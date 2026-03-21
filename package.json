@@ -1,0 +1,18 @@
+{
+  "name": "ittca-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w packages/extension",
+    "build": "npm run build -w packages/extension",
+    "lint": "npm run lint -w packages/extension"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.1.38",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0",
+    "vite-plugin-web-extension": "^4.5.0"
+  }
+}

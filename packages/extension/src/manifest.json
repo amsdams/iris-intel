@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "ITTCA - Modern IITC Alternative",
+  "description": "A lightweight, modern IITC alternative for Ingress.",
+  "version": "0.1.0",
+  "action": {
+    "default_title": "ITTCA"
+  },
+  "background": {
+    "service_worker": "src/background/index.ts",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://intel.ingress.com/*"],
+      "js": ["src/content/index.ts"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["*://intel.ingress.com/*"],
+      "js": ["src/content/interceptor.ts"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
+  ],
+  "permissions": ["storage"],
+  "host_permissions": ["*://intel.ingress.com/*"],
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/*", "src/content/*"],
+      "matches": ["*://intel.ingress.com/*"]
+    }
+  ]
+}
