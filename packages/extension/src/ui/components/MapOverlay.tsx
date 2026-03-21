@@ -37,7 +37,7 @@ export function MapOverlay() {
           {
             id: 'background',
             type: 'background',
-            paint: { 'background-color': '#111' },
+            paint: { 'background-color': 'rgba(0,0,0,0)' },
           },
           {
             id: 'fields',
@@ -49,6 +49,7 @@ export function MapOverlay() {
                 ['get', 'team'],
                 'E', '#00ff00',
                 'R', '#0000ff',
+                'M', '#ff0000',
                 '#ffffff'
               ],
               'fill-opacity': 0.2
@@ -65,6 +66,7 @@ export function MapOverlay() {
                 ['get', 'team'],
                 'E', '#00ff00',
                 'R', '#0000ff',
+                'M', '#ff0000',
                 '#ffffff'
               ]
             }
@@ -80,6 +82,7 @@ export function MapOverlay() {
                 ['get', 'team'],
                 'E', '#00ff00',
                 'R', '#0000ff',
+                'M', '#ff0000',
                 '#ffffff'
               ],
               'circle-stroke-width': 1,
@@ -167,7 +170,7 @@ export function MapOverlay() {
         left: 0,
         width: '100vw',
         height: '100vh',
-        opacity: 0.5,
+        opacity: 0.7,
         pointerEvents: 'none',
         zIndex: 9999,
       }}

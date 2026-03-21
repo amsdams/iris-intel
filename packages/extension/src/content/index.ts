@@ -39,6 +39,7 @@ window.addEventListener('message', (event) => {
   const { type, url, data, params, center, zoom } = event.data;
 
   if (type === 'ITTCA_MAP_SYNC') {
+    console.log(`ITTCA: Map Sync - Lat: ${center.lat}, Lng: ${center.lng}, Zoom: ${zoom}`);
     useStore.getState().updateMapState(center.lat, center.lng, zoom);
     return;
   }
@@ -55,21 +56,24 @@ window.addEventListener('message', (event) => {
     const fields: any[] = [];
     
     if (data.result?.map) {
+      let entityCounts: Record<string, number> = {};
       Object.values(data.result.map).forEach((tile: any) => {
         if (tile.gameEntities) {
           tile.gameEntities.forEach((entity: any) => {
             const [id, time, entData] = entity;
-            const type = entData[0];
+            const entType = entData[0];
             const team = entData[1];
 
-            if (type === 'p') { // Portal
+            entityCounts[entType] = (entityCounts[entType] || 0) + 1;
+
+            if (entType === 'p') { // Portal
               portals.push({
                 id,
                 lat: entData[2] / 1e6,
                 lng: entData[3] / 1e6,
                 team,
               });
-            } else if (type === 'l') { // Link
+            } else if (entType === 'e') { // Link (Edge)
               links.push({
                 id,
                 team,
@@ -80,7 +84,7 @@ window.addEventListener('message', (event) => {
                 toLat: entData[6] / 1e6,
                 toLng: entData[7] / 1e6,
               });
-            } else if (type === 'r') { // Region (Field)
+            } else if (entType === 'r') { // Region (Field)
               const points = entData[2].map((p: any) => ({
                 lat: p[1] / 1e6,
                 lng: p[2] / 1e6,
@@ -94,6 +98,7 @@ window.addEventListener('message', (event) => {
           });
         }
       });
+      console.log('ITTCA: Entity Types found in this batch:', entityCounts);
     }
     
     if (portals.length > 0) updatePortals(portals);
