@@ -6,6 +6,7 @@ export function ITTCAOverlay() {
   const portals = useStore((state) => state.portals);
   const links = useStore((state) => state.links);
   const fields = useStore((state) => state.fields);
+  const statsItems = useStore((state) => state.statsItems);
   
   const portalCount = Object.keys(portals).length;
   const linkCount = Object.keys(links).length;
@@ -32,6 +33,11 @@ export function ITTCAOverlay() {
         <p style={{ margin: 0 }}>Portals: {portalCount}</p>
         <p style={{ margin: 0 }}>Links: {linkCount}</p>
         <p style={{ margin: 0 }}>Fields: {fieldCount}</p>
+        {Object.values(statsItems).map((item) => (
+          <p key={item.id} style={{ margin: 0 }}>
+            {item.label}: {typeof item.value === 'function' ? item.value() : item.value}
+          </p>
+        ))}
       </div>
     </Fragment>
   );

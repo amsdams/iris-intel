@@ -10,11 +10,18 @@ const PortalNamesPlugin: ITTCAPlugin = {
   },
   setup: (api: ITTCA_API) => {
     console.log('Portal Names Plugin setup');
+    
+    let lastPortalName = 'None';
+    
+    api.ui.addStatsItem('last-portal', 'Last Portal', () => lastPortalName);
+
     api.portals.subscribe((portals) => {
       const names = Object.values(portals)
         .map((p) => p.name)
         .filter(Boolean);
+      
       if (names.length > 0) {
+        lastPortalName = names[names.length - 1] as string;
         console.log(`Portal Names Update: ${names.join(', ')}`);
       }
     });

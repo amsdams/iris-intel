@@ -13,9 +13,27 @@ build/
 # IDEs
 .idea/
 .vscode/
+.vs/
 *.swp
 *.swo
 *.iml
+.history/
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
+.nbproject/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+.idea/
+**/.idea/
+**/.vscode/
+**/tsconfig.tsbuildinfo
 
 # OS
 .DS_Store

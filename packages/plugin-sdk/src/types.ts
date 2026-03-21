@@ -14,14 +14,43 @@ export interface Portal {
   name?: string;
 }
 
+export interface Link {
+  id: string;
+  team: string;
+  fromPortalId: string;
+  fromLat: number;
+  fromLng: number;
+  toPortalId: string;
+  toLat: number;
+  toLng: number;
+}
+
+export interface Field {
+  id: string;
+  team: string;
+  points: { lat: number; lng: number }[];
+}
+
 export interface ITTCA_API {
   portals: {
     getAll: () => Record<string, Portal>;
     subscribe: (callback: (portals: Record<string, Portal>) => void) => () => void;
   };
+  links: {
+    getAll: () => Record<string, Link>;
+    subscribe: (callback: (links: Record<string, Link>) => void) => () => void;
+  };
+  fields: {
+    getAll: () => Record<string, Field>;
+    subscribe: (callback: (fields: Record<string, Field>) => void) => () => void;
+  };
   map: {
     getCenter: () => { lat: number; lng: number };
     getZoom: () => number;
+  };
+  ui: {
+    addStatsItem: (id: string, label: string, value: string | (() => string)) => void;
+    removeStatsItem: (id: string) => void;
   };
 }
 

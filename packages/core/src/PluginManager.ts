@@ -12,12 +12,28 @@ export class PluginManager {
         subscribe: (callback) => 
           useStore.subscribe((state) => callback(state.portals)),
       },
+      links: {
+        getAll: () => useStore.getState().links,
+        subscribe: (callback) => 
+          useStore.subscribe((state) => callback(state.links)),
+      },
+      fields: {
+        getAll: () => useStore.getState().fields,
+        subscribe: (callback) => 
+          useStore.subscribe((state) => callback(state.fields)),
+      },
       map: {
         getCenter: () => {
           const { lat, lng } = useStore.getState().mapState;
           return { lat, lng };
         },
         getZoom: () => useStore.getState().mapState.zoom,
+      },
+      ui: {
+        addStatsItem: (id, label, value) => 
+          useStore.getState().addStatsItem({ id, label, value }),
+        removeStatsItem: (id) => 
+          useStore.getState().removeStatsItem(id),
       },
     };
   }

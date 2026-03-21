@@ -29,10 +29,17 @@ export interface Field {
   points: { lat: number; lng: number }[];
 }
 
+export interface StatsItem {
+  id: string;
+  label: string;
+  value: string | (() => string);
+}
+
 interface ITTCAState {
   portals: Record<string, Portal>;
   links: Record<string, Link>;
   fields: Record<string, Field>;
+  statsItems: Record<string, StatsItem>;
   mapState: {
     lat: number;
     lng: number;
@@ -42,6 +49,8 @@ interface ITTCAState {
   updatePortals: (portals: Portal[]) => void;
   updateLinks: (links: Link[]) => void;
   updateFields: (fields: Field[]) => void;
+  addStatsItem: (item: StatsItem) => void;
+  removeStatsItem: (id: string) => void;
   updateMapState: (lat: number, lng: number, zoom: number) => void;
 }
 
@@ -49,6 +58,7 @@ export const useStore = create<ITTCAState>((set) => ({
   portals: {},
   links: {},
   fields: {},
+  statsItems: {},
   mapState: {
     lat: 0,
     lng: 0,
@@ -81,6 +91,16 @@ export const useStore = create<ITTCAState>((set) => ({
         fields[f.id] = f;
       });
       return { fields };
+    }),
+  addStatsItem: (item) =>
+    set((state) => ({
+      statsItems: { ...state.statsItems, [item.id]: item }
+    })),
+  removeStatsItem: (id) =>
+    set((state) => {
+      const statsItems = { ...state.statsItems };
+      delete statsItems[id];
+      return { statsItems };
     }),
   updateMapState: (lat, lng, zoom) =>
     set(() => ({
