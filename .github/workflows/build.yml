@@ -7,6 +7,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -14,15 +17,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        env:
-          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-        env:
-          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
       - name: Install dependencies
         run: npm install
@@ -36,11 +35,37 @@ jobs:
           cd packages/extension/dist
           zip -r ../../../iris-extension.zip .
 
+      # Keep artifact for PRs and manual runs
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: iris-extension
           path: iris-extension.zip
           retention-days: 30
+
+      # Create/update a rolling "latest" release on every push to main
+      - name: Create Release
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest Build
+          body: |
+            Automated build from commit ${{ github.sha }}
+
+            **Install on Kiwi Browser (Android):**
+            1. Download `iris-extension.zip`
+            2. Unzip on your phone
+            3. Kiwi Browser → Extensions → Developer mode → Load unpacked
+
+            **Install on Desktop Chrome/Chromium:**
+            1. Download and unzip
+            2. `chrome://extensions` → Developer mode → Load unpacked
+
+            **Install on Firefox / Firefox for Android (Nightly):**
+            1. Download and unzip
+            2. `about:debugging` → Load Temporary Add-on → select `manifest.json`
+          files: iris-extension.zip
+          prerelease: true
         env:
-          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
