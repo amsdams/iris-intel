@@ -170,11 +170,12 @@ function LocationSearch() {
 interface TopbarProps {
     onTogglePlayerStats: () => void;
     onToggleStateDebug: () => void;
+    onToggleLayersPopup: () => void;
     onToggleMapVisibility: () => void;
     showMap: boolean;
 }
 
-export function Topbar({ onTogglePlayerStats, onToggleStateDebug, onToggleMapVisibility, showMap }: TopbarProps) {
+export function Topbar({ onTogglePlayerStats, onToggleStateDebug, onToggleLayersPopup, onToggleMapVisibility, showMap }: TopbarProps) {
     const [locStatus, setLocStatus] = useState<'NAVIGATE TO ME' | 'LOCATING...'>('NAVIGATE TO ME');
     const [showMenu, setShowMenu] = useState(false);
 
@@ -236,6 +237,20 @@ export function Topbar({ onTogglePlayerStats, onToggleStateDebug, onToggleMapVis
                         minWidth: '150px',
                         overflowY: 'auto',
                     }}>
+                        <div
+                            onClick={() => { onToggleLayersPopup(); setShowMenu(false); }}
+                            style={{
+                                padding: '6px 8px',
+                                cursor: 'pointer',
+                                borderBottom: '1px solid #222',
+                                fontSize: '0.8em',
+                                color: '#00ffff',
+                            }}
+                            onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#1a1a1a'; }}
+                            onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
+                        >
+                            Layers
+                        </div>
                         <div
                             onClick={() => { onToggleStateDebug(); setShowMenu(false); }}
                             style={{

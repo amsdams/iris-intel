@@ -5,6 +5,7 @@ import { MapOverlay } from './MapOverlay';
 import { Topbar } from './Topbar';
 import { PlayerStatsPopup } from './PlayerStatsPopup';
 import { StateDebugPopup } from './StateDebugPopup';
+import { LayersPopup } from './LayersPopup';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -214,10 +215,12 @@ function PortalPopup() {
 export function IRISOverlay() {
     const [showPlayerStatsPopup, setShowPlayerStatsPopup] = useState(false);
     const [showStateDebugPopup, setShowStateDebugPopup] = useState(false);
-    const [showMap, setShowMap] = useState(true); // Moved here from Topbar
+    const [showLayersPopup, setShowLayersPopup] = useState(false);
+    const [showMap, setShowMap] = useState(true);
 
     const togglePlayerStatsPopup = () => setShowPlayerStatsPopup(!showPlayerStatsPopup);
     const toggleStateDebugPopup = () => setShowStateDebugPopup(!showStateDebugPopup);
+    const toggleLayersPopup = () => setShowLayersPopup(!showLayersPopup);
     const toggleMapVisibility = () => setShowMap(!showMap);
 
     return (
@@ -225,6 +228,7 @@ export function IRISOverlay() {
             <Topbar
                 onTogglePlayerStats={togglePlayerStatsPopup}
                 onToggleStateDebug={toggleStateDebugPopup}
+                onToggleLayersPopup={toggleLayersPopup}
                 onToggleMapVisibility={toggleMapVisibility}
                 showMap={showMap}
             />
@@ -240,6 +244,10 @@ export function IRISOverlay() {
 
             {showStateDebugPopup && (
                 <StateDebugPopup onClose={toggleStateDebugPopup} />
+            )}
+
+            {showLayersPopup && (
+                <LayersPopup onClose={toggleLayersPopup} />
             )}
         </Fragment>
     );

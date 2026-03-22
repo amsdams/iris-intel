@@ -81,6 +81,24 @@ interface IRISState {
 
     playerStats: PlayerStats | null;
     setPlayerStats: (stats: PlayerStats) => void;
+
+    // Layer visibility states
+    showFields: boolean;
+    showLinks: boolean;
+    showResistance: boolean;
+    showEnlightened: boolean;
+    showMachina: boolean;
+    showUnclaimedPortals: boolean;
+    showLevel: Record<number, boolean>;
+
+    // Layer visibility actions
+    toggleShowFields: () => void;
+    toggleShowLinks: () => void;
+    toggleShowResistance: () => void;
+    toggleShowEnlightened: () => void;
+    toggleShowMachina: () => void;
+    toggleShowUnclaimedPortals: () => void;
+    toggleShowLevel: (level: number) => void;
 }
 
 export const useStore = create<IRISState>((set) => ({
@@ -139,4 +157,30 @@ export const useStore = create<IRISState>((set) => ({
     selectPortal: (id) => set(() => ({ selectedPortalId: id })),
     playerStats: null,
     setPlayerStats: (stats) => set(() => ({ playerStats: stats })),
+
+    // Initialize layer visibility states
+    showFields: true,
+    showLinks: true,
+    showResistance: true,
+    showEnlightened: true,
+    showMachina: true,
+    showUnclaimedPortals: true,
+    showLevel: {
+        1: true, 2: true, 3: true, 4: true,
+        5: true, 6: true, 7: true, 8: true,
+    },
+
+    // Implement layer visibility actions
+    toggleShowFields: () => set((state) => ({ showFields: !state.showFields })),
+    toggleShowLinks: () => set((state) => ({ showLinks: !state.showLinks })),
+    toggleShowResistance: () => set((state) => ({ showResistance: !state.showResistance })),
+    toggleShowEnlightened: () => set((state) => ({ showEnlightened: !state.showEnlightened })),
+    toggleShowMachina: () => set((state) => ({ showMachina: !state.showMachina })),
+    toggleShowUnclaimedPortals: () => set((state) => ({ showUnclaimedPortals: !state.showUnclaimedPortals })),
+    toggleShowLevel: (level: number) => set((state) => ({
+        showLevel: {
+            ...state.showLevel,
+            [level]: !state.showLevel[level],
+        },
+    })),
 }));

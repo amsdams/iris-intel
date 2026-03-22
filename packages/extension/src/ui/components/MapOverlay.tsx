@@ -26,6 +26,16 @@ export function MapOverlay() {
   const fields = useStore((state) => state.fields);
   const { lat, lng, zoom } = useStore((state) => state.mapState);
 
+  // Layer visibility states from store
+  const showFields = useStore((state) => state.showFields);
+  const showLinks = useStore((state) => state.showLinks);
+  const showResistance = useStore((state) => state.showResistance);
+  const showEnlightened = useStore((state) => state.showEnlightened);
+  const showMachina = useStore((state) => state.showMachina);
+  const showUnclaimedPortals = useStore((state) => state.showUnclaimedPortals);
+  const showLevel = useStore((state) => state.showLevel);
+
+
   // ---------------------------------------------------------------------------
   // Initialise MapLibre map once on mount
   // ---------------------------------------------------------------------------
@@ -214,33 +224,73 @@ export function MapOverlay() {
   useEffect(() => {
     if (!map.current || !styleLoaded) return;
 
-    const portalSource = map.current.getSource('portals') as maplibregl.GeoJSONSource;
-    portalSource?.setData({
-      type: 'FeatureCollection',
-      features: Object.values(portals).map((p: any) => ({
+    // Filter portals
+    const filteredPortals = Object.values(portals).filter(p => {
+        const isUnclaimed = p.team === 'N';
+        const isMachina = p.team === 'M';
+        const isResistance = p.team === 'R';
+        const isEnlightened = p.team === 'E';
+
+        // Check team visibility
+        if (isUnclaimed && !showUnclaimedPortals) return false;
+        if (isMachina && !showMachina) return false;
+        if (isResistance && !showResistance) return false;
+        if (isEnlightened && !showEnlightened) return false;
+
+        // Check level visibility
+        if (p.level && !showLevel[p.level]) return false;
+
+        return true;
+    }).map((p: any) => ({
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
         properties: { id: p.id, team: p.team, name: p.name, level: p.level },
-      })),
+    }));
+
+    const portalSource = map.current.getSource('portals') as maplibregl.GeoJSONSource;
+    portalSource?.setData({
+      type: 'FeatureCollection',
+      features: filteredPortals,
     } as any);
 
-    const linkSource = map.current.getSource('links') as maplibregl.GeoJSONSource;
-    linkSource?.setData({
-      type: 'FeatureCollection',
-      features: Object.values(links).map((l: any) => ({
+    // Filter links
+    const filteredLinks = Object.values(links).filter(l => {
+        if (!showLinks) return false;
+        const isResistance = l.team === 'R';
+        const isEnlightened = l.team === 'E';
+        const isMachina = l.team === 'M';
+
+        if (isResistance && !showResistance) return false;
+        if (isEnlightened && !showEnlightened) return false;
+        if (isMachina && !showMachina) return false;
+        return true;
+    }).map((l: any) => ({
         type: 'Feature',
         geometry: {
           type: 'LineString',
           coordinates: [[l.fromLng, l.fromLat], [l.toLng, l.toLat]],
         },
         properties: { team: l.team },
-      })),
+    }));
+
+    const linkSource = map.current.getSource('links') as maplibregl.GeoJSONSource;
+    linkSource?.setData({
+      type: 'FeatureCollection',
+      features: filteredLinks,
     } as any);
 
-    const fieldSource = map.current.getSource('fields') as maplibregl.GeoJSONSource;
-    fieldSource?.setData({
-      type: 'FeatureCollection',
-      features: Object.values(fields).map((f: any) => ({
+    // Filter fields
+    const filteredFields = Object.values(fields).filter(f => {
+        if (!showFields) return false;
+        const isResistance = f.team === 'R';
+        const isEnlightened = f.team === 'E';
+        const isMachina = f.team === 'M';
+
+        if (isResistance && !showResistance) return false;
+        if (isEnlightened && !showEnlightened) return false;
+        if (isMachina && !showMachina) return false;
+        return true;
+    }).map((f: any) => ({
         type: 'Feature',
         geometry: {
           type: 'Polygon',
@@ -250,10 +300,15 @@ export function MapOverlay() {
           ]],
         },
         properties: { team: f.team },
-      })),
+    }));
+
+    const fieldSource = map.current.getSource('fields') as maplibregl.GeoJSONSource;
+    fieldSource?.setData({
+      type: 'FeatureCollection',
+      features: filteredFields,
     } as any);
 
-  }, [portals, links, fields, styleLoaded]);
+  }, [portals, links, fields, showFields, showLinks, showResistance, showEnlightened, showMachina, showUnclaimedPortals, showLevel, styleLoaded]);
 
   return (
       <div
