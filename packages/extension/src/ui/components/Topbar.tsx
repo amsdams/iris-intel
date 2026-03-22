@@ -280,7 +280,7 @@ export function Topbar({ onTogglePlayerStats, onToggleStateDebug, onToggleMapVis
                     disabled={locStatus === 'LOCATING...'}
                     style={btnStyle(locStatus !== 'LOCATING...')}
                 >
-                    {locStatus}
+                    {locStatus === 'LOCATING...' ? '...' : '◎'}
                 </button>
                 <button style={btnStyle(true)} onClick={onTogglePlayerStats}>👤</button>
             </div>
