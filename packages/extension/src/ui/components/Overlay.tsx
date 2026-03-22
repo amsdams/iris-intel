@@ -43,34 +43,45 @@ const btnStyle = (active: boolean) => ({
 // Uses Nominatim (OpenStreetMap) geocoding — moves both maps on result
 // ---------------------------------------------------------------------------
 
+interface NominatimResult {
+    place_id: number;
+    display_name: string;
+    lat: string;
+    lon: string;
+    type: string;
+}
+
 function LocationSearch() {
     const [query, setQuery] = useState('');
     const [searching, setSearching] = useState(false);
+    const [results, setResults] = useState<NominatimResult[]>([]);
     const [error, setError] = useState('');
 
     const search = async () => {
         if (!query.trim()) return;
         setSearching(true);
         setError('');
+        setResults([]);
 
         try {
             const res = await fetch(
-                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`,
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5`,
                 { headers: { 'Accept-Language': 'en' } }
             );
-            const results = await res.json();
+            const data: NominatimResult[] = await res.json();
 
-            if (!results.length) {
+            if (!data.length) {
                 setError('Location not found');
                 return;
             }
 
-            const { lat, lon } = results[0];
-            window.postMessage({
-                type: 'ITTCA_MOVE_MAP',
-                center: { lat: parseFloat(lat), lng: parseFloat(lon) },
-                zoom: 15,
-            }, '*');
+            // If only one result navigate directly
+            if (data.length === 1) {
+                navigateTo(data[0]);
+                return;
+            }
+
+            setResults(data);
         } catch (e) {
             setError('Search failed');
         } finally {
@@ -78,12 +89,26 @@ function LocationSearch() {
         }
     };
 
+    const navigateTo = (result: NominatimResult) => {
+        const lat = parseFloat(result.lat);
+        const lng = parseFloat(result.lon);
+        console.log('ITTCA: navigating to', lat, lng);
+        window.postMessage({
+            type: 'ITTCA_MOVE_MAP',
+            center: { lat, lng },
+            zoom: 15,
+        }, '*');
+        setResults([]);
+        setQuery(result.display_name.split(',')[0]);
+    };
+
     const onKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Enter') search();
+        if (e.key === 'Escape') setResults([]);
     };
 
     return (
-        <div style={{ marginTop: '10px' }}>
+        <div style={{ marginTop: '10px', position: 'relative' }}>
             <div style={{ display: 'flex', gap: '4px' }}>
                 <input
                     type="text"
@@ -100,6 +125,7 @@ function LocationSearch() {
                         padding: '4px 6px',
                         fontFamily: 'monospace',
                         fontSize: '0.85em',
+                        outline: 'none',
                     }}
                 />
                 <button
@@ -110,9 +136,53 @@ function LocationSearch() {
                     {searching ? '...' : 'GO'}
                 </button>
             </div>
+
             {error && (
                 <div style={{ color: '#ff4444', fontSize: '0.75em', marginTop: '4px' }}>
                     {error}
+                </div>
+            )}
+
+            {/* Results dropdown */}
+            {results.length > 0 && (
+                <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    background: 'rgba(0, 0, 0, 0.95)',
+                    border: '1px solid #00ffff',
+                    borderRadius: '3px',
+                    marginTop: '2px',
+                    zIndex: 10002,
+                    maxHeight: '200px',
+                    overflowY: 'auto',
+                }}>
+                    {results.map((result) => (
+                        <div
+                            key={result.place_id}
+                            onClick={() => navigateTo(result)}
+                            style={{
+                                padding: '6px 8px',
+                                cursor: 'pointer',
+                                borderBottom: '1px solid #222',
+                                fontSize: '0.8em',
+                            }}
+                            onMouseEnter={(e) => {
+                                (e.currentTarget as HTMLDivElement).style.background = '#1a1a1a';
+                            }}
+                            onMouseLeave={(e) => {
+                                (e.currentTarget as HTMLDivElement).style.background = 'transparent';
+                            }}
+                        >
+                            <div style={{ color: '#00ffff' }}>
+                                {result.display_name.split(',')[0]}
+                            </div>
+                            <div style={{ color: '#666', fontSize: '0.9em', marginTop: '1px' }}>
+                                {result.display_name.split(',').slice(1, 3).join(',')}
+                            </div>
+                        </div>
+                    ))}
                 </div>
             )}
         </div>

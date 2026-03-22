@@ -132,9 +132,13 @@ pluginManager.load(PortalNamesPlugin as any);
 // ---------------------------------------------------------------------------
 
 window.addEventListener('message', (event) => {
+  if (event.data?.type?.startsWith('ITTCA')) {
+    console.log('ITTCA raw message received:', event.data.type, event.data);
+  }
+
   if (event.source !== window || !event.data?.type) return;
 
-  const { type, url, data, params, center, zoom } = event.data;
+  const { type, url, data, params} = event.data;
 
   switch (type) {
 // Intel cookie position received — set MapLibre position immediately
@@ -152,10 +156,14 @@ window.addEventListener('message', (event) => {
 
       // User panned MapLibre — forward to interceptor to move Intel map
     case 'ITTCA_MOVE_MAP': {
+      const { center, zoom } = event.data;
+      // Move Intel map
       window.postMessage(
           { type: 'ITTCA_MOVE_MAP_INTERNAL', center, zoom },
           '*'
       );
+      // Also update MapLibre position directly
+      useStore.getState().updateMapState(center.lat, center.lng, zoom);
       break;
     }
 
