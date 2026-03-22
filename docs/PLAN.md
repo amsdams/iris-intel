@@ -1,4 +1,4 @@
-# Plan: ITTCA Architecture (Updated)
+# Plan: IRIS Architecture (Updated)
 
 ## Objective
 Create a modern, lightweight, and high-performance IITC alternative. Current focus is a **Desktop Proof of Concept (POC)** as a Browser Extension (Manifest V3) that acts as a "Master Map" overlaying the original Ingress Intel map.
@@ -20,7 +20,7 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 
 ### Phase 2: Map Rendering (100% Complete)
 - [x] MapLibre GL Overlay with OSM Basemap.
-- [x] **Bi-directional Sync:** Panning ITTCA moves Intel; Intel fetches data -> ITTCA renders.
+- [x] **Bi-directional Sync:** Panning IRIS moves Intel; Intel fetches data -> IRIS renders.
 - [x] Persistent View: Map stays alive and synced when toggled hidden.
 - [x] Modern Dark-Mode aesthetic with faction-themed WebGL layers.
 
@@ -38,9 +38,9 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 
 ## Current Working Logic
 1. **Intercept:** Catch raw JSON from Niantic.
-2. **Store:** Normalize into Zustand (`@ittca/core`).
+2. **Store:** Normalize into Zustand (`@iris/core`).
 3. **Master Sync:** MapLibre (top layer) captures user input, sends `move` commands to the Google Maps instance (bottom layer).
-4. **Trigger:** The Google Maps `idle` event indicates the map has stopped moving, which triggers a sync back to the ITTCA overlay. Data is fetched automatically by the underlying map.
+4. **Trigger:** The Google Maps `idle` event indicates the map has stopped moving, which triggers a sync back to the IRIS overlay. Data is fetched automatically by the underlying map.
 5. **Render:** Interceptor catches new data -> Store updates -> MapLibre redraws WebGL layers.
 
 ## Verification & Testing

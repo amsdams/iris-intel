@@ -2,7 +2,7 @@ import { h } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { useStore } from '@ittca/core';
+import { useStore } from '@iris/core';
 
 // Team colours used across portal, link and field layers
 const TEAM_COLOUR_EXPR = [
@@ -120,7 +120,7 @@ export function MapOverlay() {
       const center = map.current.getCenter();
       const z = map.current.getZoom();
       window.postMessage({
-        type: 'ITTCA_MOVE_MAP',
+        type: 'IRIS_MOVE_MAP',
         center: { lat: center.lat, lng: center.lng },
         zoom: Math.round(z),
       }, '*');
@@ -133,7 +133,7 @@ export function MapOverlay() {
       if (!id) return;
       useStore.getState().selectPortal(id);
       window.postMessage({
-        type: 'ITTCA_PORTAL_DETAILS_REQUEST',
+        type: 'IRIS_PORTAL_DETAILS_REQUEST',
         guid: id,
       }, '*');
     });

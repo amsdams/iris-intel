@@ -17,8 +17,8 @@
     "jsx": "react-jsx",
     "jsxImportSource": "preact",
     "paths": {
-      "@ittca/core": ["./packages/core/src"],
-      "@ittca/plugin-sdk": ["./packages/plugin-sdk/src"]
+      "@iris/core": ["./packages/core/src"],
+      "@iris/plugin-sdk": ["./packages/plugin-sdk/src"]
     }
   },
   "include": ["packages/**/*.ts", "packages/**/*.tsx"],

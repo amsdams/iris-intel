@@ -23,7 +23,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@ittca/core': path.resolve(__dirname, '../core/src'),
+      '@iris/core': path.resolve(__dirname, '../core/src'),
     },
   },
 });

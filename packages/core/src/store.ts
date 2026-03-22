@@ -58,7 +58,7 @@ export interface StatsItem {
     value: string | (() => string);
 }
 
-interface ITTCAState {
+interface IRISState {
     portals: Record<string, Portal>;
     links: Record<string, Link>;
     fields: Record<string, Field>;
@@ -83,7 +83,7 @@ interface ITTCAState {
     setPlayerStats: (stats: PlayerStats) => void;
 }
 
-export const useStore = create<ITTCAState>((set) => ({
+export const useStore = create<IRISState>((set) => ({
     portals: {},
     links: {},
     fields: {},

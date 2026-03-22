@@ -1,6 +1,6 @@
 import { h, Fragment } from 'preact';
 import { useState } from 'preact/hooks';
-import { useStore } from '@ittca/core';
+import { useStore } from '@iris/core';
 import { MapOverlay } from './MapOverlay';
 
 // ---------------------------------------------------------------------------
@@ -92,9 +92,9 @@ function LocationSearch() {
     const navigateTo = (result: NominatimResult) => {
         const lat = parseFloat(result.lat);
         const lng = parseFloat(result.lon);
-        console.log('ITTCA: navigating to', lat, lng);
+        console.log('IRIS: navigating to', lat, lng);
         window.postMessage({
-            type: 'ITTCA_MOVE_MAP',
+            type: 'IRIS_MOVE_MAP',
             center: { lat, lng },
             zoom: 15,
         }, '*');
@@ -355,10 +355,10 @@ function PortalPopup() {
 }
 
 // ---------------------------------------------------------------------------
-// ITTCAOverlay
+// IRISOverlay
 // ---------------------------------------------------------------------------
 
-export function ITTCAOverlay() {
+export function IRISOverlay() {
     const portals = useStore((state) => state.portals);
     const links = useStore((state) => state.links);
     const fields = useStore((state) => state.fields);
@@ -381,7 +381,7 @@ export function ITTCAOverlay() {
         navigator.geolocation.getCurrentPosition(
             ({ coords }) => {
                 window.postMessage({
-                    type: 'ITTCA_MOVE_MAP',
+                    type: 'IRIS_MOVE_MAP',
                     center: { lat: coords.latitude, lng: coords.longitude },
                     zoom: 15,
                 }, '*');
@@ -439,7 +439,7 @@ export function ITTCAOverlay() {
                             </div>
                         </div>
                     ) : (
-                        <h1 style={{ margin: 0, fontSize: '1.2em' }}>ITTCA</h1>
+                        <h1 style={{ margin: 0, fontSize: '1.2em' }}>IRIS</h1>
                     )}
                 </div>
                 <p style={{ margin: 0 }}>Portals: {portalCount}</p>
@@ -452,7 +452,7 @@ export function ITTCAOverlay() {
                 ))}
                 <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
                     <button onClick={() => setShowMap(!showMap)} style={btnStyle(true)}>
-                        {showMap ? 'SHOW INTEL MAP' : 'SHOW ITTCA MAP'}
+                        {showMap ? 'SHOW INTEL MAP' : 'SHOW IRIS MAP'}
                     </button>
                     <button
                         onClick={goToMyLocation}

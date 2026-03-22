@@ -1,6 +1,6 @@
 import { render, h } from 'preact';
-import { ITTCAOverlay } from '../ui/components/Overlay';
-import { useStore, pluginManager } from '@ittca/core';
+import { IRISOverlay } from '../ui/components/Overlay';
+import { useStore, pluginManager } from '@iris/core';
 import PortalNamesPlugin from '../../../plugins/src/portal-names';
 
 // Tracks whether MapLibre has been given its initial position
@@ -104,16 +104,16 @@ function parsePortalDetails(data: any, params: any): any | null {
 
 function initUI() {
   const container = document.createElement('div');
-  container.id = 'ittca-root';
+  container.id = 'iris-root';
 
   if (document.body) {
     document.body.appendChild(container);
-    render(h(ITTCAOverlay, {}), container);
+    render(h(IRISOverlay, {}), container);
   } else {
     const observer = new MutationObserver((_, obs) => {
       if (document.body) {
         document.body.appendChild(container);
-        render(h(ITTCAOverlay, {}), container);
+        render(h(IRISOverlay, {}), container);
         obs.disconnect();
       }
     });
@@ -132,8 +132,8 @@ pluginManager.load(PortalNamesPlugin as any);
 // ---------------------------------------------------------------------------
 
 window.addEventListener('message', (event) => {
-  if (event.data?.type?.startsWith('ITTCA')) {
-    console.log('ITTCA raw message received:', event.data.type, event.data);
+  if (event.data?.type?.startsWith('IRIS')) {
+    console.log('IRIS raw message received:', event.data.type, event.data);
   }
 
   if (event.source !== window || !event.data?.type) return;
@@ -143,7 +143,7 @@ window.addEventListener('message', (event) => {
   switch (type) {
 // Intel cookie position received — set MapLibre position immediately
 // This fires before any getEntities request so the map starts at the right place
-    case 'ITTCA_INITIAL_POSITION': {
+    case 'IRIS_INITIAL_POSITION': {
       const { lat, lng, zoom } = event.data;
       hasInitialPosition = true;
       // Clamp zoom to minimum 14 so portals load immediately
@@ -151,15 +151,15 @@ window.addEventListener('message', (event) => {
       break;
     }
       // Intel tile request fired — used only for zoom level logging
-    case 'ITTCA_TILE_REQUEST':
+    case 'IRIS_TILE_REQUEST':
       break;
 
       // User panned MapLibre — forward to interceptor to move Intel map
-    case 'ITTCA_MOVE_MAP': {
+    case 'IRIS_MOVE_MAP': {
       const { center, zoom } = event.data;
       // Move Intel map
       window.postMessage(
-          { type: 'ITTCA_MOVE_MAP_INTERNAL', center, zoom },
+          { type: 'IRIS_MOVE_MAP_INTERNAL', center, zoom },
           '*'
       );
       // Also update MapLibre position directly
@@ -168,27 +168,27 @@ window.addEventListener('message', (event) => {
     }
 
       // Ignore echoes of internal messages
-    case 'ITTCA_MOVE_MAP_INTERNAL':
-    case 'ITTCA_GEOLOCATE':
+    case 'IRIS_MOVE_MAP_INTERNAL':
+    case 'IRIS_GEOLOCATE':
       break;
 
       // Geolocation request from UI — forward to main world
-    case 'ITTCA_GEOLOCATE_REQUEST': {
-      window.postMessage({ type: 'ITTCA_GEOLOCATE' }, '*');
+    case 'IRIS_GEOLOCATE_REQUEST': {
+      window.postMessage({ type: 'IRIS_GEOLOCATE' }, '*');
       break;
     }
 
       // Portal click — forward to interceptor to trigger getPortalDetails XHR
-    case 'ITTCA_PORTAL_DETAILS_REQUEST': {
+    case 'IRIS_PORTAL_DETAILS_REQUEST': {
       window.postMessage({
-        type: 'ITTCA_PORTAL_DETAILS_FETCH',
+        type: 'IRIS_PORTAL_DETAILS_FETCH',
         guid: event.data.guid,
       }, '*');
       break;
     }
 
       // Intel API data received
-    case 'ITTCA_DATA': {
+    case 'IRIS_DATA': {
       if (url.includes('/r/getEntities')) {
         const { portals, links, fields } = parseEntities(data);
         const store = useStore.getState();
@@ -211,7 +211,7 @@ window.addEventListener('message', (event) => {
       break;
     }
 
-    case 'ITTCA_PLAYER_STATS': {
+    case 'IRIS_PLAYER_STATS': {
       const { nickname, level, ap, team } = event.data;
       useStore.getState().setPlayerStats({ nickname, level, ap, team });
       break;

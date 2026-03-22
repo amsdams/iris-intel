@@ -45,7 +45,7 @@
                 }
                 if (attempts > 50) {
                     clearInterval(interval);
-                    console.warn('ITTCA: Google Maps constructor not found');
+                    console.warn('IRIS: Google Maps constructor not found');
                 }
             }, 100);
         }
@@ -60,7 +60,7 @@
 
         if (nickname) {
             window.postMessage({
-                type: 'ITTCA_PLAYER_STATS',
+                type: 'IRIS_PLAYER_STATS',
                 nickname,
                 level: level ? parseInt(level, 10) : null,
                 ap: ap ? parseInt(ap, 10) : null,
@@ -99,7 +99,7 @@
     const initialPosition = getIntelPositionFromCookies();
     if (initialPosition) {
         window.postMessage(
-            { type: 'ITTCA_INITIAL_POSITION', ...initialPosition },
+            { type: 'IRIS_INITIAL_POSITION', ...initialPosition },
             '*'
         );
     }
@@ -124,14 +124,14 @@
         user?: string | null,
         password?: string | null
     ) {
-        (this as any)._ittca_url = typeof url === 'string' ? url : url.toString();
+        (this as any)._iris_url = typeof url === 'string' ? url : url.toString();
         return origOpen.apply(this, arguments as any);
     };
 
     XMLHttpRequest.prototype.send = function (
         body?: Document | XMLHttpRequestBodyInit | null
     ) {
-        const url: string = (this as any)._ittca_url || '';
+        const url: string = (this as any)._iris_url || '';
 
         if (body && url.includes('/r/')) {
             try {
@@ -145,7 +145,7 @@
                 // Broadcast tile keys so the content script can track Intel zoom level
                 if (url.includes('/r/getEntities') && requestData.tileKeys?.length > 0) {
                     window.postMessage(
-                        {type: 'ITTCA_TILE_REQUEST', tileKeys: requestData.tileKeys},
+                        {type: 'IRIS_TILE_REQUEST', tileKeys: requestData.tileKeys},
                         '*'
                     );
                 }
@@ -156,7 +156,7 @@
 
         this.addEventListener('load', function (this: XMLHttpRequest) {
             if (this.status !== 200) return;
-            const url: string = (this as any)._ittca_url || '';
+            const url: string = (this as any)._iris_url || '';
 
             if (
                 url.includes('/r/getEntities') ||
@@ -165,11 +165,11 @@
                 try {
                     const response = JSON.parse(this.responseText);
                     window.postMessage(
-                        {type: 'ITTCA_DATA', url, data: response},
+                        {type: 'IRIS_DATA', url, data: response},
                         '*'
                     );
                 } catch (e) {
-                    console.error('ITTCA: Failed to parse XHR response', e);
+                    console.error('IRIS: Failed to parse XHR response', e);
                 }
             }
         });
@@ -194,9 +194,9 @@
         ) {
             try {
                 const data = await response.clone().json();
-                window.postMessage({type: 'ITTCA_DATA', url, data}, '*');
+                window.postMessage({type: 'IRIS_DATA', url, data}, '*');
             } catch (e) {
-                console.error('ITTCA: Failed to parse fetch response', e);
+                console.error('IRIS: Failed to parse fetch response', e);
             }
         }
 
@@ -222,30 +222,30 @@
         switch (event.data.type) {
 
             // Move Intel's map to match MapLibre position
-            case 'ITTCA_MOVE_MAP_INTERNAL': {
+            case 'IRIS_MOVE_MAP_INTERNAL': {
                 if (!intelMap) break;
                 const {center, zoom} = event.data;
                 try {
                     intelMap.setCenter({lat: center.lat, lng: center.lng});
                     intelMap.setZoom(zoom);
                 } catch (e) {
-                    console.error('ITTCA: Failed to move Intel map', e);
+                    console.error('IRIS: Failed to move Intel map', e);
                 }
                 break;
             }
 
             // Fetch full portal details for a given guid
-            case 'ITTCA_PORTAL_DETAILS_FETCH': {
+            case 'IRIS_PORTAL_DETAILS_FETCH': {
                 const {guid} = event.data;
 
                 if (!intelVersion) {
-                    console.warn('ITTCA: Version token not yet captured');
+                    console.warn('IRIS: Version token not yet captured');
                     break;
                 }
 
                 const csrfToken = getCsrfToken();
                 if (!csrfToken) {
-                    console.warn('ITTCA: CSRF token not found in cookies');
+                    console.warn('IRIS: CSRF token not found in cookies');
                     break;
                 }
 
@@ -258,16 +258,16 @@
                         try {
                             const data = JSON.parse(this.responseText);
                             window.postMessage({
-                                type: 'ITTCA_DATA',
+                                type: 'IRIS_DATA',
                                 url: '/r/getPortalDetails',
                                 data,
                                 params: {guid},
                             }, '*');
                         } catch (e) {
-                            console.error('ITTCA: Failed to parse getPortalDetails response', e);
+                            console.error('IRIS: Failed to parse getPortalDetails response', e);
                         }
                     } else {
-                        console.error('ITTCA: getPortalDetails failed with status', this.status);
+                        console.error('IRIS: getPortalDetails failed with status', this.status);
                     }
                 });
                 req.send(JSON.stringify({guid, v: intelVersion}));
@@ -279,5 +279,5 @@
         }
     });
 
-    console.log('ITTCA: Interceptor ready');
+    console.log('IRIS: Interceptor ready');
 })();

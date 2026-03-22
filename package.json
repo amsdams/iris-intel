@@ -1,5 +1,5 @@
 {
-  "name": "ittca-monorepo",
+  "name": "iris-monorepo",
   "private": true,
   "workspaces": [
     "packages/*"

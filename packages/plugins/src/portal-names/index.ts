@@ -1,14 +1,14 @@
-import { ITTCAPlugin, ITTCA_API } from '@ittca/plugin-sdk';
+import { IRISPlugin, IRIS_API } from '@iris/plugin-sdk';
 
-const PortalNamesPlugin: ITTCAPlugin = {
+const PortalNamesPlugin: IRISPlugin = {
   manifest: {
     id: 'portal-names',
     name: 'Portal Names Logger',
     version: '0.1.0',
     description: 'Logs portal names to the console.',
-    author: 'ITTCA Team',
+    author: 'IRIS Team',
   },
-  setup: (api: ITTCA_API) => {
+  setup: (api: IRIS_API) => {
     console.log('Portal Names Plugin setup');
     
     let lastPortalName = 'None';

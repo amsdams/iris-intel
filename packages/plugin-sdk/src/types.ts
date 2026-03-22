@@ -31,7 +31,7 @@ export interface Field {
   points: { lat: number; lng: number }[];
 }
 
-export interface ITTCA_API {
+export interface IRIS_API {
   portals: {
     getAll: () => Record<string, Portal>;
     subscribe: (callback: (portals: Record<string, Portal>) => void) => () => void;
@@ -54,8 +54,8 @@ export interface ITTCA_API {
   };
 }
 
-export interface ITTCAPlugin {
+export interface IRISPlugin {
   manifest: PluginManifest;
-  setup: (api: ITTCA_API) => void | Promise<void>;
+  setup: (api: IRIS_API) => void | Promise<void>;
   teardown?: () => void | Promise<void>;
 }

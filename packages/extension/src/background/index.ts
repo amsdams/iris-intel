@@ -1,3 +1,3 @@
-console.log('ITTCA: Background script loaded');
+console.log('IRIS: Background script loaded');
 
 export {};

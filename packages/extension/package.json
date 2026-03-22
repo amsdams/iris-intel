@@ -1,5 +1,5 @@
 {
-  "name": "@ittca/extension",
+  "name": "@iris/extension",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@ittca/core": "*",
+    "@iris/core": "*",
     "preact": "^10.19.0",
     "zustand": "^4.0.0",
     "maplibre-gl": "^4.0.0"
