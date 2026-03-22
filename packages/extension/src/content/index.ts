@@ -3,7 +3,6 @@ import { ITTCAOverlay } from '../ui/components/Overlay';
 import { useStore, pluginManager } from '@ittca/core';
 import PortalNamesPlugin from '../../../plugins/src/portal-names';
 
-let isProgrammaticMove = false;
 let hasInitialPosition = false; // Only sync position once on first load
 
 function tileKeyToLatLng(
@@ -76,13 +75,17 @@ function parseEntities(data: any): {
 
 function parsePortalDetails(data: any, params: any): any | null {
   if (!data.result) return null;
-  const entData = data.result;
+  const d = data.result;
   return {
     id: params?.guid || '',
-    lat: entData[2] / 1e6,
-    lng: entData[3] / 1e6,
-    team: entData[1],
-    name: entData[8],
+    lat: d[2] / 1e6,
+    lng: d[3] / 1e6,
+    team: d[1],
+    name: d[8],
+    level: d[20],
+    health: d[42],
+    resCount: d[4] ? Object.keys(d[4]).length : 0,
+    image: d[7],
   };
 }
 
@@ -113,32 +116,14 @@ window.addEventListener('message', (event) => {
 
   switch (type) {
 
-    /*case 'ITTCA_TILE_REQUEST': {
-      if (!tileKeys?.length) break;
-
-      const midKey = tileKeys[Math.floor(tileKeys.length / 2)];
-      const position = tileKeyToLatLng(midKey);
-      console.log('ITTCA: raw tile key:', midKey);
-      console.log('ITTCA: calculated position:', JSON.stringify(position));
-
-      // Only use tiles at zoom 14+ for position sync — zoom 10 is too imprecise
-      if (!position || position.zoom < 14) break;
-
-      if (!hasInitialPosition) {
-        hasInitialPosition = true;
-        isProgrammaticMove = true;
-        console.log('ITTCA: Setting initial position:', JSON.stringify(position));
-        useStore.getState().updateMapState(
-            position.lat,
-            position.lng,
-            position.zoom
-        );
-        setTimeout(() => {
-          isProgrammaticMove = false;
-        }, 500);
-      }
+    case 'ITTCA_PORTAL_DETAILS_REQUEST': {
+      // Forward to main world to trigger getPortalDetails XHR
+      window.postMessage({
+        type: 'ITTCA_PORTAL_DETAILS_FETCH',
+        guid: event.data.guid,
+      }, '*');
       break;
-    }*/
+    }
     case 'ITTCA_TILE_REQUEST': {
       console.log('ITTCA_TILE_REQUEST: Init');
 
@@ -146,49 +131,9 @@ window.addEventListener('message', (event) => {
       console.log('ITTCA: Intel zoom level:', tileKeys[0].split('_')[0]);
       break;
     }
-    /*case 'ITTCA_TILE_REQUEST': {
-      if (!tileKeys?.length) break;
-
-      // Log raw tile key and calculated position
-      const midKey = tileKeys[Math.floor(tileKeys.length / 2)];
-      const position = tileKeyToLatLng(midKey);
-      console.log('ITTCA: raw tile key:', midKey);
-      console.log('ITTCA: calculated position:', position);
-      console.log('ITTCA: calculated position:', JSON.stringify(position));
-
-      break;
-    }*/
-    /*case 'ITTCA_TILE_REQUEST': {
-      if (!tileKeys?.length) break;
-
-      const parts = tileKeys[0].split('_');
-      console.log('ITTCA: Intel zoom:', parts[0]);
-
-      // Only set initial position once — prevents feedback loop
-      // on subsequent pans
-      if (!hasInitialPosition) {
-        const midKey = tileKeys[Math.floor(tileKeys.length / 2)];
-        const position = tileKeyToLatLng(midKey);
-        if (position) {
-          hasInitialPosition = true;
-          isProgrammaticMove = true;
-          console.log('ITTCA: Setting initial position from tile keys:', position);
-          useStore.getState().updateMapState(
-              position.lat,
-              position.lng,
-              position.zoom
-          );
-          setTimeout(() => {
-            isProgrammaticMove = false;
-          }, 500);
-        }
-      }
-      break;
-    }*/
 
     case 'ITTCA_MOVE_MAP': {
       console.log('ITTCA_MOVE_MAP: Init');
-      if (isProgrammaticMove) break;
       window.postMessage(
           { type: 'ITTCA_MOVE_MAP_INTERNAL', center, zoom },
           '*'
@@ -251,27 +196,18 @@ window.addEventListener('message', (event) => {
       break;
     }*/
     case 'ITTCA_DATA': {
-      console.log('ITTCA_DATA: Init');
+      console.log('ITTCA_DATA: Init', hasInitialPosition);
 
       if (url.includes('/r/getEntities')) {
         console.log('ITTCA_DATA: Captured Data Batch');
         const { portals, links, fields } = parseEntities(data);
         const store = useStore.getState();
 
-        // Update position from portal coordinates on every batch
-        // Use the median portal for a stable centre rather than the first
-        if (portals.length > 0) {
+        // Set initial MapLibre position from first portal on first load only
+        if (!hasInitialPosition && portals.length > 0) {
+          hasInitialPosition = true;
           const mid = portals[Math.floor(portals.length / 2)];
-
-          // Only update position if more than 0.01 degrees away from current
-          const current = useStore.getState().mapState;
-          const dist = Math.abs(mid.lat - current.lat) + Math.abs(mid.lng - current.lng);
-
-          if (dist > 0.01) {
-            isProgrammaticMove = true;
-            store.updateMapState(mid.lat, mid.lng, 15);
-            setTimeout(() => { isProgrammaticMove = false; }, 500);
-          }
+          store.updateMapState(mid.lat, mid.lng, 15);
         }
 
         if (portals.length > 0) store.updatePortals(portals);

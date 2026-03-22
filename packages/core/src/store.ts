@@ -52,6 +52,9 @@ interface ITTCAState {
   addStatsItem: (item: StatsItem) => void;
   removeStatsItem: (id: string) => void;
   updateMapState: (lat: number, lng: number, zoom: number) => void;
+
+    selectedPortal: Portal | null;
+    selectPortal: (portal: Portal | null) => void;
 }
 
 export const useStore = create<ITTCAState>((set) => ({
@@ -106,4 +109,6 @@ export const useStore = create<ITTCAState>((set) => ({
     set(() => ({
       mapState: { lat, lng, zoom }
     })),
+    selectedPortal: null,
+    selectPortal: (portal) => set(() => ({ selectedPortal: portal })),
 }));

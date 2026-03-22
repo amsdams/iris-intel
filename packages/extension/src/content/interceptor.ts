@@ -122,10 +122,33 @@
     return response;
   };
 
+
   // --- Map Move Handler ---
   window.addEventListener('message', (event) => {
     if (!event.data?.type) return;
 
+    if (event.data.type === 'ITTCA_PORTAL_DETAILS_FETCH') {
+      const { guid } = event.data;
+
+      // We need to use the original XHR to avoid re-intercepting
+      const req = new XMLHttpRequest();
+      req.open('POST', '/r/getPortalDetails', true);
+      req.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+      req.addEventListener('load', function() {
+        if (this.status === 200) {
+          try {
+            const data = JSON.parse(this.responseText);
+            window.postMessage({
+              type: 'ITTCA_DATA',
+              url: '/r/getPortalDetails',
+              data,
+              params: { guid },
+            }, '*');
+          } catch(e) {}
+        }
+      });
+      req.send(JSON.stringify({ guid, v: 'deadbeef' }));
+    }
     if (event.data.type === 'ITTCA_MOVE_MAP_INTERNAL') {
       const { center, zoom } = event.data;
 
@@ -141,6 +164,8 @@
         console.warn('ITTCA: Intel map instance not captured yet');
       }
     }
+
+
   });
 
   console.log('ITTCA: Interceptor ready — XHR patched, fetch wrapped, Maps hook installed');

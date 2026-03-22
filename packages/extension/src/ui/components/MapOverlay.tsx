@@ -132,6 +132,36 @@ export function MapOverlay() {
       }, '*');
     });
 
+    // Portal click handler
+    map.current.on('click', 'portals', (e) => {
+      if (!e.features?.length) return;
+      const props = e.features[0].properties;
+      const geometry = e.features[0].geometry as any;
+      const [lng, lat] = geometry.coordinates;
+      const id = props.id;
+
+      // Get portal from store
+      const portal = useStore.getState().portals[id];
+      if (!portal) return;
+
+      // Select portal to show popup immediately with what we have
+      useStore.getState().selectPortal(portal);
+
+      // Request full portal details from Intel
+      window.postMessage({
+        type: 'ITTCA_PORTAL_DETAILS_REQUEST',
+        guid: id,
+      }, '*');
+    });
+
+// Change cursor on hover
+    map.current.on('mouseenter', 'portals', () => {
+      if (map.current) map.current.getCanvas().style.cursor = 'pointer';
+    });
+    map.current.on('mouseleave', 'portals', () => {
+      if (map.current) map.current.getCanvas().style.cursor = '';
+    });
+
     return () => {
       map.current?.remove();
     };
@@ -164,7 +194,12 @@ export function MapOverlay() {
         features: Object.values(portals).map((p: any) => ({
           type: 'Feature',
           geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
-          properties: { team: p.team },
+          properties: {
+            team: p.team,
+            id: p.id,        // ← add this
+            name: p.name,    // ← add this
+            level: p.level,  // ← add this
+          },
         })),
       } as any);
     }
