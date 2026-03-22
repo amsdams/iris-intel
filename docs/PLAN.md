@@ -33,8 +33,16 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 
 ### Phase 4: Refinement & Mobile (50% Complete)
 - [x] **UI Polish:** Portal detail popups (clickable portals).
+- [ ] **Next:** Color all player names with team color across the UI.
+- [ ] **Next:** Update `CommPopup` to show group (filter) messages by "All", "Faction", and "Alerts".
+- [ ] **Next:** Fix scrollbar issue in `PortalInfoPopup` (ensure it doesn't show redundant scrollbars).
+- [ ] **Next:** Add a popup to choose map theme (e.g., 'roads', 'terrain', 'satellite').
 - [ ] **Performance:** GeoJSON source throttling for extremely dense areas.
 - [ ] **Mobile Strategy:** Decision between Capacitor App vs. Mobile Browser Extension.
+
+### Phase 5: Advanced Features (0% Complete)
+- [ ] **Player Tracker:** Track player movement based on COMM (plexts) activity. Draw lines between portals for recent activity with interactive history.
+- [ ] **Data Export:** Export captured portal/link/field data to standard formats (JSON/KML).
 
 ## Current Working Logic
 1. **Intercept:** Catch raw JSON from Niantic.

@@ -32,5 +32,13 @@ This document tracks the major completed tasks and the next priorities for the p
 - [ ] **Next:** Dynamic plugin loading (loading external JS files).
 
 ### Refinement & Mobile
+- [ ] **Next:** Color all player names with team color across the UI.
+- [ ] **Next:** Update `CommPopup` to show group (filter) messages by "all", "faction" and "alerts".
+- [ ] **Next:** Fix scrollbar issue in `PortalInfoPopup`.
+- [ ] **Next:** Add Map Theme picker popup (roads, terrain, etc.).
 - [ ] **Performance:** GeoJSON source throttling for extremely dense areas.
 - [ ] **Mobile Strategy:** Decision between Capacitor App vs. Mobile Browser Extension.
+
+### Advanced Features
+- [ ] **Player Tracker:** Interaction-based tracking from COMM activity.
+- [ ] **Data Export:** Support for JSON/KML exports.
