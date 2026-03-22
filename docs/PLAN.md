@@ -1,58 +1,49 @@
-# Plan: IITC-Next Architecture (Updated)
+# Plan: ITTCA Architecture (Updated)
 
 ## Objective
-Create a modern, lightweight, and high-performance IITC alternative. The initial goal is a **Desktop Proof of Concept (POC)** as a Browser Extension (Manifest V3), with a shared core that can later support a Capacitor mobile app or mobile browser extensions.
+Create a modern, lightweight, and high-performance IITC alternative. Current focus is a **Desktop Proof of Concept (POC)** as a Browser Extension (Manifest V3) that acts as a "Master Map" overlaying the original Ingress Intel map.
 
-## Technical Stack (The "Claude + Gemini" Hybrid)
-- **Framework:** [Preact](https://preactjs.com/) (3KB React-compatible library for UI).
-- **Build Tool:** [Vite](https://vitejs.dev/) with `vite-plugin-web-extension`.
-- **Mapping Engine:** [MapLibre GL JS](https://maplibre.org/) (WebGL-accelerated for high-density portal maps).
-- **State Management:** [Zustand](https://github.com/pmndrs/zustand) (Simple, typed reactive state).
-- **Extension API:** Manifest V3 (Cross-browser compatibility).
-- **Monorepo:** [pnpm workspaces](https://pnpm.io/workspaces) (Clean, fast, and standard for Vite).
+## Technical Stack
+- **Framework:** Preact (UI) + Zustand (State).
+- **Build Tool:** Vite + `vite-plugin-web-extension`.
+- **Mapping Engine:** MapLibre GL JS (WebGL-accelerated).
+- **Basemap:** OpenStreetMap (Raster).
+- **Sync Method:** Bi-directional event bridging between MapLibre and Google Maps (Intel).
 
-## Project Structure
-```text
-ittca/
-├── packages/
-│   ├── core/           # Shared logic: Portal store (Zustand), Map API, Types
-│   ├── extension/      # Manifest V3 Extension (Desktop/Mobile Browsers)
-│   │   ├── src/
-│   │   │   ├── content/    # XHR/Fetch Interceptor (Injected into Ingress)
-│   │   │   ├── background/ # Service Worker
-│   │   │   └── ui/         # Preact + MapLibre Overlay
-│   ├── plugin-sdk/     # TypeScript interfaces for community plugins
-│   └── plugins/        # First-party plugins (Heatmap, Portal Names, etc.)
-├── docs/               # Architecture and Plan
-└── pnpm-workspace.yaml # Monorepo configuration
-```
+## Implementation Status
 
-## Implementation Plan
+### Phase 1: Core & Data Capture (100% Complete)
+- [x] Monorepo & Extension Skeleton.
+- [x] "Main World" Interceptor for `/r/getEntities` and `/r/getPortalDetails`.
+- [x] Support for Portals, Links, Fields, and Machina (Red) faction.
+- [x] Zero-log performance optimization for high-density areas.
 
-### Phase 1: Scaffolding & Core (POC)
-1.  **Monorepo Setup:** Initialize pnpm workspaces and basic TypeScript configuration.
-2.  **Extension Skeleton:** Create a Manifest V3 extension with a background service worker and a content script.
-3.  **XHR Interception:** Implement the "Main World" injection script to capture `/r/getEntities` and `/r/getPortalDetails` from Ingress Intel.
-4.  **Data Store:** Create the Zustand store in `@ittca/core` to manage portal/link/field data.
+### Phase 2: Map Rendering (100% Complete)
+- [x] MapLibre GL Overlay with OSM Basemap.
+- [x] **Bi-directional Sync:** Panning ITTCA moves Intel; Intel fetches data -> ITTCA renders.
+- [x] Persistent View: Map stays alive and synced when toggled hidden.
+- [x] Modern Dark-Mode aesthetic with faction-themed WebGL layers.
 
-### Phase 2: Map Rendering (POC)
-1.  **Overlay UI:** Inject a Preact-based overlay onto the Intel map.
-2.  **MapLibre Integration:** Render a "Mirrored Map" using MapLibre GL that stays in sync with the Intel Map's position but renders captured data with WebGL.
-3.  **Basic Styling:** Minimalist, modern dark-mode aesthetic.
+### Phase 3: Plugin System (70% Complete)
+- [x] SDK Definition: Types for Portals, Links, Fields.
+- [x] UI Hooks: `api.ui.addStatsItem` for dynamic overlay content.
+- [x] Sample Plugin: `portal-names` logger and UI stats integration.
+- [ ] **Next:** Support for custom map layers from plugins.
+- [ ] **Next:** Dynamic plugin loading (loading external JS files).
 
-### Phase 3: Plugin System
-1.  **SDK Definition:** Finalize the `IitcPlugin` interface and lifecycle (`setup`, `teardown`).
-2.  **Plugin Loader:** Implement the logic to dynamically load/unload plugins from the `plugins/` directory.
+### Phase 4: Refinement & Mobile (Not Started)
+- [ ] **UI Polish:** Portal detail popups (clickable portals).
+- [ ] **Performance:** GeoJSON source throttling for extremely dense areas.
+- [ ] **Mobile Strategy:** Decision between Capacitor App vs. Mobile Browser Extension.
 
-### Phase 4: Mobile & Refinement
-1.  **Mobile Strategy Decision:** Evaluate whether to pursue a Capacitor App wrapper (for iOS/Android) or stay with Browser Extensions (Kiwi/Firefox).
-2.  **UI Polish:** Mobile-optimized touch gestures and responsive sidebars.
+## Current Working Logic
+1. **Intercept:** Catch raw JSON from Niantic.
+2. **Store:** Normalize into Zustand (`@ittca/core`).
+3. **Master Sync:** MapLibre (top layer) captures user input, sends `move` commands to the Google Maps instance (bottom layer).
+4. **Trigger:** The Google Maps `idle` event indicates the map has stopped moving, which triggers a sync back to the ITTCA overlay. Data is fetched automatically by the underlying map.
+5. **Render:** Interceptor catches new data -> Store updates -> MapLibre redraws WebGL layers.
 
 ## Verification & Testing
-- **Network Validation:** Verify that intercepted portal data matches the raw JSON from Niantic.
-- **Performance:** Ensure the MapLibre overlay maintains 60fps even with dense fields.
-- **Strict Typing:** All captured data must be validated against TypeScript interfaces before entering the store.
-
-## Future Considerations
-- **Offline Mode:** Caching portal data for "Intel-free" map viewing.
-- **Collaboration:** Real-time sharing of map markers with teammates.
+- **Network:** Ensure no duplicate requests are triggered.
+- **UI:** Verify stats counts match visible entities.
+- **Accuracy:** Ensure MapLibre coordinates align perfectly with original Intel markers.

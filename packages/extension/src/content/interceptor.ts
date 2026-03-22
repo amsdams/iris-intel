@@ -1,102 +1,87 @@
 /**
- * This script is injected into the "main world" (the page context)
- * to intercept XHR and Fetch calls from the Ingress Intel Map.
+ * Injected into the page's main world.
+ * Patches XHR prototype and wraps fetch to intercept Ingress Intel API calls.
  */
-
 (function () {
-  const originalXHR = window.XMLHttpRequest;
+  console.log('ITTCA: Interceptor started');
 
-  interface ITTCAXHR extends XMLHttpRequest {
-    _url?: string;
-  }
+  const origOpen = XMLHttpRequest.prototype.open;
+  const origSend = XMLHttpRequest.prototype.send;
 
-  function ITTCA_XHR(this: ITTCAXHR) {
-    const xhr = new originalXHR() as ITTCAXHR;
-    const originalOpen = xhr.open;
-    const originalSend = xhr.send;
+  XMLHttpRequest.prototype.open = function (
+      method: string,
+      url: string | URL,
+      async: boolean = true,
+      user?: string | null,
+      password?: string | null
+  ) {
+    (this as any)._ittca_url = typeof url === 'string' ? url : url.toString();
+    return origOpen.apply(this, arguments as any);
+  };
 
-    xhr.open = function (this: ITTCAXHR, method: string, url: string | URL) {
-      this._url = typeof url === 'string' ? url : url.toString();
-      return originalOpen.apply(this, arguments as any);
-    } as any;
+  XMLHttpRequest.prototype.send = function (
+      body?: Document | XMLHttpRequestBodyInit | null
+  ) {
+    const url: string = (this as any)._ittca_url || '';
 
-    xhr.send = function (this: ITTCAXHR, data?: Document | XMLHttpRequestBodyInit | null) {
-      this.addEventListener('load', function (this: ITTCAXHR) {
-        const url = this._url || '';
-        if (url.includes('/r/getEntities') || url.includes('/r/getPortalDetails')) {
-          try {
-            const response = JSON.parse(this.responseText);
-            let params = {};
-            if (data && typeof data === 'string') {
-              try {
-                params = JSON.parse(data);
-              } catch (e) {}
-            }
-            window.postMessage({ type: 'ITTCA_DATA', url, data: response, params }, '*');
-          } catch (e) {
-            console.error('ITTCA: Error parsing XHR response', e);
-          }
-        }
-      });
-      return originalSend.apply(this, arguments as any);
-    } as any;
-
-    return xhr;
-  }
-
-  // Override XMLHttpRequest
-  (window as any).XMLHttpRequest = ITTCA_XHR;
-
-  // Sync Map State
-  function syncMap() {
-    const map = (window as any).map;
-    if (map && map.getCenter && map.getZoom) {
-      const center = map.getCenter();
-      window.postMessage({
-        type: 'ITTCA_MAP_SYNC',
-        center: { lat: center.lat, lng: center.lng },
-        zoom: map.getZoom()
-      }, '*');
-    }
-  }
-
-  // Hook into Leaflet map events if available
-  const checkMap = setInterval(() => {
-    const map = (window as any).map;
-    if (map) {
-      clearInterval(checkMap);
-      map.on('move', syncMap);
-      syncMap(); // Initial sync
-      console.log('ITTCA: Leaflet map hooked for sync');
-    }
-  }, 1000);
-
-  // Also handle Fetch
-  const originalFetch = window.fetch;
-  window.fetch = async (...args) => {
-    const response = await originalFetch(...args);
-    const firstArg = args[0];
-    let url = '';
-    
-    if (typeof firstArg === 'string') {
-      url = firstArg;
-    } else if (firstArg instanceof URL) {
-      url = firstArg.toString();
-    } else if (firstArg instanceof Request) {
-      url = firstArg.url;
-    }
-
-    if (url.includes('/r/getEntities') || url.includes('/r/getPortalDetails')) {
-      const clone = response.clone();
+    if (url.includes('/r/getEntities') && body) {
       try {
-        const data = await clone.json();
-        window.postMessage({ type: 'ITTCA_DATA', url, data }, '*');
+        const requestData = JSON.parse(body as string);
+        if (requestData.tileKeys?.length > 0) {
+          window.postMessage(
+              { type: 'ITTCA_TILE_REQUEST', tileKeys: requestData.tileKeys },
+              '*'
+          );
+        }
       } catch (e) {
-        console.error('ITTCA: Error parsing Fetch response', e);
+        // body is not JSON — ignore
       }
     }
+
+    this.addEventListener('load', function (this: XMLHttpRequest) {
+      if (this.status !== 200) return;
+      const url: string = (this as any)._ittca_url || '';
+      if (
+          url.includes('/r/getEntities') ||
+          url.includes('/r/getPortalDetails')
+      ) {
+        try {
+          const response = JSON.parse(this.responseText);
+          window.postMessage(
+              { type: 'ITTCA_DATA', url, data: response },
+              '*'
+          );
+        } catch (e) {
+          console.error('ITTCA: Failed to parse XHR response', e);
+        }
+      }
+    });
+
+    return origSend.apply(this, arguments as any);
+  };
+
+  // --- Fetch Interception ---
+  const originalFetch = window.fetch;
+
+  window.fetch = async (...args): Promise<Response> => {
+    const response = await originalFetch(...args);
+    const url =
+        typeof args[0] === 'string' ? args[0] : (args[0] as Request).url;
+
+    if (
+        response.ok &&
+        (url.includes('/r/getEntities') || url.includes('/r/getPortalDetails'))
+    ) {
+      try {
+        const data = await response.clone().json();
+        window.postMessage({ type: 'ITTCA_DATA', url, data }, '*');
+      } catch (e) {
+        console.error('ITTCA: Failed to parse fetch response', e);
+      }
+    }
+
     return response;
   };
 
-  console.log('ITTCA: Interceptor injected successfully');
+  console.log('ITTCA: Interceptor ready — XHR prototype patched, fetch wrapped');
 })();
