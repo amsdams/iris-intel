@@ -4,7 +4,7 @@ import webExtension, { readJsonFile } from 'vite-plugin-web-extension';
 import path from 'node:path';
 
 function generateManifest() {
-  const manifest = readJsonFile('src/manifest.json');
+  const manifest = readJsonFile('src/manifest.chrome.json');
   const pkg = readJsonFile('package.json');
   return {
     name: pkg.name,
