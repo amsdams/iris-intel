@@ -18,7 +18,10 @@ const TEAM_NAME: Record<string, string> = {
 };
 
 function PortalPopup() {
-    const portal = useStore((state) => state.selectedPortal);
+    const selectedPortalId = useStore((state) => state.selectedPortalId);
+    const portal = useStore((state) =>
+        selectedPortalId ? state.portals[selectedPortalId] : null
+    );
     const selectPortal = useStore((state) => state.selectPortal);
 
     if (!portal) return null;
@@ -88,7 +91,7 @@ function PortalPopup() {
                 paddingRight: '20px',
                 lineHeight: 1.3,
             }}>
-                {portal.name || 'Unknown Portal'}
+                {portal.name || 'Loading...'}
             </div>
 
             {/* Stats row */}
@@ -111,6 +114,12 @@ function PortalPopup() {
             {portal.resCount !== undefined && (
                 <div style={{ fontSize: '0.85em', color: '#aaaaaa' }}>
                     Resonators: <span style={{ color: '#ffffff' }}>{portal.resCount}/8</span>
+                </div>
+            )}
+
+            {portal.owner && (
+                <div style={{ fontSize: '0.85em', color: '#aaaaaa', marginTop: '4px' }}>
+                    Owner: <span style={{ color: '#ffffff' }}>{portal.owner}</span>
                 </div>
             )}
 

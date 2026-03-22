@@ -135,19 +135,16 @@ export function MapOverlay() {
     // Portal click handler
     map.current.on('click', 'portals', (e) => {
       if (!e.features?.length) return;
-      const props = e.features[0].properties;
-      const geometry = e.features[0].geometry as any;
-      const [lng, lat] = geometry.coordinates;
-      const id = props.id;
+      const id = e.features[0].properties?.id;
+      if (!id) return;
 
-      // Get portal from store
-      const portal = useStore.getState().portals[id];
-      if (!portal) return;
+      // Clear previous selection first
+      useStore.getState().selectPortal(null);
 
-      // Select portal to show popup immediately with what we have
-      useStore.getState().selectPortal(portal);
+      // Select new portal
+      useStore.getState().selectPortal(id);
 
-      // Request full portal details from Intel
+      // Request full details
       window.postMessage({
         type: 'ITTCA_PORTAL_DETAILS_REQUEST',
         guid: id,

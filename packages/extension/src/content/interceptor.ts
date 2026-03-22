@@ -1,31 +1,23 @@
-/**
- * Injected into the page's main world at document_start.
- * 1. Hooks google.maps.Map constructor to capture Intel's map instance
- * 2. Patches XHR prototype to intercept getEntities / getPortalDetails
- * 3. Wraps fetch for the same endpoints
- */
 (function () {
   console.log('ITTCA: Interceptor started');
 
-  // --- Google Maps Constructor Hook ---
+  // --- Captured state ---
   let intelMap: any = null;
+  let intelVersion: string = '';
 
+  // --- Google Maps Constructor Hook ---
   const hookGoogleMaps = () => {
     if ((window as any).google?.maps?.Map) {
       const OrigMap = (window as any).google.maps.Map;
-
       (window as any).google.maps.Map = function (...args: any[]) {
         const instance = new OrigMap(...args);
         console.log('ITTCA: Google Maps instance captured');
         intelMap = instance;
         return instance;
       };
-
-      // Preserve prototype so instanceof checks pass
       (window as any).google.maps.Map.prototype = OrigMap.prototype;
       console.log('ITTCA: Google Maps constructor hooked');
     } else {
-      // google.maps not ready yet — poll until it is
       let attempts = 0;
       const interval = setInterval(() => {
         attempts++;
@@ -43,7 +35,7 @@
 
   hookGoogleMaps();
 
-  // --- XHR Interception via prototype patching ---
+  // --- XHR Interception ---
   const origOpen = XMLHttpRequest.prototype.open;
   const origSend = XMLHttpRequest.prototype.send;
 
@@ -63,18 +55,21 @@
   ) {
     const url: string = (this as any)._ittca_url || '';
 
-    if (url.includes('/r/getEntities') && body) {
+    // Extract version token from any Intel API request body
+    if (body && url.includes('/r/')) {
       try {
         const requestData = JSON.parse(body as string);
-        if (requestData.tileKeys?.length > 0) {
+        if (requestData.v && !intelVersion) {
+          intelVersion = requestData.v;
+          console.log('ITTCA: Captured Intel version token:', intelVersion);
+        }
+        if (url.includes('/r/getEntities') && requestData.tileKeys?.length > 0) {
           window.postMessage(
               { type: 'ITTCA_TILE_REQUEST', tileKeys: requestData.tileKeys },
               '*'
           );
         }
-      } catch (e) {
-        // body is not JSON — ignore
-      }
+      } catch (e) {}
     }
 
     this.addEventListener('load', function (this: XMLHttpRequest) {
@@ -122,39 +117,16 @@
     return response;
   };
 
-
-  // --- Map Move Handler ---
+  // --- Message Handler ---
   window.addEventListener('message', (event) => {
     if (!event.data?.type) return;
 
-    if (event.data.type === 'ITTCA_PORTAL_DETAILS_FETCH') {
-      const { guid } = event.data;
-
-      // We need to use the original XHR to avoid re-intercepting
-      const req = new XMLHttpRequest();
-      req.open('POST', '/r/getPortalDetails', true);
-      req.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-      req.addEventListener('load', function() {
-        if (this.status === 200) {
-          try {
-            const data = JSON.parse(this.responseText);
-            window.postMessage({
-              type: 'ITTCA_DATA',
-              url: '/r/getPortalDetails',
-              data,
-              params: { guid },
-            }, '*');
-          } catch(e) {}
-        }
-      });
-      req.send(JSON.stringify({ guid, v: 'deadbeef' }));
-    }
+    // Move Intel map
     if (event.data.type === 'ITTCA_MOVE_MAP_INTERNAL') {
-      const { center, zoom } = event.data;
-
+      const {center, zoom} = event.data;
       if (intelMap) {
         try {
-          intelMap.setCenter({ lat: center.lat, lng: center.lng });
+          intelMap.setCenter({lat: center.lat, lng: center.lng});
           intelMap.setZoom(zoom);
           console.log('ITTCA: Intel map moved to', center.lat, center.lng, 'zoom', zoom);
         } catch (e) {
@@ -165,7 +137,49 @@
       }
     }
 
+    // Fetch portal details
+    if (event.data.type === 'ITTCA_PORTAL_DETAILS_FETCH') {
+      const {guid} = event.data;
 
+      if (!intelVersion) {
+        console.warn('ITTCA: No version token yet — cannot fetch portal details');
+        return;
+      }
+
+      // Extract CSRF token from cookies
+      const csrfToken = document.cookie
+          .split(';')
+          .map(c => c.trim())
+          .find(c => c.startsWith('csrftoken='))
+          ?.split('=')[1] || '';
+
+      if (!csrfToken) {
+        console.warn('ITTCA: No CSRF token found in cookies');
+        return;
+      }
+
+      const req = new XMLHttpRequest();
+      req.open('POST', '/r/getPortalDetails', true);
+      req.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+      req.setRequestHeader('X-CSRFToken', csrfToken);
+      req.addEventListener('load', function () {
+        if (this.status === 200) {
+          try {
+            const data = JSON.parse(this.responseText);
+            window.postMessage({
+              type: 'ITTCA_DATA',
+              url: '/r/getPortalDetails',
+              data,
+              params: {guid},
+            }, '*');
+          } catch (e) {
+          }
+        } else {
+          console.error('ITTCA: getPortalDetails failed:', this.status, this.responseText);
+        }
+      });
+      req.send(JSON.stringify({guid, v: intelVersion}));
+    }
   });
 
   console.log('ITTCA: Interceptor ready — XHR patched, fetch wrapped, Maps hook installed');

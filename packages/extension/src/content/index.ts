@@ -81,11 +81,12 @@ function parsePortalDetails(data: any, params: any): any | null {
     lat: d[2] / 1e6,
     lng: d[3] / 1e6,
     team: d[1],
-    name: d[8],
-    level: d[20],
-    health: d[42],
-    resCount: d[4] ? Object.keys(d[4]).length : 0,
+    level: d[4],
+    health: d[5],
+    resCount: d[6],
     image: d[7],
+    name: d[8],
+    owner: d[17],
   };
 }
 
