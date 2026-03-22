@@ -1,5 +1,5 @@
 import { h, ComponentChildren } from 'preact';
-import { UI_COLORS } from '../theme';
+import { UI_COLORS, FONT_SIZES, SPACING } from '../theme';
 
 interface PopupProps {
     onClose: () => void;
@@ -13,7 +13,7 @@ const basePopupStyle: h.JSX.CSSProperties = {
     zIndex: 10002,
     background: UI_COLORS.BG_BASE,
     color: UI_COLORS.TEXT_BASE,
-    padding: '16px',
+    padding: SPACING.MD,
     borderRadius: '8px',
     border: `2px solid ${UI_COLORS.AQUA}`,
     boxShadow: `0 0 20px ${UI_COLORS.GLOW}`,
@@ -42,10 +42,10 @@ export function Popup({ onClose, title, children, style }: PopupProps) {
             <button onClick={onClose} style={closeButtonStyle}>✕</button>
             {title && (
                 <h2 style={{
-                    margin: '0 0 10px 0',
+                    margin: `0 0 ${SPACING.SM} 0`,
                     color: UI_COLORS.AQUA,
                     paddingRight: '20px',
-                    fontSize: '1.2em'
+                    fontSize: FONT_SIZES.H2
                 }}>
                     {title}
                 </h2>

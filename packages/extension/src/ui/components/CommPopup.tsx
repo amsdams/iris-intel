@@ -1,7 +1,7 @@
 import { h } from 'preact';
 import { useStore, normalizeTeam } from '@iris/core';
 import { Popup } from './Popup';
-import { TEAM_COLOUR, UI_COLORS } from '../theme';
+import { TEAM_COLOUR, UI_COLORS, SPACING } from '../theme';
 
 interface CommPopupProps {
     onClose: () => void;
@@ -47,28 +47,26 @@ export function CommPopup({ onClose }: CommPopupProps) {
                 top: '60px',
                 right: '20px',
                 width: '400px',
-                padding: '0',
             }}
         >
             <div style={{
                 flex: 1,
                 overflowY: 'auto',
-                padding: '8px',
             }}>
                 {plexts.length === 0 ? (
-                    <div style={{ padding: '20px', textAlign: 'center', color: UI_COLORS.TEXT_MUTED }}>
+                    <div style={{ padding: SPACING.LG, textAlign: 'center', color: UI_COLORS.TEXT_MUTED }}>
                         No messages yet
                     </div>
                 ) : (
                     plexts.map((p) => (
                         <div key={p.id} style={{
-                            marginBottom: '6px',
+                            marginBottom: SPACING.SM,
                             fontSize: '0.85em',
                             lineHeight: '1.4',
                             borderBottom: `1px solid ${UI_COLORS.BORDER_DIM}`,
-                            paddingBottom: '4px',
+                            paddingBottom: SPACING.XS,
                         }}>
-                            <span style={{ color: UI_COLORS.TEXT_MUTED, marginRight: '6px' }}>
+                            <span style={{ color: UI_COLORS.TEXT_MUTED, marginRight: SPACING.SM }}>
                                 [{formatTime(p.time)}]
                             </span>
                             {p.markup ? renderMarkup(p.markup) : p.text}

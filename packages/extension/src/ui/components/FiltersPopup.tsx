@@ -1,7 +1,7 @@
 import { h } from 'preact';
 import { useStore } from '@iris/core';
 import { Popup } from './Popup';
-import { UI_COLORS } from '../theme';
+import { UI_COLORS, FONT_SIZES } from '../theme';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -64,7 +64,7 @@ export function FiltersPopup({ onClose }: FiltersPopupProps) {
                 maxWidth: '420px',
             }}
         >
-            <h3 style={{ margin: '15px 0 8px 0', color: UI_COLORS.AQUA }}>Layers</h3>
+            <h3 style={{ margin: '15px 0 8px 0', color: UI_COLORS.AQUA, fontSize: FONT_SIZES.H3 }}>Layers</h3>
             <label style={checkboxContainerStyle}>
                 <input
                     type="checkbox"
@@ -85,7 +85,7 @@ export function FiltersPopup({ onClose }: FiltersPopupProps) {
                 Links
             </label>
 
-            <h3 style={{ margin: '15px 0 8px 0', color: UI_COLORS.AQUA }}>Faction</h3>
+            <h3 style={{ margin: '15px 0 8px 0', color: UI_COLORS.AQUA, fontSize: FONT_SIZES.H3 }}>Faction</h3>
             <label style={checkboxContainerStyle}>
                 <input
                     type="checkbox"
@@ -123,7 +123,7 @@ export function FiltersPopup({ onClose }: FiltersPopupProps) {
                 Unclaimed Portals
             </label>
 
-            <h3 style={{ margin: '15px 0 8px 0', color: UI_COLORS.AQUA }}>Portal Levels</h3>
+            <h3 style={{ margin: '15px 0 8px 0', color: UI_COLORS.AQUA, fontSize: FONT_SIZES.H3 }}>Portal Levels</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '5px' }}>
                 {[1, 2, 3, 4, 5, 6, 7, 8].map((level) => (
                     <label key={level} style={checkboxContainerStyle}>

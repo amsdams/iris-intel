@@ -21,6 +21,21 @@ export const UI_COLORS = {
     BORDER_DIM: '#333333',
 };
 
+export const FONT_SIZES = {
+    H2: '1.2em',
+    H3: '1.1em',
+    BASE: '1em',
+    SMALL: '0.85em',
+    TINY: '0.75em',
+};
+
+export const SPACING = {
+    XS: '4px',
+    SM: '8px',
+    MD: '16px',
+    LG: '24px',
+};
+
 export const SHARED_STYLES = {
     btnStyle: (active: boolean) => ({
         background: active ? UI_COLORS.AQUA : '#555',
