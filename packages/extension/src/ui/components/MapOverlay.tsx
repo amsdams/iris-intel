@@ -4,10 +4,21 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useStore } from '@ittca/core';
 
+// Team colours used across portal, link and field layers
+const TEAM_COLOUR_EXPR = [
+  'match', ['get', 'team'],
+  'E', '#00ff00',
+  'R', '#0000ff',
+  'M', '#ff0000',
+  '#ffffff',
+] as any;
+
 export function MapOverlay() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const [styleLoaded, setStyleLoaded] = useState(false);
+
+  // Prevents moveend from echoing back to Intel when we programmatically jump
   const isMoving = useRef(false);
 
   const portals = useStore((state) => state.portals);
@@ -15,7 +26,9 @@ export function MapOverlay() {
   const fields = useStore((state) => state.fields);
   const { lat, lng, zoom } = useStore((state) => state.mapState);
 
-  // Initialise MapLibre once — no center/zoom yet, wait for Intel position
+  // ---------------------------------------------------------------------------
+  // Initialise MapLibre map once on mount
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!mapContainer.current) return;
 
@@ -62,13 +75,7 @@ export function MapOverlay() {
             type: 'fill',
             source: 'fields',
             paint: {
-              'fill-color': [
-                'match', ['get', 'team'],
-                'E', '#00ff00',
-                'R', '#0000ff',
-                'M', '#ff0000',
-                '#ffffff',
-              ],
+              'fill-color': TEAM_COLOUR_EXPR,
               'fill-opacity': 0.3,
             },
           },
@@ -78,13 +85,7 @@ export function MapOverlay() {
             source: 'links',
             paint: {
               'line-width': 2,
-              'line-color': [
-                'match', ['get', 'team'],
-                'E', '#00ff00',
-                'R', '#0000ff',
-                'M', '#ff0000',
-                '#ffffff',
-              ],
+              'line-color': TEAM_COLOUR_EXPR,
             },
           },
           {
@@ -97,34 +98,27 @@ export function MapOverlay() {
                 10, 2,
                 15, 6,
               ],
-              'circle-color': [
-                'match', ['get', 'team'],
-                'E', '#00ff00',
-                'R', '#0000ff',
-                'M', '#ff0000',
-                '#ffffff',
-              ],
+              'circle-color': TEAM_COLOUR_EXPR,
               'circle-stroke-width': 1,
               'circle-stroke-color': '#fff',
             },
           },
         ],
       },
-      // Start at 0,0 — will jump to Intel position on first ITTCA_TILE_REQUEST
+      // Start at 0,0 — jumps to Intel position on first getEntities batch
       center: [0, 0],
       zoom: 2,
       interactive: true,
     });
 
-    map.current.on('load', () => {
-      setStyleLoaded(true);
-    });
+    // Mark style as ready so data effects can run
+    map.current.on('load', () => setStyleLoaded(true));
 
+    // Forward user pan/zoom to Intel map via content script message
     map.current.on('moveend', () => {
       if (!map.current || isMoving.current) return;
       const center = map.current.getCenter();
       const z = map.current.getZoom();
-      console.log(`ITTCA: MapLibre moveend - Lat: ${center.lat}, Lng: ${center.lng}, Zoom: ${z}`);
       window.postMessage({
         type: 'ITTCA_MOVE_MAP',
         center: { lat: center.lat, lng: center.lng },
@@ -132,26 +126,19 @@ export function MapOverlay() {
       }, '*');
     });
 
-    // Portal click handler
+    // Show portal details popup on click
     map.current.on('click', 'portals', (e) => {
       if (!e.features?.length) return;
       const id = e.features[0].properties?.id;
       if (!id) return;
-
-      // Clear previous selection first
-      useStore.getState().selectPortal(null);
-
-      // Select new portal
       useStore.getState().selectPortal(id);
-
-      // Request full details
       window.postMessage({
         type: 'ITTCA_PORTAL_DETAILS_REQUEST',
         guid: id,
       }, '*');
     });
 
-// Change cursor on hover
+    // Pointer cursor when hovering portals
     map.current.on('mouseenter', 'portals', () => {
       if (map.current) map.current.getCanvas().style.cursor = 'pointer';
     });
@@ -159,80 +146,67 @@ export function MapOverlay() {
       if (map.current) map.current.getCanvas().style.cursor = '';
     });
 
-    return () => {
-      map.current?.remove();
-    };
+    return () => map.current?.remove();
   }, []);
 
-  // Sync MapLibre position when store mapState changes
-  // This fires when ITTCA_TILE_REQUEST updates the store
+  // ---------------------------------------------------------------------------
+  // Sync MapLibre camera when store mapState changes
+  // Triggered by initial position set from first getEntities batch
+  // ---------------------------------------------------------------------------
   useEffect(() => {
-    console.log('ITTCA: data effect fired, styleLoaded:', styleLoaded, 'portals:', Object.keys(portals).length);
-
     if (!map.current || !styleLoaded) return;
-    if (lat === 0 && lng === 0) return; // ignore default state
+    if (lat === 0 && lng === 0) return;
 
     isMoving.current = true;
     map.current.jumpTo({ center: [lng, lat], zoom });
-    // Reset flag after MapLibre has processed the jump
-    setTimeout(() => {
-      isMoving.current = false;
-    }, 100);
+    setTimeout(() => { isMoving.current = false; }, 100);
   }, [lat, lng, zoom, styleLoaded]);
 
-  // Update portal/link/field data whenever store or style changes
+  // ---------------------------------------------------------------------------
+  // Update GeoJSON sources when portal/link/field data changes
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!map.current || !styleLoaded) return;
 
     const portalSource = map.current.getSource('portals') as maplibregl.GeoJSONSource;
-    if (portalSource) {
-      portalSource.setData({
-        type: 'FeatureCollection',
-        features: Object.values(portals).map((p: any) => ({
-          type: 'Feature',
-          geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
-          properties: {
-            team: p.team,
-            id: p.id,        // ← add this
-            name: p.name,    // ← add this
-            level: p.level,  // ← add this
-          },
-        })),
-      } as any);
-    }
+    portalSource?.setData({
+      type: 'FeatureCollection',
+      features: Object.values(portals).map((p: any) => ({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
+        properties: { id: p.id, team: p.team, name: p.name, level: p.level },
+      })),
+    } as any);
 
     const linkSource = map.current.getSource('links') as maplibregl.GeoJSONSource;
-    if (linkSource) {
-      linkSource.setData({
-        type: 'FeatureCollection',
-        features: Object.values(links).map((l: any) => ({
-          type: 'Feature',
-          geometry: {
-            type: 'LineString',
-            coordinates: [[l.fromLng, l.fromLat], [l.toLng, l.toLat]],
-          },
-          properties: { team: l.team },
-        })),
-      } as any);
-    }
+    linkSource?.setData({
+      type: 'FeatureCollection',
+      features: Object.values(links).map((l: any) => ({
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: [[l.fromLng, l.fromLat], [l.toLng, l.toLat]],
+        },
+        properties: { team: l.team },
+      })),
+    } as any);
 
     const fieldSource = map.current.getSource('fields') as maplibregl.GeoJSONSource;
-    if (fieldSource) {
-      fieldSource.setData({
-        type: 'FeatureCollection',
-        features: Object.values(fields).map((f: any) => ({
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [
-              [...f.points.map((p: any) => [p.lng, p.lat]),
-                [f.points[0].lng, f.points[0].lat]],
-            ],
-          },
-          properties: { team: f.team },
-        })),
-      } as any);
-    }
+    fieldSource?.setData({
+      type: 'FeatureCollection',
+      features: Object.values(fields).map((f: any) => ({
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [[
+            ...f.points.map((p: any) => [p.lng, p.lat]),
+            [f.points[0].lng, f.points[0].lat],
+          ]],
+        },
+        properties: { team: f.team },
+      })),
+    } as any);
+
   }, [portals, links, fields, styleLoaded]);
 
   return (

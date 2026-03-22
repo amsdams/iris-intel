@@ -1,5 +1,25 @@
 import {create} from 'zustand';
 
+export interface PlayerStats {
+    nickname: string;
+    level: number | null;
+    ap: number | null;
+    team: string;
+}
+
+export interface PortalMod {
+    owner: string;
+    name: string;
+    rarity: string;
+    stats: Record<string, string>;
+}
+
+export interface PortalResonator {
+    owner: string;
+    level: number;
+    energy: number;
+}
+
 export interface Portal {
     id: string;
     lat: number;
@@ -10,7 +30,9 @@ export interface Portal {
     health?: number;
     resCount?: number;
     image?: string;
-    owner?: string;   // ← add this
+    owner?: string;
+    mods?: PortalMod[];
+    resonators?: PortalResonator[];
 }
 
 export interface Link {
@@ -56,6 +78,9 @@ interface ITTCAState {
 
     selectedPortalId: string | null;
     selectPortal: (id: string | null) => void;
+
+    playerStats: PlayerStats | null;
+    setPlayerStats: (stats: PlayerStats) => void;
 }
 
 export const useStore = create<ITTCAState>((set) => ({
@@ -112,4 +137,6 @@ export const useStore = create<ITTCAState>((set) => ({
         })),
     selectedPortalId: null,
     selectPortal: (id) => set(() => ({ selectedPortalId: id })),
+    playerStats: null,
+    setPlayerStats: (stats) => set(() => ({ playerStats: stats })),
 }));
