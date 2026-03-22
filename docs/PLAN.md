@@ -20,19 +20,19 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 
 ### Phase 2: Map Rendering (100% Complete)
 - [x] MapLibre GL Overlay with OSM Basemap.
-- [x] **Bi-directional Sync:** Panning IRIS moves Intel; Intel fetches data -> IRIS renders.
+- [x] **Bi-directional Sync:** Panning IRIS moves Intel; Intel fetches data -> IRIS renders. Cross-browser compatibility fixes for event handling (e.g., Firefox).
 - [x] Persistent View: Map stays alive and synced when toggled hidden.
 - [x] Modern Dark-Mode aesthetic with faction-themed WebGL layers.
 
-### Phase 3: Plugin System (70% Complete)
+### Phase 3: Plugin System (75% Complete)
 - [x] SDK Definition: Types for Portals, Links, Fields.
 - [x] UI Hooks: `api.ui.addStatsItem` for dynamic overlay content.
 - [x] Sample Plugin: `portal-names` logger and UI stats integration.
 - [ ] **Next:** Support for custom map layers from plugins.
 - [ ] **Next:** Dynamic plugin loading (loading external JS files).
 
-### Phase 4: Refinement & Mobile (Not Started)
-- [ ] **UI Polish:** Portal detail popups (clickable portals).
+### Phase 4: Refinement & Mobile (50% Complete)
+- [x] **UI Polish:** Portal detail popups (clickable portals).
 - [ ] **Performance:** GeoJSON source throttling for extremely dense areas.
 - [ ] **Mobile Strategy:** Decision between Capacitor App vs. Mobile Browser Extension.
 

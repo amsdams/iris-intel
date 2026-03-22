@@ -1,18 +1,36 @@
-That's the core pipeline working end to end. Portals are flowing from Intel → XHR interceptor → store → MapLibre overlay.
-The slight position mismatch is expected — we're centering on the first portal coordinate, not the true centre of Intel's viewport. We can refine that later.
-What's working:
+# Project Status
 
-XHR interception ✅
-Entity parsing ✅
-Zustand store ✅
-MapLibre rendering ✅
-Initial position sync ✅
+This document tracks the major completed tasks and the next priorities for the project. For a more detailed breakdown, see [PLAN.md](PLAN.md).
 
-Next priorities — what do you want to tackle first?
+## ✅ Completed
 
-Position sync — MapLibre follows Intel as you pan, so the overlay always shows the right area
-Portals not loading on pan — when you pan Intel, new portals appear on the overlay
-Visual polish — portal colours, sizes, links, fields rendering correctly
-Remove the Intel map — hide Intel's UI entirely and drive everything from your overlay
+- **Core & Data Capture:**
+    - [x] Monorepo & Extension Skeleton.
+    - [x] "Main World" Interceptor for `/r/getEntities` and `/r/getPortalDetails`.
+    - [x] Support for Portals, Links, Fields, and Machina (Red) faction.
+    - [x] Zero-log performance optimization for high-density areas.
 
-Which of these matters most to you right now?
+- **Map Rendering:**
+    - [x] MapLibre GL Overlay with OSM Basemap.
+    - [x] **Bi-directional Sync:** Panning IRIS moves Intel; Intel fetches data -> IRIS renders. Cross-browser compatibility fixes for event handling (e.g., Firefox).
+    - [x] Persistent View: Map stays alive and synced when toggled hidden.
+    - [x] Modern Dark-Mode aesthetic with faction-themed WebGL layers.
+
+- **Plugin System (Base):**
+    - [x] SDK Definition: Types for Portals, Links, Fields.
+    - [x] UI Hooks: `api.ui.addStatsItem` for dynamic overlay content.
+    - [x] Sample Plugin: `portal-names` logger and UI stats integration.
+
+- **Refinement:**
+    - [x] **UI Polish:** Portal detail popups (clickable portals).
+
+
+## 🎯 Next Priorities
+
+### Plugin System
+- [ ] **Next:** Support for custom map layers from plugins.
+- [ ] **Next:** Dynamic plugin loading (loading external JS files).
+
+### Refinement & Mobile
+- [ ] **Performance:** GeoJSON source throttling for extremely dense areas.
+- [ ] **Mobile Strategy:** Decision between Capacitor App vs. Mobile Browser Extension.

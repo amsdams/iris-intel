@@ -177,14 +177,22 @@ export default MyPlugin;
 - [x] Player stats
 - [x] Location search
 - [x] Plugin system (basic)
-- [ ] Hide Intel UI — MapLibre-only mode
-- [ ] Mobile browser support (Android Chrome / Firefox)
-- [ ] iOS Safari Web Extension
-- [ ] Structured plugin manifest with permissions
-- [ ] Plugin enable / disable at runtime
-- [ ] Chat / Comms overlay
-- [ ] Dark / light map theme toggle
-- [ ] Export portal data (GeoJSON, CSV)
+- [ ] **Plugin System Enhancements:**
+    - [ ] Support for custom map layers from plugins
+    - [ ] Dynamic plugin loading (loading external JS files)
+    - [ ] Structured plugin manifest with permissions
+    - [ ] Plugin enable / disable at runtime
+- [ ] **Performance Optimizations:**
+    - [ ] GeoJSON source throttling for extremely dense areas
+- [ ] **UI/UX:**
+    - [ ] Hide Intel UI — MapLibre-only mode
+    - [ ] Dark / light map theme toggle
+- [ ] **Mobile:**
+    - [ ] Mobile browser support (Android Chrome / Firefox)
+    - [ ] iOS Safari Web Extension
+- [ ] **Features:**
+    - [ ] Chat / Comms overlay
+    - [ ] Export portal data (GeoJSON, CSV)
 
 ---
 
