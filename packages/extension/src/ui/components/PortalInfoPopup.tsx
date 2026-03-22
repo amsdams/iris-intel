@@ -1,23 +1,11 @@
 import { h } from 'preact';
 import { useStore } from '@iris/core';
+import { Popup } from './Popup';
+import { TEAM_COLOUR, TEAM_NAME, UI_COLORS } from '../theme';
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
-const TEAM_COLOUR: Record<string, string> = {
-    E: '#00ff00',
-    R: '#0000ff',
-    M: '#ff0000',
-    N: '#ffffff',
-};
-
-const TEAM_NAME: Record<string, string> = {
-    E: 'Enlightened',
-    R: 'Resistance',
-    M: 'Machina',
-    N: 'Neutral',
-};
 
 const RARITY_COLOUR: Record<string, string> = {
     COMMON: '#aaaaaa',
@@ -39,47 +27,22 @@ export function PortalInfoPopup() {
 
     if (!portal) return null;
 
-    const colour = TEAM_COLOUR[portal.team] || '#ffffff';
+    const colour = TEAM_COLOUR[portal.team] || UI_COLORS.TEXT_BASE;
     const teamName = TEAM_NAME[portal.team] || 'Unknown';
 
     return (
-        <div style={{
-            position: 'fixed',
-            bottom: '20px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 10001,
-            background: 'rgba(0, 0, 0, 0.92)',
-            color: '#ffffff',
-            padding: '16px',
-            borderRadius: '8px',
-            border: `2px solid ${colour}`,
-            boxShadow: `0 0 20px ${colour}55`,
-            fontFamily: 'monospace',
-            minWidth: '300px',
-            maxWidth: '420px',
-            maxHeight: '80vh',
-            overflowY: 'auto',
-            pointerEvents: 'auto',
-        }}>
-
-            {/* Close */}
-            <button
-                onClick={() => selectPortal(null)}
-                style={{
-                    position: 'absolute',
-                    top: '8px',
-                    right: '8px',
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#ffffff',
-                    fontSize: '18px',
-                    cursor: 'pointer',
-                    lineHeight: 1,
-                    padding: '0 4px',
-                }}
-            >✕</button>
-
+        <Popup
+            onClose={() => selectPortal(null)}
+            style={{
+                bottom: '20px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                minWidth: '300px',
+                maxWidth: '420px',
+                border: `2px solid ${colour}`,
+                boxShadow: `0 0 20px ${colour}55`,
+            }}
+        >
             {/* Image */}
             {portal.image && (
                 <img
@@ -113,7 +76,7 @@ export function PortalInfoPopup() {
                 display: 'flex',
                 gap: '16px',
                 fontSize: '0.85em',
-                color: '#aaaaaa',
+                color: UI_COLORS.TEXT_MUTED,
                 marginBottom: '4px',
             }}>
                 <span>Team: <span style={{ color: colour }}>{teamName}</span></span>
@@ -126,8 +89,8 @@ export function PortalInfoPopup() {
             </div>
 
             {portal.owner && (
-                <div style={{ fontSize: '0.85em', color: '#aaaaaa', marginBottom: '8px' }}>
-                    Owner: <span style={{ color: '#ffffff' }}>{portal.owner}</span>
+                <div style={{ fontSize: '0.85em', color: UI_COLORS.TEXT_MUTED, marginBottom: '8px' }}>
+                    Owner: <span style={{ color: UI_COLORS.TEXT_BASE }}>{portal.owner}</span>
                 </div>
             )}
 
@@ -148,10 +111,10 @@ export function PortalInfoPopup() {
                                 borderRadius: '3px',
                                 padding: '3px 4px',
                                 fontSize: '0.75em',
-                                border: '1px solid #333',
+                                border: `1px solid ${UI_COLORS.BORDER_DIM}`,
                             }}>
                                 <div style={{ color: '#ffff00' }}>L{r.level}</div>
-                                <div style={{ color: '#aaaaaa' }}>{r.owner}</div>
+                                <div style={{ color: UI_COLORS.TEXT_MUTED }}>{r.owner}</div>
                             </div>
                         ))}
                     </div>
@@ -171,11 +134,11 @@ export function PortalInfoPopup() {
                                 borderRadius: '3px',
                                 padding: '3px 6px',
                                 fontSize: '0.75em',
-                                border: `1px solid ${RARITY_COLOUR[m.rarity] || '#333'}`,
+                                border: `1px solid ${RARITY_COLOUR[m.rarity] || UI_COLORS.BORDER_DIM}`,
                                 display: 'flex',
                                 justifyContent: 'space-between',
                             }}>
-                                <span style={{ color: RARITY_COLOUR[m.rarity] || '#fff' }}>{m.name}</span>
+                                <span style={{ color: RARITY_COLOUR[m.rarity] || UI_COLORS.TEXT_BASE }}>{m.name}</span>
                                 <span style={{ color: '#666' }}>{m.owner}</span>
                             </div>
                         ))}
@@ -187,6 +150,6 @@ export function PortalInfoPopup() {
             <div style={{ marginTop: '4px', fontSize: '0.75em', color: '#666' }}>
                 {portal.lat.toFixed(6)}, {portal.lng.toFixed(6)}
             </div>
-        </div>
+        </Popup>
     );
 }

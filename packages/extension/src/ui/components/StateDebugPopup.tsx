@@ -1,5 +1,6 @@
 import { h } from 'preact';
 import { useStore } from '@iris/core';
+import { Popup } from './Popup';
 
 // ---------------------------------------------------------------------------
 // StateDebugPopup
@@ -20,41 +21,15 @@ export function StateDebugPopup({ onClose }: StateDebugPopupProps) {
     const fieldCount = Object.keys(fields).length;
 
     return (
-        <div style={{
-            position: 'fixed',
-            bottom: '20px',
-            right: '20px', // Adjust position to not overlap with PlayerStatsPopup
-            zIndex: 10002,
-            background: 'rgba(0, 0, 0, 0.92)',
-            color: '#00ffff',
-            padding: '16px',
-            borderRadius: '8px',
-            border: '2px solid #00ffff',
-            boxShadow: '0 0 20px #00ffff55',
-            fontFamily: 'monospace',
-            minWidth: '250px',
-            maxHeight: '80vh',
-            overflowY: 'auto',
-            pointerEvents: 'auto',
-        }}>
-            {/* Close button */}
-            <button
-                onClick={onClose}
-                style={{
-                    position: 'absolute',
-                    top: '8px',
-                    right: '8px',
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#ffffff',
-                    fontSize: '18px',
-                    cursor: 'pointer',
-                    lineHeight: 1,
-                    padding: '0 4px',
-                }}
-            >✕</button>
-
-            <h2 style={{ margin: '0 0 10px 0', color: '#00ffff', paddingRight: '20px' }}>State Debug Info</h2>
+        <Popup
+            onClose={onClose}
+            title="State Debug Info"
+            style={{
+                bottom: '20px',
+                right: '20px',
+                minWidth: '250px',
+            }}
+        >
             <p style={{ margin: 0 }}>Portals: {portalCount}</p>
             <p style={{ margin: 0 }}>Links: {linkCount}</p>
             <p style={{ margin: 0 }}>Fields: {fieldCount}</p>
@@ -63,6 +38,6 @@ export function StateDebugPopup({ onClose }: StateDebugPopupProps) {
                     {item.label}: {typeof item.value === 'function' ? item.value() : item.value}
                 </p>
             ))}
-        </div>
+        </Popup>
     );
 }
