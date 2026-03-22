@@ -1,0 +1,1 @@
+(function(){"use strict";(function(){const e=document.createElement("script");e.src=chrome.runtime.getURL("src/content/interceptor.js"),e.type="text/javascript",(document.head||document.documentElement).appendChild(e),e.addEventListener("load",()=>e.remove())})()})();

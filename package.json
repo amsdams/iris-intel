@@ -7,8 +7,13 @@
   "scripts": {
     "dev": "npm run dev -w packages/extension",
     "build": "npm run build -w packages/extension",
+    "build:chrome": "vite build --mode chrome",
+    "build:firefox": "vite build --mode firefox",
+    "build:all": "npm run build:chrome -w packages/extension && npm run build:firefox -w packages/extension",
     "lint": "npm run lint -w packages/extension"
   },
+
+
   "devDependencies": {
     "@types/chrome": "^0.1.38",
     "typescript": "^5.0.0",
