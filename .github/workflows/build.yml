@@ -59,6 +59,8 @@ jobs:
         with:
           tag_name: latest
           name: Latest Build
+          make_latest: true
+          prerelease: true
           body: |
             Automated build from commit ${{ github.sha }}
 
@@ -87,6 +89,5 @@ jobs:
           files: |
             out/iris-chrome.zip
             out/iris-firefox.xpi
-          prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
