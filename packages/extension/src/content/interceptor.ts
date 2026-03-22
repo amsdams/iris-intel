@@ -1,10 +1,49 @@
 /**
- * Injected into the page's main world.
- * Patches XHR prototype and wraps fetch to intercept Ingress Intel API calls.
+ * Injected into the page's main world at document_start.
+ * 1. Hooks google.maps.Map constructor to capture Intel's map instance
+ * 2. Patches XHR prototype to intercept getEntities / getPortalDetails
+ * 3. Wraps fetch for the same endpoints
  */
 (function () {
   console.log('ITTCA: Interceptor started');
 
+  // --- Google Maps Constructor Hook ---
+  let intelMap: any = null;
+
+  const hookGoogleMaps = () => {
+    if ((window as any).google?.maps?.Map) {
+      const OrigMap = (window as any).google.maps.Map;
+
+      (window as any).google.maps.Map = function (...args: any[]) {
+        const instance = new OrigMap(...args);
+        console.log('ITTCA: Google Maps instance captured');
+        intelMap = instance;
+        return instance;
+      };
+
+      // Preserve prototype so instanceof checks pass
+      (window as any).google.maps.Map.prototype = OrigMap.prototype;
+      console.log('ITTCA: Google Maps constructor hooked');
+    } else {
+      // google.maps not ready yet — poll until it is
+      let attempts = 0;
+      const interval = setInterval(() => {
+        attempts++;
+        if ((window as any).google?.maps?.Map) {
+          clearInterval(interval);
+          hookGoogleMaps();
+        }
+        if (attempts > 50) {
+          clearInterval(interval);
+          console.warn('ITTCA: Google Maps constructor not found after 50 attempts');
+        }
+      }, 100);
+    }
+  };
+
+  hookGoogleMaps();
+
+  // --- XHR Interception via prototype patching ---
   const origOpen = XMLHttpRequest.prototype.open;
   const origSend = XMLHttpRequest.prototype.send;
 
@@ -83,5 +122,26 @@
     return response;
   };
 
-  console.log('ITTCA: Interceptor ready — XHR prototype patched, fetch wrapped');
+  // --- Map Move Handler ---
+  window.addEventListener('message', (event) => {
+    if (!event.data?.type) return;
+
+    if (event.data.type === 'ITTCA_MOVE_MAP_INTERNAL') {
+      const { center, zoom } = event.data;
+
+      if (intelMap) {
+        try {
+          intelMap.setCenter({ lat: center.lat, lng: center.lng });
+          intelMap.setZoom(zoom);
+          console.log('ITTCA: Intel map moved to', center.lat, center.lng, 'zoom', zoom);
+        } catch (e) {
+          console.error('ITTCA: Failed to move Intel map', e);
+        }
+      } else {
+        console.warn('ITTCA: Intel map instance not captured yet');
+      }
+    }
+  });
+
+  console.log('ITTCA: Interceptor ready — XHR patched, fetch wrapped, Maps hook installed');
 })();
