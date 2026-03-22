@@ -6,6 +6,7 @@ pnpm-lock.yaml
 
 # Build
 dist/
+dist-firefox/
 out/
 build/
 *.tsbuildinfo
@@ -56,3 +57,4 @@ pnpm-debug.log*
 .geminiignore
 .turbo
 .vercel
+dist-firefox/

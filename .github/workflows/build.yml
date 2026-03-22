@@ -34,21 +34,23 @@ jobs:
 
       - name: Package Chrome zip
         run: |
+          mkdir -p out
           cd packages/extension/dist
-          zip -r ../../../iris-chrome.zip .
+          zip -r ../../../out/iris-chrome.zip .
 
       - name: Package Firefox xpi
         run: |
+          mkdir -p out
           cd packages/extension/dist-firefox
-          zip -r ../../../iris-firefox.xpi .
+          zip -r ../../../out/iris-firefox.xpi .
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: iris-extension
           path: |
-            iris-chrome.zip
-            iris-firefox.xpi
+            out/iris-chrome.zip
+            out/iris-firefox.xpi
           retention-days: 30
 
       - name: Create Release
@@ -56,3 +58,35 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
+          name: Latest Build
+          body: |
+            Automated build from commit ${{ github.sha }}
+
+            ## Android
+
+            **Kiwi Browser (easiest):**
+            1. Download `iris-chrome.zip`
+            2. Kiwi → Extensions → Developer mode → Load unpacked → select zip
+
+            **Firefox Nightly for Android:**
+            1. `about:config` → set `xpinstall.signatures.required` to `false`
+            2. Navigate to this URL in Firefox Nightly:
+               `https://github.com/${{ github.repository }}/releases/latest/download/iris-firefox.xpi`
+            3. Firefox will prompt to install
+
+            ## Desktop
+
+            **Chrome / Chromium / Edge:**
+            1. Download and unzip `iris-chrome.zip`
+            2. `chrome://extensions` → Developer mode → Load unpacked
+
+            **Firefox Desktop:**
+            1. Download `iris-firefox.xpi`
+            2. `about:addons` → gear icon → Install Add-on From File
+
+          files: |
+            out/iris-chrome.zip
+            out/iris-firefox.xpi
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

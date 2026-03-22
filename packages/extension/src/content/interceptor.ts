@@ -43,11 +43,11 @@
                     clearInterval(interval);
                     hookGoogleMaps();
                 }
-                if (attempts > 50) {
+                if (attempts > 100) {
                     clearInterval(interval);
                     console.warn('IRIS: Google Maps constructor not found');
                 }
-            }, 100);
+            }, 200);
         }
     };
 
