@@ -140,6 +140,8 @@ export function MapOverlay() {
   // Sync MapLibre position when store mapState changes
   // This fires when ITTCA_TILE_REQUEST updates the store
   useEffect(() => {
+    console.log('ITTCA: data effect fired, styleLoaded:', styleLoaded, 'portals:', Object.keys(portals).length);
+
     if (!map.current || !styleLoaded) return;
     if (lat === 0 && lng === 0) return; // ignore default state
 

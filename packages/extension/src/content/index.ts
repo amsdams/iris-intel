@@ -140,6 +140,8 @@ window.addEventListener('message', (event) => {
       break;
     }*/
     case 'ITTCA_TILE_REQUEST': {
+      console.log('ITTCA_TILE_REQUEST: Init');
+
       if (!tileKeys?.length) break;
       console.log('ITTCA: Intel zoom level:', tileKeys[0].split('_')[0]);
       break;
@@ -185,17 +187,20 @@ window.addEventListener('message', (event) => {
     }*/
 
     case 'ITTCA_MOVE_MAP': {
+      console.log('ITTCA_MOVE_MAP: Init');
       if (isProgrammaticMove) break;
-      // DISABLED — re-enable once initial sync is confirmed working
-      // window.postMessage(
-      //   { type: 'ITTCA_MOVE_MAP_INTERNAL', center, zoom },
-      //   '*'
-      // );
+      window.postMessage(
+          { type: 'ITTCA_MOVE_MAP_INTERNAL', center, zoom },
+          '*'
+      );
       break;
     }
 
     case 'ITTCA_MOVE_MAP_INTERNAL':
+      console.log('ITTCA_MOVE_MAP_INTERNAL: Init');
+      break;
     case 'ITTCA_GEOLOCATE':
+      console.log('ITTCA_GEOLOCATE: Init');
       break;
 
     case 'ITTCA_GEOLOCATE_REQUEST': {
@@ -218,7 +223,7 @@ window.addEventListener('message', (event) => {
       break;
     }*/
 
-    case 'ITTCA_DATA': {
+    /*case 'ITTCA_DATA': {
       if (url.includes('/r/getEntities')) {
         console.log('ITTCA: Captured Data Batch');
         const { portals, links, fields } = parseEntities(data);
@@ -244,8 +249,44 @@ window.addEventListener('message', (event) => {
         if (portal) useStore.getState().updatePortals([portal]);
       }
       break;
+    }*/
+    case 'ITTCA_DATA': {
+      console.log('ITTCA_DATA: Init');
+
+      if (url.includes('/r/getEntities')) {
+        console.log('ITTCA_DATA: Captured Data Batch');
+        const { portals, links, fields } = parseEntities(data);
+        const store = useStore.getState();
+
+        // Update position from portal coordinates on every batch
+        // Use the median portal for a stable centre rather than the first
+        if (portals.length > 0) {
+          const mid = portals[Math.floor(portals.length / 2)];
+
+          // Only update position if more than 0.01 degrees away from current
+          const current = useStore.getState().mapState;
+          const dist = Math.abs(mid.lat - current.lat) + Math.abs(mid.lng - current.lng);
+
+          if (dist > 0.01) {
+            isProgrammaticMove = true;
+            store.updateMapState(mid.lat, mid.lng, 15);
+            setTimeout(() => { isProgrammaticMove = false; }, 500);
+          }
+        }
+
+        if (portals.length > 0) store.updatePortals(portals);
+        if (links.length > 0) store.updateLinks(links);
+        if (fields.length > 0) store.updateFields(fields);
+
+      } else if (url.includes('/r/getPortalDetails')) {
+        const portal = parsePortalDetails(data, params);
+        if (portal) useStore.getState().updatePortals([portal]);
+      }
+      break;
     }
     default:
+      console.log('DEFAULT: Init');
+
       break;
   }
 });
