@@ -30,20 +30,25 @@ jobs:
         run: npm run build
         working-directory: packages/extension
 
-      - name: Package as zip
+      - name: Package as zip (Kiwi Browser / Chrome)
         run: |
           cd packages/extension/dist
           zip -r ../../../iris-extension.zip .
 
-      # Keep artifact for PRs and manual runs
+      - name: Package as xpi (Firefox / Firefox for Android)
+        run: |
+          cd packages/extension/dist
+          zip -r ../../../iris-extension.xpi .
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: iris-extension
-          path: iris-extension.zip
+          path: |
+            iris-extension.zip
+            iris-extension.xpi
           retention-days: 30
 
-      # Create/update a rolling "latest" release on every push to main
       - name: Create Release
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: softprops/action-gh-release@v2
@@ -53,19 +58,32 @@ jobs:
           body: |
             Automated build from commit ${{ github.sha }}
 
-            **Install on Kiwi Browser (Android):**
+            ## Install on Android
+
+            **Kiwi Browser (recommended):**
             1. Download `iris-extension.zip`
-            2. Unzip on your phone
-            3. Kiwi Browser → Extensions → Developer mode → Load unpacked
+            2. Kiwi Browser → menu → Extensions → Developer mode → Load unpacked → select zip
 
-            **Install on Desktop Chrome/Chromium:**
-            1. Download and unzip
-            2. `chrome://extensions` → Developer mode → Load unpacked
+            **Firefox Nightly for Android:**
+            1. In Firefox Nightly go to `about:config`
+            2. Set `xpinstall.signatures.required` to `false`
+            3. Navigate to this URL in Firefox Nightly:
+               `https://github.com/${{ github.repository }}/releases/latest/download/iris-extension.xpi`
+            4. Firefox will prompt to install
 
-            **Install on Firefox / Firefox for Android (Nightly):**
-            1. Download and unzip
-            2. `about:debugging` → Load Temporary Add-on → select `manifest.json`
-          files: iris-extension.zip
+            ## Install on Desktop
+
+            **Chrome / Chromium / Edge:**
+            1. Download and unzip `iris-extension.zip`
+            2. `chrome://extensions` → Developer mode → Load unpacked → select folder
+
+            **Firefox Desktop:**
+            1. Download `iris-extension.xpi`
+            2. `about:addons` → gear icon → Install Add-on From File
+
+          files: |
+            iris-extension.zip
+            iris-extension.xpi
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
