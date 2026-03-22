@@ -21,11 +21,15 @@ export const UI_COLORS = {
     BORDER_DIM: '#333333',
 };
 
-export const normalizeTeam = (team: string | undefined): string => {
-    if (!team) return 'N';
-    const t = team.toUpperCase();
-    if (t === 'ALIENS' || t === 'ENLIGHTENED' || t === 'E') return 'E';
-    if (t === 'RESISTANCE' || t === 'R') return 'R';
-    if (t === 'MAC' || t === 'MACHINA' || t === 'M') return 'M';
-    return 'N';
+export const SHARED_STYLES = {
+    btnStyle: (active: boolean) => ({
+        background: active ? UI_COLORS.AQUA : '#555',
+        color: '#000',
+        border: 'none',
+        padding: '5px 10px',
+        borderRadius: '3px',
+        cursor: active ? 'pointer' : 'default',
+        fontWeight: 'bold',
+        fontFamily: 'monospace',
+    } as const),
 };

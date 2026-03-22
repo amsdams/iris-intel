@@ -1,6 +1,6 @@
 import { render, h } from 'preact';
 import { IRISOverlay } from '../ui/components/Overlay';
-import { useStore, pluginManager } from '@iris/core';
+import { useStore, pluginManager, normalizeTeam } from '@iris/core';
 import PortalNamesPlugin from '../../../plugins/src/portal-names';
 
 // Tracks whether MapLibre has been given its initial position
@@ -27,7 +27,7 @@ function parseEntities(data: any): {
     tile.gameEntities.forEach((entity: any) => {
       const [id, , entData] = entity;
       const entType = entData[0];
-      const team = entData[1];
+      const team = normalizeTeam(entData[1]);
 
       if (entType === 'p') {
         portals.push({
@@ -86,7 +86,7 @@ function parsePortalDetails(data: any, params: any): any | null {
     id: params?.guid || '',
     lat: d[2] / 1e6,
     lng: d[3] / 1e6,
-    team: d[1],
+    team: normalizeTeam(d[1]),
     level: d[4],
     health: d[5],
     resCount: d[6],
@@ -109,7 +109,7 @@ function parsePlexts(data: any): any[] {
             text,
             markup,
             categories,
-            team,
+            team: normalizeTeam(team),
         };
     });
 }

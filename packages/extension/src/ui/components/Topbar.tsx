@@ -1,20 +1,6 @@
 import { h } from 'preact';
 import { useState } from 'preact/hooks';
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const btnStyle = (active: boolean) => ({
-    background: active ? '#00ffff' : '#555',
-    color: '#000',
-    border: 'none',
-    padding: '5px 10px',
-    borderRadius: '3px',
-    cursor: active ? 'pointer' : 'default',
-    fontWeight: 'bold',
-} as const);
-
+import { SHARED_STYLES } from '../theme';
 
 // ---------------------------------------------------------------------------
 // LocationSearch
@@ -109,7 +95,7 @@ function LocationSearch() {
                 <button
                     onClick={search}
                     disabled={searching}
-                    style={btnStyle(!searching)}
+                    style={SHARED_STYLES.btnStyle(!searching)}
                 >
                     {searching ? '...' : 'GO'}
                 </button>
@@ -231,7 +217,7 @@ export function Topbar({
         }}>
             {/* Left side: Menu button */}
             <div style={{ position: 'relative', pointerEvents: 'auto' }}>
-                <button style={btnStyle(true)} onClick={() => setShowMenu(!showMenu)}>☰</button>
+                <button style={SHARED_STYLES.btnStyle(true)} onClick={() => setShowMenu(!showMenu)}>☰</button>
                 {showMenu && (
                     <div style={{
                         position: 'absolute',
@@ -315,11 +301,11 @@ export function Topbar({
                 <button
                     onClick={goToMyLocation}
                     disabled={locStatus === 'LOCATING...'}
-                    style={btnStyle(locStatus !== 'LOCATING...')}
+                    style={SHARED_STYLES.btnStyle(locStatus !== 'LOCATING...')}
                 >
                     {locStatus === 'LOCATING...' ? '...' : '◎'}
                 </button>
-                <button style={btnStyle(true)} onClick={onTogglePlayerStats}>👤</button>
+                <button style={SHARED_STYLES.btnStyle(true)} onClick={onTogglePlayerStats}>👤</button>
             </div>
         </div>
     );

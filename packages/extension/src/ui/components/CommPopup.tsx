@@ -1,7 +1,7 @@
 import { h } from 'preact';
-import { useStore } from '@iris/core';
+import { useStore, normalizeTeam } from '@iris/core';
 import { Popup } from './Popup';
-import { TEAM_COLOUR, UI_COLORS, normalizeTeam } from '../theme';
+import { TEAM_COLOUR, UI_COLORS } from '../theme';
 
 interface CommPopupProps {
     onClose: () => void;
