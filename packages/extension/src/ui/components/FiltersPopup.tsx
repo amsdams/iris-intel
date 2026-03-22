@@ -53,11 +53,11 @@ const checkboxStyle: h.JSX.CSSProperties = {
 // LayersPopup
 // ---------------------------------------------------------------------------
 
-interface LayersPopupProps {
+interface FiltersPopupProps {
     onClose: () => void;
 }
 
-export function LayersPopup({ onClose }: LayersPopupProps) {
+export function FiltersPopup({ onClose }: FiltersPopupProps) {
     const showFields = useStore((state) => state.showFields);
     const toggleShowFields = useStore((state) => state.toggleShowFields);
 
@@ -88,8 +88,9 @@ export function LayersPopup({ onClose }: LayersPopupProps) {
             {/* Close button */}
             <button onClick={onClose} style={closeButtonStyle}>✕</button>
 
-            <h2 style={{ margin: '0 0 10px 0', color: '#00ffff', paddingRight: '20px' }}>Map Layers</h2>
+            <h2 style={{ margin: '0 0 10px 0', color: '#00ffff', paddingRight: '20px' }}>Filters</h2>
 
+            <h3 style={{ margin: '15px 0 8px 0', color: '#00ffff' }}>Layers</h3>
             <label style={checkboxContainerStyle}>
                 <input
                     type="checkbox"
@@ -110,7 +111,7 @@ export function LayersPopup({ onClose }: LayersPopupProps) {
                 Links
             </label>
 
-            <h3 style={{ margin: '15px 0 8px 0', color: '#00ffff' }}>Teams</h3>
+            <h3 style={{ margin: '15px 0 8px 0', color: '#00ffff' }}>Faction</h3>
             <label style={checkboxContainerStyle}>
                 <input
                     type="checkbox"

@@ -170,12 +170,12 @@ function LocationSearch() {
 interface TopbarProps {
     onTogglePlayerStats: () => void;
     onToggleStateDebug: () => void;
-    onToggleLayersPopup: () => void;
+    onToggleFiltersPopup: () => void;
     onToggleMapVisibility: () => void;
     showMap: boolean;
 }
 
-export function Topbar({ onTogglePlayerStats, onToggleStateDebug, onToggleLayersPopup, onToggleMapVisibility, showMap }: TopbarProps) {
+export function Topbar({ onTogglePlayerStats, onToggleStateDebug, onToggleFiltersPopup, onToggleMapVisibility, showMap }: TopbarProps) {
     const [locStatus, setLocStatus] = useState<'NAVIGATE TO ME' | 'LOCATING...'>('NAVIGATE TO ME');
     const [showMenu, setShowMenu] = useState(false);
 
@@ -238,7 +238,7 @@ export function Topbar({ onTogglePlayerStats, onToggleStateDebug, onToggleLayers
                         overflowY: 'auto',
                     }}>
                         <div
-                            onClick={() => { onToggleLayersPopup(); setShowMenu(false); }}
+                            onClick={() => { onToggleFiltersPopup(); setShowMenu(false); }}
                             style={{
                                 padding: '6px 8px',
                                 cursor: 'pointer',
@@ -249,7 +249,7 @@ export function Topbar({ onTogglePlayerStats, onToggleStateDebug, onToggleLayers
                             onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#1a1a1a'; }}
                             onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
                         >
-                            Layers
+                            Filters
                         </div>
                         <div
                             onClick={() => { onToggleStateDebug(); setShowMenu(false); }}

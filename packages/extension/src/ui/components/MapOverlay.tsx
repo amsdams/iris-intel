@@ -231,14 +231,16 @@ export function MapOverlay() {
         const isResistance = p.team === 'R';
         const isEnlightened = p.team === 'E';
 
-        // Check team visibility
+        // Filter by team first
         if (isUnclaimed && !showUnclaimedPortals) return false;
         if (isMachina && !showMachina) return false;
         if (isResistance && !showResistance) return false;
         if (isEnlightened && !showEnlightened) return false;
 
-        // Check level visibility
-        if (p.level && !showLevel[p.level]) return false;
+        // Then filter by level. Only apply level filter if the portal has a level.
+        // Unclaimed portals that explicitly have no level should not be filtered by showLevel[p.level].
+        // If p.level is defined, then apply the level filter.
+        if (p.level !== undefined && !showLevel[p.level]) return false;
 
         return true;
     }).map((p: any) => ({
