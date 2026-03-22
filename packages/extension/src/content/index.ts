@@ -76,6 +76,12 @@ function parseEntities(data: any): {
 function parsePortalDetails(data: any, params: any): any | null {
   if (!data.result) return null;
   const d = data.result;
+  console.log('ITTCA: portal details indices:');
+  d.forEach((val: any, i: number) => {
+    if (typeof val === 'string' && val.length > 0) {
+      console.log(`  [${i}] = "${val}"`);
+    }
+  });
   return {
     id: params?.guid || '',
     lat: d[2] / 1e6,
@@ -86,7 +92,7 @@ function parsePortalDetails(data: any, params: any): any | null {
     resCount: d[6],
     image: d[7],
     name: d[8],
-    owner: d[17],
+    owner: d[16],
   };
 }
 
