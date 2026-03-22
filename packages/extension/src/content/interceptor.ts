@@ -160,7 +160,8 @@
 
             if (
                 url.includes('/r/getEntities') ||
-                url.includes('/r/getPortalDetails')
+                url.includes('/r/getPortalDetails') ||
+                url.includes('/r/getPlexts')
             ) {
                 try {
                     const response = JSON.parse(this.responseText);
@@ -190,7 +191,7 @@
 
         if (
             response.ok &&
-            (url.includes('/r/getEntities') || url.includes('/r/getPortalDetails'))
+            (url.includes('/r/getEntities') || url.includes('/r/getPortalDetails') || url.includes('/r/getPlexts'))
         ) {
             try {
                 const data = await response.clone().json();

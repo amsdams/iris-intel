@@ -98,6 +98,22 @@ function parsePortalDetails(data: any, params: any): any | null {
   };
 }
 
+function parsePlexts(data: any): any[] {
+    if (!data.result) return [];
+    return data.result.map((plext: any) => {
+        const [id, time, plextData] = plext;
+        const { text, markup, categories, team } = plextData.plext;
+        return {
+            id,
+            time,
+            text,
+            markup,
+            categories,
+            team,
+        };
+    });
+}
+
 // ---------------------------------------------------------------------------
 // UI bootstrap
 // ---------------------------------------------------------------------------
@@ -207,6 +223,9 @@ window.addEventListener('message', (event) => {
       } else if (url.includes('/r/getPortalDetails')) {
         const portal = parsePortalDetails(data, params);
         if (portal) useStore.getState().updatePortals([portal]);
+      } else if (url.includes('/r/getPlexts')) {
+        const plexts = parsePlexts(data);
+        if (plexts.length > 0) useStore.getState().updatePlexts(plexts);
       }
       break;
     }

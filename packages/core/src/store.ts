@@ -52,6 +52,15 @@ export interface Field {
     points: { lat: number; lng: number }[];
 }
 
+export interface Plext {
+    id: string;
+    time: number;
+    text: string;
+    markup: any[];
+    categories: number;
+    team: string;
+}
+
 export interface StatsItem {
     id: string;
     label: string;
@@ -62,6 +71,7 @@ interface IRISState {
     portals: Record<string, Portal>;
     links: Record<string, Link>;
     fields: Record<string, Field>;
+    plexts: Plext[];
     statsItems: Record<string, StatsItem>;
     mapState: {
         lat: number;
@@ -72,6 +82,7 @@ interface IRISState {
     updatePortals: (portals: Portal[]) => void;
     updateLinks: (links: Link[]) => void;
     updateFields: (fields: Field[]) => void;
+    updatePlexts: (plexts: Plext[]) => void;
     addStatsItem: (item: StatsItem) => void;
     removeStatsItem: (id: string) => void;
     updateMapState: (lat: number, lng: number, zoom: number) => void;
@@ -105,6 +116,7 @@ export const useStore = create<IRISState>((set) => ({
     portals: {},
     links: {},
     fields: {},
+    plexts: [],
     statsItems: {},
     mapState: {
         lat: 0,
@@ -138,6 +150,15 @@ export const useStore = create<IRISState>((set) => ({
                 fields[f.id] = f;
             });
             return {fields};
+        }),
+    updatePlexts: (newPlexts) =>
+        set((state) => {
+            // Keep unique plexts, sorted by time descending
+            const all = [...state.plexts, ...newPlexts];
+            const unique = Array.from(new Map(all.map(p => [p.id, p])).values());
+            unique.sort((a, b) => b.time - a.time);
+            // Keep last 200 for performance
+            return { plexts: unique.slice(0, 200) };
         }),
     addStatsItem: (item) =>
         set((state) => ({
