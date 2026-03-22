@@ -126,32 +126,78 @@ export function MapOverlay() {
       }, '*');
     });
 
-    // Show portal details popup on click
-    map.current.on('click', 'portals', (e) => {
-      if (!e.features?.length) return;
-      const id = e.features[0].properties?.id;
-      if (!id) return;
+    // Set pointer cursor when near a portal, let MapLibre manage grab/grabbing
+    // otherwise. Avoids queryRenderedFeatures which breaks Firefox sandbox.
+    map.current.on('mousemove', (e) => {
+      if (!map.current) return;
+      const { lng, lat } = e.lngLat;
+      const allPortals = Object.values(useStore.getState().portals);
+
+      const z = map.current.getZoom();
+      const threshold = 0.0005 * Math.pow(2, 15 - z);
+
+      const isNearPortal = allPortals.some((p: any) => {
+        const dx = p.lng - lng;
+        const dy = p.lat - lat;
+        return Math.sqrt(dx * dx + dy * dy) < threshold;
+      });
+
+      map.current.getCanvas().style.cursor = isNearPortal ? 'pointer' : '';
+    });
+
+    // Plain map click — find nearest portal from store without
+    // queryRenderedFeatures which triggers Firefox sandbox errors
+    map.current.on('click', (e) => {
+      if (!map.current) return;
+      const { lng, lat } = e.lngLat;
+      const allPortals = Object.values(useStore.getState().portals);
+      if (!allPortals.length) return;
+
+      const z = map.current.getZoom();
+      const threshold = 0.0005 * Math.pow(2, 15 - z);
+
+      let nearest: any = null;
+      let minDist = Infinity;
+
+      allPortals.forEach((p: any) => {
+        const dx = p.lng - lng;
+        const dy = p.lat - lat;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < minDist) {
+          minDist = dist;
+          nearest = p;
+        }
+      });
+
+      if (nearest && minDist < threshold) {
+        document.dispatchEvent(
+            new CustomEvent('iris:portal:click', { detail: { id: nearest.id } })
+        );
+      }
+    });
+
+    // Handle portal click event — runs in content script context where
+    // useStore and window.postMessage are fully accessible
+    const onPortalClick = (e: Event) => {
+      const { id } = (e as CustomEvent).detail;
       useStore.getState().selectPortal(id);
       window.postMessage({
         type: 'IRIS_PORTAL_DETAILS_REQUEST',
         guid: id,
       }, '*');
-    });
+    };
 
-    // Pointer cursor when hovering portals
-    map.current.on('mouseenter', 'portals', () => {
-      if (map.current) map.current.getCanvas().style.cursor = 'pointer';
-    });
-    map.current.on('mouseleave', 'portals', () => {
-      if (map.current) map.current.getCanvas().style.cursor = '';
-    });
+    document.addEventListener('iris:portal:click', onPortalClick);
 
-    return () => map.current?.remove();
+    // Cleanup — remove map and event listener on unmount
+    return () => {
+      map.current?.remove();
+      document.removeEventListener('iris:portal:click', onPortalClick);
+    };
   }, []);
 
   // ---------------------------------------------------------------------------
   // Sync MapLibre camera when store mapState changes
-  // Triggered by initial position set from first getEntities batch
   // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!map.current || !styleLoaded) return;
