@@ -4,17 +4,6 @@ import { Popup } from './Popup';
 import { THEMES, TEAM_NAME, UI_COLORS } from '../theme';
 
 // ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const RARITY_COLOUR: Record<string, string> = {
-    COMMON: '#aaaaaa',
-    RARE: '#6699ff',
-    VERY_RARE: '#ff6600',
-    EXTREMELY_RARE: '#ff0000',
-};
-
-// ---------------------------------------------------------------------------
 // PortalInfoPopup
 // ---------------------------------------------------------------------------
 
@@ -83,7 +72,7 @@ export function PortalInfoPopup() {
             }}>
                 <span>Team: <span style={{ color: colour }}>{teamName}</span></span>
                 {portal.level !== undefined && (
-                    <span>Level: <span style={{ color: '#ffff00' }}>{portal.level}</span></span>
+                    <span>Level: <span style={{ color: theme.LEVELS[portal.level] || '#ffff00' }}>{portal.level}</span></span>
                 )}
                 {portal.health !== undefined && (
                     <span>Health: <span style={{ color: '#00ff00' }}>{portal.health}%</span></span>
@@ -113,9 +102,9 @@ export function PortalInfoPopup() {
                                 borderRadius: '3px',
                                 padding: '3px 4px',
                                 fontSize: '0.75em',
-                                border: `1px solid ${UI_COLORS.BORDER_DIM}`,
+                                border: `1px solid ${theme.LEVELS[r.level] || UI_COLORS.BORDER_DIM}`,
                             }}>
-                                <div style={{ color: '#ffff00' }}>L{r.level}</div>
+                                <div style={{ color: theme.LEVELS[r.level] || '#ffff00' }}>L{r.level}</div>
                                 <div style={{ color: colour }}>{r.owner}</div>
                             </div>
                         ))}
@@ -130,20 +119,23 @@ export function PortalInfoPopup() {
                         MODS
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                        {portal.mods.map((m, i) => (
-                            <div key={i} style={{
-                                background: '#111',
-                                borderRadius: '3px',
-                                padding: '3px 6px',
-                                fontSize: '0.75em',
-                                border: `1px solid ${RARITY_COLOUR[m.rarity] || UI_COLORS.BORDER_DIM}`,
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                            }}>
-                                <span style={{ color: RARITY_COLOUR[m.rarity] || UI_COLORS.TEXT_BASE }}>{m.name}</span>
-                                <span style={{ color: colour }}>{m.owner}</span>
-                            </div>
-                        ))}
+                        {portal.mods.map((m, i) => {
+                            const modRarityColor = theme.RARITY[m.rarity] || UI_COLORS.BORDER_DIM;
+                            return (
+                                <div key={i} style={{
+                                    background: '#111',
+                                    borderRadius: '3px',
+                                    padding: '3px 6px',
+                                    fontSize: '0.75em',
+                                    border: `1px solid ${modRarityColor}`,
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                }}>
+                                    <span style={{ color: modRarityColor }}>{m.name}</span>
+                                    <span style={{ color: colour }}>{m.owner}</span>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             )}

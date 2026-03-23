@@ -4,7 +4,22 @@ export interface ThemeColors {
     M: string;
     N: string;
     AQUA: string;
+    LEVELS: Record<number, string>;
+    RARITY: Record<string, string>;
 }
+
+const DEFAULT_LEVELS = {
+    1: '#FECE5A', 2: '#FFA630', 3: '#FF7315', 4: '#E80000',
+    5: '#FF0099', 6: '#EE26CD', 7: '#C124E0', 8: '#9627F4',
+};
+
+const DEFAULT_RARITY = {
+    COMMON: '#565656',
+    RARE: '#1566E6',
+    VERY_RARE: '#EF7B03',
+    EXTREMELY_RARE: '#ff0000',
+    AEGIS: '#00D4AA',
+};
 
 export const THEMES: Record<string, ThemeColors> = {
     DEFAULT: {
@@ -13,6 +28,8 @@ export const THEMES: Record<string, ThemeColors> = {
         M: '#ff0000', // Red
         N: '#ffffff', // White
         AQUA: '#00ffff',
+        LEVELS: DEFAULT_LEVELS,
+        RARITY: DEFAULT_RARITY,
     },
     CYBER: {
         E: '#00ffa3', // Minty Green
@@ -20,6 +37,8 @@ export const THEMES: Record<string, ThemeColors> = {
         M: '#ff0055', // Pinkish Red
         N: '#e0e0e0',
         AQUA: '#00e5ff',
+        LEVELS: DEFAULT_LEVELS,
+        RARITY: DEFAULT_RARITY,
     },
     SOFTER: {
         E: '#78f400', // Muted Lime
@@ -27,6 +46,26 @@ export const THEMES: Record<string, ThemeColors> = {
         M: '#ff5252', // Soft Red
         N: '#cfd8dc',
         AQUA: '#4dd0e1',
+        LEVELS: DEFAULT_LEVELS,
+        RARITY: DEFAULT_RARITY,
+    },
+    INGRESS: {
+        E: '#03DC03', // Enlightened Vivid Lime
+        R: '#0088FF', // Resistance Bright Blue
+        M: '#FF1010', // Machina Bright Red
+        N: '#C0C0C0', // Neutral Silver
+        AQUA: '#D1FFFF', // XM Primary Highlight
+        LEVELS: {
+            1: '#FECE5A', 2: '#FFA630', 3: '#FF7315', 4: '#E80000',
+            5: '#FF0099', 6: '#EE26CD', 7: '#C124E0', 8: '#9627F4',
+        },
+        RARITY: {
+            COMMON: '#565656',
+            RARE: '#1566E6',
+            VERY_RARE: '#EF7B03',
+            EXTREMELY_RARE: '#FF1010',
+            AEGIS: '#00D4AA',
+        }
     }
 };
 
@@ -65,8 +104,8 @@ export const SPACING = {
 };
 
 export const SHARED_STYLES = {
-    btnStyle: (active: boolean) => ({
-        background: active ? UI_COLORS.AQUA : '#555',
+    btnStyle: (active: boolean, accentColor: string = UI_COLORS.AQUA) => ({
+        background: active ? accentColor : '#555',
         color: '#000',
         border: 'none',
         padding: '5px 10px',

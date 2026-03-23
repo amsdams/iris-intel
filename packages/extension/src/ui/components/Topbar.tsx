@@ -1,7 +1,7 @@
 import { h } from 'preact';
 import { useState } from 'preact/hooks';
 import { useStore } from '@iris/core';
-import { SHARED_STYLES } from '../theme';
+import { SHARED_STYLES, THEMES } from '../theme';
 
 // ---------------------------------------------------------------------------
 // LocationSearch
@@ -21,6 +21,9 @@ function LocationSearch() {
     const [searching, setSearching] = useState(false);
     const [results, setResults] = useState<NominatimResult[]>([]);
     const [error, setError] = useState('');
+
+    const themeId = useStore((state) => state.themeId);
+    const theme = THEMES[themeId] || THEMES.DEFAULT;
 
     const search = async () => {
         if (!query.trim()) return;
@@ -84,8 +87,8 @@ function LocationSearch() {
                     style={{
                         flex: 1,
                         background: '#111',
-                        color: '#00ffff',
-                        border: '1px solid #00ffff',
+                        color: theme.AQUA,
+                        border: `1px solid ${theme.AQUA}`,
                         borderRadius: '3px',
                         padding: '4px 6px',
                         fontFamily: 'monospace',
@@ -96,7 +99,7 @@ function LocationSearch() {
                 <button
                     onClick={search}
                     disabled={searching}
-                    style={SHARED_STYLES.btnStyle(!searching)}
+                    style={SHARED_STYLES.btnStyle(!searching, theme.AQUA)}
                 >
                     {searching ? '...' : 'GO'}
                 </button>
@@ -116,7 +119,7 @@ function LocationSearch() {
                     left: 0,
                     right: 0,
                     background: 'rgba(0, 0, 0, 0.95)',
-                    border: '1px solid #00ffff',
+                    border: `1px solid ${theme.AQUA}`,
                     borderRadius: '3px',
                     marginTop: '2px',
                     zIndex: 10002,
@@ -140,7 +143,7 @@ function LocationSearch() {
                                 (e.currentTarget as HTMLDivElement).style.background = 'transparent';
                             }}
                         >
-                            <div style={{ color: '#00ffff' }}>
+                            <div style={{ color: theme.AQUA }}>
                                 {result.display_name.split(',')[0]}
                             </div>
                             <div style={{ color: '#666', fontSize: '0.9em', marginTop: '1px' }}>
@@ -176,6 +179,8 @@ export function Topbar({
     const [locStatus, setLocStatus] = useState<'NAVIGATE TO ME' | 'LOCATING...'>('NAVIGATE TO ME');
     const [showMenu, setShowMenu] = useState(false);
     const menuItems = useStore((state) => state.menuItems);
+    const themeId = useStore((state) => state.themeId);
+    const theme = THEMES[themeId] || THEMES.DEFAULT;
 
     const goToMyLocation = () => {
         if (!navigator.geolocation) {
@@ -221,14 +226,14 @@ export function Topbar({
         }}>
             {/* Left side: Menu button */}
             <div style={{ position: 'relative', pointerEvents: 'auto' }}>
-                <button style={SHARED_STYLES.btnStyle(true)} onClick={() => setShowMenu(!showMenu)}>☰</button>
+                <button style={SHARED_STYLES.btnStyle(true, theme.AQUA)} onClick={() => setShowMenu(!showMenu)}>☰</button>
                 {showMenu && (
                     <div style={{
                         position: 'absolute',
                         top: '100%',
                         left: 0,
                         background: 'rgba(0, 0, 0, 0.95)',
-                        border: '1px solid #00ffff',
+                        border: `1px solid ${theme.AQUA}`,
                         borderRadius: '3px',
                         marginTop: '2px',
                         zIndex: 10002,
@@ -242,7 +247,7 @@ export function Topbar({
                                 cursor: 'pointer',
                                 borderBottom: '1px solid #222',
                                 fontSize: '0.8em',
-                                color: '#00ffff',
+                                color: theme.AQUA,
                             }}
                             onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#1a1a1a'; }}
                             onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
@@ -256,7 +261,7 @@ export function Topbar({
                                 cursor: 'pointer',
                                 borderBottom: '1px solid #222',
                                 fontSize: '0.8em',
-                                color: '#00ffff',
+                                color: theme.AQUA,
                             }}
                             onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#1a1a1a'; }}
                             onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
@@ -270,7 +275,7 @@ export function Topbar({
                                 cursor: 'pointer',
                                 borderBottom: '1px solid #222',
                                 fontSize: '0.8em',
-                                color: '#00ffff',
+                                color: theme.AQUA,
                             }}
                             onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#1a1a1a'; }}
                             onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
@@ -284,7 +289,7 @@ export function Topbar({
                                 cursor: 'pointer',
                                 borderBottom: '1px solid #222',
                                 fontSize: '0.8em',
-                                color: '#00ffff',
+                                color: theme.AQUA,
                             }}
                             onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#1a1a1a'; }}
                             onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
@@ -298,7 +303,7 @@ export function Topbar({
                                 cursor: 'pointer',
                                 borderBottom: '1px solid #222',
                                 fontSize: '0.8em',
-                                color: '#00ffff',
+                                color: theme.AQUA,
                             }}
                             onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#1a1a1a'; }}
                             onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
@@ -319,7 +324,7 @@ export function Topbar({
                                     cursor: 'pointer',
                                     borderBottom: '1px solid #222',
                                     fontSize: '0.8em',
-                                    color: '#00ffff',
+                                    color: theme.AQUA,
                                 }}
                                 onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#1a1a1a'; }}
                                 onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
@@ -341,11 +346,11 @@ export function Topbar({
                 <button
                     onClick={goToMyLocation}
                     disabled={locStatus === 'LOCATING...'}
-                    style={SHARED_STYLES.btnStyle(locStatus !== 'LOCATING...')}
+                    style={SHARED_STYLES.btnStyle(locStatus !== 'LOCATING...', theme.AQUA)}
                 >
                     {locStatus === 'LOCATING...' ? '...' : '◎'}
                 </button>
-                <button style={SHARED_STYLES.btnStyle(true)} onClick={onTogglePlayerStats}>👤</button>
+                <button style={SHARED_STYLES.btnStyle(true, theme.AQUA)} onClick={onTogglePlayerStats}>👤</button>
             </div>
         </div>
     );
