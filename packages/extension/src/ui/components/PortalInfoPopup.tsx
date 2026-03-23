@@ -132,7 +132,9 @@ export function PortalInfoPopup() {
                                     display: 'flex',
                                     justifyContent: 'space-between',
                                 }}>
-                                    <span style={{ color: modRarityColor }}>{m.name}</span>
+                                    <span style={{ color: modRarityColor }}>
+                                        {m.rarity} {m.name}
+                                    </span>
                                     <span style={{ color: colour }}>{m.owner}</span>
                                 </div>
                             );

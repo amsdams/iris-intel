@@ -61,5 +61,5 @@ export interface IRIS_API {
 export interface IRISPlugin {
   manifest: PluginManifest;
   setup: (api: IRIS_API) => void | Promise<void>;
-  teardown?: () => void | Promise<void>;
+  teardown?: (api: IRIS_API) => void | Promise<void>;
 }

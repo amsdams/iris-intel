@@ -60,10 +60,10 @@ export const THEMES: Record<string, ThemeColors> = {
             5: '#FF0099', 6: '#EE26CD', 7: '#C124E0', 8: '#9627F4',
         },
         RARITY: {
-            COMMON: '#565656',
-            RARE: '#1566E6',
-            VERY_RARE: '#EF7B03',
-            EXTREMELY_RARE: '#FF1010',
+            COMMON: '#8CFFBF',
+            RARE: '#73A8FF',
+            VERY_RARE: '#B08CFF',
+            EXTREMELY_RARE: '#FF0000',
             AEGIS: '#00D4AA',
         }
     }
