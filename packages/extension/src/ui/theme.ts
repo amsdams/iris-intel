@@ -1,9 +1,37 @@
-export const TEAM_COLOUR: Record<string, string> = {
-    E: '#00ff00',
-    R: '#0000ff',
-    M: '#ff0000',
-    N: '#ffffff',
+export interface ThemeColors {
+    E: string;
+    R: string;
+    M: string;
+    N: string;
+    AQUA: string;
+}
+
+export const THEMES: Record<string, ThemeColors> = {
+    DEFAULT: {
+        E: '#00ff00', // Neon Green
+        R: '#0000ff', // Pure Blue
+        M: '#ff0000', // Red
+        N: '#ffffff', // White
+        AQUA: '#00ffff',
+    },
+    CYBER: {
+        E: '#00ffa3', // Minty Green
+        R: '#00e5ff', // Electric Blue
+        M: '#ff0055', // Pinkish Red
+        N: '#e0e0e0',
+        AQUA: '#00e5ff',
+    },
+    SOFTER: {
+        E: '#78f400', // Muted Lime
+        R: '#4fc3f7', // Light Blue
+        M: '#ff5252', // Soft Red
+        N: '#cfd8dc',
+        AQUA: '#4dd0e1',
+    }
 };
+
+// Deprecated: use THEMES from store instead. Keeping for compatibility during migration.
+export const TEAM_COLOUR: Record<string, string> = THEMES.DEFAULT;
 
 export const TEAM_NAME: Record<string, string> = {
     E: 'Enlightened',

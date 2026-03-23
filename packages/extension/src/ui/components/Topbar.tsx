@@ -1,5 +1,6 @@
 import { h } from 'preact';
 import { useState } from 'preact/hooks';
+import { useStore } from '@iris/core';
 import { SHARED_STYLES } from '../theme';
 
 // ---------------------------------------------------------------------------
@@ -159,6 +160,7 @@ interface TopbarProps {
     onToggleFiltersPopup: () => void;
     onToggleMapVisibility: () => void;
     onToggleComm: () => void;
+    onTogglePlugins: () => void;
     showMap: boolean;
 }
 
@@ -168,10 +170,12 @@ export function Topbar({
     onToggleFiltersPopup,
     onToggleMapVisibility,
     onToggleComm,
+    onTogglePlugins,
     showMap
 }: TopbarProps) {
     const [locStatus, setLocStatus] = useState<'NAVIGATE TO ME' | 'LOCATING...'>('NAVIGATE TO ME');
     const [showMenu, setShowMenu] = useState(false);
+    const menuItems = useStore((state) => state.menuItems);
 
     const goToMyLocation = () => {
         if (!navigator.geolocation) {
@@ -260,6 +264,20 @@ export function Topbar({
                             Comm
                         </div>
                         <div
+                            onClick={() => { onTogglePlugins(); setShowMenu(false); }}
+                            style={{
+                                padding: '6px 8px',
+                                cursor: 'pointer',
+                                borderBottom: '1px solid #222',
+                                fontSize: '0.8em',
+                                color: '#00ffff',
+                            }}
+                            onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#1a1a1a'; }}
+                            onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
+                        >
+                            Plugins
+                        </div>
+                        <div
                             onClick={() => { onToggleStateDebug(); setShowMenu(false); }}
                             style={{
                                 padding: '6px 8px',
@@ -287,6 +305,28 @@ export function Topbar({
                         >
                             {showMap ? 'SHOW INTEL MAP' : 'SHOW IRIS MAP'}
                         </div>
+
+                        {menuItems.length > 0 && (
+                            <div style={{ borderTop: '1px solid #333', margin: '4px 0' }} />
+                        )}
+
+                        {menuItems.map((item) => (
+                            <div
+                                key={item.id}
+                                onClick={() => { item.onClick(); setShowMenu(false); }}
+                                style={{
+                                    padding: '6px 8px',
+                                    cursor: 'pointer',
+                                    borderBottom: '1px solid #222',
+                                    fontSize: '0.8em',
+                                    color: '#00ffff',
+                                }}
+                                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#1a1a1a'; }}
+                                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
+                            >
+                                {item.label}
+                            </div>
+                        ))}
                     </div>
                 )}
             </div>

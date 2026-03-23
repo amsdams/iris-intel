@@ -1,7 +1,7 @@
 import { h } from 'preact';
 import { useStore } from '@iris/core';
 import { Popup } from './Popup';
-import { TEAM_COLOUR, UI_COLORS } from '../theme';
+import { THEMES, UI_COLORS } from '../theme';
 
 // ---------------------------------------------------------------------------
 // PlayerStatsPopup
@@ -13,12 +13,14 @@ interface PlayerStatsPopupProps {
 
 export function PlayerStatsPopup({ onClose }: PlayerStatsPopupProps) {
     const playerStats = useStore((state) => state.playerStats);
+    const themeId = useStore((state) => state.themeId);
+    const theme = THEMES[themeId] || THEMES.DEFAULT;
 
     if (!playerStats) {
         return null;
     }
 
-    const teamColour = TEAM_COLOUR[playerStats.team] || UI_COLORS.TEXT_BASE;
+    const teamColour = theme[playerStats.team as keyof typeof theme] || UI_COLORS.TEXT_BASE;
 
     return (
         <Popup

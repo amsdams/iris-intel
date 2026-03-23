@@ -2,7 +2,7 @@ import { IRISPlugin, IRIS_API } from '@iris/plugin-sdk';
 import { useStore } from './store';
 
 export class PluginManager {
-  private plugins: Map<string, IRISPlugin> = new Map();
+  private availablePlugins: Map<string, IRISPlugin> = new Map();
   private api: IRIS_API;
 
   constructor() {
@@ -34,38 +34,72 @@ export class PluginManager {
           useStore.getState().addStatsItem({ id, label, value }),
         removeStatsItem: (id) => 
           useStore.getState().removeStatsItem(id),
+        addMenuItem: (id, label, onClick) =>
+          useStore.getState().addMenuItem({ id, label, onClick }),
+        removeMenuItem: (id) =>
+          useStore.getState().removeMenuItem(id),
+        setTheme: (id) => useStore.getState().setTheme(id),
+        getTheme: () => useStore.getState().themeId,
       },
     };
   }
 
+  /**
+   * Register a plugin and enable it if not already tracked.
+   */
   async load(plugin: IRISPlugin) {
-    if (this.plugins.has(plugin.manifest.id)) {
-      console.warn(`IRIS: Plugin ${plugin.manifest.id} already loaded`);
+    if (this.availablePlugins.has(plugin.manifest.id)) {
       return;
     }
 
-    try {
-      await plugin.setup(this.api);
-      this.plugins.set(plugin.manifest.id, plugin);
-      console.log(`IRIS: Plugin ${plugin.manifest.name} loaded`);
-    } catch (e) {
-      console.error(`IRIS: Error loading plugin ${plugin.manifest.id}`, e);
+    this.availablePlugins.set(plugin.manifest.id, plugin);
+    
+    // If not in store yet, enable by default
+    const state = useStore.getState().pluginStates;
+    if (state[plugin.manifest.id] === undefined) {
+      useStore.getState().setPluginEnabled(plugin.manifest.id, true);
+    }
+
+    // If enabled in store, setup now
+    if (useStore.getState().pluginStates[plugin.manifest.id]) {
+      try {
+        await plugin.setup(this.api);
+        console.log(`IRIS: Plugin ${plugin.manifest.name} enabled`);
+      } catch (e) {
+        console.error(`IRIS: Error enabling plugin ${plugin.manifest.id}`, e);
+      }
     }
   }
 
-  async unload(id: string) {
-    const plugin = this.plugins.get(id);
+  /**
+   * Toggle plugin state and call setup/teardown.
+   */
+  async setEnabled(id: string, enabled: boolean) {
+    const plugin = this.availablePlugins.get(id);
     if (!plugin) return;
 
+    const currentState = !!useStore.getState().pluginStates[id];
+    if (currentState === enabled) return;
+
+    useStore.getState().setPluginEnabled(id, enabled);
+
     try {
-      if (plugin.teardown) {
-        await plugin.teardown();
+      if (enabled) {
+        await plugin.setup(this.api);
+        console.log(`IRIS: Plugin ${plugin.manifest.name} enabled`);
+      } else {
+        if (plugin.teardown) {
+          await plugin.teardown(this.api);
+        }
+        console.log(`IRIS: Plugin ${plugin.manifest.name} disabled`);
       }
-      this.plugins.delete(id);
-      console.log(`IRIS: Plugin ${plugin.manifest.name} unloaded`);
     } catch (e) {
-      console.error(`IRIS: Error unloading plugin ${id}`, e);
+      console.error(`IRIS: Error toggling plugin ${id}`, e);
     }
+  }
+
+  getAvailablePlugins() {
+    return Array.from(this.availablePlugins.values());
   }
 }
 

@@ -2,6 +2,7 @@ import { render, h } from 'preact';
 import { IRISOverlay } from '../ui/components/Overlay';
 import { useStore, pluginManager, normalizeTeam } from '@iris/core';
 import PortalNamesPlugin from '../../../plugins/src/portal-names';
+import ThemeSelectorPlugin from '../../../plugins/src/theme-selector';
 
 // Tracks whether MapLibre has been given its initial position
 let hasInitialPosition = false;
@@ -142,6 +143,7 @@ function initUI() {
 // ---------------------------------------------------------------------------
 
 pluginManager.load(PortalNamesPlugin as any);
+pluginManager.load(ThemeSelectorPlugin as any);
 
 // ---------------------------------------------------------------------------
 // Message handler — bridges main world interceptor and Preact UI

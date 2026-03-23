@@ -51,6 +51,10 @@ export interface IRIS_API {
   ui: {
     addStatsItem: (id: string, label: string, value: string | (() => string)) => void;
     removeStatsItem: (id: string) => void;
+    addMenuItem: (id: string, label: string, onClick: () => void) => void;
+    removeMenuItem: (id: string) => void;
+    setTheme: (id: string) => void;
+    getTheme: () => string;
   };
 }
 

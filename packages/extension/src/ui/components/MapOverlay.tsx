@@ -3,15 +3,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useStore } from '@iris/core';
-
-// Team colours used across portal, link and field layers
-const TEAM_COLOUR_EXPR = [
-  'match', ['get', 'team'],
-  'E', '#00ff00',
-  'R', '#0000ff',
-  'M', '#ff0000',
-  '#ffffff',
-] as any;
+import { THEMES } from '../theme';
 
 export function MapOverlay() {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -25,6 +17,16 @@ export function MapOverlay() {
   const links = useStore((state) => state.links);
   const fields = useStore((state) => state.fields);
   const { lat, lng, zoom } = useStore((state) => state.mapState);
+  const themeId = useStore((state) => state.themeId);
+  const theme = THEMES[themeId] || THEMES.DEFAULT;
+
+  const TEAM_COLOUR_EXPR = [
+    'match', ['get', 'team'],
+    'E', theme.E,
+    'R', theme.R,
+    'M', theme.M,
+    theme.N,
+  ] as any;
 
   // Layer visibility states from store
   const showFields = useStore((state) => state.showFields);
@@ -217,6 +219,17 @@ export function MapOverlay() {
     map.current.jumpTo({ center: [lng, lat], zoom });
     setTimeout(() => { isMoving.current = false; }, 100);
   }, [lat, lng, zoom, styleLoaded]);
+
+  // ---------------------------------------------------------------------------
+  // Update layer colors when theme changes
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (!map.current || !styleLoaded) return;
+
+    map.current.setPaintProperty('fields', 'fill-color', TEAM_COLOUR_EXPR);
+    map.current.setPaintProperty('links', 'line-color', TEAM_COLOUR_EXPR);
+    map.current.setPaintProperty('portals', 'circle-color', TEAM_COLOUR_EXPR);
+  }, [themeId, styleLoaded]);
 
   // ---------------------------------------------------------------------------
   // Update GeoJSON sources when portal/link/field data changes

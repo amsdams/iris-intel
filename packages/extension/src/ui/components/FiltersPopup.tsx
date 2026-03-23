@@ -12,6 +12,7 @@ const checkboxContainerStyle: h.JSX.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
     cursor: 'pointer',
+    fontSize: '0.85em',
 };
 
 const checkboxStyle: h.JSX.CSSProperties = {
@@ -19,7 +20,7 @@ const checkboxStyle: h.JSX.CSSProperties = {
 };
 
 // ---------------------------------------------------------------------------
-// LayersPopup
+// FiltersPopup
 // ---------------------------------------------------------------------------
 
 interface FiltersPopupProps {
@@ -47,6 +48,9 @@ export function FiltersPopup({ onClose }: FiltersPopupProps) {
 
     const showLevel = useStore((state) => state.showLevel);
     const toggleShowLevel = useStore((state) => state.toggleShowLevel);
+
+    const themeId = useStore((state) => state.themeId);
+    const setTheme = useStore((state) => state.setTheme);
 
     const handleLevelToggle = (level: number) => () => {
         toggleShowLevel(level);

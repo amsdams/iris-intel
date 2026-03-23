@@ -1,7 +1,7 @@
 import { h } from 'preact';
 import { useStore, normalizeTeam } from '@iris/core';
 import { Popup } from './Popup';
-import { TEAM_COLOUR, UI_COLORS, SPACING } from '../theme';
+import { THEMES, UI_COLORS, SPACING } from '../theme';
 
 interface CommPopupProps {
     onClose: () => void;
@@ -9,6 +9,8 @@ interface CommPopupProps {
 
 export function CommPopup({ onClose }: CommPopupProps) {
     const plexts = useStore((state) => state.plexts);
+    const themeId = useStore((state) => state.themeId);
+    const theme = THEMES[themeId] || THEMES.DEFAULT;
 
     const formatTime = (ms: number) => {
         const date = new Date(ms);
@@ -22,13 +24,13 @@ export function CommPopup({ onClose }: CommPopupProps) {
             let color = UI_COLORS.TEXT_BASE;
 
             if (type === 'PLAYER') {
-                color = TEAM_COLOUR[normalizeTeam(data.team)] || UI_COLORS.TEXT_BASE;
+                color = theme[normalizeTeam(data.team) as keyof typeof theme] || UI_COLORS.TEXT_BASE;
             } else if (type === 'PORTAL') {
-                color = UI_COLORS.AQUA;
+                color = theme.AQUA;
             } else if (type === 'SECURE') {
                 color = '#ffff00';
             } else if (type === 'SENDER') {
-                color = TEAM_COLOUR[normalizeTeam(data.team)] || UI_COLORS.TEXT_BASE;
+                color = theme[normalizeTeam(data.team) as keyof typeof theme] || UI_COLORS.TEXT_BASE;
             }
 
             return (

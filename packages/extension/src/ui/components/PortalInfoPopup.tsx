@@ -1,7 +1,7 @@
 import { h } from 'preact';
 import { useStore } from '@iris/core';
 import { Popup } from './Popup';
-import { TEAM_COLOUR, TEAM_NAME, UI_COLORS } from '../theme';
+import { THEMES, TEAM_NAME, UI_COLORS } from '../theme';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -24,10 +24,12 @@ export function PortalInfoPopup() {
         selectedPortalId ? state.portals[selectedPortalId] : null
     );
     const selectPortal = useStore((state) => state.selectPortal);
+    const themeId = useStore((state) => state.themeId);
+    const theme = THEMES[themeId] || THEMES.DEFAULT;
 
     if (!portal) return null;
 
-    const colour = TEAM_COLOUR[portal.team] || UI_COLORS.TEXT_BASE;
+    const colour = theme[portal.team as keyof typeof theme] || UI_COLORS.TEXT_BASE;
     const teamName = TEAM_NAME[portal.team] || 'Unknown';
 
     return (

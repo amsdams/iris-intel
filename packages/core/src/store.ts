@@ -67,12 +67,20 @@ export interface StatsItem {
     value: string | (() => string);
 }
 
+export interface MenuItem {
+    id: string;
+    label: string;
+    onClick: () => void;
+}
+
 interface IRISState {
     portals: Record<string, Portal>;
     links: Record<string, Link>;
     fields: Record<string, Field>;
     plexts: Plext[];
     statsItems: Record<string, StatsItem>;
+    menuItems: MenuItem[];
+    pluginStates: Record<string, boolean>;
     mapState: {
         lat: number;
         lng: number;
@@ -85,6 +93,9 @@ interface IRISState {
     updatePlexts: (plexts: Plext[]) => void;
     addStatsItem: (item: StatsItem) => void;
     removeStatsItem: (id: string) => void;
+    addMenuItem: (item: MenuItem) => void;
+    removeMenuItem: (id: string) => void;
+    setPluginEnabled: (id: string, enabled: boolean) => void;
     updateMapState: (lat: number, lng: number, zoom: number) => void;
 
     selectedPortalId: string | null;
@@ -92,6 +103,9 @@ interface IRISState {
 
     playerStats: PlayerStats | null;
     setPlayerStats: (stats: PlayerStats) => void;
+
+    themeId: string;
+    setTheme: (id: string) => void;
 
     // Layer visibility states
     showFields: boolean;
@@ -118,6 +132,8 @@ export const useStore = create<IRISState>((set) => ({
     fields: {},
     plexts: [],
     statsItems: {},
+    menuItems: [],
+    pluginStates: {},
     mapState: {
         lat: 0,
         lng: 0,
@@ -170,6 +186,18 @@ export const useStore = create<IRISState>((set) => ({
             delete statsItems[id];
             return {statsItems};
         }),
+    addMenuItem: (item) =>
+        set((state) => ({
+            menuItems: [...state.menuItems, item]
+        })),
+    removeMenuItem: (id) =>
+        set((state) => ({
+            menuItems: state.menuItems.filter((i) => i.id !== id)
+        })),
+    setPluginEnabled: (id, enabled) =>
+        set((state) => ({
+            pluginStates: { ...state.pluginStates, [id]: enabled }
+        })),
     updateMapState: (lat, lng, zoom) =>
         set(() => ({
             mapState: {lat, lng, zoom}
@@ -178,6 +206,9 @@ export const useStore = create<IRISState>((set) => ({
     selectPortal: (id) => set(() => ({ selectedPortalId: id })),
     playerStats: null,
     setPlayerStats: (stats) => set(() => ({ playerStats: stats })),
+
+    themeId: 'DEFAULT',
+    setTheme: (id) => set(() => ({ themeId: id })),
 
     // Initialize layer visibility states
     showFields: true,
