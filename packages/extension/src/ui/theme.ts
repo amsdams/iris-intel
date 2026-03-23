@@ -69,9 +69,6 @@ export const THEMES: Record<string, ThemeColors> = {
     }
 };
 
-// Deprecated: use THEMES from store instead. Keeping for compatibility during migration.
-export const TEAM_COLOUR: Record<string, string> = THEMES.DEFAULT;
-
 export const TEAM_NAME: Record<string, string> = {
     E: 'Enlightened',
     R: 'Resistance',

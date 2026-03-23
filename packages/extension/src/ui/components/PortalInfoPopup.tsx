@@ -18,7 +18,8 @@ export function PortalInfoPopup() {
 
     if (!portal) return null;
 
-    const colour = theme[portal.team as keyof typeof theme] || UI_COLORS.TEXT_BASE;
+    const factionKey = portal.team as 'E' | 'R' | 'M' | 'N';
+    const colour = theme[factionKey] || theme.N || UI_COLORS.TEXT_BASE;
     const teamName = TEAM_NAME[portal.team] || 'Unknown';
 
     return (
