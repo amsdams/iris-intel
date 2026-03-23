@@ -90,7 +90,7 @@ export function PortalInfoPopup() {
 
             {portal.owner && (
                 <div style={{ fontSize: '0.85em', color: UI_COLORS.TEXT_MUTED, marginBottom: '8px' }}>
-                    Owner: <span style={{ color: UI_COLORS.TEXT_BASE }}>{portal.owner}</span>
+                    Owner: <span style={{ color: colour }}>{portal.owner}</span>
                 </div>
             )}
 
@@ -114,7 +114,7 @@ export function PortalInfoPopup() {
                                 border: `1px solid ${UI_COLORS.BORDER_DIM}`,
                             }}>
                                 <div style={{ color: '#ffff00' }}>L{r.level}</div>
-                                <div style={{ color: UI_COLORS.TEXT_MUTED }}>{r.owner}</div>
+                                <div style={{ color: colour }}>{r.owner}</div>
                             </div>
                         ))}
                     </div>
@@ -139,7 +139,7 @@ export function PortalInfoPopup() {
                                 justifyContent: 'space-between',
                             }}>
                                 <span style={{ color: RARITY_COLOUR[m.rarity] || UI_COLORS.TEXT_BASE }}>{m.name}</span>
-                                <span style={{ color: '#666' }}>{m.owner}</span>
+                                <span style={{ color: colour }}>{m.owner}</span>
                             </div>
                         ))}
                     </div>
