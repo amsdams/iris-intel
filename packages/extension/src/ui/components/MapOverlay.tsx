@@ -416,12 +416,11 @@ export function MapOverlay() {
                 
                 el.innerHTML = `
                     <div style="display: flex; flex-direction: column; align-items: center; cursor: pointer;">
-                        <div style="background: ${color}; width: 18px; height: 18px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5);"></div>
-                        ${label ? `<div style="color: white; font-weight: bold; font-size: 11px; text-shadow: 0 0 3px black; margin-top: 4px; background: rgba(0,0,0,0.4); padding: 1px 4px; border-radius: 4px;">${label}</div>` : ''}
+                        <div style="background: ${color}; width: 14px; height: 14px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5);"></div>
                     </div>
                 `;
 
-                const marker = new maplibregl.Marker({ element: el })
+                const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
                     .setLngLat(f.geometry.coordinates)
                     .setPopup(new maplibregl.Popup({ offset: 25, closeButton: true }).setHTML(`
                         <div style="color: #000; padding: 5px; font-family: sans-serif; font-size: 12px; line-height: 1.4;">

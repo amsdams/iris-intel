@@ -102,18 +102,7 @@ const PlayerTrackerPlugin: IRISPlugin = {
         // Re-generate the final feature list: All lines + ONE point per player
         const finalFeatures: GeoJSON.Feature[] = features.filter(f => f.geometry.type === 'LineString');
         
-        let lastOverallActivity: (Location & { name: string }) | null = null;
-
-        // Find the absolute last activity first to know who gets the "(new)" label
         playerLocations.forEach((loc: Location, name) => {
-            if (!lastOverallActivity || loc.time > lastOverallActivity.time) {
-                lastOverallActivity = { ...loc, name };
-            }
-        });
-
-        playerLocations.forEach((loc: Location, name) => {
-            const isLatest = lastOverallActivity && lastOverallActivity.name === name && lastOverallActivity.time === loc.time;
-            
             finalFeatures.push({
                 type: 'Feature',
                 geometry: {
@@ -127,7 +116,6 @@ const PlayerTrackerPlugin: IRISPlugin = {
                     portalName: loc.portalName,
                     lat: loc.lat,
                     lng: loc.lng,
-                    label: isLatest ? '(new)' : null,
                     isPlayerMarker: true,
                 },
             });
