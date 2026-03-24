@@ -124,7 +124,7 @@ function parsePlexts(data: any): any[] {
                 markup,
                 categories,
                 team: normalizeTeam(team),
-                type: plextType || 'SYSTEM_BROADCAST',
+                type: plextType,
             };
         });
     } catch (e) {
