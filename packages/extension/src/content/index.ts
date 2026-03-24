@@ -223,6 +223,14 @@ window.addEventListener('message', (event) => {
         break;
     }
 
+    case 'IRIS_REQUEST_SUCCESS': {
+        useStore.getState().addSuccessfulRequest({
+            url: event.data.url,
+            time: event.data.time
+        });
+        break;
+    }
+
     case 'IRIS_JS_ERROR': {
         useStore.getState().addJSError({
             message: event.data.message,

@@ -8,6 +8,8 @@ export function StatusBar() {
     const lastRequestUrl = useStore((state) => state.lastRequestUrl);
     const failedRequests = useStore((state) => state.failedRequests);
     const clearFailedRequests = useStore((state) => state.clearFailedRequests);
+    const successfulRequests = useStore((state) => state.successfulRequests);
+    const clearSuccessfulRequests = useStore((state) => state.clearSuccessfulRequests);
     const jsErrors = useStore((state) => state.jsErrors);
     const clearJSErrors = useStore((state) => state.clearJSErrors);
     
@@ -30,6 +32,7 @@ export function StatusBar() {
         e.stopPropagation();
         clearFailedRequests();
         clearJSErrors();
+        clearSuccessfulRequests();
         setIsExpanded(false);
     };
 
@@ -65,11 +68,11 @@ export function StatusBar() {
                     overflowY: 'auto', 
                     padding: SPACING.SM,
                     borderBottom: `1px solid ${UI_COLORS.BORDER_DIM}`,
-                    background: 'rgba(20, 0, 0, 0.4)'
+                    background: 'rgba(0, 10, 20, 0.4)'
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: SPACING.SM, borderBottom: '1px solid #444', paddingBottom: '4px' }}>
-                        <span style={{ color: '#ff5555', fontWeight: 'bold' }}>
-                            ERRORS: {failedRequests.length} NET, {jsErrors.length} JS
+                        <span style={{ color: hasErrors ? '#ff5555' : UI_COLORS.AQUA, fontWeight: 'bold' }}>
+                            LOGS: {successfulRequests.length} OK, {failedRequests.length} NET, {jsErrors.length} JS
                         </span>
                         <span 
                             onClick={handleClear}
@@ -98,10 +101,10 @@ export function StatusBar() {
 
                     {/* Net Errors Section */}
                     {failedRequests.length > 0 && (
-                        <div>
+                        <div style={{ marginBottom: SPACING.MD }}>
                             <div style={{ color: '#ff5555', marginBottom: '4px', borderBottom: '1px solid #440000' }}>NETWORK ERRORS</div>
                             {failedRequests.map((req, i) => (
-                                <div key={`net-${i}`} style={{ marginBottom: '4px', borderBottom: '1px solid #222', paddingBottom: '2px' }}>
+                                <div key={`net-err-${i}`} style={{ marginBottom: '4px', borderBottom: '1px solid #222', paddingBottom: '2px' }}>
                                     <div style={{ color: '#ff5555', display: 'flex', justifyContent: 'space-between' }}>
                                         <span>[{new Date(req.time).toLocaleTimeString()}] {getEndpointName(req.url)}</span>
                                         <span>STATUS: {req.status}</span>
@@ -114,8 +117,25 @@ export function StatusBar() {
                         </div>
                     )}
 
-                    {!hasErrors && (
-                        <div style={{ padding: SPACING.MD, textAlign: 'center', color: '#666' }}>No errors recorded</div>
+                    {/* Successful Requests Section */}
+                    {successfulRequests.length > 0 && (
+                        <div>
+                            <div style={{ color: UI_COLORS.AQUA, marginBottom: '4px', borderBottom: '1px solid #004444' }}>SUCCESSFUL REQUESTS</div>
+                            {successfulRequests.map((req, i) => (
+                                <div key={`net-ok-${i}`} style={{ marginBottom: '4px', borderBottom: '1px solid #222', paddingBottom: '2px' }}>
+                                    <div style={{ color: UI_COLORS.AQUA }}>
+                                        [{new Date(req.time).toLocaleTimeString()}] {getEndpointName(req.url)}
+                                    </div>
+                                    <div style={{ color: '#888', fontSize: '9px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        OK — {req.url}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {!hasErrors && successfulRequests.length === 0 && (
+                        <div style={{ padding: SPACING.MD, textAlign: 'center', color: '#666' }}>No requests recorded</div>
                     )}
                 </div>
             )}
@@ -132,13 +152,14 @@ export function StatusBar() {
                         width: '8px', 
                         height: '8px', 
                         borderRadius: '50%', 
-                        background: activeRequests > 0 ? UI_COLORS.AQUA : (hasErrors ? '#ff0000' : '#333'),
+                        background: activeRequests > 0 ? UI_COLORS.AQUA : (hasErrors ? '#ff0000' : (successfulRequests.length > 0 ? '#00ff00' : '#333')),
                         marginRight: SPACING.SM,
-                        boxShadow: activeRequests > 0 ? `0 0 5px ${UI_COLORS.AQUA}` : (hasErrors ? '0 0 5px #ff0000' : 'none'),
+                        boxShadow: activeRequests > 0 ? `0 0 5px ${UI_COLORS.AQUA}` : (hasErrors ? '0 0 5px #ff0000' : (successfulRequests.length > 0 ? '0 0 5px #00ff00' : 'none')),
                         transition: 'background 0.3s ease, box-shadow 0.3s ease'
                     }} />
                     <span style={{ color: activeRequests > 0 ? UI_COLORS.TEXT_BASE : (hasErrors ? '#ff5555' : UI_COLORS.TEXT_MUTED) }}>
                         {activeRequests > 0 ? `NET: ${activeRequests} ACTIVE` : 'NET: IDLE'}
+                        {successfulRequests.length > 0 && ` (${successfulRequests.length} OK)`}
                         {failedRequests.length > 0 && ` (${failedRequests.length} NET)`}
                         {jsErrors.length > 0 && ` (${jsErrors.length} JS)`}
                     </span>

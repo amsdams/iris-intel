@@ -81,6 +81,11 @@ export interface FailedRequest {
     time: number;
 }
 
+export interface SuccessfulRequest {
+    url: string;
+    time: number;
+}
+
 export interface JSError {
     message: string;
     source?: string;
@@ -133,6 +138,9 @@ interface IRISState {
     failedRequests: FailedRequest[];
     addFailedRequest: (request: FailedRequest) => void;
     clearFailedRequests: () => void;
+    successfulRequests: SuccessfulRequest[];
+    addSuccessfulRequest: (request: SuccessfulRequest) => void;
+    clearSuccessfulRequests: () => void;
     jsErrors: JSError[];
     addJSError: (error: JSError) => void;
     clearJSErrors: () => void;
@@ -260,6 +268,11 @@ export const useStore = create<IRISState>()(
         failedRequests: [request, ...state.failedRequests].slice(0, 50) 
     })),
     clearFailedRequests: () => set({ failedRequests: [] }),
+    successfulRequests: [],
+    addSuccessfulRequest: (request) => set((state) => ({ 
+        successfulRequests: [request, ...state.successfulRequests].slice(0, 50) 
+    })),
+    clearSuccessfulRequests: () => set({ successfulRequests: [] }),
     jsErrors: [],
     addJSError: (error) => set((state) => ({ 
         jsErrors: [error, ...state.jsErrors].slice(0, 50) 

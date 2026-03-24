@@ -162,7 +162,13 @@
             const url: string = (this as any)._iris_url || '';
             if (url.includes('getEntities') || url.includes('getPortalDetails') || url.includes('getPlexts')) {
                 window.postMessage({ type: 'IRIS_REQUEST_END' }, '*');
-                if (this.status !== 200) {
+                if (this.status === 200) {
+                    window.postMessage({
+                        type: 'IRIS_REQUEST_SUCCESS',
+                        url,
+                        time: Date.now()
+                    }, '*');
+                } else if (this.status !== 200) {
                     window.postMessage({
                         type: 'IRIS_REQUEST_FAILED',
                         url,
@@ -244,6 +250,11 @@
                 response.ok &&
                 (url.includes('getEntities') || url.includes('getPortalDetails') || url.includes('getPlexts'))
             ) {
+                window.postMessage({
+                    type: 'IRIS_REQUEST_SUCCESS',
+                    url,
+                    time: Date.now()
+                }, '*');
                 try {
                     const data = await response.clone().json();
                     window.postMessage({type: 'IRIS_DATA', url, data}, '*');
