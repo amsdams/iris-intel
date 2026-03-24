@@ -133,6 +133,10 @@
     ) {
         const url: string = (this as any)._iris_url || '';
 
+        if (url.includes('getEntities') || url.includes('getPortalDetails') || url.includes('getPlexts')) {
+            window.postMessage({ type: 'IRIS_REQUEST_START', url }, '*');
+        }
+
         if (body && url.includes('/r/')) {
             try {
                 const requestData = JSON.parse(body as string);
@@ -155,8 +159,21 @@
         }
 
         this.addEventListener('load', function (this: XMLHttpRequest) {
-            if (this.status !== 200) return;
             const url: string = (this as any)._iris_url || '';
+            if (url.includes('getEntities') || url.includes('getPortalDetails') || url.includes('getPlexts')) {
+                window.postMessage({ type: 'IRIS_REQUEST_END' }, '*');
+                if (this.status !== 200) {
+                    window.postMessage({
+                        type: 'IRIS_REQUEST_FAILED',
+                        url,
+                        status: this.status,
+                        statusText: this.statusText,
+                        time: Date.now()
+                    }, '*');
+                }
+            }
+
+            if (this.status !== 200) return;
 
             if (
                 url.includes('getEntities') ||
@@ -175,6 +192,20 @@
             }
         });
 
+        this.addEventListener('error', function (this: XMLHttpRequest) {
+            const url: string = (this as any)._iris_url || '';
+            if (url.includes('getEntities') || url.includes('getPortalDetails') || url.includes('getPlexts')) {
+                window.postMessage({ type: 'IRIS_REQUEST_END' }, '*');
+                window.postMessage({
+                    type: 'IRIS_REQUEST_FAILED',
+                    url,
+                    status: this.status,
+                    statusText: this.statusText || 'Network Error',
+                    time: Date.now()
+                }, '*');
+            }
+        });
+
         return origSend.apply(this, arguments as any);
     };
 
@@ -185,23 +216,59 @@
     const originalFetch = window.fetch;
 
     window.fetch = async (...args): Promise<Response> => {
-        const response = await originalFetch(...args);
         const url =
             typeof args[0] === 'string' ? args[0] : (args[0] as Request).url;
+        const isIntelApi = url.includes('getEntities') || url.includes('getPortalDetails') || url.includes('getPlexts');
 
-        if (
-            response.ok &&
-            (url.includes('getEntities') || url.includes('getPortalDetails') || url.includes('getPlexts'))
-        ) {
-            try {
-                const data = await response.clone().json();
-                window.postMessage({type: 'IRIS_DATA', url, data}, '*');
-            } catch (e) {
-                console.error('IRIS: Failed to parse fetch response', e);
-            }
+        if (isIntelApi) {
+            window.postMessage({ type: 'IRIS_REQUEST_START', url }, '*');
         }
 
-        return response;
+        try {
+            const response = await originalFetch(...args);
+
+            if (
+                !response.ok &&
+                (url.includes('getEntities') || url.includes('getPortalDetails') || url.includes('getPlexts'))
+            ) {
+                window.postMessage({
+                    type: 'IRIS_REQUEST_FAILED',
+                    url,
+                    status: response.status,
+                    statusText: response.statusText,
+                    time: Date.now()
+                }, '*');
+            }
+
+            if (
+                response.ok &&
+                (url.includes('getEntities') || url.includes('getPortalDetails') || url.includes('getPlexts'))
+            ) {
+                try {
+                    const data = await response.clone().json();
+                    window.postMessage({type: 'IRIS_DATA', url, data}, '*');
+                } catch (e) {
+                    console.error('IRIS: Failed to parse fetch response', e);
+                }
+            }
+
+            return response;
+        } catch (e: any) {
+            if (isIntelApi) {
+                window.postMessage({
+                    type: 'IRIS_REQUEST_FAILED',
+                    url,
+                    status: 0,
+                    statusText: e.message || 'Network Error',
+                    time: Date.now()
+                }, '*');
+            }
+            throw e;
+        } finally {
+            if (isIntelApi) {
+                window.postMessage({ type: 'IRIS_REQUEST_END' }, '*');
+            }
+        }
     };
 
     // ---------------------------------------------------------------------------

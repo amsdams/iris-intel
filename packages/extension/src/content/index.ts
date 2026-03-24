@@ -203,6 +203,26 @@ window.addEventListener('message', (event) => {
       break;
     }
 
+    case 'IRIS_REQUEST_START': {
+        useStore.getState().onRequestStart(event.data.url);
+        break;
+    }
+
+    case 'IRIS_REQUEST_END': {
+        useStore.getState().onRequestEnd();
+        break;
+    }
+
+    case 'IRIS_REQUEST_FAILED': {
+        useStore.getState().addFailedRequest({
+            url: event.data.url,
+            status: event.data.status,
+            statusText: event.data.statusText,
+            time: event.data.time
+        });
+        break;
+    }
+
       // Portal click — forward to interceptor to trigger getPortalDetails XHR
     case 'IRIS_PORTAL_DETAILS_REQUEST': {
       window.postMessage({

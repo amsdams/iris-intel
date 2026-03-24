@@ -9,6 +9,7 @@ import { PortalInfoPopup } from './PortalInfoPopup';
 import { CommPopup } from './CommPopup';
 import { ThemePopup } from '../../../../plugins/src/theme-selector/ThemePopup';
 import { PluginsPopup } from './PluginsPopup';
+import { StatusBar } from './StatusBar';
 
 // ---------------------------------------------------------------------------
 // IRISOverlay
@@ -77,6 +78,8 @@ export function IRISOverlay() {
             {showPluginsPopup && (
                 <PluginsPopup onClose={togglePluginsPopup} />
             )}
+
+            <StatusBar />
         </Fragment>
     );
 }

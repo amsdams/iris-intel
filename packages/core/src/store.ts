@@ -74,6 +74,13 @@ export interface MenuItem {
     onClick: () => void;
 }
 
+export interface FailedRequest {
+    url: string;
+    status: number;
+    statusText: string;
+    time: number;
+}
+
 interface IRISState {
     portals: Record<string, Portal>;
     links: Record<string, Link>;
@@ -109,6 +116,14 @@ interface IRISState {
 
     themeId: string;
     setTheme: (id: string) => void;
+
+    activeRequests: number;
+    lastRequestUrl: string;
+    onRequestStart: (url: string) => void;
+    onRequestEnd: () => void;
+    failedRequests: FailedRequest[];
+    addFailedRequest: (request: FailedRequest) => void;
+    clearFailedRequests: () => void;
 
     // Layer visibility states
     showFields: boolean;
@@ -218,6 +233,21 @@ export const useStore = create<IRISState>()(
 
     themeId: 'DEFAULT',
     setTheme: (id) => set(() => ({ themeId: id })),
+
+    activeRequests: 0,
+    lastRequestUrl: '',
+    onRequestStart: (url) => set((state) => ({ 
+        activeRequests: state.activeRequests + 1,
+        lastRequestUrl: url
+    })),
+    onRequestEnd: () => set((state) => ({ 
+        activeRequests: Math.max(0, state.activeRequests - 1) 
+    })),
+    failedRequests: [],
+    addFailedRequest: (request) => set((state) => ({ 
+        failedRequests: [request, ...state.failedRequests].slice(0, 50) 
+    })),
+    clearFailedRequests: () => set({ failedRequests: [] }),
 
     // Initialize layer visibility states
     showFields: true,
