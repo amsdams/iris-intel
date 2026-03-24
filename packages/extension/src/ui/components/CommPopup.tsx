@@ -51,6 +51,27 @@ export function CommPopup({ onClose }: CommPopupProps) {
                 color = theme[team] || UI_COLORS.TEXT_BASE;
             } else if (type === 'PORTAL') {
                 color = theme.AQUA;
+                return (
+                    <span 
+                        key={i} 
+                        style={{ 
+                            color, 
+                            cursor: 'pointer',
+                            borderBottom: `1px dotted ${theme.AQUA}`,
+                        }}
+                        onClick={() => {
+                            if (data.latE6 && data.lngE6) {
+                                window.postMessage({
+                                    type: 'IRIS_MOVE_MAP',
+                                    center: { lat: data.latE6 / 1e6, lng: data.lngE6 / 1e6 },
+                                    zoom: 17
+                                }, '*');
+                            }
+                        }}
+                    >
+                        {text}
+                    </span>
+                );
             } else if (type === 'SECURE') {
                 color = '#ffff00';
             } else if (type === 'SENDER') {
