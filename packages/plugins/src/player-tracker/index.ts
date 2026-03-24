@@ -8,12 +8,15 @@ interface Location {
   faction?: string;
 }
 
+const EXPIRATION_MS = 60 * 60 * 1000; // 1 hour
+const TICK_MS = 30 * 1000; // 30 seconds update
+
 const PlayerTrackerPlugin: IRISPlugin = {
   manifest: {
     id: 'player-tracker',
     name: 'Player Tracker',
-    version: '1.0.0',
-    description: 'Visualizes player movement paths from COMM messages.',
+    version: '1.1.0',
+    description: 'Visualizes player movement paths from COMM messages with fading.',
     author: 'IRIS Team',
   },
   setup: (api: IRIS_API) => {
@@ -21,7 +24,6 @@ const PlayerTrackerPlugin: IRISPlugin = {
     const playerLocations = new Map<string, Location>();
     
     // We'll accumulate features here for this session
-    // Note: This is a simplified in-memory store for the plugin
     let features: GeoJSON.Feature[] = [];
 
     // Helper to get faction color
@@ -34,9 +36,62 @@ const PlayerTrackerPlugin: IRISPlugin = {
         return '#ffffff';
     };
 
-    const unsubscribe = api.plexts.subscribe((plexts: Plext[]) => {
-      let featuresChanged = false;
+    const updateMap = () => {
+        const now = Date.now();
+        
+        // Filter out expired lines
+        features = features.filter(f => {
+            const time = f.properties?.time;
+            return time && (now - time) < EXPIRATION_MS;
+        });
 
+        // Re-generate final features list
+        const finalFeatures: GeoJSON.Feature[] = [];
+
+        // 1. Process Lines (Lines were added with time in properties)
+        features.forEach(f => {
+            if (f.geometry.type === 'LineString') {
+                const age = now - (f.properties?.time || 0);
+                const opacity = Math.max(0, 1 - (age / EXPIRATION_MS));
+                finalFeatures.push({
+                    ...f,
+                    properties: { ...f.properties, opacity }
+                });
+            }
+        });
+
+        // 2. Process Player Points
+        playerLocations.forEach((loc: Location, name) => {
+            const age = now - loc.time;
+            if (age < EXPIRATION_MS) {
+                const opacity = Math.max(0.1, 1 - (age / EXPIRATION_MS));
+                finalFeatures.push({
+                    type: 'Feature',
+                    geometry: {
+                        type: 'Point',
+                        coordinates: [loc.lng, loc.lat],
+                    },
+                    properties: {
+                        color: getFactionColor(loc.faction || 'N'),
+                        name: name,
+                        time: loc.time,
+                        portalName: loc.portalName,
+                        lat: loc.lat,
+                        lng: loc.lng,
+                        isPlayerMarker: true,
+                        opacity: opacity,
+                    },
+                });
+            } else {
+                // If the player hasn't moved for over an hour, remove them from tracking
+                playerLocations.delete(name);
+            }
+        });
+
+        api.map.setFeatures(finalFeatures);
+    };
+
+    const unsubscribe = api.plexts.subscribe((plexts: Plext[]) => {
       // Sort plexts chronologically (oldest to newest)
       const sortedPlexts = [...plexts].sort((a, b) => a.time - b.time);
 
@@ -74,8 +129,8 @@ const PlayerTrackerPlugin: IRISPlugin = {
           };
           const lastLoc = playerLocations.get(name);
 
-          // If we have a last location, and it's different from current
-          if (lastLoc && (lastLoc.lat !== loc.lat || lastLoc.lng !== loc.lng)) {
+          // If we have a last location, and it's different from current, and it's recent
+          if (lastLoc && (lastLoc.lat !== loc.lat || lastLoc.lng !== loc.lng) && (loc.time - lastLoc.time < EXPIRATION_MS)) {
             // Draw a dashed line - using Yellow (#ffff00)
             features.push({
               type: 'Feature',
@@ -88,9 +143,9 @@ const PlayerTrackerPlugin: IRISPlugin = {
               },
               properties: {
                 color: '#ffff00',
+                time: loc.time, // Store the time for expiration and fading
               },
             });
-            featuresChanged = true;
           }
 
           // Update state
@@ -98,39 +153,21 @@ const PlayerTrackerPlugin: IRISPlugin = {
         }
       });
 
-      if (featuresChanged || sortedPlexts.length > 0) {
-        // Re-generate the final feature list: All lines + ONE point per player
-        const finalFeatures: GeoJSON.Feature[] = features.filter(f => f.geometry.type === 'LineString');
-        
-        playerLocations.forEach((loc: Location, name) => {
-            finalFeatures.push({
-                type: 'Feature',
-                geometry: {
-                    type: 'Point',
-                    coordinates: [loc.lng, loc.lat],
-                },
-                properties: {
-                    color: getFactionColor(loc.faction || 'N'),
-                    name: name,
-                    time: loc.time,
-                    portalName: loc.portalName,
-                    lat: loc.lat,
-                    lng: loc.lng,
-                    isPlayerMarker: true,
-                },
-            });
-        });
-
-        api.map.setFeatures(finalFeatures);
-      }
+      updateMap();
     });
 
-    // Store unsubscribe function on the api object (hacky but effective for simple plugin lifecycle)
+    const ticker = setInterval(updateMap, TICK_MS);
+
+    // Store objects on the api object for cleanup
     (api as any)._playerTrackerUnsub = unsubscribe;
+    (api as any)._playerTrackerTicker = ticker;
   },
   teardown: (api: IRIS_API) => {
     if ((api as any)._playerTrackerUnsub) {
       ((api as any)._playerTrackerUnsub as () => void)();
+    }
+    if ((api as any)._playerTrackerTicker) {
+      clearInterval((api as any)._playerTrackerTicker);
     }
     api.map.setFeatures([]); // Clear map
   },

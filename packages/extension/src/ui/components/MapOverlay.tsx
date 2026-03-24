@@ -125,6 +125,7 @@ export function MapOverlay() {
               'line-width': 3,
               'line-dasharray': [2, 1],
               'line-color': ['get', 'color'],
+              'line-opacity': ['coalesce', ['get', 'opacity'], 1],
             },
           },
           {
@@ -158,6 +159,8 @@ export function MapOverlay() {
               'circle-color': ['get', 'color'],
               'circle-stroke-width': 2,
               'circle-stroke-color': '#fff',
+              'circle-opacity': ['coalesce', ['get', 'opacity'], 1],
+              'circle-stroke-opacity': ['coalesce', ['get', 'opacity'], 1],
             },
           },
         ],
@@ -237,22 +240,8 @@ export function MapOverlay() {
       });
 
       if (nearestPlugin && minPluginDist < threshold) {
-        const props = nearestPlugin.properties;
-        if (props.isLast) {
-            new maplibregl.Popup({ closeButton: true, className: 'iris-plugin-popup' })
-                .setLngLat(nearestPlugin.geometry.coordinates)
-                .setHTML(`
-                    <div style="color: #000; padding: 5px; font-family: sans-serif; font-size: 12px; line-height: 1.4;">
-                        <strong style="font-size: 14px; border-bottom: 1px solid #ccc; display: block; margin-bottom: 5px; padding-bottom: 2px;">Last Player Activity</strong>
-                        <div><strong>Player:</strong> ${props.name}</div>
-                        <div><strong>Time:</strong> ${new Date(props.time).toLocaleString()}</div>
-                        <div><strong>Portal:</strong> ${props.portalName}</div>
-                        <div style="margin-top: 5px; color: #666; font-size: 10px;">${props.lat.toFixed(6)}, ${props.lng.toFixed(6)}</div>
-                    </div>
-                `)
-                .addTo(map.current);
-            return;
-        }
+        useStore.getState().setSelectedPluginFeature(nearestPlugin.properties);
+        return;
       }
 
       if (!allPortals.length) return;
@@ -435,17 +424,12 @@ export function MapOverlay() {
                     </div>
                 `;
 
-                const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+                el.onclick = () => {
+                    useStore.getState().setSelectedPluginFeature(f.properties);
+                };
+
+                const marker = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -15] })
                     .setLngLat(f.geometry.coordinates)
-                    .setPopup(new maplibregl.Popup({ offset: 25, closeButton: true }).setHTML(`
-                        <div style="color: #000; padding: 5px; font-family: sans-serif; font-size: 12px; line-height: 1.4;">
-                            <strong style="font-size: 14px; border-bottom: 1px solid #ccc; display: block; margin-bottom: 5px; padding-bottom: 2px;">Player Last Activity</strong>
-                            <div><strong>Player:</strong> ${f.properties.name}</div>
-                            <div><strong>Time:</strong> ${new Date(f.properties.time).toLocaleString()}</div>
-                            <div><strong>Portal:</strong> ${f.properties.portalName}</div>
-                            <div style="margin-top: 5px; color: #666; font-size: 10px;">${f.properties.lat.toFixed(6)}, ${f.properties.lng.toFixed(6)}</div>
-                        </div>
-                    `))
                     .addTo(map.current);
                 
                 pluginMarkers.current.push(marker);
