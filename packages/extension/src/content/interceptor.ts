@@ -372,7 +372,7 @@
 
                 const payload = {
                     v: intelVersion,
-                    tab: 'all',
+                    tab: event.data.tab || 'all',
                     minLatE6: Math.round(sw.lat() * 1e6),
                     maxLatE6: Math.round(ne.lat() * 1e6),
                     minLngE6: Math.round(sw.lng() * 1e6),

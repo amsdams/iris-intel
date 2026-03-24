@@ -116,7 +116,7 @@ function parsePlexts(data: any): any[] {
     try {
         return data.result.map((plext: any) => {
             const [id, time, plextData] = plext;
-            const { text, markup, categories, team } = plextData.plext;
+            const { text, markup, categories, team, plextType } = plextData.plext;
             return {
                 id,
                 time,
@@ -124,6 +124,7 @@ function parsePlexts(data: any): any[] {
                 markup,
                 categories,
                 team: normalizeTeam(team),
+                type: plextType,
             };
         });
     } catch (e) {
@@ -277,8 +278,17 @@ window.addEventListener('message', (event) => {
           break;
       }
       lastPlextRequestTime = now;
+      
+      // Fetch both "all" and "faction" tabs to get all message types
       window.postMessage({
         type: 'IRIS_PLEXTS_FETCH',
+        tab: 'all',
+        minTimestampMs: event.data.minTimestampMs,
+      }, '*');
+      
+      window.postMessage({
+        type: 'IRIS_PLEXTS_FETCH',
+        tab: 'faction',
         minTimestampMs: event.data.minTimestampMs,
       }, '*');
       break;

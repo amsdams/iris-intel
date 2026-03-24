@@ -1,5 +1,5 @@
 import { h } from 'preact';
-import { useEffect } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { useStore, normalizeTeam } from '@iris/core';
 import { Popup } from './Popup';
 import { THEMES, UI_COLORS, SPACING } from '../theme';
@@ -12,6 +12,7 @@ export function CommPopup({ onClose }: CommPopupProps) {
     const plexts = useStore((state) => state.plexts);
     const themeId = useStore((state) => state.themeId);
     const theme = THEMES[themeId] || THEMES.DEFAULT;
+    const [activeTab, setActiveTab] = useState('ALL');
 
     const formatTime = (ms: number) => {
         const date = new Date(ms);
@@ -26,6 +27,14 @@ export function CommPopup({ onClose }: CommPopupProps) {
     useEffect(() => {
         handleRefresh();
     }, []);
+
+    const filteredPlexts = plexts.filter(p => {
+        if (activeTab === 'ALL') return true;
+        if (activeTab === 'CHAT') return p.type === 'PLAYER_GENERATED';
+        if (activeTab === 'GLOBAL') return p.type === 'SYSTEM_BROADCAST';
+        if (activeTab === 'FACTION') return p.type === 'SYSTEM_NARROWCAST';
+        return true;
+    });
 
     const renderMarkup = (markup: any[]) => {
         return markup.map((m, i) => {
@@ -111,30 +120,67 @@ export function CommPopup({ onClose }: CommPopupProps) {
             style={{
                 top: '60px',
                 right: '20px',
-                width: '400px',
+                width: '450px',
+                height: '550px',
             }}
         >
+            <div style={{ display: 'flex', borderBottom: `1px solid ${UI_COLORS.BORDER_DIM}`, marginBottom: SPACING.SM }}>
+                {['ALL', 'CHAT', 'GLOBAL', 'FACTION'].map(tab => (
+                    <div 
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        style={{
+                            padding: '6px 12px',
+                            cursor: 'pointer',
+                            fontSize: '0.8em',
+                            borderBottom: activeTab === tab ? `2px solid ${UI_COLORS.AQUA}` : 'none',
+                            color: activeTab === tab ? UI_COLORS.AQUA : UI_COLORS.TEXT_MUTED,
+                            fontWeight: activeTab === tab ? 'bold' : 'normal',
+                        }}
+                    >
+                        {tab}
+                    </div>
+                ))}
+            </div>
+
             <div style={{
                 flex: 1,
                 overflowY: 'auto',
             }}>
-                {plexts.length === 0 ? (
+                {filteredPlexts.length === 0 ? (
                     <div style={{ padding: SPACING.LG, textAlign: 'center', color: UI_COLORS.TEXT_MUTED }}>
                         No messages yet
                     </div>
                 ) : (
-                    plexts.map((p) => (
+                    filteredPlexts.map((p) => (
                         <div key={p.id} style={{
                             marginBottom: SPACING.SM,
                             fontSize: '0.85em',
                             lineHeight: '1.4',
+                            borderLeft: p.type === 'PLAYER_GENERATED' ? 'none' : `3px solid ${p.type === 'SYSTEM_NARROWCAST' ? theme.AQUA : '#444'}`,
+                            paddingLeft: p.type === 'PLAYER_GENERATED' ? '0' : SPACING.SM,
                             borderBottom: `1px solid ${UI_COLORS.BORDER_DIM}`,
                             paddingBottom: SPACING.XS,
+                            background: p.type === 'SYSTEM_NARROWCAST' ? `${theme.AQUA}08` : 'transparent',
                         }}>
-                            <span style={{ color: UI_COLORS.TEXT_MUTED, marginRight: SPACING.SM }}>
-                                [{formatTime(p.time)}]
-                            </span>
-                            {p.markup ? renderMarkup(p.markup) : p.text}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                                <span style={{ color: UI_COLORS.TEXT_MUTED, fontSize: '0.8em' }}>
+                                    [{formatTime(p.time)}]
+                                </span>
+                                {p.type !== 'PLAYER_GENERATED' && (
+                                    <span style={{ 
+                                        fontSize: '0.75em', 
+                                        fontWeight: 'bold',
+                                        color: p.type === 'SYSTEM_NARROWCAST' ? theme.AQUA : '#888',
+                                        textTransform: 'uppercase'
+                                    }}>
+                                        {p.type === 'SYSTEM_NARROWCAST' ? 'Faction Alert' : 'System'}
+                                    </span>
+                                )}
+                            </div>
+                            <div style={{ opacity: p.type === 'PLAYER_GENERATED' ? 1 : 0.9 }}>
+                                {p.markup ? renderMarkup(p.markup) : p.text}
+                            </div>
                         </div>
                     ))
                 )}

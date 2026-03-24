@@ -60,6 +60,7 @@ export interface Plext {
     markup: any[];
     categories: number;
     team: string;
+    type: 'PLAYER_GENERATED' | 'SYSTEM_BROADCAST' | 'SYSTEM_NARROWCAST';
 }
 
 export interface StatsItem {
