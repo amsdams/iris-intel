@@ -55,9 +55,15 @@ export function MapOverlay() {
         sources: {
           osm: {
             type: 'raster',
-            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+            tiles: [
+              'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+              'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+              'https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+              'https://d.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'
+            ],
             tileSize: 256,
-            attribution: '&copy; OpenStreetMap contributors',
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            maxzoom: 20,
           },
           portals: {
             type: 'geojson',
@@ -78,16 +84,18 @@ export function MapOverlay() {
         },
         layers: [
           {
-            id: 'osm',
-            type: 'raster',
-            source: 'osm',
-          },
-          {
-            id: 'background-dim',
+            id: 'background-base',
             type: 'background',
             paint: {
               'background-color': '#000',
-              'background-opacity': 0.4,
+            },
+          },
+          {
+            id: 'osm',
+            type: 'raster',
+            source: 'osm',
+            paint: {
+              'raster-opacity': 0.6,
             },
           },
           {

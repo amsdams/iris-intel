@@ -22,7 +22,11 @@
     }
   ],
   "permissions": ["storage"],
-  "host_permissions": ["*://intel.ingress.com/*"],
+  "host_permissions": [
+    "*://intel.ingress.com/*",
+    "*://*.basemaps.cartocdn.com/*",
+    "*://demotiles.maplibre.org/*"
+  ],
   "web_accessible_resources": [
     {
       "resources": ["assets/*", "src/content/*"],
