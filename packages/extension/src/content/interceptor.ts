@@ -347,5 +347,28 @@
         }
     });
 
+    // ---------------------------------------------------------------------------
+    // JS Error Tracking
+    // ---------------------------------------------------------------------------
+
+    window.addEventListener('error', (event) => {
+        window.postMessage({
+            type: 'IRIS_JS_ERROR',
+            message: event.message,
+            source: event.filename,
+            lineno: event.lineno,
+            colno: event.colno,
+            time: Date.now()
+        }, '*');
+    });
+
+    window.addEventListener('unhandledrejection', (event) => {
+        window.postMessage({
+            type: 'IRIS_JS_ERROR',
+            message: `Unhandled Promise: ${event.reason?.message || event.reason}`,
+            time: Date.now()
+        }, '*');
+    });
+
     console.log('IRIS: Interceptor ready');
 })();

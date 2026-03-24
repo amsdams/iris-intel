@@ -223,6 +223,17 @@ window.addEventListener('message', (event) => {
         break;
     }
 
+    case 'IRIS_JS_ERROR': {
+        useStore.getState().addJSError({
+            message: event.data.message,
+            source: event.data.source,
+            lineno: event.data.lineno,
+            colno: event.data.colno,
+            time: event.data.time
+        });
+        break;
+    }
+
       // Portal click — forward to interceptor to trigger getPortalDetails XHR
     case 'IRIS_PORTAL_DETAILS_REQUEST': {
       window.postMessage({

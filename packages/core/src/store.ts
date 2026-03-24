@@ -81,6 +81,15 @@ export interface FailedRequest {
     time: number;
 }
 
+export interface JSError {
+    message: string;
+    source?: string;
+    lineno?: number;
+    colno?: number;
+    error?: any;
+    time: number;
+}
+
 interface IRISState {
     portals: Record<string, Portal>;
     links: Record<string, Link>;
@@ -124,6 +133,9 @@ interface IRISState {
     failedRequests: FailedRequest[];
     addFailedRequest: (request: FailedRequest) => void;
     clearFailedRequests: () => void;
+    jsErrors: JSError[];
+    addJSError: (error: JSError) => void;
+    clearJSErrors: () => void;
 
     // Layer visibility states
     showFields: boolean;
@@ -248,6 +260,11 @@ export const useStore = create<IRISState>()(
         failedRequests: [request, ...state.failedRequests].slice(0, 50) 
     })),
     clearFailedRequests: () => set({ failedRequests: [] }),
+    jsErrors: [],
+    addJSError: (error) => set((state) => ({ 
+        jsErrors: [error, ...state.jsErrors].slice(0, 50) 
+    })),
+    clearJSErrors: () => set({ jsErrors: [] }),
 
     // Initialize layer visibility states
     showFields: true,
