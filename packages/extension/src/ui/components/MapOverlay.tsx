@@ -2,7 +2,7 @@ import { h } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { useStore } from '@iris/core';
+import { useStore, normalizeTeam } from '@iris/core';
 import { THEMES } from '../theme';
 
 export function MapOverlay() {
@@ -172,7 +172,10 @@ export function MapOverlay() {
     });
 
     // Mark style as ready so data effects can run
-    map.current.on('load', () => setStyleLoaded(true));
+    map.current.on('load', () => {
+        console.log('IRIS: Map style loaded');
+        setStyleLoaded(true);
+    });
 
     // Forward user pan/zoom to Intel map via content script message
     map.current.on('moveend', () => {
@@ -186,8 +189,68 @@ export function MapOverlay() {
       }, '*');
     });
 
-    // Handle portal click event — runs in content script context where
-    // useStore and window.postMessage are fully accessible
+    // Manual Click Handler (Safer for Firefox security)
+    map.current.on('click', (e) => {
+        if (!map.current) return;
+        const { lng, lat } = e.lngLat;
+        const point = e.point;
+
+        // 1. Check for Portals (Manual Pixel Distance)
+        const allPortals = Object.values(useStore.getState().portals);
+        let nearestPortal = null;
+        let minPortalDist = 15; // 15px radius
+
+        for (const p of allPortals) {
+            // Quick bounds check before projecting
+            if (Math.abs(p.lng - lng) > 0.01 || Math.abs(p.lat - lat) > 0.01) continue;
+            
+            const pos = map.current.project([p.lng, p.lat]);
+            const dist = Math.sqrt(Math.pow(pos.x - point.x, 2) + Math.pow(pos.y - point.y, 2));
+            if (dist < minPortalDist) {
+                minPortalDist = dist;
+                nearestPortal = p;
+            }
+        }
+
+        if (nearestPortal) {
+            console.log('IRIS: Portal clicked (manual)', nearestPortal.id);
+            document.dispatchEvent(
+                new CustomEvent('iris:portal:click', { detail: { id: nearestPortal.id } })
+            );
+            return;
+        }
+
+        // 2. Check for Plugin Features (Lines/Points)
+        // Since queryRenderedFeatures is causing the crash, we'll rely on the Marker clicks
+        // for player pins, but for lines we'll skip for now to prevent crashes.
+    });
+
+    // Manual Cursor Handling (Throttled)
+    let lastMove = 0;
+    map.current.on('mousemove', (e) => {
+        const now = Date.now();
+        if (now - lastMove < 100) return; // limit to 10fps
+        lastMove = now;
+
+        if (!map.current) return;
+        const { lng, lat } = e.lngLat;
+        const point = e.point;
+
+        const allPortals = Object.values(useStore.getState().portals);
+        let found = false;
+        for (const p of allPortals) {
+            if (Math.abs(p.lng - lng) > 0.005 || Math.abs(p.lat - lat) > 0.005) continue;
+            const pos = map.current.project([p.lng, p.lat]);
+            const dist = Math.sqrt(Math.pow(pos.x - point.x, 2) + Math.pow(pos.y - point.y, 2));
+            if (dist < 12) {
+                found = true;
+                break;
+            }
+        }
+        map.current.getCanvas().style.cursor = found ? 'pointer' : '';
+    });
+
+    // Handle portal click event — runs in content script context
     const onPortalClick = (e: Event) => {
       const { id } = (e as CustomEvent).detail;
       useStore.getState().selectPortal(id);
@@ -243,15 +306,10 @@ export function MapOverlay() {
         const isResistance = p.team === 'R';
         const isEnlightened = p.team === 'E';
 
-        // Filter by team first
         if (isUnclaimed && !showUnclaimedPortals) return false;
         if (isMachina && !showMachina) return false;
         if (isResistance && !showResistance) return false;
         if (isEnlightened && !showEnlightened) return false;
-
-        // Then filter by level. Only apply level filter if the portal has a level.
-        // Unclaimed portals that explicitly have no level should not be filtered by showLevel[p.level].
-        // If p.level is defined, then apply the level filter.
         if (p.level !== undefined && !showLevel[p.level]) return false;
 
         return true;
@@ -325,19 +383,16 @@ export function MapOverlay() {
     const pluginSource = map.current.getSource('plugin-features') as maplibregl.GeoJSONSource;
     pluginSource?.setData(pluginFeatures as any);
 
-    // Sync HTML Markers for (new) activity
+    // Sync HTML Markers for player activity (Safer than GeoJSON layers in Firefox)
     if (map.current) {
-        // Clear old markers
         pluginMarkers.current.forEach(m => m.remove());
         pluginMarkers.current = [];
 
-        // Add new markers for all player points
         pluginFeatures.features.forEach((f: any) => {
             if (f.properties?.isPlayerMarker && f.geometry.type === 'Point' && map.current) {
                 const el = document.createElement('div');
                 el.style.pointerEvents = 'none';
                 const color = f.properties.color || '#fff';
-                const label = f.properties.label;
                 
                 el.innerHTML = `
                     <div style="display: flex; flex-direction: column; align-items: center; cursor: pointer; pointer-events: auto;">
@@ -364,52 +419,6 @@ export function MapOverlay() {
     }
 
   }, [portals, links, fields, showFields, showLinks, showResistance, showEnlightened, showMachina, showUnclaimedPortals, showLevel, styleLoaded, pluginFeatures]);
-
-  // ---------------------------------------------------------------------------
-  // Layer Click Handlers
-  // ---------------------------------------------------------------------------
-  useEffect(() => {
-    if (!map.current || !styleLoaded) return;
-
-    const onPortalLayerClick = (e: any) => {
-        if (e.features && e.features.length > 0) {
-            const feature = e.features[0];
-            document.dispatchEvent(
-                new CustomEvent('iris:portal:click', { detail: { id: feature.properties.id } })
-            );
-        }
-    };
-
-    const onPluginLayerClick = (e: any) => {
-        if (e.features && e.features.length > 0) {
-            useStore.getState().setSelectedPluginFeature(e.features[0].properties);
-        }
-    };
-
-    map.current.on('click', 'portals', onPortalLayerClick);
-    map.current.on('click', 'plugin-points', onPluginLayerClick);
-    map.current.on('click', 'plugin-lines', onPluginLayerClick);
-
-    // Update cursor on hover
-    const setPointer = () => { if (map.current) map.current.getCanvas().style.cursor = 'pointer'; };
-    const resetPointer = () => { if (map.current) map.current.getCanvas().style.cursor = ''; };
-
-    map.current.on('mouseenter', 'portals', setPointer);
-    map.current.on('mouseleave', 'portals', resetPointer);
-    map.current.on('mouseenter', 'plugin-points', setPointer);
-    map.current.on('mouseleave', 'plugin-points', resetPointer);
-    map.current.on('mouseenter', 'plugin-lines', setPointer);
-    map.current.on('mouseleave', 'plugin-lines', resetPointer);
-
-    return () => {
-        if (!map.current) return;
-        map.current.off('click', 'portals', onPortalLayerClick);
-        map.current.off('click', 'plugin-points', onPluginLayerClick);
-        map.current.off('click', 'plugin-lines', onPluginLayerClick);
-        map.current.off('mouseenter', 'portals', setPointer);
-        map.current.off('mouseleave', 'portals', resetPointer);
-    };
-  }, [styleLoaded]);
 
   return (
       <div
