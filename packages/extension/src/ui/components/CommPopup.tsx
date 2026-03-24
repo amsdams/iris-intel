@@ -32,6 +32,19 @@ export function CommPopup({ onClose }: CommPopupProps) {
             const type = m[0];
             const data = m[1];
             let color = UI_COLORS.TEXT_BASE;
+            let text = data.plain || data.name || data;
+
+            // Skip redundant FACTION labels (Resistance/Enlightened)
+            if (type === 'FACTION') {
+                return null;
+            }
+
+            // Skip the " agent " connector and other redundant team prefixes
+            if (type === 'TEXT') {
+                if (text === ' agent ' || text === ' agent') return null;
+                text = text.replace(/Resistance agent\s/g, '');
+                text = text.replace(/Enlightened agent\s/g, '');
+            }
 
             if (type === 'PLAYER') {
                 const team = normalizeTeam(data.team) as 'E' | 'R' | 'M' | 'N';
@@ -47,7 +60,7 @@ export function CommPopup({ onClose }: CommPopupProps) {
 
             return (
                 <span key={i} style={{ color }}>
-                    {data.plain || data.name || data}
+                    {text}
                 </span>
             );
         });
