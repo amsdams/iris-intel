@@ -353,6 +353,43 @@
                 break;
             }
 
+            // Fetch COMM plexts for current map bounds
+            case 'IRIS_PLEXTS_FETCH': {
+                if (!intelMap || !intelVersion) {
+                    console.warn('IRIS: Map or version not ready for plext fetch');
+                    break;
+                }
+
+                const csrfToken = getCsrfToken();
+                if (!csrfToken) {
+                    console.warn('IRIS: CSRF token not found');
+                    break;
+                }
+
+                const bounds = intelMap.getBounds();
+                const ne = bounds.getNorthEast();
+                const sw = bounds.getSouthWest();
+
+                const payload = {
+                    v: intelVersion,
+                    tab: 'all',
+                    minLatE6: Math.round(sw.lat() * 1e6),
+                    maxLatE6: Math.round(ne.lat() * 1e6),
+                    minLngE6: Math.round(sw.lng() * 1e6),
+                    maxLngE6: Math.round(ne.lng() * 1e6),
+                    minTimestampMs: event.data.minTimestampMs || -1,
+                    maxTimestampMs: -1,
+                    ascendingTimestampOrder: true
+                };
+
+                const req = new XMLHttpRequest();
+                req.open('POST', '/r/getPlexts', true);
+                req.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+                req.setRequestHeader('X-CSRFToken', csrfToken);
+                req.send(JSON.stringify(payload));
+                break;
+            }
+
             default:
                 break;
         }

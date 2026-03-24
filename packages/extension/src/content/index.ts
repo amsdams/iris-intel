@@ -7,6 +7,8 @@ import PlayerTrackerPlugin from '../../../plugins/src/player-tracker';
 
 // Tracks whether MapLibre has been given its initial position
 let hasInitialPosition = false;
+let lastPlextRequestTime = 0;
+const PLEXT_COOLDOWN_MS = 5000;
 
 // ---------------------------------------------------------------------------
 // Entity parsers
@@ -173,6 +175,8 @@ window.addEventListener('message', (event) => {
       hasInitialPosition = true;
       // Clamp zoom to minimum 14 so portals load immediately
       useStore.getState().updateMapState(lat, lng, Math.max(zoom, 14));
+      // Kick off initial COMM fetch to start player tracking
+      window.postMessage({ type: 'IRIS_PLEXTS_REQUEST', minTimestampMs: -1 }, '*');
       break;
     }
       // Intel tile request fired — used only for zoom level logging
@@ -187,6 +191,8 @@ window.addEventListener('message', (event) => {
           { type: 'IRIS_MOVE_MAP_INTERNAL', center, zoom },
           '*'
       );
+      // Refresh COMM for the new area
+      window.postMessage({ type: 'IRIS_PLEXTS_REQUEST', minTimestampMs: -1 }, '*');
       // Also update MapLibre position directly
       useStore.getState().updateMapState(center.lat, center.lng, zoom);
       break;
@@ -204,7 +210,11 @@ window.addEventListener('message', (event) => {
     }
 
     case 'IRIS_REQUEST_START': {
-        useStore.getState().onRequestStart(event.data.url);
+        const url = event.data.url;
+        if (url.includes('getPlexts')) {
+            lastPlextRequestTime = Date.now();
+        }
+        useStore.getState().onRequestStart(url);
         break;
     }
 
@@ -251,6 +261,20 @@ window.addEventListener('message', (event) => {
       break;
     }
 
+    case 'IRIS_PLEXTS_REQUEST': {
+      const now = Date.now();
+      if (now - lastPlextRequestTime < PLEXT_COOLDOWN_MS) {
+          console.log('IRIS: skipping proactive getPlexts (cooldown active)');
+          break;
+      }
+      lastPlextRequestTime = now;
+      window.postMessage({
+        type: 'IRIS_PLEXTS_FETCH',
+        minTimestampMs: event.data.minTimestampMs,
+      }, '*');
+      break;
+    }
+
       // Intel API data received
     case 'IRIS_DATA': {
       if (url.includes('getEntities')) {
@@ -272,6 +296,7 @@ window.addEventListener('message', (event) => {
         const portal = parsePortalDetails(data, params);
         if (portal) useStore.getState().updatePortals([portal]);
       } else if (url.includes('getPlexts')) {
+        lastPlextRequestTime = Date.now();
         const plexts = parsePlexts(data);
         if (plexts.length > 0) useStore.getState().updatePlexts(plexts);
       }

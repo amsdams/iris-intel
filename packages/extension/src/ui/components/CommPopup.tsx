@@ -1,4 +1,5 @@
 import { h } from 'preact';
+import { useEffect } from 'preact/hooks';
 import { useStore, normalizeTeam } from '@iris/core';
 import { Popup } from './Popup';
 import { THEMES, UI_COLORS, SPACING } from '../theme';
@@ -16,6 +17,15 @@ export function CommPopup({ onClose }: CommPopupProps) {
         const date = new Date(ms);
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
     };
+
+    const handleRefresh = () => {
+        const minTimestampMs = plexts.length > 0 ? plexts[0].time : -1;
+        window.postMessage({ type: 'IRIS_PLEXTS_REQUEST', minTimestampMs }, '*');
+    };
+
+    useEffect(() => {
+        handleRefresh();
+    }, []);
 
     const renderMarkup = (markup: any[]) => {
         return markup.map((m, i) => {
@@ -47,6 +57,23 @@ export function CommPopup({ onClose }: CommPopupProps) {
         <Popup
             onClose={onClose}
             title="COMM"
+            headerExtras={
+                <button 
+                    onClick={handleRefresh}
+                    style={{
+                        background: 'transparent',
+                        border: `1px solid ${UI_COLORS.AQUA}`,
+                        color: UI_COLORS.AQUA,
+                        fontSize: '9px',
+                        padding: '2px 6px',
+                        cursor: 'pointer',
+                        borderRadius: '2px',
+                        marginRight: SPACING.SM,
+                    }}
+                >
+                    REFRESH
+                </button>
+            }
             style={{
                 top: '60px',
                 right: '20px',

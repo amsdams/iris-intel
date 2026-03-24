@@ -7,6 +7,7 @@ interface PopupProps {
     title?: string;
     children: ComponentChildren;
     style?: h.JSX.CSSProperties;
+    headerExtras?: ComponentChildren;
 }
 
 const basePopupStyle: h.JSX.CSSProperties = {
@@ -40,7 +41,7 @@ const closeButtonStyle: h.JSX.CSSProperties = {
     zIndex: 1,
 };
 
-export function Popup({ onClose, title, children, style }: PopupProps) {
+export function Popup({ onClose, title, children, style, headerExtras }: PopupProps) {
     const [pos, setPos] = useState<{ x: number, y: number } | null>(null);
     const [dragging, setDragging] = useState(false);
     const dragStart = useRef({ x: 0, y: 0 });
@@ -97,6 +98,9 @@ export function Popup({ onClose, title, children, style }: PopupProps) {
         touchAction: 'none', // Prevents scrolling while dragging on mobile
         marginBottom: SPACING.SM,
         paddingRight: '30px', // Space for close button
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
     };
 
     // Merge styles. If pos is set, we override positioning from props
@@ -134,6 +138,7 @@ export function Popup({ onClose, title, children, style }: PopupProps) {
                 ) : (
                     <div style={{ height: '10px', width: '100%', pointerEvents: 'none' }} />
                 )}
+                {headerExtras}
             </div>
 
             <div style={{ flex: 1, overflowY: 'auto' }}>
