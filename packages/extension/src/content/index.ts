@@ -39,6 +39,8 @@ function parseEntities(data: any): {
           lat: entData[2] / 1e6,
           lng: entData[3] / 1e6,
           team,
+          level: entData[4],
+          health: entData[5],
         });
       } else if (entType === 'e') {
         links.push({

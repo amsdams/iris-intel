@@ -138,8 +138,14 @@ export function MapOverlay() {
                 15, 6,
               ],
               'circle-color': TEAM_COLOUR_EXPR,
-              'circle-stroke-width': 1,
-              'circle-stroke-color': '#fff',
+              'circle-opacity': [
+                'interpolate', ['linear'], ['get', 'health'],
+                0, 0.1,
+                100, 0.7
+              ],
+              'circle-stroke-width': 1.5,
+              'circle-stroke-color': TEAM_COLOUR_EXPR,
+              'circle-stroke-opacity': 1,
             },
           },
           {
@@ -312,6 +318,7 @@ export function MapOverlay() {
     map.current.setPaintProperty('fields', 'fill-color', TEAM_COLOUR_EXPR);
     map.current.setPaintProperty('links', 'line-color', TEAM_COLOUR_EXPR);
     map.current.setPaintProperty('portals', 'circle-color', TEAM_COLOUR_EXPR);
+    map.current.setPaintProperty('portals', 'circle-stroke-color', TEAM_COLOUR_EXPR);
   }, [themeId, styleLoaded]);
 
   // ---------------------------------------------------------------------------
@@ -342,7 +349,7 @@ export function MapOverlay() {
     }).map((p: any) => ({
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
-        properties: { id: p.id, team: p.team, name: p.name, level: p.level },
+        properties: { id: p.id, team: p.team, name: p.name, level: p.level, health: p.health ?? 100 },
     }));
 
     const portalSource = map.current.getSource('portals') as maplibregl.GeoJSONSource;

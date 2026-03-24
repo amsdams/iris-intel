@@ -6,6 +6,7 @@ export const normalizeTeam = (team: string | undefined): string => {
     const t = team.toUpperCase();
     if (t === 'ALIENS' || t === 'ENLIGHTENED' || t === 'E') return 'E';
     if (t === 'RESISTANCE' || t === 'R') return 'R';
-    if (t === 'MAC' || t === 'NEUTRAL' || t === 'MACHINA' || t === 'M') return 'M';
+    if (t === 'MAC' || t === 'MACHINA' || t === 'M') return 'M';
+    if (t === 'NEUTRAL' || t === 'N') return 'N';
     return 'N';
 };
