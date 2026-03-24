@@ -2,7 +2,7 @@ import { h } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { useStore, normalizeTeam } from '@iris/core';
+import { useStore } from '@iris/core';
 import { THEMES } from '../theme';
 
 export function MapOverlay() {
@@ -165,19 +165,13 @@ export function MapOverlay() {
           },
         ],
       },
-      // Start at 0,0 — jumps to Intel position on first getEntities batch
       center: [0, 0],
       zoom: 2,
       interactive: true,
     });
 
-    // Mark style as ready so data effects can run
-    map.current.on('load', () => {
-        console.log('IRIS: Map style loaded');
-        setStyleLoaded(true);
-    });
+    map.current.on('load', () => setStyleLoaded(true));
 
-    // Forward user pan/zoom to Intel map via content script message
     map.current.on('moveend', () => {
       if (!map.current || isMoving.current) return;
       const center = map.current.getCenter();
@@ -189,21 +183,19 @@ export function MapOverlay() {
       }, '*');
     });
 
-    // Manual Click Handler (Safer for Firefox security)
+    // Manual interaction check (Safer for Firefox)
     map.current.on('click', (e) => {
         if (!map.current) return;
         const { lng, lat } = e.lngLat;
         const point = e.point;
 
-        // 1. Check for Portals (Manual Pixel Distance)
+        // 1. Check for Portals
         const allPortals = Object.values(useStore.getState().portals);
         let nearestPortal = null;
-        let minPortalDist = 15; // 15px radius
+        let minPortalDist = 15; 
 
         for (const p of allPortals) {
-            // Quick bounds check before projecting
             if (Math.abs(p.lng - lng) > 0.01 || Math.abs(p.lat - lat) > 0.01) continue;
-            
             const pos = map.current.project([p.lng, p.lat]);
             const dist = Math.sqrt(Math.pow(pos.x - point.x, 2) + Math.pow(pos.y - point.y, 2));
             if (dist < minPortalDist) {
@@ -213,29 +205,22 @@ export function MapOverlay() {
         }
 
         if (nearestPortal) {
-            console.log('IRIS: Portal clicked (manual)', nearestPortal.id);
             document.dispatchEvent(
                 new CustomEvent('iris:portal:click', { detail: { id: nearestPortal.id } })
             );
             return;
         }
-
-        // 2. Check for Plugin Features (Lines/Points)
-        // Since queryRenderedFeatures is causing the crash, we'll rely on the Marker clicks
-        // for player pins, but for lines we'll skip for now to prevent crashes.
     });
 
-    // Manual Cursor Handling (Throttled)
     let lastMove = 0;
     map.current.on('mousemove', (e) => {
         const now = Date.now();
-        if (now - lastMove < 100) return; // limit to 10fps
+        if (now - lastMove < 100) return;
         lastMove = now;
 
         if (!map.current) return;
         const { lng, lat } = e.lngLat;
         const point = e.point;
-
         const allPortals = Object.values(useStore.getState().portals);
         let found = false;
         for (const p of allPortals) {
@@ -250,175 +235,127 @@ export function MapOverlay() {
         map.current.getCanvas().style.cursor = found ? 'pointer' : '';
     });
 
-    // Handle portal click event — runs in content script context
     const onPortalClick = (e: Event) => {
       const { id } = (e as CustomEvent).detail;
       useStore.getState().selectPortal(id);
-      window.postMessage({
-        type: 'IRIS_PORTAL_DETAILS_REQUEST',
-        guid: id,
-      }, '*');
+      window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: id }, '*');
     };
 
     document.addEventListener('iris:portal:click', onPortalClick);
 
-    // Cleanup — remove map and event listener on unmount
     return () => {
       map.current?.remove();
       document.removeEventListener('iris:portal:click', onPortalClick);
     };
   }, []);
 
-  // ---------------------------------------------------------------------------
-  // Sync MapLibre camera when store mapState changes
-  // ---------------------------------------------------------------------------
+  // Sync Camera
   useEffect(() => {
-    if (!map.current || !styleLoaded) return;
-    if (lat === 0 && lng === 0) return;
-
+    if (!map.current || !styleLoaded || (lat === 0 && lng === 0)) return;
     isMoving.current = true;
     map.current.jumpTo({ center: [lng, lat], zoom });
     setTimeout(() => { isMoving.current = false; }, 100);
   }, [lat, lng, zoom, styleLoaded]);
 
-  // ---------------------------------------------------------------------------
-  // Update layer colors when theme changes
-  // ---------------------------------------------------------------------------
+  // Sync Theme
   useEffect(() => {
     if (!map.current || !styleLoaded) return;
-
     map.current.setPaintProperty('fields', 'fill-color', TEAM_COLOUR_EXPR);
     map.current.setPaintProperty('links', 'line-color', TEAM_COLOUR_EXPR);
     map.current.setPaintProperty('portals', 'circle-color', TEAM_COLOUR_EXPR);
     map.current.setPaintProperty('portals', 'circle-stroke-color', TEAM_COLOUR_EXPR);
   }, [themeId, styleLoaded]);
 
-  // ---------------------------------------------------------------------------
-  // Update GeoJSON sources when portal/link/field data changes
-  // ---------------------------------------------------------------------------
+  // Sync GeoJSON Data
   useEffect(() => {
     if (!map.current || !styleLoaded) return;
 
-    // Filter portals
+    // Filter and update portals
     const filteredPortals = Object.values(portals).filter(p => {
-        const isUnclaimed = p.team === 'N';
-        const isMachina = p.team === 'M';
-        const isResistance = p.team === 'R';
-        const isEnlightened = p.team === 'E';
-
-        if (isUnclaimed && !showUnclaimedPortals) return false;
-        if (isMachina && !showMachina) return false;
-        if (isResistance && !showResistance) return false;
-        if (isEnlightened && !showEnlightened) return false;
+        if (p.team === 'N' && !showUnclaimedPortals) return false;
+        if (p.team === 'M' && !showMachina) return false;
+        if (p.team === 'R' && !showResistance) return false;
+        if (p.team === 'E' && !showEnlightened) return false;
         if (p.level !== undefined && !showLevel[p.level]) return false;
-
         return true;
     }).map((p: any) => ({
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
         properties: { id: p.id, team: p.team, name: p.name, level: p.level, health: p.health ?? 100 },
     }));
+    (map.current.getSource('portals') as any)?.setData({ type: 'FeatureCollection', features: filteredPortals });
 
-    const portalSource = map.current.getSource('portals') as maplibregl.GeoJSONSource;
-    portalSource?.setData({
-      type: 'FeatureCollection',
-      features: filteredPortals,
-    } as any);
-
-    // Filter links
+    // Links
     const filteredLinks = Object.values(links).filter(l => {
         if (!showLinks) return false;
-        const isResistance = l.team === 'R';
-        const isEnlightened = l.team === 'E';
-        const isMachina = l.team === 'M';
-
-        if (isResistance && !showResistance) return false;
-        if (isEnlightened && !showEnlightened) return false;
-        if (isMachina && !showMachina) return false;
+        if (l.team === 'R' && !showResistance) return false;
+        if (l.team === 'E' && !showEnlightened) return false;
+        if (l.team === 'M' && !showMachina) return false;
         return true;
     }).map((l: any) => ({
         type: 'Feature',
-        geometry: {
-          type: 'LineString',
-          coordinates: [[l.fromLng, l.fromLat], [l.toLng, l.toLat]],
-        },
+        geometry: { type: 'LineString', coordinates: [[l.fromLng, l.fromLat], [l.toLng, l.toLat]] },
         properties: { team: l.team },
     }));
+    (map.current.getSource('links') as any)?.setData({ type: 'FeatureCollection', features: filteredLinks });
 
-    const linkSource = map.current.getSource('links') as maplibregl.GeoJSONSource;
-    linkSource?.setData({
-      type: 'FeatureCollection',
-      features: filteredLinks,
-    } as any);
-
-    // Filter fields
+    // Fields
     const filteredFields = Object.values(fields).filter(f => {
         if (!showFields) return false;
-        const isResistance = f.team === 'R';
-        const isEnlightened = f.team === 'E';
-        const isMachina = f.team === 'M';
-
-        if (isResistance && !showResistance) return false;
-        if (isEnlightened && !showEnlightened) return false;
-        if (isMachina && !showMachina) return false;
+        if (f.team === 'R' && !showResistance) return false;
+        if (f.team === 'E' && !showEnlightened) return false;
+        if (f.team === 'M' && !showMachina) return false;
         return true;
     }).map((f: any) => ({
         type: 'Feature',
-        geometry: {
-          type: 'Polygon',
-          coordinates: [[
-            ...f.points.map((p: any) => [p.lng, p.lat]),
-            [f.points[0].lng, f.points[0].lat],
-          ]],
-        },
+        geometry: { type: 'Polygon', coordinates: [[...f.points.map((p: any) => [p.lng, p.lat]), [f.points[0].lng, f.points[0].lat]]] },
         properties: { team: f.team },
     }));
+    (map.current.getSource('fields') as any)?.setData({ type: 'FeatureCollection', features: filteredFields });
 
-    const fieldSource = map.current.getSource('fields') as maplibregl.GeoJSONSource;
-    fieldSource?.setData({
-      type: 'FeatureCollection',
-      features: filteredFields,
-    } as any);
-
-    const pluginSource = map.current.getSource('plugin-features') as maplibregl.GeoJSONSource;
-    pluginSource?.setData(pluginFeatures as any);
-
-    // Sync HTML Markers for player activity (Safer than GeoJSON layers in Firefox)
-    if (map.current) {
-        pluginMarkers.current.forEach(m => m.remove());
-        pluginMarkers.current = [];
-
-        pluginFeatures.features.forEach((f: any) => {
-            if (f.properties?.isPlayerMarker && f.geometry.type === 'Point' && map.current) {
-                const el = document.createElement('div');
-                el.style.pointerEvents = 'none';
-                const color = f.properties.color || '#fff';
-                
-                el.innerHTML = `
-                    <div style="display: flex; flex-direction: column; align-items: center; cursor: pointer; pointer-events: auto;">
-                        <div style="background: ${color}; width: 12px; height: 12px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5);"></div>
-                        <div style="width: 2px; height: 10px; background: white; margin-top: -2px;"></div>
-                    </div>
-                `;
-
-                const pinHead = el.querySelector('div');
-                if (pinHead) {
-                    pinHead.onclick = (e) => {
-                        e.stopPropagation();
-                        useStore.getState().setSelectedPluginFeature(f.properties);
-                    };
-                }
-
-                const marker = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -20] })
-                    .setLngLat(f.geometry.coordinates)
-                    .addTo(map.current);
-                
-                pluginMarkers.current.push(marker);
-            }
-        });
-    }
+    // Plugin Features (Lines only here, points are HTML)
+    (map.current.getSource('plugin-features') as any)?.setData(pluginFeatures);
 
   }, [portals, links, fields, showFields, showLinks, showResistance, showEnlightened, showMachina, showUnclaimedPortals, showLevel, styleLoaded, pluginFeatures]);
+
+  // Sync HTML Markers (Independent effect for performance)
+  useEffect(() => {
+    if (!map.current || !styleLoaded) return;
+
+    // Clear old markers
+    pluginMarkers.current.forEach(m => m.remove());
+    pluginMarkers.current = [];
+
+    // Add new markers
+    pluginFeatures.features.forEach((f: any) => {
+        if (f.properties?.isPlayerMarker && f.geometry.type === 'Point' && map.current) {
+            const el = document.createElement('div');
+            el.style.pointerEvents = 'none';
+            const color = f.properties.color || '#fff';
+            
+            el.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; cursor: pointer; pointer-events: auto;">
+                    <div style="background: ${color}; width: 12px; height: 12px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5);"></div>
+                    <div style="width: 2px; height: 10px; background: white; margin-top: -2px;"></div>
+                </div>
+            `;
+
+            const pinHead = el.querySelector('div');
+            if (pinHead) {
+                pinHead.onclick = (e) => {
+                    e.stopPropagation();
+                    useStore.getState().setSelectedPluginFeature(f.properties);
+                };
+            }
+
+            const marker = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -20] })
+                .setLngLat(f.geometry.coordinates)
+                .addTo(map.current);
+            
+            pluginMarkers.current.push(marker);
+        }
+    });
+  }, [pluginFeatures, styleLoaded]);
 
   return (
       <div

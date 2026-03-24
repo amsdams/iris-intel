@@ -1,15 +1,21 @@
 export * from './store';
 export * from './PluginManager';
 
+/**
+ * Normalizes various team strings from Intel API into standard IRIS keys:
+ * E: Enlightened
+ * R: Resistance
+ * M: Machina
+ * N: Neutral
+ */
 export const normalizeTeam = (team: string | undefined): string => {
     if (!team) return 'N';
     const t = team.toUpperCase();
-    let result = 'N';
-    if (t === 'ALIENS' || t === 'ENLIGHTENED' || t === 'E') result = 'E';
-    else if (t === 'RESISTANCE' || t === 'R') result = 'R';
-    else if (t.startsWith('MAC') || t === 'M') result = 'M';
-    else if (t === 'NEUTRAL' || t === 'N') result = 'N';
     
-    // console.log(`IRIS: normalizeTeam(${team}) -> ${result}`);
-    return result;
+    if (t === 'ALIENS' || t === 'ENLIGHTENED' || t === 'E') return 'E';
+    if (t === 'RESISTANCE' || t === 'R') return 'R';
+    if (t.startsWith('MAC') || t === 'M') return 'M';
+    if (t === 'NEUTRAL' || t === 'N') return 'N';
+    
+    return 'N';
 };
