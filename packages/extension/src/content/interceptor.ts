@@ -159,9 +159,9 @@
             const url: string = (this as any)._iris_url || '';
 
             if (
-                url.includes('/r/getEntities') ||
-                url.includes('/r/getPortalDetails') ||
-                url.includes('/r/getPlexts')
+                url.includes('getEntities') ||
+                url.includes('getPortalDetails') ||
+                url.includes('getPlexts')
             ) {
                 try {
                     const response = JSON.parse(this.responseText);
@@ -191,7 +191,7 @@
 
         if (
             response.ok &&
-            (url.includes('/r/getEntities') || url.includes('/r/getPortalDetails') || url.includes('/r/getPlexts'))
+            (url.includes('getEntities') || url.includes('getPortalDetails') || url.includes('getPlexts'))
         ) {
             try {
                 const data = await response.clone().json();

@@ -24,12 +24,6 @@ export default defineConfig(({mode}) => ({
         preact(),
         webExtension({
             manifest: () => generateManifest(mode),
-            // Explicitly include interceptor in all builds
-            // Firefox doesn't reference it in the manifest directly
-            // but the injector script needs it as a web-accessible resource
-            additionalInputs: mode === 'firefox'
-                ? ['src/content/interceptor.ts']
-                : [],
         }),
     ],
     resolve: {

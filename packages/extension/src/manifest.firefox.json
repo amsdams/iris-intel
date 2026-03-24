@@ -12,13 +12,14 @@
   "content_scripts": [
     {
       "matches": ["*://intel.ingress.com/*"],
-      "js": ["src/content/injector.ts"],
+      "js": ["src/content/index.ts"],
       "run_at": "document_start"
     },
     {
       "matches": ["*://intel.ingress.com/*"],
-      "js": ["src/content/index.ts"],
-      "run_at": "document_start"
+      "js": ["src/content/interceptor.ts"],
+      "run_at": "document_start",
+      "world": "MAIN"
     }
   ],
   "permissions": ["storage"],

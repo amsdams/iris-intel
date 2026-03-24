@@ -102,18 +102,23 @@ function parsePortalDetails(data: any, params: any): any | null {
 
 function parsePlexts(data: any): any[] {
     if (!data.result) return [];
-    return data.result.map((plext: any) => {
-        const [id, time, plextData] = plext;
-        const { text, markup, categories, team } = plextData.plext;
-        return {
-            id,
-            time,
-            text,
-            markup,
-            categories,
-            team: normalizeTeam(team),
-        };
-    });
+    try {
+        return data.result.map((plext: any) => {
+            const [id, time, plextData] = plext;
+            const { text, markup, categories, team } = plextData.plext;
+            return {
+                id,
+                time,
+                text,
+                markup,
+                categories,
+                team: normalizeTeam(team),
+            };
+        });
+    } catch (e) {
+        console.error('IRIS: Error parsing plexts', e, data);
+        return [];
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -209,7 +214,7 @@ window.addEventListener('message', (event) => {
 
       // Intel API data received
     case 'IRIS_DATA': {
-      if (url.includes('/r/getEntities')) {
+      if (url.includes('getEntities')) {
         const { portals, links, fields } = parseEntities(data);
         const store = useStore.getState();
 
@@ -224,10 +229,10 @@ window.addEventListener('message', (event) => {
         if (links.length > 0) store.updateLinks(links);
         if (fields.length > 0) store.updateFields(fields);
 
-      } else if (url.includes('/r/getPortalDetails')) {
+      } else if (url.includes('getPortalDetails')) {
         const portal = parsePortalDetails(data, params);
         if (portal) useStore.getState().updatePortals([portal]);
-      } else if (url.includes('/r/getPlexts')) {
+      } else if (url.includes('getPlexts')) {
         const plexts = parsePlexts(data);
         if (plexts.length > 0) useStore.getState().updatePlexts(plexts);
       }
