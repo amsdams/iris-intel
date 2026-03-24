@@ -41,7 +41,9 @@ export function CommPopup({ onClose }: CommPopupProps) {
             const type = m[0];
             const data = m[1];
             let color = UI_COLORS.TEXT_BASE;
-            let text = data.plain || data.name || data;
+            
+            // Get text, handle object vs string data
+            let text = typeof data === 'string' ? data : (data.plain || data.name || '');
 
             // Skip redundant FACTION labels (Resistance/Enlightened)
             if (type === 'FACTION') {
@@ -49,15 +51,19 @@ export function CommPopup({ onClose }: CommPopupProps) {
             }
 
             // Skip the " agent " connector and other redundant team prefixes
-            if (type === 'TEXT') {
+            if (type === 'TEXT' && typeof text === 'string') {
                 if (text === ' agent ' || text === ' agent') return null;
                 text = text.replace(/Resistance agent\s/g, '');
                 text = text.replace(/Enlightened agent\s/g, '');
             }
 
-            if (type === 'PLAYER') {
+            if (type === 'PLAYER' || type === 'SENDER' || type === 'AT_PLAYER') {
                 const team = normalizeTeam(data.team) as 'E' | 'R' | 'M' | 'N';
                 color = theme[team] || UI_COLORS.TEXT_BASE;
+                // Prepend @ for AT_PLAYER if not already there
+                if (type === 'AT_PLAYER' && typeof text === 'string' && !text.startsWith('@')) {
+                    text = '@' + text;
+                }
             } else if (type === 'PORTAL') {
                 color = theme.AQUA;
                 return (
@@ -78,19 +84,44 @@ export function CommPopup({ onClose }: CommPopupProps) {
                             }
                         }}
                     >
-                        {text}
+                        {String(text || '')}
                     </span>
                 );
             } else if (type === 'SECURE') {
                 color = '#ffff00';
-            } else if (type === 'SENDER') {
+            } else if (type === 'LINK') {
+                // Determine team color for link if available
                 const team = normalizeTeam(data.team) as 'E' | 'R' | 'M' | 'N';
-                color = theme[team] || UI_COLORS.TEXT_BASE;
+                color = theme[team] || theme.AQUA;
+                return (
+                    <span 
+                        key={i} 
+                        style={{ 
+                            color, 
+                            cursor: 'pointer',
+                            textDecoration: 'underline',
+                        }}
+                        onClick={() => {
+                            // Link objects usually have coordinates for start/end
+                            const lat = data.latE6 / 1e6;
+                            const lng = data.lngE6 / 1e6;
+                            if (lat && lng) {
+                                window.postMessage({
+                                    type: 'IRIS_MOVE_MAP',
+                                    center: { lat, lng },
+                                    zoom: 16
+                                }, '*');
+                            }
+                        }}
+                    >
+                        {String(text || 'link')}
+                    </span>
+                );
             }
 
             return (
                 <span key={i} style={{ color }}>
-                    {text}
+                    {String(text || '')}
                 </span>
             );
         });
@@ -167,14 +198,14 @@ export function CommPopup({ onClose }: CommPopupProps) {
                                 <span style={{ color: UI_COLORS.TEXT_MUTED, fontSize: '0.8em' }}>
                                     [{formatTime(p.time)}]
                                 </span>
-                                {p.type !== 'PLAYER_GENERATED' && (
+                                {p.type && p.type !== 'PLAYER_GENERATED' && (
                                     <span style={{ 
                                         fontSize: '0.75em', 
                                         fontWeight: 'bold',
                                         color: p.type === 'SYSTEM_NARROWCAST' ? theme.AQUA : '#888',
                                         textTransform: 'uppercase'
                                     }}>
-                                        {p.type === 'SYSTEM_NARROWCAST' ? 'Faction Alert' : 'System'}
+                                        {typeof p.type === 'string' ? p.type.replace('SYSTEM_', '') : 'SYSTEM'}
                                     </span>
                                 )}
                             </div>

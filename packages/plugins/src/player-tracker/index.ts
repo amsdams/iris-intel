@@ -30,9 +30,9 @@ const PlayerTrackerPlugin: IRISPlugin = {
     const getFactionColor = (team: string): string => {
         if (!team) return '#ffffff';
         const t = team.toUpperCase();
-        if (t === 'E' || t === 'ENLIGHTENED') return '#00ff00';
+        if (t === 'E' || t === 'ENLIGHTENED' || t === 'ALIENS') return '#00ff00';
         if (t === 'R' || t === 'RESISTANCE') return '#0000ff';
-        if (t === 'M' || t === 'MACHINA') return '#ff0000';
+        if (t === 'M' || t === 'MACHINA' || t === 'MAC') return '#ff0000';
         return '#ffffff';
     };
 
@@ -74,14 +74,14 @@ const PlayerTrackerPlugin: IRISPlugin = {
                     properties: {
                         color: getFactionColor(loc.faction || 'N'),
                         name: name,
+                        team: loc.faction, // Store team for correct popup coloring
                         time: loc.time,
                         portalName: loc.portalName,
                         lat: loc.lat,
                         lng: loc.lng,
                         isPlayerMarker: true,
                         opacity: opacity,
-                    },
-                });
+                    },                });
             } else {
                 // If the player hasn't moved for over an hour, remove them from tracking
                 playerLocations.delete(name);
@@ -143,6 +143,8 @@ const PlayerTrackerPlugin: IRISPlugin = {
               },
               properties: {
                 color: '#ffff00',
+                name: name,
+                team: loc.faction, // Store team for correct popup coloring
                 time: loc.time, // Store the time for expiration and fading
               },
             });
