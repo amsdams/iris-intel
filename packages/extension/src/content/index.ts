@@ -18,14 +18,21 @@ function parseEntities(data: any): {
   portals: any[];
   links: any[];
   fields: any[];
+  deletedGuids: string[];
 } {
   const portals: any[] = [];
   const links: any[] = [];
   const fields: any[] = [];
+  const deletedGuids: string[] = [];
 
-  if (!data.result?.map) return { portals, links, fields };
+  if (!data.result?.map) return { portals, links, fields, deletedGuids };
 
   Object.values(data.result.map).forEach((tile: any) => {
+    // Handle deleted entities
+    if (tile.deletedGameEntityGuids) {
+      deletedGuids.push(...tile.deletedGameEntityGuids);
+    }
+
     if (!tile.gameEntities) return;
 
     tile.gameEntities.forEach((entity: any) => {
@@ -63,7 +70,7 @@ function parseEntities(data: any): {
     });
   });
 
-  return { portals, links, fields };
+  return { portals, links, fields, deletedGuids };
 }
 
 function parsePortalDetails(data: any, params: any): any | null {
@@ -280,7 +287,7 @@ window.addEventListener('message', (event) => {
       // Intel API data received
     case 'IRIS_DATA': {
       if (url.includes('getEntities')) {
-        const { portals, links, fields } = parseEntities(data);
+        const { portals, links, fields, deletedGuids } = parseEntities(data);
         const store = useStore.getState();
 
         // Set MapLibre initial position from the median portal on first load
@@ -290,6 +297,7 @@ window.addEventListener('message', (event) => {
           store.updateMapState(mid.lat, mid.lng, 15);
         }
 
+        if (deletedGuids.length > 0) store.removeEntities(deletedGuids);
         if (portals.length > 0) store.updatePortals(portals);
         if (links.length > 0) store.updateLinks(links);
         if (fields.length > 0) store.updateFields(fields);

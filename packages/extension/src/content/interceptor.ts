@@ -147,7 +147,7 @@
                 }
 
                 // Broadcast tile keys so the content script can track Intel zoom level
-                if (url.includes('/r/getEntities') && requestData.tileKeys?.length > 0) {
+                if (url.includes('/r/getEntities') && requestData?.tileKeys?.length > 0) {
                     window.postMessage(
                         {type: 'IRIS_TILE_REQUEST', tileKeys: requestData.tileKeys},
                         '*'

@@ -121,6 +121,7 @@ interface IRISState {
     setPluginEnabled: (id: string, enabled: boolean) => void;
     setPluginFeatures: (features: GeoJSON.FeatureCollection) => void;
     updateMapState: (lat: number, lng: number, zoom: number) => void;
+    removeEntities: (guids: string[]) => void;
 
     selectedPortalId: string | null;
     selectPortal: (id: string | null) => void;
@@ -246,6 +247,21 @@ export const useStore = create<IRISState>()(
         set(() => ({
             mapState: {lat, lng, zoom}
         })),
+    removeEntities: (guids) =>
+        set((state) => {
+            const portals = { ...state.portals };
+            const links = { ...state.links };
+            const fields = { ...state.fields };
+            let changed = false;
+
+            guids.forEach((id) => {
+                if (portals[id]) { delete portals[id]; changed = true; }
+                if (links[id]) { delete links[id]; changed = true; }
+                if (fields[id]) { delete fields[id]; changed = true; }
+            });
+
+            return changed ? { portals, links, fields } : state;
+        }),
     selectedPortalId: null,
     selectPortal: (id) => set(() => ({ selectedPortalId: id })),
     playerStats: null,
