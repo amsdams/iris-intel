@@ -17,7 +17,7 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] "Main World" Interceptor for `/r/getEntities`, `/r/getPortalDetails`, and `/r/getPlexts`.
 - [x] Support for Portals, Links, Fields, and Machina (Red) faction.
 - [x] Zero-log performance optimization for high-density areas.
-- [x] **New:** Automated `getPlexts` triggering on init/move/open with 5s cooldown.
+- [x] Automated `getPlexts` triggering on init/move/open with 5s cooldown.
 
 ### Phase 2: Map Rendering (100% Complete)
 - [x] MapLibre GL Overlay with CartoDB Positron Basemap.
@@ -29,7 +29,7 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] SDK Definition: Types for Portals, Links, Fields.
 - [x] UI Hooks: `api.ui.addStatsItem` for dynamic overlay content.
 - [x] Sample Plugin: `portal-names` logger and UI stats integration.
-- [x] **New:** `player-tracker` plugin using plext movement data.
+- [x] `player-tracker` plugin using plext movement data.
 - [ ] **Next:** Support for custom map layers from plugins.
 - [ ] **Next:** Dynamic plugin loading (loading external JS files).
 
@@ -42,12 +42,23 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [ ] **Next:** Update `CommPopup` to show group (filter) messages by "All", "Faction", and "Alerts".
 - [ ] **Next:** Fix scrollbar issue in `PortalInfoPopup` (ensure it doesn't show redundant scrollbars).
 - [ ] **Next:** Add a popup to choose map theme (e.g., 'roads', 'terrain', 'satellite').
-- [ ] **Performance:** GeoJSON source throttling for extremely dense areas.
 
 ### Phase 5: Advanced Features (20% Complete)
 - [x] **Player Tracker:** Track player movement based on COMM (plexts) activity. Draw lines between portals for recent activity.
 - [ ] **Data Export:** Export captured portal/link/field data to standard formats (JSON/KML).
 - [ ] **Path Prediction:** Speculative pathing for players based on historical patterns.
+
+## Performance & Scalability Roadmap (Upcoming)
+
+To handle extremely dense areas (thousands of entities), we will implement the following:
+
+| Feature | Description | Benefit |
+|---|---|---|
+| **Viewport Clipping** | Only send entities within `map.getBounds()` to the MapLibre source. | Reduces JS -> GPU serialization overhead. |
+| **Spatial Index (RBush)** | Store all entities in a 2D R-Tree for instant bounding-box queries. | Makes viewport clipping $O(\log N)$ instead of $O(N)$. |
+| **Update Throttling** | Limit `GeoJSONSource.setData` calls to once every 100ms. | Prevents rendering jank during rapid panning. |
+| **Stale Data Eviction** | Automatically remove entities from store if they are far from view. | Maintains constant memory footprint for long sessions. |
+| **GeoJSON-VT Tuning** | Simplify geometry (tolerance/buffer) at lower zoom levels. | Reduces vertex count for the GPU to process. |
 
 ## Current Working Logic
 1. **Intercept:** Catch raw JSON from Niantic (XHR/Fetch).
