@@ -186,86 +186,6 @@ export function MapOverlay() {
       }, '*');
     });
 
-    // Set pointer cursor when near a portal or plugin marker
-    map.current.on('mousemove', (e) => {
-      if (!map.current) return;
-      const { lng, lat } = e.lngLat;
-      const allPortals = Object.values(useStore.getState().portals);
-      const pluginFeatures = useStore.getState().pluginFeatures.features;
-
-      const z = map.current.getZoom();
-      const threshold = 0.0005 * Math.pow(2, 15 - z);
-
-      const isNearPortal = allPortals.some((p: any) => {
-        const dx = p.lng - lng;
-        const dy = p.lat - lat;
-        return Math.sqrt(dx * dx + dy * dy) < threshold;
-      });
-
-      const isNearPluginMarker = pluginFeatures.some((f: any) => {
-        if (f.geometry.type !== 'Point') return false;
-        const [flng, flat] = f.geometry.coordinates;
-        const dx = flng - lng;
-        const dy = flat - lat;
-        return Math.sqrt(dx * dx + dy * dy) < threshold;
-      });
-
-      map.current.getCanvas().style.cursor = (isNearPortal || isNearPluginMarker) ? 'pointer' : '';
-    });
-
-    // Plain map click — find nearest portal or plugin marker
-    map.current.on('click', (e) => {
-      if (!map.current) return;
-      const { lng, lat } = e.lngLat;
-      const allPortals = Object.values(useStore.getState().portals);
-      const pluginFeatures = useStore.getState().pluginFeatures.features;
-
-      const z = map.current.getZoom();
-      const threshold = 0.0005 * Math.pow(2, 15 - z);
-
-      // Check plugin markers first
-      let nearestPlugin: any = null;
-      let minPluginDist = Infinity;
-
-      pluginFeatures.forEach((f: any) => {
-        if (f.geometry.type !== 'Point') return;
-        const [flng, flat] = f.geometry.coordinates;
-        const dx = flng - lng;
-        const dy = flat - lat;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < minPluginDist) {
-            minPluginDist = dist;
-            nearestPlugin = f;
-        }
-      });
-
-      if (nearestPlugin && minPluginDist < threshold) {
-        useStore.getState().setSelectedPluginFeature(nearestPlugin.properties);
-        return;
-      }
-
-      if (!allPortals.length) return;
-
-      let nearest: any = null;
-      let minDist = Infinity;
-
-      allPortals.forEach((p: any) => {
-        const dx = p.lng - lng;
-        const dy = p.lat - lat;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < minDist) {
-          minDist = dist;
-          nearest = p;
-        }
-      });
-
-      if (nearest && minDist < threshold) {
-        document.dispatchEvent(
-            new CustomEvent('iris:portal:click', { detail: { id: nearest.id } })
-        );
-      }
-    });
-
     // Handle portal click event — runs in content script context where
     // useStore and window.postMessage are fully accessible
     const onPortalClick = (e: Event) => {
@@ -415,20 +335,26 @@ export function MapOverlay() {
         pluginFeatures.features.forEach((f: any) => {
             if (f.properties?.isPlayerMarker && f.geometry.type === 'Point' && map.current) {
                 const el = document.createElement('div');
+                el.style.pointerEvents = 'none';
                 const color = f.properties.color || '#fff';
                 const label = f.properties.label;
                 
                 el.innerHTML = `
-                    <div style="display: flex; flex-direction: column; align-items: center; cursor: pointer;">
-                        <div style="background: ${color}; width: 14px; height: 14px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5);"></div>
+                    <div style="display: flex; flex-direction: column; align-items: center; cursor: pointer; pointer-events: auto;">
+                        <div style="background: ${color}; width: 12px; height: 12px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5);"></div>
+                        <div style="width: 2px; height: 10px; background: white; margin-top: -2px;"></div>
                     </div>
                 `;
 
-                el.onclick = () => {
-                    useStore.getState().setSelectedPluginFeature(f.properties);
-                };
+                const pinHead = el.querySelector('div');
+                if (pinHead) {
+                    pinHead.onclick = (e) => {
+                        e.stopPropagation();
+                        useStore.getState().setSelectedPluginFeature(f.properties);
+                    };
+                }
 
-                const marker = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -15] })
+                const marker = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -20] })
                     .setLngLat(f.geometry.coordinates)
                     .addTo(map.current);
                 
@@ -438,6 +364,52 @@ export function MapOverlay() {
     }
 
   }, [portals, links, fields, showFields, showLinks, showResistance, showEnlightened, showMachina, showUnclaimedPortals, showLevel, styleLoaded, pluginFeatures]);
+
+  // ---------------------------------------------------------------------------
+  // Layer Click Handlers
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (!map.current || !styleLoaded) return;
+
+    const onPortalLayerClick = (e: any) => {
+        if (e.features && e.features.length > 0) {
+            const feature = e.features[0];
+            document.dispatchEvent(
+                new CustomEvent('iris:portal:click', { detail: { id: feature.properties.id } })
+            );
+        }
+    };
+
+    const onPluginLayerClick = (e: any) => {
+        if (e.features && e.features.length > 0) {
+            useStore.getState().setSelectedPluginFeature(e.features[0].properties);
+        }
+    };
+
+    map.current.on('click', 'portals', onPortalLayerClick);
+    map.current.on('click', 'plugin-points', onPluginLayerClick);
+    map.current.on('click', 'plugin-lines', onPluginLayerClick);
+
+    // Update cursor on hover
+    const setPointer = () => { if (map.current) map.current.getCanvas().style.cursor = 'pointer'; };
+    const resetPointer = () => { if (map.current) map.current.getCanvas().style.cursor = ''; };
+
+    map.current.on('mouseenter', 'portals', setPointer);
+    map.current.on('mouseleave', 'portals', resetPointer);
+    map.current.on('mouseenter', 'plugin-points', setPointer);
+    map.current.on('mouseleave', 'plugin-points', resetPointer);
+    map.current.on('mouseenter', 'plugin-lines', setPointer);
+    map.current.on('mouseleave', 'plugin-lines', resetPointer);
+
+    return () => {
+        if (!map.current) return;
+        map.current.off('click', 'portals', onPortalLayerClick);
+        map.current.off('click', 'plugin-points', onPluginLayerClick);
+        map.current.off('click', 'plugin-lines', onPluginLayerClick);
+        map.current.off('mouseenter', 'portals', setPointer);
+        map.current.off('mouseleave', 'portals', resetPointer);
+    };
+  }, [styleLoaded]);
 
   return (
       <div

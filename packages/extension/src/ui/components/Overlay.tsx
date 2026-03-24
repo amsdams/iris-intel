@@ -10,6 +10,7 @@ import { CommPopup } from './CommPopup';
 import { ThemePopup } from '../../../../plugins/src/theme-selector/ThemePopup';
 import { PluginsPopup } from './PluginsPopup';
 import { StatusBar } from './StatusBar';
+import { PluginFeaturePopup } from './PluginFeaturePopup';
 
 // ---------------------------------------------------------------------------
 // IRISOverlay
@@ -54,6 +55,7 @@ export function IRISOverlay() {
             </div>
 
             <PortalInfoPopup />
+            <PluginFeaturePopup />
 
             {showCommPopup && (
                 <CommPopup onClose={toggleCommPopup} />

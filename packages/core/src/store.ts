@@ -126,6 +126,9 @@ interface IRISState {
     selectedPortalId: string | null;
     selectPortal: (id: string | null) => void;
 
+    selectedPluginFeature: any | null;
+    setSelectedPluginFeature: (feature: any | null) => void;
+
     playerStats: PlayerStats | null;
     setPlayerStats: (stats: PlayerStats) => void;
 
@@ -264,6 +267,8 @@ export const useStore = create<IRISState>()(
         }),
     selectedPortalId: null,
     selectPortal: (id) => set(() => ({ selectedPortalId: id })),
+    selectedPluginFeature: null,
+    setSelectedPluginFeature: (feature) => set(() => ({ selectedPluginFeature: feature })),
     playerStats: null,
     setPlayerStats: (stats) => set(() => ({ playerStats: stats })),
 
