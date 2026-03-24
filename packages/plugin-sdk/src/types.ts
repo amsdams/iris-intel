@@ -69,6 +69,9 @@ export interface IRIS_API {
     setTheme: (id: string) => void;
     getTheme: () => string;
   };
+  utils: {
+    normalizeTeam: (team: string | undefined) => string;
+  };
 }
 
 export interface IRISPlugin {

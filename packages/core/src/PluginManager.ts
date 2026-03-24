@@ -1,5 +1,6 @@
 import { IRISPlugin, IRIS_API } from '@iris/plugin-sdk';
 import { useStore } from './store';
+import { normalizeTeam } from './index';
 
 export class PluginManager {
   private availablePlugins: Map<string, IRISPlugin> = new Map();
@@ -61,6 +62,9 @@ export class PluginManager {
           useStore.getState().removeMenuItem(id),
         setTheme: (id) => useStore.getState().setTheme(id),
         getTheme: () => useStore.getState().themeId,
+      },
+      utils: {
+        normalizeTeam: (team) => normalizeTeam(team),
       },
     };
   }

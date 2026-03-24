@@ -15,7 +15,7 @@ const PlayerTrackerPlugin: IRISPlugin = {
   manifest: {
     id: 'player-tracker',
     name: 'Player Tracker',
-    version: '1.1.0',
+    version: '1.2.0',
     description: 'Visualizes player movement paths from COMM messages with fading.',
     author: 'IRIS Team',
   },
@@ -28,11 +28,10 @@ const PlayerTrackerPlugin: IRISPlugin = {
 
     // Helper to get faction color
     const getFactionColor = (team: string): string => {
-        if (!team) return '#ffffff';
-        const t = team.toUpperCase();
-        if (t === 'E' || t === 'ENLIGHTENED') return '#00ff00';
-        if (t === 'R' || t === 'RESISTANCE') return '#0000ff';
-        if (t === 'M' || t === 'MACHINA') return '#ff0000';
+        const teamKey = api.utils.normalizeTeam(team);
+        if (teamKey === 'E') return '#00ff00';
+        if (teamKey === 'R') return '#0000ff';
+        if (teamKey === 'M') return '#ff0000';
         return '#ffffff';
     };
 
@@ -74,6 +73,7 @@ const PlayerTrackerPlugin: IRISPlugin = {
                     properties: {
                         color: getFactionColor(loc.faction || 'N'),
                         name: name,
+                        team: loc.faction, // Crucial for popup coloring
                         time: loc.time,
                         portalName: loc.portalName,
                         lat: loc.lat,
@@ -100,14 +100,20 @@ const PlayerTrackerPlugin: IRISPlugin = {
 
         let playerName: string | null = null;
         let location: Partial<Location> | null = null;
-        let faction: string = 'N';
+        let faction: string = p.team || 'N';
 
         for (const m of p.markup) {
           const type = m[0];
           const data = m[1];
           if (type === 'PLAYER') {
             playerName = data.plain;
-            faction = data.team;
+            // Force Machina team if name is "Machina" or similar
+            const upperName = (playerName || '').toUpperCase();
+            if (upperName === 'MACHINA' || upperName === '__MACHINA__') {
+                faction = 'MACHINA';
+            } else if (data.team && data.team !== 'NEUTRAL') {
+                faction = data.team;
+            }
           } else if (type === 'PORTAL') {
             location = {
               lat: data.latE6 / 1e6,
@@ -143,6 +149,8 @@ const PlayerTrackerPlugin: IRISPlugin = {
               },
               properties: {
                 color: '#ffff00',
+                name: name,
+                team: loc.faction, // Store team for correct popup coloring
                 time: loc.time, // Store the time for expiration and fading
               },
             });
