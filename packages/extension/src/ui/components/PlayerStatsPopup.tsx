@@ -20,7 +20,8 @@ export function PlayerStatsPopup({ onClose }: PlayerStatsPopupProps) {
         return null;
     }
 
-    const teamColour = theme[playerStats.team as keyof typeof theme] || UI_COLORS.TEXT_BASE;
+    const team = playerStats.team as 'E' | 'R' | 'M' | 'N';
+    const teamColour = theme[team] || UI_COLORS.TEXT_BASE;
 
     return (
         <Popup

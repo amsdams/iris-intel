@@ -1,4 +1,5 @@
 import {create} from 'zustand';
+import {subscribeWithSelector} from 'zustand/middleware';
 
 export interface PlayerStats {
     nickname: string;
@@ -81,6 +82,7 @@ interface IRISState {
     statsItems: Record<string, StatsItem>;
     menuItems: MenuItem[];
     pluginStates: Record<string, boolean>;
+    pluginFeatures: GeoJSON.FeatureCollection;
     mapState: {
         lat: number;
         lng: number;
@@ -96,6 +98,7 @@ interface IRISState {
     addMenuItem: (item: MenuItem) => void;
     removeMenuItem: (id: string) => void;
     setPluginEnabled: (id: string, enabled: boolean) => void;
+    setPluginFeatures: (features: GeoJSON.FeatureCollection) => void;
     updateMapState: (lat: number, lng: number, zoom: number) => void;
 
     selectedPortalId: string | null;
@@ -126,7 +129,8 @@ interface IRISState {
     toggleShowLevel: (level: number) => void;
 }
 
-export const useStore = create<IRISState>((set) => ({
+export const useStore = create<IRISState>()(
+    subscribeWithSelector((set) => ({
     portals: {},
     links: {},
     fields: {},
@@ -134,6 +138,7 @@ export const useStore = create<IRISState>((set) => ({
     statsItems: {},
     menuItems: [],
     pluginStates: {},
+    pluginFeatures: { type: 'FeatureCollection', features: [] },
     mapState: {
         lat: 0,
         lng: 0,
@@ -198,6 +203,10 @@ export const useStore = create<IRISState>((set) => ({
         set((state) => ({
             pluginStates: { ...state.pluginStates, [id]: enabled }
         })),
+    setPluginFeatures: (features) =>
+        set(() => ({
+            pluginFeatures: features
+        })),
     updateMapState: (lat, lng, zoom) =>
         set(() => ({
             mapState: {lat, lng, zoom}
@@ -229,10 +238,11 @@ export const useStore = create<IRISState>((set) => ({
     toggleShowEnlightened: () => set((state) => ({ showEnlightened: !state.showEnlightened })),
     toggleShowMachina: () => set((state) => ({ showMachina: !state.showMachina })),
     toggleShowUnclaimedPortals: () => set((state) => ({ showUnclaimedPortals: !state.showUnclaimedPortals })),
-    toggleShowLevel: (level: number) => set((state) => ({
-        showLevel: {
-            ...state.showLevel,
-            [level]: !state.showLevel[level],
-        },
-    })),
-}));
+        toggleShowLevel: (level: number) => set((state) => ({
+            showLevel: {
+                ...state.showLevel,
+                [level]: !state.showLevel[level],
+            },
+        })),
+    }))
+);

@@ -10,17 +10,33 @@ export class PluginManager {
       portals: {
         getAll: () => useStore.getState().portals,
         subscribe: (callback) => 
-          useStore.subscribe((state) => callback(state.portals)),
+          useStore.subscribe(
+            (state) => state.portals,
+            (portals) => callback(portals)
+          ),
       },
       links: {
         getAll: () => useStore.getState().links,
         subscribe: (callback) => 
-          useStore.subscribe((state) => callback(state.links)),
+          useStore.subscribe(
+            (state) => state.links,
+            (links) => callback(links)
+          ),
       },
       fields: {
         getAll: () => useStore.getState().fields,
         subscribe: (callback) => 
-          useStore.subscribe((state) => callback(state.fields)),
+          useStore.subscribe(
+            (state) => state.fields,
+            (fields) => callback(fields)
+          ),
+      },
+      plexts: {
+        subscribe: (callback) =>
+          useStore.subscribe(
+            (state) => state.plexts,
+            (plexts) => callback(plexts)
+          ),
       },
       map: {
         getCenter: () => {
@@ -28,6 +44,11 @@ export class PluginManager {
           return { lat, lng };
         },
         getZoom: () => useStore.getState().mapState.zoom,
+        setFeatures: (features) =>
+          useStore.getState().setPluginFeatures({
+            type: 'FeatureCollection',
+            features,
+          }),
       },
       ui: {
         addStatsItem: (id, label, value) => 

@@ -24,13 +24,15 @@ export function CommPopup({ onClose }: CommPopupProps) {
             let color = UI_COLORS.TEXT_BASE;
 
             if (type === 'PLAYER') {
-                color = theme[normalizeTeam(data.team) as keyof typeof theme] || UI_COLORS.TEXT_BASE;
+                const team = normalizeTeam(data.team) as 'E' | 'R' | 'M' | 'N';
+                color = theme[team] || UI_COLORS.TEXT_BASE;
             } else if (type === 'PORTAL') {
                 color = theme.AQUA;
             } else if (type === 'SECURE') {
                 color = '#ffff00';
             } else if (type === 'SENDER') {
-                color = theme[normalizeTeam(data.team) as keyof typeof theme] || UI_COLORS.TEXT_BASE;
+                const team = normalizeTeam(data.team) as 'E' | 'R' | 'M' | 'N';
+                color = theme[team] || UI_COLORS.TEXT_BASE;
             }
 
             return (

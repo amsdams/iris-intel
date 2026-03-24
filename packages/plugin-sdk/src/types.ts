@@ -31,6 +31,15 @@ export interface Field {
   points: { lat: number; lng: number }[];
 }
 
+export interface Plext {
+  id: string;
+  time: number;
+  text: string;
+  markup: any[];
+  categories: number;
+  team: string;
+}
+
 export interface IRIS_API {
   portals: {
     getAll: () => Record<string, Portal>;
@@ -44,9 +53,13 @@ export interface IRIS_API {
     getAll: () => Record<string, Field>;
     subscribe: (callback: (fields: Record<string, Field>) => void) => () => void;
   };
+  plexts: {
+    subscribe: (callback: (plexts: Plext[]) => void) => () => void;
+  };
   map: {
     getCenter: () => { lat: number; lng: number };
     getZoom: () => number;
+    setFeatures: (features: GeoJSON.Feature[]) => void;
   };
   ui: {
     addStatsItem: (id: string, label: string, value: string | (() => string)) => void;
