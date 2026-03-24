@@ -1,5 +1,4 @@
 import { IRISPlugin, IRIS_API, Plext } from '@iris/plugin-sdk';
-import { normalizeTeam } from '@iris/core';
 
 interface Location {
   lat: number;
@@ -29,10 +28,11 @@ const PlayerTrackerPlugin: IRISPlugin = {
 
     // Helper to get faction color
     const getFactionColor = (team: string): string => {
-        const teamKey = normalizeTeam(team);
-        if (teamKey === 'E') return '#00ff00';
-        if (teamKey === 'R') return '#0000ff';
-        if (teamKey === 'M') return '#ff0000';
+        if (!team) return '#ffffff';
+        const t = team.toUpperCase();
+        if (t === 'E' || t === 'ENLIGHTENED' || t === 'ALIENS') return '#00ff00';
+        if (t === 'R' || t === 'RESISTANCE') return '#0000ff';
+        if (t === 'M' || t === 'MACHINA' || t === 'MAC') return '#ff0000';
         return '#ffffff';
     };
 
@@ -81,8 +81,7 @@ const PlayerTrackerPlugin: IRISPlugin = {
                         lng: loc.lng,
                         isPlayerMarker: true,
                         opacity: opacity,
-                    },
-                });
+                    },                });
             } else {
                 // If the player hasn't moved for over an hour, remove them from tracking
                 playerLocations.delete(name);
@@ -101,20 +100,14 @@ const PlayerTrackerPlugin: IRISPlugin = {
 
         let playerName: string | null = null;
         let location: Partial<Location> | null = null;
-        let faction: string = p.team || 'N'; // Fallback to message team if markup is ambiguous
+        let faction: string = 'N';
 
         for (const m of p.markup) {
           const type = m[0];
           const data = m[1];
           if (type === 'PLAYER') {
             playerName = data.plain;
-            // Force Machina team if name is "Machina" or similar
-            const upperName = (playerName || '').toUpperCase();
-            if (upperName === 'MACHINA' || upperName === '__MACHINA__') {
-                faction = 'MACHINA';
-            } else if (data.team && data.team !== 'NEUTRAL') {
-                faction = data.team;
-            }
+            faction = data.team;
           } else if (type === 'PORTAL') {
             location = {
               lat: data.latE6 / 1e6,

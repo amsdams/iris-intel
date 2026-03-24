@@ -58,9 +58,8 @@ export function CommPopup({ onClose }: CommPopupProps) {
             }
 
             if (type === 'PLAYER' || type === 'SENDER' || type === 'AT_PLAYER') {
-                const teamKey = normalizeTeam(data.team) as 'E' | 'R' | 'M' | 'N';
-                color = theme[teamKey] || UI_COLORS.TEXT_BASE;
-
+                const team = normalizeTeam(data.team) as 'E' | 'R' | 'M' | 'N';
+                color = theme[team] || UI_COLORS.TEXT_BASE;
                 // Prepend @ for AT_PLAYER if not already there
                 if (type === 'AT_PLAYER' && typeof text === 'string' && !text.startsWith('@')) {
                     text = '@' + text;
@@ -92,8 +91,8 @@ export function CommPopup({ onClose }: CommPopupProps) {
                 color = '#ffff00';
             } else if (type === 'LINK') {
                 // Determine team color for link if available
-                const teamKey = normalizeTeam(data.team) as 'E' | 'R' | 'M' | 'N';
-                color = theme[teamKey] || theme.AQUA;
+                const team = normalizeTeam(data.team) as 'E' | 'R' | 'M' | 'N';
+                color = theme[team] || theme.AQUA;
                 return (
                     <span 
                         key={i} 
