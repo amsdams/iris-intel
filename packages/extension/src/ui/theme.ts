@@ -83,6 +83,9 @@ export const UI_COLORS = {
     TEXT_BASE: '#ffffff',
     TEXT_MUTED: '#aaaaaa',
     BORDER_DIM: '#333333',
+    ERROR: '#ff5555',
+    WARNING: '#ffaa00',
+    SUCCESS: '#00ff00',
 };
 
 export const FONT_SIZES = {

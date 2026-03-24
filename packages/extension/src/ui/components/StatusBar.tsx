@@ -71,7 +71,7 @@ export function StatusBar() {
                     background: 'rgba(0, 10, 20, 0.4)'
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: SPACING.SM, borderBottom: '1px solid #444', paddingBottom: '4px' }}>
-                        <span style={{ color: hasErrors ? '#ff5555' : UI_COLORS.AQUA, fontWeight: 'bold' }}>
+                        <span style={{ color: UI_COLORS.ERROR, fontWeight: 'bold' }}>
                             LOGS: {successfulRequests.length} OK, {failedRequests.length} NET, {jsErrors.length} JS
                         </span>
                         <span 
@@ -85,10 +85,10 @@ export function StatusBar() {
                     {/* JS Errors Section */}
                     {jsErrors.length > 0 && (
                         <div style={{ marginBottom: SPACING.MD }}>
-                            <div style={{ color: '#ffaa00', marginBottom: '4px', borderBottom: '1px solid #440000' }}>JS ERRORS</div>
+                            <div style={{ color: UI_COLORS.WARNING, marginBottom: '4px', borderBottom: '1px solid #440000' }}>JS ERRORS</div>
                             {jsErrors.map((err, i) => (
                                 <div key={`js-${i}`} style={{ marginBottom: '4px', borderBottom: '1px solid #222', paddingBottom: '2px' }}>
-                                    <div style={{ color: '#ffaa00' }}>
+                                    <div style={{ color: UI_COLORS.WARNING }}>
                                         [{new Date(err.time).toLocaleTimeString()}] {err.message}
                                     </div>
                                     <div style={{ color: '#888', fontSize: '9px' }}>
@@ -102,10 +102,10 @@ export function StatusBar() {
                     {/* Net Errors Section */}
                     {failedRequests.length > 0 && (
                         <div style={{ marginBottom: SPACING.MD }}>
-                            <div style={{ color: '#ff5555', marginBottom: '4px', borderBottom: '1px solid #440000' }}>NETWORK ERRORS</div>
+                            <div style={{ color: UI_COLORS.ERROR, marginBottom: '4px', borderBottom: '1px solid #440000' }}>NETWORK ERRORS</div>
                             {failedRequests.map((req, i) => (
                                 <div key={`net-err-${i}`} style={{ marginBottom: '4px', borderBottom: '1px solid #222', paddingBottom: '2px' }}>
-                                    <div style={{ color: '#ff5555', display: 'flex', justifyContent: 'space-between' }}>
+                                    <div style={{ color: UI_COLORS.ERROR, display: 'flex', justifyContent: 'space-between' }}>
                                         <span>[{new Date(req.time).toLocaleTimeString()}] {getEndpointName(req.url)}</span>
                                         <span>STATUS: {req.status}</span>
                                     </div>
@@ -152,12 +152,12 @@ export function StatusBar() {
                         width: '8px', 
                         height: '8px', 
                         borderRadius: '50%', 
-                        background: activeRequests > 0 ? UI_COLORS.AQUA : (hasErrors ? '#ff0000' : (successfulRequests.length > 0 ? '#00ff00' : '#333')),
+                        background: activeRequests > 0 ? UI_COLORS.AQUA : (hasErrors ? UI_COLORS.ERROR : (successfulRequests.length > 0 ? UI_COLORS.SUCCESS : '#333')),
                         marginRight: SPACING.SM,
-                        boxShadow: activeRequests > 0 ? `0 0 5px ${UI_COLORS.AQUA}` : (hasErrors ? '0 0 5px #ff0000' : (successfulRequests.length > 0 ? '0 0 5px #00ff00' : 'none')),
+                        boxShadow: activeRequests > 0 ? `0 0 5px ${UI_COLORS.AQUA}` : (hasErrors ? `0 0 5px ${UI_COLORS.ERROR}` : (successfulRequests.length > 0 ? `0 0 5px ${UI_COLORS.SUCCESS}` : 'none')),
                         transition: 'background 0.3s ease, box-shadow 0.3s ease'
                     }} />
-                    <span style={{ color: activeRequests > 0 ? UI_COLORS.TEXT_BASE : (hasErrors ? '#ff5555' : UI_COLORS.TEXT_MUTED) }}>
+                    <span style={{ color: activeRequests > 0 ? UI_COLORS.TEXT_BASE : (hasErrors ? UI_COLORS.ERROR : UI_COLORS.TEXT_MUTED) }}>
                         {activeRequests > 0 ? `NET: ${activeRequests} ACTIVE` : 'NET: IDLE'}
                         {successfulRequests.length > 0 && ` (${successfulRequests.length} OK)`}
                         {failedRequests.length > 0 && ` (${failedRequests.length} NET)`}
