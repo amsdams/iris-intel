@@ -1,5 +1,5 @@
 import {create} from 'zustand';
-import {subscribeWithSelector} from 'zustand/middleware';
+import {subscribeWithSelector, persist} from 'zustand/middleware';
 
 export interface PlayerStats {
     nickname: string;
@@ -197,10 +197,14 @@ interface IRISState {
 
     debugLogging: boolean;
     toggleDebugLogging: () => void;
+
+    rehydrated: boolean;
 }
 
 export const useStore = create<IRISState>()(
-    subscribeWithSelector((set) => ({
+    subscribeWithSelector(
+        persist(
+            (set) => ({
     portals: {},
     links: {},
     fields: {},
@@ -368,6 +372,27 @@ export const useStore = create<IRISState>()(
 
         debugLogging: false,
         toggleDebugLogging: () => set((state) => ({ debugLogging: !state.debugLogging })),
-        }))
-        );
+
+        rehydrated: false,
+    }),
+    {
+        name: 'iris-settings',
+        partialize: (state) => ({
+            pluginStates: state.pluginStates,
+            themeId: state.themeId,
+            mapThemeId: state.mapThemeId,
+            showFields: state.showFields,
+            showLinks: state.showLinks,
+            showResistance: state.showResistance,
+            showEnlightened: state.showEnlightened,
+            showMachina: state.showMachina,
+            showUnclaimedPortals: state.showUnclaimedPortals,
+            showLevel: state.showLevel,
+            debugLogging: state.debugLogging,
+        }),
+        onRehydrateStorage: () => (state) => {
+            if (state) state.rehydrated = true;
+        }
+    }
+)));
 
