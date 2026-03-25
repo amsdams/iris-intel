@@ -7,7 +7,7 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - **Framework:** Preact (UI) + Zustand (State).
 - **Build Tool:** Vite + `vite-plugin-web-extension`.
 - **Mapping Engine:** MapLibre GL JS (WebGL-accelerated).
-- **Basemap:** CartoDB Positron (CORS-friendly).
+- **Basemap:** CartoDB Positron / OSM (Dynamic Switching).
 - **Sync Method:** Bi-directional event bridging between MapLibre and Google Maps (Intel).
 
 ## Implementation Status
@@ -21,8 +21,10 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] **Entity Deletion:** Correctly handle `deletedGameEntityGuids` to remove destroyed links/fields.
 
 ### Phase 2: Map Rendering (100% Complete)
-- [x] MapLibre GL Overlay with CartoDB Positron Basemap.
+- [x] MapLibre GL Overlay with OSM Basemap.
 - [x] **Bi-directional Sync:** Panning IRIS moves Intel; Intel fetches data -> IRIS renders.
+- [x] **Persistent View:** Map stays alive and synced when toggled hidden.
+- [x] **Modern Aesthetic:** Dark-Mode by default with faction-themed WebGL layers.
 - [x] **Stable Interactions:** Manual pixel-distance clicking to bypass Firefox extension security restrictions (Permission Denied error).
 - [x] **Visual Polish:** Portal opacity based on health (0-100%) and faction-colored borders.
 
@@ -30,12 +32,13 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] SDK Definition: Types for Portals, Links, Fields.
 - [x] UI Hooks: `api.ui.addStatsItem` for dynamic overlay content.
 - [x] `player-tracker` plugin with movement paths, faction-colored pins, and time-based fading (1h expiration).
-- [x] **Plugin API Expansion:** Exposed `api.utils.normalizeTeam` for consistent coloring across plugins.
+- [x] **Plugin API Expansion:** Exposed `api.utils.normalizeTeam` and `api.ui.getThemeColors` for consistent coloring across plugins.
 - [ ] **Next:** Support for custom map layers from plugins.
 - [ ] **Next:** Dynamic plugin loading (loading external JS files).
 
 ### Phase 4: Refinement & Mobile (100% Complete)
 - [x] **UI Polish:** Portal detail popups (clickable portals).
+- [x] **Player Name Coloring:** Unified team colors across all UI components (Portals, Comm, Stats).
 - [x] **Tabbed COMM:** Dedicated tabs for ALL, FACTION, and ALERTS messages using categories (1, 2, 4).
 - [x] **Interactivity in COMM:** Clickable portal names and link events for instant map navigation.
 - [x] **Network Monitoring:** Integrated Status Bar with real-time logs for OK/FAILED/JS errors.
