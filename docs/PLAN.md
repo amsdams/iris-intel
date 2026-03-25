@@ -45,6 +45,8 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] **Faction Consistency:** Unified team normalization (MACHINA/MAC/ALIENS) across entire UI.
 - [x] **Fix scrollbar issue:** Resolved redundant scrollbars in `PortalInfoPopup` and other popups.
 - [x] **Map Theme Picker:** Added a popup to choose map theme (Light, Dark, Voyager, OSM).
+- [x] **CSS Centralization:** Migrated inline styles for core UI components (Popup, Topbar, Search, Menus) to a unified `iris.css` to improve maintainability and decouple layout from logic.
+- [x] **Development Workflow:** Formalized "Allowed/Preferred Commands" in `GEMINI.md` to ensure consistent build and release processes across sessions.
 - [ ] **Next:** Performance: GeoJSON source throttling for extremely dense areas.
 - [ ] **Next:** Mobile Strategy: Decision between Capacitor App vs. Mobile Browser Extension.
 
