@@ -196,7 +196,7 @@ export function Topbar({
                             onClick={() => { onTogglePlayerStats(); setShowMenu(false); }}
                             style={{ color: theme.AQUA }}
                         >
-                            Profile
+                            Player Stats
                         </button>
                         <button
                             className="iris-menu-item"

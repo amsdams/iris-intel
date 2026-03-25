@@ -30,8 +30,6 @@ build/
 *.njsproj
 *.sln
 *.sw?
-.DS_Store
-.idea/
 **/.idea/
 **/.vscode/
 **/tsconfig.tsbuildinfo
@@ -57,4 +55,4 @@ pnpm-debug.log*
 .geminiignore
 .turbo
 .vercel
-dist-firefox/
+/reference/

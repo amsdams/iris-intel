@@ -68,32 +68,31 @@
     };
 
     const readPlayerStats = () => {
-        // Try DOM selectors first
-        let nickname = document.querySelector('.player_nickname')?.textContent?.trim();
-        let levelStr = document.querySelector('#player_level')?.textContent?.trim();
-        let apStr = document.querySelector('.number')?.textContent?.trim()?.replace(/,/g, '');
-        let teamEl = document.querySelector('#player_stats .RESISTANCE, #player_stats .ENLIGHTENED');
-        let team = 'N';
+        const P = (window as any).PLAYER;
+        if (!P) return;
 
-        // Fallback to window.PLAYER object (common in Intel's main world)
-        if (!nickname && (window as any).PLAYER) {
-            const P = (window as any).PLAYER;
-            nickname = P.nickname;
-            levelStr = String(P.level);
-            apStr = String(P.ap);
-            team = P.team === 'RESISTANCE' ? 'R' : (P.team === 'ENLIGHTENED' ? 'E' : 'N');
-        } else {
-            if (teamEl?.classList.contains('RESISTANCE')) team = 'R';
-            else if (teamEl?.classList.contains('ENLIGHTENED')) team = 'E';
-        }
+        const nickname = P.nickname;
+        const level = parseInt(String(P.verified_level || P.level), 10);
+        const ap = parseInt(String(P.ap), 10);
+        const team = P.team === 'RESISTANCE' ? 'R' : (P.team === 'ENLIGHTENED' ? 'E' : 'N');
+        const energy = parseInt(String(P.energy), 10);
+        const xm_capacity = parseInt(String(P.xm_capacity), 10);
+        const available_invites = parseInt(String(P.available_invites), 10);
+        const min_ap_for_current_level = parseInt(String(P.min_ap_for_current_level), 10);
+        const min_ap_for_next_level = parseInt(String(P.min_ap_for_next_level), 10);
 
         if (nickname) {
             window.postMessage({
                 type: 'IRIS_PLAYER_STATS',
                 nickname,
-                level: levelStr ? parseInt(levelStr, 10) : null,
-                ap: apStr ? parseInt(apStr, 10) : null,
+                level,
+                ap,
                 team,
+                energy,
+                xm_capacity,
+                available_invites,
+                min_ap_for_current_level,
+                min_ap_for_next_level
             }, '*');
         }
     };
