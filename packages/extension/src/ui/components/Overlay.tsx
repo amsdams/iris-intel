@@ -10,7 +10,7 @@ import { PortalInfoPopup } from './PortalInfoPopup';
 import { CommPopup } from './CommPopup';
 import { GameScorePopup } from './GameScorePopup';
 import { RegionScorePopup } from './RegionScorePopup';
-import { ExportPopup } from './ExportPopup';
+import { ExportPopup } from '../../../../plugins/src/export-data/ExportPopup';
 import { ThemePopup } from '../../../../plugins/src/theme-selector/ThemePopup';
 import { MapThemePopup } from './MapThemePopup';
 import { PluginsPopup } from './PluginsPopup';
@@ -62,9 +62,16 @@ export function IRISOverlay() {
     const toggleMapVisibility = () => setShowMap(!showMap);
 
     useEffect(() => {
-        const handler = () => toggleThemePopup();
-        document.addEventListener('iris:plugin:theme:toggle', handler);
-        return () => document.removeEventListener('iris:plugin:theme:toggle', handler);
+        const themeHandler = () => toggleThemePopup();
+        const exportHandler = () => toggleExportPopup();
+        
+        document.addEventListener('iris:plugin:theme:toggle', themeHandler);
+        document.addEventListener('iris:plugin:export:toggle', exportHandler);
+        
+        return () => {
+            document.removeEventListener('iris:plugin:theme:toggle', themeHandler);
+            document.removeEventListener('iris:plugin:export:toggle', exportHandler);
+        };
     }, []);
 
     return (
@@ -79,7 +86,6 @@ export function IRISOverlay() {
                 onToggleMapTheme={toggleMapThemePopup}
                 onToggleGameScore={toggleGameScorePopup}
                 onToggleRegionScore={toggleRegionScorePopup}
-                onToggleExport={toggleExportPopup}
                 showMap={showMap}
             />
             <div style={{ display: showMap ? 'block' : 'none' }}>

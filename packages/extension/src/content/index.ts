@@ -5,6 +5,7 @@ import { useStore, pluginManager, normalizeTeam } from '@iris/core';
 import PortalNamesPlugin from '../../../plugins/src/portal-names';
 import ThemeSelectorPlugin from '../../../plugins/src/theme-selector';
 import PlayerTrackerPlugin from '../../../plugins/src/player-tracker';
+import ExportDataPlugin from '../../../plugins/src/export-data';
 
 // Tracks whether MapLibre has been given its initial position
 let hasInitialPosition = false;
@@ -164,6 +165,7 @@ function initUI() {
 pluginManager.load(PortalNamesPlugin as any);
 pluginManager.load(ThemeSelectorPlugin as any);
 pluginManager.load(PlayerTrackerPlugin as any);
+pluginManager.load(ExportDataPlugin as any);
 
 // ---------------------------------------------------------------------------
 // Message handler — bridges main world interceptor and Preact UI

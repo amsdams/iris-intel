@@ -1,8 +1,8 @@
 import { h } from 'preact';
 import { useState } from 'preact/hooks';
 import { useStore } from '@iris/core';
-import { Popup } from './Popup';
-import { UI_COLORS, THEMES, SHARED_STYLES } from '../theme';
+import { Popup } from '../../../extension/src/ui/components/Popup';
+import { UI_COLORS, THEMES, SHARED_STYLES } from '../../../extension/src/ui/theme';
 
 interface ExportPopupProps {
     onClose: () => void;
