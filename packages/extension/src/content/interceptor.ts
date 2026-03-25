@@ -457,6 +457,32 @@
                 break;
             }
 
+            // Fetch Region Score Details
+            case 'IRIS_REGION_SCORE_FETCH': {
+                if (!intelVersion) break;
+
+                const csrfToken = getCsrfToken();
+                if (!csrfToken) break;
+
+                const { latE6, lngE6 } = event.data;
+                const req = new XMLHttpRequest();
+                req.open('POST', '/r/getRegionScoreDetails', true);
+                req.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+                req.setRequestHeader('X-CSRFToken', csrfToken);
+                req.addEventListener('load', function() {
+                    if (this.status === 200) {
+                        try {
+                            const data = JSON.parse(this.responseText);
+                            window.postMessage({ type: 'IRIS_DATA', url: '/r/getRegionScoreDetails', data }, '*');
+                        } catch (e) {
+                            console.error('IRIS: Failed to parse getRegionScoreDetails response', e);
+                        }
+                    }
+                }, { once: true });
+                req.send(JSON.stringify({ v: intelVersion, latE6, lngE6 }));
+                break;
+            }
+
             default:
                 break;
         }

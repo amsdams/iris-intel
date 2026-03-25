@@ -220,6 +220,16 @@ window.addEventListener('message', (event) => {
       break;
     }
 
+    case 'IRIS_REGION_SCORE_REQUEST': {
+        const { lat, lng } = event.data;
+        window.postMessage({ 
+            type: 'IRIS_REGION_SCORE_FETCH', 
+            latE6: Math.round(lat * 1e6), 
+            lngE6: Math.round(lng * 1e6) 
+        }, '*');
+        break;
+    }
+
     case 'IRIS_REQUEST_START': {
         const url = event.data.url;
         if (url.includes('getPlexts')) {
@@ -326,6 +336,16 @@ window.addEventListener('message', (event) => {
             enlightened: parseInt(String(enlightened), 10), 
             resistance: parseInt(String(resistance), 10) 
         });
+      } else if (url.includes('getRegionScoreDetails')) {
+        const res = data.result;
+        if (res) {
+            useStore.getState().setRegionScore({
+                regionName: res.regionName,
+                gameScore: [parseInt(res.gameScore[0], 10), parseInt(res.gameScore[1], 10)],
+                topAgents: res.topAgents,
+                scoreHistory: res.scoreHistory
+            });
+        }
       }
       break;
     }

@@ -99,6 +99,7 @@ export const UI_COLORS = {
     AQUA: '#00ffff',
     GLOW: '#00ffff55',
     BG_BASE: 'rgba(0, 0, 0, 0.92)',
+    BG_POPUP: 'rgba(0, 0, 0, 0.92)',
     TEXT_BASE: '#ffffff',
     TEXT_MUTED: '#aaaaaa',
     BORDER_DIM: '#333333',

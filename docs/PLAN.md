@@ -53,12 +53,12 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [ ] **Next:** Performance: GeoJSON source throttling for extremely dense areas.
 - [ ] **Next:** Mobile Strategy: Decision between Capacitor App vs. Mobile Browser Extension.
 
-### Phase 5: Advanced Features (20% Complete)
+### Phase 5: Advanced Features (80% Complete)
 - [x] **Player Tracker:** Track player movement based on COMM (plexts) activity. Draw lines between portals for recent activity.
-- [ ] **Data Export:** Export captured portal/link/field data to standard formats (JSON/KML).
+- [x] **Data Export:** Export captured portal/link/field data to standard formats (JSON/KML/GeoJSON).
 - [ ] **Path Prediction:** Speculative pathing for players based on historical patterns.
-- [ ] **Game Score:** Render GameScore Popup using intercepting `getGameScore`.
-- [ ] **Region Score:** Render RegionScoreDetails Popup using intercepting `getRegionScoreDetails`.
+- [x] **Game Score:** Render GameScore Popup using intercepting `getGameScore`.
+- [x] **Region Score:** Render RegionScoreDetails Popup using intercepting `getRegionScoreDetails`.
 
 ### Phase 6: Architecture Analysis (0% Complete)
 - [ ] **Comparative Study:** Analyse and compare reference mobile and desktop implementation in `reference` directory.

@@ -1,5 +1,6 @@
 import { h, Fragment } from 'preact';
 import { useState, useEffect } from 'preact/hooks';
+import { useStore } from '@iris/core';
 import { MapOverlay } from './MapOverlay';
 import { Topbar } from './Topbar';
 import { PlayerStatsPopup } from './PlayerStatsPopup';
@@ -8,6 +9,8 @@ import { FiltersPopup } from './FiltersPopup';
 import { PortalInfoPopup } from './PortalInfoPopup';
 import { CommPopup } from './CommPopup';
 import { GameScorePopup } from './GameScorePopup';
+import { RegionScorePopup } from './RegionScorePopup';
+import { ExportPopup } from './ExportPopup';
 import { ThemePopup } from '../../../../plugins/src/theme-selector/ThemePopup';
 import { MapThemePopup } from './MapThemePopup';
 import { PluginsPopup } from './PluginsPopup';
@@ -27,6 +30,8 @@ export function IRISOverlay() {
     const [showMapThemePopup, setShowMapThemePopup] = useState(false);
     const [showPluginsPopup, setShowPluginsPopup] = useState(false);
     const [showGameScorePopup, setShowGameScorePopup] = useState(false);
+    const [showRegionScorePopup, setShowRegionScorePopup] = useState(false);
+    const [showExportPopup, setShowExportPopup] = useState(false);
     const [showMap, setShowMap] = useState(true);
 
     const togglePlayerStatsPopup = () => setShowPlayerStatsPopup(!showPlayerStatsPopup);
@@ -42,6 +47,18 @@ export function IRISOverlay() {
         }
         setShowGameScorePopup(!showGameScorePopup);
     };
+    const toggleRegionScorePopup = () => {
+        if (!showRegionScorePopup) {
+            const { lat, lng } = useStore.getState().mapState;
+            window.postMessage({ 
+                type: 'IRIS_REGION_SCORE_REQUEST',
+                lat, 
+                lng 
+            }, '*');
+        }
+        setShowRegionScorePopup(!showRegionScorePopup);
+    };
+    const toggleExportPopup = () => setShowExportPopup(!showExportPopup);
     const toggleMapVisibility = () => setShowMap(!showMap);
 
     useEffect(() => {
@@ -61,6 +78,8 @@ export function IRISOverlay() {
                 onToggleMapVisibility={toggleMapVisibility}
                 onToggleMapTheme={toggleMapThemePopup}
                 onToggleGameScore={toggleGameScorePopup}
+                onToggleRegionScore={toggleRegionScorePopup}
+                onToggleExport={toggleExportPopup}
                 showMap={showMap}
             />
             <div style={{ display: showMap ? 'block' : 'none' }}>
@@ -80,6 +99,14 @@ export function IRISOverlay() {
 
             {showGameScorePopup && (
                 <GameScorePopup onClose={toggleGameScorePopup} />
+            )}
+
+            {showRegionScorePopup && (
+                <RegionScorePopup onClose={toggleRegionScorePopup} />
+            )}
+
+            {showExportPopup && (
+                <ExportPopup onClose={toggleExportPopup} />
             )}
 
             {showStateDebugPopup && (

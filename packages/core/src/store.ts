@@ -18,7 +18,15 @@ export interface GameScore {
     resistance: number;
 }
 
+export interface RegionScore {
+    regionName: string;
+    gameScore: [number, number]; // [ENL, RES]
+    topAgents: { team: string; nick: string }[];
+    scoreHistory: [string, string, string][]; // [CP, ENL, RES]
+}
+
 export interface PortalMod {
+
     owner: string;
     name: string;
     rarity: string;
@@ -145,6 +153,9 @@ interface IRISState {
 
     gameScore: GameScore | null;
     setGameScore: (score: GameScore) => void;
+
+    regionScore: RegionScore | null;
+    setRegionScore: (score: RegionScore) => void;
 
     themeId: string;
     setTheme: (id: string) => void;
@@ -294,6 +305,9 @@ export const useStore = create<IRISState>()(
 
     gameScore: null,
     setGameScore: (score) => set(() => ({ gameScore: score })),
+
+    regionScore: null,
+    setRegionScore: (score) => set(() => ({ regionScore: score })),
 
     themeId: 'DEFAULT',
     setTheme: (id: string) => set(() => ({ themeId: id })),
