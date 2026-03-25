@@ -224,3 +224,78 @@
 .iris-btn-primary {
     background: #00ffff;
 }
+
+/* Portal Info Popup */
+.iris-portal-info {
+    font-size: 14px;
+}
+
+.iris-portal-image {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    border: 1px solid #333;
+}
+
+.iris-portal-name {
+    font-size: 1em;
+    font-weight: bold;
+    margin-bottom: 8px;
+    padding-right: 20px;
+    line-height: 1.3;
+}
+
+.iris-portal-stats {
+    display: flex;
+    gap: 16px;
+    font-size: 0.85em;
+    color: #aaaaaa;
+    margin-bottom: 4px;
+}
+
+.iris-portal-resonators-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+}
+
+.iris-portal-resonator-item {
+    background: #111;
+    border-radius: 3px;
+    padding: 3px 4px;
+    font-size: 0.75em;
+    border: 1px solid #333;
+    overflow: hidden;
+}
+
+.iris-portal-resonator-owner {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.iris-portal-mod-item {
+    background: #111;
+    border-radius: 3px;
+    padding: 3px 6px;
+    font-size: 0.75em;
+    border: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+}
+
+/* Mobile Responsiveness for all popups */
+@media (max-width: 600px) {
+    .iris-popup {
+        width: 90vw !important;
+        max-width: 90vw !important;
+        left: 5vw !important;
+        transform: none !important;
+    }
+    
+    .iris-portal-resonators-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

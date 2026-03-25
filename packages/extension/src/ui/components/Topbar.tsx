@@ -193,6 +193,13 @@ export function Topbar({
                     <div className="iris-menu-dropdown" style={{ borderColor: theme.AQUA }}>
                         <div
                             className="iris-menu-item"
+                            onClick={() => { onTogglePlayerStats(); setShowMenu(false); }}
+                            style={{ color: theme.AQUA }}
+                        >
+                            Profile
+                        </div>
+                        <div
+                            className="iris-menu-item"
                             onClick={() => { onToggleFiltersPopup(); setShowMenu(false); }}
                             style={{ color: theme.AQUA }}
                         >
@@ -257,7 +264,7 @@ export function Topbar({
                 <LocationSearch />
             </div>
 
-            {/* Right side: Navigate and Profile icon */}
+            {/* Right side: Navigate icon */}
             <div className="iris-topbar-right">
                 <button
                     className="iris-geolocate-btn"
@@ -267,7 +274,6 @@ export function Topbar({
                 >
                     {locStatus === 'LOCATING...' ? '...' : '◎'}
                 </button>
-                <button className="iris-profile-btn" style={SHARED_STYLES.btnStyle(true, theme.AQUA)} onClick={onTogglePlayerStats}>👤</button>
             </div>
         </div>
     );

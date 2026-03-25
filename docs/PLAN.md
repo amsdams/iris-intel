@@ -47,6 +47,8 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] **Map Theme Picker:** Added a popup to choose map theme (Light, Dark, Voyager, OSM).
 - [x] **CSS Centralization:** Migrated inline styles for core UI components (Popup, Topbar, Search, Menus) to a unified `iris.css` to improve maintainability and decouple layout from logic.
 - [x] **Development Workflow:** Formalized "Allowed/Preferred Commands" in `GEMINI.md` to ensure consistent build and release processes across sessions.
+- [x] **UI Refinement:** Move the Profile/Player Stats button from the Topbar into the main Menu to declutter the header.
+- [x] **Mobile Fix:** Optimize `PortalInfoPopup` for mobile; ensure large portal images don't push the popup off-screen (responsive image sizing).
 - [ ] **Next:** Performance: GeoJSON source throttling for extremely dense areas.
 - [ ] **Next:** Mobile Strategy: Decision between Capacitor App vs. Mobile Browser Extension.
 

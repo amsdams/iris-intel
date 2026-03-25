@@ -44,14 +44,7 @@ export function PortalInfoPopup() {
                             src={portal.image}
                             alt={portal.name || 'Portal'}
                             className="iris-portal-image"
-                            style={{
-                                width: '100%',
-                                height: '140px',
-                                objectFit: 'cover',
-                                borderRadius: '4px',
-                                marginBottom: '10px',
-                                border: `1px solid ${colour}`,
-                            }}
+                            style={{ border: `1px solid ${colour}` }}
                         />
                     </div>
                 )}
@@ -59,29 +52,13 @@ export function PortalInfoPopup() {
                 {/* Name */}
                 <div 
                     className="iris-portal-name"
-                    style={{
-                        fontSize: '1em',
-                        fontWeight: 'bold',
-                        color: colour,
-                        marginBottom: '8px',
-                        paddingRight: '20px',
-                        lineHeight: 1.3,
-                    }}
+                    style={{ color: colour }}
                 >
                     {portal.name || 'Loading...'}
                 </div>
 
                 {/* Basic stats */}
-                <div 
-                    className="iris-portal-stats"
-                    style={{
-                        display: 'flex',
-                        gap: '16px',
-                        fontSize: '0.85em',
-                        color: UI_COLORS.TEXT_MUTED,
-                        marginBottom: '4px',
-                    }}
-                >
+                <div className="iris-portal-stats">
                     <span className="iris-portal-stat-team">Team: <span style={{ color: colour }}>{teamName}</span></span>
                     {portal.level !== undefined && (
                         <span className="iris-portal-stat-level">Level: <span style={{ color: theme.LEVELS[portal.level] || '#ffff00' }}>{portal.level}</span></span>
@@ -103,24 +80,13 @@ export function PortalInfoPopup() {
                         <div className="iris-portal-section-title" style={{ fontSize: '0.8em', color: '#888', marginBottom: '4px' }}>
                             RESONATORS ({portal.resonators.length}/8)
                         </div>
-                        <div 
-                            className="iris-portal-resonators-grid"
-                            style={{
-                                display: 'grid',
-                                gridTemplateColumns: 'repeat(4, 1fr)',
-                                gap: '4px',
-                            }}
-                        >
+                        <div className="iris-portal-resonators-grid">
                             {portal.resonators.map((r, i) => (
                                 <div key={i} className="iris-portal-resonator-item" style={{
-                                    background: '#111',
-                                    borderRadius: '3px',
-                                    padding: '3px 4px',
-                                    fontSize: '0.75em',
                                     border: `1px solid ${theme.LEVELS[r.level] || UI_COLORS.BORDER_DIM}`,
                                 }}>
                                     <div className="iris-portal-resonator-level" style={{ color: theme.LEVELS[r.level] || '#ffff00' }}>L{r.level}</div>
-                                    <div className="iris-portal-resonator-owner" style={{ color: colour, overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.owner}</div>
+                                    <div className="iris-portal-resonator-owner" style={{ color: colour }}>{r.owner}</div>
                                 </div>
                             ))}
                         </div>
@@ -138,13 +104,7 @@ export function PortalInfoPopup() {
                                 const modRarityColor = theme.RARITY[m.rarity] || UI_COLORS.BORDER_DIM;
                                 return (
                                     <div key={i} className="iris-portal-mod-item" style={{
-                                        background: '#111',
-                                        borderRadius: '3px',
-                                        padding: '3px 6px',
-                                        fontSize: '0.75em',
                                         border: `1px solid ${modRarityColor}`,
-                                        display: 'flex',
-                                        justifyContent: 'space-between',
                                     }}>
                                         <span className="iris-portal-mod-info" style={{ color: modRarityColor }}>
                                             {m.rarity} {m.name}
