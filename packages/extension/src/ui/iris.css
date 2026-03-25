@@ -1,0 +1,226 @@
+.iris-overlay-root {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none; /* Let clicks pass through by default */
+    z-index: 9999;
+    font-family: monospace;
+}
+
+/* Ensure our UI elements within the root DO capture clicks */
+.iris-overlay-root > * {
+    pointer-events: auto;
+}
+
+/* Base scrollbar styling for a consistent look */
+.iris-popup-content::-webkit-scrollbar,
+.iris-comm-scroll-container::-webkit-scrollbar {
+    width: 4px;
+}
+
+.iris-popup-content::-webkit-scrollbar-track,
+.iris-comm-scroll-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.iris-popup-content::-webkit-scrollbar-thumb,
+.iris-comm-scroll-container::-webkit-scrollbar-thumb {
+    background: #00ffff;
+    border-radius: 2px;
+}
+
+/* Popup Styles */
+.iris-popup {
+    position: fixed;
+    z-index: 10002;
+    background: rgba(0, 0, 0, 0.92);
+    color: #ffffff;
+    padding: 16px;
+    border-radius: 8px;
+    border: 2px solid #00ffff;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.33);
+    font-family: monospace;
+    max-height: 80vh;
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.iris-popup-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: 18px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 4px;
+    z-index: 1;
+}
+
+.iris-popup-header {
+    cursor: move;
+    user-select: none;
+    touch-action: none;
+    margin-bottom: 8px;
+    padding-right: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.iris-popup-title {
+    margin: 0;
+    color: #00ffff;
+    font-size: 1.2em;
+    pointer-events: none;
+}
+
+.iris-popup-drag-spacer {
+    height: 10px;
+    width: 100%;
+    pointer-events: none;
+}
+
+.iris-popup-content {
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* Topbar Styles */
+.iris-topbar {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    height: 40px;
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.iris-topbar > * {
+    pointer-events: auto;
+}
+
+/* Location Search */
+.iris-location-search {
+    position: relative;
+    flex-grow: 1;
+    max-width: 600px;
+}
+
+.iris-search-input-group {
+    display: flex;
+    gap: 4px;
+}
+
+.iris-search-input {
+    flex: 1;
+    background: #111;
+    color: #00ffff;
+    border: 1px solid #00ffff;
+    border-radius: 3px;
+    padding: 4px 6px;
+    font-family: monospace;
+    font-size: 0.85em;
+    outline: none;
+}
+
+.iris-search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.95);
+    border: 1px solid #00ffff;
+    border-radius: 3px;
+    margin-top: 2px;
+    z-index: 10002;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.iris-search-result-item {
+    padding: 6px 8px;
+    cursor: pointer;
+    border-bottom: 1px solid #222;
+    font-size: 0.8em;
+}
+
+.iris-search-result-item:hover {
+    background: #1a1a1a;
+}
+
+.iris-search-result-name {
+    color: #00ffff;
+}
+
+.iris-search-result-details {
+    color: #666;
+    font-size: 0.9em;
+    margin-top: 1px;
+}
+
+/* Menu Dropdown */
+.iris-menu-container {
+    position: relative;
+}
+
+.iris-menu-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: rgba(0, 0, 0, 0.95);
+    border: 1px solid #00ffff;
+    border-radius: 3px;
+    margin-top: 2px;
+    z-index: 10002;
+    min-width: 150px;
+    overflow-y: auto;
+}
+
+.iris-menu-item {
+    padding: 6px 8px;
+    cursor: pointer;
+    border-bottom: 1px solid #222;
+    font-size: 0.8em;
+    color: #00ffff;
+}
+
+.iris-menu-item:hover {
+    background: #1a1a1a;
+}
+
+.iris-menu-divider {
+    border-top: 1px solid #333;
+    margin: 4px 0;
+}
+
+/* Shared Button Base (when using classes instead of SHARED_STYLES) */
+.iris-btn {
+    background: #555;
+    color: #000;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-weight: bold;
+    font-family: monospace;
+}
+
+.iris-btn:disabled {
+    cursor: default;
+    opacity: 0.7;
+}
+
+.iris-btn-primary {
+    background: #00ffff;
+}
