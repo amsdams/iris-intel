@@ -76,27 +76,22 @@ function LocationSearch() {
     };
 
     return (
-        <div style={{ position: 'relative', flexGrow: 1, maxWidth: '600px' }}>
-            <div style={{ display: 'flex', gap: '4px' }}>
+        <div className="iris-location-search">
+            <div className="iris-search-input-group">
                 <input
                     type="text"
                     value={query}
+                    className="iris-search-input"
                     onInput={(e) => setQuery((e.target as HTMLInputElement).value)}
                     onKeyDown={onKeyDown}
                     placeholder="Search location..."
                     style={{
-                        flex: 1,
-                        background: '#111',
                         color: theme.AQUA,
-                        border: `1px solid ${theme.AQUA}`,
-                        borderRadius: '3px',
-                        padding: '4px 6px',
-                        fontFamily: 'monospace',
-                        fontSize: '0.85em',
-                        outline: 'none',
+                        borderColor: theme.AQUA,
                     }}
                 />
                 <button
+                    className="iris-search-btn"
                     onClick={search}
                     disabled={searching}
                     style={SHARED_STYLES.btnStyle(!searching, theme.AQUA)}
@@ -106,47 +101,24 @@ function LocationSearch() {
             </div>
 
             {error && (
-                <div style={{ color: '#ff4444', fontSize: '0.75em', marginTop: '4px' }}>
+                <div className="iris-search-error" style={{ color: '#ff4444', fontSize: '0.75em', marginTop: '4px' }}>
                     {error}
                 </div>
             )}
 
             {/* Results dropdown */}
             {results.length > 0 && (
-                <div style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    background: 'rgba(0, 0, 0, 0.95)',
-                    border: `1px solid ${theme.AQUA}`,
-                    borderRadius: '3px',
-                    marginTop: '2px',
-                    zIndex: 10002,
-                    maxHeight: '200px',
-                    overflowY: 'auto',
-                }}>
+                <div className="iris-search-results" style={{ borderColor: theme.AQUA }}>
                     {results.map((result) => (
                         <div
                             key={result.place_id}
+                            className="iris-search-result-item"
                             onClick={() => navigateTo(result)}
-                            style={{
-                                padding: '6px 8px',
-                                cursor: 'pointer',
-                                borderBottom: '1px solid #222',
-                                fontSize: '0.8em',
-                            }}
-                            onMouseEnter={(e) => {
-                                (e.currentTarget as HTMLDivElement).style.background = '#1a1a1a';
-                            }}
-                            onMouseLeave={(e) => {
-                                (e.currentTarget as HTMLDivElement).style.background = 'transparent';
-                            }}
                         >
-                            <div style={{ color: theme.AQUA }}>
+                            <div className="iris-search-result-name" style={{ color: theme.AQUA }}>
                                 {result.display_name.split(',')[0]}
                             </div>
-                            <div style={{ color: '#666', fontSize: '0.9em', marginTop: '1px' }}>
+                            <div className="iris-search-result-details">
                                 {result.display_name.split(',').slice(1, 3).join(',')}
                             </div>
                         </div>
@@ -213,137 +185,65 @@ export function Topbar({
     };
 
     return (
-        <div style={{
-            position: 'absolute',
-            top: '10px',
-            left: '10px',
-            right: '10px',
-            height: '40px',
-            zIndex: 10001,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '10px',
-            pointerEvents: 'none',
-        }}>
+        <div className="iris-topbar">
             {/* Left side: Menu button */}
-            <div style={{ position: 'relative', pointerEvents: 'auto' }}>
-                <button style={SHARED_STYLES.btnStyle(true, theme.AQUA)} onClick={() => setShowMenu(!showMenu)}>☰</button>
+            <div className="iris-menu-container">
+                <button className="iris-menu-btn" style={SHARED_STYLES.btnStyle(true, theme.AQUA)} onClick={() => setShowMenu(!showMenu)}>☰</button>
                 {showMenu && (
-                    <div style={{
-                        position: 'absolute',
-                        top: '100%',
-                        left: 0,
-                        background: 'rgba(0, 0, 0, 0.95)',
-                        border: `1px solid ${theme.AQUA}`,
-                        borderRadius: '3px',
-                        marginTop: '2px',
-                        zIndex: 10002,
-                        minWidth: '150px',
-                        overflowY: 'auto',
-                    }}>
+                    <div className="iris-menu-dropdown" style={{ borderColor: theme.AQUA }}>
                         <div
+                            className="iris-menu-item"
                             onClick={() => { onToggleFiltersPopup(); setShowMenu(false); }}
-                            style={{
-                                padding: '6px 8px',
-                                cursor: 'pointer',
-                                borderBottom: '1px solid #222',
-                                fontSize: '0.8em',
-                                color: theme.AQUA,
-                            }}
-                            onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#1a1a1a'; }}
-                            onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
+                            style={{ color: theme.AQUA }}
                         >
                             Filters
                         </div>
                         <div
+                            className="iris-menu-item"
                             onClick={() => { onToggleComm(); setShowMenu(false); }}
-                            style={{
-                                padding: '6px 8px',
-                                cursor: 'pointer',
-                                borderBottom: '1px solid #222',
-                                fontSize: '0.8em',
-                                color: theme.AQUA,
-                            }}
-                            onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#1a1a1a'; }}
-                            onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
+                            style={{ color: theme.AQUA }}
                         >
                             Comm
                         </div>
                         <div
+                            className="iris-menu-item"
                             onClick={() => { onTogglePlugins(); setShowMenu(false); }}
-                            style={{
-                                padding: '6px 8px',
-                                cursor: 'pointer',
-                                borderBottom: '1px solid #222',
-                                fontSize: '0.8em',
-                                color: theme.AQUA,
-                            }}
-                            onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#1a1a1a'; }}
-                            onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
+                            style={{ color: theme.AQUA }}
                         >
                             Plugins
                         </div>
                         <div
+                            className="iris-menu-item"
                             onClick={() => { onToggleMapTheme(); setShowMenu(false); }}
-                            style={{
-                                padding: '6px 8px',
-                                cursor: 'pointer',
-                                borderBottom: '1px solid #222',
-                                fontSize: '0.8em',
-                                color: theme.AQUA,
-                            }}
-                            onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#1a1a1a'; }}
-                            onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
+                            style={{ color: theme.AQUA }}
                         >
                             Map Theme
                         </div>
                         <div
+                            className="iris-menu-item"
                             onClick={() => { onToggleStateDebug(); setShowMenu(false); }}
-                            style={{
-                                padding: '6px 8px',
-                                cursor: 'pointer',
-                                borderBottom: '1px solid #222',
-                                fontSize: '0.8em',
-                                color: theme.AQUA,
-                            }}
-                            onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#1a1a1a'; }}
-                            onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
+                            style={{ color: theme.AQUA }}
                         >
                             State Debug
                         </div>
                         <div
+                            className="iris-menu-item"
                             onClick={() => { onToggleMapVisibility(); setShowMenu(false); }}
-                            style={{
-                                padding: '6px 8px',
-                                cursor: 'pointer',
-                                borderBottom: '1px solid #222',
-                                fontSize: '0.8em',
-                                color: theme.AQUA,
-                            }}
-                            onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#1a1a1a'; }}
-                            onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
+                            style={{ color: theme.AQUA }}
                         >
                             {showMap ? 'SHOW INTEL MAP' : 'SHOW IRIS MAP'}
                         </div>
 
                         {menuItems.length > 0 && (
-                            <div style={{ borderTop: '1px solid #333', margin: '4px 0' }} />
+                            <div className="iris-menu-divider" />
                         )}
 
                         {menuItems.map((item) => (
                             <div
                                 key={item.id}
+                                className={`iris-menu-item iris-menu-item-plugin-${item.id}`}
                                 onClick={() => { item.onClick(); setShowMenu(false); }}
-                                style={{
-                                    padding: '6px 8px',
-                                    cursor: 'pointer',
-                                    borderBottom: '1px solid #222',
-                                    fontSize: '0.8em',
-                                    color: theme.AQUA,
-                                }}
-                                onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#1a1a1a'; }}
-                                onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
+                                style={{ color: theme.AQUA }}
                             >
                                 {item.label}
                             </div>
@@ -353,20 +253,21 @@ export function Topbar({
             </div>
 
             {/* Middle: Search input */}
-            <div style={{ display: 'flex', justifyContent: 'center', flexGrow: 1, pointerEvents: 'auto' }}>
+            <div className="iris-topbar-center">
                 <LocationSearch />
             </div>
 
             {/* Right side: Navigate and Profile icon */}
-            <div style={{ display: 'flex', gap: '10px', pointerEvents: 'auto' }}>
+            <div className="iris-topbar-right">
                 <button
+                    className="iris-geolocate-btn"
                     onClick={goToMyLocation}
                     disabled={locStatus === 'LOCATING...'}
                     style={SHARED_STYLES.btnStyle(locStatus !== 'LOCATING...', theme.AQUA)}
                 >
                     {locStatus === 'LOCATING...' ? '...' : '◎'}
                 </button>
-                <button style={SHARED_STYLES.btnStyle(true, theme.AQUA)} onClick={onTogglePlayerStats}>👤</button>
+                <button className="iris-profile-btn" style={SHARED_STYLES.btnStyle(true, theme.AQUA)} onClick={onTogglePlayerStats}>👤</button>
             </div>
         </div>
     );

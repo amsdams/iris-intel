@@ -25,6 +25,7 @@ export function PortalInfoPopup() {
     return (
         <Popup
             onClose={() => selectPortal(null)}
+            title="Portal Details"
             style={{
                 bottom: '20px',
                 left: '50%',
@@ -35,117 +36,131 @@ export function PortalInfoPopup() {
                 boxShadow: `0 0 20px ${colour}55`,
             }}
         >
-            {/* Image */}
-            {portal.image && (
-                <img
-                    src={portal.image}
-                    alt={portal.name || 'Portal'}
+            <div className="iris-portal-info">
+                {/* Image */}
+                {portal.image && (
+                    <div className="iris-portal-image-container">
+                        <img
+                            src={portal.image}
+                            alt={portal.name || 'Portal'}
+                            className="iris-portal-image"
+                            style={{
+                                width: '100%',
+                                height: '140px',
+                                objectFit: 'cover',
+                                borderRadius: '4px',
+                                marginBottom: '10px',
+                                border: `1px solid ${colour}`,
+                            }}
+                        />
+                    </div>
+                )}
+
+                {/* Name */}
+                <div 
+                    className="iris-portal-name"
                     style={{
-                        width: '100%',
-                        height: '140px',
-                        objectFit: 'cover',
-                        borderRadius: '4px',
-                        marginBottom: '10px',
-                        border: `1px solid ${colour}`,
+                        fontSize: '1em',
+                        fontWeight: 'bold',
+                        color: colour,
+                        marginBottom: '8px',
+                        paddingRight: '20px',
+                        lineHeight: 1.3,
                     }}
-                />
-            )}
-
-            {/* Name */}
-            <div style={{
-                fontSize: '1em',
-                fontWeight: 'bold',
-                color: colour,
-                marginBottom: '8px',
-                paddingRight: '20px',
-                lineHeight: 1.3,
-            }}>
-                {portal.name || 'Loading...'}
-            </div>
-
-            {/* Basic stats */}
-            <div style={{
-                display: 'flex',
-                gap: '16px',
-                fontSize: '0.85em',
-                color: UI_COLORS.TEXT_MUTED,
-                marginBottom: '4px',
-            }}>
-                <span>Team: <span style={{ color: colour }}>{teamName}</span></span>
-                {portal.level !== undefined && (
-                    <span>Level: <span style={{ color: theme.LEVELS[portal.level] || '#ffff00' }}>{portal.level}</span></span>
-                )}
-                {portal.health !== undefined && (
-                    <span>Health: <span style={{ color: '#00ff00' }}>{portal.health}%</span></span>
-                )}
-            </div>
-
-            {portal.owner && (
-                <div style={{ fontSize: '0.85em', color: UI_COLORS.TEXT_MUTED, marginBottom: '8px' }}>
-                    Owner: <span style={{ color: colour }}>{portal.owner}</span>
+                >
+                    {portal.name || 'Loading...'}
                 </div>
-            )}
 
-            {/* Resonators */}
-            {portal.resonators && portal.resonators.length > 0 && (
-                <div style={{ marginBottom: '8px' }}>
-                    <div style={{ fontSize: '0.8em', color: '#888', marginBottom: '4px' }}>
-                        RESONATORS ({portal.resonators.length}/8)
-                    </div>
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(4, 1fr)',
-                        gap: '4px',
-                    }}>
-                        {portal.resonators.map((r, i) => (
-                            <div key={i} style={{
-                                background: '#111',
-                                borderRadius: '3px',
-                                padding: '3px 4px',
-                                fontSize: '0.75em',
-                                border: `1px solid ${theme.LEVELS[r.level] || UI_COLORS.BORDER_DIM}`,
-                            }}>
-                                <div style={{ color: theme.LEVELS[r.level] || '#ffff00' }}>L{r.level}</div>
-                                <div style={{ color: colour }}>{r.owner}</div>
-                            </div>
-                        ))}
-                    </div>
+                {/* Basic stats */}
+                <div 
+                    className="iris-portal-stats"
+                    style={{
+                        display: 'flex',
+                        gap: '16px',
+                        fontSize: '0.85em',
+                        color: UI_COLORS.TEXT_MUTED,
+                        marginBottom: '4px',
+                    }}
+                >
+                    <span className="iris-portal-stat-team">Team: <span style={{ color: colour }}>{teamName}</span></span>
+                    {portal.level !== undefined && (
+                        <span className="iris-portal-stat-level">Level: <span style={{ color: theme.LEVELS[portal.level] || '#ffff00' }}>{portal.level}</span></span>
+                    )}
+                    {portal.health !== undefined && (
+                        <span className="iris-portal-stat-health">Health: <span style={{ color: '#00ff00' }}>{portal.health}%</span></span>
+                    )}
                 </div>
-            )}
 
-            {/* Mods */}
-            {portal.mods && portal.mods.length > 0 && (
-                <div style={{ marginBottom: '8px' }}>
-                    <div style={{ fontSize: '0.8em', color: '#888', marginBottom: '4px' }}>
-                        MODS
+                {portal.owner && (
+                    <div className="iris-portal-owner" style={{ fontSize: '0.85em', color: UI_COLORS.TEXT_MUTED, marginBottom: '8px' }}>
+                        Owner: <span className="iris-portal-owner-name" style={{ color: colour }}>{portal.owner}</span>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                        {portal.mods.map((m, i) => {
-                            const modRarityColor = theme.RARITY[m.rarity] || UI_COLORS.BORDER_DIM;
-                            return (
-                                <div key={i} style={{
+                )}
+
+                {/* Resonators */}
+                {portal.resonators && portal.resonators.length > 0 && (
+                    <div className="iris-portal-resonators-section" style={{ marginBottom: '8px' }}>
+                        <div className="iris-portal-section-title" style={{ fontSize: '0.8em', color: '#888', marginBottom: '4px' }}>
+                            RESONATORS ({portal.resonators.length}/8)
+                        </div>
+                        <div 
+                            className="iris-portal-resonators-grid"
+                            style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(4, 1fr)',
+                                gap: '4px',
+                            }}
+                        >
+                            {portal.resonators.map((r, i) => (
+                                <div key={i} className="iris-portal-resonator-item" style={{
                                     background: '#111',
                                     borderRadius: '3px',
-                                    padding: '3px 6px',
+                                    padding: '3px 4px',
                                     fontSize: '0.75em',
-                                    border: `1px solid ${modRarityColor}`,
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
+                                    border: `1px solid ${theme.LEVELS[r.level] || UI_COLORS.BORDER_DIM}`,
                                 }}>
-                                    <span style={{ color: modRarityColor }}>
-                                        {m.rarity} {m.name}
-                                    </span>
-                                    <span style={{ color: colour }}>{m.owner}</span>
+                                    <div className="iris-portal-resonator-level" style={{ color: theme.LEVELS[r.level] || '#ffff00' }}>L{r.level}</div>
+                                    <div className="iris-portal-resonator-owner" style={{ color: colour, overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.owner}</div>
                                 </div>
-                            );
-                        })}
+                            ))}
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {/* Coordinates */}
-            <div style={{ marginTop: '4px', fontSize: '0.75em', color: '#666' }}>
-                {portal.lat.toFixed(6)}, {portal.lng.toFixed(6)}
+                {/* Mods */}
+                {portal.mods && portal.mods.length > 0 && (
+                    <div className="iris-portal-mods-section" style={{ marginBottom: '8px' }}>
+                        <div className="iris-portal-section-title" style={{ fontSize: '0.8em', color: '#888', marginBottom: '4px' }}>
+                            MODS
+                        </div>
+                        <div className="iris-portal-mods-list" style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                            {portal.mods.map((m, i) => {
+                                const modRarityColor = theme.RARITY[m.rarity] || UI_COLORS.BORDER_DIM;
+                                return (
+                                    <div key={i} className="iris-portal-mod-item" style={{
+                                        background: '#111',
+                                        borderRadius: '3px',
+                                        padding: '3px 6px',
+                                        fontSize: '0.75em',
+                                        border: `1px solid ${modRarityColor}`,
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                    }}>
+                                        <span className="iris-portal-mod-info" style={{ color: modRarityColor }}>
+                                            {m.rarity} {m.name}
+                                        </span>
+                                        <span className="iris-portal-mod-owner" style={{ color: colour }}>{m.owner}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {/* Coordinates */}
+                <div className="iris-portal-coords" style={{ marginTop: '4px', fontSize: '0.75em', color: '#666' }}>
+                    {portal.lat.toFixed(6)}, {portal.lng.toFixed(6)}
+                </div>
             </div>
         </Popup>
     );

@@ -71,14 +71,17 @@ export function CommPopup({ onClose }: CommPopupProps) {
             if (type === 'AT_PLAYER' && typeof text === 'string' && !text.startsWith('@')) {
                 text = '@' + text;
             }
+            return <span key={i} className={`iris-comm-markup iris-comm-markup-${type.toLowerCase()}`} style={{ color }}>{String(text || '')}</span>;
         } else if (type === 'PORTAL' || type === 'LINK') {
             const teamKey = normalizeTeam(data.team) as 'E' | 'R' | 'M' | 'N';
             color = type === 'PORTAL' ? theme.AQUA : (theme[teamKey] || theme.AQUA);
+            return <span key={i} className={`iris-comm-markup iris-comm-markup-${type.toLowerCase()}`} style={{ color }}>{String(text || '')}</span>;
         } else if (type === 'SECURE') {
             color = '#ffff00';
+            return <span key={i} className="iris-comm-markup iris-comm-markup-secure" style={{ color }}>{String(text || '')}</span>;
         }
 
-        return <span key={i} style={{ color }}>{String(text || '')}</span>;
+        return <span key={i} className="iris-comm-markup iris-comm-markup-text" style={{ color }}>{String(text || '')}</span>;
     };
 
     const renderActionLine = (markup: any[]) => {
@@ -87,13 +90,10 @@ export function CommPopup({ onClose }: CommPopupProps) {
 
         for (let i = 0; i < markup.length; i++) {
             const [type, data] = markup[i];
-            
-            // If we hit a portal or link in a system message, we stop rendering the action line
             if (type === 'PORTAL' || type === 'LINK') break;
 
             if (type === 'TEXT') {
                 let text = typeof data === 'string' ? data : data.plain;
-                // Check if this is the last text segment before a portal/link
                 const next = markup[i+1];
                 if (next && (next[0] === 'PORTAL' || next[0] === 'LINK')) {
                     for (const reg of connectors) {
@@ -114,15 +114,13 @@ export function CommPopup({ onClose }: CommPopupProps) {
     const renderPlext = (p: Plext) => {
         const markup = p.markup || [];
         const isSystem = p.type !== 'PLAYER_GENERATED';
-        
-        // Find portals for Line 2 and 3
         const portals = markup.filter(m => m[0] === 'PORTAL');
         const links = markup.filter(m => m[0] === 'LINK');
         const primaryPortal = portals.length > 0 ? portals[portals.length - 1][1] : 
                         (links.length > 0 ? links[0][1] : null);
 
         return (
-            <div key={p.id} style={{
+            <div key={p.id} className={`iris-comm-message ${isSystem ? 'iris-comm-message-system' : 'iris-comm-message-user'}`} style={{
                 marginBottom: SPACING.MD,
                 fontSize: '0.85em',
                 lineHeight: '1.4',
@@ -133,20 +131,21 @@ export function CommPopup({ onClose }: CommPopupProps) {
                 background: p.categories === 2 ? `${theme.AQUA}08` : 'transparent',
             }}>
                 {/* Line 1: Time + Action */}
-                <div style={{ marginBottom: '2px' }}>
-                    <span style={{ color: UI_COLORS.TEXT_MUTED, fontSize: '0.8em', marginRight: SPACING.XS }}>
+                <div className="iris-comm-line iris-comm-action-line" style={{ marginBottom: '2px' }}>
+                    <span className="iris-comm-timestamp" style={{ color: UI_COLORS.TEXT_MUTED, fontSize: '0.8em', marginRight: SPACING.XS }}>
                         [{formatTime(p.time)}]
                     </span>
-                    <span style={{ opacity: isSystem ? 0.9 : 1 }}>
+                    <span className="iris-comm-action-content" style={{ opacity: isSystem ? 0.9 : 1 }}>
                         {isSystem ? renderActionLine(markup) : markup.map((m, i) => renderMarkupSegment(m, i))}
                     </span>
                 </div>
 
                 {/* System-only lines for Portal Details */}
                 {isSystem && primaryPortal && (
-                    <div style={{ paddingLeft: '65px' }}>
+                    <div className="iris-comm-portal-details" style={{ paddingLeft: '65px' }}>
                         {/* Line 2: Portal Name */}
                         <div 
+                            className="iris-comm-line iris-comm-portal-name"
                             style={{ 
                                 color: theme.AQUA, 
                                 fontWeight: 'bold', 
@@ -168,7 +167,7 @@ export function CommPopup({ onClose }: CommPopupProps) {
                         </div>
 
                         {/* Line 3: Portal Address */}
-                        <div style={{ 
+                        <div className="iris-comm-line iris-comm-portal-address" style={{ 
                             color: '#888', 
                             fontSize: '0.8em',
                             fontStyle: 'italic'
@@ -181,7 +180,6 @@ export function CommPopup({ onClose }: CommPopupProps) {
         );
     };
 
-    // Group plexts by date
     const rows: any[] = [];
     let lastDate: string | null = null;
 
@@ -189,7 +187,7 @@ export function CommPopup({ onClose }: CommPopupProps) {
         const dateStr = new Date(p.time).toDateString();
         if (dateStr !== lastDate) {
             rows.push(
-                <div key={`date-${dateStr}`} style={{
+                <div key={`date-${dateStr}`} className="iris-comm-date-header" style={{
                     textAlign: 'center',
                     margin: `${SPACING.MD} 0`,
                     borderBottom: `1px solid ${UI_COLORS.BORDER_DIM}`,
@@ -218,6 +216,7 @@ export function CommPopup({ onClose }: CommPopupProps) {
             title="COMM"
             headerExtras={
                 <button 
+                    className="iris-comm-refresh-btn"
                     onClick={handleRefresh}
                     style={{
                         background: 'transparent',
@@ -243,10 +242,11 @@ export function CommPopup({ onClose }: CommPopupProps) {
                 marginLeft: 'auto',
             }}
         >
-            <div style={{ display: 'flex', borderBottom: `1px solid ${UI_COLORS.BORDER_DIM}`, marginBottom: SPACING.SM }}>
+            <div className="iris-comm-tabs" style={{ display: 'flex', borderBottom: `1px solid ${UI_COLORS.BORDER_DIM}`, marginBottom: SPACING.SM }}>
                 {['ALL', 'FACTION', 'ALERTS'].map(tab => (
                     <div 
                         key={tab}
+                        className={`iris-comm-tab ${activeTab === tab ? 'iris-comm-tab-active' : ''}`}
                         onClick={() => setActiveTab(tab)}
                         style={{
                             padding: '6px 12px',
@@ -264,6 +264,7 @@ export function CommPopup({ onClose }: CommPopupProps) {
 
             <div 
                 ref={scrollRef}
+                className="iris-comm-scroll-container"
                 style={{
                     flex: 1,
                     overflowY: 'auto',
@@ -271,7 +272,7 @@ export function CommPopup({ onClose }: CommPopupProps) {
                 }}
             >
                 {rows.length === 0 ? (
-                    <div style={{ padding: SPACING.LG, textAlign: 'center', color: UI_COLORS.TEXT_MUTED }}>
+                    <div className="iris-comm-empty" style={{ padding: SPACING.LG, textAlign: 'center', color: UI_COLORS.TEXT_MUTED }}>
                         No messages yet
                     </div>
                 ) : rows}

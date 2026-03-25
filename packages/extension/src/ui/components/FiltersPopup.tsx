@@ -49,9 +49,6 @@ export function FiltersPopup({ onClose }: FiltersPopupProps) {
     const showLevel = useStore((state) => state.showLevel);
     const toggleShowLevel = useStore((state) => state.toggleShowLevel);
 
-    const themeId = useStore((state) => state.themeId);
-    const setTheme = useStore((state) => state.setTheme);
-
     const handleLevelToggle = (level: number) => () => {
         toggleShowLevel(level);
     };
@@ -68,78 +65,80 @@ export function FiltersPopup({ onClose }: FiltersPopupProps) {
                 maxWidth: '420px',
             }}
         >
-            <h3 style={{ margin: '15px 0 8px 0', color: UI_COLORS.AQUA, fontSize: FONT_SIZES.H3 }}>Layers</h3>
-            <label style={checkboxContainerStyle}>
-                <input
-                    type="checkbox"
-                    checked={showFields}
-                    onChange={toggleShowFields}
-                    style={checkboxStyle}
-                />
-                Fields
-            </label>
+            <div className="iris-filters">
+                <h3 className="iris-filter-section-title" style={{ margin: '15px 0 8px 0', color: UI_COLORS.AQUA, fontSize: FONT_SIZES.H3 }}>Layers</h3>
+                <label className="iris-filter-item" style={checkboxContainerStyle}>
+                    <input
+                        type="checkbox"
+                        checked={showFields}
+                        onChange={toggleShowFields}
+                        style={checkboxStyle}
+                    />
+                    Fields
+                </label>
 
-            <label style={checkboxContainerStyle}>
-                <input
-                    type="checkbox"
-                    checked={showLinks}
-                    onChange={toggleShowLinks}
-                    style={checkboxStyle}
-                />
-                Links
-            </label>
+                <label className="iris-filter-item" style={checkboxContainerStyle}>
+                    <input
+                        type="checkbox"
+                        checked={showLinks}
+                        onChange={toggleShowLinks}
+                        style={checkboxStyle}
+                    />
+                    Links
+                </label>
 
-            <h3 style={{ margin: '15px 0 8px 0', color: UI_COLORS.AQUA, fontSize: FONT_SIZES.H3 }}>Faction</h3>
-            <label style={checkboxContainerStyle}>
-                <input
-                    type="checkbox"
-                    checked={showResistance}
-                    onChange={toggleShowResistance}
-                    style={checkboxStyle}
-                />
-                Resistance
-            </label>
-            <label style={checkboxContainerStyle}>
-                <input
-                    type="checkbox"
-                    checked={showEnlightened}
-                    onChange={toggleShowEnlightened}
-                    style={checkboxStyle}
-                />
-                Enlightened
-            </label>
-            <label style={checkboxContainerStyle}>
-                <input
-                    type="checkbox"
-                    checked={showMachina}
-                    onChange={toggleShowMachina}
-                    style={checkboxStyle}
-                />
-                Machina
-            </label>
-            <label style={checkboxContainerStyle}>
-                <input
-                    type="checkbox"
-                    checked={showUnclaimedPortals}
-                    onChange={toggleShowUnclaimedPortals}
-                    style={checkboxStyle}
-                />
-                Unclaimed Portals
-            </label>
+                <h3 className="iris-filter-section-title" style={{ margin: '15px 0 8px 0', color: UI_COLORS.AQUA, fontSize: FONT_SIZES.H3 }}>Faction</h3>
+                <label className="iris-filter-item" style={checkboxContainerStyle}>
+                    <input
+                        type="checkbox"
+                        checked={showResistance}
+                        onChange={toggleShowResistance}
+                        style={checkboxStyle}
+                    />
+                    Resistance
+                </label>
+                <label className="iris-filter-item" style={checkboxContainerStyle}>
+                    <input
+                        type="checkbox"
+                        checked={showEnlightened}
+                        onChange={toggleShowEnlightened}
+                        style={checkboxStyle}
+                    />
+                    Enlightened
+                </label>
+                <label className="iris-filter-item" style={checkboxContainerStyle}>
+                    <input
+                        type="checkbox"
+                        checked={showMachina}
+                        onChange={toggleShowMachina}
+                        style={checkboxStyle}
+                    />
+                    Machina
+                </label>
+                <label className="iris-filter-item" style={checkboxContainerStyle}>
+                    <input
+                        type="checkbox"
+                        checked={showUnclaimedPortals}
+                        onChange={toggleShowUnclaimedPortals}
+                        style={checkboxStyle}
+                    />
+                    Unclaimed Portals
+                </label>
 
-            <h3 style={{ margin: '15px 0 8px 0', color: UI_COLORS.AQUA, fontSize: FONT_SIZES.H3 }}>Portal Levels</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '5px' }}>
-                {[1, 2, 3, 4, 5, 6, 7, 8].map((level) => (
-                    <label key={level} style={checkboxContainerStyle}>
-                        <input
-                            type="checkbox"
-                            checked={showLevel[level]}
-                            onChange={handleLevelToggle(level)}
-                            style={checkboxStyle}
-                        />
-                        L{level}
-                    </label>
-                ))}
+                <h3 className="iris-filter-section-title" style={{ margin: '15px 0 8px 0', color: UI_COLORS.AQUA, fontSize: FONT_SIZES.H3 }}>Portal Levels</h3>
+                <div className="iris-filter-levels-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '5px' }}>
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((level) => (
+                        <label key={level} className="iris-filter-level-item" style={checkboxContainerStyle}>
+                            <input
+                                type="checkbox"
+                                checked={showLevel[level]}
+                                onChange={handleLevelToggle(level)}
+                                style={checkboxStyle}
+                            />
+                            L{level}
+                        </label>
+                    ))}
+                </div>
             </div>
         </Popup>
     );

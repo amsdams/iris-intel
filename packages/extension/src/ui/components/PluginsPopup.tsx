@@ -27,9 +27,9 @@ export function PluginsPopup({ onClose }: PluginsPopupProps) {
                 width: '350px',
             }}
         >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div className="iris-plugins-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {availablePlugins.length === 0 ? (
-                    <div style={{ textAlign: 'center', color: UI_COLORS.TEXT_MUTED, padding: SPACING.MD }}>
+                    <div className="iris-plugins-empty" style={{ textAlign: 'center', color: UI_COLORS.TEXT_MUTED, padding: SPACING.MD }}>
                         No plugins loaded.
                     </div>
                 ) : (
@@ -38,6 +38,7 @@ export function PluginsPopup({ onClose }: PluginsPopupProps) {
                         return (
                             <div 
                                 key={plugin.manifest.id}
+                                className={`iris-plugin-item ${isEnabled ? 'iris-plugin-item-enabled' : 'iris-plugin-item-disabled'}`}
                                 style={{
                                     background: '#111',
                                     padding: '10px',
@@ -48,11 +49,12 @@ export function PluginsPopup({ onClose }: PluginsPopupProps) {
                                     gap: '4px',
                                 }}
                             >
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ fontWeight: 'bold', color: isEnabled ? UI_COLORS.AQUA : '#fff' }}>
+                                <div className="iris-plugin-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span className="iris-plugin-name" style={{ fontWeight: 'bold', color: isEnabled ? UI_COLORS.AQUA : '#fff' }}>
                                         {plugin.manifest.name}
                                     </span>
                                     <button 
+                                        className="iris-plugin-toggle-btn"
                                         onClick={() => togglePlugin(plugin.manifest.id)}
                                         style={{
                                             background: isEnabled ? '#ff4444' : UI_COLORS.AQUA,
@@ -68,10 +70,10 @@ export function PluginsPopup({ onClose }: PluginsPopupProps) {
                                         {isEnabled ? 'DISABLE' : 'ENABLE'}
                                     </button>
                                 </div>
-                                <div style={{ fontSize: '0.75em', color: UI_COLORS.TEXT_MUTED }}>
+                                <div className="iris-plugin-description" style={{ fontSize: '0.75em', color: UI_COLORS.TEXT_MUTED }}>
                                     {plugin.manifest.description}
                                 </div>
-                                <div style={{ fontSize: '0.7em', color: '#666' }}>
+                                <div className="iris-plugin-meta" style={{ fontSize: '0.7em', color: '#666' }}>
                                     v{plugin.manifest.version} by {plugin.manifest.author}
                                 </div>
                             </div>

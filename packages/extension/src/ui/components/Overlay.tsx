@@ -43,7 +43,7 @@ export function IRISOverlay() {
     }, []);
 
     return (
-        <Fragment>
+        <div className="iris-overlay-root">
             <Topbar
                 onTogglePlayerStats={togglePlayerStatsPopup}
                 onToggleStateDebug={toggleStateDebugPopup}
@@ -90,6 +90,6 @@ export function IRISOverlay() {
             )}
 
             <StatusBar />
-        </Fragment>
+        </div>
     );
 }

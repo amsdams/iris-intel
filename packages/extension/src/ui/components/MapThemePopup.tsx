@@ -34,10 +34,11 @@ export function MapThemePopup({ onClose }: MapThemePopupProps) {
                 width: '300px',
             }}
         >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div className="iris-map-themes" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {Object.keys(MAP_THEMES).map((id) => (
                     <div 
                         key={id} 
+                        className={`iris-map-theme-item ${mapThemeId === id ? 'iris-map-theme-item-active' : ''}`}
                         style={{ 
                             ...itemStyle, 
                             borderColor: mapThemeId === id ? UI_COLORS.AQUA : '#333',
@@ -51,7 +52,7 @@ export function MapThemePopup({ onClose }: MapThemePopupProps) {
                             readOnly
                             style={{ marginRight: '10px' }}
                         />
-                        <span style={{ color: mapThemeId === id ? UI_COLORS.AQUA : '#fff' }}>
+                        <span className="iris-map-theme-name" style={{ color: mapThemeId === id ? UI_COLORS.AQUA : '#fff' }}>
                             {MAP_THEMES[id].name}
                         </span>
                     </div>

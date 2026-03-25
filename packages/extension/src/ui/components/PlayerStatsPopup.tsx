@@ -34,20 +34,25 @@ export function PlayerStatsPopup({ onClose }: PlayerStatsPopupProps) {
                 boxShadow: `0 0 20px ${teamColour}55`,
             }}
         >
-            <div style={{
-                fontSize: '1em',
-                fontWeight: 'bold',
-                color: teamColour,
-                marginBottom: '8px',
-                paddingRight: '20px', // Make space for close button
-            }}>
-                {playerStats.nickname}
-            </div>
-            <div style={{ fontSize: '0.8em', color: UI_COLORS.TEXT_MUTED }}>
-                Level {playerStats.level}
-                {playerStats.ap !== null && (
-                    <span> · {playerStats.ap.toLocaleString()} AP</span>
-                )}
+            <div className="iris-player-stats">
+                <div 
+                    className="iris-player-nickname"
+                    style={{
+                        fontSize: '1em',
+                        fontWeight: 'bold',
+                        color: teamColour,
+                        marginBottom: '8px',
+                        paddingRight: '20px', // Make space for close button
+                    }}
+                >
+                    {playerStats.nickname}
+                </div>
+                <div className="iris-player-meta" style={{ fontSize: '0.8em', color: UI_COLORS.TEXT_MUTED }}>
+                    <span className="iris-player-level">Level {playerStats.level}</span>
+                    {playerStats.ap !== null && (
+                        <span className="iris-player-ap"> · {playerStats.ap.toLocaleString()} AP</span>
+                    )}
+                </div>
             </div>
         </Popup>
     );

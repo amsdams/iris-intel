@@ -22,20 +22,21 @@ export function PluginFeaturePopup() {
                 borderColor: selectedFeature.color || UI_COLORS.AQUA,
             }}
         >
-            <div style={{ fontSize: '0.9em', lineHeight: '1.6' }}>
-                <div style={{ marginBottom: SPACING.XS }}>
+            <div className="iris-plugin-feature-details" style={{ fontSize: '0.9em', lineHeight: '1.6' }}>
+                <div className="iris-feature-row iris-feature-player" style={{ marginBottom: SPACING.XS }}>
                     <span style={{ color: UI_COLORS.TEXT_MUTED }}>Player: </span>
                     <span style={{ color: selectedFeature.color || UI_COLORS.TEXT_BASE, fontWeight: 'bold' }}>
                         {name}
                     </span>
                 </div>
-                <div style={{ marginBottom: SPACING.XS }}>
+                <div className="iris-feature-row iris-feature-time" style={{ marginBottom: SPACING.XS }}>
                     <span style={{ color: UI_COLORS.TEXT_MUTED }}>Time: </span>
                     <span>{new Date(time).toLocaleString()}</span>
                 </div>
-                <div style={{ marginBottom: SPACING.XS }}>
+                <div className="iris-feature-row iris-feature-portal" style={{ marginBottom: SPACING.XS }}>
                     <span style={{ color: UI_COLORS.TEXT_MUTED }}>Portal: </span>
                     <span 
+                        className="iris-feature-portal-link"
                         style={{ color: UI_COLORS.AQUA, cursor: 'pointer', borderBottom: '1px dotted' }}
                         onClick={() => {
                             window.postMessage({
@@ -48,7 +49,7 @@ export function PluginFeaturePopup() {
                         {portalName}
                     </span>
                 </div>
-                <div style={{ marginTop: SPACING.SM, fontSize: '0.8em', color: '#666' }}>
+                <div className="iris-feature-row iris-feature-coords" style={{ marginTop: SPACING.SM, fontSize: '0.8em', color: '#666' }}>
                     {lat.toFixed(6)}, {lng.toFixed(6)}
                 </div>
             </div>

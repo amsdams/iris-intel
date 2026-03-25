@@ -32,24 +32,28 @@ export function StateDebugPopup({ onClose }: StateDebugPopupProps) {
                 minWidth: '250px',
             }}
         >
-            <div style={{ marginBottom: '10px', paddingBottom: '10px', borderBottom: '1px solid #444' }}>
-                <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: '8px' }}>
-                    <input
-                        type="checkbox"
-                        checked={debugLogging}
-                        onChange={toggleDebugLogging}
-                    />
-                    Enable Debug Logging
-                </label>
+            <div className="iris-debug-info">
+                <div className="iris-debug-toggle" style={{ marginBottom: '10px', paddingBottom: '10px', borderBottom: '1px solid #444' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: '8px' }}>
+                        <input
+                            type="checkbox"
+                            checked={debugLogging}
+                            onChange={toggleDebugLogging}
+                        />
+                        Enable Debug Logging
+                    </label>
+                </div>
+                <div className="iris-debug-stats">
+                    <p className="iris-debug-stat-item" style={{ margin: 0 }}>Portals: {portalCount}</p>
+                    <p className="iris-debug-stat-item" style={{ margin: 0 }}>Links: {linkCount}</p>
+                    <p className="iris-debug-stat-item" style={{ margin: 0 }}>Fields: {fieldCount}</p>
+                    {Object.values(statsItems).map((item) => (
+                        <p key={item.id} className={`iris-debug-stat-item iris-debug-stat-${item.id}`} style={{ margin: 0 }}>
+                            {item.label}: {typeof item.value === 'function' ? item.value() : item.value}
+                        </p>
+                    ))}
+                </div>
             </div>
-            <p style={{ margin: 0 }}>Portals: {portalCount}</p>
-            <p style={{ margin: 0 }}>Links: {linkCount}</p>
-            <p style={{ margin: 0 }}>Fields: {fieldCount}</p>
-            {Object.values(statsItems).map((item) => (
-                <p key={item.id} style={{ margin: 0 }}>
-                    {item.label}: {typeof item.value === 'function' ? item.value() : item.value}
-                </p>
-            ))}
         </Popup>
     );
 }

@@ -1,6 +1,5 @@
 import { h, ComponentChildren } from 'preact';
 import { useState, useRef, useEffect } from 'preact/hooks';
-import { UI_COLORS, FONT_SIZES, SPACING } from '../theme';
 
 interface PopupProps {
     onClose: () => void;
@@ -9,36 +8,6 @@ interface PopupProps {
     style?: h.JSX.CSSProperties;
     headerExtras?: ComponentChildren;
 }
-
-const basePopupStyle: h.JSX.CSSProperties = {
-    position: 'fixed',
-    zIndex: 10002,
-    background: UI_COLORS.BG_BASE,
-    color: UI_COLORS.TEXT_BASE,
-    padding: SPACING.MD,
-    borderRadius: '8px',
-    border: `2px solid ${UI_COLORS.AQUA}`,
-    boxShadow: `0 0 20px ${UI_COLORS.GLOW}`,
-    fontFamily: 'monospace',
-    maxHeight: '80vh',
-    pointerEvents: 'auto',
-    display: 'flex',
-    flexDirection: 'column',
-};
-
-const closeButtonStyle: h.JSX.CSSProperties = {
-    position: 'absolute',
-    top: '8px',
-    right: '8px',
-    background: 'transparent',
-    border: 'none',
-    color: UI_COLORS.TEXT_BASE,
-    fontSize: '18px',
-    cursor: 'pointer',
-    lineHeight: 1,
-    padding: '0 4px',
-    zIndex: 1,
-};
 
 export function Popup({ onClose, title, children, style, headerExtras }: PopupProps) {
     const [pos, setPos] = useState<{ x: number, y: number } | null>(null);
@@ -91,20 +60,8 @@ export function Popup({ onClose, title, children, style, headerExtras }: PopupPr
         };
     }, [dragging]);
 
-    const dragHandleStyle: h.JSX.CSSProperties = {
-        cursor: 'move',
-        userSelect: 'none',
-        touchAction: 'none', // Prevents scrolling while dragging on mobile
-        marginBottom: SPACING.SM,
-        paddingRight: '30px', // Space for close button
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    };
-
     // Merge styles. If pos is set, we override positioning from props
     const finalStyle: h.JSX.CSSProperties = {
-        ...basePopupStyle,
         ...style,
         ...(pos ? {
             left: `${pos.x}px`,
@@ -116,31 +73,26 @@ export function Popup({ onClose, title, children, style, headerExtras }: PopupPr
     };
 
     return (
-        <div ref={popupRef} style={finalStyle}>
-            <button onClick={onClose} style={closeButtonStyle}>✕</button>
+        <div ref={popupRef} style={finalStyle} className="iris-popup">
+            <button onClick={onClose} className="iris-popup-close">✕</button>
 
             {/* Drag Handle: Title or a spacer if no title */}
             <div
                 onMouseDown={onStart}
                 onTouchStart={onStart}
-                style={dragHandleStyle}
+                className="iris-popup-header"
             >
                 {title ? (
-                    <h2 style={{
-                        margin: 0,
-                        color: UI_COLORS.AQUA,
-                        fontSize: FONT_SIZES.H2,
-                        pointerEvents: 'none'
-                    }}>
+                    <h2 className="iris-popup-title">
                         {title}
                     </h2>
                 ) : (
-                    <div style={{ height: '10px', width: '100%', pointerEvents: 'none' }} />
+                    <div className="iris-popup-drag-spacer" />
                 )}
                 {headerExtras}
             </div>
 
-            <div style={{ flex: 1, overflowY: 'auto' }}>
+            <div className="iris-popup-content">
                 {children}
             </div>
         </div>

@@ -41,6 +41,7 @@ export function StatusBar() {
     return (
         <div 
             onClick={toggleExpanded}
+            className={`iris-status-bar ${isExpanded ? 'iris-status-bar-expanded' : 'iris-status-bar-collapsed'}`}
             style={{
                 position: 'fixed',
                 bottom: 0,
@@ -63,18 +64,19 @@ export function StatusBar() {
         >
             {/* Expanded List */}
             {isExpanded && (
-                <div style={{ 
+                <div className="iris-status-expanded-content" style={{ 
                     flex: 1, 
                     overflowY: 'auto', 
                     padding: SPACING.SM,
                     borderBottom: `1px solid ${UI_COLORS.BORDER_DIM}`,
                     background: 'rgba(0, 10, 20, 0.4)'
                 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: SPACING.SM, borderBottom: '1px solid #444', paddingBottom: '4px' }}>
-                        <span style={{ color: UI_COLORS.ERROR, fontWeight: 'bold' }}>
+                    <div className="iris-status-header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: SPACING.SM, borderBottom: '1px solid #444', paddingBottom: '4px' }}>
+                        <span className="iris-status-summary" style={{ color: UI_COLORS.ERROR, fontWeight: 'bold' }}>
                             LOGS: {successfulRequests.length} OK, {failedRequests.length} NET, {jsErrors.length} JS
                         </span>
                         <span 
+                            className="iris-status-clear-btn"
                             onClick={handleClear}
                             style={{ color: UI_COLORS.AQUA, cursor: 'pointer', textDecoration: 'underline' }}
                         >
@@ -84,14 +86,14 @@ export function StatusBar() {
                     
                     {/* JS Errors Section */}
                     {jsErrors.length > 0 && (
-                        <div style={{ marginBottom: SPACING.MD }}>
-                            <div style={{ color: UI_COLORS.WARNING, marginBottom: '4px', borderBottom: '1px solid #440000' }}>JS ERRORS</div>
+                        <div className="iris-status-section iris-status-section-js-errors" style={{ marginBottom: SPACING.MD }}>
+                            <div className="iris-status-section-title" style={{ color: UI_COLORS.WARNING, marginBottom: '4px', borderBottom: '1px solid #440000' }}>JS ERRORS</div>
                             {jsErrors.map((err, i) => (
-                                <div key={`js-${i}`} style={{ marginBottom: '4px', borderBottom: '1px solid #222', paddingBottom: '2px' }}>
-                                    <div style={{ color: UI_COLORS.WARNING }}>
+                                <div key={`js-${i}`} className="iris-status-log-entry iris-status-log-entry-error" style={{ marginBottom: '4px', borderBottom: '1px solid #222', paddingBottom: '2px' }}>
+                                    <div className="iris-status-log-message" style={{ color: UI_COLORS.WARNING }}>
                                         [{new Date(err.time).toLocaleTimeString()}] {err.message}
                                     </div>
-                                    <div style={{ color: '#888', fontSize: '9px' }}>
+                                    <div className="iris-status-log-source" style={{ color: '#888', fontSize: '9px' }}>
                                         {err.source ? `${err.source}:${err.lineno}:${err.colno}` : 'Unknown source'}
                                     </div>
                                 </div>
@@ -101,15 +103,15 @@ export function StatusBar() {
 
                     {/* Net Errors Section */}
                     {failedRequests.length > 0 && (
-                        <div style={{ marginBottom: SPACING.MD }}>
-                            <div style={{ color: UI_COLORS.ERROR, marginBottom: '4px', borderBottom: '1px solid #440000' }}>NETWORK ERRORS</div>
+                        <div className="iris-status-section iris-status-section-net-errors" style={{ marginBottom: SPACING.MD }}>
+                            <div className="iris-status-section-title" style={{ color: UI_COLORS.ERROR, marginBottom: '4px', borderBottom: '1px solid #440000' }}>NETWORK ERRORS</div>
                             {failedRequests.map((req, i) => (
-                                <div key={`net-err-${i}`} style={{ marginBottom: '4px', borderBottom: '1px solid #222', paddingBottom: '2px' }}>
-                                    <div style={{ color: UI_COLORS.ERROR, display: 'flex', justifyContent: 'space-between' }}>
+                                <div key={`net-err-${i}`} className="iris-status-log-entry iris-status-log-entry-error" style={{ marginBottom: '4px', borderBottom: '1px solid #222', paddingBottom: '2px' }}>
+                                    <div className="iris-status-log-message" style={{ color: UI_COLORS.ERROR, display: 'flex', justifyContent: 'space-between' }}>
                                         <span>[{new Date(req.time).toLocaleTimeString()}] {getEndpointName(req.url)}</span>
                                         <span>STATUS: {req.status}</span>
                                     </div>
-                                    <div style={{ color: '#888', fontSize: '9px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    <div className="iris-status-log-url" style={{ color: '#888', fontSize: '9px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                         {req.statusText} — {req.url}
                                     </div>
                                 </div>
@@ -119,14 +121,14 @@ export function StatusBar() {
 
                     {/* Successful Requests Section */}
                     {successfulRequests.length > 0 && (
-                        <div>
-                            <div style={{ color: UI_COLORS.AQUA, marginBottom: '4px', borderBottom: '1px solid #004444' }}>SUCCESSFUL REQUESTS</div>
+                        <div className="iris-status-section iris-status-section-success">
+                            <div className="iris-status-section-title" style={{ color: UI_COLORS.AQUA, marginBottom: '4px', borderBottom: '1px solid #004444' }}>SUCCESSFUL REQUESTS</div>
                             {successfulRequests.map((req, i) => (
-                                <div key={`net-ok-${i}`} style={{ marginBottom: '4px', borderBottom: '1px solid #222', paddingBottom: '2px' }}>
-                                    <div style={{ color: UI_COLORS.AQUA }}>
+                                <div key={`net-ok-${i}`} className="iris-status-log-entry iris-status-log-entry-ok" style={{ marginBottom: '4px', borderBottom: '1px solid #222', paddingBottom: '2px' }}>
+                                    <div className="iris-status-log-message" style={{ color: UI_COLORS.AQUA }}>
                                         [{new Date(req.time).toLocaleTimeString()}] {getEndpointName(req.url)}
                                     </div>
-                                    <div style={{ color: '#888', fontSize: '9px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    <div className="iris-status-log-url" style={{ color: '#888', fontSize: '9px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                         OK — {req.url}
                                     </div>
                                 </div>
@@ -135,20 +137,20 @@ export function StatusBar() {
                     )}
 
                     {!hasErrors && successfulRequests.length === 0 && (
-                        <div style={{ padding: SPACING.MD, textAlign: 'center', color: '#666' }}>No requests recorded</div>
+                        <div className="iris-status-empty" style={{ padding: SPACING.MD, textAlign: 'center', color: '#666' }}>No requests recorded</div>
                     )}
                 </div>
             )}
 
             {/* Main Bar */}
-            <div style={{
+            <div className="iris-status-main-bar" style={{
                 height: '24px',
                 display: 'flex',
                 alignItems: 'center',
                 padding: `0 ${SPACING.MD}`,
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                    <div style={{ 
+                <div className="iris-status-indicator-group" style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                    <div className="iris-status-led" style={{ 
                         width: '8px', 
                         height: '8px', 
                         borderRadius: '50%', 
@@ -157,21 +159,21 @@ export function StatusBar() {
                         boxShadow: activeRequests > 0 ? `0 0 5px ${UI_COLORS.AQUA}` : (hasErrors ? `0 0 5px ${UI_COLORS.ERROR}` : (successfulRequests.length > 0 ? `0 0 5px ${UI_COLORS.SUCCESS}` : 'none')),
                         transition: 'background 0.3s ease, box-shadow 0.3s ease'
                     }} />
-                    <span style={{ color: activeRequests > 0 ? UI_COLORS.TEXT_BASE : (hasErrors ? UI_COLORS.ERROR : UI_COLORS.TEXT_MUTED) }}>
+                    <span className="iris-status-text" style={{ color: activeRequests > 0 ? UI_COLORS.TEXT_BASE : (hasErrors ? UI_COLORS.ERROR : UI_COLORS.TEXT_MUTED) }}>
                         {activeRequests > 0 ? `NET: ${activeRequests} ACTIVE` : 'NET: IDLE'}
                         {successfulRequests.length > 0 && ` (${successfulRequests.length} OK)`}
                         {failedRequests.length > 0 && ` (${failedRequests.length} NET)`}
                         {jsErrors.length > 0 && ` (${jsErrors.length} JS)`}
                     </span>
                     {activeRequests > 0 && lastRequestUrl && (
-                        <span style={{ marginLeft: SPACING.MD, opacity: 0.8 }}>
+                        <span className="iris-status-current-endpoint" style={{ marginLeft: SPACING.MD, opacity: 0.8 }}>
                             FETCHING {getEndpointName(lastRequestUrl)}...
                         </span>
                     )}
                 </div>
 
                 {/* Simple Progress Bar */}
-                <div style={{ 
+                <div className="iris-status-progress-bg" style={{ 
                     width: '100px', 
                     height: '2px', 
                     background: '#222', 
@@ -180,7 +182,7 @@ export function StatusBar() {
                     position: 'relative'
                 }}>
                     {activeRequests > 0 && (
-                        <div style={{
+                        <div className="iris-status-progress-bar" style={{
                             position: 'absolute',
                             top: 0,
                             left: 0,

@@ -1,4 +1,5 @@
 import { render, h } from 'preact';
+import '../ui/iris.css';
 import { IRISOverlay } from '../ui/components/Overlay';
 import { useStore, pluginManager, normalizeTeam } from '@iris/core';
 import PortalNamesPlugin from '../../../plugins/src/portal-names';
