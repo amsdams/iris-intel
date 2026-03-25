@@ -68,6 +68,7 @@ export interface IRIS_API {
     removeMenuItem: (id: string) => void;
     setTheme: (id: string) => void;
     getTheme: () => string;
+    getThemeColors: () => { E: string; R: string; M: string; N: string };
   };
   utils: {
     normalizeTeam: (team: string | undefined) => string;

@@ -72,7 +72,9 @@
         const level = document.querySelector('#player_level')?.textContent?.trim();
         const ap = document.querySelector('.number')?.textContent?.trim()?.replace(/,/g, '');
         const teamEl = document.querySelector('#player_stats .RESISTANCE, #player_stats .ENLIGHTENED');
-        const team = teamEl?.classList.contains('RESISTANCE') ? 'R' : 'E';
+        let team = 'N';
+        if (teamEl?.classList.contains('RESISTANCE')) team = 'R';
+        else if (teamEl?.classList.contains('ENLIGHTENED')) team = 'E';
 
         if (nickname) {
             window.postMessage({

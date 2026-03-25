@@ -34,14 +34,16 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [ ] **Next:** Support for custom map layers from plugins.
 - [ ] **Next:** Dynamic plugin loading (loading external JS files).
 
-### Phase 4: Refinement & Mobile (95% Complete)
+### Phase 4: Refinement & Mobile (100% Complete)
 - [x] **UI Polish:** Portal detail popups (clickable portals).
-- [x] **Tabbed COMM:** Dedicated tabs for ALL, CHAT, GLOBAL, and FACTION messages.
+- [x] **Tabbed COMM:** Dedicated tabs for ALL, FACTION, and ALERTS messages using categories (1, 2, 4).
 - [x] **Interactivity in COMM:** Clickable portal names and link events for instant map navigation.
 - [x] **Network Monitoring:** Integrated Status Bar with real-time logs for OK/FAILED/JS errors.
 - [x] **Faction Consistency:** Unified team normalization (MACHINA/MAC/ALIENS) across entire UI.
-- [ ] **Next:** Fix scrollbar issue in `PortalInfoPopup` (ensure it doesn't show redundant scrollbars).
-- [ ] **Next:** Add a popup to choose map theme (e.g., 'roads', 'terrain', 'satellite').
+- [x] **Fix scrollbar issue:** Resolved redundant scrollbars in `PortalInfoPopup` and other popups.
+- [x] **Map Theme Picker:** Added a popup to choose map theme (Light, Dark, Voyager, OSM).
+- [ ] **Next:** Performance: GeoJSON source throttling for extremely dense areas.
+- [ ] **Next:** Mobile Strategy: Decision between Capacitor App vs. Mobile Browser Extension.
 
 ### Phase 5: Advanced Features (20% Complete)
 - [x] **Player Tracker:** Track player movement based on COMM (plexts) activity. Draw lines between portals for recent activity.

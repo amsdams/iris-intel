@@ -164,6 +164,7 @@ interface TopbarProps {
     onToggleMapVisibility: () => void;
     onToggleComm: () => void;
     onTogglePlugins: () => void;
+    onToggleMapTheme: () => void;
     showMap: boolean;
 }
 
@@ -174,6 +175,7 @@ export function Topbar({
     onToggleMapVisibility,
     onToggleComm,
     onTogglePlugins,
+    onToggleMapTheme,
     showMap
 }: TopbarProps) {
     const [locStatus, setLocStatus] = useState<'NAVIGATE TO ME' | 'LOCATING...'>('NAVIGATE TO ME');
@@ -281,6 +283,20 @@ export function Topbar({
                             onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
                         >
                             Plugins
+                        </div>
+                        <div
+                            onClick={() => { onToggleMapTheme(); setShowMenu(false); }}
+                            style={{
+                                padding: '6px 8px',
+                                cursor: 'pointer',
+                                borderBottom: '1px solid #222',
+                                fontSize: '0.8em',
+                                color: theme.AQUA,
+                            }}
+                            onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#1a1a1a'; }}
+                            onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
+                        >
+                            Map Theme
                         </div>
                         <div
                             onClick={() => { onToggleStateDebug(); setShowMenu(false); }}

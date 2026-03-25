@@ -69,6 +69,25 @@ export const THEMES: Record<string, ThemeColors> = {
     }
 };
 
+export const MAP_THEMES: Record<string, { name: string; url: string }> = {
+    LIGHT: {
+        name: 'Light (Carto)',
+        url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+    },
+    DARK: {
+        name: 'Dark (Carto)',
+        url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+    },
+    VOYAGER: {
+        name: 'Voyager (Carto)',
+        url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+    },
+    OSM: {
+        name: 'OpenStreetMap',
+        url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    },
+};
+
 export const TEAM_NAME: Record<string, string> = {
     E: 'Enlightened',
     R: 'Resistance',

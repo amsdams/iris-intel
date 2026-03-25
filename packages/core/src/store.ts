@@ -136,6 +136,9 @@ interface IRISState {
     themeId: string;
     setTheme: (id: string) => void;
 
+    mapThemeId: string;
+    setMapTheme: (id: string) => void;
+
     activeRequests: number;
     lastRequestUrl: string;
     onRequestStart: (url: string) => void;
@@ -277,7 +280,10 @@ export const useStore = create<IRISState>()(
     setPlayerStats: (stats) => set(() => ({ playerStats: stats })),
 
     themeId: 'DEFAULT',
-    setTheme: (id) => set(() => ({ themeId: id })),
+    setTheme: (id: string) => set(() => ({ themeId: id })),
+
+    mapThemeId: 'DARK',
+    setMapTheme: (id: string) => set(() => ({ mapThemeId: id })),
 
     activeRequests: 0,
     lastRequestUrl: '',

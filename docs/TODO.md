@@ -23,6 +23,10 @@ This document tracks the major completed tasks and the next priorities for the p
 
 - **Refinement:**
     - [x] **UI Polish:** Portal detail popups (clickable portals).
+    - [x] **Player Name Coloring:** Unified team colors across all UI components.
+    - [x] **Tabbed COMM:** Grouped messages by ALL, FACTION, and ALERTS.
+    - [x] **Scrollbar Fix:** Removed redundant scrollbars in Popups.
+    - [x] **Map Theme Picker:** Support for Light, Dark, Voyager, and OSM themes.
 
 
 ## 🎯 Next Priorities
@@ -32,10 +36,6 @@ This document tracks the major completed tasks and the next priorities for the p
 - [ ] **Next:** Dynamic plugin loading (loading external JS files).
 
 ### Refinement & Mobile
-- [ ] **Next:** Color all player names with team color across the UI.
-- [ ] **Next:** Update `CommPopup` to show group (filter) messages by "all", "faction" and "alerts".
-- [ ] **Next:** Fix scrollbar issue in `PortalInfoPopup`.
-- [ ] **Next:** Add Map Theme picker popup (roads, terrain, etc.).
 - [ ] **Performance:** GeoJSON source throttling for extremely dense areas.
 - [ ] **Mobile Strategy:** Decision between Capacitor App vs. Mobile Browser Extension.
 

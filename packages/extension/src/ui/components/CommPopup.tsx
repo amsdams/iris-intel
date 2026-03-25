@@ -29,10 +29,9 @@ export function CommPopup({ onClose }: CommPopupProps) {
     }, []);
 
     const filteredPlexts = plexts.filter(p => {
-        if (activeTab === 'ALL') return true;
-        if (activeTab === 'CHAT') return p.type === 'PLAYER_GENERATED';
-        if (activeTab === 'GLOBAL') return p.type === 'SYSTEM_BROADCAST';
-        if (activeTab === 'FACTION') return p.type === 'SYSTEM_NARROWCAST';
+        if (activeTab === 'ALL') return p.categories === 1 || p.categories === 2;
+        if (activeTab === 'FACTION') return p.categories === 2;
+        if (activeTab === 'ALERTS') return p.categories === 4;
         return true;
     });
 
@@ -155,7 +154,7 @@ export function CommPopup({ onClose }: CommPopupProps) {
             }}
         >
             <div style={{ display: 'flex', borderBottom: `1px solid ${UI_COLORS.BORDER_DIM}`, marginBottom: SPACING.SM }}>
-                {['ALL', 'CHAT', 'GLOBAL', 'FACTION'].map(tab => (
+                {['ALL', 'FACTION', 'ALERTS'].map(tab => (
                     <div 
                         key={tab}
                         onClick={() => setActiveTab(tab)}

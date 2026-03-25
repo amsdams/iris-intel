@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useStore } from '@iris/core';
-import { THEMES } from '../theme';
+import { THEMES, MAP_THEMES } from '../theme';
 
 export function MapOverlay() {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -20,7 +20,16 @@ export function MapOverlay() {
   const pluginMarkers = useRef<maplibregl.Marker[]>([]);
   const { lat, lng, zoom } = useStore((state) => state.mapState);
   const themeId = useStore((state) => state.themeId);
+  const mapThemeId = useStore((state) => state.mapThemeId);
   const theme = THEMES[themeId] || THEMES.DEFAULT;
+
+  const getMapThemeTiles = (id: string) => {
+    const mt = MAP_THEMES[id] || MAP_THEMES.DARK;
+    if (mt.url.includes('{s}')) {
+        return ['a', 'b', 'c', 'd'].map(s => mt.url.replace('{s}', s));
+    }
+    return [mt.url];
+  };
 
   const TEAM_COLOUR_EXPR = [
     'match', ['get', 'team'],
@@ -55,12 +64,7 @@ export function MapOverlay() {
         sources: {
           osm: {
             type: 'raster',
-            tiles: [
-              'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-              'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-              'https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-              'https://d.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'
-            ],
+            tiles: getMapThemeTiles(useStore.getState().mapThemeId),
             tileSize: 256,
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
             maxzoom: 20,
@@ -265,6 +269,15 @@ export function MapOverlay() {
     map.current.setPaintProperty('portals', 'circle-color', TEAM_COLOUR_EXPR);
     map.current.setPaintProperty('portals', 'circle-stroke-color', TEAM_COLOUR_EXPR);
   }, [themeId, styleLoaded]);
+
+  // Sync Map Theme
+  useEffect(() => {
+    if (!map.current || !styleLoaded) return;
+    const source = map.current.getSource('osm') as maplibregl.RasterSource;
+    if (source) {
+        source.setTiles(getMapThemeTiles(mapThemeId));
+    }
+  }, [mapThemeId, styleLoaded]);
 
   // Sync GeoJSON Data
   useEffect(() => {

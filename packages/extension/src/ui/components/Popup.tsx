@@ -21,7 +21,6 @@ const basePopupStyle: h.JSX.CSSProperties = {
     boxShadow: `0 0 20px ${UI_COLORS.GLOW}`,
     fontFamily: 'monospace',
     maxHeight: '80vh',
-    overflowY: 'auto',
     pointerEvents: 'auto',
     display: 'flex',
     flexDirection: 'column',

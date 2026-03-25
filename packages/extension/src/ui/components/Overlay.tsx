@@ -8,6 +8,7 @@ import { FiltersPopup } from './FiltersPopup';
 import { PortalInfoPopup } from './PortalInfoPopup';
 import { CommPopup } from './CommPopup';
 import { ThemePopup } from '../../../../plugins/src/theme-selector/ThemePopup';
+import { MapThemePopup } from './MapThemePopup';
 import { PluginsPopup } from './PluginsPopup';
 import { StatusBar } from './StatusBar';
 import { PluginFeaturePopup } from './PluginFeaturePopup';
@@ -22,6 +23,7 @@ export function IRISOverlay() {
     const [showFiltersPopup, setShowFiltersPopup] = useState(false);
     const [showCommPopup, setShowCommPopup] = useState(false);
     const [showThemePopup, setShowThemePopup] = useState(false);
+    const [showMapThemePopup, setShowMapThemePopup] = useState(false);
     const [showPluginsPopup, setShowPluginsPopup] = useState(false);
     const [showMap, setShowMap] = useState(true);
 
@@ -30,6 +32,7 @@ export function IRISOverlay() {
     const toggleFiltersPopup = () => setShowFiltersPopup(!showFiltersPopup);
     const toggleCommPopup = () => setShowCommPopup(!showCommPopup);
     const toggleThemePopup = () => setShowThemePopup((v) => !v);
+    const toggleMapThemePopup = () => setShowMapThemePopup(!showMapThemePopup);
     const togglePluginsPopup = () => setShowPluginsPopup(!showPluginsPopup);
     const toggleMapVisibility = () => setShowMap(!showMap);
 
@@ -48,6 +51,7 @@ export function IRISOverlay() {
                 onToggleComm={toggleCommPopup}
                 onTogglePlugins={togglePluginsPopup}
                 onToggleMapVisibility={toggleMapVisibility}
+                onToggleMapTheme={toggleMapThemePopup}
                 showMap={showMap}
             />
             <div style={{ display: showMap ? 'block' : 'none' }}>
@@ -75,6 +79,10 @@ export function IRISOverlay() {
 
             {showThemePopup && (
                 <ThemePopup onClose={toggleThemePopup} />
+            )}
+
+            {showMapThemePopup && (
+                <MapThemePopup onClose={toggleMapThemePopup} />
             )}
 
             {showPluginsPopup && (
