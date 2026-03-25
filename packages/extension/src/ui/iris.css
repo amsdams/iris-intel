@@ -193,11 +193,17 @@
 }
 
 .iris-menu-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
     padding: 6px 8px;
     cursor: pointer;
     border-bottom: 1px solid #222;
     font-size: 0.8em;
     color: #00ffff;
+    font-family: monospace;
 }
 
 .iris-menu-item:hover {

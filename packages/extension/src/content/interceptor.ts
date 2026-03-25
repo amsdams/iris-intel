@@ -68,20 +68,31 @@
     };
 
     const readPlayerStats = () => {
-        const nickname = document.querySelector('.player_nickname')?.textContent?.trim();
-        const level = document.querySelector('#player_level')?.textContent?.trim();
-        const ap = document.querySelector('.number')?.textContent?.trim()?.replace(/,/g, '');
-        const teamEl = document.querySelector('#player_stats .RESISTANCE, #player_stats .ENLIGHTENED');
+        // Try DOM selectors first
+        let nickname = document.querySelector('.player_nickname')?.textContent?.trim();
+        let levelStr = document.querySelector('#player_level')?.textContent?.trim();
+        let apStr = document.querySelector('.number')?.textContent?.trim()?.replace(/,/g, '');
+        let teamEl = document.querySelector('#player_stats .RESISTANCE, #player_stats .ENLIGHTENED');
         let team = 'N';
-        if (teamEl?.classList.contains('RESISTANCE')) team = 'R';
-        else if (teamEl?.classList.contains('ENLIGHTENED')) team = 'E';
+
+        // Fallback to window.PLAYER object (common in Intel's main world)
+        if (!nickname && (window as any).PLAYER) {
+            const P = (window as any).PLAYER;
+            nickname = P.nickname;
+            levelStr = String(P.level);
+            apStr = String(P.ap);
+            team = P.team === 'RESISTANCE' ? 'R' : (P.team === 'ENLIGHTENED' ? 'E' : 'N');
+        } else {
+            if (teamEl?.classList.contains('RESISTANCE')) team = 'R';
+            else if (teamEl?.classList.contains('ENLIGHTENED')) team = 'E';
+        }
 
         if (nickname) {
             window.postMessage({
                 type: 'IRIS_PLAYER_STATS',
                 nickname,
-                level: level ? parseInt(level, 10) : null,
-                ap: ap ? parseInt(ap, 10) : null,
+                level: levelStr ? parseInt(levelStr, 10) : null,
+                ap: apStr ? parseInt(apStr, 10) : null,
                 team,
             }, '*');
         }

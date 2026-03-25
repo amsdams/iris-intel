@@ -285,7 +285,9 @@ export function MapOverlay() {
 
     // Filter and update portals
     const filteredPortals = Object.values(portals).filter(p => {
-        if (p.team === 'N' && !showUnclaimedPortals) return false;
+        if (p.team === 'N') {
+            return showUnclaimedPortals;
+        }
         if (p.team === 'M' && !showMachina) return false;
         if (p.team === 'R' && !showResistance) return false;
         if (p.team === 'E' && !showEnlightened) return false;
