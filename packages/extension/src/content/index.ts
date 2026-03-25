@@ -351,34 +351,41 @@ window.addEventListener('message', (event) => {
       }
       break;
     }
+case 'IRIS_PLAYER_STATS': {
+  useStore.getState().setLoginRequired(false);
+  const {
+      nickname,
+      level,
+      ap,
+      team,
+      energy,
+      xm_capacity,
+      available_invites,
+      min_ap_for_current_level,
+      min_ap_for_next_level
+  } = event.data;
 
-    case 'IRIS_PLAYER_STATS': {
-      const { 
-          nickname, 
-          level, 
-          ap, 
-          team,
-          energy,
-          xm_capacity,
-          available_invites,
-          min_ap_for_current_level,
-          min_ap_for_next_level 
-        } = event.data;
-      useStore.getState().setPlayerStats({ 
-          nickname, 
-          level, 
-          ap, 
-          team,
-          energy,
-          xm_capacity,
-          available_invites,
-          min_ap_for_current_level,
-          min_ap_for_next_level
-        });
-      break;
-    }
-    default:
-      break;
+  useStore.getState().setPlayerStats({
+      nickname,
+      level,
+      ap,
+      team,
+      energy,
+      xm_capacity,
+      available_invites,
+      min_ap_for_current_level,
+      min_ap_for_next_level
+  });
+  break;
+}
+
+case 'IRIS_LOGIN_REQUIRED': {
+    useStore.getState().setLoginRequired(true);
+    break;
+}
+
+  // Intel API data received
+
   }
 });
 
