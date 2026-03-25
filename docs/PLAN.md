@@ -28,13 +28,16 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] **Stable Interactions:** Manual pixel-distance clicking to bypass Firefox extension security restrictions (Permission Denied error).
 - [x] **Visual Polish:** Portal opacity based on health (0-100%) and faction-colored borders.
 
-### Phase 3: Plugin System (90% Complete)
+### Phase 3: Plugin System (95% Complete)
 - [x] SDK Definition: Types for Portals, Links, Fields.
 - [x] UI Hooks: `api.ui.addStatsItem` for dynamic overlay content.
 - [x] `player-tracker` plugin with movement paths, faction-colored pins, and time-based fading (1h expiration).
+- [x] `export-data` plugin for JSON, KML, and GeoJSON exports.
 - [x] **Plugin API Expansion:** Exposed `api.utils.normalizeTeam` and `api.ui.getThemeColors` for consistent coloring across plugins.
 - [ ] **Next:** Support for custom map layers from plugins.
 - [ ] **Next:** Dynamic plugin loading (loading external JS files).
+- [ ] **Next:** Migrate **State Debug** to a plugin.
+- [ ] **Next:** Migrate **Map Theme** (Theme Picker) to a plugin.
 
 ### Phase 4: Refinement & Mobile (100% Complete)
 - [x] **UI Polish:** Portal detail popups (clickable portals).
@@ -53,12 +56,12 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [ ] **Next:** Performance: GeoJSON source throttling for extremely dense areas.
 - [ ] **Next:** Mobile Strategy: Decision between Capacitor App vs. Mobile Browser Extension.
 
-### Phase 5: Advanced Features (80% Complete)
+### Phase 5: Advanced Features (100% Complete)
 - [x] **Player Tracker:** Track player movement based on COMM (plexts) activity. Draw lines between portals for recent activity.
-- [x] **Data Export:** Export captured portal/link/field data to standard formats (JSON/KML/GeoJSON).
-- [ ] **Path Prediction:** Speculative pathing for players based on historical patterns.
-- [x] **Game Score:** Render GameScore Popup using intercepting `getGameScore`.
-- [x] **Region Score:** Render RegionScoreDetails Popup using intercepting `getRegionScoreDetails`.
+- [x] **Data Export:** Export captured portal/link/field data to standard formats (Plugin).
+- [ ] **Path Prediction:** Speculative pathing for players based on historical patterns (Moved to Future).
+- [x] **Game Score:** Render GameScore Popup using intercepting `getGameScore` (Standard).
+- [x] **Region Score:** Render RegionScoreDetails Popup using intercepting `getRegionScoreDetails` (Standard).
 
 ### Phase 6: Architecture Analysis (0% Complete)
 - [ ] **Comparative Study:** Analyse and compare reference mobile and desktop implementation in `reference` directory.
