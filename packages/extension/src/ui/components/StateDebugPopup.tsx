@@ -19,6 +19,8 @@ export function StateDebugPopup({ onClose }: StateDebugPopupProps) {
     const portalCount = Object.keys(portals).length;
     const linkCount = Object.keys(links).length;
     const fieldCount = Object.keys(fields).length;
+    const debugLogging = useStore((state) => state.debugLogging);
+    const toggleDebugLogging = useStore((state) => state.toggleDebugLogging);
 
     return (
         <Popup
@@ -30,6 +32,16 @@ export function StateDebugPopup({ onClose }: StateDebugPopupProps) {
                 minWidth: '250px',
             }}
         >
+            <div style={{ marginBottom: '10px', paddingBottom: '10px', borderBottom: '1px solid #444' }}>
+                <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: '8px' }}>
+                    <input
+                        type="checkbox"
+                        checked={debugLogging}
+                        onChange={toggleDebugLogging}
+                    />
+                    Enable Debug Logging
+                </label>
+            </div>
             <p style={{ margin: 0 }}>Portals: {portalCount}</p>
             <p style={{ margin: 0 }}>Links: {linkCount}</p>
             <p style={{ margin: 0 }}>Fields: {fieldCount}</p>

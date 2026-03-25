@@ -169,7 +169,7 @@ pluginManager.load(PlayerTrackerPlugin as any);
 // ---------------------------------------------------------------------------
 
 window.addEventListener('message', (event) => {
-  if (event.data?.type?.startsWith('IRIS')) {
+  if (event.data?.type?.startsWith('IRIS') && useStore.getState().debugLogging) {
     console.log('IRIS raw message received:', event.data.type, event.data);
   }
 

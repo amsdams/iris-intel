@@ -167,6 +167,9 @@ interface IRISState {
     toggleShowMachina: () => void;
     toggleShowUnclaimedPortals: () => void;
     toggleShowLevel: (level: number) => void;
+
+    debugLogging: boolean;
+    toggleDebugLogging: () => void;
 }
 
 export const useStore = create<IRISState>()(
@@ -326,5 +329,9 @@ export const useStore = create<IRISState>()(
                 [level]: !state.showLevel[level],
             },
         })),
-    }))
-);
+
+        debugLogging: false,
+        toggleDebugLogging: () => set((state) => ({ debugLogging: !state.debugLogging })),
+        }))
+        );
+
