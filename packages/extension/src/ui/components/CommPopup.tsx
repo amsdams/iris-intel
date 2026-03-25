@@ -1,6 +1,6 @@
 import { h } from 'preact';
-import { useEffect, useState } from 'preact/hooks';
-import { useStore, normalizeTeam } from '@iris/core';
+import { useEffect, useState, useRef, useMemo } from 'preact/hooks';
+import { useStore, normalizeTeam, Plext } from '@iris/core';
 import { Popup } from './Popup';
 import { THEMES, UI_COLORS, SPACING } from '../theme';
 
@@ -13,10 +13,16 @@ export function CommPopup({ onClose }: CommPopupProps) {
     const themeId = useStore((state) => state.themeId);
     const theme = THEMES[themeId] || THEMES.DEFAULT;
     const [activeTab, setActiveTab] = useState('ALL');
+    const scrollRef = useRef<HTMLDivElement>(null);
 
     const formatTime = (ms: number) => {
         const date = new Date(ms);
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+    };
+
+    const formatDateHeader = (ms: number) => {
+        const date = new Date(ms);
+        return date.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     };
 
     const handleRefresh = () => {
@@ -28,102 +34,183 @@ export function CommPopup({ onClose }: CommPopupProps) {
         handleRefresh();
     }, []);
 
-    const filteredPlexts = plexts.filter(p => {
-        if (activeTab === 'ALL') return p.categories === 1 || p.categories === 2;
-        if (activeTab === 'FACTION') return p.categories === 2;
-        if (activeTab === 'ALERTS') return p.categories === 4;
-        return true;
-    });
+    // Scroll to bottom whenever plexts or tab change
+    useEffect(() => {
+        if (scrollRef.current) {
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+    }, [plexts, activeTab]);
 
-    const renderMarkup = (markup: any[]) => {
-        return markup.map((m, i) => {
-            const type = m[0];
-            const data = m[1];
-            let color = UI_COLORS.TEXT_BASE;
-            
-            // Get text, handle object vs string data safely
-            let text = typeof data === 'string' ? data : (data.plain || data.name || '');
-
-            // Skip redundant FACTION labels (Resistance/Enlightened)
-            if (type === 'FACTION') {
-                return null;
-            }
-
-            // Skip the " agent " connector and other redundant team prefixes
-            if (type === 'TEXT' && typeof text === 'string') {
-                if (text === ' agent ' || text === ' agent') return null;
-                text = text.replace(/Resistance agent\s/g, '');
-                text = text.replace(/Enlightened agent\s/g, '');
-            }
-
-            if (type === 'PLAYER' || type === 'SENDER' || type === 'AT_PLAYER') {
-                const teamKey = normalizeTeam(data.team) as 'E' | 'R' | 'M' | 'N';
-                color = theme[teamKey] || UI_COLORS.TEXT_BASE;
-                
-                // Prepend @ for AT_PLAYER if not already there
-                if (type === 'AT_PLAYER' && typeof text === 'string' && !text.startsWith('@')) {
-                    text = '@' + text;
-                }
-            } else if (type === 'PORTAL') {
-                color = theme.AQUA;
-                return (
-                    <span 
-                        key={i} 
-                        style={{ 
-                            color, 
-                            cursor: 'pointer',
-                            borderBottom: `1px dotted ${theme.AQUA}`,
-                        }}
-                        onClick={() => {
-                            if (data.latE6 && data.lngE6) {
-                                window.postMessage({
-                                    type: 'IRIS_MOVE_MAP',
-                                    center: { lat: data.latE6 / 1e6, lng: data.lngE6 / 1e6 },
-                                    zoom: 17
-                                }, '*');
-                            }
-                        }}
-                    >
-                        {String(text || '')}
-                    </span>
-                );
-            } else if (type === 'SECURE') {
-                color = '#ffff00';
-            } else if (type === 'LINK') {
-                const teamKey = normalizeTeam(data.team) as 'E' | 'R' | 'M' | 'N';
-                color = theme[teamKey] || theme.AQUA;
-                return (
-                    <span 
-                        key={i} 
-                        style={{ 
-                            color, 
-                            cursor: 'pointer',
-                            textDecoration: 'underline',
-                        }}
-                        onClick={() => {
-                            const lat = data.latE6 / 1e6;
-                            const lng = data.lngE6 / 1e6;
-                            if (lat && lng) {
-                                window.postMessage({
-                                    type: 'IRIS_MOVE_MAP',
-                                    center: { lat, lng },
-                                    zoom: 16
-                                }, '*');
-                            }
-                        }}
-                    >
-                        {String(text || 'link')}
-                    </span>
-                );
-            }
-
-            return (
-                <span key={i} style={{ color }}>
-                    {String(text || '')}
-                </span>
-            );
+    const filteredPlexts = useMemo(() => {
+        const filtered = plexts.filter(p => {
+            if (activeTab === 'ALL') return p.categories === 1 || p.categories === 2;
+            if (activeTab === 'FACTION') return p.categories === 2;
+            if (activeTab === 'ALERTS') return p.categories === 4;
+            return true;
         });
+        return [...filtered].reverse();
+    }, [plexts, activeTab]);
+
+    const renderMarkupSegment = (m: any, i: number) => {
+        const type = m[0];
+        const data = m[1];
+        let color = UI_COLORS.TEXT_BASE;
+        let text = typeof data === 'string' ? data : (data.plain || data.name || '');
+
+        if (type === 'FACTION') return null;
+
+        if (type === 'TEXT' && typeof text === 'string') {
+            if (text === ' agent ' || text === ' agent') return null;
+            text = text.replace(/Resistance agent\s/g, '');
+            text = text.replace(/Enlightened agent\s/g, '');
+        }
+
+        if (type === 'PLAYER' || type === 'SENDER' || type === 'AT_PLAYER') {
+            const teamKey = normalizeTeam(data.team) as 'E' | 'R' | 'M' | 'N';
+            color = theme[teamKey] || UI_COLORS.TEXT_BASE;
+            if (type === 'AT_PLAYER' && typeof text === 'string' && !text.startsWith('@')) {
+                text = '@' + text;
+            }
+        } else if (type === 'PORTAL' || type === 'LINK') {
+            const teamKey = normalizeTeam(data.team) as 'E' | 'R' | 'M' | 'N';
+            color = type === 'PORTAL' ? theme.AQUA : (theme[teamKey] || theme.AQUA);
+        } else if (type === 'SECURE') {
+            color = '#ffff00';
+        }
+
+        return <span key={i} style={{ color }}>{String(text || '')}</span>;
     };
+
+    const renderActionLine = (markup: any[]) => {
+        const actionItems: any[] = [];
+        const connectors = [/\son\s*$/, /\sat\s*$/, /\sfrom\s*$/, /\sto\s*$/, /\sin\s*$/, /\snear\s*$/];
+
+        for (let i = 0; i < markup.length; i++) {
+            const [type, data] = markup[i];
+            
+            // If we hit a portal or link in a system message, we stop rendering the action line
+            if (type === 'PORTAL' || type === 'LINK') break;
+
+            if (type === 'TEXT') {
+                let text = typeof data === 'string' ? data : data.plain;
+                // Check if this is the last text segment before a portal/link
+                const next = markup[i+1];
+                if (next && (next[0] === 'PORTAL' || next[0] === 'LINK')) {
+                    for (const reg of connectors) {
+                        if (reg.test(text)) {
+                            text = text.replace(reg, '');
+                            break;
+                        }
+                    }
+                }
+                actionItems.push(renderMarkupSegment([type, text], i));
+            } else {
+                actionItems.push(renderMarkupSegment(markup[i], i));
+            }
+        }
+        return actionItems;
+    };
+
+    const renderPlext = (p: Plext) => {
+        const markup = p.markup || [];
+        const isSystem = p.type !== 'PLAYER_GENERATED';
+        
+        // Find portals for Line 2 and 3
+        const portals = markup.filter(m => m[0] === 'PORTAL');
+        const links = markup.filter(m => m[0] === 'LINK');
+        const primaryPortal = portals.length > 0 ? portals[portals.length - 1][1] : 
+                        (links.length > 0 ? links[0][1] : null);
+
+        return (
+            <div key={p.id} style={{
+                marginBottom: SPACING.MD,
+                fontSize: '0.85em',
+                lineHeight: '1.4',
+                borderLeft: isSystem ? `3px solid ${p.categories === 2 ? theme.AQUA : '#444'}` : 'none',
+                paddingLeft: isSystem ? SPACING.SM : '0',
+                borderBottom: `1px solid ${UI_COLORS.BORDER_DIM}`,
+                paddingBottom: SPACING.SM,
+                background: p.categories === 2 ? `${theme.AQUA}08` : 'transparent',
+            }}>
+                {/* Line 1: Time + Action */}
+                <div style={{ marginBottom: '2px' }}>
+                    <span style={{ color: UI_COLORS.TEXT_MUTED, fontSize: '0.8em', marginRight: SPACING.XS }}>
+                        [{formatTime(p.time)}]
+                    </span>
+                    <span style={{ opacity: isSystem ? 0.9 : 1 }}>
+                        {isSystem ? renderActionLine(markup) : markup.map((m, i) => renderMarkupSegment(m, i))}
+                    </span>
+                </div>
+
+                {/* System-only lines for Portal Details */}
+                {isSystem && primaryPortal && (
+                    <div style={{ paddingLeft: '65px' }}>
+                        {/* Line 2: Portal Name */}
+                        <div 
+                            style={{ 
+                                color: theme.AQUA, 
+                                fontWeight: 'bold', 
+                                cursor: 'pointer',
+                                fontSize: '0.9em',
+                                textDecoration: 'underline'
+                            }}
+                            onClick={() => {
+                                if (primaryPortal.latE6 && primaryPortal.lngE6) {
+                                    window.postMessage({
+                                        type: 'IRIS_MOVE_MAP',
+                                        center: { lat: primaryPortal.latE6 / 1e6, lng: primaryPortal.lngE6 / 1e6 },
+                                        zoom: 17
+                                    }, '*');
+                                }
+                            }}
+                        >
+                            {primaryPortal.name || primaryPortal.plain || 'Unknown Portal'}
+                        </div>
+
+                        {/* Line 3: Portal Address */}
+                        <div style={{ 
+                            color: '#888', 
+                            fontSize: '0.8em',
+                            fontStyle: 'italic'
+                        }}>
+                            {primaryPortal.address || `${(primaryPortal.latE6 / 1e6).toFixed(6)}, ${(primaryPortal.lngE6 / 1e6).toFixed(6)}`}
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    // Group plexts by date
+    const rows: any[] = [];
+    let lastDate: string | null = null;
+
+    filteredPlexts.forEach(p => {
+        const dateStr = new Date(p.time).toDateString();
+        if (dateStr !== lastDate) {
+            rows.push(
+                <div key={`date-${dateStr}`} style={{
+                    textAlign: 'center',
+                    margin: `${SPACING.MD} 0`,
+                    borderBottom: `1px solid ${UI_COLORS.BORDER_DIM}`,
+                    lineHeight: '0.1em',
+                }}>
+                    <span style={{ 
+                        background: UI_COLORS.BG_BASE, 
+                        padding: `0 ${SPACING.SM}`, 
+                        color: theme.AQUA,
+                        fontSize: '0.75em',
+                        fontWeight: 'bold',
+                        textTransform: 'uppercase'
+                    }}>
+                        {formatDateHeader(p.time)}
+                    </span>
+                </div>
+            );
+            lastDate = dateStr;
+        }
+        rows.push(renderPlext(p));
+    });
 
     return (
         <Popup
@@ -147,10 +234,13 @@ export function CommPopup({ onClose }: CommPopupProps) {
                 </button>
             }
             style={{
-                top: '60px',
-                right: '20px',
-                width: '450px',
-                height: '550px',
+                top: '50px',
+                right: '10px',
+                left: '10px',
+                width: 'auto',
+                maxWidth: '450px',
+                height: 'calc(80vh - 60px)',
+                marginLeft: 'auto',
             }}
         >
             <div style={{ display: 'flex', borderBottom: `1px solid ${UI_COLORS.BORDER_DIM}`, marginBottom: SPACING.SM }}>
@@ -172,47 +262,19 @@ export function CommPopup({ onClose }: CommPopupProps) {
                 ))}
             </div>
 
-            <div style={{
-                flex: 1,
-                overflowY: 'auto',
-            }}>
-                {filteredPlexts.length === 0 ? (
+            <div 
+                ref={scrollRef}
+                style={{
+                    flex: 1,
+                    overflowY: 'auto',
+                    paddingRight: '4px'
+                }}
+            >
+                {rows.length === 0 ? (
                     <div style={{ padding: SPACING.LG, textAlign: 'center', color: UI_COLORS.TEXT_MUTED }}>
                         No messages yet
                     </div>
-                ) : (
-                    filteredPlexts.map((p) => (
-                        <div key={p.id} style={{
-                            marginBottom: SPACING.SM,
-                            fontSize: '0.85em',
-                            lineHeight: '1.4',
-                            borderLeft: p.type === 'PLAYER_GENERATED' ? 'none' : `3px solid ${p.type === 'SYSTEM_NARROWCAST' ? theme.AQUA : '#444'}`,
-                            paddingLeft: p.type === 'PLAYER_GENERATED' ? '0' : SPACING.SM,
-                            borderBottom: `1px solid ${UI_COLORS.BORDER_DIM}`,
-                            paddingBottom: SPACING.XS,
-                            background: p.type === 'SYSTEM_NARROWCAST' ? `${theme.AQUA}08` : 'transparent',
-                        }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                                <span style={{ color: UI_COLORS.TEXT_MUTED, fontSize: '0.8em' }}>
-                                    [{formatTime(p.time)}]
-                                </span>
-                                {p.type && p.type !== 'PLAYER_GENERATED' && (
-                                    <span style={{ 
-                                        fontSize: '0.75em', 
-                                        fontWeight: 'bold',
-                                        color: p.type === 'SYSTEM_NARROWCAST' ? theme.AQUA : '#888',
-                                        textTransform: 'uppercase'
-                                    }}>
-                                        {typeof p.type === 'string' ? p.type.replace('SYSTEM_', '') : 'SYSTEM'}
-                                    </span>
-                                )}
-                            </div>
-                            <div style={{ opacity: p.type === 'PLAYER_GENERATED' ? 1 : 0.9 }}>
-                                {p.markup ? renderMarkup(p.markup) : p.text}
-                            </div>
-                        </div>
-                    ))
-                )}
+                ) : rows}
             </div>
         </Popup>
     );
