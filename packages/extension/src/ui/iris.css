@@ -9,6 +9,11 @@
     font-family: monospace;
 }
 
+/* Global reset for IRIS components to prevent layout surprises */
+[class^="iris-"], [class*=" iris-"] {
+    box-sizing: border-box;
+}
+
 /* Ensure our UI elements within the root DO capture clicks */
 .iris-overlay-root > * {
     pointer-events: auto;
@@ -228,14 +233,22 @@
 /* Portal Info Popup */
 .iris-portal-info {
     font-size: 14px;
+    max-width: 100%;
+}
+
+.iris-portal-image-container {
+    width: 100%;
+    margin-bottom: 10px;
+    overflow: hidden;
+    border-radius: 4px;
 }
 
 .iris-portal-image {
+    display: block;
     width: 100%;
+    max-width: 100%;
     height: 140px;
     object-fit: cover;
-    border-radius: 4px;
-    margin-bottom: 10px;
     border: 1px solid #333;
 }
 
