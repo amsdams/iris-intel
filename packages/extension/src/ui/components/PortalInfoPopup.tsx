@@ -7,6 +7,8 @@ import { THEMES, TEAM_NAME, UI_COLORS } from '../theme';
 // PortalInfoPopup
 // ---------------------------------------------------------------------------
 
+const MAX_RESO_ENERGY = [0, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000];
+
 export function PortalInfoPopup() {
     const selectedPortalId = useStore((state) => state.selectedPortalId);
     const portal = useStore((state) =>
@@ -21,6 +23,22 @@ export function PortalInfoPopup() {
     const factionKey = portal.team as 'E' | 'R' | 'M' | 'N';
     const colour = theme[factionKey] || theme.N || UI_COLORS.TEXT_BASE;
     const teamName = TEAM_NAME[portal.team] || 'Unknown';
+
+    // Resonators — Ensure we have 8 slots
+    const allResonators = Array(8).fill(null);
+    if (portal.resonators) {
+        portal.resonators.forEach((r: any, i: number) => {
+            if (i < 8) allResonators[i] = r;
+        });
+    }
+
+    // Mods — Ensure we have 4 slots
+    const allMods = Array(4).fill(null);
+    if (portal.mods) {
+        portal.mods.forEach((m: any, i: number) => {
+            if (i < 4) allMods[i] = m;
+        });
+    }
 
     return (
         <Popup
@@ -75,47 +93,80 @@ export function PortalInfoPopup() {
                 )}
 
                 {/* Resonators */}
-                {portal.resonators && portal.resonators.length > 0 && (
-                    <div className="iris-portal-resonators-section" style={{ marginBottom: '8px' }}>
-                        <div className="iris-portal-section-title" style={{ fontSize: '0.8em', color: '#888', marginBottom: '4px' }}>
-                            RESONATORS ({portal.resonators.length}/8)
-                        </div>
-                        <div className="iris-portal-resonators-grid">
-                            {portal.resonators.map((r, i) => (
+                <div className="iris-portal-resonators-section" style={{ marginBottom: '8px' }}>
+                    <div className="iris-portal-section-title" style={{ fontSize: '0.8em', color: '#888', marginBottom: '4px' }}>
+                        RESONATORS ({portal.resonators?.length || 0}/8)
+                    </div>
+                    <div className="iris-portal-resonators-grid">
+                        {allResonators.map((r, i) => {
+                            if (!r) {
+                                return (
+                                    <div key={i} className="iris-portal-resonator-item iris-portal-resonator-empty" style={{
+                                        border: `1px dashed ${UI_COLORS.BORDER_DIM}`,
+                                        opacity: 0.5,
+                                    }}>
+                                        <div style={{ color: '#444' }}>EMPTY</div>
+                                        <div style={{ color: 'transparent' }}>-</div>
+                                    </div>
+                                );
+                            }
+                            const maxEnergy = MAX_RESO_ENERGY[r.level] || 1000;
+                            const healthPct = Math.round((r.energy / maxEnergy) * 100);
+                            return (
                                 <div key={i} className="iris-portal-resonator-item" style={{
                                     border: `1px solid ${theme.LEVELS[r.level] || UI_COLORS.BORDER_DIM}`,
                                 }}>
-                                    <div className="iris-portal-resonator-level" style={{ color: theme.LEVELS[r.level] || '#ffff00' }}>L{r.level}</div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span className="iris-portal-resonator-level" style={{ color: theme.LEVELS[r.level] || '#ffff00', fontWeight: 'bold' }}>L{r.level}</span>
+                                        <span style={{ fontSize: '0.8em', color: '#00ff00', opacity: 0.8 }}>{healthPct}%</span>
+                                    </div>
                                     <div className="iris-portal-resonator-owner" style={{ color: colour }}>{r.owner}</div>
+                                    <div 
+                                        className="iris-portal-resonator-health-bar" 
+                                        style={{ 
+                                            width: `${healthPct}%`,
+                                            background: healthPct > 50 ? '#00ff00' : (healthPct > 20 ? '#ffff00' : '#ff0000')
+                                        }} 
+                                    />
                                 </div>
-                            ))}
-                        </div>
+                            );
+                        })}
                     </div>
-                )}
+                </div>
 
                 {/* Mods */}
-                {portal.mods && portal.mods.length > 0 && (
-                    <div className="iris-portal-mods-section" style={{ marginBottom: '8px' }}>
-                        <div className="iris-portal-section-title" style={{ fontSize: '0.8em', color: '#888', marginBottom: '4px' }}>
-                            MODS
-                        </div>
-                        <div className="iris-portal-mods-list" style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                            {portal.mods.map((m, i) => {
-                                const modRarityColor = theme.RARITY[m.rarity] || UI_COLORS.BORDER_DIM;
+                <div className="iris-portal-mods-section" style={{ marginBottom: '8px' }}>
+                    <div className="iris-portal-section-title" style={{ fontSize: '0.8em', color: '#888', marginBottom: '4px' }}>
+                        MODS
+                    </div>
+                    <div className="iris-portal-mods-list" style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        {allMods.map((m, i) => {
+                            if (!m) {
                                 return (
-                                    <div key={i} className="iris-portal-mod-item" style={{
-                                        border: `1px solid ${modRarityColor}`,
+                                    <div key={i} className="iris-portal-mod-item iris-portal-mod-empty" style={{
+                                        border: `1px dashed ${UI_COLORS.BORDER_DIM}`,
+                                        opacity: 0.5,
+                                        justifyContent: 'center',
+                                        color: '#444',
                                     }}>
-                                        <span className="iris-portal-mod-info" style={{ color: modRarityColor }}>
-                                            {m.rarity} {m.name}
-                                        </span>
-                                        <span className="iris-portal-mod-owner" style={{ color: colour }}>{m.owner}</span>
+                                        EMPTY SLOT
                                     </div>
                                 );
-                            })}
-                        </div>
+                            }
+                            const modRarityColor = theme.RARITY[m.rarity] || UI_COLORS.BORDER_DIM;
+                            return (
+                                <div key={i} className="iris-portal-mod-item" style={{
+                                    border: `1px solid ${modRarityColor}`,
+                                }}>
+                                    <span className="iris-portal-mod-info" style={{ color: modRarityColor }}>
+                                        {m.rarity} {m.name}
+                                    </span>
+                                    <span className="iris-portal-mod-owner" style={{ color: colour }}>{m.owner}</span>
+                                </div>
+                            );
+                        })}
                     </div>
-                )}
+                </div>
 
                 {/* Coordinates */}
                 <div className="iris-portal-coords" style={{ marginTop: '4px', fontSize: '0.75em', color: '#666' }}>

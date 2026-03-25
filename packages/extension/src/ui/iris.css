@@ -281,6 +281,16 @@
     font-size: 0.75em;
     border: 1px solid #333;
     overflow: hidden;
+    position: relative;
+}
+
+.iris-portal-resonator-health-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    background: #00ff00;
+    transition: width 0.3s ease;
 }
 
 .iris-portal-resonator-owner {
