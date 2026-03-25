@@ -199,9 +199,6 @@ interface IRISState {
     toggleDebugLogging: () => void;
 
     rehydrated: boolean;
-
-    loginRequired: boolean;
-    setLoginRequired: (required: boolean) => void;
 }
 
 export const useStore = create<IRISState>()(
@@ -377,8 +374,6 @@ export const useStore = create<IRISState>()(
         toggleDebugLogging: () => set((state) => ({ debugLogging: !state.debugLogging })),
 
         rehydrated: false,
-        loginRequired: false,
-        setLoginRequired: (required) => set({ loginRequired: required }),
     }),
     {
         name: 'iris-settings',

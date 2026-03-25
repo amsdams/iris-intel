@@ -99,37 +99,12 @@
         }
     };
 
-    const checkLogin = () => {
-        // If PLAYER object exists and has a nickname, we are logged in
-        if ((window as any).PLAYER?.nickname) {
-            return;
-        }
-
-        // Check for common login buttons or elements on Intel's landing/login page
-        // Standard Intel login button often has id="google_login" or class="button_link"
-        const loginBtn = document.querySelector('a[href*="/login"], a[href*="signin"], #login-container, .login-button, #google_login, .button_link');
-        if (loginBtn || !(window as any).PLAYER) {
-            window.postMessage({ type: 'IRIS_LOGIN_REQUIRED' }, '*');
-        }
-    };
-
-    // Retry checkLogin periodically if not logged in yet
-    // This helps if the UI listener isn't ready yet or the page loads slowly
-    const loginCheckInterval = setInterval(() => {
-        if ((window as any).PLAYER?.nickname) {
-            clearInterval(loginCheckInterval);
-            return;
-        }
-        checkLogin();
-    }, 2000);
-
     // Use MutationObserver to track player stats availability and updates (REL-1)
     const statsObserver = new MutationObserver(() => {
         if (document.querySelector('.player_nickname')) {
             readPlayerStats();
             // Don't disconnect, as we want to capture updates if the DOM is rebuilt
         }
-        checkLogin();
     });
     statsObserver.observe(document.body || document.documentElement, {
         childList: true,
@@ -137,7 +112,6 @@
     });
     // Also try initial read
     readPlayerStats();
-    checkLogin();
 
     // Read Intel's stored map position from cookies
 // Intel saves lat/lng/zoom in cookies so the map reopens at the same location
@@ -506,17 +480,6 @@
                     }
                 }, { once: true });
                 req.send(JSON.stringify({ v: intelVersion, latE6, lngE6 }));
-                break;
-            }
-
-            case 'IRIS_LOGIN_REQUEST': {
-                const loginBtn = document.querySelector('a[href*="/login"], #login-container a, .login-button') as HTMLElement;
-                if (loginBtn) {
-                    loginBtn.click();
-                } else {
-                    // Fallback to manual redirect if button click doesn't work
-                    window.location.href = '/login';
-                }
                 break;
             }
 
