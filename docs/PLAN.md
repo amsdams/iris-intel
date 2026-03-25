@@ -49,6 +49,7 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] **Development Workflow:** Formalized "Allowed/Preferred Commands" in `GEMINI.md` to ensure consistent build and release processes across sessions.
 - [x] **UI Refinement:** Move the Profile/Player Stats button from the Topbar into the main Menu to declutter the header.
 - [x] **Mobile Fix:** Optimize `PortalInfoPopup` for mobile; ensure large portal images don't push the popup off-screen (responsive image sizing).
+- [x] **Enhanced Player Stats:** Switched from DOM-based extraction to `window.PLAYER` interception; added XM capacity, level progress bars, and invite counts.
 - [ ] **Next:** Performance: GeoJSON source throttling for extremely dense areas.
 - [ ] **Next:** Mobile Strategy: Decision between Capacitor App vs. Mobile Browser Extension.
 
@@ -56,13 +57,18 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] **Player Tracker:** Track player movement based on COMM (plexts) activity. Draw lines between portals for recent activity.
 - [ ] **Data Export:** Export captured portal/link/field data to standard formats (JSON/KML).
 - [ ] **Path Prediction:** Speculative pathing for players based on historical patterns.
+- [ ] **Game Score:** Render GameScore Popup using intercepting `getGameScore`.
+- [ ] **Region Score:** Render RegionScoreDetails Popup using intercepting `getRegionScoreDetails`.
+
+### Phase 6: Architecture Analysis (0% Complete)
+- [ ] **Comparative Study:** Analyse and compare reference mobile and desktop implementation in `reference` directory.
 
 ## Known Issues & Mobile Challenges
 
 | Environment | Issue | Status |
 |---|---|---|
 | **Mobile Firefox** | **Player Tracker Missing:** Markers/Lines are not appearing on mobile builds despite working on desktop. | *Investigating* |
-| **Mobile Firefox** | **Stale COMM Messages:** Initial COMM fetch on mobile often returns very old messages compared to desktop chrome/firefox. | *Note: Likely due to Intel initial response definition* |
+| **Mobile Firefox** | **Stale COMM Messages:** Initial COMM fetch on messages often returns very old messages compared to desktop chrome/firefox. | *Note: Likely due to Intel initial response definition* |
 | **All Firefox** | **Security Restrictions:** Accessing `.constructor` on MapLibre objects is blocked. | *Mitigated via manual interaction layer* |
 
 ## Current Working Logic

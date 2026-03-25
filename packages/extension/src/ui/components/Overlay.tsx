@@ -7,6 +7,7 @@ import { StateDebugPopup } from './StateDebugPopup';
 import { FiltersPopup } from './FiltersPopup';
 import { PortalInfoPopup } from './PortalInfoPopup';
 import { CommPopup } from './CommPopup';
+import { GameScorePopup } from './GameScorePopup';
 import { ThemePopup } from '../../../../plugins/src/theme-selector/ThemePopup';
 import { MapThemePopup } from './MapThemePopup';
 import { PluginsPopup } from './PluginsPopup';
@@ -25,6 +26,7 @@ export function IRISOverlay() {
     const [showThemePopup, setShowThemePopup] = useState(false);
     const [showMapThemePopup, setShowMapThemePopup] = useState(false);
     const [showPluginsPopup, setShowPluginsPopup] = useState(false);
+    const [showGameScorePopup, setShowGameScorePopup] = useState(false);
     const [showMap, setShowMap] = useState(true);
 
     const togglePlayerStatsPopup = () => setShowPlayerStatsPopup(!showPlayerStatsPopup);
@@ -34,6 +36,12 @@ export function IRISOverlay() {
     const toggleThemePopup = () => setShowThemePopup((v) => !v);
     const toggleMapThemePopup = () => setShowMapThemePopup(!showMapThemePopup);
     const togglePluginsPopup = () => setShowPluginsPopup(!showPluginsPopup);
+    const toggleGameScorePopup = () => {
+        if (!showGameScorePopup) {
+            window.postMessage({ type: 'IRIS_GAME_SCORE_FETCH' }, '*');
+        }
+        setShowGameScorePopup(!showGameScorePopup);
+    };
     const toggleMapVisibility = () => setShowMap(!showMap);
 
     useEffect(() => {
@@ -52,6 +60,7 @@ export function IRISOverlay() {
                 onTogglePlugins={togglePluginsPopup}
                 onToggleMapVisibility={toggleMapVisibility}
                 onToggleMapTheme={toggleMapThemePopup}
+                onToggleGameScore={toggleGameScorePopup}
                 showMap={showMap}
             />
             <div style={{ display: showMap ? 'block' : 'none' }}>
@@ -67,6 +76,10 @@ export function IRISOverlay() {
 
             {showPlayerStatsPopup && (
                 <PlayerStatsPopup onClose={togglePlayerStatsPopup} />
+            )}
+
+            {showGameScorePopup && (
+                <GameScorePopup onClose={toggleGameScorePopup} />
             )}
 
             {showStateDebugPopup && (

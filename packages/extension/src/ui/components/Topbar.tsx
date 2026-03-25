@@ -137,6 +137,7 @@ interface TopbarProps {
     onToggleComm: () => void;
     onTogglePlugins: () => void;
     onToggleMapTheme: () => void;
+    onToggleGameScore: () => void;
     showMap: boolean;
 }
 
@@ -148,6 +149,7 @@ export function Topbar({
     onToggleComm,
     onTogglePlugins,
     onToggleMapTheme,
+    onToggleGameScore,
     showMap
 }: TopbarProps) {
     const [locStatus, setLocStatus] = useState<'NAVIGATE TO ME' | 'LOCATING...'>('NAVIGATE TO ME');
@@ -197,6 +199,13 @@ export function Topbar({
                             style={{ color: theme.AQUA }}
                         >
                             Player Stats
+                        </button>
+                        <button
+                            className="iris-menu-item"
+                            onClick={() => { onToggleGameScore(); setShowMenu(false); }}
+                            style={{ color: theme.AQUA }}
+                        >
+                            Global Score
                         </button>
                         <button
                             className="iris-menu-item"

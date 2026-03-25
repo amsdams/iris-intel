@@ -13,6 +13,11 @@ export interface PlayerStats {
     min_ap_for_next_level?: number;
 }
 
+export interface GameScore {
+    enlightened: number;
+    resistance: number;
+}
+
 export interface PortalMod {
     owner: string;
     name: string;
@@ -137,6 +142,9 @@ interface IRISState {
 
     playerStats: PlayerStats | null;
     setPlayerStats: (stats: PlayerStats) => void;
+
+    gameScore: GameScore | null;
+    setGameScore: (score: GameScore) => void;
 
     themeId: string;
     setTheme: (id: string) => void;
@@ -283,6 +291,9 @@ export const useStore = create<IRISState>()(
     setSelectedPluginFeature: (feature) => set(() => ({ selectedPluginFeature: feature })),
     playerStats: null,
     setPlayerStats: (stats) => set(() => ({ playerStats: stats })),
+
+    gameScore: null,
+    setGameScore: (score) => set(() => ({ gameScore: score })),
 
     themeId: 'DEFAULT',
     setTheme: (id: string) => set(() => ({ themeId: id })),

@@ -320,6 +320,12 @@ window.addEventListener('message', (event) => {
         lastPlextRequestTime = Date.now();
         const plexts = parsePlexts(data);
         if (plexts.length > 0) useStore.getState().updatePlexts(plexts);
+      } else if (url.includes('getGameScore')) {
+        const [enlightened, resistance] = data.result || [0, 0];
+        useStore.getState().setGameScore({ 
+            enlightened: parseInt(String(enlightened), 10), 
+            resistance: parseInt(String(resistance), 10) 
+        });
       }
       break;
     }

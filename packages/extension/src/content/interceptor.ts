@@ -28,7 +28,9 @@
     const isIrisUrl = (url: string) =>
         url.includes('getEntities') ||
         url.includes('getPortalDetails') ||
-        url.includes('getPlexts');
+        url.includes('getPlexts') ||
+        url.includes('getGameScore') ||
+        url.includes('getRegionScoreDetails');
 
     // ---------------------------------------------------------------------------
     // Google Maps constructor hook
@@ -427,6 +429,31 @@
                     }
                 }, { once: true });
                 req.send(JSON.stringify(payload));
+                break;
+            }
+
+            // Fetch Global Game Score
+            case 'IRIS_GAME_SCORE_FETCH': {
+                if (!intelVersion) break;
+
+                const csrfToken = getCsrfToken();
+                if (!csrfToken) break;
+
+                const req = new XMLHttpRequest();
+                req.open('POST', '/r/getGameScore', true);
+                req.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+                req.setRequestHeader('X-CSRFToken', csrfToken);
+                req.addEventListener('load', function() {
+                    if (this.status === 200) {
+                        try {
+                            const data = JSON.parse(this.responseText);
+                            window.postMessage({ type: 'IRIS_DATA', url: '/r/getGameScore', data }, '*');
+                        } catch (e) {
+                            console.error('IRIS: Failed to parse getGameScore response', e);
+                        }
+                    }
+                }, { once: true });
+                req.send(JSON.stringify({v: intelVersion}));
                 break;
             }
 
