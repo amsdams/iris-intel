@@ -7,9 +7,10 @@ interface PopupProps {
     children: ComponentChildren;
     style?: h.JSX.CSSProperties;
     headerExtras?: ComponentChildren;
+    noScroll?: boolean;
 }
 
-export function Popup({ onClose, title, children, style, headerExtras }: PopupProps) {
+export function Popup({ onClose, title, children, style, headerExtras, noScroll }: PopupProps) {
     const [pos, setPos] = useState<{ x: number, y: number } | null>(null);
     const [dragging, setDragging] = useState(false);
     const dragStart = useRef({ x: 0, y: 0 });
@@ -73,7 +74,7 @@ export function Popup({ onClose, title, children, style, headerExtras }: PopupPr
     };
 
     return (
-        <div ref={popupRef} style={finalStyle} className="iris-popup">
+        <div ref={popupRef} style={finalStyle} className={`iris-popup ${noScroll ? 'iris-popup-no-scroll' : ''}`}>
             <button onClick={onClose} className="iris-popup-close">✕</button>
 
             {/* Drag Handle: Title or a spacer if no title */}

@@ -15,6 +15,8 @@ export function CommPopup({ onClose }: CommPopupProps) {
     const setActiveTab = useStore((state) => state.setActiveCommTab);
     const theme = THEMES[themeId] || THEMES.DEFAULT;
     const scrollRef = useRef<HTMLDivElement>(null);
+    const [loading, setLoading] = useState(false);
+    const lastRequestTime = useRef(0);
 
     const formatTime = (ms: number) => {
         const date = new Date(ms);
@@ -27,7 +29,7 @@ export function CommPopup({ onClose }: CommPopupProps) {
     };
 
     const handleRefresh = () => {
-        const minTimestampMs = plexts.length > 0 ? plexts[0].time : -1;
+        const minTimestampMs = plexts.length > 0 ? plexts[plexts.length - 1].time : -1;
         window.postMessage({ 
             type: 'IRIS_PLEXTS_REQUEST', 
             minTimestampMs,
@@ -35,16 +37,58 @@ export function CommPopup({ onClose }: CommPopupProps) {
         }, '*');
     };
 
+    const handleScroll = () => {
+        const el = scrollRef.current;
+        if (!el || loading) return;
+
+        const now = Date.now();
+        if (now - lastRequestTime.current < 1000) return;
+
+        if (el.scrollTop === 0 && filteredPlexts.length > 0) {
+            // At top -> Fetch older
+            setLoading(true);
+            lastRequestTime.current = now;
+            const oldestTime = filteredPlexts[0].time;
+            window.postMessage({ 
+                type: 'IRIS_PLEXTS_REQUEST', 
+                maxTimestampMs: oldestTime,
+                ascendingTimestampOrder: false,
+                tab: activeTab.toLowerCase()
+            }, '*');
+            
+            // Reset loading state after a delay
+            setTimeout(() => setLoading(false), 2000);
+        } else if (el.scrollTop + el.offsetHeight >= el.scrollHeight - 20) {
+            // At bottom -> Fetch newer
+            handleRefresh();
+        }
+    };
+
     useEffect(() => {
         handleRefresh();
     }, [activeTab]);
 
+    const [hasInitialScrolled, setHasInitialScrolled] = useState(false);
+
     // Scroll to bottom whenever plexts or tab change
+    // but only if already near the bottom (match original Intel behavior)
     useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        const el = scrollRef.current;
+        if (!el) return;
+
+        const isAtBottom = el.scrollTop + el.offsetHeight >= el.scrollHeight - 20;
+        
+        // Always scroll on initial load or tab switch
+        if (!hasInitialScrolled || isAtBottom) {
+            el.scrollTop = el.scrollHeight;
+            if (!hasInitialScrolled) setHasInitialScrolled(true);
         }
     }, [plexts, activeTab]);
+
+    // Reset initial scroll flag when tab changes to force a scroll-to-bottom
+    useEffect(() => {
+        setHasInitialScrolled(false);
+    }, [activeTab]);
 
     const filteredPlexts = useMemo(() => {
         const filtered = plexts.filter(p => {
@@ -65,9 +109,7 @@ export function CommPopup({ onClose }: CommPopupProps) {
         if (type === 'FACTION') return null;
 
         if (type === 'TEXT' && typeof text === 'string') {
-            if (text === ' agent ' || text === ' agent') return null;
-            text = text.replace(/Resistance agent\s/g, '');
-            text = text.replace(/Enlightened agent\s/g, '');
+            return <span key={i} className="iris-comm-markup iris-comm-markup-text" style={{ color }}>{String(text || '')}</span>;
         }
 
         if (type === 'PLAYER' || type === 'SENDER' || type === 'AT_PLAYER') {
@@ -76,111 +118,66 @@ export function CommPopup({ onClose }: CommPopupProps) {
             if (type === 'AT_PLAYER' && typeof text === 'string' && !text.startsWith('@')) {
                 text = '@' + text;
             }
-            return <span key={i} className={`iris-comm-markup iris-comm-markup-${type.toLowerCase()}`} style={{ color }}>{String(text || '')}</span>;
+            return <span key={i} className={`iris-comm-markup iris-comm-markup-${type.toLowerCase()}`} style={{ color, fontWeight: 'bold' }}>{String(text || '')}</span>;
         } else if (type === 'PORTAL' || type === 'LINK') {
             const teamKey = normalizeTeam(data.team) as 'E' | 'R' | 'M' | 'N';
             color = type === 'PORTAL' ? theme.AQUA : (theme[teamKey] || theme.AQUA);
-            return <span key={i} className={`iris-comm-markup iris-comm-markup-${type.toLowerCase()}`} style={{ color }}>{String(text || '')}</span>;
+            
+            // Original Intel uses .name for the link and .address for the brackets
+            // .plain often contains both, which causes duplication if we use it.
+            const portalName = data.name || data.plain || '';
+            const portalAddress = data.address || '';
+
+            const handlePortalClick = () => {
+                if (data.latE6 && data.lngE6) {
+                    window.postMessage({
+                        type: 'IRIS_MOVE_MAP',
+                        center: { lat: data.latE6 / 1e6, lng: data.lngE6 / 1e6 },
+                        zoom: 17
+                    }, '*');
+                }
+            };
+
+            return (
+                <span key={i} className="iris-comm-markup-container">
+                    <span 
+                        className={`iris-comm-markup iris-comm-markup-${type.toLowerCase()}`} 
+                        style={{ color, cursor: 'pointer', textDecoration: 'underline' }}
+                        onClick={handlePortalClick}
+                    >
+                        {String(portalName)}
+                    </span>
+                    {portalAddress && portalAddress !== portalName && (
+                        <span className="iris-comm-portal-address" style={{ color: UI_COLORS.TEXT_MUTED, fontSize: '0.9em' }}> ({portalAddress})</span>
+                    )}
+                </span>
+            );
         } else if (type === 'SECURE') {
             color = '#ffff00';
             return <span key={i} className="iris-comm-markup iris-comm-markup-secure" style={{ color }}>{String(text || '')}</span>;
         }
 
-        return <span key={i} className="iris-comm-markup iris-comm-markup-text" style={{ color }}>{String(text || '')}</span>;
-    };
-
-    const renderActionLine = (markup: any[]) => {
-        const actionItems: any[] = [];
-        const connectors = [/\son\s*$/, /\sat\s*$/, /\sfrom\s*$/, /\sto\s*$/, /\sin\s*$/, /\snear\s*$/];
-
-        for (let i = 0; i < markup.length; i++) {
-            const [type, data] = markup[i];
-            if (type === 'PORTAL' || type === 'LINK') break;
-
-            if (type === 'TEXT') {
-                let text = typeof data === 'string' ? data : data.plain;
-                const next = markup[i+1];
-                if (next && (next[0] === 'PORTAL' || next[0] === 'LINK')) {
-                    for (const reg of connectors) {
-                        if (reg.test(text)) {
-                            text = text.replace(reg, '');
-                            break;
-                        }
-                    }
-                }
-                actionItems.push(renderMarkupSegment([type, text], i));
-            } else {
-                actionItems.push(renderMarkupSegment(markup[i], i));
-            }
-        }
-        return actionItems;
+        return <span key={i} className="iris-comm-markup iris-comm-markup-unknown" style={{ color }}>{String(text || '')}</span>;
     };
 
     const renderPlext = (p: Plext) => {
         const markup = p.markup || [];
         const isSystem = p.type !== 'PLAYER_GENERATED';
-        const portals = markup.filter(m => m[0] === 'PORTAL');
-        const links = markup.filter(m => m[0] === 'LINK');
-        const primaryPortal = portals.length > 0 ? portals[portals.length - 1][1] : 
-                        (links.length > 0 ? links[0][1] : null);
-
+        
         return (
             <div key={p.id} className={`iris-comm-message ${isSystem ? 'iris-comm-message-system' : 'iris-comm-message-user'}`} style={{
-                marginBottom: SPACING.MD,
+                marginBottom: '4px',
                 fontSize: '0.85em',
                 lineHeight: '1.4',
-                borderLeft: isSystem ? `3px solid ${p.categories === 2 ? theme.AQUA : '#444'}` : 'none',
-                paddingLeft: isSystem ? SPACING.SM : '0',
+                padding: '2px 0',
                 borderBottom: `1px solid ${UI_COLORS.BORDER_DIM}`,
-                paddingBottom: SPACING.SM,
-                background: p.categories === 2 ? `${theme.AQUA}08` : 'transparent',
             }}>
-                {/* Line 1: Time + Action */}
-                <div className="iris-comm-line iris-comm-action-line" style={{ marginBottom: '2px' }}>
-                    <span className="iris-comm-timestamp" style={{ color: UI_COLORS.TEXT_MUTED, fontSize: '0.8em', marginRight: SPACING.XS }}>
-                        [{formatTime(p.time)}]
-                    </span>
-                    <span className="iris-comm-action-content" style={{ opacity: isSystem ? 0.9 : 1 }}>
-                        {isSystem ? renderActionLine(markup) : markup.map((m, i) => renderMarkupSegment(m, i))}
-                    </span>
-                </div>
-
-                {/* System-only lines for Portal Details */}
-                {isSystem && primaryPortal && (
-                    <div className="iris-comm-portal-details" style={{ paddingLeft: '65px' }}>
-                        {/* Line 2: Portal Name */}
-                        <div 
-                            className="iris-comm-line iris-comm-portal-name"
-                            style={{ 
-                                color: theme.AQUA, 
-                                fontWeight: 'bold', 
-                                cursor: 'pointer',
-                                fontSize: '0.9em',
-                                textDecoration: 'underline'
-                            }}
-                            onClick={() => {
-                                if (primaryPortal.latE6 && primaryPortal.lngE6) {
-                                    window.postMessage({
-                                        type: 'IRIS_MOVE_MAP',
-                                        center: { lat: primaryPortal.latE6 / 1e6, lng: primaryPortal.lngE6 / 1e6 },
-                                        zoom: 17
-                                    }, '*');
-                                }
-                            }}
-                        >
-                            {primaryPortal.name || primaryPortal.plain || 'Unknown Portal'}
-                        </div>
-
-                        {/* Line 3: Portal Address */}
-                        <div className="iris-comm-line iris-comm-portal-address" style={{ 
-                            color: '#888', 
-                            fontSize: '0.8em',
-                            fontStyle: 'italic'
-                        }}>
-                            {primaryPortal.address || `${(primaryPortal.latE6 / 1e6).toFixed(6)}, ${(primaryPortal.lngE6 / 1e6).toFixed(6)}`}
-                        </div>
-                    </div>
-                )}
+                <span className="iris-comm-timestamp" style={{ color: UI_COLORS.TEXT_MUTED, fontSize: '0.8em', marginRight: SPACING.XS }}>
+                    [{formatTime(p.time)}]
+                </span>
+                <span className="iris-comm-content" style={{ wordBreak: 'break-word' }}>
+                    {markup.map((m, i) => renderMarkupSegment(m, i))}
+                </span>
             </div>
         );
     };
@@ -219,6 +216,7 @@ export function CommPopup({ onClose }: CommPopupProps) {
         <Popup
             onClose={onClose}
             title="COMM"
+            noScroll={true}
             headerExtras={
                 <button 
                     className="iris-comm-refresh-btn"
@@ -269,6 +267,7 @@ export function CommPopup({ onClose }: CommPopupProps) {
 
             <div 
                 ref={scrollRef}
+                onScroll={handleScroll}
                 className="iris-comm-scroll-container"
                 style={{
                     flex: 1,
@@ -276,6 +275,11 @@ export function CommPopup({ onClose }: CommPopupProps) {
                     paddingRight: '4px'
                 }}
             >
+                {loading && (
+                    <div style={{ textAlign: 'center', fontSize: '0.7em', color: UI_COLORS.AQUA, padding: '5px' }}>
+                        FETCHING HISTORY...
+                    </div>
+                )}
                 {rows.length === 0 ? (
                     <div className="iris-comm-empty" style={{ padding: SPACING.LG, textAlign: 'center', color: UI_COLORS.TEXT_MUTED }}>
                         No messages yet

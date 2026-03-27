@@ -94,6 +94,12 @@
 .iris-popup-content {
     flex: 1;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.iris-popup-no-scroll .iris-popup-content {
+    overflow-y: hidden;
 }
 
 /* Topbar Styles */

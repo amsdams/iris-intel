@@ -255,8 +255,8 @@ export const useStore = create<IRISState>()(
             const all = [...state.plexts, ...newPlexts];
             const unique = Array.from(new Map(all.map(p => [p.id, p])).values());
             unique.sort((a, b) => b.time - a.time);
-            // Keep last 200 for performance
-            return { plexts: unique.slice(0, 200) };
+            // Keep last 1000 for performance and history
+            return { plexts: unique.slice(0, 1000) };
         }),
     addStatsItem: (item) =>
         set((state) => ({

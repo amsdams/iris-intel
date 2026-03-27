@@ -408,9 +408,9 @@
                     maxLatE6: Math.round(ne.lat() * 1e6),
                     minLngE6: Math.round(sw.lng() * 1e6),
                     maxLngE6: Math.round(ne.lng() * 1e6),
-                    minTimestampMs: event.data.minTimestampMs || -1,
-                    maxTimestampMs: -1,
-                    ascendingTimestampOrder: true,
+                    minTimestampMs: event.data.minTimestampMs ?? -1,
+                    maxTimestampMs: event.data.maxTimestampMs ?? -1,
+                    ascendingTimestampOrder: event.data.ascendingTimestampOrder ?? true,
                     tab: event.data.tab || 'all'
                 };
 
