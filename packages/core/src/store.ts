@@ -199,6 +199,9 @@ interface IRISState {
     toggleDebugLogging: () => void;
 
     rehydrated: boolean;
+
+    activeCommTab: string;
+    setActiveCommTab: (tab: string) => void;
 }
 
 export const useStore = create<IRISState>()(
@@ -374,6 +377,9 @@ export const useStore = create<IRISState>()(
         toggleDebugLogging: () => set((state) => ({ debugLogging: !state.debugLogging })),
 
         rehydrated: false,
+
+        activeCommTab: 'ALL',
+        setActiveCommTab: (tab) => set({ activeCommTab: tab }),
     }),
     {
         name: 'iris-settings',
@@ -389,6 +395,7 @@ export const useStore = create<IRISState>()(
             showUnclaimedPortals: state.showUnclaimedPortals,
             showLevel: state.showLevel,
             debugLogging: state.debugLogging,
+            activeCommTab: state.activeCommTab,
         }),
         onRehydrateStorage: () => (state) => {
             if (state) state.rehydrated = true;

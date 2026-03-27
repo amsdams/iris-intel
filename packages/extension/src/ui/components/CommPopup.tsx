@@ -11,8 +11,9 @@ interface CommPopupProps {
 export function CommPopup({ onClose }: CommPopupProps) {
     const plexts = useStore((state) => state.plexts);
     const themeId = useStore((state) => state.themeId);
+    const activeTab = useStore((state) => state.activeCommTab);
+    const setActiveTab = useStore((state) => state.setActiveCommTab);
     const theme = THEMES[themeId] || THEMES.DEFAULT;
-    const [activeTab, setActiveTab] = useState('ALL');
     const scrollRef = useRef<HTMLDivElement>(null);
 
     const formatTime = (ms: number) => {
@@ -27,12 +28,16 @@ export function CommPopup({ onClose }: CommPopupProps) {
 
     const handleRefresh = () => {
         const minTimestampMs = plexts.length > 0 ? plexts[0].time : -1;
-        window.postMessage({ type: 'IRIS_PLEXTS_REQUEST', minTimestampMs }, '*');
+        window.postMessage({ 
+            type: 'IRIS_PLEXTS_REQUEST', 
+            minTimestampMs,
+            tab: activeTab.toLowerCase()
+        }, '*');
     };
 
     useEffect(() => {
         handleRefresh();
-    }, []);
+    }, [activeTab]);
 
     // Scroll to bottom whenever plexts or tab change
     useEffect(() => {

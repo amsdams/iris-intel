@@ -101,7 +101,7 @@
 
     // Use MutationObserver to track player stats availability and updates (REL-1)
     const statsObserver = new MutationObserver(() => {
-        if (document.querySelector('.player_nickname')) {
+        if ((window as any).PLAYER?.nickname) {
             readPlayerStats();
             // Don't disconnect, as we want to capture updates if the DOM is rebuilt
         }
@@ -402,16 +402,16 @@
                 const ne = bounds.getNorthEast();
                 const sw = bounds.getSouthWest();
 
-                const payload = {
+                const payload: any = {
                     v: intelVersion,
-                    tab: event.data.tab || 'all',
                     minLatE6: Math.round(sw.lat() * 1e6),
                     maxLatE6: Math.round(ne.lat() * 1e6),
                     minLngE6: Math.round(sw.lng() * 1e6),
                     maxLngE6: Math.round(ne.lng() * 1e6),
                     minTimestampMs: event.data.minTimestampMs || -1,
                     maxTimestampMs: -1,
-                    ascendingTimestampOrder: true
+                    ascendingTimestampOrder: true,
+                    tab: event.data.tab || 'all'
                 };
 
                 const req = new XMLHttpRequest();

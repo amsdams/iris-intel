@@ -67,10 +67,21 @@ export function IRISOverlay() {
         
         document.addEventListener('iris:plugin:theme:toggle', themeHandler);
         document.addEventListener('iris:plugin:export:toggle', exportHandler);
+
+        // Periodic COMM refresh (every 120s) matching original Intel
+        const commInterval = setInterval(() => {
+            const activeTab = useStore.getState().activeCommTab;
+            window.postMessage({ 
+                type: 'IRIS_PLEXTS_REQUEST', 
+                minTimestampMs: -1,
+                tab: activeTab.toLowerCase()
+            }, '*');
+        }, 120000);
         
         return () => {
             document.removeEventListener('iris:plugin:theme:toggle', themeHandler);
             document.removeEventListener('iris:plugin:export:toggle', exportHandler);
+            clearInterval(commInterval);
         };
     }, []);
 

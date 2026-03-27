@@ -53,6 +53,9 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] **UI Refinement:** Move the Profile/Player Stats button from the Topbar into the main Menu to declutter the header.
 - [x] **Mobile Fix:** Optimize `PortalInfoPopup` for mobile; ensure large portal images don't push the popup off-screen (responsive image sizing).
 - [x] **Enhanced Player Stats:** Switched from DOM-based extraction to `window.PLAYER` interception; added XM capacity, level progress bars, and invite counts.
+- [x] **Session Persistence:** Implemented Zustand `persist` middleware to save settings (plugins, themes, etc.) in `localStorage`.
+- [x] **COMM Improvements:** Implemented Tab Switching fetch and Periodic Refresh (120s) to match original Intel triggers.
+- [ ] **Next:** Robust Login Detection: Implement a reliable way to detect if a Google login is required across both Desktop and Mobile, and prompt the user if so.
 - [ ] **Next:** Performance: GeoJSON source throttling for extremely dense areas.
 - [ ] **Next:** Mobile Strategy: Decision between Capacitor App vs. Mobile Browser Extension.
 

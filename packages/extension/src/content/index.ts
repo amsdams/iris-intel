@@ -292,18 +292,38 @@ window.addEventListener('message', (event) => {
       }
       lastPlextRequestTime = now;
       
-      // Fetch both "all" and "faction" tabs to get all message types
-      window.postMessage({
-        type: 'IRIS_PLEXTS_FETCH',
-        tab: 'all',
-        minTimestampMs: event.data.minTimestampMs,
-      }, '*');
-      
-      window.postMessage({
-        type: 'IRIS_PLEXTS_FETCH',
-        tab: 'faction',
-        minTimestampMs: event.data.minTimestampMs,
-      }, '*');
+      const requestedTab = event.data.tab;
+
+      if (requestedTab) {
+          // UI specifically requested a tab
+          window.postMessage({
+            type: 'IRIS_PLEXTS_FETCH',
+            tab: requestedTab,
+            minTimestampMs: event.data.minTimestampMs,
+          }, '*');
+
+          // If UI requested 'alerts', we still need 'all' or 'faction' for the Player Tracker plugin
+          if (requestedTab === 'alerts') {
+              window.postMessage({
+                type: 'IRIS_PLEXTS_FETCH',
+                tab: 'all',
+                minTimestampMs: event.data.minTimestampMs,
+              }, '*');
+          }
+      } else {
+          // Periodic refresh or generic request — fetch both main tabs to keep data fresh
+          window.postMessage({
+            type: 'IRIS_PLEXTS_FETCH',
+            tab: 'all',
+            minTimestampMs: event.data.minTimestampMs,
+          }, '*');
+          
+          window.postMessage({
+            type: 'IRIS_PLEXTS_FETCH',
+            tab: 'faction',
+            minTimestampMs: event.data.minTimestampMs,
+          }, '*');
+      }
       break;
     }
 
