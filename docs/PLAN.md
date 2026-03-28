@@ -27,6 +27,7 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] **Modern Aesthetic:** Dark-Mode by default with faction-themed WebGL layers.
 - [x] **Stable Interactions:** Manual pixel-distance clicking to bypass Firefox extension security restrictions (Permission Denied error).
 - [x] **Visual Polish:** Portal opacity based on health (0-100%) and faction-colored borders.
+- [x] **Data Safety:** Implemented strict numeric parsing (parseInt/parseFloat) for coordinates, level, and health to prevent MapLibre renderer crashes.
 
 ### Phase 3: Plugin System (95% Complete)
 - [x] SDK Definition: Types for Portals, Links, Fields.
@@ -48,6 +49,7 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] **Faction Consistency:** Unified team normalization (MACHINA/MAC/ALIENS) across entire UI.
 - [x] **Fix scrollbar issue:** Resolved redundant scrollbars in `PortalInfoPopup` and other popups.
 - [x] **Map Theme Picker:** Added a popup to choose map theme (Light, Dark, Voyager, OSM).
+- [x] **Health Filter Evolution:** Replaced the 0-100% range slider with a 4-bucket checkbox system (25%, 50%, 75%, 100%) for faster tactical filtering.
 - [x] **CSS Centralization:** Migrated inline styles for core UI components (Popup, Topbar, Search, Menus) to a unified `iris.css` to improve maintainability and decouple layout from logic.
 - [x] **Development Workflow:** Formalized "Allowed/Preferred Commands" in `GEMINI.md` to ensure consistent build and release processes across sessions.
 - [x] **UI Refinement:** Move the Profile/Player Stats button from the Topbar into the main Menu to declutter the header.
@@ -66,8 +68,13 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] **Game Score:** Render GameScore Popup using intercepting `getGameScore` (Standard).
 - [x] **Region Score:** Render RegionScoreDetails Popup using intercepting `getRegionScoreDetails` (Standard).
 
-### Phase 6: Architecture Analysis (0% Complete)
-- [ ] **Comparative Study:** Analyse and compare reference mobile and desktop implementation in `reference` directory.
+### Phase 6: Architecture Analysis (100% Complete)
+- [x] **Comparative Study:** Exhaustive analysis of original Ingress Intel (`gen_dashboard_*.js`) vs. IRIS, documented in `REF-DESKTOP.MD`.
+
+## Next Strategic Priority
+1. **Search Functionality**: Implement a unified search bar for coordinates, addresses (OSM), and portals (`/r/getPortalSearch`).
+2. **Inventory Viewer**: Build a UI for viewing player items via `/r/getInventory`.
+3. **Chat Integration**: Add an input field to `CommPopup` for sending messages via `/r/sendPlext`.
 
 ## Known Issues & Mobile Challenges
 
@@ -79,10 +86,11 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 
 ## Current Working Logic
 1. **Intercept:** Catch raw JSON from Niantic (XHR/Fetch).
-2. **Store:** Normalize into Zustand (`@iris/core`). Handles adds, updates, and deletions.
-3. **Master Sync:** MapLibre (top layer) captures user input, sends `move` commands to the Google Maps instance.
-4. **Proactive Trigger:** IRIS triggers its own API calls (e.g., `getPlexts`) on map movement with 5s cooldown.
-5. **Monitoring:** All network and JS errors are surfaced in the Status Bar.
+2. **Strict Parsing:** All incoming entity data is normalized and explicitly cast to numbers to ensure WebGL stability.
+3. **Store:** Normalize into Zustand (`@iris/core`). Handles adds, updates, and deletions.
+4. **Master Sync:** MapLibre (top layer) captures user input, sends `move` commands to the Google Maps instance.
+5. **Proactive Trigger:** IRIS triggers its own API calls (e.g., `getPlexts`) on map movement with 5s cooldown.
+6. **Monitoring:** All network and JS errors are surfaced in the Status Bar.
 
 ## Verification & Testing
 - **Network:** Cooldown logic prevents request spam. Dual-tab polling (all/faction) for COMM.

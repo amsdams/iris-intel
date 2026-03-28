@@ -26,7 +26,6 @@ export interface RegionScore {
 }
 
 export interface PortalMod {
-
     owner: string;
     name: string;
     rarity: string;
@@ -185,6 +184,7 @@ interface IRISState {
     showMachina: boolean;
     showUnclaimedPortals: boolean;
     showLevel: Record<number, boolean>;
+    showHealth: Record<number, boolean>;
 
     // Layer visibility actions
     toggleShowFields: () => void;
@@ -194,6 +194,7 @@ interface IRISState {
     toggleShowMachina: () => void;
     toggleShowUnclaimedPortals: () => void;
     toggleShowLevel: (level: number) => void;
+    toggleShowHealth: (bucket: number) => void;
 
     debugLogging: boolean;
     toggleDebugLogging: () => void;
@@ -358,6 +359,9 @@ export const useStore = create<IRISState>()(
         1: true, 2: true, 3: true, 4: true,
         5: true, 6: true, 7: true, 8: true,
     },
+    showHealth: {
+        25: true, 50: true, 75: true, 100: true,
+    },
 
     // Implement layer visibility actions
     toggleShowFields: () => set((state) => ({ showFields: !state.showFields })),
@@ -366,20 +370,26 @@ export const useStore = create<IRISState>()(
     toggleShowEnlightened: () => set((state) => ({ showEnlightened: !state.showEnlightened })),
     toggleShowMachina: () => set((state) => ({ showMachina: !state.showMachina })),
     toggleShowUnclaimedPortals: () => set((state) => ({ showUnclaimedPortals: !state.showUnclaimedPortals })),
-        toggleShowLevel: (level: number) => set((state) => ({
-            showLevel: {
-                ...state.showLevel,
-                [level]: !state.showLevel[level],
-            },
-        })),
+    toggleShowLevel: (level: number) => set((state) => ({
+        showLevel: {
+            ...state.showLevel,
+            [level]: !state.showLevel[level],
+        },
+    })),
+    toggleShowHealth: (bucket: number) => set((state) => ({
+        showHealth: {
+            ...state.showHealth,
+            [bucket]: !state.showHealth[bucket],
+        },
+    })),
 
-        debugLogging: false,
-        toggleDebugLogging: () => set((state) => ({ debugLogging: !state.debugLogging })),
+    debugLogging: false,
+    toggleDebugLogging: () => set((state) => ({ debugLogging: !state.debugLogging })),
 
-        rehydrated: false,
+    rehydrated: false,
 
-        activeCommTab: 'ALL',
-        setActiveCommTab: (tab) => set({ activeCommTab: tab }),
+    activeCommTab: 'ALL',
+    setActiveCommTab: (tab) => set({ activeCommTab: tab }),
     }),
     {
         name: 'iris-settings',
@@ -396,10 +406,10 @@ export const useStore = create<IRISState>()(
             showLevel: state.showLevel,
             debugLogging: state.debugLogging,
             activeCommTab: state.activeCommTab,
+            showHealth: state.showHealth,
         }),
         onRehydrateStorage: () => (state) => {
             if (state) state.rehydrated = true;
         }
     }
 )));
-

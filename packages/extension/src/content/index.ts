@@ -45,27 +45,27 @@ function parseEntities(data: any): {
       if (entType === 'p') {
         portals.push({
           id,
-          lat: entData[2] / 1e6,
-          lng: entData[3] / 1e6,
+          lat: parseFloat(entData[2]) / 1e6,
+          lng: parseFloat(entData[3]) / 1e6,
           team,
-          level: entData[4],
-          health: entData[5],
+          level: parseInt(entData[4], 10),
+          health: parseInt(entData[5], 10),
         });
       } else if (entType === 'e') {
         links.push({
           id,
           team,
           fromPortalId: entData[2],
-          fromLat: entData[3] / 1e6,
-          fromLng: entData[4] / 1e6,
+          fromLat: parseFloat(entData[3]) / 1e6,
+          fromLng: parseFloat(entData[4]) / 1e6,
           toPortalId: entData[5],
-          toLat: entData[6] / 1e6,
-          toLng: entData[7] / 1e6,
+          toLat: parseFloat(entData[6]) / 1e6,
+          toLng: parseFloat(entData[7]) / 1e6,
         });
       } else if (entType === 'r') {
         const points = entData[2].map((p: any) => ({
-          lat: p[1] / 1e6,
-          lng: p[2] / 1e6,
+          lat: parseFloat(p[1]) / 1e6,
+          lng: parseFloat(p[2]) / 1e6,
         }));
         fields.push({ id, team, points });
       }
@@ -99,11 +99,11 @@ function parsePortalDetails(data: any, params: any): any | null {
 
   return {
     id: params?.guid || '',
-    lat: d[2] / 1e6,
-    lng: d[3] / 1e6,
+    lat: parseFloat(d[2]) / 1e6,
+    lng: parseFloat(d[3]) / 1e6,
     team: normalizeTeam(d[1]),
-    level: d[4],
-    health: d[5],
+    level: parseInt(d[4], 10),
+    health: parseInt(d[5], 10),
     resCount: d[6],
     image: d[7],
     name: d[8],

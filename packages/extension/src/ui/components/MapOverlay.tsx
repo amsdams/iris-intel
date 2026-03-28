@@ -47,6 +47,7 @@ export function MapOverlay() {
   const showMachina = useStore((state) => state.showMachina);
   const showUnclaimedPortals = useStore((state) => state.showUnclaimedPortals);
   const showLevel = useStore((state) => state.showLevel);
+  const showHealth = useStore((state) => state.showHealth);
 
 
   // ---------------------------------------------------------------------------
@@ -285,23 +286,40 @@ export function MapOverlay() {
 
     // Filter and update portals
     const filteredPortals = Object.values(portals).filter(p => {
+        if (isNaN(p.lat) || isNaN(p.lng)) return false;
         if (p.team === 'N') {
             return showUnclaimedPortals;
         }
         if (p.team === 'M' && !showMachina) return false;
         if (p.team === 'R' && !showResistance) return false;
         if (p.team === 'E' && !showEnlightened) return false;
-        if (p.level !== undefined && !showLevel[p.level]) return false;
+        if (p.level !== undefined && !isNaN(p.level) && !showLevel[p.level]) return false;
+        
+        if (p.health !== undefined && !isNaN(p.health)) {
+            const h = p.health;
+            if (h <= 25 && !showHealth[25]) return false;
+            if (h > 25 && h <= 50 && !showHealth[50]) return false;
+            if (h > 50 && h <= 75 && !showHealth[75]) return false;
+            if (h > 75 && !showHealth[100]) return false;
+        }
+        
         return true;
     }).map((p: any) => ({
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
-        properties: { id: p.id, team: p.team, name: p.name, level: p.level, health: p.health ?? 100 },
+        properties: { 
+            id: p.id, 
+            team: p.team, 
+            name: p.name, 
+            level: isNaN(p.level) ? 0 : p.level, 
+            health: isNaN(p.health) ? 100 : p.health 
+        },
     }));
     (map.current.getSource('portals') as any)?.setData({ type: 'FeatureCollection', features: filteredPortals });
 
     // Links
     const filteredLinks = Object.values(links).filter(l => {
+        if (isNaN(l.fromLat) || isNaN(l.fromLng) || isNaN(l.toLat) || isNaN(l.toLng)) return false;
         if (!showLinks) return false;
         if (l.team === 'R' && !showResistance) return false;
         if (l.team === 'E' && !showEnlightened) return false;
@@ -316,6 +334,7 @@ export function MapOverlay() {
 
     // Fields
     const filteredFields = Object.values(fields).filter(f => {
+        if (!f.points || f.points.some((p: any) => isNaN(p.lat) || isNaN(p.lng))) return false;
         if (!showFields) return false;
         if (f.team === 'R' && !showResistance) return false;
         if (f.team === 'E' && !showEnlightened) return false;
@@ -331,7 +350,7 @@ export function MapOverlay() {
     // Plugin Features (Lines only here, points are HTML)
     (map.current.getSource('plugin-features') as any)?.setData(pluginFeatures);
 
-  }, [portals, links, fields, showFields, showLinks, showResistance, showEnlightened, showMachina, showUnclaimedPortals, showLevel, styleLoaded, pluginFeatures]);
+  }, [portals, links, fields, showFields, showLinks, showResistance, showEnlightened, showMachina, showUnclaimedPortals, showLevel, showHealth, styleLoaded, pluginFeatures]);
 
   // Sync HTML Markers (Independent effect for performance)
   useEffect(() => {

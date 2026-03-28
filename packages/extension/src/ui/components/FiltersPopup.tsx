@@ -49,8 +49,15 @@ export function FiltersPopup({ onClose }: FiltersPopupProps) {
     const showLevel = useStore((state) => state.showLevel);
     const toggleShowLevel = useStore((state) => state.toggleShowLevel);
 
+    const showHealth = useStore((state) => state.showHealth);
+    const toggleShowHealth = useStore((state) => state.toggleShowHealth);
+
     const handleLevelToggle = (level: number) => () => {
         toggleShowLevel(level);
+    };
+
+    const handleHealthToggle = (bucket: number) => () => {
+        toggleShowHealth(bucket);
     };
 
     return (
@@ -136,6 +143,21 @@ export function FiltersPopup({ onClose }: FiltersPopupProps) {
                                 style={checkboxStyle}
                             />
                             L{level}
+                        </label>
+                    ))}
+                </div>
+
+                <h3 className="iris-filter-section-title" style={{ margin: '15px 0 8px 0', color: UI_COLORS.AQUA, fontSize: FONT_SIZES.H3 }}>Portal Health</h3>
+                <div className="iris-filter-health-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '5px' }}>
+                    {[25, 50, 75, 100].map((bucket) => (
+                        <label key={bucket} className="iris-filter-health-item" style={checkboxContainerStyle}>
+                            <input
+                                type="checkbox"
+                                checked={showHealth[bucket]}
+                                onChange={handleHealthToggle(bucket)}
+                                style={checkboxStyle}
+                            />
+                            {bucket}%
                         </label>
                     ))}
                 </div>
