@@ -21,12 +21,13 @@ IRIS overlays a fully interactive [MapLibre GL](https://maplibre.org/) map on to
 ## Features
 
 - 🗺️ **MapLibre GL overlay** — smooth WebGL-rendered map over Intel
-- 📡 **Real-time entity capture** — portals, links and fields via XHR interception
+- 📡 **Real-time entity capture** — portals, links and fields via XHR/Fetch interception
 - 🔄 **Bidirectional map sync** — pan either map, both follow
 - 🏛️ **Portal details** — name, image, level, health, owner, resonators and mods on click
-- 👤 **Player stats** — agent name, level, AP and faction from Intel DOM
+- 👤 **Player stats** — agent name, level, AP, XM capacity, and progress bars via `window.PLAYER` interception
 - 🔍 **Location search** — Nominatim/OpenStreetMap geocoding with result dropdown
-- 📍 **Geolocation** — navigate to your current position
+- 📊 **Scoring** — Real-time Global MU scores and detailed Regional Cell rankings
+- 🛡️ **Tactical Filtering** — Filter portals by Faction, Level (L1-L8), and Health buckets (25%, 50%, 75%, 100%)
 - 🧩 **Plugin system** — structured manifest API with `setup()`/`teardown()` lifecycle
 - ⚡ **Lightweight** — Preact (3kb) + Zustand (1.5kb), no heavy framework
 
@@ -50,7 +51,7 @@ IRIS/
 │   │       ├── ui/         # Preact components (Overlay, MapOverlay, Popup)
 │   │       └── core/       # Re-exports from @iris/core
 │   ├── core/               # Zustand store, types, plugin manager
-│   └── plugins/            # First-party plugins (portal-names, etc.)
+│   └── plugins/            # First-party plugins (portal-names, player-tracker, etc.)
 ```
 
 ### How it works
@@ -61,14 +62,14 @@ Intel page loads
     ▼
 Interceptor (main world, document_start)
   ├── Hooks google.maps.Map constructor → captures map instance
-  ├── Patches XMLHttpRequest.prototype → intercepts getEntities / getPortalDetails
+  ├── Patches XMLHttpRequest.prototype → intercepts getEntities / getPortalDetails / getPlexts
   └── Wraps window.fetch → same endpoints
     │
     ▼
 postMessage → Content script (isolated world)
     │
     ▼
-Zustand store (portals, links, fields, mapState)
+Zustand store (portals, links, fields, mapState, plexts)
     │
     ▼
 Preact + MapLibre GL renders overlay
@@ -106,7 +107,7 @@ npm run build
 
 1. Open `about:debugging`
 2. Click **This Firefox** → **Load Temporary Add-on**
-3. Select `packages/extension/dist/manifest.json`
+3. Select `packages/extension/dist-firefox/manifest.json` (Note: Use `dist-firefox` for Firefox-specific builds)
 
 ---
 
@@ -148,9 +149,10 @@ export default MyPlugin;
 |------|--------|
 | Portal / link / field entities | `intel.ingress.com/r/getEntities` |
 | Portal details | `intel.ingress.com/r/getPortalDetails` |
-| Map tiles | OpenStreetMap (via MapLibre GL) |
+| COMM messages (Plexts) | `intel.ingress.com/r/getPlexts` |
+| Map tiles | Dynamic (Carto Dark/Light, Voyager, OSM) |
 | Geocoding | Nominatim / OpenStreetMap |
-| Player stats | Intel page DOM |
+| Player stats | `window.PLAYER` global object |
 
 ---
 
@@ -162,7 +164,7 @@ export default MyPlugin;
 | UI framework | [Preact](https://preactjs.com/) |
 | Map rendering | [MapLibre GL JS](https://maplibre.org/) |
 | State management | [Zustand](https://github.com/pmndrs/zustand) |
-| Build tool | [Vite](https://vitejs.dev/) + `vite-plugin-web-extension` |
+| Build tool | [Vite](https://vitejs.dev/) |
 | Language | TypeScript (strict) |
 | Package manager | npm workspaces |
 
@@ -170,29 +172,31 @@ export default MyPlugin;
 
 ## Roadmap
 
-- [x] XHR / fetch interception
+- [x] XHR / fetch interception (Core)
 - [x] Portal, link and field rendering
 - [x] Bidirectional map sync
 - [x] Portal details popup
-- [x] Player stats
-- [x] Location search
-- [x] Plugin system (basic)
+- [x] Player stats (Enhanced via `window.PLAYER`)
+- [x] Location search (Nominatim)
+- [x] Plugin system (Core SDK)
+- [x] **COMM / Chat Overlay** (Tabbed views, clickable portal names)
+- [x] **Data Export** (Plugin: JSON, KML, GeoJSON)
+- [x] **Scoring UI** (Global and Regional popups)
+- [ ] **Search Enhancements:**
+    - [ ] Portal Search via Niantic API (`/r/getPortalSearch`)
+    - [ ] Coordinate jump support
+- [ ] **Inventory Viewer:**
+    - [ ] Integrated item view for C.O.R.E. members (`/r/getInventory`)
 - [ ] **Plugin System Enhancements:**
     - [ ] Support for custom map layers from plugins
-    - [ ] Dynamic plugin loading (loading external JS files)
-    - [ ] Structured plugin manifest with permissions
-    - [ ] Plugin enable / disable at runtime
+    - [ ] Dynamic plugin loading
 - [ ] **Performance Optimizations:**
     - [ ] GeoJSON source throttling for extremely dense areas
-- [ ] **UI/UX:**
-    - [ ] Hide Intel UI — MapLibre-only mode
-    - [ ] Dark / light map theme toggle
 - [ ] **Mobile:**
-    - [ ] Mobile browser support (Android Chrome / Firefox)
-    - [ ] iOS Safari Web Extension
+    - [ ] Decision between Capacitor App vs. Mobile Browser Extension
 - [ ] **Features:**
-    - [ ] Chat / Comms overlay
-    - [ ] Export portal data (GeoJSON, CSV)
+    - [ ] Portal History indicators (Visited/Captured/Scanned)
+    - [ ] Mission and Artifact layers
 
 ---
 
