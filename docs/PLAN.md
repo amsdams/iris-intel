@@ -65,6 +65,7 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] **Game Score:** Render GameScore Popup using intercepting `getGameScore` (Standard).
 - [x] **Region Score:** Render RegionScoreDetails Popup using intercepting `getRegionScoreDetails` (Standard).
 - [x] **Portal History:** Added visual rings for Visited (Purple), Captured (Red), and Scanned (Yellow dashed) status integrated into the map rendering.
+- [x] **Inventory Viewer:** High-performance grid view for resonators, weapons, and mods with level-based coloring and C.O.R.E. subscription enforcement.
 
 ### Phase 6: Architecture Analysis (100% Complete)
 - [x] **Comparative Study:** Exhaustive analysis of original Ingress Intel (`gen_dashboard_*.js`) vs. IRIS, documented in `REF-DESKTOP.MD`.
@@ -76,9 +77,8 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 
 ## Next Strategic Priority
 1. **Search Functionality**: Implement a unified search bar for coordinates, addresses (OSM), and portals (`/r/getPortalSearch`).
-2. **Inventory Viewer**: Build a UI for viewing player items via `/r/getInventory` (requires C.O.R.E. subscription check).
-3. **Robust Login Detection**: Monitor for `401/403` status codes in `interceptor.ts` to detect session expiry.
-4. **Chat Integration**: Add an input field to `CommPopup` for sending messages via `/r/sendPlext`.
+2. **Robust Login Detection**: Monitor for `401/403` status codes in `interceptor.ts` to detect session expiry.
+3. **Chat Integration**: Add an input field to `CommPopup` for sending messages via `/r/sendPlext`.
 
 ## Known Issues & Mobile Challenges
 

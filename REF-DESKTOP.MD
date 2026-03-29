@@ -58,15 +58,15 @@ The search in original Intel is a versatile tool for navigation and portal disco
   - Store results in a new `searchResults` slice in the store.
   - Clicking a result should call `updateMapState` and, if it's a portal, `selectPortal`.
 
-### 2. Inventory Viewer (High Priority)
+### 2. Inventory Viewer (Completed)
 Provides a view of the player's items, typically restricted to C.O.R.E. members in the official tool.
 - **Requirements**:
   - List all items: Resonators, XMP Bursters, Ultra Strikes, Shields, Mods, Power Cubes, and Portal Keys.
   - **Subscription Check**: Must verify C.O.R.E. status via `window.PLAYER` or API response before attempting fetch.
-- **Implementation Strategy**:
+- **IRIS Status**: **Fully Implemented**.
   - Trigger `/r/getInventory` via a button in the UI.
-  - **Parsing**: The response is a complex nested structure. Iterate through `[guid, timestamp, item_data]` and group by `resourceWithLevels.type` or `modResource.resourceType`.
-  - **UI**: A new `InventoryPopup.tsx` with categorized tabs. Use CSS grids for a compact "Ingress Prime" style layout.
+  - **Parsing**: Grouping by category and level/rarity with theme-consistent coloring.
+  - **UI**: High-performance grid layout matching COMM's look and feel with C.O.R.E detection.
 
 ### 3. Robust Login Detection (Medium Priority)
 - **Requirements**: Detect and notify the user when the Ingress session has expired.
@@ -84,13 +84,13 @@ Provides a view of the player's items, typically restricted to C.O.R.E. members 
   - Call the interceptor to trigger `/r/sendPlext` with the message text, current map center, and active tab.
   - Refresh the COMM feed immediately after a successful send.
 
-### 5. Portal History Indicators (Medium Priority)
+### 5. Portal History Indicators (Completed)
 - **Requirements**:
   - Visual icons for "Visited" (hollow circle), "Captured" (filled circle), and "Scanned" (ornament) status.
-- **Implementation Strategy**:
-  - These flags are present in the `getEntities` response (indices 18, 19, 20 in some versions, or named properties).
-  - Update `MapOverlay.tsx` to include these flags in the GeoJSON `properties`.
-  - Use MapLibre `circle-stroke-width` or additional symbol layers to render the status icons.
+- **IRIS Status**: **Fully Implemented**.
+  - These flags are present in the `getEntities` and `getPortalDetails` responses as a bitmask at index 18.
+  - **Map Rendering**: Multi-layer MapLibre circles for purple, red, and yellow rings.
+  - **Filters**: Independent toggles in the Filters popup for tactical visualization.
 
 ### 6. Advanced Map Layers (Low Priority)
 - **Missions**: `/r/getMissionDetails` and `/r/getHashtagMissions`.
@@ -112,11 +112,12 @@ Provides a view of the player's items, typically restricted to C.O.R.E. members 
 | **Level Filters** | Range Slider (Min - Max) | **Implemented** | Individual checkboxes for L1-L8 for more precision. |
 | **Health Filters** | Range Slider (0 - 100%) | **Implemented** | Bucketed checkboxes (25%, 50%, 75%, 100%) for faster filtering. |
 | **Login Detection** | Monitor 401/403 + CSRF cookie | **Missing** | Update `interceptor.ts` to detect and broadcast session loss. |
-| **C.O.R.E. Perks** | `getHasActiveSubscription()` check | **Missing** | Necessary to guard Inventory and History features. |
+| **C.O.R.E. Perks** | `getHasActiveSubscription()` check | **Implemented** | Extraction from `window.PLAYER` and `/r/getHasActiveSubscription` integrated. |
 | **Search** | Google Geocoding + Portal Search | **Missing** | Requires OSM Geocoding + `/r/getPortalSearch` integration. |
-| **Inventory** | C.O.R.E restricted item viewer | **Missing** | Needs `/r/getInventory` parsing + UI grid. |
+| **Inventory** | C.O.R.E restricted item viewer | **Implemented** | Refined grid view with category filtering and level/rarity coloring. |
 | **Chat Send** | Send message to All/Faction | **Missing** | Requires Input form + `/r/sendPlext` API call. |
-| **Portal History** | Map markers for Visit/Capture | **Missing** | Needs parsing from `getEntities` + MapLibre layer styling. |
+| **Portal History** | Map markers for Visit/Capture | **Implemented** | Bitmask parsing from index 18 with multi-ring MapLibre rendering and toggles. |
 | **Missions** | Start points and waypoints | **Missing** | Requires `/r/getMissionDetails` integration. |
 | **Artifacts** | Shards and target portals | **Missing** | Needs Artifact API parsing + path rendering. |
 | **Passcodes** | Passcode redemption field | **Missing** | Simple `/r/redeemReward` API hook. |
+
