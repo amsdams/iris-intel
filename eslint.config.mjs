@@ -69,6 +69,7 @@ export default tseslint.config(
       '**/node_modules/**',
       '**/reference/**',
       'vite.config.ts',
+      '**/vite.config.ts.timestamp-*',
       'eslint.config.mjs',
       'packages/extension/public/**'
     ],

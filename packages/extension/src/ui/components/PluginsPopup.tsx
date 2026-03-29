@@ -34,7 +34,7 @@ export function PluginsPopup({ onClose }: PluginsPopupProps): JSX.Element {
                     </div>
                 ) : (
                     availablePlugins.map((plugin) => {
-                        const isEnabled = !!pluginStates[plugin.manifest.id];
+                        const isEnabled = pluginStates[plugin.manifest.id] ?? false;
                         return (
                             <div 
                                 key={plugin.manifest.id}

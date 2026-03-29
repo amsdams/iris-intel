@@ -74,6 +74,8 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] **Strict Typing:** Removed `any` usage across the codebase, ensuring robust TypeScript coverage for Core, Extension, and Plugins.
 - [x] **Linting Infrastructure:** Implemented a modern ESLint configuration (Flat Config) with TypeScript and React/Preact rules.
 - [x] **API Consistency:** Refactored `PluginManager` and `store` with explicit return types and interfaces.
+- [x] **Typecheck Workflow:** Added a root `npm run typecheck` command (`tsc --noEmit`) and verified it passes.
+- [x] **IDE Warning Cleanup:** Resolved current IntelliJ/TypeScript warnings around `unknown` API payloads, optional markup fields, XHR overload typing, redundant boolean coercions, and redundant `typeof` checks.
 
 ### Phase 8: Optimization & Architecture (In Progress)
 - [x] **Source-side Validation:** Moved all strict numeric parsing and coordinate validation to `parseEntities` to ensure the Zustand store only contains "clean" data.
@@ -95,7 +97,7 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - **Plugin API Isolation:** Plugins have direct access to core internals.
     - *Strategy:* Implement a restrictive proxy/bridge for the Plugin SDK.
 - **Lint Debt Baseline:** ~200 pre-existing errors hindering CI/CD.
-    - *Strategy:* Execute a focused "lint-fix" sprint to clear the debt.
+    - *Status:* Cleared for current tracked code paths; `npm run lint` now passes.
 
 #### Proposed Next Steps
 1. **Map Performance Sprint:** Refactor `MapOverlay.tsx` to use `queryRenderedFeatures` and optimize GeoJSON generation.

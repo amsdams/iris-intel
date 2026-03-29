@@ -112,7 +112,7 @@ export class PluginManager {
     const plugin = this.availablePlugins.get(id);
     if (!plugin) return;
 
-    const currentState = !!useStore.getState().pluginStates[id];
+    const currentState = useStore.getState().pluginStates[id] ?? false;
     if (currentState === enabled) return;
 
     useStore.getState().setPluginEnabled(id, enabled);
