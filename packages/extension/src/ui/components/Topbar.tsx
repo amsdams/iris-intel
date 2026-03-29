@@ -131,6 +131,7 @@ function LocationSearch() {
 
 interface TopbarProps {
     onTogglePlayerStats: () => void;
+    onToggleInventory: () => void;
     onToggleStateDebug: () => void;
     onToggleFiltersPopup: () => void;
     onToggleMapVisibility: () => void;
@@ -144,6 +145,7 @@ interface TopbarProps {
 
 export function Topbar({
     onTogglePlayerStats,
+    onToggleInventory,
     onToggleStateDebug,
     onToggleFiltersPopup,
     onToggleMapVisibility,
@@ -201,6 +203,13 @@ export function Topbar({
                             style={{ color: theme.AQUA }}
                         >
                             Player Stats
+                        </button>
+                        <button
+                            className="iris-menu-item"
+                            onClick={() => { onToggleInventory(); setShowMenu(false); }}
+                            style={{ color: theme.AQUA }}
+                        >
+                            Inventory
                         </button>
                         <button
                             className="iris-menu-item"

@@ -10,6 +10,7 @@ import { PortalInfoPopup } from './PortalInfoPopup';
 import { CommPopup } from './CommPopup';
 import { GameScorePopup } from './GameScorePopup';
 import { RegionScorePopup } from './RegionScorePopup';
+import { InventoryPopup } from './InventoryPopup';
 import { ExportPopup } from '../../../../plugins/src/export-data/ExportPopup';
 import { ThemePopup } from '../../../../plugins/src/theme-selector/ThemePopup';
 import { MapThemePopup } from './MapThemePopup';
@@ -23,6 +24,7 @@ import { PluginFeaturePopup } from './PluginFeaturePopup';
 
 export function IRISOverlay() {
     const [showPlayerStatsPopup, setShowPlayerStatsPopup] = useState(false);
+    const [showInventoryPopup, setShowInventoryPopup] = useState(false);
     const [showStateDebugPopup, setShowStateDebugPopup] = useState(false);
     const [showFiltersPopup, setShowFiltersPopup] = useState(false);
     const [showCommPopup, setShowCommPopup] = useState(false);
@@ -35,6 +37,12 @@ export function IRISOverlay() {
     const [showMap, setShowMap] = useState(true);
 
     const togglePlayerStatsPopup = () => setShowPlayerStatsPopup(!showPlayerStatsPopup);
+    const toggleInventoryPopup = () => {
+        if (!showInventoryPopup) {
+            window.postMessage({ type: 'IRIS_DATA_REQUEST', url: 'getInventory' }, '*');
+        }
+        setShowInventoryPopup(!showInventoryPopup);
+    };
     const toggleStateDebugPopup = () => setShowStateDebugPopup(!showStateDebugPopup);
     const toggleFiltersPopup = () => setShowFiltersPopup(!showFiltersPopup);
     const toggleCommPopup = () => setShowCommPopup(!showCommPopup);
@@ -89,6 +97,7 @@ export function IRISOverlay() {
         <div className="iris-overlay-root">
             <Topbar
                 onTogglePlayerStats={togglePlayerStatsPopup}
+                onToggleInventory={toggleInventoryPopup}
                 onToggleStateDebug={toggleStateDebugPopup}
                 onToggleFiltersPopup={toggleFiltersPopup}
                 onToggleComm={toggleCommPopup}
@@ -112,6 +121,10 @@ export function IRISOverlay() {
 
             {showPlayerStatsPopup && (
                 <PlayerStatsPopup onClose={togglePlayerStatsPopup} />
+            )}
+
+            {showInventoryPopup && (
+                <InventoryPopup onClose={toggleInventoryPopup} />
             )}
 
             {showGameScorePopup && (

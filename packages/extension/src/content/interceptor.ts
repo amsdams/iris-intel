@@ -30,7 +30,9 @@
         url.includes('getPortalDetails') ||
         url.includes('getPlexts') ||
         url.includes('getGameScore') ||
-        url.includes('getRegionScoreDetails');
+        url.includes('getRegionScoreDetails') ||
+        url.includes('getInventory') ||
+        url.includes('getHasActiveSubscription');
 
     // ---------------------------------------------------------------------------
     // Google Maps constructor hook
@@ -82,6 +84,7 @@
         const available_invites = parseInt(String(P.available_invites), 10);
         const min_ap_for_current_level = parseInt(String(P.min_ap_for_current_level), 10);
         const min_ap_for_next_level = parseInt(String(P.min_ap_for_next_level), 10);
+        const hasActiveSubscription = !!P.hasActiveSubscription;
 
         if (nickname) {
             window.postMessage({
@@ -94,7 +97,8 @@
                 xm_capacity,
                 available_invites,
                 min_ap_for_current_level,
-                min_ap_for_next_level
+                min_ap_for_next_level,
+                hasActiveSubscription
             }, '*');
         }
     };
@@ -483,10 +487,50 @@
                 break;
             }
 
+            // Generic data request
+            case 'IRIS_DATA_REQUEST': {
+                if (!intelVersion) break;
+                const { url } = event.data;
+                const csrfToken = getCsrfToken();
+                if (!csrfToken) break;
+
+                const req = new XMLHttpRequest();
+                // Ensure URL starts with /r/ if it doesn't
+                const fullUrl = url.startsWith('/') ? url : `/r/${url}`;
+                req.open('POST', fullUrl, true);
+                req.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+                req.setRequestHeader('X-CSRFToken', csrfToken);
+                req.addEventListener('load', function() {
+                    if (this.status === 200) {
+                        try {
+                            const data = JSON.parse(this.responseText);
+                            window.postMessage({ type: 'IRIS_DATA', url: fullUrl, data }, '*');
+                        } catch (e) {
+                            console.error(`IRIS: Failed to parse ${url} response`, e);
+                        }
+                    }
+                }, { once: true });
+                req.send(JSON.stringify({ v: intelVersion }));
+                break;
+            }
+
             default:
                 break;
         }
     });
+
+    // ---------------------------------------------------------------------------
+    // Boot
+    // ---------------------------------------------------------------------------
+
+    // Periodic check for version and initial data
+    const bootInterval = setInterval(() => {
+        if (intelVersion) {
+            clearInterval(bootInterval);
+            // Trigger initial subscription check
+            window.postMessage({ type: 'IRIS_DATA_REQUEST', url: 'getHasActiveSubscription' }, '*');
+        }
+    }, 1000);
 
     // ---------------------------------------------------------------------------
     // JS Error Tracking

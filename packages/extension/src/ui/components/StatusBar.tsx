@@ -12,6 +12,7 @@ export function StatusBar() {
     const clearSuccessfulRequests = useStore((state) => state.clearSuccessfulRequests);
     const jsErrors = useStore((state) => state.jsErrors);
     const clearJSErrors = useStore((state) => state.clearJSErrors);
+    const hasSubscription = useStore((state) => state.hasSubscription);
     
     const [isExpanded, setIsExpanded] = useState(false);
 
@@ -165,6 +166,11 @@ export function StatusBar() {
                         {failedRequests.length > 0 && ` (${failedRequests.length} NET)`}
                         {jsErrors.length > 0 && ` (${jsErrors.length} JS)`}
                     </span>
+                    {hasSubscription && (
+                        <span style={{ marginLeft: SPACING.MD, color: '#b000ff', fontWeight: 'bold', fontSize: '9px' }}>
+                            [C.O.R.E.]
+                        </span>
+                    )}
                     {activeRequests > 0 && lastRequestUrl && (
                         <span className="iris-status-current-endpoint" style={{ marginLeft: SPACING.MD, opacity: 0.8 }}>
                             FETCHING {getEndpointName(lastRequestUrl)}...

@@ -1,7 +1,7 @@
 import { render, h } from 'preact';
 import '../ui/iris.css';
 import { IRISOverlay } from '../ui/components/Overlay';
-import { useStore, pluginManager, normalizeTeam } from '@iris/core';
+import { useStore, pluginManager, normalizeTeam, InventoryItem } from '@iris/core';
 import PortalNamesPlugin from '../../../plugins/src/portal-names';
 import ThemeSelectorPlugin from '../../../plugins/src/theme-selector';
 import PlayerTrackerPlugin from '../../../plugins/src/player-tracker';
@@ -131,6 +131,24 @@ function parsePlexts(data: any): any[] {
         });
     } catch (e) {
         console.error('IRIS: Error parsing plexts', e, data);
+        return [];
+    }
+}
+
+function parseInventory(data: any): InventoryItem[] {
+    if (!data.result) return [];
+    try {
+        // Result is an array of [guid, timestamp, itemData]
+        return data.result.map((item: any) => {
+            const [guid, timestamp, itemData] = item;
+            return {
+                guid,
+                timestamp,
+                ...itemData
+            } as InventoryItem;
+        });
+    } catch (e) {
+        console.error('IRIS: Error parsing inventory', e, data);
         return [];
     }
 }
@@ -379,6 +397,15 @@ window.addEventListener('message', (event) => {
                 scoreHistory: res.scoreHistory
             });
         }
+      } else if (url.includes('getHasActiveSubscription')) {
+        if (data.result !== undefined) {
+            useStore.getState().setHasSubscription(!!data.result);
+        }
+      } else if (url.includes('getInventory')) {
+        const inventory = parseInventory(data);
+        if (inventory.length > 0) {
+            useStore.getState().setInventory(inventory);
+        }
       }
       break;
     }
@@ -393,7 +420,8 @@ window.addEventListener('message', (event) => {
           xm_capacity,
           available_invites,
           min_ap_for_current_level,
-          min_ap_for_next_level 
+          min_ap_for_next_level,
+          hasActiveSubscription
         } = event.data;
       useStore.getState().setPlayerStats({ 
           nickname, 
@@ -406,6 +434,10 @@ window.addEventListener('message', (event) => {
           min_ap_for_current_level,
           min_ap_for_next_level
         });
+      // Only update if true to avoid overriding a true state from getHasActiveSubscription
+      if (hasActiveSubscription) {
+          useStore.getState().setHasSubscription(true);
+      }
       break;
     }
     default:

@@ -321,6 +321,62 @@
     justify-content: space-between;
 }
 
+/* Rarity Colors */
+.iris-rarity-very-common { color: #ffffff; }
+.iris-rarity-common { color: #ffffff; }
+.iris-rarity-rare { color: #ff00ff; }
+.iris-rarity-very-rare { color: #b000ff; }
+.iris-rarity-extremely-rare { color: #ff0000; }
+
+/* Tabs */
+.iris-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--iris-border);
+    margin-bottom: 10px;
+}
+
+.iris-tab {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 0.85em;
+    color: var(--iris-text-secondary);
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.iris-tab:hover {
+    color: var(--iris-text-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.iris-tab.active {
+    color: var(--iris-accent);
+    border-bottom-color: var(--iris-accent);
+}
+
+.iris-button {
+    background: var(--iris-accent);
+    color: #000;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: monospace;
+    font-size: 0.85em;
+    font-weight: bold;
+    transition: opacity 0.2s ease;
+}
+
+.iris-button:hover {
+    opacity: 0.8;
+}
+
+.iris-button:disabled {
+    background: #555;
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
 /* Mobile Responsiveness for all popups */
 @media (max-width: 600px) {
     .iris-popup {

@@ -113,6 +113,61 @@ export interface JSError {
     time: number;
 }
 
+export interface InventoryItemData {
+    resource?: {
+        resourceType: string;
+        resourceRarity: string;
+    };
+    resourceWithLevels?: {
+        resourceType: string;
+        level: number;
+    };
+    modResource?: {
+        displayName: string;
+        stats: Record<string, string>;
+        rarity: string;
+        resourceType: string;
+    };
+    playerPowerupResource?: {
+        playerPowerupEnum: string;
+    };
+    timedPowerupResource?: {
+        multiplier: number;
+        designation: string;
+        multiplierE6: number;
+    };
+    flipCard?: {
+        flipCardType: string;
+    };
+    container?: {
+        currentCapacity: number;
+        currentCount: number;
+        stackableItems: {
+            itemGuids: string[];
+            exampleGameEntity: [string, number, InventoryItemData];
+        }[];
+    };
+    moniker?: {
+        differentiator: string;
+    };
+    portalCoupler?: {
+        portalGuid: string;
+        portalLocation: string;
+        portalImageUrl: string;
+        portalTitle: string;
+        portalAddress: string;
+    };
+    inInventory?: {
+        playerId: string;
+        acquisitionTimestampMs: string;
+    };
+}
+
+export interface InventoryItem extends InventoryItemData {
+    guid: string;
+    timestamp: number;
+}
+
 interface IRISState {
     portals: Record<string, Portal>;
     links: Record<string, Link>;
@@ -155,6 +210,12 @@ interface IRISState {
 
     regionScore: RegionScore | null;
     setRegionScore: (score: RegionScore) => void;
+
+    hasSubscription: boolean;
+    setHasSubscription: (has: boolean) => void;
+
+    inventory: InventoryItem[];
+    setInventory: (items: InventoryItem[]) => void;
 
     themeId: string;
     setTheme: (id: string) => void;
@@ -317,6 +378,12 @@ export const useStore = create<IRISState>()(
     regionScore: null,
     setRegionScore: (score) => set(() => ({ regionScore: score })),
 
+    hasSubscription: false,
+    setHasSubscription: (has) => set(() => ({ hasSubscription: has })),
+
+    inventory: [],
+    setInventory: (items: InventoryItem[]) => set(() => ({ inventory: items })),
+
     themeId: 'DEFAULT',
     setTheme: (id: string) => set(() => ({ themeId: id })),
 
@@ -407,6 +474,7 @@ export const useStore = create<IRISState>()(
             debugLogging: state.debugLogging,
             activeCommTab: state.activeCommTab,
             showHealth: state.showHealth,
+            hasSubscription: state.hasSubscription,
         }),
         onRehydrateStorage: () => (state) => {
             if (state) state.rehydrated = true;
