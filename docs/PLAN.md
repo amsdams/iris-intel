@@ -107,6 +107,8 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
     - *Strategy:* Continue extracting source update helpers and interaction helpers into map-specific modules.
 - **UI Styling Coverage Gap:** The UI folder is now domain-grouped, but only part of the styling has been moved into domain-specific CSS files.
     - *Strategy:* Continue moving remaining popup/domain styles into colocated CSS files without changing class names or behavior, starting with `comm` and `inventory`.
+- **Ingress Semantic Color Drift:** Faction colors are mostly aligned, but portal/item semantics such as rarity, powerups, and some inventory color rules are still locally encoded and not standardized against a shared Ingress palette.
+    - *Strategy:* Introduce a shared semantic color module for factions, level colors, mod rarity, and inventory/powerup classes, then migrate portal, inventory, COMM, and plugin surfaces to use it consistently.
 - **Plugin API Isolation:** Plugins have direct access to core internals.
     - *Strategy:* Implement a restrictive proxy/bridge for the Plugin SDK.
 - **Lint Debt Baseline:** ~200 pre-existing errors hindering CI/CD.
@@ -121,6 +123,7 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 4. **Persist Scope Cleanup:** Limit Zustand persistence to durable settings and plugin preferences.
 5. **Payload Typing Pass:** Replace cast-heavy endpoint parsing with explicit validated response types.
 6. **UI CSS Colocation:** Finish moving remaining domain-specific popup styling into `ui/domains/*`, starting with `comm` and `inventory`.
+7. **Ingress Semantic Palette:** Standardize faction, portal level, rarity, and powerup/item colors in one shared module and migrate current ad hoc color usage to it.
 
 #### Proposed Domain-Oriented Directory Plan
 ```text
@@ -172,6 +175,7 @@ packages/extension/src/content/
 - **Todo:** Split the Zustand store into slices and narrow what gets persisted.
 - **Todo:** Finish map-specific helper extraction from `MapOverlay.tsx`, especially interaction and source update helpers.
 - **Todo:** Convert the remaining popup/domain styling into colocated CSS files where it improves ownership, especially `comm` and `inventory`.
+- **Todo:** Add a shared Ingress semantic color palette so faction, level, rarity, and powerup/item colors match Ingress conventions consistently across UI surfaces.
 - **Todo:** Tighten Intel payload/result typing to reduce residual cast-heavy parsing.
 
 #### Domain Split Rules
@@ -268,13 +272,18 @@ packages/extension/src/ui/
 4. Finish UI CSS colocation for `comm` and `inventory`
    `packages/extension/src/ui/domains/*`
    These still carry a lot of inline layout/styling and are the next low-risk domains to move into colocated CSS files.
-5. Extract remaining map helpers
+5. Add a shared Ingress semantic color palette
+   `packages/extension/src/ui/theme.ts`
+   `packages/extension/src/ui/domains/portal/*`
+   `packages/extension/src/ui/domains/inventory/*`
+   Standardize faction, level, rarity, and powerup/item colors instead of keeping those decisions spread across components and CSS.
+6. Extract remaining map helpers
    `packages/extension/src/ui/domains/map/MapOverlay.tsx`
    Feature builders are already out. The next safe split is source update helpers and portal interaction helpers.
-6. Tighten remaining payload typing
+7. Tighten remaining payload typing
    `packages/extension/src/content/domains/*`
    Replace the remaining cast-heavy endpoint assumptions with explicit transport/result types per domain.
-7. Add batched source updates
+8. Add batched source updates
    `packages/extension/src/ui/domains/map/MapOverlay.tsx`
    Wrap clustered `setData()` updates behind `requestAnimationFrame` or a small throttle to reduce update burstiness in dense areas.
 
@@ -284,6 +293,6 @@ If you want the safest shortlist, I’d do this order:
 2. initial store slice split
 3. `queryRenderedFeatures` migration
 4. `comm` CSS colocation
-5. map source update batching
+5. shared Ingress semantic palette
 
 Those are the highest signal-to-risk ratio.
