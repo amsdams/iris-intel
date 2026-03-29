@@ -1,14 +1,27 @@
 import { render, h } from 'preact';
 import '../ui/iris.css';
-import { IRISOverlay } from '../ui/components/Overlay';
+import { IRISOverlay } from '../ui/Overlay';
 import { useStore, pluginManager } from '@iris/core';
 import PortalNamesPlugin from '../../../plugins/src/portal-names';
 import ThemeSelectorPlugin from '../../../plugins/src/theme-selector';
 import PlayerTrackerPlugin from '../../../plugins/src/player-tracker';
 import ExportDataPlugin from '../../../plugins/src/export-data';
 import { IRISPlugin } from '@iris/plugin-sdk';
-import { IRISMessage, IntelMapData, InventoryData, PlextData, PortalDetailsData, RegionScoreResult } from './intel-types';
-import { parseEntities, parseInventory, parsePlexts, parsePortalDetails } from './parsers';
+import { handleEntities } from './domains/entities/handler';
+import { IntelMapData } from './domains/entities/types';
+import { handleInventory } from './domains/inventory/handler';
+import { InventoryData } from './domains/inventory/types';
+import { handlePlayerStats } from './domains/player/handler';
+import { PlayerStatsMessage } from './domains/player/types';
+import { handlePlexts } from './domains/plexts/handler';
+import { PlextData } from './domains/plexts/types';
+import { handlePortalDetails } from './domains/portal-details/handler';
+import { PortalDetailsData } from './domains/portal-details/types';
+import { handleGameScore } from './domains/game-score/handler';
+import { GameScoreData } from './domains/game-score/types';
+import { handleRegionScore } from './domains/region-score/handler';
+import { RegionScoreData } from './domains/region-score/types';
+import { IRISMessage } from './runtime/message-types';
 
 // Tracks whether MapLibre has been given its initial position
 let hasInitialPosition = false;
@@ -221,87 +234,32 @@ window.addEventListener('message', (event: MessageEvent) => {
       }
 
       if (url_str.includes('getEntities')) {
-        const { portals, links, fields, deletedGuids } = parseEntities(data as IntelMapData);
-        const store = useStore.getState();
-
-        if (!hasInitialPosition && portals.length > 0) {
+        handleEntities(data as IntelMapData, hasInitialPosition, () => {
           hasInitialPosition = true;
-          const mid = portals[Math.floor(portals.length / 2)];
-          if (mid.lat !== undefined && mid.lng !== undefined) {
-            store.updateMapState(mid.lat, mid.lng, 15);
-          }
-        }
-
-        if (deletedGuids.length > 0) store.removeEntities(deletedGuids);
-        if (portals.length > 0) store.updatePortals(portals);
-        if (links.length > 0) store.updateLinks(links);
-        if (fields.length > 0) store.updateFields(fields);
-
-      } else if (url_str.includes('getPortalDetails')) {
-        const portal = parsePortalDetails(data as PortalDetailsData, parsedParams as { guid?: string });
-        if (portal) useStore.getState().updatePortals([portal]);
-      } else if (url_str.includes('getPlexts')) {
-        lastPlextRequestTime = Date.now();
-        const plexts = parsePlexts(data as PlextData);
-        if (plexts.length > 0) useStore.getState().updatePlexts(plexts);
-      } else if (url_str.includes('getGameScore')) {
-        const [enlightened, resistance] = (data as { result?: [number, number] }).result || [0, 0];
-        useStore.getState().setGameScore({ 
-            enlightened: parseInt(String(enlightened), 10), 
-            resistance: parseInt(String(resistance), 10) 
         });
+      } else if (url_str.includes('getPortalDetails')) {
+        handlePortalDetails(data as PortalDetailsData, parsedParams as { guid?: string });
+      } else if (url_str.includes('getPlexts')) {
+        handlePlexts(data as PlextData, (time) => {
+          lastPlextRequestTime = time;
+        });
+      } else if (url_str.includes('getGameScore')) {
+        handleGameScore(data as GameScoreData);
       } else if (url_str.includes('getRegionScoreDetails')) {
-        const res = (data as { result?: RegionScoreResult }).result;
-        if (res) {
-            useStore.getState().setRegionScore({
-                regionName: res.regionName,
-                gameScore: [parseInt(String(res.gameScore[0]), 10), parseInt(String(res.gameScore[1]), 10)],
-                topAgents: res.topAgents,
-                scoreHistory: res.scoreHistory
-            });
-        }
+        handleRegionScore(data as RegionScoreData);
       } else if (url_str.includes('getHasActiveSubscription')) {
         const res = (data as { result?: boolean }).result;
         if (res !== undefined) {
             useStore.getState().setHasSubscription(res);
         }
       } else if (url_str.includes('getInventory')) {
-        const inventory = parseInventory(data as InventoryData);
-        if (inventory.length > 0) {
-            useStore.getState().setInventory(inventory);
-        }
+        handleInventory(data as InventoryData);
       }
       break;
     }
 
     case 'IRIS_PLAYER_STATS': {
-      const stats = msg as unknown as {
-          nickname: string;
-          level: number;
-          ap: number;
-          team: string;
-          energy: number;
-          xm_capacity: number;
-          available_invites: number;
-          min_ap_for_current_level: number;
-          min_ap_for_next_level: number;
-          hasActiveSubscription: boolean;
-      };
-      
-      useStore.getState().setPlayerStats({ 
-          nickname: stats.nickname, 
-          level: stats.level, 
-          ap: stats.ap, 
-          team: stats.team,
-          energy: stats.energy,
-          xm_capacity: stats.xm_capacity,
-          available_invites: stats.available_invites,
-          min_ap_for_current_level: stats.min_ap_for_current_level,
-          min_ap_for_next_level: stats.min_ap_for_next_level
-        });
-      if (stats.hasActiveSubscription) {
-          useStore.getState().setHasSubscription(true);
-      }
+      handlePlayerStats(msg as unknown as PlayerStatsMessage);
       break;
     }
     default:

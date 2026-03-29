@@ -1,7 +1,7 @@
-import { h, JSX } from 'preact';
+import { JSX } from 'preact';
 import { useState } from 'preact/hooks';
 import { Field, Link, Portal, useStore } from '@iris/core';
-import { Popup } from '../../../extension/src/ui/components/Popup';
+import { Popup } from '../../../extension/src/ui/shared/Popup';
 import { UI_COLORS, THEMES, SHARED_STYLES } from '../../../extension/src/ui/theme';
 
 interface ExportPopupProps {

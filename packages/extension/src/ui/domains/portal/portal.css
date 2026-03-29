@@ -1,0 +1,89 @@
+.iris-portal-info {
+    font-size: 14px;
+    max-width: 100%;
+}
+
+.iris-portal-image-container {
+    width: 100%;
+    margin-bottom: 10px;
+    overflow: hidden;
+    border-radius: 4px;
+}
+
+.iris-portal-image {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: 140px;
+    object-fit: cover;
+    border: 1px solid #333;
+}
+
+.iris-portal-name {
+    font-size: 1em;
+    font-weight: bold;
+    margin-bottom: 8px;
+    padding-right: 20px;
+    line-height: 1.3;
+}
+
+.iris-portal-stats {
+    display: flex;
+    gap: 16px;
+    font-size: 0.85em;
+    color: #aaaaaa;
+    margin-bottom: 4px;
+}
+
+.iris-portal-resonators-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+}
+
+.iris-portal-resonator-item {
+    background: #111;
+    border-radius: 3px;
+    padding: 3px 4px;
+    font-size: 0.75em;
+    border: 1px solid #333;
+    overflow: hidden;
+    position: relative;
+}
+
+.iris-portal-resonator-health-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    background: #00ff00;
+    transition: width 0.3s ease;
+}
+
+.iris-portal-resonator-owner {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.iris-portal-mod-item {
+    background: #111;
+    border-radius: 3px;
+    padding: 3px 6px;
+    font-size: 0.75em;
+    border: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+}
+
+.iris-rarity-very-common { color: #ffffff; }
+.iris-rarity-common { color: #ffffff; }
+.iris-rarity-rare { color: #ff00ff; }
+.iris-rarity-very-rare { color: #b000ff; }
+.iris-rarity-extremely-rare { color: #ff0000; }
+
+@media (max-width: 600px) {
+    .iris-portal-resonators-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

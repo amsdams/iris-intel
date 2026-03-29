@@ -1,0 +1,180 @@
+.iris-overlay-root {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 9999;
+    font-family: monospace;
+    --iris-border: #333333;
+    --iris-text-secondary: #aaaaaa;
+    --iris-text-primary: #ffffff;
+    --iris-accent: #00ffff;
+}
+
+[class^="iris-"], [class*=" iris-"] {
+    box-sizing: border-box;
+}
+
+.iris-overlay-root > * {
+    pointer-events: auto;
+}
+
+.iris-popup-content::-webkit-scrollbar,
+.iris-comm-scroll-container::-webkit-scrollbar {
+    width: 4px;
+}
+
+.iris-popup-content::-webkit-scrollbar-track,
+.iris-comm-scroll-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.iris-popup-content::-webkit-scrollbar-thumb,
+.iris-comm-scroll-container::-webkit-scrollbar-thumb {
+    background: #00ffff;
+    border-radius: 2px;
+}
+
+.iris-popup {
+    position: fixed;
+    z-index: 10002;
+    background: rgba(0, 0, 0, 0.92);
+    color: #ffffff;
+    padding: 16px;
+    border-radius: 8px;
+    border: 2px solid #00ffff;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.33);
+    font-family: monospace;
+    max-height: 80vh;
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.iris-popup-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: 18px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 4px;
+    z-index: 1;
+}
+
+.iris-popup-header {
+    cursor: move;
+    user-select: none;
+    touch-action: none;
+    margin-bottom: 8px;
+    padding-right: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.iris-popup-title {
+    margin: 0;
+    color: #00ffff;
+    font-size: 1.2em;
+    pointer-events: none;
+}
+
+.iris-popup-drag-spacer {
+    height: 10px;
+    width: 100%;
+    pointer-events: none;
+}
+
+.iris-popup-content {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.iris-popup-no-scroll .iris-popup-content {
+    overflow-y: hidden;
+}
+
+.iris-btn {
+    background: #555;
+    color: #000;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-weight: bold;
+    font-family: monospace;
+}
+
+.iris-btn:disabled {
+    cursor: default;
+    opacity: 0.7;
+}
+
+.iris-btn-primary {
+    background: #00ffff;
+}
+
+.iris-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--iris-border);
+    margin-bottom: 10px;
+}
+
+.iris-tab {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 0.85em;
+    color: var(--iris-text-secondary);
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.iris-tab:hover {
+    color: var(--iris-text-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.iris-tab.active {
+    color: var(--iris-accent);
+    border-bottom-color: var(--iris-accent);
+}
+
+.iris-button {
+    background: var(--iris-accent);
+    color: #000;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: monospace;
+    font-size: 0.85em;
+    font-weight: bold;
+    transition: opacity 0.2s ease;
+}
+
+.iris-button:hover {
+    opacity: 0.8;
+}
+
+.iris-button:disabled {
+    background: #555;
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+@media (max-width: 600px) {
+    .iris-popup {
+        width: 90vw !important;
+        max-width: 90vw !important;
+        left: 5vw !important;
+        transform: none !important;
+    }
+}

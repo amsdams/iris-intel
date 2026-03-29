@@ -1,6 +1,6 @@
 import { h, JSX } from 'preact';
 import { useStore } from '@iris/core';
-import { Popup } from '../../../extension/src/ui/components/Popup';
+import { Popup } from '../../../extension/src/ui/shared/Popup';
 import { THEMES, UI_COLORS } from '../../../extension/src/ui/theme';
 
 interface ThemePopupProps {

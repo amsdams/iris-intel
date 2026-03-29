@@ -8,7 +8,7 @@ import {
     isIrisUrl,
     readPlayerStats,
     sniffVersionFromBody,
-} from './interceptor-helpers';
+} from './runtime/interceptor-runtime';
 
 /**
  * Injected into the page's main world at document_start.

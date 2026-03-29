@@ -98,6 +98,8 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
     - *Strategy:* Modularize into `VersionSniffer`, `NetworkInterceptor`, and `IntelSync` utilities.
 - **Content Script Monolith:** `content/index.ts` contains endpoint parsing, message routing, and store writes in one large switch.
     - *Strategy:* Extract endpoint-specific handlers such as `handleEntities`, `handlePlexts`, `handleScores`, and `handleInventory`.
+- **Domain Packaging Gap:** Content/interceptor logic is still only partially split by technical concern rather than full gameplay/data domains.
+    - *Strategy:* Group `types`, `parser`, `handler`, and request helpers per domain while keeping one shared interception runtime.
 - **Zustand Store Bloat:** Central store mixes core entity state with transient UI toggles.
     - *Strategy:* Split into logical "slices" (Entities, UI, Player).
 - **Transient State Persistence Scope:** Runtime-only diagnostics and ephemeral UI/network state are still colocated with durable settings.
@@ -115,6 +117,105 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 3. **Store Modularization:** Decompose the Zustand store into maintainable slices.
 4. **Content/Interceptor Cleanup:** Decouple `content/index.ts` and `interceptor.ts` into specialized modules.
 5. **Payload Typing Pass:** Replace cast-heavy endpoint parsing with explicit validated response types.
+
+#### Proposed Domain-Oriented Directory Plan
+```text
+packages/extension/src/content/
+├── domains/
+│   ├── entities/
+│   │   ├── types.ts
+│   │   ├── parser.ts
+│   │   ├── handler.ts
+│   │   └── requests.ts
+│   ├── portal-details/
+│   │   ├── types.ts
+│   │   ├── parser.ts
+│   │   ├── handler.ts
+│   │   └── requests.ts
+│   ├── plexts/
+│   │   ├── types.ts
+│   │   ├── parser.ts
+│   │   ├── handler.ts
+│   │   └── requests.ts
+│   ├── scores/
+│   │   ├── types.ts
+│   │   ├── parser.ts
+│   │   ├── handler.ts
+│   │   └── requests.ts
+│   ├── inventory/
+│   │   ├── types.ts
+│   │   ├── parser.ts
+│   │   ├── handler.ts
+│   │   └── requests.ts
+│   └── player/
+│       ├── types.ts
+│       ├── extractor.ts
+│       └── handler.ts
+├── runtime/
+│   ├── message-types.ts
+│   ├── content-runtime.ts
+│   └── interceptor-runtime.ts
+├── index.ts
+├── injector.ts
+└── interceptor.ts
+```
+
+#### Domain Split Rules
+- Keep one shared low-level XHR/fetch interception runtime. Do not create a separate patcher per domain.
+- Route requests/responses to domain handlers based on endpoint name.
+- Keep each domain self-contained: transport types, parser, state write logic, and request helpers live together.
+- Keep cross-domain concerns in `runtime/` only: window messaging, interception hooks, version sniffing, and shared request plumbing.
+
+#### Proposed Domain-Oriented UI Directory Plan
+```text
+packages/extension/src/ui/
+├── domains/
+│   ├── comm/
+│   │   ├── CommPopup.tsx
+│   │   └── comm.css
+│   ├── debug/
+│   │   └── StateDebugPopup.tsx
+│   ├── filters/
+│   │   └── FiltersPopup.tsx
+│   ├── inventory/
+│   │   ├── InventoryPopup.tsx
+│   │   └── inventory.css
+│   ├── map/
+│   │   ├── MapOverlay.tsx
+│   │   ├── MapThemePopup.tsx
+│   │   └── map.css
+│   ├── player/
+│   │   ├── PlayerStatsPopup.tsx
+│   │   └── player.css
+│   ├── plugins/
+│   │   ├── PluginFeaturePopup.tsx
+│   │   ├── PluginsPopup.tsx
+│   │   └── plugins.css
+│   ├── portal/
+│   │   ├── PortalInfoPopup.tsx
+│   │   └── portal.css
+│   ├── scores/
+│   │   ├── GameScorePopup.tsx
+│   │   ├── RegionScorePopup.tsx
+│   │   └── scores.css
+│   └── status/
+│       ├── StatusBar.tsx
+│       └── status.css
+├── shared/
+│   ├── Popup.tsx
+│   ├── Topbar.tsx
+│   ├── base.css
+│   └── topbar.css
+├── Overlay.tsx
+├── iris.css
+└── theme.ts
+```
+
+#### UI Split Rules
+- Group domain-specific UI and domain-specific styling together.
+- Keep reusable primitives like `Popup` and `Topbar` in `shared/`.
+- Keep `theme.ts` and design tokens centralized.
+- Use `iris.css` as the aggregation entry point that imports shared and domain stylesheets.
 
 ## Next Strategic Priority
 1. **Search Functionality**: Implement a unified search bar for coordinates, addresses (OSM), and portals (`/r/getPortalSearch`).

@@ -1,0 +1,115 @@
+.iris-topbar {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    height: 40px;
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.iris-topbar > * {
+    pointer-events: auto;
+}
+
+.iris-location-search {
+    position: relative;
+    flex-grow: 1;
+    max-width: 600px;
+}
+
+.iris-search-input-group {
+    display: flex;
+    gap: 4px;
+}
+
+.iris-search-input {
+    flex: 1;
+    background: #111;
+    color: #00ffff;
+    border: 1px solid #00ffff;
+    border-radius: 3px;
+    padding: 4px 6px;
+    font-family: monospace;
+    font-size: 0.85em;
+    outline: none;
+}
+
+.iris-search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.95);
+    border: 1px solid #00ffff;
+    border-radius: 3px;
+    margin-top: 2px;
+    z-index: 10002;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.iris-search-result-item {
+    padding: 6px 8px;
+    cursor: pointer;
+    border-bottom: 1px solid #222;
+    font-size: 0.8em;
+}
+
+.iris-search-result-item:hover {
+    background: #1a1a1a;
+}
+
+.iris-search-result-name {
+    color: #00ffff;
+}
+
+.iris-search-result-details {
+    color: #666;
+    font-size: 0.9em;
+    margin-top: 1px;
+}
+
+.iris-menu-container {
+    position: relative;
+}
+
+.iris-menu-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: rgba(0, 0, 0, 0.95);
+    border: 1px solid #00ffff;
+    border-radius: 3px;
+    margin-top: 2px;
+    z-index: 10002;
+    min-width: 150px;
+    overflow-y: auto;
+}
+
+.iris-menu-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    padding: 6px 8px;
+    cursor: pointer;
+    border-bottom: 1px solid #222;
+    font-size: 0.8em;
+    color: #00ffff;
+    font-family: monospace;
+}
+
+.iris-menu-item:hover {
+    background: #1a1a1a;
+}
+
+.iris-menu-divider {
+    border-top: 1px solid #333;
+    margin: 4px 0;
+}
