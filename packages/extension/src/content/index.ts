@@ -112,41 +112,61 @@ function parseEntities(data: IntelMapData): {
 }
 
 function parsePortalDetails(data: PortalDetailsData, params: { guid?: string }): Partial<Portal> | null {
-  if (!data.result) return null;
+  if (!data.result || !Array.isArray(data.result)) return null;
   const d = data.result;
 
-  // Parse mods — d[14] is array of 4 slots, each null or [owner, name, rarity, stats]
-  const mods = (d[14] as unknown[][] | undefined)
-      ?.filter(Boolean)
-      .map((m: unknown[]) => ({
-        owner: m[0] as string,
-        name: m[1] as string,
-        rarity: m[2] as string,
-        stats: m[3] as Record<string, string>,
-      })) || [];
+  try {
+    // Indices based on Niantic API:
+    // [0] "p" (type)
+    // [1] team ("E", "R", "M", "N")
+    // [2] latE6
+    // [3] lngE6
+    // [4] level
+    // [5] health
+    // [6] resCount
+    // [7] image
+    // [8] name
+    // [14] mods
+    // [15] resonators
+    // [16] owner
 
-  // Parse resonators — d[15] is array of [owner, level, energy]
-  const resonators = (d[15] as unknown[][] | undefined)
-      ?.map((r: unknown[]) => ({
-        owner: r[0] as string,
-        level: r[1] as number,
-        energy: r[2] as number,
-      })) || [];
+    // Parse mods — slot 14 is array of 4 slots, each null or [owner, name, rarity, stats]
+    const mods = (d[14] as unknown[][] | undefined)
+        ?.filter(Boolean)
+        .map((m: unknown[]) => ({
+            owner: m[0] as string,
+            name: m[1] as string,
+            rarity: m[2] as string,
+            stats: m[3] as Record<string, string>,
+        })) || [];
 
-  return {
-    id: params?.guid || '',
-    lat: parseFloat(d[2] as string) / 1e6,
-    lng: parseFloat(d[3] as string) / 1e6,
-    team: normalizeTeam(d[1] as string),
-    level: parseInt(d[4] as string, 10),
-    health: parseInt(d[5] as string, 10),
-    resCount: d[6] as number,
-    image: d[7] as string,
-    name: d[8] as string,
-    owner: d[16] as string,
-    mods,
-    resonators,
-  };
+    // Parse resonators — slot 15 is array of [owner, level, energy]
+    const resonators = (d[15] as unknown[][] | undefined)
+        ?.filter(Boolean)
+        .map((r: unknown[]) => ({
+            owner: r[0] as string,
+            level: r[1] as number,
+            energy: r[2] as number,
+        })) || [];
+
+    return {
+        id: params?.guid || '',
+        lat: typeof d[2] === 'number' ? d[2] / 1e6 : parseFloat(d[2] as string) / 1e6,
+        lng: typeof d[3] === 'number' ? d[3] / 1e6 : parseFloat(d[3] as string) / 1e6,
+        team: normalizeTeam(d[1] as string),
+        level: parseInt(String(d[4]), 10),
+        health: parseInt(String(d[5]), 10),
+        resCount: d[6] as number,
+        image: d[7] as string,
+        name: d[8] as string,
+        owner: d[16] as string,
+        mods,
+        resonators,
+    };
+  } catch (e) {
+      console.error('IRIS: Failed to parse portal details', e, data);
+      return null;
+  }
 }
 
 function parsePlexts(data: PlextData): Plext[] {
@@ -432,6 +452,17 @@ window.addEventListener('message', (event: MessageEvent) => {
 
     case 'IRIS_DATA': {
       const url_str = url as string;
+      
+      // Handle stringified params from interceptor
+      let parsedParams = params;
+      if (typeof params === 'string') {
+          try {
+              parsedParams = JSON.parse(params);
+          } catch {
+              // Ignore parse errors for non-JSON bodies
+          }
+      }
+
       if (url_str.includes('getEntities')) {
         const { portals, links, fields, deletedGuids } = parseEntities(data as IntelMapData);
         const store = useStore.getState();
@@ -450,7 +481,7 @@ window.addEventListener('message', (event: MessageEvent) => {
         if (fields.length > 0) store.updateFields(fields);
 
       } else if (url_str.includes('getPortalDetails')) {
-        const portal = parsePortalDetails(data as PortalDetailsData, params as { guid?: string });
+        const portal = parsePortalDetails(data as PortalDetailsData, parsedParams as { guid?: string });
         if (portal) useStore.getState().updatePortals([portal]);
       } else if (url_str.includes('getPlexts')) {
         lastPlextRequestTime = Date.now();
