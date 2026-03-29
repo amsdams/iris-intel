@@ -49,6 +49,9 @@ export function MapOverlay() {
   const showUnclaimedPortals = useStore((state) => state.showUnclaimedPortals);
   const showLevel = useStore((state) => state.showLevel);
   const showHealth = useStore((state) => state.showHealth);
+  const showVisited = useStore((state) => state.showVisited);
+  const showCaptured = useStore((state) => state.showCaptured);
+  const showScanned = useStore((state) => state.showScanned);
 
 
   // ---------------------------------------------------------------------------
@@ -154,6 +157,57 @@ export function MapOverlay() {
               'circle-stroke-color': TEAM_COLOUR_EXPR,
               'circle-stroke-opacity': 1,
             },
+          },
+          {
+            id: 'portal-history-visited',
+            type: 'circle',
+            source: 'portals',
+            filter: ['==', ['get', 'visited'], true],
+            paint: {
+                'circle-radius': [
+                  'interpolate', ['linear'], ['zoom'],
+                  10, 4,
+                  15, 10,
+                ],
+                'circle-color': 'transparent',
+                'circle-stroke-width': 1,
+                'circle-stroke-color': '#9B59B6', // Purple for visited
+                'circle-stroke-opacity': 0.8,
+            }
+          },
+          {
+            id: 'portal-history-captured',
+            type: 'circle',
+            source: 'portals',
+            filter: ['==', ['get', 'captured'], true],
+            paint: {
+                'circle-radius': [
+                  'interpolate', ['linear'], ['zoom'],
+                  10, 6,
+                  15, 14,
+                ],
+                'circle-color': 'transparent',
+                'circle-stroke-width': 1,
+                'circle-stroke-color': '#E74C3C', // Red for captured
+                'circle-stroke-opacity': 0.8,
+            }
+          },
+          {
+            id: 'portal-history-scanned',
+            type: 'circle',
+            source: 'portals',
+            filter: ['==', ['get', 'scanned'], true],
+            paint: {
+                'circle-radius': [
+                  'interpolate', ['linear'], ['zoom'],
+                  10, 8,
+                  15, 18,
+                ],
+                'circle-color': 'transparent',
+                'circle-stroke-width': 1.5,
+                'circle-stroke-color': '#F1C40F', // Yellow/Gold for scanned
+                'circle-stroke-opacity': 0.6,
+            }
           },
           {
             id: 'plugin-points',
@@ -306,6 +360,21 @@ export function MapOverlay() {
     }
   }, [mapThemeId, styleLoaded]);
 
+  // Sync Portal History Layer Visibility
+  useEffect(() => {
+    if (!map.current || !styleLoaded) return;
+    
+    if (map.current.getLayer('portal-history-visited')) {
+        map.current.setLayoutProperty('portal-history-visited', 'visibility', showVisited ? 'visible' : 'none');
+    }
+    if (map.current.getLayer('portal-history-captured')) {
+        map.current.setLayoutProperty('portal-history-captured', 'visibility', showCaptured ? 'visible' : 'none');
+    }
+    if (map.current.getLayer('portal-history-scanned')) {
+        map.current.setLayoutProperty('portal-history-scanned', 'visibility', showScanned ? 'visible' : 'none');
+    }
+  }, [showVisited, showCaptured, showScanned, styleLoaded]);
+
   // Sync GeoJSON Data
   useEffect(() => {
     if (!map.current || !styleLoaded) return;
@@ -338,7 +407,10 @@ export function MapOverlay() {
             team: p.team, 
             name: p.name, 
             level: isNaN(p.level) ? 0 : p.level, 
-            health: isNaN(p.health) ? 100 : p.health 
+            health: isNaN(p.health) ? 100 : p.health,
+            visited: !!p.visited,
+            captured: !!p.captured,
+            scanned: !!p.scanned
         },
     }));
     (map.current.getSource('portals') as any)?.setData({ type: 'FeatureCollection', features: filteredPortals });

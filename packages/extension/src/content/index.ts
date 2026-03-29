@@ -79,6 +79,7 @@ function parseEntities(data: IntelMapData): {
       const team = normalizeTeam(entData[1] as string);
 
       if (entType === 'p') {
+        const history = (entData[18] as number) || 0;
         portals.push({
           id,
           lat: parseFloat(entData[2] as string) / 1e6,
@@ -86,6 +87,9 @@ function parseEntities(data: IntelMapData): {
           team,
           level: parseInt(entData[4] as string, 10),
           health: parseInt(entData[5] as string, 10),
+          visited: !!(history & 1),
+          captured: !!(history & 2),
+          scanned: !!(history & 4),
         });
       } else if (entType === 'e') {
         links.push({
@@ -129,6 +133,9 @@ function parsePortalDetails(data: PortalDetailsData, params: { guid?: string }):
     // [14] mods
     // [15] resonators
     // [16] owner
+    // [18] history bitmask (1=visited, 2=captured, 4=scanned)
+
+    const history = (d[18] as number) || 0;
 
     // Parse mods — slot 14 is array of 4 slots, each null or [owner, name, rarity, stats]
     const mods = (d[14] as unknown[][] | undefined)
@@ -162,6 +169,9 @@ function parsePortalDetails(data: PortalDetailsData, params: { guid?: string }):
         owner: d[16] as string,
         mods,
         resonators,
+        visited: !!(history & 1),
+        captured: !!(history & 2),
+        scanned: !!(history & 4),
     };
   } catch (e) {
       console.error('IRIS: Failed to parse portal details', e, data);

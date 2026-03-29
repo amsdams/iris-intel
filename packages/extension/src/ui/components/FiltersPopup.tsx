@@ -52,6 +52,15 @@ export function FiltersPopup({ onClose }: FiltersPopupProps): JSX.Element {
     const showHealth = useStore((state) => state.showHealth);
     const toggleShowHealth = useStore((state) => state.toggleShowHealth);
 
+    const showVisited = useStore((state) => state.showVisited);
+    const toggleShowVisited = useStore((state) => state.toggleShowVisited);
+
+    const showCaptured = useStore((state) => state.showCaptured);
+    const toggleShowCaptured = useStore((state) => state.toggleShowCaptured);
+
+    const showScanned = useStore((state) => state.showScanned);
+    const toggleShowScanned = useStore((state) => state.toggleShowScanned);
+
     const handleLevelToggle = (level: number): (() => void) => () => {
         toggleShowLevel(level);
     };
@@ -160,6 +169,37 @@ export function FiltersPopup({ onClose }: FiltersPopupProps): JSX.Element {
                             {bucket}%
                         </label>
                     ))}
+                </div>
+
+                <h3 className="iris-filter-section-title" style={{ margin: '15px 0 8px 0', color: UI_COLORS.AQUA, fontSize: FONT_SIZES.H3 }}>Portal History</h3>
+                <div className="iris-filter-history-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '5px' }}>
+                    <label className="iris-filter-history-item" style={checkboxContainerStyle}>
+                        <input
+                            type="checkbox"
+                            checked={showVisited}
+                            onChange={toggleShowVisited}
+                            style={checkboxStyle}
+                        />
+                        Visited
+                    </label>
+                    <label className="iris-filter-history-item" style={checkboxContainerStyle}>
+                        <input
+                            type="checkbox"
+                            checked={showCaptured}
+                            onChange={toggleShowCaptured}
+                            style={checkboxStyle}
+                        />
+                        Captured
+                    </label>
+                    <label className="iris-filter-history-item" style={checkboxContainerStyle}>
+                        <input
+                            type="checkbox"
+                            checked={showScanned}
+                            onChange={toggleShowScanned}
+                            style={checkboxStyle}
+                        />
+                        Scanned
+                    </label>
                 </div>
             </div>
         </Popup>

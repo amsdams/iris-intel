@@ -51,6 +51,9 @@ export interface Portal {
     owner?: string;
     mods?: PortalMod[];
     resonators?: PortalResonator[];
+    visited?: boolean;
+    captured?: boolean;
+    scanned?: boolean;
 }
 
 export interface Link {
@@ -257,6 +260,9 @@ interface IRISState {
     showUnclaimedPortals: boolean;
     showLevel: Record<number, boolean>;
     showHealth: Record<number, boolean>;
+    showVisited: boolean;
+    showCaptured: boolean;
+    showScanned: boolean;
 
     // Layer visibility actions
     toggleShowFields: () => void;
@@ -267,6 +273,9 @@ interface IRISState {
     toggleShowUnclaimedPortals: () => void;
     toggleShowLevel: (level: number) => void;
     toggleShowHealth: (bucket: number) => void;
+    toggleShowVisited: () => void;
+    toggleShowCaptured: () => void;
+    toggleShowScanned: () => void;
 
     debugLogging: boolean;
     toggleDebugLogging: () => void;
@@ -460,6 +469,9 @@ export const useStore = create<IRISState>()(
                 showHealth: {
                     25: true, 50: true, 75: true, 100: true,
                 },
+                showVisited: true,
+                showCaptured: true,
+                showScanned: true,
 
                 // Implement layer visibility actions
                 toggleShowFields: (): void => set((state) => ({ showFields: !state.showFields })),
@@ -480,6 +492,9 @@ export const useStore = create<IRISState>()(
                         [bucket]: !state.showHealth[bucket],
                     },
                 })),
+                toggleShowVisited: (): void => set((state) => ({ showVisited: !state.showVisited })),
+                toggleShowCaptured: (): void => set((state) => ({ showCaptured: !state.showCaptured })),
+                toggleShowScanned: (): void => set((state) => ({ showScanned: !state.showScanned })),
 
                 debugLogging: false,
                 toggleDebugLogging: (): void => set((state) => ({ debugLogging: !state.debugLogging })),
@@ -506,6 +521,9 @@ export const useStore = create<IRISState>()(
                     activeCommTab: state.activeCommTab,
                     showHealth: state.showHealth,
                     hasSubscription: state.hasSubscription,
+                    showVisited: state.showVisited,
+                    showCaptured: state.showCaptured,
+                    showScanned: state.showScanned,
                 }),
                 onRehydrateStorage: () => (state: IRISState | undefined): void => {
                     if (state) state.rehydrated = true;

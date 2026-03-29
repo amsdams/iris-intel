@@ -64,6 +64,7 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] **Data Export:** Export captured portal/link/field data to standard formats (Plugin).
 - [x] **Game Score:** Render GameScore Popup using intercepting `getGameScore` (Standard).
 - [x] **Region Score:** Render RegionScoreDetails Popup using intercepting `getRegionScoreDetails` (Standard).
+- [x] **Portal History:** Added visual rings for Visited (Purple), Captured (Red), and Scanned (Yellow dashed) status integrated into the map rendering.
 
 ### Phase 6: Architecture Analysis (100% Complete)
 - [x] **Comparative Study:** Exhaustive analysis of original Ingress Intel (`gen_dashboard_*.js`) vs. IRIS, documented in `REF-DESKTOP.MD`.
