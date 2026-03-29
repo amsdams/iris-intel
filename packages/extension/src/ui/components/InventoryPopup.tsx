@@ -1,7 +1,8 @@
 import { JSX } from 'preact';
-import { useStore, InventoryItemData } from '@iris/core';
+import { useStore, InventoryItemData, normalizeTeam } from '@iris/core';
 import { Popup } from './Popup';
 import { useState, useMemo } from 'preact/hooks';
+import { THEMES, UI_COLORS, SPACING } from '../theme';
 
 type Category = 'ALL' | 'WEAPONS' | 'RESONATORS' | 'MODS' | 'POWERUPS' | 'CAPSULES' | 'KEYS';
 
@@ -18,16 +19,18 @@ interface GroupedInventoryItem {
 export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Element => {
     const inventory = useStore((state) => state.inventory);
     const hasSubscription = useStore((state) => state.hasSubscription);
+    const themeId = useStore((state) => state.themeId);
+    const theme = THEMES[themeId] || THEMES.DEFAULT;
     const [activeCategory, setActiveCategory] = useState<Category>('ALL');
 
     const categories: { label: string; value: Category }[] = [
-        { label: 'All', value: 'ALL' },
-        { label: 'Weapons', value: 'WEAPONS' },
-        { label: 'Resonators', value: 'RESONATORS' },
-        { label: 'Mods', value: 'MODS' },
-        { label: 'Powerups', value: 'POWERUPS' },
-        { label: 'Capsules', value: 'CAPSULES' },
-        { label: 'Keys', value: 'KEYS' },
+        { label: 'ALL', value: 'ALL' },
+        { label: 'WEAPONS', value: 'WEAPONS' },
+        { label: 'RESONATORS', value: 'RESONATORS' },
+        { label: 'MODS', value: 'MODS' },
+        { label: 'POWERUPS', value: 'POWERUPS' },
+        { label: 'CAPSULES', value: 'CAPSULES' },
+        { label: 'KEYS', value: 'KEYS' },
     ];
 
     const parsedItems = useMemo((): GroupedInventoryItem[] => {
@@ -106,7 +109,7 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
 
     const groupedItems = useMemo((): GroupedInventoryItem[] => {
         const groups: Record<string, GroupedInventoryItem> = {};
-        
+
         const addToGroup = (item: GroupedInventoryItem): void => {
             const key = `${item.type}-${item.level || ''}-${item.rarity || ''}-${item.name || ''}`;
             if (!groups[key]) {
@@ -133,69 +136,134 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
 
     const totalCount = parsedItems.length;
 
+    const handleRefresh = (): void => {
+        window.postMessage({ type: 'IRIS_DATA_REQUEST', url: 'getInventory' }, '*');
+    };
+
+    const getItemColor = (item: GroupedInventoryItem): string => {
+        if (item.category === 'RESONATORS' || item.category === 'WEAPONS') {
+            if (item.type === 'ADA' || item.type === 'JARVIS') {
+                return theme[normalizeTeam(item.type) as 'E' | 'R'] || theme.AQUA;
+            }
+            return theme.LEVELS[item.level || 0] || UI_COLORS.TEXT_BASE;
+        }
+        if (item.category === 'MODS' && item.rarity) {
+            return theme.RARITY[item.rarity] || UI_COLORS.TEXT_BASE;
+        }
+        if (item.category === 'KEYS') {
+            return theme.AQUA;
+        }
+        return UI_COLORS.TEXT_BASE;
+    };
+
     return (
-        <Popup title="Inventory" onClose={onClose} width={500}>
+        <Popup 
+            title="INVENTORY" 
+            onClose={onClose}
+            noScroll={true}
+            headerExtras={
+                <button 
+                    className="iris-comm-refresh-btn"
+                    onClick={handleRefresh}
+                    style={{
+                        background: 'transparent',
+                        border: `1px solid ${UI_COLORS.AQUA}`,
+                        color: UI_COLORS.AQUA,
+                        fontSize: '9px',
+                        padding: '2px 6px',
+                        cursor: 'pointer',
+                        borderRadius: '2px',
+                        marginRight: SPACING.SM,
+                    }}
+                >
+                    REFRESH
+                </button>
+            }
+            style={{
+                top: '50px',
+                right: '10px',
+                left: '10px',
+                width: 'auto',
+                maxWidth: '450px',
+                height: 'calc(80vh - 60px)',
+                marginLeft: 'auto',
+            }}
+        >
             {!hasSubscription ? (
-                <div style={{ padding: '20px', textAlign: 'center' }}>
-                    <div style={{ color: 'var(--iris-text-warn)', marginBottom: '10px', fontSize: '1.2em' }}>
-                        C.O.R.E. Subscription Required
+                <div style={{ padding: '20px', textAlign: 'center', color: UI_COLORS.TEXT_MUTED }}>
+                    <div style={{ color: UI_COLORS.ERROR, marginBottom: '10px', fontSize: '1.1em', fontWeight: 'bold' }}>
+                        C.O.R.E. SUBSCRIPTION REQUIRED
                     </div>
-                    <p>Niantic restricts inventory access to C.O.R.E. subscribers on the Intel Map.</p>
+                    <p style={{ fontSize: '0.85em' }}>Niantic restricts inventory access to C.O.R.E. subscribers on the Intel Map.</p>
                 </div>
             ) : (
-                <div className="iris-inventory">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', padding: '0 10px' }}>
-                        <div style={{ fontSize: '0.9em', color: 'var(--iris-text-secondary)' }}>
-                            Total Items: <span style={{ color: 'var(--iris-text-primary)' }}>{totalCount}</span> / 2500
-                        </div>
-                        <button 
-                            className="iris-button" 
-                            onClick={() => window.postMessage({ type: 'IRIS_DATA_REQUEST', url: 'getInventory' }, '*')}
-                            title="Refresh inventory data"
-                        >
-                            Refresh
-                        </button>
+                <div className="iris-inventory" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    <div style={{ marginBottom: SPACING.SM, padding: `0 ${SPACING.XS}`, fontSize: '0.8em', color: UI_COLORS.TEXT_MUTED }}>
+                        TOTAL: <span style={{ color: theme.AQUA, fontWeight: 'bold' }}>{totalCount}</span> / 2500
                     </div>
 
-                    <div className="iris-tabs" style={{ marginBottom: '10px', overflowX: 'auto', whiteSpace: 'nowrap' }}>
+                    <div className="iris-comm-tabs" style={{ 
+                        display: 'flex', 
+                        borderBottom: `1px solid ${UI_COLORS.BORDER_DIM}`, 
+                        marginBottom: SPACING.SM,
+                        overflowX: 'auto',
+                        whiteSpace: 'nowrap',
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none',
+                    }}>
                         {categories.map(cat => (
                             <div 
                                 key={cat.value}
-                                className={`iris-tab ${activeCategory === cat.value ? 'active' : ''}`}
+                                className={`iris-comm-tab ${activeCategory === cat.value ? 'iris-comm-tab-active' : ''}`}
                                 onClick={() => setActiveCategory(cat.value)}
+                                style={{
+                                    padding: '6px 12px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.75em',
+                                    borderBottom: activeCategory === cat.value ? `2px solid ${UI_COLORS.AQUA}` : 'none',
+                                    color: activeCategory === cat.value ? UI_COLORS.AQUA : UI_COLORS.TEXT_MUTED,
+                                    fontWeight: activeCategory === cat.value ? 'bold' : 'normal',
+                                }}
                             >
                                 {cat.label}
                             </div>
                         ))}
                     </div>
 
-                    <div style={{ maxHeight: '400px', overflowY: 'auto', padding: '0 10px' }}>
+                    <div 
+                        className="iris-comm-scroll-container"
+                        style={{ 
+                            flex: 1, 
+                            overflowY: 'auto', 
+                            paddingRight: '4px' 
+                        }}
+                    >
                         {filteredItems.length === 0 ? (
-                            <div style={{ padding: '20px', textAlign: 'center', color: 'var(--iris-text-secondary)' }}>
-                                No items found in this category.
+                            <div style={{ padding: SPACING.LG, textAlign: 'center', color: UI_COLORS.TEXT_MUTED, fontSize: '0.85em' }}>
+                                No items found
                             </div>
                         ) : (
-                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85em' }}>
                                 <thead>
-                                    <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--iris-border)' }}>
-                                        <th style={{ padding: '8px 4px' }}>Item</th>
-                                        <th style={{ padding: '8px 4px', textAlign: 'right' }}>Count</th>
+                                    <tr style={{ textAlign: 'left', borderBottom: `1px solid ${UI_COLORS.BORDER_DIM}`, color: UI_COLORS.TEXT_MUTED }}>
+                                        <th style={{ padding: '4px', fontWeight: 'normal', fontSize: '0.8em' }}>ITEM</th>
+                                        <th style={{ padding: '4px', textAlign: 'right', fontWeight: 'normal', fontSize: '0.8em' }}>COUNT</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {filteredItems.map((item, idx) => (
-                                        <tr key={idx} style={{ borderBottom: '1px solid var(--iris-border-subtle)' }}>
-                                            <td style={{ padding: '8px 4px' }}>
+                                        <tr key={idx} style={{ borderBottom: `1px solid ${UI_COLORS.BORDER_DIM}` }}>
+                                            <td style={{ padding: '6px 4px' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                    <span className={`iris-rarity-${(item.rarity || 'common').toLowerCase().replace(/_/g, '-')}`}>
+                                                    <span style={{ color: getItemColor(item) }}>
                                                         {item.name}
-                                                        {item.level && ` [L${item.level}]`}
-                                                        {item.rarity && ` (${item.rarity.replace(/_/g, ' ')})`}
-                                                        {item.moniker && ` [${item.moniker}]`}
+                                                        {item.level && <span style={{ fontWeight: 'bold' }}> [L{item.level}]</span>}
+                                                        {item.rarity && <span style={{ fontSize: '0.9em', opacity: 0.8 }}> ({item.rarity.replace(/_/g, ' ')})</span>}
+                                                        {item.moniker && <span style={{ fontSize: '0.9em', color: UI_COLORS.TEXT_MUTED }}> [{item.moniker}]</span>}
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td style={{ padding: '8px 4px', textAlign: 'right', fontWeight: 'bold' }}>
+                                            <td style={{ padding: '6px 4px', textAlign: 'right', fontWeight: 'bold', color: theme.AQUA }}>
                                                 {item.count}
                                             </td>
                                         </tr>
@@ -209,3 +277,4 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
         </Popup>
     );
 };
+
