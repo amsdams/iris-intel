@@ -2,32 +2,19 @@ import { h, JSX } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { Field, Link, Portal, useStore } from '@iris/core';
+import { Portal, useStore } from '@iris/core';
 import { THEMES, MAP_THEMES } from '../../theme';
-
-type PortalFeatureProperties = {
-  id: string;
-  team: string;
-  name?: string;
-  level: number;
-  health: number;
-  visited: boolean;
-  captured: boolean;
-  scanned: boolean;
-} & Record<string, unknown>;
-
-type TeamFeatureProperties = {
-  team: string;
-} & Record<string, unknown>;
+import {
+  buildFieldFeatures,
+  buildLinkFeatures,
+  buildPortalFeatures,
+  toFeatureCollection,
+} from './feature-builders';
 
 type PluginFeatureProperties = {
   color?: string;
   isPlayerMarker?: boolean;
 } & Record<string, unknown>;
-
-type PortalFeature = GeoJSON.Feature<GeoJSON.Point, PortalFeatureProperties>;
-type LinkFeature = GeoJSON.Feature<GeoJSON.LineString, TeamFeatureProperties>;
-type FieldFeature = GeoJSON.Feature<GeoJSON.Polygon, TeamFeatureProperties>;
 
 export function MapOverlay(): JSX.Element {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -414,68 +401,33 @@ export function MapOverlay(): JSX.Element {
   useEffect(() => {
     if (!map.current || !styleLoaded) return;
 
-    // Filter and update portals
-    const filteredPortals: PortalFeature[] = Object.values(portals).filter((p: Portal) => {
-        if (p.team === 'N') {
-            return showUnclaimedPortals;
-        }
-        if (p.team === 'M' && !showMachina) return false;
-        if (p.team === 'R' && !showResistance) return false;
-        if (p.team === 'E' && !showEnlightened) return false;
-        if (p.level !== undefined && !showLevel[p.level]) return false;
-        
-        if (p.health !== undefined) {
-            const h = p.health;
-            if (h <= 25 && !showHealth[25]) return false;
-            if (h > 25 && h <= 50 && !showHealth[50]) return false;
-            if (h > 50 && h <= 75 && !showHealth[75]) return false;
-            if (h > 75 && !showHealth[100]) return false;
-        }
-        
-        return true;
-    }).map((p: Portal) => ({
-        type: 'Feature',
-        geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
-        properties: { 
-            id: p.id, 
-            team: p.team, 
-            name: p.name, 
-            level: p.level || 0, 
-            health: p.health ?? 100,
-            visited: !!p.visited,
-            captured: !!p.captured,
-            scanned: !!p.scanned
-        } satisfies PortalFeatureProperties,
-    }));
-    getGeoJsonSource('portals')?.setData({ type: 'FeatureCollection', features: filteredPortals });
+    const filteredPortals = buildPortalFeatures(portals, {
+      showResistance,
+      showEnlightened,
+      showMachina,
+      showUnclaimedPortals,
+      showLevel,
+      showHealth,
+    });
+    getGeoJsonSource('portals')?.setData(toFeatureCollection(filteredPortals));
 
-    // Links
-    const filteredLinks: LinkFeature[] = Object.values(links).filter((l: Link) => {
-        if (!showLinks) return false;
-        if (l.team === 'R' && !showResistance) return false;
-        if (l.team === 'E' && !showEnlightened) return false;
-        return !(l.team === 'M' && !showMachina);
+    const filteredLinks = buildLinkFeatures(links, {
+      showLinks,
+      showResistance,
+      showEnlightened,
+      showMachina,
+      showUnclaimedPortals,
+    });
+    getGeoJsonSource('links')?.setData(toFeatureCollection(filteredLinks));
 
-    }).map((l: Link) => ({
-        type: 'Feature',
-        geometry: { type: 'LineString', coordinates: [[l.fromLng, l.fromLat], [l.toLng, l.toLat]] },
-        properties: { team: l.team } satisfies TeamFeatureProperties,
-    }));
-    getGeoJsonSource('links')?.setData({ type: 'FeatureCollection', features: filteredLinks });
-
-    // Fields
-    const filteredFields: FieldFeature[] = Object.values(fields).filter((f: Field) => {
-        if (!showFields) return false;
-        if (f.team === 'R' && !showResistance) return false;
-        if (f.team === 'E' && !showEnlightened) return false;
-        return !(f.team === 'M' && !showMachina);
-
-    }).map((f: Field) => ({
-        type: 'Feature',
-        geometry: { type: 'Polygon', coordinates: [[...f.points.map((point) => [point.lng, point.lat] as [number, number]), [f.points[0].lng, f.points[0].lat]]] },
-        properties: { team: f.team } satisfies TeamFeatureProperties,
-    }));
-    getGeoJsonSource('fields')?.setData({ type: 'FeatureCollection', features: filteredFields });
+    const filteredFields = buildFieldFeatures(fields, {
+      showFields,
+      showResistance,
+      showEnlightened,
+      showMachina,
+      showUnclaimedPortals,
+    });
+    getGeoJsonSource('fields')?.setData(toFeatureCollection(filteredFields));
 
     // Plugin Features (Lines only here, points are HTML)
     getGeoJsonSource('plugin-features')?.setData(pluginFeatures);
