@@ -12,9 +12,16 @@ import {
 } from './feature-builders';
 
 type PluginFeatureProperties = {
+  id?: string;
   color?: string;
   isPlayerMarker?: boolean;
+  opacity?: number;
 } & Record<string, unknown>;
+
+interface MarkerRegistryEntry {
+  marker: maplibregl.Marker;
+  clickTarget: HTMLDivElement | null;
+}
 
 export function MapOverlay(): JSX.Element {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -29,7 +36,7 @@ export function MapOverlay(): JSX.Element {
   const links = useStore((state) => state.links);
   const fields = useStore((state) => state.fields);
   const pluginFeatures = useStore((state) => state.pluginFeatures);
-  const pluginMarkers = useRef<maplibregl.Marker[]>([]);
+  const pluginMarkers = useRef<Map<string, MarkerRegistryEntry>>(new Map());
   const { lat, lng, zoom } = useStore((state) => state.mapState);
   const themeId = useStore((state) => state.themeId);
   const mapThemeId = useStore((state) => state.mapThemeId);
@@ -81,6 +88,7 @@ export function MapOverlay(): JSX.Element {
   // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!mapContainer.current) return;
+    const markerRegistry = pluginMarkers.current;
 
     map.current = new maplibregl.Map({
       container: mapContainer.current,
@@ -333,6 +341,8 @@ export function MapOverlay(): JSX.Element {
     document.addEventListener('iris:portal:click', onPortalClick);
 
     return (): void => {
+      markerRegistry.forEach(({ marker }) => marker.remove());
+      markerRegistry.clear();
       map.current?.remove();
       document.removeEventListener('iris:portal:click', onPortalClick);
     };
@@ -438,39 +448,74 @@ export function MapOverlay(): JSX.Element {
   useEffect(() => {
     if (!map.current || !styleLoaded) return;
 
-    // Clear old markers
-    pluginMarkers.current.forEach(m => m.remove());
-    pluginMarkers.current = [];
+    const activeMarkerIds = new Set<string>();
 
-    // Add new markers
     pluginFeatures.features.forEach((feature) => {
-        const properties = (feature.properties ?? {}) as PluginFeatureProperties;
-        if (properties.isPlayerMarker && feature.geometry.type === 'Point' && map.current) {
-            const el = document.createElement('div');
-            el.style.pointerEvents = 'none';
-            const color = properties.color || '#fff';
-            
-            el.innerHTML = `
-                <div style="display: flex; flex-direction: column; align-items: center; cursor: pointer; pointer-events: auto;">
-                    <div style="background: ${color}; width: 12px; height: 12px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5);"></div>
-                    <div style="width: 2px; height: 10px; background: white; margin-top: -2px;"></div>
-                </div>
-            `;
+      const properties = (feature.properties ?? {}) as PluginFeatureProperties;
+      if (!properties.isPlayerMarker || feature.geometry.type !== 'Point' || !map.current) {
+        return;
+      }
 
-            const pinHead = el.querySelector('div');
-            if (pinHead) {
-                pinHead.onclick = (e: MouseEvent): void => {
-                    e.stopPropagation();
-                    useStore.getState().setSelectedPluginFeature(feature);
-                };
-            }
+      const markerId =
+        (typeof feature.id === 'string' && feature.id) ||
+        (typeof properties.id === 'string' && properties.id) ||
+        (typeof properties.name === 'string' && properties.name ? `player:${properties.name}` : null);
 
-            const marker = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -20] })
-                .setLngLat(feature.geometry.coordinates as [number, number])
-                .addTo(map.current);
-            
-            pluginMarkers.current.push(marker);
+      if (!markerId) return;
+      activeMarkerIds.add(markerId);
+
+      const color = properties.color || '#fff';
+      const opacity = typeof properties.opacity === 'number' ? String(properties.opacity) : '1';
+      const coordinates = feature.geometry.coordinates as [number, number];
+      const existing = pluginMarkers.current.get(markerId);
+
+      if (existing) {
+        existing.marker.setLngLat(coordinates);
+        existing.marker.getElement().style.opacity = opacity;
+        if (existing.clickTarget) {
+          const pinHead = existing.clickTarget.firstElementChild as HTMLDivElement | null;
+          if (pinHead) {
+            pinHead.style.background = color;
+          }
+          existing.clickTarget.onclick = (e: MouseEvent): void => {
+            e.stopPropagation();
+            useStore.getState().setSelectedPluginFeature(feature);
+          };
         }
+        return;
+      }
+
+      const el = document.createElement('div');
+      el.style.pointerEvents = 'none';
+      el.style.opacity = opacity;
+
+      el.innerHTML = `
+          <div style="display: flex; flex-direction: column; align-items: center; cursor: pointer; pointer-events: auto;">
+              <div style="background: ${color}; width: 12px; height: 12px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5);"></div>
+              <div style="width: 2px; height: 10px; background: white; margin-top: -2px;"></div>
+          </div>
+      `;
+
+      const clickTarget = el.firstElementChild as HTMLDivElement | null;
+      if (clickTarget) {
+        clickTarget.onclick = (e: MouseEvent): void => {
+          e.stopPropagation();
+          useStore.getState().setSelectedPluginFeature(feature);
+        };
+      }
+
+      const marker = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -20] })
+        .setLngLat(coordinates)
+        .addTo(map.current);
+
+      pluginMarkers.current.set(markerId, { marker, clickTarget });
+    });
+
+    pluginMarkers.current.forEach((entry, markerId) => {
+      if (!activeMarkerIds.has(markerId)) {
+        entry.marker.remove();
+        pluginMarkers.current.delete(markerId);
+      }
     });
   }, [pluginFeatures, styleLoaded]);
 

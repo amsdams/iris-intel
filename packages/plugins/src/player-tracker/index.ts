@@ -78,11 +78,13 @@ const PlayerTrackerPlugin: IRISPlugin = {
                 const opacity = Math.max(0.1, 1 - (age / EXPIRATION_MS));
                 finalFeatures.push({
                     type: 'Feature',
+                    id: `player:${name}`,
                     geometry: {
                         type: 'Point',
                         coordinates: [loc.lng, loc.lat],
                     },
                     properties: {
+                        id: `player:${name}`,
                         color: getFactionColor(loc.faction || 'N'),
                         name: name,
                         team: loc.faction, // Crucial for popup coloring
@@ -152,6 +154,7 @@ const PlayerTrackerPlugin: IRISPlugin = {
             // Draw a dashed line - using Yellow (#ffff00)
             features.push({
               type: 'Feature',
+              id: `player-line:${name}:${loc.time}`,
               geometry: {
                 type: 'LineString',
                 coordinates: [
@@ -160,6 +163,7 @@ const PlayerTrackerPlugin: IRISPlugin = {
                 ],
               },
               properties: {
+                id: `player-line:${name}:${loc.time}`,
                 color: '#ffff00',
                 name: name,
                 team: loc.faction, // Store team for correct popup coloring
