@@ -36,6 +36,11 @@ This document serves as the technical blueprint for the IRIS extension, detailin
   - **Layers**: Toggles for Links and Fields.
   - **Optimization**: Filters are applied during the GeoJSON generation phase in `MapOverlay.tsx` to ensure high FPS.
 
+### 5. Session & Subscription Management (Analysis)
+- **Login Detection**: The original code detects session timeouts by monitoring for `401 Unauthorized` or `403 Forbidden` responses from the API. It also verifies the presence of the `csrftoken` cookie. If a failure occurs, it often triggers `window.location.reload()`.
+- **C.O.R.E. Subscription**: The `getHasActiveSubscription()` function checks if the user is a C.O.R.E. member.
+  - **Technical Impact**: Access to `getInventory` and detailed "Portal History" (V/C/S indicators) is strictly guarded by this check. Non-subscribers receive a "Access restricted" warning.
+
 ---
 
 ## Detailed Implementation Plan for Missing Features
@@ -57,13 +62,20 @@ The search in original Intel is a versatile tool for navigation and portal disco
 Provides a view of the player's items, typically restricted to C.O.R.E. members in the official tool.
 - **Requirements**:
   - List all items: Resonators, XMP Bursters, Ultra Strikes, Shields, Mods, Power Cubes, and Portal Keys.
-  - Show counts and levels for each item type.
+  - **Subscription Check**: Must verify C.O.R.E. status via `window.PLAYER` or API response before attempting fetch.
 - **Implementation Strategy**:
   - Trigger `/r/getInventory` via a button in the UI.
   - **Parsing**: The response is a complex nested structure. Iterate through `[guid, timestamp, item_data]` and group by `resourceWithLevels.type` or `modResource.resourceType`.
   - **UI**: A new `InventoryPopup.tsx` with categorized tabs. Use CSS grids for a compact "Ingress Prime" style layout.
 
-### 3. Chat (Send Plext) (Medium Priority)
+### 3. Robust Login Detection (Medium Priority)
+- **Requirements**: Detect and notify the user when the Ingress session has expired.
+- **Implementation Strategy**:
+  - Update `interceptor.ts` to detect `401/403` status codes in XHR/Fetch responses.
+  - Broadcast a `IRIS_LOGIN_REQUIRED` message to the UI.
+  - Display a "Session Expired - Please Refresh/Login" toast in the `StatusBar`.
+
+### 4. Chat (Send Plext) (Medium Priority)
 - **Requirements**:
   - Input field for the active tab (All/Faction).
   - Automatic tagging: Clicking a player name in COMM should prefix the input with `@nickname `.
@@ -72,7 +84,7 @@ Provides a view of the player's items, typically restricted to C.O.R.E. members 
   - Call the interceptor to trigger `/r/sendPlext` with the message text, current map center, and active tab.
   - Refresh the COMM feed immediately after a successful send.
 
-### 4. Portal History Indicators (Medium Priority)
+### 5. Portal History Indicators (Medium Priority)
 - **Requirements**:
   - Visual icons for "Visited" (hollow circle), "Captured" (filled circle), and "Scanned" (ornament) status.
 - **Implementation Strategy**:
@@ -80,7 +92,7 @@ Provides a view of the player's items, typically restricted to C.O.R.E. members 
   - Update `MapOverlay.tsx` to include these flags in the GeoJSON `properties`.
   - Use MapLibre `circle-stroke-width` or additional symbol layers to render the status icons.
 
-### 5. Advanced Map Layers (Low Priority)
+### 6. Advanced Map Layers (Low Priority)
 - **Missions**: `/r/getMissionDetails` and `/r/getHashtagMissions`.
 - **Artifacts**: `/r/getArtifactPortals`. These require dedicated GeoJSON sources and layers to show shards and their movement targets.
 - **Regional Cells**: Render the S2 cell boundaries used for scoring (Level 6 cells).
@@ -99,9 +111,8 @@ Provides a view of the player's items, typically restricted to C.O.R.E. members 
 | **Faction Filters** | ENL, RES, MAC, NEUTRAL | **Implemented** | High-performance client-side filtering. |
 | **Level Filters** | Range Slider (Min - Max) | **Implemented** | Individual checkboxes for L1-L8 for more precision. |
 | **Health Filters** | Range Slider (0 - 100%) | **Implemented** | Bucketed checkboxes (25%, 50%, 75%, 100%) for faster filtering. |
-| **Layer Filters** | Links and Fields toggles | **Implemented** | Synchronized with GeoJSON layer visibility. |
-| **Scoring** | Global (MU) and Regional details | **Implemented** | Global in Topbar; Regional in dedicated popup. |
-| **Player Stats** | Static PLAYER object | **Implemented** | Dynamic updates via MutationObserver in `interceptor.ts`. |
+| **Login Detection** | Monitor 401/403 + CSRF cookie | **Missing** | Update `interceptor.ts` to detect and broadcast session loss. |
+| **C.O.R.E. Perks** | `getHasActiveSubscription()` check | **Missing** | Necessary to guard Inventory and History features. |
 | **Search** | Google Geocoding + Portal Search | **Missing** | Requires OSM Geocoding + `/r/getPortalSearch` integration. |
 | **Inventory** | C.O.R.E restricted item viewer | **Missing** | Needs `/r/getInventory` parsing + UI grid. |
 | **Chat Send** | Send message to All/Faction | **Missing** | Requires Input form + `/r/sendPlext` API call. |
