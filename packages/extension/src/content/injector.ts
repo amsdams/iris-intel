@@ -3,7 +3,7 @@
  * Injects interceptor.js into the page's main world via a script tag,
  * since Firefox does not support content_scripts world: MAIN.
  */
-(function () {
+(function (): void {
     const script = document.createElement('script');
     script.src = chrome.runtime.getURL('src/content/interceptor.js');
     script.type = 'text/javascript';

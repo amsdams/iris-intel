@@ -7,15 +7,37 @@
  * - Wrap fetch for the same endpoints
  * - Handle map movement and portal detail requests from the content script
  */
-(function () {
+(function (): void {
     "use strict";
 
     // ---------------------------------------------------------------------------
     // State & Helpers
     // ---------------------------------------------------------------------------
 
-    let intelMap: any = null;
-    let intelVersion: string = '';
+    let intelMap: { setCenter: (c: { lat: number; lng: number }) => void; setZoom: (z: number) => void } | null = null;
+    let intelVersion = '';
+    
+    // Try to extract version from DOM if available
+    const extractVersionFromDOM = () => {
+        const scripts = document.querySelectorAll('script[src*="gen_dashboard_"]');
+        for (const s of scripts) {
+            const src = (s as HTMLScriptElement).src;
+            const match = src.match(/gen_dashboard_([a-f0-9]+)\.js/);
+            if (match) {
+                intelVersion = match[1];
+                break;
+            }
+        }
+    };
+    extractVersionFromDOM();
+    // Also watch for script tag insertion if not found yet
+    if (!intelVersion) {
+        const observer = new MutationObserver(() => {
+            if (!intelVersion) extractVersionFromDOM();
+            if (intelVersion) observer.disconnect();
+        });
+        observer.observe(document.head || document.documentElement, { childList: true, subtree: true });
+    }
 
     const getCsrfToken = (): string => {
         const cookies = document.cookie.split(';').map(c => c.trim());
@@ -25,7 +47,40 @@
         return csrfCookie.slice(idx + 1);
     };
 
-    const isIrisUrl = (url: string) =>
+    /**
+     * IRIS-triggered requests need the version (v) to be accepted by Intel.
+     * Since IRIS may trigger very early (document_start), we wait up to 10s for the version.
+     */
+    const safeIrisFetch = async (url: string, options: RequestInit): Promise<Response> => {
+        // Double check niantic_params if version is still missing
+        if (!intelVersion) {
+            const win = window as unknown as { niantic_params?: { version: string } };
+            if (win.niantic_params?.version) intelVersion = win.niantic_params.version;
+        }
+
+        if (!intelVersion) {
+            console.warn(`IRIS: Waiting for version before fetching ${url}...`);
+            let attempts = 0;
+            while (!intelVersion && attempts < 20) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                attempts++;
+                // Re-check DOM too
+                if (!intelVersion) extractVersionFromDOM();
+            }
+        }
+
+        if (!intelVersion) {
+            console.error(`IRIS: Failed to capture version after timeout. Request to ${url} may fail.`);
+        }
+
+        const body = JSON.parse(options.body as string);
+        body.v = intelVersion;
+        options.body = JSON.stringify(body);
+
+        return fetch(url, options);
+    };
+
+    const isIrisUrl = (url: string): boolean =>
         url.includes('getEntities') ||
         url.includes('getPortalDetails') ||
         url.includes('getPlexts') ||
@@ -40,26 +95,34 @@
     // setCenter / setZoom to keep Intel in sync with MapLibre.
     // ---------------------------------------------------------------------------
 
-    const hookGoogleMaps = () => {
-        if ((window as any).google?.maps?.Map) {
-            if ((window as any).google.maps.Map._iris_patched) return;
-            const OrigMap = (window as any).google.maps.Map;
+    interface GoogleMap {
+        _iris_patched?: boolean;
+        prototype: unknown;
+        new (...args: unknown[]): { setCenter: (c: { lat: number; lng: number }) => void; setZoom: (z: number) => void };
+    }
 
-            (window as any).google.maps.Map = function (...args: any[]) {
-                const instance = new OrigMap(...args);
+    const hookGoogleMaps = (): void => {
+        const win = window as unknown as { google?: { maps?: { Map: GoogleMap } } };
+        if (win.google?.maps?.Map) {
+            if (win.google.maps.Map._iris_patched) return;
+            const OrigMap = win.google.maps.Map;
+
+            win.google.maps.Map = function (this: unknown, ...args: unknown[]) {
+                const instance = new (OrigMap as unknown as new (...args: unknown[]) => { setCenter: (c: { lat: number; lng: number }) => void; setZoom: (z: number) => void })(...args);
                 intelMap = instance;
                 return instance;
-            };
+            } as unknown as GoogleMap;
 
             // Preserve prototype so instanceof checks pass
-            (window as any).google.maps.Map.prototype = OrigMap.prototype;
-            (window as any).google.maps.Map._iris_patched = true;
+            win.google.maps.Map.prototype = OrigMap.prototype;
+            win.google.maps.Map._iris_patched = true;
         } else {
             // google.maps not ready yet — poll until it is
             let attempts = 0;
             const interval = setInterval(() => {
                 attempts++;
-                if ((window as any).google?.maps?.Map) {
+                const winPoll = window as unknown as { google?: { maps?: { Map: GoogleMap } } };
+                if (winPoll.google?.maps?.Map) {
                     clearInterval(interval);
                     hookGoogleMaps();
                 }
@@ -71,8 +134,22 @@
         }
     };
 
-    const readPlayerStats = () => {
-        const P = (window as any).PLAYER;
+    interface IntelPlayer {
+        nickname: string;
+        level: number;
+        verified_level?: number;
+        ap: number;
+        team: string;
+        energy: number;
+        xm_capacity: number;
+        available_invites: number;
+        min_ap_for_current_level: number;
+        min_ap_for_next_level: number;
+        hasActiveSubscription: boolean;
+    }
+
+    const readPlayerStats = (): void => {
+        const P = (window as unknown as { PLAYER?: IntelPlayer }).PLAYER;
         if (!P) return;
 
         const nickname = P.nickname;
@@ -105,9 +182,8 @@
 
     // Use MutationObserver to track player stats availability and updates (REL-1)
     const statsObserver = new MutationObserver(() => {
-        if ((window as any).PLAYER?.nickname) {
+        if ((window as unknown as { PLAYER?: IntelPlayer }).PLAYER?.nickname) {
             readPlayerStats();
-            // Don't disconnect, as we want to capture updates if the DOM is rebuilt
         }
     });
     statsObserver.observe(document.body || document.documentElement, {
@@ -118,7 +194,6 @@
     readPlayerStats();
 
     // Read Intel's stored map position from cookies
-// Intel saves lat/lng/zoom in cookies so the map reopens at the same location
     const getIntelPositionFromCookies = (): { lat: number; lng: number; zoom: number } | null => {
         const cookies = Object.fromEntries(
             document.cookie.split(';').map(c => {
@@ -135,7 +210,7 @@
         return { lat, lng, zoom };
     };
 
-// Broadcast initial position as soon as interceptor loads
+    // Broadcast initial position as soon as interceptor loads
     const initialPosition = getIntelPositionFromCookies();
     if (initialPosition) {
         window.postMessage(
@@ -150,393 +225,242 @@
     // XHR prototype patching
     // ---------------------------------------------------------------------------
 
-    const origOpen = XMLHttpRequest.prototype.open;
-    const origSend = XMLHttpRequest.prototype.send;
+    const originalOpen = XMLHttpRequest.prototype.open;
+    const originalSend = XMLHttpRequest.prototype.send;
+
+    interface XMLHttpRequestAugmented extends XMLHttpRequest {
+        _iris_url?: string;
+    }
 
     XMLHttpRequest.prototype.open = function (
+        this: XMLHttpRequestAugmented,
         method: string,
         url: string | URL,
-        async: boolean = true,
+        async?: boolean,
         user?: string | null,
         password?: string | null
-    ) {
-        (this as any)._iris_url = typeof url === 'string' ? url : url.toString();
-        return origOpen.apply(this, arguments as any);
+    ): void {
+        this._iris_url = typeof url === 'string' ? url : url.toString();
+        if (async === undefined) {
+            originalOpen.apply(this, [method, url]);
+        } else {
+            originalOpen.apply(this, [method, url, async, user, password]);
+        }
     };
 
-    XMLHttpRequest.prototype.send = function (
-        body?: Document | XMLHttpRequestBodyInit | null
-    ) {
-        const url: string = (this as any)._iris_url || '';
+    XMLHttpRequest.prototype.send = function (this: XMLHttpRequestAugmented, body: Document | XMLHttpRequestBodyInit | null | undefined): void {
+        const url = this._iris_url || '';
+
+        // Proactively sniff version from outgoing request body
+        if (body && typeof body === 'string' && !intelVersion) {
+            try {
+                const parsed = JSON.parse(body) as { v?: string };
+                if (parsed.v) intelVersion = parsed.v;
+            } catch (e) { /* silent */ }
+        }
 
         if (isIrisUrl(url)) {
+            // Log that a request started
             window.postMessage({ type: 'IRIS_REQUEST_START', url }, '*');
-        }
 
-        if (body && url.includes('/r/')) {
-            try {
-                const requestData = JSON.parse(body as string);
-
-                // Capture version token from the first Intel API request that has one
-                if (requestData.v && !intelVersion) {
-                    intelVersion = requestData.v;
-                }
-
-                // Broadcast tile keys so the content script can track Intel zoom level
-                if (url.includes('/r/getEntities') && requestData?.tileKeys?.length > 0) {
-                    window.postMessage(
-                        {type: 'IRIS_TILE_REQUEST', tileKeys: requestData.tileKeys},
-                        '*'
-                    );
-                }
-            } catch (e) {
-                // body is not JSON — ignore
-            }
-        }
-
-        this.addEventListener('load', function (this: XMLHttpRequest) {
-            const url: string = (this as any)._iris_url || '';
-            if (isIrisUrl(url)) {
-                window.postMessage({ type: 'IRIS_REQUEST_END' }, '*');
-                if (this.status === 200) {
-                    window.postMessage({
-                        type: 'IRIS_REQUEST_SUCCESS',
-                        url,
-                        time: Date.now()
-                    }, '*');
-                } else if (this.status !== 200) {
-                    window.postMessage({
-                        type: 'IRIS_REQUEST_FAILED',
-                        url,
-                        status: this.status,
-                        statusText: this.statusText,
-                        time: Date.now()
-                    }, '*');
-                }
-            }
-
-            if (this.status !== 200) return;
-
-            if (isIrisUrl(url)) {
+            // Set up response listener
+            this.addEventListener('load', function (this: XMLHttpRequestAugmented) {
+                window.postMessage({ type: 'IRIS_REQUEST_SUCCESS', url, time: Date.now() }, '*');
                 try {
-                    const response = JSON.parse(this.responseText);
-                    window.postMessage(
-                        {type: 'IRIS_DATA', url, data: response},
-                        '*'
-                    );
-                } catch (e) {
-                    console.error('IRIS: Failed to parse XHR response', e);
-                }
-            }
-        }, { once: true });
+                    const data = JSON.parse(this.responseText) as { v?: string };
+                    window.postMessage({ type: 'IRIS_DATA', url, data, params: body }, '*');
 
-        this.addEventListener('error', function (this: XMLHttpRequest) {
-            const url: string = (this as any)._iris_url || '';
-            if (isIrisUrl(url)) {
-                window.postMessage({ type: 'IRIS_REQUEST_END' }, '*');
+                    // Capture intel version if found in results
+                    if (data.v && data.v !== intelVersion) {
+                        intelVersion = data.v;
+                    }
+                } catch (e) {
+                    console.error('IRIS: Interceptor failed to parse JSON', e, url);
+                } finally {
+                    window.postMessage({ type: 'IRIS_REQUEST_END' }, '*');
+                }
+            });
+
+            this.addEventListener('error', function (this: XMLHttpRequestAugmented) {
                 window.postMessage({
                     type: 'IRIS_REQUEST_FAILED',
                     url,
                     status: this.status,
-                    statusText: this.statusText || 'Network Error',
+                    statusText: this.statusText,
                     time: Date.now()
                 }, '*');
-            }
-        }, { once: true });
+                window.postMessage({ type: 'IRIS_REQUEST_END' }, '*');
+            });
+        } else if (url.includes('/r/')) {
+            // Passive version extraction for Intel's own requests
+            this.addEventListener('load', function (this: XMLHttpRequestAugmented) {
+                try {
+                    const data = JSON.parse(this.responseText) as { v?: string };
+                    if (data.v && data.v !== intelVersion) {
+                        intelVersion = data.v;
+                    }
+                } catch (e) { /* silent — common for non-JSON or partials */ }
+            });
+        }
 
-        return origSend.apply(this, arguments as any);
+        originalSend.apply(this, [body]);
     };
 
     // ---------------------------------------------------------------------------
-    // Fetch interception
+    // Fetch wrap
     // ---------------------------------------------------------------------------
 
     const originalFetch = window.fetch;
+    window.fetch = async function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+        const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : input.url);
 
-    window.fetch = async (...args): Promise<Response> => {
-        const url =
-            typeof args[0] === 'string' ? args[0] : (args[0] as Request).url;
-        const isIntelApi = isIrisUrl(url);
+        // Proactively sniff version from outgoing request body
+        if (init?.body && typeof init.body === 'string' && !intelVersion) {
+            try {
+                const parsed = JSON.parse(init.body) as { v?: string };
+                if (parsed.v) intelVersion = parsed.v;
+            } catch (e) { /* silent */ }
+        }
 
-        if (isIntelApi) {
+        if (isIrisUrl(url)) {
             window.postMessage({ type: 'IRIS_REQUEST_START', url }, '*');
-        }
-
-        // Capture version token from fetch body if not already captured
-        if (!intelVersion && url.includes('/r/')) {
-            const options = args[1];
-            if (options?.body) {
-                try {
-                    // Only try to parse if it's a string to avoid consuming Stream
-                    if (typeof options.body === 'string') {
-                        const requestData = JSON.parse(options.body);
-                        if (requestData.v) {
-                            intelVersion = requestData.v;
-                        }
-                    }
-                } catch (e) {
-                    // Ignore
-                }
-            }
-        }
-
-        try {
-            const response = await originalFetch(...args);
-
-            if (!response.ok && isIntelApi) {
-                window.postMessage({
-                    type: 'IRIS_REQUEST_FAILED',
-                    url,
-                    status: response.status,
-                    statusText: response.statusText,
-                    time: Date.now()
-                }, '*');
-            }
-
-            if (response.ok && isIntelApi) {
-                window.postMessage({
-                    type: 'IRIS_REQUEST_SUCCESS',
-                    url,
-                    time: Date.now()
-                }, '*');
-                try {
-                    const data = await response.clone().json();
-                    window.postMessage({type: 'IRIS_DATA', url, data}, '*');
-                } catch (e) {
-                    console.error('IRIS: Failed to parse fetch response', e);
-                }
-            }
-
-            return response;
-        } catch (e: any) {
-            if (isIntelApi) {
+            try {
+                const response = await originalFetch(input, init);
+                const cloned = response.clone();
+                cloned.json().then((data: { v?: string }) => {
+                    window.postMessage({ type: 'IRIS_REQUEST_SUCCESS', url, time: Date.now() }, '*');
+                    window.postMessage({ type: 'IRIS_DATA', url, data, params: init?.body }, '*');
+                    if (data.v && data.v !== intelVersion) intelVersion = data.v;
+                }).catch((e: Error) => console.error('IRIS: Fetch wrap failed to parse JSON', e));
+                return response;
+            } catch (e) {
                 window.postMessage({
                     type: 'IRIS_REQUEST_FAILED',
                     url,
                     status: 0,
-                    statusText: e.message || 'Network Error',
+                    statusText: (e as Error).message,
                     time: Date.now()
                 }, '*');
-            }
-            throw e;
-        } finally {
-            if (isIntelApi) {
+                throw e;
+            } finally {
                 window.postMessage({ type: 'IRIS_REQUEST_END' }, '*');
             }
+        } else if (url.includes('/r/')) {
+            // Passive version extraction for Intel's own requests
+            try {
+                const response = await originalFetch(input, init);
+                const cloned = response.clone();
+                cloned.json().then((data: { v?: string }) => {
+                    if (data.v && data.v !== intelVersion) intelVersion = data.v;
+                }).catch(() => {});
+                return response;
+            } catch (e) {
+                return originalFetch(input, init);
+            }
         }
+        return originalFetch(input, init);
     };
 
     // ---------------------------------------------------------------------------
     // Message handler
     // ---------------------------------------------------------------------------
 
-    window.addEventListener('message', (event) => {
+    window.addEventListener('message', (event: MessageEvent) => {
         if (event.origin !== location.origin) return;
-        if (!event.data?.type) return;
+        const msg = event.data as { 
+            type: string; 
+            center?: { lat: number; lng: number }; 
+            zoom?: number; 
+            tab?: string; 
+            minTimestampMs?: number; 
+            maxTimestampMs?: number; 
+            ascendingTimestampOrder?: boolean; 
+            latE6?: number; 
+            lngE6?: number; 
+            guid?: string;
+            minLatE6?: number;
+            maxLatE6?: number;
+            minLngE6?: number;
+            maxLngE6?: number;
+        };
+        if (!msg?.type) return;
 
-        switch (event.data.type) {
+        switch (msg.type) {
 
             // Move Intel's map to match MapLibre position
             case 'IRIS_MOVE_MAP_INTERNAL': {
                 if (!intelMap) break;
-                const {center, zoom} = event.data;
-                try {
-                    intelMap.setCenter({lat: center.lat, lng: center.lng});
-                    intelMap.setZoom(zoom);
-                } catch (e) {
-                    console.error('IRIS: Failed to move Intel map', e);
-                }
-                break;
-            }
-
-            // Fetch full portal details for a given guid
-            case 'IRIS_PORTAL_DETAILS_FETCH': {
-                const {guid} = event.data;
-
-                if (!intelVersion) {
-                    console.warn('IRIS: Version token not yet captured');
-                    break;
-                }
-
-                const csrfToken = getCsrfToken();
-                if (!csrfToken) {
-                    console.warn('IRIS: CSRF token not found in cookies');
-                    break;
-                }
-
-                const req = new XMLHttpRequest();
-                req.open('POST', '/r/getPortalDetails', true);
-                req.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-                req.setRequestHeader('X-CSRFToken', csrfToken);
-                req.addEventListener('load', function () {
-                    if (this.status === 200) {
-                        try {
-                            const data = JSON.parse(this.responseText);
-                            window.postMessage({
-                                type: 'IRIS_DATA',
-                                url: '/r/getPortalDetails',
-                                data,
-                                params: {guid},
-                            }, '*');
-                        } catch (e) {
-                            console.error('IRIS: Failed to parse getPortalDetails response', e);
-                        }
-                    } else {
-                        console.error('IRIS: getPortalDetails failed with status', this.status);
+                const { center, zoom } = msg;
+                if (center && zoom !== undefined) {
+                    try {
+                        intelMap.setCenter({ lat: center.lat, lng: center.lng });
+                        intelMap.setZoom(zoom);
+                    } catch (e) {
+                        console.error('IRIS: Failed to move Intel map', e);
                     }
-                }, { once: true });
-                req.send(JSON.stringify({guid, v: intelVersion}));
+                }
                 break;
             }
 
-            // Fetch COMM plexts for current map bounds
+            // Trigger Comm fetch
             case 'IRIS_PLEXTS_FETCH': {
-                if (!intelMap || !intelVersion) {
-                    console.warn('IRIS: Map or version not ready for plext fetch');
-                    break;
-                }
-
-                const csrfToken = getCsrfToken();
-                if (!csrfToken) {
-                    console.warn('IRIS: CSRF token not found');
-                    break;
-                }
-
-                const bounds = intelMap.getBounds();
-                const ne = bounds.getNorthEast();
-                const sw = bounds.getSouthWest();
-
-                const payload: any = {
-                    v: intelVersion,
-                    minLatE6: Math.round(sw.lat() * 1e6),
-                    maxLatE6: Math.round(ne.lat() * 1e6),
-                    minLngE6: Math.round(sw.lng() * 1e6),
-                    maxLngE6: Math.round(ne.lng() * 1e6),
-                    minTimestampMs: event.data.minTimestampMs ?? -1,
-                    maxTimestampMs: event.data.maxTimestampMs ?? -1,
-                    ascendingTimestampOrder: event.data.ascendingTimestampOrder ?? true,
-                    tab: event.data.tab || 'all'
-                };
-
-                const req = new XMLHttpRequest();
-                req.open('POST', '/r/getPlexts', true);
-                req.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-                req.setRequestHeader('X-CSRFToken', csrfToken);
-                req.addEventListener('load', function() {
-                    if (this.status === 200) {
-                        try {
-                            const data = JSON.parse(this.responseText);
-                            window.postMessage({ type: 'IRIS_DATA', url: '/r/getPlexts', data }, '*');
-                        } catch (e) {
-                            console.error('IRIS: Failed to parse getPlexts response', e);
-                        }
-                    }
-                }, { once: true });
-                req.send(JSON.stringify(payload));
+                const { tab, minTimestampMs, maxTimestampMs, ascendingTimestampOrder, minLatE6, maxLatE6, minLngE6, maxLngE6 } = msg;
+                safeIrisFetch('/r/getPlexts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                    body: JSON.stringify({
+                        tab,
+                        minTimestampMs,
+                        maxTimestampMs,
+                        ascendingTimestampOrder,
+                        minLatE6,
+                        maxLatE6,
+                        minLngE6,
+                        maxLngE6
+                    })
+                }).catch(e => console.error('IRIS: Comm fetch failed', e));
                 break;
             }
 
-            // Fetch Global Game Score
-            case 'IRIS_GAME_SCORE_FETCH': {
-                if (!intelVersion) break;
-
-                const csrfToken = getCsrfToken();
-                if (!csrfToken) break;
-
-                const req = new XMLHttpRequest();
-                req.open('POST', '/r/getGameScore', true);
-                req.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-                req.setRequestHeader('X-CSRFToken', csrfToken);
-                req.addEventListener('load', function() {
-                    if (this.status === 200) {
-                        try {
-                            const data = JSON.parse(this.responseText);
-                            window.postMessage({ type: 'IRIS_DATA', url: '/r/getGameScore', data }, '*');
-                        } catch (e) {
-                            console.error('IRIS: Failed to parse getGameScore response', e);
-                        }
-                    }
-                }, { once: true });
-                req.send(JSON.stringify({v: intelVersion}));
-                break;
-            }
-
-            // Fetch Region Score Details
             case 'IRIS_REGION_SCORE_FETCH': {
-                if (!intelVersion) break;
-
-                const csrfToken = getCsrfToken();
-                if (!csrfToken) break;
-
-                const { latE6, lngE6 } = event.data;
-                const req = new XMLHttpRequest();
-                req.open('POST', '/r/getRegionScoreDetails', true);
-                req.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-                req.setRequestHeader('X-CSRFToken', csrfToken);
-                req.addEventListener('load', function() {
-                    if (this.status === 200) {
-                        try {
-                            const data = JSON.parse(this.responseText);
-                            window.postMessage({ type: 'IRIS_DATA', url: '/r/getRegionScoreDetails', data }, '*');
-                        } catch (e) {
-                            console.error('IRIS: Failed to parse getRegionScoreDetails response', e);
-                        }
-                    }
-                }, { once: true });
-                req.send(JSON.stringify({ v: intelVersion, latE6, lngE6 }));
+                const { latE6, lngE6 } = msg;
+                safeIrisFetch('/r/getRegionScoreDetails', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                    body: JSON.stringify({ latE6, lngE6 })
+                }).catch(e => console.error('IRIS: Region score fetch failed', e));
                 break;
             }
 
-            // Generic data request
-            case 'IRIS_DATA_REQUEST': {
-                if (!intelVersion) break;
-                const { url } = event.data;
-                const csrfToken = getCsrfToken();
-                if (!csrfToken) break;
-
-                const req = new XMLHttpRequest();
-                // Ensure URL starts with /r/ if it doesn't
-                const fullUrl = url.startsWith('/') ? url : `/r/${url}`;
-                req.open('POST', fullUrl, true);
-                req.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
-                req.setRequestHeader('X-CSRFToken', csrfToken);
-                req.addEventListener('load', function() {
-                    if (this.status === 200) {
-                        try {
-                            const data = JSON.parse(this.responseText);
-                            window.postMessage({ type: 'IRIS_DATA', url: fullUrl, data }, '*');
-                        } catch (e) {
-                            console.error(`IRIS: Failed to parse ${url} response`, e);
-                        }
-                    }
-                }, { once: true });
-                req.send(JSON.stringify({ v: intelVersion }));
+            case 'IRIS_PORTAL_DETAILS_FETCH': {
+                const { guid } = msg;
+                safeIrisFetch('/r/getPortalDetails', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                    body: JSON.stringify({ guid })
+                }).catch(e => console.error('IRIS: Portal details fetch failed', e));
                 break;
             }
 
-            default:
+            case 'IRIS_GEOLOCATE': {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        window.postMessage({
+                            type: 'IRIS_INITIAL_POSITION',
+                            lat: pos.coords.latitude,
+                            lng: pos.coords.longitude,
+                            zoom: 15
+                        }, '*');
+                    },
+                    (err) => console.warn('IRIS: Geolocation failed', err)
+                );
                 break;
+            }
         }
     });
 
-    // ---------------------------------------------------------------------------
-    // Boot
-    // ---------------------------------------------------------------------------
-
-    // Periodic check for version and initial data
-    const bootInterval = setInterval(() => {
-        if (intelVersion) {
-            clearInterval(bootInterval);
-            // Trigger initial subscription check
-            window.postMessage({ type: 'IRIS_DATA_REQUEST', url: 'getHasActiveSubscription' }, '*');
-        }
-    }, 1000);
-
-    // ---------------------------------------------------------------------------
-    // JS Error Tracking
-    // ---------------------------------------------------------------------------
-
-    window.addEventListener('error', (event) => {
+    // Handle JS errors
+    window.addEventListener('error', (event: ErrorEvent) => {
         window.postMessage({
             type: 'IRIS_JS_ERROR',
             message: event.message,
@@ -547,13 +471,22 @@
         }, '*');
     });
 
-    window.addEventListener('unhandledrejection', (event) => {
-        window.postMessage({
-            type: 'IRIS_JS_ERROR',
-            message: `Unhandled Promise: ${event.reason?.message || event.reason}`,
-            time: Date.now()
-        }, '*');
-    });
+    // Proactive background checks for subscription and inventory
+    setInterval(() => {
+        // Check subscription
+        safeIrisFetch('/r/getHasActiveSubscription', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+            body: JSON.stringify({})
+        }).catch((e: Error) => console.debug('IRIS: subscription check failed (expected if not logged in)', e));
 
-    console.log('IRIS: Interceptor ready');
+        // Check inventory if subscribed
+        safeIrisFetch('/r/getInventory', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+            body: JSON.stringify({ lastQueryTimestamp: -1 })
+        }).catch((e: Error) => console.debug('IRIS: inventory check failed (expected if not C.O.R.E)', e));
+        
+    }, 60000); // Once a minute
+
 })();

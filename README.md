@@ -63,7 +63,7 @@ Intel page loads
 Interceptor (main world, document_start)
   ├── Hooks google.maps.Map constructor → captures map instance
   ├── Patches XMLHttpRequest.prototype → intercepts getEntities / getPortalDetails / getPlexts
-  └── Wraps window.fetch → same endpoints
+  └── Wraps window.fetch → same endpoints + proactive version sniffing
     │
     ▼
 postMessage → Content script (isolated world)
@@ -75,7 +75,7 @@ Zustand store (portals, links, fields, mapState, plexts)
 Preact + MapLibre GL renders overlay
 ```
 
-The XHR interceptor uses **prototype patching** (not subclassing) because Intel's internal code captures a reference to `XMLHttpRequest` before the extension runs. Patching the prototype mutates the object Intel already holds a reference to — subclassing would be invisible to it.
+The interceptor uses both **prototype patching** for `XMLHttpRequest` and a **functional wrap** for `window.fetch`. This ensures that even if Intel captures a reference to the original `XMLHttpRequest` constructor early, IRIS still catches the data flowing through its prototype.
 
 ---
 
@@ -92,6 +92,7 @@ The XHR interceptor uses **prototype patching** (not subclassing) because Intel'
 git clone https://github.com/yourusername/iris-intel.git
 cd iris-intel
 npm install
+npm run lint  # Verify code quality
 npm run build
 ```
 
@@ -165,7 +166,8 @@ export default MyPlugin;
 | Map rendering | [MapLibre GL JS](https://maplibre.org/) |
 | State management | [Zustand](https://github.com/pmndrs/zustand) |
 | Build tool | [Vite](https://vitejs.dev/) |
-| Language | TypeScript (strict) |
+| Linting | [ESLint](https://eslint.org/) (Flat Config) |
+| Language | TypeScript (Strict, no-any) |
 | Package manager | npm workspaces |
 
 ---

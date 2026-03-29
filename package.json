@@ -13,11 +13,19 @@
     "release:chrome": "mkdir -p out && cd packages/extension/dist && zip -r ../../../out/iris-chrome.zip .",
     "release:firefox": "mkdir -p out && cd packages/extension/dist-firefox && zip -r ../../../out/iris-firefox.xpi .",
     "release": "npm run build:all && npm run release:chrome && npm run release:firefox",
-    "lint": "npm run lint -w packages/extension"
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "devDependencies": {
     "@types/chrome": "^0.1.38",
+    "@typescript-eslint/eslint-plugin": "^8.57.2",
+    "@typescript-eslint/parser": "^8.57.2",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "globals": "^17.4.0",
     "typescript": "^5.0.0",
+    "typescript-eslint": "^8.57.2",
     "vite": "^5.0.0",
     "vite-plugin-web-extension": "^4.5.0"
   }

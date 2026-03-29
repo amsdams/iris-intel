@@ -12,6 +12,7 @@ export function MapOverlay() {
 
   // Prevents moveend from echoing back to Intel when we programmatically jump
   const isMoving = useRef(false);
+  const isFirstSync = useRef(true);
 
   const portals = useStore((state) => state.portals);
   const links = useStore((state) => state.links);
@@ -181,10 +182,17 @@ export function MapOverlay() {
       if (!map.current || isMoving.current) return;
       const center = map.current.getCenter();
       const z = map.current.getZoom();
+      const bounds = map.current.getBounds();
       window.postMessage({
         type: 'IRIS_MOVE_MAP',
         center: { lat: center.lat, lng: center.lng },
         zoom: Math.round(z),
+        bounds: {
+            minLatE6: Math.round(bounds.getSouth() * 1e6),
+            minLngE6: Math.round(bounds.getWest() * 1e6),
+            maxLatE6: Math.round(bounds.getNorth() * 1e6),
+            maxLngE6: Math.round(bounds.getEast() * 1e6),
+        }
       }, '*');
     });
 
@@ -257,9 +265,27 @@ export function MapOverlay() {
   // Sync Camera
   useEffect(() => {
     if (!map.current || !styleLoaded || (lat === 0 && lng === 0)) return;
-    isMoving.current = true;
-    map.current.jumpTo({ center: [lng, lat], zoom });
-    setTimeout(() => { isMoving.current = false; }, 100);
+
+    if (isFirstSync.current) {
+        isFirstSync.current = false;
+        map.current.jumpTo({ center: [lng, lat], zoom });
+        const bounds = map.current.getBounds();
+        window.postMessage({
+            type: 'IRIS_MOVE_MAP',
+            center: { lat, lng },
+            zoom,
+            bounds: {
+                minLatE6: Math.round(bounds.getSouth() * 1e6),
+                minLngE6: Math.round(bounds.getWest() * 1e6),
+                maxLatE6: Math.round(bounds.getNorth() * 1e6),
+                maxLngE6: Math.round(bounds.getEast() * 1e6),
+            }
+        }, '*');
+    } else {
+        isMoving.current = true;
+        map.current.jumpTo({ center: [lng, lat], zoom });
+        setTimeout(() => { isMoving.current = false; }, 100);
+    }
   }, [lat, lng, zoom, styleLoaded]);
 
   // Sync Theme

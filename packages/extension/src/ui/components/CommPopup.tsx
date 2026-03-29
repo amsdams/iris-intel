@@ -1,4 +1,4 @@
-import { h } from 'preact';
+import { h, JSX } from 'preact';
 import { useEffect, useState, useRef, useMemo } from 'preact/hooks';
 import { useStore, normalizeTeam, Plext } from '@iris/core';
 import { Popup } from './Popup';
@@ -8,7 +8,18 @@ interface CommPopupProps {
     onClose: () => void;
 }
 
-export function CommPopup({ onClose }: CommPopupProps) {
+interface MarkupData {
+    team?: string;
+    plain?: string;
+    name?: string;
+    address?: string;
+    latE6?: number;
+    lngE6?: number;
+}
+
+type MarkupSegment = [string, string | MarkupData];
+
+export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
     const plexts = useStore((state) => state.plexts);
     const themeId = useStore((state) => state.themeId);
     const activeTab = useStore((state) => state.activeCommTab);
@@ -18,17 +29,17 @@ export function CommPopup({ onClose }: CommPopupProps) {
     const [loading, setLoading] = useState(false);
     const lastRequestTime = useRef(0);
 
-    const formatTime = (ms: number) => {
+    const formatTime = (ms: number): string => {
         const date = new Date(ms);
         return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
     };
 
-    const formatDateHeader = (ms: number) => {
+    const formatDateHeader = (ms: number): string => {
         const date = new Date(ms);
         return date.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     };
 
-    const handleRefresh = () => {
+    const handleRefresh = (): void => {
         const minTimestampMs = plexts.length > 0 ? plexts[plexts.length - 1].time : -1;
         window.postMessage({ 
             type: 'IRIS_PLEXTS_REQUEST', 
@@ -37,7 +48,7 @@ export function CommPopup({ onClose }: CommPopupProps) {
         }, '*');
     };
 
-    const handleScroll = () => {
+    const handleScroll = (): void => {
         const el = scrollRef.current;
         if (!el || loading) return;
 
@@ -100,7 +111,7 @@ export function CommPopup({ onClose }: CommPopupProps) {
         return [...filtered].reverse();
     }, [plexts, activeTab]);
 
-    const renderMarkupSegment = (m: any, i: number) => {
+    const renderMarkupSegment = (m: MarkupSegment, i: number): JSX.Element | null => {
         const type = m[0];
         const data = m[1];
         let color = UI_COLORS.TEXT_BASE;
@@ -113,23 +124,23 @@ export function CommPopup({ onClose }: CommPopupProps) {
         }
 
         if (type === 'PLAYER' || type === 'SENDER' || type === 'AT_PLAYER') {
-            const teamKey = normalizeTeam(data.team) as 'E' | 'R' | 'M' | 'N';
+            const teamKey = normalizeTeam(typeof data === 'object' ? data.team : undefined) as 'E' | 'R' | 'M' | 'N';
             color = theme[teamKey] || UI_COLORS.TEXT_BASE;
             if (type === 'AT_PLAYER' && typeof text === 'string' && !text.startsWith('@')) {
                 text = '@' + text;
             }
             return <span key={i} className={`iris-comm-markup iris-comm-markup-${type.toLowerCase()}`} style={{ color, fontWeight: 'bold' }}>{String(text || '')}</span>;
         } else if (type === 'PORTAL' || type === 'LINK') {
-            const teamKey = normalizeTeam(data.team) as 'E' | 'R' | 'M' | 'N';
+            const teamKey = normalizeTeam(typeof data === 'object' ? data.team : undefined) as 'E' | 'R' | 'M' | 'N';
             color = type === 'PORTAL' ? theme.AQUA : (theme[teamKey] || theme.AQUA);
             
             // Original Intel uses .name for the link and .address for the brackets
             // .plain often contains both, which causes duplication if we use it.
-            const portalName = data.name || data.plain || '';
-            const portalAddress = data.address || '';
+            const portalName = (typeof data === 'object' ? data.name : '') || (typeof data === 'object' ? data.plain : '') || '';
+            const portalAddress = typeof data === 'object' ? data.address : '';
 
-            const handlePortalClick = () => {
-                if (data.latE6 && data.lngE6) {
+            const handlePortalClick = (): void => {
+                if (typeof data === 'object' && data.latE6 && data.lngE6) {
                     window.postMessage({
                         type: 'IRIS_MOVE_MAP',
                         center: { lat: data.latE6 / 1e6, lng: data.lngE6 / 1e6 },
@@ -160,8 +171,8 @@ export function CommPopup({ onClose }: CommPopupProps) {
         return <span key={i} className="iris-comm-markup iris-comm-markup-unknown" style={{ color }}>{String(text || '')}</span>;
     };
 
-    const renderPlext = (p: Plext) => {
-        const markup = p.markup || [];
+    const renderPlext = (p: Plext): JSX.Element => {
+        const markup = (p.markup as MarkupSegment[]) || [];
         const isSystem = p.type !== 'PLAYER_GENERATED';
         
         return (
@@ -182,7 +193,7 @@ export function CommPopup({ onClose }: CommPopupProps) {
         );
     };
 
-    const rows: any[] = [];
+    const rows: JSX.Element[] = [];
     let lastDate: string | null = null;
 
     filteredPlexts.forEach(p => {

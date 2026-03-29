@@ -1,11 +1,12 @@
 import { render, h } from 'preact';
 import '../ui/iris.css';
 import { IRISOverlay } from '../ui/components/Overlay';
-import { useStore, pluginManager, normalizeTeam, InventoryItem } from '@iris/core';
+import { useStore, pluginManager, normalizeTeam, InventoryItem, Portal, Link, Field, Plext } from '@iris/core';
 import PortalNamesPlugin from '../../../plugins/src/portal-names';
 import ThemeSelectorPlugin from '../../../plugins/src/theme-selector';
 import PlayerTrackerPlugin from '../../../plugins/src/player-tracker';
 import ExportDataPlugin from '../../../plugins/src/export-data';
+import { IRISPlugin } from '@iris/plugin-sdk';
 
 // Tracks whether MapLibre has been given its initial position
 let hasInitialPosition = false;
@@ -13,23 +14,58 @@ let lastPlextRequestTime = 0;
 const PLEXT_COOLDOWN_MS = 5000;
 
 // ---------------------------------------------------------------------------
+// Intel API Types
+// ---------------------------------------------------------------------------
+
+interface IntelTile {
+  deletedGameEntityGuids?: string[];
+  gameEntities?: [string, number, unknown[]][];
+}
+
+interface IntelMapData {
+  result?: {
+    map?: Record<string, IntelTile>;
+  };
+}
+
+interface PortalDetailsData {
+  result?: unknown[];
+}
+
+interface PlextData {
+  result?: [string, number, {
+    plext: {
+      text: string;
+      markup: unknown[];
+      categories: number;
+      team: string;
+      plextType: 'PLAYER_GENERATED' | 'SYSTEM_BROADCAST' | 'SYSTEM_NARROWCAST';
+    };
+  }][];
+}
+
+interface InventoryData {
+  result?: [string, number, unknown][];
+}
+
+// ---------------------------------------------------------------------------
 // Entity parsers
 // ---------------------------------------------------------------------------
 
-function parseEntities(data: any): {
-  portals: any[];
-  links: any[];
-  fields: any[];
+function parseEntities(data: IntelMapData): {
+  portals: Partial<Portal>[];
+  links: Partial<Link>[];
+  fields: Partial<Field>[];
   deletedGuids: string[];
 } {
-  const portals: any[] = [];
-  const links: any[] = [];
-  const fields: any[] = [];
+  const portals: Partial<Portal>[] = [];
+  const links: Partial<Link>[] = [];
+  const fields: Partial<Field>[] = [];
   const deletedGuids: string[] = [];
 
   if (!data.result?.map) return { portals, links, fields, deletedGuids };
 
-  Object.values(data.result.map).forEach((tile: any) => {
+  Object.values(data.result.map).forEach((tile: IntelTile) => {
     // Handle deleted entities
     if (tile.deletedGameEntityGuids) {
       deletedGuids.push(...tile.deletedGameEntityGuids);
@@ -37,35 +73,35 @@ function parseEntities(data: any): {
 
     if (!tile.gameEntities) return;
 
-    tile.gameEntities.forEach((entity: any) => {
+    tile.gameEntities.forEach((entity) => {
       const [id, , entData] = entity;
-      const entType = entData[0];
-      const team = normalizeTeam(entData[1]);
+      const entType = entData[0] as string;
+      const team = normalizeTeam(entData[1] as string);
 
       if (entType === 'p') {
         portals.push({
           id,
-          lat: parseFloat(entData[2]) / 1e6,
-          lng: parseFloat(entData[3]) / 1e6,
+          lat: parseFloat(entData[2] as string) / 1e6,
+          lng: parseFloat(entData[3] as string) / 1e6,
           team,
-          level: parseInt(entData[4], 10),
-          health: parseInt(entData[5], 10),
+          level: parseInt(entData[4] as string, 10),
+          health: parseInt(entData[5] as string, 10),
         });
       } else if (entType === 'e') {
         links.push({
           id,
           team,
-          fromPortalId: entData[2],
-          fromLat: parseFloat(entData[3]) / 1e6,
-          fromLng: parseFloat(entData[4]) / 1e6,
-          toPortalId: entData[5],
-          toLat: parseFloat(entData[6]) / 1e6,
-          toLng: parseFloat(entData[7]) / 1e6,
+          fromPortalId: entData[2] as string,
+          fromLat: parseFloat(entData[3] as string) / 1e6,
+          fromLng: parseFloat(entData[4] as string) / 1e6,
+          toPortalId: entData[5] as string,
+          toLat: parseFloat(entData[6] as string) / 1e6,
+          toLng: parseFloat(entData[7] as string) / 1e6,
         });
       } else if (entType === 'r') {
-        const points = entData[2].map((p: any) => ({
-          lat: parseFloat(p[1]) / 1e6,
-          lng: parseFloat(p[2]) / 1e6,
+        const points = (entData[2] as unknown[][]).map((p: unknown[]) => ({
+          lat: parseFloat(p[1] as string) / 1e6,
+          lng: parseFloat(p[2] as string) / 1e6,
         }));
         fields.push({ id, team, points });
       }
@@ -75,57 +111,57 @@ function parseEntities(data: any): {
   return { portals, links, fields, deletedGuids };
 }
 
-function parsePortalDetails(data: any, params: any): any | null {
+function parsePortalDetails(data: PortalDetailsData, params: { guid?: string }): Partial<Portal> | null {
   if (!data.result) return null;
   const d = data.result;
 
   // Parse mods — d[14] is array of 4 slots, each null or [owner, name, rarity, stats]
-  const mods = (d[14] as any[])
+  const mods = (d[14] as unknown[][] | undefined)
       ?.filter(Boolean)
-      .map((m: any) => ({
-        owner: m[0],
-        name: m[1],
-        rarity: m[2],
-        stats: m[3],
+      .map((m: unknown[]) => ({
+        owner: m[0] as string,
+        name: m[1] as string,
+        rarity: m[2] as string,
+        stats: m[3] as Record<string, string>,
       })) || [];
 
   // Parse resonators — d[15] is array of [owner, level, energy]
-  const resonators = (d[15] as any[])
-      ?.map((r: any) => ({
-        owner: r[0],
-        level: r[1],
-        energy: r[2],
+  const resonators = (d[15] as unknown[][] | undefined)
+      ?.map((r: unknown[]) => ({
+        owner: r[0] as string,
+        level: r[1] as number,
+        energy: r[2] as number,
       })) || [];
 
   return {
     id: params?.guid || '',
-    lat: parseFloat(d[2]) / 1e6,
-    lng: parseFloat(d[3]) / 1e6,
-    team: normalizeTeam(d[1]),
-    level: parseInt(d[4], 10),
-    health: parseInt(d[5], 10),
-    resCount: d[6],
-    image: d[7],
-    name: d[8],
-    owner: d[16],
+    lat: parseFloat(d[2] as string) / 1e6,
+    lng: parseFloat(d[3] as string) / 1e6,
+    team: normalizeTeam(d[1] as string),
+    level: parseInt(d[4] as string, 10),
+    health: parseInt(d[5] as string, 10),
+    resCount: d[6] as number,
+    image: d[7] as string,
+    name: d[8] as string,
+    owner: d[16] as string,
     mods,
     resonators,
   };
 }
 
-function parsePlexts(data: any): any[] {
+function parsePlexts(data: PlextData): Plext[] {
     if (!data.result) return [];
     try {
-        return data.result.map((plext: any) => {
+        return data.result.map((plext) => {
             const [id, time, plextData] = plext;
             const { text, markup, categories, team, plextType } = plextData.plext;
             return {
                 id,
                 time,
                 text,
-                markup,
-                categories,
-                team: normalizeTeam(team),
+                markup: markup as unknown[],
+                categories: categories as number,
+                team: normalizeTeam(team as string),
                 type: plextType,
             };
         });
@@ -135,16 +171,16 @@ function parsePlexts(data: any): any[] {
     }
 }
 
-function parseInventory(data: any): InventoryItem[] {
+function parseInventory(data: InventoryData): InventoryItem[] {
     if (!data.result) return [];
     try {
         // Result is an array of [guid, timestamp, itemData]
-        return data.result.map((item: any) => {
+        return data.result.map((item) => {
             const [guid, timestamp, itemData] = item;
             return {
                 guid,
                 timestamp,
-                ...itemData
+                ...(itemData as object)
             } as InventoryItem;
         });
     } catch (e) {
@@ -157,7 +193,7 @@ function parseInventory(data: any): InventoryItem[] {
 // UI bootstrap
 // ---------------------------------------------------------------------------
 
-function initUI() {
+function initUI(): void {
   const container = document.createElement('div');
   container.id = 'iris-root';
 
@@ -180,68 +216,106 @@ function initUI() {
 // Plugins
 // ---------------------------------------------------------------------------
 
-pluginManager.load(PortalNamesPlugin as any);
-pluginManager.load(ThemeSelectorPlugin as any);
-pluginManager.load(PlayerTrackerPlugin as any);
-pluginManager.load(ExportDataPlugin as any);
+pluginManager.load(PortalNamesPlugin as IRISPlugin);
+pluginManager.load(ThemeSelectorPlugin as IRISPlugin);
+pluginManager.load(PlayerTrackerPlugin as IRISPlugin);
+pluginManager.load(ExportDataPlugin as IRISPlugin);
 
 // ---------------------------------------------------------------------------
 // Message handler — bridges main world interceptor and Preact UI
 // ---------------------------------------------------------------------------
 
-window.addEventListener('message', (event) => {
-  if (event.data?.type?.startsWith('IRIS') && useStore.getState().debugLogging) {
-    console.log('IRIS raw message received:', event.data.type, event.data);
+interface IRISMessage {
+    type: string;
+    url?: string;
+    data?: unknown;
+    params?: unknown;
+    lat?: number;
+    lng?: number;
+    zoom?: number;
+    center?: { lat: number; lng: number };
+    status?: number;
+    statusText?: string;
+    time?: number;
+    message?: string;
+    source?: string;
+    lineno?: number;
+    colno?: number;
+    guid?: string;
+    tab?: string;
+    minTimestampMs?: number;
+    maxTimestampMs?: number;
+    ascendingTimestampOrder?: boolean;
+    bounds?: {
+        minLatE6: number;
+        minLngE6: number;
+        maxLatE6: number;
+        maxLngE6: number;
+    };
+    minLatE6?: number;
+    maxLatE6?: number;
+    minLngE6?: number;
+    maxLngE6?: number;
+
+    // Player stats fields
+    nickname?: string;
+    level?: number;
+    ap?: number;
+    team?: string;
+    energy?: number;
+    xm_capacity?: number;
+    available_invites?: number;
+    min_ap_for_current_level?: number;
+    min_ap_for_next_level?: number;
+    hasActiveSubscription?: boolean;
+}
+
+window.addEventListener('message', (event: MessageEvent) => {
+  const msg = event.data as IRISMessage;
+  if (msg?.type?.startsWith('IRIS') && useStore.getState().debugLogging) {
+    console.log('IRIS raw message received:', msg.type, msg);
   }
 
-  if (event.source !== window || !event.data?.type) return;
+  if (event.source !== window || !msg?.type) return;
 
-  const { type, url, data, params} = event.data;
+  const { type, url, data, params } = msg;
 
   switch (type) {
-// Intel cookie position received — set MapLibre position immediately
-// This fires before any getEntities request so the map starts at the right place
     case 'IRIS_INITIAL_POSITION': {
-      const { lat, lng, zoom } = event.data;
+      const { lat, lng, zoom } = msg as { lat: number; lng: number; zoom: number };
       hasInitialPosition = true;
-      // Clamp zoom to minimum 14 so portals load immediately
       useStore.getState().updateMapState(lat, lng, Math.max(zoom, 14));
-      // Kick off initial COMM fetch to start player tracking
-      window.postMessage({ type: 'IRIS_PLEXTS_REQUEST', minTimestampMs: -1 }, '*');
       break;
     }
-      // Intel tile request fired — used only for zoom level logging
     case 'IRIS_TILE_REQUEST':
       break;
 
-      // User panned MapLibre — forward to interceptor to move Intel map
     case 'IRIS_MOVE_MAP': {
-      const { center, zoom } = event.data;
-      // Move Intel map
+      const { center, zoom, bounds } = msg as { 
+        center: { lat: number; lng: number }; 
+        zoom: number;
+        bounds?: { minLatE6: number; minLngE6: number; maxLatE6: number; maxLngE6: number };
+      };
       window.postMessage(
           { type: 'IRIS_MOVE_MAP_INTERNAL', center, zoom },
           '*'
       );
-      // Refresh COMM for the new area
+      useStore.getState().updateMapState(center.lat, center.lng, zoom, bounds);
       window.postMessage({ type: 'IRIS_PLEXTS_REQUEST', minTimestampMs: -1 }, '*');
-      // Also update MapLibre position directly
-      useStore.getState().updateMapState(center.lat, center.lng, zoom);
       break;
     }
 
-      // Ignore echoes of internal messages
     case 'IRIS_MOVE_MAP_INTERNAL':
     case 'IRIS_GEOLOCATE':
       break;
 
-      // Geolocation request from UI — forward to main world
     case 'IRIS_GEOLOCATE_REQUEST': {
       window.postMessage({ type: 'IRIS_GEOLOCATE' }, '*');
       break;
     }
 
     case 'IRIS_REGION_SCORE_REQUEST': {
-        const { lat, lng } = event.data;
+        const { lat, lng } = msg as { lat: number; lng: number };
         window.postMessage({ 
             type: 'IRIS_REGION_SCORE_FETCH', 
             latE6: Math.round(lat * 1e6), 
@@ -251,11 +325,11 @@ window.addEventListener('message', (event) => {
     }
 
     case 'IRIS_REQUEST_START': {
-        const url = event.data.url;
-        if (url.includes('getPlexts')) {
+        const url_data = url as string;
+        if (url_data.includes('getPlexts')) {
             lastPlextRequestTime = Date.now();
         }
-        useStore.getState().onRequestStart(url);
+        useStore.getState().onRequestStart(url_data);
         break;
     }
 
@@ -266,38 +340,37 @@ window.addEventListener('message', (event) => {
 
     case 'IRIS_REQUEST_FAILED': {
         useStore.getState().addFailedRequest({
-            url: event.data.url,
-            status: event.data.status,
-            statusText: event.data.statusText,
-            time: event.data.time
+            url: msg.url as string,
+            status: msg.status as number,
+            statusText: msg.statusText as string,
+            time: msg.time as number
         });
         break;
     }
 
     case 'IRIS_REQUEST_SUCCESS': {
         useStore.getState().addSuccessfulRequest({
-            url: event.data.url,
-            time: event.data.time
+            url: msg.url as string,
+            time: msg.time as number
         });
         break;
     }
 
     case 'IRIS_JS_ERROR': {
         useStore.getState().addJSError({
-            message: event.data.message,
-            source: event.data.source,
-            lineno: event.data.lineno,
-            colno: event.data.colno,
-            time: event.data.time
+            message: msg.message as string,
+            source: msg.source as string,
+            lineno: msg.lineno as number,
+            colno: msg.colno as number,
+            time: msg.time as number
         });
         break;
     }
 
-      // Portal click — forward to interceptor to trigger getPortalDetails XHR
     case 'IRIS_PORTAL_DETAILS_REQUEST': {
       window.postMessage({
         type: 'IRIS_PORTAL_DETAILS_FETCH',
-        guid: event.data.guid,
+        guid: msg.guid as string,
       }, '*');
       break;
     }
@@ -305,44 +378,44 @@ window.addEventListener('message', (event) => {
     case 'IRIS_PLEXTS_REQUEST': {
       const now = Date.now();
       if (now - lastPlextRequestTime < PLEXT_COOLDOWN_MS) {
-          console.log('IRIS: skipping proactive getPlexts (cooldown active)');
           break;
       }
       lastPlextRequestTime = now;
       
-      const requestedTab = event.data.tab;
-      const minTimestampMs = event.data.minTimestampMs;
-      const maxTimestampMs = event.data.maxTimestampMs;
-      const ascendingTimestampOrder = event.data.ascendingTimestampOrder;
+      const requestedTab = msg.tab;
+      const minTimestampMs = msg.minTimestampMs ?? -1;
+      const maxTimestampMs = msg.maxTimestampMs ?? -1;
+      const ascendingTimestampOrder = msg.ascendingTimestampOrder ?? false;
+      const bounds = useStore.getState().mapState.bounds;
 
       if (requestedTab) {
-          // UI specifically requested a tab
           window.postMessage({
             type: 'IRIS_PLEXTS_FETCH',
             tab: requestedTab,
             minTimestampMs,
             maxTimestampMs,
-            ascendingTimestampOrder
+            ascendingTimestampOrder,
+            ...bounds
           }, '*');
 
-          // If UI requested 'alerts', we still need 'all' or 'faction' for the Player Tracker plugin
           if (requestedTab === 'alerts') {
               window.postMessage({
                 type: 'IRIS_PLEXTS_FETCH',
                 tab: 'all',
                 minTimestampMs,
                 maxTimestampMs,
-                ascendingTimestampOrder
+                ascendingTimestampOrder,
+                ...bounds
               }, '*');
           }
       } else {
-          // Periodic refresh or generic request — fetch both main tabs to keep data fresh
           window.postMessage({
             type: 'IRIS_PLEXTS_FETCH',
             tab: 'all',
             minTimestampMs,
             maxTimestampMs,
-            ascendingTimestampOrder
+            ascendingTimestampOrder,
+            ...bounds
           }, '*');
           
           window.postMessage({
@@ -350,23 +423,25 @@ window.addEventListener('message', (event) => {
             tab: 'faction',
             minTimestampMs,
             maxTimestampMs,
-            ascendingTimestampOrder
+            ascendingTimestampOrder,
+            ...bounds
           }, '*');
       }
       break;
     }
 
-      // Intel API data received
     case 'IRIS_DATA': {
-      if (url.includes('getEntities')) {
-        const { portals, links, fields, deletedGuids } = parseEntities(data);
+      const url_str = url as string;
+      if (url_str.includes('getEntities')) {
+        const { portals, links, fields, deletedGuids } = parseEntities(data as IntelMapData);
         const store = useStore.getState();
 
-        // Set MapLibre initial position from the median portal on first load
         if (!hasInitialPosition && portals.length > 0) {
           hasInitialPosition = true;
           const mid = portals[Math.floor(portals.length / 2)];
-          store.updateMapState(mid.lat, mid.lng, 15);
+          if (mid.lat !== undefined && mid.lng !== undefined) {
+            store.updateMapState(mid.lat, mid.lng, 15);
+          }
         }
 
         if (deletedGuids.length > 0) store.removeEntities(deletedGuids);
@@ -374,35 +449,36 @@ window.addEventListener('message', (event) => {
         if (links.length > 0) store.updateLinks(links);
         if (fields.length > 0) store.updateFields(fields);
 
-      } else if (url.includes('getPortalDetails')) {
-        const portal = parsePortalDetails(data, params);
+      } else if (url_str.includes('getPortalDetails')) {
+        const portal = parsePortalDetails(data as PortalDetailsData, params as { guid?: string });
         if (portal) useStore.getState().updatePortals([portal]);
-      } else if (url.includes('getPlexts')) {
+      } else if (url_str.includes('getPlexts')) {
         lastPlextRequestTime = Date.now();
-        const plexts = parsePlexts(data);
+        const plexts = parsePlexts(data as PlextData);
         if (plexts.length > 0) useStore.getState().updatePlexts(plexts);
-      } else if (url.includes('getGameScore')) {
-        const [enlightened, resistance] = data.result || [0, 0];
+      } else if (url_str.includes('getGameScore')) {
+        const [enlightened, resistance] = (data as { result?: [number, number] }).result || [0, 0];
         useStore.getState().setGameScore({ 
             enlightened: parseInt(String(enlightened), 10), 
             resistance: parseInt(String(resistance), 10) 
         });
-      } else if (url.includes('getRegionScoreDetails')) {
-        const res = data.result;
+      } else if (url_str.includes('getRegionScoreDetails')) {
+        const res = (data as { result?: Record<string, unknown> }).result;
         if (res) {
             useStore.getState().setRegionScore({
-                regionName: res.regionName,
-                gameScore: [parseInt(res.gameScore[0], 10), parseInt(res.gameScore[1], 10)],
-                topAgents: res.topAgents,
-                scoreHistory: res.scoreHistory
+                regionName: res.regionName as string,
+                gameScore: [parseInt(res.gameScore[0] as string, 10), parseInt(res.gameScore[1] as string, 10)],
+                topAgents: res.topAgents as { team: string; nick: string }[],
+                scoreHistory: res.scoreHistory as [string, string, string][]
             });
         }
-      } else if (url.includes('getHasActiveSubscription')) {
-        if (data.result !== undefined) {
-            useStore.getState().setHasSubscription(!!data.result);
+      } else if (url_str.includes('getHasActiveSubscription')) {
+        const res = (data as { result?: boolean }).result;
+        if (res !== undefined) {
+            useStore.getState().setHasSubscription(res);
         }
-      } else if (url.includes('getInventory')) {
-        const inventory = parseInventory(data);
+      } else if (url_str.includes('getInventory')) {
+        const inventory = parseInventory(data as InventoryData);
         if (inventory.length > 0) {
             useStore.getState().setInventory(inventory);
         }
@@ -411,31 +487,31 @@ window.addEventListener('message', (event) => {
     }
 
     case 'IRIS_PLAYER_STATS': {
-      const { 
-          nickname, 
-          level, 
-          ap, 
-          team,
-          energy,
-          xm_capacity,
-          available_invites,
-          min_ap_for_current_level,
-          min_ap_for_next_level,
-          hasActiveSubscription
-        } = event.data;
+      const stats = msg as unknown as {
+          nickname: string;
+          level: number;
+          ap: number;
+          team: string;
+          energy: number;
+          xm_capacity: number;
+          available_invites: number;
+          min_ap_for_current_level: number;
+          min_ap_for_next_level: number;
+          hasActiveSubscription: boolean;
+      };
+      
       useStore.getState().setPlayerStats({ 
-          nickname, 
-          level, 
-          ap, 
-          team,
-          energy,
-          xm_capacity,
-          available_invites,
-          min_ap_for_current_level,
-          min_ap_for_next_level
+          nickname: stats.nickname, 
+          level: stats.level, 
+          ap: stats.ap, 
+          team: stats.team,
+          energy: stats.energy,
+          xm_capacity: stats.xm_capacity,
+          available_invites: stats.available_invites,
+          min_ap_for_current_level: stats.min_ap_for_current_level,
+          min_ap_for_next_level: stats.min_ap_for_next_level
         });
-      // Only update if true to avoid overriding a true state from getHasActiveSubscription
-      if (hasActiveSubscription) {
+      if (stats.hasActiveSubscription) {
           useStore.getState().setHasSubscription(true);
       }
       break;
@@ -444,9 +520,5 @@ window.addEventListener('message', (event) => {
       break;
   }
 });
-
-// ---------------------------------------------------------------------------
-// Boot
-// ---------------------------------------------------------------------------
 
 initUI();

@@ -1,5 +1,5 @@
-import { h } from 'preact';
-import { useStore, InventoryItem, InventoryItemData } from '@iris/core';
+import { JSX } from 'preact';
+import { useStore, InventoryItemData } from '@iris/core';
 import { Popup } from './Popup';
 import { useState, useMemo } from 'preact/hooks';
 
@@ -15,7 +15,7 @@ interface GroupedInventoryItem {
     moniker?: string;
 }
 
-export const InventoryPopup = ({ onClose }: { onClose: () => void }) => {
+export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Element => {
     const inventory = useStore((state) => state.inventory);
     const hasSubscription = useStore((state) => state.hasSubscription);
     const [activeCategory, setActiveCategory] = useState<Category>('ALL');
@@ -30,7 +30,7 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }) => {
         { label: 'Keys', value: 'KEYS' },
     ];
 
-    const parsedItems = useMemo(() => {
+    const parsedItems = useMemo((): GroupedInventoryItem[] => {
         const items: GroupedInventoryItem[] = [];
 
         const processItem = (data: InventoryItemData): GroupedInventoryItem | null => {
@@ -104,10 +104,10 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }) => {
         return items;
     }, [inventory]);
 
-    const groupedItems = useMemo(() => {
+    const groupedItems = useMemo((): GroupedInventoryItem[] => {
         const groups: Record<string, GroupedInventoryItem> = {};
         
-        const addToGroup = (item: GroupedInventoryItem) => {
+        const addToGroup = (item: GroupedInventoryItem): void => {
             const key = `${item.type}-${item.level || ''}-${item.rarity || ''}-${item.name || ''}`;
             if (!groups[key]) {
                 groups[key] = { ...item, count: 0 };
@@ -126,7 +126,7 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }) => {
         });
     }, [parsedItems]);
 
-    const filteredItems = useMemo(() => {
+    const filteredItems = useMemo((): GroupedInventoryItem[] => {
         if (activeCategory === 'ALL') return groupedItems;
         return groupedItems.filter(item => item.category === activeCategory);
     }, [groupedItems, activeCategory]);

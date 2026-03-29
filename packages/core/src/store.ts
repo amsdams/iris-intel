@@ -1,5 +1,5 @@
-import {create} from 'zustand';
-import {subscribeWithSelector, persist} from 'zustand/middleware';
+import { create } from 'zustand';
+import { subscribeWithSelector, persist } from 'zustand/middleware';
 
 export interface PlayerStats {
     nickname: string;
@@ -74,7 +74,7 @@ export interface Plext {
     id: string;
     time: number;
     text: string;
-    markup: any[];
+    markup: unknown[];
     categories: number;
     team: string;
     type: 'PLAYER_GENERATED' | 'SYSTEM_BROADCAST' | 'SYSTEM_NARROWCAST';
@@ -109,7 +109,7 @@ export interface JSError {
     source?: string;
     lineno?: number;
     colno?: number;
-    error?: any;
+    error?: unknown;
     time: number;
 }
 
@@ -181,11 +181,17 @@ interface IRISState {
         lat: number;
         lng: number;
         zoom: number;
+        bounds?: {
+            minLatE6: number;
+            minLngE6: number;
+            maxLatE6: number;
+            maxLngE6: number;
+        };
     };
     addPortal: (portal: Portal) => void;
-    updatePortals: (portals: Portal[]) => void;
-    updateLinks: (links: Link[]) => void;
-    updateFields: (fields: Field[]) => void;
+    updatePortals: (portals: Partial<Portal>[]) => void;
+    updateLinks: (links: Partial<Link>[]) => void;
+    updateFields: (fields: Partial<Field>[]) => void;
     updatePlexts: (plexts: Plext[]) => void;
     addStatsItem: (item: StatsItem) => void;
     removeStatsItem: (id: string) => void;
@@ -193,14 +199,19 @@ interface IRISState {
     removeMenuItem: (id: string) => void;
     setPluginEnabled: (id: string, enabled: boolean) => void;
     setPluginFeatures: (features: GeoJSON.FeatureCollection) => void;
-    updateMapState: (lat: number, lng: number, zoom: number) => void;
+    updateMapState: (lat: number, lng: number, zoom: number, bounds?: {
+        minLatE6: number;
+        minLngE6: number;
+        maxLatE6: number;
+        maxLngE6: number;
+    }) => void;
     removeEntities: (guids: string[]) => void;
 
     selectedPortalId: string | null;
     selectPortal: (id: string | null) => void;
 
-    selectedPluginFeature: any | null;
-    setSelectedPluginFeature: (feature: any | null) => void;
+    selectedPluginFeature: GeoJSON.Feature | null;
+    setSelectedPluginFeature: (feature: GeoJSON.Feature | null) => void;
 
     playerStats: PlayerStats | null;
     setPlayerStats: (stats: PlayerStats) => void;
@@ -270,214 +281,234 @@ export const useStore = create<IRISState>()(
     subscribeWithSelector(
         persist(
             (set) => ({
-    portals: {},
-    links: {},
-    fields: {},
-    plexts: [],
-    statsItems: {},
-    menuItems: [],
-    pluginStates: {},
-    pluginFeatures: { type: 'FeatureCollection', features: [] },
-    mapState: {
-        lat: 0,
-        lng: 0,
-        zoom: 3,
-    },
-    addPortal: (portal) =>
-        set((state) => ({
-            portals: {...state.portals, [portal.id]: portal}
-        })),
-    updatePortals: (newPortals) =>
-        set((state) => {
-            const portals = {...state.portals};
-            newPortals.forEach((p) => {
-                portals[p.id] = {...portals[p.id], ...p};
-            });
-            return {portals};
-        }),
-    updateLinks: (newLinks) =>
-        set((state) => {
-            const links = {...state.links};
-            newLinks.forEach((l) => {
-                links[l.id] = l;
-            });
-            return {links};
-        }),
-    updateFields: (newFields) =>
-        set((state) => {
-            const fields = {...state.fields};
-            newFields.forEach((f) => {
-                fields[f.id] = f;
-            });
-            return {fields};
-        }),
-    updatePlexts: (newPlexts) =>
-        set((state) => {
-            // Keep unique plexts, sorted by time descending
-            const all = [...state.plexts, ...newPlexts];
-            const unique = Array.from(new Map(all.map(p => [p.id, p])).values());
-            unique.sort((a, b) => b.time - a.time);
-            // Keep last 1000 for performance and history
-            return { plexts: unique.slice(0, 1000) };
-        }),
-    addStatsItem: (item) =>
-        set((state) => ({
-            statsItems: {...state.statsItems, [item.id]: item}
-        })),
-    removeStatsItem: (id) =>
-        set((state) => {
-            const statsItems = {...state.statsItems};
-            delete statsItems[id];
-            return {statsItems};
-        }),
-    addMenuItem: (item) =>
-        set((state) => ({
-            menuItems: [...state.menuItems, item]
-        })),
-    removeMenuItem: (id) =>
-        set((state) => ({
-            menuItems: state.menuItems.filter((i) => i.id !== id)
-        })),
-    setPluginEnabled: (id, enabled) =>
-        set((state) => ({
-            pluginStates: { ...state.pluginStates, [id]: enabled }
-        })),
-    setPluginFeatures: (features) =>
-        set(() => ({
-            pluginFeatures: features
-        })),
-    updateMapState: (lat, lng, zoom) =>
-        set(() => ({
-            mapState: {lat, lng, zoom}
-        })),
-    removeEntities: (guids) =>
-        set((state) => {
-            const portals = { ...state.portals };
-            const links = { ...state.links };
-            const fields = { ...state.fields };
-            let changed = false;
+                portals: {},
+                links: {},
+                fields: {},
+                plexts: [],
+                statsItems: {},
+                menuItems: [],
+                pluginStates: {},
+                pluginFeatures: { type: 'FeatureCollection', features: [] },
+                mapState: {
+                    lat: 0,
+                    lng: 0,
+                    zoom: 3,
+                },
+                addPortal: (portal: Portal): void =>
+                    set((state) => ({
+                        portals: { ...state.portals, [portal.id]: portal }
+                    })),
+                updatePortals: (newPortals: Partial<Portal>[]): void =>
+                    set((state) => {
+                        const portals = { ...state.portals };
+                        newPortals.forEach((p) => {
+                            if (!p.id) return;
+                            portals[p.id] = { ...portals[p.id], ...p } as Portal;
+                        });
+                        return { portals };
+                    }),
+                updateLinks: (newLinks: Partial<Link>[]): void =>
+                    set((state) => {
+                        const links = { ...state.links };
+                        newLinks.forEach((l) => {
+                            if (!l.id) return;
+                            links[l.id] = { ...links[l.id], ...l } as Link;
+                        });
+                        return { links };
+                    }),
+                updateFields: (newFields: Partial<Field>[]): void =>
+                    set((state) => {
+                        const fields = { ...state.fields };
+                        newFields.forEach((f) => {
+                            if (!f.id) return;
+                            fields[f.id] = { ...fields[f.id], ...f } as Field;
+                        });
+                        return { fields };
+                    }),
+                updatePlexts: (newPlexts: Plext[]): void =>
+                    set((state) => {
+                        // Keep unique plexts, sorted by time descending
+                        const all = [...state.plexts, ...newPlexts];
+                        const unique = Array.from(new Map(all.map(p => [p.id, p])).values());
+                        unique.sort((a, b) => b.time - a.time);
+                        // Keep last 1000 for performance and history
+                        return { plexts: unique.slice(0, 1000) };
+                    }),
+                addStatsItem: (item: StatsItem): void =>
+                    set((state) => ({
+                        statsItems: { ...state.statsItems, [item.id]: item }
+                    })),
+                removeStatsItem: (id: string): void =>
+                    set((state) => {
+                        const { [id]: _, ...rest } = state.statsItems;
+                        return { statsItems: rest };
+                    }),
+                addMenuItem: (item: MenuItem): void =>
+                    set((state) => ({
+                        menuItems: [...state.menuItems, item]
+                    })),
+                removeMenuItem: (id: string): void =>
+                    set((state) => ({
+                        menuItems: state.menuItems.filter((i) => i.id !== id)
+                    })),
+                setPluginEnabled: (id: string, enabled: boolean): void =>
+                    set((state) => ({
+                        pluginStates: { ...state.pluginStates, [id]: enabled }
+                    })),
+                setPluginFeatures: (features: GeoJSON.FeatureCollection): void =>
+                    set(() => ({
+                        pluginFeatures: features
+                    })),
+                updateMapState: (lat: number, lng: number, zoom: number, bounds?: {
+                    minLatE6: number;
+                    minLngE6: number;
+                    maxLatE6: number;
+                    maxLngE6: number;
+                }): void =>
+                    set(() => ({
+                        mapState: { lat, lng, zoom, bounds }
+                    })),
 
-            guids.forEach((id) => {
-                if (portals[id]) { delete portals[id]; changed = true; }
-                if (links[id]) { delete links[id]; changed = true; }
-                if (fields[id]) { delete fields[id]; changed = true; }
-            });
+                removeEntities: (guids: string[]): void =>
+                    set((state) => {
+                        let portals = { ...state.portals };
+                        let links = { ...state.links };
+                        let fields = { ...state.fields };
+                        let changed = false;
 
-            return changed ? { portals, links, fields } : state;
-        }),
-    selectedPortalId: null,
-    selectPortal: (id) => set(() => ({ selectedPortalId: id })),
-    selectedPluginFeature: null,
-    setSelectedPluginFeature: (feature) => set(() => ({ selectedPluginFeature: feature })),
-    playerStats: null,
-    setPlayerStats: (stats) => set(() => ({ playerStats: stats })),
+                        guids.forEach((id) => {
+                            if (portals[id]) {
+                                const { [id]: _, ...rest } = portals;
+                                portals = rest;
+                                changed = true; 
+                            }
+                            if (links[id]) {
+                                const { [id]: _, ...rest } = links;
+                                links = rest;
+                                changed = true; 
+                            }
+                            if (fields[id]) {
+                                const { [id]: _, ...rest } = fields;
+                                fields = rest;
+                                changed = true; 
+                            }
+                        });
 
-    gameScore: null,
-    setGameScore: (score) => set(() => ({ gameScore: score })),
+                        return changed ? { portals, links, fields } : state;
+                    }),
+                selectedPortalId: null,
+                selectPortal: (id: string | null): void => set(() => ({ selectedPortalId: id })),
+                selectedPluginFeature: null,
+                setSelectedPluginFeature: (feature: GeoJSON.Feature | null): void => set(() => ({ selectedPluginFeature: feature })),
+                playerStats: null,
+                setPlayerStats: (stats: PlayerStats): void => set(() => ({ playerStats: stats })),
 
-    regionScore: null,
-    setRegionScore: (score) => set(() => ({ regionScore: score })),
+                gameScore: null,
+                setGameScore: (score: GameScore): void => set(() => ({ gameScore: score })),
 
-    hasSubscription: false,
-    setHasSubscription: (has) => set(() => ({ hasSubscription: has })),
+                regionScore: null,
+                setRegionScore: (score: RegionScore): void => set(() => ({ regionScore: score })),
 
-    inventory: [],
-    setInventory: (items: InventoryItem[]) => set(() => ({ inventory: items })),
+                hasSubscription: false,
+                setHasSubscription: (has: boolean): void => set(() => ({ hasSubscription: has })),
 
-    themeId: 'DEFAULT',
-    setTheme: (id: string) => set(() => ({ themeId: id })),
+                inventory: [],
+                setInventory: (items: InventoryItem[]): void => set(() => ({ inventory: items })),
 
-    mapThemeId: 'DARK',
-    setMapTheme: (id: string) => set(() => ({ mapThemeId: id })),
+                themeId: 'DEFAULT',
+                setTheme: (id: string): void => set(() => ({ themeId: id })),
 
-    activeRequests: 0,
-    lastRequestUrl: '',
-    onRequestStart: (url) => set((state) => ({ 
-        activeRequests: state.activeRequests + 1,
-        lastRequestUrl: url
-    })),
-    onRequestEnd: () => set((state) => ({ 
-        activeRequests: Math.max(0, state.activeRequests - 1) 
-    })),
-    failedRequests: [],
-    addFailedRequest: (request) => set((state) => ({ 
-        failedRequests: [request, ...state.failedRequests].slice(0, 50) 
-    })),
-    clearFailedRequests: () => set({ failedRequests: [] }),
-    successfulRequests: [],
-    addSuccessfulRequest: (request) => set((state) => ({ 
-        successfulRequests: [request, ...state.successfulRequests].slice(0, 50) 
-    })),
-    clearSuccessfulRequests: () => set({ successfulRequests: [] }),
-    jsErrors: [],
-    addJSError: (error) => set((state) => ({ 
-        jsErrors: [error, ...state.jsErrors].slice(0, 50) 
-    })),
-    clearJSErrors: () => set({ jsErrors: [] }),
+                mapThemeId: 'DARK',
+                setMapTheme: (id: string): void => set(() => ({ mapThemeId: id })),
 
-    // Initialize layer visibility states
-    showFields: true,
-    showLinks: true,
-    showResistance: true,
-    showEnlightened: true,
-    showMachina: true,
-    showUnclaimedPortals: true,
-    showLevel: {
-        1: true, 2: true, 3: true, 4: true,
-        5: true, 6: true, 7: true, 8: true,
-    },
-    showHealth: {
-        25: true, 50: true, 75: true, 100: true,
-    },
+                activeRequests: 0,
+                lastRequestUrl: '',
+                onRequestStart: (url: string): void => set((state) => ({
+                    activeRequests: state.activeRequests + 1,
+                    lastRequestUrl: url
+                })),
+                onRequestEnd: (): void => set((state) => ({
+                    activeRequests: Math.max(0, state.activeRequests - 1)
+                })),
+                failedRequests: [],
+                addFailedRequest: (request: FailedRequest): void => set((state) => ({
+                    failedRequests: [request, ...state.failedRequests].slice(0, 50)
+                })),
+                clearFailedRequests: (): void => set({ failedRequests: [] }),
+                successfulRequests: [],
+                addSuccessfulRequest: (request: SuccessfulRequest): void => set((state) => ({
+                    successfulRequests: [request, ...state.successfulRequests].slice(0, 50)
+                })),
+                clearSuccessfulRequests: (): void => set({ successfulRequests: [] }),
+                jsErrors: [],
+                addJSError: (error: JSError): void => set((state) => ({
+                    jsErrors: [error, ...state.jsErrors].slice(0, 50)
+                })),
+                clearJSErrors: (): void => set({ jsErrors: [] }),
 
-    // Implement layer visibility actions
-    toggleShowFields: () => set((state) => ({ showFields: !state.showFields })),
-    toggleShowLinks: () => set((state) => ({ showLinks: !state.showLinks })),
-    toggleShowResistance: () => set((state) => ({ showResistance: !state.showResistance })),
-    toggleShowEnlightened: () => set((state) => ({ showEnlightened: !state.showEnlightened })),
-    toggleShowMachina: () => set((state) => ({ showMachina: !state.showMachina })),
-    toggleShowUnclaimedPortals: () => set((state) => ({ showUnclaimedPortals: !state.showUnclaimedPortals })),
-    toggleShowLevel: (level: number) => set((state) => ({
-        showLevel: {
-            ...state.showLevel,
-            [level]: !state.showLevel[level],
-        },
-    })),
-    toggleShowHealth: (bucket: number) => set((state) => ({
-        showHealth: {
-            ...state.showHealth,
-            [bucket]: !state.showHealth[bucket],
-        },
-    })),
+                // Initialize layer visibility states
+                showFields: true,
+                showLinks: true,
+                showResistance: true,
+                showEnlightened: true,
+                showMachina: true,
+                showUnclaimedPortals: true,
+                showLevel: {
+                    1: true, 2: true, 3: true, 4: true,
+                    5: true, 6: true, 7: true, 8: true,
+                },
+                showHealth: {
+                    25: true, 50: true, 75: true, 100: true,
+                },
 
-    debugLogging: false,
-    toggleDebugLogging: () => set((state) => ({ debugLogging: !state.debugLogging })),
+                // Implement layer visibility actions
+                toggleShowFields: (): void => set((state) => ({ showFields: !state.showFields })),
+                toggleShowLinks: (): void => set((state) => ({ showLinks: !state.showLinks })),
+                toggleShowResistance: (): void => set((state) => ({ showResistance: !state.showResistance })),
+                toggleShowEnlightened: (): void => set((state) => ({ showEnlightened: !state.showEnlightened })),
+                toggleShowMachina: (): void => set((state) => ({ showMachina: !state.showMachina })),
+                toggleShowUnclaimedPortals: (): void => set((state) => ({ showUnclaimedPortals: !state.showUnclaimedPortals })),
+                toggleShowLevel: (level: number): void => set((state) => ({
+                    showLevel: {
+                        ...state.showLevel,
+                        [level]: !state.showLevel[level],
+                    },
+                })),
+                toggleShowHealth: (bucket: number): void => set((state) => ({
+                    showHealth: {
+                        ...state.showHealth,
+                        [bucket]: !state.showHealth[bucket],
+                    },
+                })),
 
-    rehydrated: false,
+                debugLogging: false,
+                toggleDebugLogging: (): void => set((state) => ({ debugLogging: !state.debugLogging })),
 
-    activeCommTab: 'ALL',
-    setActiveCommTab: (tab) => set({ activeCommTab: tab }),
-    }),
-    {
-        name: 'iris-settings',
-        partialize: (state) => ({
-            pluginStates: state.pluginStates,
-            themeId: state.themeId,
-            mapThemeId: state.mapThemeId,
-            showFields: state.showFields,
-            showLinks: state.showLinks,
-            showResistance: state.showResistance,
-            showEnlightened: state.showEnlightened,
-            showMachina: state.showMachina,
-            showUnclaimedPortals: state.showUnclaimedPortals,
-            showLevel: state.showLevel,
-            debugLogging: state.debugLogging,
-            activeCommTab: state.activeCommTab,
-            showHealth: state.showHealth,
-            hasSubscription: state.hasSubscription,
-        }),
-        onRehydrateStorage: () => (state) => {
-            if (state) state.rehydrated = true;
-        }
-    }
-)));
+                rehydrated: false,
+
+                activeCommTab: 'ALL',
+                setActiveCommTab: (tab: string): void => set({ activeCommTab: tab }),
+            }),
+            {
+                name: 'iris-settings',
+                partialize: (state) => ({
+                    pluginStates: state.pluginStates,
+                    themeId: state.themeId,
+                    mapThemeId: state.mapThemeId,
+                    showFields: state.showFields,
+                    showLinks: state.showLinks,
+                    showResistance: state.showResistance,
+                    showEnlightened: state.showEnlightened,
+                    showMachina: state.showMachina,
+                    showUnclaimedPortals: state.showUnclaimedPortals,
+                    showLevel: state.showLevel,
+                    debugLogging: state.debugLogging,
+                    activeCommTab: state.activeCommTab,
+                    showHealth: state.showHealth,
+                    hasSubscription: state.hasSubscription,
+                }),
+                onRehydrateStorage: () => (state: IRISState | undefined): void => {
+                    if (state) state.rehydrated = true;
+                }
+            }
+        )));

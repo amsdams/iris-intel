@@ -1,70 +1,80 @@
-import { IRISPlugin, IRIS_API } from '@iris/plugin-sdk';
+import { IRISPlugin, IRIS_API, Portal, Link, Field, Plext } from '@iris/plugin-sdk';
 import { useStore } from './store';
 import { normalizeTeam } from './index';
 
 export class PluginManager {
-  private availablePlugins: Map<string, IRISPlugin> = new Map();
+  private availablePlugins = new Map<string, IRISPlugin>();
   private api: IRIS_API;
 
   constructor() {
     this.api = {
       portals: {
-        getAll: () => useStore.getState().portals,
-        subscribe: (callback) => 
+        getAll: (): Record<string, Portal> => useStore.getState().portals,
+        subscribe: (callback: (portals: Record<string, Portal>) => void): () => void => 
           useStore.subscribe(
             (state) => state.portals,
             (portals) => callback(portals)
           ),
       },
       links: {
-        getAll: () => useStore.getState().links,
-        subscribe: (callback) => 
+        getAll: (): Record<string, Link> => useStore.getState().links,
+        subscribe: (callback: (links: Record<string, Link>) => void): () => void => 
           useStore.subscribe(
             (state) => state.links,
             (links) => callback(links)
           ),
       },
       fields: {
-        getAll: () => useStore.getState().fields,
-        subscribe: (callback) => 
+        getAll: (): Record<string, Field> => useStore.getState().fields,
+        subscribe: (callback: (fields: Record<string, Field>) => void): () => void => 
           useStore.subscribe(
             (state) => state.fields,
             (fields) => callback(fields)
           ),
       },
       plexts: {
-        subscribe: (callback) =>
+        subscribe: (callback: (plexts: Plext[]) => void): () => void =>
           useStore.subscribe(
             (state) => state.plexts,
             (plexts) => callback(plexts)
           ),
       },
       map: {
-        getCenter: () => {
+        getCenter: (): { lat: number; lng: number } => {
           const { lat, lng } = useStore.getState().mapState;
           return { lat, lng };
         },
-        getZoom: () => useStore.getState().mapState.zoom,
-        setFeatures: (features) =>
+        getZoom: (): number => useStore.getState().mapState.zoom,
+        setFeatures: (features: GeoJSON.Feature[]): void =>
           useStore.getState().setPluginFeatures({
             type: 'FeatureCollection',
             features,
           }),
       },
       ui: {
-        addStatsItem: (id, label, value) => 
+        addStatsItem: (id: string, label: string, value: string | (() => string)): void => 
           useStore.getState().addStatsItem({ id, label, value }),
-        removeStatsItem: (id) => 
+        removeStatsItem: (id: string): void => 
           useStore.getState().removeStatsItem(id),
-        addMenuItem: (id, label, onClick) =>
+        addMenuItem: (id: string, label: string, onClick: () => void): void =>
           useStore.getState().addMenuItem({ id, label, onClick }),
-        removeMenuItem: (id) =>
+        removeMenuItem: (id: string): void =>
           useStore.getState().removeMenuItem(id),
-        setTheme: (id) => useStore.getState().setTheme(id),
-        getTheme: () => useStore.getState().themeId,
+        setTheme: (id: string): void => useStore.getState().setTheme(id),
+        getTheme: (): string => useStore.getState().themeId,
+        getThemeColors: (): { E: string; R: string; M: string; N: string } => {
+          const { themeId } = useStore.getState();
+          // For now, return default colors or implement theme lookup if available
+          return {
+            E: '#00c5ff',
+            R: '#ff6600',
+            M: '#ff00ff',
+            N: '#ffffff'
+          };
+        }
       },
       utils: {
-        normalizeTeam: (team) => normalizeTeam(team),
+        normalizeTeam: (team: string | undefined): string => normalizeTeam(team),
       },
     };
   }
@@ -72,7 +82,7 @@ export class PluginManager {
   /**
    * Register a plugin and enable it if not already tracked.
    */
-  async load(plugin: IRISPlugin) {
+  async load(plugin: IRISPlugin): Promise<void> {
     if (this.availablePlugins.has(plugin.manifest.id)) {
       return;
     }
@@ -99,7 +109,7 @@ export class PluginManager {
   /**
    * Toggle plugin state and call setup/teardown.
    */
-  async setEnabled(id: string, enabled: boolean) {
+  async setEnabled(id: string, enabled: boolean): Promise<void> {
     const plugin = this.availablePlugins.get(id);
     if (!plugin) return;
 
@@ -123,7 +133,7 @@ export class PluginManager {
     }
   }
 
-  getAvailablePlugins() {
+  getAvailablePlugins(): IRISPlugin[] {
     return Array.from(this.availablePlugins.values());
   }
 }

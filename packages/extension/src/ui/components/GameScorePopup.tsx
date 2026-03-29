@@ -1,4 +1,4 @@
-import { h } from 'preact';
+import { JSX } from 'preact';
 import { useStore } from '@iris/core';
 import { Popup } from './Popup';
 import { THEMES, UI_COLORS } from '../theme';
@@ -7,7 +7,7 @@ interface GameScorePopupProps {
     onClose: () => void;
 }
 
-export function GameScorePopup({ onClose }: GameScorePopupProps) {
+export function GameScorePopup({ onClose }: GameScorePopupProps): JSX.Element {
     const gameScore = useStore((state) => state.gameScore);
     const themeId = useStore((state) => state.themeId);
     const theme = THEMES[themeId] || THEMES.DEFAULT;

@@ -1,4 +1,4 @@
-import { h } from 'preact';
+import { h, JSX } from 'preact';
 import { useStore } from '@iris/core';
 import { Popup } from './Popup';
 import { UI_COLORS, FONT_SIZES } from '../theme';
@@ -7,7 +7,7 @@ import { UI_COLORS, FONT_SIZES } from '../theme';
 // Constants
 // ---------------------------------------------------------------------------
 
-const checkboxContainerStyle: h.JSX.CSSProperties = {
+const checkboxContainerStyle: JSX.CSSProperties = {
     marginBottom: '8px',
     display: 'flex',
     alignItems: 'center',
@@ -15,7 +15,7 @@ const checkboxContainerStyle: h.JSX.CSSProperties = {
     fontSize: '0.85em',
 };
 
-const checkboxStyle: h.JSX.CSSProperties = {
+const checkboxStyle: JSX.CSSProperties = {
     marginRight: '8px',
 };
 
@@ -27,7 +27,7 @@ interface FiltersPopupProps {
     onClose: () => void;
 }
 
-export function FiltersPopup({ onClose }: FiltersPopupProps) {
+export function FiltersPopup({ onClose }: FiltersPopupProps): JSX.Element {
     const showFields = useStore((state) => state.showFields);
     const toggleShowFields = useStore((state) => state.toggleShowFields);
 
@@ -52,11 +52,11 @@ export function FiltersPopup({ onClose }: FiltersPopupProps) {
     const showHealth = useStore((state) => state.showHealth);
     const toggleShowHealth = useStore((state) => state.toggleShowHealth);
 
-    const handleLevelToggle = (level: number) => () => {
+    const handleLevelToggle = (level: number): (() => void) => () => {
         toggleShowLevel(level);
     };
 
-    const handleHealthToggle = (bucket: number) => () => {
+    const handleHealthToggle = (bucket: number): (() => void) => () => {
         toggleShowHealth(bucket);
     };
 
