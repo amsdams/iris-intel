@@ -79,35 +79,48 @@ function parseEntities(data: IntelMapData): {
       const team = normalizeTeam(entData[1] as string);
 
       if (entType === 'p') {
+        const lat = parseFloat(entData[2] as string) / 1e6;
+        const lng = parseFloat(entData[3] as string) / 1e6;
+        if (isNaN(lat) || isNaN(lng)) return;
+
         const history = (entData[18] as number) || 0;
         portals.push({
           id,
-          lat: parseFloat(entData[2] as string) / 1e6,
-          lng: parseFloat(entData[3] as string) / 1e6,
+          lat,
+          lng,
           team,
-          level: parseInt(entData[4] as string, 10),
-          health: parseInt(entData[5] as string, 10),
+          level: parseInt(String(entData[4]), 10) || 0,
+          health: parseInt(String(entData[5]), 10) || 0,
           visited: !!(history & 1),
           captured: !!(history & 2),
           scanned: !!(history & 4),
         });
       } else if (entType === 'e') {
+        const fromLat = parseFloat(entData[3] as string) / 1e6;
+        const fromLng = parseFloat(entData[4] as string) / 1e6;
+        const toLat = parseFloat(entData[6] as string) / 1e6;
+        const toLng = parseFloat(entData[7] as string) / 1e6;
+        if (isNaN(fromLat) || isNaN(fromLng) || isNaN(toLat) || isNaN(toLng)) return;
+
         links.push({
           id,
           team,
           fromPortalId: entData[2] as string,
-          fromLat: parseFloat(entData[3] as string) / 1e6,
-          fromLng: parseFloat(entData[4] as string) / 1e6,
+          fromLat,
+          fromLng,
           toPortalId: entData[5] as string,
-          toLat: parseFloat(entData[6] as string) / 1e6,
-          toLng: parseFloat(entData[7] as string) / 1e6,
+          toLat,
+          toLng,
         });
       } else if (entType === 'r') {
         const points = (entData[2] as unknown[][]).map((p: unknown[]) => ({
           lat: parseFloat(p[1] as string) / 1e6,
           lng: parseFloat(p[2] as string) / 1e6,
-        }));
-        fields.push({ id, team, points });
+        })).filter(p => !isNaN(p.lat) && !isNaN(p.lng));
+        
+        if (points.length >= 3) {
+            fields.push({ id, team, points });
+        }
       }
     });
   });

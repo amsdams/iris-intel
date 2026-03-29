@@ -381,16 +381,15 @@ export function MapOverlay() {
 
     // Filter and update portals
     const filteredPortals = Object.values(portals).filter(p => {
-        if (isNaN(p.lat) || isNaN(p.lng)) return false;
         if (p.team === 'N') {
             return showUnclaimedPortals;
         }
         if (p.team === 'M' && !showMachina) return false;
         if (p.team === 'R' && !showResistance) return false;
         if (p.team === 'E' && !showEnlightened) return false;
-        if (p.level !== undefined && !isNaN(p.level) && !showLevel[p.level]) return false;
+        if (p.level !== undefined && !showLevel[p.level]) return false;
         
-        if (p.health !== undefined && !isNaN(p.health)) {
+        if (p.health !== undefined) {
             const h = p.health;
             if (h <= 25 && !showHealth[25]) return false;
             if (h > 25 && h <= 50 && !showHealth[50]) return false;
@@ -406,8 +405,8 @@ export function MapOverlay() {
             id: p.id, 
             team: p.team, 
             name: p.name, 
-            level: isNaN(p.level) ? 0 : p.level, 
-            health: isNaN(p.health) ? 100 : p.health,
+            level: p.level || 0, 
+            health: p.health ?? 100,
             visited: !!p.visited,
             captured: !!p.captured,
             scanned: !!p.scanned
@@ -417,7 +416,6 @@ export function MapOverlay() {
 
     // Links
     const filteredLinks = Object.values(links).filter(l => {
-        if (isNaN(l.fromLat) || isNaN(l.fromLng) || isNaN(l.toLat) || isNaN(l.toLng)) return false;
         if (!showLinks) return false;
         if (l.team === 'R' && !showResistance) return false;
         if (l.team === 'E' && !showEnlightened) return false;
@@ -432,7 +430,6 @@ export function MapOverlay() {
 
     // Fields
     const filteredFields = Object.values(fields).filter(f => {
-        if (!f.points || f.points.some((p: any) => isNaN(p.lat) || isNaN(p.lng))) return false;
         if (!showFields) return false;
         if (f.team === 'R' && !showResistance) return false;
         if (f.team === 'E' && !showEnlightened) return false;
