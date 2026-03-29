@@ -27,7 +27,7 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] **Modern Aesthetic:** Dark-Mode by default with faction-themed WebGL layers.
 - [x] **Stable Interactions:** Manual pixel-distance clicking to bypass Firefox extension security restrictions (Permission Denied error).
 - [x] **Visual Polish:** Portal opacity based on health (0-100%) and faction-colored borders.
-- [x] **Data Safety:** Implemented strict numeric parsing (parseInt/parseFloat) for coordinates, level, and health to prevent MapLibre renderer crashes.
+- [x] **Data Safety (Optimized):** Initially implemented as redundant renderer checks; now moved to source-side validation in the content script for maximum performance.
 
 ### Phase 3: Plugin System (95% Complete)
 - [x] SDK Definition: Types for Portals, Links, Fields.
@@ -74,6 +74,34 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] **Strict Typing:** Removed `any` usage across the codebase, ensuring robust TypeScript coverage for Core, Extension, and Plugins.
 - [x] **Linting Infrastructure:** Implemented a modern ESLint configuration (Flat Config) with TypeScript and React/Preact rules.
 - [x] **API Consistency:** Refactored `PluginManager` and `store` with explicit return types and interfaces.
+
+### Phase 8: Optimization & Architecture (In Progress)
+- [x] **Source-side Validation:** Moved all strict numeric parsing and coordinate validation to `parseEntities` to ensure the Zustand store only contains "clean" data.
+- [x] **Renderer De-cluttering:** Removed redundant `isNaN` and safety checks from `MapOverlay.tsx`, significantly improving FPS in portal-dense areas.
+
+#### Identified Performance Bottlenecks
+- **GeoJSON Regeneration:** `MapOverlay.tsx` currently iterates over all entities on every state change. 
+    - *Strategy:* Implement `source.setData()` throttled updates or offload to a Web Worker.
+- **Zustand Selector Overhead:** Multiple complex selectors in `MapOverlay` may trigger redundant Preact re-renders.
+    - *Strategy:* Consolidate selectors using shallow equality checks.
+- **Map Interaction Overhead:** Click/Hover handlers use $O(n)$ projection loops.
+    - *Strategy:* Migrate to MapLibre's native `queryRenderedFeatures`.
+
+#### Architectural Debt & Improvements
+- **Interceptor Complexity:** `interceptor.ts` is over-extended with sniffing, patching, and syncing logic.
+    - *Strategy:* Modularize into `VersionSniffer`, `NetworkInterceptor`, and `IntelSync` utilities.
+- **Zustand Store Bloat:** Central store mixes core entity state with transient UI toggles.
+    - *Strategy:* Split into logical "slices" (Entities, UI, Player).
+- **Plugin API Isolation:** Plugins have direct access to core internals.
+    - *Strategy:* Implement a restrictive proxy/bridge for the Plugin SDK.
+- **Lint Debt Baseline:** ~200 pre-existing errors hindering CI/CD.
+    - *Strategy:* Execute a focused "lint-fix" sprint to clear the debt.
+
+#### Proposed Next Steps
+1. **Map Performance Sprint:** Refactor `MapOverlay.tsx` to use `queryRenderedFeatures` and optimize GeoJSON generation.
+2. **Store Modularization:** Decompose the Zustand store into maintainable slices.
+3. **Interceptor Cleanup:** Decouple `interceptor.ts` into specialized modules.
+4. **Lint Debt Reduction:** Standardize the codebase to match the new ESLint Flat Config.
 
 ## Next Strategic Priority
 1. **Search Functionality**: Implement a unified search bar for coordinates, addresses (OSM), and portals (`/r/getPortalSearch`).
