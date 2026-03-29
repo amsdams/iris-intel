@@ -1,3 +1,15 @@
+import {
+    extractVersionFromDOM,
+    getCsrfToken,
+    getIntelPositionFromCookies,
+    hookGoogleMaps,
+    InterceptorMessage,
+    IntelMapInstance,
+    isIrisUrl,
+    readPlayerStats,
+    sniffVersionFromBody,
+} from './interceptor-helpers';
+
 /**
  * Injected into the page's main world at document_start.
  *
@@ -14,38 +26,19 @@
     // State & Helpers
     // ---------------------------------------------------------------------------
 
-    let intelMap: { setCenter: (c: { lat: number; lng: number }) => void; setZoom: (z: number) => void } | null = null;
+    let intelMap: IntelMapInstance | null = null;
     let intelVersion = '';
     
-    // Try to extract version from DOM if available
-    const extractVersionFromDOM = (): void => {
-        const scripts = document.querySelectorAll('script[src*="gen_dashboard_"]');
-        for (const s of scripts) {
-            const src = (s as HTMLScriptElement).src;
-            const match = src.match(/gen_dashboard_([a-f0-9]+)\.js/);
-            if (match) {
-                intelVersion = match[1];
-                break;
-            }
-        }
-    };
-    extractVersionFromDOM();
-    // Also watch for script tag insertion if not found yet
+    intelVersion = extractVersionFromDOM(document) ?? '';
     if (!intelVersion) {
         const observer = new MutationObserver(() => {
-            if (!intelVersion) extractVersionFromDOM();
+            if (!intelVersion) {
+                intelVersion = extractVersionFromDOM(document) ?? '';
+            }
             if (intelVersion) observer.disconnect();
         });
         observer.observe(document.head || document.documentElement, { childList: true, subtree: true });
     }
-
-    const getCsrfToken = (): string => {
-        const cookies = document.cookie.split(';').map(c => c.trim());
-        const csrfCookie = cookies.find(c => c.startsWith('csrftoken='));
-        if (!csrfCookie) return '';
-        const idx = csrfCookie.indexOf('=');
-        return csrfCookie.slice(idx + 1);
-    };
 
     /**
      * IRIS-triggered requests need the version (v) to be accepted by Intel.
@@ -65,7 +58,7 @@
                 await new Promise(resolve => setTimeout(resolve, 500));
                 attempts++;
                 // Re-check DOM too
-                if (!intelVersion) extractVersionFromDOM();
+                if (!intelVersion) intelVersion = extractVersionFromDOM(document) ?? '';
             }
         }
 
@@ -79,139 +72,26 @@
 
         return fetch(url, options);
     };
-
-    const isIrisUrl = (url: string): boolean =>
-        url.includes('getEntities') ||
-        url.includes('getPortalDetails') ||
-        url.includes('getPlexts') ||
-        url.includes('getGameScore') ||
-        url.includes('getRegionScoreDetails') ||
-        url.includes('getInventory') ||
-        url.includes('getHasActiveSubscription');
-
-    // ---------------------------------------------------------------------------
-    // Google Maps constructor hook
-    // Captures the map instance when Niantic creates it so we can call
-    // setCenter / setZoom to keep Intel in sync with MapLibre.
-    // ---------------------------------------------------------------------------
-
-    interface GoogleMap {
-        _iris_patched?: boolean;
-        prototype: unknown;
-        new (...args: unknown[]): { setCenter: (c: { lat: number; lng: number }) => void; setZoom: (z: number) => void };
-    }
-
-    const hookGoogleMaps = (): void => {
-        const win = window as unknown as { google?: { maps?: { Map: GoogleMap } } };
-        if (win.google?.maps?.Map) {
-            if (win.google.maps.Map._iris_patched) return;
-            const OrigMap = win.google.maps.Map;
-
-            win.google.maps.Map = function (this: unknown, ...args: unknown[]) {
-                const instance = new (OrigMap as unknown as new (...args: unknown[]) => { setCenter: (c: { lat: number; lng: number }) => void; setZoom: (z: number) => void })(...args);
-                intelMap = instance;
-                return instance;
-            } as unknown as GoogleMap;
-
-            // Preserve prototype so instanceof checks pass
-            win.google.maps.Map.prototype = OrigMap.prototype;
-            win.google.maps.Map._iris_patched = true;
-        } else {
-            // google.maps not ready yet — poll until it is
-            let attempts = 0;
-            const interval = setInterval(() => {
-                attempts++;
-                const winPoll = window as unknown as { google?: { maps?: { Map: GoogleMap } } };
-                if (winPoll.google?.maps?.Map) {
-                    clearInterval(interval);
-                    hookGoogleMaps();
-                }
-                if (attempts > 100) {
-                    clearInterval(interval);
-                    console.warn('IRIS: Google Maps constructor not found');
-                }
-            }, 200);
-        }
-    };
-
-    interface IntelPlayer {
-        nickname: string;
-        level: number;
-        verified_level?: number;
-        ap: number;
-        team: string;
-        energy: number;
-        xm_capacity: number;
-        available_invites: number;
-        min_ap_for_current_level: number;
-        min_ap_for_next_level: number;
-        hasActiveSubscription: boolean;
-    }
-
-    const readPlayerStats = (): void => {
-        const P = (window as unknown as { PLAYER?: IntelPlayer }).PLAYER;
-        if (!P) return;
-
-        const nickname = P.nickname;
-        const level = parseInt(String(P.verified_level || P.level), 10);
-        const ap = parseInt(String(P.ap), 10);
-        const team = P.team === 'RESISTANCE' ? 'R' : (P.team === 'ENLIGHTENED' ? 'E' : 'N');
-        const energy = parseInt(String(P.energy), 10);
-        const xm_capacity = parseInt(String(P.xm_capacity), 10);
-        const available_invites = parseInt(String(P.available_invites), 10);
-        const min_ap_for_current_level = parseInt(String(P.min_ap_for_current_level), 10);
-        const min_ap_for_next_level = parseInt(String(P.min_ap_for_next_level), 10);
-        const hasActiveSubscription = !!P.hasActiveSubscription;
-
-        if (nickname) {
-            window.postMessage({
-                type: 'IRIS_PLAYER_STATS',
-                nickname,
-                level,
-                ap,
-                team,
-                energy,
-                xm_capacity,
-                available_invites,
-                min_ap_for_current_level,
-                min_ap_for_next_level,
-                hasActiveSubscription
-            }, '*');
+    const postPlayerStats = (): void => {
+        const payload = readPlayerStats(window);
+        if (payload) {
+            window.postMessage(payload, '*');
         }
     };
 
     // Use MutationObserver to track player stats availability and updates (REL-1)
     const statsObserver = new MutationObserver(() => {
-        if ((window as unknown as { PLAYER?: IntelPlayer }).PLAYER?.nickname) {
-            readPlayerStats();
-        }
+        postPlayerStats();
     });
     statsObserver.observe(document.body || document.documentElement, {
         childList: true,
         subtree: true,
     });
     // Also try initial read
-    readPlayerStats();
-
-    // Read Intel's stored map position from cookies
-    const getIntelPositionFromCookies = (): { lat: number; lng: number; zoom: number } | null => {
-        const cookies = Object.fromEntries(
-            document.cookie.split(';').map(c => {
-                const trimmed = c.trim();
-                const idx = trimmed.indexOf('=');
-                if (idx === -1) return [trimmed, ''];
-                return [trimmed.slice(0, idx), trimmed.slice(idx + 1)];
-            })
-        );
-        const lat = parseFloat(cookies['ingress.intelmap.lat']);
-        const lng = parseFloat(cookies['ingress.intelmap.lng']);
-        const zoom = parseInt(cookies['ingress.intelmap.zoom'], 10);
-        if (isNaN(lat) || isNaN(lng) || isNaN(zoom)) return null;
-        return { lat, lng, zoom };
-    };
+    postPlayerStats();
 
     // Broadcast initial position as soon as interceptor loads
-    const initialPosition = getIntelPositionFromCookies();
+    const initialPosition = getIntelPositionFromCookies(document);
     if (initialPosition) {
         window.postMessage(
             { type: 'IRIS_INITIAL_POSITION', ...initialPosition },
@@ -219,7 +99,9 @@
         );
     }
 
-    hookGoogleMaps();
+    hookGoogleMaps(window, (mapInstance) => {
+        intelMap = mapInstance;
+    });
 
     // ---------------------------------------------------------------------------
     // XHR prototype patching
@@ -259,11 +141,9 @@
         const url = this._iris_url || '';
 
         // Proactively sniff version from outgoing request body
-        if (body && typeof body === 'string' && !intelVersion) {
-            try {
-                const parsed = JSON.parse(body) as { v?: string };
-                if (parsed.v) intelVersion = parsed.v;
-            } catch { /* silent */ }
+        if (!intelVersion) {
+            const sniffedVersion = sniffVersionFromBody(body);
+            if (sniffedVersion) intelVersion = sniffedVersion;
         }
 
         if (isIrisUrl(url)) {
@@ -322,11 +202,9 @@
         const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : input.url);
 
         // Proactively sniff version from outgoing request body
-        if (init?.body && typeof init.body === 'string' && !intelVersion) {
-            try {
-                const parsed = JSON.parse(init.body) as { v?: string };
-                if (parsed.v) intelVersion = parsed.v;
-            } catch { /* silent */ }
+        if (!intelVersion) {
+            const sniffedVersion = sniffVersionFromBody(init?.body);
+            if (sniffedVersion) intelVersion = sniffedVersion;
         }
 
         if (isIrisUrl(url)) {
@@ -374,22 +252,7 @@
 
     window.addEventListener('message', (event: MessageEvent) => {
         if (event.origin !== location.origin) return;
-        const msg = event.data as { 
-            type: string; 
-            center?: { lat: number; lng: number }; 
-            zoom?: number; 
-            tab?: string; 
-            minTimestampMs?: number; 
-            maxTimestampMs?: number; 
-            ascendingTimestampOrder?: boolean; 
-            latE6?: number; 
-            lngE6?: number; 
-            guid?: string;
-            minLatE6?: number;
-            maxLatE6?: number;
-            minLngE6?: number;
-            maxLngE6?: number;
-        };
+        const msg = event.data as InterceptorMessage;
         if (!msg?.type) return;
 
         switch (msg.type) {
@@ -414,7 +277,7 @@
                 const { tab, minTimestampMs, maxTimestampMs, ascendingTimestampOrder, minLatE6, maxLatE6, minLngE6, maxLngE6 } = msg;
                 safeIrisFetch('/r/getPlexts', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
                     body: JSON.stringify({
                         tab,
                         minTimestampMs,
@@ -433,7 +296,7 @@
                 const { latE6, lngE6 } = msg;
                 safeIrisFetch('/r/getRegionScoreDetails', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
                     body: JSON.stringify({ latE6, lngE6 })
                 }).catch(e => console.error('IRIS: Region score fetch failed', e));
                 break;
@@ -443,7 +306,7 @@
                 const { guid } = msg;
                 safeIrisFetch('/r/getPortalDetails', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
                     body: JSON.stringify({ guid })
                 }).catch(e => console.error('IRIS: Portal details fetch failed', e));
                 break;
@@ -483,14 +346,14 @@
         // Check subscription
         safeIrisFetch('/r/getHasActiveSubscription', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
             body: JSON.stringify({})
         }).catch((e: Error) => console.debug('IRIS: subscription check failed (expected if not logged in)', e));
 
         // Check inventory if subscribed
         safeIrisFetch('/r/getInventory', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
             body: JSON.stringify({ lastQueryTimestamp: -1 })
         }).catch((e: Error) => console.debug('IRIS: inventory check failed (expected if not C.O.R.E)', e));
         

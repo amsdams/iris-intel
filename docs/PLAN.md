@@ -84,26 +84,37 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 #### Identified Performance Bottlenecks
 - **GeoJSON Regeneration:** `MapOverlay.tsx` currently iterates over all entities on every state change. 
     - *Strategy:* Implement `source.setData()` throttled updates or offload to a Web Worker.
+- **Marker Rebuild Churn:** Plugin player markers are fully removed and recreated on every plugin feature update.
+    - *Strategy:* Maintain a keyed marker registry and diff by feature id instead of full teardown/rebuild.
 - **Zustand Selector Overhead:** Multiple complex selectors in `MapOverlay` may trigger redundant Preact re-renders.
     - *Strategy:* Consolidate selectors using shallow equality checks.
 - **Map Interaction Overhead:** Click/Hover handlers use $O(n)$ projection loops.
     - *Strategy:* Migrate to MapLibre's native `queryRenderedFeatures`.
+- **Update Burstiness:** Camera/data sync paths still perform eager updates on several state transitions.
+    - *Strategy:* Batch map/source updates behind `requestAnimationFrame` or explicit throttling.
 
 #### Architectural Debt & Improvements
 - **Interceptor Complexity:** `interceptor.ts` is over-extended with sniffing, patching, and syncing logic.
     - *Strategy:* Modularize into `VersionSniffer`, `NetworkInterceptor`, and `IntelSync` utilities.
+- **Content Script Monolith:** `content/index.ts` contains endpoint parsing, message routing, and store writes in one large switch.
+    - *Strategy:* Extract endpoint-specific handlers such as `handleEntities`, `handlePlexts`, `handleScores`, and `handleInventory`.
 - **Zustand Store Bloat:** Central store mixes core entity state with transient UI toggles.
     - *Strategy:* Split into logical "slices" (Entities, UI, Player).
+- **Transient State Persistence Scope:** Runtime-only diagnostics and ephemeral UI/network state are still colocated with durable settings.
+    - *Strategy:* Narrow persisted state to settings/plugin preferences only, and keep logs/request counters strictly runtime.
 - **Plugin API Isolation:** Plugins have direct access to core internals.
     - *Strategy:* Implement a restrictive proxy/bridge for the Plugin SDK.
 - **Lint Debt Baseline:** ~200 pre-existing errors hindering CI/CD.
     - *Status:* Cleared for current tracked code paths; `npm run lint` now passes.
+- **Weak Intel Payload Typing:** Intel endpoint payload parsing still depends on local casts and partial structural assumptions.
+    - *Strategy:* Introduce explicit transport/result types for each intercepted endpoint and centralize parse validation.
 
 #### Proposed Next Steps
 1. **Map Performance Sprint:** Refactor `MapOverlay.tsx` to use `queryRenderedFeatures` and optimize GeoJSON generation.
-2. **Store Modularization:** Decompose the Zustand store into maintainable slices.
-3. **Interceptor Cleanup:** Decouple `interceptor.ts` into specialized modules.
-4. **Lint Debt Reduction:** Standardize the codebase to match the new ESLint Flat Config.
+2. **Marker Diffing:** Replace full plugin marker rebuilds with keyed incremental updates.
+3. **Store Modularization:** Decompose the Zustand store into maintainable slices.
+4. **Content/Interceptor Cleanup:** Decouple `content/index.ts` and `interceptor.ts` into specialized modules.
+5. **Payload Typing Pass:** Replace cast-heavy endpoint parsing with explicit validated response types.
 
 ## Next Strategic Priority
 1. **Search Functionality**: Implement a unified search bar for coordinates, addresses (OSM), and portals (`/r/getPortalSearch`).
@@ -133,3 +144,43 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - **Network:** Cooldown logic prevents request spam. Dual-tab polling (all/faction) for COMM.
 - **Accuracy:** Native MapLibre layer events avoided in favor of manual projection for maximum cross-browser stability.
 - **Types:** Strict TypeScript validation across all plugins and core logic.
+
+
+### Best quick wins from the current codebase:
+
+1. Content/Interceptor Cleanup
+   packages/extension/src/content/index.ts
+   packages/extension/src/content/interceptor.ts
+   This is mostly file/module extraction, so risk is low if behavior stays identical.
+2. Extract Intel Payload Parsers
+   packages/extension/src/content/index.ts
+   Move parseEntities, parsePortalDetails, parsePlexts, and parseInventory into separate parser files. Low risk because it is mostly relocation plus imports.
+3. Extract Message Type Definitions
+   packages/extension/src/content/index.ts
+   packages/extension/src/content/interceptor.ts
+   Shared message/event types can move to one types.ts. This reduces duplicate inline shapes and is low risk.
+4. Centralize GeoJSON Feature Builders
+   packages/extension/src/ui/components/MapOverlay.tsx
+   Pull portal/link/field feature mapping into pure helper functions. That improves readability with minimal runtime risk.
+5. Replace Remaining Inline Store Reads in Event Logic
+   packages/extension/src/ui/components/MapOverlay.tsx
+   packages/extension/src/ui/components/Overlay.tsx
+   Small cleanup: isolate useStore.getState() calls behind helper functions for readability and testability.
+6. Narrow Plugin Feature Types
+   packages/extension/src/ui/components/PluginFeaturePopup.tsx
+   packages/plugins/src/player-tracker/index.ts
+   Still low risk if done as typing-only cleanup.
+7. Persist Partialization
+   packages/core/src/store.ts
+   If persistence currently stores more than necessary, restricting it to settings/plugin prefs is usually low risk and reduces stale-state weirdness. Slightly higher risk than the refactors above, but still
+   manageable.
+
+If you want the safest shortlist, I’d do this order:
+
+1. content/index.ts extraction
+2. interceptor.ts extraction
+3. parser extraction
+4. shared message types
+5. GeoJSON builder helpers
+
+Those are the highest signal-to-risk ratio.
