@@ -119,14 +119,14 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
 
         if (type === 'FACTION') return null;
 
-        if (type === 'TEXT' && typeof text === 'string') {
+        if (type === 'TEXT') {
             return <span key={i} className="iris-comm-markup iris-comm-markup-text" style={{ color }}>{String(text || '')}</span>;
         }
 
         if (type === 'PLAYER' || type === 'SENDER' || type === 'AT_PLAYER') {
             const teamKey = normalizeTeam(typeof data === 'object' ? data.team : undefined) as 'E' | 'R' | 'M' | 'N';
             color = theme[teamKey] || UI_COLORS.TEXT_BASE;
-            if (type === 'AT_PLAYER' && typeof text === 'string' && !text.startsWith('@')) {
+            if (type === 'AT_PLAYER' && !text.startsWith('@')) {
                 text = '@' + text;
             }
             return <span key={i} className={`iris-comm-markup iris-comm-markup-${type.toLowerCase()}`} style={{ color, fontWeight: 'bold' }}>{String(text || '')}</span>;
@@ -140,7 +140,7 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
             const portalAddress = typeof data === 'object' ? data.address : '';
 
             const handlePortalClick = (): void => {
-                if (typeof data === 'object' && data.latE6 && data.lngE6) {
+                if (typeof data === 'object' && typeof data.latE6 === 'number' && typeof data.lngE6 === 'number') {
                     window.postMessage({
                         type: 'IRIS_MOVE_MAP',
                         center: { lat: data.latE6 / 1e6, lng: data.lngE6 / 1e6 },

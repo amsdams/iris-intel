@@ -118,7 +118,7 @@ const PlayerTrackerPlugin: IRISPlugin = {
           const type = m[0];
           const data = m[1];
           if (type === 'PLAYER') {
-            playerName = data.plain;
+            playerName = data.plain ?? null;
             // Force Machina team if name is "Machina" or similar
             const upperName = (playerName || '').toUpperCase();
             if (upperName === 'MACHINA' || upperName === '__MACHINA__') {
@@ -126,7 +126,7 @@ const PlayerTrackerPlugin: IRISPlugin = {
             } else if (data.team && data.team !== 'NEUTRAL') {
                 faction = data.team;
             }
-          } else if (type === 'PORTAL') {
+          } else if (type === 'PORTAL' && typeof data.latE6 === 'number' && typeof data.lngE6 === 'number' && typeof data.name === 'string') {
             location = {
               lat: data.latE6 / 1e6,
               lng: data.lngE6 / 1e6,

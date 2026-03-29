@@ -12,7 +12,7 @@ export function PluginsPopup({ onClose }: PluginsPopupProps): JSX.Element {
     const availablePlugins = pluginManager.getAvailablePlugins();
 
     const togglePlugin = (id: string): void => {
-        const isEnabled = !!pluginStates[id];
+        const isEnabled = pluginStates[id];
         pluginManager.setEnabled(id, !isEnabled);
     };
 

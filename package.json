@@ -10,6 +10,7 @@
     "build:chrome": "npm run build:chrome -w packages/extension",
     "build:firefox": "npm run build:firefox -w packages/extension",
     "build:all": "npm run build:chrome && npm run build:firefox",
+    "typecheck": "tsc --noEmit",
     "release:chrome": "mkdir -p out && cd packages/extension/dist && zip -r ../../../out/iris-chrome.zip .",
     "release:firefox": "mkdir -p out && cd packages/extension/dist-firefox && zip -r ../../../out/iris-firefox.xpi .",
     "release": "npm run build:all && npm run release:chrome && npm run release:firefox",

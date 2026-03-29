@@ -48,6 +48,13 @@ interface InventoryData {
   result?: [string, number, unknown][];
 }
 
+interface RegionScoreResult {
+  regionName: string;
+  gameScore: [string | number, string | number];
+  topAgents: { team: string; nick: string }[];
+  scoreHistory: [string, string, string][];
+}
+
 // ---------------------------------------------------------------------------
 // Entity parsers
 // ---------------------------------------------------------------------------
@@ -202,7 +209,7 @@ function parsePlexts(data: PlextData): Plext[] {
                 id,
                 time,
                 text,
-                markup: markup as unknown[],
+                markup: markup as Plext['markup'],
                 categories: categories as number,
                 team: normalizeTeam(team as string),
                 type: plextType,
@@ -517,13 +524,13 @@ window.addEventListener('message', (event: MessageEvent) => {
             resistance: parseInt(String(resistance), 10) 
         });
       } else if (url_str.includes('getRegionScoreDetails')) {
-        const res = (data as { result?: Record<string, unknown> }).result;
+        const res = (data as { result?: RegionScoreResult }).result;
         if (res) {
             useStore.getState().setRegionScore({
-                regionName: res.regionName as string,
-                gameScore: [parseInt(res.gameScore[0] as string, 10), parseInt(res.gameScore[1] as string, 10)],
-                topAgents: res.topAgents as { team: string; nick: string }[],
-                scoreHistory: res.scoreHistory as [string, string, string][]
+                regionName: res.regionName,
+                gameScore: [parseInt(String(res.gameScore[0]), 10), parseInt(String(res.gameScore[1]), 10)],
+                topAgents: res.topAgents,
+                scoreHistory: res.scoreHistory
             });
         }
       } else if (url_str.includes('getHasActiveSubscription')) {

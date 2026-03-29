@@ -56,17 +56,14 @@ export function MapOverlay(): JSX.Element {
     return [mt.url];
   };
 
-  const teamColourExpr = useMemo((): unknown[] => [
+  const teamColourExpr = useMemo((): string => ([
     'match', ['get', 'team'],
     'E', theme.E,
     'R', theme.R,
     'M', theme.M,
     theme.N,
-  ], [theme.E, theme.R, theme.M, theme.N]);
-  const initialTeamColourExpr = useRef<unknown[] | null>(null);
-  if (initialTeamColourExpr.current === null) {
-    initialTeamColourExpr.current = teamColourExpr;
-  }
+  ] as unknown as string), [theme.E, theme.R, theme.M, theme.N]);
+  const initialTeamColourExpr = useRef<string>(teamColourExpr);
 
   // Layer visibility states from store
   const showFields = useStore((state) => state.showFields);

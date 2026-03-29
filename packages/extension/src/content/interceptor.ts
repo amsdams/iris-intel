@@ -225,7 +225,14 @@
     // XHR prototype patching
     // ---------------------------------------------------------------------------
 
-    const originalOpen = XMLHttpRequest.prototype.open;
+    const originalOpen = XMLHttpRequest.prototype.open as (
+        this: XMLHttpRequest,
+        method: string,
+        url: string | URL,
+        async?: boolean,
+        user?: string | null,
+        password?: string | null
+    ) => void;
     const originalSend = XMLHttpRequest.prototype.send;
 
     interface XMLHttpRequestAugmented extends XMLHttpRequest {
@@ -242,9 +249,9 @@
     ): void {
         this._iris_url = typeof url === 'string' ? url : url.toString();
         if (async === undefined) {
-            originalOpen.apply(this, [method, url]);
+            originalOpen.call(this, method, url);
         } else {
-            originalOpen.apply(this, [method, url, async, user, password]);
+            originalOpen.call(this, method, url, async, user, password);
         }
     };
 

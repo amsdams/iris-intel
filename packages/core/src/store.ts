@@ -77,7 +77,7 @@ export interface Plext {
     id: string;
     time: number;
     text: string;
-    markup: unknown[];
+    markup: [string, { plain?: string; team?: string; name?: string; address?: string; latE6?: number; lngE6?: number; }][];
     categories: number;
     team: string;
     type: 'PLAYER_GENERATED' | 'SYSTEM_BROADCAST' | 'SYSTEM_NARROWCAST';
