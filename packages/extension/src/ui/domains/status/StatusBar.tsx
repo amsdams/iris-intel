@@ -1,7 +1,7 @@
 import { h, JSX } from 'preact';
 import { useState } from 'preact/hooks';
 import { useStore } from '@iris/core';
-import { UI_COLORS, SPACING } from '../../theme';
+import { UI_COLORS } from '../../theme';
 
 export function StatusBar(): JSX.Element {
     const activeRequests = useStore((state) => state.activeRequests);
@@ -43,58 +43,30 @@ export function StatusBar(): JSX.Element {
         <div 
             onClick={toggleExpanded}
             className={`iris-status-bar ${isExpanded ? 'iris-status-bar-expanded' : 'iris-status-bar-collapsed'}`}
-            style={{
-                position: 'fixed',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                background: 'rgba(0, 0, 0, 0.9)',
-                borderTop: `1px solid ${UI_COLORS.BORDER_DIM}`,
-                display: 'flex',
-                flexDirection: 'column',
-                fontSize: '10px',
-                color: UI_COLORS.TEXT_MUTED,
-                fontFamily: 'monospace',
-                zIndex: 10001,
-                backdropFilter: 'blur(8px)',
-                cursor: 'pointer',
-                pointerEvents: 'auto',
-                transition: 'max-height 0.3s ease-in-out',
-                maxHeight: isExpanded ? '400px' : '24px',
-            }}
         >
-            {/* Expanded List */}
             {isExpanded && (
-                <div className="iris-status-expanded-content" style={{ 
-                    flex: 1, 
-                    overflowY: 'auto', 
-                    padding: SPACING.SM,
-                    borderBottom: `1px solid ${UI_COLORS.BORDER_DIM}`,
-                    background: 'rgba(0, 10, 20, 0.4)'
-                }}>
-                    <div className="iris-status-header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: SPACING.SM, borderBottom: '1px solid #444', paddingBottom: '4px' }}>
-                        <span className="iris-status-summary" style={{ color: UI_COLORS.ERROR, fontWeight: 'bold' }}>
+                <div className="iris-status-expanded-content">
+                    <div className="iris-status-header">
+                        <span className="iris-status-summary">
                             LOGS: {successfulRequests.length} OK, {failedRequests.length} NET, {jsErrors.length} JS
                         </span>
                         <span 
                             className="iris-status-clear-btn"
                             onClick={handleClear}
-                            style={{ color: UI_COLORS.AQUA, cursor: 'pointer', textDecoration: 'underline' }}
                         >
                             CLEAR ALL
                         </span>
                     </div>
                     
-                    {/* JS Errors Section */}
                     {jsErrors.length > 0 && (
-                        <div className="iris-status-section iris-status-section-js-errors" style={{ marginBottom: SPACING.MD }}>
-                            <div className="iris-status-section-title" style={{ color: UI_COLORS.WARNING, marginBottom: '4px', borderBottom: '1px solid #440000' }}>JS ERRORS</div>
-                            {jsErrors.map((err, i) => (
-                                <div key={`js-${i}`} className="iris-status-log-entry iris-status-log-entry-error" style={{ marginBottom: '4px', borderBottom: '1px solid #222', paddingBottom: '2px' }}>
+                        <div className="iris-status-section iris-status-section-js-errors">
+                            <div className="iris-status-section-title">JS ERRORS</div>
+                            {jsErrors.map((err) => (
+                                <div key={`js-${err.time}-${err.message}`} className="iris-status-log-entry iris-status-log-entry-error">
                                     <div className="iris-status-log-message" style={{ color: UI_COLORS.WARNING }}>
                                         [{new Date(err.time).toLocaleTimeString()}] {err.message}
                                     </div>
-                                    <div className="iris-status-log-source" style={{ color: '#888', fontSize: '9px' }}>
+                                    <div className="iris-status-log-source">
                                         {err.source ? `${err.source}:${err.lineno}:${err.colno}` : 'Unknown source'}
                                     </div>
                                 </div>
@@ -102,35 +74,33 @@ export function StatusBar(): JSX.Element {
                         </div>
                     )}
 
-                    {/* Net Errors Section */}
                     {failedRequests.length > 0 && (
-                        <div className="iris-status-section iris-status-section-net-errors" style={{ marginBottom: SPACING.MD }}>
-                            <div className="iris-status-section-title" style={{ color: UI_COLORS.ERROR, marginBottom: '4px', borderBottom: '1px solid #440000' }}>NETWORK ERRORS</div>
-                            {failedRequests.map((req, i) => (
-                                <div key={`net-err-${i}`} className="iris-status-log-entry iris-status-log-entry-error" style={{ marginBottom: '4px', borderBottom: '1px solid #222', paddingBottom: '2px' }}>
-                                    <div className="iris-status-log-message" style={{ color: UI_COLORS.ERROR, display: 'flex', justifyContent: 'space-between' }}>
+                        <div className="iris-status-section iris-status-section-net-errors">
+                            <div className="iris-status-section-title">NETWORK ERRORS</div>
+                            {failedRequests.map((req) => (
+                                <div key={`net-err-${req.time}-${req.url}`} className="iris-status-log-entry iris-status-log-entry-error">
+                                    <div className="iris-status-log-message iris-status-log-message-network" style={{ color: UI_COLORS.ERROR }}>
                                         <span>[{new Date(req.time).toLocaleTimeString()}] {getEndpointName(req.url)}</span>
                                         <span>STATUS: {req.status}</span>
                                     </div>
-                                    <div className="iris-status-log-url" style={{ color: '#888', fontSize: '9px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                        {req.statusText} — {req.url}
+                                    <div className="iris-status-log-url">
+                                        {req.statusText} - {req.url}
                                     </div>
                                 </div>
                             ))}
                         </div>
                     )}
 
-                    {/* Successful Requests Section */}
                     {successfulRequests.length > 0 && (
                         <div className="iris-status-section iris-status-section-success">
-                            <div className="iris-status-section-title" style={{ color: UI_COLORS.AQUA, marginBottom: '4px', borderBottom: '1px solid #004444' }}>SUCCESSFUL REQUESTS</div>
-                            {successfulRequests.map((req, i) => (
-                                <div key={`net-ok-${i}`} className="iris-status-log-entry iris-status-log-entry-ok" style={{ marginBottom: '4px', borderBottom: '1px solid #222', paddingBottom: '2px' }}>
+                            <div className="iris-status-section-title">SUCCESSFUL REQUESTS</div>
+                            {successfulRequests.map((req) => (
+                                <div key={`net-ok-${req.time}-${req.url}`} className="iris-status-log-entry iris-status-log-entry-ok">
                                     <div className="iris-status-log-message" style={{ color: UI_COLORS.AQUA }}>
                                         [{new Date(req.time).toLocaleTimeString()}] {getEndpointName(req.url)}
                                     </div>
-                                    <div className="iris-status-log-url" style={{ color: '#888', fontSize: '9px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                        OK — {req.url}
+                                    <div className="iris-status-log-url">
+                                        OK - {req.url}
                                     </div>
                                 </div>
                             ))}
@@ -138,25 +108,18 @@ export function StatusBar(): JSX.Element {
                     )}
 
                     {!hasErrors && successfulRequests.length === 0 && (
-                        <div className="iris-status-empty" style={{ padding: SPACING.MD, textAlign: 'center', color: '#666' }}>No requests recorded</div>
+                        <div className="iris-status-empty">No requests recorded</div>
                     )}
                 </div>
             )}
 
-            {/* Main Bar */}
-            <div className="iris-status-main-bar" style={{
-                height: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                padding: `0 ${SPACING.MD}`,
-            }}>
-                <div className="iris-status-indicator-group" style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+            <div className="iris-status-main-bar">
+                <div className="iris-status-indicator-group">
                     <div className="iris-status-led" style={{ 
                         width: '8px', 
                         height: '8px', 
                         borderRadius: '50%', 
                         background: activeRequests > 0 ? UI_COLORS.AQUA : (hasErrors ? UI_COLORS.ERROR : (successfulRequests.length > 0 ? UI_COLORS.SUCCESS : '#333')),
-                        marginRight: SPACING.SM,
                         boxShadow: activeRequests > 0 ? `0 0 5px ${UI_COLORS.AQUA}` : (hasErrors ? `0 0 5px ${UI_COLORS.ERROR}` : (successfulRequests.length > 0 ? `0 0 5px ${UI_COLORS.SUCCESS}` : 'none')),
                         transition: 'background 0.3s ease, box-shadow 0.3s ease'
                     }} />
@@ -167,47 +130,26 @@ export function StatusBar(): JSX.Element {
                         {jsErrors.length > 0 && ` (${jsErrors.length} JS)`}
                     </span>
                     {hasSubscription && (
-                        <span style={{ marginLeft: SPACING.MD, color: '#b000ff', fontWeight: 'bold', fontSize: '9px' }}>
+                        <span className="iris-status-core">
                             [C.O.R.E.]
                         </span>
                     )}
                     {activeRequests > 0 && lastRequestUrl && (
-                        <span className="iris-status-current-endpoint" style={{ marginLeft: SPACING.MD, opacity: 0.8 }}>
+                        <span className="iris-status-current-endpoint">
                             FETCHING {getEndpointName(lastRequestUrl)}...
                         </span>
                     )}
                 </div>
 
-                {/* Simple Progress Bar */}
-                <div className="iris-status-progress-bg" style={{ 
-                    width: '100px', 
-                    height: '2px', 
-                    background: '#222', 
-                    borderRadius: '1px',
-                    overflow: 'hidden',
-                    position: 'relative'
-                }}>
+                <div className="iris-status-progress-bg">
                     {activeRequests > 0 && (
                         <div className="iris-status-progress-bar" style={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            height: '100%',
-                            width: '50%',
                             background: UI_COLORS.AQUA,
                             boxShadow: `0 0 5px ${UI_COLORS.AQUA}`,
-                            animation: 'iris-progress 1.5s infinite linear'
                         }} />
                     )}
                 </div>
             </div>
-
-            <style>{`
-                @keyframes iris-progress {
-                    0% { left: -50%; }
-                    100% { left: 100%; }
-                }
-            `}</style>
         </div>
     );
 }

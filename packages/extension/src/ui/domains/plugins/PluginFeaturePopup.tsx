@@ -1,7 +1,7 @@
 import { h, JSX } from 'preact';
 import { useStore } from '@iris/core';
 import { Popup } from '../../shared/Popup';
-import { UI_COLORS, SPACING } from '../../theme';
+import { UI_COLORS } from '../../theme';
 
 type PluginFeatureProperties = {
     color?: string;
@@ -41,22 +41,21 @@ export function PluginFeaturePopup(): JSX.Element | null {
                 borderColor: color || UI_COLORS.AQUA,
             }}
         >
-            <div className="iris-plugin-feature-details" style={{ fontSize: '0.9em', lineHeight: '1.6' }}>
-                <div className="iris-feature-row iris-feature-player" style={{ marginBottom: SPACING.XS }}>
-                    <span style={{ color: UI_COLORS.TEXT_MUTED }}>Player: </span>
-                    <span style={{ color: color || UI_COLORS.TEXT_BASE, fontWeight: 'bold' }}>
+            <div className="iris-plugin-feature-details">
+                <div className="iris-feature-row iris-feature-player">
+                    <span className="iris-feature-label">Player: </span>
+                    <span className="iris-feature-value-strong" style={{ color: color || UI_COLORS.TEXT_BASE }}>
                         {name}
                     </span>
                 </div>
-                <div className="iris-feature-row iris-feature-time" style={{ marginBottom: SPACING.XS }}>
-                    <span style={{ color: UI_COLORS.TEXT_MUTED }}>Time: </span>
+                <div className="iris-feature-row iris-feature-time">
+                    <span className="iris-feature-label">Time: </span>
                     <span>{new Date(time).toLocaleString()}</span>
                 </div>
-                <div className="iris-feature-row iris-feature-portal" style={{ marginBottom: SPACING.XS }}>
-                    <span style={{ color: UI_COLORS.TEXT_MUTED }}>Portal: </span>
+                <div className="iris-feature-row iris-feature-portal">
+                    <span className="iris-feature-label">Portal: </span>
                     <span 
                         className="iris-feature-portal-link"
-                        style={{ color: UI_COLORS.AQUA, cursor: 'pointer', borderBottom: '1px dotted' }}
                         onClick={() => {
                             window.postMessage({
                                 type: 'IRIS_MOVE_MAP',
@@ -68,7 +67,7 @@ export function PluginFeaturePopup(): JSX.Element | null {
                         {portalName}
                     </span>
                 </div>
-                <div className="iris-feature-row iris-feature-coords" style={{ marginTop: SPACING.SM, fontSize: '0.8em', color: '#666' }}>
+                <div className="iris-feature-coords">
                     {lat.toFixed(6)}, {lng.toFixed(6)}
                 </div>
             </div>

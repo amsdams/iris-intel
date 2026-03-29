@@ -1,7 +1,7 @@
 import { h, JSX } from 'preact';
 import { useStore } from '@iris/core';
 import { Popup } from '../../shared/Popup';
-import { THEMES, UI_COLORS } from '../../theme';
+import { THEMES } from '../../theme';
 
 interface RegionScorePopupProps {
     onClose: () => void;
@@ -29,75 +29,59 @@ export function RegionScorePopup({ onClose }: RegionScorePopupProps): JSX.Elemen
                 maxWidth: '400px',
             }}
         >
-            <div className="iris-region-score" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <div className="iris-region-score">
                 {!regionScore ? (
-                    <div style={{ color: UI_COLORS.TEXT_MUTED, textAlign: 'center', padding: '10px' }}>
+                    <div className="iris-score-empty">
                         Region scores not yet captured.
                     </div>
                 ) : (
                     <>
-                        {/* Current Score Bar */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9em', fontWeight: 'bold' }}>
+                        <div className="iris-region-score-current">
+                            <div className="iris-region-score-header">
                                 <span style={{ color: theme.E }}>{enlScore.toLocaleString()}</span>
                                 <span style={{ color: theme.R }}>{resScore.toLocaleString()}</span>
                             </div>
-                            <div style={{ 
-                                width: '100%', 
-                                height: '8px', 
-                                display: 'flex', 
-                                borderRadius: '4px', 
-                                overflow: 'hidden',
-                                backgroundColor: '#333'
-                            }}>
+                            <div className="iris-score-bar iris-region-score-bar">
                                 <div style={{ width: `${enlPercent}%`, height: '100%', backgroundColor: theme.E }} />
                                 <div style={{ width: `${resPercent}%`, height: '100%', backgroundColor: theme.R }} />
                             </div>
                         </div>
 
-                        {/* Top Agents */}
                         <div className="iris-region-agents">
-                            <div style={{ fontSize: '0.8em', color: UI_COLORS.TEXT_MUTED, marginBottom: '5px', borderBottom: '1px solid #333' }}>
+                            <div className="iris-region-section-title">
                                 TOP AGENTS
                             </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <div className="iris-region-agent-list">
                                 {regionScore.topAgents.map((agent, i) => (
-                                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85em' }}>
+                                    <div key={i} className="iris-region-agent-row">
                                         <span style={{ color: agent.team === 'RESISTANCE' ? theme.R : theme.E }}>
                                             {agent.nick}
                                         </span>
-                                        <span style={{ color: UI_COLORS.TEXT_MUTED }}>#{i + 1}</span>
+                                        <span className="iris-region-agent-rank">#{i + 1}</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
 
-                        {/* History */}
                         <div className="iris-region-history">
-                            <div style={{ fontSize: '0.8em', color: UI_COLORS.TEXT_MUTED, marginBottom: '5px', borderBottom: '1px solid #333' }}>
+                            <div className="iris-region-section-title">
                                 CHECKPOINT HISTORY
                             </div>
-                            <div style={{ 
-                                maxHeight: '150px', 
-                                overflowY: 'auto', 
-                                display: 'flex', 
-                                flexDirection: 'column',
-                                fontSize: '0.8em'
-                            }}>
-                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                    <thead style={{ position: 'sticky', top: 0, backgroundColor: UI_COLORS.BG_POPUP, color: UI_COLORS.TEXT_MUTED }}>
+                            <div className="iris-region-history-scroll">
+                                <table className="iris-region-history-table">
+                                    <thead className="iris-region-history-head">
                                         <tr>
-                                            <th style={{ textAlign: 'left', padding: '2px' }}>CP</th>
-                                            <th style={{ textAlign: 'right', padding: '2px', color: theme.E }}>ENL</th>
-                                            <th style={{ textAlign: 'right', padding: '2px', color: theme.R }}>RES</th>
+                                            <th className="iris-region-history-cell-left">CP</th>
+                                            <th className="iris-region-history-cell-right" style={{ color: theme.E }}>ENL</th>
+                                            <th className="iris-region-history-cell-right" style={{ color: theme.R }}>RES</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {regionScore.scoreHistory.map((row, i) => (
-                                            <tr key={i} style={{ borderBottom: '1px solid #222' }}>
-                                                <td style={{ padding: '2px' }}>{row[0]}</td>
-                                                <td style={{ textAlign: 'right', padding: '2px' }}>{parseInt(row[1], 10).toLocaleString()}</td>
-                                                <td style={{ textAlign: 'right', padding: '2px' }}>{parseInt(row[2], 10).toLocaleString()}</td>
+                                            <tr key={i} className="iris-region-history-row">
+                                                <td className="iris-region-history-cell-left">{row[0]}</td>
+                                                <td className="iris-region-history-cell-right">{parseInt(row[1], 10).toLocaleString()}</td>
+                                                <td className="iris-region-history-cell-right">{parseInt(row[2], 10).toLocaleString()}</td>
                                             </tr>
                                         )).reverse()}
                                     </tbody>

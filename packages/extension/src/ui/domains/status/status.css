@@ -1,0 +1,170 @@
+.iris-status-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.9);
+  border-top: 1px solid var(--iris-border);
+  display: flex;
+  flex-direction: column;
+  font-size: 10px;
+  color: var(--iris-text-secondary);
+  font-family: monospace;
+  z-index: 10001;
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: max-height 0.3s ease-in-out;
+}
+
+.iris-status-bar-collapsed {
+  max-height: 24px;
+}
+
+.iris-status-bar-expanded {
+  max-height: 400px;
+}
+
+.iris-status-expanded-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  border-bottom: 1px solid var(--iris-border);
+  background: rgba(0, 10, 20, 0.4);
+}
+
+.iris-status-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #444;
+  padding-bottom: 4px;
+}
+
+.iris-status-summary {
+  color: #ff5555;
+  font-weight: bold;
+}
+
+.iris-status-clear-btn {
+  color: var(--iris-accent);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.iris-status-section {
+  margin-bottom: 12px;
+}
+
+.iris-status-section-success {
+  margin-bottom: 0;
+}
+
+.iris-status-section-title {
+  margin-bottom: 4px;
+}
+
+.iris-status-section-js-errors .iris-status-section-title {
+  color: #f1c40f;
+  border-bottom: 1px solid #440000;
+}
+
+.iris-status-section-net-errors .iris-status-section-title {
+  color: #ff5555;
+  border-bottom: 1px solid #440000;
+}
+
+.iris-status-section-success .iris-status-section-title {
+  color: var(--iris-accent);
+  border-bottom: 1px solid #004444;
+}
+
+.iris-status-log-entry {
+  margin-bottom: 4px;
+  border-bottom: 1px solid #222;
+  padding-bottom: 2px;
+}
+
+.iris-status-log-message-network {
+  display: flex;
+  justify-content: space-between;
+}
+
+.iris-status-log-source,
+.iris-status-log-url {
+  color: #888;
+  font-size: 9px;
+}
+
+.iris-status-log-url {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.iris-status-empty {
+  padding: 12px;
+  text-align: center;
+  color: #666;
+}
+
+.iris-status-main-bar {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+}
+
+.iris-status-indicator-group {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.iris-status-led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.iris-status-core {
+  margin-left: 12px;
+  color: #b000ff;
+  font-weight: bold;
+  font-size: 9px;
+}
+
+.iris-status-current-endpoint {
+  margin-left: 12px;
+  opacity: 0.8;
+}
+
+.iris-status-progress-bg {
+  width: 100px;
+  height: 2px;
+  background: #222;
+  border-radius: 1px;
+  overflow: hidden;
+  position: relative;
+}
+
+.iris-status-progress-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 50%;
+  animation: iris-progress 1.5s infinite linear;
+}
+
+@keyframes iris-progress {
+  0% {
+    left: -50%;
+  }
+
+  100% {
+    left: 100%;
+  }
+}

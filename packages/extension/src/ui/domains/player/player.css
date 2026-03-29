@@ -1,0 +1,51 @@
+.iris-player-empty {
+  color: var(--iris-text-secondary);
+  font-size: 0.9em;
+  text-align: center;
+  padding: 10px;
+}
+
+.iris-player-nickname {
+  font-size: 1em;
+  font-weight: bold;
+  margin-bottom: 8px;
+  padding-right: 20px;
+}
+
+.iris-player-meta {
+  font-size: 0.85em;
+  color: var(--iris-text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.iris-player-meta-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.iris-player-ap {
+  color: var(--iris-text-primary);
+}
+
+.iris-stats-label-row {
+  font-size: 0.8em;
+  margin-bottom: 2px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.iris-stats-bar-bg {
+  width: 100%;
+  height: 4px;
+  background-color: #333;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.iris-player-invites {
+  font-size: 0.8em;
+  margin-top: 4px;
+  opacity: 0.8;
+}

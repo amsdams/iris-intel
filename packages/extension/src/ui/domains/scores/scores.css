@@ -1,0 +1,149 @@
+.iris-game-score {
+  padding: 5px 0;
+}
+
+.iris-score-empty {
+  color: var(--iris-text-secondary);
+  text-align: center;
+  padding: 10px;
+}
+
+.iris-game-score-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.iris-score-bar {
+  width: 100%;
+  display: flex;
+  overflow: hidden;
+  background-color: #333;
+}
+
+.iris-game-score-bar {
+  height: 10px;
+  border-radius: 5px;
+}
+
+.iris-region-score-bar {
+  height: 8px;
+  border-radius: 4px;
+}
+
+.iris-score-segments {
+  display: flex;
+  justify-content: space-between;
+}
+
+.iris-score-segment {
+  display: flex;
+  flex-direction: column;
+}
+
+.iris-score-segment-left {
+  align-items: flex-start;
+}
+
+.iris-score-segment-right {
+  align-items: flex-end;
+}
+
+.iris-score-team-label {
+  font-weight: bold;
+  font-size: 0.8em;
+}
+
+.iris-score-total {
+  font-size: 1.2em;
+  font-weight: bold;
+}
+
+.iris-score-percent {
+  font-size: 0.75em;
+  color: var(--iris-text-secondary);
+}
+
+.iris-game-score-footer {
+  font-size: 0.7em;
+  color: var(--iris-text-secondary);
+  text-align: center;
+  border-top: 1px solid #333;
+  padding-top: 10px;
+}
+
+.iris-region-score {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.iris-region-score-current {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.iris-region-score-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9em;
+  font-weight: bold;
+}
+
+.iris-region-section-title {
+  font-size: 0.8em;
+  color: var(--iris-text-secondary);
+  margin-bottom: 5px;
+  border-bottom: 1px solid #333;
+}
+
+.iris-region-agent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.iris-region-agent-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85em;
+}
+
+.iris-region-agent-rank {
+  color: var(--iris-text-secondary);
+}
+
+.iris-region-history-scroll {
+  max-height: 150px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  font-size: 0.8em;
+}
+
+.iris-region-history-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.iris-region-history-head {
+  position: sticky;
+  top: 0;
+  background-color: var(--iris-bg-popup);
+  color: var(--iris-text-secondary);
+}
+
+.iris-region-history-cell-left {
+  text-align: left;
+  padding: 2px;
+}
+
+.iris-region-history-cell-right {
+  text-align: right;
+  padding: 2px;
+}
+
+.iris-region-history-row {
+  border-bottom: 1px solid #222;
+}

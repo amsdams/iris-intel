@@ -1,0 +1,89 @@
+.iris-plugins-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.iris-plugins-empty {
+  text-align: center;
+  color: var(--iris-text-secondary);
+  padding: 12px;
+}
+
+.iris-plugin-item {
+  background: #111;
+  padding: 10px;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid #333;
+}
+
+.iris-plugin-item-enabled {
+  border-color: var(--iris-accent);
+}
+
+.iris-plugin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.iris-plugin-name {
+  font-weight: bold;
+  color: #fff;
+}
+
+.iris-plugin-item-enabled .iris-plugin-name {
+  color: var(--iris-accent);
+}
+
+.iris-plugin-toggle-btn {
+  color: #000;
+  border: none;
+  border-radius: 3px;
+  padding: 4px 8px;
+  font-size: 0.75em;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.iris-plugin-description {
+  font-size: 0.75em;
+  color: var(--iris-text-secondary);
+}
+
+.iris-plugin-meta {
+  font-size: 0.7em;
+  color: #666;
+}
+
+.iris-plugin-feature-details {
+  font-size: 0.9em;
+  line-height: 1.6;
+}
+
+.iris-feature-row {
+  margin-bottom: 4px;
+}
+
+.iris-feature-label {
+  color: var(--iris-text-secondary);
+}
+
+.iris-feature-value-strong {
+  font-weight: bold;
+}
+
+.iris-feature-portal-link {
+  color: var(--iris-accent);
+  cursor: pointer;
+  border-bottom: 1px dotted;
+}
+
+.iris-feature-coords {
+  margin-top: 8px;
+  font-size: 0.8em;
+  color: #666;
+}

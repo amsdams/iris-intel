@@ -1,3 +1,8 @@
 @import './shared/base.css';
 @import './shared/topbar.css';
+@import './domains/map/map.css';
+@import './domains/player/player.css';
+@import './domains/plugins/plugins.css';
 @import './domains/portal/portal.css';
+@import './domains/scores/scores.css';
+@import './domains/status/status.css';

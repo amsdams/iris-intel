@@ -33,7 +33,7 @@ export function PlayerStatsPopup({ onClose }: PlayerStatsPopupProps): JSX.Elemen
         >
             <div className="iris-player-stats">
                 {!playerStats ? (
-                    <div style={{ color: UI_COLORS.TEXT_MUTED, fontSize: '0.9em', textAlign: 'center', padding: '10px' }}>
+                    <div className="iris-player-empty">
                         Player data not yet captured.<br/>
                         Intel may still be loading.
                     </div>
@@ -41,31 +41,25 @@ export function PlayerStatsPopup({ onClose }: PlayerStatsPopupProps): JSX.Elemen
                     <>
                         <div 
                             className="iris-player-nickname"
-                            style={{
-                                fontSize: '1em',
-                                fontWeight: 'bold',
-                                color: teamColour,
-                                marginBottom: '8px',
-                                paddingRight: '20px', // Make space for close button
-                            }}
+                            style={{ color: teamColour }}
                         >
                             {playerStats.nickname}
                         </div>
-                        <div className="iris-player-meta" style={{ fontSize: '0.85em', color: UI_COLORS.TEXT_MUTED, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <div className="iris-player-meta">
+                            <div className="iris-player-meta-row">
                                 <span>Level {playerStats.level}</span>
                                 {playerStats.ap !== null && (
-                                    <span style={{ color: UI_COLORS.TEXT_BASE }}>{playerStats.ap.toLocaleString()} AP</span>
+                                    <span className="iris-player-ap">{playerStats.ap.toLocaleString()} AP</span>
                                 )}
                             </div>
 
                             {playerStats.energy !== undefined && playerStats.xm_capacity !== undefined && (
                                 <div className="iris-stats-xm">
-                                    <div style={{ fontSize: '0.8em', marginBottom: '2px', display: 'flex', justifyContent: 'space-between' }}>
+                                    <div className="iris-stats-label-row">
                                         <span>XM</span>
                                         <span>{playerStats.energy.toLocaleString()} / {playerStats.xm_capacity.toLocaleString()}</span>
                                     </div>
-                                    <div style={{ width: '100%', height: '4px', backgroundColor: '#333', borderRadius: '2px', overflow: 'hidden' }}>
+                                    <div className="iris-stats-bar-bg">
                                         <div style={{ 
                                             width: `${Math.min(100, (playerStats.energy / playerStats.xm_capacity) * 100)}%`, 
                                             height: '100%', 
@@ -78,12 +72,12 @@ export function PlayerStatsPopup({ onClose }: PlayerStatsPopupProps): JSX.Elemen
 
                             {playerStats.min_ap_for_next_level !== undefined && playerStats.min_ap_for_next_level > 0 && (
                                 <div className="iris-stats-progress">
-                                    <div style={{ fontSize: '0.8em', marginBottom: '2px', display: 'flex', justifyContent: 'space-between' }}>
+                                    <div className="iris-stats-label-row">
                                         <span>Next Level</span>
                                         <span>{playerStats.min_ap_for_next_level.toLocaleString()} AP</span>
                                     </div>
                                     {playerStats.ap !== null && playerStats.min_ap_for_current_level !== undefined && (
-                                        <div style={{ width: '100%', height: '4px', backgroundColor: '#333', borderRadius: '2px', overflow: 'hidden' }}>
+                                        <div className="iris-stats-bar-bg">
                                             <div style={{ 
                                                 width: `${Math.min(100, ((playerStats.ap - playerStats.min_ap_for_current_level) / (playerStats.min_ap_for_next_level - playerStats.min_ap_for_current_level)) * 100)}%`, 
                                                 height: '100%', 
@@ -96,7 +90,7 @@ export function PlayerStatsPopup({ onClose }: PlayerStatsPopupProps): JSX.Elemen
                             )}
 
                             {playerStats.available_invites !== undefined && playerStats.available_invites > 0 && (
-                                <div style={{ fontSize: '0.8em', marginTop: '4px', opacity: 0.8 }}>
+                                <div className="iris-player-invites">
                                     {playerStats.available_invites} invites available
                                 </div>
                             )}
