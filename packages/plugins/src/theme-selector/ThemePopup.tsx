@@ -1,7 +1,7 @@
-import { h } from 'preact';
+import { h, JSX } from 'preact';
 import { useStore } from '@iris/core';
 import { Popup } from '../../../extension/src/ui/components/Popup';
-import { THEMES, UI_COLORS, FONT_SIZES } from '../../../extension/src/ui/theme';
+import { THEMES, UI_COLORS } from '../../../extension/src/ui/theme';
 
 interface ThemePopupProps {
     onClose: () => void;
@@ -19,7 +19,7 @@ const itemStyle: h.JSX.CSSProperties = {
     background: '#111',
 };
 
-export function ThemePopup({ onClose }: ThemePopupProps) {
+export function ThemePopup({ onClose }: ThemePopupProps): JSX.Element {
     const themeId = useStore((state) => state.themeId);
     const setTheme = useStore((state) => state.setTheme);
 

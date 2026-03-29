@@ -63,7 +63,6 @@ export class PluginManager {
         setTheme: (id: string): void => useStore.getState().setTheme(id),
         getTheme: (): string => useStore.getState().themeId,
         getThemeColors: (): { E: string; R: string; M: string; N: string } => {
-          const { themeId } = useStore.getState();
           // For now, return default colors or implement theme lookup if available
           return {
             E: '#00c5ff',

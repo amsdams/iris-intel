@@ -1,5 +1,5 @@
 import { h, JSX } from 'preact';
-import { useEffect, useState, useRef, useMemo } from 'preact/hooks';
+import { useEffect, useState, useRef, useMemo, useCallback } from 'preact/hooks';
 import { useStore, normalizeTeam, Plext } from '@iris/core';
 import { Popup } from './Popup';
 import { THEMES, UI_COLORS, SPACING } from '../theme';
@@ -39,14 +39,14 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
         return date.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     };
 
-    const handleRefresh = (): void => {
+    const handleRefresh = useCallback((): void => {
         const minTimestampMs = plexts.length > 0 ? plexts[plexts.length - 1].time : -1;
         window.postMessage({ 
             type: 'IRIS_PLEXTS_REQUEST', 
             minTimestampMs,
             tab: activeTab.toLowerCase()
         }, '*');
-    };
+    }, [activeTab, plexts]);
 
     const handleScroll = (): void => {
         const el = scrollRef.current;
@@ -77,7 +77,7 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
 
     useEffect(() => {
         handleRefresh();
-    }, [activeTab]);
+    }, [handleRefresh]);
 
     const [hasInitialScrolled, setHasInitialScrolled] = useState(false);
 
@@ -94,7 +94,7 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
             el.scrollTop = el.scrollHeight;
             if (!hasInitialScrolled) setHasInitialScrolled(true);
         }
-    }, [plexts, activeTab]);
+    }, [plexts, activeTab, hasInitialScrolled]);
 
     // Reset initial scroll flag when tab changes to force a scroll-to-bottom
     useEffect(() => {

@@ -1,4 +1,4 @@
-import { h, ComponentChildren } from 'preact';
+import { h, ComponentChildren, JSX } from 'preact';
 import { useState, useRef, useEffect } from 'preact/hooks';
 
 interface PopupProps {
@@ -10,13 +10,13 @@ interface PopupProps {
     noScroll?: boolean;
 }
 
-export function Popup({ onClose, title, children, style, headerExtras, noScroll }: PopupProps) {
+export function Popup({ onClose, title, children, style, headerExtras, noScroll }: PopupProps): JSX.Element {
     const [pos, setPos] = useState<{ x: number, y: number } | null>(null);
     const [dragging, setDragging] = useState(false);
     const dragStart = useRef({ x: 0, y: 0 });
     const popupRef = useRef<HTMLDivElement>(null);
 
-    const onStart = (e: MouseEvent | TouchEvent) => {
+    const onStart = (e: MouseEvent | TouchEvent): void => {
         // Don't drag if clicking buttons
         if ((e.target as HTMLElement).tagName === 'BUTTON') return;
 
@@ -36,7 +36,7 @@ export function Popup({ onClose, title, children, style, headerExtras, noScroll 
     useEffect(() => {
         if (!dragging) return;
 
-        const onMove = (e: MouseEvent | TouchEvent) => {
+        const onMove = (e: MouseEvent | TouchEvent): void => {
             const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
             const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
 
@@ -46,14 +46,14 @@ export function Popup({ onClose, title, children, style, headerExtras, noScroll 
             });
         };
 
-        const onEnd = () => setDragging(false);
+        const onEnd = (): void => setDragging(false);
 
         window.addEventListener('mousemove', onMove);
         window.addEventListener('mouseup', onEnd);
         window.addEventListener('touchmove', onMove, { passive: false });
         window.addEventListener('touchend', onEnd);
 
-        return () => {
+        return (): void => {
             window.removeEventListener('mousemove', onMove);
             window.removeEventListener('mouseup', onEnd);
             window.removeEventListener('touchmove', onMove);

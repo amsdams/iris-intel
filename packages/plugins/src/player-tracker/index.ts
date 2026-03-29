@@ -8,6 +8,16 @@ interface Location {
   faction?: string;
 }
 
+interface PlayerTrackerApi extends IRIS_API {
+  _playerTrackerUnsub?: () => void;
+  _playerTrackerTicker?: ReturnType<typeof setInterval>;
+}
+
+type TimedFeatureProperties = {
+  time?: number;
+  opacity?: number;
+} & Record<string, unknown>;
+
 const EXPIRATION_MS = 60 * 60 * 1000; // 1 hour
 const TICK_MS = 30 * 1000; // 30 seconds update
 
@@ -19,7 +29,8 @@ const PlayerTrackerPlugin: IRISPlugin = {
     description: 'Visualizes player movement paths from COMM messages with fading.',
     author: 'IRIS Team',
   },
-  setup: (api: IRIS_API) => {
+  setup: (api: IRIS_API): void => {
+    const trackerApi = api as PlayerTrackerApi;
     // Stores the last known location for each player
     const playerLocations = new Map<string, Location>();
     
@@ -35,26 +46,27 @@ const PlayerTrackerPlugin: IRISPlugin = {
         return '#ffffff';
     };
 
-    const updateMap = () => {
+    const updateMap = (): void => {
         const now = Date.now();
         
         // Filter out expired lines
-        features = features.filter(f => {
-            const time = f.properties?.time;
-            return time && (now - time) < EXPIRATION_MS;
+        features = features.filter((feature) => {
+            const time = (feature.properties as TimedFeatureProperties | null)?.time;
+            return typeof time === 'number' && (now - time) < EXPIRATION_MS;
         });
 
         // Re-generate final features list
         const finalFeatures: GeoJSON.Feature[] = [];
 
         // 1. Process Lines (Lines were added with time in properties)
-        features.forEach(f => {
-            if (f.geometry.type === 'LineString') {
-                const age = now - (f.properties?.time || 0);
+        features.forEach((feature) => {
+            if (feature.geometry.type === 'LineString') {
+                const time = (feature.properties as TimedFeatureProperties | null)?.time ?? 0;
+                const age = now - time;
                 const opacity = Math.max(0, 1 - (age / EXPIRATION_MS));
                 finalFeatures.push({
-                    ...f,
-                    properties: { ...f.properties, opacity }
+                    ...feature,
+                    properties: { ...feature.properties, opacity }
                 });
             }
         });
@@ -167,15 +179,16 @@ const PlayerTrackerPlugin: IRISPlugin = {
     const ticker = setInterval(updateMap, TICK_MS);
 
     // Store objects on the api object for cleanup
-    (api as any)._playerTrackerUnsub = unsubscribe;
-    (api as any)._playerTrackerTicker = ticker;
+    trackerApi._playerTrackerUnsub = unsubscribe;
+    trackerApi._playerTrackerTicker = ticker;
   },
-  teardown: (api: IRIS_API) => {
-    if ((api as any)._playerTrackerUnsub) {
-      ((api as any)._playerTrackerUnsub as () => void)();
+  teardown: (api: IRIS_API): void => {
+    const trackerApi = api as PlayerTrackerApi;
+    if (trackerApi._playerTrackerUnsub) {
+      trackerApi._playerTrackerUnsub();
     }
-    if ((api as any)._playerTrackerTicker) {
-      clearInterval((api as any)._playerTrackerTicker);
+    if (trackerApi._playerTrackerTicker) {
+      clearInterval(trackerApi._playerTrackerTicker);
     }
     api.map.setFeatures([]); // Clear map
   },

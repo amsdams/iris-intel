@@ -31,11 +31,20 @@ export interface Field {
   points: { lat: number; lng: number }[];
 }
 
+export interface PlextMarkupData {
+  plain?: string;
+  team?: string;
+  name?: string;
+  address?: string;
+  latE6?: number;
+  lngE6?: number;
+}
+
 export interface Plext {
   id: string;
   time: number;
   text: string;
-  markup: any[];
+  markup: [string, PlextMarkupData][];
   categories: number;
   team: string;
 }

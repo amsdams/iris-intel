@@ -1,11 +1,35 @@
-import { h } from 'preact';
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { h, JSX } from 'preact';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { useStore } from '@iris/core';
+import { Field, Link, Portal, useStore } from '@iris/core';
 import { THEMES, MAP_THEMES } from '../theme';
 
-export function MapOverlay() {
+type PortalFeatureProperties = {
+  id: string;
+  team: string;
+  name?: string;
+  level: number;
+  health: number;
+  visited: boolean;
+  captured: boolean;
+  scanned: boolean;
+} & Record<string, unknown>;
+
+type TeamFeatureProperties = {
+  team: string;
+} & Record<string, unknown>;
+
+type PluginFeatureProperties = {
+  color?: string;
+  isPlayerMarker?: boolean;
+} & Record<string, unknown>;
+
+type PortalFeature = GeoJSON.Feature<GeoJSON.Point, PortalFeatureProperties>;
+type LinkFeature = GeoJSON.Feature<GeoJSON.LineString, TeamFeatureProperties>;
+type FieldFeature = GeoJSON.Feature<GeoJSON.Polygon, TeamFeatureProperties>;
+
+export function MapOverlay(): JSX.Element {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const [styleLoaded, setStyleLoaded] = useState(false);
@@ -24,7 +48,7 @@ export function MapOverlay() {
   const mapThemeId = useStore((state) => state.mapThemeId);
   const theme = THEMES[themeId] || THEMES.DEFAULT;
 
-  const getMapThemeTiles = (id: string) => {
+  const getMapThemeTiles = (id: string): string[] => {
     const mt = MAP_THEMES[id] || MAP_THEMES.DARK;
     if (mt.url.includes('{s}')) {
         return ['a', 'b', 'c', 'd'].map(s => mt.url.replace('{s}', s));
@@ -32,13 +56,17 @@ export function MapOverlay() {
     return [mt.url];
   };
 
-  const TEAM_COLOUR_EXPR = [
+  const teamColourExpr = useMemo((): unknown[] => [
     'match', ['get', 'team'],
     'E', theme.E,
     'R', theme.R,
     'M', theme.M,
     theme.N,
-  ] as any;
+  ], [theme.E, theme.R, theme.M, theme.N]);
+  const initialTeamColourExpr = useRef<unknown[] | null>(null);
+  if (initialTeamColourExpr.current === null) {
+    initialTeamColourExpr.current = teamColourExpr;
+  }
 
   // Layer visibility states from store
   const showFields = useStore((state) => state.showFields);
@@ -52,6 +80,16 @@ export function MapOverlay() {
   const showVisited = useStore((state) => state.showVisited);
   const showCaptured = useStore((state) => state.showCaptured);
   const showScanned = useStore((state) => state.showScanned);
+
+  const getGeoJsonSource = (sourceId: string): maplibregl.GeoJSONSource | null => {
+    const source = map.current?.getSource(sourceId);
+    return source ? (source as maplibregl.GeoJSONSource) : null;
+  };
+
+  const getRasterTileSource = (sourceId: string): maplibregl.RasterTileSource | null => {
+    const source = map.current?.getSource(sourceId);
+    return source ? (source as maplibregl.RasterTileSource) : null;
+  };
 
 
   // ---------------------------------------------------------------------------
@@ -112,7 +150,7 @@ export function MapOverlay() {
             type: 'fill',
             source: 'fields',
             paint: {
-              'fill-color': TEAM_COLOUR_EXPR,
+              'fill-color': initialTeamColourExpr.current,
               'fill-opacity': 0.3,
             },
           },
@@ -122,7 +160,7 @@ export function MapOverlay() {
             source: 'links',
             paint: {
               'line-width': 2,
-              'line-color': TEAM_COLOUR_EXPR,
+              'line-color': initialTeamColourExpr.current,
             },
           },
           {
@@ -147,14 +185,14 @@ export function MapOverlay() {
                 10, 2,
                 15, 6,
               ],
-              'circle-color': TEAM_COLOUR_EXPR,
+              'circle-color': initialTeamColourExpr.current,
               'circle-opacity': [
                 'interpolate', ['linear'], ['get', 'health'],
                 0, 0.1,
                 100, 0.7
               ],
               'circle-stroke-width': 1.5,
-              'circle-stroke-color': TEAM_COLOUR_EXPR,
+              'circle-stroke-color': initialTeamColourExpr.current,
               'circle-stroke-opacity': 1,
             },
           },
@@ -251,14 +289,14 @@ export function MapOverlay() {
     });
 
     // Manual interaction check (Safer for Firefox)
-    map.current.on('click', (e) => {
+    map.current.on('click', (e: maplibregl.MapMouseEvent) => {
         if (!map.current) return;
         const { lng, lat } = e.lngLat;
         const point = e.point;
 
         // 1. Check for Portals
-        const allPortals = Object.values(useStore.getState().portals);
-        let nearestPortal = null;
+        const allPortals: Portal[] = Object.values(useStore.getState().portals);
+        let nearestPortal: Portal | null = null;
         let minPortalDist = 15; 
 
         for (const p of allPortals) {
@@ -280,7 +318,7 @@ export function MapOverlay() {
     });
 
     let lastMove = 0;
-    map.current.on('mousemove', (e) => {
+    map.current.on('mousemove', (e: maplibregl.MapMouseEvent) => {
         const now = Date.now();
         if (now - lastMove < 100) return;
         lastMove = now;
@@ -288,7 +326,7 @@ export function MapOverlay() {
         if (!map.current) return;
         const { lng, lat } = e.lngLat;
         const point = e.point;
-        const allPortals = Object.values(useStore.getState().portals);
+        const allPortals: Portal[] = Object.values(useStore.getState().portals);
         let found = false;
         for (const p of allPortals) {
             if (Math.abs(p.lng - lng) > 0.005 || Math.abs(p.lat - lat) > 0.005) continue;
@@ -302,15 +340,15 @@ export function MapOverlay() {
         map.current.getCanvas().style.cursor = found ? 'pointer' : '';
     });
 
-    const onPortalClick = (e: Event) => {
-      const { id } = (e as CustomEvent).detail;
+    const onPortalClick = (e: Event): void => {
+      const { id } = (e as CustomEvent<{ id: string }>).detail;
       useStore.getState().selectPortal(id);
       window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: id }, '*');
     };
 
     document.addEventListener('iris:portal:click', onPortalClick);
 
-    return () => {
+    return (): void => {
       map.current?.remove();
       document.removeEventListener('iris:portal:click', onPortalClick);
     };
@@ -345,16 +383,16 @@ export function MapOverlay() {
   // Sync Theme
   useEffect(() => {
     if (!map.current || !styleLoaded) return;
-    map.current.setPaintProperty('fields', 'fill-color', TEAM_COLOUR_EXPR);
-    map.current.setPaintProperty('links', 'line-color', TEAM_COLOUR_EXPR);
-    map.current.setPaintProperty('portals', 'circle-color', TEAM_COLOUR_EXPR);
-    map.current.setPaintProperty('portals', 'circle-stroke-color', TEAM_COLOUR_EXPR);
-  }, [themeId, styleLoaded]);
+    map.current.setPaintProperty('fields', 'fill-color', teamColourExpr);
+    map.current.setPaintProperty('links', 'line-color', teamColourExpr);
+    map.current.setPaintProperty('portals', 'circle-color', teamColourExpr);
+    map.current.setPaintProperty('portals', 'circle-stroke-color', teamColourExpr);
+  }, [styleLoaded, teamColourExpr]);
 
   // Sync Map Theme
   useEffect(() => {
     if (!map.current || !styleLoaded) return;
-    const source = map.current.getSource('osm') as maplibregl.RasterSource;
+    const source = getRasterTileSource('osm');
     if (source) {
         source.setTiles(getMapThemeTiles(mapThemeId));
     }
@@ -380,7 +418,7 @@ export function MapOverlay() {
     if (!map.current || !styleLoaded) return;
 
     // Filter and update portals
-    const filteredPortals = Object.values(portals).filter(p => {
+    const filteredPortals: PortalFeature[] = Object.values(portals).filter((p: Portal) => {
         if (p.team === 'N') {
             return showUnclaimedPortals;
         }
@@ -398,7 +436,7 @@ export function MapOverlay() {
         }
         
         return true;
-    }).map((p: any) => ({
+    }).map((p: Portal) => ({
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
         properties: { 
@@ -410,40 +448,40 @@ export function MapOverlay() {
             visited: !!p.visited,
             captured: !!p.captured,
             scanned: !!p.scanned
-        },
+        } satisfies PortalFeatureProperties,
     }));
-    (map.current.getSource('portals') as any)?.setData({ type: 'FeatureCollection', features: filteredPortals });
+    getGeoJsonSource('portals')?.setData({ type: 'FeatureCollection', features: filteredPortals });
 
     // Links
-    const filteredLinks = Object.values(links).filter(l => {
+    const filteredLinks: LinkFeature[] = Object.values(links).filter((l: Link) => {
         if (!showLinks) return false;
         if (l.team === 'R' && !showResistance) return false;
         if (l.team === 'E' && !showEnlightened) return false;
         if (l.team === 'M' && !showMachina) return false;
         return true;
-    }).map((l: any) => ({
+    }).map((l: Link) => ({
         type: 'Feature',
         geometry: { type: 'LineString', coordinates: [[l.fromLng, l.fromLat], [l.toLng, l.toLat]] },
-        properties: { team: l.team },
+        properties: { team: l.team } satisfies TeamFeatureProperties,
     }));
-    (map.current.getSource('links') as any)?.setData({ type: 'FeatureCollection', features: filteredLinks });
+    getGeoJsonSource('links')?.setData({ type: 'FeatureCollection', features: filteredLinks });
 
     // Fields
-    const filteredFields = Object.values(fields).filter(f => {
+    const filteredFields: FieldFeature[] = Object.values(fields).filter((f: Field) => {
         if (!showFields) return false;
         if (f.team === 'R' && !showResistance) return false;
         if (f.team === 'E' && !showEnlightened) return false;
         if (f.team === 'M' && !showMachina) return false;
         return true;
-    }).map((f: any) => ({
+    }).map((f: Field) => ({
         type: 'Feature',
-        geometry: { type: 'Polygon', coordinates: [[...f.points.map((p: any) => [p.lng, p.lat]), [f.points[0].lng, f.points[0].lat]]] },
-        properties: { team: f.team },
+        geometry: { type: 'Polygon', coordinates: [[...f.points.map((point) => [point.lng, point.lat] as [number, number]), [f.points[0].lng, f.points[0].lat]]] },
+        properties: { team: f.team } satisfies TeamFeatureProperties,
     }));
-    (map.current.getSource('fields') as any)?.setData({ type: 'FeatureCollection', features: filteredFields });
+    getGeoJsonSource('fields')?.setData({ type: 'FeatureCollection', features: filteredFields });
 
     // Plugin Features (Lines only here, points are HTML)
-    (map.current.getSource('plugin-features') as any)?.setData(pluginFeatures);
+    getGeoJsonSource('plugin-features')?.setData(pluginFeatures);
 
   }, [portals, links, fields, showFields, showLinks, showResistance, showEnlightened, showMachina, showUnclaimedPortals, showLevel, showHealth, styleLoaded, pluginFeatures]);
 
@@ -456,11 +494,12 @@ export function MapOverlay() {
     pluginMarkers.current = [];
 
     // Add new markers
-    pluginFeatures.features.forEach((f: any) => {
-        if (f.properties?.isPlayerMarker && f.geometry.type === 'Point' && map.current) {
+    pluginFeatures.features.forEach((feature) => {
+        const properties = (feature.properties ?? {}) as PluginFeatureProperties;
+        if (properties.isPlayerMarker && feature.geometry.type === 'Point' && map.current) {
             const el = document.createElement('div');
             el.style.pointerEvents = 'none';
-            const color = f.properties.color || '#fff';
+            const color = properties.color || '#fff';
             
             el.innerHTML = `
                 <div style="display: flex; flex-direction: column; align-items: center; cursor: pointer; pointer-events: auto;">
@@ -471,14 +510,14 @@ export function MapOverlay() {
 
             const pinHead = el.querySelector('div');
             if (pinHead) {
-                pinHead.onclick = (e) => {
+                pinHead.onclick = (e: MouseEvent): void => {
                     e.stopPropagation();
-                    useStore.getState().setSelectedPluginFeature(f.properties);
+                    useStore.getState().setSelectedPluginFeature(feature);
                 };
             }
 
             const marker = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -20] })
-                .setLngLat(f.geometry.coordinates)
+                .setLngLat(feature.geometry.coordinates as [number, number])
                 .addTo(map.current);
             
             pluginMarkers.current.push(marker);

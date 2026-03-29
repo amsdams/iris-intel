@@ -1,31 +1,50 @@
-import { h } from 'preact';
+import { h, JSX } from 'preact';
 import { useStore } from '@iris/core';
 import { Popup } from './Popup';
 import { UI_COLORS, SPACING } from '../theme';
 
-export function PluginFeaturePopup() {
+type PluginFeatureProperties = {
+    color?: string;
+    name?: string;
+    time?: number;
+    portalName?: string;
+    lat?: number;
+    lng?: number;
+    isPlayerMarker?: boolean;
+} & Record<string, unknown>;
+
+export function PluginFeaturePopup(): JSX.Element | null {
     const selectedFeature = useStore((state) => state.selectedPluginFeature);
     const setSelectedPluginFeature = useStore((state) => state.setSelectedPluginFeature);
 
     if (!selectedFeature) return null;
 
-    const { name, time, portalName, lat, lng, isPlayerMarker } = selectedFeature;
+    const properties = (selectedFeature.properties ?? {}) as PluginFeatureProperties;
+    const {
+        color,
+        name = 'Unknown',
+        time = 0,
+        portalName = 'Unknown portal',
+        lat = 0,
+        lng = 0,
+        isPlayerMarker = false,
+    } = properties;
 
     return (
         <Popup
-            title={isPlayerMarker ? "Player Last Activity" : "Plugin Feature"}
+            title={isPlayerMarker ? 'Player Last Activity' : 'Plugin Feature'}
             onClose={() => setSelectedPluginFeature(null)}
             style={{
                 bottom: '20px',
                 right: '20px',
                 minWidth: '250px',
-                borderColor: selectedFeature.color || UI_COLORS.AQUA,
+                borderColor: color || UI_COLORS.AQUA,
             }}
         >
             <div className="iris-plugin-feature-details" style={{ fontSize: '0.9em', lineHeight: '1.6' }}>
                 <div className="iris-feature-row iris-feature-player" style={{ marginBottom: SPACING.XS }}>
                     <span style={{ color: UI_COLORS.TEXT_MUTED }}>Player: </span>
-                    <span style={{ color: selectedFeature.color || UI_COLORS.TEXT_BASE, fontWeight: 'bold' }}>
+                    <span style={{ color: color || UI_COLORS.TEXT_BASE, fontWeight: 'bold' }}>
                         {name}
                     </span>
                 </div>

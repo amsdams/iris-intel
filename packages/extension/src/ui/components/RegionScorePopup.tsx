@@ -1,4 +1,4 @@
-import { h } from 'preact';
+import { h, JSX } from 'preact';
 import { useStore } from '@iris/core';
 import { Popup } from './Popup';
 import { THEMES, UI_COLORS } from '../theme';
@@ -7,7 +7,7 @@ interface RegionScorePopupProps {
     onClose: () => void;
 }
 
-export function RegionScorePopup({ onClose }: RegionScorePopupProps) {
+export function RegionScorePopup({ onClose }: RegionScorePopupProps): JSX.Element {
     const regionScore = useStore((state) => state.regionScore);
     const themeId = useStore((state) => state.themeId);
     const theme = THEMES[themeId] || THEMES.DEFAULT;

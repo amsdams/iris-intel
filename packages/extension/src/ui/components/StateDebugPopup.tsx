@@ -1,4 +1,4 @@
-import { h } from 'preact';
+import { h, JSX } from 'preact';
 import { useStore } from '@iris/core';
 import { Popup } from './Popup';
 
@@ -10,7 +10,7 @@ interface StateDebugPopupProps {
     onClose: () => void;
 }
 
-export function StateDebugPopup({ onClose }: StateDebugPopupProps) {
+export function StateDebugPopup({ onClose }: StateDebugPopupProps): JSX.Element {
     const portals = useStore((state) => state.portals);
     const links = useStore((state) => state.links);
     const fields = useStore((state) => state.fields);

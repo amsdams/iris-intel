@@ -1,6 +1,6 @@
-import { h } from 'preact';
+import { h, JSX } from 'preact';
 import { useState } from 'preact/hooks';
-import { useStore } from '@iris/core';
+import { Field, Link, Portal, useStore } from '@iris/core';
 import { Popup } from '../../../extension/src/ui/components/Popup';
 import { UI_COLORS, THEMES, SHARED_STYLES } from '../../../extension/src/ui/theme';
 
@@ -8,7 +8,13 @@ interface ExportPopupProps {
     onClose: () => void;
 }
 
-export function ExportPopup({ onClose }: ExportPopupProps) {
+interface ExportData {
+    portals?: Portal[];
+    links?: Link[];
+    fields?: Field[];
+}
+
+export function ExportPopup({ onClose }: ExportPopupProps): JSX.Element {
     const [exportType, setExportType] = useState<'JSON' | 'KML' | 'GEOJSON'>('JSON');
     const [includePortals, setIncludePortals] = useState(true);
     const [includeLinks, setIncludeLinks] = useState(true);
@@ -17,9 +23,9 @@ export function ExportPopup({ onClose }: ExportPopupProps) {
     const themeId = useStore((state) => state.themeId);
     const theme = THEMES[themeId] || THEMES.DEFAULT;
 
-    const doExport = () => {
+    const doExport = (): void => {
         const state = useStore.getState();
-        const data: any = {};
+        const data: ExportData = {};
 
         if (includePortals) data.portals = Object.values(state.portals);
         if (includeLinks) data.links = Object.values(state.links);
@@ -32,7 +38,7 @@ export function ExportPopup({ onClose }: ExportPopupProps) {
         if (exportType === 'JSON') {
             content = JSON.stringify(data, null, 2);
         } else if (exportType === 'GEOJSON') {
-            const features: any[] = [];
+            const features: GeoJSON.Feature[] = [];
             
             if (includePortals) {
                 Object.values(state.portals).forEach(p => {
@@ -129,7 +135,7 @@ export function ExportPopup({ onClose }: ExportPopupProps) {
         URL.revokeObjectURL(url);
     };
 
-    const checkboxStyle = {
+    const checkboxStyle: JSX.CSSProperties = {
         display: 'flex',
         alignItems: 'center',
         gap: '10px',

@@ -1,5 +1,5 @@
-import { h } from 'preact';
-import { useStore } from '@iris/core';
+import { h, JSX } from 'preact';
+import { PortalMod, PortalResonator, useStore } from '@iris/core';
 import { Popup } from './Popup';
 import { THEMES, TEAM_NAME, UI_COLORS } from '../theme';
 
@@ -9,7 +9,7 @@ import { THEMES, TEAM_NAME, UI_COLORS } from '../theme';
 
 const MAX_RESO_ENERGY = [0, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000];
 
-export function PortalInfoPopup() {
+export function PortalInfoPopup(): JSX.Element | null {
     const selectedPortalId = useStore((state) => state.selectedPortalId);
     const portal = useStore((state) =>
         selectedPortalId ? state.portals[selectedPortalId] : null
@@ -25,17 +25,17 @@ export function PortalInfoPopup() {
     const teamName = TEAM_NAME[portal.team] || 'Unknown';
 
     // Resonators — Ensure we have 8 slots
-    const allResonators = Array(8).fill(null);
+    const allResonators: (PortalResonator | null)[] = Array.from({ length: 8 }, () => null);
     if (portal.resonators) {
-        portal.resonators.forEach((r: any, i: number) => {
+        portal.resonators.forEach((r: PortalResonator, i: number) => {
             if (i < 8) allResonators[i] = r;
         });
     }
 
     // Mods — Ensure we have 4 slots
-    const allMods = Array(4).fill(null);
+    const allMods: (PortalMod | null)[] = Array.from({ length: 4 }, () => null);
     if (portal.mods) {
-        portal.mods.forEach((m: any, i: number) => {
+        portal.mods.forEach((m: PortalMod, i: number) => {
             if (i < 4) allMods[i] = m;
         });
     }

@@ -18,7 +18,7 @@
     let intelVersion = '';
     
     // Try to extract version from DOM if available
-    const extractVersionFromDOM = () => {
+    const extractVersionFromDOM = (): void => {
         const scripts = document.querySelectorAll('script[src*="gen_dashboard_"]');
         for (const s of scripts) {
             const src = (s as HTMLScriptElement).src;
@@ -73,7 +73,7 @@
             console.error(`IRIS: Failed to capture version after timeout. Request to ${url} may fail.`);
         }
 
-        const body = JSON.parse(options.body as string);
+        const body = JSON.parse(options.body as string) as Record<string, unknown>;
         body.v = intelVersion;
         options.body = JSON.stringify(body);
 
@@ -256,7 +256,7 @@
             try {
                 const parsed = JSON.parse(body) as { v?: string };
                 if (parsed.v) intelVersion = parsed.v;
-            } catch (e) { /* silent */ }
+            } catch { /* silent */ }
         }
 
         if (isIrisUrl(url)) {
@@ -299,7 +299,7 @@
                     if (data.v && data.v !== intelVersion) {
                         intelVersion = data.v;
                     }
-                } catch (e) { /* silent — common for non-JSON or partials */ }
+                } catch { /* silent — common for non-JSON or partials */ }
             });
         }
 
@@ -319,7 +319,7 @@
             try {
                 const parsed = JSON.parse(init.body) as { v?: string };
                 if (parsed.v) intelVersion = parsed.v;
-            } catch (e) { /* silent */ }
+            } catch { /* silent */ }
         }
 
         if (isIrisUrl(url)) {
@@ -352,9 +352,9 @@
                 const cloned = response.clone();
                 cloned.json().then((data: { v?: string }) => {
                     if (data.v && data.v !== intelVersion) intelVersion = data.v;
-                }).catch(() => {});
+                }).catch((): undefined => undefined);
                 return response;
-            } catch (e) {
+            } catch {
                 return originalFetch(input, init);
             }
         }

@@ -1,4 +1,4 @@
-import { h } from 'preact';
+import { h, JSX } from 'preact';
 import { useState } from 'preact/hooks';
 import { useStore } from '@iris/core';
 import { SHARED_STYLES, THEMES } from '../theme';
@@ -16,7 +16,7 @@ interface NominatimResult {
     type: string;
 }
 
-function LocationSearch() {
+function LocationSearch(): JSX.Element {
     const [query, setQuery] = useState('');
     const [searching, setSearching] = useState(false);
     const [results, setResults] = useState<NominatimResult[]>([]);
@@ -25,7 +25,7 @@ function LocationSearch() {
     const themeId = useStore((state) => state.themeId);
     const theme = THEMES[themeId] || THEMES.DEFAULT;
 
-    const search = async () => {
+    const search = async (): Promise<void> => {
         if (!query.trim()) return;
         setSearching(true);
         setError('');
@@ -36,7 +36,7 @@ function LocationSearch() {
                 `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5`,
                 { headers: { 'Accept-Language': 'en' } }
             );
-            const data: NominatimResult[] = await res.json();
+            const data = await res.json() as NominatimResult[];
 
             if (!data.length) {
                 setError('Location not found');
@@ -50,14 +50,14 @@ function LocationSearch() {
             }
 
             setResults(data);
-        } catch (e) {
+        } catch {
             setError('Search failed');
         } finally {
             setSearching(false);
         }
     };
 
-    const navigateTo = (result: NominatimResult) => {
+    const navigateTo = (result: NominatimResult): void => {
         const lat = parseFloat(result.lat);
         const lng = parseFloat(result.lon);
         console.log('IRIS: navigating to', lat, lng);
@@ -70,7 +70,7 @@ function LocationSearch() {
         setQuery(result.display_name.split(',')[0]);
     };
 
-    const onKeyDown = (e: KeyboardEvent) => {
+    const onKeyDown = (e: KeyboardEvent): void => {
         if (e.key === 'Enter') search();
         if (e.key === 'Escape') setResults([]);
     };
@@ -155,14 +155,14 @@ export function Topbar({
     onToggleGameScore,
     onToggleRegionScore,
     showMap
-}: TopbarProps) {
+}: TopbarProps): JSX.Element {
     const [locStatus, setLocStatus] = useState<'NAVIGATE TO ME' | 'LOCATING...'>('NAVIGATE TO ME');
     const [showMenu, setShowMenu] = useState(false);
     const menuItems = useStore((state) => state.menuItems);
     const themeId = useStore((state) => state.themeId);
     const theme = THEMES[themeId] || THEMES.DEFAULT;
 
-    const goToMyLocation = () => {
+    const goToMyLocation = (): void => {
         if (!navigator.geolocation) {
             alert('Geolocation is not supported by your browser.');
             return;

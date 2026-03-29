@@ -56,3 +56,4 @@ pnpm-debug.log*
 .turbo
 .vercel
 /reference/
+.aider*

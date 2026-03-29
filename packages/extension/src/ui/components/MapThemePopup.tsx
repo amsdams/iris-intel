@@ -1,4 +1,4 @@
-import { h } from 'preact';
+import { h, JSX } from 'preact';
 import { useStore } from '@iris/core';
 import { Popup } from './Popup';
 import { MAP_THEMES, UI_COLORS } from '../theme';
@@ -19,7 +19,7 @@ const itemStyle: h.JSX.CSSProperties = {
     background: '#111',
 };
 
-export function MapThemePopup({ onClose }: MapThemePopupProps) {
+export function MapThemePopup({ onClose }: MapThemePopupProps): JSX.Element {
     const mapThemeId = useStore((state) => state.mapThemeId);
     const setMapTheme = useStore((state) => state.setMapTheme);
 

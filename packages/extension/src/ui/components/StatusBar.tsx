@@ -1,9 +1,9 @@
-import { h } from 'preact';
+import { h, JSX } from 'preact';
 import { useState } from 'preact/hooks';
 import { useStore } from '@iris/core';
 import { UI_COLORS, SPACING } from '../theme';
 
-export function StatusBar() {
+export function StatusBar(): JSX.Element {
     const activeRequests = useStore((state) => state.activeRequests);
     const lastRequestUrl = useStore((state) => state.lastRequestUrl);
     const failedRequests = useStore((state) => state.failedRequests);
@@ -17,19 +17,19 @@ export function StatusBar() {
     const [isExpanded, setIsExpanded] = useState(false);
 
     // Extract endpoint name from URL for cleaner display
-    const getEndpointName = (url: string) => {
+    const getEndpointName = (url: string): string => {
         if (url.includes('getEntities')) return 'getEntities';
         if (url.includes('getPortalDetails')) return 'getPortalDetails';
         if (url.includes('getPlexts')) return 'getPlexts';
         return url.split('/').pop() || 'Request';
     };
 
-    const toggleExpanded = (e: MouseEvent) => {
+    const toggleExpanded = (e: MouseEvent): void => {
         e.stopPropagation();
         setIsExpanded(!isExpanded);
     };
 
-    const handleClear = (e: MouseEvent) => {
+    const handleClear = (e: MouseEvent): void => {
         e.stopPropagation();
         clearFailedRequests();
         clearJSErrors();

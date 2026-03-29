@@ -1,5 +1,5 @@
-import { h, Fragment } from 'preact';
-import { useState, useEffect } from 'preact/hooks';
+import { h, JSX } from 'preact';
+import { useState, useEffect, useCallback } from 'preact/hooks';
 import { useStore } from '@iris/core';
 import { MapOverlay } from './MapOverlay';
 import { Topbar } from './Topbar';
@@ -22,7 +22,7 @@ import { PluginFeaturePopup } from './PluginFeaturePopup';
 // IRISOverlay
 // ---------------------------------------------------------------------------
 
-export function IRISOverlay() {
+export function IRISOverlay(): JSX.Element {
     const [showPlayerStatsPopup, setShowPlayerStatsPopup] = useState(false);
     const [showInventoryPopup, setShowInventoryPopup] = useState(false);
     const [showStateDebugPopup, setShowStateDebugPopup] = useState(false);
@@ -36,26 +36,26 @@ export function IRISOverlay() {
     const [showExportPopup, setShowExportPopup] = useState(false);
     const [showMap, setShowMap] = useState(true);
 
-    const togglePlayerStatsPopup = () => setShowPlayerStatsPopup(!showPlayerStatsPopup);
-    const toggleInventoryPopup = () => {
+    const togglePlayerStatsPopup = (): void => setShowPlayerStatsPopup((value) => !value);
+    const toggleInventoryPopup = (): void => {
         if (!showInventoryPopup) {
             window.postMessage({ type: 'IRIS_DATA_REQUEST', url: 'getInventory' }, '*');
         }
-        setShowInventoryPopup(!showInventoryPopup);
+        setShowInventoryPopup((value) => !value);
     };
-    const toggleStateDebugPopup = () => setShowStateDebugPopup(!showStateDebugPopup);
-    const toggleFiltersPopup = () => setShowFiltersPopup(!showFiltersPopup);
-    const toggleCommPopup = () => setShowCommPopup(!showCommPopup);
-    const toggleThemePopup = () => setShowThemePopup((v) => !v);
-    const toggleMapThemePopup = () => setShowMapThemePopup(!showMapThemePopup);
-    const togglePluginsPopup = () => setShowPluginsPopup(!showPluginsPopup);
-    const toggleGameScorePopup = () => {
+    const toggleStateDebugPopup = (): void => setShowStateDebugPopup((value) => !value);
+    const toggleFiltersPopup = (): void => setShowFiltersPopup((value) => !value);
+    const toggleCommPopup = (): void => setShowCommPopup((value) => !value);
+    const toggleThemePopup = useCallback((): void => setShowThemePopup((value) => !value), []);
+    const toggleMapThemePopup = (): void => setShowMapThemePopup((value) => !value);
+    const togglePluginsPopup = (): void => setShowPluginsPopup((value) => !value);
+    const toggleGameScorePopup = (): void => {
         if (!showGameScorePopup) {
             window.postMessage({ type: 'IRIS_GAME_SCORE_FETCH' }, '*');
         }
-        setShowGameScorePopup(!showGameScorePopup);
+        setShowGameScorePopup((value) => !value);
     };
-    const toggleRegionScorePopup = () => {
+    const toggleRegionScorePopup = (): void => {
         if (!showRegionScorePopup) {
             const { lat, lng } = useStore.getState().mapState;
             window.postMessage({ 
@@ -64,20 +64,20 @@ export function IRISOverlay() {
                 lng 
             }, '*');
         }
-        setShowRegionScorePopup(!showRegionScorePopup);
+        setShowRegionScorePopup((value) => !value);
     };
-    const toggleExportPopup = () => setShowExportPopup(!showExportPopup);
-    const toggleMapVisibility = () => setShowMap(!showMap);
+    const toggleExportPopup = useCallback((): void => setShowExportPopup((value) => !value), []);
+    const toggleMapVisibility = (): void => setShowMap((value) => !value);
 
     useEffect(() => {
-        const themeHandler = () => toggleThemePopup();
-        const exportHandler = () => toggleExportPopup();
+        const themeHandler = (): void => toggleThemePopup();
+        const exportHandler = (): void => toggleExportPopup();
         
         document.addEventListener('iris:plugin:theme:toggle', themeHandler);
         document.addEventListener('iris:plugin:export:toggle', exportHandler);
 
         // Periodic COMM refresh (every 120s) matching original Intel
-        const commInterval = setInterval(() => {
+        const commInterval = setInterval((): void => {
             const activeTab = useStore.getState().activeCommTab;
             window.postMessage({ 
                 type: 'IRIS_PLEXTS_REQUEST', 
@@ -86,12 +86,12 @@ export function IRISOverlay() {
             }, '*');
         }, 120000);
         
-        return () => {
+        return (): void => {
             document.removeEventListener('iris:plugin:theme:toggle', themeHandler);
             document.removeEventListener('iris:plugin:export:toggle', exportHandler);
             clearInterval(commInterval);
         };
-    }, []);
+    }, [toggleExportPopup, toggleThemePopup]);
 
     return (
         <div className="iris-overlay-root">

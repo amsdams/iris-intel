@@ -349,7 +349,8 @@ export const useStore = create<IRISState>()(
                     })),
                 removeStatsItem: (id: string): void =>
                     set((state) => {
-                        const { [id]: _, ...rest } = state.statsItems;
+                        const { [id]: removedItem, ...rest } = state.statsItems;
+                        void removedItem;
                         return { statsItems: rest };
                     }),
                 addMenuItem: (item: MenuItem): void =>
@@ -387,17 +388,20 @@ export const useStore = create<IRISState>()(
 
                         guids.forEach((id) => {
                             if (portals[id]) {
-                                const { [id]: _, ...rest } = portals;
+                                const { [id]: removedPortal, ...rest } = portals;
+                                void removedPortal;
                                 portals = rest;
                                 changed = true; 
                             }
                             if (links[id]) {
-                                const { [id]: _, ...rest } = links;
+                                const { [id]: removedLink, ...rest } = links;
+                                void removedLink;
                                 links = rest;
                                 changed = true; 
                             }
                             if (fields[id]) {
-                                const { [id]: _, ...rest } = fields;
+                                const { [id]: removedField, ...rest } = fields;
+                                void removedField;
                                 fields = rest;
                                 changed = true; 
                             }

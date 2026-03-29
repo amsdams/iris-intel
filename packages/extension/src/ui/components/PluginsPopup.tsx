@@ -1,4 +1,4 @@
-import { h } from 'preact';
+import { h, JSX } from 'preact';
 import { useStore, pluginManager } from '@iris/core';
 import { Popup } from './Popup';
 import { UI_COLORS, SPACING } from '../theme';
@@ -7,11 +7,11 @@ interface PluginsPopupProps {
     onClose: () => void;
 }
 
-export function PluginsPopup({ onClose }: PluginsPopupProps) {
+export function PluginsPopup({ onClose }: PluginsPopupProps): JSX.Element {
     const pluginStates = useStore((state) => state.pluginStates);
     const availablePlugins = pluginManager.getAvailablePlugins();
 
-    const togglePlugin = (id: string) => {
+    const togglePlugin = (id: string): void => {
         const isEnabled = !!pluginStates[id];
         pluginManager.setEnabled(id, !isEnabled);
     };
