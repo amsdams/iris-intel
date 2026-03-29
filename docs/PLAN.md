@@ -68,7 +68,7 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] **Inventory Viewer:** High-performance grid view for resonators, weapons, and mods with level-based coloring and C.O.R.E. subscription enforcement.
 
 ### Phase 6: Architecture Analysis (100% Complete)
-- [x] **Comparative Study:** Exhaustive analysis of original Ingress Intel (`gen_dashboard_*.js`) vs. IRIS, documented in `REF-DESKTOP.MD`.
+- [x] **Comparative Study:** Exhaustive analysis of original Ingress Intel (`gen_dashboard_*.js`) vs. IRIS, documented in `docs/REF-DESKTOP.MD`.
 
 ### Phase 7: Code Quality & Maintenance (100% Complete)
 - [x] **Strict Typing:** Removed `any` usage across the codebase, ensuring robust TypeScript coverage for Core, Extension, and Plugins.
@@ -80,6 +80,10 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 ### Phase 8: Optimization & Architecture (In Progress)
 - [x] **Source-side Validation:** Moved all strict numeric parsing and coordinate validation to `parseEntities` to ensure the Zustand store only contains "clean" data.
 - [x] **Renderer De-cluttering:** Removed redundant `isNaN` and safety checks from `MapOverlay.tsx`, significantly improving FPS in portal-dense areas.
+- [x] **Content/Interceptor Cleanup:** Split content parsing and interception into domain and runtime modules while keeping one shared low-level interception path.
+- [x] **Domain-Oriented Content Layout:** Added per-domain `types`, `parser`, and `handler` modules for entities, portal details, plexts, inventory, player, game score, and region score.
+- [x] **Domain-Oriented UI Layout:** Grouped UI components by gameplay domain under `ui/domains/` and moved shared primitives to `ui/shared/`.
+- [x] **UI Style Cleanup:** Broke the old monolithic stylesheet into a shared base/topbar split plus domain CSS entrypoints, while keeping `iris.css` as the aggregation entry.
 
 #### Identified Performance Bottlenecks
 - **GeoJSON Regeneration:** `MapOverlay.tsx` currently iterates over all entities on every state change. 
@@ -94,16 +98,14 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
     - *Strategy:* Batch map/source updates behind `requestAnimationFrame` or explicit throttling.
 
 #### Architectural Debt & Improvements
-- **Interceptor Complexity:** `interceptor.ts` is over-extended with sniffing, patching, and syncing logic.
-    - *Strategy:* Modularize into `VersionSniffer`, `NetworkInterceptor`, and `IntelSync` utilities.
-- **Content Script Monolith:** `content/index.ts` contains endpoint parsing, message routing, and store writes in one large switch.
-    - *Strategy:* Extract endpoint-specific handlers such as `handleEntities`, `handlePlexts`, `handleScores`, and `handleInventory`.
-- **Domain Packaging Gap:** Content/interceptor logic is still only partially split by technical concern rather than full gameplay/data domains.
-    - *Strategy:* Group `types`, `parser`, `handler`, and request helpers per domain while keeping one shared interception runtime.
 - **Zustand Store Bloat:** Central store mixes core entity state with transient UI toggles.
     - *Strategy:* Split into logical "slices" (Entities, UI, Player).
 - **Transient State Persistence Scope:** Runtime-only diagnostics and ephemeral UI/network state are still colocated with durable settings.
     - *Strategy:* Narrow persisted state to settings/plugin preferences only, and keep logs/request counters strictly runtime.
+- **Map Overlay Monolith:** `ui/domains/map/MapOverlay.tsx` still owns too much rendering, event, and GeoJSON assembly logic.
+    - *Strategy:* Extract feature builders, source update helpers, and interaction helpers into map-specific modules.
+- **UI Styling Coverage Gap:** The UI folder is now domain-grouped, but only part of the styling has been moved into domain-specific CSS files.
+    - *Strategy:* Continue moving remaining popup/domain styles into colocated CSS files without changing class names or behavior.
 - **Plugin API Isolation:** Plugins have direct access to core internals.
     - *Strategy:* Implement a restrictive proxy/bridge for the Plugin SDK.
 - **Lint Debt Baseline:** ~200 pre-existing errors hindering CI/CD.
@@ -115,8 +117,9 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 1. **Map Performance Sprint:** Refactor `MapOverlay.tsx` to use `queryRenderedFeatures` and optimize GeoJSON generation.
 2. **Marker Diffing:** Replace full plugin marker rebuilds with keyed incremental updates.
 3. **Store Modularization:** Decompose the Zustand store into maintainable slices.
-4. **Content/Interceptor Cleanup:** Decouple `content/index.ts` and `interceptor.ts` into specialized modules.
+4. **Persist Scope Cleanup:** Limit Zustand persistence to durable settings and plugin preferences.
 5. **Payload Typing Pass:** Replace cast-heavy endpoint parsing with explicit validated response types.
+6. **UI CSS Colocation:** Finish moving remaining domain-specific popup styling into `ui/domains/*`.
 
 #### Proposed Domain-Oriented Directory Plan
 ```text
@@ -126,39 +129,46 @@ packages/extension/src/content/
 │   │   ├── types.ts
 │   │   ├── parser.ts
 │   │   ├── handler.ts
-│   │   └── requests.ts
 │   ├── portal-details/
 │   │   ├── types.ts
 │   │   ├── parser.ts
 │   │   ├── handler.ts
-│   │   └── requests.ts
 │   ├── plexts/
 │   │   ├── types.ts
 │   │   ├── parser.ts
 │   │   ├── handler.ts
-│   │   └── requests.ts
-│   ├── scores/
+│   ├── game-score/
 │   │   ├── types.ts
 │   │   ├── parser.ts
 │   │   ├── handler.ts
-│   │   └── requests.ts
+│   ├── region-score/
+│   │   ├── types.ts
+│   │   ├── parser.ts
+│   │   ├── handler.ts
 │   ├── inventory/
 │   │   ├── types.ts
 │   │   ├── parser.ts
 │   │   ├── handler.ts
-│   │   └── requests.ts
 │   └── player/
 │       ├── types.ts
-│       ├── extractor.ts
 │       └── handler.ts
 ├── runtime/
 │   ├── message-types.ts
-│   ├── content-runtime.ts
 │   └── interceptor-runtime.ts
 ├── index.ts
 ├── injector.ts
 └── interceptor.ts
 ```
+
+#### Domain Refactor Status
+- **Done:** Content/interceptor logic is now split across `domains/` and `runtime/`, with separate game-score and region-score modules for consistency.
+- **Done:** UI components are grouped by domain under `ui/domains/`, with shared primitives in `ui/shared/`.
+- **Done:** Root workflow checks now include `npm run typecheck`, `npm run lint`, and `npm run build`.
+- **Done:** Current IntelliJ/TypeScript warnings that were blocking day-to-day work have been cleaned up.
+- **Todo:** Split the Zustand store into slices and narrow what gets persisted.
+- **Todo:** Finish map-specific helper extraction from `MapOverlay.tsx`.
+- **Todo:** Convert remaining popup/domain styling into colocated CSS files where it improves ownership.
+- **Todo:** Tighten Intel payload/result typing to reduce residual cast-heavy parsing.
 
 #### Domain Split Rules
 - Keep one shared low-level XHR/fetch interception runtime. Do not create a separate patcher per domain.
@@ -172,35 +182,28 @@ packages/extension/src/ui/
 ├── domains/
 │   ├── comm/
 │   │   ├── CommPopup.tsx
-│   │   └── comm.css
 │   ├── debug/
 │   │   └── StateDebugPopup.tsx
 │   ├── filters/
 │   │   └── FiltersPopup.tsx
 │   ├── inventory/
 │   │   ├── InventoryPopup.tsx
-│   │   └── inventory.css
 │   ├── map/
 │   │   ├── MapOverlay.tsx
 │   │   ├── MapThemePopup.tsx
-│   │   └── map.css
 │   ├── player/
-│   │   ├── PlayerStatsPopup.tsx
-│   │   └── player.css
+│   │   └── PlayerStatsPopup.tsx
 │   ├── plugins/
 │   │   ├── PluginFeaturePopup.tsx
-│   │   ├── PluginsPopup.tsx
-│   │   └── plugins.css
+│   │   └── PluginsPopup.tsx
 │   ├── portal/
 │   │   ├── PortalInfoPopup.tsx
 │   │   └── portal.css
 │   ├── scores/
 │   │   ├── GameScorePopup.tsx
-│   │   ├── RegionScorePopup.tsx
-│   │   └── scores.css
+│   │   └── RegionScorePopup.tsx
 │   └── status/
-│       ├── StatusBar.tsx
-│       └── status.css
+│       └── StatusBar.tsx
 ├── shared/
 │   ├── Popup.tsx
 │   ├── Topbar.tsx
@@ -245,43 +248,38 @@ packages/extension/src/ui/
 - **Network:** Cooldown logic prevents request spam. Dual-tab polling (all/faction) for COMM.
 - **Accuracy:** Native MapLibre layer events avoided in favor of manual projection for maximum cross-browser stability.
 - **Types:** Strict TypeScript validation across all plugins and core logic.
-
+- **Workflow:** `npm run typecheck`, `npm run lint`, and `npm run build` are part of the expected post-change verification flow.
 
 ### Best quick wins from the current codebase:
 
-1. Content/Interceptor Cleanup
-   packages/extension/src/content/index.ts
-   packages/extension/src/content/interceptor.ts
-   This is mostly file/module extraction, so risk is low if behavior stays identical.
-2. Extract Intel Payload Parsers
-   packages/extension/src/content/index.ts
-   Move parseEntities, parsePortalDetails, parsePlexts, and parseInventory into separate parser files. Low risk because it is mostly relocation plus imports.
-3. Extract Message Type Definitions
-   packages/extension/src/content/index.ts
-   packages/extension/src/content/interceptor.ts
-   Shared message/event types can move to one types.ts. This reduces duplicate inline shapes and is low risk.
-4. Centralize GeoJSON Feature Builders
-   packages/extension/src/ui/components/MapOverlay.tsx
-   Pull portal/link/field feature mapping into pure helper functions. That improves readability with minimal runtime risk.
-5. Replace Remaining Inline Store Reads in Event Logic
-   packages/extension/src/ui/components/MapOverlay.tsx
-   packages/extension/src/ui/components/Overlay.tsx
-   Small cleanup: isolate useStore.getState() calls behind helper functions for readability and testability.
-6. Narrow Plugin Feature Types
-   packages/extension/src/ui/components/PluginFeaturePopup.tsx
-   packages/plugins/src/player-tracker/index.ts
-   Still low risk if done as typing-only cleanup.
-7. Persist Partialization
-   packages/core/src/store.ts
-   If persistence currently stores more than necessary, restricting it to settings/plugin prefs is usually low risk and reduces stale-state weirdness. Slightly higher risk than the refactors above, but still
-   manageable.
+1. Centralize map feature builders
+   `packages/extension/src/ui/domains/map/MapOverlay.tsx`
+   Pull portal/link/field GeoJSON mapping into pure helpers. This is mostly internal reorganization and should be low risk if layer ids and feature shapes stay unchanged.
+2. Replace manual hit-testing with `queryRenderedFeatures`
+   `packages/extension/src/ui/domains/map/MapOverlay.tsx`
+   This removes the current O(n) click/hover scans and is a focused performance win with limited surface area.
+3. Diff plugin markers instead of rebuilding all of them
+   `packages/extension/src/ui/domains/map/MapOverlay.tsx`
+   Keep a keyed marker registry by feature id so plugin updates do not tear down and recreate every marker.
+4. Narrow persisted Zustand state
+   `packages/core/src/store.ts`
+   Restrict persistence to settings and plugin preferences so logs, diagnostics, and other runtime-only state do not survive reloads.
+5. Start store slice extraction
+   `packages/core/src/store.ts`
+   Begin with a low-risk split between entity data, UI state, and durable settings without changing external selectors all at once.
+6. Finish UI CSS colocation
+   `packages/extension/src/ui/domains/*`
+   More of the popup and domain styling can move next to the owning components now that the filesystem is domain-grouped.
+7. Tighten remaining payload typing
+   `packages/extension/src/content/domains/*`
+   Replace the remaining cast-heavy endpoint assumptions with explicit transport/result types per domain.
 
 If you want the safest shortlist, I’d do this order:
 
-1. content/index.ts extraction
-2. interceptor.ts extraction
-3. parser extraction
-4. shared message types
-5. GeoJSON builder helpers
+1. map feature builder extraction
+2. plugin marker diffing
+3. persisted state narrowing
+4. initial store slice split
+5. `queryRenderedFeatures` migration
 
 Those are the highest signal-to-risk ratio.
