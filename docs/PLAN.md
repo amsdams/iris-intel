@@ -84,12 +84,13 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] **Domain-Oriented Content Layout:** Added per-domain `types`, `parser`, and `handler` modules for entities, portal details, plexts, inventory, player, game score, and region score.
 - [x] **Domain-Oriented UI Layout:** Grouped UI components by gameplay domain under `ui/domains/` and moved shared primitives to `ui/shared/`.
 - [x] **UI Style Cleanup:** Broke the old monolithic stylesheet into a shared base/topbar split plus domain CSS entrypoints, while keeping `iris.css` as the aggregation entry.
+- [x] **Map Feature Builder Extraction:** Moved portal/link/field GeoJSON assembly out of `MapOverlay.tsx` into pure map helper functions.
+- [x] **Plugin Marker Diffing:** Replaced full player marker teardown/rebuild with keyed incremental marker updates using stable plugin feature ids.
+- [x] **Partial UI CSS Colocation:** Moved scores, plugins, player, status, and map-theme styling into domain-local CSS files while keeping dynamic theme values inline.
 
 #### Identified Performance Bottlenecks
 - **GeoJSON Regeneration:** `MapOverlay.tsx` currently iterates over all entities on every state change. 
     - *Strategy:* Implement `source.setData()` throttled updates or offload to a Web Worker.
-- **Marker Rebuild Churn:** Plugin player markers are fully removed and recreated on every plugin feature update.
-    - *Strategy:* Maintain a keyed marker registry and diff by feature id instead of full teardown/rebuild.
 - **Zustand Selector Overhead:** Multiple complex selectors in `MapOverlay` may trigger redundant Preact re-renders.
     - *Strategy:* Consolidate selectors using shallow equality checks.
 - **Map Interaction Overhead:** Click/Hover handlers use $O(n)$ projection loops.
@@ -103,9 +104,9 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - **Transient State Persistence Scope:** Runtime-only diagnostics and ephemeral UI/network state are still colocated with durable settings.
     - *Strategy:* Narrow persisted state to settings/plugin preferences only, and keep logs/request counters strictly runtime.
 - **Map Overlay Monolith:** `ui/domains/map/MapOverlay.tsx` still owns too much rendering, event, and GeoJSON assembly logic.
-    - *Strategy:* Extract feature builders, source update helpers, and interaction helpers into map-specific modules.
+    - *Strategy:* Continue extracting source update helpers and interaction helpers into map-specific modules.
 - **UI Styling Coverage Gap:** The UI folder is now domain-grouped, but only part of the styling has been moved into domain-specific CSS files.
-    - *Strategy:* Continue moving remaining popup/domain styles into colocated CSS files without changing class names or behavior.
+    - *Strategy:* Continue moving remaining popup/domain styles into colocated CSS files without changing class names or behavior, starting with `comm` and `inventory`.
 - **Plugin API Isolation:** Plugins have direct access to core internals.
     - *Strategy:* Implement a restrictive proxy/bridge for the Plugin SDK.
 - **Lint Debt Baseline:** ~200 pre-existing errors hindering CI/CD.
@@ -114,12 +115,12 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
     - *Strategy:* Introduce explicit transport/result types for each intercepted endpoint and centralize parse validation.
 
 #### Proposed Next Steps
-1. **Map Performance Sprint:** Refactor `MapOverlay.tsx` to use `queryRenderedFeatures` and optimize GeoJSON generation.
-2. **Marker Diffing:** Replace full plugin marker rebuilds with keyed incremental updates.
+1. **Map Interaction Sprint:** Replace manual portal click/hover hit-testing with `queryRenderedFeatures`.
+2. **GeoJSON Update Optimization:** Throttle or batch `setData()` updates and extract the remaining map source update helpers.
 3. **Store Modularization:** Decompose the Zustand store into maintainable slices.
 4. **Persist Scope Cleanup:** Limit Zustand persistence to durable settings and plugin preferences.
 5. **Payload Typing Pass:** Replace cast-heavy endpoint parsing with explicit validated response types.
-6. **UI CSS Colocation:** Finish moving remaining domain-specific popup styling into `ui/domains/*`.
+6. **UI CSS Colocation:** Finish moving remaining domain-specific popup styling into `ui/domains/*`, starting with `comm` and `inventory`.
 
 #### Proposed Domain-Oriented Directory Plan
 ```text
@@ -165,9 +166,12 @@ packages/extension/src/content/
 - **Done:** UI components are grouped by domain under `ui/domains/`, with shared primitives in `ui/shared/`.
 - **Done:** Root workflow checks now include `npm run typecheck`, `npm run lint`, and `npm run build`.
 - **Done:** Current IntelliJ/TypeScript warnings that were blocking day-to-day work have been cleaned up.
+- **Done:** Portal/link/field GeoJSON builders now live in dedicated map helper modules.
+- **Done:** Plugin player markers are updated incrementally rather than rebuilt wholesale.
+- **Done:** Scores, plugins, player, status, and map-theme UI now have colocated domain CSS files.
 - **Todo:** Split the Zustand store into slices and narrow what gets persisted.
-- **Todo:** Finish map-specific helper extraction from `MapOverlay.tsx`.
-- **Todo:** Convert remaining popup/domain styling into colocated CSS files where it improves ownership.
+- **Todo:** Finish map-specific helper extraction from `MapOverlay.tsx`, especially interaction and source update helpers.
+- **Todo:** Convert the remaining popup/domain styling into colocated CSS files where it improves ownership, especially `comm` and `inventory`.
 - **Todo:** Tighten Intel payload/result typing to reduce residual cast-heavy parsing.
 
 #### Domain Split Rules
@@ -252,34 +256,34 @@ packages/extension/src/ui/
 
 ### Best quick wins from the current codebase:
 
-1. Centralize map feature builders
-   `packages/extension/src/ui/domains/map/MapOverlay.tsx`
-   Pull portal/link/field GeoJSON mapping into pure helpers. This is mostly internal reorganization and should be low risk if layer ids and feature shapes stay unchanged.
-2. Replace manual hit-testing with `queryRenderedFeatures`
+1. Replace manual hit-testing with `queryRenderedFeatures`
    `packages/extension/src/ui/domains/map/MapOverlay.tsx`
    This removes the current O(n) click/hover scans and is a focused performance win with limited surface area.
-3. Diff plugin markers instead of rebuilding all of them
-   `packages/extension/src/ui/domains/map/MapOverlay.tsx`
-   Keep a keyed marker registry by feature id so plugin updates do not tear down and recreate every marker.
-4. Narrow persisted Zustand state
+2. Narrow persisted Zustand state
    `packages/core/src/store.ts`
    Restrict persistence to settings and plugin preferences so logs, diagnostics, and other runtime-only state do not survive reloads.
-5. Start store slice extraction
+3. Start store slice extraction
    `packages/core/src/store.ts`
    Begin with a low-risk split between entity data, UI state, and durable settings without changing external selectors all at once.
-6. Finish UI CSS colocation
+4. Finish UI CSS colocation for `comm` and `inventory`
    `packages/extension/src/ui/domains/*`
-   More of the popup and domain styling can move next to the owning components now that the filesystem is domain-grouped.
-7. Tighten remaining payload typing
+   These still carry a lot of inline layout/styling and are the next low-risk domains to move into colocated CSS files.
+5. Extract remaining map helpers
+   `packages/extension/src/ui/domains/map/MapOverlay.tsx`
+   Feature builders are already out. The next safe split is source update helpers and portal interaction helpers.
+6. Tighten remaining payload typing
    `packages/extension/src/content/domains/*`
    Replace the remaining cast-heavy endpoint assumptions with explicit transport/result types per domain.
+7. Add batched source updates
+   `packages/extension/src/ui/domains/map/MapOverlay.tsx`
+   Wrap clustered `setData()` updates behind `requestAnimationFrame` or a small throttle to reduce update burstiness in dense areas.
 
 If you want the safest shortlist, I’d do this order:
 
-1. map feature builder extraction
-2. plugin marker diffing
-3. persisted state narrowing
-4. initial store slice split
-5. `queryRenderedFeatures` migration
+1. persisted state narrowing
+2. initial store slice split
+3. `queryRenderedFeatures` migration
+4. `comm` CSS colocation
+5. map source update batching
 
 Those are the highest signal-to-risk ratio.

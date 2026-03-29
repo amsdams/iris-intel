@@ -24,8 +24,8 @@ This document serves as the technical blueprint for the IRIS extension, detailin
 - **Original Intel**: Uses `getPlexts` for all chat and system logs.
 - **Technical Detail**: Supports three tabs: `all`, `faction`, and `alerts`.
 - **IRIS Status**: **In Progress**. 
-  - **Done**: Parsing markup into interactive elements (click to move map).
-  - **Missing**: "Send" functionality and proper pagination (infinite scroll).
+  - **Done**: Three tabs, periodic refresh, interactive markup, and older/newer fetch triggers tied to scroll position.
+  - **Missing**: "Send" functionality and Intel-style continuation/pagination semantics. The current implementation uses timestamp-based fetches instead of the original continuation-guid flow.
 
 ### 4. Filters & Visibility (Completed)
 - **Original Intel**: Faction (E/R/M/N), Level (Range), Health (Range), and Layer (Links/Fields) toggles.
@@ -36,10 +36,28 @@ This document serves as the technical blueprint for the IRIS extension, detailin
   - **Layers**: Toggles for Links and Fields.
   - **Optimization**: Filters are applied during the GeoJSON generation phase in `MapOverlay.tsx` to ensure high FPS.
 
-### 5. Session & Subscription Management (Analysis)
+### 5. Scores & Meta Panels (Completed)
+- **Original Intel**: Uses `getGameScore` and `getRegionScoreDetails` to render the metascore panel and regional score details.
+- **IRIS Status**: **Implemented**.
+  - Global score is rendered in `GameScorePopup.tsx`.
+  - Regional score and checkpoint history are rendered in `RegionScorePopup.tsx`.
+  - Data is intercepted and parsed through dedicated score domain handlers.
+
+### 6. Session & Subscription Management (Analysis)
 - **Login Detection**: The original code detects session timeouts by monitoring for `401 Unauthorized` or `403 Forbidden` responses from the API. It also verifies the presence of the `csrftoken` cookie. If a failure occurs, it often triggers `window.location.reload()`.
 - **C.O.R.E. Subscription**: The `getHasActiveSubscription()` function checks if the user is a C.O.R.E. member.
   - **Technical Impact**: Access to `getInventory` and detailed "Portal History" (V/C/S indicators) is strictly guarded by this check. Non-subscribers receive a "Access restricted" warning.
+
+### 7. Architecture & Extensibility (Implemented Differently)
+- **Original Intel**: Mostly monolithic dashboard code centered around Google Maps, direct DOM updates, and tightly coupled view/state/network logic.
+- **IRIS Implementation**: Uses a domain-oriented TypeScript structure with:
+  - `packages/extension/src/content/domains/*` for intercepted endpoint parsing/handling
+  - `packages/extension/src/content/runtime/*` for shared interception/runtime logic
+  - `packages/extension/src/ui/domains/*` for domain-grouped UI
+  - `packages/core` for normalized state and plugin management
+- **Technical Impact**:
+  - The architecture no longer mirrors Intel’s monolith one-to-one.
+  - IRIS has a plugin API and live plugin feature rendering, which is an intentional extension beyond Intel core behavior.
 
 ---
 
@@ -57,6 +75,9 @@ The search in original Intel is a versatile tool for navigation and portal disco
   - Add a `SearchPopup` or search bar in `Topbar.tsx`.
   - Store results in a new `searchResults` slice in the store.
   - Clicking a result should call `updateMapState` and, if it's a portal, `selectPortal`.
+- **Current IRIS Status**: **Partially Implemented**.
+  - `Topbar.tsx` already supports coordinate/address geocoding via Nominatim.
+  - Portal search via `/r/getPortalSearch` is still missing.
 
 ### 2. Inventory Viewer (Completed)
 Provides a view of the player's items, typically restricted to C.O.R.E. members in the official tool.
@@ -106,18 +127,21 @@ Provides a view of the player's items, typically restricted to C.O.R.E. members 
 | **Map Engine** | Google Maps API v3 | **MapLibre GL JS** | Significant performance gain with vector-like GeoJSON rendering. |
 | **Data Fetching** | Tile-based `getEntities` | **Intercepted** | IRIS hooks the same API calls to maintain a local Zustand store. |
 | **Portal Details** | Rich detailed response on click | **Implemented** | Displays owner, mods, and resonators in `PortalInfoPopup`. |
-| **COMM Tabs** | All, Faction, Alerts | **Implemented** | Interactive markup allows jumping to portals from chat. |
-| **COMM History** | Infinite scroll via continuation GUID | **Partial** | Currently shows last 200; pagination logic is pending. |
+| **COMM Tabs** | All, Faction, Alerts | **Implemented** | Interactive markup, periodic refresh, and tab-specific fetches are in place. |
+| **COMM History** | Infinite scroll via continuation GUID | **Partial** | IRIS has older/newer timestamp-driven fetches, but not the original continuation-guid behavior. |
 | **Faction Filters** | ENL, RES, MAC, NEUTRAL | **Implemented** | High-performance client-side filtering. |
 | **Level Filters** | Range Slider (Min - Max) | **Implemented** | Individual checkboxes for L1-L8 for more precision. |
 | **Health Filters** | Range Slider (0 - 100%) | **Implemented** | Bucketed checkboxes (25%, 50%, 75%, 100%) for faster filtering. |
 | **Login Detection** | Monitor 401/403 + CSRF cookie | **Missing** | Update `interceptor.ts` to detect and broadcast session loss. |
 | **C.O.R.E. Perks** | `getHasActiveSubscription()` check | **Implemented** | Extraction from `window.PLAYER` and `/r/getHasActiveSubscription` integrated. |
-| **Search** | Google Geocoding + Portal Search | **Missing** | Requires OSM Geocoding + `/r/getPortalSearch` integration. |
+| **Search** | Google Geocoding + Portal Search | **Partial** | Address/coordinate search via Nominatim exists; Intel-style portal search is still missing. |
 | **Inventory** | C.O.R.E restricted item viewer | **Implemented** | Refined grid view with category filtering and level/rarity coloring. |
+| **Global Score** | `getGameScore` metascore panel | **Implemented** | Rendered in `GameScorePopup` using intercepted score payloads. |
+| **Regional Score** | `getRegionScoreDetails` details panel | **Implemented** | Region score, top agents, and checkpoint history are implemented. |
 | **Chat Send** | Send message to All/Faction | **Missing** | Requires Input form + `/r/sendPlext` API call. |
 | **Portal History** | Map markers for Visit/Capture | **Implemented** | Bitmask parsing from index 18 with multi-ring MapLibre rendering and toggles. |
+| **Plugin System** | Not a first-class Intel concept | **Implemented Differently** | IRIS adds a plugin architecture and plugin-rendered map features beyond the original dashboard. |
+| **Architecture** | Monolithic dashboard script | **Implemented Differently** | IRIS now uses domain-oriented content/runtime/UI modules rather than one large dashboard controller. |
 | **Missions** | Start points and waypoints | **Missing** | Requires `/r/getMissionDetails` integration. |
 | **Artifacts** | Shards and target portals | **Missing** | Needs Artifact API parsing + path rendering. |
 | **Passcodes** | Passcode redemption field | **Missing** | Simple `/r/redeemReward` API hook. |
-
