@@ -57,3 +57,4 @@ pnpm-debug.log*
 .vercel
 /reference/
 .aider*
+/packages/extension/dist-firefox/

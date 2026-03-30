@@ -35,6 +35,28 @@
     margin-bottom: 4px;
 }
 
+.iris-portal-history-section {
+    margin-bottom: 8px;
+}
+
+.iris-portal-history-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.iris-portal-history-badge {
+    border: 1px solid #333;
+    border-radius: 999px;
+    padding: 2px 8px;
+    font-size: 0.75em;
+    background: #111;
+}
+
+.iris-portal-history-badge-inactive {
+    opacity: 0.6;
+}
+
 .iris-portal-resonators-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);

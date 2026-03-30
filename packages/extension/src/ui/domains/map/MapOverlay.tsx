@@ -392,18 +392,18 @@ export function MapOverlay(): JSX.Element {
     }
   }, [mapThemeId, styleLoaded]);
 
-  // Sync Portal History Layer Visibility
+  // Sync Portal History Highlight Filters
   useEffect(() => {
     if (!map.current || !styleLoaded) return;
     
     if (map.current.getLayer('portal-history-visited')) {
-        map.current.setLayoutProperty('portal-history-visited', 'visibility', showVisited ? 'visible' : 'none');
+        map.current.setFilter('portal-history-visited', ['==', ['get', 'visited'], showVisited]);
     }
     if (map.current.getLayer('portal-history-captured')) {
-        map.current.setLayoutProperty('portal-history-captured', 'visibility', showCaptured ? 'visible' : 'none');
+        map.current.setFilter('portal-history-captured', ['==', ['get', 'captured'], showCaptured]);
     }
     if (map.current.getLayer('portal-history-scanned')) {
-        map.current.setLayoutProperty('portal-history-scanned', 'visibility', showScanned ? 'visible' : 'none');
+        map.current.setFilter('portal-history-scanned', ['==', ['get', 'scanned'], showScanned]);
     }
   }, [showVisited, showCaptured, showScanned, styleLoaded]);
 

@@ -92,6 +92,32 @@ export function PortalInfoPopup(): JSX.Element | null {
                     </div>
                 )}
 
+                <div className="iris-portal-history-section">
+                    <div className="iris-portal-section-title" style={{ fontSize: '0.8em', color: '#888', marginBottom: '4px' }}>
+                        HISTORY
+                    </div>
+                    <div className="iris-portal-history-badges">
+                        <span
+                            className={`iris-portal-history-badge ${portal.visited ? 'iris-portal-history-badge-active' : 'iris-portal-history-badge-inactive'}`}
+                            style={{ borderColor: '#9B59B6', color: portal.visited ? '#9B59B6' : '#666' }}
+                        >
+                            Visited
+                        </span>
+                        <span
+                            className={`iris-portal-history-badge ${portal.captured ? 'iris-portal-history-badge-active' : 'iris-portal-history-badge-inactive'}`}
+                            style={{ borderColor: '#E74C3C', color: portal.captured ? '#E74C3C' : '#666' }}
+                        >
+                            Captured
+                        </span>
+                        <span
+                            className={`iris-portal-history-badge ${portal.scanned ? 'iris-portal-history-badge-active' : 'iris-portal-history-badge-inactive'}`}
+                            style={{ borderColor: '#F1C40F', color: portal.scanned ? '#F1C40F' : '#666' }}
+                        >
+                            Scanned
+                        </span>
+                    </div>
+                </div>
+
                 {/* Resonators */}
                 <div className="iris-portal-resonators-section" style={{ marginBottom: '8px' }}>
                     <div className="iris-portal-section-title" style={{ fontSize: '0.8em', color: '#888', marginBottom: '4px' }}>
