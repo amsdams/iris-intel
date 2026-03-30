@@ -86,6 +86,7 @@ export function isIrisUrl(url: string): boolean {
     url.includes('getPortalDetails') ||
     url.includes('getMissionDetails') ||
     url.includes('getTopMissionsInBounds') ||
+    url.includes('getTopMissionsForPortal') ||
     url.includes('getPlexts') ||
     url.includes('getGameScore') ||
     url.includes('getRegionScoreDetails') ||

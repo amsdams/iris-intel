@@ -41,6 +41,7 @@ export function parsePortalDetails(data: PortalDetailsData, params: { guid?: str
       visited: !!(history & 1),
       captured: !!(history & 2),
       scanned: !!(history & 4),
+      hasMissionsStartingHere: Boolean(details[10]),
     };
   } catch (error) {
     console.error('IRIS: Failed to parse portal details', error, data);

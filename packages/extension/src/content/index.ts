@@ -253,7 +253,7 @@ window.addEventListener('message', (event: MessageEvent) => {
         handleRegionScore(data as RegionScoreData);
       } else if (url_str.includes('getMissionDetails')) {
         handleMissionDetails(data as MissionDetailsData);
-      } else if (url_str.includes('getTopMissionsInBounds')) {
+      } else if (url_str.includes('getTopMissionsInBounds') || url_str.includes('getTopMissionsForPortal')) {
         handleTopMissionsInBounds(data as TopMissionsInBoundsData);
       } else if (url_str.includes('getHasActiveSubscription')) {
         const res = (data as { result?: boolean }).result;

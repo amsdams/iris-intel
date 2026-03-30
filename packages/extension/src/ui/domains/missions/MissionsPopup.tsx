@@ -11,10 +11,22 @@ interface MissionsPopupProps {
 export function MissionsPopup({ onClose }: MissionsPopupProps): JSX.Element {
   const missions = useStore((state) => state.missionsInView);
   const bounds = useStore((state) => state.mapState.bounds);
+  const missionsPortalId = useStore((state) => state.missionsPortalId);
+  const portalName = useStore((state) =>
+    state.missionsPortalId ? state.portals[state.missionsPortalId]?.name : null
+  );
   const themeId = useStore((state) => state.themeId);
   const theme = THEMES[themeId] || THEMES.DEFAULT;
 
   useEffect(() => {
+    if (missionsPortalId) {
+      window.postMessage({
+        type: 'IRIS_TOP_MISSIONS_FOR_PORTAL_FETCH',
+        guid: missionsPortalId,
+      }, '*');
+      return;
+    }
+
     if (!bounds) return;
 
     window.postMessage({
@@ -24,7 +36,7 @@ export function MissionsPopup({ onClose }: MissionsPopupProps): JSX.Element {
       maxLatE6: bounds.maxLatE6,
       maxLngE6: bounds.maxLngE6,
     }, '*');
-  }, [bounds]);
+  }, [bounds, missionsPortalId]);
 
   const handleMissionClick = (missionId: string): void => {
     window.postMessage({
@@ -36,7 +48,7 @@ export function MissionsPopup({ onClose }: MissionsPopupProps): JSX.Element {
   return (
     <Popup
       onClose={onClose}
-      title="Missions"
+      title={missionsPortalId ? 'Missions Starting Here' : 'Missions'}
       style={{
         top: '90px',
         left: '20px',
@@ -47,15 +59,21 @@ export function MissionsPopup({ onClose }: MissionsPopupProps): JSX.Element {
       }}
     >
       <div className="iris-missions-list">
-        {!bounds && (
+        {missionsPortalId && portalName && (
+          <div className="iris-missions-context" style={{ color: theme.AQUA }}>
+            {portalName}
+          </div>
+        )}
+
+        {!missionsPortalId && !bounds && (
           <div className="iris-missions-empty">
             Move the map once so IRIS has viewport bounds.
           </div>
         )}
 
-        {bounds && missions.length === 0 && (
+        {((missionsPortalId !== null) || bounds) && missions.length === 0 && (
           <div className="iris-missions-empty">
-            No missions in range, try zooming out.
+            {missionsPortalId ? 'No missions starting here.' : 'No missions in range, try zooming out.'}
           </div>
         )}
 

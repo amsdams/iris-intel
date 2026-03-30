@@ -54,6 +54,7 @@ export interface Portal {
     visited?: boolean;
     captured?: boolean;
     scanned?: boolean;
+    hasMissionsStartingHere?: boolean;
 }
 
 export interface Link {
@@ -266,6 +267,8 @@ interface IRISState {
     setMissionDetails: (mission: MissionDetails | null) => void;
     missionsInView: MissionSummary[];
     setMissionsInView: (missions: MissionSummary[]) => void;
+    missionsPortalId: string | null;
+    setMissionsPortalId: (portalId: string | null) => void;
 
     themeId: string;
     setTheme: (id: string) => void;
@@ -468,6 +471,8 @@ export const useStore = create<IRISState>()(
                 setMissionDetails: (mission: MissionDetails | null): void => set(() => ({ missionDetails: mission })),
                 missionsInView: [],
                 setMissionsInView: (missions: MissionSummary[]): void => set(() => ({ missionsInView: missions })),
+                missionsPortalId: null,
+                setMissionsPortalId: (portalId: string | null): void => set(() => ({ missionsPortalId: portalId })),
 
                 themeId: 'DEFAULT',
                 setTheme: (id: string): void => set(() => ({ themeId: id })),

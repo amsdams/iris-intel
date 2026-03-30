@@ -70,13 +70,15 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 ### Phase 5.5: Intel Feature-Completeness Push (In Progress)
 - [x] **Mission Details:** Intercept and render `getMissionDetails` with a mission details popup plus waypoint/route rendering on the IRIS map.
 - [x] **Viewport Mission List:** Added a `Missions` menu entry backed by `getTopMissionsInBounds`, with click-through to mission details.
-- [ ] **Mission Browser Parity:** Add portal-scoped mission browsing via `getTopMissionsForPortal`.
+- [x] **Portal Mission Browser:** Added `getTopMissionsForPortal` and a conditional "Missions Starting Here" action in portal details, matching Intel’s portal-flag gating.
+- [ ] **Mission Browser Parity:** Refine mission-browser UX to better match Intel, including list/detail transitions, map interaction, and metadata presentation.
 - [ ] **Artifacts:** Add `getArtifactPortals` parsing and map rendering for shards/targets.
 - [ ] **Portal Search:** Implement `/r/getPortalSearch` so IRIS matches Intel’s portal search workflow instead of only address/coordinate search.
 - [ ] **COMM Send:** Add `/r/sendPlext` support with an input field in COMM.
 - [ ] **Passcodes:** Add `/r/redeemReward` UI and response handling.
 - [ ] **Login Recovery:** Detect Intel session loss (`401`/`403`) and surface a clear recovery action.
 - [ ] **Mission UI Polish:** Mission author styling is currently not correctly faction-colored; revisit after establishing a reliable semantic color approach.
+- [x] **Font Consistency:** Standardized the IRIS UI onto an explicit Menlo-first monospace stack and forced form controls to inherit it, preventing browser-default Arial from leaking into new mission and popup surfaces.
 
 ### Phase 6: Architecture Analysis (100% Complete)
 - [x] **Comparative Study:** Exhaustive analysis of original Ingress Intel (`gen_dashboard_*.js`) vs. IRIS, documented in `docs/REF-DESKTOP.MD`.

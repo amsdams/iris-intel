@@ -40,6 +40,12 @@ export function PortalInfoPopup(): JSX.Element | null {
         });
     }
 
+    const openPortalMissions = (): void => {
+        document.dispatchEvent(
+            new CustomEvent('iris:missions:open', { detail: { portalId: portal.id } })
+        );
+    };
+
     return (
         <Popup
             onClose={() => selectPortal(null)}
@@ -89,6 +95,24 @@ export function PortalInfoPopup(): JSX.Element | null {
                 {portal.owner && (
                     <div className="iris-portal-owner" style={{ fontSize: '0.85em', color: UI_COLORS.TEXT_MUTED, marginBottom: '8px' }}>
                         Owner: <span className="iris-portal-owner-name" style={{ color: colour }}>{portal.owner}</span>
+                    </div>
+                )}
+
+                {portal.hasMissionsStartingHere && (
+                    <div style={{ marginBottom: '8px' }}>
+                        <button
+                            onClick={openPortalMissions}
+                            style={{
+                                background: 'transparent',
+                                border: `1px solid ${colour}`,
+                                color: colour,
+                                padding: '4px 8px',
+                                fontSize: '0.8em',
+                                cursor: 'pointer',
+                            }}
+                        >
+                            Missions Starting Here
+                        </button>
                     </div>
                 )}
 

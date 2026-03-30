@@ -351,6 +351,16 @@ import {
                 break;
             }
 
+            case 'IRIS_TOP_MISSIONS_FOR_PORTAL_FETCH': {
+                const { guid } = msg;
+                safeIrisFetch('/r/getTopMissionsForPortal', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
+                    body: JSON.stringify({ guid })
+                }).catch(e => console.error('IRIS: Top missions for portal fetch failed', e));
+                break;
+            }
+
             case 'IRIS_GEOLOCATE': {
                 navigator.geolocation.getCurrentPosition(
                     (pos) => {

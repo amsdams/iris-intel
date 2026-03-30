@@ -71,7 +71,12 @@ export function IRISOverlay(): JSX.Element {
     };
     const toggleExportPopup = useCallback((): void => setShowExportPopup((value) => !value), []);
     const toggleMapVisibility = (): void => setShowMap((value) => !value);
-    const toggleMissionsPopup = (): void => setShowMissionsPopup((value) => !value);
+    const toggleMissionsPopup = (): void => {
+        if (!showMissionsPopup) {
+            useStore.getState().setMissionsPortalId(null);
+        }
+        setShowMissionsPopup((value) => !value);
+    };
 
     useEffect(() => {
         const themeHandler = (): void => toggleThemePopup();
@@ -79,6 +84,12 @@ export function IRISOverlay(): JSX.Element {
         
         document.addEventListener('iris:plugin:theme:toggle', themeHandler);
         document.addEventListener('iris:plugin:export:toggle', exportHandler);
+        const missionsOpenHandler = (event: Event): void => {
+            const detail = (event as CustomEvent<{ portalId?: string | null }>).detail;
+            useStore.getState().setMissionsPortalId(detail?.portalId ?? null);
+            setShowMissionsPopup(true);
+        };
+        document.addEventListener('iris:missions:open', missionsOpenHandler);
 
         // Periodic COMM refresh (every 120s) matching original Intel
         const commInterval = setInterval((): void => {
@@ -93,6 +104,7 @@ export function IRISOverlay(): JSX.Element {
         return (): void => {
             document.removeEventListener('iris:plugin:theme:toggle', themeHandler);
             document.removeEventListener('iris:plugin:export:toggle', exportHandler);
+            document.removeEventListener('iris:missions:open', missionsOpenHandler);
             clearInterval(commInterval);
         };
     }, [toggleExportPopup, toggleThemePopup]);

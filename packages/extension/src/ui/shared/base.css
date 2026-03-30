@@ -7,10 +7,20 @@
     pointer-events: none;
     z-index: 9999;
     font-family: monospace;
+    --iris-font-family: monospace;
     --iris-border: #333333;
     --iris-text-secondary: #aaaaaa;
     --iris-text-primary: #ffffff;
     --iris-accent: #00ffff;
+}
+
+[class^="iris-"],
+[class*=" iris-"],
+.iris-overlay-root button,
+.iris-overlay-root input,
+.iris-overlay-root textarea,
+.iris-overlay-root select {
+    font-family: var(--iris-font-family);
 }
 
 [class^="iris-"], [class*=" iris-"] {
