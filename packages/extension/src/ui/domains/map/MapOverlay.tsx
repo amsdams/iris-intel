@@ -7,6 +7,8 @@ import { THEMES, MAP_THEMES } from '../../theme';
 import {
   buildFieldFeatures,
   buildLinkFeatures,
+  buildMissionRouteFeatures,
+  buildMissionWaypointFeatures,
   buildPortalFeatures,
   toFeatureCollection,
 } from './feature-builders';
@@ -35,6 +37,7 @@ export function MapOverlay(): JSX.Element {
   const portals = useStore((state) => state.portals);
   const links = useStore((state) => state.links);
   const fields = useStore((state) => state.fields);
+  const missionDetails = useStore((state) => state.missionDetails);
   const pluginFeatures = useStore((state) => state.pluginFeatures);
   const pluginMarkers = useRef<Map<string, MarkerRegistryEntry>>(new Map());
   const { lat, lng, zoom } = useStore((state) => state.mapState);
@@ -116,6 +119,14 @@ export function MapOverlay(): JSX.Element {
             type: 'geojson',
             data: { type: 'FeatureCollection', features: [] },
           },
+          'mission-route': {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: [] },
+          },
+          'mission-waypoints': {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: [] },
+          },
           'plugin-features': {
             type: 'geojson',
             data: { type: 'FeatureCollection', features: [] },
@@ -165,6 +176,16 @@ export function MapOverlay(): JSX.Element {
               'line-dasharray': [2, 1],
               'line-color': ['get', 'color'],
               'line-opacity': ['coalesce', ['get', 'opacity'], 1],
+            },
+          },
+          {
+            id: 'mission-route',
+            type: 'line',
+            source: 'mission-route',
+            paint: {
+              'line-width': 4,
+              'line-color': '#ef8e2e',
+              'line-opacity': 0.7,
             },
           },
           {
@@ -238,6 +259,21 @@ export function MapOverlay(): JSX.Element {
                 'circle-stroke-color': '#F1C40F', // Yellow/Gold for scanned
                 'circle-stroke-opacity': 0.6,
             }
+          },
+          {
+            id: 'mission-waypoints',
+            type: 'circle',
+            source: 'mission-waypoints',
+            paint: {
+              'circle-radius': [
+                'interpolate', ['linear'], ['zoom'],
+                10, 6,
+                15, 10,
+              ],
+              'circle-color': '#ef8e2e',
+              'circle-stroke-width': 2,
+              'circle-stroke-color': '#fff',
+            },
           },
           {
             id: 'plugin-points',
@@ -438,11 +474,13 @@ export function MapOverlay(): JSX.Element {
       showUnclaimedPortals,
     });
     getGeoJsonSource('fields')?.setData(toFeatureCollection(filteredFields));
+    getGeoJsonSource('mission-route')?.setData(toFeatureCollection(buildMissionRouteFeatures(missionDetails)));
+    getGeoJsonSource('mission-waypoints')?.setData(toFeatureCollection(buildMissionWaypointFeatures(missionDetails)));
 
     // Plugin Features (Lines only here, points are HTML)
     getGeoJsonSource('plugin-features')?.setData(pluginFeatures);
 
-  }, [portals, links, fields, showFields, showLinks, showResistance, showEnlightened, showMachina, showUnclaimedPortals, showLevel, showHealth, styleLoaded, pluginFeatures]);
+  }, [portals, links, fields, missionDetails, showFields, showLinks, showResistance, showEnlightened, showMachina, showUnclaimedPortals, showLevel, showHealth, styleLoaded, pluginFeatures]);
 
   // Sync HTML Markers (Independent effect for performance)
   useEffect(() => {

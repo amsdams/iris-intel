@@ -1,4 +1,4 @@
-import { Field, Link, Portal } from '@iris/core';
+import { Field, Link, MissionDetails, Portal } from '@iris/core';
 
 type PortalFeatureProperties = {
   id: string;
@@ -18,6 +18,8 @@ type TeamFeatureProperties = {
 export type PortalFeature = GeoJSON.Feature<GeoJSON.Point, PortalFeatureProperties>;
 export type LinkFeature = GeoJSON.Feature<GeoJSON.LineString, TeamFeatureProperties>;
 export type FieldFeature = GeoJSON.Feature<GeoJSON.Polygon, TeamFeatureProperties>;
+export type MissionRouteFeature = GeoJSON.Feature<GeoJSON.LineString, Record<string, unknown>>;
+export type MissionWaypointFeature = GeoJSON.Feature<GeoJSON.Point, Record<string, unknown>>;
 
 interface TeamVisibility {
   showResistance: boolean;
@@ -129,3 +131,44 @@ export const buildFieldFeatures = (
       },
       properties: { team: field.team } satisfies TeamFeatureProperties,
     }));
+
+export const buildMissionRouteFeatures = (mission: MissionDetails | null): MissionRouteFeature[] => {
+  if (!mission) return [];
+
+  const coordinates = mission.waypoints
+    .filter((waypoint) => !waypoint.hidden && waypoint.lat !== undefined && waypoint.lng !== undefined)
+    .map((waypoint) => [waypoint.lng as number, waypoint.lat as number] as [number, number]);
+
+  if (coordinates.length < 2) return [];
+
+  return [{
+    type: 'Feature',
+    geometry: {
+      type: 'LineString',
+      coordinates,
+    },
+    properties: {
+      missionId: mission.id,
+    },
+  }];
+};
+
+export const buildMissionWaypointFeatures = (mission: MissionDetails | null): MissionWaypointFeature[] => {
+  if (!mission) return [];
+
+  return mission.waypoints
+    .filter((waypoint) => !waypoint.hidden && waypoint.lat !== undefined && waypoint.lng !== undefined)
+    .map((waypoint) => ({
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: [waypoint.lng as number, waypoint.lat as number],
+      },
+      properties: {
+        missionId: mission.id,
+        waypointId: waypoint.id,
+        index: waypoint.index + 1,
+        title: waypoint.title,
+      },
+    }));
+};

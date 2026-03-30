@@ -171,6 +171,37 @@ export interface InventoryItem extends InventoryItemData {
     timestamp: number;
 }
 
+export interface MissionWaypoint {
+    index: number;
+    id: string;
+    title: string;
+    type: number;
+    objective: number;
+    hidden: boolean;
+    lat?: number;
+    lng?: number;
+}
+
+export interface MissionDetails {
+    id: string;
+    title: string;
+    description: string;
+    author?: string;
+    logoUrl?: string;
+    rating?: number;
+    medianCompletionTime?: string;
+    participants?: number;
+    waypoints: MissionWaypoint[];
+}
+
+export interface MissionSummary {
+    id: string;
+    title: string;
+    logoUrl?: string;
+    rating?: number;
+    medianCompletionTime?: string;
+}
+
 interface IRISState {
     portals: Record<string, Portal>;
     links: Record<string, Link>;
@@ -230,6 +261,11 @@ interface IRISState {
 
     inventory: InventoryItem[];
     setInventory: (items: InventoryItem[]) => void;
+
+    missionDetails: MissionDetails | null;
+    setMissionDetails: (mission: MissionDetails | null) => void;
+    missionsInView: MissionSummary[];
+    setMissionsInView: (missions: MissionSummary[]) => void;
 
     themeId: string;
     setTheme: (id: string) => void;
@@ -427,6 +463,11 @@ export const useStore = create<IRISState>()(
 
                 inventory: [],
                 setInventory: (items: InventoryItem[]): void => set(() => ({ inventory: items })),
+
+                missionDetails: null,
+                setMissionDetails: (mission: MissionDetails | null): void => set(() => ({ missionDetails: mission })),
+                missionsInView: [],
+                setMissionsInView: (missions: MissionSummary[]): void => set(() => ({ missionsInView: missions })),
 
                 themeId: 'DEFAULT',
                 setTheme: (id: string): void => set(() => ({ themeId: id })),

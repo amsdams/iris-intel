@@ -84,11 +84,18 @@ export function getCsrfToken(doc: Document): string {
 export function isIrisUrl(url: string): boolean {
   return url.includes('getEntities') ||
     url.includes('getPortalDetails') ||
+    url.includes('getMissionDetails') ||
+    url.includes('getTopMissionsInBounds') ||
     url.includes('getPlexts') ||
     url.includes('getGameScore') ||
     url.includes('getRegionScoreDetails') ||
     url.includes('getInventory') ||
     url.includes('getHasActiveSubscription');
+}
+
+export function getMissionGuidFromLocation(locationLike: Pick<Location, 'pathname'>): string | null {
+  const match = locationLike.pathname.match(/\/mission\/([^/?#]+)/);
+  return match?.[1] ?? null;
 }
 
 export function sniffVersionFromBody(body: unknown): string | null {

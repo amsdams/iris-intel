@@ -5,6 +5,7 @@ import {
     hookGoogleMaps,
     InterceptorMessage,
     IntelMapInstance,
+    getMissionGuidFromLocation,
     isIrisUrl,
     readPlayerStats,
     sniffVersionFromBody,
@@ -102,6 +103,19 @@ import {
     hookGoogleMaps(window, (mapInstance) => {
         intelMap = mapInstance;
     });
+
+    const postMissionRequestFromLocation = (): void => {
+        const missionGuid = getMissionGuidFromLocation(window.location);
+        if (!missionGuid) return;
+
+        window.postMessage({
+            type: 'IRIS_MISSION_DETAILS_FETCH',
+            guid: missionGuid,
+        }, '*');
+    };
+
+    postMissionRequestFromLocation();
+    window.addEventListener('popstate', postMissionRequestFromLocation);
 
     // ---------------------------------------------------------------------------
     // XHR prototype patching
@@ -309,6 +323,31 @@ import {
                     headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
                     body: JSON.stringify({ guid })
                 }).catch(e => console.error('IRIS: Portal details fetch failed', e));
+                break;
+            }
+
+            case 'IRIS_MISSION_DETAILS_FETCH': {
+                const { guid } = msg;
+                safeIrisFetch('/r/getMissionDetails', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
+                    body: JSON.stringify({ guid })
+                }).catch(e => console.error('IRIS: Mission details fetch failed', e));
+                break;
+            }
+
+            case 'IRIS_TOP_MISSIONS_IN_BOUNDS_FETCH': {
+                const { minLatE6, maxLatE6, minLngE6, maxLngE6 } = msg;
+                safeIrisFetch('/r/getTopMissionsInBounds', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
+                    body: JSON.stringify({
+                        northE6: maxLatE6,
+                        eastE6: maxLngE6,
+                        southE6: minLatE6,
+                        westE6: minLngE6,
+                    })
+                }).catch(e => console.error('IRIS: Top missions in bounds fetch failed', e));
                 break;
             }
 

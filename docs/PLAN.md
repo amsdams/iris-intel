@@ -67,6 +67,17 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] **Portal History:** Added visual rings for Visited (Purple), Captured (Red), and Scanned (Yellow dashed) status integrated into the map rendering.
 - [x] **Inventory Viewer:** High-performance grid view for resonators, weapons, and mods with level-based coloring and C.O.R.E. subscription enforcement.
 
+### Phase 5.5: Intel Feature-Completeness Push (In Progress)
+- [x] **Mission Details:** Intercept and render `getMissionDetails` with a mission details popup plus waypoint/route rendering on the IRIS map.
+- [x] **Viewport Mission List:** Added a `Missions` menu entry backed by `getTopMissionsInBounds`, with click-through to mission details.
+- [ ] **Mission Browser Parity:** Add portal-scoped mission browsing via `getTopMissionsForPortal`.
+- [ ] **Artifacts:** Add `getArtifactPortals` parsing and map rendering for shards/targets.
+- [ ] **Portal Search:** Implement `/r/getPortalSearch` so IRIS matches Intel’s portal search workflow instead of only address/coordinate search.
+- [ ] **COMM Send:** Add `/r/sendPlext` support with an input field in COMM.
+- [ ] **Passcodes:** Add `/r/redeemReward` UI and response handling.
+- [ ] **Login Recovery:** Detect Intel session loss (`401`/`403`) and surface a clear recovery action.
+- [ ] **Mission UI Polish:** Mission author styling is currently not correctly faction-colored; revisit after establishing a reliable semantic color approach.
+
 ### Phase 6: Architecture Analysis (100% Complete)
 - [x] **Comparative Study:** Exhaustive analysis of original Ingress Intel (`gen_dashboard_*.js`) vs. IRIS, documented in `docs/REF-DESKTOP.MD`.
 
@@ -124,6 +135,7 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 5. **Payload Typing Pass:** Replace cast-heavy endpoint parsing with explicit validated response types.
 6. **UI CSS Colocation:** Finish moving remaining domain-specific popup styling into `ui/domains/*`, starting with `comm` and `inventory`.
 7. **Ingress Semantic Palette:** Standardize faction, portal level, rarity, and powerup/item colors in one shared module and migrate current ad hoc color usage to it.
+8. **Feature-Completeness Sprint:** Finish the remaining Intel-core basics: portal search, artifacts, portal mission browser, COMM send, passcodes, and login recovery.
 
 #### Proposed Domain-Oriented Directory Plan
 ```text
@@ -172,11 +184,13 @@ packages/extension/src/content/
 - **Done:** Portal/link/field GeoJSON builders now live in dedicated map helper modules.
 - **Done:** Plugin player markers are updated incrementally rather than rebuilt wholesale.
 - **Done:** Scores, plugins, player, status, and map-theme UI now have colocated domain CSS files.
+- **Done:** Mission details and viewport mission list are now wired as first-class content/UI features.
 - **Todo:** Split the Zustand store into slices and narrow what gets persisted.
 - **Todo:** Finish map-specific helper extraction from `MapOverlay.tsx`, especially interaction and source update helpers.
 - **Todo:** Convert the remaining popup/domain styling into colocated CSS files where it improves ownership, especially `comm` and `inventory`.
 - **Todo:** Add a shared Ingress semantic color palette so faction, level, rarity, and powerup/item colors match Ingress conventions consistently across UI surfaces.
 - **Todo:** Tighten Intel payload/result typing to reduce residual cast-heavy parsing.
+- **Todo:** Complete the remaining Intel-core feature gaps around portal search, artifacts, mission browsing, COMM send, passcodes, and session recovery.
 
 #### Domain Split Rules
 - Keep one shared low-level XHR/fetch interception runtime. Do not create a separate patcher per domain.
@@ -229,9 +243,12 @@ packages/extension/src/ui/
 - Use `iris.css` as the aggregation entry point that imports shared and domain stylesheets.
 
 ## Next Strategic Priority
-1. **Search Functionality**: Implement a unified search bar for coordinates, addresses (OSM), and portals (`/r/getPortalSearch`).
-2. **Robust Login Detection**: Monitor for `401/403` status codes in `interceptor.ts` to detect session expiry.
-3. **Chat Integration**: Add an input field to `CommPopup` for sending messages via `/r/sendPlext`.
+1. **Portal Search**: Add `/r/getPortalSearch` so the existing search UX covers Intel’s portal lookup flow as well as OSM/geocode jumps.
+2. **Artifacts**: Implement `getArtifactPortals` parsing and map layers so shard events are visible.
+3. **Mission Parity**: Add `getTopMissionsForPortal` and refine mission details/list styling, including fixing author coloring.
+4. **COMM Send**: Add an input field to `CommPopup` for sending messages via `/r/sendPlext`.
+5. **Robust Login Detection**: Monitor for `401/403` status codes in `interceptor.ts` to detect session expiry and guide recovery.
+6. **Passcodes**: Add a simple passcode redemption UI backed by `/r/redeemReward`.
 
 ## Known Issues & Mobile Challenges
 
@@ -286,6 +303,10 @@ packages/extension/src/ui/
 8. Add batched source updates
    `packages/extension/src/ui/domains/map/MapOverlay.tsx`
    Wrap clustered `setData()` updates behind `requestAnimationFrame` or a small throttle to reduce update burstiness in dense areas.
+9. Finish mission-browser parity
+   `packages/extension/src/content/domains/missions*`
+   `packages/extension/src/ui/domains/missions/*`
+   The core viewport mission list exists now; the next low-risk step is portal-scoped mission browsing plus a polish pass on mission metadata, author styling, and map interaction.
 
 If you want the safest shortlist, I’d do this order:
 
@@ -294,5 +315,6 @@ If you want the safest shortlist, I’d do this order:
 3. `queryRenderedFeatures` migration
 4. `comm` CSS colocation
 5. shared Ingress semantic palette
+6. mission-browser parity
 
 Those are the highest signal-to-risk ratio.

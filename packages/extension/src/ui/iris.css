@@ -1,6 +1,7 @@
 @import './shared/base.css';
 @import './shared/topbar.css';
 @import './domains/map/map.css';
+@import './domains/missions/missions.css';
 @import './domains/player/player.css';
 @import './domains/plugins/plugins.css';
 @import './domains/portal/portal.css';

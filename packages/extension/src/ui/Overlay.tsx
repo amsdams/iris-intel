@@ -17,6 +17,8 @@ import { PluginsPopup } from './domains/plugins/PluginsPopup';
 import { StatusBar } from './domains/status/StatusBar';
 import { PluginFeaturePopup } from './domains/plugins/PluginFeaturePopup';
 import { InventoryPopup } from './domains/inventory/InventoryPopup';
+import { MissionDetailsPopup } from './domains/missions/MissionDetailsPopup';
+import { MissionsPopup } from './domains/missions/MissionsPopup';
 
 // ---------------------------------------------------------------------------
 // IRISOverlay
@@ -35,6 +37,7 @@ export function IRISOverlay(): JSX.Element {
     const [showRegionScorePopup, setShowRegionScorePopup] = useState(false);
     const [showExportPopup, setShowExportPopup] = useState(false);
     const [showMap, setShowMap] = useState(true);
+    const [showMissionsPopup, setShowMissionsPopup] = useState(false);
 
     const togglePlayerStatsPopup = (): void => setShowPlayerStatsPopup((value) => !value);
     const toggleInventoryPopup = (): void => {
@@ -68,6 +71,7 @@ export function IRISOverlay(): JSX.Element {
     };
     const toggleExportPopup = useCallback((): void => setShowExportPopup((value) => !value), []);
     const toggleMapVisibility = (): void => setShowMap((value) => !value);
+    const toggleMissionsPopup = (): void => setShowMissionsPopup((value) => !value);
 
     useEffect(() => {
         const themeHandler = (): void => toggleThemePopup();
@@ -102,6 +106,7 @@ export function IRISOverlay(): JSX.Element {
                 onToggleFiltersPopup={toggleFiltersPopup}
                 onToggleComm={toggleCommPopup}
                 onTogglePlugins={togglePluginsPopup}
+                onToggleMissions={toggleMissionsPopup}
                 onToggleMapVisibility={toggleMapVisibility}
                 onToggleMapTheme={toggleMapThemePopup}
                 onToggleGameScore={toggleGameScorePopup}
@@ -113,10 +118,15 @@ export function IRISOverlay(): JSX.Element {
             </div>
 
             <PortalInfoPopup />
+            <MissionDetailsPopup />
             <PluginFeaturePopup />
 
             {showCommPopup && (
                 <CommPopup onClose={toggleCommPopup} />
+            )}
+
+            {showMissionsPopup && (
+                <MissionsPopup onClose={toggleMissionsPopup} />
             )}
 
             {showPlayerStatsPopup && (

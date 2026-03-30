@@ -8,6 +8,17 @@ interface Location {
   faction?: string;
 }
 
+interface PlayerEvent {
+  latlngs: [number, number][];
+  time: number;
+  portalName: string;
+}
+
+interface PlayerHistory {
+  team: string;
+  events: PlayerEvent[];
+}
+
 interface PlayerTrackerApi extends IRIS_API {
   _playerTrackerUnsub?: () => void;
   _playerTrackerTicker?: ReturnType<typeof setInterval>;
@@ -20,6 +31,7 @@ type TimedFeatureProperties = {
 
 const EXPIRATION_MS = 60 * 60 * 1000; // 1 hour
 const TICK_MS = 30 * 1000; // 30 seconds update
+const MAX_DISPLAY_EVENTS = 10;
 
 const PlayerTrackerPlugin: IRISPlugin = {
   manifest: {
@@ -31,11 +43,36 @@ const PlayerTrackerPlugin: IRISPlugin = {
   },
   setup: (api: IRIS_API): void => {
     const trackerApi = api as PlayerTrackerApi;
-    // Stores the last known location for each player
-    const playerLocations = new Map<string, Location>();
+    const playerHistories = new Map<string, PlayerHistory>();
+    const processedPlextIds = new Set<string>();
     
-    // We'll accumulate features here for this session
-    let features: GeoJSON.Feature[] = [];
+    const averageLatLng = (event: PlayerEvent): [number, number] => {
+        const total = event.latlngs.reduce(
+            (acc, [lat, lng]) => ({ lat: acc.lat + lat, lng: acc.lng + lng }),
+            { lat: 0, lng: 0 }
+        );
+
+        return [total.lat / event.latlngs.length, total.lng / event.latlngs.length];
+    };
+
+    const eventHasLatLng = (event: PlayerEvent, lat: number, lng: number): boolean =>
+        event.latlngs.some(([eventLat, eventLng]) => eventLat === lat && eventLng === lng);
+
+    const discardOldData = (): void => {
+        const limit = Date.now() - EXPIRATION_MS;
+
+        playerHistories.forEach((history, playerName) => {
+            const firstValidIndex = history.events.findIndex((event) => event.time >= limit);
+            if (firstValidIndex === -1) {
+                playerHistories.delete(playerName);
+                return;
+            }
+
+            if (firstValidIndex > 0) {
+                history.events.splice(0, firstValidIndex);
+            }
+        });
+    };
 
     // Helper to get faction color
     const getFactionColor = (team: string): string => {
@@ -48,58 +85,69 @@ const PlayerTrackerPlugin: IRISPlugin = {
 
     const updateMap = (): void => {
         const now = Date.now();
-        
-        // Filter out expired lines
-        features = features.filter((feature) => {
-            const time = (feature.properties as TimedFeatureProperties | null)?.time;
-            return typeof time === 'number' && (now - time) < EXPIRATION_MS;
-        });
+        discardOldData();
 
-        // Re-generate final features list
         const finalFeatures: GeoJSON.Feature[] = [];
 
-        // 1. Process Lines (Lines were added with time in properties)
-        features.forEach((feature) => {
-            if (feature.geometry.type === 'LineString') {
-                const time = (feature.properties as TimedFeatureProperties | null)?.time ?? 0;
-                const age = now - time;
-                const opacity = Math.max(0, 1 - (age / EXPIRATION_MS));
-                finalFeatures.push({
-                    ...feature,
-                    properties: { ...feature.properties, opacity }
-                });
+        playerHistories.forEach((history, name) => {
+            if (history.events.length === 0) {
+                return;
             }
-        });
 
-        // 2. Process Player Points
-        playerLocations.forEach((loc: Location, name) => {
-            const age = now - loc.time;
-            if (age < EXPIRATION_MS) {
-                const opacity = Math.max(0.1, 1 - (age / EXPIRATION_MS));
+            const visibleEvents = history.events.slice(-MAX_DISPLAY_EVENTS);
+
+            for (let i = 1; i < visibleEvents.length; i += 1) {
+                const currentEvent = visibleEvents[i];
+                const previousEvent = visibleEvents[i - 1];
+                const age = now - currentEvent.time;
+                const opacity = Math.max(0, 1 - (age / EXPIRATION_MS));
+
                 finalFeatures.push({
                     type: 'Feature',
-                    id: `player:${name}`,
+                    id: `player-line:${name}:${currentEvent.time}`,
                     geometry: {
-                        type: 'Point',
-                        coordinates: [loc.lng, loc.lat],
+                        type: 'LineString',
+                        coordinates: [
+                            [averageLatLng(previousEvent)[1], averageLatLng(previousEvent)[0]],
+                            [averageLatLng(currentEvent)[1], averageLatLng(currentEvent)[0]],
+                        ],
                     },
                     properties: {
-                        id: `player:${name}`,
-                        color: getFactionColor(loc.faction || 'N'),
-                        name: name,
-                        team: loc.faction, // Crucial for popup coloring
-                        time: loc.time,
-                        portalName: loc.portalName,
-                        lat: loc.lat,
-                        lng: loc.lng,
-                        isPlayerMarker: true,
-                        opacity: opacity,
-                    },
+                        id: `player-line:${name}:${currentEvent.time}`,
+                        color: '#ffff00',
+                        name,
+                        team: history.team,
+                        time: currentEvent.time,
+                        opacity,
+                    } satisfies TimedFeatureProperties,
                 });
-            } else {
-                // If the player hasn't moved for over an hour, remove them from tracking
-                playerLocations.delete(name);
             }
+
+            const lastEvent = visibleEvents[visibleEvents.length - 1];
+            const [lastLat, lastLng] = averageLatLng(lastEvent);
+            const age = now - lastEvent.time;
+            const opacity = Math.max(0.1, 1 - (age / EXPIRATION_MS));
+
+            finalFeatures.push({
+                type: 'Feature',
+                id: `player:${name}`,
+                geometry: {
+                    type: 'Point',
+                    coordinates: [lastLng, lastLat],
+                },
+                properties: {
+                    id: `player:${name}`,
+                    color: getFactionColor(history.team || 'N'),
+                    name,
+                    team: history.team,
+                    time: lastEvent.time,
+                    portalName: lastEvent.portalName,
+                    lat: lastLat,
+                    lng: lastLng,
+                    isPlayerMarker: true,
+                    opacity,
+                },
+            });
         });
 
         api.map.setFeatures(finalFeatures);
@@ -110,16 +158,31 @@ const PlayerTrackerPlugin: IRISPlugin = {
       const sortedPlexts = [...plexts].sort((a, b) => a.time - b.time);
 
       sortedPlexts.forEach((p) => {
+        if (processedPlextIds.has(p.id)) return;
+        processedPlextIds.add(p.id);
         if (!p.markup) return;
+        if (p.time < Date.now() - EXPIRATION_MS) return;
 
         let playerName: string | null = null;
         let location: Partial<Location> | null = null;
         let faction: string = p.team || 'N';
+        let skipThisMessage = false;
 
         for (const m of p.markup) {
           const type = m[0];
           const data = m[1];
-          if (type === 'PLAYER') {
+          if (type === 'TEXT') {
+            const plain = data.plain ?? '';
+            if (
+              plain.includes('destroyed the Link') ||
+              plain.includes('destroyed a Control Field') ||
+              plain.includes('destroyed the') ||
+              plain.includes('Your Link')
+            ) {
+              skipThisMessage = true;
+              break;
+            }
+          } else if (type === 'PLAYER') {
             playerName = data.plain ?? null;
             // Force Machina team if name is "Machina" or similar
             const upperName = (playerName || '').toUpperCase();
@@ -138,42 +201,53 @@ const PlayerTrackerPlugin: IRISPlugin = {
           }
         }
 
-        if (playerName && location && location.lat !== undefined && location.lng !== undefined && location.portalName !== undefined && location.time !== undefined) {
-          const name = playerName as string;
-          const loc: Location = {
-            lat: location.lat,
-            lng: location.lng,
-            portalName: location.portalName,
-            time: location.time,
-            faction
-          };
-          const lastLoc = playerLocations.get(name);
+        if (!playerName || !location || location.lat === undefined || location.lng === undefined || location.portalName === undefined || location.time === undefined || skipThisMessage) {
+          return;
+        }
 
-          // If we have a last location, and it's different from current, and it's recent
-          if (lastLoc && (lastLoc.lat !== loc.lat || lastLoc.lng !== loc.lng) && (loc.time - lastLoc.time < EXPIRATION_MS)) {
-            // Draw a dashed line - using Yellow (#ffff00)
-            features.push({
-              type: 'Feature',
-              id: `player-line:${name}:${loc.time}`,
-              geometry: {
-                type: 'LineString',
-                coordinates: [
-                  [lastLoc.lng, lastLoc.lat],
-                  [loc.lng, loc.lat],
-                ],
-              },
-              properties: {
-                id: `player-line:${name}:${loc.time}`,
-                color: '#ffff00',
-                name: name,
-                team: loc.faction, // Store team for correct popup coloring
-                time: loc.time, // Store the time for expiration and fading
-              },
-            });
-          }
+        const name = playerName;
+        const lat = location.lat;
+        const lng = location.lng;
+        const newEvent: PlayerEvent = {
+          latlngs: [[lat, lng]],
+          time: location.time,
+          portalName: location.portalName,
+        };
 
-          // Update state
-          playerLocations.set(name, loc);
+        const playerHistory = playerHistories.get(name);
+        if (!playerHistory || playerHistory.events.length === 0) {
+          playerHistories.set(name, {
+            team: faction,
+            events: [newEvent],
+          });
+          return;
+        }
+
+        playerHistory.team = faction;
+        const events = playerHistory.events;
+
+        let insertIndex = 0;
+        for (insertIndex = 0; insertIndex < events.length; insertIndex += 1) {
+          if (events[insertIndex].time > location.time) break;
+        }
+
+        const compareIndex = Math.max(insertIndex - 1, 0);
+
+        if (events[compareIndex].time === location.time) {
+          events[compareIndex].latlngs.push([lat, lng]);
+          return;
+        }
+
+        if (events[compareIndex + 1] && eventHasLatLng(events[compareIndex + 1], lat, lng)) {
+          return;
+        }
+
+        const sameLocation = eventHasLatLng(events[compareIndex], lat, lng);
+        if (sameLocation) {
+          events[compareIndex].time = location.time;
+          events[compareIndex].portalName = location.portalName;
+        } else {
+          events.splice(insertIndex, 0, newEvent);
         }
       });
 

@@ -21,6 +21,10 @@ import { handleGameScore } from './domains/game-score/handler';
 import { GameScoreData } from './domains/game-score/types';
 import { handleRegionScore } from './domains/region-score/handler';
 import { RegionScoreData } from './domains/region-score/types';
+import { handleMissionDetails } from './domains/missions/handler';
+import { MissionDetailsData } from './domains/missions/types';
+import { handleTopMissionsInBounds } from './domains/missions-list/handler';
+import { TopMissionsInBoundsData } from './domains/missions-list/types';
 import { IRISMessage } from './runtime/message-types';
 
 // Tracks whether MapLibre has been given its initial position
@@ -247,6 +251,10 @@ window.addEventListener('message', (event: MessageEvent) => {
         handleGameScore(data as GameScoreData);
       } else if (url_str.includes('getRegionScoreDetails')) {
         handleRegionScore(data as RegionScoreData);
+      } else if (url_str.includes('getMissionDetails')) {
+        handleMissionDetails(data as MissionDetailsData);
+      } else if (url_str.includes('getTopMissionsInBounds')) {
+        handleTopMissionsInBounds(data as TopMissionsInBoundsData);
       } else if (url_str.includes('getHasActiveSubscription')) {
         const res = (data as { result?: boolean }).result;
         if (res !== undefined) {

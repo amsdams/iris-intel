@@ -136,6 +136,7 @@ interface TopbarProps {
     onToggleFiltersPopup: () => void;
     onToggleMapVisibility: () => void;
     onToggleComm: () => void;
+    onToggleMissions: () => void;
     onTogglePlugins: () => void;
     onToggleMapTheme: () => void;
     onToggleGameScore: () => void;
@@ -150,6 +151,7 @@ export function Topbar({
     onToggleFiltersPopup,
     onToggleMapVisibility,
     onToggleComm,
+    onToggleMissions,
     onTogglePlugins,
     onToggleMapTheme,
     onToggleGameScore,
@@ -238,6 +240,13 @@ export function Topbar({
                             style={{ color: theme.AQUA }}
                         >
                             Comm
+                        </button>
+                        <button
+                            className="iris-menu-item"
+                            onClick={() => { onToggleMissions(); setShowMenu(false); }}
+                            style={{ color: theme.AQUA }}
+                        >
+                            Missions
                         </button>
                         <button
                             className="iris-menu-item"
