@@ -1,6 +1,7 @@
 import { h, JSX } from 'preact';
 import { useStore } from '@iris/core';
 import { Popup } from '../../shared/Popup';
+import { IRIS_VERSION_LABEL } from '../../../version';
 
 // ---------------------------------------------------------------------------
 // StateDebugPopup
@@ -44,6 +45,7 @@ export function StateDebugPopup({ onClose }: StateDebugPopupProps): JSX.Element 
                     </label>
                 </div>
                 <div className="iris-debug-stats">
+                    <p className="iris-debug-stat-item" style={{ margin: 0 }}>Version: {IRIS_VERSION_LABEL}</p>
                     <p className="iris-debug-stat-item" style={{ margin: 0 }}>Portals: {portalCount}</p>
                     <p className="iris-debug-stat-item" style={{ margin: 0 }}>Links: {linkCount}</p>
                     <p className="iris-debug-stat-item" style={{ margin: 0 }}>Fields: {fieldCount}</p>
