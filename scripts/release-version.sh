@@ -28,10 +28,10 @@ fi
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
-node <<'EOF' "$VERSION"
+node - "$VERSION" <<'EOF'
 const fs = require('fs');
 
-const version = process.argv[1];
+const version = process.argv[2];
 
 function updateJson(file) {
   const raw = fs.readFileSync(file, 'utf8');
