@@ -24,6 +24,7 @@ export default defineConfig(({mode}) => ({
         preact(),
         webExtension({
             manifest: () => generateManifest(mode),
+            skipManifestValidation: true,
         }),
     ],
     resolve: {

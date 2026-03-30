@@ -4,10 +4,11 @@ This file contains foundational instructions and preferences for the IRIS develo
 
 ## Technical Integrity
 - **Validation:** Always verify library-specific API properties (e.g., MapLibre style specifications, Preact hook signatures) against official documentation or existing codebase patterns before implementation to prevent runtime errors.
-- **Linting Discipline:** After every code, config, or build-related change, fix ESLint errors in affected files before finishing the task.
-- **Typecheck Discipline:** After every code, config, or build-related change, run `npm run typecheck` from the project root and resolve TypeScript errors before finishing the task.
-- **Build Verification:** After every code, config, or build-related change, run `npm run build` from the project root and resolve build failures before finishing the task.
+- **Linting Discipline:** Do not run `npm run lint` automatically after every change. Run it when the user requests verification, when a change is likely to affect lint/type rules broadly, or when you need confirmation before closing out a risky code change.
+- **Typecheck Discipline:** Do not run `npm run typecheck` automatically after every change. Prefer it for TypeScript-heavy changes, cross-file refactors, public type changes, or when the user asks for verification.
+- **Build Verification:** Do not run `npm run build` automatically after every change. Prefer it for runtime-sensitive UI/build/config changes, release-oriented work, or when the user explicitly asks for verification.
 - **Docs-Only Exception:** For markdown or docs-only edits, do not run `npm run typecheck`, `npm run lint`, `npm run build`, or `npm run release` unless the documentation change also updates commands, generated outputs, configuration expectations, or anything else that should be verified against the repo state.
+- **Ask Before Full Verification:** If all three of `npm run typecheck`, `npm run lint`, and `npm run build` would be run mainly as a precaution rather than a clear necessity, ask first instead of running them automatically.
 - **Post-Change Release:** Execute `npm run release` from the project root after completing code modifications or feature implementations when release artifacts are part of the task. Do not run release for docs-only changes.
 - **Testing:** Prefer testing changes before committing; do not ask to commit immediately after making changes.
 - **Style:** Adhere to Preact (TypeScript) and Zustand state management patterns already established in the `@iris/core` and `@iris/extension` packages.
