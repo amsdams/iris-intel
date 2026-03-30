@@ -7,11 +7,17 @@
     pointer-events: none;
     z-index: 9999;
     font-family: monospace;
-    --iris-font-family: monospace;
+    --iris-font-family: Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     --iris-border: #333333;
     --iris-text-secondary: #aaaaaa;
     --iris-text-primary: #ffffff;
     --iris-accent: #00ffff;
+}
+
+.iris-overlay-root *,
+.iris-overlay-root *::before,
+.iris-overlay-root *::after {
+    box-sizing: border-box;
 }
 
 [class^="iris-"],
@@ -20,11 +26,69 @@
 .iris-overlay-root input,
 .iris-overlay-root textarea,
 .iris-overlay-root select {
-    font-family: var(--iris-font-family);
+    font-family: var(--iris-font-family, monospace);
 }
 
-[class^="iris-"], [class*=" iris-"] {
-    box-sizing: border-box;
+.iris-overlay-root,
+.iris-overlay-root button,
+.iris-overlay-root input,
+.iris-overlay-root textarea,
+.iris-overlay-root select {
+    font: inherit;
+    color: inherit;
+}
+
+.iris-overlay-root button,
+.iris-overlay-root input,
+.iris-overlay-root textarea,
+.iris-overlay-root select,
+.iris-overlay-root h1,
+.iris-overlay-root h2,
+.iris-overlay-root h3,
+.iris-overlay-root h4,
+.iris-overlay-root h5,
+.iris-overlay-root h6,
+.iris-overlay-root p,
+.iris-overlay-root ul,
+.iris-overlay-root ol,
+.iris-overlay-root li {
+    margin: 0;
+}
+
+.iris-overlay-root ul,
+.iris-overlay-root ol {
+    padding: 0;
+    list-style: none;
+}
+
+.iris-overlay-root img {
+    max-width: 100%;
+    display: block;
+}
+
+.iris-overlay-root button {
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+.iris-overlay-root input,
+.iris-overlay-root textarea,
+.iris-overlay-root select,
+.iris-overlay-root button {
+    border-radius: 0;
+}
+
+.iris-overlay-root input[type="text"],
+.iris-overlay-root input[type="email"],
+.iris-overlay-root input[type="search"],
+.iris-overlay-root input[type="number"],
+.iris-overlay-root input[type="password"],
+.iris-overlay-root input[type="submit"],
+.iris-overlay-root input[type="button"],
+.iris-overlay-root textarea,
+.iris-overlay-root select,
+.iris-overlay-root button {
+    font-family: var(--iris-font-family, monospace) !important;
 }
 
 .iris-overlay-root > * {
