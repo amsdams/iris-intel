@@ -1,0 +1,6 @@
+export const IRIS_VERSION = __IRIS_VERSION__;
+export const IRIS_GIT_SHA = __IRIS_GIT_SHA__;
+
+export const IRIS_VERSION_LABEL = IRIS_GIT_SHA
+  ? `IRIS ${IRIS_VERSION}+${IRIS_GIT_SHA}`
+  : `IRIS ${IRIS_VERSION}`;

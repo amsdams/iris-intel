@@ -1,6 +1,7 @@
 {
   "name": "iris-monorepo",
   "private": true,
+  "version": "0.1.0",
   "workspaces": [
     "packages/*"
   ],
@@ -11,6 +12,7 @@
     "build:firefox": "npm run build:firefox -w packages/extension",
     "build:all": "npm run build:chrome && npm run build:firefox",
     "typecheck": "tsc --noEmit",
+    "version:bump": "bash ./scripts/release-version.sh",
     "release:chrome": "mkdir -p out && cd packages/extension/dist && zip -r ../../../out/iris-chrome.zip .",
     "release:firefox": "mkdir -p out && cd packages/extension/dist-firefox && zip -r ../../../out/iris-firefox.xpi .",
     "release": "npm run build:all && npm run release:chrome && npm run release:firefox",
