@@ -58,3 +58,5 @@ pnpm-debug.log*
 /reference/
 .aider*
 /packages/extension/dist-firefox/
+docs/PLAYER-TRACKER.md
+docs/REF-IITC_BUTTON.md
