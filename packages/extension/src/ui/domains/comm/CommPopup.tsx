@@ -2,7 +2,8 @@ import { h, JSX } from 'preact';
 import { useEffect, useState, useRef, useMemo, useCallback } from 'preact/hooks';
 import { useStore, normalizeTeam, Plext } from '@iris/core';
 import { Popup } from '../../shared/Popup';
-import { THEMES, UI_COLORS, SPACING } from '../../theme';
+import { THEMES, UI_COLORS } from '../../theme';
+import './comm.css';
 
 interface CommPopupProps {
     onClose: () => void;
@@ -153,13 +154,13 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
                 <span key={i} className="iris-comm-markup-container">
                     <span 
                         className={`iris-comm-markup iris-comm-markup-${type.toLowerCase()}`} 
-                        style={{ color, cursor: 'pointer', textDecoration: 'underline' }}
+                        style={{ color }}
                         onClick={handlePortalClick}
                     >
                         {String(portalName)}
                     </span>
                     {portalAddress && portalAddress !== portalName && (
-                        <span className="iris-comm-portal-address" style={{ color: UI_COLORS.TEXT_MUTED, fontSize: '0.9em' }}> ({portalAddress})</span>
+                        <span className="iris-comm-portal-address"> ({portalAddress})</span>
                     )}
                 </span>
             );
@@ -176,17 +177,11 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
         const isSystem = p.type !== 'PLAYER_GENERATED';
         
         return (
-            <div key={p.id} className={`iris-comm-message ${isSystem ? 'iris-comm-message-system' : 'iris-comm-message-user'}`} style={{
-                marginBottom: '4px',
-                fontSize: '0.85em',
-                lineHeight: '1.4',
-                padding: '2px 0',
-                borderBottom: `1px solid ${UI_COLORS.BORDER_DIM}`,
-            }}>
-                <span className="iris-comm-timestamp" style={{ color: UI_COLORS.TEXT_MUTED, fontSize: '0.8em', marginRight: SPACING.XS }}>
+            <div key={p.id} className={`iris-comm-message ${isSystem ? 'iris-comm-message-system' : 'iris-comm-message-user'}`}>
+                <span className="iris-comm-timestamp">
                     [{formatTime(p.time)}]
                 </span>
-                <span className="iris-comm-content" style={{ wordBreak: 'break-word' }}>
+                <span className="iris-comm-content">
                     {markup.map((m, i) => renderMarkupSegment(m, i))}
                 </span>
             </div>
@@ -200,20 +195,8 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
         const dateStr = new Date(p.time).toDateString();
         if (dateStr !== lastDate) {
             rows.push(
-                <div key={`date-${dateStr}`} className="iris-comm-date-header" style={{
-                    textAlign: 'center',
-                    margin: `${SPACING.MD} 0`,
-                    borderBottom: `1px solid ${UI_COLORS.BORDER_DIM}`,
-                    lineHeight: '0.1em',
-                }}>
-                    <span style={{ 
-                        background: UI_COLORS.BG_BASE, 
-                        padding: `0 ${SPACING.SM}`, 
-                        color: theme.AQUA,
-                        fontSize: '0.75em',
-                        fontWeight: 'bold',
-                        textTransform: 'uppercase'
-                    }}>
+                <div key={`date-${dateStr}`} className="iris-comm-date-header">
+                    <span>
                         {formatDateHeader(p.time)}
                     </span>
                 </div>
@@ -232,16 +215,6 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
                 <button 
                     className="iris-comm-refresh-btn"
                     onClick={handleRefresh}
-                    style={{
-                        background: 'transparent',
-                        border: `1px solid ${UI_COLORS.AQUA}`,
-                        color: UI_COLORS.AQUA,
-                        fontSize: '9px',
-                        padding: '2px 6px',
-                        cursor: 'pointer',
-                        borderRadius: '2px',
-                        marginRight: SPACING.SM,
-                    }}
                 >
                     REFRESH
                 </button>
@@ -256,20 +229,12 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
                 marginLeft: 'auto',
             }}
         >
-            <div className="iris-comm-tabs" style={{ display: 'flex', borderBottom: `1px solid ${UI_COLORS.BORDER_DIM}`, marginBottom: SPACING.SM }}>
+            <div className="iris-comm-tabs">
                 {['ALL', 'FACTION', 'ALERTS'].map(tab => (
                     <div 
                         key={tab}
                         className={`iris-comm-tab ${activeTab === tab ? 'iris-comm-tab-active' : ''}`}
                         onClick={() => setActiveTab(tab)}
-                        style={{
-                            padding: '6px 12px',
-                            cursor: 'pointer',
-                            fontSize: '0.8em',
-                            borderBottom: activeTab === tab ? `2px solid ${UI_COLORS.AQUA}` : 'none',
-                            color: activeTab === tab ? UI_COLORS.AQUA : UI_COLORS.TEXT_MUTED,
-                            fontWeight: activeTab === tab ? 'bold' : 'normal',
-                        }}
                     >
                         {tab}
                     </div>
@@ -280,19 +245,14 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
                 ref={scrollRef}
                 onScroll={handleScroll}
                 className="iris-comm-scroll-container"
-                style={{
-                    flex: 1,
-                    overflowY: 'auto',
-                    paddingRight: '4px'
-                }}
             >
                 {loading && (
-                    <div style={{ textAlign: 'center', fontSize: '0.7em', color: UI_COLORS.AQUA, padding: '5px' }}>
+                    <div className="iris-comm-loading">
                         FETCHING HISTORY...
                     </div>
                 )}
                 {rows.length === 0 ? (
-                    <div className="iris-comm-empty" style={{ padding: SPACING.LG, textAlign: 'center', color: UI_COLORS.TEXT_MUTED }}>
+                    <div className="iris-comm-empty">
                         No messages yet
                     </div>
                 ) : rows}

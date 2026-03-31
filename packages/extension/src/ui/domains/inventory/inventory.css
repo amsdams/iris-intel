@@ -1,0 +1,125 @@
+.iris-inventory {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.iris-inventory-total {
+    margin-bottom: 8px;
+    padding: 0 4px;
+    font-size: 0.8em;
+    color: var(--iris-text-muted);
+}
+
+.iris-inventory-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--iris-border-dim);
+    margin-bottom: 8px;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.iris-inventory-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.iris-inventory-tab {
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.75em;
+    color: var(--iris-text-muted);
+    font-weight: normal;
+}
+
+.iris-inventory-tab-active {
+    border-bottom: 2px solid var(--iris-aqua);
+    color: var(--iris-aqua);
+    font-weight: bold;
+}
+
+.iris-inventory-scroll-container {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.iris-inventory-empty {
+    padding: 24px;
+    text-align: center;
+    color: var(--iris-text-muted);
+    font-size: 0.85em;
+}
+
+.iris-inventory-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85em;
+}
+
+.iris-inventory-table thead tr {
+    text-align: left;
+    border-bottom: 1px solid var(--iris-border-dim);
+    color: var(--iris-text-muted);
+}
+
+.iris-inventory-table th {
+    padding: 4px;
+    font-weight: normal;
+    font-size: 0.8em;
+}
+
+.iris-inventory-table th:last-child {
+    text-align: right;
+}
+
+.iris-inventory-table tr {
+    border-bottom: 1px solid var(--iris-border-dim);
+}
+
+.iris-inventory-table td {
+    padding: 6px 4px;
+}
+
+.iris-inventory-table td:last-child {
+    text-align: right;
+    font-weight: bold;
+}
+
+.iris-inventory-item-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.iris-inventory-item-level {
+    font-weight: bold;
+}
+
+.iris-inventory-item-rarity {
+    font-size: 0.9em;
+    opacity: 0.8;
+}
+
+.iris-inventory-item-moniker {
+    font-size: 0.9em;
+    color: var(--iris-text-muted);
+}
+
+.iris-inventory-subscription-warning {
+    padding: 20px;
+    text-align: center;
+    color: var(--iris-text-muted);
+}
+
+.iris-inventory-subscription-warning-title {
+    color: var(--iris-error);
+    margin-bottom: 10px;
+    font-size: 1.1em;
+    font-weight: bold;
+}
+
+.iris-inventory-subscription-warning-text {
+    font-size: 0.85em;
+}

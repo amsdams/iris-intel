@@ -25,7 +25,7 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] **Bi-directional Sync:** Panning IRIS moves Intel; Intel fetches data -> IRIS renders.
 - [x] **Persistent View:** Map stays alive and synced when toggled hidden.
 - [x] **Modern Aesthetic:** Dark-Mode by default with faction-themed WebGL layers.
-- [x] **Stable Interactions:** Manual pixel-distance clicking to bypass Firefox extension security restrictions (Permission Denied error).
+- [x] **Stable Interactions:** Native MapLibre layer events avoided in favor of manual projection for maximum cross-browser stability.
 - [x] **Visual Polish:** Portal opacity based on health (0-100%) and faction-colored borders.
 - [x] **Data Safety (Optimized):** Initially implemented as redundant renderer checks; now moved to source-side validation in the content script for maximum performance.
 
@@ -100,6 +100,10 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] **Map Feature Builder Extraction:** Moved portal/link/field GeoJSON assembly out of `MapOverlay.tsx` into pure map helper functions.
 - [x] **Plugin Marker Diffing:** Replaced full player marker teardown/rebuild with keyed incremental marker updates using stable plugin feature ids.
 - [x] **Partial UI CSS Colocation:** Moved scores, plugins, player, status, and map-theme styling into domain-local CSS files while keeping dynamic theme values inline.
+- [x] **Store Modularization:** Decomposed the Zustand store into maintainable slices (Settings, Entities, UI, Player, Diagnostics).
+- [x] **Persist Scope Cleanup:** Limited Zustand persistence to durable settings and plugin preferences only.
+- [x] **Map Interaction Migration:** Migrated to high-performance map interaction using `queryRenderedFeatures` with mobile stability refinements.
+- [x] **UI CSS Colocation (Extended):** Finished moving remaining domain-specific popup styling into `ui/domains/*` for `comm` and `inventory`.
 
 #### Identified Performance Bottlenecks
 - **GeoJSON Regeneration:** `MapOverlay.tsx` currently iterates over all entities on every state change. 
@@ -107,19 +111,19 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - **Zustand Selector Overhead:** Multiple complex selectors in `MapOverlay` may trigger redundant Preact re-renders.
     - *Strategy:* Consolidate selectors using shallow equality checks.
 - **Map Interaction Overhead:** Click/Hover handlers use $O(n)$ projection loops.
-    - *Strategy:* Migrate to MapLibre's native `queryRenderedFeatures`.
+    - *Strategy:* Migrated to MapLibre's native `queryRenderedFeatures` with mobile-optimized proximity fallback.
 - **Update Burstiness:** Camera/data sync paths still perform eager updates on several state transitions.
     - *Strategy:* Batch map/source updates behind `requestAnimationFrame` or explicit throttling.
 
 #### Architectural Debt & Improvements
-- **Zustand Store Bloat:** Central store mixes core entity state with transient UI toggles.
-    - *Strategy:* Split into logical "slices" (Entities, UI, Player).
-- **Transient State Persistence Scope:** Runtime-only diagnostics and ephemeral UI/network state are still colocated with durable settings.
-    - *Strategy:* Narrow persisted state to settings/plugin preferences only, and keep logs/request counters strictly runtime.
+- [x] **Zustand Store Bloat:** Central store mixed core entity state with transient UI toggles.
+    - *Status:* Split into logical slices (Entities, UI, Player, etc.).
+- [x] **Transient State Persistence Scope:** Runtime-only diagnostics and ephemeral UI/network state were colocated with durable settings.
+    - *Status:* Persistence narrowed to settings/plugin preferences only.
 - **Map Overlay Monolith:** `ui/domains/map/MapOverlay.tsx` still owns too much rendering, event, and GeoJSON assembly logic.
     - *Strategy:* Continue extracting source update helpers and interaction helpers into map-specific modules.
-- **UI Styling Coverage Gap:** The UI folder is now domain-grouped, but only part of the styling has been moved into domain-specific CSS files.
-    - *Strategy:* Continue moving remaining popup/domain styles into colocated CSS files without changing class names or behavior, starting with `comm` and `inventory`.
+- [x] **UI Styling Coverage Gap:** The UI folder is now domain-grouped, and popup styling for `comm` and `inventory` has been moved into colocated CSS files.
+    - *Status:* Completed for all major domains.
 - **Ingress Semantic Color Drift:** Faction colors are mostly aligned, but portal/item semantics such as rarity, powerups, and some inventory color rules are still locally encoded and not standardized against a shared Ingress palette.
     - *Strategy:* Introduce a shared semantic color module for factions, level colors, mod rarity, and inventory/powerup classes, then migrate portal, inventory, COMM, and plugin surfaces to use it consistently.
 - **Plugin API Isolation:** Plugins have direct access to core internals.
@@ -130,12 +134,12 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
     - *Strategy:* Introduce explicit transport/result types for each intercepted endpoint and centralize parse validation.
 
 #### Proposed Next Steps
-1. **Map Interaction Sprint:** Replace manual portal click/hover hit-testing with `queryRenderedFeatures`.
+1. [x] **Map Interaction Sprint:** Replace manual portal click/hover hit-testing with `queryRenderedFeatures`.
 2. **GeoJSON Update Optimization:** Throttle or batch `setData()` updates and extract the remaining map source update helpers.
-3. **Store Modularization:** Decompose the Zustand store into maintainable slices.
-4. **Persist Scope Cleanup:** Limit Zustand persistence to durable settings and plugin preferences.
+3. [x] **Store Modularization:** Decompose the Zustand store into maintainable slices.
+4. [x] **Persist Scope Cleanup:** Limit Zustand persistence to durable settings and plugin preferences.
 5. **Payload Typing Pass:** Replace cast-heavy endpoint parsing with explicit validated response types.
-6. **UI CSS Colocation:** Finish moving remaining domain-specific popup styling into `ui/domains/*`, starting with `comm` and `inventory`.
+6. [x] **UI CSS Colocation:** Finish moving remaining domain-specific popup styling into `ui/domains/*`, starting with `comm` and `inventory`.
 7. **Ingress Semantic Palette:** Standardize faction, portal level, rarity, and powerup/item colors in one shared module and migrate current ad hoc color usage to it.
 8. **Feature-Completeness Sprint:** Finish the remaining Intel-core basics: portal search, artifacts, portal mission browser, COMM send, passcodes, and login recovery.
 
@@ -187,9 +191,10 @@ packages/extension/src/content/
 - **Done:** Plugin player markers are updated incrementally rather than rebuilt wholesale.
 - **Done:** Scores, plugins, player, status, and map-theme UI now have colocated domain CSS files.
 - **Done:** Mission details and viewport mission list are now wired as first-class content/UI features.
-- **Todo:** Split the Zustand store into slices and narrow what gets persisted.
+- **Done:** Split the Zustand store into slices and narrow what gets persisted.
+- **Done:** Migrated to high-performance map interaction using `queryRenderedFeatures` with mobile stability refinements.
+- **Done:** Converted the remaining popup/domain styling into colocated CSS files for `comm` and `inventory`.
 - **Todo:** Finish map-specific helper extraction from `MapOverlay.tsx`, especially interaction and source update helpers.
-- **Todo:** Convert the remaining popup/domain styling into colocated CSS files where it improves ownership, especially `comm` and `inventory`.
 - **Todo:** Add a shared Ingress semantic color palette so faction, level, rarity, and powerup/item colors match Ingress conventions consistently across UI surfaces.
 - **Todo:** Tighten Intel payload/result typing to reduce residual cast-heavy parsing.
 - **Todo:** Complete the remaining Intel-core feature gaps around portal search, artifacts, mission browsing, COMM send, passcodes, and session recovery.
@@ -206,12 +211,14 @@ packages/extension/src/ui/
 ├── domains/
 │   ├── comm/
 │   │   ├── CommPopup.tsx
+│   │   ├── comm.css
 │   ├── debug/
 │   │   └── StateDebugPopup.tsx
 │   ├── filters/
 │   │   └── FiltersPopup.tsx
 │   ├── inventory/
 │   │   ├── InventoryPopup.tsx
+│   │   ├── inventory.css
 │   ├── map/
 │   │   ├── MapOverlay.tsx
 │   │   ├── MapThemePopup.tsx
@@ -279,18 +286,14 @@ packages/extension/src/ui/
 
 ### Best quick wins from the current codebase:
 
-1. Replace manual hit-testing with `queryRenderedFeatures`
+1. [x] Replace manual hit-testing with `queryRenderedFeatures`
    `packages/extension/src/ui/domains/map/MapOverlay.tsx`
-   This removes the current O(n) click/hover scans and is a focused performance win with limited surface area.
-2. Narrow persisted Zustand state
+2. [x] Narrow persisted Zustand state
    `packages/core/src/store.ts`
-   Restrict persistence to settings and plugin preferences so logs, diagnostics, and other runtime-only state do not survive reloads.
-3. Start store slice extraction
+3. [x] Start store slice extraction
    `packages/core/src/store.ts`
-   Begin with a low-risk split between entity data, UI state, and durable settings without changing external selectors all at once.
-4. Finish UI CSS colocation for `comm` and `inventory`
+4. [x] **Finish UI CSS colocation for `comm` and `inventory`**
    `packages/extension/src/ui/domains/*`
-   These still carry a lot of inline layout/styling and are the next low-risk domains to move into colocated CSS files.
 5. Add a shared Ingress semantic color palette
    `packages/extension/src/ui/theme.ts`
    `packages/extension/src/ui/domains/portal/*`
@@ -312,10 +315,10 @@ packages/extension/src/ui/
 
 If you want the safest shortlist, I’d do this order:
 
-1. persisted state narrowing
-2. initial store slice split
-3. `queryRenderedFeatures` migration
-4. `comm` CSS colocation
+1. [x] persisted state narrowing
+2. [x] initial store slice split
+3. [x] `queryRenderedFeatures` migration
+4. [x] `comm` CSS colocation
 5. shared Ingress semantic palette
 6. mission-browser parity
 

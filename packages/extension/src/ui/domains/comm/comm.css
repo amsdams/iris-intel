@@ -1,0 +1,94 @@
+.iris-comm-refresh-btn {
+    background: transparent;
+    border: 1px solid var(--iris-aqua);
+    color: var(--iris-aqua);
+    font-size: 9px;
+    padding: 2px 6px;
+    cursor: pointer;
+    border-radius: 2px;
+    margin-right: 8px;
+}
+
+.iris-comm-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--iris-border-dim);
+    margin-bottom: 8px;
+}
+
+.iris-comm-tab {
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.8em;
+    color: var(--iris-text-muted);
+    font-weight: normal;
+}
+
+.iris-comm-tab-active {
+    border-bottom: 2px solid var(--iris-aqua);
+    color: var(--iris-aqua);
+    font-weight: bold;
+}
+
+.iris-comm-scroll-container {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.iris-comm-loading {
+    text-align: center;
+    font-size: 0.7em;
+    color: var(--iris-aqua);
+    padding: 5px;
+}
+
+.iris-comm-empty {
+    padding: 24px;
+    text-align: center;
+    color: var(--iris-text-muted);
+}
+
+.iris-comm-message {
+    margin-bottom: 4px;
+    font-size: 0.85em;
+    line-height: 1.4;
+    padding: 2px 0;
+    border-bottom: 1px solid var(--iris-border-dim);
+}
+
+.iris-comm-timestamp {
+    color: var(--iris-text-muted);
+    font-size: 0.8em;
+    margin-right: 4px;
+}
+
+.iris-comm-content {
+    word-break: break-word;
+}
+
+.iris-comm-date-header {
+    text-align: center;
+    margin: 16px 0;
+    border-bottom: 1px solid var(--iris-border-dim);
+    line-height: 0.1em;
+}
+
+.iris-comm-date-header span {
+    background: var(--iris-bg-base);
+    padding: 0 8px;
+    color: var(--iris-aqua);
+    font-size: 0.75em;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.iris-comm-markup-portal,
+.iris-comm-markup-link {
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.iris-comm-portal-address {
+    color: var(--iris-text-muted);
+    font-size: 0.9em;
+}

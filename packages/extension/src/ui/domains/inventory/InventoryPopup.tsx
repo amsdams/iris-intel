@@ -2,7 +2,8 @@ import { JSX } from 'preact';
 import { useStore, InventoryItemData, normalizeTeam } from '@iris/core';
 import { Popup } from '../../shared/Popup';
 import { useState, useMemo } from 'preact/hooks';
-import { THEMES, UI_COLORS, SPACING } from '../../theme';
+import { THEMES, UI_COLORS } from '../../theme';
+import './inventory.css';
 
 type Category = 'ALL' | 'WEAPONS' | 'RESONATORS' | 'MODS' | 'POWERUPS' | 'CAPSULES' | 'KEYS';
 
@@ -165,16 +166,6 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
                 <button 
                     className="iris-comm-refresh-btn"
                     onClick={handleRefresh}
-                    style={{
-                        background: 'transparent',
-                        border: `1px solid ${UI_COLORS.AQUA}`,
-                        color: UI_COLORS.AQUA,
-                        fontSize: '9px',
-                        padding: '2px 6px',
-                        cursor: 'pointer',
-                        borderRadius: '2px',
-                        marginRight: SPACING.SM,
-                    }}
                 >
                     REFRESH
                 </button>
@@ -190,80 +181,57 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
             }}
         >
             {!hasSubscription ? (
-                <div style={{ padding: '20px', textAlign: 'center', color: UI_COLORS.TEXT_MUTED }}>
-                    <div style={{ color: UI_COLORS.ERROR, marginBottom: '10px', fontSize: '1.1em', fontWeight: 'bold' }}>
+                <div className="iris-inventory-subscription-warning">
+                    <div className="iris-inventory-subscription-warning-title">
                         C.O.R.E. SUBSCRIPTION REQUIRED
                     </div>
-                    <p style={{ fontSize: '0.85em' }}>Niantic restricts inventory access to C.O.R.E. subscribers on the Intel Map.</p>
+                    <p className="iris-inventory-subscription-warning-text">Niantic restricts inventory access to C.O.R.E. subscribers on the Intel Map.</p>
                 </div>
             ) : (
-                <div className="iris-inventory" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                    <div style={{ marginBottom: SPACING.SM, padding: `0 ${SPACING.XS}`, fontSize: '0.8em', color: UI_COLORS.TEXT_MUTED }}>
+                <div className="iris-inventory">
+                    <div className="iris-inventory-total">
                         TOTAL: <span style={{ color: theme.AQUA, fontWeight: 'bold' }}>{totalCount}</span> / 2500
                     </div>
 
-                    <div className="iris-comm-tabs" style={{ 
-                        display: 'flex', 
-                        borderBottom: `1px solid ${UI_COLORS.BORDER_DIM}`, 
-                        marginBottom: SPACING.SM,
-                        overflowX: 'auto',
-                        whiteSpace: 'nowrap',
-                        scrollbarWidth: 'none',
-                        msOverflowStyle: 'none',
-                    }}>
+                    <div className="iris-inventory-tabs">
                         {categories.map(cat => (
                             <div 
                                 key={cat.value}
-                                className={`iris-comm-tab ${activeCategory === cat.value ? 'iris-comm-tab-active' : ''}`}
+                                className={`iris-inventory-tab ${activeCategory === cat.value ? 'iris-inventory-tab-active' : ''}`}
                                 onClick={() => setActiveCategory(cat.value)}
-                                style={{
-                                    padding: '6px 12px',
-                                    cursor: 'pointer',
-                                    fontSize: '0.75em',
-                                    borderBottom: activeCategory === cat.value ? `2px solid ${UI_COLORS.AQUA}` : 'none',
-                                    color: activeCategory === cat.value ? UI_COLORS.AQUA : UI_COLORS.TEXT_MUTED,
-                                    fontWeight: activeCategory === cat.value ? 'bold' : 'normal',
-                                }}
                             >
                                 {cat.label}
                             </div>
                         ))}
                     </div>
 
-                    <div 
-                        className="iris-comm-scroll-container"
-                        style={{ 
-                            flex: 1, 
-                            overflowY: 'auto', 
-                            paddingRight: '4px' 
-                        }}
-                    >
+                    <div className="iris-inventory-scroll-container">
                         {filteredItems.length === 0 ? (
-                            <div style={{ padding: SPACING.LG, textAlign: 'center', color: UI_COLORS.TEXT_MUTED, fontSize: '0.85em' }}>
+                            <div className="iris-inventory-empty">
                                 No items found
                             </div>
                         ) : (
-                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85em' }}>
+                            <table className="iris-inventory-table">
                                 <thead>
-                                    <tr style={{ textAlign: 'left', borderBottom: `1px solid ${UI_COLORS.BORDER_DIM}`, color: UI_COLORS.TEXT_MUTED }}>
-                                        <th style={{ padding: '4px', fontWeight: 'normal', fontSize: '0.8em' }}>ITEM</th>
-                                        <th style={{ padding: '4px', textAlign: 'right', fontWeight: 'normal', fontSize: '0.8em' }}>COUNT</th>
+                                    <tr>
+                                        <th>ITEM</th>
+                                        <th>COUNT</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {filteredItems.map((item, idx) => (
-                                        <tr key={idx} style={{ borderBottom: `1px solid ${UI_COLORS.BORDER_DIM}` }}>
-                                            <td style={{ padding: '6px 4px' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <tr key={idx}>
+                                            <td>
+                                                <div className="iris-inventory-item-name">
                                                     <span style={{ color: getItemColor(item) }}>
                                                         {item.name}
-                                                        {item.level && <span style={{ fontWeight: 'bold' }}> [L{item.level}]</span>}
-                                                        {item.rarity && <span style={{ fontSize: '0.9em', opacity: 0.8 }}> ({item.rarity.replace(/_/g, ' ')})</span>}
-                                                        {item.moniker && <span style={{ fontSize: '0.9em', color: UI_COLORS.TEXT_MUTED }}> [{item.moniker}]</span>}
+                                                        {item.level && <span className="iris-inventory-item-level"> [L{item.level}]</span>}
+                                                        {item.rarity && <span className="iris-inventory-item-rarity"> ({item.rarity.replace(/_/g, ' ')})</span>}
+                                                        {item.moniker && <span className="iris-inventory-item-moniker"> [{item.moniker}]</span>}
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td style={{ padding: '6px 4px', textAlign: 'right', fontWeight: 'bold', color: theme.AQUA }}>
+                                            <td style={{ color: theme.AQUA }}>
                                                 {item.count}
                                             </td>
                                         </tr>
