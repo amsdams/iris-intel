@@ -142,6 +142,7 @@ Provides a view of the player's items, typically restricted to C.O.R.E. members 
 | **Portal History** | Map markers for Visit/Capture | **Implemented** | Bitmask parsing from index 18 with multi-ring MapLibre rendering and toggles. |
 | **Plugin System** | Not a first-class Intel concept | **Implemented Differently** | IRIS adds a plugin architecture and plugin-rendered map features beyond the original dashboard. |
 | **Architecture** | Monolithic dashboard script | **Implemented Differently** | IRIS now uses domain-oriented content/runtime/UI modules rather than one large dashboard controller. |
-| **Missions** | Start points and waypoints | **Missing** | Requires `/r/getMissionDetails` integration. |
-| **Artifacts** | Shards and target portals | **Missing** | Needs Artifact API parsing + path rendering. |
+| **Missions** | Start points and waypoints | **Implemented** | Intercepts `/r/getMissionDetails` and `/r/getTopMissionsInBounds`. |
+
+| **Artifacts** | Shards and target portals | **Implemented** | Added `getArtifactPortals` parsing and map rendering. |
 | **Passcodes** | Passcode redemption field | **Missing** | Simple `/r/redeemReward` API hook. |

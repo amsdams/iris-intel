@@ -72,7 +72,7 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] **Viewport Mission List:** Added a `Missions` menu entry backed by `getTopMissionsInBounds`, with click-through to mission details.
 - [x] **Portal Mission Browser:** Added `getTopMissionsForPortal` and a conditional "Missions Starting Here" action in portal details, matching Intel’s portal-flag gating.
 - [ ] **Mission Browser Parity:** Refine mission-browser UX to better match Intel, including list/detail transitions, map interaction, and metadata presentation.
-- [ ] **Artifacts:** Add `getArtifactPortals` parsing and map rendering for shards/targets.
+- [x] **Artifacts:** Add `getArtifactPortals` parsing and map rendering for shards/targets.
 - [ ] **Portal Search:** Implement `/r/getPortalSearch` so IRIS matches Intel’s portal search workflow instead of only address/coordinate search.
 - [ ] **COMM Send:** Add `/r/sendPlext` support with an input field in COMM.
 - [ ] **Passcodes:** Add `/r/redeemReward` UI and response handling.
@@ -253,7 +253,7 @@ packages/extension/src/ui/
 
 ## Next Strategic Priority
 1. **Portal Search**: Add `/r/getPortalSearch` so the existing search UX covers Intel’s portal lookup flow as well as OSM/geocode jumps.
-2. **Artifacts**: Implement `getArtifactPortals` parsing and map layers so shard events are visible.
+2. [x] **Artifacts**: Implement `getArtifactPortals` parsing and map layers so shard events are visible.
 3. **Mission Parity**: Add `getTopMissionsForPortal` and refine mission details/list styling, including fixing author coloring.
 4. **COMM Send**: Add an input field to `CommPopup` for sending messages via `/r/sendPlext`.
 5. **Robust Login Detection**: Monitor for `401/403` status codes in `interceptor.ts` to detect session expiry and guide recovery.

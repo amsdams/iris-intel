@@ -10,10 +10,12 @@ import { THEMES, TEAM_NAME, UI_COLORS } from '../../theme';
 const MAX_RESO_ENERGY = [0, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000];
 
 export function PortalInfoPopup(): JSX.Element | null {
+    const portals = useStore((state) => state.portals);
+    const artifacts = useStore((state) => state.artifacts);
     const selectedPortalId = useStore((state) => state.selectedPortalId);
-    const portal = useStore((state) =>
-        selectedPortalId ? state.portals[selectedPortalId] : null
-    );
+    const portal = selectedPortalId ? portals[selectedPortalId] : null;
+    const artifact = selectedPortalId ? artifacts[selectedPortalId] : null;
+
     const selectPortal = useStore((state) => state.selectPortal);
     const themeId = useStore((state) => state.themeId);
     const theme = THEMES[themeId] || THEMES.DEFAULT;
@@ -91,6 +93,35 @@ export function PortalInfoPopup(): JSX.Element | null {
                         <span className="iris-portal-stat-health">Health: <span style={{ color: '#00ff00' }}>{portal.health}%</span></span>
                     )}
                 </div>
+
+                {artifact && (
+                    <div className="iris-portal-artifact-section" style={{
+                        marginTop: '8px',
+                        marginBottom: '8px',
+                        padding: '8px',
+                        border: '1px solid #f0f',
+                        background: 'rgba(255, 0, 255, 0.1)',
+                        borderRadius: '4px'
+                    }}>
+                        <div className="iris-portal-section-title" style={{ fontSize: '0.8em', color: '#f0f', marginBottom: '4px', fontWeight: 'bold' }}>
+                            ARTIFACT: {artifact.type.toUpperCase()}
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                            {artifact.ids.map(id => (
+                                <span key={id} style={{
+                                    fontSize: '0.8em',
+                                    color: '#f0f',
+                                    background: 'rgba(255, 0, 255, 0.2)',
+                                    padding: '2px 6px',
+                                    borderRadius: '2px',
+                                    border: '1px solid rgba(255, 0, 255, 0.5)'
+                                }}>
+                                    #{id}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {portal.owner && (
                     <div className="iris-portal-owner" style={{ fontSize: '0.85em', color: UI_COLORS.TEXT_MUTED, marginBottom: '8px' }}>

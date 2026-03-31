@@ -390,8 +390,15 @@ import {
         }, '*');
     });
 
-    // Proactive background checks for subscription and inventory
+    // Proactive background checks for subscription, inventory, and artifacts
     setInterval(() => {
+        // Check artifacts
+        safeIrisFetch('/r/getArtifactPortals', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
+            body: JSON.stringify({})
+        }).catch((e: Error) => console.debug('IRIS: artifact fetch failed', e));
+
         // Check subscription
         safeIrisFetch('/r/getHasActiveSubscription', {
             method: 'POST',

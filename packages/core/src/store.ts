@@ -74,6 +74,12 @@ export interface Field {
     points: { lat: number; lng: number }[];
 }
 
+export interface Artifact {
+    portalId: string;
+    type: string;
+    ids: string[];
+}
+
 export interface Plext {
     id: string;
     time: number;
@@ -267,11 +273,13 @@ interface EntitiesSlice {
     portals: Record<string, Portal>;
     links: Record<string, Link>;
     fields: Record<string, Field>;
+    artifacts: Record<string, Artifact>;
     plexts: Plext[];
     addPortal: (portal: Portal) => void;
     updatePortals: (portals: Partial<Portal>[]) => void;
     updateLinks: (links: Partial<Link>[]) => void;
     updateFields: (fields: Partial<Field>[]) => void;
+    updateArtifacts: (artifacts: Artifact[]) => void;
     updatePlexts: (plexts: Plext[]) => void;
     removeEntities: (guids: string[]) => void;
 }
@@ -377,6 +385,7 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
     portals: {},
     links: {},
     fields: {},
+    artifacts: {},
     plexts: [],
     addPortal: (portal) => set((state) => ({
         portals: { ...state.portals, [portal.id]: portal }
@@ -405,6 +414,13 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
         });
         return { fields };
     }),
+    updateArtifacts: (newArtifacts) => set(() => {
+        const artifacts: Record<string, Artifact> = {};
+        newArtifacts.forEach((a) => {
+            artifacts[a.portalId] = a;
+        });
+        return { artifacts };
+    }),
     updatePlexts: (newPlexts) => set((state) => {
         const all = [...state.plexts, ...newPlexts];
         const unique = Array.from(new Map(all.map(p => [p.id, p])).values());
@@ -415,6 +431,7 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
         let portals = { ...state.portals };
         let links = { ...state.links };
         let fields = { ...state.fields };
+        let artifacts = { ...state.artifacts };
         let changed = false;
         guids.forEach((id) => {
             if (portals[id]) {
@@ -432,8 +449,13 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
                 fields = rest;
                 changed = true;
             }
+            if (artifacts[id]) {
+                const { [id]: _, ...rest } = artifacts;
+                artifacts = rest;
+                changed = true;
+            }
         });
-        return changed ? { portals, links, fields } : state;
+        return changed ? { portals, links, fields, artifacts } : state;
     }),
 });
 

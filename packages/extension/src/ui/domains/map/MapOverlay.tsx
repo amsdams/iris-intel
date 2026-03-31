@@ -5,6 +5,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { useStore } from '@iris/core';
 import { THEMES, MAP_THEMES } from '../../theme';
 import {
+  buildArtifactFeatures,
   buildFieldFeatures,
   buildLinkFeatures,
   buildMissionRouteFeatures,
@@ -37,6 +38,7 @@ export function MapOverlay(): JSX.Element {
   const portals = useStore((state) => state.portals);
   const links = useStore((state) => state.links);
   const fields = useStore((state) => state.fields);
+  const artifacts = useStore((state) => state.artifacts);
   const missionDetails = useStore((state) => state.missionDetails);
   const pluginFeatures = useStore((state) => state.pluginFeatures);
   const pluginMarkers = useRef<Map<string, MarkerRegistryEntry>>(new Map());
@@ -123,6 +125,10 @@ export function MapOverlay(): JSX.Element {
             data: { type: 'FeatureCollection', features: [] },
           },
           fields: {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: [] },
+          },
+          artifacts: {
             type: 'geojson',
             data: { type: 'FeatureCollection', features: [] },
           },
@@ -280,6 +286,22 @@ export function MapOverlay(): JSX.Element {
               'circle-color': '#ef8e2e',
               'circle-stroke-width': 2,
               'circle-stroke-color': '#fff',
+            },
+          },
+          {
+            id: 'artifacts',
+            type: 'circle',
+            source: 'artifacts',
+            paint: {
+              'circle-radius': [
+                'interpolate', ['linear'], ['zoom'],
+                10, 6,
+                15, 12,
+              ],
+              'circle-color': 'transparent',
+              'circle-stroke-width': 2,
+              'circle-stroke-color': '#f0f', // Magenta for artifacts/shards
+              'circle-stroke-opacity': 0.9,
             },
           },
           {
@@ -516,13 +538,14 @@ export function MapOverlay(): JSX.Element {
       showUnclaimedPortals,
     });
     getGeoJsonSource('fields')?.setData(toFeatureCollection(filteredFields));
+    getGeoJsonSource('artifacts')?.setData(toFeatureCollection(buildArtifactFeatures(artifacts, portals)));
     getGeoJsonSource('mission-route')?.setData(toFeatureCollection(buildMissionRouteFeatures(missionDetails)));
     getGeoJsonSource('mission-waypoints')?.setData(toFeatureCollection(buildMissionWaypointFeatures(missionDetails)));
 
     // Plugin Features (Lines only here, points are HTML)
     getGeoJsonSource('plugin-features')?.setData(pluginFeatures);
 
-  }, [portals, links, fields, missionDetails, showFields, showLinks, showResistance, showEnlightened, showMachina, showUnclaimedPortals, showLevel, showHealth, styleLoaded, pluginFeatures]);
+  }, [portals, links, fields, artifacts, missionDetails, showFields, showLinks, showResistance, showEnlightened, showMachina, showUnclaimedPortals, showLevel, showHealth, styleLoaded, pluginFeatures]);
 
   // Sync HTML Markers (Independent effect for performance)
   useEffect(() => {

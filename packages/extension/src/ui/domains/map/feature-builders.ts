@@ -1,4 +1,4 @@
-import { Field, Link, MissionDetails, Portal } from '@iris/core';
+import { Artifact, Field, Link, MissionDetails, Portal } from '@iris/core';
 
 type PortalFeatureProperties = {
   id: string;
@@ -18,6 +18,7 @@ type TeamFeatureProperties = {
 export type PortalFeature = GeoJSON.Feature<GeoJSON.Point, PortalFeatureProperties>;
 export type LinkFeature = GeoJSON.Feature<GeoJSON.LineString, TeamFeatureProperties>;
 export type FieldFeature = GeoJSON.Feature<GeoJSON.Polygon, TeamFeatureProperties>;
+export type ArtifactFeature = GeoJSON.Feature<GeoJSON.Point, { portalId: string; type: string; ids: string[] }>;
 export type MissionRouteFeature = GeoJSON.Feature<GeoJSON.LineString, Record<string, unknown>>;
 export type MissionWaypointFeature = GeoJSON.Feature<GeoJSON.Point, Record<string, unknown>>;
 
@@ -131,6 +132,27 @@ export const buildFieldFeatures = (
       },
       properties: { team: field.team } satisfies TeamFeatureProperties,
     }));
+
+export const buildArtifactFeatures = (
+  artifacts: Record<string, Artifact>,
+  portals: Record<string, Portal>
+): ArtifactFeature[] =>
+  Object.values(artifacts)
+    .map((artifact) => {
+      const portal = portals[artifact.portalId];
+      if (!portal) return null;
+
+      return {
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [portal.lng, portal.lat] },
+        properties: {
+          portalId: artifact.portalId,
+          type: artifact.type,
+          ids: artifact.ids,
+        },
+      } as ArtifactFeature;
+    })
+    .filter((f): f is ArtifactFeature => f !== null);
 
 export const buildMissionRouteFeatures = (mission: MissionDetails | null): MissionRouteFeature[] => {
   if (!mission) return [];

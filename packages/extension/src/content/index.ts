@@ -25,6 +25,8 @@ import { handleMissionDetails } from './domains/missions/handler';
 import { MissionDetailsData } from './domains/missions/types';
 import { handleTopMissionsInBounds } from './domains/missions-list/handler';
 import { TopMissionsInBoundsData } from './domains/missions-list/types';
+import { handleArtifacts } from './domains/artifacts/handler';
+import { ArtifactData } from './domains/artifacts/types';
 import { IRISMessage } from './runtime/message-types';
 
 // Tracks whether MapLibre has been given its initial position
@@ -255,6 +257,8 @@ window.addEventListener('message', (event: MessageEvent) => {
         handleMissionDetails(data as MissionDetailsData);
       } else if (url_str.includes('getTopMissionsInBounds') || url_str.includes('getTopMissionsForPortal')) {
         handleTopMissionsInBounds(data as TopMissionsInBoundsData);
+      } else if (url_str.includes('getArtifactPortals')) {
+        handleArtifacts(data as ArtifactData);
       } else if (url_str.includes('getHasActiveSubscription')) {
         const res = (data as { result?: boolean }).result;
         if (res !== undefined) {
