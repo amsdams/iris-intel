@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create, StateCreator } from 'zustand';
 import { subscribeWithSelector, persist } from 'zustand/middleware';
 
 export interface PlayerStats {
@@ -244,11 +244,39 @@ export const DEFAULT_SETTINGS: IRISSettings = {
     debugLogging: false,
 };
 
-interface IRISState extends IRISSettings {
+// Slice Types
+interface SettingsSlice extends IRISSettings {
+    setPluginEnabled: (id: string, enabled: boolean) => void;
+    setTheme: (id: string) => void;
+    setMapTheme: (id: string) => void;
+    toggleShowFields: () => void;
+    toggleShowLinks: () => void;
+    toggleShowResistance: () => void;
+    toggleShowEnlightened: () => void;
+    toggleShowMachina: () => void;
+    toggleShowUnclaimedPortals: () => void;
+    toggleShowLevel: (level: number) => void;
+    toggleShowHealth: (bucket: number) => void;
+    toggleShowVisited: () => void;
+    toggleShowCaptured: () => void;
+    toggleShowScanned: () => void;
+    toggleDebugLogging: () => void;
+}
+
+interface EntitiesSlice {
     portals: Record<string, Portal>;
     links: Record<string, Link>;
     fields: Record<string, Field>;
     plexts: Plext[];
+    addPortal: (portal: Portal) => void;
+    updatePortals: (portals: Partial<Portal>[]) => void;
+    updateLinks: (links: Partial<Link>[]) => void;
+    updateFields: (fields: Partial<Field>[]) => void;
+    updatePlexts: (plexts: Plext[]) => void;
+    removeEntities: (guids: string[]) => void;
+}
+
+interface UISlice {
     statsItems: Record<string, StatsItem>;
     menuItems: MenuItem[];
     pluginFeatures: GeoJSON.FeatureCollection;
@@ -263,16 +291,14 @@ interface IRISState extends IRISSettings {
             maxLngE6: number;
         };
     };
-    addPortal: (portal: Portal) => void;
-    updatePortals: (portals: Partial<Portal>[]) => void;
-    updateLinks: (links: Partial<Link>[]) => void;
-    updateFields: (fields: Partial<Field>[]) => void;
-    updatePlexts: (plexts: Plext[]) => void;
+    selectedPortalId: string | null;
+    selectedPluginFeature: GeoJSON.Feature | null;
+    activeCommTab: string;
+    rehydrated: boolean;
     addStatsItem: (item: StatsItem) => void;
     removeStatsItem: (id: string) => void;
     addMenuItem: (item: MenuItem) => void;
     removeMenuItem: (id: string) => void;
-    setPluginEnabled: (id: string, enabled: boolean) => void;
     setPluginFeatures: (features: GeoJSON.FeatureCollection) => void;
     updateMapState: (lat: number, lng: number, zoom: number, bounds?: {
         minLatE6: number;
@@ -280,282 +306,221 @@ interface IRISState extends IRISSettings {
         maxLatE6: number;
         maxLngE6: number;
     }) => void;
-    removeEntities: (guids: string[]) => void;
-
-    selectedPortalId: string | null;
     selectPortal: (id: string | null) => void;
-
-    selectedPluginFeature: GeoJSON.Feature | null;
     setSelectedPluginFeature: (feature: GeoJSON.Feature | null) => void;
-
-    playerStats: PlayerStats | null;
-    setPlayerStats: (stats: PlayerStats) => void;
-
-    gameScore: GameScore | null;
-    setGameScore: (score: GameScore) => void;
-
-    regionScore: RegionScore | null;
-    setRegionScore: (score: RegionScore) => void;
-
-    hasSubscription: boolean;
-    setHasSubscription: (has: boolean) => void;
-
-    inventory: InventoryItem[];
-    setInventory: (items: InventoryItem[]) => void;
-
-    missionDetails: MissionDetails | null;
-    setMissionDetails: (mission: MissionDetails | null) => void;
-    missionsInView: MissionSummary[];
-    setMissionsInView: (missions: MissionSummary[]) => void;
-    missionsPortalId: string | null;
-    setMissionsPortalId: (portalId: string | null) => void;
-
-    setTheme: (id: string) => void;
-
-    setMapTheme: (id: string) => void;
-
-    activeRequests: number;
-    lastRequestUrl: string;
-    onRequestStart: (url: string) => void;
-    onRequestEnd: () => void;
-    failedRequests: FailedRequest[];
-    addFailedRequest: (request: FailedRequest) => void;
-    clearFailedRequests: () => void;
-    successfulRequests: SuccessfulRequest[];
-    addSuccessfulRequest: (request: SuccessfulRequest) => void;
-    clearSuccessfulRequests: () => void;
-    jsErrors: JSError[];
-    addJSError: (error: JSError) => void;
-    clearJSErrors: () => void;
-
-    // Layer visibility actions
-    toggleShowFields: () => void;
-    toggleShowLinks: () => void;
-    toggleShowResistance: () => void;
-    toggleShowEnlightened: () => void;
-    toggleShowMachina: () => void;
-    toggleShowUnclaimedPortals: () => void;
-    toggleShowLevel: (level: number) => void;
-    toggleShowHealth: (bucket: number) => void;
-    toggleShowVisited: () => void;
-    toggleShowCaptured: () => void;
-    toggleShowScanned: () => void;
-
-    toggleDebugLogging: () => void;
-
-    rehydrated: boolean;
-
-    activeCommTab: string;
     setActiveCommTab: (tab: string) => void;
 }
+
+interface PlayerSlice {
+    playerStats: PlayerStats | null;
+    gameScore: GameScore | null;
+    regionScore: RegionScore | null;
+    hasSubscription: boolean;
+    inventory: InventoryItem[];
+    missionDetails: MissionDetails | null;
+    missionsInView: MissionSummary[];
+    missionsPortalId: string | null;
+    setPlayerStats: (stats: PlayerStats) => void;
+    setGameScore: (score: GameScore) => void;
+    setRegionScore: (score: RegionScore) => void;
+    setHasSubscription: (has: boolean) => void;
+    setInventory: (items: InventoryItem[]) => void;
+    setMissionDetails: (mission: MissionDetails | null) => void;
+    setMissionsInView: (missions: MissionSummary[]) => void;
+    setMissionsPortalId: (portalId: string | null) => void;
+}
+
+interface DiagnosticsSlice {
+    activeRequests: number;
+    lastRequestUrl: string;
+    failedRequests: FailedRequest[];
+    successfulRequests: SuccessfulRequest[];
+    jsErrors: JSError[];
+    onRequestStart: (url: string) => void;
+    onRequestEnd: () => void;
+    addFailedRequest: (request: FailedRequest) => void;
+    clearFailedRequests: () => void;
+    addSuccessfulRequest: (request: SuccessfulRequest) => void;
+    clearSuccessfulRequests: () => void;
+    addJSError: (error: JSError) => void;
+    clearJSErrors: () => void;
+}
+
+export type IRISState = SettingsSlice & EntitiesSlice & UISlice & PlayerSlice & DiagnosticsSlice;
+
+// Slice Creators
+const createSettingsSlice: StateCreator<IRISState, [], [], SettingsSlice> = (set) => ({
+    ...DEFAULT_SETTINGS,
+    setPluginEnabled: (id, enabled) =>
+        set((state) => ({ pluginStates: { ...state.pluginStates, [id]: enabled } })),
+    setTheme: (id) => set(() => ({ themeId: id })),
+    setMapTheme: (id) => set(() => ({ mapThemeId: id })),
+    toggleShowFields: () => set((state) => ({ showFields: !state.showFields })),
+    toggleShowLinks: () => set((state) => ({ showLinks: !state.showLinks })),
+    toggleShowResistance: () => set((state) => ({ showResistance: !state.showResistance })),
+    toggleShowEnlightened: () => set((state) => ({ showEnlightened: !state.showEnlightened })),
+    toggleShowMachina: () => set((state) => ({ showMachina: !state.showMachina })),
+    toggleShowUnclaimedPortals: () => set((state) => ({ showUnclaimedPortals: !state.showUnclaimedPortals })),
+    toggleShowLevel: (level) => set((state) => ({
+        showLevel: { ...state.showLevel, [level]: !state.showLevel[level] }
+    })),
+    toggleShowHealth: (bucket) => set((state) => ({
+        showHealth: { ...state.showHealth, [bucket]: !state.showHealth[bucket] }
+    })),
+    toggleShowVisited: () => set((state) => ({ showVisited: !state.showVisited })),
+    toggleShowCaptured: () => set((state) => ({ showCaptured: !state.showCaptured })),
+    toggleShowScanned: () => set((state) => ({ showScanned: !state.showScanned })),
+    toggleDebugLogging: () => set((state) => ({ debugLogging: !state.debugLogging })),
+});
+
+const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set) => ({
+    portals: {},
+    links: {},
+    fields: {},
+    plexts: [],
+    addPortal: (portal) => set((state) => ({
+        portals: { ...state.portals, [portal.id]: portal }
+    })),
+    updatePortals: (newPortals) => set((state) => {
+        const portals = { ...state.portals };
+        newPortals.forEach((p) => {
+            if (!p.id) return;
+            portals[p.id] = { ...portals[p.id], ...p } as Portal;
+        });
+        return { portals };
+    }),
+    updateLinks: (newLinks) => set((state) => {
+        const links = { ...state.links };
+        newLinks.forEach((l) => {
+            if (!l.id) return;
+            links[l.id] = { ...links[l.id], ...l } as Link;
+        });
+        return { links };
+    }),
+    updateFields: (newFields) => set((state) => {
+        const fields = { ...state.fields };
+        newFields.forEach((f) => {
+            if (!f.id) return;
+            fields[f.id] = { ...fields[f.id], ...f } as Field;
+        });
+        return { fields };
+    }),
+    updatePlexts: (newPlexts) => set((state) => {
+        const all = [...state.plexts, ...newPlexts];
+        const unique = Array.from(new Map(all.map(p => [p.id, p])).values());
+        unique.sort((a, b) => b.time - a.time);
+        return { plexts: unique.slice(0, 1000) };
+    }),
+    removeEntities: (guids) => set((state) => {
+        let portals = { ...state.portals };
+        let links = { ...state.links };
+        let fields = { ...state.fields };
+        let changed = false;
+        guids.forEach((id) => {
+            if (portals[id]) {
+                const { [id]: _, ...rest } = portals;
+                portals = rest;
+                changed = true;
+            }
+            if (links[id]) {
+                const { [id]: _, ...rest } = links;
+                links = rest;
+                changed = true;
+            }
+            if (fields[id]) {
+                const { [id]: _, ...rest } = fields;
+                fields = rest;
+                changed = true;
+            }
+        });
+        return changed ? { portals, links, fields } : state;
+    }),
+});
+
+const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
+    statsItems: {},
+    menuItems: [],
+    pluginFeatures: { type: 'FeatureCollection', features: [] },
+    mapState: { lat: 0, lng: 0, zoom: 3 },
+    selectedPortalId: null,
+    selectedPluginFeature: null,
+    activeCommTab: 'ALL',
+    rehydrated: false,
+    addStatsItem: (item) => set((state) => ({
+        statsItems: { ...state.statsItems, [item.id]: item }
+    })),
+    removeStatsItem: (id) => set((state) => {
+        const { [id]: _, ...rest } = state.statsItems;
+        return { statsItems: rest };
+    }),
+    addMenuItem: (item) => set((state) => ({ menuItems: [...state.menuItems, item] })),
+    removeMenuItem: (id) => set((state) => ({
+        menuItems: state.menuItems.filter((i) => i.id !== id)
+    })),
+    setPluginFeatures: (features) => set(() => ({ pluginFeatures: features })),
+    updateMapState: (lat, lng, zoom, bounds) => set(() => ({
+        mapState: { lat, lng, zoom, bounds }
+    })),
+    selectPortal: (id) => set(() => ({ selectedPortalId: id })),
+    setSelectedPluginFeature: (feature) => set(() => ({ selectedPluginFeature: feature })),
+    setActiveCommTab: (tab) => set(() => ({ activeCommTab: tab })),
+});
+
+const createPlayerSlice: StateCreator<IRISState, [], [], PlayerSlice> = (set) => ({
+    playerStats: null,
+    gameScore: null,
+    regionScore: null,
+    hasSubscription: false,
+    inventory: [],
+    missionDetails: null,
+    missionsInView: [],
+    missionsPortalId: null,
+    setPlayerStats: (stats) => set(() => ({ playerStats: stats })),
+    setGameScore: (score) => set(() => ({ gameScore: score })),
+    setRegionScore: (score) => set(() => ({ regionScore: score })),
+    setHasSubscription: (has) => set(() => ({ hasSubscription: has })),
+    setInventory: (items) => set(() => ({ inventory: items })),
+    setMissionDetails: (mission) => set(() => ({ missionDetails: mission })),
+    setMissionsInView: (missions) => set(() => ({ missionsInView: missions })),
+    setMissionsPortalId: (portalId) => set(() => ({ missionsPortalId: portalId })),
+});
+
+const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> = (set) => ({
+    activeRequests: 0,
+    lastRequestUrl: '',
+    failedRequests: [],
+    successfulRequests: [],
+    jsErrors: [],
+    onRequestStart: (url) => set((state) => ({
+        activeRequests: state.activeRequests + 1,
+        lastRequestUrl: url
+    })),
+    onRequestEnd: () => set((state) => ({
+        activeRequests: Math.max(0, state.activeRequests - 1)
+    })),
+    addFailedRequest: (request) => set((state) => ({
+        failedRequests: [request, ...state.failedRequests].slice(0, 50)
+    })),
+    clearFailedRequests: () => set({ failedRequests: [] }),
+    addSuccessfulRequest: (request) => set((state) => ({
+        successfulRequests: [request, ...state.successfulRequests].slice(0, 50)
+    })),
+    clearSuccessfulRequests: () => set({ successfulRequests: [] }),
+    addJSError: (error) => set((state) => ({
+        jsErrors: [error, ...state.jsErrors].slice(0, 50)
+    })),
+    clearJSErrors: () => set({ jsErrors: [] }),
+});
 
 export const useStore = create<IRISState>()(
     subscribeWithSelector(
         persist(
-            (set) => ({
-                ...DEFAULT_SETTINGS,
-                portals: {},
-                links: {},
-                fields: {},
-                plexts: [],
-                statsItems: {},
-                menuItems: [],
-                pluginFeatures: { type: 'FeatureCollection', features: [] },
-                mapState: {
-                    lat: 0,
-                    lng: 0,
-                    zoom: 3,
-                },
-                addPortal: (portal: Portal): void =>
-                    set((state) => ({
-                        portals: { ...state.portals, [portal.id]: portal }
-                    })),
-                updatePortals: (newPortals: Partial<Portal>[]): void =>
-                    set((state) => {
-                        const portals = { ...state.portals };
-                        newPortals.forEach((p) => {
-                            if (!p.id) return;
-                            portals[p.id] = { ...portals[p.id], ...p } as Portal;
-                        });
-                        return { portals };
-                    }),
-                updateLinks: (newLinks: Partial<Link>[]): void =>
-                    set((state) => {
-                        const links = { ...state.links };
-                        newLinks.forEach((l) => {
-                            if (!l.id) return;
-                            links[l.id] = { ...links[l.id], ...l } as Link;
-                        });
-                        return { links };
-                    }),
-                updateFields: (newFields: Partial<Field>[]): void =>
-                    set((state) => {
-                        const fields = { ...state.fields };
-                        newFields.forEach((f) => {
-                            if (!f.id) return;
-                            fields[f.id] = { ...fields[f.id], ...f } as Field;
-                        });
-                        return { fields };
-                    }),
-                updatePlexts: (newPlexts: Plext[]): void =>
-                    set((state) => {
-                        // Keep unique plexts, sorted by time descending
-                        const all = [...state.plexts, ...newPlexts];
-                        const unique = Array.from(new Map(all.map(p => [p.id, p])).values());
-                        unique.sort((a, b) => b.time - a.time);
-                        // Keep last 1000 for performance and history
-                        return { plexts: unique.slice(0, 1000) };
-                    }),
-                addStatsItem: (item: StatsItem): void =>
-                    set((state) => ({
-                        statsItems: { ...state.statsItems, [item.id]: item }
-                    })),
-                removeStatsItem: (id: string): void =>
-                    set((state) => {
-                        const { [id]: removedItem, ...rest } = state.statsItems;
-                        void removedItem;
-                        return { statsItems: rest };
-                    }),
-                addMenuItem: (item: MenuItem): void =>
-                    set((state) => ({
-                        menuItems: [...state.menuItems, item]
-                    })),
-                removeMenuItem: (id: string): void =>
-                    set((state) => ({
-                        menuItems: state.menuItems.filter((i) => i.id !== id)
-                    })),
-                setPluginEnabled: (id: string, enabled: boolean): void =>
-                    set((state) => ({
-                        pluginStates: { ...state.pluginStates, [id]: enabled }
-                    })),
-                setPluginFeatures: (features: GeoJSON.FeatureCollection): void =>
-                    set(() => ({
-                        pluginFeatures: features
-                    })),
-                updateMapState: (lat: number, lng: number, zoom: number, bounds?: {
-                    minLatE6: number;
-                    minLngE6: number;
-                    maxLatE6: number;
-                    maxLngE6: number;
-                }): void =>
-                    set(() => ({
-                        mapState: { lat, lng, zoom, bounds }
-                    })),
-
-                removeEntities: (guids: string[]): void =>
-                    set((state) => {
-                        let portals = { ...state.portals };
-                        let links = { ...state.links };
-                        let fields = { ...state.fields };
-                        let changed = false;
-
-                        guids.forEach((id) => {
-                            if (portals[id]) {
-                                const { [id]: removedPortal, ...rest } = portals;
-                                void removedPortal;
-                                portals = rest;
-                                changed = true; 
-                            }
-                            if (links[id]) {
-                                const { [id]: removedLink, ...rest } = links;
-                                void removedLink;
-                                links = rest;
-                                changed = true; 
-                            }
-                            if (fields[id]) {
-                                const { [id]: removedField, ...rest } = fields;
-                                void removedField;
-                                fields = rest;
-                                changed = true; 
-                            }
-                        });
-
-                        return changed ? { portals, links, fields } : state;
-                    }),
-                selectedPortalId: null,
-                selectPortal: (id: string | null): void => set(() => ({ selectedPortalId: id })),
-                selectedPluginFeature: null,
-                setSelectedPluginFeature: (feature: GeoJSON.Feature | null): void => set(() => ({ selectedPluginFeature: feature })),
-                playerStats: null,
-                setPlayerStats: (stats: PlayerStats): void => set(() => ({ playerStats: stats })),
-
-                gameScore: null,
-                setGameScore: (score: GameScore): void => set(() => ({ gameScore: score })),
-
-                regionScore: null,
-                setRegionScore: (score: RegionScore): void => set(() => ({ regionScore: score })),
-
-                hasSubscription: false,
-                setHasSubscription: (has: boolean): void => set(() => ({ hasSubscription: has })),
-
-                inventory: [],
-                setInventory: (items: InventoryItem[]): void => set(() => ({ inventory: items })),
-
-                missionDetails: null,
-                setMissionDetails: (mission: MissionDetails | null): void => set(() => ({ missionDetails: mission })),
-                missionsInView: [],
-                setMissionsInView: (missions: MissionSummary[]): void => set(() => ({ missionsInView: missions })),
-                missionsPortalId: null,
-                setMissionsPortalId: (portalId: string | null): void => set(() => ({ missionsPortalId: portalId })),
-
-                setTheme: (id: string): void => set(() => ({ themeId: id })),
-
-                setMapTheme: (id: string): void => set(() => ({ mapThemeId: id })),
-
-                activeRequests: 0,
-                lastRequestUrl: '',
-                onRequestStart: (url: string): void => set((state) => ({
-                    activeRequests: state.activeRequests + 1,
-                    lastRequestUrl: url
-                })),
-                onRequestEnd: (): void => set((state) => ({
-                    activeRequests: Math.max(0, state.activeRequests - 1)
-                })),
-                failedRequests: [],
-                addFailedRequest: (request: FailedRequest): void => set((state) => ({
-                    failedRequests: [request, ...state.failedRequests].slice(0, 50)
-                })),
-                clearFailedRequests: (): void => set({ failedRequests: [] }),
-                successfulRequests: [],
-                addSuccessfulRequest: (request: SuccessfulRequest): void => set((state) => ({
-                    successfulRequests: [request, ...state.successfulRequests].slice(0, 50)
-                })),
-                clearSuccessfulRequests: (): void => set({ successfulRequests: [] }),
-                jsErrors: [],
-                addJSError: (error: JSError): void => set((state) => ({
-                    jsErrors: [error, ...state.jsErrors].slice(0, 50)
-                })),
-                clearJSErrors: (): void => set({ jsErrors: [] }),
-
-                // Layer visibility actions
-                toggleShowFields: (): void => set((state) => ({ showFields: !state.showFields })),
-                toggleShowLinks: (): void => set((state) => ({ showLinks: !state.showLinks })),
-                toggleShowResistance: (): void => set((state) => ({ showResistance: !state.showResistance })),
-                toggleShowEnlightened: (): void => set((state) => ({ showEnlightened: !state.showEnlightened })),
-                toggleShowMachina: (): void => set((state) => ({ showMachina: !state.showMachina })),
-                toggleShowUnclaimedPortals: (): void => set((state) => ({ showUnclaimedPortals: !state.showUnclaimedPortals })),
-                toggleShowLevel: (level: number): void => set((state) => ({
-                    showLevel: {
-                        ...state.showLevel,
-                        [level]: !state.showLevel[level],
-                    },
-                })),
-                toggleShowHealth: (bucket: number): void => set((state) => ({
-                    showHealth: {
-                        ...state.showHealth,
-                        [bucket]: !state.showHealth[bucket],
-                    },
-                })),
-                toggleShowVisited: (): void => set((state) => ({ showVisited: !state.showVisited })),
-                toggleShowCaptured: (): void => set((state) => ({ showCaptured: !state.showCaptured })),
-                toggleShowScanned: (): void => set((state) => ({ showScanned: !state.showScanned })),
-
-                toggleDebugLogging: (): void => set((state) => ({ debugLogging: !state.debugLogging })),
-
-                rehydrated: false,
-
-                activeCommTab: 'ALL',
-                setActiveCommTab: (tab: string): void => set({ activeCommTab: tab }),
+            (...a) => ({
+                ...createSettingsSlice(...a),
+                ...createEntitiesSlice(...a),
+                ...createUISlice(...a),
+                ...createPlayerSlice(...a),
+                ...createDiagnosticsSlice(...a),
             }),
             {
                 name: 'iris-settings',
