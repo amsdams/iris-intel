@@ -75,6 +75,13 @@ export function MapOverlay(): JSX.Element {
   const showCaptured = useStore((state) => state.showCaptured);
   const showScanned = useStore((state) => state.showScanned);
 
+  // Track touch state to distinguish taps from gesture endings
+  const touchState = useRef({
+    maxFingers: 0,
+    hasMoved: false,
+    startPoint: { x: 0, y: 0 }
+  });
+
   const getGeoJsonSource = (sourceId: string): maplibregl.GeoJSONSource | null => {
     const source = map.current?.getSource(sourceId);
     return source ? (source as maplibregl.GeoJSONSource) : null;
@@ -317,7 +324,7 @@ export function MapOverlay(): JSX.Element {
     });
 
     // Interaction check using queryRenderedFeatures
-    const onInteraction = (e: maplibregl.MapMouseEvent | maplibregl.MapTouchEvent) => {
+    const onInteraction = (e: maplibregl.MapMouseEvent | maplibregl.MapTouchEvent): void => {
       if (!map.current) return;
       
       // Use a bounding box for more forgiving hit-testing (30x30px)
@@ -331,21 +338,67 @@ export function MapOverlay(): JSX.Element {
       });
 
       if (features.length > 0) {
-        const portalId = features[0].properties?.id;
-        if (portalId) {
+        let closestPortalId: string | null = null;
+        let minDistanceSq = Infinity;
+
+        // Find the nearest portal by projected pixel distance
+        features.forEach((feature) => {
+          const properties = feature.properties;
+          const id = (properties && 'id' in properties) ? String(properties.id) : null;
+          if (!id || feature.geometry.type !== 'Point' || !map.current) return;
+
+          const coords = feature.geometry.coordinates as [number, number];
+          const pos = map.current.project(coords);
+          const dx = pos.x - e.point.x;
+          const dy = pos.y - e.point.y;
+          const distSq = dx * dx + dy * dy;
+
+          if (distSq < minDistanceSq) {
+            minDistanceSq = distSq;
+            closestPortalId = id;
+          }
+        });
+
+        if (closestPortalId) {
           document.dispatchEvent(
-            new CustomEvent('iris:portal:click', { detail: { id: portalId } })
+            new CustomEvent('iris:portal:click', { detail: { id: closestPortalId } })
           );
         }
       }
     };
 
+    map.current.on('touchstart', (e: maplibregl.MapTouchEvent) => {
+      touchState.current.maxFingers = Math.max(touchState.current.maxFingers, e.points.length);
+      if (e.points.length === 1) {
+        touchState.current.startPoint = { x: e.point.x, y: e.point.y };
+        touchState.current.hasMoved = false;
+      }
+    });
+
+    map.current.on('touchmove', (e: maplibregl.MapTouchEvent) => {
+      if (e.points.length === 1) {
+        const dx = e.point.x - touchState.current.startPoint.x;
+        const dy = e.point.y - touchState.current.startPoint.y;
+        if (Math.sqrt(dx * dx + dy * dy) > 10) {
+          touchState.current.hasMoved = true;
+        }
+      } else {
+        touchState.current.hasMoved = true;
+      }
+    });
+
     map.current.on('click', onInteraction);
 
     map.current.on('touchend', (e: maplibregl.MapTouchEvent) => {
-      // Only trigger if it's a single-finger tap
-      if (e.points && e.points.length === 1) {
+      // Only trigger if it was a stationary, single-finger session
+      if (touchState.current.maxFingers === 1 && !touchState.current.hasMoved) {
         onInteraction(e);
+      }
+      
+      // Reset tracker when all fingers are lifted
+      if (e.originalEvent.touches.length === 0) {
+        touchState.current.maxFingers = 0;
+        touchState.current.hasMoved = false;
       }
     });
 

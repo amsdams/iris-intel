@@ -53,7 +53,7 @@ export default tseslint.config(
       '@typescript-eslint/explicit-function-return-type': 'error',
       
       // PREVENT COMMON TYPE BUGS
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^h$' }],
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^h$|^_' }],
       '@typescript-eslint/no-non-null-assertion': 'warn',
       
       // REACT/PREACT SPECIFIC

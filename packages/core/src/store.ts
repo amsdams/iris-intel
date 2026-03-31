@@ -451,7 +451,7 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
     })),
     removeStatsItem: (id) => set((state) => {
         const { [id]: _, ...rest } = state.statsItems;
-        return { statsItems: rest };
+        return { statsItems: { ...rest } };
     }),
     addMenuItem: (item) => set((state) => ({ menuItems: [...state.menuItems, item] })),
     removeMenuItem: (id) => set((state) => ({
