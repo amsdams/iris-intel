@@ -203,14 +203,54 @@ export interface MissionSummary {
     medianCompletionTime?: string;
 }
 
-interface IRISState {
+export interface IRISSettings {
+    pluginStates: Record<string, boolean>;
+    themeId: string;
+    mapThemeId: string;
+    showFields: boolean;
+    showLinks: boolean;
+    showResistance: boolean;
+    showEnlightened: boolean;
+    showMachina: boolean;
+    showUnclaimedPortals: boolean;
+    showLevel: Record<number, boolean>;
+    showHealth: Record<number, boolean>;
+    showVisited: boolean;
+    showCaptured: boolean;
+    showScanned: boolean;
+    debugLogging: boolean;
+}
+
+export const DEFAULT_SETTINGS: IRISSettings = {
+    pluginStates: {},
+    themeId: 'DEFAULT',
+    mapThemeId: 'DARK',
+    showFields: true,
+    showLinks: true,
+    showResistance: true,
+    showEnlightened: true,
+    showMachina: true,
+    showUnclaimedPortals: true,
+    showLevel: {
+        1: true, 2: true, 3: true, 4: true,
+        5: true, 6: true, 7: true, 8: true,
+    },
+    showHealth: {
+        25: true, 50: true, 75: true, 100: true,
+    },
+    showVisited: true,
+    showCaptured: true,
+    showScanned: true,
+    debugLogging: false,
+};
+
+interface IRISState extends IRISSettings {
     portals: Record<string, Portal>;
     links: Record<string, Link>;
     fields: Record<string, Field>;
     plexts: Plext[];
     statsItems: Record<string, StatsItem>;
     menuItems: MenuItem[];
-    pluginStates: Record<string, boolean>;
     pluginFeatures: GeoJSON.FeatureCollection;
     mapState: {
         lat: number;
@@ -270,10 +310,8 @@ interface IRISState {
     missionsPortalId: string | null;
     setMissionsPortalId: (portalId: string | null) => void;
 
-    themeId: string;
     setTheme: (id: string) => void;
 
-    mapThemeId: string;
     setMapTheme: (id: string) => void;
 
     activeRequests: number;
@@ -290,19 +328,6 @@ interface IRISState {
     addJSError: (error: JSError) => void;
     clearJSErrors: () => void;
 
-    // Layer visibility states
-    showFields: boolean;
-    showLinks: boolean;
-    showResistance: boolean;
-    showEnlightened: boolean;
-    showMachina: boolean;
-    showUnclaimedPortals: boolean;
-    showLevel: Record<number, boolean>;
-    showHealth: Record<number, boolean>;
-    showVisited: boolean;
-    showCaptured: boolean;
-    showScanned: boolean;
-
     // Layer visibility actions
     toggleShowFields: () => void;
     toggleShowLinks: () => void;
@@ -316,7 +341,6 @@ interface IRISState {
     toggleShowCaptured: () => void;
     toggleShowScanned: () => void;
 
-    debugLogging: boolean;
     toggleDebugLogging: () => void;
 
     rehydrated: boolean;
@@ -329,13 +353,13 @@ export const useStore = create<IRISState>()(
     subscribeWithSelector(
         persist(
             (set) => ({
+                ...DEFAULT_SETTINGS,
                 portals: {},
                 links: {},
                 fields: {},
                 plexts: [],
                 statsItems: {},
                 menuItems: [],
-                pluginStates: {},
                 pluginFeatures: { type: 'FeatureCollection', features: [] },
                 mapState: {
                     lat: 0,
@@ -474,10 +498,8 @@ export const useStore = create<IRISState>()(
                 missionsPortalId: null,
                 setMissionsPortalId: (portalId: string | null): void => set(() => ({ missionsPortalId: portalId })),
 
-                themeId: 'DEFAULT',
                 setTheme: (id: string): void => set(() => ({ themeId: id })),
 
-                mapThemeId: 'DARK',
                 setMapTheme: (id: string): void => set(() => ({ mapThemeId: id })),
 
                 activeRequests: 0,
@@ -505,25 +527,7 @@ export const useStore = create<IRISState>()(
                 })),
                 clearJSErrors: (): void => set({ jsErrors: [] }),
 
-                // Initialize layer visibility states
-                showFields: true,
-                showLinks: true,
-                showResistance: true,
-                showEnlightened: true,
-                showMachina: true,
-                showUnclaimedPortals: true,
-                showLevel: {
-                    1: true, 2: true, 3: true, 4: true,
-                    5: true, 6: true, 7: true, 8: true,
-                },
-                showHealth: {
-                    25: true, 50: true, 75: true, 100: true,
-                },
-                showVisited: true,
-                showCaptured: true,
-                showScanned: true,
-
-                // Implement layer visibility actions
+                // Layer visibility actions
                 toggleShowFields: (): void => set((state) => ({ showFields: !state.showFields })),
                 toggleShowLinks: (): void => set((state) => ({ showLinks: !state.showLinks })),
                 toggleShowResistance: (): void => set((state) => ({ showResistance: !state.showResistance })),
@@ -546,7 +550,6 @@ export const useStore = create<IRISState>()(
                 toggleShowCaptured: (): void => set((state) => ({ showCaptured: !state.showCaptured })),
                 toggleShowScanned: (): void => set((state) => ({ showScanned: !state.showScanned })),
 
-                debugLogging: false,
                 toggleDebugLogging: (): void => set((state) => ({ debugLogging: !state.debugLogging })),
 
                 rehydrated: false,
@@ -568,13 +571,11 @@ export const useStore = create<IRISState>()(
                     showUnclaimedPortals: state.showUnclaimedPortals,
                     showLevel: state.showLevel,
                     debugLogging: state.debugLogging,
-                    activeCommTab: state.activeCommTab,
                     showHealth: state.showHealth,
-                    hasSubscription: state.hasSubscription,
                     showVisited: state.showVisited,
                     showCaptured: state.showCaptured,
                     showScanned: state.showScanned,
-                }),
+                } as IRISSettings),
                 onRehydrateStorage: () => (state: IRISState | undefined): void => {
                     if (state) state.rehydrated = true;
                 }
