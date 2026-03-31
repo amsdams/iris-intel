@@ -17,7 +17,8 @@
     "release:firefox": "mkdir -p out && cd packages/extension/dist-firefox && zip -r ../../../out/iris-firefox.xpi .",
     "release": "npm run build:all && npm run release:chrome && npm run release:firefox",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "serve": "npx qrcode-terminal http://$(ipconfig getifaddr en0):8080 && npx http-server -p 8080"
   },
   "devDependencies": {
     "@types/chrome": "^0.1.38",

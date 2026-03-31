@@ -2,7 +2,7 @@ import { h, JSX } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { Portal, useStore } from '@iris/core';
+import { useStore } from '@iris/core';
 import { THEMES, MAP_THEMES } from '../../theme';
 import {
   buildFieldFeatures,
@@ -316,56 +316,45 @@ export function MapOverlay(): JSX.Element {
       }, '*');
     });
 
-    // Manual interaction check (Safer for Firefox)
-    map.current.on('click', (e: maplibregl.MapMouseEvent) => {
-        if (!map.current) return;
-        const { lng, lat } = e.lngLat;
-        const point = e.point;
+    // Interaction check using queryRenderedFeatures
+    const onInteraction = (e: maplibregl.MapMouseEvent | maplibregl.MapTouchEvent) => {
+      if (!map.current) return;
+      
+      // Use a bounding box for more forgiving hit-testing (30x30px)
+      const bbox: [maplibregl.PointLike, maplibregl.PointLike] = [
+        [e.point.x - 15, e.point.y - 15],
+        [e.point.x + 15, e.point.y + 15]
+      ];
 
-        // 1. Check for Portals
-        const allPortals: Portal[] = Object.values(useStore.getState().portals);
-        let nearestPortal: Portal | null = null;
-        let minPortalDist = 15; 
+      const features = map.current.queryRenderedFeatures(bbox, {
+        layers: ['portals']
+      });
 
-        for (const p of allPortals) {
-            if (Math.abs(p.lng - lng) > 0.01 || Math.abs(p.lat - lat) > 0.01) continue;
-            const pos = map.current.project([p.lng, p.lat]);
-            const dist = Math.sqrt(Math.pow(pos.x - point.x, 2) + Math.pow(pos.y - point.y, 2));
-            if (dist < minPortalDist) {
-                minPortalDist = dist;
-                nearestPortal = p;
-            }
+      if (features.length > 0) {
+        const portalId = features[0].properties?.id;
+        if (portalId) {
+          document.dispatchEvent(
+            new CustomEvent('iris:portal:click', { detail: { id: portalId } })
+          );
         }
+      }
+    };
 
-        if (nearestPortal) {
-            document.dispatchEvent(
-                new CustomEvent('iris:portal:click', { detail: { id: nearestPortal.id } })
-            );
-            return;
-        }
+    map.current.on('click', onInteraction);
+
+    map.current.on('touchend', (e: maplibregl.MapTouchEvent) => {
+      // Only trigger if it's a single-finger tap
+      if (e.points && e.points.length === 1) {
+        onInteraction(e);
+      }
     });
 
-    let lastMove = 0;
     map.current.on('mousemove', (e: maplibregl.MapMouseEvent) => {
-        const now = Date.now();
-        if (now - lastMove < 100) return;
-        lastMove = now;
-
         if (!map.current) return;
-        const { lng, lat } = e.lngLat;
-        const point = e.point;
-        const allPortals: Portal[] = Object.values(useStore.getState().portals);
-        let found = false;
-        for (const p of allPortals) {
-            if (Math.abs(p.lng - lng) > 0.005 || Math.abs(p.lat - lat) > 0.005) continue;
-            const pos = map.current.project([p.lng, p.lat]);
-            const dist = Math.sqrt(Math.pow(pos.x - point.x, 2) + Math.pow(pos.y - point.y, 2));
-            if (dist < 12) {
-                found = true;
-                break;
-            }
-        }
-        map.current.getCanvas().style.cursor = found ? 'pointer' : '';
+        const features = map.current.queryRenderedFeatures(e.point, {
+          layers: ['portals']
+        });
+        map.current.getCanvas().style.cursor = features.length > 0 ? 'pointer' : '';
     });
 
     const onPortalClick = (e: Event): void => {
