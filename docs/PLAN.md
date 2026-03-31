@@ -102,7 +102,7 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] **Partial UI CSS Colocation:** Moved scores, plugins, player, status, and map-theme styling into domain-local CSS files while keeping dynamic theme values inline.
 - [x] **Store Modularization:** Decomposed the Zustand store into maintainable slices (Settings, Entities, UI, Player, Diagnostics).
 - [x] **Persist Scope Cleanup:** Limited Zustand persistence to durable settings and plugin preferences only.
-- [x] **Map Interaction Migration:** Migrated to high-performance map interaction using `queryRenderedFeatures` with mobile stability refinements.
+- [x] **Map Interaction Migration:** Migrated to high-performance map interaction using manual projection for cross-browser stability.
 - [x] **UI CSS Colocation (Extended):** Finished moving remaining domain-specific popup styling into `ui/domains/*` for `comm` and `inventory`.
 
 #### Identified Performance Bottlenecks
@@ -194,10 +194,11 @@ packages/extension/src/content/
 - **Done:** Split the Zustand store into slices and narrow what gets persisted.
 - **Done:** Migrated to high-performance map interaction using `queryRenderedFeatures` with mobile stability refinements.
 - **Done:** Converted the remaining popup/domain styling into colocated CSS files for `comm` and `inventory`.
+- **Done:** Implemented artifacts parsing and map layers.
 - **Todo:** Finish map-specific helper extraction from `MapOverlay.tsx`, especially interaction and source update helpers.
 - **Todo:** Add a shared Ingress semantic color palette so faction, level, rarity, and powerup/item colors match Ingress conventions consistently across UI surfaces.
 - **Todo:** Tighten Intel payload/result typing to reduce residual cast-heavy parsing.
-- **Todo:** Complete the remaining Intel-core feature gaps around portal search, artifacts, mission browsing, COMM send, passcodes, and session recovery.
+- **Todo:** Complete the remaining Intel-core feature gaps around portal search, mission browsing, COMM send, passcodes, and session recovery.
 
 #### Domain Split Rules
 - Keep one shared low-level XHR/fetch interception runtime. Do not create a separate patcher per domain.
@@ -286,7 +287,7 @@ packages/extension/src/ui/
 
 ### Best quick wins from the current codebase:
 
-1. [x] Replace manual hit-testing with `queryRenderedFeatures`
+1. [x] Replace manual hit-testing with manual projection (Safer for Firefox/Mobile)
    `packages/extension/src/ui/domains/map/MapOverlay.tsx`
 2. [x] Narrow persisted Zustand state
    `packages/core/src/store.ts`
@@ -294,21 +295,23 @@ packages/extension/src/ui/
    `packages/core/src/store.ts`
 4. [x] **Finish UI CSS colocation for `comm` and `inventory`**
    `packages/extension/src/ui/domains/*`
-5. Add a shared Ingress semantic color palette
+5. [x] **Implement artifacts parsing and map layers**
+   `packages/extension/src/content/domains/artifacts/*`
+6. Add a shared Ingress semantic color palette
    `packages/extension/src/ui/theme.ts`
    `packages/extension/src/ui/domains/portal/*`
    `packages/extension/src/ui/domains/inventory/*`
    Standardize faction, level, rarity, and powerup/item colors instead of keeping those decisions spread across components and CSS.
-6. Extract remaining map helpers
+7. Extract remaining map helpers
    `packages/extension/src/ui/domains/map/MapOverlay.tsx`
    Feature builders are already out. The next safe split is source update helpers and portal interaction helpers.
-7. Tighten remaining payload typing
+8. Tighten remaining payload typing
    `packages/extension/src/content/domains/*`
    Replace the remaining cast-heavy endpoint assumptions with explicit transport/result types per domain.
-8. Add batched source updates
+9. Add batched source updates
    `packages/extension/src/ui/domains/map/MapOverlay.tsx`
    Wrap clustered `setData()` updates behind `requestAnimationFrame` or a small throttle to reduce update burstiness in dense areas.
-9. Finish mission-browser parity
+10. Finish mission-browser parity
    `packages/extension/src/content/domains/missions*`
    `packages/extension/src/ui/domains/missions/*`
    The core viewport mission list exists now; the next low-risk step is portal-scoped mission browsing plus a polish pass on mission metadata, author styling, and map interaction.
@@ -317,9 +320,10 @@ If you want the safest shortlist, I’d do this order:
 
 1. [x] persisted state narrowing
 2. [x] initial store slice split
-3. [x] `queryRenderedFeatures` migration
+3. [x] manual interaction migration
 4. [x] `comm` CSS colocation
-5. shared Ingress semantic palette
-6. mission-browser parity
+5. [x] artifacts implementation
+6. shared Ingress semantic palette
+7. mission-browser parity
 
 Those are the highest signal-to-risk ratio.

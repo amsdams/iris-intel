@@ -345,8 +345,8 @@ export function MapOverlay(): JSX.Element {
       }, '*');
     });
 
-    // Manual interaction check (Safer for Firefox)
-    map.current.on('click', (e: maplibregl.MapMouseEvent) => {
+    // Interaction check using manual projection (more stable on mobile/firefox)
+    const onInteraction = (e: maplibregl.MapMouseEvent | maplibregl.MapTouchEvent): void => {
         if (!map.current) return;
         const { lng, lat } = e.lngLat;
         const point = e.point;
@@ -354,7 +354,7 @@ export function MapOverlay(): JSX.Element {
         // 1. Check for Portals
         const allPortals: Portal[] = Object.values(useStore.getState().portals);
         let nearestPortal: Portal | null = null;
-        let minPortalDist = 15;
+        let minPortalDist = 20; // 20px radius for better touch targeting
 
         for (const p of allPortals) {
             if (Math.abs(p.lng - lng) > 0.01 || Math.abs(p.lat - lat) > 0.01) continue;
@@ -371,6 +371,65 @@ export function MapOverlay(): JSX.Element {
                 new CustomEvent('iris:portal:click', { detail: { id: nearestPortal.id } })
             );
             return;
+        }
+
+        // 2. Check for Artifacts
+        const artifacts: Record<string, any> = useStore.getState().artifacts;
+        const portals: Record<string, Portal> = useStore.getState().portals;
+        let nearestArtifactPortalId: string | null = null;
+        let minArtifactDist = 20;
+
+        Object.values(artifacts).forEach((a) => {
+            const p = portals[a.portalId];
+            if (!p) return;
+            if (Math.abs(p.lng - lng) > 0.01 || Math.abs(p.lat - lat) > 0.01) return;
+            const pos = map.current!.project([p.lng, p.lat]);
+            const dist = Math.sqrt(Math.pow(pos.x - point.x, 2) + Math.pow(pos.y - point.y, 2));
+            if (dist < minArtifactDist) {
+                minArtifactDist = dist;
+                nearestArtifactPortalId = a.portalId;
+            }
+        });
+
+        if (nearestArtifactPortalId) {
+            document.dispatchEvent(
+                new CustomEvent('iris:portal:click', { detail: { id: nearestArtifactPortalId } })
+            );
+        }
+    };
+
+    map.current.on('touchstart', (e: maplibregl.MapTouchEvent) => {
+        touchState.current.maxFingers = Math.max(touchState.current.maxFingers, e.points.length);
+        if (e.points.length === 1) {
+            touchState.current.startPoint = { x: e.point.x, y: e.point.y };
+            touchState.current.hasMoved = false;
+        }
+    });
+
+    map.current.on('touchmove', (e: maplibregl.MapTouchEvent) => {
+        if (e.points.length === 1) {
+            const dx = e.point.x - touchState.current.startPoint.x;
+            const dy = e.point.y - touchState.current.startPoint.y;
+            if (Math.sqrt(dx * dx + dy * dy) > 10) {
+                touchState.current.hasMoved = true;
+            }
+        } else {
+            touchState.current.hasMoved = true;
+        }
+    });
+
+    map.current.on('click', onInteraction);
+
+    map.current.on('touchend', (e: maplibregl.MapTouchEvent) => {
+        // Only trigger if it was a stationary, single-finger session
+        if (touchState.current.maxFingers === 1 && !touchState.current.hasMoved) {
+            onInteraction(e);
+        }
+        
+        // Reset tracker when all fingers are lifted
+        if (e.originalEvent.touches.length === 0) {
+            touchState.current.maxFingers = 0;
+            touchState.current.hasMoved = false;
         }
     });
 
