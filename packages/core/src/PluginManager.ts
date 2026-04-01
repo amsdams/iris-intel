@@ -62,12 +62,13 @@ export class PluginManager {
           useStore.getState().removeMenuItem(id),
         setTheme: (id: string): void => useStore.getState().setTheme(id),
         getTheme: (): string => useStore.getState().themeId,
-        getThemeColors: (): { E: string; R: string; M: string } => {
-          // For now, return default colors or implement theme lookup if available
+        getThemeColors: (): { E: string; R: string; M: string; N: string } => {
+          // Keep plugin API colors stable even before theme-specific lookup is added.
           return {
             E: '#00ff00',
             R: '#0000ff',
-            M: '#ff0000'
+            M: '#ff0000',
+            N: '#ffffff',
           };
         }
       },
