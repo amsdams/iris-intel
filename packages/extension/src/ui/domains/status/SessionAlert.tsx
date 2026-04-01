@@ -22,12 +22,18 @@ export function SessionAlert(): JSX.Element | null {
         return null;
     }
 
+    const openIntelLogin = (): void => {
+        window.location.assign(
+            'https://signin.nianticspatial.com/signin?continue=https%3A%2F%2Fintel.ingress.com%2Fsigninhandler%3Fiitc%3D&service=ingress-intel',
+        );
+    };
+
     return (
         <div className="iris-session-alert" role="alert" aria-live="assertive">
             <div className="iris-session-alert-copy">
                 <div className="iris-session-alert-title">Session Expired</div>
                 <div className="iris-session-alert-text">
-                    Intel sign-in is required. Sign in on intel.ingress.com, then reload.
+                    Intel sign-in is required before IRIS can continue. Open Intel, sign in, then reload if needed.
                 </div>
                 <div className="iris-session-alert-meta" style={{ color: UI_COLORS.TEXT_MUTED }}>
                     {lastSessionError.statusText} ({lastSessionError.status}) - {lastSessionError.url}
@@ -37,9 +43,16 @@ export function SessionAlert(): JSX.Element | null {
                 <button
                     type="button"
                     className="iris-session-alert-button iris-session-alert-button-primary"
+                    onClick={openIntelLogin}
+                >
+                    Sign In On Intel
+                </button>
+                <button
+                    type="button"
+                    className="iris-session-alert-button"
                     onClick={() => window.location.reload()}
                 >
-                    Reload Intel
+                    Reload After Login
                 </button>
                 <button
                     type="button"

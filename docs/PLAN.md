@@ -76,7 +76,7 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [ ] **Portal Search:** Implement `/r/getPortalSearch` so IRIS matches Intel’s portal search workflow instead of only address/coordinate search.
 - [ ] **COMM Send:** Add `/r/sendPlext` support with an input field in COMM.
 - [ ] **Passcodes:** Add `/r/redeemReward` UI and response handling.
-- [x] **Login Recovery:** Detect Intel session loss from `401` / `403` and login HTML responses, surface recovery state in the status bar, show a prominent `Session Expired` alert, and suppress repeated auth-failure noise.
+- [x] **Login Recovery:** Detect Intel session loss from `401` / `403` and login HTML responses, surface recovery state in the status bar, show a prominent `Session Expired` alert, and direct the user to sign in on Intel before reloading if needed.
 - [ ] **Mission UI Polish:** Mission author styling is currently not correctly faction-colored; revisit after establishing a reliable semantic color approach.
 - [x] **Font Consistency:** Standardized the IRIS UI onto an explicit Menlo-first monospace stack and forced form controls to inherit it, preventing browser-default Arial from leaking into new mission and popup surfaces.
 
