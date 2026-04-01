@@ -29,6 +29,7 @@ import {
 
     let intelMap: IntelMapInstance | null = null;
     let intelVersion = '';
+    let sessionState: 'ok' | 'expired' | 'recovering' = 'ok';
     
     intelVersion = extractVersionFromDOM(document) ?? '';
     if (!intelVersion) {
@@ -53,6 +54,9 @@ import {
         }
 
         if (!intelVersion) {
+            if (sessionState === 'expired') {
+                throw new Error(`IRIS: blocked ${url} because Intel session is expired`);
+            }
             console.warn(`IRIS: Waiting for version before fetching ${url}...`);
             let attempts = 0;
             while (!intelVersion && attempts < 20) {
@@ -64,7 +68,13 @@ import {
         }
 
         if (!intelVersion) {
-            console.error(`IRIS: Failed to capture version after timeout. Request to ${url} may fail.`);
+            if (sessionState !== 'expired') {
+                console.error(`IRIS: Failed to capture version after timeout. Request to ${url} may fail.`);
+            }
+        }
+
+        if (sessionState === 'expired') {
+            throw new Error(`IRIS: blocked ${url} because Intel session is expired`);
         }
 
         const body = JSON.parse(options.body as string) as Record<string, unknown>;
@@ -78,6 +88,59 @@ import {
         if (payload) {
             window.postMessage(payload, '*');
         }
+    };
+
+    const isAuthFailureStatus = (status: number): boolean => status === 401 || status === 403;
+
+    const isLikelyHtmlDocument = (text: string): boolean => {
+        const trimmed = text.trimStart();
+        return trimmed.startsWith('<!DOCTYPE') || trimmed.startsWith('<html') || trimmed.startsWith('<head') || trimmed.startsWith('<body');
+    };
+
+    const isLoginHtmlResponse = (text: string): boolean => {
+        const lower = text.toLowerCase();
+        return isLikelyHtmlDocument(text) && (
+            lower.includes('intel.ingress.com') ||
+            lower.includes('sign in') ||
+            lower.includes('signin') ||
+            lower.includes('login')
+        );
+    };
+
+    const reportSessionExpired = (url: string, status: number, statusText: string): void => {
+        if (sessionState === 'expired') return;
+        sessionState = 'expired';
+        window.postMessage({
+            type: 'IRIS_SESSION_EXPIRED',
+            url,
+            status,
+            statusText,
+            time: Date.now(),
+        }, '*');
+    };
+
+    const reportSessionSuccess = (url: string): void => {
+        if (sessionState === 'expired') {
+            sessionState = 'recovering';
+            window.postMessage({
+                type: 'IRIS_SESSION_RECOVERING',
+                url,
+                time: Date.now(),
+            }, '*');
+        }
+
+        if (sessionState === 'recovering') {
+            sessionState = 'ok';
+            window.postMessage({
+                type: 'IRIS_SESSION_RECOVERED',
+                url,
+                time: Date.now(),
+            }, '*');
+        }
+    };
+
+    const reportHtmlLoginResponse = (url: string): void => {
+        reportSessionExpired(url, 200, 'Login HTML returned instead of Intel API JSON');
     };
 
     // Use MutationObserver to track player stats availability and updates (REL-1)
@@ -166,6 +229,25 @@ import {
 
             // Set up response listener
             this.addEventListener('load', function (this: XMLHttpRequestAugmented) {
+                if (isAuthFailureStatus(this.status)) {
+                    reportSessionExpired(url, this.status, this.statusText);
+                } else if (this.status > 0 && this.status < 400) {
+                    reportSessionSuccess(url);
+                }
+
+                if (isLoginHtmlResponse(this.responseText)) {
+                    reportHtmlLoginResponse(url);
+                    window.postMessage({
+                        type: 'IRIS_REQUEST_FAILED',
+                        url,
+                        status: 200,
+                        statusText: 'Login HTML returned instead of Intel API JSON',
+                        time: Date.now()
+                    }, '*');
+                    window.postMessage({ type: 'IRIS_REQUEST_END' }, '*');
+                    return;
+                }
+
                 window.postMessage({ type: 'IRIS_REQUEST_SUCCESS', url, time: Date.now() }, '*');
                 try {
                     const data = JSON.parse(this.responseText) as { v?: string };
@@ -176,7 +258,9 @@ import {
                         intelVersion = data.v;
                     }
                 } catch (e) {
-                    console.error('IRIS: Interceptor failed to parse JSON', e, url);
+                    if (sessionState !== 'expired') {
+                        console.error('IRIS: Interceptor failed to parse JSON', e, url);
+                    }
                 } finally {
                     window.postMessage({ type: 'IRIS_REQUEST_END' }, '*');
                 }
@@ -225,12 +309,40 @@ import {
             window.postMessage({ type: 'IRIS_REQUEST_START', url }, '*');
             try {
                 const response = await originalFetch(input, init);
+                if (isAuthFailureStatus(response.status)) {
+                    reportSessionExpired(url, response.status, response.statusText);
+                } else if (response.status > 0 && response.status < 400) {
+                    reportSessionSuccess(url);
+                }
                 const cloned = response.clone();
                 cloned.json().then((data: { v?: string }) => {
                     window.postMessage({ type: 'IRIS_REQUEST_SUCCESS', url, time: Date.now() }, '*');
                     window.postMessage({ type: 'IRIS_DATA', url, data, params: init?.body }, '*');
                     if (data.v && data.v !== intelVersion) intelVersion = data.v;
-                }).catch((e: Error) => console.error('IRIS: Fetch wrap failed to parse JSON', e));
+                }).catch(async () => {
+                    try {
+                        const text = await response.clone().text();
+                        if (isLoginHtmlResponse(text)) {
+                            reportHtmlLoginResponse(url);
+                            window.postMessage({
+                                type: 'IRIS_REQUEST_FAILED',
+                                url,
+                                status: response.status || 200,
+                                statusText: 'Login HTML returned instead of Intel API JSON',
+                                time: Date.now()
+                            }, '*');
+                            return;
+                        }
+
+                        if (sessionState !== 'expired') {
+                            console.error('IRIS: Fetch wrap failed to parse JSON for', url);
+                        }
+                    } catch (e) {
+                        if (sessionState !== 'expired') {
+                            console.error('IRIS: Fetch wrap failed to inspect non-JSON response', e);
+                        }
+                    }
+                });
                 return response;
             } catch (e) {
                 window.postMessage({
@@ -392,6 +504,8 @@ import {
 
     // Proactive background checks for subscription, inventory, and artifacts
     setInterval(() => {
+        if (sessionState === 'expired') return;
+
         // Check artifacts
         safeIrisFetch('/r/getArtifactPortals', {
             method: 'POST',

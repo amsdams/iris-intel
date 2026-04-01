@@ -123,6 +123,13 @@ export interface JSError {
     time: number;
 }
 
+export interface SessionError {
+    url: string;
+    status: number;
+    statusText: string;
+    time: number;
+}
+
 export interface InventoryItemData {
     resource?: {
         resourceType: string;
@@ -344,6 +351,8 @@ interface DiagnosticsSlice {
     failedRequests: FailedRequest[];
     successfulRequests: SuccessfulRequest[];
     jsErrors: JSError[];
+    sessionStatus: 'ok' | 'expired' | 'recovering';
+    lastSessionError: SessionError | null;
     onRequestStart: (url: string) => void;
     onRequestEnd: () => void;
     addFailedRequest: (request: FailedRequest) => void;
@@ -352,6 +361,9 @@ interface DiagnosticsSlice {
     clearSuccessfulRequests: () => void;
     addJSError: (error: JSError) => void;
     clearJSErrors: () => void;
+    setSessionExpired: (error: SessionError) => void;
+    setSessionRecovering: () => void;
+    setSessionRecovered: () => void;
 }
 
 export type IRISState = SettingsSlice & EntitiesSlice & UISlice & PlayerSlice & DiagnosticsSlice;
@@ -513,6 +525,8 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
     failedRequests: [],
     successfulRequests: [],
     jsErrors: [],
+    sessionStatus: 'ok',
+    lastSessionError: null,
     onRequestStart: (url) => set((state) => ({
         activeRequests: state.activeRequests + 1,
         lastRequestUrl: url
@@ -532,6 +546,33 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
         jsErrors: [error, ...state.jsErrors].slice(0, 50)
     })),
     clearJSErrors: () => set({ jsErrors: [] }),
+    setSessionExpired: (error) => set((state) => {
+        if (
+            state.sessionStatus === 'expired' &&
+            state.lastSessionError?.url === error.url &&
+            state.lastSessionError?.status === error.status
+        ) {
+            return state;
+        }
+
+        return {
+            sessionStatus: 'expired',
+            lastSessionError: error,
+        };
+    }),
+    setSessionRecovering: () => set((state) => (
+        state.sessionStatus === 'expired'
+            ? { sessionStatus: 'recovering' }
+            : state
+    )),
+    setSessionRecovered: () => set((state) => (
+        state.sessionStatus === 'ok' && state.lastSessionError === null
+            ? state
+            : {
+                sessionStatus: 'ok',
+                lastSessionError: null,
+            }
+    )),
 });
 
 export const useStore = create<IRISState>()(

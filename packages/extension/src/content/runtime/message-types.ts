@@ -39,4 +39,5 @@ export interface IRISMessage {
   min_ap_for_current_level?: number;
   min_ap_for_next_level?: number;
   hasActiveSubscription?: boolean;
+  sessionStatus?: 'ok' | 'expired' | 'recovering';
 }

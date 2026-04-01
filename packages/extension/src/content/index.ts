@@ -144,6 +144,26 @@ window.addEventListener('message', (event: MessageEvent) => {
         break;
     }
 
+    case 'IRIS_SESSION_EXPIRED': {
+        useStore.getState().setSessionExpired({
+            url: msg.url as string,
+            status: msg.status as number,
+            statusText: msg.statusText as string,
+            time: msg.time as number
+        });
+        break;
+    }
+
+    case 'IRIS_SESSION_RECOVERING': {
+        useStore.getState().setSessionRecovering();
+        break;
+    }
+
+    case 'IRIS_SESSION_RECOVERED': {
+        useStore.getState().setSessionRecovered();
+        break;
+    }
+
     case 'IRIS_REQUEST_SUCCESS': {
         useStore.getState().addSuccessfulRequest({
             url: msg.url as string,
