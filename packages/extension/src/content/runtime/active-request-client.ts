@@ -98,6 +98,15 @@ export function handleActiveRequestMessage(
             break;
         }
 
+        case 'IRIS_GAME_SCORE_FETCH': {
+            runtime.safeIrisFetch('/r/getGameScore', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
+                body: JSON.stringify({}),
+            }).catch((e: Error) => console.debug('IRIS: game score fetch failed', e));
+            break;
+        }
+
         case 'IRIS_INVENTORY_FETCH': {
             const lastQueryTimestamp = typeof msg.lastQueryTimestamp === 'number' ? msg.lastQueryTimestamp : -1;
             runtime.safeIrisFetch('/r/getInventory', {

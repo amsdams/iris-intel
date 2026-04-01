@@ -101,6 +101,16 @@ window.addEventListener('message', (event: MessageEvent) => {
       break;
     }
 
+    case 'IRIS_INVENTORY_REQUEST': {
+      requestCoordinator.handleInventoryRequest();
+      break;
+    }
+
+    case 'IRIS_GAME_SCORE_REQUEST': {
+      requestCoordinator.handleGameScoreRequest();
+      break;
+    }
+
     case 'IRIS_REGION_SCORE_REQUEST': {
         requestCoordinator.handleRegionScoreRequest(msg);
         break;
@@ -169,6 +179,16 @@ window.addEventListener('message', (event: MessageEvent) => {
 
     case 'IRIS_PORTAL_DETAILS_REQUEST': {
       requestCoordinator.handlePortalDetailsRequest(msg);
+      break;
+    }
+
+    case 'IRIS_MISSIONS_REQUEST': {
+      requestCoordinator.handleMissionsRequest();
+      break;
+    }
+
+    case 'IRIS_MISSION_DETAILS_REQUEST': {
+      requestCoordinator.handleMissionDetailsRequest(msg);
       break;
     }
 

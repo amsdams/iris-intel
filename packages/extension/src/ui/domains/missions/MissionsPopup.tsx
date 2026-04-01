@@ -19,28 +19,16 @@ export function MissionsPopup({ onClose }: MissionsPopupProps): JSX.Element {
   const theme = THEMES[themeId] || THEMES.DEFAULT;
 
   useEffect(() => {
-    if (missionsPortalId) {
+    if (missionsPortalId || bounds) {
       window.postMessage({
-        type: 'IRIS_TOP_MISSIONS_FOR_PORTAL_FETCH',
-        guid: missionsPortalId,
+        type: 'IRIS_MISSIONS_REQUEST',
       }, '*');
-      return;
     }
-
-    if (!bounds) return;
-
-    window.postMessage({
-      type: 'IRIS_TOP_MISSIONS_IN_BOUNDS_FETCH',
-      minLatE6: bounds.minLatE6,
-      minLngE6: bounds.minLngE6,
-      maxLatE6: bounds.maxLatE6,
-      maxLngE6: bounds.maxLngE6,
-    }, '*');
   }, [bounds, missionsPortalId]);
 
   const handleMissionClick = (missionId: string): void => {
     window.postMessage({
-      type: 'IRIS_MISSION_DETAILS_FETCH',
+      type: 'IRIS_MISSION_DETAILS_REQUEST',
       guid: missionId,
     }, '*');
   };

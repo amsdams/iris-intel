@@ -138,7 +138,7 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
     const totalCount = parsedItems.length;
 
     const handleRefresh = (): void => {
-        window.postMessage({ type: 'IRIS_DATA_REQUEST', url: 'getInventory' }, '*');
+        window.postMessage({ type: 'IRIS_INVENTORY_REQUEST' }, '*');
     };
 
     const getItemColor = (item: GroupedInventoryItem): string => {

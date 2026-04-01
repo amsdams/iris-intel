@@ -42,7 +42,7 @@ export function IRISOverlay(): JSX.Element {
     const togglePlayerStatsPopup = (): void => setShowPlayerStatsPopup((value) => !value);
     const toggleInventoryPopup = (): void => {
         if (!showInventoryPopup) {
-            window.postMessage({ type: 'IRIS_DATA_REQUEST', url: 'getInventory' }, '*');
+            window.postMessage({ type: 'IRIS_INVENTORY_REQUEST' }, '*');
         }
         setShowInventoryPopup((value) => !value);
     };
@@ -54,7 +54,7 @@ export function IRISOverlay(): JSX.Element {
     const togglePluginsPopup = (): void => setShowPluginsPopup((value) => !value);
     const toggleGameScorePopup = (): void => {
         if (!showGameScorePopup) {
-            window.postMessage({ type: 'IRIS_GAME_SCORE_FETCH' }, '*');
+            window.postMessage({ type: 'IRIS_GAME_SCORE_REQUEST' }, '*');
         }
         setShowGameScorePopup((value) => !value);
     };

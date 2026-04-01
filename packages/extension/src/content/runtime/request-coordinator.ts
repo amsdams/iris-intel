@@ -9,8 +9,12 @@ export interface RequestCoordinator {
     stop: () => void;
     handleMoveMap: (msg: IRISMessage) => void;
     handleGeolocateRequest: () => void;
+    handleInventoryRequest: () => void;
+    handleGameScoreRequest: () => void;
     handleRegionScoreRequest: (msg: IRISMessage) => void;
     handlePortalDetailsRequest: (msg: IRISMessage) => void;
+    handleMissionDetailsRequest: (msg: IRISMessage) => void;
+    handleMissionsRequest: () => void;
     handlePlextsRequest: (msg: IRISMessage) => void;
     onRequestStart: (url: string) => void;
     onPlextsDataReceived: (time?: number) => void;
@@ -63,6 +67,14 @@ export function createRequestCoordinator(): RequestCoordinator {
             postMessage({ type: 'IRIS_GEOLOCATE' });
         },
 
+        handleInventoryRequest(): void {
+            postMessage({ type: 'IRIS_INVENTORY_FETCH', lastQueryTimestamp: -1 });
+        },
+
+        handleGameScoreRequest(): void {
+            postMessage({ type: 'IRIS_GAME_SCORE_FETCH' });
+        },
+
         handleRegionScoreRequest(msg: IRISMessage): void {
             const { lat, lng } = msg as { lat: number; lng: number };
             postMessage({
@@ -76,6 +88,37 @@ export function createRequestCoordinator(): RequestCoordinator {
             postMessage({
                 type: 'IRIS_PORTAL_DETAILS_FETCH',
                 guid: msg.guid as string,
+            });
+        },
+
+        handleMissionDetailsRequest(msg: IRISMessage): void {
+            postMessage({
+                type: 'IRIS_MISSION_DETAILS_FETCH',
+                guid: msg.guid as string,
+            });
+        },
+
+        handleMissionsRequest(): void {
+            const store = useStore.getState();
+            const missionsPortalId = store.missionsPortalId;
+
+            if (missionsPortalId) {
+                postMessage({
+                    type: 'IRIS_TOP_MISSIONS_FOR_PORTAL_FETCH',
+                    guid: missionsPortalId,
+                });
+                return;
+            }
+
+            const bounds = store.mapState.bounds;
+            if (!bounds) return;
+
+            postMessage({
+                type: 'IRIS_TOP_MISSIONS_IN_BOUNDS_FETCH',
+                minLatE6: bounds.minLatE6,
+                minLngE6: bounds.minLngE6,
+                maxLatE6: bounds.maxLatE6,
+                maxLngE6: bounds.maxLngE6,
             });
         },
 
