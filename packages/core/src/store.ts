@@ -130,6 +130,32 @@ export interface SessionError {
     time: number;
 }
 
+export type EndpointStatus = 'idle' | 'in_flight' | 'success' | 'error';
+
+export type EndpointKey =
+    | 'entities'
+    | 'portalDetails'
+    | 'plexts'
+    | 'missionDetails'
+    | 'topMissions'
+    | 'artifacts'
+    | 'subscription'
+    | 'inventory'
+    | 'gameScore'
+    | 'regionScore'
+    | 'unknown';
+
+export interface EndpointDiagnostics {
+    key: EndpointKey;
+    status: EndpointStatus;
+    lastRequestAt: number | null;
+    lastSuccessAt: number | null;
+    lastErrorAt: number | null;
+    lastErrorStatus: number | null;
+    lastErrorText: string | null;
+    lastUrl: string;
+}
+
 export interface InventoryItemData {
     resource?: {
         resourceType: string;
@@ -353,6 +379,7 @@ interface DiagnosticsSlice {
     jsErrors: JSError[];
     sessionStatus: 'ok' | 'expired' | 'recovering';
     lastSessionError: SessionError | null;
+    endpointDiagnostics: Record<EndpointKey, EndpointDiagnostics>;
     onRequestStart: (url: string) => void;
     onRequestEnd: () => void;
     addFailedRequest: (request: FailedRequest) => void;
@@ -364,9 +391,54 @@ interface DiagnosticsSlice {
     setSessionExpired: (error: SessionError) => void;
     setSessionRecovering: () => void;
     setSessionRecovered: () => void;
+    clearEndpointDiagnostics: () => void;
 }
 
 export type IRISState = SettingsSlice & EntitiesSlice & UISlice & PlayerSlice & DiagnosticsSlice;
+
+const ENDPOINT_KEYS: EndpointKey[] = [
+    'entities',
+    'portalDetails',
+    'plexts',
+    'missionDetails',
+    'topMissions',
+    'artifacts',
+    'subscription',
+    'inventory',
+    'gameScore',
+    'regionScore',
+    'unknown',
+];
+
+const createEmptyEndpointDiagnostics = (): Record<EndpointKey, EndpointDiagnostics> =>
+    Object.fromEntries(
+        ENDPOINT_KEYS.map((key) => [key, {
+            key,
+            status: 'idle',
+            lastRequestAt: null,
+            lastSuccessAt: null,
+            lastErrorAt: null,
+            lastErrorStatus: null,
+            lastErrorText: null,
+            lastUrl: '',
+        } satisfies EndpointDiagnostics]),
+    ) as Record<EndpointKey, EndpointDiagnostics>;
+
+export function getEndpointKeyFromUrl(url: string): EndpointKey {
+    if (url.includes('getEntities')) return 'entities';
+    if (url.includes('getPortalDetails')) return 'portalDetails';
+    if (url.includes('getPlexts')) return 'plexts';
+    if (url.includes('getMissionDetails')) return 'missionDetails';
+    if (url.includes('getTopMissionsInBounds') || url.includes('getTopMissionsForPortal')) return 'topMissions';
+    if (url.includes('getArtifactPortals')) return 'artifacts';
+    if (url.includes('getHasActiveSubscription')) return 'subscription';
+    if (url.includes('getInventory')) return 'inventory';
+    if (url.includes('getGameScore')) return 'gameScore';
+    if (url.includes('getRegionScoreDetails')) return 'regionScore';
+    return 'unknown';
+}
+
+const SUCCESS_DEDUP_WINDOW_MS = 3000;
 
 // Slice Creators
 const createSettingsSlice: StateCreator<IRISState, [], [], SettingsSlice> = (set) => ({
@@ -527,20 +599,65 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
     jsErrors: [],
     sessionStatus: 'ok',
     lastSessionError: null,
+    endpointDiagnostics: createEmptyEndpointDiagnostics(),
     onRequestStart: (url) => set((state) => ({
         activeRequests: state.activeRequests + 1,
-        lastRequestUrl: url
+        lastRequestUrl: url,
+        endpointDiagnostics: {
+            ...state.endpointDiagnostics,
+            [getEndpointKeyFromUrl(url)]: {
+                ...state.endpointDiagnostics[getEndpointKeyFromUrl(url)],
+                status: 'in_flight',
+                lastRequestAt: Date.now(),
+                lastUrl: url,
+            },
+        },
     })),
     onRequestEnd: () => set((state) => ({
         activeRequests: Math.max(0, state.activeRequests - 1)
     })),
-    addFailedRequest: (request) => set((state) => ({
-        failedRequests: [request, ...state.failedRequests].slice(0, 50)
-    })),
+    addFailedRequest: (request) => set((state) => {
+        const endpointKey = getEndpointKeyFromUrl(request.url);
+        return {
+            failedRequests: [request, ...state.failedRequests].slice(0, 50),
+            endpointDiagnostics: {
+                ...state.endpointDiagnostics,
+                [endpointKey]: {
+                    ...state.endpointDiagnostics[endpointKey],
+                    status: 'error',
+                    lastErrorAt: request.time,
+                    lastErrorStatus: request.status,
+                    lastErrorText: request.statusText,
+                    lastUrl: request.url,
+                },
+            },
+        };
+    }),
     clearFailedRequests: () => set({ failedRequests: [] }),
-    addSuccessfulRequest: (request) => set((state) => ({
-        successfulRequests: [request, ...state.successfulRequests].slice(0, 50)
-    })),
+    addSuccessfulRequest: (request) => set((state) => {
+        const endpointKey = getEndpointKeyFromUrl(request.url);
+        const dedupedSuccessfulRequests = state.successfulRequests.filter((existing) => {
+            const sameEndpoint = getEndpointKeyFromUrl(existing.url) === endpointKey;
+            const withinWindow = Math.abs(request.time - existing.time) <= SUCCESS_DEDUP_WINDOW_MS;
+            return !(sameEndpoint && withinWindow);
+        });
+
+        return {
+            successfulRequests: [request, ...dedupedSuccessfulRequests].slice(0, 50),
+            endpointDiagnostics: {
+                ...state.endpointDiagnostics,
+                [endpointKey]: {
+                    ...state.endpointDiagnostics[endpointKey],
+                    status: 'success',
+                    lastSuccessAt: request.time,
+                    lastErrorAt: null,
+                    lastErrorStatus: null,
+                    lastErrorText: null,
+                    lastUrl: request.url,
+                },
+            },
+        };
+    }),
     clearSuccessfulRequests: () => set({ successfulRequests: [] }),
     addJSError: (error) => set((state) => ({
         jsErrors: [error, ...state.jsErrors].slice(0, 50)
@@ -573,6 +690,7 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
                 lastSessionError: null,
             }
     )),
+    clearEndpointDiagnostics: () => set({ endpointDiagnostics: createEmptyEndpointDiagnostics() }),
 });
 
 export const useStore = create<IRISState>()(

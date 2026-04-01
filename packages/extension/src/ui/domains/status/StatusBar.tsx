@@ -1,7 +1,20 @@
 import { h, JSX } from 'preact';
 import { useState } from 'preact/hooks';
-import { useStore } from '@iris/core';
+import { EndpointDiagnostics, EndpointKey, useStore } from '@iris/core';
 import { UI_COLORS } from '../../theme';
+
+const ENDPOINT_STALE_AFTER_MS: Partial<Record<EndpointKey, number>> = {
+    plexts: 2 * 60 * 1000,
+    entities: 2 * 60 * 1000,
+    portalDetails: 5 * 60 * 1000,
+    missionDetails: 5 * 60 * 1000,
+    topMissions: 5 * 60 * 1000,
+    artifacts: 5 * 60 * 1000,
+    subscription: 5 * 60 * 1000,
+    inventory: 5 * 60 * 1000,
+    gameScore: 5 * 60 * 1000,
+    regionScore: 5 * 60 * 1000,
+};
 
 export function StatusBar(): JSX.Element {
     const activeRequests = useStore((state) => state.activeRequests);
@@ -15,6 +28,8 @@ export function StatusBar(): JSX.Element {
     const hasSubscription = useStore((state) => state.hasSubscription);
     const sessionStatus = useStore((state) => state.sessionStatus);
     const lastSessionError = useStore((state) => state.lastSessionError);
+    const endpointDiagnostics = useStore((state) => state.endpointDiagnostics);
+    const clearEndpointDiagnostics = useStore((state) => state.clearEndpointDiagnostics);
     
     const [isExpanded, setIsExpanded] = useState(false);
 
@@ -36,6 +51,7 @@ export function StatusBar(): JSX.Element {
         clearFailedRequests();
         clearJSErrors();
         clearSuccessfulRequests();
+        clearEndpointDiagnostics();
         setIsExpanded(false);
     };
 
@@ -56,6 +72,39 @@ export function StatusBar(): JSX.Element {
             return 'Intel session is recovering after login.';
         }
         return null;
+    };
+
+    const endpointEntries = Object.values(endpointDiagnostics).filter((entry) => entry.key !== 'unknown');
+
+    const getDerivedEndpointStatus = (entry: EndpointDiagnostics): 'idle' | 'in_flight' | 'success' | 'error' | 'stale' => {
+        if (entry.status === 'success' && entry.lastSuccessAt) {
+            const staleAfter = ENDPOINT_STALE_AFTER_MS[entry.key];
+            if (staleAfter && Date.now() - entry.lastSuccessAt > staleAfter) {
+                return 'stale';
+            }
+        }
+        return entry.status;
+    };
+
+    const endpointHealthCounts = endpointEntries.reduce((acc, entry) => {
+        const status = getDerivedEndpointStatus(entry);
+        acc[status] = (acc[status] ?? 0) + 1;
+        return acc;
+    }, {} as Record<'idle' | 'in_flight' | 'success' | 'error' | 'stale', number>);
+
+    const endpointStatusColor = (status: 'idle' | 'in_flight' | 'success' | 'error' | 'stale'): string => {
+        switch (status) {
+            case 'in_flight':
+                return UI_COLORS.AQUA;
+            case 'success':
+                return UI_COLORS.SUCCESS;
+            case 'error':
+                return UI_COLORS.ERROR;
+            case 'stale':
+                return UI_COLORS.WARNING;
+            default:
+                return UI_COLORS.TEXT_MUTED;
+        }
     };
 
     return (
@@ -146,6 +195,31 @@ export function StatusBar(): JSX.Element {
                         </div>
                     )}
 
+                    <div className="iris-status-section iris-status-section-endpoints">
+                        <div className="iris-status-section-title">ENDPOINT HEALTH</div>
+                        {endpointEntries.map((entry) => {
+                            const derivedStatus = getDerivedEndpointStatus(entry);
+                            return (
+                                <div key={`endpoint-${entry.key}`} className="iris-status-log-entry">
+                                    <div className="iris-status-log-message iris-status-log-message-network" style={{ color: endpointStatusColor(derivedStatus) }}>
+                                        <span>{entry.key}</span>
+                                        <span>{derivedStatus.toUpperCase()}</span>
+                                    </div>
+                                    <div className="iris-status-log-url">
+                                        last request: {entry.lastRequestAt ? new Date(entry.lastRequestAt).toLocaleTimeString() : 'never'}
+                                        {entry.lastSuccessAt ? ` | last success: ${new Date(entry.lastSuccessAt).toLocaleTimeString()}` : ''}
+                                        {entry.lastErrorStatus !== null ? ` | last error: ${entry.lastErrorStatus}` : ''}
+                                    </div>
+                                    {entry.lastUrl && (
+                                        <div className="iris-status-log-url">
+                                            {entry.lastUrl}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+
                     {!hasErrors && successfulRequests.length === 0 && (
                         <div className="iris-status-empty">No requests recorded</div>
                     )}
@@ -167,6 +241,12 @@ export function StatusBar(): JSX.Element {
                         {successfulRequests.length > 0 && ` (${successfulRequests.length} OK)`}
                         {failedRequests.length > 0 && ` (${failedRequests.length} NET)`}
                         {jsErrors.length > 0 && ` (${jsErrors.length} JS)`}
+                    </span>
+                    <span className="iris-status-text" style={{ color: endpointHealthCounts.error ? UI_COLORS.ERROR : (endpointHealthCounts.stale ? UI_COLORS.WARNING : UI_COLORS.TEXT_MUTED) }}>
+                        ENDPOINTS:
+                        {endpointHealthCounts.in_flight ? ` ${endpointHealthCounts.in_flight} ACTIVE` : ''}
+                        {endpointHealthCounts.error ? ` ${endpointHealthCounts.error} ERR` : ''}
+                        {endpointHealthCounts.stale ? ` ${endpointHealthCounts.stale} STALE` : ''}
                     </span>
                     <span className="iris-status-text" style={{ color: sessionStatus === 'expired' ? UI_COLORS.WARNING : (sessionStatus === 'recovering' ? UI_COLORS.AQUA : UI_COLORS.TEXT_MUTED) }}>
                         {sessionLabel()}
