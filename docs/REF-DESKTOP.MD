@@ -49,7 +49,7 @@ This document serves as the technical blueprint for the IRIS extension, detailin
   - **Technical Impact**: Access to `getInventory` and detailed "Portal History" (V/C/S indicators) is strictly guarded by this check. Non-subscribers receive a "Access restricted" warning.
 - **IRIS Status**: **Implemented Differently**.
   - Session-expiry state is now detected from `401` / `403` responses and login HTML returned from protected `/r/*` endpoints.
-  - Recovery is surfaced in the IRIS status bar instead of relying on an immediate full-page reload.
+  - Recovery is surfaced in the IRIS status bar plus a prominent `Session Expired` alert instead of relying on an immediate full-page reload.
 
 ### 7. Architecture & Extensibility (Implemented Differently)
 - **Original Intel**: Mostly monolithic dashboard code centered around Google Maps, direct DOM updates, and tightly coupled view/state/network logic.
@@ -101,7 +101,7 @@ Provides a view of the player's items, typically restricted to C.O.R.E. members 
 - **Current IRIS Status**: **Implemented**.
   - Session expiry and recovery states are tracked centrally.
   - Login HTML responses from protected endpoints are treated as expired-session signals, not generic JSON parse failures.
-  - The status bar provides recovery guidance and repeated auth-noise is suppressed after expiry is detected.
+  - The status bar provides persistent recovery guidance, a top-level `Session Expired` alert appears on expiry, and repeated auth-noise is suppressed after expiry is detected.
 
 ### 4. Chat (Send Plext) (Medium Priority)
 - **Requirements**:
@@ -139,7 +139,7 @@ Provides a view of the player's items, typically restricted to C.O.R.E. members 
 | **Faction Filters** | ENL, RES, MAC, NEUTRAL | **Implemented** | High-performance client-side filtering. |
 | **Level Filters** | Range Slider (Min - Max) | **Implemented** | Individual checkboxes for L1-L8 for more precision. |
 | **Health Filters** | Range Slider (0 - 100%) | **Implemented** | Bucketed checkboxes (25%, 50%, 75%, 100%) for faster filtering. |
-| **Login Detection** | Monitor 401/403 + CSRF cookie | **Implemented Differently** | IRIS detects `401` / `403` and login HTML responses, exposes session state in the status bar, and does not rely on Intel-style full-page reload. |
+| **Login Detection** | Monitor 401/403 + CSRF cookie | **Implemented Differently** | IRIS detects `401` / `403` and login HTML responses, exposes session state in the status bar, shows a `Session Expired` alert, and does not rely on Intel-style full-page reload. |
 | **C.O.R.E. Perks** | `getHasActiveSubscription()` check | **Implemented** | Extraction from `window.PLAYER` and `/r/getHasActiveSubscription` integrated. |
 | **Search** | Google Geocoding + Portal Search | **Partial** | Address/coordinate search via Nominatim exists; Intel-style portal search is still missing. |
 | **Inventory** | C.O.R.E restricted item viewer | **Implemented** | Refined grid view with category filtering and level/rarity coloring. |

@@ -76,7 +76,7 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [ ] **Portal Search:** Implement `/r/getPortalSearch` so IRIS matches Intel’s portal search workflow instead of only address/coordinate search.
 - [ ] **COMM Send:** Add `/r/sendPlext` support with an input field in COMM.
 - [ ] **Passcodes:** Add `/r/redeemReward` UI and response handling.
-- [x] **Login Recovery:** Detect Intel session loss from `401` / `403` and login HTML responses, surface recovery state in the status bar, and suppress repeated auth-failure noise.
+- [x] **Login Recovery:** Detect Intel session loss from `401` / `403` and login HTML responses, surface recovery state in the status bar, show a prominent `Session Expired` alert, and suppress repeated auth-failure noise.
 - [ ] **Mission UI Polish:** Mission author styling is currently not correctly faction-colored; revisit after establishing a reliable semantic color approach.
 - [x] **Font Consistency:** Standardized the IRIS UI onto an explicit Menlo-first monospace stack and forced form controls to inherit it, preventing browser-default Arial from leaking into new mission and popup surfaces.
 
@@ -269,7 +269,7 @@ packages/extension/src/ui/
 2. [x] **Artifacts**: Implement `getArtifactPortals` parsing and map layers so shard events are visible.
 3. **Mission Parity**: Add `getTopMissionsForPortal` and refine mission details/list styling, including fixing author coloring.
 4. **COMM Send**: Add an input field to `CommPopup` for sending messages via `/r/sendPlext`.
-5. **Robust Login Detection**: Monitor for `401/403` status codes in `interceptor.ts` to detect session expiry and guide recovery.
+5. [x] **Robust Login Detection**: Detect session expiry from protected endpoint failures, surface a `Session Expired` alert, and guide recovery.
 6. **Passcodes**: Add a simple passcode redemption UI backed by `/r/redeemReward`.
 
 ## Known Issues & Mobile Challenges
@@ -279,7 +279,7 @@ packages/extension/src/ui/
 | **Mobile Firefox** | **Player Tracker Missing:** Markers/Lines are not appearing on mobile builds despite working on desktop. | *Investigating* |
 | **Mobile Firefox** | **Stale COMM Messages:** Initial COMM fetch on messages often returns very old messages compared to desktop chrome/firefox. | *Note: Likely due to Intel initial response definition* |
 | **All Firefox** | **Security Restrictions:** Accessing `.constructor` on MapLibre objects is blocked. | *Mitigated via manual interaction layer* |
-| **All Browsers** | **Login Detection:** Silent failure when session expires. | *Strategy: Monitor 401/403 in interceptor* |
+| **All Browsers** | **Login Detection:** Session expiry now surfaces through a status state plus a prominent alert instead of failing silently. | *Implemented* |
 | **All Browsers** | **Subscription Check:** Missing C.O.R.E detection for Inventory. | *Strategy: Extract from window.PLAYER* |
 
 ## Current Working Logic

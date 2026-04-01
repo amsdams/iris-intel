@@ -15,6 +15,7 @@ import { ThemePopup } from '../../../plugins/src/theme-selector/ThemePopup';
 import { MapThemePopup } from './domains/map/MapThemePopup';
 import { PluginsPopup } from './domains/plugins/PluginsPopup';
 import { StatusBar } from './domains/status/StatusBar';
+import { SessionAlert } from './domains/status/SessionAlert';
 import { PluginFeaturePopup } from './domains/plugins/PluginFeaturePopup';
 import { InventoryPopup } from './domains/inventory/InventoryPopup';
 import { MissionDetailsPopup } from './domains/missions/MissionDetailsPopup';
@@ -111,6 +112,7 @@ export function IRISOverlay(): JSX.Element {
 
     return (
         <div className="iris-overlay-root">
+            <SessionAlert />
             <Topbar
                 onTogglePlayerStats={togglePlayerStatsPopup}
                 onToggleInventory={toggleInventoryPopup}
