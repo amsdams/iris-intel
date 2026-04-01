@@ -138,6 +138,7 @@ export type EndpointKey =
     | 'plexts'
     | 'missionDetails'
     | 'topMissions'
+    | 'sendPlext'
     | 'artifacts'
     | 'subscription'
     | 'inventory'
@@ -335,6 +336,8 @@ interface UISlice {
     selectedPortalId: string | null;
     selectedPluginFeature: GeoJSON.Feature | null;
     activeCommTab: string;
+    commSendStatus: 'idle' | 'sending' | 'success' | 'error';
+    commSendError: string | null;
     rehydrated: boolean;
     addStatsItem: (item: StatsItem) => void;
     removeStatsItem: (id: string) => void;
@@ -350,6 +353,10 @@ interface UISlice {
     selectPortal: (id: string | null) => void;
     setSelectedPluginFeature: (feature: GeoJSON.Feature | null) => void;
     setActiveCommTab: (tab: string) => void;
+    setCommSendPending: () => void;
+    setCommSendSuccess: () => void;
+    setCommSendError: (error: string) => void;
+    clearCommSendState: () => void;
 }
 
 interface PlayerSlice {
@@ -402,6 +409,7 @@ const ENDPOINT_KEYS: EndpointKey[] = [
     'plexts',
     'missionDetails',
     'topMissions',
+    'sendPlext',
     'artifacts',
     'subscription',
     'inventory',
@@ -430,6 +438,7 @@ export function getEndpointKeyFromUrl(url: string): EndpointKey {
     if (url.includes('getPlexts')) return 'plexts';
     if (url.includes('getMissionDetails')) return 'missionDetails';
     if (url.includes('getTopMissionsInBounds') || url.includes('getTopMissionsForPortal')) return 'topMissions';
+    if (url.includes('sendPlext')) return 'sendPlext';
     if (url.includes('getArtifactPortals')) return 'artifacts';
     if (url.includes('getHasActiveSubscription')) return 'subscription';
     if (url.includes('getInventory')) return 'inventory';
@@ -551,6 +560,8 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
     selectedPortalId: null,
     selectedPluginFeature: null,
     activeCommTab: 'ALL',
+    commSendStatus: 'idle',
+    commSendError: null,
     rehydrated: false,
     addStatsItem: (item) => set((state) => ({
         statsItems: { ...state.statsItems, [item.id]: item }
@@ -570,6 +581,22 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
     selectPortal: (id) => set(() => ({ selectedPortalId: id })),
     setSelectedPluginFeature: (feature) => set(() => ({ selectedPluginFeature: feature })),
     setActiveCommTab: (tab) => set(() => ({ activeCommTab: tab })),
+    setCommSendPending: () => set(() => ({
+        commSendStatus: 'sending',
+        commSendError: null,
+    })),
+    setCommSendSuccess: () => set(() => ({
+        commSendStatus: 'success',
+        commSendError: null,
+    })),
+    setCommSendError: (error) => set(() => ({
+        commSendStatus: 'error',
+        commSendError: error,
+    })),
+    clearCommSendState: () => set(() => ({
+        commSendStatus: 'idle',
+        commSendError: null,
+    })),
 });
 
 const createPlayerSlice: StateCreator<IRISState, [], [], PlayerSlice> = (set) => ({

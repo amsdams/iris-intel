@@ -79,8 +79,9 @@ The search in original Intel is a versatile tool for navigation and portal disco
   - Store results in a new `searchResults` slice in the store.
   - Clicking a result should call `updateMapState` and, if it's a portal, `selectPortal`.
 - **Current IRIS Status**: **Partially Implemented**.
-  - `Topbar.tsx` already supports coordinate/address geocoding via Nominatim.
-  - Portal search via `/r/getPortalSearch` is still missing.
+  - `Topbar.tsx` supports direct coordinate navigation.
+  - Nominatim geocoding remains available as a fallback map search path.
+  - Intel-native portal search is not currently enabled because the assumed `/r/getPortalSearch` path returned `404` and still needs verification.
 
 ### 2. Inventory Viewer (Completed)
 Provides a view of the player's items, typically restricted to C.O.R.E. members in the official tool.
@@ -111,6 +112,10 @@ Provides a view of the player's items, typically restricted to C.O.R.E. members 
   - Add a `<form>` at the bottom of `CommPopup.tsx`.
   - Call the interceptor to trigger `/r/sendPlext` with the message text, current map center, and active tab.
   - Refresh the COMM feed immediately after a successful send.
+- **Current IRIS Status**: **Implemented**.
+  - COMM now supports sending on `ALL` and `FACTION`.
+  - The request goes through the coordinator/runtime flow and now triggers an immediate newer-items refresh after success.
+  - The UI exposes send-state and error feedback.
 
 ### 5. Portal History Indicators (Completed)
 - **Requirements**:
@@ -141,11 +146,11 @@ Provides a view of the player's items, typically restricted to C.O.R.E. members 
 | **Health Filters** | Range Slider (0 - 100%) | **Implemented** | Bucketed checkboxes (25%, 50%, 75%, 100%) for faster filtering. |
 | **Login Detection** | Monitor 401/403 + CSRF cookie | **Implemented Differently** | IRIS detects `401` / `403` and login HTML responses, exposes session state in the status bar, shows a `Session Expired` alert with a sign-in action, and does not rely on Intel-style full-page reload. |
 | **C.O.R.E. Perks** | `getHasActiveSubscription()` check | **Implemented** | Extraction from `window.PLAYER` and `/r/getHasActiveSubscription` integrated. |
-| **Search** | Google Geocoding + Portal Search | **Partial** | Address/coordinate search via Nominatim exists; Intel-style portal search is still missing. |
+| **Search** | Google Geocoding + Portal Search | **Partial** | IRIS supports coordinates and Nominatim fallback; Intel-native portal search still needs endpoint/flow verification before it can be reintroduced safely. |
 | **Inventory** | C.O.R.E restricted item viewer | **Implemented** | Refined grid view with category filtering and level/rarity coloring. |
 | **Global Score** | `getGameScore` metascore panel | **Implemented** | Rendered in `GameScorePopup` using intercepted score payloads. |
 | **Regional Score** | `getRegionScoreDetails` details panel | **Implemented** | Region score, top agents, and checkpoint history are implemented. |
-| **Chat Send** | Send message to All/Faction | **Missing** | Requires Input form + `/r/sendPlext` API call. |
+| **Chat Send** | Send message to All/Faction | **Implemented** | COMM supports sending via `/r/sendPlext` for `ALL` and `FACTION`, with runtime-owned request flow and UI feedback. |
 | **Portal History** | Map markers for Visit/Capture | **Implemented** | Bitmask parsing from index 18 with multi-ring MapLibre rendering and toggles. |
 | **Plugin System** | Not a first-class Intel concept | **Implemented Differently** | IRIS adds a plugin architecture and plugin-rendered map features beyond the original dashboard. |
 | **Architecture** | Monolithic dashboard script | **Implemented Differently** | IRIS now uses domain-oriented content/runtime/UI modules rather than one large dashboard controller. |

@@ -40,7 +40,10 @@ export interface PlayerStatsPayload {
 export interface InterceptorMessage {
   type: string;
   center?: { lat: number; lng: number };
+  lat?: number;
+  lng?: number;
   zoom?: number;
+  text?: string;
   tab?: string;
   minTimestampMs?: number;
   maxTimestampMs?: number;
@@ -89,6 +92,7 @@ export function isIrisUrl(url: string): boolean {
     url.includes('getTopMissionsInBounds') ||
     url.includes('getTopMissionsForPortal') ||
     url.includes('getPlexts') ||
+    url.includes('sendPlext') ||
     url.includes('getArtifactPortals') ||
     url.includes('getGameScore') ||
     url.includes('getRegionScoreDetails') ||

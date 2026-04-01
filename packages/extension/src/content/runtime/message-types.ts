@@ -15,6 +15,8 @@ export interface IRISMessage {
   lineno?: number;
   colno?: number;
   guid?: string;
+  query?: string;
+  text?: string;
   tab?: string;
   minTimestampMs?: number;
   maxTimestampMs?: number;

@@ -117,6 +117,55 @@ export function handleActiveRequestMessage(
             break;
         }
 
+        case 'IRIS_COMM_SEND_FETCH': {
+            const { text, tab, latE6, lngE6 } = msg;
+            runtime.safeIrisFetch('/r/sendPlext', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
+                body: JSON.stringify({
+                    message: text,
+                    tab,
+                    latE6,
+                    lngE6,
+                }),
+            }).then(async (response) => {
+                const bodyText = await response.clone().text();
+                if (!response.ok) {
+                    window.postMessage({
+                        type: 'IRIS_COMM_SEND_FAILED',
+                        statusText: response.statusText || 'COMM send failed',
+                        status: response.status,
+                        tab,
+                    }, '*');
+                    return;
+                }
+                if (runtime.isLoginHtmlResponse(bodyText)) {
+                    runtime.reportHtmlLoginResponse('/r/sendPlext');
+                    window.postMessage({
+                        type: 'IRIS_COMM_SEND_FAILED',
+                        statusText: 'Intel sign-in required before COMM send can continue.',
+                        status: 200,
+                        tab,
+                    }, '*');
+                    return;
+                }
+                window.postMessage({
+                    type: 'IRIS_COMM_SEND_SUCCESS',
+                    tab,
+                    time: Date.now(),
+                }, '*');
+            }).catch((e: Error) => {
+                window.postMessage({
+                    type: 'IRIS_COMM_SEND_FAILED',
+                    statusText: e.message || 'COMM send failed',
+                    tab,
+                    time: Date.now(),
+                }, '*');
+                console.error('IRIS: COMM send failed', e);
+            });
+            break;
+        }
+
         case 'IRIS_GEOLOCATE': {
             navigator.geolocation.getCurrentPosition(
                 (pos) => {

@@ -25,9 +25,13 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
     const themeId = useStore((state) => state.themeId);
     const activeTab = useStore((state) => state.activeCommTab);
     const setActiveTab = useStore((state) => state.setActiveCommTab);
+    const commSendStatus = useStore((state) => state.commSendStatus);
+    const commSendError = useStore((state) => state.commSendError);
+    const clearCommSendState = useStore((state) => state.clearCommSendState);
     const theme = THEMES[themeId] || THEMES.DEFAULT;
     const scrollRef = useRef<HTMLDivElement>(null);
     const [loading, setLoading] = useState(false);
+    const [draft, setDraft] = useState('');
     const lastRequestTime = useRef(0);
 
     const formatTime = (ms: number): string => {
@@ -79,6 +83,13 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
     useEffect(() => {
         handleRefresh();
     }, [handleRefresh]);
+
+    useEffect(() => {
+        if (commSendStatus === 'success') {
+            setDraft('');
+            clearCommSendState();
+        }
+    }, [clearCommSendState, commSendStatus]);
 
     const [hasInitialScrolled, setHasInitialScrolled] = useState(false);
 
@@ -206,6 +217,17 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
         rows.push(renderPlext(p));
     });
 
+    const canSend = activeTab !== 'ALERTS' && draft.trim().length > 0 && commSendStatus !== 'sending';
+
+    const handleSend = (): void => {
+        if (!canSend) return;
+        window.postMessage({
+            type: 'IRIS_COMM_SEND_REQUEST',
+            text: draft.trim(),
+            tab: activeTab.toLowerCase(),
+        }, '*');
+    };
+
     return (
         <Popup
             onClose={onClose}
@@ -256,6 +278,46 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
                         No messages yet
                     </div>
                 ) : rows}
+            </div>
+
+            <div className="iris-comm-send">
+                {commSendError && (
+                    <div className="iris-comm-send-error">
+                        {commSendError}
+                    </div>
+                )}
+                {activeTab === 'ALERTS' ? (
+                    <div className="iris-comm-send-disabled">
+                        ALERTS is read-only.
+                    </div>
+                ) : (
+                    <div className="iris-comm-send-row">
+                        <input
+                            type="text"
+                            value={draft}
+                            className="iris-comm-send-input"
+                            placeholder={`Send to ${activeTab.toLowerCase()}...`}
+                            onInput={(e) => {
+                                if (commSendError) clearCommSendState();
+                                setDraft((e.target as HTMLInputElement).value);
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleSend();
+                                }
+                            }}
+                        />
+                        <button
+                            type="button"
+                            className="iris-comm-send-button"
+                            onClick={handleSend}
+                            disabled={!canSend}
+                        >
+                            {commSendStatus === 'sending' ? '...' : 'SEND'}
+                        </button>
+                    </div>
+                )}
             </div>
         </Popup>
     );

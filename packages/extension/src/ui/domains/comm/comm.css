@@ -92,3 +92,45 @@
     color: var(--iris-text-muted);
     font-size: 0.9em;
 }
+
+.iris-comm-send {
+    border-top: 1px solid var(--iris-border-dim);
+    margin-top: 8px;
+    padding-top: 8px;
+}
+
+.iris-comm-send-row {
+    display: flex;
+    gap: 8px;
+}
+
+.iris-comm-send-input {
+    flex: 1;
+    min-width: 0;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--iris-border);
+    color: var(--iris-text-primary);
+    padding: 6px 8px;
+    font: inherit;
+}
+
+.iris-comm-send-button {
+    background: transparent;
+    border: 1px solid var(--iris-aqua);
+    color: var(--iris-aqua);
+    padding: 6px 10px;
+    font: inherit;
+    cursor: pointer;
+}
+
+.iris-comm-send-button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.iris-comm-send-error,
+.iris-comm-send-disabled {
+    color: #ff8080;
+    font-size: 0.75em;
+    margin-bottom: 6px;
+}

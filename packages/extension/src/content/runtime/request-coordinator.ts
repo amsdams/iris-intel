@@ -15,6 +15,8 @@ export interface RequestCoordinator {
     handleGameScoreRequest: () => void;
     handleRegionScoreRequest: (msg: IRISMessage) => void;
     handlePortalDetailsRequest: (msg: IRISMessage) => void;
+    handleCommSendRequest: (msg: IRISMessage) => void;
+    handleCommSendSuccess: (msg: IRISMessage) => void;
     handleMissionDetailsRequest: (msg: IRISMessage) => void;
     handleMissionsRequest: () => void;
     handlePlextsRequest: (msg: IRISMessage) => void;
@@ -47,6 +49,64 @@ export function createRequestCoordinator(): RequestCoordinator {
         postMessage({ type: 'IRIS_ARTIFACTS_FETCH' });
         postMessage({ type: 'IRIS_SUBSCRIPTION_FETCH' });
         postMessage({ type: 'IRIS_INVENTORY_FETCH', lastQueryTimestamp: -1 });
+    };
+
+    const buildPlextPayload = (msg: Pick<IRISMessage, 'tab' | 'minTimestampMs' | 'maxTimestampMs' | 'ascendingTimestampOrder'>): Record<string, unknown> | null => {
+        const bounds = useStore.getState().mapState.bounds;
+        if (!bounds) return null;
+
+        return {
+            minTimestampMs: msg.minTimestampMs ?? -1,
+            maxTimestampMs: msg.maxTimestampMs ?? -1,
+            ascendingTimestampOrder: msg.ascendingTimestampOrder ?? false,
+            ...bounds,
+        };
+    };
+
+    const postPlextFetches = (
+        msg: Pick<IRISMessage, 'tab' | 'minTimestampMs' | 'maxTimestampMs' | 'ascendingTimestampOrder'>,
+        bypassCooldown = false,
+    ): void => {
+        if (isSessionExpired()) return;
+
+        const now = Date.now();
+        if (!bypassCooldown && now - lastPlextRequestTime < PLEXT_COOLDOWN_MS) {
+            return;
+        }
+
+        const basePayload = buildPlextPayload(msg);
+        if (!basePayload) return;
+
+        lastPlextRequestTime = now;
+
+        if (msg.tab) {
+            postMessage({
+                type: 'IRIS_PLEXTS_FETCH',
+                tab: msg.tab,
+                ...basePayload,
+            });
+
+            if (msg.tab === 'alerts') {
+                postMessage({
+                    type: 'IRIS_PLEXTS_FETCH',
+                    tab: 'all',
+                    ...basePayload,
+                });
+            }
+            return;
+        }
+
+        postMessage({
+            type: 'IRIS_PLEXTS_FETCH',
+            tab: 'all',
+            ...basePayload,
+        });
+
+        postMessage({
+            type: 'IRIS_PLEXTS_FETCH',
+            tab: 'faction',
+            ...basePayload,
+        });
     };
 
     return {
@@ -117,6 +177,49 @@ export function createRequestCoordinator(): RequestCoordinator {
             });
         },
 
+        handleCommSendRequest(msg: IRISMessage): void {
+            const text = String(msg.text ?? '').trim();
+            const tab = String(msg.tab ?? '').toLowerCase();
+            if (!text) return;
+
+            if (tab === 'alerts') {
+                useStore.getState().setCommSendError('Alerts is read-only. Switch to ALL or FACTION to send.');
+                return;
+            }
+            if (isSessionExpired()) {
+                useStore.getState().setCommSendError('Intel sign-in required before COMM send can continue.');
+                return;
+            }
+            if (useStore.getState().commSendStatus === 'sending') return;
+
+            const { lat, lng } = useStore.getState().mapState;
+            useStore.getState().setCommSendPending();
+            postMessage({
+                type: 'IRIS_COMM_SEND_FETCH',
+                text,
+                tab,
+                latE6: Math.round(lat * 1e6),
+                lngE6: Math.round(lng * 1e6),
+            });
+        },
+
+        handleCommSendSuccess(msg: IRISMessage): void {
+            useStore.getState().setCommSendSuccess();
+            const currentTab = String(msg.tab ?? '').toUpperCase();
+            const latestTimestamp = useStore.getState().plexts
+                .filter((p) => {
+                    if (currentTab === 'FACTION') return p.categories === 2;
+                    if (currentTab === 'ALERTS') return p.categories === 4;
+                    return p.categories === 1 || p.categories === 2;
+                })
+                .reduce((max, p) => Math.max(max, p.time), -1);
+            postPlextFetches({
+                tab: msg.tab,
+                minTimestampMs: latestTimestamp,
+                ascendingTimestampOrder: latestTimestamp >= 0,
+            }, true);
+        },
+
         handleMissionDetailsRequest(msg: IRISMessage): void {
             postMessage({
                 type: 'IRIS_MISSION_DETAILS_FETCH',
@@ -149,57 +252,7 @@ export function createRequestCoordinator(): RequestCoordinator {
         },
 
         handlePlextsRequest(msg: IRISMessage): void {
-            if (isSessionExpired()) return;
-
-            const now = Date.now();
-            if (now - lastPlextRequestTime < PLEXT_COOLDOWN_MS) {
-                return;
-            }
-            lastPlextRequestTime = now;
-
-            const requestedTab = msg.tab;
-            const minTimestampMs = msg.minTimestampMs ?? -1;
-            const maxTimestampMs = msg.maxTimestampMs ?? -1;
-            const ascendingTimestampOrder = msg.ascendingTimestampOrder ?? false;
-            const bounds = useStore.getState().mapState.bounds;
-
-            if (!bounds) return;
-
-            const basePayload = {
-                minTimestampMs,
-                maxTimestampMs,
-                ascendingTimestampOrder,
-                ...bounds,
-            };
-
-            if (requestedTab) {
-                postMessage({
-                    type: 'IRIS_PLEXTS_FETCH',
-                    tab: requestedTab,
-                    ...basePayload,
-                });
-
-                if (requestedTab === 'alerts') {
-                    postMessage({
-                        type: 'IRIS_PLEXTS_FETCH',
-                        tab: 'all',
-                        ...basePayload,
-                    });
-                }
-                return;
-            }
-
-            postMessage({
-                type: 'IRIS_PLEXTS_FETCH',
-                tab: 'all',
-                ...basePayload,
-            });
-
-            postMessage({
-                type: 'IRIS_PLEXTS_FETCH',
-                tab: 'faction',
-                ...basePayload,
-            });
+            postPlextFetches(msg, false);
         },
 
         onRequestStart(url: string): void {

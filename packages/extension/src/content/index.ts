@@ -129,6 +129,9 @@ window.addEventListener('message', (event: MessageEvent) => {
     }
 
     case 'IRIS_REQUEST_FAILED': {
+        if ((msg.url as string).includes('sendPlext')) {
+            useStore.getState().setCommSendError(String(msg.statusText ?? 'COMM send failed'));
+        }
         useStore.getState().addFailedRequest({
             url: msg.url as string,
             status: msg.status as number,
@@ -179,6 +182,21 @@ window.addEventListener('message', (event: MessageEvent) => {
 
     case 'IRIS_PORTAL_DETAILS_REQUEST': {
       requestCoordinator.handlePortalDetailsRequest(msg);
+      break;
+    }
+
+    case 'IRIS_COMM_SEND_REQUEST': {
+      requestCoordinator.handleCommSendRequest(msg);
+      break;
+    }
+
+    case 'IRIS_COMM_SEND_SUCCESS': {
+      requestCoordinator.handleCommSendSuccess(msg);
+      break;
+    }
+
+    case 'IRIS_COMM_SEND_FAILED': {
+      useStore.getState().setCommSendError(String(msg.statusText ?? 'COMM send failed'));
       break;
     }
 

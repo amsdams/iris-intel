@@ -73,8 +73,8 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] **Portal Mission Browser:** Added `getTopMissionsForPortal` and a conditional "Missions Starting Here" action in portal details, matching Intel’s portal-flag gating.
 - [ ] **Mission Browser Parity:** Refine mission-browser UX to better match Intel, including list/detail transitions, map interaction, and metadata presentation.
 - [x] **Artifacts:** Add `getArtifactPortals` parsing and map rendering for shards/targets.
-- [ ] **Portal Search:** Implement `/r/getPortalSearch` so IRIS matches Intel’s portal search workflow instead of only address/coordinate search.
-- [ ] **COMM Send:** Add `/r/sendPlext` support with an input field in COMM.
+- [ ] **Portal Search:** Intel-native portal search remains unverified; current search is limited to direct coordinate navigation and Nominatim geocoding fallback.
+- [x] **COMM Send:** Added `/r/sendPlext` support with an input field in COMM for `ALL` and `FACTION`, plus send-state and error feedback.
 - [ ] **Passcodes:** Add `/r/redeemReward` UI and response handling.
 - [x] **Login Recovery:** Detect Intel session loss from `401` / `403` and login HTML responses, surface recovery state in the status bar, show a prominent `Session Expired` alert, and direct the user to sign in on Intel before reloading if needed.
 - [ ] **Mission UI Polish:** Mission author styling is currently not correctly faction-colored; revisit after establishing a reliable semantic color approach.
@@ -144,15 +144,15 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 5. **Payload Typing Pass:** Replace cast-heavy endpoint parsing with explicit validated response types.
 6. [x] **UI CSS Colocation:** Finish moving remaining domain-specific popup styling into `ui/domains/*`, starting with `comm` and `inventory`.
 7. **Ingress Semantic Palette:** Standardize faction, portal level, rarity, and powerup/item colors in one shared module and migrate current ad hoc color usage to it.
-8. **Feature-Completeness Sprint:** Finish the remaining Intel-core basics: portal search, mission browser polish, COMM send, and passcodes.
+8. **Feature-Completeness Sprint:** Finish the remaining Intel-core basics: portal search verification, mission browser polish, and passcodes.
 9. **Post-Runtime Cleanup:** Tighten cache/TTL policy for slow-moving endpoints, keep status diagnostics readable, and continue moving request policy only into the coordinator.
 
 #### Quick Wins
-1. **Portal Search:** Implement `/r/getPortalSearch` to close one of the most visible Intel parity gaps.
-2. **COMM Send:** Add `/r/sendPlext` for core two-way COMM behavior.
-3. **Mission Browser Polish:** Improve mission list/detail UX and metadata styling without changing the now-stable request pipeline.
-4. **Semantic Color Palette:** Centralize mission, rarity, powerup, and faction-adjacent colors so new UI surfaces stop encoding colors ad hoc.
-5. **Payload Typing Pass:** Add validated transport types for the remaining cast-heavy Intel payloads.
+1. **Portal Search Verification:** Confirm the real Intel portal-search flow before reintroducing it.
+2. **Mission Browser Polish:** Improve mission list/detail UX and metadata styling without changing the now-stable request pipeline.
+3. **Semantic Color Palette:** Centralize mission, rarity, powerup, and faction-adjacent colors so new UI surfaces stop encoding colors ad hoc.
+4. **Payload Typing Pass:** Add validated transport types for the remaining cast-heavy Intel payloads.
+5. **Passcodes:** Add `/r/redeemReward` with simple UI and response handling.
 
 #### Proposed Domain-Oriented Directory Plan
 ```text
@@ -210,7 +210,7 @@ packages/extension/src/content/
 - **Todo:** Finish map-specific helper extraction from `MapOverlay.tsx`, especially interaction and source update helpers.
 - **Todo:** Add a shared Ingress semantic color palette so faction, level, rarity, and powerup/item colors match Ingress conventions consistently across UI surfaces.
 - **Todo:** Tighten Intel payload/result typing to reduce residual cast-heavy parsing.
-- **Todo:** Complete the remaining Intel-core feature gaps around portal search, mission browsing polish, COMM send, and passcodes.
+- **Todo:** Complete the remaining Intel-core feature gaps around portal search verification, mission browsing polish, and passcodes.
 
 #### Domain Split Rules
 - Keep one shared low-level XHR/fetch interception runtime. Do not create a separate patcher per domain.
@@ -265,10 +265,10 @@ packages/extension/src/ui/
 - Use `iris.css` as the aggregation entry point that imports shared and domain stylesheets.
 
 ## Next Strategic Priority
-1. **Portal Search**: Add `/r/getPortalSearch` so the existing search UX covers Intel’s portal lookup flow as well as OSM/geocode jumps.
+1. **Portal Search**: Verify the real Intel portal-search flow before reintroducing it. Coordinate and geocode search remain available.
 2. [x] **Artifacts**: Implement `getArtifactPortals` parsing and map layers so shard events are visible.
 3. **Mission Parity**: Add `getTopMissionsForPortal` and refine mission details/list styling, including fixing author coloring.
-4. **COMM Send**: Add an input field to `CommPopup` for sending messages via `/r/sendPlext`.
+4. [x] **COMM Send**: Add an input field to `CommPopup` for sending messages via `/r/sendPlext`, with an immediate newer-items refresh after send.
 5. [x] **Robust Login Detection**: Detect session expiry from protected endpoint failures, surface a `Session Expired` alert, and guide recovery.
 6. **Passcodes**: Add a simple passcode redemption UI backed by `/r/redeemReward`.
 

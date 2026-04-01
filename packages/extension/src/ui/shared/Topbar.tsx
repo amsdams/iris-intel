@@ -25,30 +25,59 @@ function LocationSearch(): JSX.Element {
     const themeId = useStore((state) => state.themeId);
     const theme = THEMES[themeId] || THEMES.DEFAULT;
 
+    const clearLocalResults = (): void => {
+        setResults([]);
+    };
+
+    const navigateToCoordinates = (lat: number, lng: number, label?: string): void => {
+        window.postMessage({
+            type: 'IRIS_MOVE_MAP',
+            center: { lat, lng },
+            zoom: 15,
+        }, '*');
+        if (label) setQuery(label);
+        clearLocalResults();
+    };
+
+    const parseCoordinateQuery = (value: string): { lat: number; lng: number } | null => {
+        const match = value.trim().match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+        if (!match) return null;
+
+        const lat = Number(match[1]);
+        const lng = Number(match[2]);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+        if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+        return { lat, lng };
+    };
+
     const search = async (): Promise<void> => {
         if (!query.trim()) return;
+        const trimmedQuery = query.trim();
+        const coords = parseCoordinateQuery(trimmedQuery);
+        if (coords) {
+            setError('');
+            navigateToCoordinates(coords.lat, coords.lng, trimmedQuery);
+            return;
+        }
+
         setSearching(true);
         setError('');
         setResults([]);
 
         try {
             const res = await fetch(
-                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5`,
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(trimmedQuery)}&format=json&limit=5`,
                 { headers: { 'Accept-Language': 'en' } }
             );
             const data = await res.json() as NominatimResult[];
-
             if (!data.length) {
                 setError('Location not found');
                 return;
             }
-
-            // If only one result navigate directly
             if (data.length === 1) {
                 navigateTo(data[0]);
                 return;
             }
-
             setResults(data);
         } catch {
             setError('Search failed');
@@ -60,19 +89,12 @@ function LocationSearch(): JSX.Element {
     const navigateTo = (result: NominatimResult): void => {
         const lat = parseFloat(result.lat);
         const lng = parseFloat(result.lon);
-        console.log('IRIS: navigating to', lat, lng);
-        window.postMessage({
-            type: 'IRIS_MOVE_MAP',
-            center: { lat, lng },
-            zoom: 15,
-        }, '*');
-        setResults([]);
-        setQuery(result.display_name.split(',')[0]);
+        navigateToCoordinates(lat, lng, result.display_name.split(',')[0]);
     };
 
     const onKeyDown = (e: KeyboardEvent): void => {
         if (e.key === 'Enter') search();
-        if (e.key === 'Escape') setResults([]);
+        if (e.key === 'Escape') clearLocalResults();
     };
 
     return (
@@ -106,7 +128,6 @@ function LocationSearch(): JSX.Element {
                 </div>
             )}
 
-            {/* Results dropdown */}
             {results.length > 0 && (
                 <div className="iris-search-results" style={{ borderColor: theme.AQUA }}>
                     {results.map((result) => (
