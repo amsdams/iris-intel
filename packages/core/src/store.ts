@@ -263,7 +263,7 @@ export interface IRISSettings {
 
 export const DEFAULT_SETTINGS: IRISSettings = {
     pluginStates: {},
-    themeId: 'DEFAULT',
+    themeId: 'INGRESS',
     mapThemeId: 'DARK',
     showFields: true,
     showLinks: true,
@@ -750,7 +750,12 @@ export const useStore = create<IRISState>()(
                     showScanned: state.showScanned,
                 } as IRISSettings),
                 onRehydrateStorage: () => (state: IRISState | undefined): void => {
-                    if (state) state.rehydrated = true;
+                    if (state) {
+                        if (state.themeId === 'DEFAULT') {
+                            state.themeId = 'INGRESS';
+                        }
+                        state.rehydrated = true;
+                    }
                 }
             }
         )));

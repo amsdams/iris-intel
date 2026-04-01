@@ -28,7 +28,7 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
     const commSendStatus = useStore((state) => state.commSendStatus);
     const commSendError = useStore((state) => state.commSendError);
     const clearCommSendState = useStore((state) => state.clearCommSendState);
-    const theme = THEMES[themeId] || THEMES.DEFAULT;
+    const theme = THEMES[themeId] || THEMES.INGRESS;
     const scrollRef = useRef<HTMLDivElement>(null);
     const [loading, setLoading] = useState(false);
     const [draft, setDraft] = useState('');

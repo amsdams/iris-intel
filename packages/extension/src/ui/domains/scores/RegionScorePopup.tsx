@@ -10,7 +10,7 @@ interface RegionScorePopupProps {
 export function RegionScorePopup({ onClose }: RegionScorePopupProps): JSX.Element {
     const regionScore = useStore((state) => state.regionScore);
     const themeId = useStore((state) => state.themeId);
-    const theme = THEMES[themeId] || THEMES.DEFAULT;
+    const theme = THEMES[themeId] || THEMES.INGRESS;
 
     const enlScore = regionScore?.gameScore[0] || 0;
     const resScore = regionScore?.gameScore[1] || 0;

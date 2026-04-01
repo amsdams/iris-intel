@@ -23,7 +23,7 @@ function LocationSearch(): JSX.Element {
     const [error, setError] = useState('');
 
     const themeId = useStore((state) => state.themeId);
-    const theme = THEMES[themeId] || THEMES.DEFAULT;
+    const theme = THEMES[themeId] || THEMES.INGRESS;
 
     const clearLocalResults = (): void => {
         setResults([]);
@@ -183,7 +183,7 @@ export function Topbar({
     const [showMenu, setShowMenu] = useState(false);
     const menuItems = useStore((state) => state.menuItems);
     const themeId = useStore((state) => state.themeId);
-    const theme = THEMES[themeId] || THEMES.DEFAULT;
+    const theme = THEMES[themeId] || THEMES.INGRESS;
 
     const goToMyLocation = (): void => {
         if (!navigator.geolocation) {

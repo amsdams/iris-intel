@@ -21,7 +21,7 @@ export function ExportPopup({ onClose }: ExportPopupProps): JSX.Element {
     const [includeFields, setIncludeFields] = useState(true);
 
     const themeId = useStore((state) => state.themeId);
-    const theme = THEMES[themeId] || THEMES.DEFAULT;
+    const theme = THEMES[themeId] || THEMES.INGRESS;
 
     const doExport = (): void => {
         const state = useStore.getState();

@@ -7,7 +7,7 @@ export function MissionDetailsPopup(): JSX.Element | null {
   const mission = useStore((state) => state.missionDetails);
   const clearMission = useStore((state) => state.setMissionDetails);
   const themeId = useStore((state) => state.themeId);
-  const theme = THEMES[themeId] || THEMES.DEFAULT;
+  const theme = THEMES[themeId] || THEMES.INGRESS;
 
   if (!mission) return null;
 

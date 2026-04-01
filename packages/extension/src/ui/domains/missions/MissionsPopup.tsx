@@ -16,7 +16,7 @@ export function MissionsPopup({ onClose }: MissionsPopupProps): JSX.Element {
     state.missionsPortalId ? state.portals[state.missionsPortalId]?.name : null
   );
   const themeId = useStore((state) => state.themeId);
-  const theme = THEMES[themeId] || THEMES.DEFAULT;
+  const theme = THEMES[themeId] || THEMES.INGRESS;
 
   useEffect(() => {
     if (missionsPortalId || bounds) {

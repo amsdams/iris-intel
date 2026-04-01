@@ -21,7 +21,7 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
     const inventory = useStore((state) => state.inventory);
     const hasSubscription = useStore((state) => state.hasSubscription);
     const themeId = useStore((state) => state.themeId);
-    const theme = THEMES[themeId] || THEMES.DEFAULT;
+    const theme = THEMES[themeId] || THEMES.INGRESS;
     const [activeCategory, setActiveCategory] = useState<Category>('ALL');
 
     const categories: { label: string; value: Category }[] = [

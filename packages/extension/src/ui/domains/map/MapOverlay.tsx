@@ -46,7 +46,7 @@ export function MapOverlay(): JSX.Element {
   const { lat, lng, zoom } = useStore((state) => state.mapState);
   const themeId = useStore((state) => state.themeId);
   const mapThemeId = useStore((state) => state.mapThemeId);
-  const theme = THEMES[themeId] || THEMES.DEFAULT;
+  const theme = THEMES[themeId] || THEMES.INGRESS;
 
   const getMapThemeTiles = (id: string): string[] => {
     const mt = MAP_THEMES[id] || MAP_THEMES.DARK;

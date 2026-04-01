@@ -10,7 +10,7 @@ interface GameScorePopupProps {
 export function GameScorePopup({ onClose }: GameScorePopupProps): JSX.Element {
     const gameScore = useStore((state) => state.gameScore);
     const themeId = useStore((state) => state.themeId);
-    const theme = THEMES[themeId] || THEMES.DEFAULT;
+    const theme = THEMES[themeId] || THEMES.INGRESS;
 
     const total = (gameScore?.enlightened || 0) + (gameScore?.resistance || 0);
     const enlPercent = total > 0 ? (gameScore?.enlightened || 0) / total * 100 : 50;

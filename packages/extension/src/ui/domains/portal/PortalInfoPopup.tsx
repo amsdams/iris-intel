@@ -18,7 +18,7 @@ export function PortalInfoPopup(): JSX.Element | null {
 
     const selectPortal = useStore((state) => state.selectPortal);
     const themeId = useStore((state) => state.themeId);
-    const theme = THEMES[themeId] || THEMES.DEFAULT;
+    const theme = THEMES[themeId] || THEMES.INGRESS;
 
     if (!portal) return null;
 

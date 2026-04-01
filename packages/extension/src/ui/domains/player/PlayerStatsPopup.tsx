@@ -14,7 +14,7 @@ interface PlayerStatsPopupProps {
 export function PlayerStatsPopup({ onClose }: PlayerStatsPopupProps): JSX.Element {
     const playerStats = useStore((state) => state.playerStats);
     const themeId = useStore((state) => state.themeId);
-    const theme = THEMES[themeId] || THEMES.DEFAULT;
+    const theme = THEMES[themeId] || THEMES.INGRESS;
 
     const team = (playerStats?.team as 'E' | 'R' | 'M' | 'N') || 'N';
     const teamColour = theme[team] || UI_COLORS.TEXT_BASE;
