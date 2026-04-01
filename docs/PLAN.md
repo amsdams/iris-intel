@@ -76,7 +76,7 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [ ] **Portal Search:** Implement `/r/getPortalSearch` so IRIS matches Intel’s portal search workflow instead of only address/coordinate search.
 - [ ] **COMM Send:** Add `/r/sendPlext` support with an input field in COMM.
 - [ ] **Passcodes:** Add `/r/redeemReward` UI and response handling.
-- [ ] **Login Recovery:** Detect Intel session loss (`401`/`403`) and surface a clear recovery action.
+- [x] **Login Recovery:** Detect Intel session loss from `401` / `403` and login HTML responses, surface recovery state in the status bar, and suppress repeated auth-failure noise.
 - [ ] **Mission UI Polish:** Mission author styling is currently not correctly faction-colored; revisit after establishing a reliable semantic color approach.
 - [x] **Font Consistency:** Standardized the IRIS UI onto an explicit Menlo-first monospace stack and forced form controls to inherit it, preventing browser-default Arial from leaking into new mission and popup surfaces.
 
@@ -94,6 +94,7 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] **Source-side Validation:** Moved all strict numeric parsing and coordinate validation to `parseEntities` to ensure the Zustand store only contains "clean" data.
 - [x] **Renderer De-cluttering:** Removed redundant `isNaN` and safety checks from `MapOverlay.tsx`, significantly improving FPS in portal-dense areas.
 - [x] **Content/Interceptor Cleanup:** Split content parsing and interception into domain and runtime modules while keeping one shared low-level interception path.
+- [x] **Runtime Discipline Pass:** Added explicit session-expiry state, split passive interception from active IRIS-owned fetch execution, introduced a request coordinator, endpoint health tracking, and request-policy cleanup for UI-driven flows.
 - [x] **Domain-Oriented Content Layout:** Added per-domain `types`, `parser`, and `handler` modules for entities, portal details, plexts, inventory, player, game score, and region score.
 - [x] **Domain-Oriented UI Layout:** Grouped UI components by gameplay domain under `ui/domains/` and moved shared primitives to `ui/shared/`.
 - [x] **UI Style Cleanup:** Broke the old monolithic stylesheet into a shared base/topbar split plus domain CSS entrypoints, while keeping `iris.css` as the aggregation entry.
@@ -132,6 +133,8 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
     - *Status:* Cleared for current tracked code paths; `npm run lint` now passes.
 - **Weak Intel Payload Typing:** Intel endpoint payload parsing still depends on local casts and partial structural assumptions.
     - *Strategy:* Introduce explicit transport/result types for each intercepted endpoint and centralize parse validation.
+- **Mission UX Parity Gap:** Mission fetching is implemented, but the popup flow and metadata presentation still do not fully match Intel’s mission browsing feel.
+    - *Strategy:* Refine mission list/detail transitions, mission context messaging, and waypoint affordances without coupling mission fetch policy back into the UI.
 
 #### Proposed Next Steps
 1. [x] **Map Interaction Sprint:** Replace manual portal click/hover hit-testing with `queryRenderedFeatures`.
@@ -141,7 +144,15 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 5. **Payload Typing Pass:** Replace cast-heavy endpoint parsing with explicit validated response types.
 6. [x] **UI CSS Colocation:** Finish moving remaining domain-specific popup styling into `ui/domains/*`, starting with `comm` and `inventory`.
 7. **Ingress Semantic Palette:** Standardize faction, portal level, rarity, and powerup/item colors in one shared module and migrate current ad hoc color usage to it.
-8. **Feature-Completeness Sprint:** Finish the remaining Intel-core basics: portal search, artifacts, portal mission browser, COMM send, passcodes, and login recovery.
+8. **Feature-Completeness Sprint:** Finish the remaining Intel-core basics: portal search, mission browser polish, COMM send, and passcodes.
+9. **Post-Runtime Cleanup:** Tighten cache/TTL policy for slow-moving endpoints, keep status diagnostics readable, and continue moving request policy only into the coordinator.
+
+#### Quick Wins
+1. **Portal Search:** Implement `/r/getPortalSearch` to close one of the most visible Intel parity gaps.
+2. **COMM Send:** Add `/r/sendPlext` for core two-way COMM behavior.
+3. **Mission Browser Polish:** Improve mission list/detail UX and metadata styling without changing the now-stable request pipeline.
+4. **Semantic Color Palette:** Centralize mission, rarity, powerup, and faction-adjacent colors so new UI surfaces stop encoding colors ad hoc.
+5. **Payload Typing Pass:** Add validated transport types for the remaining cast-heavy Intel payloads.
 
 #### Proposed Domain-Oriented Directory Plan
 ```text
@@ -195,10 +206,11 @@ packages/extension/src/content/
 - **Done:** Migrated to high-performance map interaction using `queryRenderedFeatures` with mobile stability refinements.
 - **Done:** Converted the remaining popup/domain styling into colocated CSS files for `comm` and `inventory`.
 - **Done:** Implemented artifacts parsing and map layers.
+- **Done:** Added session-expiry detection/recovery UI, request coordination, endpoint health diagnostics, and score endpoint TTL/in-flight deduplication.
 - **Todo:** Finish map-specific helper extraction from `MapOverlay.tsx`, especially interaction and source update helpers.
 - **Todo:** Add a shared Ingress semantic color palette so faction, level, rarity, and powerup/item colors match Ingress conventions consistently across UI surfaces.
 - **Todo:** Tighten Intel payload/result typing to reduce residual cast-heavy parsing.
-- **Todo:** Complete the remaining Intel-core feature gaps around portal search, mission browsing, COMM send, passcodes, and session recovery.
+- **Todo:** Complete the remaining Intel-core feature gaps around portal search, mission browsing polish, COMM send, and passcodes.
 
 #### Domain Split Rules
 - Keep one shared low-level XHR/fetch interception runtime. Do not create a separate patcher per domain.

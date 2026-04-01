@@ -47,6 +47,9 @@ This document serves as the technical blueprint for the IRIS extension, detailin
 - **Login Detection**: The original code detects session timeouts by monitoring for `401 Unauthorized` or `403 Forbidden` responses from the API. It also verifies the presence of the `csrftoken` cookie. If a failure occurs, it often triggers `window.location.reload()`.
 - **C.O.R.E. Subscription**: The `getHasActiveSubscription()` function checks if the user is a C.O.R.E. member.
   - **Technical Impact**: Access to `getInventory` and detailed "Portal History" (V/C/S indicators) is strictly guarded by this check. Non-subscribers receive a "Access restricted" warning.
+- **IRIS Status**: **Implemented Differently**.
+  - Session-expiry state is now detected from `401` / `403` responses and login HTML returned from protected `/r/*` endpoints.
+  - Recovery is surfaced in the IRIS status bar instead of relying on an immediate full-page reload.
 
 ### 7. Architecture & Extensibility (Implemented Differently)
 - **Original Intel**: Mostly monolithic dashboard code centered around Google Maps, direct DOM updates, and tightly coupled view/state/network logic.
@@ -95,6 +98,10 @@ Provides a view of the player's items, typically restricted to C.O.R.E. members 
   - Update `interceptor.ts` to detect `401/403` status codes in XHR/Fetch responses.
   - Broadcast a `IRIS_LOGIN_REQUIRED` message to the UI.
   - Display a "Session Expired - Please Refresh/Login" toast in the `StatusBar`.
+- **Current IRIS Status**: **Implemented**.
+  - Session expiry and recovery states are tracked centrally.
+  - Login HTML responses from protected endpoints are treated as expired-session signals, not generic JSON parse failures.
+  - The status bar provides recovery guidance and repeated auth-noise is suppressed after expiry is detected.
 
 ### 4. Chat (Send Plext) (Medium Priority)
 - **Requirements**:
@@ -132,7 +139,7 @@ Provides a view of the player's items, typically restricted to C.O.R.E. members 
 | **Faction Filters** | ENL, RES, MAC, NEUTRAL | **Implemented** | High-performance client-side filtering. |
 | **Level Filters** | Range Slider (Min - Max) | **Implemented** | Individual checkboxes for L1-L8 for more precision. |
 | **Health Filters** | Range Slider (0 - 100%) | **Implemented** | Bucketed checkboxes (25%, 50%, 75%, 100%) for faster filtering. |
-| **Login Detection** | Monitor 401/403 + CSRF cookie | **Missing** | Update `interceptor.ts` to detect and broadcast session loss. |
+| **Login Detection** | Monitor 401/403 + CSRF cookie | **Implemented Differently** | IRIS detects `401` / `403` and login HTML responses, exposes session state in the status bar, and does not rely on Intel-style full-page reload. |
 | **C.O.R.E. Perks** | `getHasActiveSubscription()` check | **Implemented** | Extraction from `window.PLAYER` and `/r/getHasActiveSubscription` integrated. |
 | **Search** | Google Geocoding + Portal Search | **Partial** | Address/coordinate search via Nominatim exists; Intel-style portal search is still missing. |
 | **Inventory** | C.O.R.E restricted item viewer | **Implemented** | Refined grid view with category filtering and level/rarity coloring. |
@@ -142,7 +149,6 @@ Provides a view of the player's items, typically restricted to C.O.R.E. members 
 | **Portal History** | Map markers for Visit/Capture | **Implemented** | Bitmask parsing from index 18 with multi-ring MapLibre rendering and toggles. |
 | **Plugin System** | Not a first-class Intel concept | **Implemented Differently** | IRIS adds a plugin architecture and plugin-rendered map features beyond the original dashboard. |
 | **Architecture** | Monolithic dashboard script | **Implemented Differently** | IRIS now uses domain-oriented content/runtime/UI modules rather than one large dashboard controller. |
-| **Missions** | Start points and waypoints | **Implemented** | Intercepts `/r/getMissionDetails` and `/r/getTopMissionsInBounds`. |
-
+| **Missions** | Start points, mission list, and waypoints | **Implemented, UX Partial** | Intercepts `/r/getMissionDetails`, `/r/getTopMissionsInBounds`, and `/r/getTopMissionsForPortal`; core data flow works, but mission browser UX still needs parity polish. |
 | **Artifacts** | Shards and target portals | **Implemented** | Added `getArtifactPortals` parsing and map rendering. |
 | **Passcodes** | Passcode redemption field | **Missing** | Simple `/r/redeemReward` API hook. |
