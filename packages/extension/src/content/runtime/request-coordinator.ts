@@ -3,6 +3,8 @@ import { IRISMessage } from './message-types';
 
 const PLEXT_COOLDOWN_MS = 5000;
 const AUXILIARY_POLL_MS = 60000;
+const GAME_SCORE_TTL_MS = 10 * 60 * 1000;
+const REGION_SCORE_TTL_MS = 5 * 60 * 1000;
 
 export interface RequestCoordinator {
     start: () => void;
@@ -23,12 +25,21 @@ export interface RequestCoordinator {
 export function createRequestCoordinator(): RequestCoordinator {
     let lastPlextRequestTime = 0;
     let auxiliaryPollId: number | null = null;
+    let lastRegionScoreRequestKey: string | null = null;
 
     const postMessage = (message: Record<string, unknown>): void => {
         window.postMessage(message, '*');
     };
 
     const isSessionExpired = (): boolean => useStore.getState().sessionStatus === 'expired';
+    const getEndpointDiagnostics = (key: 'gameScore' | 'regionScore') =>
+        useStore.getState().endpointDiagnostics[key];
+    const isEndpointInFlight = (key: 'gameScore' | 'regionScore'): boolean =>
+        getEndpointDiagnostics(key).status === 'in_flight';
+    const isEndpointFresh = (key: 'gameScore' | 'regionScore', ttlMs: number): boolean => {
+        const lastSuccessAt = getEndpointDiagnostics(key).lastSuccessAt;
+        return typeof lastSuccessAt === 'number' && Date.now() - lastSuccessAt < ttlMs;
+    };
 
     const scheduleAuxiliaryFetches = (): void => {
         if (isSessionExpired()) return;
@@ -72,15 +83,30 @@ export function createRequestCoordinator(): RequestCoordinator {
         },
 
         handleGameScoreRequest(): void {
+            if (isSessionExpired()) return;
+            if (isEndpointInFlight('gameScore')) return;
+            if (isEndpointFresh('gameScore', GAME_SCORE_TTL_MS)) return;
             postMessage({ type: 'IRIS_GAME_SCORE_FETCH' });
         },
 
         handleRegionScoreRequest(msg: IRISMessage): void {
             const { lat, lng } = msg as { lat: number; lng: number };
+            if (isSessionExpired()) return;
+
+            const latE6 = Math.round(lat * 1e6);
+            const lngE6 = Math.round(lng * 1e6);
+            const requestKey = `${latE6}:${lngE6}`;
+
+            if (isEndpointInFlight('regionScore')) return;
+            if (requestKey === lastRegionScoreRequestKey && isEndpointFresh('regionScore', REGION_SCORE_TTL_MS)) {
+                return;
+            }
+
+            lastRegionScoreRequestKey = requestKey;
             postMessage({
                 type: 'IRIS_REGION_SCORE_FETCH',
-                latE6: Math.round(lat * 1e6),
-                lngE6: Math.round(lng * 1e6),
+                latE6,
+                lngE6,
             });
         },
 
