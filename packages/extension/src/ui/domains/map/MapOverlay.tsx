@@ -19,6 +19,7 @@ type PluginFeatureProperties = {
   color?: string;
   isPlayerMarker?: boolean;
   opacity?: number;
+  label?: string;
 } & Record<string, unknown>;
 
 interface MarkerRegistryEntry {
@@ -185,8 +186,8 @@ export function MapOverlay(): JSX.Element {
             source: 'plugin-features',
             filter: ['==', '$type', 'LineString'],
             paint: {
-              'line-width': 3,
-              'line-dasharray': [2, 1],
+              'line-width': ['coalesce', ['get', 'weight'], 3],
+              'line-dasharray': [5, 8],
               'line-color': ['get', 'color'],
               'line-opacity': ['coalesce', ['get', 'opacity'], 1],
             },
@@ -600,10 +601,24 @@ export function MapOverlay(): JSX.Element {
         existing.marker.setLngLat(coordinates);
         existing.marker.getElement().style.opacity = opacity;
         if (existing.clickTarget) {
-          const pinHead = existing.clickTarget.firstElementChild as HTMLDivElement | null;
+          const pinHead = existing.clickTarget.querySelector('div[style*="border-radius: 50%"]') as HTMLDivElement | null;
           if (pinHead) {
             pinHead.style.background = color;
           }
+          const labelDiv = existing.clickTarget.querySelector('div[style*="position: absolute"]') as HTMLDivElement | null;
+          if (labelDiv && properties.label) {
+            labelDiv.textContent = properties.label;
+            labelDiv.style.border = `1px solid ${color}`;
+          } else if (!labelDiv && properties.label) {
+            // Add label if it didn't exist
+            const newLabel = document.createElement('div');
+            newLabel.style.cssText = `position: absolute; left: 15px; top: -5px; white-space: nowrap; background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; border: 1px solid ${color}; pointer-events: none;`;
+            newLabel.textContent = properties.label;
+            existing.clickTarget.prepend(newLabel);
+          } else if (labelDiv && !properties.label) {
+            labelDiv.remove();
+          }
+
           existing.clickTarget.onclick = (e: MouseEvent): void => {
             e.stopPropagation();
             useStore.getState().setSelectedPluginFeature(feature);
@@ -616,8 +631,13 @@ export function MapOverlay(): JSX.Element {
       el.style.pointerEvents = 'none';
       el.style.opacity = opacity;
 
+      const labelHtml = properties.label 
+        ? `<div style="position: absolute; left: 15px; top: -5px; white-space: nowrap; background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; border: 1px solid ${color}; pointer-events: none;">${properties.label}</div>`
+        : '';
+
       el.innerHTML = `
-          <div style="display: flex; flex-direction: column; align-items: center; cursor: pointer; pointer-events: auto;">
+          <div style="display: flex; flex-direction: column; align-items: center; cursor: pointer; pointer-events: auto; position: relative;">
+              ${labelHtml}
               <div style="background: ${color}; width: 12px; height: 12px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5);"></div>
               <div style="width: 2px; height: 10px; background: white; margin-top: -2px;"></div>
           </div>

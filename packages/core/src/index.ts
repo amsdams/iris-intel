@@ -14,8 +14,7 @@ export const normalizeTeam = (team: string | undefined): string => {
     
     if (t === 'ALIENS' || t === 'ENLIGHTENED' || t === 'E') return 'E';
     if (t === 'RESISTANCE' || t === 'R') return 'R';
-    if (t.startsWith('MAC') || t === 'M') return 'M';
-    if (t === 'NEUTRAL' || t === 'N') return 'N';
+    if (t.startsWith('MAC') || t === 'M' || t === 'MACHINA') return 'M';
     
     return 'N';
 };

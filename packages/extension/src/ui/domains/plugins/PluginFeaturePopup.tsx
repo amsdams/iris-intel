@@ -11,6 +11,7 @@ type PluginFeatureProperties = {
     lat?: number;
     lng?: number;
     isPlayerMarker?: boolean;
+    actions?: string[];
 } & Record<string, unknown>;
 
 export function PluginFeaturePopup(): JSX.Element | null {
@@ -28,6 +29,7 @@ export function PluginFeaturePopup(): JSX.Element | null {
         lat = 0,
         lng = 0,
         isPlayerMarker = false,
+        actions = [],
     } = properties;
 
     return (
@@ -70,6 +72,17 @@ export function PluginFeaturePopup(): JSX.Element | null {
                 <div className="iris-feature-coords">
                     {lat.toFixed(6)}, {lng.toFixed(6)}
                 </div>
+
+                {actions.length > 0 && (
+                    <div className="iris-feature-actions" style={{ marginTop: '10px', borderTop: '1px solid #333', paddingTop: '10px' }}>
+                        <div className="iris-feature-label" style={{ marginBottom: '5px' }}>Recent Actions:</div>
+                        {actions.map((action, i) => (
+                            <div key={i} className="iris-feature-action-item" style={{ fontSize: '0.85em', color: UI_COLORS.TEXT_MUTED, marginBottom: '2px' }}>
+                                • {action}
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
         </Popup>
     );
