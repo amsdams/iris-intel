@@ -12,6 +12,10 @@
     --iris-text-secondary: #aaaaaa;
     --iris-text-primary: #ffffff;
     --iris-accent: #00ffff;
+    --iris-aqua: var(--iris-accent);
+    --iris-border-dim: var(--iris-border);
+    --iris-text-muted: var(--iris-text-secondary);
+    --iris-bg-base: rgba(0, 0, 0, 0.92);
 }
 
 .iris-overlay-root *,
