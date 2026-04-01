@@ -7,7 +7,7 @@ import {
     getMissionGuidFromLocation,
     readPlayerStats,
 } from './runtime/interceptor-runtime';
-import { handleActiveRequestMessage, startActivePolling } from './runtime/active-request-client';
+import { handleActiveRequestMessage } from './runtime/active-request-client';
 import { installPassiveInterception } from './runtime/passive-interceptor';
 import { createSessionRuntime } from './runtime/session-runtime';
 
@@ -108,6 +108,4 @@ import { createSessionRuntime } from './runtime/session-runtime';
             time: Date.now(),
         }, '*');
     });
-
-    startActivePolling(runtime);
 })();

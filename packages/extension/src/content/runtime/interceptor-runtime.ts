@@ -52,6 +52,7 @@ export interface InterceptorMessage {
   maxLatE6?: number;
   minLngE6?: number;
   maxLngE6?: number;
+  lastQueryTimestamp?: number;
 }
 
 type GoogleWindow = Window & typeof globalThis & {

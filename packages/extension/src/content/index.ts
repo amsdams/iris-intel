@@ -28,11 +28,11 @@ import { TopMissionsInBoundsData } from './domains/missions-list/types';
 import { handleArtifacts } from './domains/artifacts/handler';
 import { ArtifactData } from './domains/artifacts/types';
 import { IRISMessage } from './runtime/message-types';
+import { createRequestCoordinator } from './runtime/request-coordinator';
 
 // Tracks whether MapLibre has been given its initial position
 let hasInitialPosition = false;
-let lastPlextRequestTime = 0;
-const PLEXT_COOLDOWN_MS = 5000;
+const requestCoordinator = createRequestCoordinator();
 
 // ---------------------------------------------------------------------------
 // UI bootstrap
@@ -65,6 +65,7 @@ pluginManager.load(PortalNamesPlugin as IRISPlugin);
 pluginManager.load(ThemeSelectorPlugin as IRISPlugin);
 pluginManager.load(PlayerTrackerPlugin as IRISPlugin);
 pluginManager.load(ExportDataPlugin as IRISPlugin);
+requestCoordinator.start();
 
 window.addEventListener('message', (event: MessageEvent) => {
   const msg = event.data as IRISMessage;
@@ -87,17 +88,7 @@ window.addEventListener('message', (event: MessageEvent) => {
       break;
 
     case 'IRIS_MOVE_MAP': {
-      const { center, zoom, bounds } = msg as { 
-        center: { lat: number; lng: number }; 
-        zoom: number;
-        bounds?: { minLatE6: number; minLngE6: number; maxLatE6: number; maxLngE6: number };
-      };
-      window.postMessage(
-          { type: 'IRIS_MOVE_MAP_INTERNAL', center, zoom },
-          '*'
-      );
-      useStore.getState().updateMapState(center.lat, center.lng, zoom, bounds);
-      window.postMessage({ type: 'IRIS_PLEXTS_REQUEST', minTimestampMs: -1 }, '*');
+      requestCoordinator.handleMoveMap(msg);
       break;
     }
 
@@ -106,25 +97,18 @@ window.addEventListener('message', (event: MessageEvent) => {
       break;
 
     case 'IRIS_GEOLOCATE_REQUEST': {
-      window.postMessage({ type: 'IRIS_GEOLOCATE' }, '*');
+      requestCoordinator.handleGeolocateRequest();
       break;
     }
 
     case 'IRIS_REGION_SCORE_REQUEST': {
-        const { lat, lng } = msg as { lat: number; lng: number };
-        window.postMessage({ 
-            type: 'IRIS_REGION_SCORE_FETCH', 
-            latE6: Math.round(lat * 1e6), 
-            lngE6: Math.round(lng * 1e6) 
-        }, '*');
+        requestCoordinator.handleRegionScoreRequest(msg);
         break;
     }
 
     case 'IRIS_REQUEST_START': {
         const url_data = url as string;
-        if (url_data.includes('getPlexts')) {
-            lastPlextRequestTime = Date.now();
-        }
+        requestCoordinator.onRequestStart(url_data);
         useStore.getState().onRequestStart(url_data);
         break;
     }
@@ -184,65 +168,12 @@ window.addEventListener('message', (event: MessageEvent) => {
     }
 
     case 'IRIS_PORTAL_DETAILS_REQUEST': {
-      window.postMessage({
-        type: 'IRIS_PORTAL_DETAILS_FETCH',
-        guid: msg.guid as string,
-      }, '*');
+      requestCoordinator.handlePortalDetailsRequest(msg);
       break;
     }
 
     case 'IRIS_PLEXTS_REQUEST': {
-      const now = Date.now();
-      if (now - lastPlextRequestTime < PLEXT_COOLDOWN_MS) {
-          break;
-      }
-      lastPlextRequestTime = now;
-      
-      const requestedTab = msg.tab;
-      const minTimestampMs = msg.minTimestampMs ?? -1;
-      const maxTimestampMs = msg.maxTimestampMs ?? -1;
-      const ascendingTimestampOrder = msg.ascendingTimestampOrder ?? false;
-      const bounds = useStore.getState().mapState.bounds;
-
-      if (requestedTab) {
-          window.postMessage({
-            type: 'IRIS_PLEXTS_FETCH',
-            tab: requestedTab,
-            minTimestampMs,
-            maxTimestampMs,
-            ascendingTimestampOrder,
-            ...bounds
-          }, '*');
-
-          if (requestedTab === 'alerts') {
-              window.postMessage({
-                type: 'IRIS_PLEXTS_FETCH',
-                tab: 'all',
-                minTimestampMs,
-                maxTimestampMs,
-                ascendingTimestampOrder,
-                ...bounds
-              }, '*');
-          }
-      } else {
-          window.postMessage({
-            type: 'IRIS_PLEXTS_FETCH',
-            tab: 'all',
-            minTimestampMs,
-            maxTimestampMs,
-            ascendingTimestampOrder,
-            ...bounds
-          }, '*');
-          
-          window.postMessage({
-            type: 'IRIS_PLEXTS_FETCH',
-            tab: 'faction',
-            minTimestampMs,
-            maxTimestampMs,
-            ascendingTimestampOrder,
-            ...bounds
-          }, '*');
-      }
+      requestCoordinator.handlePlextsRequest(msg);
       break;
     }
 
@@ -267,7 +198,7 @@ window.addEventListener('message', (event: MessageEvent) => {
         handlePortalDetails(data as PortalDetailsData, parsedParams as { guid?: string });
       } else if (url_str.includes('getPlexts')) {
         handlePlexts(data as PlextData, (time) => {
-          lastPlextRequestTime = time;
+          requestCoordinator.onPlextsDataReceived(time);
         });
       } else if (url_str.includes('getGameScore')) {
         handleGameScore(data as GameScoreData);

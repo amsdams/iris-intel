@@ -80,6 +80,34 @@ export function handleActiveRequestMessage(
             break;
         }
 
+        case 'IRIS_ARTIFACTS_FETCH': {
+            runtime.safeIrisFetch('/r/getArtifactPortals', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
+                body: JSON.stringify({}),
+            }).catch((e: Error) => console.debug('IRIS: artifact fetch failed', e));
+            break;
+        }
+
+        case 'IRIS_SUBSCRIPTION_FETCH': {
+            runtime.safeIrisFetch('/r/getHasActiveSubscription', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
+                body: JSON.stringify({}),
+            }).catch((e: Error) => console.debug('IRIS: subscription check failed (expected if not logged in)', e));
+            break;
+        }
+
+        case 'IRIS_INVENTORY_FETCH': {
+            const lastQueryTimestamp = typeof msg.lastQueryTimestamp === 'number' ? msg.lastQueryTimestamp : -1;
+            runtime.safeIrisFetch('/r/getInventory', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
+                body: JSON.stringify({ lastQueryTimestamp }),
+            }).catch((e: Error) => console.debug('IRIS: inventory check failed (expected if not C.O.R.E)', e));
+            break;
+        }
+
         case 'IRIS_GEOLOCATE': {
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
@@ -95,28 +123,4 @@ export function handleActiveRequestMessage(
             break;
         }
     }
-}
-
-export function startActivePolling(runtime: SessionRuntime): number {
-    return window.setInterval(() => {
-        if (runtime.isSessionExpired()) return;
-
-        runtime.safeIrisFetch('/r/getArtifactPortals', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
-            body: JSON.stringify({}),
-        }).catch((e: Error) => console.debug('IRIS: artifact fetch failed', e));
-
-        runtime.safeIrisFetch('/r/getHasActiveSubscription', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
-            body: JSON.stringify({}),
-        }).catch((e: Error) => console.debug('IRIS: subscription check failed (expected if not logged in)', e));
-
-        runtime.safeIrisFetch('/r/getInventory', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
-            body: JSON.stringify({ lastQueryTimestamp: -1 }),
-        }).catch((e: Error) => console.debug('IRIS: inventory check failed (expected if not C.O.R.E)', e));
-    }, 60000);
 }
