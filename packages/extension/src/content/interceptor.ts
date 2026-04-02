@@ -23,23 +23,40 @@ import { createSessionRuntime } from './runtime/session-runtime';
 (function (): void {
     "use strict";
 
+    const PLAYER_STATS_DEBOUNCE_MS = 250;
+
     let intelMap: IntelMapInstance | null = null;
+    let lastPlayerStatsKey: string | null = null;
+    let playerStatsPostTimeoutId: number | null = null;
     const runtime = createSessionRuntime(window, document);
 
     installPassiveInterception(runtime);
 
     const postPlayerStats = (): void => {
+        playerStatsPostTimeoutId = null;
         const payload = readPlayerStats(window);
-        if (payload) {
-            window.postMessage(payload, '*');
+        if (!payload) return;
+
+        const payloadKey = JSON.stringify(payload);
+        if (payloadKey === lastPlayerStatsKey) return;
+
+        lastPlayerStatsKey = payloadKey;
+        window.postMessage(payload, '*');
+    };
+
+    const schedulePlayerStatsPost = (): void => {
+        if (playerStatsPostTimeoutId !== null) {
+            window.clearTimeout(playerStatsPostTimeoutId);
         }
+
+        playerStatsPostTimeoutId = window.setTimeout(postPlayerStats, PLAYER_STATS_DEBOUNCE_MS);
     };
 
     // Try immediate version capture so active requests can succeed sooner.
     runtime.observeIntelVersion(extractVersionFromDOM(document));
 
     const statsObserver = new MutationObserver(() => {
-        postPlayerStats();
+        schedulePlayerStatsPost();
     });
     statsObserver.observe(document.body || document.documentElement, {
         childList: true,

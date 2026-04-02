@@ -480,18 +480,6 @@ export function MapOverlay(): JSX.Element {
     if (isFirstSync.current) {
         isFirstSync.current = false;
         map.current.jumpTo({ center: [lng, lat], zoom });
-        const bounds = map.current.getBounds();
-        window.postMessage({
-            type: 'IRIS_MOVE_MAP',
-            center: { lat, lng },
-            zoom,
-            bounds: {
-                minLatE6: Math.round(bounds.getSouth() * 1e6),
-                minLngE6: Math.round(bounds.getWest() * 1e6),
-                maxLatE6: Math.round(bounds.getNorth() * 1e6),
-                maxLngE6: Math.round(bounds.getEast() * 1e6),
-            }
-        }, '*');
     } else {
         isMoving.current = true;
         map.current.jumpTo({ center: [lng, lat], zoom });

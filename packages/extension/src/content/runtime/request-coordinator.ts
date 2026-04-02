@@ -4,6 +4,7 @@ import { IRISMessage } from './message-types';
 const PLEXT_COOLDOWN_MS = 5000;
 const PLEXT_POLL_MS = 120000;
 const AUXILIARY_POLL_MS = 60000;
+const AUXILIARY_STARTUP_DEDUP_MS = 5000;
 const GAME_SCORE_TTL_MS = 10 * 60 * 1000;
 const REGION_SCORE_TTL_MS = 5 * 60 * 1000;
 
@@ -37,11 +38,11 @@ export function createRequestCoordinator(): RequestCoordinator {
     };
 
     const isSessionExpired = (): boolean => useStore.getState().sessionStatus === 'expired';
-    const getEndpointDiagnostics = (key: 'gameScore' | 'regionScore') =>
+    const getEndpointDiagnostics = (key: 'artifacts' | 'subscription' | 'gameScore' | 'regionScore') =>
         useStore.getState().endpointDiagnostics[key];
-    const isEndpointInFlight = (key: 'gameScore' | 'regionScore'): boolean =>
+    const isEndpointInFlight = (key: 'artifacts' | 'subscription' | 'gameScore' | 'regionScore'): boolean =>
         getEndpointDiagnostics(key).status === 'in_flight';
-    const isEndpointFresh = (key: 'gameScore' | 'regionScore', ttlMs: number): boolean => {
+    const isEndpointFresh = (key: 'artifacts' | 'subscription' | 'gameScore' | 'regionScore', ttlMs: number): boolean => {
         const lastSuccessAt = getEndpointDiagnostics(key).lastSuccessAt;
         return typeof lastSuccessAt === 'number' && Date.now() - lastSuccessAt < ttlMs;
     };
@@ -49,8 +50,14 @@ export function createRequestCoordinator(): RequestCoordinator {
     const scheduleAuxiliaryFetches = (): void => {
         if (isSessionExpired()) return;
 
-        postMessage({ type: 'IRIS_ARTIFACTS_FETCH' });
-        postMessage({ type: 'IRIS_SUBSCRIPTION_FETCH' });
+        if (!isEndpointInFlight('artifacts') && !isEndpointFresh('artifacts', AUXILIARY_STARTUP_DEDUP_MS)) {
+            postMessage({ type: 'IRIS_ARTIFACTS_FETCH' });
+        }
+
+        if (!isEndpointInFlight('subscription') && !isEndpointFresh('subscription', AUXILIARY_STARTUP_DEDUP_MS)) {
+            postMessage({ type: 'IRIS_SUBSCRIPTION_FETCH' });
+        }
+
         postMessage({ type: 'IRIS_INVENTORY_FETCH', lastQueryTimestamp: -1 });
     };
 
