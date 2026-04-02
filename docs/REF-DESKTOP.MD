@@ -50,6 +50,7 @@ This document serves as the technical blueprint for the IRIS extension, detailin
 - **IRIS Status**: **Implemented Differently**.
   - Session-expiry state is now detected from `401` / `403` responses and login HTML returned from protected `/r/*` endpoints.
   - Recovery is surfaced in the IRIS status bar plus a prominent `Session Expired` alert, with a direct sign-in action on Intel instead of relying on an immediate full-page reload.
+  - The sign-in action now uses the real Niantic/Intel sign-in flow rather than opening a transient Intel tab and hoping reload is enough.
 
 ### 7. Architecture & Extensibility (Implemented Differently)
 - **Original Intel**: Mostly monolithic dashboard code centered around Google Maps, direct DOM updates, and tightly coupled view/state/network logic.
@@ -117,6 +118,17 @@ Provides a view of the player's items, typically restricted to C.O.R.E. members 
   - The request goes through the coordinator/runtime flow and now triggers an immediate newer-items refresh after success.
   - The UI exposes send-state and error feedback.
 
+### 4.5 Missions (Implementation Notes)
+- **Original Intel**:
+  - Mission list and mission details are tightly connected.
+  - Mission waypoint rows become clickable when the waypoint carries a portal/location object.
+  - Clicking a waypoint pans the map to that waypoint, and portal-backed waypoints also drive the portal/location detail flow.
+- **IRIS Status**: **Implemented, Closer To Intel**
+  - Mission list/detail context and loading states have been refined.
+  - Metadata now uses simpler inline `label: value` formatting rather than button-like pills.
+  - Mission details waypoint rows now pan the IRIS map, and portal-type waypoints also request portal details.
+  - This matches the practical Intel behavior more closely without reproducing the original dashboard DOM structure.
+
 ### 5. Portal History Indicators (Completed)
 - **Requirements**:
   - Visual icons for "Visited" (hollow circle), "Captured" (filled circle), and "Scanned" (ornament) status.
@@ -154,6 +166,21 @@ Provides a view of the player's items, typically restricted to C.O.R.E. members 
 | **Portal History** | Map markers for Visit/Capture | **Implemented** | Bitmask parsing from index 18 with multi-ring MapLibre rendering and toggles. |
 | **Plugin System** | Not a first-class Intel concept | **Implemented Differently** | IRIS adds a plugin architecture and plugin-rendered map features beyond the original dashboard. |
 | **Architecture** | Monolithic dashboard script | **Implemented Differently** | IRIS now uses domain-oriented content/runtime/UI modules rather than one large dashboard controller. |
-| **Missions** | Start points, mission list, and waypoints | **Implemented, UX Partial** | Intercepts `/r/getMissionDetails`, `/r/getTopMissionsInBounds`, and `/r/getTopMissionsForPortal`; core data flow works, but mission browser UX still needs parity polish. |
+| **Missions** | Start points, mission list, and waypoints | **Implemented** | Intercepts `/r/getMissionDetails`, `/r/getTopMissionsInBounds`, and `/r/getTopMissionsForPortal`; mission UI is now clearer and waypoint clicks pan/open details more like Intel. |
 | **Artifacts** | Shards and target portals | **Implemented** | Added `getArtifactPortals` parsing and map rendering. |
 | **Passcodes** | Passcode redemption field | **Missing** | Simple `/r/redeemReward` API hook. |
+
+## Next Review Targets
+
+### 1. Initial Login
+- Verify original Intel behavior when opened while fully logged out.
+- Distinguish first-load unauthenticated behavior from mid-session expiry.
+- Decide whether IRIS should show dedicated initial-login guidance before protected requests begin failing.
+
+### 2. UI Review
+- Compare IRIS against original Intel first and IITC second for:
+  - top-level menu order
+  - popup placement
+  - button placement and wording
+  - consistency of actions and labels
+- Capture small corrective changes rather than a redesign.

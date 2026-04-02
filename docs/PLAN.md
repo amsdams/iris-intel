@@ -71,13 +71,13 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] **Mission Details:** Intercept and render `getMissionDetails` with a mission details popup plus waypoint/route rendering on the IRIS map.
 - [x] **Viewport Mission List:** Added a `Missions` menu entry backed by `getTopMissionsInBounds`, with click-through to mission details.
 - [x] **Portal Mission Browser:** Added `getTopMissionsForPortal` and a conditional "Missions Starting Here" action in portal details, matching Intel’s portal-flag gating.
-- [ ] **Mission Browser Parity:** Refine mission-browser UX to better match Intel, including list/detail transitions, map interaction, and metadata presentation.
+- [x] **Mission Browser Parity:** Improved mission list/detail context, loading states, waypoint scanability, inline metadata formatting, and waypoint click behavior so mission waypoints now pan the map and portal-type waypoints also open portal details.
 - [x] **Artifacts:** Add `getArtifactPortals` parsing and map rendering for shards/targets.
 - [ ] **Portal Search:** Intel-native portal search remains unverified; current search is limited to direct coordinate navigation and Nominatim geocoding fallback.
 - [x] **COMM Send:** Added `/r/sendPlext` support with an input field in COMM for `ALL` and `FACTION`, plus send-state and error feedback.
 - [ ] **Passcodes:** Add `/r/redeemReward` UI and response handling.
 - [x] **Login Recovery:** Detect Intel session loss from `401` / `403` and login HTML responses, surface recovery state in the status bar, show a prominent `Session Expired` alert, and direct the user to sign in on Intel before reloading if needed.
-- [ ] **Mission UI Polish:** Mission author styling is currently not correctly faction-colored; revisit after establishing a reliable semantic color approach.
+- [x] **Mission UI Polish:** Cleaned up mission metadata presentation, fixed the `Author` inline layout, and added Intel-like waypoint click affordances.
 - [x] **Font Consistency:** Standardized the IRIS UI onto an explicit Menlo-first monospace stack and forced form controls to inherit it, preventing browser-default Arial from leaking into new mission and popup surfaces.
 
 ### Phase 6: Architecture Analysis (100% Complete)
@@ -133,8 +133,10 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
     - *Status:* Cleared for current tracked code paths; `npm run lint` now passes.
 - **Weak Intel Payload Typing:** Intel endpoint payload parsing still depends on local casts and partial structural assumptions.
     - *Strategy:* Introduce explicit transport/result types for each intercepted endpoint and centralize parse validation.
-- **Mission UX Parity Gap:** Mission fetching is implemented, but the popup flow and metadata presentation still do not fully match Intel’s mission browsing feel.
-    - *Strategy:* Refine mission list/detail transitions, mission context messaging, and waypoint affordances without coupling mission fetch policy back into the UI.
+- **Initial Login Flow Is Still Under-Specified:** Session expiry is handled well now, but the very first unauthenticated visit flow has not been reviewed against original Intel.
+    - *Strategy:* Verify how Intel behaves when opened while fully logged out, document the exact redirect/login shell behavior, and decide whether IRIS should show a lighter initial-login guidance state before any protected requests fail.
+- **UI Placement Consistency Needs A Focused Review:** Major features exist, but menu placement, popup ordering, button wording, and top-level affordances have grown incrementally rather than through one parity review.
+    - *Strategy:* Compare IRIS layout, menu/button placement, and labeling against original Intel first and IITC second, then capture small corrective moves before larger visual polish.
 
 #### Proposed Next Steps
 1. [x] **Map Interaction Sprint:** Replace manual portal click/hover hit-testing with `queryRenderedFeatures`.
@@ -144,14 +146,16 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 5. **Payload Typing Pass:** Replace cast-heavy endpoint parsing with explicit validated response types.
 6. [x] **UI CSS Colocation:** Finish moving remaining domain-specific popup styling into `ui/domains/*`, starting with `comm` and `inventory`.
 7. **Ingress Semantic Palette:** Standardize faction, portal level, rarity, and powerup/item colors in one shared module and migrate current ad hoc color usage to it.
-8. **Feature-Completeness Sprint:** Finish the remaining Intel-core basics: portal search verification, mission browser polish, and passcodes.
-9. **Post-Runtime Cleanup:** Tighten cache/TTL policy for slow-moving endpoints, keep status diagnostics readable, and continue moving request policy only into the coordinator.
+8. **Feature-Completeness Sprint:** Finish the remaining Intel-core basics: portal search verification and passcodes.
+9. **Initial Login Review:** Compare IRIS startup behavior while logged out against original Intel and document the desired UX.
+10. **UI Review:** Audit menu placement, popup/button placement, wording, and consistency against original Intel and IITC.
+11. **Post-Runtime Cleanup:** Tighten cache/TTL policy for slow-moving endpoints, keep status diagnostics readable, and continue moving request policy only into the coordinator.
 
 #### Quick Wins
 1. **Portal Search Verification:** Confirm the real Intel portal-search flow before reintroducing it.
-2. **Mission Browser Polish:** Improve mission list/detail UX and metadata styling without changing the now-stable request pipeline.
-3. **Semantic Color Palette:** Centralize mission, rarity, powerup, and faction-adjacent colors so new UI surfaces stop encoding colors ad hoc.
-4. **Payload Typing Pass:** Add validated transport types for the remaining cast-heavy Intel payloads.
+2. **Initial Login Review:** Verify the first-load logged-out flow against Intel and decide what IRIS should surface before requests start failing.
+3. **UI Review:** Compare menu placement, popup/button placement, and labeling against Intel and IITC and capture small corrective tickets.
+4. **Semantic Color Palette:** Centralize mission, rarity, powerup, and faction-adjacent colors so new UI surfaces stop encoding colors ad hoc.
 5. **Passcodes:** Add `/r/redeemReward` with simple UI and response handling.
 
 #### Proposed Domain-Oriented Directory Plan
@@ -202,15 +206,19 @@ packages/extension/src/content/
 - **Done:** Plugin player markers are updated incrementally rather than rebuilt wholesale.
 - **Done:** Scores, plugins, player, status, and map-theme UI now have colocated domain CSS files.
 - **Done:** Mission details and viewport mission list are now wired as first-class content/UI features.
+- **Done:** Mission browser UX has been polished with clearer context, loading states, inline metadata, and Intel-like waypoint click behavior.
 - **Done:** Split the Zustand store into slices and narrow what gets persisted.
 - **Done:** Migrated to high-performance map interaction using `queryRenderedFeatures` with mobile stability refinements.
 - **Done:** Converted the remaining popup/domain styling into colocated CSS files for `comm` and `inventory`.
 - **Done:** Implemented artifacts parsing and map layers.
 - **Done:** Added session-expiry detection/recovery UI, request coordination, endpoint health diagnostics, and score endpoint TTL/in-flight deduplication.
+- **Done:** Reworked login recovery so the primary action takes the user to the actual Intel sign-in flow instead of relying on reload alone.
 - **Todo:** Finish map-specific helper extraction from `MapOverlay.tsx`, especially interaction and source update helpers.
 - **Todo:** Add a shared Ingress semantic color palette so faction, level, rarity, and powerup/item colors match Ingress conventions consistently across UI surfaces.
 - **Todo:** Tighten Intel payload/result typing to reduce residual cast-heavy parsing.
-- **Todo:** Complete the remaining Intel-core feature gaps around portal search verification, mission browsing polish, and passcodes.
+- **Todo:** Complete the remaining Intel-core feature gaps around portal search verification and passcodes.
+- **Todo:** Review the first-load logged-out experience against original Intel and decide on explicit initial-login guidance.
+- **Todo:** Run a focused UI consistency pass against original Intel first and IITC second.
 
 #### Domain Split Rules
 - Keep one shared low-level XHR/fetch interception runtime. Do not create a separate patcher per domain.
