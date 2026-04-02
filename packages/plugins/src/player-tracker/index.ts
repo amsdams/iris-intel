@@ -1,10 +1,15 @@
 import { IRISPlugin, IRIS_API, Plext } from '@iris/plugin-sdk';
 
+interface PlayerAction {
+  text: string;
+  markup: Plext['markup'];
+}
+
 interface PlayerEvent {
   latlngs: [number, number][]; // Handle multiple coords at same timestamp (resos)
   time: number;
   portalName: string;
-  actions: string[]; // Capture message text (DanielOnDiordna addon style)
+  actions: PlayerAction[];
 }
 
 interface PlayerHistory {
@@ -193,12 +198,14 @@ const PlayerTrackerPlugin: IRISPlugin = {
         let pName = '';
         let skipThis = false;
         const actionParts: string[] = [];
+        const actionMarkup: Plext['markup'] = [];
 
         for (const m of p.markup) {
           const [type, data] = m;
           if (type === 'TEXT') {
             const txt = data.plain || '';
             actionParts.push(txt);
+            actionMarkup.push(m);
             if (txt.includes('destroyed the Link') ||
                 txt.includes('destroyed a Control Field') ||
                 txt.includes('destroyed the') ||
@@ -206,25 +213,34 @@ const PlayerTrackerPlugin: IRISPlugin = {
               skipThis = true;
               break;
             }
-          } else if (type === 'PLAYER') {
+          } else if (type === 'PLAYER' || type === 'SENDER' || type === 'AT_PLAYER' || type === 'FACTION') {
             playerName = data.plain || null;
             if (data.team && data.team !== 'NEUTRAL') plrTeam = data.team;
             // Force Machina
             const upper = (playerName || '').toUpperCase();
             if (upper === 'MACHINA' || upper === '__MACHINA__') plrTeam = 'MACHINA';
-          } else if (type === 'PORTAL' && !lat && !lng) {
+          } else if ((type === 'PORTAL' || type === 'LINK') && !lat && !lng) {
             // Take the FIRST portal in markup as player location (IITC style)
             if (typeof data.latE6 === 'number' && typeof data.lngE6 === 'number') {
               lat = data.latE6 / 1e6;
               lng = data.lngE6 / 1e6;
               pName = data.name || '';
             }
+            actionMarkup.push(m);
+          } else {
+            actionMarkup.push(m);
           }
         }
 
         if (skipThis || !playerName || lat === null || lng === null) return;
 
         const action = actionParts.join('').trim();
+        const actionRecord: PlayerAction | null = action
+          ? {
+              text: action,
+              markup: actionMarkup,
+            }
+          : null;
 
         let history = playerHistories.get(playerName);
         if (!history) {
@@ -250,8 +266,8 @@ const PlayerTrackerPlugin: IRISPlugin = {
           if (!eventHasLatLng(evts[cmp], lat, lng)) {
             evts[cmp].latlngs.push([lat, lng]);
           }
-          if (action && !evts[cmp].actions.includes(action)) {
-            evts[cmp].actions.push(action);
+          if (actionRecord && !evts[cmp].actions.some((existing) => existing.text === actionRecord.text)) {
+            evts[cmp].actions.push(actionRecord);
           }
           return;
         }
@@ -259,8 +275,8 @@ const PlayerTrackerPlugin: IRISPlugin = {
         // Time changed. Is player still at same location?
         // Check next event
         if (evts[cmp + 1] && eventHasLatLng(evts[cmp + 1], lat, lng)) {
-          if (action && !evts[cmp + 1].actions.includes(action)) {
-            evts[cmp + 1].actions.push(action);
+          if (actionRecord && !evts[cmp + 1].actions.some((existing) => existing.text === actionRecord.text)) {
+            evts[cmp + 1].actions.push(actionRecord);
           }
           return;
         }
@@ -270,8 +286,8 @@ const PlayerTrackerPlugin: IRISPlugin = {
         if (sameLoc) {
           // Same location, just update time to newest
           evts[cmp].time = p.time;
-          if (action && !evts[cmp].actions.includes(action)) {
-            evts[cmp].actions.push(action);
+          if (actionRecord && !evts[cmp].actions.some((existing) => existing.text === actionRecord.text)) {
+            evts[cmp].actions.push(actionRecord);
           }
         } else {
           // New location, insert
@@ -279,7 +295,7 @@ const PlayerTrackerPlugin: IRISPlugin = {
             latlngs: [[lat, lng]],
             time: p.time,
             portalName: pName,
-            actions: action ? [action] : [],
+            actions: actionRecord ? [actionRecord] : [],
           });
         }
       });

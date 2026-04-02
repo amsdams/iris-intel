@@ -152,11 +152,11 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 11. **Post-Runtime Cleanup:** Tighten cache/TTL policy for slow-moving endpoints, keep status diagnostics readable, and continue moving request policy only into the coordinator.
 
 #### Quick Wins
-1. **Portal Search Verification:** Confirm the real Intel portal-search flow before reintroducing it.
-2. **Initial Login Review:** Verify the first-load logged-out flow against Intel and decide what IRIS should surface before requests start failing.
-3. **UI Review:** Compare menu placement, popup/button placement, and labeling against Intel and IITC and capture small corrective tickets.
-4. **Semantic Color Palette:** Centralize mission, rarity, powerup, and faction-adjacent colors so new UI surfaces stop encoding colors ad hoc.
-5. **Passcodes:** Add `/r/redeemReward` with simple UI and response handling.
+1. **Initial Login Review:** Verify the first-load logged-out flow against Intel and decide what IRIS should surface before requests start failing.
+2. **UI Review:** Compare menu placement, popup/button placement, and labeling against Intel and IITC and capture small corrective tickets.
+3. **Portal Search Verification:** Confirm the real Intel portal-search flow before reintroducing it.
+4. **Passcodes:** Add `/r/redeemReward` with simple UI and response handling.
+5. **Semantic Color Palette:** Centralize mission, rarity, powerup, and faction-adjacent colors so new UI surfaces stop encoding colors ad hoc.
 
 #### Product / UX Suggestions
 
@@ -370,7 +370,11 @@ If you want the safest shortlist, I’d do this order:
 3. [x] manual interaction migration
 4. [x] `comm` CSS colocation
 5. [x] artifacts implementation
-6. shared Ingress semantic palette
-7. mission-browser parity
+6. [x] mission-browser parity
+7. initial login review
+8. UI review against Intel and IITC
+9. portal search verification
+10. passcodes
+11. shared Ingress semantic palette
 
 Those are the highest signal-to-risk ratio.

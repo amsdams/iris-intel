@@ -3,6 +3,22 @@ import { useStore } from '@iris/core';
 import { Popup } from '../../shared/Popup';
 import { UI_COLORS } from '../../theme';
 
+type ActionMarkupData = {
+    plain?: string;
+    team?: string;
+    name?: string;
+    address?: string;
+    latE6?: number;
+    lngE6?: number;
+};
+
+type ActionMarkupSegment = [string, ActionMarkupData];
+
+type PlayerAction = {
+    text: string;
+    markup: ActionMarkupSegment[];
+};
+
 type PluginFeatureProperties = {
     color?: string;
     name?: string;
@@ -11,7 +27,7 @@ type PluginFeatureProperties = {
     lat?: number;
     lng?: number;
     isPlayerMarker?: boolean;
-    actions?: string[];
+    actions?: PlayerAction[];
 } & Record<string, unknown>;
 
 export function PluginFeaturePopup(): JSX.Element | null {
@@ -31,6 +47,43 @@ export function PluginFeaturePopup(): JSX.Element | null {
         isPlayerMarker = false,
         actions = [],
     } = properties;
+
+    const renderActionSegment = (segment: ActionMarkupSegment, index: number): JSX.Element | null => {
+        const [type, data] = segment;
+        const text = data.plain || data.name || '';
+
+        if (type === 'FACTION' || type === 'PLAYER' || type === 'SENDER' || type === 'AT_PLAYER') {
+            return null;
+        }
+
+        if (type === 'PORTAL' || type === 'LINK') {
+            const portalNameText = data.name || data.plain || '';
+            const portalAddress = data.address || '';
+            const handlePortalClick = (): void => {
+                if (typeof data.latE6 !== 'number' || typeof data.lngE6 !== 'number') return;
+
+                window.postMessage({
+                    type: 'IRIS_MOVE_MAP',
+                    center: { lat: data.latE6 / 1e6, lng: data.lngE6 / 1e6 },
+                    zoom: 17,
+                }, '*');
+            };
+
+            return (
+                <span key={index}>
+                    <span
+                        className="iris-feature-portal-link"
+                        onClick={handlePortalClick}
+                    >
+                        {portalNameText}
+                    </span>
+                    {portalAddress && portalAddress !== portalNameText ? ` (${portalAddress})` : ''}
+                </span>
+            );
+        }
+
+        return <span key={index}>{text}</span>;
+    };
 
     return (
         <Popup
@@ -78,7 +131,8 @@ export function PluginFeaturePopup(): JSX.Element | null {
                         <div className="iris-feature-label" style={{ marginBottom: '5px' }}>Recent Actions:</div>
                         {actions.map((action, i) => (
                             <div key={i} className="iris-feature-action-item" style={{ fontSize: '0.85em', color: UI_COLORS.TEXT_MUTED, marginBottom: '2px' }}>
-                                • {action}
+                                <span>• </span>
+                                {action.markup.length > 0 ? action.markup.map((segment, segmentIndex) => renderActionSegment(segment, segmentIndex)) : action.text}
                             </div>
                         ))}
                     </div>
