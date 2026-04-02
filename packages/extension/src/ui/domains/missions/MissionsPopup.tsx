@@ -12,6 +12,9 @@ export function MissionsPopup({ onClose }: MissionsPopupProps): JSX.Element {
   const missions = useStore((state) => state.missionsInView);
   const bounds = useStore((state) => state.mapState.bounds);
   const missionsPortalId = useStore((state) => state.missionsPortalId);
+  const missionDetails = useStore((state) => state.missionDetails);
+  const topMissionsStatus = useStore((state) => state.endpointDiagnostics.topMissions.status);
+  const missionDetailsStatus = useStore((state) => state.endpointDiagnostics.missionDetails.status);
   const portalName = useStore((state) =>
     state.missionsPortalId ? state.portals[state.missionsPortalId]?.name : null
   );
@@ -33,6 +36,14 @@ export function MissionsPopup({ onClose }: MissionsPopupProps): JSX.Element {
     }, '*');
   };
 
+  const selectedMissionId = missionDetails?.id ?? null;
+  const sourceLabel = missionsPortalId ? 'Portal Missions' : 'Viewport Missions';
+  const contextCopy = missionsPortalId
+    ? 'Missions starting from the selected portal.'
+    : 'Missions currently available within the Intel viewport.';
+  const isLoadingList = topMissionsStatus === 'in_flight' && missions.length === 0;
+  const isLoadingDetails = missionDetailsStatus === 'in_flight';
+
   return (
     <Popup
       onClose={onClose}
@@ -47,11 +58,24 @@ export function MissionsPopup({ onClose }: MissionsPopupProps): JSX.Element {
       }}
     >
       <div className="iris-missions-list">
-        {missionsPortalId && portalName && (
-          <div className="iris-missions-context" style={{ color: theme.AQUA }}>
-            {portalName}
+        <div className="iris-missions-header-card">
+          <div className="iris-missions-header-top">
+            <div className="iris-missions-source" style={{ color: theme.AQUA }}>
+              {sourceLabel}
+            </div>
+            <div className="iris-missions-count">
+              {missions.length} mission{missions.length === 1 ? '' : 's'}
+            </div>
           </div>
-        )}
+          <div className="iris-missions-context-copy">
+            {contextCopy}
+          </div>
+          {missionsPortalId && portalName && (
+            <div className="iris-missions-context" style={{ color: theme.AQUA }}>
+              {portalName}
+            </div>
+          )}
+        </div>
 
         {!missionsPortalId && !bounds && (
           <div className="iris-missions-empty">
@@ -59,7 +83,13 @@ export function MissionsPopup({ onClose }: MissionsPopupProps): JSX.Element {
           </div>
         )}
 
-        {((missionsPortalId !== null) || bounds) && missions.length === 0 && (
+        {isLoadingList && (
+          <div className="iris-missions-loading" style={{ color: theme.AQUA }}>
+            Loading missions from Intel...
+          </div>
+        )}
+
+        {!isLoadingList && ((missionsPortalId !== null) || bounds) && missions.length === 0 && (
           <div className="iris-missions-empty">
             {missionsPortalId ? 'No missions starting here.' : 'No missions in range, try zooming out.'}
           </div>
@@ -68,7 +98,7 @@ export function MissionsPopup({ onClose }: MissionsPopupProps): JSX.Element {
         {missions.map((mission) => (
           <button
             key={mission.id}
-            className="iris-mission-list-item"
+            className={`iris-mission-list-item ${selectedMissionId === mission.id ? 'iris-mission-list-item-active' : ''}`}
             onClick={() => handleMissionClick(mission.id)}
           >
             {mission.logoUrl ? (
@@ -93,9 +123,16 @@ export function MissionsPopup({ onClose }: MissionsPopupProps): JSX.Element {
         ))}
 
         {missions.length > 0 && (
-          <div className="iris-missions-hint" style={{ color: UI_COLORS.TEXT_MUTED }}>
-            Click a mission to load route details.
-          </div>
+          <>
+            <div className="iris-missions-hint" style={{ color: UI_COLORS.TEXT_MUTED }}>
+              Select a mission to load details and draw its route on the map.
+            </div>
+            {isLoadingDetails && (
+              <div className="iris-missions-loading-inline" style={{ color: theme.AQUA }}>
+                Loading mission details...
+              </div>
+            )}
+          </>
         )}
       </div>
     </Popup>
