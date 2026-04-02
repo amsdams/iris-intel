@@ -27,6 +27,7 @@ import { PasscodePopup } from './domains/passcodes/PasscodePopup';
 // ---------------------------------------------------------------------------
 
 export function IRISOverlay(): JSX.Element {
+    const sessionStatus = useStore((state) => state.sessionStatus);
     const [showPlayerStatsPopup, setShowPlayerStatsPopup] = useState(false);
     const [showInventoryPopup, setShowInventoryPopup] = useState(false);
     const [showStateDebugPopup, setShowStateDebugPopup] = useState(false);
@@ -106,6 +107,14 @@ export function IRISOverlay(): JSX.Element {
             document.removeEventListener('iris:missions:open', missionsOpenHandler);
         };
     }, [toggleExportPopup, toggleThemePopup]);
+
+    if (sessionStatus === 'initial_login_required') {
+        return (
+            <div className="iris-overlay-root">
+                <SessionAlert />
+            </div>
+        );
+    }
 
     return (
         <div className="iris-overlay-root">
