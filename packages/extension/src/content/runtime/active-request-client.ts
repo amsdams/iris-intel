@@ -166,6 +166,43 @@ export function handleActiveRequestMessage(
             break;
         }
 
+        case 'IRIS_PASSCODE_REDEEM_FETCH': {
+            const { passcode } = msg;
+            runtime.safeIrisFetch('/r/redeemReward', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
+                body: JSON.stringify({ passcode }),
+            }).then(async (response) => {
+                const bodyText = await response.clone().text();
+                if (!response.ok) {
+                    window.postMessage({
+                        type: 'IRIS_PASSCODE_REDEEM_FAILED',
+                        statusText: response.statusText || 'Passcode redemption failed',
+                        status: response.status,
+                        time: Date.now(),
+                    }, '*');
+                    return;
+                }
+                if (runtime.isLoginHtmlResponse(bodyText)) {
+                    runtime.reportHtmlLoginResponse('/r/redeemReward');
+                    window.postMessage({
+                        type: 'IRIS_PASSCODE_REDEEM_FAILED',
+                        statusText: 'Intel sign-in required before passcode redemption can continue.',
+                        status: 200,
+                        time: Date.now(),
+                    }, '*');
+                }
+            }).catch((e: Error) => {
+                window.postMessage({
+                    type: 'IRIS_PASSCODE_REDEEM_FAILED',
+                    statusText: e.message || 'Passcode redemption failed',
+                    time: Date.now(),
+                }, '*');
+                console.error('IRIS: passcode redemption failed', e);
+            });
+            break;
+        }
+
         case 'IRIS_GEOLOCATE': {
             navigator.geolocation.getCurrentPosition(
                 (pos) => {

@@ -162,6 +162,7 @@ interface TopbarProps {
     onToggleMapTheme: () => void;
     onToggleGameScore: () => void;
     onToggleRegionScore: () => void;
+    onTogglePasscodes: () => void;
     showMap: boolean;
 }
 
@@ -177,6 +178,7 @@ export function Topbar({
     onToggleMapTheme,
     onToggleGameScore,
     onToggleRegionScore,
+    onTogglePasscodes,
     showMap
 }: TopbarProps): JSX.Element {
     const [locStatus, setLocStatus] = useState<'NAVIGATE TO ME' | 'LOCATING...'>('NAVIGATE TO ME');
@@ -268,6 +270,13 @@ export function Topbar({
                             style={{ color: theme.AQUA }}
                         >
                             Missions
+                        </button>
+                        <button
+                            className="iris-menu-item"
+                            onClick={() => { onTogglePasscodes(); setShowMenu(false); }}
+                            style={{ color: theme.AQUA }}
+                        >
+                            Passcode
                         </button>
                         <button
                             className="iris-menu-item"

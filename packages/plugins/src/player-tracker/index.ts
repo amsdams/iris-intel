@@ -23,12 +23,6 @@ interface PlayerTrackerApi extends IRIS_API {
   _playerTrackerTicker?: ReturnType<typeof setInterval>;
 }
 
-type TimedFeatureProperties = {
-  time?: number;
-  opacity?: number;
-  color?: string;
-} & Record<string, unknown>;
-
 const EXPIRATION_MS = 3 * 60 * 60 * 1000; // 3 hours (IITC default)
 const TICK_MS = 30 * 1000; // 30 seconds update
 const MAX_DISPLAY_EVENTS = 10; // Max events to show in trace

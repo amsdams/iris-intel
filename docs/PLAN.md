@@ -75,7 +75,7 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 - [x] **Artifacts:** Add `getArtifactPortals` parsing and map rendering for shards/targets.
 - [ ] **Portal Search:** Intel-native portal search remains unverified; current search is limited to direct coordinate navigation and Nominatim geocoding fallback.
 - [x] **COMM Send:** Added `/r/sendPlext` support with an input field in COMM for `ALL` and `FACTION`, plus send-state and error feedback.
-- [ ] **Passcodes:** Add `/r/redeemReward` UI and response handling.
+- [x] **Passcodes:** Added `/r/redeemReward` with a compact popup, Intel-like pending/error/success handling, and reward-list rendering.
 - [x] **Login Recovery:** Detect Intel session loss from `401` / `403` and login HTML responses, surface recovery state in the status bar, show a prominent `Session Expired` alert, and direct the user to sign in on Intel before reloading if needed.
 - [x] **Mission UI Polish:** Cleaned up mission metadata presentation, fixed the `Author` inline layout, and added Intel-like waypoint click affordances.
 - [x] **Font Consistency:** Standardized the IRIS UI onto an explicit Menlo-first monospace stack and forced form controls to inherit it, preventing browser-default Arial from leaking into new mission and popup surfaces.
@@ -146,7 +146,7 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 5. **Payload Typing Pass:** Replace cast-heavy endpoint parsing with explicit validated response types.
 6. [x] **UI CSS Colocation:** Finish moving remaining domain-specific popup styling into `ui/domains/*`, starting with `comm` and `inventory`.
 7. **Ingress Semantic Palette:** Standardize faction, portal level, rarity, and powerup/item colors in one shared module and migrate current ad hoc color usage to it.
-8. **Feature-Completeness Sprint:** Finish the remaining Intel-core basics: portal search verification and passcodes.
+8. **Feature-Completeness Sprint:** Finish the remaining Intel-core basics: portal search verification.
 9. **Initial Login Review:** Compare IRIS startup behavior while logged out against original Intel and document the desired UX.
 10. **UI Review:** Audit menu placement, popup/button placement, wording, and consistency against original Intel and IITC.
 11. **Post-Runtime Cleanup:** Tighten cache/TTL policy for slow-moving endpoints, keep status diagnostics readable, and continue moving request policy only into the coordinator.
@@ -155,7 +155,7 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 1. **Initial Login Review:** Verify the first-load logged-out flow against Intel and decide what IRIS should surface before requests start failing.
 2. **UI Review:** Compare menu placement, popup/button placement, and labeling against Intel and IITC and capture small corrective tickets.
 3. **Portal Search Verification:** Confirm the real Intel portal-search flow before reintroducing it.
-4. **Passcodes:** Add `/r/redeemReward` with simple UI and response handling.
+4. **Passcode UX Review:** Compare the new IRIS popup against original Intel’s compact header flow and tighten wording/layout if needed.
 5. **Semantic Color Palette:** Centralize mission, rarity, powerup, and faction-adjacent colors so new UI surfaces stop encoding colors ad hoc.
 
 #### Product / UX Suggestions
@@ -241,7 +241,8 @@ packages/extension/src/content/
 - **Todo:** Finish map-specific helper extraction from `MapOverlay.tsx`, especially interaction and source update helpers.
 - **Todo:** Add a shared Ingress semantic color palette so faction, level, rarity, and powerup/item colors match Ingress conventions consistently across UI surfaces.
 - **Todo:** Tighten Intel payload/result typing to reduce residual cast-heavy parsing.
-- **Todo:** Complete the remaining Intel-core feature gaps around portal search verification and passcodes.
+- **Done:** Added compact passcode redemption UI and runtime handling for `/r/redeemReward`.
+- **Todo:** Complete the remaining Intel-core feature gaps around portal search verification.
 - **Todo:** Review the first-load logged-out experience against original Intel and decide on explicit initial-login guidance.
 - **Todo:** Run a focused UI consistency pass against original Intel first and IITC second.
 - **Todo:** Review COMM and stale-data behavior from a user perspective, not only from transport/debugging correctness.
@@ -302,10 +303,10 @@ packages/extension/src/ui/
 ## Next Strategic Priority
 1. **Portal Search**: Verify the real Intel portal-search flow before reintroducing it. Coordinate and geocode search remain available.
 2. [x] **Artifacts**: Implement `getArtifactPortals` parsing and map layers so shard events are visible.
-3. **Mission Parity**: Add `getTopMissionsForPortal` and refine mission details/list styling, including fixing author coloring.
+3. [x] **Mission Parity**: Added `getTopMissionsForPortal`, refined mission details/list styling, fixed author layout, and made waypoints interactive.
 4. [x] **COMM Send**: Add an input field to `CommPopup` for sending messages via `/r/sendPlext`, with an immediate newer-items refresh after send.
 5. [x] **Robust Login Detection**: Detect session expiry from protected endpoint failures, surface a `Session Expired` alert, and guide recovery.
-6. **Passcodes**: Add a simple passcode redemption UI backed by `/r/redeemReward`.
+6. [x] **Passcodes**: Added a simple passcode redemption popup backed by `/r/redeemReward`.
 
 ## Known Issues & Mobile Challenges
 

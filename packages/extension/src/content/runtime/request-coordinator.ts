@@ -16,6 +16,7 @@ export interface RequestCoordinator {
     handleRegionScoreRequest: (msg: IRISMessage) => void;
     handlePortalDetailsRequest: (msg: IRISMessage) => void;
     handleCommSendRequest: (msg: IRISMessage) => void;
+    handlePasscodeRedeemRequest: (msg: IRISMessage) => void;
     handleCommSendSuccess: (msg: IRISMessage) => void;
     handleMissionDetailsRequest: (msg: IRISMessage) => void;
     handleMissionsRequest: () => void;
@@ -200,6 +201,24 @@ export function createRequestCoordinator(): RequestCoordinator {
                 tab,
                 latE6: Math.round(lat * 1e6),
                 lngE6: Math.round(lng * 1e6),
+            });
+        },
+
+        handlePasscodeRedeemRequest(msg: IRISMessage): void {
+            const passcode = String(msg.passcode ?? '').trim();
+            if (!passcode) return;
+
+            if (isSessionExpired()) {
+                useStore.getState().setPasscodeRedeemError('Intel sign-in required before passcode redemption can continue.');
+                return;
+            }
+
+            if (useStore.getState().passcodeRedeemStatus === 'sending') return;
+
+            useStore.getState().setPasscodeRedeemPending();
+            postMessage({
+                type: 'IRIS_PASSCODE_REDEEM_FETCH',
+                passcode,
             });
         },
 

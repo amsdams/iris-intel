@@ -139,6 +139,7 @@ export type EndpointKey =
     | 'missionDetails'
     | 'topMissions'
     | 'sendPlext'
+    | 'redeemReward'
     | 'artifacts'
     | 'subscription'
     | 'inventory'
@@ -210,6 +211,23 @@ export interface InventoryItemData {
 export interface InventoryItem extends InventoryItemData {
     guid: string;
     timestamp: number;
+}
+
+export interface PasscodeRewardAward {
+    level: number;
+    count: number;
+}
+
+export interface PasscodeRewardInventoryItem {
+    name: string;
+    awards: PasscodeRewardAward[];
+}
+
+export interface PasscodeRewards {
+    xm: number;
+    ap: number;
+    other: string[];
+    inventory?: PasscodeRewardInventoryItem[];
 }
 
 export interface MissionWaypoint {
@@ -338,6 +356,9 @@ interface UISlice {
     activeCommTab: string;
     commSendStatus: 'idle' | 'sending' | 'success' | 'error';
     commSendError: string | null;
+    passcodeRedeemStatus: 'idle' | 'sending' | 'success' | 'error';
+    passcodeRedeemError: string | null;
+    passcodeRewards: PasscodeRewards | null;
     rehydrated: boolean;
     addStatsItem: (item: StatsItem) => void;
     removeStatsItem: (id: string) => void;
@@ -357,6 +378,10 @@ interface UISlice {
     setCommSendSuccess: () => void;
     setCommSendError: (error: string) => void;
     clearCommSendState: () => void;
+    setPasscodeRedeemPending: () => void;
+    setPasscodeRedeemSuccess: (rewards: PasscodeRewards) => void;
+    setPasscodeRedeemError: (error: string) => void;
+    clearPasscodeRedeemState: () => void;
 }
 
 interface PlayerSlice {
@@ -410,6 +435,7 @@ const ENDPOINT_KEYS: EndpointKey[] = [
     'missionDetails',
     'topMissions',
     'sendPlext',
+    'redeemReward',
     'artifacts',
     'subscription',
     'inventory',
@@ -439,6 +465,7 @@ export function getEndpointKeyFromUrl(url: string): EndpointKey {
     if (url.includes('getMissionDetails')) return 'missionDetails';
     if (url.includes('getTopMissionsInBounds') || url.includes('getTopMissionsForPortal')) return 'topMissions';
     if (url.includes('sendPlext')) return 'sendPlext';
+    if (url.includes('redeemReward')) return 'redeemReward';
     if (url.includes('getArtifactPortals')) return 'artifacts';
     if (url.includes('getHasActiveSubscription')) return 'subscription';
     if (url.includes('getInventory')) return 'inventory';
@@ -562,6 +589,9 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
     activeCommTab: 'ALL',
     commSendStatus: 'idle',
     commSendError: null,
+    passcodeRedeemStatus: 'idle',
+    passcodeRedeemError: null,
+    passcodeRewards: null,
     rehydrated: false,
     addStatsItem: (item) => set((state) => ({
         statsItems: { ...state.statsItems, [item.id]: item }
@@ -596,6 +626,26 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
     clearCommSendState: () => set(() => ({
         commSendStatus: 'idle',
         commSendError: null,
+    })),
+    setPasscodeRedeemPending: () => set(() => ({
+        passcodeRedeemStatus: 'sending',
+        passcodeRedeemError: null,
+        passcodeRewards: null,
+    })),
+    setPasscodeRedeemSuccess: (rewards) => set(() => ({
+        passcodeRedeemStatus: 'success',
+        passcodeRedeemError: null,
+        passcodeRewards: rewards,
+    })),
+    setPasscodeRedeemError: (error) => set(() => ({
+        passcodeRedeemStatus: 'error',
+        passcodeRedeemError: error,
+        passcodeRewards: null,
+    })),
+    clearPasscodeRedeemState: () => set(() => ({
+        passcodeRedeemStatus: 'idle',
+        passcodeRedeemError: null,
+        passcodeRewards: null,
     })),
 });
 

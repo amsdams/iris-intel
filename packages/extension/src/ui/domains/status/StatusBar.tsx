@@ -10,6 +10,7 @@ const ENDPOINT_STALE_AFTER_MS: Partial<Record<EndpointKey, number>> = {
     missionDetails: 5 * 60 * 1000,
     topMissions: 5 * 60 * 1000,
     sendPlext: 2 * 60 * 1000,
+    redeemReward: 2 * 60 * 1000,
     artifacts: 5 * 60 * 1000,
     subscription: 5 * 60 * 1000,
     inventory: 5 * 60 * 1000,
@@ -40,6 +41,7 @@ export function StatusBar(): JSX.Element {
         if (url.includes('getPortalDetails')) return 'getPortalDetails';
         if (url.includes('getPlexts')) return 'getPlexts';
         if (url.includes('sendPlext')) return 'sendPlext';
+        if (url.includes('redeemReward')) return 'redeemReward';
         return url.split('/').pop() || 'Request';
     };
 

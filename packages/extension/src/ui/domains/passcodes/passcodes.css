@@ -1,0 +1,63 @@
+.iris-passcode-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.iris-passcode-form {
+  display: flex;
+  gap: 8px;
+}
+
+.iris-passcode-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.iris-passcode-submit {
+  flex: 0 0 auto;
+}
+
+.iris-passcode-status {
+  font-size: 0.85em;
+  color: var(--iris-text-secondary);
+}
+
+.iris-passcode-status-error {
+  color: #ff7a7a;
+}
+
+.iris-passcode-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.iris-passcode-results-title {
+  font-size: 0.9em;
+  font-weight: 700;
+}
+
+.iris-passcode-reward-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.85em;
+}
+
+.iris-passcode-reward-list li {
+  margin-bottom: 4px;
+}
+
+.iris-passcode-item-level {
+  font-weight: 700;
+}
+
+.iris-passcode-item-level-1 { color: #f2f2f2; }
+.iris-passcode-item-level-2 { color: #8cffbf; }
+.iris-passcode-item-level-3 { color: #00d8ff; }
+.iris-passcode-item-level-4 { color: #5da6ff; }
+.iris-passcode-item-level-5 { color: #d291ff; }
+.iris-passcode-item-level-6 { color: #ff8fdc; }
+.iris-passcode-item-level-7 { color: #ff8a5c; }
+.iris-passcode-item-level-8 { color: #ffe55c; }

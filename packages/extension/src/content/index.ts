@@ -27,6 +27,8 @@ import { handleTopMissionsInBounds } from './domains/missions-list/handler';
 import { TopMissionsInBoundsData } from './domains/missions-list/types';
 import { handleArtifacts } from './domains/artifacts/handler';
 import { ArtifactData } from './domains/artifacts/types';
+import { handlePasscodeResponse } from './domains/passcodes/handler';
+import { PasscodeResponseData } from './domains/passcodes/types';
 import { IRISMessage } from './runtime/message-types';
 import { createRequestCoordinator } from './runtime/request-coordinator';
 
@@ -190,6 +192,11 @@ window.addEventListener('message', (event: MessageEvent) => {
       break;
     }
 
+    case 'IRIS_PASSCODE_REDEEM_REQUEST': {
+      requestCoordinator.handlePasscodeRedeemRequest(msg);
+      break;
+    }
+
     case 'IRIS_COMM_SEND_SUCCESS': {
       requestCoordinator.handleCommSendSuccess(msg);
       break;
@@ -197,6 +204,11 @@ window.addEventListener('message', (event: MessageEvent) => {
 
     case 'IRIS_COMM_SEND_FAILED': {
       useStore.getState().setCommSendError(String(msg.statusText ?? 'COMM send failed'));
+      break;
+    }
+
+    case 'IRIS_PASSCODE_REDEEM_FAILED': {
+      useStore.getState().setPasscodeRedeemError(String(msg.statusText ?? 'Passcode redemption failed'));
       break;
     }
 
@@ -255,6 +267,8 @@ window.addEventListener('message', (event: MessageEvent) => {
         }
       } else if (url_str.includes('getInventory')) {
         handleInventory(data as InventoryData);
+      } else if (url_str.includes('redeemReward')) {
+        handlePasscodeResponse(data as PasscodeResponseData);
       }
       break;
     }

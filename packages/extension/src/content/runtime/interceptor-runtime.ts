@@ -51,6 +51,7 @@ export interface InterceptorMessage {
   latE6?: number;
   lngE6?: number;
   guid?: string;
+  passcode?: string;
   minLatE6?: number;
   maxLatE6?: number;
   minLngE6?: number;
@@ -93,6 +94,7 @@ export function isIrisUrl(url: string): boolean {
     url.includes('getTopMissionsForPortal') ||
     url.includes('getPlexts') ||
     url.includes('sendPlext') ||
+    url.includes('redeemReward') ||
     url.includes('getArtifactPortals') ||
     url.includes('getGameScore') ||
     url.includes('getRegionScoreDetails') ||

@@ -5,6 +5,7 @@
 @import './domains/map/map.css';
 @import './domains/missions/missions.css';
 @import './domains/player/player.css';
+@import './domains/passcodes/passcodes.css';
 @import './domains/plugins/plugins.css';
 @import './domains/portal/portal.css';
 @import './domains/scores/scores.css';

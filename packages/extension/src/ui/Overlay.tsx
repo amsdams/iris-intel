@@ -20,6 +20,7 @@ import { PluginFeaturePopup } from './domains/plugins/PluginFeaturePopup';
 import { InventoryPopup } from './domains/inventory/InventoryPopup';
 import { MissionDetailsPopup } from './domains/missions/MissionDetailsPopup';
 import { MissionsPopup } from './domains/missions/MissionsPopup';
+import { PasscodePopup } from './domains/passcodes/PasscodePopup';
 
 // ---------------------------------------------------------------------------
 // IRISOverlay
@@ -39,6 +40,7 @@ export function IRISOverlay(): JSX.Element {
     const [showExportPopup, setShowExportPopup] = useState(false);
     const [showMap, setShowMap] = useState(true);
     const [showMissionsPopup, setShowMissionsPopup] = useState(false);
+    const [showPasscodePopup, setShowPasscodePopup] = useState(false);
 
     const togglePlayerStatsPopup = (): void => setShowPlayerStatsPopup((value) => !value);
     const toggleInventoryPopup = (): void => {
@@ -72,6 +74,12 @@ export function IRISOverlay(): JSX.Element {
     };
     const toggleExportPopup = useCallback((): void => setShowExportPopup((value) => !value), []);
     const toggleMapVisibility = (): void => setShowMap((value) => !value);
+    const togglePasscodePopup = (): void => {
+        if (!showPasscodePopup) {
+            useStore.getState().clearPasscodeRedeemState();
+        }
+        setShowPasscodePopup((value) => !value);
+    };
     const toggleMissionsPopup = (): void => {
         if (!showMissionsPopup) {
             useStore.getState().setMissionsPortalId(null);
@@ -125,6 +133,7 @@ export function IRISOverlay(): JSX.Element {
                 onToggleMapTheme={toggleMapThemePopup}
                 onToggleGameScore={toggleGameScorePopup}
                 onToggleRegionScore={toggleRegionScorePopup}
+                onTogglePasscodes={togglePasscodePopup}
                 showMap={showMap}
             />
             <div style={{ display: showMap ? 'block' : 'none' }}>
@@ -141,6 +150,10 @@ export function IRISOverlay(): JSX.Element {
 
             {showMissionsPopup && (
                 <MissionsPopup onClose={toggleMissionsPopup} />
+            )}
+
+            {showPasscodePopup && (
+                <PasscodePopup onClose={togglePasscodePopup} />
             )}
 
             {showPlayerStatsPopup && (
