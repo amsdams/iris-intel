@@ -409,7 +409,7 @@ interface DiagnosticsSlice {
     failedRequests: FailedRequest[];
     successfulRequests: SuccessfulRequest[];
     jsErrors: JSError[];
-    sessionStatus: 'ok' | 'expired' | 'recovering';
+    sessionStatus: 'ok' | 'initial_login_required' | 'expired' | 'recovering';
     lastSessionError: SessionError | null;
     endpointDiagnostics: Record<EndpointKey, EndpointDiagnostics>;
     onRequestStart: (url: string) => void;
@@ -420,6 +420,7 @@ interface DiagnosticsSlice {
     clearSuccessfulRequests: () => void;
     addJSError: (error: JSError) => void;
     clearJSErrors: () => void;
+    setInitialLoginRequired: (error: SessionError) => void;
     setSessionExpired: (error: SessionError) => void;
     setSessionRecovering: () => void;
     setSessionRecovered: () => void;
@@ -740,6 +741,19 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
         jsErrors: [error, ...state.jsErrors].slice(0, 50)
     })),
     clearJSErrors: () => set({ jsErrors: [] }),
+    setInitialLoginRequired: (error) => set((state) => {
+        if (
+            state.sessionStatus === 'initial_login_required' &&
+            state.lastSessionError?.url === error.url
+        ) {
+            return state;
+        }
+
+        return {
+            sessionStatus: 'initial_login_required',
+            lastSessionError: error,
+        };
+    }),
     setSessionExpired: (error) => set((state) => {
         if (
             state.sessionStatus === 'expired' &&
@@ -755,7 +769,7 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
         };
     }),
     setSessionRecovering: () => set((state) => (
-        state.sessionStatus === 'expired'
+        state.sessionStatus === 'expired' || state.sessionStatus === 'initial_login_required'
             ? { sessionStatus: 'recovering' }
             : state
     )),

@@ -5,6 +5,7 @@ const PLEXT_COOLDOWN_MS = 5000;
 const PLEXT_POLL_MS = 120000;
 const AUXILIARY_POLL_MS = 60000;
 const AUXILIARY_STARTUP_DEDUP_MS = 5000;
+const STARTUP_GRACE_MS = 5000;
 const GAME_SCORE_TTL_MS = 10 * 60 * 1000;
 const REGION_SCORE_TTL_MS = 5 * 60 * 1000;
 
@@ -29,6 +30,8 @@ export interface RequestCoordinator {
 
 export function createRequestCoordinator(): RequestCoordinator {
     let lastPlextRequestTime = 0;
+    let startupGraceUntil = 0;
+    let startupTimeoutId: number | null = null;
     let plextPollId: number | null = null;
     let auxiliaryPollId: number | null = null;
     let lastRegionScoreRequestKey: string | null = null;
@@ -38,11 +41,12 @@ export function createRequestCoordinator(): RequestCoordinator {
     };
 
     const isSessionExpired = (): boolean => useStore.getState().sessionStatus === 'expired';
-    const getEndpointDiagnostics = (key: 'artifacts' | 'subscription' | 'gameScore' | 'regionScore') =>
+    const isWithinStartupGrace = (): boolean => Date.now() < startupGraceUntil;
+    const getEndpointDiagnostics = (key: 'artifacts' | 'subscription' | 'inventory' | 'plexts' | 'gameScore' | 'regionScore') =>
         useStore.getState().endpointDiagnostics[key];
-    const isEndpointInFlight = (key: 'artifacts' | 'subscription' | 'gameScore' | 'regionScore'): boolean =>
+    const isEndpointInFlight = (key: 'artifacts' | 'subscription' | 'inventory' | 'plexts' | 'gameScore' | 'regionScore'): boolean =>
         getEndpointDiagnostics(key).status === 'in_flight';
-    const isEndpointFresh = (key: 'artifacts' | 'subscription' | 'gameScore' | 'regionScore', ttlMs: number): boolean => {
+    const isEndpointFresh = (key: 'artifacts' | 'subscription' | 'inventory' | 'plexts' | 'gameScore' | 'regionScore', ttlMs: number): boolean => {
         const lastSuccessAt = getEndpointDiagnostics(key).lastSuccessAt;
         return typeof lastSuccessAt === 'number' && Date.now() - lastSuccessAt < ttlMs;
     };
@@ -69,6 +73,16 @@ export function createRequestCoordinator(): RequestCoordinator {
             minTimestampMs: -1,
             tab: useStore.getState().activeCommTab.toLowerCase(),
         });
+    };
+
+    const runStartupCatchup = (): void => {
+        if (isSessionExpired()) return;
+
+        if (!isEndpointInFlight('plexts') && !isEndpointFresh('plexts', STARTUP_GRACE_MS)) {
+            postPlextFetches({ minTimestampMs: -1 }, true);
+        }
+
+        scheduleAuxiliaryFetches();
     };
 
     const buildPlextPayload = (msg: Pick<IRISMessage, 'tab' | 'minTimestampMs' | 'maxTimestampMs' | 'ascendingTimestampOrder'>): Record<string, unknown> | null => {
@@ -131,16 +145,30 @@ export function createRequestCoordinator(): RequestCoordinator {
 
     return {
         start(): void {
-            if (plextPollId === null) {
-                plextPollId = window.setInterval(schedulePlextPoll, PLEXT_POLL_MS);
-            }
+            startupGraceUntil = Date.now() + STARTUP_GRACE_MS;
 
-            if (auxiliaryPollId === null) {
-                auxiliaryPollId = window.setInterval(scheduleAuxiliaryFetches, AUXILIARY_POLL_MS);
+            if (startupTimeoutId === null) {
+                startupTimeoutId = window.setTimeout(() => {
+                    startupTimeoutId = null;
+                    runStartupCatchup();
+
+                    if (plextPollId === null) {
+                        plextPollId = window.setInterval(schedulePlextPoll, PLEXT_POLL_MS);
+                    }
+
+                    if (auxiliaryPollId === null) {
+                        auxiliaryPollId = window.setInterval(scheduleAuxiliaryFetches, AUXILIARY_POLL_MS);
+                    }
+                }, STARTUP_GRACE_MS);
             }
         },
 
         stop(): void {
+            if (startupTimeoutId !== null) {
+                window.clearTimeout(startupTimeoutId);
+                startupTimeoutId = null;
+            }
+
             if (plextPollId !== null) {
                 window.clearInterval(plextPollId);
                 plextPollId = null;
@@ -161,6 +189,11 @@ export function createRequestCoordinator(): RequestCoordinator {
 
             postMessage({ type: 'IRIS_MOVE_MAP_INTERNAL', center, zoom });
             useStore.getState().updateMapState(center.lat, center.lng, zoom, bounds);
+
+            if (isWithinStartupGrace()) {
+                return;
+            }
+
             this.handlePlextsRequest({
                 type: 'IRIS_PLEXTS_REQUEST',
                 minTimestampMs: -1,

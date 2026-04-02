@@ -1,9 +1,9 @@
 import { extractVersionFromDOM } from './interceptor-runtime';
 
-export type SessionState = 'ok' | 'expired' | 'recovering';
+export type SessionState = 'ok' | 'initial_login_required' | 'expired' | 'recovering';
 
 interface SessionMessagePayload {
-    type: 'IRIS_SESSION_EXPIRED' | 'IRIS_SESSION_RECOVERING' | 'IRIS_SESSION_RECOVERED';
+    type: 'IRIS_INITIAL_LOGIN_REQUIRED' | 'IRIS_SESSION_EXPIRED' | 'IRIS_SESSION_RECOVERING' | 'IRIS_SESSION_RECOVERED';
     url: string;
     time: number;
     status?: number;
@@ -42,6 +42,42 @@ export function createSessionRuntime(win: Window, doc: Document): SessionRuntime
         win.postMessage(payload, '*');
     };
 
+    const isInitialLoginPage = (): boolean => {
+        const signInLink = doc.querySelector<HTMLAnchorElement>('#dashboard_container a[href*="signin.nianticspatial.com/signin"]');
+        const welcomeHeading = doc.querySelector('#dashboard_container h2');
+        const hasIntelDashboard = doc.querySelector('#butterbar, #dashboard, #map_canvas, #playerstat');
+
+        if (hasIntelDashboard) return false;
+        if (signInLink) return true;
+
+        return welcomeHeading?.textContent?.trim() === 'Welcome to Ingress.';
+    };
+
+    const syncLandingSessionState = (): void => {
+        if (isInitialLoginPage()) {
+            if (sessionState === 'ok') {
+                sessionState = 'initial_login_required';
+                postSessionMessage({
+                    type: 'IRIS_INITIAL_LOGIN_REQUIRED',
+                    url: win.location.href,
+                    status: 401,
+                    statusText: 'Intel landing page requires sign-in before dashboard requests can run',
+                    time: Date.now(),
+                });
+            }
+            return;
+        }
+
+        if (sessionState === 'initial_login_required') {
+            sessionState = 'ok';
+            postSessionMessage({
+                type: 'IRIS_SESSION_RECOVERED',
+                url: win.location.href,
+                time: Date.now(),
+            });
+        }
+    };
+
     const isAuthFailureStatus = (status: number): boolean => status === 401 || status === 403;
 
     const isLikelyHtmlDocument = (text: string): boolean => {
@@ -72,7 +108,7 @@ export function createSessionRuntime(win: Window, doc: Document): SessionRuntime
     };
 
     const reportSessionSuccess = (url: string): void => {
-        if (sessionState === 'expired') {
+        if (sessionState === 'expired' || sessionState === 'initial_login_required') {
             sessionState = 'recovering';
             postSessionMessage({
                 type: 'IRIS_SESSION_RECOVERING',
@@ -94,6 +130,17 @@ export function createSessionRuntime(win: Window, doc: Document): SessionRuntime
     const reportHtmlLoginResponse = (url: string): void => {
         reportSessionExpired(url, 200, 'Login HTML returned instead of Intel API JSON');
     };
+
+    const sessionObserver = new MutationObserver(() => {
+        syncLandingSessionState();
+    });
+    sessionObserver.observe(doc.documentElement, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['id'],
+    });
+    syncLandingSessionState();
 
     const observeIntelVersion = (candidate?: string | null): void => {
         if (candidate && candidate !== intelVersion) {
@@ -144,7 +191,7 @@ export function createSessionRuntime(win: Window, doc: Document): SessionRuntime
     const safeIrisFetch = async (url: string, options: RequestInit): Promise<Response> => {
         await ensureIntelVersion(url);
 
-        if (sessionState === 'expired') {
+        if (sessionState === 'expired' || sessionState === 'initial_login_required') {
             throw new Error(`IRIS: blocked ${url} because Intel session is expired`);
         }
 
@@ -160,7 +207,7 @@ export function createSessionRuntime(win: Window, doc: Document): SessionRuntime
         sniffIntelVersion,
         observeIntelVersion,
         getSessionState: () => sessionState,
-        isSessionExpired: () => sessionState === 'expired',
+        isSessionExpired: () => sessionState === 'expired' || sessionState === 'initial_login_required',
         isAuthFailureStatus,
         isLoginHtmlResponse,
         reportSessionExpired,
@@ -169,4 +216,3 @@ export function createSessionRuntime(win: Window, doc: Document): SessionRuntime
         safeIrisFetch,
     };
 }
-

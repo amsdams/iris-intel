@@ -60,15 +60,19 @@ export function StatusBar(): JSX.Element {
     };
 
     const hasErrors = failedRequests.length > 0 || jsErrors.length > 0;
-    const hasSessionIssue = sessionStatus === 'expired' || sessionStatus === 'recovering';
+    const hasSessionIssue = sessionStatus === 'initial_login_required' || sessionStatus === 'expired' || sessionStatus === 'recovering';
 
     const sessionLabel = (): string => {
+        if (sessionStatus === 'initial_login_required') return 'SESSION: SIGN-IN REQUIRED';
         if (sessionStatus === 'expired') return 'SESSION: EXPIRED';
         if (sessionStatus === 'recovering') return 'SESSION: RECOVERING';
         return 'SESSION: OK';
     };
 
     const sessionHelpText = (): string | null => {
+        if (sessionStatus === 'initial_login_required') {
+            return 'Intel is showing its logged-out landing page. Sign in on intel.ingress.com to continue.';
+        }
         if (sessionStatus === 'expired') {
             return 'Intel sign-in required. Sign in on intel.ingress.com, then reload.';
         }
@@ -130,17 +134,19 @@ export function StatusBar(): JSX.Element {
                         </span>
                     </div>
 
-                    {hasSessionIssue && lastSessionError && (
+                    {hasSessionIssue && (
                         <div className="iris-status-section iris-status-section-session">
                             <div className="iris-status-section-title">SESSION</div>
                             <div className="iris-status-log-entry iris-status-log-entry-error">
                                 <div className="iris-status-log-message iris-status-log-message-network" style={{ color: UI_COLORS.WARNING }}>
-                                    <span>[{new Date(lastSessionError.time).toLocaleTimeString()}] {sessionLabel()}</span>
-                                    <span>STATUS: {lastSessionError.status}</span>
+                                    <span>{lastSessionError ? `[${new Date(lastSessionError.time).toLocaleTimeString()}] ` : ''}{sessionLabel()}</span>
+                                    <span>STATUS: {lastSessionError?.status ?? 'N/A'}</span>
                                 </div>
-                                <div className="iris-status-log-url">
-                                    {lastSessionError.statusText} - {lastSessionError.url}
-                                </div>
+                                {lastSessionError && (
+                                    <div className="iris-status-log-url">
+                                        {lastSessionError.statusText} - {lastSessionError.url}
+                                    </div>
+                                )}
                                 {sessionHelpText() && (
                                     <div className="iris-status-log-url">
                                         {sessionHelpText()}
@@ -252,7 +258,7 @@ export function StatusBar(): JSX.Element {
                         {endpointHealthCounts.error ? ` ${endpointHealthCounts.error} ERR` : ''}
                         {endpointHealthCounts.stale ? ` ${endpointHealthCounts.stale} STALE` : ''}
                     </span>
-                    <span className="iris-status-text" style={{ color: sessionStatus === 'expired' ? UI_COLORS.WARNING : (sessionStatus === 'recovering' ? UI_COLORS.AQUA : UI_COLORS.TEXT_MUTED) }}>
+                    <span className="iris-status-text" style={{ color: sessionStatus === 'expired' || sessionStatus === 'initial_login_required' ? UI_COLORS.WARNING : (sessionStatus === 'recovering' ? UI_COLORS.AQUA : UI_COLORS.TEXT_MUTED) }}>
                         {sessionLabel()}
                     </span>
                     {hasSubscription && (

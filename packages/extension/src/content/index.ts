@@ -160,6 +160,16 @@ window.addEventListener('message', (event: MessageEvent) => {
         break;
     }
 
+    case 'IRIS_INITIAL_LOGIN_REQUIRED': {
+        useStore.getState().setInitialLoginRequired({
+            url: msg.url as string,
+            status: msg.status as number,
+            statusText: msg.statusText as string,
+            time: msg.time as number
+        });
+        break;
+    }
+
     case 'IRIS_SESSION_EXPIRED': {
         useStore.getState().setSessionExpired({
             url: msg.url as string,
