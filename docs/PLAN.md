@@ -158,6 +158,31 @@ Create a modern, lightweight, and high-performance IITC alternative. Current foc
 4. **Semantic Color Palette:** Centralize mission, rarity, powerup, and faction-adjacent colors so new UI surfaces stop encoding colors ad hoc.
 5. **Passcodes:** Add `/r/redeemReward` with simple UI and response handling.
 
+#### Product / UX Suggestions
+
+**Core Logic & Integration**
+- **Clarify The Startup Login Model:** Decide whether IRIS should remain mostly passive until Intel is authenticated, or whether it should show a dedicated initial-login guidance state before protected requests begin failing.
+- **Make Intel The Primary UX Baseline:** For menu order, popup placement, button wording, and action prominence, compare IRIS against original Intel first and use IITC as a secondary reference only.
+- **Keep Portal Search In Verification Mode:** Do not reintroduce Intel-native portal-name search until the real endpoint and interaction model are confirmed from the reference plus live behavior.
+- **Define What Data Is User-Triggered vs. Background-Managed:** Be explicit about which datasets should only refresh on demand, which should be coordinator-managed, and which should remain passive mirrors of Intel traffic.
+- **Simplify User-Facing Freshness Signals:** Endpoint health is useful for debugging, but normal users may need a simpler model such as `live`, `stale`, or `needs refresh`.
+
+**Workflow & Interaction**
+- **Review COMM As A Workflow, Not Just An Endpoint:** Recheck send timing, refresh timing, tab distinction, mention ergonomics, and whether post-send behavior feels immediate enough compared with Intel.
+- **COMM Infinite Scroll:** Replace the older/newer buttons with seamless chronological history loading.
+- **Treat Missions As Map Interaction, Not Just Metadata:** Continue comparing mission waypoint behavior and route emphasis against Intel to decide whether the current pan-and-open-details behavior is sufficient or needs stronger portal highlighting.
+- **Portal Selection Visuals:** Add a "Flash" or "Pulse" animation to portals when selected via link or search to improve orientation in dense clusters.
+- **Map Context Menus:** Add right-click (desktop) or long-press (mobile) actions for "Search nearby," "Copy coordinates," and "Navigate here."
+- **Keyboard Shortcuts:** Implement standard power-user keys (e.g., `C` for COMM, `I` for Inventory, `F` for Filters, `Esc` to close popups).
+
+**Performance & Architecture**
+- **GeoJSON Throttling:** Wrap `setData()` in a throttle or `requestAnimationFrame` to maintain high FPS during rapid movement in portal-dense areas.
+- **Web Worker Offloading:** Move heavy JSON normalization and GeoJSON assembly to a background worker to keep the UI thread dedicated entirely to rendering and interaction.
+- **Tactical Overlays:** Implement Level 6 S2 cell geometry rendering for regional scoring and "cell-flipping" parity.
+- **Automated E2E Testing:** Integrate Playwright or Cypress suites to catch browser-specific interaction regressions (like the recent Firefox Mobile click issue) before release.
+- **Security: Plugin SDK Bridge:** Migrate plugins from direct store access to a strictly governed proxy/bridge to prevent accidental state corruption.
+- **Consider A Cleaner Operator Mode Split:** Keep the strong diagnostics, but decide whether some debug/status surfaces should be more clearly separated from the normal everyday UI.
+
 #### Proposed Domain-Oriented Directory Plan
 ```text
 packages/extension/src/content/
@@ -219,6 +244,8 @@ packages/extension/src/content/
 - **Todo:** Complete the remaining Intel-core feature gaps around portal search verification and passcodes.
 - **Todo:** Review the first-load logged-out experience against original Intel and decide on explicit initial-login guidance.
 - **Todo:** Run a focused UI consistency pass against original Intel first and IITC second.
+- **Todo:** Review COMM and stale-data behavior from a user perspective, not only from transport/debugging correctness.
+- **Todo:** Decide whether mission waypoint clicks should eventually also produce stronger portal selection/highlight behavior beyond pan plus details.
 
 #### Domain Split Rules
 - Keep one shared low-level XHR/fetch interception runtime. Do not create a separate patcher per domain.
