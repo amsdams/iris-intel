@@ -2,6 +2,7 @@ import { useStore } from '@iris/core';
 import { IRISMessage } from './message-types';
 
 const PLEXT_COOLDOWN_MS = 5000;
+const PLEXT_POLL_MS = 120000;
 const AUXILIARY_POLL_MS = 60000;
 const GAME_SCORE_TTL_MS = 10 * 60 * 1000;
 const REGION_SCORE_TTL_MS = 5 * 60 * 1000;
@@ -27,6 +28,7 @@ export interface RequestCoordinator {
 
 export function createRequestCoordinator(): RequestCoordinator {
     let lastPlextRequestTime = 0;
+    let plextPollId: number | null = null;
     let auxiliaryPollId: number | null = null;
     let lastRegionScoreRequestKey: string | null = null;
 
@@ -50,6 +52,16 @@ export function createRequestCoordinator(): RequestCoordinator {
         postMessage({ type: 'IRIS_ARTIFACTS_FETCH' });
         postMessage({ type: 'IRIS_SUBSCRIPTION_FETCH' });
         postMessage({ type: 'IRIS_INVENTORY_FETCH', lastQueryTimestamp: -1 });
+    };
+
+    const schedulePlextPoll = (): void => {
+        if (isSessionExpired()) return;
+
+        postMessage({
+            type: 'IRIS_PLEXTS_REQUEST',
+            minTimestampMs: -1,
+            tab: useStore.getState().activeCommTab.toLowerCase(),
+        });
     };
 
     const buildPlextPayload = (msg: Pick<IRISMessage, 'tab' | 'minTimestampMs' | 'maxTimestampMs' | 'ascendingTimestampOrder'>): Record<string, unknown> | null => {
@@ -112,11 +124,21 @@ export function createRequestCoordinator(): RequestCoordinator {
 
     return {
         start(): void {
-            if (auxiliaryPollId !== null) return;
-            auxiliaryPollId = window.setInterval(scheduleAuxiliaryFetches, AUXILIARY_POLL_MS);
+            if (plextPollId === null) {
+                plextPollId = window.setInterval(schedulePlextPoll, PLEXT_POLL_MS);
+            }
+
+            if (auxiliaryPollId === null) {
+                auxiliaryPollId = window.setInterval(scheduleAuxiliaryFetches, AUXILIARY_POLL_MS);
+            }
         },
 
         stop(): void {
+            if (plextPollId !== null) {
+                window.clearInterval(plextPollId);
+                plextPollId = null;
+            }
+
             if (auxiliaryPollId !== null) {
                 window.clearInterval(auxiliaryPollId);
                 auxiliaryPollId = null;
@@ -132,7 +154,10 @@ export function createRequestCoordinator(): RequestCoordinator {
 
             postMessage({ type: 'IRIS_MOVE_MAP_INTERNAL', center, zoom });
             useStore.getState().updateMapState(center.lat, center.lng, zoom, bounds);
-            this.handlePlextsRequest({ type: 'IRIS_PLEXTS_REQUEST', minTimestampMs: -1 });
+            this.handlePlextsRequest({
+                type: 'IRIS_PLEXTS_REQUEST',
+                minTimestampMs: -1,
+            });
         },
 
         handleGeolocateRequest(): void {

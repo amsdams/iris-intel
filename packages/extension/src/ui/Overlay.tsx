@@ -100,21 +100,10 @@ export function IRISOverlay(): JSX.Element {
         };
         document.addEventListener('iris:missions:open', missionsOpenHandler);
 
-        // Periodic COMM refresh (every 120s) matching original Intel
-        const commInterval = setInterval((): void => {
-            const activeTab = useStore.getState().activeCommTab;
-            window.postMessage({ 
-                type: 'IRIS_PLEXTS_REQUEST', 
-                minTimestampMs: -1,
-                tab: activeTab.toLowerCase()
-            }, '*');
-        }, 120000);
-        
         return (): void => {
             document.removeEventListener('iris:plugin:theme:toggle', themeHandler);
             document.removeEventListener('iris:plugin:export:toggle', exportHandler);
             document.removeEventListener('iris:missions:open', missionsOpenHandler);
-            clearInterval(commInterval);
         };
     }, [toggleExportPopup, toggleThemePopup]);
 

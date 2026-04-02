@@ -30,6 +30,7 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
     const clearCommSendState = useStore((state) => state.clearCommSendState);
     const theme = THEMES[themeId] || THEMES.INGRESS;
     const scrollRef = useRef<HTMLDivElement>(null);
+    const suppressNextScrollFetch = useRef(false);
     const [loading, setLoading] = useState(false);
     const [draft, setDraft] = useState('');
     const lastRequestTime = useRef(0);
@@ -45,17 +46,22 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
     };
 
     const handleRefresh = useCallback((): void => {
-        const minTimestampMs = plexts.length > 0 ? plexts[plexts.length - 1].time : -1;
+        const currentPlexts = useStore.getState().plexts;
+        const minTimestampMs = currentPlexts.length > 0 ? currentPlexts[currentPlexts.length - 1].time : -1;
         window.postMessage({ 
             type: 'IRIS_PLEXTS_REQUEST', 
             minTimestampMs,
-            tab: activeTab.toLowerCase()
+            tab: activeTab.toLowerCase(),
         }, '*');
-    }, [activeTab, plexts]);
+    }, [activeTab]);
 
     const handleScroll = (): void => {
         const el = scrollRef.current;
         if (!el || loading) return;
+        if (suppressNextScrollFetch.current) {
+            suppressNextScrollFetch.current = false;
+            return;
+        }
 
         const now = Date.now();
         if (now - lastRequestTime.current < 1000) return;
@@ -69,7 +75,7 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
                 type: 'IRIS_PLEXTS_REQUEST', 
                 maxTimestampMs: oldestTime,
                 ascendingTimestampOrder: false,
-                tab: activeTab.toLowerCase()
+                tab: activeTab.toLowerCase(),
             }, '*');
             
             // Reset loading state after a delay
@@ -103,6 +109,7 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
         
         // Always scroll on initial load or tab switch
         if (!hasInitialScrolled || isAtBottom) {
+            suppressNextScrollFetch.current = true;
             el.scrollTop = el.scrollHeight;
             if (!hasInitialScrolled) setHasInitialScrolled(true);
         }

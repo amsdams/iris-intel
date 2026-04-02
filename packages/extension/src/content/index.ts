@@ -32,6 +32,17 @@ import { PasscodeResponseData } from './domains/passcodes/types';
 import { IRISMessage } from './runtime/message-types';
 import { createRequestCoordinator } from './runtime/request-coordinator';
 
+declare global {
+  interface Window {
+    __irisContentInitialized?: boolean;
+  }
+}
+
+if (window.__irisContentInitialized) {
+  console.warn('IRIS: content runtime already initialized; skipping duplicate bootstrap');
+} else {
+  window.__irisContentInitialized = true;
+
 // Tracks whether MapLibre has been given its initial position
 let hasInitialPosition = false;
 const requestCoordinator = createRequestCoordinator();
@@ -72,7 +83,13 @@ requestCoordinator.start();
 window.addEventListener('message', (event: MessageEvent) => {
   const msg = event.data as IRISMessage;
   if (msg?.type?.startsWith('IRIS') && useStore.getState().debugLogging) {
-    console.log('IRIS raw message received:', msg.type, msg);
+    const timestamp = new Date().toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+    console.log(`[IRIS ${timestamp}] raw message received:`, msg.type, msg);
   }
 
   if (event.source !== window || !msg?.type) return;
@@ -283,3 +300,4 @@ window.addEventListener('message', (event: MessageEvent) => {
 });
 
 initUI();
+}
