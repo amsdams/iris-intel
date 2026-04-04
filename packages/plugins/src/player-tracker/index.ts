@@ -57,23 +57,18 @@ const PlayerTrackerPlugin: IRISPlugin = {
 
     // Player-specific random color based on name hash (IITC style)
     const getPlayerColor = (name: string, team: string): string => {
-        let hash = 0;
-        for (let i = 0; i < name.length; i += 1) {
-            hash = name.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        hash = Math.abs(hash) % 200 + 55;
-        const hex = hash.toString(16).toUpperCase().padStart(2, '0');
-        const teamKey = api.utils.normalizeTeam(team);
-        if (teamKey === 'E') return `#00${hex}00`;
-        if (teamKey === 'R') return `#0000${hex}`;
-        if (teamKey === 'M') return `#${hex}0000`;
-        return `#${hex}${hex}${hex}`;
+        const colors = api.ui.getThemeColors();
+        const teamKey = api.utils.normalizeTeam('plexts', team);
+        console.log("player team", team, "teamKey", teamKey)
+        return (colors as any)[teamKey] || '#ffffff';
     };
 
     // Faction color helper
     const getFactionColor = (team: string): string => {
+
         const colors = api.ui.getThemeColors();
-        const teamKey = api.utils.normalizeTeam(team);
+        const teamKey = api.utils.normalizeTeam('plexts', team);
+        console.log("faction team", team, "teamKey", teamKey)
         return (colors as any)[teamKey] || '#ffffff';
     };
 
@@ -186,7 +181,7 @@ const PlayerTrackerPlugin: IRISPlugin = {
         if (!p.markup) return;
 
         let playerName: string | null = null;
-        let plrTeam: string = p.team || 'N';
+        let plrTeam: string = p.team || 'NEUTRAL';
         let lat: number | null = null;
         let lng: number | null = null;
         let pName = '';

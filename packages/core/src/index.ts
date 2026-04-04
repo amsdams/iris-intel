@@ -8,13 +8,15 @@ export * from './PluginManager';
  * M: Machina
  * N: Neutral
  */
-export const normalizeTeam = (team: string | undefined): string => {
-    if (!team) return 'N';
-    const t = team.toUpperCase();
-    
-    if (t === 'ALIENS' || t === 'ENLIGHTENED' || t === 'E') return 'E';
-    if (t === 'RESISTANCE' || t === 'R') return 'R';
-    if (t.startsWith('MAC') || t === 'M' || t === 'MACHINA') return 'M';
-    
-    return 'N';
+export const normalizeTeam = (source: string, team: string | undefined): string => {
+    let result = 'N';
+    if (team) {
+        const t = team.toUpperCase();
+        if (t === 'ENLIGHTENED' || t === 'E') result = 'E';
+        else if (t === 'RESISTANCE' || t === 'R') result = 'R';
+        else if (t === 'NEUTRAL' || t === 'M') result = 'M';
+    }
+
+    console.log(`[IRIS:${source}] normalizing team: "${team}" -> "${result}"`);
+    return result;
 };

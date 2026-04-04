@@ -15,7 +15,7 @@ export function parsePlexts(data: PlextData): Plext[] {
         text,
         markup: markup as Plext['markup'],
         categories: categories as number,
-        team: normalizeTeam(team as string),
+        team: normalizeTeam('plexts', team as string),
         type: plextType,
       };
     });

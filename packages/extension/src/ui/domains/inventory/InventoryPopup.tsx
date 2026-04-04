@@ -144,7 +144,7 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
     const getItemColor = (item: GroupedInventoryItem): string => {
         if (item.category === 'RESONATORS' || item.category === 'WEAPONS') {
             if (item.type === 'ADA' || item.type === 'JARVIS') {
-                return theme[normalizeTeam(item.type) as 'E' | 'R'] || theme.AQUA;
+                return theme[normalizeTeam('inventory', item.type) as 'E' | 'R'] || theme.AQUA;
             }
             return theme.LEVELS[item.level || 0] || UI_COLORS.TEXT_BASE;
         }

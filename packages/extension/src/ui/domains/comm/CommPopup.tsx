@@ -143,14 +143,14 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
         }
 
         if (type === 'PLAYER' || type === 'SENDER' || type === 'AT_PLAYER') {
-            const teamKey = normalizeTeam(typeof data === 'object' ? data.team : undefined) as 'E' | 'R' | 'M' | 'N';
+            const teamKey = normalizeTeam('plexts', typeof data === 'object' ? data.team : undefined) as 'E' | 'R' | 'M' | 'N';
             color = theme[teamKey] || UI_COLORS.TEXT_BASE;
             if (type === 'AT_PLAYER' && !text.startsWith('@')) {
                 text = '@' + text;
             }
             return <span key={i} className={`iris-comm-markup iris-comm-markup-${type.toLowerCase()}`} style={{ color, fontWeight: 'bold' }}>{String(text || '')}</span>;
         } else if (type === 'PORTAL' || type === 'LINK') {
-            const teamKey = normalizeTeam(typeof data === 'object' ? data.team : undefined) as 'E' | 'R' | 'M' | 'N';
+            const teamKey = normalizeTeam('plexts', typeof data === 'object' ? data.team : undefined) as 'E' | 'R' | 'M' | 'N';
             color = type === 'PORTAL' ? theme.AQUA : (theme[teamKey] || theme.AQUA);
             
             // Original Intel uses .name for the link and .address for the brackets
