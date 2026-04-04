@@ -241,14 +241,14 @@ export function Topbar({
                             onClick={() => { onToggleGameScore(); setShowMenu(false); }}
                             style={{ color: theme.AQUA }}
                         >
-                            Global Score
+                            Global Scoreboard
                         </button>
                         <button
                             className="iris-menu-item"
                             onClick={() => { onToggleRegionScore(); setShowMenu(false); }}
                             style={{ color: theme.AQUA }}
                         >
-                            Regional Score
+                            Region Scores
                         </button>
                         <button
                             className="iris-menu-item"
@@ -262,7 +262,7 @@ export function Topbar({
                             onClick={() => { onToggleComm(); setShowMenu(false); }}
                             style={{ color: theme.AQUA }}
                         >
-                            Comm
+                            COMM
                         </button>
                         <button
                             className="iris-menu-item"
@@ -276,7 +276,7 @@ export function Topbar({
                             onClick={() => { onTogglePasscodes(); setShowMenu(false); }}
                             style={{ color: theme.AQUA }}
                         >
-                            Passcode
+                            Passcodes
                         </button>
                         <button
                             className="iris-menu-item"
@@ -290,21 +290,21 @@ export function Topbar({
                             onClick={() => { onToggleMapTheme(); setShowMenu(false); }}
                             style={{ color: theme.AQUA }}
                         >
-                            Map Theme
+                            Map Style
                         </button>
                         <button
                             className="iris-menu-item"
                             onClick={() => { onToggleStateDebug(); setShowMenu(false); }}
                             style={{ color: theme.AQUA }}
                         >
-                            State Debug
+                            Diagnostics
                         </button>
                         <button
                             className="iris-menu-item"
                             onClick={() => { onToggleMapVisibility(); setShowMenu(false); }}
                             style={{ color: theme.AQUA }}
                         >
-                            {showMap ? 'SHOW INTEL MAP' : 'SHOW IRIS MAP'}
+                            {showMap ? 'Use Intel Map' : 'Use IRIS Map'}
                         </button>
 
                         {menuItems.length > 0 && (
