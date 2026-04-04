@@ -117,12 +117,12 @@ export function installPassiveInterception(runtime: SessionRuntime): void {
                     runtime.reportSessionSuccess(url);
                 }
 
-                const cloned = response.clone();
-                cloned.json().then((data: { v?: string }) => {
+                try {
+                    const data = await response.clone().json() as { v?: string };
                     window.postMessage({ type: 'IRIS_REQUEST_SUCCESS', url, time: Date.now() }, '*');
                     window.postMessage({ type: 'IRIS_DATA', url, data, params: init?.body }, '*');
                     runtime.observeIntelVersion(data.v);
-                }).catch(async () => {
+                } catch {
                     try {
                         const text = await response.clone().text();
                         if (runtime.isLoginHtmlResponse(text)) {
@@ -134,10 +134,7 @@ export function installPassiveInterception(runtime: SessionRuntime): void {
                                 statusText: 'Login HTML returned instead of Intel API JSON',
                                 time: Date.now(),
                             }, '*');
-                            return;
-                        }
-
-                        if (!runtime.isSessionExpired()) {
+                        } else if (!runtime.isSessionExpired()) {
                             console.error('IRIS: Fetch wrap failed to parse JSON for', url);
                         }
                     } catch (e) {
@@ -145,7 +142,7 @@ export function installPassiveInterception(runtime: SessionRuntime): void {
                             console.error('IRIS: Fetch wrap failed to inspect non-JSON response', e);
                         }
                     }
-                });
+                }
                 return response;
             } catch (e) {
                 window.postMessage({
@@ -175,4 +172,3 @@ export function installPassiveInterception(runtime: SessionRuntime): void {
         return originalFetch(input, init);
     };
 }
-

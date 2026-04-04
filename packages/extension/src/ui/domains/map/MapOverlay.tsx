@@ -78,7 +78,6 @@ export function MapOverlay(): JSX.Element {
   const showCaptured = useStore((state) => state.showCaptured);
   const showScanned = useStore((state) => state.showScanned);
 
-  // Track touch state to distinguish taps from gesture endings
   const touchState = useRef({
     maxFingers: 0,
     hasMoved: false,
@@ -346,16 +345,14 @@ export function MapOverlay(): JSX.Element {
       }, '*');
     });
 
-    // Interaction check using manual projection (more stable on mobile/firefox)
     const onInteraction = (e: maplibregl.MapMouseEvent | maplibregl.MapTouchEvent): void => {
         if (!map.current) return;
         const { lng, lat } = e.lngLat;
         const point = e.point;
 
-        // 1. Check for Portals
         const allPortals: Portal[] = Object.values(useStore.getState().portals);
         let nearestPortal: Portal | null = null;
-        let minPortalDist = 20; // 20px radius for better touch targeting
+        let minPortalDist = 20;
 
         for (const p of allPortals) {
             if (Math.abs(p.lng - lng) > 0.01 || Math.abs(p.lat - lat) > 0.01) continue;
@@ -374,7 +371,6 @@ export function MapOverlay(): JSX.Element {
             return;
         }
 
-        // 2. Check for Artifacts
         const artifacts: Record<string, any> = useStore.getState().artifacts;
         const portals: Record<string, Portal> = useStore.getState().portals;
         let nearestArtifactPortalId: string | null = null;
@@ -422,12 +418,10 @@ export function MapOverlay(): JSX.Element {
     map.current.on('click', onInteraction);
 
     map.current.on('touchend', (e: maplibregl.MapTouchEvent) => {
-        // Only trigger if it was a stationary, single-finger session
         if (touchState.current.maxFingers === 1 && !touchState.current.hasMoved) {
             onInteraction(e);
         }
-        
-        // Reset tracker when all fingers are lifted
+
         if (e.originalEvent.touches.length === 0) {
             touchState.current.maxFingers = 0;
             touchState.current.hasMoved = false;

@@ -26,7 +26,6 @@ export function PortalInfoPopup(): JSX.Element | null {
     const colour = theme[factionKey] || theme.N || UI_COLORS.TEXT_BASE;
     const teamName = TEAM_NAME[portal.team] || 'Unknown';
 
-    // Resonators — Ensure we have 8 slots
     const allResonators: (PortalResonator | null)[] = Array.from({ length: 8 }, () => null);
     if (portal.resonators) {
         portal.resonators.forEach((r: PortalResonator, i: number) => {
@@ -34,7 +33,6 @@ export function PortalInfoPopup(): JSX.Element | null {
         });
     }
 
-    // Mods — Ensure we have 4 slots
     const allMods: (PortalMod | null)[] = Array.from({ length: 4 }, () => null);
     if (portal.mods) {
         portal.mods.forEach((m: PortalMod, i: number) => {
@@ -63,7 +61,6 @@ export function PortalInfoPopup(): JSX.Element | null {
             }}
         >
             <div className="iris-portal-info">
-                {/* Image */}
                 {portal.image && (
                     <div className="iris-portal-image-container">
                         <img
@@ -75,7 +72,6 @@ export function PortalInfoPopup(): JSX.Element | null {
                     </div>
                 )}
 
-                {/* Name */}
                 <div 
                     className="iris-portal-name"
                     style={{ color: colour }}
@@ -83,7 +79,6 @@ export function PortalInfoPopup(): JSX.Element | null {
                     {portal.name || 'Loading...'}
                 </div>
 
-                {/* Basic stats */}
                 <div className="iris-portal-stats">
                     <span className="iris-portal-stat-team">Team: <span style={{ color: colour }}>{teamName}</span></span>
                     {portal.level !== undefined && (
@@ -173,7 +168,6 @@ export function PortalInfoPopup(): JSX.Element | null {
                     </div>
                 </div>
 
-                {/* Resonators */}
                 <div className="iris-portal-resonators-section" style={{ marginBottom: '8px' }}>
                     <div className="iris-portal-section-title" style={{ fontSize: '0.8em', color: '#888', marginBottom: '4px' }}>
                         RESONATORS ({portal.resonators?.length || 0}/8)
@@ -215,7 +209,6 @@ export function PortalInfoPopup(): JSX.Element | null {
                     </div>
                 </div>
 
-                {/* Mods */}
                 <div className="iris-portal-mods-section" style={{ marginBottom: '8px' }}>
                     <div className="iris-portal-section-title" style={{ fontSize: '0.8em', color: '#888', marginBottom: '4px' }}>
                         MODS
@@ -249,7 +242,6 @@ export function PortalInfoPopup(): JSX.Element | null {
                     </div>
                 </div>
 
-                {/* Coordinates */}
                 <div className="iris-portal-coords" style={{ marginTop: '4px', fontSize: '0.75em', color: '#666' }}>
                     {portal.lat.toFixed(6)}, {portal.lng.toFixed(6)}
                 </div>

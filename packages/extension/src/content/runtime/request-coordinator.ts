@@ -3,8 +3,12 @@ import { IRISMessage } from './message-types';
 
 const PLEXT_COOLDOWN_MS = 5000;
 const PLEXT_POLL_MS = 120000;
-const AUXILIARY_POLL_MS = 60000;
-const AUXILIARY_STARTUP_DEDUP_MS = 5000;
+const ARTIFACTS_POLL_MS = 60000;
+const SUBSCRIPTION_POLL_MS = 60000;
+const INVENTORY_POLL_MS = 60000;
+const ARTIFACTS_STARTUP_DEDUP_MS = 5000;
+const SUBSCRIPTION_STARTUP_DEDUP_MS = 5000;
+const INVENTORY_STARTUP_DEDUP_MS = 5000;
 const STARTUP_GRACE_MS = 5000;
 const GAME_SCORE_TTL_MS = 10 * 60 * 1000;
 const REGION_SCORE_TTL_MS = 5 * 60 * 1000;
@@ -33,14 +37,19 @@ export function createRequestCoordinator(): RequestCoordinator {
     let startupGraceUntil = 0;
     let startupTimeoutId: number | null = null;
     let plextPollId: number | null = null;
-    let auxiliaryPollId: number | null = null;
+    let artifactsPollId: number | null = null;
+    let subscriptionPollId: number | null = null;
+    let inventoryPollId: number | null = null;
     let lastRegionScoreRequestKey: string | null = null;
 
     const postMessage = (message: Record<string, unknown>): void => {
         window.postMessage(message, '*');
     };
 
-    const isSessionExpired = (): boolean => useStore.getState().sessionStatus === 'expired';
+    const isSessionBlocked = (): boolean => {
+        const sessionStatus = useStore.getState().sessionStatus;
+        return sessionStatus === 'expired' || sessionStatus === 'initial_login_required';
+    };
     const isWithinStartupGrace = (): boolean => Date.now() < startupGraceUntil;
     const getEndpointDiagnostics = (key: 'artifacts' | 'subscription' | 'inventory' | 'plexts' | 'gameScore' | 'regionScore') =>
         useStore.getState().endpointDiagnostics[key];
@@ -51,22 +60,32 @@ export function createRequestCoordinator(): RequestCoordinator {
         return typeof lastSuccessAt === 'number' && Date.now() - lastSuccessAt < ttlMs;
     };
 
-    const scheduleAuxiliaryFetches = (): void => {
-        if (isSessionExpired()) return;
+    const scheduleArtifactsFetch = (): void => {
+        if (isSessionBlocked()) return;
 
-        if (!isEndpointInFlight('artifacts') && !isEndpointFresh('artifacts', AUXILIARY_STARTUP_DEDUP_MS)) {
+        if (!isEndpointInFlight('artifacts') && !isEndpointFresh('artifacts', ARTIFACTS_STARTUP_DEDUP_MS)) {
             postMessage({ type: 'IRIS_ARTIFACTS_FETCH' });
         }
+    };
 
-        if (!isEndpointInFlight('subscription') && !isEndpointFresh('subscription', AUXILIARY_STARTUP_DEDUP_MS)) {
+    const scheduleSubscriptionFetch = (): void => {
+        if (isSessionBlocked()) return;
+
+        if (!isEndpointInFlight('subscription') && !isEndpointFresh('subscription', SUBSCRIPTION_STARTUP_DEDUP_MS)) {
             postMessage({ type: 'IRIS_SUBSCRIPTION_FETCH' });
         }
+    };
 
-        postMessage({ type: 'IRIS_INVENTORY_FETCH', lastQueryTimestamp: -1 });
+    const scheduleInventoryFetch = (): void => {
+        if (isSessionBlocked()) return;
+
+        if (!isEndpointInFlight('inventory') && !isEndpointFresh('inventory', INVENTORY_STARTUP_DEDUP_MS)) {
+            postMessage({ type: 'IRIS_INVENTORY_FETCH', lastQueryTimestamp: -1 });
+        }
     };
 
     const schedulePlextPoll = (): void => {
-        if (isSessionExpired()) return;
+        if (isSessionBlocked()) return;
 
         postMessage({
             type: 'IRIS_PLEXTS_REQUEST',
@@ -76,13 +95,15 @@ export function createRequestCoordinator(): RequestCoordinator {
     };
 
     const runStartupCatchup = (): void => {
-        if (isSessionExpired()) return;
+        if (isSessionBlocked()) return;
 
         if (!isEndpointInFlight('plexts') && !isEndpointFresh('plexts', STARTUP_GRACE_MS)) {
             postPlextFetches({ minTimestampMs: -1 }, true);
         }
 
-        scheduleAuxiliaryFetches();
+        scheduleArtifactsFetch();
+        scheduleSubscriptionFetch();
+        scheduleInventoryFetch();
     };
 
     const buildPlextPayload = (msg: Pick<IRISMessage, 'tab' | 'minTimestampMs' | 'maxTimestampMs' | 'ascendingTimestampOrder'>): Record<string, unknown> | null => {
@@ -101,7 +122,7 @@ export function createRequestCoordinator(): RequestCoordinator {
         msg: Pick<IRISMessage, 'tab' | 'minTimestampMs' | 'maxTimestampMs' | 'ascendingTimestampOrder'>,
         bypassCooldown = false,
     ): void => {
-        if (isSessionExpired()) return;
+        if (isSessionBlocked()) return;
 
         const now = Date.now();
         if (!bypassCooldown && now - lastPlextRequestTime < PLEXT_COOLDOWN_MS) {
@@ -156,8 +177,16 @@ export function createRequestCoordinator(): RequestCoordinator {
                         plextPollId = window.setInterval(schedulePlextPoll, PLEXT_POLL_MS);
                     }
 
-                    if (auxiliaryPollId === null) {
-                        auxiliaryPollId = window.setInterval(scheduleAuxiliaryFetches, AUXILIARY_POLL_MS);
+                    if (artifactsPollId === null) {
+                        artifactsPollId = window.setInterval(scheduleArtifactsFetch, ARTIFACTS_POLL_MS);
+                    }
+
+                    if (subscriptionPollId === null) {
+                        subscriptionPollId = window.setInterval(scheduleSubscriptionFetch, SUBSCRIPTION_POLL_MS);
+                    }
+
+                    if (inventoryPollId === null) {
+                        inventoryPollId = window.setInterval(scheduleInventoryFetch, INVENTORY_POLL_MS);
                     }
                 }, STARTUP_GRACE_MS);
             }
@@ -174,9 +203,19 @@ export function createRequestCoordinator(): RequestCoordinator {
                 plextPollId = null;
             }
 
-            if (auxiliaryPollId !== null) {
-                window.clearInterval(auxiliaryPollId);
-                auxiliaryPollId = null;
+            if (artifactsPollId !== null) {
+                window.clearInterval(artifactsPollId);
+                artifactsPollId = null;
+            }
+
+            if (subscriptionPollId !== null) {
+                window.clearInterval(subscriptionPollId);
+                subscriptionPollId = null;
+            }
+
+            if (inventoryPollId !== null) {
+                window.clearInterval(inventoryPollId);
+                inventoryPollId = null;
             }
         },
 
@@ -205,11 +244,13 @@ export function createRequestCoordinator(): RequestCoordinator {
         },
 
         handleInventoryRequest(): void {
+            if (isSessionBlocked()) return;
+            if (isEndpointInFlight('inventory')) return;
             postMessage({ type: 'IRIS_INVENTORY_FETCH', lastQueryTimestamp: -1 });
         },
 
         handleGameScoreRequest(): void {
-            if (isSessionExpired()) return;
+            if (isSessionBlocked()) return;
             if (isEndpointInFlight('gameScore')) return;
             if (isEndpointFresh('gameScore', GAME_SCORE_TTL_MS)) return;
             postMessage({ type: 'IRIS_GAME_SCORE_FETCH' });
@@ -217,7 +258,7 @@ export function createRequestCoordinator(): RequestCoordinator {
 
         handleRegionScoreRequest(msg: IRISMessage): void {
             const { lat, lng } = msg as { lat: number; lng: number };
-            if (isSessionExpired()) return;
+            if (isSessionBlocked()) return;
 
             const latE6 = Math.round(lat * 1e6);
             const lngE6 = Math.round(lng * 1e6);
@@ -252,7 +293,7 @@ export function createRequestCoordinator(): RequestCoordinator {
                 useStore.getState().setCommSendError('Alerts is read-only. Switch to ALL or FACTION to send.');
                 return;
             }
-            if (isSessionExpired()) {
+            if (isSessionBlocked()) {
                 useStore.getState().setCommSendError('Intel sign-in required before COMM send can continue.');
                 return;
             }
@@ -273,7 +314,7 @@ export function createRequestCoordinator(): RequestCoordinator {
             const passcode = String(msg.passcode ?? '').trim();
             if (!passcode) return;
 
-            if (isSessionExpired()) {
+            if (isSessionBlocked()) {
                 useStore.getState().setPasscodeRedeemError('Intel sign-in required before passcode redemption can continue.');
                 return;
             }
