@@ -12,6 +12,7 @@ const MAX_RESO_ENERGY = [0, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000];
 export function PortalInfoPopup(): JSX.Element | null {
     const portals = useStore((state) => state.portals);
     const artifacts = useStore((state) => state.artifacts);
+    const links = useStore((state) => state.links);
     const selectedPortalId = useStore((state) => state.selectedPortalId);
     const portal = selectedPortalId ? portals[selectedPortalId] : null;
     const artifact = selectedPortalId ? artifacts[selectedPortalId] : null;
@@ -40,6 +41,11 @@ export function PortalInfoPopup(): JSX.Element | null {
         });
     }
 
+    const totalEnergy = (portal.resonators || []).reduce((sum, resonator) => sum + resonator.energy, 0);
+    const maxEnergy = (portal.resonators || []).reduce((sum, resonator) => sum + (MAX_RESO_ENERGY[resonator.level] || 0), 0);
+    const linksIn = Object.values(links).filter((link) => link.toPortalId === portal.id).length;
+    const linksOut = Object.values(links).filter((link) => link.fromPortalId === portal.id).length;
+
     const openPortalMissions = (): void => {
         document.dispatchEvent(
             new CustomEvent('iris:missions:open', { detail: { portalId: portal.id } })
@@ -49,7 +55,7 @@ export function PortalInfoPopup(): JSX.Element | null {
     return (
         <Popup
             onClose={() => selectPortal(null)}
-            title="Portal Details"
+            title={'Portal Details'}
             style={{
                 bottom: '20px',
                 left: '50%',
@@ -60,7 +66,7 @@ export function PortalInfoPopup(): JSX.Element | null {
                 boxShadow: `0 0 20px ${colour}55`,
             }}
         >
-            <div className="iris-portal-info">
+                <div className="iris-portal-info">
                 {portal.image && (
                     <div className="iris-portal-image-container">
                         <img
@@ -124,47 +130,38 @@ export function PortalInfoPopup(): JSX.Element | null {
                     </div>
                 )}
 
-                {portal.hasMissionsStartingHere && (
-                    <div style={{ marginBottom: '8px' }}>
-                        <button
-                            onClick={openPortalMissions}
-                            style={{
-                                background: 'transparent',
-                                border: `1px solid ${colour}`,
-                                color: colour,
-                                padding: '4px 8px',
-                                fontSize: '0.8em',
-                                cursor: 'pointer',
-                            }}
-                        >
-                            Missions Starting Here
-                        </button>
-                    </div>
-                )}
 
-                <div className="iris-portal-history-section">
+
+                <div className="iris-portal-mods-section" style={{ marginBottom: '8px' }}>
                     <div className="iris-portal-section-title" style={{ fontSize: '0.8em', color: '#888', marginBottom: '4px' }}>
-                        HISTORY
+                        MODS
                     </div>
-                    <div className="iris-portal-history-badges">
-                        <span
-                            className={`iris-portal-history-badge ${portal.visited ? 'iris-portal-history-badge-active' : 'iris-portal-history-badge-inactive'}`}
-                            style={{ borderColor: '#9B59B6', color: portal.visited ? '#9B59B6' : '#666' }}
-                        >
-                            Visited
-                        </span>
-                        <span
-                            className={`iris-portal-history-badge ${portal.captured ? 'iris-portal-history-badge-active' : 'iris-portal-history-badge-inactive'}`}
-                            style={{ borderColor: '#E74C3C', color: portal.captured ? '#E74C3C' : '#666' }}
-                        >
-                            Captured
-                        </span>
-                        <span
-                            className={`iris-portal-history-badge ${portal.scanned ? 'iris-portal-history-badge-active' : 'iris-portal-history-badge-inactive'}`}
-                            style={{ borderColor: '#F1C40F', color: portal.scanned ? '#F1C40F' : '#666' }}
-                        >
-                            Scanned
-                        </span>
+                    <div className="iris-portal-mods-grid">
+                        {allMods.map((m, i) => {
+                            if (!m) {
+                                return (
+                                    <div key={i} className="iris-portal-mod-item iris-portal-mod-empty" style={{
+                                        border: `1px dashed ${UI_COLORS.BORDER_DIM}`,
+                                        opacity: 0.5,
+                                        color: '#444',
+                                    }}>
+                                        <span className="iris-portal-mod-name">EMPTY</span>
+                                        <span className="iris-portal-mod-owner" style={{ color: 'transparent' }}>-</span>
+                                    </div>
+                                );
+                            }
+                            const modRarityColor = theme.RARITY[m.rarity] || UI_COLORS.BORDER_DIM;
+                            return (
+                                <div key={i} className="iris-portal-mod-item" style={{
+                                    border: `1px solid ${modRarityColor}`,
+                                }}>
+                                    <span className="iris-portal-mod-name" style={{ color: modRarityColor }}>
+                                        {m.rarity} {m.name}
+                                    </span>
+                                    <span className="iris-portal-mod-owner" style={{ color: colour }}>{m.owner}</span>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -185,8 +182,8 @@ export function PortalInfoPopup(): JSX.Element | null {
                                     </div>
                                 );
                             }
-                            const maxEnergy = MAX_RESO_ENERGY[r.level] || 1000;
-                            const healthPct = Math.round((r.energy / maxEnergy) * 100);
+                            const resonatorMaxEnergy = MAX_RESO_ENERGY[r.level] || 1000;
+                            const healthPct = Math.round((r.energy / resonatorMaxEnergy) * 100);
                             return (
                                 <div key={i} className="iris-portal-resonator-item" style={{
                                     border: `1px solid ${theme.LEVELS[r.level] || UI_COLORS.BORDER_DIM}`,
@@ -196,12 +193,12 @@ export function PortalInfoPopup(): JSX.Element | null {
                                         <span style={{ fontSize: '0.8em', color: '#00ff00', opacity: 0.8 }}>{healthPct}%</span>
                                     </div>
                                     <div className="iris-portal-resonator-owner" style={{ color: colour }}>{r.owner}</div>
-                                    <div 
-                                        className="iris-portal-resonator-health-bar" 
-                                        style={{ 
+                                    <div
+                                        className="iris-portal-resonator-health-bar"
+                                        style={{
                                             width: `${healthPct}%`,
                                             background: healthPct > 50 ? '#00ff00' : (healthPct > 20 ? '#ffff00' : '#ff0000')
-                                        }} 
+                                        }}
                                     />
                                 </div>
                             );
@@ -209,39 +206,71 @@ export function PortalInfoPopup(): JSX.Element | null {
                     </div>
                 </div>
 
-                <div className="iris-portal-mods-section" style={{ marginBottom: '8px' }}>
+                <div className="iris-portal-details-section" style={{ marginBottom: '8px' }}>
                     <div className="iris-portal-section-title" style={{ fontSize: '0.8em', color: '#888', marginBottom: '4px' }}>
-                        MODS
+                        DETAILS
                     </div>
-                    <div className="iris-portal-mods-list" style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                        {allMods.map((m, i) => {
-                            if (!m) {
-                                return (
-                                    <div key={i} className="iris-portal-mod-item iris-portal-mod-empty" style={{
-                                        border: `1px dashed ${UI_COLORS.BORDER_DIM}`,
-                                        opacity: 0.5,
-                                        justifyContent: 'center',
-                                        color: '#444',
-                                    }}>
-                                        EMPTY SLOT
-                                    </div>
-                                );
-                            }
-                            const modRarityColor = theme.RARITY[m.rarity] || UI_COLORS.BORDER_DIM;
-                            return (
-                                <div key={i} className="iris-portal-mod-item" style={{
-                                    border: `1px solid ${modRarityColor}`,
-                                }}>
-                                    <span className="iris-portal-mod-info" style={{ color: modRarityColor }}>
-                                        {m.rarity} {m.name}
-                                    </span>
-                                    <span className="iris-portal-mod-owner" style={{ color: colour }}>{m.owner}</span>
-                                </div>
-                            );
-                        })}
+                    <div className="iris-portal-details-table">
+                        <div className="iris-portal-details-row">
+                            <span className="iris-portal-details-label">Energy</span>
+                            <span className="iris-portal-details-value">
+                                <span style={{ color: '#00ff00' }}>{totalEnergy.toLocaleString()}</span>
+                                {maxEnergy > 0 && <span style={{ color: UI_COLORS.TEXT_MUTED }}> / {maxEnergy.toLocaleString()}</span>}
+                            </span>
+                        </div>
+                        <div className="iris-portal-details-row">
+                            <span className="iris-portal-details-label">Links In</span>
+                            <span className="iris-portal-details-value" style={{ color: colour }}>{linksIn}</span>
+                        </div>
+                        <div className="iris-portal-details-row">
+                            <span className="iris-portal-details-label">Links Out</span>
+                            <span className="iris-portal-details-value" style={{ color: colour }}>{linksOut}</span>
+                        </div>
                     </div>
                 </div>
 
+                    {portal.hasMissionsStartingHere && (
+                        <div style={{ marginBottom: '8px' }}>
+                            <button
+                                onClick={openPortalMissions}
+                                style={{
+                                    background: 'transparent',
+                                    border: `1px solid ${colour}`,
+                                    color: colour,
+                                    padding: '4px 8px',
+                                    fontSize: '0.8em',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                Missions Starting Here
+                            </button>
+                        </div>
+                    )}
+                    <div className="iris-portal-history-section">
+                        <div className="iris-portal-section-title" style={{ fontSize: '0.8em', color: '#888', marginBottom: '4px' }}>
+                            HISTORY
+                        </div>
+                        <div className="iris-portal-history-badges">
+                        <span
+                            className={`iris-portal-history-badge ${portal.visited ? 'iris-portal-history-badge-active' : 'iris-portal-history-badge-inactive'}`}
+                            style={{ borderColor: '#9B59B6', color: portal.visited ? '#9B59B6' : '#666' }}
+                        >
+                            Visited
+                        </span>
+                            <span
+                                className={`iris-portal-history-badge ${portal.captured ? 'iris-portal-history-badge-active' : 'iris-portal-history-badge-inactive'}`}
+                                style={{ borderColor: '#E74C3C', color: portal.captured ? '#E74C3C' : '#666' }}
+                            >
+                            Captured
+                        </span>
+                            <span
+                                className={`iris-portal-history-badge ${portal.scanned ? 'iris-portal-history-badge-active' : 'iris-portal-history-badge-inactive'}`}
+                                style={{ borderColor: '#F1C40F', color: portal.scanned ? '#F1C40F' : '#666' }}
+                            >
+                            Scanned
+                        </span>
+                        </div>
+                    </div>
                 <div className="iris-portal-coords" style={{ marginTop: '4px', fontSize: '0.75em', color: '#666' }}>
                     {portal.lat.toFixed(6)}, {portal.lng.toFixed(6)}
                 </div>

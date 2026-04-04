@@ -29,6 +29,7 @@
 
 .iris-portal-stats {
     display: flex;
+    flex-wrap: wrap;
     gap: 16px;
     font-size: 0.85em;
     color: #aaaaaa;
@@ -88,14 +89,69 @@
     white-space: nowrap;
 }
 
+.iris-portal-mods-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+}
+
 .iris-portal-mod-item {
     background: #111;
     border-radius: 3px;
-    padding: 3px 6px;
+    padding: 4px 5px;
     font-size: 0.75em;
     border: 1px solid #333;
     display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-height: 52px;
+}
+
+.iris-portal-mod-name {
+    line-height: 1.2;
+    word-break: break-word;
+}
+
+.iris-portal-mod-owner {
+    font-size: 0.9em;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.iris-portal-details-table {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border: 1px solid #222;
+    border-radius: 4px;
+    background: #111;
+    overflow: hidden;
+}
+
+.iris-portal-details-row {
+    display: flex;
+    align-items: center;
     justify-content: space-between;
+    gap: 12px;
+    padding: 5px 8px;
+    border-bottom: 1px solid #1c1c1c;
+}
+
+.iris-portal-details-row:last-child {
+    border-bottom: none;
+}
+
+.iris-portal-details-label {
+    color: #888;
+    font-size: 0.78em;
+}
+
+.iris-portal-details-value {
+    color: #d6d6d6;
+    font-size: 0.8em;
+    text-align: right;
 }
 
 .iris-rarity-very-common { color: #ffffff; }
@@ -105,6 +161,10 @@
 .iris-rarity-extremely-rare { color: #ff0000; }
 
 @media (max-width: 600px) {
+    .iris-portal-mods-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
     .iris-portal-resonators-grid {
         grid-template-columns: repeat(2, 1fr);
     }

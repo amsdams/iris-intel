@@ -113,3 +113,23 @@
     border-top: 1px solid #333;
     margin: 4px 0;
 }
+
+@media (max-width: 600px) {
+    .iris-topbar {
+        gap: 6px;
+    }
+
+    .iris-location-search {
+        max-width: none;
+    }
+
+    .iris-search-input {
+        font-size: 0.8em;
+        padding: 4px 5px;
+    }
+
+    .iris-menu-dropdown {
+        min-width: 140px;
+        max-width: 75vw;
+    }
+}

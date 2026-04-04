@@ -71,7 +71,7 @@ function LocationSearch(): JSX.Element {
             );
             const data = await res.json() as NominatimResult[];
             if (!data.length) {
-                setError('Location not found');
+                setError('Place not found');
                 return;
             }
             if (data.length === 1) {
@@ -80,7 +80,7 @@ function LocationSearch(): JSX.Element {
             }
             setResults(data);
         } catch {
-            setError('Search failed');
+            setError('Map search failed');
         } finally {
             setSearching(false);
         }
@@ -106,7 +106,7 @@ function LocationSearch(): JSX.Element {
                     className="iris-search-input"
                     onInput={(e) => setQuery((e.target as HTMLInputElement).value)}
                     onKeyDown={onKeyDown}
-                    placeholder="Search location..."
+                    placeholder="Place or lat,lng"
                     style={{
                         color: theme.AQUA,
                         borderColor: theme.AQUA,
