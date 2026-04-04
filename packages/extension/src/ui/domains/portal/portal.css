@@ -19,21 +19,45 @@
     border: 1px solid #333;
 }
 
-.iris-portal-name {
-    font-size: 1em;
-    font-weight: bold;
+.iris-portal-summary-table {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
     margin-bottom: 8px;
-    padding-right: 20px;
-    line-height: 1.3;
 }
 
-.iris-portal-stats {
+.iris-portal-summary-col {
     display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-    font-size: 0.85em;
-    color: #aaaaaa;
-    margin-bottom: 4px;
+    flex-direction: column;
+    gap: 2px;
+    border: 1px solid #222;
+    border-radius: 4px;
+    background: #111;
+    overflow: hidden;
+}
+
+.iris-portal-summary-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 5px 8px;
+    border-bottom: 1px solid #1c1c1c;
+}
+
+.iris-portal-summary-row:last-child {
+    border-bottom: none;
+}
+
+.iris-portal-summary-label {
+    color: #888;
+    font-size: 0.78em;
+}
+
+.iris-portal-summary-value {
+    color: #d6d6d6;
+    font-size: 0.8em;
+    text-align: right;
 }
 
 .iris-portal-history-section {
@@ -120,6 +144,12 @@
     white-space: nowrap;
 }
 
+.iris-portal-details-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
 .iris-portal-details-table {
     display: flex;
     flex-direction: column;
@@ -161,6 +191,14 @@
 .iris-rarity-extremely-rare { color: #ff0000; }
 
 @media (max-width: 600px) {
+    .iris-portal-summary-table {
+        grid-template-columns: 1fr;
+    }
+
+    .iris-portal-details-grid {
+        grid-template-columns: 1fr;
+    }
+
     .iris-portal-mods-grid {
         grid-template-columns: repeat(2, 1fr);
     }
