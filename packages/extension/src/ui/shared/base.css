@@ -16,6 +16,17 @@
     --iris-border-dim: var(--iris-border);
     --iris-text-muted: var(--iris-text-secondary);
     --iris-bg-base: rgba(0, 0, 0, 0.92);
+
+    /* Dynamic Properties (Defined here to resolve IDE warnings) */
+    --iris-faction-color: #ffffff;
+    --iris-faction-shadow-color: rgba(0, 255, 255, 0.33);
+    --iris-level-color: #ffff00;
+    --iris-reso-color: #333333;
+    --iris-mod-rarity-color: #333333;
+    --iris-health-pct: 0%;
+    --iris-health-color: #00ff00;
+    --iris-comm-color: var(--iris-accent);
+    --iris-item-color: #ffffff;
 }
 
 .iris-overlay-root *,
@@ -247,6 +258,35 @@
     cursor: not-allowed;
     opacity: 0.5;
 }
+
+/* Utilities */
+.iris-flex { display: flex; }
+.iris-flex-col { display: flex; flex-direction: column; }
+.iris-flex-row { display: flex; flex-direction: row; }
+.iris-flex-center { align-items: center; justify-content: center; }
+.iris-flex-between { justify-content: space-between; }
+.iris-flex-align-center { align-items: center; }
+.iris-flex-wrap { flex-wrap: wrap; }
+.iris-flex-1 { flex: 1; }
+
+.iris-gap-1 { gap: 4px; }
+.iris-gap-2 { gap: 8px; }
+.iris-gap-3 { gap: 12px; }
+.iris-gap-4 { gap: 16px; }
+
+.iris-mt-1 { margin-top: 4px; }
+.iris-mt-2 { margin-top: 8px; }
+.iris-mb-1 { margin-bottom: 4px; }
+.iris-mb-2 { margin-bottom: 8px; }
+
+.iris-text-small { font-size: 0.8em; }
+.iris-text-tiny { font-size: 0.7em; }
+.iris-text-bold { font-weight: bold; }
+.iris-text-muted { color: var(--iris-text-muted); }
+.iris-text-primary { color: var(--iris-text-primary); }
+.iris-text-accent { color: var(--iris-accent); }
+
+.iris-hidden { display: none; }
 
 @media (max-width: 600px) {
     .iris-popup {

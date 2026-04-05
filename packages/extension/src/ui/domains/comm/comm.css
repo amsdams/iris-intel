@@ -86,6 +86,7 @@
 .iris-comm-markup-link {
     cursor: pointer;
     text-decoration: underline;
+    color: var(--iris-comm-color, var(--iris-aqua));
 }
 
 .iris-comm-portal-address {
@@ -133,4 +134,33 @@
     color: #ff8080;
     font-size: 0.75em;
     margin-bottom: 6px;
+}
+
+.iris-comm-popup-custom {
+    top: 50px;
+    right: 10px;
+    left: 10px;
+    width: auto;
+    max-width: 450px;
+    height: calc(80vh - 60px);
+    margin-left: auto;
+}
+
+.iris-comm-markup-text {
+    color: var(--iris-text-base);
+}
+
+.iris-comm-markup-player,
+.iris-comm-markup-sender,
+.iris-comm-markup-at_player {
+    font-weight: bold;
+    color: var(--iris-comm-color, var(--iris-text-primary));
+}
+
+.iris-comm-markup-secure {
+    color: #ffff00;
+}
+
+.iris-comm-markup-unknown {
+    color: var(--iris-text-base);
 }

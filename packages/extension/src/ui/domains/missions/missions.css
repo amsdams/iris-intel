@@ -1,3 +1,21 @@
+.iris-missions-popup-custom {
+  top: 90px;
+  left: 20px;
+  min-width: 320px;
+  max-width: 420px;
+  border: 2px solid var(--iris-accent, #00ffff);
+  box-shadow: 0 0 20px rgba(var(--iris-accent-rgb, 0, 255, 255), 0.33);
+}
+
+.iris-mission-details-popup-custom {
+  top: 90px;
+  right: 20px;
+  min-width: 320px;
+  max-width: 420px;
+  border: 2px solid var(--iris-accent, #00ffff);
+  box-shadow: 0 0 20px rgba(var(--iris-accent-rgb, 0, 255, 255), 0.33);
+}
+
 .iris-mission-info {
   display: flex;
   flex-direction: column;
@@ -27,6 +45,7 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  color: var(--iris-accent, #00ffff);
 }
 
 .iris-missions-count,
@@ -39,6 +58,7 @@
 .iris-missions-context {
   font-size: 0.9em;
   font-weight: 700;
+  color: var(--iris-accent, #00ffff);
 }
 
 .iris-mission-logo {
@@ -53,6 +73,7 @@
   font-size: 1.1em;
   font-weight: 700;
   text-align: center;
+  color: var(--iris-accent, #00ffff);
 }
 
 .iris-mission-meta,
@@ -82,6 +103,10 @@
   flex-wrap: wrap;
   gap: 8px 12px;
   color: var(--iris-text-secondary);
+}
+
+.iris-mission-summary-item span {
+  color: var(--iris-accent, #00ffff);
 }
 
 .iris-mission-description {
@@ -133,6 +158,8 @@
   font-size: 0.8em;
   font-weight: 700;
   flex: 0 0 auto;
+  border-color: var(--iris-accent, #00ffff);
+  color: var(--iris-accent, #00ffff);
 }
 
 .iris-mission-waypoint-body {
@@ -172,6 +199,7 @@
 .iris-missions-loading,
 .iris-missions-loading-inline {
   font-size: 0.82em;
+  color: var(--iris-accent, #00ffff);
 }
 
 .iris-mission-list-item {
@@ -218,6 +246,7 @@
   font-size: 0.95em;
   font-weight: 700;
   line-height: 1.2;
+  color: var(--iris-accent, #00ffff);
 }
 
 .iris-mission-list-meta {
@@ -230,6 +259,7 @@
 
 .iris-mission-author {
   font-weight: 700;
+  color: var(--iris-accent, #00ffff);
 }
 
 .iris-mission-author::before {

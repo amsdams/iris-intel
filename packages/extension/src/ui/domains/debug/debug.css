@@ -17,7 +17,7 @@
 
 .iris-debug-stat-label {
     font-weight: bold;
-    color: #00ffff;
+    color: var(--iris-accent, #00ffff);
     margin-top: 4px;
 }
 
@@ -25,13 +25,51 @@
     margin-left: 8px;
 }
 
+.iris-debug-address-section {
+    margin-top: 4px;
+}
+
+.iris-debug-address-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.iris-debug-address-label {
+    font-size: 0.85em;
+}
+
+.iris-debug-address-stale {
+    font-size: 0.75em;
+    color: #ffaa00;
+    font-style: italic;
+}
+
+.iris-debug-address-resolving {
+    font-size: 0.75em;
+    color: var(--iris-accent, #00ffff);
+}
+
+.iris-debug-address-wait {
+    font-size: 0.75em;
+    color: var(--iris-text-muted, #aaaaaa);
+}
+
 .iris-debug-discovered-location {
     margin-left: 8px;
     font-size: 0.9em;
-    color: #aaa;
+    color: var(--iris-text-muted, #aaa);
     font-style: italic;
     word-wrap: break-word;
     white-space: normal;
+}
+
+.iris-debug-location-stale {
+    opacity: 0.6;
+}
+
+.iris-debug-location-unknown {
+    opacity: 0.5;
 }
 
 .iris-debug-divider {

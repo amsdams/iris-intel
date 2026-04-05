@@ -16,7 +16,7 @@
     max-width: 100%;
     height: 140px;
     object-fit: cover;
-    border: 1px solid #333;
+    border: 1px solid var(--iris-faction-color);
 }
 
 .iris-portal-summary-table {
@@ -60,6 +60,18 @@
     text-align: right;
 }
 
+.iris-portal-summary-value-faction {
+    color: var(--iris-faction-color);
+}
+
+.iris-portal-summary-value-level {
+    color: var(--iris-level-color, #ffff00);
+}
+
+.iris-portal-summary-value-health {
+    color: #00ff00;
+}
+
 .iris-portal-history-section {
     margin-bottom: 8px;
 }
@@ -76,7 +88,17 @@
     padding: 2px 8px;
     font-size: 0.75em;
     background: #111;
+    color: #666;
 }
+
+.iris-portal-history-badge-visited { border-color: #9B59B6; }
+.iris-portal-history-badge-visited.iris-portal-history-badge-active { color: #9B59B6; }
+
+.iris-portal-history-badge-captured { border-color: #E74C3C; }
+.iris-portal-history-badge-captured.iris-portal-history-badge-active { color: #E74C3C; }
+
+.iris-portal-history-badge-scanned { border-color: #F1C40F; }
+.iris-portal-history-badge-scanned.iris-portal-history-badge-active { color: #F1C40F; }
 
 .iris-portal-history-badge-inactive {
     opacity: 0.6;
@@ -93,9 +115,14 @@
     border-radius: 3px;
     padding: 3px 4px;
     font-size: 0.75em;
-    border: 1px solid #333;
+    border: 1px solid var(--iris-reso-color, #333);
     overflow: hidden;
     position: relative;
+}
+
+.iris-portal-resonator-level {
+    color: var(--iris-reso-color, #333);
+    font-weight: bold;
 }
 
 .iris-portal-resonator-health-bar {
@@ -103,7 +130,8 @@
     bottom: 0;
     left: 0;
     height: 2px;
-    background: #00ff00;
+    width: var(--iris-health-pct, 0%);
+    background: var(--iris-health-color, #00ff00);
     transition: width 0.3s ease;
 }
 
@@ -111,6 +139,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    color: var(--iris-faction-color);
 }
 
 .iris-portal-mods-grid {
@@ -124,7 +153,7 @@
     border-radius: 3px;
     padding: 4px 5px;
     font-size: 0.75em;
-    border: 1px solid #333;
+    border: 1px solid var(--iris-mod-rarity-color, #333);
     display: flex;
     flex-direction: column;
     gap: 3px;
@@ -134,6 +163,7 @@
 .iris-portal-mod-name {
     line-height: 1.2;
     word-break: break-word;
+    color: var(--iris-mod-rarity-color, #333);
 }
 
 .iris-portal-mod-owner {
@@ -142,6 +172,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    color: var(--iris-faction-color);
 }
 
 .iris-portal-details-grid {
@@ -184,11 +215,128 @@
     text-align: right;
 }
 
+.iris-portal-details-value-faction {
+    color: var(--iris-faction-color);
+}
+
+.iris-portal-energy-current {
+    color: #00ff00;
+}
+
+.iris-portal-energy-max {
+    color: #666;
+}
+
 .iris-rarity-very-common { color: #ffffff; }
 .iris-rarity-common { color: #ffffff; }
 .iris-rarity-rare { color: #ff00ff; }
 .iris-rarity-very-rare { color: #b000ff; }
 .iris-rarity-extremely-rare { color: #ff0000; }
+
+.iris-portal-popup-custom {
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 300px;
+    max-width: 420px;
+    border: 2px solid var(--iris-faction-color);
+    box-shadow: 0 0 20px var(--iris-faction-shadow-color, rgba(0, 255, 255, 0.33));
+}
+
+.iris-portal-name {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 8px;
+    line-height: 1.2;
+    color: var(--iris-faction-color);
+}
+
+.iris-portal-artifact-section {
+    margin-top: 8px;
+    margin-bottom: 8px;
+    padding: 8px;
+    border: 1px solid #f0f;
+    background: rgba(255, 0, 255, 0.1);
+    border-radius: 4px;
+}
+
+.iris-portal-artifact-title {
+    font-size: 0.8em;
+    color: #f0f;
+    margin-bottom: 4px;
+    font-weight: bold;
+}
+
+.iris-portal-artifact-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.iris-portal-artifact-badge {
+    font-size: 0.8em;
+    color: #f0f;
+    background: rgba(255, 0, 255, 0.2);
+    padding: 2px 6px;
+    border-radius: 2px;
+    border: 1px solid rgba(255, 0, 255, 0.5);
+}
+
+.iris-portal-section-title {
+    font-size: 0.8em;
+    color: #888;
+    margin-bottom: 4px;
+}
+
+.iris-portal-mods-section {
+    margin-bottom: 8px;
+}
+
+.iris-portal-mod-item-empty {
+    opacity: 0.5;
+    color: #444;
+}
+
+.iris-portal-resonators-section {
+    margin-bottom: 8px;
+}
+
+.iris-portal-resonator-item-empty {
+    opacity: 0.5;
+    color: #444;
+}
+
+.iris-portal-resonator-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.iris-portal-resonator-health-text {
+    font-size: 0.8em;
+    color: #00ff00;
+    opacity: 0.8;
+}
+
+.iris-portal-details-section {
+    margin-bottom: 8px;
+}
+
+.iris-portal-missions-button {
+    background: transparent;
+    padding: 4px 8px;
+    font-size: 0.8em;
+    cursor: pointer;
+    margin-bottom: 8px;
+    border: 1px solid var(--iris-faction-color);
+    color: var(--iris-faction-color);
+}
+
+.iris-portal-coords {
+    margin-top: 4px;
+    font-size: 0.75em;
+    color: #666;
+}
 
 @media (max-width: 600px) {
     .iris-portal-summary-table {

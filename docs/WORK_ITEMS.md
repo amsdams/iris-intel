@@ -280,10 +280,29 @@ Tasks:
 | Storage boundary design pass | Open | document or introduce clearer storage-service boundary |
 
 ## Semantic UI Cleanup
-Status: `Open`
+Status: `In Progress`
 
 Goal:
 - move semantic colors and UI semantics into clearer shared modules
+
+### UI components follow a CSS-first styling policy
+Status: `In Progress`
+
+Outcome:
+- eliminate inline `style={{...}}` blocks for static layout and design
+- improve reusability and theming consistency across the monorepo
+- enable advanced CSS features (hover, active, media queries) for all components
+
+Tasks:
+
+| Task | Status | Notes |
+| --- | --- | --- |
+| Add className support to base Popup component | Done | verified in Debug and Map themes |
+| Refactor State Debug Popup to pure CSS | Done | migrated to debug.css |
+| Refactor Portal Info Popup to pure CSS | Done | migrated to portal.css; uses CSS variables for faction/level colors |
+| Refactor COMM / Passcode Popups to pure CSS | Done | migrated to comm.css and passcodes.css |
+| Refactor Inventory / Missions Popups to pure CSS | Done | migrated to inventory.css and missions.css |
+| Standardize common utility classes in base.css | Done | added flex, gap, margin, and text utilities |
 
 ### Semantic colors are shared instead of locally improvised
 Status: `Open`

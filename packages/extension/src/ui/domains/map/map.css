@@ -1,3 +1,10 @@
+.iris-map-theme-popup-custom {
+  top: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+}
+
 .iris-map-themes {
   display: flex;
   flex-direction: column;

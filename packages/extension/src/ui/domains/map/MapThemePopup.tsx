@@ -2,6 +2,7 @@ import { h, JSX } from 'preact';
 import { useStore } from '@iris/core';
 import { Popup } from '../../shared/Popup';
 import { MAP_THEMES } from '../../theme';
+import './map.css';
 
 interface MapThemePopupProps {
     onClose: () => void;
@@ -15,12 +16,7 @@ export function MapThemePopup({ onClose }: MapThemePopupProps): JSX.Element {
         <Popup
             onClose={onClose}
             title="Map Theme"
-            style={{
-                top: '100px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: '300px',
-            }}
+            className="iris-map-theme-popup-custom"
         >
             <div className="iris-map-themes">
                 {Object.keys(MAP_THEMES).map((id) => (

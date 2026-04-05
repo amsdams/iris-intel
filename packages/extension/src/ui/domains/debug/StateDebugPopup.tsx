@@ -3,6 +3,7 @@ import { useState, useEffect } from 'preact/hooks';
 import { useStore } from '@iris/core';
 import { Popup } from '../../shared/Popup';
 import { IRIS_VERSION_LABEL } from '../../../version';
+import './debug.css';
 
 // ---------------------------------------------------------------------------
 // StateDebugPopup
@@ -74,19 +75,19 @@ export function StateDebugPopup({ onClose }: StateDebugPopupProps): JSX.Element 
                     <p className="iris-debug-stat-item iris-debug-stat-value">Lng: {mapState.lng.toFixed(6)}</p>
                     <p className="iris-debug-stat-item iris-debug-stat-value">Zoom: {mapState.zoom}</p>
                     
-                    <div style={{ marginTop: '4px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <p className="iris-debug-stat-item iris-debug-stat-label" style={{ fontSize: '0.85em' }}>Address:</p>
-                            {isStale && <span style={{ fontSize: '0.75em', color: '#ffaa00', fontStyle: 'italic' }}>(stale)</span>}
-                            {addressStatus === 'resolving' && <span style={{ fontSize: '0.75em', color: '#00ffff' }}>Resolving...</span>}
-                            {countdown !== null && <span style={{ fontSize: '0.75em', color: '#aaaaaa' }}>Wait: {(countdown / 1000).toFixed(1)}s</span>}
+                    <div className="iris-debug-address-section">
+                        <div className="iris-debug-address-header">
+                            <p className="iris-debug-stat-item iris-debug-stat-label iris-debug-address-label">Address:</p>
+                            {isStale && <span className="iris-debug-address-stale">(stale)</span>}
+                            {addressStatus === 'resolving' && <span className="iris-debug-address-resolving">Resolving...</span>}
+                            {countdown !== null && <span className="iris-debug-address-wait">Wait: {(countdown / 1000).toFixed(1)}s</span>}
                         </div>
                         {discoveredLocation ? (
-                            <p className="iris-debug-stat-item iris-debug-discovered-location" style={{ opacity: isStale ? 0.6 : 1 }}>
+                            <p className={`iris-debug-stat-item iris-debug-discovered-location ${isStale ? 'iris-debug-location-stale' : ''}`}>
                                 {discoveredLocation}
                             </p>
                         ) : (
-                            <p className="iris-debug-stat-item iris-debug-discovered-location" style={{ opacity: 0.5 }}>
+                            <p className="iris-debug-stat-item iris-debug-discovered-location iris-debug-location-unknown">
                                 (unknown)
                             </p>
                         )}

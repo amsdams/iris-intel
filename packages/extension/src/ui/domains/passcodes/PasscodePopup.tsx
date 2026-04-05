@@ -37,13 +37,9 @@ export function PasscodePopup({ onClose }: PasscodePopupProps): JSX.Element {
     <Popup
       onClose={close}
       title="Passcode"
+      className="iris-passcode-popup-custom"
       style={{
-        top: '90px',
-        left: '20px',
-        minWidth: '320px',
-        maxWidth: '420px',
-        border: `2px solid ${theme.AQUA}`,
-        boxShadow: `0 0 20px ${theme.AQUA}55`,
+        ['--iris-accent' as any]: theme.AQUA,
       }}
     >
       <div className="iris-passcode-panel">
@@ -79,7 +75,7 @@ export function PasscodePopup({ onClose }: PasscodePopupProps): JSX.Element {
 
         {rewards && (
           <div className="iris-passcode-results">
-            <div className="iris-passcode-results-title" style={{ color: theme.AQUA }}>
+            <div className="iris-passcode-results-title">
               Passcode confirmed. Acquired items:
             </div>
             <ul className="iris-passcode-reward-list">

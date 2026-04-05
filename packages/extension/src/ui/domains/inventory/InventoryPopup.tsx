@@ -170,14 +170,9 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
                     REFRESH
                 </button>
             }
+            className="iris-inventory-popup-custom"
             style={{
-                top: '50px',
-                right: '10px',
-                left: '10px',
-                width: 'auto',
-                maxWidth: '450px',
-                height: 'calc(80vh - 60px)',
-                marginLeft: 'auto',
+                ['--iris-accent' as any]: theme.AQUA,
             }}
         >
             {!hasSubscription ? (
@@ -190,7 +185,7 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
             ) : (
                 <div className="iris-inventory">
                     <div className="iris-inventory-total">
-                        TOTAL: <span style={{ color: theme.AQUA, fontWeight: 'bold' }}>{totalCount}</span> / 2500
+                        TOTAL: <span className="iris-inventory-total-value">{totalCount}</span> / 2500
                     </div>
 
                     <div className="iris-inventory-tabs">
@@ -223,7 +218,10 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
                                         <tr key={idx}>
                                             <td>
                                                 <div className="iris-inventory-item-name">
-                                                    <span style={{ color: getItemColor(item) }}>
+                                                    <span 
+                                                        className="iris-inventory-item-name-value"
+                                                        style={{ ['--iris-item-color' as any]: getItemColor(item) }}
+                                                    >
                                                         {item.name}
                                                         {item.level && <span className="iris-inventory-item-level"> [L{item.level}]</span>}
                                                         {item.rarity && <span className="iris-inventory-item-rarity"> ({item.rarity.replace(/_/g, ' ')})</span>}
@@ -231,7 +229,7 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td style={{ color: theme.AQUA }}>
+                                            <td>
                                                 {item.count}
                                             </td>
                                         </tr>

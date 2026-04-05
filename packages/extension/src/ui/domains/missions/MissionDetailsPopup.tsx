@@ -1,7 +1,8 @@
 import { h, JSX } from 'preact';
 import { useStore } from '@iris/core';
 import { Popup } from '../../shared/Popup';
-import { THEMES, UI_COLORS } from '../../theme';
+import { THEMES } from '../../theme';
+import './missions.css';
 
 const WAYPOINT_TYPE_LABELS: Record<number, string> = {
   1: 'Portal',
@@ -56,18 +57,14 @@ export function MissionDetailsPopup(): JSX.Element | null {
     <Popup
       onClose={() => clearMission(null)}
       title="Mission Details"
+      className="iris-mission-details-popup-custom"
       style={{
-        top: '90px',
-        right: '20px',
-        minWidth: '320px',
-        maxWidth: '420px',
-        border: `2px solid ${theme.AQUA}`,
-        boxShadow: `0 0 20px ${theme.AQUA}55`,
+        ['--iris-accent' as any]: theme.AQUA,
       }}
     >
       <div className="iris-mission-info">
         <div className="iris-mission-header-card">
-          <div className="iris-mission-source" style={{ color: theme.AQUA }}>
+          <div className="iris-mission-source">
             {missionsPortalId ? 'Portal Mission Details' : 'Mission Details'}
           </div>
           {missionsPortalId && portalName && (
@@ -85,14 +82,14 @@ export function MissionDetailsPopup(): JSX.Element | null {
           />
         )}
 
-        <div className="iris-mission-title" style={{ color: theme.AQUA }}>
+        <div className="iris-mission-title">
           {mission.title}
         </div>
 
         {mission.author && (
           <div className="iris-mission-meta iris-mission-meta-inline">
             <span>Author</span>
-            <span className="iris-mission-author" style={{ color: theme.AQUA }}>
+            <span className="iris-mission-author">
               {mission.author}
             </span>
           </div>
@@ -101,25 +98,25 @@ export function MissionDetailsPopup(): JSX.Element | null {
         <div className="iris-mission-summary">
           {mission.rating !== undefined && (
             <div className="iris-mission-summary-item">
-              Rating: <span style={{ color: theme.AQUA }}>{(mission.rating * 100).toFixed(0)}%</span>
+              Rating: <span>{(mission.rating * 100).toFixed(0)}%</span>
             </div>
           )}
           {mission.medianCompletionTime && (
             <div className="iris-mission-summary-item">
-              Time: <span style={{ color: theme.AQUA }}>{mission.medianCompletionTime}</span>
+              Time: <span>{mission.medianCompletionTime}</span>
             </div>
           )}
           {mission.participants !== undefined && (
             <div className="iris-mission-summary-item">
-              Players: <span style={{ color: theme.AQUA }}>{mission.participants}</span>
+              Players: <span>{mission.participants}</span>
             </div>
           )}
           <div className="iris-mission-summary-item">
-            Waypoints: <span style={{ color: theme.AQUA }}>{visibleWaypoints.length}</span>
+            Waypoints: <span>{visibleWaypoints.length}</span>
           </div>
           {hiddenWaypointCount > 0 && (
             <div className="iris-mission-summary-item">
-              Hidden: <span style={{ color: theme.AQUA }}>{hiddenWaypointCount}</span>
+              Hidden: <span>{hiddenWaypointCount}</span>
             </div>
           )}
         </div>
@@ -133,7 +130,7 @@ export function MissionDetailsPopup(): JSX.Element | null {
         <div className="iris-mission-waypoints">
           <div className="iris-mission-section-title">WAYPOINTS ({visibleWaypoints.length})</div>
           {hiddenWaypointCount > 0 && (
-            <div className="iris-mission-waypoint-note" style={{ color: UI_COLORS.TEXT_MUTED }}>
+            <div className="iris-mission-waypoint-note">
               Hidden waypoints are omitted until Intel reveals them.
             </div>
           )}
@@ -147,7 +144,7 @@ export function MissionDetailsPopup(): JSX.Element | null {
               }`}
               onClick={() => focusWaypoint(waypoint)}
             >
-              <div className="iris-mission-waypoint-index" style={{ borderColor: theme.AQUA, color: theme.AQUA }}>
+              <div className="iris-mission-waypoint-index">
                 {waypoint.index + 1}
               </div>
               <div className="iris-mission-waypoint-body">
@@ -161,7 +158,7 @@ export function MissionDetailsPopup(): JSX.Element | null {
                     {waypoint.lat.toFixed(6)}, {waypoint.lng.toFixed(6)}
                   </div>
                 ) : (
-                  <div className="iris-mission-waypoint-coords" style={{ color: UI_COLORS.TEXT_MUTED }}>
+                  <div className="iris-mission-waypoint-coords">
                     No map coordinates in payload
                   </div>
                 )}

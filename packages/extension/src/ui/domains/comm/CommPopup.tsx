@@ -133,22 +133,30 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
     const renderMarkupSegment = (m: MarkupSegment, i: number): JSX.Element | null => {
         const type = m[0];
         const data = m[1];
-        let color = UI_COLORS.TEXT_BASE;
+        let color = '';
         let text = typeof data === 'string' ? data : (data.plain || data.name || '');
 
         if (type === 'FACTION') return null;
 
         if (type === 'TEXT') {
-            return <span key={i} className="iris-comm-markup iris-comm-markup-text" style={{ color }}>{String(text || '')}</span>;
+            return <span key={i} className="iris-comm-markup iris-comm-markup-text">{String(text || '')}</span>;
         }
 
         if (type === 'PLAYER' || type === 'SENDER' || type === 'AT_PLAYER') {
             const teamKey = normalizeTeam(typeof data === 'object' ? data.team : undefined) as 'E' | 'R' | 'M' | 'N';
-            color = theme[teamKey] || UI_COLORS.TEXT_BASE;
+            color = theme[teamKey] || '';
             if (type === 'AT_PLAYER' && !text.startsWith('@')) {
                 text = '@' + text;
             }
-            return <span key={i} className={`iris-comm-markup iris-comm-markup-${type.toLowerCase()}`} style={{ color, fontWeight: 'bold' }}>{String(text || '')}</span>;
+            return (
+                <span
+                    key={i}
+                    className={`iris-comm-markup iris-comm-markup-${type.toLowerCase()}`}
+                    style={{['--iris-comm-color' as any]: color}}
+                >
+                    {String(text || '')}
+                </span>
+            );
         } else if (type === 'PORTAL' || type === 'LINK') {
             const teamKey = normalizeTeam(typeof data === 'object' ? data.team : undefined) as 'E' | 'R' | 'M' | 'N';
             color = type === 'PORTAL' ? theme.AQUA : (theme[teamKey] || theme.AQUA);
@@ -172,7 +180,7 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
                 <span key={i} className="iris-comm-markup-container">
                     <span 
                         className={`iris-comm-markup iris-comm-markup-${type.toLowerCase()}`} 
-                        style={{ color }}
+                        style={{['--iris-comm-color' as any]: color}}
                         onClick={handlePortalClick}
                     >
                         {String(portalName)}
@@ -183,11 +191,10 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
                 </span>
             );
         } else if (type === 'SECURE') {
-            color = '#ffff00';
-            return <span key={i} className="iris-comm-markup iris-comm-markup-secure" style={{ color }}>{String(text || '')}</span>;
+            return <span key={i} className="iris-comm-markup iris-comm-markup-secure">{String(text || '')}</span>;
         }
 
-        return <span key={i} className="iris-comm-markup iris-comm-markup-unknown" style={{ color }}>{String(text || '')}</span>;
+        return <span key={i} className="iris-comm-markup iris-comm-markup-unknown">{String(text || '')}</span>;
     };
 
     const renderPlext = (p: Plext): JSX.Element => {
@@ -240,6 +247,7 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
             onClose={onClose}
             title="COMM"
             noScroll={true}
+            className="iris-comm-popup-custom"
             headerExtras={
                 <button 
                     className="iris-comm-refresh-btn"
@@ -248,15 +256,6 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
                     REFRESH
                 </button>
             }
-            style={{
-                top: '50px',
-                right: '10px',
-                left: '10px',
-                width: 'auto',
-                maxWidth: '450px',
-                height: 'calc(80vh - 60px)',
-                marginLeft: 'auto',
-            }}
         >
             <div className="iris-comm-tabs">
                 {['ALL', 'FACTION', 'ALERTS'].map(tab => (

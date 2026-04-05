@@ -33,9 +33,19 @@
   gap: 8px;
 }
 
+.iris-passcode-popup-custom {
+  top: 90px;
+  left: 20px;
+  min-width: 320px;
+  max-width: 420px;
+  border: 2px solid var(--iris-accent, #00ffff);
+  box-shadow: 0 0 20px rgba(var(--iris-accent-rgb, 0, 255, 255), 0.33);
+}
+
 .iris-passcode-results-title {
   font-size: 0.9em;
   font-weight: 700;
+  color: var(--iris-accent, #00ffff);
 }
 
 .iris-passcode-reward-list {
