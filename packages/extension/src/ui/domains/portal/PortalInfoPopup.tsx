@@ -78,6 +78,13 @@ export function PortalInfoPopup(): JSX.Element | null {
                     </div>
                 )}
 
+                <div
+                    className="iris-portal-name"
+                    style={{color: colour}}
+                >
+                    {portal.name || 'Loading...'}
+                </div>
+
                 <div className="iris-portal-summary-table">
                     <div className="iris-portal-summary-col">
                         <div className="iris-portal-summary-row">
@@ -86,7 +93,8 @@ export function PortalInfoPopup(): JSX.Element | null {
                         </div>
                         <div className="iris-portal-summary-row">
                             <span className="iris-portal-summary-label">Owner</span>
-                            <span className="iris-portal-summary-value" style={{color: colour}}>{portal.owner || 'Unknown'}</span>
+                            <span className="iris-portal-summary-value"
+                                  style={{color: colour}}>{portal.owner || 'Unknown'}</span>
                         </div>
                     </div>
                     <div className="iris-portal-summary-col">
@@ -238,7 +246,8 @@ export function PortalInfoPopup(): JSX.Element | null {
                                 <span className="iris-portal-details-value">
                                     <span style={{color: '#00ff00'}}>{totalEnergy.toLocaleString()}</span>
                                     {maxEnergy > 0 &&
-                                        <span style={{color: UI_COLORS.TEXT_MUTED}}> / {maxEnergy.toLocaleString()}</span>}
+                                        <span
+                                            style={{color: UI_COLORS.TEXT_MUTED}}> / {maxEnergy.toLocaleString()}</span>}
                                 </span>
                             </div>
                         </div>

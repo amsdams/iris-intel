@@ -73,7 +73,7 @@ export class PluginManager {
         }
       },
       utils: {
-        normalizeTeam: (source: string, team: string | undefined): string => normalizeTeam(source || 'plugin', team),
+        normalizeTeam: (team: string | undefined): string => normalizeTeam(team),
       },
     };
   }

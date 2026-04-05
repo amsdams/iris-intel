@@ -29,7 +29,7 @@ export function parsePortalDetails(data: PortalDetailsData, params: { guid?: str
       id: params.guid || '',
       lat: typeof details[2] === 'number' ? details[2] / 1e6 : parseFloat(details[2] as string) / 1e6,
       lng: typeof details[3] === 'number' ? details[3] / 1e6 : parseFloat(details[3] as string) / 1e6,
-      team: normalizeTeam('portal-details', details[1] as string),
+      team: normalizeTeam(details[1] as string),
       level: parseInt(String(details[4]), 10),
       health: parseInt(String(details[5]), 10),
       resCount: details[6] as number,

@@ -8,7 +8,7 @@ export * from './PluginManager';
  * M: Machina
  * N: Neutral
  */
-export const normalizeTeam = (source: string, team: string | undefined): string => {
+export const normalizeTeam = (team: string | undefined): string => {
     let result = 'N';
     if (team) {
         const t = team.toUpperCase();
@@ -16,7 +16,5 @@ export const normalizeTeam = (source: string, team: string | undefined): string 
         else if (t === 'RESISTANCE' || t === 'R') result = 'R';
         else if (t === 'NEUTRAL' || t === 'M') result = 'M';
     }
-
-    console.log(`[IRIS:${source}] normalizing team: "${team}" -> "${result}"`);
     return result;
 };

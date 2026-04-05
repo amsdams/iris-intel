@@ -24,7 +24,7 @@ export function parseEntities(data: IntelMapData): {
     tile.gameEntities.forEach((entity) => {
       const [id, , entData] = entity;
       const entType = entData[0] as string;
-      const team = normalizeTeam('entities', entData[1] as string);
+      const team = normalizeTeam(entData[1] as string);
 
       if (entType === 'p') {
         const lat = parseFloat(entData[2] as string) / 1e6;
