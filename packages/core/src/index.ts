@@ -5,8 +5,8 @@ export * from './PluginManager';
  * Normalizes various team strings from Intel API into standard IRIS keys:
  * E: Enlightened
  * R: Resistance
- * M: Machina
- * N: Neutral
+ * M: Neutral, M(Machina)
+ * N: Uncaptured, N
  */
 export const normalizeTeam = (team: string | undefined): string => {
     let result = 'N';
