@@ -161,7 +161,7 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
         <Popup 
             title="INVENTORY" 
             onClose={onClose}
-            noScroll={true}
+            noScroll={false}
             headerExtras={
                 <button 
                     className="iris-comm-refresh-btn"
