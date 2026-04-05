@@ -22,16 +22,17 @@ const itemStyle: h.JSX.CSSProperties = {
 export function ThemePopup({ onClose }: ThemePopupProps): JSX.Element {
     const themeId = useStore((state) => state.themeId);
     const setTheme = useStore((state) => state.setTheme);
+    const theme = THEMES[themeId] || THEMES.INGRESS;
 
     return (
         <Popup
             onClose={onClose}
             title="Theme Settings"
-            style={{
-                top: '100px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: '300px',
+            className="iris-popup-center iris-popup-medium"
+             style={{
+                ['--iris-popup-border' as any]: theme.AQUA,
+                ['--iris-popup-shadow' as any]: `${theme.AQUA}55`,
+                ['--iris-popup-title-color' as any]: theme.AQUA,
             }}
         >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

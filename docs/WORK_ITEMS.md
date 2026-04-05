@@ -286,12 +286,13 @@ Goal:
 - move semantic colors and UI semantics into clearer shared modules
 
 ### UI components follow a CSS-first styling policy
-Status: `In Progress`
+Status: `Done`
 
 Outcome:
 - eliminate inline `style={{...}}` blocks for static layout and design
 - improve reusability and theming consistency across the monorepo
 - enable advanced CSS features (hover, active, media queries) for all components
+- standardize popup positioning and padding
 
 Tasks:
 
@@ -303,6 +304,8 @@ Tasks:
 | Refactor COMM / Passcode Popups to pure CSS | Done | migrated to comm.css and passcodes.css |
 | Refactor Inventory / Missions Popups to pure CSS | Done | migrated to inventory.css and missions.css |
 | Standardize common utility classes in base.css | Done | added flex, gap, margin, and text utilities |
+| Generalize popup styling in base.css | Done | base `.iris-popup` handles standard padding and variables |
+| Unify popup width and centering | Done | all major popups use `iris-popup-center iris-popup-medium` |
 
 ### Semantic colors are shared instead of locally improvised
 Status: `Open`
@@ -313,6 +316,42 @@ Tasks:
 | --- | --- | --- |
 | Formal semantic color module | Open | centralize faction, level, rarity semantics |
 | Reduce hard-coded semantic colors in CSS/components | Open | follow-up cleanup after module exists |
+
+## Engineering Standards and Design Patterns
+Status: `In Progress`
+
+Goal:
+- ensure codebase consistency, maintainability, and performance through strictly followed patterns
+
+### Core UI and Styling Principles
+Status: `In Progress`
+
+Outcome:
+- predictable, themeable, and mobile-ready UI components
+
+Tasks:
+
+| Task | Status | Notes |
+| --- | --- | --- |
+| CSS-First Styling Policy | Done | prefer CSS classes and variables over inline `style` objects |
+| Mobile-First Layouts | Done | assume narrow screens; use 90vw width and centering for small viewports |
+| Centered Modal Pattern | Done | major interactions (Comm, Inventory, Missions) use a centered modal feel |
+| Theme variable usage | Done | define dynamic properties in `base.css` to satisfy IDE and maintain consistency |
+
+### Architectural Patterns
+Status: `In Progress`
+
+Outcome:
+- clean boundaries between interception, state, and presentation layers
+
+Tasks:
+
+| Task | Status | Notes |
+| --- | --- | --- |
+| Zustand for Global State | Done | centralized stores in `@iris/core`; component-level selectors |
+| Message-based IPC | Done | content script communicates with interceptor via standard `postMessage` protocol |
+| Surgical Interception | Done | intercept network traffic without modifying Intel's internal logic |
+| Type-Safe Domain Models | Open | strictly type all incoming Intel payloads to prevent runtime casting errors |
 
 ## Current Next Pickup
 

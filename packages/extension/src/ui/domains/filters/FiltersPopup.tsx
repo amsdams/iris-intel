@@ -2,6 +2,7 @@ import { h, JSX } from 'preact';
 import { useStore } from '@iris/core';
 import { Popup } from '../../shared/Popup';
 import './filters.css';
+import {THEMES} from "../../theme";
 
 // ---------------------------------------------------------------------------
 // FiltersPopup
@@ -12,6 +13,10 @@ interface FiltersPopupProps {
 }
 
 export function FiltersPopup({ onClose }: FiltersPopupProps): JSX.Element {
+    const themeId = useStore((state) => state.themeId);
+
+    const theme = THEMES[themeId] || THEMES.INGRESS;
+
     const showFields = useStore((state) => state.showFields);
     const toggleShowFields = useStore((state) => state.toggleShowFields);
 
@@ -57,7 +62,12 @@ export function FiltersPopup({ onClose }: FiltersPopupProps): JSX.Element {
         <Popup
             onClose={onClose}
             title="Filters"
-            className="iris-popup-bottom-center iris-popup-medium"
+            className="iris-popup-center iris-popup-medium"
+             style={{
+                ['--iris-popup-border' as any]: theme.AQUA,
+                ['--iris-popup-shadow' as any]: `${theme.AQUA}55`,
+                ['--iris-popup-title-color' as any]: theme.AQUA,
+            }}
         >
             <div className="iris-filters">
                 <h3 className="iris-filter-section-title">Layers</h3>

@@ -248,6 +248,11 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
             title="COMM"
             noScroll={true}
             className="iris-popup-center iris-popup-medium"
+             style={{
+                ['--iris-popup-border' as any]: theme.AQUA,
+                ['--iris-popup-shadow' as any]: `${theme.AQUA}55`,
+                ['--iris-popup-title-color' as any]: theme.AQUA,
+            }}
             headerExtras={
                 <button 
                     className="iris-comm-refresh-btn"

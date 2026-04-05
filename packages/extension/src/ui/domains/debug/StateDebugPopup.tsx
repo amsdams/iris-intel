@@ -4,6 +4,7 @@ import { useStore } from '@iris/core';
 import { Popup } from '../../shared/Popup';
 import { IRIS_VERSION_LABEL } from '../../../version';
 import './debug.css';
+import {THEMES} from "../../theme";
 
 // ---------------------------------------------------------------------------
 // StateDebugPopup
@@ -14,6 +15,8 @@ interface StateDebugPopupProps {
 }
 
 export function StateDebugPopup({ onClose }: StateDebugPopupProps): JSX.Element {
+    const themeId = useStore((state) => state.themeId);
+    const theme = THEMES[themeId] || THEMES.INGRESS;
     const portals = useStore((state) => state.portals);
     const links = useStore((state) => state.links);
     const fields = useStore((state) => state.fields);
@@ -56,6 +59,11 @@ export function StateDebugPopup({ onClose }: StateDebugPopupProps): JSX.Element 
             onClose={onClose}
             title="State Debug Info"
             className="iris-popup-center iris-popup-medium"
+             style={{
+                ['--iris-popup-border' as any]: theme.AQUA,
+                ['--iris-popup-shadow' as any]: `${theme.AQUA}55`,
+                ['--iris-popup-title-color' as any]: theme.AQUA,
+            }}
         >
             <div className="iris-debug-info">
                 <div className="iris-debug-toggle">
