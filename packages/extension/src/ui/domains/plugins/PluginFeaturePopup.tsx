@@ -2,6 +2,7 @@ import { h, JSX } from 'preact';
 import { useStore } from '@iris/core';
 import { Popup } from '../../shared/Popup';
 import { UI_COLORS } from '../../theme';
+import './plugins.css';
 
 type ActionMarkupData = {
     plain?: string;
@@ -89,17 +90,18 @@ export function PluginFeaturePopup(): JSX.Element | null {
         <Popup
             title={isPlayerMarker ? 'Player Last Activity' : 'Plugin Feature'}
             onClose={() => setSelectedPluginFeature(null)}
+            className="iris-popup-center iris-popup-medium"
             style={{
-                bottom: '20px',
-                right: '20px',
-                minWidth: '250px',
-                borderColor: color || UI_COLORS.AQUA,
+                ['--iris-popup-border' as any]: color || UI_COLORS.AQUA,
+                ['--iris-popup-shadow' as any]: `${color || UI_COLORS.AQUA}55`,
+                ['--iris-popup-title-color' as any]: color || UI_COLORS.AQUA,
+                ['--iris-feature-color' as any]: color || UI_COLORS.TEXT_BASE,
             }}
         >
             <div className="iris-plugin-feature-details">
                 <div className="iris-feature-row iris-feature-player">
                     <span className="iris-feature-label">Player: </span>
-                    <span className="iris-feature-value-strong" style={{ color: color || UI_COLORS.TEXT_BASE }}>
+                    <span className="iris-feature-value-strong">
                         {name}
                     </span>
                 </div>
@@ -127,10 +129,10 @@ export function PluginFeaturePopup(): JSX.Element | null {
                 </div>
 
                 {actions.length > 0 && (
-                    <div className="iris-feature-actions" style={{ marginTop: '10px', borderTop: '1px solid #333', paddingTop: '10px' }}>
-                        <div className="iris-feature-label" style={{ marginBottom: '5px' }}>Recent Actions:</div>
+                    <div className="iris-feature-actions">
+                        <div className="iris-feature-label iris-mb-1">Recent Actions:</div>
                         {actions.map((action, i) => (
-                            <div key={i} className="iris-feature-action-item" style={{ fontSize: '0.85em', color: UI_COLORS.TEXT_MUTED, marginBottom: '2px' }}>
+                            <div key={i} className="iris-feature-action-item">
                                 <span>• </span>
                                 {action.markup.length > 0 ? action.markup.map((segment, segmentIndex) => renderActionSegment(segment, segmentIndex)) : action.text}
                             </div>

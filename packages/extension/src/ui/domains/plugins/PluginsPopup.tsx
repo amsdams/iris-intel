@@ -1,7 +1,7 @@
 import { h, JSX } from 'preact';
 import { useStore, pluginManager } from '@iris/core';
 import { Popup } from '../../shared/Popup';
-import { UI_COLORS } from '../../theme';
+import './plugins.css';
 
 interface PluginsPopupProps {
     onClose: () => void;
@@ -20,12 +20,7 @@ export function PluginsPopup({ onClose }: PluginsPopupProps): JSX.Element {
         <Popup
             onClose={onClose}
             title="Plugin Manager"
-            style={{
-                top: '100px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: '350px',
-            }}
+            className="iris-popup-center iris-popup-medium"
         >
             <div className="iris-plugins-list">
                 {availablePlugins.length === 0 ? (
@@ -45,11 +40,8 @@ export function PluginsPopup({ onClose }: PluginsPopupProps): JSX.Element {
                                         {plugin.manifest.name}
                                     </span>
                                     <button 
-                                        className="iris-plugin-toggle-btn"
+                                        className={`iris-plugin-toggle-btn ${isEnabled ? 'iris-plugin-btn-disable' : 'iris-plugin-btn-enable'}`}
                                         onClick={() => togglePlugin(plugin.manifest.id)}
-                                        style={{
-                                            background: isEnabled ? '#ff4444' : UI_COLORS.AQUA,
-                                        }}
                                     >
                                         {isEnabled ? 'DISABLE' : 'ENABLE'}
                                     </button>

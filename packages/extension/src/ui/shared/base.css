@@ -29,6 +29,8 @@
     --iris-item-color: #ffffff;
     --iris-progress: 0%;
     --iris-progress-color: var(--iris-accent);
+    --iris-enl-color: #00ff00;
+    --iris-res-color: #0000ff;
 }
 
 .iris-overlay-root *,

@@ -54,6 +54,23 @@
   font-size: 0.8em;
 }
 
+.iris-score-team-enl { color: var(--iris-enl-color, #00ff00); }
+.iris-score-team-res { color: var(--iris-res-color, #00ffff); }
+
+.iris-score-bar-enl {
+  background-color: var(--iris-enl-color, #00ff00);
+  box-shadow: 0 0 10px var(--iris-enl-color, #00ff00);
+  width: var(--iris-enl-percent, 50%);
+  height: 100%;
+}
+
+.iris-score-bar-res {
+  background-color: var(--iris-res-color, #00ffff);
+  box-shadow: 0 0 10px var(--iris-res-color, #00ffff);
+  width: var(--iris-res-percent, 50%);
+  height: 100%;
+}
+
 .iris-score-total {
   font-size: 1.2em;
   font-weight: bold;

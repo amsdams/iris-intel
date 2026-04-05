@@ -20,10 +20,12 @@ export function GameScorePopup({ onClose }: GameScorePopupProps): JSX.Element {
         <Popup
             onClose={onClose}
             title="Global Score"
+            className="iris-popup-center iris-popup-medium"
             style={{
-                bottom: '80px',
-                right: '20px',
-                minWidth: '300px',
+                ['--iris-enl-color' as any]: theme.E,
+                ['--iris-res-color' as any]: theme.R,
+                ['--iris-enl-percent' as any]: `${enlPercent}%`,
+                ['--iris-res-percent' as any]: `${resPercent}%`,
             }}
         >
             <div className="iris-game-score">
@@ -34,23 +36,13 @@ export function GameScorePopup({ onClose }: GameScorePopupProps): JSX.Element {
                 ) : (
                     <div className="iris-game-score-layout">
                         <div className="iris-score-bar iris-game-score-bar">
-                            <div style={{ 
-                                width: `${enlPercent}%`, 
-                                height: '100%', 
-                                backgroundColor: theme.E,
-                                boxShadow: `0 0 10px ${theme.E}`
-                            }} />
-                            <div style={{ 
-                                width: `${resPercent}%`, 
-                                height: '100%', 
-                                backgroundColor: theme.R,
-                                boxShadow: `0 0 10px ${theme.R}`
-                            }} />
+                            <div className="iris-score-bar-enl" />
+                            <div className="iris-score-bar-res" />
                         </div>
 
                         <div className="iris-score-segments">
                             <div className="iris-score-segment iris-score-segment-left">
-                                <span className="iris-score-team-label" style={{ color: theme.E }}>ENLIGHTENED</span>
+                                <span className="iris-score-team-label iris-score-team-enl">ENLIGHTENED</span>
                                 <span className="iris-score-total">
                                     {gameScore.enlightened.toLocaleString()}
                                 </span>
@@ -59,7 +51,7 @@ export function GameScorePopup({ onClose }: GameScorePopupProps): JSX.Element {
                                 </span>
                             </div>
                             <div className="iris-score-segment iris-score-segment-right">
-                                <span className="iris-score-team-label" style={{ color: theme.R }}>RESISTANCE</span>
+                                <span className="iris-score-team-label iris-score-team-res">RESISTANCE</span>
                                 <span className="iris-score-total">
                                     {gameScore.resistance.toLocaleString()}
                                 </span>

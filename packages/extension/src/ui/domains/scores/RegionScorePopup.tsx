@@ -2,6 +2,7 @@ import { h, JSX } from 'preact';
 import { useStore } from '@iris/core';
 import { Popup } from '../../shared/Popup';
 import { THEMES } from '../../theme';
+import './scores.css';
 
 interface RegionScorePopupProps {
     onClose: () => void;
@@ -22,11 +23,12 @@ export function RegionScorePopup({ onClose }: RegionScorePopupProps): JSX.Elemen
         <Popup
             onClose={onClose}
             title={regionScore?.regionName || "Regional Score"}
+            className="iris-popup-center iris-popup-medium"
             style={{
-                bottom: '140px',
-                right: '20px',
-                minWidth: '320px',
-                maxWidth: '400px',
+                ['--iris-enl-color' as any]: theme.E,
+                ['--iris-res-color' as any]: theme.R,
+                ['--iris-enl-percent' as any]: `${enlPercent}%`,
+                ['--iris-res-percent' as any]: `${resPercent}%`,
             }}
         >
             <div className="iris-region-score">
@@ -38,12 +40,12 @@ export function RegionScorePopup({ onClose }: RegionScorePopupProps): JSX.Elemen
                     <>
                         <div className="iris-region-score-current">
                             <div className="iris-region-score-header">
-                                <span style={{ color: theme.E }}>{enlScore.toLocaleString()}</span>
-                                <span style={{ color: theme.R }}>{resScore.toLocaleString()}</span>
+                                <span className="iris-score-team-enl">{enlScore.toLocaleString()}</span>
+                                <span className="iris-score-team-res">{resScore.toLocaleString()}</span>
                             </div>
                             <div className="iris-score-bar iris-region-score-bar">
-                                <div style={{ width: `${enlPercent}%`, height: '100%', backgroundColor: theme.E }} />
-                                <div style={{ width: `${resPercent}%`, height: '100%', backgroundColor: theme.R }} />
+                                <div className="iris-score-bar-enl" style={{ boxShadow: 'none' }} />
+                                <div className="iris-score-bar-res" style={{ boxShadow: 'none' }} />
                             </div>
                         </div>
 
@@ -54,7 +56,7 @@ export function RegionScorePopup({ onClose }: RegionScorePopupProps): JSX.Elemen
                             <div className="iris-region-agent-list">
                                 {regionScore.topAgents.map((agent, i) => (
                                     <div key={i} className="iris-region-agent-row">
-                                        <span style={{ color: agent.team === 'RESISTANCE' ? theme.R : theme.E }}>
+                                        <span className={agent.team === 'RESISTANCE' ? 'iris-score-team-res' : 'iris-score-team-enl'}>
                                             {agent.nick}
                                         </span>
                                         <span className="iris-region-agent-rank">#{i + 1}</span>
@@ -72,8 +74,8 @@ export function RegionScorePopup({ onClose }: RegionScorePopupProps): JSX.Elemen
                                     <thead className="iris-region-history-head">
                                         <tr>
                                             <th className="iris-region-history-cell-left">CP</th>
-                                            <th className="iris-region-history-cell-right" style={{ color: theme.E }}>ENL</th>
-                                            <th className="iris-region-history-cell-right" style={{ color: theme.R }}>RES</th>
+                                            <th className="iris-region-history-cell-right iris-score-team-enl">ENL</th>
+                                            <th className="iris-region-history-cell-right iris-score-team-res">RES</th>
                                         </tr>
                                     </thead>
                                     <tbody>

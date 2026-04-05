@@ -2,7 +2,8 @@ import { JSX } from 'preact';
 import { useState } from 'preact/hooks';
 import { Field, Link, Portal, useStore } from '@iris/core';
 import { Popup } from '../../../extension/src/ui/shared/Popup';
-import { UI_COLORS, THEMES, SHARED_STYLES } from '../../../extension/src/ui/theme';
+import { THEMES, SHARED_STYLES } from '../../../extension/src/ui/theme';
+import './ExportPopup.css';
 
 interface ExportPopupProps {
     onClose: () => void;
@@ -135,38 +136,27 @@ export function ExportPopup({ onClose }: ExportPopupProps): JSX.Element {
         URL.revokeObjectURL(url);
     };
 
-    const checkboxStyle: JSX.CSSProperties = {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px',
-        cursor: 'pointer',
-        padding: '5px 0'
-    };
-
     return (
         <Popup
             onClose={onClose}
             title="Export Data"
+            className="iris-popup-center iris-popup-medium"
             style={{
-                bottom: '200px',
-                right: '20px',
-                minWidth: '250px',
+                ['--iris-popup-border' as any]: theme.AQUA,
+                ['--iris-popup-shadow' as any]: `${theme.AQUA}55`,
+                ['--iris-popup-title-color' as any]: theme.AQUA,
             }}
         >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ fontSize: '0.8em', color: UI_COLORS.TEXT_MUTED }}>FORMAT</div>
-                    <div style={{ display: 'flex', gap: '5px' }}>
+            <div className="iris-export-content">
+                <div className="iris-export-section">
+                    <div className="iris-export-section-title">FORMAT</div>
+                    <div className="iris-export-format-grid">
                         {(['JSON', 'GEOJSON', 'KML'] as const).map(type => (
                             <button
                                 key={type}
                                 onClick={() => setExportType(type)}
-                                style={{
-                                    ...SHARED_STYLES.btnStyle(exportType === type, theme.AQUA),
-                                    flex: 1,
-                                    fontSize: '0.7em',
-                                    padding: '4px'
-                                }}
+                                className="iris-export-format-btn"
+                                style={SHARED_STYLES.btnStyle(exportType === type, theme.AQUA)}
                             >
                                 {type}
                             </button>
@@ -174,29 +164,28 @@ export function ExportPopup({ onClose }: ExportPopupProps): JSX.Element {
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                    <div style={{ fontSize: '0.8em', color: UI_COLORS.TEXT_MUTED }}>INCLUDE</div>
-                    <label style={checkboxStyle}>
-                        <input type="checkbox" checked={includePortals} onChange={e => setIncludePortals((e.target as HTMLInputElement).checked)} />
-                        <span>Portals</span>
-                    </label>
-                    <label style={checkboxStyle}>
-                        <input type="checkbox" checked={includeLinks} onChange={e => setIncludeLinks((e.target as HTMLInputElement).checked)} />
-                        <span>Links</span>
-                    </label>
-                    <label style={checkboxStyle}>
-                        <input type="checkbox" checked={includeFields} onChange={e => setIncludeFields((e.target as HTMLInputElement).checked)} />
-                        <span>Fields</span>
-                    </label>
+                <div className="iris-export-section">
+                    <div className="iris-export-section-title">INCLUDE</div>
+                    <div className="iris-export-options">
+                        <label className="iris-export-option-label">
+                            <input type="checkbox" checked={includePortals} onChange={e => setIncludePortals((e.target as HTMLInputElement).checked)} />
+                            <span>Portals</span>
+                        </label>
+                        <label className="iris-export-option-label">
+                            <input type="checkbox" checked={includeLinks} onChange={e => setIncludeLinks((e.target as HTMLInputElement).checked)} />
+                            <span>Links</span>
+                        </label>
+                        <label className="iris-export-option-label">
+                            <input type="checkbox" checked={includeFields} onChange={e => setIncludeFields((e.target as HTMLInputElement).checked)} />
+                            <span>Fields</span>
+                        </label>
+                    </div>
                 </div>
 
                 <button
                     onClick={doExport}
-                    style={{
-                        ...SHARED_STYLES.btnStyle(true, theme.AQUA),
-                        marginTop: '10px',
-                        padding: '8px'
-                    }}
+                    className="iris-export-submit-btn"
+                    style={SHARED_STYLES.btnStyle(true, theme.AQUA)}
                 >
                     DOWNLOAD
                 </button>

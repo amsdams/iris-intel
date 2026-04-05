@@ -49,6 +49,14 @@
   cursor: pointer;
 }
 
+.iris-plugin-btn-enable {
+  background: var(--iris-accent);
+}
+
+.iris-plugin-btn-disable {
+  background: #ff4444;
+}
+
 .iris-plugin-description {
   font-size: 0.75em;
   color: var(--iris-text-secondary);
@@ -74,6 +82,19 @@
 
 .iris-feature-value-strong {
   font-weight: bold;
+  color: var(--iris-feature-color, var(--iris-text-primary));
+}
+
+.iris-feature-actions {
+  margin-top: 10px;
+  border-top: 1px solid var(--iris-border-dim);
+  padding-top: 10px;
+}
+
+.iris-feature-action-item {
+  font-size: 0.85em;
+  color: var(--iris-text-muted);
+  margin-bottom: 2px;
 }
 
 .iris-feature-portal-link {

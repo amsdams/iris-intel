@@ -1,0 +1,48 @@
+.iris-export-content {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.iris-export-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.iris-export-section-title {
+    font-size: 0.8em;
+    color: var(--iris-text-muted);
+    text-transform: uppercase;
+}
+
+.iris-export-format-grid {
+    display: flex;
+    gap: 5px;
+}
+
+.iris-export-format-btn {
+    flex: 1;
+    font-size: 0.7em;
+    padding: 4px;
+}
+
+.iris-export-options {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.iris-export-option-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    padding: 5px 0;
+    font-size: 0.9em;
+}
+
+.iris-export-submit-btn {
+    margin-top: 10px;
+    padding: 8px;
+}
