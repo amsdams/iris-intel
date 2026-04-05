@@ -190,3 +190,11 @@ export function getIntelPositionFromCookies(doc: Document): { lat: number; lng: 
 
   return { lat, lng, zoom };
 }
+
+export function extractDiscoveredLocation(doc: Document): string | null {
+  const addressInput = doc.querySelector('#address') as HTMLInputElement;
+  if (addressInput && addressInput.value && addressInput.value.trim().length > 0) {
+    return addressInput.value.trim();
+  }
+  return null;
+}

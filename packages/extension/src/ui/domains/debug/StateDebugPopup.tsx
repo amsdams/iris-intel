@@ -22,20 +22,18 @@ export function StateDebugPopup({ onClose }: StateDebugPopupProps): JSX.Element 
     const fieldCount = Object.keys(fields).length;
     const debugLogging = useStore((state) => state.debugLogging);
     const toggleDebugLogging = useStore((state) => state.toggleDebugLogging);
+    const mapState = useStore((state) => state.mapState);
+    const discoveredLocation = useStore((state) => state.discoveredLocation);
 
     return (
         <Popup
             onClose={onClose}
             title="State Debug Info"
-            style={{
-                bottom: '20px',
-                right: '20px',
-                minWidth: '250px',
-            }}
+            className="iris-debug-popup-custom"
         >
             <div className="iris-debug-info">
-                <div className="iris-debug-toggle" style={{ marginBottom: '10px', paddingBottom: '10px', borderBottom: '1px solid #444' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: '8px' }}>
+                <div className="iris-debug-toggle">
+                    <label>
                         <input
                             type="checkbox"
                             checked={debugLogging}
@@ -45,12 +43,24 @@ export function StateDebugPopup({ onClose }: StateDebugPopupProps): JSX.Element 
                     </label>
                 </div>
                 <div className="iris-debug-stats">
-                    <p className="iris-debug-stat-item" style={{ margin: 0 }}>Version: {IRIS_VERSION_LABEL}</p>
-                    <p className="iris-debug-stat-item" style={{ margin: 0 }}>Portals: {portalCount}</p>
-                    <p className="iris-debug-stat-item" style={{ margin: 0 }}>Links: {linkCount}</p>
-                    <p className="iris-debug-stat-item" style={{ margin: 0 }}>Fields: {fieldCount}</p>
+                    <p className="iris-debug-stat-item">Version: {IRIS_VERSION_LABEL}</p>
+                    <p className="iris-debug-stat-item iris-debug-stat-label">Location:</p>
+                    <p className="iris-debug-stat-item iris-debug-stat-value">Lat: {mapState.lat.toFixed(6)}</p>
+                    <p className="iris-debug-stat-item iris-debug-stat-value">Lng: {mapState.lng.toFixed(6)}</p>
+                    <p className="iris-debug-stat-item iris-debug-stat-value">Zoom: {mapState.zoom}</p>
+                    {discoveredLocation && (
+                        <p className="iris-debug-stat-item iris-debug-discovered-location">
+                            {discoveredLocation}
+                        </p>
+                    )}
+                    
+                    <div className="iris-debug-divider">
+                        <p className="iris-debug-stat-item">Portals: {portalCount}</p>
+                        <p className="iris-debug-stat-item">Links: {linkCount}</p>
+                        <p className="iris-debug-stat-item">Fields: {fieldCount}</p>
+                    </div>
                     {Object.values(statsItems).map((item) => (
-                        <p key={item.id} className={`iris-debug-stat-item iris-debug-stat-${item.id}`} style={{ margin: 0 }}>
+                        <p key={item.id} className={`iris-debug-stat-item iris-debug-stat-${item.id}`}>
                             {item.label}: {typeof item.value === 'function' ? item.value() : item.value}
                         </p>
                     ))}

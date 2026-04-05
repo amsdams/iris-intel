@@ -340,6 +340,7 @@ interface UISlice {
     statsItems: Record<string, StatsItem>;
     menuItems: MenuItem[];
     pluginFeatures: GeoJSON.FeatureCollection;
+    discoveredLocation: string | null;
     mapState: {
         lat: number;
         lng: number;
@@ -365,6 +366,7 @@ interface UISlice {
     addMenuItem: (item: MenuItem) => void;
     removeMenuItem: (id: string) => void;
     setPluginFeatures: (features: GeoJSON.FeatureCollection) => void;
+    setDiscoveredLocation: (location: string | null) => void;
     updateMapState: (lat: number, lng: number, zoom: number, bounds?: {
         minLatE6: number;
         minLngE6: number;
@@ -584,6 +586,7 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
     statsItems: {},
     menuItems: [],
     pluginFeatures: { type: 'FeatureCollection', features: [] },
+    discoveredLocation: null,
     mapState: { lat: 0, lng: 0, zoom: 3 },
     selectedPortalId: null,
     selectedPluginFeature: null,
@@ -606,6 +609,7 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
         menuItems: state.menuItems.filter((i) => i.id !== id)
     })),
     setPluginFeatures: (features) => set(() => ({ pluginFeatures: features })),
+    setDiscoveredLocation: (location) => set(() => ({ discoveredLocation: location })),
     updateMapState: (lat, lng, zoom, bounds) => set(() => ({
         mapState: { lat, lng, zoom, bounds }
     })),
@@ -812,7 +816,12 @@ export const useStore = create<IRISState>()(
                     showVisited: state.showVisited,
                     showCaptured: state.showCaptured,
                     showScanned: state.showScanned,
-                } as IRISSettings),
+                    mapState: {
+                        lat: state.mapState.lat,
+                        lng: state.mapState.lng,
+                        zoom: state.mapState.zoom,
+                    },
+                } as IRISSettings & { mapState: UISlice['mapState'] }),
                 onRehydrateStorage: () => (state: IRISState | undefined): void => {
                     if (state) {
                         if (state.themeId === 'DEFAULT') {

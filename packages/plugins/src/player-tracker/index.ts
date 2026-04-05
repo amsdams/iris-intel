@@ -59,16 +59,13 @@ const PlayerTrackerPlugin: IRISPlugin = {
     const getPlayerColor = (name: string, team: string): string => {
         const colors = api.ui.getThemeColors();
         const teamKey = api.utils.normalizeTeam(team);
-        console.log("player team", team, "teamKey", teamKey)
         return (colors as any)[teamKey] || '#ffffff';
     };
 
     // Faction color helper
     const getFactionColor = (team: string): string => {
-
         const colors = api.ui.getThemeColors();
         const teamKey = api.utils.normalizeTeam(team);
-        console.log("faction team", team, "teamKey", teamKey)
         return (colors as any)[teamKey] || '#ffffff';
     };
 

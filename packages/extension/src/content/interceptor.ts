@@ -6,6 +6,7 @@ import {
     IntelMapInstance,
     getMissionGuidFromLocation,
     readPlayerStats,
+    extractDiscoveredLocation,
 } from './runtime/interceptor-runtime';
 import { handleActiveRequestMessage } from './runtime/active-request-client';
 import { installPassiveInterception } from './runtime/passive-interceptor';
@@ -27,10 +28,18 @@ import { createSessionRuntime } from './runtime/session-runtime';
 
     let intelMap: IntelMapInstance | null = null;
     let lastPlayerStatsKey: string | null = null;
+    let lastDiscoveredLocation: string | null = null;
     let playerStatsPostTimeoutId: number | null = null;
     const runtime = createSessionRuntime(window, document);
 
     installPassiveInterception(runtime);
+
+    const postDiscoveredLocation = (): void => {
+        const location = extractDiscoveredLocation(document);
+        if (location === lastDiscoveredLocation) return;
+        lastDiscoveredLocation = location;
+        window.postMessage({ type: 'IRIS_DISCOVERED_LOCATION', location }, '*');
+    };
 
     const postPlayerStats = (): void => {
         playerStatsPostTimeoutId = null;
@@ -57,12 +66,14 @@ import { createSessionRuntime } from './runtime/session-runtime';
 
     const statsObserver = new MutationObserver(() => {
         schedulePlayerStatsPost();
+        postDiscoveredLocation();
     });
     statsObserver.observe(document.body || document.documentElement, {
         childList: true,
         subtree: true,
     });
     postPlayerStats();
+    postDiscoveredLocation();
 
     const initialPosition = getIntelPositionFromCookies(document);
     if (initialPosition) {

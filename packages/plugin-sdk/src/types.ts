@@ -80,7 +80,7 @@ export interface IRIS_API {
     getThemeColors: () => { E: string; R: string; M: string; N: string };
   };
   utils: {
-    normalizeTeam: (source: string, team: string | undefined) => string;
+    normalizeTeam: (team: string | undefined) => string;
   };
 }
 

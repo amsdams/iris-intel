@@ -63,12 +63,17 @@ export class PluginManager {
         setTheme: (id: string): void => useStore.getState().setTheme(id),
         getTheme: (): string => useStore.getState().themeId,
         getThemeColors: (): { E: string; R: string; M: string; N: string } => {
-          // Keep plugin API colors stable even before theme-specific lookup is added.
+          // Look up colors from the theme registry (defined in extension/ui/theme.ts)
+          // For now, core doesn't have direct access to theme.ts, so we'll pass it in or move theme.ts to core.
+          // However, we can at least return better defaults or wait until we move the theme registry.
+          
+          // Actually, we can just return the colors from the active theme if we had them.
+          // Given the current structure, let's keep it simple but accurate to the default INGRESS theme.
           return {
-            E: '#00ff00',
-            R: '#0000ff',
-            M: '#ff0000',
-            N: '#ffffff',
+            E: '#03DC03',
+            R: '#0088FF',
+            M: '#FF1010',
+            N: '#C0C0C0',
           };
         }
       },

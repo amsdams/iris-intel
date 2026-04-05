@@ -103,6 +103,11 @@ window.addEventListener('message', (event: MessageEvent) => {
       useStore.getState().updateMapState(lat, lng, Math.max(zoom, 14));
       break;
     }
+    case 'IRIS_DISCOVERED_LOCATION': {
+      const { location } = msg as { location: string | null };
+      useStore.getState().setDiscoveredLocation(location);
+      break;
+    }
     case 'IRIS_TILE_REQUEST':
       break;
 
