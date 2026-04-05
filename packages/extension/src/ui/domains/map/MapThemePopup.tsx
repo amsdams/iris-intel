@@ -20,7 +20,7 @@ export function MapThemePopup({ onClose }: MapThemePopupProps): JSX.Element {
         <Popup
             onClose={onClose}
             title="Map Theme"
-            className="iris-popup-center iris-popup-medium"
+            className="iris-popup-top-center iris-popup-medium"
              style={{
                 ['--iris-popup-border' as any]: theme.AQUA,
                 ['--iris-popup-shadow' as any]: `${theme.AQUA}55`,

@@ -56,11 +56,12 @@ export function PortalInfoPopup(): JSX.Element | null {
         <Popup
             onClose={() => selectPortal(null)}
             title={'Portal Details'}
-            className="iris-popup-center iris-popup-medium"
-             style={{
+            className="iris-popup-top-center iris-popup-medium"
+            style={{
                 ['--iris-popup-border' as any]: theme.AQUA,
                 ['--iris-popup-shadow' as any]: `${theme.AQUA}55`,
                 ['--iris-popup-title-color' as any]: theme.AQUA,
+
             }}
         >
             <div className="iris-portal-info">
@@ -74,7 +75,7 @@ export function PortalInfoPopup(): JSX.Element | null {
                     </div>
                 )}
 
-                <div className="iris-portal-name">
+                <div className="iris-portal-name" style={{ color: colour }}>
                     {portal.name || 'Loading...'}
                 </div>
 
@@ -82,11 +83,12 @@ export function PortalInfoPopup(): JSX.Element | null {
                     <div className="iris-portal-summary-col">
                         <div className="iris-portal-summary-row">
                             <span className="iris-portal-summary-label">Team</span>
-                            <span className="iris-portal-summary-value iris-portal-summary-value-faction">{teamName}</span>
+                            <span
+                                className="iris-portal-summary-value iris-portal-summary-value-faction" style={{ color: colour }}>{teamName}</span>
                         </div>
                         <div className="iris-portal-summary-row">
                             <span className="iris-portal-summary-label">Owner</span>
-                            <span className="iris-portal-summary-value iris-portal-summary-value-faction">
+                            <span className="iris-portal-summary-value iris-portal-summary-value-faction"  style={{ color: colour }}>
                                 {portal.owner || 'Unknown'}
                             </span>
                         </div>
@@ -149,7 +151,7 @@ export function PortalInfoPopup(): JSX.Element | null {
                                     <span className="iris-portal-mod-name">
                                         {m.rarity} {m.name}
                                     </span>
-                                    <span className="iris-portal-mod-owner">{m.owner}</span>
+                                    <span className="iris-portal-mod-owner" style={{ color: colour }}>{m.owner}</span>
                                 </div>
                             );
                         })}
@@ -164,7 +166,8 @@ export function PortalInfoPopup(): JSX.Element | null {
                         {allResonators.map((r, i) => {
                             if (!r) {
                                 return (
-                                    <div key={i} className="iris-portal-resonator-item iris-portal-resonator-item-empty">
+                                    <div key={i}
+                                         className="iris-portal-resonator-item iris-portal-resonator-item-empty">
                                         <div>EMPTY</div>
                                         <div style={{color: 'transparent'}}>-</div>
                                     </div>
@@ -190,8 +193,8 @@ export function PortalInfoPopup(): JSX.Element | null {
                                         </span>
                                         <span className="iris-portal-resonator-health-text">{healthPct}%</span>
                                     </div>
-                                    <div className="iris-portal-resonator-owner">{r.owner}</div>
-                                    <div className="iris-portal-resonator-health-bar" />
+                                    <div className="iris-portal-resonator-owner" style={{ color: colour }}>{r.owner}</div>
+                                    <div className="iris-portal-resonator-health-bar"/>
                                 </div>
                             );
                         })}
@@ -239,13 +242,16 @@ export function PortalInfoPopup(): JSX.Element | null {
                         HISTORY
                     </div>
                     <div className="iris-portal-history-badges">
-                        <span className={`iris-portal-history-badge iris-portal-history-badge-visited ${portal.visited ? 'iris-portal-history-badge-active' : ''}`}>
+                        <span
+                            className={`iris-portal-history-badge iris-portal-history-badge-visited ${portal.visited ? 'iris-portal-history-badge-active' : ''}`}>
                             Visited
                         </span>
-                        <span className={`iris-portal-history-badge iris-portal-history-badge-captured ${portal.captured ? 'iris-portal-history-badge-active' : ''}`}>
+                        <span
+                            className={`iris-portal-history-badge iris-portal-history-badge-captured ${portal.captured ? 'iris-portal-history-badge-active' : ''}`}>
                             Captured
                         </span>
-                        <span className={`iris-portal-history-badge iris-portal-history-badge-scanned ${portal.scanned ? 'iris-portal-history-badge-active' : ''}`}>
+                        <span
+                            className={`iris-portal-history-badge iris-portal-history-badge-scanned ${portal.scanned ? 'iris-portal-history-badge-active' : ''}`}>
                             Scanned
                         </span>
                     </div>

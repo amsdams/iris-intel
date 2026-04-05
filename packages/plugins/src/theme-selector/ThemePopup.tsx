@@ -28,7 +28,7 @@ export function ThemePopup({ onClose }: ThemePopupProps): JSX.Element {
         <Popup
             onClose={onClose}
             title="Theme Settings"
-            className="iris-popup-center iris-popup-medium"
+            className="iris-popup-top-center iris-popup-medium"
              style={{
                 ['--iris-popup-border' as any]: theme.AQUA,
                 ['--iris-popup-shadow' as any]: `${theme.AQUA}55`,

@@ -2,12 +2,15 @@ import { h, JSX } from 'preact';
 import { useStore, pluginManager } from '@iris/core';
 import { Popup } from '../../shared/Popup';
 import './plugins.css';
+import {THEMES} from "../../theme";
 
 interface PluginsPopupProps {
     onClose: () => void;
 }
 
 export function PluginsPopup({ onClose }: PluginsPopupProps): JSX.Element {
+    const themeId = useStore((state) => state.themeId);
+    const theme = THEMES[themeId] || THEMES.INGRESS;
     const pluginStates = useStore((state) => state.pluginStates);
     const availablePlugins = pluginManager.getAvailablePlugins();
 
@@ -20,7 +23,12 @@ export function PluginsPopup({ onClose }: PluginsPopupProps): JSX.Element {
         <Popup
             onClose={onClose}
             title="Plugin Manager"
-            className="iris-popup-center iris-popup-medium"
+            className="iris-popup-top-center iris-popup-medium"
+            style={{
+                ['--iris-popup-border' as any]: theme.AQUA,
+                ['--iris-popup-shadow' as any]: `${theme.AQUA}55`,
+                ['--iris-popup-title-color' as any]: theme.AQUA,
+            }}
         >
             <div className="iris-plugins-list">
                 {availablePlugins.length === 0 ? (

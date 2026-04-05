@@ -140,7 +140,7 @@ export function ExportPopup({ onClose }: ExportPopupProps): JSX.Element {
         <Popup
             onClose={onClose}
             title="Export Data"
-            className="iris-popup-center iris-popup-medium"
+            className="iris-popup-top-center iris-popup-medium"
             style={{
                 ['--iris-popup-border' as any]: theme.AQUA,
                 ['--iris-popup-shadow' as any]: `${theme.AQUA}55`,

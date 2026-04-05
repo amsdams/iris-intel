@@ -1,7 +1,7 @@
 import { h, JSX } from 'preact';
 import { useStore } from '@iris/core';
 import { Popup } from '../../shared/Popup';
-import { UI_COLORS } from '../../theme';
+import {THEMES, UI_COLORS} from '../../theme';
 import './plugins.css';
 
 type ActionMarkupData = {
@@ -32,6 +32,9 @@ type PluginFeatureProperties = {
 } & Record<string, unknown>;
 
 export function PluginFeaturePopup(): JSX.Element | null {
+    const themeId = useStore((state) => state.themeId);
+    const theme = THEMES[themeId] || THEMES.INGRESS;
+
     const selectedFeature = useStore((state) => state.selectedPluginFeature);
     const setSelectedPluginFeature = useStore((state) => state.setSelectedPluginFeature);
 
@@ -90,12 +93,11 @@ export function PluginFeaturePopup(): JSX.Element | null {
         <Popup
             title={isPlayerMarker ? 'Player Last Activity' : 'Plugin Feature'}
             onClose={() => setSelectedPluginFeature(null)}
-            className="iris-popup-center iris-popup-medium"
+            className="iris-popup-top-center iris-popup-medium"
             style={{
-                ['--iris-popup-border' as any]: color || UI_COLORS.AQUA,
-                ['--iris-popup-shadow' as any]: `${color || UI_COLORS.AQUA}55`,
-                ['--iris-popup-title-color' as any]: color || UI_COLORS.AQUA,
-                ['--iris-feature-color' as any]: color || UI_COLORS.TEXT_BASE,
+                ['--iris-popup-border' as any]: theme.AQUA,
+                ['--iris-popup-shadow' as any]: `${theme.AQUA}55`,
+                ['--iris-popup-title-color' as any]: theme.AQUA,
             }}
         >
             <div className="iris-plugin-feature-details">

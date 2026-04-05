@@ -18,18 +18,17 @@ export function PlayerStatsPopup({ onClose }: PlayerStatsPopupProps): JSX.Elemen
     const theme = THEMES[themeId] || THEMES.INGRESS;
 
     const team = (playerStats?.team as 'E' | 'R' | 'M' | 'N') || 'N';
-    const teamColour = theme[team] || UI_COLORS.TEXT_BASE;
+    const colour = theme[team] || UI_COLORS.TEXT_BASE;
 
     return (
         <Popup
             onClose={onClose}
             title="Player Stats"
-            className="iris-popup-center iris-popup-medium"
+            className="iris-popup-top-center iris-popup-medium"
             style={{
-                ['--iris-popup-border' as any]: teamColour,
-                ['--iris-popup-shadow' as any]: `${teamColour}55`,
-                ['--iris-popup-title-color' as any]: teamColour,
-                ['--iris-faction-color' as any]: teamColour,
+                ['--iris-popup-border' as any]: theme.AQUA,
+                ['--iris-popup-shadow' as any]: `${theme.AQUA}55`,
+                ['--iris-popup-title-color' as any]: theme.AQUA,
             }}
         >
             <div className="iris-player-stats">
@@ -40,7 +39,7 @@ export function PlayerStatsPopup({ onClose }: PlayerStatsPopupProps): JSX.Elemen
                     </div>
                 ) : (
                     <>
-                        <div className="iris-player-nickname">
+                        <div className="iris-player-nickname" style={{ color: colour }}>
                             {playerStats.nickname}
                         </div>
                         <div className="iris-player-meta">
@@ -81,7 +80,7 @@ export function PlayerStatsPopup({ onClose }: PlayerStatsPopupProps): JSX.Elemen
                                                 className="iris-stats-bar-fill"
                                                 style={{ 
                                                     ['--iris-progress' as any]: `${Math.min(100, ((playerStats.ap - playerStats.min_ap_for_current_level) / (playerStats.min_ap_for_next_level - playerStats.min_ap_for_current_level)) * 100)}%`, 
-                                                    ['--iris-progress-color' as any]: teamColour,
+                                                    ['--iris-progress-color' as any]: colour,
                                                 }} 
                                             />
                                         </div>
