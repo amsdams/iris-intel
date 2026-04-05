@@ -27,6 +27,8 @@
     --iris-health-color: #00ff00;
     --iris-comm-color: var(--iris-accent);
     --iris-item-color: #ffffff;
+    --iris-progress: 0%;
+    --iris-progress-color: var(--iris-accent);
 }
 
 .iris-overlay-root *,
@@ -129,12 +131,12 @@
 .iris-popup {
     position: fixed;
     z-index: 10002;
-    background: rgba(0, 0, 0, 0.92);
-    color: #ffffff;
+    background: var(--iris-popup-bg, rgba(0, 0, 0, 0.92));
+    color: var(--iris-text-primary);
     padding: 16px;
     border-radius: 8px;
-    border: 2px solid #00ffff;
-    box-shadow: 0 0 20px rgba(0, 255, 255, 0.33);
+    border: 2px solid var(--iris-popup-border, var(--iris-accent));
+    box-shadow: 0 0 20px var(--iris-popup-shadow, rgba(0, 255, 255, 0.33));
     font-family: monospace;
     max-height: 80vh;
     pointer-events: auto;
@@ -169,7 +171,7 @@
 
 .iris-popup-title {
     margin: 0;
-    color: #00ffff;
+    color: var(--iris-popup-title-color, var(--iris-accent));
     font-size: 1.2em;
     pointer-events: none;
 }
@@ -327,9 +329,7 @@
     transform: translate(-50%, -50%);
 }
 
-.iris-popup-narrow { width: 300px; min-width: 300px; }
-.iris-popup-medium { width: 420px; min-width: 320px; max-width: 420px; }
-.iris-popup-wide { width: 600px; min-width: 450px; max-width: 90vw; }
+.iris-popup-medium { width: 420px; min-width: 320px; max-width: 90vw; }
 
 @media (max-width: 600px) {
     .iris-popup {

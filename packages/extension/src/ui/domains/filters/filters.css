@@ -1,0 +1,30 @@
+.iris-filter-section-title {
+    margin: 15px 0 8px 0;
+    color: var(--iris-aqua);
+    font-size: 1.2em;
+}
+
+.iris-filter-item {
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 0.85em;
+}
+
+.iris-filter-checkbox {
+    margin-right: 8px;
+}
+
+.iris-filter-levels-grid,
+.iris-filter-health-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+}
+
+.iris-filter-history-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 5px;
+}

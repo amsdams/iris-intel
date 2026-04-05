@@ -1,51 +1,68 @@
+.iris-player-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
 .iris-player-empty {
-  color: var(--iris-text-secondary);
-  font-size: 0.9em;
-  text-align: center;
-  padding: 10px;
+    padding: 20px;
+    text-align: center;
+    color: var(--iris-text-muted);
+    font-size: 0.9em;
 }
 
 .iris-player-nickname {
-  font-size: 1em;
-  font-weight: bold;
-  margin-bottom: 8px;
-  padding-right: 20px;
+    font-size: 1.4em;
+    font-weight: bold;
+    color: var(--iris-faction-color, var(--iris-accent));
+    text-align: center;
 }
 
 .iris-player-meta {
-  font-size: 0.85em;
-  color: var(--iris-text-secondary);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .iris-player-meta-row {
-  display: flex;
-  justify-content: space-between;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9em;
+    font-weight: bold;
+    color: var(--iris-text-primary);
 }
 
 .iris-player-ap {
-  color: var(--iris-text-primary);
+    color: var(--iris-accent);
 }
 
 .iris-stats-label-row {
-  font-size: 0.8em;
-  margin-bottom: 2px;
-  display: flex;
-  justify-content: space-between;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75em;
+    color: var(--iris-text-muted);
+    margin-bottom: 4px;
 }
 
 .iris-stats-bar-bg {
-  width: 100%;
-  height: 4px;
-  background-color: #333;
-  border-radius: 2px;
-  overflow: hidden;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    width: 100%;
+    overflow: hidden;
+    border-radius: 2px;
+}
+
+.iris-stats-bar-fill {
+    height: 100%;
+    width: var(--iris-progress, 0%);
+    background-color: var(--iris-progress-color, var(--iris-accent));
+    box-shadow: 0 0 5px var(--iris-progress-color, var(--iris-accent));
+    transition: width 0.3s ease;
 }
 
 .iris-player-invites {
-  font-size: 0.8em;
-  margin-top: 4px;
-  opacity: 0.8;
+    font-size: 0.8em;
+    text-align: center;
+    color: var(--iris-text-muted);
+    margin-top: 4px;
 }

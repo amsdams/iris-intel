@@ -2,6 +2,7 @@ import { h, JSX } from 'preact';
 import { useStore } from '@iris/core';
 import { Popup } from '../../shared/Popup';
 import { THEMES, UI_COLORS } from '../../theme';
+import './player.css';
 
 // ---------------------------------------------------------------------------
 // PlayerStatsPopup
@@ -23,12 +24,12 @@ export function PlayerStatsPopup({ onClose }: PlayerStatsPopupProps): JSX.Elemen
         <Popup
             onClose={onClose}
             title="Player Stats"
+            className="iris-popup-center iris-popup-medium"
             style={{
-                bottom: '20px',
-                right: '20px',
-                minWidth: '250px',
-                border: `2px solid ${teamColour}`,
-                boxShadow: `0 0 20px ${teamColour}55`,
+                ['--iris-popup-border' as any]: teamColour,
+                ['--iris-popup-shadow' as any]: `${teamColour}55`,
+                ['--iris-popup-title-color' as any]: teamColour,
+                ['--iris-faction-color' as any]: teamColour,
             }}
         >
             <div className="iris-player-stats">
@@ -39,10 +40,7 @@ export function PlayerStatsPopup({ onClose }: PlayerStatsPopupProps): JSX.Elemen
                     </div>
                 ) : (
                     <>
-                        <div 
-                            className="iris-player-nickname"
-                            style={{ color: teamColour }}
-                        >
+                        <div className="iris-player-nickname">
                             {playerStats.nickname}
                         </div>
                         <div className="iris-player-meta">
@@ -60,12 +58,13 @@ export function PlayerStatsPopup({ onClose }: PlayerStatsPopupProps): JSX.Elemen
                                         <span>{playerStats.energy.toLocaleString()} / {playerStats.xm_capacity.toLocaleString()}</span>
                                     </div>
                                     <div className="iris-stats-bar-bg">
-                                        <div style={{ 
-                                            width: `${Math.min(100, (playerStats.energy / playerStats.xm_capacity) * 100)}%`, 
-                                            height: '100%', 
-                                            backgroundColor: '#00faff', // XM color
-                                            boxShadow: '0 0 5px #00faff'
-                                        }} />
+                                        <div 
+                                            className="iris-stats-bar-fill"
+                                            style={{ 
+                                                ['--iris-progress' as any]: `${Math.min(100, (playerStats.energy / playerStats.xm_capacity) * 100)}%`,
+                                                ['--iris-progress-color' as any]: '#00faff',
+                                            }} 
+                                        />
                                     </div>
                                 </div>
                             )}
@@ -78,12 +77,13 @@ export function PlayerStatsPopup({ onClose }: PlayerStatsPopupProps): JSX.Elemen
                                     </div>
                                     {playerStats.ap !== null && playerStats.min_ap_for_current_level !== undefined && (
                                         <div className="iris-stats-bar-bg">
-                                            <div style={{ 
-                                                width: `${Math.min(100, ((playerStats.ap - playerStats.min_ap_for_current_level) / (playerStats.min_ap_for_next_level - playerStats.min_ap_for_current_level)) * 100)}%`, 
-                                                height: '100%', 
-                                                backgroundColor: teamColour,
-                                                boxShadow: `0 0 5px ${teamColour}`
-                                            }} />
+                                            <div 
+                                                className="iris-stats-bar-fill"
+                                                style={{ 
+                                                    ['--iris-progress' as any]: `${Math.min(100, ((playerStats.ap - playerStats.min_ap_for_current_level) / (playerStats.min_ap_for_next_level - playerStats.min_ap_for_current_level)) * 100)}%`, 
+                                                    ['--iris-progress-color' as any]: teamColour,
+                                                }} 
+                                            />
                                         </div>
                                     )}
                                 </div>
