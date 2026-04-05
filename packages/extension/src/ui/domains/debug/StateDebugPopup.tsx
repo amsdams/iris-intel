@@ -1,4 +1,5 @@
 import { h, JSX } from 'preact';
+import { useState, useEffect } from 'preact/hooks';
 import { useStore } from '@iris/core';
 import { Popup } from '../../shared/Popup';
 import { IRIS_VERSION_LABEL } from '../../../version';
@@ -24,6 +25,30 @@ export function StateDebugPopup({ onClose }: StateDebugPopupProps): JSX.Element 
     const toggleDebugLogging = useStore((state) => state.toggleDebugLogging);
     const mapState = useStore((state) => state.mapState);
     const discoveredLocation = useStore((state) => state.discoveredLocation);
+    const lastResolvedLatLng = useStore((state) => state.lastResolvedLatLng);
+    const addressStatus = useStore((state) => state.addressStatus);
+    const addressNextLookupAt = useStore((state) => state.addressNextLookupAt);
+
+    const [countdown, setCountdown] = useState<number | null>(null);
+
+    useEffect(() => {
+        if (addressStatus !== 'pending' || !addressNextLookupAt) {
+            setCountdown(null);
+            return;
+        }
+
+        const interval = setInterval(() => {
+            const remaining = Math.max(0, addressNextLookupAt - Date.now());
+            setCountdown(remaining);
+        }, 50);
+
+        return () => clearInterval(interval);
+    }, [addressStatus, addressNextLookupAt]);
+
+    const isStale = discoveredLocation && lastResolvedLatLng && (
+        Math.abs(lastResolvedLatLng.lat - mapState.lat) > 0.000001 ||
+        Math.abs(lastResolvedLatLng.lng - mapState.lng) > 0.000001
+    );
 
     return (
         <Popup
@@ -48,14 +73,24 @@ export function StateDebugPopup({ onClose }: StateDebugPopupProps): JSX.Element 
                     <p className="iris-debug-stat-item iris-debug-stat-value">Lat: {mapState.lat.toFixed(6)}</p>
                     <p className="iris-debug-stat-item iris-debug-stat-value">Lng: {mapState.lng.toFixed(6)}</p>
                     <p className="iris-debug-stat-item iris-debug-stat-value">Zoom: {mapState.zoom}</p>
-                    {discoveredLocation && (
-                        <div style={{ marginTop: '4px' }}>
+                    
+                    <div style={{ marginTop: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <p className="iris-debug-stat-item iris-debug-stat-label" style={{ fontSize: '0.85em' }}>Address:</p>
-                            <p className="iris-debug-stat-item iris-debug-discovered-location">
+                            {isStale && <span style={{ fontSize: '0.75em', color: '#ffaa00', fontStyle: 'italic' }}>(stale)</span>}
+                            {addressStatus === 'resolving' && <span style={{ fontSize: '0.75em', color: '#00ffff' }}>Resolving...</span>}
+                            {countdown !== null && <span style={{ fontSize: '0.75em', color: '#aaaaaa' }}>Wait: {(countdown / 1000).toFixed(1)}s</span>}
+                        </div>
+                        {discoveredLocation ? (
+                            <p className="iris-debug-stat-item iris-debug-discovered-location" style={{ opacity: isStale ? 0.6 : 1 }}>
                                 {discoveredLocation}
                             </p>
-                        </div>
-                    )}
+                        ) : (
+                            <p className="iris-debug-stat-item iris-debug-discovered-location" style={{ opacity: 0.5 }}>
+                                (unknown)
+                            </p>
+                        )}
+                    </div>
                     
                     <div className="iris-debug-divider">
                         <p className="iris-debug-stat-item">Portals: {portalCount}</p>

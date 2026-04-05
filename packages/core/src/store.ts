@@ -342,6 +342,8 @@ interface UISlice {
     pluginFeatures: GeoJSON.FeatureCollection;
     discoveredLocation: string | null;
     lastResolvedLatLng: { lat: number; lng: number } | null;
+    addressStatus: 'idle' | 'pending' | 'resolving';
+    addressNextLookupAt: number | null;
     mapState: {
         lat: number;
         lng: number;
@@ -480,6 +482,9 @@ export function getEndpointKeyFromUrl(url: string): EndpointKey {
 }
 
 const SUCCESS_DEDUP_WINDOW_MS = 3000;
+const REVERSE_GEOCODE_DEBOUNCE_MS = 1000;
+
+let reverseGeocodeTimeout: any = null;
 
 // Slice Creators
 const createSettingsSlice: StateCreator<IRISState, [], [], SettingsSlice> = (set) => ({
@@ -590,6 +595,8 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
     pluginFeatures: { type: 'FeatureCollection', features: [] },
     discoveredLocation: null,
     lastResolvedLatLng: null,
+    addressStatus: 'idle',
+    addressNextLookupAt: null,
     mapState: { lat: 0, lng: 0, zoom: 3 },
     selectedPortalId: null,
     selectedPluginFeature: null,
@@ -614,7 +621,8 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
     setPluginFeatures: (features) => set(() => ({ pluginFeatures: features })),
     setDiscoveredLocation: (location) => set(() => ({ discoveredLocation: location })),
     reverseGeocode: async (lat, lng) => {
-        const { lastResolvedLatLng } = useStore.getState();
+        const { lastResolvedLatLng, debugLogging } = useStore.getState();
+        
         // Use higher precision (0.000001 is ~11cm) to ensure search jumps trigger lookup
         if (lastResolvedLatLng &&
             Math.abs(lastResolvedLatLng.lat - lat) < 0.000001 &&
@@ -622,24 +630,42 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
           return;
         }
 
-        if (useStore.getState().debugLogging) {
-            console.log(`IRIS: Reverse geocoding for ${lat}, ${lng}`);
+        if (reverseGeocodeTimeout) {
+            clearTimeout(reverseGeocodeTimeout);
         }
 
-        try {
-            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`);
-            if (response.ok) {
-                const data = await response.json();
-                if (data.display_name) {
-                    set(() => ({ 
-                        discoveredLocation: data.display_name,
-                        lastResolvedLatLng: { lat, lng }
-                    }));
-                }
+        set(() => ({ 
+            addressStatus: 'pending',
+            addressNextLookupAt: Date.now() + REVERSE_GEOCODE_DEBOUNCE_MS
+        }));
+
+        reverseGeocodeTimeout = setTimeout(async () => {
+            set(() => ({ 
+                addressStatus: 'resolving',
+                addressNextLookupAt: null
+            }));
+
+            if (debugLogging) {
+                console.log(`IRIS: Reverse geocoding for ${lat}, ${lng}`);
             }
-        } catch (e) {
-            console.warn('IRIS: Reverse geocoding failed', e);
-        }
+
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.display_name) {
+                        set(() => ({ 
+                            discoveredLocation: data.display_name,
+                            lastResolvedLatLng: { lat, lng },
+                            addressStatus: 'idle'
+                        }));
+                    }
+                }
+            } catch (e) {
+                console.warn('IRIS: Reverse geocoding failed', e);
+                set(() => ({ addressStatus: 'idle' }));
+            }
+        }, REVERSE_GEOCODE_DEBOUNCE_MS);
     },
     updateMapState: (lat, lng, zoom, bounds) => set(() => ({
         mapState: { lat, lng, zoom, bounds }
@@ -847,12 +873,14 @@ export const useStore = create<IRISState>()(
                     showVisited: state.showVisited,
                     showCaptured: state.showCaptured,
                     showScanned: state.showScanned,
+                    discoveredLocation: state.discoveredLocation,
+                    lastResolvedLatLng: state.lastResolvedLatLng,
                     mapState: {
                         lat: state.mapState.lat,
                         lng: state.mapState.lng,
                         zoom: state.mapState.zoom,
                     },
-                } as IRISSettings & { mapState: UISlice['mapState'] }),
+                } as IRISState),
                 onRehydrateStorage: () => (state: IRISState | undefined): void => {
                     if (state) {
                         if (state.themeId === 'DEFAULT') {
