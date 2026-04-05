@@ -32,3 +32,13 @@
 .iris-map-theme-item-active .iris-map-theme-name {
   color: var(--iris-accent);
 }
+
+.iris-map-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: auto;
+  z-index: 9999;
+}

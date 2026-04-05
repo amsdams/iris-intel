@@ -49,9 +49,12 @@ export function StateDebugPopup({ onClose }: StateDebugPopupProps): JSX.Element 
                     <p className="iris-debug-stat-item iris-debug-stat-value">Lng: {mapState.lng.toFixed(6)}</p>
                     <p className="iris-debug-stat-item iris-debug-stat-value">Zoom: {mapState.zoom}</p>
                     {discoveredLocation && (
-                        <p className="iris-debug-stat-item iris-debug-discovered-location">
-                            {discoveredLocation}
-                        </p>
+                        <div style={{ marginTop: '4px' }}>
+                            <p className="iris-debug-stat-item iris-debug-stat-label" style={{ fontSize: '0.85em' }}>Address:</p>
+                            <p className="iris-debug-stat-item iris-debug-discovered-location">
+                                {discoveredLocation}
+                            </p>
+                        </div>
                     )}
                     
                     <div className="iris-debug-divider">

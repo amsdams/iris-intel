@@ -1,0 +1,47 @@
+.iris-debug-toggle {
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #444;
+}
+
+.iris-debug-toggle label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    gap: 8px;
+}
+
+.iris-debug-stat-item {
+    margin: 0;
+}
+
+.iris-debug-stat-label {
+    font-weight: bold;
+    color: #00ffff;
+    margin-top: 4px;
+}
+
+.iris-debug-stat-value {
+    margin-left: 8px;
+}
+
+.iris-debug-discovered-location {
+    margin-left: 8px;
+    font-size: 0.9em;
+    color: #aaa;
+    font-style: italic;
+    word-wrap: break-word;
+    white-space: normal;
+}
+
+.iris-debug-divider {
+    margin-top: 8px;
+    border-top: 1px solid #333;
+    padding-top: 4px;
+}
+
+.iris-debug-popup-custom {
+    bottom: 20px;
+    right: 20px;
+    min-width: 250px;
+}

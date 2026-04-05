@@ -341,6 +341,7 @@ interface UISlice {
     menuItems: MenuItem[];
     pluginFeatures: GeoJSON.FeatureCollection;
     discoveredLocation: string | null;
+    lastResolvedLatLng: { lat: number; lng: number } | null;
     mapState: {
         lat: number;
         lng: number;
@@ -367,6 +368,7 @@ interface UISlice {
     removeMenuItem: (id: string) => void;
     setPluginFeatures: (features: GeoJSON.FeatureCollection) => void;
     setDiscoveredLocation: (location: string | null) => void;
+    reverseGeocode: (lat: number, lng: number) => Promise<void>;
     updateMapState: (lat: number, lng: number, zoom: number, bounds?: {
         minLatE6: number;
         minLngE6: number;
@@ -587,6 +589,7 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
     menuItems: [],
     pluginFeatures: { type: 'FeatureCollection', features: [] },
     discoveredLocation: null,
+    lastResolvedLatLng: null,
     mapState: { lat: 0, lng: 0, zoom: 3 },
     selectedPortalId: null,
     selectedPluginFeature: null,
@@ -610,6 +613,34 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
     })),
     setPluginFeatures: (features) => set(() => ({ pluginFeatures: features })),
     setDiscoveredLocation: (location) => set(() => ({ discoveredLocation: location })),
+    reverseGeocode: async (lat, lng) => {
+        const { lastResolvedLatLng } = useStore.getState();
+        // Use higher precision (0.000001 is ~11cm) to ensure search jumps trigger lookup
+        if (lastResolvedLatLng &&
+            Math.abs(lastResolvedLatLng.lat - lat) < 0.000001 &&
+            Math.abs(lastResolvedLatLng.lng - lng) < 0.000001) {
+          return;
+        }
+
+        if (useStore.getState().debugLogging) {
+            console.log(`IRIS: Reverse geocoding for ${lat}, ${lng}`);
+        }
+
+        try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.display_name) {
+                    set(() => ({ 
+                        discoveredLocation: data.display_name,
+                        lastResolvedLatLng: { lat, lng }
+                    }));
+                }
+            }
+        } catch (e) {
+            console.warn('IRIS: Reverse geocoding failed', e);
+        }
+    },
     updateMapState: (lat, lng, zoom, bounds) => set(() => ({
         mapState: { lat, lng, zoom, bounds }
     })),

@@ -1,6 +1,9 @@
 export interface IntelMapInstance {
   setCenter: (center: { lat: number; lng: number }) => void;
   setZoom: (zoom: number) => void;
+  getCenter: () => { lat: () => number; lng: () => number };
+  getZoom: () => number;
+  addListener: (event: string, callback: () => void) => void;
 }
 
 export interface GoogleMapConstructor {
@@ -189,12 +192,4 @@ export function getIntelPositionFromCookies(doc: Document): { lat: number; lng: 
   if (isNaN(lat) || isNaN(lng) || isNaN(zoom)) return null;
 
   return { lat, lng, zoom };
-}
-
-export function extractDiscoveredLocation(doc: Document): string | null {
-  const addressInput = doc.querySelector('#address') as HTMLInputElement;
-  if (addressInput && addressInput.value && addressInput.value.trim().length > 0) {
-    return addressInput.value.trim();
-  }
-  return null;
 }

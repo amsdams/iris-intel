@@ -343,6 +343,9 @@ export function MapOverlay(): JSX.Element {
             maxLngE6: Math.round(bounds.getEast() * 1e6),
         }
       }, '*');
+
+      // Update address lookup
+      useStore.getState().reverseGeocode(center.lat, center.lng);
     });
 
     const onInteraction = (e: maplibregl.MapMouseEvent | maplibregl.MapTouchEvent): void => {
@@ -474,9 +477,11 @@ export function MapOverlay(): JSX.Element {
     if (isFirstSync.current) {
         isFirstSync.current = false;
         map.current.jumpTo({ center: [lng, lat], zoom });
+        useStore.getState().reverseGeocode(lat, lng);
     } else {
         isMoving.current = true;
         map.current.jumpTo({ center: [lng, lat], zoom });
+        useStore.getState().reverseGeocode(lat, lng);
         setTimeout(() => { isMoving.current = false; }, 100);
     }
   }, [lat, lng, zoom, styleLoaded]);
@@ -651,15 +656,7 @@ export function MapOverlay(): JSX.Element {
   return (
       <div
           ref={mapContainer}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            pointerEvents: 'auto',
-            zIndex: 9999,
-          }}
+          className="iris-map-container"
       />
   );
 }
