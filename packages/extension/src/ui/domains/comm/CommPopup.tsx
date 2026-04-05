@@ -247,7 +247,7 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
             onClose={onClose}
             title="COMM"
             noScroll={true}
-            className="iris-comm-popup-custom"
+            className="iris-popup-top-right iris-popup-medium"
             headerExtras={
                 <button 
                     className="iris-comm-refresh-btn"

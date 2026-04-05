@@ -288,6 +288,49 @@
 
 .iris-hidden { display: none; }
 
+/* Popup Positioning Utilities */
+.iris-popup-bottom-center {
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.iris-popup-top-center {
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.iris-popup-bottom-right {
+    bottom: 20px;
+    right: 20px;
+}
+
+.iris-popup-bottom-left {
+    bottom: 20px;
+    left: 20px;
+}
+
+.iris-popup-top-right {
+    top: 90px;
+    right: 20px;
+}
+
+.iris-popup-top-left {
+    top: 90px;
+    left: 20px;
+}
+
+.iris-popup-center {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.iris-popup-narrow { width: 300px; min-width: 300px; }
+.iris-popup-medium { width: 420px; min-width: 320px; max-width: 420px; }
+.iris-popup-wide { width: 600px; min-width: 450px; max-width: 90vw; }
+
 @media (max-width: 600px) {
     .iris-popup {
         width: 90vw !important;

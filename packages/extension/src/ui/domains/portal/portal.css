@@ -233,16 +233,6 @@
 .iris-rarity-very-rare { color: #b000ff; }
 .iris-rarity-extremely-rare { color: #ff0000; }
 
-.iris-portal-popup-custom {
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    min-width: 300px;
-    max-width: 420px;
-    border: 2px solid var(--iris-faction-color);
-    box-shadow: 0 0 20px var(--iris-faction-shadow-color, rgba(0, 255, 255, 0.33));
-}
-
 .iris-portal-name {
     font-size: 1.2em;
     font-weight: bold;

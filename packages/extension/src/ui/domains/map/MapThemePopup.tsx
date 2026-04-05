@@ -16,7 +16,7 @@ export function MapThemePopup({ onClose }: MapThemePopupProps): JSX.Element {
         <Popup
             onClose={onClose}
             title="Map Theme"
-            className="iris-map-theme-popup-custom"
+            className="iris-popup-top-center iris-popup-narrow"
         >
             <div className="iris-map-themes">
                 {Object.keys(MAP_THEMES).map((id) => (

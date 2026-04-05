@@ -1,13 +1,3 @@
-.iris-inventory-popup-custom {
-    top: 50px;
-    right: 10px;
-    left: 10px;
-    width: auto;
-    max-width: 450px;
-    height: calc(80vh - 60px);
-    margin-left: auto;
-}
-
 .iris-inventory {
     display: flex;
     flex-direction: column;

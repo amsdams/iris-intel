@@ -55,7 +55,7 @@ export function StateDebugPopup({ onClose }: StateDebugPopupProps): JSX.Element 
         <Popup
             onClose={onClose}
             title="State Debug Info"
-            className="iris-debug-popup-custom"
+            className="iris-popup-bottom-right iris-popup-narrow"
         >
             <div className="iris-debug-info">
                 <div className="iris-debug-toggle">

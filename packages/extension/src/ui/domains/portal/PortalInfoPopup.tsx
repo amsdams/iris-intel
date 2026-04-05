@@ -56,10 +56,12 @@ export function PortalInfoPopup(): JSX.Element | null {
         <Popup
             onClose={() => selectPortal(null)}
             title={'Portal Details'}
-            className="iris-portal-popup-custom"
+            className="iris-popup-bottom-center iris-popup-medium"
             style={{
+                ['--iris-popup-border' as any]: colour,
+                ['--iris-popup-shadow' as any]: `${colour}55`,
+                ['--iris-popup-title-color' as any]: colour,
                 ['--iris-faction-color' as any]: colour,
-                ['--iris-faction-shadow-color' as any]: `${colour}55`,
             }}
         >
             <div className="iris-portal-info">

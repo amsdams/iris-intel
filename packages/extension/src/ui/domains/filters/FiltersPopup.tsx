@@ -57,7 +57,7 @@ export function FiltersPopup({ onClose }: FiltersPopupProps): JSX.Element {
         <Popup
             onClose={onClose}
             title="Filters"
-            className="iris-filters-popup-custom"
+            className="iris-popup-bottom-center iris-popup-medium"
         >
             <div className="iris-filters">
                 <h3 className="iris-filter-section-title">Layers</h3>

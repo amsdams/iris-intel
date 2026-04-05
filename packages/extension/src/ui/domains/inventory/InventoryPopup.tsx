@@ -170,9 +170,11 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
                     REFRESH
                 </button>
             }
-            className="iris-inventory-popup-custom"
+            className="iris-popup-top-right iris-popup-wide"
             style={{
-                ['--iris-accent' as any]: theme.AQUA,
+                ['--iris-popup-border' as any]: theme.AQUA,
+                ['--iris-popup-shadow' as any]: `${theme.AQUA}55`,
+                ['--iris-popup-title-color' as any]: theme.AQUA,
             }}
         >
             {!hasSubscription ? (

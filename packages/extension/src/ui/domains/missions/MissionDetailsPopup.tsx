@@ -57,9 +57,11 @@ export function MissionDetailsPopup(): JSX.Element | null {
     <Popup
       onClose={() => clearMission(null)}
       title="Mission Details"
-      className="iris-mission-details-popup-custom"
+      className="iris-popup-top-right iris-popup-medium"
       style={{
-        ['--iris-accent' as any]: theme.AQUA,
+        ['--iris-popup-border' as any]: theme.AQUA,
+        ['--iris-popup-shadow' as any]: `${theme.AQUA}55`,
+        ['--iris-popup-title-color' as any]: theme.AQUA,
       }}
     >
       <div className="iris-mission-info">

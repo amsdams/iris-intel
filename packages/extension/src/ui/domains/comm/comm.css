@@ -136,16 +136,6 @@
     margin-bottom: 6px;
 }
 
-.iris-comm-popup-custom {
-    top: 50px;
-    right: 10px;
-    left: 10px;
-    width: auto;
-    max-width: 450px;
-    height: calc(80vh - 60px);
-    margin-left: auto;
-}
-
 .iris-comm-markup-text {
     color: var(--iris-text-base);
 }
