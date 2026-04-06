@@ -7,14 +7,14 @@ import './debug.css';
 import {THEMES} from "../../theme";
 
 // ---------------------------------------------------------------------------
-// StateDebugPopup
+// DiagnosticsPopup
 // ---------------------------------------------------------------------------
 
-interface StateDebugPopupProps {
+interface DiagnosticsPopupProps {
     onClose: () => void;
 }
 
-export function StateDebugPopup({ onClose }: StateDebugPopupProps): JSX.Element {
+export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Element {
     const themeId = useStore((state) => state.themeId);
     const theme = THEMES[themeId] || THEMES.INGRESS;
     const portals = useStore((state) => state.portals);

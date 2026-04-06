@@ -153,7 +153,7 @@ function LocationSearch(): JSX.Element {
 interface TopbarProps {
     onTogglePlayerStats: () => void;
     onToggleInventory: () => void;
-    onToggleStateDebug: () => void;
+    onToggleDiagnostics: () => void;
     onToggleFiltersPopup: () => void;
     onToggleMapVisibility: () => void;
     onToggleComm: () => void;
@@ -169,7 +169,7 @@ interface TopbarProps {
 export function Topbar({
     onTogglePlayerStats,
     onToggleInventory,
-    onToggleStateDebug,
+    onToggleDiagnostics,
     onToggleFiltersPopup,
     onToggleMapVisibility,
     onToggleComm,
@@ -294,7 +294,7 @@ export function Topbar({
                         </button>
                         <button
                             className="iris-menu-item"
-                            onClick={() => { onToggleStateDebug(); setShowMenu(false); }}
+                            onClick={() => { onToggleDiagnostics(); setShowMenu(false); }}
                             style={{ color: theme.AQUA }}
                         >
                             Diagnostics

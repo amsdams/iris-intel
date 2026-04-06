@@ -163,9 +163,9 @@ Tasks:
 | Persist map state to localStorage | Done | lat, lng, and zoom are now persistent |
 | Implement reverse geocoding | Done | uses Nominatim API with 1s debounce and precision throttling |
 | Sync Intel search moves | Done | hooked Google Maps `idle` event to capture search jumps |
-| Visualize address status in Debug Popup | Done | shows stale/resolving states and a debounce countdown |
+| Visualize address status in Diagnostics Popup | Done | shows stale/resolving states and a debounce countdown |
 | Persist resolved address and geocode metadata | Done | top-level persistence ensures "instant" UI on reload |
-| Enable/Disable Map Rotation and Pitch | Done | add setting to store; merge with "Map Style" popup |
+| Enable/Disable Map Rotation and Pitch | Done | add setting to store; integrated into "Map Style" popup |
 
 ### Portal details show richer derived stats after targeted investigation
 Status: `Open`
@@ -257,7 +257,7 @@ Bugs:
 | Crosslink logic depends on visible map state and zoom | Open | reference plugin warns that visible range and zoom affect crosslink detection |
 
 ## Data Contracts And Persistence
-Status: `Open`
+Status: `In Progress`
 
 Goal:
 - improve type safety, parser confidence, storage boundaries, and bridge discipline
@@ -272,13 +272,16 @@ Tasks:
 | Payload typing pass | In Progress | missions-list, artifacts, scores completed; store/coordinator update in progress |
 
 ### Storage boundaries are clearer
-Status: `Open`
+Status: `Done`
+
+Outcome:
+- ensure critical settings survive sessions
 
 Tasks:
 
 | Task | Status | Notes |
 | --- | --- | --- |
-| Storage boundary design pass | Open | document or introduce clearer storage-service boundary |
+| Storage boundary design pass | Done | added allowRotation and allowPitch to persisted state |
 
 ## Diagnostics and Observability
 Status: `In Progress`
@@ -298,10 +301,10 @@ Tasks:
 | --- | --- | --- |
 | Log map panning events | Open | track lat/lng changes in Diagnostics |
 | Log map zoom events | Open | track zoom level changes in Diagnostics |
-| Visualize interaction history in Debug Popup | Open | show a rolling log of recent map movements |
+| Visualize interaction history in Diagnostics Popup | Open | show a rolling log of recent map movements |
 
 ## Semantic UI Cleanup
-Status: `In Progress`
+Status: `Done`
 
 Goal:
 - move semantic colors and UI semantics into clearer shared modules
@@ -314,13 +317,14 @@ Outcome:
 - improve reusability and theming consistency across the monorepo
 - enable advanced CSS features (hover, active, media queries) for all components
 - standardize popup positioning and padding
+- introduce generalized design system for inputs, buttons, and choice items
 
 Tasks:
 
 | Task | Status | Notes |
 | --- | --- | --- |
-| Add className support to base Popup component | Done | verified in Debug and Map themes |
-| Refactor State Debug Popup to pure CSS | Done | migrated to debug.css |
+| Add className support to base Popup component | Done | verified in Diagnostics and Map themes |
+| Refactor Diagnostics Popup to pure CSS | Done | migrated to debug.css |
 | Refactor Portal Info Popup to pure CSS | Done | migrated to portal.css; uses CSS variables for faction/level colors |
 | Refactor COMM / Passcode Popups to pure CSS | Done | migrated to comm.css and passcodes.css |
 | Refactor Inventory / Missions Popups to pure CSS | Done | migrated to inventory.css and missions.css |
@@ -328,6 +332,8 @@ Tasks:
 | Generalize popup styling in base.css | Done | base `.iris-popup` handles standard padding and variables |
 | Unify popup width and centering | Done | all major popups use `iris-popup-center iris-popup-medium` |
 | Fix inconsistent popup internal padding | Done | moved padding to .iris-popup-content; standardized internal spacing for major domains |
+| Standardize input and button styling | Done | introduced .iris-input and .iris-button in base.css |
+| Generalize choice item styling | Done | introduced .iris-choice-item for boxed interactive labels |
 
 ### Semantic colors are shared instead of locally improvised
 Status: `Open`
@@ -346,10 +352,11 @@ Goal:
 - ensure codebase consistency, maintainability, and performance through strictly followed patterns
 
 ### Core UI and Styling Principles
-Status: `In Progress`
+Status: `Done`
 
 Outcome:
 - predictable, themeable, and mobile-ready UI components
+- consistent pattern for inputs, buttons, and boxed choice items
 
 Tasks:
 
@@ -359,6 +366,7 @@ Tasks:
 | Mobile-First Layouts | Done | assume narrow screens; use 90vw width and centering for small viewports |
 | Centered Modal Pattern | Done | major interactions (Comm, Inventory, Missions) use a centered modal feel |
 | Theme variable usage | Done | define dynamic properties in `base.css` to satisfy IDE and maintain consistency |
+| Choice Item Pattern | Done | standardized boxed labels with consistent hover/active feedback |
 
 ### Architectural Patterns
 Status: `In Progress`

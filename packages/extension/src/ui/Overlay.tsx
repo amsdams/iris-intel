@@ -4,7 +4,7 @@ import { useStore } from '@iris/core';
 import { MapOverlay } from './domains/map/MapOverlay';
 import { Topbar } from './shared/Topbar';
 import { PlayerStatsPopup } from './domains/player/PlayerStatsPopup';
-import { StateDebugPopup } from './domains/debug/StateDebugPopup';
+import { DiagnosticsPopup } from './domains/debug/DiagnosticsPopup';
 import { FiltersPopup } from './domains/filters/FiltersPopup';
 import { PortalInfoPopup } from './domains/portal/PortalInfoPopup';
 import { CommPopup } from './domains/comm/CommPopup';
@@ -30,7 +30,7 @@ export function IRISOverlay(): JSX.Element {
     const sessionStatus = useStore((state) => state.sessionStatus);
     const [showPlayerStatsPopup, setShowPlayerStatsPopup] = useState(false);
     const [showInventoryPopup, setShowInventoryPopup] = useState(false);
-    const [showStateDebugPopup, setShowStateDebugPopup] = useState(false);
+    const [showDiagnosticsPopup, setShowDiagnosticsPopup] = useState(false);
     const [showFiltersPopup, setShowFiltersPopup] = useState(false);
     const [showCommPopup, setShowCommPopup] = useState(false);
     const [showThemePopup, setShowThemePopup] = useState(false);
@@ -50,7 +50,7 @@ export function IRISOverlay(): JSX.Element {
         }
         setShowInventoryPopup((value) => !value);
     };
-    const toggleStateDebugPopup = (): void => setShowStateDebugPopup((value) => !value);
+    const toggleDiagnosticsPopup = (): void => setShowDiagnosticsPopup((value) => !value);
     const toggleFiltersPopup = (): void => setShowFiltersPopup((value) => !value);
     const toggleCommPopup = (): void => setShowCommPopup((value) => !value);
     const toggleThemePopup = useCallback((): void => setShowThemePopup((value) => !value), []);
@@ -122,7 +122,7 @@ export function IRISOverlay(): JSX.Element {
             <Topbar
                 onTogglePlayerStats={togglePlayerStatsPopup}
                 onToggleInventory={toggleInventoryPopup}
-                onToggleStateDebug={toggleStateDebugPopup}
+                onToggleDiagnostics={toggleDiagnosticsPopup}
                 onToggleFiltersPopup={toggleFiltersPopup}
                 onToggleComm={toggleCommPopup}
                 onTogglePlugins={togglePluginsPopup}
@@ -174,8 +174,8 @@ export function IRISOverlay(): JSX.Element {
                 <ExportPopup onClose={toggleExportPopup} />
             )}
 
-            {showStateDebugPopup && (
-                <StateDebugPopup onClose={toggleStateDebugPopup} />
+            {showDiagnosticsPopup && (
+                <DiagnosticsPopup onClose={toggleDiagnosticsPopup} />
             )}
 
             {showFiltersPopup && (
