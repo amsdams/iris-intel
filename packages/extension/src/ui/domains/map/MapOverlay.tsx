@@ -340,7 +340,7 @@ export function MapOverlay(): JSX.Element {
       window.postMessage({
         type: 'IRIS_MOVE_MAP',
         center: { lat: center.lat, lng: center.lng },
-        zoom: Math.round(z),
+        zoom: z,
         bounds: {
             minLatE6: Math.round(bounds.getSouth() * 1e6),
             minLngE6: Math.round(bounds.getWest() * 1e6),

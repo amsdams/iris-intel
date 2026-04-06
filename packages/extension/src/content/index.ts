@@ -100,7 +100,13 @@ window.addEventListener('message', (event: MessageEvent) => {
     case 'IRIS_INITIAL_POSITION': {
       const { lat, lng, zoom } = msg as { lat: number; lng: number; zoom: number };
       hasInitialPosition = true;
-      useStore.getState().updateMapState(lat, lng, Math.max(zoom, 14));
+      const state = useStore.getState();
+      const currentZoom = state.mapState.zoom;
+      // If the incoming zoom is an integer (from Intel) and close to our current zoom,
+      // it's likely just Intel snapping to integer zoom levels.
+      // We keep our fractional zoom to avoid the "bounce" effect.
+      const targetZoom = (Math.abs(currentZoom - zoom) < 0.5) ? currentZoom : zoom;
+      state.updateMapState(lat, lng, targetZoom);
       break;
     }
     case 'IRIS_DISCOVERED_LOCATION': {

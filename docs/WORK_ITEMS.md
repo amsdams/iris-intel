@@ -166,6 +166,7 @@ Tasks:
 | Visualize address status in Diagnostics Popup | Done | shows stale/resolving states and a debounce countdown |
 | Persist resolved address and geocode metadata | Done | top-level persistence ensures "instant" UI on reload |
 | Enable/Disable Map Rotation and Pitch | Done | add setting to store; integrated into "Map Style" popup |
+| Fix map zoom "bounce" effect | Done | removed rounding/zoom-floor and added snap-prevention |
 
 ### Portal details show richer derived stats after targeted investigation
 Status: `Open`
