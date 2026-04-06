@@ -57,60 +57,98 @@ export function StateDebugPopup({ onClose }: StateDebugPopupProps): JSX.Element 
     return (
         <Popup
             onClose={onClose}
-            title="State Debug Info"
+            title="Diagnostics"
             className="iris-popup-top-center iris-popup-medium"
              style={{
-                ['--iris-popup-border' as any]: theme.AQUA,
-                ['--iris-popup-shadow' as any]: `${theme.AQUA}55`,
-                ['--iris-popup-title-color' as any]: theme.AQUA,
-            }}
+                '--iris-popup-border': theme.AQUA,
+                '--iris-popup-shadow': `${theme.AQUA}55`,
+                '--iris-popup-title-color': theme.AQUA,
+            } as Record<string, string>}
         >
             <div className="iris-debug-info">
-                <div className="iris-debug-toggle">
-                    <label>
-                        <input
-                            type="checkbox"
-                            checked={debugLogging}
-                            onChange={toggleDebugLogging}
-                        />
-                        Enable Debug Logging
-                    </label>
-                </div>
                 <div className="iris-debug-stats">
-                    <p className="iris-debug-stat-item">Version: {IRIS_VERSION_LABEL}</p>
-                    <p className="iris-debug-stat-item iris-debug-stat-label">Location:</p>
-                    <p className="iris-debug-stat-item iris-debug-stat-value">Lat: {mapState.lat.toFixed(6)}</p>
-                    <p className="iris-debug-stat-item iris-debug-stat-value">Lng: {mapState.lng.toFixed(6)}</p>
-                    <p className="iris-debug-stat-item iris-debug-stat-value">Zoom: {mapState.zoom}</p>
+                    <div className="iris-debug-table">
+                        <div className="iris-debug-row">
+                            <span className="iris-debug-label">Version</span>
+                            <span className="iris-debug-value">{IRIS_VERSION_LABEL}</span>
+                        </div>
+                    </div>
+
+                    <div className="iris-debug-section-title">LOCATION</div>
+                    <div className="iris-debug-table">
+                        <div className="iris-debug-row">
+                            <span className="iris-debug-label">Lat</span>
+                            <span className="iris-debug-value">{mapState.lat.toFixed(6)}</span>
+                        </div>
+                        <div className="iris-debug-row">
+                            <span className="iris-debug-label">Lng</span>
+                            <span className="iris-debug-value">{mapState.lng.toFixed(6)}</span>
+                        </div>
+                        <div className="iris-debug-row">
+                            <span className="iris-debug-label">Zoom</span>
+                            <span className="iris-debug-value">{mapState.zoom}</span>
+                        </div>
+                    </div>
                     
                     <div className="iris-debug-address-section">
                         <div className="iris-debug-address-header">
-                            <p className="iris-debug-stat-item iris-debug-stat-label iris-debug-address-label">Address:</p>
+                            <span className="iris-debug-section-title">ADDRESS</span>
                             {isStale && <span className="iris-debug-address-stale">(stale)</span>}
                             {addressStatus === 'resolving' && <span className="iris-debug-address-resolving">Resolving...</span>}
                             {countdown !== null && <span className="iris-debug-address-wait">Wait: {(countdown / 1000).toFixed(1)}s</span>}
                         </div>
-                        {discoveredLocation ? (
-                            <p className={`iris-debug-stat-item iris-debug-discovered-location ${isStale ? 'iris-debug-location-stale' : ''}`}>
-                                {discoveredLocation}
-                            </p>
-                        ) : (
-                            <p className="iris-debug-stat-item iris-debug-discovered-location iris-debug-location-unknown">
-                                (unknown)
-                            </p>
-                        )}
+                        <div className="iris-debug-table">
+                             <div className="iris-debug-row">
+                                <span className={`iris-debug-value iris-debug-discovered-location ${isStale ? 'iris-debug-location-stale' : ''}`}>
+                                    {discoveredLocation || '(unknown)'}
+                                </span>
+                             </div>
+                        </div>
                     </div>
                     
-                    <div className="iris-debug-divider">
-                        <p className="iris-debug-stat-item">Portals: {portalCount}</p>
-                        <p className="iris-debug-stat-item">Links: {linkCount}</p>
-                        <p className="iris-debug-stat-item">Fields: {fieldCount}</p>
+                    <div className="iris-debug-section-title">ENTITIES</div>
+                    <div className="iris-debug-table">
+                        <div className="iris-debug-row">
+                            <span className="iris-debug-label">Portals</span>
+                            <span className="iris-debug-value">{portalCount}</span>
+                        </div>
+                        <div className="iris-debug-row">
+                            <span className="iris-debug-label">Links</span>
+                            <span className="iris-debug-value">{linkCount}</span>
+                        </div>
+                        <div className="iris-debug-row">
+                            <span className="iris-debug-label">Fields</span>
+                            <span className="iris-debug-value">{fieldCount}</span>
+                        </div>
                     </div>
-                    {Object.values(statsItems).map((item) => (
-                        <p key={item.id} className={`iris-debug-stat-item iris-debug-stat-${item.id}`}>
-                            {item.label}: {typeof item.value === 'function' ? item.value() : item.value}
-                        </p>
-                    ))}
+
+                    {Object.values(statsItems).length > 0 && (
+                        <>
+                            <div className="iris-debug-section-title">EXTRA</div>
+                            <div className="iris-debug-table">
+                                {Object.values(statsItems).map((item) => (
+                                    <div key={item.id} className="iris-debug-row">
+                                        <span className="iris-debug-label">{item.label}</span>
+                                        <span className={`iris-debug-value iris-debug-stat-${item.id}`}>
+                                            {typeof item.value === 'function' ? item.value() : item.value}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                    )}
+
+                    <div className="iris-debug-section-title">DEVELOPER</div>
+                    <div className="iris-debug-toggle">
+                        <label>
+                            <input
+                                type="checkbox"
+                                checked={debugLogging}
+                                onChange={toggleDebugLogging}
+                            />
+                            Log raw message activity
+                        </label>
+                    </div>
                 </div>
             </div>
         </Popup>

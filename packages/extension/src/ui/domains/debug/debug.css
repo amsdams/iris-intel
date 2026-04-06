@@ -11,18 +11,47 @@
     gap: 8px;
 }
 
-.iris-debug-stat-item {
-    margin: 0;
+.iris-debug-section-title {
+    font-size: 0.8em;
+    color: #888;
+    margin-top: 12px;
+    margin-bottom: 4px;
+    text-transform: uppercase;
 }
 
-.iris-debug-stat-label {
-    font-weight: bold;
-    color: var(--iris-accent, #0ff);
-    margin-top: 4px;
+.iris-debug-table {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    border: 1px solid #222;
+    border-radius: 4px;
+    background: #111;
+    overflow: hidden;
+    margin-bottom: 8px;
 }
 
-.iris-debug-stat-value {
-    margin-left: 8px;
+.iris-debug-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 5px 8px;
+    border-bottom: 1px solid #1c1c1c;
+}
+
+.iris-debug-row:last-child {
+    border-bottom: none;
+}
+
+.iris-debug-label {
+    color: #888;
+    font-size: 0.78em;
+}
+
+.iris-debug-value {
+    color: #d6d6d6;
+    font-size: 0.8em;
+    text-align: right;
 }
 
 .iris-debug-address-section {
@@ -32,11 +61,7 @@
 .iris-debug-address-header {
     display: flex;
     align-items: center;
-    gap: 6px;
-}
-
-.iris-debug-address-label {
-    font-size: 0.85em;
+    gap: 8px;
 }
 
 .iris-debug-address-stale {
@@ -56,24 +81,14 @@
 }
 
 .iris-debug-discovered-location {
-    margin-left: 8px;
-    font-size: 0.9em;
+    font-size: 0.95em;
     color: var(--iris-text-muted, #aaa);
     font-style: italic;
-    overflow-wrap: break-word;
+    overflow-wrap: anywhere;
     white-space: normal;
+    text-align: left;
 }
 
 .iris-debug-location-stale {
     opacity: 0.6;
-}
-
-.iris-debug-location-unknown {
-    opacity: 0.5;
-}
-
-.iris-debug-divider {
-    margin-top: 8px;
-    border-top: 1px solid #333;
-    padding-top: 4px;
 }
