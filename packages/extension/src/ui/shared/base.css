@@ -209,24 +209,146 @@
     overflow-y: hidden;
 }
 
-.iris-btn {
-    background: #555;
+.iris-btn,
+.iris-button {
+    background: var(--iris-accent);
     color: #000;
     border: none;
-    padding: 5px 10px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: var(--iris-font-family, monospace);
+    font-size: 0.9em;
+    font-weight: bold;
+    transition: opacity 0.2s ease, transform 0.1s ease, background 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    line-height: 1.2;
+}
+
+.iris-btn:hover,
+.iris-button:hover {
+    opacity: 0.9;
+    background: var(--iris-accent);
+    filter: brightness(1.1);
+}
+
+.iris-btn:active,
+.iris-button:active {
+    transform: translateY(1px);
+}
+
+.iris-btn:disabled,
+.iris-button:disabled {
+    background: #444;
+    color: #888;
+    cursor: not-allowed;
+    opacity: 0.6;
+    transform: none;
+}
+
+.iris-btn-secondary {
+    background: #333;
+    color: var(--iris-text-primary);
+    border: 1px solid var(--iris-border);
+}
+
+.iris-btn-secondary:hover {
+    background: #444;
+    border-color: var(--iris-text-secondary);
+}
+
+.iris-input {
+    background: var(--iris-bg-alt, #111);
+    border: 1px solid var(--iris-border);
+    color: var(--iris-text-primary);
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-family: var(--iris-font-family, monospace);
+    font-size: 0.9em;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    width: 100%;
+}
+
+.iris-input:focus {
+    outline: none;
+    border-color: var(--iris-accent);
+    box-shadow: 0 0 0 2px rgb(0 255 255 / 10%);
+}
+
+.iris-input::placeholder {
+    color: var(--iris-text-muted);
+    opacity: 0.6;
+}
+
+.iris-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 0.9em;
+    color: var(--iris-text-primary);
+    user-select: none;
+    transition: color 0.2s ease;
+}
+
+.iris-label:hover {
+    color: var(--iris-accent);
+}
+
+.iris-checkbox,
+.iris-radio {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border: 1px solid var(--iris-border);
+    background: var(--iris-bg-alt, #111);
     border-radius: 3px;
     cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.iris-radio {
+    border-radius: 50%;
+}
+
+.iris-checkbox:checked,
+.iris-radio:checked {
+    background: var(--iris-accent);
+    border-color: var(--iris-accent);
+}
+
+.iris-checkbox:checked::after {
+    content: "✓";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #000;
+    font-size: 12px;
     font-weight: bold;
-    font-family: monospace;
 }
 
-.iris-btn:disabled {
-    cursor: default;
-    opacity: 0.7;
+.iris-radio:checked::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 6px;
+    height: 6px;
+    background: #000;
+    border-radius: 50%;
 }
 
-.iris-btn-primary {
-    background: #0ff;
+.iris-checkbox:focus-visible,
+.iris-radio:focus-visible {
+    outline: 2px solid var(--iris-accent);
+    outline-offset: 2px;
 }
 
 .iris-tabs {
@@ -234,50 +356,6 @@
     border-bottom: 1px solid var(--iris-border);
     margin-bottom: 10px;
 }
-
-.iris-tab {
-    padding: 8px 12px;
-    cursor: pointer;
-    font-size: 0.85em;
-    color: var(--iris-text-secondary);
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s ease;
-}
-
-.iris-tab:hover {
-    color: var(--iris-text-primary);
-    background: rgb(255 255 255 / 5%);
-}
-
-.iris-tab.active {
-    color: var(--iris-accent);
-    border-bottom-color: var(--iris-accent);
-}
-
-.iris-button {
-    background: var(--iris-accent);
-    color: #000;
-    border: none;
-    padding: 4px 8px;
-    border-radius: 3px;
-    cursor: pointer;
-    font-family: monospace;
-    font-size: 0.85em;
-    font-weight: bold;
-    transition: opacity 0.2s ease;
-}
-
-.iris-button:hover {
-    opacity: 0.8;
-}
-
-.iris-button:disabled {
-    background: #555;
-    cursor: not-allowed;
-    opacity: 0.5;
-}
-
-/* Utilities */
 .iris-flex { display: flex; }
 .iris-flex-col { display: flex; flex-direction: column; }
 .iris-flex-row { display: flex; flex-direction: row; }
@@ -294,6 +372,8 @@
 
 .iris-mt-1 { margin-top: 4px; }
 .iris-mt-2 { margin-top: 8px; }
+.iris-mt-3 { margin-top: 12px; }
+.iris-mt-4 { margin-top: 16px; }
 .iris-mb-1 { margin-bottom: 4px; }
 .iris-mb-2 { margin-bottom: 8px; }
 

@@ -71,60 +71,60 @@ export function FiltersPopup({ onClose }: FiltersPopupProps): JSX.Element {
         >
             <div className="iris-filters">
                 <h3 className="iris-filter-section-title">Layers</h3>
-                <label className="iris-filter-item">
+                <label className="iris-label">
                     <input
                         type="checkbox"
                         checked={showFields}
                         onChange={toggleShowFields}
-                        className="iris-filter-checkbox"
+                        className="iris-checkbox"
                     />
                     Fields
                 </label>
 
-                <label className="iris-filter-item">
+                <label className="iris-label">
                     <input
                         type="checkbox"
                         checked={showLinks}
                         onChange={toggleShowLinks}
-                        className="iris-filter-checkbox"
+                        className="iris-checkbox"
                     />
                     Links
                 </label>
 
                 <h3 className="iris-filter-section-title">Faction</h3>
-                <label className="iris-filter-item">
+                <label className="iris-label">
                     <input
                         type="checkbox"
                         checked={showResistance}
                         onChange={toggleShowResistance}
-                        className="iris-filter-checkbox"
+                        className="iris-checkbox"
                     />
                     Resistance
                 </label>
-                <label className="iris-filter-item">
+                <label className="iris-label">
                     <input
                         type="checkbox"
                         checked={showEnlightened}
                         onChange={toggleShowEnlightened}
-                        className="iris-filter-checkbox"
+                        className="iris-checkbox"
                     />
                     Enlightened
                 </label>
-                <label className="iris-filter-item">
+                <label className="iris-label">
                     <input
                         type="checkbox"
                         checked={showMachina}
                         onChange={toggleShowMachina}
-                        className="iris-filter-checkbox"
+                        className="iris-checkbox"
                     />
                     Machina
                 </label>
-                <label className="iris-filter-item">
+                <label className="iris-label">
                     <input
                         type="checkbox"
                         checked={showUnclaimedPortals}
                         onChange={toggleShowUnclaimedPortals}
-                        className="iris-filter-checkbox"
+                        className="iris-checkbox"
                     />
                     Unclaimed Portals
                 </label>
@@ -132,12 +132,12 @@ export function FiltersPopup({ onClose }: FiltersPopupProps): JSX.Element {
                 <h3 className="iris-filter-section-title">Portal Levels</h3>
                 <div className="iris-filter-levels-grid">
                     {[1, 2, 3, 4, 5, 6, 7, 8].map((level) => (
-                        <label key={level} className="iris-filter-level-item iris-filter-item">
+                        <label key={level} className="iris-label">
                             <input
                                 type="checkbox"
                                 checked={showLevel[level]}
                                 onChange={handleLevelToggle(level)}
-                                className="iris-filter-checkbox"
+                                className="iris-checkbox"
                             />
                             L{level}
                         </label>
@@ -147,12 +147,12 @@ export function FiltersPopup({ onClose }: FiltersPopupProps): JSX.Element {
                 <h3 className="iris-filter-section-title">Portal Health</h3>
                 <div className="iris-filter-health-grid">
                     {[25, 50, 75, 100].map((bucket) => (
-                        <label key={bucket} className="iris-filter-health-item iris-filter-item">
+                        <label key={bucket} className="iris-label">
                             <input
                                 type="checkbox"
                                 checked={showHealth[bucket]}
                                 onChange={handleHealthToggle(bucket)}
-                                className="iris-filter-checkbox"
+                                className="iris-checkbox"
                             />
                             {bucket}%
                         </label>
@@ -161,30 +161,30 @@ export function FiltersPopup({ onClose }: FiltersPopupProps): JSX.Element {
 
                 <h3 className="iris-filter-section-title">Portal History</h3>
                 <div className="iris-filter-history-grid">
-                    <label className="iris-filter-history-item iris-filter-item">
+                    <label className="iris-label">
                         <input
                             type="checkbox"
                             checked={showVisited}
                             onChange={toggleShowVisited}
-                            className="iris-filter-checkbox"
+                            className="iris-checkbox"
                         />
                         Visited
                     </label>
-                    <label className="iris-filter-history-item iris-filter-item">
+                    <label className="iris-label">
                         <input
                             type="checkbox"
                             checked={showCaptured}
                             onChange={toggleShowCaptured}
-                            className="iris-filter-checkbox"
+                            className="iris-checkbox"
                         />
                         Captured
                     </label>
-                    <label className="iris-filter-history-item iris-filter-item">
+                    <label className="iris-label">
                         <input
                             type="checkbox"
                             checked={showScanned}
                             onChange={toggleShowScanned}
-                            className="iris-filter-checkbox"
+                            className="iris-checkbox"
                         />
                         Scanned
                     </label>

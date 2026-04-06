@@ -28,14 +28,14 @@ export function ThemePopup({ onClose }: ThemePopupProps): JSX.Element {
                 {Object.keys(THEMES).map((id) => (
                     <label 
                         key={id} 
-                        className={`iris-theme-item ${themeId === id ? 'iris-theme-item-active' : ''}`}
+                        className={`iris-theme-item iris-label ${themeId === id ? 'iris-theme-item-active' : ''}`}
                     >
                         <input
                             type="radio"
                             name="theme-id"
                             checked={themeId === id}
                             onChange={() => setTheme(id)}
-                            className="iris-theme-radio"
+                            className="iris-radio iris-theme-radio"
                         />
                         <span className="iris-theme-name">{id}</span>
                         

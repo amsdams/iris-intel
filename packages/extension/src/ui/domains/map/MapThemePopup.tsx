@@ -36,14 +36,14 @@ export function MapThemePopup({ onClose }: MapThemePopupProps): JSX.Element {
                 {Object.keys(MAP_THEMES).map((id) => (
                     <label 
                         key={id} 
-                        className={`iris-map-theme-item ${mapThemeId === id ? 'iris-map-theme-item-active' : ''}`}
+                        className={`iris-label iris-map-theme-item ${mapThemeId === id ? 'iris-map-theme-item-active' : ''}`}
                     >
                         <input
                             type="radio"
                             name="map-theme"
                             checked={mapThemeId === id}
                             onChange={() => setMapTheme(id)}
-                            className="iris-map-theme-radio"
+                            className="iris-radio"
                         />
                         <span className="iris-map-theme-name">
                             {MAP_THEMES[id].name}
@@ -51,22 +51,22 @@ export function MapThemePopup({ onClose }: MapThemePopupProps): JSX.Element {
                     </label>
                 ))}
 
-                <div className="iris-map-section-title" style={{ marginTop: '12px' }}>INTERACTION</div>
-                <label className="iris-map-theme-item">
+                <div className="iris-map-section-title iris-mt-3">INTERACTION</div>
+                <label className="iris-label iris-map-theme-item">
                     <input
                         type="checkbox"
                         checked={allowRotation}
                         onChange={toggleAllowRotation}
-                        className="iris-map-theme-radio"
+                        className="iris-checkbox"
                     />
                     <span className="iris-map-theme-name">Allow Rotation</span>
                 </label>
-                <label className="iris-map-theme-item">
+                <label className="iris-label iris-map-theme-item">
                     <input
                         type="checkbox"
                         checked={allowPitch}
                         onChange={toggleAllowPitch}
-                        className="iris-map-theme-radio"
+                        className="iris-checkbox"
                     />
                     <span className="iris-map-theme-name">Allow Pitch (3D)</span>
                 </label>

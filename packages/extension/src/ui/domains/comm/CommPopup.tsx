@@ -256,7 +256,7 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
             } as Record<string, string>}
             headerExtras={
                 <button 
-                    className="iris-comm-refresh-btn"
+                    className="iris-button iris-comm-refresh-btn"
                     onClick={handleRefresh}
                 >
                     REFRESH
@@ -307,7 +307,7 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
                         <input
                             type="text"
                             value={draft}
-                            className="iris-comm-send-input"
+                            className="iris-input iris-comm-send-input"
                             placeholder={`Send to ${activeTab.toLowerCase()}...`}
                             onInput={(e) => {
                                 if (commSendError) clearCommSendState();
@@ -322,7 +322,7 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
                         />
                         <button
                             type="button"
-                            className="iris-comm-send-button"
+                            className="iris-comm-send-button iris-button"
                             onClick={handleSend}
                             disabled={!canSend}
                         >

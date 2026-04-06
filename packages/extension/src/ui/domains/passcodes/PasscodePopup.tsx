@@ -49,7 +49,7 @@ export function PasscodePopup({ onClose }: PasscodePopupProps): JSX.Element {
           <input
             type="text"
             value={passcode}
-            className="iris-passcode-input"
+            className="iris-input iris-passcode-input"
             onInput={(event) => setPasscode((event.target as HTMLInputElement).value)}
             onKeyDown={(event) => {
               if (event.key === 'Enter') submit();
@@ -57,7 +57,7 @@ export function PasscodePopup({ onClose }: PasscodePopupProps): JSX.Element {
             placeholder="enter passcode"
           />
           <button
-            className="iris-passcode-submit"
+            className="iris-button iris-passcode-submit"
             onClick={submit}
             disabled={status === 'sending' || !passcode.trim()}
           >

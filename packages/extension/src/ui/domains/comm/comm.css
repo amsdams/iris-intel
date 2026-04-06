@@ -1,11 +1,6 @@
 .iris-comm-refresh-btn {
-    background: transparent;
-    border: 1px solid var(--iris-aqua);
-    color: var(--iris-aqua);
     font-size: 9px;
     padding: 2px 6px;
-    cursor: pointer;
-    border-radius: 2px;
     margin-right: 8px;
 }
 
@@ -108,25 +103,10 @@
 .iris-comm-send-input {
     flex: 1;
     min-width: 0;
-    background: rgb(255 255 255 / 4%);
-    border: 1px solid var(--iris-border);
-    color: var(--iris-text-primary);
-    padding: 6px 8px;
-    font: inherit;
 }
 
 .iris-comm-send-button {
-    background: transparent;
-    border: 1px solid var(--iris-aqua);
-    color: var(--iris-aqua);
-    padding: 6px 10px;
-    font: inherit;
-    cursor: pointer;
-}
-
-.iris-comm-send-button:disabled {
-    opacity: 0.5;
-    cursor: default;
+    white-space: nowrap;
 }
 
 .iris-comm-send-error,

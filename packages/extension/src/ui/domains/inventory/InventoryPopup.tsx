@@ -165,7 +165,7 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
             contentClassName="iris-popup-content-no-padding"
             headerExtras={
                 <button 
-                    className="iris-comm-refresh-btn"
+                    className="iris-button iris-comm-refresh-btn"
                     onClick={handleRefresh}
                 >
                     REFRESH
