@@ -12,30 +12,8 @@
   margin-bottom: 4px;
 }
 
-.iris-map-theme-item {
-  padding: 10px 12px;
-  border-radius: 4px;
-  border: 1px solid var(--iris-border-dim, #333);
-  background: var(--iris-bg-alt, #111);
-  transition: background 0.2s ease, border-color 0.2s ease;
-}
-
-.iris-map-theme-item:hover {
-  background: var(--iris-bg-hover, #1a1a1a);
-}
-
-.iris-map-theme-item-active {
-  border-color: var(--iris-accent);
-  background: var(--iris-bg-active, #1a1a1a);
-}
-
 .iris-map-theme-name {
   flex: 1;
-}
-
-.iris-map-theme-item-active .iris-map-theme-name {
-  color: var(--iris-accent);
-  font-weight: bold;
 }
 
 .iris-map-container {

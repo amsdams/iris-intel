@@ -298,6 +298,33 @@
     color: var(--iris-accent);
 }
 
+.iris-choice-item {
+    background: var(--iris-bg-alt, #111);
+    border: 1px solid var(--iris-border-dim, #333);
+    padding: 10px 12px;
+    border-radius: 4px;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+}
+
+.iris-choice-item:hover {
+    background: var(--iris-bg-hover, #1a1a1a);
+    border-color: var(--iris-border);
+}
+
+.iris-choice-item:active {
+    transform: translateY(1px);
+}
+
+.iris-choice-item-active {
+    border-color: var(--iris-accent);
+    background: var(--iris-bg-active, #1a1a1a);
+}
+
+.iris-choice-item-active .iris-label {
+    color: var(--iris-accent);
+    font-weight: bold;
+}
+
 .iris-checkbox,
 .iris-radio {
     appearance: none;

@@ -36,7 +36,7 @@ export function MapThemePopup({ onClose }: MapThemePopupProps): JSX.Element {
                 {Object.keys(MAP_THEMES).map((id) => (
                     <label 
                         key={id} 
-                        className={`iris-label iris-map-theme-item ${mapThemeId === id ? 'iris-map-theme-item-active' : ''}`}
+                        className={`iris-choice-item iris-label ${mapThemeId === id ? 'iris-choice-item-active' : ''}`}
                     >
                         <input
                             type="radio"
@@ -52,7 +52,7 @@ export function MapThemePopup({ onClose }: MapThemePopupProps): JSX.Element {
                 ))}
 
                 <div className="iris-map-section-title iris-mt-3">INTERACTION</div>
-                <label className="iris-label iris-map-theme-item">
+                <label className="iris-choice-item iris-label">
                     <input
                         type="checkbox"
                         checked={allowRotation}
@@ -61,7 +61,7 @@ export function MapThemePopup({ onClose }: MapThemePopupProps): JSX.Element {
                     />
                     <span className="iris-map-theme-name">Allow Rotation</span>
                 </label>
-                <label className="iris-label iris-map-theme-item">
+                <label className="iris-choice-item iris-label">
                     <input
                         type="checkbox"
                         checked={allowPitch}

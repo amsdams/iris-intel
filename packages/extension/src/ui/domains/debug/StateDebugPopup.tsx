@@ -140,7 +140,7 @@ export function StateDebugPopup({ onClose }: StateDebugPopupProps): JSX.Element 
 
                     <div className="iris-debug-section-title">DEVELOPER</div>
                     <div className="iris-debug-toggle">
-                        <label className="iris-label">
+                        <label className="iris-choice-item iris-label">
                             <input
                                 type="checkbox"
                                 checked={debugLogging}

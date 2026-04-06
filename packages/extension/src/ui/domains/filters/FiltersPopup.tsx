@@ -71,7 +71,7 @@ export function FiltersPopup({ onClose }: FiltersPopupProps): JSX.Element {
         >
             <div className="iris-filters">
                 <h3 className="iris-filter-section-title">Layers</h3>
-                <label className="iris-label">
+                <label className="iris-choice-item iris-label">
                     <input
                         type="checkbox"
                         checked={showFields}
@@ -81,7 +81,7 @@ export function FiltersPopup({ onClose }: FiltersPopupProps): JSX.Element {
                     Fields
                 </label>
 
-                <label className="iris-label">
+                <label className="iris-choice-item iris-label">
                     <input
                         type="checkbox"
                         checked={showLinks}
@@ -92,7 +92,7 @@ export function FiltersPopup({ onClose }: FiltersPopupProps): JSX.Element {
                 </label>
 
                 <h3 className="iris-filter-section-title">Faction</h3>
-                <label className="iris-label">
+                <label className="iris-choice-item iris-label">
                     <input
                         type="checkbox"
                         checked={showResistance}
@@ -101,7 +101,7 @@ export function FiltersPopup({ onClose }: FiltersPopupProps): JSX.Element {
                     />
                     Resistance
                 </label>
-                <label className="iris-label">
+                <label className="iris-choice-item iris-label">
                     <input
                         type="checkbox"
                         checked={showEnlightened}
@@ -110,7 +110,7 @@ export function FiltersPopup({ onClose }: FiltersPopupProps): JSX.Element {
                     />
                     Enlightened
                 </label>
-                <label className="iris-label">
+                <label className="iris-choice-item iris-label">
                     <input
                         type="checkbox"
                         checked={showMachina}
@@ -119,7 +119,7 @@ export function FiltersPopup({ onClose }: FiltersPopupProps): JSX.Element {
                     />
                     Machina
                 </label>
-                <label className="iris-label">
+                <label className="iris-choice-item iris-label">
                     <input
                         type="checkbox"
                         checked={showUnclaimedPortals}
@@ -161,7 +161,7 @@ export function FiltersPopup({ onClose }: FiltersPopupProps): JSX.Element {
 
                 <h3 className="iris-filter-section-title">Portal History</h3>
                 <div className="iris-filter-history-grid">
-                    <label className="iris-label">
+                    <label className="iris-choice-item iris-label">
                         <input
                             type="checkbox"
                             checked={showVisited}
@@ -170,7 +170,7 @@ export function FiltersPopup({ onClose }: FiltersPopupProps): JSX.Element {
                         />
                         Visited
                     </label>
-                    <label className="iris-label">
+                    <label className="iris-choice-item iris-label">
                         <input
                             type="checkbox"
                             checked={showCaptured}
@@ -179,7 +179,7 @@ export function FiltersPopup({ onClose }: FiltersPopupProps): JSX.Element {
                         />
                         Captured
                     </label>
-                    <label className="iris-label">
+                    <label className="iris-choice-item iris-label">
                         <input
                             type="checkbox"
                             checked={showScanned}
