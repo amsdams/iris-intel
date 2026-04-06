@@ -27,6 +27,18 @@ interface MarkerRegistryEntry {
   clickTarget: HTMLDivElement | null;
 }
 
+type DragRotateInternals = maplibregl.Map['dragRotate'] & {
+  _pitchWithRotate?: boolean;
+  _mouseRotate?: {
+    enable: () => void;
+    disable: () => void;
+  };
+  _mousePitch?: {
+    enable: () => void;
+    disable: () => void;
+  };
+};
+
 export function MapOverlay(): JSX.Element {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
@@ -511,26 +523,33 @@ export function MapOverlay(): JSX.Element {
     }
   }, [mapThemeId, styleLoaded]);
 
-  // Sync Interaction Settings
   useEffect(() => {
     if (!map.current || !styleLoaded) return;
-    if (allowRotation) {
-        map.current.dragRotate.enable();
-    } else {
-        map.current.dragRotate.disable();
-        map.current.resetNorth();
-    }
-  }, [allowRotation, styleLoaded]);
+    const dragRotate = map.current.dragRotate as DragRotateInternals;
+    dragRotate.disable();
+    // MapLibre only reads this option during handler construction, so toggling
+    // pitch later requires updating the handler before re-enabling it.
+    dragRotate._pitchWithRotate = allowPitch;
 
-  useEffect(() => {
-    if (!map.current || !styleLoaded) return;
-    if (allowPitch) {
-        map.current.touchPitch.enable();
+    if (allowRotation) {
+      dragRotate.enable();
+      map.current.touchZoomRotate.enable();
+      map.current.touchZoomRotate.enableRotation();
     } else {
-        map.current.touchPitch.disable();
-        map.current.setPitch(0);
+      if (allowPitch) {
+        dragRotate._mousePitch?.enable();
+      }
+      map.current.touchZoomRotate.disableRotation();
+      map.current.resetNorth();
     }
-  }, [allowPitch, styleLoaded]);
+
+    if (allowPitch) {
+      map.current.touchPitch.enable();
+    } else {
+      map.current.touchPitch.disable();
+      map.current.setPitch(0);
+    }
+  }, [allowRotation, allowPitch, styleLoaded]);
 
   // Sync Portal History Highlight Filters
   useEffect(() => {
