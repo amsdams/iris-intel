@@ -142,7 +142,6 @@
     z-index: 10002;
     background: var(--iris-popup-bg, rgb(0 0 0 / 92%));
     color: var(--iris-text-primary);
-    padding: 16px;
     border-radius: 8px;
     border: 2px solid var(--iris-popup-border, var(--iris-accent));
     box-shadow: 0 0 20px var(--iris-popup-shadow, rgb(0 255 255 / 33%));
@@ -171,18 +170,21 @@
     cursor: move;
     user-select: none;
     touch-action: none;
-    margin-bottom: 8px;
-    padding-right: 30px;
+    padding: 12px 16px 8px;
+    padding-right: 40px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    border-bottom: 1px solid var(--iris-border-dim, rgb(255 255 255 / 10%));
 }
 
 .iris-popup-title {
     margin: 0;
     color: var(--iris-popup-title-color, var(--iris-accent));
-    font-size: 1.2em;
+    font-size: 1.1em;
     pointer-events: none;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .iris-popup-drag-spacer {
@@ -196,6 +198,11 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+    padding: 16px;
+}
+
+.iris-popup-content-no-padding {
+    padding: 0;
 }
 
 .iris-popup-no-scroll .iris-popup-content {

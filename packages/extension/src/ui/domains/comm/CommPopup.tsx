@@ -247,6 +247,7 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
             onClose={onClose}
             title="COMM"
             noScroll={true}
+            contentClassName="iris-popup-content-no-padding"
             className="iris-popup-top-center iris-popup-medium"
              style={{
                 '--iris-popup-border': theme.AQUA,

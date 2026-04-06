@@ -7,11 +7,12 @@ interface PopupProps {
     children: ComponentChildren;
     style?: h.JSX.CSSProperties;
     className?: string;
+    contentClassName?: string;
     headerExtras?: ComponentChildren;
     noScroll?: boolean;
 }
 
-export function Popup({ onClose, title, children, style, className, headerExtras, noScroll }: PopupProps): JSX.Element {
+export function Popup({ onClose, title, children, style, className, contentClassName, headerExtras, noScroll }: PopupProps): JSX.Element {
     const [pos, setPos] = useState<{ x: number, y: number } | null>(null);
     const [dragging, setDragging] = useState(false);
     const dragStart = useRef({ x: 0, y: 0 });
@@ -94,7 +95,7 @@ export function Popup({ onClose, title, children, style, className, headerExtras
                 {headerExtras}
             </div>
 
-            <div className="iris-popup-content">
+            <div className={`iris-popup-content ${contentClassName ?? ''}`}>
                 {children}
             </div>
         </div>

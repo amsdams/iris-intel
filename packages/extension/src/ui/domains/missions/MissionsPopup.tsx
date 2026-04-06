@@ -50,6 +50,7 @@ export function MissionsPopup({ onClose }: MissionsPopupProps): JSX.Element {
       onClose={onClose}
       title={missionsPortalId ? 'Missions Starting Here' : 'Missions'}
       className="iris-popup-top-center iris-popup-medium"
+      contentClassName="iris-popup-content-no-padding"
        style={{
                 '--iris-popup-border': theme.AQUA,
                 '--iris-popup-shadow': `${theme.AQUA}55`,

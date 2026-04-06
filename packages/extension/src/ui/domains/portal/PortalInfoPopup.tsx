@@ -57,6 +57,7 @@ export function PortalInfoPopup(): JSX.Element | null {
             onClose={() => selectPortal(null)}
             title={'Portal Details'}
             className="iris-popup-top-center iris-popup-medium"
+            contentClassName="iris-popup-content-no-padding"
             style={{
                 '--iris-popup-border': theme.AQUA,
                 '--iris-popup-shadow': `${theme.AQUA}55`,

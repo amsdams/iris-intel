@@ -165,6 +165,7 @@ Tasks:
 | Sync Intel search moves | Done | hooked Google Maps `idle` event to capture search jumps |
 | Visualize address status in Debug Popup | Done | shows stale/resolving states and a debounce countdown |
 | Persist resolved address and geocode metadata | Done | top-level persistence ensures "instant" UI on reload |
+| Enable/Disable Map Rotation and Pitch | Open | add setting to store; merge with "Map Style" popup |
 
 ### Portal details show richer derived stats after targeted investigation
 Status: `Open`
@@ -262,13 +263,13 @@ Goal:
 - improve type safety, parser confidence, storage boundaries, and bridge discipline
 
 ### Payload typing is stronger in cast-heavy domains
-Status: `Open`
+Status: `In Progress`
 
 Tasks:
 
 | Task | Status | Notes |
 | --- | --- | --- |
-| Payload typing pass | Open | missions, missions-list, artifacts, score-related domains |
+| Payload typing pass | In Progress | missions-list, artifacts, scores completed; store/coordinator update in progress |
 
 ### Storage boundaries are clearer
 Status: `Open`
@@ -278,6 +279,26 @@ Tasks:
 | Task | Status | Notes |
 | --- | --- | --- |
 | Storage boundary design pass | Open | document or introduce clearer storage-service boundary |
+
+## Diagnostics and Observability
+Status: `In Progress`
+
+Goal:
+- improve visibility into runtime behavior and user interactions
+
+### User interaction logging
+Status: `Open`
+
+Outcome:
+- capture and visualize user map interactions to help debug state sync and performance
+
+Tasks:
+
+| Task | Status | Notes |
+| --- | --- | --- |
+| Log map panning events | Open | track lat/lng changes in Diagnostics |
+| Log map zoom events | Open | track zoom level changes in Diagnostics |
+| Visualize interaction history in Debug Popup | Open | show a rolling log of recent map movements |
 
 ## Semantic UI Cleanup
 Status: `In Progress`
@@ -306,6 +327,7 @@ Tasks:
 | Standardize common utility classes in base.css | Done | added flex, gap, margin, and text utilities |
 | Generalize popup styling in base.css | Done | base `.iris-popup` handles standard padding and variables |
 | Unify popup width and centering | Done | all major popups use `iris-popup-center iris-popup-medium` |
+| Fix inconsistent popup internal padding | Done | moved padding to .iris-popup-content; standardized internal spacing for major domains |
 
 ### Semantic colors are shared instead of locally improvised
 Status: `Open`
