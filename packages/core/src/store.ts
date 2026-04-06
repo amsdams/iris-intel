@@ -276,6 +276,8 @@ export interface IRISSettings {
     showVisited: boolean;
     showCaptured: boolean;
     showScanned: boolean;
+    allowRotation: boolean;
+    allowPitch: boolean;
     debugLogging: boolean;
 }
 
@@ -299,6 +301,8 @@ export const DEFAULT_SETTINGS: IRISSettings = {
     showVisited: true,
     showCaptured: true,
     showScanned: true,
+    allowRotation: true,
+    allowPitch: true,
     debugLogging: false,
 };
 
@@ -318,6 +322,8 @@ interface SettingsSlice extends IRISSettings {
     toggleShowVisited: () => void;
     toggleShowCaptured: () => void;
     toggleShowScanned: () => void;
+    toggleAllowRotation: () => void;
+    toggleAllowPitch: () => void;
     toggleDebugLogging: () => void;
 }
 
@@ -512,6 +518,8 @@ const createSettingsSlice: StateCreator<IRISState, [], [], SettingsSlice> = (set
     toggleShowVisited: () => set((state) => ({ showVisited: !state.showVisited })),
     toggleShowCaptured: () => set((state) => ({ showCaptured: !state.showCaptured })),
     toggleShowScanned: () => set((state) => ({ showScanned: !state.showScanned })),
+    toggleAllowRotation: () => set((state) => ({ allowRotation: !state.allowRotation })),
+    toggleAllowPitch: () => set((state) => ({ allowPitch: !state.allowPitch })),
     toggleDebugLogging: () => set((state) => ({ debugLogging: !state.debugLogging })),
 });
 
@@ -877,6 +885,8 @@ export const useStore = create<IRISState>()(
                     showVisited: state.showVisited,
                     showCaptured: state.showCaptured,
                     showScanned: state.showScanned,
+                    allowRotation: state.allowRotation,
+                    allowPitch: state.allowPitch,
                     discoveredLocation: state.discoveredLocation,
                     lastResolvedLatLng: state.lastResolvedLatLng,
                     mapState: {

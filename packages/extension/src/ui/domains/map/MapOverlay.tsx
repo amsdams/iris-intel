@@ -77,6 +77,8 @@ export function MapOverlay(): JSX.Element {
   const showVisited = useStore((state) => state.showVisited);
   const showCaptured = useStore((state) => state.showCaptured);
   const showScanned = useStore((state) => state.showScanned);
+  const allowRotation = useStore((state) => state.allowRotation);
+  const allowPitch = useStore((state) => state.allowPitch);
 
   const touchState = useRef({
     maxFingers: 0,
@@ -323,6 +325,9 @@ export function MapOverlay(): JSX.Element {
       center: [0, 0],
       zoom: 2,
       interactive: true,
+      dragRotate: useStore.getState().allowRotation,
+      touchPitch: useStore.getState().allowPitch,
+      pitchWithRotate: useStore.getState().allowPitch,
     });
 
     map.current.on('load', () => setStyleLoaded(true));
@@ -505,6 +510,27 @@ export function MapOverlay(): JSX.Element {
         source.setTiles(getMapThemeTiles(mapThemeId));
     }
   }, [mapThemeId, styleLoaded]);
+
+  // Sync Interaction Settings
+  useEffect(() => {
+    if (!map.current || !styleLoaded) return;
+    if (allowRotation) {
+        map.current.dragRotate.enable();
+    } else {
+        map.current.dragRotate.disable();
+        map.current.resetNorth();
+    }
+  }, [allowRotation, styleLoaded]);
+
+  useEffect(() => {
+    if (!map.current || !styleLoaded) return;
+    if (allowPitch) {
+        map.current.touchPitch.enable();
+    } else {
+        map.current.touchPitch.disable();
+        map.current.setPitch(0);
+    }
+  }, [allowPitch, styleLoaded]);
 
   // Sync Portal History Highlight Filters
   useEffect(() => {

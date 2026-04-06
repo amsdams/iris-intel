@@ -165,7 +165,7 @@ Tasks:
 | Sync Intel search moves | Done | hooked Google Maps `idle` event to capture search jumps |
 | Visualize address status in Debug Popup | Done | shows stale/resolving states and a debounce countdown |
 | Persist resolved address and geocode metadata | Done | top-level persistence ensures "instant" UI on reload |
-| Enable/Disable Map Rotation and Pitch | Open | add setting to store; merge with "Map Style" popup |
+| Enable/Disable Map Rotation and Pitch | Done | add setting to store; merge with "Map Style" popup |
 
 ### Portal details show richer derived stats after targeted investigation
 Status: `Open`
