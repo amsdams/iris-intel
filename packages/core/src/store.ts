@@ -484,7 +484,11 @@ export function getEndpointKeyFromUrl(url: string): EndpointKey {
 const SUCCESS_DEDUP_WINDOW_MS = 3000;
 const REVERSE_GEOCODE_DEBOUNCE_MS = 1000;
 
-let reverseGeocodeTimeout: any = null;
+interface NominatimResponse {
+    display_name?: string;
+}
+
+let reverseGeocodeTimeout: ReturnType<typeof setTimeout> | null = null;
 
 // Slice Creators
 const createSettingsSlice: StateCreator<IRISState, [], [], SettingsSlice> = (set) => ({
@@ -620,7 +624,7 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
     })),
     setPluginFeatures: (features) => set(() => ({ pluginFeatures: features })),
     setDiscoveredLocation: (location) => set(() => ({ discoveredLocation: location })),
-    reverseGeocode: async (lat, lng) => {
+    reverseGeocode: async (lat: number, lng: number): Promise<void> => {
         const { lastResolvedLatLng, debugLogging } = useStore.getState();
         
         // Use higher precision (0.000001 is ~11cm) to ensure search jumps trigger lookup
@@ -652,7 +656,7 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
             try {
                 const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`);
                 if (response.ok) {
-                    const data = await response.json();
+                    const data = await response.json() as NominatimResponse;
                     if (data.display_name) {
                         set(() => ({ 
                             discoveredLocation: data.display_name,

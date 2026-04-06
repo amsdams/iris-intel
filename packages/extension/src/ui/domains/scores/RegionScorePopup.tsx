@@ -25,14 +25,14 @@ export function RegionScorePopup({ onClose }: RegionScorePopupProps): JSX.Elemen
             title={regionScore?.regionName || "Regional Score"}
             className="iris-popup-top-center iris-popup-medium"
             style={{
-                ['--iris-popup-border' as any]: theme.AQUA,
-                ['--iris-popup-shadow' as any]: `${theme.AQUA}55`,
-                ['--iris-popup-title-color' as any]: theme.AQUA,
-                ['--iris-enl-color' as any]: theme.E,
-                ['--iris-res-color' as any]: theme.R,
-                ['--iris-enl-percent' as any]: `${enlPercent}%`,
-                ['--iris-res-percent' as any]: `${resPercent}%`,
-            }}
+                '--iris-popup-border': theme.AQUA,
+                '--iris-popup-shadow': `${theme.AQUA}55`,
+                '--iris-popup-title-color': theme.AQUA,
+                '--iris-enl-color': theme.E,
+                '--iris-res-color': theme.R,
+                '--iris-enl-percent': `${enlPercent}%`,
+                '--iris-res-percent': `${resPercent}%`,
+            } as Record<string, string>}
         >
             <div className="iris-region-score">
                 {!regionScore ? (

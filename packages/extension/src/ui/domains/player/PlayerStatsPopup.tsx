@@ -26,10 +26,10 @@ export function PlayerStatsPopup({ onClose }: PlayerStatsPopupProps): JSX.Elemen
             title="Player Stats"
             className="iris-popup-top-center iris-popup-medium"
             style={{
-                ['--iris-popup-border' as any]: theme.AQUA,
-                ['--iris-popup-shadow' as any]: `${theme.AQUA}55`,
-                ['--iris-popup-title-color' as any]: theme.AQUA,
-            }}
+                '--iris-popup-border': theme.AQUA,
+                '--iris-popup-shadow': `${theme.AQUA}55`,
+                '--iris-popup-title-color': theme.AQUA,
+            } as Record<string, string>}
         >
             <div className="iris-player-stats">
                 {!playerStats ? (
@@ -60,9 +60,9 @@ export function PlayerStatsPopup({ onClose }: PlayerStatsPopupProps): JSX.Elemen
                                         <div 
                                             className="iris-stats-bar-fill"
                                             style={{ 
-                                                ['--iris-progress' as any]: `${Math.min(100, (playerStats.energy / playerStats.xm_capacity) * 100)}%`,
-                                                ['--iris-progress-color' as any]: '#00faff',
-                                            }} 
+                                                '--iris-progress': `${Math.min(100, (playerStats.energy / playerStats.xm_capacity) * 100)}%`,
+                                                '--iris-progress-color': '#00faff',
+                                            } as Record<string, string>} 
                                         />
                                     </div>
                                 </div>
@@ -79,9 +79,9 @@ export function PlayerStatsPopup({ onClose }: PlayerStatsPopupProps): JSX.Elemen
                                             <div 
                                                 className="iris-stats-bar-fill"
                                                 style={{ 
-                                                    ['--iris-progress' as any]: `${Math.min(100, ((playerStats.ap - playerStats.min_ap_for_current_level) / (playerStats.min_ap_for_next_level - playerStats.min_ap_for_current_level)) * 100)}%`, 
-                                                    ['--iris-progress-color' as any]: colour,
-                                                }} 
+                                                    '--iris-progress': `${Math.min(100, ((playerStats.ap - playerStats.min_ap_for_current_level) / (playerStats.min_ap_for_next_level - playerStats.min_ap_for_current_level)) * 100)}%`, 
+                                                    '--iris-progress-color': colour,
+                                                } as Record<string, string>} 
                                             />
                                         </div>
                                     )}

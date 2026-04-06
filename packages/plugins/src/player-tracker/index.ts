@@ -56,17 +56,17 @@ const PlayerTrackerPlugin: IRISPlugin = {
         event.latlngs.some(([eLat, eLng]) => eLat === lat && eLng === lng);
 
     // Player-specific random color based on name hash (IITC style)
-    const getPlayerColor = (name: string, team: string): string => {
+    const getPlayerColor = (_name: string, team: string): string => {
         const colors = api.ui.getThemeColors();
-        const teamKey = api.utils.normalizeTeam(team);
-        return (colors as any)[teamKey] || '#ffffff';
+        const teamKey = api.utils.normalizeTeam(team) as keyof ReturnType<typeof api.ui.getThemeColors>;
+        return colors[teamKey] || '#ffffff';
     };
 
     // Faction color helper
     const getFactionColor = (team: string): string => {
         const colors = api.ui.getThemeColors();
-        const teamKey = api.utils.normalizeTeam(team);
-        return (colors as any)[teamKey] || '#ffffff';
+        const teamKey = api.utils.normalizeTeam(team) as keyof ReturnType<typeof api.ui.getThemeColors>;
+        return colors[teamKey] || '#ffffff';
     };
 
     // Time ago helper (IITC style)

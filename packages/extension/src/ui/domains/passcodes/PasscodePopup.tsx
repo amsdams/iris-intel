@@ -39,10 +39,10 @@ export function PasscodePopup({ onClose }: PasscodePopupProps): JSX.Element {
       title="Passcode"
       className="iris-popup-top-center iris-popup-medium"
        style={{
-                ['--iris-popup-border' as any]: theme.AQUA,
-                ['--iris-popup-shadow' as any]: `${theme.AQUA}55`,
-                ['--iris-popup-title-color' as any]: theme.AQUA,
-            }}
+                '--iris-popup-border': theme.AQUA,
+                '--iris-popup-shadow': `${theme.AQUA}55`,
+                '--iris-popup-title-color': theme.AQUA,
+            } as Record<string, string>}
     >
       <div className="iris-passcode-panel">
         <div className="iris-passcode-form">

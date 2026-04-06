@@ -59,10 +59,10 @@ export function MissionDetailsPopup(): JSX.Element | null {
       title="Mission Details"
       className="iris-popup-top-center iris-popup-medium"
        style={{
-                ['--iris-popup-border' as any]: theme.AQUA,
-                ['--iris-popup-shadow' as any]: `${theme.AQUA}55`,
-                ['--iris-popup-title-color' as any]: theme.AQUA,
-            }}
+                '--iris-popup-border': theme.AQUA,
+                '--iris-popup-shadow': `${theme.AQUA}55`,
+                '--iris-popup-title-color': theme.AQUA,
+            } as Record<string, string>}
     >
       <div className="iris-mission-info">
         <div className="iris-mission-header-card">

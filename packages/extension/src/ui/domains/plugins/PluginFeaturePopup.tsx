@@ -4,23 +4,23 @@ import { Popup } from '../../shared/Popup';
 import {THEMES} from '../../theme';
 import './plugins.css';
 
-type ActionMarkupData = {
+interface ActionMarkupData {
     plain?: string;
     team?: string;
     name?: string;
     address?: string;
     latE6?: number;
     lngE6?: number;
-};
+}
 
 type ActionMarkupSegment = [string, ActionMarkupData];
 
-type PlayerAction = {
+interface PlayerAction {
     text: string;
     markup: ActionMarkupSegment[];
-};
+}
 
-type PluginFeatureProperties = {
+interface PluginFeatureProperties extends Record<string, unknown> {
     color?: string;
     name?: string;
     time?: number;
@@ -29,7 +29,7 @@ type PluginFeatureProperties = {
     lng?: number;
     isPlayerMarker?: boolean;
     actions?: PlayerAction[];
-} & Record<string, unknown>;
+}
 
 export function PluginFeaturePopup(): JSX.Element | null {
     const themeId = useStore((state) => state.themeId);
@@ -42,7 +42,6 @@ export function PluginFeaturePopup(): JSX.Element | null {
 
     const properties = (selectedFeature.properties ?? {}) as PluginFeatureProperties;
     const {
-        color,
         name = 'Unknown',
         time = 0,
         portalName = 'Unknown portal',
@@ -95,10 +94,10 @@ export function PluginFeaturePopup(): JSX.Element | null {
             onClose={() => setSelectedPluginFeature(null)}
             className="iris-popup-top-center iris-popup-medium"
             style={{
-                ['--iris-popup-border' as any]: theme.AQUA,
-                ['--iris-popup-shadow' as any]: `${theme.AQUA}55`,
-                ['--iris-popup-title-color' as any]: theme.AQUA,
-            }}
+                '--iris-popup-border': theme.AQUA,
+                '--iris-popup-shadow': `${theme.AQUA}55`,
+                '--iris-popup-title-color': theme.AQUA,
+            } as Record<string, string>}
         >
             <div className="iris-plugin-feature-details">
                 <div className="iris-feature-row iris-feature-player">

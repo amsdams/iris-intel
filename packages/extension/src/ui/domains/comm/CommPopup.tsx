@@ -152,7 +152,7 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
                 <span
                     key={i}
                     className={`iris-comm-markup iris-comm-markup-${type.toLowerCase()}`}
-                    style={{['--iris-comm-color' as any]: color}}
+                    style={{ '--iris-comm-color': color } as Record<string, string>}
                 >
                     {String(text || '')}
                 </span>
@@ -180,7 +180,7 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
                 <span key={i} className="iris-comm-markup-container">
                     <span 
                         className={`iris-comm-markup iris-comm-markup-${type.toLowerCase()}`} 
-                        style={{['--iris-comm-color' as any]: color}}
+                        style={{ '--iris-comm-color': color } as Record<string, string>}
                         onClick={handlePortalClick}
                     >
                         {String(portalName)}
@@ -249,10 +249,10 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
             noScroll={true}
             className="iris-popup-top-center iris-popup-medium"
              style={{
-                ['--iris-popup-border' as any]: theme.AQUA,
-                ['--iris-popup-shadow' as any]: `${theme.AQUA}55`,
-                ['--iris-popup-title-color' as any]: theme.AQUA,
-            }}
+                '--iris-popup-border': theme.AQUA,
+                '--iris-popup-shadow': `${theme.AQUA}55`,
+                '--iris-popup-title-color': theme.AQUA,
+            } as Record<string, string>}
             headerExtras={
                 <button 
                     className="iris-comm-refresh-btn"

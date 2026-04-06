@@ -172,10 +172,10 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
             }
             className="iris-popup-top-center iris-popup-medium"
              style={{
-                ['--iris-popup-border' as any]: theme.AQUA,
-                ['--iris-popup-shadow' as any]: `${theme.AQUA}55`,
-                ['--iris-popup-title-color' as any]: theme.AQUA,
-            }}
+                '--iris-popup-border': theme.AQUA,
+                '--iris-popup-shadow': `${theme.AQUA}55`,
+                '--iris-popup-title-color': theme.AQUA,
+            } as Record<string, string>}
         >
             {!hasSubscription ? (
                 <div className="iris-inventory-subscription-warning">
@@ -222,7 +222,7 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
                                                 <div className="iris-inventory-item-name">
                                                     <span 
                                                         className="iris-inventory-item-name-value"
-                                                        style={{ ['--iris-item-color' as any]: getItemColor(item) }}
+                                                        style={{ '--iris-item-color': getItemColor(item) } as Record<string, string>}
                                                     >
                                                         {item.name}
                                                         {item.level && <span className="iris-inventory-item-level"> [L{item.level}]</span>}

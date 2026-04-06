@@ -46,7 +46,7 @@ export function StateDebugPopup({ onClose }: StateDebugPopupProps): JSX.Element 
             setCountdown(remaining);
         }, 50);
 
-        return () => clearInterval(interval);
+        return (): void => clearInterval(interval);
     }, [addressStatus, addressNextLookupAt]);
 
     const isStale = discoveredLocation && lastResolvedLatLng && (

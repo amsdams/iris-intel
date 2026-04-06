@@ -58,11 +58,10 @@ export function PortalInfoPopup(): JSX.Element | null {
             title={'Portal Details'}
             className="iris-popup-top-center iris-popup-medium"
             style={{
-                ['--iris-popup-border' as any]: theme.AQUA,
-                ['--iris-popup-shadow' as any]: `${theme.AQUA}55`,
-                ['--iris-popup-title-color' as any]: theme.AQUA,
-
-            }}
+                '--iris-popup-border': theme.AQUA,
+                '--iris-popup-shadow': `${theme.AQUA}55`,
+                '--iris-popup-title-color': theme.AQUA,
+            } as Record<string, string>}
         >
             <div className="iris-portal-info">
                 {portal.image && (
@@ -98,7 +97,7 @@ export function PortalInfoPopup(): JSX.Element | null {
                             <span className="iris-portal-summary-label">Level</span>
                             <span
                                 className="iris-portal-summary-value iris-portal-summary-value-level"
-                                style={{['--iris-level-color' as any]: portal.level !== undefined ? (theme.LEVELS[portal.level] || '#ffff00') : undefined}}
+                                style={{'--iris-level-color': portal.level !== undefined ? (theme.LEVELS[portal.level] || '#ffff00') : undefined} as Record<string, string>}
                             >
                                 {portal.level !== undefined ? portal.level : 'Unknown'}
                             </span>
@@ -146,7 +145,7 @@ export function PortalInfoPopup(): JSX.Element | null {
                                 <div
                                     key={i}
                                     className="iris-portal-mod-item"
-                                    style={{['--iris-mod-rarity-color' as any]: modRarityColor}}
+                                    style={{'--iris-mod-rarity-color': modRarityColor} as Record<string, string>}
                                 >
                                     <span className="iris-portal-mod-name">
                                         {m.rarity} {m.name}
@@ -182,10 +181,10 @@ export function PortalInfoPopup(): JSX.Element | null {
                                     key={i}
                                     className="iris-portal-resonator-item"
                                     style={{
-                                        ['--iris-reso-color' as any]: resoColor,
-                                        ['--iris-health-pct' as any]: `${healthPct}%`,
-                                        ['--iris-health-color' as any]: healthColor,
-                                    }}
+                                        '--iris-reso-color': resoColor,
+                                        '--iris-health-pct': `${healthPct}%`,
+                                        '--iris-health-color': healthColor,
+                                    } as Record<string, string>}
                                 >
                                     <div className="iris-portal-resonator-header">
                                         <span className="iris-portal-resonator-level">

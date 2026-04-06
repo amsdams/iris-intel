@@ -64,10 +64,10 @@ export function FiltersPopup({ onClose }: FiltersPopupProps): JSX.Element {
             title="Filters"
             className="iris-popup-top-center iris-popup-medium"
              style={{
-                ['--iris-popup-border' as any]: theme.AQUA,
-                ['--iris-popup-shadow' as any]: `${theme.AQUA}55`,
-                ['--iris-popup-title-color' as any]: theme.AQUA,
-            }}
+                '--iris-popup-border': theme.AQUA,
+                '--iris-popup-shadow': `${theme.AQUA}55`,
+                '--iris-popup-title-color': theme.AQUA,
+            } as Record<string, string>}
         >
             <div className="iris-filters">
                 <h3 className="iris-filter-section-title">Layers</h3>

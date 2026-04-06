@@ -51,7 +51,7 @@ export function createRequestCoordinator(): RequestCoordinator {
         return sessionStatus === 'expired' || sessionStatus === 'initial_login_required';
     };
     const isWithinStartupGrace = (): boolean => Date.now() < startupGraceUntil;
-    const getEndpointDiagnostics = (key: 'artifacts' | 'subscription' | 'inventory' | 'plexts' | 'gameScore' | 'regionScore') =>
+    const getEndpointDiagnostics = (key: 'artifacts' | 'subscription' | 'inventory' | 'plexts' | 'gameScore' | 'regionScore'): import('@iris/core').EndpointDiagnostics =>
         useStore.getState().endpointDiagnostics[key];
     const isEndpointInFlight = (key: 'artifacts' | 'subscription' | 'inventory' | 'plexts' | 'gameScore' | 'regionScore'): boolean =>
         getEndpointDiagnostics(key).status === 'in_flight';

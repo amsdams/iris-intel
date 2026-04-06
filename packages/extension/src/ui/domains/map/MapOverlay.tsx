@@ -2,7 +2,7 @@ import { h, JSX } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import {Portal, useStore} from '@iris/core';
+import {Portal, useStore, Artifact} from '@iris/core';
 import { THEMES, MAP_THEMES } from '../../theme';
 import {
   buildArtifactFeatures,
@@ -374,7 +374,7 @@ export function MapOverlay(): JSX.Element {
             return;
         }
 
-        const artifacts: Record<string, any> = useStore.getState().artifacts;
+        const artifacts: Record<string, Artifact> = useStore.getState().artifacts;
         const portals: Record<string, Portal> = useStore.getState().portals;
         let nearestArtifactPortalId: string | null = null;
         let minArtifactDist = 20;
@@ -383,7 +383,9 @@ export function MapOverlay(): JSX.Element {
             const p = portals[a.portalId];
             if (!p) return;
             if (Math.abs(p.lng - lng) > 0.01 || Math.abs(p.lat - lat) > 0.01) return;
-            const pos = map.current!.project([p.lng, p.lat]);
+            const mapInstance = map.current;
+            if (!mapInstance) return;
+            const pos = mapInstance.project([p.lng, p.lat]);
             const dist = Math.sqrt(Math.pow(pos.x - point.x, 2) + Math.pow(pos.y - point.y, 2));
             if (dist < minArtifactDist) {
                 minArtifactDist = dist;
