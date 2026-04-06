@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import {Portal, useStore, Artifact} from '@iris/core';
-import { THEMES, MAP_THEMES } from '../../theme';
+import { THEMES, MAP_THEMES, SEMANTIC_COLORS } from '../../theme';
 import {
   buildArtifactFeatures,
   buildFieldFeatures,
@@ -211,7 +211,7 @@ export function MapOverlay(): JSX.Element {
             source: 'mission-route',
             paint: {
               'line-width': 4,
-              'line-color': '#ef8e2e',
+              'line-color': SEMANTIC_COLORS.MISSION,
               'line-opacity': 0.7,
             },
           },
@@ -249,7 +249,7 @@ export function MapOverlay(): JSX.Element {
                 ],
                 'circle-color': 'transparent',
                 'circle-stroke-width': 1,
-                'circle-stroke-color': '#9B59B6', // Purple for visited
+                'circle-stroke-color': SEMANTIC_COLORS.HISTORY_VISITED,
                 'circle-stroke-opacity': 0.8,
             }
           },
@@ -266,7 +266,7 @@ export function MapOverlay(): JSX.Element {
                 ],
                 'circle-color': 'transparent',
                 'circle-stroke-width': 1,
-                'circle-stroke-color': '#E74C3C', // Red for captured
+                'circle-stroke-color': SEMANTIC_COLORS.HISTORY_CAPTURED,
                 'circle-stroke-opacity': 0.8,
             }
           },
@@ -283,7 +283,7 @@ export function MapOverlay(): JSX.Element {
                 ],
                 'circle-color': 'transparent',
                 'circle-stroke-width': 1.5,
-                'circle-stroke-color': '#F1C40F', // Yellow/Gold for scanned
+                'circle-stroke-color': SEMANTIC_COLORS.HISTORY_SCANNED,
                 'circle-stroke-opacity': 0.6,
             }
           },
@@ -297,7 +297,7 @@ export function MapOverlay(): JSX.Element {
                 10, 6,
                 15, 10,
               ],
-              'circle-color': '#ef8e2e',
+              'circle-color': SEMANTIC_COLORS.MISSION,
               'circle-stroke-width': 2,
               'circle-stroke-color': '#fff',
             },
@@ -314,7 +314,7 @@ export function MapOverlay(): JSX.Element {
               ],
               'circle-color': 'transparent',
               'circle-stroke-width': 2,
-              'circle-stroke-color': '#f0f', // Magenta for artifacts/shards
+              'circle-stroke-color': SEMANTIC_COLORS.ARTIFACT,
               'circle-stroke-opacity': 0.9,
             },
           },

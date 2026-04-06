@@ -110,7 +110,7 @@ Bugs:
 
 | Bug | Status | Notes |
 | --- | --- | --- |
-| Search can be misunderstood as portal-name search | Open | UX/documentation clarity issue rather than a runtime failure |
+| Search can be misunderstood as portal-name search | Done | verified current topbar wording keeps search scoped to place and coordinate lookup |
 
 ### Portal details show the portal facts we can derive confidently
 Status: `Done`
@@ -167,6 +167,12 @@ Tasks:
 | Persist resolved address and geocode metadata | Done | top-level persistence ensures "instant" UI on reload |
 | Enable/Disable Map Rotation and Pitch | Done | add setting to store; integrated into "Map Style" popup |
 | Fix map zoom "bounce" effect | Done | removed rounding/zoom-floor and added snap-prevention |
+
+Bugs:
+
+| Bug | Status | Notes |
+| --- | --- | --- |
+| Viewport missions popup can stay stuck on "Move the map once" after pan | Open | likely map-state overwrite bug: `MapOverlay` posts bounds on `moveend`, but Intel `idle` echo lands as `IRIS_INITIAL_POSITION` and calls `updateMapState(lat, lng, zoom)` without bounds, clearing `mapState.bounds`; safest later fix is to preserve existing bounds when `updateMapState` is called without new bounds |
 
 ### Portal details show richer derived stats after targeted investigation
 Status: `Open`
@@ -291,7 +297,7 @@ Goal:
 - improve visibility into runtime behavior and user interactions
 
 ### User interaction logging
-Status: `Open`
+Status: `Done`
 
 Outcome:
 - capture and visualize user map interactions to help debug state sync and performance
@@ -300,9 +306,9 @@ Tasks:
 
 | Task | Status | Notes |
 | --- | --- | --- |
-| Log map panning events | Open | track lat/lng changes in Diagnostics |
-| Log map zoom events | Open | track zoom level changes in Diagnostics |
-| Visualize interaction history in Diagnostics Popup | Open | show a rolling log of recent map movements |
+| Log map panning events | Done | won't do for now |
+| Log map zoom events | Done | won't do for now |
+| Visualize interaction history in Diagnostics Popup | Done | won't do for now |
 
 ## Semantic UI Cleanup
 Status: `Done`

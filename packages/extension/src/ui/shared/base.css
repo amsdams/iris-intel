@@ -39,6 +39,14 @@
     --iris-popup-shadow: rgb(0 255 255 / 33%);
     --iris-popup-title-color: var(--iris-accent);
     --iris-feature-color: var(--iris-text-primary);
+    --iris-history-visited: #9b59b6;
+    --iris-history-captured: #e74c3c;
+    --iris-history-scanned: #f1c40f;
+    --iris-mission-color: #ef8e2e;
+    --iris-artifact-color: #f0f;
+    --iris-health-high: #0f0;
+    --iris-health-medium: #ff0;
+    --iris-health-low: #f00;
 }
 
 .iris-overlay-root *,

@@ -115,6 +115,17 @@ export const UI_COLORS = {
     SUCCESS: '#00ff00',
 };
 
+export const SEMANTIC_COLORS = {
+    HISTORY_VISITED: '#9B59B6',
+    HISTORY_CAPTURED: '#E74C3C',
+    HISTORY_SCANNED: '#F1C40F',
+    MISSION: '#EF8E2E',
+    ARTIFACT: '#FF00FF',
+    HEALTH_HIGH: '#00FF00',
+    HEALTH_MEDIUM: '#FFFF00',
+    HEALTH_LOW: '#FF0000',
+} as const;
+
 export const FONT_SIZES = {
     H2: '1.2em',
     H3: '1.1em',
