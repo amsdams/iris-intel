@@ -31,6 +31,13 @@
     --iris-progress-color: var(--iris-accent);
     --iris-enl-color: #00ff00;
     --iris-res-color: #0000ff;
+    --iris-enl-percent: 50%;
+    --iris-res-percent: 50%;
+    --iris-popup-bg: rgba(0, 0, 0, 0.92);
+    --iris-popup-border: var(--iris-accent);
+    --iris-popup-shadow: rgba(0, 255, 255, 0.33);
+    --iris-popup-title-color: var(--iris-accent);
+    --iris-feature-color: var(--iris-text-primary);
 }
 
 .iris-overlay-root *,

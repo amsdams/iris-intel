@@ -2,7 +2,7 @@ import { h, JSX } from 'preact';
 import { useEffect, useState, useRef, useMemo, useCallback } from 'preact/hooks';
 import { useStore, normalizeTeam, Plext } from '@iris/core';
 import { Popup } from '../../shared/Popup';
-import { THEMES, UI_COLORS } from '../../theme';
+import { THEMES } from '../../theme';
 import './comm.css';
 
 interface CommPopupProps {

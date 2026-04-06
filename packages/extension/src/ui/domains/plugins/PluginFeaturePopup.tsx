@@ -1,7 +1,7 @@
 import { h, JSX } from 'preact';
 import { useStore } from '@iris/core';
 import { Popup } from '../../shared/Popup';
-import {THEMES, UI_COLORS} from '../../theme';
+import {THEMES} from '../../theme';
 import './plugins.css';
 
 type ActionMarkupData = {
