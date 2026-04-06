@@ -12,7 +12,7 @@ import { GameScorePopup } from './domains/scores/GameScorePopup';
 import { RegionScorePopup } from './domains/scores/RegionScorePopup';
 import { ExportPopup } from '../../../plugins/src/export-data/ExportPopup';
 import { ThemePopup } from '../../../plugins/src/theme-selector/ThemePopup';
-import { MapThemePopup } from './domains/map/MapThemePopup';
+import { MapSettingsPopup } from './domains/map/MapSettingsPopup';
 import { PluginsPopup } from './domains/plugins/PluginsPopup';
 import { StatusBar } from './domains/status/StatusBar';
 import { SessionAlert } from './domains/status/SessionAlert';
@@ -34,7 +34,7 @@ export function IRISOverlay(): JSX.Element {
     const [showFiltersPopup, setShowFiltersPopup] = useState(false);
     const [showCommPopup, setShowCommPopup] = useState(false);
     const [showThemePopup, setShowThemePopup] = useState(false);
-    const [showMapThemePopup, setShowMapThemePopup] = useState(false);
+    const [showMapSettingsPopup, setShowMapSettingsPopup] = useState(false);
     const [showPluginsPopup, setShowPluginsPopup] = useState(false);
     const [showGameScorePopup, setShowGameScorePopup] = useState(false);
     const [showRegionScorePopup, setShowRegionScorePopup] = useState(false);
@@ -54,7 +54,7 @@ export function IRISOverlay(): JSX.Element {
     const toggleFiltersPopup = (): void => setShowFiltersPopup((value) => !value);
     const toggleCommPopup = (): void => setShowCommPopup((value) => !value);
     const toggleThemePopup = useCallback((): void => setShowThemePopup((value) => !value), []);
-    const toggleMapThemePopup = (): void => setShowMapThemePopup((value) => !value);
+    const toggleMapSettingsPopup = (): void => setShowMapSettingsPopup((value) => !value);
     const togglePluginsPopup = (): void => setShowPluginsPopup((value) => !value);
     const toggleGameScorePopup = (): void => {
         if (!showGameScorePopup) {
@@ -128,7 +128,7 @@ export function IRISOverlay(): JSX.Element {
                 onTogglePlugins={togglePluginsPopup}
                 onToggleMissions={toggleMissionsPopup}
                 onToggleMapVisibility={toggleMapVisibility}
-                onToggleMapTheme={toggleMapThemePopup}
+                onToggleMapSettings={toggleMapSettingsPopup}
                 onToggleGameScore={toggleGameScorePopup}
                 onToggleRegionScore={toggleRegionScorePopup}
                 onTogglePasscodes={togglePasscodePopup}
@@ -186,8 +186,8 @@ export function IRISOverlay(): JSX.Element {
                 <ThemePopup onClose={toggleThemePopup} />
             )}
 
-            {showMapThemePopup && (
-                <MapThemePopup onClose={toggleMapThemePopup} />
+            {showMapSettingsPopup && (
+                <MapSettingsPopup onClose={toggleMapSettingsPopup} />
             )}
 
             {showPluginsPopup && (

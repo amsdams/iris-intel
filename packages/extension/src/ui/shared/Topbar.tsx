@@ -159,7 +159,7 @@ interface TopbarProps {
     onToggleComm: () => void;
     onToggleMissions: () => void;
     onTogglePlugins: () => void;
-    onToggleMapTheme: () => void;
+    onToggleMapSettings: () => void;
     onToggleGameScore: () => void;
     onToggleRegionScore: () => void;
     onTogglePasscodes: () => void;
@@ -175,7 +175,7 @@ export function Topbar({
     onToggleComm,
     onToggleMissions,
     onTogglePlugins,
-    onToggleMapTheme,
+    onToggleMapSettings,
     onToggleGameScore,
     onToggleRegionScore,
     onTogglePasscodes,
@@ -287,10 +287,10 @@ export function Topbar({
                         </button>
                         <button
                             className="iris-menu-item"
-                            onClick={() => { onToggleMapTheme(); setShowMenu(false); }}
+                            onClick={() => { onToggleMapSettings(); setShowMenu(false); }}
                             style={{ color: theme.AQUA }}
                         >
-                            Map Style
+                            Map Settings
                         </button>
                         <button
                             className="iris-menu-item"

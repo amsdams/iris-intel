@@ -4,11 +4,11 @@ import { Popup } from '../../shared/Popup';
 import {MAP_THEMES, THEMES} from '../../theme';
 import './map.css';
 
-interface MapThemePopupProps {
+interface MapSettingsPopupProps {
     onClose: () => void;
 }
 
-export function MapThemePopup({ onClose }: MapThemePopupProps): JSX.Element {
+export function MapSettingsPopup({ onClose }: MapSettingsPopupProps): JSX.Element {
     const mapThemeId = useStore((state) => state.mapThemeId);
     const setMapTheme = useStore((state) => state.setMapTheme);
 
@@ -23,7 +23,7 @@ export function MapThemePopup({ onClose }: MapThemePopupProps): JSX.Element {
     return (
         <Popup
             onClose={onClose}
-            title="Map Style"
+            title="Map Settings"
             className="iris-popup-top-center iris-popup-medium"
              style={{
                 '--iris-popup-border': theme.AQUA,
@@ -32,7 +32,7 @@ export function MapThemePopup({ onClose }: MapThemePopupProps): JSX.Element {
             } as Record<string, string>}
         >
             <div className="iris-map-themes">
-                <div className="iris-map-section-title">THEME</div>
+                <div className="iris-map-section-title">MAP THEME</div>
                 {Object.keys(MAP_THEMES).map((id) => (
                     <label 
                         key={id} 
