@@ -353,6 +353,22 @@ Tasks:
 | Surgical Interception | Done | intercept network traffic without modifying Intel's internal logic |
 | Type-Safe Domain Models | Open | strictly type all incoming Intel payloads to prevent runtime casting errors |
 
+### Linting and Code Quality
+Status: `Done`
+
+Outcome:
+- automated verification of CSS health and standards
+- normalized CSS across the monorepo
+
+Tasks:
+
+| Task | Status | Notes |
+| --- | --- | --- |
+| Add Stylelint to monorepo | Done | established root `.stylelintrc.json` and `.stylelintignore` |
+| Standardize CSS properties and colors | Done | full pass with `stylelint --fix` to normalize hex and notation |
+| Replace deprecated `word-break: break-word` | Done | migrated to `overflow-wrap: anywhere` in all domains |
+| Include CSS linting in CI/release | Done | integrated into `npm run lint` and verified in GitHub Actions |
+
 ## Current Next Pickup
 
 1. Turn the draw-tools epic into an implementation plan for the first mobile-safe baseline.
