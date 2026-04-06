@@ -17,7 +17,7 @@
 
 .iris-debug-stat-label {
     font-weight: bold;
-    color: var(--iris-accent, #00ffff);
+    color: var(--iris-accent, #0ff);
     margin-top: 4px;
 }
 
@@ -41,18 +41,18 @@
 
 .iris-debug-address-stale {
     font-size: 0.75em;
-    color: #ffaa00;
+    color: #fa0;
     font-style: italic;
 }
 
 .iris-debug-address-resolving {
     font-size: 0.75em;
-    color: var(--iris-accent, #00ffff);
+    color: var(--iris-accent, #0ff);
 }
 
 .iris-debug-address-wait {
     font-size: 0.75em;
-    color: var(--iris-text-muted, #aaaaaa);
+    color: var(--iris-text-muted, #aaa);
 }
 
 .iris-debug-discovered-location {
@@ -60,7 +60,7 @@
     font-size: 0.9em;
     color: var(--iris-text-muted, #aaa);
     font-style: italic;
-    word-wrap: break-word;
+    overflow-wrap: break-word;
     white-space: normal;
 }
 

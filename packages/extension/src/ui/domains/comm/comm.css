@@ -63,7 +63,7 @@
 }
 
 .iris-comm-content {
-    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 .iris-comm-date-header {
@@ -108,7 +108,7 @@
 .iris-comm-send-input {
     flex: 1;
     min-width: 0;
-    background: rgba(255, 255, 255, 0.04);
+    background: rgb(255 255 255 / 4%);
     border: 1px solid var(--iris-border);
     color: var(--iris-text-primary);
     padding: 6px 8px;
@@ -148,7 +148,7 @@
 }
 
 .iris-comm-markup-secure {
-    color: #ffff00;
+    color: #ff0;
 }
 
 .iris-comm-markup-unknown {

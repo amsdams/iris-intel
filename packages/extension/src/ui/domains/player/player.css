@@ -46,7 +46,7 @@
 
 .iris-stats-bar-bg {
     height: 4px;
-    background: rgba(255, 255, 255, 0.05);
+    background: rgb(255 255 255 / 5%);
     width: 100%;
     overflow: hidden;
     border-radius: 2px;

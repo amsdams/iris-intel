@@ -3,7 +3,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background: rgba(0, 0, 0, 0.9);
+  background: rgb(0 0 0 / 90%);
   border-top: 1px solid var(--iris-border);
   display: flex;
   flex-direction: column;
@@ -22,9 +22,9 @@
   top: 48px;
   right: 12px;
   width: min(420px, calc(100vw - 24px));
-  background: rgba(20, 0, 0, 0.94);
+  background: rgb(20 0 0 / 94%);
   border: 1px solid #6b1d1d;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 40%);
   color: var(--iris-text-primary);
   z-index: 10002;
   padding: 12px;
@@ -45,7 +45,7 @@
 .iris-session-alert-meta {
   font-size: 10px;
   line-height: 1.3;
-  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .iris-session-alert-actions {
@@ -56,7 +56,7 @@
 
 .iris-session-alert-button {
   border: 1px solid #555;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   color: var(--iris-text-primary);
   padding: 6px 10px;
   cursor: pointer;
@@ -64,8 +64,8 @@
 }
 
 .iris-session-alert-button-primary {
-  border-color: #ff5555;
-  color: #ffaaaa;
+  border-color: #f55;
+  color: #faa;
 }
 
 .iris-status-bar-collapsed {
@@ -81,7 +81,7 @@
   overflow-y: auto;
   padding: 8px;
   border-bottom: 1px solid var(--iris-border);
-  background: rgba(0, 10, 20, 0.4);
+  background: rgb(0 10 20 / 40%);
 }
 
 .iris-status-header {
@@ -93,7 +93,7 @@
 }
 
 .iris-status-summary {
-  color: #ff5555;
+  color: #f55;
   font-weight: bold;
 }
 
@@ -117,17 +117,17 @@
 
 .iris-status-section-js-errors .iris-status-section-title {
   color: #f1c40f;
-  border-bottom: 1px solid #440000;
+  border-bottom: 1px solid #400;
 }
 
 .iris-status-section-net-errors .iris-status-section-title {
-  color: #ff5555;
-  border-bottom: 1px solid #440000;
+  color: #f55;
+  border-bottom: 1px solid #400;
 }
 
 .iris-status-section-success .iris-status-section-title {
   color: var(--iris-accent);
-  border-bottom: 1px solid #004444;
+  border-bottom: 1px solid #044;
 }
 
 .iris-status-log-entry {

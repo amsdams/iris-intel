@@ -16,8 +16,10 @@
     "release:chrome": "mkdir -p out && TS=$(date +%Y%m%d%H%M) && cd packages/extension/dist && zip -r ../../../out/iris-chrome-$TS.zip .",
     "release:firefox": "mkdir -p out && TS=$(date +%Y%m%d%H%M) && cd packages/extension/dist-firefox && zip -r ../../../out/iris-firefox-$TS.xpi .",
     "release": "npm run build:all && npm run release:chrome && npm run release:firefox",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
+    "lint": "eslint . && npm run lint:css",
+    "lint:fix": "eslint . --fix && npm run lint:css:fix",
+    "lint:css": "stylelint '**/*.css'",
+    "lint:css:fix": "stylelint '**/*.css' --fix",
     "serve": "npx qrcode-terminal http://$(ipconfig getifaddr en0):8080 && npx http-server -p 8080"
   },
   "devDependencies": {
@@ -28,6 +30,8 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "globals": "^17.4.0",
+    "stylelint": "^17.6.0",
+    "stylelint-config-standard": "^40.0.0",
     "typescript": "^5.0.0",
     "typescript-eslint": "^8.57.2",
     "vite": "^5.0.0",

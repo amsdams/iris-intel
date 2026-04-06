@@ -1,0 +1,14 @@
+{
+  "extends": "stylelint-config-standard",
+  "rules": {
+    "font-family-no-missing-generic-family-keyword": [true, {
+      "ignoreFontFamilies": ["monospace"]
+    }],
+    "declaration-block-single-line-max-declarations": null,
+    "selector-class-pattern": null,
+
+    "custom-property-pattern": null,
+    "no-descending-specificity": null,
+    "declaration-block-no-redundant-longhand-properties": null
+  }
+}

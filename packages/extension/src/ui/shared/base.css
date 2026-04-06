@@ -7,35 +7,36 @@
     pointer-events: none;
     z-index: 9999;
     font-family: monospace;
-    --iris-font-family: Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    --iris-border: #333333;
-    --iris-text-secondary: #aaaaaa;
-    --iris-text-primary: #ffffff;
-    --iris-accent: #00ffff;
+
+    --iris-font-family: menlo, monaco, consolas, "Liberation Mono", "Courier New", monospace;
+    --iris-border: #333;
+    --iris-text-secondary: #aaa;
+    --iris-text-primary: #fff;
+    --iris-accent: #0ff;
     --iris-aqua: var(--iris-accent);
     --iris-border-dim: var(--iris-border);
     --iris-text-muted: var(--iris-text-secondary);
-    --iris-bg-base: rgba(0, 0, 0, 0.92);
+    --iris-bg-base: rgb(0 0 0 / 92%);
 
     /* Dynamic Properties (Defined here to resolve IDE warnings) */
-    --iris-faction-color: #ffffff;
-    --iris-faction-shadow-color: rgba(0, 255, 255, 0.33);
-    --iris-level-color: #ffff00;
-    --iris-reso-color: #333333;
-    --iris-mod-rarity-color: #333333;
+    --iris-faction-color: #fff;
+    --iris-faction-shadow-color: rgb(0 255 255 / 33%);
+    --iris-level-color: #ff0;
+    --iris-reso-color: #333;
+    --iris-mod-rarity-color: #333;
     --iris-health-pct: 0%;
-    --iris-health-color: #00ff00;
+    --iris-health-color: #0f0;
     --iris-comm-color: var(--iris-accent);
-    --iris-item-color: #ffffff;
+    --iris-item-color: #fff;
     --iris-progress: 0%;
     --iris-progress-color: var(--iris-accent);
-    --iris-enl-color: #00ff00;
-    --iris-res-color: #0000ff;
+    --iris-enl-color: #0f0;
+    --iris-res-color: #00f;
     --iris-enl-percent: 50%;
     --iris-res-percent: 50%;
-    --iris-popup-bg: rgba(0, 0, 0, 0.92);
+    --iris-popup-bg: rgb(0 0 0 / 92%);
     --iris-popup-border: var(--iris-accent);
-    --iris-popup-shadow: rgba(0, 255, 255, 0.33);
+    --iris-popup-shadow: rgb(0 255 255 / 33%);
     --iris-popup-title-color: var(--iris-accent);
     --iris-feature-color: var(--iris-text-primary);
 }
@@ -94,7 +95,6 @@
 
 .iris-overlay-root button {
     appearance: none;
-    -webkit-appearance: none;
 }
 
 .iris-overlay-root input,
@@ -128,24 +128,24 @@
 
 .iris-popup-content::-webkit-scrollbar-track,
 .iris-comm-scroll-container::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.1);
+    background: rgb(0 0 0 / 10%);
 }
 
 .iris-popup-content::-webkit-scrollbar-thumb,
 .iris-comm-scroll-container::-webkit-scrollbar-thumb {
-    background: #00ffff;
+    background: #0ff;
     border-radius: 2px;
 }
 
 .iris-popup {
     position: fixed;
     z-index: 10002;
-    background: var(--iris-popup-bg, rgba(0, 0, 0, 0.92));
+    background: var(--iris-popup-bg, rgb(0 0 0 / 92%));
     color: var(--iris-text-primary);
     padding: 16px;
     border-radius: 8px;
     border: 2px solid var(--iris-popup-border, var(--iris-accent));
-    box-shadow: 0 0 20px var(--iris-popup-shadow, rgba(0, 255, 255, 0.33));
+    box-shadow: 0 0 20px var(--iris-popup-shadow, rgb(0 255 255 / 33%));
     font-family: monospace;
     max-height: 80vh;
     pointer-events: auto;
@@ -159,7 +159,7 @@
     right: 8px;
     background: transparent;
     border: none;
-    color: #ffffff;
+    color: #fff;
     font-size: 18px;
     cursor: pointer;
     line-height: 1;
@@ -219,7 +219,7 @@
 }
 
 .iris-btn-primary {
-    background: #00ffff;
+    background: #0ff;
 }
 
 .iris-tabs {
@@ -239,7 +239,7 @@
 
 .iris-tab:hover {
     color: var(--iris-text-primary);
-    background: rgba(255, 255, 255, 0.05);
+    background: rgb(255 255 255 / 5%);
 }
 
 .iris-tab.active {
@@ -340,7 +340,7 @@
 
 .iris-popup-medium { width: 420px; min-width: 320px; max-width: 90vw; }
 
-@media (max-width: 600px) {
+@media (width <= 600px) {
     .iris-popup {
         width: 90vw !important;
         max-width: 90vw !important;

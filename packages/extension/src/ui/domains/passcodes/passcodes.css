@@ -36,7 +36,7 @@
 .iris-passcode-results-title {
   font-size: 0.9em;
   font-weight: 700;
-  color: var(--iris-accent, #00ffff);
+  color: var(--iris-accent, #0ff);
 }
 
 .iris-passcode-reward-list {
