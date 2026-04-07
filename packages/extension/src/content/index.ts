@@ -11,6 +11,7 @@ import { handleEntities } from './domains/entities/handler';
 import { IntelMapData } from './domains/entities/types';
 import { handleInventory } from './domains/inventory/handler';
 import { InventoryData } from './domains/inventory/types';
+import mockInventoryData from './domains/inventory/mock.inventory.json';
 import { handlePlayerStats } from './domains/player/handler';
 import { PlayerStatsMessage } from './domains/player/types';
 import { handlePlexts } from './domains/plexts/handler';
@@ -45,6 +46,7 @@ if (window.__irisContentInitialized) {
 
 // Tracks whether MapLibre has been given its initial position
 let hasInitialPosition = false;
+let inventoryMockPreviousSubscription: boolean | null = null;
 const requestCoordinator = createRequestCoordinator();
 
 // ---------------------------------------------------------------------------
@@ -147,6 +149,24 @@ window.addEventListener('message', (event: MessageEvent) => {
 
     case 'IRIS_INVENTORY_REQUEST': {
       requestCoordinator.handleInventoryRequest();
+      break;
+    }
+
+    case 'IRIS_LOAD_MOCK_INVENTORY': {
+      const state = useStore.getState();
+      inventoryMockPreviousSubscription = state.hasSubscription;
+      state.setHasSubscription(true);
+      handleInventory(mockInventoryData as InventoryData);
+      break;
+    }
+
+    case 'IRIS_CLEAR_MOCK_INVENTORY': {
+      const state = useStore.getState();
+      state.setInventory([]);
+      if (inventoryMockPreviousSubscription !== null) {
+        state.setHasSubscription(inventoryMockPreviousSubscription);
+        inventoryMockPreviousSubscription = null;
+      }
       break;
     }
 

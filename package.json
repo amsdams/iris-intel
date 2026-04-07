@@ -11,6 +11,8 @@
     "build:chrome": "npm run build:chrome -w packages/extension",
     "build:firefox": "npm run build:firefox -w packages/extension",
     "build:all": "npm run build:chrome && npm run build:firefox",
+    "test": "vitest run",
+    "test:store-bounds": "vitest run packages/core/src/store.bounds.test.ts",
     "typecheck": "tsc --noEmit",
     "version:bump": "bash ./scripts/release-version.sh",
     "release:chrome": "mkdir -p out && TS=$(date +%Y%m%d%H%M) && cd packages/extension/dist && zip -r ../../../out/iris-chrome-$TS.zip .",
@@ -35,6 +37,7 @@
     "typescript": "^5.0.0",
     "typescript-eslint": "^8.57.2",
     "vite": "^5.0.0",
-    "vite-plugin-web-extension": "^4.5.0"
+    "vite-plugin-web-extension": "^4.5.0",
+    "vitest": "^4.1.3"
   }
 }

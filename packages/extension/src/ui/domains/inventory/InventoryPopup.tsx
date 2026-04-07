@@ -20,6 +20,7 @@ interface GroupedInventoryItem {
 export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Element => {
     const inventory = useStore((state) => state.inventory);
     const hasSubscription = useStore((state) => state.hasSubscription);
+    const debugLogging = useStore((state) => state.debugLogging);
     const themeId = useStore((state) => state.themeId);
     const theme = THEMES[themeId] || THEMES.INGRESS;
     const [activeCategory, setActiveCategory] = useState<Category>('ALL');
@@ -141,6 +142,14 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
         window.postMessage({ type: 'IRIS_INVENTORY_REQUEST' }, '*');
     };
 
+    const handleLoadMock = (): void => {
+        window.postMessage({ type: 'IRIS_LOAD_MOCK_INVENTORY' }, '*');
+    };
+
+    const handleClearMock = (): void => {
+        window.postMessage({ type: 'IRIS_CLEAR_MOCK_INVENTORY' }, '*');
+    };
+
     const getItemColor = (item: GroupedInventoryItem): string => {
         if (item.category === 'RESONATORS' || item.category === 'WEAPONS') {
             if (item.type === 'ADA' || item.type === 'JARVIS') {
@@ -164,12 +173,30 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
             noScroll={false}
             contentClassName="iris-popup-content-no-padding"
             headerExtras={
-                <button 
-                    className="iris-button iris-comm-refresh-btn"
-                    onClick={handleRefresh}
-                >
-                    REFRESH
-                </button>
+                <div className="iris-flex iris-gap-2">
+                    {debugLogging && (
+                        <>
+                            <button
+                                className="iris-button iris-comm-refresh-btn"
+                                onClick={handleLoadMock}
+                            >
+                                LOAD MOCK
+                            </button>
+                            <button
+                                className="iris-button iris-comm-refresh-btn"
+                                onClick={handleClearMock}
+                            >
+                                CLEAR MOCK
+                            </button>
+                        </>
+                    )}
+                    <button 
+                        className="iris-button iris-comm-refresh-btn"
+                        onClick={handleRefresh}
+                    >
+                        REFRESH
+                    </button>
+                </div>
             }
             className="iris-popup-top-center iris-popup-medium"
              style={{

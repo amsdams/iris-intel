@@ -679,8 +679,16 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
             }
         }, REVERSE_GEOCODE_DEBOUNCE_MS);
     },
-    updateMapState: (lat, lng, zoom, bounds) => set(() => ({
-        mapState: { lat, lng, zoom, bounds }
+    updateMapState: (lat, lng, zoom, bounds) => set((state) => ({
+        mapState: {
+            lat,
+            lng,
+            zoom,
+            // Intel sync updates do not always carry bounds; preserve the last
+            // known viewport so viewport-dependent UI (for example missions)
+            // does not regress back to an uninitialized state.
+            bounds: bounds ?? state.mapState.bounds,
+        }
     })),
     selectPortal: (id) => set(() => ({ selectedPortalId: id })),
     setSelectedPluginFeature: (feature) => set(() => ({ selectedPluginFeature: feature })),

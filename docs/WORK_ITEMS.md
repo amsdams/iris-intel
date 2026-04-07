@@ -173,7 +173,7 @@ Bugs:
 
 | Bug | Status | Notes |
 | --- | --- | --- |
-| Viewport missions popup can stay stuck on "Move the map once" after pan | Open | startup camera restore is fixed, but viewport missions still lose `mapState.bounds` when a later Intel position sync updates map state without bounds; next pickup should preserve existing bounds when `updateMapState` is called without new bounds, or split bounded MapLibre moves from unbounded Intel sync updates more explicitly |
+| Viewport missions popup can stay stuck on "Move the map once" after pan | Done | preserving existing `mapState.bounds` when sync updates arrive without bounds keeps viewport missions available after pan/startup sync |
 
 ### Portal details show richer derived stats after targeted investigation
 Status: `Open`
@@ -188,6 +188,37 @@ Tasks:
 | Investigate shielding/mitigation summary from mod stats | Open | possible if shield stats are reliable in current payloads |
 | Investigate AP gain presentation | Open | needs a clear definition; not a native portal-details field today |
 | Investigate hack-rate or hacks-per-minute presentation | Open | needs confirmation of available mod/stat inputs before adding |
+
+### Deferred refactor notes for missions and startup sync
+Status: `Open`
+
+Outcome:
+- keep follow-up architecture ideas visible without treating them as active bugfix work
+
+Tasks:
+
+| Task | Status | Notes |
+| --- | --- | --- |
+| Refactor missions state model | Open | separate viewport missions, portal missions, selected mission details, and rendered route ownership more explicitly if missions behavior grows more complex |
+| Rework missions popup request flow | Open | consider dedupe/caching/open-trigger discipline if repeated popup-driven requests become noisy or harder to reason about |
+| Simplify startup sync ownership | Open | current startup behavior is improved, but persisted IRIS state, Intel startup cookies, Intel idle sync, and entity fallback still deserve a clearer long-term contract if another concrete bug appears |
+
+### Deferred refactor notes for map/render/store boundaries
+Status: `Open`
+
+Outcome:
+- capture medium-sized cleanup ideas before they turn into bug-driven emergency work
+
+Tasks:
+
+| Task | Status | Notes |
+| --- | --- | --- |
+| Split map sync store actions by intent | Open | separate bounded viewport updates, unbounded Intel sync updates, and startup restore so camera/bounds ownership is explicit instead of inferred from optional params |
+| Make plugin HTML markers a first-class rendering path | Open | player-tracker currently relies on GeoJSON features plus special-case HTML marker handling in `MapOverlay`; a dedicated plugin overlay path would reduce renderer coupling |
+| Isolate reverse-geocode state into a dedicated module or slice | Open | `discoveredLocation`, `lastResolvedLatLng`, `addressStatus`, and debounce timing are coherent now but still spread across the main UI slice |
+| Tighten IRIS message-type contracts for map sync | Open | startup Intel position, later Intel sync, and IRIS-owned camera moves now differ semantically and should stay explicit in the bridge protocol |
+| Extract MapLibre interaction handler logic behind a helper | Open | rotate/pitch support currently touches MapLibre handler internals directly in `MapOverlay`; isolating that would reduce component complexity and future upgrade risk |
+| Keep mock fixtures out of release bundles | Open | debug mock inventory currently ships because the JSON fixture is imported by runtime code; later cleanup should gate mocks behind a dev-only build flag or separate debug-only entry path |
 
 ## Draw Tools Plugin
 Status: `In Progress`
@@ -409,7 +440,7 @@ Tasks:
 
 ## Current Next Pickup
 
-1. Fix the viewport missions list by keeping `mapState.bounds` stable across Intel sync updates so the popup no longer stays stuck on "Move the map once".
+1. Turn the draw-tools epic into an implementation plan for the first mobile-safe baseline.
 2. Keep the startup duplicate score/subscription burst tracked, but do not block other work on it.
 3. Investigate richer portal-details stats only after deciding which ones are truly defensible.
 
