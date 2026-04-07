@@ -219,6 +219,26 @@ Tasks:
 | Tighten IRIS message-type contracts for map sync | Open | startup Intel position, later Intel sync, and IRIS-owned camera moves now differ semantically and should stay explicit in the bridge protocol |
 | Extract MapLibre interaction handler logic behind a helper | Open | rotate/pitch support currently touches MapLibre handler internals directly in `MapOverlay`; isolating that would reduce component complexity and future upgrade risk |
 | Keep mock fixtures out of release bundles | Open | debug mock inventory currently ships because the JSON fixture is imported by runtime code; later cleanup should gate mocks behind a dev-only build flag or separate debug-only entry path |
+| Stage entity relationship cleanup before any full entity-store rewrite | Open | keep the current split `portals`/`links`/`fields` model for now, but incrementally add relationship-aware cleanup: portal delete should remove attached links now, and later investigate storing field anchor portal ids or secondary indexes before considering a broader normalized graph refactor |
+| Investigate heuristic stale-portal repair from link/field contradictions | Open | debug-only first: detect links or fields whose team contradicts currently stored anchor portal teams; if reliable, consider an opt-in inferred-team repair path instead of silently rewriting portal teams |
+
+### Entity cleanup and endpoint diagnostics are more relationship-aware
+Status: `In Progress`
+
+Outcome:
+- store enough relationship data to clean up stale geometry more safely
+- make endpoint timing easier to inspect during runtime debugging
+
+Tasks:
+
+| Task | Status | Notes |
+| --- | --- | --- |
+| Preserve field anchor portal ids from `getEntities` | Done | field points now retain `portalId` instead of only lat/lng |
+| Remove links attached to a deleted portal | Done | store cascade now removes dependent links when a portal GUID is deleted |
+| Remove fields anchored to a deleted portal | Done | field cleanup now uses stored anchor portal ids |
+| Add regression coverage for portal-delete cascades | Done | Vitest covers both link and field cleanup when a portal is deleted |
+| Show endpoint next-refresh timing in status UI | Done | polled endpoints now expose `next auto refresh`, while `entities` is labeled event-driven |
+| Keep endpoint ordering stable but useful | Done | expanded status and diagnostics now sort active first, then auto-refresh by due time, then event-driven, then on-demand |
 
 ## Draw Tools Plugin
 Status: `In Progress`

@@ -28,7 +28,7 @@ export interface Link {
 export interface Field {
   id: string;
   team: string;
-  points: { lat: number; lng: number }[];
+  points: { portalId?: string; lat: number; lng: number }[];
 }
 
 export interface PlextMarkupData {

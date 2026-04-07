@@ -1,5 +1,5 @@
 import { h, JSX } from 'preact';
-import { useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { EndpointDiagnostics, EndpointKey, useStore } from '@iris/core';
 import { UI_COLORS } from '../../theme';
 
@@ -18,6 +18,32 @@ const ENDPOINT_STALE_AFTER_MS: Partial<Record<EndpointKey, number>> = {
     regionScore: 5 * 60 * 1000,
 };
 
+const POLLED_ENDPOINT_LABELS: Partial<Record<EndpointKey, string>> = {
+    plexts: 'next auto refresh',
+    artifacts: 'next auto refresh',
+    subscription: 'next auto refresh',
+    inventory: 'next auto refresh',
+};
+
+const ENDPOINT_REFRESH_MODE_LABELS: Partial<Record<EndpointKey, string>> = {
+    entities: 'refresh: event-driven',
+};
+
+const ENDPOINT_FALLBACK_ORDER: EndpointKey[] = [
+    'entities',
+    'portalDetails',
+    'plexts',
+    'missionDetails',
+    'topMissions',
+    'sendPlext',
+    'redeemReward',
+    'artifacts',
+    'subscription',
+    'inventory',
+    'gameScore',
+    'regionScore',
+];
+
 export function StatusBar(): JSX.Element {
     const activeRequests = useStore((state) => state.activeRequests);
     const lastRequestUrl = useStore((state) => state.lastRequestUrl);
@@ -34,6 +60,12 @@ export function StatusBar(): JSX.Element {
     const clearEndpointDiagnostics = useStore((state) => state.clearEndpointDiagnostics);
     
     const [isExpanded, setIsExpanded] = useState(false);
+    const [, setNow] = useState(() => Date.now());
+
+    useEffect(() => {
+        const interval = window.setInterval(() => setNow(Date.now()), 1000);
+        return (): void => window.clearInterval(interval);
+    }, []);
 
     // Extract endpoint name from URL for cleaner display
     const getEndpointName = (url: string): string => {
@@ -114,6 +146,38 @@ export function StatusBar(): JSX.Element {
                 return UI_COLORS.TEXT_MUTED;
         }
     };
+
+    const formatCountdown = (entry: EndpointDiagnostics): string | null => {
+        if (!entry.nextAutoRefreshAt || !POLLED_ENDPOINT_LABELS[entry.key]) return null;
+        if (entry.status === 'in_flight') return 'refreshing now';
+
+        const remainingMs = entry.nextAutoRefreshAt - Date.now();
+        if (remainingMs <= 0) return 'due';
+
+        const totalSeconds = Math.ceil(remainingMs / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+    };
+
+    const getEndpointSortBucket = (entry: EndpointDiagnostics): number => {
+        if (entry.status === 'in_flight') return 0;
+        if (entry.nextAutoRefreshAt) return 1;
+        if (ENDPOINT_REFRESH_MODE_LABELS[entry.key]) return 2;
+        return 3;
+    };
+
+    const sortedEndpointEntries = [...endpointEntries].sort((a, b) => {
+        const bucketDiff = getEndpointSortBucket(a) - getEndpointSortBucket(b);
+        if (bucketDiff !== 0) return bucketDiff;
+
+        if (a.nextAutoRefreshAt && b.nextAutoRefreshAt) {
+            const refreshDiff = a.nextAutoRefreshAt - b.nextAutoRefreshAt;
+            if (refreshDiff !== 0) return refreshDiff;
+        }
+
+        return ENDPOINT_FALLBACK_ORDER.indexOf(a.key) - ENDPOINT_FALLBACK_ORDER.indexOf(b.key);
+    });
 
     return (
         <div 
@@ -207,7 +271,7 @@ export function StatusBar(): JSX.Element {
 
                     <div className="iris-status-section iris-status-section-endpoints">
                         <div className="iris-status-section-title">ENDPOINT HEALTH</div>
-                        {endpointEntries.map((entry) => {
+                        {sortedEndpointEntries.map((entry) => {
                             const derivedStatus = getDerivedEndpointStatus(entry);
                             return (
                                 <div key={`endpoint-${entry.key}`} className="iris-status-log-entry">
@@ -220,6 +284,16 @@ export function StatusBar(): JSX.Element {
                                         {entry.lastSuccessAt ? ` | last success: ${new Date(entry.lastSuccessAt).toLocaleTimeString()}` : ''}
                                         {entry.lastErrorStatus !== null ? ` | last error: ${entry.lastErrorStatus}` : ''}
                                     </div>
+                                    {formatCountdown(entry) && (
+                                        <div className="iris-status-log-url">
+                                            {POLLED_ENDPOINT_LABELS[entry.key]}: {formatCountdown(entry)}
+                                        </div>
+                                    )}
+                                    {!formatCountdown(entry) && ENDPOINT_REFRESH_MODE_LABELS[entry.key] && (
+                                        <div className="iris-status-log-url">
+                                            {ENDPOINT_REFRESH_MODE_LABELS[entry.key]}
+                                        </div>
+                                    )}
                                     {entry.lastUrl && (
                                         <div className="iris-status-log-url">
                                             {entry.lastUrl}

@@ -20,7 +20,7 @@ interface GroupedInventoryItem {
 export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Element => {
     const inventory = useStore((state) => state.inventory);
     const hasSubscription = useStore((state) => state.hasSubscription);
-    const debugLogging = useStore((state) => state.debugLogging);
+    const showMockTools = useStore((state) => state.showMockTools);
     const themeId = useStore((state) => state.themeId);
     const theme = THEMES[themeId] || THEMES.INGRESS;
     const [activeCategory, setActiveCategory] = useState<Category>('ALL');
@@ -174,7 +174,7 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
             contentClassName="iris-popup-content-no-padding"
             headerExtras={
                 <div className="iris-flex iris-gap-2">
-                    {debugLogging && (
+                    {showMockTools && (
                         <>
                             <button
                                 className="iris-button iris-comm-refresh-btn"

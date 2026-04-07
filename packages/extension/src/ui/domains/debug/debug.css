@@ -43,6 +43,10 @@
     border-bottom: none;
 }
 
+.iris-debug-row-endpoint {
+    align-items: flex-start;
+}
+
 .iris-debug-label {
     color: #888;
     font-size: 0.78em;
@@ -52,6 +56,7 @@
     color: #d6d6d6;
     font-size: 0.8em;
     text-align: right;
+    overflow-wrap: anywhere;
 }
 
 .iris-debug-address-section {

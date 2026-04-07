@@ -46,6 +46,13 @@ export function createRequestCoordinator(): RequestCoordinator {
         window.postMessage(message, '*');
     };
 
+    const setNextAutoRefresh = (
+        key: 'artifacts' | 'subscription' | 'inventory' | 'plexts',
+        nextAutoRefreshAt: number | null,
+    ): void => {
+        useStore.getState().setEndpointNextAutoRefresh(key, nextAutoRefreshAt);
+    };
+
     const isSessionBlocked = (): boolean => {
         const sessionStatus = useStore.getState().sessionStatus;
         return sessionStatus === 'expired' || sessionStatus === 'initial_login_required';
@@ -167,26 +174,46 @@ export function createRequestCoordinator(): RequestCoordinator {
     return {
         start(): void {
             startupGraceUntil = Date.now() + STARTUP_GRACE_MS;
+            setNextAutoRefresh('plexts', startupGraceUntil);
+            setNextAutoRefresh('artifacts', startupGraceUntil);
+            setNextAutoRefresh('subscription', startupGraceUntil);
+            setNextAutoRefresh('inventory', startupGraceUntil);
 
             if (startupTimeoutId === null) {
                 startupTimeoutId = window.setTimeout(() => {
                     startupTimeoutId = null;
                     runStartupCatchup();
+                    setNextAutoRefresh('plexts', Date.now() + PLEXT_POLL_MS);
+                    setNextAutoRefresh('artifacts', Date.now() + ARTIFACTS_POLL_MS);
+                    setNextAutoRefresh('subscription', Date.now() + SUBSCRIPTION_POLL_MS);
+                    setNextAutoRefresh('inventory', Date.now() + INVENTORY_POLL_MS);
 
                     if (plextPollId === null) {
-                        plextPollId = window.setInterval(schedulePlextPoll, PLEXT_POLL_MS);
+                        plextPollId = window.setInterval(() => {
+                            schedulePlextPoll();
+                            setNextAutoRefresh('plexts', Date.now() + PLEXT_POLL_MS);
+                        }, PLEXT_POLL_MS);
                     }
 
                     if (artifactsPollId === null) {
-                        artifactsPollId = window.setInterval(scheduleArtifactsFetch, ARTIFACTS_POLL_MS);
+                        artifactsPollId = window.setInterval(() => {
+                            scheduleArtifactsFetch();
+                            setNextAutoRefresh('artifacts', Date.now() + ARTIFACTS_POLL_MS);
+                        }, ARTIFACTS_POLL_MS);
                     }
 
                     if (subscriptionPollId === null) {
-                        subscriptionPollId = window.setInterval(scheduleSubscriptionFetch, SUBSCRIPTION_POLL_MS);
+                        subscriptionPollId = window.setInterval(() => {
+                            scheduleSubscriptionFetch();
+                            setNextAutoRefresh('subscription', Date.now() + SUBSCRIPTION_POLL_MS);
+                        }, SUBSCRIPTION_POLL_MS);
                     }
 
                     if (inventoryPollId === null) {
-                        inventoryPollId = window.setInterval(scheduleInventoryFetch, INVENTORY_POLL_MS);
+                        inventoryPollId = window.setInterval(() => {
+                            scheduleInventoryFetch();
+                            setNextAutoRefresh('inventory', Date.now() + INVENTORY_POLL_MS);
+                        }, INVENTORY_POLL_MS);
                     }
                 }, STARTUP_GRACE_MS);
             }
@@ -217,6 +244,11 @@ export function createRequestCoordinator(): RequestCoordinator {
                 window.clearInterval(inventoryPollId);
                 inventoryPollId = null;
             }
+
+            setNextAutoRefresh('plexts', null);
+            setNextAutoRefresh('artifacts', null);
+            setNextAutoRefresh('subscription', null);
+            setNextAutoRefresh('inventory', null);
         },
 
         handleMoveMap(msg: IRISMessage): void {

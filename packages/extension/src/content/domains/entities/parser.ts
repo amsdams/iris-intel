@@ -63,10 +63,11 @@ export function parseEntities(data: IntelMapData): {
       } else if (entType === 'r') {
         const points = (entData[2] as unknown[][])
           .map((point: unknown[]) => ({
+            portalId: String(point[0] ?? ''),
             lat: parseFloat(point[1] as string) / 1e6,
             lng: parseFloat(point[2] as string) / 1e6,
           }))
-          .filter((point) => !isNaN(point.lat) && !isNaN(point.lng));
+          .filter((point) => point.portalId && !isNaN(point.lat) && !isNaN(point.lng));
 
         if (points.length >= 3) {
           fields.push({ id, team, points });

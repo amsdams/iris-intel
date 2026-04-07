@@ -71,7 +71,7 @@ export interface Link {
 export interface Field {
     id: string;
     team: string;
-    points: { lat: number; lng: number }[];
+    points: { portalId?: string; lat: number; lng: number }[];
 }
 
 export interface Artifact {
@@ -156,6 +156,7 @@ export interface EndpointDiagnostics {
     lastErrorStatus: number | null;
     lastErrorText: string | null;
     lastUrl: string;
+    nextAutoRefreshAt: number | null;
 }
 
 export interface InventoryItemData {
@@ -279,6 +280,7 @@ export interface IRISSettings {
     allowRotation: boolean;
     allowPitch: boolean;
     debugLogging: boolean;
+    showMockTools: boolean;
 }
 
 export const DEFAULT_SETTINGS: IRISSettings = {
@@ -304,6 +306,7 @@ export const DEFAULT_SETTINGS: IRISSettings = {
     allowRotation: true,
     allowPitch: true,
     debugLogging: false,
+    showMockTools: false,
 };
 
 // Slice Types
@@ -325,6 +328,7 @@ interface SettingsSlice extends IRISSettings {
     toggleAllowRotation: () => void;
     toggleAllowPitch: () => void;
     toggleDebugLogging: () => void;
+    toggleShowMockTools: () => void;
 }
 
 interface EntitiesSlice {
@@ -436,6 +440,7 @@ interface DiagnosticsSlice {
     setSessionExpired: (error: SessionError) => void;
     setSessionRecovering: () => void;
     setSessionRecovered: () => void;
+    setEndpointNextAutoRefresh: (key: EndpointKey, nextAutoRefreshAt: number | null) => void;
     clearEndpointDiagnostics: () => void;
 }
 
@@ -468,6 +473,7 @@ const createEmptyEndpointDiagnostics = (): Record<EndpointKey, EndpointDiagnosti
             lastErrorStatus: null,
             lastErrorText: null,
             lastUrl: '',
+            nextAutoRefreshAt: null,
         } satisfies EndpointDiagnostics]),
     ) as Record<EndpointKey, EndpointDiagnostics>;
 
@@ -521,6 +527,7 @@ const createSettingsSlice: StateCreator<IRISState, [], [], SettingsSlice> = (set
     toggleAllowRotation: () => set((state) => ({ allowRotation: !state.allowRotation })),
     toggleAllowPitch: () => set((state) => ({ allowPitch: !state.allowPitch })),
     toggleDebugLogging: () => set((state) => ({ debugLogging: !state.debugLogging })),
+    toggleShowMockTools: () => set((state) => ({ showMockTools: !state.showMockTools })),
 });
 
 const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set) => ({
@@ -575,10 +582,13 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
         let fields = { ...state.fields };
         let artifacts = { ...state.artifacts };
         let changed = false;
+        const deletedPortalIds = new Set<string>();
+
         guids.forEach((id) => {
             if (portals[id]) {
                 const { [id]: _, ...rest } = portals;
                 portals = rest;
+                deletedPortalIds.add(id);
                 changed = true;
             }
             if (links[id]) {
@@ -597,6 +607,25 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
                 changed = true;
             }
         });
+
+        if (deletedPortalIds.size > 0) {
+            Object.entries(links).forEach(([id, link]) => {
+                if (deletedPortalIds.has(link.fromPortalId) || deletedPortalIds.has(link.toPortalId)) {
+                    const { [id]: _, ...rest } = links;
+                    links = rest;
+                    changed = true;
+                }
+            });
+
+            Object.entries(fields).forEach(([id, field]) => {
+                if (field.points.some((point) => point.portalId && deletedPortalIds.has(point.portalId))) {
+                    const { [id]: _, ...rest } = fields;
+                    fields = rest;
+                    changed = true;
+                }
+            });
+        }
+
         return changed ? { portals, links, fields, artifacts } : state;
     }),
 });
@@ -862,7 +891,26 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
                 lastSessionError: null,
             }
     )),
-    clearEndpointDiagnostics: () => set({ endpointDiagnostics: createEmptyEndpointDiagnostics() }),
+    setEndpointNextAutoRefresh: (key, nextAutoRefreshAt) => set((state) => ({
+        endpointDiagnostics: {
+            ...state.endpointDiagnostics,
+            [key]: {
+                ...state.endpointDiagnostics[key],
+                nextAutoRefreshAt,
+            },
+        },
+    })),
+    clearEndpointDiagnostics: () => set((state) => ({
+        endpointDiagnostics: Object.fromEntries(
+            Object.entries(state.endpointDiagnostics).map(([key, entry]) => [
+                key,
+                {
+                    ...createEmptyEndpointDiagnostics()[key as EndpointKey],
+                    nextAutoRefreshAt: entry.nextAutoRefreshAt,
+                },
+            ]),
+        ) as Record<EndpointKey, EndpointDiagnostics>,
+    })),
 });
 
 export const useStore = create<IRISState>()(
@@ -889,6 +937,7 @@ export const useStore = create<IRISState>()(
                     showUnclaimedPortals: state.showUnclaimedPortals,
                     showLevel: state.showLevel,
                     debugLogging: state.debugLogging,
+                    showMockTools: state.showMockTools,
                     showHealth: state.showHealth,
                     showVisited: state.showVisited,
                     showCaptured: state.showCaptured,
