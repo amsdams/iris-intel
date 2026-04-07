@@ -97,6 +97,20 @@ window.addEventListener('message', (event: MessageEvent) => {
   const { type, url, data, params } = msg;
 
   switch (type) {
+    case 'IRIS_INTEL_STARTUP_POSITION': {
+      const { lat, lng, zoom } = msg as { lat: number; lng: number; zoom: number };
+      const state = useStore.getState();
+      if (state.rehydrated && !(state.mapState.lat === 0 && state.mapState.lng === 0)) {
+        hasInitialPosition = true;
+        break;
+      }
+
+      hasInitialPosition = true;
+      state.updateMapState(lat, lng, zoom);
+      break;
+    }
+
+    case 'IRIS_INTEL_POSITION_SYNC':
     case 'IRIS_INITIAL_POSITION': {
       const { lat, lng, zoom } = msg as { lat: number; lng: number; zoom: number };
       hasInitialPosition = true;

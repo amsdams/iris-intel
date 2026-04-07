@@ -67,7 +67,7 @@ import { createSessionRuntime } from './runtime/session-runtime';
     const initialPosition = getIntelPositionFromCookies(document);
     if (initialPosition) {
         window.postMessage(
-            { type: 'IRIS_INITIAL_POSITION', ...initialPosition },
+            { type: 'IRIS_INTEL_STARTUP_POSITION', ...initialPosition },
             '*',
         );
     }
@@ -81,7 +81,7 @@ import { createSessionRuntime } from './runtime/session-runtime';
             const zoom = mapInstance.getZoom();
             if (center && zoom !== undefined) {
                 window.postMessage({
-                    type: 'IRIS_INITIAL_POSITION',
+                    type: 'IRIS_INTEL_POSITION_SYNC',
                     lat: center.lat(),
                     lng: center.lng(),
                     zoom

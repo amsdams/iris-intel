@@ -167,12 +167,13 @@ Tasks:
 | Persist resolved address and geocode metadata | Done | top-level persistence ensures "instant" UI on reload |
 | Enable/Disable Map Rotation and Pitch | Done | add setting to store; integrated into "Map Style" popup |
 | Fix map zoom "bounce" effect | Done | removed rounding/zoom-floor and added snap-prevention |
+| Keep persisted `mapState` authoritative on startup | Done | split Intel startup position from later Intel sync so reload now prefers persisted camera without using `lastResolvedLatLng` as camera state |
 
 Bugs:
 
 | Bug | Status | Notes |
 | --- | --- | --- |
-| Viewport missions popup can stay stuck on "Move the map once" after pan | Open | likely map-state overwrite bug: `MapOverlay` posts bounds on `moveend`, but Intel `idle` echo lands as `IRIS_INITIAL_POSITION` and calls `updateMapState(lat, lng, zoom)` without bounds, clearing `mapState.bounds`; safest later fix is to preserve existing bounds when `updateMapState` is called without new bounds |
+| Viewport missions popup can stay stuck on "Move the map once" after pan | Open | startup camera restore is fixed, but viewport missions still lose `mapState.bounds` when a later Intel position sync updates map state without bounds; next pickup should preserve existing bounds when `updateMapState` is called without new bounds, or split bounded MapLibre moves from unbounded Intel sync updates more explicitly |
 
 ### Portal details show richer derived stats after targeted investigation
 Status: `Open`
@@ -408,7 +409,7 @@ Tasks:
 
 ## Current Next Pickup
 
-1. Turn the draw-tools epic into an implementation plan for the first mobile-safe baseline.
+1. Fix the viewport missions list by keeping `mapState.bounds` stable across Intel sync updates so the popup no longer stays stuck on "Move the map once".
 2. Keep the startup duplicate score/subscription burst tracked, but do not block other work on it.
 3. Investigate richer portal-details stats only after deciding which ones are truly defensible.
 

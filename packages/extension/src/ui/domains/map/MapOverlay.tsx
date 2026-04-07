@@ -322,7 +322,11 @@ export function MapOverlay(): JSX.Element {
             id: 'plugin-points',
             type: 'circle',
             source: 'plugin-features',
-            filter: ['==', '$type', 'Point'],
+            filter: [
+              'all',
+              ['==', '$type', 'Point'],
+              ['!=', 'isPlayerMarker', true],
+            ],
             paint: {
               'circle-radius': 8,
               'circle-color': ['get', 'color'],
