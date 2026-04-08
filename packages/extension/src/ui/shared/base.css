@@ -17,6 +17,9 @@
     --iris-border-dim: var(--iris-border);
     --iris-text-muted: var(--iris-text-secondary);
     --iris-bg-base: rgb(0 0 0 / 92%);
+    --iris-bg-alt: #111;
+    --iris-bg-hover: #1a1a1a;
+    --iris-bg-active: #1a1a1a;
 
     /* Dynamic Properties (Defined here to resolve IDE warnings) */
     --iris-faction-color: #fff;
@@ -39,14 +42,31 @@
     --iris-popup-shadow: rgb(0 255 255 / 33%);
     --iris-popup-title-color: var(--iris-accent);
     --iris-feature-color: var(--iris-text-primary);
+    --iris-error-color: #ff7a7a;
+    --iris-warning-color: #fa0;
     --iris-history-visited: #9b59b6;
     --iris-history-captured: #e74c3c;
     --iris-history-scanned: #f1c40f;
     --iris-mission-color: #ef8e2e;
     --iris-artifact-color: #f0f;
+    --iris-artifact-bg-soft: rgb(255 0 255 / 10%);
+    --iris-artifact-bg-strong: rgb(255 0 255 / 20%);
+    --iris-artifact-border-soft: rgb(255 0 255 / 50%);
     --iris-health-high: #0f0;
     --iris-health-medium: #ff0;
     --iris-health-low: #f00;
+    --iris-level-1: #f2f2f2;
+    --iris-level-2: #8cffbf;
+    --iris-level-3: #00d8ff;
+    --iris-level-4: #5da6ff;
+    --iris-level-5: #d291ff;
+    --iris-level-6: #ff8fdc;
+    --iris-level-7: #ff8a5c;
+    --iris-level-8: #ffe55c;
+    --iris-rarity-common: #fff;
+    --iris-rarity-rare: #f0f;
+    --iris-rarity-very-rare: #b000ff;
+    --iris-rarity-extremely-rare: #f00;
 }
 
 .iris-overlay-root *,

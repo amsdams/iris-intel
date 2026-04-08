@@ -228,14 +228,14 @@
 }
 
 .iris-portal-energy-max {
-    color: #666;
+    color: var(--iris-text-muted, #666);
 }
 
-.iris-rarity-very-common { color: #fff; }
-.iris-rarity-common { color: #fff; }
-.iris-rarity-rare { color: #f0f; }
-.iris-rarity-very-rare { color: #b000ff; }
-.iris-rarity-extremely-rare { color: #f00; }
+.iris-rarity-very-common { color: var(--iris-rarity-common, #fff); }
+.iris-rarity-common { color: var(--iris-rarity-common, #fff); }
+.iris-rarity-rare { color: var(--iris-rarity-rare, #f0f); }
+.iris-rarity-very-rare { color: var(--iris-rarity-very-rare, #b000ff); }
+.iris-rarity-extremely-rare { color: var(--iris-rarity-extremely-rare, #f00); }
 
 .iris-portal-name {
     font-size: 1.2em;
@@ -250,7 +250,7 @@
     margin-bottom: 8px;
     padding: 8px;
     border: 1px solid var(--iris-artifact-color);
-    background: rgb(255 0 255 / 10%);
+    background: var(--iris-artifact-bg-soft, rgb(255 0 255 / 10%));
     border-radius: 4px;
 }
 
@@ -270,15 +270,15 @@
 .iris-portal-artifact-badge {
     font-size: 0.8em;
     color: var(--iris-artifact-color);
-    background: rgb(255 0 255 / 20%);
+    background: var(--iris-artifact-bg-strong, rgb(255 0 255 / 20%));
     padding: 2px 6px;
     border-radius: 2px;
-    border: 1px solid rgb(255 0 255 / 50%);
+    border: 1px solid var(--iris-artifact-border-soft, rgb(255 0 255 / 50%));
 }
 
 .iris-portal-section-title {
     font-size: 0.8em;
-    color: #888;
+    color: var(--iris-text-secondary, #888);
     margin-bottom: 4px;
 }
 
@@ -288,7 +288,7 @@
 
 .iris-portal-mod-item-empty {
     opacity: 0.5;
-    color: #444;
+    color: var(--iris-border, #444);
 }
 
 .iris-portal-resonators-section {
@@ -297,7 +297,7 @@
 
 .iris-portal-resonator-item-empty {
     opacity: 0.5;
-    color: #444;
+    color: var(--iris-border, #444);
 }
 
 .iris-portal-resonator-header {
