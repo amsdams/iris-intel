@@ -30,6 +30,7 @@ import { handleArtifacts } from './domains/artifacts/handler';
 import { ArtifactData } from './domains/artifacts/types';
 import { handlePasscodeResponse } from './domains/passcodes/handler';
 import { PasscodeResponseData } from './domains/passcodes/types';
+import mockPasscodeData from './domains/passcodes/mock.passcode.json';
 import { IRISMessage } from './runtime/message-types';
 import { createRequestCoordinator } from './runtime/request-coordinator';
 
@@ -281,6 +282,16 @@ window.addEventListener('message', (event: MessageEvent) => {
 
     case 'IRIS_PASSCODE_REDEEM_FAILED': {
       useStore.getState().setPasscodeRedeemError(String(msg.statusText ?? 'Passcode redemption failed'));
+      break;
+    }
+
+    case 'IRIS_LOAD_MOCK_PASSCODE': {
+      handlePasscodeResponse(mockPasscodeData as PasscodeResponseData);
+      break;
+    }
+
+    case 'IRIS_CLEAR_MOCK_PASSCODE': {
+      useStore.getState().clearPasscodeRedeemState();
       break;
     }
 

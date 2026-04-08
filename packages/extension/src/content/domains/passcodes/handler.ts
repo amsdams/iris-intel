@@ -2,10 +2,19 @@ import { useStore } from '@iris/core';
 import type { PasscodeRewards } from '@iris/core';
 import { PasscodeResponseData } from './types';
 
+function toNumber(value: unknown, fallback = 0): number {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+  return fallback;
+}
+
 function normalizeRewards(data: PasscodeResponseData['rewards']): PasscodeRewards {
   return {
-    xm: typeof data?.xm === 'number' ? data.xm : 0,
-    ap: typeof data?.ap === 'number' ? data.ap : 0,
+    xm: toNumber(data?.xm, 0),
+    ap: toNumber(data?.ap, 0),
     other: Array.isArray(data?.other) ? data.other.filter((entry): entry is string => typeof entry === 'string') : [],
     inventory: Array.isArray(data?.inventory)
       ? data.inventory
@@ -14,8 +23,8 @@ function normalizeRewards(data: PasscodeResponseData['rewards']): PasscodeReward
             name: typeof item.name === 'string' ? item.name : 'Unknown item',
             awards: Array.isArray(item.awards)
               ? item.awards.map((award) => ({
-                  level: typeof award.level === 'number' ? award.level : 0,
-                  count: typeof award.count === 'number' ? award.count : 1,
+                  level: toNumber(award.level, 0),
+                  count: toNumber(award.count, 1),
                 }))
               : [],
           }))

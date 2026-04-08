@@ -231,7 +231,7 @@
     color: var(--iris-text-muted, #666);
 }
 
-.iris-rarity-very-common { color: var(--iris-rarity-common, #fff); }
+.iris-rarity-very-common { color: var(--iris-rarity-very-common, #fff); }
 .iris-rarity-common { color: var(--iris-rarity-common, #fff); }
 .iris-rarity-rare { color: var(--iris-rarity-rare, #f0f); }
 .iris-rarity-very-rare { color: var(--iris-rarity-very-rare, #b000ff); }

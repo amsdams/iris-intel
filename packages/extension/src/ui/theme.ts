@@ -5,6 +5,10 @@ export interface ThemeColors {
     N: string;
     AQUA: string;
     LEVELS: Record<number, string>;
+    ITEM_RARITY: Record<string, string>;
+    MOD_RARITY: Record<string, string>;
+    ITEM_TYPES: Record<string, string>;
+    // Backward compatibility alias; prefer ITEM_RARITY for new code.
     RARITY: Record<string, string>;
 }
 
@@ -19,20 +23,45 @@ const INGRESS_LEVELS: Record<number, string> = {
     8: '#9627F4',
 };
 
-const INGRESS_RARITY = {
+const INGRESS_ITEM_RARITY = {
     COMMON: '#8CFFBF',
     RARE: '#73A8FF',
     VERY_RARE: '#B08CFF',
     EXTREMELY_RARE: '#FF0000',
-    AEGIS: '#00D4AA',
+    VERY_COMMON: '#FFFFFF',
+    SPECIAL: '#D1FFFF',
 };
 
-const DEBUG_RARITY = {
+const INGRESS_MOD_RARITY = {
     COMMON: '#565656',
     RARE: '#1566E6',
     VERY_RARE: '#EF7B03',
-    EXTREMELY_RARE: '#ff0000',
     AEGIS: '#00D4AA',
+};
+
+const DEBUG_ITEM_RARITY = {
+    VERY_COMMON: '#F2F2F2',
+    COMMON: '#565656',
+    RARE: '#73A8FF',
+    VERY_RARE: '#B08CFF',
+    EXTREMELY_RARE: '#FF0000',
+    SPECIAL: '#D1FFFF',
+};
+
+const DEBUG_MOD_RARITY = {
+    COMMON: '#565656',
+    RARE: '#1566E6',
+    VERY_RARE: '#EF7B03',
+    AEGIS: '#00D4AA',
+};
+
+const DEFAULT_ITEM_TYPES = {
+    PORTAL_LINK_KEY: '#D1FFFF',
+    MEDIA: '#FFFFFF',
+    CAPSULE: '#73A8FF',
+    KINETIC_CAPSULE: '#8CFFBF',
+    VIRUS: '#B08CFF',
+    POWERUP: '#FFFFFF',
 };
 
 const INTEL_DEFAULT_THEME: ThemeColors = {
@@ -42,7 +71,10 @@ const INTEL_DEFAULT_THEME: ThemeColors = {
     N: '#C0C0C0',
     AQUA: '#D1FFFF',
     LEVELS: INGRESS_LEVELS,
-    RARITY: INGRESS_RARITY,
+    ITEM_RARITY: INGRESS_ITEM_RARITY,
+    MOD_RARITY: INGRESS_MOD_RARITY,
+    ITEM_TYPES: DEFAULT_ITEM_TYPES,
+    RARITY: INGRESS_ITEM_RARITY,
 };
 
 export const THEMES: Record<string, ThemeColors> = {
@@ -54,7 +86,13 @@ export const THEMES: Record<string, ThemeColors> = {
         N: '#ffffff',
         AQUA: '#00ffff',
         LEVELS: INGRESS_LEVELS,
-        RARITY: DEBUG_RARITY,
+        ITEM_RARITY: DEBUG_ITEM_RARITY,
+        MOD_RARITY: DEBUG_MOD_RARITY,
+        ITEM_TYPES: {
+            ...DEFAULT_ITEM_TYPES,
+            PORTAL_LINK_KEY: '#00ffff',
+        },
+        RARITY: DEBUG_ITEM_RARITY,
     },
     CYBER: {
         E: '#00ffa3',
@@ -63,7 +101,20 @@ export const THEMES: Record<string, ThemeColors> = {
         N: '#e0e0e0',
         AQUA: '#00e5ff',
         LEVELS: INGRESS_LEVELS,
-        RARITY: DEBUG_RARITY,
+        ITEM_RARITY: {
+            ...DEBUG_ITEM_RARITY,
+            SPECIAL: '#00e5ff',
+        },
+        MOD_RARITY: DEBUG_MOD_RARITY,
+        ITEM_TYPES: {
+            ...DEFAULT_ITEM_TYPES,
+            PORTAL_LINK_KEY: '#00e5ff',
+            POWERUP: '#00e5ff',
+        },
+        RARITY: {
+            ...DEBUG_ITEM_RARITY,
+            SPECIAL: '#00e5ff',
+        },
     },
     SOFTER: {
         E: '#78f400',
@@ -72,9 +123,34 @@ export const THEMES: Record<string, ThemeColors> = {
         N: '#cfd8dc',
         AQUA: '#4dd0e1',
         LEVELS: INGRESS_LEVELS,
-        RARITY: DEBUG_RARITY,
+        ITEM_RARITY: {
+            ...DEBUG_ITEM_RARITY,
+            SPECIAL: '#4dd0e1',
+        },
+        MOD_RARITY: DEBUG_MOD_RARITY,
+        ITEM_TYPES: {
+            ...DEFAULT_ITEM_TYPES,
+            PORTAL_LINK_KEY: '#4dd0e1',
+            POWERUP: '#4dd0e1',
+        },
+        RARITY: {
+            ...DEBUG_ITEM_RARITY,
+            SPECIAL: '#4dd0e1',
+        },
     },
 };
+
+export function getItemRarityColor(theme: ThemeColors, rarity?: string): string {
+    if (!rarity) return UI_COLORS.TEXT_BASE;
+    return theme.ITEM_RARITY[rarity.toUpperCase()] || UI_COLORS.TEXT_BASE;
+}
+
+export function getModRarityColor(theme: ThemeColors, rarity?: string, modName?: string): string {
+    const normalizedRarity = rarity?.toUpperCase();
+    const normalizedName = modName?.toUpperCase() || '';
+    if (normalizedName.includes('AEGIS')) return theme.MOD_RARITY.AEGIS || UI_COLORS.BORDER_DIM;
+    return (normalizedRarity && theme.MOD_RARITY[normalizedRarity]) || UI_COLORS.BORDER_DIM;
+}
 
 export const MAP_THEMES: Record<string, { name: string; url: string }> = {
     DARK: {

@@ -2,7 +2,7 @@ import { h, JSX } from 'preact';
 import { useState } from 'preact/hooks';
 import { useStore } from '@iris/core';
 import { Popup } from '../../shared/Popup';
-import { THEMES } from '../../theme';
+import { THEMES, UI_COLORS } from '../../theme';
 import './passcodes.css';
 
 interface PasscodePopupProps {
@@ -17,6 +17,7 @@ export function PasscodePopup({ onClose }: PasscodePopupProps): JSX.Element {
   const error = useStore((state) => state.passcodeRedeemError);
   const rewards = useStore((state) => state.passcodeRewards);
   const clearState = useStore((state) => state.clearPasscodeRedeemState);
+  const showMockTools = useStore((state) => state.showMockTools);
 
   const submit = (): void => {
     const trimmed = passcode.trim();
@@ -33,15 +34,80 @@ export function PasscodePopup({ onClose }: PasscodePopupProps): JSX.Element {
     onClose();
   };
 
+  const loadMock = (): void => {
+    window.postMessage({ type: 'IRIS_LOAD_MOCK_PASSCODE' }, '*');
+  };
+
+  const clearMock = (): void => {
+    window.postMessage({ type: 'IRIS_CLEAR_MOCK_PASSCODE' }, '*');
+  };
+
+  const isModReward = (name: string): boolean => {
+    const normalized = name.toUpperCase();
+    return (
+      normalized.includes('PORTAL SHIELD') ||
+      normalized.includes('HEAT SINK') ||
+      normalized.includes('MULTI-HACK') ||
+      normalized.includes('MULTIHACK') ||
+      normalized.includes('LINK AMP') ||
+      normalized.includes('FORCE AMP') ||
+      normalized.includes('TURRET') ||
+      normalized.includes('SOFTBANK') ||
+      normalized.includes('ITO EN')
+    );
+  };
+
+  const getRewardColor = (name: string, level: number): string => {
+    if (isModReward(name)) {
+      if (level === 0) return theme.MOD_RARITY.COMMON || UI_COLORS.TEXT_BASE;
+      if (level === 1) return theme.MOD_RARITY.RARE || UI_COLORS.TEXT_BASE;
+      if (level === 2) return theme.MOD_RARITY.VERY_RARE || UI_COLORS.TEXT_BASE;
+      return theme.MOD_RARITY.COMMON || UI_COLORS.TEXT_BASE;
+    }
+
+    if (level > 0) {
+      return theme.LEVELS[level] || UI_COLORS.TEXT_BASE;
+    }
+
+    const normalized = name.toUpperCase();
+    if (normalized.includes('MEDIA')) return theme.ITEM_RARITY.VERY_COMMON || UI_COLORS.TEXT_BASE;
+    if (normalized.includes('HYPERCUBE')) return theme.ITEM_RARITY.VERY_RARE || UI_COLORS.TEXT_BASE;
+    if (normalized.includes('JARVIS') || normalized.includes('ADA')) return theme.ITEM_TYPES.VIRUS || UI_COLORS.TEXT_BASE;
+    if (normalized.includes('KINETIC')) return theme.ITEM_TYPES.KINETIC_CAPSULE || UI_COLORS.TEXT_BASE;
+    if (normalized.includes('CAPSULE')) return theme.ITEM_TYPES.CAPSULE || UI_COLORS.TEXT_BASE;
+    if (normalized.includes('KEY')) return theme.ITEM_TYPES.PORTAL_LINK_KEY || UI_COLORS.TEXT_BASE;
+    return theme.ITEM_RARITY.VERY_COMMON || UI_COLORS.TEXT_BASE;
+  };
+
   return (
     <Popup
       onClose={close}
       title="Passcode"
       className="iris-popup-top-center iris-popup-medium"
+      headerExtras={
+        showMockTools ? (
+          <div className="iris-flex iris-gap-2">
+            <button className="iris-button iris-comm-refresh-btn" onClick={loadMock}>
+              LOAD MOCK
+            </button>
+            <button className="iris-button iris-comm-refresh-btn" onClick={clearMock}>
+              CLEAR MOCK
+            </button>
+          </div>
+        ) : undefined
+      }
        style={{
                 '--iris-popup-border': theme.AQUA,
                 '--iris-popup-shadow': `${theme.AQUA}55`,
                 '--iris-popup-title-color': theme.AQUA,
+                '--iris-level-1': theme.LEVELS[1],
+                '--iris-level-2': theme.LEVELS[2],
+                '--iris-level-3': theme.LEVELS[3],
+                '--iris-level-4': theme.LEVELS[4],
+                '--iris-level-5': theme.LEVELS[5],
+                '--iris-level-6': theme.LEVELS[6],
+                '--iris-level-7': theme.LEVELS[7],
+                '--iris-level-8': theme.LEVELS[8],
             } as Record<string, string>}
     >
       <div className="iris-passcode-panel">
@@ -89,6 +155,10 @@ export function PasscodePopup({ onClose }: PasscodePopupProps): JSX.Element {
               {rewards.inventory?.flatMap((item) =>
                 item.awards.map((award, index) => (
                   <li key={`${item.name}-${award.level}-${index}`}>
+                    <span
+                      className="iris-passcode-item-name"
+                      style={{ '--iris-item-color': getRewardColor(item.name, award.level) } as Record<string, string>}
+                    >
                     {award.level > 0 && (
                       <span className={`iris-passcode-item-level iris-passcode-item-level-${award.level}`}>
                         L{award.level}
@@ -96,6 +166,7 @@ export function PasscodePopup({ onClose }: PasscodePopupProps): JSX.Element {
                     )}{' '}
                     {item.name}
                     {award.count > 1 ? ` (${award.count})` : ''}
+                    </span>
                   </li>
                 )),
               )}

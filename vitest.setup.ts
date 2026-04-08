@@ -18,7 +18,8 @@ class MemoryStorage implements Storage {
   }
 
   removeItem(key: string): void {
-    delete this.data[key];
+    const { [key]: _removed, ...rest } = this.data;
+    this.data = rest;
   }
 
   setItem(key: string, value: string): void {

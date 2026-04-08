@@ -1,0 +1,81 @@
+{
+  "rewards": {
+    "ap": "0",
+    "xm": "1331",
+    "other": [],
+    "inventory": [
+      {
+        "name": "Hypercube",
+        "awards": [
+          {
+            "level": 0,
+            "count": 10
+          }
+        ]
+      },
+      {
+        "name": "Link Amp",
+        "awards": [
+          {
+            "level": 0,
+            "count": 3
+          }
+        ]
+      },
+      {
+        "name": "Power Cube",
+        "awards": [
+          {
+            "level": 8,
+            "count": 10
+          }
+        ]
+      },
+      {
+        "name": "Resonator",
+        "awards": [
+          {
+            "level": 4,
+            "count": 3
+          }
+        ]
+      },
+      {
+        "name": "Multi-hack",
+        "awards": [
+          {
+            "level": 0,
+            "count": 3
+          }
+        ]
+      },
+      {
+        "name": "Heat Sink",
+        "awards": [
+          {
+            "level": 0,
+            "count": 3
+          }
+        ]
+      },
+      {
+        "name": "Portal Shield",
+        "awards": [
+          {
+            "level": 0,
+            "count": 3
+          }
+        ]
+      },
+      {
+        "name": "Media",
+        "awards": [
+          {
+            "level": 1,
+            "count": 1
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -21,6 +21,6 @@
       "@iris/plugin-sdk": ["./packages/plugin-sdk/src"]
     }
   },
-  "include": ["packages/**/*.ts", "packages/**/*.tsx"],
+  "include": ["packages/**/*.ts", "packages/**/*.tsx", "vitest.setup.ts"],
   "exclude": ["node_modules"]
 }

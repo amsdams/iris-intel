@@ -1,7 +1,7 @@
 import {h, JSX} from 'preact';
 import {PortalMod, PortalResonator, useStore} from '@iris/core';
 import {Popup} from '../../shared/Popup';
-import {THEMES, TEAM_NAME, UI_COLORS} from '../../theme';
+import {THEMES, TEAM_NAME, UI_COLORS, getModRarityColor} from '../../theme';
 
 // ---------------------------------------------------------------------------
 // PortalInfoPopup
@@ -62,6 +62,11 @@ export function PortalInfoPopup(): JSX.Element | null {
                 '--iris-popup-border': theme.AQUA,
                 '--iris-popup-shadow': `${theme.AQUA}55`,
                 '--iris-popup-title-color': theme.AQUA,
+                '--iris-rarity-very-common': theme.ITEM_RARITY.VERY_COMMON || '#fff',
+                '--iris-rarity-common': theme.ITEM_RARITY.COMMON || '#8cffbf',
+                '--iris-rarity-rare': theme.ITEM_RARITY.RARE || '#73a8ff',
+                '--iris-rarity-very-rare': theme.ITEM_RARITY.VERY_RARE || '#b08cff',
+                '--iris-rarity-extremely-rare': theme.ITEM_RARITY.EXTREMELY_RARE || '#f00',
             } as Record<string, string>}
         >
             <div className="iris-portal-info">
@@ -141,7 +146,7 @@ export function PortalInfoPopup(): JSX.Element | null {
                                     </div>
                                 );
                             }
-                            const modRarityColor = theme.RARITY[m.rarity] || UI_COLORS.BORDER_DIM;
+                            const modRarityColor = getModRarityColor(theme, m.rarity, m.name);
                             return (
                                 <div
                                     key={i}

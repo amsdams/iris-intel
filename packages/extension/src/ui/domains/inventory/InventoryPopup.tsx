@@ -2,7 +2,7 @@ import { JSX } from 'preact';
 import { useStore, InventoryItemData, normalizeTeam } from '@iris/core';
 import { Popup } from '../../shared/Popup';
 import { useState, useMemo } from 'preact/hooks';
-import { THEMES, UI_COLORS } from '../../theme';
+import { THEMES, UI_COLORS, getItemRarityColor, getModRarityColor } from '../../theme';
 import './inventory.css';
 
 type Category = 'ALL' | 'WEAPONS' | 'RESONATORS' | 'MODS' | 'POWERUPS' | 'CAPSULES' | 'KEYS';
@@ -153,17 +153,24 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
     const getItemColor = (item: GroupedInventoryItem): string => {
         if (item.category === 'RESONATORS' || item.category === 'WEAPONS') {
             if (item.type === 'ADA' || item.type === 'JARVIS') {
-                return theme[normalizeTeam(item.type) as 'E' | 'R'] || theme.AQUA;
+                return theme.ITEM_TYPES.VIRUS || theme[normalizeTeam(item.type) as 'E' | 'R'] || theme.AQUA;
             }
             return theme.LEVELS[item.level || 0] || UI_COLORS.TEXT_BASE;
         }
         if (item.category === 'MODS' && item.rarity) {
-            return theme.RARITY[item.rarity] || UI_COLORS.TEXT_BASE;
+            return getModRarityColor(theme, item.rarity, item.name);
+        }
+        if (item.category === 'CAPSULES') {
+            if (item.type.toUpperCase().includes('KINETIC')) return theme.ITEM_TYPES.KINETIC_CAPSULE || UI_COLORS.TEXT_BASE;
+            return theme.ITEM_TYPES.CAPSULE || UI_COLORS.TEXT_BASE;
         }
         if (item.category === 'KEYS') {
-            return theme.AQUA;
+            return theme.ITEM_TYPES.PORTAL_LINK_KEY || theme.AQUA;
         }
-        return UI_COLORS.TEXT_BASE;
+        if (item.category === 'POWERUPS') {
+            return theme.ITEM_TYPES.POWERUP || UI_COLORS.TEXT_BASE;
+        }
+        return getItemRarityColor(theme, item.rarity);
     };
 
     return (

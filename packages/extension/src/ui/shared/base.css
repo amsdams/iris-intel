@@ -55,18 +55,23 @@
     --iris-health-high: #0f0;
     --iris-health-medium: #ff0;
     --iris-health-low: #f00;
-    --iris-level-1: #f2f2f2;
-    --iris-level-2: #8cffbf;
-    --iris-level-3: #00d8ff;
-    --iris-level-4: #5da6ff;
-    --iris-level-5: #d291ff;
-    --iris-level-6: #ff8fdc;
-    --iris-level-7: #ff8a5c;
-    --iris-level-8: #ffe55c;
-    --iris-rarity-common: #fff;
-    --iris-rarity-rare: #f0f;
-    --iris-rarity-very-rare: #b000ff;
+    --iris-level-1: #fece5a;
+    --iris-level-2: #ffa630;
+    --iris-level-3: #ff7315;
+    --iris-level-4: #e80000;
+    --iris-level-5: #f09;
+    --iris-level-6: #ee26cd;
+    --iris-level-7: #c124e0;
+    --iris-level-8: #9627f4;
+    --iris-rarity-very-common: #fff;
+    --iris-rarity-common: #8cffbf;
+    --iris-rarity-rare: #73a8ff;
+    --iris-rarity-very-rare: #b08cff;
     --iris-rarity-extremely-rare: #f00;
+    --iris-mod-rarity-common: #565656;
+    --iris-mod-rarity-rare: #1566e6;
+    --iris-mod-rarity-very-rare: #ef7b03;
+    --iris-mod-rarity-aegis: #00d4aa;
 }
 
 .iris-overlay-root *,
