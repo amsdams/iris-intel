@@ -59,10 +59,9 @@ export function PasscodePopup({ onClose }: PasscodePopupProps): JSX.Element {
 
   const getRewardColor = (name: string, level: number): string => {
     if (isModReward(name)) {
-      if (level === 0) return theme.MOD_RARITY.COMMON || UI_COLORS.TEXT_BASE;
-      if (level === 1) return theme.MOD_RARITY.RARE || UI_COLORS.TEXT_BASE;
-      if (level === 2) return theme.MOD_RARITY.VERY_RARE || UI_COLORS.TEXT_BASE;
-      return theme.MOD_RARITY.COMMON || UI_COLORS.TEXT_BASE;
+      if (level === 0) return theme.ITEM_RARITY.COMMON || UI_COLORS.TEXT_BASE;
+      if (level === 1) return theme.ITEM_RARITY.RARE || UI_COLORS.TEXT_BASE;
+      return theme.ITEM_RARITY.VERY_RARE || UI_COLORS.TEXT_BASE;
     }
 
     if (level > 0) {

@@ -145,13 +145,6 @@ export function getItemRarityColor(theme: ThemeColors, rarity?: string): string 
     return theme.ITEM_RARITY[rarity.toUpperCase()] || UI_COLORS.TEXT_BASE;
 }
 
-export function getModRarityColor(theme: ThemeColors, rarity?: string, modName?: string): string {
-    const normalizedRarity = rarity?.toUpperCase();
-    const normalizedName = modName?.toUpperCase() || '';
-    if (normalizedName.includes('AEGIS')) return theme.MOD_RARITY.AEGIS || UI_COLORS.BORDER_DIM;
-    return (normalizedRarity && theme.MOD_RARITY[normalizedRarity]) || UI_COLORS.BORDER_DIM;
-}
-
 export const MAP_THEMES: Record<string, { name: string; url: string }> = {
     DARK: {
         name: 'Dark (Carto)',

@@ -1,7 +1,7 @@
 import {h, JSX} from 'preact';
 import {PortalMod, PortalResonator, useStore} from '@iris/core';
 import {Popup} from '../../shared/Popup';
-import {THEMES, TEAM_NAME, UI_COLORS, getModRarityColor} from '../../theme';
+import {THEMES, TEAM_NAME, UI_COLORS, getItemRarityColor} from '../../theme';
 
 // ---------------------------------------------------------------------------
 // PortalInfoPopup
@@ -146,7 +146,7 @@ export function PortalInfoPopup(): JSX.Element | null {
                                     </div>
                                 );
                             }
-                            const modRarityColor = getModRarityColor(theme, m.rarity, m.name);
+                            const modRarityColor = getItemRarityColor(theme, m.rarity);
                             return (
                                 <div
                                     key={i}

@@ -2,7 +2,7 @@ import { JSX } from 'preact';
 import { useStore, InventoryItemData, normalizeTeam } from '@iris/core';
 import { Popup } from '../../shared/Popup';
 import { useState, useMemo } from 'preact/hooks';
-import { THEMES, UI_COLORS, getItemRarityColor, getModRarityColor } from '../../theme';
+import { THEMES, UI_COLORS, getItemRarityColor } from '../../theme';
 import './inventory.css';
 
 type Category = 'ALL' | 'WEAPONS' | 'RESONATORS' | 'MODS' | 'POWERUPS' | 'CAPSULES' | 'KEYS';
@@ -158,7 +158,7 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
             return theme.LEVELS[item.level || 0] || UI_COLORS.TEXT_BASE;
         }
         if (item.category === 'MODS' && item.rarity) {
-            return getModRarityColor(theme, item.rarity, item.name);
+            return getItemRarityColor(theme, item.rarity);
         }
         if (item.category === 'CAPSULES') {
             if (item.type.toUpperCase().includes('KINETIC')) return theme.ITEM_TYPES.KINETIC_CAPSULE || UI_COLORS.TEXT_BASE;

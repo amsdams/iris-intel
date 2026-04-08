@@ -395,14 +395,14 @@ Tasks:
 | Generalize choice item styling | Done | introduced .iris-choice-item for boxed interactive labels |
 
 ### Semantic colors are shared instead of locally improvised
-Status: `Open`
+Status: `In Progress`
 
 Tasks:
 
 | Task | Status | Notes |
 | --- | --- | --- |
-| Formal semantic color module | Open | centralize faction, level, rarity semantics |
-| Reduce hard-coded semantic colors in CSS/components | Open | follow-up cleanup after module exists |
+| Formal semantic color module | In Progress | shared theme tokens now separate `LEVELS`, `ITEM_RARITY`, `MOD_RARITY`, and item-type semantics; continuing to normalize naming and usage boundaries |
+| Reduce hard-coded semantic colors in CSS/components | In Progress | portal details, inventory, and passcode rewards now use shared semantic tokens; continue migrating remaining one-off CSS values in status/debug/topbar surfaces |
 
 ## Engineering Standards and Design Patterns
 Status: `In Progress`

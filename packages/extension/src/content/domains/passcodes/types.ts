@@ -1,6 +1,6 @@
 export interface PasscodeRewardAwardData {
-  level?: number;
-  count?: number;
+  level?: number | string;
+  count?: number | string;
 }
 
 export interface PasscodeRewardInventoryItemData {
@@ -9,8 +9,8 @@ export interface PasscodeRewardInventoryItemData {
 }
 
 export interface PasscodeRewardsData {
-  xm?: number;
-  ap?: number;
+  xm?: number | string;
+  ap?: number | string;
   other?: string[];
   inventory?: PasscodeRewardInventoryItemData[];
 }
