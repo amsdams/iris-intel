@@ -47,6 +47,13 @@ describe('inventory parser', () => {
           },
         ],
         [
+          'ultra-link-1',
+          2,
+          {
+            modResource: { displayName: 'SoftBank Ultra Link', rarity: 'VERY_RARE', resourceType: 'ULTRA_LINK_AMP' },
+          },
+        ],
+        [
           'frack-1',
           3,
           {
@@ -57,8 +64,16 @@ describe('inventory parser', () => {
           'capsule-1',
           4,
           {
-            resource: { resourceType: 'KINETIC_CAPSULE', resourceRarity: 'COMMON' },
+            resource: { resourceType: 'KEY_CAPSULE', resourceRarity: 'COMMON' },
             container: { currentCapacity: 100, currentCount: 0, stackableItems: [] },
+          },
+        ],
+        [
+          'battle-beacon-1',
+          5,
+          {
+            timedPowerupResource: { designation: 'BB_BATTLE', multiplier: 0, multiplierE6: 1000000 },
+            resource: { resourceType: 'PORTAL_POWERUP', resourceRarity: 'VERY_RARE' },
           },
         ],
       ],
@@ -67,9 +82,11 @@ describe('inventory parser', () => {
     const derived = deriveInventoryDisplayItems(parsed);
 
     expect(derived.find((item) => item.guid === 'reso-1')?.name).toBe('Resonator');
-    expect(derived.find((item) => item.guid === 'apex-1')?.name).toBe('Apex');
+    expect(derived.find((item) => item.guid === 'apex-1')?.name).toBe('Apex Mod');
+    expect(derived.find((item) => item.guid === 'ultra-link-1')?.name).toBe('Ultra Link');
     expect(derived.find((item) => item.guid === 'frack-1')?.name).toBe('Portal Fracker');
-    expect(derived.find((item) => item.guid === 'capsule-1')?.name).toBe('Kinetic Capsule');
+    expect(derived.find((item) => item.guid === 'capsule-1')?.name).toBe('Key Capsule');
+    expect(derived.find((item) => item.guid === 'battle-beacon-1')?.name).toBe('Very Rare Battle Beacon');
   });
 
   it('counts portal keys including keys stored in capsules', () => {

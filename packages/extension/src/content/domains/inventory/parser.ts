@@ -14,6 +14,62 @@ export interface DerivedInventoryItem {
   moniker?: string;
 }
 
+const INTEL_ITEM_LABELS: Record<string, string> = {
+  BOOSTED_POWER_CUBE: 'Hypercube',
+  BOOSTED_POWER_CUBE_K: 'Hypercube',
+  CAPSULE: 'Capsule',
+  DRONE: 'Drone',
+  EMITTER_A: 'Resonator',
+  EMP_BURSTER: 'Xmp Burster',
+  EXTRA_SHIELD: 'Aegis Shield',
+  'FLIP_CARD:ADA': 'ADA Refactor',
+  'FLIP_CARD:JARVIS': 'JARVIS Virus',
+  FLIP_CARD: 'Alignment Virus',
+  FORCE_AMP: 'Force Amp',
+  HEATSINK: 'Heat Sink',
+  INTEREST_CAPSULE: 'Quantum Capsule',
+  KEY_CAPSULE: 'Key Capsule',
+  KINETIC_CAPSULE: 'Kinetic Capsule',
+  LINK_AMPLIFIER: 'Link Amp',
+  MEDIA: 'Media',
+  MULTIHACK: 'Multi-hack',
+  MYSTERIOUS_ITEM_PLACEHOLDER: 'Mysterious item',
+  PLAYER_POWERUP: 'Player Powerup',
+  'PLAYER_POWERUP:APEX': 'Apex Mod',
+  PORTAL_LINK_KEY: 'Portal Key',
+  PORTAL_POWERUP: 'Portal Powerup',
+  'PORTAL_POWERUP:AEGISNOVA': 'Beacon - Aegis Nova',
+  'PORTAL_POWERUP:BB_BATTLE': 'Very Rare Battle Beacon',
+  'PORTAL_POWERUP:BB_BATTLE_RARE': 'Rare Battle Beacon',
+  'PORTAL_POWERUP:BN_BLM': 'Beacon - Black Lives Matter',
+  'PORTAL_POWERUP:BN_MHN_LOGO': 'Beacon - Monster Hunter Now Logo',
+  'PORTAL_POWERUP:BN_MHN_PALICO': 'Beacon - Monster Hunter Now Palico',
+  'PORTAL_POWERUP:BN_PEACE': 'Beacon - Peace',
+  'PORTAL_POWERUP:ENL': 'Beacon - ENL',
+  'PORTAL_POWERUP:EXO5': 'Beacon - EXO5',
+  'PORTAL_POWERUP:FRACK': 'Portal Fracker',
+  'PORTAL_POWERUP:FW_ENL': 'Enlightened Fireworks',
+  'PORTAL_POWERUP:FW_RES': 'Resistance Fireworks',
+  'PORTAL_POWERUP:INITIO': 'Beacon - Initio',
+  'PORTAL_POWERUP:LOOK': 'Beacon - Target',
+  'PORTAL_POWERUP:MAGNUSRE': 'Beacon - Reawakens',
+  'PORTAL_POWERUP:MEET': 'Beacon - Meetup',
+  'PORTAL_POWERUP:NEMESIS': 'Beacon - Nemesis',
+  'PORTAL_POWERUP:NIA': 'Beacon - Niantic',
+  'PORTAL_POWERUP:OBSIDIAN': 'Beacon - Obsidian',
+  'PORTAL_POWERUP:RES': 'Beacon - RES',
+  'PORTAL_POWERUP:TOASTY': 'Beacon - Toast!',
+  'PORTAL_POWERUP:VIALUX': 'Beacon - Via Lux',
+  'PORTAL_POWERUP:VIANOIR': 'Beacon - Via Noir',
+  POWER_CUBE: 'Power Cube',
+  RES_SHIELD: 'Portal Shield',
+  TRANSMUTER_ATTACK: 'Ito En Transmuter (-)',
+  TRANSMUTER_DEFENSE: 'Ito En Transmuter (+)',
+  TURRET: 'Turret',
+  ULTRA_LINK_AMP: 'Ultra Link',
+  ULTRA_STRIKE: 'Ultra Strike',
+};
+
 function humanizeEnum(value: string): string {
   return value
     .toLowerCase()
@@ -22,51 +78,20 @@ function humanizeEnum(value: string): string {
     .join(' ');
 }
 
-function getResourceLabel(resourceType: string, level?: number): string {
-  switch (resourceType) {
-    case 'EMITTER_A':
-      return 'Resonator';
-    case 'EMP_BURSTER':
-      return 'XMP Burster';
-    case 'ULTRA_STRIKE':
-      return 'Ultra Strike';
-    case 'POWER_CUBE':
-      return 'Power Cube';
-    case 'BOOSTED_POWER_CUBE':
-      return level ? 'Hypercube' : 'Hypercube';
-    case 'DRONE':
-      return 'Drone';
-    case 'CAPSULE':
-      return 'Capsule';
-    case 'INTEREST_CAPSULE':
-      return 'Quantum Capsule';
-    case 'KEY_CAPSULE':
-      return 'Key Locker';
-    case 'KINETIC_CAPSULE':
-      return 'Kinetic Capsule';
-    default:
-      return humanizeEnum(resourceType);
-  }
+function getIntelLabel(key: string): string {
+  return INTEL_ITEM_LABELS[key] || humanizeEnum(key);
 }
 
-function getTimedPowerupLabel(designation: string): string {
-  switch (designation) {
-    case 'FRACK':
-      return 'Portal Fracker';
-    case 'BB_BATTLE':
-      return 'Battle Beacon';
-    default:
-      return humanizeEnum(designation);
+function getTimedPowerupLabel(designation: string, rarity?: string): string {
+  if (designation === 'BB_BATTLE' && rarity === 'RARE') {
+    return getIntelLabel('PORTAL_POWERUP:BB_BATTLE_RARE');
   }
+
+  return getIntelLabel(`PORTAL_POWERUP:${designation}`);
 }
 
 function getPlayerPowerupLabel(playerPowerupEnum: string): string {
-  switch (playerPowerupEnum) {
-    case 'APEX':
-      return 'Apex';
-    default:
-      return humanizeEnum(playerPowerupEnum);
-  }
+  return getIntelLabel(`PLAYER_POWERUP:${playerPowerupEnum}`);
 }
 
 export function parseInventory(data: InventoryData): InventoryItem[] {
@@ -107,7 +132,7 @@ export function deriveInventoryDisplayItem(item: InventoryItem): DerivedInventor
       timestamp: item.timestamp,
       type: item.resourceWithLevels.resourceType,
       level: item.resourceWithLevels.level,
-      name: getResourceLabel(item.resourceWithLevels.resourceType, item.resourceWithLevels.level),
+      name: getIntelLabel(item.resourceWithLevels.resourceType),
       category: getCategoryForResourceType(item.resourceWithLevels.resourceType),
     };
   }
@@ -117,7 +142,7 @@ export function deriveInventoryDisplayItem(item: InventoryItem): DerivedInventor
       guid: item.guid,
       timestamp: item.timestamp,
       type: item.modResource.resourceType,
-      name: item.modResource.displayName,
+      name: getIntelLabel(item.modResource.resourceType),
       rarity: item.modResource.rarity,
       category: 'MODS',
     };
@@ -148,7 +173,7 @@ export function deriveInventoryDisplayItem(item: InventoryItem): DerivedInventor
       guid: item.guid,
       timestamp: item.timestamp,
       type: item.timedPowerupResource.designation,
-      name: getTimedPowerupLabel(item.timedPowerupResource.designation),
+      name: getTimedPowerupLabel(item.timedPowerupResource.designation, item.resource?.resourceRarity),
       category: 'POWERUPS',
     };
   }
@@ -158,7 +183,7 @@ export function deriveInventoryDisplayItem(item: InventoryItem): DerivedInventor
       guid: item.guid,
       timestamp: item.timestamp,
       type: item.flipCard.flipCardType,
-      name: item.flipCard.flipCardType === 'ADA' ? 'ADA Refactor' : item.flipCard.flipCardType === 'JARVIS' ? 'JARVIS Virus' : humanizeEnum(item.flipCard.flipCardType),
+      name: getIntelLabel(`FLIP_CARD:${item.flipCard.flipCardType}`),
       category: 'WEAPONS',
     };
   }
@@ -169,7 +194,7 @@ export function deriveInventoryDisplayItem(item: InventoryItem): DerivedInventor
       guid: item.guid,
       timestamp: item.timestamp,
       type: capsuleType,
-      name: getResourceLabel(capsuleType),
+      name: getIntelLabel(capsuleType),
       moniker: item.moniker?.differentiator,
       category: 'CAPSULES',
     };
@@ -183,7 +208,7 @@ export function deriveInventoryDisplayItem(item: InventoryItem): DerivedInventor
           guid: item.guid,
           timestamp: item.timestamp,
           type: item.resource.resourceType,
-          name: getResourceLabel(item.resource.resourceType),
+          name: getIntelLabel(item.resource.resourceType),
           rarity: item.resource.resourceRarity,
           category: 'POWERUPS',
         };
