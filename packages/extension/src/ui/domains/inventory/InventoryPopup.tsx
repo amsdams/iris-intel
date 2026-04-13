@@ -1,7 +1,7 @@
 import { JSX } from 'preact';
 import { useStore, normalizeTeam } from '@iris/core';
 import { Popup } from '../../shared/Popup';
-import { useState, useMemo } from 'preact/hooks';
+import { useEffect, useState, useMemo } from 'preact/hooks';
 import { THEMES, UI_COLORS, getItemRarityColor } from '../../theme';
 import { deriveInventoryDisplayItems, InventoryCategory } from '../../../content/domains/inventory/parser';
 import './inventory.css';
@@ -19,11 +19,24 @@ interface GroupedInventoryItem {
 type InventorySortMode = 'COUNT' | 'NAME' | 'RARITY';
 
 const RARITY_SORT_ORDER: Record<string, number> = {
-    AEGIS: 5,
+    AEGIS: 7,
+    SPECIAL: 6,
+    EXTREMELY_RARE: 5,
     VERY_RARE: 4,
     RARE: 3,
     COMMON: 2,
+    VERY_COMMON: 1,
 };
+
+const CATEGORIES: { label: string; value: InventoryCategory }[] = [
+    { label: 'ALL', value: 'ALL' },
+    { label: 'WEAPONS', value: 'WEAPONS' },
+    { label: 'RESONATORS', value: 'RESONATORS' },
+    { label: 'MODS', value: 'MODS' },
+    { label: 'POWERUPS', value: 'POWERUPS' },
+    { label: 'CAPSULES', value: 'CAPSULES' },
+    { label: 'KEYS', value: 'KEYS' },
+];
 
 export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Element => {
     const inventory = useStore((state) => state.inventory);
@@ -35,16 +48,8 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
     const theme = THEMES[themeId] || THEMES.INGRESS;
     const [activeCategory, setActiveCategory] = useState<InventoryCategory>('ALL');
     const [sortMode, setSortMode] = useState<InventorySortMode>('COUNT');
-
-    const categories: { label: string; value: InventoryCategory }[] = [
-        { label: 'ALL', value: 'ALL' },
-        { label: 'WEAPONS', value: 'WEAPONS' },
-        { label: 'RESONATORS', value: 'RESONATORS' },
-        { label: 'MODS', value: 'MODS' },
-        { label: 'POWERUPS', value: 'POWERUPS' },
-        { label: 'CAPSULES', value: 'CAPSULES' },
-        { label: 'KEYS', value: 'KEYS' },
-    ];
+    const [searchText, setSearchText] = useState('');
+    const inventoryHasLoaded = inventoryEndpoint.lastSuccessAt !== null;
 
     const parsedItems = useMemo(
         (): GroupedInventoryItem[] => deriveInventoryDisplayItems(inventory).map((item) => ({
@@ -75,7 +80,6 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
         });
 
         return Object.values(groups).sort((a, b) => {
-            if (a.category !== b.category) return a.category.localeCompare(b.category);
             if (sortMode === 'COUNT' && a.count !== b.count) return b.count - a.count;
             if (sortMode === 'RARITY') {
                 const rarityDelta = (RARITY_SORT_ORDER[b.rarity || ''] || 0) - (RARITY_SORT_ORDER[a.rarity || ''] || 0);
@@ -84,17 +88,58 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
             const nameCompare = a.name.localeCompare(b.name);
             if (nameCompare !== 0) return nameCompare;
             if (a.level !== b.level) return (b.level || 0) - (a.level || 0);
-            return (a.moniker || '').localeCompare(b.moniker || '');
+            const monikerCompare = (a.moniker || '').localeCompare(b.moniker || '');
+            if (monikerCompare !== 0) return monikerCompare;
+            return a.category.localeCompare(b.category);
         });
     }, [parsedItems, sortMode]);
 
+    const normalizedSearch = searchText.trim().toLowerCase();
+
+    const categoryCounts = useMemo((): Record<InventoryCategory, number> => {
+        const counts: Record<InventoryCategory, number> = {
+            ALL: parsedItems.length,
+            WEAPONS: 0,
+            RESONATORS: 0,
+            MODS: 0,
+            POWERUPS: 0,
+            CAPSULES: 0,
+            KEYS: 0,
+        };
+
+        parsedItems.forEach((item) => {
+            counts[item.category] += 1;
+        });
+
+        return counts;
+    }, [parsedItems]);
+
+    const visibleCategories = useMemo(
+        () => CATEGORIES.filter((category) => category.value === 'ALL' || !inventoryHasLoaded || categoryCounts[category.value] > 0),
+        [inventoryHasLoaded, categoryCounts],
+    );
+
+    useEffect(() => {
+        if (!visibleCategories.some((category) => category.value === activeCategory)) {
+            setActiveCategory('ALL');
+        }
+    }, [activeCategory, visibleCategories]);
+
     const filteredItems = useMemo((): GroupedInventoryItem[] => {
-        if (activeCategory === 'ALL') return groupedItems;
-        return groupedItems.filter(item => item.category === activeCategory);
-    }, [groupedItems, activeCategory]);
+        const categoryFiltered = activeCategory === 'ALL'
+            ? groupedItems
+            : groupedItems.filter(item => item.category === activeCategory);
+
+        if (!normalizedSearch) return categoryFiltered;
+
+        return categoryFiltered.filter((item) => {
+            const haystack = `${item.name} ${item.rarity || ''} ${item.moniker || ''} ${item.level ? `L${item.level}` : ''}`.toLowerCase();
+            return haystack.includes(normalizedSearch);
+        });
+    }, [groupedItems, activeCategory, normalizedSearch]);
 
     const totalCount = parsedItems.length;
-    const inventoryHasLoaded = inventoryEndpoint.lastSuccessAt !== null;
+    const showSnapshotBehaviorHint = inventoryHasLoaded && totalCount > 0;
 
     const handleRefresh = (): void => {
         window.postMessage({ type: 'IRIS_INVENTORY_REQUEST' }, '*');
@@ -196,6 +241,17 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
                         TOTAL: <span className="iris-inventory-total-value">{totalCount}</span> / 2500
                     </div>
 
+                    <div className="iris-inventory-hints">
+                        <div className="iris-inventory-hint">
+                            Totals and tabs include capsule contents.
+                        </div>
+                        {showSnapshotBehaviorHint && (
+                            <div className="iris-inventory-hint">
+                                If Intel returns an empty refresh, IRIS keeps the last known inventory snapshot.
+                            </div>
+                        )}
+                    </div>
+
                     <div className="iris-inventory-sort">
                         <span className="iris-inventory-sort-label">SORT</span>
                         <button
@@ -221,15 +277,26 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
                         </button>
                     </div>
 
+                    <div className="iris-inventory-filter">
+                        <input
+                            type="text"
+                            value={searchText}
+                            className="iris-input iris-inventory-search-input"
+                            onInput={(event) => setSearchText((event.target as HTMLInputElement).value)}
+                            placeholder="Filter items"
+                        />
+                    </div>
+
                     <div className="iris-inventory-scroll-container">
                         <div className="iris-inventory-tabs">
-                            {categories.map(cat => (
+                            {visibleCategories.map(cat => (
                                 <div 
                                     key={cat.value}
                                     className={`iris-inventory-tab ${activeCategory === cat.value ? 'iris-inventory-tab-active' : ''}`}
                                     onClick={() => setActiveCategory(cat.value)}
                                 >
-                                    {cat.label}
+                                    <span>{cat.label}</span>
+                                    <span className="iris-inventory-tab-count">{categoryCounts[cat.value]}</span>
                                 </div>
                             ))}
                         </div>
@@ -248,7 +315,7 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
                             </div>
                         ) : filteredItems.length === 0 ? (
                             <div className="iris-inventory-empty">
-                                No items found in this category
+                                {normalizedSearch ? 'No items match the current filter' : 'No items found in this category'}
                             </div>
                         ) : (
                             <table className="iris-inventory-table">

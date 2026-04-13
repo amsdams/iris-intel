@@ -85,7 +85,7 @@ Bugs:
 | --- | --- | --- |
 | Inventory popup tabs still ignore capsule contents while portal key count includes them | Done | display derivation now expands capsule contents, and grouping keeps capsule monikers distinct |
 | Empty `getInventory` responses are ambiguous on Intel | Investigating | IRIS now preserves the previous snapshot and explains the state in UI, but the underlying Intel behavior still needs more live verification |
-| Inventory tab bar can disappear after switching categories such as `ALL` or `KEYS` | Investigating | sticky tab-strip and single-scroll cleanup improved behavior, but the issue still appears with large lists, especially `KEYS` and `ALL`; likely needs live verification and layout/perf review under heavier inventory sizes |
+| Inventory tab bar can disappear after switching categories such as `ALL` or `KEYS` | Done | moved the tab strip into the actual inventory scroll container and kept it sticky there; long-list testing now behaves correctly in `KEYS` and `ALL` |
 
 Improvement ideas:
 
@@ -96,13 +96,15 @@ Improvement ideas:
 | Sort grouped inventory rows by item count before name/level tiebreaks | Done | inventory popup now offers `COUNT`, `NAME`, and `RARITY` sort chips, with count-first as the default grouped view |
 | Preserve rarity through derived inventory items so chips and colours match Intel payloads | Done | capsules, keys, powerups, and level-backed resource items now keep payload rarity for display chips, colour selection, and rarity sorting |
 | Prefer level colour first, then rarity colour, before falling back to item-type colour | Done | power cubes, resonators, and XMPs now use level colours, while keys, capsules, hypercubes, fireworks, and beacons use rarity colours when the payload provides it |
-| Make category tabs data-aware instead of always showing every tab | Open | consider showing only tabs with captured items, or at least badge counts, now that capsule-contained items are part of the same derived display model |
+| Make category tabs data-aware instead of always showing every tab | Done | inventory tabs now hide empty categories after inventory loads and show per-category item counts |
 | Decide whether `ENTITLEMENT` should be hidden, surfaced, or grouped separately | Open | real payloads contain entitlement items; current parser intentionally ignores them |
-| Mark preserved inventory snapshots as stale after an empty refresh | Open | current UI explains missing data states, but not yet "showing last known inventory snapshot" explicitly |
+| Mark preserved inventory snapshots as stale after an empty refresh | Open | the popup now explains the preserved-snapshot behavior, but it still does not track or mark the currently displayed inventory as definitively stale/preserved |
 | Add fixture coverage for nested capsule-derived display items | Done | parser tests now cover capsule-contained display derivation, preserved monikers, and recursive portal key counting |
-| Make `COUNT` and `RARITY` sorting span the full `ALL` list instead of staying category-first | Open | current comparator still sorts by category before count/rarity, so `ALL` is not yet a true global count-first or rarity-first view |
-| Expand rarity sort ordering to cover Intel values such as `VERY_COMMON`, `SPECIAL`, and `EXTREMELY_RARE` | Open | current rarity sort only prioritizes `AEGIS`, `VERY_RARE`, `RARE`, and `COMMON`, so keys/media/special items can still sort inconsistently |
+| Make `COUNT` and `RARITY` sorting span the full `ALL` list instead of staying category-first | Done | grouped inventory sorting is now global in `ALL`, with category only used as a final tiebreak |
+| Expand rarity sort ordering to cover Intel values such as `VERY_COMMON`, `SPECIAL`, and `EXTREMELY_RARE` | Done | rarity sorting now covers Intel-style values beyond just `AEGIS`, `VERY_RARE`, `RARE`, and `COMMON` |
 | Preserve subtype-specific labels when a broad resource type maps to multiple Intel names | Open | current parser lookup is mostly resource-type keyed, so item families that can differ by subtype/displayName still need a more deliberate label policy |
+| Add lightweight inventory filtering without changing fetch ownership or parser behavior | Done | popup now supports client-side name/metadata filtering for grouped inventory rows |
+| Keep the preserved-snapshot note truthful to the current inventory state | Open | current hint explains the behavior generically, but it is not yet gated on a tracked "showing preserved snapshot" state |
 
 ## Intel Parity Features
 Status: `In Progress`

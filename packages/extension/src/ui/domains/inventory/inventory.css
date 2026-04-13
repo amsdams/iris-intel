@@ -18,9 +18,23 @@
     font-weight: bold;
 }
 
+.iris-inventory-hints {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0 16px 8px;
+}
+
+.iris-inventory-hint {
+    color: var(--iris-text-muted);
+    font-size: 0.74em;
+    line-height: 1.35;
+}
+
 .iris-inventory-sort {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 8px;
     padding: 0 16px 8px;
 }
@@ -49,6 +63,15 @@
     box-shadow: inset 0 0 0 1px rgb(0 255 255 / 18%);
 }
 
+.iris-inventory-filter {
+    padding: 0 16px 8px;
+}
+
+.iris-inventory-search-input {
+    width: 100%;
+    font-size: 0.8em;
+}
+
 .iris-inventory-tabs {
     display: flex;
     position: sticky;
@@ -72,6 +95,9 @@
 }
 
 .iris-inventory-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     padding: 6px 12px;
     cursor: pointer;
     font-size: 0.75em;
@@ -83,6 +109,19 @@
     border-bottom: 2px solid var(--iris-aqua);
     color: var(--iris-aqua);
     font-weight: bold;
+}
+
+.iris-inventory-tab-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    padding: 0 6px;
+    border: 1px solid currentcolor;
+    border-radius: 999px;
+    font-size: 0.86em;
+    line-height: 1.3;
+    opacity: 0.85;
 }
 
 .iris-inventory-scroll-container {

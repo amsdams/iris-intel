@@ -5,8 +5,6 @@ const PLEXT_COOLDOWN_MS = 5000;
 
 const PLEXT_POLL_MS = 120000;
 const ARTIFACTS_POLL_MS = 60000;
-const SUBSCRIPTION_POLL_MS = 10 * 60 * 1000;
-
 const ARTIFACTS_STARTUP_DEDUP_MS = 5000;
 
 const STARTUP_GRACE_MS = 5000;
@@ -71,13 +69,6 @@ export function createRequestCoordinator(): RequestCoordinator {
         if (!isEndpointInFlight('artifacts') && !isEndpointFresh('artifacts', ARTIFACTS_STARTUP_DEDUP_MS)) {
             postMessage({ type: 'IRIS_ARTIFACTS_FETCH' });
         }
-    };
-
-    const refreshSubscriptionIfStale = (): void => {
-        if (isSessionBlocked()) return;
-        if (isEndpointInFlight('subscription')) return;
-        if (isEndpointFresh('subscription', SUBSCRIPTION_POLL_MS)) return;
-        postMessage({ type: 'IRIS_SUBSCRIPTION_FETCH' });
     };
 
     const schedulePlextPoll = (): void => {
