@@ -133,6 +133,7 @@ export function deriveInventoryDisplayItem(item: InventoryItem): DerivedInventor
       type: item.resourceWithLevels.resourceType,
       level: item.resourceWithLevels.level,
       name: getIntelLabel(item.resourceWithLevels.resourceType),
+      rarity: item.resource?.resourceRarity,
       category: getCategoryForResourceType(item.resourceWithLevels.resourceType),
     };
   }
@@ -154,6 +155,7 @@ export function deriveInventoryDisplayItem(item: InventoryItem): DerivedInventor
       timestamp: item.timestamp,
       type: 'PORTAL_LINK_KEY',
       name: item.portalCoupler.portalTitle,
+      rarity: item.resource?.resourceRarity,
       category: 'KEYS',
     };
   }
@@ -164,6 +166,7 @@ export function deriveInventoryDisplayItem(item: InventoryItem): DerivedInventor
       timestamp: item.timestamp,
       type: item.playerPowerupResource.playerPowerupEnum,
       name: getPlayerPowerupLabel(item.playerPowerupResource.playerPowerupEnum),
+      rarity: item.resource?.resourceRarity,
       category: 'POWERUPS',
     };
   }
@@ -174,6 +177,7 @@ export function deriveInventoryDisplayItem(item: InventoryItem): DerivedInventor
       timestamp: item.timestamp,
       type: item.timedPowerupResource.designation,
       name: getTimedPowerupLabel(item.timedPowerupResource.designation, item.resource?.resourceRarity),
+      rarity: item.resource?.resourceRarity,
       category: 'POWERUPS',
     };
   }
@@ -195,6 +199,7 @@ export function deriveInventoryDisplayItem(item: InventoryItem): DerivedInventor
       timestamp: item.timestamp,
       type: capsuleType,
       name: getIntelLabel(capsuleType),
+      rarity: item.resource?.resourceRarity,
       moniker: item.moniker?.differentiator,
       category: 'CAPSULES',
     };

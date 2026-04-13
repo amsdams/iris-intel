@@ -89,6 +89,58 @@ describe('inventory parser', () => {
     expect(derived.find((item) => item.guid === 'battle-beacon-1')?.name).toBe('Very Rare Battle Beacon');
   });
 
+  it('preserves rarity for capsules, keys, and powerups when the payload provides it', () => {
+    const parsed = parseInventory({
+      result: [
+        [
+          'key-capsule-1',
+          1,
+          {
+            resource: { resourceType: 'KEY_CAPSULE', resourceRarity: 'VERY_RARE' },
+            container: { currentCapacity: 100, currentCount: 0, stackableItems: [] },
+          },
+        ],
+        [
+          'kinetic-capsule-1',
+          2,
+          {
+            resource: { resourceType: 'KINETIC_CAPSULE', resourceRarity: 'COMMON' },
+            container: { currentCapacity: 100, currentCount: 0, stackableItems: [] },
+          },
+        ],
+        [
+          'portal-key-1',
+          3,
+          {
+            resource: { resourceType: 'PORTAL_LINK_KEY', resourceRarity: 'VERY_COMMON' },
+            portalCoupler: {
+              portalGuid: 'portal-a',
+              portalLocation: '0,0',
+              portalImageUrl: '',
+              portalTitle: 'Portal A',
+              portalAddress: '',
+            },
+          },
+        ],
+        [
+          'apex-1',
+          4,
+          {
+            playerPowerupResource: { playerPowerupEnum: 'APEX' },
+            resource: { resourceType: 'PLAYER_POWERUP', resourceRarity: 'VERY_RARE' },
+          },
+        ],
+      ],
+    } as InventoryData);
+
+    const derived = deriveInventoryDisplayItems(parsed);
+
+    expect(derived.find((item) => item.guid === 'key-capsule-1')?.rarity).toBe('VERY_RARE');
+    expect(derived.find((item) => item.guid === 'kinetic-capsule-1')?.rarity).toBe('COMMON');
+    expect(derived.find((item) => item.guid === 'portal-key-1')?.rarity).toBe('VERY_COMMON');
+    expect(derived.find((item) => item.guid === 'apex-1')?.rarity).toBe('VERY_RARE');
+  });
+
   it('counts portal keys including keys stored in capsules', () => {
     const parsed = parseInventory({
       result: [
