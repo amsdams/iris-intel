@@ -139,11 +139,40 @@ export function deriveInventoryDisplayItem(item: InventoryItem): DerivedInventor
   return null;
 }
 
-export function deriveInventoryDisplayItems(items: InventoryItem[]): DerivedInventoryItem[] {
-  return items.flatMap((item) => {
-    const derived = deriveInventoryDisplayItem(item);
-    return derived ? [derived] : [];
+function deriveInventoryDisplayItemsFromItem(
+  item: InventoryItem,
+  capsuleMoniker?: string,
+): DerivedInventoryItem[] {
+  const derived = deriveInventoryDisplayItem(item);
+  const derivedItems: DerivedInventoryItem[] = derived
+    ? [{
+        ...derived,
+        moniker: derived.category === 'CAPSULES' ? derived.moniker : (capsuleMoniker ?? derived.moniker),
+      }]
+    : [];
+
+  if (!item.container) {
+    return derivedItems;
+  }
+
+  const nestedCapsuleMoniker = item.moniker?.differentiator ?? capsuleMoniker;
+  const nestedItems = item.container.stackableItems.flatMap((stackableItem) => {
+    const [guid, timestamp, itemData] = stackableItem.exampleGameEntity;
+    const nestedItem = {
+      guid,
+      timestamp,
+      ...(itemData as object),
+    } as InventoryItem;
+
+    const expanded = deriveInventoryDisplayItemsFromItem(nestedItem, nestedCapsuleMoniker);
+    return stackableItem.itemGuids.flatMap(() => expanded);
   });
+
+  return [...derivedItems, ...nestedItems];
+}
+
+export function deriveInventoryDisplayItems(items: InventoryItem[]): DerivedInventoryItem[] {
+  return items.flatMap((item) => deriveInventoryDisplayItemsFromItem(item));
 }
 
 function countPortalKeysInItem(item: InventoryItem, portalId: string): number {

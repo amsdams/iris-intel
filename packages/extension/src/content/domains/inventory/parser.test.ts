@@ -81,4 +81,64 @@ describe('inventory parser', () => {
     expect(countPortalKeys(parsed, 'portal-a')).toBe(3);
     expect(countPortalKeys(parsed, 'portal-b')).toBe(0);
   });
+
+  it('derives capsule-contained items for display and preserves capsule monikers', () => {
+    const parsed = parseInventory({
+      result: [
+        [
+          'capsule-1',
+          1,
+          {
+            resource: { resourceType: 'CAPSULE', resourceRarity: 'COMMON' },
+            moniker: { differentiator: 'C1' },
+            container: {
+              currentCapacity: 100,
+              currentCount: 3,
+              stackableItems: [
+                {
+                  itemGuids: ['nested-key-1', 'nested-key-2'],
+                  exampleGameEntity: [
+                    'nested-key-template',
+                    2,
+                    {
+                      portalCoupler: {
+                        portalGuid: 'portal-a',
+                        portalLocation: '0,0',
+                        portalImageUrl: '',
+                        portalTitle: 'Portal A',
+                        portalAddress: '',
+                      },
+                    },
+                  ],
+                },
+                {
+                  itemGuids: ['nested-cube-1'],
+                  exampleGameEntity: [
+                    'nested-cube-template',
+                    3,
+                    {
+                      resource: { resourceType: 'POWER_CUBE', resourceRarity: 'COMMON' },
+                      resourceWithLevels: { resourceType: 'POWER_CUBE', level: 8 },
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        ],
+      ],
+    } as InventoryData);
+
+    const derived = deriveInventoryDisplayItems(parsed);
+    const capsule = derived.find((item) => item.category === 'CAPSULES');
+    const nestedKeys = derived.filter((item) => item.category === 'KEYS');
+    const nestedPowerCubes = derived.filter((item) => item.type === 'POWER_CUBE');
+
+    expect(capsule?.moniker).toBe('C1');
+    expect(nestedKeys).toHaveLength(2);
+    expect(nestedKeys.every((item) => item.moniker === 'C1')).toBe(true);
+    expect(nestedPowerCubes).toHaveLength(1);
+    expect(nestedPowerCubes[0]?.category).toBe('POWERUPS');
+    expect(nestedPowerCubes[0]?.moniker).toBe('C1');
+  });
 });

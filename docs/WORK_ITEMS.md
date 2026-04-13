@@ -88,11 +88,19 @@ Improvement ideas:
 
 | Idea | Status | Notes |
 | --- | --- | --- |
-| Flatten capsule contents into derived inventory display items | Open | would align inventory totals and tabs with the recursive portal key count and closer with Intel/community inventory tooling |
-| Make category tabs data-aware instead of always showing every tab | Open | consider showing only tabs with captured items, or at least badge counts, once capsule flattening exists |
+| Flatten capsule contents into derived inventory display items | Done | inventory popup totals and tabs now include capsule-contained items, aligning display derivation with recursive portal key counting |
+| Use Intel-style inventory labels instead of raw enum names | Open | prefer explicit Intel wording such as `Resonator`, `Portal Fracker`, `Apex Mod`, and `Ultra Link` instead of raw values like `EMITTER A` or `FRACK` |
+| Sort grouped inventory rows by item count before name/level tiebreaks | Open | current popup sorting is mostly category/name/level driven; a count-first view would make the inventory scan faster, especially in `ALL` |
+| Make category tabs data-aware instead of always showing every tab | Open | consider showing only tabs with captured items, or at least badge counts, now that capsule-contained items are part of the same derived display model |
 | Decide whether `ENTITLEMENT` should be hidden, surfaced, or grouped separately | Open | real payloads contain entitlement items; current parser intentionally ignores them |
 | Mark preserved inventory snapshots as stale after an empty refresh | Open | current UI explains missing data states, but not yet "showing last known inventory snapshot" explicitly |
 | Add fixture coverage for nested capsule-derived display items | Open | parser tests currently cover category presence and recursive key counting, but not full capsule item expansion |
+
+Bugs:
+
+| Bug | Status | Notes |
+| --- | --- | --- |
+| Inventory tab bar can disappear after switching categories such as `ALL` or `KEYS` | Open | investigate layout/state interaction in the inventory popup; observed behavior suggests the tab strip is not staying consistently visible after category changes |
 
 ## Intel Parity Features
 Status: `In Progress`

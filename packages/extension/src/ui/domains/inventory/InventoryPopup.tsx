@@ -53,7 +53,7 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
         const groups: Record<string, GroupedInventoryItem> = {};
 
         const addToGroup = (item: GroupedInventoryItem): void => {
-            const key = `${item.type}-${item.level || ''}-${item.rarity || ''}-${item.name || ''}`;
+            const key = `${item.type}-${item.level || ''}-${item.rarity || ''}-${item.name || ''}-${item.moniker || ''}`;
             if (!groups[key]) {
                 groups[key] = { ...item, count: 0 };
             }
