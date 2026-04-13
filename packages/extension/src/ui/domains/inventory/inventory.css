@@ -18,8 +18,42 @@
     font-weight: bold;
 }
 
+.iris-inventory-sort {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 16px 8px;
+}
+
+.iris-inventory-sort-label {
+    color: var(--iris-text-muted);
+    font-size: 0.72em;
+    letter-spacing: 0.08em;
+}
+
+.iris-inventory-sort-chip {
+    border: 1px solid var(--iris-border-dim);
+    background: transparent;
+    color: var(--iris-text-muted);
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 0.72em;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: border-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
+}
+
+.iris-inventory-sort-chip-active {
+    border-color: var(--iris-aqua);
+    color: var(--iris-aqua);
+    box-shadow: inset 0 0 0 1px rgb(0 255 255 / 18%);
+}
+
 .iris-inventory-tabs {
     display: flex;
+    position: sticky;
+    top: 0;
+    z-index: 1;
     border-bottom: 1px solid var(--iris-border-dim);
     margin-bottom: 8px;
     overflow-x: auto;
@@ -27,6 +61,7 @@
     scrollbar-width: none;
     -ms-overflow-style: none;
     padding: 0 16px;
+    background: var(--iris-bg-elevated, rgb(8 12 16 / 96%));
 }
 
 .iris-inventory-tabs::-webkit-scrollbar {
@@ -111,27 +146,36 @@
 }
 
 .iris-inventory-item-name {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    display: block;
 }
 
 .iris-inventory-item-name-value {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
     color: var(--iris-item-color, #fff);
 }
 
-.iris-inventory-item-level {
-    font-weight: bold;
+.iris-inventory-item-name-text {
+    display: inline-block;
 }
 
-.iris-inventory-item-rarity {
-    font-size: 0.9em;
-    opacity: 0.8;
+.iris-inventory-item-meta {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
 }
 
-.iris-inventory-item-moniker {
-    font-size: 0.9em;
+.iris-inventory-item-label {
+    border: 1px solid var(--iris-border-dim);
+    border-radius: 999px;
+    padding: 1px 7px;
     color: var(--iris-text-muted);
+    font-size: 0.72em;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
 }
 
 .iris-inventory-subscription-warning {

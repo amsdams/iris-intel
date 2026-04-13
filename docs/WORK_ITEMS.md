@@ -76,31 +76,28 @@ Tasks:
 | Clarify inventory-not-loaded vs empty-inventory UI | Done | inventory popup and portal details now distinguish loading, not-yet-loaded, unavailable, and numeric states |
 | Preserve previous inventory snapshot when Intel returns `{\"result\":[]}` | Done | empty inventory refreshes no longer wipe a previously captured inventory snapshot |
 | Refresh inventory mock against saved live payload shapes | Done | mock inventory now includes realistic timed/player powerups, boosted power cube, drone, entitlement, and nested capsule contents |
+| Include capsule-contained items in inventory tabs and totals | Done | inventory display derivation now expands capsule contents recursively so popup totals and tabs match portal key counting |
+| Keep inventory tab bar visible while switching categories and scrolling | Done | inventory popup now owns the scroll area and the tab strip stays sticky instead of scrolling/clipping away |
 
 Bugs:
 
 | Bug | Status | Notes |
 | --- | --- | --- |
-| Inventory popup tabs still ignore capsule contents while portal key count includes them | Open | parser display derivation only walks top-level items today; capsule-contained items affect portal key count but do not yet appear in tabs or totals |
+| Inventory popup tabs still ignore capsule contents while portal key count includes them | Done | display derivation now expands capsule contents, and grouping keeps capsule monikers distinct |
 | Empty `getInventory` responses are ambiguous on Intel | Investigating | IRIS now preserves the previous snapshot and explains the state in UI, but the underlying Intel behavior still needs more live verification |
+| Inventory tab bar can disappear after switching categories such as `ALL` or `KEYS` | Done | removed the double-scroll setup and made the tab strip sticky so it stays visible during category changes and list scrolling |
 
 Improvement ideas:
 
 | Idea | Status | Notes |
 | --- | --- | --- |
 | Flatten capsule contents into derived inventory display items | Done | inventory popup totals and tabs now include capsule-contained items, aligning display derivation with recursive portal key counting |
-| Use Intel-style inventory labels instead of raw enum names | Open | prefer explicit Intel wording such as `Resonator`, `Portal Fracker`, `Apex Mod`, and `Ultra Link` instead of raw values like `EMITTER A` or `FRACK` |
-| Sort grouped inventory rows by item count before name/level tiebreaks | Open | current popup sorting is mostly category/name/level driven; a count-first view would make the inventory scan faster, especially in `ALL` |
+| Use Intel-style inventory labels instead of raw enum names | Done | parser now normalizes derived inventory labels to readable Intel-style names such as `Resonator`, `Portal Fracker`, `Apex`, and capsule labels |
+| Sort grouped inventory rows by item count before name/level tiebreaks | Done | inventory popup now offers `COUNT` and `NAME` sort chips, with count-first as the default grouped view |
 | Make category tabs data-aware instead of always showing every tab | Open | consider showing only tabs with captured items, or at least badge counts, now that capsule-contained items are part of the same derived display model |
 | Decide whether `ENTITLEMENT` should be hidden, surfaced, or grouped separately | Open | real payloads contain entitlement items; current parser intentionally ignores them |
 | Mark preserved inventory snapshots as stale after an empty refresh | Open | current UI explains missing data states, but not yet "showing last known inventory snapshot" explicitly |
-| Add fixture coverage for nested capsule-derived display items | Open | parser tests currently cover category presence and recursive key counting, but not full capsule item expansion |
-
-Bugs:
-
-| Bug | Status | Notes |
-| --- | --- | --- |
-| Inventory tab bar can disappear after switching categories such as `ALL` or `KEYS` | Open | investigate layout/state interaction in the inventory popup; observed behavior suggests the tab strip is not staying consistently visible after category changes |
+| Add fixture coverage for nested capsule-derived display items | Done | parser tests now cover capsule-contained display derivation, preserved monikers, and recursive portal key counting |
 
 ## Intel Parity Features
 Status: `In Progress`

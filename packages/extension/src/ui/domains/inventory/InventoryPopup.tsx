@@ -16,6 +16,15 @@ interface GroupedInventoryItem {
     moniker?: string;
 }
 
+type InventorySortMode = 'COUNT' | 'NAME' | 'RARITY';
+
+const RARITY_SORT_ORDER: Record<string, number> = {
+    AEGIS: 5,
+    VERY_RARE: 4,
+    RARE: 3,
+    COMMON: 2,
+};
+
 export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Element => {
     const inventory = useStore((state) => state.inventory);
     const hasSubscription = useStore((state) => state.hasSubscription);
@@ -25,6 +34,7 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
     const themeId = useStore((state) => state.themeId);
     const theme = THEMES[themeId] || THEMES.INGRESS;
     const [activeCategory, setActiveCategory] = useState<InventoryCategory>('ALL');
+    const [sortMode, setSortMode] = useState<InventorySortMode>('COUNT');
 
     const categories: { label: string; value: InventoryCategory }[] = [
         { label: 'ALL', value: 'ALL' },
@@ -66,10 +76,17 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
 
         return Object.values(groups).sort((a, b) => {
             if (a.category !== b.category) return a.category.localeCompare(b.category);
+            if (sortMode === 'COUNT' && a.count !== b.count) return b.count - a.count;
+            if (sortMode === 'RARITY') {
+                const rarityDelta = (RARITY_SORT_ORDER[b.rarity || ''] || 0) - (RARITY_SORT_ORDER[a.rarity || ''] || 0);
+                if (rarityDelta !== 0) return rarityDelta;
+            }
+            const nameCompare = a.name.localeCompare(b.name);
+            if (nameCompare !== 0) return nameCompare;
             if (a.level !== b.level) return (b.level || 0) - (a.level || 0);
-            return a.name.localeCompare(b.name);
+            return (a.moniker || '').localeCompare(b.moniker || '');
         });
-    }, [parsedItems]);
+    }, [parsedItems, sortMode]);
 
     const filteredItems = useMemo((): GroupedInventoryItem[] => {
         if (activeCategory === 'ALL') return groupedItems;
@@ -118,7 +135,7 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
         <Popup 
             title="INVENTORY" 
             onClose={onClose}
-            noScroll={false}
+            noScroll={true}
             contentClassName="iris-popup-content-no-padding"
             headerExtras={
                 <div className="iris-flex iris-gap-2">
@@ -173,6 +190,31 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
                         TOTAL: <span className="iris-inventory-total-value">{totalCount}</span> / 2500
                     </div>
 
+                    <div className="iris-inventory-sort">
+                        <span className="iris-inventory-sort-label">SORT</span>
+                        <button
+                            type="button"
+                            className={`iris-inventory-sort-chip ${sortMode === 'COUNT' ? 'iris-inventory-sort-chip-active' : ''}`}
+                            onClick={() => setSortMode('COUNT')}
+                        >
+                            COUNT
+                        </button>
+                        <button
+                            type="button"
+                            className={`iris-inventory-sort-chip ${sortMode === 'NAME' ? 'iris-inventory-sort-chip-active' : ''}`}
+                            onClick={() => setSortMode('NAME')}
+                        >
+                            NAME
+                        </button>
+                        <button
+                            type="button"
+                            className={`iris-inventory-sort-chip ${sortMode === 'RARITY' ? 'iris-inventory-sort-chip-active' : ''}`}
+                            onClick={() => setSortMode('RARITY')}
+                        >
+                            RARITY
+                        </button>
+                    </div>
+
                     <div className="iris-inventory-tabs">
                         {categories.map(cat => (
                             <div 
@@ -215,15 +257,17 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
                                         <tr key={idx}>
                                             <td>
                                                 <div className="iris-inventory-item-name">
-                                                    <span 
+                                                    <div
                                                         className="iris-inventory-item-name-value"
                                                         style={{ '--iris-item-color': getItemColor(item) } as Record<string, string>}
                                                     >
-                                                        {item.name}
-                                                        {item.level && <span className="iris-inventory-item-level"> [L{item.level}]</span>}
-                                                        {item.rarity && <span className="iris-inventory-item-rarity"> ({item.rarity.replace(/_/g, ' ')})</span>}
-                                                        {item.moniker && <span className="iris-inventory-item-moniker"> [{item.moniker}]</span>}
-                                                    </span>
+                                                        <span className="iris-inventory-item-name-text">{item.name}</span>
+                                                        <div className="iris-inventory-item-meta">
+                                                            {item.level && <span className="iris-inventory-item-label">L{item.level}</span>}
+                                                            {item.rarity && <span className="iris-inventory-item-label">{item.rarity.replace(/_/g, ' ')}</span>}
+                                                            {item.moniker && <span className="iris-inventory-item-label">{item.moniker}</span>}
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td>

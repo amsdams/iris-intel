@@ -14,6 +14,61 @@ export interface DerivedInventoryItem {
   moniker?: string;
 }
 
+function humanizeEnum(value: string): string {
+  return value
+    .toLowerCase()
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function getResourceLabel(resourceType: string, level?: number): string {
+  switch (resourceType) {
+    case 'EMITTER_A':
+      return 'Resonator';
+    case 'EMP_BURSTER':
+      return 'XMP Burster';
+    case 'ULTRA_STRIKE':
+      return 'Ultra Strike';
+    case 'POWER_CUBE':
+      return 'Power Cube';
+    case 'BOOSTED_POWER_CUBE':
+      return level ? 'Hypercube' : 'Hypercube';
+    case 'DRONE':
+      return 'Drone';
+    case 'CAPSULE':
+      return 'Capsule';
+    case 'INTEREST_CAPSULE':
+      return 'Quantum Capsule';
+    case 'KEY_CAPSULE':
+      return 'Key Locker';
+    case 'KINETIC_CAPSULE':
+      return 'Kinetic Capsule';
+    default:
+      return humanizeEnum(resourceType);
+  }
+}
+
+function getTimedPowerupLabel(designation: string): string {
+  switch (designation) {
+    case 'FRACK':
+      return 'Portal Fracker';
+    case 'BB_BATTLE':
+      return 'Battle Beacon';
+    default:
+      return humanizeEnum(designation);
+  }
+}
+
+function getPlayerPowerupLabel(playerPowerupEnum: string): string {
+  switch (playerPowerupEnum) {
+    case 'APEX':
+      return 'Apex';
+    default:
+      return humanizeEnum(playerPowerupEnum);
+  }
+}
+
 export function parseInventory(data: InventoryData): InventoryItem[] {
   if (!data.result) return [];
 
@@ -52,7 +107,7 @@ export function deriveInventoryDisplayItem(item: InventoryItem): DerivedInventor
       timestamp: item.timestamp,
       type: item.resourceWithLevels.resourceType,
       level: item.resourceWithLevels.level,
-      name: item.resourceWithLevels.resourceType.replace(/_/g, ' '),
+      name: getResourceLabel(item.resourceWithLevels.resourceType, item.resourceWithLevels.level),
       category: getCategoryForResourceType(item.resourceWithLevels.resourceType),
     };
   }
@@ -83,7 +138,7 @@ export function deriveInventoryDisplayItem(item: InventoryItem): DerivedInventor
       guid: item.guid,
       timestamp: item.timestamp,
       type: item.playerPowerupResource.playerPowerupEnum,
-      name: item.playerPowerupResource.playerPowerupEnum,
+      name: getPlayerPowerupLabel(item.playerPowerupResource.playerPowerupEnum),
       category: 'POWERUPS',
     };
   }
@@ -93,7 +148,7 @@ export function deriveInventoryDisplayItem(item: InventoryItem): DerivedInventor
       guid: item.guid,
       timestamp: item.timestamp,
       type: item.timedPowerupResource.designation,
-      name: item.timedPowerupResource.designation,
+      name: getTimedPowerupLabel(item.timedPowerupResource.designation),
       category: 'POWERUPS',
     };
   }
@@ -103,17 +158,18 @@ export function deriveInventoryDisplayItem(item: InventoryItem): DerivedInventor
       guid: item.guid,
       timestamp: item.timestamp,
       type: item.flipCard.flipCardType,
-      name: item.flipCard.flipCardType,
+      name: item.flipCard.flipCardType === 'ADA' ? 'ADA Refactor' : item.flipCard.flipCardType === 'JARVIS' ? 'JARVIS Virus' : humanizeEnum(item.flipCard.flipCardType),
       category: 'WEAPONS',
     };
   }
 
   if (item.container) {
+    const capsuleType = item.resource?.resourceType || 'CAPSULE';
     return {
       guid: item.guid,
       timestamp: item.timestamp,
-      type: item.resource?.resourceType || 'CAPSULE',
-      name: (item.resource?.resourceType || 'CAPSULE').replace(/_/g, ' '),
+      type: capsuleType,
+      name: getResourceLabel(capsuleType),
       moniker: item.moniker?.differentiator,
       category: 'CAPSULES',
     };
@@ -127,7 +183,7 @@ export function deriveInventoryDisplayItem(item: InventoryItem): DerivedInventor
           guid: item.guid,
           timestamp: item.timestamp,
           type: item.resource.resourceType,
-          name: item.resource.resourceType.replace(/_/g, ' '),
+          name: getResourceLabel(item.resource.resourceType),
           rarity: item.resource.resourceRarity,
           category: 'POWERUPS',
         };

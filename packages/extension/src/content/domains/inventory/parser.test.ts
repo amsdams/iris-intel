@@ -29,6 +29,49 @@ describe('inventory parser', () => {
     expect(derived.some((item) => item.type === 'DRONE' && item.category === 'POWERUPS')).toBe(true);
   });
 
+  it('uses human-readable Intel-style inventory labels for derived items', () => {
+    const parsed = parseInventory({
+      result: [
+        [
+          'reso-1',
+          1,
+          {
+            resourceWithLevels: { resourceType: 'EMITTER_A', level: 8 },
+          },
+        ],
+        [
+          'apex-1',
+          2,
+          {
+            playerPowerupResource: { playerPowerupEnum: 'APEX' },
+          },
+        ],
+        [
+          'frack-1',
+          3,
+          {
+            timedPowerupResource: { designation: 'FRACK', multiplier: 0, multiplierE6: 2000000 },
+          },
+        ],
+        [
+          'capsule-1',
+          4,
+          {
+            resource: { resourceType: 'KINETIC_CAPSULE', resourceRarity: 'COMMON' },
+            container: { currentCapacity: 100, currentCount: 0, stackableItems: [] },
+          },
+        ],
+      ],
+    } as InventoryData);
+
+    const derived = deriveInventoryDisplayItems(parsed);
+
+    expect(derived.find((item) => item.guid === 'reso-1')?.name).toBe('Resonator');
+    expect(derived.find((item) => item.guid === 'apex-1')?.name).toBe('Apex');
+    expect(derived.find((item) => item.guid === 'frack-1')?.name).toBe('Portal Fracker');
+    expect(derived.find((item) => item.guid === 'capsule-1')?.name).toBe('Kinetic Capsule');
+  });
+
   it('counts portal keys including keys stored in capsules', () => {
     const parsed = parseInventory({
       result: [
