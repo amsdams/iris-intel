@@ -1,11 +1,10 @@
 import { JSX } from 'preact';
-import { useStore, InventoryItemData, normalizeTeam } from '@iris/core';
+import { useStore, normalizeTeam } from '@iris/core';
 import { Popup } from '../../shared/Popup';
 import { useState, useMemo } from 'preact/hooks';
 import { THEMES, UI_COLORS, getItemRarityColor } from '../../theme';
+import { deriveInventoryDisplayItems, InventoryCategory } from '../../../content/domains/inventory/parser';
 import './inventory.css';
-
-type Category = 'ALL' | 'WEAPONS' | 'RESONATORS' | 'MODS' | 'POWERUPS' | 'CAPSULES' | 'KEYS';
 
 interface GroupedInventoryItem {
     type: string;
@@ -13,20 +12,21 @@ interface GroupedInventoryItem {
     level?: number;
     rarity?: string;
     count: number;
-    category: Category;
+    category: InventoryCategory;
     moniker?: string;
 }
 
 export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Element => {
     const inventory = useStore((state) => state.inventory);
     const hasSubscription = useStore((state) => state.hasSubscription);
-    const inventoryStatus = useStore((state) => state.endpointDiagnostics.inventory.status);
+    const inventoryEndpoint = useStore((state) => state.endpointDiagnostics.inventory);
+    const inventoryStatus = inventoryEndpoint.status;
     const showMockTools = useStore((state) => state.showMockTools);
     const themeId = useStore((state) => state.themeId);
     const theme = THEMES[themeId] || THEMES.INGRESS;
-    const [activeCategory, setActiveCategory] = useState<Category>('ALL');
+    const [activeCategory, setActiveCategory] = useState<InventoryCategory>('ALL');
 
-    const categories: { label: string; value: Category }[] = [
+    const categories: { label: string; value: InventoryCategory }[] = [
         { label: 'ALL', value: 'ALL' },
         { label: 'WEAPONS', value: 'WEAPONS' },
         { label: 'RESONATORS', value: 'RESONATORS' },
@@ -36,79 +36,18 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
         { label: 'KEYS', value: 'KEYS' },
     ];
 
-    const parsedItems = useMemo((): GroupedInventoryItem[] => {
-        const items: GroupedInventoryItem[] = [];
-
-        const processItem = (data: InventoryItemData): GroupedInventoryItem | null => {
-            if (data.resourceWithLevels) {
-                return {
-                    type: data.resourceWithLevels.resourceType,
-                    level: data.resourceWithLevels.level,
-                    name: data.resourceWithLevels.resourceType.replace(/_/g, ' '),
-                    category: (data.resourceWithLevels.resourceType === 'EMITTER_A') ? 'RESONATORS' : 'WEAPONS',
-                    count: 1
-                };
-            }
-            if (data.modResource) {
-                return {
-                    type: data.modResource.resourceType,
-                    name: data.modResource.displayName,
-                    rarity: data.modResource.rarity,
-                    category: 'MODS',
-                    count: 1
-                };
-            }
-            if (data.portalCoupler) {
-                return {
-                    type: 'PORTAL_LINK_KEY',
-                    name: data.portalCoupler.portalTitle,
-                    category: 'KEYS',
-                    count: 1
-                };
-            }
-            if (data.playerPowerupResource) {
-                return {
-                    type: data.playerPowerupResource.playerPowerupEnum,
-                    name: data.playerPowerupResource.playerPowerupEnum,
-                    category: 'POWERUPS',
-                    count: 1
-                };
-            }
-            if (data.timedPowerupResource) {
-                return {
-                    type: data.timedPowerupResource.designation,
-                    name: data.timedPowerupResource.designation,
-                    category: 'POWERUPS',
-                    count: 1
-                };
-            }
-            if (data.flipCard) {
-                return {
-                    type: data.flipCard.flipCardType,
-                    name: data.flipCard.flipCardType,
-                    category: 'WEAPONS',
-                    count: 1
-                };
-            }
-            if (data.container) {
-                return {
-                    type: data.resource?.resourceType || 'CAPSULE',
-                    name: (data.resource?.resourceType || 'CAPSULE').replace(/_/g, ' '),
-                    moniker: data.moniker?.differentiator,
-                    category: 'CAPSULES',
-                    count: 1
-                };
-            }
-            return null;
-        };
-
-        inventory.forEach((item) => {
-            const p = processItem(item);
-            if (p) items.push(p);
-        });
-
-        return items;
-    }, [inventory]);
+    const parsedItems = useMemo(
+        (): GroupedInventoryItem[] => deriveInventoryDisplayItems(inventory).map((item) => ({
+            type: item.type,
+            name: item.name,
+            level: item.level,
+            rarity: item.rarity,
+            moniker: item.moniker,
+            category: item.category,
+            count: 1,
+        })),
+        [inventory],
+    );
 
     const groupedItems = useMemo((): GroupedInventoryItem[] => {
         const groups: Record<string, GroupedInventoryItem> = {};
@@ -138,6 +77,7 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
     }, [groupedItems, activeCategory]);
 
     const totalCount = parsedItems.length;
+    const inventoryHasLoaded = inventoryEndpoint.lastSuccessAt !== null;
 
     const handleRefresh = (): void => {
         window.postMessage({ type: 'IRIS_INVENTORY_REQUEST' }, '*');
@@ -246,9 +186,21 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
                     </div>
 
                     <div className="iris-inventory-scroll-container">
-                        {filteredItems.length === 0 ? (
+                        {inventoryStatus === 'in_flight' && totalCount === 0 ? (
                             <div className="iris-inventory-empty">
-                                No items found
+                                Loading inventory from Intel...
+                            </div>
+                        ) : !inventoryHasLoaded && totalCount === 0 ? (
+                            <div className="iris-inventory-empty">
+                                Inventory not loaded yet. Use REFRESH after Intel inventory access succeeds.
+                            </div>
+                        ) : filteredItems.length === 0 && totalCount === 0 ? (
+                            <div className="iris-inventory-empty">
+                                Intel returned no inventory items yet. Try REFRESH to re-check.
+                            </div>
+                        ) : filteredItems.length === 0 ? (
+                            <div className="iris-inventory-empty">
+                                No items found in this category
                             </div>
                         ) : (
                             <table className="iris-inventory-table">

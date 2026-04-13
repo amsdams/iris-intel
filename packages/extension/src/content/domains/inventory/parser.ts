@@ -1,6 +1,19 @@
 import { InventoryItem } from '@iris/core';
 import { InventoryData } from './types';
 
+export type InventoryCategory = 'ALL' | 'WEAPONS' | 'RESONATORS' | 'MODS' | 'POWERUPS' | 'CAPSULES' | 'KEYS';
+
+export interface DerivedInventoryItem {
+  guid: string;
+  timestamp: number;
+  type: string;
+  name: string;
+  category: Exclude<InventoryCategory, 'ALL'>;
+  level?: number;
+  rarity?: string;
+  moniker?: string;
+}
+
 export function parseInventory(data: InventoryData): InventoryItem[] {
   if (!data.result) return [];
 
@@ -17,4 +30,143 @@ export function parseInventory(data: InventoryData): InventoryItem[] {
     console.error('IRIS: Error parsing inventory', error, data);
     return [];
   }
+}
+
+function getCategoryForResourceType(resourceType: string): Exclude<InventoryCategory, 'ALL'> {
+  switch (resourceType) {
+    case 'EMITTER_A':
+      return 'RESONATORS';
+    case 'POWER_CUBE':
+    case 'BOOSTED_POWER_CUBE':
+    case 'DRONE':
+      return 'POWERUPS';
+    default:
+      return 'WEAPONS';
+  }
+}
+
+export function deriveInventoryDisplayItem(item: InventoryItem): DerivedInventoryItem | null {
+  if (item.resourceWithLevels) {
+    return {
+      guid: item.guid,
+      timestamp: item.timestamp,
+      type: item.resourceWithLevels.resourceType,
+      level: item.resourceWithLevels.level,
+      name: item.resourceWithLevels.resourceType.replace(/_/g, ' '),
+      category: getCategoryForResourceType(item.resourceWithLevels.resourceType),
+    };
+  }
+
+  if (item.modResource) {
+    return {
+      guid: item.guid,
+      timestamp: item.timestamp,
+      type: item.modResource.resourceType,
+      name: item.modResource.displayName,
+      rarity: item.modResource.rarity,
+      category: 'MODS',
+    };
+  }
+
+  if (item.portalCoupler) {
+    return {
+      guid: item.guid,
+      timestamp: item.timestamp,
+      type: 'PORTAL_LINK_KEY',
+      name: item.portalCoupler.portalTitle,
+      category: 'KEYS',
+    };
+  }
+
+  if (item.playerPowerupResource) {
+    return {
+      guid: item.guid,
+      timestamp: item.timestamp,
+      type: item.playerPowerupResource.playerPowerupEnum,
+      name: item.playerPowerupResource.playerPowerupEnum,
+      category: 'POWERUPS',
+    };
+  }
+
+  if (item.timedPowerupResource) {
+    return {
+      guid: item.guid,
+      timestamp: item.timestamp,
+      type: item.timedPowerupResource.designation,
+      name: item.timedPowerupResource.designation,
+      category: 'POWERUPS',
+    };
+  }
+
+  if (item.flipCard) {
+    return {
+      guid: item.guid,
+      timestamp: item.timestamp,
+      type: item.flipCard.flipCardType,
+      name: item.flipCard.flipCardType,
+      category: 'WEAPONS',
+    };
+  }
+
+  if (item.container) {
+    return {
+      guid: item.guid,
+      timestamp: item.timestamp,
+      type: item.resource?.resourceType || 'CAPSULE',
+      name: (item.resource?.resourceType || 'CAPSULE').replace(/_/g, ' '),
+      moniker: item.moniker?.differentiator,
+      category: 'CAPSULES',
+    };
+  }
+
+  if (item.resource) {
+    switch (item.resource.resourceType) {
+      case 'BOOSTED_POWER_CUBE':
+      case 'DRONE':
+        return {
+          guid: item.guid,
+          timestamp: item.timestamp,
+          type: item.resource.resourceType,
+          name: item.resource.resourceType.replace(/_/g, ' '),
+          rarity: item.resource.resourceRarity,
+          category: 'POWERUPS',
+        };
+      default:
+        return null;
+    }
+  }
+
+  return null;
+}
+
+export function deriveInventoryDisplayItems(items: InventoryItem[]): DerivedInventoryItem[] {
+  return items.flatMap((item) => {
+    const derived = deriveInventoryDisplayItem(item);
+    return derived ? [derived] : [];
+  });
+}
+
+function countPortalKeysInItem(item: InventoryItem, portalId: string): number {
+  if (item.portalCoupler?.portalGuid === portalId) {
+    return 1;
+  }
+
+  if (!item.container) {
+    return 0;
+  }
+
+  return item.container.stackableItems.reduce((sum, stackableItem) => {
+    const [guid, timestamp, itemData] = stackableItem.exampleGameEntity;
+    const nestedItem = {
+      guid,
+      timestamp,
+      ...(itemData as object),
+    } as InventoryItem;
+
+    return sum + countPortalKeysInItem(nestedItem, portalId) * stackableItem.itemGuids.length;
+  }, 0);
+}
+
+export function countPortalKeys(items: InventoryItem[], portalId: string): number {
+  return items.reduce((sum, item) => sum + countPortalKeysInItem(item, portalId), 0);
 }

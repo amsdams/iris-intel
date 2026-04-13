@@ -2,6 +2,7 @@ import {h, JSX} from 'preact';
 import {PortalMod, PortalResonator, useStore} from '@iris/core';
 import {Popup} from '../../shared/Popup';
 import {THEMES, TEAM_NAME, UI_COLORS, getItemRarityColor} from '../../theme';
+import { countPortalKeys } from '../../../content/domains/inventory/parser';
 
 // ---------------------------------------------------------------------------
 // PortalInfoPopup
@@ -12,6 +13,8 @@ const MAX_RESO_ENERGY = [0, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000];
 export function PortalInfoPopup(): JSX.Element | null {
     const portals = useStore((state) => state.portals);
     const artifacts = useStore((state) => state.artifacts);
+    const inventory = useStore((state) => state.inventory);
+    const inventoryEndpoint = useStore((state) => state.endpointDiagnostics.inventory);
     const links = useStore((state) => state.links);
     const selectedPortalId = useStore((state) => state.selectedPortalId);
     const portal = selectedPortalId ? portals[selectedPortalId] : null;
@@ -45,6 +48,8 @@ export function PortalInfoPopup(): JSX.Element | null {
     const maxEnergy = (portal.resonators || []).reduce((sum, resonator) => sum + (MAX_RESO_ENERGY[resonator.level] || 0), 0);
     const linksIn = Object.values(links).filter((link) => link.toPortalId === portal.id).length;
     const linksOut = Object.values(links).filter((link) => link.fromPortalId === portal.id).length;
+    const keyCount = countPortalKeys(inventory, portal.id);
+    const inventoryHasLoaded = inventoryEndpoint.lastSuccessAt !== null;
 
     const openPortalMissions = (): void => {
         document.dispatchEvent(
@@ -226,6 +231,18 @@ export function PortalInfoPopup(): JSX.Element | null {
                                 <span className="iris-portal-details-label">Links</span>
                                 <span className="iris-portal-details-value iris-portal-details-value-faction">
                                     {linksIn} in / {linksOut} out
+                                </span>
+                            </div>
+                            <div className="iris-portal-details-row">
+                                <span className="iris-portal-details-label">Keys</span>
+                                <span className="iris-portal-details-value iris-portal-details-value-faction">
+                                    {inventoryEndpoint.status === 'in_flight'
+                                        ? 'loading...'
+                                        : !inventoryHasLoaded
+                                            ? 'not loaded'
+                                            : inventory.length === 0
+                                                ? 'unavailable'
+                                                : keyCount.toLocaleString()}
                                 </span>
                             </div>
                         </div>
