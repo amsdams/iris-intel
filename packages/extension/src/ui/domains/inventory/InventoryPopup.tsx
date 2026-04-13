@@ -20,6 +20,7 @@ interface GroupedInventoryItem {
 export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Element => {
     const inventory = useStore((state) => state.inventory);
     const hasSubscription = useStore((state) => state.hasSubscription);
+    const inventoryStatus = useStore((state) => state.endpointDiagnostics.inventory.status);
     const showMockTools = useStore((state) => state.showMockTools);
     const themeId = useStore((state) => state.themeId);
     const theme = THEMES[themeId] || THEMES.INGRESS;
@@ -212,7 +213,14 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
                 '--iris-popup-title-color': theme.AQUA,
             } as Record<string, string>}
         >
-            {!hasSubscription ? (
+            {!hasSubscription && inventoryStatus === 'in_flight' ? (
+                <div className="iris-inventory-subscription-warning">
+                    <div className="iris-inventory-subscription-warning-title">
+                        CHECKING C.O.R.E. ACCESS...
+                    </div>
+                    <p className="iris-inventory-subscription-warning-text">Waiting for Intel inventory access confirmation.</p>
+                </div>
+            ) : !hasSubscription ? (
                 <div className="iris-inventory-subscription-warning">
                     <div className="iris-inventory-subscription-warning-title">
                         C.O.R.E. SUBSCRIPTION REQUIRED

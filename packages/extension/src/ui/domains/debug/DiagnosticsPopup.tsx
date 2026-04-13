@@ -9,8 +9,6 @@ import {THEMES} from "../../theme";
 const POLLED_ENDPOINT_LABELS: Partial<Record<EndpointKey, string>> = {
     plexts: 'next auto refresh',
     artifacts: 'next auto refresh',
-    subscription: 'next auto refresh',
-    inventory: 'next auto refresh',
 };
 
 const ENDPOINT_REFRESH_MODE_LABELS: Partial<Record<EndpointKey, string>> = {

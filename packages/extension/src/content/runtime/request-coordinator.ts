@@ -6,11 +6,8 @@ const PLEXT_COOLDOWN_MS = 5000;
 const PLEXT_POLL_MS = 120000;
 const ARTIFACTS_POLL_MS = 60000;
 const SUBSCRIPTION_POLL_MS = 10 * 60 * 1000;
-const INVENTORY_POLL_MS = 60000;
 
 const ARTIFACTS_STARTUP_DEDUP_MS = 5000;
-const SUBSCRIPTION_STARTUP_DEDUP_MS = 5000;
-const INVENTORY_STARTUP_DEDUP_MS = 5000;
 
 const STARTUP_GRACE_MS = 5000;
 const GAME_SCORE_TTL_MS = 10 * 60 * 1000;
@@ -41,8 +38,6 @@ export function createRequestCoordinator(): RequestCoordinator {
     let startupTimeoutId: number | null = null;
     let plextPollId: number | null = null;
     let artifactsPollId: number | null = null;
-    let subscriptionPollId: number | null = null;
-    let inventoryPollId: number | null = null;
     let lastRegionScoreRequestKey: string | null = null;
 
     const postMessage = (message: Record<string, unknown>): void => {
@@ -78,27 +73,11 @@ export function createRequestCoordinator(): RequestCoordinator {
         }
     };
 
-    const scheduleSubscriptionFetch = (): void => {
-        if (isSessionBlocked()) return;
-
-        if (!isEndpointInFlight('subscription') && !isEndpointFresh('subscription', SUBSCRIPTION_STARTUP_DEDUP_MS)) {
-            postMessage({ type: 'IRIS_SUBSCRIPTION_FETCH' });
-        }
-    };
-
     const refreshSubscriptionIfStale = (): void => {
         if (isSessionBlocked()) return;
         if (isEndpointInFlight('subscription')) return;
         if (isEndpointFresh('subscription', SUBSCRIPTION_POLL_MS)) return;
         postMessage({ type: 'IRIS_SUBSCRIPTION_FETCH' });
-    };
-
-    const scheduleInventoryFetch = (): void => {
-        if (isSessionBlocked()) return;
-
-        if (!isEndpointInFlight('inventory') && !isEndpointFresh('inventory', INVENTORY_STARTUP_DEDUP_MS)) {
-            postMessage({ type: 'IRIS_INVENTORY_FETCH', lastQueryTimestamp: -1 });
-        }
     };
 
     const schedulePlextPoll = (): void => {
@@ -119,8 +98,6 @@ export function createRequestCoordinator(): RequestCoordinator {
         }
 
         scheduleArtifactsFetch();
-        scheduleSubscriptionFetch();
-        scheduleInventoryFetch();
     };
 
     const buildPlextPayload = (msg: Pick<IRISMessage, 'tab' | 'minTimestampMs' | 'maxTimestampMs' | 'ascendingTimestampOrder'>): Record<string, unknown> | null => {
@@ -186,8 +163,6 @@ export function createRequestCoordinator(): RequestCoordinator {
             startupGraceUntil = Date.now() + STARTUP_GRACE_MS;
             setNextAutoRefresh('plexts', startupGraceUntil);
             setNextAutoRefresh('artifacts', startupGraceUntil);
-            setNextAutoRefresh('subscription', startupGraceUntil);
-            setNextAutoRefresh('inventory', startupGraceUntil);
 
             if (startupTimeoutId === null) {
                 startupTimeoutId = window.setTimeout(() => {
@@ -195,8 +170,6 @@ export function createRequestCoordinator(): RequestCoordinator {
                     runStartupCatchup();
                     setNextAutoRefresh('plexts', Date.now() + PLEXT_POLL_MS);
                     setNextAutoRefresh('artifacts', Date.now() + ARTIFACTS_POLL_MS);
-                    setNextAutoRefresh('subscription', Date.now() + SUBSCRIPTION_POLL_MS);
-                    setNextAutoRefresh('inventory', Date.now() + INVENTORY_POLL_MS);
 
                     if (plextPollId === null) {
                         plextPollId = window.setInterval(() => {
@@ -210,20 +183,6 @@ export function createRequestCoordinator(): RequestCoordinator {
                             scheduleArtifactsFetch();
                             setNextAutoRefresh('artifacts', Date.now() + ARTIFACTS_POLL_MS);
                         }, ARTIFACTS_POLL_MS);
-                    }
-
-                    if (subscriptionPollId === null) {
-                        subscriptionPollId = window.setInterval(() => {
-                            scheduleSubscriptionFetch();
-                            setNextAutoRefresh('subscription', Date.now() + SUBSCRIPTION_POLL_MS);
-                        }, SUBSCRIPTION_POLL_MS);
-                    }
-
-                    if (inventoryPollId === null) {
-                        inventoryPollId = window.setInterval(() => {
-                            scheduleInventoryFetch();
-                            setNextAutoRefresh('inventory', Date.now() + INVENTORY_POLL_MS);
-                        }, INVENTORY_POLL_MS);
                     }
                 }, STARTUP_GRACE_MS);
             }
@@ -243,16 +202,6 @@ export function createRequestCoordinator(): RequestCoordinator {
             if (artifactsPollId !== null) {
                 window.clearInterval(artifactsPollId);
                 artifactsPollId = null;
-            }
-
-            if (subscriptionPollId !== null) {
-                window.clearInterval(subscriptionPollId);
-                subscriptionPollId = null;
-            }
-
-            if (inventoryPollId !== null) {
-                window.clearInterval(inventoryPollId);
-                inventoryPollId = null;
             }
 
             setNextAutoRefresh('plexts', null);
@@ -287,7 +236,6 @@ export function createRequestCoordinator(): RequestCoordinator {
 
         handleInventoryRequest(): void {
             if (isSessionBlocked()) return;
-            refreshSubscriptionIfStale();
             if (isEndpointInFlight('inventory')) return;
             postMessage({ type: 'IRIS_INVENTORY_FETCH', lastQueryTimestamp: -1 });
         },
