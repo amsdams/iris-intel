@@ -14,7 +14,5 @@ export function handlePlayerStats(stats: PlayerStatsMessage): void {
     min_ap_for_next_level: stats.min_ap_for_next_level,
   });
 
-  if (stats.hasActiveSubscription) {
-    useStore.getState().setHasSubscription(true);
-  }
+  useStore.getState().setHasSubscription(stats.hasActiveSubscription);
 }

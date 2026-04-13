@@ -2,13 +2,16 @@ import { useStore } from '@iris/core';
 import { IRISMessage } from './message-types';
 
 const PLEXT_COOLDOWN_MS = 5000;
+
 const PLEXT_POLL_MS = 120000;
 const ARTIFACTS_POLL_MS = 60000;
-const SUBSCRIPTION_POLL_MS = 60000;
+const SUBSCRIPTION_POLL_MS = 10 * 60 * 1000;
 const INVENTORY_POLL_MS = 60000;
+
 const ARTIFACTS_STARTUP_DEDUP_MS = 5000;
 const SUBSCRIPTION_STARTUP_DEDUP_MS = 5000;
 const INVENTORY_STARTUP_DEDUP_MS = 5000;
+
 const STARTUP_GRACE_MS = 5000;
 const GAME_SCORE_TTL_MS = 10 * 60 * 1000;
 const REGION_SCORE_TTL_MS = 5 * 60 * 1000;
@@ -81,6 +84,13 @@ export function createRequestCoordinator(): RequestCoordinator {
         if (!isEndpointInFlight('subscription') && !isEndpointFresh('subscription', SUBSCRIPTION_STARTUP_DEDUP_MS)) {
             postMessage({ type: 'IRIS_SUBSCRIPTION_FETCH' });
         }
+    };
+
+    const refreshSubscriptionIfStale = (): void => {
+        if (isSessionBlocked()) return;
+        if (isEndpointInFlight('subscription')) return;
+        if (isEndpointFresh('subscription', SUBSCRIPTION_POLL_MS)) return;
+        postMessage({ type: 'IRIS_SUBSCRIPTION_FETCH' });
     };
 
     const scheduleInventoryFetch = (): void => {
@@ -277,6 +287,7 @@ export function createRequestCoordinator(): RequestCoordinator {
 
         handleInventoryRequest(): void {
             if (isSessionBlocked()) return;
+            refreshSubscriptionIfStale();
             if (isEndpointInFlight('inventory')) return;
             postMessage({ type: 'IRIS_INVENTORY_FETCH', lastQueryTimestamp: -1 });
         },
