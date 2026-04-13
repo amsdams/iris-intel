@@ -43,7 +43,8 @@ Tasks:
 | Task | Status | Notes |
 | --- | --- | --- |
 | Coordinator session gating cleanup | Done | now blocks both `expired` and `initial_login_required` |
-| Inventory polling freshness/in-flight cleanup | Done | inventory now follows the same basic discipline as artifacts/subscription |
+| Inventory polling freshness/in-flight cleanup | Done | inventory no longer polls in the background; popup open and manual refresh now own inventory fetches |
+| Reduce `getHasActiveSubscription` polling to Intel-like ownership | Done | recurring subscription polling was removed; inventory open now relies on intercepted Intel state and explicit inventory fetches instead of a heartbeat |
 | Passive fetch lifecycle ordering cleanup | Done | `END` no longer lands before `SUCCESS` / `DATA` |
 | Keep tracking startup duplicate score/subscription burst | Open | only patch when ownership is clearer |
 
@@ -53,6 +54,45 @@ Bugs:
 | --- | --- | --- |
 | Initial duplicate `getHasActiveSubscription` / `getGameScore` burst on startup | Open | later polling is single and predictable; tracked refinement, not blocker |
 | Player-stats publication is still noisier than ideal | Investigating | materially improved, but still worth keeping disciplined |
+
+### Inventory access and portal key visibility are more Intel-like
+Status: `In Progress`
+
+Outcome:
+- inventory fetch ownership is now closer to Intel's click-driven flow
+- inventory parsing is more deliberate and uses the same client-side derivation path for mock and live payloads
+- portal details can show a key count from captured inventory
+- empty or missing inventory responses are explained instead of silently reading as zero
+
+Tasks:
+
+| Task | Status | Notes |
+| --- | --- | --- |
+| Stop background inventory polling | Done | IRIS no longer polls `getInventory`; popup open and manual refresh own the request |
+| Stop background subscription polling | Done | IRIS no longer runs a recurring `getHasActiveSubscription` timer; relies on intercepted Intel state plus inventory fetch flow |
+| Refactor inventory categorization out of the popup | Done | parser now owns display-item derivation so mock and live inventory use the same logic |
+| Classify live `POWER_CUBE`, `BOOSTED_POWER_CUBE`, and `DRONE` shapes correctly | Done | power cubes and drones are now treated as `POWERUPS` instead of weapons or disappearing |
+| Add portal key count to portal details | Done | portal details now shows `Keys` using recursive capsule-aware counting from captured inventory |
+| Clarify inventory-not-loaded vs empty-inventory UI | Done | inventory popup and portal details now distinguish loading, not-yet-loaded, unavailable, and numeric states |
+| Preserve previous inventory snapshot when Intel returns `{\"result\":[]}` | Done | empty inventory refreshes no longer wipe a previously captured inventory snapshot |
+| Refresh inventory mock against saved live payload shapes | Done | mock inventory now includes realistic timed/player powerups, boosted power cube, drone, entitlement, and nested capsule contents |
+
+Bugs:
+
+| Bug | Status | Notes |
+| --- | --- | --- |
+| Inventory popup tabs still ignore capsule contents while portal key count includes them | Open | parser display derivation only walks top-level items today; capsule-contained items affect portal key count but do not yet appear in tabs or totals |
+| Empty `getInventory` responses are ambiguous on Intel | Investigating | IRIS now preserves the previous snapshot and explains the state in UI, but the underlying Intel behavior still needs more live verification |
+
+Improvement ideas:
+
+| Idea | Status | Notes |
+| --- | --- | --- |
+| Flatten capsule contents into derived inventory display items | Open | would align inventory totals and tabs with the recursive portal key count and closer with Intel/community inventory tooling |
+| Make category tabs data-aware instead of always showing every tab | Open | consider showing only tabs with captured items, or at least badge counts, once capsule flattening exists |
+| Decide whether `ENTITLEMENT` should be hidden, surfaced, or grouped separately | Open | real payloads contain entitlement items; current parser intentionally ignores them |
+| Mark preserved inventory snapshots as stale after an empty refresh | Open | current UI explains missing data states, but not yet "showing last known inventory snapshot" explicitly |
+| Add fixture coverage for nested capsule-derived display items | Open | parser tests currently cover category presence and recursive key counting, but not full capsule item expansion |
 
 ## Intel Parity Features
 Status: `In Progress`
