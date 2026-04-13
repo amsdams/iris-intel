@@ -53,15 +53,18 @@
     display: flex;
     position: sticky;
     top: 0;
-    z-index: 1;
+    z-index: 3;
     border-bottom: 1px solid var(--iris-border-dim);
     margin-bottom: 8px;
     overflow-x: auto;
     white-space: nowrap;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    margin-left: -16px;
+    margin-right: -16px;
     padding: 0 16px;
-    background: var(--iris-bg-elevated, rgb(8 12 16 / 96%));
+    background: var(--iris-popup-bg, rgb(0 0 0 / 96%));
+    box-shadow: 0 1px 0 rgb(0 0 0 / 45%);
 }
 
 .iris-inventory-tabs::-webkit-scrollbar {

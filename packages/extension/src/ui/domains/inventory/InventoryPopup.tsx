@@ -221,19 +221,19 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
                         </button>
                     </div>
 
-                    <div className="iris-inventory-tabs">
-                        {categories.map(cat => (
-                            <div 
-                                key={cat.value}
-                                className={`iris-inventory-tab ${activeCategory === cat.value ? 'iris-inventory-tab-active' : ''}`}
-                                onClick={() => setActiveCategory(cat.value)}
-                            >
-                                {cat.label}
-                            </div>
-                        ))}
-                    </div>
-
                     <div className="iris-inventory-scroll-container">
+                        <div className="iris-inventory-tabs">
+                            {categories.map(cat => (
+                                <div 
+                                    key={cat.value}
+                                    className={`iris-inventory-tab ${activeCategory === cat.value ? 'iris-inventory-tab-active' : ''}`}
+                                    onClick={() => setActiveCategory(cat.value)}
+                                >
+                                    {cat.label}
+                                </div>
+                            ))}
+                        </div>
+
                         {inventoryStatus === 'in_flight' && totalCount === 0 ? (
                             <div className="iris-inventory-empty">
                                 Loading inventory from Intel...
