@@ -4,6 +4,8 @@ export interface PluginManifest {
   version: string;
   description: string;
   author: string;
+  defaultEnabled?: boolean;
+  capabilities?: string[];
 }
 
 export interface Portal {
@@ -12,6 +14,64 @@ export interface Portal {
   lng: number;
   team: string;
   name?: string;
+  level?: number;
+  health?: number;
+  resCount?: number;
+}
+
+export interface InventoryItemData {
+  resource?: {
+    resourceType: string;
+    resourceRarity: string;
+  };
+  resourceWithLevels?: {
+    resourceType: string;
+    level: number;
+  };
+  modResource?: {
+    displayName: string;
+    stats: Record<string, string>;
+    rarity: string;
+    resourceType: string;
+  };
+  playerPowerupResource?: {
+    playerPowerupEnum: string;
+  };
+  timedPowerupResource?: {
+    multiplier: number;
+    designation: string;
+    multiplierE6: number;
+  };
+  flipCard?: {
+    flipCardType: string;
+  };
+  container?: {
+    currentCapacity: number;
+    currentCount: number;
+    stackableItems: {
+      itemGuids: string[];
+      exampleGameEntity: [string, number, InventoryItemData];
+    }[];
+  };
+  moniker?: {
+    differentiator: string;
+  };
+  portalCoupler?: {
+    portalGuid: string;
+    portalLocation: string;
+    portalImageUrl: string;
+    portalTitle: string;
+    portalAddress: string;
+  };
+  inInventory?: {
+    playerId: string;
+    acquisitionTimestampMs: string;
+  };
+}
+
+export interface InventoryItem extends InventoryItemData {
+  guid: string;
+  timestamp: number;
 }
 
 export interface Link {
@@ -64,6 +124,10 @@ export interface IRIS_API {
   };
   plexts: {
     subscribe: (callback: (plexts: Plext[]) => void) => () => void;
+  };
+  inventory: {
+    getAll: () => InventoryItem[];
+    subscribe: (callback: (inventory: InventoryItem[]) => void) => () => void;
   };
   map: {
     getCenter: () => { lat: number; lng: number };

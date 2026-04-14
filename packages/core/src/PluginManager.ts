@@ -1,13 +1,29 @@
-import { IRISPlugin, IRIS_API, Portal, Link, Field, Plext } from '@iris/plugin-sdk';
+import { IRISPlugin, IRIS_API, Portal, Link, Field, Plext, InventoryItem } from '@iris/plugin-sdk';
 import { useStore } from './store';
 import { normalizeTeam } from './index';
 
 export class PluginManager {
   private availablePlugins = new Map<string, IRISPlugin>();
-  private api: IRIS_API;
+  private pluginFeaturesByPlugin = new Map<string, GeoJSON.Feature[]>();
 
-  constructor() {
-    this.api = {
+  private syncPluginFeatures(): void {
+    useStore.getState().setPluginFeatures({
+      type: 'FeatureCollection',
+      features: Array.from(this.pluginFeaturesByPlugin.values()).flat(),
+    });
+  }
+
+  private clearPluginFeatures(id: string): void {
+    if (!this.pluginFeaturesByPlugin.has(id)) {
+      return;
+    }
+
+    this.pluginFeaturesByPlugin.delete(id);
+    this.syncPluginFeatures();
+  }
+
+  private createApi(pluginId: string): IRIS_API {
+    return {
       portals: {
         getAll: (): Record<string, Portal> => useStore.getState().portals,
         subscribe: (callback: (portals: Record<string, Portal>) => void): () => void => 
@@ -39,17 +55,24 @@ export class PluginManager {
             (plexts) => callback(plexts)
           ),
       },
+      inventory: {
+        getAll: (): InventoryItem[] => useStore.getState().inventory,
+        subscribe: (callback: (inventory: InventoryItem[]) => void): () => void =>
+          useStore.subscribe(
+            (state) => state.inventory,
+            (inventory) => callback(inventory)
+          ),
+      },
       map: {
         getCenter: (): { lat: number; lng: number } => {
           const { lat, lng } = useStore.getState().mapState;
           return { lat, lng };
         },
         getZoom: (): number => useStore.getState().mapState.zoom,
-        setFeatures: (features: GeoJSON.Feature[]): void =>
-          useStore.getState().setPluginFeatures({
-            type: 'FeatureCollection',
-            features,
-          }),
+        setFeatures: (features: GeoJSON.Feature[]): void => {
+          this.pluginFeaturesByPlugin.set(pluginId, features);
+          this.syncPluginFeatures();
+        },
       },
       ui: {
         addStatsItem: (id: string, label: string, value: string | (() => string)): void => 
@@ -93,16 +116,19 @@ export class PluginManager {
 
     this.availablePlugins.set(plugin.manifest.id, plugin);
     
-    // If not in store yet, enable by default
+    // If not in store yet, respect the plugin's preferred default.
     const state = useStore.getState().pluginStates;
     if (state[plugin.manifest.id] === undefined) {
-      useStore.getState().setPluginEnabled(plugin.manifest.id, true);
+      useStore.getState().setPluginEnabled(
+        plugin.manifest.id,
+        plugin.manifest.defaultEnabled ?? true
+      );
     }
 
     // If enabled in store, setup now
     if (useStore.getState().pluginStates[plugin.manifest.id]) {
       try {
-        await plugin.setup(this.api);
+        await plugin.setup(this.createApi(plugin.manifest.id));
         console.log(`IRIS: Plugin ${plugin.manifest.name} enabled`);
       } catch (e) {
         console.error(`IRIS: Error enabling plugin ${plugin.manifest.id}`, e);
@@ -124,12 +150,13 @@ export class PluginManager {
 
     try {
       if (enabled) {
-        await plugin.setup(this.api);
+        await plugin.setup(this.createApi(id));
         console.log(`IRIS: Plugin ${plugin.manifest.name} enabled`);
       } else {
         if (plugin.teardown) {
-          await plugin.teardown(this.api);
+          await plugin.teardown(this.createApi(id));
         }
+        this.clearPluginFeatures(id);
         console.log(`IRIS: Plugin ${plugin.manifest.name} disabled`);
       }
     } catch (e) {

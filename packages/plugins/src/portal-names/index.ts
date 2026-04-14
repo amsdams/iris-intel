@@ -7,6 +7,8 @@ const PortalNamesPlugin: IRISPlugin = {
     version: '0.1.0',
     description: 'Logs portal names to the console.',
     author: 'IRIS Team',
+    defaultEnabled: true,
+    capabilities: ['stats', 'debug'],
   },
   setup: (api: IRIS_API) => {
     console.log('Portal Names Plugin setup');

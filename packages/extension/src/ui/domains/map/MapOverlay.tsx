@@ -18,13 +18,80 @@ type PluginFeatureProperties = {
   id?: string;
   color?: string;
   isPlayerMarker?: boolean;
+  isHtmlMarker?: boolean;
+  isLabelMarker?: boolean;
+  isInteractive?: boolean;
   opacity?: number;
   label?: string;
+  minZoom?: number;
+  maxZoom?: number;
 } & Record<string, unknown>;
 
 interface MarkerRegistryEntry {
   marker: maplibregl.Marker;
   clickTarget: HTMLDivElement | null;
+}
+
+function isFeatureVisibleAtZoom(properties: PluginFeatureProperties, zoom: number): boolean {
+  const minZoom = typeof properties.minZoom === 'number' ? properties.minZoom : null;
+  const maxZoom = typeof properties.maxZoom === 'number' ? properties.maxZoom : null;
+
+  if (minZoom !== null && zoom < minZoom) {
+    return false;
+  }
+
+  if (maxZoom !== null && zoom > maxZoom) {
+    return false;
+  }
+
+  return true;
+}
+
+function bindPluginMarkerClickTarget(
+  clickTarget: HTMLDivElement | null,
+  feature: GeoJSON.Feature,
+  isInteractive: boolean
+): void {
+  if (!clickTarget) {
+    return;
+  }
+
+  if (!isInteractive) {
+    clickTarget.style.cursor = 'default';
+    clickTarget.onclick = null;
+    return;
+  }
+
+  clickTarget.style.cursor = 'pointer';
+  clickTarget.onclick = (e: MouseEvent): void => {
+    e.stopPropagation();
+    useStore.getState().setSelectedPluginFeature(feature);
+  };
+}
+
+function getPluginMarkerHtml(properties: PluginFeatureProperties, color: string): string {
+  const isLabelMarker = properties.isLabelMarker === true;
+
+  if (isLabelMarker) {
+    const labelText = properties.label || '';
+    return `
+      <div style="display: flex; align-items: center; justify-content: center; pointer-events: auto; position: relative;">
+        <div data-iris-plugin-label="true" style="white-space: nowrap; background: rgba(0,0,0,0.82); color: ${color}; padding: 1px 5px; border-radius: 999px; font-size: 11px; line-height: 1.2; border: 1px solid ${color}; font-weight: bold; box-shadow: 0 0 4px rgba(0,0,0,0.45);">${labelText}</div>
+      </div>
+    `;
+  }
+
+  const labelHtml = properties.label
+    ? `<div data-iris-plugin-label="true" style="position: absolute; left: 15px; top: -5px; white-space: nowrap; background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; border: 1px solid ${color}; pointer-events: none;">${properties.label}</div>`
+    : '';
+
+  return `
+    <div style="display: flex; flex-direction: column; align-items: center; pointer-events: auto; position: relative;">
+      ${labelHtml}
+      <div style="background: ${color}; width: 12px; height: 12px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5);"></div>
+      <div style="width: 2px; height: 10px; background: white; margin-top: -2px;"></div>
+    </div>
+  `;
 }
 
 type DragRotateInternals = maplibregl.Map['dragRotate'] & {
@@ -326,6 +393,7 @@ export function MapOverlay(): JSX.Element {
               'all',
               ['==', '$type', 'Point'],
               ['!=', 'isPlayerMarker', true],
+              ['!=', 'isHtmlMarker', true],
             ],
             paint: {
               'circle-radius': 8,
@@ -615,10 +683,15 @@ export function MapOverlay(): JSX.Element {
     if (!map.current || !styleLoaded) return;
 
     const activeMarkerIds = new Set<string>();
+    const currentZoom = map.current.getZoom();
 
     pluginFeatures.features.forEach((feature) => {
       const properties = (feature.properties ?? {}) as PluginFeatureProperties;
-      if (!properties.isPlayerMarker || feature.geometry.type !== 'Point' || !map.current) {
+      if ((!properties.isPlayerMarker && !properties.isHtmlMarker) || feature.geometry.type !== 'Point' || !map.current) {
+        return;
+      }
+
+      if (!isFeatureVisibleAtZoom(properties, currentZoom)) {
         return;
       }
 
@@ -634,62 +707,39 @@ export function MapOverlay(): JSX.Element {
       const opacity = typeof properties.opacity === 'number' ? String(properties.opacity) : '1';
       const coordinates = feature.geometry.coordinates as [number, number];
       const existing = pluginMarkers.current.get(markerId);
+      const isLabelMarker = properties.isLabelMarker === true;
+      const isInteractive = properties.isInteractive !== false;
 
       if (existing) {
         existing.marker.setLngLat(coordinates);
         existing.marker.getElement().style.opacity = opacity;
         if (existing.clickTarget) {
+          const textLabel = existing.clickTarget.querySelector('[data-iris-plugin-label="true"]') as HTMLDivElement | null;
+          if (textLabel) {
+            textLabel.textContent = properties.label || '';
+            textLabel.style.border = `1px solid ${color}`;
+            textLabel.style.color = color;
+            textLabel.style.background = isLabelMarker ? 'rgba(0,0,0,0.82)' : 'rgba(0,0,0,0.7)';
+          }
+
           const pinHead = existing.clickTarget.querySelector('div[style*="border-radius: 50%"]') as HTMLDivElement | null;
           if (pinHead) {
             pinHead.style.background = color;
           }
-          const labelDiv = existing.clickTarget.querySelector('div[style*="position: absolute"]') as HTMLDivElement | null;
-          if (labelDiv && properties.label) {
-            labelDiv.textContent = properties.label;
-            labelDiv.style.border = `1px solid ${color}`;
-          } else if (!labelDiv && properties.label) {
-            // Add label if it didn't exist
-            const newLabel = document.createElement('div');
-            newLabel.style.cssText = `position: absolute; left: 15px; top: -5px; white-space: nowrap; background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; border: 1px solid ${color}; pointer-events: none;`;
-            newLabel.textContent = properties.label;
-            existing.clickTarget.prepend(newLabel);
-          } else if (labelDiv && !properties.label) {
-            labelDiv.remove();
-          }
-
-          existing.clickTarget.onclick = (e: MouseEvent): void => {
-            e.stopPropagation();
-            useStore.getState().setSelectedPluginFeature(feature);
-          };
         }
+        bindPluginMarkerClickTarget(existing.clickTarget, feature, isInteractive);
         return;
       }
 
       const el = document.createElement('div');
       el.style.pointerEvents = 'none';
       el.style.opacity = opacity;
-
-      const labelHtml = properties.label 
-        ? `<div style="position: absolute; left: 15px; top: -5px; white-space: nowrap; background: rgba(0,0,0,0.7); color: white; padding: 2px 6px; border-radius: 4px; font-size: 11px; border: 1px solid ${color}; pointer-events: none;">${properties.label}</div>`
-        : '';
-
-      el.innerHTML = `
-          <div style="display: flex; flex-direction: column; align-items: center; cursor: pointer; pointer-events: auto; position: relative;">
-              ${labelHtml}
-              <div style="background: ${color}; width: 12px; height: 12px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5);"></div>
-              <div style="width: 2px; height: 10px; background: white; margin-top: -2px;"></div>
-          </div>
-      `;
+      el.innerHTML = getPluginMarkerHtml(properties, color);
 
       const clickTarget = el.firstElementChild as HTMLDivElement | null;
-      if (clickTarget) {
-        clickTarget.onclick = (e: MouseEvent): void => {
-          e.stopPropagation();
-          useStore.getState().setSelectedPluginFeature(feature);
-        };
-      }
+      bindPluginMarkerClickTarget(clickTarget, feature, isInteractive);
 
-      const marker = new maplibregl.Marker({ element: el, anchor: 'bottom', offset: [0, -20] })
+      const marker = new maplibregl.Marker({ element: el, anchor: isLabelMarker ? 'center' : 'bottom', offset: isLabelMarker ? [0, 0] : [0, -20] })
         .setLngLat(coordinates)
         .addTo(map.current);
 
@@ -702,7 +752,7 @@ export function MapOverlay(): JSX.Element {
         pluginMarkers.current.delete(markerId);
       }
     });
-  }, [pluginFeatures, styleLoaded]);
+  }, [pluginFeatures, styleLoaded, zoom]);
 
   return (
       <div

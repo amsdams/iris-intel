@@ -274,6 +274,40 @@ Tasks:
 | Stage entity relationship cleanup before any full entity-store rewrite | Open | keep the current split `portals`/`links`/`fields` model for now, but incrementally add relationship-aware cleanup: portal delete should remove attached links now, and later investigate storing field anchor portal ids or secondary indexes before considering a broader normalized graph refactor |
 | Investigate heuristic stale-portal repair from link/field contradictions | Open | debug-only first: detect links or fields whose team contradicts currently stored anchor portal teams; if reliable, consider an opt-in inferred-team repair path instead of silently rewriting portal teams |
 
+### Plugin overlay and highlighter baseline is partially implemented
+Status: `In Progress`
+
+Outcome:
+- four map-overlay plugins now exist in the local plugin architecture
+- plugin feature ownership is per-plugin instead of one shared overwrite bucket
+- highlighter semantics are still IRIS-specific and not yet aligned with an IITC-style "selected highlighter" contract
+
+Tasks:
+
+| Task | Status | Notes |
+| --- | --- | --- |
+| Add portal level highlighter plugin | Done | basic point overlay with Ingress level colours exists |
+| Add recharge-need highlighter plugin | Done | basic point overlay using health thresholds exists |
+| Add portal level label plugin | Done | HTML label markers exist for portal levels |
+| Add portal key count plugin | Done | inventory-backed HTML labels exist using recursive capsule-aware key counting |
+| Merge plugin-rendered features per plugin instead of last-writer-wins | Done | `PluginManager` now stores plugin features by plugin id and publishes a merged collection |
+| Extend plugin SDK with portal level/health and inventory access | Done | plugin API now exposes enough state for the current overlay plugins |
+| Load the new plugins in the extension runtime | Done | all four plugins are currently registered at startup |
+| Let plugins declare safer defaults and lightweight capability hints | Done | manifests can now mark overlay plugins as default-off and label-heavy without forcing a single-highlighter model |
+| Keep label-heavy plugin markers hidden until closer zoom | Done | level-label and key-count overlays now stay out of low-zoom views |
+| Remove generic popup behavior from non-interactive label overlays | Done | portal key counts and level labels no longer open the plugin feature popup |
+| Decide whether highlighters should be mutually exclusive or just ordinary concurrent plugins | Open | IITC references use a single selected highlighter, but IRIS has not committed to that model yet |
+| Separate plugin HTML markers from generic GeoJSON point rendering | Open | current `MapOverlay` support works, but it is still a special-case renderer path |
+| Add visibility/zoom guardrails for label-heavy plugins | Done | initial `minZoom` gating now reduces clutter for level labels and key counts |
+
+Bugs:
+
+| Bug | Status | Notes |
+| --- | --- | --- |
+| New plugins auto-enable on first load even when they add map clutter | Done | overlay/highlighter plugins can now opt into safer default-off startup via manifest metadata |
+| Level and recharge overlays can stack visually on the same portal | Investigating | current IRIS model allows concurrent overlays; this may be acceptable, but it needs an explicit product decision |
+| HTML marker rendering is coupled to `MapOverlay` internals | Open | functional for now, but still a maintenance risk if more marker-style plugins are added |
+
 ### Entity cleanup and endpoint diagnostics are more relationship-aware
 Status: `In Progress`
 

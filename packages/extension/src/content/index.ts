@@ -6,6 +6,10 @@ import PortalNamesPlugin from '../../../plugins/src/portal-names';
 import ThemeSelectorPlugin from '../../../plugins/src/theme-selector';
 import PlayerTrackerPlugin from '../../../plugins/src/player-tracker';
 import ExportDataPlugin from '../../../plugins/src/export-data';
+import PortalLevelFillPlugin from '../../../plugins/src/portal-level-fill';
+import PortalHealthFillPlugin from '../../../plugins/src/portal-health-fill';
+import PortalLevelLabelsPlugin from '../../../plugins/src/portal-level-labels';
+import PortalKeyCountLabelsPlugin from '../../../plugins/src/portal-key-count-labels';
 import { IRISPlugin } from '@iris/plugin-sdk';
 import { handleEntities } from './domains/entities/handler';
 import { IntelMapData } from './domains/entities/types';
@@ -81,6 +85,10 @@ pluginManager.load(PortalNamesPlugin as IRISPlugin);
 pluginManager.load(ThemeSelectorPlugin as IRISPlugin);
 pluginManager.load(PlayerTrackerPlugin as IRISPlugin);
 pluginManager.load(ExportDataPlugin as IRISPlugin);
+pluginManager.load(PortalLevelFillPlugin as IRISPlugin);
+pluginManager.load(PortalHealthFillPlugin as IRISPlugin);
+pluginManager.load(PortalLevelLabelsPlugin as IRISPlugin);
+pluginManager.load(PortalKeyCountLabelsPlugin as IRISPlugin);
 requestCoordinator.start();
 
 window.addEventListener('message', (event: MessageEvent) => {

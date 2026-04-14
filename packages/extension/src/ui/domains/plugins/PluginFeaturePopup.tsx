@@ -23,6 +23,7 @@ interface PlayerAction {
 interface PluginFeatureProperties extends Record<string, unknown> {
     color?: string;
     name?: string;
+    label?: string;
     time?: number;
     portalName?: string;
     lat?: number;
@@ -43,6 +44,7 @@ export function PluginFeaturePopup(): JSX.Element | null {
     const properties = (selectedFeature.properties ?? {}) as PluginFeatureProperties;
     const {
         name = 'Unknown',
+        label,
         time = 0,
         portalName = 'Unknown portal',
         lat = 0,
@@ -101,15 +103,17 @@ export function PluginFeaturePopup(): JSX.Element | null {
         >
             <div className="iris-plugin-feature-details">
                 <div className="iris-feature-row iris-feature-player">
-                    <span className="iris-feature-label">Player: </span>
+                    <span className="iris-feature-label">{isPlayerMarker ? 'Player: ' : 'Label: '}</span>
                     <span className="iris-feature-value-strong">
-                        {name}
+                        {isPlayerMarker ? name : (label || name)}
                     </span>
                 </div>
-                <div className="iris-feature-row iris-feature-time">
-                    <span className="iris-feature-label">Time: </span>
-                    <span>{new Date(time).toLocaleString()}</span>
-                </div>
+                {isPlayerMarker && (
+                    <div className="iris-feature-row iris-feature-time">
+                        <span className="iris-feature-label">Time: </span>
+                        <span>{new Date(time).toLocaleString()}</span>
+                    </div>
+                )}
                 <div className="iris-feature-row iris-feature-portal">
                     <span className="iris-feature-label">Portal: </span>
                     <span 

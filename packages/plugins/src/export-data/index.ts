@@ -7,6 +7,8 @@ const ExportDataPlugin: IRISPlugin = {
     version: '1.0.0',
     description: 'Allows exporting captured portal, link, and field data to JSON, KML, or GeoJSON.',
     author: 'IRIS Team',
+    defaultEnabled: true,
+    capabilities: ['menu', 'export'],
   },
   setup: (api: IRIS_API) => {
     api.ui.addMenuItem('export-data-trigger', 'Export Data', () => {
