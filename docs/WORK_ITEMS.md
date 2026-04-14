@@ -286,16 +286,17 @@ Tasks:
 
 | Task | Status | Notes |
 | --- | --- | --- |
-| Add portal level highlighter plugin | Done | basic point overlay with Ingress level colours exists |
-| Add recharge-need highlighter plugin | Done | basic point overlay using health thresholds exists |
-| Add portal level label plugin | Done | HTML label markers exist for portal levels |
-| Add portal key count plugin | Done | inventory-backed HTML labels exist using recursive capsule-aware key counting |
+| Add portal level fill plugin | Done | basic point overlay with Ingress level colours exists |
+| Add portal health fill plugin | Done | basic point overlay using health thresholds exists |
+| Add portal level labels plugin | Done | HTML label markers exist for portal levels |
+| Add portal key count labels plugin | Done | inventory-backed HTML labels exist using recursive capsule-aware key counting |
 | Merge plugin-rendered features per plugin instead of last-writer-wins | Done | `PluginManager` now stores plugin features by plugin id and publishes a merged collection |
 | Extend plugin SDK with portal level/health and inventory access | Done | plugin API now exposes enough state for the current overlay plugins |
 | Load the new plugins in the extension runtime | Done | all four plugins are currently registered at startup |
 | Let plugins declare safer defaults and lightweight capability hints | Done | manifests can now mark overlay plugins as default-off and label-heavy without forcing a single-highlighter model |
 | Keep label-heavy plugin markers hidden until closer zoom | Done | level-label and key-count overlays now stay out of low-zoom views |
 | Remove generic popup behavior from non-interactive label overlays | Done | portal key counts and level labels no longer open the plugin feature popup |
+| Rename overlay plugins to clearer `Fill` / `Labels` names and align ids/paths | Done | renamed to `portal-level-fill`, `portal-health-fill`, and `portal-key-count-labels`; directory names, ids, and imports now match |
 | Decide whether highlighters should be mutually exclusive or just ordinary concurrent plugins | Open | IITC references use a single selected highlighter, but IRIS has not committed to that model yet |
 | Separate plugin HTML markers from generic GeoJSON point rendering | Open | current `MapOverlay` support works, but it is still a special-case renderer path |
 | Add visibility/zoom guardrails for label-heavy plugins | Done | initial `minZoom` gating now reduces clutter for level labels and key counts |

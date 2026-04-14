@@ -24,11 +24,15 @@ IRIS overlays a fully interactive [MapLibre GL](https://maplibre.org/) map on to
 - 📡 **Real-time entity capture** — portals, links and fields via XHR/Fetch interception
 - 🔄 **Bidirectional map sync** — pan either map, both follow
 - 🏛️ **Portal details** — name, image, level, health, owner, resonators and mods on click
+- 🎒 **Inventory-aware UI** — inventory popup, Intel-like grouping, capsule-aware totals, and portal key counts in portal details
 - 👤 **Player stats** — agent name, level, AP, XM capacity, and progress bars via `window.PLAYER` interception
+- 💬 **COMM overlay** — tabbed comm views with clickable portal names and player-tracker integration
+- 🗺️ **Mission and artifact support** — mission routes, mission details, artifact overlays, and viewport mission requests
 - 🔍 **Location search** — Nominatim/OpenStreetMap geocoding with result dropdown
 - 📊 **Scoring** — Real-time Global MU scores and detailed Regional Cell rankings
+- 🧭 **Persistent map state** — camera state survives reloads and Intel search jumps sync back into IRIS
 - 🛡️ **Tactical Filtering** — Filter portals by Faction, Level (L1-L8), and Health buckets (25%, 50%, 75%, 100%)
-- 🧩 **Plugin system** — structured manifest API with `setup()`/`teardown()` lifecycle
+- 🧩 **Plugin system** — typed manifest API with `setup()`/`teardown()` lifecycle, persisted enable-state, and first-party overlay/menu plugins
 - ⚡ **Lightweight** — Preact (3kb) + Zustand (1.5kb), no heavy framework
 
 ---
@@ -117,30 +121,41 @@ npm run build
 Plugins declare a manifest and receive a typed API:
 
 ```typescript
-import type { PluginDefinition } from '@iris/core';
+import { IRISPlugin } from '@iris/plugin-sdk';
 
-const MyPlugin: PluginDefinition = {
+const MyPlugin: IRISPlugin = {
   manifest: {
-    id: 'com.github.yourname.my-plugin',
+    id: 'my-plugin',
     name: 'My Plugin',
     version: '1.0.0',
-    minCoreVersion: '>=0.1.0',
     description: 'Does something useful',
     author: 'Your Name',
-    permissions: ['portals:read', 'map:overlay'],
+    defaultEnabled: true,
+    capabilities: ['menu'],
   },
   setup(api) {
-    api.portals.onChange((portals) => {
+    api.portals.subscribe((portals) => {
       console.log('Portal count:', Object.keys(portals).length);
     });
   },
-  teardown() {
+  teardown(api) {
     // cleanup
   },
 };
 
 export default MyPlugin;
 ```
+
+Current first-party plugins include:
+
+- `portal-names`
+- `theme-selector`
+- `export-data`
+- `player-tracker`
+- `portal-level-fill`
+- `portal-health-fill`
+- `portal-level-labels`
+- `portal-key-count-labels`
 
 ---
 
@@ -184,21 +199,21 @@ export default MyPlugin;
 - [x] **COMM / Chat Overlay** (Tabbed views, clickable portal names)
 - [x] **Data Export** (Plugin: JSON, KML, GeoJSON)
 - [x] **Scoring UI** (Global and Regional popups)
+- [x] **Inventory Viewer** (Popup-driven fetch, grouping, capsule-aware totals)
+- [x] **Portal key counts** (Portal details plus plugin label overlay)
+- [x] **Mission and Artifact layers**
+- [x] **Portal History indicators** (Visited/Captured/Scanned)
 - [ ] **Search Enhancements:**
-    - [ ] Portal Search via Niantic API (`/r/getPortalSearch`)
-    - [ ] Coordinate jump support
-- [ ] **Inventory Viewer:**
-    - [ ] Integrated item view for C.O.R.E. members (`/r/getInventory`)
+    - [ ] Portal Search via verified Intel request path
 - [ ] **Plugin System Enhancements:**
-    - [ ] Support for custom map layers from plugins
-    - [ ] Dynamic plugin loading
+    - [ ] Reduce `MapOverlay` special-casing for HTML plugin markers
+    - [ ] Decide whether highlighter-style overlays should stay concurrent or become mutually exclusive
 - [ ] **Performance Optimizations:**
     - [ ] GeoJSON source throttling for extremely dense areas
 - [ ] **Mobile:**
     - [ ] Decision between Capacitor App vs. Mobile Browser Extension
 - [ ] **Features:**
-    - [ ] Portal History indicators (Visited/Captured/Scanned)
-    - [ ] Mission and Artifact layers
+    - [ ] Draw-tools style planning plugin
 
 ---
 
@@ -224,10 +239,9 @@ Contributions are welcome. Please open an issue before submitting a pull request
 
 ## License
 
-IRIS core is licensed under [GPL-3.0](LICENSE).
-The plugin SDK (`@iris/core`) is licensed under [MIT](packages/core/LICENSE).
+IRIS is licensed under [GPL-3.0](LICENSE).
 
-Plugin authors may use any licence for their own plugins.
+Plugin authors may use any licence for their own plugins, subject to the interfaces and dependencies they build against.
 
 ---
 
