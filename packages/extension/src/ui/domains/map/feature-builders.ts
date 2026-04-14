@@ -9,6 +9,7 @@ type PortalFeatureProperties = {
   visited: boolean;
   captured: boolean;
   scanned: boolean;
+  ornaments: string[];
 } & Record<string, unknown>;
 
 type TeamFeatureProperties = {
@@ -19,6 +20,7 @@ export type PortalFeature = GeoJSON.Feature<GeoJSON.Point, PortalFeatureProperti
 export type LinkFeature = GeoJSON.Feature<GeoJSON.LineString, TeamFeatureProperties>;
 export type FieldFeature = GeoJSON.Feature<GeoJSON.Polygon, TeamFeatureProperties>;
 export type ArtifactFeature = GeoJSON.Feature<GeoJSON.Point, { portalId: string; type: string; ids: string[] }>;
+export type OrnamentFeature = GeoJSON.Feature<GeoJSON.Point, { portalId: string; team: string; ornaments: string[] }>;
 export type MissionRouteFeature = GeoJSON.Feature<GeoJSON.LineString, Record<string, unknown>>;
 export type MissionWaypointFeature = GeoJSON.Feature<GeoJSON.Point, Record<string, unknown>>;
 
@@ -33,6 +35,14 @@ type PortalFilters = TeamVisibility & {
   showLevel: Record<number, boolean>;
   showHealth: Record<number, boolean>;
 };
+
+type OrnamentFilters = PortalFilters & {
+  showOrnaments: boolean;
+};
+
+interface ArtifactFilters {
+  showArtifacts: boolean;
+}
 
 type LinkFilters = TeamVisibility & {
   showLinks: boolean;
@@ -84,6 +94,7 @@ export const buildPortalFeatures = (
         visited: !!portal.visited,
         captured: !!portal.captured,
         scanned: !!portal.scanned,
+        ornaments: portal.ornaments || [],
       } satisfies PortalFeatureProperties,
     }));
 
@@ -135,8 +146,10 @@ export const buildFieldFeatures = (
 
 export const buildArtifactFeatures = (
   artifacts: Record<string, Artifact>,
-  portals: Record<string, Portal>
+  portals: Record<string, Portal>,
+  filters: ArtifactFilters
 ): ArtifactFeature[] =>
+  (!filters.showArtifacts ? [] :
   Object.values(artifacts)
     .map((artifact) => {
       const portal = portals[artifact.portalId];
@@ -152,7 +165,44 @@ export const buildArtifactFeatures = (
         },
       } as ArtifactFeature;
     })
-    .filter((f): f is ArtifactFeature => f !== null);
+    .filter((f): f is ArtifactFeature => f !== null));
+
+export const buildOrnamentFeatures = (
+  portals: Record<string, Portal>,
+  mockOrnaments: Record<string, string[]>,
+  filters: OrnamentFilters
+): OrnamentFeature[] =>
+  (!filters.showOrnaments ? [] :
+  Object.values(portals)
+    .filter((portal) => {
+      const ornaments = [...(portal.ornaments || []), ...(mockOrnaments[portal.id] || [])];
+      if (ornaments.length === 0) return false;
+      if (portal.team === 'N') {
+        return filters.showUnclaimedPortals;
+      }
+      if (portal.team === 'M' && !filters.showMachina) return false;
+      if (portal.team === 'R' && !filters.showResistance) return false;
+      if (portal.team === 'E' && !filters.showEnlightened) return false;
+      if (portal.level !== undefined && !filters.showLevel[portal.level]) return false;
+
+      if (portal.health !== undefined) {
+        if (portal.health <= 25 && !filters.showHealth[25]) return false;
+        if (portal.health > 25 && portal.health <= 50 && !filters.showHealth[50]) return false;
+        if (portal.health > 50 && portal.health <= 75 && !filters.showHealth[75]) return false;
+        if (portal.health > 75 && !filters.showHealth[100]) return false;
+      }
+
+      return true;
+    })
+    .map((portal) => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [portal.lng, portal.lat] },
+      properties: {
+        portalId: portal.id,
+        team: portal.team,
+        ornaments: [...(portal.ornaments || []), ...(mockOrnaments[portal.id] || [])],
+      },
+    })));
 
 export const buildMissionRouteFeatures = (mission: MissionDetails | null): MissionRouteFeature[] => {
   if (!mission) return [];

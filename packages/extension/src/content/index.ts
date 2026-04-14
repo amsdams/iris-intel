@@ -54,6 +54,66 @@ let hasInitialPosition = false;
 let inventoryMockPreviousSubscription: boolean | null = null;
 const requestCoordinator = createRequestCoordinator();
 
+function buildMockArtifacts(): ArtifactData {
+  const state = useStore.getState();
+  const allPortals = Object.values(state.portals);
+  const bounds = state.mapState.bounds;
+
+  const inBoundsPortals = bounds
+    ? allPortals.filter((portal) =>
+        portal.lat >= bounds.minLatE6 / 1e6 &&
+        portal.lat <= bounds.maxLatE6 / 1e6 &&
+        portal.lng >= bounds.minLngE6 / 1e6 &&
+        portal.lng <= bounds.maxLngE6 / 1e6
+      )
+    : [];
+
+  const candidatePortals = (inBoundsPortals.length > 0 ? inBoundsPortals : allPortals)
+    .filter((portal) => portal.team !== 'N')
+    .slice(0, 3);
+
+  if (candidatePortals.length === 0) {
+    return { result: [] };
+  }
+
+  return {
+    result: candidatePortals.map((portal, index) => [
+      portal.id,
+      Date.now(),
+      [
+        index % 2 === 0 ? 'shard' : 'target',
+        [`${index + 1}01`, `${index + 1}02`],
+      ],
+    ]),
+  };
+}
+
+function buildMockOrnaments(): Record<string, string[]> {
+  const state = useStore.getState();
+  const allPortals = Object.values(state.portals);
+  const bounds = state.mapState.bounds;
+
+  const inBoundsPortals = bounds
+    ? allPortals.filter((portal) =>
+        portal.lat >= bounds.minLatE6 / 1e6 &&
+        portal.lat <= bounds.maxLatE6 / 1e6 &&
+        portal.lng >= bounds.minLngE6 / 1e6 &&
+        portal.lng <= bounds.maxLngE6 / 1e6
+      )
+    : [];
+
+  const candidatePortals = (inBoundsPortals.length > 0 ? inBoundsPortals : allPortals)
+    .filter((portal) => portal.team !== 'N')
+    .slice(0, 5);
+
+  return Object.fromEntries(
+    candidatePortals.map((portal, index) => [
+      portal.id,
+      [index % 2 === 0 ? 'ap' : 'event'],
+    ])
+  );
+}
+
 // ---------------------------------------------------------------------------
 // UI bootstrap
 // ---------------------------------------------------------------------------
@@ -176,6 +236,26 @@ window.addEventListener('message', (event: MessageEvent) => {
         state.setHasSubscription(inventoryMockPreviousSubscription);
         inventoryMockPreviousSubscription = null;
       }
+      break;
+    }
+
+    case 'IRIS_LOAD_MOCK_ARTIFACTS': {
+      handleArtifacts(buildMockArtifacts());
+      break;
+    }
+
+    case 'IRIS_CLEAR_MOCK_ARTIFACTS': {
+      useStore.getState().updateArtifacts([]);
+      break;
+    }
+
+    case 'IRIS_LOAD_MOCK_ORNAMENTS': {
+      useStore.getState().setMockOrnaments(buildMockOrnaments());
+      break;
+    }
+
+    case 'IRIS_CLEAR_MOCK_ORNAMENTS': {
+      useStore.getState().clearMockOrnaments();
       break;
     }
 

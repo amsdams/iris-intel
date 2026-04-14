@@ -10,6 +10,7 @@ import {
   buildLinkFeatures,
   buildMissionRouteFeatures,
   buildMissionWaypointFeatures,
+  buildOrnamentFeatures,
   buildPortalFeatures,
   toFeatureCollection,
 } from './feature-builders';
@@ -119,6 +120,7 @@ export function MapOverlay(): JSX.Element {
   const links = useStore((state) => state.links);
   const fields = useStore((state) => state.fields);
   const artifacts = useStore((state) => state.artifacts);
+  const mockOrnaments = useStore((state) => state.mockOrnaments);
   const missionDetails = useStore((state) => state.missionDetails);
   const pluginFeatures = useStore((state) => state.pluginFeatures);
   const pluginMarkers = useRef<Map<string, MarkerRegistryEntry>>(new Map());
@@ -147,6 +149,8 @@ export function MapOverlay(): JSX.Element {
   // Layer visibility states from store
   const showFields = useStore((state) => state.showFields);
   const showLinks = useStore((state) => state.showLinks);
+  const showOrnaments = useStore((state) => state.showOrnaments);
+  const showArtifacts = useStore((state) => state.showArtifacts);
   const showResistance = useStore((state) => state.showResistance);
   const showEnlightened = useStore((state) => state.showEnlightened);
   const showMachina = useStore((state) => state.showMachina);
@@ -210,6 +214,10 @@ export function MapOverlay(): JSX.Element {
             data: { type: 'FeatureCollection', features: [] },
           },
           artifacts: {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: [] },
+          },
+          ornaments: {
             type: 'geojson',
             data: { type: 'FeatureCollection', features: [] },
           },
@@ -383,6 +391,22 @@ export function MapOverlay(): JSX.Element {
               'circle-stroke-width': 2,
               'circle-stroke-color': SEMANTIC_COLORS.ARTIFACT,
               'circle-stroke-opacity': 0.9,
+            },
+          },
+          {
+            id: 'ornaments',
+            type: 'circle',
+            source: 'ornaments',
+            paint: {
+              'circle-radius': [
+                'interpolate', ['linear'], ['zoom'],
+                10, 4,
+                15, 10,
+              ],
+              'circle-color': 'transparent',
+              'circle-stroke-width': 2,
+              'circle-stroke-color': '#ffffff',
+              'circle-stroke-opacity': 0.75,
             },
           },
           {
@@ -669,14 +693,23 @@ export function MapOverlay(): JSX.Element {
       showUnclaimedPortals,
     });
     getGeoJsonSource('fields')?.setData(toFeatureCollection(filteredFields));
-    getGeoJsonSource('artifacts')?.setData(toFeatureCollection(buildArtifactFeatures(artifacts, portals)));
+    getGeoJsonSource('artifacts')?.setData(toFeatureCollection(buildArtifactFeatures(artifacts, portals, { showArtifacts })));
+    getGeoJsonSource('ornaments')?.setData(toFeatureCollection(buildOrnamentFeatures(portals, mockOrnaments, {
+      showOrnaments,
+      showResistance,
+      showEnlightened,
+      showMachina,
+      showUnclaimedPortals,
+      showLevel,
+      showHealth,
+    })));
     getGeoJsonSource('mission-route')?.setData(toFeatureCollection(buildMissionRouteFeatures(missionDetails)));
     getGeoJsonSource('mission-waypoints')?.setData(toFeatureCollection(buildMissionWaypointFeatures(missionDetails)));
 
     // Plugin Features (Lines only here, points are HTML)
     getGeoJsonSource('plugin-features')?.setData(pluginFeatures);
 
-  }, [portals, links, fields, artifacts, missionDetails, showFields, showLinks, showResistance, showEnlightened, showMachina, showUnclaimedPortals, showLevel, showHealth, styleLoaded, pluginFeatures]);
+  }, [portals, links, fields, artifacts, mockOrnaments, missionDetails, showFields, showLinks, showOrnaments, showArtifacts, showResistance, showEnlightened, showMachina, showUnclaimedPortals, showLevel, showHealth, styleLoaded, pluginFeatures]);
 
   // Sync HTML Markers (Independent effect for performance)
   useEffect(() => {

@@ -55,6 +55,7 @@ export interface Portal {
     captured?: boolean;
     scanned?: boolean;
     hasMissionsStartingHere?: boolean;
+    ornaments?: string[];
 }
 
 export interface Link {
@@ -268,6 +269,8 @@ export interface IRISSettings {
     mapThemeId: string;
     showFields: boolean;
     showLinks: boolean;
+    showOrnaments: boolean;
+    showArtifacts: boolean;
     showResistance: boolean;
     showEnlightened: boolean;
     showMachina: boolean;
@@ -289,6 +292,8 @@ export const DEFAULT_SETTINGS: IRISSettings = {
     mapThemeId: 'DARK',
     showFields: true,
     showLinks: true,
+    showOrnaments: true,
+    showArtifacts: true,
     showResistance: true,
     showEnlightened: true,
     showMachina: true,
@@ -316,6 +321,8 @@ interface SettingsSlice extends IRISSettings {
     setMapTheme: (id: string) => void;
     toggleShowFields: () => void;
     toggleShowLinks: () => void;
+    toggleShowOrnaments: () => void;
+    toggleShowArtifacts: () => void;
     toggleShowResistance: () => void;
     toggleShowEnlightened: () => void;
     toggleShowMachina: () => void;
@@ -336,12 +343,15 @@ interface EntitiesSlice {
     links: Record<string, Link>;
     fields: Record<string, Field>;
     artifacts: Record<string, Artifact>;
+    mockOrnaments: Record<string, string[]>;
     plexts: Plext[];
     addPortal: (portal: Portal) => void;
     updatePortals: (portals: Partial<Portal>[]) => void;
     updateLinks: (links: Partial<Link>[]) => void;
     updateFields: (fields: Partial<Field>[]) => void;
     updateArtifacts: (artifacts: Artifact[]) => void;
+    setMockOrnaments: (ornaments: Record<string, string[]>) => void;
+    clearMockOrnaments: () => void;
     updatePlexts: (plexts: Plext[]) => void;
     removeEntities: (guids: string[]) => void;
 }
@@ -511,6 +521,8 @@ const createSettingsSlice: StateCreator<IRISState, [], [], SettingsSlice> = (set
     setMapTheme: (id) => set(() => ({ mapThemeId: id })),
     toggleShowFields: () => set((state) => ({ showFields: !state.showFields })),
     toggleShowLinks: () => set((state) => ({ showLinks: !state.showLinks })),
+    toggleShowOrnaments: () => set((state) => ({ showOrnaments: !state.showOrnaments })),
+    toggleShowArtifacts: () => set((state) => ({ showArtifacts: !state.showArtifacts })),
     toggleShowResistance: () => set((state) => ({ showResistance: !state.showResistance })),
     toggleShowEnlightened: () => set((state) => ({ showEnlightened: !state.showEnlightened })),
     toggleShowMachina: () => set((state) => ({ showMachina: !state.showMachina })),
@@ -535,6 +547,7 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
     links: {},
     fields: {},
     artifacts: {},
+    mockOrnaments: {},
     plexts: [],
     addPortal: (portal) => set((state) => ({
         portals: { ...state.portals, [portal.id]: portal }
@@ -570,6 +583,8 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
         });
         return { artifacts };
     }),
+    setMockOrnaments: (mockOrnaments) => set(() => ({ mockOrnaments })),
+    clearMockOrnaments: () => set(() => ({ mockOrnaments: {} })),
     updatePlexts: (newPlexts) => set((state) => {
         const all = [...state.plexts, ...newPlexts];
         const unique = Array.from(new Map(all.map(p => [p.id, p])).values());
@@ -581,6 +596,7 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
         let links = { ...state.links };
         let fields = { ...state.fields };
         let artifacts = { ...state.artifacts };
+        let mockOrnaments = { ...state.mockOrnaments };
         let changed = false;
         const deletedPortalIds = new Set<string>();
 
@@ -606,6 +622,11 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
                 artifacts = rest;
                 changed = true;
             }
+            if (mockOrnaments[id]) {
+                const { [id]: _, ...rest } = mockOrnaments;
+                mockOrnaments = rest;
+                changed = true;
+            }
         });
 
         if (deletedPortalIds.size > 0) {
@@ -626,7 +647,7 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
             });
         }
 
-        return changed ? { portals, links, fields, artifacts } : state;
+        return changed ? { portals, links, fields, artifacts, mockOrnaments } : state;
     }),
 });
 
@@ -931,6 +952,8 @@ export const useStore = create<IRISState>()(
                     mapThemeId: state.mapThemeId,
                     showFields: state.showFields,
                     showLinks: state.showLinks,
+                    showOrnaments: state.showOrnaments,
+                    showArtifacts: state.showArtifacts,
                     showResistance: state.showResistance,
                     showEnlightened: state.showEnlightened,
                     showMachina: state.showMachina,

@@ -23,6 +23,12 @@ export function FiltersPopup({ onClose }: FiltersPopupProps): JSX.Element {
     const showLinks = useStore((state) => state.showLinks);
     const toggleShowLinks = useStore((state) => state.toggleShowLinks);
 
+    const showOrnaments = useStore((state) => state.showOrnaments);
+    const toggleShowOrnaments = useStore((state) => state.toggleShowOrnaments);
+
+    const showArtifacts = useStore((state) => state.showArtifacts);
+    const toggleShowArtifacts = useStore((state) => state.toggleShowArtifacts);
+
     const showResistance = useStore((state) => state.showResistance);
     const toggleShowResistance = useStore((state) => state.toggleShowResistance);
 
@@ -89,6 +95,26 @@ export function FiltersPopup({ onClose }: FiltersPopupProps): JSX.Element {
                         className="iris-checkbox"
                     />
                     Links
+                </label>
+
+                <label className="iris-choice-item iris-label">
+                    <input
+                        type="checkbox"
+                        checked={showOrnaments}
+                        onChange={toggleShowOrnaments}
+                        className="iris-checkbox"
+                    />
+                    Ornaments
+                </label>
+
+                <label className="iris-choice-item iris-label">
+                    <input
+                        type="checkbox"
+                        checked={showArtifacts}
+                        onChange={toggleShowArtifacts}
+                        className="iris-checkbox"
+                    />
+                    Artifacts
                 </label>
 
                 <h3 className="iris-filter-section-title">Faction</h3>

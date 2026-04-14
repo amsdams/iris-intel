@@ -50,6 +50,7 @@ export function PortalInfoPopup(): JSX.Element | null {
     const linksOut = Object.values(links).filter((link) => link.fromPortalId === portal.id).length;
     const keyCount = countPortalKeys(inventory, portal.id);
     const inventoryHasLoaded = inventoryEndpoint.lastSuccessAt !== null;
+    const ornaments = portal.ornaments || [];
 
     const openPortalMissions = (): void => {
         document.dispatchEvent(
@@ -131,6 +132,21 @@ export function PortalInfoPopup(): JSX.Element | null {
                             {artifact.ids.map(id => (
                                 <span key={id} className="iris-portal-artifact-badge">
                                     #{id}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {ornaments.length > 0 && (
+                    <div className="iris-portal-ornament-section">
+                        <div className="iris-portal-ornament-title">
+                            ORNAMENTS
+                        </div>
+                        <div className="iris-portal-ornament-grid">
+                            {ornaments.map((ornament) => (
+                                <span key={ornament} className="iris-portal-ornament-badge">
+                                    {ornament}
                                 </span>
                             ))}
                         </div>

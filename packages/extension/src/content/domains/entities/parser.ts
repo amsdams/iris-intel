@@ -42,6 +42,9 @@ export function parseEntities(data: IntelMapData): {
           visited: !!(history & 1),
           captured: !!(history & 2),
           scanned: !!(history & 4),
+          ornaments: Array.isArray(entData[9])
+            ? (entData[9] as unknown[]).filter((ornament): ornament is string => typeof ornament === 'string')
+            : undefined,
         });
       } else if (entType === 'e') {
         const fromLat = parseFloat(entData[3] as string) / 1e6;

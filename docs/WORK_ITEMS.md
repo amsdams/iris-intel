@@ -297,6 +297,9 @@ Tasks:
 | Keep label-heavy plugin markers hidden until closer zoom | Done | level-label and key-count overlays now stay out of low-zoom views |
 | Remove generic popup behavior from non-interactive label overlays | Done | portal key counts and level labels no longer open the plugin feature popup |
 | Rename overlay plugins to clearer `Fill` / `Labels` names and align ids/paths | Done | renamed to `portal-level-fill`, `portal-health-fill`, and `portal-key-count-labels`; directory names, ids, and imports now match |
+| Add debug-only mock artifacts flow for local testing | Done | diagnostics can now synthesize artifact data from currently loaded portals and clear it again without relying on live events |
+| Add `Artifacts` and `Ornaments` filter toggles | Done | artifacts now have an explicit filter toggle, and ornaments now parse from portal entity payloads into a separate overlay layer with its own filter toggle |
+| Add debug-only mock ornaments flow for local testing | Done | diagnostics can now add and clear mock ornament overlays without overwriting live ornament data on portals |
 | Decide whether highlighters should be mutually exclusive or just ordinary concurrent plugins | Open | IITC references use a single selected highlighter, but IRIS has not committed to that model yet |
 | Separate plugin HTML markers from generic GeoJSON point rendering | Open | current `MapOverlay` support works, but it is still a special-case renderer path |
 | Add visibility/zoom guardrails for label-heavy plugins | Done | initial `minZoom` gating now reduces clutter for level labels and key counts |

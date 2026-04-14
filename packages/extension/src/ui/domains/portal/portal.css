@@ -276,6 +276,37 @@
     border: 1px solid var(--iris-artifact-border-soft, rgb(255 0 255 / 50%));
 }
 
+.iris-portal-ornament-section {
+    margin-top: 8px;
+    margin-bottom: 8px;
+    padding: 8px;
+    border: 1px solid rgb(255 255 255 / 18%);
+    background: rgb(255 255 255 / 6%);
+    border-radius: 4px;
+}
+
+.iris-portal-ornament-title {
+    font-size: 0.8em;
+    color: var(--iris-text-secondary, #888);
+    margin-bottom: 4px;
+    font-weight: bold;
+}
+
+.iris-portal-ornament-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.iris-portal-ornament-badge {
+    font-size: 0.8em;
+    color: var(--iris-text-base, #fff);
+    background: rgb(255 255 255 / 8%);
+    padding: 2px 6px;
+    border-radius: 2px;
+    border: 1px solid rgb(255 255 255 / 14%);
+}
+
 .iris-portal-section-title {
     font-size: 0.8em;
     color: var(--iris-text-secondary, #888);
