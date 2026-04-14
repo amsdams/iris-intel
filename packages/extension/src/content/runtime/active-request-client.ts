@@ -35,6 +35,20 @@ export function handleActiveRequestMessage(
             break;
         }
 
+        case 'IRIS_ENTITIES_FETCH': {
+            const tileKeys = Array.isArray(msg.tileKeys) ? msg.tileKeys : [];
+            if (tileKeys.length === 0) {
+                break;
+            }
+
+            runtime.safeIrisFetch('/r/getEntities', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
+                body: JSON.stringify({ tileKeys }),
+            }).catch((e) => console.error('IRIS: Entities fetch failed', e));
+            break;
+        }
+
         case 'IRIS_PORTAL_DETAILS_FETCH': {
             const { guid } = msg;
             runtime.safeIrisFetch('/r/getPortalDetails', {

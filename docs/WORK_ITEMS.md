@@ -106,6 +106,80 @@ Improvement ideas:
 | Add lightweight inventory filtering without changing fetch ownership or parser behavior | Done | popup now supports client-side name/metadata filtering for grouped inventory rows |
 | Keep the preserved-snapshot note truthful to the current inventory state | Open | current hint explains the behavior generically, but it is not yet gated on a tracked "showing preserved snapshot" state |
 
+## Live Map Freshness
+Status: `In Progress`
+
+Goal:
+- make IRIS map state update quickly and predictably enough that captures, link destroys, and field changes appear closer to Intel/IITC timing instead of waiting on incidental passive observation
+
+### Entity refresh ownership becomes an IRIS concern
+Status: `Open`
+
+Outcome:
+- IRIS should be able to request fresh `getEntities` data for the current view on its own schedule instead of relying only on Intel's fetch timing
+
+Tasks:
+
+| Task | Status | Notes |
+| --- | --- | --- |
+| Introduce a minimal IRIS-owned `getEntities` request path | Done | IRIS now posts active `getEntities` requests using IITC-style `tileKeys` derived from current bounds/zoom |
+| Route entity refresh through a dedicated coordinator/scheduler path | In Progress | request coordinator now owns startup, move-settle, and idle entity refresh, but coverage/dedupe policy is still intentionally simple |
+| Preserve CSRF/version/session discipline for active entity fetches | Done | active entity fetches now reuse the same guarded `safeIrisFetch` path as other Intel requests |
+| Keep passive interception as a complementary signal, not the only freshness source | Open | passive data is still useful, but should no longer be the sole reason the map becomes fresh |
+
+### Viewport-driven entity freshness is deliberate
+Status: `Open`
+
+Outcome:
+- current map bounds and zoom should drive when IRIS refreshes entities, with dedupe and backoff that stay understandable in logs
+
+Tasks:
+
+| Task | Status | Notes |
+| --- | --- | --- |
+| Refresh entities on startup after the initial map position is known | Done | startup catch-up now includes an active entity refresh when bounds are available |
+| Refresh entities after map movement settles | Done | moveend now schedules a short settle delay before refreshing entities for the current bounds |
+| Add a periodic idle refresh for the current view | Done | a conservative idle poll now keeps the current view fresh even without map movement |
+| Gate entity refresh by zoom, in-flight state, and recent freshness | In Progress | current gate covers in-flight requests and same-coverage freshness, but not richer zoom/backoff policy yet |
+| Record enough coverage state to decide whether a new refresh is needed | Open | likely current bounds, zoom, last success time, and a simple coverage/params key |
+
+### Entity merge and removal behavior stays correct under faster refresh
+Status: `Open`
+
+Outcome:
+- more frequent entity updates should not regress correctness, selection behavior, or cleanup
+
+Tasks:
+
+| Task | Status | Notes |
+| --- | --- | --- |
+| Review newer-data-wins rules for portals, links, and fields | Open | explicit merge policy matters more once IRIS owns refresh timing |
+| Keep delete cascades reliable under repeated entity refreshes | Open | portal deletion must continue to remove dependent links/fields safely |
+| Decide whether selected portals need temporary preservation semantics | Open | IITC keeps selected portals alive through some cleanup paths; IRIS should decide explicitly rather than incidentally |
+| Verify artifact and ornament overlays remain coherent after entity refreshes | Open | these overlays depend on portal presence and should not flicker or orphan under more active updates |
+
+### Freshness is observable in diagnostics
+Status: `Open`
+
+Outcome:
+- entity freshness work should be easy to inspect while tuning behavior
+
+Tasks:
+
+| Task | Status | Notes |
+| --- | --- | --- |
+| Add explicit entity freshness status to diagnostics | Open | current endpoint diagnostics label `entities` as event-driven; this will need to evolve once IRIS owns refreshes |
+| Log why an entity refresh was triggered or skipped | Open | startup, move-settle, idle refresh, stale coverage, in-flight, cooldown, and blocked-session reasons should be inspectable |
+| Distinguish passive entity updates from IRIS-owned refreshes in logs | Open | needed to tell whether freshness came from Intel or IRIS during testing |
+
+Improvement ideas:
+
+| Idea | Status | Notes |
+| --- | --- | --- |
+| Use COMM or other high-signal events as a hint to accelerate the next entity refresh | Open | good later refinement, but should follow basic viewport-driven ownership |
+| Move toward IITC-style coverage tracking instead of only time-based freshness | Open | likely phase 2 after the first minimal owned refresh loop works |
+| Consider a lightweight tile/cell cache only if simpler bounds-based refresh remains too stale or too noisy | Open | not a phase-1 requirement |
+
 ## Intel Parity Features
 Status: `In Progress`
 

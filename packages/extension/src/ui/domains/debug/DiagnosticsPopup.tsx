@@ -8,11 +8,12 @@ import {THEMES} from "../../theme";
 
 const POLLED_ENDPOINT_LABELS: Partial<Record<EndpointKey, string>> = {
     plexts: 'next auto refresh',
+    entities: 'next refresh',
     artifacts: 'next auto refresh',
 };
 
 const ENDPOINT_REFRESH_MODE_LABELS: Partial<Record<EndpointKey, string>> = {
-    entities: 'event-driven',
+    entities: 'startup + move settle + idle',
 };
 
 const ENDPOINT_FALLBACK_ORDER: EndpointKey[] = [

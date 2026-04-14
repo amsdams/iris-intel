@@ -20,11 +20,12 @@ const ENDPOINT_STALE_AFTER_MS: Partial<Record<EndpointKey, number>> = {
 
 const POLLED_ENDPOINT_LABELS: Partial<Record<EndpointKey, string>> = {
     plexts: 'next auto refresh',
+    entities: 'next refresh',
     artifacts: 'next auto refresh',
 };
 
 const ENDPOINT_REFRESH_MODE_LABELS: Partial<Record<EndpointKey, string>> = {
-    entities: 'refresh: event-driven',
+    entities: 'refresh: startup + move settle + idle',
 };
 
 const ENDPOINT_FALLBACK_ORDER: EndpointKey[] = [

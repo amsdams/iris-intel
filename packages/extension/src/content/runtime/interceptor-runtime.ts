@@ -59,6 +59,7 @@ export interface InterceptorMessage {
   maxLatE6?: number;
   minLngE6?: number;
   maxLngE6?: number;
+  tileKeys?: string[];
   lastQueryTimestamp?: number;
 }
 

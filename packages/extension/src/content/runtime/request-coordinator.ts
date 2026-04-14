@@ -1,11 +1,15 @@
 import { useStore } from '@iris/core';
 import { IRISMessage } from './message-types';
+import { buildEntityRequestPayload } from '../domains/entities/request';
 
 const PLEXT_COOLDOWN_MS = 5000;
 
 const PLEXT_POLL_MS = 120000;
 const ARTIFACTS_POLL_MS = 60000;
 const ARTIFACTS_STARTUP_DEDUP_MS = 5000;
+const ENTITY_IDLE_POLL_MS = 60000;
+const ENTITY_MOVE_SETTLE_MS = 1500;
+const ENTITY_FRESHNESS_TTL_MS = 10000;
 
 const STARTUP_GRACE_MS = 5000;
 const GAME_SCORE_TTL_MS = 10 * 60 * 1000;
@@ -36,14 +40,17 @@ export function createRequestCoordinator(): RequestCoordinator {
     let startupTimeoutId: number | null = null;
     let plextPollId: number | null = null;
     let artifactsPollId: number | null = null;
+    let entitiesPollId: number | null = null;
+    let entityMoveRefreshTimeoutId: number | null = null;
     let lastRegionScoreRequestKey: string | null = null;
+    let lastEntityCoverageKey: string | null = null;
 
     const postMessage = (message: Record<string, unknown>): void => {
         window.postMessage(message, '*');
     };
 
     const setNextAutoRefresh = (
-        key: 'artifacts' | 'subscription' | 'inventory' | 'plexts',
+        key: 'artifacts' | 'subscription' | 'inventory' | 'plexts' | 'entities',
         nextAutoRefreshAt: number | null,
     ): void => {
         useStore.getState().setEndpointNextAutoRefresh(key, nextAutoRefreshAt);
@@ -54,13 +61,47 @@ export function createRequestCoordinator(): RequestCoordinator {
         return sessionStatus === 'expired' || sessionStatus === 'initial_login_required';
     };
     const isWithinStartupGrace = (): boolean => Date.now() < startupGraceUntil;
-    const getEndpointDiagnostics = (key: 'artifacts' | 'subscription' | 'inventory' | 'plexts' | 'gameScore' | 'regionScore'): import('@iris/core').EndpointDiagnostics =>
+    const getEndpointDiagnostics = (key: 'artifacts' | 'subscription' | 'inventory' | 'plexts' | 'gameScore' | 'regionScore' | 'entities'): import('@iris/core').EndpointDiagnostics =>
         useStore.getState().endpointDiagnostics[key];
-    const isEndpointInFlight = (key: 'artifacts' | 'subscription' | 'inventory' | 'plexts' | 'gameScore' | 'regionScore'): boolean =>
+    const isEndpointInFlight = (key: 'artifacts' | 'subscription' | 'inventory' | 'plexts' | 'gameScore' | 'regionScore' | 'entities'): boolean =>
         getEndpointDiagnostics(key).status === 'in_flight';
-    const isEndpointFresh = (key: 'artifacts' | 'subscription' | 'inventory' | 'plexts' | 'gameScore' | 'regionScore', ttlMs: number): boolean => {
+    const isEndpointFresh = (key: 'artifacts' | 'subscription' | 'inventory' | 'plexts' | 'gameScore' | 'regionScore' | 'entities', ttlMs: number): boolean => {
         const lastSuccessAt = getEndpointDiagnostics(key).lastSuccessAt;
         return typeof lastSuccessAt === 'number' && Date.now() - lastSuccessAt < ttlMs;
+    };
+
+    const clearEntityMoveRefresh = (): void => {
+        if (entityMoveRefreshTimeoutId !== null) {
+            window.clearTimeout(entityMoveRefreshTimeoutId);
+            entityMoveRefreshTimeoutId = null;
+        }
+    };
+
+    const scheduleEntitiesFetch = (reason: 'startup' | 'move_settle' | 'idle'): void => {
+        if (isSessionBlocked()) return;
+
+        const { bounds, zoom } = useStore.getState().mapState;
+        if (!bounds) return;
+
+        const payload = buildEntityRequestPayload(bounds, zoom);
+        if (payload.tileKeys.length === 0) return;
+
+        const isSameCoverage = payload.coverageKey === lastEntityCoverageKey;
+        const shouldSkipForFreshness = isSameCoverage && isEndpointFresh('entities', ENTITY_FRESHNESS_TTL_MS);
+
+        if (isEndpointInFlight('entities') || shouldSkipForFreshness) {
+            return;
+        }
+
+        lastEntityCoverageKey = payload.coverageKey;
+        postMessage({
+            type: 'IRIS_ENTITIES_FETCH',
+            tileKeys: payload.tileKeys,
+        });
+
+        if (reason === 'idle') {
+            setNextAutoRefresh('entities', Date.now() + ENTITY_IDLE_POLL_MS);
+        }
     };
 
     const scheduleArtifactsFetch = (): void => {
@@ -89,6 +130,7 @@ export function createRequestCoordinator(): RequestCoordinator {
         }
 
         scheduleArtifactsFetch();
+        scheduleEntitiesFetch('startup');
     };
 
     const buildPlextPayload = (msg: Pick<IRISMessage, 'tab' | 'minTimestampMs' | 'maxTimestampMs' | 'ascendingTimestampOrder'>): Record<string, unknown> | null => {
@@ -154,6 +196,7 @@ export function createRequestCoordinator(): RequestCoordinator {
             startupGraceUntil = Date.now() + STARTUP_GRACE_MS;
             setNextAutoRefresh('plexts', startupGraceUntil);
             setNextAutoRefresh('artifacts', startupGraceUntil);
+            setNextAutoRefresh('entities', startupGraceUntil);
 
             if (startupTimeoutId === null) {
                 startupTimeoutId = window.setTimeout(() => {
@@ -161,6 +204,7 @@ export function createRequestCoordinator(): RequestCoordinator {
                     runStartupCatchup();
                     setNextAutoRefresh('plexts', Date.now() + PLEXT_POLL_MS);
                     setNextAutoRefresh('artifacts', Date.now() + ARTIFACTS_POLL_MS);
+                    setNextAutoRefresh('entities', Date.now() + ENTITY_IDLE_POLL_MS);
 
                     if (plextPollId === null) {
                         plextPollId = window.setInterval(() => {
@@ -174,6 +218,13 @@ export function createRequestCoordinator(): RequestCoordinator {
                             scheduleArtifactsFetch();
                             setNextAutoRefresh('artifacts', Date.now() + ARTIFACTS_POLL_MS);
                         }, ARTIFACTS_POLL_MS);
+                    }
+
+                    if (entitiesPollId === null) {
+                        entitiesPollId = window.setInterval(() => {
+                            scheduleEntitiesFetch('idle');
+                            setNextAutoRefresh('entities', Date.now() + ENTITY_IDLE_POLL_MS);
+                        }, ENTITY_IDLE_POLL_MS);
                     }
                 }, STARTUP_GRACE_MS);
             }
@@ -195,8 +246,15 @@ export function createRequestCoordinator(): RequestCoordinator {
                 artifactsPollId = null;
             }
 
+            if (entitiesPollId !== null) {
+                window.clearInterval(entitiesPollId);
+                entitiesPollId = null;
+            }
+
+            clearEntityMoveRefresh();
             setNextAutoRefresh('plexts', null);
             setNextAutoRefresh('artifacts', null);
+            setNextAutoRefresh('entities', null);
             setNextAutoRefresh('subscription', null);
             setNextAutoRefresh('inventory', null);
         },
@@ -214,6 +272,13 @@ export function createRequestCoordinator(): RequestCoordinator {
             if (isWithinStartupGrace()) {
                 return;
             }
+
+            clearEntityMoveRefresh();
+            entityMoveRefreshTimeoutId = window.setTimeout(() => {
+                entityMoveRefreshTimeoutId = null;
+                scheduleEntitiesFetch('move_settle');
+            }, ENTITY_MOVE_SETTLE_MS);
+            setNextAutoRefresh('entities', Date.now() + ENTITY_MOVE_SETTLE_MS);
 
             this.handlePlextsRequest({
                 type: 'IRIS_PLEXTS_REQUEST',
@@ -365,6 +430,10 @@ export function createRequestCoordinator(): RequestCoordinator {
         onRequestStart(url: string): void {
             if (url.includes('getPlexts')) {
                 lastPlextRequestTime = Date.now();
+            }
+
+            if (url.includes('getEntities')) {
+                setNextAutoRefresh('entities', null);
             }
         },
 
