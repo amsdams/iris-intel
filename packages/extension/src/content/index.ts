@@ -12,6 +12,7 @@ import PortalLevelLabelsPlugin from '../../../plugins/src/portal-level-labels';
 import PortalKeyCountLabelsPlugin from '../../../plugins/src/portal-key-count-labels';
 import { IRISPlugin } from '@iris/plugin-sdk';
 import { handleEntities } from './domains/entities/handler';
+import { getKnownOrnamentIds } from './domains/entities/ornaments';
 import { IntelMapData } from './domains/entities/types';
 import { handleInventory } from './domains/inventory/handler';
 import { InventoryData } from './domains/inventory/types';
@@ -104,14 +105,25 @@ function buildMockOrnaments(): Record<string, string[]> {
 
   const candidatePortals = (inBoundsPortals.length > 0 ? inBoundsPortals : allPortals)
     .filter((portal) => portal.team !== 'N')
-    .slice(0, 5);
+    .slice(0, 8);
 
-  return Object.fromEntries(
-    candidatePortals.map((portal, index) => [
-      portal.id,
-      [index % 2 === 0 ? 'ap' : 'event'],
-    ])
-  );
+  const ornamentIds = getKnownOrnamentIds();
+
+  if (candidatePortals.length === 0 || ornamentIds.length === 0) {
+    return {};
+  }
+
+  const mockOrnaments: Record<string, string[]> = {};
+
+  ornamentIds.forEach((ornamentId, index) => {
+    const portal = candidatePortals[index % candidatePortals.length];
+    if (!mockOrnaments[portal.id]) {
+      mockOrnaments[portal.id] = [];
+    }
+    mockOrnaments[portal.id].push(ornamentId);
+  });
+
+  return mockOrnaments;
 }
 
 // ---------------------------------------------------------------------------

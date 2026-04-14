@@ -3,6 +3,7 @@ import {PortalMod, PortalResonator, useStore} from '@iris/core';
 import {Popup} from '../../shared/Popup';
 import {THEMES, TEAM_NAME, UI_COLORS, getItemRarityColor} from '../../theme';
 import { countPortalKeys } from '../../../content/domains/inventory/parser';
+import { getOrnamentLabel } from '../../../content/domains/entities/ornaments';
 
 // ---------------------------------------------------------------------------
 // PortalInfoPopup
@@ -146,7 +147,7 @@ export function PortalInfoPopup(): JSX.Element | null {
                         <div className="iris-portal-ornament-grid">
                             {ornaments.map((ornament) => (
                                 <span key={ornament} className="iris-portal-ornament-badge">
-                                    {ornament}
+                                    {getOrnamentLabel(ornament)}
                                 </span>
                             ))}
                         </div>

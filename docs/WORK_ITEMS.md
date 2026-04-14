@@ -300,6 +300,8 @@ Tasks:
 | Add debug-only mock artifacts flow for local testing | Done | diagnostics can now synthesize artifact data from currently loaded portals and clear it again without relying on live events |
 | Add `Artifacts` and `Ornaments` filter toggles | Done | artifacts now have an explicit filter toggle, and ornaments now parse from portal entity payloads into a separate overlay layer with its own filter toggle |
 | Add debug-only mock ornaments flow for local testing | Done | diagnostics can now add and clear mock ornament overlays without overwriting live ornament data on portals |
+| Add a local ornament label map for IITC-known ids | Done | portal details now map the IITC-known anomaly, beacon, battle, reward, shard, and scouting ornament ids to friendly labels while unknown ids still fall back to raw codes |
+| Expand ornament mock data to cover all locally known ids | Done | diagnostics mock ornaments now distribute the full local known-id set across currently loaded portals instead of only a couple of placeholder values |
 | Decide whether highlighters should be mutually exclusive or just ordinary concurrent plugins | Open | IITC references use a single selected highlighter, but IRIS has not committed to that model yet |
 | Separate plugin HTML markers from generic GeoJSON point rendering | Open | current `MapOverlay` support works, but it is still a special-case renderer path |
 | Add visibility/zoom guardrails for label-heavy plugins | Done | initial `minZoom` gating now reduces clutter for level labels and key counts |
