@@ -184,6 +184,7 @@ export function Topbar({
     const [locStatus, setLocStatus] = useState<'NAVIGATE TO ME' | 'LOCATING...'>('NAVIGATE TO ME');
     const [showMenu, setShowMenu] = useState(false);
     const menuItems = useStore((state) => state.menuItems);
+    const { lat, lng, zoom } = useStore((state) => state.mapState);
     const themeId = useStore((state) => state.themeId);
     const theme = THEMES[themeId] || THEMES.INGRESS;
 
@@ -213,6 +214,24 @@ export function Topbar({
             },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
+    };
+
+    const zoomIn = (): void => {
+        const nextZoom = Math.min(zoom + 1, 20);
+        window.postMessage({
+            type: 'IRIS_MOVE_MAP',
+            center: { lat, lng },
+            zoom: nextZoom,
+        }, '*');
+    };
+
+    const zoomOut = (): void => {
+        const nextZoom = Math.max(zoom - 1, 3);
+        window.postMessage({
+            type: 'IRIS_MOVE_MAP',
+            center: { lat, lng },
+            zoom: nextZoom,
+        }, '*');
     };
 
     return (
@@ -330,8 +349,27 @@ export function Topbar({
                 <LocationSearch />
             </div>
 
-            {/* Right side: Navigate icon */}
+            {/* Right side: Navigate icon and Zoom controls */}
             <div className="iris-topbar-right">
+                <div className="iris-zoom-group">
+                    <button
+                        className="iris-zoom-btn"
+                        onClick={zoomOut}
+                        style={SHARED_STYLES.btnStyle(true, theme.AQUA)}
+                    >
+                        -
+                    </button>
+                    <div className="iris-zoom-indicator" style={{ color: theme.AQUA }}>
+                        Z{Math.floor(zoom)}
+                    </div>
+                    <button
+                        className="iris-zoom-btn"
+                        onClick={zoomIn}
+                        style={SHARED_STYLES.btnStyle(true, theme.AQUA)}
+                    >
+                        +
+                    </button>
+                </div>
                 <button
                     className="iris-geolocate-btn"
                     onClick={goToMyLocation}

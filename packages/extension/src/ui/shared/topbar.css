@@ -133,3 +133,46 @@
         max-width: 75vw;
     }
 }
+
+.iris-topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    pointer-events: auto;
+}
+
+.iris-zoom-group {
+    display: flex;
+    align-items: center;
+    background: rgb(0 0 0 / 85%);
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    padding: 2px;
+}
+
+.iris-zoom-btn {
+    background: transparent;
+    border: none;
+    color: inherit;
+    font-family: monospace;
+    font-size: 1.2em;
+    font-weight: bold;
+    padding: 0 8px;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.iris-zoom-btn:hover {
+    background: rgb(255 255 255 / 10%);
+}
+
+.iris-zoom-indicator {
+    font-family: monospace;
+    font-size: 0.85em;
+    font-weight: bold;
+    padding: 0 4px;
+    min-width: 2.5em;
+    text-align: center;
+    border-left: 1px solid currentColor;
+    border-right: 1px solid currentColor;
+}
