@@ -30,7 +30,7 @@ function buildFeatures(portals: Record<string, Portal>): GeoJSON.Feature[] {
         isHtmlMarker: true,
         isLabelMarker: true,
         isInteractive: false,
-        minZoom: 15,
+        /*minZoom: 15,*/
         opacity: 0.95,
         portalName: portal.name || 'Unknown portal',
         lat: portal.lat,

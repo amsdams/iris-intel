@@ -180,7 +180,7 @@ export function StatusBar(): JSX.Element {
 
     const lastEntitiesSuccessAt = endpointDiagnostics['entities']?.lastSuccessAt;
     const entitiesAgeMinutes = lastEntitiesSuccessAt ? Math.floor((Date.now() - lastEntitiesSuccessAt) / 60000) : null;
-    const isEntitiesStale = entitiesAgeMinutes !== null && entitiesAgeMinutes >= (ENDPOINT_STALE_AFTER_MS['entities']! / 60000);
+    const isEntitiesStale = entitiesAgeMinutes !== null && entitiesAgeMinutes >= ((ENDPOINT_STALE_AFTER_MS['entities'] ?? 300000) / 60000);
 
     return (
         <div 

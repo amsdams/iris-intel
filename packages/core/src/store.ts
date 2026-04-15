@@ -581,7 +581,7 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
                 // Special handling for arrays (mods, resonators, ornaments)
                 if (Array.isArray(newVal)) {
                     if (!Array.isArray(oldVal) || newVal.length >= oldVal.length) {
-                        (updated as any)[key] = newVal;
+                        Object.assign(updated, { [key]: newVal });
                         pChanged = true;
                     }
                     return;
@@ -589,7 +589,7 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
 
                 // Normal field update
                 if (newVal !== oldVal) {
-                    (updated as any)[key] = newVal;
+                    Object.assign(updated, { [key]: newVal });
                     pChanged = true;
                 }
             });
@@ -608,7 +608,7 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
         const tileFreshness = { ...state.tileFreshness };
         let changed = false;
 
-        const selectedPortalId = (state as any).selectedPortalId;
+        const selectedPortalId = (state as IRISState).selectedPortalId;
         const artifactPortalIds = new Set(Object.values(state.artifacts).map(a => a.portalId));
 
         // Helper to calculate approx distance in KM
@@ -624,29 +624,37 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
         };
 
         const deletedPortalIds = new Set<string>();
+        const nextPortals: Record<string, Portal> = {};
 
         Object.keys(portals).forEach((id) => {
             const p = portals[id];
             // Preserve selected portal and portals with artifacts
-            if (id === selectedPortalId || artifactPortalIds.has(id)) return;
-
-            if (getDistKm(p.lat, p.lng) > maxDistKm) {
-                delete portals[id];
+            if (id === selectedPortalId || artifactPortalIds.has(id) || getDistKm(p.lat, p.lng) <= maxDistKm) {
+                nextPortals[id] = p;
+            } else {
                 deletedPortalIds.add(id);
                 changed = true;
             }
         });
 
+        let nextLinks = links;
+        let nextFields = fields;
+
         if (deletedPortalIds.size > 0) {
+            nextLinks = {};
             Object.entries(links).forEach(([id, link]) => {
-                if (deletedPortalIds.has(link.fromPortalId) || deletedPortalIds.has(link.toPortalId)) {
-                    delete links[id];
+                if (!deletedPortalIds.has(link.fromPortalId) && !deletedPortalIds.has(link.toPortalId)) {
+                    nextLinks[id] = link;
+                } else {
                     changed = true;
                 }
             });
+
+            nextFields = {};
             Object.entries(fields).forEach(([id, field]) => {
-                if (field.points.some((point) => point.portalId && deletedPortalIds.has(point.portalId))) {
-                    delete fields[id];
+                if (!field.points.some((point) => point.portalId && deletedPortalIds.has(point.portalId))) {
+                    nextFields[id] = field;
+                } else {
                     changed = true;
                 }
             });
@@ -654,14 +662,16 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
 
         // Also cull old tile freshness entries (older than 1 hour)
         const oneHourAgo = Date.now() - 3600000;
+        const nextTileFreshness: Record<string, number> = {};
         Object.entries(tileFreshness).forEach(([key, lastSuccessAt]) => {
-            if (lastSuccessAt < oneHourAgo) {
-                delete tileFreshness[key];
+            if (lastSuccessAt >= oneHourAgo) {
+                nextTileFreshness[key] = lastSuccessAt;
+            } else {
                 changed = true;
             }
         });
 
-        return changed ? { portals, links, fields, tileFreshness } : state;
+        return changed ? { portals: nextPortals, links: nextLinks, fields: nextFields, tileFreshness: nextTileFreshness } : state;
     }),
     setTileFreshness: (tileKeys) => set((state) => {
         const now = Date.now();

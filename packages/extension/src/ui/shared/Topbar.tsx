@@ -349,27 +349,8 @@ export function Topbar({
                 <LocationSearch />
             </div>
 
-            {/* Right side: Navigate icon and Zoom controls */}
+            {/* Right side: Geolocation icon */}
             <div className="iris-topbar-right">
-                <div className="iris-zoom-group">
-                    <button
-                        className="iris-zoom-btn"
-                        onClick={zoomOut}
-                        style={SHARED_STYLES.btnStyle(true, theme.AQUA)}
-                    >
-                        -
-                    </button>
-                    <div className="iris-zoom-indicator" style={{ color: theme.AQUA }}>
-                        Z{Math.floor(zoom)}
-                    </div>
-                    <button
-                        className="iris-zoom-btn"
-                        onClick={zoomIn}
-                        style={SHARED_STYLES.btnStyle(true, theme.AQUA)}
-                    >
-                        +
-                    </button>
-                </div>
                 <button
                     className="iris-geolocate-btn"
                     onClick={goToMyLocation}
@@ -377,6 +358,27 @@ export function Topbar({
                     style={SHARED_STYLES.btnStyle(locStatus !== 'LOCATING...', theme.AQUA)}
                 >
                     {locStatus === 'LOCATING...' ? '...' : '◎'}
+                </button>
+            </div>
+
+            {/* Floating Zoom controls (Top Right, under geolocate on mobile) */}
+            <div className="iris-zoom-group">
+                <button
+                    className="iris-zoom-btn"
+                    onClick={zoomIn}
+                    style={SHARED_STYLES.btnStyle(true, theme.AQUA)}
+                >
+                    +
+                </button>
+                <div className="iris-zoom-indicator" style={{ color: theme.AQUA }}>
+                    Z{Math.floor(zoom)}
+                </div>
+                <button
+                    className="iris-zoom-btn"
+                    onClick={zoomOut}
+                    style={SHARED_STYLES.btnStyle(true, theme.AQUA)}
+                >
+                    -
                 </button>
             </div>
         </div>

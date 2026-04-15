@@ -164,6 +164,9 @@ Tasks:
 | Implement per-tile freshness tracking | Done | store now tracks `lastSuccessAt` per `tileKey` |
 | Implement surgical fetching | Done | coordinator now only requests tiles that are stale (> 2m old), skipping already fresh tiles during pan/zoom |
 | Implement age-based cache culling | Done | `cullEntities` now prunes tile freshness entries older than 1 hour |
+| Fix portal visibility below zoom 15 | Done | implemented placeholder portal extraction from links and fields in `parseEntities` |
+| Fix data-zoom detail level gating | Done | `getDataZoomForMapZoom` now correctly accounts for level changes even when `hasPortals` is false |
+| Ensure low-zoom marker visibility | Done | added zoom 3 interpolation points to `circle-radius` paint properties in `MapOverlay` |
 
 
 
