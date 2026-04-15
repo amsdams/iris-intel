@@ -617,25 +617,27 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
         });
 
         if (changedPortalIdsWithTeamChange.size > 0) {
-            let links = { ...state.links };
-            let fields = { ...state.fields };
-            let entitiesChanged = false;
-
-            Object.entries(links).forEach(([id, link]) => {
+            const links: Record<string, Link> = {};
+            let linksChanged = false;
+            Object.entries(state.links).forEach(([id, link]) => {
                 if (changedPortalIdsWithTeamChange.has(link.fromPortalId) || changedPortalIdsWithTeamChange.has(link.toPortalId)) {
-                    delete links[id];
-                    entitiesChanged = true;
+                    linksChanged = true;
+                } else {
+                    links[id] = link;
                 }
             });
 
-            Object.entries(fields).forEach(([id, field]) => {
+            const fields: Record<string, Field> = {};
+            let fieldsChanged = false;
+            Object.entries(state.fields).forEach(([id, field]) => {
                 if (field.points.some((point) => point.portalId && changedPortalIdsWithTeamChange.has(point.portalId))) {
-                    delete fields[id];
-                    entitiesChanged = true;
+                    fieldsChanged = true;
+                } else {
+                    fields[id] = field;
                 }
             });
 
-            if (entitiesChanged) {
+            if (linksChanged || fieldsChanged) {
                 return { portals, links, fields };
             }
         }
@@ -643,9 +645,7 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
         return changed ? { portals } : state;
     }),
     cullEntities: (centerLat, centerLng, maxDistKm) => set((state) => {
-        const portals = { ...state.portals };
-        const links = { ...state.links };
-        const fields = { ...state.fields };
+        const portals: Record<string, Portal> = {};
         const tileFreshness = { ...state.tileFreshness };
         let changed = false;
 
@@ -665,35 +665,36 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
         };
 
         const deletedPortalIds = new Set<string>();
-        const nextPortals: Record<string, Portal> = {};
 
-        Object.keys(portals).forEach((id) => {
-            const p = portals[id];
+        Object.keys(state.portals).forEach((id) => {
+            const p = state.portals[id];
             // Preserve selected portal and portals with artifacts
             if (id === selectedPortalId || artifactPortalIds.has(id) || getDistKm(p.lat, p.lng) <= maxDistKm) {
-                nextPortals[id] = p;
+                portals[id] = p;
             } else {
                 deletedPortalIds.add(id);
                 changed = true;
             }
         });
 
-        let nextLinks = links;
-        let nextFields = fields;
+        let nextLinks = state.links;
+        let nextFields = state.fields;
 
         if (deletedPortalIds.size > 0) {
-            nextLinks = { ...links };
-            Object.entries(links).forEach(([id, link]) => {
-                if (deletedPortalIds.has(link.fromPortalId) || deletedPortalIds.has(link.toPortalId)) {
-                    delete nextLinks[id];
+            nextLinks = {};
+            Object.entries(state.links).forEach(([id, link]) => {
+                if (!deletedPortalIds.has(link.fromPortalId) && !deletedPortalIds.has(link.toPortalId)) {
+                    nextLinks[id] = link;
+                } else {
                     changed = true;
                 }
             });
 
-            nextFields = { ...fields };
-            Object.entries(fields).forEach(([id, field]) => {
-                if (field.points.some((point) => point.portalId && deletedPortalIds.has(point.portalId))) {
-                    delete nextFields[id];
+            nextFields = {};
+            Object.entries(state.fields).forEach(([id, field]) => {
+                if (!field.points.some((point) => point.portalId && deletedPortalIds.has(point.portalId))) {
+                    nextFields[id] = field;
+                } else {
                     changed = true;
                 }
             });
@@ -710,7 +711,7 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
             }
         });
 
-        return changed ? { portals: nextPortals, links: nextLinks, fields: nextFields, tileFreshness: nextTileFreshness } : state;
+        return changed ? { portals, links: nextLinks, fields: nextFields, tileFreshness: nextTileFreshness } : state;
     }),
     setTileFreshness: (tileKeys) => set((state) => {
         const now = Date.now();
@@ -752,52 +753,77 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
         return { plexts: unique.slice(0, 1000) };
     }),
     removeEntities: (guids) => set((state) => {
-        const portals = { ...state.portals };
-        const links = { ...state.links };
-        const fields = { ...state.fields };
-        const artifacts = { ...state.artifacts };
-        const mockOrnaments = { ...state.mockOrnaments };
+        const portals: Record<string, Portal> = {};
+        const links: Record<string, Link> = {};
+        const fields: Record<string, Field> = {};
+        const artifacts: Record<string, Artifact> = {};
+        const mockOrnaments: Record<string, string[]> = {};
+        
         let changed = false;
         const deletedPortalIds = new Set<string>();
+        const guidsSet = new Set(guids);
 
-        guids.forEach((id) => {
-            if (portals[id]) {
-                delete portals[id];
+        Object.entries(state.portals).forEach(([id, portal]) => {
+            if (guidsSet.has(id)) {
                 deletedPortalIds.add(id);
                 changed = true;
+            } else {
+                portals[id] = portal;
             }
-            if (links[id]) {
-                delete links[id];
+        });
+
+        Object.entries(state.links).forEach(([id, link]) => {
+            if (guidsSet.has(id)) {
                 changed = true;
+            } else {
+                links[id] = link;
             }
-            if (fields[id]) {
-                delete fields[id];
+        });
+
+        Object.entries(state.fields).forEach(([id, field]) => {
+            if (guidsSet.has(id)) {
                 changed = true;
+            } else {
+                fields[id] = field;
             }
-            if (artifacts[id]) {
-                delete artifacts[id];
+        });
+
+        Object.entries(state.artifacts).forEach(([id, artifact]) => {
+            if (guidsSet.has(id)) {
                 changed = true;
+            } else {
+                artifacts[id] = artifact;
             }
-            if (mockOrnaments[id]) {
-                delete mockOrnaments[id];
+        });
+
+        Object.entries(state.mockOrnaments).forEach(([id, ornaments]) => {
+            if (guidsSet.has(id)) {
                 changed = true;
+            } else {
+                mockOrnaments[id] = ornaments;
             }
         });
 
         if (deletedPortalIds.size > 0) {
+            const finalLinks: Record<string, Link> = {};
             Object.entries(links).forEach(([id, link]) => {
                 if (deletedPortalIds.has(link.fromPortalId) || deletedPortalIds.has(link.toPortalId)) {
-                    delete links[id];
                     changed = true;
+                } else {
+                    finalLinks[id] = link;
                 }
             });
 
+            const finalFields: Record<string, Field> = {};
             Object.entries(fields).forEach(([id, field]) => {
                 if (field.points.some((point) => point.portalId && deletedPortalIds.has(point.portalId))) {
-                    delete fields[id];
                     changed = true;
+                } else {
+                    finalFields[id] = field;
                 }
             });
+
+            return { portals, links: finalLinks, fields: finalFields, artifacts, mockOrnaments };
         }
 
         return changed ? { portals, links, fields, artifacts, mockOrnaments } : state;
