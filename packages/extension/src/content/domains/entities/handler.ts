@@ -1,6 +1,4 @@
-import { useStore } from '@iris/core';
-import { IntelMapData } from './types';
-import { parseEntities } from './parser';
+import { useStore, EntityParser, IntelMapData } from '@iris/core';
 
 export function handleEntities(
   data: IntelMapData,
@@ -8,7 +6,7 @@ export function handleEntities(
   setHasInitialPosition: () => void,
   tileKeys?: string[],
 ): void {
-  const { portals, links, fields, deletedGuids } = parseEntities(data);
+  const { portals, links, fields, deletedGuids } = EntityParser.parse(data);
   const store = useStore.getState();
 
   if (!hasInitialPosition && portals.length > 0) {

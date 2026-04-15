@@ -1,5 +1,8 @@
 export * from './store';
 export * from './PluginManager';
+export * from './logic/EntityLogic';
+export * from './parsers/EntityParser';
+export * from './parsers/intel-types';
 
 /**
  * Normalizes various team strings from Intel API into standard IRIS keys:

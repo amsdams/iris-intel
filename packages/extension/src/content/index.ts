@@ -1,7 +1,7 @@
 import { render, h } from 'preact';
 import '../ui/iris.css';
 import { IRISOverlay } from '../ui/Overlay';
-import { useStore, pluginManager } from '@iris/core';
+import { useStore, pluginManager, IntelMapData } from '@iris/core';
 import PortalNamesPlugin from '../../../plugins/src/portal-names';
 import ThemeSelectorPlugin from '../../../plugins/src/theme-selector';
 import PlayerTrackerPlugin from '../../../plugins/src/player-tracker';
@@ -13,7 +13,6 @@ import PortalKeyCountLabelsPlugin from '../../../plugins/src/portal-key-count-la
 import { IRISPlugin } from '@iris/plugin-sdk';
 import { handleEntities } from './domains/entities/handler';
 import { getKnownOrnamentIds } from './domains/entities/ornaments';
-import { IntelMapData } from './domains/entities/types';
 import { handleInventory } from './domains/inventory/handler';
 import { InventoryData } from './domains/inventory/types';
 import mockInventoryData from './domains/inventory/mock.inventory.json';

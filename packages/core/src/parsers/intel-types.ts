@@ -8,3 +8,7 @@ export interface IntelMapData {
     map?: Record<string, IntelTile>;
   };
 }
+
+export interface InventoryData {
+  result?: [string, number, unknown][];
+}

@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { parseEntities } from './parser';
-import { IntelMapData } from './types';
+import { EntityParser } from './EntityParser';
+import { IntelMapData } from './intel-types';
 
-describe('parseEntities', () => {
+describe('EntityParser', () => {
   it('should extract portals from links even if they are not in gameEntities as portals', () => {
     const data: IntelMapData = {
       result: {
@@ -29,7 +29,7 @@ describe('parseEntities', () => {
       }
     };
 
-    const { portals, links } = parseEntities(data);
+    const { portals, links } = EntityParser.parse(data);
 
     expect(links).toHaveLength(1);
     expect(portals).toHaveLength(2);
@@ -72,7 +72,7 @@ describe('parseEntities', () => {
       }
     };
 
-    const { portals, fields } = parseEntities(data);
+    const { portals, fields } = EntityParser.parse(data);
 
     expect(fields).toHaveLength(1);
     expect(portals).toHaveLength(3);
@@ -123,7 +123,7 @@ describe('parseEntities', () => {
       }
     };
 
-    const { portals } = parseEntities(data);
+    const { portals } = EntityParser.parse(data);
 
     expect(portals).toHaveLength(2);
     const portal = portals.find(p => p.id === 'portal_guid');

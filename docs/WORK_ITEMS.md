@@ -159,6 +159,7 @@ Tasks:
 | --- | --- | --- |
 | Review newer-data-wins rules for portals, links, and fields | Done | implemented 'richer-wins' merge policy: summary updates no longer wipe detailed mod/res/ornament data |
 | Keep delete cascades reliable under repeated entity refreshes | Done | verified existing cascade logic; portal delete removes attached links/fields |
+| Remove links/fields when a portal's team changes | Done | `updatePortals` now triggers cleanup when a portal becomes neutral or changes teams |
 | Decide whether selected portals need temporary preservation semantics | Done | implemented preservation: `cullEntities` ignores the currently selected portal |
 | Verify artifact and ornament overlays remain coherent after entity refreshes | Done | implemented preservation: `cullEntities` ignores portals with active artifacts |
 | Implement periodic distance-based culling | Done | coordinator now triggers a 50km radial cull every 5 minutes to maintain performance |
@@ -359,7 +360,7 @@ Tasks:
 | Tighten IRIS message-type contracts for map sync | Open | startup Intel position, later Intel sync, and IRIS-owned camera moves now differ semantically and should stay explicit in the bridge protocol |
 | Extract MapLibre interaction handler logic behind a helper | Open | rotate/pitch support currently touches MapLibre handler internals directly in `MapOverlay`; isolating that would reduce component complexity and future upgrade risk |
 | Keep mock fixtures out of release bundles | Open | debug mock fixtures currently ship because JSON fixtures are imported by runtime code; later cleanup should gate mocks behind a dev-only build flag or separate debug-only entry path, and sanitize captured payloads so player-specific metadata (for example `playerData.nickname`) is not kept unless required for UI behavior |
-| Stage entity relationship cleanup before any full entity-store rewrite | Open | keep the current split `portals`/`links`/`fields` model for now, but incrementally add relationship-aware cleanup: portal delete should remove attached links now, and later investigate storing field anchor portal ids or secondary indexes before considering a broader normalized graph refactor |
+| Stage entity relationship cleanup before any full entity-store rewrite | Open | keep the current split `portals`/`links`/`fields` model for now, but incrementally add relationship-aware cleanup: portal delete and team changes now remove attached links/fields; later investigate storing field anchor portal ids or secondary indexes before considering a broader normalized graph refactor |
 | Investigate heuristic stale-portal repair from link/field contradictions | Open | debug-only first: detect links or fields whose team contradicts currently stored anchor portal teams; if reliable, consider an opt-in inferred-team repair path instead of silently rewriting portal teams |
 
 ### Plugin overlay and highlighter baseline is partially implemented
@@ -416,6 +417,7 @@ Tasks:
 | Preserve field anchor portal ids from `getEntities` | Done | field points now retain `portalId` instead of only lat/lng |
 | Remove links attached to a deleted portal | Done | store cascade now removes dependent links when a portal GUID is deleted |
 | Remove fields anchored to a deleted portal | Done | field cleanup now uses stored anchor portal ids |
+| Remove links/fields when a portal's team changes | Done | `updatePortals` now triggers cleanup when a portal becomes neutral or changes teams |
 | Add regression coverage for portal-delete cascades | Done | Vitest covers both link and field cleanup when a portal is deleted |
 | Show endpoint next-refresh timing in status UI | Done | polled endpoints now expose `next auto refresh`, while `entities` is labeled event-driven |
 | Keep endpoint ordering stable but useful | Done | expanded status and diagnostics now sort active first, then auto-refresh by due time, then event-driven, then on-demand |
@@ -618,9 +620,11 @@ Tasks:
 | Task | Status | Notes |
 | --- | --- | --- |
 | Zustand for Global State | Done | centralized stores in `@iris/core`; component-level selectors |
+| Service-Lite Logic Layer | Done | extracted pure business logic (merging, cascading deletes) into `EntityLogic.ts` |
+| Centralized Data Parsers | In Progress | `EntityParser` migrated to `@iris/core`; other parsers pending migration |
 | Message-based IPC | Done | content script communicates with interceptor via standard `postMessage` protocol |
 | Surgical Interception | Done | intercept network traffic without modifying Intel's internal logic |
-| Type-Safe Domain Models | Open | strictly type all incoming Intel payloads to prevent runtime casting errors |
+| Type-Safe Domain Models | In Progress | moved core Intel types to `intel-types.ts`; strictly typing all incoming payloads |
 
 ### Linting and Code Quality
 Status: `Done`
@@ -640,7 +644,7 @@ Tasks:
 
 ## Current Next Pickup
 
-1. **[Live Map Freshness]** Implement a strict concurrent request limit (5) in `RequestCoordinator` (Done).
+1. **[Architectural Patterns]** Continue migrating remaining parsers (inventory, portal-details, etc.) to `@iris/core`.
 2. **[Plugin Overlay]** Implement a "Single Highlighter" selection model.
 3. **[Intel Parity]** Enhance `parser.ts` for more detailed mod stats and history flags (Done).
 4. **[Draw Tools]** Turn the draw-tools epic into an implementation plan for the first mobile-safe baseline.

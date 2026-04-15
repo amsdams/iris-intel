@@ -1,5 +1,6 @@
 import { create, StateCreator } from 'zustand';
 import { subscribeWithSelector, persist } from 'zustand/middleware';
+import { EntityLogic } from './logic/EntityLogic';
 
 export interface PlayerStats {
     nickname: string;
@@ -578,34 +579,7 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
                 return;
             }
 
-            // Richer-wins merge: don't let a summary update wipe detailed data
-            const updated: Portal = { ...existing };
-            let pChanged = false;
-            let teamChanged = false;
-
-            (Object.keys(p) as (keyof Portal)[]).forEach((key) => {
-                const newVal = p[key];
-                const oldVal = existing[key];
-
-                // Skip if new value is undefined/null unless it's a field we expect to clear
-                if (newVal === undefined || newVal === null) return;
-
-                // Special handling for arrays (mods, resonators, ornaments)
-                if (Array.isArray(newVal)) {
-                    if (!Array.isArray(oldVal) || newVal.length >= oldVal.length) {
-                        Object.assign(updated, { [key]: newVal });
-                        pChanged = true;
-                    }
-                    return;
-                }
-
-                // Normal field update
-                if (newVal !== oldVal) {
-                    Object.assign(updated, { [key]: newVal });
-                    pChanged = true;
-                    if (key === 'team') teamChanged = true;
-                }
-            });
+            const { updated, teamChanged, changed: pChanged } = EntityLogic.mergePortal(existing, p);
 
             if (pChanged) {
                 portals[p.id] = updated;
@@ -617,27 +591,13 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
         });
 
         if (changedPortalIdsWithTeamChange.size > 0) {
-            const links: Record<string, Link> = {};
-            let linksChanged = false;
-            Object.entries(state.links).forEach(([id, link]) => {
-                if (changedPortalIdsWithTeamChange.has(link.fromPortalId) || changedPortalIdsWithTeamChange.has(link.toPortalId)) {
-                    linksChanged = true;
-                } else {
-                    links[id] = link;
-                }
-            });
+            const { links, fields, changed: entitiesChanged } = EntityLogic.calculateCascadingDeletes(
+                changedPortalIdsWithTeamChange,
+                state.links,
+                state.fields
+            );
 
-            const fields: Record<string, Field> = {};
-            let fieldsChanged = false;
-            Object.entries(state.fields).forEach(([id, field]) => {
-                if (field.points.some((point) => point.portalId && changedPortalIdsWithTeamChange.has(point.portalId))) {
-                    fieldsChanged = true;
-                } else {
-                    fields[id] = field;
-                }
-            });
-
-            if (linksChanged || fieldsChanged) {
+            if (entitiesChanged) {
                 return { portals, links, fields };
             }
         }
@@ -652,24 +612,12 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
         const selectedPortalId = (state as IRISState).selectedPortalId;
         const artifactPortalIds = new Set(Object.values(state.artifacts).map(a => a.portalId));
 
-        // Helper to calculate approx distance in KM
-        const getDistKm = (lat: number, lng: number): number => {
-            const R = 6371;
-            const dLat = (lat - centerLat) * Math.PI / 180;
-            const dLng = (lng - centerLng) * Math.PI / 180;
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                      Math.cos(centerLat * Math.PI / 180) * Math.cos(lat * Math.PI / 180) *
-                      Math.sin(dLng / 2) * Math.sin(dLng / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return R * c;
-        };
-
         const deletedPortalIds = new Set<string>();
 
         Object.keys(state.portals).forEach((id) => {
             const p = state.portals[id];
             // Preserve selected portal and portals with artifacts
-            if (id === selectedPortalId || artifactPortalIds.has(id) || getDistKm(p.lat, p.lng) <= maxDistKm) {
+            if (id === selectedPortalId || artifactPortalIds.has(id) || EntityLogic.getDistKm(centerLat, centerLng, p.lat, p.lng) <= maxDistKm) {
                 portals[id] = p;
             } else {
                 deletedPortalIds.add(id);
@@ -681,23 +629,10 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
         let nextFields = state.fields;
 
         if (deletedPortalIds.size > 0) {
-            nextLinks = {};
-            Object.entries(state.links).forEach(([id, link]) => {
-                if (!deletedPortalIds.has(link.fromPortalId) && !deletedPortalIds.has(link.toPortalId)) {
-                    nextLinks[id] = link;
-                } else {
-                    changed = true;
-                }
-            });
-
-            nextFields = {};
-            Object.entries(state.fields).forEach(([id, field]) => {
-                if (!field.points.some((point) => point.portalId && deletedPortalIds.has(point.portalId))) {
-                    nextFields[id] = field;
-                } else {
-                    changed = true;
-                }
-            });
+            const result = EntityLogic.calculateCascadingDeletes(deletedPortalIds, state.links, state.fields);
+            nextLinks = result.links;
+            nextFields = result.fields;
+            if (result.changed) changed = true;
         }
 
         // Also cull old tile freshness entries (older than 1 hour)
@@ -754,8 +689,6 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
     }),
     removeEntities: (guids) => set((state) => {
         const portals: Record<string, Portal> = {};
-        const links: Record<string, Link> = {};
-        const fields: Record<string, Field> = {};
         const artifacts: Record<string, Artifact> = {};
         const mockOrnaments: Record<string, string[]> = {};
         
@@ -772,19 +705,22 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
             }
         });
 
+        // First pass: remove the explicitly requested GUIDs from links and fields
+        const remainingLinks: Record<string, Link> = {};
         Object.entries(state.links).forEach(([id, link]) => {
             if (guidsSet.has(id)) {
                 changed = true;
             } else {
-                links[id] = link;
+                remainingLinks[id] = link;
             }
         });
 
+        const remainingFields: Record<string, Field> = {};
         Object.entries(state.fields).forEach(([id, field]) => {
             if (guidsSet.has(id)) {
                 changed = true;
             } else {
-                fields[id] = field;
+                remainingFields[id] = field;
             }
         });
 
@@ -804,27 +740,14 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
             }
         });
 
-        if (deletedPortalIds.size > 0) {
-            const finalLinks: Record<string, Link> = {};
-            Object.entries(links).forEach(([id, link]) => {
-                if (deletedPortalIds.has(link.fromPortalId) || deletedPortalIds.has(link.toPortalId)) {
-                    changed = true;
-                } else {
-                    finalLinks[id] = link;
-                }
-            });
+        // Second pass: remove links and fields anchored to deleted portals
+        const { links, fields, changed: cascadingChanged } = EntityLogic.calculateCascadingDeletes(
+            deletedPortalIds,
+            remainingLinks,
+            remainingFields
+        );
 
-            const finalFields: Record<string, Field> = {};
-            Object.entries(fields).forEach(([id, field]) => {
-                if (field.points.some((point) => point.portalId && deletedPortalIds.has(point.portalId))) {
-                    changed = true;
-                } else {
-                    finalFields[id] = field;
-                }
-            });
-
-            return { portals, links: finalLinks, fields: finalFields, artifacts, mockOrnaments };
-        }
+        if (cascadingChanged) changed = true;
 
         return changed ? { portals, links, fields, artifacts, mockOrnaments } : state;
     }),
