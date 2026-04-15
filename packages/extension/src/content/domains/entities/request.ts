@@ -3,19 +3,19 @@ const DEFAULT_ZOOM_TO_LEVEL = [8, 8, 8, 8, 7, 7, 7, 6, 6, 5, 4, 4, 3, 2, 2, 1, 1
 const DEFAULT_ZOOM_TO_LINK_LENGTH = [200000, 200000, 200000, 200000, 200000, 60000, 60000, 10000, 5000, 2500, 2500, 800, 300, 0, 0];
 const MAX_MAP_ZOOM = 21;
 
-type BoundsE6 = {
+interface BoundsE6 {
   minLatE6: number;
   minLngE6: number;
   maxLatE6: number;
   maxLngE6: number;
-};
+}
 
-type TileParams = {
+interface TileParams {
   level: number;
   tilesPerEdge: number;
   hasPortals: boolean;
   zoom: number;
-};
+}
 
 export interface EntityRequestPayload {
   tileKeys: string[];
@@ -26,10 +26,13 @@ export interface EntityRequestPayload {
 function getMapZoomTileParameters(zoom: number): TileParams {
   const maxTilesPerEdge = DEFAULT_ZOOM_TO_TILES_PER_EDGE[DEFAULT_ZOOM_TO_TILES_PER_EDGE.length - 1];
 
+  // Portals start appearing at zoom 13 in Ingress Intel
+  const portalZoomLimit = 13;
+
   return {
     level: DEFAULT_ZOOM_TO_LEVEL[zoom] || 0,
     tilesPerEdge: DEFAULT_ZOOM_TO_TILES_PER_EDGE[zoom] || maxTilesPerEdge,
-    hasPortals: zoom >= DEFAULT_ZOOM_TO_LINK_LENGTH.length,
+    hasPortals: zoom >= portalZoomLimit,
     zoom,
   };
 }
@@ -68,7 +71,11 @@ function pointToTileId(params: TileParams, x: number, y: number): string {
 }
 
 export function buildEntityRequestPayload(bounds: BoundsE6, mapZoom: number): EntityRequestPayload {
-  const dataZoom = getDataZoomForMapZoom(mapZoom);
+  // MapLibre zoom level is often offset by 1 compared to Google Maps/Leaflet for the same visual area
+  const MAPLIBRE_ZOOM_OFFSET = 1;
+  const adjustedZoom = mapZoom + MAPLIBRE_ZOOM_OFFSET;
+
+  const dataZoom = getDataZoomForMapZoom(adjustedZoom);
   const params = getMapZoomTileParameters(dataZoom);
   const south = bounds.minLatE6 / 1e6;
   const west = bounds.minLngE6 / 1e6;

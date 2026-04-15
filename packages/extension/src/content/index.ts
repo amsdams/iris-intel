@@ -426,7 +426,7 @@ window.addEventListener('message', (event: MessageEvent) => {
       if (url_str.includes('getEntities')) {
         handleEntities(data as IntelMapData, hasInitialPosition, () => {
           hasInitialPosition = true;
-        });
+        }, (parsedParams as any)?.tileKeys);
       } else if (url_str.includes('getPortalDetails')) {
         handlePortalDetails(data as PortalDetailsData, parsedParams as { guid?: string });
       } else if (url_str.includes('getPlexts')) {

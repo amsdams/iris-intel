@@ -161,6 +161,10 @@ Tasks:
 | Decide whether selected portals need temporary preservation semantics | Done | implemented preservation: `cullEntities` ignores the currently selected portal |
 | Verify artifact and ornament overlays remain coherent after entity refreshes | Done | implemented preservation: `cullEntities` ignores portals with active artifacts |
 | Implement periodic distance-based culling | Done | coordinator now triggers a 50km radial cull every 5 minutes to maintain performance |
+| Implement per-tile freshness tracking | Done | store now tracks `lastSuccessAt` per `tileKey` |
+| Implement surgical fetching | Done | coordinator now only requests tiles that are stale (> 2m old), skipping already fresh tiles during pan/zoom |
+| Implement age-based cache culling | Done | `cullEntities` now prunes tile freshness entries older than 1 hour |
+
 
 
 ### Freshness is observable in diagnostics

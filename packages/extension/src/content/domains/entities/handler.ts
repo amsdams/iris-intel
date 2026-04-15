@@ -6,6 +6,7 @@ export function handleEntities(
   data: IntelMapData,
   hasInitialPosition: boolean,
   setHasInitialPosition: () => void,
+  tileKeys?: string[],
 ): void {
   const { portals, links, fields, deletedGuids } = parseEntities(data);
   const store = useStore.getState();
@@ -22,4 +23,8 @@ export function handleEntities(
   if (portals.length > 0) store.updatePortals(portals);
   if (links.length > 0) store.updateLinks(links);
   if (fields.length > 0) store.updateFields(fields);
+
+  if (tileKeys && tileKeys.length > 0) {
+    store.setTileFreshness(tileKeys);
+  }
 }

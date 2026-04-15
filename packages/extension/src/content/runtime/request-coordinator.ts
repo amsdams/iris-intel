@@ -17,6 +17,7 @@ const ENTITY_BATCH_SIZE = 25;       // IITC-like batch size
 const ENTITY_RETRY_LIMIT = 3;
 const ENTITY_RETRY_DELAY_MS = 5000;
 const ENTITY_FRESHNESS_TTL_MS = 10000;
+const TILE_FRESHNESS_TTL_MS = 120000; // 2m per-tile TTL
 
 const STARTUP_GRACE_MS = 5000;
 const GAME_SCORE_TTL_MS = 10 * 60 * 1000;
@@ -121,11 +122,32 @@ export function createRequestCoordinator(): RequestCoordinator {
             clearEntityRetry();
         }
 
+        // Surgical Fetching: Only request tiles that are not fresh
+        let tilesToFetch = payload.tileKeys;
+        if (reason !== 'retry') {
+            const tileFreshness = useStore.getState().tileFreshness;
+            const now = Date.now();
+            tilesToFetch = payload.tileKeys.filter((key) => {
+                const lastUpdate = tileFreshness[key];
+                return !lastUpdate || (now - lastUpdate > TILE_FRESHNESS_TTL_MS);
+            });
+        }
+
+        if (tilesToFetch.length === 0) {
+            if (reason === 'idle') {
+                const interval = zoom > ENTITY_IDLE_ZOOM_THRESHOLD 
+                    ? ENTITY_IDLE_POLL_CLOSE_MS 
+                    : ENTITY_IDLE_POLL_FAR_MS;
+                setNextAutoRefresh('entities', Date.now() + interval);
+            }
+            return;
+        }
+
         lastEntityCoverageKey = payload.coverageKey;
 
         // Batch tileKeys to avoid massive single requests (IITC-like batching)
-        for (let i = 0; i < payload.tileKeys.length; i += ENTITY_BATCH_SIZE) {
-            const batch = payload.tileKeys.slice(i, i + ENTITY_BATCH_SIZE);
+        for (let i = 0; i < tilesToFetch.length; i += ENTITY_BATCH_SIZE) {
+            const batch = tilesToFetch.slice(i, i + ENTITY_BATCH_SIZE);
             postMessage({
                 type: 'IRIS_ENTITIES_FETCH',
                 tileKeys: batch,

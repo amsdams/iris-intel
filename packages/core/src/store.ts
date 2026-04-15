@@ -344,6 +344,7 @@ interface EntitiesSlice {
     fields: Record<string, Field>;
     artifacts: Record<string, Artifact>;
     mockOrnaments: Record<string, string[]>;
+    tileFreshness: Record<string, number>;
     plexts: Plext[];
     addPortal: (portal: Portal) => void;
     updatePortals: (portals: Partial<Portal>[]) => void;
@@ -355,8 +356,8 @@ interface EntitiesSlice {
     updatePlexts: (plexts: Plext[]) => void;
     removeEntities: (guids: string[]) => void;
     cullEntities: (centerLat: number, centerLng: number, maxDistKm: number) => void;
+    setTileFreshness: (tileKeys: string[]) => void;
     }
-
 interface UISlice {
     statsItems: Record<string, StatsItem>;
     menuItems: MenuItem[];
@@ -549,6 +550,7 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
     fields: {},
     artifacts: {},
     mockOrnaments: {},
+    tileFreshness: {},
     plexts: [],
     addPortal: (portal) => set((state) => ({
         portals: { ...state.portals, [portal.id]: portal }
@@ -603,6 +605,7 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
         const portals = { ...state.portals };
         const links = { ...state.links };
         const fields = { ...state.fields };
+        const tileFreshness = { ...state.tileFreshness };
         let changed = false;
 
         const selectedPortalId = (state as any).selectedPortalId;
@@ -649,7 +652,24 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
             });
         }
 
-        return changed ? { portals, links, fields } : state;
+        // Also cull old tile freshness entries (older than 1 hour)
+        const oneHourAgo = Date.now() - 3600000;
+        Object.entries(tileFreshness).forEach(([key, lastSuccessAt]) => {
+            if (lastSuccessAt < oneHourAgo) {
+                delete tileFreshness[key];
+                changed = true;
+            }
+        });
+
+        return changed ? { portals, links, fields, tileFreshness } : state;
+    }),
+    setTileFreshness: (tileKeys) => set((state) => {
+        const now = Date.now();
+        const tileFreshness = { ...state.tileFreshness };
+        tileKeys.forEach((key) => {
+            tileFreshness[key] = now;
+        });
+        return { tileFreshness };
     }),
     updateLinks: (newLinks) => set((state) => {
         const links = { ...state.links };
