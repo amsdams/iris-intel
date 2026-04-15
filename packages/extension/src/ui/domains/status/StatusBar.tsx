@@ -5,7 +5,7 @@ import { UI_COLORS } from '../../theme';
 
 const ENDPOINT_STALE_AFTER_MS: Partial<Record<EndpointKey, number>> = {
     plexts: 2 * 60 * 1000,
-    entities: 2 * 60 * 1000,
+    entities: 5 * 60 * 1000, // 5m warning threshold
     portalDetails: 5 * 60 * 1000,
     missionDetails: 5 * 60 * 1000,
     topMissions: 5 * 60 * 1000,
@@ -178,6 +178,10 @@ export function StatusBar(): JSX.Element {
         return ENDPOINT_FALLBACK_ORDER.indexOf(a.key) - ENDPOINT_FALLBACK_ORDER.indexOf(b.key);
     });
 
+    const lastEntitiesSuccessAt = endpointDiagnostics['entities']?.lastSuccessAt;
+    const entitiesAgeMinutes = lastEntitiesSuccessAt ? Math.floor((Date.now() - lastEntitiesSuccessAt) / 60000) : null;
+    const isEntitiesStale = entitiesAgeMinutes !== null && entitiesAgeMinutes >= (ENDPOINT_STALE_AFTER_MS['entities']! / 60000);
+
     return (
         <div 
             onClick={toggleExpanded}
@@ -331,6 +335,16 @@ export function StatusBar(): JSX.Element {
                         {endpointHealthCounts.error ? ` ${endpointHealthCounts.error} ERR` : ''}
                         {endpointHealthCounts.stale ? ` ${endpointHealthCounts.stale} STALE` : ''}
                     </span>
+
+                    {entitiesAgeMinutes !== null && (
+                        <span className="iris-status-text" style={{ 
+                            color: isEntitiesStale ? UI_COLORS.WARNING : UI_COLORS.TEXT_MUTED,
+                            fontWeight: isEntitiesStale ? 'bold' : 'normal'
+                        }}>
+                            MAP DATA: {entitiesAgeMinutes === 0 ? '< 1m' : `${entitiesAgeMinutes}m`} AGO
+                        </span>
+                    )}
+
                     <span className="iris-status-text" style={{ color: sessionStatus === 'expired' || sessionStatus === 'initial_login_required' ? UI_COLORS.WARNING : (sessionStatus === 'recovering' ? UI_COLORS.AQUA : UI_COLORS.TEXT_MUTED) }}>
                         {sessionLabel()}
                     </span>

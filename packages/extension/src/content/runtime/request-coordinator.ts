@@ -6,6 +6,8 @@ const PLEXT_COOLDOWN_MS = 5000;
 
 const PLEXT_POLL_MS = 120000;
 const ARTIFACTS_POLL_MS = 60000;
+const ENTITY_CULL_POLL_MS = 300000; // 5m
+const ENTITY_CULL_DIST_KM = 50;     // 50km
 const ARTIFACTS_STARTUP_DEDUP_MS = 5000;
 const ENTITY_IDLE_POLL_CLOSE_MS = 300000; // 5m (z > 12)
 const ENTITY_IDLE_POLL_FAR_MS = 900000;   // 15m (z <= 12)
@@ -46,6 +48,7 @@ export function createRequestCoordinator(): RequestCoordinator {
     let plextPollId: number | null = null;
     let artifactsPollId: number | null = null;
     let entitiesPollId: number | null = null;
+    let cullPollId: number | null = null;
     let entityMoveRefreshTimeoutId: number | null = null;
     let entityRetryTimeoutId: number | null = null;
     let entityRetryCount = 0;
@@ -90,6 +93,11 @@ export function createRequestCoordinator(): RequestCoordinator {
             window.clearTimeout(entityRetryTimeoutId);
             entityRetryTimeoutId = null;
         }
+    };
+
+    const scheduleCulling = (): void => {
+        const { lat, lng } = useStore.getState().mapState;
+        useStore.getState().cullEntities(lat, lng, ENTITY_CULL_DIST_KM);
     };
 
     const scheduleEntitiesFetch = (reason: 'startup' | 'move_settle' | 'idle' | 'retry'): void => {
@@ -286,6 +294,12 @@ export function createRequestCoordinator(): RequestCoordinator {
                         }, ARTIFACTS_POLL_MS);
                     }
 
+                    if (cullPollId === null) {
+                        cullPollId = window.setInterval(() => {
+                            scheduleCulling();
+                        }, ENTITY_CULL_POLL_MS);
+                    }
+
                     scheduleNextIdleEntitiesPoll();
                 }, STARTUP_GRACE_MS);
             }
@@ -305,6 +319,11 @@ export function createRequestCoordinator(): RequestCoordinator {
             if (artifactsPollId !== null) {
                 window.clearInterval(artifactsPollId);
                 artifactsPollId = null;
+            }
+
+            if (cullPollId !== null) {
+                window.clearInterval(cullPollId);
+                cullPollId = null;
             }
 
             if (entitiesPollId !== null) {

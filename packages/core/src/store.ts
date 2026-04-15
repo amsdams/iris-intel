@@ -350,11 +350,12 @@ interface EntitiesSlice {
     updateLinks: (links: Partial<Link>[]) => void;
     updateFields: (fields: Partial<Field>[]) => void;
     updateArtifacts: (artifacts: Artifact[]) => void;
-    setMockOrnaments: (ornaments: Record<string, string[]>) => void;
+    setMockOrnaments: (mockOrnaments: Record<string, string[]>) => void;
     clearMockOrnaments: () => void;
     updatePlexts: (plexts: Plext[]) => void;
     removeEntities: (guids: string[]) => void;
-}
+    cullEntities: (centerLat: number, centerLng: number, maxDistKm: number) => void;
+    }
 
 interface UISlice {
     statsItems: Record<string, StatsItem>;
@@ -554,11 +555,101 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
     })),
     updatePortals: (newPortals) => set((state) => {
         const portals = { ...state.portals };
+        let changed = false;
         newPortals.forEach((p) => {
             if (!p.id) return;
-            portals[p.id] = { ...portals[p.id], ...p } as Portal;
+            const existing = portals[p.id];
+            if (!existing) {
+                portals[p.id] = p as Portal;
+                changed = true;
+                return;
+            }
+
+            // Richer-wins merge: don't let a summary update wipe detailed data
+            const updated: Portal = { ...existing };
+            let pChanged = false;
+
+            (Object.keys(p) as (keyof Portal)[]).forEach((key) => {
+                const newVal = p[key];
+                const oldVal = existing[key];
+
+                // Skip if new value is undefined/null unless it's a field we expect to clear
+                if (newVal === undefined || newVal === null) return;
+
+                // Special handling for arrays (mods, resonators, ornaments)
+                if (Array.isArray(newVal)) {
+                    if (!Array.isArray(oldVal) || newVal.length >= oldVal.length) {
+                        (updated as any)[key] = newVal;
+                        pChanged = true;
+                    }
+                    return;
+                }
+
+                // Normal field update
+                if (newVal !== oldVal) {
+                    (updated as any)[key] = newVal;
+                    pChanged = true;
+                }
+            });
+
+            if (pChanged) {
+                portals[p.id] = updated;
+                changed = true;
+            }
         });
-        return { portals };
+        return changed ? { portals } : state;
+    }),
+    cullEntities: (centerLat, centerLng, maxDistKm) => set((state) => {
+        const portals = { ...state.portals };
+        const links = { ...state.links };
+        const fields = { ...state.fields };
+        let changed = false;
+
+        const selectedPortalId = (state as any).selectedPortalId;
+        const artifactPortalIds = new Set(Object.values(state.artifacts).map(a => a.portalId));
+
+        // Helper to calculate approx distance in KM
+        const getDistKm = (lat: number, lng: number): number => {
+            const R = 6371;
+            const dLat = (lat - centerLat) * Math.PI / 180;
+            const dLng = (lng - centerLng) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(centerLat * Math.PI / 180) * Math.cos(lat * Math.PI / 180) *
+                      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        };
+
+        const deletedPortalIds = new Set<string>();
+
+        Object.keys(portals).forEach((id) => {
+            const p = portals[id];
+            // Preserve selected portal and portals with artifacts
+            if (id === selectedPortalId || artifactPortalIds.has(id)) return;
+
+            if (getDistKm(p.lat, p.lng) > maxDistKm) {
+                delete portals[id];
+                deletedPortalIds.add(id);
+                changed = true;
+            }
+        });
+
+        if (deletedPortalIds.size > 0) {
+            Object.entries(links).forEach(([id, link]) => {
+                if (deletedPortalIds.has(link.fromPortalId) || deletedPortalIds.has(link.toPortalId)) {
+                    delete links[id];
+                    changed = true;
+                }
+            });
+            Object.entries(fields).forEach(([id, field]) => {
+                if (field.points.some((point) => point.portalId && deletedPortalIds.has(point.portalId))) {
+                    delete fields[id];
+                    changed = true;
+                }
+            });
+        }
+
+        return changed ? { portals, links, fields } : state;
     }),
     updateLinks: (newLinks) => set((state) => {
         const links = { ...state.links };

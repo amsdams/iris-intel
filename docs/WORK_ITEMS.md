@@ -147,7 +147,7 @@ Tasks:
 
 
 ### Entity merge and removal behavior stays correct under faster refresh
-Status: `Open`
+Status: `Done`
 
 Outcome:
 - more frequent entity updates should not regress correctness, selection behavior, or cleanup
@@ -156,10 +156,12 @@ Tasks:
 
 | Task | Status | Notes |
 | --- | --- | --- |
-| Review newer-data-wins rules for portals, links, and fields | Open | explicit merge policy matters more once IRIS owns refresh timing |
-| Keep delete cascades reliable under repeated entity refreshes | Open | portal deletion must continue to remove dependent links/fields safely |
-| Decide whether selected portals need temporary preservation semantics | Open | IITC keeps selected portals alive through some cleanup paths; IRIS should decide explicitly rather than incidentally |
-| Verify artifact and ornament overlays remain coherent after entity refreshes | Open | these overlays depend on portal presence and should not flicker or orphan under more active updates |
+| Review newer-data-wins rules for portals, links, and fields | Done | implemented 'richer-wins' merge policy: summary updates no longer wipe detailed mod/res/ornament data |
+| Keep delete cascades reliable under repeated entity refreshes | Done | verified existing cascade logic; portal delete removes attached links/fields |
+| Decide whether selected portals need temporary preservation semantics | Done | implemented preservation: `cullEntities` ignores the currently selected portal |
+| Verify artifact and ornament overlays remain coherent after entity refreshes | Done | implemented preservation: `cullEntities` ignores portals with active artifacts |
+| Implement periodic distance-based culling | Done | coordinator now triggers a 50km radial cull every 5 minutes to maintain performance |
+
 
 ### Freshness is observable in diagnostics
 Status: `Open`
