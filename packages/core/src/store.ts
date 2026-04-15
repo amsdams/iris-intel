@@ -566,7 +566,9 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
     })),
     updatePortals: (newPortals) => set((state) => {
         const portals = { ...state.portals };
+        const changedPortalIdsWithTeamChange = new Set<string>();
         let changed = false;
+
         newPortals.forEach((p) => {
             if (!p.id) return;
             const existing = portals[p.id];
@@ -579,6 +581,7 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
             // Richer-wins merge: don't let a summary update wipe detailed data
             const updated: Portal = { ...existing };
             let pChanged = false;
+            let teamChanged = false;
 
             (Object.keys(p) as (keyof Portal)[]).forEach((key) => {
                 const newVal = p[key];
@@ -600,14 +603,43 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
                 if (newVal !== oldVal) {
                     Object.assign(updated, { [key]: newVal });
                     pChanged = true;
+                    if (key === 'team') teamChanged = true;
                 }
             });
 
             if (pChanged) {
                 portals[p.id] = updated;
                 changed = true;
+                if (teamChanged) {
+                    changedPortalIdsWithTeamChange.add(p.id);
+                }
             }
         });
+
+        if (changedPortalIdsWithTeamChange.size > 0) {
+            let links = { ...state.links };
+            let fields = { ...state.fields };
+            let entitiesChanged = false;
+
+            Object.entries(links).forEach(([id, link]) => {
+                if (changedPortalIdsWithTeamChange.has(link.fromPortalId) || changedPortalIdsWithTeamChange.has(link.toPortalId)) {
+                    delete links[id];
+                    entitiesChanged = true;
+                }
+            });
+
+            Object.entries(fields).forEach(([id, field]) => {
+                if (field.points.some((point) => point.portalId && changedPortalIdsWithTeamChange.has(point.portalId))) {
+                    delete fields[id];
+                    entitiesChanged = true;
+                }
+            });
+
+            if (entitiesChanged) {
+                return { portals, links, fields };
+            }
+        }
+
         return changed ? { portals } : state;
     }),
     cullEntities: (centerLat, centerLng, maxDistKm) => set((state) => {
@@ -650,20 +682,18 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
         let nextFields = fields;
 
         if (deletedPortalIds.size > 0) {
-            nextLinks = {};
+            nextLinks = { ...links };
             Object.entries(links).forEach(([id, link]) => {
-                if (!deletedPortalIds.has(link.fromPortalId) && !deletedPortalIds.has(link.toPortalId)) {
-                    nextLinks[id] = link;
-                } else {
+                if (deletedPortalIds.has(link.fromPortalId) || deletedPortalIds.has(link.toPortalId)) {
+                    delete nextLinks[id];
                     changed = true;
                 }
             });
 
-            nextFields = {};
+            nextFields = { ...fields };
             Object.entries(fields).forEach(([id, field]) => {
-                if (!field.points.some((point) => point.portalId && deletedPortalIds.has(point.portalId))) {
-                    nextFields[id] = field;
-                } else {
+                if (field.points.some((point) => point.portalId && deletedPortalIds.has(point.portalId))) {
+                    delete nextFields[id];
                     changed = true;
                 }
             });
@@ -722,39 +752,34 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
         return { plexts: unique.slice(0, 1000) };
     }),
     removeEntities: (guids) => set((state) => {
-        let portals = { ...state.portals };
-        let links = { ...state.links };
-        let fields = { ...state.fields };
-        let artifacts = { ...state.artifacts };
-        let mockOrnaments = { ...state.mockOrnaments };
+        const portals = { ...state.portals };
+        const links = { ...state.links };
+        const fields = { ...state.fields };
+        const artifacts = { ...state.artifacts };
+        const mockOrnaments = { ...state.mockOrnaments };
         let changed = false;
         const deletedPortalIds = new Set<string>();
 
         guids.forEach((id) => {
             if (portals[id]) {
-                const { [id]: _, ...rest } = portals;
-                portals = rest;
+                delete portals[id];
                 deletedPortalIds.add(id);
                 changed = true;
             }
             if (links[id]) {
-                const { [id]: _, ...rest } = links;
-                links = rest;
+                delete links[id];
                 changed = true;
             }
             if (fields[id]) {
-                const { [id]: _, ...rest } = fields;
-                fields = rest;
+                delete fields[id];
                 changed = true;
             }
             if (artifacts[id]) {
-                const { [id]: _, ...rest } = artifacts;
-                artifacts = rest;
+                delete artifacts[id];
                 changed = true;
             }
             if (mockOrnaments[id]) {
-                const { [id]: _, ...rest } = mockOrnaments;
-                mockOrnaments = rest;
+                delete mockOrnaments[id];
                 changed = true;
             }
         });
@@ -762,16 +787,14 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
         if (deletedPortalIds.size > 0) {
             Object.entries(links).forEach(([id, link]) => {
                 if (deletedPortalIds.has(link.fromPortalId) || deletedPortalIds.has(link.toPortalId)) {
-                    const { [id]: _, ...rest } = links;
-                    links = rest;
+                    delete links[id];
                     changed = true;
                 }
             });
 
             Object.entries(fields).forEach(([id, field]) => {
                 if (field.points.some((point) => point.portalId && deletedPortalIds.has(point.portalId))) {
-                    const { [id]: _, ...rest } = fields;
-                    fields = rest;
+                    delete fields[id];
                     changed = true;
                 }
             });
