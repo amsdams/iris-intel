@@ -7,8 +7,13 @@ const PLEXT_COOLDOWN_MS = 5000;
 const PLEXT_POLL_MS = 120000;
 const ARTIFACTS_POLL_MS = 60000;
 const ARTIFACTS_STARTUP_DEDUP_MS = 5000;
-const ENTITY_IDLE_POLL_MS = 60000;
-const ENTITY_MOVE_SETTLE_MS = 1500;
+const ENTITY_IDLE_POLL_CLOSE_MS = 300000; // 5m (z > 12)
+const ENTITY_IDLE_POLL_FAR_MS = 900000;   // 15m (z <= 12)
+const ENTITY_IDLE_ZOOM_THRESHOLD = 12;
+const ENTITY_MOVE_SETTLE_MS = 3000; // IITC-like settle delay
+const ENTITY_BATCH_SIZE = 25;       // IITC-like batch size
+const ENTITY_RETRY_LIMIT = 3;
+const ENTITY_RETRY_DELAY_MS = 5000;
 const ENTITY_FRESHNESS_TTL_MS = 10000;
 
 const STARTUP_GRACE_MS = 5000;
@@ -42,8 +47,11 @@ export function createRequestCoordinator(): RequestCoordinator {
     let artifactsPollId: number | null = null;
     let entitiesPollId: number | null = null;
     let entityMoveRefreshTimeoutId: number | null = null;
+    let entityRetryTimeoutId: number | null = null;
+    let entityRetryCount = 0;
     let lastRegionScoreRequestKey: string | null = null;
     let lastEntityCoverageKey: string | null = null;
+    let entityUnsub: (() => void) | null = null;
 
     const postMessage = (message: Record<string, unknown>): void => {
         window.postMessage(message, '*');
@@ -77,7 +85,14 @@ export function createRequestCoordinator(): RequestCoordinator {
         }
     };
 
-    const scheduleEntitiesFetch = (reason: 'startup' | 'move_settle' | 'idle'): void => {
+    const clearEntityRetry = (): void => {
+        if (entityRetryTimeoutId !== null) {
+            window.clearTimeout(entityRetryTimeoutId);
+            entityRetryTimeoutId = null;
+        }
+    };
+
+    const scheduleEntitiesFetch = (reason: 'startup' | 'move_settle' | 'idle' | 'retry'): void => {
         if (isSessionBlocked()) return;
 
         const { bounds, zoom } = useStore.getState().mapState;
@@ -89,18 +104,31 @@ export function createRequestCoordinator(): RequestCoordinator {
         const isSameCoverage = payload.coverageKey === lastEntityCoverageKey;
         const shouldSkipForFreshness = isSameCoverage && isEndpointFresh('entities', ENTITY_FRESHNESS_TTL_MS);
 
-        if (isEndpointInFlight('entities') || shouldSkipForFreshness) {
+        if (reason !== 'retry' && (isEndpointInFlight('entities') || shouldSkipForFreshness)) {
             return;
         }
 
+        if (reason !== 'retry') {
+            entityRetryCount = 0;
+            clearEntityRetry();
+        }
+
         lastEntityCoverageKey = payload.coverageKey;
-        postMessage({
-            type: 'IRIS_ENTITIES_FETCH',
-            tileKeys: payload.tileKeys,
-        });
+
+        // Batch tileKeys to avoid massive single requests (IITC-like batching)
+        for (let i = 0; i < payload.tileKeys.length; i += ENTITY_BATCH_SIZE) {
+            const batch = payload.tileKeys.slice(i, i + ENTITY_BATCH_SIZE);
+            postMessage({
+                type: 'IRIS_ENTITIES_FETCH',
+                tileKeys: batch,
+            });
+        }
 
         if (reason === 'idle') {
-            setNextAutoRefresh('entities', Date.now() + ENTITY_IDLE_POLL_MS);
+            const interval = zoom > ENTITY_IDLE_ZOOM_THRESHOLD 
+                ? ENTITY_IDLE_POLL_CLOSE_MS 
+                : ENTITY_IDLE_POLL_FAR_MS;
+            setNextAutoRefresh('entities', Date.now() + interval);
         }
     };
 
@@ -191,6 +219,24 @@ export function createRequestCoordinator(): RequestCoordinator {
         });
     };
 
+    const scheduleNextIdleEntitiesPoll = (): void => {
+        if (entitiesPollId !== null) {
+            window.clearTimeout(entitiesPollId);
+        }
+        
+        const zoom = useStore.getState().mapState.zoom;
+        const interval = zoom > ENTITY_IDLE_ZOOM_THRESHOLD 
+            ? ENTITY_IDLE_POLL_CLOSE_MS 
+            : ENTITY_IDLE_POLL_FAR_MS;
+            
+        entitiesPollId = window.setTimeout(() => {
+            scheduleEntitiesFetch('idle');
+            scheduleNextIdleEntitiesPoll();
+        }, interval);
+        
+        setNextAutoRefresh('entities', Date.now() + interval);
+    };
+
     return {
         start(): void {
             startupGraceUntil = Date.now() + STARTUP_GRACE_MS;
@@ -198,13 +244,33 @@ export function createRequestCoordinator(): RequestCoordinator {
             setNextAutoRefresh('artifacts', startupGraceUntil);
             setNextAutoRefresh('entities', startupGraceUntil);
 
+            // Subscribe to entity status to handle retries
+            entityUnsub = useStore.subscribe(
+                (state) => state.endpointDiagnostics['entities'],
+                (entities) => {
+                    if (entities.status === 'error') {
+                        if (entityRetryCount < ENTITY_RETRY_LIMIT) {
+                            entityRetryCount += 1;
+                            clearEntityRetry();
+                            entityRetryTimeoutId = window.setTimeout(() => {
+                                entityRetryTimeoutId = null;
+                                scheduleEntitiesFetch('retry');
+                            }, ENTITY_RETRY_DELAY_MS);
+                            setNextAutoRefresh('entities', Date.now() + ENTITY_RETRY_DELAY_MS);
+                        }
+                    } else if (entities.status === 'success') {
+                        entityRetryCount = 0;
+                        clearEntityRetry();
+                    }
+                }
+            );
+
             if (startupTimeoutId === null) {
                 startupTimeoutId = window.setTimeout(() => {
                     startupTimeoutId = null;
                     runStartupCatchup();
                     setNextAutoRefresh('plexts', Date.now() + PLEXT_POLL_MS);
                     setNextAutoRefresh('artifacts', Date.now() + ARTIFACTS_POLL_MS);
-                    setNextAutoRefresh('entities', Date.now() + ENTITY_IDLE_POLL_MS);
 
                     if (plextPollId === null) {
                         plextPollId = window.setInterval(() => {
@@ -220,12 +286,7 @@ export function createRequestCoordinator(): RequestCoordinator {
                         }, ARTIFACTS_POLL_MS);
                     }
 
-                    if (entitiesPollId === null) {
-                        entitiesPollId = window.setInterval(() => {
-                            scheduleEntitiesFetch('idle');
-                            setNextAutoRefresh('entities', Date.now() + ENTITY_IDLE_POLL_MS);
-                        }, ENTITY_IDLE_POLL_MS);
-                    }
+                    scheduleNextIdleEntitiesPoll();
                 }, STARTUP_GRACE_MS);
             }
         },
@@ -247,11 +308,17 @@ export function createRequestCoordinator(): RequestCoordinator {
             }
 
             if (entitiesPollId !== null) {
-                window.clearInterval(entitiesPollId);
+                window.clearTimeout(entitiesPollId);
                 entitiesPollId = null;
             }
 
+            if (entityUnsub) {
+                entityUnsub();
+                entityUnsub = null;
+            }
+
             clearEntityMoveRefresh();
+            clearEntityRetry();
             setNextAutoRefresh('plexts', null);
             setNextAutoRefresh('artifacts', null);
             setNextAutoRefresh('entities', null);
@@ -277,6 +344,7 @@ export function createRequestCoordinator(): RequestCoordinator {
             entityMoveRefreshTimeoutId = window.setTimeout(() => {
                 entityMoveRefreshTimeoutId = null;
                 scheduleEntitiesFetch('move_settle');
+                scheduleNextIdleEntitiesPoll(); // Reschedule idle poll after move
             }, ENTITY_MOVE_SETTLE_MS);
             setNextAutoRefresh('entities', Date.now() + ENTITY_MOVE_SETTLE_MS);
 

@@ -128,7 +128,7 @@ Tasks:
 | Keep passive interception as a complementary signal, not the only freshness source | Open | passive data is still useful, but should no longer be the sole reason the map becomes fresh |
 
 ### Viewport-driven entity freshness is deliberate
-Status: `Open`
+Status: `In Progress`
 
 Outcome:
 - current map bounds and zoom should drive when IRIS refreshes entities, with dedupe and backoff that stay understandable in logs
@@ -138,10 +138,13 @@ Tasks:
 | Task | Status | Notes |
 | --- | --- | --- |
 | Refresh entities on startup after the initial map position is known | Done | startup catch-up now includes an active entity refresh when bounds are available |
-| Refresh entities after map movement settles | Done | moveend now schedules a short settle delay before refreshing entities for the current bounds |
-| Add a periodic idle refresh for the current view | Done | a conservative idle poll now keeps the current view fresh even without map movement |
-| Gate entity refresh by zoom, in-flight state, and recent freshness | In Progress | current gate covers in-flight requests and same-coverage freshness, but not richer zoom/backoff policy yet |
-| Record enough coverage state to decide whether a new refresh is needed | Open | likely current bounds, zoom, last success time, and a simple coverage/params key |
+| Refresh entities after map movement settles | Done | moveend now schedules a 3s settle delay before refreshing entities for the current bounds (aligned with IITC) |
+| Add a periodic idle refresh for the current view | Done | implemented adaptive idle poll: 5m for z > 12, 15m for z <= 12 (aligned with IITC) |
+| Gate entity refresh by zoom, in-flight state, and recent freshness | Done | current gate covers in-flight requests, same-coverage freshness, and zoom-dependent adaptive timers |
+| Record enough coverage state to decide whether a new refresh is needed | Done | uses `coverageKey` (bounds + zoom + tile count) to dedupe redundant fetches |
+| Batch tile requests to avoid massive timeouts | Done | `getEntities` requests are now split into chunks of 25 tiles (aligned with IITC) |
+| Implement retry logic for failed entity fetches | Done | coordinator now performs up to 3 retries with 5s backoff after a failed fetch |
+
 
 ### Entity merge and removal behavior stays correct under faster refresh
 Status: `Open`

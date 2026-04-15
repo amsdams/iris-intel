@@ -144,6 +144,9 @@ const PlayerTrackerPlugin: IRISPlugin = {
             const lastPos = getLatLngFromEvent(lastEvent);
             const agoText = formatAgo(lastEvent.time, now);
 
+            const markerAgeBucket = Math.floor((now - lastEvent.time) / (EXPIRATION_MS / 4));
+            const markerOpacity = Math.max(0.1, 1 - 0.2 * markerAgeBucket);
+
             finalFeatures.push({
                 type: 'Feature',
                 id: `player:${name}`,
@@ -156,6 +159,7 @@ const PlayerTrackerPlugin: IRISPlugin = {
                     name,
                     team: history.team,
                     color: getFactionColor(history.team),
+                    opacity: markerOpacity,
                     isPlayerMarker: true,
                     label: `${name}, ${agoText}`,
                     time: lastEvent.time,
