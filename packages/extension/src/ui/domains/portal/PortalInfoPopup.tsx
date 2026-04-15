@@ -11,6 +11,19 @@ import { getOrnamentLabel } from '../../../content/domains/entities/ornaments';
 
 const MAX_RESO_ENERGY = [0, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000];
 
+function formatModStat(key: string, val: string | number): string {
+    const label = key.replace(/_/g, ' ').toLowerCase();
+    let displayVal = String(val);
+
+    if (key === 'HACK_SPEED' || key === 'HIT_BONUS' || key === 'REMOVAL_STICKINESS') {
+        displayVal = `${Number(val) / 10000}%`;
+    } else if (key === 'ATTACK_FREQUENCY' || key === 'FORCE_AMPLIFIER' || key === 'LINK_RANGE_MULTIPLIER' || key === 'LINK_DEFENSE_BOOST') {
+        displayVal = `${Number(val) / 1000}x`;
+    }
+
+    return `${displayVal} ${label}`;
+}
+
 export function PortalInfoPopup(): JSX.Element | null {
     const portals = useStore((state) => state.portals);
     const artifacts = useStore((state) => state.artifacts);
@@ -179,6 +192,15 @@ export function PortalInfoPopup(): JSX.Element | null {
                                         {m.rarity} {m.name}
                                     </span>
                                     <span className="iris-portal-mod-owner" style={{ color: colour }}>{m.owner}</span>
+                                    {m.stats && Object.keys(m.stats).length > 0 && (
+                                        <div className="iris-portal-mod-stats">
+                                            {Object.keys(m.stats).map(key => (
+                                                <div key={key}>
+                                                    +{formatModStat(key, m.stats[key])}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}
@@ -242,14 +264,6 @@ export function PortalInfoPopup(): JSX.Element | null {
                                         <span className="iris-portal-energy-max"> / {maxEnergy.toLocaleString()}</span>}
                                 </span>
                             </div>
-                        </div>
-                        <div className="iris-portal-details-table">
-                            <div className="iris-portal-details-row">
-                                <span className="iris-portal-details-label">Links</span>
-                                <span className="iris-portal-details-value iris-portal-details-value-faction">
-                                    {linksIn} in / {linksOut} out
-                                </span>
-                            </div>
                             <div className="iris-portal-details-row">
                                 <span className="iris-portal-details-label">Keys</span>
                                 <span className="iris-portal-details-value iris-portal-details-value-faction">
@@ -260,6 +274,21 @@ export function PortalInfoPopup(): JSX.Element | null {
                                             : inventory.length === 0
                                                 ? 'unavailable'
                                                 : keyCount.toLocaleString()}
+                                </span>
+                            </div>
+                        </div>
+                        <div className="iris-portal-details-table">
+                            <div className="iris-portal-details-row">
+                                <span className="iris-portal-details-label">Links</span>
+                                <span className="iris-portal-details-value iris-portal-details-value-faction">
+                                    {linksIn} in / {linksOut} out
+                                </span>
+                            </div>
+                            <div className="iris-portal-details-row">
+                                <span className="iris-portal-details-label">Mitigation</span>
+                                <span className="iris-portal-details-value">
+                                    {portal.mitigation?.total || 0}
+                                    {portal.mitigation?.excess && portal.mitigation.excess > 0 ? ` (+${portal.mitigation.excess})` : ''}
                                 </span>
                             </div>
                         </div>
@@ -290,8 +319,8 @@ export function PortalInfoPopup(): JSX.Element | null {
                             Captured
                         </span>
                         <span
-                            className={`iris-portal-history-badge iris-portal-history-badge-scanned ${portal.scanned ? 'iris-portal-history-badge-active' : ''}`}>
-                            Scanned
+                            className={`iris-portal-history-badge iris-portal-history-badge-scout-controlled ${portal.scoutControlled ? 'iris-portal-history-badge-active' : ''}`}>
+                            Scout Controlled
                         </span>
                     </div>
                 </div>

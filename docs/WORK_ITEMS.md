@@ -123,8 +123,9 @@ Tasks:
 | Task | Status | Notes |
 | --- | --- | --- |
 | Introduce a minimal IRIS-owned `getEntities` request path | Done | IRIS now posts active `getEntities` requests using IITC-style `tileKeys` derived from current bounds/zoom |
-| Route entity refresh through a dedicated coordinator/scheduler path | In Progress | request coordinator now owns startup, move-settle, and idle entity refresh, but coverage/dedupe policy is still intentionally simple |
+| Route entity refresh through a dedicated coordinator/scheduler path | In Progress | request coordinator now owns startup, move-settle, and idle refresh; implement strict 5-request parallel limit (aligned with IITC) |
 | Preserve CSRF/version/session discipline for active entity fetches | Done | active entity fetches now reuse the same guarded `safeIrisFetch` path as other Intel requests |
+| Implement strict concurrent request limiting | Open | limit parallel Intel requests to 5 (match IITC MAX_REQUESTS) to avoid blocking other traffic |
 | Keep passive interception as a complementary signal, not the only freshness source | Open | passive data is still useful, but should no longer be the sole reason the map becomes fresh |
 
 ### Viewport-driven entity freshness is deliberate
@@ -251,7 +252,7 @@ Bugs:
 | Search can be misunderstood as portal-name search | Done | verified current topbar wording keeps search scoped to place and coordinate lookup |
 
 ### Portal details show the portal facts we can derive confidently
-Status: `Done`
+Status: `In Progress`
 
 Outcome:
 - improve portal details without destabilizing mobile interaction or changing the popup model
@@ -265,6 +266,7 @@ Tasks:
 | Add links and energy summary | Done | now shows links in, links out, and energy current/max from existing store data |
 | Compact popup layout polish | Done | keep descriptive labels; use tighter summary/details tables without changing popup ownership |
 | Fix mobile two-column layout for tables | Done | summary and details tables now stay 2-column on mobile |
+| Enhance `parser.ts` for more detailed mod stats and history flags | Done | capture 100% of attributes found in IITC's `entity_decode.js` (shielding, history flags, etc.) |
 
 ### Faction and player styling is consistent
 Status: `Done`
@@ -388,7 +390,7 @@ Tasks:
 | Add debug-only mock ornaments flow for local testing | Done | diagnostics can now add and clear mock ornament overlays without overwriting live ornament data on portals |
 | Add a local ornament label map for IITC-known ids | Done | portal details now map the IITC-known anomaly, beacon, battle, reward, shard, and scouting ornament ids to friendly labels while unknown ids still fall back to raw codes |
 | Expand ornament mock data to cover all locally known ids | Done | diagnostics mock ornaments now distribute the full local known-id set across currently loaded portals instead of only a couple of placeholder values |
-| Decide whether highlighters should be mutually exclusive or just ordinary concurrent plugins | Open | IITC references use a single selected highlighter, but IRIS has not committed to that model yet |
+| Implement a Single Highlighter selection model | Open | align with IITC by allowing users to select one active highlighter (e.g. "Highlight weak portals") |
 | Separate plugin HTML markers from generic GeoJSON point rendering | Open | current `MapOverlay` support works, but it is still a special-case renderer path |
 | Add visibility/zoom guardrails for label-heavy plugins | Done | initial `minZoom` gating now reduces clutter for level labels and key counts |
 
@@ -638,9 +640,10 @@ Tasks:
 
 ## Current Next Pickup
 
-1. Turn the draw-tools epic into an implementation plan for the first mobile-safe baseline.
-2. Keep the startup duplicate score/subscription burst tracked, but do not block other work on it.
-3. Investigate richer portal-details stats only after deciding which ones are truly defensible.
+1. **[Live Map Freshness]** Implement a strict concurrent request limit (5) in `RequestCoordinator`.
+2. **[Plugin Overlay]** Implement a "Single Highlighter" selection model.
+3. **[Intel Parity]** Enhance `parser.ts` for more detailed mod stats and history flags.
+4. **[Draw Tools]** Turn the draw-tools epic into an implementation plan for the first mobile-safe baseline.
 
 ## Snapshot And Reference Sources
 

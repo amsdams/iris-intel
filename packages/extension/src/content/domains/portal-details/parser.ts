@@ -1,7 +1,7 @@
 import { normalizeTeam, Portal } from '@iris/core';
 import { PortalDetailsData } from './types';
 
-export function parsePortalDetails(data: PortalDetailsData, params: { guid?: string }): Partial<Portal> | null {
+export function parsePortalDetails(data: PortalDetailsData, params: { guid?: string }, linkCount = 0): Partial<Portal> | null {
   if (!data.result || !Array.isArray(data.result)) return null;
   const details = data.result;
 
@@ -10,12 +10,24 @@ export function parsePortalDetails(data: PortalDetailsData, params: { guid?: str
 
     const mods = (details[14] as unknown[][] | undefined)
       ?.filter(Boolean)
-      .map((mod: unknown[]) => ({
-        owner: mod[0] as string,
-        name: mod[1] as string,
-        rarity: mod[2] as string,
-        stats: mod[3] as Record<string, string>,
-      })) || [];
+      .map((mod: unknown[]) => {
+        const stats: Record<string, string | number> = {};
+        const rawStats = mod[3] as Record<string, string>;
+        if (rawStats) {
+          Object.keys(rawStats).forEach((key) => {
+            const val = rawStats[key];
+            const num = parseInt(val, 10);
+            stats[key] = isNaN(num) ? val : num;
+          });
+        }
+
+        return {
+          owner: mod[0] as string,
+          name: mod[1] as string,
+          rarity: mod[2] as string,
+          stats,
+        };
+      }) || [];
 
     const resonators = (details[15] as unknown[][] | undefined)
       ?.filter(Boolean)
@@ -24,6 +36,19 @@ export function parsePortalDetails(data: PortalDetailsData, params: { guid?: str
         level: resonator[1] as number,
         energy: resonator[2] as number,
       })) || [];
+
+    // Calculate Mitigation
+    let shieldMitigation = 0;
+    let linkDefenseBoost = 1;
+    mods.forEach((mod) => {
+      if (mod.stats.MITIGATION) shieldMitigation += Number(mod.stats.MITIGATION);
+      if (mod.stats.LINK_DEFENSE_BOOST) {
+          linkDefenseBoost *= (Number(mod.stats.LINK_DEFENSE_BOOST) / 1000);
+      }
+    });
+    linkDefenseBoost = Math.round(10 * linkDefenseBoost) / 10;
+    const linksMitigation = Math.round((400 / 9) * Math.atan(linkCount / Math.E));
+    const totalMitigation = Math.min(95, shieldMitigation + linksMitigation * linkDefenseBoost);
 
     return {
       id: params.guid || '',
@@ -38,9 +63,18 @@ export function parsePortalDetails(data: PortalDetailsData, params: { guid?: str
       owner: details[16] as string,
       mods,
       resonators,
+      history,
       visited: !!(history & 1),
       captured: !!(history & 2),
-      scanned: !!(history & 4),
+      scoutControlled: !!(history & 4),
+      scanned: !!(history & 4), // IRIS uses scanned for scoutControlled bit
+      mitigation: {
+        total: totalMitigation,
+        shields: shieldMitigation,
+        links: linksMitigation,
+        linkDefenseBoost,
+        excess: Math.round(10 * (shieldMitigation + linksMitigation * linkDefenseBoost - totalMitigation)) / 10,
+      },
       hasMissionsStartingHere: Boolean(details[10]),
     };
   } catch (error) {

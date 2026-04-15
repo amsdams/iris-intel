@@ -33,6 +33,8 @@ export function parseEntities(data: IntelMapData): {
         const lng = parseFloat(entData[3] as string) / 1e6;
         if (isNaN(lat) || isNaN(lng)) return;
 
+        const history = (entData[18] as number) || 0;
+
         portalsMap[id] = {
           id,
           lat,
@@ -42,9 +44,11 @@ export function parseEntities(data: IntelMapData): {
           health: parseInt(String(entData[5]), 10) || 0,
           name: typeof entData[8] === 'string' ? entData[8] : undefined,
           image: typeof entData[7] === 'string' ? entData[7] : undefined,
-          visited: !!entData[10],
-          captured: !!entData[11],
-          scanned: !!entData[12],
+          history,
+          visited: history ? !!(history & 1) : undefined,
+          captured: history ? !!(history & 2) : undefined,
+          scoutControlled: history ? !!(history & 4) : undefined,
+          hasMissionsStartingHere: !!entData[10] || !!entData[11],
           ornaments: Array.isArray(entData[9])
             ? (entData[9] as unknown[]).filter((ornament): ornament is string => typeof ornament === 'string')
             : undefined,

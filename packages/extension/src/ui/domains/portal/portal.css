@@ -104,6 +104,9 @@
 .iris-portal-history-badge-scanned { border-color: var(--iris-history-scanned); }
 .iris-portal-history-badge-scanned.iris-portal-history-badge-active { color: var(--iris-history-scanned); }
 
+.iris-portal-history-badge-scout-controlled { border-color: var(--iris-history-scout-controlled, #ff8c00); }
+.iris-portal-history-badge-scout-controlled.iris-portal-history-badge-active { color: var(--iris-history-scout-controlled, #ff8c00); }
+
 .iris-portal-history-badge-inactive {
     opacity: 0.6;
 }
@@ -177,6 +180,13 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     color: var(--iris-faction-color);
+}
+
+.iris-portal-mod-stats {
+    font-size: 0.75em;
+    color: #888;
+    line-height: 1.1;
+    margin-top: 2px;
 }
 
 .iris-portal-details-grid {

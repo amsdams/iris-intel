@@ -29,7 +29,7 @@ export interface PortalMod {
     owner: string;
     name: string;
     rarity: string;
-    stats: Record<string, string>;
+    stats: Record<string, string | number>;
 }
 
 export interface PortalResonator {
@@ -54,6 +54,15 @@ export interface Portal {
     visited?: boolean;
     captured?: boolean;
     scanned?: boolean;
+    scoutControlled?: boolean;
+    history?: number;
+    mitigation?: {
+        total: number;
+        shields: number;
+        links: number;
+        linkDefenseBoost: number;
+        excess: number;
+    };
     hasMissionsStartingHere?: boolean;
     ornaments?: string[];
 }
