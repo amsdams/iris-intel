@@ -1,5 +1,5 @@
 import { normalizeTeam, Field, Link, Portal } from '@iris/core';
-import { IntelMapData, IntelTile } from './types';
+import { IntelMapData } from './types';
 
 export function parseEntities(data: IntelMapData): {
   portals: Partial<Portal>[];
@@ -7,14 +7,16 @@ export function parseEntities(data: IntelMapData): {
   fields: Partial<Field>[];
   deletedGuids: string[];
 } {
-  const portals: Partial<Portal>[] = [];
+  const portalsMap: Record<string, Partial<Portal>> = {};
   const links: Partial<Link>[] = [];
   const fields: Partial<Field>[] = [];
   const deletedGuids: string[] = [];
 
-  if (!data.result?.map) return { portals, links, fields, deletedGuids };
+  if (!data.result || !data.result.map) {
+    return { portals: [], links: [], fields: [], deletedGuids: [] };
+  }
 
-  Object.values(data.result.map).forEach((tile: IntelTile) => {
+  Object.values(data.result.map).forEach((tile) => {
     if (tile.deletedGameEntityGuids) {
       deletedGuids.push(...tile.deletedGameEntityGuids);
     }
@@ -32,7 +34,7 @@ export function parseEntities(data: IntelMapData): {
         if (isNaN(lat) || isNaN(lng)) return;
 
         const history = (entData[18] as number) || 0;
-        portals.push({
+        portalsMap[id] = {
           id,
           lat,
           lng,
@@ -45,7 +47,7 @@ export function parseEntities(data: IntelMapData): {
           ornaments: Array.isArray(entData[9])
             ? (entData[9] as unknown[]).filter((ornament): ornament is string => typeof ornament === 'string')
             : undefined,
-        });
+        };
       } else if (entType === 'e') {
         const fromLat = parseFloat(entData[3] as string) / 1e6;
         const fromLng = parseFloat(entData[4] as string) / 1e6;
@@ -53,23 +55,42 @@ export function parseEntities(data: IntelMapData): {
         const toLng = parseFloat(entData[7] as string) / 1e6;
         if (isNaN(fromLat) || isNaN(fromLng) || isNaN(toLat) || isNaN(toLng)) return;
 
+        const fromPortalId = entData[2] as string;
+        const toPortalId = entData[5] as string;
+
+        // Add placeholder portals if not already present or if we only have summary
+        if (!portalsMap[fromPortalId]) {
+          portalsMap[fromPortalId] = { id: fromPortalId, lat: fromLat, lng: fromLng, team };
+        }
+        if (!portalsMap[toPortalId]) {
+          portalsMap[toPortalId] = { id: toPortalId, lat: toLat, lng: toLng, team };
+        }
+
         links.push({
           id,
           team,
-          fromPortalId: entData[2] as string,
+          fromPortalId,
           fromLat,
           fromLng,
-          toPortalId: entData[5] as string,
+          toPortalId,
           toLat,
           toLng,
         });
       } else if (entType === 'r') {
         const points = (entData[2] as unknown[][])
-          .map((point: unknown[]) => ({
-            portalId: String(point[0] ?? ''),
-            lat: parseFloat(point[1] as string) / 1e6,
-            lng: parseFloat(point[2] as string) / 1e6,
-          }))
+          .map((point: unknown[]) => {
+            const portalId = String(point[0] ?? '');
+            const lat = parseFloat(point[1] as string) / 1e6;
+            const lng = parseFloat(point[2] as string) / 1e6;
+
+            if (portalId && !isNaN(lat) && !isNaN(lng)) {
+              if (!portalsMap[portalId]) {
+                portalsMap[portalId] = { id: portalId, lat, lng, team };
+              }
+            }
+
+            return { portalId, lat, lng };
+          })
           .filter((point) => point.portalId && !isNaN(point.lat) && !isNaN(point.lng));
 
         if (points.length >= 3) {
@@ -79,5 +100,10 @@ export function parseEntities(data: IntelMapData): {
     });
   });
 
-  return { portals, links, fields, deletedGuids };
+  return { 
+    portals: Object.values(portalsMap), 
+    links, 
+    fields, 
+    deletedGuids 
+  };
 }

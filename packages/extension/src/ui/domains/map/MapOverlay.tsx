@@ -297,6 +297,7 @@ export function MapOverlay(): JSX.Element {
             paint: {
               'circle-radius': [
                 'interpolate', ['linear'], ['zoom'],
+                3, 1,
                 10, 2,
                 15, 6,
               ],
@@ -319,6 +320,7 @@ export function MapOverlay(): JSX.Element {
             paint: {
                 'circle-radius': [
                   'interpolate', ['linear'], ['zoom'],
+                  3, 2,
                   10, 4,
                   15, 10,
                 ],
@@ -336,6 +338,7 @@ export function MapOverlay(): JSX.Element {
             paint: {
                 'circle-radius': [
                   'interpolate', ['linear'], ['zoom'],
+                  3, 3,
                   10, 6,
                   15, 14,
                 ],
@@ -353,6 +356,7 @@ export function MapOverlay(): JSX.Element {
             paint: {
                 'circle-radius': [
                   'interpolate', ['linear'], ['zoom'],
+                  3, 4,
                   10, 8,
                   15, 18,
                 ],
@@ -369,6 +373,7 @@ export function MapOverlay(): JSX.Element {
             paint: {
               'circle-radius': [
                 'interpolate', ['linear'], ['zoom'],
+                3, 3,
                 10, 6,
                 15, 10,
               ],
@@ -384,6 +389,7 @@ export function MapOverlay(): JSX.Element {
             paint: {
               'circle-radius': [
                 'interpolate', ['linear'], ['zoom'],
+                3, 3,
                 10, 6,
                 15, 12,
               ],
@@ -400,6 +406,7 @@ export function MapOverlay(): JSX.Element {
             paint: {
               'circle-radius': [
                 'interpolate', ['linear'], ['zoom'],
+                3, 2,
                 10, 4,
                 15, 10,
               ],

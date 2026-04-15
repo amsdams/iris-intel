@@ -1,5 +1,5 @@
 const DEFAULT_ZOOM_TO_TILES_PER_EDGE = [1, 1, 1, 40, 40, 80, 80, 320, 1000, 2000, 2000, 4000, 8000, 16000, 16000, 32000];
-const DEFAULT_ZOOM_TO_LEVEL = [8, 8, 8, 8, 7, 7, 7, 6, 6, 5, 4, 4, 3, 2, 2, 1, 1];
+const DEFAULT_ZOOM_TO_LEVEL = [8, 8, 8, 8, 7, 7, 7, 6, 6, 5, 4, 4, 3, 2, 2, 0, 0];
 const DEFAULT_ZOOM_TO_LINK_LENGTH = [200000, 200000, 200000, 200000, 200000, 60000, 60000, 10000, 5000, 2500, 2500, 800, 300, 0, 0];
 const MAX_MAP_ZOOM = 21;
 
@@ -26,11 +26,12 @@ export interface EntityRequestPayload {
 function getMapZoomTileParameters(zoom: number): TileParams {
   const maxTilesPerEdge = DEFAULT_ZOOM_TO_TILES_PER_EDGE[DEFAULT_ZOOM_TO_TILES_PER_EDGE.length - 1];
 
-  // Portals start appearing at zoom 13 in Ingress Intel
-  const portalZoomLimit = 13;
+  // Portals start appearing as "All Portals" (Level 0+) at zoom 15+.
+  // Below zoom 15, Intel returns portals selectively (e.g., L2+ at zoom 13-14).
+  const portalZoomLimit = 15;
 
   return {
-    level: DEFAULT_ZOOM_TO_LEVEL[zoom] || 0,
+    level: DEFAULT_ZOOM_TO_LEVEL[zoom] ?? 0,
     tilesPerEdge: DEFAULT_ZOOM_TO_TILES_PER_EDGE[zoom] || maxTilesPerEdge,
     hasPortals: zoom >= portalZoomLimit,
     zoom,
@@ -43,10 +44,12 @@ function getDataZoomForMapZoom(mapZoom: number): number {
 
   while (zoom > 0) {
     const nextParams = getMapZoomTileParameters(zoom - 1);
+    
+    // Aligned with IITC's getDataZoomForMapZoom logic
     const changesDetailLevel =
       nextParams.tilesPerEdge !== originalParams.tilesPerEdge ||
       nextParams.hasPortals !== originalParams.hasPortals ||
-      (nextParams.level * Number(nextParams.hasPortals)) !== (originalParams.level * Number(originalParams.hasPortals));
+      nextParams.level !== originalParams.level;
 
     if (changesDetailLevel) {
       break;
@@ -71,8 +74,9 @@ function pointToTileId(params: TileParams, x: number, y: number): string {
 }
 
 export function buildEntityRequestPayload(bounds: BoundsE6, mapZoom: number): EntityRequestPayload {
-  // MapLibre zoom level is often offset by 1 compared to Google Maps/Leaflet for the same visual area
-  const MAPLIBRE_ZOOM_OFFSET = 1;
+  // MapLibre zoom level matches Leaflet/Intel when using 256px tiles.
+  // The +1 offset was a remnant of 512px tile assumptions and caused "data overflow" at zoom 14.
+  const MAPLIBRE_ZOOM_OFFSET = 0;
   const adjustedZoom = mapZoom + MAPLIBRE_ZOOM_OFFSET;
 
   const dataZoom = getDataZoomForMapZoom(adjustedZoom);
