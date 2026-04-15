@@ -142,6 +142,15 @@ export function createSessionRuntime(win: Window, doc: Document): SessionRuntime
     });
     syncLandingSessionState();
 
+    const MAX_CONCURRENT_REQUESTS = 5;
+    let activeRequestsCount = 0;
+    const requestQueue: {
+        url: string;
+        options: RequestInit;
+        resolve: (value: Response | PromiseLike<Response>) => void;
+        reject: (reason?: unknown) => void;
+    }[] = [];
+
     const observeIntelVersion = (candidate?: string | null): void => {
         if (candidate && candidate !== intelVersion) {
             intelVersion = candidate;
@@ -188,18 +197,45 @@ export function createSessionRuntime(win: Window, doc: Document): SessionRuntime
         }
     };
 
-    const safeIrisFetch = async (url: string, options: RequestInit): Promise<Response> => {
-        await ensureIntelVersion(url);
-
-        if (sessionState === 'expired' || sessionState === 'initial_login_required') {
-            throw new Error(`IRIS: blocked ${url} because Intel session is expired`);
+    const processQueue = (): void => {
+        if (activeRequestsCount >= MAX_CONCURRENT_REQUESTS || requestQueue.length === 0) {
+            return;
         }
 
-        const body = JSON.parse(options.body as string) as Record<string, unknown>;
-        body.v = intelVersion;
-        options.body = JSON.stringify(body);
+        const request = requestQueue.shift();
+        if (!request) return;
 
-        return fetch(url, options);
+        const { url, options, resolve, reject } = request;
+        activeRequestsCount++;
+
+        (async (): Promise<void> => {
+            try {
+                await ensureIntelVersion(url);
+
+                if (sessionState === 'expired' || sessionState === 'initial_login_required') {
+                    throw new Error(`IRIS: blocked ${url} because Intel session is expired`);
+                }
+
+                const body = JSON.parse(options.body as string) as Record<string, unknown>;
+                body.v = intelVersion;
+                options.body = JSON.stringify(body);
+
+                const response = await fetch(url, options);
+                resolve(response);
+            } catch (e) {
+                reject(e);
+            } finally {
+                activeRequestsCount--;
+                processQueue();
+            }
+        })();
+    };
+
+    const safeIrisFetch = (url: string, options: RequestInit): Promise<Response> => {
+        return new Promise((resolve, reject) => {
+            requestQueue.push({ url, options, resolve, reject });
+            processQueue();
+        });
     };
 
     return {

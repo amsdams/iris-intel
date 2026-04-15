@@ -125,7 +125,7 @@ Tasks:
 | Introduce a minimal IRIS-owned `getEntities` request path | Done | IRIS now posts active `getEntities` requests using IITC-style `tileKeys` derived from current bounds/zoom |
 | Route entity refresh through a dedicated coordinator/scheduler path | In Progress | request coordinator now owns startup, move-settle, and idle refresh; implement strict 5-request parallel limit (aligned with IITC) |
 | Preserve CSRF/version/session discipline for active entity fetches | Done | active entity fetches now reuse the same guarded `safeIrisFetch` path as other Intel requests |
-| Implement strict concurrent request limiting | Open | limit parallel Intel requests to 5 (match IITC MAX_REQUESTS) to avoid blocking other traffic |
+| Implement strict concurrent request limiting | Done | limit parallel Intel requests to 5 (match IITC MAX_REQUESTS) to avoid blocking other traffic; implemented in `safeIrisFetch` via FIFO queue |
 | Keep passive interception as a complementary signal, not the only freshness source | Open | passive data is still useful, but should no longer be the sole reason the map becomes fresh |
 
 ### Viewport-driven entity freshness is deliberate
@@ -640,9 +640,9 @@ Tasks:
 
 ## Current Next Pickup
 
-1. **[Live Map Freshness]** Implement a strict concurrent request limit (5) in `RequestCoordinator`.
+1. **[Live Map Freshness]** Implement a strict concurrent request limit (5) in `RequestCoordinator` (Done).
 2. **[Plugin Overlay]** Implement a "Single Highlighter" selection model.
-3. **[Intel Parity]** Enhance `parser.ts` for more detailed mod stats and history flags.
+3. **[Intel Parity]** Enhance `parser.ts` for more detailed mod stats and history flags (Done).
 4. **[Draw Tools]** Turn the draw-tools epic into an implementation plan for the first mobile-safe baseline.
 
 ## Snapshot And Reference Sources
