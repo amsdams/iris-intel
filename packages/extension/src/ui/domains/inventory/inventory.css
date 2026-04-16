@@ -7,6 +7,7 @@
 }
 
 .iris-inventory-total {
+    flex-shrink: 0;
     margin-bottom: 8px;
     padding: 12px 16px 0;
     font-size: 0.85em;
@@ -19,6 +20,7 @@
 }
 
 .iris-inventory-hints {
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -32,6 +34,7 @@
 }
 
 .iris-inventory-sort {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     flex-wrap: wrap;
@@ -64,6 +67,7 @@
 }
 
 .iris-inventory-filter {
+    flex-shrink: 0;
     padding: 0 16px 8px;
 }
 
@@ -73,21 +77,16 @@
 }
 
 .iris-inventory-tabs {
+    flex-shrink: 0;
     display: flex;
-    position: sticky;
-    top: 0;
-    z-index: 3;
     border-bottom: 1px solid var(--iris-border-dim);
-    margin-bottom: 8px;
+    margin-bottom: 0;
     overflow-x: auto;
     white-space: nowrap;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    margin-left: -16px;
-    margin-right: -16px;
     padding: 0 16px;
     background: var(--iris-popup-bg, rgb(0 0 0 / 96%));
-    box-shadow: 0 1px 0 rgb(0 0 0 / 45%);
 }
 
 .iris-inventory-tabs::-webkit-scrollbar {
@@ -98,7 +97,7 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 12px;
+    padding: 10px 12px;
     cursor: pointer;
     font-size: 0.75em;
     color: var(--iris-text-muted);
@@ -128,7 +127,7 @@
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding: 0 16px 16px;
+    padding: 0 0 16px;
 }
 
 .iris-inventory-scroll-container::-webkit-scrollbar {
@@ -164,9 +163,16 @@
 }
 
 .iris-inventory-table th {
-    padding: 4px;
-    font-weight: normal;
-    font-size: 0.8em;
+    padding: 10px 16px;
+    font-weight: bold;
+    font-size: 0.72em;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--iris-popup-bg, rgb(0 0 0 / 96%));
+    box-shadow: inset 0 -1px 0 var(--iris-border-dim);
 }
 
 .iris-inventory-table th:last-child {
@@ -178,7 +184,7 @@
 }
 
 .iris-inventory-table td {
-    padding: 6px 4px;
+    padding: 8px 16px;
 }
 
 .iris-inventory-table td:last-child {
