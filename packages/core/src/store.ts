@@ -123,6 +123,7 @@ export interface FailedRequest {
 export interface SuccessfulRequest {
     url: string;
     time: number;
+    isActive?: boolean;
 }
 
 export interface JSError {
@@ -168,6 +169,11 @@ export interface EndpointDiagnostics {
     lastErrorText: string | null;
     lastUrl: string;
     nextAutoRefreshAt: number | null;
+    lastRefreshReason: string | null;
+    lastSkipReason: string | null;
+    lastActiveSuccessAt: number | null;
+    lastPassiveSuccessAt: number | null;
+    lastCoverageKey: string | null;
 }
 
 export interface InventoryItemData {
@@ -463,6 +469,7 @@ interface DiagnosticsSlice {
     setSessionRecovering: () => void;
     setSessionRecovered: () => void;
     setEndpointNextAutoRefresh: (key: EndpointKey, nextAutoRefreshAt: number | null) => void;
+    setEndpointMetadata: (key: EndpointKey, metadata: Partial<EndpointDiagnostics>) => void;
     clearEndpointDiagnostics: () => void;
 }
 
@@ -496,6 +503,11 @@ const createEmptyEndpointDiagnostics = (): Record<EndpointKey, EndpointDiagnosti
             lastErrorText: null,
             lastUrl: '',
             nextAutoRefreshAt: null,
+            lastRefreshReason: null,
+            lastSkipReason: null,
+            lastActiveSuccessAt: null,
+            lastPassiveSuccessAt: null,
+            lastCoverageKey: null,
         } satisfies EndpointDiagnostics]),
     ) as Record<EndpointKey, EndpointDiagnostics>;
 
@@ -961,6 +973,8 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
                     ...state.endpointDiagnostics[endpointKey],
                     status: 'success',
                     lastSuccessAt: request.time,
+                    lastActiveSuccessAt: request.isActive ? request.time : state.endpointDiagnostics[endpointKey].lastActiveSuccessAt,
+                    lastPassiveSuccessAt: !request.isActive ? request.time : state.endpointDiagnostics[endpointKey].lastPassiveSuccessAt,
                     lastErrorAt: null,
                     lastErrorStatus: null,
                     lastErrorText: null,
@@ -1020,6 +1034,15 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
             [key]: {
                 ...state.endpointDiagnostics[key],
                 nextAutoRefreshAt,
+            },
+        },
+    })),
+    setEndpointMetadata: (key, metadata) => set((state) => ({
+        endpointDiagnostics: {
+            ...state.endpointDiagnostics,
+            [key]: {
+                ...state.endpointDiagnostics[key],
+                ...metadata,
             },
         },
     })),

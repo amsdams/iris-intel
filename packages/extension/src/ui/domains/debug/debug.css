@@ -45,6 +45,43 @@
 
 .iris-debug-row-endpoint {
     align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.iris-debug-endpoint-main {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    align-items: center;
+}
+
+.iris-debug-endpoint-details {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    border-top: 1px solid #1c1c1c;
+    margin-top: 2px;
+    padding-top: 2px;
+    background: #151515;
+}
+
+.iris-debug-endpoint-details .iris-debug-row {
+    padding: 2px 8px;
+    border-bottom: none;
+    min-height: auto;
+}
+
+.iris-debug-label-indent {
+    color: #666;
+    font-size: 0.72em;
+    padding-left: 8px;
+}
+
+.iris-debug-coverage-key {
+    font-family: monospace;
+    font-size: 0.7em;
+    opacity: 0.7;
 }
 
 .iris-debug-label {

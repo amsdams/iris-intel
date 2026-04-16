@@ -104,6 +104,7 @@ export function installPassiveInterception(runtime: SessionRuntime): void {
     const originalFetch = window.fetch;
     window.fetch = async function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
         const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : input.url);
+        const isActive = init?._iris_active === true;
 
         runtime.sniffIntelVersion(init?.body);
 
@@ -119,8 +120,8 @@ export function installPassiveInterception(runtime: SessionRuntime): void {
 
                 try {
                     const data = await response.clone().json() as { v?: string };
-                    window.postMessage({ type: 'IRIS_REQUEST_SUCCESS', url, time: Date.now() }, '*');
-                    window.postMessage({ type: 'IRIS_DATA', url, data, params: init?.body }, '*');
+                    window.postMessage({ type: 'IRIS_REQUEST_SUCCESS', url, time: Date.now(), isActive }, '*');
+                    window.postMessage({ type: 'IRIS_DATA', url, data, params: init?.body, isActive }, '*');
                     runtime.observeIntelVersion(data.v);
                 } catch {
                     try {

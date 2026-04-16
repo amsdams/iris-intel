@@ -102,18 +102,48 @@ export function createRequestCoordinator(): RequestCoordinator {
     };
 
     const scheduleEntitiesFetch = (reason: 'startup' | 'move_settle' | 'idle' | 'retry'): void => {
-        if (isSessionBlocked()) return;
+        if (isSessionBlocked()) {
+            useStore.getState().setEndpointMetadata('entities', {
+                lastRefreshReason: reason,
+                lastSkipReason: 'session blocked',
+            });
+            return;
+        }
 
         const { bounds, zoom } = useStore.getState().mapState;
-        if (!bounds) return;
+        const debugLogging = useStore.getState().debugLogging;
+        if (!bounds) {
+            useStore.getState().setEndpointMetadata('entities', {
+                lastRefreshReason: reason,
+                lastSkipReason: 'no bounds',
+            });
+            return;
+        }
 
         const payload = buildEntityRequestPayload(bounds, zoom);
-        if (payload.tileKeys.length === 0) return;
+        if (payload.tileKeys.length === 0) {
+            useStore.getState().setEndpointMetadata('entities', {
+                lastRefreshReason: reason,
+                lastSkipReason: 'no tiles',
+            });
+            return;
+        }
+
+        useStore.getState().setEndpointMetadata('entities', {
+            lastRefreshReason: reason,
+            lastSkipReason: null,
+            lastCoverageKey: payload.coverageKey,
+        });
 
         const isSameCoverage = payload.coverageKey === lastEntityCoverageKey;
         const shouldSkipForFreshness = isSameCoverage && isEndpointFresh('entities', ENTITY_FRESHNESS_TTL_MS);
 
         if (reason !== 'retry' && (isEndpointInFlight('entities') || shouldSkipForFreshness)) {
+            const skipReason = isEndpointInFlight('entities') ? 'in-flight' : 'cooldown';
+            useStore.getState().setEndpointMetadata('entities', { lastSkipReason: skipReason });
+            if (debugLogging) {
+                console.log(`IRIS: Skipping entities fetch (${reason}): ${skipReason}`);
+            }
             return;
         }
 
@@ -134,6 +164,10 @@ export function createRequestCoordinator(): RequestCoordinator {
         }
 
         if (tilesToFetch.length === 0) {
+            useStore.getState().setEndpointMetadata('entities', { lastSkipReason: 'all fresh' });
+            if (debugLogging) {
+                console.log(`IRIS: Skipping entities fetch (${reason}): all ${payload.tileKeys.length} tiles are fresh`);
+            }
             if (reason === 'idle') {
                 const interval = zoom > ENTITY_IDLE_ZOOM_THRESHOLD 
                     ? ENTITY_IDLE_POLL_CLOSE_MS 
@@ -141,6 +175,10 @@ export function createRequestCoordinator(): RequestCoordinator {
                 setNextAutoRefresh('entities', Date.now() + interval);
             }
             return;
+        }
+
+        if (debugLogging) {
+            console.log(`IRIS: Starting entities fetch (${reason}): requesting ${tilesToFetch.length} of ${payload.tileKeys.length} tiles`);
         }
 
         lastEntityCoverageKey = payload.coverageKey;
@@ -539,10 +577,6 @@ export function createRequestCoordinator(): RequestCoordinator {
         onRequestStart(url: string): void {
             if (url.includes('getPlexts')) {
                 lastPlextRequestTime = Date.now();
-            }
-
-            if (url.includes('getEntities')) {
-                setNextAutoRefresh('entities', null);
             }
         },
 

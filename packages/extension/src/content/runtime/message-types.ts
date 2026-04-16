@@ -46,4 +46,5 @@ export interface IRISMessage {
   sessionStatus?: 'ok' | 'initial_login_required' | 'expired' | 'recovering';
   lastQueryTimestamp?: number;
   location?: string | null;
+  isActive?: boolean;
 }

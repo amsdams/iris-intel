@@ -173,7 +173,7 @@ Tasks:
 
 
 ### Freshness is observable in diagnostics
-Status: `Open`
+Status: `Done`
 
 Outcome:
 - entity freshness work should be easy to inspect while tuning behavior
@@ -182,9 +182,9 @@ Tasks:
 
 | Task | Status | Notes |
 | --- | --- | --- |
-| Add explicit entity freshness status to diagnostics | Open | current endpoint diagnostics label `entities` as event-driven; this will need to evolve once IRIS owns refreshes |
-| Log why an entity refresh was triggered or skipped | Open | startup, move-settle, idle refresh, stale coverage, in-flight, cooldown, and blocked-session reasons should be inspectable |
-| Distinguish passive entity updates from IRIS-owned refreshes in logs | Open | needed to tell whether freshness came from Intel or IRIS during testing |
+| Add explicit entity freshness status to diagnostics | Done | shows Source (IRIS/Intel), Coverage, and detailed timing labels |
+| Log why an entity refresh was triggered or skipped | Done | diagnostics now show the trigger reason (e.g. move-settle) and skip reason (e.g. cooldown, in-flight) |
+| Distinguish passive entity updates from IRIS-owned refreshes in logs | Done | UI explicitly labels IRIS vs Intel success times |
 
 Improvement ideas:
 

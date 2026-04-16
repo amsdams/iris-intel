@@ -180,7 +180,7 @@ window.addEventListener('message', (event: MessageEvent) => {
 
   if (event.source !== window || !msg?.type) return;
 
-  const { type, url, data, params } = msg;
+  const { type, url, data, params, isActive } = msg;
 
   switch (type) {
     case 'IRIS_INTEL_STARTUP_POSITION': {
@@ -342,7 +342,8 @@ window.addEventListener('message', (event: MessageEvent) => {
     case 'IRIS_REQUEST_SUCCESS': {
         useStore.getState().addSuccessfulRequest({
             url: msg.url as string,
-            time: msg.time as number
+            time: msg.time as number,
+            isActive: msg.isActive
         });
         break;
     }
@@ -427,6 +428,10 @@ window.addEventListener('message', (event: MessageEvent) => {
       }
 
       if (url_str.includes('getEntities')) {
+        const isActuallyActive = !!isActive;
+        useStore.getState().setEndpointMetadata('entities', {
+            [isActuallyActive ? 'lastActiveSuccessAt' : 'lastPassiveSuccessAt']: Date.now(),
+        });
         handleEntities(data as IntelMapData, hasInitialPosition, () => {
           hasInitialPosition = true;
         }, (parsedParams as { tileKeys?: string[] })?.tileKeys);

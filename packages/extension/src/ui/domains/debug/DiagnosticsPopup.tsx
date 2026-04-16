@@ -130,25 +130,42 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
         return entry.status;
     };
 
+    const formatRelativeTime = (time: number | null | undefined): string => {
+        if (!time) return 'never';
+        const seconds = Math.floor((Date.now() - time) / 1000);
+        if (seconds < 60) return `${seconds}s ago`;
+        return `${Math.floor(seconds / 60)}m ago`;
+    };
+
     const getEndpointTimingLabel = (entry: EndpointDiagnostics): string | null => {
+        let timerLabel = '';
         if (entry.nextAutoRefreshAt && POLLED_ENDPOINT_LABELS[entry.key]) {
-            if (entry.status === 'in_flight') return `${POLLED_ENDPOINT_LABELS[entry.key]}: refreshing now`;
-
-            const remainingMs = entry.nextAutoRefreshAt - Date.now();
-            if (remainingMs <= 0) return `${POLLED_ENDPOINT_LABELS[entry.key]}: due`;
-
-            const totalSeconds = Math.ceil(remainingMs / 1000);
-            const minutes = Math.floor(totalSeconds / 60);
-            const seconds = totalSeconds % 60;
-            const formatted = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
-            return `${POLLED_ENDPOINT_LABELS[entry.key]}: ${formatted}`;
+            if (entry.status === 'in_flight') {
+                timerLabel = `${POLLED_ENDPOINT_LABELS[entry.key]}: refreshing now`;
+            } else {
+                const remainingMs = entry.nextAutoRefreshAt - Date.now();
+                if (remainingMs <= 0) {
+                    timerLabel = `${POLLED_ENDPOINT_LABELS[entry.key]}: due`;
+                } else {
+                    const totalSeconds = Math.ceil(remainingMs / 1000);
+                    const minutes = Math.floor(totalSeconds / 60);
+                    const seconds = totalSeconds % 60;
+                    const formatted = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+                    timerLabel = `${POLLED_ENDPOINT_LABELS[entry.key]}: ${formatted}`;
+                }
+            }
         }
 
         if (ENDPOINT_REFRESH_MODE_LABELS[entry.key]) {
-            return `refresh: ${ENDPOINT_REFRESH_MODE_LABELS[entry.key]}`;
+            let modeLabel = `refresh: ${ENDPOINT_REFRESH_MODE_LABELS[entry.key]}`;
+            if (entry.key === 'entities' && entry.lastRefreshReason) {
+                const skipPart = entry.lastSkipReason ? ` skip: ${entry.lastSkipReason}` : '';
+                modeLabel += ` (last: ${entry.lastRefreshReason}${skipPart})`;
+            }
+            return timerLabel ? `${timerLabel} | ${modeLabel}` : modeLabel;
         }
 
-        return null;
+        return timerLabel || null;
     };
 
     const getEndpointSortBucket = (entry: EndpointDiagnostics): number => {
@@ -242,11 +259,30 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                     <div className="iris-debug-table">
                         {sortedEndpointEntries.map((entry) => (
                             <div key={entry.key} className="iris-debug-row iris-debug-row-endpoint">
-                                <span className="iris-debug-label">{entry.key}</span>
-                                <span className="iris-debug-value">
-                                    {getDerivedEndpointStatus(entry).toUpperCase()}
-                                    {getEndpointTimingLabel(entry) ? ` | ${getEndpointTimingLabel(entry)}` : ''}
-                                </span>
+                                <div className="iris-debug-endpoint-main">
+                                    <span className="iris-debug-label">{entry.key}</span>
+                                    <span className="iris-debug-value">
+                                        {getDerivedEndpointStatus(entry).toUpperCase()}
+                                        {getEndpointTimingLabel(entry) ? ` | ${getEndpointTimingLabel(entry)}` : ''}
+                                    </span>
+                                </div>
+                                {entry.key === 'entities' && (
+                                    <div className="iris-debug-endpoint-details">
+                                        <div className="iris-debug-row">
+                                            <span className="iris-debug-label-indent">Source</span>
+                                            <span className="iris-debug-value">
+                                                IRIS: {formatRelativeTime(entry.lastActiveSuccessAt)} | 
+                                                Intel: {formatRelativeTime(entry.lastPassiveSuccessAt)}
+                                            </span>
+                                        </div>
+                                        {entry.lastCoverageKey && (
+                                            <div className="iris-debug-row">
+                                                <span className="iris-debug-label-indent">Coverage</span>
+                                                <span className="iris-debug-value iris-debug-coverage-key">{entry.lastCoverageKey}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>

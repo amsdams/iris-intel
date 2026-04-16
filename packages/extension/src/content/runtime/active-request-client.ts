@@ -45,6 +45,7 @@ export function handleActiveRequestMessage(
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
                 body: JSON.stringify({ tileKeys }),
+                _iris_active: true,
             }).catch((e) => console.error('IRIS: Entities fetch failed', e));
             break;
         }
