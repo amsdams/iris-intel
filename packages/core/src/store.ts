@@ -379,6 +379,7 @@ interface UISlice {
     menuItems: MenuItem[];
     pluginFeatures: GeoJSON.FeatureCollection;
     discoveredLocation: string | null;
+    portalAddresses: Record<string, string>;
     lastResolvedLatLng: { lat: number; lng: number } | null;
     addressStatus: 'idle' | 'pending' | 'resolving';
     addressNextLookupAt: number | null;
@@ -408,7 +409,7 @@ interface UISlice {
     removeMenuItem: (id: string) => void;
     setPluginFeatures: (features: GeoJSON.FeatureCollection) => void;
     setDiscoveredLocation: (location: string | null) => void;
-    reverseGeocode: (lat: number, lng: number) => Promise<void>;
+    reverseGeocode: (lat: number, lng: number, portalId?: string) => Promise<void>;
     updateMapState: (lat: number, lng: number, zoom: number, bounds?: {
         minLatE6: number;
         minLngE6: number;
@@ -770,6 +771,7 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
     menuItems: [],
     pluginFeatures: { type: 'FeatureCollection', features: [] },
     discoveredLocation: null,
+    portalAddresses: {},
     lastResolvedLatLng: null,
     addressStatus: 'idle',
     addressNextLookupAt: null,
@@ -796,11 +798,16 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
     })),
     setPluginFeatures: (features) => set(() => ({ pluginFeatures: features })),
     setDiscoveredLocation: (location) => set(() => ({ discoveredLocation: location })),
-    reverseGeocode: async (lat: number, lng: number): Promise<void> => {
-        const { lastResolvedLatLng, debugLogging } = useStore.getState();
+    reverseGeocode: async (lat: number, lng: number, portalId?: string): Promise<void> => {
+        const { lastResolvedLatLng, portalAddresses, debugLogging } = useStore.getState();
         
+        // If it's for a portal and we already have it, don't re-fetch
+        if (portalId && portalAddresses[portalId]) {
+            return;
+        }
+
         // Use higher precision (0.000001 is ~11cm) to ensure search jumps trigger lookup
-        if (lastResolvedLatLng &&
+        if (!portalId && lastResolvedLatLng &&
             Math.abs(lastResolvedLatLng.lat - lat) < 0.000001 &&
             Math.abs(lastResolvedLatLng.lng - lng) < 0.000001) {
           return;
@@ -822,7 +829,7 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
             }));
 
             if (debugLogging) {
-                console.log(`IRIS: Reverse geocoding for ${lat}, ${lng}`);
+                console.log(`IRIS: Reverse geocoding for ${lat}, ${lng} ${portalId ? `(portal: ${portalId})` : ''}`);
             }
 
             try {
@@ -830,9 +837,11 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
                 if (response.ok) {
                     const data = await response.json() as NominatimResponse;
                     if (data.display_name) {
-                        set(() => ({ 
-                            discoveredLocation: data.display_name,
-                            lastResolvedLatLng: { lat, lng },
+                        const newAddress = data.display_name;
+                        set((state): Partial<IRISState> => ({ 
+                            discoveredLocation: portalId ? state.discoveredLocation : newAddress,
+                            portalAddresses: portalId ? { ...state.portalAddresses, [portalId]: newAddress } as Record<string, string> : state.portalAddresses,
+                            lastResolvedLatLng: portalId ? state.lastResolvedLatLng : { lat, lng },
                             addressStatus: 'idle'
                         }));
                     }
@@ -1093,6 +1102,7 @@ export const useStore = create<IRISState>()(
                     allowRotation: state.allowRotation,
                     allowPitch: state.allowPitch,
                     discoveredLocation: state.discoveredLocation,
+                    portalAddresses: state.portalAddresses,
                     lastResolvedLatLng: state.lastResolvedLatLng,
                     mapState: {
                         lat: state.mapState.lat,

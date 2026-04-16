@@ -1,4 +1,5 @@
 import {h, JSX} from 'preact';
+import { useEffect } from 'preact/hooks';
 import {PortalMod, PortalResonator, useStore, InventoryParser} from '@iris/core';
 import {Popup} from '../../shared/Popup';
 import {THEMES, TEAM_NAME, UI_COLORS, getItemRarityColor} from '../../theme';
@@ -36,8 +37,20 @@ export function PortalInfoPopup(): JSX.Element | null {
     const selectPortal = useStore((state) => state.selectPortal);
     const themeId = useStore((state) => state.themeId);
     const theme = THEMES[themeId] || THEMES.INGRESS;
+    const portalAddresses = useStore((state) => state.portalAddresses);
+    const reverseGeocode = useStore((state) => state.reverseGeocode);
+    const addressStatus = useStore((state) => state.addressStatus);
+
+    useEffect(() => {
+        if (portal && portal.id && !portalAddresses[portal.id]) {
+            reverseGeocode(portal.lat, portal.lng, portal.id);
+        }
+    }, [portal, portalAddresses, reverseGeocode]);
 
     if (!portal) return null;
+
+    const portalAddress = portalAddresses[portal.id];
+    const isAddressStale = false; // Portal addresses are cached per-id and don't become "stale" like the map center
 
     const factionKey = portal.team as 'E' | 'R' | 'M' | 'N';
     const colour = theme[factionKey] || theme.N || UI_COLORS.TEXT_BASE;
@@ -323,8 +336,35 @@ export function PortalInfoPopup(): JSX.Element | null {
                         </span>
                     </div>
                 </div>
-                <div className="iris-portal-coords">
-                    {portal.lat.toFixed(6)}, {portal.lng.toFixed(6)}
+                <div className="iris-portal-details-section">
+                    <div className="iris-portal-section-title">
+                        LOCATION
+                    </div>
+                    <div className="iris-portal-details-table">
+                        <div className="iris-portal-details-row">
+                            <span className="iris-portal-details-label">Lat</span>
+                            <span className="iris-portal-details-value">{portal.lat.toFixed(6)}</span>
+                        </div>
+                        <div className="iris-portal-details-row">
+                            <span className="iris-portal-details-label">Lng</span>
+                            <span className="iris-portal-details-value">{portal.lng.toFixed(6)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="iris-portal-details-section">
+                    <div className="iris-portal-address-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div className="iris-portal-section-title">ADDRESS</div>
+                        {isAddressStale && <span style={{ color: '#888', fontSize: '0.75em' }}>(stale)</span>}
+                        {addressStatus === 'resolving' && <span style={{ color: theme.AQUA, fontSize: '0.75em' }}>Resolving...</span>}
+                    </div>
+                    <div className="iris-portal-details-table">
+                         <div className="iris-portal-details-row">
+                            <span className="iris-portal-details-value" style={{ textAlign: 'left', width: '100%' }}>
+                                {portalAddress || (addressStatus === 'resolving' ? 'Resolving...' : '(unknown)')}
+                            </span>
+                         </div>
+                    </div>
                 </div>
             </div>
         </Popup>
