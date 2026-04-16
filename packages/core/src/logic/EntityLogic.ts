@@ -24,7 +24,7 @@ export const EntityLogic = {
             // Special handling for arrays (mods, resonators, ornaments)
             if (Array.isArray(newVal)) {
                 if (!Array.isArray(oldVal) || newVal.length >= (oldVal as unknown[]).length) {
-                    (updated as Record<string, unknown>)[key] = newVal;
+                    (updated as unknown as Record<string, unknown>)[key] = newVal;
                     changed = true;
                 }
                 return;
@@ -32,7 +32,7 @@ export const EntityLogic = {
 
             // Normal field update
             if (newVal !== oldVal) {
-                (updated as Record<string, unknown>)[key] = newVal;
+                (updated as unknown as Record<string, unknown>)[key] = newVal;
                 changed = true;
                 if (key === 'team') teamChanged = true;
             }

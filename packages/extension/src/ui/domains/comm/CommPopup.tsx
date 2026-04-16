@@ -98,17 +98,24 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
     }, [clearCommSendState, commSendStatus]);
 
     const [hasInitialScrolled, setHasInitialScrolled] = useState(false);
+    const wasAtBottomRef = useRef(false);
 
-    // Scroll to bottom whenever plexts or tab change
+    // Capture scroll position BEFORE the DOM updates
+    // This runs during the render phase to "see" the state of the scroll container
+    // before the new rows are added.
+    if (scrollRef.current) {
+        const el = scrollRef.current;
+        wasAtBottomRef.current = el.scrollTop + el.offsetHeight >= el.scrollHeight - 30;
+    }
+
+    // Snap to bottom whenever plexts or tab change
     // but only if already near the bottom (match original Intel behavior)
     useEffect(() => {
         const el = scrollRef.current;
         if (!el) return;
-
-        const isAtBottom = el.scrollTop + el.offsetHeight >= el.scrollHeight - 20;
         
         // Always scroll on initial load or tab switch
-        if (!hasInitialScrolled || isAtBottom) {
+        if (!hasInitialScrolled || wasAtBottomRef.current) {
             suppressNextScrollFetch.current = true;
             el.scrollTop = el.scrollHeight;
             if (!hasInitialScrolled) setHasInitialScrolled(true);
