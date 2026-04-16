@@ -1,7 +1,5 @@
-import { useStore } from '@iris/core';
-import { TopMissionsInBoundsData } from './types';
-import { parseTopMissionsInBounds } from './parser';
+import { useStore, MissionParser, TopMissionsInBoundsData } from '@iris/core';
 
 export function handleTopMissionsInBounds(data: TopMissionsInBoundsData): void {
-  useStore.getState().setMissionsInView(parseTopMissionsInBounds(data));
+  useStore.getState().setMissionsInView(MissionParser.parseTopMissions(data));
 }

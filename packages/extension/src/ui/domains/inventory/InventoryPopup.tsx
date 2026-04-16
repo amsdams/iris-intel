@@ -1,9 +1,8 @@
 import { JSX } from 'preact';
-import { useStore, normalizeTeam } from '@iris/core';
+import { useStore, normalizeTeam, InventoryParser, InventoryCategory } from '@iris/core';
 import { Popup } from '../../shared/Popup';
 import { useEffect, useState, useMemo } from 'preact/hooks';
 import { THEMES, UI_COLORS, getItemRarityColor } from '../../theme';
-import { deriveInventoryDisplayItems, InventoryCategory } from '../../../content/domains/inventory/parser';
 import './inventory.css';
 
 interface GroupedInventoryItem {
@@ -52,7 +51,7 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
     const inventoryHasLoaded = inventoryEndpoint.lastSuccessAt !== null;
 
     const parsedItems = useMemo(
-        (): GroupedInventoryItem[] => deriveInventoryDisplayItems(inventory).map((item) => ({
+        (): GroupedInventoryItem[] => InventoryParser.deriveInventoryDisplayItems(inventory).map((item) => ({
             type: item.type,
             name: item.name,
             level: item.level,

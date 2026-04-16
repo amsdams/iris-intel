@@ -1,9 +1,7 @@
-import { useStore } from '@iris/core';
-import { MissionDetailsData } from './types';
-import { parseMissionDetails } from './parser';
+import { useStore, MissionParser, MissionDetailsData } from '@iris/core';
 
 export function handleMissionDetails(data: MissionDetailsData): void {
-  const mission = parseMissionDetails(data);
+  const mission = MissionParser.parseDetails(data);
   if (!mission) return;
 
   useStore.getState().setMissionDetails(mission);

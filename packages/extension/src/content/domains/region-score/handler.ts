@@ -1,10 +1,8 @@
-import { useStore } from '@iris/core';
-import { RegionScoreData } from './types';
-import { parseRegionScore } from './parser';
+import { useStore, RegionScoreParser, RegionScoreData } from '@iris/core';
 
 export function handleRegionScore(data: RegionScoreData): void {
-  const parsed = parseRegionScore(data);
-  if (!parsed) return;
-
-  useStore.getState().setRegionScore(parsed);
+  const score = RegionScoreParser.parse(data);
+  if (score) {
+    useStore.getState().setRegionScore(score);
+  }
 }

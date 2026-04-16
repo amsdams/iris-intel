@@ -2,6 +2,15 @@ export * from './store';
 export * from './PluginManager';
 export * from './logic/EntityLogic';
 export * from './parsers/EntityParser';
+export * from './parsers/PortalDetailsParser';
+export * from './parsers/ArtifactParser';
+export * from './parsers/GameScoreParser';
+export * from './parsers/InventoryParser';
+export * from './parsers/MissionParser';
+export * from './parsers/PlextParser';
+export * from './parsers/RegionScoreParser';
+export * from './parsers/PasscodeParser';
+export * from './parsers/PlayerParser';
 export * from './parsers/intel-types';
 
 /**

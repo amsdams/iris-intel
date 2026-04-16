@@ -1,6 +1,4 @@
-import { useStore } from '@iris/core';
-import { PortalDetailsData } from './types';
-import { parsePortalDetails } from './parser';
+import { useStore, PortalDetailsParser, PortalDetailsData } from '@iris/core';
 
 export function handlePortalDetails(data: PortalDetailsData, params: { guid?: string }): void {
   const store = useStore.getState();
@@ -8,7 +6,7 @@ export function handlePortalDetails(data: PortalDetailsData, params: { guid?: st
   const linksIn = Object.values(store.links).filter((link) => link.toPortalId === guid).length;
   const linksOut = Object.values(store.links).filter((link) => link.fromPortalId === guid).length;
 
-  const portal = parsePortalDetails(data, params, linksIn + linksOut);
+  const portal = PortalDetailsParser.parse(data, params, linksIn + linksOut);
   if (portal) {
     store.updatePortals([portal]);
   }

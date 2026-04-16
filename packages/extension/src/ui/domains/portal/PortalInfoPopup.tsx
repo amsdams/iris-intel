@@ -1,8 +1,7 @@
 import {h, JSX} from 'preact';
-import {PortalMod, PortalResonator, useStore} from '@iris/core';
+import {PortalMod, PortalResonator, useStore, InventoryParser} from '@iris/core';
 import {Popup} from '../../shared/Popup';
 import {THEMES, TEAM_NAME, UI_COLORS, getItemRarityColor} from '../../theme';
-import { countPortalKeys } from '../../../content/domains/inventory/parser';
 import { getOrnamentLabel } from '../../../content/domains/entities/ornaments';
 
 // ---------------------------------------------------------------------------
@@ -62,7 +61,7 @@ export function PortalInfoPopup(): JSX.Element | null {
     const maxEnergy = (portal.resonators || []).reduce((sum, resonator) => sum + (MAX_RESO_ENERGY[resonator.level] || 0), 0);
     const linksIn = Object.values(links).filter((link) => link.toPortalId === portal.id).length;
     const linksOut = Object.values(links).filter((link) => link.fromPortalId === portal.id).length;
-    const keyCount = countPortalKeys(inventory, portal.id);
+    const keyCount = InventoryParser.countPortalKeys(inventory, portal.id);
     const inventoryHasLoaded = inventoryEndpoint.lastSuccessAt !== null;
     const ornaments = portal.ornaments || [];
 

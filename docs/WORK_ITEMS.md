@@ -510,7 +510,7 @@ Tasks:
 
 | Task | Status | Notes |
 | --- | --- | --- |
-| Payload typing pass | In Progress | missions-list, artifacts, scores completed; store/coordinator update in progress |
+| Payload typing pass | Done | all primary Intel entities (portals, links, fields, details, plexts, missions, scores, passcodes) now use strict tuple typing |
 
 ### Storage boundaries are clearer
 Status: `Done`
@@ -621,10 +621,10 @@ Tasks:
 | --- | --- | --- |
 | Zustand for Global State | Done | centralized stores in `@iris/core`; component-level selectors |
 | Service-Lite Logic Layer | Done | extracted pure business logic (merging, cascading deletes) into `EntityLogic.ts` |
-| Centralized Data Parsers | In Progress | `EntityParser` migrated to `@iris/core`; other parsers pending migration |
+| Centralized Data Parsers | Done | all domain parsers migrated to `@iris/core` |
 | Message-based IPC | Done | content script communicates with interceptor via standard `postMessage` protocol |
 | Surgical Interception | Done | intercept network traffic without modifying Intel's internal logic |
-| Type-Safe Domain Models | In Progress | moved core Intel types to `intel-types.ts`; strictly typing all incoming payloads |
+| Type-Safe Domain Models | Done | moved all Intel types to `intel-types.ts`; strictly typing all incoming payloads |
 
 ### Linting and Code Quality
 Status: `Done`
@@ -644,10 +644,9 @@ Tasks:
 
 ## Current Next Pickup
 
-1. **[Architectural Patterns]** Continue migrating remaining parsers (inventory, portal-details, etc.) to `@iris/core`.
-2. **[Plugin Overlay]** Implement a "Single Highlighter" selection model.
-3. **[Intel Parity]** Enhance `parser.ts` for more detailed mod stats and history flags (Done).
-4. **[Draw Tools]** Turn the draw-tools epic into an implementation plan for the first mobile-safe baseline.
+1. **[Plugin Overlay]** Implement a "Single Highlighter" selection model.
+2. **[Live Map Freshness]** Implement strict concurrent request limit (5) in `RequestCoordinator` (Done).
+3. **[Draw Tools]** Turn the draw-tools epic into an implementation plan for the first mobile-safe baseline.
 
 ## Snapshot And Reference Sources
 

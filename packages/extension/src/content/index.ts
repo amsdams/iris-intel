@@ -1,7 +1,21 @@
 import { render, h } from 'preact';
 import '../ui/iris.css';
 import { IRISOverlay } from '../ui/Overlay';
-import { useStore, pluginManager, IntelMapData } from '@iris/core';
+import { 
+  useStore, 
+  pluginManager, 
+  IntelMapData, 
+  InventoryData, 
+  PlextData, 
+  PortalDetailsData, 
+  GameScoreData, 
+  RegionScoreData, 
+  MissionDetailsData, 
+  TopMissionsInBoundsData, 
+  ArtifactData,
+  PlayerStatsMessage,
+  PasscodeResponseData
+} from '@iris/core';
 import PortalNamesPlugin from '../../../plugins/src/portal-names';
 import ThemeSelectorPlugin from '../../../plugins/src/theme-selector';
 import PlayerTrackerPlugin from '../../../plugins/src/player-tracker';
@@ -14,26 +28,16 @@ import { IRISPlugin } from '@iris/plugin-sdk';
 import { handleEntities } from './domains/entities/handler';
 import { getKnownOrnamentIds } from './domains/entities/ornaments';
 import { handleInventory } from './domains/inventory/handler';
-import { InventoryData } from './domains/inventory/types';
 import mockInventoryData from './domains/inventory/mock.inventory.json';
 import { handlePlayerStats } from './domains/player/handler';
-import { PlayerStatsMessage } from './domains/player/types';
 import { handlePlexts } from './domains/plexts/handler';
-import { PlextData } from './domains/plexts/types';
 import { handlePortalDetails } from './domains/portal-details/handler';
-import { PortalDetailsData } from './domains/portal-details/types';
 import { handleGameScore } from './domains/game-score/handler';
-import { GameScoreData } from './domains/game-score/types';
 import { handleRegionScore } from './domains/region-score/handler';
-import { RegionScoreData } from './domains/region-score/types';
 import { handleMissionDetails } from './domains/missions/handler';
-import { MissionDetailsData } from './domains/missions/types';
 import { handleTopMissionsInBounds } from './domains/missions-list/handler';
-import { TopMissionsInBoundsData } from './domains/missions-list/types';
 import { handleArtifacts } from './domains/artifacts/handler';
-import { ArtifactData } from './domains/artifacts/types';
 import { handlePasscodeResponse } from './domains/passcodes/handler';
-import { PasscodeResponseData } from './domains/passcodes/types';
 import mockPasscodeData from './domains/passcodes/mock.passcode.json';
 import { IRISMessage } from './runtime/message-types';
 import { createRequestCoordinator } from './runtime/request-coordinator';

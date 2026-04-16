@@ -23,7 +23,7 @@ export const EntityLogic = {
 
             // Special handling for arrays (mods, resonators, ornaments)
             if (Array.isArray(newVal)) {
-                if (!Array.isArray(oldVal) || newVal.length >= oldVal.length) {
+                if (!Array.isArray(oldVal) || newVal.length >= (oldVal as unknown[]).length) {
                     (updated as Record<string, unknown>)[key] = newVal;
                     changed = true;
                 }

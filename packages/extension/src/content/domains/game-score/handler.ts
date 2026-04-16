@@ -1,7 +1,5 @@
-import { useStore } from '@iris/core';
-import { GameScoreData } from './types';
-import { parseGameScore } from './parser';
+import { useStore, GameScoreParser, GameScoreData } from '@iris/core';
 
 export function handleGameScore(data: GameScoreData): void {
-  useStore.getState().setGameScore(parseGameScore(data));
+  useStore.getState().setGameScore(GameScoreParser.parse(data));
 }

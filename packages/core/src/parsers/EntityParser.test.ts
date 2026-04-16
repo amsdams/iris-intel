@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { EntityParser } from './EntityParser';
-import { IntelMapData } from './intel-types';
+import { IntelMapData, IntelEntityData } from './intel-types';
 
 describe('EntityParser', () => {
   it('should extract portals from links even if they are not in gameEntities as portals', () => {
@@ -21,7 +21,7 @@ describe('EntityParser', () => {
                   "to_portal_guid",
                   52035845,
                   4366433
-                ]
+                ] as unknown as IntelEntityData
               ]
             ]
           }
@@ -64,7 +64,7 @@ describe('EntityParser', () => {
                     ["p2_guid", 52023990, 4367998],
                     ["p3_guid", 52024231, 4374069]
                   ]
-                ]
+                ] as unknown as IntelEntityData
               ]
             ]
           }
@@ -99,9 +99,19 @@ describe('EntityParser', () => {
                   5, // level
                   100, // health
                   8, // resCount
+                  "ImageUrl",
                   "Name",
-                  "ImageUrl"
-                ]
+                  [], // ornaments
+                  true, // visited
+                  false, // captured
+                  "scout", // scoutControlled
+                  "address",
+                  0, // unknown
+                  0, // unknown
+                  "guid",
+                  "team",
+                  1 // history
+                ] as unknown as IntelEntityData
               ],
               [
                 "link_guid",
@@ -115,7 +125,7 @@ describe('EntityParser', () => {
                   "other_guid",
                   52035845,
                   4366433
-                ]
+                ] as unknown as IntelEntityData
               ]
             ]
           }

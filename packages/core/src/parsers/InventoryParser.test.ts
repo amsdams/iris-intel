@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import mockInventoryData from './mock.inventory.json';
-import liveInventoryData from '../../../../../../docs/update-map/get-inventory-20260413.json';
-import { countPortalKeys, deriveInventoryDisplayItems, parseInventory } from './parser';
-import type { InventoryData } from './types';
+import mockInventoryData from '../../../../packages/extension/src/content/domains/inventory/mock.inventory.json';
+import liveInventoryData from '../../../../docs/update-map/get-inventory-20260413.json';
+import { InventoryParser } from './InventoryParser';
+import { InventoryData } from './intel-types';
 
-describe('inventory parser', () => {
+describe('InventoryParser', () => {
   it('derives expected categories from mock inventory data', () => {
-    const parsed = parseInventory(mockInventoryData as InventoryData);
-    const derived = deriveInventoryDisplayItems(parsed);
+    const parsed = InventoryParser.parse(mockInventoryData as InventoryData);
+    const derived = InventoryParser.deriveInventoryDisplayItems(parsed);
     const categories = new Set(derived.map((item) => item.category));
 
     expect(categories).toEqual(new Set([
@@ -21,8 +21,8 @@ describe('inventory parser', () => {
   });
 
   it('derives power cubes, boosted power cubes, and drones from saved live data', () => {
-    const parsed = parseInventory(liveInventoryData as InventoryData);
-    const derived = deriveInventoryDisplayItems(parsed);
+    const parsed = InventoryParser.parse(liveInventoryData as InventoryData);
+    const derived = InventoryParser.deriveInventoryDisplayItems(parsed);
 
     expect(derived.some((item) => item.type === 'POWER_CUBE' && item.category === 'POWERUPS')).toBe(true);
     expect(derived.some((item) => item.type === 'BOOSTED_POWER_CUBE' && item.category === 'POWERUPS')).toBe(true);
@@ -30,7 +30,7 @@ describe('inventory parser', () => {
   });
 
   it('uses human-readable Intel-style inventory labels for derived items', () => {
-    const parsed = parseInventory({
+    const parsed = InventoryParser.parse({
       result: [
         [
           'reso-1',
@@ -79,7 +79,7 @@ describe('inventory parser', () => {
       ],
     } as InventoryData);
 
-    const derived = deriveInventoryDisplayItems(parsed);
+    const derived = InventoryParser.deriveInventoryDisplayItems(parsed);
 
     expect(derived.find((item) => item.guid === 'reso-1')?.name).toBe('Resonator');
     expect(derived.find((item) => item.guid === 'apex-1')?.name).toBe('Apex Mod');
@@ -90,7 +90,7 @@ describe('inventory parser', () => {
   });
 
   it('preserves rarity for capsules, keys, and powerups when the payload provides it', () => {
-    const parsed = parseInventory({
+    const parsed = InventoryParser.parse({
       result: [
         [
           'key-capsule-1',
@@ -133,7 +133,7 @@ describe('inventory parser', () => {
       ],
     } as InventoryData);
 
-    const derived = deriveInventoryDisplayItems(parsed);
+    const derived = InventoryParser.deriveInventoryDisplayItems(parsed);
 
     expect(derived.find((item) => item.guid === 'key-capsule-1')?.rarity).toBe('VERY_RARE');
     expect(derived.find((item) => item.guid === 'kinetic-capsule-1')?.rarity).toBe('COMMON');
@@ -142,7 +142,7 @@ describe('inventory parser', () => {
   });
 
   it('counts portal keys including keys stored in capsules', () => {
-    const parsed = parseInventory({
+    const parsed = InventoryParser.parse({
       result: [
         [
           'loose-key',
@@ -190,12 +190,12 @@ describe('inventory parser', () => {
       ],
     } as InventoryData);
 
-    expect(countPortalKeys(parsed, 'portal-a')).toBe(3);
-    expect(countPortalKeys(parsed, 'portal-b')).toBe(0);
+    expect(InventoryParser.countPortalKeys(parsed, 'portal-a')).toBe(3);
+    expect(InventoryParser.countPortalKeys(parsed, 'portal-b')).toBe(0);
   });
 
   it('derives capsule-contained items for display and preserves capsule monikers', () => {
-    const parsed = parseInventory({
+    const parsed = InventoryParser.parse({
       result: [
         [
           'capsule-1',
@@ -241,7 +241,7 @@ describe('inventory parser', () => {
       ],
     } as InventoryData);
 
-    const derived = deriveInventoryDisplayItems(parsed);
+    const derived = InventoryParser.deriveInventoryDisplayItems(parsed);
     const capsule = derived.find((item) => item.category === 'CAPSULES');
     const nestedKeys = derived.filter((item) => item.category === 'KEYS');
     const nestedPowerCubes = derived.filter((item) => item.type === 'POWER_CUBE');
