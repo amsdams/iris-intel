@@ -68,10 +68,9 @@
     --iris-rarity-rare: #73a8ff;
     --iris-rarity-very-rare: #b08cff;
     --iris-rarity-extremely-rare: #f00;
-    --iris-mod-rarity-common: #565656;
-    --iris-mod-rarity-rare: #1566e6;
-    --iris-mod-rarity-very-rare: #ef7b03;
-    --iris-mod-rarity-aegis: #00d4aa;
+    --iris-mod-rarity-common: #49ebc3;
+    --iris-mod-rarity-rare: #b68bff;
+    --iris-mod-rarity-very-rare: #f781ff;
 }
 
 .iris-overlay-root *,

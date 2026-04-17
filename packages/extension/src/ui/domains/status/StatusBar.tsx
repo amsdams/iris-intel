@@ -329,6 +329,7 @@ export function StatusBar(): JSX.Element {
                         {failedRequests.length > 0 && ` (${failedRequests.length} NET)`}
                         {jsErrors.length > 0 && ` (${jsErrors.length} JS)`}
                     </span>
+                    <div className="iris-status-divider" />
                     <span className="iris-status-text" style={{ color: endpointHealthCounts.error ? UI_COLORS.ERROR : (endpointHealthCounts.stale ? UI_COLORS.WARNING : UI_COLORS.TEXT_MUTED) }}>
                         ENDPOINTS:
                         {endpointHealthCounts.in_flight ? ` ${endpointHealthCounts.in_flight} ACTIVE` : ''}
@@ -337,14 +338,18 @@ export function StatusBar(): JSX.Element {
                     </span>
 
                     {entitiesAgeMinutes !== null && (
-                        <span className="iris-status-text" style={{ 
-                            color: isEntitiesStale ? UI_COLORS.WARNING : UI_COLORS.TEXT_MUTED,
-                            fontWeight: isEntitiesStale ? 'bold' : 'normal'
-                        }}>
-                            MAP DATA: {entitiesAgeMinutes === 0 ? '< 1m' : `${entitiesAgeMinutes}m`} AGO
-                        </span>
+                        <>
+                            <div className="iris-status-divider" />
+                            <span className="iris-status-text" style={{ 
+                                color: isEntitiesStale ? UI_COLORS.WARNING : UI_COLORS.TEXT_MUTED,
+                                fontWeight: isEntitiesStale ? 'bold' : 'normal'
+                            }}>
+                                MAP DATA: {entitiesAgeMinutes === 0 ? '< 1m' : `${entitiesAgeMinutes}m`} AGO
+                            </span>
+                        </>
                     )}
 
+                    <div className="iris-status-divider" />
                     <span className="iris-status-text" style={{ color: sessionStatus === 'expired' || sessionStatus === 'initial_login_required' ? UI_COLORS.WARNING : (sessionStatus === 'recovering' ? UI_COLORS.AQUA : UI_COLORS.TEXT_MUTED) }}>
                         {sessionLabel()}
                     </span>

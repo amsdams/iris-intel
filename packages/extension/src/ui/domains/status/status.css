@@ -172,6 +172,14 @@
   flex: 1;
 }
 
+.iris-status-divider {
+  width: 1px;
+  height: 10px;
+  background: #333;
+  margin: 0 10px;
+  flex-shrink: 0;
+}
+
 .iris-status-led {
   width: 8px;
   height: 8px;

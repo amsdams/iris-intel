@@ -95,6 +95,16 @@
   font-size: 0.85em;
   color: var(--iris-text-muted);
   margin-bottom: 2px;
+  display: flex;
+  align-items: baseline;
+}
+
+.iris-feature-action-time {
+  color: #666;
+  font-size: 0.85em;
+  margin-right: 6px;
+  font-family: monospace;
+  white-space: nowrap;
 }
 
 .iris-feature-portal-link {

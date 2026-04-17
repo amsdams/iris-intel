@@ -31,6 +31,7 @@ export interface PortalMod {
     name: string;
     rarity: string;
     stats: Record<string, string | number>;
+    type?: string;
 }
 
 export interface PortalResonator {

@@ -2,7 +2,7 @@ import { JSX } from 'preact';
 import { useStore, normalizeTeam, InventoryParser, InventoryCategory } from '@iris/core';
 import { Popup } from '../../shared/Popup';
 import { useEffect, useState, useMemo } from 'preact/hooks';
-import { THEMES, UI_COLORS, getItemRarityColor } from '../../theme';
+import { THEMES, UI_COLORS, getItemRarityColor, getModRarityColor } from '../../theme';
 import './inventory.css';
 
 interface GroupedInventoryItem {
@@ -18,9 +18,6 @@ interface GroupedInventoryItem {
 type InventorySortMode = 'COUNT' | 'NAME' | 'RARITY';
 
 const RARITY_SORT_ORDER: Record<string, number> = {
-    AEGIS: 7,
-    SPECIAL: 6,
-    EXTREMELY_RARE: 5,
     VERY_RARE: 4,
     RARE: 3,
     COMMON: 2,
@@ -163,7 +160,7 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
 
         if (item.rarity) {
             if (item.category === 'MODS') {
-                return theme.MOD_RARITY[item.rarity.toUpperCase()] || getItemRarityColor(theme, item.rarity);
+                return getModRarityColor(theme, item.rarity, item.name, item.type);
             }
             return getItemRarityColor(theme, item.rarity);
         }

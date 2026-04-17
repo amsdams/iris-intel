@@ -33,15 +33,14 @@ const INGRESS_ITEM_RARITY = {
 };
 
 const INGRESS_MOD_RARITY = {
-    COMMON: '#565656',
-    RARE: '#1566E6',
-    VERY_RARE: '#EF7B03',
-    AEGIS: '#00D4AA',
+    COMMON: '#49EBC3',
+    RARE: '#B68BFF',
+    VERY_RARE: '#F781FF',
 };
 
 const DEBUG_ITEM_RARITY = {
     VERY_COMMON: '#F2F2F2',
-    COMMON: '#565656',
+    COMMON: '#8CFFBF',
     RARE: '#73A8FF',
     VERY_RARE: '#B08CFF',
     EXTREMELY_RARE: '#FF0000',
@@ -49,10 +48,9 @@ const DEBUG_ITEM_RARITY = {
 };
 
 const DEBUG_MOD_RARITY = {
-    COMMON: '#565656',
-    RARE: '#1566E6',
-    VERY_RARE: '#EF7B03',
-    AEGIS: '#00D4AA',
+    COMMON: '#49EBC3',
+    RARE: '#B68BFF',
+    VERY_RARE: '#F781FF',
 };
 
 const DEFAULT_ITEM_TYPES = {
@@ -62,6 +60,7 @@ const DEFAULT_ITEM_TYPES = {
     KINETIC_CAPSULE: '#8CFFBF',
     VIRUS: '#B08CFF',
     POWERUP: '#FFFFFF',
+    AEGIS_SHIELD: '#00D4AA',
 };
 
 const INTEL_DEFAULT_THEME: ThemeColors = {
@@ -105,11 +104,16 @@ export const THEMES: Record<string, ThemeColors> = {
             ...DEBUG_ITEM_RARITY,
             SPECIAL: '#00e5ff',
         },
-        MOD_RARITY: DEBUG_MOD_RARITY,
+        MOD_RARITY: {
+            VERY_RARE: '#00e5ff',
+            RARE: '#00e5ff',
+            COMMON: '#00e5ff',
+        },
         ITEM_TYPES: {
             ...DEFAULT_ITEM_TYPES,
             PORTAL_LINK_KEY: '#00e5ff',
             POWERUP: '#00e5ff',
+            AEGIS_SHIELD: '#00e5ff',
         },
         RARITY: {
             ...DEBUG_ITEM_RARITY,
@@ -127,11 +131,16 @@ export const THEMES: Record<string, ThemeColors> = {
             ...DEBUG_ITEM_RARITY,
             SPECIAL: '#4dd0e1',
         },
-        MOD_RARITY: DEBUG_MOD_RARITY,
+        MOD_RARITY: {
+            VERY_RARE: '#4dd0e1',
+            RARE: '#4dd0e1',
+            COMMON: '#4dd0e1',
+        },
         ITEM_TYPES: {
             ...DEFAULT_ITEM_TYPES,
             PORTAL_LINK_KEY: '#4dd0e1',
             POWERUP: '#4dd0e1',
+            AEGIS_SHIELD: '#4dd0e1',
         },
         RARITY: {
             ...DEBUG_ITEM_RARITY,
@@ -143,6 +152,13 @@ export const THEMES: Record<string, ThemeColors> = {
 export function getItemRarityColor(theme: ThemeColors, rarity?: string): string {
     if (!rarity) return UI_COLORS.TEXT_BASE;
     return theme.ITEM_RARITY[rarity.toUpperCase()] || UI_COLORS.TEXT_BASE;
+}
+
+export function getModRarityColor(theme: ThemeColors, rarity?: string, name?: string, type?: string): string {
+    const isAegis = type === 'EXTRA_SHIELD' || (name && name.toLowerCase().includes('aegis'));
+    if (isAegis) return theme.ITEM_TYPES.AEGIS_SHIELD || '#00D4AA';
+    if (!rarity) return UI_COLORS.TEXT_BASE;
+    return theme.MOD_RARITY[rarity.toUpperCase()] || UI_COLORS.TEXT_BASE;
 }
 
 export const MAP_THEMES: Record<string, { name: string; url: string }> = {

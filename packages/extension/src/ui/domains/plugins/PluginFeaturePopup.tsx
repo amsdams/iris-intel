@@ -1,7 +1,7 @@
 import { h, JSX } from 'preact';
 import { useStore } from '@iris/core';
 import { Popup } from '../../shared/Popup';
-import {THEMES} from '../../theme';
+import {THEMES, UI_COLORS} from '../../theme';
 import './plugins.css';
 
 interface ActionMarkupData {
@@ -18,6 +18,7 @@ type ActionMarkupSegment = [string, ActionMarkupData];
 interface PlayerAction {
     text: string;
     markup: ActionMarkupSegment[];
+    time: number;
 }
 
 interface PluginFeatureProperties extends Record<string, unknown> {
@@ -30,6 +31,7 @@ interface PluginFeatureProperties extends Record<string, unknown> {
     lng?: number;
     isPlayerMarker?: boolean;
     actions?: PlayerAction[];
+    maxLevel?: number;
 }
 
 export function PluginFeaturePopup(): JSX.Element | null {
@@ -51,6 +53,7 @@ export function PluginFeaturePopup(): JSX.Element | null {
         lng = 0,
         isPlayerMarker = false,
         actions = [],
+        maxLevel,
     } = properties;
 
     const renderActionSegment = (segment: ActionMarkupSegment, index: number): JSX.Element | null => {
@@ -99,6 +102,7 @@ export function PluginFeaturePopup(): JSX.Element | null {
                 '--iris-popup-border': theme.AQUA,
                 '--iris-popup-shadow': `${theme.AQUA}55`,
                 '--iris-popup-title-color': theme.AQUA,
+                '--iris-feature-color': properties.color,
             } as Record<string, string>}
         >
             <div className="iris-plugin-feature-details">
@@ -112,6 +116,14 @@ export function PluginFeaturePopup(): JSX.Element | null {
                     <div className="iris-feature-row iris-feature-time">
                         <span className="iris-feature-label">Time: </span>
                         <span>{new Date(time).toLocaleString()}</span>
+                    </div>
+                )}
+                {isPlayerMarker && maxLevel && (
+                    <div className="iris-feature-row iris-feature-level">
+                        <span className="iris-feature-label">Guessed Level: </span>
+                        <span style={{ color: theme.LEVELS[maxLevel as keyof typeof theme.LEVELS] || UI_COLORS.TEXT_BASE }}>
+                            L{maxLevel}
+                        </span>
                     </div>
                 )}
                 <div className="iris-feature-row iris-feature-portal">
@@ -138,7 +150,9 @@ export function PluginFeaturePopup(): JSX.Element | null {
                         <div className="iris-feature-label iris-mb-1">Recent Actions:</div>
                         {actions.map((action, i) => (
                             <div key={i} className="iris-feature-action-item">
-                                <span>• </span>
+                                <span className="iris-feature-action-time">
+                                    [{new Date(action.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}]
+                                </span>
                                 {action.markup.length > 0 ? action.markup.map((segment, segmentIndex) => renderActionSegment(segment, segmentIndex)) : action.text}
                             </div>
                         ))}
