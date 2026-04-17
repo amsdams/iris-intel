@@ -17,7 +17,6 @@ interface PlayerHistory {
   team: string;
   color: string;
   events: PlayerEvent[];
-  maxLevel?: number;
 }
 
 interface PlayerTrackerApi extends IRIS_API {
@@ -167,7 +166,6 @@ const PlayerTrackerPlugin: IRISPlugin = {
                     time: lastEvent.time,
                     portalName: lastEvent.portalName,
                     actions: lastEvent.actions, // Pass actions array
-                    maxLevel: history.maxLevel,
                 },
             });
         });
@@ -230,13 +228,6 @@ const PlayerTrackerPlugin: IRISPlugin = {
         if (skipThis || !playerName || lat === null || lng === null) return;
 
         const action = actionParts.join('').trim();
-        const actionRecord: PlayerAction | null = action
-          ? {
-              text: action,
-              markup: actionMarkup,
-              time: p.time,
-            }
-          : null;
 
         let history = playerHistories.get(playerName);
         if (!history) {
@@ -248,14 +239,13 @@ const PlayerTrackerPlugin: IRISPlugin = {
           playerHistories.set(playerName, history);
         }
 
-        // Guess player level from resonator levels in actions
-        const levelMatch = action.match(/\(L([1-8])\)/);
-        if (levelMatch) {
-            const lvl = parseInt(levelMatch[1], 10);
-            if (!history.maxLevel || lvl > history.maxLevel) {
-                history.maxLevel = lvl;
+        const actionRecord: PlayerAction | null = action
+          ? {
+              text: action,
+              markup: actionMarkup,
+              time: p.time,
             }
-        }
+          : null;
 
         // Logic to insert/update event (IITC processNewData style)
         const evts = history.events;

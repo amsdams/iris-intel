@@ -313,7 +313,7 @@ Tasks:
 | Refactor `normalizeTeam` logic                                            | Done   | strictly improved mapping for ENLIGHTENED, RESISTANCE, and NEUTRAL (M)                                                                                     |
 | Add time to player actions in player tracker popup                        | Done   | display time for each action in the recent actions list                                                                                                    |
 | Add team color to player name in player tracker popup                     | Done   | player name now uses faction color in the popup                                                                                                            |
-| Add Guess player level to    player tracker popup  (Could be a plugin)    | Done   | tracks highest resonator level mentioned in player actions                                                                                                 |
+| Add Guess player level to    player tracker popup  (Could be a plugin)    | Todo   | use highest resonator level used by player                                                                                                                 |
 | Maybe add divider between iris-status-indicator-group items in status bar | Done   | implemented visual dividers between status groups in UI bar                                                                                                |
 | Bring back proper mod colors (common green, etc)                          | Done   | updated INGRESS_MOD_RARITY to use IITC-CE scheme (#49EBC3, #B68BFF, #F781FF) and implemented getModRarityColor helper |
 
