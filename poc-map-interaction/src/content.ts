@@ -1,21 +1,12 @@
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import RBush from 'rbush';
 import { MockDataGenerator, Faction } from './MockDataGenerator';
 import { getMinLevelForZoom, getGridSizeForZoom } from './ZoomPolicy';
-
-type EntityType = 'portal' | 'link' | 'field';
-
-interface MapEntityIndexItem {
-    minX: number; minY: number; maxX: number; maxY: number;
-    id: string; type: EntityType; faction: Faction; data: any;
-}
 
 console.log("POC (TS): Intel Mode (Initial Zoom 13)");
 
 function initMap() {
     const generator = new MockDataGenerator();
-    let spatialIndex = new RBush<MapEntityIndexItem>();
     const loadedKeys = new Set<string>();
 
     const COLORS = { ENL: '#00ff00', RES: '#0000ff', MAC: '#ff0000', NEU: '#ffffff' };
@@ -116,23 +107,37 @@ function initMap() {
     }
 
     function syncToMap(map: maplibregl.Map) {
+        const bounds = map.getBounds();
+        const buffer = 0.05; // ~5km buffer
+        const queryBounds = {
+            minX: bounds.getWest() - buffer,
+            minY: bounds.getSouth() - buffer,
+            maxX: bounds.getEast() + buffer,
+            maxY: bounds.getNorth() + buffer
+        };
+
+        const results = generator.query(queryBounds);
         const features: any[] = [];
-        spatialIndex = new RBush<MapEntityIndexItem>();
-        generator.portals.forEach(p => {
-            spatialIndex.insert({ minX: p.lng, minY: p.lat, maxX: p.lng, maxY: p.lat, id: p.id, type: 'portal', faction: p.faction, data: p });
-            features.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [p.lng, p.lat] }, properties: { id: p.id, type: 'portal', faction: p.faction, level: p.level } });
+        
+        results.forEach(item => {
+            if (item.type === 'portal') {
+                const p = generator.portals.get(item.id);
+                if (p) features.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [p.lng, p.lat] }, properties: { id: p.id, type: 'portal', faction: p.faction, level: p.level } });
+            } else if (item.type === 'link') {
+                const l = generator.links.find(l => l.id === item.id);
+                if (l) features.push({ type: 'Feature', id: `l-${l.id}`, geometry: { type: 'LineString', coordinates: [[l.p1.lng, l.p1.lat], [l.p2.lng, l.p2.lat]] }, properties: { id: l.id, type: 'link', faction: l.faction } });
+            } else if (item.type === 'field') {
+                const f = generator.fields.find(f => f.id === item.id);
+                if (f) {
+                    const poly = [[f.p1.lng, f.p1.lat], [f.p2.lng, f.p2.lat], [f.p3.lng, f.p3.lat], [f.p1.lng, f.p1.lat]];
+                    features.push({ type: 'Feature', id: `f-${f.id}`, geometry: { type: 'Polygon', coordinates: [poly] }, properties: { id: f.id, type: 'field', faction: f.faction } });
+                }
+            }
         });
-        generator.links.forEach(l => {
-            spatialIndex.insert({ minX: Math.min(l.p1.lng, l.p2.lng), minY: Math.min(l.p1.lat, l.p2.lat), maxX: Math.max(l.p1.lng, l.p2.lng), maxY: Math.max(l.p1.lat, l.p2.lat), id: l.id, type: 'link', faction: l.faction, data: { coords: [[l.p1.lng, l.p1.lat], [l.p2.lng, l.p2.lat]] } });
-            features.push({ type: 'Feature', id: `l-${l.id}`, geometry: { type: 'LineString', coordinates: [[l.p1.lng, l.p1.lat], [l.p2.lng, l.p2.lat]] }, properties: { id: l.id, type: 'link', faction: l.faction } });
-        });
-        generator.fields.forEach(f => {
-            const poly = [[f.p1.lng, f.p1.lat], [f.p2.lng, f.p2.lat], [f.p3.lng, f.p3.lat], [f.p1.lng, f.p1.lat]];
-            spatialIndex.insert({ minX: Math.min(f.p1.lng, f.p2.lng, f.p3.lng), minY: Math.min(f.p1.lat, f.p2.lat, f.p3.lat), maxX: Math.max(f.p1.lng, f.p2.lng, f.p3.lng), maxY: Math.max(f.p1.lat, f.p2.lat, f.p3.lat), id: f.id, type: 'field', faction: f.faction, data: { coords: poly } });
-            features.push({ type: 'Feature', id: `f-${f.id}`, geometry: { type: 'Polygon', coordinates: [poly] }, properties: { id: f.id, type: 'field', faction: f.faction } });
-        });
+
         const source = map.getSource('entities') as maplibregl.GeoJSONSource;
         if (source) source.setData({ type: 'FeatureCollection', features });
+        logEvent(`RENDERED: ${features.length} / ${generator.portals.size + generator.links.length + generator.fields.length} items`);
     }
 
     function checkAndLoad(map: maplibregl.Map) {
@@ -157,9 +162,10 @@ function initMap() {
                 }
             }
         }
+        
+        syncToMap(map);
         if (addedAny) {
-            syncToMap(map);
-            logEvent(`UPDATED. Total Entities: ${generator.portals.size + generator.links.length + generator.fields.length}`);
+            logEvent(`GENERATED NEW DATA. Total Store: ${generator.portals.size + generator.links.length + generator.fields.length}`);
         }
     }
 
