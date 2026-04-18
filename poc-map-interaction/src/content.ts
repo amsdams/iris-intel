@@ -1,9 +1,9 @@
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import RBush from 'rbush';
+import { MockDataGenerator, Faction } from './MockDataGenerator';
 
 type EntityType = 'portal' | 'link' | 'field';
-type Faction = 'ENL' | 'RES' | 'NEU';
 
 interface MapEntityIndexItem {
     minX: number;
@@ -16,112 +16,115 @@ interface MapEntityIndexItem {
     data: any;
 }
 
-console.log("POC (TS): Guaranteed Non-Crossing Multilayered Fields Loaded");
+console.log("POC (TS): Hybrid Interaction with MAC (Machine) Faction Loaded");
 
 function initMap() {
+    const generator = new MockDataGenerator();
     const spatialIndex = new RBush<MapEntityIndexItem>();
-    const features: any[] = [];
 
     const COLORS = {
         ENL: '#00ff00',
         RES: '#0000ff',
+        MAC: '#ff0000',
         NEU: '#ffffff'
     };
 
-    function generateSpineNetwork(faction: Faction, centerLng: number) {
-        // 1. Create 2 Base Anchors (The "Onion" Base)
-        const b1 = { id: `${faction}-B1`, lng: centerLng - 0.02, lat: -0.02 };
-        const b2 = { id: `${faction}-B2`, lng: centerLng + 0.02, lat: -0.02 };
-        const bases = [b1, b2];
+    // --- 1. GENERATE MOCK DATA ---
 
-        bases.forEach(a => {
-            spatialIndex.insert({ minX: a.lng, minY: a.lat, maxX: a.lng, maxY: a.lat, id: a.id, type: 'portal', faction, data: { lng: a.lng, lat: a.lat } });
-            features.push({
-                type: 'Feature', id: `p-${a.id}`,
-                geometry: { type: 'Point', coordinates: [a.lng, a.lat] },
-                properties: { id: a.id, type: 'portal', faction }
-            });
-        });
+    // NORTH: Portals (including MAC)
+    for (let i = 0; i < 24; i++) {
+        const factions: Faction[] = ['NEU', 'ENL', 'RES', 'MAC'];
+        const faction = factions[i % 4];
+        generator.addPortal(`TOP-P-${i}`, faction, (Math.random() - 0.5) * 0.1, 0.04 + Math.random() * 0.02);
+    }
 
-        // Link the two bases
-        const baseLid = `${faction}-L-BASE`;
-        spatialIndex.insert({
-            minX: Math.min(b1.lng, b2.lng), minY: Math.min(b1.lat, b2.lat),
-            maxX: Math.max(b1.lng, b2.lng), maxY: Math.max(b1.lat, b2.lat),
-            id: baseLid, type: 'link', faction, data: { coords: [[b1.lng, b1.lat], [b2.lng, b2.lat]] }
-        });
-        features.push({
-            type: 'Feature', id: `l-${baseLid}`,
-            geometry: { type: 'LineString', coordinates: [[b1.lng, b1.lat], [b2.lng, b2.lat]] },
-            properties: { id: baseLid, type: 'link', faction }
-        });
-
-        // 2. Create a sequence of Spine Portals moving North
-        // Because they all connect to the same base and move progressively away, links NEVER cross.
-        const spine = [];
-        for (let i = 0; i < 8; i++) {
-            const lng = centerLng + (Math.random() - 0.5) * 0.005; 
-            const lat = -0.01 + (i * 0.01); // Each portal is strictly "above" the previous one
-            const p = { id: `${faction}-S-${i}`, lng, lat };
-            spine.push(p);
-
-            spatialIndex.insert({ minX: lng, minY: lat, maxX: lng, maxY: lat, id: p.id, type: 'portal', faction, data: { lng, lat } });
-            features.push({
-                type: 'Feature', id: `p-${p.id}`,
-                geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
-                properties: { id: p.id, type: 'portal', faction }
-            });
-
-            // Connect to Base 1 and Base 2
-            [b1, b2].forEach(b => {
-                const lid = `${faction}-L-${p.id}-${b.id}`;
-                spatialIndex.insert({
-                    minX: Math.min(p.lng, b.lng), minY: Math.min(p.lat, b.lat),
-                    maxX: Math.max(p.lng, b.lng), maxY: Math.max(p.lat, b.lat),
-                    id: lid, type: 'link', faction, data: { coords: [[p.lng, p.lat], [b.lng, b.lat]] }
-                });
-                features.push({
-                    type: 'Feature', id: `l-${lid}`,
-                    geometry: { type: 'LineString', coordinates: [[p.lng, p.lat], [b.lng, b.lat]] },
-                    properties: { id: lid, type: 'link', faction }
-                });
-            });
-
-            // Create Field (Current Spine + Base 1 + Base 2)
-            const fid = `${faction}-F-LAYER-${i}`;
-            const polyCoords = [[p.lng, p.lat], [b1.lng, b1.lat], [b2.lng, b2.lat], [p.lng, p.lat]];
-            
-            spatialIndex.insert({
-                minX: Math.min(p.lng, b1.lng, b2.lng), minY: Math.min(p.lat, b1.lat, b2.lat),
-                maxX: Math.max(p.lng, b1.lng, b2.lng), maxY: Math.max(p.lat, b1.lat, b2.lat),
-                id: fid, type: 'field', faction, data: { coords: polyCoords }
-            });
-            features.push({
-                type: 'Feature', id: `f-${fid}`,
-                geometry: { type: 'Polygon', coordinates: [polyCoords] },
-                properties: { id: fid, type: 'field', faction }
-            });
-
-            // OPTIONAL: Connect to the previous spine portal to create "nested" sub-fields
-            if (i > 0) {
-                const prev = spine[i-1];
-                const lid = `${faction}-L-INTERNAL-${i}`;
-                spatialIndex.insert({
-                    minX: Math.min(p.lng, prev.lng), minY: Math.min(p.lat, prev.lat),
-                    maxX: Math.max(p.lng, prev.lng), maxY: Math.max(p.lat, prev.lat),
-                    id: lid, type: 'link', faction, data: { coords: [[p.lng, p.lat], [prev.lng, prev.lat]] }
-                });
-                features.push({
-                    type: 'Feature', id: `l-${lid}`,
-                    geometry: { type: 'LineString', coordinates: [[p.lng, p.lat], [prev.lng, prev.lat]] },
-                    properties: { id: lid, type: 'link', faction }
-                });
-            }
+    // CENTER: Portals + Links (including MAC)
+    const midPortals = [];
+    for (let i = 0; i < 21; i++) {
+        const factions: Faction[] = ['ENL', 'RES', 'MAC'];
+        const faction = factions[Math.floor(i / 7)]; // Blocks of 7 per faction
+        const p = generator.addPortal(`MID-P-${i}`, faction, (Math.random() - 0.5) * 0.1, 0.01 + Math.random() * 0.02);
+        midPortals.push(p);
+    }
+    for (let i = 0; i < midPortals.length - 1; i++) {
+        if (midPortals[i].faction === midPortals[i+1].faction) {
+            generator.addLink(`MID-L-${i}`, midPortals[i].faction, midPortals[i].id, midPortals[i+1].id);
         }
     }
 
-    generateSpineNetwork('ENL', -0.04);
-    generateSpineNetwork('RES', 0.04);
+    // SOUTH: Full Network
+    // ENL Spine
+    const b1 = generator.addPortal('ENL-B1', 'ENL', -0.04, -0.05);
+    const b2 = generator.addPortal('ENL-B2', 'ENL', -0.01, -0.05);
+    generator.addLink('ENL-L-BASE', 'ENL', 'ENL-B1', 'ENL-B2');
+    for (let i = 0; i < 4; i++) {
+        const id = `ENL-S-${i}`;
+        generator.addPortal(id, 'ENL', -0.025 + (Math.random() - 0.5) * 0.005, -0.04 + (i * 0.01));
+        generator.addField(`${id}-F`, 'ENL', id, 'ENL-B1', 'ENL-B2');
+    }
+
+    // RES Fan
+    const anchor = generator.addPortal('RES-ANCHOR', 'RES', 0.01, -0.05);
+    const fanPoints = [];
+    for (let i = 0; i < 4; i++) {
+        const p = generator.addPortal(`RES-F-${i}`, 'RES', 0.02 + (i * 0.01), -0.04 + (Math.random() * 0.02));
+        fanPoints.push(p);
+        generator.addLink(`${p.id}-L-A`, 'RES', p.id, anchor.id);
+        if (i > 0) {
+            generator.addField(`${p.id}-F`, 'RES', p.id, fanPoints[i-1].id, anchor.id);
+        }
+    }
+
+    // MAC (Machine) Random Links - Red cannot have fields
+    const macPortals = [];
+    for (let i = 0; i < 6; i++) {
+        const p = generator.addPortal(`MAC-S-${i}`, 'MAC', 0.04 + (Math.random() - 0.5) * 0.01, -0.04 + (i * 0.01));
+        macPortals.push(p);
+    }
+    for (let i = 0; i < macPortals.length - 1; i++) {
+        generator.addLink(`MAC-L-${i}`, 'MAC', macPortals[i].id, macPortals[i+1].id);
+    }
+
+    // --- 2. POPULATE SPATIAL INDEX & GEOJSON FEATURES ---
+    const features: any[] = [];
+
+    generator.portals.forEach(p => {
+        spatialIndex.insert({ minX: p.lng, minY: p.lat, maxX: p.lng, maxY: p.lat, id: p.id, type: 'portal', faction: p.faction, data: p });
+        features.push({
+            type: 'Feature', id: `p-${p.id}`,
+            geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
+            properties: { id: p.id, type: 'portal', faction: p.faction }
+        });
+    });
+
+    generator.links.forEach(l => {
+        spatialIndex.insert({
+            minX: Math.min(l.p1.lng, l.p2.lng), minY: Math.min(l.p1.lat, l.p2.lat),
+            maxX: Math.max(l.p1.lng, l.p2.lng), maxY: Math.max(l.p1.lat, l.p2.lat),
+            id: l.id, type: 'link', faction: l.faction, data: { coords: [[l.p1.lng, l.p1.lat], [l.p2.lng, l.p2.lat]] }
+        });
+        features.push({
+            type: 'Feature', id: `l-${l.id}`,
+            geometry: { type: 'LineString', coordinates: [[l.p1.lng, l.p1.lat], [l.p2.lng, l.p2.lat]] },
+            properties: { id: l.id, type: 'link', faction: l.faction }
+        });
+    });
+
+    generator.fields.forEach(f => {
+        const polyCoords = [[f.p1.lng, f.p1.lat], [f.p2.lng, f.p2.lat], [f.p3.lng, f.p3.lat], [f.p1.lng, f.p1.lat]];
+        spatialIndex.insert({
+            minX: Math.min(f.p1.lng, f.p2.lng, f.p3.lng), minY: Math.min(f.p1.lat, f.p2.lat, f.p3.lat),
+            maxX: Math.max(f.p1.lng, f.p2.lng, f.p3.lng), maxY: Math.max(f.p1.lat, f.p2.lat, f.p3.lat),
+            id: f.id, type: 'field', faction: f.faction, data: { coords: polyCoords }
+        });
+        features.push({
+            type: 'Feature', id: `f-${f.id}`,
+            geometry: { type: 'Polygon', coordinates: [polyCoords] },
+            properties: { id: f.id, type: 'field', faction: f.faction }
+        });
+    });
+
+    // --- 3. MAPBOX-GL INITIALIZATION ---
 
     const container = document.createElement('div');
     container.id = 'map-poc-container';
@@ -155,14 +158,18 @@ function initMap() {
                 { id: 'fields-res', type: 'fill', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'faction', 'RES']], paint: { 'fill-color': COLORS.RES, 'fill-opacity': 0.1 } },
                 { id: 'links-enl', type: 'line', source: 'entities', filter: ['all', ['==', 'type', 'link'], ['==', 'faction', 'ENL']], paint: { 'line-color': COLORS.ENL, 'line-width': 1 } },
                 { id: 'links-res', type: 'line', source: 'entities', filter: ['all', ['==', 'type', 'link'], ['==', 'faction', 'RES']], paint: { 'line-color': COLORS.RES, 'line-width': 1 } },
+                { id: 'links-mac', type: 'line', source: 'entities', filter: ['all', ['==', 'type', 'link'], ['==', 'faction', 'MAC']], paint: { 'line-color': COLORS.MAC, 'line-width': 1 } },
                 { id: 'portals-enl', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'faction', 'ENL']], paint: { 'circle-radius': 5, 'circle-color': COLORS.ENL, 'circle-stroke-width': 1, 'circle-stroke-color': '#fff' } },
-                { id: 'portals-res', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'faction', 'RES']], paint: { 'circle-radius': 5, 'circle-color': COLORS.RES, 'circle-stroke-width': 1, 'circle-stroke-color': '#fff' } }
+                { id: 'portals-res', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'faction', 'RES']], paint: { 'circle-radius': 5, 'circle-color': COLORS.RES, 'circle-stroke-width': 1, 'circle-stroke-color': '#fff' } },
+                { id: 'portals-mac', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'faction', 'MAC']], paint: { 'circle-radius': 5, 'circle-color': COLORS.MAC, 'circle-stroke-width': 1, 'circle-stroke-color': '#fff' } },
+                { id: 'portals-neu', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'faction', 'NEU']], paint: { 'circle-radius': 5, 'circle-color': COLORS.NEU, 'circle-stroke-width': 1, 'circle-stroke-color': '#888' } }
             ]
         },
         center: [0, 0], zoom: 12, dragPan: true, touchZoomRotate: true
     });
 
-    // --- HELPER MATH ---
+    // --- 4. INTERACTION LOGIC (HYBRID) ---
+
     function isPointInPolygon(point: [number, number], vs: number[][]) {
         const x = point[0], y = point[1];
         let inside = false;
@@ -183,14 +190,13 @@ function initMap() {
         return Math.sqrt(Math.pow(p.x - (v.x + t * (w.x - v.x)), 2) + Math.pow(p.y - (v.y + t * (w.y - v.y)), 2));
     }
 
-    // --- INTERACTION ---
     function handleInteraction(point: { x: number, y: number }) {
         const startTime = performance.now();
         let hits: { id: string, type: string, faction: Faction, method: string }[] = [];
 
         try {
             const box: [maplibregl.PointLike, maplibregl.PointLike] = [[point.x - 10, point.y - 10], [point.x + 10, point.y + 10]];
-            const features = map.queryRenderedFeatures(box, { layers: ['portals-enl', 'portals-res', 'links-enl', 'links-res', 'fields-enl', 'fields-res'] });
+            const features = map.queryRenderedFeatures(box, { layers: ['portals-enl', 'portals-res', 'portals-mac', 'portals-neu', 'links-enl', 'links-res', 'links-mac', 'fields-enl', 'fields-res'] });
             hits = features.map(f => ({ id: f.properties?.id, type: f.properties?.type, faction: f.properties?.faction, method: 'NATIVE' }));
         } catch (e: any) { logEvent(`NATIVE BLOCKED: ${e.message}`, '#ff0000'); }
 
