@@ -1,26 +1,22 @@
+
+export const ZOOM_TO_LEVEL = [8, 8, 8, 8, 7, 7, 6, 5, 5, 4, 3, 3, 2, 1, 1, 0, 0];
+
 /**
- * Mimics Ingress Intel zoom-to-portal-level mapping.
+ * Returns the minimum portal level that should be visible at a given zoom level.
+ * Aligned with Ingress Intel's data-level gating.
  */
 export function getMinLevelForZoom(zoom: number): number {
-    if (zoom >= 17) return 0; // All
-    if (zoom >= 16) return 1;
-    if (zoom >= 15) return 2;
-    if (zoom >= 14) return 3;
-    if (zoom >= 13) return 4;
-    if (zoom >= 12) return 5;
-    if (zoom >= 11) return 6;
-    if (zoom >= 9) return 7;
-    if (zoom >= 3) return 8; // L8 only
-    return 9; // Z0-Z2: No portals
+    const z = Math.max(0, Math.min(ZOOM_TO_LEVEL.length - 1, Math.floor(zoom)));
+    return ZOOM_TO_LEVEL[z];
 }
 
 /**
- * Provides a dynamic grid size (degrees) to ensure we don't 
- * iterate over too many cells when zoomed out.
+ * Returns a grid size (in degrees) suitable for the given zoom level.
+ * Used for spatial partitioning and clustering.
  */
 export function getGridSizeForZoom(zoom: number): number {
     if (zoom >= 13) return 0.05;
     if (zoom >= 9) return 0.5;
     if (zoom >= 6) return 2.0;
-    return 5.0; // Very large cells for world view
+    return 5.0;
 }

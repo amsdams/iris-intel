@@ -2,7 +2,7 @@ import {h, JSX} from 'preact';
 import {useEffect, useMemo, useRef, useState, useCallback} from 'preact/hooks';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import {useStore, globalSpatialIndex, getMinLevelForZoom, Portal, Link, Field} from '@iris/core';
+import {useStore, globalSpatialIndex, Portal, Link, Field, getMinLevelForZoom} from '@iris/core';
 import {THEMES, MAP_THEMES, SEMANTIC_COLORS} from '../../theme';
 import {
   buildArtifactFeatures,
@@ -220,7 +220,9 @@ export function MapOverlay(): JSX.Element {
     const viewportPortals: Record<string, Portal> = {};
     results.filter(r => r.type === 'portal').forEach(r => {
         const p = store.portals[r.id];
-        if (p && p.level !== undefined && p.level >= minLevel) {
+        // Note: p.level can be undefined for placeholder portals (extracted from links/fields).
+        // We always show placeholders, as they are part of the active data set for this zoom.
+        if (p && (p.level === undefined || p.level >= minLevel)) {
             viewportPortals[p.id] = p;
         }
     });
@@ -236,8 +238,11 @@ export function MapOverlay(): JSX.Element {
         if (l) {
             const p1 = store.portals[l.fromPortalId];
             const p2 = store.portals[l.toPortalId];
-            // Only show link if BOTH endpoints are visible at this zoom
-            if (p1 && p2 && p1.level !== undefined && p2.level !== undefined && p1.level >= minLevel && p2.level >= minLevel) {
+            // Only show link if BOTH endpoints satisfy the minLevel filter (or are placeholders)
+            const p1Visible = p1 && (p1.level === undefined || p1.level >= minLevel);
+            const p2Visible = p2 && (p2.level === undefined || p2.level >= minLevel);
+            
+            if (p1Visible && p2Visible) {
                 viewportLinks[l.id] = l;
             }
         }
@@ -255,7 +260,7 @@ export function MapOverlay(): JSX.Element {
             const allVisible = f.points.every(pt => {
                 if (!pt.portalId) return true;
                 const p = store.portals[pt.portalId];
-                return p && p.level !== undefined && p.level >= minLevel;
+                return p && (p.level === undefined || p.level >= minLevel);
             });
             if (allVisible) viewportFields[f.id] = f;
         }
@@ -415,7 +420,7 @@ export function MapOverlay(): JSX.Element {
               ],
               'circle-color': initialTeamColourExpr.current,
               'circle-opacity': [
-                'interpolate', ['linear'], ['get', 'health'],
+                'interpolate', ['linear'], ['coalesce', ['get', 'health'], 100],
                 0, 0.1,
                 100, 0.7
               ],

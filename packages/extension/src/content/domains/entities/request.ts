@@ -1,5 +1,6 @@
+import { ZOOM_TO_LEVEL } from '@iris/core';
+
 const DEFAULT_ZOOM_TO_TILES_PER_EDGE = [1, 1, 1, 40, 40, 80, 80, 320, 1000, 2000, 2000, 4000, 8000, 16000, 16000, 32000];
-const DEFAULT_ZOOM_TO_LEVEL = [8, 8, 8, 8, 7, 7, 6, 5, 5, 4, 3, 3, 2, 1, 1, 0, 0];
 const MAX_MAP_ZOOM = 21;
 
 interface BoundsE6 {
@@ -30,7 +31,7 @@ function getMapZoomTileParameters(zoom: number): TileParams {
   const portalZoomLimit = 15;
 
   return {
-    level: DEFAULT_ZOOM_TO_LEVEL[zoom] ?? 0,
+    level: ZOOM_TO_LEVEL[zoom] ?? 0,
     tilesPerEdge: DEFAULT_ZOOM_TO_TILES_PER_EDGE[zoom] || maxTilesPerEdge,
     hasPortals: zoom >= portalZoomLimit,
     zoom,
