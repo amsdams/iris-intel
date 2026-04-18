@@ -11,37 +11,71 @@ interface MapEntityIndexItem {
     id: string; type: EntityType; faction: Faction; data: any;
 }
 
-console.log("POC (TS): Optimized Tiling + Ingress Zoom Policy Active");
+console.log("POC (TS): Intel Mode (Initial Zoom 13)");
 
 function initMap() {
     const generator = new MockDataGenerator();
     let spatialIndex = new RBush<MapEntityIndexItem>();
-    const loadedKeys = new Set<string>(); // Tracks "lat,lng,gridSize,minLevel"
+    const loadedKeys = new Set<string>();
 
     const COLORS = { ENL: '#00ff00', RES: '#0000ff', MAC: '#ff0000', NEU: '#ffffff' };
+    const MAP_STYLES: Record<string, string[]> = {
+        'Dark': [
+            'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+            'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
+            'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png'
+        ],
+        'Light': [
+            'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png',
+            'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png',
+            'https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png'
+        ],
+        'Voyager': [
+            'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
+            'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png',
+            'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png'
+        ],
+        'OSM': [
+            'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+        ]
+    };
+
+    function switchStyle(map: maplibregl.Map, name: string) {
+        if (!MAP_STYLES[name]) return;
+        if (map.getLayer('carto')) map.removeLayer('carto');
+        if (map.getSource('carto')) map.removeSource('carto');
+        
+        map.addSource('carto', { 
+            type: 'raster', 
+            tiles: MAP_STYLES[name], 
+            tileSize: 256, 
+            attribution: name === 'OSM' ? '&copy; OpenStreetMap' : '&copy; CARTO &copy; OpenStreetMap' 
+        });
+        
+        // Insert at the bottom
+        const firstLayer = map.getStyle().layers?.[0]?.id;
+        map.addLayer({ id: 'carto', type: 'raster', source: 'carto' }, firstLayer && firstLayer !== 'carto' ? firstLayer : undefined);
+        logEvent(`Style: ${name}`);
+    }
 
     function generateForCell(latIdx: number, lngIdx: number, size: number, minLevel: number) {
         const minLat = latIdx * size;
         const minLng = lngIdx * size;
         const cellId = `${latIdx}_${lngIdx}_S${size.toFixed(2)}`;
 
-        // 1. Portals (Only if zoom allows)
         if (minLevel <= 8) {
             for (let i = 0; i < 20; i++) {
                 const level = Math.floor(Math.random() * 9);
                 if (level < minLevel) continue;
-
                 const f: Faction = ['NEU', 'ENL', 'RES', 'MAC'][Math.floor(Math.random() * 4)] as Faction;
                 generator.addPortal(`P-${cellId}-${i}`, f, minLng + Math.random() * size, minLat + Math.random() * size, level);
             }
         }
 
-        // 2. Network (Always Z3+)
         const faction: Faction = Math.random() > 0.5 ? 'ENL' : 'RES';
         const b1 = generator.addPortal(`B1-${cellId}`, faction, minLng + size * 0.2, minLat + size * 0.2, 8);
         const b2 = generator.addPortal(`B2-${cellId}`, faction, minLng + size * 0.8, minLat + size * 0.2, 8);
         generator.addLink(`L-BASE-${cellId}`, faction, b1.id, b2.id);
-        
         for (let i = 0; i < 2; i++) {
             const p = generator.addPortal(`S-${cellId}-${i}`, faction, minLng + size * 0.5, minLat + size * (0.4 + i * 0.3), 8);
             generator.addField(`F-${cellId}-${i}`, faction, p.id, b1.id, b2.id);
@@ -73,20 +107,15 @@ function initMap() {
         const minLevel = getMinLevelForZoom(zoom);
         const gridSize = getGridSizeForZoom(zoom);
         const bounds = map.getBounds();
-
         logPos(`Z:${zoom.toFixed(1)} | Min L:${minLevel} | Grid:${gridSize.toFixed(2)}°`);
-
         if (zoom < 3) return;
-
         const startLat = Math.floor(bounds.getSouth() / gridSize);
         const endLat = Math.floor(bounds.getNorth() / gridSize);
         const startLng = Math.floor(bounds.getWest() / gridSize);
         const endLng = Math.floor(bounds.getEast() / gridSize);
-
         let addedAny = false;
         for (let lat = startLat; lat <= endLat; lat++) {
             for (let lng = startLng; lng <= endLng; lng++) {
-                // The key includes gridSize and minLevel to allow progressive loading
                 const key = `${lat},${lng},${gridSize},L${minLevel}`;
                 if (!loadedKeys.has(key)) {
                     generateForCell(lat, lng, gridSize, minLevel);
@@ -95,7 +124,6 @@ function initMap() {
                 }
             }
         }
-
         if (addedAny) {
             syncToMap(map);
             logEvent(`UPDATED. Total Entities: ${generator.portals.size + generator.links.length + generator.fields.length}`);
@@ -118,7 +146,6 @@ function initMap() {
 
     const posLog = document.createElement('div');
     posLog.id = 'pos-log';
-    posLog.textContent = 'Initializing...';
     document.body.appendChild(posLog);
 
     const log = document.createElement('div');
@@ -150,7 +177,7 @@ function initMap() {
                 { id: 'p', type: 'circle', source: 'entities', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': ['step', ['get', 'level'], 2, 4, 3, 7, 4, 8, 6], 'circle-color': ['match', ['get', 'faction'], 'ENL', COLORS.ENL, 'RES', COLORS.RES, 'MAC', COLORS.MAC, COLORS.NEU], 'circle-stroke-width': 1, 'circle-stroke-color': '#fff' } }
             ]
         },
-        center: [0, 0], zoom: 3
+        center: [-0.1276, 51.5072], zoom: 13
     });
 
     const btns = document.createElement('div');
@@ -164,29 +191,24 @@ function initMap() {
     mk('+', () => map.zoomIn()); mk('-', () => map.zoomOut());
     mk('↑', () => map.panBy([0, -250])); mk('↓', () => map.panBy([0, 250]));
     mk('←', () => map.panBy([-250, 0])); mk('→', () => map.panBy([150, 0]));
-    mk('R', () => { map.setCenter([0,0]); map.setZoom(3); });
+    mk('R', () => { map.setCenter([-0.1276, 51.5072]); map.setZoom(13); });
+    mk('D', () => switchStyle(map, 'Dark'));
+    mk('L', () => switchStyle(map, 'Light'));
+    mk('V', () => switchStyle(map, 'Voyager'));
+    mk('O', () => switchStyle(map, 'OSM'));
 
     map.on('load', () => {
-        logEvent("INTEL MODE READY (Z3+). Dynamic tiling enabled.");
         container.style.background = 'transparent';
         map.resize();
         checkAndLoad(map);
     });
-
     map.on('move', () => {
-        const center = map.getCenter();
         logPos(`Z:${map.getZoom().toFixed(1)} | Min L:${getMinLevelForZoom(map.getZoom())} | Grid:${getGridSizeForZoom(map.getZoom()).toFixed(2)}°`);
     });
-
     map.on('moveend', () => checkAndLoad(map));
-
     map.on('click', (e) => {
         const features = map.queryRenderedFeatures([[e.point.x-10, e.point.y-10], [e.point.x+10, e.point.y+10]]);
-        if (features.length > 0) {
-            const f = features[0].properties;
-            logEvent(`HIT: ${f.id} (Level ${f.level})`);
-        }
+        if (features.length > 0) logEvent(`HIT: ${features[0].properties?.id} (L${features[0].properties?.level})`);
     });
 }
-
 setTimeout(initMap, 500);
