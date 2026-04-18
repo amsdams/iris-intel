@@ -1,5 +1,7 @@
 export * from './store';
 export * from './PluginManager';
+export * from './SpatialIndex';
+export * from './ZoomPolicy';
 export * from './logic/EntityLogic';
 export * from './parsers/EntityParser';
 export * from './parsers/PortalDetailsParser';

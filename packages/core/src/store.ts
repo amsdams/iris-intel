@@ -1,6 +1,7 @@
 import { create, StateCreator } from 'zustand';
 import { subscribeWithSelector, persist } from 'zustand/middleware';
 import { EntityLogic } from './logic/EntityLogic';
+import { globalSpatialIndex } from './SpatialIndex';
 
 export interface PlayerStats {
     nickname: string;
@@ -371,6 +372,7 @@ interface EntitiesSlice {
     mockOrnaments: Record<string, string[]>;
     tileFreshness: Record<string, number>;
     plexts: Plext[];
+    syncIndex: () => void;
     addPortal: (portal: Portal) => void;
     updatePortals: (portals: Partial<Portal>[]) => void;
     updateLinks: (links: Partial<Link>[]) => void;
@@ -587,9 +589,14 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
     mockOrnaments: {},
     tileFreshness: {},
     plexts: [],
-    addPortal: (portal) => set((state) => ({
-        portals: { ...state.portals, [portal.id]: portal }
-    })),
+    syncIndex: () => set((state) => {
+        globalSpatialIndex.syncAll(state.portals, state.links, state.fields);
+        return state;
+    }),
+    addPortal: (portal) => set((state) => {
+        globalSpatialIndex.updatePortal(portal);
+        return { portals: { ...state.portals, [portal.id]: portal } };
+    }),
     updatePortals: (newPortals) => set((state) => {
         const portals = { ...state.portals };
         const changedPortalIdsWithTeamChange = new Set<string>();
@@ -600,6 +607,7 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
             const existing = portals[p.id];
             if (!existing) {
                 portals[p.id] = p as Portal;
+                globalSpatialIndex.updatePortal(p as Portal);
                 changed = true;
                 return;
             }
@@ -608,6 +616,7 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
 
             if (pChanged) {
                 portals[p.id] = updated;
+                globalSpatialIndex.updatePortal(updated);
                 changed = true;
                 if (teamChanged) {
                     changedPortalIdsWithTeamChange.add(p.id);
@@ -623,6 +632,12 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
             );
 
             if (entitiesChanged) {
+                // Cleanup removed links/fields from index
+                const deletedLinkIds = Object.keys(state.links).filter(id => !links[id]);
+                const deletedFieldIds = Object.keys(state.fields).filter(id => !fields[id]);
+                deletedLinkIds.forEach(id => globalSpatialIndex.remove(id));
+                deletedFieldIds.forEach(id => globalSpatialIndex.remove(id));
+
                 return { portals, links, fields };
             }
         }
@@ -646,6 +661,7 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
                 portals[id] = p;
             } else {
                 deletedPortalIds.add(id);
+                globalSpatialIndex.remove(id);
                 changed = true;
             }
         });
@@ -655,6 +671,11 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
 
         if (deletedPortalIds.size > 0) {
             const result = EntityLogic.calculateCascadingDeletes(deletedPortalIds, state.links, state.fields);
+            
+            // Cleanup index
+            Object.keys(state.links).forEach(id => { if (!result.links[id]) globalSpatialIndex.remove(id); });
+            Object.keys(state.fields).forEach(id => { if (!result.fields[id]) globalSpatialIndex.remove(id); });
+
             nextLinks = result.links;
             nextFields = result.fields;
             if (result.changed) changed = true;
@@ -685,7 +706,9 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
         const links = { ...state.links };
         newLinks.forEach((l) => {
             if (!l.id) return;
-            links[l.id] = { ...links[l.id], ...l } as Link;
+            const updated = { ...links[l.id], ...l } as Link;
+            links[l.id] = updated;
+            globalSpatialIndex.updateLink(updated);
         });
         return { links };
     }),
@@ -693,7 +716,9 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
         const fields = { ...state.fields };
         newFields.forEach((f) => {
             if (!f.id) return;
-            fields[f.id] = { ...fields[f.id], ...f } as Field;
+            const updated = { ...fields[f.id], ...f } as Field;
+            fields[f.id] = updated;
+            globalSpatialIndex.updateField(updated);
         });
         return { fields };
     }),
@@ -724,6 +749,7 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
         Object.entries(state.portals).forEach(([id, portal]) => {
             if (guidsSet.has(id)) {
                 deletedPortalIds.add(id);
+                globalSpatialIndex.remove(id);
                 changed = true;
             } else {
                 portals[id] = portal;
@@ -734,6 +760,7 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
         const remainingLinks: Record<string, Link> = {};
         Object.entries(state.links).forEach(([id, link]) => {
             if (guidsSet.has(id)) {
+                globalSpatialIndex.remove(id);
                 changed = true;
             } else {
                 remainingLinks[id] = link;
@@ -743,6 +770,7 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
         const remainingFields: Record<string, Field> = {};
         Object.entries(state.fields).forEach(([id, field]) => {
             if (guidsSet.has(id)) {
+                globalSpatialIndex.remove(id);
                 changed = true;
             } else {
                 remainingFields[id] = field;
@@ -772,7 +800,12 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
             remainingFields
         );
 
-        if (cascadingChanged) changed = true;
+        if (cascadingChanged) {
+            // Cleanup index for cascading deletes
+            Object.keys(remainingLinks).forEach(id => { if (!links[id]) globalSpatialIndex.remove(id); });
+            Object.keys(remainingFields).forEach(id => { if (!fields[id]) globalSpatialIndex.remove(id); });
+            changed = true;
+        }
 
         return changed ? { portals, links, fields, artifacts, mockOrnaments } : state;
     }),

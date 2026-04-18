@@ -1,8 +1,8 @@
 import {h, JSX} from 'preact';
-import {useEffect, useMemo, useRef, useState} from 'preact/hooks';
+import {useEffect, useMemo, useRef, useState, useCallback} from 'preact/hooks';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import {useStore} from '@iris/core';
+import {useStore, globalSpatialIndex, getMinLevelForZoom, Portal, Link, Field} from '@iris/core';
 import {THEMES, MAP_THEMES, SEMANTIC_COLORS} from '../../theme';
 import {
   buildArtifactFeatures,
@@ -127,9 +127,7 @@ export function MapOverlay(): JSX.Element {
   const isMoving = useRef(false);
   const isFirstSync = useRef(true);
 
-  const portals = useStore((state) => state.portals);
-  const links = useStore((state) => state.links);
-  const fields = useStore((state) => state.fields);
+  // Core entities are NOT subscribed here anymore. We use the globalSpatialIndex for viewport sync.
   const artifacts = useStore((state) => state.artifacts);
   const mockOrnaments = useStore((state) => state.mockOrnaments);
   const missionDetails = useStore((state) => state.missionDetails);
@@ -145,6 +143,7 @@ export function MapOverlay(): JSX.Element {
     startY: 0,
     hasMoved: false
   });
+
 
   const getMapThemeTiles = (id: string): string[] => {
     const mt = MAP_THEMES[id] || MAP_THEMES.DARK;
@@ -197,6 +196,85 @@ export function MapOverlay(): JSX.Element {
         featureId
     });
   };
+
+  const syncViewport = useCallback(() => {
+    if (!map.current || !styleLoaded) return;
+
+    const bounds = map.current.getBounds();
+    const zoom = map.current.getZoom();
+    const minLevel = getMinLevelForZoom(zoom);
+    
+    // ~5km buffer in degrees approx
+    const buffer = 0.05;
+    const queryBounds = {
+        minLat: bounds.getSouth() - buffer,
+        minLng: bounds.getWest() - buffer,
+        maxLat: bounds.getNorth() + buffer,
+        maxLng: bounds.getEast() + buffer
+    };
+
+    const results = globalSpatialIndex.query(queryBounds);
+    const store = useStore.getState();
+
+    // 1. Filter and Build Portals
+    const viewportPortals: Record<string, Portal> = {};
+    results.filter(r => r.type === 'portal').forEach(r => {
+        const p = store.portals[r.id];
+        if (p && p.level !== undefined && p.level >= minLevel) {
+            viewportPortals[p.id] = p;
+        }
+    });
+    const portalFeatures = buildPortalFeatures(viewportPortals, {
+        showResistance, showEnlightened, showMachina, showUnclaimedPortals, showLevel, showHealth
+    });
+    getGeoJsonSource('portals')?.setData(toFeatureCollection(portalFeatures));
+
+    // 2. Filter and Build Links
+    const viewportLinks: Record<string, Link> = {};
+    results.filter(r => r.type === 'link').forEach(r => {
+        const l = store.links[r.id];
+        if (l) {
+            const p1 = store.portals[l.fromPortalId];
+            const p2 = store.portals[l.toPortalId];
+            // Only show link if BOTH endpoints are visible at this zoom
+            if (p1 && p2 && p1.level !== undefined && p2.level !== undefined && p1.level >= minLevel && p2.level >= minLevel) {
+                viewportLinks[l.id] = l;
+            }
+        }
+    });
+    const linkFeatures = buildLinkFeatures(viewportLinks, {
+        showLinks, showResistance, showEnlightened, showMachina, showUnclaimedPortals
+    });
+    getGeoJsonSource('links')?.setData(toFeatureCollection(linkFeatures));
+
+    // 3. Filter and Build Fields
+    const viewportFields: Record<string, Field> = {};
+    results.filter(r => r.type === 'field').forEach(r => {
+        const f = store.fields[r.id];
+        if (f) {
+            const allVisible = f.points.every(pt => {
+                if (!pt.portalId) return true;
+                const p = store.portals[pt.portalId];
+                return p && p.level !== undefined && p.level >= minLevel;
+            });
+            if (allVisible) viewportFields[f.id] = f;
+        }
+    });
+    const fieldFeatures = buildFieldFeatures(viewportFields, {
+        showFields, showResistance, showEnlightened, showMachina, showUnclaimedPortals
+    });
+    getGeoJsonSource('fields')?.setData(toFeatureCollection(fieldFeatures));
+
+    // 4. Other overlays (keep full records for now if small)
+    getGeoJsonSource('artifacts')?.setData(toFeatureCollection(buildArtifactFeatures(artifacts, store.portals, { showArtifacts })));
+    getGeoJsonSource('ornaments')?.setData(toFeatureCollection(buildOrnamentFeatures(store.portals, mockOrnaments, {
+      showOrnaments, showResistance, showEnlightened, showMachina, showUnclaimedPortals, showLevel, showHealth
+    })));
+    getGeoJsonSource('mission-route')?.setData(toFeatureCollection(buildMissionRouteFeatures(missionDetails)));
+    getGeoJsonSource('mission-waypoints')?.setData(toFeatureCollection(buildMissionWaypointFeatures(missionDetails)));
+    getGeoJsonSource('plugin-features')?.setData(pluginFeatures);
+
+  }, [styleLoaded, showFields, showLinks, showOrnaments, showArtifacts, showResistance, showEnlightened, showMachina, showUnclaimedPortals, showLevel, showHealth, artifacts, mockOrnaments, missionDetails, pluginFeatures]);
 
   // Direct DOM listener as a fallback/debug
   useEffect(() => {
@@ -570,7 +648,7 @@ export function MapOverlay(): JSX.Element {
         });
 
         // Prevent map drag from triggering touchend on a point
-        map.current?.on('touchmove', layerId, (e) => {});
+        // (Removed empty touchmove layer listener causing type error)
 
         // 4. Hover State (Desktop Only)
         map.current?.on('mouseenter', layerId, () => {
@@ -694,54 +772,47 @@ export function MapOverlay(): JSX.Element {
     }
   }, [showVisited, showCaptured, showScanned, styleLoaded]);
 
-  // Sync GeoJSON Data
+  // Sync Viewport on Map Movement
+  useEffect(() => {
+    if (!map.current || !styleLoaded) return;
+    
+    const onMove = () => syncViewport();
+    map.current.on('moveend', onMove);
+    map.current.on('zoomend', onMove);
+    
+    // Initial sync
+    syncViewport();
+
+    return () => {
+      map.current?.off('moveend', onMove);
+      map.current?.off('zoomend', onMove);
+    };
+  }, [styleLoaded, syncViewport]);
+
+  // Sync Viewport on Store Entity Changes (Decoupled from render cycle)
   useEffect(() => {
     if (!map.current || !styleLoaded) return;
 
-    const filteredPortals = buildPortalFeatures(portals, {
-      showResistance,
-      showEnlightened,
-      showMachina,
-      showUnclaimedPortals,
-      showLevel,
-      showHealth,
-    });
-    getGeoJsonSource('portals')?.setData(toFeatureCollection(filteredPortals));
+    // Subscribe to portal changes to trigger re-sync if they happen while in view
+    const unsubPortals = useStore.subscribe(
+        state => state.portals,
+        () => syncViewport()
+    );
+    const unsubLinks = useStore.subscribe(
+        state => state.links,
+        () => syncViewport()
+    );
+    const unsubFields = useStore.subscribe(
+        state => state.fields,
+        () => syncViewport()
+    );
 
-    const filteredLinks = buildLinkFeatures(links, {
-      showLinks,
-      showResistance,
-      showEnlightened,
-      showMachina,
-      showUnclaimedPortals,
-    });
-    getGeoJsonSource('links')?.setData(toFeatureCollection(filteredLinks));
-
-    const filteredFields = buildFieldFeatures(fields, {
-      showFields,
-      showResistance,
-      showEnlightened,
-      showMachina,
-      showUnclaimedPortals,
-    });
-    getGeoJsonSource('fields')?.setData(toFeatureCollection(filteredFields));
-    getGeoJsonSource('artifacts')?.setData(toFeatureCollection(buildArtifactFeatures(artifacts, portals, { showArtifacts })));
-    getGeoJsonSource('ornaments')?.setData(toFeatureCollection(buildOrnamentFeatures(portals, mockOrnaments, {
-      showOrnaments,
-      showResistance,
-      showEnlightened,
-      showMachina,
-      showUnclaimedPortals,
-      showLevel,
-      showHealth,
-    })));
-    getGeoJsonSource('mission-route')?.setData(toFeatureCollection(buildMissionRouteFeatures(missionDetails)));
-    getGeoJsonSource('mission-waypoints')?.setData(toFeatureCollection(buildMissionWaypointFeatures(missionDetails)));
-
-    // Plugin Features (Lines only here, points are HTML)
-    getGeoJsonSource('plugin-features')?.setData(pluginFeatures);
-
-  }, [portals, links, fields, artifacts, mockOrnaments, missionDetails, showFields, showLinks, showOrnaments, showArtifacts, showResistance, showEnlightened, showMachina, showUnclaimedPortals, showLevel, showHealth, styleLoaded, pluginFeatures]);
+    return () => {
+        unsubPortals();
+        unsubLinks();
+        unsubFields();
+    };
+  }, [styleLoaded, syncViewport]);
 
   // Sync HTML Markers (Independent effect for performance)
   useEffect(() => {

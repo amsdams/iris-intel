@@ -4,9 +4,11 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "zustand": "^4.0.0"
+    "zustand": "^4.0.0",
+    "rbush": "^4.0.1"
   },
   "devDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "@types/rbush": "^4.0.0"
   }
 }
