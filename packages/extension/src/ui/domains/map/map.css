@@ -24,4 +24,5 @@
   height: 100vh;
   pointer-events: auto;
   z-index: 9999;
+  touch-action: none;
 }

@@ -145,12 +145,13 @@
 .iris-status-log-url {
   color: #888;
   font-size: 9px;
+  word-break: break-all;
+  white-space: pre-wrap;
 }
 
-.iris-status-log-url {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.iris-status-log-message {
+  word-break: break-all;
+  white-space: pre-wrap;
 }
 
 .iris-status-empty {

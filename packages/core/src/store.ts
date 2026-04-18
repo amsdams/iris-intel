@@ -143,6 +143,14 @@ export interface SessionError {
     time: number;
 }
 
+export interface MapInteraction {
+    type: 'click' | 'mouseenter' | 'mouseleave';
+    layerId: string;
+    featureId?: string;
+    lngLat?: [number, number];
+    time: number;
+}
+
 export type EndpointStatus = 'idle' | 'in_flight' | 'success' | 'error';
 
 export type EndpointKey =
@@ -455,6 +463,7 @@ interface DiagnosticsSlice {
     failedRequests: FailedRequest[];
     successfulRequests: SuccessfulRequest[];
     jsErrors: JSError[];
+    interactionLogs: MapInteraction[];
     sessionStatus: 'ok' | 'initial_login_required' | 'expired' | 'recovering';
     lastSessionError: SessionError | null;
     endpointDiagnostics: Record<EndpointKey, EndpointDiagnostics>;
@@ -466,6 +475,8 @@ interface DiagnosticsSlice {
     clearSuccessfulRequests: () => void;
     addJSError: (error: JSError) => void;
     clearJSErrors: () => void;
+    addInteractionLog: (log: Omit<MapInteraction, 'time'>) => void;
+    clearInteractionLogs: () => void;
     setInitialLoginRequired: (error: SessionError) => void;
     setSessionExpired: (error: SessionError) => void;
     setSessionRecovering: () => void;
@@ -998,6 +1009,11 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
         jsErrors: [error, ...state.jsErrors].slice(0, 50)
     })),
     clearJSErrors: () => set({ jsErrors: [] }),
+    interactionLogs: [],
+    addInteractionLog: (log) => set((state) => ({
+        interactionLogs: [{ ...log, time: Date.now() }, ...state.interactionLogs].slice(0, 50)
+    })),
+    clearInteractionLogs: () => set({ interactionLogs: [] }),
     setInitialLoginRequired: (error) => set((state) => {
         if (
             state.sessionStatus === 'initial_login_required' &&

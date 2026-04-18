@@ -1,9 +1,9 @@
-import { h, JSX } from 'preact';
-import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
+import {h, JSX} from 'preact';
+import {useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import {Portal, useStore, Artifact} from '@iris/core';
-import { THEMES, MAP_THEMES, SEMANTIC_COLORS } from '../../theme';
+import {useStore} from '@iris/core';
+import {THEMES, MAP_THEMES, SEMANTIC_COLORS} from '../../theme';
 import {
   buildArtifactFeatures,
   buildFieldFeatures,
@@ -107,6 +107,17 @@ type DragRotateInternals = maplibregl.Map['dragRotate'] & {
   };
 };
 
+const INTERACTIVE_LAYERS = [
+    'portals',
+    'artifacts',
+    'ornaments',
+    'portal-history-visited',
+    'portal-history-captured',
+    'portal-history-scanned',
+    'mission-waypoints',
+    'plugin-points'
+];
+
 export function MapOverlay(): JSX.Element {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
@@ -128,6 +139,12 @@ export function MapOverlay(): JSX.Element {
   const themeId = useStore((state) => state.themeId);
   const mapThemeId = useStore((state) => state.mapThemeId);
   const theme = THEMES[themeId] || THEMES.INGRESS;
+
+  const touchState = useRef({
+    startX: 0,
+    startY: 0,
+    hasMoved: false
+  });
 
   const getMapThemeTiles = (id: string): string[] => {
     const mt = MAP_THEMES[id] || MAP_THEMES.DARK;
@@ -163,12 +180,6 @@ export function MapOverlay(): JSX.Element {
   const allowRotation = useStore((state) => state.allowRotation);
   const allowPitch = useStore((state) => state.allowPitch);
 
-  const touchState = useRef({
-    maxFingers: 0,
-    hasMoved: false,
-    startPoint: { x: 0, y: 0 }
-  });
-
   const getGeoJsonSource = (sourceId: string): maplibregl.GeoJSONSource | null => {
     const source = map.current?.getSource(sourceId);
     return source ? (source as maplibregl.GeoJSONSource) : null;
@@ -179,6 +190,29 @@ export function MapOverlay(): JSX.Element {
     return source ? (source as maplibregl.RasterTileSource) : null;
   };
 
+  const logMapEvent = (type: string, layerId: string, featureId?: string) => {
+    useStore.getState().addInteractionLog({
+        type: 'click',
+        layerId: `MAP-${type}-${layerId}`,
+        featureId
+    });
+  };
+
+  // Direct DOM listener as a fallback/debug
+  useEffect(() => {
+    const el = mapContainer.current;
+    if (!el) return;
+
+    const handleTouchStart = () => {
+        useStore.getState().addInteractionLog({
+            type: 'click',
+            layerId: 'DOM-touchstart'
+        });
+    };
+
+    el.addEventListener('touchstart', handleTouchStart, { passive: true });
+    return () => el.removeEventListener('touchstart', handleTouchStart);
+  }, []);
 
   // ---------------------------------------------------------------------------
   // Initialise MapLibre map once on mount
@@ -440,12 +474,19 @@ export function MapOverlay(): JSX.Element {
       center: [0, 0],
       zoom: 2,
       interactive: true,
+      dragPan: true,
       dragRotate: useStore.getState().allowRotation,
+      touchZoomRotate: true,
       touchPitch: useStore.getState().allowPitch,
-      pitchWithRotate: useStore.getState().allowPitch,
     });
 
-    map.current.on('load', () => setStyleLoaded(true));
+    map.current.on('load', () => {
+        setStyleLoaded(true);
+        if (map.current) {
+            map.current.dragPan.enable();
+            map.current.touchZoomRotate.enable();
+        }
+    });
 
     map.current.on('moveend', () => {
       if (!map.current || isMoving.current) return;
@@ -468,127 +509,145 @@ export function MapOverlay(): JSX.Element {
       useStore.getState().reverseGeocode(center.lat, center.lng);
     });
 
-    const onInteraction = (e: maplibregl.MapMouseEvent | maplibregl.MapTouchEvent): void => {
-        if (!map.current) return;
-        const { lng, lat } = e.lngLat;
-        const point = e.point;
-
-        const allPortals: Portal[] = Object.values(useStore.getState().portals);
-        let nearestPortal: Portal | null = null;
-        let minPortalDist = 20;
-
-        for (const p of allPortals) {
-            if (Math.abs(p.lng - lng) > 0.01 || Math.abs(p.lat - lat) > 0.01) continue;
-            const pos = map.current.project([p.lng, p.lat]);
-            const dist = Math.sqrt(Math.pow(pos.x - point.x, 2) + Math.pow(pos.y - point.y, 2));
-            if (dist < minPortalDist) {
-                minPortalDist = dist;
-                nearestPortal = p;
-            }
-        }
-
-        if (nearestPortal) {
-            document.dispatchEvent(
-                new CustomEvent('iris:portal:click', { detail: { id: nearestPortal.id } })
-            );
-            return;
-        }
-
-        const artifacts: Record<string, Artifact> = useStore.getState().artifacts;
-        const portals: Record<string, Portal> = useStore.getState().portals;
-        let nearestArtifactPortalId: string | null = null;
-        let minArtifactDist = 20;
-
-        Object.values(artifacts).forEach((a) => {
-            const p = portals[a.portalId];
-            if (!p) return;
-            if (Math.abs(p.lng - lng) > 0.01 || Math.abs(p.lat - lat) > 0.01) return;
-            const mapInstance = map.current;
-            if (!mapInstance) return;
-            const pos = mapInstance.project([p.lng, p.lat]);
-            const dist = Math.sqrt(Math.pow(pos.x - point.x, 2) + Math.pow(pos.y - point.y, 2));
-            if (dist < minArtifactDist) {
-                minArtifactDist = dist;
-                nearestArtifactPortalId = a.portalId;
-            }
-        });
-
-        if (nearestArtifactPortalId) {
-            document.dispatchEvent(
-                new CustomEvent('iris:portal:click', { detail: { id: nearestArtifactPortalId } })
-            );
+    const handlePointInteraction = (id: string): void => {
+        try {
+            useStore.getState().selectPortal(id);
+            window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: id }, '*');
+        } catch (err: any) {
+            logMapEvent('err-interaction', err.message);
         }
     };
 
-    map.current.on('touchstart', (e: maplibregl.MapTouchEvent) => {
-        touchState.current.maxFingers = Math.max(touchState.current.maxFingers, e.points.length);
-        if (e.points.length === 1) {
-            touchState.current.startPoint = { x: e.point.x, y: e.point.y };
-            touchState.current.hasMoved = false;
+    const findClosestPortal = (lngLat: maplibregl.LngLat, point: { x: number, y: number }): string | null => {
+        const m = map.current;
+        if (!m) return null;
+
+        const allPortals = Object.values(useStore.getState().portals);
+        let bestId: string | null = null;
+        let bestDist = 24; // 24 pixel radius threshold
+
+        // Stage 1: Fast LngLat filter (approx 0.01 degree box)
+        const candidates = allPortals.filter(p => 
+            Math.abs(p.lng - lngLat.lng) < 0.01 && Math.abs(p.lat - lngLat.lat) < 0.01
+        );
+
+        // Stage 2: Precise pixel distance
+        for (const p of candidates) {
+            try {
+                const pos = m.project([p.lng, p.lat]);
+                const dx = pos.x - point.x;
+                const dy = pos.y - point.y;
+                const d = Math.sqrt(dx * dx + dy * dy);
+                if (d < bestDist) {
+                    bestDist = d;
+                    bestId = p.id;
+                }
+            } catch { continue; }
         }
+
+        return bestId;
+    };
+
+    map.current.on('touchstart', (e) => {
+        if (e.points && e.points.length > 0) {
+            touchState.current = {
+                startX: e.points[0].x,
+                startY: e.points[0].y,
+                hasMoved: false
+            };
+        }
+        logMapEvent('touchstart', 'map');
     });
 
-    map.current.on('touchmove', (e: maplibregl.MapTouchEvent) => {
-        if (e.points.length === 1) {
-            const dx = e.point.x - touchState.current.startPoint.x;
-            const dy = e.point.y - touchState.current.startPoint.y;
+    map.current.on('touchmove', (e) => {
+        if (e.points && e.points.length > 0) {
+            const dx = e.points[0].x - touchState.current.startX;
+            const dy = e.points[0].y - touchState.current.startY;
             if (Math.sqrt(dx * dx + dy * dy) > 10) {
                 touchState.current.hasMoved = true;
             }
-        } else {
-            touchState.current.hasMoved = true;
         }
     });
 
-    map.current.on('click', onInteraction);
+    map.current.on('click', (e) => {
+        const m = map.current;
+        if (!m) return;
+        
+        // Capture coordinates from the event - using Number() to ensure they are primitives
+        const x = Number(e.point.x);
+        const y = Number(e.point.y);
+        const lng = Number(e.lngLat.lng);
+        const lat = Number(e.lngLat.lat);
 
-    map.current.on('touchend', (e: maplibregl.MapTouchEvent) => {
-        if (touchState.current.maxFingers === 1 && !touchState.current.hasMoved) {
-            onInteraction(e);
-        }
+        logMapEvent('click', `at-${Math.round(x)},${Math.round(y)}`);
 
-        if (e.originalEvent.touches.length === 0) {
-            touchState.current.maxFingers = 0;
-            touchState.current.hasMoved = false;
-        }
-    });
+        try {
+            const queryBox: [[number, number], [number, number]] = [
+                [x - 8, y - 8], 
+                [x + 8, y + 8]
+            ];
+            
+            const layersToQuery = INTERACTIVE_LAYERS.filter(l => {
+                try { return !!m.getLayer(l); } catch { return false; }
+            });
 
-    let lastMove = 0;
-    map.current.on('mousemove', (e: maplibregl.MapMouseEvent) => {
-        const now = Date.now();
-        if (now - lastMove < 100) return;
-        lastMove = now;
+            // 1. Query the map
+            const rawHits = m.queryRenderedFeatures(queryBox, { 
+                layers: layersToQuery 
+            });
 
-        if (!map.current) return;
-        const { lng, lat } = e.lngLat;
-        const point = e.point;
-        const allPortals: Portal[] = Object.values(useStore.getState().portals);
-        let found = false;
-        for (const p of allPortals) {
-            if (Math.abs(p.lng - lng) > 0.005 || Math.abs(p.lat - lat) > 0.005) continue;
-            const pos = map.current.project([p.lng, p.lat]);
-            const dist = Math.sqrt(Math.pow(pos.x - point.x, 2) + Math.pow(pos.y - point.y, 2));
-            if (dist < 12) {
-                found = true;
-                break;
+            if (rawHits && rawHits.length > 0) {
+                // 2. DETACH: Deep-clone the features to remove Firefox's security wrappers
+                // This is the "silver bullet" for "Permission denied to access property constructor"
+                const hits = JSON.parse(JSON.stringify(rawHits));
+                
+                const f = hits[0];
+                const props = f.properties || {};
+                const featureId = (props.id || props.portalId) as string | undefined;
+                const layerId = f.layer?.id || 'unknown';
+
+                if (featureId) {
+                    logMapEvent('hit-qrf', layerId, featureId);
+                    handlePointInteraction(featureId);
+                    return;
+                }
             }
+        } catch (err: any) {
+            // Log full error message to the interaction log
+            logMapEvent('err-qrf', err.stack || err.message || 'Permission denied');
         }
-        map.current.getCanvas().style.cursor = found ? 'pointer' : '';
+
+        // Manual Fallback (Only used if QRF actually misses, not if it errors)
+        const portalId = findClosestPortal(new maplibregl.LngLat(lng, lat), { x, y });
+        if (portalId) {
+            logMapEvent('hit-manual', 'portals', portalId);
+            handlePointInteraction(portalId);
+        } else {
+            logMapEvent('click', 'empty-map');
+            useStore.getState().selectPortal(null);
+        }
     });
 
-    const onPortalClick = (e: Event): void => {
-      const { id } = (e as CustomEvent<{ id: string }>).detail;
-      useStore.getState().selectPortal(id);
-      window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: id }, '*');
-    };
+    map.current.on('touchend', (e) => {
+        if (touchState.current.hasMoved) return;
+        logMapEvent('tap', 'detect');
+        // MapLibre synthesizes a click on tap, so we don't usually need to trigger here
+    });
 
-    document.addEventListener('iris:portal:click', onPortalClick);
+    // Hover cursor (Desktop only)
+    INTERACTIVE_LAYERS.forEach(layerId => {
+        map.current?.on('mouseenter', layerId, () => {
+            if (map.current) map.current.getCanvas().style.cursor = 'pointer';
+        });
+        map.current?.on('mouseleave', layerId, () => {
+            if (map.current) map.current.getCanvas().style.cursor = '';
+        });
+    });
 
     return (): void => {
       markerRegistry.forEach(({ marker }) => marker.remove());
       markerRegistry.clear();
       map.current?.remove();
-      document.removeEventListener('iris:portal:click', onPortalClick);
     };
   }, []);
 
@@ -628,17 +687,20 @@ export function MapOverlay(): JSX.Element {
 
   useEffect(() => {
     if (!map.current || !styleLoaded) return;
+
+    useStore.getState().addInteractionLog({
+        type: 'click',
+        layerId: `EFFECT-rotation: rot=${allowRotation}, pitch=${allowPitch}`
+    });
+
     const dragRotate = map.current.dragRotate as DragRotateInternals;
-    dragRotate.disable();
-    // MapLibre only reads this option during handler construction, so toggling
-    // pitch later requires updating the handler before re-enabling it.
-    dragRotate._pitchWithRotate = allowPitch;
 
     if (allowRotation) {
       dragRotate.enable();
       map.current.touchZoomRotate.enable();
       map.current.touchZoomRotate.enableRotation();
     } else {
+      dragRotate.disable();
       if (allowPitch) {
         dragRotate._mousePitch?.enable();
       }
@@ -648,16 +710,23 @@ export function MapOverlay(): JSX.Element {
 
     if (allowPitch) {
       map.current.touchPitch.enable();
+      // Only set this if it actually changed to avoid re-triggering internals
+      if (dragRotate._pitchWithRotate !== true) {
+          dragRotate._pitchWithRotate = true;
+      }
     } else {
       map.current.touchPitch.disable();
       map.current.setPitch(0);
+      if (dragRotate._pitchWithRotate !== false) {
+          dragRotate._pitchWithRotate = false;
+      }
     }
   }, [allowRotation, allowPitch, styleLoaded]);
 
   // Sync Portal History Highlight Filters
   useEffect(() => {
     if (!map.current || !styleLoaded) return;
-    
+
     if (map.current.getLayer('portal-history-visited')) {
         map.current.setFilter('portal-history-visited', ['==', ['get', 'visited'], showVisited]);
     }

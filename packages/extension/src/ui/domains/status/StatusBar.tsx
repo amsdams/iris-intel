@@ -52,6 +52,8 @@ export function StatusBar(): JSX.Element {
     const clearSuccessfulRequests = useStore((state) => state.clearSuccessfulRequests);
     const jsErrors = useStore((state) => state.jsErrors);
     const clearJSErrors = useStore((state) => state.clearJSErrors);
+    const interactionLogs = useStore((state) => state.interactionLogs);
+    const clearInteractionLogs = useStore((state) => state.clearInteractionLogs);
     const hasSubscription = useStore((state) => state.hasSubscription);
     const sessionStatus = useStore((state) => state.sessionStatus);
     const lastSessionError = useStore((state) => state.lastSessionError);
@@ -86,6 +88,7 @@ export function StatusBar(): JSX.Element {
         clearFailedRequests();
         clearJSErrors();
         clearSuccessfulRequests();
+        clearInteractionLogs();
         clearEndpointDiagnostics();
         setIsExpanded(false);
     };
@@ -191,7 +194,7 @@ export function StatusBar(): JSX.Element {
                 <div className="iris-status-expanded-content">
                     <div className="iris-status-header">
                         <span className="iris-status-summary">
-                            LOGS: {successfulRequests.length} OK, {failedRequests.length} NET, {jsErrors.length} JS
+                            LOGS: {successfulRequests.length} OK, {failedRequests.length} NET, {jsErrors.length} JS, {interactionLogs.length} INT
                         </span>
                         <span 
                             className="iris-status-clear-btn"
@@ -233,6 +236,23 @@ export function StatusBar(): JSX.Element {
                                     </div>
                                     <div className="iris-status-log-source">
                                         {err.source ? `${err.source}:${err.lineno}:${err.colno}` : 'Unknown source'}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {interactionLogs.length > 0 && (
+                        <div className="iris-status-section iris-status-section-interactions">
+                            <div className="iris-status-section-title">MAP INTERACTIONS</div>
+                            {interactionLogs.map((log) => (
+                                <div key={`int-${log.time}-${log.type}-${log.layerId}`} className="iris-status-log-entry">
+                                    <div className="iris-status-log-message" style={{ color: UI_COLORS.AQUA }}>
+                                        [{new Date(log.time).toLocaleTimeString()}] {log.type.toUpperCase()}: {log.layerId}
+                                    </div>
+                                    <div className="iris-status-log-url">
+                                        {log.featureId ? `feature: ${log.featureId} | ` : ''}
+                                        {log.lngLat ? `location: ${log.lngLat[0].toFixed(5)}, ${log.lngLat[1].toFixed(5)}` : ''}
                                     </div>
                                 </div>
                             ))}

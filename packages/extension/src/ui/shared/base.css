@@ -149,10 +149,6 @@
     font-family: var(--iris-font-family, monospace) !important;
 }
 
-.iris-overlay-root > * {
-    pointer-events: auto;
-}
-
 .iris-popup-content::-webkit-scrollbar,
 .iris-comm-scroll-container::-webkit-scrollbar {
     width: 4px;
