@@ -15,7 +15,6 @@
 .iris-map-theme-name {
   flex: 1;
 }
-
 .iris-map-container {
   position: absolute;
   top: 0;
@@ -24,6 +23,7 @@
   height: 100%;
   pointer-events: auto;
   z-index: 1;
+  touch-action: none;
 }
 
 .iris-map-wrapper {
@@ -32,8 +32,8 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  z-index: 1;
-  touch-action: none;
+  z-index: 1; /* Above page background, below IRIS UI (z-index: 9999) */
+  pointer-events: none;
 }
 
 .iris-map-controls {
@@ -43,7 +43,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  z-index: 10;
+  z-index: 10000;
   pointer-events: none;
 }
 

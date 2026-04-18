@@ -569,10 +569,6 @@ export function MapOverlay(): JSX.Element {
         setStyleLoaded(true);
         if (map.current) {
             map.current.resize();
-            map.current.dragPan.enable();
-            map.current.touchZoomRotate.enable();
-            map.current.scrollZoom.enable();
-            map.current.doubleClickZoom.enable();
         }
     });
 
@@ -673,62 +669,14 @@ export function MapOverlay(): JSX.Element {
         }
     };
 
-    // Implementation of Proposed Solution: Layer-Scoped Listeners
-    INTERACTIVE_LAYERS.forEach(layerId => {
-        // 2. Desktop Interaction (Click)
-        map.current?.on('click', layerId, (e) => {
-            try {
-                const features = (e as any).features;
-                if (features && features.length > 0) {
-                    logMapEvent('click', layerId, 'hit');
-                    handlePointInteraction(features[0], e.lngLat);
-                    (e as any)._iris_handled = true;
-                }
-            } catch (err: any) {
-                logMapEvent(`err-click-${layerId}`, err.message);
-            }
-        });
-
-        // 3. Mobile Interaction (Touch)
-        map.current?.on('touchend', layerId, (e) => {
-            try {
-                // Ignore multi-touch (e.g. pinch-zoom)
-                const originalEvent = (e as any).originalEvent;
-                if (originalEvent && originalEvent.touches && originalEvent.touches.length !== 0) return;
-                
-                const features = (e as any).features;
-                if (features && features.length > 0) {
-                    logMapEvent('tap', layerId, 'hit');
-                    handlePointInteraction(features[0], e.lngLat);
-                    (e as any)._iris_handled = true;
-                }
-            } catch (err: any) {
-                logMapEvent(`err-tap-${layerId}`, err.message);
-            }
-        });
-
-        // 4. Hover State (Desktop Only)
-        map.current?.on('mouseenter', layerId, () => {
-            if (map.current) map.current.getCanvas().style.cursor = 'pointer';
-        });
-        map.current?.on('mouseleave', layerId, () => {
-            if (map.current) map.current.getCanvas().style.cursor = '';
-        });
-    });
-
-    // Handle clicking empty map to deselect OR perform spatial fallback
+    // Implementation of the POC "Amsterdam" Click Model:
+    // One global click handler that uses RBush for hit detection.
+    // This is more robust on mobile than layer-specific listeners.
     map.current.on('click', (e) => {
-        if (!map.current || (e as any)._iris_handled) return;
-        performSpatialFallback(e.point, e.lngLat, false);
-    });
-
-    map.current.on('touchend', (e) => {
-        if (!map.current || (e as any)._iris_handled) return;
-        // Ignore multi-touch
-        const originalEvent = (e as any).originalEvent;
-        if (originalEvent && originalEvent.touches && originalEvent.touches.length !== 0) return;
+        if (!map.current) return;
         
-        performSpatialFallback(e.point, e.lngLat, true);
+        // Use the spatial fallback logic (RBush) as the primary handler
+        performSpatialFallback(e.point, e.lngLat, false);
     });
 
     return (): void => {
