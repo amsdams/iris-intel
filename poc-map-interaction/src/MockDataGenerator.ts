@@ -34,27 +34,27 @@ interface EntityIndexItem {
 export class MockDataGenerator {
     public portals: Map<string, Portal> = new Map();
     public linksMap: Map<string, Link> = new Map();
-    public fields: Field[] = [];
+    public fieldsMap: Map<string, Field> = new Map();
     private index = new RBush<EntityIndexItem>();
 
     get links(): Link[] {
         return Array.from(this.linksMap.values());
     }
 
+    get fields(): Field[] {
+        return Array.from(this.fieldsMap.values());
+    }
+
     clear() {
         this.portals.clear();
         this.linksMap.clear();
-        this.fields = [];
+        this.fieldsMap.clear();
         this.index.clear();
     }
 
     addPortal(id: string, faction: Faction, lng: number, lat: number, level: number = 0): Portal {
         const existing = this.portals.get(id);
-        if (existing) {
-            // Update faction/level if it changed, but we should also handle cleanup of links if faction changes.
-            // For POC, we'll just keep the first one to maintain consistency.
-            return existing;
-        }
+        if (existing) return existing;
         const portal = { id, faction, lng, lat, level };
         this.portals.set(id, portal);
         this.index.insert({ minX: lng, minY: lat, maxX: lng, maxY: lat, id, type: 'portal' });
@@ -66,11 +66,9 @@ export class MockDataGenerator {
         const p2 = this.portals.get(p2Id);
         if (!p1 || !p2 || p1.id === p2.id) return null;
 
-        // RULE: Portals must be the same faction as the link
         if (p1.faction !== faction || p2.faction !== faction) return null;
-        if (faction === 'NEU' || faction === 'MAC') return null; // Neutral/MAC portals cannot have links in this POC logic
+        if (faction === 'NEU' || faction === 'MAC') return null;
 
-        // Canonical ID to avoid duplicates regardless of direction
         const linkId = [p1.id, p2.id].sort().join('->');
         if (this.linksMap.has(linkId)) return this.linksMap.get(linkId)!;
 
@@ -83,7 +81,6 @@ export class MockDataGenerator {
         for (const item of neighbors) {
             if (item.type === 'link') {
                 const other = this.linksMap.get(item.id);
-                // Important: Exact intersection test
                 if (other && this.doSegmentsIntersect(p1, p2, other.p1, other.p2)) return null;
             }
         }
@@ -101,7 +98,6 @@ export class MockDataGenerator {
         const p3 = this.portals.get(p3Id);
         if (!p1 || !p2 || !p3) return null;
 
-        // Field faction must match portals
         if (p1.faction !== faction || p2.faction !== faction || p3.faction !== faction) return null;
 
         const L12 = this.addLink(`${id}-L12`, faction, p1Id, p2Id);
@@ -110,7 +106,7 @@ export class MockDataGenerator {
         if (!L12 || !L23 || !L31) return null;
 
         const field = { id, faction, p1, p2, p3 };
-        this.fields.push(field);
+        this.fieldsMap.set(id, field);
         this.index.insert({
             minX: Math.min(p1.lng, p2.lng, p3.lng),
             minY: Math.min(p1.lat, p2.lat, p3.lat),
@@ -123,6 +119,15 @@ export class MockDataGenerator {
 
     query(bounds: { minX: number, minY: number, maxX: number, maxY: number }) {
         return this.index.search(bounds);
+    }
+
+    isPointInField(p: {lng: number, lat: number}, f: Field): boolean {
+        const a = f.p1, b = f.p2, c = f.p3;
+        const det = (b.lat - c.lat) * (a.lng - c.lng) + (c.lng - b.lng) * (a.lat - c.lat);
+        const s = ((b.lat - c.lat) * (p.lng - c.lng) + (c.lng - b.lng) * (p.lat - c.lat)) / det;
+        const t = ((c.lat - a.lat) * (p.lng - c.lng) + (a.lng - c.lng) * (p.lat - c.lat)) / det;
+        const u = 1 - s - t;
+        return s >= 0 && t >= 0 && u >= 0;
     }
 
     private onSegment(p: {lng: number, lat: number}, q: {lng: number, lat: number}, r: {lng: number, lat: number}): boolean {

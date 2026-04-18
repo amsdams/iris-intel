@@ -3,7 +3,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { MockDataGenerator, Faction } from './MockDataGenerator';
 import { getMinLevelForZoom, getGridSizeForZoom } from './ZoomPolicy';
 
-console.log("POC (TS): Intel Mode (Initial Zoom 13)");
+console.log("POC (TS): Intel Mode (Initial Zoom 13) | v1.0.1 | Default: Amsterdam");
 
 function initMap() {
     const generator = new MockDataGenerator();
@@ -72,18 +72,17 @@ function initMap() {
         const minLng = lngIdx * size;
         const cellId = `${latIdx}_${lngIdx}_S${size.toFixed(2)}`;
 
-        // Stable pseudo-random density factor [0, 1] based on coordinates
         const hash = Math.abs(Math.sin(latIdx * 12.9898 + lngIdx * 78.233) * 43758.5453) % 1;
-        
-        // Define tiers: Urban (10%), Suburban (30%), Rural (60%)
         let densityKm2 = 2; // Rural
         let clusters = 2;
         if (hash > 0.90) { densityKm2 = 150; clusters = 12; } // Urban
         else if (hash > 0.60) { densityKm2 = 40; clusters = 6; } // Suburban
 
-        // Approx area in km2 (London area: 1deg lat ~111km, 1deg lng ~69km)
         const areaKm2 = (size * 111) * (size * 69);
-        const portalCount = Math.floor(areaKm2 * densityKm2);
+        let portalCount = Math.floor(areaKm2 * densityKm2);
+        
+        // Performance Cap for large cells
+        if (portalCount > 2000) portalCount = 2000;
         
         logEvent(`Cell ${latIdx},${lngIdx} | Tier: ${densityKm2}/km² | Goal: ${portalCount} portals`);
 
@@ -107,18 +106,13 @@ function initMap() {
             }
         }
 
-        // Realistic Links & Fields using "Fan" pattern for ENL and RES
         ['ENL', 'RES'].forEach(f => {
             const pIds = factionPortals[f as Faction];
             if (pIds.length < 3) return;
-
-            // Pick 2 anchors and fan out to other portals
             const anchor1 = pIds[0];
             const anchor2 = pIds[1];
-            const targets = pIds.slice(2, Math.floor(pIds.length * 0.4)); // ~40% of portals are part of a fan
-
+            const targets = pIds.slice(2, Math.floor(pIds.length * 0.4)); 
             targets.forEach((tId, idx) => {
-                // Ingress rule: Links cannot cross. addField handles this via addLink check.
                 generator.addField(`F-${cellId}-${f}-${idx}`, f as Faction, anchor1, anchor2, tId);
             });
         });
@@ -126,6 +120,8 @@ function initMap() {
 
     function syncToMap(map: maplibregl.Map) {
         const bounds = map.getBounds();
+        const zoom = map.getZoom();
+        const minLevel = getMinLevelForZoom(zoom);
         const buffer = 0.05; // ~5km buffer
         const queryBounds = {
             minX: bounds.getWest() - buffer,
@@ -140,33 +136,32 @@ function initMap() {
         results.forEach(item => {
             if (item.type === 'portal') {
                 const p = generator.portals.get(item.id);
-                if (p) {
+                // GRADUAL LOADING
+                if (p && p.level >= minLevel) {
                     const props = { id: p.id, type: 'portal', faction: p.faction, level: p.level, height: (p.level + 1) * 30, base_height: 0 };
                     features.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [p.lng, p.lat] }, properties: props });
                     
-                    // 3D Pillar geometry (small square)
                     const s = 0.0001; // ~10m
                     const poly = [[ [p.lng-s, p.lat-s], [p.lng+s, p.lat-s], [p.lng+s, p.lat+s], [p.lng-s, p.lat+s], [p.lng-s, p.lat-s] ]];
                     features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: poly }, properties: { ...props, type: 'portal-ext' } });
                 }
             } else if (item.type === 'link') {
                 const l = generator.linksMap.get(item.id);
-                if (l) {
+                if (l && l.p1.level >= minLevel && l.p2.level >= minLevel) {
                     const props = { id: l.id, type: 'link', faction: l.faction, height: 10, base_height: 0 };
                     features.push({ type: 'Feature', id: `l-${l.id}`, geometry: { type: 'LineString', coordinates: [[l.p1.lng, l.p1.lat], [l.p2.lng, l.p2.lat]] }, properties: props });
                     
-                    // 3D Wall geometry (thin ribbon)
                     const dx = l.p2.lng - l.p1.lng;
                     const dy = l.p2.lat - l.p1.lat;
                     const len = Math.sqrt(dx*dx + dy*dy);
-                    const nx = -dy / len * 0.00005;
-                    const ny = dx / len * 0.00005;
+                    const nx = -dy / (len || 1) * 0.00005;
+                    const ny = dx / (len || 1) * 0.00005;
                     const poly = [[ [l.p1.lng+nx, l.p1.lat+ny], [l.p2.lng+nx, l.p2.lat+ny], [l.p2.lng-nx, l.p2.lat-ny], [l.p1.lng-nx, l.p1.lat-ny], [l.p1.lng+nx, l.p1.lat+ny] ]];
                     features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: poly }, properties: { ...props, type: 'link-ext' } });
                 }
             } else if (item.type === 'field') {
-                const f = generator.fields.find(f => f.id === item.id);
-                if (f) {
+                const f = generator.fieldsMap.get(item.id);
+                if (f && f.p1.level >= minLevel && f.p2.level >= minLevel && f.p3.level >= minLevel) {
                     const poly = [[f.p1.lng, f.p1.lat], [f.p2.lng, f.p2.lat], [f.p3.lng, f.p3.lat], [f.p1.lng, f.p1.lat]];
                     const height = 300;
                     const base_height = 290;
@@ -177,7 +172,7 @@ function initMap() {
 
         const source = map.getSource('entities') as maplibregl.GeoJSONSource;
         if (source) source.setData({ type: 'FeatureCollection', features });
-        logEvent(`RENDERED: ${features.length} / ${generator.portals.size + generator.linksMap.size + generator.fields.length} items`);
+        logEvent(`RENDERED: ${features.length} / ${generator.portals.size + generator.linksMap.size + generator.fieldsMap.size} items (Min L: ${minLevel})`);
     }
 
     function checkAndLoad(map: maplibregl.Map) {
@@ -205,17 +200,22 @@ function initMap() {
         
         syncToMap(map);
         if (addedAny) {
-            logEvent(`GENERATED NEW DATA. Total Store: ${generator.portals.size + generator.linksMap.size + generator.fields.length}`);
+            logEvent(`GENERATED NEW DATA. Total Store: ${generator.portals.size + generator.linksMap.size + generator.fieldsMap.size}`);
         }
     }
 
     document.body.innerHTML = '';
+    const meta = document.createElement('meta');
+    meta.name = 'viewport';
+    meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+    document.head.appendChild(meta);
+
     const bodyStyle = document.createElement('style');
     bodyStyle.textContent = `
         html, body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: #000 !important; }
-        #map-poc-container { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #222; }
+        #map-poc-container { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #222; touch-action: none; }
         .debug-btn { width: 50px; height: 50px; background: rgba(34,34,34,0.9); color: #fff; border: 2px solid #00ffff; border-radius: 8px; font-size: 20px; z-index: 1000005; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-user-select: none; user-select: none; }
-        #pos-log { position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.85); color: #fff; padding: 6px 12px; font-family: monospace; font-size: 13px; border-radius: 4px; z-index: 1000006; border: 1px solid #888; }
+        #pos-log { position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.85); color: #fff; padding: 6px 12px; font-family: monospace; font-size: 13px; border-radius: 4px; z-index: 1000006; border: 1px solid #888; pointer-events: none; }
     `;
     document.head.appendChild(bodyStyle);
 
@@ -248,14 +248,11 @@ function initMap() {
             },
             layers: [
                 { id: 'carto', type: 'raster', source: 'carto' },
-                // 3D Extrusion Layers (Hidden by default)
                 { id: 'f-ext-enl', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'faction', 'ENL']], paint: { 'fill-extrusion-color': COLORS.ENL, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.5 }, layout: { visibility: 'none' } },
                 { id: 'f-ext-res', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'faction', 'RES']], paint: { 'fill-extrusion-color': COLORS.RES, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.5 }, layout: { visibility: 'none' } },
                 { id: 'l-ext-enl', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'link-ext'], ['==', 'faction', 'ENL']], paint: { 'fill-extrusion-color': COLORS.ENL, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.8 }, layout: { visibility: 'none' } },
                 { id: 'l-ext-res', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'link-ext'], ['==', 'faction', 'RES']], paint: { 'fill-extrusion-color': COLORS.RES, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.8 }, layout: { visibility: 'none' } },
                 { id: 'p-ext', type: 'fill-extrusion', source: 'entities', filter: ['==', 'type', 'portal-ext'], paint: { 'fill-extrusion-color': ['match', ['get', 'faction'], 'ENL', COLORS.ENL, 'RES', COLORS.RES, 'MAC', COLORS.MAC, COLORS.NEU], 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'] }, layout: { visibility: 'none' } },
-                
-                // Flat Layers (Visible by default)
                 { id: 'f-enl', type: 'fill', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'faction', 'ENL']], paint: { 'fill-color': COLORS.ENL, 'fill-opacity': 0.1 } },
                 { id: 'f-res', type: 'fill', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'faction', 'RES']], paint: { 'fill-color': COLORS.RES, 'fill-opacity': 0.1 } },
                 { id: 'l-enl', type: 'line', source: 'entities', filter: ['all', ['==', 'type', 'link'], ['==', 'faction', 'ENL']], paint: { 'line-color': COLORS.ENL, 'line-width': 1.5 } },
@@ -264,7 +261,7 @@ function initMap() {
                 { id: 'p', type: 'circle', source: 'entities', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': ['step', ['get', 'level'], 2, 4, 3, 7, 4, 8, 6], 'circle-color': ['match', ['get', 'faction'], 'ENL', COLORS.ENL, 'RES', COLORS.RES, 'MAC', COLORS.MAC, COLORS.NEU], 'circle-stroke-width': 1, 'circle-stroke-color': '#fff' } }
             ]
         },
-        center: [-0.1276, 51.5072], zoom: 13
+        center: [4.8952, 52.3702], zoom: 13
     });
 
     const btns = document.createElement('div');
@@ -278,7 +275,7 @@ function initMap() {
     mk('+', () => map.zoomIn()); mk('-', () => map.zoomOut());
     mk('↑', () => map.panBy([0, -250])); mk('↓', () => map.panBy([0, 250]));
     mk('←', () => map.panBy([-250, 0])); mk('→', () => map.panBy([150, 0]));
-    mk('R', () => { map.setCenter([-0.1276, 51.5072]); map.setZoom(13); map.setPitch(0); map.setBearing(0); });
+    mk('R', () => { map.setCenter([4.8952, 52.3702]); map.setZoom(13); map.setPitch(0); map.setBearing(0); });
     mk('X', () => toggleExtrusion(map));
     mk('D', () => switchStyle(map, 'Dark'));
     mk('L', () => switchStyle(map, 'Light'));
@@ -295,8 +292,29 @@ function initMap() {
     });
     map.on('moveend', () => checkAndLoad(map));
     map.on('click', (e) => {
-        const features = map.queryRenderedFeatures([[e.point.x-10, e.point.y-10], [e.point.x+10, e.point.y+10]]);
-        if (features.length > 0) logEvent(`HIT: ${features[0].properties?.id} (L${features[0].properties?.level})`);
+        logEvent(`Map Click @ ${e.lngLat.lng.toFixed(4)}, ${e.lngLat.lat.toFixed(4)}`);
+        const pixelBuffer = 20;
+        const latRange = Math.abs(map.unproject([e.point.x, e.point.y + pixelBuffer]).lat - map.unproject([e.point.x, e.point.y - pixelBuffer]).lat);
+        const lngRange = Math.abs(map.unproject([e.point.x + pixelBuffer, e.point.y]).lng - map.unproject([e.point.x - pixelBuffer, e.point.y]).lng);
+        const queryBounds = { minX: e.lngLat.lng - lngRange, minY: e.lngLat.lat - latRange, maxX: e.lngLat.lng + lngRange, maxY: e.lngLat.lat + latRange };
+        const results = generator.query(queryBounds);
+        if (results.length === 0) { logEvent("MISS: No entity nearby"); return; }
+        const portals = results.filter(r => r.type === 'portal').map(r => generator.portals.get(r.id)!);
+        const links = results.filter(r => r.type === 'link').map(r => generator.linksMap.get(r.id)!);
+        const fields = results.filter(r => r.type === 'field').map(r => generator.fieldsMap.get(r.id)!).filter(f => generator.isPointInField(e.lngLat, f));
+        if (portals.length > 0) {
+            const p = portals.sort((a, _b) => Math.hypot(a.lng - e.lngLat.lng, a.lat - e.lngLat.lat))[0];
+            logEvent(`PORTAL: ${p.id} | L${p.level} | ${p.faction}`);
+        }
+        if (links.length > 0) {
+            const l = links.sort((a, b) => {
+                const distA = Math.min(Math.hypot(a.p1.lng - e.lngLat.lng, a.p1.lat - e.lngLat.lat), Math.hypot(a.p2.lng - e.lngLat.lng, a.p2.lat - e.lngLat.lat));
+                const distB = Math.min(Math.hypot(b.p1.lng - e.lngLat.lng, b.p1.lat - e.lngLat.lat), Math.hypot(b.p2.lng - e.lngLat.lng, b.p2.lat - e.lngLat.lat));
+                return distA - distB;
+            })[0];
+            logEvent(`LINK: ${l.id} | ${l.faction}`);
+        }
+        if (fields.length > 0) { logEvent(`FIELDS: ${fields.length} layers | Top: ${fields[0].id} (${fields[0].faction})`); }
     });
 }
 setTimeout(initMap, 500);
