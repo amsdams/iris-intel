@@ -60,3 +60,4 @@ pnpm-debug.log*
 /packages/extension/dist-firefox/
 docs/PLAYER-TRACKER.md
 docs/REF-IITC_BUTTON.md
+/poc-map-interaction/builds/

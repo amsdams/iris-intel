@@ -1,0 +1,20 @@
+{
+  "name": "poc-map-interaction",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && node build-zip.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "maplibre-gl": "^4.1.2",
+    "rbush": "^4.0.1"
+  },
+  "devDependencies": {
+    "@types/rbush": "^4.0.0",
+    "archiver": "^7.0.1",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.11"
+  }
+}

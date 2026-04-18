@@ -509,16 +509,26 @@ export function MapOverlay(): JSX.Element {
       useStore.getState().reverseGeocode(center.lat, center.lng);
     });
 
-    const handlePointInteraction = (feature: maplibregl.MapGeoJSONFeature, lngLat: maplibregl.LngLat): void => {
+    const handlePointInteraction = (feature: any, lngLat: any): void => {
         try {
             // Waive Xray vision on Firefox to safely access properties from the page context
             const f = (feature as any).wrappedJSObject || feature;
-            const props = f.properties || {};
+            if (!f) return;
+
+            // Extract properties safely
+            let props: any = {};
+            try {
+                props = f.properties || {};
+            } catch (e: any) {
+                logMapEvent('err-props', e.message);
+            }
+
             const id = (props.id || props.portalId || props.guid) as string | undefined;
             
             if (id) {
-                useStore.getState().selectPortal(id);
-                window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: id }, '*');
+                const finalId = String(id);
+                useStore.getState().selectPortal(finalId);
+                window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: finalId }, '*');
             }
         } catch (err: any) {
             logMapEvent('err-interaction', err.message);
@@ -532,10 +542,8 @@ export function MapOverlay(): JSX.Element {
         // 2. Desktop Interaction (Click)
         map.current?.on('click', layerId, (e) => {
             try {
-                // MapLibre provides features in e.features for layer-scoped listeners
                 const features = (e as any).features;
                 if (features && features.length > 0) {
-                    (e as any)._irisHandled = true;
                     logMapEvent('click', layerId, 'hit');
                     handlePointInteraction(features[0], e.lngLat);
                 }
@@ -553,7 +561,6 @@ export function MapOverlay(): JSX.Element {
                 
                 const features = (e as any).features;
                 if (features && features.length > 0) {
-                    (e as any)._irisHandled = true;
                     logMapEvent('tap', layerId, 'hit');
                     handlePointInteraction(features[0], e.lngLat);
                 }
@@ -561,6 +568,9 @@ export function MapOverlay(): JSX.Element {
                 logMapEvent(`err-tap-${layerId}`, err.message);
             }
         });
+
+        // Prevent map drag from triggering touchend on a point
+        map.current?.on('touchmove', layerId, (e) => {});
 
         // 4. Hover State (Desktop Only)
         map.current?.on('mouseenter', layerId, () => {
@@ -573,12 +583,20 @@ export function MapOverlay(): JSX.Element {
 
     // Handle clicking empty map to deselect
     map.current.on('click', (e) => {
-        // In layer-scoped listeners, we don't automatically know if a feature was hit 
-        // in the global click handler. We rely on the fact that global click fires after.
-        // However, we want to deselect ONLY if no interactive feature was hit.
-        // To keep this performant and bypass security, we check if the event was handled.
-        if (!(e as any)._irisHandled) {
-             useStore.getState().selectPortal(null);
+        if (!map.current) return;
+        try {
+            const bbox: [[number, number], [number, number]] = [[e.point.x - 5, e.point.y - 5], [e.point.x + 5, e.point.y + 5]];
+            const hits = map.current.queryRenderedFeatures(bbox, {
+                layers: INTERACTIVE_LAYERS.filter(l => {
+                    try { return !!map.current?.getLayer(l); } catch { return false; }
+                })
+            });
+            if (hits.length === 0) {
+                logMapEvent('click', 'map-empty');
+                useStore.getState().selectPortal(null);
+            }
+        } catch (err: any) {
+            logMapEvent('err-deselect', err.message);
         }
     });
 

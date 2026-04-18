@@ -1,0 +1,2924 @@
+{
+  "result": [
+    [
+      "4bf43b3361de4cfc8d640e55f232a33f.d",
+      1775597782134,
+      {
+        "plext": {
+          "text": "Agent Ypje destroyed the Resistance Link Kleuterspeeltuin Waterwijk (Van der Woudendijk 11, 2497 XP Den Haag, Netherlands) to Knooppunt 89 Wandelnetwerk Hof van Delfland (Singel 21, 2497 GS Den Haag, Netherlands)",
+          "team": "RESISTANCE",
+          "markup": [
+            [
+              "TEXT",
+              {
+                "plain": "Agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed the "
+              }
+            ],
+            [
+              "FACTION",
+              {
+                "team": "RESISTANCE",
+                "plain": "Resistance"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " Link "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Kleuterspeeltuin Waterwijk (Van der Woudendijk 11, 2497 XP Den Haag, Netherlands)",
+                "name": "Kleuterspeeltuin Waterwijk",
+                "address": "Van der Woudendijk 11, 2497 XP Den Haag, Netherlands",
+                "latE6": 52032993,
+                "lngE6": 4361470,
+                "team": "RESISTANCE"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " to "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Knooppunt 89 Wandelnetwerk Hof van Delfland (Singel 21, 2497 GS Den Haag, Netherlands)",
+                "name": "Knooppunt 89 Wandelnetwerk Hof van Delfland",
+                "address": "Singel 21, 2497 GS Den Haag, Netherlands",
+                "latE6": 52031344,
+                "lngE6": 4358319,
+                "team": "RESISTANCE"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "10f950cadb6249539d570c695ac81ed9.d",
+      1775597778711,
+      {
+        "plext": {
+          "text": "Ypje destroyed a Resonator on Knooppunt 89 Wandelnetwerk Hof van Delfland (Singel 21, 2497 GS Den Haag, Netherlands)",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed a Resonator on "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Knooppunt 89 Wandelnetwerk Hof van Delfland (Singel 21, 2497 GS Den Haag, Netherlands)",
+                "name": "Knooppunt 89 Wandelnetwerk Hof van Delfland",
+                "address": "Singel 21, 2497 GS Den Haag, Netherlands",
+                "latE6": 52031344,
+                "lngE6": 4358319,
+                "team": "RESISTANCE"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "3b0b40c57d774695b822dad1edf4c448.d",
+      1775597737821,
+      {
+        "plext": {
+          "text": "Ypje deployed a Resonator on Ling Zhi Helicopters (De Mok 29, 2497 VT Den Haag, Netherlands)",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " deployed a Resonator on "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Ling Zhi Helicopters (De Mok 29, 2497 VT Den Haag, Netherlands)",
+                "name": "Ling Zhi Helicopters",
+                "address": "De Mok 29, 2497 VT Den Haag, Netherlands",
+                "latE6": 52031852,
+                "lngE6": 4358427,
+                "team": "ENLIGHTENED"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "059c546364cd47a9bf66d58bdb2517f8.d",
+      1775597737821,
+      {
+        "plext": {
+          "text": "Ypje captured Ling Zhi Helicopters (De Mok 29, 2497 VT Den Haag, Netherlands)",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " captured "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Ling Zhi Helicopters (De Mok 29, 2497 VT Den Haag, Netherlands)",
+                "name": "Ling Zhi Helicopters",
+                "address": "De Mok 29, 2497 VT Den Haag, Netherlands",
+                "latE6": 52031852,
+                "lngE6": 4358427,
+                "team": "ENLIGHTENED"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "7364cc39fa89406b9ae0efeb03bcc320.d",
+      1775597680587,
+      {
+        "plext": {
+          "text": "Ypje deployed a Resonator on Betovering (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands)",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " deployed a Resonator on "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Betovering (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands)",
+                "name": "Betovering",
+                "address": "Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands",
+                "latE6": 52031918,
+                "lngE6": 4358935,
+                "team": "ENLIGHTENED"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "48851dc223984a54a49ca0ea06e2f0cb.d",
+      1775597680587,
+      {
+        "plext": {
+          "text": "Ypje captured Betovering (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands)",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " captured "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Betovering (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands)",
+                "name": "Betovering",
+                "address": "Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands",
+                "latE6": 52031918,
+                "lngE6": 4358935,
+                "team": "ENLIGHTENED"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "46e86766c35c43a1ab58b1f2843bb46d.d",
+      1775597675325,
+      {
+        "plext": {
+          "text": "Agent Ypje destroyed the Resistance Link Ling Zhi Helicopters (De Mok 29, 2497 VT Den Haag, Netherlands) to Knooppunt 89 Wandelnetwerk Hof van Delfland (Singel 21, 2497 GS Den Haag, Netherlands)",
+          "team": "RESISTANCE",
+          "markup": [
+            [
+              "TEXT",
+              {
+                "plain": "Agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed the "
+              }
+            ],
+            [
+              "FACTION",
+              {
+                "team": "RESISTANCE",
+                "plain": "Resistance"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " Link "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Ling Zhi Helicopters (De Mok 29, 2497 VT Den Haag, Netherlands)",
+                "name": "Ling Zhi Helicopters",
+                "address": "De Mok 29, 2497 VT Den Haag, Netherlands",
+                "latE6": 52031852,
+                "lngE6": 4358427,
+                "team": "RESISTANCE"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " to "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Knooppunt 89 Wandelnetwerk Hof van Delfland (Singel 21, 2497 GS Den Haag, Netherlands)",
+                "name": "Knooppunt 89 Wandelnetwerk Hof van Delfland",
+                "address": "Singel 21, 2497 GS Den Haag, Netherlands",
+                "latE6": 52031344,
+                "lngE6": 4358319,
+                "team": "RESISTANCE"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "d53d4a6b707746d69ab6011eaccb873e.d",
+      1775597672030,
+      {
+        "plext": {
+          "text": "Agent Ypje destroyed the Resistance Link Kleuterspeeltuin Waterwijk (Van der Woudendijk 11, 2497 XP Den Haag, Netherlands) to Betovering (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands)",
+          "team": "RESISTANCE",
+          "markup": [
+            [
+              "TEXT",
+              {
+                "plain": "Agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed the "
+              }
+            ],
+            [
+              "FACTION",
+              {
+                "team": "RESISTANCE",
+                "plain": "Resistance"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " Link "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Kleuterspeeltuin Waterwijk (Van der Woudendijk 11, 2497 XP Den Haag, Netherlands)",
+                "name": "Kleuterspeeltuin Waterwijk",
+                "address": "Van der Woudendijk 11, 2497 XP Den Haag, Netherlands",
+                "latE6": 52032993,
+                "lngE6": 4361470,
+                "team": "RESISTANCE"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " to "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Betovering (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands)",
+                "name": "Betovering",
+                "address": "Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands",
+                "latE6": 52031918,
+                "lngE6": 4358935,
+                "team": "RESISTANCE"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "77d1f59d83804439a4f8ea1639c7619a.d",
+      1775597672030,
+      {
+        "plext": {
+          "text": "Agent Ypje destroyed the Resistance Control Field @Betovering (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands) -5 MUs",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "TEXT",
+              {
+                "plain": "Agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed the "
+              }
+            ],
+            [
+              "FACTION",
+              {
+                "team": "RESISTANCE",
+                "plain": "Resistance"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " Control Field @"
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Betovering (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands)",
+                "name": "Betovering",
+                "address": "Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands",
+                "latE6": 52031918,
+                "lngE6": 4358935,
+                "team": "RESISTANCE"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " -"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": "5"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " MUs"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "64d07fcb7cb941ef83a7ae97b0bcbbb0.d",
+      1775597672030,
+      {
+        "plext": {
+          "text": "Agent Ypje destroyed the Resistance Control Field @Betovering (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands) -1 MUs",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "TEXT",
+              {
+                "plain": "Agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed the "
+              }
+            ],
+            [
+              "FACTION",
+              {
+                "team": "RESISTANCE",
+                "plain": "Resistance"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " Control Field @"
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Betovering (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands)",
+                "name": "Betovering",
+                "address": "Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands",
+                "latE6": 52031918,
+                "lngE6": 4358935,
+                "team": "RESISTANCE"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " -"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": "1"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " MUs"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "56219a4959c549d18e95b04e5c197859.d",
+      1775597672030,
+      {
+        "plext": {
+          "text": "Agent Ypje destroyed the Resistance Link Betovering (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands) to Ling Zhi Helicopters (De Mok 29, 2497 VT Den Haag, Netherlands)",
+          "team": "RESISTANCE",
+          "markup": [
+            [
+              "TEXT",
+              {
+                "plain": "Agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed the "
+              }
+            ],
+            [
+              "FACTION",
+              {
+                "team": "RESISTANCE",
+                "plain": "Resistance"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " Link "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Betovering (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands)",
+                "name": "Betovering",
+                "address": "Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands",
+                "latE6": 52031918,
+                "lngE6": 4358935,
+                "team": "RESISTANCE"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " to "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Ling Zhi Helicopters (De Mok 29, 2497 VT Den Haag, Netherlands)",
+                "name": "Ling Zhi Helicopters",
+                "address": "De Mok 29, 2497 VT Den Haag, Netherlands",
+                "latE6": 52031852,
+                "lngE6": 4358427,
+                "team": "RESISTANCE"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "1bf3c773d8b84f1d900f7f2439e14c45.d",
+      1775597672030,
+      {
+        "plext": {
+          "text": "Agent Ypje destroyed the Resistance Link Betovering (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands) to Knooppunt 89 Wandelnetwerk Hof van Delfland (Singel 21, 2497 GS Den Haag, Netherlands)",
+          "team": "RESISTANCE",
+          "markup": [
+            [
+              "TEXT",
+              {
+                "plain": "Agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed the "
+              }
+            ],
+            [
+              "FACTION",
+              {
+                "team": "RESISTANCE",
+                "plain": "Resistance"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " Link "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Betovering (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands)",
+                "name": "Betovering",
+                "address": "Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands",
+                "latE6": 52031918,
+                "lngE6": 4358935,
+                "team": "RESISTANCE"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " to "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Knooppunt 89 Wandelnetwerk Hof van Delfland (Singel 21, 2497 GS Den Haag, Netherlands)",
+                "name": "Knooppunt 89 Wandelnetwerk Hof van Delfland",
+                "address": "Singel 21, 2497 GS Den Haag, Netherlands",
+                "latE6": 52031344,
+                "lngE6": 4358319,
+                "team": "RESISTANCE"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "46fcd0c0034043169d2190fadd87d76f.d",
+      1775597662489,
+      {
+        "plext": {
+          "text": "Ypje destroyed a Resonator on Ling Zhi Helicopters (De Mok 29, 2497 VT Den Haag, Netherlands)",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed a Resonator on "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Ling Zhi Helicopters (De Mok 29, 2497 VT Den Haag, Netherlands)",
+                "name": "Ling Zhi Helicopters",
+                "address": "De Mok 29, 2497 VT Den Haag, Netherlands",
+                "latE6": 52031852,
+                "lngE6": 4358427,
+                "team": "RESISTANCE"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "2f792675c6b84602b0570f7ce153b385.d",
+      1775597660064,
+      {
+        "plext": {
+          "text": "Ypje destroyed a Resonator on Betovering (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands)",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed a Resonator on "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Betovering (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands)",
+                "name": "Betovering",
+                "address": "Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands",
+                "latE6": 52031918,
+                "lngE6": 4358935,
+                "team": "RESISTANCE"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "ab2f9ab5b327497483f4067cf54371f4.d",
+      1775597637051,
+      {
+        "plext": {
+          "text": "Ypje captured Contour (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands)",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " captured "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Contour (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands)",
+                "name": "Contour",
+                "address": "Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands",
+                "latE6": 52032187,
+                "lngE6": 4358461,
+                "team": "ENLIGHTENED"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "702d15c9fce8415e9e6873acd0a28dfd.d",
+      1775597637051,
+      {
+        "plext": {
+          "text": "Ypje deployed a Resonator on Contour (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands)",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " deployed a Resonator on "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Contour (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands)",
+                "name": "Contour",
+                "address": "Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands",
+                "latE6": 52032187,
+                "lngE6": 4358461,
+                "team": "ENLIGHTENED"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "ee7b38ec91604daf86c85f64800182dd.d",
+      1775597608755,
+      {
+        "plext": {
+          "text": "Ypje captured Kids Playground Fitnesspark (Rijswijkse Landingslaan 8, 2497 TA Den Haag, Netherlands)",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " captured "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Kids Playground Fitnesspark (Rijswijkse Landingslaan 8, 2497 TA Den Haag, Netherlands)",
+                "name": "Kids Playground Fitnesspark",
+                "address": "Rijswijkse Landingslaan 8, 2497 TA Den Haag, Netherlands",
+                "latE6": 52032451,
+                "lngE6": 4358401,
+                "team": "ENLIGHTENED"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "27d1ccf2582e41c3941d0d470f60165b.d",
+      1775597608755,
+      {
+        "plext": {
+          "text": "Ypje deployed a Resonator on Kids Playground Fitnesspark (Rijswijkse Landingslaan 8, 2497 TA Den Haag, Netherlands)",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " deployed a Resonator on "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Kids Playground Fitnesspark (Rijswijkse Landingslaan 8, 2497 TA Den Haag, Netherlands)",
+                "name": "Kids Playground Fitnesspark",
+                "address": "Rijswijkse Landingslaan 8, 2497 TA Den Haag, Netherlands",
+                "latE6": 52032451,
+                "lngE6": 4358401,
+                "team": "ENLIGHTENED"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "447753659c4e45f0a9080cd18067bc64.d",
+      1775597584465,
+      {
+        "plext": {
+          "text": "Ypje deployed a Resonator on Skatepark (Singel 47, 2497 Den Haag, Netherlands)",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " deployed a Resonator on "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Skatepark (Singel 47, 2497 Den Haag, Netherlands)",
+                "name": "Skatepark",
+                "address": "Singel 47, 2497 Den Haag, Netherlands",
+                "latE6": 52032015,
+                "lngE6": 4357943,
+                "team": "ENLIGHTENED"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "0b9eca2581544466927a00bbda9707c5.d",
+      1775597584465,
+      {
+        "plext": {
+          "text": "Ypje captured Skatepark (Singel 47, 2497 Den Haag, Netherlands)",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " captured "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Skatepark (Singel 47, 2497 Den Haag, Netherlands)",
+                "name": "Skatepark",
+                "address": "Singel 47, 2497 Den Haag, Netherlands",
+                "latE6": 52032015,
+                "lngE6": 4357943,
+                "team": "ENLIGHTENED"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "d7b9b6aa2e2344f0a9d13dae82076585.d",
+      1775597574730,
+      {
+        "plext": {
+          "text": "Agent Ypje destroyed the Resistance Link Contour (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands) to Ling Zhi Helicopters (De Mok 29, 2497 VT Den Haag, Netherlands)",
+          "team": "RESISTANCE",
+          "markup": [
+            [
+              "TEXT",
+              {
+                "plain": "Agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed the "
+              }
+            ],
+            [
+              "FACTION",
+              {
+                "team": "RESISTANCE",
+                "plain": "Resistance"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " Link "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Contour (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands)",
+                "name": "Contour",
+                "address": "Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands",
+                "latE6": 52032187,
+                "lngE6": 4358461,
+                "team": "RESISTANCE"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " to "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Ling Zhi Helicopters (De Mok 29, 2497 VT Den Haag, Netherlands)",
+                "name": "Ling Zhi Helicopters",
+                "address": "De Mok 29, 2497 VT Den Haag, Netherlands",
+                "latE6": 52031852,
+                "lngE6": 4358427,
+                "team": "RESISTANCE"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "bb27c8ee0afc4e39b7b90804486cf286.d",
+      1775597574730,
+      {
+        "plext": {
+          "text": "Agent Ypje destroyed the Resistance Control Field @Contour (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands) -1 MUs",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "TEXT",
+              {
+                "plain": "Agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed the "
+              }
+            ],
+            [
+              "FACTION",
+              {
+                "team": "RESISTANCE",
+                "plain": "Resistance"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " Control Field @"
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Contour (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands)",
+                "name": "Contour",
+                "address": "Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands",
+                "latE6": 52032187,
+                "lngE6": 4358461,
+                "team": "RESISTANCE"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " -"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": "1"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " MUs"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "577e169285c64759b2177f9c6d818f26.d",
+      1775597574730,
+      {
+        "plext": {
+          "text": "Agent Ypje destroyed the Resistance Link Contour (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands) to Betovering (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands)",
+          "team": "RESISTANCE",
+          "markup": [
+            [
+              "TEXT",
+              {
+                "plain": "Agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed the "
+              }
+            ],
+            [
+              "FACTION",
+              {
+                "team": "RESISTANCE",
+                "plain": "Resistance"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " Link "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Contour (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands)",
+                "name": "Contour",
+                "address": "Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands",
+                "latE6": 52032187,
+                "lngE6": 4358461,
+                "team": "RESISTANCE"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " to "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Betovering (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands)",
+                "name": "Betovering",
+                "address": "Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands",
+                "latE6": 52031918,
+                "lngE6": 4358935,
+                "team": "RESISTANCE"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "48ead86784c4401c8014212490b07dc7.d",
+      1775597574730,
+      {
+        "plext": {
+          "text": "Agent Ypje destroyed the Resistance Link Contour (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands) to Knooppunt 89 Wandelnetwerk Hof van Delfland (Singel 21, 2497 GS Den Haag, Netherlands)",
+          "team": "RESISTANCE",
+          "markup": [
+            [
+              "TEXT",
+              {
+                "plain": "Agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed the "
+              }
+            ],
+            [
+              "FACTION",
+              {
+                "team": "RESISTANCE",
+                "plain": "Resistance"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " Link "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Contour (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands)",
+                "name": "Contour",
+                "address": "Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands",
+                "latE6": 52032187,
+                "lngE6": 4358461,
+                "team": "RESISTANCE"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " to "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Knooppunt 89 Wandelnetwerk Hof van Delfland (Singel 21, 2497 GS Den Haag, Netherlands)",
+                "name": "Knooppunt 89 Wandelnetwerk Hof van Delfland",
+                "address": "Singel 21, 2497 GS Den Haag, Netherlands",
+                "latE6": 52031344,
+                "lngE6": 4358319,
+                "team": "RESISTANCE"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "362b7f1bcee94d3486413f10a1f659ac.d",
+      1775597574730,
+      {
+        "plext": {
+          "text": "Agent Ypje destroyed the Resistance Control Field @Contour (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands) -3 MUs",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "TEXT",
+              {
+                "plain": "Agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed the "
+              }
+            ],
+            [
+              "FACTION",
+              {
+                "team": "RESISTANCE",
+                "plain": "Resistance"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " Control Field @"
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Contour (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands)",
+                "name": "Contour",
+                "address": "Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands",
+                "latE6": 52032187,
+                "lngE6": 4358461,
+                "team": "RESISTANCE"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " -"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": "3"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " MUs"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "9e511814267143fc843863c5fedece7f.d",
+      1775597570730,
+      {
+        "plext": {
+          "text": "Agent Ypje destroyed the Resistance Link Skatepark (Singel 47, 2497 Den Haag, Netherlands) to Knooppunt 89 Wandelnetwerk Hof van Delfland (Singel 21, 2497 GS Den Haag, Netherlands)",
+          "team": "RESISTANCE",
+          "markup": [
+            [
+              "TEXT",
+              {
+                "plain": "Agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed the "
+              }
+            ],
+            [
+              "FACTION",
+              {
+                "team": "RESISTANCE",
+                "plain": "Resistance"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " Link "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Skatepark (Singel 47, 2497 Den Haag, Netherlands)",
+                "name": "Skatepark",
+                "address": "Singel 47, 2497 Den Haag, Netherlands",
+                "latE6": 52032015,
+                "lngE6": 4357943,
+                "team": "RESISTANCE"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " to "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Knooppunt 89 Wandelnetwerk Hof van Delfland (Singel 21, 2497 GS Den Haag, Netherlands)",
+                "name": "Knooppunt 89 Wandelnetwerk Hof van Delfland",
+                "address": "Singel 21, 2497 GS Den Haag, Netherlands",
+                "latE6": 52031344,
+                "lngE6": 4358319,
+                "team": "RESISTANCE"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "f5eddd650d184ce9b540cece10839b01.d",
+      1775597560502,
+      {
+        "plext": {
+          "text": "Ypje destroyed a Resonator on Contour (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands)",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed a Resonator on "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Contour (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands)",
+                "name": "Contour",
+                "address": "Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands",
+                "latE6": 52032187,
+                "lngE6": 4358461,
+                "team": "RESISTANCE"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "d68f0d84900a4d0082678b681804aac6.d",
+      1775597560502,
+      {
+        "plext": {
+          "text": "Ypje destroyed a Resonator on Kids Playground Fitnesspark (Rijswijkse Landingslaan 8, 2497 TA Den Haag, Netherlands)",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed a Resonator on "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Kids Playground Fitnesspark (Rijswijkse Landingslaan 8, 2497 TA Den Haag, Netherlands)",
+                "name": "Kids Playground Fitnesspark",
+                "address": "Rijswijkse Landingslaan 8, 2497 TA Den Haag, Netherlands",
+                "latE6": 52032451,
+                "lngE6": 4358401,
+                "team": "RESISTANCE"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "b2ddca7ed5f44cfaa497ce124c25cc07.d",
+      1775597558309,
+      {
+        "plext": {
+          "text": "Ypje destroyed a Resonator on Skatepark (Singel 47, 2497 Den Haag, Netherlands)",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed a Resonator on "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Skatepark (Singel 47, 2497 Den Haag, Netherlands)",
+                "name": "Skatepark",
+                "address": "Singel 47, 2497 Den Haag, Netherlands",
+                "latE6": 52032015,
+                "lngE6": 4357943,
+                "team": "RESISTANCE"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "04c73242ff534f6e950c0e473cd1090a.d",
+      1775597522656,
+      {
+        "plext": {
+          "text": "Ypje deployed a Resonator on Water speelplek Singels (Bieremalaan 119, 2497 AX Den Haag, Netherlands)",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " deployed a Resonator on "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Water speelplek Singels (Bieremalaan 119, 2497 AX Den Haag, Netherlands)",
+                "name": "Water speelplek Singels",
+                "address": "Bieremalaan 119, 2497 AX Den Haag, Netherlands",
+                "latE6": 52033044,
+                "lngE6": 4358167,
+                "team": "ENLIGHTENED"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "b841b6c65dfa4be1b3a4ca7c21121f69.d",
+      1775597476018,
+      {
+        "plext": {
+          "text": "Enlightened agent Ypje linked from Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands) to Glijgangen (Bieremalaan 1, 2497 AW Den Haag, Netherlands)",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "FACTION",
+              {
+                "team": "ENLIGHTENED",
+                "plain": "Enlightened"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " linked from "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands)",
+                "name": "Balsports Bieremalaan",
+                "address": "Bieremalaan 111, 2497 AX Den Haag, Netherlands",
+                "latE6": 52033384,
+                "lngE6": 4358588,
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " to "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Glijgangen (Bieremalaan 1, 2497 AW Den Haag, Netherlands)",
+                "name": "Glijgangen",
+                "address": "Bieremalaan 1, 2497 AW Den Haag, Netherlands",
+                "latE6": 52034868,
+                "lngE6": 4356454,
+                "team": "ENLIGHTENED"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "9a16a48c77f840a286174a5d7bd043cd.d",
+      1775597476018,
+      {
+        "plext": {
+          "text": "Enlightened agent Ypje created a Control Field @Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands) +11 MUs",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "FACTION",
+              {
+                "team": "ENLIGHTENED",
+                "plain": "Enlightened"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " created a Control Field @"
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands)",
+                "name": "Balsports Bieremalaan",
+                "address": "Bieremalaan 111, 2497 AX Den Haag, Netherlands",
+                "latE6": 52033384,
+                "lngE6": 4358588,
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " +"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": "11"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " MUs"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "4f8ecbc555a641648c4763270483bbe4.d",
+      1775597434779,
+      {
+        "plext": {
+          "text": "Enlightened agent Ypje linked from Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands) to Iron Sculpture (Laan van Hoornwijck 70, 2289 Rijswijk, Netherlands)",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "FACTION",
+              {
+                "team": "ENLIGHTENED",
+                "plain": "Enlightened"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " linked from "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands)",
+                "name": "Balsports Bieremalaan",
+                "address": "Bieremalaan 111, 2497 AX Den Haag, Netherlands",
+                "latE6": 52033384,
+                "lngE6": 4358588,
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " to "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Iron Sculpture (Laan van Hoornwijck 70, 2289 Rijswijk, Netherlands)",
+                "name": "Iron Sculpture",
+                "address": "Laan van Hoornwijck 70, 2289 Rijswijk, Netherlands",
+                "latE6": 52048107,
+                "lngE6": 4347628,
+                "team": "ENLIGHTENED"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "d1d649ca0e7445019339b40f756ee42d.d",
+      1775597429010,
+      {
+        "plext": {
+          "text": "Enlightened agent Ypje created a Control Field @Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands) +4 MUs",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "FACTION",
+              {
+                "team": "ENLIGHTENED",
+                "plain": "Enlightened"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " created a Control Field @"
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands)",
+                "name": "Balsports Bieremalaan",
+                "address": "Bieremalaan 111, 2497 AX Den Haag, Netherlands",
+                "latE6": 52033384,
+                "lngE6": 4358588,
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " +"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": "4"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " MUs"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "be18d0850d2c43ffb27aa0bcde14ad94.d",
+      1775597429010,
+      {
+        "plext": {
+          "text": "Enlightened agent Ypje linked from Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands) to Mega insecten hotel (1, Ballang\u00e9elaan, 2497 AA Den Haag, Netherlands)",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "FACTION",
+              {
+                "team": "ENLIGHTENED",
+                "plain": "Enlightened"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " linked from "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands)",
+                "name": "Balsports Bieremalaan",
+                "address": "Bieremalaan 111, 2497 AX Den Haag, Netherlands",
+                "latE6": 52033384,
+                "lngE6": 4358588,
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " to "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Mega insecten hotel (1, Ballang\u00e9elaan, 2497 AA Den Haag, Netherlands)",
+                "name": "Mega insecten hotel",
+                "address": "1, Ballang\u00e9elaan, 2497 AA Den Haag, Netherlands",
+                "latE6": 52034711,
+                "lngE6": 4355434,
+                "team": "ENLIGHTENED"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "a890409032034ed593c7d752ac3ce327.d",
+      1775597424190,
+      {
+        "plext": {
+          "text": "Enlightened agent Ypje linked from Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands) to The Iron Goals (Bieremalaan 25, 2497 AW Den Haag, Netherlands)",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "FACTION",
+              {
+                "team": "ENLIGHTENED",
+                "plain": "Enlightened"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " linked from "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands)",
+                "name": "Balsports Bieremalaan",
+                "address": "Bieremalaan 111, 2497 AX Den Haag, Netherlands",
+                "latE6": 52033384,
+                "lngE6": 4358588,
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " to "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "The Iron Goals (Bieremalaan 25, 2497 AW Den Haag, Netherlands)",
+                "name": "The Iron Goals",
+                "address": "Bieremalaan 25, 2497 AW Den Haag, Netherlands",
+                "latE6": 52033968,
+                "lngE6": 4356708,
+                "team": "ENLIGHTENED"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "de68047554474744aa1bf201d7812827.d",
+      1775597385764,
+      {
+        "plext": {
+          "text": "Ypje deployed a Resonator on Water speelplek Singels (Bieremalaan 119, 2497 AX Den Haag, Netherlands)",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " deployed a Resonator on "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Water speelplek Singels (Bieremalaan 119, 2497 AX Den Haag, Netherlands)",
+                "name": "Water speelplek Singels",
+                "address": "Bieremalaan 119, 2497 AX Den Haag, Netherlands",
+                "latE6": 52033044,
+                "lngE6": 4358167,
+                "team": "ENLIGHTENED"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "bfbb1f10776547739ff1c6030507b446.d",
+      1775597385764,
+      {
+        "plext": {
+          "text": "Ypje captured Water speelplek Singels (Bieremalaan 119, 2497 AX Den Haag, Netherlands)",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " captured "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Water speelplek Singels (Bieremalaan 119, 2497 AX Den Haag, Netherlands)",
+                "name": "Water speelplek Singels",
+                "address": "Bieremalaan 119, 2497 AX Den Haag, Netherlands",
+                "latE6": 52033044,
+                "lngE6": 4358167,
+                "team": "ENLIGHTENED"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "d8e0b4a3710a4185a1b4d0467d8b57a7.d",
+      1775597380718,
+      {
+        "plext": {
+          "text": "Agent Ypje destroyed the Resistance Control Field @Kids Playground Fitnesspark (Rijswijkse Landingslaan 8, 2497 TA Den Haag, Netherlands) -3 MUs",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "TEXT",
+              {
+                "plain": "Agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed the "
+              }
+            ],
+            [
+              "FACTION",
+              {
+                "team": "RESISTANCE",
+                "plain": "Resistance"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " Control Field @"
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Kids Playground Fitnesspark (Rijswijkse Landingslaan 8, 2497 TA Den Haag, Netherlands)",
+                "name": "Kids Playground Fitnesspark",
+                "address": "Rijswijkse Landingslaan 8, 2497 TA Den Haag, Netherlands",
+                "latE6": 52032451,
+                "lngE6": 4358401,
+                "team": "RESISTANCE"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " -"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": "3"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " MUs"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "c8d89807c264414ab7e9b55b60fdacaa.d",
+      1775597380718,
+      {
+        "plext": {
+          "text": "Agent Ypje destroyed the Resistance Link Kids Playground Fitnesspark (Rijswijkse Landingslaan 8, 2497 TA Den Haag, Netherlands) to Knooppunt 89 Wandelnetwerk Hof van Delfland (Singel 21, 2497 GS Den Haag, Netherlands)",
+          "team": "RESISTANCE",
+          "markup": [
+            [
+              "TEXT",
+              {
+                "plain": "Agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed the "
+              }
+            ],
+            [
+              "FACTION",
+              {
+                "team": "RESISTANCE",
+                "plain": "Resistance"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " Link "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Kids Playground Fitnesspark (Rijswijkse Landingslaan 8, 2497 TA Den Haag, Netherlands)",
+                "name": "Kids Playground Fitnesspark",
+                "address": "Rijswijkse Landingslaan 8, 2497 TA Den Haag, Netherlands",
+                "latE6": 52032451,
+                "lngE6": 4358401,
+                "team": "RESISTANCE"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " to "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Knooppunt 89 Wandelnetwerk Hof van Delfland (Singel 21, 2497 GS Den Haag, Netherlands)",
+                "name": "Knooppunt 89 Wandelnetwerk Hof van Delfland",
+                "address": "Singel 21, 2497 GS Den Haag, Netherlands",
+                "latE6": 52031344,
+                "lngE6": 4358319,
+                "team": "RESISTANCE"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "20bdbc4be43e4272bf7606db72c0b9dc.d",
+      1775597380718,
+      {
+        "plext": {
+          "text": "Agent Ypje destroyed the Resistance Link Kids Playground Fitnesspark (Rijswijkse Landingslaan 8, 2497 TA Den Haag, Netherlands) to Skatepark (Singel 47, 2497 Den Haag, Netherlands)",
+          "team": "RESISTANCE",
+          "markup": [
+            [
+              "TEXT",
+              {
+                "plain": "Agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed the "
+              }
+            ],
+            [
+              "FACTION",
+              {
+                "team": "RESISTANCE",
+                "plain": "Resistance"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " Link "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Kids Playground Fitnesspark (Rijswijkse Landingslaan 8, 2497 TA Den Haag, Netherlands)",
+                "name": "Kids Playground Fitnesspark",
+                "address": "Rijswijkse Landingslaan 8, 2497 TA Den Haag, Netherlands",
+                "latE6": 52032451,
+                "lngE6": 4358401,
+                "team": "RESISTANCE"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " to "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Skatepark (Singel 47, 2497 Den Haag, Netherlands)",
+                "name": "Skatepark",
+                "address": "Singel 47, 2497 Den Haag, Netherlands",
+                "latE6": 52032015,
+                "lngE6": 4357943,
+                "team": "RESISTANCE"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "e312aaf8d8b941a3b63d9ca31cda444e.d",
+      1775597373636,
+      {
+        "plext": {
+          "text": "Ypje captured Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands)",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " captured "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands)",
+                "name": "Balsports Bieremalaan",
+                "address": "Bieremalaan 111, 2497 AX Den Haag, Netherlands",
+                "latE6": 52033384,
+                "lngE6": 4358588,
+                "team": "ENLIGHTENED"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "681ba948cfa04fa6bffb42b03361032f.d",
+      1775597373636,
+      {
+        "plext": {
+          "text": "Ypje deployed a Resonator on Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands)",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " deployed a Resonator on "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands)",
+                "name": "Balsports Bieremalaan",
+                "address": "Bieremalaan 111, 2497 AX Den Haag, Netherlands",
+                "latE6": 52033384,
+                "lngE6": 4358588,
+                "team": "ENLIGHTENED"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "e08cdc176cdc47869746b78f7cc5da52.d",
+      1775597356272,
+      {
+        "plext": {
+          "text": "Agent Ypje destroyed the Resistance Control Field @Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands) -1 MUs",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "TEXT",
+              {
+                "plain": "Agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed the "
+              }
+            ],
+            [
+              "FACTION",
+              {
+                "team": "RESISTANCE",
+                "plain": "Resistance"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " Control Field @"
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands)",
+                "name": "Balsports Bieremalaan",
+                "address": "Bieremalaan 111, 2497 AX Den Haag, Netherlands",
+                "latE6": 52033384,
+                "lngE6": 4358588,
+                "team": "RESISTANCE"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " -"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": "1"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " MUs"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "dcb6b9cf76c349ec8a31301f69fadee9.d",
+      1775597356272,
+      {
+        "plext": {
+          "text": "Agent Ypje destroyed the Resistance Control Field @Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands) -4 MUs",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "TEXT",
+              {
+                "plain": "Agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed the "
+              }
+            ],
+            [
+              "FACTION",
+              {
+                "team": "RESISTANCE",
+                "plain": "Resistance"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " Control Field @"
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands)",
+                "name": "Balsports Bieremalaan",
+                "address": "Bieremalaan 111, 2497 AX Den Haag, Netherlands",
+                "latE6": 52033384,
+                "lngE6": 4358588,
+                "team": "RESISTANCE"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " -"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": "4"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " MUs"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "d706d2ec7c5f4f54a5a606ce5258c46e.d",
+      1775597356272,
+      {
+        "plext": {
+          "text": "Agent Ypje destroyed the Resistance Control Field @Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands) -6 MUs",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "TEXT",
+              {
+                "plain": "Agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed the "
+              }
+            ],
+            [
+              "FACTION",
+              {
+                "team": "RESISTANCE",
+                "plain": "Resistance"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " Control Field @"
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands)",
+                "name": "Balsports Bieremalaan",
+                "address": "Bieremalaan 111, 2497 AX Den Haag, Netherlands",
+                "latE6": 52033384,
+                "lngE6": 4358588,
+                "team": "RESISTANCE"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " -"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": "6"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " MUs"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "d17166d2abe442059fd552fc91da91ad.d",
+      1775597356272,
+      {
+        "plext": {
+          "text": "Agent Ypje destroyed the Resistance Control Field @Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands) -6 MUs",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "TEXT",
+              {
+                "plain": "Agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed the "
+              }
+            ],
+            [
+              "FACTION",
+              {
+                "team": "RESISTANCE",
+                "plain": "Resistance"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " Control Field @"
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands)",
+                "name": "Balsports Bieremalaan",
+                "address": "Bieremalaan 111, 2497 AX Den Haag, Netherlands",
+                "latE6": 52033384,
+                "lngE6": 4358588,
+                "team": "RESISTANCE"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " -"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": "6"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " MUs"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "c8cf4747a57849dcb91c73d60db2ad1a.d",
+      1775597356272,
+      {
+        "plext": {
+          "text": "Agent Ypje destroyed the Resistance Control Field @Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands) -1 MUs",
+          "team": "ENLIGHTENED",
+          "markup": [
+            [
+              "TEXT",
+              {
+                "plain": "Agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed the "
+              }
+            ],
+            [
+              "FACTION",
+              {
+                "team": "RESISTANCE",
+                "plain": "Resistance"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " Control Field @"
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands)",
+                "name": "Balsports Bieremalaan",
+                "address": "Bieremalaan 111, 2497 AX Den Haag, Netherlands",
+                "latE6": 52033384,
+                "lngE6": 4358588,
+                "team": "RESISTANCE"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " -"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": "1"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " MUs"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "b25900514fbc4ba79b3b683326fb6c69.d",
+      1775597356272,
+      {
+        "plext": {
+          "text": "Agent Ypje destroyed the Resistance Link Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands) to Kids Playground Fitnesspark (Rijswijkse Landingslaan 8, 2497 TA Den Haag, Netherlands)",
+          "team": "RESISTANCE",
+          "markup": [
+            [
+              "TEXT",
+              {
+                "plain": "Agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed the "
+              }
+            ],
+            [
+              "FACTION",
+              {
+                "team": "RESISTANCE",
+                "plain": "Resistance"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " Link "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands)",
+                "name": "Balsports Bieremalaan",
+                "address": "Bieremalaan 111, 2497 AX Den Haag, Netherlands",
+                "latE6": 52033384,
+                "lngE6": 4358588,
+                "team": "RESISTANCE"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " to "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Kids Playground Fitnesspark (Rijswijkse Landingslaan 8, 2497 TA Den Haag, Netherlands)",
+                "name": "Kids Playground Fitnesspark",
+                "address": "Rijswijkse Landingslaan 8, 2497 TA Den Haag, Netherlands",
+                "latE6": 52032451,
+                "lngE6": 4358401,
+                "team": "RESISTANCE"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ],
+    [
+      "92210826c0df4cb5b19e9b0bea108a08.d",
+      1775597356272,
+      {
+        "plext": {
+          "text": "Agent Ypje destroyed the Resistance Link Contour (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands) to Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands)",
+          "team": "RESISTANCE",
+          "markup": [
+            [
+              "TEXT",
+              {
+                "plain": "Agent "
+              }
+            ],
+            [
+              "PLAYER",
+              {
+                "plain": "Ypje",
+                "team": "ENLIGHTENED"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " destroyed the "
+              }
+            ],
+            [
+              "FACTION",
+              {
+                "team": "RESISTANCE",
+                "plain": "Resistance"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " Link "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Contour (Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands)",
+                "name": "Contour",
+                "address": "Rijswijkse Landingslaan 12-72, 2497 Den Haag, Netherlands",
+                "latE6": 52032187,
+                "lngE6": 4358461,
+                "team": "RESISTANCE"
+              }
+            ],
+            [
+              "TEXT",
+              {
+                "plain": " to "
+              }
+            ],
+            [
+              "PORTAL",
+              {
+                "plain": "Balsports Bieremalaan (Bieremalaan 111, 2497 AX Den Haag, Netherlands)",
+                "name": "Balsports Bieremalaan",
+                "address": "Bieremalaan 111, 2497 AX Den Haag, Netherlands",
+                "latE6": 52033384,
+                "lngE6": 4358588,
+                "team": "RESISTANCE"
+              }
+            ]
+          ],
+          "plextType": "SYSTEM_BROADCAST",
+          "categories": 1
+        }
+      }
+    ]
+  ]
+}

@@ -1,0 +1,94 @@
+{
+  "rewards": {
+    "ap": "0",
+    "xm": "1331",
+    "other": [],
+    "inventory": [
+      {
+        "name": "Hypercube",
+        "awards": [
+          {
+            "level": 0,
+            "count": 10
+          }
+        ]
+      },
+      {
+        "name": "Link Amp",
+        "awards": [
+          {
+            "level": 0,
+            "count": 3
+          }
+        ]
+      },
+      {
+        "name": "Power Cube",
+        "awards": [
+          {
+            "level": 8,
+            "count": 10
+          }
+        ]
+      },
+      {
+        "name": "Resonator",
+        "awards": [
+          {
+            "level": 4,
+            "count": 3
+          }
+        ]
+      },
+      {
+        "name": "Multi-hack",
+        "awards": [
+          {
+            "level": 0,
+            "count": 3
+          }
+        ]
+      },
+      {
+        "name": "Heat Sink",
+        "awards": [
+          {
+            "level": 0,
+            "count": 3
+          }
+        ]
+      },
+      {
+        "name": "Portal Shield",
+        "awards": [
+          {
+            "level": 0,
+            "count": 3
+          }
+        ]
+      },
+      {
+        "name": "Media",
+        "awards": [
+          {
+            "level": 1,
+            "count": 1
+          }
+        ]
+      }
+    ]
+  },
+  "playerData": {
+    "ap": "3540825",
+    "energy": 11261,
+    "team": "RESISTANCE",
+    "available_invites": 142,
+    "verified_level": 9,
+    "xm_capacity": "11500",
+    "min_ap_for_current_level": "2400000",
+    "min_ap_for_next_level": "4000000",
+    "guid": "9ffae2a04a864c28bf2409460603f3fa.c",
+    "recursion_count": "0",
+    "nickname": "AmsDams"
+  }
+}

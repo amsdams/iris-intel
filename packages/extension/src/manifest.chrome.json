@@ -1,4 +1,4 @@
-{
+make {
   "manifest_version": 3,
   "name": "IRIS - Modern IITC Alternative",
   "description": "A lightweight, modern IITC alternative for Ingress.",
