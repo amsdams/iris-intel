@@ -27,6 +27,12 @@ export class MockDataGenerator {
     public links: Link[] = [];
     public fields: Field[] = [];
 
+    clear() {
+        this.portals.clear();
+        this.links = [];
+        this.fields = [];
+    }
+
     addPortal(id: string, faction: Faction, lng: number, lat: number): Portal {
         const portal = { id, faction, lng, lat };
         this.portals.set(id, portal);

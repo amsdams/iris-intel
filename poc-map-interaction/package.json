@@ -2,9 +2,10 @@
   "name": "poc-map-interaction",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node build-zip.js",
+    "build": "vite build && node build-zip.cjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -15,6 +16,6 @@
     "@types/rbush": "^4.0.0",
     "archiver": "^7.0.1",
     "typescript": "^5.4.5",
-    "vite": "^5.2.11"
+    "vite": "^5.4.21"
   }
 }
