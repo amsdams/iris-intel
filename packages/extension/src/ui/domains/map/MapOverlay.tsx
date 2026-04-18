@@ -509,151 +509,77 @@ export function MapOverlay(): JSX.Element {
       useStore.getState().reverseGeocode(center.lat, center.lng);
     });
 
-    const handlePointInteraction = (id: string): void => {
+    const handlePointInteraction = (feature: maplibregl.MapGeoJSONFeature, lngLat: maplibregl.LngLat): void => {
         try {
-            useStore.getState().selectPortal(id);
-            window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: id }, '*');
+            // Waive Xray vision on Firefox to safely access properties from the page context
+            const f = (feature as any).wrappedJSObject || feature;
+            const props = f.properties || {};
+            const id = (props.id || props.portalId || props.guid) as string | undefined;
+            
+            if (id) {
+                useStore.getState().selectPortal(id);
+                window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: id }, '*');
+            }
         } catch (err: any) {
             logMapEvent('err-interaction', err.message);
         }
     };
 
-    const findClosestPortal = (lngLat: maplibregl.LngLat, point: { x: number, y: number }): string | null => {
-        const m = map.current;
-        if (!m) return null;
+    map.current.on('touchstart', (e) => logMapEvent('touchstart', 'map'));
 
-        const allPortals = Object.values(useStore.getState().portals);
-        let bestId: string | null = null;
-        let bestDist = 24; // 24 pixel radius threshold
-
-        // Stage 1: Fast LngLat filter (approx 0.01 degree box)
-        const candidates = allPortals.filter(p => 
-            Math.abs(p.lng - lngLat.lng) < 0.01 && Math.abs(p.lat - lngLat.lat) < 0.01
-        );
-
-        // Stage 2: Precise pixel distance
-        for (const p of candidates) {
-            try {
-                const pos = m.project([p.lng, p.lat]);
-                const dx = pos.x - point.x;
-                const dy = pos.y - point.y;
-                const d = Math.sqrt(dx * dx + dy * dy);
-                if (d < bestDist) {
-                    bestDist = d;
-                    bestId = p.id;
-                }
-            } catch { continue; }
-        }
-
-        return bestId;
-    };
-
-    map.current.on('touchstart', (e) => {
-        if (e.points && e.points.length > 0) {
-            touchState.current = {
-                startX: e.points[0].x,
-                startY: e.points[0].y,
-                hasMoved: false
-            };
-        }
-        logMapEvent('touchstart', 'map');
-    });
-
-    map.current.on('touchmove', (e) => {
-        if (e.points && e.points.length > 0) {
-            const dx = e.points[0].x - touchState.current.startX;
-            const dy = e.points[0].y - touchState.current.startY;
-            if (Math.sqrt(dx * dx + dy * dy) > 10) {
-                touchState.current.hasMoved = true;
-            }
-        }
-    });
-
-    map.current.on('click', (e) => {
-        const m = map.current;
-        if (!m) return;
-        
-        // 1. STRICT PRIMITIVE EXTRACTION
-        // We do this inside a try-catch because even 'e.point' might be restricted
-        let x: number, y: number, lng: number, lat: number;
-        try {
-            x = Number(e.point.x);
-            y = Number(e.point.y);
-            lng = Number(e.lngLat.lng);
-            lat = Number(e.lngLat.lat);
-        } catch (err: any) {
-            logMapEvent('err-coords', `Point access denied: ${err.message}`);
-            return;
-        }
-
-        logMapEvent('click', `at-${Math.round(x)},${Math.round(y)}`);
-
-        // 2. DEFENSIVE QUERY
-        try {
-            // Reconstruct primitives locally
-            const box: [[number, number], [number, number]] = [[x - 8, y - 8], [x + 8, y + 8]];
-            
-            // Avoid complex options if they might be causing the "constructor" check failure
-            // We'll filter the results manually instead of using the 'layers' option
-            const allHitsRaw = m.queryRenderedFeatures(box);
-
-            if (allHitsRaw && allHitsRaw.length > 0) {
-                // 3. SAFE RESULT PROCESSING
-                // We use a simple loop with individual try-catch blocks
-                for (let i = 0; i < allHitsRaw.length; i++) {
-                    try {
-                        const feature = allHitsRaw[i];
-                        const layerId = feature.layer?.id;
-                        
-                        if (layerId && INTERACTIVE_LAYERS.includes(layerId)) {
-                            const props = feature.properties || {};
-                            const id = (props.id || props.portalId || props.guid);
-                            
-                            if (id) {
-                                logMapEvent('hit-qrf', layerId, id);
-                                handlePointInteraction(String(id));
-                                return;
-                            }
-                        }
-                    } catch (featErr: any) {
-                        // Log but continue to next feature
-                        logMapEvent('err-feat', `Feature ${i} restricted: ${featErr.message}`);
-                    }
-                }
-            }
-            
-            logMapEvent('qrf-miss', `hits:${allHitsRaw?.length || 0}`);
-        } catch (err: any) {
-            // LOG FULL ERROR AND STACK
-            const errorInfo = `${err.message}\nStack: ${err.stack || 'no stack'}`;
-            logMapEvent('err-qrf', errorInfo);
-        }
-
-        // 4. MANUAL FALLBACK (Always here as a safety net)
-        const portalId = findClosestPortal(new maplibregl.LngLat(lng, lat), { x, y });
-        if (portalId) {
-            logMapEvent('hit-manual', 'portals', portalId);
-            handlePointInteraction(portalId);
-        } else {
-            logMapEvent('click', 'empty-map');
-            useStore.getState().selectPortal(null);
-        }
-    });
-
-    map.current.on('touchend', (e) => {
-        if (touchState.current.hasMoved) return;
-        logMapEvent('tap', 'detect');
-        // MapLibre synthesizes a click on tap, so we don't usually need to trigger here
-    });
-
-    // Hover cursor (Desktop only)
+    // Implementation of Proposed Solution: Layer-Scoped Listeners
     INTERACTIVE_LAYERS.forEach(layerId => {
+        // 2. Desktop Interaction (Click)
+        map.current?.on('click', layerId, (e) => {
+            try {
+                // MapLibre provides features in e.features for layer-scoped listeners
+                const features = (e as any).features;
+                if (features && features.length > 0) {
+                    (e as any)._irisHandled = true;
+                    logMapEvent('click', layerId, 'hit');
+                    handlePointInteraction(features[0], e.lngLat);
+                }
+            } catch (err: any) {
+                logMapEvent(`err-click-${layerId}`, err.message);
+            }
+        });
+
+        // 3. Mobile Interaction (Touch)
+        map.current?.on('touchend', layerId, (e) => {
+            try {
+                // Ignore multi-touch (e.g. pinch-zoom)
+                const originalEvent = (e as any).originalEvent;
+                if (originalEvent && originalEvent.touches && originalEvent.touches.length !== 0) return;
+                
+                const features = (e as any).features;
+                if (features && features.length > 0) {
+                    (e as any)._irisHandled = true;
+                    logMapEvent('tap', layerId, 'hit');
+                    handlePointInteraction(features[0], e.lngLat);
+                }
+            } catch (err: any) {
+                logMapEvent(`err-tap-${layerId}`, err.message);
+            }
+        });
+
+        // 4. Hover State (Desktop Only)
         map.current?.on('mouseenter', layerId, () => {
             if (map.current) map.current.getCanvas().style.cursor = 'pointer';
         });
         map.current?.on('mouseleave', layerId, () => {
             if (map.current) map.current.getCanvas().style.cursor = '';
         });
+    });
+
+    // Handle clicking empty map to deselect
+    map.current.on('click', (e) => {
+        // In layer-scoped listeners, we don't automatically know if a feature was hit 
+        // in the global click handler. We rely on the fact that global click fires after.
+        // However, we want to deselect ONLY if no interactive feature was hit.
+        // To keep this performant and bypass security, we check if the event was handled.
+        if (!(e as any)._irisHandled) {
+             useStore.getState().selectPortal(null);
+        }
     });
 
     return (): void => {
