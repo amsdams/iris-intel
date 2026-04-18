@@ -132,6 +132,7 @@ export function MapOverlay(): JSX.Element {
   const mockOrnaments = useStore((state) => state.mockOrnaments);
   const missionDetails = useStore((state) => state.missionDetails);
   const pluginFeatures = useStore((state) => state.pluginFeatures);
+  const showMapControls = useStore((state) => state.showMapControls);
   const pluginMarkers = useRef<Map<string, MarkerRegistryEntry>>(new Map());
   const { lat, lng, zoom } = useStore((state) => state.mapState);
   const themeId = useStore((state) => state.themeId);
@@ -561,13 +562,17 @@ export function MapOverlay(): JSX.Element {
       dragRotate: useStore.getState().allowRotation,
       touchZoomRotate: true,
       touchPitch: useStore.getState().allowPitch,
+      cooperativeGestures: false,
     });
 
     map.current.on('load', () => {
         setStyleLoaded(true);
         if (map.current) {
+            map.current.resize();
             map.current.dragPan.enable();
             map.current.touchZoomRotate.enable();
+            map.current.scrollZoom.enable();
+            map.current.doubleClickZoom.enable();
         }
     });
 
@@ -618,7 +623,55 @@ export function MapOverlay(): JSX.Element {
         }
     };
 
-    map.current.on('touchstart', (e) => logMapEvent('touchstart', 'map'));
+    const performSpatialFallback = (point: { x: number, y: number }, lngLat: maplibregl.LngLat, isTouch: boolean): void => {
+        if (!map.current) return;
+        
+        const zoom = map.current.getZoom();
+        // Adaptive buffer: larger for touch, and larger when zoomed out
+        const baseBuffer = isTouch ? 20 : 10;
+        const zoomFactor = Math.max(1, (20 - zoom) / 2);
+        const pixelBuffer = baseBuffer * zoomFactor;
+
+        // Convert pixel buffer to geographic degrees approx
+        // At zoom 15, 1px is approx 4.7m at equator. 
+        // A simpler way is to query map features with a bbox:
+        const bbox: [[number, number], [number, number]] = [
+            [point.x - pixelBuffer, point.y - pixelBuffer],
+            [point.x + pixelBuffer, point.y + pixelBuffer]
+        ];
+
+        const hits = map.current.queryRenderedFeatures(bbox, {
+            layers: INTERACTIVE_LAYERS.filter(l => {
+                try { return !!map.current?.getLayer(l); } catch { return false; }
+            })
+        });
+
+        if (hits.length > 0) {
+            logMapEvent(isTouch ? 'tap-fallback' : 'click-fallback', hits[0].layer.id, 'hit');
+            handlePointInteraction(hits[0], hits[0].geometry);
+        } else {
+            // Last resort: Query RBush directly for the closest portal
+            // (Degrees buffer instead of pixels)
+            const degreeBuffer = 0.0005 * zoomFactor; 
+            const queryBounds = {
+                minLat: lngLat.lat - degreeBuffer,
+                minLng: lngLat.lng - degreeBuffer,
+                maxLat: lngLat.lat + degreeBuffer,
+                maxLng: lngLat.lng + degreeBuffer
+            };
+            const spatialHits = globalSpatialIndex.query(queryBounds);
+            const portals = spatialHits.filter(h => h.type === 'portal');
+            
+            if (portals.length > 0) {
+                logMapEvent(isTouch ? 'tap-rbush' : 'click-rbush', 'portal', 'hit');
+                useStore.getState().selectPortal(portals[0].id);
+                window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: portals[0].id }, '*');
+            } else {
+                logMapEvent(isTouch ? 'tap' : 'click', 'map-empty');
+                useStore.getState().selectPortal(null);
+            }
+        }
+    };
 
     // Implementation of Proposed Solution: Layer-Scoped Listeners
     INTERACTIVE_LAYERS.forEach(layerId => {
@@ -629,6 +682,7 @@ export function MapOverlay(): JSX.Element {
                 if (features && features.length > 0) {
                     logMapEvent('click', layerId, 'hit');
                     handlePointInteraction(features[0], e.lngLat);
+                    (e as any)._iris_handled = true;
                 }
             } catch (err: any) {
                 logMapEvent(`err-click-${layerId}`, err.message);
@@ -646,14 +700,12 @@ export function MapOverlay(): JSX.Element {
                 if (features && features.length > 0) {
                     logMapEvent('tap', layerId, 'hit');
                     handlePointInteraction(features[0], e.lngLat);
+                    (e as any)._iris_handled = true;
                 }
             } catch (err: any) {
                 logMapEvent(`err-tap-${layerId}`, err.message);
             }
         });
-
-        // Prevent map drag from triggering touchend on a point
-        // (Removed empty touchmove layer listener causing type error)
 
         // 4. Hover State (Desktop Only)
         map.current?.on('mouseenter', layerId, () => {
@@ -664,23 +716,19 @@ export function MapOverlay(): JSX.Element {
         });
     });
 
-    // Handle clicking empty map to deselect
+    // Handle clicking empty map to deselect OR perform spatial fallback
     map.current.on('click', (e) => {
-        if (!map.current) return;
-        try {
-            const bbox: [[number, number], [number, number]] = [[e.point.x - 5, e.point.y - 5], [e.point.x + 5, e.point.y + 5]];
-            const hits = map.current.queryRenderedFeatures(bbox, {
-                layers: INTERACTIVE_LAYERS.filter(l => {
-                    try { return !!map.current?.getLayer(l); } catch { return false; }
-                })
-            });
-            if (hits.length === 0) {
-                logMapEvent('click', 'map-empty');
-                useStore.getState().selectPortal(null);
-            }
-        } catch (err: any) {
-            logMapEvent('err-deselect', err.message);
-        }
+        if (!map.current || (e as any)._iris_handled) return;
+        performSpatialFallback(e.point, e.lngLat, false);
+    });
+
+    map.current.on('touchend', (e) => {
+        if (!map.current || (e as any)._iris_handled) return;
+        // Ignore multi-touch
+        const originalEvent = (e as any).originalEvent;
+        if (originalEvent && originalEvent.touches && originalEvent.touches.length !== 0) return;
+        
+        performSpatialFallback(e.point, e.lngLat, true);
     });
 
     return (): void => {
@@ -895,10 +943,35 @@ export function MapOverlay(): JSX.Element {
     });
   }, [pluginFeatures, styleLoaded, zoom]);
 
+  const panBy = (x: number, y: number) => {
+    map.current?.panBy([x, y], { duration: 200 });
+  };
+
+  const zoomIn = () => {
+    map.current?.zoomIn({ duration: 200 });
+  };
+
+  const zoomOut = () => {
+    map.current?.zoomOut({ duration: 200 });
+  };
+
   return (
-      <div
-          ref={mapContainer}
-          className="iris-map-container"
-      />
+      <div className="iris-map-wrapper">
+          <div
+              ref={mapContainer}
+              className="iris-map-container"
+          />
+          {showMapControls && (
+              <div className="iris-map-controls">
+                  <button className="iris-map-control-btn" onPointerDown={(e) => { e.stopPropagation(); zoomIn(); }} title="Zoom In">+</button>
+                  <button className="iris-map-control-btn" onPointerDown={(e) => { e.stopPropagation(); zoomOut(); }} title="Zoom Out">−</button>
+                  <div className="iris-map-control-spacer" />
+                  <button className="iris-map-control-btn" onPointerDown={(e) => { e.stopPropagation(); panBy(0, -250); }} title="Pan Up">↑</button>
+                  <button className="iris-map-control-btn" onPointerDown={(e) => { e.stopPropagation(); panBy(0, 250); }} title="Pan Down">↓</button>
+                  <button className="iris-map-control-btn" onPointerDown={(e) => { e.stopPropagation(); panBy(-250, 0); }} title="Pan Left">←</button>
+                  <button className="iris-map-control-btn" onPointerDown={(e) => { e.stopPropagation(); panBy(250, 0); }} title="Pan Right">→</button>
+              </div>
+          )}
+      </div>
   );
 }

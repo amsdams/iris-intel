@@ -310,6 +310,7 @@ export interface IRISSettings {
     allowPitch: boolean;
     debugLogging: boolean;
     showMockTools: boolean;
+    showMapControls: boolean;
 }
 
 export const DEFAULT_SETTINGS: IRISSettings = {
@@ -338,6 +339,7 @@ export const DEFAULT_SETTINGS: IRISSettings = {
     allowPitch: true,
     debugLogging: false,
     showMockTools: false,
+    showMapControls: true,
 };
 
 // Slice Types
@@ -362,6 +364,7 @@ interface SettingsSlice extends IRISSettings {
     toggleAllowPitch: () => void;
     toggleDebugLogging: () => void;
     toggleShowMockTools: () => void;
+    toggleShowMapControls: () => void;
 }
 
 interface EntitiesSlice {
@@ -579,6 +582,7 @@ const createSettingsSlice: StateCreator<IRISState, [], [], SettingsSlice> = (set
     toggleAllowPitch: () => set((state) => ({ allowPitch: !state.allowPitch })),
     toggleDebugLogging: () => set((state) => ({ debugLogging: !state.debugLogging })),
     toggleShowMockTools: () => set((state) => ({ showMockTools: !state.showMockTools })),
+    toggleShowMapControls: () => set((state) => ({ showMapControls: !state.showMapControls })),
 });
 
 const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set) => ({
@@ -1145,6 +1149,7 @@ export const useStore = create<IRISState>()(
                     showLevel: state.showLevel,
                     debugLogging: state.debugLogging,
                     showMockTools: state.showMockTools,
+                    showMapControls: state.showMapControls,
                     showHealth: state.showHealth,
                     showVisited: state.showVisited,
                     showCaptured: state.showCaptured,

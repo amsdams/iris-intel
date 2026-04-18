@@ -17,12 +17,67 @@
 }
 
 .iris-map-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto;
+  z-index: 1;
+}
+
+.iris-map-wrapper {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  pointer-events: auto;
-  z-index: 9999;
+  z-index: 1;
   touch-action: none;
+}
+
+.iris-map-controls {
+  position: absolute;
+  top: 60px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.iris-map-control-btn {
+  width: 36px;
+  height: 36px;
+  background: rgba(10, 10, 10, 0.85);
+  color: #00ffff;
+  border: 1px solid rgba(0, 255, 255, 0.4);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.iris-map-control-btn:hover {
+  background: rgba(20, 20, 20, 0.95);
+  border-color: #00ffff;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+}
+
+.iris-map-control-btn:active {
+  transform: scale(0.92);
+  background: #00ffff;
+  color: #000;
+}
+
+.iris-map-control-spacer {
+  height: 8px;
 }

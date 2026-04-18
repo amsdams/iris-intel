@@ -69,6 +69,8 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
     const toggleDebugLogging = useStore((state) => state.toggleDebugLogging);
     const showMockTools = useStore((state) => state.showMockTools);
     const toggleShowMockTools = useStore((state) => state.toggleShowMockTools);
+    const showMapControls = useStore((state) => state.showMapControls);
+    const toggleShowMapControls = useStore((state) => state.toggleShowMapControls);
     const mapState = useStore((state) => state.mapState);
     const discoveredLocation = useStore((state) => state.discoveredLocation);
     const lastResolvedLatLng = useStore((state) => state.lastResolvedLatLng);
@@ -322,6 +324,15 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                                 className="iris-checkbox"
                             />
                             Show mock tools
+                        </label>
+                        <label className="iris-choice-item iris-label">
+                            <input
+                                type="checkbox"
+                                checked={showMapControls}
+                                onChange={toggleShowMapControls}
+                                className="iris-checkbox"
+                            />
+                            Show map navigation controls
                         </label>
                     </div>
                     {showMockTools && (
