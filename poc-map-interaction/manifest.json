@@ -3,7 +3,11 @@
   "name": "Map Interaction POC (Vite/TS)",
   "version": "1.0.0",
   "description": "POC to test layered map interactions in Firefox Mobile extensions",
-  "host_permissions": ["https://www.google.com/*"],
+  "host_permissions": [
+    "https://www.google.com/*",
+    "https://*.basemaps.cartocdn.com/*",
+    "https://*.tile.openstreetmap.org/*"
+  ],
   "content_scripts": [
     {
       "matches": ["https://www.google.com/*"],
