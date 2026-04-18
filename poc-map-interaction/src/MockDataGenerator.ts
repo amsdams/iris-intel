@@ -1,3 +1,5 @@
+import RBush from 'rbush';
+
 export type Faction = 'ENL' | 'RES' | 'NEU' | 'MAC';
 
 export interface Portal {
@@ -23,15 +25,22 @@ export interface Field {
     p3: Portal;
 }
 
+interface LinkIndexItem {
+    minX: number; minY: number; maxX: number; maxY: number;
+    link: Link;
+}
+
 export class MockDataGenerator {
     public portals: Map<string, Portal> = new Map();
     public links: Link[] = [];
     public fields: Field[] = [];
+    private linkIndex = new RBush<LinkIndexItem>();
 
     clear() {
         this.portals.clear();
         this.links = [];
         this.fields = [];
+        this.linkIndex.clear();
     }
 
     addPortal(id: string, faction: Faction, lng: number, lat: number, level: number = 0): Portal {
@@ -44,10 +53,7 @@ export class MockDataGenerator {
         const p1 = this.portals.get(p1Id);
         const p2 = this.portals.get(p2Id);
 
-        if (!p1 || !p2) {
-            console.warn(`Link ${id} rejected: One or both portals not found (${p1Id}, ${p2Id})`);
-            return null;
-        }
+        if (!p1 || !p2 || p1.id === p2.id) return null;
 
         const exists = this.links.find(l => 
             (l.p1.id === p1Id && l.p2.id === p2Id) || 
@@ -55,15 +61,22 @@ export class MockDataGenerator {
         );
         if (exists) return exists;
 
-        for (const other of this.links) {
-            if (this.doSegmentsIntersect(p1, p2, other.p1, other.p2)) {
-                console.warn(`Link ${id} rejected: Intersects with existing link ${other.id}`);
+        const minX = Math.min(p1.lng, p2.lng);
+        const minY = Math.min(p1.lat, p2.lat);
+        const maxX = Math.max(p1.lng, p2.lng);
+        const maxY = Math.max(p1.lat, p2.lat);
+
+        // Spatial query to check only nearby links
+        const neighbors = this.linkIndex.search({ minX, minY, maxX, maxY });
+        for (const item of neighbors) {
+            if (this.doSegmentsIntersect(p1, p2, item.link.p1, item.link.p2)) {
                 return null;
             }
         }
 
         const link = { id, faction, p1, p2 };
         this.links.push(link);
+        this.linkIndex.insert({ minX, minY, maxX, maxY, link });
         return link;
     }
 addField(id: string, faction: Faction, p1Id: string, p2Id: string, p3Id: string): Field | null {

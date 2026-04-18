@@ -63,23 +63,56 @@ function initMap() {
         const minLng = lngIdx * size;
         const cellId = `${latIdx}_${lngIdx}_S${size.toFixed(2)}`;
 
+        // Stable pseudo-random density factor [0, 1] based on coordinates
+        const hash = Math.abs(Math.sin(latIdx * 12.9898 + lngIdx * 78.233) * 43758.5453) % 1;
+        
+        // Define tiers: Urban (10%), Suburban (30%), Rural (60%)
+        let densityKm2 = 2; // Rural
+        let clusters = 2;
+        if (hash > 0.90) { densityKm2 = 150; clusters = 12; } // Urban
+        else if (hash > 0.60) { densityKm2 = 40; clusters = 6; } // Suburban
+
+        // Approx area in km2 (London area: 1deg lat ~111km, 1deg lng ~69km)
+        const areaKm2 = (size * 111) * (size * 69);
+        const portalCount = Math.floor(areaKm2 * densityKm2);
+        
+        logEvent(`Cell ${latIdx},${lngIdx} | Tier: ${densityKm2}/km² | Goal: ${portalCount} portals`);
+
+        const factionPortals: Record<Faction, string[]> = { ENL: [], RES: [], MAC: [], NEU: [] };
+
         if (minLevel <= 8) {
-            for (let i = 0; i < 20; i++) {
+            const seeds = Array.from({ length: clusters }, () => ({
+                lat: minLat + Math.random() * size,
+                lng: minLng + Math.random() * size
+            }));
+
+            for (let i = 0; i < portalCount; i++) {
+                const seed = seeds[Math.floor(Math.random() * seeds.length)];
+                const lat = seed.lat + (Math.random() - 0.5) * (size * 0.1);
+                const lng = seed.lng + (Math.random() - 0.5) * (size * 0.1);
                 const level = Math.floor(Math.random() * 9);
                 if (level < minLevel) continue;
                 const f: Faction = ['NEU', 'ENL', 'RES', 'MAC'][Math.floor(Math.random() * 4)] as Faction;
-                generator.addPortal(`P-${cellId}-${i}`, f, minLng + Math.random() * size, minLat + Math.random() * size, level);
+                const p = generator.addPortal(`P-${cellId}-${i}`, f, lng, lat, level);
+                factionPortals[f].push(p.id);
             }
         }
 
-        const faction: Faction = Math.random() > 0.5 ? 'ENL' : 'RES';
-        const b1 = generator.addPortal(`B1-${cellId}`, faction, minLng + size * 0.2, minLat + size * 0.2, 8);
-        const b2 = generator.addPortal(`B2-${cellId}`, faction, minLng + size * 0.8, minLat + size * 0.2, 8);
-        generator.addLink(`L-BASE-${cellId}`, faction, b1.id, b2.id);
-        for (let i = 0; i < 2; i++) {
-            const p = generator.addPortal(`S-${cellId}-${i}`, faction, minLng + size * 0.5, minLat + size * (0.4 + i * 0.3), 8);
-            generator.addField(`F-${cellId}-${i}`, faction, p.id, b1.id, b2.id);
-        }
+        // Realistic Links & Fields using "Fan" pattern for ENL and RES
+        ['ENL', 'RES'].forEach(f => {
+            const pIds = factionPortals[f as Faction];
+            if (pIds.length < 3) return;
+
+            // Pick 2 anchors and fan out to other portals
+            const anchor1 = pIds[0];
+            const anchor2 = pIds[1];
+            const targets = pIds.slice(2, Math.floor(pIds.length * 0.4)); // ~40% of portals are part of a fan
+
+            targets.forEach((tId, idx) => {
+                // Ingress rule: Links cannot cross. addField handles this via addLink check.
+                generator.addField(`F-${cellId}-${f}-${idx}`, f as Faction, anchor1, anchor2, tId);
+            });
+        });
     }
 
     function syncToMap(map: maplibregl.Map) {
