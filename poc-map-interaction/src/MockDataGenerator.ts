@@ -61,7 +61,7 @@ export class MockDataGenerator {
         return portal;
     }
 
-    addLink(id: string, faction: Faction, p1Id: string, p2Id: string): Link | null {
+    addLink(_id: string, faction: Faction, p1Id: string, p2Id: string): Link | null {
         const p1 = this.portals.get(p1Id);
         const p2 = this.portals.get(p2Id);
         if (!p1 || !p2 || p1.id === p2.id) return null;

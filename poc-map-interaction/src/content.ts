@@ -8,6 +8,7 @@ console.log("POC (TS): Intel Mode (Initial Zoom 13)");
 function initMap() {
     const generator = new MockDataGenerator();
     const loadedKeys = new Set<string>();
+    let extrusionEnabled = false;
 
     const COLORS = { ENL: '#00ff00', RES: '#0000ff', MAC: '#ff0000', NEU: '#ffffff' };
     const MAP_STYLES: Record<string, string[]> = {
@@ -44,9 +45,26 @@ function initMap() {
         });
         
         // Insert at the bottom
-        const firstLayer = map.getStyle().layers?.[0]?.id;
+        const layers = map.getStyle().layers;
+        const firstLayer = layers && layers.length > 0 ? layers[0].id : undefined;
         map.addLayer({ id: 'carto', type: 'raster', source: 'carto' }, firstLayer && firstLayer !== 'carto' ? firstLayer : undefined);
         logEvent(`Style: ${name}`);
+    }
+
+    function toggleExtrusion(map: maplibregl.Map) {
+        extrusionEnabled = !extrusionEnabled;
+        const visibility = extrusionEnabled ? 'visible' : 'none';
+        const flatVisibility = extrusionEnabled ? 'none' : 'visible';
+
+        ['f-ext-enl', 'f-ext-res', 'l-ext-enl', 'l-ext-res', 'p-ext'].forEach(id => {
+            if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', visibility);
+        });
+        ['f-enl', 'f-res', 'l-enl', 'l-res', 'l-mac', 'p'].forEach(id => {
+            if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', flatVisibility);
+        });
+
+        map.easeTo({ pitch: extrusionEnabled ? 60 : 0, bearing: extrusionEnabled ? -20 : 0, duration: 800 });
+        logEvent(`Extrusion: ${extrusionEnabled ? 'ON' : 'OFF'}`);
     }
 
     function generateForCell(latIdx: number, lngIdx: number, size: number, minLevel: number) {
@@ -122,22 +140,44 @@ function initMap() {
         results.forEach(item => {
             if (item.type === 'portal') {
                 const p = generator.portals.get(item.id);
-                if (p) features.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [p.lng, p.lat] }, properties: { id: p.id, type: 'portal', faction: p.faction, level: p.level } });
+                if (p) {
+                    const props = { id: p.id, type: 'portal', faction: p.faction, level: p.level, height: (p.level + 1) * 30, base_height: 0 };
+                    features.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [p.lng, p.lat] }, properties: props });
+                    
+                    // 3D Pillar geometry (small square)
+                    const s = 0.0001; // ~10m
+                    const poly = [[ [p.lng-s, p.lat-s], [p.lng+s, p.lat-s], [p.lng+s, p.lat+s], [p.lng-s, p.lat+s], [p.lng-s, p.lat-s] ]];
+                    features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: poly }, properties: { ...props, type: 'portal-ext' } });
+                }
             } else if (item.type === 'link') {
                 const l = generator.linksMap.get(item.id);
-                if (l) features.push({ type: 'Feature', id: `l-${l.id}`, geometry: { type: 'LineString', coordinates: [[l.p1.lng, l.p1.lat], [l.p2.lng, l.p2.lat]] }, properties: { id: l.id, type: 'link', faction: l.faction } });
+                if (l) {
+                    const props = { id: l.id, type: 'link', faction: l.faction, height: 10, base_height: 0 };
+                    features.push({ type: 'Feature', id: `l-${l.id}`, geometry: { type: 'LineString', coordinates: [[l.p1.lng, l.p1.lat], [l.p2.lng, l.p2.lat]] }, properties: props });
+                    
+                    // 3D Wall geometry (thin ribbon)
+                    const dx = l.p2.lng - l.p1.lng;
+                    const dy = l.p2.lat - l.p1.lat;
+                    const len = Math.sqrt(dx*dx + dy*dy);
+                    const nx = -dy / len * 0.00005;
+                    const ny = dx / len * 0.00005;
+                    const poly = [[ [l.p1.lng+nx, l.p1.lat+ny], [l.p2.lng+nx, l.p2.lat+ny], [l.p2.lng-nx, l.p2.lat-ny], [l.p1.lng-nx, l.p1.lat-ny], [l.p1.lng+nx, l.p1.lat+ny] ]];
+                    features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: poly }, properties: { ...props, type: 'link-ext' } });
+                }
             } else if (item.type === 'field') {
                 const f = generator.fields.find(f => f.id === item.id);
                 if (f) {
                     const poly = [[f.p1.lng, f.p1.lat], [f.p2.lng, f.p2.lat], [f.p3.lng, f.p3.lat], [f.p1.lng, f.p1.lat]];
-                    features.push({ type: 'Feature', id: `f-${f.id}`, geometry: { type: 'Polygon', coordinates: [poly] }, properties: { id: f.id, type: 'field', faction: f.faction } });
+                    const height = 300;
+                    const base_height = 290;
+                    features.push({ type: 'Feature', id: `f-${f.id}`, geometry: { type: 'Polygon', coordinates: [poly] }, properties: { id: f.id, type: 'field', faction: f.faction, height, base_height } });
                 }
             }
         });
 
         const source = map.getSource('entities') as maplibregl.GeoJSONSource;
         if (source) source.setData({ type: 'FeatureCollection', features });
-        logEvent(`RENDERED: ${features.length} / ${generator.portals.size + generator.links.length + generator.fields.length} items`);
+        logEvent(`RENDERED: ${features.length} / ${generator.portals.size + generator.linksMap.size + generator.fields.length} items`);
     }
 
     function checkAndLoad(map: maplibregl.Map) {
@@ -165,7 +205,7 @@ function initMap() {
         
         syncToMap(map);
         if (addedAny) {
-            logEvent(`GENERATED NEW DATA. Total Store: ${generator.portals.size + generator.links.length + generator.fields.length}`);
+            logEvent(`GENERATED NEW DATA. Total Store: ${generator.portals.size + generator.linksMap.size + generator.fields.length}`);
         }
     }
 
@@ -203,11 +243,19 @@ function initMap() {
         style: {
             version: 8,
             sources: {
-                'carto': { type: 'raster', tiles: ['https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png','https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'], tileSize: 256, attribution: '&copy; CARTO' },
+                'carto': { type: 'raster', tiles: MAP_STYLES['Dark'], tileSize: 256, attribution: '&copy; CARTO' },
                 'entities': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } }
             },
             layers: [
                 { id: 'carto', type: 'raster', source: 'carto' },
+                // 3D Extrusion Layers (Hidden by default)
+                { id: 'f-ext-enl', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'faction', 'ENL']], paint: { 'fill-extrusion-color': COLORS.ENL, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.5 }, layout: { visibility: 'none' } },
+                { id: 'f-ext-res', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'faction', 'RES']], paint: { 'fill-extrusion-color': COLORS.RES, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.5 }, layout: { visibility: 'none' } },
+                { id: 'l-ext-enl', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'link-ext'], ['==', 'faction', 'ENL']], paint: { 'fill-extrusion-color': COLORS.ENL, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.8 }, layout: { visibility: 'none' } },
+                { id: 'l-ext-res', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'link-ext'], ['==', 'faction', 'RES']], paint: { 'fill-extrusion-color': COLORS.RES, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.8 }, layout: { visibility: 'none' } },
+                { id: 'p-ext', type: 'fill-extrusion', source: 'entities', filter: ['==', 'type', 'portal-ext'], paint: { 'fill-extrusion-color': ['match', ['get', 'faction'], 'ENL', COLORS.ENL, 'RES', COLORS.RES, 'MAC', COLORS.MAC, COLORS.NEU], 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'] }, layout: { visibility: 'none' } },
+                
+                // Flat Layers (Visible by default)
                 { id: 'f-enl', type: 'fill', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'faction', 'ENL']], paint: { 'fill-color': COLORS.ENL, 'fill-opacity': 0.1 } },
                 { id: 'f-res', type: 'fill', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'faction', 'RES']], paint: { 'fill-color': COLORS.RES, 'fill-opacity': 0.1 } },
                 { id: 'l-enl', type: 'line', source: 'entities', filter: ['all', ['==', 'type', 'link'], ['==', 'faction', 'ENL']], paint: { 'line-color': COLORS.ENL, 'line-width': 1.5 } },
@@ -230,7 +278,8 @@ function initMap() {
     mk('+', () => map.zoomIn()); mk('-', () => map.zoomOut());
     mk('↑', () => map.panBy([0, -250])); mk('↓', () => map.panBy([0, 250]));
     mk('←', () => map.panBy([-250, 0])); mk('→', () => map.panBy([150, 0]));
-    mk('R', () => { map.setCenter([-0.1276, 51.5072]); map.setZoom(13); });
+    mk('R', () => { map.setCenter([-0.1276, 51.5072]); map.setZoom(13); map.setPitch(0); map.setBearing(0); });
+    mk('X', () => toggleExtrusion(map));
     mk('D', () => switchStyle(map, 'Dark'));
     mk('L', () => switchStyle(map, 'Light'));
     mk('V', () => switchStyle(map, 'Voyager'));
