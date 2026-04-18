@@ -124,7 +124,7 @@ function initMap() {
                 const p = generator.portals.get(item.id);
                 if (p) features.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [p.lng, p.lat] }, properties: { id: p.id, type: 'portal', faction: p.faction, level: p.level } });
             } else if (item.type === 'link') {
-                const l = generator.links.find(l => l.id === item.id);
+                const l = generator.linksMap.get(item.id);
                 if (l) features.push({ type: 'Feature', id: `l-${l.id}`, geometry: { type: 'LineString', coordinates: [[l.p1.lng, l.p1.lat], [l.p2.lng, l.p2.lat]] }, properties: { id: l.id, type: 'link', faction: l.faction } });
             } else if (item.type === 'field') {
                 const f = generator.fields.find(f => f.id === item.id);
