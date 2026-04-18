@@ -131,14 +131,18 @@
 }
 
 .iris-status-log-entry {
-  margin-bottom: 4px;
-  border-bottom: 1px solid #222;
-  padding-bottom: 2px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .iris-status-log-message-network {
   display: flex;
   justify-content: space-between;
+  gap: 8px;
 }
 
 .iris-status-log-source,
@@ -147,11 +151,14 @@
   font-size: 9px;
   word-break: break-all;
   white-space: pre-wrap;
+  line-height: 1.2;
 }
 
 .iris-status-log-message {
   word-break: break-all;
   white-space: pre-wrap;
+  font-weight: bold;
+  line-height: 1.3;
 }
 
 .iris-status-empty {

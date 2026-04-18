@@ -573,51 +573,63 @@ export function MapOverlay(): JSX.Element {
         const m = map.current;
         if (!m) return;
         
-        // Capture coordinates from the event - using Number() to ensure they are primitives
-        const x = Number(e.point.x);
-        const y = Number(e.point.y);
-        const lng = Number(e.lngLat.lng);
-        const lat = Number(e.lngLat.lat);
+        // 1. STRICT PRIMITIVE EXTRACTION
+        // We do this inside a try-catch because even 'e.point' might be restricted
+        let x: number, y: number, lng: number, lat: number;
+        try {
+            x = Number(e.point.x);
+            y = Number(e.point.y);
+            lng = Number(e.lngLat.lng);
+            lat = Number(e.lngLat.lat);
+        } catch (err: any) {
+            logMapEvent('err-coords', `Point access denied: ${err.message}`);
+            return;
+        }
 
         logMapEvent('click', `at-${Math.round(x)},${Math.round(y)}`);
 
+        // 2. DEFENSIVE QUERY
         try {
-            const queryBox: [[number, number], [number, number]] = [
-                [x - 8, y - 8], 
-                [x + 8, y + 8]
-            ];
+            // Reconstruct primitives locally
+            const box: [[number, number], [number, number]] = [[x - 8, y - 8], [x + 8, y + 8]];
             
-            const layersToQuery = INTERACTIVE_LAYERS.filter(l => {
-                try { return !!m.getLayer(l); } catch { return false; }
-            });
+            // Avoid complex options if they might be causing the "constructor" check failure
+            // We'll filter the results manually instead of using the 'layers' option
+            const allHitsRaw = m.queryRenderedFeatures(box);
 
-            // 1. Query the map
-            const rawHits = m.queryRenderedFeatures(queryBox, { 
-                layers: layersToQuery 
-            });
-
-            if (rawHits && rawHits.length > 0) {
-                // 2. DETACH: Deep-clone the features to remove Firefox's security wrappers
-                // This is the "silver bullet" for "Permission denied to access property constructor"
-                const hits = JSON.parse(JSON.stringify(rawHits));
-                
-                const f = hits[0];
-                const props = f.properties || {};
-                const featureId = (props.id || props.portalId) as string | undefined;
-                const layerId = f.layer?.id || 'unknown';
-
-                if (featureId) {
-                    logMapEvent('hit-qrf', layerId, featureId);
-                    handlePointInteraction(featureId);
-                    return;
+            if (allHitsRaw && allHitsRaw.length > 0) {
+                // 3. SAFE RESULT PROCESSING
+                // We use a simple loop with individual try-catch blocks
+                for (let i = 0; i < allHitsRaw.length; i++) {
+                    try {
+                        const feature = allHitsRaw[i];
+                        const layerId = feature.layer?.id;
+                        
+                        if (layerId && INTERACTIVE_LAYERS.includes(layerId)) {
+                            const props = feature.properties || {};
+                            const id = (props.id || props.portalId || props.guid);
+                            
+                            if (id) {
+                                logMapEvent('hit-qrf', layerId, id);
+                                handlePointInteraction(String(id));
+                                return;
+                            }
+                        }
+                    } catch (featErr: any) {
+                        // Log but continue to next feature
+                        logMapEvent('err-feat', `Feature ${i} restricted: ${featErr.message}`);
+                    }
                 }
             }
+            
+            logMapEvent('qrf-miss', `hits:${allHitsRaw?.length || 0}`);
         } catch (err: any) {
-            // Log full error message to the interaction log
-            logMapEvent('err-qrf', err.stack || err.message || 'Permission denied');
+            // LOG FULL ERROR AND STACK
+            const errorInfo = `${err.message}\nStack: ${err.stack || 'no stack'}`;
+            logMapEvent('err-qrf', errorInfo);
         }
 
-        // Manual Fallback (Only used if QRF actually misses, not if it errors)
+        // 4. MANUAL FALLBACK (Always here as a safety net)
         const portalId = findClosestPortal(new maplibregl.LngLat(lng, lat), { x, y });
         if (portalId) {
             logMapEvent('hit-manual', 'portals', portalId);
