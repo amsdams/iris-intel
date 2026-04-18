@@ -66,4 +66,21 @@ describe('MockDataGenerator - Intersection Detection', () => {
 
         expect(L_CROSS).toBeNull();
     });
+
+    it('should reject a field if its edges would cross existing links', () => {
+        const gen = new MockDataGenerator();
+        // A single link blocking a potential field
+        gen.addPortal('x1', 'NEU', 0, 0.5);
+        gen.addPortal('x2', 'NEU', 2, 0.5);
+        gen.addLink('BLOCKER', 'NEU', 'x1', 'x2');
+
+        // A potential triangle that would be split by the blocker
+        gen.addPortal('a', 'NEU', 1, 0);
+        gen.addPortal('b', 'NEU', 0, 2);
+        gen.addPortal('c', 'NEU', 2, 2);
+        
+        const field = gen.addField('F_CROSS', 'NEU', 'a', 'b', 'c');
+        expect(field).toBeNull();
+        expect(gen.fields.length).toBe(0);
+    });
 });
