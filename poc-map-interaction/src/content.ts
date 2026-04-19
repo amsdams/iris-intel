@@ -5,6 +5,23 @@ import { getMinLevelForZoom, getGridSizeForZoom } from './ZoomPolicy';
 
 console.log("POC (TS): Intel Mode (Initial Zoom 13) | v1.0.1 | Default: Amsterdam");
 
+function createCirclePolygon(lng: number, lat: number, radiusMeters: number, sides: number = 12): number[][][] {
+    const coords: number[][] = [];
+    const km = radiusMeters / 1000;
+    const latOffset = km / 111.32;
+    const lngOffset = km / (111.32 * Math.cos(lat * Math.PI / 180));
+
+    for (let i = 0; i < sides; i++) {
+        const angle = (i * 360 / sides) * Math.PI / 180;
+        coords.push([
+            lng + lngOffset * Math.cos(angle),
+            lat + latOffset * Math.sin(angle)
+        ]);
+    }
+    coords.push(coords[0]); // Close polygon
+    return [coords];
+}
+
 function initMap() {
     const generator = new MockDataGenerator();
     const loadedKeys = new Set<string>();
@@ -214,32 +231,56 @@ function initMap() {
 
         const results = generator.query(queryBounds);
         const features: any[] = [];
+
+        // Pre-calculate portal heights based on highest anchored field layer
+        const portalMaxLayer = new Map<string, number>();
+        generator.fieldsMap.forEach(f => {
+            [f.p1.id, f.p2.id, f.p3.id].forEach(pid => {
+                const current = portalMaxLayer.get(pid) ?? -1;
+                if (f.layer > current) portalMaxLayer.set(pid, f.layer);
+            });
+        });
         
         results.forEach(item => {
             if (item.type === 'portal') {
                 const p = generator.portals.get(item.id);
-                // GRADUAL LOADING
                 if (p && p.level >= minLevel) {
-                    const props = { id: p.id, type: 'portal', faction: p.faction, level: p.level, height: (p.level + 1) * 50, base_height: 0 };
+                    const maxLayer = portalMaxLayer.get(p.id) ?? -1;
+                    const towerHeight = 200 + (maxLayer * 20) + 15; // 15m above highest anchored field
+                    const props = { id: p.id, type: 'portal', faction: p.faction, level: p.level, height: towerHeight, base_height: 0 };
+                    
+                    // Flat Circle
                     features.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [p.lng, p.lat] }, properties: props });
                     
-                    const s = 0.0001; // ~10m
-                    const poly = [[ [p.lng-s, p.lat-s], [p.lng+s, p.lat-s], [p.lng+s, p.lat+s], [p.lng-s, p.lat+s], [p.lng-s, p.lat-s] ]];
-                    features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: poly }, properties: { ...props, type: 'portal-ext' } });
+                    // Cylinder Tower (12-sided)
+                    features.push({ 
+                        type: 'Feature', 
+                        geometry: { type: 'Polygon', coordinates: createCirclePolygon(p.lng, p.lat, 8, 12) }, 
+                        properties: { ...props, type: 'portal-ext' } 
+                    });
                 }
             } else if (item.type === 'link') {
                 const l = generator.linksMap.get(item.id);
                 if (l && l.p1.level >= minLevel && l.p2.level >= minLevel) {
-                    const props = { id: l.id, type: 'link', faction: l.faction, height: 15, base_height: 10 };
-                    features.push({ type: 'Feature', id: `l-${l.id}`, geometry: { type: 'LineString', coordinates: [[l.p1.lng, l.p1.lat], [l.p2.lng, l.p2.lat]] }, properties: props });
+                    const baseProps = { id: l.id, type: 'link', faction: l.faction };
+                    features.push({ type: 'Feature', id: `l-${l.id}`, geometry: { type: 'LineString', coordinates: [[l.p1.lng, l.p1.lat], [l.p2.lng, l.p2.lat]] }, properties: baseProps });
                     
+                    // Double-Layered Prismatic Beam
                     const dx = l.p2.lng - l.p1.lng;
                     const dy = l.p2.lat - l.p1.lat;
                     const len = Math.sqrt(dx*dx + dy*dy);
-                    const nx = -dy / (len || 1) * 0.00005;
-                    const ny = dx / (len || 1) * 0.00005;
-                    const poly = [[ [l.p1.lng+nx, l.p1.lat+ny], [l.p2.lng+nx, l.p2.lat+ny], [l.p2.lng-nx, l.p2.lat-ny], [l.p1.lng-nx, l.p1.lat-ny], [l.p1.lng+nx, l.p1.lat+ny] ]];
-                    features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: poly }, properties: { ...props, type: 'link-ext' } });
+                    
+                    // Bottom layer (wider)
+                    const n1x = -dy / (len || 1) * 0.00006;
+                    const n1y = dx / (len || 1) * 0.00006;
+                    const poly1 = [[ [l.p1.lng+n1x, l.p1.lat+n1y], [l.p2.lng+n1x, l.p2.lat+n1y], [l.p2.lng-n1x, l.p2.lat-n1y], [l.p1.lng-n1x, l.p1.lat-n1y], [l.p1.lng+n1x, l.p1.lat+n1y] ]];
+                    features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: poly1 }, properties: { ...baseProps, type: 'link-ext', height: 12, base_height: 10 } });
+
+                    // Top layer (narrower)
+                    const n2x = -dy / (len || 1) * 0.00003;
+                    const n2y = dx / (len || 1) * 0.00003;
+                    const poly2 = [[ [l.p1.lng+n2x, l.p1.lat+n2y], [l.p2.lng+n2x, l.p2.lat+n2y], [l.p2.lng-n2x, l.p2.lat-n2y], [l.p1.lng-n2x, l.p1.lat-n2y], [l.p1.lng+n2x, l.p1.lat+n2y] ]];
+                    features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: poly2 }, properties: { ...baseProps, type: 'link-ext', height: 15, base_height: 12 } });
                 }
             } else if (item.type === 'field') {
                 const f = generator.fieldsMap.get(item.id);
