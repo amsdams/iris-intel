@@ -36,6 +36,7 @@ export class MockDataGenerator {
     public portals: Map<string, Portal> = new Map();
     public linksMap: Map<string, Link> = new Map();
     public fieldsMap: Map<string, Field> = new Map();
+    private neighborMap: Map<string, Set<string>> = new Map();
     private index = new RBush<EntityIndexItem>();
 
     get links(): Link[] {
@@ -50,6 +51,7 @@ export class MockDataGenerator {
         this.portals.clear();
         this.linksMap.clear();
         this.fieldsMap.clear();
+        this.neighborMap.clear();
         this.index.clear();
     }
 
@@ -58,6 +60,7 @@ export class MockDataGenerator {
         if (existing) return existing;
         const portal = { id, faction, lng, lat, level };
         this.portals.set(id, portal);
+        this.neighborMap.set(id, new Set());
         this.index.insert({ minX: lng, minY: lat, maxX: lng, maxY: lat, id, type: 'portal' });
         return portal;
     }
@@ -89,22 +92,34 @@ export class MockDataGenerator {
         const link = { id: linkId, faction, p1, p2 };
         this.linksMap.set(linkId, link);
         this.index.insert({ minX, minY, maxX, maxY, id: linkId, type: 'link' });
+
+        // Triangle Detection (Link-Driven Fields)
+        const n1 = this.neighborMap.get(p1Id)!;
+        const n2 = this.neighborMap.get(p2Id)!;
+        
+        n1.forEach(p3Id => {
+            if (n2.has(p3Id)) {
+                // p1-p3 and p2-p3 already exist. p1-p2 just added. Closed triangle!
+                this.addField(`F-${[p1Id, p2Id, p3Id].sort().join('-')}`, faction, p1Id, p2Id, p3Id);
+            }
+        });
+
+        n1.add(p2Id);
+        n2.add(p1Id);
+
         return link;
     }
 
-    addField(id: string, faction: Faction, p1Id: string, p2Id: string, p3Id: string, layer: number = 0): Field | null {
-        if (faction === 'MAC' || faction === 'NEU') return null;
-        const p1 = this.portals.get(p1Id);
-        const p2 = this.portals.get(p2Id);
-        const p3 = this.portals.get(p3Id);
-        if (!p1 || !p2 || !p3) return null;
+    private addField(id: string, faction: Faction, p1Id: string, p2Id: string, p3Id: string): Field | null {
+        if (this.fieldsMap.has(id)) return this.fieldsMap.get(id)!;
 
-        if (p1.faction !== faction || p2.faction !== faction || p3.faction !== faction) return null;
+        const p1 = this.portals.get(p1Id)!;
+        const p2 = this.portals.get(p2Id)!;
+        const p3 = this.portals.get(p3Id)!;
 
-        const L12 = this.addLink(`${id}-L12`, faction, p1Id, p2Id);
-        const L23 = this.addLink(`${id}-L23`, faction, p2Id, p3Id);
-        const L31 = this.addLink(`${id}-L31`, faction, p3Id, p1Id);
-        if (!L12 || !L23 || !L31) return null;
+        // Auto-calculate layer based on nesting
+        const center = { lng: (p1.lng + p2.lng + p3.lng) / 3, lat: (p1.lat + p2.lat + p3.lat) / 3 };
+        const layer = this.calculateNesting(center);
 
         const field = { id, faction, p1, p2, p3, layer };
         this.fieldsMap.set(id, field);
@@ -116,6 +131,14 @@ export class MockDataGenerator {
             id, type: 'field'
         });
         return field;
+    }
+
+    private calculateNesting(p: {lng: number, lat: number}): number {
+        let count = 0;
+        this.fieldsMap.forEach(f => {
+            if (this.isPointInField(p, f)) count++;
+        });
+        return count;
     }
 
     query(bounds: { minX: number, minY: number, maxX: number, maxY: number }) {

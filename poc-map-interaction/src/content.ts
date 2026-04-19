@@ -9,6 +9,7 @@ function initMap() {
     const generator = new MockDataGenerator();
     const loadedKeys = new Set<string>();
     let extrusionEnabled = false;
+    let patternMode = 0; // 0: Off, 1: Nested, 2: Single Nested
 
     const COLORS = { ENL: '#00ff00', RES: '#0000ff', MAC: '#ff0000', NEU: '#ffffff' };
     const MAP_STYLES: Record<string, string[]> = {
@@ -56,7 +57,7 @@ function initMap() {
         const visibility = extrusionEnabled ? 'visible' : 'none';
         const flatVisibility = extrusionEnabled ? 'none' : 'visible';
 
-        ['f-ext-enl', 'f-ext-res', 'l-ext-enl', 'l-ext-res', 'p-ext'].forEach(id => {
+        ['f-ext-enl', 'f-ext-res', 'l-ext-enl', 'l-ext-res', 'p-ext', 'f-tether-enl', 'f-tether-res'].forEach(id => {
             if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', visibility);
         });
         ['f-enl', 'f-res', 'l-enl', 'l-res', 'l-mac', 'p'].forEach(id => {
@@ -112,11 +113,92 @@ function initMap() {
             const anchor1 = pIds[0];
             const anchor2 = pIds[1];
             const targets = pIds.slice(2, Math.floor(pIds.length * 0.4)); 
-            targets.forEach((tId, idx) => {
-                generator.addField(`F-${cellId}-${f}-${idx}`, f as Faction, anchor1, anchor2, tId, idx);
+            
+            // Link anchors
+            generator.addLink(`L-${cellId}-${f}-base`, f as Faction, anchor1, anchor2);
+            
+            targets.forEach((tId) => {
+                // Linking to both anchors will automatically create a field
+                generator.addLink(`L-${cellId}-${f}-${tId}-1`, f as Faction, anchor1, tId);
+                generator.addLink(`L-${cellId}-${f}-${tId}-2`, f as Faction, anchor2, tId);
             });
         });
     }
+
+    function loadPattern1(map: maplibregl.Map) {
+        generator.clear();
+        loadedKeys.clear();
+        const center = map.getCenter();
+        const offset = 0.002;
+        generator.addPortal('A', 'ENL', center.lng - offset, center.lat, 8);
+        generator.addPortal('B', 'ENL', center.lng + offset, center.lat, 8);
+        generator.addPortal('C', 'ENL', center.lng, center.lat + offset * 1.5, 8);
+        generator.addPortal('D', 'ENL', center.lng, center.lat + offset * 0.5, 8);
+        
+        // Links for BASE field (A-B-C)
+        generator.addLink('L-AB', 'ENL', 'A', 'B');
+        generator.addLink('L-BC', 'ENL', 'B', 'C');
+        generator.addLink('L-CA', 'ENL', 'C', 'A'); // Field A-B-C auto-created
+
+        // Links for NEST field (A-B-D)
+        generator.addLink('L-AD', 'ENL', 'A', 'D');
+        generator.addLink('L-BD', 'ENL', 'B', 'D'); // Field A-B-D auto-created
+
+        syncToMap(map);
+        logEvent("PATTERN 1: Single Nested (Link-Driven).");
+    }
+
+    function loadPattern2(map: maplibregl.Map) {
+        generator.clear();
+        loadedKeys.clear();
+        const center = map.getCenter();
+        const offset = 0.002;
+        generator.addPortal('A', 'ENL', center.lng - offset, center.lat, 8);
+        generator.addPortal('B', 'ENL', center.lng + offset, center.lat, 8);
+        generator.addPortal('C', 'ENL', center.lng, center.lat + offset * 1.5, 8);
+        generator.addPortal('D', 'ENL', center.lng, center.lat + offset * 0.5, 8);
+        
+        // Form the diamond with links
+        generator.addLink('L-AB', 'ENL', 'A', 'B');
+        generator.addLink('L-BC', 'ENL', 'B', 'C');
+        generator.addLink('L-CA', 'ENL', 'C', 'A'); // Field ABC created
+        generator.addLink('L-AD', 'ENL', 'A', 'D');
+        generator.addLink('L-BD', 'ENL', 'B', 'D'); // Field ABD created
+        generator.addLink('L-CD', 'ENL', 'C', 'D'); // Fields BCD and ACD created
+
+        syncToMap(map);
+        logEvent("PATTERN 2: Nested Diamond (Link-Driven).");
+    }
+
+    function loadPattern3(map: maplibregl.Map) {
+        generator.clear();
+        loadedKeys.clear();
+        const center = map.getCenter();
+        const offset = 0.002;
+        generator.addPortal('A', 'ENL', center.lng - offset, center.lat, 8);
+        generator.addPortal('B', 'ENL', center.lng + offset, center.lat, 8);
+        generator.addPortal('C', 'ENL', center.lng, center.lat + offset * 1.5, 8);
+        generator.addPortal('D', 'ENL', center.lng, center.lat + offset * 0.5, 8);
+        generator.addPortal('E', 'ENL', center.lng, center.lat + offset * 0.2, 8);
+        
+        // Base Diamond links
+        generator.addLink('L-AB', 'ENL', 'A', 'B');
+        generator.addLink('L-BC', 'ENL', 'B', 'C');
+        generator.addLink('L-CA', 'ENL', 'C', 'A'); // ABC
+        generator.addLink('L-AD', 'ENL', 'A', 'D');
+        generator.addLink('L-BD', 'ENL', 'B', 'D'); // ABD
+        generator.addLink('L-CD', 'ENL', 'C', 'D'); // BCD, ACD
+
+        // The 3-way split of ABD using E
+        generator.addLink('L-AE', 'ENL', 'A', 'E');
+        generator.addLink('L-BE', 'ENL', 'B', 'E');
+        generator.addLink('L-DE', 'ENL', 'D', 'E'); // ABE, ADE, BDE created
+
+        syncToMap(map);
+        logEvent("PATTERN 3: 3-Way Split (Link-Driven).");
+    }
+
+
 
     function syncToMap(map: maplibregl.Map) {
         const bounds = map.getBounds();
@@ -166,6 +248,18 @@ function initMap() {
                     const base_height = 200 + (f.layer * 20);
                     const height = base_height + 5;
                     features.push({ type: 'Feature', id: `f-${f.id}`, geometry: { type: 'Polygon', coordinates: [poly] }, properties: { id: f.id, type: 'field', faction: f.faction, height, base_height } });
+                    
+                    // Add 3 tethers at the corners
+                    [f.p1, f.p2, f.p3].forEach((p, i) => {
+                        const s = 0.00005; // 5m thin tether
+                        const tPoly = [[ [p.lng-s, p.lat-s], [p.lng+s, p.lat-s], [p.lng+s, p.lat+s], [p.lng-s, p.lat+s], [p.lng-s, p.lat-s] ]];
+                        features.push({ 
+                            type: 'Feature', 
+                            id: `t-${f.id}-${i}`,
+                            geometry: { type: 'Polygon', coordinates: tPoly }, 
+                            properties: { type: 'field-tether', faction: f.faction, height: base_height, base_height: 0 } 
+                        });
+                    });
                 }
             }
         });
@@ -180,7 +274,13 @@ function initMap() {
         const minLevel = getMinLevelForZoom(zoom);
         const gridSize = getGridSizeForZoom(zoom);
         const bounds = map.getBounds();
-        logPos(`Z:${zoom.toFixed(1)} | Min L:${minLevel} | Grid:${gridSize.toFixed(2)}°`);
+        logPos(`Z:${zoom.toFixed(1)} | Min L:${minLevel} | Grid:${gridSize.toFixed(2)}°${patternMode > 0 ? ` | PATTERN ${patternMode}` : ''}`);
+        
+        if (patternMode > 0) {
+            syncToMap(map);
+            return;
+        }
+
         if (zoom < 3) return;
         const startLat = Math.floor(bounds.getSouth() / gridSize);
         const endLat = Math.floor(bounds.getNorth() / gridSize);
@@ -322,7 +422,11 @@ function initMap() {
                 { id: 'sel-f', type: 'line', source: 'selection', filter: ['==', 'type', 'field'], paint: { 'line-color': '#fff', 'line-width': 3, 'line-opacity': 0.8 } },
                 { id: 'sel-l', type: 'line', source: 'selection', filter: ['==', 'type', 'link'], paint: { 'line-color': '#fff', 'line-width': 4, 'line-opacity': 0.8 } },
                 { id: 'sel-p', type: 'circle', source: 'selection', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': 12, 'circle-color': 'transparent', 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 } },
-                { id: 'hitbox', type: 'fill', source: 'debug-hitbox', paint: { 'fill-color': '#f00', 'fill-opacity': 0.2, 'fill-outline-color': '#f00' } }
+                { id: 'hitbox', type: 'fill', source: 'debug-hitbox', paint: { 'fill-color': '#f00', 'fill-opacity': 0.2, 'fill-outline-color': '#f00' } },
+
+                // Tether layers
+                { id: 'f-tether-enl', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'field-tether'], ['==', 'faction', 'ENL']], paint: { 'fill-extrusion-color': COLORS.ENL, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.2 }, layout: { visibility: 'none' } },
+                { id: 'f-tether-res', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'field-tether'], ['==', 'faction', 'RES']], paint: { 'fill-extrusion-color': COLORS.RES, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.2 }, layout: { visibility: 'none' } }
             ]
 
         },
@@ -346,6 +450,20 @@ function initMap() {
     mk('L', () => switchStyle(map, 'Light'));
     mk('V', () => switchStyle(map, 'Voyager'));
     mk('O', () => switchStyle(map, 'OSM'));
+    mk('P', () => {
+        patternMode = (patternMode + 1) % 4;
+        if (patternMode === 1) {
+            loadPattern1(map);
+        } else if (patternMode === 2) {
+            loadPattern2(map);
+        } else if (patternMode === 3) {
+            loadPattern3(map);
+        } else {
+            generator.clear();
+            loadedKeys.clear();
+            checkAndLoad(map);
+        }
+    });
 
     map.on('load', () => {
         container.style.background = 'transparent';
