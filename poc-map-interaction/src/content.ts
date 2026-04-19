@@ -74,14 +74,18 @@ function initMap() {
         const visibility = extrusionEnabled ? 'visible' : 'none';
         const flatVisibility = extrusionEnabled ? 'none' : 'visible';
 
-        ['f-ext-enl', 'f-ext-res', 'l-ext-enl', 'l-ext-res', 'p-ext', 'f-tether-enl', 'f-tether-res'].forEach(id => {
+        ['f-ext-enl', 'f-ext-res', 'l-ext-enl', 'l-ext-res', 'l-ext-mac', 'p-ext', 'f-tether-enl', 'f-tether-res'].forEach(id => {
             if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', visibility);
         });
         ['f-enl', 'f-res', 'l-enl', 'l-res', 'l-mac', 'p'].forEach(id => {
             if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', flatVisibility);
         });
 
-        map.easeTo({ pitch: extrusionEnabled ? 60 : 0, bearing: extrusionEnabled ? -20 : 0, duration: 800 });
+        if (extrusionEnabled) {
+            map.easeTo({ pitch: 60, bearing: -20, duration: 1000 });
+        } else {
+            map.easeTo({ pitch: 0, bearing: 0, duration: 800 });
+        }
         logEvent(`Extrusion: ${extrusionEnabled ? 'ON' : 'OFF'}`);
     }
 
@@ -146,73 +150,123 @@ function initMap() {
         generator.clear();
         loadedKeys.clear();
         const center = map.getCenter();
-        const offset = 0.002;
-        generator.addPortal('A', 'ENL', center.lng - offset, center.lat, 8);
-        generator.addPortal('B', 'ENL', center.lng + offset, center.lat, 8);
-        generator.addPortal('C', 'ENL', center.lng, center.lat + offset * 1.5, 8);
-        generator.addPortal('D', 'ENL', center.lng, center.lat + offset * 0.5, 8);
         
-        // Links for BASE field (A-B-C)
+        // --- ENL (East) ---
+        const eOff = 0.003;
+        generator.addPortal('A', 'ENL', center.lng - 0.002 + eOff, center.lat, 8);
+        generator.addPortal('B', 'ENL', center.lng + 0.002 + eOff, center.lat, 8);
+        generator.addPortal('C', 'ENL', center.lng + eOff, center.lat + 0.003, 8);
+        generator.addPortal('D', 'ENL', center.lng + eOff, center.lat + 0.001, 8);
         generator.addLink('L-AB', 'ENL', 'A', 'B');
         generator.addLink('L-BC', 'ENL', 'B', 'C');
-        generator.addLink('L-CA', 'ENL', 'C', 'A'); // Field A-B-C auto-created
-
-        // Links for NEST field (A-B-D)
+        generator.addLink('L-CA', 'ENL', 'C', 'A');
         generator.addLink('L-AD', 'ENL', 'A', 'D');
-        generator.addLink('L-BD', 'ENL', 'B', 'D'); // Field A-B-D auto-created
+        generator.addLink('L-BD', 'ENL', 'B', 'D');
+
+        // --- RES (West) ---
+        const wOff = -0.003;
+        generator.addPortal('RA', 'RES', center.lng - 0.002 + wOff, center.lat, 8);
+        generator.addPortal('RB', 'RES', center.lng + 0.002 + wOff, center.lat, 8);
+        generator.addPortal('RC', 'RES', center.lng + wOff, center.lat + 0.003, 8);
+        generator.addPortal('RD', 'RES', center.lng + wOff, center.lat + 0.001, 8);
+        generator.addLink('RL-AB', 'RES', 'RA', 'RB');
+        generator.addLink('RL-BC', 'RES', 'RB', 'RC');
+        generator.addLink('RL-CA', 'RES', 'RC', 'RA');
+        generator.addLink('RL-AD', 'RES', 'RA', 'RD');
+        generator.addLink('RL-BD', 'RES', 'RB', 'RD');
 
         syncToMap(map);
-        logEvent("PATTERN 1: Single Nested (Link-Driven).");
+        logEvent("PATTERN 1: Mirror Single Nested.");
     }
 
     function loadPattern2(map: maplibregl.Map) {
         generator.clear();
         loadedKeys.clear();
         const center = map.getCenter();
-        const offset = 0.002;
-        generator.addPortal('A', 'ENL', center.lng - offset, center.lat, 8);
-        generator.addPortal('B', 'ENL', center.lng + offset, center.lat, 8);
-        generator.addPortal('C', 'ENL', center.lng, center.lat + offset * 1.5, 8);
-        generator.addPortal('D', 'ENL', center.lng, center.lat + offset * 0.5, 8);
         
-        // Form the diamond with links
+        // --- ENL (East) ---
+        const eOff = 0.003;
+        generator.addPortal('A', 'ENL', center.lng - 0.002 + eOff, center.lat, 8);
+        generator.addPortal('B', 'ENL', center.lng + 0.002 + eOff, center.lat, 8);
+        generator.addPortal('C', 'ENL', center.lng + eOff, center.lat + 0.003, 8);
+        generator.addPortal('D', 'ENL', center.lng + eOff, center.lat + 0.001, 8);
         generator.addLink('L-AB', 'ENL', 'A', 'B');
         generator.addLink('L-BC', 'ENL', 'B', 'C');
-        generator.addLink('L-CA', 'ENL', 'C', 'A'); // Field ABC created
+        generator.addLink('L-CA', 'ENL', 'C', 'A');
         generator.addLink('L-AD', 'ENL', 'A', 'D');
-        generator.addLink('L-BD', 'ENL', 'B', 'D'); // Field ABD created
-        generator.addLink('L-CD', 'ENL', 'C', 'D'); // Fields BCD and ACD created
+        generator.addLink('L-BD', 'ENL', 'B', 'D');
+        generator.addLink('L-CD', 'ENL', 'C', 'D');
+
+        // --- RES (West) ---
+        const wOff = -0.003;
+        generator.addPortal('RA', 'RES', center.lng - 0.002 + wOff, center.lat, 8);
+        generator.addPortal('RB', 'RES', center.lng + 0.002 + wOff, center.lat, 8);
+        generator.addPortal('RC', 'RES', center.lng + wOff, center.lat + 0.003, 8);
+        generator.addPortal('RD', 'RES', center.lng + wOff, center.lat + 0.001, 8);
+        generator.addLink('RL-AB', 'RES', 'RA', 'RB');
+        generator.addLink('RL-BC', 'RES', 'RB', 'RC');
+        generator.addLink('RL-CA', 'RES', 'RC', 'RA');
+        generator.addLink('RL-AD', 'RES', 'RA', 'RD');
+        generator.addLink('RL-BD', 'RES', 'RB', 'RD');
+        generator.addLink('RL-CD', 'RES', 'RC', 'RD');
 
         syncToMap(map);
-        logEvent("PATTERN 2: Nested Diamond (Link-Driven).");
+        logEvent("PATTERN 2: Mirror Nested Diamond.");
     }
 
     function loadPattern3(map: maplibregl.Map) {
         generator.clear();
         loadedKeys.clear();
         const center = map.getCenter();
-        const offset = 0.002;
-        generator.addPortal('A', 'ENL', center.lng - offset, center.lat, 8);
-        generator.addPortal('B', 'ENL', center.lng + offset, center.lat, 8);
-        generator.addPortal('C', 'ENL', center.lng, center.lat + offset * 1.5, 8);
-        generator.addPortal('D', 'ENL', center.lng, center.lat + offset * 0.5, 8);
-        generator.addPortal('E', 'ENL', center.lng, center.lat + offset * 0.2, 8);
-        
-        // Base Diamond links
+
+        // --- ENL (Center-East) ---
+        const eOff = 0.003;
+        generator.addPortal('A', 'ENL', center.lng - 0.002 + eOff, center.lat, 8);
+        generator.addPortal('B', 'ENL', center.lng + 0.002 + eOff, center.lat, 8);
+        generator.addPortal('C', 'ENL', center.lng + eOff, center.lat + 0.003, 8);
+        generator.addPortal('D', 'ENL', center.lng + eOff, center.lat + 0.001, 8);
+        generator.addPortal('E', 'ENL', center.lng + eOff, center.lat + 0.0005, 8);
         generator.addLink('L-AB', 'ENL', 'A', 'B');
         generator.addLink('L-BC', 'ENL', 'B', 'C');
-        generator.addLink('L-CA', 'ENL', 'C', 'A'); // ABC
+        generator.addLink('L-CA', 'ENL', 'C', 'A');
         generator.addLink('L-AD', 'ENL', 'A', 'D');
-        generator.addLink('L-BD', 'ENL', 'B', 'D'); // ABD
-        generator.addLink('L-CD', 'ENL', 'C', 'D'); // BCD, ACD
-
-        // The 3-way split of ABD using E
+        generator.addLink('L-BD', 'ENL', 'B', 'D');
+        generator.addLink('L-CD', 'ENL', 'C', 'D');
         generator.addLink('L-AE', 'ENL', 'A', 'E');
         generator.addLink('L-BE', 'ENL', 'B', 'E');
-        generator.addLink('L-DE', 'ENL', 'D', 'E'); // ABE, ADE, BDE created
+        generator.addLink('L-DE', 'ENL', 'D', 'E');
+
+        // --- RES (Center-West) ---
+        const wOff = -0.003;
+        generator.addPortal('RA', 'RES', center.lng - 0.002 + wOff, center.lat, 8);
+        generator.addPortal('RB', 'RES', center.lng + 0.002 + wOff, center.lat, 8);
+        generator.addPortal('RC', 'RES', center.lng + wOff, center.lat + 0.003, 8);
+        generator.addPortal('RD', 'RES', center.lng + wOff, center.lat + 0.001, 8);
+        generator.addPortal('RE', 'RES', center.lng + wOff, center.lat + 0.0005, 8);
+        generator.addLink('RL-AB', 'RES', 'RA', 'RB');
+        generator.addLink('RL-BC', 'RES', 'RB', 'RC');
+        generator.addLink('RL-CA', 'RES', 'RC', 'RA');
+        generator.addLink('RL-AD', 'RES', 'RA', 'RD');
+        generator.addLink('RL-BD', 'RES', 'RB', 'RD');
+        generator.addLink('RL-CD', 'RES', 'RC', 'RD');
+        generator.addLink('RL-AE', 'RES', 'RA', 'RE');
+        generator.addLink('RL-BE', 'RES', 'RB', 'RE');
+        generator.addLink('RL-DE', 'RES', 'RD', 'RE');
+
+        // --- Machina Cluster (Far East) ---
+        const mOff = 0.009; // Increased offset
+        generator.addPortal('M1', 'MAC', center.lng + mOff, center.lat + 0.002, 1);
+        generator.addPortal('M2', 'MAC', center.lng + mOff + 0.002, center.lat, 1);
+        generator.addPortal('M3', 'MAC', center.lng + mOff - 0.002, center.lat - 0.002, 1);
+        generator.addLink('ML-12', 'MAC', 'M1', 'M2');
+
+        // --- Neutral Hubs (Far North) ---
+        const nOff = 0.006; // Increased offset
+        generator.addPortal('N1', 'NEU', center.lng - 0.002, center.lat + nOff, 0);
+        generator.addPortal('N2', 'NEU', center.lng + 0.002, center.lat + nOff, 0);
 
         syncToMap(map);
-        logEvent("PATTERN 3: 3-Way Split (Link-Driven).");
+        logEvent("PATTERN 3: Scaled Global Scenario.");
     }
 
 
@@ -232,19 +286,33 @@ function initMap() {
         const results = generator.query(queryBounds);
         const features: any[] = [];
 
-        // Pre-calculate portal heights based on highest anchored field layer
+        // Pre-calculate heights based on highest anchored field layer
         const portalMaxLayer = new Map<string, number>();
+        const linkMaxLayer = new Map<string, number>();
+        
         generator.fieldsMap.forEach(f => {
+            // Portals
             [f.p1.id, f.p2.id, f.p3.id].forEach(pid => {
-                const current = portalMaxLayer.get(pid) ?? -1;
-                if (f.layer > current) portalMaxLayer.set(pid, f.layer);
+                const currentP = portalMaxLayer.get(pid) ?? -1;
+                if (f.layer > currentP) portalMaxLayer.set(pid, f.layer);
+            });
+            // Implicit Links
+            const lids = [
+                [f.p1.id, f.p2.id].sort().join('->'),
+                [f.p2.id, f.p3.id].sort().join('->'),
+                [f.p3.id, f.p1.id].sort().join('->')
+            ];
+            lids.forEach(lid => {
+                const currentL = linkMaxLayer.get(lid) ?? -1;
+                if (f.layer > currentL) linkMaxLayer.set(lid, f.layer);
             });
         });
         
         results.forEach(item => {
             if (item.type === 'portal') {
                 const p = generator.portals.get(item.id);
-                if (p && p.level >= minLevel) {
+                const isVisible = patternMode > 0 || (p && p.level >= minLevel);
+                if (p && isVisible) {
                     const maxLayer = portalMaxLayer.get(p.id) ?? -1;
                     const towerHeight = 200 + (maxLayer * 20) + 15; // 15m above highest anchored field
                     const props = { id: p.id, type: 'portal', faction: p.faction, level: p.level, height: towerHeight, base_height: 0 };
@@ -261,30 +329,36 @@ function initMap() {
                 }
             } else if (item.type === 'link') {
                 const l = generator.linksMap.get(item.id);
-                if (l && l.p1.level >= minLevel && l.p2.level >= minLevel) {
+                const isVisible = patternMode > 0 || (l && l.p1.level >= minLevel && l.p2.level >= minLevel);
+                if (l && isVisible) {
                     const baseProps = { id: l.id, type: 'link', faction: l.faction };
                     features.push({ type: 'Feature', id: `l-${l.id}`, geometry: { type: 'LineString', coordinates: [[l.p1.lng, l.p1.lat], [l.p2.lng, l.p2.lat]] }, properties: baseProps });
                     
-                    // Double-Layered Prismatic Beam
+                    // Double-Layered Floating Prismatic Beam
                     const dx = l.p2.lng - l.p1.lng;
                     const dy = l.p2.lat - l.p1.lat;
                     const len = Math.sqrt(dx*dx + dy*dy);
                     
+                    const maxLayer = linkMaxLayer.get(l.id) ?? -1;
+                    // If part of a field, float it at the field altitude. Otherwise, stay near ground.
+                    const baseAlt = maxLayer >= 0 ? 200 + (maxLayer * 20) : 10;
+
                     // Bottom layer (wider)
                     const n1x = -dy / (len || 1) * 0.00006;
                     const n1y = dx / (len || 1) * 0.00006;
                     const poly1 = [[ [l.p1.lng+n1x, l.p1.lat+n1y], [l.p2.lng+n1x, l.p2.lat+n1y], [l.p2.lng-n1x, l.p2.lat-n1y], [l.p1.lng-n1x, l.p1.lat-n1y], [l.p1.lng+n1x, l.p1.lat+n1y] ]];
-                    features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: poly1 }, properties: { ...baseProps, type: 'link-ext', height: 12, base_height: 10 } });
+                    features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: poly1 }, properties: { ...baseProps, type: 'link-ext', height: baseAlt + 2, base_height: baseAlt } });
 
                     // Top layer (narrower)
                     const n2x = -dy / (len || 1) * 0.00003;
                     const n2y = dx / (len || 1) * 0.00003;
                     const poly2 = [[ [l.p1.lng+n2x, l.p1.lat+n2y], [l.p2.lng+n2x, l.p2.lat+n2y], [l.p2.lng-n2x, l.p2.lat-n2y], [l.p1.lng-n2x, l.p1.lat-n2y], [l.p1.lng+n2x, l.p1.lat+n2y] ]];
-                    features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: poly2 }, properties: { ...baseProps, type: 'link-ext', height: 15, base_height: 12 } });
+                    features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: poly2 }, properties: { ...baseProps, type: 'link-ext', height: baseAlt + 5, base_height: baseAlt + 2 } });
                 }
             } else if (item.type === 'field') {
                 const f = generator.fieldsMap.get(item.id);
-                if (f && f.p1.level >= minLevel && f.p2.level >= minLevel && f.p3.level >= minLevel) {
+                const isVisible = patternMode > 0 || (f && f.p1.level >= minLevel && f.p2.level >= minLevel && f.p3.level >= minLevel);
+                if (f && isVisible) {
                     const poly = [[f.p1.lng, f.p1.lat], [f.p2.lng, f.p2.lat], [f.p3.lng, f.p3.lat], [f.p1.lng, f.p1.lat]];
                     const base_height = 200 + (f.layer * 20);
                     const height = base_height + 5;
@@ -451,6 +525,7 @@ function initMap() {
                 { id: 'f-ext-res', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'faction', 'RES']], paint: { 'fill-extrusion-color': COLORS.RES, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.5 }, layout: { visibility: 'none' } },
                 { id: 'l-ext-enl', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'link-ext'], ['==', 'faction', 'ENL']], paint: { 'fill-extrusion-color': COLORS.ENL, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.8 }, layout: { visibility: 'none' } },
                 { id: 'l-ext-res', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'link-ext'], ['==', 'faction', 'RES']], paint: { 'fill-extrusion-color': COLORS.RES, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.8 }, layout: { visibility: 'none' } },
+                { id: 'l-ext-mac', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'link-ext'], ['==', 'faction', 'MAC']], paint: { 'fill-extrusion-color': COLORS.MAC, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.8 }, layout: { visibility: 'none' } },
                 { id: 'p-ext', type: 'fill-extrusion', source: 'entities', filter: ['==', 'type', 'portal-ext'], paint: { 'fill-extrusion-color': ['match', ['get', 'faction'], 'ENL', COLORS.ENL, 'RES', COLORS.RES, 'MAC', COLORS.MAC, COLORS.NEU], 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'] }, layout: { visibility: 'none' } },
                 { id: 'f-enl', type: 'fill', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'faction', 'ENL']], paint: { 'fill-color': COLORS.ENL, 'fill-opacity': 0.1 } },
                 { id: 'f-res', type: 'fill', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'faction', 'RES']], paint: { 'fill-color': COLORS.RES, 'fill-opacity': 0.1 } },

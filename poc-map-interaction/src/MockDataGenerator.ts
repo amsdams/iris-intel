@@ -71,7 +71,7 @@ export class MockDataGenerator {
         if (!p1 || !p2 || p1.id === p2.id) return null;
 
         if (p1.faction !== faction || p2.faction !== faction) return null;
-        if (faction === 'NEU' || faction === 'MAC') return null;
+        if (faction === 'NEU') return null; // Neutral cannot link, but Machina can
 
         const linkId = [p1.id, p2.id].sort().join('->');
         if (this.linksMap.has(linkId)) return this.linksMap.get(linkId)!;
