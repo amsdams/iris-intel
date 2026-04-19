@@ -23,6 +23,7 @@ export interface Field {
     p1: Portal;
     p2: Portal;
     p3: Portal;
+    layer: number;
 }
 
 interface EntityIndexItem {
@@ -91,7 +92,7 @@ export class MockDataGenerator {
         return link;
     }
 
-    addField(id: string, faction: Faction, p1Id: string, p2Id: string, p3Id: string): Field | null {
+    addField(id: string, faction: Faction, p1Id: string, p2Id: string, p3Id: string, layer: number = 0): Field | null {
         if (faction === 'MAC' || faction === 'NEU') return null;
         const p1 = this.portals.get(p1Id);
         const p2 = this.portals.get(p2Id);
@@ -105,7 +106,7 @@ export class MockDataGenerator {
         const L31 = this.addLink(`${id}-L31`, faction, p3Id, p1Id);
         if (!L12 || !L23 || !L31) return null;
 
-        const field = { id, faction, p1, p2, p3 };
+        const field = { id, faction, p1, p2, p3, layer };
         this.fieldsMap.set(id, field);
         this.index.insert({
             minX: Math.min(p1.lng, p2.lng, p3.lng),

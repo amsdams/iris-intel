@@ -113,7 +113,7 @@ function initMap() {
             const anchor2 = pIds[1];
             const targets = pIds.slice(2, Math.floor(pIds.length * 0.4)); 
             targets.forEach((tId, idx) => {
-                generator.addField(`F-${cellId}-${f}-${idx}`, f as Faction, anchor1, anchor2, tId);
+                generator.addField(`F-${cellId}-${f}-${idx}`, f as Faction, anchor1, anchor2, tId, idx);
             });
         });
     }
@@ -138,7 +138,7 @@ function initMap() {
                 const p = generator.portals.get(item.id);
                 // GRADUAL LOADING
                 if (p && p.level >= minLevel) {
-                    const props = { id: p.id, type: 'portal', faction: p.faction, level: p.level, height: (p.level + 1) * 30, base_height: 0 };
+                    const props = { id: p.id, type: 'portal', faction: p.faction, level: p.level, height: (p.level + 1) * 50, base_height: 0 };
                     features.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [p.lng, p.lat] }, properties: props });
                     
                     const s = 0.0001; // ~10m
@@ -148,7 +148,7 @@ function initMap() {
             } else if (item.type === 'link') {
                 const l = generator.linksMap.get(item.id);
                 if (l && l.p1.level >= minLevel && l.p2.level >= minLevel) {
-                    const props = { id: l.id, type: 'link', faction: l.faction, height: 10, base_height: 0 };
+                    const props = { id: l.id, type: 'link', faction: l.faction, height: 15, base_height: 10 };
                     features.push({ type: 'Feature', id: `l-${l.id}`, geometry: { type: 'LineString', coordinates: [[l.p1.lng, l.p1.lat], [l.p2.lng, l.p2.lat]] }, properties: props });
                     
                     const dx = l.p2.lng - l.p1.lng;
@@ -163,8 +163,8 @@ function initMap() {
                 const f = generator.fieldsMap.get(item.id);
                 if (f && f.p1.level >= minLevel && f.p2.level >= minLevel && f.p3.level >= minLevel) {
                     const poly = [[f.p1.lng, f.p1.lat], [f.p2.lng, f.p2.lat], [f.p3.lng, f.p3.lat], [f.p1.lng, f.p1.lat]];
-                    const height = 300;
-                    const base_height = 290;
+                    const base_height = 200 + (f.layer * 20);
+                    const height = base_height + 5;
                     features.push({ type: 'Feature', id: `f-${f.id}`, geometry: { type: 'Polygon', coordinates: [poly] }, properties: { id: f.id, type: 'field', faction: f.faction, height, base_height } });
                 }
             }
@@ -228,14 +228,70 @@ function initMap() {
     document.body.appendChild(posLog);
 
     const log = document.createElement('div');
-    log.style.cssText = `position: fixed; bottom: 10px; left: 10px; right: 10px; height: 120px; background: rgba(0,0,0,0.85); color: #00ffff; overflow-y: auto; z-index: 2000000; font-family: monospace; padding: 10px; font-size: 11px; border: 2px solid #00ffff; pointer-events: none; border-radius: 4px;`;
+    log.id = 'event-log';
+    log.style.cssText = `position: fixed; bottom: 10px; left: 10px; right: 10px; height: 100px; background: rgba(0,0,0,0.85); color: #00ffff; overflow-y: auto; z-index: 2000000; font-family: monospace; padding: 10px; font-size: 11px; border: 1px solid #00ffff; pointer-events: none; border-radius: 4px; opacity: 0.7;`;
     document.body.appendChild(log);
+
+    const details = document.createElement('div');
+    details.id = 'entity-details';
+    details.style.cssText = `position: fixed; top: 50px; left: 10px; width: 250px; background: rgba(0,0,0,0.9); color: #fff; padding: 12px; font-family: monospace; font-size: 12px; border: 1px solid #444; border-radius: 4px; z-index: 1000007; display: none; pointer-events: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.5);`;
+    document.body.appendChild(details);
 
     function logPos(msg: string) { posLog.textContent = msg; }
     function logEvent(msg: string) {
         const e = document.createElement('div');
         e.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
         log.prepend(e);
+        if (log.children.length > 20) log.lastChild?.remove();
+    }
+
+    function showDetails(type: string, data: any) {
+        details.style.display = 'block';
+        details.style.borderColor = COLORS[data.faction as keyof typeof COLORS] || '#444';
+        
+        let html = `<div style="color: ${COLORS[data.faction as keyof typeof COLORS]}; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid #333; padding-bottom: 4px;">${type.toUpperCase()} DETAILS</div>`;
+        
+        const selectionSource = map.getSource('selection') as maplibregl.GeoJSONSource;
+        const selFeatures: any[] = [];
+
+        if (type === 'portal') {
+            html += `<div>ID: ${data.id}</div>`;
+            html += `<div>Faction: ${data.faction}</div>`;
+            html += `<div>Level: ${data.level}</div>`;
+            html += `<div>Health: 100%</div>`;
+            const p = generator.portals.get(data.id);
+            if (p) selFeatures.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [p.lng, p.lat] }, properties: { type: 'portal' } });
+        } else if (type === 'link') {
+            html += `<div>ID: ${data.id}</div>`;
+            html += `<div>Faction: ${data.faction}</div>`;
+            html += `<div style="margin-top: 4px; color: #aaa; font-size: 10px;">From: ${data.p1}</div>`;
+            html += `<div style="color: #aaa; font-size: 10px;">To: ${data.p2}</div>`;
+            const l = generator.linksMap.get(data.id);
+            if (l) selFeatures.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: [[l.p1.lng, l.p1.lat], [l.p2.lng, l.p2.lat]] }, properties: { type: 'link' } });
+        } else if (type === 'field') {
+            html += `<div>ID: ${data.id}</div>`;
+            html += `<div>Faction: ${data.faction}</div>`;
+            html += `<div style="margin-top: 4px; color: #0ff;">Layers: ${data.layerInfo}</div>`;
+            html += `<div style="margin-top: 4px; color: #aaa; font-size: 10px;">Anchors:</div>`;
+            data.anchors.forEach((a: string) => {
+                html += `<div style="color: #888; font-size: 9px; padding-left: 8px;">• ${a}</div>`;
+            });
+            const f = generator.fieldsMap.get(data.id);
+            if (f) {
+                const poly = [[f.p1.lng, f.p1.lat], [f.p2.lng, f.p2.lat], [f.p3.lng, f.p3.lat], [f.p1.lng, f.p1.lat]];
+                selFeatures.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: poly }, properties: { type: 'field' } });
+            }
+        }
+        
+        if (selectionSource) selectionSource.setData({ type: 'FeatureCollection', features: selFeatures });
+
+        html += `<div style="margin-top: 10px; text-align: right;"><button id="close-details" style="background: #222; color: #eee; border: 1px solid #555; padding: 2px 8px; cursor: pointer; font-size: 10px;">CLOSE</button></div>`;
+        details.innerHTML = html;
+        
+        document.getElementById('close-details')?.addEventListener('click', () => {
+            details.style.display = 'none';
+            if (selectionSource) selectionSource.setData({ type: 'FeatureCollection', features: [] });
+        });
     }
 
     const map = new maplibregl.Map({
@@ -244,7 +300,9 @@ function initMap() {
             version: 8,
             sources: {
                 'carto': { type: 'raster', tiles: MAP_STYLES['Dark'], tileSize: 256, attribution: '&copy; CARTO' },
-                'entities': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } }
+                'entities': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
+                'selection': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
+                'debug-hitbox': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } }
             },
             layers: [
                 { id: 'carto', type: 'raster', source: 'carto' },
@@ -258,8 +316,15 @@ function initMap() {
                 { id: 'l-enl', type: 'line', source: 'entities', filter: ['all', ['==', 'type', 'link'], ['==', 'faction', 'ENL']], paint: { 'line-color': COLORS.ENL, 'line-width': 1.5 } },
                 { id: 'l-res', type: 'line', source: 'entities', filter: ['all', ['==', 'type', 'link'], ['==', 'faction', 'RES']], paint: { 'line-color': COLORS.RES, 'line-width': 1.5 } },
                 { id: 'l-mac', type: 'line', source: 'entities', filter: ['all', ['==', 'type', 'link'], ['==', 'faction', 'MAC']], paint: { 'line-color': COLORS.MAC, 'line-width': 1.5 } },
-                { id: 'p', type: 'circle', source: 'entities', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': ['step', ['get', 'level'], 2, 4, 3, 7, 4, 8, 6], 'circle-color': ['match', ['get', 'faction'], 'ENL', COLORS.ENL, 'RES', COLORS.RES, 'MAC', COLORS.MAC, COLORS.NEU], 'circle-stroke-width': 1, 'circle-stroke-color': '#fff' } }
+                { id: 'p', type: 'circle', source: 'entities', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': ['step', ['get', 'level'], 2, 4, 3, 7, 4, 8, 6], 'circle-color': ['match', ['get', 'faction'], 'ENL', COLORS.ENL, 'RES', COLORS.RES, 'MAC', COLORS.MAC, COLORS.NEU], 'circle-stroke-width': 1, 'circle-stroke-color': '#fff' } },
+                
+                // Selection / Debug layers
+                { id: 'sel-f', type: 'line', source: 'selection', filter: ['==', 'type', 'field'], paint: { 'line-color': '#fff', 'line-width': 3, 'line-opacity': 0.8 } },
+                { id: 'sel-l', type: 'line', source: 'selection', filter: ['==', 'type', 'link'], paint: { 'line-color': '#fff', 'line-width': 4, 'line-opacity': 0.8 } },
+                { id: 'sel-p', type: 'circle', source: 'selection', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': 12, 'circle-color': 'transparent', 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 } },
+                { id: 'hitbox', type: 'fill', source: 'debug-hitbox', paint: { 'fill-color': '#f00', 'fill-opacity': 0.2, 'fill-outline-color': '#f00' } }
             ]
+
         },
         center: [4.8952, 52.3702], zoom: 13
     });
@@ -293,28 +358,98 @@ function initMap() {
     map.on('moveend', () => checkAndLoad(map));
     map.on('click', (e) => {
         logEvent(`Map Click @ ${e.lngLat.lng.toFixed(4)}, ${e.lngLat.lat.toFixed(4)}`);
+        
+        // --- 1. Debug Hitbox Visualization ---
         const pixelBuffer = 20;
+        const p0 = map.unproject([e.point.x - pixelBuffer, e.point.y - pixelBuffer]);
+        const p1 = map.unproject([e.point.x + pixelBuffer, e.point.y - pixelBuffer]);
+        const p2 = map.unproject([e.point.x + pixelBuffer, e.point.y + pixelBuffer]);
+        const p3 = map.unproject([e.point.x - pixelBuffer, e.point.y + pixelBuffer]);
+        const hitboxPoly = [[ [p0.lng, p0.lat], [p1.lng, p1.lat], [p2.lng, p2.lat], [p3.lng, p3.lat], [p0.lng, p0.lat] ]];
+        
+        const hbSource = map.getSource('debug-hitbox') as maplibregl.GeoJSONSource;
+        if (hbSource) {
+            hbSource.setData({ type: 'FeatureCollection', features: [{ type: 'Feature', geometry: { type: 'Polygon', coordinates: hitboxPoly }, properties: {} }] });
+            setTimeout(() => hbSource.setData({ type: 'FeatureCollection', features: [] }), 500);
+        }
+
+        // --- 2. Query Logic ---
         const latRange = Math.abs(map.unproject([e.point.x, e.point.y + pixelBuffer]).lat - map.unproject([e.point.x, e.point.y - pixelBuffer]).lat);
         const lngRange = Math.abs(map.unproject([e.point.x + pixelBuffer, e.point.y]).lng - map.unproject([e.point.x - pixelBuffer, e.point.y]).lng);
         const queryBounds = { minX: e.lngLat.lng - lngRange, minY: e.lngLat.lat - latRange, maxX: e.lngLat.lng + lngRange, maxY: e.lngLat.lat + latRange };
         const results = generator.query(queryBounds);
-        if (results.length === 0) { logEvent("MISS: No entity nearby"); return; }
+        
+        if (results.length === 0) { 
+            logEvent("MISS: No entity nearby"); 
+            details.style.display = 'none';
+            (map.getSource('selection') as maplibregl.GeoJSONSource)?.setData({ type: 'FeatureCollection', features: [] });
+            return; 
+        }
+
         const portals = results.filter(r => r.type === 'portal').map(r => generator.portals.get(r.id)!);
         const links = results.filter(r => r.type === 'link').map(r => generator.linksMap.get(r.id)!);
-        const fields = results.filter(r => r.type === 'field').map(r => generator.fieldsMap.get(r.id)!).filter(f => generator.isPointInField(e.lngLat, f));
-        if (portals.length > 0) {
-            const p = portals.sort((a, _b) => Math.hypot(a.lng - e.lngLat.lng, a.lat - e.lngLat.lat))[0];
-            logEvent(`PORTAL: ${p.id} | L${p.level} | ${p.faction}`);
+        const allFields = results.filter(r => r.type === 'field').map(r => generator.fieldsMap.get(r.id)!).filter(f => generator.isPointInField(e.lngLat, f));
+
+        // --- 3. Balanced Priority Evaluation ---
+        
+        // Priority A: Precise Portal Hit (10px)
+        const portalHits = portals.map(p => {
+            const screenP = map.project([p.lng, p.lat]);
+            const dist = Math.hypot(screenP.x - e.point.x, screenP.y - e.point.y);
+            return { p, dist };
+        }).filter(h => h.dist < 10).sort((a, b) => a.dist - b.dist);
+
+        if (portalHits.length > 0) {
+            const p = portalHits[0].p;
+            logEvent(`SNAP PORTAL: ${p.id} (${portalHits[0].dist.toFixed(1)}px)`);
+            showDetails('portal', { id: p.id, faction: p.faction, level: p.level });
+            return;
         }
-        if (links.length > 0) {
-            const l = links.sort((a, b) => {
-                const distA = Math.min(Math.hypot(a.p1.lng - e.lngLat.lng, a.p1.lat - e.lngLat.lat), Math.hypot(a.p2.lng - e.lngLat.lng, a.p2.lat - e.lngLat.lat));
-                const distB = Math.min(Math.hypot(b.p1.lng - e.lngLat.lng, b.p1.lat - e.lngLat.lat), Math.hypot(b.p2.lng - e.lngLat.lng, b.p2.lat - e.lngLat.lat));
-                return distA - distB;
-            })[0];
-            logEvent(`LINK: ${l.id} | ${l.faction}`);
+
+        // Priority B: Field Hit (favors area over link edges)
+        if (allFields.length > 0) {
+            // Sort by layer descending to pick the "top" pane
+            const sortedFields = [...allFields].sort((a, b) => b.layer - a.layer);
+            const f = sortedFields[0]; 
+            logEvent(`SELECT FIELD: ${f.id} (Layer ${f.layer}, ${allFields.length} total)`);
+            showDetails('field', { 
+                id: f.id, 
+                faction: f.faction, 
+                layerInfo: `${allFields.length} overlapping layers (Selected Layer ${f.layer})`,
+                anchors: [f.p1.id, f.p2.id, f.p3.id] 
+            });
+            return;
         }
-        if (fields.length > 0) { logEvent(`FIELDS: ${fields.length} layers | Top: ${fields[0].id} (${fields[0].faction})`); }
+
+        // Priority C: Precise Link Hit (5px)
+        const linkHits = links.map(l => {
+            const p1 = map.project([l.p1.lng, l.p1.lat]);
+            const p2 = map.project([l.p2.lng, l.p2.lat]);
+            const A = e.point.x - p1.x;
+            const B = e.point.y - p1.y;
+            const C = p2.x - p1.x;
+            const D = p2.y - p1.y;
+            const dot = A * C + B * D;
+            const len_sq = C * C + D * D;
+            let param = -1;
+            if (len_sq !== 0) param = dot / len_sq;
+            let xx, yy;
+            if (param < 0) { xx = p1.x; yy = p1.y; }
+            else if (param > 1) { xx = p2.x; yy = p2.y; }
+            else { xx = p1.x + param * C; yy = p1.y + param * D; }
+            const dist = Math.hypot(e.point.x - xx, e.point.y - yy);
+            return { l, dist };
+        }).filter(h => h.dist < 5).sort((a, b) => a.dist - b.dist);
+
+        if (linkHits.length > 0) {
+            const l = linkHits[0].l;
+            logEvent(`SNAP LINK: ${l.id} (${linkHits[0].dist.toFixed(1)}px)`);
+            showDetails('link', { id: l.id, faction: l.faction, p1: l.p1.id, p2: l.p2.id });
+            return;
+        }
+
+        details.style.display = 'none';
+        (map.getSource('selection') as maplibregl.GeoJSONSource)?.setData({ type: 'FeatureCollection', features: [] });
     });
 }
 setTimeout(initMap, 500);
