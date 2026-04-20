@@ -324,14 +324,19 @@ Matching Ingress logic, the system should be **Link-Centric**:
 ### Critical TODOs
 
 1. **Fix Live Mode Click Misses**:
-   - **Issue**: Clicks on real portals return "MISS" despite being visible.
-   - **Investigation**: Compare `map.unproject` accuracy between the raw MapLibre instance and IRIS's React-wrapped version. Possible mismatch in coordinate precision (E6 vs Float).
-2. **Implement Active Request Sync**:
-   - **Goal**: When the 3D map pans, it should not just move the official map, but also trigger the IRIS `RequestCoordinator` to fetch specific missing tiles.
-3. **Normalize Entity Models**:
-   - **Goal**: Move the "Team-to-Faction" and "IRIS-to-POC-Geometry" mapping out of the render loop and into a dedicated Data Adapter layer.
-4. **Preact Migration**:
+   - **Status**: **IN PROGRESS**. Recent fix added index syncing, but precision tuning continues.
+2. **Zoom Policy Alignment**:
+   - **Issue**: Some portals/links aren't loading at the same zoom levels as IRIS.
+   - **Goal**: Align the POC's `ZoomPolicy.ts` and `getDataZoomForMapZoom` logic exactly with the main extension to ensure consistent data density.
+3. **Player Tracker**:
+   - **Goal**: Intercept `/r/getPlexts` requests. Parse player nicknames and locations from the log entries.
+   - **Visual**: Render players as 3D "Agent Avatars" that move in real-time on the map.
+4. **Tooling Alignment**:
+   - **Goal**: Synchronize `tsconfig.json`, ESLint rules, and Vitest configurations with the main `@iris` packages to ensure code quality consistency.
+5. **Preact Migration**:
    - **Goal**: Refactor the raw DOM buttons and logs into Preact components to ensure the 3D map can be dropped into the main IRIS extension as a `MapV3` component.
+5. **Browser support**:
+   - **Goal**: Make sure extension works in chrome and firefox mobile. Currently no 3D button is visible on mobile firefox.
 
 ---
 

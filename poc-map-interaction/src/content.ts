@@ -28,7 +28,7 @@ function initMap() {
     const loadedKeys = new Set<string>();
     let extrusionEnabled = false;
     let patternMode = 0; // 0: Off, 1: Nested, 2: Single Nested
-    let liveMode = false;
+    let liveMode = true;
 
     const teamToFaction = (team: string): Faction => {
         if (team === 'E') return 'ENL';
