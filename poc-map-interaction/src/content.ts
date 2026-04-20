@@ -659,8 +659,11 @@ function initMap() {
         // --- 2. Query Logic ---
         const latRange = Math.abs(map.unproject([e.point.x, e.point.y + pixelBuffer]).lat - map.unproject([e.point.x, e.point.y - pixelBuffer]).lat);
         const lngRange = Math.abs(map.unproject([e.point.x + pixelBuffer, e.point.y]).lng - map.unproject([e.point.x - pixelBuffer, e.point.y]).lng);
-        const queryBounds = { minX: e.lngLat.lng - lngRange, minY: e.lngLat.lat - latRange, maxX: e.lngLat.lng + lngRange, maxY: e.lngLat.lat + latRange };
-        const results = generator.query(queryBounds);
+        
+        const qB = { minX: e.lngLat.lng - lngRange, minY: e.lngLat.lat - latRange, maxX: e.lngLat.lng + lngRange, maxY: e.lngLat.lat + latRange };
+        const qG = { minLat: e.lngLat.lat - latRange, minLng: e.lngLat.lng - lngRange, maxLat: e.lngLat.lat + latRange, maxLng: e.lngLat.lng + lngRange };
+        
+        const results = liveMode ? globalSpatialIndex.query(qG) : generator.query(qB);
         
         if (results.length === 0) { 
             logEvent("MISS: No entity nearby"); 
@@ -669,9 +672,17 @@ function initMap() {
             return; 
         }
 
-        const portals = results.filter(r => r.type === 'portal').map(r => generator.portals.get(r.id)!);
-        const links = results.filter(r => r.type === 'link').map(r => generator.linksMap.get(r.id)!);
-        const allFields = results.filter(r => r.type === 'field').map(r => generator.fieldsMap.get(r.id)!).filter(f => generator.isPointInField(e.lngLat, f));
+        const store = useStore.getState();
+        const portals = results.filter(r => r.type === 'portal').map(r => liveMode ? store.portals[r.id] : generator.portals.get(r.id)!).filter(Boolean);
+        const links = results.filter(r => r.type === 'link').map(r => liveMode ? store.links[r.id] : generator.linksMap.get(r.id)!).filter(Boolean);
+        const allFields = results.filter(r => r.type === 'field').map(r => {
+            const f = liveMode ? store.fields[r.id] : generator.fieldsMap.get(r.id)!;
+            if (!f) return null;
+            // Normalize for isPointInField
+            const points = liveMode ? (f as any).points : [(f as any).p1, (f as any).p2, (f as any).p3];
+            const normF = { ...f, p1: points[0], p2: points[1], p3: points[2] };
+            return generator.isPointInField(e.lngLat, normF as any) ? f : null;
+        }).filter(Boolean);
 
         // --- 3. Balanced Priority Evaluation ---
         
@@ -684,50 +695,62 @@ function initMap() {
 
         if (portalHits.length > 0) {
             const p = portalHits[0].p;
+            const faction = liveMode ? teamToFaction((p as any).team) : (p as any).faction;
             logEvent(`SNAP PORTAL: ${p.id} (${portalHits[0].dist.toFixed(1)}px)`);
-            showDetails('portal', { id: p.id, faction: p.faction, level: p.level });
+            showDetails('portal', { id: p.id, faction, level: p.level });
             return;
         }
 
         // Priority B: Field Hit (favors area over link edges)
         if (allFields.length > 0) {
             // Sort by layer descending to pick the "top" pane
-            const sortedFields = [...allFields].sort((a, b) => b.layer - a.layer);
-            const f = sortedFields[0]; 
-            logEvent(`SELECT FIELD: ${f.id} (Layer ${f.layer}, ${allFields.length} total)`);
+            const sortedFields = [...allFields].sort((a: any, b: any) => (b.layer || 0) - (a.layer || 0));
+            const f = sortedFields[0] as any; 
+            const faction = liveMode ? teamToFaction(f.team) : f.faction;
+            const layer = liveMode ? 0 : f.layer;
+            const anchors = liveMode ? f.points.map((p: any) => p.id) : [f.p1.id, f.p2.id, f.p3.id];
+
+            logEvent(`SELECT FIELD: ${f.id} (Layer ${layer}, ${allFields.length} total)`);
             showDetails('field', { 
                 id: f.id, 
-                faction: f.faction, 
-                layerInfo: `${allFields.length} overlapping layers (Selected Layer ${f.layer})`,
-                anchors: [f.p1.id, f.p2.id, f.p3.id] 
+                faction, 
+                layerInfo: `${allFields.length} overlapping layers (Selected Layer ${layer})`,
+                anchors
             });
             return;
         }
 
         // Priority C: Precise Link Hit (5px)
         const linkHits = links.map(l => {
-            const p1 = map.project([l.p1.lng, l.p1.lat]);
-            const p2 = map.project([l.p2.lng, l.p2.lat]);
-            const A = e.point.x - p1.x;
-            const B = e.point.y - p1.y;
-            const C = p2.x - p1.x;
-            const D = p2.y - p1.y;
+            const p1 = liveMode ? store.portals[(l as any).fromGuid] : (l as any).p1;
+            const p2 = liveMode ? store.portals[(l as any).toGuid] : (l as any).p2;
+            if (!p1 || !p2) return { l, dist: 999 };
+
+            const s1 = map.project([p1.lng, p1.lat]);
+            const s2 = map.project([p2.lng, p2.lat]);
+            const A = e.point.x - s1.x;
+            const B = e.point.y - s1.y;
+            const C = s2.x - s1.x;
+            const D = s2.y - s1.y;
             const dot = A * C + B * D;
             const len_sq = C * C + D * D;
             let param = -1;
             if (len_sq !== 0) param = dot / len_sq;
             let xx, yy;
-            if (param < 0) { xx = p1.x; yy = p1.y; }
-            else if (param > 1) { xx = p2.x; yy = p2.y; }
-            else { xx = p1.x + param * C; yy = p1.y + param * D; }
+            if (param < 0) { xx = s1.x; yy = s1.y; }
+            else if (param > 1) { xx = s2.x; yy = s2.y; }
+            else { xx = s1.x + param * C; yy = s1.y + param * D; }
             const dist = Math.hypot(e.point.x - xx, e.point.y - yy);
             return { l, dist };
         }).filter(h => h.dist < 5).sort((a, b) => a.dist - b.dist);
 
         if (linkHits.length > 0) {
-            const l = linkHits[0].l;
+            const l = linkHits[0].l as any;
+            const faction = liveMode ? teamToFaction(l.team) : l.faction;
+            const p1Id = liveMode ? l.fromGuid : l.p1.id;
+            const p2Id = liveMode ? l.toGuid : l.p2.id;
             logEvent(`SNAP LINK: ${l.id} (${linkHits[0].dist.toFixed(1)}px)`);
-            showDetails('link', { id: l.id, faction: l.faction, p1: l.p1.id, p2: l.p2.id });
+            showDetails('link', { id: l.id, faction, p1: p1Id, p2: p2Id });
             return;
         }
 
