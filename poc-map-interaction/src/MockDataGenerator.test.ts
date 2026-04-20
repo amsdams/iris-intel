@@ -57,8 +57,46 @@ describe('MockDataGenerator - Rules Enforcement', () => {
         gen.addPortal('b', 'ENL', 0, 2);
         gen.addPortal('c', 'ENL', 2, 2);
         
-        const field = gen.addField('F_CROSS', 'ENL', 'a', 'b', 'c');
-        expect(field).toBeNull();
+        gen.addLink('L-AB', 'ENL', 'a', 'b');
+        gen.addLink('L-BC', 'ENL', 'b', 'c'); // This crosses BLOCKER!
+        gen.addLink('L-CA', 'ENL', 'c', 'a');
+
+        expect(gen.fields.length).toBe(0); // Field should not have been created
+    });
+
+    it('should automatically create a field when a triangle is closed', () => {
+        const gen = new MockDataGenerator();
+        gen.addPortal('a', 'ENL', 0, 0);
+        gen.addPortal('b', 'ENL', 1, 0);
+        gen.addPortal('c', 'ENL', 0, 1);
+
+        gen.addLink('L1', 'ENL', 'a', 'b');
+        gen.addLink('L2', 'ENL', 'b', 'c');
         expect(gen.fields.length).toBe(0);
+
+        gen.addLink('L3', 'ENL', 'c', 'a');
+        expect(gen.fields.length).toBe(1);
+        expect(gen.fields[0].layer).toBe(0);
+    });
+
+    it('should automatically calculate nesting layers', () => {
+        const gen = new MockDataGenerator();
+        // Base Triangle
+        gen.addPortal('a', 'ENL', 0, 0);
+        gen.addPortal('b', 'ENL', 10, 0);
+        gen.addPortal('c', 'ENL', 0, 10);
+        gen.addLink('L1', 'ENL', 'a', 'b');
+        gen.addLink('L2', 'ENL', 'b', 'c');
+        gen.addLink('L3', 'ENL', 'c', 'a');
+        expect(gen.fields[0].layer).toBe(0);
+
+        // Nested Triangle inside (a,b,c)
+        gen.addPortal('d', 'ENL', 1, 1);
+        gen.addLink('L4', 'ENL', 'a', 'd');
+        gen.addLink('L5', 'ENL', 'b', 'd');
+        
+        expect(gen.fields.length).toBe(2);
+        const nested = gen.fields.find(f => f.id.includes('d'));
+        expect(nested?.layer).toBe(1);
     });
 });
