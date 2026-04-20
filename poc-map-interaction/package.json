@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@iris/core": "*",
     "maplibre-gl": "^4.1.2",
     "rbush": "^4.0.1"
   },

@@ -4,15 +4,21 @@
   "version": "1.0.1",
   "description": "POC to test layered map interactions in Firefox Mobile extensions",
   "host_permissions": [
-    "https://www.google.com/*",
+    "https://intel.ingress.com/*",
     "https://*.basemaps.cartocdn.com/*",
     "https://*.tile.openstreetmap.org/*"
   ],
   "content_scripts": [
     {
-      "matches": ["https://www.google.com/*"],
+      "matches": ["https://intel.ingress.com/*"],
       "js": ["content.js"],
       "run_at": "document_end"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["interceptor.js"],
+      "matches": ["https://intel.ingress.com/*"]
     }
   ],
   "browser_specific_settings": {

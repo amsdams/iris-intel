@@ -10,6 +10,10 @@
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "noEmit": true,
+    "paths": {
+      "@iris/core": ["../packages/core/src"],
+      "@iris/plugin-sdk": ["../packages/plugin-sdk/src"]
+    },
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,

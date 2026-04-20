@@ -2,6 +2,7 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { MockDataGenerator, Faction } from './MockDataGenerator';
 import { getMinLevelForZoom, getGridSizeForZoom } from './ZoomPolicy';
+import { useStore, globalSpatialIndex, EntityParser } from '@iris/core';
 
 console.log("POC (TS): Intel Mode (Initial Zoom 13) | v1.0.1 | Default: Amsterdam");
 
@@ -27,6 +28,14 @@ function initMap() {
     const loadedKeys = new Set<string>();
     let extrusionEnabled = false;
     let patternMode = 0; // 0: Off, 1: Nested, 2: Single Nested
+    let liveMode = false;
+
+    const teamToFaction = (team: string): Faction => {
+        if (team === 'E') return 'ENL';
+        if (team === 'R') return 'RES';
+        if (team === 'M') return 'MAC';
+        return 'NEU';
+    };
 
     const COLORS = { ENL: '#00ff00', RES: '#0000ff', MAC: '#ff0000', NEU: '#ffffff' };
     const MAP_STYLES: Record<string, string[]> = {
@@ -276,51 +285,56 @@ function initMap() {
         const zoom = map.getZoom();
         const minLevel = getMinLevelForZoom(zoom);
         const buffer = 0.05; // ~5km buffer
-        const queryBounds = {
-            minX: bounds.getWest() - buffer,
-            minY: bounds.getSouth() - buffer,
-            maxX: bounds.getEast() + buffer,
-            maxY: bounds.getNorth() + buffer
+        
+        const q = {
+            minLat: bounds.getSouth() - buffer,
+            minLng: bounds.getWest() - buffer,
+            maxLat: bounds.getNorth() + buffer,
+            maxLng: bounds.getEast() + buffer
         };
 
-        const results = generator.query(queryBounds);
+        const results = liveMode ? globalSpatialIndex.query(q) : generator.query({ minX: q.minLng, minY: q.minLat, maxX: q.maxLng, maxY: q.maxLat });
         const features: any[] = [];
+        const store = useStore.getState();
 
         // Pre-calculate heights based on highest anchored field layer
         const portalMaxLayer = new Map<string, number>();
         const linkMaxLayer = new Map<string, number>();
         
-        generator.fieldsMap.forEach(f => {
-            // Portals
-            [f.p1.id, f.p2.id, f.p3.id].forEach(pid => {
+        const processFieldForHeights = (_id: string, layer: number, p1Id: string, p2Id: string, p3Id: string) => {
+            [p1Id, p2Id, p3Id].forEach(pid => {
                 const currentP = portalMaxLayer.get(pid) ?? -1;
-                if (f.layer > currentP) portalMaxLayer.set(pid, f.layer);
+                if (layer > currentP) portalMaxLayer.set(pid, layer);
             });
-            // Implicit Links
-            const lids = [
-                [f.p1.id, f.p2.id].sort().join('->'),
-                [f.p2.id, f.p3.id].sort().join('->'),
-                [f.p3.id, f.p1.id].sort().join('->')
-            ];
+            const lids = [ [p1Id, p2Id].sort().join('->'), [p2Id, p3Id].sort().join('->'), [p3Id, p1Id].sort().join('->') ];
             lids.forEach(lid => {
                 const currentL = linkMaxLayer.get(lid) ?? -1;
-                if (f.layer > currentL) linkMaxLayer.set(lid, f.layer);
+                if (layer > currentL) linkMaxLayer.set(lid, layer);
             });
-        });
+        };
+
+        if (liveMode) {
+            Object.values(store.fields).forEach((f: any) => {
+                const layer = 0; 
+                processFieldForHeights(f.id, layer, f.points[0].id, f.points[1].id, f.points[2].id);
+            });
+        } else {
+            generator.fieldsMap.forEach(f => processFieldForHeights(f.id, f.layer, f.p1.id, f.p2.id, f.p3.id));
+        }
         
-        results.forEach(item => {
+        results.forEach((item: any) => {
             if (item.type === 'portal') {
-                const p = generator.portals.get(item.id);
-                const isVisible = patternMode > 0 || (p && p.level >= minLevel);
-                if (p && isVisible) {
+                const p = liveMode ? store.portals[item.id] : generator.portals.get(item.id);
+                if (!p) return;
+                const faction = liveMode ? teamToFaction((p as any).team) : (p as any).faction;
+                const level = (p as any).level ?? 0;
+                
+                const isVisible = patternMode > 0 || liveMode || level >= minLevel;
+                if (isVisible) {
                     const maxLayer = portalMaxLayer.get(p.id) ?? -1;
-                    const towerHeight = 200 + (maxLayer * 20) + 15; // 15m above highest anchored field
-                    const props = { id: p.id, type: 'portal', faction: p.faction, level: p.level, height: towerHeight, base_height: 0 };
-                    
-                    // Flat Circle
+                    const towerHeight = 200 + (maxLayer * 20) + 15;
+                    const props = { id: p.id, type: 'portal', faction, level, height: towerHeight, base_height: 0 };
                     features.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [p.lng, p.lat] }, properties: props });
-                    
-                    // Cylinder Tower (12-sided)
                     features.push({ 
                         type: 'Feature', 
                         geometry: { type: 'Polygon', coordinates: createCirclePolygon(p.lng, p.lat, 8, 12) }, 
@@ -328,51 +342,55 @@ function initMap() {
                     });
                 }
             } else if (item.type === 'link') {
-                const l = generator.linksMap.get(item.id);
-                const isVisible = patternMode > 0 || (l && l.p1.level >= minLevel && l.p2.level >= minLevel);
-                if (l && isVisible) {
-                    const baseProps = { id: l.id, type: 'link', faction: l.faction };
-                    features.push({ type: 'Feature', id: `l-${l.id}`, geometry: { type: 'LineString', coordinates: [[l.p1.lng, l.p1.lat], [l.p2.lng, l.p2.lat]] }, properties: baseProps });
+                const l = liveMode ? store.links[item.id] : generator.linksMap.get(item.id);
+                if (!l) return;
+                const faction = liveMode ? teamToFaction((l as any).team) : (l as any).faction;
+                const p1 = liveMode ? store.portals[(l as any).fromGuid] : (l as any).p1;
+                const p2 = liveMode ? store.portals[(l as any).toGuid] : (l as any).p2;
+                
+                const isVisible = patternMode > 0 || liveMode || (p1 && p2 && p1.level >= minLevel && p2.level >= minLevel);
+                if (isVisible && p1 && p2) {
+                    const baseProps = { id: l.id, type: 'link', faction };
+                    features.push({ type: 'Feature', id: `l-${l.id}`, geometry: { type: 'LineString', coordinates: [[p1.lng, p1.lat], [p2.lng, p2.lat]] }, properties: baseProps });
                     
-                    // Double-Layered Floating Prismatic Beam
-                    const dx = l.p2.lng - l.p1.lng;
-                    const dy = l.p2.lat - l.p1.lat;
+                    const dx = p2.lng - p1.lng;
+                    const dy = p2.lat - p1.lat;
                     const len = Math.sqrt(dx*dx + dy*dy);
-                    
                     const maxLayer = linkMaxLayer.get(l.id) ?? -1;
-                    // If part of a field, float it at the field altitude. Otherwise, stay near ground.
                     const baseAlt = maxLayer >= 0 ? 200 + (maxLayer * 20) : 10;
 
-                    // Bottom layer (wider)
                     const n1x = -dy / (len || 1) * 0.00006;
                     const n1y = dx / (len || 1) * 0.00006;
-                    const poly1 = [[ [l.p1.lng+n1x, l.p1.lat+n1y], [l.p2.lng+n1x, l.p2.lat+n1y], [l.p2.lng-n1x, l.p2.lat-n1y], [l.p1.lng-n1x, l.p1.lat-n1y], [l.p1.lng+n1x, l.p1.lat+n1y] ]];
-                    features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: poly1 }, properties: { ...baseProps, type: 'link-ext', height: baseAlt + 2, base_height: baseAlt } });
-
-                    // Top layer (narrower)
+                    const poly = [[ [p1.lng+n1x, p1.lat+n1y], [p2.lng+n1x, p2.lat+n1y], [p2.lng-n1x, p2.lat-n1y], [p1.lng-n1x, p1.lat-n1y], [p1.lng+n1x, p1.lat+n1y] ]];
+                    features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: poly }, properties: { ...baseProps, type: 'link-ext', height: baseAlt + 2, base_height: baseAlt } });
+                    
                     const n2x = -dy / (len || 1) * 0.00003;
                     const n2y = dx / (len || 1) * 0.00003;
-                    const poly2 = [[ [l.p1.lng+n2x, l.p1.lat+n2y], [l.p2.lng+n2x, l.p2.lat+n2y], [l.p2.lng-n2x, l.p2.lat-n2y], [l.p1.lng-n2x, l.p1.lat-n2y], [l.p1.lng+n2x, l.p1.lat+n2y] ]];
+                    const poly2 = [[ [p1.lng+n2x, p1.lat+n2y], [p2.lng+n2x, p2.lat+n2y], [p2.lng-n2x, p2.lat-n2y], [p1.lng-n2x, p1.lat-n2y], [p1.lng+n2x, p1.lat+n2y] ]];
                     features.push({ type: 'Feature', geometry: { type: 'Polygon', coordinates: poly2 }, properties: { ...baseProps, type: 'link-ext', height: baseAlt + 5, base_height: baseAlt + 2 } });
                 }
             } else if (item.type === 'field') {
-                const f = generator.fieldsMap.get(item.id);
-                const isVisible = patternMode > 0 || (f && f.p1.level >= minLevel && f.p2.level >= minLevel && f.p3.level >= minLevel);
-                if (f && isVisible) {
-                    const poly = [[f.p1.lng, f.p1.lat], [f.p2.lng, f.p2.lat], [f.p3.lng, f.p3.lat], [f.p1.lng, f.p1.lat]];
-                    const base_height = 200 + (f.layer * 20);
+                const f = liveMode ? store.fields[item.id] : generator.fieldsMap.get(item.id);
+                if (!f) return;
+                const faction = liveMode ? teamToFaction((f as any).team) : (f as any).faction;
+                const points = liveMode ? (f as any).points : [(f as any).p1, (f as any).p2, (f as any).p3];
+                const layer = liveMode ? 0 : (f as any).layer;
+
+                const isVisible = patternMode > 0 || liveMode || points.every((p: any) => (p.level ?? 0) >= minLevel);
+                if (isVisible) {
+                    const poly = [...points.map((p: any) => [p.lng, p.lat]), [points[0].lng, points[0].lat]];
+                    const base_height = 200 + (layer * 20);
                     const height = base_height + 5;
-                    features.push({ type: 'Feature', id: `f-${f.id}`, geometry: { type: 'Polygon', coordinates: [poly] }, properties: { id: f.id, type: 'field', faction: f.faction, height, base_height } });
+                    features.push({ type: 'Feature', id: `f-${f.id}`, geometry: { type: 'Polygon', coordinates: [poly] }, properties: { id: f.id, type: 'field', faction, height, base_height } });
                     
-                    // Add 3 tethers at the corners
-                    [f.p1, f.p2, f.p3].forEach((p, i) => {
-                        const s = 0.00005; // 5m thin tether
+                    points.forEach((p: any, i: number) => {
+                        const s = 0.00005;
                         const tPoly = [[ [p.lng-s, p.lat-s], [p.lng+s, p.lat-s], [p.lng+s, p.lat+s], [p.lng-s, p.lat+s], [p.lng-s, p.lat-s] ]];
                         features.push({ 
                             type: 'Feature', 
                             id: `t-${f.id}-${i}`,
                             geometry: { type: 'Polygon', coordinates: tPoly }, 
-                            properties: { type: 'field-tether', faction: f.faction, height: base_height, base_height: 0 } 
+                            properties: { type: 'field-tether', faction, height: base_height, base_height: 0 } 
                         });
                     });
                 }
@@ -381,7 +399,9 @@ function initMap() {
 
         const source = map.getSource('entities') as maplibregl.GeoJSONSource;
         if (source) source.setData({ type: 'FeatureCollection', features });
-        logEvent(`RENDERED: ${features.length} / ${generator.portals.size + generator.linksMap.size + generator.fieldsMap.size} items (Min L: ${minLevel})`);
+        
+        const totalItems = liveMode ? (Object.keys(store.portals).length + Object.keys(store.links).length + Object.keys(store.fields).length) : (generator.portals.size + generator.linksMap.size + generator.fieldsMap.size);
+        logEvent(`RENDERED: ${features.length} / ${totalItems} items (Mode: ${liveMode ? 'LIVE' : 'SIM'})`);
     }
 
     function checkAndLoad(map: maplibregl.Map) {
@@ -389,9 +409,9 @@ function initMap() {
         const minLevel = getMinLevelForZoom(zoom);
         const gridSize = getGridSizeForZoom(zoom);
         const bounds = map.getBounds();
-        logPos(`Z:${zoom.toFixed(1)} | Min L:${minLevel} | Grid:${gridSize.toFixed(2)}°${patternMode > 0 ? ` | PATTERN ${patternMode}` : ''}`);
+        logPos(`Z:${zoom.toFixed(1)} | Min L:${minLevel} | Grid:${gridSize.toFixed(2)}°${patternMode > 0 ? ` | PATTERN ${patternMode}` : ''}${liveMode ? ' | LIVE' : ''}`);
         
-        if (patternMode > 0) {
+        if (patternMode > 0 || liveMode) {
             syncToMap(map);
             return;
         }
@@ -419,18 +439,14 @@ function initMap() {
         }
     }
 
-    document.body.innerHTML = '';
-    const meta = document.createElement('meta');
-    meta.name = 'viewport';
-    meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
-    document.head.appendChild(meta);
-
     const bodyStyle = document.createElement('style');
     bodyStyle.textContent = `
-        html, body { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: #000 !important; }
-        #map-poc-container { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #222; touch-action: none; }
-        .debug-btn { width: 50px; height: 50px; background: rgba(34,34,34,0.9); color: #fff; border: 2px solid #00ffff; border-radius: 8px; font-size: 20px; z-index: 1000005; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-user-select: none; user-select: none; }
-        #pos-log { position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.85); color: #fff; padding: 6px 12px; font-family: monospace; font-size: 13px; border-radius: 4px; z-index: 1000006; border: 1px solid #888; pointer-events: none; }
+        #map-poc-container { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #222; z-index: 1000000; display: none; }
+        #launch-3d-btn { position: fixed; bottom: 120px; right: 10px; width: 60px; height: 60px; background: #000; color: #00ffff; border: 2px solid #00ffff; border-radius: 50%; z-index: 1000010; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; box-shadow: 0 0 15px rgba(0,255,255,0.4); }
+        .debug-btn { width: 40px; height: 40px; background: rgba(34,34,34,0.9); color: #fff; border: 1px solid #00ffff; border-radius: 4px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-user-select: none; user-select: none; }
+        #pos-log { position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.85); color: #fff; padding: 4px 8px; font-family: monospace; font-size: 11px; border-radius: 4px; z-index: 1000006; border: 1px solid #888; pointer-events: none; display: none; }
+        #debug-btns-container { display: none; }
+        #event-log { display: none; }
     `;
     document.head.appendChild(bodyStyle);
 
@@ -550,10 +566,12 @@ function initMap() {
     });
 
     const btns = document.createElement('div');
-    btns.style.cssText = 'position: fixed; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 8px; z-index: 2000001;';
+    btns.id = 'debug-btns-container';
+    btns.style.cssText = 'position: fixed; top: 10px; right: 10px; display: none; flex-direction: row; flex-wrap: wrap; justify-content: flex-end; gap: 6px; z-index: 2000001; max-width: 140px; pointer-events: none;';
     document.body.appendChild(btns);
     const mk = (l: string, a: () => void) => {
         const b = document.createElement('div'); b.className = 'debug-btn'; b.textContent = l;
+        b.style.pointerEvents = 'auto';
         b.addEventListener('pointerdown', (e) => { e.stopPropagation(); a(); });
         btns.appendChild(b);
     };
@@ -568,6 +586,7 @@ function initMap() {
     mk('O', () => switchStyle(map, 'OSM'));
     mk('P', () => {
         patternMode = (patternMode + 1) % 4;
+        if (patternMode > 0) liveMode = false; 
         if (patternMode === 1) {
             loadPattern1(map);
         } else if (patternMode === 2) {
@@ -580,16 +599,46 @@ function initMap() {
             checkAndLoad(map);
         }
     });
+    mk('L', () => {
+        liveMode = !liveMode;
+        if (liveMode) patternMode = 0;
+        generator.clear();
+        loadedKeys.clear();
+        checkAndLoad(map);
+        logEvent(`Mode: ${liveMode ? 'LIVE (Real Data)' : 'SIMULATION'}`);
+    });
+
+    // Subscribe to real IRIS store updates
+    useStore.subscribe((state: any, prevState: any) => {
+        if (liveMode && (state.portals !== prevState.portals || state.links !== prevState.links || state.fields !== prevState.fields)) {
+            syncToMap(map);
+        }
+    });
 
     map.on('load', () => {
         container.style.background = 'transparent';
         map.resize();
         checkAndLoad(map);
     });
+    function syncIntelMap() {
+        if (!liveMode) return;
+        const center = map.getCenter();
+        window.postMessage({
+            type: 'IRIS_SYNC_INTEL_MAP',
+            lat: center.lat,
+            lng: center.lng,
+            zoom: Math.round(map.getZoom())
+        }, '*');
+    }
+
     map.on('move', () => {
         logPos(`Z:${map.getZoom().toFixed(1)} | Min L:${getMinLevelForZoom(map.getZoom())} | Grid:${getGridSizeForZoom(map.getZoom()).toFixed(2)}°`);
+        syncIntelMap();
     });
-    map.on('moveend', () => checkAndLoad(map));
+    map.on('moveend', () => {
+        syncIntelMap();
+        checkAndLoad(map);
+    });
     map.on('click', (e) => {
         logEvent(`Map Click @ ${e.lngLat.lng.toFixed(4)}, ${e.lngLat.lat.toFixed(4)}`);
         
@@ -684,6 +733,60 @@ function initMap() {
 
         details.style.display = 'none';
         (map.getSource('selection') as maplibregl.GeoJSONSource)?.setData({ type: 'FeatureCollection', features: [] });
+    });
+
+    function initInterceptor() {
+        const script = document.createElement('script');
+        script.src = chrome.runtime.getURL('interceptor.js');
+        script.type = 'text/javascript';
+        (document.head || document.documentElement).appendChild(script);
+        script.addEventListener('load', () => script.remove());
+        console.log('IRIS POC: Web-Accessible Interceptor Triggered');
+    }
+
+    window.addEventListener('message', (event) => {
+        const msg = event.data;
+        if (!msg || msg.type !== 'IRIS_DATA') return;
+
+        // Handle getEntities or similar data
+        if (msg.url.includes('getEntities')) {
+            const rawData = msg.data;
+            const parsed = EntityParser.parse(rawData);
+            const store = useStore.getState();
+            
+            if (parsed.portals.length > 0) store.updatePortals(parsed.portals);
+            if (parsed.links.length > 0) store.updateLinks(parsed.links);
+            if (parsed.fields.length > 0) store.updateFields(parsed.fields);
+            
+            if (rawData.result?.map) {
+                store.setTileFreshness(Object.keys(rawData.result.map));
+            }
+            
+            logEvent(`Live Data: ${parsed.portals.length}P, ${parsed.links.length}L, ${parsed.fields.length}F`);
+        }
+    });
+
+    initInterceptor();
+
+    const launchBtn = document.createElement('div');
+    launchBtn.id = 'launch-3d-btn';
+    launchBtn.textContent = '3D';
+    document.body.appendChild(launchBtn);
+
+    let is3DVisible = false;
+    launchBtn.addEventListener('click', () => {
+        is3DVisible = !is3DVisible;
+        container.style.display = is3DVisible ? 'block' : 'none';
+        posLog.style.display = is3DVisible ? 'block' : 'none';
+        btns.style.display = is3DVisible ? 'flex' : 'none';
+        log.style.display = is3DVisible ? 'block' : 'none';
+        launchBtn.style.background = is3DVisible ? '#00ffff' : '#000';
+        launchBtn.style.color = is3DVisible ? '#000' : '#00ffff';
+        
+        if (is3DVisible) {
+            map.resize();
+            checkAndLoad(map);
+        }
     });
 }
 setTimeout(initMap, 500);
