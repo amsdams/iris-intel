@@ -657,8 +657,9 @@ function initMap() {
         }
 
         // --- 2. Query Logic ---
-        const latRange = Math.abs(map.unproject([e.point.x, e.point.y + pixelBuffer]).lat - map.unproject([e.point.x, e.point.y - pixelBuffer]).lat);
-        const lngRange = Math.abs(map.unproject([e.point.x + pixelBuffer, e.point.y]).lng - map.unproject([e.point.x - pixelBuffer, e.point.y]).lng);
+        const queryBuffer = 40; // Larger search area for raw spatial index
+        const latRange = Math.abs(map.unproject([e.point.x, e.point.y + queryBuffer]).lat - map.unproject([e.point.x, e.point.y - queryBuffer]).lat);
+        const lngRange = Math.abs(map.unproject([e.point.x + queryBuffer, e.point.y]).lng - map.unproject([e.point.x - queryBuffer, e.point.y]).lng);
         
         const qB = { minX: e.lngLat.lng - lngRange, minY: e.lngLat.lat - latRange, maxX: e.lngLat.lng + lngRange, maxY: e.lngLat.lat + latRange };
         const qG = { minLat: e.lngLat.lat - latRange, minLng: e.lngLat.lng - lngRange, maxLat: e.lngLat.lat + latRange, maxLng: e.lngLat.lng + lngRange };
@@ -780,6 +781,9 @@ function initMap() {
             if (parsed.portals.length > 0) store.updatePortals(parsed.portals);
             if (parsed.links.length > 0) store.updateLinks(parsed.links);
             if (parsed.fields.length > 0) store.updateFields(parsed.fields);
+            
+            // CRITICAL: Explicitly sync the index so clicks work!
+            store.syncIndex();
             
             if (rawData.result?.map) {
                 store.setTileFreshness(Object.keys(rawData.result.map));
