@@ -484,21 +484,26 @@ function initMap() {
         
         const selectionSource = map.getSource('selection') as maplibregl.GeoJSONSource;
         const selFeatures: any[] = [];
+        const store = useStore.getState();
 
         if (type === 'portal') {
             html += `<div>ID: ${data.id}</div>`;
             html += `<div>Faction: ${data.faction}</div>`;
             html += `<div>Level: ${data.level}</div>`;
             html += `<div>Health: 100%</div>`;
-            const p = generator.portals.get(data.id);
+            const p = liveMode ? store.portals[data.id] : generator.portals.get(data.id);
             if (p) selFeatures.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [p.lng, p.lat] }, properties: { type: 'portal' } });
         } else if (type === 'link') {
             html += `<div>ID: ${data.id}</div>`;
             html += `<div>Faction: ${data.faction}</div>`;
             html += `<div style="margin-top: 4px; color: #aaa; font-size: 10px;">From: ${data.p1}</div>`;
             html += `<div style="color: #aaa; font-size: 10px;">To: ${data.p2}</div>`;
-            const l = generator.linksMap.get(data.id);
-            if (l) selFeatures.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: [[l.p1.lng, l.p1.lat], [l.p2.lng, l.p2.lat]] }, properties: { type: 'link' } });
+            const l = liveMode ? store.links[data.id] : generator.linksMap.get(data.id);
+            if (l) {
+                const p1 = liveMode ? { lng: (l as any).fromLng, lat: (l as any).fromLat } : (l as any).p1;
+                const p2 = liveMode ? { lng: (l as any).toLng, lat: (l as any).toLat } : (l as any).p2;
+                selFeatures.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: [[p1.lng, p1.lat], [p2.lng, p2.lat]] }, properties: { type: 'link' } });
+            }
         } else if (type === 'field') {
             html += `<div>ID: ${data.id}</div>`;
             html += `<div>Faction: ${data.faction}</div>`;
@@ -507,9 +512,10 @@ function initMap() {
             data.anchors.forEach((a: string) => {
                 html += `<div style="color: #888; font-size: 9px; padding-left: 8px;">• ${a}</div>`;
             });
-            const f = generator.fieldsMap.get(data.id);
+            const f = liveMode ? store.fields[data.id] : generator.fieldsMap.get(data.id);
             if (f) {
-                const poly = [[f.p1.lng, f.p1.lat], [f.p2.lng, f.p2.lat], [f.p3.lng, f.p3.lat], [f.p1.lng, f.p1.lat]];
+                const pts = liveMode ? (f as any).points : [(f as any).p1, (f as any).p2, (f as any).p3];
+                const poly = [...pts.map((p: any) => [p.lng, p.lat]), [pts[0].lng, pts[0].lat]];
                 selFeatures.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: poly }, properties: { type: 'field' } });
             }
         }
@@ -723,8 +729,8 @@ function initMap() {
 
         // Priority C: Precise Link Hit (5px)
         const linkHits = links.map(l => {
-            const p1 = liveMode ? store.portals[(l as any).fromGuid] : (l as any).p1;
-            const p2 = liveMode ? store.portals[(l as any).toGuid] : (l as any).p2;
+            const p1 = liveMode ? { lng: (l as any).fromLng, lat: (l as any).fromLat } : (l as any).p1;
+            const p2 = liveMode ? { lng: (l as any).toLng, lat: (l as any).toLat } : (l as any).p2;
             if (!p1 || !p2) return { l, dist: 999 };
 
             const s1 = map.project([p1.lng, p1.lat]);
