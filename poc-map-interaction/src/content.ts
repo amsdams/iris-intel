@@ -575,30 +575,75 @@ function initMap() {
     });
 
     map.on('click', (e) => {
-        const queryBuffer = 0.001; 
-        const qG = { minLat: e.lngLat.lat - queryBuffer, minLng: e.lngLat.lng - queryBuffer, maxLat: e.lngLat.lat + queryBuffer, maxLng: e.lngLat.lng + queryBuffer };
+        logEvent(`Map Click @ ${e.lngLat.lng.toFixed(4)}, ${e.lngLat.lat.toFixed(4)}`);
+        
+        // --- 1. Query Bounds (Pixel-to-Geo) ---
+        const pixelBuffer = 40; // Search in a 40px radius
+        const pLow = map.unproject([e.point.x - pixelBuffer, e.point.y + pixelBuffer]);
+        const pHigh = map.unproject([e.point.x + pixelBuffer, e.point.y - pixelBuffer]);
+        
+        const qG = { minLat: pLow.lat, minLng: pLow.lng, maxLat: pHigh.lat, maxLng: pHigh.lng };
         const results = liveMode ? globalSpatialIndex.query(qG) : generator.query({ minX: qG.minLng, minY: qG.minLat, maxX: qG.maxLng, maxY: qG.maxLat });
         
-        if (results.length > 0) {
-            // Priority: Portal > Field > Link
-            const portalHit = results.find(r => r.type === 'portal');
-            if (portalHit) {
-                const p = liveMode ? useStore.getState().portals[portalHit.id] : generator.portals.get(portalHit.id);
-                if (p) { showDetails('portal', p); return; }
-            }
-
-            const fieldHit = results.find(r => r.type === 'field');
-            if (fieldHit) {
-                const f = liveMode ? useStore.getState().fields[fieldHit.id] : generator.fieldsMap.get(fieldHit.id);
-                if (f) { showDetails('field', f); return; }
-            }
-
-            const linkHit = results.find(r => r.type === 'link');
-            if (linkHit) {
-                const l = liveMode ? useStore.getState().links[linkHit.id] : generator.linksMap.get(linkHit.id);
-                if (l) { showDetails('link', l); return; }
-            }
+        if (results.length === 0) { 
+            details.style.display = 'none';
+            (map.getSource('selection') as maplibregl.GeoJSONSource)?.setData({ type: 'FeatureCollection', features: [] });
+            return; 
         }
+
+        const store = useStore.getState();
+        const portals = results.filter(r => r.type === 'portal').map(r => liveMode ? store.portals[r.id] : generator.portals.get(r.id)).filter(Boolean);
+        const links = results.filter(r => r.type === 'link').map(r => liveMode ? store.links[r.id] : generator.linksMap.get(r.id)).filter(Boolean);
+        const allFields = results.filter(r => r.type === 'field').map(r => {
+            const f = liveMode ? store.fields[r.id] : generator.fieldsMap.get(r.id);
+            return f && generator.isPointInField(e.lngLat, f) ? f : null;
+        }).filter(Boolean);
+
+        // --- 2. Balanced Priority Evaluation (Screen Space) ---
+        
+        // Priority A: Portal Snap (10px)
+        const portalHits = portals.map(p => {
+            const screenP = map.project([p!.lng, p!.lat]);
+            const dist = Math.hypot(screenP.x - e.point.x, screenP.y - e.point.y);
+            return { p, dist };
+        }).filter(h => h.dist < 10).sort((a, b) => a.dist - b.dist);
+
+        if (portalHits.length > 0) {
+            showDetails('portal', portalHits[0].p);
+            return;
+        }
+
+        // Priority B: Field Selection (favors highest layer)
+        if (allFields.length > 0) {
+            // Sort by layer descending if available (mostly sim)
+            const f = allFields[0]; 
+            showDetails('field', f);
+            return;
+        }
+
+        // Priority C: Link Snap (5px)
+        const linkHits = links.map(l => {
+            const p1 = map.project([l!.fromLng ?? (l as any).points?.[0].lng, l!.fromLat ?? (l as any).points?.[0].lat]);
+            const p2 = map.project([l!.toLng ?? (l as any).points?.[1].lng, l!.toLat ?? (l as any).points?.[1].lat]);
+            const A = e.point.x - p1.x; const B = e.point.y - p1.y;
+            const C = p2.x - p1.x; const D = p2.y - p1.y;
+            const dot = A * C + B * D; const len_sq = C * C + D * D;
+            let param = -1; if (len_sq !== 0) param = dot / len_sq;
+            let xx, yy;
+            if (param < 0) { xx = p1.x; yy = p1.y; }
+            else if (param > 1) { xx = p2.x; yy = p2.y; }
+            else { xx = p1.x + param * C; yy = p1.y + param * D; }
+            const dist = Math.hypot(e.point.x - xx, e.point.y - yy);
+            return { l, dist };
+        }).filter(h => h.dist < 5).sort((a, b) => a.dist - b.dist);
+
+        if (linkHits.length > 0) {
+            showDetails('link', linkHits[0].l);
+            return;
+        }
+
+        details.style.display = 'none';
+        (map.getSource('selection') as maplibregl.GeoJSONSource)?.setData({ type: 'FeatureCollection', features: [] });
     });
 
     initInterceptor();
