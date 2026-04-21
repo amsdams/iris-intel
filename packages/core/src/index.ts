@@ -28,7 +28,8 @@ export const normalizeTeam = (team: string | undefined): string => {
         const t = team.toUpperCase();
         if (t === 'ENLIGHTENED' || t === 'E') result = 'E';
         else if (t === 'RESISTANCE' || t === 'R') result = 'R';
-        else if (t === 'NEUTRAL' || t === 'M') result = 'M';
+        else if (t === 'MACHINA' || t === 'M' || t === 'ALIENS') result = 'M';
+        else if (t === 'NEUTRAL' || t === 'N') result = 'N';
     }
     return result;
 };
