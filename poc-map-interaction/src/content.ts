@@ -613,9 +613,19 @@ function initMap(): void {
         }, '*');
     }
 
-    map.on('move', () => { syncIntelMap(); });
+    function updatePosLog(): void {
+        const center = map.getCenter();
+        const zoom = map.getZoom();
+        posLog.textContent = `Z: ${zoom.toFixed(2)} | ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}`;
+    }
+
+    map.on('move', () => { 
+        syncIntelMap(); 
+        updatePosLog();
+    });
     map.on('moveend', () => {
         syncIntelMap();
+        updatePosLog();
         checkAndLoad(map);
     });
 
@@ -765,7 +775,12 @@ function initMap(): void {
         btns.style.display = isVis ? 'none' : 'flex';
         posLog.style.display = isVis ? 'none' : 'block';
         eventLog.style.display = isVis ? 'none' : 'block';
-        if (!isVis) { map.resize(); checkAndLoad(map); logEvent("Tactical Map Opened"); }
+        if (!isVis) { 
+            map.resize(); 
+            updatePosLog();
+            checkAndLoad(map); 
+            logEvent("Tactical Map Opened"); 
+        }
     });
 }
 setTimeout(initMap, 500);
