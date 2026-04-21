@@ -2,6 +2,21 @@
     console.log('IRIS POC: Interceptor initializing...');
     const isIrisUrl = (url) => url.includes('getEntities') || url.includes('getPortalDetails') || url.includes('getPlexts');
     
+    function getCsrfToken() {
+        const cookies = document.cookie.split(';').map(c => c.trim());
+        const csrf = cookies.find(c => c.startsWith('csrftoken='));
+        return csrf ? csrf.split('=')[1] : '';
+    }
+
+    function extractVersion() {
+        const scripts = document.querySelectorAll('script[src*="gen_dashboard_"]');
+        for (const s of scripts) {
+            const match = s.src.match(/gen_dashboard_([a-f0-9]+)\.js/);
+            if (match) return match[1];
+        }
+        return '';
+    }
+
     // 1. Hook XHR
     const XHR = XMLHttpRequest.prototype;
     const open = XHR.open;
@@ -16,7 +31,6 @@
                 console.log('IRIS POC: Intercepted XHR:', this._url);
                 try {
                     const data = JSON.parse(this.responseText);
-                    // Pass raw data so EntityParser can find .result.map
                     window.postMessage({ type: 'IRIS_DATA', url: this._url, data: data, params: body }, '*');
                 } catch (e) {
                     console.error('IRIS POC: XHR Parse Error', e);
@@ -62,10 +76,26 @@
 
     // 4. Handle sync messages from 3D Map
     window.addEventListener('message', (e) => {
-        if (e.data?.type === 'IRIS_SYNC_INTEL_MAP' && window._iris_intel_map) {
-            const { lat, lng, zoom } = e.data;
+        const msg = e.data;
+        if (!msg) return;
+
+        if (msg.type === 'IRIS_SYNC_INTEL_MAP' && window._iris_intel_map) {
+            const { lat, lng, zoom } = msg;
             window._iris_intel_map.setCenter({ lat, lng });
             window._iris_intel_map.setZoom(zoom);
+        } else if (msg.type === 'IRIS_PORTAL_DETAILS_REQUEST') {
+            const guid = msg.guid;
+            const url = '/r/getPortalDetails';
+            const body = JSON.stringify({ guid, v: extractVersion() });
+            
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                body: body
+            }).then(async (res) => {
+                const data = await res.json();
+                window.postMessage({ type: 'IRIS_DATA', url, data, params: body }, '*');
+            }).catch(e => console.error('IRIS POC: Detail Fetch Failed', e));
         }
     });
 

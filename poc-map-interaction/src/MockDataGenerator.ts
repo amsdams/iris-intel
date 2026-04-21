@@ -35,6 +35,19 @@ export class MockDataGenerator {
     addPortal(id: string, team: Faction, lng: number, lat: number, level: number = 0): Portal {
         const existing = this.portals.get(id);
         if (existing) return existing;
+
+        const resonators = team === 'N' ? [] : Array.from({ length: 8 }, (_, i) => ({
+            owner: `Agent_${team}_${i}`,
+            level: level || 1,
+            energy: 1000
+        }));
+
+        const mods = team === 'N' ? [] : [
+            { owner: `Agent_${team}_Alpha`, name: 'Portal Shield', rarity: 'RARE', stats: { MITIGATION: 30 } }
+        ];
+
+        const history = team === 'N' ? 0 : (Math.random() > 0.5 ? 1 : 0) | (Math.random() > 0.3 ? 2 : 0);
+
         const portal: Portal = { 
             id, 
             team, 
@@ -43,14 +56,21 @@ export class MockDataGenerator {
             level,
             health: 100,
             resCount: team === 'N' ? 0 : 8,
-            name: `Portal ${id}`
+            name: `Portal ${id}`,
+            owner: team === 'N' ? undefined : `Agent_${team}_Alpha`,
+            image: team === 'N' ? undefined : `https://picsum.photos/seed/${id}/140/80`,
+            resonators,
+            mods,
+            history,
+            visited: !!(history & 1),
+            captured: !!(history & 2),
+            mitigation: { total: team === 'N' ? 0 : 30, shields: team === 'N' ? 0 : 30, links: 0, linkDefenseBoost: 1, excess: 0 }
         };
         this.portals.set(id, portal);
         this.neighborMap.set(id, new Set());
         this.index.insert({ minX: lng, minY: lat, maxX: lng, maxY: lat, id, type: 'portal' });
         return portal;
     }
-
     addLink(id: string, team: Faction, p1Id: string, p2Id: string): Link | null {
         const p1 = this.portals.get(p1Id);
         const p2 = this.portals.get(p2Id);

@@ -1,7 +1,7 @@
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { MockDataGenerator, Faction } from './MockDataGenerator';
-import { useStore, globalSpatialIndex, EntityParser, getMinLevelForZoom, getGridSizeForZoom } from '@iris/core';
+import { useStore, globalSpatialIndex, EntityParser, PortalDetailsParser, getMinLevelForZoom, getGridSizeForZoom } from '@iris/core';
 
 console.log("POC (TS): Tactical Overlay | v1.0.4 | Core Zoom Policy Active");
 
@@ -386,9 +386,8 @@ function initMap() {
     eventLog.id = 'event-log';
     document.body.appendChild(eventLog);
 
-    const details = document.createElement('div');
-    details.id = 'entity-details';
-    details.style.cssText = `position: fixed; top: 50px; left: 10px; width: 250px; background: rgba(0,0,0,0.9); color: #fff; padding: 12px; font-family: monospace; font-size: 12px; border: 1px solid #444; border-radius: 4px; z-index: 1000007; display: none; pointer-events: auto;`;
+    const details = document.createElement('div'); details.id = 'entity-details';
+    details.style.cssText = `position: fixed; top: 50px; left: 10px; width: 250px; background: rgba(0,0,0,0.9); color: #fff; padding: 0; font-family: monospace; font-size: 12px; border: 1px solid #444; border-radius: 4px; z-index: 1000007; display: none; pointer-events: auto; overflow: hidden;`;
     document.body.appendChild(details);
 
     function logEvent(msg: string) { 
@@ -400,32 +399,78 @@ function initMap() {
     }
 
     function showDetails(type: string, data: any) {
-        details.style.display = 'block';
-        details.style.borderColor = COLORS[data.team as keyof typeof COLORS] || '#444';
-        let html = `<div style="color: ${COLORS[data.team as keyof typeof COLORS]}; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid #333; padding-bottom: 4px;">${type.toUpperCase()} DETAILS</div>`;
-        html += `<div>ID: ${data.id}</div>`;
-        html += `<div>Team: ${data.team}</div>`;
+        details.style.display = 'block'; details.style.borderColor = COLORS[data.team as keyof typeof COLORS] || '#444';
+        const teamColor = COLORS[data.team as keyof typeof COLORS] || '#fff';
+        
+        let html = '';
+        if (type === 'portal') {
+            if (data.image) html += `<div style="height: 100px; background: url(${data.image}) center/cover; border-bottom: 2px solid ${teamColor};"></div>`;
+            html += `<div style="padding: 12px;">`;
+            html += `<div style="color: ${teamColor}; font-weight: bold; font-size: 14px; margin-bottom: 4px;">${data.name || 'PORTAL'}</div>`;
+            html += `<div style="color: #888; font-size: 10px; margin-bottom: 12px;">Owner: ${data.owner || (data.team === 'N' ? 'Neutral' : 'Unknown')}</div>`;
+            
+            // Stats Row
+            html += `<div style="display: flex; justify-content: space-between; margin-bottom: 12px; background: #111; padding: 6px; border-radius: 4px;">`;
+            html += `<div><span style="color: #666;">Level:</span> <span style="color: #ff0;">${data.level || 0}</span></div>`;
+            html += `<div><span style="color: #666;">Defense:</span> <span style="color: #0ff;">${data.mitigation?.total || 0}</span></div>`;
+            html += `<div><span style="color: #666;">Health:</span> <span style="color: #0f0;">${data.health ?? 0}%</span></div>`;
+            html += `</div>`;
+
+            // Resonators (Compact Grid: R1-R8)
+            html += `<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; margin-bottom: 12px;">`;
+            const resos = data.resonators || [];
+            for (let i = 0; i < 8; i++) {
+                const r = resos[i];
+                const label = r ? `R${r.level}` : '-';
+                const opacity = r ? 1 : 0.2;
+                html += `<div style="background: #222; border-bottom: 2px solid #0f0; text-align: center; font-size: 9px; padding: 2px; opacity: ${opacity};">${label}</div>`;
+            }
+            html += `</div>`;
+
+            // Mods (Abbreviated: VRS, VRHS, etc.)
+            html += `<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px;">`;
+            const mods = data.mods || [];
+            for (let i = 0; i < 4; i++) {
+                const m = mods[i];
+                let label = '-';
+                if (m) {
+                    const rarity = m.rarity === 'VERY_RARE' ? 'VR' : (m.rarity === 'RARE' ? 'R' : 'C');
+                    // Abbreviate name: "Portal Shield" -> "S", "Heat Sink" -> "HS"
+                    const shortName = m.name.split(' ').map((w: string) => w[0]).join('');
+                    label = `${rarity}${shortName}`;
+                }
+                html += `<div style="background: #151515; padding: 4px; border-left: 2px solid #b08cff; font-size: 10px; opacity: ${m ? 1 : 0.2}; text-align: center;">${label}</div>`;
+            }
+            html += `</div>`;
+
+            // History
+            html += `<div style="display: flex; gap: 8px; margin-top: 12px;">`;
+            html += `<span style="border: 1px solid ${data.visited ? '#9b59b6' : '#333'}; color: ${data.visited ? '#9b59b6' : '#444'}; padding: 2px 6px; border-radius: 99px; font-size: 9px;">V</span>`;
+            html += `<span style="border: 1px solid ${data.captured ? '#e74c3c' : '#333'}; color: ${data.captured ? '#e74c3c' : '#444'}; padding: 2px 6px; border-radius: 99px; font-size: 9px;">C</span>`;
+            html += `</div>`;
+            html += `</div>`; 
+        } else {
+            html += `<div style="padding: 12px;">`;
+            html += `<div style="color: ${teamColor}; font-weight: bold; margin-bottom: 8px;">${type.toUpperCase()} DETAILS</div>`;
+            html += `<div>ID: ${data.id}</div><div>Team: ${data.team}</div>`;
+            html += `</div>`;
+        }
 
         const selSource = map.getSource('selection') as maplibregl.GeoJSONSource;
-        const selFeatures: any[] = [];
-
-        if (type === 'portal') {
-            selFeatures.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [data.lng, data.lat] }, properties: { type: 'portal' } });
-        } else if (type === 'link') {
+        const selFeat: any[] = [];
+        if (type === 'portal') selFeat.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [data.lng, data.lat] }, properties: { type: 'portal' } });
+        else if (type === 'link') {
             const p1 = liveMode ? useStore.getState().portals[data.fromPortalId] : generator.portals.get(data.fromPortalId);
             const p2 = liveMode ? useStore.getState().portals[data.toPortalId] : generator.portals.get(data.toPortalId);
-            if (p1 && p2) {
-                selFeatures.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: [[p1.lng, p1.lat], [p2.lng, p2.lat]] }, properties: { type: 'link' } });
-            }
+            if (p1 && p2) selFeat.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: [[p1.lng, p1.lat], [p2.lng, p2.lat]] }, properties: { type: 'link' } });
         } else if (type === 'field') {
             const pts = data.points;
             const poly = [...pts.map((p: any) => [p.lng, p.lat]), [pts[0].lng, pts[0].lat]];
-            selFeatures.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: poly }, properties: { type: 'field' } });
+            selFeat.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: poly }, properties: { type: 'field' } });
         }
+        if (selSource) selSource.setData({ type: 'FeatureCollection', features: selFeat });
 
-        if (selSource) selSource.setData({ type: 'FeatureCollection', features: selFeatures });
-
-        html += `<div style="margin-top: 10px; text-align: right;"><button id="close-details" style="background: #222; color: #eee; border: 1px solid #555; padding: 2px 8px; cursor: pointer; font-size: 10px;">CLOSE</button></div>`;
+        html += `<div style="padding: 12px; border-top: 1px solid #222; text-align: right;"><button id="close-details" style="background: #222; color: #eee; border: 1px solid #555; padding: 4px 12px; cursor: pointer; font-size: 10px; border-radius: 3px;">CLOSE</button></div>`;
         details.innerHTML = html;
         document.getElementById('close-details')?.addEventListener('click', () => { 
             details.style.display = 'none'; 
@@ -557,19 +602,36 @@ function initMap() {
         const msg = event.data;
         if (!msg || msg.type !== 'IRIS_DATA') return;
 
+        // Ensure params are parsed if stringified
+        let parsedParams = msg.params;
+        if (typeof msg.params === 'string') {
+            try { parsedParams = JSON.parse(msg.params); } catch (e) {}
+        }
+
         if (msg.url.includes('getEntities')) {
             const rawData = msg.data;
             const parsed = EntityParser.parse(rawData);
             const store = useStore.getState();
-            
             if (parsed.portals.length > 0) store.updatePortals(parsed.portals);
             if (parsed.links.length > 0) store.updateLinks(parsed.links);
             if (parsed.fields.length > 0) store.updateFields(parsed.fields);
-            
             store.syncIndex();
+            if (rawData.result?.map) store.setTileFreshness(Object.keys(rawData.result.map));
+            logEvent(`Live Data: ${parsed.portals.length}P, ${parsed.links.length}L`);
+        } else if (msg.url.includes('getPortalDetails')) {
+            const store = useStore.getState();
+            const guid = parsedParams?.guid || '';
+            if (!guid) return;
+
+            const linksIn = Object.values(store.links).filter((link) => link.toPortalId === guid).length;
+            const linksOut = Object.values(store.links).filter((link) => link.fromPortalId === guid).length;
+            const parsed = PortalDetailsParser.parse(msg.data, { guid }, linksIn + linksOut);
             
-            if (rawData.result?.map) {
-                store.setTileFreshness(Object.keys(rawData.result.map));
+            if (parsed) {
+                store.updatePortals([parsed]);
+                logEvent(`Details: ${parsed.name} | ${parsed.resonators?.length || 0} resos`);
+                // Refresh dashboard if this portal is still selected
+                showDetails('portal', store.portals[guid]);
             }
         }
     });
@@ -609,7 +671,9 @@ function initMap() {
         }).filter(h => h.dist < 10).sort((a, b) => a.dist - b.dist);
 
         if (portalHits.length > 0) {
-            showDetails('portal', portalHits[0].p);
+            const p = portalHits[0].p;
+            showDetails('portal', p);
+            if (liveMode) window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: p!.id }, '*');
             return;
         }
 
