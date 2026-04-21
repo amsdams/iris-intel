@@ -370,6 +370,7 @@ function initMap() {
         .drawer-container { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
         .drawer-content { display: none; flex-direction: column; gap: 4px; padding: 4px; background: rgba(20,20,20,0.8); border-radius: 4px; border: 1px solid #00ffff; }
         #pos-log { position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.85); color: #fff; padding: 4px 8px; font-family: monospace; font-size: 11px; border-radius: 4px; z-index: 1000006; border: 1px solid #888; pointer-events: none; display: none; }
+        #event-log { position: fixed; bottom: 10px; left: 10px; right: 10px; height: 100px; background: rgba(0,0,0,0.85); color: #00ffff; overflow-y: auto; z-index: 2000000; font-family: monospace; padding: 10px; font-size: 11px; border: 1px solid #00ffff; pointer-events: none; border-radius: 4px; opacity: 0.8; display: none; }
     `;
     document.head.appendChild(bodyStyle);
 
@@ -381,22 +382,55 @@ function initMap() {
     posLog.id = 'pos-log';
     document.body.appendChild(posLog);
 
+    const eventLog = document.createElement('div');
+    eventLog.id = 'event-log';
+    document.body.appendChild(eventLog);
+
     const details = document.createElement('div');
     details.id = 'entity-details';
-    details.style.cssText = `position: fixed; top: 50px; left: 10px; width: 250px; background: rgba(0,0,0,0.9); color: #fff; padding: 12px; font-family: monospace; font-size: 12px; border: 1px solid #444; border-radius: 4px; z-index: 1000007; display: none; pointer-events: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.5);`;
+    details.style.cssText = `position: fixed; top: 50px; left: 10px; width: 250px; background: rgba(0,0,0,0.9); color: #fff; padding: 12px; font-family: monospace; font-size: 12px; border: 1px solid #444; border-radius: 4px; z-index: 1000007; display: none; pointer-events: auto;`;
     document.body.appendChild(details);
 
-    function logEvent(msg: string) { console.log(`[POC] ${msg}`); }
+    function logEvent(msg: string) { 
+        const entry = document.createElement('div');
+        entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        eventLog.prepend(entry);
+        if (eventLog.children.length > 30) eventLog.lastChild?.remove();
+        console.log(`[POC] ${msg}`); 
+    }
 
     function showDetails(type: string, data: any) {
         details.style.display = 'block';
         details.style.borderColor = COLORS[data.team as keyof typeof COLORS] || '#444';
-        let html = `<div style="color: ${COLORS[data.team as keyof typeof COLORS]}; font-weight: bold; margin-bottom: 8px;">${type.toUpperCase()} DETAILS</div>`;
+        let html = `<div style="color: ${COLORS[data.team as keyof typeof COLORS]}; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid #333; padding-bottom: 4px;">${type.toUpperCase()} DETAILS</div>`;
         html += `<div>ID: ${data.id}</div>`;
         html += `<div>Team: ${data.team}</div>`;
+
+        const selSource = map.getSource('selection') as maplibregl.GeoJSONSource;
+        const selFeatures: any[] = [];
+
+        if (type === 'portal') {
+            selFeatures.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [data.lng, data.lat] }, properties: { type: 'portal' } });
+        } else if (type === 'link') {
+            const p1 = liveMode ? useStore.getState().portals[data.fromPortalId] : generator.portals.get(data.fromPortalId);
+            const p2 = liveMode ? useStore.getState().portals[data.toPortalId] : generator.portals.get(data.toPortalId);
+            if (p1 && p2) {
+                selFeatures.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: [[p1.lng, p1.lat], [p2.lng, p2.lat]] }, properties: { type: 'link' } });
+            }
+        } else if (type === 'field') {
+            const pts = data.points;
+            const poly = [...pts.map((p: any) => [p.lng, p.lat]), [pts[0].lng, pts[0].lat]];
+            selFeatures.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: poly }, properties: { type: 'field' } });
+        }
+
+        if (selSource) selSource.setData({ type: 'FeatureCollection', features: selFeatures });
+
         html += `<div style="margin-top: 10px; text-align: right;"><button id="close-details" style="background: #222; color: #eee; border: 1px solid #555; padding: 2px 8px; cursor: pointer; font-size: 10px;">CLOSE</button></div>`;
         details.innerHTML = html;
-        document.getElementById('close-details')?.addEventListener('click', () => { details.style.display = 'none'; });
+        document.getElementById('close-details')?.addEventListener('click', () => { 
+            details.style.display = 'none'; 
+            if (selSource) selSource.setData({ type: 'FeatureCollection', features: [] });
+        });
     }
 
     const map = new maplibregl.Map({
@@ -405,7 +439,8 @@ function initMap() {
             version: 8,
             sources: {
                 'carto': { type: 'raster', tiles: MAP_STYLES['Dark'], tileSize: 256 },
-                'entities': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } }
+                'entities': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
+                'selection': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } }
             },
             layers: [
                 { id: 'carto', type: 'raster', source: 'carto' },
@@ -421,6 +456,9 @@ function initMap() {
                 { id: 'l-ext-enl', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'link-ext'], ['==', 'team', 'E']], paint: { 'fill-extrusion-color': COLORS.E, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.8 }, layout: { visibility: 'none' } },
                 { id: 'l-ext-res', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'link-ext'], ['==', 'team', 'R']], paint: { 'fill-extrusion-color': COLORS.R, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.8 }, layout: { visibility: 'none' } },
                 { id: 'l-ext-mac', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'link-ext'], ['==', 'team', 'M']], paint: { 'fill-extrusion-color': COLORS.M, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.8 }, layout: { visibility: 'none' } },
+                { id: 'sel-f', type: 'line', source: 'selection', filter: ['==', 'type', 'field'], paint: { 'line-color': '#fff', 'line-width': 3 } },
+                { id: 'sel-l', type: 'line', source: 'selection', filter: ['==', 'type', 'link'], paint: { 'line-color': '#fff', 'line-width': 4 } },
+                { id: 'sel-p', type: 'circle', source: 'selection', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': 12, 'circle-color': 'transparent', 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 } },
                 { id: 'f-tether-enl', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'field-tether'], ['==', 'team', 'E']], paint: { 'fill-extrusion-color': COLORS.E, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': 0, 'fill-extrusion-opacity': 0.2 }, layout: { visibility: 'none' } },
                 { id: 'f-tether-res', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'field-tether'], ['==', 'team', 'R']], paint: { 'fill-extrusion-color': COLORS.R, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': 0, 'fill-extrusion-opacity': 0.2 }, layout: { visibility: 'none' } },
                 { id: 'p', type: 'circle', source: 'entities', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': 4, 'circle-color': ['match', ['get', 'team'], 'E', COLORS.E, 'R', COLORS.R, 'M', COLORS.M, COLORS.N] } }
@@ -574,7 +612,9 @@ function initMap() {
         const isVis = container.style.display === 'block';
         container.style.display = isVis ? 'none' : 'block';
         btns.style.display = isVis ? 'none' : 'flex';
-        if (!isVis) { map.resize(); checkAndLoad(map); }
+        posLog.style.display = isVis ? 'none' : 'block';
+        eventLog.style.display = isVis ? 'none' : 'block';
+        if (!isVis) { map.resize(); checkAndLoad(map); logEvent("Tactical Map Opened"); }
     });
 }
 setTimeout(initMap, 500);
