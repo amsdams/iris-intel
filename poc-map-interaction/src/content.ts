@@ -573,8 +573,12 @@ function initMap(): void {
     };
 
     const nav = mkDrawer('🧭');
-    nav('+', () => map.zoomIn());
-    nav('-', () => map.zoomOut());
+    nav('+', () => { map.zoomIn(); });
+    nav('-', () => { map.zoomOut(); });
+    nav('↑', () => { map.panBy([0, -200]); });
+    nav('↓', () => { map.panBy([0, 200]); });
+    nav('←', () => { map.panBy([-200, 0]); });
+    nav('→', () => { map.panBy([200, 0]); });
     nav('R', () => { map.setCenter([4.8952, 52.3702]); map.setZoom(13); });
 
     const sty = mkDrawer('🎨');
