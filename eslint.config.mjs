@@ -10,10 +10,21 @@ export default tseslint.config(
   ...tseslint.configs.strict,
   ...tseslint.configs.stylistic,
   {
-    files: ['**/vite.config.ts'],
+    files: ['**/vite.config.ts', 'poc-map-interaction/build-zip.cjs'],
     languageOptions: {
         globals: {
             ...globals.node,
+        }
+    },
+    rules: {
+        '@typescript-eslint/no-require-imports': 'off',
+    }
+  },
+  {
+    files: ['poc-map-interaction/public/interceptor.js'],
+    languageOptions: {
+        globals: {
+            ...globals.browser,
         }
     }
   },

@@ -12,7 +12,7 @@ export function getMinLevelForZoom(zoom: number): number {
 
 /**
  * Returns a grid size (in degrees) suitable for the given zoom level.
- * Used for spatial partitioning and clustering.
+ * Used for spatial partitioning and clustering.lets start with aligning tsconfig sn esli
  */
 export function getGridSizeForZoom(zoom: number): number {
     if (zoom >= 13) return 0.05;

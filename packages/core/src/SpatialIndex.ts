@@ -23,7 +23,7 @@ export class SpatialIndex {
     /**
      * Clears the entire index.
      */
-    clear() {
+    clear(): void {
         this.index.clear();
         this.tracker.clear();
     }
@@ -31,7 +31,7 @@ export class SpatialIndex {
     /**
      * Removes an entity from the index by ID.
      */
-    remove(id: string) {
+    remove(id: string): void {
         const item = this.tracker.get(id);
         if (item) {
             this.index.remove(item);
@@ -42,7 +42,7 @@ export class SpatialIndex {
     /**
      * Updates or inserts a portal into the index.
      */
-    updatePortal(portal: Portal) {
+    updatePortal(portal: Portal): void {
         this.remove(portal.id);
         const item: EntityIndexItem = {
             minX: portal.lng,
@@ -59,7 +59,7 @@ export class SpatialIndex {
     /**
      * Updates or inserts a link into the index.
      */
-    updateLink(link: Link) {
+    updateLink(link: Link): void {
         this.remove(link.id);
         const item: EntityIndexItem = {
             minX: Math.min(link.fromLng, link.toLng),
@@ -76,7 +76,7 @@ export class SpatialIndex {
     /**
      * Updates or inserts a field into the index.
      */
-    updateField(field: Field) {
+    updateField(field: Field): void {
         this.remove(field.id);
         const lngs = field.points.map(p => p.lng);
         const lats = field.points.map(p => p.lat);
@@ -109,7 +109,7 @@ export class SpatialIndex {
      * Bulk updates the index from the provided records.
      * Useful for initial hydration or large state changes.
      */
-    syncAll(portals: Record<string, Portal>, links: Record<string, Link>, fields: Record<string, Field>) {
+    syncAll(portals: Record<string, Portal>, links: Record<string, Link>, fields: Record<string, Field>): void {
         this.clear();
         Object.values(portals).forEach(p => this.updatePortal(p));
         Object.values(links).forEach(l => this.updateLink(l));

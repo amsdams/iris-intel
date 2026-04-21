@@ -21,6 +21,12 @@
       "@iris/plugin-sdk": ["./packages/plugin-sdk/src"]
     }
   },
-  "include": ["packages/**/*.ts", "packages/**/*.tsx", "vitest.setup.ts"],
+  "include": [
+    "packages/**/*.ts",
+    "packages/**/*.tsx",
+    "poc-map-interaction/src/**/*.ts",
+    "poc-map-interaction/src/**/*.tsx",
+    "vitest.setup.ts"
+  ],
   "exclude": ["node_modules"]
 }

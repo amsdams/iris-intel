@@ -10,10 +10,10 @@ interface EntityIndexItem {
 }
 
 export class MockDataGenerator {
-    public portals: Map<string, Portal> = new Map();
-    public linksMap: Map<string, Link> = new Map();
-    public fieldsMap: Map<string, Field> = new Map();
-    private neighborMap: Map<string, Set<string>> = new Map();
+    public portals = new Map<string, Portal>();
+    public linksMap = new Map<string, Link>();
+    public fieldsMap = new Map<string, Field>();
+    private neighborMap = new Map<string, Set<string>>();
     private index = new RBush<EntityIndexItem>();
 
     get links(): Link[] {
@@ -24,7 +24,7 @@ export class MockDataGenerator {
         return Array.from(this.fieldsMap.values());
     }
 
-    clear() {
+    clear(): void {
         this.portals.clear();
         this.linksMap.clear();
         this.fieldsMap.clear();
@@ -32,7 +32,7 @@ export class MockDataGenerator {
         this.index.clear();
     }
 
-    addPortal(id: string, team: Faction, lng: number, lat: number, level: number = 0): Portal {
+    addPortal(id: string, team: Faction, lng: number, lat: number, level = 0): Portal {
         const existing = this.portals.get(id);
         if (existing) return existing;
 
@@ -80,7 +80,8 @@ export class MockDataGenerator {
         if (team === 'N') return null; 
 
         const linkId = id || [p1.id, p2.id].sort().join('->');
-        if (this.linksMap.has(linkId)) return this.linksMap.get(linkId)!;
+        const existingLink = this.linksMap.get(linkId);
+        if (existingLink) return existingLink;
 
         const minX = Math.min(p1.lng, p2.lng);
         const minY = Math.min(p1.lat, p2.lat);
@@ -113,27 +114,31 @@ export class MockDataGenerator {
         this.linksMap.set(linkId, link);
         this.index.insert({ minX, minY, maxX, maxY, id: linkId, type: 'link' });
 
-        const n1 = this.neighborMap.get(p1Id)!;
-        const n2 = this.neighborMap.get(p2Id)!;
+        const n1 = this.neighborMap.get(p1Id);
+        const n2 = this.neighborMap.get(p2Id);
         
-        n1.forEach(p3Id => {
-            if (n2.has(p3Id)) {
-                this.addField(`F-${[p1Id, p2Id, p3Id].sort().join('-')}`, team, p1Id, p2Id, p3Id);
-            }
-        });
+        if (n1 && n2) {
+            n1.forEach(p3Id => {
+                if (n2.has(p3Id)) {
+                    this.addField(`F-${[p1Id, p2Id, p3Id].sort().join('-')}`, team, p1Id, p2Id, p3Id);
+                }
+            });
 
-        n1.add(p2Id);
-        n2.add(p1Id);
+            n1.add(p2Id);
+            n2.add(p1Id);
+        }
 
         return link;
     }
 
     private addField(id: string, team: Faction, p1Id: string, p2Id: string, p3Id: string): Field | null {
-        if (this.fieldsMap.has(id)) return this.fieldsMap.get(id)!;
+        if (this.fieldsMap.has(id)) return this.fieldsMap.get(id) || null;
 
-        const p1 = this.portals.get(p1Id)!;
-        const p2 = this.portals.get(p2Id)!;
-        const p3 = this.portals.get(p3Id)!;
+        const p1 = this.portals.get(p1Id);
+        const p2 = this.portals.get(p2Id);
+        const p3 = this.portals.get(p3Id);
+
+        if (!p1 || !p2 || !p3) return null;
 
         const field: Field = { 
             id, 
@@ -155,7 +160,7 @@ export class MockDataGenerator {
         return field;
     }
 
-    query(bounds: { minX: number, minY: number, maxX: number, maxY: number }) {
+    query(bounds: { minX: number, minY: number, maxX: number, maxY: number }): EntityIndexItem[] {
         return this.index.search(bounds);
     }
 

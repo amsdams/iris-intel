@@ -15,6 +15,7 @@
 .iris-map-theme-name {
   flex: 1;
 }
+
 .iris-map-container {
   position: absolute;
   top: 0;
@@ -50,9 +51,9 @@
 .iris-map-control-btn {
   width: 36px;
   height: 36px;
-  background: rgba(10, 10, 10, 0.85);
-  color: #00ffff;
-  border: 1px solid rgba(0, 255, 255, 0.4);
+  background: rgb(10 10 10 / 85%);
+  color: #0ff;
+  border: 1px solid rgb(0 255 255 / 40%);
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -61,20 +62,20 @@
   font-weight: bold;
   cursor: pointer;
   pointer-events: auto;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 10px rgb(0 0 0 / 50%);
   transition: all 0.2s ease;
   padding: 0;
 }
 
 .iris-map-control-btn:hover {
-  background: rgba(20, 20, 20, 0.95);
-  border-color: #00ffff;
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+  background: rgb(20 20 20 / 95%);
+  border-color: #0ff;
+  box-shadow: 0 0 15px rgb(0 255 255 / 30%);
 }
 
 .iris-map-control-btn:active {
   transform: scale(0.92);
-  background: #00ffff;
+  background: #0ff;
   color: #000;
 }
 

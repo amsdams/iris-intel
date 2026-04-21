@@ -139,13 +139,6 @@ export function MapOverlay(): JSX.Element {
   const mapThemeId = useStore((state) => state.mapThemeId);
   const theme = THEMES[themeId] || THEMES.INGRESS;
 
-  const touchState = useRef({
-    startX: 0,
-    startY: 0,
-    hasMoved: false
-  });
-
-
   const getMapThemeTiles = (id: string): string[] => {
     const mt = MAP_THEMES[id] || MAP_THEMES.DARK;
     if (mt.url.includes('{s}')) {
@@ -190,7 +183,7 @@ export function MapOverlay(): JSX.Element {
     return source ? (source as maplibregl.RasterTileSource) : null;
   };
 
-  const logMapEvent = (type: string, layerId: string, featureId?: string) => {
+  const logMapEvent = (type: string, layerId: string, featureId?: string): void => {
     useStore.getState().addInteractionLog({
         type: 'click',
         layerId: `MAP-${type}-${layerId}`,
@@ -198,7 +191,7 @@ export function MapOverlay(): JSX.Element {
     });
   };
 
-  const syncViewport = useCallback(() => {
+  const syncViewport = useCallback((): void => {
     if (!map.current || !styleLoaded) return;
 
     const bounds = map.current.getBounds();
@@ -283,11 +276,11 @@ export function MapOverlay(): JSX.Element {
   }, [styleLoaded, showFields, showLinks, showOrnaments, showArtifacts, showResistance, showEnlightened, showMachina, showUnclaimedPortals, showLevel, showHealth, artifacts, mockOrnaments, missionDetails, pluginFeatures]);
 
   // Direct DOM listener as a fallback/debug
-  useEffect(() => {
+  useEffect((): undefined | (() => void) => {
     const el = mapContainer.current;
     if (!el) return;
 
-    const handleTouchStart = () => {
+    const handleTouchStart = (): void => {
         useStore.getState().addInteractionLog({
             type: 'click',
             layerId: 'DOM-touchstart'
@@ -295,13 +288,13 @@ export function MapOverlay(): JSX.Element {
     };
 
     el.addEventListener('touchstart', handleTouchStart, { passive: true });
-    return () => el.removeEventListener('touchstart', handleTouchStart);
+    return (): void => el.removeEventListener('touchstart', handleTouchStart);
   }, []);
 
   // ---------------------------------------------------------------------------
   // Initialise MapLibre map once on mount
   // ---------------------------------------------------------------------------
-  useEffect(() => {
+  useEffect((): undefined | (() => void) => {
     if (!mapContainer.current) return;
     const markerRegistry = pluginMarkers.current;
 
@@ -593,29 +586,29 @@ export function MapOverlay(): JSX.Element {
       useStore.getState().reverseGeocode(center.lat, center.lng);
     });
 
-    const handlePointInteraction = (feature: any, lngLat: any): void => {
+    const handlePointInteraction = (feature: maplibregl.MapGeoJSONFeature): void => {
         try {
             // Waive Xray vision on Firefox to safely access properties from the page context
-            const f = (feature as any).wrappedJSObject || feature;
+            const f = (feature as unknown as { wrappedJSObject?: maplibregl.MapGeoJSONFeature }).wrappedJSObject || feature;
             if (!f) return;
 
             // Extract properties safely
-            let props: any = {};
+            let props: GeoJSON.GeoJsonProperties = {};
             try {
-                props = f.properties || {};
-            } catch (e: any) {
-                logMapEvent('err-props', e.message);
+                props = (f as maplibregl.MapGeoJSONFeature).properties || {};
+            } catch (e: unknown) {
+                logMapEvent('err-props', (e as Error).message);
             }
 
-            const id = (props.id || props.portalId || props.guid) as string | undefined;
+            const id = (props?.id || props?.portalId || props?.guid) as string | undefined;
             
             if (id) {
                 const finalId = String(id);
                 useStore.getState().selectPortal(finalId);
                 window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: finalId }, '*');
             }
-        } catch (err: any) {
-            logMapEvent('err-interaction', err.message);
+        } catch (err: unknown) {
+            logMapEvent('err-interaction', (err as Error).message);
         }
     };
 
@@ -644,7 +637,7 @@ export function MapOverlay(): JSX.Element {
 
         if (hits.length > 0) {
             logMapEvent(isTouch ? 'tap-fallback' : 'click-fallback', hits[0].layer.id, 'hit');
-            handlePointInteraction(hits[0], hits[0].geometry);
+            handlePointInteraction(hits[0]);
         } else {
             // Last resort: Query RBush directly for the closest portal
             // (Degrees buffer instead of pixels)
@@ -687,7 +680,7 @@ export function MapOverlay(): JSX.Element {
   }, []);
 
   // Sync Camera
-  useEffect(() => {
+  useEffect((): void => {
     if (!map.current || !styleLoaded || (lat === 0 && lng === 0)) return;
 
     if (isFirstSync.current) {
@@ -703,7 +696,7 @@ export function MapOverlay(): JSX.Element {
   }, [lat, lng, zoom, styleLoaded]);
 
   // Sync Theme
-  useEffect(() => {
+  useEffect((): undefined | (() => void) => {
     if (!map.current || !styleLoaded) return;
     map.current.setPaintProperty('fields', 'fill-color', teamColourExpr);
     map.current.setPaintProperty('links', 'line-color', teamColourExpr);
@@ -712,7 +705,7 @@ export function MapOverlay(): JSX.Element {
   }, [styleLoaded, teamColourExpr]);
 
   // Sync Map Theme
-  useEffect(() => {
+  useEffect((): undefined | (() => void) => {
     if (!map.current || !styleLoaded) return;
     const source = getRasterTileSource('osm');
     if (source) {
@@ -720,7 +713,7 @@ export function MapOverlay(): JSX.Element {
     }
   }, [mapThemeId, styleLoaded]);
 
-  useEffect(() => {
+  useEffect((): undefined | (() => void) => {
     if (!map.current || !styleLoaded) return;
 
     useStore.getState().addInteractionLog({
@@ -759,7 +752,7 @@ export function MapOverlay(): JSX.Element {
   }, [allowRotation, allowPitch, styleLoaded]);
 
   // Sync Portal History Highlight Filters
-  useEffect(() => {
+  useEffect((): undefined | (() => void) => {
     if (!map.current || !styleLoaded) return;
 
     if (map.current.getLayer('portal-history-visited')) {
@@ -774,10 +767,10 @@ export function MapOverlay(): JSX.Element {
   }, [showVisited, showCaptured, showScanned, styleLoaded]);
 
   // Sync Viewport on Map Movement
-  useEffect(() => {
+  useEffect((): undefined | (() => void) => {
     if (!map.current || !styleLoaded) return;
     
-    const onMove = () => syncViewport();
+    const onMove = (): void => syncViewport();
     map.current.on('moveend', onMove);
     map.current.on('zoomend', onMove);
     
@@ -791,7 +784,7 @@ export function MapOverlay(): JSX.Element {
   }, [styleLoaded, syncViewport]);
 
   // Sync Viewport on Store Entity Changes (Decoupled from render cycle)
-  useEffect(() => {
+  useEffect((): undefined | (() => void) => {
     if (!map.current || !styleLoaded) return;
 
     // Subscribe to portal changes to trigger re-sync if they happen while in view
@@ -816,7 +809,7 @@ export function MapOverlay(): JSX.Element {
   }, [styleLoaded, syncViewport]);
 
   // Sync HTML Markers (Independent effect for performance)
-  useEffect(() => {
+  useEffect((): undefined | (() => void) => {
     if (!map.current || !styleLoaded) return;
 
     const activeMarkerIds = new Set<string>();
@@ -891,15 +884,15 @@ export function MapOverlay(): JSX.Element {
     });
   }, [pluginFeatures, styleLoaded, zoom]);
 
-  const panBy = (x: number, y: number) => {
+  const panBy = (x: number, y: number): void => {
     map.current?.panBy([x, y], { duration: 200 });
   };
 
-  const zoomIn = () => {
+  const zoomIn = (): void => {
     map.current?.zoomIn({ duration: 200 });
   };
 
-  const zoomOut = () => {
+  const zoomOut = (): void => {
     map.current?.zoomOut({ duration: 200 });
   };
 

@@ -317,26 +317,39 @@ Matching Ingress logic, the system should be **Link-Centric**:
 | :--- | :--- | :--- |
 | **Spatial Indexing** | **DONE** | Matches IRIS Core (`globalSpatialIndex`). |
 | **3D Rendering** | **ADVANCED** | Far superior to IRIS (Cylinders, Floating Beams, Stacking). |
-| **Live Interception**| **PASSIVE** | Basic hook; IRIS has active request coordination. |
-| **Interaction** | **STABLE (Sim)** | 100% reliable in Simulation; **BROKEN** in Live Mode. |
+| **Live Interception**| **ACTIVE** | Full active request support for portal details. |
+| **Rich Dashboard** | **DONE** | Supports R1-8, VRS/VRHS abbreviations, and Mitigation. |
+| **Interaction** | **STABLE** | Pixel-perfect snapping (Portals > Fields > Links). |
+| **Tooling** | **ALIGNED** | Standardized TSConfig/ESLint with root monorepo. |
 | **UI Framework** | **RAW DOM** | IRIS uses Preact; POC needs migration for porting. |
 
-### Critical TODOs
+### Alignment with IRIS & IITC-CE Core
 
-1. **Fix Live Mode Click Misses**:
-   - **Status**: **IN PROGRESS**. Recent fix added index syncing, but precision tuning continues.
-2. **Zoom Policy Alignment**:
-   - **Issue**: Some portals/links aren't loading at the same zoom levels as IRIS.
-   - **Goal**: Align the POC's `ZoomPolicy.ts` and `getDataZoomForMapZoom` logic exactly with the main extension to ensure consistent data density.
-3. **Player Tracker**:
-   - **Goal**: Intercept `/r/getPlexts` requests. Parse player nicknames and locations from the log entries. Align the POC with the main extension.
-   - **Visual**: Render players as 3D "Agent Avatars" that move in real-time on the map.
-4. **Tooling Alignment**:
-   - **Goal**: Synchronize `tsconfig.json`, ESLint rules, and Vitest configurations with the main `@iris` packages to ensure code quality consistency.
-5. **Preact Migration**:
-   - **Goal**: Refactor the raw DOM buttons and logs into Preact components to ensure the 3D map can be dropped into the main IRIS extension as a `MapV3` component.
-5. **Browser support**:
-   - **Goal**: Make sure extension works in chrome and firefox mobile. Currently no 3D button is visible on mobile firefox.
+To move from a POC to a core IRIS feature, the following alignment steps are required:
+
+1.  **Data Coordinator**:
+    *   Adopt the main extension's `request-coordinator.ts` logic.
+    *   Implement batching, intelligent polling (idle vs. active), and retry-with-backoff for entities.
+2.  **Standardized Data Handling**:
+    *   Expand beyond entities to handle **Inventory**, **Player Stats**, and **Scores**.
+    *   Align "Live Mode" state management with the main IRIS store slices.
+3.  **Preact Component Architecture**:
+    *   Refactor the dashboard and map controls into Preact components.
+    *   Enable the 3D Map to be used as a drop-in replacement for the current `MapOverlay.tsx`.
+4.  **IITC-CE Compatibility**:
+    *   Ensure plugin-sdk compatibility so standard IITC scripts can "target" the 3D view.
+
+### Critical TODOs (Next Session)
+
+1.  **Player Tracker**:
+    *   **Goal**: Intercept `/r/getPlexts` and parse agent locations.
+    *   **Visual**: Render real-time 3D "Agent Avatars" with movement traces.
+2.  **Preact Migration Phase 1**:
+    *   **Goal**: Convert the `showDetails` dashboard from HTML strings to a Preact component.
+3.  **Performance Optimization**:
+    *   **Goal**: Split the `entities` GeoJSON source into `src-portals`, `src-links`, and `src-fields` to minimize re-parse overhead in high-density areas.
+4.  **Browser support**:
+    *   **Goal**: Fix Mobile Firefox visibility issues (3D button missing on small viewports).
 
 ---
 

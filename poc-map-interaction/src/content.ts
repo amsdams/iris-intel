@@ -1,11 +1,11 @@
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { MockDataGenerator, Faction } from './MockDataGenerator';
-import { useStore, globalSpatialIndex, EntityParser, PortalDetailsParser, getMinLevelForZoom, getGridSizeForZoom } from '@iris/core';
+import { useStore, globalSpatialIndex, EntityParser, PortalDetailsParser, getMinLevelForZoom, getGridSizeForZoom, Portal, Link, Field } from '@iris/core';
 
 console.log("POC (TS): Tactical Overlay | v1.0.4 | Core Zoom Policy Active");
 
-function createCirclePolygon(lng: number, lat: number, radiusMeters: number, sides: number = 12): number[][][] {
+function createCirclePolygon(lng: number, lat: number, radiusMeters: number, sides = 12): number[][][] {
     const coords: number[][] = [];
     const km = radiusMeters / 1000;
     const latOffset = km / 111.32;
@@ -22,7 +22,7 @@ function createCirclePolygon(lng: number, lat: number, radiusMeters: number, sid
     return [coords];
 }
 
-function initMap() {
+function initMap(): void {
     const generator = new MockDataGenerator();
     const loadedKeys = new Set<string>();
     let extrusionEnabled = false;
@@ -51,7 +51,7 @@ function initMap() {
         ]
     };
 
-    function switchStyle(map: maplibregl.Map, name: string) {
+    function switchStyle(map: maplibregl.Map, name: string): void {
         if (!MAP_STYLES[name]) return;
         if (map.getLayer('carto')) map.removeLayer('carto');
         if (map.getSource('carto')) map.removeSource('carto');
@@ -69,7 +69,7 @@ function initMap() {
         logEvent(`Style: ${name}`);
     }
 
-    function toggleExtrusion(map: maplibregl.Map) {
+    function toggleExtrusion(map: maplibregl.Map): void {
         extrusionEnabled = !extrusionEnabled;
         const visibility = extrusionEnabled ? 'visible' : 'none';
         const flatVisibility = extrusionEnabled ? 'none' : 'visible';
@@ -89,7 +89,7 @@ function initMap() {
         logEvent(`Extrusion: ${extrusionEnabled ? 'ON' : 'OFF'}`);
     }
 
-    function generateForCell(latIdx: number, lngIdx: number, size: number, minLevel: number) {
+    function generateForCell(latIdx: number, lngIdx: number, size: number, minLevel: number): void {
         const minLat = latIdx * size;
         const minLng = lngIdx * size;
         const cellId = `${latIdx}_${lngIdx}_S${size.toFixed(2)}`;
@@ -143,7 +143,7 @@ function initMap() {
         });
     }
 
-    function loadPattern1(map: maplibregl.Map) {
+    function loadPattern1(map: maplibregl.Map): void {
         generator.clear();
         loadedKeys.clear();
         const center = map.getCenter();
@@ -162,7 +162,7 @@ function initMap() {
         logEvent("PATTERN 1: Single Nested.");
     }
 
-    function loadPattern2(map: maplibregl.Map) {
+    function loadPattern2(map: maplibregl.Map): void {
         generator.clear();
         loadedKeys.clear();
         const center = map.getCenter();
@@ -182,7 +182,7 @@ function initMap() {
         logEvent("PATTERN 2: Nested Diamond.");
     }
 
-    function loadPattern3(map: maplibregl.Map) {
+    function loadPattern3(map: maplibregl.Map): void {
         generator.clear();
         loadedKeys.clear();
         const center = map.getCenter();
@@ -216,7 +216,7 @@ function initMap() {
         logEvent("PATTERN 3: Scaled Global Scenario.");
     }
 
-    function syncToMap(map: maplibregl.Map) {
+    function syncToMap(map: maplibregl.Map): void {
         const bounds = map.getBounds();
         const zoom = map.getZoom();
         const minLevel = getMinLevelForZoom(zoom);
@@ -230,13 +230,13 @@ function initMap() {
         };
 
         const results = liveMode ? globalSpatialIndex.query(q) : generator.query({ minX: q.minLng, minY: q.minLat, maxX: q.maxLng, maxY: q.maxLat });
-        const features: any[] = [];
+        const features: GeoJSON.Feature[] = [];
         const store = useStore.getState();
 
         const portalMaxLayer = new Map<string, number>();
         const linkMaxLayer = new Map<string, number>();
         
-        const processFieldForHeights = (_id: string, layer: number, p1Id: string, p2Id: string, p3Id: string) => {
+        const processFieldForHeights = (_id: string, layer: number, p1Id: string, p2Id: string, p3Id: string): void => {
             [p1Id, p2Id, p3Id].forEach(pid => {
                 const currentP = portalMaxLayer.get(pid) ?? -1;
                 if (layer > currentP) portalMaxLayer.set(pid, layer);
@@ -250,15 +250,25 @@ function initMap() {
 
         if (liveMode) {
             Object.values(store.fields).forEach((f) => {
-                processFieldForHeights(f.id, 0, f.points[0].portalId!, f.points[1].portalId!, f.points[2].portalId!);
+                const p1Id = f.points[0]?.portalId;
+                const p2Id = f.points[1]?.portalId;
+                const p3Id = f.points[2]?.portalId;
+                if (p1Id && p2Id && p3Id) {
+                    processFieldForHeights(f.id, 0, p1Id, p2Id, p3Id);
+                }
             });
         } else {
             generator.fieldsMap.forEach(f => {
-                processFieldForHeights(f.id, 0, f.points[0].portalId!, f.points[1].portalId!, f.points[2].portalId!);
+                const p1Id = f.points[0]?.portalId;
+                const p2Id = f.points[1]?.portalId;
+                const p3Id = f.points[2]?.portalId;
+                if (p1Id && p2Id && p3Id) {
+                    processFieldForHeights(f.id, 0, p1Id, p2Id, p3Id);
+                }
             });
         }
         
-        results.forEach((item: any) => {
+        results.forEach((item) => {
             if (item.type === 'portal') {
                 const p = liveMode ? store.portals[item.id] : generator.portals.get(item.id);
                 if (!p) return;
@@ -306,7 +316,8 @@ function initMap() {
                 const points = f.points;
 
                 const isVisible = patternMode > 0 || liveMode || points.every((p) => {
-                    const portal = liveMode ? store.portals[p.portalId!] : generator.portals.get(p.portalId!);
+                    const pid = p.portalId;
+                    const portal = pid ? (liveMode ? store.portals[pid] : generator.portals.get(pid)) : null;
                     return (portal?.level ?? 0) >= minLevel;
                 });
                 if (isVisible) {
@@ -315,7 +326,7 @@ function initMap() {
                     const height = base_height + 5;
                     features.push({ type: 'Feature', id: `f-${f.id}`, geometry: { type: 'Polygon', coordinates: [poly] }, properties: { id: f.id, type: 'field', team: faction, height, base_height } });
                     
-                    points.forEach((p: any, i: number) => {
+                    points.forEach((p, i: number) => {
                         const s = 0.00005;
                         const tPoly = [[ [p.lng-s, p.lat-s], [p.lng+s, p.lat-s], [p.lng+s, p.lat+s], [p.lng-s, p.lat+s], [p.lng-s, p.lat-s] ]];
                         features.push({ 
@@ -334,7 +345,7 @@ function initMap() {
         logEvent(`RENDERED: ${features.length} items`);
     }
 
-    function checkAndLoad(map: maplibregl.Map) {
+    function checkAndLoad(map: maplibregl.Map): void {
         const zoom = map.getZoom();
         const minLevel = getMinLevelForZoom(zoom);
         const gridSize = getGridSizeForZoom(zoom);
@@ -390,35 +401,42 @@ function initMap() {
     details.style.cssText = `position: fixed; top: 50px; left: 10px; width: 250px; background: rgba(0,0,0,0.9); color: #fff; padding: 0; font-family: monospace; font-size: 12px; border: 1px solid #444; border-radius: 4px; z-index: 1000007; display: none; pointer-events: auto; overflow: hidden;`;
     document.body.appendChild(details);
 
-    function logEvent(msg: string) { 
+    function logEvent(msg: string): void { 
         const entry = document.createElement('div');
         entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
         eventLog.prepend(entry);
-        if (eventLog.children.length > 30) eventLog.lastChild?.remove();
+        if (eventLog.children.length > 30) {
+            const last = eventLog.lastChild;
+            if (last) last.remove();
+        }
         console.log(`[POC] ${msg}`); 
     }
 
-    function showDetails(type: string, data: any) {
-        details.style.display = 'block'; details.style.borderColor = COLORS[data.team as keyof typeof COLORS] || '#444';
-        const teamColor = COLORS[data.team as keyof typeof COLORS] || '#fff';
+    function showDetails(type: string, data: Portal | Link | Field): void {
+        details.style.display = 'block'; 
+        const teamKey = data.team as keyof typeof COLORS;
+        details.style.borderColor = COLORS[teamKey] || '#444';
+        const teamColor = COLORS[teamKey] || '#fff';
         
         let html = '';
         if (type === 'portal') {
-            if (data.image) html += `<div style="height: 100px; background: url(${data.image}) center/cover; border-bottom: 2px solid ${teamColor};"></div>`;
+            const p = data as Portal;
+            if (p.image) html += `<div style="height: 100px; background: url(${p.image}) center/cover; border-bottom: 2px solid ${teamColor};"></div>`;
             html += `<div style="padding: 12px;">`;
-            html += `<div style="color: ${teamColor}; font-weight: bold; font-size: 14px; margin-bottom: 4px;">${data.name || 'PORTAL'}</div>`;
-            html += `<div style="color: #888; font-size: 10px; margin-bottom: 12px;">Owner: ${data.owner || (data.team === 'N' ? 'Neutral' : 'Unknown')}</div>`;
+            html += `<div style="color: ${teamColor}; font-weight: bold; font-size: 14px; margin-bottom: 4px;">${p.name || 'PORTAL'}</div>`;
+            html += `<div style="color: #888; font-size: 10px; margin-bottom: 12px;">Owner: ${p.owner || (p.team === 'N' ? 'Neutral' : 'Unknown')}</div>`;
             
             // Stats Row
+            const mitigationTotal = p.mitigation?.total ?? 0;
             html += `<div style="display: flex; justify-content: space-between; margin-bottom: 12px; background: #111; padding: 6px; border-radius: 4px;">`;
-            html += `<div><span style="color: #666;">Level:</span> <span style="color: #ff0;">${data.level || 0}</span></div>`;
-            html += `<div><span style="color: #666;">Defense:</span> <span style="color: #0ff;">${data.mitigation?.total || 0}</span></div>`;
-            html += `<div><span style="color: #666;">Health:</span> <span style="color: #0f0;">${data.health ?? 0}%</span></div>`;
+            html += `<div><span style="color: #666;">Level:</span> <span style="color: #ff0;">${p.level || 0}</span></div>`;
+            html += `<div><span style="color: #666;">Defense:</span> <span style="color: #0ff;">${mitigationTotal}</span></div>`;
+            html += `<div><span style="color: #666;">Health:</span> <span style="color: #0f0;">${p.health ?? 0}%</span></div>`;
             html += `</div>`;
 
             // Resonators (Compact Grid: R1-R8)
             html += `<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; margin-bottom: 12px;">`;
-            const resos = data.resonators || [];
+            const resos = p.resonators || [];
             for (let i = 0; i < 8; i++) {
                 const r = resos[i];
                 const label = r ? `R${r.level}` : '-';
@@ -429,7 +447,7 @@ function initMap() {
 
             // Mods (Abbreviated: VRS, VRHS, etc.)
             html += `<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px;">`;
-            const mods = data.mods || [];
+            const mods = p.mods || [];
             for (let i = 0; i < 4; i++) {
                 const m = mods[i];
                 let label = '-';
@@ -445,8 +463,8 @@ function initMap() {
 
             // History
             html += `<div style="display: flex; gap: 8px; margin-top: 12px;">`;
-            html += `<span style="border: 1px solid ${data.visited ? '#9b59b6' : '#333'}; color: ${data.visited ? '#9b59b6' : '#444'}; padding: 2px 6px; border-radius: 99px; font-size: 9px;">V</span>`;
-            html += `<span style="border: 1px solid ${data.captured ? '#e74c3c' : '#333'}; color: ${data.captured ? '#e74c3c' : '#444'}; padding: 2px 6px; border-radius: 99px; font-size: 9px;">C</span>`;
+            html += `<span style="border: 1px solid ${p.visited ? '#9b59b6' : '#333'}; color: ${p.visited ? '#9b59b6' : '#444'}; padding: 2px 6px; border-radius: 99px; font-size: 9px;">V</span>`;
+            html += `<span style="border: 1px solid ${p.captured ? '#e74c3c' : '#333'}; color: ${p.captured ? '#e74c3c' : '#444'}; padding: 2px 6px; border-radius: 99px; font-size: 9px;">C</span>`;
             html += `</div>`;
             html += `</div>`; 
         } else {
@@ -457,25 +475,32 @@ function initMap() {
         }
 
         const selSource = map.getSource('selection') as maplibregl.GeoJSONSource;
-        const selFeat: any[] = [];
-        if (type === 'portal') selFeat.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [data.lng, data.lat] }, properties: { type: 'portal' } });
-        else if (type === 'link') {
-            const p1 = liveMode ? useStore.getState().portals[data.fromPortalId] : generator.portals.get(data.fromPortalId);
-            const p2 = liveMode ? useStore.getState().portals[data.toPortalId] : generator.portals.get(data.toPortalId);
+        const selFeat: GeoJSON.Feature[] = [];
+        if (type === 'portal') {
+            const p = data as Portal;
+            selFeat.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [p.lng, p.lat] }, properties: { type: 'portal' } });
+        } else if (type === 'link') {
+            const l = data as Link;
+            const p1 = liveMode ? useStore.getState().portals[l.fromPortalId] : generator.portals.get(l.fromPortalId);
+            const p2 = liveMode ? useStore.getState().portals[l.toPortalId] : generator.portals.get(l.toPortalId);
             if (p1 && p2) selFeat.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: [[p1.lng, p1.lat], [p2.lng, p2.lat]] }, properties: { type: 'link' } });
         } else if (type === 'field') {
-            const pts = data.points;
-            const poly = [...pts.map((p: any) => [p.lng, p.lat]), [pts[0].lng, pts[0].lat]];
+            const f = data as Field;
+            const pts = f.points;
+            const poly = [...pts.map((p) => [p.lng, p.lat]), [pts[0].lng, pts[0].lat]];
             selFeat.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: poly }, properties: { type: 'field' } });
         }
         if (selSource) selSource.setData({ type: 'FeatureCollection', features: selFeat });
 
         html += `<div style="padding: 12px; border-top: 1px solid #222; text-align: right;"><button id="close-details" style="background: #222; color: #eee; border: 1px solid #555; padding: 4px 12px; cursor: pointer; font-size: 10px; border-radius: 3px;">CLOSE</button></div>`;
         details.innerHTML = html;
-        document.getElementById('close-details')?.addEventListener('click', () => { 
-            details.style.display = 'none'; 
-            if (selSource) selSource.setData({ type: 'FeatureCollection', features: [] });
-        });
+        const closeBtn = document.getElementById('close-details');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => { 
+                details.style.display = 'none'; 
+                if (selSource) selSource.setData({ type: 'FeatureCollection', features: [] });
+            });
+        }
     }
 
     const map = new maplibregl.Map({
@@ -517,7 +542,7 @@ function initMap() {
     btns.style.cssText = 'position: fixed; top: 10px; right: 10px; display: none; flex-direction: column; align-items: flex-end; gap: 8px; z-index: 2000001; pointer-events: none;';
     document.body.appendChild(btns);
 
-    const mkDrawer = (icon: string) => {
+    const mkDrawer = (icon: string): (l: string, a: () => void) => void => {
         const dContainer = document.createElement('div');
         dContainer.className = 'drawer-container';
         btns.appendChild(dContainer);
@@ -533,7 +558,7 @@ function initMap() {
         catBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             const isOpen = content.style.display === 'flex';
-            document.querySelectorAll('.drawer-content').forEach(d => (d as HTMLElement).style.display = 'none');
+            document.querySelectorAll('.drawer-content').forEach(d => { (d as HTMLElement).style.display = 'none'; });
             content.style.display = isOpen ? 'none' : 'flex';
         });
 
@@ -573,7 +598,7 @@ function initMap() {
         }
     });
 
-    function syncIntelMap() {
+    function syncIntelMap(): void {
         if (!liveMode) return;
         const center = map.getCenter();
         window.postMessage({
@@ -584,32 +609,44 @@ function initMap() {
         }, '*');
     }
 
-    map.on('move', () => syncIntelMap());
+    map.on('move', () => { syncIntelMap(); });
     map.on('moveend', () => {
         syncIntelMap();
         checkAndLoad(map);
     });
 
-    function initInterceptor() {
+    function initInterceptor(): void {
         const script = document.createElement('script');
         script.src = chrome.runtime.getURL('interceptor.js');
         script.type = 'text/javascript';
         (document.head || document.documentElement).appendChild(script);
-        script.addEventListener('load', () => script.remove());
+        script.addEventListener('load', () => { script.remove(); });
     }
 
-    window.addEventListener('message', (event) => {
-        const msg = event.data;
+    interface IrisMessage {
+        type: string;
+        url: string;
+        data: unknown;
+        params: unknown;
+        guid?: string;
+    }
+
+    window.addEventListener('message', (event: MessageEvent): void => {
+        const msg = event.data as IrisMessage;
         if (!msg || msg.type !== 'IRIS_DATA') return;
 
         // Ensure params are parsed if stringified
-        let parsedParams = msg.params;
+        let parsedParams: unknown = msg.params;
         if (typeof msg.params === 'string') {
-            try { parsedParams = JSON.parse(msg.params); } catch (e) {}
+            try { 
+                parsedParams = JSON.parse(msg.params); 
+            } catch {
+                // ignore
+            }
         }
 
         if (msg.url.includes('getEntities')) {
-            const rawData = msg.data;
+            const rawData = msg.data as import('@iris/core').IntelMapData;
             const parsed = EntityParser.parse(rawData);
             const store = useStore.getState();
             if (parsed.portals.length > 0) store.updatePortals(parsed.portals);
@@ -620,18 +657,19 @@ function initMap() {
             logEvent(`Live Data: ${parsed.portals.length}P, ${parsed.links.length}L`);
         } else if (msg.url.includes('getPortalDetails')) {
             const store = useStore.getState();
-            const guid = parsedParams?.guid || '';
+            const guid = (parsedParams as { guid?: string })?.guid || '';
             if (!guid) return;
 
             const linksIn = Object.values(store.links).filter((link) => link.toPortalId === guid).length;
             const linksOut = Object.values(store.links).filter((link) => link.fromPortalId === guid).length;
-            const parsed = PortalDetailsParser.parse(msg.data, { guid }, linksIn + linksOut);
+            const parsed = PortalDetailsParser.parse(msg.data as import('@iris/core').PortalDetailsData, { guid }, linksIn + linksOut);
             
             if (parsed) {
                 store.updatePortals([parsed]);
-                logEvent(`Details: ${parsed.name} | ${parsed.resonators?.length || 0} resos`);
+                logEvent(`Details: ${parsed.name || 'unknown'} | ${parsed.resonators?.length || 0} resos`);
                 // Refresh dashboard if this portal is still selected
-                showDetails('portal', store.portals[guid]);
+                const p = store.portals[guid];
+                if (p) showDetails('portal', p);
             }
         }
     });
@@ -654,18 +692,18 @@ function initMap() {
         }
 
         const store = useStore.getState();
-        const portals = results.filter(r => r.type === 'portal').map(r => liveMode ? store.portals[r.id] : generator.portals.get(r.id)).filter(Boolean);
-        const links = results.filter(r => r.type === 'link').map(r => liveMode ? store.links[r.id] : generator.linksMap.get(r.id)).filter(Boolean);
+        const portals = results.filter(r => r.type === 'portal').map(r => liveMode ? store.portals[r.id] : generator.portals.get(r.id)).filter((p): p is Portal => !!p);
+        const links = results.filter(r => r.type === 'link').map(r => liveMode ? store.links[r.id] : generator.linksMap.get(r.id)).filter((l): l is Link => !!l);
         const allFields = results.filter(r => r.type === 'field').map(r => {
             const f = liveMode ? store.fields[r.id] : generator.fieldsMap.get(r.id);
             return f && generator.isPointInField(e.lngLat, f) ? f : null;
-        }).filter(Boolean);
+        }).filter((f): f is Field => !!f);
 
         // --- 2. Balanced Priority Evaluation (Screen Space) ---
         
         // Priority A: Portal Snap (10px)
         const portalHits = portals.map(p => {
-            const screenP = map.project([p!.lng, p!.lat]);
+            const screenP = map.project([p.lng, p.lat]);
             const dist = Math.hypot(screenP.x - e.point.x, screenP.y - e.point.y);
             return { p, dist };
         }).filter(h => h.dist < 10).sort((a, b) => a.dist - b.dist);
@@ -673,7 +711,7 @@ function initMap() {
         if (portalHits.length > 0) {
             const p = portalHits[0].p;
             showDetails('portal', p);
-            if (liveMode) window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: p!.id }, '*');
+            if (liveMode) window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: p.id }, '*');
             return;
         }
 
@@ -687,13 +725,13 @@ function initMap() {
 
         // Priority C: Link Snap (5px)
         const linkHits = links.map(l => {
-            const p1 = map.project([l!.fromLng ?? (l as any).points?.[0].lng, l!.fromLat ?? (l as any).points?.[0].lat]);
-            const p2 = map.project([l!.toLng ?? (l as any).points?.[1].lng, l!.toLat ?? (l as any).points?.[1].lat]);
+            const p1 = map.project([l.fromLng, l.fromLat]);
+            const p2 = map.project([l.toLng, l.toLat]);
             const A = e.point.x - p1.x; const B = e.point.y - p1.y;
             const C = p2.x - p1.x; const D = p2.y - p1.y;
             const dot = A * C + B * D; const len_sq = C * C + D * D;
             let param = -1; if (len_sq !== 0) param = dot / len_sq;
-            let xx, yy;
+            let xx: number, yy: number;
             if (param < 0) { xx = p1.x; yy = p1.y; }
             else if (param > 1) { xx = p2.x; yy = p2.y; }
             else { xx = p1.x + param * C; yy = p1.y + param * D; }

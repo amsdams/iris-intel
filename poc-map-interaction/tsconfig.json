@@ -1,23 +1,8 @@
 {
+  "extends": "../tsconfig.json",
   "compilerOptions": {
-    "target": "ESNext",
-    "useDefineForClassFields": true,
-    "module": "ESNext",
-    "lib": ["ESNext", "DOM"],
-    "moduleResolution": "Node",
-    "strict": true,
-    "sourceMap": true,
-    "resolveJsonModule": true,
-    "esModuleInterop": true,
-    "noEmit": true,
-    "paths": {
-      "@iris/core": ["../packages/core/src"],
-      "@iris/plugin-sdk": ["../packages/plugin-sdk/src"]
-    },
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
-    "skipLibCheck": true
+    "types": ["chrome", "vite/client"],
+    "sourceMap": true
   },
-  "include": ["src"]
+  "include": ["src/**/*"]
 }
