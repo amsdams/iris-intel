@@ -3,7 +3,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { MockDataGenerator, Faction } from './MockDataGenerator';
 import { useStore, globalSpatialIndex, EntityParser, getMinLevelForZoom, getGridSizeForZoom } from '@iris/core';
 
-console.log("POC (TS): Intel Mode (Initial Zoom 13) | v1.0.1 | Default: Amsterdam");
+console.log("POC (TS): Tactical Overlay | v1.0.4 | Core Zoom Policy Active");
 
 function createCirclePolygon(lng: number, lat: number, radiusMeters: number, sides: number = 12): number[][][] {
     const coords: number[][] = [];
