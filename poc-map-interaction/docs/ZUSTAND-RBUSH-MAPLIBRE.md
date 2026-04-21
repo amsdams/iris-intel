@@ -329,7 +329,7 @@ Matching Ingress logic, the system should be **Link-Centric**:
    - **Issue**: Some portals/links aren't loading at the same zoom levels as IRIS.
    - **Goal**: Align the POC's `ZoomPolicy.ts` and `getDataZoomForMapZoom` logic exactly with the main extension to ensure consistent data density.
 3. **Player Tracker**:
-   - **Goal**: Intercept `/r/getPlexts` requests. Parse player nicknames and locations from the log entries.
+   - **Goal**: Intercept `/r/getPlexts` requests. Parse player nicknames and locations from the log entries. Align the POC with the main extension.
    - **Visual**: Render players as 3D "Agent Avatars" that move in real-time on the map.
 4. **Tooling Alignment**:
    - **Goal**: Synchronize `tsconfig.json`, ESLint rules, and Vitest configurations with the main `@iris` packages to ensure code quality consistency.

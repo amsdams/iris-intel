@@ -1,8 +1,7 @@
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { MockDataGenerator, Faction } from './MockDataGenerator';
-import { getMinLevelForZoom, getGridSizeForZoom } from './ZoomPolicy';
-import { useStore, globalSpatialIndex, EntityParser } from '@iris/core';
+import { useStore, globalSpatialIndex, EntityParser, getMinLevelForZoom, getGridSizeForZoom } from '@iris/core';
 
 console.log("POC (TS): Intel Mode (Initial Zoom 13) | v1.0.1 | Default: Amsterdam");
 
@@ -443,10 +442,12 @@ function initMap() {
     bodyStyle.textContent = `
         #map-poc-container { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #222; z-index: 1000000; display: none; }
         #launch-3d-btn { position: fixed; bottom: 120px; right: 10px; width: 60px; height: 60px; background: #000; color: #00ffff; border: 2px solid #00ffff; border-radius: 50%; z-index: 1000010; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; box-shadow: 0 0 15px rgba(0,255,255,0.4); }
-        .debug-btn { width: 40px; height: 40px; background: rgba(34,34,34,0.9); color: #fff; border: 1px solid #00ffff; border-radius: 4px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-user-select: none; user-select: none; }
+        .debug-btn { width: 36px; height: 36px; background: rgba(34,34,34,0.9); color: #fff; border: 1px solid #00ffff; border-radius: 4px; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-user-select: none; user-select: none; transition: background 0.2s; }
+        .debug-btn:active { background: #00ffff; color: #000; }
+        .drawer-container { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+        .drawer-content { display: none; flex-direction: column; gap: 4px; padding: 4px; background: rgba(20,20,20,0.8); border-radius: 4px; border: 1px solid #00ffff; }
         #pos-log { position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.85); color: #fff; padding: 4px 8px; font-family: monospace; font-size: 11px; border-radius: 4px; z-index: 1000006; border: 1px solid #888; pointer-events: none; display: none; }
         #debug-btns-container { display: none; }
-        #event-log { display: none; }
     `;
     document.head.appendChild(bodyStyle);
 
@@ -573,45 +574,83 @@ function initMap() {
 
     const btns = document.createElement('div');
     btns.id = 'debug-btns-container';
-    btns.style.cssText = 'position: fixed; top: 10px; right: 10px; display: none; flex-direction: row; flex-wrap: wrap; justify-content: flex-end; gap: 6px; z-index: 2000001; max-width: 140px; pointer-events: none;';
+    btns.style.cssText = 'position: fixed; top: 10px; right: 10px; display: none; flex-direction: column; align-items: flex-end; gap: 8px; z-index: 2000001; pointer-events: none;';
     document.body.appendChild(btns);
-    const mk = (l: string, a: () => void) => {
-        const b = document.createElement('div'); b.className = 'debug-btn'; b.textContent = l;
-        b.style.pointerEvents = 'auto';
-        b.addEventListener('pointerdown', (e) => { e.stopPropagation(); a(); });
-        btns.appendChild(b);
+
+    const openDrawers: HTMLElement[] = [];
+    const mkDrawer = (icon: string) => {
+        const container = document.createElement('div');
+        container.className = 'drawer-container';
+        container.style.pointerEvents = 'none';
+        btns.appendChild(container);
+
+        const catBtn = document.createElement('div');
+        catBtn.className = 'debug-btn';
+        catBtn.textContent = icon;
+        catBtn.style.pointerEvents = 'auto';
+        container.appendChild(catBtn);
+
+        const content = document.createElement('div');
+        content.className = 'drawer-content';
+        container.appendChild(content);
+
+        catBtn.addEventListener('pointerdown', (e) => {
+            e.stopPropagation();
+            const isOpen = content.style.display === 'flex';
+            // Close others
+            openDrawers.forEach(d => { if (d !== content) d.style.display = 'none'; });
+            content.style.display = isOpen ? 'none' : 'flex';
+            if (!isOpen && !openDrawers.includes(content)) openDrawers.push(content);
+        });
+
+        return (l: string, a: () => void) => {
+            const b = document.createElement('div');
+            b.className = 'debug-btn';
+            b.textContent = l;
+            b.style.pointerEvents = 'auto';
+            b.style.width = '34px'; b.style.height = '34px'; b.style.fontSize = '12px';
+            b.addEventListener('pointerdown', (e) => { e.stopPropagation(); a(); });
+            content.appendChild(b);
+        };
     };
-    mk('+', () => map.zoomIn()); mk('-', () => map.zoomOut());
-    mk('↑', () => map.panBy([0, -250])); mk('↓', () => map.panBy([0, 250]));
-    mk('←', () => map.panBy([-250, 0])); mk('→', () => map.panBy([150, 0]));
-    mk('R', () => { map.setCenter([4.8952, 52.3702]); map.setZoom(13); map.setPitch(0); map.setBearing(0); });
-    mk('X', () => toggleExtrusion(map));
-    mk('D', () => switchStyle(map, 'Dark'));
-    mk('L', () => switchStyle(map, 'Light'));
-    mk('V', () => switchStyle(map, 'Voyager'));
-    mk('O', () => switchStyle(map, 'OSM'));
-    mk('P', () => {
-        patternMode = (patternMode + 1) % 4;
-        if (patternMode > 0) liveMode = false; 
-        if (patternMode === 1) {
+
+    const nav = mkDrawer('🧭');
+    nav('+', () => map.zoomIn());
+    nav('-', () => map.zoomOut());
+    nav('↑', () => map.panBy([0, -250]));
+    nav('↓', () => map.panBy([0, 250]));
+    nav('←', () => map.panBy([-250, 0]));
+    nav('→', () => map.panBy([250, 0]));
+    nav('R', () => { map.setCenter([4.8952, 52.3702]); map.setZoom(13); map.setPitch(0); map.setBearing(0); });
+
+    const sty = mkDrawer('🎨');
+    sty('D', () => switchStyle(map, 'Dark'));
+    sty('L', () => switchStyle(map, 'Light'));
+    sty('V', () => switchStyle(map, 'Voyager'));
+    sty('O', () => switchStyle(map, 'OSM'));
+
+    const mod = mkDrawer('🛠');
+    mod('3D', () => toggleExtrusion(map));
+    mod('Src', () => {
+        // Cycle: Live (default) -> Pattern 1 -> Pattern 2 -> Pattern 3 -> back to Live
+        if (liveMode) {
+            liveMode = false;
+            patternMode = 1;
             loadPattern1(map);
-        } else if (patternMode === 2) {
+        } else if (patternMode === 1) {
+            patternMode = 2;
             loadPattern2(map);
-        } else if (patternMode === 3) {
+        } else if (patternMode === 2) {
+            patternMode = 3;
             loadPattern3(map);
         } else {
+            patternMode = 0;
+            liveMode = true;
             generator.clear();
             loadedKeys.clear();
             checkAndLoad(map);
+            logEvent("Mode: LIVE (Real Data)");
         }
-    });
-    mk('L', () => {
-        liveMode = !liveMode;
-        if (liveMode) patternMode = 0;
-        generator.clear();
-        loadedKeys.clear();
-        checkAndLoad(map);
-        logEvent(`Mode: ${liveMode ? 'LIVE (Real Data)' : 'SIMULATION'}`);
     });
 
     // Subscribe to real IRIS store updates
