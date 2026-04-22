@@ -28,7 +28,7 @@ export function Dashboard({ type, data, colors, onClose }: DashboardProps): JSX.
         const mods = p.mods || [];
         const mitigationTotal = p.mitigation?.total ?? 0;
         
-        // Calculate stickiness (simplified estimate based on common mod rules)
+        // Calculate stickiness (simplified estimate)
         let stickiness = 0;
         mods.forEach(m => {
             if (m.name.includes('Shield')) {
@@ -73,24 +73,25 @@ export function Dashboard({ type, data, colors, onClose }: DashboardProps): JSX.
                         </div>
                     </div>
 
-                    {/* Resonators (Compact Grid: R1-R8 with Health Bars) */}
+                    {/* Resonators (Compact Grid: R1-R8 with Health Bars and Owners) */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginBottom: '10px' }}>
                         {Array.from({ length: 8 }).map((_, i) => {
                             const r = resos[i];
                             const level = r?.level || 0;
-                            const energyPct = r ? 100 : 0; // Simulated health
+                            const energyPct = r ? (r.energy / (level > 0 ? (level * 1000) : 1000)) * 100 : 0;
                             const color = LEVEL_COLORS[level] || '#333';
                             return (
-                                <div key={i} style={{ background: '#1a1a1a', border: `1px solid ${color}44`, padding: '2px', position: 'relative', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <div key={i} style={{ background: '#1a1a1a', border: `1px solid ${color}44`, padding: '4px 2px', position: 'relative', minHeight: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                                     <span style={{ color: color, fontSize: '10px', fontWeight: 'bold', zIndex: 1 }}>{r ? `R${level}` : '-'}</span>
-                                    {r && <div style={{ position: 'absolute', bottom: 0, left: 0, height: '2px', background: '#0f0', width: `${energyPct}%` }}></div>}
+                                    {r && <div style={{ fontSize: '7px', fontWeight: 'normal', color: '#888', marginTop: '1px', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', zIndex: 1 }}>{r.owner}</div>}
+                                    {r && <div style={{ position: 'absolute', bottom: 0, left: 0, height: '2px', background: '#0f0', width: `${Math.min(100, energyPct)}%` }}></div>}
                                 </div>
                             );
                         })}
                     </div>
 
-                    {/* Mods (1 Row, 4 Cols) */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px' }}>
+                    {/* Mods (1 Row, 4 Cols with Full Owners) */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginBottom: '10px' }}>
                         {Array.from({ length: 4 }).map((_, i) => {
                             const m = mods[i];
                             let label = '-';
@@ -102,8 +103,9 @@ export function Dashboard({ type, data, colors, onClose }: DashboardProps): JSX.
                                 color = MOD_COLORS[m.rarity] || '#fff';
                             }
                             return (
-                                <div key={i} style={{ background: '#1a1a1a', border: `1px solid ${color}44`, padding: '4px 2px', fontSize: '9px', color: color, textAlign: 'center', minHeight: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: m ? 'bold' : 'normal' }}>
-                                    {label}
+                                <div key={i} style={{ background: '#1a1a1a', border: `1px solid ${color}44`, padding: '4px 2px', fontSize: '9px', color: color, textAlign: 'center', minHeight: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontWeight: m ? 'bold' : 'normal' }}>
+                                    <div>{label}</div>
+                                    {m && <div style={{ fontSize: '7px', fontWeight: 'normal', color: '#888', marginTop: '1px', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.owner}</div>}
                                 </div>
                             );
                         })}
