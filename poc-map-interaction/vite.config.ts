@@ -1,7 +1,9 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
+import preact from '@preact/preset-vite';
 
 export default defineConfig({
+  plugins: [preact()],
   define: {
     'process.env.NODE_ENV': JSON.stringify('production'),
   },
@@ -15,7 +17,7 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     lib: {
-      entry: resolve(__dirname, 'src/content.ts'),
+      entry: resolve(__dirname, 'src/content.tsx'),
       name: 'ContentScript',
       formats: ['iife'],
       fileName: () => 'content.js',

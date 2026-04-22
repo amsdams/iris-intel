@@ -13,9 +13,11 @@
   "dependencies": {
     "@iris/core": "*",
     "maplibre-gl": "^4.1.2",
+    "preact": "^10.19.0",
     "rbush": "^4.0.1"
   },
   "devDependencies": {
+    "@preact/preset-vite": "^2.7.0",
     "@types/rbush": "^4.0.0",
     "archiver": "^7.0.1",
     "typescript": "^5.4.5",
