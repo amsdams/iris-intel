@@ -1,6 +1,6 @@
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { render, h } from 'preact';
+import { render, h, Fragment } from 'preact';
 import { useState, useEffect, useCallback } from 'preact/hooks';
 import { MockDataGenerator, Faction } from './MockDataGenerator';
 import { useStore, globalSpatialIndex, EntityParser, PortalDetailsParser, getMinLevelForZoom, getGridSizeForZoom, Portal, Link, Field } from '@iris/core';
@@ -452,16 +452,20 @@ function TacticalOverlay(): h.JSX.Element {
 
     return (
         <div id="poc-preact-root" style={{ pointerEvents: 'none' }}>
-            <TacticalUI 
-                zoom={mapState.zoom} lat={mapState.lat} lng={mapState.lng} 
-                events={events}
-                onNav={handleNav} onStyle={handleStyle} onMode={handleMode}
-            />
-            {selected && (
-                <Dashboard 
-                    type={selected.type} data={selected.data} colors={COLORS} 
-                    onClose={() => setSelected(null)}
-                />
+            {isVis && (
+                <Fragment>
+                    <TacticalUI 
+                        zoom={mapState.zoom} lat={mapState.lat} lng={mapState.lng} 
+                        events={events}
+                        onNav={handleNav} onStyle={handleStyle} onMode={handleMode}
+                    />
+                    {selected && (
+                        <Dashboard 
+                            type={selected.type} data={selected.data} colors={COLORS} 
+                            onClose={() => setSelected(null)}
+                        />
+                    )}
+                </Fragment>
             )}
             <div id="launch-3d-btn" onClick={() => setIsVis(!isVis)} style={{ position: 'fixed', bottom: '120px', right: '10px', width: '60px', height: '60px', background: '#000', color: '#00ffff', border: '2px solid #00ffff', borderRadius: '50%', zIndex: 1000010, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '16px', boxShadow: '0 0 15px rgba(0,255,255,0.4)', pointerEvents: 'auto' }}>3D</div>
             <style>{`

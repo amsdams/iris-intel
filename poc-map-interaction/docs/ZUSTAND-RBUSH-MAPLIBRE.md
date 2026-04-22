@@ -318,10 +318,10 @@ Matching Ingress logic, the system should be **Link-Centric**:
 | **Spatial Indexing** | **DONE** | Matches IRIS Core (`globalSpatialIndex`). |
 | **3D Rendering** | **ADVANCED** | Far superior to IRIS (Cylinders, Floating Beams, Stacking). |
 | **Live Interception**| **ACTIVE** | Full active request support for portal details. |
-| **Rich Dashboard** | **DONE** | Supports R1-8, VRS/VRHS abbreviations, and Mitigation. |
+| **Rich Dashboard** | **DONE** | **Preact-based**. R1-8, 1x4 Mods, Full Nicknames, Health Bars. |
 | **Interaction** | **STABLE** | Pixel-perfect snapping (Portals > Fields > Links). |
-| **Tooling** | **ALIGNED** | Standardized TSConfig/ESLint with root monorepo. |
-| **UI Framework** | **RAW DOM** | IRIS uses Preact; POC needs migration for porting. |
+| **Tooling** | **ALIGNED** | Standardized TSConfig/ESLint/Stylelint with monorepo. |
+| **UI Framework** | **PREACT** | Fully migrated from Raw DOM to reactive components. |
 
 ### Alignment with IRIS & IITC-CE Core
 
@@ -333,23 +333,20 @@ To move from a POC to a core IRIS feature, the following alignment steps are req
 2.  **Standardized Data Handling**:
     *   Expand beyond entities to handle **Inventory**, **Player Stats**, and **Scores**.
     *   Align "Live Mode" state management with the main IRIS store slices.
-3.  **Preact Component Architecture**:
-    *   Refactor the dashboard and map controls into Preact components.
-    *   Enable the 3D Map to be used as a drop-in replacement for the current `MapOverlay.tsx`.
-4.  **IITC-CE Compatibility**:
-    *   Ensure plugin-sdk compatibility so standard IITC scripts can "target" the 3D view.
+3.  **Component Architecture**:
+    *   Further decouple `Dashboard` and `TacticalUI` into the `@iris/core` component library.
 
-### Critical TODOs (Next Session)
+### Next Session Priorities
 
-1.  **Player Tracker**:
-    *   **Goal**: Intercept `/r/getPlexts` and parse agent locations.
-    *   **Visual**: Render real-time 3D "Agent Avatars" with movement traces.
-2.  **Preact Migration Phase 1**:
-    *   **Goal**: Convert the `showDetails` dashboard from HTML strings to a Preact component.
-3.  **Performance Optimization**:
-    *   **Goal**: Split the `entities` GeoJSON source into `src-portals`, `src-links`, and `src-fields` to minimize re-parse overhead in high-density areas.
-4.  **Browser support**:
-    *   **Goal**: Fix Mobile Firefox visibility issues (3D button missing on small viewports).
+1.  **Player Tracker (COMM Integration)**:
+    *   **Goal**: Intercept `/r/getPlexts` to parse agent locations from the tactical log.
+    *   **Visual**: Render real-time 3D "Agent Avatars" with color-coded movement traces.
+2.  **Inventory: Keys on Map**:
+    *   **Goal**: Integrate the `@iris/core` Inventory parser.
+    *   **Visual**: Render glowing "Key Indicators" on portals where the agent holds a key, improving field planning.
+3.  **Performance: GeoJSON Splitting**:
+    *   **Goal**: Split the single `entities` source into `src-portals`, `src-links`, and `src-fields`.
+    *   **Why**: MapLibre re-parses the entire collection on every change; splitting them makes updates 3x faster in dense areas.
 
 ---
 
