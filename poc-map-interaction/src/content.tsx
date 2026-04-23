@@ -69,6 +69,7 @@ function TacticalOverlay(): h.JSX.Element {
         if (!map) return;
         generator.clear(); loadedKeys.clear();
         const center = map.getCenter();
+        // ENL
         generator.addPortal('A', 'E', center.lng - 0.002, center.lat, 8);
         generator.addPortal('B', 'E', center.lng + 0.002, center.lat, 8);
         generator.addPortal('C', 'E', center.lng, center.lat + 0.003, 8);
@@ -78,13 +79,24 @@ function TacticalOverlay(): h.JSX.Element {
         generator.addLink('L-CA', 'E', 'C', 'A');
         generator.addLink('L-AD', 'E', 'A', 'D');
         generator.addLink('L-BD', 'E', 'B', 'D');
-        logEvent("PATTERN 1: Single Nested.");
+        // RES Mirror
+        generator.addPortal('RA', 'R', center.lng - 0.002, center.lat - 0.005, 8);
+        generator.addPortal('RB', 'R', center.lng + 0.002, center.lat - 0.005, 8);
+        generator.addPortal('RC', 'R', center.lng, center.lat - 0.008, 8);
+        generator.addPortal('RD', 'R', center.lng, center.lat - 0.006, 8);
+        generator.addLink('RL-AB', 'R', 'RA', 'RB');
+        generator.addLink('RL-BC', 'R', 'RB', 'RC');
+        generator.addLink('RL-CA', 'R', 'RC', 'RA');
+        generator.addLink('RL-AD', 'R', 'RA', 'RD');
+        generator.addLink('RL-BD', 'R', 'RB', 'RD');
+        logEvent("PATTERN 1: Single Nested (Mirrored).");
     }, [map, generator, loadedKeys, logEvent]);
 
     const loadPattern2 = useCallback((): void => {
         if (!map) return;
         generator.clear(); loadedKeys.clear();
         const center = map.getCenter();
+        // ENL
         generator.addPortal('A', 'E', center.lng - 0.002, center.lat, 8);
         generator.addPortal('B', 'E', center.lng + 0.002, center.lat, 8);
         generator.addPortal('C', 'E', center.lng, center.lat + 0.003, 8);
@@ -95,13 +107,25 @@ function TacticalOverlay(): h.JSX.Element {
         generator.addLink('L-AD', 'E', 'A', 'D');
         generator.addLink('L-BD', 'E', 'B', 'D');
         generator.addLink('L-CD', 'E', 'C', 'D');
-        logEvent("PATTERN 2: Nested Diamond.");
+        // RES Mirror
+        generator.addPortal('RA', 'R', center.lng - 0.002, center.lat - 0.005, 8);
+        generator.addPortal('RB', 'R', center.lng + 0.002, center.lat - 0.005, 8);
+        generator.addPortal('RC', 'R', center.lng, center.lat - 0.008, 8);
+        generator.addPortal('RD', 'R', center.lng, center.lat - 0.006, 8);
+        generator.addLink('RL-AB', 'R', 'RA', 'RB');
+        generator.addLink('RL-BC', 'R', 'RB', 'RC');
+        generator.addLink('RL-CA', 'R', 'RC', 'RA');
+        generator.addLink('RL-AD', 'R', 'RA', 'RD');
+        generator.addLink('RL-BD', 'R', 'RB', 'RD');
+        generator.addLink('RL-CD', 'R', 'RC', 'RD');
+        logEvent("PATTERN 2: Nested Diamond (Mirrored).");
     }, [map, generator, loadedKeys, logEvent]);
 
     const loadPattern3 = useCallback((): void => {
         if (!map) return;
         generator.clear(); loadedKeys.clear();
         const center = map.getCenter();
+        // ENL
         generator.addPortal('A', 'E', center.lng - 0.002, center.lat, 8);
         generator.addPortal('B', 'E', center.lng + 0.002, center.lat, 8);
         generator.addPortal('C', 'E', center.lng, center.lat + 0.003, 8);
@@ -116,6 +140,23 @@ function TacticalOverlay(): h.JSX.Element {
         generator.addLink('L-AE', 'E', 'A', 'E');
         generator.addLink('L-BE', 'E', 'B', 'E');
         generator.addLink('L-DE', 'E', 'D', 'E');
+        // RES Mirror
+        const rOff = -0.008;
+        generator.addPortal('RA', 'R', center.lng - 0.002, center.lat + rOff, 8);
+        generator.addPortal('RB', 'R', center.lng + 0.002, center.lat + rOff, 8);
+        generator.addPortal('RC', 'R', center.lng, center.lat + rOff + 0.003, 8);
+        generator.addPortal('RD', 'R', center.lng, center.lat + rOff + 0.001, 8);
+        generator.addPortal('RE', 'R', center.lng, center.lat + rOff + 0.0005, 8);
+        generator.addLink('RL-AB', 'R', 'RA', 'RB');
+        generator.addLink('RL-BC', 'R', 'RB', 'RC');
+        generator.addLink('RL-CA', 'R', 'RC', 'RA');
+        generator.addLink('RL-AD', 'R', 'RA', 'RD');
+        generator.addLink('RL-BD', 'R', 'RB', 'RD');
+        generator.addLink('RL-CD', 'R', 'RC', 'RD');
+        generator.addLink('RL-AE', 'R', 'RA', 'RE');
+        generator.addLink('RL-BE', 'R', 'RB', 'RE');
+        generator.addLink('RL-DE', 'R', 'RD', 'RE');
+
         const mOff = 0.009;
         generator.addPortal('M1', 'M', center.lng + mOff, center.lat + 0.002, 1);
         generator.addPortal('M2', 'M', center.lng + mOff + 0.002, center.lat, 1);
@@ -124,7 +165,7 @@ function TacticalOverlay(): h.JSX.Element {
         const nOff = 0.006;
         generator.addPortal('N1', 'N', center.lng - 0.002, center.lat + nOff, 0);
         generator.addPortal('N2', 'N', center.lng + 0.002, center.lat + nOff, 0);
-        logEvent("PATTERN 3: Scaled Global Scenario.");
+        logEvent("PATTERN 3: Scaled Global (Mirrored).");
     }, [map, generator, loadedKeys, logEvent]);
 
     const syncToMap = useCallback((currentMap: maplibregl.Map, currentLiveMode: boolean, currentPatternMode: number): void => {
@@ -297,10 +338,9 @@ function TacticalOverlay(): h.JSX.Element {
                 },
                 layers: [
                     { id: 'carto', type: 'raster', source: 'carto' },
-                    { id: 'f-enl', type: 'fill', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'E']], paint: { 'fill-color': COLORS.E, 'fill-opacity': 0.1 } },
-                    { id: 'f-res', type: 'fill', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'R']], paint: { 'fill-color': COLORS.R, 'fill-opacity': 0.1 } },
-                    { id: 'f-mac', type: 'fill', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'M']], paint: { 'fill-color': COLORS.M, 'fill-opacity': 0.1 } },
-                    { id: 'l-enl', type: 'line', source: 'entities', filter: ['all', ['==', 'type', 'link'], ['==', 'team', 'E']], paint: { 'line-color': COLORS.E, 'line-width': 1.5 } },
+                    { id: 'f-enl', type: 'fill', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'E']], paint: { 'fill-color': COLORS.E, 'fill-opacity': 0.3 } },
+                    { id: 'f-res', type: 'fill', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'R']], paint: { 'fill-color': COLORS.R, 'fill-opacity': 0.3 } },
+                    { id: 'f-mac', type: 'fill', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'M']], paint: { 'fill-color': COLORS.M, 'fill-opacity': 0.3 } },                    { id: 'l-enl', type: 'line', source: 'entities', filter: ['all', ['==', 'type', 'link'], ['==', 'team', 'E']], paint: { 'line-color': COLORS.E, 'line-width': 1.5 } },
                     { id: 'l-res', type: 'line', source: 'entities', filter: ['all', ['==', 'type', 'link'], ['==', 'team', 'R']], paint: { 'line-color': COLORS.R, 'line-width': 1.5 } },
                     { id: 'l-mac', type: 'line', source: 'entities', filter: ['all', ['==', 'type', 'link'], ['==', 'team', 'M']], paint: { 'line-color': COLORS.M, 'line-width': 1.5 } },
                     { id: 'f-ext-enl', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'E']], paint: { 'fill-extrusion-color': COLORS.E, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.5 }, layout: { visibility: 'none' } },
