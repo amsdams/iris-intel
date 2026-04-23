@@ -15,7 +15,7 @@ import { useMapRenderer } from './useMapRenderer';
 import { useScores } from './useScores';
 import { usePlayerStats } from './usePlayerStats';
 
-console.log("POC (TS): Tactical Overlay | v1.2.7 | Player Stats Active");
+console.log("POC (TS): Tactical Overlay | v1.2.8 | COMM Map Interaction Active");
 
 function TacticalOverlay(): h.JSX.Element {
     const [map, setMap] = useState<maplibregl.Map | null>(null);
@@ -69,6 +69,23 @@ function TacticalOverlay(): h.JSX.Element {
         }
         syncToMap(currentMap, currentLiveMode, currentPatternMode);
     }, [loadedKeys, syncToMap]);
+
+    const handlePortalClick = useCallback((lat: number, lng: number, name: string) => {
+        if (!map) return;
+        logEvent(`Jumping to Portal: ${name}`);
+        map.flyTo({ center: [lng, lat], zoom: 17, duration: 2000 });
+        
+        // Find if portal exists in store to select it
+        const store = useStore.getState();
+        const existing = Object.values(store.portals).find(p => Math.abs(p.lat - lat) < 0.0001 && Math.abs(p.lng - lng) < 0.0001);
+        if (existing) {
+            setSelected({ type: 'portal', data: existing });
+            if (liveMode) window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: existing.id }, '*');
+        } else {
+            // Highlight location even if portal data not yet loaded
+            setSelected({ type: 'portal', data: { id: 'temp', lat, lng, team: 'N', name } as Portal });
+        }
+    }, [map, logEvent, liveMode]);
 
     useEffect(() => {
         const m = new maplibregl.Map({
@@ -305,6 +322,7 @@ function TacticalOverlay(): h.JSX.Element {
                         zoom={mapState.zoom} lat={mapState.lat} lng={mapState.lng} 
                         events={events}
                         onNav={handleNav} onStyle={handleStyle} onMode={handleMode}
+                        onPortalClick={handlePortalClick}
                     />
                     {selected && (
                         <Dashboard 

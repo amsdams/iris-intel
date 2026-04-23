@@ -1,6 +1,6 @@
 import { h, JSX } from 'preact';
 import { useMemo } from 'preact/hooks';
-import { useStore, InventoryParser, Plext } from '@iris/core';
+import { useStore, InventoryParser, Plext, normalizeTeam } from '@iris/core';
 import { COLORS, RARITY_COLORS, ITEM_LEVEL_COLORS } from './MapConstants';
 import { formatMU, formatAP } from './GeoUtils';
 import { CommTab } from './useComm';
@@ -10,9 +10,10 @@ interface DataDockProps {
     onToggle: (id: string) => void;
     commTab: CommTab;
     onCommTabChange: (tab: CommTab) => void;
+    onPortalClick: (lat: number, lng: number, name: string) => void;
 }
 
-export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange }: DataDockProps): JSX.Element {
+export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPortalClick }: DataDockProps): JSX.Element {
     const { gameScore, regionScore, playerStats, hasSubscription, inventory, plexts } = useStore();
 
     // 1. Inventory Stats
@@ -49,13 +50,24 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange }: Dat
         return p.markup.map((m, i) => {
             const [type, data] = m;
             const text = data.plain || '';
-            const color = data.team ? (COLORS[data.team as keyof typeof COLORS] || '#ccc') : '#ccc';
+            const team = normalizeTeam(data.team);
+            const color = team !== 'N' ? (COLORS[team as keyof typeof COLORS] || '#ccc') : '#ccc';
             
-            if (type === 'PLAYER' || type === 'SENDER') {
+            if (type === 'PLAYER' || type === 'SENDER' || type === 'AT_PLAYER') {
                 return <span key={i} style={{ color, fontWeight: 'bold' }}>{text}</span>;
             }
             if (type === 'PORTAL') {
-                return <span key={i} style={{ color: '#00ffff', textDecoration: 'underline', cursor: 'pointer' }}>{text}</span>;
+                const lat = (data.latE6 || 0) / 1e6;
+                const lng = (data.lngE6 || 0) / 1e6;
+                return (
+                    <span 
+                        key={i} 
+                        onClick={() => onPortalClick(lat, lng, data.name || text)}
+                        style={{ color: '#00ffff', textDecoration: 'underline', cursor: 'pointer' }}
+                    >
+                        {text}
+                    </span>
+                );
             }
             return <span key={i} style={{ color: '#bbb' }}>{text}</span>;
         });
@@ -91,7 +103,7 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange }: Dat
                     {playerStats ? (
                         <div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                <span style={{ color: COLORS[playerStats.team as keyof typeof COLORS] || '#fff', fontWeight: 'bold', fontSize: '16px' }}>{playerStats.nickname}</span>
+                                <span style={{ color: COLORS[normalizeTeam(playerStats.team) as keyof typeof COLORS] || '#fff', fontWeight: 'bold', fontSize: '16px' }}>{playerStats.nickname}</span>
                                 {hasSubscription && <span style={{ background: '#f1c40f', color: '#000', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>C.O.R.E.</span>}
                             </div>
                             <div style={{ background: '#1a1a1a', padding: '10px', borderRadius: '8px', marginBottom: '10px', border: '1px solid #333' }}>
@@ -104,7 +116,7 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange }: Dat
                                         <div style={{ 
                                             width: `${Math.min(100, ((playerStats.ap || 0) - (playerStats.min_ap_for_current_level || 0)) / ((playerStats.min_ap_for_next_level || 0) - (playerStats.min_ap_for_current_level || 0)) * 100)}%`, 
                                             height: '100%', 
-                                            background: COLORS[playerStats.team as keyof typeof COLORS] || '#00ffff',
+                                            background: COLORS[normalizeTeam(playerStats.team) as keyof typeof COLORS] || '#00ffff',
                                             boxShadow: '0 0 10px rgba(0,255,255,0.5)'
                                         }}></div>
                                     </div>

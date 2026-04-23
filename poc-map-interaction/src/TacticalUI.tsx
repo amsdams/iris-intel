@@ -17,14 +17,13 @@ interface TacticalUIProps {
     onNav: (action: string) => void;
     onStyle: (style: string) => void;
     onMode: (mode: string) => void;
+    onPortalClick: (lat: number, lng: number, name: string) => void;
 }
 
-export function TacticalUI({ zoom, lat, lng, events, onNav, onStyle, onMode }: TacticalUIProps): JSX.Element {
+export function TacticalUI({ zoom, lat, lng, events, onNav, onStyle, onMode, onPortalClick }: TacticalUIProps): JSX.Element {
     const [openDrawer, setOpenDrawer] = useState<string | null>(null);
     const logRef = useRef<HTMLDivElement>(null);
     
-    // Live mode is assumed true if we are in this UI for now, 
-    // but we can pass it from props if needed.
     const { activeTab, setActiveTab, refreshComm } = useComm(true, true);
 
     const toggleDrawer = (id: string): void => {
@@ -67,6 +66,7 @@ export function TacticalUI({ zoom, lat, lng, events, onNav, onStyle, onMode }: T
                 onToggle={toggleDrawer} 
                 commTab={activeTab}
                 onCommTabChange={setActiveTab}
+                onPortalClick={onPortalClick}
             />
 
             {/* Event Log */}
