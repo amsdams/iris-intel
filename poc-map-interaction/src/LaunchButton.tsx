@@ -12,11 +12,12 @@ export function LaunchButton({ isVis, onClick }: LaunchButtonProps): JSX.Element
             onClick={onClick} 
             style={{ 
                 position: 'fixed', 
-                bottom: '120px', 
-                right: '10px', 
-                width: '60px', 
-                height: '60px', 
-                background: '#000', 
+                bottom: isVis ? '15px' : '20px', 
+                right: isVis ? 'auto' : '20px',
+                left: isVis ? '20px' : 'auto',
+                width: '50px', 
+                height: '50px', 
+                background: isVis ? 'rgba(20,20,20,0.9)' : '#000', 
                 color: '#00ffff', 
                 border: '2px solid #00ffff', 
                 borderRadius: '50%', 
@@ -26,12 +27,13 @@ export function LaunchButton({ isVis, onClick }: LaunchButtonProps): JSX.Element
                 alignItems: 'center', 
                 justifyContent: 'center', 
                 fontWeight: 'bold', 
-                fontSize: '16px', 
+                fontSize: '14px', 
                 boxShadow: '0 0 15px rgba(0,255,255,0.4)', 
-                pointerEvents: 'auto' 
+                pointerEvents: 'auto',
+                transition: 'all 0.3s ease'
             }}
         >
-            {isVis ? '3D' : '3D'}
+            {isVis ? 'X' : '3D'}
         </div>
     );
 }
