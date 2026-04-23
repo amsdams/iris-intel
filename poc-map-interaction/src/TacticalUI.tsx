@@ -134,7 +134,7 @@ export function TacticalUI({ zoom, lat, lng, events, onNav, onStyle, onMode }: T
                                     <span style={{ color: '#888', fontSize: '11px' }}>LEVEL {playerStats.level}</span>
                                     <span style={{ color: '#fff', fontSize: '11px', fontWeight: 'bold' }}>{formatAP(playerStats.ap || 0)} AP</span>
                                 </div>
-                                {playerStats.min_ap_for_next_level && (
+                                {playerStats.min_ap_for_next_level && playerStats.min_ap_for_next_level > 0 ? (
                                     <div style={{ width: '100%', height: '6px', background: '#333', borderRadius: '3px', overflow: 'hidden' }}>
                                         <div style={{ 
                                             width: `${Math.min(100, ((playerStats.ap || 0) - (playerStats.min_ap_for_current_level || 0)) / ((playerStats.min_ap_for_next_level || 0) - (playerStats.min_ap_for_current_level || 0)) * 100)}%`, 
@@ -143,6 +143,8 @@ export function TacticalUI({ zoom, lat, lng, events, onNav, onStyle, onMode }: T
                                             boxShadow: '0 0 10px rgba(0,255,255,0.5)'
                                         }}></div>
                                     </div>
+                                ) : (
+                                    <div style={{ fontSize: '9px', color: '#666', fontStyle: 'italic', marginTop: '2px' }}>MAX LEVEL REACHED</div>
                                 )}
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#aaa' }}>
