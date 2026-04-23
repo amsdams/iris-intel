@@ -5,6 +5,17 @@ export const COLORS = {
     N: '#ffffff'
 };
 
+export const RARITY_COLORS: Record<string, string> = {
+    'COMMON': '#49EBC3',
+    'RARE': '#B68BFF',
+    'VERY_RARE': '#F781FF'
+};
+
+export const ITEM_LEVEL_COLORS: Record<number, string> = {
+    1: '#FECE5A', 2: '#FFA630', 3: '#FF7315', 4: '#E80000',
+    5: '#FF0099', 6: '#EE26CD', 7: '#C124E0', 8: '#9627F4'
+};
+
 export const MAP_STYLES: Record<string, string[]> = {
     'Dark': [
         'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',

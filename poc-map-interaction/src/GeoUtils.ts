@@ -14,3 +14,13 @@ export function createCirclePolygon(lng: number, lat: number, radiusMeters: numb
     coords.push(coords[0]);
     return [coords];
 }
+
+export function formatMU(val: number): string {
+    if (val >= 1000000) return (val / 1000000).toFixed(2) + 'M';
+    if (val >= 1000) return (val / 1000).toFixed(1) + 'k';
+    return val.toString();
+}
+
+export function formatAP(val: number): string {
+    return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
