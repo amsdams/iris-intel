@@ -1,6 +1,6 @@
 import { useEffect } from 'preact/hooks';
 import maplibregl from 'maplibre-gl';
-import { useStore, EntityParser, PortalDetailsParser, GameScoreParser, RegionScoreParser, InventoryParser, PlayerParser, Portal, Link, Field } from '@iris/core';
+import { useStore, EntityParser, PortalDetailsParser, GameScoreParser, RegionScoreParser, InventoryParser, PlayerParser, PlextParser, Portal, Link, Field } from '@iris/core';
 
 export function useIntelMessages(
     map: maplibregl.Map | null,
@@ -30,7 +30,6 @@ export function useIntelMessages(
                     min_ap_for_next_level: msg.min_ap_for_next_level
                 });
                 store.setHasSubscription(msg.hasActiveSubscription);
-                // logEvent(`Agent: ${msg.nickname} (L${msg.level})`);
                 return;
             }
 
@@ -81,20 +80,21 @@ export function useIntelMessages(
             } else if (msg.url.includes('getInventory')) {
                 const store = useStore.getState();
                 const items = InventoryParser.parse(msg.data);
-                
-                if (items.length > 0) {
-                    store.setInventory(items);
-                    logEvent(`Inventory: ${items.length} items`);
-                } else if (msg.data.result && msg.data.result.length === 0) {
+                if (items.length > 0) store.setInventory(items);
+                if (msg.data.result && msg.data.result.length === 0) {
                     logEvent(`Inventory: Access Denied (Non-C.O.R.E.)`);
                 }
-                
-                if (msg.data.result) {
-                    if ((msg.data as any).player) {
-                        const parsed = PlayerParser.parseStats((msg.data as any).player);
-                        store.setPlayerStats(parsed.stats);
-                        store.setHasSubscription(parsed.hasActiveSubscription);
-                    }
+                if (msg.data.result && (msg.data as any).player) {
+                    const parsed = PlayerParser.parseStats((msg.data as any).player);
+                    store.setPlayerStats(parsed.stats);
+                    store.setHasSubscription(parsed.hasActiveSubscription);
+                }
+            } else if (msg.url.includes('getPlexts')) {
+                const store = useStore.getState();
+                const plexts = PlextParser.parse(msg.data);
+                if (plexts.length > 0) {
+                    store.updatePlexts(plexts);
+                    logEvent(`COMM: ${plexts.length} messages`);
                 }
             }
         };

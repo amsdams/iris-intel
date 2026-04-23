@@ -2,6 +2,7 @@ import { h, JSX, Fragment } from 'preact';
 import { useState, useRef } from 'preact/hooks';
 import { MapTools } from './MapTools';
 import { DataDock } from './DataDock';
+import { useComm } from './useComm';
 
 interface EventLogEntry {
     time: string;
@@ -21,6 +22,10 @@ interface TacticalUIProps {
 export function TacticalUI({ zoom, lat, lng, events, onNav, onStyle, onMode }: TacticalUIProps): JSX.Element {
     const [openDrawer, setOpenDrawer] = useState<string | null>(null);
     const logRef = useRef<HTMLDivElement>(null);
+    
+    // Live mode is assumed true if we are in this UI for now, 
+    // but we can pass it from props if needed.
+    const { activeTab, setActiveTab, refreshComm } = useComm(true, true);
 
     const toggleDrawer = (id: string): void => {
         const isOpening = openDrawer !== id;
@@ -34,6 +39,8 @@ export function TacticalUI({ zoom, lat, lng, events, onNav, onStyle, onMode }: T
             } else if (id === 'scores') {
                 window.postMessage({ type: 'IRIS_GAME_SCORE_REQUEST' }, '*');
                 window.postMessage({ type: 'IRIS_REGION_SCORE_REQUEST' }, '*');
+            } else if (id === 'comm') {
+                refreshComm();
             }
         }
     };
@@ -58,9 +65,11 @@ export function TacticalUI({ zoom, lat, lng, events, onNav, onStyle, onMode }: T
             <DataDock 
                 openDrawer={openDrawer} 
                 onToggle={toggleDrawer} 
+                commTab={activeTab}
+                onCommTabChange={setActiveTab}
             />
 
-            {/* Event Log (Positioned between dock and map tools) */}
+            {/* Event Log */}
             <div id="event-log" ref={logRef} style={{ position: 'fixed', bottom: '85px', left: '10px', right: '10px', height: '60px', background: 'rgba(0,0,0,0.7)', color: '#00ffff', overflowY: 'auto', zIndex: 2000000, fontFamily: 'monospace', padding: '8px', fontSize: '10px', border: '1px solid rgba(0,255,255,0.3)', pointerEvents: 'none', borderRadius: '4px', opacity: 0.6 }}>
                 {events.map((e, i) => (
                     <div key={i}>[{e.time}] {e.msg}</div>

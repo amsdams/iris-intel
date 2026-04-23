@@ -197,6 +197,25 @@
                 const data = await res.json();
                 window.postMessage({ type: 'IRIS_DATA', url, data: data, params: body }, '*');
             }).catch(e => console.error('IRIS POC: Inventory Fetch Failed', e));
+        } else if (msg.type === 'IRIS_PLEXTS_REQUEST') {
+            const { tab, minTimestampMs } = msg;
+            const url = '/r/getPlexts';
+            const body = JSON.stringify({ 
+                tab, 
+                minTimestampMs, 
+                maxTimestampMs: -1,
+                ascendingTimestampMs: true,
+                v: extractVersion() 
+            });
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                body: body
+            }).then(async (res) => {
+                if (!res.ok) return;
+                const data = await res.json();
+                window.postMessage({ type: 'IRIS_DATA', url, data: data, params: body }, '*');
+            }).catch(e => console.error('IRIS POC: Plext Fetch Failed', e));
         }
     });
 
