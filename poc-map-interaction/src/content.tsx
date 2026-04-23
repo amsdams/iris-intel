@@ -65,7 +65,70 @@ function TacticalOverlay(): h.JSX.Element {
         console.log(`[POC] ${msg}`);
     }, []);
 
+    const loadPattern1 = useCallback((): void => {
+        if (!map) return;
+        generator.clear(); loadedKeys.clear();
+        const center = map.getCenter();
+        generator.addPortal('A', 'E', center.lng - 0.002, center.lat, 8);
+        generator.addPortal('B', 'E', center.lng + 0.002, center.lat, 8);
+        generator.addPortal('C', 'E', center.lng, center.lat + 0.003, 8);
+        generator.addPortal('D', 'E', center.lng, center.lat + 0.001, 8);
+        generator.addLink('L-AB', 'E', 'A', 'B');
+        generator.addLink('L-BC', 'E', 'B', 'C');
+        generator.addLink('L-CA', 'E', 'C', 'A');
+        generator.addLink('L-AD', 'E', 'A', 'D');
+        generator.addLink('L-BD', 'E', 'B', 'D');
+        logEvent("PATTERN 1: Single Nested.");
+    }, [map, generator, loadedKeys, logEvent]);
+
+    const loadPattern2 = useCallback((): void => {
+        if (!map) return;
+        generator.clear(); loadedKeys.clear();
+        const center = map.getCenter();
+        generator.addPortal('A', 'E', center.lng - 0.002, center.lat, 8);
+        generator.addPortal('B', 'E', center.lng + 0.002, center.lat, 8);
+        generator.addPortal('C', 'E', center.lng, center.lat + 0.003, 8);
+        generator.addPortal('D', 'E', center.lng, center.lat + 0.001, 8);
+        generator.addLink('L-AB', 'E', 'A', 'B');
+        generator.addLink('L-BC', 'E', 'B', 'C');
+        generator.addLink('L-CA', 'E', 'C', 'A');
+        generator.addLink('L-AD', 'E', 'A', 'D');
+        generator.addLink('L-BD', 'E', 'B', 'D');
+        generator.addLink('L-CD', 'E', 'C', 'D');
+        logEvent("PATTERN 2: Nested Diamond.");
+    }, [map, generator, loadedKeys, logEvent]);
+
+    const loadPattern3 = useCallback((): void => {
+        if (!map) return;
+        generator.clear(); loadedKeys.clear();
+        const center = map.getCenter();
+        generator.addPortal('A', 'E', center.lng - 0.002, center.lat, 8);
+        generator.addPortal('B', 'E', center.lng + 0.002, center.lat, 8);
+        generator.addPortal('C', 'E', center.lng, center.lat + 0.003, 8);
+        generator.addPortal('D', 'E', center.lng, center.lat + 0.001, 8);
+        generator.addPortal('E', 'E', center.lng, center.lat + 0.0005, 8);
+        generator.addLink('L-AB', 'E', 'A', 'B');
+        generator.addLink('L-BC', 'E', 'B', 'C');
+        generator.addLink('L-CA', 'E', 'C', 'A');
+        generator.addLink('L-AD', 'E', 'A', 'D');
+        generator.addLink('L-BD', 'E', 'B', 'D');
+        generator.addLink('L-CD', 'E', 'C', 'D');
+        generator.addLink('L-AE', 'E', 'A', 'E');
+        generator.addLink('L-BE', 'E', 'B', 'E');
+        generator.addLink('L-DE', 'E', 'D', 'E');
+        const mOff = 0.009;
+        generator.addPortal('M1', 'M', center.lng + mOff, center.lat + 0.002, 1);
+        generator.addPortal('M2', 'M', center.lng + mOff + 0.002, center.lat, 1);
+        generator.addPortal('M3', 'M', center.lng + mOff - 0.002, center.lat - 0.002, 1);
+        generator.addLink('ML-12', 'M', 'M1', 'M2');
+        const nOff = 0.006;
+        generator.addPortal('N1', 'N', center.lng - 0.002, center.lat + nOff, 0);
+        generator.addPortal('N2', 'N', center.lng + 0.002, center.lat + nOff, 0);
+        logEvent("PATTERN 3: Scaled Global Scenario.");
+    }, [map, generator, loadedKeys, logEvent]);
+
     const syncToMap = useCallback((currentMap: maplibregl.Map, currentLiveMode: boolean, currentPatternMode: number): void => {
+        if (!currentMap || !currentMap.getStyle()) return;
         const bounds = currentMap.getBounds();
         const zoom = currentMap.getZoom();
         const minLevel = getMinLevelForZoom(zoom);
@@ -185,12 +248,16 @@ function TacticalOverlay(): h.JSX.Element {
             }
         });
 
-        const source = currentMap.getSource('entities') as maplibregl.GeoJSONSource;
-        if (source) source.setData({ type: 'FeatureCollection', features });
-        logEvent(`RENDERED: ${features.length} items`);
+        const source = currentMap.getSource('entities') as maplibregl.GeoJSONSource | undefined;
+        if (source) {
+            source.setData({ type: 'FeatureCollection', features });
+            logEvent(`RENDERED: ${features.length} items`);
+        }
     }, [generator, logEvent]);
 
     const checkAndLoad = useCallback((currentMap: maplibregl.Map, currentPatternMode: number, currentLiveMode: boolean): void => {
+        if (!currentMap || !currentMap.getStyle()) return;
+
         const zoom = currentMap.getZoom();
         const minLevel = getMinLevelForZoom(zoom);
         const gridSize = getGridSizeForZoom(zoom);
@@ -412,7 +479,7 @@ function TacticalOverlay(): h.JSX.Element {
     };
 
     const handleStyle = (style: string): void => {
-        if (!map || !MAP_STYLES[style]) return;
+        if (!map || !map.getStyle() || !MAP_STYLES[style]) return;
         if (map.getLayer('carto')) map.removeLayer('carto');
         if (map.getSource('carto')) map.removeSource('carto');
         map.addSource('carto', { type: 'raster', tiles: MAP_STYLES[style], tileSize: 256, attribution: style === 'OSM' ? '&copy; OpenStreetMap' : '&copy; CARTO' });
@@ -422,7 +489,7 @@ function TacticalOverlay(): h.JSX.Element {
     };
 
     const handleMode = (mode: string): void => {
-        if (!map) return;
+        if (!map || !map.getStyle()) return;
         if (mode === '3D') {
             const nextExtrusion = !extrusionEnabled;
             setExtrusionEnabled(nextExtrusion);
@@ -445,10 +512,25 @@ function TacticalOverlay(): h.JSX.Element {
         }
     };
 
+    // Store subscription
+    useEffect(() => {
+        const unsub = useStore.subscribe((state, prevState) => {
+            if (liveMode && map && (state.portals !== prevState.portals || state.links !== prevState.links || state.fields !== prevState.fields)) {
+                syncToMap(map, liveMode, patternMode);
+            }
+        });
+        return () => unsub();
+    }, [map, liveMode, patternMode, syncToMap]);
+
     // Effect to trigger load/sync on mode changes
     useEffect(() => {
-        if (map) checkAndLoad(map, patternMode, liveMode);
-    }, [map, patternMode, liveMode, checkAndLoad]);
+        if (!map) return;
+        if (patternMode === 1) loadPattern1();
+        else if (patternMode === 2) loadPattern2();
+        else if (patternMode === 3) loadPattern3();
+        
+        checkAndLoad(map, patternMode, liveMode);
+    }, [map, patternMode, liveMode, checkAndLoad, loadPattern1, loadPattern2, loadPattern3]);
 
     return (
         <div id="poc-preact-root" style={{ pointerEvents: 'none' }}>
@@ -467,8 +549,14 @@ function TacticalOverlay(): h.JSX.Element {
                     )}
                 </Fragment>
             )}
-            <div id="launch-3d-btn" onClick={() => setIsVis(!isVis)} style={{ position: 'fixed', bottom: '120px', right: '10px', width: '60px', height: '60px', background: '#000', color: '#00ffff', border: '2px solid #00ffff', borderRadius: '50%', zIndex: 1000010, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '16px', boxShadow: '0 0 15px rgba(0,255,255,0.4)', pointerEvents: 'auto' }}>3D</div>
-            <style>{`
+            <div id="launch-3d-btn" onClick={() => {
+                setIsVis(!isVis);
+                if (!isVis && map && map.getStyle()) {
+                    map.resize();
+                    checkAndLoad(map, patternMode, liveMode);
+                    logEvent("Tactical Map Opened");
+                }
+            }} style={{ position: 'fixed', bottom: '120px', right: '10px', width: '60px', height: '60px', background: '#000', color: '#00ffff', border: '2px solid #00ffff', borderRadius: '50%', zIndex: 1000010, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '16px', boxShadow: '0 0 15px rgba(0,255,255,0.4)', pointerEvents: 'auto' }}>3D</div>            <style>{`
                 #map-poc-container { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #222; z-index: 1000000; display: ${isVis ? 'block' : 'none'}; pointer-events: auto; }
             `}</style>
         </div>
@@ -476,7 +564,7 @@ function TacticalOverlay(): h.JSX.Element {
 }
 
 function initApp(): void {
-    const script = document.createElement('script');
+const script = document.createElement('script');
     script.src = chrome.runtime.getURL('interceptor.js');
     script.type = 'text/javascript';
     document.head.appendChild(script);
