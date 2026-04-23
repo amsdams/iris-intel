@@ -138,16 +138,22 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 | **Scores Panel** | **DONE** | Global MU standings and Regional Top Agents. |
 | **Inventory Stats** | **DONE** | Summary view of weapons, resonators, and mods. |
 
-### Next Session Priorities
+### Roadmap & Alignment (TODO)
 
-1.  **Mission Integration**:
-    *   **Goal**: Add a 5th tab to the Data Dock for "Missions".
-    *   **Visual**: Render mission start-points and waypoint sequences in 3D.
-2.  **Player Tracker (Movement Traces)**:
-    *   **Goal**: Restore real-time agent movement parsing from COMM.
-    *   **Visual**: 3D "Agent Avatars" with color-coded movement traces.
-3.  **Inventory: Keys on Map**:
-    *   **Goal**: Integrate the `@iris/core` Inventory parser to show keys on portals.
+#### High Priority
+1. **Player Tracker (Movement Traces)**: Parse COMM for agent coordinates and render 3D paths.
+2. **Draw Tools**: Implement custom line/polygon drawing for field planning.
+3. **Missions**: Integrate Top Missions and Mission Details (rendering waypoints in 3D).
+4. **Search**: Portal and location search with map-jump interaction.
+
+#### Feature Alignment
+- **Artifacts & Ornaments**: Support for specialized spatial markers (shards, beacons).
+- **Passcode Redemption**: Input UI for redeeming passcodes via `/r/redeemReward`.
+- **Geolocation**: Real-time user position tracking and "Center on Me" functionality.
+- **Dynamic Filters**: IITC-style health, level, and title filtering for portals.
+
+#### Performance
+- **GeoJSON Splitting**: Move to per-type sources (`src-portals`, `src-links`, `src-fields`) to optimize re-parsing time.
 
 ---
 
@@ -160,7 +166,8 @@ src/
 │   ├── useIntelMessages.ts # Interceptor message handler
 │   ├── useMapRenderer.ts   # Map data synchronization
 │   ├── usePlayerStats.ts   # Stats + CORE logic
-│   └── useScores.ts        # MU Score management
+│   ├── useScores.ts        # MU Score management
+│   └── useComm.ts          # COMM Polling and Tab management
 ├── components/
 │   ├── DataDock.tsx        # Bottom-dock panels (Player, COMM, Scores)
 │   ├── MapTools.tsx        # Top-right drawers (Nav, Style, Mode)
