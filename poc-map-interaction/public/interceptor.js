@@ -1,6 +1,6 @@
 (function() {
     console.log('IRIS POC: Interceptor initializing...');
-    const isIrisUrl = (url) => url.includes('getEntities') || url.includes('getPortalDetails') || url.includes('getPlexts');
+    const isIrisUrl = (url) => url.includes('getEntities') || url.includes('getPortalDetails') || url.includes('getPlexts') || url.includes('getGameScore') || url.includes('getRegionScoreDetails');
     
     function getCsrfToken() {
         const cookies = document.cookie.split(';').map(c => c.trim());
@@ -115,8 +115,32 @@
             }).then(async (res) => {
                 if (!res.ok) return;
                 const data = await res.json();
-                window.postMessage({ type: 'IRIS_DATA', url, data, params: body }, '*');
+                window.postMessage({ type: 'IRIS_DATA', url, data: data, params: body }, '*');
             }).catch(e => console.error('IRIS POC: Detail Fetch Failed', e));
+        } else if (msg.type === 'IRIS_GAME_SCORE_REQUEST') {
+            const url = '/r/getGameScore';
+            const body = JSON.stringify({ v: extractVersion() });
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                body: body
+            }).then(async (res) => {
+                if (!res.ok) return;
+                const data = await res.json();
+                window.postMessage({ type: 'IRIS_DATA', url, data: data, params: body }, '*');
+            }).catch(e => console.error('IRIS POC: Game Score Fetch Failed', e));
+        } else if (msg.type === 'IRIS_REGION_SCORE_REQUEST') {
+            const url = '/r/getRegionScoreDetails';
+            const body = JSON.stringify({ v: extractVersion() });
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                body: body
+            }).then(async (res) => {
+                if (!res.ok) return;
+                const data = await res.json();
+                window.postMessage({ type: 'IRIS_DATA', url, data: data, params: body }, '*');
+            }).catch(e => console.error('IRIS POC: Region Score Fetch Failed', e));
         }
     });
 

@@ -1,6 +1,6 @@
 import { useEffect } from 'preact/hooks';
 import maplibregl from 'maplibre-gl';
-import { useStore, EntityParser, PortalDetailsParser, Portal, Link, Field } from '@iris/core';
+import { useStore, EntityParser, PortalDetailsParser, GameScoreParser, RegionScoreParser, Portal, Link, Field } from '@iris/core';
 
 export function useIntelMessages(
     map: maplibregl.Map | null,
@@ -41,6 +41,18 @@ export function useIntelMessages(
                     if (selected?.type === 'portal' && selected.data.id === guid) {
                         setSelected({ type: 'portal', data: store.portals[guid] });
                     }
+                }
+            } else if (msg.url.includes('getGameScore')) {
+                const store = useStore.getState();
+                const parsed = GameScoreParser.parse(msg.data);
+                store.setGameScore(parsed);
+                logEvent(`Global Score Updated`);
+            } else if (msg.url.includes('getRegionScoreDetails')) {
+                const store = useStore.getState();
+                const parsed = RegionScoreParser.parse(msg.data);
+                if (parsed) {
+                    store.setRegionScore(parsed);
+                    logEvent(`Region Score: ${parsed.regionName}`);
                 }
             }
         };

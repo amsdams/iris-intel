@@ -1,5 +1,7 @@
 import { h, JSX, Fragment } from 'preact';
 import { useState, useEffect, useRef } from 'preact/hooks';
+import { useStore } from '@iris/core';
+import { COLORS } from './MapConstants';
 
 interface EventLogEntry {
     time: string;
@@ -19,9 +21,16 @@ interface TacticalUIProps {
 export function TacticalUI({ zoom, lat, lng, events, onNav, onStyle, onMode }: TacticalUIProps): JSX.Element {
     const [openDrawer, setOpenDrawer] = useState<string | null>(null);
     const logRef = useRef<HTMLDivElement>(null);
+    const { gameScore, regionScore } = useStore();
 
     const toggleDrawer = (id: string): void => {
         setOpenDrawer(openDrawer === id ? null : id);
+    };
+
+    const formatMU = (val: number): string => {
+        if (val >= 1000000) return (val / 1000000).toFixed(2) + 'M';
+        if (val >= 1000) return (val / 1000).toFixed(1) + 'k';
+        return val.toString();
     };
 
     return (
@@ -41,6 +50,40 @@ export function TacticalUI({ zoom, lat, lng, events, onNav, onStyle, onMode }: T
             {/* Control Drawers */}
             <div id="debug-btns-container" style={{ position: 'fixed', top: '10px', right: '10px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', zIndex: 2000001, pointerEvents: 'none' }}>
                 
+                {/* Scores Drawer */}
+                <div className="drawer-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                    <div className="debug-btn" onClick={() => toggleDrawer('scores')} style={{ width: '36px', height: '36px', background: 'rgba(34,34,34,0.9)', color: '#fff', border: '1px solid #00ffff', borderRadius: '4px', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'auto' }}>📊</div>
+                    <div className="drawer-content" style={{ display: openDrawer === 'scores' ? 'flex' : 'none', flexDirection: 'column', gap: '8px', padding: '10px', background: 'rgba(20,20,20,0.95)', borderRadius: '4px', border: '1px solid #00ffff', minWidth: '150px', color: '#fff', fontSize: '11px', fontFamily: 'monospace', pointerEvents: 'auto' }}>
+                        
+                        {/* Global Game Score */}
+                        <div style={{ borderBottom: '1px solid #333', paddingBottom: '4px' }}>
+                            <div style={{ color: '#888', fontSize: '9px', marginBottom: '2px' }}>GLOBAL MU</div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                <span style={{ color: COLORS.E }}>ENL: {gameScore ? formatMU(gameScore.enlightened) : '-'}</span>
+                                <span style={{ color: COLORS.R }}>RES: {gameScore ? formatMU(gameScore.resistance) : '-'}</span>
+                            </div>
+                        </div>
+
+                        {/* Region Score */}
+                        {regionScore && (
+                            <div>
+                                <div style={{ color: '#888', fontSize: '9px', marginBottom: '2px' }}>REGION: {regionScore.regionName}</div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                    <span style={{ color: COLORS.E }}>{formatMU(regionScore.gameScore[0])}</span>
+                                    <span style={{ color: COLORS.R }}>{formatMU(regionScore.gameScore[1])}</span>
+                                </div>
+                                <div style={{ color: '#888', fontSize: '8px', borderTop: '1px solid #222', paddingTop: '4px' }}>TOP AGENTS</div>
+                                {regionScore.topAgents.slice(0, 3).map((a, idx) => (
+                                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: a.team === 'ENLIGHTENED' ? COLORS.E : COLORS.R }}>
+                                        <span>{idx + 1}. {a.nick}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {!regionScore && <div style={{ color: '#666', fontSize: '9px' }}>No regional data.</div>}
+                    </div>
+                </div>
+
                 {/* Navigation Drawer */}
                 <div className="drawer-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                     <div className="debug-btn" onClick={() => toggleDrawer('nav')} style={{ width: '36px', height: '36px', background: 'rgba(34,34,34,0.9)', color: '#fff', border: '1px solid #00ffff', borderRadius: '4px', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'auto' }}>🧭</div>
