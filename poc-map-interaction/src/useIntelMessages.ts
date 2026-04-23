@@ -30,7 +30,7 @@ export function useIntelMessages(
                     min_ap_for_next_level: msg.min_ap_for_next_level
                 });
                 store.setHasSubscription(msg.hasActiveSubscription);
-                logEvent(`Agent: ${msg.nickname} (L${msg.level})`);
+                // logEvent(`Agent: ${msg.nickname} (L${msg.level})`);
                 return;
             }
 
@@ -77,11 +77,17 @@ export function useIntelMessages(
             } else if (msg.url.includes('getHasActiveSubscription')) {
                 const store = useStore.getState();
                 store.setHasSubscription(msg.data.result === true);
-                logEvent(`Subscription: ${msg.data.result ? 'C.O.R.E.' : 'Standard'}`);
+                logEvent(`C.O.R.E. Status: ${msg.data.result ? 'ACTIVE' : 'INACTIVE'}`);
             } else if (msg.url.includes('getInventory')) {
                 const store = useStore.getState();
                 const items = InventoryParser.parse(msg.data);
-                if (items.length > 0) store.setInventory(items);
+                
+                if (items.length > 0) {
+                    store.setInventory(items);
+                    logEvent(`Inventory: ${items.length} items`);
+                } else if (msg.data.result && msg.data.result.length === 0) {
+                    logEvent(`Inventory: Access Denied (Non-C.O.R.E.)`);
+                }
                 
                 if (msg.data.result) {
                     if ((msg.data as any).player) {
@@ -90,7 +96,6 @@ export function useIntelMessages(
                         store.setHasSubscription(parsed.hasActiveSubscription);
                     }
                 }
-                logEvent(`Inventory: ${items.length} items`);
             }
         };
         window.addEventListener('message', handler);

@@ -1,6 +1,6 @@
 import { h, JSX, Fragment } from 'preact';
-import { useState, useRef } from 'preact/hooks';
-import { useStore } from '@iris/core';
+import { useState, useRef, useMemo } from 'preact/hooks';
+import { useStore, InventoryParser } from '@iris/core';
 import { COLORS } from './MapConstants';
 
 interface EventLogEntry {
@@ -18,13 +18,36 @@ interface TacticalUIProps {
     onMode: (mode: string) => void;
 }
 
+const RARITY_COLORS: Record<string, string> = {
+    'COMMON': '#49EBC3',
+    'RARE': '#B68BFF',
+    'VERY_RARE': '#F781FF'
+};
+
+const ITEM_LEVEL_COLORS: Record<number, string> = {
+    1: '#FECE5A', 2: '#FFA630', 3: '#FF7315', 4: '#E80000',
+    5: '#FF0099', 6: '#EE26CD', 7: '#C124E0', 8: '#9627F4'
+};
+
 export function TacticalUI({ zoom, lat, lng, events, onNav, onStyle, onMode }: TacticalUIProps): JSX.Element {
     const [openDrawer, setOpenDrawer] = useState<string | null>(null);
     const logRef = useRef<HTMLDivElement>(null);
-    const { gameScore, regionScore, playerStats, hasSubscription } = useStore();
+    const { gameScore, regionScore, playerStats, hasSubscription, inventory } = useStore();
 
     const toggleDrawer = (id: string): void => {
-        setOpenDrawer(openDrawer === id ? null : id);
+        const isOpening = openDrawer !== id;
+        setOpenDrawer(isOpening ? id : null);
+
+        if (isOpening) {
+            if (id === 'player') {
+                window.postMessage({ type: 'IRIS_SUBSCRIPTION_REQUEST' }, '*');
+            } else if (id === 'inventory') {
+                window.postMessage({ type: 'IRIS_INVENTORY_REQUEST' }, '*');
+            } else if (id === 'scores') {
+                window.postMessage({ type: 'IRIS_GAME_SCORE_REQUEST' }, '*');
+                window.postMessage({ type: 'IRIS_REGION_SCORE_REQUEST' }, '*');
+            }
+        }
     };
 
     const formatMU = (val: number): string => {
@@ -37,6 +60,28 @@ export function TacticalUI({ zoom, lat, lng, events, onNav, onStyle, onMode }: T
         return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     };
 
+    // Inventory Processing
+    const derivedItems = useMemo(() => {
+        if (!inventory || inventory.length === 0) return [];
+        return InventoryParser.deriveInventoryDisplayItems(inventory);
+    }, [inventory]);
+
+    const inventoryStats = useMemo(() => {
+        const stats: Record<string, { count: number, color: string }> = {};
+        derivedItems.forEach(item => {
+            const cat = item.category;
+            if (!stats[cat]) {
+                stats[cat] = { count: 0, color: '#aaa' };
+                if (cat === 'RESONATORS') stats[cat].color = ITEM_LEVEL_COLORS[8];
+                if (cat === 'WEAPONS') stats[cat].color = ITEM_LEVEL_COLORS[4];
+                if (cat === 'MODS') stats[cat].color = RARITY_COLORS['VERY_RARE'];
+                if (cat === 'KEYS') stats[cat].color = '#f1c40f';
+            }
+            stats[cat].count++;
+        });
+        return stats;
+    }, [derivedItems]);
+
     return (
         <Fragment>
             {/* 1. TOP LEFT: Position Log */}
@@ -44,10 +89,8 @@ export function TacticalUI({ zoom, lat, lng, events, onNav, onStyle, onMode }: T
                 Z: {zoom.toFixed(2)} | {lat.toFixed(5)}, {lng.toFixed(5)}
             </div>
 
-            {/* 2. TOP RIGHT: Map Tools (Navigation, Style, Mode) */}
+            {/* 2. TOP RIGHT: Map Tools */}
             <div id="map-tools-container" style={{ position: 'fixed', top: '10px', right: '10px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', zIndex: 2000001, pointerEvents: 'none' }}>
-                
-                {/* Navigation Drawer */}
                 <div className="drawer-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                     <div className="debug-btn" onClick={() => toggleDrawer('nav')} style={{ width: '40px', height: '40px', background: 'rgba(34,34,34,0.9)', color: '#fff', border: '1px solid #00ffff', borderRadius: '50%', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'auto', boxShadow: '0 0 10px rgba(0,255,255,0.2)' }}>🧭</div>
                     <div className="drawer-content" style={{ display: openDrawer === 'nav' ? 'flex' : 'none', flexDirection: 'column', gap: '4px', padding: '4px', background: 'rgba(20,20,20,0.9)', borderRadius: '8px', border: '1px solid #00ffff' }}>
@@ -57,7 +100,6 @@ export function TacticalUI({ zoom, lat, lng, events, onNav, onStyle, onMode }: T
                     </div>
                 </div>
 
-                {/* Style Drawer */}
                 <div className="drawer-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                     <div className="debug-btn" onClick={() => toggleDrawer('style')} style={{ width: '40px', height: '40px', background: 'rgba(34,34,34,0.9)', color: '#fff', border: '1px solid #00ffff', borderRadius: '50%', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'auto' }}>🎨</div>
                     <div className="drawer-content" style={{ display: openDrawer === 'style' ? 'flex' : 'none', flexDirection: 'column', gap: '4px', padding: '4px', background: 'rgba(20,20,20,0.9)', borderRadius: '8px', border: '1px solid #00ffff' }}>
@@ -67,7 +109,6 @@ export function TacticalUI({ zoom, lat, lng, events, onNav, onStyle, onMode }: T
                     </div>
                 </div>
 
-                {/* Mode Drawer */}
                 <div className="drawer-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                     <div className="debug-btn" onClick={() => toggleDrawer('mode')} style={{ width: '40px', height: '40px', background: 'rgba(34,34,34,0.9)', color: '#fff', border: '1px solid #00ffff', borderRadius: '50%', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'auto' }}>🛠</div>
                     <div className="drawer-content" style={{ display: openDrawer === 'mode' ? 'flex' : 'none', flexDirection: 'column', gap: '4px', padding: '4px', background: 'rgba(20,20,20,0.9)', borderRadius: '8px', border: '1px solid #00ffff' }}>
@@ -77,7 +118,7 @@ export function TacticalUI({ zoom, lat, lng, events, onNav, onStyle, onMode }: T
                 </div>
             </div>
 
-            {/* 3. CENTER BOTTOM: Data Panels (Player/Score Sheets) */}
+            {/* 3. DATA PANELS */}
             <div id="data-panel-container" style={{ position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)', width: '90%', maxWidth: '400px', zIndex: 2000002, pointerEvents: 'none' }}>
                 
                 {/* Player Stats Panel */}
@@ -114,6 +155,28 @@ export function TacticalUI({ zoom, lat, lng, events, onNav, onStyle, onMode }: T
                     )}
                 </div>
 
+                {/* Inventory Panel */}
+                <div style={{ display: openDrawer === 'inventory' ? 'block' : 'none', background: 'rgba(10,10,10,0.95)', border: '1px solid #00ffff', borderRadius: '12px', padding: '15px', color: '#fff', boxShadow: '0 -5px 20px rgba(0,0,0,0.8)', pointerEvents: 'auto' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid #333', paddingBottom: '8px' }}>
+                        <span style={{ fontWeight: 'bold', fontSize: '14px', color: '#00ffff' }}>INVENTORY</span>
+                        <span style={{ fontSize: '11px', color: '#888' }}>{derivedItems.length} ITEMS</span>
+                    </div>
+                    {inventory && inventory.length > 0 ? (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
+                            {Object.entries(inventoryStats).map(([cat, stat]) => (
+                                <div key={cat} style={{ background: '#1a1a1a', padding: '8px', borderRadius: '6px', border: '1px solid #222', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ color: '#888', fontSize: '10px' }}>{cat}</span>
+                                    <span style={{ color: stat.color, fontWeight: 'bold', fontSize: '13px' }}>{stat.count}</span>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                            {hasSubscription === false ? "C.O.R.E. Subscription Required" : "No inventory data yet."}
+                        </div>
+                    )}
+                </div>
+
                 {/* Scores Panel */}
                 <div style={{ display: openDrawer === 'scores' ? 'block' : 'none', background: 'rgba(10,10,10,0.95)', border: '1px solid #00ffff', borderRadius: '12px', padding: '15px', color: '#fff', boxShadow: '0 -5px 20px rgba(0,0,0,0.8)', pointerEvents: 'auto' }}>
                     <div style={{ borderBottom: '1px solid #333', paddingBottom: '10px', marginBottom: '10px' }}>
@@ -141,10 +204,10 @@ export function TacticalUI({ zoom, lat, lng, events, onNav, onStyle, onMode }: T
                 </div>
             </div>
 
-            {/* 4. BOTTOM DOCK: Main Navigation Tabs */}
+            {/* 4. BOTTOM DOCK */}
             <div id="bottom-dock" style={{ position: 'fixed', bottom: '15px', left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: '15px', padding: '8px 20px', background: 'rgba(20,20,20,0.9)', borderRadius: '30px', border: '1px solid #00ffff', zIndex: 2000003, pointerEvents: 'auto', boxShadow: '0 5px 15px rgba(0,0,0,0.5)' }}>
                 <div className="dock-item" onClick={() => toggleDrawer('player')} style={{ fontSize: '24px', cursor: 'pointer', opacity: openDrawer === 'player' ? 1 : 0.6, transition: 'opacity 0.2s' }}>👤</div>
-                <div className="dock-item" style={{ fontSize: '24px', cursor: 'pointer', opacity: 0.3 }}>🎒</div>
+                <div className="dock-item" onClick={() => toggleDrawer('inventory')} style={{ fontSize: '24px', cursor: 'pointer', opacity: openDrawer === 'inventory' ? 1 : 0.6, transition: 'opacity 0.2s' }}>🎒</div>
                 <div className="dock-item" onClick={() => toggleDrawer('scores')} style={{ fontSize: '24px', cursor: 'pointer', opacity: openDrawer === 'scores' ? 1 : 0.6, transition: 'opacity 0.2s' }}>📊</div>
             </div>
 
