@@ -18,6 +18,19 @@ This document describes the architecture for rendering large numbers of spatial 
 
 ---
 
+## Modular Hook-based Architecture (v1.2+)
+
+The POC has migrated from a monolithic `content.tsx` to a modular hook-driven design to ensure maintainability and readability:
+
+- **`useMapRenderer`**: Centralized logic for converting RBush results and Store entities into GeoJSON features for MapLibre. Handles 3D altitudes and geometry approximation (e.g., portal cylinders).
+- **`useIntelMessages`**: High-performance listener for the `interceptor.js` stream. Routes incoming data to the correct Zustand store actions and ensures the spatial index is synchronized.
+- **`usePlayerStats`**: Manages C.O.R.E. subscription verification and player statistic polling.
+- **`useComm`**: Orchestrates COMM polling and tab management (ALL / FACTION / ALERTS).
+- **`useScores`**: Periodic global and regional MU standings updates.
+- **`usePatterns`**: Simulation engine for stress testing and visual alignment.
+
+---
+
 ## Entity Types
 
 | Entity | Geometry | GeoJSON type | Notes |
@@ -32,7 +45,7 @@ This document describes the architecture for rendering large numbers of spatial 
 
 ## Spatial Index (RBush)
 
-RBush is a high-performance R-tree for 2D bounding-box queries. It lives **outside React and Zustand** as module-level singletons — it is a data structure, not state.
+RBush is a high-performance R-tree for 2D bounding-box queries. It lives **outside React and Zustand** as module-level singletons or via the `@iris/core` `globalSpatialIndex`.
 
 ### Why not in Zustand?
 
@@ -40,37 +53,9 @@ RBush is a high-performance R-tree for 2D bounding-box queries. It lives **outsi
 - The tree never needs to trigger a re-render by itself. Only its *query results* do.
 - Keeping it as a singleton means it can be updated (e.g. on data load) without touching React at all.
 
-### Setup — `src/spatial/index.ts`
-
-```ts
-import RBush from 'rbush';
-
-export interface SpatialItem {
-  minX: number; minY: number;
-  maxX: number; maxY: number;
-  id: string;
-  type: 'portal' | 'link' | 'field' | 'artifact' | 'ornament';
-}
-
-export const portalIndex   = new RBush<SpatialItem>();
-export const linkIndex     = new RBush<SpatialItem>();
-export const fieldIndex    = new RBush<SpatialItem>();
-export const artifactIndex = new RBush<SpatialItem>();
-export const ornamentIndex = new RBush<SpatialItem>();
-```
-
 ### Loading data
 
 ```ts
-import { portalIndex, linkIndex, fieldIndex } from './spatial';
-
-// Points — minX/maxX/minY/maxY are all equal
-portalIndex.load(portals.map(p => ({
-  minX: p.lon, minY: p.lat,
-  maxX: p.lon, maxY: p.lat,
-  id: p.id, type: 'portal'
-})));
-
 // LineStrings — use bounding box of endpoints
 linkIndex.load(links.map(l => ({
   minX: Math.min(l.fromLon, l.toLon),
@@ -82,17 +67,13 @@ linkIndex.load(links.map(l => ({
 
 // Polygons — bounding box of all vertices
 fieldIndex.load(fields.map(f => ({
-  minX: Math.min(...f.coords.map(c => c[0])),
-  minY: Math.min(...f.coords.map(c => c[1])),
-  maxX: Math.max(...f.coords.map(c => c[0])),
-  maxY: Math.max(...f.coords.map(c => c[1])),
+  minX: Math.min(...f.points.map(p => p.lng)),
+  minY: Math.min(...f.points.map(p => p.lat)),
+  maxX: Math.max(...f.points.map(p => p.lng)),
+  maxY: Math.max(...f.points.map(p => p.lat)),
   id: f.id, type: 'field'
 })));
 ```
-
-> **Note on links:** A diagonal link's bounding box is larger than the link itself, producing
-> false positives. This is intentional and fine — RBush does fast bbox rejection, and MapLibre
-> renders the actual line geometry. Do not do exact segment intersection in the query hot path.
 
 ---
 
@@ -101,133 +82,14 @@ fieldIndex.load(fields.map(f => ({
 Zustand stores only what React needs to render: the *results* of spatial queries and UI state.
 It never stores the raw geometry data or the RBush trees themselves.
 
-### Store — `src/store/mapStore.ts`
-
-```ts
-import { create } from 'zustand';
-import { portalIndex, linkIndex, fieldIndex, artifactIndex, ornamentIndex } from '../spatial';
-
-interface BBox { minX: number; minY: number; maxX: number; maxY: number; }
-
-interface MapStore {
-  // Visible entity IDs from last viewport query
-  visiblePortalIds:   string[];
-  visibleLinkIds:     string[];
-  visibleFieldIds:    string[];
-  visibleArtifactIds: string[];
-  visibleOrnamentIds: string[];
-
-  // UI state
-  selectedPortalId: string | null;
-  factionFilter:    'all' | 'Resistance' | 'Enlightened' | 'Neutral';
-  minLevel:         number;
-
-  // Actions
-  updateViewport:      (bbox: BBox) => void;
-  setSelectedPortal:   (id: string | null) => void;
-  setFactionFilter:    (f: MapStore['factionFilter']) => void;
-  setMinLevel:         (l: number) => void;
-}
-
-export const useMapStore = create<MapStore>((set) => ({
-  visiblePortalIds:   [],
-  visibleLinkIds:     [],
-  visibleFieldIds:    [],
-  visibleArtifactIds: [],
-  visibleOrnamentIds: [],
-  selectedPortalId:   null,
-  factionFilter:      'all',
-  minLevel:           1,
-
-  updateViewport: (bbox) => set({
-    visiblePortalIds:   portalIndex.search(bbox).map(i => i.id),
-    visibleLinkIds:     linkIndex.search(bbox).map(i => i.id),
-    visibleFieldIds:    fieldIndex.search(bbox).map(i => i.id),
-    visibleArtifactIds: artifactIndex.search(bbox).map(i => i.id),
-    visibleOrnamentIds: ornamentIndex.search(bbox).map(i => i.id),
-  }),
-
-  setSelectedPortal: (id) => set({ selectedPortalId: id }),
-  setFactionFilter:  (f)  => set({ factionFilter: f }),
-  setMinLevel:       (l)  => set({ minLevel: l }),
-}));
-```
-
----
-
-## MapLibre Integration
-
 ### Viewport → RBush → Zustand → MapLibre sources
 
 ```
 map 'move' / 'moveend' event
   → extract bbox from map.getBounds()
-  → call store.updateViewport(bbox)        ← RBush query happens here
-  → Zustand updates visible IDs
-  → React re-renders GeoJSON sources
-  → MapLibre re-draws layers
-```
-
-### Map component — `src/components/Map.tsx`
-
-```tsx
-import { useEffect, useRef } from 'react';
-import maplibregl from 'maplibre-gl';
-import throttle from 'lodash.throttle';
-import { useMapStore } from '../store/mapStore';
-import { allPortals, allLinks, allFields } from '../data'; // your full dataset
-
-export function Map() {
-  const mapRef = useRef<maplibregl.Map | null>(null);
-  const updateViewport = useMapStore(s => s.updateViewport);
-  const visiblePortalIds = useMapStore(s => s.visiblePortalIds);
-  const factionFilter = useMapStore(s => s.factionFilter);
-
-  // Init map
-  useEffect(() => {
-    const map = new maplibregl.Map({ container: 'map', /* ... */ });
-    mapRef.current = map;
-
-    map.on('load', () => {
-      map.addSource('portals', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-      map.addSource('links',   { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-      map.addSource('fields',  { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-
-      map.addLayer({ id: 'fields-fill',  type: 'fill',   source: 'fields',  /* paint */ });
-      map.addLayer({ id: 'links-line',   type: 'line',   source: 'links',   /* paint */ });
-      map.addLayer({ id: 'portals-circle', type: 'circle', source: 'portals', /* paint */ });
-    });
-
-    // Throttle viewport updates — MapLibre fires 'move' every animation frame
-    const onMove = throttle(() => {
-      const b = map.getBounds();
-      updateViewport({
-        minX: b.getWest(), minY: b.getSouth(),
-        maxX: b.getEast(), maxY: b.getNorth(),
-      });
-    }, 120); // ms
-
-    map.on('move', onMove);
-    map.on('moveend', onMove);
-    return () => { map.remove(); };
-  }, []);
-
-  // Update GeoJSON sources when visible IDs change
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map?.isStyleLoaded()) return;
-
-    const idSet = new Set(visiblePortalIds);
-    const features = allPortals
-      .filter(p => idSet.has(p.id))
-      .filter(p => factionFilter === 'all' || p.faction === factionFilter);
-
-    (map.getSource('portals') as maplibregl.GeoJSONSource)
-      .setData({ type: 'FeatureCollection', features });
-  }, [visiblePortalIds, factionFilter]);
-
-  return <div id="map" style={{ width: '100%', height: '100vh' }} />;
-}
+  → syncToMap() triggered                  ← RBush query happens here
+  → Generate GeoJSON FeatureCollection
+  → MapLibre source.setData(features)
 ```
 
 ---
@@ -235,46 +97,13 @@ export function Map() {
 ## Performance Guidelines
 
 ### Throttle viewport handlers
-MapLibre fires `move` every animation frame (~60fps). Always throttle RBush queries to **100–150ms**.
-
-```ts
-const onMove = throttle(handleMove, 120);
-map.on('move', onMove);
-map.on('moveend', onMove); // catches final position after inertia
-```
-
-### Separate sources per entity type
-Use one GeoJSON source per entity type (portals, links, fields, artifacts, ornaments).
-Mixing them into one source forces MapLibre to re-parse the entire FeatureCollection on any update.
+MapLibre fires `move` every animation frame (~60fps). Always throttle RBush queries or use `moveend` for heavy operations.
 
 ### Use `setData` not layer filters for visibility
-Calling `map.setFilter(layerId, ...)` is fast for small datasets but degrades at 10k+ features
-because MapLibre still processes all features in the source. Prefer updating the source data
-directly with only the visible subset.
+Calling `map.setFilter(layerId, ...)` is fast for small datasets but degrades at 10k+ features. Prefer updating the source data directly with only the visible subset.
 
 ### Bulk load RBush with `.load()`
-RBush's `.load()` uses OMT bulk-loading algorithm and is **~10× faster** than inserting items one by one with `.insert()`. Always use `.load()` for initial data.
-
-### Keep data lookup maps
-Maintain a `Map<string, Portal>` (id → object) alongside the RBush index for O(1) lookup
-after a spatial query returns IDs.
-
-```ts
-export const portalMap = new Map<string, Portal>(
-  allPortals.map(p => [p.id, p])
-);
-```
-
-### Zoom-level culling
-Skip RBush queries entirely at low zoom levels — render summary layers (e.g. cluster counts)
-instead of individual portals. A practical threshold:
-
-| Zoom | Render |
-|---|---|
-| < 12 | Heatmap or cluster layer only |
-| 12–14 | Fields + links only |
-| 14–16 | All entities, no label text |
-| > 16 | All entities + labels |
+RBush's `.load()` is **~10× faster** than inserting items one by one. Always use `.load()` for initial data or large batches.
 
 ---
 
@@ -287,27 +116,12 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
    - Dynamic Height: `Base (200m) + (Max Nested Layer * 20m) + Cap (15m)`.
 2. **Links (Floating Beams)**:
    - Geometry: Double-layered prismatic extrusions (wide base, narrow top).
-   - Altitude: Calculated to match the altitude of the highest anchored field pane.
+   - Altitude: Calculated to match the altitude of the field panes.
 3. **Fields (Glass Panes)**:
    - Altitude: `Base (200m) + (Nesting Layer * 20m)`.
    - Result: Overlapping fields appear as stacked translucent glass panes.
 
-### Automatic Layering (Nesting)
-
-Do not store layer numbers in the database. Calculate them dynamically during the data-sync phase:
-1. Identify the center-point of the field.
-2. Count how many other fields contain that point via `isPointInField` (Point-in-Triangle).
-3. The count equals the field's `layer` (altitude index).
-
 ---
-
-## Link-Driven Data Flow
-
-Matching Ingress logic, the system should be **Link-Centric**:
-
-1. **Link Insertion**: When a link is added, search for common neighbors between the two endpoints.
-2. **Implicit Field Creation**: If a common neighbor exists, a triangle is closed. Automatically generate the `Field` entity.
-3. **Reactivity**: Since fields are implicit, the UI must run the "Automatic Layering" calculation whenever the link-set changes to ensure 3D altitudes remain consistent.
 
 ## Status & Roadmap
 
@@ -317,69 +131,23 @@ Matching Ingress logic, the system should be **Link-Centric**:
 | :--- | :--- | :--- |
 | **Spatial Indexing** | **DONE** | Matches IRIS Core (`globalSpatialIndex`). |
 | **3D Rendering** | **ADVANCED** | Far superior to IRIS (Cylinders, Floating Beams, Stacking). |
-| **Live Interception**| **ACTIVE** | Full active request support for portal details. |
-| **Rich Dashboard** | **DONE** | **Preact-based**. R1-8, 1x4 Mods, Full Nicknames, Health Bars. |
-| **Interaction** | **STABLE** | Pixel-perfect snapping (Portals > Fields > Links). |
-| **Tooling** | **ALIGNED** | Standardized TSConfig/ESLint/Stylelint with monorepo. |
-| **UI Framework** | **PREACT** | Fully migrated from Raw DOM to reactive components. |
-
-### Alignment with IRIS & IITC-CE Core
-
-To move from a POC to a core IRIS feature, the following alignment steps are required:
-
-1.  **Data Coordinator**:
-    *   Adopt the main extension's `request-coordinator.ts` logic.
-    *   Implement batching, intelligent polling (idle vs. active), and retry-with-backoff for entities.
-2.  **Standardized Data Handling**:
-    *   Expand beyond entities to handle **Inventory**, **Player Stats**, and **Scores**.
-    *   Align "Live Mode" state management with the main IRIS store slices.
-3.  **Component Architecture**:
-    *   Further decouple `Dashboard` and `TacticalUI` into the `@iris/core` component library.
+| **Modular Refactor** | **DONE** | Clean separation of map, data, and UI concerns. |
+| **Mobile-First UI** | **DONE** | Bottom Dock UX optimized for thumb-reach. |
+| **Player Stats** | **DONE** | L16 support, C.O.R.E. detection, AP Progress bars. |
+| **COMM Panel** | **DONE** | Multi-tab (All/Faction/Alerts), colored nicks, map-snapping. |
+| **Scores Panel** | **DONE** | Global MU standings and Regional Top Agents. |
+| **Inventory Stats** | **DONE** | Summary view of weapons, resonators, and mods. |
 
 ### Next Session Priorities
 
-1.  **Player Tracker (COMM Integration)**:
-    *   **Goal**: Intercept `/r/getPlexts` to parse agent locations from the tactical log.
-    *   **Visual**: Render real-time 3D "Agent Avatars" with color-coded movement traces.
-2.  **Inventory: Keys on Map**:
-    *   **Goal**: Integrate the `@iris/core` Inventory parser.
-    *   **Visual**: Render glowing "Key Indicators" on portals where the agent holds a key, improving field planning.
-3.  **Performance: GeoJSON Splitting**:
-    *   **Goal**: Split the single `entities` source into `src-portals`, `src-links`, and `src-fields`.
-    *   **Why**: MapLibre re-parses the entire collection on every change; splitting them makes updates 3x faster in dense areas.
-
----
-
-## Data Flow Diagram
-
-```
-Raw data (GeoJSON / API)
-        │
-        ▼
-  RBush indexes ──────────────────────────────┐
-  (module singletons)                         │
-        │                                     │
-  map 'move' event                            │
-        │                                     │
-        ▼                                     │
-  updateViewport(bbox) ──► RBush.search()     │
-        │                                     │
-        ▼                                     │
-  Zustand store                               │
-  visiblePortalIds[]                          │
-  visibleLinkIds[]                            │
-  visibleFieldIds[]                           │
-        │                                     │
-        ▼                                     │
-  React component                             │
-  filter full dataset by visible IDs ◄────────┘
-        │
-        ▼
-  MapLibre source.setData(filteredFeatures)
-        │
-        ▼
-  MapLibre renders layers
-```
+1.  **Mission Integration**:
+    *   **Goal**: Add a 5th tab to the Data Dock for "Missions".
+    *   **Visual**: Render mission start-points and waypoint sequences in 3D.
+2.  **Player Tracker (Movement Traces)**:
+    *   **Goal**: Restore real-time agent movement parsing from COMM.
+    *   **Visual**: 3D "Agent Avatars" with color-coded movement traces.
+3.  **Inventory: Keys on Map**:
+    *   **Goal**: Integrate the `@iris/core` Inventory parser to show keys on portals.
 
 ---
 
@@ -387,36 +155,17 @@ Raw data (GeoJSON / API)
 
 ```
 src/
-├── spatial/
-│   └── index.ts          # RBush instances + load helpers
-├── store/
-│   └── mapStore.ts       # Zustand store
-├── data/
-│   ├── portals.ts        # Full portal dataset + portalMap (id → Portal)
-│   ├── links.ts          # Full link dataset
-│   └── fields.ts         # Full field dataset
+├── hooks/
+│   ├── useComm.ts          # COMM logic + Polling
+│   ├── useIntelMessages.ts # Interceptor message handler
+│   ├── useMapRenderer.ts   # Map data synchronization
+│   ├── usePlayerStats.ts   # Stats + CORE logic
+│   └── useScores.ts        # MU Score management
 ├── components/
-│   ├── Map.tsx           # MapLibre init + source updates
-│   ├── PortalPanel.tsx   # Reads selectedPortalId from Zustand
-│   └── FilterBar.tsx     # Writes factionFilter / minLevel to Zustand
-└── hooks/
-    └── useViewportEntities.ts  # Optional: wraps the Zustand selectors
-```
-
----
-
-## Dependencies
-
-```json
-{
-  "maplibre-gl": "^4.x",
-  "rbush": "^3.x",
-  "zustand": "^4.x",
-  "lodash.throttle": "^4.x"
-}
-```
-
-```bash
-npm install maplibre-gl rbush zustand lodash.throttle
-npm install -D @types/lodash.throttle
+│   ├── DataDock.tsx        # Bottom-dock panels (Player, COMM, Scores)
+│   ├── MapTools.tsx        # Top-right drawers (Nav, Style, Mode)
+│   ├── TacticalUI.tsx      # Main UI Orchestrator
+│   └── LaunchButton.tsx    # Floating 3D toggle
+├── MapConstants.ts         # Centralized colors and styles
+└── GeoUtils.ts             # Geometry and formatting helpers
 ```
