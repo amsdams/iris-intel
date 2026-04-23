@@ -13,8 +13,9 @@ import { usePatterns } from './usePatterns';
 import { useIntelMessages } from './useIntelMessages';
 import { useMapRenderer } from './useMapRenderer';
 import { useScores } from './useScores';
+import { usePlayerStats } from './usePlayerStats';
 
-console.log("POC (TS): Tactical Overlay | v1.2.6 | Scores Integrated");
+console.log("POC (TS): Tactical Overlay | v1.2.7 | Player Stats Active");
 
 function TacticalOverlay(): h.JSX.Element {
     const [map, setMap] = useState<maplibregl.Map | null>(null);
@@ -38,6 +39,7 @@ function TacticalOverlay(): h.JSX.Element {
     
     useIntelMessages(map, liveMode, patternMode, selected, setSelected, (m, l, p) => syncToMap(m, l, p), logEvent);
     useScores(isVis, liveMode);
+    usePlayerStats(isVis, liveMode);
 
     const checkAndLoad = useCallback((currentMap: maplibregl.Map, currentPatternMode: number, currentLiveMode: boolean): void => {
         if (!currentMap || !currentMap.getStyle()) return;

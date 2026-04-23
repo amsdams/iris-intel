@@ -21,7 +21,7 @@ interface TacticalUIProps {
 export function TacticalUI({ zoom, lat, lng, events, onNav, onStyle, onMode }: TacticalUIProps): JSX.Element {
     const [openDrawer, setOpenDrawer] = useState<string | null>(null);
     const logRef = useRef<HTMLDivElement>(null);
-    const { gameScore, regionScore } = useStore();
+    const { gameScore, regionScore, playerStats, hasSubscription } = useStore();
 
     const toggleDrawer = (id: string): void => {
         setOpenDrawer(openDrawer === id ? null : id);
@@ -31,6 +31,10 @@ export function TacticalUI({ zoom, lat, lng, events, onNav, onStyle, onMode }: T
         if (val >= 1000000) return (val / 1000000).toFixed(2) + 'M';
         if (val >= 1000) return (val / 1000).toFixed(1) + 'k';
         return val.toString();
+    };
+
+    const formatAP = (val: number): string => {
+        return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     };
 
     return (
@@ -50,12 +54,44 @@ export function TacticalUI({ zoom, lat, lng, events, onNav, onStyle, onMode }: T
             {/* Control Drawers */}
             <div id="debug-btns-container" style={{ position: 'fixed', top: '10px', right: '10px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', zIndex: 2000001, pointerEvents: 'none' }}>
                 
+                {/* Player Drawer */}
+                <div className="drawer-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                    <div className="debug-btn" onClick={() => toggleDrawer('player')} style={{ width: '36px', height: '36px', background: 'rgba(34,34,34,0.9)', color: '#fff', border: '1px solid #00ffff', borderRadius: '4px', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'auto' }}>👤</div>
+                    <div className="drawer-content" style={{ display: openDrawer === 'player' ? 'flex' : 'none', flexDirection: 'column', gap: '8px', padding: '10px', background: 'rgba(20,20,20,0.95)', borderRadius: '4px', border: '1px solid #00ffff', minWidth: '160px', color: '#fff', fontSize: '11px', fontFamily: 'monospace', pointerEvents: 'auto' }}>
+                        {playerStats ? (
+                            <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                    <span style={{ color: COLORS[playerStats.team as keyof typeof COLORS] || '#fff', fontWeight: 'bold', fontSize: '13px' }}>{playerStats.nickname}</span>
+                                    {hasSubscription && <span style={{ background: '#f1c40f', color: '#000', fontSize: '8px', padding: '1px 4px', borderRadius: '2px', fontWeight: 'bold' }}>C.O.R.E.</span>}
+                                </div>
+                                <div style={{ background: '#111', padding: '6px', borderRadius: '4px', marginBottom: '6px' }}>
+                                    <div style={{ color: '#888', fontSize: '9px' }}>LEVEL {playerStats.level}</div>
+                                    <div style={{ color: '#fff', fontSize: '11px' }}>{formatAP(playerStats.ap || 0)} AP</div>
+                                    {playerStats.min_ap_for_next_level && (
+                                        <div style={{ width: '100%', height: '3px', background: '#333', marginTop: '4px', borderRadius: '2px', overflow: 'hidden' }}>
+                                            <div style={{ 
+                                                width: `${Math.min(100, ((playerStats.ap || 0) - (playerStats.min_ap_for_current_level || 0)) / ((playerStats.min_ap_for_next_level || 0) - (playerStats.min_ap_for_current_level || 0)) * 100)}%`, 
+                                                height: '100%', 
+                                                background: COLORS[playerStats.team as keyof typeof COLORS] || '#00ffff' 
+                                            }}></div>
+                                        </div>
+                                    )}
+                                </div>
+                                <div style={{ color: '#666', fontSize: '9px' }}>
+                                    XM: {playerStats.energy} / {playerStats.xm_capacity}
+                                </div>
+                            </div>
+                        ) : (
+                            <div style={{ color: '#666', fontSize: '9px' }}>Loading agent data...</div>
+                        )}
+                    </div>
+                </div>
+
                 {/* Scores Drawer */}
                 <div className="drawer-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                     <div className="debug-btn" onClick={() => toggleDrawer('scores')} style={{ width: '36px', height: '36px', background: 'rgba(34,34,34,0.9)', color: '#fff', border: '1px solid #00ffff', borderRadius: '4px', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'auto' }}>📊</div>
                     <div className="drawer-content" style={{ display: openDrawer === 'scores' ? 'flex' : 'none', flexDirection: 'column', gap: '8px', padding: '10px', background: 'rgba(20,20,20,0.95)', borderRadius: '4px', border: '1px solid #00ffff', minWidth: '150px', color: '#fff', fontSize: '11px', fontFamily: 'monospace', pointerEvents: 'auto' }}>
                         
-                        {/* Global Game Score */}
                         <div style={{ borderBottom: '1px solid #333', paddingBottom: '4px' }}>
                             <div style={{ color: '#888', fontSize: '9px', marginBottom: '2px' }}>GLOBAL MU</div>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -64,7 +100,6 @@ export function TacticalUI({ zoom, lat, lng, events, onNav, onStyle, onMode }: T
                             </div>
                         </div>
 
-                        {/* Region Score */}
                         {regionScore && (
                             <div>
                                 <div style={{ color: '#888', fontSize: '9px', marginBottom: '2px' }}>REGION: {regionScore.regionName}</div>

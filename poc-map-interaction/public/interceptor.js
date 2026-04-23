@@ -1,6 +1,6 @@
 (function() {
     console.log('IRIS POC: Interceptor initializing...');
-    const isIrisUrl = (url) => url.includes('getEntities') || url.includes('getPortalDetails') || url.includes('getPlexts') || url.includes('getGameScore') || url.includes('getRegionScoreDetails');
+    const isIrisUrl = (url) => url.includes('getEntities') || url.includes('getPortalDetails') || url.includes('getPlexts') || url.includes('getGameScore') || url.includes('getRegionScoreDetails') || url.includes('getHasActiveSubscription') || url.includes('getInventory');
     
     function getCsrfToken() {
         const cookies = document.cookie.split(';').map(c => c.trim());
@@ -16,6 +16,39 @@
         }
         return '';
     }
+
+    function readPlayerStats() {
+        const p = window.PLAYER;
+        if (!p || !p.nickname) return null;
+        return {
+            type: 'IRIS_PLAYER_STATS',
+            nickname: p.nickname,
+            level: parseInt(String(p.verified_level || p.level), 10),
+            ap: parseInt(String(p.ap), 10),
+            team: p.team === 'RESISTANCE' ? 'R' : (p.team === 'ENLIGHTENED' ? 'E' : 'N'),
+            energy: parseInt(String(p.energy), 10),
+            xm_capacity: parseInt(String(p.xm_capacity), 10),
+            available_invites: parseInt(String(p.available_invites), 10),
+            min_ap_for_current_level: parseInt(String(p.min_ap_for_current_level), 10),
+            min_ap_for_next_level: parseInt(String(p.min_ap_for_next_level), 10),
+            hasActiveSubscription: p.hasActiveSubscription ?? false
+        };
+    }
+
+    let lastStatsKey = '';
+    function postPlayerStats() {
+        const stats = readPlayerStats();
+        if (!stats) return;
+        const key = JSON.stringify(stats);
+        if (key === lastStatsKey) return;
+        lastStatsKey = key;
+        window.postMessage(stats, '*');
+    }
+
+    // Monitor for player changes
+    const observer = new MutationObserver(() => postPlayerStats());
+    observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
+    setTimeout(postPlayerStats, 1000);
 
     // 1. Hook XHR
     const XHR = XMLHttpRequest.prototype;
@@ -107,7 +140,6 @@
             const guid = msg.guid;
             const url = '/r/getPortalDetails';
             const body = JSON.stringify({ guid, v: extractVersion() });
-            
             fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
@@ -141,6 +173,30 @@
                 const data = await res.json();
                 window.postMessage({ type: 'IRIS_DATA', url, data: data, params: body }, '*');
             }).catch(e => console.error('IRIS POC: Region Score Fetch Failed', e));
+        } else if (msg.type === 'IRIS_SUBSCRIPTION_REQUEST') {
+            const url = '/r/getHasActiveSubscription';
+            const body = JSON.stringify({ v: extractVersion() });
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                body: body
+            }).then(async (res) => {
+                if (!res.ok) return;
+                const data = await res.json();
+                window.postMessage({ type: 'IRIS_DATA', url, data: data, params: body }, '*');
+            }).catch(e => console.error('IRIS POC: Subscription Fetch Failed', e));
+        } else if (msg.type === 'IRIS_INVENTORY_REQUEST') {
+            const url = '/r/getInventory';
+            const body = JSON.stringify({ lastQueryTimestamp: -1, v: extractVersion() });
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                body: body
+            }).then(async (res) => {
+                if (!res.ok) return;
+                const data = await res.json();
+                window.postMessage({ type: 'IRIS_DATA', url, data: data, params: body }, '*');
+            }).catch(e => console.error('IRIS POC: Inventory Fetch Failed', e));
         }
     });
 

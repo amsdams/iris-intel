@@ -1,6 +1,6 @@
 import { useEffect } from 'preact/hooks';
 import maplibregl from 'maplibre-gl';
-import { useStore, EntityParser, PortalDetailsParser, GameScoreParser, RegionScoreParser, Portal, Link, Field } from '@iris/core';
+import { useStore, EntityParser, PortalDetailsParser, GameScoreParser, RegionScoreParser, InventoryParser, PlayerParser, Portal, Link, Field } from '@iris/core';
 
 export function useIntelMessages(
     map: maplibregl.Map | null,
@@ -14,7 +14,27 @@ export function useIntelMessages(
     useEffect(() => {
         const handler = (event: MessageEvent): void => {
             const msg = event.data;
-            if (!msg || msg.type !== 'IRIS_DATA') return;
+            if (!msg) return;
+
+            if (msg.type === 'IRIS_PLAYER_STATS') {
+                const store = useStore.getState();
+                store.setPlayerStats({
+                    nickname: msg.nickname,
+                    level: msg.level,
+                    ap: msg.ap,
+                    team: msg.team,
+                    energy: msg.energy,
+                    xm_capacity: msg.xm_capacity,
+                    available_invites: msg.available_invites,
+                    min_ap_for_current_level: msg.min_ap_for_current_level,
+                    min_ap_for_next_level: msg.min_ap_for_next_level
+                });
+                store.setHasSubscription(msg.hasActiveSubscription);
+                logEvent(`Agent: ${msg.nickname} (L${msg.level})`);
+                return;
+            }
+
+            if (msg.type !== 'IRIS_DATA') return;
             let parsedParams: any = msg.params;
             if (typeof msg.params === 'string') { try { parsedParams = JSON.parse(msg.params); } catch { } }
 
@@ -54,6 +74,23 @@ export function useIntelMessages(
                     store.setRegionScore(parsed);
                     logEvent(`Region Score: ${parsed.regionName}`);
                 }
+            } else if (msg.url.includes('getHasActiveSubscription')) {
+                const store = useStore.getState();
+                store.setHasSubscription(msg.data.result === true);
+                logEvent(`Subscription: ${msg.data.result ? 'C.O.R.E.' : 'Standard'}`);
+            } else if (msg.url.includes('getInventory')) {
+                const store = useStore.getState();
+                const items = InventoryParser.parse(msg.data);
+                if (items.length > 0) store.setInventory(items);
+                
+                if (msg.data.result) {
+                    if ((msg.data as any).player) {
+                        const parsed = PlayerParser.parseStats((msg.data as any).player);
+                        store.setPlayerStats(parsed.stats);
+                        store.setHasSubscription(parsed.hasActiveSubscription);
+                    }
+                }
+                logEvent(`Inventory: ${items.length} items`);
             }
         };
         window.addEventListener('message', handler);
