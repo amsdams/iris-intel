@@ -13,7 +13,7 @@ import { usePatterns } from './usePatterns';
 import { useIntelMessages } from './useIntelMessages';
 import { useMapRenderer } from './useMapRenderer';
 
-console.log("POC (TS): Tactical Overlay | v1.2.3 | Modular Refactor (Features Reverted)");
+console.log("POC (TS): Tactical Overlay | v1.2.4 | Selection Restored");
 
 function TacticalOverlay(): h.JSX.Element {
     const [map, setMap] = useState<maplibregl.Map | null>(null);
@@ -91,6 +91,9 @@ function TacticalOverlay(): h.JSX.Element {
                     { id: 'l-ext-res', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'link-ext'], ['==', 'team', 'R']], paint: { 'fill-extrusion-color': COLORS.R, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.8 }, layout: { visibility: 'none' } },
                     { id: 'l-ext-mac', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'link-ext'], ['==', 'team', 'M']], paint: { 'fill-extrusion-color': COLORS.M, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.8 }, layout: { visibility: 'none' } },
                     { id: 'p-ext', type: 'fill-extrusion', source: 'entities', filter: ['==', 'type', 'portal-ext'], paint: { 'fill-extrusion-color': ['match', ['get', 'team'], 'E', COLORS.E, 'R', COLORS.R, 'M', COLORS.M, COLORS.N], 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': 0, 'fill-extrusion-opacity': 0.9 }, layout: { visibility: 'none' } },
+                    { id: 'sel-f', type: 'line', source: 'selection', filter: ['==', 'type', 'field'], paint: { 'line-color': '#fff', 'line-width': 3 } },
+                    { id: 'sel-l', type: 'line', source: 'selection', filter: ['==', 'type', 'link'], paint: { 'line-color': '#fff', 'line-width': 4 } },
+                    { id: 'sel-p', type: 'circle', source: 'selection', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': 12, 'circle-color': 'transparent', 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 } },
                     { id: 'p', type: 'circle', source: 'entities', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': 4, 'circle-color': ['match', ['get', 'team'], 'E', COLORS.E, 'R', COLORS.R, 'M', COLORS.M, COLORS.N] } }
                 ]
             },
@@ -162,6 +165,26 @@ function TacticalOverlay(): h.JSX.Element {
                 return;
             }
 
+            const linkHits = links.map(l => {
+                const p1 = m.project([l.fromLng, l.fromLat]);
+                const p2 = m.project([l.toLng, l.toLat]);
+                const A = e.point.x - p1.x; const B = e.point.y - p1.y;
+                const C = p2.x - p1.x; const D = p2.y - p1.y;
+                const dot = A * C + B * D; const len_sq = C * C + D * D;
+                let param = -1; if (len_sq !== 0) param = dot / len_sq;
+                let xx: number, yy: number;
+                if (param < 0) { xx = p1.x; yy = p1.y; }
+                else if (param > 1) { xx = p2.x; yy = p2.y; }
+                else { xx = p1.x + param * C; yy = p1.y + param * D; }
+                const dist = Math.hypot(e.point.x - xx, e.point.y - yy);
+                return { l, dist };
+            }).filter(h => h.dist < 5).sort((a, b) => a.dist - b.dist);
+
+            if (linkHits.length > 0) {
+                setSelected({ type: 'link', data: linkHits[0].l });
+                return;
+            }
+
             setSelected(null);
             (m.getSource('selection') as maplibregl.GeoJSONSource)?.setData({ type: 'FeatureCollection', features: [] });
         });
@@ -176,12 +199,23 @@ function TacticalOverlay(): h.JSX.Element {
         const selSource = map.getSource('selection') as maplibregl.GeoJSONSource;
         if (!selSource) return;
         const selFeat: GeoJSON.Feature[] = [];
+        const store = useStore.getState();
+
         if (selected.type === 'portal') {
             const p = selected.data as Portal;
             selFeat.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [p.lng, p.lat] }, properties: { type: 'portal' } });
+        } else if (selected.type === 'link') {
+            const l = selected.data as Link;
+            const p1 = liveMode ? store.portals[l.fromPortalId] : generator.portals.get(l.fromPortalId);
+            const p2 = liveMode ? store.portals[l.toPortalId] : generator.portals.get(l.toPortalId);
+            if (p1 && p2) selFeat.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: [[p1.lng, p1.lat], [p2.lng, p2.lat]] }, properties: { type: 'link' } });
+        } else if (selected.type === 'field') {
+            const f = selected.data as Field;
+            const poly = [...f.points.map((p) => [p.lng, p.lat]), [f.points[0].lng, f.points[0].lat]];
+            selFeat.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: poly }, properties: { type: 'field' } });
         }
         selSource.setData({ type: 'FeatureCollection', features: selFeat });
-    }, [map, selected]);
+    }, [map, selected, liveMode, generator]);
 
     const handleNav = (action: string): void => {
         if (!map) return;
