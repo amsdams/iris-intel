@@ -28,7 +28,6 @@ export function Dashboard({ type, data, colors, onClose }: DashboardProps): JSX.
         const mods = p.mods || [];
         const mitigationTotal = p.mitigation?.total ?? 0;
         
-        // Calculate stickiness (simplified estimate)
         let stickiness = 0;
         mods.forEach(m => {
             if (m.name.includes('Shield')) {
@@ -45,7 +44,6 @@ export function Dashboard({ type, data, colors, onClose }: DashboardProps): JSX.
                     <div style={{ color: teamColor, fontWeight: 'bold', fontSize: '14px', marginBottom: '2px' }}>{p.name || 'PORTAL'}</div>
                     <div style={{ color: '#888', fontSize: '10px', marginBottom: '10px' }}>Owner: {p.owner || (p.team === 'N' ? 'Neutral' : 'Unknown')}</div>
                     
-                    {/* Primary Stats */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px', marginBottom: '10px' }}>
                         <div style={{ background: '#111', padding: '4px', textAlign: 'center', borderRadius: '2px' }}>
                             <div style={{ color: '#666', fontSize: '9px' }}>LEVEL</div>
@@ -61,7 +59,6 @@ export function Dashboard({ type, data, colors, onClose }: DashboardProps): JSX.
                         </div>
                     </div>
 
-                    {/* Tactical Stats */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginBottom: '10px' }}>
                         <div style={{ background: '#111', padding: '4px 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: '2px' }}>
                             <span style={{ color: '#666', fontSize: '9px' }}>MITIGATION</span>
@@ -73,7 +70,6 @@ export function Dashboard({ type, data, colors, onClose }: DashboardProps): JSX.
                         </div>
                     </div>
 
-                    {/* Resonators (Compact Grid: R1-R8 with Health Bars and Owners) */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginBottom: '10px' }}>
                         {Array.from({ length: 8 }).map((_, i) => {
                             const r = resos[i];
@@ -90,7 +86,6 @@ export function Dashboard({ type, data, colors, onClose }: DashboardProps): JSX.
                         })}
                     </div>
 
-                    {/* Mods (1 Row, 4 Cols with Full Owners) */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginBottom: '10px' }}>
                         {Array.from({ length: 4 }).map((_, i) => {
                             const m = mods[i];
@@ -111,7 +106,6 @@ export function Dashboard({ type, data, colors, onClose }: DashboardProps): JSX.
                         })}
                     </div>
 
-                    {/* History */}
                     <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #222', marginTop: '10px', paddingTop: '10px' }}>
                         <span style={{ border: `1px solid ${p.visited ? '#9b59b6' : '#333'}`, color: p.visited ? '#9b59b6' : '#444', padding: '1px 6px', borderRadius: '99px', fontSize: '9px', fontWeight: p.visited ? 'bold' : 'normal' }}>VISITED</span>
                         <span style={{ border: `1px solid ${p.captured ? '#e74c3c' : '#333'}`, color: p.captured ? '#e74c3c' : '#444', padding: '1px 6px', borderRadius: '99px', fontSize: '9px', fontWeight: p.captured ? 'bold' : 'normal' }}>CAPTURED</span>
@@ -128,7 +122,7 @@ export function Dashboard({ type, data, colors, onClose }: DashboardProps): JSX.
                     <div style={{ color: teamColor, fontWeight: 'bold', marginBottom: '8px', fontSize: '14px' }}>{type.toUpperCase()} DETAILS</div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', background: '#111', padding: '6px', borderRadius: '4px', fontSize: '11px' }}>
                         <span style={{ color: '#666' }}>ID</span>
-                        <span style={{ color: '#ccc' }}>{data.id.slice(0, 12)}...</span>
+                        <span style={{ color: '#ccc' }}>{(data as Portal | Link | Field).id.slice(0, 12)}...</span>
                     </div>
                 </div>
             )}
