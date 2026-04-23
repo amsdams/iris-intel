@@ -15,7 +15,7 @@ import { useMapRenderer } from './useMapRenderer';
 import { useScores } from './useScores';
 import { usePlayerStats } from './usePlayerStats';
 
-console.log("POC (TS): Tactical Overlay | v1.2.8 | COMM Map Interaction Active");
+console.log("POC (TS): Tactical Overlay | v1.2.9 | Geolocation Integrated");
 
 function TacticalOverlay(): h.JSX.Element {
     const [map, setMap] = useState<maplibregl.Map | null>(null);
@@ -75,14 +75,12 @@ function TacticalOverlay(): h.JSX.Element {
         logEvent(`Jumping to Portal: ${name}`);
         map.flyTo({ center: [lng, lat], zoom: 17, duration: 2000 });
         
-        // Find if portal exists in store to select it
         const store = useStore.getState();
         const existing = Object.values(store.portals).find(p => Math.abs(p.lat - lat) < 0.0001 && Math.abs(p.lng - lng) < 0.0001);
         if (existing) {
             setSelected({ type: 'portal', data: existing });
             if (liveMode) window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: existing.id }, '*');
         } else {
-            // Highlight location even if portal data not yet loaded
             setSelected({ type: 'portal', data: { id: 'temp', lat, lng, team: 'N', name } as Portal });
         }
     }, [map, logEvent, liveMode]);
@@ -238,7 +236,7 @@ function TacticalOverlay(): h.JSX.Element {
         selSource.setData({ type: 'FeatureCollection', features: selFeat });
     }, [map, selected, liveMode, generator]);
 
-    const handleNav = (action: string): void => {
+    const handleNav = useCallback((action: string): void => {
         if (!map) return;
         if (action === '+') map.zoomIn();
         else if (action === '-') map.zoomOut();
@@ -247,7 +245,17 @@ function TacticalOverlay(): h.JSX.Element {
         else if (action === '←') map.panBy([-200, 0]);
         else if (action === '→') map.panBy([200, 0]);
         else if (action === 'R') { map.setCenter([4.8952, 52.3702]); map.setZoom(13); }
-    };
+        else if (action === '🎯') {
+            logEvent("Geolocating...");
+            navigator.geolocation.getCurrentPosition((pos) => {
+                const { latitude, longitude } = pos.coords;
+                map.flyTo({ center: [longitude, latitude], zoom: 16 });
+                logEvent(`Located: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+            }, (err) => {
+                logEvent(`Location Failed: ${err.message}`);
+            }, { enableHighAccuracy: true, timeout: 5000 });
+        }
+    }, [map, logEvent]);
 
     const handleStyle = (style: string): void => {
         if (!map || !map.getStyle() || !MAP_STYLES[style]) return;
