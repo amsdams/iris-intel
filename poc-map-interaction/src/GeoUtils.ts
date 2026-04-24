@@ -24,3 +24,22 @@ export function formatMU(val: number): string {
 export function formatAP(val: number): string {
     return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
+
+export function debounce<T extends (...args: any[]) => any>(fn: T, delay: number) {
+    let timeoutId: number | null = null;
+    return (...args: Parameters<T>) => {
+        if (timeoutId) clearTimeout(timeoutId);
+        timeoutId = window.setTimeout(() => fn(...args), delay);
+    };
+}
+
+export function throttle<T extends (...args: any[]) => any>(fn: T, limit: number) {
+    let inThrottle: boolean;
+    return (...args: Parameters<T>) => {
+        if (!inThrottle) {
+            fn(...args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+        }
+    };
+}

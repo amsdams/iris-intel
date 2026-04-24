@@ -1,7 +1,7 @@
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { render, h, Fragment } from 'preact';
-import { useState, useEffect, useCallback } from 'preact/hooks';
+import { useState, useEffect, useCallback, useMemo } from 'preact/hooks';
 import { MockDataGenerator } from './MockDataGenerator';
 import { useStore, globalSpatialIndex, getMinLevelForZoom, getGridSizeForZoom, Portal, Link, Field } from '@iris/core';
 import { Dashboard } from './Dashboard';
@@ -14,8 +14,9 @@ import { useIntelMessages } from './useIntelMessages';
 import { useMapRenderer } from './useMapRenderer';
 import { useScores } from './useScores';
 import { usePlayerStats } from './usePlayerStats';
+import { throttle, debounce } from './GeoUtils';
 
-console.log("POC (TS): Tactical Overlay | v1.3.0 | Refact interceptor");
+console.log("POC (TS): Tactical Overlay | v1.3.1 | Camera Debouncing Active");
 
 function TacticalOverlay(): h.JSX.Element {
     const [map, setMap] = useState<maplibregl.Map | null>(null);
@@ -70,6 +71,26 @@ function TacticalOverlay(): h.JSX.Element {
         syncToMap(currentMap, currentLiveMode, currentPatternMode);
     }, [loadedKeys, syncToMap]);
 
+    // Throttled and Debounced handlers
+    const throttledSync = useMemo(() => throttle((m: maplibregl.Map, isLive: boolean) => {
+        const center = m.getCenter();
+        setMapState({ zoom: m.getZoom(), lat: center.lat, lng: center.lng });
+        if (isLive) {
+            window.postMessage({
+                type: 'IRIS_SYNC_INTEL_MAP',
+                lat: center.lat,
+                lng: center.lng,
+                zoom: Math.round(m.getZoom())
+            }, '*');
+        }
+    }, 100), []);
+
+    const debouncedLoad = useMemo(() => debounce((m: maplibregl.Map, pMode: number, isLive: boolean) => {
+        const center = m.getCenter();
+        setMapState({ zoom: m.getZoom(), lat: center.lat, lng: center.lng });
+        checkAndLoad(m, pMode, isLive);
+    }, 300), [checkAndLoad]);
+
     const handlePortalClick = useCallback((lat: number, lng: number, name: string) => {
         if (!map) return;
         logEvent(`Jumping to Portal: ${name}`);
@@ -120,22 +141,11 @@ function TacticalOverlay(): h.JSX.Element {
         });
 
         m.on('move', () => {
-            const center = m.getCenter();
-            setMapState({ zoom: m.getZoom(), lat: center.lat, lng: center.lng });
-            if (liveMode) {
-                window.postMessage({
-                    type: 'IRIS_SYNC_INTEL_MAP',
-                    lat: center.lat,
-                    lng: center.lng,
-                    zoom: Math.round(m.getZoom())
-                }, '*');
-            }
+            throttledSync(m, liveMode);
         });
 
         m.on('moveend', () => {
-            const center = m.getCenter();
-            setMapState({ zoom: m.getZoom(), lat: center.lat, lng: center.lng });
-            checkAndLoad(m, patternMode, liveMode);
+            debouncedLoad(m, patternMode, liveMode);
         });
 
         m.on('click', (e) => {
@@ -210,7 +220,7 @@ function TacticalOverlay(): h.JSX.Element {
 
         setMap(m);
         return () => m.remove();
-    }, [generator, checkAndLoad, liveMode, logEvent, patternMode, syncToMap]);
+    }, [generator, liveMode, logEvent, throttledSync, debouncedLoad, patternMode]);
 
     // Render Selection Highlights
     useEffect(() => {
