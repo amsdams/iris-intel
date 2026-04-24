@@ -1,6 +1,13 @@
 import { getCsrfToken, extractVersion } from './utils';
 
 /**
+ * Request Queue Configuration
+ */
+const MAX_CONCURRENT_REQUESTS = 2;
+const requestQueue: (() => Promise<void>)[] = [];
+let activeRequests = 0;
+
+/**
  * Handles incoming request messages from the 3D map.
  */
 export function installRequestHandlers(): void {
@@ -10,53 +17,81 @@ export function installRequestHandlers(): void {
 
         switch (msg.type) {
             case 'IRIS_PORTAL_DETAILS_REQUEST':
-                handlePortalDetailsRequest(msg.guid);
+                enqueueRequest(() => handlePortalDetailsRequest(msg.guid));
                 break;
             case 'IRIS_GAME_SCORE_REQUEST':
-                handleGameScoreRequest();
+                enqueueRequest(() => handleGameScoreRequest());
                 break;
             case 'IRIS_REGION_SCORE_REQUEST':
-                handleRegionScoreRequest();
+                enqueueRequest(() => handleRegionScoreRequest());
                 break;
             case 'IRIS_SUBSCRIPTION_REQUEST':
-                handleSubscriptionRequest();
+                enqueueRequest(() => handleSubscriptionRequest());
                 break;
             case 'IRIS_INVENTORY_REQUEST':
-                handleInventoryRequest();
+                enqueueRequest(() => handleInventoryRequest());
                 break;
             case 'IRIS_PLEXTS_REQUEST':
-                handlePlextsRequest(msg.tab, msg.minTimestampMs);
+                enqueueRequest(() => handlePlextsRequest(msg.tab, msg.minTimestampMs));
                 break;
         }
     });
 }
 
-function handlePortalDetailsRequest(guid: string) {
+/**
+ * Enqueues a request and triggers processing.
+ */
+function enqueueRequest(fn: () => Promise<void>) {
+    requestQueue.push(fn);
+    processQueue();
+}
+
+/**
+ * Processes the next item in the queue if concurrency limits allow.
+ */
+async function processQueue() {
+    if (activeRequests >= MAX_CONCURRENT_REQUESTS || requestQueue.length === 0) {
+        return;
+    }
+
+    const nextRequest = requestQueue.shift();
+    if (!nextRequest) return;
+
+    activeRequests++;
+    try {
+        await nextRequest();
+    } finally {
+        activeRequests--;
+        processQueue(); // Check for more work
+    }
+}
+
+async function handlePortalDetailsRequest(guid: string) {
     const body = JSON.stringify({ guid, v: extractVersion() });
-    sendIntelRequest('/r/getPortalDetails', body, 'Detail Fetch Failed');
+    return sendIntelRequest('/r/getPortalDetails', body, 'Detail Fetch Failed');
 }
 
-function handleGameScoreRequest() {
+async function handleGameScoreRequest() {
     const body = JSON.stringify({ v: extractVersion() });
-    sendIntelRequest('/r/getGameScore', body, 'Game Score Fetch Failed');
+    return sendIntelRequest('/r/getGameScore', body, 'Game Score Fetch Failed');
 }
 
-function handleRegionScoreRequest() {
+async function handleRegionScoreRequest() {
     const body = JSON.stringify({ v: extractVersion() });
-    sendIntelRequest('/r/getRegionScoreDetails', body, 'Region Score Fetch Failed');
+    return sendIntelRequest('/r/getRegionScoreDetails', body, 'Region Score Fetch Failed');
 }
 
-function handleSubscriptionRequest() {
+async function handleSubscriptionRequest() {
     const body = JSON.stringify({ v: extractVersion() });
-    sendIntelRequest('/r/getHasActiveSubscription', body, 'Subscription Fetch Failed');
+    return sendIntelRequest('/r/getHasActiveSubscription', body, 'Subscription Fetch Failed');
 }
 
-function handleInventoryRequest() {
+async function handleInventoryRequest() {
     const body = JSON.stringify({ lastQueryTimestamp: -1, v: extractVersion() });
-    sendIntelRequest('/r/getInventory', body, 'Inventory Fetch Failed');
+    return sendIntelRequest('/r/getInventory', body, 'Inventory Fetch Failed');
 }
 
-function handlePlextsRequest(tab: string, minTimestampMs: number) {
+async function handlePlextsRequest(tab: string, minTimestampMs: number) {
     const body = JSON.stringify({ 
         tab, 
         minTimestampMs, 
@@ -64,7 +99,7 @@ function handlePlextsRequest(tab: string, minTimestampMs: number) {
         ascendingTimestampMs: true,
         v: extractVersion() 
     });
-    sendIntelRequest('/r/getPlexts', body, 'Plext Fetch Failed');
+    return sendIntelRequest('/r/getPlexts', body, 'Plext Fetch Failed');
 }
 
 async function sendIntelRequest(url: string, body: string, errorMsg: string) {

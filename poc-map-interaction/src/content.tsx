@@ -16,7 +16,7 @@ import { useScores } from './useScores';
 import { usePlayerStats } from './usePlayerStats';
 import { throttle, debounce } from './GeoUtils';
 
-console.log("POC (TS): Tactical Overlay | v1.3.1 | Camera Debouncing Active");
+console.log("POC (TS): Tactical Overlay | v1.3.2 | Sync Fix");
 
 function TacticalOverlay(): h.JSX.Element {
     const [map, setMap] = useState<maplibregl.Map | null>(null);
@@ -72,9 +72,15 @@ function TacticalOverlay(): h.JSX.Element {
     }, [loadedKeys, syncToMap]);
 
     // Throttled and Debounced handlers
-    const throttledSync = useMemo(() => throttle((m: maplibregl.Map, isLive: boolean) => {
+    const throttledSync = useMemo(() => throttle((m: maplibregl.Map) => {
         const center = m.getCenter();
         setMapState({ zoom: m.getZoom(), lat: center.lat, lng: center.lng });
+    }, 100), []);
+
+    const debouncedLoad = useMemo(() => debounce((m: maplibregl.Map, pMode: number, isLive: boolean) => {
+        const center = m.getCenter();
+        setMapState({ zoom: m.getZoom(), lat: center.lat, lng: center.lng });
+        
         if (isLive) {
             window.postMessage({
                 type: 'IRIS_SYNC_INTEL_MAP',
@@ -83,11 +89,7 @@ function TacticalOverlay(): h.JSX.Element {
                 zoom: Math.round(m.getZoom())
             }, '*');
         }
-    }, 100), []);
-
-    const debouncedLoad = useMemo(() => debounce((m: maplibregl.Map, pMode: number, isLive: boolean) => {
-        const center = m.getCenter();
-        setMapState({ zoom: m.getZoom(), lat: center.lat, lng: center.lng });
+        
         checkAndLoad(m, pMode, isLive);
     }, 300), [checkAndLoad]);
 
@@ -141,7 +143,7 @@ function TacticalOverlay(): h.JSX.Element {
         });
 
         m.on('move', () => {
-            throttledSync(m, liveMode);
+            throttledSync(m);
         });
 
         m.on('moveend', () => {
@@ -340,7 +342,6 @@ function TacticalOverlay(): h.JSX.Element {
                         zoom={mapState.zoom} lat={mapState.lat} lng={mapState.lng} 
                         events={events}
                         onNav={handleNav} onStyle={handleStyle} onMode={handleMode}
-                        onPortalClick={handlePortalClick}
                     />
                     {selected && (
                         <Dashboard 
