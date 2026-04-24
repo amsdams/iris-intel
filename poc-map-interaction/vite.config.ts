@@ -15,7 +15,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    emptyOutDir: true,
+    emptyOutDir: false, // Don't empty so we can run sequential builds
     lib: {
       entry: resolve(__dirname, 'src/content.tsx'),
       name: 'ContentScript',

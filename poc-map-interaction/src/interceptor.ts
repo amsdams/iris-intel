@@ -1,6 +1,36 @@
+/**
+ * Injected into the page's main world at document_end.
+ * Intercepts Intel API requests and map movements.
+ */
+
+interface IntelPlayer {
+    nickname: string;
+    level: number;
+    verified_level?: number;
+    ap: number;
+    team: string;
+    energy: number;
+    xm_capacity: number;
+    available_invites: number;
+    min_ap_for_current_level: number;
+    min_ap_for_next_level: number;
+    hasActiveSubscription: boolean;
+}
+
 (function() {
-    console.log('IRIS POC: Interceptor initializing...');
-    const isIrisUrl = (url) => url.includes('getEntities') || url.includes('getPortalDetails') || url.includes('getPlexts') || url.includes('getGameScore') || url.includes('getRegionScoreDetails') || url.includes('getHasActiveSubscription') || url.includes('getInventory');
+    console.log('IRIS POC: Interceptor initializing (TS)...');
+    
+    // Type-safe access to window properties
+    const win = window as any;
+
+    const isIrisUrl = (url: string) => 
+        url.includes('getEntities') || 
+        url.includes('getPortalDetails') || 
+        url.includes('getPlexts') || 
+        url.includes('getGameScore') || 
+        url.includes('getRegionScoreDetails') || 
+        url.includes('getHasActiveSubscription') || 
+        url.includes('getInventory');
     
     function getCsrfToken() {
         const cookies = document.cookie.split(';').map(c => c.trim());
@@ -10,15 +40,16 @@
 
     function extractVersion() {
         const scripts = document.querySelectorAll('script[src*="gen_dashboard_"]');
-        for (const s of scripts) {
-            const match = s.src.match(/gen_dashboard_([a-f0-9]+)\.js/);
+        for (const s of Array.from(scripts)) {
+            const src = (s as HTMLScriptElement).src;
+            const match = src.match(/gen_dashboard_([a-f0-9]+)\.js/);
             if (match) return match[1];
         }
-        return '';
+        return win.niantic_params?.frontendVersion || '';
     }
 
     function readPlayerStats() {
-        const p = window.PLAYER;
+        const p: IntelPlayer | undefined = win.PLAYER;
         if (!p || !p.nickname) return null;
         return {
             type: 'IRIS_PLAYER_STATS',
@@ -54,12 +85,14 @@
     const XHR = XMLHttpRequest.prototype;
     const open = XHR.open;
     const send = XHR.send;
-    XHR.open = function(method, url) {
+
+    XHR.open = function(this: any, method: string, url: string | URL) {
         this._url = typeof url === 'string' ? url : url.toString();
-        return open.apply(this, arguments);
+        return open.apply(this, arguments as any);
     };
-    XHR.send = function(body) {
-        this.addEventListener('load', function() {
+
+    XHR.send = function(this: any, body?: Document | XMLHttpRequestBodyInit | null) {
+        this.addEventListener('load', function(this: any) {
             if (isIrisUrl(this._url)) {
                 try {
                     const data = JSON.parse(this.responseText);
@@ -68,13 +101,13 @@
                 }
             }
         });
-        return send.apply(this, arguments);
+        return send.apply(this, arguments as any);
     };
 
     // 2. Hook Fetch
     const originalFetch = window.fetch;
-    window.fetch = async function(input, init) {
-        const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : input.url);
+    window.fetch = async function(input: RequestInfo | URL, init?: RequestInit) {
+        const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : (input as Request).url);
         const response = await originalFetch(input, init);
         if (isIrisUrl(url)) {
             try {
@@ -90,34 +123,34 @@
     // 3. Hook Maps (Google and Leaflet)
     function hookMaps() {
         // Google Maps
-        if (window.google && window.google.maps && window.google.maps.Map && !window._iris_intel_map_hooked) {
-            const OriginalMap = window.google.maps.Map;
-            window.google.maps.Map = function(el, opts) {
+        if (win.google && win.google.maps && win.google.maps.Map && !win._iris_intel_map_hooked) {
+            const OriginalMap = win.google.maps.Map;
+            win.google.maps.Map = function(this: any, el: HTMLElement, opts: any) {
                 const map = new OriginalMap(el, opts);
-                window._iris_intel_map = map;
-                window._iris_map_type = 'gmaps';
+                win._iris_intel_map = map;
+                win._iris_map_type = 'gmaps';
                 return map;
-            };
-            window.google.maps.Map.prototype = OriginalMap.prototype;
-            window._iris_intel_map_hooked = true;
+            } as any;
+            win.google.maps.Map.prototype = OriginalMap.prototype;
+            win._iris_intel_map_hooked = true;
             console.log('IRIS POC: Google Maps Hooked');
         }
         
         // Leaflet (IITC)
-        if (!window._iris_intel_map) {
+        if (!win._iris_intel_map) {
             const mapEl = document.getElementById('map_canvas');
             if (mapEl) {
                 const keys = Object.keys(mapEl);
                 const k = keys.find(k => k.startsWith('__leaflet_map'));
                 if (k) {
-                    window._iris_intel_map = mapEl[k];
-                    window._iris_map_type = 'leaflet';
+                    win._iris_intel_map = (mapEl as any)[k];
+                    win._iris_map_type = 'leaflet';
                     console.log('IRIS POC: Leaflet Map Found');
                 }
             }
         }
 
-        if (!window._iris_intel_map) {
+        if (!win._iris_intel_map) {
             setTimeout(hookMaps, 1000);
         }
     }
@@ -128,13 +161,13 @@
         const msg = e.data;
         if (!msg) return;
 
-        if (msg.type === 'IRIS_SYNC_INTEL_MAP' && window._iris_intel_map) {
+        if (msg.type === 'IRIS_SYNC_INTEL_MAP' && win._iris_intel_map) {
             const { lat, lng, zoom } = msg;
-            if (window._iris_map_type === 'gmaps') {
-                window._iris_intel_map.setCenter({ lat, lng });
-                window._iris_intel_map.setZoom(zoom);
-            } else if (window._iris_map_type === 'leaflet') {
-                window._iris_intel_map.setView([lat, lng], zoom, { animate: false });
+            if (win._iris_map_type === 'gmaps') {
+                win._iris_intel_map.setCenter({ lat, lng });
+                win._iris_intel_map.setZoom(zoom);
+            } else if (win._iris_map_type === 'leaflet') {
+                win._iris_intel_map.setView([lat, lng], zoom, { animate: false });
             }
         } else if (msg.type === 'IRIS_PORTAL_DETAILS_REQUEST') {
             const guid = msg.guid;
@@ -219,5 +252,5 @@
         }
     });
 
-    console.log('IRIS POC: Web-Accessible Interceptor Fully Active');
+    console.log('IRIS POC: Web-Accessible Interceptor Fully Active (TS)');
 })();

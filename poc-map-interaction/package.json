@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node build-zip.cjs",
+    "build": "vite build && vite build --config vite.interceptor.config.ts && node build-zip.cjs",
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint src",
     "lint:fix": "npx eslint src --fix"
