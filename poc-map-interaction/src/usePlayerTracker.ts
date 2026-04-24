@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'preact/hooks';
 import { PlextParser, Plext } from '@iris/core';
 import { useEndpointTelemetry } from './useEndpointTelemetry';
+import { createPlextRequestMessage, type PlextRequestBounds } from './plextRequests';
 
 export interface PlayerEvent {
     latlngs: [number, number][];
@@ -17,7 +18,12 @@ export interface PlayerHistory {
 const EXPIRATION_MS = 3 * 60 * 60 * 1000; // 3 hours
 const PLEXT_POLL_MS = 120000;
 
-export function usePlayerTracker(isVis: boolean, liveMode: boolean, logEvent: (msg: string) => void) {
+export function usePlayerTracker(
+    isVis: boolean,
+    liveMode: boolean,
+    logEvent: (msg: string) => void,
+    plextBounds: PlextRequestBounds | null = null,
+) {
     const [playerHistories, setPlayerHistories] = useState<Map<string, PlayerHistory>>(new Map());
     const [lastPlextTime, setLastPlextTime] = useState(-1);
     const telemetry = useEndpointTelemetry();
@@ -147,7 +153,10 @@ export function usePlayerTracker(isVis: boolean, liveMode: boolean, logEvent: (m
                 if (plexts.nextRefreshAt !== null && now < plexts.nextRefreshAt) return;
             }
 
-            window.postMessage({ type: 'IRIS_PLEXTS_REQUEST', tab: 'all', minTimestampMs: lastPlextTime }, '*');
+            const request = createPlextRequestMessage('all', plextBounds, lastPlextTime, -1, lastPlextTime >= 0);
+            if (request) {
+                window.postMessage(request, '*');
+            }
         };
 
         let timerId: number | null = null;
@@ -166,7 +175,7 @@ export function usePlayerTracker(isVis: boolean, liveMode: boolean, logEvent: (m
         return () => {
             if (timerId !== null) window.clearTimeout(timerId);
         };
-    }, [isVis, liveMode, lastPlextTime, telemetry.plexts]);
+    }, [isVis, liveMode, lastPlextTime, plextBounds, telemetry.plexts]);
 
     return { playerHistories };
 }

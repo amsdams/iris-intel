@@ -155,7 +155,14 @@ export function installRequestHandlers(): void {
                 enqueueRequest('gameScore', 'global', GAME_SCORE_FRESHNESS_MS, () => handleGameScoreRequest());
                 break;
             case 'IRIS_REGION_SCORE_REQUEST':
-                enqueueRequest('regionScore', 'global', REGION_SCORE_FRESHNESS_MS, () => handleRegionScoreRequest());
+                enqueueRequest(
+                    'regionScore',
+                    typeof msg.lat === 'number' && typeof msg.lng === 'number'
+                        ? `${Math.round(msg.lat * 1e6)}:${Math.round(msg.lng * 1e6)}`
+                        : 'global',
+                    REGION_SCORE_FRESHNESS_MS,
+                    () => handleRegionScoreRequest(msg.lat, msg.lng),
+                );
                 break;
             case 'IRIS_SUBSCRIPTION_REQUEST':
                 enqueueRequest('subscription', 'global', SUBSCRIPTION_FRESHNESS_MS, () => handleSubscriptionRequest());
@@ -166,9 +173,18 @@ export function installRequestHandlers(): void {
             case 'IRIS_PLEXTS_REQUEST':
                 enqueueRequest(
                     'plexts',
-                    `${msg.tab ?? 'all'}:${typeof msg.minTimestampMs === 'number' ? msg.minTimestampMs : -1}`,
+                    keyForPlexts(msg.tab, msg.minTimestampMs, msg.minLatE6, msg.minLngE6, msg.maxLatE6, msg.maxLngE6),
                     PLEXT_FRESHNESS_MS,
-                    () => handlePlextsRequest(msg.tab, msg.minTimestampMs),
+                    () => handlePlextsRequest(
+                        msg.tab,
+                        msg.minTimestampMs,
+                        msg.maxTimestampMs,
+                        msg.ascendingTimestampOrder,
+                        msg.minLatE6,
+                        msg.minLngE6,
+                        msg.maxLatE6,
+                        msg.maxLngE6,
+                    ),
                 );
                 break;
         }
@@ -359,8 +375,16 @@ async function handleGameScoreRequest() {
     return sendIntelRequest('gameScore', 'global', '/r/getGameScore', body, 'Game Score Fetch Failed');
 }
 
-async function handleRegionScoreRequest() {
-    const body = JSON.stringify({ v: extractVersion() });
+async function handleRegionScoreRequest(lat?: number, lng?: number) {
+    if (typeof lat !== 'number' || typeof lng !== 'number') {
+        return;
+    }
+
+    const body = JSON.stringify({
+        latE6: Math.round(lat * 1e6),
+        lngE6: Math.round(lng * 1e6),
+        v: extractVersion(),
+    });
     return sendIntelRequest('regionScore', 'global', '/r/getRegionScoreDetails', body, 'Region Score Fetch Failed');
 }
 
@@ -374,15 +398,34 @@ async function handleInventoryRequest() {
     return sendIntelRequest('inventory', 'global', '/r/getInventory', body, 'Inventory Fetch Failed');
 }
 
-async function handlePlextsRequest(tab: string, minTimestampMs: number) {
-    const body = JSON.stringify({ 
-        tab, 
-        minTimestampMs, 
-        maxTimestampMs: -1,
-        ascendingTimestampMs: true,
-        v: extractVersion() 
+async function handlePlextsRequest(
+    tab: string,
+    minTimestampMs: number,
+    maxTimestampMs?: number,
+    ascendingTimestampOrder?: boolean,
+    minLatE6?: number,
+    minLngE6?: number,
+    maxLatE6?: number,
+    maxLngE6?: number,
+) {
+    const body = JSON.stringify({
+        tab,
+        minTimestampMs,
+        maxTimestampMs,
+        ascendingTimestampOrder,
+        minLatE6,
+        minLngE6,
+        maxLatE6,
+        maxLngE6,
+        v: extractVersion(),
     });
-    return sendIntelRequest('plexts', keyForPlexts(tab, minTimestampMs), '/r/getPlexts', body, 'Plext Fetch Failed');
+    return sendIntelRequest(
+        'plexts',
+        keyForPlexts(tab, minTimestampMs, minLatE6, minLngE6, maxLatE6, maxLngE6),
+        '/r/getPlexts',
+        body,
+        'Plext Fetch Failed',
+    );
 }
 
 async function sendIntelRequest(endpoint: RequestEndpoint, key: string, url: string, body: string, errorMsg: string) {
@@ -427,8 +470,22 @@ function keyForPortalDetails(guid: string): string {
     return guid.trim();
 }
 
-function keyForPlexts(tab: string | undefined, minTimestampMs: number | undefined): string {
-    return `${tab ?? 'all'}:${typeof minTimestampMs === 'number' ? minTimestampMs : -1}`;
+function keyForPlexts(
+    tab: string | undefined,
+    minTimestampMs: number | undefined,
+    minLatE6?: number,
+    minLngE6?: number,
+    maxLatE6?: number,
+    maxLngE6?: number,
+): string {
+    return [
+        tab ?? 'all',
+        typeof minTimestampMs === 'number' ? minTimestampMs : -1,
+        typeof minLatE6 === 'number' ? minLatE6 : -1,
+        typeof minLngE6 === 'number' ? minLngE6 : -1,
+        typeof maxLatE6 === 'number' ? maxLatE6 : -1,
+        typeof maxLngE6 === 'number' ? maxLngE6 : -1,
+    ].join(':');
 }
 
 function getFreshnessMs(endpoint: RequestEndpoint): number {

@@ -4,6 +4,7 @@ import { useStore, InventoryParser, Plext, normalizeTeam } from '@iris/core';
 import { COLORS, RARITY_COLORS, ITEM_LEVEL_COLORS } from './MapConstants';
 import { formatMU, formatAP } from './GeoUtils';
 import { CommTab } from './useComm';
+import { createPlextRequestMessage, type PlextRequestBounds } from './plextRequests';
 
 interface DataDockProps {
     openDrawer: string | null;
@@ -11,9 +12,10 @@ interface DataDockProps {
     commTab: CommTab;
     onCommTabChange: (tab: CommTab) => void;
     onPortalClick: (lat: number, lng: number, name: string) => void;
+    plextBounds: PlextRequestBounds | null;
 }
 
-export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPortalClick }: DataDockProps): JSX.Element {
+export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPortalClick, plextBounds }: DataDockProps): JSX.Element {
     const { gameScore, regionScore, playerStats, hasSubscription, inventory, plexts } = useStore();
 
     // 1. Inventory Stats
@@ -45,6 +47,15 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPor
         if (commTab === 'alerts') return plexts.filter(p => p.type === 'SYSTEM_NARROWCAST');
         return plexts;
     }, [plexts, commTab]);
+
+    const currentTab = commTab.toLowerCase();
+
+    const sendPlextRequest = (minTimestampMs: number, maxTimestampMs = -1, ascendingTimestampOrder?: boolean): void => {
+        const request = createPlextRequestMessage(currentTab, plextBounds, minTimestampMs, maxTimestampMs, ascendingTimestampOrder);
+        if (request) {
+            window.postMessage(request, '*');
+        }
+    };
 
     const renderPlextMarkup = (p: Plext) => {
         return p.markup.map((m, i) => {

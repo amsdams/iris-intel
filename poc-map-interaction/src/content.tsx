@@ -15,12 +15,63 @@ import { useMapRenderer } from './useMapRenderer';
 import { useScores } from './useScores';
 import { usePlayerStats } from './usePlayerStats';
 import { useEndpointTelemetry } from './useEndpointTelemetry';
+import type { PlextRequestBounds } from './plextRequests';
 import { throttle } from './GeoUtils';
 
 console.log("POC (TS): Tactical Overlay | v1.3.3 | Stable Orchestration");
 
 const DEFAULT_MAP_CENTER: [number, number] = [4.8952, 52.3702];
-const DEFAULT_MAP_ZOOM = 15;
+const DEFAULT_MAP_ZOOM = 13;
+const MAP_STATE_STORAGE_KEY = 'iris-poc-map-state';
+const MAP_STATE_COOKIE_KEY = 'iris_poc_map_state';
+
+interface SavedMapState {
+    lat: number;
+    lng: number;
+    zoom: number;
+}
+
+function readSavedMapState(): SavedMapState | null {
+    try {
+        const cookieMatch = document.cookie
+            .split(';')
+            .map(cookie => cookie.trim())
+            .find(cookie => cookie.startsWith(`${MAP_STATE_COOKIE_KEY}=`));
+
+        const raw = cookieMatch
+            ? decodeURIComponent(cookieMatch.slice(MAP_STATE_COOKIE_KEY.length + 1))
+            : window.localStorage.getItem(MAP_STATE_STORAGE_KEY);
+
+        if (!raw) return null;
+
+        const parsed = JSON.parse(raw) as Partial<SavedMapState>;
+        if (
+            typeof parsed.lat !== 'number' ||
+            typeof parsed.lng !== 'number' ||
+            typeof parsed.zoom !== 'number'
+        ) {
+            return null;
+        }
+
+        return {
+            lat: parsed.lat,
+            lng: parsed.lng,
+            zoom: parsed.zoom,
+        };
+    } catch {
+        return null;
+    }
+}
+
+function writeSavedMapState(state: SavedMapState): void {
+    try {
+        const serialized = JSON.stringify(state);
+        window.localStorage.setItem(MAP_STATE_STORAGE_KEY, serialized);
+        document.cookie = `${MAP_STATE_COOKIE_KEY}=${encodeURIComponent(serialized)}; path=/; SameSite=Lax; Secure`;
+    } catch {
+        // Ignore storage failures.
+    }
+}
 
 function TacticalOverlay(): h.JSX.Element {
     const mapRef = useRef<maplibregl.Map | null>(null);
@@ -28,7 +79,13 @@ function TacticalOverlay(): h.JSX.Element {
     const [loadedKeys] = useState(() => new Set<string>());
     const [events, setEvents] = useState<{time: string, msg: string}[]>([]);
     const [selected, setSelected] = useState<{type: string, data: any} | null>(null);
-    const [mapState, setMapState] = useState({ zoom: DEFAULT_MAP_ZOOM, lat: DEFAULT_MAP_CENTER[1], lng: DEFAULT_MAP_CENTER[0] });
+    const [savedMapState] = useState(() => readSavedMapState());
+    const [mapState, setMapState] = useState(() => ({
+        zoom: savedMapState?.zoom ?? DEFAULT_MAP_ZOOM,
+        lat: savedMapState?.lat ?? DEFAULT_MAP_CENTER[1],
+        lng: savedMapState?.lng ?? DEFAULT_MAP_CENTER[0],
+    }));
+    const [plextBounds, setPlextBounds] = useState<PlextRequestBounds | null>(null);
     const [liveMode, setLiveMode] = useState(true);
     const [patternMode, setPatternMode] = useState(0);
     const [extrusionEnabled, setExtrusionEnabled] = useState(false);
@@ -36,6 +93,7 @@ function TacticalOverlay(): h.JSX.Element {
     const liveModeRef = useRef(liveMode);
     const patternModeRef = useRef(patternMode);
     const moveSettleTimerRef = useRef<number | null>(null);
+    const mapStateRef = useRef(mapState);
 
     const logEvent = useCallback((msg: string): void => {
         setEvents(prev => [{ time: new Date().toLocaleTimeString(), msg }, ...prev].slice(0, 30));
@@ -49,6 +107,41 @@ function TacticalOverlay(): h.JSX.Element {
     useEffect(() => {
         patternModeRef.current = patternMode;
     }, [patternMode]);
+
+    useEffect(() => {
+        mapStateRef.current = mapState;
+    }, [mapState]);
+
+    const persistMapState = useCallback((nextState?: SavedMapState): void => {
+        const stateToSave = nextState ?? {
+            lat: mapStateRef.current.lat,
+            lng: mapStateRef.current.lng,
+            zoom: mapStateRef.current.zoom,
+        };
+
+        writeSavedMapState({
+            lat: stateToSave.lat,
+            lng: stateToSave.lng,
+            zoom: stateToSave.zoom,
+        });
+    }, []);
+
+    useEffect(() => {
+        persistMapState();
+    }, [persistMapState, liveMode, mapState, patternMode]);
+
+    useEffect(() => {
+        const handlePageHide = (): void => {
+            persistMapState();
+        };
+
+        window.addEventListener('pagehide', handlePageHide);
+        window.addEventListener('beforeunload', handlePageHide);
+        return () => {
+            window.removeEventListener('pagehide', handlePageHide);
+            window.removeEventListener('beforeunload', handlePageHide);
+        };
+    }, [persistMapState]);
 
     const clearMoveSettleTimer = useCallback((): void => {
         if (moveSettleTimerRef.current !== null) {
@@ -106,7 +199,7 @@ function TacticalOverlay(): h.JSX.Element {
     const { loadPattern1, loadPattern2, loadPattern3 } = usePatterns(mapRef.current, generator, loadedKeys, logEvent);
     
     useIntelMessages(mapRef.current, liveMode, patternMode, selected, setSelected, (m, l, p) => syncToMap(m, l, p), logEvent);
-    useScores(isVis, liveMode);
+    useScores(isVis, liveMode, mapState.lat, mapState.lng);
     usePlayerStats(isVis, liveMode);
 
     const checkAndLoad = useCallback((currentMap: maplibregl.Map, currentPatternMode: number, currentLiveMode: boolean): void => {
@@ -149,22 +242,33 @@ function TacticalOverlay(): h.JSX.Element {
     const scheduleMoveSettleLoad = useCallback((m: maplibregl.Map): void => {
         clearMoveSettleTimer();
 
-        const settleMs = liveModeRef.current ? 3000 : 300;
+        const center = m.getCenter();
+        const currentZoom = m.getZoom();
+        const currentLive = liveModeRef.current;
+        const currentPattern = patternModeRef.current;
+        const bounds = m.getBounds();
+        const nextBounds = {
+            minLatE6: Math.round(bounds.getSouth() * 1e6),
+            minLngE6: Math.round(bounds.getWest() * 1e6),
+            maxLatE6: Math.round(bounds.getNorth() * 1e6),
+            maxLngE6: Math.round(bounds.getEast() * 1e6),
+        };
+
+        const nextState = { zoom: currentZoom, lat: center.lat, lng: center.lng };
+        setMapState(nextState);
+        setPlextBounds(nextBounds);
+        persistMapState(nextState);
+
+        if (currentLive) {
+            window.postMessage({ type: 'IRIS_SYNC_INTEL_MAP', lat: center.lat, lng: center.lng, zoom: Math.round(currentZoom) }, '*');
+        }
+
+        const settleMs = currentLive ? 300 : 300;
         moveSettleTimerRef.current = window.setTimeout(() => {
             moveSettleTimerRef.current = null;
-
-            const center = m.getCenter();
-            const currentZoom = m.getZoom();
-            const currentLive = liveModeRef.current;
-            const currentPattern = patternModeRef.current;
-
-            setMapState({ zoom: currentZoom, lat: center.lat, lng: center.lng });
-            if (currentLive) {
-                window.postMessage({ type: 'IRIS_SYNC_INTEL_MAP', lat: center.lat, lng: center.lng, zoom: Math.round(currentZoom) }, '*');
-            }
             checkAndLoad(m, currentPattern, currentLive);
         }, settleMs);
-    }, [checkAndLoad, clearMoveSettleTimer]);
+    }, [checkAndLoad, clearMoveSettleTimer, persistMapState]);
 
     const handlePortalClick = useCallback((lat: number, lng: number, name: string) => {
         if (!mapRef.current) return;
@@ -183,6 +287,12 @@ function TacticalOverlay(): h.JSX.Element {
 
     useEffect(() => {
         if (mapRef.current) return; // Only init once
+
+        const initialCenter: [number, number] = [
+            savedMapState?.lng ?? DEFAULT_MAP_CENTER[0],
+            savedMapState?.lat ?? DEFAULT_MAP_CENTER[1],
+        ];
+        const initialZoom = savedMapState?.zoom ?? DEFAULT_MAP_ZOOM;
         
         const m = new maplibregl.Map({
             container: 'map-poc-container',
@@ -214,7 +324,17 @@ function TacticalOverlay(): h.JSX.Element {
                     { id: 'p', type: 'circle', source: 'entities', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': 4, 'circle-color': ['match', ['get', 'team'], 'E', COLORS.E, 'R', COLORS.R, 'M', COLORS.M, COLORS.N] } }
                 ]
             },
-            center: DEFAULT_MAP_CENTER, zoom: DEFAULT_MAP_ZOOM
+            center: initialCenter, zoom: initialZoom
+        });
+
+        m.once('load', () => {
+            const bounds = m.getBounds();
+            setPlextBounds({
+                minLatE6: Math.round(bounds.getSouth() * 1e6),
+                minLngE6: Math.round(bounds.getWest() * 1e6),
+                maxLatE6: Math.round(bounds.getNorth() * 1e6),
+                maxLngE6: Math.round(bounds.getEast() * 1e6),
+            });
         });
 
         m.on('movestart', clearMoveSettleTimer);
@@ -336,7 +456,15 @@ function TacticalOverlay(): h.JSX.Element {
         else if (action === '↓') m.panBy([0, 200]);
         else if (action === '←') m.panBy([-200, 0]);
         else if (action === '→') m.panBy([200, 0]);
-        else if (action === 'R') { m.setCenter(DEFAULT_MAP_CENTER); m.setZoom(DEFAULT_MAP_ZOOM); }
+        else if (action === 'R') {
+            m.setCenter(DEFAULT_MAP_CENTER);
+            m.setZoom(DEFAULT_MAP_ZOOM);
+            persistMapState({
+                lat: DEFAULT_MAP_CENTER[1],
+                lng: DEFAULT_MAP_CENTER[0],
+                zoom: DEFAULT_MAP_ZOOM,
+            });
+        }
         else if (action === '🎯') {
             logEvent("Geolocating...");
             navigator.geolocation.getCurrentPosition((pos) => {
@@ -360,7 +488,7 @@ function TacticalOverlay(): h.JSX.Element {
         logEvent(`Style: ${style}`);
     };
 
-    const handleMode = (mode: string): void => {
+    const handleMode = useCallback((mode: string): void => {
         const m = mapRef.current;
         if (!m || !m.getStyle()) return;
         if (mode === '3D') {
@@ -376,17 +504,20 @@ function TacticalOverlay(): h.JSX.Element {
             else m.easeTo({ pitch: 0, bearing: 0, duration: 800 });
             logEvent(`Extrusion: ${nextExtrusion ? 'ON' : 'OFF'}`);
         } else if (mode === 'Src') {
-            if (liveMode) {
+            const currentLiveMode = liveModeRef.current;
+            const currentPatternMode = patternModeRef.current;
+
+            if (currentLiveMode) {
                 liveModeRef.current = false;
                 patternModeRef.current = 1;
                 setLiveMode(false);
                 setPatternMode(1);
                 generator.clear();
                 loadedKeys.clear();
-            } else if (patternMode === 1) {
+            } else if (currentPatternMode === 1) {
                 patternModeRef.current = 2;
                 setPatternMode(2);
-            } else if (patternMode === 2) {
+            } else if (currentPatternMode === 2) {
                 patternModeRef.current = 3;
                 setPatternMode(3);
             } else {
@@ -398,7 +529,7 @@ function TacticalOverlay(): h.JSX.Element {
                 loadedKeys.clear();
             }
         }
-    };
+    }, [extrusionEnabled, generator, loadedKeys, logEvent]);
 
     // 3. Store subscription
     useEffect(() => {
@@ -428,6 +559,7 @@ function TacticalOverlay(): h.JSX.Element {
                         zoom={mapState.zoom} lat={mapState.lat} lng={mapState.lng} 
                         events={events}
                         endpointTelemetry={endpointTelemetry}
+                        plextBounds={plextBounds}
                         onNav={handleNav} onStyle={handleStyle} onMode={handleMode}
                         onPortalClick={handlePortalClick}
                     />

@@ -1,16 +1,18 @@
 import { useState, useEffect, useCallback } from 'preact/hooks';
 import { useEndpointTelemetry } from './useEndpointTelemetry';
+import { createPlextRequestMessage, type PlextRequestBounds } from './plextRequests';
 
 export type CommTab = 'all' | 'faction' | 'alerts';
 
 const COMM_POLL_MS = 120000;
 
-export function useComm(isVis: boolean, liveMode: boolean) {
+export function useComm(isVis: boolean, liveMode: boolean, plextBounds: PlextRequestBounds | null) {
     const [activeTab, setActiveTab] = useState<CommTab>('all');
     const telemetry = useEndpointTelemetry();
 
     const pollComm = useCallback((): void => {
         if (!isVis || !liveMode) return;
+        if (!plextBounds) return;
         const plexts = telemetry.plexts;
         const now = Date.now();
         if (plexts) {
@@ -18,12 +20,12 @@ export function useComm(isVis: boolean, liveMode: boolean) {
             if (plexts.cooldownUntil !== null && now < plexts.cooldownUntil) return;
             if (plexts.nextRefreshAt !== null && now < plexts.nextRefreshAt) return;
         }
-        window.postMessage({ 
-            type: 'IRIS_PLEXTS_REQUEST', 
-            tab: activeTab, 
-            minTimestampMs: -1 // Let interceptor/intel decide, or track last time
-        }, '*');
-    }, [activeTab, isVis, liveMode, telemetry.plexts]);
+
+        const request = createPlextRequestMessage(activeTab.toLowerCase(), plextBounds, -1, -1, true);
+        if (request) {
+            window.postMessage(request, '*');
+        }
+    }, [activeTab, isVis, liveMode, plextBounds, telemetry.plexts]);
 
     useEffect(() => {
         if (!isVis || !liveMode) return;

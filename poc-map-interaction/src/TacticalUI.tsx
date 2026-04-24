@@ -4,6 +4,7 @@ import { MapTools } from './MapTools';
 import { DataDock } from './DataDock';
 import { useComm } from './useComm';
 import type { EndpointName, EndpointTelemetry } from './useEndpointTelemetry';
+import type { PlextRequestBounds } from './plextRequests';
 
 interface EventLogEntry {
     time: string;
@@ -16,17 +17,18 @@ interface TacticalUIProps {
     lng: number;
     events: EventLogEntry[];
     endpointTelemetry: Partial<Record<EndpointName, EndpointTelemetry>>;
+    plextBounds: PlextRequestBounds | null;
     onNav: (action: string) => void;
     onStyle: (style: string) => void;
     onMode: (mode: string) => void;
     onPortalClick: (lat: number, lng: number, name: string) => void;
 }
 
-export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, onNav, onStyle, onMode, onPortalClick }: TacticalUIProps): JSX.Element {
+export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBounds, onNav, onStyle, onMode, onPortalClick }: TacticalUIProps): JSX.Element {
     const [openDrawer, setOpenDrawer] = useState<string | null>(null);
     const logRef = useRef<HTMLDivElement>(null);
     
-    const { activeTab, setActiveTab, refreshComm } = useComm(true, true);
+    const { activeTab, setActiveTab, refreshComm } = useComm(true, true, plextBounds);
 
     const formatDelay = (ms: number | null | undefined): string => {
         if (typeof ms !== 'number' || !Number.isFinite(ms)) return '';
@@ -141,7 +143,7 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, onNav, o
                 window.postMessage({ type: 'IRIS_INVENTORY_REQUEST' }, '*');
             } else if (id === 'scores') {
                 window.postMessage({ type: 'IRIS_GAME_SCORE_REQUEST' }, '*');
-                window.postMessage({ type: 'IRIS_REGION_SCORE_REQUEST' }, '*');
+                window.postMessage({ type: 'IRIS_REGION_SCORE_REQUEST', lat, lng }, '*');
             } else if (id === 'comm') {
                 refreshComm();
             }
@@ -185,6 +187,7 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, onNav, o
                 commTab={activeTab}
                 onCommTabChange={setActiveTab}
                 onPortalClick={onPortalClick}
+                plextBounds={plextBounds}
             />
 
             {/* Event Log */}

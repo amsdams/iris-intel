@@ -3,7 +3,7 @@ import { useEndpointTelemetry } from './useEndpointTelemetry';
 
 const SCORE_POLL_MS = 300000;
 
-export function useScores(isVis: boolean, liveMode: boolean) {
+export function useScores(isVis: boolean, liveMode: boolean, lat: number, lng: number) {
     const telemetry = useEndpointTelemetry();
 
     useEffect(() => {
@@ -25,7 +25,7 @@ export function useScores(isVis: boolean, liveMode: boolean) {
                 if (regionScore.nextRefreshAt !== null && now < regionScore.nextRefreshAt) return;
             }
             window.postMessage({ type: 'IRIS_GAME_SCORE_REQUEST' }, '*');
-            window.postMessage({ type: 'IRIS_REGION_SCORE_REQUEST' }, '*');
+            window.postMessage({ type: 'IRIS_REGION_SCORE_REQUEST', lat, lng }, '*');
         };
 
         let timerId: number | null = null;
@@ -49,5 +49,5 @@ export function useScores(isVis: boolean, liveMode: boolean) {
         return () => {
             if (timerId !== null) window.clearTimeout(timerId);
         };
-    }, [isVis, liveMode, telemetry.gameScore, telemetry.regionScore]);
+    }, [isVis, liveMode, lat, lng, telemetry.gameScore, telemetry.regionScore]);
 }
