@@ -342,6 +342,7 @@ function TacticalOverlay(): h.JSX.Element {
                         zoom={mapState.zoom} lat={mapState.lat} lng={mapState.lng} 
                         events={events}
                         onNav={handleNav} onStyle={handleStyle} onMode={handleMode}
+                        onPortalClick={handlePortalClick}
                     />
                     {selected && (
                         <Dashboard 
