@@ -15,7 +15,7 @@ import { useMapRenderer } from './useMapRenderer';
 import { useScores } from './useScores';
 import { usePlayerStats } from './usePlayerStats';
 
-console.log("POC (TS): Tactical Overlay | v1.2.9 | Geolocation Integrated");
+console.log("POC (TS): Tactical Overlay | v1.3.0 | Refact interceptor");
 
 function TacticalOverlay(): h.JSX.Element {
     const [map, setMap] = useState<maplibregl.Map | null>(null);
