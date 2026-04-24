@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'preact/hooks';
 import { PlextParser, Plext } from '@iris/core';
+import { useEndpointTelemetry } from './useEndpointTelemetry';
 
 export interface PlayerEvent {
     latlngs: [number, number][];
@@ -14,10 +15,12 @@ export interface PlayerHistory {
 }
 
 const EXPIRATION_MS = 3 * 60 * 60 * 1000; // 3 hours
+const PLEXT_POLL_MS = 120000;
 
 export function usePlayerTracker(isVis: boolean, liveMode: boolean, logEvent: (msg: string) => void) {
     const [playerHistories, setPlayerHistories] = useState<Map<string, PlayerHistory>>(new Map());
     const [lastPlextTime, setLastPlextTime] = useState(-1);
+    const telemetry = useEndpointTelemetry();
 
     const processPlexts = useCallback((plexts: Plext[]) => {
         if (plexts.length === 0) return;
@@ -134,15 +137,36 @@ export function usePlayerTracker(isVis: boolean, liveMode: boolean, logEvent: (m
     // Polling effect
     useEffect(() => {
         if (!isVis || !liveMode) return;
-        
-        const poll = () => {
+
+        const poll = (): void => {
+            const plexts = telemetry.plexts;
+            const now = Date.now();
+            if (plexts) {
+                if (plexts.status === 'in_flight') return;
+                if (plexts.cooldownUntil !== null && now < plexts.cooldownUntil) return;
+                if (plexts.nextRefreshAt !== null && now < plexts.nextRefreshAt) return;
+            }
+
             window.postMessage({ type: 'IRIS_PLEXTS_REQUEST', tab: 'all', minTimestampMs: lastPlextTime }, '*');
         };
 
-        poll();
-        const id = setInterval(poll, 60000); // 1 min for POC (more aggressive than 2min)
-        return () => clearInterval(id);
-    }, [isVis, liveMode, lastPlextTime]);
+        let timerId: number | null = null;
+        const schedule = (): void => {
+            poll();
+            const nextDue = Math.max(
+                telemetry.plexts?.nextRefreshAt !== null && telemetry.plexts?.nextRefreshAt !== undefined
+                    ? telemetry.plexts.nextRefreshAt - Date.now()
+                    : PLEXT_POLL_MS,
+                PLEXT_POLL_MS,
+            );
+            timerId = window.setTimeout(schedule, nextDue);
+        };
+
+        schedule();
+        return () => {
+            if (timerId !== null) window.clearTimeout(timerId);
+        };
+    }, [isVis, liveMode, lastPlextTime, telemetry.plexts]);
 
     return { playerHistories };
 }

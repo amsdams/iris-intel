@@ -14,9 +14,13 @@ import { useIntelMessages } from './useIntelMessages';
 import { useMapRenderer } from './useMapRenderer';
 import { useScores } from './useScores';
 import { usePlayerStats } from './usePlayerStats';
-import { throttle, debounce } from './GeoUtils';
+import { useEndpointTelemetry } from './useEndpointTelemetry';
+import { throttle } from './GeoUtils';
 
 console.log("POC (TS): Tactical Overlay | v1.3.3 | Stable Orchestration");
+
+const DEFAULT_MAP_CENTER: [number, number] = [4.8952, 52.3702];
+const DEFAULT_MAP_ZOOM = 15;
 
 function TacticalOverlay(): h.JSX.Element {
     const mapRef = useRef<maplibregl.Map | null>(null);
@@ -24,16 +28,79 @@ function TacticalOverlay(): h.JSX.Element {
     const [loadedKeys] = useState(() => new Set<string>());
     const [events, setEvents] = useState<{time: string, msg: string}[]>([]);
     const [selected, setSelected] = useState<{type: string, data: any} | null>(null);
-    const [mapState, setMapState] = useState({ zoom: 13, lat: 52.3702, lng: 4.8952 });
+    const [mapState, setMapState] = useState({ zoom: DEFAULT_MAP_ZOOM, lat: DEFAULT_MAP_CENTER[1], lng: DEFAULT_MAP_CENTER[0] });
     const [liveMode, setLiveMode] = useState(true);
     const [patternMode, setPatternMode] = useState(0);
     const [extrusionEnabled, setExtrusionEnabled] = useState(false);
     const [isVis, setIsVis] = useState(false);
+    const liveModeRef = useRef(liveMode);
+    const patternModeRef = useRef(patternMode);
+    const moveSettleTimerRef = useRef<number | null>(null);
 
     const logEvent = useCallback((msg: string): void => {
         setEvents(prev => [{ time: new Date().toLocaleTimeString(), msg }, ...prev].slice(0, 30));
         console.log(`[POC] ${msg}`);
     }, []);
+
+    useEffect(() => {
+        liveModeRef.current = liveMode;
+    }, [liveMode]);
+
+    useEffect(() => {
+        patternModeRef.current = patternMode;
+    }, [patternMode]);
+
+    const clearMoveSettleTimer = useCallback((): void => {
+        if (moveSettleTimerRef.current !== null) {
+            window.clearTimeout(moveSettleTimerRef.current);
+            moveSettleTimerRef.current = null;
+        }
+    }, []);
+
+    const endpointTelemetry = useEndpointTelemetry();
+
+    useEffect(() => {
+        const formatDelay = (ms: number | null | undefined): string => {
+            if (typeof ms !== 'number' || !Number.isFinite(ms)) return '';
+            const diff = Math.max(0, ms - Date.now());
+            const seconds = Math.ceil(diff / 1000);
+            if (seconds < 60) return `${seconds}s`;
+            const minutes = Math.floor(seconds / 60);
+            const rest = seconds % 60;
+            return `${minutes}m ${rest}s`;
+        };
+
+        const handler = (event: MessageEvent): void => {
+            const msg = event.data;
+            if (!msg || msg.type !== 'IRIS_ENDPOINT_STATE') return;
+
+            const endpoint = String(msg.endpoint ?? 'unknown');
+            const status = String(msg.status ?? 'idle');
+            const skipReason = typeof msg.lastSkipReason === 'string' ? msg.lastSkipReason : '';
+            const cooldown = formatDelay(msg.cooldownUntil);
+            const nextRefresh = formatDelay(msg.nextRefreshAt);
+            const inFlightCount = typeof msg.inFlightCount === 'number' ? msg.inFlightCount : 0;
+
+            if (status === 'in_flight') {
+                logEvent(`NET ${endpoint}: in-flight${inFlightCount > 1 ? ` x${inFlightCount}` : ''}`);
+                return;
+            }
+
+            if (status === 'error') {
+                const suffix = cooldown ? `; backoff ${cooldown}` : '';
+                logEvent(`NET ${endpoint}: error${skipReason ? ` (${skipReason})` : ''}${suffix}`);
+                return;
+            }
+
+            if (skipReason) {
+                const suffix = nextRefresh ? `; next ${nextRefresh}` : '';
+                logEvent(`NET ${endpoint}: skipped ${skipReason}${suffix}`);
+            }
+        };
+
+        window.addEventListener('message', handler);
+        return () => window.removeEventListener('message', handler);
+    }, [logEvent]);
 
     const { syncToMap } = useMapRenderer(generator, logEvent);
     const { loadPattern1, loadPattern2, loadPattern3 } = usePatterns(mapRef.current, generator, loadedKeys, logEvent);
@@ -79,14 +146,25 @@ function TacticalOverlay(): h.JSX.Element {
         setMapState({ zoom: m.getZoom(), lat: center.lat, lng: center.lng });
     }, 100), []);
 
-    const debouncedLoad = useMemo(() => debounce((m: maplibregl.Map, pMode: number, isLive: boolean) => {
-        const center = m.getCenter();
-        setMapState({ zoom: m.getZoom(), lat: center.lat, lng: center.lng });
-        if (isLive) {
-            window.postMessage({ type: 'IRIS_SYNC_INTEL_MAP', lat: center.lat, lng: center.lng, zoom: Math.round(m.getZoom()) }, '*');
-        }
-        checkAndLoad(m, pMode, isLive);
-    }, 300), [checkAndLoad]);
+    const scheduleMoveSettleLoad = useCallback((m: maplibregl.Map): void => {
+        clearMoveSettleTimer();
+
+        const settleMs = liveModeRef.current ? 3000 : 300;
+        moveSettleTimerRef.current = window.setTimeout(() => {
+            moveSettleTimerRef.current = null;
+
+            const center = m.getCenter();
+            const currentZoom = m.getZoom();
+            const currentLive = liveModeRef.current;
+            const currentPattern = patternModeRef.current;
+
+            setMapState({ zoom: currentZoom, lat: center.lat, lng: center.lng });
+            if (currentLive) {
+                window.postMessage({ type: 'IRIS_SYNC_INTEL_MAP', lat: center.lat, lng: center.lng, zoom: Math.round(currentZoom) }, '*');
+            }
+            checkAndLoad(m, currentPattern, currentLive);
+        }, settleMs);
+    }, [checkAndLoad, clearMoveSettleTimer]);
 
     const handlePortalClick = useCallback((lat: number, lng: number, name: string) => {
         if (!mapRef.current) return;
@@ -136,20 +214,22 @@ function TacticalOverlay(): h.JSX.Element {
                     { id: 'p', type: 'circle', source: 'entities', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': 4, 'circle-color': ['match', ['get', 'team'], 'E', COLORS.E, 'R', COLORS.R, 'M', COLORS.M, COLORS.N] } }
                 ]
             },
-            center: [4.8952, 52.3702], zoom: 13
+            center: DEFAULT_MAP_CENTER, zoom: DEFAULT_MAP_ZOOM
         });
 
+        m.on('movestart', clearMoveSettleTimer);
         m.on('move', () => { throttledSync(m); });
-        m.on('moveend', () => { debouncedLoad(m, patternMode, liveMode); });
+        m.on('moveend', () => { scheduleMoveSettleLoad(m); });
 
         m.on('click', (e) => {
+            const isLive = liveModeRef.current;
             logEvent(`Map Click @ ${e.lngLat.lng.toFixed(4)}, ${e.lngLat.lat.toFixed(4)}`);
             const pixelBuffer = 40;
             const pLow = m.unproject([e.point.x - pixelBuffer, e.point.y + pixelBuffer]);
             const pHigh = m.unproject([e.point.x + pixelBuffer, e.point.y - pixelBuffer]);
             const qG = { minLat: pLow.lat, minLng: pLow.lng, maxLat: pHigh.lat, maxLng: pHigh.lng };
             let results;
-            if (liveMode) {
+            if (isLive) {
                 useStore.getState().syncIndex();
                 results = globalSpatialIndex.query(qG);
             } else {
@@ -163,10 +243,10 @@ function TacticalOverlay(): h.JSX.Element {
             }
 
             const store = useStore.getState();
-            const portals = results.filter(r => r.type === 'portal').map(r => liveMode ? store.portals[r.id] : generator.portals.get(r.id)).filter((p): p is Portal => !!p);
-            const links = results.filter(r => r.type === 'link').map(r => liveMode ? store.links[r.id] : generator.linksMap.get(r.id)).filter((l): l is Link => !!l);
+            const portals = results.filter(r => r.type === 'portal').map(r => isLive ? store.portals[r.id] : generator.portals.get(r.id)).filter((p): p is Portal => !!p);
+            const links = results.filter(r => r.type === 'link').map(r => isLive ? store.links[r.id] : generator.linksMap.get(r.id)).filter((l): l is Link => !!l);
             const allFields = results.filter(r => r.type === 'field').map(r => {
-                const f = liveMode ? store.fields[r.id] : generator.fieldsMap.get(r.id);
+                const f = isLive ? store.fields[r.id] : generator.fieldsMap.get(r.id);
                 return f && generator.isPointInField(e.lngLat, f) ? f : null;
             }).filter((f): f is Field => !!f);
 
@@ -179,7 +259,7 @@ function TacticalOverlay(): h.JSX.Element {
             if (portalHits.length > 0) {
                 const p = portalHits[0].p;
                 setSelected({ type: 'portal', data: p });
-                if (liveMode) window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: p.id }, '*');
+                if (isLive) window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: p.id }, '*');
                 return;
             }
 
@@ -214,7 +294,13 @@ function TacticalOverlay(): h.JSX.Element {
 
         mapRef.current = m;
         return () => { m.remove(); mapRef.current = null; };
-    }, [generator, liveMode, logEvent, throttledSync, debouncedLoad, patternMode]);
+    }, [clearMoveSettleTimer, generator, logEvent, scheduleMoveSettleLoad, throttledSync]);
+
+    useEffect(() => {
+        return () => {
+            clearMoveSettleTimer();
+        };
+    }, [clearMoveSettleTimer]);
 
     // 2. Selection highlights
     useEffect(() => {
@@ -250,7 +336,7 @@ function TacticalOverlay(): h.JSX.Element {
         else if (action === '↓') m.panBy([0, 200]);
         else if (action === '←') m.panBy([-200, 0]);
         else if (action === '→') m.panBy([200, 0]);
-        else if (action === 'R') { m.setCenter([4.8952, 52.3702]); m.setZoom(13); }
+        else if (action === 'R') { m.setCenter(DEFAULT_MAP_CENTER); m.setZoom(DEFAULT_MAP_ZOOM); }
         else if (action === '🎯') {
             logEvent("Geolocating...");
             navigator.geolocation.getCurrentPosition((pos) => {
@@ -290,10 +376,27 @@ function TacticalOverlay(): h.JSX.Element {
             else m.easeTo({ pitch: 0, bearing: 0, duration: 800 });
             logEvent(`Extrusion: ${nextExtrusion ? 'ON' : 'OFF'}`);
         } else if (mode === 'Src') {
-            if (liveMode) { setLiveMode(false); setPatternMode(1); generator.clear(); loadedKeys.clear(); }
-            else if (patternMode === 1) setPatternMode(2);
-            else if (patternMode === 2) setPatternMode(3);
-            else { setPatternMode(0); setLiveMode(true); generator.clear(); loadedKeys.clear(); }
+            if (liveMode) {
+                liveModeRef.current = false;
+                patternModeRef.current = 1;
+                setLiveMode(false);
+                setPatternMode(1);
+                generator.clear();
+                loadedKeys.clear();
+            } else if (patternMode === 1) {
+                patternModeRef.current = 2;
+                setPatternMode(2);
+            } else if (patternMode === 2) {
+                patternModeRef.current = 3;
+                setPatternMode(3);
+            } else {
+                patternModeRef.current = 0;
+                liveModeRef.current = true;
+                setPatternMode(0);
+                setLiveMode(true);
+                generator.clear();
+                loadedKeys.clear();
+            }
         }
     };
 
@@ -324,6 +427,7 @@ function TacticalOverlay(): h.JSX.Element {
                     <TacticalUI 
                         zoom={mapState.zoom} lat={mapState.lat} lng={mapState.lng} 
                         events={events}
+                        endpointTelemetry={endpointTelemetry}
                         onNav={handleNav} onStyle={handleStyle} onMode={handleMode}
                         onPortalClick={handlePortalClick}
                     />

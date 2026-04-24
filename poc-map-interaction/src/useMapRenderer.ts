@@ -1,15 +1,45 @@
-import { useCallback, useMemo } from 'preact/hooks';
+import { useCallback, useEffect, useRef } from 'preact/hooks';
 import maplibregl from 'maplibre-gl';
-import { useStore, globalSpatialIndex, getMinLevelForZoom, Portal, Link, Field } from '@iris/core';
+import { useStore, globalSpatialIndex, getMinLevelForZoom } from '@iris/core';
 import { MockDataGenerator } from './MockDataGenerator';
-import { createCirclePolygon, throttle } from './GeoUtils';
+import { createCirclePolygon } from './GeoUtils';
 
 export function useMapRenderer(generator: MockDataGenerator, logEvent: (msg: string) => void) {
-    
-    // Throttled setData to keep UI smooth during data bursts
-    const throttledSetData = useMemo(() => throttle((source: maplibregl.GeoJSONSource, data: any) => {
-        source.setData(data);
-    }, 100), []);
+    const pendingFrameRef = useRef<number | null>(null);
+    const pendingSetDataRef = useRef<{
+        source: maplibregl.GeoJSONSource;
+        data: GeoJSON.FeatureCollection;
+    } | null>(null);
+
+    const flushPendingSetData = useCallback((): void => {
+        pendingFrameRef.current = null;
+        const pending = pendingSetDataRef.current;
+        if (!pending) return;
+
+        pendingSetDataRef.current = null;
+        pending.source.setData(pending.data);
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            if (pendingFrameRef.current !== null) {
+                window.cancelAnimationFrame(pendingFrameRef.current);
+                pendingFrameRef.current = null;
+            }
+            pendingSetDataRef.current = null;
+        };
+    }, []);
+
+    const scheduleSetData = useCallback((source: maplibregl.GeoJSONSource, data: GeoJSON.FeatureCollection): void => {
+        pendingSetDataRef.current = { source, data };
+        if (pendingFrameRef.current !== null) {
+            return;
+        }
+
+        pendingFrameRef.current = window.requestAnimationFrame(() => {
+            flushPendingSetData();
+        });
+    }, [flushPendingSetData]);
 
     const syncToMap = useCallback((
         currentMap: maplibregl.Map, 
@@ -141,10 +171,10 @@ export function useMapRenderer(generator: MockDataGenerator, logEvent: (msg: str
 
         const source = currentMap.getSource('entities') as maplibregl.GeoJSONSource | undefined;
         if (source) {
-            throttledSetData(source, { type: 'FeatureCollection', features });
+            scheduleSetData(source, { type: 'FeatureCollection', features });
             logEvent(`RENDERED: ${features.length} items (Min L:${minLevel})`);
         }
-    }, [generator, throttledSetData, logEvent]);
+    }, [generator, logEvent, scheduleSetData]);
 
     return { syncToMap };
 }

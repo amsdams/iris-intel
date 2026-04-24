@@ -176,3 +176,11 @@ src/
 ├── MapConstants.ts         # Centralized colors and styles
 └── GeoUtils.ts             # Geometry and formatting helpers
 ```
+For very very later.
+
+On the interceptor-library idea: yes, that is the right direction eventually. A separate interceptor/runtime library would make the split much cleaner:
+
+- backend-like concerns: request state, freshness, retries, session handling, parsing
+- frontend concerns: rendering, mode switching, selection, overlays
+
+I would not do that now. It is a real extraction, and it pays off only once the POC stabilizes enough that the boundary is clear. For later, though, it’s a good idea.
