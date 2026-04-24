@@ -3,7 +3,7 @@ import { getCsrfToken, extractVersion } from './utils';
 /**
  * Request Queue Configuration
  */
-const MAX_CONCURRENT_REQUESTS = 2;
+const MAX_CONCURRENT_REQUESTS = 5;
 const requestQueue: (() => Promise<void>)[] = [];
 let activeRequests = 0;
 

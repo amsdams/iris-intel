@@ -1,7 +1,7 @@
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { render, h, Fragment } from 'preact';
-import { useState, useEffect, useCallback, useMemo } from 'preact/hooks';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'preact/hooks';
 import { MockDataGenerator } from './MockDataGenerator';
 import { useStore, globalSpatialIndex, getMinLevelForZoom, getGridSizeForZoom, Portal, Link, Field } from '@iris/core';
 import { Dashboard } from './Dashboard';
@@ -16,10 +16,10 @@ import { useScores } from './useScores';
 import { usePlayerStats } from './usePlayerStats';
 import { throttle, debounce } from './GeoUtils';
 
-console.log("POC (TS): Tactical Overlay | v1.3.2 | Sync Fix");
+console.log("POC (TS): Tactical Overlay | v1.3.3 | Stable Orchestration");
 
 function TacticalOverlay(): h.JSX.Element {
-    const [map, setMap] = useState<maplibregl.Map | null>(null);
+    const mapRef = useRef<maplibregl.Map | null>(null);
     const [generator] = useState(() => new MockDataGenerator());
     const [loadedKeys] = useState(() => new Set<string>());
     const [events, setEvents] = useState<{time: string, msg: string}[]>([]);
@@ -36,9 +36,9 @@ function TacticalOverlay(): h.JSX.Element {
     }, []);
 
     const { syncToMap } = useMapRenderer(generator, logEvent);
-    const { loadPattern1, loadPattern2, loadPattern3 } = usePatterns(map, generator, loadedKeys, logEvent);
+    const { loadPattern1, loadPattern2, loadPattern3 } = usePatterns(mapRef.current, generator, loadedKeys, logEvent);
     
-    useIntelMessages(map, liveMode, patternMode, selected, setSelected, (m, l, p) => syncToMap(m, l, p), logEvent);
+    useIntelMessages(mapRef.current, liveMode, patternMode, selected, setSelected, (m, l, p) => syncToMap(m, l, p), logEvent);
     useScores(isVis, liveMode);
     usePlayerStats(isVis, liveMode);
 
@@ -60,18 +60,20 @@ function TacticalOverlay(): h.JSX.Element {
         const endLat = Math.floor(bounds.getNorth() / gridSize);
         const startLng = Math.floor(bounds.getWest() / gridSize);
         const endLng = Math.floor(bounds.getEast() / gridSize);
+        let addedAny = false;
         for (let lat = startLat; lat <= endLat; lat++) {
             for (let lng = startLng; lng <= endLng; lng++) {
                 const key = `${lat},${lng},${gridSize},L${minLevel}`;
                 if (!loadedKeys.has(key)) {
                     loadedKeys.add(key);
+                    addedAny = true;
                 }
             }
         }
         syncToMap(currentMap, currentLiveMode, currentPatternMode);
-    }, [loadedKeys, syncToMap]);
+        if (addedAny) logEvent(`Sim Tiles Loaded (Min L:${minLevel})`);
+    }, [loadedKeys, syncToMap, logEvent]);
 
-    // Throttled and Debounced handlers
     const throttledSync = useMemo(() => throttle((m: maplibregl.Map) => {
         const center = m.getCenter();
         setMapState({ zoom: m.getZoom(), lat: center.lat, lng: center.lng });
@@ -80,23 +82,16 @@ function TacticalOverlay(): h.JSX.Element {
     const debouncedLoad = useMemo(() => debounce((m: maplibregl.Map, pMode: number, isLive: boolean) => {
         const center = m.getCenter();
         setMapState({ zoom: m.getZoom(), lat: center.lat, lng: center.lng });
-        
         if (isLive) {
-            window.postMessage({
-                type: 'IRIS_SYNC_INTEL_MAP',
-                lat: center.lat,
-                lng: center.lng,
-                zoom: Math.round(m.getZoom())
-            }, '*');
+            window.postMessage({ type: 'IRIS_SYNC_INTEL_MAP', lat: center.lat, lng: center.lng, zoom: Math.round(m.getZoom()) }, '*');
         }
-        
         checkAndLoad(m, pMode, isLive);
     }, 300), [checkAndLoad]);
 
     const handlePortalClick = useCallback((lat: number, lng: number, name: string) => {
-        if (!map) return;
+        if (!mapRef.current) return;
         logEvent(`Jumping to Portal: ${name}`);
-        map.flyTo({ center: [lng, lat], zoom: 17, duration: 2000 });
+        mapRef.current.flyTo({ center: [lng, lat], zoom: 17, duration: 2000 });
         
         const store = useStore.getState();
         const existing = Object.values(store.portals).find(p => Math.abs(p.lat - lat) < 0.0001 && Math.abs(p.lng - lng) < 0.0001);
@@ -106,9 +101,11 @@ function TacticalOverlay(): h.JSX.Element {
         } else {
             setSelected({ type: 'portal', data: { id: 'temp', lat, lng, team: 'N', name } as Portal });
         }
-    }, [map, logEvent, liveMode]);
+    }, [logEvent, liveMode]);
 
     useEffect(() => {
+        if (mapRef.current) return; // Only init once
+        
         const m = new maplibregl.Map({
             container: 'map-poc-container',
             style: {
@@ -142,13 +139,8 @@ function TacticalOverlay(): h.JSX.Element {
             center: [4.8952, 52.3702], zoom: 13
         });
 
-        m.on('move', () => {
-            throttledSync(m);
-        });
-
-        m.on('moveend', () => {
-            debouncedLoad(m, patternMode, liveMode);
-        });
+        m.on('move', () => { throttledSync(m); });
+        m.on('moveend', () => { debouncedLoad(m, patternMode, liveMode); });
 
         m.on('click', (e) => {
             logEvent(`Map Click @ ${e.lngLat.lng.toFixed(4)}, ${e.lngLat.lat.toFixed(4)}`);
@@ -220,14 +212,15 @@ function TacticalOverlay(): h.JSX.Element {
             (m.getSource('selection') as maplibregl.GeoJSONSource)?.setData({ type: 'FeatureCollection', features: [] });
         });
 
-        setMap(m);
-        return () => m.remove();
+        mapRef.current = m;
+        return () => { m.remove(); mapRef.current = null; };
     }, [generator, liveMode, logEvent, throttledSync, debouncedLoad, patternMode]);
 
-    // Render Selection Highlights
+    // 2. Selection highlights
     useEffect(() => {
-        if (!map || !selected) return;
-        const selSource = map.getSource('selection') as maplibregl.GeoJSONSource;
+        const m = mapRef.current;
+        if (!m || !selected) return;
+        const selSource = m.getSource('selection') as maplibregl.GeoJSONSource;
         if (!selSource) return;
         const selFeat: GeoJSON.Feature[] = [];
         const store = useStore.getState();
@@ -246,64 +239,55 @@ function TacticalOverlay(): h.JSX.Element {
             selFeat.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: poly }, properties: { type: 'field' } });
         }
         selSource.setData({ type: 'FeatureCollection', features: selFeat });
-    }, [map, selected, liveMode, generator]);
+    }, [selected, liveMode, generator]);
 
     const handleNav = useCallback((action: string): void => {
-        if (!map) return;
-        if (action === '+') map.zoomIn();
-        else if (action === '-') map.zoomOut();
-        else if (action === '↑') map.panBy([0, -200]);
-        else if (action === '↓') map.panBy([0, 200]);
-        else if (action === '←') map.panBy([-200, 0]);
-        else if (action === '→') map.panBy([200, 0]);
-        else if (action === 'R') { map.setCenter([4.8952, 52.3702]); map.setZoom(13); }
+        const m = mapRef.current;
+        if (!m) return;
+        if (action === '+') m.zoomIn();
+        else if (action === '-') m.zoomOut();
+        else if (action === '↑') m.panBy([0, -200]);
+        else if (action === '↓') m.panBy([0, 200]);
+        else if (action === '←') m.panBy([-200, 0]);
+        else if (action === '→') m.panBy([200, 0]);
+        else if (action === 'R') { m.setCenter([4.8952, 52.3702]); m.setZoom(13); }
         else if (action === '🎯') {
             logEvent("Geolocating...");
             navigator.geolocation.getCurrentPosition((pos) => {
                 const { latitude, longitude } = pos.coords;
-                map.flyTo({ center: [longitude, latitude], zoom: 16 });
+                m.flyTo({ center: [longitude, latitude], zoom: 16 });
                 logEvent(`Located: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
             }, (err) => {
                 logEvent(`Location Failed: ${err.message}`);
             }, { enableHighAccuracy: true, timeout: 5000 });
         }
-    }, [map, logEvent]);
+    }, [logEvent]);
 
     const handleStyle = (style: string): void => {
-        if (!map || !map.getStyle() || !MAP_STYLES[style]) return;
-        if (map.getLayer('carto')) map.removeLayer('carto');
-        if (map.getSource('carto')) map.removeSource('carto');
-        map.addSource('carto', { type: 'raster', tiles: MAP_STYLES[style], tileSize: 256, attribution: style === 'OSM' ? '&copy; OpenStreetMap' : '&copy; CARTO' });
-        const layers = map.getStyle().layers;
-        map.addLayer({ id: 'carto', type: 'raster', source: 'carto' }, layers?.[0]?.id);
+        const m = mapRef.current;
+        if (!m || !m.getStyle() || !MAP_STYLES[style]) return;
+        if (m.getLayer('carto')) m.removeLayer('carto');
+        if (m.getSource('carto')) m.removeSource('carto');
+        m.addSource('carto', { type: 'raster', tiles: MAP_STYLES[style], tileSize: 256, attribution: style === 'OSM' ? '&copy; OpenStreetMap' : '&copy; CARTO' });
+        const layers = m.getStyle().layers;
+        m.addLayer({ id: 'carto', type: 'raster', source: 'carto' }, layers?.[0]?.id);
         logEvent(`Style: ${style}`);
     };
 
     const handleMode = (mode: string): void => {
-        if (!map || !map.getStyle()) return;
+        const m = mapRef.current;
+        if (!m || !m.getStyle()) return;
         if (mode === '3D') {
             const nextExtrusion = !extrusionEnabled;
             setExtrusionEnabled(nextExtrusion);
             const visibility = nextExtrusion ? 'visible' : 'none';
             const flatVisibility = nextExtrusion ? 'none' : 'visible';
-            const layers3D = [
-                'f-ext-enl', 'f-ext-res', 'f-ext-mac', 
-                'l-ext-enl', 'l-ext-res', 'l-ext-mac', 
-                'p-ext'
-            ];
-            const layersFlat = [
-                'f-enl', 'f-res', 'f-mac', 
-                'l-enl', 'l-res', 'l-mac', 
-                'p'
-            ];
-            layers3D.forEach(id => {
-                if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', visibility);
-            });
-            layersFlat.forEach(id => {
-                if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', flatVisibility);
-            });
-            if (nextExtrusion) map.easeTo({ pitch: 60, bearing: -20, duration: 1000 });
-            else map.easeTo({ pitch: 0, bearing: 0, duration: 800 });
+            const layers3D = ['f-ext-enl', 'f-ext-res', 'f-ext-mac', 'l-ext-enl', 'l-ext-res', 'l-ext-mac', 'p-ext'];
+            const layersFlat = ['f-enl', 'f-res', 'f-mac', 'l-enl', 'l-res', 'l-mac', 'p'];
+            layers3D.forEach(id => { if (m.getLayer(id)) m.setLayoutProperty(id, 'visibility', visibility); });
+            layersFlat.forEach(id => { if (m.getLayer(id)) m.setLayoutProperty(id, 'visibility', flatVisibility); });
+            if (nextExtrusion) m.easeTo({ pitch: 60, bearing: -20, duration: 1000 });
+            else m.easeTo({ pitch: 0, bearing: 0, duration: 800 });
             logEvent(`Extrusion: ${nextExtrusion ? 'ON' : 'OFF'}`);
         } else if (mode === 'Src') {
             if (liveMode) { setLiveMode(false); setPatternMode(1); generator.clear(); loadedKeys.clear(); }
@@ -313,25 +297,24 @@ function TacticalOverlay(): h.JSX.Element {
         }
     };
 
-    // Store subscription
+    // 3. Store subscription
     useEffect(() => {
         const unsub = useStore.subscribe((state, prevState) => {
-            if (liveMode && map && (state.portals !== prevState.portals || state.links !== prevState.links || state.fields !== prevState.fields)) {
-                syncToMap(map, liveMode, patternMode);
+            if (liveMode && mapRef.current && (state.portals !== prevState.portals || state.links !== prevState.links || state.fields !== prevState.fields)) {
+                syncToMap(mapRef.current, liveMode, patternMode);
             }
         });
         return () => unsub();
-    }, [map, liveMode, patternMode, syncToMap]);
+    }, [liveMode, patternMode, syncToMap]);
 
-    // Effect to trigger load/sync on mode changes
+    // 4. Pattern Sync
     useEffect(() => {
-        if (!map) return;
+        if (!mapRef.current) return;
         if (patternMode === 1) loadPattern1();
         else if (patternMode === 2) loadPattern2();
         else if (patternMode === 3) loadPattern3();
-        
-        checkAndLoad(map, patternMode, liveMode);
-    }, [map, patternMode, liveMode, checkAndLoad, loadPattern1, loadPattern2, loadPattern3]);
+        checkAndLoad(mapRef.current, patternMode, liveMode);
+    }, [patternMode, liveMode, checkAndLoad, loadPattern1, loadPattern2, loadPattern3]);
 
     return (
         <div id="poc-preact-root" style={{ pointerEvents: 'none' }}>
@@ -354,9 +337,9 @@ function TacticalOverlay(): h.JSX.Element {
             )}
             <LaunchButton isVis={isVis} onClick={() => {
                 setIsVis(!isVis);
-                if (!isVis && map && map.getStyle()) {
-                    map.resize();
-                    checkAndLoad(map, patternMode, liveMode);
+                if (!isVis && mapRef.current && mapRef.current.getStyle()) {
+                    mapRef.current.resize();
+                    checkAndLoad(mapRef.current, patternMode, liveMode);
                     logEvent("Tactical Map Opened");
                 }
             }} />

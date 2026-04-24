@@ -1,10 +1,16 @@
-import { useCallback } from 'preact/hooks';
+import { useCallback, useMemo } from 'preact/hooks';
 import maplibregl from 'maplibre-gl';
 import { useStore, globalSpatialIndex, getMinLevelForZoom, Portal, Link, Field } from '@iris/core';
 import { MockDataGenerator } from './MockDataGenerator';
-import { createCirclePolygon } from './GeoUtils';
+import { createCirclePolygon, throttle } from './GeoUtils';
 
 export function useMapRenderer(generator: MockDataGenerator, logEvent: (msg: string) => void) {
+    
+    // Throttled setData to keep UI smooth during data bursts
+    const throttledSetData = useMemo(() => throttle((source: maplibregl.GeoJSONSource, data: any) => {
+        source.setData(data);
+    }, 100), []);
+
     const syncToMap = useCallback((
         currentMap: maplibregl.Map, 
         currentLiveMode: boolean, 
@@ -14,7 +20,8 @@ export function useMapRenderer(generator: MockDataGenerator, logEvent: (msg: str
         const bounds = currentMap.getBounds();
         const zoom = currentMap.getZoom();
         const minLevel = getMinLevelForZoom(zoom);
-        const buffer = 0.05; 
+
+        const buffer = 0.05;
         
         const q = {
             minLat: bounds.getSouth() - buffer,
@@ -66,6 +73,7 @@ export function useMapRenderer(generator: MockDataGenerator, logEvent: (msg: str
                 const level = p.level ?? 0;
                 
                 const isVisible = currentPatternMode > 0 || currentLiveMode || level >= minLevel;
+                
                 if (isVisible) {
                     const maxLayer = portalMaxLayer.get(p.id) ?? -1;
                     const towerHeight = 200 + (maxLayer * 20) + 15;
@@ -83,6 +91,7 @@ export function useMapRenderer(generator: MockDataGenerator, logEvent: (msg: str
                 const p1 = currentLiveMode ? store.portals[l.fromPortalId] : generator.portals.get(l.fromPortalId);
                 const p2 = currentLiveMode ? store.portals[l.toPortalId] : generator.portals.get(l.toPortalId);
                 
+                // Links are visible if both anchors satisfy the level filter
                 const isVisible = currentPatternMode > 0 || currentLiveMode || (p1 && p2 && (p1.level ?? 0) >= minLevel && (p2.level ?? 0) >= minLevel);
                 if (isVisible && p1 && p2) {
                     const baseProps = { id: l.id, type: 'link', team: l.team };
@@ -132,10 +141,10 @@ export function useMapRenderer(generator: MockDataGenerator, logEvent: (msg: str
 
         const source = currentMap.getSource('entities') as maplibregl.GeoJSONSource | undefined;
         if (source) {
-            source.setData({ type: 'FeatureCollection', features });
-            logEvent(`RENDERED: ${features.length} items`);
+            throttledSetData(source, { type: 'FeatureCollection', features });
+            logEvent(`RENDERED: ${features.length} items (Min L:${minLevel})`);
         }
-    }, [generator, logEvent]);
+    }, [generator, throttledSetData, logEvent]);
 
     return { syncToMap };
 }
