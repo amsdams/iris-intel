@@ -14,6 +14,7 @@ import { useIntelMessages } from './useIntelMessages';
 import { useMapRenderer } from './useMapRenderer';
 import { useScores } from './useScores';
 import { usePlayerStats } from './usePlayerStats';
+import { usePlayerTracker } from './usePlayerTracker';
 import { useEndpointTelemetry } from './useEndpointTelemetry';
 import type { PlextRequestBounds } from './plextRequests';
 import { throttle } from './GeoUtils';
@@ -90,6 +91,7 @@ function TacticalOverlay(): h.JSX.Element {
     const [patternMode, setPatternMode] = useState(0);
     const [extrusionEnabled, setExtrusionEnabled] = useState(false);
     const [isVis, setIsVis] = useState(false);
+    const [pulseTick, setPulseTick] = useState(0);
     const liveModeRef = useRef(liveMode);
     const patternModeRef = useRef(patternMode);
     const moveSettleTimerRef = useRef<number | null>(null);
@@ -111,6 +113,23 @@ function TacticalOverlay(): h.JSX.Element {
     useEffect(() => {
         mapStateRef.current = mapState;
     }, [mapState]);
+
+    useEffect(() => {
+        if (!isVis) return;
+
+        let frame: number | null = null;
+        const tick = (): void => {
+            setPulseTick((Date.now() % 1200) / 1200);
+            frame = window.requestAnimationFrame(tick);
+        };
+
+        frame = window.requestAnimationFrame(tick);
+        return () => {
+            if (frame !== null) {
+                window.cancelAnimationFrame(frame);
+            }
+        };
+    }, [isVis]);
 
     const persistMapState = useCallback((nextState?: SavedMapState): void => {
         const stateToSave = nextState ?? {
@@ -201,6 +220,103 @@ function TacticalOverlay(): h.JSX.Element {
     useIntelMessages(mapRef.current, liveMode, patternMode, selected, setSelected, (m, l, p) => syncToMap(m, l, p), logEvent);
     useScores(isVis, liveMode, mapState.lat, mapState.lng);
     usePlayerStats(isVis, liveMode);
+    const { playerHistories } = usePlayerTracker(isVis, liveMode, logEvent, plextBounds);
+    const playerTrailData = useMemo<GeoJSON.FeatureCollection>(() => {
+        const features: GeoJSON.Feature[] = [];
+        const clusters = new Map<string, { lat: number; lng: number; names: string[]; team: string; count: number }>();
+
+        const averageEventCoords = (event: { latlngs: [number, number][] }): [number, number] | null => {
+            if (event.latlngs.length === 0) return null;
+            let latSum = 0;
+            let lngSum = 0;
+            event.latlngs.forEach(([lat, lng]) => {
+                latSum += lat;
+                lngSum += lng;
+            });
+            return [latSum / event.latlngs.length, lngSum / event.latlngs.length];
+        };
+
+        const ageMinutes = (time: number): number => Math.max(0, (Date.now() - time) / 60000);
+
+        playerHistories.forEach((history, name) => {
+            const trailEvents = history.events
+                .map((event) => ({ event, coords: averageEventCoords(event) }))
+                .filter((item): item is { event: { latlngs: [number, number][]; time: number; portalName: string; actions: any[] }, coords: [number, number] } => !!item.coords);
+
+            for (let i = 1; i < trailEvents.length; i++) {
+                const prev = trailEvents[i - 1];
+                const curr = trailEvents[i];
+                features.push({
+                    type: 'Feature',
+                    geometry: {
+                        type: 'LineString',
+                        coordinates: [
+                            [prev.coords[1], prev.coords[0]],
+                            [curr.coords[1], curr.coords[0]],
+                        ],
+                    },
+                    properties: {
+                        id: `${name}:${curr.event.time}`,
+                        team: history.team,
+                        type: 'player-trail',
+                        ageMinutes: ageMinutes(curr.event.time),
+                    },
+                });
+            }
+
+            const lastEvent = history.events[history.events.length - 1];
+            const lastPos = lastEvent ? averageEventCoords(lastEvent) : null;
+            if (lastPos) {
+                const [lat, lng] = lastPos;
+                features.push({
+                    type: 'Feature',
+                    geometry: {
+                        type: 'Point',
+                        coordinates: [lng, lat],
+                    },
+                    properties: {
+                        id: name,
+                        team: history.team,
+                        type: 'player-point',
+                        portalName: lastEvent.portalName,
+                        name,
+                        pulse: pulseTick,
+                    },
+                });
+
+                const clusterKey = `${lat.toFixed(6)}:${lng.toFixed(6)}`;
+                const cluster = clusters.get(clusterKey) ?? { lat, lng, names: [], team: history.team, count: 0 };
+                cluster.names.push(name);
+                cluster.count += 1;
+                if (!cluster.team || cluster.team === 'N') {
+                    cluster.team = history.team;
+                }
+                clusters.set(clusterKey, cluster);
+            }
+        });
+
+        clusters.forEach((cluster) => {
+            features.push({
+                type: 'Feature',
+                geometry: {
+                    type: 'Point',
+                    coordinates: [cluster.lng, cluster.lat],
+                },
+                properties: {
+                    id: `player-label:${cluster.lat.toFixed(6)}:${cluster.lng.toFixed(6)}`,
+                    team: cluster.team,
+                    type: 'player-label',
+                    label: cluster.names.join('\n'),
+                    count: cluster.count,
+                },
+            });
+        });
+
+        return {
+            type: 'FeatureCollection',
+            features,
+        };
+    }, [playerHistories, pulseTick]);
 
     const checkAndLoad = useCallback((currentMap: maplibregl.Map, currentPatternMode: number, currentLiveMode: boolean): void => {
         if (!currentMap || !currentMap.getStyle()) return;
@@ -298,9 +414,11 @@ function TacticalOverlay(): h.JSX.Element {
             container: 'map-poc-container',
             style: {
                 version: 8,
+                glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
                 sources: {
                     'carto': { type: 'raster', tiles: MAP_STYLES['Dark'], tileSize: 256 },
                     'entities': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
+                    'players': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
                     'selection': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } }
                 },
                 layers: [
@@ -308,9 +426,9 @@ function TacticalOverlay(): h.JSX.Element {
                     { id: 'f-enl', type: 'fill', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'E']], paint: { 'fill-color': COLORS.E, 'fill-opacity': 0.3 } },
                     { id: 'f-res', type: 'fill', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'R']], paint: { 'fill-color': COLORS.R, 'fill-opacity': 0.3 } },
                     { id: 'f-mac', type: 'fill', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'M']], paint: { 'fill-color': COLORS.M, 'fill-opacity': 0.3 } },
-                    { id: 'l-enl', type: 'line', source: 'entities', filter: ['all', ['==', 'type', 'link'], ['==', 'team', 'E']], paint: { 'line-color': COLORS.E, 'line-width': 1.5 } },
-                    { id: 'l-res', type: 'line', source: 'entities', filter: ['all', ['==', 'type', 'link'], ['==', 'team', 'R']], paint: { 'line-color': COLORS.R, 'line-width': 1.5 } },
-                    { id: 'l-mac', type: 'line', source: 'entities', filter: ['all', ['==', 'type', 'link'], ['==', 'team', 'M']], paint: { 'line-color': COLORS.M, 'line-width': 1.5 } },
+                    { id: 'l-enl', type: 'line', source: 'entities', filter: ['all', ['==', 'type', 'link'], ['==', 'team', 'E']], paint: { 'line-color': COLORS.E, 'line-width': ['coalesce', ['get', 'width'], 2] } },
+                    { id: 'l-res', type: 'line', source: 'entities', filter: ['all', ['==', 'type', 'link'], ['==', 'team', 'R']], paint: { 'line-color': COLORS.R, 'line-width': ['coalesce', ['get', 'width'], 2] } },
+                    { id: 'l-mac', type: 'line', source: 'entities', filter: ['all', ['==', 'type', 'link'], ['==', 'team', 'M']], paint: { 'line-color': COLORS.M, 'line-width': ['coalesce', ['get', 'width'], 2] } },
                     { id: 'f-ext-enl', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'E']], paint: { 'fill-extrusion-color': COLORS.E, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.5 }, layout: { visibility: 'none' } },
                     { id: 'f-ext-res', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'R']], paint: { 'fill-extrusion-color': COLORS.R, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.5 }, layout: { visibility: 'none' } },
                     { id: 'f-ext-mac', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'M']], paint: { 'fill-extrusion-color': COLORS.M, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.5 }, layout: { visibility: 'none' } },
@@ -318,10 +436,15 @@ function TacticalOverlay(): h.JSX.Element {
                     { id: 'l-ext-res', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'link-ext'], ['==', 'team', 'R']], paint: { 'fill-extrusion-color': COLORS.R, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.8 }, layout: { visibility: 'none' } },
                     { id: 'l-ext-mac', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'link-ext'], ['==', 'team', 'M']], paint: { 'fill-extrusion-color': COLORS.M, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.8 }, layout: { visibility: 'none' } },
                     { id: 'p-ext', type: 'fill-extrusion', source: 'entities', filter: ['==', 'type', 'portal-ext'], paint: { 'fill-extrusion-color': ['match', ['get', 'team'], 'E', COLORS.E, 'R', COLORS.R, 'M', COLORS.M, COLORS.N], 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': 0, 'fill-extrusion-opacity': 0.9 }, layout: { visibility: 'none' } },
+                    { id: 'player-trails', type: 'line', source: 'players', filter: ['==', 'type', 'player-trail'], paint: { 'line-color': '#FF0099', 'line-width': 3, 'line-opacity': ['interpolate', ['linear'], ['get', 'ageMinutes'], 0, 0.95, 5, 0.75, 20, 0.45, 60, 0.2, 180, 0.08], 'line-blur': 0.6, 'line-dasharray': [1.2, 1.6] } },
+                    { id: 'player-points-glow', type: 'circle', source: 'players', filter: ['==', 'type', 'player-point'], paint: { 'circle-color': '#FF0099', 'circle-radius': ['interpolate', ['linear'], ['get', 'pulse'], 0, 7, 0.5, 13, 1, 7], 'circle-opacity': ['interpolate', ['linear'], ['get', 'pulse'], 0, 0.12, 0.5, 0.26, 1, 0.12] } },
+                    { id: 'player-points', type: 'circle', source: 'players', filter: ['==', 'type', 'player-point'], paint: { 'circle-color': '#F781FF', 'circle-radius': ['interpolate', ['linear'], ['get', 'pulse'], 0, 4.5, 0.5, 6.5, 1, 4.5], 'circle-stroke-width': 2, 'circle-stroke-color': '#1a0010', 'circle-opacity': 0.98 } },
+                    { id: 'player-label-bg', type: 'circle', source: 'players', filter: ['==', 'type', 'player-label'], paint: { 'circle-color': ['match', ['get', 'team'], 'E', COLORS.E, 'R', COLORS.R, 'M', COLORS.M, '#00ffff'], 'circle-radius': ['interpolate', ['linear'], ['get', 'count'], 1, 8, 2, 11, 5, 15], 'circle-opacity': 0.08 } },
+                    { id: 'player-labels', type: 'symbol', source: 'players', filter: ['==', 'type', 'player-label'], layout: { 'text-field': ['get', 'label'], 'text-size': 12, 'text-offset': [0, 1.2], 'text-anchor': 'top', 'text-allow-overlap': true, 'text-ignore-placement': true, 'text-max-width': 12 }, paint: { 'text-color': '#ffffff', 'text-halo-color': '#000000', 'text-halo-width': 1.4, 'text-opacity': 0.96 } },
                     { id: 'sel-f', type: 'line', source: 'selection', filter: ['==', 'type', 'field'], paint: { 'line-color': '#fff', 'line-width': 3 } },
                     { id: 'sel-l', type: 'line', source: 'selection', filter: ['==', 'type', 'link'], paint: { 'line-color': '#fff', 'line-width': 4 } },
                     { id: 'sel-p', type: 'circle', source: 'selection', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': 12, 'circle-color': 'transparent', 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 } },
-                    { id: 'p', type: 'circle', source: 'entities', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': 4, 'circle-color': ['match', ['get', 'team'], 'E', COLORS.E, 'R', COLORS.R, 'M', COLORS.M, COLORS.N] } }
+                    { id: 'p', type: 'circle', source: 'entities', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': ['coalesce', ['get', 'radius'], 2], 'circle-color': ['match', ['get', 'team'], 'E', COLORS.E, 'R', COLORS.R, 'M', COLORS.M, COLORS.N] } }
                 ]
             },
             center: initialCenter, zoom: initialZoom
@@ -335,6 +458,10 @@ function TacticalOverlay(): h.JSX.Element {
                 maxLatE6: Math.round(bounds.getNorth() * 1e6),
                 maxLngE6: Math.round(bounds.getEast() * 1e6),
             });
+            const playerSource = m.getSource('players') as maplibregl.GeoJSONSource | undefined;
+            if (playerSource) {
+                playerSource.setData(playerTrailData);
+            }
         });
 
         m.on('movestart', clearMoveSettleTimer);
@@ -421,6 +548,12 @@ function TacticalOverlay(): h.JSX.Element {
             clearMoveSettleTimer();
         };
     }, [clearMoveSettleTimer]);
+
+    useEffect(() => {
+        const m = mapRef.current;
+        if (!m || !m.getSource('players')) return;
+        (m.getSource('players') as maplibregl.GeoJSONSource).setData(playerTrailData);
+    }, [playerTrailData]);
 
     // 2. Selection highlights
     useEffect(() => {
@@ -560,6 +693,7 @@ function TacticalOverlay(): h.JSX.Element {
                         events={events}
                         endpointTelemetry={endpointTelemetry}
                         plextBounds={plextBounds}
+                        playerHistories={playerHistories}
                         onNav={handleNav} onStyle={handleStyle} onMode={handleMode}
                         onPortalClick={handlePortalClick}
                     />

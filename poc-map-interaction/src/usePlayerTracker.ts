@@ -1,12 +1,19 @@
-import { useState, useEffect, useCallback } from 'preact/hooks';
-import { PlextParser, Plext } from '@iris/core';
+import { useState, useEffect, useCallback, useRef } from 'preact/hooks';
+import { useStore, PlextParser, Plext } from '@iris/core';
 import { useEndpointTelemetry } from './useEndpointTelemetry';
 import { createPlextRequestMessage, type PlextRequestBounds } from './plextRequests';
+
+export interface PlayerAction {
+    text: string;
+    markup: Plext['markup'];
+    time: number;
+}
 
 export interface PlayerEvent {
     latlngs: [number, number][];
     time: number;
     portalName: string;
+    actions: PlayerAction[];
 }
 
 export interface PlayerHistory {
@@ -27,11 +34,21 @@ export function usePlayerTracker(
     const [playerHistories, setPlayerHistories] = useState<Map<string, PlayerHistory>>(new Map());
     const [lastPlextTime, setLastPlextTime] = useState(-1);
     const telemetry = useEndpointTelemetry();
+    const processedPlextIdsRef = useRef<Set<string>>(new Set());
 
     const processPlexts = useCallback((plexts: Plext[]) => {
         if (plexts.length === 0) return;
 
-        const newMaxTime = Math.max(...plexts.map(p => p.time));
+        const freshPlexts = plexts.filter(p => {
+            if (processedPlextIdsRef.current.has(p.id)) return false;
+            processedPlextIdsRef.current.add(p.id);
+            return true;
+        });
+
+        if (freshPlexts.length === 0) return;
+
+        const newMaxTime = Math.max(...freshPlexts.map(p => p.time));
+        const touchedPlayers = new Set<string>();
         setLastPlextTime(prev => Math.max(prev, newMaxTime));
 
         setPlayerHistories(prev => {
@@ -39,21 +56,26 @@ export function usePlayerTracker(
             const limit = Date.now() - EXPIRATION_MS;
 
             // Sort oldest to newest for consistent history building
-            const sorted = [...plexts].sort((a, b) => a.time - b.time);
+            const sorted = [...freshPlexts].sort((a, b) => a.time - b.time);
 
             sorted.forEach(p => {
                 if (p.time < limit) return;
                 
-                let playerName = '';
+                let playerName: string | null = null;
+                let playerTeam = p.team || 'N';
                 let lat: number | null = null;
                 let lng: number | null = null;
                 let pName = '';
                 let skipThis = false;
+                const actionParts: string[] = [];
+                const actionMarkup: Plext['markup'] = [];
 
                 for (const m of p.markup) {
                     const [type, data] = m;
                     if (type === 'TEXT') {
                         const txt = data.plain || '';
+                        actionParts.push(txt);
+                        actionMarkup.push(m);
                         if (txt.includes('destroyed the Link') ||
                             txt.includes('destroyed a Control Field') ||
                             txt.includes('destroyed the') ||
@@ -61,24 +83,37 @@ export function usePlayerTracker(
                             skipThis = true;
                             break;
                         }
-                    } else if (type === 'PLAYER' || type === 'SENDER' || type === 'AT_PLAYER') {
-                        playerName = data.plain || '';
-                    } else if ((type === 'PORTAL' || type === 'LINK') && !lat) {
+                    } else if (type === 'PLAYER' || type === 'SENDER' || type === 'AT_PLAYER' || type === 'FACTION') {
+                        playerName = data.plain || data.name || playerName;
+                        if (data.team && data.team !== 'N') {
+                            playerTeam = data.team;
+                        }
+                        const upper = (playerName || '').toUpperCase();
+                        if (upper === 'MACHINA' || upper === '__MACHINA__') {
+                            playerTeam = 'M';
+                        }
+                        actionMarkup.push(m);
+                    } else if ((type === 'PORTAL' || type === 'LINK') && lat === null && lng === null) {
                         lat = (data.latE6 || 0) / 1e6;
                         lng = (data.lngE6 || 0) / 1e6;
                         pName = data.name || '';
+                        actionMarkup.push(m);
+                    } else {
+                        actionMarkup.push(m);
                     }
                 }
 
-                if (skipThis || !playerName || !lat || !lng) return;
+                if (skipThis || !playerName || lat === null || lng === null) return;
+                const actionText = actionParts.join('').trim();
 
-                const history = next.get(playerName) || { name: playerName, team: p.team, events: [] };
-                
-                // Support Machina faction override
-                const upper = playerName.toUpperCase();
-                if (upper === 'MACHINA' || upper === '__MACHINA__') {
-                    history.team = 'M';
+                let history = next.get(playerName);
+                if (!history) {
+                    history = { name: playerName, team: playerTeam, events: [] };
+                    next.set(playerName, history);
+                } else if (playerTeam && history.team !== playerTeam) {
+                    history.team = playerTeam;
                 }
+                touchedPlayers.add(playerName);
 
                 // Logic to update/insert event (IITC style)
                 const evts = history.events;
@@ -93,6 +128,9 @@ export function usePlayerTracker(
                     // Same timestamp (multiple resos), check if location is new
                     const alreadyHas = evts[cmp].latlngs.some(ll => ll[0] === lat && ll[1] === lng);
                     if (!alreadyHas) evts[cmp].latlngs.push([lat!, lng!]);
+                    if (actionText && !evts[cmp].actions.some((existing) => existing.text === actionText)) {
+                        evts[cmp].actions.push({ text: actionText, markup: actionMarkup, time: p.time });
+                    }
                     return;
                 }
 
@@ -100,11 +138,15 @@ export function usePlayerTracker(
                 const sameLoc = evts.length > 0 && evts[cmp].latlngs.some(ll => ll[0] === lat && ll[1] === lng);
                 if (sameLoc) {
                     evts[cmp].time = p.time;
+                    if (actionText && !evts[cmp].actions.some((existing) => existing.text === actionText)) {
+                        evts[cmp].actions.push({ text: actionText, markup: actionMarkup, time: p.time });
+                    }
                 } else {
                     evts.splice(i, 0, {
                         latlngs: [[lat, lng]],
                         time: p.time,
-                        portalName: pName
+                        portalName: pName,
+                        actions: actionText ? [{ text: actionText, markup: actionMarkup, time: p.time }] : [],
                     });
                 }
 
@@ -122,7 +164,9 @@ export function usePlayerTracker(
 
             return next;
         });
-    }, []);
+
+        logEvent(`TRACKER: ${freshPlexts.length} plexts, ${touchedPlayers.size} players`);
+    }, [logEvent]);
 
     // Message Listener for COMM data
     useEffect(() => {
@@ -139,6 +183,11 @@ export function usePlayerTracker(
         window.addEventListener('message', handler);
         return () => window.removeEventListener('message', handler);
     }, [processPlexts, logEvent]);
+
+    const plextFeed = useStore(state => state.plexts);
+    useEffect(() => {
+        processPlexts(plextFeed);
+    }, [plextFeed, processPlexts]);
 
     // Polling effect
     useEffect(() => {

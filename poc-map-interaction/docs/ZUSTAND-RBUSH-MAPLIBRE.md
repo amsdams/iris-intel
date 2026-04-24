@@ -137,6 +137,8 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 | **COMM Panel** | **DONE** | Multi-tab (All/Faction/Alerts), colored nicks, map-snapping. |
 | **Scores Panel** | **DONE** | Global MU standings and Regional Top Agents. |
 | **Inventory Stats** | **DONE** | Summary view of weapons, resonators, and mods. |
+| **Portal / Link Sizing** | **DONE** | Zoom-aligned to IRIS-style interpolation for 2D readability. |
+| **Player Trail Retention** | **DONE** | 3 hour window, with fading trail segments and pulsing marker. |
 
 ### Roadmap & Alignment (TODO)
 
@@ -145,6 +147,11 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 2. **Draw Tools**: Implement custom line/polygon drawing for field planning.
 3. **Missions**: Integrate Top Missions and Mission Details (rendering waypoints in 3D).
 4. **Search**: Portal and location search with map-jump interaction.
+
+#### Current Alignment Notes
+- Portal and link scale now follow the same zoom-aware approach used by IRIS rather than hardcoded POC sizes.
+- The player trail lifetime matches the IRIS / IITC reference window at 3 hours, with the POC using stronger visual fading to keep the trace readable.
+- Remaining work is mostly feature breadth, not core rendering stability.
 
 #### Feature Alignment
 - **Artifacts & Ornaments**: Support for specialized spatial markers (shards, beacons).

@@ -4,6 +4,7 @@ import { useStore, InventoryParser, Plext, normalizeTeam } from '@iris/core';
 import { COLORS, RARITY_COLORS, ITEM_LEVEL_COLORS } from './MapConstants';
 import { formatMU, formatAP } from './GeoUtils';
 import { CommTab } from './useComm';
+import type { PlayerHistory } from './usePlayerTracker';
 import { createPlextRequestMessage, type PlextRequestBounds } from './plextRequests';
 
 interface DataDockProps {
@@ -13,9 +14,10 @@ interface DataDockProps {
     onCommTabChange: (tab: CommTab) => void;
     onPortalClick: (lat: number, lng: number, name: string) => void;
     plextBounds: PlextRequestBounds | null;
+    playerHistories: Map<string, PlayerHistory>;
 }
 
-export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPortalClick, plextBounds }: DataDockProps): JSX.Element {
+export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPortalClick, plextBounds, playerHistories }: DataDockProps): JSX.Element {
     const { gameScore, regionScore, playerStats, hasSubscription, inventory, plexts } = useStore();
 
     // 1. Inventory Stats
@@ -50,12 +52,24 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPor
 
     const currentTab = commTab.toLowerCase();
 
-    const sendPlextRequest = (minTimestampMs: number, maxTimestampMs = -1, ascendingTimestampOrder?: boolean): void => {
-        const request = createPlextRequestMessage(currentTab, plextBounds, minTimestampMs, maxTimestampMs, ascendingTimestampOrder);
+    const refreshComm = (): void => {
+        const request = createPlextRequestMessage(currentTab, plextBounds, -1, -1, true);
         if (request) {
             window.postMessage(request, '*');
         }
     };
+
+    const trackedPlayers = useMemo(() => {
+        return Array.from(playerHistories.values())
+            .map(history => {
+                const lastEvent = history.events[history.events.length - 1] ?? null;
+                return {
+                    ...history,
+                    lastEvent,
+                };
+            })
+            .sort((a, b) => (b.lastEvent?.time ?? 0) - (a.lastEvent?.time ?? 0));
+    }, [playerHistories]);
 
     const renderPlextMarkup = (p: Plext) => {
         return p.markup.map((m, i) => {
@@ -97,6 +111,9 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPor
                                 {t.toUpperCase()}
                             </div>
                         ))}
+                        <div onClick={refreshComm} style={{ padding: '10px 12px', textAlign: 'center', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer', color: '#00ffff', borderLeft: '1px solid #222', background: plextBounds ? 'rgba(0,255,255,0.06)' : 'rgba(255,255,255,0.02)' }}>
+                            REFRESH
+                        </div>
                     </div>
                     <div style={{ flex: 1, overflowY: 'auto', padding: '10px', display: 'flex', flexDirection: 'column-reverse', gap: '8px' }}>
                         {filteredPlexts.map(p => (
@@ -143,6 +160,46 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPor
                     ) : (
                         <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>Waiting for Intel data...</div>
                     )}
+                    <div style={{ marginTop: '14px', borderTop: '1px solid #222', paddingTop: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                            <span style={{ color: '#00ffff', fontSize: '11px', fontWeight: 'bold', letterSpacing: '0.06em' }}>TRACKED PLAYERS</span>
+                            <span style={{ color: '#666', fontSize: '10px' }}>{trackedPlayers.length} ACTIVE</span>
+                        </div>
+                        {trackedPlayers.length > 0 ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '220px', overflowY: 'auto' }}>
+                                {trackedPlayers.slice(0, 8).map(history => {
+                                    const lastEvent = history.lastEvent;
+                                    return (
+                                        <div key={history.name} style={{ background: '#141414', border: '1px solid #222', borderRadius: '8px', padding: '8px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', marginBottom: '4px' }}>
+                                                <span style={{ color: COLORS[normalizeTeam(history.team) as keyof typeof COLORS] || '#fff', fontWeight: 'bold', fontSize: '12px' }}>{history.name}</span>
+                                                <span style={{ color: '#777', fontSize: '10px' }}>{history.events.length} hits</span>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', fontSize: '10px', color: '#aaa' }}>
+                                                <span>{lastEvent ? lastEvent.portalName || 'Unknown portal' : 'No recent portal'}</span>
+                                                <span>{lastEvent ? new Date(lastEvent.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                                            </div>
+                                            {lastEvent && lastEvent.latlngs.length > 0 && (
+                                                <div style={{ marginTop: '6px', display: 'flex', justifyContent: 'flex-end' }}>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => onPortalClick(lastEvent.latlngs[0][0], lastEvent.latlngs[0][1], lastEvent.portalName || history.name)}
+                                                        style={{ background: 'rgba(0,255,255,0.08)', color: '#00ffff', border: '1px solid rgba(0,255,255,0.2)', borderRadius: '6px', padding: '4px 8px', fontSize: '10px', cursor: 'pointer' }}
+                                                    >
+                                                        JUMP
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <div style={{ textAlign: 'center', padding: '16px', color: '#666', fontSize: '11px' }}>
+                                No tracked movement yet. Open COMM and keep live mode on.
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Inventory Panel */}

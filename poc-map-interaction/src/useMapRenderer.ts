@@ -107,7 +107,7 @@ export function useMapRenderer(generator: MockDataGenerator, logEvent: (msg: str
                 if (isVisible) {
                     const maxLayer = portalMaxLayer.get(p.id) ?? -1;
                     const towerHeight = 200 + (maxLayer * 20) + 15;
-                    const props = { id: p.id, type: 'portal', team: faction, level, height: towerHeight, base_height: 0 };
+                    const props = { id: p.id, type: 'portal', team: faction, level, height: towerHeight, base_height: 0, radius: Math.max(1, Math.min(6, 1 + ((zoom - 3) / 12) * 5)) };
                     features.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [p.lng, p.lat] }, properties: props });
                     features.push({ 
                         type: 'Feature', 
@@ -125,7 +125,7 @@ export function useMapRenderer(generator: MockDataGenerator, logEvent: (msg: str
                 const isVisible = currentPatternMode > 0 || currentLiveMode || (p1 && p2 && (p1.level ?? 0) >= minLevel && (p2.level ?? 0) >= minLevel);
                 if (isVisible && p1 && p2) {
                     const baseProps = { id: l.id, type: 'link', team: l.team };
-                    features.push({ type: 'Feature', id: `l-${l.id}`, geometry: { type: 'LineString', coordinates: [[p1.lng, p1.lat], [p2.lng, p2.lat]] }, properties: baseProps });
+                    features.push({ type: 'Feature', id: `l-${l.id}`, geometry: { type: 'LineString', coordinates: [[p1.lng, p1.lat], [p2.lng, p2.lat]] }, properties: { ...baseProps, width: Math.max(2, Math.min(4, 2 + ((zoom - 3) / 12) * 2)) } });
                     
                     const dx = p2.lng - p1.lng;
                     const dy = p2.lat - p1.lat;

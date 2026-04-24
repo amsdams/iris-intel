@@ -1,5 +1,6 @@
 import { h, JSX, Fragment } from 'preact';
 import { useState, useRef } from 'preact/hooks';
+import type { PlayerHistory } from './usePlayerTracker';
 import { MapTools } from './MapTools';
 import { DataDock } from './DataDock';
 import { useComm } from './useComm';
@@ -18,13 +19,14 @@ interface TacticalUIProps {
     events: EventLogEntry[];
     endpointTelemetry: Partial<Record<EndpointName, EndpointTelemetry>>;
     plextBounds: PlextRequestBounds | null;
+    playerHistories: Map<string, PlayerHistory>;
     onNav: (action: string) => void;
     onStyle: (style: string) => void;
     onMode: (mode: string) => void;
     onPortalClick: (lat: number, lng: number, name: string) => void;
 }
 
-export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBounds, onNav, onStyle, onMode, onPortalClick }: TacticalUIProps): JSX.Element {
+export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBounds, playerHistories, onNav, onStyle, onMode, onPortalClick }: TacticalUIProps): JSX.Element {
     const [openDrawer, setOpenDrawer] = useState<string | null>(null);
     const logRef = useRef<HTMLDivElement>(null);
     
@@ -188,6 +190,7 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBou
                 onCommTabChange={setActiveTab}
                 onPortalClick={onPortalClick}
                 plextBounds={plextBounds}
+                playerHistories={playerHistories}
             />
 
             {/* Event Log */}
