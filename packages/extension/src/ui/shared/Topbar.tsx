@@ -150,46 +150,8 @@ function LocationSearch(): JSX.Element {
     );
 }
 
-interface TopbarProps {
-    onTogglePlayerStats: () => void;
-    onToggleInventory: () => void;
-    onToggleDiagnostics: () => void;
-    onToggleFiltersPopup: () => void;
-    onToggleMapVisibility: () => void;
-    onToggleComm: () => void;
-    onToggleMissions: () => void;
-    onTogglePlugins: () => void;
-    onToggleMapSettings: () => void;
-    onToggleGameScore: () => void;
-    onToggleRegionScore: () => void;
-    onTogglePasscodes: () => void;
-    onToggleNavigation: () => void;
-    showMap: boolean;
-}
-
-export function Topbar({
-    onTogglePlayerStats,
-    onToggleInventory,
-    onToggleDiagnostics,
-    onToggleFiltersPopup,
-    onToggleMapVisibility,
-    onToggleComm,
-    onToggleMissions,
-    onTogglePlugins,
-    onToggleMapSettings,
-    onToggleGameScore,
-    onToggleRegionScore,
-    onTogglePasscodes,
-    onToggleNavigation,
-    showMap
-}: TopbarProps): JSX.Element {
+export function Topbar(): JSX.Element {
     const [locStatus, setLocStatus] = useState<'NAVIGATE TO ME' | 'LOCATING...'>('NAVIGATE TO ME');
-    const [showIntelMenu, setShowIntelMenu] = useState(false);
-    const [showMapMenu, setShowMapMenu] = useState(false);
-    const [showSystemMenu, setShowSystemMenu] = useState(false);
-    const [showPluginsMenu, setShowPluginsMenu] = useState(false);
-
-    const menuItems = useStore((state) => state.menuItems);
     const themeId = useStore((state) => state.themeId);
     const theme = THEMES[themeId] || THEMES.INGRESS;
 
@@ -221,212 +183,10 @@ export function Topbar({
         );
     };
 
-    const toggleIntelMenu = (): void => {
-        setShowIntelMenu(!showIntelMenu);
-        setShowMapMenu(false);
-        setShowSystemMenu(false);
-        setShowPluginsMenu(false);
-    };
-
-    const toggleMapMenu = (): void => {
-        setShowMapMenu(!showMapMenu);
-        setShowIntelMenu(false);
-        setShowSystemMenu(false);
-        setShowPluginsMenu(false);
-    };
-
-    const toggleSystemMenu = (): void => {
-        setShowSystemMenu(!showSystemMenu);
-        setShowIntelMenu(false);
-        setShowMapMenu(false);
-        setShowPluginsMenu(false);
-    };
-
-    const togglePluginsMenu = (): void => {
-        setShowPluginsMenu(!showPluginsMenu);
-        setShowIntelMenu(false);
-        setShowMapMenu(false);
-        setShowSystemMenu(false);
-    };
-
     return (
         <div className="iris-topbar">
-            {/* Left side: Menu buttons */}
-            <div className="iris-topbar-left">
-                {/* Intel Menu */}
-                <div className="iris-menu-container">
-                    <button 
-                        className="iris-menu-btn" 
-                        title="Agent & Scores"
-                        style={SHARED_STYLES.btnStyle(true, theme.AQUA)} 
-                        onClick={toggleIntelMenu}
-                    >
-                        👤
-                    </button>
-                    {showIntelMenu && (
-                        <div className="iris-menu-dropdown" style={{ borderColor: theme.AQUA }}>
-                            <button
-                                className="iris-menu-item"
-                                onClick={() => { onTogglePlayerStats(); setShowIntelMenu(false); }}
-                                style={{ color: theme.AQUA }}
-                            >
-                                👤 Player Stats
-                            </button>
-                            <button
-                                className="iris-menu-item"
-                                onClick={() => { onToggleInventory(); setShowIntelMenu(false); }}
-                                style={{ color: theme.AQUA }}
-                            >
-                                🎒 Inventory
-                            </button>
-                            <button
-                                className="iris-menu-item"
-                                onClick={() => { onToggleGameScore(); setShowIntelMenu(false); }}
-                                style={{ color: theme.AQUA }}
-                            >
-                                📊 Global Scoreboard
-                            </button>
-                            <button
-                                className="iris-menu-item"
-                                onClick={() => { onToggleRegionScore(); setShowIntelMenu(false); }}
-                                style={{ color: theme.AQUA }}
-                            >
-                                📉 Region Scores
-                            </button>
-                            <button
-                                className="iris-menu-item"
-                                onClick={() => { onToggleComm(); setShowIntelMenu(false); }}
-                                style={{ color: theme.AQUA }}
-                            >
-                                💬 COMM
-                            </button>
-                            <button
-                                className="iris-menu-item"
-                                onClick={() => { onTogglePasscodes(); setShowIntelMenu(false); }}
-                                style={{ color: theme.AQUA }}
-                            >
-                                🔑 Passcodes
-                            </button>
-                        </div>
-                    )}
-                </div>
-
-                {/* Map Menu */}
-                <div className="iris-menu-container">
-                    <button 
-                        className="iris-menu-btn" 
-                        title="Map Data"
-                        style={SHARED_STYLES.btnStyle(true, theme.AQUA)} 
-                        onClick={toggleMapMenu}
-                    >
-                        🗺️
-                    </button>
-                    {showMapMenu && (
-                        <div className="iris-menu-dropdown" style={{ borderColor: theme.AQUA }}>
-                            <button
-                                className="iris-menu-item"
-                                onClick={() => { onToggleNavigation(); setShowMapMenu(false); }}
-                                style={{ color: theme.AQUA }}
-                            >
-                                🧭 Navigation
-                            </button>
-                            <button
-                                className="iris-menu-item"
-                                onClick={() => { onToggleFiltersPopup(); setShowMapMenu(false); }}
-                                style={{ color: theme.AQUA }}
-                            >
-                                🔍 Filters
-                            </button>
-                            <button
-                                className="iris-menu-item"
-                                onClick={() => { onToggleMissions(); setShowMapMenu(false); }}
-                                style={{ color: theme.AQUA }}
-                            >
-                                🚀 Missions
-                            </button>
-                        </div>
-                    )}
-                </div>
-
-                {/* System Menu */}
-                <div className="iris-menu-container">
-                    <button 
-                        className="iris-menu-btn" 
-                        title="System"
-                        style={SHARED_STYLES.btnStyle(true, theme.AQUA)} 
-                        onClick={toggleSystemMenu}
-                    >
-                        ⚙️
-                    </button>
-                    {showSystemMenu && (
-                        <div className="iris-menu-dropdown" style={{ borderColor: theme.AQUA }}>
-                            <button
-                                className="iris-menu-item"
-                                onClick={() => { onTogglePlugins(); setShowSystemMenu(false); }}
-                                style={{ color: theme.AQUA }}
-                            >
-                                🧩 Plugins Manager
-                            </button>
-                            <button
-                                className="iris-menu-item"
-                                onClick={() => { onToggleMapSettings(); setShowSystemMenu(false); }}
-                                style={{ color: theme.AQUA }}
-                            >
-                                ⚙️ Map Settings
-                            </button>
-                            <button
-                                className="iris-menu-item"
-                                onClick={() => { onToggleDiagnostics(); setShowSystemMenu(false); }}
-                                style={{ color: theme.AQUA }}
-                            >
-                                🛠️ Diagnostics
-                            </button>
-                            <button
-                                className="iris-menu-item"
-                                onClick={() => { onToggleMapVisibility(); setShowSystemMenu(false); }}
-                                style={{ color: theme.AQUA }}
-                            >
-                                🔄 {showMap ? 'Use Intel Map' : 'Use IRIS Map'}
-                            </button>
-                        </div>
-                    )}
-                </div>
-
-                {/* Plugins Menu */}
-                <div className="iris-menu-container">
-                    <button 
-                        className="iris-menu-btn" 
-                        title="Plugin Actions"
-                        style={SHARED_STYLES.btnStyle(true, theme.AQUA)} 
-                        onClick={togglePluginsMenu}
-                    >
-                        📦
-                    </button>
-                    {showPluginsMenu && (
-                        <div className="iris-menu-dropdown" style={{ borderColor: theme.AQUA }}>
-                            {menuItems.length === 0 && (
-                                <div className="iris-menu-item" style={{ color: '#666', fontStyle: 'italic' }}>
-                                    No plugin items.
-                                </div>
-                            )}
-
-                            {menuItems.map((item) => (
-                                <button
-                                    key={item.id}
-                                    className={`iris-menu-item iris-menu-item-plugin-${item.id}`}
-                                    onClick={() => { item.onClick(); setShowPluginsMenu(false); }}
-                                    style={{ color: theme.AQUA }}
-                                >
-                                    📦 {item.label}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Middle: Search input */}
-            <div className="iris-topbar-center">
+            {/* Left side: Search input */}
+            <div className="iris-topbar-left" style={{ flex: 1 }}>
                 <LocationSearch />
             </div>
 
@@ -437,6 +197,7 @@ export function Topbar({
                     onClick={goToMyLocation}
                     disabled={locStatus === 'LOCATING...'}
                     style={SHARED_STYLES.btnStyle(locStatus !== 'LOCATING...', theme.AQUA)}
+                    title="Navigate to Me"
                 >
                     {locStatus === 'LOCATING...' ? '...' : '◎'}
                 </button>

@@ -1,0 +1,73 @@
+.iris-bottom-dock {
+    position: fixed;
+    bottom: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    border-radius: 30px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    gap: 15px;
+    z-index: 10005;
+    pointer-events: auto;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.iris-bottom-dock:hover {
+    border-color: rgba(0, 255, 255, 0.6);
+    box-shadow: 0 4px 20px rgba(0, 255, 255, 0.2);
+}
+
+.iris-dock-btn {
+    background: transparent;
+    border: none;
+    color: #fff;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.iris-dock-btn:active {
+    background: rgba(0, 255, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+.iris-dock-icon {
+    font-size: 1.4em;
+}
+
+.iris-dock-label {
+    font-size: 0.6em;
+    font-family: monospace;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-top: 2px;
+}
+
+.iris-dock-btn-active {
+    color: #0ff;
+    background: rgba(0, 255, 255, 0.1);
+}
+
+.iris-dock-btn-active::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    width: 4px;
+    height: 4px;
+    background: #0ff;
+    border-radius: 50%;
+}

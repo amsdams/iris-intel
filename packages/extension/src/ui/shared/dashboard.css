@@ -1,0 +1,110 @@
+.iris-dashboard-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 20000;
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    animation: iris-fade-in 0.2s ease-out;
+}
+
+@keyframes iris-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.iris-dashboard-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    max-width: 600px;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.iris-dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    margin-top: 40px;
+}
+
+.iris-dashboard-header h1 {
+    margin: 0;
+    font-size: 1.5em;
+    letter-spacing: 2px;
+    font-family: monospace;
+}
+
+.iris-dashboard-close {
+    background: transparent;
+    border: 1px solid currentColor;
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+
+.iris-dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    overflow-y: auto;
+}
+
+.iris-dashboard-item {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 15px 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    aspect-ratio: 1 / 1;
+}
+
+.iris-dashboard-item:active {
+    background: rgba(0, 255, 255, 0.1);
+    transform: scale(0.95);
+    border-color: rgba(0, 255, 255, 0.5);
+}
+
+.iris-dashboard-icon {
+    font-size: 2em;
+    margin-bottom: 8px;
+}
+
+.iris-dashboard-label {
+    font-size: 0.75em;
+    text-transform: uppercase;
+    text-align: center;
+    font-family: monospace;
+    font-weight: bold;
+}
+
+.iris-dashboard-item-plugin {
+    border-style: dashed;
+}
+
+@media (max-width: 400px) {
+    .iris-dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

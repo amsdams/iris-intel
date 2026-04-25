@@ -22,6 +22,8 @@ import { MissionDetailsPopup } from './domains/missions/MissionDetailsPopup';
 import { MissionsPopup } from './domains/missions/MissionsPopup';
 import { PasscodePopup } from './domains/passcodes/PasscodePopup';
 import { NavigationPopup } from './domains/map/NavigationPopup';
+import { BottomDock } from './shared/BottomDock';
+import { DashboardOverlay, DashboardType } from './shared/DashboardOverlay';
 
 // ---------------------------------------------------------------------------
 // IRISOverlay
@@ -44,6 +46,8 @@ export function IRISOverlay(): JSX.Element {
     const [showMissionsPopup, setShowMissionsPopup] = useState(false);
     const [showPasscodePopup, setShowPasscodePopup] = useState(false);
     const [showNavigationPopup, setShowNavigationPopup] = useState(false);
+    
+    const [activeDashboard, setActiveDashboard] = useState<DashboardType>(null);
 
     const togglePlayerStatsPopup = (): void => setShowPlayerStatsPopup((value) => !value);
     const toggleInventoryPopup = (): void => {
@@ -91,6 +95,28 @@ export function IRISOverlay(): JSX.Element {
     };
     const toggleNavigationPopup = (): void => setShowNavigationPopup((value) => !value);
 
+    const handleDashboardAction = (action: string): void => {
+        switch (action) {
+            case 'stats': togglePlayerStatsPopup(); break;
+            case 'inventory': toggleInventoryPopup(); break;
+            case 'gameScore': toggleGameScorePopup(); break;
+            case 'regionScore': toggleRegionScorePopup(); break;
+            case 'comm': toggleCommPopup(); break;
+            case 'passcodes': togglePasscodePopup(); break;
+            case 'nav': toggleNavigationPopup(); break;
+            case 'filters': toggleFiltersPopup(); break;
+            case 'missions': toggleMissionsPopup(); break;
+            case 'plugins': togglePluginsPopup(); break;
+            case 'settings': toggleMapSettingsPopup(); break;
+            case 'diag': toggleDiagnosticsPopup(); break;
+            case 'toggle': toggleMapVisibility(); break;
+        }
+    };
+
+    const toggleDashboard = (type: DashboardType): void => {
+        setActiveDashboard(current => current === type ? null : type);
+    };
+
     useEffect(() => {
         const themeHandler = (): void => toggleThemePopup();
         const exportHandler = (): void => toggleExportPopup();
@@ -122,22 +148,8 @@ export function IRISOverlay(): JSX.Element {
     return (
         <div className="iris-overlay-root">
             <SessionAlert />
-            <Topbar
-                onTogglePlayerStats={togglePlayerStatsPopup}
-                onToggleInventory={toggleInventoryPopup}
-                onToggleDiagnostics={toggleDiagnosticsPopup}
-                onToggleFiltersPopup={toggleFiltersPopup}
-                onToggleComm={toggleCommPopup}
-                onTogglePlugins={togglePluginsPopup}
-                onToggleMissions={toggleMissionsPopup}
-                onToggleMapVisibility={toggleMapVisibility}
-                onToggleMapSettings={toggleMapSettingsPopup}
-                onToggleGameScore={toggleGameScorePopup}
-                onToggleRegionScore={toggleRegionScorePopup}
-                onTogglePasscodes={togglePasscodePopup}
-                onToggleNavigation={toggleNavigationPopup}
-                showMap={showMap}
-            />
+            <Topbar />
+            
             <div style={{ display: showMap ? 'block' : 'none' }}>
                 <MapOverlay />
             </div>
@@ -201,6 +213,18 @@ export function IRISOverlay(): JSX.Element {
             {showNavigationPopup && (
                 <NavigationPopup onClose={toggleNavigationPopup} />
             )}
+
+            <DashboardOverlay 
+                type={activeDashboard} 
+                onClose={() => setActiveDashboard(null)} 
+                onAction={handleDashboardAction}
+                showMap={showMap}
+            />
+
+            <BottomDock 
+                activeDashboard={activeDashboard} 
+                onToggleDashboard={toggleDashboard} 
+            />
 
             <StatusBar />
         </div>
