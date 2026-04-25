@@ -87,6 +87,15 @@ The interceptor uses both **prototype patching** for `XMLHttpRequest` and a **fu
 
 ## Installation (Development)
 
+## Command Matrix
+
+| Target | Build | Check | Clean | Release |
+|---|---|---|---|---|
+| `core` | `npm run build:core` | `npm run check:core` | `npm run clean:core` | None |
+| `iris` | `npm run build:iris` | `npm run check:iris` | `npm run clean:iris` | `npm run release:iris` |
+| `mini-iris` | `npm run build:mini-iris` | `npm run check:mini-iris` | `npm run clean:mini-iris` | None |
+| `all` | `npm run build:all` | `npm run check:all` | `npm run clean:all` | None |
+
 ### Prerequisites
 
 - Node.js 18+

@@ -6,9 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && vite build --config vite.interceptor.config.ts && node build-zip.cjs",
+    "clean": "rm -rf dist builds",
+    "check": "npm run lint && npm run typecheck && npm run test",
     "typecheck": "tsc --noEmit",
-    "lint": "npx eslint src",
-    "lint:fix": "npx eslint src --fix"
+    "test": "vitest run",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix"
   },
   "dependencies": {
     "@iris/core": "*",

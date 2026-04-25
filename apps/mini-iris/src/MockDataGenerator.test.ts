@@ -58,13 +58,13 @@ describe('MockDataGenerator', () => {
     });
 
     it('should block ENL link if RES blocker exists', () => {
-        gen.addPortal('x1', 'R', -1, 0.5);
-        gen.addPortal('x2', 'R', 2, 0.5);
+        gen.addPortal('x1', 'R', -1, 1);
+        gen.addPortal('x2', 'R', 2, 1);
         gen.addLink('BLOCKER', 'R', 'x1', 'x2');
 
-        gen.addPortal('a', 'E', 1, 0);
-        gen.addPortal('b', 'E', 0, 2);
-        gen.addPortal('c', 'E', 2, 2);
+        gen.addPortal('a', 'E', -2, 0);
+        gen.addPortal('b', 'E', -2, 2);
+        gen.addPortal('c', 'E', 2, 0);
 
         gen.addLink('L-AB', 'E', 'a', 'b');
         gen.addLink('L-BC', 'E', 'b', 'c'); // This crosses BLOCKER!

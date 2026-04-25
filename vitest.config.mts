@@ -4,7 +4,7 @@ import path from 'path';
 export default defineConfig({
   test: {
     environment: 'node',
-    setupFiles: ['./vitest.setup.ts'],
+    setupFiles: [path.resolve(__dirname, './vitest.setup.ts')],
     exclude: ['**/node_modules/**', '**/dist/**', 'reference/**'],
     alias: {
       '@iris/core': path.resolve(__dirname, './packages/core/src/index.ts'),

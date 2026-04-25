@@ -9,7 +9,12 @@
     "build:chrome": "vite build --mode chrome",
     "build:firefox": "vite build --mode firefox",
     "build:all": "npm run build:chrome && npm run build:firefox",
-    "lint": "eslint src"
+    "clean": "rm -rf dist dist-firefox",
+    "check": "npm run lint && npm run typecheck && npm run test",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix"
   },
   "dependencies": {
     "@iris/core": "*",
