@@ -107,6 +107,39 @@ type DragRotateInternals = maplibregl.Map['dragRotate'] & {
   };
 };
 
+function extractPortalIdFromFeature(feature: maplibregl.MapGeoJSONFeature): string | null {
+  const properties = feature.properties as Record<string, unknown> | undefined;
+  if (!properties) return null;
+
+  const id = properties.id ?? properties.portalId ?? properties.guid;
+  return typeof id === 'string' && id.length > 0 ? id : null;
+}
+
+function getPortalSelectionCandidate(hits: maplibregl.MapGeoJSONFeature[]): string | null {
+  const priorityLayers = [
+    'portals',
+    'portal-history-visited',
+    'portal-history-captured',
+    'portal-history-scanned',
+    'artifacts',
+    'ornaments',
+    'plugin-points',
+  ];
+
+  for (const layerId of priorityLayers) {
+    const hit = hits.find((feature) => feature.layer?.id === layerId);
+    const portalId = hit ? extractPortalIdFromFeature(hit) : null;
+    if (portalId) return portalId;
+  }
+
+  for (const hit of hits) {
+    const portalId = extractPortalIdFromFeature(hit);
+    if (portalId) return portalId;
+  }
+
+  return null;
+}
+
 const INTERACTIVE_LAYERS = [
     'portals',
     'artifacts',
@@ -137,7 +170,10 @@ export function MapOverlay(): JSX.Element {
   const { lat, lng, zoom } = useStore((state) => state.mapState);
   const themeId = useStore((state) => state.themeId);
   const mapThemeId = useStore((state) => state.mapThemeId);
-  const theme = THEMES[themeId] || THEMES.INGRESS;
+    const theme = THEMES[themeId] || THEMES.INGRESS;
+    const touchStartPoint = useRef<{ x: number; y: number } | null>(null);
+    const touchMoved = useRef(false);
+    const touchFallbackTimer = useRef<number | null>(null);
 
   const getMapThemeTiles = (id: string): string[] => {
     const mt = MAP_THEMES[id] || MAP_THEMES.DARK;
@@ -586,32 +622,6 @@ export function MapOverlay(): JSX.Element {
       useStore.getState().reverseGeocode(center.lat, center.lng);
     });
 
-    const handlePointInteraction = (feature: maplibregl.MapGeoJSONFeature): void => {
-        try {
-            // Waive Xray vision on Firefox to safely access properties from the page context
-            const f = (feature as unknown as { wrappedJSObject?: maplibregl.MapGeoJSONFeature }).wrappedJSObject || feature;
-            if (!f) return;
-
-            // Extract properties safely
-            let props: GeoJSON.GeoJsonProperties = {};
-            try {
-                props = (f as maplibregl.MapGeoJSONFeature).properties || {};
-            } catch (e: unknown) {
-                logMapEvent('err-props', (e as Error).message);
-            }
-
-            const id = (props?.id || props?.portalId || props?.guid) as string | undefined;
-            
-            if (id) {
-                const finalId = String(id);
-                useStore.getState().selectPortal(finalId);
-                window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: finalId }, '*');
-            }
-        } catch (err: unknown) {
-            logMapEvent('err-interaction', (err as Error).message);
-        }
-    };
-
     const performSpatialFallback = (point: { x: number, y: number }, lngLat: maplibregl.LngLat, isTouch: boolean): void => {
         if (!map.current) return;
         
@@ -635,31 +645,170 @@ export function MapOverlay(): JSX.Element {
             })
         });
 
-        if (hits.length > 0) {
-            logMapEvent(isTouch ? 'tap-fallback' : 'click-fallback', hits[0].layer.id, 'hit');
-            handlePointInteraction(hits[0]);
-        } else {
-            // Last resort: Query RBush directly for the closest portal
-            // (Degrees buffer instead of pixels)
-            const degreeBuffer = 0.0005 * zoomFactor; 
-            const queryBounds = {
-                minLat: lngLat.lat - degreeBuffer,
-                minLng: lngLat.lng - degreeBuffer,
-                maxLat: lngLat.lat + degreeBuffer,
-                maxLng: lngLat.lng + degreeBuffer
-            };
-            const spatialHits = globalSpatialIndex.query(queryBounds);
-            const portals = spatialHits.filter(h => h.type === 'portal');
-            
-            if (portals.length > 0) {
-                logMapEvent(isTouch ? 'tap-rbush' : 'click-rbush', 'portal', 'hit');
-                useStore.getState().selectPortal(portals[0].id);
-                window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: portals[0].id }, '*');
-            } else {
-                logMapEvent(isTouch ? 'tap' : 'click', 'map-empty');
-                useStore.getState().selectPortal(null);
-            }
+        const portalIdFromRendered = getPortalSelectionCandidate(hits);
+        if (portalIdFromRendered) {
+            logMapEvent(isTouch ? 'tap-fallback' : 'click-fallback', 'portal', 'hit');
+            useStore.getState().selectPortal(portalIdFromRendered);
+            window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: portalIdFromRendered }, '*');
+            return;
         }
+
+        // Last resort: Query RBush directly for the closest portal by screen distance.
+        const degreeBuffer = 0.0005 * zoomFactor;
+        const queryBounds = {
+            minLat: lngLat.lat - degreeBuffer,
+            minLng: lngLat.lng - degreeBuffer,
+            maxLat: lngLat.lat + degreeBuffer,
+            maxLng: lngLat.lng + degreeBuffer
+        };
+        const spatialHits = globalSpatialIndex.query(queryBounds);
+        const store = useStore.getState();
+        const portalCandidates: Portal[] = spatialHits
+            .filter(h => h.type === 'portal')
+            .map(h => store.portals[h.id])
+            .filter((portal): portal is Portal => !!portal);
+
+        let closestPortal: Portal | null = null;
+        let closestDistance = Number.POSITIVE_INFINITY;
+        const maxDistance = isTouch ? 30 : 24;
+
+        portalCandidates.forEach((portal) => {
+            const projected = map.current?.project([portal.lng, portal.lat]);
+            if (!projected) return;
+
+            const dist = Math.hypot(projected.x - point.x, projected.y - point.y);
+            if (dist < closestDistance) {
+                closestDistance = dist;
+                closestPortal = portal;
+            }
+        });
+
+        const selectedPortal = closestPortal as Portal | null;
+        if (selectedPortal && closestDistance <= maxDistance) {
+            logMapEvent(isTouch ? 'tap-rbush' : 'click-rbush', 'portal', 'hit');
+            store.selectPortal(selectedPortal.id);
+            window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: selectedPortal.id }, '*');
+        } else {
+            logMapEvent(isTouch ? 'tap' : 'click', 'map-empty');
+            store.selectPortal(null);
+        }
+    };
+
+    const getDomTouchPoint = (clientX: number, clientY: number): { x: number; y: number } | null => {
+        if (!mapContainer.current) return null;
+
+        const rect = mapContainer.current.getBoundingClientRect();
+        return {
+            x: clientX - rect.left,
+            y: clientY - rect.top,
+        };
+    };
+
+    const getTouchPointFromEvent = (event: TouchEvent): { x: number; y: number } | null => {
+        const touch = event.touches[0] || event.changedTouches[0];
+        if (!touch) return null;
+
+        return getDomTouchPoint(touch.clientX, touch.clientY);
+    };
+
+    const clearTouchFallbackTimer = (): void => {
+        if (touchFallbackTimer.current === null) return;
+
+        window.clearTimeout(touchFallbackTimer.current);
+        touchFallbackTimer.current = null;
+    };
+
+    const resolveTouchTap = (touchPoint: { x: number; y: number }): void => {
+        if (!map.current) return;
+
+        const lngLat = map.current.unproject([touchPoint.x, touchPoint.y]);
+        performSpatialFallback(touchPoint, lngLat, true);
+    };
+
+    const handleTouchStart = (event: TouchEvent): void => {
+        const touchPoint = getTouchPointFromEvent(event);
+        if (!touchPoint || event.touches.length !== 1) {
+            touchStartPoint.current = null;
+            touchMoved.current = false;
+            clearTouchFallbackTimer();
+            return;
+        }
+
+        touchStartPoint.current = { x: touchPoint.x, y: touchPoint.y };
+        touchMoved.current = false;
+        clearTouchFallbackTimer();
+        touchFallbackTimer.current = window.setTimeout(() => {
+            if (!touchStartPoint.current || touchMoved.current) return;
+
+            resolveTouchTap(touchStartPoint.current);
+            touchStartPoint.current = null;
+            touchMoved.current = false;
+            touchFallbackTimer.current = null;
+        }, 450);
+    };
+
+    const handleTouchMove = (event: TouchEvent): void => {
+        const touchPoint = getTouchPointFromEvent(event);
+        if (!touchStartPoint.current || !touchPoint || event.touches.length !== 1) {
+            return;
+        }
+
+        const dx = touchPoint.x - touchStartPoint.current.x;
+        const dy = touchPoint.y - touchStartPoint.current.y;
+        if (Math.hypot(dx, dy) > 20) {
+            touchMoved.current = true;
+            clearTouchFallbackTimer();
+        }
+    };
+
+    const handleTouchEnd = (event: TouchEvent): void => {
+        const touchPoint = getTouchPointFromEvent(event);
+        if (!touchStartPoint.current || !touchPoint) {
+            touchStartPoint.current = null;
+            touchMoved.current = false;
+            clearTouchFallbackTimer();
+            return;
+        }
+
+        const dx = touchPoint.x - touchStartPoint.current.x;
+        const dy = touchPoint.y - touchStartPoint.current.y;
+        const movedFar = touchMoved.current || Math.hypot(dx, dy) > 20;
+        clearTouchFallbackTimer();
+
+        if (!movedFar) {
+            resolveTouchTap(touchPoint);
+        }
+
+        touchStartPoint.current = null;
+        touchMoved.current = false;
+    };
+
+    const handleTouchCancel = (): void => {
+        touchStartPoint.current = null;
+        touchMoved.current = false;
+        clearTouchFallbackTimer();
+    };
+
+    const handlePointerUp = (event: PointerEvent): void => {
+        if (event.pointerType !== 'touch' || !touchStartPoint.current) return;
+
+        const touchPoint = getDomTouchPoint(event.clientX, event.clientY);
+        if (!touchPoint) {
+            handleTouchCancel();
+            return;
+        }
+
+        const dx = touchPoint.x - touchStartPoint.current.x;
+        const dy = touchPoint.y - touchStartPoint.current.y;
+        const movedFar = touchMoved.current || Math.hypot(dx, dy) > 20;
+        clearTouchFallbackTimer();
+
+        if (!movedFar) {
+            resolveTouchTap(touchPoint);
+        }
+
+        touchStartPoint.current = null;
+        touchMoved.current = false;
     };
 
     // Implementation of the POC "Amsterdam" Click Model:
@@ -672,7 +821,20 @@ export function MapOverlay(): JSX.Element {
         performSpatialFallback(e.point, e.lngLat, false);
     });
 
+    window.addEventListener('touchstart', handleTouchStart, { passive: true, capture: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: true, capture: true });
+    window.addEventListener('touchend', handleTouchEnd, { passive: true, capture: true });
+    window.addEventListener('touchcancel', handleTouchCancel, { passive: true, capture: true });
+    window.addEventListener('pointerup', handlePointerUp, { passive: true, capture: true });
+    window.addEventListener('pointercancel', handleTouchCancel, { passive: true, capture: true });
+
     return (): void => {
+      window.removeEventListener('touchstart', handleTouchStart, true);
+      window.removeEventListener('touchmove', handleTouchMove, true);
+      window.removeEventListener('touchend', handleTouchEnd, true);
+      window.removeEventListener('touchcancel', handleTouchCancel, true);
+      window.removeEventListener('pointerup', handlePointerUp, true);
+      window.removeEventListener('pointercancel', handleTouchCancel, true);
       markerRegistry.forEach(({ marker }) => marker.remove());
       markerRegistry.clear();
       map.current?.remove();
