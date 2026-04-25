@@ -16,6 +16,12 @@
     pointer-events: auto;
 }
 
+.iris-topbar-left {
+    display: flex;
+    gap: 6px;
+    pointer-events: auto;
+}
+
 .iris-location-search {
     position: relative;
     flex-grow: 1;

@@ -163,6 +163,7 @@ interface TopbarProps {
     onToggleGameScore: () => void;
     onToggleRegionScore: () => void;
     onTogglePasscodes: () => void;
+    onToggleCameraControls: () => void;
     showMap: boolean;
 }
 
@@ -179,10 +180,14 @@ export function Topbar({
     onToggleGameScore,
     onToggleRegionScore,
     onTogglePasscodes,
+    onToggleCameraControls,
     showMap
 }: TopbarProps): JSX.Element {
     const [locStatus, setLocStatus] = useState<'NAVIGATE TO ME' | 'LOCATING...'>('NAVIGATE TO ME');
-    const [showMenu, setShowMenu] = useState(false);
+    const [showIntelMenu, setShowIntelMenu] = useState(false);
+    const [showMapMenu, setShowMapMenu] = useState(false);
+    const [showPluginsMenu, setShowPluginsMenu] = useState(false);
+
     const menuItems = useStore((state) => state.menuItems);
     const { lat, lng, zoom } = useStore((state) => state.mapState);
     const themeId = useStore((state) => state.themeId);
@@ -234,114 +239,181 @@ export function Topbar({
         }, '*');
     };
 
+    const toggleIntelMenu = (): void => {
+        setShowIntelMenu(!showIntelMenu);
+        setShowMapMenu(false);
+        setShowPluginsMenu(false);
+    };
+
+    const toggleMapMenu = (): void => {
+        setShowMapMenu(!showMapMenu);
+        setShowIntelMenu(false);
+        setShowPluginsMenu(false);
+    };
+
+    const togglePluginsMenu = (): void => {
+        setShowPluginsMenu(!showPluginsMenu);
+        setShowIntelMenu(false);
+        setShowMapMenu(false);
+    };
+
     return (
         <div className="iris-topbar">
-            {/* Left side: Menu button */}
-            <div className="iris-menu-container">
-                <button className="iris-menu-btn" style={SHARED_STYLES.btnStyle(true, theme.AQUA)} onClick={() => setShowMenu(!showMenu)}>☰</button>
-                {showMenu && (
-                    <div className="iris-menu-dropdown" style={{ borderColor: theme.AQUA }}>
-                        <button
-                            className="iris-menu-item"
-                            onClick={() => { onTogglePlayerStats(); setShowMenu(false); }}
-                            style={{ color: theme.AQUA }}
-                        >
-                            Player Stats
-                        </button>
-                        <button
-                            className="iris-menu-item"
-                            onClick={() => { onToggleInventory(); setShowMenu(false); }}
-                            style={{ color: theme.AQUA }}
-                        >
-                            Inventory
-                        </button>
-                        <button
-                            className="iris-menu-item"
-                            onClick={() => { onToggleGameScore(); setShowMenu(false); }}
-                            style={{ color: theme.AQUA }}
-                        >
-                            Global Scoreboard
-                        </button>
-                        <button
-                            className="iris-menu-item"
-                            onClick={() => { onToggleRegionScore(); setShowMenu(false); }}
-                            style={{ color: theme.AQUA }}
-                        >
-                            Region Scores
-                        </button>
-                        <button
-                            className="iris-menu-item"
-                            onClick={() => { onToggleFiltersPopup(); setShowMenu(false); }}
-                            style={{ color: theme.AQUA }}
-                        >
-                            Filters
-                        </button>
-                        <button
-                            className="iris-menu-item"
-                            onClick={() => { onToggleComm(); setShowMenu(false); }}
-                            style={{ color: theme.AQUA }}
-                        >
-                            COMM
-                        </button>
-                        <button
-                            className="iris-menu-item"
-                            onClick={() => { onToggleMissions(); setShowMenu(false); }}
-                            style={{ color: theme.AQUA }}
-                        >
-                            Missions
-                        </button>
-                        <button
-                            className="iris-menu-item"
-                            onClick={() => { onTogglePasscodes(); setShowMenu(false); }}
-                            style={{ color: theme.AQUA }}
-                        >
-                            Passcodes
-                        </button>
-                        <button
-                            className="iris-menu-item"
-                            onClick={() => { onTogglePlugins(); setShowMenu(false); }}
-                            style={{ color: theme.AQUA }}
-                        >
-                            Plugins
-                        </button>
-                        <button
-                            className="iris-menu-item"
-                            onClick={() => { onToggleMapSettings(); setShowMenu(false); }}
-                            style={{ color: theme.AQUA }}
-                        >
-                            Map Settings
-                        </button>
-                        <button
-                            className="iris-menu-item"
-                            onClick={() => { onToggleDiagnostics(); setShowMenu(false); }}
-                            style={{ color: theme.AQUA }}
-                        >
-                            Diagnostics
-                        </button>
-                        <button
-                            className="iris-menu-item"
-                            onClick={() => { onToggleMapVisibility(); setShowMenu(false); }}
-                            style={{ color: theme.AQUA }}
-                        >
-                            {showMap ? 'Use Intel Map' : 'Use IRIS Map'}
-                        </button>
-
-                        {menuItems.length > 0 && (
-                            <div className="iris-menu-divider" />
-                        )}
-
-                        {menuItems.map((item) => (
+            {/* Left side: Menu buttons */}
+            <div className="iris-topbar-left">
+                {/* Intel Menu */}
+                <div className="iris-menu-container">
+                    <button 
+                        className="iris-menu-btn" 
+                        title="Agent & Scores"
+                        style={SHARED_STYLES.btnStyle(true, theme.AQUA)} 
+                        onClick={toggleIntelMenu}
+                    >
+                        👤
+                    </button>
+                    {showIntelMenu && (
+                        <div className="iris-menu-dropdown" style={{ borderColor: theme.AQUA }}>
                             <button
-                                key={item.id}
-                                className={`iris-menu-item iris-menu-item-plugin-${item.id}`}
-                                onClick={() => { item.onClick(); setShowMenu(false); }}
+                                className="iris-menu-item"
+                                onClick={() => { onTogglePlayerStats(); setShowIntelMenu(false); }}
                                 style={{ color: theme.AQUA }}
                             >
-                                {item.label}
+                                👤 Player Stats
                             </button>
-                        ))}
-                    </div>
-                )}
+                            <button
+                                className="iris-menu-item"
+                                onClick={() => { onToggleInventory(); setShowIntelMenu(false); }}
+                                style={{ color: theme.AQUA }}
+                            >
+                                🎒 Inventory
+                            </button>
+                            <button
+                                className="iris-menu-item"
+                                onClick={() => { onToggleGameScore(); setShowIntelMenu(false); }}
+                                style={{ color: theme.AQUA }}
+                            >
+                                📊 Global Scoreboard
+                            </button>
+                            <button
+                                className="iris-menu-item"
+                                onClick={() => { onToggleRegionScore(); setShowIntelMenu(false); }}
+                                style={{ color: theme.AQUA }}
+                            >
+                                📉 Region Scores
+                            </button>
+                            <button
+                                className="iris-menu-item"
+                                onClick={() => { onToggleComm(); setShowIntelMenu(false); }}
+                                style={{ color: theme.AQUA }}
+                            >
+                                💬 COMM
+                            </button>
+                            <button
+                                className="iris-menu-item"
+                                onClick={() => { onTogglePasscodes(); setShowIntelMenu(false); }}
+                                style={{ color: theme.AQUA }}
+                            >
+                                🔑 Passcodes
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {/* Map Menu */}
+                <div className="iris-menu-container">
+                    <button 
+                        className="iris-menu-btn" 
+                        title="Map & System"
+                        style={SHARED_STYLES.btnStyle(true, theme.AQUA)} 
+                        onClick={toggleMapMenu}
+                    >
+                        🗺️
+                    </button>
+                    {showMapMenu && (
+                        <div className="iris-menu-dropdown" style={{ borderColor: theme.AQUA }}>
+                            <button
+                                className="iris-menu-item"
+                                onClick={() => { onToggleFiltersPopup(); setShowMapMenu(false); }}
+                                style={{ color: theme.AQUA }}
+                            >
+                                🔍 Filters
+                            </button>
+                            <button
+                                className="iris-menu-item"
+                                onClick={() => { onToggleMissions(); setShowMapMenu(false); }}
+                                style={{ color: theme.AQUA }}
+                            >
+                                🚀 Missions
+                            </button>
+                            <button
+                                className="iris-menu-item"
+                                onClick={() => { onToggleCameraControls(); setShowMapMenu(false); }}
+                                style={{ color: theme.AQUA }}
+                            >
+                                🎥 Camera Controls
+                            </button>
+                            <button
+                                className="iris-menu-item"
+                                onClick={() => { onToggleMapSettings(); setShowMapMenu(false); }}
+                                style={{ color: theme.AQUA }}
+                            >
+                                ⚙️ Map Settings
+                            </button>
+                            <button
+                                className="iris-menu-item"
+                                onClick={() => { onToggleDiagnostics(); setShowMapMenu(false); }}
+                                style={{ color: theme.AQUA }}
+                            >
+                                🛠️ Diagnostics
+                            </button>
+                            <button
+                                className="iris-menu-item"
+                                onClick={() => { onToggleMapVisibility(); setShowMapMenu(false); }}
+                                style={{ color: theme.AQUA }}
+                            >
+                                🔄 {showMap ? 'Use Intel Map' : 'Use IRIS Map'}
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {/* Plugins Menu */}
+                <div className="iris-menu-container">
+                    <button 
+                        className="iris-menu-btn" 
+                        title="Plugins"
+                        style={SHARED_STYLES.btnStyle(true, theme.AQUA)} 
+                        onClick={togglePluginsMenu}
+                    >
+                        🧩
+                    </button>
+                    {showPluginsMenu && (
+                        <div className="iris-menu-dropdown" style={{ borderColor: theme.AQUA }}>
+                            <button
+                                className="iris-menu-item"
+                                onClick={() => { onTogglePlugins(); setShowPluginsMenu(false); }}
+                                style={{ color: theme.AQUA }}
+                            >
+                                ⚙️ Plugins Manager
+                            </button>
+
+                            {menuItems.length > 0 && (
+                                <div className="iris-menu-divider" />
+                            )}
+
+                            {menuItems.map((item) => (
+                                <button
+                                    key={item.id}
+                                    className={`iris-menu-item iris-menu-item-plugin-${item.id}`}
+                                    onClick={() => { item.onClick(); setShowPluginsMenu(false); }}
+                                    style={{ color: theme.AQUA }}
+                                >
+                                    📦 {item.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Middle: Search input */}
