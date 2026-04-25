@@ -21,7 +21,7 @@ import { InventoryPopup } from './domains/inventory/InventoryPopup';
 import { MissionDetailsPopup } from './domains/missions/MissionDetailsPopup';
 import { MissionsPopup } from './domains/missions/MissionsPopup';
 import { PasscodePopup } from './domains/passcodes/PasscodePopup';
-import { CameraControlsPopup } from './domains/map/CameraControlsPopup';
+import { NavigationPopup } from './domains/map/NavigationPopup';
 
 // ---------------------------------------------------------------------------
 // IRISOverlay
@@ -43,7 +43,7 @@ export function IRISOverlay(): JSX.Element {
     const [showMap, setShowMap] = useState(true);
     const [showMissionsPopup, setShowMissionsPopup] = useState(false);
     const [showPasscodePopup, setShowPasscodePopup] = useState(false);
-    const [showCameraControlsPopup, setShowCameraControlsPopup] = useState(false);
+    const [showNavigationPopup, setShowNavigationPopup] = useState(false);
 
     const togglePlayerStatsPopup = (): void => setShowPlayerStatsPopup((value) => !value);
     const toggleInventoryPopup = (): void => {
@@ -89,7 +89,7 @@ export function IRISOverlay(): JSX.Element {
         }
         setShowMissionsPopup((value) => !value);
     };
-    const toggleCameraControlsPopup = (): void => setShowCameraControlsPopup((value) => !value);
+    const toggleNavigationPopup = (): void => setShowNavigationPopup((value) => !value);
 
     useEffect(() => {
         const themeHandler = (): void => toggleThemePopup();
@@ -135,7 +135,7 @@ export function IRISOverlay(): JSX.Element {
                 onToggleGameScore={toggleGameScorePopup}
                 onToggleRegionScore={toggleRegionScorePopup}
                 onTogglePasscodes={togglePasscodePopup}
-                onToggleCameraControls={toggleCameraControlsPopup}
+                onToggleNavigation={toggleNavigationPopup}
                 showMap={showMap}
             />
             <div style={{ display: showMap ? 'block' : 'none' }}>
@@ -198,8 +198,8 @@ export function IRISOverlay(): JSX.Element {
                 <PluginsPopup onClose={togglePluginsPopup} />
             )}
 
-            {showCameraControlsPopup && (
-                <CameraControlsPopup onClose={toggleCameraControlsPopup} />
+            {showNavigationPopup && (
+                <NavigationPopup onClose={toggleNavigationPopup} />
             )}
 
             <StatusBar />

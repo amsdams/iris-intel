@@ -123,7 +123,6 @@ export function MapOverlay(): JSX.Element {
   const mockOrnaments = useStore((state) => state.mockOrnaments);
   const missionDetails = useStore((state) => state.missionDetails);
   const pluginFeatures = useStore((state) => state.pluginFeatures);
-  const showMapControls = useStore((state) => state.showMapControls);
   const pluginMarkers = useRef<Map<string, MarkerRegistryEntry>>(new Map());
   const { lat, lng, zoom } = useStore((state) => state.mapState);
   const themeId = useStore((state) => state.themeId);
@@ -741,12 +740,22 @@ export function MapOverlay(): JSX.Element {
     map.current.on('moveend', onMove);
     map.current.on('zoomend', onMove);
     
+    // External command listeners
+    const commandHandler = (event: MessageEvent): void => {
+        const msg = event.data;
+        if (msg?.type === 'IRIS_PAN_MAP') {
+            panBy(msg.dx ?? 0, msg.dy ?? 0);
+        }
+    };
+    window.addEventListener('message', commandHandler);
+
     // Initial sync
     syncViewport();
 
     return () => {
       map.current?.off('moveend', onMove);
       map.current?.off('zoomend', onMove);
+      window.removeEventListener('message', commandHandler);
     };
   }, [styleLoaded, syncViewport]);
 
@@ -869,17 +878,6 @@ export function MapOverlay(): JSX.Element {
               ref={mapContainer}
               className="iris-map-container"
           />
-          {showMapControls && (
-              <div className="iris-map-controls">
-                  <button className="iris-map-control-btn" onPointerDown={(e) => { e.stopPropagation(); zoomIn(); }} title="Zoom In">+</button>
-                  <button className="iris-map-control-btn" onPointerDown={(e) => { e.stopPropagation(); zoomOut(); }} title="Zoom Out">−</button>
-                  <div className="iris-map-control-spacer" />
-                  <button className="iris-map-control-btn" onPointerDown={(e) => { e.stopPropagation(); panBy(0, -250); }} title="Pan Up">↑</button>
-                  <button className="iris-map-control-btn" onPointerDown={(e) => { e.stopPropagation(); panBy(0, 250); }} title="Pan Down">↓</button>
-                  <button className="iris-map-control-btn" onPointerDown={(e) => { e.stopPropagation(); panBy(-250, 0); }} title="Pan Left">←</button>
-                  <button className="iris-map-control-btn" onPointerDown={(e) => { e.stopPropagation(); panBy(250, 0); }} title="Pan Right">→</button>
-              </div>
-          )}
       </div>
   );
 }

@@ -163,7 +163,7 @@ interface TopbarProps {
     onToggleGameScore: () => void;
     onToggleRegionScore: () => void;
     onTogglePasscodes: () => void;
-    onToggleCameraControls: () => void;
+    onToggleNavigation: () => void;
     showMap: boolean;
 }
 
@@ -180,16 +180,16 @@ export function Topbar({
     onToggleGameScore,
     onToggleRegionScore,
     onTogglePasscodes,
-    onToggleCameraControls,
+    onToggleNavigation,
     showMap
 }: TopbarProps): JSX.Element {
     const [locStatus, setLocStatus] = useState<'NAVIGATE TO ME' | 'LOCATING...'>('NAVIGATE TO ME');
     const [showIntelMenu, setShowIntelMenu] = useState(false);
     const [showMapMenu, setShowMapMenu] = useState(false);
+    const [showSystemMenu, setShowSystemMenu] = useState(false);
     const [showPluginsMenu, setShowPluginsMenu] = useState(false);
 
     const menuItems = useStore((state) => state.menuItems);
-    const { lat, lng, zoom } = useStore((state) => state.mapState);
     const themeId = useStore((state) => state.themeId);
     const theme = THEMES[themeId] || THEMES.INGRESS;
 
@@ -221,33 +221,24 @@ export function Topbar({
         );
     };
 
-    const zoomIn = (): void => {
-        const nextZoom = Math.min(zoom + 1, 20);
-        window.postMessage({
-            type: 'IRIS_MOVE_MAP',
-            center: { lat, lng },
-            zoom: nextZoom,
-        }, '*');
-    };
-
-    const zoomOut = (): void => {
-        const nextZoom = Math.max(zoom - 1, 3);
-        window.postMessage({
-            type: 'IRIS_MOVE_MAP',
-            center: { lat, lng },
-            zoom: nextZoom,
-        }, '*');
-    };
-
     const toggleIntelMenu = (): void => {
         setShowIntelMenu(!showIntelMenu);
         setShowMapMenu(false);
+        setShowSystemMenu(false);
         setShowPluginsMenu(false);
     };
 
     const toggleMapMenu = (): void => {
         setShowMapMenu(!showMapMenu);
         setShowIntelMenu(false);
+        setShowSystemMenu(false);
+        setShowPluginsMenu(false);
+    };
+
+    const toggleSystemMenu = (): void => {
+        setShowSystemMenu(!showSystemMenu);
+        setShowIntelMenu(false);
+        setShowMapMenu(false);
         setShowPluginsMenu(false);
     };
 
@@ -255,6 +246,7 @@ export function Topbar({
         setShowPluginsMenu(!showPluginsMenu);
         setShowIntelMenu(false);
         setShowMapMenu(false);
+        setShowSystemMenu(false);
     };
 
     return (
@@ -323,7 +315,7 @@ export function Topbar({
                 <div className="iris-menu-container">
                     <button 
                         className="iris-menu-btn" 
-                        title="Map & System"
+                        title="Map Data"
                         style={SHARED_STYLES.btnStyle(true, theme.AQUA)} 
                         onClick={toggleMapMenu}
                     >
@@ -331,6 +323,13 @@ export function Topbar({
                     </button>
                     {showMapMenu && (
                         <div className="iris-menu-dropdown" style={{ borderColor: theme.AQUA }}>
+                            <button
+                                className="iris-menu-item"
+                                onClick={() => { onToggleNavigation(); setShowMapMenu(false); }}
+                                style={{ color: theme.AQUA }}
+                            >
+                                🧭 Navigation
+                            </button>
                             <button
                                 className="iris-menu-item"
                                 onClick={() => { onToggleFiltersPopup(); setShowMapMenu(false); }}
@@ -345,30 +344,46 @@ export function Topbar({
                             >
                                 🚀 Missions
                             </button>
+                        </div>
+                    )}
+                </div>
+
+                {/* System Menu */}
+                <div className="iris-menu-container">
+                    <button 
+                        className="iris-menu-btn" 
+                        title="System"
+                        style={SHARED_STYLES.btnStyle(true, theme.AQUA)} 
+                        onClick={toggleSystemMenu}
+                    >
+                        ⚙️
+                    </button>
+                    {showSystemMenu && (
+                        <div className="iris-menu-dropdown" style={{ borderColor: theme.AQUA }}>
                             <button
                                 className="iris-menu-item"
-                                onClick={() => { onToggleCameraControls(); setShowMapMenu(false); }}
+                                onClick={() => { onTogglePlugins(); setShowSystemMenu(false); }}
                                 style={{ color: theme.AQUA }}
                             >
-                                🎥 Camera Controls
+                                🧩 Plugins Manager
                             </button>
                             <button
                                 className="iris-menu-item"
-                                onClick={() => { onToggleMapSettings(); setShowMapMenu(false); }}
+                                onClick={() => { onToggleMapSettings(); setShowSystemMenu(false); }}
                                 style={{ color: theme.AQUA }}
                             >
                                 ⚙️ Map Settings
                             </button>
                             <button
                                 className="iris-menu-item"
-                                onClick={() => { onToggleDiagnostics(); setShowMapMenu(false); }}
+                                onClick={() => { onToggleDiagnostics(); setShowSystemMenu(false); }}
                                 style={{ color: theme.AQUA }}
                             >
                                 🛠️ Diagnostics
                             </button>
                             <button
                                 className="iris-menu-item"
-                                onClick={() => { onToggleMapVisibility(); setShowMapMenu(false); }}
+                                onClick={() => { onToggleMapVisibility(); setShowSystemMenu(false); }}
                                 style={{ color: theme.AQUA }}
                             >
                                 🔄 {showMap ? 'Use Intel Map' : 'Use IRIS Map'}
@@ -381,24 +396,18 @@ export function Topbar({
                 <div className="iris-menu-container">
                     <button 
                         className="iris-menu-btn" 
-                        title="Plugins"
+                        title="Plugin Actions"
                         style={SHARED_STYLES.btnStyle(true, theme.AQUA)} 
                         onClick={togglePluginsMenu}
                     >
-                        🧩
+                        📦
                     </button>
                     {showPluginsMenu && (
                         <div className="iris-menu-dropdown" style={{ borderColor: theme.AQUA }}>
-                            <button
-                                className="iris-menu-item"
-                                onClick={() => { onTogglePlugins(); setShowPluginsMenu(false); }}
-                                style={{ color: theme.AQUA }}
-                            >
-                                ⚙️ Plugins Manager
-                            </button>
-
-                            {menuItems.length > 0 && (
-                                <div className="iris-menu-divider" />
+                            {menuItems.length === 0 && (
+                                <div className="iris-menu-item" style={{ color: '#666', fontStyle: 'italic' }}>
+                                    No plugin items.
+                                </div>
                             )}
 
                             {menuItems.map((item) => (
@@ -430,27 +439,6 @@ export function Topbar({
                     style={SHARED_STYLES.btnStyle(locStatus !== 'LOCATING...', theme.AQUA)}
                 >
                     {locStatus === 'LOCATING...' ? '...' : '◎'}
-                </button>
-            </div>
-
-            {/* Floating Zoom controls (Top Right, under geolocate on mobile) */}
-            <div className="iris-zoom-group">
-                <button
-                    className="iris-zoom-btn"
-                    onClick={zoomIn}
-                    style={SHARED_STYLES.btnStyle(true, theme.AQUA)}
-                >
-                    +
-                </button>
-                <div className="iris-zoom-indicator" style={{ color: theme.AQUA }}>
-                    Z{Math.floor(zoom)}
-                </div>
-                <button
-                    className="iris-zoom-btn"
-                    onClick={zoomOut}
-                    style={SHARED_STYLES.btnStyle(true, theme.AQUA)}
-                >
-                    -
                 </button>
             </div>
         </div>
