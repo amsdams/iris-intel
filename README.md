@@ -6,7 +6,7 @@ A modern, open-source browser extension alternative to IITC — built with TypeS
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)
 ![Manifest](https://img.shields.io/badge/Manifest-V3-green)
-![Status](https://img.shields.io/badge/status-PoC-orange)
+![Status](https://img.shields.io/badge/status-Active-orange)
 
 ---
 
@@ -14,7 +14,7 @@ A modern, open-source browser extension alternative to IITC — built with TypeS
 
 IRIS overlays a fully interactive [MapLibre GL](https://maplibre.org/) map on top of [Ingress Intel](https://intel.ingress.com), intercepting the Intel API to render portals, links and fields in real time. It is designed as a modern, maintainable alternative to [IITC-CE](https://iitc.app/) with a clean TypeScript codebase, a structured plugin API, and first-class mobile browser support.
 
-> **Note:** IRIS is a proof of concept. Use at your own risk and in accordance with Niantic's Terms of Service.
+> **Note:** IRIS is under active development. Use at your own risk and in accordance with Niantic's Terms of Service.
 
 ---
 
@@ -47,6 +47,8 @@ IRIS overlays a fully interactive [MapLibre GL](https://maplibre.org/) map on to
 
 ```
 IRIS/
+├── apps/
+│   └── mini-iris/         # Compact secondary app with a different UI and interaction model
 ├── packages/
 │   ├── extension/          # Browser extension (Manifest V3)
 │   │   ├── manifest.json
@@ -54,7 +56,7 @@ IRIS/
 │   │       ├── content/    # Content script + main-world interceptor
 │   │       ├── ui/         # Preact components (Overlay, MapOverlay, Popup)
 │   │       └── core/       # Re-exports from @iris/core
-│   ├── core/               # Zustand store, types, plugin manager
+│   ├── core/               # Shared platform: Zustand store, types, plugin manager
 │   └── plugins/            # First-party plugins (portal-names, player-tracker, etc.)
 ```
 

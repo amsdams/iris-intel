@@ -10,7 +10,7 @@ export default tseslint.config(
   ...tseslint.configs.strict,
   ...tseslint.configs.stylistic,
   {
-    files: ['**/vite.config.ts', 'poc-map-interaction/build-zip.cjs'],
+    files: ['**/vite.config.ts', 'apps/mini-iris/build-zip.cjs'],
     languageOptions: {
         globals: {
             ...globals.node,
@@ -18,14 +18,6 @@ export default tseslint.config(
     },
     rules: {
         '@typescript-eslint/no-require-imports': 'off',
-    }
-  },
-  {
-    files: ['poc-map-interaction/public/interceptor.js'],
-    languageOptions: {
-        globals: {
-            ...globals.browser,
-        }
     }
   },
   {

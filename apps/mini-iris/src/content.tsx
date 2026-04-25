@@ -19,7 +19,7 @@ import { useEndpointTelemetry } from './useEndpointTelemetry';
 import type { PlextRequestBounds } from './plextRequests';
 import { throttle } from './GeoUtils';
 
-console.log("POC (TS): Tactical Overlay | v1.3.3 | Stable Orchestration");
+console.log("Mini IRIS (TS): Tactical Overlay | v1.3.3 | Stable Orchestration");
 
 const DEFAULT_MAP_CENTER: [number, number] = [4.8952, 52.3702];
 const DEFAULT_MAP_ZOOM = 13;
@@ -99,7 +99,7 @@ function TacticalOverlay(): h.JSX.Element {
 
     const logEvent = useCallback((msg: string): void => {
         setEvents(prev => [{ time: new Date().toLocaleTimeString(), msg }, ...prev].slice(0, 30));
-        console.log(`[POC] ${msg}`);
+        console.log(`[Mini IRIS] ${msg}`);
     }, []);
 
     useEffect(() => {

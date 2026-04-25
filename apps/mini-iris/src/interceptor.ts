@@ -4,12 +4,12 @@ import { installPlayerObserver } from './interceptor/player';
 import { installRequestHandlers } from './interceptor/requests';
 
 (function() {
-    console.log('IRIS POC: Interceptor initializing (Modular TS)...');
+    console.log('Mini IRIS: Interceptor initializing (Modular TS)...');
     
     installNetworkHooks();
     installMapHooks();
     installPlayerObserver();
     installRequestHandlers();
 
-    console.log('IRIS POC: Web-Accessible Interceptor Fully Active');
+    console.log('Mini IRIS: Web-Accessible Interceptor Fully Active');
 })();

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Map Interaction POC (Vite/TS)",
+  "name": "Mini IRIS",
   "version": "1.0.1",
-  "description": "POC to test layered map interactions in Firefox Mobile extensions",
+  "description": "Compact IRIS map experience with an alternate UI and interaction model",
   "host_permissions": [
     "https://intel.ingress.com/*",
     "https://*.basemaps.cartocdn.com/*",
@@ -23,7 +23,7 @@
   ],
   "browser_specific_settings": {
     "gecko": {
-      "id": "poc-map-interaction-v2@iris.debug",
+      "id": "mini-iris@iris.debug",
       "strict_min_version": "109.0"
     }
   }

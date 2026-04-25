@@ -9,8 +9,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@iris/core': resolve(__dirname, '../packages/core/src'),
-      '@iris/plugin-sdk': resolve(__dirname, '../packages/plugin-sdk/src'),
+      '@iris/core': resolve(__dirname, '../../packages/core/src'),
+      '@iris/plugin-sdk': resolve(__dirname, '../../packages/plugin-sdk/src'),
     },
   },
   build: {

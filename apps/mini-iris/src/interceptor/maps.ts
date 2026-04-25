@@ -16,7 +16,7 @@ export function installMapHooks(): void {
             } as any;
             win.google.maps.Map.prototype = OriginalMap.prototype;
             win._iris_intel_map_hooked = true;
-            console.log('IRIS POC: Google Maps Hooked');
+            console.log('Mini IRIS: Google Maps Hooked');
         }
         
         // 2. Leaflet (IITC)
@@ -28,7 +28,7 @@ export function installMapHooks(): void {
                 if (k) {
                     win._iris_intel_map = (mapEl as any)[k];
                     win._iris_map_type = 'leaflet';
-                    console.log('IRIS POC: Leaflet Map Found');
+                    console.log('Mini IRIS: Leaflet Map Found');
                 }
             }
         }

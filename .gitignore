@@ -61,3 +61,6 @@ pnpm-debug.log*
 docs/PLAYER-TRACKER.md
 docs/REF-IITC_BUTTON.md
 /poc-map-interaction/builds/
+/docs/
+/apps/mini-iris/docs/
+/apps/mini-iris/builds/

@@ -462,7 +462,7 @@ async function sendIntelRequest(endpoint: RequestEndpoint, key: string, url: str
         window.postMessage({ type: 'IRIS_DATA', url, data: data, params: body }, '*');
     } catch (e) {
         markEndpointFailure(endpoint, e instanceof Error ? e.message : 'request failed');
-        console.error(`IRIS POC: ${errorMsg}`, e);
+        console.error(`Mini IRIS: ${errorMsg}`, e);
     }
 }
 

@@ -2,6 +2,11 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@iris/core': resolve(__dirname, '../../packages/core/src'),
+    },
+  },
   build: {
     outDir: 'dist',
     emptyOutDir: false,

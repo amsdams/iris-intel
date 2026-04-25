@@ -4,16 +4,20 @@
   "version": "0.1.2",
   "workspaces": [
     "packages/*",
-    "poc-map-interaction"
+    "apps/*"
   ],
   "scripts": {
     "dev": "npm run dev -w packages/extension",
+    "dev:mini-iris": "npm run dev -w apps/mini-iris",
     "build": "npm run build:chrome -w packages/extension",
+    "build:mini-iris": "npm run build -w apps/mini-iris",
     "build:chrome": "npm run build:chrome -w packages/extension",
     "build:firefox": "npm run build:firefox -w packages/extension",
     "build:all": "npm run build:chrome && npm run build:firefox",
     "test": "vitest run",
     "test:store-bounds": "vitest run packages/core/src/store.bounds.test.ts",
+    "typecheck:mini-iris": "npm run typecheck -w apps/mini-iris",
+    "lint:mini-iris": "npm run lint -w apps/mini-iris",
     "typecheck": "tsc --noEmit",
     "version:bump": "bash ./scripts/release-version.sh",
     "release:chrome": "mkdir -p out && TS=$(date +%Y%m%d%H%M) && cd packages/extension/dist && zip -r ../../../out/iris-chrome-$TS.zip .",

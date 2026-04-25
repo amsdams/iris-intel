@@ -224,7 +224,7 @@ Improvement ideas:
 
 | Idea                                                                                 | Status | Notes                                                                                                    |
 |--------------------------------------------------------------------------------------|--------|----------------------------------------------------------------------------------------------------------|
-| Add field selection to the shared map interaction model                              | Open   | borrow the POC behavior that can identify a clicked field and expose basic field info in a popup/sidecar |
+| Add field selection to the shared map interaction model                              | Open   | borrow the mini-IRIS behavior that can identify a clicked field and expose basic field info in a popup/sidecar |
 | Add link selection to the shared map interaction model                               | Open   | support line-click hit testing and a minimal details view for the selected link                          |
 | Add artifact-specific handling after portal/field/link selection feels settled       | Open   | keep artifacts separate for now; decide later whether they open portal details or their own details view |
 | Expand hover feedback only if it needs richer states than a pointer cursor           | Open   | keep hover simple unless future selected targets need distinct affordances                               |
@@ -749,11 +749,4 @@ Tasks:
 
 Active tracker:
 
-- [`docs/WORK_ITEMS.md`](/Users/jula/ittca/docs/WORK_ITEMS.md)
-
-Dated snapshot set:
-
-- [`docs/20260402/IITC-PLAN.md`](/Users/jula/ittca/docs/20260402/IITC-PLAN.md)
-- [`docs/20260402/IITC-PLAN_PHASE-1.md`](/Users/jula/ittca/docs/20260402/IITC-PLAN_PHASE-1.md)
-- [`docs/20260402/FINDINGS-IITC_GAPS.md`](/Users/jula/ittca/docs/20260402/FINDINGS-IITC_GAPS.md)
-- [`docs/20260402/UI_REVIEW_INTEL_FIRST.md`](/Users/jula/ittca/docs/20260402/UI_REVIEW_INTEL_FIRST.md)
+- [`docs/WORK_ITEMS.md`](docs/WORK_ITEMS.md)
