@@ -171,9 +171,11 @@ export function MapOverlay(): JSX.Element {
   const themeId = useStore((state) => state.themeId);
   const mapThemeId = useStore((state) => state.mapThemeId);
     const theme = THEMES[themeId] || THEMES.INGRESS;
-    const touchStartPoint = useRef<{ x: number; y: number } | null>(null);
-    const touchMoved = useRef(false);
-    const touchFallbackTimer = useRef<number | null>(null);
+    const touchState = useRef({
+      maxFingers: 0,
+      hasMoved: false,
+      startPoint: { x: 0, y: 0 }
+    });
 
   const getMapThemeTiles = (id: string): string[] => {
     const mt = MAP_THEMES[id] || MAP_THEMES.DARK;
@@ -310,22 +312,6 @@ export function MapOverlay(): JSX.Element {
     getGeoJsonSource('plugin-features')?.setData(pluginFeatures);
 
   }, [styleLoaded, showFields, showLinks, showOrnaments, showArtifacts, showResistance, showEnlightened, showMachina, showUnclaimedPortals, showLevel, showHealth, artifacts, mockOrnaments, missionDetails, pluginFeatures]);
-
-  // Direct DOM listener as a fallback/debug
-  useEffect((): undefined | (() => void) => {
-    const el = mapContainer.current;
-    if (!el) return;
-
-    const handleTouchStart = (): void => {
-        useStore.getState().addInteractionLog({
-            type: 'click',
-            layerId: 'DOM-touchstart'
-        });
-    };
-
-    el.addEventListener('touchstart', handleTouchStart, { passive: true });
-    return (): void => el.removeEventListener('touchstart', handleTouchStart);
-  }, []);
 
   // ---------------------------------------------------------------------------
   // Initialise MapLibre map once on mount
@@ -694,123 +680,6 @@ export function MapOverlay(): JSX.Element {
         }
     };
 
-    const getDomTouchPoint = (clientX: number, clientY: number): { x: number; y: number } | null => {
-        if (!mapContainer.current) return null;
-
-        const rect = mapContainer.current.getBoundingClientRect();
-        return {
-            x: clientX - rect.left,
-            y: clientY - rect.top,
-        };
-    };
-
-    const getTouchPointFromEvent = (event: TouchEvent): { x: number; y: number } | null => {
-        const touch = event.touches[0] || event.changedTouches[0];
-        if (!touch) return null;
-
-        return getDomTouchPoint(touch.clientX, touch.clientY);
-    };
-
-    const clearTouchFallbackTimer = (): void => {
-        if (touchFallbackTimer.current === null) return;
-
-        window.clearTimeout(touchFallbackTimer.current);
-        touchFallbackTimer.current = null;
-    };
-
-    const resolveTouchTap = (touchPoint: { x: number; y: number }): void => {
-        if (!map.current) return;
-
-        const lngLat = map.current.unproject([touchPoint.x, touchPoint.y]);
-        performSpatialFallback(touchPoint, lngLat, true);
-    };
-
-    const handleTouchStart = (event: TouchEvent): void => {
-        const touchPoint = getTouchPointFromEvent(event);
-        if (!touchPoint || event.touches.length !== 1) {
-            touchStartPoint.current = null;
-            touchMoved.current = false;
-            clearTouchFallbackTimer();
-            return;
-        }
-
-        touchStartPoint.current = { x: touchPoint.x, y: touchPoint.y };
-        touchMoved.current = false;
-        clearTouchFallbackTimer();
-        touchFallbackTimer.current = window.setTimeout(() => {
-            if (!touchStartPoint.current || touchMoved.current) return;
-
-            resolveTouchTap(touchStartPoint.current);
-            touchStartPoint.current = null;
-            touchMoved.current = false;
-            touchFallbackTimer.current = null;
-        }, 450);
-    };
-
-    const handleTouchMove = (event: TouchEvent): void => {
-        const touchPoint = getTouchPointFromEvent(event);
-        if (!touchStartPoint.current || !touchPoint || event.touches.length !== 1) {
-            return;
-        }
-
-        const dx = touchPoint.x - touchStartPoint.current.x;
-        const dy = touchPoint.y - touchStartPoint.current.y;
-        if (Math.hypot(dx, dy) > 20) {
-            touchMoved.current = true;
-            clearTouchFallbackTimer();
-        }
-    };
-
-    const handleTouchEnd = (event: TouchEvent): void => {
-        const touchPoint = getTouchPointFromEvent(event);
-        if (!touchStartPoint.current || !touchPoint) {
-            touchStartPoint.current = null;
-            touchMoved.current = false;
-            clearTouchFallbackTimer();
-            return;
-        }
-
-        const dx = touchPoint.x - touchStartPoint.current.x;
-        const dy = touchPoint.y - touchStartPoint.current.y;
-        const movedFar = touchMoved.current || Math.hypot(dx, dy) > 20;
-        clearTouchFallbackTimer();
-
-        if (!movedFar) {
-            resolveTouchTap(touchPoint);
-        }
-
-        touchStartPoint.current = null;
-        touchMoved.current = false;
-    };
-
-    const handleTouchCancel = (): void => {
-        touchStartPoint.current = null;
-        touchMoved.current = false;
-        clearTouchFallbackTimer();
-    };
-
-    const handlePointerUp = (event: PointerEvent): void => {
-        if (event.pointerType !== 'touch' || !touchStartPoint.current) return;
-
-        const touchPoint = getDomTouchPoint(event.clientX, event.clientY);
-        if (!touchPoint) {
-            handleTouchCancel();
-            return;
-        }
-
-        const dx = touchPoint.x - touchStartPoint.current.x;
-        const dy = touchPoint.y - touchStartPoint.current.y;
-        const movedFar = touchMoved.current || Math.hypot(dx, dy) > 20;
-        clearTouchFallbackTimer();
-
-        if (!movedFar) {
-            resolveTouchTap(touchPoint);
-        }
-
-        touchStartPoint.current = null;
-        touchMoved.current = false;
-    };
-
     // Implementation of the POC "Amsterdam" Click Model:
     // One global click handler that uses RBush for hit detection.
     // This is more robust on mobile than layer-specific listeners.
@@ -821,20 +690,42 @@ export function MapOverlay(): JSX.Element {
         performSpatialFallback(e.point, e.lngLat, false);
     });
 
-    window.addEventListener('touchstart', handleTouchStart, { passive: true, capture: true });
-    window.addEventListener('touchmove', handleTouchMove, { passive: true, capture: true });
-    window.addEventListener('touchend', handleTouchEnd, { passive: true, capture: true });
-    window.addEventListener('touchcancel', handleTouchCancel, { passive: true, capture: true });
-    window.addEventListener('pointerup', handlePointerUp, { passive: true, capture: true });
-    window.addEventListener('pointercancel', handleTouchCancel, { passive: true, capture: true });
+    map.current.on('touchstart', (e) => {
+        if (e.points && e.points.length > 0) {
+            touchState.current = {
+                startPoint: {
+                    x: e.points[0].x,
+                    y: e.points[0].y
+                },
+                hasMoved: false,
+                maxFingers: e.points.length
+            };
+        }
+        logMapEvent('touchstart', 'map');
+    });
+
+    map.current.on('touchmove', (e) => {
+        if (e.points && e.points.length > 0) {
+            const dx = e.points[0].x - touchState.current.startPoint.x;
+            const dy = e.points[0].y - touchState.current.startPoint.y;
+            if (Math.sqrt(dx * dx + dy * dy) > 20) {
+                touchState.current.hasMoved = true;
+            }
+        }
+    });
+
+    map.current.on('touchend', (e) => {
+        if (touchState.current.maxFingers === 1 && !touchState.current.hasMoved) {
+            performSpatialFallback(e.point, e.lngLat, true);
+        }
+
+        if (e.originalEvent.touches.length === 0) {
+            touchState.current.maxFingers = 0;
+            touchState.current.hasMoved = false;
+        }
+    });
 
     return (): void => {
-      window.removeEventListener('touchstart', handleTouchStart, true);
-      window.removeEventListener('touchmove', handleTouchMove, true);
-      window.removeEventListener('touchend', handleTouchEnd, true);
-      window.removeEventListener('touchcancel', handleTouchCancel, true);
-      window.removeEventListener('pointerup', handlePointerUp, true);
-      window.removeEventListener('pointercancel', handleTouchCancel, true);
       markerRegistry.forEach(({ marker }) => marker.remove());
       markerRegistry.clear();
       map.current?.remove();
