@@ -1,8 +1,7 @@
-import { h, JSX } from 'preact';
+import { h, JSX, Fragment } from 'preact';
 import { useState, useEffect, useCallback } from 'preact/hooks';
 import { useStore } from '@iris/core';
 import { MapOverlay } from './domains/map/MapOverlay';
-import { Topbar } from './shared/Topbar';
 import { PlayerStatsPopup } from './domains/player/PlayerStatsPopup';
 import { DiagnosticsPopup } from './domains/debug/DiagnosticsPopup';
 import { FiltersPopup } from './domains/filters/FiltersPopup';
@@ -24,6 +23,7 @@ import { PasscodePopup } from './domains/passcodes/PasscodePopup';
 import { NavigationPopup } from './domains/map/NavigationPopup';
 import { BottomDock } from './shared/BottomDock';
 import { DashboardOverlay, DashboardType } from './shared/DashboardOverlay';
+import { LocationSearchPopup } from './shared/LocationSearchPopup';
 
 // ---------------------------------------------------------------------------
 // IRISOverlay
@@ -46,54 +46,61 @@ export function IRISOverlay(): JSX.Element {
     const [showMissionsPopup, setShowMissionsPopup] = useState(false);
     const [showPasscodePopup, setShowPasscodePopup] = useState(false);
     const [showNavigationPopup, setShowNavigationPopup] = useState(false);
+    const [showSearchPopup, setShowSearchPopup] = useState(false);
     
     const [activeDashboard, setActiveDashboard] = useState<DashboardType>(null);
+    const [locating, setLocating] = useState(false);
 
-    const togglePlayerStatsPopup = (): void => setShowPlayerStatsPopup((value) => !value);
+    const themeId = useStore((state) => state.themeId);
+    const theme = useStore((state) => state.themeId === 'INGRESS' ? { AQUA: '#0ff' } : { AQUA: '#0ff' }); // Simple fallback
+
+    const togglePlayerStatsPopup = (): void => setShowPlayerStatsPopup((v) => !v);
     const toggleInventoryPopup = (): void => {
-        if (!showInventoryPopup) {
-            window.postMessage({ type: 'IRIS_INVENTORY_REQUEST' }, '*');
-        }
-        setShowInventoryPopup((value) => !value);
+        if (!showInventoryPopup) window.postMessage({ type: 'IRIS_INVENTORY_REQUEST' }, '*');
+        setShowInventoryPopup((v) => !v);
     };
-    const toggleDiagnosticsPopup = (): void => setShowDiagnosticsPopup((value) => !value);
-    const toggleFiltersPopup = (): void => setShowFiltersPopup((value) => !value);
-    const toggleCommPopup = (): void => setShowCommPopup((value) => !value);
-    const toggleThemePopup = useCallback((): void => setShowThemePopup((value) => !value), []);
-    const toggleMapSettingsPopup = (): void => setShowMapSettingsPopup((value) => !value);
-    const togglePluginsPopup = (): void => setShowPluginsPopup((value) => !value);
+    const toggleDiagnosticsPopup = (): void => setShowDiagnosticsPopup((v) => !v);
+    const toggleFiltersPopup = (): void => setShowFiltersPopup((v) => !v);
+    const toggleCommPopup = (): void => setShowCommPopup((v) => !v);
+    const toggleThemePopup = useCallback((): void => setShowThemePopup((v) => !v), []);
+    const toggleMapSettingsPopup = (): void => setShowMapSettingsPopup((v) => !v);
+    const togglePluginsPopup = (): void => setShowPluginsPopup((v) => !v);
     const toggleGameScorePopup = (): void => {
-        if (!showGameScorePopup) {
-            window.postMessage({ type: 'IRIS_GAME_SCORE_REQUEST' }, '*');
-        }
-        setShowGameScorePopup((value) => !value);
+        if (!showGameScorePopup) window.postMessage({ type: 'IRIS_GAME_SCORE_REQUEST' }, '*');
+        setShowGameScorePopup((v) => !v);
     };
     const toggleRegionScorePopup = (): void => {
         if (!showRegionScorePopup) {
             const { lat, lng } = useStore.getState().mapState;
-            window.postMessage({ 
-                type: 'IRIS_REGION_SCORE_REQUEST',
-                lat, 
-                lng 
-            }, '*');
+            window.postMessage({ type: 'IRIS_REGION_SCORE_REQUEST', lat, lng }, '*');
         }
-        setShowRegionScorePopup((value) => !value);
+        setShowRegionScorePopup((v) => !v);
     };
-    const toggleExportPopup = useCallback((): void => setShowExportPopup((value) => !value), []);
-    const toggleMapVisibility = (): void => setShowMap((value) => !value);
+    const toggleExportPopup = useCallback((): void => setShowExportPopup((v) => !v), []);
+    const toggleMapVisibility = (): void => setShowMap((v) => !v);
     const togglePasscodePopup = (): void => {
-        if (!showPasscodePopup) {
-            useStore.getState().clearPasscodeRedeemState();
-        }
-        setShowPasscodePopup((value) => !value);
+        if (!showPasscodePopup) useStore.getState().clearPasscodeRedeemState();
+        setShowPasscodePopup((v) => !v);
     };
     const toggleMissionsPopup = (): void => {
-        if (!showMissionsPopup) {
-            useStore.getState().setMissionsPortalId(null);
-        }
-        setShowMissionsPopup((value) => !value);
+        if (!showMissionsPopup) useStore.getState().setMissionsPortalId(null);
+        setShowMissionsPopup((v) => !v);
     };
-    const toggleNavigationPopup = (): void => setShowNavigationPopup((value) => !value);
+    const toggleNavigationPopup = (): void => setShowNavigationPopup((v) => !v);
+    const toggleSearchPopup = (): void => setShowSearchPopup((v) => !v);
+
+    const handleGeolocate = (): void => {
+        if (!navigator.geolocation) return;
+        setLocating(true);
+        navigator.geolocation.getCurrentPosition(
+            ({ coords }) => {
+                window.postMessage({ type: 'IRIS_MOVE_MAP', center: { lat: coords.latitude, lng: coords.longitude }, zoom: 15 }, '*');
+                setLocating(false);
+            },
+            () => setLocating(false),
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    };
 
     const handleDashboardAction = (action: string): void => {
         switch (action) {
@@ -110,17 +117,13 @@ export function IRISOverlay(): JSX.Element {
             case 'settings': toggleMapSettingsPopup(); break;
             case 'diag': toggleDiagnosticsPopup(); break;
             case 'toggle': toggleMapVisibility(); break;
+            case 'search': toggleSearchPopup(); break;
         }
-    };
-
-    const toggleDashboard = (type: DashboardType): void => {
-        setActiveDashboard(current => current === type ? null : type);
     };
 
     useEffect(() => {
         const themeHandler = (): void => toggleThemePopup();
         const exportHandler = (): void => toggleExportPopup();
-        
         document.addEventListener('iris:plugin:theme:toggle', themeHandler);
         document.addEventListener('iris:plugin:export:toggle', exportHandler);
         const missionsOpenHandler = (event: Event): void => {
@@ -129,7 +132,6 @@ export function IRISOverlay(): JSX.Element {
             setShowMissionsPopup(true);
         };
         document.addEventListener('iris:missions:open', missionsOpenHandler);
-
         return (): void => {
             document.removeEventListener('iris:plugin:theme:toggle', themeHandler);
             document.removeEventListener('iris:plugin:export:toggle', exportHandler);
@@ -148,7 +150,6 @@ export function IRISOverlay(): JSX.Element {
     return (
         <div className="iris-overlay-root">
             <SessionAlert />
-            <Topbar />
             
             <div style={{ display: showMap ? 'block' : 'none' }}>
                 <MapOverlay />
@@ -158,61 +159,21 @@ export function IRISOverlay(): JSX.Element {
             <MissionDetailsPopup />
             <PluginFeaturePopup />
 
-            {showCommPopup && (
-                <CommPopup onClose={toggleCommPopup} />
-            )}
-
-            {showMissionsPopup && (
-                <MissionsPopup onClose={toggleMissionsPopup} />
-            )}
-
-            {showPasscodePopup && (
-                <PasscodePopup onClose={togglePasscodePopup} />
-            )}
-
-            {showPlayerStatsPopup && (
-                <PlayerStatsPopup onClose={togglePlayerStatsPopup} />
-            )}
-
-            {showInventoryPopup && (
-                <InventoryPopup onClose={toggleInventoryPopup} />
-            )}
-
-            {showGameScorePopup && (
-                <GameScorePopup onClose={toggleGameScorePopup} />
-            )}
-
-            {showRegionScorePopup && (
-                <RegionScorePopup onClose={toggleRegionScorePopup} />
-            )}
-
-            {showExportPopup && (
-                <ExportPopup onClose={toggleExportPopup} />
-            )}
-
-            {showDiagnosticsPopup && (
-                <DiagnosticsPopup onClose={toggleDiagnosticsPopup} />
-            )}
-
-            {showFiltersPopup && (
-                <FiltersPopup onClose={toggleFiltersPopup} />
-            )}
-
-            {showThemePopup && (
-                <ThemePopup onClose={toggleThemePopup} />
-            )}
-
-            {showMapSettingsPopup && (
-                <MapSettingsPopup onClose={toggleMapSettingsPopup} />
-            )}
-
-            {showPluginsPopup && (
-                <PluginsPopup onClose={togglePluginsPopup} />
-            )}
-
-            {showNavigationPopup && (
-                <NavigationPopup onClose={toggleNavigationPopup} />
-            )}
+            {showCommPopup && <CommPopup onClose={toggleCommPopup} />}
+            {showMissionsPopup && <MissionsPopup onClose={toggleMissionsPopup} />}
+            {showPasscodePopup && <PasscodePopup onClose={togglePasscodePopup} />}
+            {showPlayerStatsPopup && <PlayerStatsPopup onClose={togglePlayerStatsPopup} />}
+            {showInventoryPopup && <InventoryPopup onClose={toggleInventoryPopup} />}
+            {showGameScorePopup && <GameScorePopup onClose={toggleGameScorePopup} />}
+            {showRegionScorePopup && <RegionScorePopup onClose={toggleRegionScorePopup} />}
+            {showExportPopup && <ExportPopup onClose={toggleExportPopup} />}
+            {showDiagnosticsPopup && <DiagnosticsPopup onClose={toggleDiagnosticsPopup} />}
+            {showFiltersPopup && <FiltersPopup onClose={toggleFiltersPopup} />}
+            {showThemePopup && <ThemePopup onClose={toggleThemePopup} />}
+            {showMapSettingsPopup && <MapSettingsPopup onClose={toggleMapSettingsPopup} />}
+            {showPluginsPopup && <PluginsPopup onClose={togglePluginsPopup} />}
+            {showNavigationPopup && <NavigationPopup onClose={toggleNavigationPopup} />}
+            {showSearchPopup && <LocationSearchPopup onClose={toggleSearchPopup} />}
 
             <DashboardOverlay 
                 type={activeDashboard} 
@@ -221,9 +182,18 @@ export function IRISOverlay(): JSX.Element {
                 showMap={showMap}
             />
 
+            <button 
+                className="iris-fab-geolocate" 
+                onClick={handleGeolocate} 
+                disabled={locating}
+                title="Navigate to Me"
+            >
+                {locating ? '...' : '◎'}
+            </button>
+
             <BottomDock 
                 activeDashboard={activeDashboard} 
-                onToggleDashboard={toggleDashboard} 
+                onToggleDashboard={(type) => setActiveDashboard(current => current === type ? null : type)} 
             />
 
             <StatusBar />

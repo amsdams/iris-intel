@@ -1,5 +1,6 @@
 @import url('./shared/base.css');
-@import url('./shared/topbar.css');
+@import url('./shared/dashboard.css');
+@import url('./shared/bottomdock.css');
 @import url('./domains/comm/comm.css');
 @import url('./domains/inventory/inventory.css');
 @import url('./domains/map/map.css');

@@ -38,8 +38,9 @@ export function DashboardOverlay({ type, onClose, onAction, showMap }: Dashboard
         );
     } else if (type === 'map') {
         items.push(
+            { id: 'search', label: 'Search', icon: '🔍' },
             { id: 'nav', label: 'Navigation', icon: '🧭' },
-            { id: 'filters', label: 'Filters', icon: '🔍' },
+            { id: 'filters', label: 'Filters', icon: '🛡️' },
             { id: 'missions', label: 'Missions', icon: '🚀' }
         );
     } else if (type === 'system') {
