@@ -54,8 +54,8 @@ export function DashboardOverlay({ type, onClose, onAction, showMap }: Dashboard
 
     return (
         <div className="iris-dashboard-overlay" onClick={onClose}>
-            <div className="iris-dashboard-content" onClick={(e) => e.stopPropagation()}>
-                <div className="iris-dashboard-header">
+            <div className="iris-dashboard-content">
+                <div className="iris-dashboard-header" onClick={(e) => e.stopPropagation()}>
                     <h1 style={{ color: theme.AQUA }}>{type.toUpperCase()} CENTER</h1>
                     <button className="iris-dashboard-close" onClick={onClose} style={{ color: theme.AQUA, borderColor: theme.AQUA }}>✕</button>
                 </div>
@@ -65,7 +65,7 @@ export function DashboardOverlay({ type, onClose, onAction, showMap }: Dashboard
                         <button 
                             key={item.id} 
                             className="iris-dashboard-item"
-                            onClick={() => { onAction(item.id); onClose(); }}
+                            onClick={(e) => { e.stopPropagation(); onAction(item.id); onClose(); }}
                         >
                             <div className="iris-dashboard-icon">{item.icon}</div>
                             <div className="iris-dashboard-label" style={{ color: theme.AQUA }}>{item.label}</div>
@@ -76,7 +76,7 @@ export function DashboardOverlay({ type, onClose, onAction, showMap }: Dashboard
                         <button 
                             key={item.id} 
                             className="iris-dashboard-item iris-dashboard-item-plugin"
-                            onClick={() => { item.onClick(); onClose(); }}
+                            onClick={(e) => { e.stopPropagation(); item.onClick(); onClose(); }}
                         >
                             <div className="iris-dashboard-icon">📦</div>
                             <div className="iris-dashboard-label" style={{ color: theme.AQUA }}>{item.label}</div>
