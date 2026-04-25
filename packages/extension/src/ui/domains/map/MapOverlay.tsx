@@ -2,7 +2,7 @@ import {h, JSX} from 'preact';
 import {useEffect, useMemo, useRef, useState, useCallback} from 'preact/hooks';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import {useStore, globalSpatialIndex, Portal, Link, Field, getMinLevelForZoom} from '@iris/core';
+import {useStore, globalSpatialIndex, Portal, Link, Field, Artifact, getMinLevelForZoom} from '@iris/core';
 import {THEMES, MAP_THEMES, SEMANTIC_COLORS} from '../../theme';
 import {
   buildArtifactFeatures,
@@ -107,50 +107,6 @@ type DragRotateInternals = maplibregl.Map['dragRotate'] & {
   };
 };
 
-function extractPortalIdFromFeature(feature: maplibregl.MapGeoJSONFeature): string | null {
-  const properties = feature.properties as Record<string, unknown> | undefined;
-  if (!properties) return null;
-
-  const id = properties.id ?? properties.portalId ?? properties.guid;
-  return typeof id === 'string' && id.length > 0 ? id : null;
-}
-
-function getPortalSelectionCandidate(hits: maplibregl.MapGeoJSONFeature[]): string | null {
-  const priorityLayers = [
-    'portals',
-    'portal-history-visited',
-    'portal-history-captured',
-    'portal-history-scanned',
-    'artifacts',
-    'ornaments',
-    'plugin-points',
-  ];
-
-  for (const layerId of priorityLayers) {
-    const hit = hits.find((feature) => feature.layer?.id === layerId);
-    const portalId = hit ? extractPortalIdFromFeature(hit) : null;
-    if (portalId) return portalId;
-  }
-
-  for (const hit of hits) {
-    const portalId = extractPortalIdFromFeature(hit);
-    if (portalId) return portalId;
-  }
-
-  return null;
-}
-
-const INTERACTIVE_LAYERS = [
-    'portals',
-    'artifacts',
-    'ornaments',
-    'portal-history-visited',
-    'portal-history-captured',
-    'portal-history-scanned',
-    'mission-waypoints',
-    'plugin-points'
-];
-
 export function MapOverlay(): JSX.Element {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
@@ -219,14 +175,6 @@ export function MapOverlay(): JSX.Element {
   const getRasterTileSource = (sourceId: string): maplibregl.RasterTileSource | null => {
     const source = map.current?.getSource(sourceId);
     return source ? (source as maplibregl.RasterTileSource) : null;
-  };
-
-  const logMapEvent = (type: string, layerId: string, featureId?: string): void => {
-    useStore.getState().addInteractionLog({
-        type: 'click',
-        layerId: `MAP-${type}-${layerId}`,
-        featureId
-    });
   };
 
   const syncViewport = useCallback((): void => {
@@ -608,115 +556,83 @@ export function MapOverlay(): JSX.Element {
       useStore.getState().reverseGeocode(center.lat, center.lng);
     });
 
-    const performSpatialFallback = (point: { x: number, y: number }, lngLat: maplibregl.LngLat, isTouch: boolean): void => {
+    const handleInteraction = (e: maplibregl.MapMouseEvent | maplibregl.MapTouchEvent): void => {
         if (!map.current) return;
-        
-        const zoom = map.current.getZoom();
-        // Adaptive buffer: larger for touch, and larger when zoomed out
-        const baseBuffer = isTouch ? 20 : 10;
-        const zoomFactor = Math.max(1, (20 - zoom) / 2);
-        const pixelBuffer = baseBuffer * zoomFactor;
+        const {lng, lat} = e.lngLat;
+        const point = e.point;
 
-        // Convert pixel buffer to geographic degrees approx
-        // At zoom 15, 1px is approx 4.7m at equator. 
-        // A simpler way is to query map features with a bbox:
-        const bbox: [[number, number], [number, number]] = [
-            [point.x - pixelBuffer, point.y - pixelBuffer],
-            [point.x + pixelBuffer, point.y + pixelBuffer]
-        ];
+        const allPortals: Portal[] = Object.values(useStore.getState().portals);
+        let nearestPortal: Portal | null = null;
+        let minPortalDist = 20;
 
-        const hits = map.current.queryRenderedFeatures(bbox, {
-            layers: INTERACTIVE_LAYERS.filter(l => {
-                try { return !!map.current?.getLayer(l); } catch { return false; }
-            })
-        });
+        for (const p of allPortals) {
+            if (Math.abs(p.lng - lng) > 0.01 || Math.abs(p.lat - lat) > 0.01) continue;
+            const pos = map.current.project([p.lng, p.lat]);
+            const dist = Math.sqrt(Math.pow(pos.x - point.x, 2) + Math.pow(pos.y - point.y, 2));
+            if (dist < minPortalDist) {
+                minPortalDist = dist;
+                nearestPortal = p;
+            }
+        }
 
-        const portalIdFromRendered = getPortalSelectionCandidate(hits);
-        if (portalIdFromRendered) {
-            logMapEvent(isTouch ? 'tap-fallback' : 'click-fallback', 'portal', 'hit');
-            useStore.getState().selectPortal(portalIdFromRendered);
-            window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: portalIdFromRendered }, '*');
+        if (nearestPortal) {
+            document.dispatchEvent(
+                new CustomEvent('iris:portal:click', {detail: {id: nearestPortal.id}})
+            );
             return;
         }
 
-        // Last resort: Query RBush directly for the closest portal by screen distance.
-        const degreeBuffer = 0.0005 * zoomFactor;
-        const queryBounds = {
-            minLat: lngLat.lat - degreeBuffer,
-            minLng: lngLat.lng - degreeBuffer,
-            maxLat: lngLat.lat + degreeBuffer,
-            maxLng: lngLat.lng + degreeBuffer
-        };
-        const spatialHits = globalSpatialIndex.query(queryBounds);
-        const store = useStore.getState();
-        const portalCandidates: Portal[] = spatialHits
-            .filter(h => h.type === 'portal')
-            .map(h => store.portals[h.id])
-            .filter((portal): portal is Portal => !!portal);
+        const artifacts: Record<string, Artifact> = useStore.getState().artifacts;
+        const portals: Record<string, Portal> = useStore.getState().portals;
+        let nearestArtifactPortalId: string | null = null;
+        let minArtifactDist = 20;
 
-        let closestPortal: Portal | null = null;
-        let closestDistance = Number.POSITIVE_INFINITY;
-        const maxDistance = isTouch ? 30 : 24;
-
-        portalCandidates.forEach((portal) => {
-            const projected = map.current?.project([portal.lng, portal.lat]);
-            if (!projected) return;
-
-            const dist = Math.hypot(projected.x - point.x, projected.y - point.y);
-            if (dist < closestDistance) {
-                closestDistance = dist;
-                closestPortal = portal;
+        Object.values(artifacts).forEach((artifact) => {
+            const p = portals[artifact.portalId];
+            if (!p) return;
+            if (Math.abs(p.lng - lng) > 0.01 || Math.abs(p.lat - lat) > 0.01) return;
+            const mapInstance = map.current;
+            if (!mapInstance) return;
+            const pos = mapInstance.project([p.lng, p.lat]);
+            const dist = Math.sqrt(Math.pow(pos.x - point.x, 2) + Math.pow(pos.y - point.y, 2));
+            if (dist < minArtifactDist) {
+                minArtifactDist = dist;
+                nearestArtifactPortalId = artifact.portalId;
             }
         });
 
-        const selectedPortal = closestPortal as Portal | null;
-        if (selectedPortal && closestDistance <= maxDistance) {
-            logMapEvent(isTouch ? 'tap-rbush' : 'click-rbush', 'portal', 'hit');
-            store.selectPortal(selectedPortal.id);
-            window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: selectedPortal.id }, '*');
-        } else {
-            logMapEvent(isTouch ? 'tap' : 'click', 'map-empty');
-            store.selectPortal(null);
+        if (nearestArtifactPortalId) {
+            document.dispatchEvent(
+                new CustomEvent('iris:portal:click', {detail: {id: nearestArtifactPortalId}})
+            );
         }
     };
 
-    // Implementation of the POC "Amsterdam" Click Model:
-    // One global click handler that uses RBush for hit detection.
-    // This is more robust on mobile than layer-specific listeners.
-    map.current.on('click', (e) => {
-        if (!map.current) return;
-        
-        // Use the spatial fallback logic (RBush) as the primary handler
-        performSpatialFallback(e.point, e.lngLat, false);
-    });
+    map.current.on('click', handleInteraction);
 
-    map.current.on('touchstart', (e) => {
-        if (e.points && e.points.length > 0) {
-            touchState.current = {
-                startPoint: {
-                    x: e.points[0].x,
-                    y: e.points[0].y
-                },
-                hasMoved: false,
-                maxFingers: e.points.length
-            };
+    map.current.on('touchstart', (e: maplibregl.MapTouchEvent) => {
+        touchState.current.maxFingers = Math.max(touchState.current.maxFingers, e.points.length);
+        if (e.points.length === 1) {
+            touchState.current.startPoint = {x: e.point.x, y: e.point.y};
+            touchState.current.hasMoved = false;
         }
-        logMapEvent('touchstart', 'map');
     });
 
-    map.current.on('touchmove', (e) => {
-        if (e.points && e.points.length > 0) {
-            const dx = e.points[0].x - touchState.current.startPoint.x;
-            const dy = e.points[0].y - touchState.current.startPoint.y;
-            if (Math.sqrt(dx * dx + dy * dy) > 20) {
+    map.current.on('touchmove', (e: maplibregl.MapTouchEvent) => {
+        if (e.points.length === 1) {
+            const dx = e.point.x - touchState.current.startPoint.x;
+            const dy = e.point.y - touchState.current.startPoint.y;
+            if (Math.sqrt(dx * dx + dy * dy) > 10) {
                 touchState.current.hasMoved = true;
             }
+        } else {
+            touchState.current.hasMoved = true;
         }
     });
 
-    map.current.on('touchend', (e) => {
+    map.current.on('touchend', (e: maplibregl.MapTouchEvent) => {
         if (touchState.current.maxFingers === 1 && !touchState.current.hasMoved) {
-            performSpatialFallback(e.point, e.lngLat, true);
+            handleInteraction(e);
         }
 
         if (e.originalEvent.touches.length === 0) {
@@ -725,10 +641,42 @@ export function MapOverlay(): JSX.Element {
         }
     });
 
+    let lastMove = 0;
+    map.current.on('mousemove', (e: maplibregl.MapMouseEvent) => {
+        const now = Date.now();
+        if (now - lastMove < 100) return;
+        lastMove = now;
+
+        if (!map.current) return;
+        const {lng, lat} = e.lngLat;
+        const point = e.point;
+        const allPortals: Portal[] = Object.values(useStore.getState().portals);
+        let found = false;
+        for (const p of allPortals) {
+            if (Math.abs(p.lng - lng) > 0.005 || Math.abs(p.lat - lat) > 0.005) continue;
+            const pos = map.current.project([p.lng, p.lat]);
+            const dist = Math.sqrt(Math.pow(pos.x - point.x, 2) + Math.pow(pos.y - point.y, 2));
+            if (dist < 12) {
+                found = true;
+                break;
+            }
+        }
+        map.current.getCanvas().style.cursor = found ? 'pointer' : '';
+    });
+
+    const onPortalClick = (e: Event): void => {
+      const {id} = (e as CustomEvent<{id: string}>).detail;
+      useStore.getState().selectPortal(id);
+      window.postMessage({type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: id}, '*');
+    };
+
+    document.addEventListener('iris:portal:click', onPortalClick);
+
     return (): void => {
       markerRegistry.forEach(({ marker }) => marker.remove());
       markerRegistry.clear();
       map.current?.remove();
+      document.removeEventListener('iris:portal:click', onPortalClick);
     };
   }, []);
 
