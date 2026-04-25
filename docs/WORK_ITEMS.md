@@ -212,6 +212,23 @@ Improvement ideas:
 | Move toward IITC-style coverage tracking instead of only time-based freshness                              | Open   | likely phase 2 after the first minimal owned refresh loop works          |
 | Consider a lightweight tile/cell cache only if simpler bounds-based refresh remains too stale or too noisy | Open   | not a phase-1 requirement                                                |
 
+## Map Interaction Extensions
+
+Status: `Open`
+
+Goal:
+
+- keep the current portal click handler stable while expanding map interaction targets later
+
+Improvement ideas:
+
+| Idea                                                                                 | Status | Notes                                                                                                    |
+|--------------------------------------------------------------------------------------|--------|----------------------------------------------------------------------------------------------------------|
+| Add field selection to the shared map interaction model                              | Open   | borrow the POC behavior that can identify a clicked field and expose basic field info in a popup/sidecar |
+| Add link selection to the shared map interaction model                               | Open   | support line-click hit testing and a minimal details view for the selected link                          |
+| Add artifact-specific handling after portal/field/link selection feels settled       | Open   | keep artifacts separate for now; decide later whether they open portal details or their own details view |
+| Expand hover feedback only if it needs richer states than a pointer cursor           | Open   | keep hover simple unless future selected targets need distinct affordances                               |
+
 ## Intel Parity Features
 
 Status: `In Progress`

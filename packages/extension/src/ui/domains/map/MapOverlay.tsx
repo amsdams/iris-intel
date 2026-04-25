@@ -2,7 +2,7 @@ import {h, JSX} from 'preact';
 import {useEffect, useMemo, useRef, useState, useCallback} from 'preact/hooks';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import {useStore, globalSpatialIndex, Portal, Link, Field, Artifact, getMinLevelForZoom} from '@iris/core';
+import {useStore, globalSpatialIndex, Portal, Link, Field, getMinLevelForZoom} from '@iris/core';
 import {THEMES, MAP_THEMES, SEMANTIC_COLORS} from '../../theme';
 import {
   buildArtifactFeatures,
@@ -14,6 +14,8 @@ import {
   buildPortalFeatures,
   toFeatureCollection,
 } from './feature-builders';
+import {emitPortalClick, installPortalSelectionBridge} from './map-events';
+import {resolveMapSelection} from './map-selection';
 
 type PluginFeatureProperties = {
   id?: string;
@@ -558,57 +560,30 @@ export function MapOverlay(): JSX.Element {
 
     const handleInteraction = (e: maplibregl.MapMouseEvent | maplibregl.MapTouchEvent): void => {
         if (!map.current) return;
-        const {lng, lat} = e.lngLat;
-        const point = e.point;
-
-        const allPortals: Portal[] = Object.values(useStore.getState().portals);
-        let nearestPortal: Portal | null = null;
-        let minPortalDist = 20;
-
-        for (const p of allPortals) {
-            if (Math.abs(p.lng - lng) > 0.01 || Math.abs(p.lat - lat) > 0.01) continue;
-            const pos = map.current.project([p.lng, p.lat]);
-            const dist = Math.sqrt(Math.pow(pos.x - point.x, 2) + Math.pow(pos.y - point.y, 2));
-            if (dist < minPortalDist) {
-                minPortalDist = dist;
-                nearestPortal = p;
-            }
-        }
-
-        if (nearestPortal) {
-            document.dispatchEvent(
-                new CustomEvent('iris:portal:click', {detail: {id: nearestPortal.id}})
-            );
-            return;
-        }
-
-        const artifacts: Record<string, Artifact> = useStore.getState().artifacts;
-        const portals: Record<string, Portal> = useStore.getState().portals;
-        let nearestArtifactPortalId: string | null = null;
-        let minArtifactDist = 20;
-
-        Object.values(artifacts).forEach((artifact) => {
-            const p = portals[artifact.portalId];
-            if (!p) return;
-            if (Math.abs(p.lng - lng) > 0.01 || Math.abs(p.lat - lat) > 0.01) return;
-            const mapInstance = map.current;
-            if (!mapInstance) return;
-            const pos = mapInstance.project([p.lng, p.lat]);
-            const dist = Math.sqrt(Math.pow(pos.x - point.x, 2) + Math.pow(pos.y - point.y, 2));
-            if (dist < minArtifactDist) {
-                minArtifactDist = dist;
-                nearestArtifactPortalId = artifact.portalId;
-            }
+        const selection = resolveMapSelection({
+            portals: useStore.getState().portals,
+            point: e.point,
+            lng: e.lngLat.lng,
+            lat: e.lngLat.lat,
+            zoom: map.current.getZoom(),
+            project: (lng, lat) => {
+                const projected = map.current?.project([lng, lat]);
+                return projected ? {x: projected.x, y: projected.y} : null;
+            },
         });
 
-        if (nearestArtifactPortalId) {
-            document.dispatchEvent(
-                new CustomEvent('iris:portal:click', {detail: {id: nearestArtifactPortalId}})
-            );
+        if (selection) {
+            emitPortalClick(document, selection.portalId);
         }
     };
 
     map.current.on('click', handleInteraction);
+
+    const removePortalSelectionBridge = installPortalSelectionBridge({
+      target: document,
+      windowLike: window,
+      selectPortal: (id: string | null) => useStore.getState().selectPortal(id),
+    });
 
     map.current.on('touchstart', (e: maplibregl.MapTouchEvent) => {
         touchState.current.maxFingers = Math.max(touchState.current.maxFingers, e.points.length);
@@ -648,35 +623,26 @@ export function MapOverlay(): JSX.Element {
         lastMove = now;
 
         if (!map.current) return;
-        const {lng, lat} = e.lngLat;
-        const point = e.point;
-        const allPortals: Portal[] = Object.values(useStore.getState().portals);
-        let found = false;
-        for (const p of allPortals) {
-            if (Math.abs(p.lng - lng) > 0.005 || Math.abs(p.lat - lat) > 0.005) continue;
-            const pos = map.current.project([p.lng, p.lat]);
-            const dist = Math.sqrt(Math.pow(pos.x - point.x, 2) + Math.pow(pos.y - point.y, 2));
-            if (dist < 12) {
-                found = true;
-                break;
-            }
-        }
-        map.current.getCanvas().style.cursor = found ? 'pointer' : '';
+        const selection = resolveMapSelection({
+            portals: useStore.getState().portals,
+            point: e.point,
+            lng: e.lngLat.lng,
+            lat: e.lngLat.lat,
+            zoom: map.current.getZoom(),
+            project: (lng, lat) => {
+                const projected = map.current?.project([lng, lat]);
+                return projected ? {x: projected.x, y: projected.y} : null;
+            },
+            portalThreshold: 12,
+        });
+        map.current.getCanvas().style.cursor = selection ? 'pointer' : '';
     });
-
-    const onPortalClick = (e: Event): void => {
-      const {id} = (e as CustomEvent<{id: string}>).detail;
-      useStore.getState().selectPortal(id);
-      window.postMessage({type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: id}, '*');
-    };
-
-    document.addEventListener('iris:portal:click', onPortalClick);
 
     return (): void => {
       markerRegistry.forEach(({ marker }) => marker.remove());
       markerRegistry.clear();
       map.current?.remove();
-      document.removeEventListener('iris:portal:click', onPortalClick);
+      removePortalSelectionBridge();
     };
   }, []);
 
