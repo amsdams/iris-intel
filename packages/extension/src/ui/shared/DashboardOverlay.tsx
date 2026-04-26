@@ -1,5 +1,5 @@
 import { h, JSX, Fragment } from 'preact';
-import { useStore } from '@iris/core';
+import { useStore, pluginManager } from '@iris/core';
 import { THEMES } from '../theme';
 import './dashboard.css';
 
@@ -16,6 +16,7 @@ interface DashboardItem {
     id: string;
     label: string;
     icon: string;
+    isActive?: boolean;
 }
 
 interface DashboardSection {
@@ -29,6 +30,9 @@ export function DashboardOverlay({ type, onClose, onAction, showMap }: Dashboard
     const themeId = useStore((state) => state.themeId);
     const theme = THEMES[themeId] || THEMES.INGRESS;
     const menuItems = useStore((state) => state.menuItems);
+    const pluginStates = useStore((state) => state.pluginStates);
+    const activeHighlighterIds = useStore((state) => state.activeHighlighterIds);
+    const toggleHighlighter = useStore((state) => state.toggleHighlighter);
 
     const sections: DashboardSection[] = [];
 
@@ -66,6 +70,24 @@ export function DashboardOverlay({ type, onClose, onAction, showMap }: Dashboard
                 { id: 'history', label: 'History', icon: '📜' }
             ]
         });
+
+        // Add Highlighters from PluginManager (only if enabled in settings)
+        const highlighters = pluginManager.getAvailablePlugins().filter(p => 
+            p.manifest.capabilities?.includes('highlighter') && (pluginStates[p.manifest.id] ?? false)
+        );
+
+        if (highlighters.length > 0) {
+            sections.push({
+                title: 'HIGHLIGHTERS',
+                items: highlighters.map(p => ({
+                    id: `highlighter-${p.manifest.id}`,
+                    label: p.manifest.name.replace('Portal ', ''),
+                    icon: '✨',
+                    isActive: activeHighlighterIds.includes(p.manifest.id),
+                    pluginId: p.manifest.id
+                }))
+            });
+        }
     } else if (type === 'system') {
         sections.push({
             title: 'IRIS SETTINGS',
@@ -77,6 +99,9 @@ export function DashboardOverlay({ type, onClose, onAction, showMap }: Dashboard
             ]
         });
         
+        // Filter dynamic menu items based on whether their plugin is actually enabled
+        // Note: Currently MenuItem doesn't track its parent plugin ID. 
+        // We'll trust the PluginManager's current behavior of clearing menu items on teardown.
         if (menuItems.length > 0) {
             sections.push({
                 title: 'PLUGIN ACTIONS',
@@ -100,10 +125,14 @@ export function DashboardOverlay({ type, onClose, onAction, showMap }: Dashboard
                             {section.items.map(item => (
                                 <button 
                                     key={item.id} 
-                                    className={`iris-dashboard-item ${item.id.startsWith('plugin-') ? 'iris-dashboard-item-plugin' : ''}`}
+                                    className={`iris-dashboard-item ${item.isActive ? 'iris-dashboard-item-active' : ''} ${item.id.startsWith('plugin-') ? 'iris-dashboard-item-plugin' : ''}`}
                                     onClick={(e) => { 
                                         e.stopPropagation(); 
-                                        if (item.id.startsWith('plugin-') && (item as any).original) {
+                                        if (item.id.startsWith('highlighter-')) {
+                                            const pId = (item as any).pluginId;
+                                            toggleHighlighter(pId);
+                                            setTimeout(() => pluginManager.syncHighlighters(), 0);
+                                        } else if (item.id.startsWith('plugin-') && (item as any).original) {
                                             (item as any).original.onClick();
                                             onClose();
                                         } else {

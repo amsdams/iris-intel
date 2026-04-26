@@ -98,6 +98,12 @@
     border-color: rgba(0, 255, 255, 0.5);
 }
 
+.iris-dashboard-item-active {
+    background: rgba(0, 255, 255, 0.15);
+    border-color: #0ff;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
 .iris-dashboard-icon {
     font-size: 2em;
     margin-bottom: 8px;

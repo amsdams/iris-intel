@@ -7,10 +7,31 @@ export class PluginManager {
   private pluginFeaturesByPlugin = new Map<string, GeoJSON.Feature[]>();
 
   private syncPluginFeatures(): void {
+    const activeHighlighterIds = useStore.getState().activeHighlighterIds;
+    const features: GeoJSON.Feature[] = [];
+
+    for (const [id, pluginFeatures] of this.pluginFeaturesByPlugin) {
+        const plugin = this.availablePlugins.get(id);
+        const isHighlighter = plugin?.manifest.capabilities?.includes('highlighter');
+        
+        // If it's a highlighter, only include if active.
+        // If it's not a highlighter (e.g. Draw Tools, Player Tracker), include always if enabled.
+        if (!isHighlighter || activeHighlighterIds.includes(id)) {
+            features.push(...pluginFeatures);
+        }
+    }
+
     useStore.getState().setPluginFeatures({
       type: 'FeatureCollection',
-      features: Array.from(this.pluginFeaturesByPlugin.values()).flat(),
+      features,
     });
+  }
+
+  /**
+   * Public way for UI to trigger a re-sync when activeHighlighterIds changes.
+   */
+  public syncHighlighters(): void {
+    this.syncPluginFeatures();
   }
 
   private clearPluginFeatures(id: string): void {
@@ -86,12 +107,6 @@ export class PluginManager {
         setTheme: (id: string): void => useStore.getState().setTheme(id),
         getTheme: (): string => useStore.getState().themeId,
         getThemeColors: (): { E: string; R: string; M: string; N: string } => {
-          // Look up colors from the theme registry (defined in extension/ui/theme.ts)
-          // For now, core doesn't have direct access to theme.ts, so we'll pass it in or move theme.ts to core.
-          // However, we can at least return better defaults or wait until we move the theme registry.
-          
-          // Actually, we can just return the colors from the active theme if we had them.
-          // Given the current structure, let's keep it simple but accurate to the default INGRESS theme.
           return {
             E: '#03DC03',
             R: '#0088FF',
@@ -106,9 +121,6 @@ export class PluginManager {
     };
   }
 
-  /**
-   * Register a plugin and enable it if not already tracked.
-   */
   async load(plugin: IRISPlugin): Promise<void> {
     if (this.availablePlugins.has(plugin.manifest.id)) {
       return;
@@ -116,7 +128,6 @@ export class PluginManager {
 
     this.availablePlugins.set(plugin.manifest.id, plugin);
     
-    // If not in store yet, respect the plugin's preferred default.
     const state = useStore.getState().pluginStates;
     if (state[plugin.manifest.id] === undefined) {
       useStore.getState().setPluginEnabled(
@@ -125,7 +136,6 @@ export class PluginManager {
       );
     }
 
-    // If enabled in store, setup now
     if (useStore.getState().pluginStates[plugin.manifest.id]) {
       try {
         await plugin.setup(this.createApi(plugin.manifest.id));
@@ -136,9 +146,6 @@ export class PluginManager {
     }
   }
 
-  /**
-   * Toggle plugin state and call setup/teardown.
-   */
   async setEnabled(id: string, enabled: boolean): Promise<void> {
     const plugin = this.availablePlugins.get(id);
     if (!plugin) return;

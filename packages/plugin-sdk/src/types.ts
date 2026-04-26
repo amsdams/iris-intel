@@ -5,7 +5,7 @@ export interface PluginManifest {
   description: string;
   author: string;
   defaultEnabled?: boolean;
-  capabilities?: string[];
+  capabilities?: ('menu' | 'highlighter' | string)[];
 }
 
 export interface Portal {

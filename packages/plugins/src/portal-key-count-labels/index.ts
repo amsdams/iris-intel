@@ -75,7 +75,7 @@ const PortalKeyCountLabelsPlugin: IRISPlugin = {
     description: 'Shows portal key counts on the map using the captured inventory snapshot.',
     author: 'IRIS Team',
     defaultEnabled: false,
-    capabilities: ['overlay', 'inventory', 'label-heavy'],
+    capabilities: ['overlay', 'inventory', 'label-heavy', 'highlighter'],
   },
   setup: (api: IRIS_API): void => {
     unsubscribePortalKeysInventory?.();

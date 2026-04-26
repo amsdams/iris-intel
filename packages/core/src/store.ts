@@ -417,6 +417,7 @@ interface UISlice {
     passcodeRedeemError: string | null;
     passcodeRewards: PasscodeRewards | null;
     rehydrated: boolean;
+    activeHighlighterIds: string[];
     addStatsItem: (item: StatsItem) => void;
     removeStatsItem: (id: string) => void;
     addMenuItem: (item: MenuItem) => void;
@@ -441,6 +442,7 @@ interface UISlice {
     setPasscodeRedeemSuccess: (rewards: PasscodeRewards) => void;
     setPasscodeRedeemError: (error: string) => void;
     clearPasscodeRedeemState: () => void;
+    toggleHighlighter: (id: string) => void;
 }
 
 interface PlayerSlice {
@@ -834,6 +836,7 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
     passcodeRedeemError: null,
     passcodeRewards: null,
     rehydrated: false,
+    activeHighlighterIds: [],
     addStatsItem: (item) => set((state) => ({
         statsItems: { ...state.statsItems, [item.id]: item }
     })),
@@ -950,6 +953,11 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
         passcodeRedeemStatus: 'idle',
         passcodeRedeemError: null,
         passcodeRewards: null,
+    })),
+    toggleHighlighter: (id) => set((state) => ({
+        activeHighlighterIds: state.activeHighlighterIds.includes(id)
+            ? state.activeHighlighterIds.filter((activeId) => activeId !== id)
+            : [...state.activeHighlighterIds, id]
     })),
 });
 
