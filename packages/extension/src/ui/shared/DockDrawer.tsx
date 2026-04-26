@@ -3,7 +3,7 @@ import { useStore, pluginManager } from '@iris/core';
 import { THEMES } from '../theme';
 import './dock-drawer.css';
 
-export type DrawerTab = 'intel' | 'nav' | 'highlighters' | 'layers' | 'system' | null;
+export type DrawerTab = 'intel' | 'nav' | 'tactical' | 'layers' | 'highlighters' | 'system' | null;
 
 interface DockDrawerProps {
     tab: DrawerTab;
@@ -18,7 +18,7 @@ export function DockDrawer({ tab, onClose, onAction, showMap }: DockDrawerProps)
     const themeId = useStore((state) => state.themeId);
     const theme = THEMES[themeId] || THEMES.INGRESS;
     
-    // Store states for live toggles
+    // Core Visibility
     const showResistance = useStore((state) => state.showResistance);
     const toggleShowResistance = useStore((state) => state.toggleShowResistance);
     const showEnlightened = useStore((state) => state.showEnlightened);
@@ -109,46 +109,65 @@ export function DockDrawer({ tab, onClose, onAction, showMap }: DockDrawerProps)
         </Fragment>
     );
 
-    const renderHighlightersContent = () => {
-        // Highlighters EXCLUDING player-tracker (which is now in Layers)
-        const highlighters = pluginManager.getAvailablePlugins().filter(p => 
-            p.manifest.capabilities?.includes('highlighter') && 
-            p.manifest.id !== 'player-tracker' &&
-            (pluginStates[p.manifest.id] ?? false)
-        );
+    const renderTacticalContent = () => (
+        <Fragment>
+            <div className="iris-drawer-section-label">Faction Filters</div>
+            <div className="iris-drawer-scroll-group">
+                <button className={`iris-drawer-btn ${showEnlightened ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowEnlightened}>
+                    <div className="iris-drawer-btn-icon">💚</div>
+                    <div className="iris-drawer-btn-label">ENL</div>
+                </button>
+                <button className={`iris-drawer-btn ${showResistance ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowResistance}>
+                    <div className="iris-drawer-btn-icon">💙</div>
+                    <div className="iris-drawer-btn-label">RES</div>
+                </button>
+                <button className={`iris-drawer-btn ${showMachina ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowMachina}>
+                    <div className="iris-drawer-btn-icon">❤️</div>
+                    <div className="iris-drawer-btn-label">MAC</div>
+                </button>
+                <button className={`iris-drawer-btn ${showUnclaimedPortals ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowUnclaimedPortals}>
+                    <div className="iris-drawer-btn-icon">🤍</div>
+                    <div className="iris-drawer-btn-label">NEU</div>
+                </button>
+            </div>
 
-        return (
-            <Fragment>
-                <div className="iris-drawer-section-label">Tactical Highlighters</div>
-                {highlighters.length === 0 ? (
-                    <div className="iris-text-small iris-mt-2" style={{ opacity: 0.5, fontStyle: 'italic' }}>
-                        No highlighters enabled. Check Plugin Manager.
-                    </div>
-                ) : (
-                    <div className="iris-drawer-grid">
-                        {highlighters.map(p => (
-                            <button 
-                                key={p.manifest.id} 
-                                className={`iris-drawer-btn ${activeHighlighterIds.includes(p.manifest.id) ? 'iris-drawer-btn-active' : ''}`}
-                                onClick={() => {
-                                    toggleHighlighter(p.manifest.id);
-                                    setTimeout(() => pluginManager.syncHighlighters(), 0);
-                                }}
-                            >
-                                <div className="iris-drawer-btn-icon">✨</div>
-                                <div className="iris-drawer-btn-label">{p.manifest.name.replace('Portal ', '')}</div>
-                            </button>
-                        ))}
-                    </div>
-                )}
-            </Fragment>
-        );
-    };
+            <div className="iris-drawer-section-label">Level Filters</div>
+            <div className="iris-drawer-scroll-group">
+                {[1, 2, 3, 4, 5, 6, 7, 8].map(l => (
+                    <button key={l} className={`iris-drawer-btn ${showLevel[l] ? 'iris-drawer-btn-active' : ''}`} onClick={() => toggleShowLevel(l)}>
+                        <div className="iris-drawer-btn-label">L{l}</div>
+                    </button>
+                ))}
+            </div>
+
+            <div className="iris-drawer-section-label">Health Filters</div>
+            <div className="iris-drawer-scroll-group">
+                {[25, 50, 75, 100].map(h => (
+                    <button key={h} className={`iris-drawer-btn ${showHealth[h] ? 'iris-drawer-btn-active' : ''}`} onClick={() => toggleShowHealth(h)}>
+                        <div className="iris-drawer-btn-label">{h}%</div>
+                    </button>
+                ))}
+            </div>
+
+            <div className="iris-drawer-section-label">Agent History</div>
+            <div className="iris-drawer-scroll-group">
+                <button className={`iris-drawer-btn ${showVisited ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowVisited}>
+                    <div className="iris-drawer-btn-label">Visited</div>
+                </button>
+                <button className={`iris-drawer-btn ${showCaptured ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowCaptured}>
+                    <div className="iris-drawer-btn-label">Captured</div>
+                </button>
+                <button className={`iris-drawer-btn ${showScanned ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowScanned}>
+                    <div className="iris-drawer-btn-label">Scanned</div>
+                </button>
+            </div>
+        </Fragment>
+    );
 
     const renderLayersContent = () => (
         <Fragment>
-            <div className="iris-drawer-section-label">Map Layers</div>
-            <div className="iris-drawer-scroll-group">
+            <div className="iris-drawer-section-label">Structural Layers</div>
+            <div className="iris-drawer-grid">
                 <button className={`iris-drawer-btn ${showFields ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowFields}>
                     <div className="iris-drawer-btn-icon">🌐</div>
                     <div className="iris-drawer-btn-label">Fields</div>
@@ -173,70 +192,54 @@ export function DockDrawer({ tab, onClose, onAction, showMap }: DockDrawerProps)
 
                 <button className={`iris-drawer-btn ${showOrnaments ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowOrnaments}>
                     <div className="iris-drawer-btn-icon">💠</div>
-                    <div className="iris-drawer-btn-label">Ornaments</div>
+                    <div className="iris-drawer-btn-label">Event</div>
                 </button>
                 <button className={`iris-drawer-btn ${showArtifacts ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowArtifacts}>
                     <div className="iris-drawer-btn-icon">💎</div>
-                    <div className="iris-drawer-btn-label">Artifacts</div>
-                </button>
-            </div>
-
-            <div className="iris-drawer-section-label">Factions</div>
-            <div className="iris-drawer-scroll-group">
-                <button className={`iris-drawer-btn ${showEnlightened ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowEnlightened}>
-                    <div className="iris-drawer-btn-icon">💚</div>
-                    <div className="iris-drawer-btn-label">ENL</div>
-                </button>
-                <button className={`iris-drawer-btn ${showResistance ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowResistance}>
-                    <div className="iris-drawer-btn-icon">💙</div>
-                    <div className="iris-drawer-btn-label">RES</div>
-                </button>
-                <button className={`iris-drawer-btn ${showMachina ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowMachina}>
-                    <div className="iris-drawer-btn-icon">❤️</div>
-                    <div className="iris-drawer-btn-label">MAC</div>
-                </button>
-                <button className={`iris-drawer-btn ${showUnclaimedPortals ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowUnclaimedPortals}>
-                    <div className="iris-drawer-btn-icon">🤍</div>
-                    <div className="iris-drawer-btn-label">NEU</div>
-                </button>
-            </div>
-
-            <div className="iris-drawer-section-label">Levels</div>
-            <div className="iris-drawer-scroll-group">
-                {[1, 2, 3, 4, 5, 6, 7, 8].map(l => (
-                    <button key={l} className={`iris-drawer-btn ${showLevel[l] ? 'iris-drawer-btn-active' : ''}`} onClick={() => toggleShowLevel(l)}>
-                        <div className="iris-drawer-btn-label">L{l}</div>
-                    </button>
-                ))}
-            </div>
-
-            <div className="iris-drawer-section-label">Health</div>
-            <div className="iris-drawer-scroll-group">
-                {[25, 50, 75, 100].map(h => (
-                    <button key={h} className={`iris-drawer-btn ${showHealth[h] ? 'iris-drawer-btn-active' : ''}`} onClick={() => toggleShowHealth(h)}>
-                        <div className="iris-drawer-btn-label">{h}%</div>
-                    </button>
-                ))}
-            </div>
-
-            <div className="iris-drawer-section-label">Agent History</div>
-            <div className="iris-drawer-scroll-group">
-                <button className={`iris-drawer-btn ${showVisited ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowVisited}>
-                    <div className="iris-drawer-btn-label">Visited</div>
-                </button>
-                <button className={`iris-drawer-btn ${showCaptured ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowCaptured}>
-                    <div className="iris-drawer-btn-label">Captured</div>
-                </button>
-                <button className={`iris-drawer-btn ${showScanned ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowScanned}>
-                    <div className="iris-drawer-btn-label">Scanned</div>
+                    <div className="iris-drawer-btn-label">Shard</div>
                 </button>
             </div>
         </Fragment>
     );
 
+    const renderHighlightersContent = () => {
+        const highlighters = pluginManager.getAvailablePlugins().filter(p => 
+            p.manifest.capabilities?.includes('highlighter') && 
+            p.manifest.id !== 'player-tracker' &&
+            (pluginStates[p.manifest.id] ?? false)
+        );
+
+        return (
+            <Fragment>
+                <div className="iris-drawer-section-label">Visual Augmentations</div>
+                {highlighters.length === 0 ? (
+                    <div className="iris-text-small iris-mt-2" style={{ opacity: 0.5, fontStyle: 'italic' }}>
+                        No highlighters enabled.
+                    </div>
+                ) : (
+                    <div className="iris-drawer-grid">
+                        {highlighters.map(p => (
+                            <button 
+                                key={p.manifest.id} 
+                                className={`iris-drawer-btn ${activeHighlighterIds.includes(p.manifest.id) ? 'iris-drawer-btn-active' : ''}`}
+                                onClick={() => {
+                                    toggleHighlighter(p.manifest.id);
+                                    setTimeout(() => pluginManager.syncHighlighters(), 0);
+                                }}
+                            >
+                                <div className="iris-drawer-btn-icon">✨</div>
+                                <div className="iris-drawer-btn-label">{p.manifest.name.replace('Portal ', '')}</div>
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </Fragment>
+        );
+    };
+
     const renderSystemContent = () => (
         <Fragment>
-            <div className="iris-drawer-section-label">System</div>
+            <div className="iris-drawer-section-label">Iris Core</div>
             <div className="iris-drawer-grid">
                 <button className="iris-drawer-btn" onClick={() => onAction('plugins')}>
                     <div className="iris-drawer-btn-icon">🧩</div>
@@ -281,8 +284,9 @@ export function DockDrawer({ tab, onClose, onAction, showMap }: DockDrawerProps)
             <div className="iris-drawer-content">
                 {tab === 'intel' && renderIntelContent()}
                 {tab === 'nav' && renderNavContent()}
-                {tab === 'highlighters' && renderHighlightersContent()}
+                {tab === 'tactical' && renderTacticalContent()}
                 {tab === 'layers' && renderLayersContent()}
+                {tab === 'highlighters' && renderHighlightersContent()}
                 {tab === 'system' && renderSystemContent()}
             </div>
         </div>

@@ -14,15 +14,16 @@ export function BottomDock({ activeDashboard, onToggleDashboard }: BottomDockPro
     const theme = THEMES[themeId] || THEMES.INGRESS;
 
     const navItems: { type: DrawerTab, icon: string, label: string }[] = [
-        { type: 'intel', icon: '👤', label: 'Intel' },
-        { type: 'nav', icon: '🧭', label: 'Nav' },
-        { type: 'highlighters', icon: '✨', label: 'High' },
-        { type: 'layers', icon: '🛡️', label: 'Layr' },
+        { type: 'intel', icon: '👤', label: 'Agent' },
+        { type: 'nav', icon: '🧭', label: 'Map' },
+        { type: 'tactical', icon: '🔍', label: 'Tact' },
+        { type: 'layers', icon: '🌐', label: 'Layr' },
+        { type: 'highlighters', icon: '✨', label: 'Vis' },
         { type: 'system', icon: '⚙️', label: 'Sys' },
     ];
 
     return (
-        <div className="iris-bottom-dock" style={{ borderColor: `${theme.AQUA}55`, gap: '8px', padding: '0 8px', maxWidth: '95%', width: 'auto' }}>
+        <div className="iris-bottom-dock" style={{ borderColor: `${theme.AQUA}55`, gap: '6px', padding: '0 6px', maxWidth: '98%', width: 'auto' }}>
             {navItems.map(item => (
                 <button
                     key={item.type}
@@ -30,11 +31,11 @@ export function BottomDock({ activeDashboard, onToggleDashboard }: BottomDockPro
                     onClick={() => onToggleDashboard(item.type)}
                     style={{ 
                         color: activeDashboard === item.type ? theme.AQUA : '#fff',
-                        width: '40px'
+                        width: '38px'
                     }}
                 >
-                    <div className="iris-dock-icon" style={{ fontSize: '1.2em' }}>{item.icon}</div>
-                    <div className="iris-dock-label" style={{ fontSize: '0.55em' }}>{item.label}</div>
+                    <div className="iris-dock-icon" style={{ fontSize: '1.1em' }}>{item.icon}</div>
+                    <div className="iris-dock-label" style={{ fontSize: '0.5em' }}>{item.label}</div>
                 </button>
             ))}
         </div>

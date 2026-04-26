@@ -198,8 +198,8 @@ export function IRISOverlay(): JSX.Element {
             </button>
 
             <BottomDock 
-                activeDashboard={activeDrawerTab as any} 
-                onToggleDashboard={(type) => setActiveDrawerTab(current => current === type ? null : type as DrawerTab)} 
+                activeDashboard={activeDrawerTab} 
+                onToggleDashboard={(tab) => setActiveDrawerTab(current => current === tab ? null : tab)} 
             />
 
             <StatusBar />
