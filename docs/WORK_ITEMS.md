@@ -314,6 +314,49 @@ Tasks:
 | Fix mobile two-column layout for tables                           | Done   | summary and details tables now stay 2-column on mobile                                         |
 | Enhance `parser.ts` for more detailed mod stats and history flags | Done   | capture 100% of attributes found in IITC's `entity_decode.js` (shielding, history flags, etc.) |
 
+## Immersive UX and Mobile Ergonomics
+
+Status: `In Progress`
+
+Goal:
+- Achieve 100% map immersion while providing one-thumb access to all tactical tools
+
+### Zero-Topbar immersive layout
+
+Status: `Done`
+
+Outcome:
+- achieve 100% vertical map visibility on mobile and desktop
+- move secondary utilities (Search, Geolocate) into ergonomic floating or dashboard locations
+
+Tasks:
+
+| Task                                          | Status | Notes                                                                                   |
+|-----------------------------------------------|--------|-----------------------------------------------------------------------------------------|
+| Remove static Topbar                          | Done   | purges screen-top chrome entirely                                                       |
+| Implement Floating Action Button (FAB)        | Done   | moved Geolocate to bottom-right thumb zone; auto-adjusts height when drawers open       |
+| Move Location Search to Popup                 | Done   | accessible via Nav Dashboard; clean full-screen input experience                        |
+| Map interaction backdrop                      | Done   | tapping anywhere on the map backdrop instantly dismisses open drawers                   |
+
+### Multi-Tab Dock Drawer system
+
+Status: `Done`
+
+Outcome:
+- granular, context-aware navigation using a 6-tab persistent bottom dock
+- zero-occlusion toggling for map visuals and filters
+
+Tasks:
+
+| Task                                          | Status | Notes                                                                                   |
+|-----------------------------------------------|--------|-----------------------------------------------------------------------------------------|
+| 6-Tab Dock Implementation                     | Done   | Agent, Map, Tactical, Layers, Visuals, System tabs established                          |
+| Modular Drawer Architecture                   | Done   | each tab logic isolated in dedicated components (`AgentTab.tsx`, etc.)                  |
+| Thematic Button Coloring                      | Done   | unique colors per dock button for peripheral visual recognition                         |
+| Explicit State Naming Prefixing               | Done   | refactored store to use `layerShow`, `filterShow`, and `activeVisualOverlay` prefixes   |
+| Integrated Plugin Toggles                     | Done   | highlighters and player-tracker visibility integrated directly into drawer tabs         |
+| Active Overlay Persistence                    | Done   | `activeVisualOverlayIds` now survives hard refreshes via localStorage                   |
+
 ### Faction and player styling is consistent
 
 Status: `Done`
@@ -600,9 +643,10 @@ Outcome:
 
 Tasks:
 
-| Task                         | Status | Notes                                                 |
-|------------------------------|--------|-------------------------------------------------------|
-| Storage boundary design pass | Done   | added allowRotation and allowPitch to persisted state |
+| Task                                          | Status | Notes                                                                                   |
+|-----------------------------------------------|--------|-----------------------------------------------------------------------------------------|
+| Storage boundary design pass                  | Done   | added allowRotation and allowPitch to persisted state                                   |
+| Prefix-based state property naming            | Done   | refactored store to use `layerShow`, `filterShow`, and `activeVisualOverlay` prefixes   |
 
 ## Diagnostics and Observability
 
@@ -743,7 +787,9 @@ Tasks:
 
 1. **[Plugin Overlay]** Implement a "Single Highlighter" selection model.
 2. **[Live Map Freshness]** Implement strict concurrent request limit (5) in `RequestCoordinator` (Done).
-3. **[Draw Tools]** Turn the draw-tools epic into an implementation plan for the first mobile-safe baseline.
+3. **[Live Map Freshness]** Implement surgical tile fetching (Done).
+4. **[Draw Tools]** Turn the draw-tools epic into an implementation plan for the first mobile-safe baseline.
+5. **[Ergonomics]** Evaluate "Swipe down to close" for the new Dock Drawer.
 
 ## Snapshot And Reference Sources
 
