@@ -3,7 +3,7 @@ import { useStore, pluginManager } from '@iris/core';
 import { THEMES } from '../theme';
 import './dock-drawer.css';
 
-export type DrawerTab = 'intel' | 'nav' | 'highlighters' | 'filters' | 'system' | null;
+export type DrawerTab = 'intel' | 'nav' | 'highlighters' | 'layers' | 'system' | null;
 
 interface DockDrawerProps {
     tab: DrawerTab;
@@ -110,8 +110,11 @@ export function DockDrawer({ tab, onClose, onAction, showMap }: DockDrawerProps)
     );
 
     const renderHighlightersContent = () => {
+        // Highlighters EXCLUDING player-tracker (which is now in Layers)
         const highlighters = pluginManager.getAvailablePlugins().filter(p => 
-            p.manifest.capabilities?.includes('highlighter') && (pluginStates[p.manifest.id] ?? false)
+            p.manifest.capabilities?.includes('highlighter') && 
+            p.manifest.id !== 'player-tracker' &&
+            (pluginStates[p.manifest.id] ?? false)
         );
 
         return (
@@ -142,7 +145,7 @@ export function DockDrawer({ tab, onClose, onAction, showMap }: DockDrawerProps)
         );
     };
 
-    const renderFiltersContent = () => (
+    const renderLayersContent = () => (
         <Fragment>
             <div className="iris-drawer-section-label">Map Layers</div>
             <div className="iris-drawer-scroll-group">
@@ -154,6 +157,20 @@ export function DockDrawer({ tab, onClose, onAction, showMap }: DockDrawerProps)
                     <div className="iris-drawer-btn-icon">⛓️</div>
                     <div className="iris-drawer-btn-label">Links</div>
                 </button>
+                
+                {pluginStates['player-tracker'] && (
+                    <button 
+                        className={`iris-drawer-btn ${activeHighlighterIds.includes('player-tracker') ? 'iris-drawer-btn-active' : ''}`} 
+                        onClick={() => {
+                            toggleHighlighter('player-tracker');
+                            setTimeout(() => pluginManager.syncHighlighters(), 0);
+                        }}
+                    >
+                        <div className="iris-drawer-btn-icon">🏃</div>
+                        <div className="iris-drawer-btn-label">Players</div>
+                    </button>
+                )}
+
                 <button className={`iris-drawer-btn ${showOrnaments ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowOrnaments}>
                     <div className="iris-drawer-btn-icon">💠</div>
                     <div className="iris-drawer-btn-label">Ornaments</div>
@@ -265,7 +282,7 @@ export function DockDrawer({ tab, onClose, onAction, showMap }: DockDrawerProps)
                 {tab === 'intel' && renderIntelContent()}
                 {tab === 'nav' && renderNavContent()}
                 {tab === 'highlighters' && renderHighlightersContent()}
-                {tab === 'filters' && renderFiltersContent()}
+                {tab === 'layers' && renderLayersContent()}
                 {tab === 'system' && renderSystemContent()}
             </div>
         </div>

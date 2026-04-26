@@ -17,7 +17,7 @@ export function BottomDock({ activeDashboard, onToggleDashboard }: BottomDockPro
         { type: 'intel', icon: '👤', label: 'Intel' },
         { type: 'nav', icon: '🧭', label: 'Nav' },
         { type: 'highlighters', icon: '✨', label: 'High' },
-        { type: 'filters', icon: '🛡️', label: 'Filt' },
+        { type: 'layers', icon: '🛡️', label: 'Layr' },
         { type: 'system', icon: '⚙️', label: 'Sys' },
     ];
 
@@ -30,7 +30,7 @@ export function BottomDock({ activeDashboard, onToggleDashboard }: BottomDockPro
                     onClick={() => onToggleDashboard(item.type)}
                     style={{ 
                         color: activeDashboard === item.type ? theme.AQUA : '#fff',
-                        width: '40px' /* Slightly smaller to fit 5 */
+                        width: '40px'
                     }}
                 >
                     <div className="iris-dock-icon" style={{ fontSize: '1.2em' }}>{item.icon}</div>
