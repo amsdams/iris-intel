@@ -1,6 +1,4 @@
 import { h, JSX } from 'preact';
-import { useStore } from '@iris/core';
-import { THEMES } from '../theme';
 import { DrawerTab } from './DockDrawer';
 import './bottomdock.css';
 
@@ -10,32 +8,25 @@ interface BottomDockProps {
 }
 
 export function BottomDock({ activeDashboard, onToggleDashboard }: BottomDockProps): JSX.Element {
-    const themeId = useStore((state) => state.themeId);
-    const theme = THEMES[themeId] || THEMES.INGRESS;
-
-    const navItems: { type: DrawerTab, icon: string, label: string }[] = [
-        { type: 'intel', icon: '👤', label: 'Agent' },
-        { type: 'nav', icon: '🧭', label: 'Map' },
-        { type: 'tactical', icon: '🔍', label: 'Tact' },
-        { type: 'layers', icon: '🌐', label: 'Layr' },
-        { type: 'highlighters', icon: '✨', label: 'Vis' },
-        { type: 'system', icon: '⚙️', label: 'Sys' },
+    const navItems: { type: DrawerTab, icon: string, label: string, className: string }[] = [
+        { type: 'intel', icon: '👤', label: 'Agent', className: 'iris-dock-btn-intel' },
+        { type: 'nav', icon: '🧭', label: 'Map', className: 'iris-dock-btn-nav' },
+        { type: 'tactical', icon: '🔍', label: 'Tact', className: 'iris-dock-btn-tactical' },
+        { type: 'layers', icon: '🌐', label: 'Layr', className: 'iris-dock-btn-layers' },
+        { type: 'highlighters', icon: '✨', label: 'Vis', className: 'iris-dock-btn-highlighters' },
+        { type: 'system', icon: '⚙️', label: 'Sys', className: 'iris-dock-btn-system' },
     ];
 
     return (
-        <div className="iris-bottom-dock" style={{ borderColor: `${theme.AQUA}55`, gap: '6px', padding: '0 6px', maxWidth: '98%', width: 'auto' }}>
+        <div className="iris-bottom-dock">
             {navItems.map(item => (
                 <button
                     key={item.type}
-                    className={`iris-dock-btn ${activeDashboard === item.type ? 'iris-dock-btn-active' : ''}`}
+                    className={`iris-dock-btn ${item.className} ${activeDashboard === item.type ? 'iris-dock-btn-active' : ''}`}
                     onClick={() => onToggleDashboard(item.type)}
-                    style={{ 
-                        color: activeDashboard === item.type ? theme.AQUA : '#fff',
-                        width: '38px'
-                    }}
                 >
-                    <div className="iris-dock-icon" style={{ fontSize: '1.1em' }}>{item.icon}</div>
-                    <div className="iris-dock-label" style={{ fontSize: '0.5em' }}>{item.label}</div>
+                    <div className="iris-dock-icon">{item.icon}</div>
+                    <div className="iris-dock-label">{item.label}</div>
                 </button>
             ))}
         </div>

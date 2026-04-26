@@ -6,21 +6,23 @@
     background: rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(0, 255, 255, 0.3);
+    border: 1px solid var(--iris-accent-dim, rgba(0, 255, 255, 0.3));
     border-radius: 30px;
     height: 60px;
     display: flex;
     align-items: center;
-    padding: 0 10px;
-    gap: 15px;
+    padding: 0 8px;
+    gap: 6px;
     z-index: 10005;
     pointer-events: auto;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    max-width: 98%;
+    width: auto;
 }
 
 .iris-bottom-dock:hover {
-    border-color: rgba(0, 255, 255, 0.6);
+    border-color: var(--iris-accent);
     box-shadow: 0 4px 20px rgba(0, 255, 255, 0.2);
 }
 
@@ -28,7 +30,7 @@
     background: transparent;
     border: none;
     color: #fff;
-    width: 44px;
+    width: 38px;
     height: 44px;
     border-radius: 50%;
     display: flex;
@@ -41,25 +43,32 @@
 }
 
 .iris-dock-btn:active {
-    background: rgba(0, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.1);
     transform: translateY(-2px);
 }
 
 .iris-dock-icon {
-    font-size: 1.4em;
+    font-size: 1.1em;
 }
 
 .iris-dock-label {
-    font-size: 0.6em;
+    font-size: 0.5em;
     font-family: monospace;
     font-weight: bold;
     text-transform: uppercase;
     margin-top: 2px;
 }
 
+/* Thematic Colors */
+.iris-dock-btn-intel.iris-dock-btn-active { color: #0ff; }
+.iris-dock-btn-nav.iris-dock-btn-active { color: #fff; }
+.iris-dock-btn-tactical.iris-dock-btn-active { color: #ffcc00; }
+.iris-dock-btn-layers.iris-dock-btn-active { color: #0088ff; }
+.iris-dock-btn-highlighters.iris-dock-btn-active { color: #b000ff; }
+.iris-dock-btn-system.iris-dock-btn-active { color: #888; }
+
 .iris-dock-btn-active {
-    color: #0ff;
-    background: rgba(0, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .iris-dock-btn-active::after {
@@ -68,8 +77,9 @@
     bottom: -4px;
     width: 4px;
     height: 4px;
-    background: #0ff;
+    background: currentColor;
     border-radius: 50%;
+    box-shadow: 0 0 5px currentColor;
 }
 
 .iris-fab-geolocate {
@@ -80,8 +90,8 @@
     height: 48px;
     border-radius: 50%;
     background: rgba(0, 0, 0, 0.85);
-    border: 1px solid rgba(0, 255, 255, 0.4);
-    color: #0ff;
+    border: 1px solid var(--iris-accent-dim);
+    color: var(--iris-accent);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -90,11 +100,11 @@
     pointer-events: auto;
     z-index: 10004;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
-    transition: all 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .iris-fab-geolocate:active {
     transform: scale(0.9);
-    background: #0ff;
+    background: var(--iris-accent);
     color: #000;
 }
