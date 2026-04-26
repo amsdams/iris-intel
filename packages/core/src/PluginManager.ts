@@ -7,7 +7,7 @@ export class PluginManager {
   private pluginFeaturesByPlugin = new Map<string, GeoJSON.Feature[]>();
 
   private syncPluginFeatures(): void {
-    const activeHighlighterIds = useStore.getState().activeHighlighterIds;
+    const activeVisualOverlayIds = useStore.getState().activeVisualOverlayIds;
     const features: GeoJSON.Feature[] = [];
 
     for (const [id, pluginFeatures] of this.pluginFeaturesByPlugin) {
@@ -16,7 +16,7 @@ export class PluginManager {
         
         // If it's a highlighter, only include if active.
         // If it's not a highlighter (e.g. Draw Tools, Player Tracker), include always if enabled.
-        if (!isHighlighter || activeHighlighterIds.includes(id)) {
+        if (!isHighlighter || activeVisualOverlayIds.includes(id)) {
             features.push(...pluginFeatures);
         }
     }
@@ -28,9 +28,9 @@ export class PluginManager {
   }
 
   /**
-   * Public way for UI to trigger a re-sync when activeHighlighterIds changes.
+   * Public way for UI to trigger a re-sync when activeVisualOverlayIds changes.
    */
-  public syncHighlighters(): void {
+  public syncVisualOverlays(): void {
     this.syncPluginFeatures();
   }
 

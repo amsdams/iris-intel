@@ -2,8 +2,8 @@ import { h, JSX, Fragment } from 'preact';
 import { useStore, pluginManager } from '@iris/core';
 
 export function VisualsTab(): JSX.Element {
-    const activeHighlighterIds = useStore((state) => state.activeHighlighterIds);
-    const toggleHighlighter = useStore((state) => state.toggleHighlighter);
+    const activeVisualOverlayIds = useStore((state) => state.activeVisualOverlayIds);
+    const toggleVisualOverlay = useStore((state) => state.toggleVisualOverlay);
     const pluginStates = useStore((state) => state.pluginStates);
 
     const highlighters = pluginManager.getAvailablePlugins().filter(p => 
@@ -24,10 +24,10 @@ export function VisualsTab(): JSX.Element {
                     {highlighters.map(p => (
                         <button 
                             key={p.manifest.id} 
-                            className={`iris-drawer-btn ${activeHighlighterIds.includes(p.manifest.id) ? 'iris-drawer-btn-active' : ''}`}
+                            className={`iris-drawer-btn ${activeVisualOverlayIds.includes(p.manifest.id) ? 'iris-drawer-btn-active' : ''}`}
                             onClick={() => {
-                                toggleHighlighter(p.manifest.id);
-                                setTimeout(() => pluginManager.syncHighlighters(), 0);
+                                toggleVisualOverlay(p.manifest.id);
+                                setTimeout(() => pluginManager.syncVisualOverlays(), 0);
                             }}
                         >
                             <div className="iris-drawer-btn-icon">✨</div>

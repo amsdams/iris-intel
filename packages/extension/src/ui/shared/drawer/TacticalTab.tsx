@@ -2,44 +2,44 @@ import { h, JSX, Fragment } from 'preact';
 import { useStore } from '@iris/core';
 
 export function TacticalTab(): JSX.Element {
-    const showResistance = useStore((state) => state.showResistance);
-    const toggleShowResistance = useStore((state) => state.toggleShowResistance);
-    const showEnlightened = useStore((state) => state.showEnlightened);
-    const toggleShowEnlightened = useStore((state) => state.toggleShowEnlightened);
-    const showMachina = useStore((state) => state.showMachina);
-    const toggleShowMachina = useStore((state) => state.toggleShowMachina);
-    const showUnclaimedPortals = useStore((state) => state.showUnclaimedPortals);
-    const toggleShowUnclaimedPortals = useStore((state) => state.toggleShowUnclaimedPortals);
+    const filterShowResistance = useStore((state) => state.filterShowResistance);
+    const toggleFilterResistance = useStore((state) => state.toggleFilterResistance);
+    const filterShowEnlightened = useStore((state) => state.filterShowEnlightened);
+    const toggleFilterEnlightened = useStore((state) => state.toggleFilterEnlightened);
+    const filterShowMachina = useStore((state) => state.filterShowMachina);
+    const toggleFilterMachina = useStore((state) => state.toggleFilterMachina);
+    const filterShowUnclaimedPortals = useStore((state) => state.filterShowUnclaimedPortals);
+    const toggleFilterUnclaimedPortals = useStore((state) => state.toggleFilterUnclaimedPortals);
     
-    const showLevel = useStore((state) => state.showLevel);
-    const toggleShowLevel = useStore((state) => state.toggleShowLevel);
-    const showHealth = useStore((state) => state.showHealth);
-    const toggleShowHealth = useStore((state) => state.toggleShowHealth);
+    const filterShowLevel = useStore((state) => state.filterShowLevel);
+    const toggleFilterLevel = useStore((state) => state.toggleFilterLevel);
+    const filterShowHealth = useStore((state) => state.filterShowHealth);
+    const toggleFilterHealth = useStore((state) => state.toggleFilterHealth);
     
-    const showVisited = useStore((state) => state.showVisited);
-    const toggleShowVisited = useStore((state) => state.toggleShowVisited);
-    const showCaptured = useStore((state) => state.showCaptured);
-    const toggleShowCaptured = useStore((state) => state.toggleShowCaptured);
-    const showScanned = useStore((state) => state.showScanned);
-    const toggleShowScanned = useStore((state) => state.toggleShowScanned);
+    const filterShowVisited = useStore((state) => state.filterShowVisited);
+    const toggleFilterVisited = useStore((state) => state.toggleFilterVisited);
+    const filterShowCaptured = useStore((state) => state.filterShowCaptured);
+    const toggleFilterCaptured = useStore((state) => state.toggleFilterCaptured);
+    const filterShowScanned = useStore((state) => state.filterShowScanned);
+    const toggleFilterScanned = useStore((state) => state.toggleFilterScanned);
 
     return (
         <Fragment>
             <div className="iris-drawer-section-label">Faction Filters</div>
             <div className="iris-drawer-scroll-group">
-                <button className={`iris-drawer-btn ${showEnlightened ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowEnlightened}>
+                <button className={`iris-drawer-btn ${filterShowEnlightened ? 'iris-drawer-btn-active' : ''}`} onClick={toggleFilterEnlightened}>
                     <div className="iris-drawer-btn-icon">💚</div>
                     <div className="iris-drawer-btn-label">ENL</div>
                 </button>
-                <button className={`iris-drawer-btn ${showResistance ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowResistance}>
+                <button className={`iris-drawer-btn ${filterShowResistance ? 'iris-drawer-btn-active' : ''}`} onClick={toggleFilterResistance}>
                     <div className="iris-drawer-btn-icon">💙</div>
                     <div className="iris-drawer-btn-label">RES</div>
                 </button>
-                <button className={`iris-drawer-btn ${showMachina ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowMachina}>
+                <button className={`iris-drawer-btn ${filterShowMachina ? 'iris-drawer-btn-active' : ''}`} onClick={toggleFilterMachina}>
                     <div className="iris-drawer-btn-icon">❤️</div>
                     <div className="iris-drawer-btn-label">MAC</div>
                 </button>
-                <button className={`iris-drawer-btn ${showUnclaimedPortals ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowUnclaimedPortals}>
+                <button className={`iris-drawer-btn ${filterShowUnclaimedPortals ? 'iris-drawer-btn-active' : ''}`} onClick={toggleFilterUnclaimedPortals}>
                     <div className="iris-drawer-btn-icon">🤍</div>
                     <div className="iris-drawer-btn-label">NEU</div>
                 </button>
@@ -48,7 +48,7 @@ export function TacticalTab(): JSX.Element {
             <div className="iris-drawer-section-label">Level Filters</div>
             <div className="iris-drawer-scroll-group">
                 {[1, 2, 3, 4, 5, 6, 7, 8].map(l => (
-                    <button key={l} className={`iris-drawer-btn ${showLevel[l] ? 'iris-drawer-btn-active' : ''}`} onClick={() => toggleShowLevel(l)}>
+                    <button key={l} className={`iris-drawer-btn ${filterShowLevel[l] ? 'iris-drawer-btn-active' : ''}`} onClick={() => toggleFilterLevel(l)}>
                         <div className="iris-drawer-btn-label">L{l}</div>
                     </button>
                 ))}
@@ -57,7 +57,7 @@ export function TacticalTab(): JSX.Element {
             <div className="iris-drawer-section-label">Health Filters</div>
             <div className="iris-drawer-scroll-group">
                 {[25, 50, 75, 100].map(h => (
-                    <button key={h} className={`iris-drawer-btn ${showHealth[h] ? 'iris-drawer-btn-active' : ''}`} onClick={() => toggleShowHealth(h)}>
+                    <button key={h} className={`iris-drawer-btn ${filterShowHealth[h] ? 'iris-drawer-btn-active' : ''}`} onClick={() => toggleFilterHealth(h)}>
                         <div className="iris-drawer-btn-label">{h}%</div>
                     </button>
                 ))}
@@ -65,13 +65,13 @@ export function TacticalTab(): JSX.Element {
 
             <div className="iris-drawer-section-label">Agent History</div>
             <div className="iris-drawer-scroll-group">
-                <button className={`iris-drawer-btn ${showVisited ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowVisited}>
+                <button className={`iris-drawer-btn ${filterShowVisited ? 'iris-drawer-btn-active' : ''}`} onClick={toggleFilterVisited}>
                     <div className="iris-drawer-btn-label">Visited</div>
                 </button>
-                <button className={`iris-drawer-btn ${showCaptured ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowCaptured}>
+                <button className={`iris-drawer-btn ${filterShowCaptured ? 'iris-drawer-btn-active' : ''}`} onClick={toggleFilterCaptured}>
                     <div className="iris-drawer-btn-label">Captured</div>
                 </button>
-                <button className={`iris-drawer-btn ${showScanned ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowScanned}>
+                <button className={`iris-drawer-btn ${filterShowScanned ? 'iris-drawer-btn-active' : ''}`} onClick={toggleFilterScanned}>
                     <div className="iris-drawer-btn-label">Scanned</div>
                 </button>
             </div>

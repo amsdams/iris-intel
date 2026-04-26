@@ -293,19 +293,19 @@ export interface IRISSettings {
     pluginStates: Record<string, boolean>;
     themeId: string;
     mapThemeId: string;
-    showFields: boolean;
-    showLinks: boolean;
-    showOrnaments: boolean;
-    showArtifacts: boolean;
-    showResistance: boolean;
-    showEnlightened: boolean;
-    showMachina: boolean;
-    showUnclaimedPortals: boolean;
-    showLevel: Record<number, boolean>;
-    showHealth: Record<number, boolean>;
-    showVisited: boolean;
-    showCaptured: boolean;
-    showScanned: boolean;
+    layerShowFields: boolean;
+    layerShowLinks: boolean;
+    layerShowOrnaments: boolean;
+    layerShowArtifacts: boolean;
+    filterShowResistance: boolean;
+    filterShowEnlightened: boolean;
+    filterShowMachina: boolean;
+    filterShowUnclaimedPortals: boolean;
+    filterShowLevel: Record<number, boolean>;
+    filterShowHealth: Record<number, boolean>;
+    filterShowVisited: boolean;
+    filterShowCaptured: boolean;
+    filterShowScanned: boolean;
     allowRotation: boolean;
     allowPitch: boolean;
     debugLogging: boolean;
@@ -317,24 +317,24 @@ export const DEFAULT_SETTINGS: IRISSettings = {
     pluginStates: {},
     themeId: 'INGRESS',
     mapThemeId: 'DARK',
-    showFields: true,
-    showLinks: true,
-    showOrnaments: true,
-    showArtifacts: true,
-    showResistance: true,
-    showEnlightened: true,
-    showMachina: true,
-    showUnclaimedPortals: true,
-    showLevel: {
+    layerShowFields: true,
+    layerShowLinks: true,
+    layerShowOrnaments: true,
+    layerShowArtifacts: true,
+    filterShowResistance: true,
+    filterShowEnlightened: true,
+    filterShowMachina: true,
+    filterShowUnclaimedPortals: true,
+    filterShowLevel: {
         1: true, 2: true, 3: true, 4: true,
         5: true, 6: true, 7: true, 8: true,
     },
-    showHealth: {
+    filterShowHealth: {
         25: true, 50: true, 75: true, 100: true,
     },
-    showVisited: true,
-    showCaptured: true,
-    showScanned: true,
+    filterShowVisited: true,
+    filterShowCaptured: true,
+    filterShowScanned: true,
     allowRotation: true,
     allowPitch: true,
     debugLogging: false,
@@ -347,19 +347,19 @@ interface SettingsSlice extends IRISSettings {
     setPluginEnabled: (id: string, enabled: boolean) => void;
     setTheme: (id: string) => void;
     setMapTheme: (id: string) => void;
-    toggleShowFields: () => void;
-    toggleShowLinks: () => void;
-    toggleShowOrnaments: () => void;
-    toggleShowArtifacts: () => void;
-    toggleShowResistance: () => void;
-    toggleShowEnlightened: () => void;
-    toggleShowMachina: () => void;
-    toggleShowUnclaimedPortals: () => void;
-    toggleShowLevel: (level: number) => void;
-    toggleShowHealth: (bucket: number) => void;
-    toggleShowVisited: () => void;
-    toggleShowCaptured: () => void;
-    toggleShowScanned: () => void;
+    toggleLayerFields: () => void;
+    toggleLayerLinks: () => void;
+    toggleLayerOrnaments: () => void;
+    toggleLayerArtifacts: () => void;
+    toggleFilterResistance: () => void;
+    toggleFilterEnlightened: () => void;
+    toggleFilterMachina: () => void;
+    toggleFilterUnclaimedPortals: () => void;
+    toggleFilterLevel: (level: number) => void;
+    toggleFilterHealth: (bucket: number) => void;
+    toggleFilterVisited: () => void;
+    toggleFilterCaptured: () => void;
+    toggleFilterScanned: () => void;
     toggleAllowRotation: () => void;
     toggleAllowPitch: () => void;
     toggleDebugLogging: () => void;
@@ -417,7 +417,7 @@ interface UISlice {
     passcodeRedeemError: string | null;
     passcodeRewards: PasscodeRewards | null;
     rehydrated: boolean;
-    activeHighlighterIds: string[];
+    activeVisualOverlayIds: string[];
     addStatsItem: (item: StatsItem) => void;
     removeStatsItem: (id: string) => void;
     addMenuItem: (item: MenuItem) => void;
@@ -442,7 +442,7 @@ interface UISlice {
     setPasscodeRedeemSuccess: (rewards: PasscodeRewards) => void;
     setPasscodeRedeemError: (error: string) => void;
     clearPasscodeRedeemState: () => void;
-    toggleHighlighter: (id: string) => void;
+    toggleVisualOverlay: (id: string) => void;
 }
 
 interface PlayerSlice {
@@ -459,6 +459,7 @@ interface PlayerSlice {
     setRegionScore: (score: RegionScore) => void;
     setHasSubscription: (has: boolean) => void;
     setInventory: (items: InventoryItem[]) => void;
+    setInventoryItems: (items: InventoryItem[]) => void;
     setMissionDetails: (mission: MissionDetails | null) => void;
     setMissionsInView: (missions: MissionSummary[]) => void;
     setMissionsPortalId: (portalId: string | null) => void;
@@ -563,23 +564,23 @@ const createSettingsSlice: StateCreator<IRISState, [], [], SettingsSlice> = (set
         set((state) => ({ pluginStates: { ...state.pluginStates, [id]: enabled } })),
     setTheme: (id) => set(() => ({ themeId: id })),
     setMapTheme: (id) => set(() => ({ mapThemeId: id })),
-    toggleShowFields: () => set((state) => ({ showFields: !state.showFields })),
-    toggleShowLinks: () => set((state) => ({ showLinks: !state.showLinks })),
-    toggleShowOrnaments: () => set((state) => ({ showOrnaments: !state.showOrnaments })),
-    toggleShowArtifacts: () => set((state) => ({ showArtifacts: !state.showArtifacts })),
-    toggleShowResistance: () => set((state) => ({ showResistance: !state.showResistance })),
-    toggleShowEnlightened: () => set((state) => ({ showEnlightened: !state.showEnlightened })),
-    toggleShowMachina: () => set((state) => ({ showMachina: !state.showMachina })),
-    toggleShowUnclaimedPortals: () => set((state) => ({ showUnclaimedPortals: !state.showUnclaimedPortals })),
-    toggleShowLevel: (level) => set((state) => ({
-        showLevel: { ...state.showLevel, [level]: !state.showLevel[level] }
+    toggleLayerFields: () => set((state) => ({ layerShowFields: !state.layerShowFields })),
+    toggleLayerLinks: () => set((state) => ({ layerShowLinks: !state.layerShowLinks })),
+    toggleLayerOrnaments: () => set((state) => ({ layerShowOrnaments: !state.layerShowOrnaments })),
+    toggleLayerArtifacts: () => set((state) => ({ layerShowArtifacts: !state.layerShowArtifacts })),
+    toggleFilterResistance: () => set((state) => ({ filterShowResistance: !state.filterShowResistance })),
+    toggleFilterEnlightened: () => set((state) => ({ filterShowEnlightened: !state.filterShowEnlightened })),
+    toggleFilterMachina: () => set((state) => ({ filterShowMachina: !state.filterShowMachina })),
+    toggleFilterUnclaimedPortals: () => set((state) => ({ filterShowUnclaimedPortals: !state.filterShowUnclaimedPortals })),
+    toggleFilterLevel: (level) => set((state) => ({
+        filterShowLevel: { ...state.filterShowLevel, [level]: !state.filterShowLevel[level] }
     })),
-    toggleShowHealth: (bucket) => set((state) => ({
-        showHealth: { ...state.showHealth, [bucket]: !state.showHealth[bucket] }
+    toggleFilterHealth: (bucket) => set((state) => ({
+        filterShowHealth: { ...state.filterShowHealth, [bucket]: !state.filterShowHealth[bucket] }
     })),
-    toggleShowVisited: () => set((state) => ({ showVisited: !state.showVisited })),
-    toggleShowCaptured: () => set((state) => ({ showCaptured: !state.showCaptured })),
-    toggleShowScanned: () => set((state) => ({ showScanned: !state.showScanned })),
+    toggleFilterVisited: () => set((state) => ({ filterShowVisited: !state.filterShowVisited })),
+    toggleFilterCaptured: () => set((state) => ({ filterShowCaptured: !state.filterShowCaptured })),
+    toggleFilterScanned: () => set((state) => ({ filterShowScanned: !state.filterShowScanned })),
     toggleAllowRotation: () => set((state) => ({ allowRotation: !state.allowRotation })),
     toggleAllowPitch: () => set((state) => ({ allowPitch: !state.allowPitch })),
     toggleDebugLogging: () => set((state) => ({ debugLogging: !state.debugLogging })),
@@ -836,7 +837,7 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
     passcodeRedeemError: null,
     passcodeRewards: null,
     rehydrated: false,
-    activeHighlighterIds: [],
+    activeVisualOverlayIds: [],
     addStatsItem: (item) => set((state) => ({
         statsItems: { ...state.statsItems, [item.id]: item }
     })),
@@ -954,10 +955,10 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
         passcodeRedeemError: null,
         passcodeRewards: null,
     })),
-    toggleHighlighter: (id) => set((state) => ({
-        activeHighlighterIds: state.activeHighlighterIds.includes(id)
-            ? state.activeHighlighterIds.filter((activeId) => activeId !== id)
-            : [...state.activeHighlighterIds, id]
+    toggleVisualOverlay: (id) => set((state) => ({
+        activeVisualOverlayIds: state.activeVisualOverlayIds.includes(id)
+            ? state.activeVisualOverlayIds.filter((activeId) => activeId !== id)
+            : [...state.activeVisualOverlayIds, id]
     })),
 });
 
@@ -975,6 +976,7 @@ const createPlayerSlice: StateCreator<IRISState, [], [], PlayerSlice> = (set) =>
     setRegionScore: (score) => set(() => ({ regionScore: score })),
     setHasSubscription: (has) => set(() => ({ hasSubscription: has })),
     setInventory: (items) => set(() => ({ inventory: items })),
+    setInventoryItems: (items) => set(() => ({ inventory: items })),
     setMissionDetails: (mission) => set(() => ({ missionDetails: mission })),
     setMissionsInView: (missions) => set(() => ({ missionsInView: missions })),
     setMissionsPortalId: (portalId) => set(() => ({ missionsPortalId: portalId })),
@@ -1146,28 +1148,28 @@ export const useStore = create<IRISState>()(
                     pluginStates: state.pluginStates,
                     themeId: state.themeId,
                     mapThemeId: state.mapThemeId,
-                    showFields: state.showFields,
-                    showLinks: state.showLinks,
-                    showOrnaments: state.showOrnaments,
-                    showArtifacts: state.showArtifacts,
-                    showResistance: state.showResistance,
-                    showEnlightened: state.showEnlightened,
-                    showMachina: state.showMachina,
-                    showUnclaimedPortals: state.showUnclaimedPortals,
-                    showLevel: state.showLevel,
+                    layerShowFields: state.layerShowFields,
+                    layerShowLinks: state.layerShowLinks,
+                    layerShowOrnaments: state.layerShowOrnaments,
+                    layerShowArtifacts: state.layerShowArtifacts,
+                    filterShowResistance: state.filterShowResistance,
+                    filterShowEnlightened: state.filterShowEnlightened,
+                    filterShowMachina: state.filterShowMachina,
+                    filterShowUnclaimedPortals: state.filterShowUnclaimedPortals,
+                    filterShowLevel: state.filterShowLevel,
                     debugLogging: state.debugLogging,
                     showMockTools: state.showMockTools,
                     showMapControls: state.showMapControls,
-                    showHealth: state.showHealth,
-                    showVisited: state.showVisited,
-                    showCaptured: state.showCaptured,
-                    showScanned: state.showScanned,
+                    filterShowHealth: state.filterShowHealth,
+                    filterShowVisited: state.filterShowVisited,
+                    filterShowCaptured: state.filterShowCaptured,
+                    filterShowScanned: state.filterShowScanned,
                     allowRotation: state.allowRotation,
                     allowPitch: state.allowPitch,
                     discoveredLocation: state.discoveredLocation,
                     portalAddresses: state.portalAddresses,
                     lastResolvedLatLng: state.lastResolvedLatLng,
-                    activeHighlighterIds: state.activeHighlighterIds,
+                    activeVisualOverlayIds: state.activeVisualOverlayIds,
                     mapState: {
                         lat: state.mapState.lat,
                         lng: state.mapState.lng,

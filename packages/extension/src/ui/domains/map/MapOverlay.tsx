@@ -152,19 +152,19 @@ export function MapOverlay(): JSX.Element {
   const initialTeamColourExpr = useRef<string>(teamColourExpr);
 
   // Layer visibility states from store
-  const showFields = useStore((state) => state.showFields);
-  const showLinks = useStore((state) => state.showLinks);
-  const showOrnaments = useStore((state) => state.showOrnaments);
-  const showArtifacts = useStore((state) => state.showArtifacts);
-  const showResistance = useStore((state) => state.showResistance);
-  const showEnlightened = useStore((state) => state.showEnlightened);
-  const showMachina = useStore((state) => state.showMachina);
-  const showUnclaimedPortals = useStore((state) => state.showUnclaimedPortals);
-  const showLevel = useStore((state) => state.showLevel);
-  const showHealth = useStore((state) => state.showHealth);
-  const showVisited = useStore((state) => state.showVisited);
-  const showCaptured = useStore((state) => state.showCaptured);
-  const showScanned = useStore((state) => state.showScanned);
+  const layerShowFields = useStore((state) => state.layerShowFields);
+  const layerShowLinks = useStore((state) => state.layerShowLinks);
+  const layerShowOrnaments = useStore((state) => state.layerShowOrnaments);
+  const layerShowArtifacts = useStore((state) => state.layerShowArtifacts);
+  const filterShowResistance = useStore((state) => state.filterShowResistance);
+  const filterShowEnlightened = useStore((state) => state.filterShowEnlightened);
+  const filterShowMachina = useStore((state) => state.filterShowMachina);
+  const filterShowUnclaimedPortals = useStore((state) => state.filterShowUnclaimedPortals);
+  const filterShowLevel = useStore((state) => state.filterShowLevel);
+  const filterShowHealth = useStore((state) => state.filterShowHealth);
+  const filterShowVisited = useStore((state) => state.filterShowVisited);
+  const filterShowCaptured = useStore((state) => state.filterShowCaptured);
+  const filterShowScanned = useStore((state) => state.filterShowScanned);
   const allowRotation = useStore((state) => state.allowRotation);
   const allowPitch = useStore((state) => state.allowPitch);
 
@@ -201,14 +201,17 @@ export function MapOverlay(): JSX.Element {
     const viewportPortals: Record<string, Portal> = {};
     results.filter(r => r.type === 'portal').forEach(r => {
         const p = store.portals[r.id];
-        // Note: p.level can be undefined for placeholder portals (extracted from links/fields).
-        // We always show placeholders, as they are part of the active data set for this zoom.
         if (p && (p.level === undefined || p.level >= minLevel)) {
             viewportPortals[p.id] = p;
         }
     });
     const portalFeatures = buildPortalFeatures(viewportPortals, {
-        showResistance, showEnlightened, showMachina, showUnclaimedPortals, showLevel, showHealth
+        showResistance: filterShowResistance, 
+        showEnlightened: filterShowEnlightened, 
+        showMachina: filterShowMachina, 
+        showUnclaimedPortals: filterShowUnclaimedPortals, 
+        showLevel: filterShowLevel, 
+        showHealth: filterShowHealth
     });
     getGeoJsonSource('portals')?.setData(toFeatureCollection(portalFeatures));
 
@@ -219,7 +222,6 @@ export function MapOverlay(): JSX.Element {
         if (l) {
             const p1 = store.portals[l.fromPortalId];
             const p2 = store.portals[l.toPortalId];
-            // Only show link if BOTH endpoints satisfy the minLevel filter (or are placeholders)
             const p1Visible = p1 && (p1.level === undefined || p1.level >= minLevel);
             const p2Visible = p2 && (p2.level === undefined || p2.level >= minLevel);
             
@@ -229,7 +231,11 @@ export function MapOverlay(): JSX.Element {
         }
     });
     const linkFeatures = buildLinkFeatures(viewportLinks, {
-        showLinks, showResistance, showEnlightened, showMachina, showUnclaimedPortals
+        showLinks: layerShowLinks, 
+        showResistance: filterShowResistance, 
+        showEnlightened: filterShowEnlightened, 
+        showMachina: filterShowMachina, 
+        showUnclaimedPortals: filterShowUnclaimedPortals
     });
     getGeoJsonSource('links')?.setData(toFeatureCollection(linkFeatures));
 
@@ -247,20 +253,30 @@ export function MapOverlay(): JSX.Element {
         }
     });
     const fieldFeatures = buildFieldFeatures(viewportFields, {
-        showFields, showResistance, showEnlightened, showMachina, showUnclaimedPortals
+        showFields: layerShowFields, 
+        showResistance: filterShowResistance, 
+        showEnlightened: filterShowEnlightened, 
+        showMachina: filterShowMachina, 
+        showUnclaimedPortals: filterShowUnclaimedPortals
     });
     getGeoJsonSource('fields')?.setData(toFeatureCollection(fieldFeatures));
 
     // 4. Other overlays (keep full records for now if small)
-    getGeoJsonSource('artifacts')?.setData(toFeatureCollection(buildArtifactFeatures(artifacts, store.portals, { showArtifacts })));
+    getGeoJsonSource('artifacts')?.setData(toFeatureCollection(buildArtifactFeatures(artifacts, store.portals, { showArtifacts: layerShowArtifacts })));
     getGeoJsonSource('ornaments')?.setData(toFeatureCollection(buildOrnamentFeatures(store.portals, mockOrnaments, {
-      showOrnaments, showResistance, showEnlightened, showMachina, showUnclaimedPortals, showLevel, showHealth
+      showOrnaments: layerShowOrnaments, 
+      showResistance: filterShowResistance, 
+      showEnlightened: filterShowEnlightened, 
+      showMachina: filterShowMachina, 
+      showUnclaimedPortals: filterShowUnclaimedPortals, 
+      showLevel: filterShowLevel, 
+      showHealth: filterShowHealth
     })));
     getGeoJsonSource('mission-route')?.setData(toFeatureCollection(buildMissionRouteFeatures(missionDetails)));
     getGeoJsonSource('mission-waypoints')?.setData(toFeatureCollection(buildMissionWaypointFeatures(missionDetails)));
     getGeoJsonSource('plugin-features')?.setData(pluginFeatures);
 
-  }, [styleLoaded, showFields, showLinks, showOrnaments, showArtifacts, showResistance, showEnlightened, showMachina, showUnclaimedPortals, showLevel, showHealth, artifacts, mockOrnaments, missionDetails, pluginFeatures]);
+  }, [styleLoaded, layerShowFields, layerShowLinks, layerShowOrnaments, layerShowArtifacts, filterShowResistance, filterShowEnlightened, filterShowMachina, filterShowUnclaimedPortals, filterShowLevel, filterShowHealth, artifacts, mockOrnaments, missionDetails, pluginFeatures]);
 
   // ---------------------------------------------------------------------------
   // Initialise MapLibre map once on mount
@@ -722,15 +738,15 @@ export function MapOverlay(): JSX.Element {
     if (!map.current || !styleLoaded) return;
 
     if (map.current.getLayer('portal-history-visited')) {
-        map.current.setFilter('portal-history-visited', ['==', ['get', 'visited'], showVisited]);
+        map.current.setFilter('portal-history-visited', ['==', ['get', 'visited'], filterShowVisited]);
     }
     if (map.current.getLayer('portal-history-captured')) {
-        map.current.setFilter('portal-history-captured', ['==', ['get', 'captured'], showCaptured]);
+        map.current.setFilter('portal-history-captured', ['==', ['get', 'captured'], filterShowCaptured]);
     }
     if (map.current.getLayer('portal-history-scanned')) {
-        map.current.setFilter('portal-history-scanned', ['==', ['get', 'scanned'], showScanned]);
+        map.current.setFilter('portal-history-scanned', ['==', ['get', 'scanned'], filterShowScanned]);
     }
-  }, [showVisited, showCaptured, showScanned, styleLoaded]);
+  }, [filterShowVisited, filterShowCaptured, filterShowScanned, styleLoaded]);
 
   // Sync Viewport on Map Movement
   useEffect((): undefined | (() => void) => {

@@ -2,37 +2,37 @@ import { h, JSX, Fragment } from 'preact';
 import { useStore, pluginManager } from '@iris/core';
 
 export function LayersTab(): JSX.Element {
-    const showFields = useStore((state) => state.showFields);
-    const toggleShowFields = useStore((state) => state.toggleShowFields);
-    const showLinks = useStore((state) => state.showLinks);
-    const toggleShowLinks = useStore((state) => state.toggleShowLinks);
-    const showOrnaments = useStore((state) => state.showOrnaments);
-    const toggleShowOrnaments = useStore((state) => state.toggleShowOrnaments);
-    const showArtifacts = useStore((state) => state.showArtifacts);
-    const toggleShowArtifacts = useStore((state) => state.toggleShowArtifacts);
+    const layerShowFields = useStore((state) => state.layerShowFields);
+    const toggleLayerFields = useStore((state) => state.toggleLayerFields);
+    const layerShowLinks = useStore((state) => state.layerShowLinks);
+    const toggleLayerLinks = useStore((state) => state.toggleLayerLinks);
+    const layerShowOrnaments = useStore((state) => state.layerShowOrnaments);
+    const toggleLayerOrnaments = useStore((state) => state.toggleLayerOrnaments);
+    const layerShowArtifacts = useStore((state) => state.layerShowArtifacts);
+    const toggleLayerArtifacts = useStore((state) => state.toggleLayerArtifacts);
     const pluginStates = useStore((state) => state.pluginStates);
-    const activeHighlighterIds = useStore((state) => state.activeHighlighterIds);
-    const toggleHighlighter = useStore((state) => state.toggleHighlighter);
+    const activeVisualOverlayIds = useStore((state) => state.activeVisualOverlayIds);
+    const toggleVisualOverlay = useStore((state) => state.toggleVisualOverlay);
 
     return (
         <Fragment>
             <div className="iris-drawer-section-label">Structural Layers</div>
             <div className="iris-drawer-grid">
-                <button className={`iris-drawer-btn ${showFields ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowFields}>
+                <button className={`iris-drawer-btn ${layerShowFields ? 'iris-drawer-btn-active' : ''}`} onClick={toggleLayerFields}>
                     <div className="iris-drawer-btn-icon">🌐</div>
                     <div className="iris-drawer-btn-label">Fields</div>
                 </button>
-                <button className={`iris-drawer-btn ${showLinks ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowLinks}>
+                <button className={`iris-drawer-btn ${layerShowLinks ? 'iris-drawer-btn-active' : ''}`} onClick={toggleLayerLinks}>
                     <div className="iris-drawer-btn-icon">⛓️</div>
                     <div className="iris-drawer-btn-label">Links</div>
                 </button>
                 
                 {pluginStates['player-tracker'] && (
                     <button 
-                        className={`iris-drawer-btn ${activeHighlighterIds.includes('player-tracker') ? 'iris-drawer-btn-active' : ''}`} 
+                        className={`iris-drawer-btn ${activeVisualOverlayIds.includes('player-tracker') ? 'iris-drawer-btn-active' : ''}`} 
                         onClick={() => {
-                            toggleHighlighter('player-tracker');
-                            setTimeout(() => pluginManager.syncHighlighters(), 0);
+                            toggleVisualOverlay('player-tracker');
+                            setTimeout(() => pluginManager.syncVisualOverlays(), 0);
                         }}
                     >
                         <div className="iris-drawer-btn-icon">🏃</div>
@@ -40,11 +40,11 @@ export function LayersTab(): JSX.Element {
                     </button>
                 )}
 
-                <button className={`iris-drawer-btn ${showOrnaments ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowOrnaments}>
+                <button className={`iris-drawer-btn ${layerShowOrnaments ? 'iris-drawer-btn-active' : ''}`} onClick={toggleLayerOrnaments}>
                     <div className="iris-drawer-btn-icon">💠</div>
                     <div className="iris-drawer-btn-label">Event</div>
                 </button>
-                <button className={`iris-drawer-btn ${showArtifacts ? 'iris-drawer-btn-active' : ''}`} onClick={toggleShowArtifacts}>
+                <button className={`iris-drawer-btn ${layerShowArtifacts ? 'iris-drawer-btn-active' : ''}`} onClick={toggleLayerArtifacts}>
                     <div className="iris-drawer-btn-icon">💎</div>
                     <div className="iris-drawer-btn-label">Shard</div>
                 </button>
