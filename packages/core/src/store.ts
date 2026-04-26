@@ -1167,6 +1167,7 @@ export const useStore = create<IRISState>()(
                     discoveredLocation: state.discoveredLocation,
                     portalAddresses: state.portalAddresses,
                     lastResolvedLatLng: state.lastResolvedLatLng,
+                    activeHighlighterIds: state.activeHighlighterIds,
                     mapState: {
                         lat: state.mapState.lat,
                         lng: state.mapState.lng,
