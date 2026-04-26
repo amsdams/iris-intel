@@ -1,4 +1,4 @@
-import { h, JSX } from 'preact';
+import { h, JSX, Fragment } from 'preact';
 import { useStore } from '@iris/core';
 import { THEMES } from '../theme';
 import './dashboard.css';
@@ -18,6 +18,11 @@ interface DashboardItem {
     icon: string;
 }
 
+interface DashboardSection {
+    title: string;
+    items: DashboardItem[];
+}
+
 export function DashboardOverlay({ type, onClose, onAction, showMap }: DashboardOverlayProps): JSX.Element | null {
     if (!type) return null;
 
@@ -25,31 +30,59 @@ export function DashboardOverlay({ type, onClose, onAction, showMap }: Dashboard
     const theme = THEMES[themeId] || THEMES.INGRESS;
     const menuItems = useStore((state) => state.menuItems);
 
-    const items: DashboardItem[] = [];
+    const sections: DashboardSection[] = [];
 
     if (type === 'intel') {
-        items.push(
-            { id: 'stats', label: 'Player Stats', icon: '👤' },
-            { id: 'inventory', label: 'Inventory', icon: '🎒' },
-            { id: 'gameScore', label: 'Global Score', icon: '📊' },
-            { id: 'regionScore', label: 'Region Score', icon: '📉' },
-            { id: 'comm', label: 'COMM', icon: '💬' },
-            { id: 'passcodes', label: 'Passcodes', icon: '🔑' }
-        );
+        sections.push({
+            title: 'AGENT DATA',
+            items: [
+                { id: 'stats', label: 'Stats', icon: '👤' },
+                { id: 'inventory', label: 'Inventory', icon: '🎒' },
+                { id: 'comm', label: 'COMM', icon: '💬' },
+            ]
+        });
+        sections.push({
+            title: 'WORLD DATA',
+            items: [
+                { id: 'gameScore', label: 'Global MU', icon: '📊' },
+                { id: 'regionScore', label: 'Cell MU', icon: '📉' },
+                { id: 'passcodes', label: 'Passcodes', icon: '🔑' }
+            ]
+        });
     } else if (type === 'map') {
-        items.push(
-            { id: 'search', label: 'Search', icon: '🔍' },
-            { id: 'nav', label: 'Navigation', icon: '🧭' },
-            { id: 'filters', label: 'Filters', icon: '🛡️' },
-            { id: 'missions', label: 'Missions', icon: '🚀' }
-        );
+        sections.push({
+            title: 'NAVIGATION',
+            items: [
+                { id: 'search', label: 'Search', icon: '🔍' },
+                { id: 'nav', label: 'Controls', icon: '🧭' },
+                { id: 'missions', label: 'Missions', icon: '🚀' }
+            ]
+        });
+        sections.push({
+            title: 'MAP FILTERS',
+            items: [
+                { id: 'layers', label: 'Layers', icon: '🌐' },
+                { id: 'filters', label: 'Tactical', icon: '🛡️' },
+                { id: 'history', label: 'History', icon: '📜' }
+            ]
+        });
     } else if (type === 'system') {
-        items.push(
-            { id: 'plugins', label: 'Plugins', icon: '🧩' },
-            { id: 'settings', label: 'Map Settings', icon: '⚙️' },
-            { id: 'diag', label: 'Diagnostics', icon: '🛠️' },
-            { id: 'toggle', label: showMap ? 'Use Intel Map' : 'Use IRIS Map', icon: '🔄' }
-        );
+        sections.push({
+            title: 'IRIS SETTINGS',
+            items: [
+                { id: 'plugins', label: 'Manager', icon: '🧩' },
+                { id: 'settings', label: 'Display', icon: '⚙️' },
+                { id: 'diag', label: 'Diagnostics', icon: '🛠️' },
+                { id: 'toggle', label: showMap ? 'Use Intel' : 'Use IRIS', icon: '🔄' }
+            ]
+        });
+        
+        if (menuItems.length > 0) {
+            sections.push({
+                title: 'PLUGIN ACTIONS',
+                items: menuItems.map(m => ({ id: `plugin-${m.id}`, label: m.label, icon: '📦', original: m }))
+            });
+        }
     }
 
     return (
@@ -61,26 +94,29 @@ export function DashboardOverlay({ type, onClose, onAction, showMap }: Dashboard
                 </div>
                 
                 <div className="iris-dashboard-grid">
-                    {items.map(item => (
-                        <button 
-                            key={item.id} 
-                            className="iris-dashboard-item"
-                            onClick={(e) => { e.stopPropagation(); onAction(item.id); onClose(); }}
-                        >
-                            <div className="iris-dashboard-icon">{item.icon}</div>
-                            <div className="iris-dashboard-label" style={{ color: theme.AQUA }}>{item.label}</div>
-                        </button>
-                    ))}
-
-                    {type === 'system' && menuItems.map(item => (
-                        <button 
-                            key={item.id} 
-                            className="iris-dashboard-item iris-dashboard-item-plugin"
-                            onClick={(e) => { e.stopPropagation(); item.onClick(); onClose(); }}
-                        >
-                            <div className="iris-dashboard-icon">📦</div>
-                            <div className="iris-dashboard-label" style={{ color: theme.AQUA }}>{item.label}</div>
-                        </button>
+                    {sections.map(section => (
+                        <Fragment key={section.title}>
+                            <div className="iris-dashboard-section-title">{section.title}</div>
+                            {section.items.map(item => (
+                                <button 
+                                    key={item.id} 
+                                    className={`iris-dashboard-item ${item.id.startsWith('plugin-') ? 'iris-dashboard-item-plugin' : ''}`}
+                                    onClick={(e) => { 
+                                        e.stopPropagation(); 
+                                        if (item.id.startsWith('plugin-') && (item as any).original) {
+                                            (item as any).original.onClick();
+                                            onClose();
+                                        } else {
+                                            onAction(item.id); 
+                                            onClose(); 
+                                        }
+                                    }}
+                                >
+                                    <div className="iris-dashboard-icon">{item.icon}</div>
+                                    <div className="iris-dashboard-label" style={{ color: theme.AQUA }}>{item.label}</div>
+                                </button>
+                            ))}
+                        </Fragment>
                     ))}
                 </div>
             </div>

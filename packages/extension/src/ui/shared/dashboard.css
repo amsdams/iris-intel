@@ -66,6 +66,18 @@
     overflow-y: auto;
 }
 
+.iris-dashboard-section-title {
+    grid-column: 1 / -1;
+    font-size: 0.7em;
+    color: var(--iris-text-muted, #888);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 15px;
+    margin-bottom: -5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 4px;
+}
+
 .iris-dashboard-item {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(0, 255, 255, 0.2);

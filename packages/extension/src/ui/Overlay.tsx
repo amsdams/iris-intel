@@ -4,7 +4,9 @@ import { useStore } from '@iris/core';
 import { MapOverlay } from './domains/map/MapOverlay';
 import { PlayerStatsPopup } from './domains/player/PlayerStatsPopup';
 import { DiagnosticsPopup } from './domains/debug/DiagnosticsPopup';
-import { FiltersPopup } from './domains/filters/FiltersPopup';
+import { LayersPopup } from './domains/filters/LayersPopup';
+import { TacticalFiltersPopup } from './domains/filters/TacticalFiltersPopup';
+import { HistoryFiltersPopup } from './domains/filters/HistoryFiltersPopup';
 import { PortalInfoPopup } from './domains/portal/PortalInfoPopup';
 import { CommPopup } from './domains/comm/CommPopup';
 import { GameScorePopup } from './domains/scores/GameScorePopup';
@@ -34,7 +36,9 @@ export function IRISOverlay(): JSX.Element {
     const [showPlayerStatsPopup, setShowPlayerStatsPopup] = useState(false);
     const [showInventoryPopup, setShowInventoryPopup] = useState(false);
     const [showDiagnosticsPopup, setShowDiagnosticsPopup] = useState(false);
-    const [showFiltersPopup, setShowFiltersPopup] = useState(false);
+    const [showLayersPopup, setShowLayersPopup] = useState(false);
+    const [showTacticalFiltersPopup, setShowTacticalFiltersPopup] = useState(false);
+    const [showHistoryFiltersPopup, setShowHistoryFiltersPopup] = useState(false);
     const [showCommPopup, setShowCommPopup] = useState(false);
     const [showThemePopup, setShowThemePopup] = useState(false);
     const [showMapSettingsPopup, setShowMapSettingsPopup] = useState(false);
@@ -51,16 +55,15 @@ export function IRISOverlay(): JSX.Element {
     const [activeDashboard, setActiveDashboard] = useState<DashboardType>(null);
     const [locating, setLocating] = useState(false);
 
-    const themeId = useStore((state) => state.themeId);
-    const theme = useStore((state) => state.themeId === 'INGRESS' ? { AQUA: '#0ff' } : { AQUA: '#0ff' }); // Simple fallback
-
     const togglePlayerStatsPopup = (): void => setShowPlayerStatsPopup((v) => !v);
     const toggleInventoryPopup = (): void => {
         if (!showInventoryPopup) window.postMessage({ type: 'IRIS_INVENTORY_REQUEST' }, '*');
         setShowInventoryPopup((v) => !v);
     };
     const toggleDiagnosticsPopup = (): void => setShowDiagnosticsPopup((v) => !v);
-    const toggleFiltersPopup = (): void => setShowFiltersPopup((v) => !v);
+    const toggleLayersPopup = (): void => setShowLayersPopup((v) => !v);
+    const toggleTacticalFiltersPopup = (): void => setShowTacticalFiltersPopup((v) => !v);
+    const toggleHistoryFiltersPopup = (): void => setShowHistoryFiltersPopup((v) => !v);
     const toggleCommPopup = (): void => setShowCommPopup((v) => !v);
     const toggleThemePopup = useCallback((): void => setShowThemePopup((v) => !v), []);
     const toggleMapSettingsPopup = (): void => setShowMapSettingsPopup((v) => !v);
@@ -111,7 +114,9 @@ export function IRISOverlay(): JSX.Element {
             case 'comm': toggleCommPopup(); break;
             case 'passcodes': togglePasscodePopup(); break;
             case 'nav': toggleNavigationPopup(); break;
-            case 'filters': toggleFiltersPopup(); break;
+            case 'layers': toggleLayersPopup(); break;
+            case 'filters': toggleTacticalFiltersPopup(); break;
+            case 'history': toggleHistoryFiltersPopup(); break;
             case 'missions': toggleMissionsPopup(); break;
             case 'plugins': togglePluginsPopup(); break;
             case 'settings': toggleMapSettingsPopup(); break;
@@ -168,7 +173,9 @@ export function IRISOverlay(): JSX.Element {
             {showRegionScorePopup && <RegionScorePopup onClose={toggleRegionScorePopup} />}
             {showExportPopup && <ExportPopup onClose={toggleExportPopup} />}
             {showDiagnosticsPopup && <DiagnosticsPopup onClose={toggleDiagnosticsPopup} />}
-            {showFiltersPopup && <FiltersPopup onClose={toggleFiltersPopup} />}
+            {showLayersPopup && <LayersPopup onClose={toggleLayersPopup} />}
+            {showTacticalFiltersPopup && <TacticalFiltersPopup onClose={toggleTacticalFiltersPopup} />}
+            {showHistoryFiltersPopup && <HistoryFiltersPopup onClose={toggleHistoryFiltersPopup} />}
             {showThemePopup && <ThemePopup onClose={toggleThemePopup} />}
             {showMapSettingsPopup && <MapSettingsPopup onClose={toggleMapSettingsPopup} />}
             {showPluginsPopup && <PluginsPopup onClose={togglePluginsPopup} />}
