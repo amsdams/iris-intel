@@ -24,7 +24,7 @@ import { MissionsPopup } from './domains/missions/MissionsPopup';
 import { PasscodePopup } from './domains/passcodes/PasscodePopup';
 import { NavigationPopup } from './domains/map/NavigationPopup';
 import { BottomDock } from './shared/BottomDock';
-import { DashboardOverlay, DashboardType } from './shared/DashboardOverlay';
+import { DockDrawer, DrawerTab } from './shared/DockDrawer';
 import { LocationSearchPopup } from './shared/LocationSearchPopup';
 
 // ---------------------------------------------------------------------------
@@ -52,7 +52,7 @@ export function IRISOverlay(): JSX.Element {
     const [showNavigationPopup, setShowNavigationPopup] = useState(false);
     const [showSearchPopup, setShowSearchPopup] = useState(false);
     
-    const [activeDashboard, setActiveDashboard] = useState<DashboardType>(null);
+    const [activeDrawerTab, setActiveDrawerTab] = useState<DrawerTab>(null);
     const [locating, setLocating] = useState(false);
 
     const togglePlayerStatsPopup = (): void => setShowPlayerStatsPopup((v) => !v);
@@ -105,7 +105,7 @@ export function IRISOverlay(): JSX.Element {
         );
     };
 
-    const handleDashboardAction = (action: string): void => {
+    const handleDrawerAction = (action: string): void => {
         switch (action) {
             case 'stats': togglePlayerStatsPopup(); break;
             case 'inventory': toggleInventoryPopup(); break;
@@ -113,16 +113,14 @@ export function IRISOverlay(): JSX.Element {
             case 'regionScore': toggleRegionScorePopup(); break;
             case 'comm': toggleCommPopup(); break;
             case 'passcodes': togglePasscodePopup(); break;
+            case 'search': toggleSearchPopup(); break;
             case 'nav': toggleNavigationPopup(); break;
-            case 'layers': toggleLayersPopup(); break;
-            case 'filters': toggleTacticalFiltersPopup(); break;
-            case 'history': toggleHistoryFiltersPopup(); break;
             case 'missions': toggleMissionsPopup(); break;
+            case 'layers': toggleLayersPopup(); break;
             case 'plugins': togglePluginsPopup(); break;
             case 'settings': toggleMapSettingsPopup(); break;
             case 'diag': toggleDiagnosticsPopup(); break;
             case 'toggle': toggleMapVisibility(); break;
-            case 'search': toggleSearchPopup(); break;
         }
     };
 
@@ -182,10 +180,10 @@ export function IRISOverlay(): JSX.Element {
             {showNavigationPopup && <NavigationPopup onClose={toggleNavigationPopup} />}
             {showSearchPopup && <LocationSearchPopup onClose={toggleSearchPopup} />}
 
-            <DashboardOverlay 
-                type={activeDashboard} 
-                onClose={() => setActiveDashboard(null)} 
-                onAction={handleDashboardAction}
+            <DockDrawer 
+                tab={activeDrawerTab} 
+                onClose={() => setActiveDrawerTab(null)} 
+                onAction={handleDrawerAction}
                 showMap={showMap}
             />
 
@@ -194,13 +192,14 @@ export function IRISOverlay(): JSX.Element {
                 onClick={handleGeolocate} 
                 disabled={locating}
                 title="Navigate to Me"
+                style={{ bottom: activeDrawerTab ? '48vh' : '100px', transition: 'bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
             >
                 {locating ? '...' : '◎'}
             </button>
 
             <BottomDock 
-                activeDashboard={activeDashboard} 
-                onToggleDashboard={(type) => setActiveDashboard(current => current === type ? null : type)} 
+                activeDashboard={activeDrawerTab as any} 
+                onToggleDashboard={(type) => setActiveDrawerTab(current => current === type ? null : type as DrawerTab)} 
             />
 
             <StatusBar />
