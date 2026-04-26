@@ -1,7 +1,7 @@
-import { h, JSX } from 'preact';
+import { h, JSX, Fragment } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { EndpointDiagnostics, EndpointKey, useStore } from '@iris/core';
-import { UI_COLORS } from '../../theme';
+import { THEMES, UI_COLORS } from '../../theme';
 
 const ENDPOINT_STALE_AFTER_MS: Partial<Record<EndpointKey, number>> = {
     plexts: 2 * 60 * 1000,
@@ -59,6 +59,8 @@ export function StatusBar(): JSX.Element {
     const lastSessionError = useStore((state) => state.lastSessionError);
     const endpointDiagnostics = useStore((state) => state.endpointDiagnostics);
     const clearEndpointDiagnostics = useStore((state) => state.clearEndpointDiagnostics);
+    const themeId = useStore((state) => state.themeId);
+    const theme = THEMES[themeId] || THEMES.INGRESS;
     
     const [isExpanded, setIsExpanded] = useState(false);
     const [, setNow] = useState(() => Date.now());
@@ -137,7 +139,7 @@ export function StatusBar(): JSX.Element {
     const endpointStatusColor = (status: 'idle' | 'in_flight' | 'success' | 'error' | 'stale'): string => {
         switch (status) {
             case 'in_flight':
-                return UI_COLORS.AQUA;
+                return theme.AQUA;
             case 'success':
                 return UI_COLORS.SUCCESS;
             case 'error':
@@ -247,7 +249,7 @@ export function StatusBar(): JSX.Element {
                             <div className="iris-status-section-title">MAP INTERACTIONS</div>
                             {interactionLogs.map((log) => (
                                 <div key={`int-${log.time}-${log.type}-${log.layerId}`} className="iris-status-log-entry">
-                                    <div className="iris-status-log-message" style={{ color: UI_COLORS.AQUA }}>
+                                    <div className="iris-status-log-message" style={{ color: theme.AQUA }}>
                                         [{new Date(log.time).toLocaleTimeString()}] {log.type.toUpperCase()}: {log.layerId}
                                     </div>
                                     <div className="iris-status-log-url">
@@ -281,7 +283,7 @@ export function StatusBar(): JSX.Element {
                             <div className="iris-status-section-title">SUCCESSFUL REQUESTS</div>
                             {successfulRequests.map((req) => (
                                 <div key={`net-ok-${req.time}-${req.url}`} className="iris-status-log-entry iris-status-log-entry-ok">
-                                    <div className="iris-status-log-message" style={{ color: UI_COLORS.AQUA }}>
+                                    <div className="iris-status-log-message" style={{ color: theme.AQUA }}>
                                         [{new Date(req.time).toLocaleTimeString()}] {getEndpointName(req.url)}
                                     </div>
                                     <div className="iris-status-log-url">
@@ -339,8 +341,8 @@ export function StatusBar(): JSX.Element {
                         width: '8px', 
                         height: '8px', 
                         borderRadius: '50%', 
-                        background: activeRequests > 0 ? UI_COLORS.AQUA : (hasErrors ? UI_COLORS.ERROR : (successfulRequests.length > 0 ? UI_COLORS.SUCCESS : '#333')),
-                        boxShadow: activeRequests > 0 ? `0 0 5px ${UI_COLORS.AQUA}` : (hasErrors ? `0 0 5px ${UI_COLORS.ERROR}` : (successfulRequests.length > 0 ? `0 0 5px ${UI_COLORS.SUCCESS}` : 'none')),
+                        background: activeRequests > 0 ? theme.AQUA : (hasErrors ? UI_COLORS.ERROR : (successfulRequests.length > 0 ? UI_COLORS.SUCCESS : '#333')),
+                        boxShadow: activeRequests > 0 ? `0 0 5px ${theme.AQUA}` : (hasErrors ? `0 0 5px ${UI_COLORS.ERROR}` : (successfulRequests.length > 0 ? `0 0 5px ${UI_COLORS.SUCCESS}` : 'none')),
                         transition: 'background 0.3s ease, box-shadow 0.3s ease'
                     }} />
                     <span className="iris-status-text" style={{ color: activeRequests > 0 ? UI_COLORS.TEXT_BASE : (hasErrors ? UI_COLORS.ERROR : UI_COLORS.TEXT_MUTED) }}>
@@ -370,7 +372,7 @@ export function StatusBar(): JSX.Element {
                     )}
 
                     <div className="iris-status-divider" />
-                    <span className="iris-status-text" style={{ color: sessionStatus === 'expired' || sessionStatus === 'initial_login_required' ? UI_COLORS.WARNING : (sessionStatus === 'recovering' ? UI_COLORS.AQUA : UI_COLORS.TEXT_MUTED) }}>
+                    <span className="iris-status-text" style={{ color: sessionStatus === 'expired' || sessionStatus === 'initial_login_required' ? UI_COLORS.WARNING : (sessionStatus === 'recovering' ? theme.AQUA : UI_COLORS.TEXT_MUTED) }}>
                         {sessionLabel()}
                     </span>
                     {hasSubscription && (
@@ -388,8 +390,8 @@ export function StatusBar(): JSX.Element {
                 <div className="iris-status-progress-bg">
                     {activeRequests > 0 && (
                         <div className="iris-status-progress-bar" style={{
-                            background: UI_COLORS.AQUA,
-                            boxShadow: `0 0 5px ${UI_COLORS.AQUA}`,
+                            background: theme.AQUA,
+                            boxShadow: `0 0 5px ${theme.AQUA}`,
                         }} />
                     )}
                 </div>

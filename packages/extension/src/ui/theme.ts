@@ -38,19 +38,22 @@ const INGRESS_MOD_RARITY = {
     VERY_RARE: '#F781FF',
 };
 
-const DEBUG_ITEM_RARITY = {
-    VERY_COMMON: '#F2F2F2',
-    COMMON: '#8CFFBF',
-    RARE: '#73A8FF',
-    VERY_RARE: '#B08CFF',
+const CYBER_ITEM_RARITY = {
+    VERY_COMMON: '#FFFFFF',
+    COMMON: '#00FF00',
+    RARE: '#00AAFF',
+    VERY_RARE: '#FF00FF',
     EXTREMELY_RARE: '#FF0000',
-    SPECIAL: '#D1FFFF',
+    SPECIAL: '#00E5FF',
 };
 
-const DEBUG_MOD_RARITY = {
-    COMMON: '#49EBC3',
-    RARE: '#B68BFF',
-    VERY_RARE: '#F781FF',
+const SOFTER_ITEM_RARITY = {
+    VERY_COMMON: '#E0E0E0',
+    COMMON: '#A5D6A7',
+    RARE: '#90CAF9',
+    VERY_RARE: '#CE93D8',
+    EXTREMELY_RARE: '#EF9A9A',
+    SPECIAL: '#80DEEA',
 };
 
 const DEFAULT_ITEM_TYPES = {
@@ -85,13 +88,13 @@ export const THEMES: Record<string, ThemeColors> = {
         N: '#ffffff',
         AQUA: '#00ffff',
         LEVELS: INGRESS_LEVELS,
-        ITEM_RARITY: DEBUG_ITEM_RARITY,
-        MOD_RARITY: DEBUG_MOD_RARITY,
+        ITEM_RARITY: INGRESS_ITEM_RARITY,
+        MOD_RARITY: INGRESS_MOD_RARITY,
         ITEM_TYPES: {
             ...DEFAULT_ITEM_TYPES,
             PORTAL_LINK_KEY: '#00ffff',
         },
-        RARITY: DEBUG_ITEM_RARITY,
+        RARITY: INGRESS_ITEM_RARITY,
     },
     CYBER: {
         E: '#00ffa3',
@@ -100,25 +103,19 @@ export const THEMES: Record<string, ThemeColors> = {
         N: '#e0e0e0',
         AQUA: '#00e5ff',
         LEVELS: INGRESS_LEVELS,
-        ITEM_RARITY: {
-            ...DEBUG_ITEM_RARITY,
-            SPECIAL: '#00e5ff',
-        },
+        ITEM_RARITY: CYBER_ITEM_RARITY,
         MOD_RARITY: {
-            VERY_RARE: '#00e5ff',
-            RARE: '#00e5ff',
-            COMMON: '#00e5ff',
+            VERY_RARE: '#FF00FF',
+            RARE: '#00AAFF',
+            COMMON: '#00FF00',
         },
         ITEM_TYPES: {
             ...DEFAULT_ITEM_TYPES,
             PORTAL_LINK_KEY: '#00e5ff',
             POWERUP: '#00e5ff',
-            AEGIS_SHIELD: '#00e5ff',
+            AEGIS_SHIELD: '#00D4AA',
         },
-        RARITY: {
-            ...DEBUG_ITEM_RARITY,
-            SPECIAL: '#00e5ff',
-        },
+        RARITY: CYBER_ITEM_RARITY,
     },
     SOFTER: {
         E: '#78f400',
@@ -127,25 +124,19 @@ export const THEMES: Record<string, ThemeColors> = {
         N: '#cfd8dc',
         AQUA: '#4dd0e1',
         LEVELS: INGRESS_LEVELS,
-        ITEM_RARITY: {
-            ...DEBUG_ITEM_RARITY,
-            SPECIAL: '#4dd0e1',
-        },
+        ITEM_RARITY: SOFTER_ITEM_RARITY,
         MOD_RARITY: {
-            VERY_RARE: '#4dd0e1',
-            RARE: '#4dd0e1',
-            COMMON: '#4dd0e1',
+            VERY_RARE: '#CE93D8',
+            RARE: '#90CAF9',
+            COMMON: '#A5D6A7',
         },
         ITEM_TYPES: {
             ...DEFAULT_ITEM_TYPES,
             PORTAL_LINK_KEY: '#4dd0e1',
             POWERUP: '#4dd0e1',
-            AEGIS_SHIELD: '#4dd0e1',
+            AEGIS_SHIELD: '#00D4AA',
         },
-        RARITY: {
-            ...DEBUG_ITEM_RARITY,
-            SPECIAL: '#4dd0e1',
-        },
+        RARITY: SOFTER_ITEM_RARITY,
     },
 };
 
