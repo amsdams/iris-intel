@@ -31,6 +31,12 @@ export function LinkInfoPopup({ onClose, visible }: LinkInfoPopupProps): JSX.Ele
         : 0;
     const distStr = distKm < 1 ? `${Math.round(distKm * 1000)}m` : `${distKm.toFixed(2)}km`;
 
+    const handlePortalClick = (id: string, lat: number, lng: number): void => {
+        onClose();
+        window.postMessage({ type: 'IRIS_MOVE_MAP', center: { lat, lng }, zoom: 15 }, '*');
+        useStore.getState().selectPortal(id);
+    };
+
     return (
         <Popup
             onClose={onClose}
@@ -66,15 +72,23 @@ export function LinkInfoPopup({ onClose, visible }: LinkInfoPopupProps): JSX.Ele
                 <div className="iris-portal-details-section">
                     <div className="iris-portal-section-title">ANCHORS</div>
                     <div className="iris-portal-details-table">
-                        <div className="iris-portal-details-row">
+                        <div 
+                            className="iris-portal-details-row" 
+                            style={{ cursor: fromPortal ? 'pointer' : 'default' }}
+                            onClick={() => fromPortal && handlePortalClick(fromPortal.id, fromPortal.lat, fromPortal.lng)}
+                        >
                             <span className="iris-portal-details-label">From</span>
-                            <span className="iris-portal-details-value" style={{ color: colour }}>
+                            <span className="iris-portal-details-value" style={{ color: fromPortal ? '#00ffff' : colour, textDecoration: fromPortal ? 'underline' : 'none' }}>
                                 {fromPortal?.name || 'Unknown Portal'}
                             </span>
                         </div>
-                        <div className="iris-portal-details-row">
+                        <div 
+                            className="iris-portal-details-row" 
+                            style={{ cursor: toPortal ? 'pointer' : 'default' }}
+                            onClick={() => toPortal && handlePortalClick(toPortal.id, toPortal.lat, toPortal.lng)}
+                        >
                             <span className="iris-portal-details-label">To</span>
-                            <span className="iris-portal-details-value" style={{ color: colour }}>
+                            <span className="iris-portal-details-value" style={{ color: toPortal ? '#00ffff' : colour, textDecoration: toPortal ? 'underline' : 'none' }}>
                                 {toPortal?.name || 'Unknown Portal'}
                             </span>
                         </div>

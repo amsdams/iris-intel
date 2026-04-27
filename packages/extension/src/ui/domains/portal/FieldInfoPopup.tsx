@@ -46,6 +46,12 @@ export function FieldInfoPopup({ onClose, visible }: FieldInfoPopupProps): JSX.E
 
     const estimatedMU = calculateEstimatedMU();
 
+    const handlePortalClick = (id: string, lat: number, lng: number): void => {
+        onClose();
+        window.postMessage({ type: 'IRIS_MOVE_MAP', center: { lat, lng }, zoom: 15 }, '*');
+        useStore.getState().selectPortal(id);
+    };
+
     return (
         <Popup
             onClose={onClose}
@@ -84,9 +90,14 @@ export function FieldInfoPopup({ onClose, visible }: FieldInfoPopupProps): JSX.E
                         {field.points.map((pt, i) => {
                             const p = pt.portalId ? portals[pt.portalId] : null;
                             return (
-                                <div key={i} className="iris-portal-details-row">
+                                <div 
+                                    key={i} 
+                                    className="iris-portal-details-row"
+                                    style={{ cursor: p ? 'pointer' : 'default' }}
+                                    onClick={() => p && handlePortalClick(p.id, p.lat, p.lng)}
+                                >
                                     <span className="iris-portal-details-label">Anchor {i+1}</span>
-                                    <span className="iris-portal-details-value" style={{ color: colour }}>
+                                    <span className="iris-portal-details-value" style={{ color: p ? '#00ffff' : colour, textDecoration: p ? 'underline' : 'none' }}>
                                         {p?.name || 'Unknown Portal'}
                                     </span>
                                 </div>
