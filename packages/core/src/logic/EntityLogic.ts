@@ -88,5 +88,20 @@ export const EntityLogic = {
                   Math.sin(dLng / 2) * Math.sin(dLng / 2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return R * c;
+    },
+
+    /**
+     * Determines if a point is inside a triangular field using barycentric coordinates.
+     */
+    isPointInField: (p: { lng: number; lat: number }, f: Field): boolean => {
+        const pts = f.points;
+        if (pts.length < 3) return false;
+        const a = pts[0], b = pts[1], c = pts[2];
+        const det = (b.lat - c.lat) * (a.lng - c.lng) + (c.lng - b.lng) * (a.lat - c.lat);
+        if (Math.abs(det) < 1e-18) return false; // Degenerate triangle
+        const s = ((b.lat - c.lat) * (p.lng - c.lng) + (c.lng - b.lng) * (p.lat - c.lat)) / det;
+        const t = ((c.lat - a.lat) * (p.lng - c.lng) + (a.lng - c.lng) * (p.lat - c.lat)) / det;
+        const u = 1 - s - t;
+        return s >= 0 && t >= 0 && u >= 0;
     }
 };

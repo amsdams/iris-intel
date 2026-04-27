@@ -409,6 +409,7 @@ interface UISlice {
         };
     };
     selectedPortalId: string | null;
+    selectedFieldId: string | null;
     selectedPluginFeature: GeoJSON.Feature | null;
     activeCommTab: string;
     commSendStatus: 'idle' | 'sending' | 'success' | 'error';
@@ -432,6 +433,7 @@ interface UISlice {
         maxLngE6: number;
     }) => void;
     selectPortal: (id: string | null) => void;
+    selectField: (id: string | null) => void;
     setSelectedPluginFeature: (feature: GeoJSON.Feature | null) => void;
     setActiveCommTab: (tab: string) => void;
     setCommSendPending: () => void;
@@ -829,6 +831,7 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
     addressNextLookupAt: null,
     mapState: { lat: 0, lng: 0, zoom: 3 },
     selectedPortalId: null,
+    selectedFieldId: null,
     selectedPluginFeature: null,
     activeCommTab: 'ALL',
     commSendStatus: 'idle',
@@ -916,7 +919,8 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
             bounds: bounds ?? state.mapState.bounds,
         }
     })),
-    selectPortal: (id) => set(() => ({ selectedPortalId: id })),
+    selectPortal: (id) => set(() => ({ selectedPortalId: id, selectedFieldId: null })),
+    selectField: (id) => set(() => ({ selectedFieldId: id, selectedPortalId: null })),
     setSelectedPluginFeature: (feature) => set(() => ({ selectedPluginFeature: feature })),
     setActiveCommTab: (tab) => set(() => ({ activeCommTab: tab })),
     setCommSendPending: () => set(() => ({

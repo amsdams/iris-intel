@@ -1,4 +1,4 @@
-import {globalSpatialIndex, Portal} from '@iris/core';
+import {EntityLogic, Field, globalSpatialIndex, Portal} from '@iris/core';
 
 export interface MapPoint {
   x: number;
@@ -9,6 +9,7 @@ export type MapProjector = (lng: number, lat: number) => MapPoint | null;
 
 export interface MapSelectionContext {
   portals: Record<string, Portal>;
+  fields: Record<string, Field>;
   point: MapPoint;
   lng: number;
   lat: number;
@@ -19,10 +20,9 @@ export interface MapSelectionContext {
   fastPathPortalCount?: number;
 }
 
-export interface MapSelectionResult {
-  portalId: string;
-  reason: 'portal';
-}
+export type MapSelectionResult = 
+  | { portalId: string; reason: 'portal' }
+  | { fieldId: string; reason: 'field' };
 
 function squaredDistance(a: MapPoint, b: MapPoint): number {
   const dx = a.x - b.x;
@@ -48,6 +48,7 @@ function getApproxQueryDelta(zoom: number, thresholdPx: number): number {
 export function resolveMapSelection(context: MapSelectionContext): MapSelectionResult | null {
   const {
     portals,
+    fields,
     point,
     lng,
     lat,
@@ -60,6 +61,7 @@ export function resolveMapSelection(context: MapSelectionContext): MapSelectionR
 
   const useFastPath = Object.keys(portals).length >= fastPathPortalCount;
   const candidatePortalIds = new Set<string>();
+  const candidateFieldIds = new Set<string>();
 
   if (useFastPath) {
     const queryDelta = getApproxQueryDelta(zoom, portalThreshold);
@@ -70,9 +72,10 @@ export function resolveMapSelection(context: MapSelectionContext): MapSelectionR
       maxLng: lng + queryDelta,
     });
 
-    hits
-      .filter((hit) => hit.type === 'portal')
-      .forEach((hit) => candidatePortalIds.add(hit.id));
+    hits.forEach((hit) => {
+      if (hit.type === 'portal') candidatePortalIds.add(hit.id);
+      if (hit.type === 'field') candidateFieldIds.add(hit.id);
+    });
   }
 
   let nearestPortal: Portal | null = null;
@@ -94,6 +97,17 @@ export function resolveMapSelection(context: MapSelectionContext): MapSelectionR
 
   if (nearestPortal) {
     return {portalId: nearestPortal.id, reason: 'portal'};
+  }
+
+  // If no portal hit, check fields
+  const fieldList = useFastPath 
+    ? Array.from(candidateFieldIds).map(id => fields[id]).filter(f => !!f)
+    : Object.values(fields);
+
+  for (const field of fieldList) {
+    if (EntityLogic.isPointInField({lng, lat}, field)) {
+      return {fieldId: field.id, reason: 'field'};
+    }
   }
 
   return null;

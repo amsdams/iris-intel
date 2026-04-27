@@ -45,6 +45,7 @@ describe('resolveMapSelection fast path', () => {
 
     const result = resolveMapSelection({
       portals,
+      fields: {},
       point: {x: 100.04, y: 100.04},
       lng: 1.0004,
       lat: 1.0004,
@@ -76,6 +77,7 @@ describe('resolveMapSelection', () => {
         a: makePortal('a', 1, 1),
         b: makePortal('b', 2, 2),
       },
+      fields: {},
       point: {x: 100.5, y: 100.5},
       lng: 1.004,
       lat: 1.004,
@@ -97,6 +99,7 @@ describe('resolveMapSelection', () => {
         a: makePortal('a', 1, 1),
         b: makePortal('b', 5, 5),
       },
+      fields: {},
       point: {x: 400, y: 400},
       lng: 10,
       lat: 10,
@@ -105,5 +108,32 @@ describe('resolveMapSelection', () => {
     });
 
     expect(result).toBeNull();
+  });
+
+  it('detects when a point is inside a field', () => {
+    const fieldId = 'test-field';
+    const fields = {
+      [fieldId]: {
+        id: fieldId,
+        team: 'E',
+        points: [
+          {lng: 0, lat: 0},
+          {lng: 2, lat: 0},
+          {lng: 1, lat: 2},
+        ],
+      },
+    };
+
+    const result = resolveMapSelection({
+      portals: {},
+      fields,
+      point: {x: 100, y: 50},
+      lng: 1,
+      lat: 0.5,
+      zoom: 12,
+      project: makeProject(),
+    });
+
+    expect(result).toEqual({fieldId, reason: 'field'});
   });
 });
