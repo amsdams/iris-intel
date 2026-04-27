@@ -786,10 +786,13 @@ Tasks:
 ## Current Next Pickup
 
 1. **[Plugin Overlay]** Implement a "Single Highlighter" selection model.
-2. **[Live Map Freshness]** Implement strict concurrent request limit (5) in `RequestCoordinator` (Done).
-3. **[Live Map Freshness]** Implement surgical tile fetching (Done).
-4. **[Draw Tools]** Turn the draw-tools epic into an implementation plan for the first mobile-safe baseline.
-5. **[Ergonomics]** Evaluate "Swipe down to close" for the new Dock Drawer.
+2. **[Live Map Freshness]** Implement surgical tile fetching (Done).
+3. **[Draw Tools]** Turn the draw-tools epic into an implementation plan for the first mobile-safe baseline.
+4. **[Ergonomics]** Evaluate "Swipe down to close" for the new Dock Drawer.
+5. **[Tactical]** Add a "Clear All Filters" button to the Tactical Drawer.
+6. **[Debug]** Add Portal GUIDs to Portal Details when the DEBUG theme is active.
+7. **[Player Tracker]** Add "Guess player level" based on highest resonator seen.
+8. **[Passcodes]** Add a "Stale" state to the passcode redemption UI for already-used codes.
 
 ## Snapshot And Reference Sources
 

@@ -61,10 +61,12 @@ export const toFeatureCollection = <T extends GeoJSON.Geometry, P extends GeoJSO
 
 export const buildPortalFeatures = (
   portals: Record<string, Portal>,
-  filters: PortalFilters
+  filters: PortalFilters,
+  selectedPortalId?: string | null
 ): PortalFeature[] =>
   Object.values(portals)
     .filter((portal) => {
+      if (selectedPortalId && portal.id === selectedPortalId) return true;
       if (portal.team === 'N') {
         return filters.showUnclaimedPortals;
       }

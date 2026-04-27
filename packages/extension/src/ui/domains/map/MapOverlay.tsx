@@ -212,8 +212,20 @@ export function MapOverlay(): JSX.Element {
         showUnclaimedPortals: filterShowUnclaimedPortals, 
         showLevel: filterShowLevel, 
         showHealth: filterShowHealth
-    });
+    }, store.selectedPortalId);
     getGeoJsonSource('portals')?.setData(toFeatureCollection(portalFeatures));
+
+    // Update portal selection highlight
+    if (store.selectedPortalId && viewportPortals[store.selectedPortalId]) {
+      const p = viewportPortals[store.selectedPortalId];
+      getGeoJsonSource('portal-selected')?.setData(toFeatureCollection([{
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
+        properties: { id: p.id }
+      }]));
+    } else {
+      getGeoJsonSource('portal-selected')?.setData(toFeatureCollection([]));
+    }
 
     // 2. Filter and Build Links
     const viewportLinks: Record<string, Link> = {};
@@ -276,7 +288,7 @@ export function MapOverlay(): JSX.Element {
     getGeoJsonSource('mission-waypoints')?.setData(toFeatureCollection(buildMissionWaypointFeatures(missionDetails)));
     getGeoJsonSource('plugin-features')?.setData(pluginFeatures);
 
-  }, [styleLoaded, layerShowFields, layerShowLinks, layerShowOrnaments, layerShowArtifacts, filterShowResistance, filterShowEnlightened, filterShowMachina, filterShowUnclaimedPortals, filterShowLevel, filterShowHealth, artifacts, mockOrnaments, missionDetails, pluginFeatures]);
+  }, [styleLoaded, layerShowFields, layerShowLinks, layerShowOrnaments, layerShowArtifacts, filterShowResistance, filterShowEnlightened, filterShowMachina, filterShowUnclaimedPortals, filterShowLevel, filterShowHealth, artifacts, mockOrnaments, missionDetails, pluginFeatures, useStore((state) => state.selectedPortalId)]);
 
   // ---------------------------------------------------------------------------
   // Initialise MapLibre map once on mount
@@ -300,6 +312,10 @@ export function MapOverlay(): JSX.Element {
             maxzoom: 20,
           },
           portals: {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: [] },
+          },
+          'portal-selected': {
             type: 'geojson',
             data: { type: 'FeatureCollection', features: [] },
           },
@@ -408,6 +424,23 @@ export function MapOverlay(): JSX.Element {
               'circle-stroke-width': 1.5,
               'circle-stroke-color': initialTeamColourExpr.current,
               'circle-stroke-opacity': 1,
+            },
+          },
+          {
+            id: 'portal-selected',
+            type: 'circle',
+            source: 'portal-selected',
+            paint: {
+              'circle-radius': [
+                'interpolate', ['linear'], ['zoom'],
+                3, 3,
+                10, 6,
+                15, 12,
+              ],
+              'circle-color': 'transparent',
+              'circle-stroke-width': 3,
+              'circle-stroke-color': '#fff',
+              'circle-stroke-opacity': 0.8,
             },
           },
           {
