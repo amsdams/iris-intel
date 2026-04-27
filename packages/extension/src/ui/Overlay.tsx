@@ -5,6 +5,8 @@ import { MapOverlay } from './domains/map/MapOverlay';
 import { PlayerStatsPopup } from './domains/player/PlayerStatsPopup';
 import { DiagnosticsPopup } from './domains/debug/DiagnosticsPopup';
 import { PortalInfoPopup } from './domains/portal/PortalInfoPopup';
+import { FieldInfoPopup } from './domains/portal/FieldInfoPopup';
+import { LinkInfoPopup } from './domains/portal/LinkInfoPopup';
 import { CommPopup } from './domains/comm/CommPopup';
 import { GameScorePopup } from './domains/scores/GameScorePopup';
 import { RegionScorePopup } from './domains/scores/RegionScorePopup';
@@ -45,7 +47,7 @@ export function IRISOverlay(): JSX.Element {
     const [showPasscodePopup, setShowPasscodePopup] = useState(false);
     const [showNavigationPopup, setShowNavigationPopup] = useState(false);
     const [showSearchPopup, setShowSearchPopup] = useState(false);
-    const [showPortalInfo, setShowPortalInfo] = useState(false);
+    const [showSelectionInfo, setShowSelectionInfo] = useState(false);
     
     const [activeDrawerTab, setActiveDrawerTab] = useState<DrawerTab>(null);
     const [locating, setLocating] = useState(false);
@@ -57,7 +59,7 @@ export function IRISOverlay(): JSX.Element {
     // If selection is cleared externally, hide the info popup
     useEffect(() => {
         if (!selectedPortalId && !selectedFieldId && !selectedLinkId) {
-            setShowPortalInfo(false);
+            setShowSelectionInfo(false);
         }
     }, [selectedPortalId, selectedFieldId, selectedLinkId]);
 
@@ -168,7 +170,9 @@ export function IRISOverlay(): JSX.Element {
                 />
             )}
 
-            <PortalInfoPopup visible={showPortalInfo} onClose={() => setShowPortalInfo(false)} />
+            <PortalInfoPopup visible={showSelectionInfo && !!selectedPortalId} onClose={() => setShowSelectionInfo(false)} />
+            <FieldInfoPopup visible={showSelectionInfo && !!selectedFieldId} onClose={() => setShowSelectionInfo(false)} />
+            <LinkInfoPopup visible={showSelectionInfo && !!selectedLinkId} onClose={() => setShowSelectionInfo(false)} />
             <MissionDetailsPopup />
             <PluginFeaturePopup />
 
@@ -207,8 +211,8 @@ export function IRISOverlay(): JSX.Element {
             <BottomDock 
                 activeDashboard={activeDrawerTab} 
                 onToggleDashboard={(tab) => setActiveDrawerTab(current => current === tab ? null : tab)} 
-                isSelectionVisible={showPortalInfo}
-                onToggleSelection={() => setShowPortalInfo(v => !v)}
+                isSelectionVisible={showSelectionInfo}
+                onToggleSelection={() => setShowSelectionInfo(v => !v)}
             />
 
             <StatusBar />
