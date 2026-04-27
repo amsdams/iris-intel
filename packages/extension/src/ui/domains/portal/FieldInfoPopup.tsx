@@ -1,5 +1,5 @@
 import { h, JSX } from 'preact';
-import { useStore, EntityLogic } from '@iris/core';
+import { useStore } from '@iris/core';
 import { Popup } from '../../shared/Popup';
 import { THEMES, TEAM_NAME } from '../../theme';
 
@@ -26,7 +26,7 @@ export function FieldInfoPopup({ onClose, visible }: FieldInfoPopupProps): JSX.E
     // MU Estimation based on triangle area
     // Planar approximation for small fields: 
     // Area in square degrees * factor (approx 1.2e8 for MU/sq deg in many areas, but we'll use a simpler scale)
-    const calculateEstimatedMU = () => {
+    const calculateEstimatedMU = (): number => {
         if (field.points.length < 3) return 0;
         const p1 = field.points[0];
         const p2 = field.points[1];

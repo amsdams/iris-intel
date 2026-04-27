@@ -224,8 +224,8 @@ Improvement ideas:
 
 | Idea                                                                                 | Status | Notes                                                                                                    |
 |--------------------------------------------------------------------------------------|--------|----------------------------------------------------------------------------------------------------------|
-| Add field selection to the shared map interaction model                              | Open   | borrow the mini-IRIS behavior that can identify a clicked field and expose basic field info in a popup/sidecar |
-| Add link selection to the shared map interaction model                               | Open   | support line-click hit testing and a minimal details view for the selected link                          |
+| Add field selection to the shared map interaction model                              | Done   | implemented `FieldInfoPopup` that identifies clicked fields and displays anchors and estimated MU |
+| Add link selection to the shared map interaction model                               | Done   | implemented `LinkInfoPopup` that identifies clicked links and displays anchors and length (KM) |
 | Add artifact-specific handling after portal/field/link selection feels settled       | Open   | keep artifacts separate for now; decide later whether they open portal details or their own details view |
 | Expand hover feedback only if it needs richer states than a pointer cursor           | Open   | keep hover simple unless future selected targets need distinct affordances                               |
 
