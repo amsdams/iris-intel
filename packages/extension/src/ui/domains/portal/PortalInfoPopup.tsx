@@ -24,7 +24,12 @@ function formatModStat(key: string, val: string | number): string {
     return `${displayVal} ${label}`;
 }
 
-export function PortalInfoPopup(): JSX.Element | null {
+interface PortalInfoPopupProps {
+    onClose: () => void;
+    visible: boolean;
+}
+
+export function PortalInfoPopup({ onClose, visible }: PortalInfoPopupProps): JSX.Element | null {
     const portals = useStore((state) => state.portals);
     const artifacts = useStore((state) => state.artifacts);
     const inventory = useStore((state) => state.inventory);
@@ -34,7 +39,6 @@ export function PortalInfoPopup(): JSX.Element | null {
     const portal = selectedPortalId ? portals[selectedPortalId] : null;
     const artifact = selectedPortalId ? artifacts[selectedPortalId] : null;
 
-    const selectPortal = useStore((state) => state.selectPortal);
     const themeId = useStore((state) => state.themeId);
     const theme = THEMES[themeId] || THEMES.INGRESS;
     const portalAddresses = useStore((state) => state.portalAddresses);
@@ -47,7 +51,7 @@ export function PortalInfoPopup(): JSX.Element | null {
         }
     }, [portal, portalAddresses, reverseGeocode]);
 
-    if (!portal) return null;
+    if (!portal || !visible) return null;
 
     const portalAddress = portalAddresses[portal.id];
     const isAddressStale = false; // Portal addresses are cached per-id and don't become "stale" like the map center
@@ -86,7 +90,7 @@ export function PortalInfoPopup(): JSX.Element | null {
 
     return (
         <Popup
-            onClose={() => selectPortal(null)}
+            onClose={onClose}
             title={'Portal Details'}
             className="iris-popup-top-center iris-popup-medium"
             contentClassName="iris-popup-content-no-padding"

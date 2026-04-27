@@ -45,9 +45,21 @@ export function IRISOverlay(): JSX.Element {
     const [showPasscodePopup, setShowPasscodePopup] = useState(false);
     const [showNavigationPopup, setShowNavigationPopup] = useState(false);
     const [showSearchPopup, setShowSearchPopup] = useState(false);
+    const [showPortalInfo, setShowPortalInfo] = useState(false);
     
     const [activeDrawerTab, setActiveDrawerTab] = useState<DrawerTab>(null);
     const [locating, setLocating] = useState(false);
+
+    const selectedPortalId = useStore((state) => state.selectedPortalId);
+    const selectedFieldId = useStore((state) => state.selectedFieldId);
+    const selectedLinkId = useStore((state) => state.selectedLinkId);
+
+    // If selection is cleared externally, hide the info popup
+    useEffect(() => {
+        if (!selectedPortalId && !selectedFieldId && !selectedLinkId) {
+            setShowPortalInfo(false);
+        }
+    }, [selectedPortalId, selectedFieldId, selectedLinkId]);
 
     const togglePlayerStatsPopup = (): void => setShowPlayerStatsPopup((v) => !v);
     const toggleInventoryPopup = (): void => {
@@ -156,7 +168,7 @@ export function IRISOverlay(): JSX.Element {
                 />
             )}
 
-            <PortalInfoPopup />
+            <PortalInfoPopup visible={showPortalInfo} onClose={() => setShowPortalInfo(false)} />
             <MissionDetailsPopup />
             <PluginFeaturePopup />
 
@@ -195,6 +207,8 @@ export function IRISOverlay(): JSX.Element {
             <BottomDock 
                 activeDashboard={activeDrawerTab} 
                 onToggleDashboard={(tab) => setActiveDrawerTab(current => current === tab ? null : tab)} 
+                isSelectionVisible={showPortalInfo}
+                onToggleSelection={() => setShowPortalInfo(v => !v)}
             />
 
             <StatusBar />
