@@ -1,4 +1,4 @@
-import { h, JSX, Fragment } from 'preact';
+import { h, JSX } from 'preact';
 import { useState, useEffect, useCallback } from 'preact/hooks';
 import { useStore } from '@iris/core';
 import { MapOverlay } from './domains/map/MapOverlay';

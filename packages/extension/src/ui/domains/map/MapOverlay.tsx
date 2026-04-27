@@ -123,6 +123,9 @@ export function MapOverlay(): JSX.Element {
   const mockOrnaments = useStore((state) => state.mockOrnaments);
   const missionDetails = useStore((state) => state.missionDetails);
   const pluginFeatures = useStore((state) => state.pluginFeatures);
+  const selectedPortalId = useStore((state) => state.selectedPortalId);
+  const selectedFieldId = useStore((state) => state.selectedFieldId);
+  const selectedLinkId = useStore((state) => state.selectedLinkId);
   const pluginMarkers = useRef<Map<string, MarkerRegistryEntry>>(new Map());
   const { lat, lng, zoom } = useStore((state) => state.mapState);
   const themeId = useStore((state) => state.themeId);
@@ -207,8 +210,8 @@ export function MapOverlay(): JSX.Element {
     });
 
     // Ensure selected portal is in viewportPortals if it exists in store
-    if (store.selectedPortalId && store.portals[store.selectedPortalId]) {
-      viewportPortals[store.selectedPortalId] = store.portals[store.selectedPortalId];
+    if (selectedPortalId && store.portals[selectedPortalId]) {
+      viewportPortals[selectedPortalId] = store.portals[selectedPortalId];
     }
 
     const portalFeatures = buildPortalFeatures(viewportPortals, {
@@ -218,12 +221,12 @@ export function MapOverlay(): JSX.Element {
         showUnclaimedPortals: filterShowUnclaimedPortals, 
         showLevel: filterShowLevel, 
         showHealth: filterShowHealth
-    }, store.selectedPortalId);
+    }, selectedPortalId);
     getGeoJsonSource('portals')?.setData(toFeatureCollection(portalFeatures));
 
     // Update portal selection highlight
-    if (store.selectedPortalId && store.portals[store.selectedPortalId]) {
-      const p = store.portals[store.selectedPortalId];
+    if (selectedPortalId && store.portals[selectedPortalId]) {
+      const p = store.portals[selectedPortalId];
       getGeoJsonSource('portal-selected')?.setData(toFeatureCollection([{
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
@@ -258,8 +261,8 @@ export function MapOverlay(): JSX.Element {
     getGeoJsonSource('links')?.setData(toFeatureCollection(linkFeatures));
 
     // Update link selection highlight
-    if (store.selectedLinkId && store.links[store.selectedLinkId]) {
-      const l = store.links[store.selectedLinkId];
+    if (selectedLinkId && store.links[selectedLinkId]) {
+      const l = store.links[selectedLinkId];
       getGeoJsonSource('link-selected')?.setData(toFeatureCollection([{
         type: 'Feature',
         geometry: {
@@ -287,8 +290,8 @@ export function MapOverlay(): JSX.Element {
     });
 
     // Ensure selected field is in viewportFields if it exists in store
-    if (store.selectedFieldId && store.fields[store.selectedFieldId]) {
-      viewportFields[store.selectedFieldId] = store.fields[store.selectedFieldId];
+    if (selectedFieldId && store.fields[selectedFieldId]) {
+      viewportFields[selectedFieldId] = store.fields[selectedFieldId];
     }
 
     const fieldFeatures = buildFieldFeatures(viewportFields, {
@@ -301,8 +304,8 @@ export function MapOverlay(): JSX.Element {
     getGeoJsonSource('fields')?.setData(toFeatureCollection(fieldFeatures));
 
     // Update field selection highlight
-    if (store.selectedFieldId && store.fields[store.selectedFieldId]) {
-      const f = store.fields[store.selectedFieldId];
+    if (selectedFieldId && store.fields[selectedFieldId]) {
+      const f = store.fields[selectedFieldId];
       const poly = [...f.points.map((p) => [p.lng, p.lat] as [number, number]), [f.points[0].lng, f.points[0].lat] as [number, number]];
       getGeoJsonSource('field-selected')?.setData(toFeatureCollection([{
         type: 'Feature',
@@ -328,7 +331,7 @@ export function MapOverlay(): JSX.Element {
     getGeoJsonSource('mission-waypoints')?.setData(toFeatureCollection(buildMissionWaypointFeatures(missionDetails)));
     getGeoJsonSource('plugin-features')?.setData(pluginFeatures);
 
-  }, [styleLoaded, layerShowFields, layerShowLinks, layerShowOrnaments, layerShowArtifacts, filterShowResistance, filterShowEnlightened, filterShowMachina, filterShowUnclaimedPortals, filterShowLevel, filterShowHealth, artifacts, mockOrnaments, missionDetails, pluginFeatures, useStore((state) => state.selectedPortalId), useStore((state) => state.selectedFieldId), useStore((state) => state.selectedLinkId)]);
+  }, [styleLoaded, layerShowFields, layerShowLinks, layerShowOrnaments, layerShowArtifacts, filterShowResistance, filterShowEnlightened, filterShowMachina, filterShowUnclaimedPortals, filterShowLevel, filterShowHealth, artifacts, mockOrnaments, missionDetails, pluginFeatures, selectedPortalId, selectedFieldId, selectedLinkId]);
 
   // ---------------------------------------------------------------------------
   // Initialise MapLibre map once on mount
@@ -871,7 +874,7 @@ export function MapOverlay(): JSX.Element {
     
     // External command listeners
     const commandHandler = (event: MessageEvent): void => {
-        const msg = event.data;
+        const msg = event.data as { type?: string; dx?: number; dy?: number };
         if (msg?.type === 'IRIS_PAN_MAP') {
             panBy(msg.dx ?? 0, msg.dy ?? 0);
         }
@@ -991,14 +994,6 @@ export function MapOverlay(): JSX.Element {
 
   const panBy = (x: number, y: number): void => {
     map.current?.panBy([x, y], { duration: 200 });
-  };
-
-  const zoomIn = (): void => {
-    map.current?.zoomIn({ duration: 200 });
-  };
-
-  const zoomOut = (): void => {
-    map.current?.zoomOut({ duration: 200 });
   };
 
   return (

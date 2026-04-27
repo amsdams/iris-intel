@@ -2,7 +2,7 @@ import { h, JSX } from 'preact';
 import { useState } from 'preact/hooks';
 import { useStore } from '@iris/core';
 import { Popup } from '../shared/Popup';
-import { SHARED_STYLES, THEMES } from '../theme';
+import { THEMES } from '../theme';
 
 interface NominatimResult {
     place_id: number;
@@ -25,7 +25,7 @@ export function LocationSearchPopup({ onClose }: LocationSearchPopupProps): JSX.
     const themeId = useStore((state) => state.themeId);
     const theme = THEMES[themeId] || THEMES.INGRESS;
 
-    const navigateToCoordinates = (lat: number, lng: number, label?: string): void => {
+    const navigateToCoordinates = (lat: number, lng: number, _label?: string): void => {
         window.postMessage({
             type: 'IRIS_MOVE_MAP',
             center: { lat, lng },

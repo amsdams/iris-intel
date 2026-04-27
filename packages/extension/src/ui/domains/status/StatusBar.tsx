@@ -1,4 +1,4 @@
-import { h, JSX, Fragment } from 'preact';
+import { h, JSX } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { EndpointDiagnostics, EndpointKey, useStore } from '@iris/core';
 import { THEMES, UI_COLORS } from '../../theme';

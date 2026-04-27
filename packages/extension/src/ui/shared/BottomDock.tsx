@@ -1,6 +1,6 @@
 import { h, JSX } from 'preact';
 import { useStore } from '@iris/core';
-import { THEMES, TEAM_NAME } from '../theme';
+import { THEMES } from '../theme';
 import { DrawerTab } from './DockDrawer';
 import './bottomdock.css';
 
