@@ -46,6 +46,7 @@ describe('resolveMapSelection fast path', () => {
     const result = resolveMapSelection({
       portals,
       fields: {},
+      links: {},
       point: {x: 100.04, y: 100.04},
       lng: 1.0004,
       lat: 1.0004,
@@ -78,6 +79,7 @@ describe('resolveMapSelection', () => {
         b: makePortal('b', 2, 2),
       },
       fields: {},
+      links: {},
       point: {x: 100.5, y: 100.5},
       lng: 1.004,
       lat: 1.004,
@@ -100,6 +102,7 @@ describe('resolveMapSelection', () => {
         b: makePortal('b', 5, 5),
       },
       fields: {},
+      links: {},
       point: {x: 400, y: 400},
       lng: 10,
       lat: 10,
@@ -127,6 +130,7 @@ describe('resolveMapSelection', () => {
     const result = resolveMapSelection({
       portals: {},
       fields,
+      links: {},
       point: {x: 100, y: 50},
       lng: 1,
       lat: 0.5,
@@ -135,5 +139,35 @@ describe('resolveMapSelection', () => {
     });
 
     expect(result).toEqual({fieldId, reason: 'field'});
+  });
+
+  it('detects when a point is near a link', () => {
+    const linkId = 'test-link';
+    const links = {
+      [linkId]: {
+        id: linkId,
+        team: 'E',
+        fromPortalId: 'p1',
+        fromLat: 0,
+        fromLng: 0,
+        toPortalId: 'p2',
+        toLat: 2,
+        toLng: 0,
+      },
+    };
+
+    const result = resolveMapSelection({
+      portals: {},
+      fields: {},
+      links,
+      point: {x: 5, y: 100}, // Near (0, 1) in degrees
+      lng: 0.05,
+      lat: 1,
+      zoom: 12,
+      project: makeProject(),
+      linkThreshold: 10,
+    });
+
+    expect(result).toEqual({linkId, reason: 'link'});
   });
 });

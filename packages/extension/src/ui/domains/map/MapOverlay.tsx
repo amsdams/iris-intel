@@ -257,6 +257,21 @@ export function MapOverlay(): JSX.Element {
     });
     getGeoJsonSource('links')?.setData(toFeatureCollection(linkFeatures));
 
+    // Update link selection highlight
+    if (store.selectedLinkId && store.links[store.selectedLinkId]) {
+      const l = store.links[store.selectedLinkId];
+      getGeoJsonSource('link-selected')?.setData(toFeatureCollection([{
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: [[l.fromLng, l.fromLat], [l.toLng, l.toLat]]
+        },
+        properties: { id: l.id }
+      }]));
+    } else {
+      getGeoJsonSource('link-selected')?.setData(toFeatureCollection([]));
+    }
+
     // 3. Filter and Build Fields
     const viewportFields: Record<string, Field> = {};
     results.filter(r => r.type === 'field').forEach(r => {
@@ -313,7 +328,7 @@ export function MapOverlay(): JSX.Element {
     getGeoJsonSource('mission-waypoints')?.setData(toFeatureCollection(buildMissionWaypointFeatures(missionDetails)));
     getGeoJsonSource('plugin-features')?.setData(pluginFeatures);
 
-  }, [styleLoaded, layerShowFields, layerShowLinks, layerShowOrnaments, layerShowArtifacts, filterShowResistance, filterShowEnlightened, filterShowMachina, filterShowUnclaimedPortals, filterShowLevel, filterShowHealth, artifacts, mockOrnaments, missionDetails, pluginFeatures, useStore((state) => state.selectedPortalId), useStore((state) => state.selectedFieldId)]);
+  }, [styleLoaded, layerShowFields, layerShowLinks, layerShowOrnaments, layerShowArtifacts, filterShowResistance, filterShowEnlightened, filterShowMachina, filterShowUnclaimedPortals, filterShowLevel, filterShowHealth, artifacts, mockOrnaments, missionDetails, pluginFeatures, useStore((state) => state.selectedPortalId), useStore((state) => state.selectedFieldId), useStore((state) => state.selectedLinkId)]);
 
   // ---------------------------------------------------------------------------
   // Initialise MapLibre map once on mount
@@ -345,6 +360,10 @@ export function MapOverlay(): JSX.Element {
             data: { type: 'FeatureCollection', features: [] },
           },
           'field-selected': {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: [] },
+          },
+          'link-selected': {
             type: 'geojson',
             data: { type: 'FeatureCollection', features: [] },
           },
@@ -409,6 +428,15 @@ export function MapOverlay(): JSX.Element {
             paint: {
               'fill-color': initialTeamColourExpr.current,
               'fill-opacity': 0.3,
+            },
+          },
+          {
+            id: 'link-selected',
+            type: 'line',
+            source: 'link-selected',
+            paint: {
+              'line-color': '#fff',
+              'line-width': 4,
             },
           },
           {
@@ -650,6 +678,7 @@ export function MapOverlay(): JSX.Element {
         const selection = resolveMapSelection({
             portals: state.portals,
             fields: state.fields,
+            links: state.links,
             point: e.point,
             lng: e.lngLat.lng,
             lat: e.lngLat.lat,
@@ -665,6 +694,8 @@ export function MapOverlay(): JSX.Element {
               emitPortalClick(document, selection.portalId);
             } else if (selection.reason === 'field') {
               state.selectField(selection.fieldId);
+            } else if (selection.reason === 'link') {
+              state.selectLink(selection.linkId);
             }
         } else {
             state.selectPortal(null);
@@ -721,6 +752,7 @@ export function MapOverlay(): JSX.Element {
         const selection = resolveMapSelection({
             portals: state.portals,
             fields: state.fields,
+            links: state.links,
             point: e.point,
             lng: e.lngLat.lng,
             lat: e.lngLat.lat,

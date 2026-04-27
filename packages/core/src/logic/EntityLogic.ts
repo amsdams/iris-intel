@@ -103,5 +103,19 @@ export const EntityLogic = {
         const t = ((c.lat - a.lat) * (p.lng - c.lng) + (a.lng - c.lng) * (p.lat - c.lat)) / det;
         const u = 1 - s - t;
         return s >= 0 && t >= 0 && u >= 0;
+    },
+
+    /**
+     * Calculates the minimum distance from a point to a line segment.
+     * All coordinates in degrees.
+     */
+    distToSegment: (p: { lng: number; lat: number }, a: { lng: number; lat: number }, b: { lng: number; lat: number }): number => {
+        const dx = b.lng - a.lng;
+        const dy = b.lat - a.lat;
+        const l2 = dx * dx + dy * dy;
+        if (l2 === 0) return EntityLogic.getDistKm(p.lat, p.lng, a.lat, a.lng);
+        let t = ((p.lng - a.lng) * dx + (p.lat - a.lat) * dy) / l2;
+        t = Math.max(0, Math.min(1, t));
+        return EntityLogic.getDistKm(p.lat, p.lng, a.lat + t * dy, a.lng + t * dx);
     }
 };
