@@ -29,11 +29,13 @@ interface TacticalUIProps {
     onStyle: (style: string) => void;
     onMode: (mode: string) => void;
     onPortalClick: (lat: number, lng: number, name: string) => void;
+    onSelectionPanelOpen: () => void;
+    onSelectionPanelClose: () => void;
     portalHistoryLayers: PortalHistoryLayerState;
     onPortalHistoryLayerToggle: (key: PortalHistoryKey) => void;
 }
 
-export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBounds, playerHistories, selected, onNav, onStyle, onMode, onPortalClick, portalHistoryLayers, onPortalHistoryLayerToggle }: TacticalUIProps): JSX.Element {
+export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBounds, playerHistories, selected, onNav, onStyle, onMode, onPortalClick, onSelectionPanelOpen, onSelectionPanelClose, portalHistoryLayers, onPortalHistoryLayerToggle }: TacticalUIProps): JSX.Element {
     const [openDrawer, setOpenDrawer] = useState<string | null>(null);
     const logRef = useRef<HTMLDivElement>(null);
     
@@ -41,9 +43,15 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBou
 
     useEffect(() => {
         if (!selected) {
-            setOpenDrawer((current) => current === 'selection' ? null : current);
+            setOpenDrawer((current) => {
+                if (current === 'selection') {
+                    onSelectionPanelClose();
+                    return null;
+                }
+                return current;
+            });
         }
-    }, [selected]);
+    }, [onSelectionPanelClose, selected]);
 
     const formatDelay = (ms: number | null | undefined): string => {
         if (typeof ms !== 'number' || !Number.isFinite(ms)) return '';
@@ -148,11 +156,19 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBou
     };
 
     const toggleDrawer = (id: string): void => {
+        const wasSelectionOpen = openDrawer === 'selection';
         const isOpening = openDrawer !== id;
-        setOpenDrawer(isOpening ? id : null);
+        const nextDrawer = isOpening ? id : null;
+        setOpenDrawer(nextDrawer);
+
+        if (wasSelectionOpen && nextDrawer !== 'selection') {
+            onSelectionPanelClose();
+        }
 
         if (isOpening) {
-            if (id === 'player') {
+            if (id === 'selection') {
+                onSelectionPanelOpen();
+            } else if (id === 'player') {
                 window.postMessage({ type: 'IRIS_SUBSCRIPTION_REQUEST' }, '*');
             } else if (id === 'inventory') {
                 window.postMessage({ type: 'IRIS_INVENTORY_REQUEST' }, '*');

@@ -1,4 +1,5 @@
 import { h, JSX } from 'preact';
+import { useState } from 'preact/hooks';
 import { EntityLogic, Portal, Link, Field } from '@iris/core';
 
 interface DashboardProps {
@@ -21,6 +22,9 @@ const MOD_COLORS: Record<string, string> = {
 export function Dashboard({ type, data, colors }: DashboardProps): JSX.Element {
     const teamKey = data.team;
     const teamColor = colors[teamKey] || '#fff';
+    const title = `${type.toUpperCase()} DETAILS`;
+    const titleMeta = getTitleMeta(type, data);
+    const [showOwners, setShowOwners] = useState(false);
 
     const renderPortal = (p: Portal): JSX.Element => {
         const resos = p.resonators || [];
@@ -37,79 +41,114 @@ export function Dashboard({ type, data, colors }: DashboardProps): JSX.Element {
         });
 
         return (
-            <div style={{ display: 'block', border: `1px solid ${teamColor}`, borderRadius: '4px', background: 'rgba(0,0,0,0.95)', overflow: 'hidden', boxShadow: `0 0 10px ${teamColor}44` }}>
-                {p.image && <div style={{ height: '100px', background: `url(${p.image}) center/cover`, borderBottom: `2px solid ${teamColor}` }}></div>}
-                <div style={{ padding: '12px' }}>
-                    <div style={{ color: teamColor, fontWeight: 'bold', fontSize: '14px', marginBottom: '2px' }}>{p.name || 'PORTAL'}</div>
-                    <div style={{ color: '#888', fontSize: '10px', marginBottom: '10px' }}>Owner: {p.owner || (p.team === 'N' ? 'Neutral' : 'Unknown')}</div>
-                    
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px', marginBottom: '10px' }}>
-                        <div style={{ background: '#111', padding: '4px', textAlign: 'center', borderRadius: '2px' }}>
-                            <div style={{ color: '#666', fontSize: '9px' }}>LEVEL</div>
-                            <div style={{ color: LEVEL_COLORS[p.level || 1] || '#fff', fontWeight: 'bold' }}>{p.level || 0}</div>
-                        </div>
-                        <div style={{ background: '#111', padding: '4px', textAlign: 'center', borderRadius: '2px' }}>
-                            <div style={{ color: '#666', fontSize: '9px' }}>HEALTH</div>
-                            <div style={{ color: '#0f0', fontWeight: 'bold' }}>{p.health ?? 0}%</div>
-                        </div>
-                        <div style={{ background: '#111', padding: '4px', textAlign: 'center', borderRadius: '2px' }}>
-                            <div style={{ color: '#666', fontSize: '9px' }}>RESOs</div>
-                            <div style={{ color: teamColor, fontWeight: 'bold' }}>{p.resCount || 0}/8</div>
-                        </div>
+            <div style={{ padding: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '6px' }}>
+                    {p.image && (
+                        <div
+                            title="Open portal image"
+                            onClick={() => window.open(p.image, '_blank', 'noopener,noreferrer')}
+                            style={{ width: '42px', height: '42px', flexShrink: 0, cursor: 'pointer', border: `1px solid ${teamColor}66`, borderRadius: '3px', background: `url(${p.image}) center/cover`, boxShadow: `0 0 6px ${teamColor}33` }}
+                        />
+                    )}
+                    <div style={{ minWidth: 0 }}>
+                        <div style={{ color: teamColor, fontWeight: 'bold', fontSize: '12px', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name || 'PORTAL'}</div>
+                        <div style={{ color: '#777', fontSize: '9px', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.owner || (p.team === 'N' ? 'Neutral' : 'Unknown')}</div>
                     </div>
+                    <div style={{ color: LEVEL_COLORS[p.level || 1] || teamColor, fontSize: '18px', lineHeight: 1, fontWeight: 'bold', flexShrink: 0 }}>L{p.level || 0}</div>
+                </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginBottom: '10px' }}>
-                        <div style={{ background: '#111', padding: '4px 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: '2px' }}>
-                            <span style={{ color: '#666', fontSize: '9px' }}>MITIGATION</span>
-                            <span style={{ color: '#0ff', fontWeight: 'bold', fontSize: '11px' }}>{mitigationTotal}</span>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '3px', marginBottom: '6px' }}>
+                    {[
+                        ['HEALTH', `${p.health ?? 0}%`, '#0f0'],
+                        ['RES', `${p.resCount || 0}/8`, teamColor],
+                        ['MIT', `${mitigationTotal}`, '#0ff'],
+                        ['STICKY', `${stickiness}%`, '#f0f'],
+                    ].map(([label, value, color]) => (
+                        <div key={label} style={{ background: '#111', padding: '3px', textAlign: 'center', borderRadius: '2px', minWidth: 0 }}>
+                            <div style={{ color: '#666', fontSize: '8px', lineHeight: 1.1 }}>{label}</div>
+                            <div style={{ color, fontWeight: 'bold', fontSize: '10px', lineHeight: 1.2 }}>{value}</div>
                         </div>
-                        <div style={{ background: '#111', padding: '4px 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: '2px' }}>
-                            <span style={{ color: '#666', fontSize: '9px' }}>STICKY</span>
-                            <span style={{ color: '#f0f', fontWeight: 'bold', fontSize: '11px' }}>{stickiness}%</span>
-                        </div>
-                    </div>
+                    ))}
+                </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginBottom: '10px' }}>
-                        {Array.from({ length: 8 }).map((_, i) => {
-                            const r = resos[i];
-                            const level = r?.level || 0;
-                            const energyPct = r ? (r.energy / (level > 0 ? (level * 1000) : 1000)) * 100 : 0;
-                            const color = LEVEL_COLORS[level] || '#333';
-                            return (
-                                <div key={i} style={{ background: '#1a1a1a', border: `1px solid ${color}44`, padding: '4px 2px', position: 'relative', minHeight: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                                    <span style={{ color: color, fontSize: '10px', fontWeight: 'bold', zIndex: 1 }}>{r ? `R${level}` : '-'}</span>
-                                    {r && <div style={{ fontSize: '7px', fontWeight: 'normal', color: '#888', marginTop: '1px', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', zIndex: 1 }}>{r.owner}</div>}
-                                    {r && <div style={{ position: 'absolute', bottom: 0, left: 0, height: '2px', background: '#0f0', width: `${Math.min(100, energyPct)}%` }}></div>}
-                                </div>
-                            );
-                        })}
-                    </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: '2px', marginBottom: '5px' }}>
+                    {Array.from({ length: 8 }).map((_, i) => {
+                        const r = resos[i];
+                        const level = r?.level || 0;
+                        const energyPct = r ? (r.energy / (level > 0 ? (level * 1000) : 1000)) * 100 : 0;
+                        const color = LEVEL_COLORS[level] || '#333';
+                        return (
+                            <div key={i} title={r?.owner} style={{ background: '#1a1a1a', border: `1px solid ${color}55`, padding: '2px 1px', position: 'relative', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <span style={{ color, fontSize: '9px', fontWeight: 'bold', zIndex: 1 }}>{r ? level : '-'}</span>
+                                {r && <div style={{ position: 'absolute', bottom: 0, left: 0, height: '2px', background: '#0f0', width: `${Math.min(100, energyPct)}%` }}></div>}
+                            </div>
+                        );
+                    })}
+                </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginBottom: '10px' }}>
-                        {Array.from({ length: 4 }).map((_, i) => {
-                            const m = mods[i];
-                            let label = '-';
-                            let color = '#333';
-                            if (m) {
-                                const rarity = m.rarity === 'VERY_RARE' ? 'VR' : (m.rarity === 'RARE' ? 'R' : 'C');
-                                const shortName = m.name.split(' ').map((w: string) => w[0]).join('');
-                                label = `${rarity}${shortName}`;
-                                color = MOD_COLORS[m.rarity] || '#fff';
-                            }
-                            return (
-                                <div key={i} style={{ background: '#1a1a1a', border: `1px solid ${color}44`, padding: '4px 2px', fontSize: '9px', color: color, textAlign: 'center', minHeight: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontWeight: m ? 'bold' : 'normal' }}>
-                                    <div>{label}</div>
-                                    {m && <div style={{ fontSize: '7px', fontWeight: 'normal', color: '#888', marginTop: '1px', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.owner}</div>}
-                                </div>
-                            );
-                        })}
-                    </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '2px', marginBottom: '6px' }}>
+                    {Array.from({ length: 4 }).map((_, i) => {
+                        const m = mods[i];
+                        const label = getModShortLabel(m);
+                        let color = '#333';
+                        if (m) {
+                            color = MOD_COLORS[m.rarity] || '#fff';
+                        }
+                        return (
+                            <div key={i} title={m ? `${m.rarity} ${m.name}` : undefined} style={{ background: '#1a1a1a', border: `1px solid ${color}44`, padding: '3px 2px', fontSize: '8px', color, textAlign: 'center', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: m ? 'bold' : 'normal', overflow: 'hidden' }}>
+                                <div>{label}</div>
+                            </div>
+                        );
+                    })}
+                </div>
 
-                    <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #222', marginTop: '10px', paddingTop: '10px' }}>
-                        <span style={{ border: `1px solid ${p.visited ? '#9b59b6' : '#333'}`, color: p.visited ? '#9b59b6' : '#444', padding: '1px 6px', borderRadius: '99px', fontSize: '9px', fontWeight: p.visited ? 'bold' : 'normal' }}>VISITED</span>
-                        <span style={{ border: `1px solid ${p.captured ? '#e74c3c' : '#333'}`, color: p.captured ? '#e74c3c' : '#444', padding: '1px 6px', borderRadius: '99px', fontSize: '9px', fontWeight: p.captured ? 'bold' : 'normal' }}>CAPTURED</span>
-                        <span style={{ border: `1px solid ${p.scanned ? '#00d9ff' : '#333'}`, color: p.scanned ? '#00d9ff' : '#444', padding: '1px 6px', borderRadius: '99px', fontSize: '9px', fontWeight: p.scanned ? 'bold' : 'normal' }}>SCANNED</span>
+                <div
+                    onClick={() => setShowOwners((current) => !current)}
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #222', padding: '5px 0', color: teamColor, fontSize: '9px', fontWeight: 'bold', cursor: 'pointer', letterSpacing: '0.04em' }}
+                >
+                    <span>OWNERS</span>
+                    <span style={{ color: '#777' }}>{showOwners ? 'HIDE' : 'SHOW'}</span>
+                </div>
+
+                {showOwners && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '6px' }}>
+                        <OwnerColumn title="RESONATORS">
+                            {Array.from({ length: 8 }).map((_, i) => {
+                                const r = resos[i];
+                                const maxEnergy = r ? getMaxResonatorEnergy(r.level) : 0;
+                                const healthPct = r && maxEnergy > 0 ? Math.round((r.energy / maxEnergy) * 100) : 0;
+                                return (
+                                    <OwnerRow
+                                        key={i}
+                                        label={r ? `R${r.level}` : `R${i + 1}`}
+                                        detail={r ? `${healthPct}%` : '-'}
+                                        owner={r?.owner}
+                                        color={LEVEL_COLORS[r?.level || 0] || '#555'}
+                                    />
+                                );
+                            })}
+                        </OwnerColumn>
+                        <OwnerColumn title="MODS">
+                            {Array.from({ length: 4 }).map((_, i) => {
+                                const m = mods[i];
+                                return (
+                                    <OwnerRow
+                                        key={i}
+                                        label={m ? getModShortLabel(m) : `M${i + 1}`}
+                                        detail={m?.rarity || '-'}
+                                        owner={m?.owner}
+                                        color={m ? MOD_COLORS[m.rarity] || '#fff' : '#555'}
+                                    />
+                                );
+                            })}
+                        </OwnerColumn>
                     </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '4px', borderTop: '1px solid #222', paddingTop: '6px' }}>
+                    <span style={{ border: `1px solid ${p.visited ? '#9b59b6' : '#333'}`, color: p.visited ? '#9b59b6' : '#444', padding: '1px 6px', borderRadius: '99px', fontSize: '9px', fontWeight: p.visited ? 'bold' : 'normal' }}>VISITED</span>
+                    <span style={{ border: `1px solid ${p.captured ? '#e74c3c' : '#333'}`, color: p.captured ? '#e74c3c' : '#444', padding: '1px 6px', borderRadius: '99px', fontSize: '9px', fontWeight: p.captured ? 'bold' : 'normal' }}>CAPTURED</span>
+                    <span style={{ border: `1px solid ${p.scanned ? '#00d9ff' : '#333'}`, color: p.scanned ? '#00d9ff' : '#444', padding: '1px 6px', borderRadius: '99px', fontSize: '9px', fontWeight: p.scanned ? 'bold' : 'normal' }}>SCANNED</span>
                 </div>
             </div>
         );
@@ -118,25 +157,24 @@ export function Dashboard({ type, data, colors }: DashboardProps): JSX.Element {
     const renderField = (field: Field): JSX.Element => {
         const estimatedMU = calculateEstimatedFieldMu(field);
         return (
-            <div style={{ padding: '12px', border: `1px solid ${teamColor}`, borderRadius: '4px', background: 'rgba(0,0,0,0.95)', boxShadow: `0 0 10px ${teamColor}44` }}>
-                <div style={{ color: teamColor, fontWeight: 'bold', marginBottom: '8px', fontSize: '14px' }}>FIELD DETAILS</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginBottom: '10px' }}>
-                    <div style={{ background: '#111', padding: '6px', borderRadius: '4px' }}>
+            <div style={{ padding: '8px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3px', marginBottom: '6px' }}>
+                    <div style={{ background: '#111', padding: '4px', borderRadius: '3px' }}>
                         <div style={{ color: '#666', fontSize: '9px' }}>TEAM</div>
                         <div style={{ color: teamColor, fontWeight: 'bold', fontSize: '11px' }}>{field.team}</div>
                     </div>
-                    <div style={{ background: '#111', padding: '6px', borderRadius: '4px' }}>
+                    <div style={{ background: '#111', padding: '4px', borderRadius: '3px' }}>
                         <div style={{ color: '#666', fontSize: '9px' }}>EST. MU</div>
                         <div style={{ color: teamColor, fontWeight: 'bold', fontSize: '11px' }}>{estimatedMU.toLocaleString()}</div>
                     </div>
                 </div>
-                <div style={{ background: '#111', padding: '6px', borderRadius: '4px', fontSize: '11px', marginBottom: '10px' }}>
+                <div style={{ background: '#111', padding: '4px', borderRadius: '3px', fontSize: '10px', marginBottom: '6px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span style={{ color: '#666' }}>ID</span>
                         <span style={{ color: '#ccc' }}>{field.id.slice(0, 12)}...</span>
                     </div>
                 </div>
-                <div style={{ borderTop: '1px solid #222', paddingTop: '8px' }}>
+                <div style={{ borderTop: '1px solid #222', paddingTop: '6px' }}>
                     <div style={{ color: '#666', fontSize: '9px', fontWeight: 'bold', marginBottom: '5px' }}>ANCHORS</div>
                     {field.points.map((point, index) => (
                         <div key={index} style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '10px', color: '#aaa', padding: '2px 0' }}>
@@ -153,25 +191,24 @@ export function Dashboard({ type, data, colors }: DashboardProps): JSX.Element {
         const distKm = EntityLogic.getDistKm(link.fromLat, link.fromLng, link.toLat, link.toLng);
         const distStr = distKm < 1 ? `${Math.round(distKm * 1000)}m` : `${distKm.toFixed(2)}km`;
         return (
-            <div style={{ padding: '12px', border: `1px solid ${teamColor}`, borderRadius: '4px', background: 'rgba(0,0,0,0.95)', boxShadow: `0 0 10px ${teamColor}44` }}>
-                <div style={{ color: teamColor, fontWeight: 'bold', marginBottom: '8px', fontSize: '14px' }}>LINK DETAILS</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginBottom: '10px' }}>
-                    <div style={{ background: '#111', padding: '6px', borderRadius: '4px' }}>
+            <div style={{ padding: '8px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3px', marginBottom: '6px' }}>
+                    <div style={{ background: '#111', padding: '4px', borderRadius: '3px' }}>
                         <div style={{ color: '#666', fontSize: '9px' }}>TEAM</div>
                         <div style={{ color: teamColor, fontWeight: 'bold', fontSize: '11px' }}>{link.team}</div>
                     </div>
-                    <div style={{ background: '#111', padding: '6px', borderRadius: '4px' }}>
+                    <div style={{ background: '#111', padding: '4px', borderRadius: '3px' }}>
                         <div style={{ color: '#666', fontSize: '9px' }}>LENGTH</div>
                         <div style={{ color: teamColor, fontWeight: 'bold', fontSize: '11px' }}>{distStr}</div>
                     </div>
                 </div>
-                <div style={{ background: '#111', padding: '6px', borderRadius: '4px', fontSize: '11px', marginBottom: '10px' }}>
+                <div style={{ background: '#111', padding: '4px', borderRadius: '3px', fontSize: '10px', marginBottom: '6px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span style={{ color: '#666' }}>ID</span>
                         <span style={{ color: '#ccc' }}>{link.id.slice(0, 12)}...</span>
                     </div>
                 </div>
-                <div style={{ borderTop: '1px solid #222', paddingTop: '8px' }}>
+                <div style={{ borderTop: '1px solid #222', paddingTop: '6px' }}>
                     <div style={{ color: '#666', fontSize: '9px', fontWeight: 'bold', marginBottom: '5px' }}>ANCHORS</div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '10px', color: '#aaa', padding: '2px 0' }}>
                         <span>From</span>
@@ -187,10 +224,13 @@ export function Dashboard({ type, data, colors }: DashboardProps): JSX.Element {
     };
 
     return (
-        <div id="entity-details" style={{ color: '#fff', padding: '0', fontFamily: 'monospace', fontSize: '12px', pointerEvents: 'auto' }}>
+        <div id="entity-details" style={{ color: '#fff', padding: '0', fontFamily: 'monospace', fontSize: '12px', pointerEvents: 'auto', border: `1px solid ${teamColor}`, borderRadius: '4px', background: 'rgba(0,0,0,0.95)', overflow: 'hidden', boxShadow: `0 0 10px ${teamColor}44` }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '7px 8px', borderBottom: '1px solid #333' }}>
+                <span style={{ color: teamColor, fontWeight: 'bold', fontSize: '11px', letterSpacing: '0.04em' }}>{title}</span>
+                {titleMeta && <span style={{ color: '#aaa', fontSize: '10px', fontWeight: 'bold' }}>{titleMeta}</span>}
+            </div>
             {type === 'portal' ? renderPortal(data as Portal) : type === 'field' ? renderField(data as Field) : type === 'link' ? renderLink(data as Link) : (
-                <div style={{ padding: '12px', border: `1px solid ${teamColor}`, borderRadius: '4px', background: 'rgba(0,0,0,0.95)', boxShadow: `0 0 10px ${teamColor}44` }}>
-                    <div style={{ color: teamColor, fontWeight: 'bold', marginBottom: '8px', fontSize: '14px' }}>{type.toUpperCase()} DETAILS</div>
+                <div style={{ padding: '8px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', background: '#111', padding: '6px', borderRadius: '4px', fontSize: '11px' }}>
                         <span style={{ color: '#666' }}>ID</span>
                         <span style={{ color: '#ccc' }}>{(data as Portal | Link | Field).id.slice(0, 12)}...</span>
@@ -199,6 +239,56 @@ export function Dashboard({ type, data, colors }: DashboardProps): JSX.Element {
             )}
         </div>
     );
+}
+
+function OwnerColumn({ title, children }: { title: string; children: preact.ComponentChildren }): JSX.Element {
+    return (
+        <div style={{ minWidth: 0 }}>
+            <div style={{ color: '#666', fontSize: '8px', fontWeight: 'bold', marginBottom: '3px' }}>{title}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>{children}</div>
+        </div>
+    );
+}
+
+function OwnerRow({ label, detail, owner, color }: { label: string; detail: string; owner?: string; color: string }): JSX.Element {
+    const isEmpty = !owner;
+    return (
+        <div style={{ display: 'grid', gridTemplateColumns: '28px 34px minmax(0, 1fr)', gap: '4px', alignItems: 'center', background: '#111', border: `1px solid ${isEmpty ? '#222' : `${color}33`}`, borderRadius: '2px', padding: '2px 3px', minWidth: 0 }}>
+            <span style={{ color: isEmpty ? '#444' : color, fontSize: '8px', fontWeight: 'bold' }}>{label}</span>
+            <span style={{ color: '#666', fontSize: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{detail}</span>
+            <span style={{ color: isEmpty ? '#444' : '#bbb', fontSize: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{owner || '-'}</span>
+        </div>
+    );
+}
+
+function getModShortLabel(mod: { rarity: string; name: string } | undefined): string {
+    if (!mod) return '-';
+    const rarity = mod.rarity === 'VERY_RARE' ? 'VR' : (mod.rarity === 'RARE' ? 'R' : 'C');
+    const shortName = mod.name.split(' ').map((w: string) => w[0]).join('');
+    return `${rarity}${shortName}`;
+}
+
+function getMaxResonatorEnergy(level: number): number {
+    return [0, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000][level] || 1000;
+}
+
+function getTitleMeta(type: string, data: Portal | Link | Field): string {
+    if (type === 'portal') {
+        const portal = data as Portal;
+        return portal.level !== undefined ? `L${portal.level}` : portal.team;
+    }
+
+    if (type === 'field') {
+        return `~${calculateEstimatedFieldMu(data as Field).toLocaleString()} MU`;
+    }
+
+    if (type === 'link') {
+        const link = data as Link;
+        const distKm = EntityLogic.getDistKm(link.fromLat, link.fromLng, link.toLat, link.toLng);
+        return distKm < 1 ? `${Math.round(distKm * 1000)}m` : `${distKm.toFixed(2)}km`;
+    }
+
+    return '';
 }
 
 function calculateEstimatedFieldMu(field: Field): number {

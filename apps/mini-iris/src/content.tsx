@@ -426,6 +426,14 @@ function TacticalOverlay(): h.JSX.Element {
         }));
     }, []);
 
+    const handleSelectionPanelOpen = useCallback((): void => {
+        mapRef.current?.panBy([0, 140], { duration: 200 });
+    }, []);
+
+    const handleSelectionPanelClose = useCallback((): void => {
+        mapRef.current?.panBy([0, -140], { duration: 200 });
+    }, []);
+
     useEffect(() => {
         if (mapRef.current) return; // Only init once
 
@@ -730,6 +738,8 @@ function TacticalOverlay(): h.JSX.Element {
                         onPortalHistoryLayerToggle={handlePortalHistoryLayerToggle}
                         onNav={handleNav} onStyle={handleStyle} onMode={handleMode}
                         onPortalClick={handlePortalClick}
+                        onSelectionPanelOpen={handleSelectionPanelOpen}
+                        onSelectionPanelClose={handleSelectionPanelClose}
                     />
                 </Fragment>
             )}
