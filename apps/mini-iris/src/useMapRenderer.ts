@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef } from 'preact/hooks';
 import maplibregl from 'maplibre-gl';
-import { useStore, globalSpatialIndex, getMinLevelForZoom } from '@iris/core';
+import { useStore, globalSpatialIndex, getMinLevelForZoom, InventoryParser, type InventoryItem } from '@iris/core';
 import { MockDataGenerator } from './MockDataGenerator';
 import { createCirclePolygon } from './GeoUtils';
+import { INGRESS_COLORS } from './MapConstants';
 import type { PortalHistoryLayerState } from './portalHistory';
 
 interface UseMapRendererResult {
@@ -13,6 +14,8 @@ export function useMapRenderer(
     generator: MockDataGenerator,
     logEvent: (msg: string) => void,
     portalHistoryLayers: PortalHistoryLayerState,
+    keyOverlayEnabled: boolean,
+    mockInventory: InventoryItem[],
 ): UseMapRendererResult {
     const pendingFrameRef = useRef<number | null>(null);
     const pendingSetDataRef = useRef<{
@@ -72,6 +75,7 @@ export function useMapRenderer(
         const results = currentLiveMode ? globalSpatialIndex.query(q) : generator.query({ minX: q.minLng, minY: q.minLat, maxX: q.maxLng, maxY: q.maxLat });
         const features: GeoJSON.Feature[] = [];
         const store = useStore.getState();
+        const keyInventory = currentLiveMode ? store.inventory : mockInventory;
 
         const portalMaxLayer = new Map<string, number>();
         const linkMaxLayer = new Map<string, number>();
@@ -140,6 +144,27 @@ export function useMapRenderer(
                         geometry: { type: 'Polygon', coordinates: createCirclePolygon(p.lng, p.lat, 8, 12) }, 
                         properties: { ...props, type: 'portal-ext' } 
                     });
+
+                    if (keyOverlayEnabled && keyInventory.length > 0) {
+                        const keyCounts = InventoryParser.countPortalKeysDetailed(keyInventory, p.id);
+                        if (keyCounts.total > 0) {
+                            features.push({
+                                type: 'Feature',
+                                id: `portal-key-count:${p.id}`,
+                                geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
+                                properties: {
+                                    id: `portal-key-count:${p.id}`,
+                                    type: 'portal-key-count',
+                                    total: keyCounts.total,
+                                    loose: keyCounts.loose,
+                                    capsule: keyCounts.capsule,
+                                    totalLabel: String(keyCounts.total),
+                                    splitLabel: `${keyCounts.loose}L/${keyCounts.capsule}C`,
+                                    color: INGRESS_COLORS.KEY,
+                                },
+                            });
+                        }
+                    }
                 }
             } else if (item.type === 'link') {
                 const l = currentLiveMode ? store.links[item.id] : generator.linksMap.get(item.id);
@@ -200,7 +225,7 @@ export function useMapRenderer(
             scheduleSetData(source, { type: 'FeatureCollection', features });
             logEvent(`RENDERED: ${features.length} items (Min L:${minLevel})`);
         }
-    }, [generator, logEvent, portalHistoryLayers, scheduleSetData]);
+    }, [generator, keyOverlayEnabled, logEvent, mockInventory, portalHistoryLayers, scheduleSetData]);
 
     return { syncToMap };
 }

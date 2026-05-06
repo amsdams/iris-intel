@@ -14,6 +14,12 @@ export interface DerivedInventoryItem {
   moniker?: string;
 }
 
+export interface PortalKeyCounts {
+  total: number;
+  loose: number;
+  capsule: number;
+}
+
 const INTEL_ITEM_LABELS: Record<string, string> = {
   BOOSTED_POWER_CUBE: 'Hypercube',
   BOOSTED_POWER_CUBE_K: 'Hypercube',
@@ -262,14 +268,18 @@ export const InventoryParser = {
     return items.flatMap((item) => deriveItemsFromItem(item));
   },
 
-  countPortalKeys: (items: InventoryItem[], portalId: string): number => {
-    const countInItem = (item: InventoryItem, pid: string): number => {
+  countPortalKeysDetailed: (items: InventoryItem[], portalId: string): PortalKeyCounts => {
+    const countInItem = (item: InventoryItem, pid: string, inCapsule: boolean): PortalKeyCounts => {
       if (item.portalCoupler?.portalGuid === pid) {
-        return 1;
+        return {
+          total: 1,
+          loose: inCapsule ? 0 : 1,
+          capsule: inCapsule ? 1 : 0,
+        };
       }
 
       if (!item.container) {
-        return 0;
+        return { total: 0, loose: 0, capsule: 0 };
       }
 
       return item.container.stackableItems.reduce((sum, stackableItem) => {
@@ -280,10 +290,27 @@ export const InventoryParser = {
           ...(itemData as object),
         } as InventoryItem;
 
-        return sum + countInItem(nestedItem, pid) * stackableItem.itemGuids.length;
-      }, 0);
+        const nestedCount = countInItem(nestedItem, pid, true);
+        const multiplier = stackableItem.itemGuids.length;
+        return {
+          total: sum.total + nestedCount.total * multiplier,
+          loose: sum.loose + nestedCount.loose * multiplier,
+          capsule: sum.capsule + nestedCount.capsule * multiplier,
+        };
+      }, { total: 0, loose: 0, capsule: 0 });
     };
 
-    return items.reduce((sum, item) => sum + countInItem(item, portalId), 0);
+    return items.reduce((sum, item) => {
+      const count = countInItem(item, portalId, false);
+      return {
+        total: sum.total + count.total,
+        loose: sum.loose + count.loose,
+        capsule: sum.capsule + count.capsule,
+      };
+    }, { total: 0, loose: 0, capsule: 0 });
+  },
+
+  countPortalKeys: (items: InventoryItem[], portalId: string): number => {
+    return InventoryParser.countPortalKeysDetailed(items, portalId).total;
   }
 };

@@ -194,6 +194,67 @@ describe('InventoryParser', () => {
     expect(InventoryParser.countPortalKeys(parsed, 'portal-b')).toBe(0);
   });
 
+  it('counts loose and capsule portal keys separately', () => {
+    const parsed = InventoryParser.parse({
+      result: [
+        [
+          'loose-key',
+          1,
+          {
+            portalCoupler: {
+              portalGuid: 'portal-a',
+              portalLocation: '0,0',
+              portalImageUrl: '',
+              portalTitle: 'Portal A',
+              portalAddress: '',
+            },
+          },
+        ],
+        [
+          'capsule-1',
+          2,
+          {
+            resource: { resourceType: 'CAPSULE', resourceRarity: 'COMMON' },
+            moniker: { differentiator: 'C1' },
+            container: {
+              currentCapacity: 100,
+              currentCount: 2,
+              stackableItems: [
+                {
+                  itemGuids: ['nested-key-1', 'nested-key-2'],
+                  exampleGameEntity: [
+                    'nested-key-template',
+                    3,
+                    {
+                      portalCoupler: {
+                        portalGuid: 'portal-a',
+                        portalLocation: '0,0',
+                        portalImageUrl: '',
+                        portalTitle: 'Portal A',
+                        portalAddress: '',
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        ],
+      ],
+    } as InventoryData);
+
+    expect(InventoryParser.countPortalKeysDetailed(parsed, 'portal-a')).toEqual({
+      total: 3,
+      loose: 1,
+      capsule: 2,
+    });
+    expect(InventoryParser.countPortalKeysDetailed(parsed, 'portal-b')).toEqual({
+      total: 0,
+      loose: 0,
+      capsule: 0,
+    });
+  });
+
   it('derives capsule-contained items for display and preserves capsule monikers', () => {
     const parsed = InventoryParser.parse({
       result: [

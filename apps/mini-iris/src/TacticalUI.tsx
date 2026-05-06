@@ -33,9 +33,11 @@ interface TacticalUIProps {
     onSelectionPanelClose: () => void;
     portalHistoryLayers: PortalHistoryLayerState;
     onPortalHistoryLayerToggle: (key: PortalHistoryKey) => void;
+    keyOverlayEnabled: boolean;
+    onKeyOverlayToggle: () => void;
 }
 
-export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBounds, playerHistories, selected, onNav, onStyle, onMode, onPortalClick, onSelectionPanelOpen, onSelectionPanelClose, portalHistoryLayers, onPortalHistoryLayerToggle }: TacticalUIProps): JSX.Element {
+export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBounds, playerHistories, selected, onNav, onStyle, onMode, onPortalClick, onSelectionPanelOpen, onSelectionPanelClose, portalHistoryLayers, onPortalHistoryLayerToggle, keyOverlayEnabled, onKeyOverlayToggle }: TacticalUIProps): JSX.Element {
     const [openDrawer, setOpenDrawer] = useState<string | null>(null);
     const logRef = useRef<HTMLDivElement>(null);
     
@@ -211,6 +213,8 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBou
                 onMode={onMode} 
                 portalHistoryLayers={portalHistoryLayers}
                 onPortalHistoryLayerToggle={onPortalHistoryLayerToggle}
+                keyOverlayEnabled={keyOverlayEnabled}
+                onKeyOverlayToggle={onKeyOverlayToggle}
             />
 
             {/* Bottom: Data & Profile Dock */}

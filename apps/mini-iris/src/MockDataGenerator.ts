@@ -1,7 +1,37 @@
 import RBush from 'rbush';
-import { Portal, Link, Field } from '@iris/core';
+import { Portal, Link, Field, InventoryItem } from '@iris/core';
 
 export type Faction = 'E' | 'R' | 'N' | 'M';
+
+function getDeterministicHistory(id: string, team: Faction): number {
+    let hash = team.charCodeAt(0);
+    for (let i = 0; i < id.length; i++) {
+        hash = ((hash * 31) + id.charCodeAt(i)) >>> 0;
+    }
+
+    const bucket = hash % 8;
+    if (bucket === 0) return 0;
+
+    let history = 0;
+    if (bucket % 2 === 0 || bucket === 7) history |= 1;
+    if (bucket % 3 === 0 || bucket === 5) history |= 2;
+    if (bucket % 4 === 0 || bucket === 6) history |= 4;
+
+    return history;
+}
+
+function getDeterministicKeyCounts(id: string, team: string): { loose: number; capsule: number } {
+    let hash = (team || 'N').charCodeAt(0);
+    for (let i = 0; i < id.length; i++) {
+        hash = ((hash * 37) + id.charCodeAt(i)) >>> 0;
+    }
+
+    const bucket = hash % 6;
+    return {
+        loose: bucket % 3,
+        capsule: bucket === 0 || bucket === 4 ? 0 : bucket % 4,
+    };
+}
 
 interface EntityIndexItem {
     minX: number; minY: number; maxX: number; maxY: number;
@@ -22,6 +52,62 @@ export class MockDataGenerator {
 
     get fields(): Field[] {
         return Array.from(this.fieldsMap.values());
+    }
+
+    createMockInventory(): InventoryItem[] {
+        const items: InventoryItem[] = [];
+        const capsuleStackableItems: NonNullable<InventoryItem['container']>['stackableItems'] = [];
+
+        this.portals.forEach((portal) => {
+            const counts = getDeterministicKeyCounts(portal.id, portal.team);
+            const coupler = {
+                portalGuid: portal.id,
+                portalLocation: `${Math.round(portal.lat * 1e6)},${Math.round(portal.lng * 1e6)}`,
+                portalImageUrl: portal.image || '',
+                portalTitle: portal.name || `Portal ${portal.id}`,
+                portalAddress: `Mock address ${portal.id}`,
+            };
+
+            for (let i = 0; i < counts.loose; i++) {
+                items.push({
+                    guid: `mock-key:${portal.id}:${i}`,
+                    timestamp: Date.now() + items.length,
+                    resource: { resourceType: 'PORTAL_LINK_KEY', resourceRarity: 'VERY_COMMON' },
+                    portalCoupler: coupler,
+                });
+            }
+
+            if (counts.capsule > 0) {
+                capsuleStackableItems.push({
+                    itemGuids: Array.from({ length: counts.capsule }, (_, i) => `mock-capsule-key:${portal.id}:${i}`),
+                    exampleGameEntity: [
+                        `mock-capsule-key-template:${portal.id}`,
+                        Date.now() + items.length,
+                        {
+                            resource: { resourceType: 'PORTAL_LINK_KEY', resourceRarity: 'VERY_COMMON' },
+                            portalCoupler: coupler,
+                        },
+                    ],
+                });
+            }
+        });
+
+        if (capsuleStackableItems.length > 0) {
+            const currentCount = capsuleStackableItems.reduce((sum, item) => sum + item.itemGuids.length, 0);
+            items.push({
+                guid: 'mock-key-capsule',
+                timestamp: Date.now() + items.length,
+                resource: { resourceType: 'KEY_CAPSULE', resourceRarity: 'RARE' },
+                moniker: { differentiator: 'TEST' },
+                container: {
+                    currentCapacity: 100,
+                    currentCount,
+                    stackableItems: capsuleStackableItems,
+                },
+            });
+        }
+
+        return items;
     }
 
     clear(): void {
@@ -46,9 +132,7 @@ export class MockDataGenerator {
             { owner: `Agent_${team}_Alpha`, name: 'Portal Shield', rarity: 'RARE', stats: { MITIGATION: 30 } }
         ];
 
-        const history = team === 'N'
-            ? 0
-            : (Math.random() > 0.5 ? 1 : 0) | (Math.random() > 0.3 ? 2 : 0) | (Math.random() > 0.7 ? 4 : 0);
+        const history = team === 'N' ? 0 : getDeterministicHistory(id, team);
 
         const portal: Portal = { 
             id, 

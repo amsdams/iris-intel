@@ -31,52 +31,52 @@ export function Dashboard({ type, data, colors }: DashboardProps): JSX.Element {
         });
 
         return (
-            <div style={{ padding: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '6px' }}>
+            <div style={{ padding: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '8px' }}>
                     {p.image && (
                         <div
                             title="Open portal image"
                             onClick={() => window.open(p.image, '_blank', 'noopener,noreferrer')}
-                            style={{ width: '42px', height: '42px', flexShrink: 0, cursor: 'pointer', border: `1px solid ${teamColor}66`, borderRadius: '3px', background: `url(${p.image}) center/cover`, boxShadow: `0 0 6px ${teamColor}33` }}
+                            style={{ width: '56px', height: '46px', flexShrink: 0, cursor: 'pointer', border: `1px solid ${teamColor}66`, borderRadius: '4px', background: `url(${p.image}) center/cover`, boxShadow: `0 0 6px ${teamColor}33` }}
                         />
                     )}
-                    <div style={{ minWidth: 0 }}>
-                        <div style={{ color: teamColor, fontWeight: 'bold', fontSize: '12px', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name || 'PORTAL'}</div>
-                        <div style={{ color: '#777', fontSize: '9px', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.owner || (p.team === 'N' ? 'Neutral' : 'Unknown')}</div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ color: teamColor, fontWeight: 'bold', fontSize: '13px', lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name || 'PORTAL'}</div>
+                        <div style={{ color: '#aaa', fontSize: '10px', lineHeight: 1.25, marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.owner || (p.team === 'N' ? 'Neutral' : 'Unknown')}</div>
                     </div>
-                    <div style={{ color: ITEM_LEVEL_COLORS[p.level || 1] || teamColor, fontSize: '18px', lineHeight: 1, fontWeight: 'bold', flexShrink: 0 }}>L{p.level || 0}</div>
+                    <div style={{ color: ITEM_LEVEL_COLORS[p.level || 1] || teamColor, fontSize: '20px', lineHeight: 1, fontWeight: 'bold', flexShrink: 0 }}>L{p.level || 0}</div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '3px', marginBottom: '6px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginBottom: '8px' }}>
                     {[
                         ['HEALTH', `${p.health ?? 0}%`, INGRESS_COLORS.ENLIGHTENED],
                         ['RES', `${p.resCount || 0}/8`, teamColor],
                         ['MIT', `${mitigationTotal}`, INGRESS_COLORS.XM],
                         ['STICKY', `${stickiness}%`, INGRESS_COLORS.TRACKER],
                     ].map(([label, value, color]) => (
-                        <div key={label} style={{ background: '#111', padding: '3px', textAlign: 'center', borderRadius: '2px', minWidth: 0 }}>
+                        <div key={label} style={{ background: '#111', padding: '4px 3px', textAlign: 'center', borderRadius: '3px', minWidth: 0 }}>
                             <div style={{ color: '#666', fontSize: '8px', lineHeight: 1.1 }}>{label}</div>
-                            <div style={{ color, fontWeight: 'bold', fontSize: '10px', lineHeight: 1.2 }}>{value}</div>
+                            <div style={{ color, fontWeight: 'bold', fontSize: '11px', lineHeight: 1.25 }}>{value}</div>
                         </div>
                     ))}
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: '2px', marginBottom: '5px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: '3px', marginBottom: '6px' }}>
                     {Array.from({ length: 8 }).map((_, i) => {
                         const r = resos[i];
                         const level = r?.level || 0;
                         const energyPct = r ? (r.energy / (level > 0 ? (level * 1000) : 1000)) * 100 : 0;
                         const color = ITEM_LEVEL_COLORS[level] || '#333';
                         return (
-                            <div key={i} title={r?.owner} style={{ background: '#1a1a1a', border: `1px solid ${color}55`, padding: '2px 1px', position: 'relative', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <span style={{ color, fontSize: '9px', fontWeight: 'bold', zIndex: 1 }}>{r ? level : '-'}</span>
+                            <div key={i} title={r?.owner} style={{ background: '#1a1a1a', border: `1px solid ${color}55`, padding: '2px 1px', position: 'relative', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '2px' }}>
+                                <span style={{ color, fontSize: '10px', fontWeight: 'bold', zIndex: 1 }}>{r ? level : '-'}</span>
                                 {r && <div style={{ position: 'absolute', bottom: 0, left: 0, height: '2px', background: INGRESS_COLORS.ENLIGHTENED, width: `${Math.min(100, energyPct)}%` }}></div>}
                             </div>
                         );
                     })}
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '2px', marginBottom: '6px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '3px', marginBottom: '8px' }}>
                     {Array.from({ length: 4 }).map((_, i) => {
                         const m = mods[i];
                         const label = getModShortLabel(m);
@@ -85,7 +85,7 @@ export function Dashboard({ type, data, colors }: DashboardProps): JSX.Element {
                             color = RARITY_COLORS[m.rarity] || '#fff';
                         }
                         return (
-                            <div key={i} title={m ? `${m.rarity} ${m.name}` : undefined} style={{ background: '#1a1a1a', border: `1px solid ${color}44`, padding: '3px 2px', fontSize: '8px', color, textAlign: 'center', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: m ? 'bold' : 'normal', overflow: 'hidden' }}>
+                            <div key={i} title={m ? `${m.rarity} ${m.name}` : undefined} style={{ background: '#1a1a1a', border: `1px solid ${color}44`, padding: '3px 2px', fontSize: '9px', color, textAlign: 'center', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: m ? 'bold' : 'normal', overflow: 'hidden', borderRadius: '2px' }}>
                                 <div>{label}</div>
                             </div>
                         );
@@ -94,14 +94,14 @@ export function Dashboard({ type, data, colors }: DashboardProps): JSX.Element {
 
                 <div
                     onClick={() => setShowOwners((current) => !current)}
-                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #222', padding: '5px 0', color: teamColor, fontSize: '9px', fontWeight: 'bold', cursor: 'pointer', letterSpacing: '0.04em' }}
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #222', padding: '6px 0', color: teamColor, fontSize: '10px', fontWeight: 'bold', cursor: 'pointer', letterSpacing: '0.04em' }}
                 >
                     <span>OWNERS</span>
                     <span style={{ color: '#777' }}>{showOwners ? 'HIDE' : 'SHOW'}</span>
                 </div>
 
                 {showOwners && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '6px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '7px', marginBottom: '8px' }}>
                         <OwnerColumn title="RESONATORS">
                             {Array.from({ length: 8 }).map((_, i) => {
                                 const r = resos[i];
@@ -135,10 +135,10 @@ export function Dashboard({ type, data, colors }: DashboardProps): JSX.Element {
                     </div>
                 )}
 
-                <div style={{ display: 'flex', gap: '4px', borderTop: '1px solid #222', paddingTop: '6px' }}>
-                    <span style={{ border: `1px solid ${p.visited ? PORTAL_HISTORY_COLORS.visited : '#333'}`, color: p.visited ? PORTAL_HISTORY_COLORS.visited : '#444', padding: '1px 6px', borderRadius: '99px', fontSize: '9px', fontWeight: p.visited ? 'bold' : 'normal' }}>VISITED</span>
-                    <span style={{ border: `1px solid ${p.captured ? PORTAL_HISTORY_COLORS.captured : '#333'}`, color: p.captured ? PORTAL_HISTORY_COLORS.captured : '#444', padding: '1px 6px', borderRadius: '99px', fontSize: '9px', fontWeight: p.captured ? 'bold' : 'normal' }}>CAPTURED</span>
-                    <span style={{ border: `1px solid ${p.scanned ? PORTAL_HISTORY_COLORS.scanned : '#333'}`, color: p.scanned ? PORTAL_HISTORY_COLORS.scanned : '#444', padding: '1px 6px', borderRadius: '99px', fontSize: '9px', fontWeight: p.scanned ? 'bold' : 'normal' }}>SCANNED</span>
+                <div style={{ display: 'flex', gap: '5px', borderTop: '1px solid #222', paddingTop: '7px', flexWrap: 'wrap' }}>
+                    <span style={{ border: `1px solid ${p.visited ? PORTAL_HISTORY_COLORS.visited : '#333'}`, color: p.visited ? PORTAL_HISTORY_COLORS.visited : '#444', padding: '2px 7px', borderRadius: '99px', fontSize: '9px', fontWeight: p.visited ? 'bold' : 'normal' }}>VISITED</span>
+                    <span style={{ border: `1px solid ${p.captured ? PORTAL_HISTORY_COLORS.captured : '#333'}`, color: p.captured ? PORTAL_HISTORY_COLORS.captured : '#444', padding: '2px 7px', borderRadius: '99px', fontSize: '9px', fontWeight: p.captured ? 'bold' : 'normal' }}>CAPTURED</span>
+                    <span style={{ border: `1px solid ${p.scanned ? PORTAL_HISTORY_COLORS.scanned : '#333'}`, color: p.scanned ? PORTAL_HISTORY_COLORS.scanned : '#444', padding: '2px 7px', borderRadius: '99px', fontSize: '9px', fontWeight: p.scanned ? 'bold' : 'normal' }}>SCANNED</span>
                 </div>
             </div>
         );
@@ -234,8 +234,8 @@ export function Dashboard({ type, data, colors }: DashboardProps): JSX.Element {
 function OwnerColumn({ title, children }: { title: string; children: preact.ComponentChildren }): JSX.Element {
     return (
         <div style={{ minWidth: 0 }}>
-            <div style={{ color: '#666', fontSize: '8px', fontWeight: 'bold', marginBottom: '3px' }}>{title}</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>{children}</div>
+            <div style={{ color: '#777', fontSize: '9px', fontWeight: 'bold', marginBottom: '4px' }}>{title}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>{children}</div>
         </div>
     );
 }
@@ -243,10 +243,10 @@ function OwnerColumn({ title, children }: { title: string; children: preact.Comp
 function OwnerRow({ label, detail, owner, color }: { label: string; detail: string; owner?: string; color: string }): JSX.Element {
     const isEmpty = !owner;
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: '28px 34px minmax(0, 1fr)', gap: '4px', alignItems: 'center', background: '#111', border: `1px solid ${isEmpty ? '#222' : `${color}33`}`, borderRadius: '2px', padding: '2px 3px', minWidth: 0 }}>
-            <span style={{ color: isEmpty ? '#444' : color, fontSize: '8px', fontWeight: 'bold' }}>{label}</span>
-            <span style={{ color: '#666', fontSize: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{detail}</span>
-            <span style={{ color: isEmpty ? '#444' : '#bbb', fontSize: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{owner || '-'}</span>
+        <div style={{ display: 'grid', gridTemplateColumns: '32px 38px minmax(0, 1fr)', gap: '5px', alignItems: 'center', background: '#111', border: `1px solid ${isEmpty ? '#222' : `${color}33`}`, borderRadius: '3px', padding: '3px 4px', minWidth: 0 }}>
+            <span style={{ color: isEmpty ? '#444' : color, fontSize: '9px', fontWeight: 'bold' }}>{label}</span>
+            <span style={{ color: '#777', fontSize: '9px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{detail}</span>
+            <span style={{ color: isEmpty ? '#444' : '#cfcfcf', fontSize: '9px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{owner || '-'}</span>
         </div>
     );
 }

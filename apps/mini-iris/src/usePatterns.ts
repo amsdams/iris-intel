@@ -1,5 +1,6 @@
 import { useCallback } from 'preact/hooks';
 import maplibregl from 'maplibre-gl';
+import type { InventoryItem } from '@iris/core';
 import { MockDataGenerator } from './MockDataGenerator';
 
 interface UsePatternsResult {
@@ -12,8 +13,15 @@ export function usePatterns(
     map: maplibregl.Map | null, 
     generator: MockDataGenerator, 
     loadedKeys: Set<string>, 
-    logEvent: (msg: string) => void
+    logEvent: (msg: string) => void,
+    onMockInventory: (inventory: InventoryItem[]) => void,
 ): UsePatternsResult {
+    const publishMockInventory = useCallback((): number => {
+        const inventory = generator.createMockInventory();
+        onMockInventory(inventory);
+        return inventory.length;
+    }, [generator, onMockInventory]);
+
     const loadPattern1 = useCallback((): void => {
         if (!map) return;
         generator.clear(); loadedKeys.clear();
@@ -38,8 +46,9 @@ export function usePatterns(
         generator.addLink('RL-CA', 'R', 'RC', 'RA');
         generator.addLink('RL-AD', 'R', 'RA', 'RD');
         generator.addLink('RL-BD', 'R', 'RB', 'RD');
-        logEvent("PATTERN 1: Single Nested (Mirrored).");
-    }, [map, generator, loadedKeys, logEvent]);
+        const inventoryCount = publishMockInventory();
+        logEvent(`PATTERN 1: Single Nested (Mirrored). Mock inventory: ${inventoryCount} items.`);
+    }, [map, generator, loadedKeys, logEvent, publishMockInventory]);
 
     const loadPattern2 = useCallback((): void => {
         if (!map) return;
@@ -67,8 +76,9 @@ export function usePatterns(
         generator.addLink('RL-AD', 'R', 'RA', 'RD');
         generator.addLink('RL-BD', 'R', 'RB', 'RD');
         generator.addLink('RL-CD', 'R', 'RC', 'RD');
-        logEvent("PATTERN 2: Nested Diamond (Mirrored).");
-    }, [map, generator, loadedKeys, logEvent]);
+        const inventoryCount = publishMockInventory();
+        logEvent(`PATTERN 2: Nested Diamond (Mirrored). Mock inventory: ${inventoryCount} items.`);
+    }, [map, generator, loadedKeys, logEvent, publishMockInventory]);
 
     const loadPattern3 = useCallback((): void => {
         if (!map) return;
@@ -114,8 +124,9 @@ export function usePatterns(
         const nOff = 0.006;
         generator.addPortal('N1', 'N', center.lng - 0.002, center.lat + nOff, 0);
         generator.addPortal('N2', 'N', center.lng + 0.002, center.lat + nOff, 0);
-        logEvent("PATTERN 3: Scaled Global (Mirrored).");
-    }, [map, generator, loadedKeys, logEvent]);
+        const inventoryCount = publishMockInventory();
+        logEvent(`PATTERN 3: Scaled Global (Mirrored). Mock inventory: ${inventoryCount} items.`);
+    }, [map, generator, loadedKeys, logEvent, publishMockInventory]);
 
     return { loadPattern1, loadPattern2, loadPattern3 };
 }

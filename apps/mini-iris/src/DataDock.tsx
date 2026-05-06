@@ -107,7 +107,7 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPor
     return (
         <div id="data-dock-orchestrator">
             {/* PANELS */}
-            <div id="data-panel-container" style={{ position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)', width: '90%', maxWidth: openDrawer === 'selection' ? '320px' : '400px', zIndex: 2000002, pointerEvents: 'none' }}>
+            <div id="data-panel-container" style={{ position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)', width: '92%', maxWidth: openDrawer === 'selection' ? '360px' : '400px', zIndex: 2000002, pointerEvents: 'none' }}>
                 {/* Selection Details Panel */}
                 {selected && (
                     <div style={{ display: openDrawer === 'selection' ? 'block' : 'none', pointerEvents: 'auto' }}>

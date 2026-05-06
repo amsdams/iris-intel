@@ -1,6 +1,7 @@
 import { h, JSX } from 'preact';
 import type { PortalHistoryKey, PortalHistoryLayerState, PortalHistoryMode } from './portalHistory';
 import { PORTAL_HISTORY_COLORS } from './portalHistory';
+import { INGRESS_COLORS } from './MapConstants';
 
 interface MapToolsProps {
     openDrawer: string | null;
@@ -10,6 +11,8 @@ interface MapToolsProps {
     onMode: (mode: string) => void;
     portalHistoryLayers: PortalHistoryLayerState;
     onPortalHistoryLayerToggle: (key: PortalHistoryKey) => void;
+    keyOverlayEnabled: boolean;
+    onKeyOverlayToggle: () => void;
 }
 
 const HISTORY_LAYER_LABELS: Record<PortalHistoryKey, string> = {
@@ -47,7 +50,7 @@ function historyButtonStyle(mode: PortalHistoryMode, color: string): h.JSX.CSSPr
     };
 }
 
-export function MapTools({ openDrawer, onToggle, onNav, onStyle, onMode, portalHistoryLayers, onPortalHistoryLayerToggle }: MapToolsProps): JSX.Element {
+export function MapTools({ openDrawer, onToggle, onNav, onStyle, onMode, portalHistoryLayers, onPortalHistoryLayerToggle, keyOverlayEnabled, onKeyOverlayToggle }: MapToolsProps): JSX.Element {
     return (
         <div id="map-tools-container" style={{ position: 'fixed', top: '10px', right: '10px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', zIndex: 2000001, pointerEvents: 'none' }}>
             
@@ -100,6 +103,33 @@ export function MapTools({ openDrawer, onToggle, onNav, onStyle, onMode, portalH
                             </div>
                         );
                     })}
+                </div>
+            </div>
+
+            {/* Inventory Keys Toggle */}
+            <div className="drawer-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                <div
+                    className="debug-btn"
+                    onClick={onKeyOverlayToggle}
+                    title={`Inventory keys: ${keyOverlayEnabled ? 'on' : 'off'}`}
+                    style={{
+                        width: '40px',
+                        height: '40px',
+                        background: keyOverlayEnabled ? `${INGRESS_COLORS.KEY}22` : 'rgba(34,34,34,0.9)',
+                        color: keyOverlayEnabled ? INGRESS_COLORS.KEY : '#fff',
+                        border: `1px solid ${keyOverlayEnabled ? INGRESS_COLORS.KEY : '#00ffff'}`,
+                        borderRadius: '50%',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        pointerEvents: 'auto',
+                        boxShadow: keyOverlayEnabled ? `0 0 10px ${INGRESS_COLORS.KEY}33` : 'none',
+                    }}
+                >
+                    KEY
                 </div>
             </div>
         </div>
