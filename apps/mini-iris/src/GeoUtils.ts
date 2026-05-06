@@ -25,21 +25,21 @@ export function formatAP(val: number): string {
     return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-export function debounce<T extends (...args: any[]) => any>(fn: T, delay: number) {
+export function debounce<T extends (...args: never[]) => unknown>(fn: T, delay: number): (...args: Parameters<T>) => void {
     let timeoutId: number | null = null;
-    return (...args: Parameters<T>) => {
+    return (...args: Parameters<T>): void => {
         if (timeoutId) clearTimeout(timeoutId);
-        timeoutId = window.setTimeout(() => fn(...args), delay);
+        timeoutId = window.setTimeout((): void => { fn(...args); }, delay);
     };
 }
 
-export function throttle<T extends (...args: any[]) => any>(fn: T, limit: number) {
+export function throttle<T extends (...args: never[]) => unknown>(fn: T, limit: number): (...args: Parameters<T>) => void {
     let inThrottle: boolean;
-    return (...args: Parameters<T>) => {
+    return (...args: Parameters<T>): void => {
         if (!inThrottle) {
             fn(...args);
             inThrottle = true;
-            setTimeout(() => inThrottle = false, limit);
+            setTimeout((): void => { inThrottle = false; }, limit);
         }
     };
 }

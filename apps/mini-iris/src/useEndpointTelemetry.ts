@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
+import { isEndpointStateMessage, numberOrNull, stringOrNull } from './messages';
 
 export type EndpointName = 'portalDetails' | 'gameScore' | 'regionScore' | 'subscription' | 'inventory' | 'plexts';
 
@@ -25,34 +26,47 @@ export function useEndpointTelemetry(): TelemetryMap {
 
     useEffect(() => {
         const handler = (event: MessageEvent): void => {
-            const msg = event.data;
-            if (!msg || msg.type !== 'IRIS_ENDPOINT_STATE') return;
+            const msg: unknown = event.data;
+            if (!isEndpointStateMessage(msg)) return;
 
-            const endpoint = msg.endpoint as EndpointName | undefined;
-            if (!endpoint) return;
+            const endpoint = stringOrNull(msg.endpoint);
+            if (!isEndpointName(endpoint)) return;
+            const status = stringOrNull(msg.status);
 
-            setTelemetry((prev) => ({
+            setTelemetry((prev): TelemetryMap => ({
                 ...prev,
                 [endpoint]: {
-                    status: msg.status,
-                    inFlightKey: msg.inFlightKey ?? null,
-                    inFlightCount: typeof msg.inFlightCount === 'number' ? msg.inFlightCount : 0,
-                    lastSuccessKey: msg.lastSuccessKey ?? null,
-                    lastSuccessAt: typeof msg.lastSuccessAt === 'number' ? msg.lastSuccessAt : null,
-                    lastAttemptKey: msg.lastAttemptKey ?? null,
-                    lastAttemptAt: typeof msg.lastAttemptAt === 'number' ? msg.lastAttemptAt : null,
-                    lastSkipReason: msg.lastSkipReason ?? null,
-                    nextRefreshAt: typeof msg.nextRefreshAt === 'number' ? msg.nextRefreshAt : null,
-                    failureCount: typeof msg.failureCount === 'number' ? msg.failureCount : 0,
-                    cooldownUntil: typeof msg.cooldownUntil === 'number' ? msg.cooldownUntil : null,
+                    status: isEndpointStatus(status) ? status : 'idle',
+                    inFlightKey: stringOrNull(msg.inFlightKey),
+                    inFlightCount: numberOrNull(msg.inFlightCount) ?? 0,
+                    lastSuccessKey: stringOrNull(msg.lastSuccessKey),
+                    lastSuccessAt: numberOrNull(msg.lastSuccessAt),
+                    lastAttemptKey: stringOrNull(msg.lastAttemptKey),
+                    lastAttemptAt: numberOrNull(msg.lastAttemptAt),
+                    lastSkipReason: stringOrNull(msg.lastSkipReason),
+                    nextRefreshAt: numberOrNull(msg.nextRefreshAt),
+                    failureCount: numberOrNull(msg.failureCount) ?? 0,
+                    cooldownUntil: numberOrNull(msg.cooldownUntil),
                 },
             }));
         };
 
         window.addEventListener('message', handler);
-        return () => window.removeEventListener('message', handler);
+        return (): void => window.removeEventListener('message', handler);
     }, []);
 
     return telemetry;
 }
 
+function isEndpointName(value: string | null): value is EndpointName {
+    return value === 'portalDetails'
+        || value === 'gameScore'
+        || value === 'regionScore'
+        || value === 'subscription'
+        || value === 'inventory'
+        || value === 'plexts';
+}
+
+function isEndpointStatus(value: string | null): value is EndpointTelemetry['status'] {
+    return value === 'idle' || value === 'in_flight' || value === 'error';
+}

@@ -17,10 +17,10 @@ export interface IntelPlayer {
 }
 
 export function installPlayerObserver(): void {
-    const win = window as any;
+    const win = window as Window & { PLAYER?: IntelPlayer };
     let lastStatsKey = '';
 
-    function readPlayerStats() {
+    function readPlayerStats(): (IntelPlayerStatsMessage & { type: 'IRIS_PLAYER_STATS' }) | null {
         const p: IntelPlayer | undefined = win.PLAYER;
         if (!p || !p.nickname) return null;
         return {
@@ -38,7 +38,7 @@ export function installPlayerObserver(): void {
         };
     }
 
-    function postPlayerStats() {
+    function postPlayerStats(): void {
         const stats = readPlayerStats();
         if (!stats) return;
         const key = JSON.stringify(stats);
@@ -56,4 +56,17 @@ export function installPlayerObserver(): void {
         childList: true, 
         subtree: true 
     });
+}
+
+interface IntelPlayerStatsMessage {
+    nickname: string;
+    level: number;
+    ap: number;
+    team: string;
+    energy: number;
+    xm_capacity: number;
+    available_invites: number;
+    min_ap_for_current_level: number;
+    min_ap_for_next_level: number;
+    hasActiveSubscription: boolean;
 }

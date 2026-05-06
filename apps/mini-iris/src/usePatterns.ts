@@ -2,12 +2,18 @@ import { useCallback } from 'preact/hooks';
 import maplibregl from 'maplibre-gl';
 import { MockDataGenerator } from './MockDataGenerator';
 
+interface UsePatternsResult {
+    loadPattern1: () => void;
+    loadPattern2: () => void;
+    loadPattern3: () => void;
+}
+
 export function usePatterns(
     map: maplibregl.Map | null, 
     generator: MockDataGenerator, 
     loadedKeys: Set<string>, 
     logEvent: (msg: string) => void
-) {
+): UsePatternsResult {
     const loadPattern1 = useCallback((): void => {
         if (!map) return;
         generator.clear(); loadedKeys.clear();

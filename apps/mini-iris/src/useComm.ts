@@ -6,7 +6,13 @@ export type CommTab = 'all' | 'faction' | 'alerts';
 
 const COMM_POLL_MS = 120000;
 
-export function useComm(isVis: boolean, liveMode: boolean, plextBounds: PlextRequestBounds | null) {
+interface UseCommResult {
+    activeTab: CommTab;
+    setActiveTab: (tab: CommTab) => void;
+    refreshComm: () => void;
+}
+
+export function useComm(isVis: boolean, liveMode: boolean, plextBounds: PlextRequestBounds | null): UseCommResult {
     const [activeTab, setActiveTab] = useState<CommTab>('all');
     const telemetry = useEndpointTelemetry();
 
@@ -42,7 +48,7 @@ export function useComm(isVis: boolean, liveMode: boolean, plextBounds: PlextReq
         };
 
         schedule();
-        return () => {
+        return (): void => {
             if (timerId !== null) window.clearTimeout(timerId);
         };
     }, [isVis, liveMode, pollComm, telemetry.plexts]);

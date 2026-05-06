@@ -9,39 +9,55 @@ export function installNetworkHooks(): void {
     const open = XHR.open;
     const send = XHR.send;
 
-    XHR.open = function(this: any, _method: string, url: string | URL) {
-        this._url = typeof url === 'string' ? url : url.toString();
-        return open.apply(this, arguments as any);
+    XHR.open = function(
+        this: XMLHttpRequestWithIrisUrl,
+        method: string,
+        url: string | URL,
+        async?: boolean,
+        username?: string | null,
+        password?: string | null,
+    ): void {
+        this._irisUrl = typeof url === 'string' ? url : url.toString();
+        if (typeof async === 'boolean') {
+            open.call(this, method, url, async, username, password);
+            return;
+        }
+        open.call(this, method, url, true);
     };
 
-    XHR.send = function(this: any, body?: Document | XMLHttpRequestBodyInit | null) {
-        this.addEventListener('load', function(this: any) {
-            if (isIrisUrl(this._url)) {
+    XHR.send = function(this: XMLHttpRequestWithIrisUrl, body?: Document | XMLHttpRequestBodyInit | null): void {
+        this.addEventListener('load', function(this: XMLHttpRequestWithIrisUrl): void {
+            const url = this._irisUrl;
+            if (url && isIrisUrl(url)) {
                 try {
-                    const data = JSON.parse(this.responseText);
-                    window.postMessage({ type: 'IRIS_DATA', url: this._url, data: data, params: body }, '*');
-                } catch (e) {
+                    const data: unknown = JSON.parse(this.responseText);
+                    window.postMessage({ type: 'IRIS_DATA', url, data, params: body }, '*');
+                } catch {
                     // Ignore parse errors
                 }
             }
         });
-        return send.apply(this, arguments as any);
+        send.call(this, body);
     };
 
     // 2. Hook Fetch
     const originalFetch = window.fetch;
-    window.fetch = async function(input: RequestInfo | URL, init?: RequestInit) {
+    window.fetch = async function(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
         const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : (input as Request).url);
         const response = await originalFetch(input, init);
         if (isIrisUrl(url)) {
             try {
                 const cloned = response.clone();
-                const data = await cloned.json();
-                window.postMessage({ type: 'IRIS_DATA', url, data: data, params: init?.body }, '*');
-            } catch (e) {
+                const data: unknown = await cloned.json();
+                window.postMessage({ type: 'IRIS_DATA', url, data, params: init?.body }, '*');
+            } catch {
                 // Ignore parse errors
             }
         }
         return response;
     };
+}
+
+interface XMLHttpRequestWithIrisUrl extends XMLHttpRequest {
+    _irisUrl?: string;
 }

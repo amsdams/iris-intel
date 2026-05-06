@@ -1,4 +1,5 @@
 import { getCsrfToken, extractVersion } from './utils';
+import { getMessageType, isRecord, numberOrNull, stringOrNull } from '../messages';
 
 /**
  * Request Queue Configuration.
@@ -144,25 +145,31 @@ const REQUEST_PRIORITIES: Record<RequestEndpoint, number> = {
  */
 export function installRequestHandlers(): void {
     window.addEventListener('message', (e) => {
-        const msg = e.data;
-        if (!msg) return;
+        const msg: unknown = e.data;
+        const type = getMessageType(msg);
+        if (!isRecord(msg) || !type) return;
 
-        switch (msg.type) {
+        switch (type) {
             case 'IRIS_PORTAL_DETAILS_REQUEST':
-                enqueueRequest('portalDetails', msg.guid ?? '', PORTAL_DETAILS_FRESHNESS_MS, () => handlePortalDetailsRequest(msg.guid));
+                enqueueRequest('portalDetails', stringOrNull(msg.guid) ?? '', PORTAL_DETAILS_FRESHNESS_MS, () => handlePortalDetailsRequest(stringOrNull(msg.guid) ?? ''));
                 break;
             case 'IRIS_GAME_SCORE_REQUEST':
                 enqueueRequest('gameScore', 'global', GAME_SCORE_FRESHNESS_MS, () => handleGameScoreRequest());
                 break;
             case 'IRIS_REGION_SCORE_REQUEST':
-                enqueueRequest(
-                    'regionScore',
-                    typeof msg.lat === 'number' && typeof msg.lng === 'number'
-                        ? `${Math.round(msg.lat * 1e6)}:${Math.round(msg.lng * 1e6)}`
-                        : 'global',
-                    REGION_SCORE_FRESHNESS_MS,
-                    () => handleRegionScoreRequest(msg.lat, msg.lng),
-                );
+                {
+                    const lat = numberOrNull(msg.lat);
+                    const lng = numberOrNull(msg.lng);
+                    const key = lat !== null && lng !== null
+                        ? `${Math.round(lat * 1e6)}:${Math.round(lng * 1e6)}`
+                        : 'global';
+                    enqueueRequest(
+                        'regionScore',
+                        key,
+                        REGION_SCORE_FRESHNESS_MS,
+                        () => handleRegionScoreRequest(lat ?? undefined, lng ?? undefined),
+                    );
+                }
                 break;
             case 'IRIS_SUBSCRIPTION_REQUEST':
                 enqueueRequest('subscription', 'global', SUBSCRIPTION_FRESHNESS_MS, () => handleSubscriptionRequest());
@@ -171,21 +178,33 @@ export function installRequestHandlers(): void {
                 enqueueRequest('inventory', 'global', INVENTORY_FRESHNESS_MS, () => handleInventoryRequest());
                 break;
             case 'IRIS_PLEXTS_REQUEST':
-                enqueueRequest(
-                    'plexts',
-                    keyForPlexts(msg.tab, msg.minTimestampMs, msg.minLatE6, msg.minLngE6, msg.maxLatE6, msg.maxLngE6),
-                    PLEXT_FRESHNESS_MS,
-                    () => handlePlextsRequest(
-                        msg.tab,
-                        msg.minTimestampMs,
-                        msg.maxTimestampMs,
-                        msg.ascendingTimestampOrder,
-                        msg.minLatE6,
-                        msg.minLngE6,
-                        msg.maxLatE6,
-                        msg.maxLngE6,
-                    ),
-                );
+                {
+                    const tab = stringOrNull(msg.tab) ?? 'all';
+                    const minTimestampMs = numberOrNull(msg.minTimestampMs) ?? -1;
+                    const maxTimestampMs = numberOrNull(msg.maxTimestampMs) ?? undefined;
+                    const ascendingTimestampOrder = typeof msg.ascendingTimestampOrder === 'boolean' ? msg.ascendingTimestampOrder : undefined;
+                    const minLatE6 = numberOrNull(msg.minLatE6) ?? undefined;
+                    const minLngE6 = numberOrNull(msg.minLngE6) ?? undefined;
+                    const maxLatE6 = numberOrNull(msg.maxLatE6) ?? undefined;
+                    const maxLngE6 = numberOrNull(msg.maxLngE6) ?? undefined;
+                    enqueueRequest(
+                        'plexts',
+                        keyForPlexts(tab, minTimestampMs, minLatE6, minLngE6, maxLatE6, maxLngE6),
+                        PLEXT_FRESHNESS_MS,
+                        () => handlePlextsRequest(
+                            tab,
+                            minTimestampMs,
+                            maxTimestampMs,
+                            ascendingTimestampOrder,
+                            minLatE6,
+                            minLngE6,
+                            maxLatE6,
+                            maxLngE6,
+                        ),
+                    );
+                }
+                break;
+            default:
                 break;
         }
     });
@@ -194,7 +213,7 @@ export function installRequestHandlers(): void {
 /**
  * Enqueues a request and triggers processing.
  */
-function enqueueRequest(endpoint: RequestEndpoint, key: string, freshnessMs: number, run: () => Promise<void>) {
+function enqueueRequest(endpoint: RequestEndpoint, key: string, freshnessMs: number, run: () => Promise<void>): void {
     const now = Date.now();
     const state = endpointState[endpoint];
 
@@ -242,7 +261,7 @@ function enqueueRequest(endpoint: RequestEndpoint, key: string, freshnessMs: num
 /**
  * Processes the next item in the queue if concurrency limits allow.
  */
-function processQueue() {
+function processQueue(): void {
     while (activeRequests < MAX_CONCURRENT_REQUESTS && requestQueue.length > 0) {
         const nextRequest = requestQueue.shift();
         if (!nextRequest) return;
@@ -281,7 +300,7 @@ function processQueue() {
         state.lastSkipReason = null;
         emitEndpointState(endpoint);
 
-        void (async () => {
+        void (async (): Promise<void> => {
             try {
                 await run();
                 if (state.status !== 'error') {
@@ -305,7 +324,7 @@ function processQueue() {
     }
 }
 
-function markEndpointSuccess(endpoint: RequestEndpoint, key: string) {
+function markEndpointSuccess(endpoint: RequestEndpoint, key: string): void {
     const state = endpointState[endpoint];
     const now = Date.now();
     state.status = 'idle';
@@ -318,7 +337,7 @@ function markEndpointSuccess(endpoint: RequestEndpoint, key: string) {
     emitEndpointState(endpoint);
 }
 
-function markEndpointFailure(endpoint: RequestEndpoint, reason: string) {
+function markEndpointFailure(endpoint: RequestEndpoint, reason: string): void {
     const state = endpointState[endpoint];
     const now = Date.now();
     state.failureCount += 1;
@@ -330,7 +349,7 @@ function markEndpointFailure(endpoint: RequestEndpoint, reason: string) {
     emitEndpointState(endpoint);
 }
 
-function emitEndpointState(endpoint: RequestEndpoint) {
+function emitEndpointState(endpoint: RequestEndpoint): void {
     const state = endpointState[endpoint];
     window.postMessage({
         type: 'IRIS_ENDPOINT_STATE',
@@ -365,17 +384,17 @@ function insertTask(task: RequestTask): void {
     requestQueue.splice(insertAt, 0, task);
 }
 
-async function handlePortalDetailsRequest(guid: string) {
+async function handlePortalDetailsRequest(guid: string): Promise<void> {
     const body = JSON.stringify({ guid, v: extractVersion() });
     return sendIntelRequest('portalDetails', keyForPortalDetails(guid), '/r/getPortalDetails', body, 'Detail Fetch Failed');
 }
 
-async function handleGameScoreRequest() {
+async function handleGameScoreRequest(): Promise<void> {
     const body = JSON.stringify({ v: extractVersion() });
     return sendIntelRequest('gameScore', 'global', '/r/getGameScore', body, 'Game Score Fetch Failed');
 }
 
-async function handleRegionScoreRequest(lat?: number, lng?: number) {
+async function handleRegionScoreRequest(lat?: number, lng?: number): Promise<void> {
     if (typeof lat !== 'number' || typeof lng !== 'number') {
         return;
     }
@@ -388,12 +407,12 @@ async function handleRegionScoreRequest(lat?: number, lng?: number) {
     return sendIntelRequest('regionScore', 'global', '/r/getRegionScoreDetails', body, 'Region Score Fetch Failed');
 }
 
-async function handleSubscriptionRequest() {
+async function handleSubscriptionRequest(): Promise<void> {
     const body = JSON.stringify({ v: extractVersion() });
     return sendIntelRequest('subscription', 'global', '/r/getHasActiveSubscription', body, 'Subscription Fetch Failed');
 }
 
-async function handleInventoryRequest() {
+async function handleInventoryRequest(): Promise<void> {
     const body = JSON.stringify({ lastQueryTimestamp: -1, v: extractVersion() });
     return sendIntelRequest('inventory', 'global', '/r/getInventory', body, 'Inventory Fetch Failed');
 }
@@ -407,7 +426,7 @@ async function handlePlextsRequest(
     minLngE6?: number,
     maxLatE6?: number,
     maxLngE6?: number,
-) {
+): Promise<void> {
     const body = JSON.stringify({
         tab,
         minTimestampMs,
@@ -428,7 +447,7 @@ async function handlePlextsRequest(
     );
 }
 
-async function sendIntelRequest(endpoint: RequestEndpoint, key: string, url: string, body: string, errorMsg: string) {
+async function sendIntelRequest(endpoint: RequestEndpoint, key: string, url: string, body: string, errorMsg: string): Promise<void> {
     try {
         const res = await fetch(url, {
             method: 'POST',

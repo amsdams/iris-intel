@@ -3,7 +3,7 @@ import { installMapHooks } from './interceptor/maps';
 import { installPlayerObserver } from './interceptor/player';
 import { installRequestHandlers } from './interceptor/requests';
 
-(function() {
+(function(): void {
     console.log('Mini IRIS: Interceptor initializing (Modular TS)...');
     
     installNetworkHooks();

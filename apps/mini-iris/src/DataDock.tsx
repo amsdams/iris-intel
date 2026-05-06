@@ -71,7 +71,7 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPor
             .sort((a, b) => (b.lastEvent?.time ?? 0) - (a.lastEvent?.time ?? 0));
     }, [playerHistories]);
 
-    const renderPlextMarkup = (p: Plext) => {
+    const renderPlextMarkup = (p: Plext): JSX.Element[] => {
         return p.markup.map((m, i) => {
             const [type, data] = m;
             const text = data.plain || '';

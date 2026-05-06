@@ -48,7 +48,7 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBou
     };
 
     const entries = (Object.entries(endpointTelemetry) as [EndpointName, EndpointTelemetry | undefined][])
-        .filter(([, value]) => !!value);
+        .filter((entry): entry is [EndpointName, EndpointTelemetry] => entry[1] !== undefined);
     const activeCount = entries.filter(([, value]) => value?.status === 'in_flight').length;
     const errorCount = entries.filter(([, value]) => value?.status === 'error').length;
     const cooldownCount = entries.filter(([, value]) => value?.cooldownUntil !== null && typeof value?.cooldownUntil === 'number' && value.cooldownUntil > Date.now()).length;
@@ -166,9 +166,9 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBou
                 {entries.map(([endpoint, entry]) => (
                     <span
                         key={endpoint}
-                        style={{ ...endpointBadgeStyle(entry!), padding: '2px 7px', borderRadius: '999px' }}
+                        style={{ ...endpointBadgeStyle(entry), padding: '2px 7px', borderRadius: '999px' }}
                     >
-                        {endpointLabel(endpoint)} {endpointStateLabel(entry!)}
+                        {endpointLabel(endpoint)} {endpointStateLabel(entry)}
                     </span>
                 ))}
             </div>

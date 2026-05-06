@@ -4,7 +4,11 @@ import { useStore, globalSpatialIndex, getMinLevelForZoom } from '@iris/core';
 import { MockDataGenerator } from './MockDataGenerator';
 import { createCirclePolygon } from './GeoUtils';
 
-export function useMapRenderer(generator: MockDataGenerator, logEvent: (msg: string) => void) {
+interface UseMapRendererResult {
+    syncToMap: (currentMap: maplibregl.Map, currentLiveMode: boolean, currentPatternMode: number) => void;
+}
+
+export function useMapRenderer(generator: MockDataGenerator, logEvent: (msg: string) => void): UseMapRendererResult {
     const pendingFrameRef = useRef<number | null>(null);
     const pendingSetDataRef = useRef<{
         source: maplibregl.GeoJSONSource;
@@ -21,7 +25,7 @@ export function useMapRenderer(generator: MockDataGenerator, logEvent: (msg: str
     }, []);
 
     useEffect(() => {
-        return () => {
+        return (): void => {
             if (pendingFrameRef.current !== null) {
                 window.cancelAnimationFrame(pendingFrameRef.current);
                 pendingFrameRef.current = null;

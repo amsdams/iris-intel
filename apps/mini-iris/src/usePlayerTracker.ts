@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'preact/hooks';
 import { useStore, PlextParser, Plext } from '@iris/core';
+import type { PlextData } from '@iris/core';
 import { useEndpointTelemetry } from './useEndpointTelemetry';
 import { createPlextRequestMessage, type PlextRequestBounds } from './plextRequests';
+import { isIrisDataMessage } from './messages';
 
 export interface PlayerAction {
     text: string;
@@ -22,6 +24,10 @@ export interface PlayerHistory {
     events: PlayerEvent[];
 }
 
+interface UsePlayerTrackerResult {
+    playerHistories: Map<string, PlayerHistory>;
+}
+
 const EXPIRATION_MS = 3 * 60 * 60 * 1000; // 3 hours
 const PLEXT_POLL_MS = 120000;
 
@@ -30,7 +36,7 @@ export function usePlayerTracker(
     liveMode: boolean,
     logEvent: (msg: string) => void,
     plextBounds: PlextRequestBounds | null = null,
-) {
+): UsePlayerTrackerResult {
     const [playerHistories, setPlayerHistories] = useState<Map<string, PlayerHistory>>(new Map());
     const [lastPlextTime, setLastPlextTime] = useState(-1);
     const telemetry = useEndpointTelemetry();
@@ -127,7 +133,7 @@ export function usePlayerTracker(
                 if (evts.length > 0 && evts[cmp].time === p.time) {
                     // Same timestamp (multiple resos), check if location is new
                     const alreadyHas = evts[cmp].latlngs.some(ll => ll[0] === lat && ll[1] === lng);
-                    if (!alreadyHas) evts[cmp].latlngs.push([lat!, lng!]);
+                    if (!alreadyHas) evts[cmp].latlngs.push([lat, lng]);
                     if (actionText && !evts[cmp].actions.some((existing) => existing.text === actionText)) {
                         evts[cmp].actions.push({ text: actionText, markup: actionMarkup, time: p.time });
                     }
@@ -170,18 +176,18 @@ export function usePlayerTracker(
 
     // Message Listener for COMM data
     useEffect(() => {
-        const handler = (event: MessageEvent) => {
-            const msg = event.data;
-            if (!msg || msg.type !== 'IRIS_DATA' || !msg.url.includes('getPlexts')) return;
+        const handler = (event: MessageEvent): void => {
+            const msg: unknown = event.data;
+            if (!isIrisDataMessage(msg) || !msg.url.includes('getPlexts')) return;
             
-            const plexts = PlextParser.parse(msg.data);
+            const plexts = PlextParser.parse(msg.data as PlextData);
             if (plexts.length > 0) {
                 processPlexts(plexts);
                 logEvent(`COMM: ${plexts.length} messages parsed`);
             }
         };
         window.addEventListener('message', handler);
-        return () => window.removeEventListener('message', handler);
+        return (): void => window.removeEventListener('message', handler);
     }, [processPlexts, logEvent]);
 
     const plextFeed = useStore(state => state.plexts);
@@ -221,7 +227,7 @@ export function usePlayerTracker(
         };
 
         schedule();
-        return () => {
+        return (): void => {
             if (timerId !== null) window.clearTimeout(timerId);
         };
     }, [isVis, liveMode, lastPlextTime, plextBounds, telemetry.plexts]);

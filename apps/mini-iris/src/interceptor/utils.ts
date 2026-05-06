@@ -9,14 +9,14 @@ export function getCsrfToken(): string {
 }
 
 export function extractVersion(): string {
-    const win = window as any;
     const scripts = document.querySelectorAll('script[src*="gen_dashboard_"]');
     for (const s of Array.from(scripts)) {
         const src = (s as HTMLScriptElement).src;
         const match = src.match(/gen_dashboard_([a-f0-9]+)\.js/);
         if (match) return match[1];
     }
-    return win.niantic_params?.frontendVersion || '';
+    const params = (window as Window & { niantic_params?: { frontendVersion?: unknown } }).niantic_params;
+    return typeof params?.frontendVersion === 'string' ? params.frontendVersion : '';
 }
 
 export const isIrisUrl = (url: string): boolean => 

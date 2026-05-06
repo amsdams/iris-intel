@@ -3,7 +3,7 @@ import { useEndpointTelemetry } from './useEndpointTelemetry';
 
 const SCORE_POLL_MS = 300000;
 
-export function useScores(isVis: boolean, liveMode: boolean, lat: number, lng: number) {
+export function useScores(isVis: boolean, liveMode: boolean, lat: number, lng: number): void {
     const telemetry = useEndpointTelemetry();
 
     useEffect(() => {
@@ -46,7 +46,7 @@ export function useScores(isVis: boolean, liveMode: boolean, lat: number, lng: n
 
         schedule();
 
-        return () => {
+        return (): void => {
             if (timerId !== null) window.clearTimeout(timerId);
         };
     }, [isVis, liveMode, lat, lng, telemetry.gameScore, telemetry.regionScore]);

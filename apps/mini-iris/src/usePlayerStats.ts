@@ -5,7 +5,7 @@ import { useEndpointTelemetry } from './useEndpointTelemetry';
 const SUBSCRIPTION_POLL_MS = 600000;
 const INVENTORY_POLL_MS = 300000;
 
-export function usePlayerStats(isVis: boolean, liveMode: boolean) {
+export function usePlayerStats(isVis: boolean, liveMode: boolean): void {
     const hasSubscription = useStore(state => state.hasSubscription);
     const telemetry = useEndpointTelemetry();
 
@@ -37,7 +37,7 @@ export function usePlayerStats(isVis: boolean, liveMode: boolean) {
         };
 
         schedule();
-        return () => {
+        return (): void => {
             if (timerId !== null) window.clearTimeout(timerId);
         };
     }, [isVis, liveMode, telemetry.subscription]);
@@ -70,7 +70,7 @@ export function usePlayerStats(isVis: boolean, liveMode: boolean) {
         };
 
         schedule();
-        return () => {
+        return (): void => {
             if (timerId !== null) window.clearTimeout(timerId);
         };
     }, [isVis, liveMode, hasSubscription, telemetry.inventory]);
