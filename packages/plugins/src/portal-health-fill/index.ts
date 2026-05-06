@@ -34,6 +34,7 @@ function buildFeatures(portals: Record<string, Portal>): GeoJSON.Feature[] {
         properties: {
           id: `portal-recharge:${portal.id}`,
           color,
+          team: portal.team,
           opacity: getRechargeOpacity(health),
         },
       } as GeoJSON.Feature;

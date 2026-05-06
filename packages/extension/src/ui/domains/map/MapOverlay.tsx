@@ -630,7 +630,14 @@ export function MapOverlay(): JSX.Element {
               'circle-radius': 8,
               'circle-color': ['get', 'color'],
               'circle-stroke-width': 2,
-              'circle-stroke-color': '#fff',
+              'circle-stroke-color': [
+                'match', ['get', 'team'],
+                'E', theme.E,
+                'R', theme.R,
+                'M', theme.M,
+                'N', theme.N,
+                '#ffffff' // Fallback for features without a team
+              ],
               'circle-opacity': ['coalesce', ['get', 'opacity'], 1],
               'circle-stroke-opacity': ['coalesce', ['get', 'opacity'], 1],
             },

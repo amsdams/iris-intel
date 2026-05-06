@@ -26,6 +26,7 @@ function buildFeatures(portals: Record<string, Portal>): GeoJSON.Feature[] {
       properties: {
         id: `portal-level:${portal.id}`,
         color: LEVEL_COLORS[portal.level as number] || '#ffffff',
+        team: portal.team,
         opacity: 0.9,
       },
     }));
