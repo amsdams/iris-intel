@@ -1,7 +1,7 @@
 import { h, JSX } from 'preact';
 import { useMemo } from 'preact/hooks';
 import { Field, Link, Portal, useStore, InventoryParser, Plext, normalizeTeam } from '@iris/core';
-import { COLORS, RARITY_COLORS, ITEM_LEVEL_COLORS } from './MapConstants';
+import { COLORS, INGRESS_COLORS, RARITY_COLORS, ITEM_LEVEL_COLORS } from './MapConstants';
 import { formatMU, formatAP } from './GeoUtils';
 import { CommTab } from './useComm';
 import type { PlayerHistory } from './usePlayerTracker';
@@ -39,7 +39,7 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPor
                 if (cat === 'RESONATORS') stats[cat].color = ITEM_LEVEL_COLORS[8];
                 if (cat === 'WEAPONS') stats[cat].color = ITEM_LEVEL_COLORS[4];
                 if (cat === 'MODS') stats[cat].color = RARITY_COLORS['VERY_RARE'];
-                if (cat === 'KEYS') stats[cat].color = '#f1c40f';
+                if (cat === 'KEYS') stats[cat].color = INGRESS_COLORS.KEY;
             }
             stats[cat].count++;
         });
@@ -148,7 +148,7 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPor
                         <div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                                 <span style={{ color: COLORS[normalizeTeam(playerStats.team) as keyof typeof COLORS] || '#fff', fontWeight: 'bold', fontSize: '16px' }}>{playerStats.nickname}</span>
-                                {hasSubscription && <span style={{ background: '#f1c40f', color: '#000', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>C.O.R.E.</span>}
+                                {hasSubscription && <span style={{ background: INGRESS_COLORS.KEY, color: '#000', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>C.O.R.E.</span>}
                             </div>
                             <div style={{ background: '#1a1a1a', padding: '10px', borderRadius: '8px', marginBottom: '10px', border: '1px solid #333' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
@@ -160,7 +160,7 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPor
                                         <div style={{ 
                                             width: `${Math.min(100, ((playerStats.ap || 0) - (playerStats.min_ap_for_current_level || 0)) / ((playerStats.min_ap_for_next_level || 0) - (playerStats.min_ap_for_current_level || 0)) * 100)}%`, 
                                             height: '100%', 
-                                            background: COLORS[normalizeTeam(playerStats.team) as keyof typeof COLORS] || '#00ffff',
+                                            background: COLORS[normalizeTeam(playerStats.team) as keyof typeof COLORS] || INGRESS_COLORS.XM,
                                             boxShadow: '0 0 10px rgba(0,255,255,0.5)'
                                         }}></div>
                                     </div>

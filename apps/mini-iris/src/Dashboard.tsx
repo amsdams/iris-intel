@@ -1,23 +1,13 @@
 import { h, JSX } from 'preact';
 import { useState } from 'preact/hooks';
 import { EntityLogic, Portal, Link, Field } from '@iris/core';
+import { INGRESS_COLORS, ITEM_LEVEL_COLORS, PORTAL_HISTORY_COLORS, RARITY_COLORS } from './MapConstants';
 
 interface DashboardProps {
     type: string;
     data: Portal | Link | Field;
     colors: Record<string, string>;
 }
-
-const LEVEL_COLORS: Record<number, string> = {
-    1: '#FECE5A', 2: '#FFA630', 3: '#FF7315', 4: '#E80000',
-    5: '#FF0099', 6: '#EE26CD', 7: '#C124E0', 8: '#9627F4'
-};
-
-const MOD_COLORS: Record<string, string> = {
-    'COMMON': '#49EBC3',
-    'RARE': '#B68BFF',
-    'VERY_RARE': '#F781FF'
-};
 
 export function Dashboard({ type, data, colors }: DashboardProps): JSX.Element {
     const teamKey = data.team;
@@ -54,15 +44,15 @@ export function Dashboard({ type, data, colors }: DashboardProps): JSX.Element {
                         <div style={{ color: teamColor, fontWeight: 'bold', fontSize: '12px', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name || 'PORTAL'}</div>
                         <div style={{ color: '#777', fontSize: '9px', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.owner || (p.team === 'N' ? 'Neutral' : 'Unknown')}</div>
                     </div>
-                    <div style={{ color: LEVEL_COLORS[p.level || 1] || teamColor, fontSize: '18px', lineHeight: 1, fontWeight: 'bold', flexShrink: 0 }}>L{p.level || 0}</div>
+                    <div style={{ color: ITEM_LEVEL_COLORS[p.level || 1] || teamColor, fontSize: '18px', lineHeight: 1, fontWeight: 'bold', flexShrink: 0 }}>L{p.level || 0}</div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '3px', marginBottom: '6px' }}>
                     {[
-                        ['HEALTH', `${p.health ?? 0}%`, '#0f0'],
+                        ['HEALTH', `${p.health ?? 0}%`, INGRESS_COLORS.ENLIGHTENED],
                         ['RES', `${p.resCount || 0}/8`, teamColor],
-                        ['MIT', `${mitigationTotal}`, '#0ff'],
-                        ['STICKY', `${stickiness}%`, '#f0f'],
+                        ['MIT', `${mitigationTotal}`, INGRESS_COLORS.XM],
+                        ['STICKY', `${stickiness}%`, INGRESS_COLORS.TRACKER],
                     ].map(([label, value, color]) => (
                         <div key={label} style={{ background: '#111', padding: '3px', textAlign: 'center', borderRadius: '2px', minWidth: 0 }}>
                             <div style={{ color: '#666', fontSize: '8px', lineHeight: 1.1 }}>{label}</div>
@@ -76,11 +66,11 @@ export function Dashboard({ type, data, colors }: DashboardProps): JSX.Element {
                         const r = resos[i];
                         const level = r?.level || 0;
                         const energyPct = r ? (r.energy / (level > 0 ? (level * 1000) : 1000)) * 100 : 0;
-                        const color = LEVEL_COLORS[level] || '#333';
+                        const color = ITEM_LEVEL_COLORS[level] || '#333';
                         return (
                             <div key={i} title={r?.owner} style={{ background: '#1a1a1a', border: `1px solid ${color}55`, padding: '2px 1px', position: 'relative', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <span style={{ color, fontSize: '9px', fontWeight: 'bold', zIndex: 1 }}>{r ? level : '-'}</span>
-                                {r && <div style={{ position: 'absolute', bottom: 0, left: 0, height: '2px', background: '#0f0', width: `${Math.min(100, energyPct)}%` }}></div>}
+                                {r && <div style={{ position: 'absolute', bottom: 0, left: 0, height: '2px', background: INGRESS_COLORS.ENLIGHTENED, width: `${Math.min(100, energyPct)}%` }}></div>}
                             </div>
                         );
                     })}
@@ -92,7 +82,7 @@ export function Dashboard({ type, data, colors }: DashboardProps): JSX.Element {
                         const label = getModShortLabel(m);
                         let color = '#333';
                         if (m) {
-                            color = MOD_COLORS[m.rarity] || '#fff';
+                            color = RARITY_COLORS[m.rarity] || '#fff';
                         }
                         return (
                             <div key={i} title={m ? `${m.rarity} ${m.name}` : undefined} style={{ background: '#1a1a1a', border: `1px solid ${color}44`, padding: '3px 2px', fontSize: '8px', color, textAlign: 'center', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: m ? 'bold' : 'normal', overflow: 'hidden' }}>
@@ -123,7 +113,7 @@ export function Dashboard({ type, data, colors }: DashboardProps): JSX.Element {
                                         label={r ? `R${r.level}` : `R${i + 1}`}
                                         detail={r ? `${healthPct}%` : '-'}
                                         owner={r?.owner}
-                                        color={LEVEL_COLORS[r?.level || 0] || '#555'}
+                                        color={ITEM_LEVEL_COLORS[r?.level || 0] || '#555'}
                                     />
                                 );
                             })}
@@ -137,7 +127,7 @@ export function Dashboard({ type, data, colors }: DashboardProps): JSX.Element {
                                         label={m ? getModShortLabel(m) : `M${i + 1}`}
                                         detail={m?.rarity || '-'}
                                         owner={m?.owner}
-                                        color={m ? MOD_COLORS[m.rarity] || '#fff' : '#555'}
+                                        color={m ? RARITY_COLORS[m.rarity] || '#fff' : '#555'}
                                     />
                                 );
                             })}
@@ -146,9 +136,9 @@ export function Dashboard({ type, data, colors }: DashboardProps): JSX.Element {
                 )}
 
                 <div style={{ display: 'flex', gap: '4px', borderTop: '1px solid #222', paddingTop: '6px' }}>
-                    <span style={{ border: `1px solid ${p.visited ? '#9b59b6' : '#333'}`, color: p.visited ? '#9b59b6' : '#444', padding: '1px 6px', borderRadius: '99px', fontSize: '9px', fontWeight: p.visited ? 'bold' : 'normal' }}>VISITED</span>
-                    <span style={{ border: `1px solid ${p.captured ? '#e74c3c' : '#333'}`, color: p.captured ? '#e74c3c' : '#444', padding: '1px 6px', borderRadius: '99px', fontSize: '9px', fontWeight: p.captured ? 'bold' : 'normal' }}>CAPTURED</span>
-                    <span style={{ border: `1px solid ${p.scanned ? '#00d9ff' : '#333'}`, color: p.scanned ? '#00d9ff' : '#444', padding: '1px 6px', borderRadius: '99px', fontSize: '9px', fontWeight: p.scanned ? 'bold' : 'normal' }}>SCANNED</span>
+                    <span style={{ border: `1px solid ${p.visited ? PORTAL_HISTORY_COLORS.visited : '#333'}`, color: p.visited ? PORTAL_HISTORY_COLORS.visited : '#444', padding: '1px 6px', borderRadius: '99px', fontSize: '9px', fontWeight: p.visited ? 'bold' : 'normal' }}>VISITED</span>
+                    <span style={{ border: `1px solid ${p.captured ? PORTAL_HISTORY_COLORS.captured : '#333'}`, color: p.captured ? PORTAL_HISTORY_COLORS.captured : '#444', padding: '1px 6px', borderRadius: '99px', fontSize: '9px', fontWeight: p.captured ? 'bold' : 'normal' }}>CAPTURED</span>
+                    <span style={{ border: `1px solid ${p.scanned ? PORTAL_HISTORY_COLORS.scanned : '#333'}`, color: p.scanned ? PORTAL_HISTORY_COLORS.scanned : '#444', padding: '1px 6px', borderRadius: '99px', fontSize: '9px', fontWeight: p.scanned ? 'bold' : 'normal' }}>SCANNED</span>
                 </div>
             </div>
         );

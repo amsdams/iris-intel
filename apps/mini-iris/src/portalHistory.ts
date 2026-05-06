@@ -1,3 +1,5 @@
+import { PORTAL_HISTORY_COLORS as MAP_PORTAL_HISTORY_COLORS } from './MapConstants';
+
 export type PortalHistoryKey = 'visited' | 'captured' | 'scanned';
 
 export type PortalHistoryMode = 'off' | 'highlight' | 'inverse';
@@ -11,9 +13,9 @@ export const DEFAULT_PORTAL_HISTORY_LAYERS: PortalHistoryLayerState = {
 };
 
 export const PORTAL_HISTORY_COLORS: Record<PortalHistoryKey, string> = {
-    visited: '#9b59b6',
-    captured: '#ff6b35',
-    scanned: '#00d9ff',
+    visited: MAP_PORTAL_HISTORY_COLORS.visited,
+    captured: MAP_PORTAL_HISTORY_COLORS.captured,
+    scanned: MAP_PORTAL_HISTORY_COLORS.scanned,
 };
 
 export function nextPortalHistoryMode(mode: PortalHistoryMode): PortalHistoryMode {

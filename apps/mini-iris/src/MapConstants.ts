@@ -1,8 +1,33 @@
+export const INGRESS_COLORS = {
+    ENLIGHTENED: '#03FE03',
+    RESISTANCE: '#00C2FF',
+    MACHINA: '#FF202D',
+    NEUTRAL: '#FFFFFF',
+    XM: '#00D9FF',
+    KEY: '#F7C948',
+    VISITED: '#B56DFF',
+    CAPTURED: '#FF8A3D',
+    SCANNED: '#00D9FF',
+    TRACKER: '#F781FF',
+};
+
 export const COLORS = {
-    E: '#00ff00',
-    R: '#0000ff',
-    M: '#ff0000',
-    N: '#ffffff'
+    E: INGRESS_COLORS.ENLIGHTENED,
+    R: INGRESS_COLORS.RESISTANCE,
+    M: INGRESS_COLORS.MACHINA,
+    N: INGRESS_COLORS.NEUTRAL
+};
+
+export const PORTAL_HISTORY_COLORS = {
+    visited: INGRESS_COLORS.VISITED,
+    captured: INGRESS_COLORS.CAPTURED,
+    scanned: INGRESS_COLORS.SCANNED,
+};
+
+export const PLAYER_TRACKER_COLORS = {
+    trail: INGRESS_COLORS.TRACKER,
+    point: INGRESS_COLORS.TRACKER,
+    stroke: '#1A0010',
 };
 
 export const RARITY_COLORS: Record<string, string> = {
