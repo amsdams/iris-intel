@@ -1,5 +1,6 @@
 import { h, JSX, Fragment } from 'preact';
-import { useState, useRef } from 'preact/hooks';
+import { useEffect, useState, useRef } from 'preact/hooks';
+import type { Field, Link, Portal } from '@iris/core';
 import type { PlayerHistory } from './usePlayerTracker';
 import { MapTools } from './MapTools';
 import { DataDock } from './DataDock';
@@ -13,6 +14,8 @@ interface EventLogEntry {
     msg: string;
 }
 
+type SelectedEntity = { type: 'portal'; data: Portal } | { type: 'link'; data: Link } | { type: 'field'; data: Field };
+
 interface TacticalUIProps {
     zoom: number;
     lat: number;
@@ -21,6 +24,7 @@ interface TacticalUIProps {
     endpointTelemetry: Partial<Record<EndpointName, EndpointTelemetry>>;
     plextBounds: PlextRequestBounds | null;
     playerHistories: Map<string, PlayerHistory>;
+    selected: SelectedEntity | null;
     onNav: (action: string) => void;
     onStyle: (style: string) => void;
     onMode: (mode: string) => void;
@@ -29,11 +33,17 @@ interface TacticalUIProps {
     onPortalHistoryLayerToggle: (key: PortalHistoryKey) => void;
 }
 
-export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBounds, playerHistories, onNav, onStyle, onMode, onPortalClick, portalHistoryLayers, onPortalHistoryLayerToggle }: TacticalUIProps): JSX.Element {
+export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBounds, playerHistories, selected, onNav, onStyle, onMode, onPortalClick, portalHistoryLayers, onPortalHistoryLayerToggle }: TacticalUIProps): JSX.Element {
     const [openDrawer, setOpenDrawer] = useState<string | null>(null);
     const logRef = useRef<HTMLDivElement>(null);
     
     const { activeTab, setActiveTab, refreshComm } = useComm(true, true, plextBounds);
+
+    useEffect(() => {
+        if (!selected) {
+            setOpenDrawer((current) => current === 'selection' ? null : current);
+        }
+    }, [selected]);
 
     const formatDelay = (ms: number | null | undefined): string => {
         if (typeof ms !== 'number' || !Number.isFinite(ms)) return '';
@@ -196,6 +206,7 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBou
                 onPortalClick={onPortalClick}
                 plextBounds={plextBounds}
                 playerHistories={playerHistories}
+                selected={selected}
             />
 
             {/* Event Log */}

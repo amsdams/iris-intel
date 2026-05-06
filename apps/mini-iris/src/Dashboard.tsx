@@ -1,11 +1,10 @@
 import { h, JSX } from 'preact';
-import { Portal, Link, Field } from '@iris/core';
+import { EntityLogic, Portal, Link, Field } from '@iris/core';
 
 interface DashboardProps {
     type: string;
     data: Portal | Link | Field;
     colors: Record<string, string>;
-    onClose: () => void;
 }
 
 const LEVEL_COLORS: Record<number, string> = {
@@ -19,7 +18,7 @@ const MOD_COLORS: Record<string, string> = {
     'VERY_RARE': '#F781FF'
 };
 
-export function Dashboard({ type, data, colors, onClose }: DashboardProps): JSX.Element {
+export function Dashboard({ type, data, colors }: DashboardProps): JSX.Element {
     const teamKey = data.team;
     const teamColor = colors[teamKey] || '#fff';
 
@@ -116,9 +115,80 @@ export function Dashboard({ type, data, colors, onClose }: DashboardProps): JSX.
         );
     };
 
+    const renderField = (field: Field): JSX.Element => {
+        const estimatedMU = calculateEstimatedFieldMu(field);
+        return (
+            <div style={{ padding: '12px', border: `1px solid ${teamColor}`, borderRadius: '4px', background: 'rgba(0,0,0,0.95)', boxShadow: `0 0 10px ${teamColor}44` }}>
+                <div style={{ color: teamColor, fontWeight: 'bold', marginBottom: '8px', fontSize: '14px' }}>FIELD DETAILS</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginBottom: '10px' }}>
+                    <div style={{ background: '#111', padding: '6px', borderRadius: '4px' }}>
+                        <div style={{ color: '#666', fontSize: '9px' }}>TEAM</div>
+                        <div style={{ color: teamColor, fontWeight: 'bold', fontSize: '11px' }}>{field.team}</div>
+                    </div>
+                    <div style={{ background: '#111', padding: '6px', borderRadius: '4px' }}>
+                        <div style={{ color: '#666', fontSize: '9px' }}>EST. MU</div>
+                        <div style={{ color: teamColor, fontWeight: 'bold', fontSize: '11px' }}>{estimatedMU.toLocaleString()}</div>
+                    </div>
+                </div>
+                <div style={{ background: '#111', padding: '6px', borderRadius: '4px', fontSize: '11px', marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#666' }}>ID</span>
+                        <span style={{ color: '#ccc' }}>{field.id.slice(0, 12)}...</span>
+                    </div>
+                </div>
+                <div style={{ borderTop: '1px solid #222', paddingTop: '8px' }}>
+                    <div style={{ color: '#666', fontSize: '9px', fontWeight: 'bold', marginBottom: '5px' }}>ANCHORS</div>
+                    {field.points.map((point, index) => (
+                        <div key={index} style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '10px', color: '#aaa', padding: '2px 0' }}>
+                            <span>Anchor {index + 1}</span>
+                            <span style={{ color: '#ccc' }}>{point.portalId?.slice(0, 10) || `${point.lat.toFixed(4)}, ${point.lng.toFixed(4)}`}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    };
+
+    const renderLink = (link: Link): JSX.Element => {
+        const distKm = EntityLogic.getDistKm(link.fromLat, link.fromLng, link.toLat, link.toLng);
+        const distStr = distKm < 1 ? `${Math.round(distKm * 1000)}m` : `${distKm.toFixed(2)}km`;
+        return (
+            <div style={{ padding: '12px', border: `1px solid ${teamColor}`, borderRadius: '4px', background: 'rgba(0,0,0,0.95)', boxShadow: `0 0 10px ${teamColor}44` }}>
+                <div style={{ color: teamColor, fontWeight: 'bold', marginBottom: '8px', fontSize: '14px' }}>LINK DETAILS</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginBottom: '10px' }}>
+                    <div style={{ background: '#111', padding: '6px', borderRadius: '4px' }}>
+                        <div style={{ color: '#666', fontSize: '9px' }}>TEAM</div>
+                        <div style={{ color: teamColor, fontWeight: 'bold', fontSize: '11px' }}>{link.team}</div>
+                    </div>
+                    <div style={{ background: '#111', padding: '6px', borderRadius: '4px' }}>
+                        <div style={{ color: '#666', fontSize: '9px' }}>LENGTH</div>
+                        <div style={{ color: teamColor, fontWeight: 'bold', fontSize: '11px' }}>{distStr}</div>
+                    </div>
+                </div>
+                <div style={{ background: '#111', padding: '6px', borderRadius: '4px', fontSize: '11px', marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#666' }}>ID</span>
+                        <span style={{ color: '#ccc' }}>{link.id.slice(0, 12)}...</span>
+                    </div>
+                </div>
+                <div style={{ borderTop: '1px solid #222', paddingTop: '8px' }}>
+                    <div style={{ color: '#666', fontSize: '9px', fontWeight: 'bold', marginBottom: '5px' }}>ANCHORS</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '10px', color: '#aaa', padding: '2px 0' }}>
+                        <span>From</span>
+                        <span style={{ color: '#ccc' }}>{link.fromPortalId.slice(0, 10)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '10px', color: '#aaa', padding: '2px 0' }}>
+                        <span>To</span>
+                        <span style={{ color: '#ccc' }}>{link.toPortalId.slice(0, 10)}</span>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     return (
-        <div id="entity-details" style={{ position: 'fixed', top: '50px', left: '10px', width: '250px', color: '#fff', padding: '0', fontFamily: 'monospace', fontSize: '12px', zIndex: 1000007, pointerEvents: 'auto' }}>
-            {type === 'portal' ? renderPortal(data as Portal) : (
+        <div id="entity-details" style={{ color: '#fff', padding: '0', fontFamily: 'monospace', fontSize: '12px', pointerEvents: 'auto' }}>
+            {type === 'portal' ? renderPortal(data as Portal) : type === 'field' ? renderField(data as Field) : type === 'link' ? renderLink(data as Link) : (
                 <div style={{ padding: '12px', border: `1px solid ${teamColor}`, borderRadius: '4px', background: 'rgba(0,0,0,0.95)', boxShadow: `0 0 10px ${teamColor}44` }}>
                     <div style={{ color: teamColor, fontWeight: 'bold', marginBottom: '8px', fontSize: '14px' }}>{type.toUpperCase()} DETAILS</div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', background: '#111', padding: '6px', borderRadius: '4px', fontSize: '11px' }}>
@@ -127,15 +197,18 @@ export function Dashboard({ type, data, colors, onClose }: DashboardProps): JSX.
                     </div>
                 </div>
             )}
-            <div style={{ padding: '8px 12px', textAlign: 'right' }}>
-                <button 
-                    id="close-details" 
-                    onClick={onClose}
-                    style={{ background: '#222', color: '#eee', border: '1px solid #444', padding: '4px 12px', cursor: 'pointer', fontSize: '10px', borderRadius: '3px', fontWeight: 'bold' }}
-                >
-                    CLOSE
-                </button>
-            </div>
         </div>
     );
+}
+
+function calculateEstimatedFieldMu(field: Field): number {
+    if (field.points.length < 3) return 0;
+    const [p1, p2, p3] = field.points;
+    const area = Math.abs(
+        p1.lng * (p2.lat - p3.lat) +
+        p2.lng * (p3.lat - p1.lat) +
+        p3.lng * (p1.lat - p2.lat)
+    ) / 2;
+
+    return Math.max(1, Math.round(area * 1000000));
 }

@@ -1,11 +1,14 @@
 import { h, JSX } from 'preact';
 import { useMemo } from 'preact/hooks';
-import { useStore, InventoryParser, Plext, normalizeTeam } from '@iris/core';
+import { Field, Link, Portal, useStore, InventoryParser, Plext, normalizeTeam } from '@iris/core';
 import { COLORS, RARITY_COLORS, ITEM_LEVEL_COLORS } from './MapConstants';
 import { formatMU, formatAP } from './GeoUtils';
 import { CommTab } from './useComm';
 import type { PlayerHistory } from './usePlayerTracker';
 import { createPlextRequestMessage, type PlextRequestBounds } from './plextRequests';
+import { Dashboard } from './Dashboard';
+
+type SelectedEntity = { type: 'portal'; data: Portal } | { type: 'link'; data: Link } | { type: 'field'; data: Field };
 
 interface DataDockProps {
     openDrawer: string | null;
@@ -15,9 +18,10 @@ interface DataDockProps {
     onPortalClick: (lat: number, lng: number, name: string) => void;
     plextBounds: PlextRequestBounds | null;
     playerHistories: Map<string, PlayerHistory>;
+    selected: SelectedEntity | null;
 }
 
-export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPortalClick, plextBounds, playerHistories }: DataDockProps): JSX.Element {
+export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPortalClick, plextBounds, playerHistories, selected }: DataDockProps): JSX.Element {
     const { gameScore, regionScore, playerStats, hasSubscription, inventory, plexts } = useStore();
 
     // 1. Inventory Stats
@@ -71,6 +75,8 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPor
             .sort((a, b) => (b.lastEvent?.time ?? 0) - (a.lastEvent?.time ?? 0));
     }, [playerHistories]);
 
+    const selectionMeta = selected ? getSelectionMeta(selected) : null;
+
     const renderPlextMarkup = (p: Plext): JSX.Element[] => {
         return p.markup.map((m, i) => {
             const [type, data] = m;
@@ -102,6 +108,16 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPor
         <div id="data-dock-orchestrator">
             {/* PANELS */}
             <div id="data-panel-container" style={{ position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)', width: '90%', maxWidth: '400px', zIndex: 2000002, pointerEvents: 'none' }}>
+                {/* Selection Details Panel */}
+                {selected && (
+                    <div style={{ display: openDrawer === 'selection' ? 'block' : 'none', pointerEvents: 'auto' }}>
+                        <Dashboard
+                            type={selected.type}
+                            data={selected.data}
+                            colors={COLORS}
+                        />
+                    </div>
+                )}
                 
                 {/* COMM Panel */}
                 <div style={{ display: openDrawer === 'comm' ? 'flex' : 'none', flexDirection: 'column', background: 'rgba(10,10,10,0.95)', border: '1px solid #00ffff', borderRadius: '12px', height: '400px', color: '#fff', boxShadow: '0 -5px 20px rgba(0,0,0,0.8)', pointerEvents: 'auto', overflow: 'hidden' }}>
@@ -253,6 +269,20 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPor
 
             {/* DOCK BAR */}
             <div id="bottom-dock" style={{ position: 'fixed', bottom: '15px', left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: '15px', padding: '8px 20px', background: 'rgba(20,20,20,0.9)', borderRadius: '30px', border: '1px solid #00ffff', zIndex: 2000003, pointerEvents: 'auto', boxShadow: '0 5px 15px rgba(0,0,0,0.5)' }}>
+                {selectionMeta && (
+                    <div
+                        className="dock-item"
+                        onClick={() => onToggle('selection')}
+                        title={`${selectionMeta.title} details`}
+                        style={{ minWidth: '38px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1px', cursor: 'pointer', opacity: openDrawer === 'selection' ? 1 : 0.72, transition: 'opacity 0.2s', color: selectionMeta.color }}
+                    >
+                        <span style={{ fontSize: '18px', lineHeight: 1 }}>{selectionMeta.icon}</span>
+                        <span style={{ fontSize: '8px', fontWeight: 'bold', lineHeight: 1 }}>{selectionMeta.label}</span>
+                    </div>
+                )}
+                {selectionMeta && (
+                    <div style={{ width: '1px', height: '28px', background: 'rgba(0,255,255,0.35)' }} />
+                )}
                 <div className="dock-item" onClick={() => onToggle('player')} style={{ fontSize: '24px', cursor: 'pointer', opacity: openDrawer === 'player' ? 1 : 0.6, transition: 'opacity 0.2s' }}>👤</div>
                 <div className="dock-item" onClick={() => onToggle('inventory')} style={{ fontSize: '24px', cursor: 'pointer', opacity: openDrawer === 'inventory' ? 1 : 0.6, transition: 'opacity 0.2s' }}>🎒</div>
                 <div className="dock-item" onClick={() => onToggle('comm')} style={{ fontSize: '24px', cursor: 'pointer', opacity: openDrawer === 'comm' ? 1 : 0.6, transition: 'opacity 0.2s' }}>💬</div>
@@ -260,4 +290,32 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPor
             </div>
         </div>
     );
+}
+
+function getSelectionMeta(selected: SelectedEntity): { icon: string; label: string; title: string; color: string } {
+    if (selected.type === 'portal') {
+        const portal = selected.data;
+        return {
+            icon: '◎',
+            label: portal.level !== undefined ? `L${portal.level}` : 'Portal',
+            title: portal.name || 'Portal',
+            color: COLORS[normalizeTeam(portal.team) as keyof typeof COLORS] || COLORS.N,
+        };
+    }
+
+    if (selected.type === 'field') {
+        return {
+            icon: '△',
+            label: 'Field',
+            title: 'Field',
+            color: COLORS[normalizeTeam(selected.data.team) as keyof typeof COLORS] || COLORS.N,
+        };
+    }
+
+    return {
+        icon: '↔',
+        label: 'Link',
+        title: 'Link',
+        color: COLORS[normalizeTeam(selected.data.team) as keyof typeof COLORS] || COLORS.N,
+    };
 }

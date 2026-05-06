@@ -4,7 +4,6 @@ import { render, h, Fragment } from 'preact';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'preact/hooks';
 import { MockDataGenerator } from './MockDataGenerator';
 import { useStore, globalSpatialIndex, getMinLevelForZoom, getGridSizeForZoom, Portal, Link, Field } from '@iris/core';
-import { Dashboard } from './Dashboard';
 import { TacticalUI } from './TacticalUI';
 import { COLORS, MAP_STYLES } from './MapConstants';
 import { LaunchButton } from './LaunchButton';
@@ -726,17 +725,12 @@ function TacticalOverlay(): h.JSX.Element {
                         endpointTelemetry={endpointTelemetry}
                         plextBounds={plextBounds}
                         playerHistories={playerHistories}
+                        selected={selected}
                         portalHistoryLayers={portalHistoryLayers}
                         onPortalHistoryLayerToggle={handlePortalHistoryLayerToggle}
                         onNav={handleNav} onStyle={handleStyle} onMode={handleMode}
                         onPortalClick={handlePortalClick}
                     />
-                    {selected && (
-                        <Dashboard 
-                            type={selected.type} data={selected.data} colors={COLORS} 
-                            onClose={(): void => setSelected(null)}
-                        />
-                    )}
                 </Fragment>
             )}
             <LaunchButton isVis={isVis} onClick={(): void => {
