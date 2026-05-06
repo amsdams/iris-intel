@@ -220,7 +220,10 @@ export function MapOverlay(): JSX.Element {
         showMachina: filterShowMachina, 
         showUnclaimedPortals: filterShowUnclaimedPortals, 
         showLevel: filterShowLevel, 
-        showHealth: filterShowHealth
+        showHealth: filterShowHealth,
+        showVisited: filterShowVisited,
+        showCaptured: filterShowCaptured,
+        showScanned: filterShowScanned
     }, selectedPortalId);
     getGeoJsonSource('portals')?.setData(toFeatureCollection(portalFeatures));
 
@@ -325,13 +328,16 @@ export function MapOverlay(): JSX.Element {
       showMachina: filterShowMachina, 
       showUnclaimedPortals: filterShowUnclaimedPortals, 
       showLevel: filterShowLevel, 
-      showHealth: filterShowHealth
+      showHealth: filterShowHealth,
+      showVisited: filterShowVisited,
+      showCaptured: filterShowCaptured,
+      showScanned: filterShowScanned
     })));
     getGeoJsonSource('mission-route')?.setData(toFeatureCollection(buildMissionRouteFeatures(missionDetails)));
     getGeoJsonSource('mission-waypoints')?.setData(toFeatureCollection(buildMissionWaypointFeatures(missionDetails)));
     getGeoJsonSource('plugin-features')?.setData(pluginFeatures);
 
-  }, [styleLoaded, layerShowFields, layerShowLinks, layerShowOrnaments, layerShowArtifacts, filterShowResistance, filterShowEnlightened, filterShowMachina, filterShowUnclaimedPortals, filterShowLevel, filterShowHealth, artifacts, mockOrnaments, missionDetails, pluginFeatures, selectedPortalId, selectedFieldId, selectedLinkId]);
+  }, [styleLoaded, layerShowFields, layerShowLinks, layerShowOrnaments, layerShowArtifacts, filterShowResistance, filterShowEnlightened, filterShowMachina, filterShowUnclaimedPortals, filterShowLevel, filterShowHealth, filterShowVisited, filterShowCaptured, filterShowScanned, artifacts, mockOrnaments, missionDetails, pluginFeatures, selectedPortalId, selectedFieldId, selectedLinkId]);
 
   // ---------------------------------------------------------------------------
   // Initialise MapLibre map once on mount
@@ -511,60 +517,6 @@ export function MapOverlay(): JSX.Element {
               'circle-stroke-color': '#fff',
               'circle-stroke-opacity': 0.8,
             },
-          },
-          {
-            id: 'portal-history-visited',
-            type: 'circle',
-            source: 'portals',
-            filter: ['==', ['get', 'visited'], true],
-            paint: {
-                'circle-radius': [
-                  'interpolate', ['linear'], ['zoom'],
-                  3, 2,
-                  10, 4,
-                  15, 10,
-                ],
-                'circle-color': 'transparent',
-                'circle-stroke-width': 1,
-                'circle-stroke-color': SEMANTIC_COLORS.HISTORY_VISITED,
-                'circle-stroke-opacity': 0.8,
-            }
-          },
-          {
-            id: 'portal-history-captured',
-            type: 'circle',
-            source: 'portals',
-            filter: ['==', ['get', 'captured'], true],
-            paint: {
-                'circle-radius': [
-                  'interpolate', ['linear'], ['zoom'],
-                  3, 3,
-                  10, 6,
-                  15, 14,
-                ],
-                'circle-color': 'transparent',
-                'circle-stroke-width': 1,
-                'circle-stroke-color': SEMANTIC_COLORS.HISTORY_CAPTURED,
-                'circle-stroke-opacity': 0.8,
-            }
-          },
-          {
-            id: 'portal-history-scanned',
-            type: 'circle',
-            source: 'portals',
-            filter: ['==', ['get', 'scanned'], true],
-            paint: {
-                'circle-radius': [
-                  'interpolate', ['linear'], ['zoom'],
-                  3, 4,
-                  10, 8,
-                  15, 18,
-                ],
-                'circle-color': 'transparent',
-                'circle-stroke-width': 1.5,
-                'circle-stroke-color': SEMANTIC_COLORS.HISTORY_SCANNED,
-                'circle-stroke-opacity': 0.6,
-            }
           },
           {
             id: 'mission-waypoints',
@@ -855,21 +807,6 @@ export function MapOverlay(): JSX.Element {
       }
     }
   }, [allowRotation, allowPitch, styleLoaded]);
-
-  // Sync Portal History Highlight Filters
-  useEffect((): undefined | (() => void) => {
-    if (!map.current || !styleLoaded) return;
-
-    if (map.current.getLayer('portal-history-visited')) {
-        map.current.setFilter('portal-history-visited', ['==', ['get', 'visited'], filterShowVisited]);
-    }
-    if (map.current.getLayer('portal-history-captured')) {
-        map.current.setFilter('portal-history-captured', ['==', ['get', 'captured'], filterShowCaptured]);
-    }
-    if (map.current.getLayer('portal-history-scanned')) {
-        map.current.setFilter('portal-history-scanned', ['==', ['get', 'scanned'], filterShowScanned]);
-    }
-  }, [filterShowVisited, filterShowCaptured, filterShowScanned, styleLoaded]);
 
   // Sync Viewport on Map Movement
   useEffect((): undefined | (() => void) => {

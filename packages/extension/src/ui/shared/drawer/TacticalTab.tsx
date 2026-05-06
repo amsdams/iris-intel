@@ -65,14 +65,23 @@ export function TacticalTab(): JSX.Element {
 
             <div className="iris-drawer-section-label">Agent History</div>
             <div className="iris-drawer-scroll-group">
-                <button className={`iris-drawer-btn ${filterShowVisited ? 'iris-drawer-btn-active' : ''}`} onClick={toggleFilterVisited}>
-                    <div className="iris-drawer-btn-label">Visited</div>
+                <button 
+                    className={`iris-drawer-btn ${filterShowVisited !== 'ALL' ? 'iris-drawer-btn-active' : ''}`} 
+                    onClick={toggleFilterVisited}
+                >
+                    <div className="iris-drawer-btn-label">Visited: {filterShowVisited === 'ALL' ? 'All' : (filterShowVisited === 'TRUE' ? 'Yes' : 'No')}</div>
                 </button>
-                <button className={`iris-drawer-btn ${filterShowCaptured ? 'iris-drawer-btn-active' : ''}`} onClick={toggleFilterCaptured}>
-                    <div className="iris-drawer-btn-label">Captured</div>
+                <button 
+                    className={`iris-drawer-btn ${filterShowCaptured !== 'ALL' ? 'iris-drawer-btn-active' : ''}`} 
+                    onClick={toggleFilterCaptured}
+                >
+                    <div className="iris-drawer-btn-label">Captured: {filterShowCaptured === 'ALL' ? 'All' : (filterShowCaptured === 'TRUE' ? 'Yes' : 'No')}</div>
                 </button>
-                <button className={`iris-drawer-btn ${filterShowScanned ? 'iris-drawer-btn-active' : ''}`} onClick={toggleFilterScanned}>
-                    <div className="iris-drawer-btn-label">Scanned</div>
+                <button 
+                    className={`iris-drawer-btn ${filterShowScanned !== 'ALL' ? 'iris-drawer-btn-active' : ''}`} 
+                    onClick={toggleFilterScanned}
+                >
+                    <div className="iris-drawer-btn-label">Scanned: {filterShowScanned === 'ALL' ? 'All' : (filterShowScanned === 'TRUE' ? 'Yes' : 'No')}</div>
                 </button>
             </div>
         </Fragment>

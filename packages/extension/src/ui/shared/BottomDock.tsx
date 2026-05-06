@@ -63,6 +63,10 @@ export function BottomDock({ activeDashboard, onToggleDashboard, onToggleSelecti
 
     return (
         <div className="iris-bottom-dock">
+            {selectionBtn}
+            {selectionBtn && (
+                <div className="iris-dock-separator" />
+            )}
             {navItems.map(item => (
                 <button
                     key={item.type}
@@ -73,10 +77,6 @@ export function BottomDock({ activeDashboard, onToggleDashboard, onToggleSelecti
                     <div className="iris-dock-label">{item.label}</div>
                 </button>
             ))}
-            {selectionBtn && (
-                <div className="iris-dock-separator" />
-            )}
-            {selectionBtn}
         </div>
     );
 }

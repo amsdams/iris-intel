@@ -289,6 +289,8 @@ export interface MissionSummary {
     medianCompletionTime?: string;
 }
 
+export type HistoryFilterState = 'ALL' | 'TRUE' | 'FALSE';
+
 export interface IRISSettings {
     pluginStates: Record<string, boolean>;
     themeId: string;
@@ -303,9 +305,9 @@ export interface IRISSettings {
     filterShowUnclaimedPortals: boolean;
     filterShowLevel: Record<number, boolean>;
     filterShowHealth: Record<number, boolean>;
-    filterShowVisited: boolean;
-    filterShowCaptured: boolean;
-    filterShowScanned: boolean;
+    filterShowVisited: HistoryFilterState;
+    filterShowCaptured: HistoryFilterState;
+    filterShowScanned: HistoryFilterState;
     allowRotation: boolean;
     allowPitch: boolean;
     debugLogging: boolean;
@@ -332,9 +334,9 @@ export const DEFAULT_SETTINGS: IRISSettings = {
     filterShowHealth: {
         25: true, 50: true, 75: true, 100: true,
     },
-    filterShowVisited: true,
-    filterShowCaptured: true,
-    filterShowScanned: true,
+    filterShowVisited: 'ALL',
+    filterShowCaptured: 'ALL',
+    filterShowScanned: 'ALL',
     allowRotation: true,
     allowPitch: true,
     debugLogging: false,
@@ -582,9 +584,18 @@ const createSettingsSlice: StateCreator<IRISState, [], [], SettingsSlice> = (set
     toggleFilterHealth: (bucket) => set((state) => ({
         filterShowHealth: { ...state.filterShowHealth, [bucket]: !state.filterShowHealth[bucket] }
     })),
-    toggleFilterVisited: () => set((state) => ({ filterShowVisited: !state.filterShowVisited })),
-    toggleFilterCaptured: () => set((state) => ({ filterShowCaptured: !state.filterShowCaptured })),
-    toggleFilterScanned: () => set((state) => ({ filterShowScanned: !state.filterShowScanned })),
+    toggleFilterVisited: () => set((state) => {
+        const next: HistoryFilterState = state.filterShowVisited === 'ALL' ? 'TRUE' : (state.filterShowVisited === 'TRUE' ? 'FALSE' : 'ALL');
+        return { filterShowVisited: next };
+    }),
+    toggleFilterCaptured: () => set((state) => {
+        const next: HistoryFilterState = state.filterShowCaptured === 'ALL' ? 'TRUE' : (state.filterShowCaptured === 'TRUE' ? 'FALSE' : 'ALL');
+        return { filterShowCaptured: next };
+    }),
+    toggleFilterScanned: () => set((state) => {
+        const next: HistoryFilterState = state.filterShowScanned === 'ALL' ? 'TRUE' : (state.filterShowScanned === 'TRUE' ? 'FALSE' : 'ALL');
+        return { filterShowScanned: next };
+    }),
     toggleAllowRotation: () => set((state) => ({ allowRotation: !state.allowRotation })),
     toggleAllowPitch: () => set((state) => ({ allowPitch: !state.allowPitch })),
     toggleDebugLogging: () => set((state) => ({ debugLogging: !state.debugLogging })),

@@ -1,4 +1,4 @@
-import { Artifact, Field, Link, MissionDetails, Portal } from '@iris/core';
+import { Artifact, Field, HistoryFilterState, Link, MissionDetails, Portal } from '@iris/core';
 
 type PortalFeatureProperties = {
   id: string;
@@ -31,11 +31,6 @@ interface TeamVisibility {
   showUnclaimedPortals: boolean;
 }
 
-type PortalFilters = TeamVisibility & {
-  showLevel: Record<number, boolean>;
-  showHealth: Record<number, boolean>;
-};
-
 type OrnamentFilters = PortalFilters & {
   showOrnaments: boolean;
 };
@@ -59,6 +54,14 @@ export const toFeatureCollection = <T extends GeoJSON.Geometry, P extends GeoJSO
   features,
 });
 
+type PortalFilters = TeamVisibility & {
+  showLevel: Record<number, boolean>;
+  showHealth: Record<number, boolean>;
+  showVisited: HistoryFilterState;
+  showCaptured: HistoryFilterState;
+  showScanned: HistoryFilterState;
+};
+
 export const buildPortalFeatures = (
   portals: Record<string, Portal>,
   filters: PortalFilters,
@@ -81,6 +84,16 @@ export const buildPortalFeatures = (
         if (portal.health > 50 && portal.health <= 75 && !filters.showHealth[75]) return false;
         if (portal.health > 75 && !filters.showHealth[100]) return false;
       }
+
+      // History Filters (Three-way)
+      if (filters.showVisited === 'TRUE' && !portal.visited) return false;
+      if (filters.showVisited === 'FALSE' && portal.visited) return false;
+
+      if (filters.showCaptured === 'TRUE' && !portal.captured) return false;
+      if (filters.showCaptured === 'FALSE' && portal.captured) return false;
+
+      if (filters.showScanned === 'TRUE' && !portal.scanned) return false;
+      if (filters.showScanned === 'FALSE' && portal.scanned) return false;
 
       return true;
     })
