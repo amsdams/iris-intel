@@ -6,6 +6,7 @@ import { DataDock } from './DataDock';
 import { useComm } from './useComm';
 import type { EndpointName, EndpointTelemetry } from './useEndpointTelemetry';
 import type { PlextRequestBounds } from './plextRequests';
+import type { PortalHistoryKey, PortalHistoryLayerState } from './portalHistory';
 
 interface EventLogEntry {
     time: string;
@@ -24,9 +25,11 @@ interface TacticalUIProps {
     onStyle: (style: string) => void;
     onMode: (mode: string) => void;
     onPortalClick: (lat: number, lng: number, name: string) => void;
+    portalHistoryLayers: PortalHistoryLayerState;
+    onPortalHistoryLayerToggle: (key: PortalHistoryKey) => void;
 }
 
-export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBounds, playerHistories, onNav, onStyle, onMode, onPortalClick }: TacticalUIProps): JSX.Element {
+export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBounds, playerHistories, onNav, onStyle, onMode, onPortalClick, portalHistoryLayers, onPortalHistoryLayerToggle }: TacticalUIProps): JSX.Element {
     const [openDrawer, setOpenDrawer] = useState<string | null>(null);
     const logRef = useRef<HTMLDivElement>(null);
     
@@ -180,6 +183,8 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBou
                 onNav={onNav} 
                 onStyle={onStyle} 
                 onMode={onMode} 
+                portalHistoryLayers={portalHistoryLayers}
+                onPortalHistoryLayerToggle={onPortalHistoryLayerToggle}
             />
 
             {/* Bottom: Data & Profile Dock */}

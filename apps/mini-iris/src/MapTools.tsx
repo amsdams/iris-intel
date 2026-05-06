@@ -1,4 +1,6 @@
 import { h, JSX } from 'preact';
+import type { PortalHistoryKey, PortalHistoryLayerState, PortalHistoryMode } from './portalHistory';
+import { PORTAL_HISTORY_COLORS } from './portalHistory';
 
 interface MapToolsProps {
     openDrawer: string | null;
@@ -6,9 +8,46 @@ interface MapToolsProps {
     onNav: (action: string) => void;
     onStyle: (style: string) => void;
     onMode: (mode: string) => void;
+    portalHistoryLayers: PortalHistoryLayerState;
+    onPortalHistoryLayerToggle: (key: PortalHistoryKey) => void;
 }
 
-export function MapTools({ openDrawer, onToggle, onNav, onStyle, onMode }: MapToolsProps): JSX.Element {
+const HISTORY_LAYER_LABELS: Record<PortalHistoryKey, string> = {
+    visited: 'V',
+    captured: 'C',
+    scanned: 'S',
+};
+
+const HISTORY_MODE_LABELS: Record<PortalHistoryMode, string> = {
+    off: 'Off',
+    highlight: 'On',
+    inverse: 'Inv',
+};
+
+function historyButtonStyle(mode: PortalHistoryMode, color: string): h.JSX.CSSProperties {
+    const isOff = mode === 'off';
+    const isInverse = mode === 'inverse';
+    return {
+        width: '42px',
+        height: '36px',
+        background: isOff ? 'rgba(40,40,40,0.9)' : (isInverse ? `${color}10` : `${color}22`),
+        color: isOff ? '#777' : color,
+        border: `${isInverse ? 2 : 1}px ${isInverse ? 'dashed' : 'solid'} ${isOff ? '#555' : color}`,
+        borderRadius: '4px',
+        fontSize: '11px',
+        fontWeight: 'bold',
+        cursor: 'pointer',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '1px',
+        pointerEvents: 'auto',
+        boxShadow: isInverse ? `0 0 10px ${color}33 inset` : 'none',
+    };
+}
+
+export function MapTools({ openDrawer, onToggle, onNav, onStyle, onMode, portalHistoryLayers, onPortalHistoryLayerToggle }: MapToolsProps): JSX.Element {
     return (
         <div id="map-tools-container" style={{ position: 'fixed', top: '10px', right: '10px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', zIndex: 2000001, pointerEvents: 'none' }}>
             
@@ -38,6 +77,29 @@ export function MapTools({ openDrawer, onToggle, onNav, onStyle, onMode }: MapTo
                 <div className="drawer-content" style={{ display: openDrawer === 'mode' ? 'flex' : 'none', flexDirection: 'column', gap: '4px', padding: '4px', background: 'rgba(20,20,20,0.9)', borderRadius: '8px', border: '1px solid #00ffff' }}>
                     <div className="debug-btn" onClick={() => onMode('3D')} style={{ width: '36px', height: '36px', background: 'rgba(40,40,40,0.9)', color: '#fff', border: '1px solid #555', borderRadius: '4px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'auto' }}>3D</div>
                     <div className="debug-btn" onClick={() => onMode('Src')} style={{ width: '36px', height: '36px', background: 'rgba(40,40,40,0.9)', color: '#fff', border: '1px solid #555', borderRadius: '4px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'auto' }}>Src</div>
+                </div>
+            </div>
+
+            {/* Portal History Drawer */}
+            <div className="drawer-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                <div className="debug-btn" onClick={() => onToggle('history')} style={{ width: '40px', height: '40px', background: 'rgba(34,34,34,0.9)', color: '#fff', border: '1px solid #00ffff', borderRadius: '50%', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'auto' }}>◎</div>
+                <div className="drawer-content" style={{ display: openDrawer === 'history' ? 'flex' : 'none', flexDirection: 'column', gap: '4px', padding: '4px', background: 'rgba(20,20,20,0.9)', borderRadius: '8px', border: '1px solid #00ffff' }}>
+                    {(Object.keys(HISTORY_LAYER_LABELS) as PortalHistoryKey[]).map((key) => {
+                        const mode = portalHistoryLayers[key];
+                        const color = PORTAL_HISTORY_COLORS[key];
+                        return (
+                            <div
+                                key={key}
+                                className="debug-btn"
+                                onClick={() => onPortalHistoryLayerToggle(key)}
+                                title={`${key}: ${mode}`}
+                                style={historyButtonStyle(mode, color)}
+                            >
+                                <span>{HISTORY_LAYER_LABELS[key]}</span>
+                                <span style={{ fontSize: '8px', color: mode === 'off' ? '#666' : color }}>{HISTORY_MODE_LABELS[mode]}</span>
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
         </div>

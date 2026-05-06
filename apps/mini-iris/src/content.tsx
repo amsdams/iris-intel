@@ -19,6 +19,7 @@ import { useEndpointTelemetry } from './useEndpointTelemetry';
 import type { PlextRequestBounds } from './plextRequests';
 import { throttle } from './GeoUtils';
 import { isEndpointStateMessage, numberOrNull, stringOrNull } from './messages';
+import { DEFAULT_PORTAL_HISTORY_LAYERS, PORTAL_HISTORY_COLORS, nextPortalHistoryMode, type PortalHistoryKey } from './portalHistory';
 
 console.log("Mini IRIS (TS): Tactical Overlay | v1.3.3 | Stable Orchestration");
 
@@ -92,6 +93,7 @@ function TacticalOverlay(): h.JSX.Element {
     const [plextBounds, setPlextBounds] = useState<PlextRequestBounds | null>(null);
     const [liveMode, setLiveMode] = useState(true);
     const [patternMode, setPatternMode] = useState(0);
+    const [portalHistoryLayers, setPortalHistoryLayers] = useState(DEFAULT_PORTAL_HISTORY_LAYERS);
     const [extrusionEnabled, setExtrusionEnabled] = useState(false);
     const [isVis, setIsVis] = useState(false);
     const [pulseTick, setPulseTick] = useState(0);
@@ -221,7 +223,7 @@ function TacticalOverlay(): h.JSX.Element {
         return (): void => window.removeEventListener('message', handler);
     }, [logEvent]);
 
-    const { syncToMap } = useMapRenderer(generator, logEvent);
+    const { syncToMap } = useMapRenderer(generator, logEvent, portalHistoryLayers);
     const { loadPattern1, loadPattern2, loadPattern3 } = usePatterns(mapRef.current, generator, loadedKeys, logEvent);
     
     useIntelMessages(mapRef.current, liveMode, patternMode, selected, setSelected, (m, l, p) => syncToMap(m, l, p), logEvent);
@@ -361,6 +363,12 @@ function TacticalOverlay(): h.JSX.Element {
         if (addedAny) logEvent(`Sim Tiles Loaded (Min L:${minLevel})`);
     }, [loadedKeys, syncToMap, logEvent]);
 
+    const checkAndLoadRef = useRef(checkAndLoad);
+
+    useEffect(() => {
+        checkAndLoadRef.current = checkAndLoad;
+    }, [checkAndLoad]);
+
     const throttledSync = useMemo(() => throttle((m: maplibregl.Map): void => {
         const center = m.getCenter();
         setMapState({ zoom: m.getZoom(), lat: center.lat, lng: center.lng });
@@ -393,9 +401,9 @@ function TacticalOverlay(): h.JSX.Element {
         const settleMs = currentLive ? 300 : 300;
         moveSettleTimerRef.current = window.setTimeout(() => {
             moveSettleTimerRef.current = null;
-            checkAndLoad(m, currentPattern, currentLive);
+            checkAndLoadRef.current(m, currentPattern, currentLive);
         }, settleMs);
-    }, [checkAndLoad, clearMoveSettleTimer, persistMapState]);
+    }, [clearMoveSettleTimer, persistMapState]);
 
     const handlePortalClick = useCallback((lat: number, lng: number, name: string): void => {
         if (!mapRef.current) return;
@@ -411,6 +419,13 @@ function TacticalOverlay(): h.JSX.Element {
             setSelected({ type: 'portal', data: { id: 'temp', lat, lng, team: 'N', name } as Portal });
         }
     }, [logEvent, liveMode]);
+
+    const handlePortalHistoryLayerToggle = useCallback((key: PortalHistoryKey): void => {
+        setPortalHistoryLayers((current) => ({
+            ...current,
+            [key]: nextPortalHistoryMode(current[key]),
+        }));
+    }, []);
 
     useEffect(() => {
         if (mapRef.current) return; // Only init once
@@ -455,7 +470,13 @@ function TacticalOverlay(): h.JSX.Element {
                     { id: 'sel-f', type: 'line', source: 'selection', filter: ['==', 'type', 'field'], paint: { 'line-color': '#fff', 'line-width': 3 } },
                     { id: 'sel-l', type: 'line', source: 'selection', filter: ['==', 'type', 'link'], paint: { 'line-color': '#fff', 'line-width': 4 } },
                     { id: 'sel-p', type: 'circle', source: 'selection', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': 12, 'circle-color': 'transparent', 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 } },
-                    { id: 'p', type: 'circle', source: 'entities', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': ['coalesce', ['get', 'radius'], 2], 'circle-color': ['match', ['get', 'team'], 'E', COLORS.E, 'R', COLORS.R, 'M', COLORS.M, COLORS.N] } }
+                    { id: 'p', type: 'circle', source: 'entities', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': ['coalesce', ['get', 'radius'], 2], 'circle-color': ['match', ['get', 'team'], 'E', COLORS.E, 'R', COLORS.R, 'M', COLORS.M, COLORS.N] } },
+                    { id: 'p-history-visited-highlight', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'visitedHighlight', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 5], 'circle-color': 'transparent', 'circle-stroke-color': PORTAL_HISTORY_COLORS.visited, 'circle-stroke-width': 2, 'circle-opacity': 0.9 } },
+                    { id: 'p-history-captured-highlight', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'capturedHighlight', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 8], 'circle-color': 'transparent', 'circle-stroke-color': PORTAL_HISTORY_COLORS.captured, 'circle-stroke-width': 2, 'circle-opacity': 0.9 } },
+                    { id: 'p-history-scanned-highlight', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'scannedHighlight', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 11], 'circle-color': 'transparent', 'circle-stroke-color': PORTAL_HISTORY_COLORS.scanned, 'circle-stroke-width': 2, 'circle-opacity': 0.9 } },
+                    { id: 'p-history-visited-inverse', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'visitedInverse', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 5], 'circle-color': PORTAL_HISTORY_COLORS.visited, 'circle-opacity': 0.14, 'circle-stroke-color': PORTAL_HISTORY_COLORS.visited, 'circle-stroke-width': 2, 'circle-stroke-opacity': 0.85 } },
+                    { id: 'p-history-captured-inverse', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'capturedInverse', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 8], 'circle-color': PORTAL_HISTORY_COLORS.captured, 'circle-opacity': 0.14, 'circle-stroke-color': PORTAL_HISTORY_COLORS.captured, 'circle-stroke-width': 2, 'circle-stroke-opacity': 0.85 } },
+                    { id: 'p-history-scanned-inverse', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'scannedInverse', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 11], 'circle-color': PORTAL_HISTORY_COLORS.scanned, 'circle-opacity': 0.14, 'circle-stroke-color': PORTAL_HISTORY_COLORS.scanned, 'circle-stroke-width': 2, 'circle-stroke-opacity': 0.85 } }
                 ]
             },
             center: initialCenter, zoom: initialZoom
@@ -705,6 +726,8 @@ function TacticalOverlay(): h.JSX.Element {
                         endpointTelemetry={endpointTelemetry}
                         plextBounds={plextBounds}
                         playerHistories={playerHistories}
+                        portalHistoryLayers={portalHistoryLayers}
+                        onPortalHistoryLayerToggle={handlePortalHistoryLayerToggle}
                         onNav={handleNav} onStyle={handleStyle} onMode={handleMode}
                         onPortalClick={handlePortalClick}
                     />
@@ -728,16 +751,26 @@ function TacticalOverlay(): h.JSX.Element {
     );
 }
 
-function initApp(): void {
+function injectInterceptor(): void {
     const script = document.createElement('script');
     script.src = chrome.runtime.getURL('interceptor.js');
     script.type = 'text/javascript';
-    document.head.appendChild(script);
+    (document.head ?? document.documentElement).appendChild(script);
     script.addEventListener('load', () => script.remove());
+}
 
+function initApp(): void {
     const uiRoot = document.createElement('div');
     document.body.appendChild(uiRoot);
     render(h(TacticalOverlay, {}), uiRoot);
 }
 
-setTimeout(initApp, 500);
+injectInterceptor();
+
+if (document.body) {
+    setTimeout(initApp, 500);
+} else {
+    window.addEventListener('DOMContentLoaded', () => {
+        setTimeout(initApp, 500);
+    }, { once: true });
+}

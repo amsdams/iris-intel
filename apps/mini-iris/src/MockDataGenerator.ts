@@ -46,7 +46,9 @@ export class MockDataGenerator {
             { owner: `Agent_${team}_Alpha`, name: 'Portal Shield', rarity: 'RARE', stats: { MITIGATION: 30 } }
         ];
 
-        const history = team === 'N' ? 0 : (Math.random() > 0.5 ? 1 : 0) | (Math.random() > 0.3 ? 2 : 0);
+        const history = team === 'N'
+            ? 0
+            : (Math.random() > 0.5 ? 1 : 0) | (Math.random() > 0.3 ? 2 : 0) | (Math.random() > 0.7 ? 4 : 0);
 
         const portal: Portal = { 
             id, 
@@ -64,6 +66,8 @@ export class MockDataGenerator {
             history,
             visited: !!(history & 1),
             captured: !!(history & 2),
+            scanned: !!(history & 4),
+            scoutControlled: !!(history & 4),
             mitigation: { total: team === 'N' ? 0 : 30, shields: team === 'N' ? 0 : 30, links: 0, linkDefenseBoost: 1, excess: 0 }
         };
         this.portals.set(id, portal);

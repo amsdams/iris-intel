@@ -3,12 +3,17 @@ import maplibregl from 'maplibre-gl';
 import { useStore, globalSpatialIndex, getMinLevelForZoom } from '@iris/core';
 import { MockDataGenerator } from './MockDataGenerator';
 import { createCirclePolygon } from './GeoUtils';
+import type { PortalHistoryLayerState } from './portalHistory';
 
 interface UseMapRendererResult {
     syncToMap: (currentMap: maplibregl.Map, currentLiveMode: boolean, currentPatternMode: number) => void;
 }
 
-export function useMapRenderer(generator: MockDataGenerator, logEvent: (msg: string) => void): UseMapRendererResult {
+export function useMapRenderer(
+    generator: MockDataGenerator,
+    logEvent: (msg: string) => void,
+    portalHistoryLayers: PortalHistoryLayerState,
+): UseMapRendererResult {
     const pendingFrameRef = useRef<number | null>(null);
     const pendingSetDataRef = useRef<{
         source: maplibregl.GeoJSONSource;
@@ -111,7 +116,24 @@ export function useMapRenderer(generator: MockDataGenerator, logEvent: (msg: str
                 if (isVisible) {
                     const maxLayer = portalMaxLayer.get(p.id) ?? -1;
                     const towerHeight = 200 + (maxLayer * 20) + 15;
-                    const props = { id: p.id, type: 'portal', team: faction, level, height: towerHeight, base_height: 0, radius: Math.max(1, Math.min(6, 1 + ((zoom - 3) / 12) * 5)) };
+                    const props = {
+                        id: p.id,
+                        type: 'portal',
+                        team: faction,
+                        level,
+                        height: towerHeight,
+                        base_height: 0,
+                        radius: Math.max(1, Math.min(6, 1 + ((zoom - 3) / 12) * 5)),
+                        visited: p.visited,
+                        captured: p.captured,
+                        scanned: p.scanned,
+                        visitedHighlight: portalHistoryLayers.visited === 'highlight' && p.visited === true,
+                        capturedHighlight: portalHistoryLayers.captured === 'highlight' && p.captured === true,
+                        scannedHighlight: portalHistoryLayers.scanned === 'highlight' && p.scanned === true,
+                        visitedInverse: portalHistoryLayers.visited === 'inverse' && p.visited === false,
+                        capturedInverse: portalHistoryLayers.captured === 'inverse' && p.captured === false,
+                        scannedInverse: portalHistoryLayers.scanned === 'inverse' && p.scanned === false,
+                    };
                     features.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [p.lng, p.lat] }, properties: props });
                     features.push({ 
                         type: 'Feature', 
@@ -178,7 +200,7 @@ export function useMapRenderer(generator: MockDataGenerator, logEvent: (msg: str
             scheduleSetData(source, { type: 'FeatureCollection', features });
             logEvent(`RENDERED: ${features.length} items (Min L:${minLevel})`);
         }
-    }, [generator, logEvent, scheduleSetData]);
+    }, [generator, logEvent, portalHistoryLayers, scheduleSetData]);
 
     return { syncToMap };
 }

@@ -109,6 +109,7 @@ export function Dashboard({ type, data, colors, onClose }: DashboardProps): JSX.
                     <div style={{ display: 'flex', gap: '8px', borderTop: '1px solid #222', marginTop: '10px', paddingTop: '10px' }}>
                         <span style={{ border: `1px solid ${p.visited ? '#9b59b6' : '#333'}`, color: p.visited ? '#9b59b6' : '#444', padding: '1px 6px', borderRadius: '99px', fontSize: '9px', fontWeight: p.visited ? 'bold' : 'normal' }}>VISITED</span>
                         <span style={{ border: `1px solid ${p.captured ? '#e74c3c' : '#333'}`, color: p.captured ? '#e74c3c' : '#444', padding: '1px 6px', borderRadius: '99px', fontSize: '9px', fontWeight: p.captured ? 'bold' : 'normal' }}>CAPTURED</span>
+                        <span style={{ border: `1px solid ${p.scanned ? '#00d9ff' : '#333'}`, color: p.scanned ? '#00d9ff' : '#444', padding: '1px 6px', borderRadius: '99px', fontSize: '9px', fontWeight: p.scanned ? 'bold' : 'normal' }}>SCANNED</span>
                     </div>
                 </div>
             </div>

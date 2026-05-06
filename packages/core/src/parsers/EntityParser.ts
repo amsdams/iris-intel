@@ -51,6 +51,7 @@ export const EntityParser = {
             visited: history ? !!(history & 1) : undefined,
             captured: history ? !!(history & 2) : undefined,
             scoutControlled: history ? !!(history & 4) : undefined,
+            scanned: history ? !!(history & 4) : undefined,
             hasMissionsStartingHere: !!pData[10] || !!pData[11],
             ornaments: Array.isArray(pData[9])
               ? (pData[9] as unknown[]).filter((ornament): ornament is string => typeof ornament === 'string')

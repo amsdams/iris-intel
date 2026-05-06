@@ -3,19 +3,22 @@
  */
 export function installMapHooks(): void {
     const win = window as WindowWithIntelMaps;
+    let hookAttempts = 0;
 
     function hookMaps(): void {
         // 1. Google Maps
-        if (win.google?.maps?.Map && !win._iris_intel_map_hooked) {
-            const OriginalMap = win.google.maps.Map;
-            const WrappedMap = function(this: GoogleMapLike, el: HTMLElement, opts?: GoogleMapOptions): GoogleMapLike {
-                const map = new OriginalMap(el, opts);
+        const maps = win.google?.maps;
+        const OriginalMap = maps?.Map;
+        if (OriginalMap && !OriginalMap._iris_patched) {
+            const WrappedMap = function(this: unknown, ...args: unknown[]): GoogleMapLike {
+                const map = new OriginalMap(...args);
                 win._iris_intel_map = map;
                 win._iris_map_type = 'gmaps';
                 return map;
             } as unknown as GoogleMapConstructor;
             WrappedMap.prototype = OriginalMap.prototype;
-            win.google.maps.Map = WrappedMap;
+            WrappedMap._iris_patched = true;
+            maps.Map = WrappedMap;
             win._iris_intel_map_hooked = true;
             console.log('Mini IRIS: Google Maps Hooked');
         }
@@ -39,7 +42,12 @@ export function installMapHooks(): void {
 
         // Keep trying until we find a map
         if (!win._iris_intel_map) {
-            setTimeout(hookMaps, 1000);
+            hookAttempts += 1;
+            if (hookAttempts <= 100) {
+                setTimeout(hookMaps, 200);
+            } else {
+                console.warn('Mini IRIS: Intel map was not found after hook retries');
+            }
         }
     }
 
@@ -64,16 +72,15 @@ export function installMapHooks(): void {
     });
 }
 
-type GoogleMapOptions = Record<string, unknown>;
-
 interface GoogleMapLike {
     setCenter(center: { lat: number; lng: number }): void;
     setZoom(zoom: number): void;
 }
 
 interface GoogleMapConstructor {
-    new (el: HTMLElement, opts?: GoogleMapOptions): GoogleMapLike;
+    new (...args: unknown[]): GoogleMapLike;
     prototype: GoogleMapLike;
+    _iris_patched?: boolean;
 }
 
 interface LeafletMapLike {
