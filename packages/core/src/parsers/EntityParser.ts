@@ -31,12 +31,19 @@ export const EntityParser = {
         const team = normalizeTeam(entData[1] as string);
 
         if (entType === 'p') {
-          const pData = entData as [ 'p', string, number, number, number, number, number, string, string, string[], boolean, boolean, string, string, number, number, string, string, number ];
+          const pData = entData as [ 'p', string, number, number, number, number, number, string, string, string[], unknown, unknown, unknown, string, number, number, string, string, unknown ];
           const lat = parseFloat(pData[2] as unknown as string) / 1e6;
           const lng = parseFloat(pData[3] as unknown as string) / 1e6;
           if (isNaN(lat) || isNaN(lng)) return;
 
-          const history = (pData[18] as number) || 0;
+          const hasHistoryBits = typeof pData[18] === 'number';
+          const history = hasHistoryBits ? pData[18] as number : 0;
+          const directVisited = typeof pData[10] === 'boolean' ? pData[10] : undefined;
+          const directCaptured = typeof pData[11] === 'boolean' ? pData[11] : undefined;
+          const directScoutControlled = parseScoutControlled(pData[12]);
+          const visited = mergeHistoryFlag(directVisited, hasHistoryBits, history & 1);
+          const captured = mergeHistoryFlag(directCaptured, hasHistoryBits, history & 2);
+          const scoutControlled = mergeHistoryFlag(directScoutControlled, hasHistoryBits, history & 4);
 
           portalsMap[id] = {
             id,
@@ -48,11 +55,11 @@ export const EntityParser = {
             name: typeof pData[8] === 'string' ? pData[8] : undefined,
             image: typeof pData[7] === 'string' ? pData[7] : undefined,
             history,
-            visited: history ? !!(history & 1) : undefined,
-            captured: history ? !!(history & 2) : undefined,
-            scoutControlled: history ? !!(history & 4) : undefined,
-            scanned: history ? !!(history & 4) : undefined,
-            hasMissionsStartingHere: !!pData[10] || !!pData[11],
+            visited,
+            captured,
+            scoutControlled,
+            scanned: scoutControlled,
+            hasMissionsStartingHere: (typeof pData[10] !== 'boolean' && !!pData[10]) || (typeof pData[11] !== 'boolean' && !!pData[11]),
             ornaments: Array.isArray(pData[9])
               ? (pData[9] as unknown[]).filter((ornament): ornament is string => typeof ornament === 'string')
               : undefined,
@@ -119,3 +126,20 @@ export const EntityParser = {
     };
   }
 };
+
+function parseScoutControlled(value: unknown): boolean | undefined {
+  if (typeof value === 'boolean') return value;
+  if (typeof value !== 'string') return undefined;
+
+  const normalized = value.trim().toLowerCase();
+  if (!normalized || normalized === 'false' || normalized === '0' || normalized === 'none') {
+    return false;
+  }
+
+  return true;
+}
+
+function mergeHistoryFlag(direct: boolean | undefined, hasHistoryBits: boolean, bitValue: number): boolean | undefined {
+  if (direct === undefined && !hasHistoryBits) return undefined;
+  return direct === true || (hasHistoryBits && bitValue !== 0);
+}

@@ -140,7 +140,53 @@ describe('EntityParser', () => {
     expect(portal?.level).toBe(5); // Should have data from 'p' entity
     expect(portal?.visited).toBe(true);
     expect(portal?.captured).toBe(false);
+    expect(portal?.scanned).toBe(true);
+    expect(portal?.scoutControlled).toBe(true);
+  });
+
+  it('should parse direct portal history flags from map entities without history bits', () => {
+    const data: IntelMapData = {
+      result: {
+        map: {
+          "tile_key": {
+            gameEntities: [
+              [
+                "direct_history_portal_guid",
+                123456789,
+                [
+                  "p",
+                  "E",
+                  52038381,
+                  4368969,
+                  5,
+                  100,
+                  8,
+                  "ImageUrl",
+                  "Name",
+                  [],
+                  false,
+                  true,
+                  "",
+                  "address",
+                  0,
+                  0,
+                  "guid",
+                  "team"
+                ] as unknown as IntelEntityData
+              ]
+            ]
+          }
+        }
+      }
+    };
+
+    const { portals } = EntityParser.parse(data);
+    const portal = portals.find(p => p.id === 'direct_history_portal_guid');
+
+    expect(portal?.visited).toBe(false);
+    expect(portal?.captured).toBe(true);
     expect(portal?.scanned).toBe(false);
+    expect(portal?.scoutControlled).toBe(false);
   });
 
   it('should parse portal history bits for visited captured and scanned', () => {
