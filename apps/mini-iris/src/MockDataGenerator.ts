@@ -3,6 +3,8 @@ import { Portal, Link, Field, InventoryItem } from '@iris/core';
 
 export type Faction = 'E' | 'R' | 'N' | 'M';
 
+const MOCK_INVENTORY_TIMESTAMP = 1712520000000;
+
 function getDeterministicHistory(id: string, team: Faction): number {
     let hash = team.charCodeAt(0);
     for (let i = 0; i < id.length; i++) {
@@ -57,6 +59,8 @@ export class MockDataGenerator {
     createMockInventory(): InventoryItem[] {
         const items: InventoryItem[] = [];
         const capsuleStackableItems: NonNullable<InventoryItem['container']>['stackableItems'] = [];
+        let timestampOffset = 0;
+        const nextTimestamp = (): number => MOCK_INVENTORY_TIMESTAMP + timestampOffset++;
 
         this.portals.forEach((portal) => {
             const counts = getDeterministicKeyCounts(portal.id, portal.team);
@@ -71,7 +75,7 @@ export class MockDataGenerator {
             for (let i = 0; i < counts.loose; i++) {
                 items.push({
                     guid: `mock-key:${portal.id}:${i}`,
-                    timestamp: Date.now() + items.length,
+                    timestamp: nextTimestamp(),
                     resource: { resourceType: 'PORTAL_LINK_KEY', resourceRarity: 'VERY_COMMON' },
                     portalCoupler: coupler,
                 });
@@ -82,7 +86,7 @@ export class MockDataGenerator {
                     itemGuids: Array.from({ length: counts.capsule }, (_, i) => `mock-capsule-key:${portal.id}:${i}`),
                     exampleGameEntity: [
                         `mock-capsule-key-template:${portal.id}`,
-                        Date.now() + items.length,
+                        nextTimestamp(),
                         {
                             resource: { resourceType: 'PORTAL_LINK_KEY', resourceRarity: 'VERY_COMMON' },
                             portalCoupler: coupler,
@@ -96,7 +100,7 @@ export class MockDataGenerator {
             const currentCount = capsuleStackableItems.reduce((sum, item) => sum + item.itemGuids.length, 0);
             items.push({
                 guid: 'mock-key-capsule',
-                timestamp: Date.now() + items.length,
+                timestamp: nextTimestamp(),
                 resource: { resourceType: 'KEY_CAPSULE', resourceRarity: 'RARE' },
                 moniker: { differentiator: 'TEST' },
                 container: {

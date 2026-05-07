@@ -12,7 +12,7 @@ interface UsePatternsResult {
 export function usePatterns(
     map: maplibregl.Map | null, 
     generator: MockDataGenerator, 
-    loadedKeys: Set<string>, 
+    loadedTileKeys: Set<string>,
     logEvent: (msg: string) => void,
     onMockInventory: (inventory: InventoryItem[]) => void,
 ): UsePatternsResult {
@@ -24,7 +24,7 @@ export function usePatterns(
 
     const loadPattern1 = useCallback((): void => {
         if (!map) return;
-        generator.clear(); loadedKeys.clear();
+        generator.clear(); loadedTileKeys.clear();
         const center = map.getCenter();
         // ENL
         generator.addPortal('A', 'E', center.lng - 0.002, center.lat, 8);
@@ -48,11 +48,11 @@ export function usePatterns(
         generator.addLink('RL-BD', 'R', 'RB', 'RD');
         const inventoryCount = publishMockInventory();
         logEvent(`PATTERN 1: Single Nested (Mirrored). Mock inventory: ${inventoryCount} items.`);
-    }, [map, generator, loadedKeys, logEvent, publishMockInventory]);
+    }, [map, generator, loadedTileKeys, logEvent, publishMockInventory]);
 
     const loadPattern2 = useCallback((): void => {
         if (!map) return;
-        generator.clear(); loadedKeys.clear();
+        generator.clear(); loadedTileKeys.clear();
         const center = map.getCenter();
         // ENL
         generator.addPortal('A', 'E', center.lng - 0.002, center.lat, 8);
@@ -78,11 +78,11 @@ export function usePatterns(
         generator.addLink('RL-CD', 'R', 'RC', 'RD');
         const inventoryCount = publishMockInventory();
         logEvent(`PATTERN 2: Nested Diamond (Mirrored). Mock inventory: ${inventoryCount} items.`);
-    }, [map, generator, loadedKeys, logEvent, publishMockInventory]);
+    }, [map, generator, loadedTileKeys, logEvent, publishMockInventory]);
 
     const loadPattern3 = useCallback((): void => {
         if (!map) return;
-        generator.clear(); loadedKeys.clear();
+        generator.clear(); loadedTileKeys.clear();
         const center = map.getCenter();
         // ENL
         generator.addPortal('A', 'E', center.lng - 0.002, center.lat, 8);
@@ -126,7 +126,7 @@ export function usePatterns(
         generator.addPortal('N2', 'N', center.lng + 0.002, center.lat + nOff, 0);
         const inventoryCount = publishMockInventory();
         logEvent(`PATTERN 3: Scaled Global (Mirrored). Mock inventory: ${inventoryCount} items.`);
-    }, [map, generator, loadedKeys, logEvent, publishMockInventory]);
+    }, [map, generator, loadedTileKeys, logEvent, publishMockInventory]);
 
     return { loadPattern1, loadPattern2, loadPattern3 };
 }

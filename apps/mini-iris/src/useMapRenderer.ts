@@ -155,6 +155,7 @@ export function useMapRenderer(
                                 properties: {
                                     id: `portal-key-count:${p.id}`,
                                     type: 'portal-key-count',
+                                    team: faction,
                                     total: keyCounts.total,
                                     loose: keyCounts.loose,
                                     capsule: keyCounts.capsule,

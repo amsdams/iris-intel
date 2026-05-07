@@ -80,7 +80,7 @@ function writeSavedMapState(state: SavedMapState): void {
 function TacticalOverlay(): h.JSX.Element {
     const mapRef = useRef<maplibregl.Map | null>(null);
     const [generator] = useState(() => new MockDataGenerator());
-    const [loadedKeys] = useState(() => new Set<string>());
+    const [loadedTileKeys] = useState(() => new Set<string>());
     const [events, setEvents] = useState<{time: string, msg: string}[]>([]);
     const [selected, setSelected] = useState<SelectedEntity | null>(null);
     const [savedMapState] = useState(() => readSavedMapState());
@@ -225,7 +225,7 @@ function TacticalOverlay(): h.JSX.Element {
     }, [logEvent]);
 
     const { syncToMap } = useMapRenderer(generator, logEvent, portalHistoryLayers, keyOverlayEnabled, mockInventory);
-    const { loadPattern1, loadPattern2, loadPattern3 } = usePatterns(mapRef.current, generator, loadedKeys, logEvent, setMockInventory);
+    const { loadPattern1, loadPattern2, loadPattern3 } = usePatterns(mapRef.current, generator, loadedTileKeys, logEvent, setMockInventory);
     
     useIntelMessages(mapRef.current, liveMode, patternMode, selected, setSelected, (m, l, p) => syncToMap(m, l, p), logEvent);
     useScores(isVis, liveMode, mapState.lat, mapState.lng);
@@ -354,15 +354,15 @@ function TacticalOverlay(): h.JSX.Element {
         for (let lat = startLat; lat <= endLat; lat++) {
             for (let lng = startLng; lng <= endLng; lng++) {
                 const key = `${lat},${lng},${gridSize},L${minLevel}`;
-                if (!loadedKeys.has(key)) {
-                    loadedKeys.add(key);
+                if (!loadedTileKeys.has(key)) {
+                    loadedTileKeys.add(key);
                     addedAny = true;
                 }
             }
         }
         syncToMap(currentMap, currentLiveMode, currentPatternMode);
         if (addedAny) logEvent(`Sim Tiles Loaded (Min L:${minLevel})`);
-    }, [loadedKeys, syncToMap, logEvent]);
+    }, [loadedTileKeys, syncToMap, logEvent]);
 
     const checkAndLoadRef = useRef(checkAndLoad);
 
@@ -490,9 +490,9 @@ function TacticalOverlay(): h.JSX.Element {
                     { id: 'p-history-visited-inverse', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'visitedInverse', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 5], 'circle-color': PORTAL_HISTORY_COLORS.visited, 'circle-opacity': 0.14, 'circle-stroke-color': PORTAL_HISTORY_COLORS.visited, 'circle-stroke-width': 2, 'circle-stroke-opacity': 0.85 } },
                     { id: 'p-history-captured-inverse', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'capturedInverse', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 8], 'circle-color': PORTAL_HISTORY_COLORS.captured, 'circle-opacity': 0.14, 'circle-stroke-color': PORTAL_HISTORY_COLORS.captured, 'circle-stroke-width': 2, 'circle-stroke-opacity': 0.85 } },
                     { id: 'p-history-scanned-inverse', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'scannedInverse', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 11], 'circle-color': PORTAL_HISTORY_COLORS.scanned, 'circle-opacity': 0.14, 'circle-stroke-color': PORTAL_HISTORY_COLORS.scanned, 'circle-stroke-width': 2, 'circle-stroke-opacity': 0.85 } },
-                    { id: 'p-key-count-bg', type: 'circle', source: 'entities', filter: ['==', 'type', 'portal-key-count'], paint: { 'circle-color': '#000000', 'circle-radius': 13, 'circle-opacity': 0.78, 'circle-stroke-color': INGRESS_COLORS.KEY, 'circle-stroke-width': 1.5, 'circle-stroke-opacity': 0.95 } },
-                    { id: 'p-key-count-total', type: 'symbol', source: 'entities', filter: ['==', 'type', 'portal-key-count'], layout: { 'text-field': ['get', 'totalLabel'], 'text-size': 12, 'text-anchor': 'center', 'text-allow-overlap': true, 'text-ignore-placement': true }, paint: { 'text-color': INGRESS_COLORS.KEY, 'text-halo-color': '#000000', 'text-halo-width': 1.4, 'text-opacity': 1 } },
-                    { id: 'p-key-count-split', type: 'symbol', source: 'entities', filter: ['==', 'type', 'portal-key-count'], layout: { 'text-field': ['get', 'splitLabel'], 'text-size': 8, 'text-offset': [0, 1.85], 'text-anchor': 'top', 'text-allow-overlap': true, 'text-ignore-placement': true }, paint: { 'text-color': '#ffffff', 'text-halo-color': '#000000', 'text-halo-width': 1.2, 'text-opacity': 0.95 } }
+                    { id: 'p-key-count-bg', type: 'circle', source: 'entities', filter: ['==', 'type', 'portal-key-count'], paint: { 'circle-color': '#000000', 'circle-radius': 12, 'circle-translate': [0, -18], 'circle-opacity': 0.78, 'circle-stroke-color': ['match', ['get', 'team'], 'E', COLORS.E, 'R', COLORS.R, 'M', COLORS.M, COLORS.N], 'circle-stroke-width': 1.8, 'circle-stroke-opacity': 0.95 } },
+                    { id: 'p-key-count-total', type: 'symbol', source: 'entities', filter: ['==', 'type', 'portal-key-count'], layout: { 'text-field': ['get', 'totalLabel'], 'text-size': 12, 'text-anchor': 'center', 'text-allow-overlap': true, 'text-ignore-placement': true }, paint: { 'text-color': INGRESS_COLORS.KEY, 'text-halo-color': '#000000', 'text-halo-width': 1.4, 'text-opacity': 1, 'text-translate': [0, -20] } },
+                    { id: 'p-key-count-split', type: 'symbol', source: 'entities', filter: ['==', 'type', 'portal-key-count'], layout: { 'text-field': ['get', 'splitLabel'], 'text-size': 8, 'text-offset': [0, 0.95], 'text-anchor': 'center', 'text-allow-overlap': true, 'text-ignore-placement': true }, paint: { 'text-color': '#ffffff', 'text-halo-color': '#000000', 'text-halo-width': 1.2, 'text-opacity': 0.95, 'text-translate': [0, -20] } }
                 ]
             },
             center: initialCenter, zoom: initialZoom
@@ -699,7 +699,7 @@ function TacticalOverlay(): h.JSX.Element {
                 setLiveMode(false);
                 setPatternMode(1);
                 generator.clear();
-                loadedKeys.clear();
+                loadedTileKeys.clear();
                 setMockInventory([]);
             } else if (currentPatternMode === 1) {
                 patternModeRef.current = 2;
@@ -713,14 +713,14 @@ function TacticalOverlay(): h.JSX.Element {
                 setPatternMode(0);
                 setLiveMode(true);
                 generator.clear();
-                loadedKeys.clear();
+                loadedTileKeys.clear();
                 setMockInventory([]);
                 if (useStore.getState().hasSubscription) {
                     window.postMessage({ type: 'IRIS_INVENTORY_REQUEST' }, '*');
                 }
             }
         }
-    }, [extrusionEnabled, generator, loadedKeys, logEvent]);
+    }, [extrusionEnabled, generator, loadedTileKeys, logEvent]);
 
     // 3. Store subscription
     useEffect(() => {
