@@ -20,7 +20,7 @@ import { throttle } from './GeoUtils';
 import { isEndpointStateMessage, numberOrNull, stringOrNull } from './messages';
 import { DEFAULT_PORTAL_HISTORY_LAYERS, PORTAL_HISTORY_COLORS, nextPortalHistoryMode, type PortalHistoryKey, type PortalHistoryLayerState, type PortalHistoryMode } from './portalHistory';
 
-console.log("Mini IRIS (TS): Tactical Overlay | v1.3.25 | Storage Write Cleanup");
+console.log("Mini IRIS (TS): Tactical Overlay | v1.3.26 | Settled Load Guard");
 
 const DEFAULT_MAP_CENTER: [number, number] = [4.8952, 52.3702];
 const DEFAULT_MAP_ZOOM = 13;
@@ -194,6 +194,7 @@ function TacticalOverlay(): h.JSX.Element {
     const liveModeRef = useRef(liveMode);
     const patternModeRef = useRef(patternMode);
     const moveSettleTimerRef = useRef<number | null>(null);
+    const lastSettledLoadRef = useRef<{ lat: number; lng: number; zoom: number } | null>(null);
     const mapStateRef = useRef(mapState);
     const initialOpenAppliedRef = useRef(false);
     const playerTrailDataRef = useRef<GeoJSON.FeatureCollection>({
@@ -496,6 +497,16 @@ function TacticalOverlay(): h.JSX.Element {
         const settleMs = currentLive ? 300 : 300;
         moveSettleTimerRef.current = window.setTimeout(() => {
             moveSettleTimerRef.current = null;
+            const lastSettledLoad = lastSettledLoadRef.current;
+            if (
+                lastSettledLoad &&
+                Math.abs(lastSettledLoad.zoom - currentZoom) < 0.01 &&
+                Math.abs(lastSettledLoad.lat - center.lat) < 0.00001 &&
+                Math.abs(lastSettledLoad.lng - center.lng) < 0.00001
+            ) {
+                return;
+            }
+            lastSettledLoadRef.current = { zoom: currentZoom, lat: center.lat, lng: center.lng };
             checkAndLoadRef.current(m, currentPattern, currentLive);
         }, settleMs);
     }, [clearMoveSettleTimer, persistMapState]);

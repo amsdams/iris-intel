@@ -199,12 +199,13 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 - Current testing confirms saved-open hard refresh uses the full viewport and does not reintroduce the previous flicker or missing-entity issues.
 - Preference cleanup decision: keep standalone localStorage keys for now because they were verified incrementally and can be rolled back independently.
 - Storage writes were reduced: map position now writes only on settled movement, reset, and pagehide/beforeunload; legacy experimental key cleanup runs once at startup instead of during every preference write.
+- Settled movement loads now skip redundant `checkAndLoad` calls when the settled center/zoom has not meaningfully changed.
 - Experimental preference keys from the lifecycle test builds (`mini-iris:preferences:v1`, `mini-iris:preferences:v2`) are removed so stale style/key/open-state values cannot affect startup rendering.
 - Map style, portal history layers, key overlay, launcher/open state, MapContainer behavior, Intel map sync, and entity rendering are back to the `91e83b5` baseline while the render regression is isolated.
 - Launcher open/close behavior remains close to the stable `91e83b5` path; persistence only records the open intent and replays the existing open path after startup.
 - Map container visibility, Intel map sync, and entity rendering were restored to the stable `91e83b5` behavior to avoid the style flicker and missing-entity regressions introduced by later lifecycle experiments.
 - Robust INTEL/IRIS switching is no longer an active implementation item; it remains a regression checklist unless new concrete failures appear.
-- Mini IRIS version markers are now extension/package `1.0.23` and console banner `v1.3.25 | Storage Write Cleanup`.
+- Mini IRIS version markers are now extension/package `1.0.24` and console banner `v1.3.26 | Settled Load Guard`.
 
 #### Current Alignment Notes
 - Portal and link scale now follow the same zoom-aware approach used by IRIS rather than hardcoded mini-IRIS sizes.
