@@ -127,33 +127,33 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 
 ### Current Implementation Progress (mini-IRIS)
 
-| Feature | Status | Comparison to IRIS |
-| :--- | :--- | :--- |
-| **Spatial Indexing** | **DONE** | Matches IRIS Core (`globalSpatialIndex`). |
-| **3D Rendering** | **ADVANCED** | Far superior to IRIS (Cylinders, Floating Beams, Stacking). |
-| **Modular Refactor** | **DONE** | Clean separation of map, data, and UI concerns. |
-| **Mobile-First UI** | **DONE** | Bottom Dock UX optimized for thumb-reach. |
-| **Player Stats** | **DONE** | L16 support, C.O.R.E. detection, AP Progress bars. |
-| **COMM Panel** | **DONE** | Multi-tab (All/Faction/Alerts), colored nicks, map-snapping. |
-| **Scores Panel** | **DONE** | Global MU standings and Regional Top Agents. |
-| **Inventory Stats** | **DONE** | Summary view of weapons, resonators, and mods. |
-| **Portal / Link Sizing** | **DONE** | Zoom-aligned to IRIS-style interpolation for 2D readability. |
-| **Player Trail Retention** | **DONE** | 3 hour window, with fading trail segments and pulsing marker. |
+| Feature | Status          | Comparison to IRIS |
+| :--- |:----------------| :--- |
+| **Spatial Indexing** | **DONE**        | Matches IRIS Core (`globalSpatialIndex`). |
+| **3D Rendering** | **ADVANCED**    | Far superior to IRIS (Cylinders, Floating Beams, Stacking). |
+| **Modular Refactor** | **DONE**        | Clean separation of map, data, and UI concerns. |
+| **Mobile-First UI** | **DONE**        | Bottom Dock UX optimized for thumb-reach. |
+| **Player Stats** | **DONE**        | L16 support, C.O.R.E. detection, AP progress bars, and explicit PLAYER stats requests. |
+| **COMM Panel** | **DONE**        | Multi-tab (All/Faction/Alerts), colored nicks, map-snapping. |
+| **Scores Panel** | **DONE**        | Global MU standings and Regional Top Agents. |
+| **Inventory Stats** | **DONE**        | Summary view of weapons, resonators, and mods. |
+| **Portal / Link Sizing** | **DONE**        | Zoom-aligned to IRIS-style interpolation for 2D readability. |
+| **Player Trail Retention** | **DONE**        | 3 hour window, with fading trail segments and pulsing marker. |
 | **Player Tracker Panel** | **IN PROGRESS** | COMM-derived player histories appear in the player panel and can jump the map to the latest hit. |
-| **Portal History Overlays** | **DONE** | Visited, captured, and scanned states can be toggled as highlight or inverse rings. |
+| **Portal History Overlays** | **DONE**        | Visited, captured, and scanned states can be toggled as highlight or inverse rings. |
 | **Selection Details Panel** | **IN PROGRESS** | Portal, link, and field details now open from the dock, with a more readable portal layout and ownership view. |
 | **Portal Media** | **IN PROGRESS** | Portal thumbnails and full image links are available in the selection details panel. |
-| **Ingress Colour Alignment** | **DONE** | Faction, portal history, key, C.O.R.E., tracker, item level, and rarity colors now route through shared constants. |
-| **Inventory Key Map Overlay** | **DONE** | Toggleable key labels show total keys per portal plus loose/capsule split. |
-| **Mock Map Test Data** | **IMPROVED** | Mock history and inventory are deterministic, with separate local mock inventory for key overlay testing. |
-| **Mock Map Panning Drift** | **FIXED** | Mock pattern loading is separated from map data sync so panning and overlay changes do not regenerate mock coordinates. |
-| **Key Overlay Performance** | **IMPROVED** | Inventory key counts are pre-aggregated by portal and key labels only render at tactical zoom. |
+| **Ingress Colour Alignment** | **DONE**        | Faction, portal history, key, C.O.R.E., tracker, item level, and rarity colors now route through shared constants. |
+| **Inventory Key Map Overlay** | **VERIFYING**   | Toggleable key labels show total keys per portal plus loose/capsule split; mobile live-data testing is ongoing. |
+| **Mock Map Test Data** | **IMPROVED**    | Mock history and inventory are deterministic, with separate local mock inventory for key overlay testing. |
+| **Mock Map Panning Drift** | **FIXED**       | Mock pattern loading is separated from map data sync so panning and overlay changes do not regenerate mock coordinates. |
+| **Key Overlay Performance** | **IMPROVED**    | Inventory key counts are pre-aggregated by portal and key labels only render at tactical zoom. |
 
 ### Roadmap & Alignment (TODO)
 
 #### High Priority
-1. **Fix Player Profile Data Loading**: Investigate why the player panel stays on "Waiting for Intel data...", including whether the recent `manifest.json` lifecycle change prevents player stats/subscription requests or responses from reaching Mini IRIS.
-2. **Hide Live Player Tracker in Mock Mode**: Prevent live player trails, labels, and player panel entries from appearing while using mock/source mode.
+1. **Hide Live Player Tracker in Mock Mode**: Prevent live player trails, labels, and player panel entries from appearing while using mock/source mode.
+2. **Fix Player Profile Edge Cases**: Verify the explicit PLAYER stats request path on mobile/live Intel and add telemetry if some Intel sessions still do not expose `window.PLAYER`.
 3. **Fix Player Tracker on Mobile**: Ensure player actions update the map reliably on mobile and that the player label plus pulse/animation remain visible.
 4. **Player Tracker (Movement Traces)**: Continue improving COMM-derived agent coordinates, map-jump behavior, and trace rendering.
 5. **Draw Tools**: Implement custom line/polygon drawing for field planning.
@@ -182,14 +182,17 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 - The inventory panel now has a manual refresh button, matching the explicit refresh behavior already available for COMM.
 - Manual inventory refresh now forces a network request past the normal freshness window while still respecting in-flight requests and failure cooldowns.
 - Manual COMM refresh now uses the same force path, so explicit refresh bypasses plext freshness while scheduled polling keeps the normal cadence.
+- Player profile loading now has an explicit `IRIS_PLAYER_STATS_REQUEST` path plus repeated page-world checks, so the panel does not depend on a single early passive `PLAYER` post.
+- Initial live testing shows the player profile panel now loads more reliably; keep this in verification until mobile/live Intel sessions confirm it consistently.
+- Inventory key labels are still being mobile-tested against live data, especially visibility, refresh behavior, and performance with real key counts.
 
 #### Current Alignment Notes
 - Portal and link scale now follow the same zoom-aware approach used by IRIS rather than hardcoded mini-IRIS sizes.
 - The player trail lifetime matches the IRIS / IITC reference window at 3 hours, with the mini-IRIS using stronger visual fading to keep the trace readable.
 - Selection details are usable after the first readability pass, but broader product/UI refinement can stay iterative.
 - Player tracking is functional, but live tracker leakage into mock mode plus mobile map update behavior and label/animation visibility are still open issues.
-- Inventory key support now includes a first map overlay, mock test data, pre-aggregated render counts, tactical zoom gating, and forced manual inventory refresh; deeper filtering, capsule names, and drilldown can stay future work.
-- Player profile data is currently suspect because the player panel can remain stuck on "Waiting for Intel data..."; manifest lifecycle and request/response wiring need verification.
+- Inventory key support now includes a first map overlay, mock test data, pre-aggregated render counts, tactical zoom gating, and forced manual inventory refresh; mobile live-data verification is still in progress, while deeper filtering, capsule names, and drilldown can stay future work.
+- Player profile data no longer depends only on the initial interceptor post; early testing looks better, but mobile/live verification should confirm whether any Intel sessions still lack a usable `window.PLAYER` payload.
 - Mock/source mode is useful for overlay testing, with pattern coordinates now stable during panning and overlay syncs.
 - Visual alignment is in a better baseline state after centralizing the Ingress palette; generic UI chrome can stay iterative.
 - Remaining work is mostly feature breadth and mobile polish, not core rendering stability.

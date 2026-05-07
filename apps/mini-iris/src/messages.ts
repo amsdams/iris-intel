@@ -1,6 +1,7 @@
 export type IrisMessageType =
     | 'IRIS_DATA'
     | 'IRIS_PLAYER_STATS'
+    | 'IRIS_PLAYER_STATS_REQUEST'
     | 'IRIS_ENDPOINT_STATE'
     | 'IRIS_PORTAL_DETAILS_REQUEST'
     | 'IRIS_GAME_SCORE_REQUEST'

@@ -4,12 +4,27 @@ import { useEndpointTelemetry } from './useEndpointTelemetry';
 
 const SUBSCRIPTION_POLL_MS = 600000;
 const INVENTORY_POLL_MS = 300000;
+const PLAYER_STATS_RETRY_MS = 2000;
 
 export function usePlayerStats(isVis: boolean, liveMode: boolean): void {
+    const playerStats = useStore(state => state.playerStats);
     const hasSubscription = useStore(state => state.hasSubscription);
     const telemetry = useEndpointTelemetry();
 
-    // 1. Always poll subscription status
+    // 1. Ask the page-world interceptor for PLAYER data until profile stats arrive.
+    useEffect(() => {
+        if (!isVis || !liveMode || playerStats) return;
+
+        const requestPlayerStats = (): void => {
+            window.postMessage({ type: 'IRIS_PLAYER_STATS_REQUEST' }, '*');
+        };
+
+        requestPlayerStats();
+        const timerId = window.setInterval(requestPlayerStats, PLAYER_STATS_RETRY_MS);
+        return (): void => window.clearInterval(timerId);
+    }, [isVis, liveMode, playerStats]);
+
+    // 2. Always poll subscription status
     useEffect(() => {
         if (!isVis || !liveMode) return;
 
@@ -42,7 +57,7 @@ export function usePlayerStats(isVis: boolean, liveMode: boolean): void {
         };
     }, [isVis, liveMode, telemetry.subscription]);
 
-    // 2. Only poll inventory if C.O.R.E. is active
+    // 3. Only poll inventory if C.O.R.E. is active
     useEffect(() => {
         if (!isVis || !liveMode || !hasSubscription) return;
 
