@@ -253,6 +253,13 @@ describe('InventoryParser', () => {
       loose: 0,
       capsule: 0,
     });
+    expect(InventoryParser.aggregatePortalKeys(parsed)).toEqual({
+      'portal-a': {
+        total: 3,
+        loose: 1,
+        capsule: 2,
+      },
+    });
   });
 
   it('derives capsule-contained items for display and preserves capsule monikers', () => {

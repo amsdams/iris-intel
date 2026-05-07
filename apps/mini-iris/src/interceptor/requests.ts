@@ -37,6 +37,7 @@ interface RequestTask {
     endpoint: RequestEndpoint;
     key: string;
     freshnessMs: number;
+    force: boolean;
     priority: number;
     enqueuedAt: number;
     run: () => Promise<void>;
@@ -175,7 +176,7 @@ export function installRequestHandlers(): void {
                 enqueueRequest('subscription', 'global', SUBSCRIPTION_FRESHNESS_MS, () => handleSubscriptionRequest());
                 break;
             case 'IRIS_INVENTORY_REQUEST':
-                enqueueRequest('inventory', 'global', INVENTORY_FRESHNESS_MS, () => handleInventoryRequest());
+                enqueueRequest('inventory', 'global', INVENTORY_FRESHNESS_MS, () => handleInventoryRequest(), msg.force === true);
                 break;
             case 'IRIS_PLEXTS_REQUEST':
                 {
@@ -201,6 +202,7 @@ export function installRequestHandlers(): void {
                             maxLatE6,
                             maxLngE6,
                         ),
+                        msg.force === true,
                     );
                 }
                 break;
@@ -213,7 +215,7 @@ export function installRequestHandlers(): void {
 /**
  * Enqueues a request and triggers processing.
  */
-function enqueueRequest(endpoint: RequestEndpoint, key: string, freshnessMs: number, run: () => Promise<void>): void {
+function enqueueRequest(endpoint: RequestEndpoint, key: string, freshnessMs: number, run: () => Promise<void>, force = false): void {
     const now = Date.now();
     const state = endpointState[endpoint];
 
@@ -234,7 +236,7 @@ function enqueueRequest(endpoint: RequestEndpoint, key: string, freshnessMs: num
         return;
     }
 
-    if (state.lastSuccessKey === key && state.lastSuccessAt !== null && now - state.lastSuccessAt < freshnessMs) {
+    if (!force && state.lastSuccessKey === key && state.lastSuccessAt !== null && now - state.lastSuccessAt < freshnessMs) {
         state.lastSkipReason = 'fresh';
         state.nextRefreshAt = state.lastSuccessAt + freshnessMs;
         emitEndpointState(endpoint);
@@ -251,6 +253,7 @@ function enqueueRequest(endpoint: RequestEndpoint, key: string, freshnessMs: num
         endpoint,
         key,
         freshnessMs,
+        force,
         priority: REQUEST_PRIORITIES[endpoint],
         enqueuedAt: now,
         run,
@@ -266,7 +269,7 @@ function processQueue(): void {
         const nextRequest = requestQueue.shift();
         if (!nextRequest) return;
 
-        const { endpoint, key, freshnessMs, run } = nextRequest;
+        const { endpoint, key, freshnessMs, force, run } = nextRequest;
         const state = endpointState[endpoint];
         const now = Date.now();
 
@@ -283,7 +286,7 @@ function processQueue(): void {
             continue;
         }
 
-        if (state.lastSuccessKey === key && state.lastSuccessAt !== null && now - state.lastSuccessAt < freshnessMs) {
+        if (!force && state.lastSuccessKey === key && state.lastSuccessAt !== null && now - state.lastSuccessAt < freshnessMs) {
             state.lastSkipReason = 'fresh';
             state.nextRefreshAt = state.lastSuccessAt + freshnessMs;
             emitEndpointState(endpoint);

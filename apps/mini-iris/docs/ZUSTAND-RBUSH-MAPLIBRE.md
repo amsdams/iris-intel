@@ -146,12 +146,14 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 | **Ingress Colour Alignment** | **DONE** | Faction, portal history, key, C.O.R.E., tracker, item level, and rarity colors now route through shared constants. |
 | **Inventory Key Map Overlay** | **DONE** | Toggleable key labels show total keys per portal plus loose/capsule split. |
 | **Mock Map Test Data** | **IMPROVED** | Mock history and inventory are deterministic, with separate local mock inventory for key overlay testing. |
+| **Mock Map Panning Drift** | **FIXED** | Mock pattern loading is separated from map data sync so panning and overlay changes do not regenerate mock coordinates. |
+| **Key Overlay Performance** | **IMPROVED** | Inventory key counts are pre-aggregated by portal and key labels only render at tactical zoom. |
 
 ### Roadmap & Alignment (TODO)
 
 #### High Priority
-1. **Fix Mock Map Panning Drift**: Investigate and fix the bug where mocked map features appear to move incorrectly while panning in mock/source mode.
-2. **Improve Key Overlay Performance**: Avoid per-portal inventory scans during map rendering; pre-aggregate key counts by portal and reuse them while inventory is unchanged.
+1. **Fix Player Profile Data Loading**: Investigate why the player panel stays on "Waiting for Intel data...", including whether the recent `manifest.json` lifecycle change prevents player stats/subscription requests or responses from reaching Mini IRIS.
+2. **Hide Live Player Tracker in Mock Mode**: Prevent live player trails, labels, and player panel entries from appearing while using mock/source mode.
 3. **Fix Player Tracker on Mobile**: Ensure player actions update the map reliably on mobile and that the player label plus pulse/animation remain visible.
 4. **Player Tracker (Movement Traces)**: Continue improving COMM-derived agent coordinates, map-jump behavior, and trace rendering.
 5. **Draw Tools**: Implement custom line/polygon drawing for field planning.
@@ -174,14 +176,21 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 - Mock inventory is kept separate from live Zustand inventory, so switching between mock/source mode and live mode no longer overwrites live inventory.
 - Key count labels were moved off the portal center and outlined with faction color to keep portal ownership readable.
 - Mock tile-cache naming was clarified from `loadedKeys` to `loadedTileKeys` to avoid confusion with portal inventory keys.
+- Mock/source pattern loading is now decoupled from map data sync, fixing panning drift caused by mock features being regenerated around the current map center.
+- Key overlay rendering now uses pre-aggregated portal key counts for live and mock inventory instead of scanning inventory for every visible portal.
+- Key labels now have a minimum zoom threshold to reduce map clutter and symbol layout work when zoomed out.
+- The inventory panel now has a manual refresh button, matching the explicit refresh behavior already available for COMM.
+- Manual inventory refresh now forces a network request past the normal freshness window while still respecting in-flight requests and failure cooldowns.
+- Manual COMM refresh now uses the same force path, so explicit refresh bypasses plext freshness while scheduled polling keeps the normal cadence.
 
 #### Current Alignment Notes
 - Portal and link scale now follow the same zoom-aware approach used by IRIS rather than hardcoded mini-IRIS sizes.
 - The player trail lifetime matches the IRIS / IITC reference window at 3 hours, with the mini-IRIS using stronger visual fading to keep the trace readable.
 - Selection details are usable after the first readability pass, but broader product/UI refinement can stay iterative.
-- Player tracking is functional, but mobile map update behavior and label/animation visibility are still open issues.
-- Inventory key support now includes a first map overlay and mock test data; deeper filtering, capsule names, drilldown, and render performance still need follow-up.
-- Mock/source mode is useful for overlay testing, but panning behavior currently has a known mocked-feature movement bug.
+- Player tracking is functional, but live tracker leakage into mock mode plus mobile map update behavior and label/animation visibility are still open issues.
+- Inventory key support now includes a first map overlay, mock test data, pre-aggregated render counts, tactical zoom gating, and forced manual inventory refresh; deeper filtering, capsule names, and drilldown can stay future work.
+- Player profile data is currently suspect because the player panel can remain stuck on "Waiting for Intel data..."; manifest lifecycle and request/response wiring need verification.
+- Mock/source mode is useful for overlay testing, with pattern coordinates now stable during panning and overlay syncs.
 - Visual alignment is in a better baseline state after centralizing the Ingress palette; generic UI chrome can stay iterative.
 - Remaining work is mostly feature breadth and mobile polish, not core rendering stability.
 
@@ -193,7 +202,6 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 
 #### Performance
 1. **GeoJSON Splitting**: Move to per-type sources (`src-portals`, `src-links`, `src-fields`) to optimize re-parsing time.
-2. **Key Count Aggregation**: Precompute inventory key counts by portal before rendering, rather than calling detailed key counting for each visible portal.
 
 ---
 

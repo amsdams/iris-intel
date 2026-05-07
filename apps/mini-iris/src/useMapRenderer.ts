@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef } from 'preact/hooks';
+import { useCallback, useEffect, useMemo, useRef } from 'preact/hooks';
 import maplibregl from 'maplibre-gl';
-import { useStore, globalSpatialIndex, getMinLevelForZoom, InventoryParser, type InventoryItem } from '@iris/core';
+import { useStore, globalSpatialIndex, getMinLevelForZoom, InventoryParser, type InventoryItem, type PortalKeyCounts } from '@iris/core';
 import { MockDataGenerator } from './MockDataGenerator';
 import { createCirclePolygon } from './GeoUtils';
 import { INGRESS_COLORS } from './MapConstants';
@@ -10,6 +10,8 @@ interface UseMapRendererResult {
     syncToMap: (currentMap: maplibregl.Map, currentLiveMode: boolean, currentPatternMode: number) => void;
 }
 
+const KEY_OVERLAY_MIN_ZOOM = 14;
+
 export function useMapRenderer(
     generator: MockDataGenerator,
     logEvent: (msg: string) => void,
@@ -18,10 +20,23 @@ export function useMapRenderer(
     mockInventory: InventoryItem[],
 ): UseMapRendererResult {
     const pendingFrameRef = useRef<number | null>(null);
+    const liveInventory = useStore((state) => state.inventory);
+    const liveKeyCountsByPortal = useMemo(() => InventoryParser.aggregatePortalKeys(liveInventory), [liveInventory]);
+    const mockKeyCountsByPortal = useMemo(() => InventoryParser.aggregatePortalKeys(mockInventory), [mockInventory]);
+    const liveKeyCountsRef = useRef<Record<string, PortalKeyCounts>>({});
+    const mockKeyCountsRef = useRef<Record<string, PortalKeyCounts>>({});
     const pendingSetDataRef = useRef<{
         source: maplibregl.GeoJSONSource;
         data: GeoJSON.FeatureCollection;
     } | null>(null);
+
+    useEffect(() => {
+        liveKeyCountsRef.current = liveKeyCountsByPortal;
+    }, [liveKeyCountsByPortal]);
+
+    useEffect(() => {
+        mockKeyCountsRef.current = mockKeyCountsByPortal;
+    }, [mockKeyCountsByPortal]);
 
     const flushPendingSetData = useCallback((): void => {
         pendingFrameRef.current = null;
@@ -62,6 +77,7 @@ export function useMapRenderer(
         const bounds = currentMap.getBounds();
         const zoom = currentMap.getZoom();
         const minLevel = getMinLevelForZoom(zoom);
+        const showKeyOverlay = keyOverlayEnabled && zoom >= KEY_OVERLAY_MIN_ZOOM;
 
         const buffer = 0.05;
         
@@ -75,7 +91,7 @@ export function useMapRenderer(
         const results = currentLiveMode ? globalSpatialIndex.query(q) : generator.query({ minX: q.minLng, minY: q.minLat, maxX: q.maxLng, maxY: q.maxLat });
         const features: GeoJSON.Feature[] = [];
         const store = useStore.getState();
-        const keyInventory = currentLiveMode ? store.inventory : mockInventory;
+        const keyCountsByPortal = currentLiveMode ? liveKeyCountsRef.current : mockKeyCountsRef.current;
 
         const portalMaxLayer = new Map<string, number>();
         const linkMaxLayer = new Map<string, number>();
@@ -145,9 +161,9 @@ export function useMapRenderer(
                         properties: { ...props, type: 'portal-ext' } 
                     });
 
-                    if (keyOverlayEnabled && keyInventory.length > 0) {
-                        const keyCounts = InventoryParser.countPortalKeysDetailed(keyInventory, p.id);
-                        if (keyCounts.total > 0) {
+                    if (showKeyOverlay) {
+                        const keyCounts = keyCountsByPortal[p.id];
+                        if (keyCounts && keyCounts.total > 0) {
                             features.push({
                                 type: 'Feature',
                                 id: `portal-key-count:${p.id}`,
@@ -226,7 +242,7 @@ export function useMapRenderer(
             scheduleSetData(source, { type: 'FeatureCollection', features });
             logEvent(`RENDERED: ${features.length} items (Min L:${minLevel})`);
         }
-    }, [generator, keyOverlayEnabled, logEvent, mockInventory, portalHistoryLayers, scheduleSetData]);
+    }, [generator, keyOverlayEnabled, logEvent, portalHistoryLayers, scheduleSetData]);
 
     return { syncToMap };
 }

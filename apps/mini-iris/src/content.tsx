@@ -737,14 +737,18 @@ function TacticalOverlay(): h.JSX.Element {
         return (): void => unsub();
     }, [keyOverlayEnabled, liveMode, patternMode, syncToMap]);
 
-    // 4. Pattern Sync
+    // 4. Pattern loading and data sync
     useEffect(() => {
         if (!mapRef.current) return;
         if (patternMode === 1) loadPattern1();
         else if (patternMode === 2) loadPattern2();
         else if (patternMode === 3) loadPattern3();
+    }, [patternMode, liveMode, loadPattern1, loadPattern2, loadPattern3]);
+
+    useEffect(() => {
+        if (!mapRef.current) return;
         checkAndLoad(mapRef.current, patternMode, liveMode);
-    }, [patternMode, liveMode, checkAndLoad, loadPattern1, loadPattern2, loadPattern3]);
+    }, [patternMode, liveMode, checkAndLoad]);
 
     return (
         <div id="poc-preact-root" style={{ pointerEvents: 'none' }}>

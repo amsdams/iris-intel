@@ -310,6 +310,42 @@ export const InventoryParser = {
     }, { total: 0, loose: 0, capsule: 0 });
   },
 
+  aggregatePortalKeys: (items: InventoryItem[]): Record<string, PortalKeyCounts> => {
+    const addCounts = (target: Record<string, PortalKeyCounts>, portalId: string, loose: number, capsule: number): void => {
+      const current = target[portalId] ?? { total: 0, loose: 0, capsule: 0 };
+      current.loose += loose;
+      current.capsule += capsule;
+      current.total += loose + capsule;
+      target[portalId] = current;
+    };
+
+    const countItem = (item: InventoryItem, target: Record<string, PortalKeyCounts>, inCapsule: boolean, multiplier = 1): void => {
+      const portalId = item.portalCoupler?.portalGuid;
+      if (portalId) {
+        addCounts(target, portalId, inCapsule ? 0 : multiplier, inCapsule ? multiplier : 0);
+      }
+
+      if (!item.container) {
+        return;
+      }
+
+      item.container.stackableItems.forEach((stackableItem) => {
+        const [guid, timestamp, itemData] = stackableItem.exampleGameEntity;
+        const nestedItem = {
+          guid,
+          timestamp,
+          ...(itemData as object),
+        } as InventoryItem;
+
+        countItem(nestedItem, target, true, stackableItem.itemGuids.length);
+      });
+    };
+
+    const counts: Record<string, PortalKeyCounts> = {};
+    items.forEach((item) => countItem(item, counts, false));
+    return counts;
+  },
+
   countPortalKeys: (items: InventoryItem[], portalId: string): number => {
     return InventoryParser.countPortalKeysDetailed(items, portalId).total;
   }

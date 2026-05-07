@@ -11,6 +11,7 @@ export interface PlextRequestMessage extends PlextRequestBounds {
     minTimestampMs: number;
     maxTimestampMs: number;
     ascendingTimestampOrder?: boolean;
+    force?: boolean;
 }
 
 export function createPlextRequestMessage(
@@ -19,6 +20,7 @@ export function createPlextRequestMessage(
     minTimestampMs: number,
     maxTimestampMs = -1,
     ascendingTimestampOrder?: boolean,
+    force = false,
 ): PlextRequestMessage | null {
     if (!bounds) return null;
 
@@ -32,5 +34,6 @@ export function createPlextRequestMessage(
         minLngE6: bounds.minLngE6,
         maxLatE6: bounds.maxLatE6,
         maxLngE6: bounds.maxLngE6,
+        ...(force ? { force: true } : {}),
     };
 }

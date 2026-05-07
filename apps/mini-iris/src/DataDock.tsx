@@ -57,10 +57,14 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPor
     const currentTab = commTab.toLowerCase();
 
     const refreshComm = (): void => {
-        const request = createPlextRequestMessage(currentTab, plextBounds, -1, -1, true);
+        const request = createPlextRequestMessage(currentTab, plextBounds, -1, -1, true, true);
         if (request) {
             window.postMessage(request, '*');
         }
+    };
+
+    const refreshInventory = (): void => {
+        window.postMessage({ type: 'IRIS_INVENTORY_REQUEST', force: true }, '*');
     };
 
     const trackedPlayers = useMemo(() => {
@@ -222,7 +226,16 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPor
                 <div style={{ display: openDrawer === 'inventory' ? 'block' : 'none', background: 'rgba(10,10,10,0.95)', border: '1px solid #00ffff', borderRadius: '12px', padding: '15px', color: '#fff', boxShadow: '0 -5px 20px rgba(0,0,0,0.8)', pointerEvents: 'auto' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid #333', paddingBottom: '8px' }}>
                         <span style={{ fontWeight: 'bold', fontSize: '14px', color: '#00ffff' }}>INVENTORY</span>
-                        <span style={{ fontSize: '11px', color: '#888' }}>{derivedItems.length} ITEMS</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '11px', color: '#888' }}>{derivedItems.length} ITEMS</span>
+                            <button
+                                type="button"
+                                onClick={refreshInventory}
+                                style={{ background: 'rgba(0,255,255,0.08)', color: '#00ffff', border: '1px solid rgba(0,255,255,0.24)', borderRadius: '6px', padding: '4px 8px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' }}
+                            >
+                                REFRESH
+                            </button>
+                        </div>
                     </div>
                     {inventory && inventory.length > 0 ? (
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>

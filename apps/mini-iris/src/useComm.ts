@@ -16,7 +16,7 @@ export function useComm(isVis: boolean, liveMode: boolean, plextBounds: PlextReq
     const [activeTab, setActiveTab] = useState<CommTab>('all');
     const telemetry = useEndpointTelemetry();
 
-    const pollComm = useCallback((): void => {
+    const pollComm = useCallback((force = false): void => {
         if (!isVis || !liveMode) return;
         if (!plextBounds) return;
         const plexts = telemetry.plexts;
@@ -24,14 +24,18 @@ export function useComm(isVis: boolean, liveMode: boolean, plextBounds: PlextReq
         if (plexts) {
             if (plexts.status === 'in_flight') return;
             if (plexts.cooldownUntil !== null && now < plexts.cooldownUntil) return;
-            if (plexts.nextRefreshAt !== null && now < plexts.nextRefreshAt) return;
+            if (!force && plexts.nextRefreshAt !== null && now < plexts.nextRefreshAt) return;
         }
 
-        const request = createPlextRequestMessage(activeTab.toLowerCase(), plextBounds, -1, -1, true);
+        const request = createPlextRequestMessage(activeTab.toLowerCase(), plextBounds, -1, -1, true, force);
         if (request) {
             window.postMessage(request, '*');
         }
     }, [activeTab, isVis, liveMode, plextBounds, telemetry.plexts]);
+
+    const refreshComm = useCallback((): void => {
+        pollComm(true);
+    }, [pollComm]);
 
     useEffect(() => {
         if (!isVis || !liveMode) return;
@@ -53,5 +57,5 @@ export function useComm(isVis: boolean, liveMode: boolean, plextBounds: PlextReq
         };
     }, [isVis, liveMode, pollComm, telemetry.plexts]);
 
-    return { activeTab, setActiveTab, refreshComm: pollComm };
+    return { activeTab, setActiveTab, refreshComm };
 }
