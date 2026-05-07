@@ -162,11 +162,9 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 7. **Search**: Portal and location search with map-jump interaction.
 
 #### Preferences & Launcher Follow-Up
-1. **Verify Key Overlay Persistence**: Confirm the standalone `iris-poc-key-overlay-enabled` localStorage key restores the key overlay toggle without feature flicker, missing entities, or extra inventory request side effects.
-2. **Preference Cleanup/Migration**: Once the standalone preference keys are stable, decide whether to keep separate keys or migrate to a consolidated schema with an explicit version and rollback path.
-3. **Verify Launcher Rename**: Confirm the launcher-only label/id/title change does not affect map visibility, rendering, or INTEL/IRIS switching.
-4. **Persist Mini IRIS Open State**: Treat open-state persistence as higher risk; only attempt after the launcher rename is stable, and verify hard refresh, INTEL -> IRIS, IRIS -> INTEL, and repeated switches.
-5. **Robust INTEL/IRIS Switching**: Investigate a dedicated switch lifecycle that supports back-and-forth INTEL/IRIS without missing entities, flicker, stale player tracker state, or forced map panning; keep this separate from preference storage.
+1. **Persist Mini IRIS Open State**: Treat open-state persistence as higher risk; only attempt after the launcher rename remains stable, and verify hard refresh, INTEL -> IRIS, IRIS -> INTEL, and repeated switches.
+2. **Robust INTEL/IRIS Switching**: Investigate a dedicated switch lifecycle that supports back-and-forth INTEL/IRIS without missing entities, flicker, stale player tracker state, or forced map panning; keep this separate from preference storage.
+3. **Optional Preference Consolidation**: Keep the current standalone preference keys for now; only revisit a consolidated versioned schema if the separate keys become hard to manage.
 
 #### Recent Progress
 - Portal history controls were added to the map tools drawer for visited, captured, and scanned states, with highlight and inverse display modes.
@@ -198,6 +196,7 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 - Portal history modes now persist via the standalone `iris-poc-portal-history-layers` localStorage key and are read only for initial React state.
 - Key overlay state now persists via the standalone `iris-poc-key-overlay-enabled` localStorage key and is read only for initial React state.
 - The launcher button now uses `IRIS`/`INTEL` text, the `mini-iris-toggle-btn` id, and a descriptive title without changing the existing visibility or open/close lifecycle.
+- Preference cleanup decision: keep standalone localStorage keys for now because they were verified incrementally and can be rolled back independently.
 - Experimental preference keys from the lifecycle test builds (`mini-iris:preferences:v1`, `mini-iris:preferences:v2`) are removed so stale style/key/open-state values cannot affect startup rendering.
 - Map style, portal history layers, key overlay, launcher/open state, MapContainer behavior, Intel map sync, and entity rendering are back to the `91e83b5` baseline while the render regression is isolated.
 - Launcher open-state behavior intentionally remains at the stable `91e83b5` baseline; only the button text/id/title changed.
