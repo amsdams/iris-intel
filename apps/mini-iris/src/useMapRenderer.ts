@@ -62,38 +62,10 @@ export function useMapRenderer(
         };
 
         const store = useStore.getState();
-        if (currentLiveMode) {
-            store.syncIndex();
-        }
         const hasLiveStoreData = Object.keys(store.portals).length > 0 || Object.keys(store.links).length > 0 || Object.keys(store.fields).length > 0;
-        let results: ReturnType<typeof globalSpatialIndex.query> = currentLiveMode
-            ? globalSpatialIndex.query(q)
+        const results: ReturnType<typeof globalSpatialIndex.query> = currentLiveMode
+            ? buildLiveViewportResults(store, q)
             : generator.query({ minX: q.minLng, minY: q.minLat, maxX: q.maxLng, maxY: q.maxLat });
-
-        if (currentLiveMode && hasLiveStoreData && results.length === 0) {
-            const portalResults = Object.values(store.portals)
-                .filter((p) => p.lat >= q.minLat && p.lat <= q.maxLat && p.lng >= q.minLng && p.lng <= q.maxLng)
-                .map((p) => ({ minX: p.lng, minY: p.lat, maxX: p.lng, maxY: p.lat, id: p.id, type: 'portal' as const }));
-            const linkResults = Object.values(store.links)
-                .filter((l) => Math.max(l.fromLat, l.toLat) >= q.minLat && Math.min(l.fromLat, l.toLat) <= q.maxLat && Math.max(l.fromLng, l.toLng) >= q.minLng && Math.min(l.fromLng, l.toLng) <= q.maxLng)
-                .map((l) => ({ minX: Math.min(l.fromLng, l.toLng), minY: Math.min(l.fromLat, l.toLat), maxX: Math.max(l.fromLng, l.toLng), maxY: Math.max(l.fromLat, l.toLat), id: l.id, type: 'link' as const }));
-            const fieldResults = Object.values(store.fields)
-                .map((f) => {
-                    const lngs = f.points.map((p) => p.lng);
-                    const lats = f.points.map((p) => p.lat);
-                    return {
-                        minX: Math.min(...lngs),
-                        minY: Math.min(...lats),
-                        maxX: Math.max(...lngs),
-                        maxY: Math.max(...lats),
-                        id: f.id,
-                        type: 'field' as const,
-                    };
-                })
-                .filter((f) => f.maxY >= q.minLat && f.minY <= q.maxLat && f.maxX >= q.minLng && f.minX <= q.maxLng);
-            results = [...portalResults, ...linkResults, ...fieldResults];
-            logEvent(`RENDERED: live spatial index fallback used (${results.length} indexed items)`);
-        }
 
         const features: GeoJSON.Feature[] = [];
         const keyCountsByPortal = currentLiveMode ? liveKeyCountsRef.current : mockKeyCountsRef.current;
@@ -258,4 +230,34 @@ export function useMapRenderer(
     }, [applySetData, generator, keyOverlayEnabled, logEvent, portalHistoryLayers]);
 
     return { syncToMap };
+}
+
+function buildLiveViewportResults(
+    store: ReturnType<typeof useStore.getState>,
+    bounds: { minLat: number; minLng: number; maxLat: number; maxLng: number },
+): ReturnType<typeof globalSpatialIndex.query> {
+    const portalResults = Object.values(store.portals)
+        .filter((p) => p.lat >= bounds.minLat && p.lat <= bounds.maxLat && p.lng >= bounds.minLng && p.lng <= bounds.maxLng)
+        .map((p) => ({ minX: p.lng, minY: p.lat, maxX: p.lng, maxY: p.lat, id: p.id, type: 'portal' as const }));
+
+    const linkResults = Object.values(store.links)
+        .filter((l) => Math.max(l.fromLat, l.toLat) >= bounds.minLat && Math.min(l.fromLat, l.toLat) <= bounds.maxLat && Math.max(l.fromLng, l.toLng) >= bounds.minLng && Math.min(l.fromLng, l.toLng) <= bounds.maxLng)
+        .map((l) => ({ minX: Math.min(l.fromLng, l.toLng), minY: Math.min(l.fromLat, l.toLat), maxX: Math.max(l.fromLng, l.toLng), maxY: Math.max(l.fromLat, l.toLat), id: l.id, type: 'link' as const }));
+
+    const fieldResults = Object.values(store.fields)
+        .map((f) => {
+            const lngs = f.points.map((p) => p.lng);
+            const lats = f.points.map((p) => p.lat);
+            return {
+                minX: Math.min(...lngs),
+                minY: Math.min(...lats),
+                maxX: Math.max(...lngs),
+                maxY: Math.max(...lats),
+                id: f.id,
+                type: 'field' as const,
+            };
+        })
+        .filter((f) => f.maxY >= bounds.minLat && f.minY <= bounds.maxLat && f.maxX >= bounds.minLng && f.minX <= bounds.maxLng);
+
+    return [...portalResults, ...linkResults, ...fieldResults];
 }

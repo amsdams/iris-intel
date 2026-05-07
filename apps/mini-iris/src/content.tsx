@@ -20,7 +20,7 @@ import { throttle } from './GeoUtils';
 import { isEndpointStateMessage, numberOrNull, stringOrNull } from './messages';
 import { DEFAULT_PORTAL_HISTORY_LAYERS, PORTAL_HISTORY_COLORS, nextPortalHistoryMode, type PortalHistoryKey, type PortalHistoryLayerState, type PortalHistoryMode } from './portalHistory';
 
-console.log("Mini IRIS (TS): Tactical Overlay | v1.3.8 | Immediate Entity SetData");
+console.log("Mini IRIS (TS): Tactical Overlay | v1.3.12 | Stable UI Sync");
 
 const DEFAULT_MAP_CENTER: [number, number] = [4.8952, 52.3702];
 const DEFAULT_MAP_ZOOM = 13;
@@ -36,6 +36,20 @@ interface SavedViewState {
 }
 
 type MapStyleName = keyof typeof MAP_STYLES;
+
+const MAP_OVERLAY_LAYER_ORDER = [
+    'f-enl', 'f-res', 'f-mac',
+    'l-enl', 'l-res', 'l-mac',
+    'f-ext-enl', 'f-ext-res', 'f-ext-mac',
+    'l-ext-enl', 'l-ext-res', 'l-ext-mac',
+    'p-ext',
+    'p',
+    'p-history-visited-highlight', 'p-history-captured-highlight', 'p-history-scanned-highlight',
+    'p-history-visited-inverse', 'p-history-captured-inverse', 'p-history-scanned-inverse',
+    'p-key-count-bg', 'p-key-count-total', 'p-key-count-split',
+    'player-trails', 'player-points-glow', 'player-points', 'player-label-bg', 'player-labels',
+    'sel-f', 'sel-l', 'sel-p',
+] as const;
 
 interface SavedUiState {
     mapStyle: MapStyleName;
@@ -66,6 +80,28 @@ function isMapStyleName(value: unknown): value is MapStyleName {
 
 function isPortalHistoryMode(value: unknown): value is PortalHistoryMode {
     return value === 'off' || value === 'highlight' || value === 'inverse';
+}
+
+function reassertMapLayerOrder(map: maplibregl.Map): void {
+    if (!map.getStyle()) return;
+
+    const firstOverlayId = MAP_OVERLAY_LAYER_ORDER.find((id) => map.getLayer(id));
+    if (firstOverlayId && map.getLayer('carto')) {
+        try {
+            map.moveLayer('carto', firstOverlayId);
+        } catch {
+            // The style may still be settling after source/layer mutation.
+        }
+    }
+
+    MAP_OVERLAY_LAYER_ORDER.forEach((id) => {
+        if (!map.getLayer(id)) return;
+        try {
+            map.moveLayer(id);
+        } catch {
+            // Ignore transient MapLibre ordering errors while the style is settling.
+        }
+    });
 }
 
 function defaultViewState(): SavedViewState {
@@ -480,6 +516,24 @@ function TacticalOverlay(): h.JSX.Element {
         checkAndLoadRef.current = checkAndLoad;
     }, [checkAndLoad]);
 
+    const syncMapAfterUiChange = useCallback((): void => {
+        const map = mapRef.current;
+        if (!map || !map.getStyle()) return;
+        reassertMapLayerOrder(map);
+        checkAndLoadRef.current(map, patternModeRef.current, liveModeRef.current);
+        map.triggerRepaint();
+    }, []);
+
+    const scheduleMapSyncAfterUiChange = useCallback((): void => {
+        syncMapAfterUiChange();
+        window.requestAnimationFrame(syncMapAfterUiChange);
+        window.setTimeout(syncMapAfterUiChange, 120);
+
+        const map = mapRef.current;
+        if (!map || !map.getStyle()) return;
+        map.once('idle', syncMapAfterUiChange);
+    }, [syncMapAfterUiChange]);
+
     const throttledSync = useMemo(() => throttle((m: maplibregl.Map): void => {
         const center = m.getCenter();
         setMapState({ zoom: m.getZoom(), lat: center.lat, lng: center.lng });
@@ -620,6 +674,7 @@ function TacticalOverlay(): h.JSX.Element {
             if (playerSource) {
                 playerSource.setData(playerTrailDataRef.current);
             }
+            reassertMapLayerOrder(m);
         });
 
         m.on('movestart', clearMoveSettleTimer);
@@ -715,8 +770,8 @@ function TacticalOverlay(): h.JSX.Element {
 
     useEffect(() => {
         if (!mapRef.current) return;
-        syncToMap(mapRef.current, liveMode, patternMode);
-    }, [keyOverlayEnabled, liveMode, patternMode, syncToMap]);
+        scheduleMapSyncAfterUiChange();
+    }, [keyOverlayEnabled, liveMode, patternMode, scheduleMapSyncAfterUiChange]);
 
     // 2. Selection highlights
     useEffect(() => {
@@ -776,19 +831,23 @@ function TacticalOverlay(): h.JSX.Element {
     const handleStyle = useCallback((style: string): void => {
         const m = mapRef.current;
         if (!m || !m.getStyle() || !isMapStyleName(style)) return;
+
+        if (style === mapStyle) {
+            scheduleMapSyncAfterUiChange();
+            logEvent(`Style: ${style}`);
+            return;
+        }
+
         if (m.getLayer('carto')) m.removeLayer('carto');
         if (m.getSource('carto')) m.removeSource('carto');
         m.addSource('carto', { type: 'raster', tiles: MAP_STYLES[style], tileSize: 256, attribution: style === 'OSM' ? '&copy; OpenStreetMap' : '&copy; CARTO' });
-        const layers = m.getStyle().layers;
-        m.addLayer({ id: 'carto', type: 'raster', source: 'carto' }, layers?.[0]?.id);
+        const firstOverlayId = MAP_OVERLAY_LAYER_ORDER.find((id) => m.getLayer(id));
+        m.addLayer({ id: 'carto', type: 'raster', source: 'carto' }, firstOverlayId);
+        reassertMapLayerOrder(m);
         setMapStyle(style);
-        window.requestAnimationFrame(() => {
-            if (!mapRef.current) return;
-            checkAndLoadRef.current(mapRef.current, patternModeRef.current, liveModeRef.current);
-            mapRef.current.triggerRepaint();
-        });
+        scheduleMapSyncAfterUiChange();
         logEvent(`Style: ${style}`);
-    }, [logEvent]);
+    }, [logEvent, mapStyle, scheduleMapSyncAfterUiChange]);
 
     const handleMode = useCallback((mode: string): void => {
         const m = mapRef.current;
