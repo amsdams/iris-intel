@@ -20,7 +20,7 @@ import { throttle } from './GeoUtils';
 import { isEndpointStateMessage, numberOrNull, stringOrNull } from './messages';
 import { DEFAULT_PORTAL_HISTORY_LAYERS, PORTAL_HISTORY_COLORS, nextPortalHistoryMode, type PortalHistoryKey, type PortalHistoryLayerState, type PortalHistoryMode } from './portalHistory';
 
-console.log("Mini IRIS (TS): Tactical Overlay | v1.3.21 | Launcher Label");
+console.log("Mini IRIS (TS): Tactical Overlay | v1.3.23 | Deferred Open Resize");
 
 const DEFAULT_MAP_CENTER: [number, number] = [4.8952, 52.3702];
 const DEFAULT_MAP_ZOOM = 13;
@@ -28,6 +28,7 @@ const MAP_STATE_STORAGE_KEY = 'iris-poc-map-state';
 const MAP_STYLE_STORAGE_KEY = 'iris-poc-map-style';
 const PORTAL_HISTORY_STORAGE_KEY = 'iris-poc-portal-history-layers';
 const KEY_OVERLAY_STORAGE_KEY = 'iris-poc-key-overlay-enabled';
+const MINI_IRIS_OPEN_STORAGE_KEY = 'iris-poc-mini-iris-open';
 const MAP_STATE_COOKIE_KEY = 'iris_poc_map_state';
 const EXPERIMENTAL_PREFS_STORAGE_KEY = 'mini-iris:preferences:v1';
 const EXPERIMENTAL_PREFS_STORAGE_KEY_V2 = 'mini-iris:preferences:v2';
@@ -145,6 +146,24 @@ function writeSavedKeyOverlayEnabled(enabled: boolean): void {
     }
 }
 
+function readSavedMiniIrisOpen(): boolean {
+    try {
+        return window.localStorage.getItem(MINI_IRIS_OPEN_STORAGE_KEY) === 'true';
+    } catch {
+        return false;
+    }
+}
+
+function writeSavedMiniIrisOpen(open: boolean): void {
+    try {
+        window.localStorage.setItem(MINI_IRIS_OPEN_STORAGE_KEY, open ? 'true' : 'false');
+        window.localStorage.removeItem(EXPERIMENTAL_PREFS_STORAGE_KEY);
+        window.localStorage.removeItem(EXPERIMENTAL_PREFS_STORAGE_KEY_V2);
+    } catch {
+        // Ignore storage failures.
+    }
+}
+
 function TacticalOverlay(): h.JSX.Element {
     const mapRef = useRef<maplibregl.Map | null>(null);
     const [generator] = useState(() => new MockDataGenerator());
@@ -155,6 +174,7 @@ function TacticalOverlay(): h.JSX.Element {
     const [initialMapStyle] = useState(() => readSavedMapStyle());
     const [initialPortalHistoryLayers] = useState(() => readSavedPortalHistoryLayers());
     const [initialKeyOverlayEnabled] = useState(() => readSavedKeyOverlayEnabled());
+    const [initialMiniIrisOpen] = useState(() => readSavedMiniIrisOpen());
     const [mapState, setMapState] = useState(() => ({
         zoom: savedMapState?.zoom ?? DEFAULT_MAP_ZOOM,
         lat: savedMapState?.lat ?? DEFAULT_MAP_CENTER[1],
@@ -173,6 +193,7 @@ function TacticalOverlay(): h.JSX.Element {
     const patternModeRef = useRef(patternMode);
     const moveSettleTimerRef = useRef<number | null>(null);
     const mapStateRef = useRef(mapState);
+    const initialOpenAppliedRef = useRef(false);
     const playerTrailDataRef = useRef<GeoJSON.FeatureCollection>({
         type: 'FeatureCollection',
         features: [],
@@ -529,6 +550,23 @@ function TacticalOverlay(): h.JSX.Element {
         mapRef.current?.panBy([0, -140], { duration: 200 });
     }, []);
 
+    const openMiniIris = useCallback((): void => {
+        setIsVis(true);
+        writeSavedMiniIrisOpen(true);
+        window.requestAnimationFrame(() => {
+            const map = mapRef.current;
+            if (!map || !map.getStyle()) return;
+            map.resize();
+            checkAndLoad(map, patternModeRef.current, liveModeRef.current);
+            logEvent("Tactical Map Opened");
+        });
+    }, [checkAndLoad, logEvent]);
+
+    const closeMiniIris = useCallback((): void => {
+        setIsVis(false);
+        writeSavedMiniIrisOpen(false);
+    }, []);
+
     useEffect(() => {
         if (mapRef.current) return; // Only init once
 
@@ -679,6 +717,12 @@ function TacticalOverlay(): h.JSX.Element {
         mapRef.current = m;
         return (): void => { m.remove(); mapRef.current = null; };
     }, [clearMoveSettleTimer, generator, logEvent, savedMapState?.lat, savedMapState?.lng, savedMapState?.zoom, scheduleMoveSettleLoad, throttledSync]);
+
+    useEffect(() => {
+        if (!initialMiniIrisOpen || initialOpenAppliedRef.current || isVis || !mapRef.current) return;
+        initialOpenAppliedRef.current = true;
+        openMiniIris();
+    }, [initialMiniIrisOpen, isVis, openMiniIris]);
 
     useEffect(() => {
         return (): void => {
@@ -864,12 +908,8 @@ function TacticalOverlay(): h.JSX.Element {
                 </Fragment>
             )}
             <LaunchButton isVis={isVis} onClick={(): void => {
-                setIsVis(!isVis);
-                if (!isVis && mapRef.current && mapRef.current.getStyle()) {
-                    mapRef.current.resize();
-                    checkAndLoad(mapRef.current, patternMode, liveMode);
-                    logEvent("Tactical Map Opened");
-                }
+                if (isVis) closeMiniIris();
+                else openMiniIris();
             }} />
         </div>
     );

@@ -148,7 +148,7 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 | **Mock Map Test Data** | **IMPROVED**    | Mock history and inventory are deterministic, with separate local mock inventory for key overlay testing. |
 | **Mock Map Panning Drift** | **FIXED**       | Mock pattern loading is separated from map data sync so panning and overlay changes do not regenerate mock coordinates. |
 | **Key Overlay Performance** | **IMPROVED**    | Inventory key counts are pre-aggregated by portal and key labels only render at tactical zoom. |
-| **UI Preference Persistence** | **PARTIAL**     | Map position, map style, portal history modes, and key overlay state persist via standalone localStorage keys; launcher/open-state persistence remains deferred. |
+| **UI Preference Persistence** | **VERIFYING**   | Map position, map style, portal history modes, key overlay state, and Mini IRIS open intent persist via standalone localStorage keys. |
 
 ### Roadmap & Alignment (TODO)
 
@@ -162,7 +162,7 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 7. **Search**: Portal and location search with map-jump interaction.
 
 #### Preferences & Launcher Follow-Up
-1. **Persist Mini IRIS Open State**: Treat open-state persistence as higher risk; only attempt after the launcher rename remains stable, and verify hard refresh, INTEL -> IRIS, IRIS -> INTEL, and repeated switches.
+1. **Verify Mini IRIS Open State Persistence**: Confirm saved-open replay uses the existing open path after the map ref exists, with no missing entities, flicker, or stale player tracker behavior after hard refresh.
 2. **Robust INTEL/IRIS Switching**: Investigate a dedicated switch lifecycle that supports back-and-forth INTEL/IRIS without missing entities, flicker, stale player tracker state, or forced map panning; keep this separate from preference storage.
 3. **Optional Preference Consolidation**: Keep the current standalone preference keys for now; only revisit a consolidated versioned schema if the separate keys become hard to manage.
 
@@ -196,12 +196,13 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 - Portal history modes now persist via the standalone `iris-poc-portal-history-layers` localStorage key and are read only for initial React state.
 - Key overlay state now persists via the standalone `iris-poc-key-overlay-enabled` localStorage key and is read only for initial React state.
 - The launcher button now uses `IRIS`/`INTEL` text, the `mini-iris-toggle-btn` id, and a descriptive title without changing the existing visibility or open/close lifecycle.
+- Mini IRIS open intent now persists via the standalone `iris-poc-mini-iris-open` localStorage key; saved-open replay still starts closed and then defers MapLibre resize/check to the next frame after the visible render.
 - Preference cleanup decision: keep standalone localStorage keys for now because they were verified incrementally and can be rolled back independently.
 - Experimental preference keys from the lifecycle test builds (`mini-iris:preferences:v1`, `mini-iris:preferences:v2`) are removed so stale style/key/open-state values cannot affect startup rendering.
 - Map style, portal history layers, key overlay, launcher/open state, MapContainer behavior, Intel map sync, and entity rendering are back to the `91e83b5` baseline while the render regression is isolated.
-- Launcher open-state behavior intentionally remains at the stable `91e83b5` baseline; only the button text/id/title changed.
+- Launcher open/close behavior remains close to the stable `91e83b5` path; persistence only records the open intent and replays the existing open path after startup.
 - Map container visibility, Intel map sync, and entity rendering were restored to the stable `91e83b5` behavior to avoid the style flicker and missing-entity regressions introduced by later lifecycle experiments.
-- Mini IRIS version markers are now extension/package `1.0.19` and console banner `v1.3.21 | Launcher Label`.
+- Mini IRIS version markers are now extension/package `1.0.21` and console banner `v1.3.23 | Deferred Open Resize`.
 
 #### Current Alignment Notes
 - Portal and link scale now follow the same zoom-aware approach used by IRIS rather than hardcoded mini-IRIS sizes.
