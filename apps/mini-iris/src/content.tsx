@@ -18,13 +18,16 @@ import { useEndpointTelemetry } from './useEndpointTelemetry';
 import type { PlextRequestBounds } from './plextRequests';
 import { throttle } from './GeoUtils';
 import { isEndpointStateMessage, numberOrNull, stringOrNull } from './messages';
-import { DEFAULT_PORTAL_HISTORY_LAYERS, PORTAL_HISTORY_COLORS, nextPortalHistoryMode, type PortalHistoryKey } from './portalHistory';
+import { DEFAULT_PORTAL_HISTORY_LAYERS, PORTAL_HISTORY_COLORS, nextPortalHistoryMode, type PortalHistoryKey, type PortalHistoryLayerState, type PortalHistoryMode } from './portalHistory';
 
-console.log("Mini IRIS (TS): Tactical Overlay | v1.3.17 | Baseline LocalStorage");
+console.log("Mini IRIS (TS): Tactical Overlay | v1.3.20 | Key Overlay Preference");
 
 const DEFAULT_MAP_CENTER: [number, number] = [4.8952, 52.3702];
 const DEFAULT_MAP_ZOOM = 13;
 const MAP_STATE_STORAGE_KEY = 'iris-poc-map-state';
+const MAP_STYLE_STORAGE_KEY = 'iris-poc-map-style';
+const PORTAL_HISTORY_STORAGE_KEY = 'iris-poc-portal-history-layers';
+const KEY_OVERLAY_STORAGE_KEY = 'iris-poc-key-overlay-enabled';
 const MAP_STATE_COOKIE_KEY = 'iris_poc_map_state';
 const EXPERIMENTAL_PREFS_STORAGE_KEY = 'mini-iris:preferences:v1';
 const EXPERIMENTAL_PREFS_STORAGE_KEY_V2 = 'mini-iris:preferences:v2';
@@ -34,6 +37,8 @@ interface SavedMapState {
     lng: number;
     zoom: number;
 }
+
+type MapStyleName = keyof typeof MAP_STYLES;
 
 type SelectedEntity = { type: 'portal'; data: Portal } | { type: 'link'; data: Link } | { type: 'field'; data: Field };
 
@@ -73,6 +78,73 @@ function writeSavedMapState(state: SavedMapState): void {
     }
 }
 
+function readSavedMapStyle(): MapStyleName {
+    try {
+        const raw = window.localStorage.getItem(MAP_STYLE_STORAGE_KEY);
+        return raw && raw in MAP_STYLES ? raw as MapStyleName : 'Dark';
+    } catch {
+        return 'Dark';
+    }
+}
+
+function writeSavedMapStyle(style: string): void {
+    if (!(style in MAP_STYLES)) return;
+    try {
+        window.localStorage.setItem(MAP_STYLE_STORAGE_KEY, style);
+        window.localStorage.removeItem(EXPERIMENTAL_PREFS_STORAGE_KEY);
+        window.localStorage.removeItem(EXPERIMENTAL_PREFS_STORAGE_KEY_V2);
+    } catch {
+        // Ignore storage failures.
+    }
+}
+
+function isPortalHistoryMode(value: unknown): value is PortalHistoryMode {
+    return value === 'off' || value === 'highlight' || value === 'inverse';
+}
+
+function readSavedPortalHistoryLayers(): PortalHistoryLayerState {
+    try {
+        const raw = window.localStorage.getItem(PORTAL_HISTORY_STORAGE_KEY);
+        if (!raw) return DEFAULT_PORTAL_HISTORY_LAYERS;
+        const parsed = JSON.parse(raw) as Partial<Record<PortalHistoryKey, unknown>>;
+        return {
+            visited: isPortalHistoryMode(parsed.visited) ? parsed.visited : DEFAULT_PORTAL_HISTORY_LAYERS.visited,
+            captured: isPortalHistoryMode(parsed.captured) ? parsed.captured : DEFAULT_PORTAL_HISTORY_LAYERS.captured,
+            scanned: isPortalHistoryMode(parsed.scanned) ? parsed.scanned : DEFAULT_PORTAL_HISTORY_LAYERS.scanned,
+        };
+    } catch {
+        return DEFAULT_PORTAL_HISTORY_LAYERS;
+    }
+}
+
+function writeSavedPortalHistoryLayers(layers: PortalHistoryLayerState): void {
+    try {
+        window.localStorage.setItem(PORTAL_HISTORY_STORAGE_KEY, JSON.stringify(layers));
+        window.localStorage.removeItem(EXPERIMENTAL_PREFS_STORAGE_KEY);
+        window.localStorage.removeItem(EXPERIMENTAL_PREFS_STORAGE_KEY_V2);
+    } catch {
+        // Ignore storage failures.
+    }
+}
+
+function readSavedKeyOverlayEnabled(): boolean {
+    try {
+        return window.localStorage.getItem(KEY_OVERLAY_STORAGE_KEY) === 'true';
+    } catch {
+        return false;
+    }
+}
+
+function writeSavedKeyOverlayEnabled(enabled: boolean): void {
+    try {
+        window.localStorage.setItem(KEY_OVERLAY_STORAGE_KEY, enabled ? 'true' : 'false');
+        window.localStorage.removeItem(EXPERIMENTAL_PREFS_STORAGE_KEY);
+        window.localStorage.removeItem(EXPERIMENTAL_PREFS_STORAGE_KEY_V2);
+    } catch {
+        // Ignore storage failures.
+    }
+}
+
 function TacticalOverlay(): h.JSX.Element {
     const mapRef = useRef<maplibregl.Map | null>(null);
     const [generator] = useState(() => new MockDataGenerator());
@@ -80,6 +152,9 @@ function TacticalOverlay(): h.JSX.Element {
     const [events, setEvents] = useState<{time: string, msg: string}[]>([]);
     const [selected, setSelected] = useState<SelectedEntity | null>(null);
     const [savedMapState] = useState(() => readSavedMapState());
+    const [initialMapStyle] = useState(() => readSavedMapStyle());
+    const [initialPortalHistoryLayers] = useState(() => readSavedPortalHistoryLayers());
+    const [initialKeyOverlayEnabled] = useState(() => readSavedKeyOverlayEnabled());
     const [mapState, setMapState] = useState(() => ({
         zoom: savedMapState?.zoom ?? DEFAULT_MAP_ZOOM,
         lat: savedMapState?.lat ?? DEFAULT_MAP_CENTER[1],
@@ -88,8 +163,8 @@ function TacticalOverlay(): h.JSX.Element {
     const [plextBounds, setPlextBounds] = useState<PlextRequestBounds | null>(null);
     const [liveMode, setLiveMode] = useState(true);
     const [patternMode, setPatternMode] = useState(0);
-    const [portalHistoryLayers, setPortalHistoryLayers] = useState(DEFAULT_PORTAL_HISTORY_LAYERS);
-    const [keyOverlayEnabled, setKeyOverlayEnabled] = useState(false);
+    const [portalHistoryLayers, setPortalHistoryLayers] = useState(initialPortalHistoryLayers);
+    const [keyOverlayEnabled, setKeyOverlayEnabled] = useState(initialKeyOverlayEnabled);
     const [mockInventory, setMockInventory] = useState<InventoryItem[]>([]);
     const [extrusionEnabled, setExtrusionEnabled] = useState(false);
     const [isVis, setIsVis] = useState(false);
@@ -428,14 +503,22 @@ function TacticalOverlay(): h.JSX.Element {
     }, [logEvent, liveMode]);
 
     const handlePortalHistoryLayerToggle = useCallback((key: PortalHistoryKey): void => {
-        setPortalHistoryLayers((current) => ({
-            ...current,
-            [key]: nextPortalHistoryMode(current[key]),
-        }));
+        setPortalHistoryLayers((current) => {
+            const next = {
+                ...current,
+                [key]: nextPortalHistoryMode(current[key]),
+            };
+            writeSavedPortalHistoryLayers(next);
+            return next;
+        });
     }, []);
 
     const handleKeyOverlayToggle = useCallback((): void => {
-        setKeyOverlayEnabled((current) => !current);
+        setKeyOverlayEnabled((current) => {
+            const next = !current;
+            writeSavedKeyOverlayEnabled(next);
+            return next;
+        });
     }, []);
 
     const handleSelectionPanelOpen = useCallback((): void => {
@@ -461,7 +544,7 @@ function TacticalOverlay(): h.JSX.Element {
                 version: 8,
                 glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
                 sources: {
-                    'carto': { type: 'raster', tiles: MAP_STYLES['Dark'], tileSize: 256 },
+                    'carto': { type: 'raster', tiles: MAP_STYLES[initialMapStyle], tileSize: 256 },
                     'entities': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
                     'players': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
                     'selection': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } }
@@ -677,6 +760,7 @@ function TacticalOverlay(): h.JSX.Element {
         m.addSource('carto', { type: 'raster', tiles: MAP_STYLES[style], tileSize: 256, attribution: style === 'OSM' ? '&copy; OpenStreetMap' : '&copy; CARTO' });
         const layers = m.getStyle().layers;
         m.addLayer({ id: 'carto', type: 'raster', source: 'carto' }, layers?.[0]?.id);
+        writeSavedMapStyle(style);
         logEvent(`Style: ${style}`);
     }, [logEvent]);
 

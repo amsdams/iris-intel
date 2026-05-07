@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Mini IRIS",
-  "version": "1.0.15",
+  "version": "1.0.18",
   "description": "Compact IRIS map experience with an alternate UI and interaction model",
   "host_permissions": [
     "https://intel.ingress.com/*",
