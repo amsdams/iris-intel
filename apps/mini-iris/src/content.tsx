@@ -20,7 +20,7 @@ import { throttle } from './GeoUtils';
 import { isEndpointStateMessage, numberOrNull, stringOrNull } from './messages';
 import { DEFAULT_PORTAL_HISTORY_LAYERS, PORTAL_HISTORY_COLORS, nextPortalHistoryMode, type PortalHistoryKey, type PortalHistoryLayerState, type PortalHistoryMode } from './portalHistory';
 
-console.log("Mini IRIS (TS): Tactical Overlay | v1.3.23 | Deferred Open Resize");
+console.log("Mini IRIS (TS): Tactical Overlay | v1.3.25 | Storage Write Cleanup");
 
 const DEFAULT_MAP_CENTER: [number, number] = [4.8952, 52.3702];
 const DEFAULT_MAP_ZOOM = 13;
@@ -32,6 +32,8 @@ const MINI_IRIS_OPEN_STORAGE_KEY = 'iris-poc-mini-iris-open';
 const MAP_STATE_COOKIE_KEY = 'iris_poc_map_state';
 const EXPERIMENTAL_PREFS_STORAGE_KEY = 'mini-iris:preferences:v1';
 const EXPERIMENTAL_PREFS_STORAGE_KEY_V2 = 'mini-iris:preferences:v2';
+
+// Keep preferences as small standalone keys; avoid a broad state object that can affect map lifecycle.
 
 interface SavedMapState {
     lat: number;
@@ -72,8 +74,6 @@ function writeSavedMapState(state: SavedMapState): void {
     try {
         const serialized = JSON.stringify(state);
         window.localStorage.setItem(MAP_STATE_STORAGE_KEY, serialized);
-        window.localStorage.removeItem(EXPERIMENTAL_PREFS_STORAGE_KEY);
-        window.localStorage.removeItem(EXPERIMENTAL_PREFS_STORAGE_KEY_V2);
     } catch {
         // Ignore storage failures.
     }
@@ -92,8 +92,6 @@ function writeSavedMapStyle(style: string): void {
     if (!(style in MAP_STYLES)) return;
     try {
         window.localStorage.setItem(MAP_STYLE_STORAGE_KEY, style);
-        window.localStorage.removeItem(EXPERIMENTAL_PREFS_STORAGE_KEY);
-        window.localStorage.removeItem(EXPERIMENTAL_PREFS_STORAGE_KEY_V2);
     } catch {
         // Ignore storage failures.
     }
@@ -121,8 +119,6 @@ function readSavedPortalHistoryLayers(): PortalHistoryLayerState {
 function writeSavedPortalHistoryLayers(layers: PortalHistoryLayerState): void {
     try {
         window.localStorage.setItem(PORTAL_HISTORY_STORAGE_KEY, JSON.stringify(layers));
-        window.localStorage.removeItem(EXPERIMENTAL_PREFS_STORAGE_KEY);
-        window.localStorage.removeItem(EXPERIMENTAL_PREFS_STORAGE_KEY_V2);
     } catch {
         // Ignore storage failures.
     }
@@ -139,8 +135,6 @@ function readSavedKeyOverlayEnabled(): boolean {
 function writeSavedKeyOverlayEnabled(enabled: boolean): void {
     try {
         window.localStorage.setItem(KEY_OVERLAY_STORAGE_KEY, enabled ? 'true' : 'false');
-        window.localStorage.removeItem(EXPERIMENTAL_PREFS_STORAGE_KEY);
-        window.localStorage.removeItem(EXPERIMENTAL_PREFS_STORAGE_KEY_V2);
     } catch {
         // Ignore storage failures.
     }
@@ -157,10 +151,18 @@ function readSavedMiniIrisOpen(): boolean {
 function writeSavedMiniIrisOpen(open: boolean): void {
     try {
         window.localStorage.setItem(MINI_IRIS_OPEN_STORAGE_KEY, open ? 'true' : 'false');
+    } catch {
+        // Ignore storage failures.
+    }
+}
+
+function cleanupLegacyStorage(): void {
+    try {
+        document.cookie = `${MAP_STATE_COOKIE_KEY}=; path=/; max-age=0; SameSite=Lax; Secure`;
         window.localStorage.removeItem(EXPERIMENTAL_PREFS_STORAGE_KEY);
         window.localStorage.removeItem(EXPERIMENTAL_PREFS_STORAGE_KEY_V2);
     } catch {
-        // Ignore storage failures.
+        // Ignore storage cleanup failures.
     }
 }
 
@@ -217,13 +219,7 @@ function TacticalOverlay(): h.JSX.Element {
     }, [mapState]);
 
     useEffect(() => {
-        try {
-            document.cookie = `${MAP_STATE_COOKIE_KEY}=; path=/; max-age=0; SameSite=Lax; Secure`;
-            window.localStorage.removeItem(EXPERIMENTAL_PREFS_STORAGE_KEY);
-            window.localStorage.removeItem(EXPERIMENTAL_PREFS_STORAGE_KEY_V2);
-        } catch {
-            // Ignore storage cleanup failures.
-        }
+        cleanupLegacyStorage();
     }, []);
 
     useEffect(() => {
@@ -256,10 +252,6 @@ function TacticalOverlay(): h.JSX.Element {
             zoom: stateToSave.zoom,
         });
     }, []);
-
-    useEffect(() => {
-        persistMapState();
-    }, [persistMapState, liveMode, mapState, patternMode]);
 
     useEffect(() => {
         const handlePageHide = (): void => {
