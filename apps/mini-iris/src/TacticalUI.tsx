@@ -35,9 +35,13 @@ interface TacticalUIProps {
     onPortalHistoryLayerToggle: (key: PortalHistoryKey) => void;
     keyOverlayEnabled: boolean;
     onKeyOverlayToggle: () => void;
+    portalLevelColorEnabled: boolean;
+    onPortalLevelColorToggle: () => void;
+    portalHealthColorEnabled: boolean;
+    onPortalHealthColorToggle: () => void;
 }
 
-export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBounds, playerHistories, selected, onNav, onStyle, onMode, onPortalClick, onSelectionPanelOpen, onSelectionPanelClose, portalHistoryLayers, onPortalHistoryLayerToggle, keyOverlayEnabled, onKeyOverlayToggle }: TacticalUIProps): JSX.Element {
+export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBounds, playerHistories, selected, onNav, onStyle, onMode, onPortalClick, onSelectionPanelOpen, onSelectionPanelClose, portalHistoryLayers, onPortalHistoryLayerToggle, keyOverlayEnabled, onKeyOverlayToggle, portalLevelColorEnabled, onPortalLevelColorToggle, portalHealthColorEnabled, onPortalHealthColorToggle }: TacticalUIProps): JSX.Element {
     const [openDrawer, setOpenDrawer] = useState<string | null>(null);
     const logRef = useRef<HTMLDivElement>(null);
     
@@ -205,16 +209,20 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBou
             </div>
 
             {/* Top Right: Map Tools */}
-            <MapTools 
-                openDrawer={openDrawer} 
-                onToggle={toggleDrawer} 
-                onNav={onNav} 
-                onStyle={onStyle} 
-                onMode={onMode} 
+            <MapTools
+                openDrawer={openDrawer}
+                onToggle={toggleDrawer}
+                onNav={onNav}
+                onStyle={onStyle}
+                onMode={onMode}
                 portalHistoryLayers={portalHistoryLayers}
                 onPortalHistoryLayerToggle={onPortalHistoryLayerToggle}
                 keyOverlayEnabled={keyOverlayEnabled}
                 onKeyOverlayToggle={onKeyOverlayToggle}
+                portalLevelColorEnabled={portalLevelColorEnabled}
+                onPortalLevelColorToggle={onPortalLevelColorToggle}
+                portalHealthColorEnabled={portalHealthColorEnabled}
+                onPortalHealthColorToggle={onPortalHealthColorToggle}
             />
 
             {/* Bottom: Data & Profile Dock */}

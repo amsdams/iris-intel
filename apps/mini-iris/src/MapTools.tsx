@@ -1,7 +1,7 @@
 import { h, JSX } from 'preact';
 import type { PortalHistoryKey, PortalHistoryLayerState, PortalHistoryMode } from './portalHistory';
 import { PORTAL_HISTORY_COLORS } from './portalHistory';
-import { INGRESS_COLORS } from './MapConstants';
+import { INGRESS_COLORS, ITEM_LEVEL_COLORS } from './MapConstants';
 
 interface MapToolsProps {
     openDrawer: string | null;
@@ -13,6 +13,10 @@ interface MapToolsProps {
     onPortalHistoryLayerToggle: (key: PortalHistoryKey) => void;
     keyOverlayEnabled: boolean;
     onKeyOverlayToggle: () => void;
+    portalLevelColorEnabled: boolean;
+    onPortalLevelColorToggle: () => void;
+    portalHealthColorEnabled: boolean;
+    onPortalHealthColorToggle: () => void;
 }
 
 const HISTORY_LAYER_LABELS: Record<PortalHistoryKey, string> = {
@@ -50,7 +54,7 @@ function historyButtonStyle(mode: PortalHistoryMode, color: string): h.JSX.CSSPr
     };
 }
 
-export function MapTools({ openDrawer, onToggle, onNav, onStyle, onMode, portalHistoryLayers, onPortalHistoryLayerToggle, keyOverlayEnabled, onKeyOverlayToggle }: MapToolsProps): JSX.Element {
+export function MapTools({ openDrawer, onToggle, onNav, onStyle, onMode, portalHistoryLayers, onPortalHistoryLayerToggle, keyOverlayEnabled, onKeyOverlayToggle, portalLevelColorEnabled, onPortalLevelColorToggle, portalHealthColorEnabled, onPortalHealthColorToggle }: MapToolsProps): JSX.Element {
     return (
         <div id="map-tools-container" style={{ position: 'fixed', top: '10px', right: '10px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', zIndex: 2000001, pointerEvents: 'none' }}>
             
@@ -130,6 +134,59 @@ export function MapTools({ openDrawer, onToggle, onNav, onStyle, onMode, portalH
                     }}
                 >
                     KEY
+                </div>
+            </div>
+
+            {/* Portal Visual Modes */}
+            <div className="drawer-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                <div className="debug-btn" onClick={() => onToggle('portal-visuals')} title="Portal visual modes" style={{ width: '40px', height: '40px', background: 'rgba(34,34,34,0.9)', color: '#fff', border: '1px solid #00ffff', borderRadius: '50%', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'auto' }}>◉</div>
+                <div className="drawer-content" style={{ display: openDrawer === 'portal-visuals' ? 'flex' : 'none', flexDirection: 'column', gap: '4px', padding: '4px', background: 'rgba(20,20,20,0.9)', borderRadius: '8px', border: '1px solid #00ffff' }}>
+                    <div
+                        className="debug-btn"
+                        onClick={onPortalLevelColorToggle}
+                        title={`Portal level coloring: ${portalLevelColorEnabled ? 'on' : 'off'}`}
+                        style={{
+                            width: '42px',
+                            height: '36px',
+                            background: portalLevelColorEnabled ? `${ITEM_LEVEL_COLORS[8]}22` : 'rgba(40,40,40,0.9)',
+                            color: portalLevelColorEnabled ? ITEM_LEVEL_COLORS[8] : '#777',
+                            border: `1px solid ${portalLevelColorEnabled ? ITEM_LEVEL_COLORS[8] : '#555'}`,
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            pointerEvents: 'auto',
+                            boxShadow: portalLevelColorEnabled ? `0 0 10px ${ITEM_LEVEL_COLORS[8]}33 inset` : 'none',
+                        }}
+                    >
+                        LVL
+                    </div>
+                    <div
+                        className="debug-btn"
+                        onClick={onPortalHealthColorToggle}
+                        title={`Portal health opacity: ${portalHealthColorEnabled ? 'on' : 'off'}`}
+                        style={{
+                            width: '42px',
+                            height: '36px',
+                            background: portalHealthColorEnabled ? `${INGRESS_COLORS.ENLIGHTENED}22` : 'rgba(40,40,40,0.9)',
+                            color: portalHealthColorEnabled ? INGRESS_COLORS.ENLIGHTENED : '#777',
+                            border: `1px solid ${portalHealthColorEnabled ? INGRESS_COLORS.ENLIGHTENED : '#555'}`,
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            pointerEvents: 'auto',
+                            boxShadow: portalHealthColorEnabled ? `0 0 10px ${INGRESS_COLORS.ENLIGHTENED}33 inset` : 'none',
+                        }}
+                    >
+                        HP
+                    </div>
                 </div>
             </div>
         </div>

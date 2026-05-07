@@ -147,6 +147,7 @@ export function useMapRenderer(
                         visited: p.visited,
                         captured: p.captured,
                         scanned: p.scanned,
+                        health: p.health ?? 100,
                         visitedHighlight: portalHistoryLayers.visited === 'highlight' && p.visited === true,
                         capturedHighlight: portalHistoryLayers.captured === 'highlight' && p.captured === true,
                         scannedHighlight: portalHistoryLayers.scanned === 'highlight' && p.scanned === true,

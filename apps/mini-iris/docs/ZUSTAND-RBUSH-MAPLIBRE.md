@@ -149,6 +149,7 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 | **Mock Map Panning Drift** | **FIXED**       | Mock pattern loading is separated from map data sync so panning and overlay changes do not regenerate mock coordinates. |
 | **Key Overlay Performance** | **IMPROVED**    | Inventory key counts are pre-aggregated by portal and key labels only render at tactical zoom. |
 | **UI Preference Persistence** | **DONE**        | Map position, map style, portal history modes, key overlay state, and Mini IRIS open intent persist via standalone localStorage keys without rendering regressions in current testing. |
+| **Portal Health/Level Visual Modes** | **VERIFYING** | Optional map tool toggles can recolor portals by level and fade portals by health using existing feature properties. |
 
 ### Roadmap & Alignment (TODO)
 
@@ -160,10 +161,20 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 5. **Draw Tools**: Implement custom line/polygon drawing for field planning.
 6. **Missions**: Integrate Top Missions and Mission Details (rendering waypoints in 3D).
 7. **Search**: Portal and location search with map-jump interaction.
+8. **Verify Portal Health/Level Coloring**: Test the new portal visual modes against live Intel data and compare level/health readability with original IRIS behavior.
 
 #### Preferences & Launcher Follow-Up
 1. **Verify INTEL/IRIS Switching Stability**: Keep as a regression checklist, not planned implementation: hard refresh while open, IRIS -> INTEL -> IRIS, style toggle, key overlay toggle, and viewport sizing.
 2. **Optional Preference Consolidation**: Keep the current standalone preference keys for now; only revisit a consolidated versioned schema if the separate keys become hard to manage.
+
+#### UI Cleanup Follow-Up
+1. **Shared Styling Primitives**: Reduce repeated inline button, drawer, panel, badge, and dock styles by introducing small shared style helpers/components before doing broader visual redesign.
+
+#### Manual Regression Checklist
+1. **Saved Open Refresh**: Leave Mini IRIS open, hard refresh, confirm full viewport, entities visible, and no flicker.
+2. **Switching**: Switch IRIS -> INTEL -> IRIS without panning and confirm portals, links, fields, player tracker, and labels remain visible.
+3. **Preferences**: Change map style, portal history modes, and key overlay state; hard refresh and confirm each preference restores correctly.
+4. **Movement**: Pan, zoom, reset, and geolocate; confirm map position persists and no redundant visible reload/flicker appears.
 
 #### Recent Progress
 - Portal history controls were added to the map tools drawer for visited, captured, and scanned states, with highlight and inverse display modes.
@@ -200,12 +211,14 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 - Preference cleanup decision: keep standalone localStorage keys for now because they were verified incrementally and can be rolled back independently.
 - Storage writes were reduced: map position now writes only on settled movement, reset, and pagehide/beforeunload; legacy experimental key cleanup runs once at startup instead of during every preference write.
 - Settled movement loads now skip redundant `checkAndLoad` calls when the settled center/zoom has not meaningfully changed.
+- Live Intel map sync now skips duplicate same-view `IRIS_SYNC_INTEL_MAP` posts after settled movement.
+- Portal visual modes were added as opt-in map tools: `LVL` recolors portal fill by Ingress level colors, and `HP` fades portal opacity by health using the existing live/mock portal health value.
 - Experimental preference keys from the lifecycle test builds (`mini-iris:preferences:v1`, `mini-iris:preferences:v2`) are removed so stale style/key/open-state values cannot affect startup rendering.
 - Map style, portal history layers, key overlay, launcher/open state, MapContainer behavior, Intel map sync, and entity rendering are back to the `91e83b5` baseline while the render regression is isolated.
 - Launcher open/close behavior remains close to the stable `91e83b5` path; persistence only records the open intent and replays the existing open path after startup.
 - Map container visibility, Intel map sync, and entity rendering were restored to the stable `91e83b5` behavior to avoid the style flicker and missing-entity regressions introduced by later lifecycle experiments.
 - Robust INTEL/IRIS switching is no longer an active implementation item; it remains a regression checklist unless new concrete failures appear.
-- Mini IRIS version markers are now extension/package `1.0.24` and console banner `v1.3.26 | Settled Load Guard`.
+- Mini IRIS version markers are now extension/package `1.0.26` and console banner `v1.3.28 | Portal Visual Modes`.
 
 #### Current Alignment Notes
 - Portal and link scale now follow the same zoom-aware approach used by IRIS rather than hardcoded mini-IRIS sizes.
@@ -215,8 +228,10 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 - Inventory key support now includes a first map overlay, mock test data, pre-aggregated render counts, tactical zoom gating, and forced manual inventory refresh; mobile live-data verification is still in progress, while deeper filtering, capsule names, and drilldown can stay future work.
 - Player profile data no longer depends only on the initial interceptor post; early testing looks better, but mobile/live verification should confirm whether any Intel sessions still lack a usable `window.PLAYER` payload.
 - Mock/source mode is useful for overlay testing, with pattern coordinates now stable during panning and overlay syncs.
+- Portal health/level coloring is intentionally not persisted yet; verify the runtime behavior first before adding more saved UI state.
 - Display preference persistence intentionally excludes live/mock mode, pattern mode, 3D extrusion, open drawer state, and selected objects.
 - Visual alignment is in a better baseline state after centralizing the Ingress palette; generic UI chrome can stay iterative.
+- UI styling is currently spread across inline styles in `MapTools`, `DataDock`, `TacticalUI`, `LaunchButton`, and `MapContainer`; cleanup should start with repeated primitives rather than a full layout rewrite.
 - Remaining work is mostly feature breadth and mobile polish, not core rendering stability.
 
 #### Feature Alignment

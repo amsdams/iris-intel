@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'preact/hooks'
 import { MockDataGenerator } from './MockDataGenerator';
 import { useStore, globalSpatialIndex, getMinLevelForZoom, getGridSizeForZoom, Portal, Link, Field, type InventoryItem } from '@iris/core';
 import { TacticalUI } from './TacticalUI';
-import { COLORS, INGRESS_COLORS, MAP_STYLES, PLAYER_TRACKER_COLORS } from './MapConstants';
+import { COLORS, INGRESS_COLORS, ITEM_LEVEL_COLORS, MAP_STYLES, PLAYER_TRACKER_COLORS } from './MapConstants';
 import { LaunchButton } from './LaunchButton';
 import { MapContainer } from './MapContainer';
 import { usePatterns } from './usePatterns';
@@ -20,7 +20,7 @@ import { throttle } from './GeoUtils';
 import { isEndpointStateMessage, numberOrNull, stringOrNull } from './messages';
 import { DEFAULT_PORTAL_HISTORY_LAYERS, PORTAL_HISTORY_COLORS, nextPortalHistoryMode, type PortalHistoryKey, type PortalHistoryLayerState, type PortalHistoryMode } from './portalHistory';
 
-console.log("Mini IRIS (TS): Tactical Overlay | v1.3.26 | Settled Load Guard");
+console.log("Mini IRIS (TS): Tactical Overlay | v1.3.28 | Portal Visual Modes");
 
 const DEFAULT_MAP_CENTER: [number, number] = [4.8952, 52.3702];
 const DEFAULT_MAP_ZOOM = 13;
@@ -44,6 +44,22 @@ interface SavedMapState {
 type MapStyleName = keyof typeof MAP_STYLES;
 
 type SelectedEntity = { type: 'portal'; data: Portal } | { type: 'link'; data: Link } | { type: 'field'; data: Field };
+
+const PORTAL_TEAM_COLOR_EXPR: unknown[] = ['match', ['get', 'team'], 'E', COLORS.E, 'R', COLORS.R, 'M', COLORS.M, COLORS.N];
+const PORTAL_LEVEL_COLOR_EXPR = [
+    'match',
+    ['get', 'level'],
+    1, ITEM_LEVEL_COLORS[1],
+    2, ITEM_LEVEL_COLORS[2],
+    3, ITEM_LEVEL_COLORS[3],
+    4, ITEM_LEVEL_COLORS[4],
+    5, ITEM_LEVEL_COLORS[5],
+    6, ITEM_LEVEL_COLORS[6],
+    7, ITEM_LEVEL_COLORS[7],
+    8, ITEM_LEVEL_COLORS[8],
+    COLORS.N,
+];
+const PORTAL_HEALTH_OPACITY_EXPR: unknown[] = ['interpolate', ['linear'], ['coalesce', ['get', 'health'], 100], 0, 0.15, 100, 1];
 
 function readSavedMapState(): SavedMapState | null {
     try {
@@ -187,6 +203,8 @@ function TacticalOverlay(): h.JSX.Element {
     const [patternMode, setPatternMode] = useState(0);
     const [portalHistoryLayers, setPortalHistoryLayers] = useState(initialPortalHistoryLayers);
     const [keyOverlayEnabled, setKeyOverlayEnabled] = useState(initialKeyOverlayEnabled);
+    const [portalLevelColorEnabled, setPortalLevelColorEnabled] = useState(false);
+    const [portalHealthColorEnabled, setPortalHealthColorEnabled] = useState(false);
     const [mockInventory, setMockInventory] = useState<InventoryItem[]>([]);
     const [extrusionEnabled, setExtrusionEnabled] = useState(false);
     const [isVis, setIsVis] = useState(false);
@@ -195,6 +213,7 @@ function TacticalOverlay(): h.JSX.Element {
     const patternModeRef = useRef(patternMode);
     const moveSettleTimerRef = useRef<number | null>(null);
     const lastSettledLoadRef = useRef<{ lat: number; lng: number; zoom: number } | null>(null);
+    const lastIntelSyncRef = useRef<{ lat: number; lng: number; zoom: number } | null>(null);
     const mapStateRef = useRef(mapState);
     const initialOpenAppliedRef = useRef(false);
     const playerTrailDataRef = useRef<GeoJSON.FeatureCollection>({
@@ -491,7 +510,17 @@ function TacticalOverlay(): h.JSX.Element {
         persistMapState(nextState);
 
         if (currentLive) {
-            window.postMessage({ type: 'IRIS_SYNC_INTEL_MAP', lat: center.lat, lng: center.lng, zoom: Math.round(currentZoom) }, '*');
+            const lastIntelSync = lastIntelSyncRef.current;
+            const nextIntelSync = { zoom: Math.round(currentZoom), lat: center.lat, lng: center.lng };
+            if (
+                !lastIntelSync ||
+                Math.abs(lastIntelSync.zoom - nextIntelSync.zoom) >= 1 ||
+                Math.abs(lastIntelSync.lat - nextIntelSync.lat) >= 0.00001 ||
+                Math.abs(lastIntelSync.lng - nextIntelSync.lng) >= 0.00001
+            ) {
+                lastIntelSyncRef.current = nextIntelSync;
+                window.postMessage({ type: 'IRIS_SYNC_INTEL_MAP', lat: nextIntelSync.lat, lng: nextIntelSync.lng, zoom: nextIntelSync.zoom }, '*');
+            }
         }
 
         const settleMs = currentLive ? 300 : 300;
@@ -544,6 +573,21 @@ function TacticalOverlay(): h.JSX.Element {
             return next;
         });
     }, []);
+
+    const handlePortalLevelColorToggle = useCallback((): void => {
+        setPortalLevelColorEnabled((current) => !current);
+    }, []);
+
+    const handlePortalHealthColorToggle = useCallback((): void => {
+        setPortalHealthColorEnabled((current) => !current);
+    }, []);
+
+    useEffect(() => {
+        const m = mapRef.current;
+        if (!m || !m.getLayer('p')) return;
+        m.setPaintProperty('p', 'circle-color', (portalLevelColorEnabled ? PORTAL_LEVEL_COLOR_EXPR : PORTAL_TEAM_COLOR_EXPR) as any);
+        m.setPaintProperty('p', 'circle-opacity', (portalHealthColorEnabled ? PORTAL_HEALTH_OPACITY_EXPR : 1) as any);
+    }, [portalHealthColorEnabled, portalLevelColorEnabled]);
 
     const handleSelectionPanelOpen = useCallback((): void => {
         mapRef.current?.panBy([0, 140], { duration: 200 });
@@ -613,7 +657,7 @@ function TacticalOverlay(): h.JSX.Element {
                     { id: 'sel-f', type: 'line', source: 'selection', filter: ['==', 'type', 'field'], paint: { 'line-color': '#fff', 'line-width': 3 } },
                     { id: 'sel-l', type: 'line', source: 'selection', filter: ['==', 'type', 'link'], paint: { 'line-color': '#fff', 'line-width': 4 } },
                     { id: 'sel-p', type: 'circle', source: 'selection', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': 12, 'circle-color': 'transparent', 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 } },
-                    { id: 'p', type: 'circle', source: 'entities', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': ['coalesce', ['get', 'radius'], 2], 'circle-color': ['match', ['get', 'team'], 'E', COLORS.E, 'R', COLORS.R, 'M', COLORS.M, COLORS.N] } },
+                    { id: 'p', type: 'circle', source: 'entities', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': ['coalesce', ['get', 'radius'], 2], 'circle-color': PORTAL_TEAM_COLOR_EXPR as any, 'circle-opacity': 1 } },
                     { id: 'p-history-visited-highlight', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'visitedHighlight', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 5], 'circle-color': 'transparent', 'circle-stroke-color': PORTAL_HISTORY_COLORS.visited, 'circle-stroke-width': 2, 'circle-opacity': 0.9 } },
                     { id: 'p-history-captured-highlight', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'capturedHighlight', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 8], 'circle-color': 'transparent', 'circle-stroke-color': PORTAL_HISTORY_COLORS.captured, 'circle-stroke-width': 2, 'circle-opacity': 0.9 } },
                     { id: 'p-history-scanned-highlight', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'scannedHighlight', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 11], 'circle-color': 'transparent', 'circle-stroke-color': PORTAL_HISTORY_COLORS.scanned, 'circle-stroke-width': 2, 'circle-opacity': 0.9 } },
@@ -903,6 +947,10 @@ function TacticalOverlay(): h.JSX.Element {
                         onPortalHistoryLayerToggle={handlePortalHistoryLayerToggle}
                         keyOverlayEnabled={keyOverlayEnabled}
                         onKeyOverlayToggle={handleKeyOverlayToggle}
+                        portalLevelColorEnabled={portalLevelColorEnabled}
+                        onPortalLevelColorToggle={handlePortalLevelColorToggle}
+                        portalHealthColorEnabled={portalHealthColorEnabled}
+                        onPortalHealthColorToggle={handlePortalHealthColorToggle}
                         onNav={handleNav} onStyle={handleStyle} onMode={handleMode}
                         onPortalClick={handlePortalClick}
                         onSelectionPanelOpen={handleSelectionPanelOpen}
