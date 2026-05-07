@@ -196,8 +196,9 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 - Entity rendering guards against UI-only live resyncs replacing a populated `entities` source with an empty feature collection.
 - Entity source updates apply `setData` immediately instead of deferring through `requestAnimationFrame`.
 - Live UI redraws render viewport entities directly from the Zustand store instead of depending on RBush, so style/key overlay changes cannot blank the map because of spatial-index timing.
-- Map style changes and key overlay toggles now use a settled UI sync path (`now`, next frame, short settle, and MapLibre `idle`) and reassert the base/overlay layer order, fixing first-click blank maps without requiring a second style/key click.
-- Mini IRIS version markers are now extension/package `1.0.10` and console banner `v1.3.12 | Stable UI Sync`.
+- Map style changes now only swap the raster base layer and reassert base/overlay layer order across MapLibre settle points; they also force a local MapLibre resize/jump/repaint cycle so existing portal/link/field layers repaint without rebuilding the entity GeoJSON source.
+- Key overlay toggles still use the settled entity sync path because key labels are currently rendered from the same `entities` source as portals/links/fields.
+- Mini IRIS version markers are now extension/package `1.0.12` and console banner `v1.3.14 | Style Repaint Sync`.
 
 #### Current Alignment Notes
 - Portal and link scale now follow the same zoom-aware approach used by IRIS rather than hardcoded mini-IRIS sizes.

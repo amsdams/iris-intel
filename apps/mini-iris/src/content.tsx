@@ -20,7 +20,7 @@ import { throttle } from './GeoUtils';
 import { isEndpointStateMessage, numberOrNull, stringOrNull } from './messages';
 import { DEFAULT_PORTAL_HISTORY_LAYERS, PORTAL_HISTORY_COLORS, nextPortalHistoryMode, type PortalHistoryKey, type PortalHistoryLayerState, type PortalHistoryMode } from './portalHistory';
 
-console.log("Mini IRIS (TS): Tactical Overlay | v1.3.12 | Stable UI Sync");
+console.log("Mini IRIS (TS): Tactical Overlay | v1.3.14 | Style Repaint Sync");
 
 const DEFAULT_MAP_CENTER: [number, number] = [4.8952, 52.3702];
 const DEFAULT_MAP_ZOOM = 13;
@@ -534,6 +534,31 @@ function TacticalOverlay(): h.JSX.Element {
         map.once('idle', syncMapAfterUiChange);
     }, [syncMapAfterUiChange]);
 
+    const syncLayerOrderAfterStyleChange = useCallback((): void => {
+        const map = mapRef.current;
+        if (!map || !map.getStyle()) return;
+        reassertMapLayerOrder(map);
+        map.resize();
+        const center = map.getCenter();
+        map.jumpTo({
+            center: [center.lng, center.lat],
+            zoom: map.getZoom(),
+            bearing: map.getBearing(),
+            pitch: map.getPitch(),
+        });
+        map.triggerRepaint();
+    }, []);
+
+    const scheduleLayerOrderAfterStyleChange = useCallback((): void => {
+        syncLayerOrderAfterStyleChange();
+        window.requestAnimationFrame(syncLayerOrderAfterStyleChange);
+        window.setTimeout(syncLayerOrderAfterStyleChange, 120);
+
+        const map = mapRef.current;
+        if (!map || !map.getStyle()) return;
+        map.once('idle', syncLayerOrderAfterStyleChange);
+    }, [syncLayerOrderAfterStyleChange]);
+
     const throttledSync = useMemo(() => throttle((m: maplibregl.Map): void => {
         const center = m.getCenter();
         setMapState({ zoom: m.getZoom(), lat: center.lat, lng: center.lng });
@@ -833,7 +858,7 @@ function TacticalOverlay(): h.JSX.Element {
         if (!m || !m.getStyle() || !isMapStyleName(style)) return;
 
         if (style === mapStyle) {
-            scheduleMapSyncAfterUiChange();
+            scheduleLayerOrderAfterStyleChange();
             logEvent(`Style: ${style}`);
             return;
         }
@@ -845,9 +870,9 @@ function TacticalOverlay(): h.JSX.Element {
         m.addLayer({ id: 'carto', type: 'raster', source: 'carto' }, firstOverlayId);
         reassertMapLayerOrder(m);
         setMapStyle(style);
-        scheduleMapSyncAfterUiChange();
+        scheduleLayerOrderAfterStyleChange();
         logEvent(`Style: ${style}`);
-    }, [logEvent, mapStyle, scheduleMapSyncAfterUiChange]);
+    }, [logEvent, mapStyle, scheduleLayerOrderAfterStyleChange]);
 
     const handleMode = useCallback((mode: string): void => {
         const m = mapRef.current;
