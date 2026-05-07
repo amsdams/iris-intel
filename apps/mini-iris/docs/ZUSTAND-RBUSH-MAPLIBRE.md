@@ -148,6 +148,7 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 | **Mock Map Test Data** | **IMPROVED**    | Mock history and inventory are deterministic, with separate local mock inventory for key overlay testing. |
 | **Mock Map Panning Drift** | **FIXED**       | Mock pattern loading is separated from map data sync so panning and overlay changes do not regenerate mock coordinates. |
 | **Key Overlay Performance** | **IMPROVED**    | Inventory key counts are pre-aggregated by portal and key labels only render at tactical zoom. |
+| **UI Preference Persistence** | **DONE**        | Mini IRIS open state, map style, portal history modes, key overlay state, and map position persist under one Mini IRIS localStorage key without Mini IRIS cookies. |
 
 ### Roadmap & Alignment (TODO)
 
@@ -185,6 +186,10 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 - Player profile loading now has an explicit `IRIS_PLAYER_STATS_REQUEST` path plus repeated page-world checks, so the panel does not depend on a single early passive `PLAYER` post.
 - Initial live testing shows the player profile panel now loads more reliably; keep this in verification until mobile/live Intel sessions confirm it consistently.
 - Inventory key labels are still being mobile-tested against live data, especially visibility, refresh behavior, and performance with real key counts.
+- Display preferences, Mini IRIS/default Intel mode, and map position now persist via the consolidated `mini-iris:preferences:v1` localStorage key.
+- Legacy Mini IRIS localStorage keys (`iris-poc-map-state`, `mini-iris-ui-state-v1`) are migrated into the consolidated key and removed after the next write.
+- Mini IRIS map position persistence is localStorage-only; the old map-state cookie is no longer read or written and is cleared when the overlay loads.
+- The launcher button now uses the `mini-iris-toggle-btn` id and describes the target view (`IRIS` when closed, `INTEL` when open) instead of using the old `3D` wording.
 
 #### Current Alignment Notes
 - Portal and link scale now follow the same zoom-aware approach used by IRIS rather than hardcoded mini-IRIS sizes.
@@ -194,6 +199,7 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 - Inventory key support now includes a first map overlay, mock test data, pre-aggregated render counts, tactical zoom gating, and forced manual inventory refresh; mobile live-data verification is still in progress, while deeper filtering, capsule names, and drilldown can stay future work.
 - Player profile data no longer depends only on the initial interceptor post; early testing looks better, but mobile/live verification should confirm whether any Intel sessions still lack a usable `window.PLAYER` payload.
 - Mock/source mode is useful for overlay testing, with pattern coordinates now stable during panning and overlay syncs.
+- Display preference persistence intentionally excludes live/mock mode, pattern mode, 3D extrusion, open drawer state, and selected objects.
 - Visual alignment is in a better baseline state after centralizing the Ingress palette; generic UI chrome can stay iterative.
 - Remaining work is mostly feature breadth and mobile polish, not core rendering stability.
 

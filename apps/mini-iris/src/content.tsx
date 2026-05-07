@@ -18,60 +18,156 @@ import { useEndpointTelemetry } from './useEndpointTelemetry';
 import type { PlextRequestBounds } from './plextRequests';
 import { throttle } from './GeoUtils';
 import { isEndpointStateMessage, numberOrNull, stringOrNull } from './messages';
-import { DEFAULT_PORTAL_HISTORY_LAYERS, PORTAL_HISTORY_COLORS, nextPortalHistoryMode, type PortalHistoryKey } from './portalHistory';
+import { DEFAULT_PORTAL_HISTORY_LAYERS, PORTAL_HISTORY_COLORS, nextPortalHistoryMode, type PortalHistoryKey, type PortalHistoryLayerState, type PortalHistoryMode } from './portalHistory';
 
 console.log("Mini IRIS (TS): Tactical Overlay | v1.3.3 | Stable Orchestration");
 
 const DEFAULT_MAP_CENTER: [number, number] = [4.8952, 52.3702];
 const DEFAULT_MAP_ZOOM = 13;
-const MAP_STATE_STORAGE_KEY = 'iris-poc-map-state';
-const MAP_STATE_COOKIE_KEY = 'iris_poc_map_state';
+const MINI_IRIS_STORAGE_KEY = 'mini-iris:preferences:v1';
+const LEGACY_MAP_STATE_STORAGE_KEY = 'iris-poc-map-state';
+const LEGACY_UI_STATE_STORAGE_KEY = 'mini-iris-ui-state-v1';
+const LEGACY_MAP_STATE_COOKIE_KEY = 'iris_poc_map_state';
 
-interface SavedMapState {
+interface SavedViewState {
     lat: number;
     lng: number;
     zoom: number;
 }
 
+type MapStyleName = keyof typeof MAP_STYLES;
+
+interface SavedUiState {
+    mapStyle: MapStyleName;
+    portalHistoryLayers: PortalHistoryLayerState;
+    keyOverlayEnabled: boolean;
+    miniIrisOpen: boolean;
+}
+
+interface MiniIrisPreferences {
+    version: 1;
+    view: SavedViewState;
+    display: SavedUiState;
+}
+
 type SelectedEntity = { type: 'portal'; data: Portal } | { type: 'link'; data: Link } | { type: 'field'; data: Field };
 
-function readSavedMapState(): SavedMapState | null {
+function clearLegacyMapStateCookie(): void {
     try {
-        const cookieMatch = document.cookie
-            .split(';')
-            .map(cookie => cookie.trim())
-            .find(cookie => cookie.startsWith(`${MAP_STATE_COOKIE_KEY}=`));
+        document.cookie = `${LEGACY_MAP_STATE_COOKIE_KEY}=; path=/; max-age=0; SameSite=Lax; Secure`;
+    } catch {
+        // Ignore cookie cleanup failures.
+    }
+}
 
-        const raw = cookieMatch
-            ? decodeURIComponent(cookieMatch.slice(MAP_STATE_COOKIE_KEY.length + 1))
-            : window.localStorage.getItem(MAP_STATE_STORAGE_KEY);
+function isMapStyleName(value: unknown): value is MapStyleName {
+    return typeof value === 'string' && value in MAP_STYLES;
+}
 
-        if (!raw) return null;
+function isPortalHistoryMode(value: unknown): value is PortalHistoryMode {
+    return value === 'off' || value === 'highlight' || value === 'inverse';
+}
 
-        const parsed = JSON.parse(raw) as Partial<SavedMapState>;
-        if (
-            typeof parsed.lat !== 'number' ||
-            typeof parsed.lng !== 'number' ||
-            typeof parsed.zoom !== 'number'
-        ) {
-            return null;
-        }
+function defaultViewState(): SavedViewState {
+    return {
+        lat: DEFAULT_MAP_CENTER[1],
+        lng: DEFAULT_MAP_CENTER[0],
+        zoom: DEFAULT_MAP_ZOOM,
+    };
+}
 
-        return {
-            lat: parsed.lat,
-            lng: parsed.lng,
-            zoom: parsed.zoom,
-        };
+function defaultUiState(): SavedUiState {
+    return {
+        mapStyle: 'Dark',
+        portalHistoryLayers: DEFAULT_PORTAL_HISTORY_LAYERS,
+        keyOverlayEnabled: false,
+        miniIrisOpen: false,
+    };
+}
+
+function parseViewState(value: unknown): SavedViewState | null {
+    if (
+        typeof value !== 'object' ||
+        value === null ||
+        !('lat' in value) ||
+        !('lng' in value) ||
+        !('zoom' in value) ||
+        typeof value.lat !== 'number' ||
+        typeof value.lng !== 'number' ||
+        typeof value.zoom !== 'number'
+    ) {
+        return null;
+    }
+
+    return {
+        lat: value.lat,
+        lng: value.lng,
+        zoom: value.zoom,
+    };
+}
+
+function parseUiState(value: unknown): SavedUiState {
+    if (typeof value !== 'object' || value === null) return defaultUiState();
+    const parsed = value as Partial<SavedUiState>;
+    const history = parsed.portalHistoryLayers as Partial<Record<PortalHistoryKey, unknown>> | undefined;
+
+    return {
+        mapStyle: isMapStyleName(parsed.mapStyle) ? parsed.mapStyle : 'Dark',
+        portalHistoryLayers: {
+            visited: isPortalHistoryMode(history?.visited) ? history.visited : DEFAULT_PORTAL_HISTORY_LAYERS.visited,
+            captured: isPortalHistoryMode(history?.captured) ? history.captured : DEFAULT_PORTAL_HISTORY_LAYERS.captured,
+            scanned: isPortalHistoryMode(history?.scanned) ? history.scanned : DEFAULT_PORTAL_HISTORY_LAYERS.scanned,
+        },
+        keyOverlayEnabled: typeof parsed.keyOverlayEnabled === 'boolean' ? parsed.keyOverlayEnabled : false,
+        miniIrisOpen: typeof parsed.miniIrisOpen === 'boolean' ? parsed.miniIrisOpen : false,
+    };
+}
+
+function readLegacyMapState(): SavedViewState | null {
+    try {
+        const raw = window.localStorage.getItem(LEGACY_MAP_STATE_STORAGE_KEY);
+        return raw ? parseViewState(JSON.parse(raw)) : null;
     } catch {
         return null;
     }
 }
 
-function writeSavedMapState(state: SavedMapState): void {
+function readLegacyUiState(): SavedUiState | null {
     try {
-        const serialized = JSON.stringify(state);
-        window.localStorage.setItem(MAP_STATE_STORAGE_KEY, serialized);
-        document.cookie = `${MAP_STATE_COOKIE_KEY}=${encodeURIComponent(serialized)}; path=/; SameSite=Lax; Secure`;
+        const raw = window.localStorage.getItem(LEGACY_UI_STATE_STORAGE_KEY);
+        return raw ? parseUiState(JSON.parse(raw)) : null;
+    } catch {
+        return null;
+    }
+}
+
+function readMiniIrisPreferences(): MiniIrisPreferences {
+    try {
+        const raw = window.localStorage.getItem(MINI_IRIS_STORAGE_KEY);
+        if (raw) {
+            const parsed = JSON.parse(raw) as Partial<MiniIrisPreferences>;
+            return {
+                version: 1,
+                view: parseViewState(parsed.view) ?? defaultViewState(),
+                display: parseUiState(parsed.display),
+            };
+        }
+    } catch {
+        // Fall through to legacy/default preferences.
+    }
+
+    return {
+        version: 1,
+        view: readLegacyMapState() ?? defaultViewState(),
+        display: readLegacyUiState() ?? defaultUiState(),
+    };
+}
+
+function writeMiniIrisPreferences(preferences: MiniIrisPreferences): void {
+    try {
+        window.localStorage.setItem(MINI_IRIS_STORAGE_KEY, JSON.stringify(preferences));
+        window.localStorage.removeItem(LEGACY_MAP_STATE_STORAGE_KEY);
+        window.localStorage.removeItem(LEGACY_UI_STATE_STORAGE_KEY);
     } catch {
         // Ignore storage failures.
     }
@@ -83,20 +179,21 @@ function TacticalOverlay(): h.JSX.Element {
     const [loadedTileKeys] = useState(() => new Set<string>());
     const [events, setEvents] = useState<{time: string, msg: string}[]>([]);
     const [selected, setSelected] = useState<SelectedEntity | null>(null);
-    const [savedMapState] = useState(() => readSavedMapState());
+    const [savedPreferences] = useState(() => readMiniIrisPreferences());
     const [mapState, setMapState] = useState(() => ({
-        zoom: savedMapState?.zoom ?? DEFAULT_MAP_ZOOM,
-        lat: savedMapState?.lat ?? DEFAULT_MAP_CENTER[1],
-        lng: savedMapState?.lng ?? DEFAULT_MAP_CENTER[0],
+        zoom: savedPreferences.view.zoom,
+        lat: savedPreferences.view.lat,
+        lng: savedPreferences.view.lng,
     }));
     const [plextBounds, setPlextBounds] = useState<PlextRequestBounds | null>(null);
     const [liveMode, setLiveMode] = useState(true);
     const [patternMode, setPatternMode] = useState(0);
-    const [portalHistoryLayers, setPortalHistoryLayers] = useState(DEFAULT_PORTAL_HISTORY_LAYERS);
-    const [keyOverlayEnabled, setKeyOverlayEnabled] = useState(false);
+    const [mapStyle, setMapStyle] = useState<MapStyleName>(savedPreferences.display.mapStyle);
+    const [portalHistoryLayers, setPortalHistoryLayers] = useState<PortalHistoryLayerState>(savedPreferences.display.portalHistoryLayers);
+    const [keyOverlayEnabled, setKeyOverlayEnabled] = useState(savedPreferences.display.keyOverlayEnabled);
     const [mockInventory, setMockInventory] = useState<InventoryItem[]>([]);
     const [extrusionEnabled, setExtrusionEnabled] = useState(false);
-    const [isVis, setIsVis] = useState(false);
+    const [isVis, setIsVis] = useState(savedPreferences.display.miniIrisOpen);
     const [pulseTick, setPulseTick] = useState(0);
     const liveModeRef = useRef(liveMode);
     const patternModeRef = useRef(patternMode);
@@ -125,6 +222,10 @@ function TacticalOverlay(): h.JSX.Element {
     }, [mapState]);
 
     useEffect(() => {
+        clearLegacyMapStateCookie();
+    }, []);
+
+    useEffect(() => {
         if (!isVis) return;
 
         let frame: number | null = null;
@@ -141,27 +242,36 @@ function TacticalOverlay(): h.JSX.Element {
         };
     }, [isVis]);
 
-    const persistMapState = useCallback((nextState?: SavedMapState): void => {
-        const stateToSave = nextState ?? {
+    const persistPreferences = useCallback((viewOverride?: SavedViewState): void => {
+        const stateToSave = viewOverride ?? {
             lat: mapStateRef.current.lat,
             lng: mapStateRef.current.lng,
             zoom: mapStateRef.current.zoom,
         };
 
-        writeSavedMapState({
-            lat: stateToSave.lat,
-            lng: stateToSave.lng,
-            zoom: stateToSave.zoom,
+        writeMiniIrisPreferences({
+            version: 1,
+            view: {
+                lat: stateToSave.lat,
+                lng: stateToSave.lng,
+                zoom: stateToSave.zoom,
+            },
+            display: {
+                mapStyle,
+                portalHistoryLayers,
+                keyOverlayEnabled,
+                miniIrisOpen: isVis,
+            },
         });
-    }, []);
+    }, [isVis, keyOverlayEnabled, mapStyle, portalHistoryLayers]);
 
     useEffect(() => {
-        persistMapState();
-    }, [persistMapState, liveMode, mapState, patternMode]);
+        persistPreferences();
+    }, [isVis, keyOverlayEnabled, liveMode, mapState, mapStyle, patternMode, persistPreferences, portalHistoryLayers]);
 
     useEffect(() => {
         const handlePageHide = (): void => {
-            persistMapState();
+            persistPreferences();
         };
 
         window.addEventListener('pagehide', handlePageHide);
@@ -170,7 +280,7 @@ function TacticalOverlay(): h.JSX.Element {
             window.removeEventListener('pagehide', handlePageHide);
             window.removeEventListener('beforeunload', handlePageHide);
         };
-    }, [persistMapState]);
+    }, [persistPreferences]);
 
     const clearMoveSettleTimer = useCallback((): void => {
         if (moveSettleTimerRef.current !== null) {
@@ -393,7 +503,7 @@ function TacticalOverlay(): h.JSX.Element {
         const nextState = { zoom: currentZoom, lat: center.lat, lng: center.lng };
         setMapState(nextState);
         setPlextBounds(nextBounds);
-        persistMapState(nextState);
+        persistPreferences(nextState);
 
         if (currentLive) {
             window.postMessage({ type: 'IRIS_SYNC_INTEL_MAP', lat: center.lat, lng: center.lng, zoom: Math.round(currentZoom) }, '*');
@@ -404,7 +514,7 @@ function TacticalOverlay(): h.JSX.Element {
             moveSettleTimerRef.current = null;
             checkAndLoadRef.current(m, currentPattern, currentLive);
         }, settleMs);
-    }, [clearMoveSettleTimer, persistMapState]);
+    }, [clearMoveSettleTimer, persistPreferences]);
 
     const handlePortalClick = useCallback((lat: number, lng: number, name: string): void => {
         if (!mapRef.current) return;
@@ -444,10 +554,10 @@ function TacticalOverlay(): h.JSX.Element {
         if (mapRef.current) return; // Only init once
 
         const initialCenter: [number, number] = [
-            savedMapState?.lng ?? DEFAULT_MAP_CENTER[0],
-            savedMapState?.lat ?? DEFAULT_MAP_CENTER[1],
+            savedPreferences.view.lng,
+            savedPreferences.view.lat,
         ];
-        const initialZoom = savedMapState?.zoom ?? DEFAULT_MAP_ZOOM;
+        const initialZoom = savedPreferences.view.zoom;
         
         const m = new maplibregl.Map({
             container: 'map-poc-container',
@@ -455,7 +565,7 @@ function TacticalOverlay(): h.JSX.Element {
                 version: 8,
                 glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
                 sources: {
-                    'carto': { type: 'raster', tiles: MAP_STYLES['Dark'], tileSize: 256 },
+                    'carto': { type: 'raster', tiles: MAP_STYLES[mapStyle], tileSize: 256 },
                     'entities': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
                     'players': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
                     'selection': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } }
@@ -589,7 +699,7 @@ function TacticalOverlay(): h.JSX.Element {
 
         mapRef.current = m;
         return (): void => { m.remove(); mapRef.current = null; };
-    }, [clearMoveSettleTimer, generator, logEvent, savedMapState?.lat, savedMapState?.lng, savedMapState?.zoom, scheduleMoveSettleLoad, throttledSync]);
+    }, [clearMoveSettleTimer, generator, logEvent, savedPreferences.view.lat, savedPreferences.view.lng, savedPreferences.view.zoom, scheduleMoveSettleLoad, throttledSync]);
 
     useEffect(() => {
         return (): void => {
@@ -645,7 +755,7 @@ function TacticalOverlay(): h.JSX.Element {
         else if (action === 'R') {
             m.setCenter(DEFAULT_MAP_CENTER);
             m.setZoom(DEFAULT_MAP_ZOOM);
-            persistMapState({
+            persistPreferences({
                 lat: DEFAULT_MAP_CENTER[1],
                 lng: DEFAULT_MAP_CENTER[0],
                 zoom: DEFAULT_MAP_ZOOM,
@@ -661,16 +771,17 @@ function TacticalOverlay(): h.JSX.Element {
                 logEvent(`Location Failed: ${err.message}`);
             }, { enableHighAccuracy: true, timeout: 5000 });
         }
-    }, [logEvent, persistMapState]);
+    }, [logEvent, persistPreferences]);
 
     const handleStyle = useCallback((style: string): void => {
         const m = mapRef.current;
-        if (!m || !m.getStyle() || !MAP_STYLES[style]) return;
+        if (!m || !m.getStyle() || !isMapStyleName(style)) return;
         if (m.getLayer('carto')) m.removeLayer('carto');
         if (m.getSource('carto')) m.removeSource('carto');
         m.addSource('carto', { type: 'raster', tiles: MAP_STYLES[style], tileSize: 256, attribution: style === 'OSM' ? '&copy; OpenStreetMap' : '&copy; CARTO' });
         const layers = m.getStyle().layers;
         m.addLayer({ id: 'carto', type: 'raster', source: 'carto' }, layers?.[0]?.id);
+        setMapStyle(style);
         logEvent(`Style: ${style}`);
     }, [logEvent]);
 
@@ -774,8 +885,9 @@ function TacticalOverlay(): h.JSX.Element {
                 </Fragment>
             )}
             <LaunchButton isVis={isVis} onClick={(): void => {
-                setIsVis(!isVis);
-                if (!isVis && mapRef.current && mapRef.current.getStyle()) {
+                const nextIsVis = !isVis;
+                setIsVis(nextIsVis);
+                if (nextIsVis && mapRef.current && mapRef.current.getStyle()) {
                     mapRef.current.resize();
                     checkAndLoad(mapRef.current, patternMode, liveMode);
                     logEvent("Tactical Map Opened");
