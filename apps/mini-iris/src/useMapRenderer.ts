@@ -19,16 +19,15 @@ export function useMapRenderer(
     keyOverlayEnabled: boolean,
     mockInventory: InventoryItem[],
 ): UseMapRendererResult {
-    const pendingFrameRef = useRef<number | null>(null);
     const liveInventory = useStore((state) => state.inventory);
     const liveKeyCountsByPortal = useMemo(() => InventoryParser.aggregatePortalKeys(liveInventory), [liveInventory]);
     const mockKeyCountsByPortal = useMemo(() => InventoryParser.aggregatePortalKeys(mockInventory), [mockInventory]);
     const liveKeyCountsRef = useRef<Record<string, PortalKeyCounts>>({});
     const mockKeyCountsRef = useRef<Record<string, PortalKeyCounts>>({});
-    const pendingSetDataRef = useRef<{
-        source: maplibregl.GeoJSONSource;
-        data: GeoJSON.FeatureCollection;
-    } | null>(null);
+    const lastEntityDataRef = useRef<GeoJSON.FeatureCollection>({
+        type: 'FeatureCollection',
+        features: [],
+    });
 
     useEffect(() => {
         liveKeyCountsRef.current = liveKeyCountsByPortal;
@@ -38,35 +37,9 @@ export function useMapRenderer(
         mockKeyCountsRef.current = mockKeyCountsByPortal;
     }, [mockKeyCountsByPortal]);
 
-    const flushPendingSetData = useCallback((): void => {
-        pendingFrameRef.current = null;
-        const pending = pendingSetDataRef.current;
-        if (!pending) return;
-
-        pendingSetDataRef.current = null;
-        pending.source.setData(pending.data);
+    const applySetData = useCallback((source: maplibregl.GeoJSONSource, data: GeoJSON.FeatureCollection): void => {
+        source.setData(data);
     }, []);
-
-    useEffect(() => {
-        return (): void => {
-            if (pendingFrameRef.current !== null) {
-                window.cancelAnimationFrame(pendingFrameRef.current);
-                pendingFrameRef.current = null;
-            }
-            pendingSetDataRef.current = null;
-        };
-    }, []);
-
-    const scheduleSetData = useCallback((source: maplibregl.GeoJSONSource, data: GeoJSON.FeatureCollection): void => {
-        pendingSetDataRef.current = { source, data };
-        if (pendingFrameRef.current !== null) {
-            return;
-        }
-
-        pendingFrameRef.current = window.requestAnimationFrame(() => {
-            flushPendingSetData();
-        });
-    }, [flushPendingSetData]);
 
     const syncToMap = useCallback((
         currentMap: maplibregl.Map, 
@@ -88,9 +61,41 @@ export function useMapRenderer(
             maxLng: bounds.getEast() + buffer
         };
 
-        const results = currentLiveMode ? globalSpatialIndex.query(q) : generator.query({ minX: q.minLng, minY: q.minLat, maxX: q.maxLng, maxY: q.maxLat });
-        const features: GeoJSON.Feature[] = [];
         const store = useStore.getState();
+        if (currentLiveMode) {
+            store.syncIndex();
+        }
+        const hasLiveStoreData = Object.keys(store.portals).length > 0 || Object.keys(store.links).length > 0 || Object.keys(store.fields).length > 0;
+        let results: ReturnType<typeof globalSpatialIndex.query> = currentLiveMode
+            ? globalSpatialIndex.query(q)
+            : generator.query({ minX: q.minLng, minY: q.minLat, maxX: q.maxLng, maxY: q.maxLat });
+
+        if (currentLiveMode && hasLiveStoreData && results.length === 0) {
+            const portalResults = Object.values(store.portals)
+                .filter((p) => p.lat >= q.minLat && p.lat <= q.maxLat && p.lng >= q.minLng && p.lng <= q.maxLng)
+                .map((p) => ({ minX: p.lng, minY: p.lat, maxX: p.lng, maxY: p.lat, id: p.id, type: 'portal' as const }));
+            const linkResults = Object.values(store.links)
+                .filter((l) => Math.max(l.fromLat, l.toLat) >= q.minLat && Math.min(l.fromLat, l.toLat) <= q.maxLat && Math.max(l.fromLng, l.toLng) >= q.minLng && Math.min(l.fromLng, l.toLng) <= q.maxLng)
+                .map((l) => ({ minX: Math.min(l.fromLng, l.toLng), minY: Math.min(l.fromLat, l.toLat), maxX: Math.max(l.fromLng, l.toLng), maxY: Math.max(l.fromLat, l.toLat), id: l.id, type: 'link' as const }));
+            const fieldResults = Object.values(store.fields)
+                .map((f) => {
+                    const lngs = f.points.map((p) => p.lng);
+                    const lats = f.points.map((p) => p.lat);
+                    return {
+                        minX: Math.min(...lngs),
+                        minY: Math.min(...lats),
+                        maxX: Math.max(...lngs),
+                        maxY: Math.max(...lats),
+                        id: f.id,
+                        type: 'field' as const,
+                    };
+                })
+                .filter((f) => f.maxY >= q.minLat && f.minY <= q.maxLat && f.maxX >= q.minLng && f.minX <= q.maxLng);
+            results = [...portalResults, ...linkResults, ...fieldResults];
+            logEvent(`RENDERED: live spatial index fallback used (${results.length} indexed items)`);
+        }
+
+        const features: GeoJSON.Feature[] = [];
         const keyCountsByPortal = currentLiveMode ? liveKeyCountsRef.current : mockKeyCountsRef.current;
 
         const portalMaxLayer = new Map<string, number>();
@@ -239,10 +244,18 @@ export function useMapRenderer(
 
         const source = currentMap.getSource('entities') as maplibregl.GeoJSONSource | undefined;
         if (source) {
-            scheduleSetData(source, { type: 'FeatureCollection', features });
+            const nextData: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features };
+            if (currentLiveMode && hasLiveStoreData && nextData.features.length === 0 && lastEntityDataRef.current.features.length > 0) {
+                applySetData(source, lastEntityDataRef.current);
+                logEvent(`RENDERED: restored ${lastEntityDataRef.current.features.length} cached items after empty live sync`);
+                return;
+            }
+
+            lastEntityDataRef.current = nextData;
+            applySetData(source, nextData);
             logEvent(`RENDERED: ${features.length} items (Min L:${minLevel})`);
         }
-    }, [generator, keyOverlayEnabled, logEvent, portalHistoryLayers, scheduleSetData]);
+    }, [applySetData, generator, keyOverlayEnabled, logEvent, portalHistoryLayers]);
 
     return { syncToMap };
 }

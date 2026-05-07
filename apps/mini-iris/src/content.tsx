@@ -20,7 +20,7 @@ import { throttle } from './GeoUtils';
 import { isEndpointStateMessage, numberOrNull, stringOrNull } from './messages';
 import { DEFAULT_PORTAL_HISTORY_LAYERS, PORTAL_HISTORY_COLORS, nextPortalHistoryMode, type PortalHistoryKey, type PortalHistoryLayerState, type PortalHistoryMode } from './portalHistory';
 
-console.log("Mini IRIS (TS): Tactical Overlay | v1.3.3 | Stable Orchestration");
+console.log("Mini IRIS (TS): Tactical Overlay | v1.3.8 | Immediate Entity SetData");
 
 const DEFAULT_MAP_CENTER: [number, number] = [4.8952, 52.3702];
 const DEFAULT_MAP_ZOOM = 13;
@@ -782,6 +782,11 @@ function TacticalOverlay(): h.JSX.Element {
         const layers = m.getStyle().layers;
         m.addLayer({ id: 'carto', type: 'raster', source: 'carto' }, layers?.[0]?.id);
         setMapStyle(style);
+        window.requestAnimationFrame(() => {
+            if (!mapRef.current) return;
+            checkAndLoadRef.current(mapRef.current, patternModeRef.current, liveModeRef.current);
+            mapRef.current.triggerRepaint();
+        });
         logEvent(`Style: ${style}`);
     }, [logEvent]);
 
@@ -861,6 +866,40 @@ function TacticalOverlay(): h.JSX.Element {
         checkAndLoad(mapRef.current, patternMode, liveMode);
     }, [patternMode, liveMode, checkAndLoad]);
 
+    const refreshMiniIrisAfterOpen = useCallback((): void => {
+        const runRefresh = (label: string): void => {
+            const map = mapRef.current;
+            if (!map || !map.getStyle()) {
+                logEvent(`IRIS reopen refresh skipped (${label}): map unavailable`);
+                return;
+            }
+
+            map.resize();
+            const center = map.getCenter();
+            const zoom = map.getZoom();
+            const bounds = map.getBounds();
+            setMapState({ zoom, lat: center.lat, lng: center.lng });
+            setPlextBounds({
+                minLatE6: Math.round(bounds.getSouth() * 1e6),
+                minLngE6: Math.round(bounds.getWest() * 1e6),
+                maxLatE6: Math.round(bounds.getNorth() * 1e6),
+                maxLngE6: Math.round(bounds.getEast() * 1e6),
+            });
+
+            if (liveModeRef.current) {
+                logEvent(`Intel map sync requested (${label}) @ ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)} z${Math.round(zoom)}`);
+                window.postMessage({ type: 'IRIS_SYNC_INTEL_MAP', lat: center.lat, lng: center.lng, zoom: Math.round(zoom), refresh: true }, '*');
+            }
+
+            checkAndLoadRef.current(map, patternModeRef.current, liveModeRef.current);
+            map.triggerRepaint();
+        };
+
+        logEvent("IRIS reopen refresh scheduled");
+        window.setTimeout(() => runRefresh('fast'), 80);
+        window.setTimeout(() => runRefresh('settled'), 350);
+    }, [logEvent]);
+
     return (
         <div id="poc-preact-root" style={{ pointerEvents: 'none' }}>
             <MapContainer isVis={isVis} />
@@ -887,10 +926,10 @@ function TacticalOverlay(): h.JSX.Element {
             <LaunchButton isVis={isVis} onClick={(): void => {
                 const nextIsVis = !isVis;
                 setIsVis(nextIsVis);
-                if (nextIsVis && mapRef.current && mapRef.current.getStyle()) {
-                    mapRef.current.resize();
-                    checkAndLoad(mapRef.current, patternMode, liveMode);
-                    logEvent("Tactical Map Opened");
+                if (nextIsVis) {
+                    refreshMiniIrisAfterOpen();
+                } else {
+                    logEvent("Tactical Map Closed");
                 }
             }} />
         </div>

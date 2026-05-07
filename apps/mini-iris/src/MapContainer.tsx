@@ -16,8 +16,9 @@ export function MapContainer({ isVis }: MapContainerProps): JSX.Element {
                 bottom: 0, 
                 background: '#222', 
                 zIndex: 1000000, 
-                display: isVis ? 'block' : 'none', 
-                pointerEvents: 'auto' 
+                display: 'block',
+                visibility: isVis ? 'visible' : 'hidden',
+                pointerEvents: isVis ? 'auto' : 'none',
             }} 
         />
     );

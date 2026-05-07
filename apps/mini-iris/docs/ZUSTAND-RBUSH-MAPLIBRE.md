@@ -190,6 +190,16 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 - Legacy Mini IRIS localStorage keys (`iris-poc-map-state`, `mini-iris-ui-state-v1`) are migrated into the consolidated key and removed after the next write.
 - Mini IRIS map position persistence is localStorage-only; the old map-state cookie is no longer read or written and is cleared when the overlay loads.
 - The launcher button now uses the `mini-iris-toggle-btn` id and describes the target view (`IRIS` when closed, `INTEL` when open) instead of using the old `3D` wording.
+- The Mini IRIS map container now stays laid out while hidden and toggles `visibility`/pointer events instead of `display`, so MapLibre keeps entity layers painted across INTEL/IRIS switches.
+- Mini IRIS version markers were bumped to extension/package `1.0.3` and console banner `v1.3.5 | Direct Reopen Refresh` to make stale extension builds obvious during retesting.
+- The launcher click path now directly schedules fast and settled reopen refresh attempts, resizes MapLibre, syncs local entities, and posts `IRIS_SYNC_INTEL_MAP` with a refresh hint.
+- `IRIS_SYNC_INTEL_MAP` now supports a delayed refresh hint that performs a tiny reversible Intel map nudge, avoiding Google Maps no-op behavior when center/zoom are unchanged.
+- Mini IRIS version markers were bumped to extension/package `1.0.4` and console banner `v1.3.6 | Entity Source Guard`.
+- Entity rendering now guards against UI-only live resyncs replacing a populated `entities` source with an empty feature collection; style changes also resync entities after the base layer swap.
+- Mini IRIS version markers were bumped to extension/package `1.0.5` and console banner `v1.3.7 | Spatial Fallback`.
+- Live entity rendering now rebuilds the spatial index before UI-only resyncs and falls back to viewport-filtering the Zustand entity store if the RBush query returns empty while live entities are present.
+- Mini IRIS version markers were bumped to extension/package `1.0.6` and console banner `v1.3.8 | Immediate Entity SetData`.
+- Entity source updates now apply `setData` immediately instead of deferring through `requestAnimationFrame`, removing a race between style/key UI changes and stale scheduled entity updates.
 
 #### Current Alignment Notes
 - Portal and link scale now follow the same zoom-aware approach used by IRIS rather than hardcoded mini-IRIS sizes.
