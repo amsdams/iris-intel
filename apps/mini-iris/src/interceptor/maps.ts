@@ -56,42 +56,16 @@ export function installMapHooks(): void {
     // Handle sync messages from the 3D Map
     window.addEventListener('message', (e) => {
         const msg: unknown = e.data;
-        if (!isSyncMessage(msg)) return;
-        if (!win._iris_intel_map) {
-            console.warn('Mini IRIS: Intel map sync ignored; map not found');
-            return;
-        }
+        if (!isSyncMessage(msg) || !win._iris_intel_map) return;
 
-        const { lat, lng, zoom, refresh } = msg;
-        const center = { lat, lng };
-        const refreshCenter = { lat: lat + 0.00025, lng };
-        console.log(`Mini IRIS: Intel map sync ${win._iris_map_type ?? 'unknown'} refresh=${refresh === true}`);
+        const { lat, lng, zoom } = msg;
         if (win._iris_map_type === 'gmaps') {
             if (isGoogleMap(win._iris_intel_map)) {
-                if (refresh) {
-                    win._iris_intel_map.setCenter(refreshCenter);
-                    win.setTimeout(() => {
-                        if (isGoogleMap(win._iris_intel_map)) {
-                            win._iris_intel_map.setCenter(center);
-                            win._iris_intel_map.setZoom(zoom);
-                        }
-                    }, 80);
-                    return;
-                }
-                win._iris_intel_map.setCenter(center);
+                win._iris_intel_map.setCenter({ lat, lng });
                 win._iris_intel_map.setZoom(zoom);
             }
         } else if (win._iris_map_type === 'leaflet') {
             if (isLeafletMap(win._iris_intel_map)) {
-                if (refresh) {
-                    win._iris_intel_map.setView([refreshCenter.lat, refreshCenter.lng], zoom, { animate: false });
-                    win.setTimeout(() => {
-                        if (isLeafletMap(win._iris_intel_map)) {
-                            win._iris_intel_map.setView([lat, lng], zoom, { animate: false });
-                        }
-                    }, 80);
-                    return;
-                }
                 win._iris_intel_map.setView([lat, lng], zoom, { animate: false });
             }
         }
@@ -131,7 +105,6 @@ interface SyncMessage {
     lat: number;
     lng: number;
     zoom: number;
-    refresh?: boolean;
 }
 
 function isSyncMessage(value: unknown): value is SyncMessage {

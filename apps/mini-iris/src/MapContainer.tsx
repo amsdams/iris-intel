@@ -13,13 +13,12 @@ export function MapContainer({ isVis }: MapContainerProps): JSX.Element {
                 top: 0, 
                 left: 0, 
                 right: 0, 
-                bottom: 0, 
-                background: '#222', 
-                zIndex: 1000000, 
-                display: 'block',
-                visibility: isVis ? 'visible' : 'hidden',
-                pointerEvents: isVis ? 'auto' : 'none',
-            }} 
+                bottom: 0,
+                background: '#222',
+                zIndex: 1000000,
+                display: isVis ? 'block' : 'none',
+                pointerEvents: 'auto'
+            }}
         />
     );
 }

@@ -186,19 +186,12 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 - Player profile loading now has an explicit `IRIS_PLAYER_STATS_REQUEST` path plus repeated page-world checks, so the panel does not depend on a single early passive `PLAYER` post.
 - Initial live testing shows the player profile panel now loads more reliably; keep this in verification until mobile/live Intel sessions confirm it consistently.
 - Inventory key labels are still being mobile-tested against live data, especially visibility, refresh behavior, and performance with real key counts.
-- Display preferences, Mini IRIS/default Intel mode, and map position now persist via the consolidated `mini-iris:preferences:v1` localStorage key.
-- Legacy Mini IRIS localStorage keys (`iris-poc-map-state`, `mini-iris-ui-state-v1`) are migrated into the consolidated key and removed after the next write.
-- Mini IRIS map position persistence is localStorage-only; the old map-state cookie is no longer read or written and is cleared when the overlay loads.
-- The launcher button now uses the `mini-iris-toggle-btn` id and describes the target view (`IRIS` when closed, `INTEL` when open) instead of using the old `3D` wording.
-- The Mini IRIS map container now stays laid out while hidden and toggles `visibility`/pointer events instead of `display`, so MapLibre keeps entity layers painted across INTEL/IRIS switches.
-- The launcher click path directly schedules fast and settled reopen refresh attempts, resizes MapLibre, syncs local entities, and posts `IRIS_SYNC_INTEL_MAP` with a refresh hint.
-- `IRIS_SYNC_INTEL_MAP` supports a delayed refresh hint that performs a tiny reversible Intel map nudge, avoiding Google Maps no-op behavior when center/zoom are unchanged.
-- Entity rendering guards against UI-only live resyncs replacing a populated `entities` source with an empty feature collection.
-- Entity source updates apply `setData` immediately instead of deferring through `requestAnimationFrame`.
-- Live UI redraws render viewport entities directly from the Zustand store instead of depending on RBush, so style/key overlay changes cannot blank the map because of spatial-index timing.
-- Map style changes now only swap the raster base layer and reassert base/overlay layer order across MapLibre settle points; they also force a local MapLibre resize/jump/repaint cycle so existing portal/link/field layers repaint without rebuilding the entity GeoJSON source.
-- Key overlay toggles still use the settled entity sync path because key labels are currently rendered from the same `entities` source as portals/links/fields.
-- Mini IRIS version markers are now extension/package `1.0.12` and console banner `v1.3.14 | Style Repaint Sync`.
+- Map position now persists via the stable `iris-poc-map-state` localStorage key only; the old map-state cookie is no longer read or written and is cleared when the overlay loads.
+- Experimental preference keys from the lifecycle test builds (`mini-iris:preferences:v1`, `mini-iris:preferences:v2`) are removed so stale style/key/open-state values cannot affect startup rendering.
+- Map style, portal history layers, key overlay, launcher/open state, MapContainer behavior, Intel map sync, and entity rendering are back to the `91e83b5` baseline while the render regression is isolated.
+- The launcher button/open-state behavior is intentionally back to the stable `91e83b5` baseline (`3D`/`X`, no persisted Mini IRIS/default Intel mode).
+- Map container visibility, Intel map sync, and entity rendering were restored to the stable `91e83b5` behavior to avoid the style flicker and missing-entity regressions introduced by later lifecycle experiments.
+- Mini IRIS version markers are now extension/package `1.0.15` and console banner `v1.3.17 | Baseline LocalStorage`.
 
 #### Current Alignment Notes
 - Portal and link scale now follow the same zoom-aware approach used by IRIS rather than hardcoded mini-IRIS sizes.
