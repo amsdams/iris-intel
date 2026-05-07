@@ -148,7 +148,7 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 | **Mock Map Test Data** | **IMPROVED**    | Mock history and inventory are deterministic, with separate local mock inventory for key overlay testing. |
 | **Mock Map Panning Drift** | **FIXED**       | Mock pattern loading is separated from map data sync so panning and overlay changes do not regenerate mock coordinates. |
 | **Key Overlay Performance** | **IMPROVED**    | Inventory key counts are pre-aggregated by portal and key labels only render at tactical zoom. |
-| **UI Preference Persistence** | **DONE**        | Mini IRIS open state, map style, portal history modes, key overlay state, and map position persist under one Mini IRIS localStorage key without Mini IRIS cookies. |
+| **UI Preference Persistence** | **PARTIAL**     | Map position persists via localStorage only; broader UI preference persistence was rolled back to protect map rendering stability. |
 
 ### Roadmap & Alignment (TODO)
 
@@ -160,6 +160,14 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 5. **Draw Tools**: Implement custom line/polygon drawing for field planning.
 6. **Missions**: Integrate Top Missions and Mission Details (rendering waypoints in 3D).
 7. **Search**: Portal and location search with map-jump interaction.
+
+#### Preferences & Launcher Follow-Up
+1. **Persist Map Style Only**: Reintroduce map style persistence as the next lowest-risk preference slice; apply only at initial MapLibre construction and do not trigger any post-load style resync.
+2. **Persist Portal History Modes**: Save visited/captured/scanned overlay modes after map style persistence is proven stable; verify no feature flicker or missing entities on startup and toggles.
+3. **Persist Key Overlay State**: Save the key overlay toggle only after history persistence is stable; explicitly retest live inventory, mock inventory, and mobile performance.
+4. **Rename Main Button Without Lifecycle Changes**: Change the launcher label/id/title separately from visibility behavior, keeping the existing `display` toggle and open/close code path unchanged.
+5. **Persist Mini IRIS Open State**: Treat open-state persistence as higher risk; only attempt after the launcher rename is stable, and verify hard refresh, INTEL -> IRIS, IRIS -> INTEL, and repeated switches.
+6. **Robust INTEL/IRIS Switching**: Investigate a dedicated switch lifecycle that supports back-and-forth INTEL/IRIS without missing entities, flicker, stale player tracker state, or forced map panning; keep this separate from preference storage.
 
 #### Recent Progress
 - Portal history controls were added to the map tools drawer for visited, captured, and scanned states, with highlight and inverse display modes.
