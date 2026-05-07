@@ -28,19 +28,19 @@ export function usePatterns(
         const center = map.getCenter();
         // ENL
         generator.addPortal('A', 'E', center.lng - 0.002, center.lat, 8);
-        generator.addPortal('B', 'E', center.lng + 0.002, center.lat, 8);
-        generator.addPortal('C', 'E', center.lng, center.lat + 0.003, 8);
-        generator.addPortal('D', 'E', center.lng, center.lat + 0.001, 8);
+        generator.addPortal('B', 'E', center.lng + 0.002, center.lat, 7);
+        generator.addPortal('C', 'E', center.lng, center.lat + 0.003, 6);
+        generator.addPortal('D', 'E', center.lng, center.lat + 0.001, 5);
         generator.addLink('L-AB', 'E', 'A', 'B');
         generator.addLink('L-BC', 'E', 'B', 'C');
         generator.addLink('L-CA', 'E', 'C', 'A');
         generator.addLink('L-AD', 'E', 'A', 'D');
         generator.addLink('L-BD', 'E', 'B', 'D');
         // RES Mirror
-        generator.addPortal('RA', 'R', center.lng - 0.002, center.lat - 0.005, 8);
-        generator.addPortal('RB', 'R', center.lng + 0.002, center.lat - 0.005, 8);
-        generator.addPortal('RC', 'R', center.lng, center.lat - 0.008, 8);
-        generator.addPortal('RD', 'R', center.lng, center.lat - 0.006, 8);
+        generator.addPortal('RA', 'R', center.lng - 0.002, center.lat - 0.005, 4);
+        generator.addPortal('RB', 'R', center.lng + 0.002, center.lat - 0.005, 3);
+        generator.addPortal('RC', 'R', center.lng, center.lat - 0.008, 2);
+        generator.addPortal('RD', 'R', center.lng, center.lat - 0.006, 1);
         generator.addLink('RL-AB', 'R', 'RA', 'RB');
         generator.addLink('RL-BC', 'R', 'RB', 'RC');
         generator.addLink('RL-CA', 'R', 'RC', 'RA');
@@ -56,9 +56,9 @@ export function usePatterns(
         const center = map.getCenter();
         // ENL
         generator.addPortal('A', 'E', center.lng - 0.002, center.lat, 8);
-        generator.addPortal('B', 'E', center.lng + 0.002, center.lat, 8);
-        generator.addPortal('C', 'E', center.lng, center.lat + 0.003, 8);
-        generator.addPortal('D', 'E', center.lng, center.lat + 0.001, 8);
+        generator.addPortal('B', 'E', center.lng + 0.002, center.lat, 7);
+        generator.addPortal('C', 'E', center.lng, center.lat + 0.003, 6);
+        generator.addPortal('D', 'E', center.lng, center.lat + 0.001, 5);
         generator.addLink('L-AB', 'E', 'A', 'B');
         generator.addLink('L-BC', 'E', 'B', 'C');
         generator.addLink('L-CA', 'E', 'C', 'A');
@@ -66,10 +66,10 @@ export function usePatterns(
         generator.addLink('L-BD', 'E', 'B', 'D');
         generator.addLink('L-CD', 'E', 'C', 'D');
         // RES Mirror
-        generator.addPortal('RA', 'R', center.lng - 0.002, center.lat - 0.005, 8);
-        generator.addPortal('RB', 'R', center.lng + 0.002, center.lat - 0.005, 8);
-        generator.addPortal('RC', 'R', center.lng, center.lat - 0.008, 8);
-        generator.addPortal('RD', 'R', center.lng, center.lat - 0.006, 8);
+        generator.addPortal('RA', 'R', center.lng - 0.002, center.lat - 0.005, 4);
+        generator.addPortal('RB', 'R', center.lng + 0.002, center.lat - 0.005, 3);
+        generator.addPortal('RC', 'R', center.lng, center.lat - 0.008, 2);
+        generator.addPortal('RD', 'R', center.lng, center.lat - 0.006, 1);
         generator.addLink('RL-AB', 'R', 'RA', 'RB');
         generator.addLink('RL-BC', 'R', 'RB', 'RC');
         generator.addLink('RL-CA', 'R', 'RC', 'RA');
@@ -86,10 +86,10 @@ export function usePatterns(
         const center = map.getCenter();
         // ENL
         generator.addPortal('A', 'E', center.lng - 0.002, center.lat, 8);
-        generator.addPortal('B', 'E', center.lng + 0.002, center.lat, 8);
-        generator.addPortal('C', 'E', center.lng, center.lat + 0.003, 8);
-        generator.addPortal('D', 'E', center.lng, center.lat + 0.001, 8);
-        generator.addPortal('E', 'E', center.lng, center.lat + 0.0005, 8);
+        generator.addPortal('B', 'E', center.lng + 0.002, center.lat, 7);
+        generator.addPortal('C', 'E', center.lng, center.lat + 0.003, 6);
+        generator.addPortal('D', 'E', center.lng, center.lat + 0.001, 5);
+        generator.addPortal('E', 'E', center.lng, center.lat + 0.0005, 4);
         generator.addLink('L-AB', 'E', 'A', 'B');
         generator.addLink('L-BC', 'E', 'B', 'C');
         generator.addLink('L-CA', 'E', 'C', 'A');
@@ -101,10 +101,10 @@ export function usePatterns(
         generator.addLink('L-DE', 'E', 'D', 'E');
         // RES Mirror
         const rOff = -0.008;
-        generator.addPortal('RA', 'R', center.lng - 0.002, center.lat + rOff, 8);
-        generator.addPortal('RB', 'R', center.lng + 0.002, center.lat + rOff, 8);
-        generator.addPortal('RC', 'R', center.lng, center.lat + rOff + 0.003, 8);
-        generator.addPortal('RD', 'R', center.lng, center.lat + rOff + 0.001, 8);
+        generator.addPortal('RA', 'R', center.lng - 0.002, center.lat + rOff, 4);
+        generator.addPortal('RB', 'R', center.lng + 0.002, center.lat + rOff, 3);
+        generator.addPortal('RC', 'R', center.lng, center.lat + rOff + 0.003, 2);
+        generator.addPortal('RD', 'R', center.lng, center.lat + rOff + 0.001, 1);
         generator.addPortal('RE', 'R', center.lng, center.lat + rOff + 0.0005, 8);
         generator.addLink('RL-AB', 'R', 'RA', 'RB');
         generator.addLink('RL-BC', 'R', 'RB', 'RC');

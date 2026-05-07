@@ -43,6 +43,7 @@ export function usePlayerTracker(
     const processedPlextIdsRef = useRef<Set<string>>(new Set());
 
     const processPlexts = useCallback((plexts: Plext[]) => {
+        if (!liveMode) return;
         if (plexts.length === 0) return;
 
         const freshPlexts = plexts.filter(p => {
@@ -172,7 +173,7 @@ export function usePlayerTracker(
         });
 
         logEvent(`TRACKER: ${freshPlexts.length} plexts, ${touchedPlayers.size} players`);
-    }, [logEvent]);
+    }, [liveMode, logEvent]);
 
     // Message Listener for COMM data
     useEffect(() => {

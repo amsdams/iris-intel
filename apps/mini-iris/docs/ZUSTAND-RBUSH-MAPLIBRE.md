@@ -150,18 +150,29 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 | **Key Overlay Performance** | **IMPROVED**    | Inventory key counts are pre-aggregated by portal and key labels only render at tactical zoom. |
 | **UI Preference Persistence** | **DONE**        | Map position, map style, portal history modes, key overlay state, and Mini IRIS open intent persist via standalone localStorage keys without rendering regressions in current testing. |
 | **Portal Health/Level Visual Modes** | **VERIFYING** | Optional map tool toggles can recolor portals by level and fade portals by health using existing feature properties. |
+| **Mock Tracker Isolation** | **DONE** | Live COMM-derived player tracker state is hidden while using mock/source mode. |
+| **Mock Data Coverage** | **IMPROVED** | Mock patterns now include deterministic portal level and health variation for visual-mode testing. |
 
 ### Roadmap & Alignment (TODO)
 
 #### High Priority
-1. **Hide Live Player Tracker in Mock Mode**: Prevent live player trails, labels, and player panel entries from appearing while using mock/source mode.
-2. **Fix Player Profile Edge Cases**: Verify the explicit PLAYER stats request path on mobile/live Intel and add telemetry if some Intel sessions still do not expose `window.PLAYER`.
-3. **Fix Player Tracker on Mobile**: Ensure player actions update the map reliably on mobile and that the player label plus pulse/animation remain visible.
-4. **Player Tracker (Movement Traces)**: Continue improving COMM-derived agent coordinates, map-jump behavior, and trace rendering.
-5. **Draw Tools**: Implement custom line/polygon drawing for field planning.
-6. **Missions**: Integrate Top Missions and Mission Details (rendering waypoints in 3D).
-7. **Search**: Portal and location search with map-jump interaction.
-8. **Verify Portal Health/Level Coloring**: Test the new portal visual modes against live Intel data and compare level/health readability with original IRIS behavior.
+1. **Fix Player Profile Edge Cases**: Verify the explicit PLAYER stats request path on mobile/live Intel and add telemetry if some Intel sessions still do not expose `window.PLAYER`.
+2. **Fix Player Tracker on Mobile**: Ensure player actions update the map reliably on mobile and that the player label plus pulse/animation remain visible.
+3. **Player Tracker (Movement Traces)**: Continue improving COMM-derived agent coordinates, map-jump behavior, and trace rendering.
+4. **Draw Tools**: Implement custom line/polygon drawing for field planning.
+5. **Missions**: Integrate Top Missions and Mission Details (rendering waypoints in 3D).
+6. **Search**: Portal and location search with map-jump interaction.
+7. **Verify Portal Health/Level Coloring**: Test the new portal visual modes against live Intel data and compare level/health readability with original IRIS behavior.
+
+#### Performance & Architecture Follow-Up
+1. **Key Overlay Zoom/Viewport Refinement**: Further reduce key label clutter and symbol work on mobile with stronger zoom gating or selected/nearby-only display modes.
+2. **Mock COMM/Player Tracker Data**: Add deterministic mock plext activity tied to mock portals so tracker trails, labels, clustering, and panel entries can be tested without live COMM data.
+3. **Mock Data Coverage Extensions**: Expand deterministic fixtures beyond level/health into ownership, neutral, damaged, link/field, inventory, and history edge cases.
+4. **MapLibre Layer Update Helpers**: Centralize layer existence checks, paint updates, and shared expressions for safer visual toggles.
+5. **Data-Derivation Memoization Audit**: Review inventory stats, player histories, key aggregation, and visible feature generation for avoidable recalculation.
+6. **Split `content.tsx` Responsibilities**: Extract focused hooks for preferences, map lifecycle, visual modes, and Intel sync once behavior settles.
+7. **Map Source Update Throttling**: Confirm entity, player, and key sources only receive `setData` when their backing data meaningfully changes.
+8. **Diagnostics Panel Cleanup**: Put queue strip, endpoint telemetry, event log, and debug-heavy UI behind a debug setting for normal mobile use.
 
 #### Preferences & Launcher Follow-Up
 1. **Verify INTEL/IRIS Switching Stability**: Keep as a regression checklist, not planned implementation: hard refresh while open, IRIS -> INTEL -> IRIS, style toggle, key overlay toggle, and viewport sizing.
@@ -169,6 +180,12 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 
 #### UI Cleanup Follow-Up
 1. **Shared Styling Primitives**: Reduce repeated inline button, drawer, panel, badge, and dock styles by introducing small shared style helpers/components before doing broader visual redesign.
+
+#### Next Session Candidates
+1. **Verify Recent Preferences**: Check hard refresh behavior for map style, portal history, key overlay, Mini IRIS open state, and portal `LVL`/`HP` toggles.
+2. **Key Overlay Mobile Pass**: Re-test key labels on mobile with live inventory, especially performance, readability, and faction ownership clarity.
+3. **Shared Styling Primitives for MapTools**: Start styling cleanup in the smallest duplicated surface before touching larger panels.
+4. **Mock COMM/Player Tracker Data**: Add deterministic mock tracker activity after live/mock tracker isolation has been verified.
 
 #### Manual Regression Checklist
 1. **Saved Open Refresh**: Leave Mini IRIS open, hard refresh, confirm full viewport, entities visible, and no flicker.
@@ -213,22 +230,27 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 - Settled movement loads now skip redundant `checkAndLoad` calls when the settled center/zoom has not meaningfully changed.
 - Live Intel map sync now skips duplicate same-view `IRIS_SYNC_INTEL_MAP` posts after settled movement.
 - Portal visual modes were added as opt-in map tools: `LVL` recolors portal fill by Ingress level colors, and `HP` fades portal opacity by health using the existing live/mock portal health value.
+- Live player tracker data is now isolated from mock/source mode: tracker plext processing pauses outside live mode, and the map plus player panel receive an empty tracker collection while mock data is active.
+- Portal `LVL` and `HP` visual toggles now persist via standalone localStorage keys, matching the verified preference pattern used by style, history, keys, and open intent.
+- Mock pattern portals now use deterministic level and health variation, so portal visual modes can be tested without live data.
 - Experimental preference keys from the lifecycle test builds (`mini-iris:preferences:v1`, `mini-iris:preferences:v2`) are removed so stale style/key/open-state values cannot affect startup rendering.
 - Map style, portal history layers, key overlay, launcher/open state, MapContainer behavior, Intel map sync, and entity rendering are back to the `91e83b5` baseline while the render regression is isolated.
 - Launcher open/close behavior remains close to the stable `91e83b5` path; persistence only records the open intent and replays the existing open path after startup.
 - Map container visibility, Intel map sync, and entity rendering were restored to the stable `91e83b5` behavior to avoid the style flicker and missing-entity regressions introduced by later lifecycle experiments.
 - Robust INTEL/IRIS switching is no longer an active implementation item; it remains a regression checklist unless new concrete failures appear.
-- Mini IRIS version markers are now extension/package `1.0.26` and console banner `v1.3.28 | Portal Visual Modes`.
+- Mini IRIS version markers are now extension/package `1.0.28` and console banner `v1.3.30 | Portal Visual Persistence`.
 
 #### Current Alignment Notes
 - Portal and link scale now follow the same zoom-aware approach used by IRIS rather than hardcoded mini-IRIS sizes.
 - The player trail lifetime matches the IRIS / IITC reference window at 3 hours, with the mini-IRIS using stronger visual fading to keep the trace readable.
 - Selection details are usable after the first readability pass, but broader product/UI refinement can stay iterative.
-- Player tracking is functional, but live tracker leakage into mock mode plus mobile map update behavior and label/animation visibility are still open issues.
+- Player tracking is functional, and live tracker state is hidden in mock/source mode; mobile map update behavior plus label/animation visibility still need live-device verification.
 - Inventory key support now includes a first map overlay, mock test data, pre-aggregated render counts, tactical zoom gating, and forced manual inventory refresh; mobile live-data verification is still in progress, while deeper filtering, capsule names, and drilldown can stay future work.
 - Player profile data no longer depends only on the initial interceptor post; early testing looks better, but mobile/live verification should confirm whether any Intel sessions still lack a usable `window.PLAYER` payload.
 - Mock/source mode is useful for overlay testing, with pattern coordinates now stable during panning and overlay syncs.
-- Portal health/level coloring is intentionally not persisted yet; verify the runtime behavior first before adding more saved UI state.
+- Mock COMM/player tracker data would be useful later, but should stay separate from live tracker isolation so mock mode does not accidentally consume live COMM state.
+- Portal health/level coloring is now persisted as two standalone booleans; keep this separate from broader preference consolidation.
+- Recent preference additions should be verified together on the next pass before any broader preference schema or style cleanup work.
 - Display preference persistence intentionally excludes live/mock mode, pattern mode, 3D extrusion, open drawer state, and selected objects.
 - Visual alignment is in a better baseline state after centralizing the Ingress palette; generic UI chrome can stay iterative.
 - UI styling is currently spread across inline styles in `MapTools`, `DataDock`, `TacticalUI`, `LaunchButton`, and `MapContainer`; cleanup should start with repeated primitives rather than a full layout rewrite.

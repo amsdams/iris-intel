@@ -13,14 +13,14 @@ import { useIntelMessages } from './useIntelMessages';
 import { useMapRenderer } from './useMapRenderer';
 import { useScores } from './useScores';
 import { usePlayerStats } from './usePlayerStats';
-import { usePlayerTracker, type PlayerAction } from './usePlayerTracker';
+import { usePlayerTracker, type PlayerAction, type PlayerHistory } from './usePlayerTracker';
 import { useEndpointTelemetry } from './useEndpointTelemetry';
 import type { PlextRequestBounds } from './plextRequests';
 import { throttle } from './GeoUtils';
 import { isEndpointStateMessage, numberOrNull, stringOrNull } from './messages';
 import { DEFAULT_PORTAL_HISTORY_LAYERS, PORTAL_HISTORY_COLORS, nextPortalHistoryMode, type PortalHistoryKey, type PortalHistoryLayerState, type PortalHistoryMode } from './portalHistory';
 
-console.log("Mini IRIS (TS): Tactical Overlay | v1.3.28 | Portal Visual Modes");
+console.log("Mini IRIS (TS): Tactical Overlay | v1.3.30 | Portal Visual Persistence");
 
 const DEFAULT_MAP_CENTER: [number, number] = [4.8952, 52.3702];
 const DEFAULT_MAP_ZOOM = 13;
@@ -28,6 +28,8 @@ const MAP_STATE_STORAGE_KEY = 'iris-poc-map-state';
 const MAP_STYLE_STORAGE_KEY = 'iris-poc-map-style';
 const PORTAL_HISTORY_STORAGE_KEY = 'iris-poc-portal-history-layers';
 const KEY_OVERLAY_STORAGE_KEY = 'iris-poc-key-overlay-enabled';
+const PORTAL_LEVEL_COLOR_STORAGE_KEY = 'iris-poc-portal-level-color-enabled';
+const PORTAL_HEALTH_COLOR_STORAGE_KEY = 'iris-poc-portal-health-color-enabled';
 const MINI_IRIS_OPEN_STORAGE_KEY = 'iris-poc-mini-iris-open';
 const MAP_STATE_COOKIE_KEY = 'iris_poc_map_state';
 const EXPERIMENTAL_PREFS_STORAGE_KEY = 'mini-iris:preferences:v1';
@@ -45,6 +47,7 @@ type MapStyleName = keyof typeof MAP_STYLES;
 
 type SelectedEntity = { type: 'portal'; data: Portal } | { type: 'link'; data: Link } | { type: 'field'; data: Field };
 
+const EMPTY_PLAYER_HISTORIES = new Map<string, PlayerHistory>();
 const PORTAL_TEAM_COLOR_EXPR: unknown[] = ['match', ['get', 'team'], 'E', COLORS.E, 'R', COLORS.R, 'M', COLORS.M, COLORS.N];
 const PORTAL_LEVEL_COLOR_EXPR = [
     'match',
@@ -156,6 +159,38 @@ function writeSavedKeyOverlayEnabled(enabled: boolean): void {
     }
 }
 
+function readSavedPortalLevelColorEnabled(): boolean {
+    try {
+        return window.localStorage.getItem(PORTAL_LEVEL_COLOR_STORAGE_KEY) === 'true';
+    } catch {
+        return false;
+    }
+}
+
+function writeSavedPortalLevelColorEnabled(enabled: boolean): void {
+    try {
+        window.localStorage.setItem(PORTAL_LEVEL_COLOR_STORAGE_KEY, enabled ? 'true' : 'false');
+    } catch {
+        // Ignore storage failures.
+    }
+}
+
+function readSavedPortalHealthColorEnabled(): boolean {
+    try {
+        return window.localStorage.getItem(PORTAL_HEALTH_COLOR_STORAGE_KEY) === 'true';
+    } catch {
+        return false;
+    }
+}
+
+function writeSavedPortalHealthColorEnabled(enabled: boolean): void {
+    try {
+        window.localStorage.setItem(PORTAL_HEALTH_COLOR_STORAGE_KEY, enabled ? 'true' : 'false');
+    } catch {
+        // Ignore storage failures.
+    }
+}
+
 function readSavedMiniIrisOpen(): boolean {
     try {
         return window.localStorage.getItem(MINI_IRIS_OPEN_STORAGE_KEY) === 'true';
@@ -192,6 +227,8 @@ function TacticalOverlay(): h.JSX.Element {
     const [initialMapStyle] = useState(() => readSavedMapStyle());
     const [initialPortalHistoryLayers] = useState(() => readSavedPortalHistoryLayers());
     const [initialKeyOverlayEnabled] = useState(() => readSavedKeyOverlayEnabled());
+    const [initialPortalLevelColorEnabled] = useState(() => readSavedPortalLevelColorEnabled());
+    const [initialPortalHealthColorEnabled] = useState(() => readSavedPortalHealthColorEnabled());
     const [initialMiniIrisOpen] = useState(() => readSavedMiniIrisOpen());
     const [mapState, setMapState] = useState(() => ({
         zoom: savedMapState?.zoom ?? DEFAULT_MAP_ZOOM,
@@ -203,8 +240,8 @@ function TacticalOverlay(): h.JSX.Element {
     const [patternMode, setPatternMode] = useState(0);
     const [portalHistoryLayers, setPortalHistoryLayers] = useState(initialPortalHistoryLayers);
     const [keyOverlayEnabled, setKeyOverlayEnabled] = useState(initialKeyOverlayEnabled);
-    const [portalLevelColorEnabled, setPortalLevelColorEnabled] = useState(false);
-    const [portalHealthColorEnabled, setPortalHealthColorEnabled] = useState(false);
+    const [portalLevelColorEnabled, setPortalLevelColorEnabled] = useState(initialPortalLevelColorEnabled);
+    const [portalHealthColorEnabled, setPortalHealthColorEnabled] = useState(initialPortalHealthColorEnabled);
     const [mockInventory, setMockInventory] = useState<InventoryItem[]>([]);
     const [extrusionEnabled, setExtrusionEnabled] = useState(false);
     const [isVis, setIsVis] = useState(false);
@@ -345,6 +382,7 @@ function TacticalOverlay(): h.JSX.Element {
     useScores(isVis, liveMode, mapState.lat, mapState.lng);
     usePlayerStats(isVis, liveMode);
     const { playerHistories } = usePlayerTracker(isVis, liveMode, logEvent, plextBounds);
+    const visiblePlayerHistories = liveMode ? playerHistories : EMPTY_PLAYER_HISTORIES;
     const playerTrailData = useMemo<GeoJSON.FeatureCollection>(() => {
         const features: GeoJSON.Feature[] = [];
         const clusters = new Map<string, { lat: number; lng: number; names: string[]; team: string; count: number }>();
@@ -362,7 +400,7 @@ function TacticalOverlay(): h.JSX.Element {
 
         const ageMinutes = (time: number): number => Math.max(0, (Date.now() - time) / 60000);
 
-        playerHistories.forEach((history, name) => {
+        visiblePlayerHistories.forEach((history, name) => {
             const trailEvents = history.events
                 .map((event) => ({ event, coords: averageEventCoords(event) }))
                 .filter((item): item is { event: { latlngs: [number, number][]; time: number; portalName: string; actions: PlayerAction[] }, coords: [number, number] } => !!item.coords);
@@ -440,7 +478,7 @@ function TacticalOverlay(): h.JSX.Element {
             type: 'FeatureCollection',
             features,
         };
-    }, [playerHistories, pulseTick]);
+    }, [visiblePlayerHistories, pulseTick]);
 
     useEffect(() => {
         playerTrailDataRef.current = playerTrailData;
@@ -575,11 +613,19 @@ function TacticalOverlay(): h.JSX.Element {
     }, []);
 
     const handlePortalLevelColorToggle = useCallback((): void => {
-        setPortalLevelColorEnabled((current) => !current);
+        setPortalLevelColorEnabled((current) => {
+            const next = !current;
+            writeSavedPortalLevelColorEnabled(next);
+            return next;
+        });
     }, []);
 
     const handlePortalHealthColorToggle = useCallback((): void => {
-        setPortalHealthColorEnabled((current) => !current);
+        setPortalHealthColorEnabled((current) => {
+            const next = !current;
+            writeSavedPortalHealthColorEnabled(next);
+            return next;
+        });
     }, []);
 
     useEffect(() => {
@@ -941,7 +987,7 @@ function TacticalOverlay(): h.JSX.Element {
                         events={events}
                         endpointTelemetry={endpointTelemetry}
                         plextBounds={plextBounds}
-                        playerHistories={playerHistories}
+                        playerHistories={visiblePlayerHistories}
                         selected={selected}
                         portalHistoryLayers={portalHistoryLayers}
                         onPortalHistoryLayerToggle={handlePortalHistoryLayerToggle}

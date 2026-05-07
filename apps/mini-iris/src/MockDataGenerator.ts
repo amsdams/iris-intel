@@ -35,6 +35,18 @@ function getDeterministicKeyCounts(id: string, team: string): { loose: number; c
     };
 }
 
+function getDeterministicHealth(id: string, team: Faction, level: number): number {
+    if (team === 'N') return 0;
+
+    let hash = (team || 'N').charCodeAt(0) + (level * 17);
+    for (let i = 0; i < id.length; i++) {
+        hash = ((hash * 29) + id.charCodeAt(i)) >>> 0;
+    }
+
+    const healthSteps = [100, 86, 72, 58, 44, 30, 16];
+    return healthSteps[hash % healthSteps.length];
+}
+
 interface EntityIndexItem {
     minX: number; minY: number; maxX: number; maxY: number;
     id: string;
@@ -126,10 +138,13 @@ export class MockDataGenerator {
         const existing = this.portals.get(id);
         if (existing) return existing;
 
+        const health = getDeterministicHealth(id, team, level);
+        const resonatorEnergy = Math.max(1, Math.round(1000 * (health / 100)));
+
         const resonators = team === 'N' ? [] : Array.from({ length: 8 }, (_, i) => ({
             owner: `Agent_${team}_${i}`,
             level: level || 1,
-            energy: 1000
+            energy: resonatorEnergy
         }));
 
         const mods = team === 'N' ? [] : [
@@ -144,7 +159,7 @@ export class MockDataGenerator {
             lng, 
             lat, 
             level,
-            health: 100,
+            health,
             resCount: team === 'N' ? 0 : 8,
             name: `Portal ${id}`,
             owner: team === 'N' ? undefined : `Agent_${team}_Alpha`,
