@@ -164,7 +164,7 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 #### Preferences & Launcher Follow-Up
 1. **Verify Key Overlay Persistence**: Confirm the standalone `iris-poc-key-overlay-enabled` localStorage key restores the key overlay toggle without feature flicker, missing entities, or extra inventory request side effects.
 2. **Preference Cleanup/Migration**: Once the standalone preference keys are stable, decide whether to keep separate keys or migrate to a consolidated schema with an explicit version and rollback path.
-3. **Rename Main Button Without Lifecycle Changes**: Change the launcher label/id/title separately from visibility behavior, keeping the existing `display` toggle and open/close code path unchanged.
+3. **Verify Launcher Rename**: Confirm the launcher-only label/id/title change does not affect map visibility, rendering, or INTEL/IRIS switching.
 4. **Persist Mini IRIS Open State**: Treat open-state persistence as higher risk; only attempt after the launcher rename is stable, and verify hard refresh, INTEL -> IRIS, IRIS -> INTEL, and repeated switches.
 5. **Robust INTEL/IRIS Switching**: Investigate a dedicated switch lifecycle that supports back-and-forth INTEL/IRIS without missing entities, flicker, stale player tracker state, or forced map panning; keep this separate from preference storage.
 
@@ -197,11 +197,12 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 - Map style now persists via the standalone `iris-poc-map-style` localStorage key and is applied only during initial MapLibre construction.
 - Portal history modes now persist via the standalone `iris-poc-portal-history-layers` localStorage key and are read only for initial React state.
 - Key overlay state now persists via the standalone `iris-poc-key-overlay-enabled` localStorage key and is read only for initial React state.
+- The launcher button now uses `IRIS`/`INTEL` text, the `mini-iris-toggle-btn` id, and a descriptive title without changing the existing visibility or open/close lifecycle.
 - Experimental preference keys from the lifecycle test builds (`mini-iris:preferences:v1`, `mini-iris:preferences:v2`) are removed so stale style/key/open-state values cannot affect startup rendering.
 - Map style, portal history layers, key overlay, launcher/open state, MapContainer behavior, Intel map sync, and entity rendering are back to the `91e83b5` baseline while the render regression is isolated.
-- The launcher button/open-state behavior is intentionally back to the stable `91e83b5` baseline (`3D`/`X`, no persisted Mini IRIS/default Intel mode).
+- Launcher open-state behavior intentionally remains at the stable `91e83b5` baseline; only the button text/id/title changed.
 - Map container visibility, Intel map sync, and entity rendering were restored to the stable `91e83b5` behavior to avoid the style flicker and missing-entity regressions introduced by later lifecycle experiments.
-- Mini IRIS version markers are now extension/package `1.0.18` and console banner `v1.3.20 | Key Overlay Preference`.
+- Mini IRIS version markers are now extension/package `1.0.19` and console banner `v1.3.21 | Launcher Label`.
 
 #### Current Alignment Notes
 - Portal and link scale now follow the same zoom-aware approach used by IRIS rather than hardcoded mini-IRIS sizes.
@@ -241,7 +242,7 @@ src/
 │   ├── DataDock.tsx        # Bottom-dock panels (Player, COMM, Scores)
 │   ├── MapTools.tsx        # Top-right drawers (Nav, Style, Mode)
 │   ├── TacticalUI.tsx      # Main UI Orchestrator
-│   └── LaunchButton.tsx    # Floating 3D toggle
+│   └── LaunchButton.tsx    # Floating Mini IRIS toggle
 ├── MapConstants.ts         # Centralized colors and styles
 └── GeoUtils.ts             # Geometry and formatting helpers
 ```

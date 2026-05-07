@@ -8,8 +8,9 @@ interface LaunchButtonProps {
 export function LaunchButton({ isVis, onClick }: LaunchButtonProps): JSX.Element {
     return (
         <div 
-            id="launch-3d-btn"
+            id="mini-iris-toggle-btn"
             onClick={onClick}
+            title={isVis ? 'Return to default Intel' : 'Open Mini IRIS'}
             style={{
                 position: 'fixed',
                 bottom: isVis ? '15px' : '20px',
@@ -27,13 +28,13 @@ export function LaunchButton({ isVis, onClick }: LaunchButtonProps): JSX.Element
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontWeight: 'bold',
-                fontSize: '14px',
+                fontSize: isVis ? '11px' : '12px',
                 boxShadow: '0 0 15px rgba(0,255,255,0.4)',
                 pointerEvents: 'auto',
                 transition: 'all 0.3s ease'
             }}
         >
-            {isVis ? 'X' : '3D'}
+            {isVis ? 'INTEL' : 'IRIS'}
         </div>
     );
 }
