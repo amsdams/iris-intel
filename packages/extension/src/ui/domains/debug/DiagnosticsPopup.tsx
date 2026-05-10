@@ -78,30 +78,6 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
     const addressNextLookupAt = useStore((state) => state.addressNextLookupAt);
     const endpointDiagnostics = useStore((state) => state.endpointDiagnostics);
 
-    const handleLoadMockArtifacts = (): void => {
-        window.postMessage({ type: 'IRIS_LOAD_MOCK_ARTIFACTS' }, '*');
-    };
-
-    const handleClearMockArtifacts = (): void => {
-        window.postMessage({ type: 'IRIS_CLEAR_MOCK_ARTIFACTS' }, '*');
-    };
-
-    const handleLoadMockOrnaments = (): void => {
-        window.postMessage({ type: 'IRIS_LOAD_MOCK_ORNAMENTS' }, '*');
-    };
-
-    const handleClearMockOrnaments = (): void => {
-        window.postMessage({ type: 'IRIS_CLEAR_MOCK_ORNAMENTS' }, '*');
-    };
-
-    const handleLoadMockPortalKeys = (): void => {
-        window.postMessage({ type: 'IRIS_LOAD_MOCK_PORTAL_KEYS_500' }, '*');
-    };
-
-    const handleClearMockInventory = (): void => {
-        window.postMessage({ type: 'IRIS_CLEAR_MOCK_INVENTORY' }, '*');
-    };
-
     const [countdown, setCountdown] = useState<number | null>(null);
     const [, setNow] = useState(() => Date.now());
 
@@ -343,49 +319,6 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                             Show map navigation controls
                         </label>
                     </div>
-                    {showMockTools && (
-                        <>
-                            <div className="iris-debug-section-title">MOCK DATA</div>
-                            <div className="iris-flex iris-gap-2 iris-flex-wrap">
-                                <button
-                                    className="iris-button iris-comm-refresh-btn"
-                                    onClick={handleLoadMockArtifacts}
-                                >
-                                    LOAD MOCK ARTIFACTS
-                                </button>
-                                <button
-                                    className="iris-button iris-comm-refresh-btn"
-                                    onClick={handleClearMockArtifacts}
-                                >
-                                    CLEAR MOCK ARTIFACTS
-                                </button>
-                                <button
-                                    className="iris-button iris-comm-refresh-btn"
-                                    onClick={handleLoadMockOrnaments}
-                                >
-                                    LOAD MOCK ORNAMENTS
-                                </button>
-                                <button
-                                    className="iris-button iris-comm-refresh-btn"
-                                    onClick={handleClearMockOrnaments}
-                                >
-                                    CLEAR MOCK ORNAMENTS
-                                </button>
-                                <button
-                                    className="iris-button iris-comm-refresh-btn"
-                                    onClick={handleLoadMockPortalKeys}
-                                >
-                                    LOAD 500 MOCK KEYS
-                                </button>
-                                <button
-                                    className="iris-button iris-comm-refresh-btn"
-                                    onClick={handleClearMockInventory}
-                                >
-                                    CLEAR MOCK INVENTORY
-                                </button>
-                            </div>
-                        </>
-                    )}
                 </div>
             </div>
         </Popup>

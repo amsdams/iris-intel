@@ -17,7 +17,6 @@ export function PasscodePopup({ onClose }: PasscodePopupProps): JSX.Element {
   const error = useStore((state) => state.passcodeRedeemError);
   const rewards = useStore((state) => state.passcodeRewards);
   const clearState = useStore((state) => state.clearPasscodeRedeemState);
-  const showMockTools = useStore((state) => state.showMockTools);
 
   const submit = (): void => {
     const trimmed = passcode.trim();
@@ -32,14 +31,6 @@ export function PasscodePopup({ onClose }: PasscodePopupProps): JSX.Element {
   const close = (): void => {
     clearState();
     onClose();
-  };
-
-  const loadMock = (): void => {
-    window.postMessage({ type: 'IRIS_LOAD_MOCK_PASSCODE' }, '*');
-  };
-
-  const clearMock = (): void => {
-    window.postMessage({ type: 'IRIS_CLEAR_MOCK_PASSCODE' }, '*');
   };
 
   const isModReward = (name: string): boolean => {
@@ -83,18 +74,6 @@ export function PasscodePopup({ onClose }: PasscodePopupProps): JSX.Element {
       onClose={close}
       title="Passcode"
       className="iris-popup-top-center iris-popup-medium"
-      headerExtras={
-        showMockTools ? (
-          <div className="iris-flex iris-gap-2">
-            <button className="iris-button iris-comm-refresh-btn" onClick={loadMock}>
-              LOAD MOCK
-            </button>
-            <button className="iris-button iris-comm-refresh-btn" onClick={clearMock}>
-              CLEAR MOCK
-            </button>
-          </div>
-        ) : undefined
-      }
        style={{
                 '--iris-popup-border': theme.AQUA,
                 '--iris-popup-shadow': `${theme.AQUA}55`,

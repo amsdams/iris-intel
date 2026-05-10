@@ -126,3 +126,59 @@
     background: var(--iris-accent);
     color: #000;
 }
+
+.iris-mock-tools-bar {
+    position: fixed;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10004;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    max-width: min(920px, calc(100vw - 24px));
+    padding: 6px 8px;
+    overflow-x: auto;
+    background: rgba(0, 0, 0, 0.82);
+    border: 1px solid var(--iris-warning-color, #fa0);
+    border-radius: 18px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.iris-mock-tools-label {
+    flex: 0 0 auto;
+    color: var(--iris-warning-color, #fa0);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 0 4px;
+}
+
+.iris-mock-tools-btn {
+    flex: 0 0 auto;
+    min-height: 28px;
+    padding: 0 9px;
+    border: 1px solid rgba(255, 170, 0, 0.45);
+    border-radius: 14px;
+    background: rgba(255, 170, 0, 0.12);
+    color: #ffd890;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.iris-mock-tools-btn:active {
+    background: rgba(255, 170, 0, 0.28);
+    transform: translateY(1px);
+}
+
+.iris-mock-tools-btn-active {
+    border-color: rgba(255, 122, 122, 0.65);
+    background: rgba(255, 122, 122, 0.18);
+    color: #ffb0b0;
+    box-shadow: inset 0 0 0 1px rgba(255, 122, 122, 0.18);
+}

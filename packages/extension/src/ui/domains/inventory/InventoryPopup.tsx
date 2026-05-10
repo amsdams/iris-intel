@@ -39,7 +39,6 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
     const hasSubscription = useStore((state) => state.hasSubscription);
     const inventoryEndpoint = useStore((state) => state.endpointDiagnostics.inventory);
     const inventoryStatus = inventoryEndpoint.status;
-    const showMockTools = useStore((state) => state.showMockTools);
     const themeId = useStore((state) => state.themeId);
     const theme = THEMES[themeId] || THEMES.INGRESS;
     const [activeCategory, setActiveCategory] = useState<InventoryCategory>('ALL');
@@ -141,14 +140,6 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
         window.postMessage({ type: 'IRIS_INVENTORY_REQUEST' }, '*');
     };
 
-    const handleLoadMock = (): void => {
-        window.postMessage({ type: 'IRIS_LOAD_MOCK_INVENTORY' }, '*');
-    };
-
-    const handleClearMock = (): void => {
-        window.postMessage({ type: 'IRIS_CLEAR_MOCK_INVENTORY' }, '*');
-    };
-
     const getItemColor = (item: GroupedInventoryItem): string => {
         if (item.type === 'ADA' || item.type === 'JARVIS') {
             return theme.ITEM_TYPES.VIRUS || theme[normalizeTeam(item.type) as 'E' | 'R'] || theme.AQUA;
@@ -186,22 +177,6 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
             contentClassName="iris-popup-content-no-padding"
             headerExtras={
                 <div className="iris-flex iris-gap-2">
-                    {showMockTools && (
-                        <>
-                            <button
-                                className="iris-button iris-comm-refresh-btn"
-                                onClick={handleLoadMock}
-                            >
-                                LOAD MOCK
-                            </button>
-                            <button
-                                className="iris-button iris-comm-refresh-btn"
-                                onClick={handleClearMock}
-                            >
-                                CLEAR MOCK
-                            </button>
-                        </>
-                    )}
                     <button 
                         className="iris-button iris-comm-refresh-btn"
                         onClick={handleRefresh}

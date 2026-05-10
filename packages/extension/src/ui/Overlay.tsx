@@ -25,6 +25,7 @@ import { NavigationPopup } from './domains/map/NavigationPopup';
 import { BottomDock } from './shared/BottomDock';
 import { DockDrawer, DrawerTab } from './shared/DockDrawer';
 import { LocationSearchPopup } from './shared/LocationSearchPopup';
+import { MockToolsBar } from './shared/MockToolsBar';
 
 // ---------------------------------------------------------------------------
 // IRISOverlay
@@ -161,6 +162,7 @@ export function IRISOverlay(): JSX.Element {
             <div style={{ display: showMap ? 'block' : 'none' }}>
                 <MapOverlay />
             </div>
+            <MockToolsBar />
 
             {/* Click-to-close Backdrop for Drawer */}
             {activeDrawerTab && (
