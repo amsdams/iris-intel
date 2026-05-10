@@ -1397,6 +1397,8 @@ export function MapOverlay(): JSX.Element {
       map.current?.remove();
       removePortalSelectionBridge();
     };
+  // The MapLibre instance must be created once; runtime state is read through refs/store selectors.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Sync Camera

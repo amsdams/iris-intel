@@ -146,7 +146,7 @@ function buildLoadedPortalKeyInventory(totalKeys = 500): InventoryData {
   const capsuleCount = totalKeys - looseCount;
   const result: NonNullable<InventoryData['result']> = [];
 
-  const createCoupler = (portal: typeof portals[number]) => ({
+  const createCoupler = (portal: typeof portals[number]): NonNullable<IntelInventoryItemData['portalCoupler']> => ({
     portalGuid: portal.id,
     portalLocation: `${Math.round(portal.lat * 1e6)},${Math.round(portal.lng * 1e6)}`,
     portalImageUrl: portal.image || '',
