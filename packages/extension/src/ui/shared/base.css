@@ -484,9 +484,34 @@
 
 @media (width <= 600px) {
     .iris-popup {
-        width: 90vw !important;
-        max-width: 90vw !important;
-        left: 5vw !important;
+        top: auto !important;
+        bottom: 76px !important;
+        left: 10px !important;
+        right: 10px !important;
+        width: auto !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        max-height: min(68dvh, 620px);
         transform: none !important;
+        border-radius: 10px 10px 8px 8px;
+    }
+
+    .iris-popup-header {
+        cursor: default;
+        touch-action: auto;
+        padding: 10px 40px 8px 12px;
+    }
+
+    .iris-popup-title {
+        font-size: 0.95em;
+    }
+
+    .iris-popup-content {
+        min-height: 0;
+        padding: 12px;
+    }
+
+    .iris-popup-content-no-padding {
+        padding: 0;
     }
 }

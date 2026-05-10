@@ -487,6 +487,11 @@ export function MapOverlay(): JSX.Element {
     syncViewportRef.current = syncViewport;
   }, [syncViewport]);
 
+  useEffect((): void => {
+    if (!map.current || !styleLoaded) return;
+    getGeoJsonSource('plugin-features')?.setData(pluginFeatures);
+  }, [pluginFeatures, styleLoaded]);
+
   const scheduleViewportSync = useCallback((): void => {
     if (!map.current || !styleLoaded || scheduledViewportSyncFrame.current !== null) {
       return;
@@ -1296,6 +1301,26 @@ export function MapOverlay(): JSX.Element {
       window.removeEventListener('message', commandHandler);
     };
   }, [styleLoaded, scheduleViewportSync, runPanBenchmark]);
+
+  // Sync Viewport on Layer/Filter Changes
+  useEffect((): void => {
+    scheduleViewportSync();
+  }, [
+    scheduleViewportSync,
+    layerShowFields,
+    layerShowLinks,
+    layerShowOrnaments,
+    layerShowArtifacts,
+    filterShowResistance,
+    filterShowEnlightened,
+    filterShowMachina,
+    filterShowUnclaimedPortals,
+    filterShowLevel,
+    filterShowHealth,
+    filterShowVisited,
+    filterShowCaptured,
+    filterShowScanned,
+  ]);
 
   // Sync Viewport on Store Entity Changes (Decoupled from render cycle)
   useEffect((): undefined | (() => void) => {

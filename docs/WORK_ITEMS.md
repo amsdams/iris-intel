@@ -764,6 +764,24 @@ Tasks:
 | Unify popup width and centering                  | Done   | all major popups use `iris-popup-center iris-popup-medium`                            |
 | Fix inconsistent popup internal padding          | Done   | moved padding to .iris-popup-content; standardized internal spacing for major domains |
 | Revisit portal/link/field popup content density  | Open   | improve scanability against the project docs and IITC expectations without changing the shared popup interaction model |
+| Add mobile bottom-sheet popup presentation       | Done   | popups keep existing content but become constrained bottom sheets on small screens with internal scrolling and mobile dragging disabled |
+| Tighten portal popup mobile density              | Done   | portal/link/field details keep all sections while using shorter images, tighter spacing, and two-column mod/resonator grids on mobile |
+| Close drawer after launching popup content       | Done   | drawer actions that open popups now dismiss the drawer so mobile bottom-sheet popups are immediately visible; map visibility toggle stays in place |
+| Decide mobile popup focus/minimize model         | Open   | evaluate one-primary-popup focus or minimized chips later if bottom sheets still stack too aggressively on small screens |
+| Tune mobile bottom-sheet height                  | Open   | evaluate 68dvh versus a slightly taller contextual sheet such as 72dvh if portal details still feel cramped |
+| Add mobile bottom-sheet handle affordance        | Open   | add a subtle visual handle at the top of mobile sheets so the presentation reads as an intentional bottom sheet |
+| Add primary-popup focus behavior on mobile       | Open   | consider closing other primary popups when opening stats/portal/link/field/player details while keeping COMM independent if useful |
+| Add portal popup action row                      | Open   | keep all details but make high-frequency actions such as Missions, copy/navigation, or map movement easier to reach near the top |
+| Review mobile back/escape close behavior         | Open   | consider closing the active bottom sheet before broader overlay state changes; treat as later UX work because it touches global interaction |
+
+### Map layer and filter toggles update immediately
+
+Status: `Done`
+
+Notes:
+
+- fixed a stale viewport sync path where drawer layer toggles and portal history filters updated store state but did not rebuild MapLibre sources until the next pan/zoom
+- fixed the same stale update pattern for plugin-rendered MapLibre visual fills; level/health fill overlays now update the `plugin-features` source immediately when visual overlay state changes
 | Standardize input and button styling             | Done   | introduced .iris-input and .iris-button in base.css                                   |
 | Generalize choice item styling                   | Done   | introduced .iris-choice-item for boxed interactive labels                             |
 

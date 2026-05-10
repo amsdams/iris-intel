@@ -113,18 +113,18 @@ export function IRISOverlay(): JSX.Element {
 
     const handleDrawerAction = (action: string): void => {
         switch (action) {
-            case 'stats': togglePlayerStatsPopup(); break;
-            case 'inventory': toggleInventoryPopup(); break;
-            case 'gameScore': toggleGameScorePopup(); break;
-            case 'regionScore': toggleRegionScorePopup(); break;
-            case 'comm': toggleCommPopup(); break;
-            case 'passcodes': togglePasscodePopup(); break;
-            case 'search': toggleSearchPopup(); break;
-            case 'nav': toggleNavigationPopup(); break;
-            case 'missions': toggleMissionsPopup(); break;
-            case 'plugins': togglePluginsPopup(); break;
-            case 'settings': toggleMapSettingsPopup(); break;
-            case 'diag': toggleDiagnosticsPopup(); break;
+            case 'stats': togglePlayerStatsPopup(); setActiveDrawerTab(null); break;
+            case 'inventory': toggleInventoryPopup(); setActiveDrawerTab(null); break;
+            case 'gameScore': toggleGameScorePopup(); setActiveDrawerTab(null); break;
+            case 'regionScore': toggleRegionScorePopup(); setActiveDrawerTab(null); break;
+            case 'comm': toggleCommPopup(); setActiveDrawerTab(null); break;
+            case 'passcodes': togglePasscodePopup(); setActiveDrawerTab(null); break;
+            case 'search': toggleSearchPopup(); setActiveDrawerTab(null); break;
+            case 'nav': toggleNavigationPopup(); setActiveDrawerTab(null); break;
+            case 'missions': toggleMissionsPopup(); setActiveDrawerTab(null); break;
+            case 'plugins': togglePluginsPopup(); setActiveDrawerTab(null); break;
+            case 'settings': toggleMapSettingsPopup(); setActiveDrawerTab(null); break;
+            case 'diag': toggleDiagnosticsPopup(); setActiveDrawerTab(null); break;
             case 'toggle': toggleMapVisibility(); break;
         }
     };

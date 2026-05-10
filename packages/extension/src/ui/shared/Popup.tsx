@@ -19,6 +19,8 @@ export function Popup({ onClose, title, children, style, className, contentClass
     const popupRef = useRef<HTMLDivElement>(null);
 
     const onStart = (e: MouseEvent | TouchEvent): void => {
+        if (window.matchMedia('(width <= 600px)').matches) return;
+
         // Don't drag if clicking buttons
         if ((e.target as HTMLElement).tagName === 'BUTTON') return;
 

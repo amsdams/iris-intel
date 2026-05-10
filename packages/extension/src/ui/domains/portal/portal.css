@@ -374,12 +374,30 @@
 }
 
 @media (width <= 600px) {
+    .iris-portal-info {
+        padding: 12px;
+        gap: 10px;
+    }
+
+    .iris-portal-image-container {
+        margin: -12px -12px 6px;
+        height: 108px;
+    }
+
+    .iris-portal-name {
+        font-size: 1.05em;
+        margin-bottom: 4px;
+    }
+
     .iris-portal-summary-table {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+        margin-bottom: 4px;
     }
 
     .iris-portal-details-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
     }
 
     .iris-portal-mods-grid {
@@ -388,5 +406,11 @@
 
     .iris-portal-resonators-grid {
         grid-template-columns: repeat(2, 1fr);
+    }
+
+    .iris-portal-summary-row,
+    .iris-portal-details-row {
+        padding: 5px 6px;
+        gap: 8px;
     }
 }
