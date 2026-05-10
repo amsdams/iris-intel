@@ -542,13 +542,13 @@ export function MapOverlay(): JSX.Element {
               'circle-radius': [
                 'interpolate', ['linear'], ['zoom'],
                 3, 3,
-                10, 6,
-                15, 12,
+                10, 7,
+                15, 14,
               ],
               'circle-color': 'transparent',
-              'circle-stroke-width': 2,
+              'circle-stroke-width': 2.5,
               'circle-stroke-color': SEMANTIC_COLORS.ARTIFACT,
-              'circle-stroke-opacity': 0.9,
+              'circle-stroke-opacity': 0.85,
             },
           },
           {
@@ -564,8 +564,8 @@ export function MapOverlay(): JSX.Element {
               ],
               'circle-color': 'transparent',
               'circle-stroke-width': 2,
-              'circle-stroke-color': '#ffffff',
-              'circle-stroke-opacity': 0.75,
+              'circle-stroke-color': SEMANTIC_COLORS.ORNAMENT,
+              'circle-stroke-opacity': 0.8,
             },
           },
           {

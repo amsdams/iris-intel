@@ -496,8 +496,10 @@ Tasks:
 | Add debug-only mock ornaments flow for local testing                          | Done   | diagnostics can now add and clear mock ornament overlays without overwriting live ornament data on portals                                                                |
 | Add a local ornament label map for IITC-known ids                             | Done   | portal details now map the IITC-known anomaly, beacon, battle, reward, shard, and scouting ornament ids to friendly labels while unknown ids still fall back to raw codes |
 | Expand ornament mock data to cover all locally known ids                      | Done   | diagnostics mock ornaments now distribute the full local known-id set across currently loaded portals instead of only a couple of placeholder values                      |
+| Align artifact and ornament ring colours closer to IITC                       | Done   | ornaments now use IITC-like event yellow instead of a generic white ring; artifact rings are slightly larger/stronger while full stock icon rendering remains future work |
 | Implement a Single Highlighter selection model                                | Open   | align with IITC by allowing users to select one active highlighter (e.g. "Highlight weak portals")                                                                        |
 | Separate plugin HTML markers from generic GeoJSON point rendering             | Open   | current `MapOverlay` support works, but it is still a special-case renderer path                                                                                          |
+| Render artifact and ornament overlays with IITC-style stock icons             | Open   | IITC uses `marker_images/{ornament}.png`, `{type}_shard.png`, and `{type}_shard_target.png`; IRIS still uses MapLibre ring approximations for now                         |
 | Add visibility/zoom guardrails for label-heavy plugins                        | Done   | initial `minZoom` gating now reduces clutter for level labels and key counts                                                                                              |
 
 Bugs:
