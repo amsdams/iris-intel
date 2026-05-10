@@ -35,6 +35,22 @@ describe('updateMapState', () => {
     expect(useStore.getState().mapState.zoom).toBe(13);
     expect(useStore.getState().mapState.bounds).toEqual(initialBounds);
   });
+
+  it('does not replace map state for identical view updates', () => {
+    const bounds = {
+      minLatE6: 1,
+      minLngE6: 2,
+      maxLatE6: 3,
+      maxLngE6: 4,
+    };
+
+    useStore.getState().updateMapState(10, 20, 12, bounds);
+    const previousMapState = useStore.getState().mapState;
+
+    useStore.getState().updateMapState(10, 20, 12, bounds);
+
+    expect(useStore.getState().mapState).toBe(previousMapState);
+  });
 });
 
 describe('removeEntities', () => {

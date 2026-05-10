@@ -922,17 +922,36 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
             }
         }, REVERSE_GEOCODE_DEBOUNCE_MS);
     },
-    updateMapState: (lat, lng, zoom, bounds) => set((state) => ({
-        mapState: {
-            lat,
-            lng,
-            zoom,
-            // Intel sync updates do not always carry bounds; preserve the last
-            // known viewport so viewport-dependent UI (for example missions)
-            // does not regress back to an uninitialized state.
-            bounds: bounds ?? state.mapState.bounds,
+    updateMapState: (lat, lng, zoom, bounds) => set((state) => {
+        const nextBounds = bounds ?? state.mapState.bounds;
+        const currentBounds = state.mapState.bounds;
+        const sameBounds = !nextBounds && !currentBounds ? true : !!nextBounds && !!currentBounds &&
+            nextBounds.minLatE6 === currentBounds.minLatE6 &&
+            nextBounds.minLngE6 === currentBounds.minLngE6 &&
+            nextBounds.maxLatE6 === currentBounds.maxLatE6 &&
+            nextBounds.maxLngE6 === currentBounds.maxLngE6;
+
+        if (
+            Math.abs(state.mapState.lat - lat) < 0.000001 &&
+            Math.abs(state.mapState.lng - lng) < 0.000001 &&
+            Math.abs(state.mapState.zoom - zoom) < 0.001 &&
+            sameBounds
+        ) {
+            return state;
         }
-    })),
+
+        return {
+            mapState: {
+                lat,
+                lng,
+                zoom,
+                // Intel sync updates do not always carry bounds; preserve the last
+                // known viewport so viewport-dependent UI (for example missions)
+                // does not regress back to an uninitialized state.
+                bounds: nextBounds,
+            }
+        };
+    }),
     selectPortal: (id) => set(() => ({ selectedPortalId: id, selectedFieldId: null, selectedLinkId: null })),
     selectField: (id) => set(() => ({ selectedFieldId: id, selectedPortalId: null, selectedLinkId: null })),
     selectLink: (id) => set(() => ({ selectedLinkId: id, selectedPortalId: null, selectedFieldId: null })),

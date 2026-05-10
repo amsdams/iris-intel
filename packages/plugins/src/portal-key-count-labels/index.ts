@@ -1,39 +1,17 @@
 import { IRISPlugin, IRIS_API, InventoryItem, Portal } from '@iris/plugin-sdk';
+import { InventoryParser } from '@iris/core';
 
 let unsubscribePortalKeysInventory: (() => void) | undefined;
 let unsubscribePortalKeysPortals: (() => void) | undefined;
 let latestInventory: InventoryItem[] = [];
 let latestPortals: Record<string, Portal> = {};
 
-function countPortalKeysInItem(item: InventoryItem, portalId: string): number {
-  if (item.portalCoupler?.portalGuid === portalId) {
-    return 1;
-  }
-
-  if (!item.container) {
-    return 0;
-  }
-
-  return item.container.stackableItems.reduce((sum, stackableItem) => {
-    const [guid, timestamp, itemData] = stackableItem.exampleGameEntity;
-    const nestedItem = {
-      guid,
-      timestamp,
-      ...(itemData as object),
-    } as InventoryItem;
-
-    return sum + countPortalKeysInItem(nestedItem, portalId) * stackableItem.itemGuids.length;
-  }, 0);
-}
-
-function countPortalKeys(items: InventoryItem[], portalId: string): number {
-  return items.reduce((sum, item) => sum + countPortalKeysInItem(item, portalId), 0);
-}
-
 function buildFeatures(portals: Record<string, Portal>, inventory: InventoryItem[]): GeoJSON.Feature[] {
+  const keyCounts = InventoryParser.aggregatePortalKeys(inventory);
+
   return Object.values(portals)
     .map((portal) => {
-      const count = countPortalKeys(inventory, portal.id);
+      const count = keyCounts[portal.id]?.total ?? 0;
       if (count <= 0) {
         return null;
       }

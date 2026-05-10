@@ -94,6 +94,14 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
         window.postMessage({ type: 'IRIS_CLEAR_MOCK_ORNAMENTS' }, '*');
     };
 
+    const handleLoadMockPortalKeys = (): void => {
+        window.postMessage({ type: 'IRIS_LOAD_MOCK_PORTAL_KEYS_500' }, '*');
+    };
+
+    const handleClearMockInventory = (): void => {
+        window.postMessage({ type: 'IRIS_CLEAR_MOCK_INVENTORY' }, '*');
+    };
+
     const [countdown, setCountdown] = useState<number | null>(null);
     const [, setNow] = useState(() => Date.now());
 
@@ -362,6 +370,18 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                                     onClick={handleClearMockOrnaments}
                                 >
                                     CLEAR MOCK ORNAMENTS
+                                </button>
+                                <button
+                                    className="iris-button iris-comm-refresh-btn"
+                                    onClick={handleLoadMockPortalKeys}
+                                >
+                                    LOAD 500 MOCK KEYS
+                                </button>
+                                <button
+                                    className="iris-button iris-comm-refresh-btn"
+                                    onClick={handleClearMockInventory}
+                                >
+                                    CLEAR MOCK INVENTORY
                                 </button>
                             </div>
                         </>

@@ -162,6 +162,7 @@ Tasks:
 | Record enough coverage state to decide whether a new refresh is needed | Done   | uses `coverageKey` (bounds + zoom + tile count) to dedupe redundant fetches                                   |
 | Batch tile requests to avoid massive timeouts                          | Done   | `getEntities` requests are now split into chunks of 25 tiles (aligned with IITC)                              |
 | Implement retry logic for failed entity fetches                        | Done   | coordinator now performs up to 3 retries with 5s backoff after a failed fetch                                 |
+| Reduce post-pan UI work on mobile                                      | Done   | map-state updates now no-op for identical views, `MapOverlay` skips same-view camera echoes, and ornaments build from the buffered viewport instead of all loaded portals |
 
 ### Entity merge and removal behavior stays correct under faster refresh
 
@@ -211,6 +212,7 @@ Improvement ideas:
 | Use COMM or other high-signal events as a hint to accelerate the next entity refresh                       | Open   | good later refinement, but should follow basic viewport-driven ownership |
 | Move toward IITC-style coverage tracking instead of only time-based freshness                              | Open   | likely phase 2 after the first minimal owned refresh loop works          |
 | Consider a lightweight tile/cell cache only if simpler bounds-based refresh remains too stale or too noisy | Open   | not a phase-1 requirement                                                |
+| Profile mobile post-pan delay with real data                                                                  | Open   | if button latency remains, inspect `syncViewport`, plugin HTML marker sync, reverse geocoding, and immediate plext refresh after `moveend` |
 
 ## Map Interaction Extensions
 
@@ -483,7 +485,7 @@ Tasks:
 | Add portal level fill plugin                                                  | Done   | basic point overlay with Ingress level colours exists                                                                                                                     |
 | Add portal health fill plugin                                                 | Done   | basic point overlay using health thresholds exists                                                                                                                        |
 | Add portal level labels plugin                                                | Done   | HTML label markers exist for portal levels                                                                                                                                |
-| Add portal key count labels plugin                                            | Done   | inventory-backed HTML labels exist using recursive capsule-aware key counting                                                                                             |
+| Add portal key count labels plugin                                            | Done   | inventory-backed key labels exist using recursive capsule-aware key counting                                                                                              |
 | Merge plugin-rendered features per plugin instead of last-writer-wins         | Done   | `PluginManager` now stores plugin features by plugin id and publishes a merged collection                                                                                 |
 | Extend plugin SDK with portal level/health and inventory access               | Done   | plugin API now exposes enough state for the current overlay plugins                                                                                                       |
 | Load the new plugins in the extension runtime                                 | Done   | all four plugins are currently registered at startup                                                                                                                      |
@@ -491,6 +493,9 @@ Tasks:
 | Keep label-heavy plugin markers hidden until closer zoom                      | Done   | level-label and key-count overlays now stay out of low-zoom views                                                                                                         |
 | Remove generic popup behavior from non-interactive label overlays             | Done   | portal key counts and level labels no longer open the plugin feature popup                                                                                                |
 | Rename overlay plugins to clearer `Fill` / `Labels` names and align ids/paths | Done   | renamed to `portal-level-fill`, `portal-health-fill`, and `portal-key-count-labels`; directory names, ids, and imports now match                                          |
+| Pre-aggregate portal key count labels                                         | Done   | key labels now use pre-aggregated inventory key counts instead of recursively recounting capsules per portal; mobile currently uses the same HTML marker path as portal level labels for visibility |
+| Move portal key count labels off HTML markers                                 | Open   | MapLibre symbol labels worked on desktop but did not appear on mobile; revisit later with mobile-specific rendering/profiling before replacing the visible HTML marker fallback |
+| Add heavy mock key inventory for loaded portals                               | Done   | diagnostics mock tools can now load 500 portal keys distributed across currently loaded portals, split between loose keys and a mock capsule for key-overlay performance testing |
 | Add debug-only mock artifacts flow for local testing                          | Done   | diagnostics can now synthesize artifact data from currently loaded portals and clear it again without relying on live events                                              |
 | Add `Artifacts` and `Ornaments` filter toggles                                | Done   | artifacts now have an explicit filter toggle, and ornaments now parse from portal entity payloads into a separate overlay layer with its own filter toggle                |
 | Add debug-only mock ornaments flow for local testing                          | Done   | diagnostics can now add and clear mock ornament overlays without overwriting live ornament data on portals                                                                |
@@ -501,6 +506,7 @@ Tasks:
 | Separate plugin HTML markers from generic GeoJSON point rendering             | Open   | current `MapOverlay` support works, but it is still a special-case renderer path                                                                                          |
 | Render artifact and ornament overlays with IITC-style stock icons             | Open   | IITC uses `marker_images/{ornament}.png`, `{type}_shard.png`, and `{type}_shard_target.png`; IRIS still uses MapLibre ring approximations for now                         |
 | Add visibility/zoom guardrails for label-heavy plugins                        | Done   | initial `minZoom` gating now reduces clutter for level labels and key counts                                                                                              |
+| Move remaining label-heavy HTML marker plugins to MapLibre symbol layers      | Open   | portal level labels may eventually need the same treatment if mobile panning still suffers with that overlay enabled                                                      |
 
 Bugs:
 

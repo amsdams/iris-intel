@@ -97,6 +97,15 @@ function getPluginMarkerHtml(properties: PluginFeatureProperties, color: string)
   `;
 }
 
+function isCurrentMapView(mapInstance: maplibregl.Map, lat: number, lng: number, zoom: number): boolean {
+  const center = mapInstance.getCenter();
+  return (
+    Math.abs(center.lat - lat) < 0.000001 &&
+    Math.abs(center.lng - lng) < 0.000001 &&
+    Math.abs(mapInstance.getZoom() - zoom) < 0.001
+  );
+}
+
 type DragRotateInternals = maplibregl.Map['dragRotate'] & {
   _pitchWithRotate?: boolean;
   _mouseRotate?: {
@@ -321,7 +330,7 @@ export function MapOverlay(): JSX.Element {
 
     // 4. Other overlays (keep full records for now if small)
     getGeoJsonSource('artifacts')?.setData(toFeatureCollection(buildArtifactFeatures(artifacts, store.portals, { showArtifacts: layerShowArtifacts })));
-    getGeoJsonSource('ornaments')?.setData(toFeatureCollection(buildOrnamentFeatures(store.portals, mockOrnaments, {
+    getGeoJsonSource('ornaments')?.setData(toFeatureCollection(buildOrnamentFeatures(viewportPortals, mockOrnaments, {
       showOrnaments: layerShowOrnaments, 
       showResistance: filterShowResistance, 
       showEnlightened: filterShowEnlightened, 
@@ -577,6 +586,7 @@ export function MapOverlay(): JSX.Element {
               ['==', '$type', 'Point'],
               ['!=', 'isPlayerMarker', true],
               ['!=', 'isHtmlMarker', true],
+              ['!=', 'isLabelMarker', true],
             ],
             paint: {
               'circle-radius': 8,
@@ -592,6 +602,60 @@ export function MapOverlay(): JSX.Element {
               ],
               'circle-opacity': ['coalesce', ['get', 'opacity'], 1],
               'circle-stroke-opacity': ['coalesce', ['get', 'opacity'], 1],
+            },
+          },
+          {
+            id: 'plugin-symbol-label-backing',
+            type: 'circle',
+            source: 'plugin-features',
+            filter: [
+              'all',
+              ['==', '$type', 'Point'],
+              ['==', 'isLabelMarker', true],
+              ['!=', 'isHtmlMarker', true],
+            ],
+            paint: {
+              'circle-radius': [
+                'interpolate', ['linear'], ['zoom'],
+                3, 5,
+                12, 7,
+                15, 9,
+                18, 11,
+              ],
+              'circle-color': 'rgba(0, 0, 0, 0.78)',
+              'circle-stroke-width': 1,
+              'circle-stroke-color': ['coalesce', ['get', 'color'], '#ffffff'],
+              'circle-opacity': ['coalesce', ['get', 'opacity'], 1],
+              'circle-stroke-opacity': ['coalesce', ['get', 'opacity'], 1],
+            },
+          },
+          {
+            id: 'plugin-symbol-labels',
+            type: 'symbol',
+            source: 'plugin-features',
+            filter: [
+              'all',
+              ['==', '$type', 'Point'],
+              ['==', 'isLabelMarker', true],
+              ['!=', 'isHtmlMarker', true],
+            ],
+            layout: {
+              'text-field': ['get', 'label'],
+              'text-size': [
+                'interpolate', ['linear'], ['zoom'],
+                3, 10,
+                12, 11,
+                15, 12,
+              ],
+              'text-anchor': 'center',
+              'text-allow-overlap': true,
+              'text-ignore-placement': true,
+            },
+            paint: {
+              'text-color': ['coalesce', ['get', 'color'], '#ffffff'],
+              'text-halo-color': '#000000',
+              'text-halo-width': 1.4,
+              'text-opacity': ['coalesce', ['get', 'opacity'], 1],
             },
           },
         ],
@@ -742,9 +806,16 @@ export function MapOverlay(): JSX.Element {
 
     if (isFirstSync.current) {
         isFirstSync.current = false;
+        if (isCurrentMapView(map.current, lat, lng, zoom)) {
+          useStore.getState().reverseGeocode(lat, lng);
+          return;
+        }
         map.current.jumpTo({ center: [lng, lat], zoom });
         useStore.getState().reverseGeocode(lat, lng);
     } else {
+        if (isCurrentMapView(map.current, lat, lng, zoom)) {
+          return;
+        }
         isMoving.current = true;
         map.current.jumpTo({ center: [lng, lat], zoom });
         useStore.getState().reverseGeocode(lat, lng);

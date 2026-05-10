@@ -14,7 +14,8 @@ import {
   TopMissionsInBoundsData, 
   ArtifactData,
   PlayerStatsMessage,
-  PasscodeResponseData
+  PasscodeResponseData,
+  IntelInventoryItemData
 } from '@iris/core';
 import PortalNamesPlugin from '../../../plugins/src/portal-names';
 import ThemeSelectorPlugin from '../../../plugins/src/theme-selector';
@@ -129,6 +130,88 @@ function buildMockOrnaments(): Record<string, string[]> {
   return mockOrnaments;
 }
 
+function buildLoadedPortalKeyInventory(totalKeys = 500): InventoryData {
+  const state = useStore.getState();
+  const portals = Object.values(state.portals)
+    .filter((portal) => portal.lat !== undefined && portal.lng !== undefined)
+    .sort((a, b) => a.id.localeCompare(b.id));
+
+  if (portals.length === 0) {
+    return { result: [] };
+  }
+
+  const now = Date.now();
+  const looseCount = Math.ceil(totalKeys / 2);
+  const capsuleCount = totalKeys - looseCount;
+  const result: NonNullable<InventoryData['result']> = [];
+
+  const createCoupler = (portal: typeof portals[number]) => ({
+    portalGuid: portal.id,
+    portalLocation: `${Math.round(portal.lat * 1e6)},${Math.round(portal.lng * 1e6)}`,
+    portalImageUrl: portal.image || '',
+    portalTitle: portal.name || `Portal ${portal.id}`,
+    portalAddress: `Mock loaded portal ${portal.id}`,
+  });
+
+  for (let i = 0; i < looseCount; i++) {
+    const portal = portals[i % portals.length];
+    result.push([
+      `mock-loaded-key-${i + 1}`,
+      now + i,
+      {
+        resource: { resourceType: 'PORTAL_LINK_KEY', resourceRarity: 'VERY_COMMON' },
+        portalCoupler: createCoupler(portal),
+      },
+    ]);
+  }
+
+  if (capsuleCount > 0) {
+    const stackableItems: { itemGuids: string[]; exampleGameEntity: [string, number, IntelInventoryItemData] }[] = Array.from({ length: capsuleCount }, (_, i) => {
+      const portal = portals[(looseCount + i) % portals.length];
+      return {
+        itemGuids: [`mock-loaded-capsule-key-${i + 1}`],
+        exampleGameEntity: [
+          `mock-loaded-capsule-key-template-${i + 1}`,
+          now + looseCount + i,
+          {
+            resource: { resourceType: 'PORTAL_LINK_KEY', resourceRarity: 'VERY_COMMON' },
+            portalCoupler: createCoupler(portal),
+          },
+        ],
+      };
+    });
+
+    result.push([
+      'mock-loaded-key-capsule-500',
+      now + totalKeys + 1,
+      {
+        resource: { resourceType: 'KEY_CAPSULE', resourceRarity: 'RARE' },
+        moniker: { differentiator: 'LOAD' },
+        container: {
+          currentCapacity: 500,
+          currentCount: capsuleCount,
+          stackableItems,
+        },
+      },
+    ]);
+  }
+
+  return { result };
+}
+
+function markMockInventoryLoaded(): void {
+  const now = Date.now();
+  useStore.getState().setEndpointMetadata('inventory', {
+    status: 'success',
+    lastSuccessAt: now,
+    lastActiveSuccessAt: now,
+    lastErrorAt: null,
+    lastErrorStatus: null,
+    lastErrorText: null,
+    lastUrl: 'mock:getInventory',
+  });
+}
+
 // ---------------------------------------------------------------------------
 // UI bootstrap
 // ---------------------------------------------------------------------------
@@ -241,6 +324,18 @@ window.addEventListener('message', (event: MessageEvent) => {
       inventoryMockPreviousSubscription = state.hasSubscription;
       state.setHasSubscription(true);
       handleInventory(mockInventoryData as InventoryData);
+      markMockInventoryLoaded();
+      break;
+    }
+
+    case 'IRIS_LOAD_MOCK_PORTAL_KEYS_500': {
+      const state = useStore.getState();
+      inventoryMockPreviousSubscription = state.hasSubscription;
+      state.setHasSubscription(true);
+      const mockKeyInventory = buildLoadedPortalKeyInventory(500);
+      handleInventory(mockKeyInventory);
+      markMockInventoryLoaded();
+      console.log(`IRIS: Loaded mock portal key inventory (${mockKeyInventory.result?.length ?? 0} top-level items)`);
       break;
     }
 
