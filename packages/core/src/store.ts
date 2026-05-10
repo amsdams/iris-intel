@@ -186,6 +186,36 @@ export interface EndpointDiagnostics {
     lastCoverageKey: string | null;
 }
 
+export interface MapPerfSnapshot {
+    type: 'viewport' | 'htmlMarkers';
+    time: number;
+    totalMs: number;
+    queryMs?: number;
+    setDataMs?: number;
+    zoom?: number;
+    queryBufferDegrees?: number;
+    sourceSetDataMs?: Record<string, number>;
+    sourceFeatureCounts?: Record<string, number>;
+    itemCount?: number;
+    portalCount?: number;
+    linkCount?: number;
+    fieldCount?: number;
+    artifactCount?: number;
+    ornamentCount?: number;
+    pluginCount?: number;
+    candidateCount?: number;
+    activeCount?: number;
+    existingCount?: number;
+    createdCount?: number;
+    updatedCount?: number;
+    removedCount?: number;
+}
+
+export interface MapPerfDiagnostics {
+    viewport: MapPerfSnapshot | null;
+    htmlMarkers: MapPerfSnapshot | null;
+}
+
 export interface InventoryItemData {
     resource?: {
         resourceType: string;
@@ -481,6 +511,7 @@ interface DiagnosticsSlice {
     sessionStatus: 'ok' | 'initial_login_required' | 'expired' | 'recovering';
     lastSessionError: SessionError | null;
     endpointDiagnostics: Record<EndpointKey, EndpointDiagnostics>;
+    mapPerfDiagnostics: MapPerfDiagnostics;
     onRequestStart: (url: string) => void;
     onRequestEnd: () => void;
     addFailedRequest: (request: FailedRequest) => void;
@@ -497,6 +528,7 @@ interface DiagnosticsSlice {
     setSessionRecovered: () => void;
     setEndpointNextAutoRefresh: (key: EndpointKey, nextAutoRefreshAt: number | null) => void;
     setEndpointMetadata: (key: EndpointKey, metadata: Partial<EndpointDiagnostics>) => void;
+    setMapPerfSnapshot: (snapshot: MapPerfSnapshot) => void;
     clearEndpointDiagnostics: () => void;
 }
 
@@ -1029,6 +1061,10 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
     sessionStatus: 'ok',
     lastSessionError: null,
     endpointDiagnostics: createEmptyEndpointDiagnostics(),
+    mapPerfDiagnostics: {
+        viewport: null,
+        htmlMarkers: null,
+    },
     onRequestStart: (url) => set((state) => ({
         activeRequests: state.activeRequests + 1,
         lastRequestUrl: url,
@@ -1155,6 +1191,12 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
                 ...state.endpointDiagnostics[key],
                 ...metadata,
             },
+        },
+    })),
+    setMapPerfSnapshot: (snapshot) => set((state) => ({
+        mapPerfDiagnostics: {
+            ...state.mapPerfDiagnostics,
+            [snapshot.type]: snapshot,
         },
     })),
     clearEndpointDiagnostics: () => set((state) => ({

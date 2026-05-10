@@ -164,6 +164,41 @@ Tasks:
 | Implement retry logic for failed entity fetches                        | Done   | coordinator now performs up to 3 retries with 5s backoff after a failed fetch                                 |
 | Reduce post-pan UI work on mobile                                      | Done   | map-state updates now no-op for identical views, `MapOverlay` skips same-view camera echoes, and ornaments build from the buffered viewport instead of all loaded portals |
 
+### IITC-style mobile panning performance
+
+Status: `Open`
+
+Outcome:
+
+- make map drag/zoom feel closer to IITC Mobile by keeping active movement mostly render-only
+- avoid risky renderer swaps until simpler scheduling and visibility rules are measured
+
+Tasks:
+
+| Task                                                            | Status | Notes                                                                                                                                      |
+|-----------------------------------------------------------------|--------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| Pause expensive overlay work during active map movement         | Done   | HTML marker sync now defers while the user is actively moving/zooming the map and resumes after a short settle delay                     |
+| Coalesce viewport source rebuilds                              | Done   | `moveend`, `zoomend`, and portal/link/field store updates now schedule one animation-frame viewport sync instead of stacking direct calls |
+| Add debug timing for map panning hotspots                      | Done   | debug logging now reports throttled viewport sync and HTML marker sync timings/counts so mobile panning bottlenecks can be measured       |
+| Surface map performance samples in Diagnostics                 | Done   | latest viewport and HTML marker timing/count samples are shown in Diagnostics with zoom, per-source counts/timings, and a copy button for mobile testing |
+| Skip hover hit-testing while the map is moving                 | Done   | desktop hover selection now avoids spatial hit-testing during active map movement and clears the cursor while dragging                    |
+| Reduce offscreen entity buffer on mobile                       | Done   | mobile viewport sync now uses a bounded viewport-relative query buffer instead of the fixed multi-kilometer desktop buffer                 |
+| Simplify field fill rendering without hiding entities          | Done   | field fill antialiasing is disabled to reduce polygon edge work while preserving all visible IITC-level detail                            |
+| Resume label-heavy overlays after a short settle delay          | Open   | IITC updates portal names/levels after request/refresh hooks with delays; use a similar delayed path for level/key labels                 |
+| Cap label-heavy HTML markers on mobile                          | Open   | keep the visible IITC-like HTML marker path, but render only on-map/near-viewport labels and cap counts before considering renderer swaps |
+| Add overlap thinning for portal level and key labels            | Open   | mirror IITC portal-level-numbers behavior: suppress lower-priority nearby labels instead of drawing every label                            |
+| Gate player tracker visibility and COMM interest by zoom        | Open   | IITC hides player tracker below z9 and disables background COMM interest there; evaluate matching this in IRIS                             |
+| Profile store subscriptions and UI rerenders during pan         | Open   | identify components that rerender from `mapState` or plugin feature churn while the user is dragging                                       |
+| Revisit MapLibre symbol labels only after mobile root cause     | Open   | desktop symbols worked, mobile did not; keep as a later investigation after scheduling/capping improvements are measured                   |
+
+Risks:
+
+| Risk                                                        | Mitigation                                                                                              |
+|-------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+| Deferring overlays may make labels feel late after panning  | start with short settle delays and keep base portals/links/fields moving normally                       |
+| Mobile caps may hide expected key/level labels              | prefer deterministic nearest/visible prioritization and document the rule in the work item before coding |
+| Replacing HTML labels could regress mobile visibility again | keep the current HTML fallback until a symbol-layer fix is verified on mobile                           |
+
 ### Entity merge and removal behavior stays correct under faster refresh
 
 Status: `Done`
@@ -508,6 +543,8 @@ Tasks:
 | Render artifact and ornament overlays with IITC-style stock icons             | Open   | IITC uses `marker_images/{ornament}.png`, `{type}_shard.png`, and `{type}_shard_target.png`; IRIS still uses MapLibre ring approximations for now                         |
 | Add visibility/zoom guardrails for label-heavy plugins                        | Done   | initial `minZoom` gating now reduces clutter for level labels and key counts                                                                                              |
 | Move remaining label-heavy HTML marker plugins to MapLibre symbol layers      | Open   | portal level labels may eventually need the same treatment if mobile panning still suffers with that overlay enabled                                                      |
+| Align label-heavy overlay scheduling with IITC Mobile                          | Open   | portal level/key labels should update after movement settles and avoid full marker churn while the map is actively panning                                                |
+| Add IITC-style label overlap thinning                                          | Open   | portal level labels already have an IITC reference implementation; adapt the same priority/overlap approach for key labels before trying another renderer                 |
 
 Bugs:
 
@@ -794,14 +831,15 @@ Tasks:
 
 ## Current Next Pickup
 
-1. **[Plugin Overlay]** Implement a "Single Highlighter" selection model.
-2. **[Live Map Freshness]** Implement surgical tile fetching (Done).
-3. **[Draw Tools]** Turn the draw-tools epic into an implementation plan for the first mobile-safe baseline.
-4. **[Ergonomics]** Evaluate "Swipe down to close" for the new Dock Drawer.
-5. **[Tactical]** Add a "Clear All Filters" button to the Tactical Drawer.
-6. **[Debug]** Add Portal GUIDs to Portal Details when the DEBUG theme is active.
-7. **[Player Tracker]** Add "Guess player level" based on highest resonator seen.
-8. **[Passcodes]** Add a "Stale" state to the passcode redemption UI for already-used codes.
+1. **[Live Map Freshness]** Pause expensive overlay work during active map movement.
+2. **[Plugin Overlay]** Add IITC-style label overlap thinning.
+3. **[Plugin Overlay]** Implement a "Single Highlighter" selection model.
+4. **[Draw Tools]** Turn the draw-tools epic into an implementation plan for the first mobile-safe baseline.
+5. **[Ergonomics]** Evaluate "Swipe down to close" for the new Dock Drawer.
+6. **[Tactical]** Add a "Clear All Filters" button to the Tactical Drawer.
+7. **[Debug]** Add Portal GUIDs to Portal Details when the DEBUG theme is active.
+8. **[Player Tracker]** Add "Guess player level" based on highest resonator seen.
+9. **[Passcodes]** Add a "Stale" state to the passcode redemption UI for already-used codes.
 
 ## Snapshot And Reference Sources
 

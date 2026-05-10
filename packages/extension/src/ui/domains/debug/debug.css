@@ -19,6 +19,24 @@
     text-transform: uppercase;
 }
 
+.iris-debug-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.iris-debug-section-header .iris-debug-section-title {
+    margin-top: 0;
+}
+
+.iris-debug-copy-btn {
+    min-height: 24px;
+    padding: 2px 8px;
+    font-size: 0.72em;
+}
+
 .iris-debug-table {
     display: flex;
     flex-direction: column;

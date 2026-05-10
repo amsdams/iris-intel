@@ -1,6 +1,6 @@
 import { h, JSX } from 'preact';
 import { useState, useEffect } from 'preact/hooks';
-import { EndpointDiagnostics, EndpointKey, useStore } from '@iris/core';
+import { EndpointDiagnostics, EndpointKey, MapPerfDiagnostics, useStore } from '@iris/core';
 import { Popup } from '../../shared/Popup';
 import { IRIS_VERSION_LABEL } from '../../../version';
 import './debug.css';
@@ -46,6 +46,35 @@ const ENDPOINT_STALE_AFTER_MS: Partial<Record<EndpointKey, number>> = {
     regionScore: 5 * 60 * 1000,
 };
 
+function formatMs(value: number | undefined): string {
+    return typeof value === 'number' ? `${Math.round(value)}ms` : '-';
+}
+
+function formatCount(value: number | undefined): string {
+    return typeof value === 'number' ? value.toLocaleString() : '-';
+}
+
+function buildPerfSummary(perf: MapPerfDiagnostics): string {
+    const viewport = perf.viewport;
+    const html = perf.htmlMarkers;
+    const sourceCounts = viewport?.sourceFeatureCounts ?? {};
+    const sourceSetData = viewport?.sourceSetDataMs ?? {};
+    const sourceDetails = viewport
+        ? ['portals', 'links', 'fields', 'artifacts', 'ornaments', 'plugin-features']
+            .map((sourceId) => `${sourceId} ${formatCount(sourceCounts[sourceId])}/${formatMs(sourceSetData[sourceId])}`)
+            .join(' | ')
+        : '';
+    return [
+        viewport
+            ? `VIEWPORT ${formatMs(viewport.totalMs)} z ${viewport.zoom?.toFixed(2) ?? '-'} buffer ${viewport.queryBufferDegrees?.toFixed(4) ?? '-'} query ${formatMs(viewport.queryMs)} setData ${formatMs(viewport.setDataMs)} items ${formatCount(viewport.itemCount)} P ${formatCount(viewport.portalCount)} L ${formatCount(viewport.linkCount)} F ${formatCount(viewport.fieldCount)} art ${formatCount(viewport.artifactCount)} orn ${formatCount(viewport.ornamentCount)} plugin ${formatCount(viewport.pluginCount)}`
+            : 'VIEWPORT no sample',
+        sourceDetails ? `SOURCES ${sourceDetails}` : 'SOURCES no sample',
+        html
+            ? `HTML ${formatMs(html.totalMs)} candidates ${formatCount(html.candidateCount)} active ${formatCount(html.activeCount)} existing ${formatCount(html.existingCount)} created ${formatCount(html.createdCount)} updated ${formatCount(html.updatedCount)} removed ${formatCount(html.removedCount)}`
+            : 'HTML no sample',
+    ].join('\n');
+}
+
 // ---------------------------------------------------------------------------
 // DiagnosticsPopup
 // ---------------------------------------------------------------------------
@@ -77,9 +106,11 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
     const addressStatus = useStore((state) => state.addressStatus);
     const addressNextLookupAt = useStore((state) => state.addressNextLookupAt);
     const endpointDiagnostics = useStore((state) => state.endpointDiagnostics);
+    const mapPerfDiagnostics = useStore((state) => state.mapPerfDiagnostics);
 
     const [countdown, setCountdown] = useState<number | null>(null);
     const [, setNow] = useState(() => Date.now());
+    const [copyStatus, setCopyStatus] = useState<string | null>(null);
 
     useEffect(() => {
         if (addressStatus !== 'pending' || !addressNextLookupAt) {
@@ -172,6 +203,16 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
 
         return ENDPOINT_FALLBACK_ORDER.indexOf(a.key) - ENDPOINT_FALLBACK_ORDER.indexOf(b.key);
     });
+    const viewportPerf = mapPerfDiagnostics.viewport;
+    const htmlMarkerPerf = mapPerfDiagnostics.htmlMarkers;
+
+    const copyPerfSummary = (): void => {
+        const text = buildPerfSummary(mapPerfDiagnostics);
+        navigator.clipboard?.writeText(text)
+            .then(() => setCopyStatus('Copied'))
+            .catch(() => setCopyStatus('Copy failed'));
+        window.setTimeout(() => setCopyStatus(null), 1600);
+    };
 
     return (
         <Popup
@@ -238,6 +279,72 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                         <div className="iris-debug-row">
                             <span className="iris-debug-label">Fields</span>
                             <span className="iris-debug-value">{fieldCount}</span>
+                        </div>
+                    </div>
+
+                    <div className="iris-debug-section-header">
+                        <span className="iris-debug-section-title">MAP PERFORMANCE</span>
+                        <button
+                            className="iris-button iris-debug-copy-btn"
+                            onClick={copyPerfSummary}
+                        >
+                            {copyStatus || 'COPY'}
+                        </button>
+                    </div>
+                    <div className="iris-debug-table">
+                        <div className="iris-debug-row iris-debug-row-endpoint">
+                            <div className="iris-debug-endpoint-main">
+                                <span className="iris-debug-label">Viewport</span>
+                                <span className="iris-debug-value">
+                                    {viewportPerf ? `${formatMs(viewportPerf.totalMs)} | z ${viewportPerf.zoom?.toFixed(2) ?? '-'} | setData ${formatMs(viewportPerf.setDataMs)}` : 'no sample'}
+                                </span>
+                            </div>
+                            {viewportPerf && (
+                                <div className="iris-debug-endpoint-details">
+                                    <div className="iris-debug-row">
+                                        <span className="iris-debug-label-indent">Counts</span>
+                                        <span className="iris-debug-value">
+                                            P {formatCount(viewportPerf.portalCount)} | L {formatCount(viewportPerf.linkCount)} | F {formatCount(viewportPerf.fieldCount)} | Plugin {formatCount(viewportPerf.pluginCount)}
+                                        </span>
+                                    </div>
+                                    <div className="iris-debug-row">
+                                        <span className="iris-debug-label-indent">Other</span>
+                                        <span className="iris-debug-value">
+                                            query {formatMs(viewportPerf.queryMs)} | items {formatCount(viewportPerf.itemCount)} | art {formatCount(viewportPerf.artifactCount)} | orn {formatCount(viewportPerf.ornamentCount)}
+                                        </span>
+                                    </div>
+                                    <div className="iris-debug-row">
+                                        <span className="iris-debug-label-indent">Sources</span>
+                                        <span className="iris-debug-value">
+                                            P {formatCount(viewportPerf.sourceFeatureCounts?.portals)}/{formatMs(viewportPerf.sourceSetDataMs?.portals)} | L {formatCount(viewportPerf.sourceFeatureCounts?.links)}/{formatMs(viewportPerf.sourceSetDataMs?.links)} | F {formatCount(viewportPerf.sourceFeatureCounts?.fields)}/{formatMs(viewportPerf.sourceSetDataMs?.fields)}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        <div className="iris-debug-row iris-debug-row-endpoint">
+                            <div className="iris-debug-endpoint-main">
+                                <span className="iris-debug-label">HTML markers</span>
+                                <span className="iris-debug-value">
+                                    {htmlMarkerPerf ? `${formatMs(htmlMarkerPerf.totalMs)} | active ${formatCount(htmlMarkerPerf.activeCount)}` : 'no sample'}
+                                </span>
+                            </div>
+                            {htmlMarkerPerf && (
+                                <div className="iris-debug-endpoint-details">
+                                    <div className="iris-debug-row">
+                                        <span className="iris-debug-label-indent">Counts</span>
+                                        <span className="iris-debug-value">
+                                            candidates {formatCount(htmlMarkerPerf.candidateCount)} | existing {formatCount(htmlMarkerPerf.existingCount)}
+                                        </span>
+                                    </div>
+                                    <div className="iris-debug-row">
+                                        <span className="iris-debug-label-indent">Changes</span>
+                                        <span className="iris-debug-value">
+                                            +{formatCount(htmlMarkerPerf.createdCount)} / ~{formatCount(htmlMarkerPerf.updatedCount)} / -{formatCount(htmlMarkerPerf.removedCount)}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 

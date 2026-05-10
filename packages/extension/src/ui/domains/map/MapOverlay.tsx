@@ -106,6 +106,22 @@ function isCurrentMapView(mapInstance: maplibregl.Map, lat: number, lng: number,
   );
 }
 
+function isMobileMapViewport(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia('(max-width: 768px), (pointer: coarse)').matches;
+}
+
+function getViewportQueryBufferDegrees(bounds: maplibregl.LngLatBounds): number {
+  if (!isMobileMapViewport()) {
+    return 0.05;
+  }
+
+  const latSpan = Math.abs(bounds.getNorth() - bounds.getSouth());
+  const lngSpan = Math.abs(bounds.getEast() - bounds.getWest());
+  const viewportRelativeBuffer = Math.max(latSpan, lngSpan) * 0.2;
+
+  return Math.min(Math.max(viewportRelativeBuffer, 0.002), 0.015);
+}
+
 type DragRotateInternals = maplibregl.Map['dragRotate'] & {
   _pitchWithRotate?: boolean;
   _mouseRotate?: {
@@ -122,9 +138,12 @@ export function MapOverlay(): JSX.Element {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const [styleLoaded, setStyleLoaded] = useState(false);
+  const [htmlMarkerSyncTick, setHtmlMarkerSyncTick] = useState(0);
 
   // Prevents moveend from echoing back to Intel when we programmatically jump
   const isMoving = useRef(false);
+  const isUserMovingMap = useRef(false);
+  const htmlMarkerSettleTimer = useRef<number | null>(null);
   const isFirstSync = useRef(true);
 
   // Core entities are NOT subscribed here anymore. We use the globalSpatialIndex for viewport sync.
@@ -136,6 +155,10 @@ export function MapOverlay(): JSX.Element {
   const selectedFieldId = useStore((state) => state.selectedFieldId);
   const selectedLinkId = useStore((state) => state.selectedLinkId);
   const pluginMarkers = useRef<Map<string, MarkerRegistryEntry>>(new Map());
+  const syncViewportRef = useRef<() => void>(() => undefined);
+  const scheduledViewportSyncFrame = useRef<number | null>(null);
+  const lastViewportPerfLogAt = useRef(0);
+  const lastHtmlMarkerPerfLogAt = useRef(0);
   const { lat, lng, zoom } = useStore((state) => state.mapState);
   const themeId = useStore((state) => state.themeId);
   const mapThemeId = useStore((state) => state.mapThemeId);
@@ -193,12 +216,28 @@ export function MapOverlay(): JSX.Element {
   const syncViewport = useCallback((): void => {
     if (!map.current || !styleLoaded) return;
 
+    const perfStart = performance.now();
+    const debugLogging = useStore.getState().debugLogging;
+    let setDataMs = 0;
+    const sourceSetDataMs: Record<string, number> = {};
+    const sourceFeatureCounts: Record<string, number> = {};
+    const setSourceData = (sourceId: string, featureCollection: GeoJSON.FeatureCollection): void => {
+      const source = getGeoJsonSource(sourceId);
+      if (!source) return;
+
+      sourceFeatureCounts[sourceId] = featureCollection.features.length;
+      const setDataStart = performance.now();
+      source.setData(featureCollection);
+      const elapsed = performance.now() - setDataStart;
+      sourceSetDataMs[sourceId] = (sourceSetDataMs[sourceId] ?? 0) + elapsed;
+      setDataMs += elapsed;
+    };
+
     const bounds = map.current.getBounds();
     const zoom = map.current.getZoom();
     const minLevel = getMinLevelForZoom(zoom);
     
-    // ~5km buffer in degrees approx
-    const buffer = 0.05;
+    const buffer = getViewportQueryBufferDegrees(bounds);
     const queryBounds = {
         minLat: bounds.getSouth() - buffer,
         minLng: bounds.getWest() - buffer,
@@ -206,7 +245,9 @@ export function MapOverlay(): JSX.Element {
         maxLng: bounds.getEast() + buffer
     };
 
+    const queryStart = performance.now();
     const results = globalSpatialIndex.query(queryBounds);
+    const queryMs = performance.now() - queryStart;
     const store = useStore.getState();
 
     // 1. Filter and Build Portals
@@ -234,18 +275,18 @@ export function MapOverlay(): JSX.Element {
         showCaptured: filterShowCaptured,
         showScanned: filterShowScanned
     }, selectedPortalId);
-    getGeoJsonSource('portals')?.setData(toFeatureCollection(portalFeatures));
+    setSourceData('portals', toFeatureCollection(portalFeatures));
 
     // Update portal selection highlight
     if (selectedPortalId && store.portals[selectedPortalId]) {
       const p = store.portals[selectedPortalId];
-      getGeoJsonSource('portal-selected')?.setData(toFeatureCollection([{
+      setSourceData('portal-selected', toFeatureCollection([{
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
         properties: { id: p.id }
       }]));
     } else {
-      getGeoJsonSource('portal-selected')?.setData(toFeatureCollection([]));
+      setSourceData('portal-selected', toFeatureCollection([]));
     }
 
     // 2. Filter and Build Links
@@ -270,12 +311,12 @@ export function MapOverlay(): JSX.Element {
         showMachina: filterShowMachina, 
         showUnclaimedPortals: filterShowUnclaimedPortals
     });
-    getGeoJsonSource('links')?.setData(toFeatureCollection(linkFeatures));
+    setSourceData('links', toFeatureCollection(linkFeatures));
 
     // Update link selection highlight
     if (selectedLinkId && store.links[selectedLinkId]) {
       const l = store.links[selectedLinkId];
-      getGeoJsonSource('link-selected')?.setData(toFeatureCollection([{
+      setSourceData('link-selected', toFeatureCollection([{
         type: 'Feature',
         geometry: {
           type: 'LineString',
@@ -284,7 +325,7 @@ export function MapOverlay(): JSX.Element {
         properties: { id: l.id }
       }]));
     } else {
-      getGeoJsonSource('link-selected')?.setData(toFeatureCollection([]));
+      setSourceData('link-selected', toFeatureCollection([]));
     }
 
     // 3. Filter and Build Fields
@@ -313,24 +354,24 @@ export function MapOverlay(): JSX.Element {
         showMachina: filterShowMachina, 
         showUnclaimedPortals: filterShowUnclaimedPortals
     });
-    getGeoJsonSource('fields')?.setData(toFeatureCollection(fieldFeatures));
+    setSourceData('fields', toFeatureCollection(fieldFeatures));
 
     // Update field selection highlight
     if (selectedFieldId && store.fields[selectedFieldId]) {
       const f = store.fields[selectedFieldId];
       const poly = [...f.points.map((p) => [p.lng, p.lat] as [number, number]), [f.points[0].lng, f.points[0].lat] as [number, number]];
-      getGeoJsonSource('field-selected')?.setData(toFeatureCollection([{
+      setSourceData('field-selected', toFeatureCollection([{
         type: 'Feature',
         geometry: { type: 'LineString', coordinates: poly },
         properties: { id: f.id }
       }]));
     } else {
-      getGeoJsonSource('field-selected')?.setData(toFeatureCollection([]));
+      setSourceData('field-selected', toFeatureCollection([]));
     }
 
     // 4. Other overlays (keep full records for now if small)
-    getGeoJsonSource('artifacts')?.setData(toFeatureCollection(buildArtifactFeatures(artifacts, store.portals, { showArtifacts: layerShowArtifacts })));
-    getGeoJsonSource('ornaments')?.setData(toFeatureCollection(buildOrnamentFeatures(viewportPortals, mockOrnaments, {
+    const artifactFeatures = buildArtifactFeatures(artifacts, store.portals, { showArtifacts: layerShowArtifacts });
+    const ornamentFeatures = buildOrnamentFeatures(viewportPortals, mockOrnaments, {
       showOrnaments: layerShowOrnaments, 
       showResistance: filterShowResistance, 
       showEnlightened: filterShowEnlightened, 
@@ -341,12 +382,64 @@ export function MapOverlay(): JSX.Element {
       showVisited: filterShowVisited,
       showCaptured: filterShowCaptured,
       showScanned: filterShowScanned
-    })));
-    getGeoJsonSource('mission-route')?.setData(toFeatureCollection(buildMissionRouteFeatures(missionDetails)));
-    getGeoJsonSource('mission-waypoints')?.setData(toFeatureCollection(buildMissionWaypointFeatures(missionDetails)));
-    getGeoJsonSource('plugin-features')?.setData(pluginFeatures);
+    });
+    const missionRouteFeatures = buildMissionRouteFeatures(missionDetails);
+    const missionWaypointFeatures = buildMissionWaypointFeatures(missionDetails);
+    setSourceData('artifacts', toFeatureCollection(artifactFeatures));
+    setSourceData('ornaments', toFeatureCollection(ornamentFeatures));
+    setSourceData('mission-route', toFeatureCollection(missionRouteFeatures));
+    setSourceData('mission-waypoints', toFeatureCollection(missionWaypointFeatures));
+    setSourceData('plugin-features', pluginFeatures);
+
+    const now = Date.now();
+    if (now - lastViewportPerfLogAt.current > 1000) {
+      lastViewportPerfLogAt.current = now;
+      const totalMs = performance.now() - perfStart;
+      store.setMapPerfSnapshot({
+        type: 'viewport',
+        time: now,
+        totalMs,
+        queryMs,
+        setDataMs,
+        zoom,
+        queryBufferDegrees: buffer,
+        sourceSetDataMs,
+        sourceFeatureCounts,
+        itemCount: results.length,
+        portalCount: portalFeatures.length,
+        linkCount: linkFeatures.length,
+        fieldCount: fieldFeatures.length,
+        artifactCount: artifactFeatures.length,
+        ornamentCount: ornamentFeatures.length,
+        pluginCount: pluginFeatures.features.length,
+      });
+      if (debugLogging) {
+        console.log(
+          `[IRIS] VIEWPORT sync ${Math.round(totalMs)}ms | ` +
+          `query ${Math.round(queryMs)}ms | setData ${Math.round(setDataMs)}ms | ` +
+          `z ${zoom.toFixed(2)} | buffer ${buffer.toFixed(4)} | ` +
+          `items ${results.length} | P ${portalFeatures.length} | L ${linkFeatures.length} | F ${fieldFeatures.length} | ` +
+          `art ${artifactFeatures.length} | orn ${ornamentFeatures.length} | plugin ${pluginFeatures.features.length}`
+        );
+      }
+    }
 
   }, [styleLoaded, layerShowFields, layerShowLinks, layerShowOrnaments, layerShowArtifacts, filterShowResistance, filterShowEnlightened, filterShowMachina, filterShowUnclaimedPortals, filterShowLevel, filterShowHealth, filterShowVisited, filterShowCaptured, filterShowScanned, artifacts, mockOrnaments, missionDetails, pluginFeatures, selectedPortalId, selectedFieldId, selectedLinkId]);
+
+  useEffect((): void => {
+    syncViewportRef.current = syncViewport;
+  }, [syncViewport]);
+
+  const scheduleViewportSync = useCallback((): void => {
+    if (!map.current || !styleLoaded || scheduledViewportSyncFrame.current !== null) {
+      return;
+    }
+
+    scheduledViewportSyncFrame.current = window.requestAnimationFrame(() => {
+      scheduledViewportSyncFrame.current = null;
+      syncViewportRef.current();
+    });
+  }, [styleLoaded]);
 
   // ---------------------------------------------------------------------------
   // Initialise MapLibre map once on mount
@@ -446,6 +539,7 @@ export function MapOverlay(): JSX.Element {
             paint: {
               'fill-color': initialTeamColourExpr.current,
               'fill-opacity': 0.3,
+              'fill-antialias': false,
             },
           },
           {
@@ -623,6 +717,32 @@ export function MapOverlay(): JSX.Element {
         }
     });
 
+    const markHtmlMarkersMoving = (): void => {
+      if (htmlMarkerSettleTimer.current !== null) {
+        window.clearTimeout(htmlMarkerSettleTimer.current);
+        htmlMarkerSettleTimer.current = null;
+      }
+      isUserMovingMap.current = true;
+      map.current?.getCanvas().style.setProperty('cursor', '');
+    };
+
+    const markHtmlMarkersSettling = (): void => {
+      if (htmlMarkerSettleTimer.current !== null) {
+        window.clearTimeout(htmlMarkerSettleTimer.current);
+      }
+
+      htmlMarkerSettleTimer.current = window.setTimeout(() => {
+        htmlMarkerSettleTimer.current = null;
+        isUserMovingMap.current = false;
+        setHtmlMarkerSyncTick((value) => value + 1);
+      }, 350);
+    };
+
+    map.current.on('movestart', markHtmlMarkersMoving);
+    map.current.on('zoomstart', markHtmlMarkersMoving);
+    map.current.on('moveend', markHtmlMarkersSettling);
+    map.current.on('zoomend', markHtmlMarkersSettling);
+
     map.current.on('moveend', () => {
       if (!map.current || isMoving.current) return;
       const center = map.current.getCenter();
@@ -715,6 +835,11 @@ export function MapOverlay(): JSX.Element {
 
     let lastMove = 0;
     map.current.on('mousemove', (e: maplibregl.MapMouseEvent) => {
+        if (isUserMovingMap.current) {
+          map.current?.getCanvas().style.setProperty('cursor', '');
+          return;
+        }
+
         const now = Date.now();
         if (now - lastMove < 100) return;
         lastMove = now;
@@ -739,6 +864,14 @@ export function MapOverlay(): JSX.Element {
     });
 
     return (): void => {
+      if (htmlMarkerSettleTimer.current !== null) {
+        window.clearTimeout(htmlMarkerSettleTimer.current);
+        htmlMarkerSettleTimer.current = null;
+      }
+      if (scheduledViewportSyncFrame.current !== null) {
+        window.cancelAnimationFrame(scheduledViewportSyncFrame.current);
+        scheduledViewportSyncFrame.current = null;
+      }
       markerRegistry.forEach(({ marker }) => marker.remove());
       markerRegistry.clear();
       map.current?.remove();
@@ -829,7 +962,7 @@ export function MapOverlay(): JSX.Element {
   useEffect((): undefined | (() => void) => {
     if (!map.current || !styleLoaded) return;
     
-    const onMove = (): void => syncViewport();
+    const onMove = (): void => scheduleViewportSync();
     map.current.on('moveend', onMove);
     map.current.on('zoomend', onMove);
     
@@ -843,14 +976,14 @@ export function MapOverlay(): JSX.Element {
     window.addEventListener('message', commandHandler);
 
     // Initial sync
-    syncViewport();
+    scheduleViewportSync();
 
     return () => {
       map.current?.off('moveend', onMove);
       map.current?.off('zoomend', onMove);
       window.removeEventListener('message', commandHandler);
     };
-  }, [styleLoaded, syncViewport]);
+  }, [styleLoaded, scheduleViewportSync]);
 
   // Sync Viewport on Store Entity Changes (Decoupled from render cycle)
   useEffect((): undefined | (() => void) => {
@@ -859,15 +992,15 @@ export function MapOverlay(): JSX.Element {
     // Subscribe to portal changes to trigger re-sync if they happen while in view
     const unsubPortals = useStore.subscribe(
         state => state.portals,
-        () => syncViewport()
+        () => scheduleViewportSync()
     );
     const unsubLinks = useStore.subscribe(
         state => state.links,
-        () => syncViewport()
+        () => scheduleViewportSync()
     );
     const unsubFields = useStore.subscribe(
         state => state.fields,
-        () => syncViewport()
+        () => scheduleViewportSync()
     );
 
     return () => {
@@ -875,12 +1008,25 @@ export function MapOverlay(): JSX.Element {
         unsubLinks();
         unsubFields();
     };
-  }, [styleLoaded, syncViewport]);
+  }, [styleLoaded, scheduleViewportSync]);
 
   // Sync HTML Markers (Independent effect for performance)
   useEffect((): undefined | (() => void) => {
     if (!map.current || !styleLoaded) return;
 
+    if (isUserMovingMap.current) {
+      if (useStore.getState().debugLogging) {
+        console.log('IRIS: HTML marker sync deferred during map movement');
+      }
+      return;
+    }
+
+    const perfStart = performance.now();
+    const debugLogging = useStore.getState().debugLogging;
+    let candidates = 0;
+    let updated = 0;
+    let created = 0;
+    let removed = 0;
     const activeMarkerIds = new Set<string>();
     const currentZoom = map.current.getZoom();
 
@@ -889,6 +1035,7 @@ export function MapOverlay(): JSX.Element {
       if ((!properties.isPlayerMarker && !properties.isHtmlMarker) || feature.geometry.type !== 'Point' || !map.current) {
         return;
       }
+      candidates++;
 
       if (!isFeatureVisibleAtZoom(properties, currentZoom)) {
         return;
@@ -927,6 +1074,7 @@ export function MapOverlay(): JSX.Element {
           }
         }
         bindPluginMarkerClickTarget(existing.clickTarget, feature, isInteractive);
+        updated++;
         return;
       }
 
@@ -943,15 +1091,41 @@ export function MapOverlay(): JSX.Element {
         .addTo(map.current);
 
       pluginMarkers.current.set(markerId, { marker, clickTarget });
+      created++;
     });
 
     pluginMarkers.current.forEach((entry, markerId) => {
       if (!activeMarkerIds.has(markerId)) {
         entry.marker.remove();
         pluginMarkers.current.delete(markerId);
+        removed++;
       }
     });
-  }, [pluginFeatures, styleLoaded, zoom]);
+
+    const now = Date.now();
+    if (now - lastHtmlMarkerPerfLogAt.current > 1000) {
+      lastHtmlMarkerPerfLogAt.current = now;
+      const totalMs = performance.now() - perfStart;
+      useStore.getState().setMapPerfSnapshot({
+        type: 'htmlMarkers',
+        time: now,
+        totalMs,
+        candidateCount: candidates,
+        activeCount: activeMarkerIds.size,
+        existingCount: pluginMarkers.current.size,
+        createdCount: created,
+        updatedCount: updated,
+        removedCount: removed,
+      });
+      if (debugLogging) {
+        console.log(
+          `[IRIS] HTML markers sync ${Math.round(totalMs)}ms | ` +
+          `candidates ${candidates} | active ${activeMarkerIds.size} | existing ${pluginMarkers.current.size} | ` +
+          `created ${created} | updated ${updated} | removed ${removed}`
+        );
+      }
+    }
+  }, [pluginFeatures, styleLoaded, zoom, htmlMarkerSyncTick]);
 
   const panBy = (x: number, y: number): void => {
     map.current?.panBy([x, y], { duration: 200 });
