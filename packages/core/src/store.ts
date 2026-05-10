@@ -187,7 +187,7 @@ export interface EndpointDiagnostics {
 }
 
 export interface MapPerfSnapshot {
-    type: 'viewport' | 'htmlMarkers';
+    type: 'viewport' | 'htmlMarkers' | 'frame';
     time: number;
     totalMs: number;
     queryMs?: number;
@@ -209,11 +209,17 @@ export interface MapPerfSnapshot {
     createdCount?: number;
     updatedCount?: number;
     removedCount?: number;
+    frameCount?: number;
+    averageFrameMs?: number;
+    maxFrameMs?: number;
+    slowFrameCount?: number;
+    estimatedFps?: number;
 }
 
 export interface MapPerfDiagnostics {
     viewport: MapPerfSnapshot | null;
     htmlMarkers: MapPerfSnapshot | null;
+    frame: MapPerfSnapshot | null;
 }
 
 export interface InventoryItemData {
@@ -1064,6 +1070,7 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
     mapPerfDiagnostics: {
         viewport: null,
         htmlMarkers: null,
+        frame: null,
     },
     onRequestStart: (url) => set((state) => ({
         activeRequests: state.activeRequests + 1,

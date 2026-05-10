@@ -81,6 +81,13 @@ export function MockToolsBar(): JSX.Element | null {
                     {action.label}
                 </button>
             ))}
+            <button
+                className="iris-mock-tools-btn"
+                title="Run a 5 second automated pan benchmark"
+                onClick={() => window.postMessage({ type: 'IRIS_RUN_PAN_BENCHMARK' }, '*')}
+            >
+                Bench
+            </button>
         </div>
     );
 }

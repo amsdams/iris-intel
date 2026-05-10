@@ -57,6 +57,7 @@ function formatCount(value: number | undefined): string {
 function buildPerfSummary(perf: MapPerfDiagnostics): string {
     const viewport = perf.viewport;
     const html = perf.htmlMarkers;
+    const frame = perf.frame;
     const sourceCounts = viewport?.sourceFeatureCounts ?? {};
     const sourceSetData = viewport?.sourceSetDataMs ?? {};
     const sourceDetails = viewport
@@ -72,6 +73,9 @@ function buildPerfSummary(perf: MapPerfDiagnostics): string {
         html
             ? `HTML ${formatMs(html.totalMs)} candidates ${formatCount(html.candidateCount)} active ${formatCount(html.activeCount)} existing ${formatCount(html.existingCount)} created ${formatCount(html.createdCount)} updated ${formatCount(html.updatedCount)} removed ${formatCount(html.removedCount)}`
             : 'HTML no sample',
+        frame
+            ? `FRAME ${formatMs(frame.totalMs)} avg ${formatMs(frame.averageFrameMs)} max ${formatMs(frame.maxFrameMs)} fps ${formatCount(frame.estimatedFps)} slow ${formatCount(frame.slowFrameCount)}/${formatCount(frame.frameCount)}`
+            : 'FRAME no sample',
     ].join('\n');
 }
 
@@ -205,6 +209,7 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
     });
     const viewportPerf = mapPerfDiagnostics.viewport;
     const htmlMarkerPerf = mapPerfDiagnostics.htmlMarkers;
+    const framePerf = mapPerfDiagnostics.frame;
 
     const copyPerfSummary = (): void => {
         const text = buildPerfSummary(mapPerfDiagnostics);
@@ -341,6 +346,24 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                                         <span className="iris-debug-label-indent">Changes</span>
                                         <span className="iris-debug-value">
                                             +{formatCount(htmlMarkerPerf.createdCount)} / ~{formatCount(htmlMarkerPerf.updatedCount)} / -{formatCount(htmlMarkerPerf.removedCount)}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        <div className="iris-debug-row iris-debug-row-endpoint">
+                            <div className="iris-debug-endpoint-main">
+                                <span className="iris-debug-label">Pan frames</span>
+                                <span className="iris-debug-value">
+                                    {framePerf ? `avg ${formatMs(framePerf.averageFrameMs)} | max ${formatMs(framePerf.maxFrameMs)} | fps ${formatCount(framePerf.estimatedFps)}` : 'no sample'}
+                                </span>
+                            </div>
+                            {framePerf && (
+                                <div className="iris-debug-endpoint-details">
+                                    <div className="iris-debug-row">
+                                        <span className="iris-debug-label-indent">Slow frames</span>
+                                        <span className="iris-debug-value">
+                                            {formatCount(framePerf.slowFrameCount)} / {formatCount(framePerf.frameCount)} over {formatMs(framePerf.totalMs)}
                                         </span>
                                     </div>
                                 </div>

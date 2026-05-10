@@ -30,9 +30,32 @@ type PluginFeatureProperties = {
   maxZoom?: number;
 } & Record<string, unknown>;
 
+const SETTLE_DELAY_MS = 350;
+const FIELD_FILL_OPACITY = 0.3;
+const LINK_LINE_WIDTH = 2;
+const MOVING_LINK_LINE_WIDTH = 1;
+const LINK_LINE_OPACITY = 1;
+const MOVING_LINK_LINE_OPACITY = 0.72;
+const SLOW_FRAME_MS = 34;
+const PAN_BENCHMARK_DURATION_MS = 5000;
+const PAN_BENCHMARK_STEP_MS = 450;
+const PAN_BENCHMARK_STEP_PX = 220;
+const PAN_BENCHMARK_START = { lat: 52.371094, lng: 4.906375, zoom: 14.36 };
+const PAN_BENCHMARK_SETTLE_MS = 800;
+
 interface MarkerRegistryEntry {
   marker: maplibregl.Marker;
   clickTarget: HTMLDivElement | null;
+}
+
+interface MovingFrameSample {
+  active: boolean;
+  startedAt: number;
+  lastFrameAt: number | null;
+  frameCount: number;
+  totalFrameMs: number;
+  maxFrameMs: number;
+  slowFrameCount: number;
 }
 
 function isFeatureVisibleAtZoom(properties: PluginFeatureProperties, zoom: number): boolean {
@@ -122,6 +145,27 @@ function getViewportQueryBufferDegrees(bounds: maplibregl.LngLatBounds): number 
   return Math.min(Math.max(viewportRelativeBuffer, 0.002), 0.015);
 }
 
+function setPaintIfLayerExists(
+  mapInstance: maplibregl.Map,
+  layerId: string,
+  name: string,
+  value: unknown
+): void {
+  if (mapInstance.getLayer(layerId)) {
+    mapInstance.setPaintProperty(layerId, name, value);
+  }
+}
+
+function setLayerVisibilityIfExists(
+  mapInstance: maplibregl.Map,
+  layerId: string,
+  visibility: 'visible' | 'none'
+): void {
+  if (mapInstance.getLayer(layerId)) {
+    mapInstance.setLayoutProperty(layerId, 'visibility', visibility);
+  }
+}
+
 type DragRotateInternals = maplibregl.Map['dragRotate'] & {
   _pitchWithRotate?: boolean;
   _mouseRotate?: {
@@ -159,6 +203,20 @@ export function MapOverlay(): JSX.Element {
   const scheduledViewportSyncFrame = useRef<number | null>(null);
   const lastViewportPerfLogAt = useRef(0);
   const lastHtmlMarkerPerfLogAt = useRef(0);
+  const movingFrameRequest = useRef<number | null>(null);
+  const panBenchmarkActive = useRef(false);
+  const panBenchmarkInterval = useRef<number | null>(null);
+  const panBenchmarkTimer = useRef<number | null>(null);
+  const panBenchmarkSettleTimer = useRef<number | null>(null);
+  const movingFrameSample = useRef<MovingFrameSample>({
+    active: false,
+    startedAt: 0,
+    lastFrameAt: null,
+    frameCount: 0,
+    totalFrameMs: 0,
+    maxFrameMs: 0,
+    slowFrameCount: 0,
+  });
   const { lat, lng, zoom } = useStore((state) => state.mapState);
   const themeId = useStore((state) => state.themeId);
   const mapThemeId = useStore((state) => state.mapThemeId);
@@ -441,6 +499,152 @@ export function MapOverlay(): JSX.Element {
     });
   }, [styleLoaded]);
 
+  const applyMovingRenderMode = useCallback((enabled: boolean): void => {
+    const mapInstance = map.current;
+    if (!mapInstance || !isMobileMapViewport()) {
+      return;
+    }
+
+    setLayerVisibilityIfExists(mapInstance, 'fields', enabled ? 'none' : 'visible');
+    setPaintIfLayerExists(mapInstance, 'fields', 'fill-opacity', FIELD_FILL_OPACITY);
+    setPaintIfLayerExists(
+      mapInstance,
+      'links',
+      'line-width',
+      enabled ? MOVING_LINK_LINE_WIDTH : LINK_LINE_WIDTH
+    );
+    setPaintIfLayerExists(
+      mapInstance,
+      'links',
+      'line-opacity',
+      enabled ? MOVING_LINK_LINE_OPACITY : LINK_LINE_OPACITY
+    );
+  }, []);
+
+  const stopMovingFrameSample = useCallback((): void => {
+    const sample = movingFrameSample.current;
+    if (!sample.active) {
+      return;
+    }
+
+    sample.active = false;
+    if (movingFrameRequest.current !== null) {
+      window.cancelAnimationFrame(movingFrameRequest.current);
+      movingFrameRequest.current = null;
+    }
+
+    if (sample.frameCount === 0) {
+      return;
+    }
+
+    const now = performance.now();
+    const averageFrameMs = sample.totalFrameMs / sample.frameCount;
+    useStore.getState().setMapPerfSnapshot({
+      type: 'frame',
+      time: Date.now(),
+      totalMs: now - sample.startedAt,
+      frameCount: sample.frameCount,
+      averageFrameMs,
+      maxFrameMs: sample.maxFrameMs,
+      slowFrameCount: sample.slowFrameCount,
+      estimatedFps: Math.round(1000 / averageFrameMs),
+    });
+  }, []);
+
+  const startMovingFrameSample = useCallback((): void => {
+    const sample = movingFrameSample.current;
+    if (sample.active) {
+      return;
+    }
+
+    sample.active = true;
+    sample.startedAt = performance.now();
+    sample.lastFrameAt = null;
+    sample.frameCount = 0;
+    sample.totalFrameMs = 0;
+    sample.maxFrameMs = 0;
+    sample.slowFrameCount = 0;
+
+    const tick = (now: number): void => {
+      if (!movingFrameSample.current.active) {
+        return;
+      }
+
+      const currentSample = movingFrameSample.current;
+      if (currentSample.lastFrameAt !== null) {
+        const frameMs = now - currentSample.lastFrameAt;
+        currentSample.frameCount += 1;
+        currentSample.totalFrameMs += frameMs;
+        currentSample.maxFrameMs = Math.max(currentSample.maxFrameMs, frameMs);
+        if (frameMs >= SLOW_FRAME_MS) {
+          currentSample.slowFrameCount += 1;
+        }
+      }
+      currentSample.lastFrameAt = now;
+      movingFrameRequest.current = window.requestAnimationFrame(tick);
+    };
+
+    movingFrameRequest.current = window.requestAnimationFrame(tick);
+  }, []);
+
+  const stopPanBenchmark = useCallback((): void => {
+    if (panBenchmarkInterval.current !== null) {
+      window.clearInterval(panBenchmarkInterval.current);
+      panBenchmarkInterval.current = null;
+    }
+    if (panBenchmarkTimer.current !== null) {
+      window.clearTimeout(panBenchmarkTimer.current);
+      panBenchmarkTimer.current = null;
+    }
+    if (panBenchmarkSettleTimer.current !== null) {
+      window.clearTimeout(panBenchmarkSettleTimer.current);
+      panBenchmarkSettleTimer.current = null;
+    }
+    panBenchmarkActive.current = false;
+    applyMovingRenderMode(false);
+    stopMovingFrameSample();
+  }, [applyMovingRenderMode, stopMovingFrameSample]);
+
+  const runPanBenchmark = useCallback((): void => {
+    const mapInstance = map.current;
+    if (!mapInstance) {
+      return;
+    }
+
+    stopPanBenchmark();
+    mapInstance.jumpTo({
+      center: [PAN_BENCHMARK_START.lng, PAN_BENCHMARK_START.lat],
+      zoom: PAN_BENCHMARK_START.zoom,
+    });
+    scheduleViewportSync();
+
+    panBenchmarkSettleTimer.current = window.setTimeout(() => {
+      if (!map.current) {
+        return;
+      }
+
+      panBenchmarkSettleTimer.current = null;
+      panBenchmarkActive.current = true;
+      isUserMovingMap.current = true;
+      applyMovingRenderMode(true);
+      startMovingFrameSample();
+
+      let direction = 1;
+      const panStep = (): void => {
+        direction *= -1;
+        map.current?.panBy([PAN_BENCHMARK_STEP_PX * direction, 0], { duration: PAN_BENCHMARK_STEP_MS - 50 });
+      };
+
+      panStep();
+      panBenchmarkInterval.current = window.setInterval(panStep, PAN_BENCHMARK_STEP_MS);
+      panBenchmarkTimer.current = window.setTimeout(() => {
+        stopPanBenchmark();
+        isUserMovingMap.current = false;
+        setHtmlMarkerSyncTick((value) => value + 1);
+      }, PAN_BENCHMARK_DURATION_MS);
+    }, PAN_BENCHMARK_SETTLE_MS);
+  }, [applyMovingRenderMode, scheduleViewportSync, startMovingFrameSample, stopPanBenchmark]);
+
   // ---------------------------------------------------------------------------
   // Initialise MapLibre map once on mount
   // ---------------------------------------------------------------------------
@@ -538,7 +742,7 @@ export function MapOverlay(): JSX.Element {
             source: 'fields',
             paint: {
               'fill-color': initialTeamColourExpr.current,
-              'fill-opacity': 0.3,
+              'fill-opacity': FIELD_FILL_OPACITY,
               'fill-antialias': false,
             },
           },
@@ -556,8 +760,9 @@ export function MapOverlay(): JSX.Element {
             type: 'line',
             source: 'links',
             paint: {
-              'line-width': 2,
+              'line-width': LINK_LINE_WIDTH,
               'line-color': initialTeamColourExpr.current,
+              'line-opacity': LINK_LINE_OPACITY,
             },
           },
           {
@@ -723,6 +928,8 @@ export function MapOverlay(): JSX.Element {
         htmlMarkerSettleTimer.current = null;
       }
       isUserMovingMap.current = true;
+      applyMovingRenderMode(true);
+      startMovingFrameSample();
       map.current?.getCanvas().style.setProperty('cursor', '');
     };
 
@@ -730,12 +937,17 @@ export function MapOverlay(): JSX.Element {
       if (htmlMarkerSettleTimer.current !== null) {
         window.clearTimeout(htmlMarkerSettleTimer.current);
       }
+      if (panBenchmarkActive.current) {
+        return;
+      }
+      stopMovingFrameSample();
 
       htmlMarkerSettleTimer.current = window.setTimeout(() => {
         htmlMarkerSettleTimer.current = null;
         isUserMovingMap.current = false;
+        applyMovingRenderMode(false);
         setHtmlMarkerSyncTick((value) => value + 1);
-      }, 350);
+      }, SETTLE_DELAY_MS);
     };
 
     map.current.on('movestart', markHtmlMarkersMoving);
@@ -868,6 +1080,9 @@ export function MapOverlay(): JSX.Element {
         window.clearTimeout(htmlMarkerSettleTimer.current);
         htmlMarkerSettleTimer.current = null;
       }
+      stopPanBenchmark();
+      applyMovingRenderMode(false);
+      stopMovingFrameSample();
       if (scheduledViewportSyncFrame.current !== null) {
         window.cancelAnimationFrame(scheduledViewportSyncFrame.current);
         scheduledViewportSyncFrame.current = null;
@@ -971,6 +1186,8 @@ export function MapOverlay(): JSX.Element {
         const msg = event.data as { type?: string; dx?: number; dy?: number };
         if (msg?.type === 'IRIS_PAN_MAP') {
             panBy(msg.dx ?? 0, msg.dy ?? 0);
+        } else if (msg?.type === 'IRIS_RUN_PAN_BENCHMARK') {
+            runPanBenchmark();
         }
     };
     window.addEventListener('message', commandHandler);
@@ -983,7 +1200,7 @@ export function MapOverlay(): JSX.Element {
       map.current?.off('zoomend', onMove);
       window.removeEventListener('message', commandHandler);
     };
-  }, [styleLoaded, scheduleViewportSync]);
+  }, [styleLoaded, scheduleViewportSync, runPanBenchmark]);
 
   // Sync Viewport on Store Entity Changes (Decoupled from render cycle)
   useEffect((): undefined | (() => void) => {
