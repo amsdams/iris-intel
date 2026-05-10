@@ -26,6 +26,7 @@ import { BottomDock } from './shared/BottomDock';
 import { DockDrawer, DrawerTab } from './shared/DockDrawer';
 import { LocationSearchPopup } from './shared/LocationSearchPopup';
 import { MockToolsBar } from './shared/MockToolsBar';
+import { PlanningBar } from './shared/PlanningBar';
 
 // ---------------------------------------------------------------------------
 // IRISOverlay
@@ -122,6 +123,7 @@ export function IRISOverlay(): JSX.Element {
             case 'search': toggleSearchPopup(); setActiveDrawerTab(null); break;
             case 'nav': toggleNavigationPopup(); setActiveDrawerTab(null); break;
             case 'missions': toggleMissionsPopup(); setActiveDrawerTab(null); break;
+            case 'planning': useStore.getState().togglePlanningMode(); setShowSelectionInfo(false); setActiveDrawerTab(null); break;
             case 'plugins': togglePluginsPopup(); setActiveDrawerTab(null); break;
             case 'settings': toggleMapSettingsPopup(); setActiveDrawerTab(null); break;
             case 'diag': toggleDiagnosticsPopup(); setActiveDrawerTab(null); break;
@@ -163,6 +165,7 @@ export function IRISOverlay(): JSX.Element {
                 <MapOverlay />
             </div>
             <MockToolsBar />
+            <PlanningBar />
 
             {/* Click-to-close Backdrop for Drawer */}
             {activeDrawerTab && (

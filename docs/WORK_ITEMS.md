@@ -624,12 +624,17 @@ Tasks:
 
 | Task                                                                     | Status | Notes                                                                                   |
 |--------------------------------------------------------------------------|--------|-----------------------------------------------------------------------------------------|
-| Add a plugin entrypoint and toolbar/menu affordance                      | Open   | should live in plugin architecture, not Intel-core shell                                |
-| Support planned link creation between portals                            | Open   | primary planning action; portal to portal                                               |
-| Support removing planned links                                           | Open   | should be a first-class edit/delete flow, not manual data cleanup                       |
-| Show crossing links against a hypothetical link                          | Open   | core planning value; compare against visible Intel links first                          |
+| Add a plugin entrypoint and toolbar/menu affordance                      | Done   | `planned-links` is now registered as a disabled-by-default plugin; Plan appears in the Map drawer only when the plugin is enabled |
+| Add first mobile-safe planning toolbar                                   | Done   | Map drawer now exposes Plan mode and a compact cyan planning bar with anchor status, Done, Undo, and Clear |
+| Support planned link creation between portals                            | Done   | in Plan mode, tapping portal A sets an anchor and tapping portal B creates a dashed cyan planned link to avoid event yellow |
+| Align planning portal taps with normal portal selection                  | Done   | planned links now route through the same `iris:portal:click` bridge as portal info, then branch by planning mode |
+| Support baseline planned-link removal                                    | Done   | baseline supports Undo last planned link and Clear all planned links from the planning bar                  |
+| Persist planned links locally                                            | Done   | saved planned links now survive refresh via `iris-settings`; in-progress planning mode and anchor stay transient |
+| Show crossing links against a hypothetical link                          | Done   | planned links now mark currently loaded crossing Intel links with red dashed overlays, excluding shared-endpoint links |
+| Improve mobile portal selection for planning                             | Open   | still harder than normal portal info selection; long press has higher success, so inspect touch/click timing and hit targets on mobile |
 | Decide whether crosslink display should also compare against drawn links | Open   | `quick-draw-links` supports existing, drawn, or both                                    |
 | Support moving or copying links from one anchor portal to another        | Open   | useful for fast route/plan variants if interaction model stays understandable on mobile |
+| Support selecting and deleting individual planned items                  | Open   | Undo/Clear exists, but item-level removal/edit is still needed before plans become large |
 
 ### Draw tools baseline supports non-link geometry carefully
 
@@ -645,7 +650,7 @@ Tasks:
 |-------------------------------------------------------------|---------------|-----------------------------------------------------------------------------------------------------------|
 | Support polygon or field-style drawing                      | Open          | reference plugin derives fields from drawn links; need to decide direct polygon drawing vs derived fields |
 | Support circle drawing                                      | Open          | useful for radius-based planning and crossing-link inspection                                             |
-| Support free marker placement                               | Open          | useful as annotations or temporary plan anchors                                                           |
+| Support free marker placement                               | Open          | useful as annotations or temporary plan anchors; should include select/delete behavior from the start     |
 | Decide whether a separate shard/arrow tool is really needed | Investigating | user idea is plausible, but reference evidence is weaker than for links/circles/markers                   |
 | Keep mobile interaction compact                             | Open          | avoid a desktop-heavy control surface                                                                     |
 
@@ -672,6 +677,7 @@ Bugs:
 |-------------------------------------------------------|--------|-------------------------------------------------------------------------------|
 | Tool scope can sprawl quickly on mobile               | Open   | link planning is clear; too many modes will make the UI heavy fast            |
 | Crosslink logic depends on visible map state and zoom | Open   | reference plugin warns that visible range and zoom affect crosslink detection |
+| Mobile portal selection for planning is inconsistent  | Open   | normal portal info selection feels easier; long press has higher success for planned-link anchors |
 
 ## Data Contracts And Persistence
 
@@ -863,7 +869,7 @@ Tasks:
 ## Current Next Pickup
 
 1. **[Performance]** Compare stationary vs moving field-render modes if mobile panning still needs tuning.
-2. **[Draw Tools]** Turn the draw-tools epic into an implementation plan for the first mobile-safe planning baseline.
+2. **[Draw Tools]** Improve mobile portal selection for planned-link anchors, then add item-level select/delete.
 3. **[Popup UX]** Revisit portal/link/field popup content density against docs and IITC expectations.
 4. **[Plugin Overlay]** Add IITC-style label overlap thinning.
 5. **[Plugin Overlay]** Implement a "Single Highlighter" selection model.

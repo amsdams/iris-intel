@@ -1,10 +1,14 @@
 import { h, JSX, Fragment } from 'preact';
+import { useStore } from '@iris/core';
 
 interface MapTabProps {
     onAction: (action: string) => void;
 }
 
 export function MapTab({ onAction }: MapTabProps): JSX.Element {
+    const planningMode = useStore((state) => state.planningMode);
+    const plannedLinksEnabled = useStore((state) => state.pluginStates['planned-links'] ?? false);
+
     return (
         <Fragment>
             <div className="iris-drawer-section-label">Map Navigation</div>
@@ -21,6 +25,12 @@ export function MapTab({ onAction }: MapTabProps): JSX.Element {
                     <div className="iris-drawer-btn-icon">🚀</div>
                     <div className="iris-drawer-btn-label">Missions</div>
                 </button>
+                {plannedLinksEnabled && (
+                    <button className={`iris-drawer-btn ${planningMode ? 'iris-drawer-btn-active' : ''}`} onClick={() => onAction('planning')}>
+                        <div className="iris-drawer-btn-icon">✍</div>
+                        <div className="iris-drawer-btn-label">Plan</div>
+                    </button>
+                )}
             </div>
         </Fragment>
     );

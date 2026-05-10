@@ -25,6 +25,7 @@ import PortalLevelFillPlugin from '../../../plugins/src/portal-level-fill';
 import PortalHealthFillPlugin from '../../../plugins/src/portal-health-fill';
 import PortalLevelLabelsPlugin from '../../../plugins/src/portal-level-labels';
 import PortalKeyCountLabelsPlugin from '../../../plugins/src/portal-key-count-labels';
+import PlannedLinksPlugin from '../../../plugins/src/planned-links';
 import { IRISPlugin } from '@iris/plugin-sdk';
 import { handleEntities } from './domains/entities/handler';
 import { getKnownOrnamentIds } from './domains/entities/ornaments';
@@ -247,6 +248,7 @@ pluginManager.load(PortalLevelFillPlugin as IRISPlugin);
 pluginManager.load(PortalHealthFillPlugin as IRISPlugin);
 pluginManager.load(PortalLevelLabelsPlugin as IRISPlugin);
 pluginManager.load(PortalKeyCountLabelsPlugin as IRISPlugin);
+pluginManager.load(PlannedLinksPlugin as IRISPlugin);
 requestCoordinator.start();
 
 window.addEventListener('message', (event: MessageEvent) => {

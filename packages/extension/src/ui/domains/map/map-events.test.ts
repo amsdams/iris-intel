@@ -49,4 +49,27 @@ describe('installPortalSelectionBridge', () => {
 
     cleanup();
   });
+
+  it('routes portal clicks to planning without requesting details while planning mode is active', () => {
+    const target = new FakeTarget();
+    const selectPortal = vi.fn();
+    const selectPlanningPortal = vi.fn();
+    const postMessage = vi.fn();
+
+    const cleanup = installPortalSelectionBridge({
+      target,
+      windowLike: { postMessage },
+      selectPortal,
+      selectPlanningPortal,
+      isPlanningMode: () => true,
+    });
+
+    emitPortalClick(target, 'portal-123');
+
+    expect(selectPlanningPortal).toHaveBeenCalledWith('portal-123');
+    expect(selectPortal).not.toHaveBeenCalled();
+    expect(postMessage).not.toHaveBeenCalled();
+
+    cleanup();
+  });
 });

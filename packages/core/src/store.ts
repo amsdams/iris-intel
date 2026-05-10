@@ -81,6 +81,13 @@ export interface Link {
     toLng: number;
 }
 
+export interface PlannedLink {
+    id: string;
+    fromPortalId: string;
+    toPortalId: string;
+    createdAt: number;
+}
+
 export interface Field {
     id: string;
     team: string;
@@ -455,6 +462,9 @@ interface UISlice {
     selectedFieldId: string | null;
     selectedLinkId: string | null;
     selectedPluginFeature: GeoJSON.Feature | null;
+    planningMode: boolean;
+    planningAnchorPortalId: string | null;
+    plannedLinks: PlannedLink[];
     activeCommTab: string;
     commSendStatus: 'idle' | 'sending' | 'success' | 'error';
     commSendError: string | null;
@@ -480,6 +490,11 @@ interface UISlice {
     selectField: (id: string | null) => void;
     selectLink: (id: string | null) => void;
     setSelectedPluginFeature: (feature: GeoJSON.Feature | null) => void;
+    togglePlanningMode: () => void;
+    setPlanningMode: (enabled: boolean) => void;
+    selectPlanningPortal: (portalId: string) => void;
+    undoPlannedLink: () => void;
+    clearPlannedLinks: () => void;
     setActiveCommTab: (tab: string) => void;
     setCommSendPending: () => void;
     setCommSendSuccess: () => void;
@@ -890,6 +905,9 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
     selectedFieldId: null,
     selectedLinkId: null,
     selectedPluginFeature: null,
+    planningMode: false,
+    planningAnchorPortalId: null,
+    plannedLinks: [],
     activeCommTab: 'ALL',
     commSendStatus: 'idle',
     commSendError: null,
@@ -999,6 +1017,56 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
     selectField: (id) => set(() => ({ selectedFieldId: id, selectedPortalId: null, selectedLinkId: null })),
     selectLink: (id) => set(() => ({ selectedLinkId: id, selectedPortalId: null, selectedFieldId: null })),
     setSelectedPluginFeature: (feature) => set(() => ({ selectedPluginFeature: feature })),
+    togglePlanningMode: () => set((state) => ({
+        planningMode: !state.planningMode,
+        planningAnchorPortalId: null,
+    })),
+    setPlanningMode: (enabled) => set(() => ({
+        planningMode: enabled,
+        planningAnchorPortalId: null,
+    })),
+    selectPlanningPortal: (portalId) => set((state) => {
+        if (!state.planningMode) {
+            return state;
+        }
+
+        if (!state.planningAnchorPortalId || state.planningAnchorPortalId === portalId) {
+            return {
+                planningAnchorPortalId: state.planningAnchorPortalId === portalId ? null : portalId,
+            };
+        }
+
+        const fromPortalId = state.planningAnchorPortalId;
+        const toPortalId = portalId;
+        const existing = state.plannedLinks.some((link) =>
+            (link.fromPortalId === fromPortalId && link.toPortalId === toPortalId) ||
+            (link.fromPortalId === toPortalId && link.toPortalId === fromPortalId)
+        );
+
+        if (existing) {
+            return { planningAnchorPortalId: toPortalId };
+        }
+
+        return {
+            planningAnchorPortalId: toPortalId,
+            plannedLinks: [
+                ...state.plannedLinks,
+                {
+                    id: `planned-link:${fromPortalId}:${toPortalId}:${Date.now()}`,
+                    fromPortalId,
+                    toPortalId,
+                    createdAt: Date.now(),
+                },
+            ],
+        };
+    }),
+    undoPlannedLink: () => set((state) => ({
+        plannedLinks: state.plannedLinks.slice(0, -1),
+    })),
+    clearPlannedLinks: () => set(() => ({
+        plannedLinks: [],
+        planningAnchorPortalId: null,
+    })),
     setActiveCommTab: (tab) => set(() => ({ activeCommTab: tab })),
     setCommSendPending: () => set(() => ({
         commSendStatus: 'sending',
@@ -1262,6 +1330,7 @@ export const useStore = create<IRISState>()(
                     portalAddresses: state.portalAddresses,
                     lastResolvedLatLng: state.lastResolvedLatLng,
                     activeVisualOverlayIds: state.activeVisualOverlayIds,
+                    plannedLinks: state.plannedLinks,
                     mapState: {
                         lat: state.mapState.lat,
                         lng: state.mapState.lng,

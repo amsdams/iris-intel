@@ -17,6 +17,8 @@ export interface PortalSelectionBridgeDeps {
   target: PortalSelectionBridgeTarget;
   windowLike: PortalSelectionBridgeWindow;
   selectPortal: (id: string | null) => void;
+  selectPlanningPortal?: (id: string) => void;
+  isPlanningMode?: () => boolean;
 }
 
 export function createPortalClickEvent(id: string): Event | PortalClickEventLike {
@@ -38,11 +40,19 @@ export function installPortalSelectionBridge({
   target,
   windowLike,
   selectPortal,
+  selectPlanningPortal,
+  isPlanningMode,
 }: PortalSelectionBridgeDeps): () => void {
   const onPortalClick = (event: Event): void => {
     const detail = (event as unknown as PortalClickEventLike).detail;
     const id = detail?.id;
     if (!id) return;
+
+    if (isPlanningMode?.() && selectPlanningPortal) {
+      selectPlanningPortal(id);
+      return;
+    }
+
     selectPortal(id);
     windowLike.postMessage({type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: id}, '*');
   };

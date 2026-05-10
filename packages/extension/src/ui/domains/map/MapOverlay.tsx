@@ -2,7 +2,7 @@ import {h, JSX} from 'preact';
 import {useEffect, useMemo, useRef, useState, useCallback} from 'preact/hooks';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import {useStore, globalSpatialIndex, Portal, Link, Field, getMinLevelForZoom, MapPerfSnapshot} from '@iris/core';
+import {useStore, globalSpatialIndex, Portal, Link, Field, PlannedLink, getMinLevelForZoom, MapPerfSnapshot} from '@iris/core';
 import {THEMES, MAP_THEMES, SEMANTIC_COLORS} from '../../theme';
 import {
   buildArtifactFeatures,
@@ -42,6 +42,9 @@ const PAN_BENCHMARK_RUN_COUNT = 3;
 const PAN_BENCHMARK_RUN_DURATION_MS = 3000;
 const PAN_BENCHMARK_START = { lat: 52.371094, lng: 4.906375, zoom: 14.36 };
 const PAN_BENCHMARK_SETTLE_MS = 600;
+const PLANNED_LINK_COLOR = '#37e6ff';
+const PLANNED_CROSSLINK_COLOR = '#ff4d4d';
+const TOUCH_TAP_MOVE_THRESHOLD_PX = 10;
 
 interface MarkerRegistryEntry {
   marker: maplibregl.Marker;
@@ -83,11 +86,13 @@ function bindPluginMarkerClickTarget(
   }
 
   if (!isInteractive) {
+    clickTarget.style.pointerEvents = 'none';
     clickTarget.style.cursor = 'default';
     clickTarget.onclick = null;
     return;
   }
 
+  clickTarget.style.pointerEvents = 'auto';
   clickTarget.style.cursor = 'pointer';
   clickTarget.onclick = (e: MouseEvent): void => {
     e.stopPropagation();
@@ -166,6 +171,116 @@ function setLayerVisibilityIfExists(
   }
 }
 
+function buildPlannedLinkFeatures(
+  plannedLinks: PlannedLink[],
+  portals: Record<string, Portal>,
+  links: Record<string, Link>,
+  planningAnchorPortalId: string | null
+): GeoJSON.Feature[] {
+  const features: GeoJSON.Feature[] = [];
+  const loadedLinks = Object.values(links);
+
+  plannedLinks.forEach((plannedLink) => {
+      const from = portals[plannedLink.fromPortalId];
+      const to = portals[plannedLink.toPortalId];
+      if (!from || !to) {
+        return;
+      }
+
+      features.push({
+        type: 'Feature',
+        id: plannedLink.id,
+        geometry: {
+          type: 'LineString',
+          coordinates: [
+            [from.lng, from.lat],
+            [to.lng, to.lat],
+          ],
+        },
+        properties: {
+          id: plannedLink.id,
+          color: PLANNED_LINK_COLOR,
+          opacity: 0.92,
+        },
+      } as GeoJSON.Feature);
+
+      loadedLinks.forEach((link) => {
+        if (
+          link.fromPortalId === plannedLink.fromPortalId ||
+          link.toPortalId === plannedLink.fromPortalId ||
+          link.fromPortalId === plannedLink.toPortalId ||
+          link.toPortalId === plannedLink.toPortalId
+        ) {
+          return;
+        }
+
+        if (!segmentsIntersect(
+          { lng: from.lng, lat: from.lat },
+          { lng: to.lng, lat: to.lat },
+          { lng: link.fromLng, lat: link.fromLat },
+          { lng: link.toLng, lat: link.toLat }
+        )) {
+          return;
+        }
+
+        features.push({
+          type: 'Feature',
+          id: `planned-crossing:${plannedLink.id}:${link.id}`,
+          geometry: {
+            type: 'LineString',
+            coordinates: [
+              [link.fromLng, link.fromLat],
+              [link.toLng, link.toLat],
+            ],
+          },
+          properties: {
+            id: `planned-crossing:${plannedLink.id}:${link.id}`,
+            plannedType: 'crossing',
+            color: PLANNED_CROSSLINK_COLOR,
+            opacity: 0.95,
+          },
+        });
+      });
+  });
+
+  if (planningAnchorPortalId && portals[planningAnchorPortalId]) {
+    const portal = portals[planningAnchorPortalId];
+    features.push({
+      type: 'Feature',
+      id: `planned-anchor:${planningAnchorPortalId}`,
+      geometry: {
+        type: 'Point',
+        coordinates: [portal.lng, portal.lat],
+      },
+      properties: {
+        id: `planned-anchor:${planningAnchorPortalId}`,
+        plannedType: 'anchor',
+        color: PLANNED_LINK_COLOR,
+        opacity: 0.95,
+      },
+    });
+  }
+
+  return features;
+}
+
+function segmentsIntersect(
+  a: { lng: number; lat: number },
+  b: { lng: number; lat: number },
+  c: { lng: number; lat: number },
+  d: { lng: number; lat: number }
+): boolean {
+  const denominator = ((a.lng - b.lng) * (c.lat - d.lat)) - ((a.lat - b.lat) * (c.lng - d.lng));
+  if (Math.abs(denominator) < 1e-12) {
+    return false;
+  }
+
+  const t = (((a.lng - c.lng) * (c.lat - d.lat)) - ((a.lat - c.lat) * (c.lng - d.lng))) / denominator;
+  const u = -(((a.lng - b.lng) * (a.lat - c.lat)) - ((a.lat - b.lat) * (a.lng - c.lng))) / denominator;
+
+  return t > 0 && t < 1 && u > 0 && u < 1;
+}
+
 type DragRotateInternals = maplibregl.Map['dragRotate'] & {
   _pitchWithRotate?: boolean;
   _mouseRotate?: {
@@ -195,6 +310,10 @@ export function MapOverlay(): JSX.Element {
   const mockOrnaments = useStore((state) => state.mockOrnaments);
   const missionDetails = useStore((state) => state.missionDetails);
   const pluginFeatures = useStore((state) => state.pluginFeatures);
+  const plannedLinks = useStore((state) => state.plannedLinks);
+  const planningMode = useStore((state) => state.planningMode);
+  const planningAnchorPortalId = useStore((state) => state.planningAnchorPortalId);
+  const plannedLinksEnabled = useStore((state) => state.pluginStates['planned-links'] ?? false);
   const selectedPortalId = useStore((state) => state.selectedPortalId);
   const selectedFieldId = useStore((state) => state.selectedFieldId);
   const selectedLinkId = useStore((state) => state.selectedLinkId);
@@ -491,6 +610,45 @@ export function MapOverlay(): JSX.Element {
     if (!map.current || !styleLoaded) return;
     getGeoJsonSource('plugin-features')?.setData(pluginFeatures);
   }, [pluginFeatures, styleLoaded]);
+
+  useEffect((): void => {
+    if (!map.current || !styleLoaded) return;
+    const state = useStore.getState();
+    getGeoJsonSource('planned-links')?.setData({
+      type: 'FeatureCollection',
+      features: plannedLinksEnabled ? buildPlannedLinkFeatures(
+          plannedLinks,
+          state.portals,
+          state.links,
+          planningMode ? planningAnchorPortalId : null
+      ) : [],
+    });
+  }, [plannedLinks, planningMode, planningAnchorPortalId, plannedLinksEnabled, styleLoaded]);
+
+  useEffect((): undefined | (() => void) => {
+    if (!map.current || !styleLoaded) return;
+
+    const syncPlannedLinks = (): void => {
+      const state = useStore.getState();
+      getGeoJsonSource('planned-links')?.setData({
+        type: 'FeatureCollection',
+        features: (state.pluginStates['planned-links'] ?? false) ? buildPlannedLinkFeatures(
+          state.plannedLinks,
+          state.portals,
+          state.links,
+          state.planningMode ? state.planningAnchorPortalId : null
+        ) : [],
+      });
+    };
+
+    const unsubPortals = useStore.subscribe((state) => state.portals, syncPlannedLinks);
+    const unsubLinks = useStore.subscribe((state) => state.links, syncPlannedLinks);
+
+    return () => {
+      unsubPortals();
+      unsubLinks();
+    };
+  }, [styleLoaded]);
 
   const scheduleViewportSync = useCallback((): void => {
     if (!map.current || !styleLoaded || scheduledViewportSyncFrame.current !== null) {
@@ -810,6 +968,10 @@ export function MapOverlay(): JSX.Element {
             type: 'geojson',
             data: { type: 'FeatureCollection', features: [] },
           },
+          'planned-links': {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: [] },
+          },
         },
         layers: [
           {
@@ -863,6 +1025,18 @@ export function MapOverlay(): JSX.Element {
               'line-width': LINK_LINE_WIDTH,
               'line-color': initialTeamColourExpr.current,
               'line-opacity': LINK_LINE_OPACITY,
+            },
+          },
+          {
+            id: 'planned-links',
+            type: 'line',
+            source: 'planned-links',
+            filter: ['==', '$type', 'LineString'],
+            paint: {
+              'line-width': 3,
+              'line-color': PLANNED_LINK_COLOR,
+              'line-opacity': 0.92,
+              'line-dasharray': [2, 2],
             },
           },
           {
@@ -1003,6 +1177,35 @@ export function MapOverlay(): JSX.Element {
               'circle-stroke-opacity': ['coalesce', ['get', 'opacity'], 1],
             },
           },
+          {
+            id: 'planned-anchor',
+            type: 'circle',
+            source: 'planned-links',
+            filter: ['all', ['==', '$type', 'Point'], ['==', 'plannedType', 'anchor']],
+            paint: {
+              'circle-radius': [
+                'interpolate', ['linear'], ['zoom'],
+                10, 7,
+                15, 12,
+              ],
+              'circle-color': 'transparent',
+              'circle-stroke-width': 3,
+              'circle-stroke-color': PLANNED_LINK_COLOR,
+              'circle-stroke-opacity': 0.95,
+            },
+          },
+          {
+            id: 'planned-crossings',
+            type: 'line',
+            source: 'planned-links',
+            filter: ['all', ['==', '$type', 'LineString'], ['==', 'plannedType', 'crossing']],
+            paint: {
+              'line-width': 4,
+              'line-color': PLANNED_CROSSLINK_COLOR,
+              'line-opacity': 0.95,
+              'line-dasharray': [1, 1],
+            },
+          },
         ],
       },
       center: [0, 0],
@@ -1112,6 +1315,8 @@ export function MapOverlay(): JSX.Element {
       target: document,
       windowLike: window,
       selectPortal: (id: string | null) => useStore.getState().selectPortal(id),
+      selectPlanningPortal: (id: string) => useStore.getState().selectPlanningPortal(id),
+      isPlanningMode: () => useStore.getState().planningMode,
     });
 
     map.current.on('touchstart', (e: maplibregl.MapTouchEvent) => {
@@ -1126,7 +1331,7 @@ export function MapOverlay(): JSX.Element {
         if (e.points.length === 1) {
             const dx = e.point.x - touchState.current.startPoint.x;
             const dy = e.point.y - touchState.current.startPoint.y;
-            if (Math.sqrt(dx * dx + dy * dy) > 10) {
+            if (Math.sqrt(dx * dx + dy * dy) > TOUCH_TAP_MOVE_THRESHOLD_PX) {
                 touchState.current.hasMoved = true;
             }
         } else {
