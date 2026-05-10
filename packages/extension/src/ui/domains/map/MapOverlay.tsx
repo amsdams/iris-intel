@@ -2,7 +2,7 @@ import {h, JSX} from 'preact';
 import {useEffect, useMemo, useRef, useState, useCallback} from 'preact/hooks';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import {useStore, globalSpatialIndex, Portal, Link, Field, getMinLevelForZoom} from '@iris/core';
+import {useStore, globalSpatialIndex, Portal, Link, Field, getMinLevelForZoom, MapPerfSnapshot} from '@iris/core';
 import {THEMES, MAP_THEMES, SEMANTIC_COLORS} from '../../theme';
 import {
   buildArtifactFeatures,
@@ -37,11 +37,11 @@ const MOVING_LINK_LINE_WIDTH = 1;
 const LINK_LINE_OPACITY = 1;
 const MOVING_LINK_LINE_OPACITY = 0.72;
 const SLOW_FRAME_MS = 34;
-const PAN_BENCHMARK_DURATION_MS = 5000;
-const PAN_BENCHMARK_STEP_MS = 450;
 const PAN_BENCHMARK_STEP_PX = 220;
+const PAN_BENCHMARK_RUN_COUNT = 3;
+const PAN_BENCHMARK_RUN_DURATION_MS = 3000;
 const PAN_BENCHMARK_START = { lat: 52.371094, lng: 4.906375, zoom: 14.36 };
-const PAN_BENCHMARK_SETTLE_MS = 800;
+const PAN_BENCHMARK_SETTLE_MS = 600;
 
 interface MarkerRegistryEntry {
   marker: maplibregl.Marker;
@@ -205,9 +205,8 @@ export function MapOverlay(): JSX.Element {
   const lastHtmlMarkerPerfLogAt = useRef(0);
   const movingFrameRequest = useRef<number | null>(null);
   const panBenchmarkActive = useRef(false);
-  const panBenchmarkInterval = useRef<number | null>(null);
-  const panBenchmarkTimer = useRef<number | null>(null);
   const panBenchmarkSettleTimer = useRef<number | null>(null);
+  const panBenchmarkAnimation = useRef<number | null>(null);
   const movingFrameSample = useRef<MovingFrameSample>({
     active: false,
     startedAt: 0,
@@ -521,10 +520,10 @@ export function MapOverlay(): JSX.Element {
     );
   }, []);
 
-  const stopMovingFrameSample = useCallback((): void => {
+  const stopMovingFrameSample = useCallback((publish = true): MapPerfSnapshot | null => {
     const sample = movingFrameSample.current;
     if (!sample.active) {
-      return;
+      return null;
     }
 
     sample.active = false;
@@ -534,12 +533,12 @@ export function MapOverlay(): JSX.Element {
     }
 
     if (sample.frameCount === 0) {
-      return;
+      return null;
     }
 
     const now = performance.now();
     const averageFrameMs = sample.totalFrameMs / sample.frameCount;
-    useStore.getState().setMapPerfSnapshot({
+    const snapshot: MapPerfSnapshot = {
       type: 'frame',
       time: Date.now(),
       totalMs: now - sample.startedAt,
@@ -548,7 +547,13 @@ export function MapOverlay(): JSX.Element {
       maxFrameMs: sample.maxFrameMs,
       slowFrameCount: sample.slowFrameCount,
       estimatedFps: Math.round(1000 / averageFrameMs),
-    });
+    };
+
+    if (publish) {
+      useStore.getState().setMapPerfSnapshot(snapshot);
+    }
+
+    return snapshot;
   }, []);
 
   const startMovingFrameSample = useCallback((): void => {
@@ -587,18 +592,52 @@ export function MapOverlay(): JSX.Element {
     movingFrameRequest.current = window.requestAnimationFrame(tick);
   }, []);
 
+  const publishBenchmarkFrameSnapshot = useCallback((snapshots: MapPerfSnapshot[]): void => {
+    const validSnapshots = snapshots.filter((snapshot) => typeof snapshot.averageFrameMs === 'number');
+    if (validSnapshots.length === 0) {
+      return;
+    }
+
+    const averageValues = validSnapshots
+      .map((snapshot) => snapshot.averageFrameMs as number)
+      .sort((a, b) => a - b);
+    const middle = Math.floor(averageValues.length / 2);
+    const medianAverageFrameMs = averageValues.length % 2 === 0
+      ? (averageValues[middle - 1] + averageValues[middle]) / 2
+      : averageValues[middle];
+    const totalFrameCount = validSnapshots.reduce((total, snapshot) => total + (snapshot.frameCount ?? 0), 0);
+    const totalFrameMs = validSnapshots.reduce(
+      (total, snapshot) => total + ((snapshot.averageFrameMs ?? 0) * (snapshot.frameCount ?? 0)),
+      0
+    );
+    const totalMs = validSnapshots.reduce((total, snapshot) => total + snapshot.totalMs, 0);
+    const averageFrameMs = totalFrameCount > 0 ? totalFrameMs / totalFrameCount : medianAverageFrameMs;
+
+    useStore.getState().setMapPerfSnapshot({
+      type: 'frame',
+      time: Date.now(),
+      totalMs,
+      frameCount: totalFrameCount,
+      averageFrameMs,
+      maxFrameMs: Math.max(...validSnapshots.map((snapshot) => snapshot.maxFrameMs ?? 0)),
+      slowFrameCount: validSnapshots.reduce((total, snapshot) => total + (snapshot.slowFrameCount ?? 0), 0),
+      estimatedFps: Math.round(1000 / averageFrameMs),
+      benchmarkRunCount: validSnapshots.length,
+      benchmarkMedianAverageFrameMs: medianAverageFrameMs,
+      benchmarkMinAverageFrameMs: averageValues[0],
+      benchmarkMaxAverageFrameMs: averageValues[averageValues.length - 1],
+      benchmarkMaxFrameMs: Math.max(...validSnapshots.map((snapshot) => snapshot.maxFrameMs ?? 0)),
+    });
+  }, []);
+
   const stopPanBenchmark = useCallback((): void => {
-    if (panBenchmarkInterval.current !== null) {
-      window.clearInterval(panBenchmarkInterval.current);
-      panBenchmarkInterval.current = null;
-    }
-    if (panBenchmarkTimer.current !== null) {
-      window.clearTimeout(panBenchmarkTimer.current);
-      panBenchmarkTimer.current = null;
-    }
     if (panBenchmarkSettleTimer.current !== null) {
       window.clearTimeout(panBenchmarkSettleTimer.current);
       panBenchmarkSettleTimer.current = null;
+    }
+    if (panBenchmarkAnimation.current !== null) {
+      window.cancelAnimationFrame(panBenchmarkAnimation.current);
+      panBenchmarkAnimation.current = null;
     }
     panBenchmarkActive.current = false;
     applyMovingRenderMode(false);
@@ -618,32 +657,88 @@ export function MapOverlay(): JSX.Element {
     });
     scheduleViewportSync();
 
+    const runSnapshots: MapPerfSnapshot[] = [];
+
+    const runSingleBenchmark = (runIndex: number): void => {
+      const currentMap = map.current;
+      if (!currentMap) {
+        stopPanBenchmark();
+        return;
+      }
+
+      currentMap.jumpTo({
+        center: [PAN_BENCHMARK_START.lng, PAN_BENCHMARK_START.lat],
+        zoom: PAN_BENCHMARK_START.zoom,
+      });
+      scheduleViewportSync();
+
+      panBenchmarkSettleTimer.current = window.setTimeout(() => {
+        const settledMap = map.current;
+        if (!settledMap) {
+          stopPanBenchmark();
+          return;
+        }
+
+        panBenchmarkSettleTimer.current = null;
+        panBenchmarkActive.current = true;
+        isUserMovingMap.current = true;
+        applyMovingRenderMode(true);
+        startMovingFrameSample();
+
+        const startPoint = settledMap.project([PAN_BENCHMARK_START.lng, PAN_BENCHMARK_START.lat]);
+        const startedAt = performance.now();
+
+        const tick = (now: number): void => {
+          const activeMap = map.current;
+          if (!activeMap || !panBenchmarkActive.current) {
+            return;
+          }
+
+          const elapsed = now - startedAt;
+          const progress = Math.min(elapsed / PAN_BENCHMARK_RUN_DURATION_MS, 1);
+          const offset = Math.sin(progress * Math.PI * 4) * PAN_BENCHMARK_STEP_PX;
+          const center = activeMap.unproject([startPoint.x + offset, startPoint.y]);
+          activeMap.jumpTo({
+            center: [center.lng, center.lat],
+            zoom: PAN_BENCHMARK_START.zoom,
+          });
+
+          if (progress < 1) {
+            panBenchmarkAnimation.current = window.requestAnimationFrame(tick);
+            return;
+          }
+
+          panBenchmarkAnimation.current = null;
+          const snapshot = stopMovingFrameSample(false);
+          if (snapshot) {
+            runSnapshots.push(snapshot);
+          }
+
+          if (runIndex + 1 < PAN_BENCHMARK_RUN_COUNT) {
+            panBenchmarkSettleTimer.current = window.setTimeout(() => {
+              runSingleBenchmark(runIndex + 1);
+            }, PAN_BENCHMARK_SETTLE_MS);
+            return;
+          }
+
+          panBenchmarkActive.current = false;
+          isUserMovingMap.current = false;
+          applyMovingRenderMode(false);
+          publishBenchmarkFrameSnapshot(runSnapshots);
+          setHtmlMarkerSyncTick((value) => value + 1);
+        };
+
+        panBenchmarkAnimation.current = window.requestAnimationFrame(tick);
+      }, PAN_BENCHMARK_SETTLE_MS);
+    };
+
     panBenchmarkSettleTimer.current = window.setTimeout(() => {
       if (!map.current) {
         return;
       }
-
-      panBenchmarkSettleTimer.current = null;
-      panBenchmarkActive.current = true;
-      isUserMovingMap.current = true;
-      applyMovingRenderMode(true);
-      startMovingFrameSample();
-
-      let direction = 1;
-      const panStep = (): void => {
-        direction *= -1;
-        map.current?.panBy([PAN_BENCHMARK_STEP_PX * direction, 0], { duration: PAN_BENCHMARK_STEP_MS - 50 });
-      };
-
-      panStep();
-      panBenchmarkInterval.current = window.setInterval(panStep, PAN_BENCHMARK_STEP_MS);
-      panBenchmarkTimer.current = window.setTimeout(() => {
-        stopPanBenchmark();
-        isUserMovingMap.current = false;
-        setHtmlMarkerSyncTick((value) => value + 1);
-      }, PAN_BENCHMARK_DURATION_MS);
+      runSingleBenchmark(0);
     }, PAN_BENCHMARK_SETTLE_MS);
-  }, [applyMovingRenderMode, scheduleViewportSync, startMovingFrameSample, stopPanBenchmark]);
+  }, [applyMovingRenderMode, publishBenchmarkFrameSnapshot, scheduleViewportSync, startMovingFrameSample, stopPanBenchmark, stopMovingFrameSample]);
 
   // ---------------------------------------------------------------------------
   // Initialise MapLibre map once on mount

@@ -74,7 +74,7 @@ function buildPerfSummary(perf: MapPerfDiagnostics): string {
             ? `HTML ${formatMs(html.totalMs)} candidates ${formatCount(html.candidateCount)} active ${formatCount(html.activeCount)} existing ${formatCount(html.existingCount)} created ${formatCount(html.createdCount)} updated ${formatCount(html.updatedCount)} removed ${formatCount(html.removedCount)}`
             : 'HTML no sample',
         frame
-            ? `FRAME ${formatMs(frame.totalMs)} avg ${formatMs(frame.averageFrameMs)} max ${formatMs(frame.maxFrameMs)} fps ${formatCount(frame.estimatedFps)} slow ${formatCount(frame.slowFrameCount)}/${formatCount(frame.frameCount)}`
+            ? `FRAME ${formatMs(frame.totalMs)} avg ${formatMs(frame.averageFrameMs)} max ${formatMs(frame.maxFrameMs)} fps ${formatCount(frame.estimatedFps)} slow ${formatCount(frame.slowFrameCount)}/${formatCount(frame.frameCount)}${frame.benchmarkRunCount ? ` bench ${formatCount(frame.benchmarkRunCount)} median ${formatMs(frame.benchmarkMedianAverageFrameMs)} range ${formatMs(frame.benchmarkMinAverageFrameMs)}-${formatMs(frame.benchmarkMaxAverageFrameMs)} benchMax ${formatMs(frame.benchmarkMaxFrameMs)}` : ''}`
             : 'FRAME no sample',
     ].join('\n');
 }
@@ -355,11 +355,19 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                             <div className="iris-debug-endpoint-main">
                                 <span className="iris-debug-label">Pan frames</span>
                                 <span className="iris-debug-value">
-                                    {framePerf ? `avg ${formatMs(framePerf.averageFrameMs)} | max ${formatMs(framePerf.maxFrameMs)} | fps ${formatCount(framePerf.estimatedFps)}` : 'no sample'}
+                                    {framePerf ? `avg ${formatMs(framePerf.averageFrameMs)} | max ${formatMs(framePerf.maxFrameMs)} | fps ${formatCount(framePerf.estimatedFps)}${framePerf.benchmarkRunCount ? ` | bench ${formatCount(framePerf.benchmarkRunCount)}` : ''}` : 'no sample'}
                                 </span>
                             </div>
                             {framePerf && (
                                 <div className="iris-debug-endpoint-details">
+                                    {framePerf.benchmarkRunCount && (
+                                        <div className="iris-debug-row">
+                                            <span className="iris-debug-label-indent">Benchmark</span>
+                                            <span className="iris-debug-value">
+                                                median {formatMs(framePerf.benchmarkMedianAverageFrameMs)} | range {formatMs(framePerf.benchmarkMinAverageFrameMs)}-{formatMs(framePerf.benchmarkMaxAverageFrameMs)}
+                                            </span>
+                                        </div>
+                                    )}
                                     <div className="iris-debug-row">
                                         <span className="iris-debug-label-indent">Slow frames</span>
                                         <span className="iris-debug-value">

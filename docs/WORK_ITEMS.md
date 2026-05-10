@@ -172,6 +172,7 @@ Outcome:
 
 - make map drag/zoom feel closer to IITC Mobile by keeping active movement mostly render-only
 - avoid risky renderer swaps until simpler scheduling and visibility rules are measured
+- current accepted baseline keeps portal key counts useful on map, preserves stationary IITC-level detail, and suspends field fill only during active mobile movement
 
 Tasks:
 
@@ -187,11 +188,14 @@ Tasks:
 | Simplify expensive paint only while actively moving            | Done   | on mobile, field fill rendering is suspended and link width/opacity are reduced during pan/zoom, then full stationary detail is restored after settle |
 | Add pan frame timing diagnostics                               | Done   | Diagnostics copy now includes average/max frame time, estimated FPS, and slow-frame counts after map movement                             |
 | Measure translucent field/link overdraw before deeper changes  | Done   | mobile samples improved from roughly 17-18 FPS to 27 FPS when field fill was suspended during movement, confirming field overdraw as a major bottleneck |
-| Add automated pan benchmark for repeatable mobile samples      | Done   | mock tools now include a debug-only Bench action that jumps to Amsterdam z14.36, runs a fixed 5s pan, and records the result in FRAME diagnostics |
+| Add automated pan benchmark for repeatable mobile samples      | Done   | mock tools now include a debug-only Bench action that jumps to Amsterdam z14.36, runs a deterministic 3-run pan sample, and records aggregate/median results in FRAME diagnostics |
 | Tune mobile moving-mode link rendering                         | Open   | links still render during movement; if panning remains slow, test whether thinner/fainter moving links improve frame time without losing orientation |
-| Make pan benchmark path deterministic under stutter             | Open   | current Bench uses animated `panBy`; mobile stutter can let the path drift, so use requestAnimationFrame with direct center interpolation before relying on cross-device comparisons |
-| Add benchmark sample history or run count                       | Open   | collect 3-5 FRAME samples and report median/min/max so perf comparisons are less dependent on one pan gesture or transient device load |
+| Make pan benchmark path deterministic under stutter             | Done   | Bench now drives the map by requestAnimationFrame and direct center interpolation instead of animated `panBy`, avoiding path drift from queued mobile pan animations |
+| Add benchmark sample history or run count                       | Done   | Bench now runs 3 samples and reports run count, median average frame time, average range, and worst frame in Diagnostics copy output |
 | Compare stationary vs moving field-render modes                 | Open   | add a debug-only benchmark variant or note-taking flow to compare full fields, hidden-moving fields, and lighter-moving fields on the same device |
+| Add overlay-hidden benchmark variant                            | Open   | compare MapLibre baseline camera movement with IRIS entity/plugin layers hidden during Bench to separate map engine cost from overlay rendering cost |
+| Add raster/base-map benchmark variant                           | Open   | compare normal raster tiles against a simplified/base-only map style during Bench to isolate tile compositing cost on mobile |
+| Compare RAF jump benchmark against real finger pan samples      | Open   | current Bench is deterministic but may measure `jumpTo` camera update cost; keep manual finger-pan FRAME samples as the real UX reference |
 | Resume label-heavy overlays after a short settle delay          | Open   | IITC updates portal names/levels after request/refresh hooks with delays; use a similar delayed path for level/key labels                 |
 | Cap label-heavy HTML markers on mobile                          | Open   | keep the visible IITC-like HTML marker path, but render only on-map/near-viewport labels and cap counts before considering renderer swaps |
 | Add overlap thinning for portal level and key labels            | Open   | mirror IITC portal-level-numbers behavior: suppress lower-priority nearby labels instead of drawing every label                            |
@@ -840,17 +844,16 @@ Tasks:
 
 ## Current Next Pickup
 
-1. **[Performance]** Make the pan benchmark path deterministic under mobile stutter.
-2. **[Performance]** Add benchmark sample history or median reporting.
-3. **[Draw Tools]** Turn the draw-tools epic into an implementation plan for the first mobile-safe planning baseline.
-4. **[Popup UX]** Revisit portal/link/field popup content density against docs and IITC expectations.
-5. **[Plugin Overlay]** Add IITC-style label overlap thinning.
-6. **[Plugin Overlay]** Implement a "Single Highlighter" selection model.
-7. **[Ergonomics]** Evaluate "Swipe down to close" for the new Dock Drawer.
-8. **[Tactical]** Add a "Clear All Filters" button to the Tactical Drawer.
-9. **[Debug]** Add Portal GUIDs to Portal Details when the DEBUG theme is active.
-10. **[Player Tracker]** Add "Guess player level" based on highest resonator seen.
-11. **[Passcodes]** Add a "Stale" state to the passcode redemption UI for already-used codes.
+1. **[Performance]** Compare stationary vs moving field-render modes if mobile panning still needs tuning.
+2. **[Draw Tools]** Turn the draw-tools epic into an implementation plan for the first mobile-safe planning baseline.
+3. **[Popup UX]** Revisit portal/link/field popup content density against docs and IITC expectations.
+4. **[Plugin Overlay]** Add IITC-style label overlap thinning.
+5. **[Plugin Overlay]** Implement a "Single Highlighter" selection model.
+6. **[Ergonomics]** Evaluate "Swipe down to close" for the new Dock Drawer.
+7. **[Tactical]** Add a "Clear All Filters" button to the Tactical Drawer.
+8. **[Debug]** Add Portal GUIDs to Portal Details when the DEBUG theme is active.
+9. **[Player Tracker]** Add "Guess player level" based on highest resonator seen.
+10. **[Passcodes]** Add a "Stale" state to the passcode redemption UI for already-used codes.
 
 ## Snapshot And Reference Sources
 

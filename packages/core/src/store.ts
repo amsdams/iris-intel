@@ -214,6 +214,11 @@ export interface MapPerfSnapshot {
     maxFrameMs?: number;
     slowFrameCount?: number;
     estimatedFps?: number;
+    benchmarkRunCount?: number;
+    benchmarkMedianAverageFrameMs?: number;
+    benchmarkMinAverageFrameMs?: number;
+    benchmarkMaxAverageFrameMs?: number;
+    benchmarkMaxFrameMs?: number;
 }
 
 export interface MapPerfDiagnostics {
