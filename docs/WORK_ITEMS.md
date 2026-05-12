@@ -874,6 +874,22 @@ Tasks:
 | Replace deprecated `word-break: break-word` | Done   | migrated to `overflow-wrap: anywhere` in all domains           |
 | Include CSS linting in CI/release           | Done   | integrated into `npm run lint` and verified in GitHub Actions  |
 
+### Dependency Maintenance
+
+Status: `Open`
+
+Outcome:
+
+- keep runtime, build, and lint dependencies current without mixing safe patch updates with larger migration work
+
+Tasks:
+
+| Task                                                | Status        | Notes                                                                                                                                                                                                                                                                 |
+|-----------------------------------------------------|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Review outdated npm dependencies                    | Investigating | `npm outdated --workspaces --long` and root `npm outdated --long` found routine updates; `npm audit --workspaces` reports 0 vulnerabilities. Vite is currently not reported as outdated by npm.                                                                       |
+| Apply low-risk patch/minor dependency updates       | Open          | likely safe batch: `preact` 10.29.0 -> 10.29.1, `vite-plugin-web-extension` 4.5.0 -> 4.5.1, `vitest` 4.1.3 -> 4.1.6, `@types/chrome` 0.1.38 -> 0.1.42, `typescript-eslint`/parser/plugin 8.57.2 -> 8.59.3, `eslint-plugin-react-hooks` 7.0.1 -> 7.1.1, `globals` 17.4.0 -> 17.6.0, `stylelint` 17.6.0 -> 17.11.0 |
+| Evaluate major dependency migrations separately     | Open          | larger risk updates need dedicated testing: `maplibre-gl` 4.7.1 -> 5.24.0, `zustand` 4.5.7 -> 5.0.13, `archiver` 7.0.1 -> 8.0.0, `typescript` 5.9.3 -> 6.0.3                                                                                     |
+
 ## Current Next Pickup
 
 1. **[Performance]** Compare stationary vs moving field-render modes if mobile panning still needs tuning.
