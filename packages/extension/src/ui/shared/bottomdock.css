@@ -224,6 +224,12 @@
     white-space: nowrap;
 }
 
+.iris-planning-status-secondary {
+    color: rgb(255 255 255 / 68%);
+    font-size: 10px;
+    font-weight: 600;
+}
+
 .iris-planning-count {
     color: rgb(255 255 255 / 62%);
     font-size: 10px;
@@ -233,6 +239,44 @@
     flex: 0 0 auto;
     display: flex;
     gap: 6px;
+}
+
+.iris-planning-marker-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 28px;
+}
+
+.iris-planning-marker-btn {
+    width: 28px;
+    height: 28px;
+    border: 1px solid rgb(255 255 255 / 45%);
+    border-radius: 50%;
+    background: var(--iris-planning-marker-color);
+    box-shadow: 0 0 0 2px rgb(0 0 0 / 80%);
+    cursor: pointer;
+}
+
+.iris-planning-marker-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.iris-planning-marker-white {
+    --iris-planning-marker-color: #fff;
+}
+
+.iris-planning-marker-red {
+    --iris-planning-marker-color: #ff4d4d;
+}
+
+.iris-planning-marker-blue {
+    --iris-planning-marker-color: #37e6ff;
+}
+
+.iris-planning-marker-green {
+    --iris-planning-marker-color: #49ff7a;
 }
 
 .iris-planning-btn {
@@ -267,6 +311,10 @@
     }
 
     .iris-planning-actions {
+        justify-content: space-between;
+    }
+
+    .iris-planning-marker-group {
         justify-content: space-between;
     }
 

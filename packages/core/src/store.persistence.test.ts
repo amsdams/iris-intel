@@ -9,6 +9,7 @@ describe('store persistence', () => {
     useStore.setState((state) => ({
       ...state,
       planningMode: false,
+      planningTool: 'links',
       planningAnchorPortalId: null,
       plannedLinks: [],
       plannedMarkers: [],
@@ -30,6 +31,8 @@ describe('store persistence', () => {
         lat: 52.371094,
         lng: 4.906375,
         label: 'Marker 1',
+        color: 'blue' as const,
+        portalId: 'portal-a',
         createdAt: 2,
       },
     ];
@@ -37,6 +40,7 @@ describe('store persistence', () => {
     useStore.setState((state) => ({
       ...state,
       planningMode: true,
+      planningTool: 'markers',
       planningAnchorPortalId: 'portal-a',
       plannedLinks,
       plannedMarkers,
@@ -47,6 +51,7 @@ describe('store persistence', () => {
         plannedLinks?: typeof plannedLinks;
         plannedMarkers?: typeof plannedMarkers;
         planningMode?: boolean;
+        planningTool?: string;
         planningAnchorPortalId?: string | null;
       };
     };
@@ -54,6 +59,23 @@ describe('store persistence', () => {
     expect(stored.state?.plannedLinks).toEqual(plannedLinks);
     expect(stored.state?.plannedMarkers).toEqual(plannedMarkers);
     expect(stored.state?.planningMode).toBeUndefined();
+    expect(stored.state?.planningTool).toBeUndefined();
     expect(stored.state?.planningAnchorPortalId).toBeUndefined();
+  });
+
+  it('does not create links while marker tool is active', () => {
+    useStore.setState((state) => ({
+      ...state,
+      planningMode: true,
+      planningTool: 'markers',
+      planningAnchorPortalId: null,
+      plannedLinks: [],
+    }));
+
+    useStore.getState().selectPlanningPortal('portal-a');
+    useStore.getState().selectPlanningPortal('portal-b');
+
+    expect(useStore.getState().planningAnchorPortalId).toBe('portal-b');
+    expect(useStore.getState().plannedLinks).toHaveLength(0);
   });
 });

@@ -46,6 +46,12 @@ const PLANNED_LINK_COLOR = '#37e6ff';
 const PLANNED_CROSSLINK_COLOR = '#ff4d4d';
 const TOUCH_TAP_MOVE_THRESHOLD_PX = 18;
 const TOUCH_PORTAL_THRESHOLD_PX = 32;
+const PLANNED_MARKER_COLORS: Record<PlannedMarker['color'], string> = {
+  white: '#ffffff',
+  red: '#ff4d4d',
+  blue: '#37e6ff',
+  green: '#49ff7a',
+};
 
 interface MarkerRegistryEntry {
   marker: maplibregl.Marker;
@@ -274,8 +280,9 @@ function buildPlannedLinkFeatures(
       properties: {
         id: plannedMarker.id,
         label: plannedMarker.label,
+        portalId: plannedMarker.portalId,
         plannedType: 'marker',
-        color: PLANNED_LINK_COLOR,
+        color: PLANNED_MARKER_COLORS[plannedMarker.color] ?? PLANNED_MARKER_COLORS.blue,
         opacity: 0.95,
       },
     });
@@ -1230,7 +1237,7 @@ export function MapOverlay(): JSX.Element {
                 10, 5,
                 15, 9,
               ],
-              'circle-color': PLANNED_LINK_COLOR,
+              'circle-color': ['coalesce', ['get', 'color'], PLANNED_LINK_COLOR],
               'circle-opacity': 0.9,
               'circle-stroke-width': 2,
               'circle-stroke-color': '#000',
@@ -1328,6 +1335,7 @@ export function MapOverlay(): JSX.Element {
     ): void => {
         if (!map.current) return;
         const state = useStore.getState();
+        const portalThreshold = options.portalThreshold ?? (state.planningMode ? TOUCH_PORTAL_THRESHOLD_PX : undefined);
         const selection = resolveMapSelection({
             portals: state.portals,
             fields: state.fields,
@@ -1340,7 +1348,7 @@ export function MapOverlay(): JSX.Element {
                 const projected = map.current?.project([lng, lat]);
                 return projected ? {x: projected.x, y: projected.y} : null;
             },
-            portalThreshold: options.portalThreshold,
+            portalThreshold,
         });
 
         if (selection) {

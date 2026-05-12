@@ -93,8 +93,12 @@ export interface PlannedMarker {
     lat: number;
     lng: number;
     label: string;
+    color: 'white' | 'red' | 'blue' | 'green';
+    portalId?: string;
     createdAt: number;
 }
+
+export type PlanningTool = 'links' | 'markers';
 
 export interface Field {
     id: string;
@@ -471,6 +475,7 @@ interface UISlice {
     selectedLinkId: string | null;
     selectedPluginFeature: GeoJSON.Feature | null;
     planningMode: boolean;
+    planningTool: PlanningTool;
     planningAnchorPortalId: string | null;
     plannedLinks: PlannedLink[];
     plannedMarkers: PlannedMarker[];
@@ -501,8 +506,9 @@ interface UISlice {
     setSelectedPluginFeature: (feature: GeoJSON.Feature | null) => void;
     togglePlanningMode: () => void;
     setPlanningMode: (enabled: boolean) => void;
+    setPlanningTool: (tool: PlanningTool) => void;
     selectPlanningPortal: (portalId: string) => void;
-    addPlannedMarker: (lat: number, lng: number, label?: string) => void;
+    addPlannedMarker: (lat: number, lng: number, label?: string, color?: PlannedMarker['color'], portalId?: string) => void;
     undoPlannedItem: () => void;
     clearPlannedLinks: () => void;
     setActiveCommTab: (tab: string) => void;
@@ -916,6 +922,7 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
     selectedLinkId: null,
     selectedPluginFeature: null,
     planningMode: false,
+    planningTool: 'links',
     planningAnchorPortalId: null,
     plannedLinks: [],
     plannedMarkers: [],
@@ -1036,9 +1043,18 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
         planningMode: enabled,
         planningAnchorPortalId: null,
     })),
+    setPlanningTool: (tool) => set(() => ({
+        planningMode: true,
+        planningTool: tool,
+        planningAnchorPortalId: null,
+    })),
     selectPlanningPortal: (portalId) => set((state) => {
         if (!state.planningMode) {
             return state;
+        }
+
+        if (state.planningTool === 'markers') {
+            return { planningAnchorPortalId: portalId };
         }
 
         if (!state.planningAnchorPortalId || state.planningAnchorPortalId === portalId) {
@@ -1071,7 +1087,7 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
             ],
         };
     }),
-    addPlannedMarker: (lat, lng, label) => set((state) => {
+    addPlannedMarker: (lat, lng, label, color = 'blue', portalId) => set((state) => {
         const createdAt = Date.now();
 
         return {
@@ -1082,6 +1098,8 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
                     lat,
                     lng,
                     label: label || `Marker ${state.plannedMarkers.length + 1}`,
+                    color,
+                    portalId,
                     createdAt,
                 },
             ],

@@ -123,7 +123,8 @@ export function IRISOverlay(): JSX.Element {
             case 'search': toggleSearchPopup(); setActiveDrawerTab(null); break;
             case 'nav': toggleNavigationPopup(); setActiveDrawerTab(null); break;
             case 'missions': toggleMissionsPopup(); setActiveDrawerTab(null); break;
-            case 'planning': useStore.getState().togglePlanningMode(); setShowSelectionInfo(false); setActiveDrawerTab(null); break;
+            case 'planning-links': useStore.getState().setPlanningTool('links'); setShowSelectionInfo(false); setActiveDrawerTab(null); break;
+            case 'planning-markers': useStore.getState().setPlanningTool('markers'); setShowSelectionInfo(false); setActiveDrawerTab(null); break;
             case 'plugins': togglePluginsPopup(); setActiveDrawerTab(null); break;
             case 'settings': toggleMapSettingsPopup(); setActiveDrawerTab(null); break;
             case 'diag': toggleDiagnosticsPopup(); setActiveDrawerTab(null); break;

@@ -626,12 +626,13 @@ Tasks:
 |--------------------------------------------------------------------------|--------|-----------------------------------------------------------------------------------------|
 | Add a plugin entrypoint and toolbar/menu affordance                      | Done   | `planned-links` is now registered as a disabled-by-default plugin; Plan appears in the Map drawer only when the plugin is enabled |
 | Add first mobile-safe planning toolbar                                   | Done   | Map drawer now exposes Plan mode and a compact cyan planning bar with anchor status, Done, Undo, and Clear |
+| Split link and marker drawing modes                                      | Done   | Map drawer exposes separate Links and Markers tools so marker portal taps no longer create unintended planned links |
 | Support planned link creation between portals                            | Done   | in Plan mode, tapping portal A sets an anchor and tapping portal B creates a dashed cyan planned link to avoid event yellow |
 | Align planning portal taps with normal portal selection                  | Done   | planned links now route through the same `iris:portal:click` bridge as portal info, then branch by planning mode |
 | Support baseline planned-link removal                                    | Done   | baseline supports Undo last planned link and Clear all planned links from the planning bar                  |
 | Persist planned links locally                                            | Done   | saved planned links now survive refresh via `iris-settings`; in-progress planning mode and anchor stay transient |
 | Show crossing links against a hypothetical link                          | Done   | planned links now mark currently loaded crossing Intel links with red dashed overlays, excluding shared-endpoint links |
-| Improve mobile portal selection for planning                             | In Progress | shared touch tap drift tolerance and mobile portal hit radius were raised; still needs mobile verification against quick taps and long press |
+| Improve mobile portal selection for planning                             | In Progress | planning mode now uses a larger portal hit radius for mouse/device-toolbar clicks and touch taps; still needs real mobile verification |
 | Decide whether crosslink display should also compare against drawn links | Open   | `quick-draw-links` supports existing, drawn, or both                                    |
 | Support moving or copying links from one anchor portal to another        | Open   | useful for fast route/plan variants if interaction model stays understandable on mobile |
 | Support selecting and deleting individual planned items                  | Open   | Undo/Clear exists, but item-level removal/edit is still needed before plans become large |
@@ -650,7 +651,7 @@ Tasks:
 |-------------------------------------------------------------|---------------|-----------------------------------------------------------------------------------------------------------|
 | Support polygon or field-style drawing                      | Open          | reference plugin derives fields from drawn links; need to decide direct polygon drawing vs derived fields |
 | Support circle drawing                                      | Open          | useful for radius-based planning and crossing-link inspection                                             |
-| Support free marker placement                               | In Progress   | `Mark` now drops a persisted planned marker at the current map center; item-level select/delete still needed |
+| Support portal marker placement                             | In Progress   | Marker mode can add persisted white/red/blue/green markers to the selected portal; item-level select/delete and labels still needed |
 | Decide whether a separate shard/arrow tool is really needed | Investigating | user idea is plausible, but reference evidence is weaker than for links/circles/markers                   |
 | Keep mobile interaction compact                             | Open          | avoid a desktop-heavy control surface                                                                     |
 
