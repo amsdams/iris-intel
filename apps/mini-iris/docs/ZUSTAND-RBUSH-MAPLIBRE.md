@@ -152,6 +152,7 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 | **Portal Health/Level Visual Modes** | **VERIFYING** | Optional map tool toggles can recolor portals by level and fade portals by health using existing feature properties. |
 | **Mock Tracker Isolation** | **DONE** | Live COMM-derived player tracker state is hidden while using mock/source mode. |
 | **Mock Data Coverage** | **IMPROVED** | Mock patterns now include deterministic portal level and health variation for visual-mode testing. |
+| **Mobile Startup Entity Sync** | **FIXED** | MapLibre load now resizes and triggers entity sync on the next animation frame; mobile retest confirmed entities render and map style/history/LVL/HP toggles still work. |
 
 ### Roadmap & Alignment (TODO)
 
@@ -238,7 +239,8 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 - Launcher open/close behavior remains close to the stable `91e83b5` path; persistence only records the open intent and replays the existing open path after startup.
 - Map container visibility, Intel map sync, and entity rendering were restored to the stable `91e83b5` behavior to avoid the style flicker and missing-entity regressions introduced by later lifecycle experiments.
 - Robust INTEL/IRIS switching is no longer an active implementation item; it remains a regression checklist unless new concrete failures appear.
-- Mini IRIS version markers are now extension/package `1.0.28` and console banner `v1.3.30 | Portal Visual Persistence`.
+- Mini IRIS version markers are now extension/package `1.0.29` and console banner `v1.3.32 | Mobile Load Entity Sync`.
+- Mobile startup entity rendering was restored by resizing and syncing entities from the MapLibre `load` event; mobile retest covered panning, zooming, map styles, history overlays, and `LVL`/`HP` visual modes.
 
 #### Current Alignment Notes
 - Portal and link scale now follow the same zoom-aware approach used by IRIS rather than hardcoded mini-IRIS sizes.

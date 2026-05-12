@@ -21,7 +21,7 @@ import { throttle } from './GeoUtils';
 import { isEndpointStateMessage, numberOrNull, stringOrNull } from './messages';
 import { DEFAULT_PORTAL_HISTORY_LAYERS, PORTAL_HISTORY_COLORS, nextPortalHistoryMode, type PortalHistoryKey, type PortalHistoryLayerState, type PortalHistoryMode } from './portalHistory';
 
-console.log("Mini IRIS (TS): Tactical Overlay | v1.3.31 | Vite 6 Planning Pass");
+console.log("Mini IRIS (TS): Tactical Overlay | v1.3.32 | Mobile Load Entity Sync");
 
 const DEFAULT_MAP_CENTER: [number, number] = [4.8952, 52.3702];
 const DEFAULT_MAP_ZOOM = 13;
@@ -721,6 +721,7 @@ function TacticalOverlay(): h.JSX.Element {
         });
 
         m.once('load', (): void => {
+            m.resize();
             const bounds = m.getBounds();
             setPlextBounds({
                 minLatE6: Math.round(bounds.getSouth() * 1e6),
@@ -732,6 +733,9 @@ function TacticalOverlay(): h.JSX.Element {
             if (playerSource) {
                 playerSource.setData(playerTrailDataRef.current);
             }
+            window.requestAnimationFrame(() => {
+                checkAndLoadRef.current(m, patternModeRef.current, liveModeRef.current);
+            });
         });
 
         m.on('movestart', clearMoveSettleTimer);
