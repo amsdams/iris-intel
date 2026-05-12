@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "IRIS - Modern IITC Alternative",
   "description": "A lightweight, modern IITC alternative for Ingress.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "action": {
     "default_title": "IRIS"
   },

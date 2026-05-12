@@ -631,7 +631,7 @@ Tasks:
 | Support baseline planned-link removal                                    | Done   | baseline supports Undo last planned link and Clear all planned links from the planning bar                  |
 | Persist planned links locally                                            | Done   | saved planned links now survive refresh via `iris-settings`; in-progress planning mode and anchor stay transient |
 | Show crossing links against a hypothetical link                          | Done   | planned links now mark currently loaded crossing Intel links with red dashed overlays, excluding shared-endpoint links |
-| Improve mobile portal selection for planning                             | Open   | still harder than normal portal info selection; long press has higher success, so inspect touch/click timing and hit targets on mobile |
+| Improve mobile portal selection for planning                             | In Progress | shared touch tap drift tolerance and mobile portal hit radius were raised; still needs mobile verification against quick taps and long press |
 | Decide whether crosslink display should also compare against drawn links | Open   | `quick-draw-links` supports existing, drawn, or both                                    |
 | Support moving or copying links from one anchor portal to another        | Open   | useful for fast route/plan variants if interaction model stays understandable on mobile |
 | Support selecting and deleting individual planned items                  | Open   | Undo/Clear exists, but item-level removal/edit is still needed before plans become large |
@@ -650,7 +650,7 @@ Tasks:
 |-------------------------------------------------------------|---------------|-----------------------------------------------------------------------------------------------------------|
 | Support polygon or field-style drawing                      | Open          | reference plugin derives fields from drawn links; need to decide direct polygon drawing vs derived fields |
 | Support circle drawing                                      | Open          | useful for radius-based planning and crossing-link inspection                                             |
-| Support free marker placement                               | Open          | useful as annotations or temporary plan anchors; should include select/delete behavior from the start     |
+| Support free marker placement                               | In Progress   | `Mark` now drops a persisted planned marker at the current map center; item-level select/delete still needed |
 | Decide whether a separate shard/arrow tool is really needed | Investigating | user idea is plausible, but reference evidence is weaker than for links/circles/markers                   |
 | Keep mobile interaction compact                             | Open          | avoid a desktop-heavy control surface                                                                     |
 

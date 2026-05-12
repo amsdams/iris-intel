@@ -1,5 +1,6 @@
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import type { CircleLayerSpecification } from '@maplibre/maplibre-gl-style-spec';
 import { render, h, Fragment } from 'preact';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'preact/hooks';
 import { MockDataGenerator } from './MockDataGenerator';
@@ -20,7 +21,7 @@ import { throttle } from './GeoUtils';
 import { isEndpointStateMessage, numberOrNull, stringOrNull } from './messages';
 import { DEFAULT_PORTAL_HISTORY_LAYERS, PORTAL_HISTORY_COLORS, nextPortalHistoryMode, type PortalHistoryKey, type PortalHistoryLayerState, type PortalHistoryMode } from './portalHistory';
 
-console.log("Mini IRIS (TS): Tactical Overlay | v1.3.30 | Portal Visual Persistence");
+console.log("Mini IRIS (TS): Tactical Overlay | v1.3.31 | Vite 6 Planning Pass");
 
 const DEFAULT_MAP_CENTER: [number, number] = [4.8952, 52.3702];
 const DEFAULT_MAP_ZOOM = 13;
@@ -48,8 +49,9 @@ type MapStyleName = keyof typeof MAP_STYLES;
 type SelectedEntity = { type: 'portal'; data: Portal } | { type: 'link'; data: Link } | { type: 'field'; data: Field };
 
 const EMPTY_PLAYER_HISTORIES = new Map<string, PlayerHistory>();
-const PORTAL_TEAM_COLOR_EXPR: unknown[] = ['match', ['get', 'team'], 'E', COLORS.E, 'R', COLORS.R, 'M', COLORS.M, COLORS.N];
-const PORTAL_LEVEL_COLOR_EXPR = [
+type CirclePaint = NonNullable<CircleLayerSpecification['paint']>;
+const PORTAL_TEAM_COLOR_EXPR: CirclePaint['circle-color'] = ['match', ['get', 'team'], 'E', COLORS.E, 'R', COLORS.R, 'M', COLORS.M, COLORS.N];
+const PORTAL_LEVEL_COLOR_EXPR: CirclePaint['circle-color'] = [
     'match',
     ['get', 'level'],
     1, ITEM_LEVEL_COLORS[1],
@@ -62,7 +64,7 @@ const PORTAL_LEVEL_COLOR_EXPR = [
     8, ITEM_LEVEL_COLORS[8],
     COLORS.N,
 ];
-const PORTAL_HEALTH_OPACITY_EXPR: unknown[] = ['interpolate', ['linear'], ['coalesce', ['get', 'health'], 100], 0, 0.15, 100, 1];
+const PORTAL_HEALTH_OPACITY_EXPR: CirclePaint['circle-opacity'] = ['interpolate', ['linear'], ['coalesce', ['get', 'health'], 100], 0, 0.15, 100, 1];
 
 function readSavedMapState(): SavedMapState | null {
     try {
@@ -631,8 +633,8 @@ function TacticalOverlay(): h.JSX.Element {
     useEffect(() => {
         const m = mapRef.current;
         if (!m || !m.getLayer('p')) return;
-        m.setPaintProperty('p', 'circle-color', (portalLevelColorEnabled ? PORTAL_LEVEL_COLOR_EXPR : PORTAL_TEAM_COLOR_EXPR) as any);
-        m.setPaintProperty('p', 'circle-opacity', (portalHealthColorEnabled ? PORTAL_HEALTH_OPACITY_EXPR : 1) as any);
+        m.setPaintProperty('p', 'circle-color', portalLevelColorEnabled ? PORTAL_LEVEL_COLOR_EXPR : PORTAL_TEAM_COLOR_EXPR);
+        m.setPaintProperty('p', 'circle-opacity', portalHealthColorEnabled ? PORTAL_HEALTH_OPACITY_EXPR : 1);
     }, [portalHealthColorEnabled, portalLevelColorEnabled]);
 
     const handleSelectionPanelOpen = useCallback((): void => {
@@ -703,7 +705,7 @@ function TacticalOverlay(): h.JSX.Element {
                     { id: 'sel-f', type: 'line', source: 'selection', filter: ['==', 'type', 'field'], paint: { 'line-color': '#fff', 'line-width': 3 } },
                     { id: 'sel-l', type: 'line', source: 'selection', filter: ['==', 'type', 'link'], paint: { 'line-color': '#fff', 'line-width': 4 } },
                     { id: 'sel-p', type: 'circle', source: 'selection', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': 12, 'circle-color': 'transparent', 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 } },
-                    { id: 'p', type: 'circle', source: 'entities', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': ['coalesce', ['get', 'radius'], 2], 'circle-color': PORTAL_TEAM_COLOR_EXPR as any, 'circle-opacity': 1 } },
+                    { id: 'p', type: 'circle', source: 'entities', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': ['coalesce', ['get', 'radius'], 2], 'circle-color': PORTAL_TEAM_COLOR_EXPR, 'circle-opacity': 1 } },
                     { id: 'p-history-visited-highlight', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'visitedHighlight', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 5], 'circle-color': 'transparent', 'circle-stroke-color': PORTAL_HISTORY_COLORS.visited, 'circle-stroke-width': 2, 'circle-opacity': 0.9 } },
                     { id: 'p-history-captured-highlight', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'capturedHighlight', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 8], 'circle-color': 'transparent', 'circle-stroke-color': PORTAL_HISTORY_COLORS.captured, 'circle-stroke-width': 2, 'circle-opacity': 0.9 } },
                     { id: 'p-history-scanned-highlight', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'scannedHighlight', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 11], 'circle-color': 'transparent', 'circle-stroke-color': PORTAL_HISTORY_COLORS.scanned, 'circle-stroke-width': 2, 'circle-opacity': 0.9 } },
@@ -809,6 +811,8 @@ function TacticalOverlay(): h.JSX.Element {
 
         mapRef.current = m;
         return (): void => { m.remove(); mapRef.current = null; };
+    // MapLibre is initialized once; later style changes update the raster source in a separate effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [clearMoveSettleTimer, generator, logEvent, savedMapState?.lat, savedMapState?.lng, savedMapState?.zoom, scheduleMoveSettleLoad, throttledSync]);
 
     useEffect(() => {

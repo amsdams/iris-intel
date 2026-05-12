@@ -1,6 +1,6 @@
 {
   "name": "@iris/extension",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -18,14 +18,14 @@
   },
   "dependencies": {
     "@iris/core": "*",
+    "maplibre-gl": "^4.0.0",
     "preact": "^10.19.0",
-    "zustand": "^4.0.0",
-    "maplibre-gl": "^4.0.0"
+    "zustand": "^4.0.0"
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.7.0",
     "typescript": "^5.0.0",
-    "vite": "^5.0.0",
+    "vite": "^6.4.2",
     "vite-plugin-web-extension": "^4.1.0"
   }
 }

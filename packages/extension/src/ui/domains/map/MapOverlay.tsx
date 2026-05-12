@@ -2,7 +2,7 @@ import {h, JSX} from 'preact';
 import {useEffect, useMemo, useRef, useState, useCallback} from 'preact/hooks';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import {useStore, globalSpatialIndex, Portal, Link, Field, PlannedLink, getMinLevelForZoom, MapPerfSnapshot} from '@iris/core';
+import {useStore, globalSpatialIndex, Portal, Link, Field, PlannedLink, PlannedMarker, getMinLevelForZoom, MapPerfSnapshot} from '@iris/core';
 import {THEMES, MAP_THEMES, SEMANTIC_COLORS} from '../../theme';
 import {
   buildArtifactFeatures,
@@ -44,7 +44,8 @@ const PAN_BENCHMARK_START = { lat: 52.371094, lng: 4.906375, zoom: 14.36 };
 const PAN_BENCHMARK_SETTLE_MS = 600;
 const PLANNED_LINK_COLOR = '#37e6ff';
 const PLANNED_CROSSLINK_COLOR = '#ff4d4d';
-const TOUCH_TAP_MOVE_THRESHOLD_PX = 10;
+const TOUCH_TAP_MOVE_THRESHOLD_PX = 18;
+const TOUCH_PORTAL_THRESHOLD_PX = 32;
 
 interface MarkerRegistryEntry {
   marker: maplibregl.Marker;
@@ -173,6 +174,7 @@ function setLayerVisibilityIfExists(
 
 function buildPlannedLinkFeatures(
   plannedLinks: PlannedLink[],
+  plannedMarkers: PlannedMarker[],
   portals: Record<string, Portal>,
   links: Record<string, Link>,
   planningAnchorPortalId: string | null
@@ -261,6 +263,24 @@ function buildPlannedLinkFeatures(
     });
   }
 
+  plannedMarkers.forEach((plannedMarker) => {
+    features.push({
+      type: 'Feature',
+      id: plannedMarker.id,
+      geometry: {
+        type: 'Point',
+        coordinates: [plannedMarker.lng, plannedMarker.lat],
+      },
+      properties: {
+        id: plannedMarker.id,
+        label: plannedMarker.label,
+        plannedType: 'marker',
+        color: PLANNED_LINK_COLOR,
+        opacity: 0.95,
+      },
+    });
+  });
+
   return features;
 }
 
@@ -311,6 +331,7 @@ export function MapOverlay(): JSX.Element {
   const missionDetails = useStore((state) => state.missionDetails);
   const pluginFeatures = useStore((state) => state.pluginFeatures);
   const plannedLinks = useStore((state) => state.plannedLinks);
+  const plannedMarkers = useStore((state) => state.plannedMarkers);
   const planningMode = useStore((state) => state.planningMode);
   const planningAnchorPortalId = useStore((state) => state.planningAnchorPortalId);
   const plannedLinksEnabled = useStore((state) => state.pluginStates['planned-links'] ?? false);
@@ -618,12 +639,13 @@ export function MapOverlay(): JSX.Element {
       type: 'FeatureCollection',
       features: plannedLinksEnabled ? buildPlannedLinkFeatures(
           plannedLinks,
+          plannedMarkers,
           state.portals,
           state.links,
           planningMode ? planningAnchorPortalId : null
       ) : [],
     });
-  }, [plannedLinks, planningMode, planningAnchorPortalId, plannedLinksEnabled, styleLoaded]);
+  }, [plannedLinks, plannedMarkers, planningMode, planningAnchorPortalId, plannedLinksEnabled, styleLoaded]);
 
   useEffect((): undefined | (() => void) => {
     if (!map.current || !styleLoaded) return;
@@ -634,6 +656,7 @@ export function MapOverlay(): JSX.Element {
         type: 'FeatureCollection',
         features: (state.pluginStates['planned-links'] ?? false) ? buildPlannedLinkFeatures(
           state.plannedLinks,
+          state.plannedMarkers,
           state.portals,
           state.links,
           state.planningMode ? state.planningAnchorPortalId : null
@@ -643,10 +666,12 @@ export function MapOverlay(): JSX.Element {
 
     const unsubPortals = useStore.subscribe((state) => state.portals, syncPlannedLinks);
     const unsubLinks = useStore.subscribe((state) => state.links, syncPlannedLinks);
+    const unsubMarkers = useStore.subscribe((state) => state.plannedMarkers, syncPlannedLinks);
 
     return () => {
       unsubPortals();
       unsubLinks();
+      unsubMarkers();
     };
   }, [styleLoaded]);
 
@@ -1195,6 +1220,24 @@ export function MapOverlay(): JSX.Element {
             },
           },
           {
+            id: 'planned-markers',
+            type: 'circle',
+            source: 'planned-links',
+            filter: ['all', ['==', '$type', 'Point'], ['==', 'plannedType', 'marker']],
+            paint: {
+              'circle-radius': [
+                'interpolate', ['linear'], ['zoom'],
+                10, 5,
+                15, 9,
+              ],
+              'circle-color': PLANNED_LINK_COLOR,
+              'circle-opacity': 0.9,
+              'circle-stroke-width': 2,
+              'circle-stroke-color': '#000',
+              'circle-stroke-opacity': 0.85,
+            },
+          },
+          {
             id: 'planned-crossings',
             type: 'line',
             source: 'planned-links',
@@ -1279,7 +1322,10 @@ export function MapOverlay(): JSX.Element {
       useStore.getState().reverseGeocode(center.lat, center.lng);
     });
 
-    const handleInteraction = (e: maplibregl.MapMouseEvent | maplibregl.MapTouchEvent): void => {
+    const handleInteraction = (
+      e: maplibregl.MapMouseEvent | maplibregl.MapTouchEvent,
+      options: { portalThreshold?: number } = {}
+    ): void => {
         if (!map.current) return;
         const state = useStore.getState();
         const selection = resolveMapSelection({
@@ -1294,6 +1340,7 @@ export function MapOverlay(): JSX.Element {
                 const projected = map.current?.project([lng, lat]);
                 return projected ? {x: projected.x, y: projected.y} : null;
             },
+            portalThreshold: options.portalThreshold,
         });
 
         if (selection) {
@@ -1341,7 +1388,7 @@ export function MapOverlay(): JSX.Element {
 
     map.current.on('touchend', (e: maplibregl.MapTouchEvent) => {
         if (touchState.current.maxFingers === 1 && !touchState.current.hasMoved) {
-            handleInteraction(e);
+            handleInteraction(e, { portalThreshold: TOUCH_PORTAL_THRESHOLD_PX });
         }
 
         if (e.originalEvent.touches.length === 0) {

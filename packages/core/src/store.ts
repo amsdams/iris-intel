@@ -88,6 +88,14 @@ export interface PlannedLink {
     createdAt: number;
 }
 
+export interface PlannedMarker {
+    id: string;
+    lat: number;
+    lng: number;
+    label: string;
+    createdAt: number;
+}
+
 export interface Field {
     id: string;
     team: string;
@@ -465,6 +473,7 @@ interface UISlice {
     planningMode: boolean;
     planningAnchorPortalId: string | null;
     plannedLinks: PlannedLink[];
+    plannedMarkers: PlannedMarker[];
     activeCommTab: string;
     commSendStatus: 'idle' | 'sending' | 'success' | 'error';
     commSendError: string | null;
@@ -493,7 +502,8 @@ interface UISlice {
     togglePlanningMode: () => void;
     setPlanningMode: (enabled: boolean) => void;
     selectPlanningPortal: (portalId: string) => void;
-    undoPlannedLink: () => void;
+    addPlannedMarker: (lat: number, lng: number, label?: string) => void;
+    undoPlannedItem: () => void;
     clearPlannedLinks: () => void;
     setActiveCommTab: (tab: string) => void;
     setCommSendPending: () => void;
@@ -908,6 +918,7 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
     planningMode: false,
     planningAnchorPortalId: null,
     plannedLinks: [],
+    plannedMarkers: [],
     activeCommTab: 'ALL',
     commSendStatus: 'idle',
     commSendError: null,
@@ -1060,11 +1071,39 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
             ],
         };
     }),
-    undoPlannedLink: () => set((state) => ({
-        plannedLinks: state.plannedLinks.slice(0, -1),
-    })),
+    addPlannedMarker: (lat, lng, label) => set((state) => {
+        const createdAt = Date.now();
+
+        return {
+            plannedMarkers: [
+                ...state.plannedMarkers,
+                {
+                    id: `planned-marker:${createdAt}`,
+                    lat,
+                    lng,
+                    label: label || `Marker ${state.plannedMarkers.length + 1}`,
+                    createdAt,
+                },
+            ],
+        };
+    }),
+    undoPlannedItem: () => set((state) => {
+        const latestLink = state.plannedLinks[state.plannedLinks.length - 1] ?? null;
+        const latestMarker = state.plannedMarkers[state.plannedMarkers.length - 1] ?? null;
+
+        if (!latestLink && !latestMarker) {
+            return state;
+        }
+
+        if (latestLink && (!latestMarker || latestLink.createdAt >= latestMarker.createdAt)) {
+            return { plannedLinks: state.plannedLinks.slice(0, -1) };
+        }
+
+        return { plannedMarkers: state.plannedMarkers.slice(0, -1) };
+    }),
     clearPlannedLinks: () => set(() => ({
         plannedLinks: [],
+        plannedMarkers: [],
         planningAnchorPortalId: null,
     })),
     setActiveCommTab: (tab) => set(() => ({ activeCommTab: tab })),
@@ -1331,6 +1370,7 @@ export const useStore = create<IRISState>()(
                     lastResolvedLatLng: state.lastResolvedLatLng,
                     activeVisualOverlayIds: state.activeVisualOverlayIds,
                     plannedLinks: state.plannedLinks,
+                    plannedMarkers: state.plannedMarkers,
                     mapState: {
                         lat: state.mapState.lat,
                         lng: state.mapState.lng,
