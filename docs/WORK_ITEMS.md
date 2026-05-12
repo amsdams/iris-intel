@@ -627,7 +627,9 @@ Tasks:
 | Add a plugin entrypoint and toolbar/menu affordance                      | Done   | `planned-links` is now registered as a disabled-by-default plugin; Plan appears in the Map drawer only when the plugin is enabled |
 | Add first mobile-safe planning toolbar                                   | Done   | Map drawer now exposes Plan mode and a compact cyan planning bar with anchor status, Done, Undo, and Clear |
 | Split link and marker drawing modes                                      | Done   | Map drawer exposes separate Links and Markers tools so marker portal taps no longer create unintended planned links |
-| Support planned link creation between portals                            | Done   | in Plan mode, tapping portal A sets an anchor and tapping portal B creates a dashed cyan planned link to avoid event yellow |
+| Support planned link creation between portals                            | Done   | in Links mode, tapping portals builds a transient path preview and Add Link/Add Links saves adjacent dashed cyan planned links to avoid event yellow |
+| Require explicit confirmation for planned links                          | Done   | link planning now matches the INTEL-style source/destination flow and avoids creating accidental links while selecting portals |
+| Support multi-portal link path previews                                  | Done   | link planning uses an in-progress portal path array, so selecting A, B, C previews A-B and B-C before saving |
 | Align planning portal taps with normal portal selection                  | Done   | planned links now route through the same `iris:portal:click` bridge as portal info, then branch by planning mode |
 | Support baseline planned-link removal                                    | Done   | baseline supports Undo last planned link and Clear all planned links from the planning bar                  |
 | Persist planned links locally                                            | Done   | saved planned links now survive refresh via `iris-settings`; in-progress planning mode and anchor stay transient |
@@ -678,7 +680,7 @@ Bugs:
 |-------------------------------------------------------|--------|-------------------------------------------------------------------------------|
 | Tool scope can sprawl quickly on mobile               | Open   | link planning is clear; too many modes will make the UI heavy fast            |
 | Crosslink logic depends on visible map state and zoom | Open   | reference plugin warns that visible range and zoom affect crosslink detection |
-| Mobile portal selection for planning is inconsistent  | Open   | normal portal info selection feels easier; long press has higher success for planned-link anchors |
+| Mobile portal selection for planning is inconsistent  | Open   | link planning now uses explicit source/destination confirmation, but real mobile selection still needs verification against normal portal info taps |
 
 ## Data Contracts And Persistence
 

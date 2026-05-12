@@ -183,7 +183,7 @@ function buildPlannedLinkFeatures(
   plannedMarkers: PlannedMarker[],
   portals: Record<string, Portal>,
   links: Record<string, Link>,
-  planningAnchorPortalId: string | null
+  planningPortalPath: string[]
 ): GeoJSON.Feature[] {
   const features: GeoJSON.Feature[] = [];
   const loadedLinks = Object.values(links);
@@ -251,20 +251,52 @@ function buildPlannedLinkFeatures(
       });
   });
 
-  if (planningAnchorPortalId && portals[planningAnchorPortalId]) {
-    const portal = portals[planningAnchorPortalId];
+  planningPortalPath.forEach((portalId, index) => {
+    const portal = portals[portalId];
+    if (!portal) {
+      return;
+    }
+
     features.push({
       type: 'Feature',
-      id: `planned-anchor:${planningAnchorPortalId}`,
+      id: `planned-path:${index}:${portalId}`,
       geometry: {
         type: 'Point',
         coordinates: [portal.lng, portal.lat],
       },
       properties: {
-        id: `planned-anchor:${planningAnchorPortalId}`,
-        plannedType: 'anchor',
+        id: `planned-path:${index}:${portalId}`,
+        plannedType: index === 0 ? 'anchor' : 'target',
         color: PLANNED_LINK_COLOR,
         opacity: 0.95,
+      },
+    });
+  });
+
+  for (let index = 0; index < planningPortalPath.length - 1; index += 1) {
+    const fromPortalId = planningPortalPath[index];
+    const toPortalId = planningPortalPath[index + 1];
+    const from = portals[fromPortalId];
+    const to = portals[toPortalId];
+    if (!from || !to) {
+      continue;
+    }
+
+    features.push({
+      type: 'Feature',
+      id: `planned-preview:${index}:${fromPortalId}:${toPortalId}`,
+      geometry: {
+        type: 'LineString',
+        coordinates: [
+          [from.lng, from.lat],
+          [to.lng, to.lat],
+        ],
+      },
+      properties: {
+        id: `planned-preview:${index}:${fromPortalId}:${toPortalId}`,
+        plannedType: 'preview',
+        color: PLANNED_LINK_COLOR,
+        opacity: 0.72,
       },
     });
   }
@@ -340,7 +372,7 @@ export function MapOverlay(): JSX.Element {
   const plannedLinks = useStore((state) => state.plannedLinks);
   const plannedMarkers = useStore((state) => state.plannedMarkers);
   const planningMode = useStore((state) => state.planningMode);
-  const planningAnchorPortalId = useStore((state) => state.planningAnchorPortalId);
+  const planningPortalPath = useStore((state) => state.planningPortalPath);
   const plannedLinksEnabled = useStore((state) => state.pluginStates['planned-links'] ?? false);
   const selectedPortalId = useStore((state) => state.selectedPortalId);
   const selectedFieldId = useStore((state) => state.selectedFieldId);
@@ -649,10 +681,10 @@ export function MapOverlay(): JSX.Element {
           plannedMarkers,
           state.portals,
           state.links,
-          planningMode ? planningAnchorPortalId : null
+          planningMode ? planningPortalPath : []
       ) : [],
     });
-  }, [plannedLinks, plannedMarkers, planningMode, planningAnchorPortalId, plannedLinksEnabled, styleLoaded]);
+  }, [plannedLinks, plannedMarkers, planningMode, planningPortalPath, plannedLinksEnabled, styleLoaded]);
 
   useEffect((): undefined | (() => void) => {
     if (!map.current || !styleLoaded) return;
@@ -666,7 +698,7 @@ export function MapOverlay(): JSX.Element {
           state.plannedMarkers,
           state.portals,
           state.links,
-          state.planningMode ? state.planningAnchorPortalId : null
+          state.planningMode ? state.planningPortalPath : []
         ) : [],
       });
     };
@@ -1063,7 +1095,7 @@ export function MapOverlay(): JSX.Element {
             id: 'planned-links',
             type: 'line',
             source: 'planned-links',
-            filter: ['==', '$type', 'LineString'],
+            filter: ['all', ['==', '$type', 'LineString'], ['!=', 'plannedType', 'crossing']],
             paint: {
               'line-width': 3,
               'line-color': PLANNED_LINK_COLOR,
@@ -1213,7 +1245,7 @@ export function MapOverlay(): JSX.Element {
             id: 'planned-anchor',
             type: 'circle',
             source: 'planned-links',
-            filter: ['all', ['==', '$type', 'Point'], ['==', 'plannedType', 'anchor']],
+            filter: ['all', ['==', '$type', 'Point'], ['any', ['==', 'plannedType', 'anchor'], ['==', 'plannedType', 'target']]],
             paint: {
               'circle-radius': [
                 'interpolate', ['linear'], ['zoom'],

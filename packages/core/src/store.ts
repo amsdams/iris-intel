@@ -477,6 +477,7 @@ interface UISlice {
     planningMode: boolean;
     planningTool: PlanningTool;
     planningAnchorPortalId: string | null;
+    planningPortalPath: string[];
     plannedLinks: PlannedLink[];
     plannedMarkers: PlannedMarker[];
     activeCommTab: string;
@@ -508,6 +509,8 @@ interface UISlice {
     setPlanningMode: (enabled: boolean) => void;
     setPlanningTool: (tool: PlanningTool) => void;
     selectPlanningPortal: (portalId: string) => void;
+    createPlannedLink: () => void;
+    clearPlanningSelection: () => void;
     addPlannedMarker: (lat: number, lng: number, label?: string, color?: PlannedMarker['color'], portalId?: string) => void;
     undoPlannedItem: () => void;
     clearPlannedLinks: () => void;
@@ -924,6 +927,7 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
     planningMode: false,
     planningTool: 'links',
     planningAnchorPortalId: null,
+    planningPortalPath: [],
     plannedLinks: [],
     plannedMarkers: [],
     activeCommTab: 'ALL',
@@ -1038,15 +1042,18 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
     togglePlanningMode: () => set((state) => ({
         planningMode: !state.planningMode,
         planningAnchorPortalId: null,
+        planningPortalPath: [],
     })),
     setPlanningMode: (enabled) => set(() => ({
         planningMode: enabled,
         planningAnchorPortalId: null,
+        planningPortalPath: [],
     })),
     setPlanningTool: (tool) => set(() => ({
         planningMode: true,
         planningTool: tool,
         planningAnchorPortalId: null,
+        planningPortalPath: [],
     })),
     selectPlanningPortal: (portalId) => set((state) => {
         if (!state.planningMode) {
@@ -1054,39 +1061,59 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
         }
 
         if (state.planningTool === 'markers') {
-            return { planningAnchorPortalId: portalId };
+            return { planningAnchorPortalId: portalId, planningPortalPath: [] };
         }
 
-        if (!state.planningAnchorPortalId || state.planningAnchorPortalId === portalId) {
-            return {
-                planningAnchorPortalId: state.planningAnchorPortalId === portalId ? null : portalId,
-            };
-        }
-
-        const fromPortalId = state.planningAnchorPortalId;
-        const toPortalId = portalId;
-        const existing = state.plannedLinks.some((link) =>
-            (link.fromPortalId === fromPortalId && link.toPortalId === toPortalId) ||
-            (link.fromPortalId === toPortalId && link.toPortalId === fromPortalId)
-        );
-
-        if (existing) {
-            return { planningAnchorPortalId: toPortalId };
+        const lastPortalId = state.planningPortalPath[state.planningPortalPath.length - 1] ?? null;
+        if (lastPortalId === portalId) {
+            return state;
         }
 
         return {
-            planningAnchorPortalId: toPortalId,
-            plannedLinks: [
-                ...state.plannedLinks,
-                {
-                    id: `planned-link:${fromPortalId}:${toPortalId}:${Date.now()}`,
-                    fromPortalId,
-                    toPortalId,
-                    createdAt: Date.now(),
-                },
-            ],
+            planningAnchorPortalId: portalId,
+            planningPortalPath: [...state.planningPortalPath, portalId],
         };
     }),
+    createPlannedLink: () => set((state) => {
+        if (state.planningPortalPath.length < 2) {
+            return state;
+        }
+
+        const createdAt = Date.now();
+        const plannedLinks = [...state.plannedLinks];
+
+        for (let index = 0; index < state.planningPortalPath.length - 1; index += 1) {
+            const fromPortalId = state.planningPortalPath[index];
+            const toPortalId = state.planningPortalPath[index + 1];
+            const existing = plannedLinks.some((link) =>
+                (link.fromPortalId === fromPortalId && link.toPortalId === toPortalId) ||
+                (link.fromPortalId === toPortalId && link.toPortalId === fromPortalId)
+            );
+
+            if (existing) {
+                continue;
+            }
+
+            plannedLinks.push({
+                id: `planned-link:${fromPortalId}:${toPortalId}:${createdAt}:${index}`,
+                fromPortalId,
+                toPortalId,
+                createdAt,
+            });
+        }
+
+        const lastPortalId = state.planningPortalPath[state.planningPortalPath.length - 1];
+
+        return {
+            planningAnchorPortalId: lastPortalId,
+            planningPortalPath: [lastPortalId],
+            plannedLinks,
+        };
+    }),
+    clearPlanningSelection: () => set(() => ({
+        planningAnchorPortalId: null,
+        planningPortalPath: [],
+    })),
     addPlannedMarker: (lat, lng, label, color = 'blue', portalId) => set((state) => {
         const createdAt = Date.now();
 
@@ -1123,6 +1150,7 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
         plannedLinks: [],
         plannedMarkers: [],
         planningAnchorPortalId: null,
+        planningPortalPath: [],
     })),
     setActiveCommTab: (tab) => set(() => ({ activeCommTab: tab })),
     setCommSendPending: () => set(() => ({

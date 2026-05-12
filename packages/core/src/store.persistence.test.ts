@@ -11,6 +11,7 @@ describe('store persistence', () => {
       planningMode: false,
       planningTool: 'links',
       planningAnchorPortalId: null,
+      planningPortalPath: [],
       plannedLinks: [],
       plannedMarkers: [],
     }));
@@ -42,6 +43,7 @@ describe('store persistence', () => {
       planningMode: true,
       planningTool: 'markers',
       planningAnchorPortalId: 'portal-a',
+      planningPortalPath: ['portal-a', 'portal-b'],
       plannedLinks,
       plannedMarkers,
     }));
@@ -53,6 +55,7 @@ describe('store persistence', () => {
         planningMode?: boolean;
         planningTool?: string;
         planningAnchorPortalId?: string | null;
+        planningPortalPath?: string[];
       };
     };
 
@@ -61,6 +64,40 @@ describe('store persistence', () => {
     expect(stored.state?.planningMode).toBeUndefined();
     expect(stored.state?.planningTool).toBeUndefined();
     expect(stored.state?.planningAnchorPortalId).toBeUndefined();
+    expect(stored.state?.planningPortalPath).toBeUndefined();
+  });
+
+  it('requires explicit confirmation before creating planned link paths', () => {
+    useStore.setState((state) => ({
+      ...state,
+      planningMode: true,
+      planningTool: 'links',
+      planningAnchorPortalId: null,
+      planningPortalPath: [],
+      plannedLinks: [],
+    }));
+
+    useStore.getState().selectPlanningPortal('portal-a');
+    useStore.getState().selectPlanningPortal('portal-b');
+    useStore.getState().selectPlanningPortal('portal-c');
+
+    expect(useStore.getState().planningAnchorPortalId).toBe('portal-c');
+    expect(useStore.getState().planningPortalPath).toEqual(['portal-a', 'portal-b', 'portal-c']);
+    expect(useStore.getState().plannedLinks).toHaveLength(0);
+
+    useStore.getState().createPlannedLink();
+
+    expect(useStore.getState().plannedLinks).toHaveLength(2);
+    expect(useStore.getState().plannedLinks[0]).toMatchObject({
+      fromPortalId: 'portal-a',
+      toPortalId: 'portal-b',
+    });
+    expect(useStore.getState().plannedLinks[1]).toMatchObject({
+      fromPortalId: 'portal-b',
+      toPortalId: 'portal-c',
+    });
+    expect(useStore.getState().planningAnchorPortalId).toBe('portal-c');
+    expect(useStore.getState().planningPortalPath).toEqual(['portal-c']);
   });
 
   it('does not create links while marker tool is active', () => {
@@ -69,6 +106,7 @@ describe('store persistence', () => {
       planningMode: true,
       planningTool: 'markers',
       planningAnchorPortalId: null,
+      planningPortalPath: [],
       plannedLinks: [],
     }));
 
@@ -76,6 +114,7 @@ describe('store persistence', () => {
     useStore.getState().selectPlanningPortal('portal-b');
 
     expect(useStore.getState().planningAnchorPortalId).toBe('portal-b');
+    expect(useStore.getState().planningPortalPath).toEqual([]);
     expect(useStore.getState().plannedLinks).toHaveLength(0);
   });
 });
