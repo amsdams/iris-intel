@@ -4,9 +4,9 @@ import { useStore } from '@iris/core';
 const PlannedLinksPlugin: IRISPlugin = {
   manifest: {
     id: 'planned-links',
-    name: 'Planned Links',
+    name: 'Draw Tools',
     version: '0.1.0',
-    description: 'Plan portal-to-portal links on the map before creating them in Intel.',
+    description: 'Plan links and mark portals on the map before acting in Intel.',
     author: 'IRIS Team',
     defaultEnabled: false,
     capabilities: ['planning', 'overlay'],

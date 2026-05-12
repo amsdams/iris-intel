@@ -9,6 +9,10 @@ export function MapTab({ onAction }: MapTabProps): JSX.Element {
     const planningMode = useStore((state) => state.planningMode);
     const planningTool = useStore((state) => state.planningTool);
     const plannedLinksEnabled = useStore((state) => state.pluginStates['planned-links'] ?? false);
+    const plannedShowLinks = useStore((state) => state.plannedShowLinks);
+    const plannedShowMarkers = useStore((state) => state.plannedShowMarkers);
+    const togglePlannedShowLinks = useStore((state) => state.togglePlannedShowLinks);
+    const togglePlannedShowMarkers = useStore((state) => state.togglePlannedShowMarkers);
 
     return (
         <Fragment>
@@ -28,6 +32,14 @@ export function MapTab({ onAction }: MapTabProps): JSX.Element {
                 </button>
                 {plannedLinksEnabled && (
                     <Fragment>
+                        <button className={`iris-drawer-btn ${plannedShowLinks ? 'iris-drawer-btn-active' : ''}`} onClick={togglePlannedShowLinks}>
+                            <div className="iris-drawer-btn-icon">〰</div>
+                            <div className="iris-drawer-btn-label">Vis Links</div>
+                        </button>
+                        <button className={`iris-drawer-btn ${plannedShowMarkers ? 'iris-drawer-btn-active' : ''}`} onClick={togglePlannedShowMarkers}>
+                            <div className="iris-drawer-btn-icon">◉</div>
+                            <div className="iris-drawer-btn-label">Vis Marks</div>
+                        </button>
                         <button className={`iris-drawer-btn ${planningMode && planningTool === 'links' ? 'iris-drawer-btn-active' : ''}`} onClick={() => onAction('planning-links')}>
                             <div className="iris-drawer-btn-icon">↔</div>
                             <div className="iris-drawer-btn-label">Links</div>

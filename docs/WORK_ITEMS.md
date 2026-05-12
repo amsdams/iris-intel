@@ -624,9 +624,10 @@ Tasks:
 
 | Task                                                                     | Status | Notes                                                                                   |
 |--------------------------------------------------------------------------|--------|-----------------------------------------------------------------------------------------|
-| Add a plugin entrypoint and toolbar/menu affordance                      | Done   | `planned-links` is now registered as a disabled-by-default plugin; Plan appears in the Map drawer only when the plugin is enabled |
+| Add a plugin entrypoint and toolbar/menu affordance                      | Done   | `planned-links` remains the stable plugin id, but the user-facing plugin is now named Draw Tools because it includes links and markers |
 | Add first mobile-safe planning toolbar                                   | Done   | Map drawer now exposes Plan mode and a compact cyan planning bar with anchor status, Done, Undo, and Clear |
 | Split link and marker drawing modes                                      | Done   | Map drawer exposes separate Links and Markers tools so marker portal taps no longer create unintended planned links |
+| Toggle planned drawing visibility by type                                | Done   | Map drawer exposes persisted Vis Links and Vis Marks toggles, including their hitbox layers |
 | Support planned link creation between portals                            | Done   | in Links mode, tapping portals builds a transient path preview and Add Link/Add Links saves adjacent dashed cyan planned links to avoid event yellow |
 | Require explicit confirmation for planned links                          | Done   | link planning now matches the INTEL-style source/destination flow and avoids creating accidental links while selecting portals |
 | Support multi-portal link path previews                                  | Done   | link planning uses an in-progress portal path array, so selecting A, B, C previews A-B and B-C before saving |

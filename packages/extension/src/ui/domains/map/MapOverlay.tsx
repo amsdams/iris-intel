@@ -383,6 +383,8 @@ export function MapOverlay(): JSX.Element {
   const planningPortalPath = useStore((state) => state.planningPortalPath);
   const selectedPlannedItemId = useStore((state) => state.selectedPlannedItemId);
   const plannedLinksEnabled = useStore((state) => state.pluginStates['planned-links'] ?? false);
+  const plannedShowLinks = useStore((state) => state.plannedShowLinks);
+  const plannedShowMarkers = useStore((state) => state.plannedShowMarkers);
   const selectedPortalId = useStore((state) => state.selectedPortalId);
   const selectedFieldId = useStore((state) => state.selectedFieldId);
   const selectedLinkId = useStore((state) => state.selectedLinkId);
@@ -698,6 +700,19 @@ export function MapOverlay(): JSX.Element {
       ) : [],
     });
   }, [plannedLinks, plannedMarkers, planningMode, planningTool, planningAnchorPortalId, planningPortalPath, selectedPlannedItemId, plannedLinksEnabled, styleLoaded]);
+
+  useEffect((): void => {
+    if (!map.current || !styleLoaded) return;
+    const linkVisibility = plannedLinksEnabled && plannedShowLinks ? 'visible' : 'none';
+    const markerVisibility = plannedLinksEnabled && plannedShowMarkers ? 'visible' : 'none';
+
+    setLayerVisibilityIfExists(map.current, 'planned-links', linkVisibility);
+    setLayerVisibilityIfExists(map.current, 'planned-link-hitbox', linkVisibility);
+    setLayerVisibilityIfExists(map.current, 'planned-crossings', linkVisibility);
+    setLayerVisibilityIfExists(map.current, 'planned-markers', markerVisibility);
+    setLayerVisibilityIfExists(map.current, 'planned-marker-hitbox', markerVisibility);
+    setLayerVisibilityIfExists(map.current, 'planned-anchor', plannedLinksEnabled && planningMode ? 'visible' : 'none');
+  }, [plannedLinksEnabled, plannedShowLinks, plannedShowMarkers, planningMode, styleLoaded]);
 
   useEffect((): undefined | (() => void) => {
     if (!map.current || !styleLoaded) return;
