@@ -1410,18 +1410,12 @@ export function MapOverlay(): JSX.Element {
     ): void => {
         if (!map.current) return;
         const state = useStore.getState();
-        const plannedFeature = map.current.queryRenderedFeatures(e.point, {
-            layers: ['planned-marker-hitbox', 'planned-link-hitbox', 'planned-markers', 'planned-links'],
-        }).find((feature) =>
-            feature.properties?.plannedItemType === 'marker' ||
-            feature.properties?.plannedItemType === 'link'
-        );
+        const plannedMarkerFeature = map.current.queryRenderedFeatures(e.point, {
+            layers: ['planned-marker-hitbox', 'planned-markers'],
+        }).find((feature) => feature.properties?.plannedItemType === 'marker');
 
-        if (plannedFeature?.properties?.id && plannedFeature.properties.plannedItemType) {
-            state.selectPlannedItem(
-                String(plannedFeature.properties.id),
-                plannedFeature.properties.plannedItemType === 'marker' ? 'marker' : 'link'
-            );
+        if (plannedMarkerFeature?.properties?.id) {
+            state.selectPlannedItem(String(plannedMarkerFeature.properties.id), 'marker');
             return;
         }
 
@@ -1441,10 +1435,24 @@ export function MapOverlay(): JSX.Element {
             portalThreshold,
         });
 
+        if (selection?.reason === 'portal') {
+            emitPortalClick(document, selection.portalId);
+            return;
+        }
+
+        const plannedFeature = map.current.queryRenderedFeatures(e.point, {
+            layers: ['planned-link-hitbox', 'planned-links'],
+        }).find((feature) =>
+            feature.properties?.plannedItemType === 'link'
+        );
+
+        if (plannedFeature?.properties?.id) {
+            state.selectPlannedItem(String(plannedFeature.properties.id), 'link');
+            return;
+        }
+
         if (selection) {
-            if (selection.reason === 'portal') {
-              emitPortalClick(document, selection.portalId);
-            } else if (selection.reason === 'field') {
+            if (selection.reason === 'field') {
               state.selectField(selection.fieldId);
             } else if (selection.reason === 'link') {
               state.selectLink(selection.linkId);
