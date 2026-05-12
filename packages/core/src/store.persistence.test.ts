@@ -117,4 +117,50 @@ describe('store persistence', () => {
     expect(useStore.getState().planningPortalPath).toEqual([]);
     expect(useStore.getState().plannedLinks).toHaveLength(0);
   });
+
+  it('scopes planned undo and clear actions to the active tool when requested', () => {
+    useStore.setState((state) => ({
+      ...state,
+      planningAnchorPortalId: 'portal-a',
+      planningPortalPath: ['portal-a', 'portal-b'],
+      plannedLinks: [
+        {
+          id: 'planned-link:portal-a:portal-b:1',
+          fromPortalId: 'portal-a',
+          toPortalId: 'portal-b',
+          createdAt: 1,
+        },
+        {
+          id: 'planned-link:portal-b:portal-c:3',
+          fromPortalId: 'portal-b',
+          toPortalId: 'portal-c',
+          createdAt: 3,
+        },
+      ],
+      plannedMarkers: [
+        {
+          id: 'planned-marker:2',
+          lat: 52.371094,
+          lng: 4.906375,
+          label: 'Marker 1',
+          color: 'blue',
+          portalId: 'portal-a',
+          createdAt: 2,
+        },
+      ],
+    }));
+
+    useStore.getState().undoPlannedItem('markers');
+
+    expect(useStore.getState().plannedLinks).toHaveLength(2);
+    expect(useStore.getState().plannedMarkers).toHaveLength(0);
+
+    useStore.getState().addPlannedMarker(52.371094, 4.906375, 'Marker 2', 'green', 'portal-b');
+    useStore.getState().clearPlannedLinks('links');
+
+    expect(useStore.getState().plannedLinks).toHaveLength(0);
+    expect(useStore.getState().plannedMarkers).toHaveLength(1);
+    expect(useStore.getState().planningAnchorPortalId).toBeNull();
+    expect(useStore.getState().planningPortalPath).toEqual([]);
+  });
 });

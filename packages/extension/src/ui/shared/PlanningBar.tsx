@@ -1,9 +1,11 @@
 import { h, JSX } from 'preact';
+import { useState } from 'preact/hooks';
 import { PlannedMarker, useStore } from '@iris/core';
 
 const MARKER_COLORS: PlannedMarker['color'][] = ['white', 'red', 'blue', 'green'];
 
 export function PlanningBar(): JSX.Element | null {
+    const [confirmClear, setConfirmClear] = useState(false);
     const planningMode = useStore((state) => state.planningMode);
     const planningTool = useStore((state) => state.planningTool);
     const planningAnchorPortalId = useStore((state) => state.planningAnchorPortalId);
@@ -25,8 +27,19 @@ export function PlanningBar(): JSX.Element | null {
     const anchor = planningAnchorPortalId ? portals[planningAnchorPortalId] : null;
     const pathPortalNames = planningPortalPath.map((portalId) => portals[portalId]?.name || 'Unknown portal');
     const linkCountToAdd = Math.max(0, planningPortalPath.length - 1);
-    const plannedItemCount = plannedLinks.length + plannedMarkers.length;
     const isMarkerTool = planningTool === 'markers';
+    const activePlannedItemCount = isMarkerTool ? plannedMarkers.length : plannedLinks.length;
+    const clearDisabled = activePlannedItemCount === 0 && !planningAnchorPortalId && planningPortalPath.length === 0;
+    const clearTitle = isMarkerTool ? 'Clear all planned markers' : 'Clear all planned links';
+    const handleClear = (): void => {
+        if (confirmClear) {
+            clearPlannedLinks(planningTool);
+            setConfirmClear(false);
+            return;
+        }
+
+        setConfirmClear(true);
+    };
 
     return (
         <div className="iris-planning-bar">
@@ -49,52 +62,73 @@ export function PlanningBar(): JSX.Element | null {
                 </span>
             </div>
             <div className="iris-planning-actions">
-                {isMarkerTool && (
-                    <div className="iris-planning-marker-group" aria-label="Add portal marker">
-                        {MARKER_COLORS.map((color) => (
-                            <button
-                                key={color}
-                                className={`iris-planning-marker-btn iris-planning-marker-${color}`}
-                                onClick={() => anchor && addPlannedMarker(anchor.lat, anchor.lng, anchor.name || undefined, color, anchor.id)}
-                                disabled={!anchor}
-                                title={`Add ${color} marker`}
-                            />
-                        ))}
-                    </div>
-                )}
-                {!isMarkerTool && (
+                <div className="iris-planning-action-row iris-planning-action-row-primary">
+                    {isMarkerTool && (
+                        <div className="iris-planning-marker-group" aria-label="Add portal marker">
+                            {MARKER_COLORS.map((color) => (
+                                <button
+                                    key={color}
+                                    className={`iris-planning-marker-btn iris-planning-marker-${color}`}
+                                    onClick={() => {
+                                        if (!anchor) return;
+                                        addPlannedMarker(anchor.lat, anchor.lng, anchor.name || undefined, color, anchor.id);
+                                        setConfirmClear(false);
+                                    }}
+                                    disabled={!anchor}
+                                    title={`Add ${color} marker`}
+                                />
+                            ))}
+                        </div>
+                    )}
+                    {!isMarkerTool && (
+                        <button
+                            className="iris-planning-btn iris-planning-btn-primary"
+                            onClick={() => {
+                                createPlannedLink();
+                                setConfirmClear(false);
+                            }}
+                            disabled={linkCountToAdd === 0}
+                        >
+                            {linkCountToAdd > 1 ? 'Add Links' : 'Add Link'}
+                        </button>
+                    )}
+                    <button className="iris-planning-btn" onClick={() => {
+                        setPlanningMode(false);
+                        setConfirmClear(false);
+                    }}>
+                        Close
+                    </button>
+                </div>
+                <div className="iris-planning-action-row iris-planning-action-row-secondary">
                     <button
                         className="iris-planning-btn"
-                        onClick={createPlannedLink}
-                        disabled={linkCountToAdd === 0}
+                        onClick={() => {
+                            clearPlanningSelection();
+                            setConfirmClear(false);
+                        }}
+                        disabled={!planningAnchorPortalId && planningPortalPath.length === 0}
                     >
-                        {linkCountToAdd > 1 ? 'Add Links' : 'Add Link'}
+                        Reset
                     </button>
-                )}
-                <button
-                    className="iris-planning-btn"
-                    onClick={clearPlanningSelection}
-                    disabled={!planningAnchorPortalId && planningPortalPath.length === 0}
-                >
-                    Reset
-                </button>
-                <button
-                    className="iris-planning-btn"
-                    onClick={undoPlannedItem}
-                    disabled={plannedItemCount === 0}
-                >
-                    Undo
-                </button>
-                <button
-                    className="iris-planning-btn"
-                    onClick={clearPlannedLinks}
-                    disabled={plannedItemCount === 0 && !planningAnchorPortalId && planningPortalPath.length === 0}
-                >
-                    Clear
-                </button>
-                <button className="iris-planning-btn iris-planning-btn-primary" onClick={() => setPlanningMode(false)}>
-                    Done
-                </button>
+                    <button
+                        className="iris-planning-btn"
+                        onClick={() => {
+                            undoPlannedItem(planningTool);
+                            setConfirmClear(false);
+                        }}
+                        disabled={activePlannedItemCount === 0}
+                    >
+                        Undo
+                    </button>
+                    <button
+                        className={`iris-planning-btn ${confirmClear ? 'iris-planning-btn-danger' : ''}`}
+                        onClick={handleClear}
+                        disabled={clearDisabled}
+                        title={confirmClear ? `Click again to ${clearTitle.toLowerCase()}` : clearTitle}
+                    >
+                        {confirmClear ? 'Confirm' : 'Clear'}
+                    </button>
+                </div>
             </div>
         </div>
     );

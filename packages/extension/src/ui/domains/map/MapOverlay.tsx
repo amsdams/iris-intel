@@ -372,6 +372,8 @@ export function MapOverlay(): JSX.Element {
   const plannedLinks = useStore((state) => state.plannedLinks);
   const plannedMarkers = useStore((state) => state.plannedMarkers);
   const planningMode = useStore((state) => state.planningMode);
+  const planningTool = useStore((state) => state.planningTool);
+  const planningAnchorPortalId = useStore((state) => state.planningAnchorPortalId);
   const planningPortalPath = useStore((state) => state.planningPortalPath);
   const plannedLinksEnabled = useStore((state) => state.pluginStates['planned-links'] ?? false);
   const selectedPortalId = useStore((state) => state.selectedPortalId);
@@ -674,6 +676,9 @@ export function MapOverlay(): JSX.Element {
   useEffect((): void => {
     if (!map.current || !styleLoaded) return;
     const state = useStore.getState();
+    const activePlanningPath = planningMode && planningTool === 'markers' && planningAnchorPortalId
+      ? [planningAnchorPortalId]
+      : planningMode ? planningPortalPath : [];
     getGeoJsonSource('planned-links')?.setData({
       type: 'FeatureCollection',
       features: plannedLinksEnabled ? buildPlannedLinkFeatures(
@@ -681,16 +686,19 @@ export function MapOverlay(): JSX.Element {
           plannedMarkers,
           state.portals,
           state.links,
-          planningMode ? planningPortalPath : []
+          activePlanningPath
       ) : [],
     });
-  }, [plannedLinks, plannedMarkers, planningMode, planningPortalPath, plannedLinksEnabled, styleLoaded]);
+  }, [plannedLinks, plannedMarkers, planningMode, planningTool, planningAnchorPortalId, planningPortalPath, plannedLinksEnabled, styleLoaded]);
 
   useEffect((): undefined | (() => void) => {
     if (!map.current || !styleLoaded) return;
 
     const syncPlannedLinks = (): void => {
       const state = useStore.getState();
+      const activePlanningPath = state.planningMode && state.planningTool === 'markers' && state.planningAnchorPortalId
+        ? [state.planningAnchorPortalId]
+        : state.planningMode ? state.planningPortalPath : [];
       getGeoJsonSource('planned-links')?.setData({
         type: 'FeatureCollection',
         features: (state.pluginStates['planned-links'] ?? false) ? buildPlannedLinkFeatures(
@@ -698,7 +706,7 @@ export function MapOverlay(): JSX.Element {
           state.plannedMarkers,
           state.portals,
           state.links,
-          state.planningMode ? state.planningPortalPath : []
+          activePlanningPath
         ) : [],
       });
     };

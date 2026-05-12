@@ -238,6 +238,12 @@
 .iris-planning-actions {
     flex: 0 0 auto;
     display: flex;
+    align-items: stretch;
+    gap: 6px;
+}
+
+.iris-planning-action-row {
+    display: flex;
     gap: 6px;
 }
 
@@ -302,23 +308,48 @@
     color: #000;
 }
 
+.iris-planning-btn-danger {
+    border-color: rgb(255 77 77 / 70%);
+    background: rgb(255 77 77 / 18%);
+    color: #ffd0d0;
+}
+
 @media (width <= 600px) {
     .iris-planning-bar {
+        width: min(420px, calc(100vw - 16px));
         bottom: 92px;
         align-items: stretch;
         flex-direction: column;
         gap: 8px;
+        padding: 8px;
     }
 
     .iris-planning-actions {
-        justify-content: space-between;
+        flex-direction: column;
+        justify-content: stretch;
+        gap: 6px;
+    }
+
+    .iris-planning-action-row {
+        display: flex;
+        justify-content: stretch;
+        gap: 6px;
+    }
+
+    .iris-planning-action-row-primary {
+        min-height: 30px;
     }
 
     .iris-planning-marker-group {
-        justify-content: space-between;
+        flex: 1 1 auto;
+        justify-content: center;
+        gap: 10px;
     }
 
     .iris-planning-btn {
-        flex: 1;
+        flex: 1 1 58px;
+        min-width: 0;
+        padding: 0 6px;
+        font-size: 9px;
     }
 }

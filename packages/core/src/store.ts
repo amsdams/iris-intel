@@ -512,8 +512,8 @@ interface UISlice {
     createPlannedLink: () => void;
     clearPlanningSelection: () => void;
     addPlannedMarker: (lat: number, lng: number, label?: string, color?: PlannedMarker['color'], portalId?: string) => void;
-    undoPlannedItem: () => void;
-    clearPlannedLinks: () => void;
+    undoPlannedItem: (tool?: PlanningTool) => void;
+    clearPlannedLinks: (tool?: PlanningTool) => void;
     setActiveCommTab: (tab: string) => void;
     setCommSendPending: () => void;
     setCommSendSuccess: () => void;
@@ -1132,7 +1132,15 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
             ],
         };
     }),
-    undoPlannedItem: () => set((state) => {
+    undoPlannedItem: (tool) => set((state) => {
+        if (tool === 'links') {
+            return { plannedLinks: state.plannedLinks.slice(0, -1) };
+        }
+
+        if (tool === 'markers') {
+            return { plannedMarkers: state.plannedMarkers.slice(0, -1) };
+        }
+
         const latestLink = state.plannedLinks[state.plannedLinks.length - 1] ?? null;
         const latestMarker = state.plannedMarkers[state.plannedMarkers.length - 1] ?? null;
 
@@ -1146,12 +1154,30 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
 
         return { plannedMarkers: state.plannedMarkers.slice(0, -1) };
     }),
-    clearPlannedLinks: () => set(() => ({
-        plannedLinks: [],
-        plannedMarkers: [],
-        planningAnchorPortalId: null,
-        planningPortalPath: [],
-    })),
+    clearPlannedLinks: (tool) => set((state) => {
+        if (tool === 'links') {
+            return {
+                plannedLinks: [],
+                planningAnchorPortalId: null,
+                planningPortalPath: [],
+            };
+        }
+
+        if (tool === 'markers') {
+            return {
+                plannedMarkers: [],
+                planningAnchorPortalId: null,
+                planningPortalPath: [],
+            };
+        }
+
+        return {
+            plannedLinks: [],
+            plannedMarkers: [],
+            planningAnchorPortalId: null,
+            planningPortalPath: [],
+        };
+    }),
     setActiveCommTab: (tab) => set(() => ({ activeCommTab: tab })),
     setCommSendPending: () => set(() => ({
         commSendStatus: 'sending',

@@ -630,8 +630,11 @@ Tasks:
 | Support planned link creation between portals                            | Done   | in Links mode, tapping portals builds a transient path preview and Add Link/Add Links saves adjacent dashed cyan planned links to avoid event yellow |
 | Require explicit confirmation for planned links                          | Done   | link planning now matches the INTEL-style source/destination flow and avoids creating accidental links while selecting portals |
 | Support multi-portal link path previews                                  | Done   | link planning uses an in-progress portal path array, so selecting A, B, C previews A-B and B-C before saving |
+| Make destructive planning actions more deliberate                        | Done   | Clear now requires a second confirmation tap and only clears the active Links or Markers mode |
+| Scope planning undo to the active drawing mode                           | Done   | Undo in Links mode removes the last planned link, while Undo in Markers mode removes the last planned marker |
+| Show selected portal feedback in marker mode                             | Done   | Marker mode reuses the planning highlight ring so the currently selected marker target is visible on the map |
 | Align planning portal taps with normal portal selection                  | Done   | planned links now route through the same `iris:portal:click` bridge as portal info, then branch by planning mode |
-| Support baseline planned-link removal                                    | Done   | baseline supports Undo last planned link and Clear all planned links from the planning bar                  |
+| Support baseline planned-link removal                                    | Done   | baseline supports mode-scoped Undo and Clear from the planning bar                  |
 | Persist planned links locally                                            | Done   | saved planned links now survive refresh via `iris-settings`; in-progress planning mode and anchor stay transient |
 | Show crossing links against a hypothetical link                          | Done   | planned links now mark currently loaded crossing Intel links with red dashed overlays, excluding shared-endpoint links |
 | Improve mobile portal selection for planning                             | In Progress | planning mode now uses a larger portal hit radius for mouse/device-toolbar clicks and touch taps; still needs real mobile verification |
