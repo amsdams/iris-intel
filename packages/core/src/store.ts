@@ -99,6 +99,7 @@ export interface PlannedMarker {
 }
 
 export type PlanningTool = 'links' | 'markers';
+export type PlannedItemType = 'link' | 'marker';
 
 export interface Field {
     id: string;
@@ -478,6 +479,8 @@ interface UISlice {
     planningTool: PlanningTool;
     planningAnchorPortalId: string | null;
     planningPortalPath: string[];
+    selectedPlannedItemId: string | null;
+    selectedPlannedItemType: PlannedItemType | null;
     plannedLinks: PlannedLink[];
     plannedMarkers: PlannedMarker[];
     activeCommTab: string;
@@ -512,6 +515,8 @@ interface UISlice {
     createPlannedLink: () => void;
     clearPlanningSelection: () => void;
     addPlannedMarker: (lat: number, lng: number, label?: string, color?: PlannedMarker['color'], portalId?: string) => void;
+    selectPlannedItem: (id: string | null, type?: PlannedItemType | null) => void;
+    deleteSelectedPlannedItem: () => void;
     undoPlannedItem: (tool?: PlanningTool) => void;
     clearPlannedLinks: (tool?: PlanningTool) => void;
     setActiveCommTab: (tab: string) => void;
@@ -928,6 +933,8 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
     planningTool: 'links',
     planningAnchorPortalId: null,
     planningPortalPath: [],
+    selectedPlannedItemId: null,
+    selectedPlannedItemType: null,
     plannedLinks: [],
     plannedMarkers: [],
     activeCommTab: 'ALL',
@@ -1043,17 +1050,23 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
         planningMode: !state.planningMode,
         planningAnchorPortalId: null,
         planningPortalPath: [],
+        selectedPlannedItemId: null,
+        selectedPlannedItemType: null,
     })),
     setPlanningMode: (enabled) => set(() => ({
         planningMode: enabled,
         planningAnchorPortalId: null,
         planningPortalPath: [],
+        selectedPlannedItemId: null,
+        selectedPlannedItemType: null,
     })),
     setPlanningTool: (tool) => set(() => ({
         planningMode: true,
         planningTool: tool,
         planningAnchorPortalId: null,
         planningPortalPath: [],
+        selectedPlannedItemId: null,
+        selectedPlannedItemType: null,
     })),
     selectPlanningPortal: (portalId) => set((state) => {
         if (!state.planningMode) {
@@ -1113,13 +1126,15 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
     clearPlanningSelection: () => set(() => ({
         planningAnchorPortalId: null,
         planningPortalPath: [],
+        selectedPlannedItemId: null,
+        selectedPlannedItemType: null,
     })),
     addPlannedMarker: (lat, lng, label, color = 'blue', portalId) => set((state) => {
         const createdAt = Date.now();
 
-        return {
-            plannedMarkers: [
-                ...state.plannedMarkers,
+            return {
+                plannedMarkers: [
+                    ...state.plannedMarkers,
                 {
                     id: `planned-marker:${createdAt}`,
                     lat,
@@ -1132,13 +1147,52 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
             ],
         };
     }),
+    selectPlannedItem: (id, type = null) => set((state) => {
+        if (!id || !type) {
+            return {
+                selectedPlannedItemId: null,
+                selectedPlannedItemType: null,
+            };
+        }
+
+        if (state.selectedPlannedItemId === id && state.selectedPlannedItemType === type) {
+            return {
+                selectedPlannedItemId: null,
+                selectedPlannedItemType: null,
+            };
+        }
+
+        return {
+            selectedPlannedItemId: id,
+            selectedPlannedItemType: type,
+        };
+    }),
+    deleteSelectedPlannedItem: () => set((state) => {
+        if (!state.selectedPlannedItemId || !state.selectedPlannedItemType) {
+            return state;
+        }
+
+        if (state.selectedPlannedItemType === 'link') {
+            return {
+                plannedLinks: state.plannedLinks.filter((link) => link.id !== state.selectedPlannedItemId),
+                selectedPlannedItemId: null,
+                selectedPlannedItemType: null,
+            };
+        }
+
+        return {
+            plannedMarkers: state.plannedMarkers.filter((marker) => marker.id !== state.selectedPlannedItemId),
+            selectedPlannedItemId: null,
+            selectedPlannedItemType: null,
+        };
+    }),
     undoPlannedItem: (tool) => set((state) => {
         if (tool === 'links') {
-            return { plannedLinks: state.plannedLinks.slice(0, -1) };
+            return { plannedLinks: state.plannedLinks.slice(0, -1), selectedPlannedItemId: null, selectedPlannedItemType: null };
         }
 
         if (tool === 'markers') {
-            return { plannedMarkers: state.plannedMarkers.slice(0, -1) };
+            return { plannedMarkers: state.plannedMarkers.slice(0, -1), selectedPlannedItemId: null, selectedPlannedItemType: null };
         }
 
         const latestLink = state.plannedLinks[state.plannedLinks.length - 1] ?? null;
@@ -1149,10 +1203,10 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
         }
 
         if (latestLink && (!latestMarker || latestLink.createdAt >= latestMarker.createdAt)) {
-            return { plannedLinks: state.plannedLinks.slice(0, -1) };
+            return { plannedLinks: state.plannedLinks.slice(0, -1), selectedPlannedItemId: null, selectedPlannedItemType: null };
         }
 
-        return { plannedMarkers: state.plannedMarkers.slice(0, -1) };
+        return { plannedMarkers: state.plannedMarkers.slice(0, -1), selectedPlannedItemId: null, selectedPlannedItemType: null };
     }),
     clearPlannedLinks: (tool) => set((state) => {
         if (tool === 'links') {
@@ -1160,6 +1214,8 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
                 plannedLinks: [],
                 planningAnchorPortalId: null,
                 planningPortalPath: [],
+                selectedPlannedItemId: null,
+                selectedPlannedItemType: null,
             };
         }
 
@@ -1168,6 +1224,8 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
                 plannedMarkers: [],
                 planningAnchorPortalId: null,
                 planningPortalPath: [],
+                selectedPlannedItemId: null,
+                selectedPlannedItemType: null,
             };
         }
 
@@ -1176,6 +1234,8 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
             plannedMarkers: [],
             planningAnchorPortalId: null,
             planningPortalPath: [],
+            selectedPlannedItemId: null,
+            selectedPlannedItemType: null,
         };
     }),
     setActiveCommTab: (tab) => set(() => ({ activeCommTab: tab })),

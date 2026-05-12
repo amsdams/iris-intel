@@ -640,7 +640,8 @@ Tasks:
 | Improve mobile portal selection for planning                             | In Progress | planning mode now uses a larger portal hit radius for mouse/device-toolbar clicks and touch taps; still needs real mobile verification |
 | Decide whether crosslink display should also compare against drawn links | Open   | `quick-draw-links` supports existing, drawn, or both                                    |
 | Support moving or copying links from one anchor portal to another        | Open   | useful for fast route/plan variants if interaction model stays understandable on mobile |
-| Support selecting and deleting individual planned items                  | Open   | Undo/Clear exists, but item-level removal/edit is still needed before plans become large |
+| Support selecting and deleting individual planned items                  | Done   | tapping a saved planned link or marker selects it, highlights it, and enables Delete in the planning bar |
+| Support editing individual planned items                                | Open   | marker color/label edits and link move/copy remain future work |
 
 ### Draw tools baseline supports non-link geometry carefully
 

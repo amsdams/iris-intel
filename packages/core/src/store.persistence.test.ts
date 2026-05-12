@@ -12,6 +12,8 @@ describe('store persistence', () => {
       planningTool: 'links',
       planningAnchorPortalId: null,
       planningPortalPath: [],
+      selectedPlannedItemId: null,
+      selectedPlannedItemType: null,
       plannedLinks: [],
       plannedMarkers: [],
     }));
@@ -44,6 +46,8 @@ describe('store persistence', () => {
       planningTool: 'markers',
       planningAnchorPortalId: 'portal-a',
       planningPortalPath: ['portal-a', 'portal-b'],
+      selectedPlannedItemId: 'planned-link:portal-a:portal-b:1',
+      selectedPlannedItemType: 'link',
       plannedLinks,
       plannedMarkers,
     }));
@@ -56,6 +60,8 @@ describe('store persistence', () => {
         planningTool?: string;
         planningAnchorPortalId?: string | null;
         planningPortalPath?: string[];
+        selectedPlannedItemId?: string | null;
+        selectedPlannedItemType?: string | null;
       };
     };
 
@@ -65,6 +71,8 @@ describe('store persistence', () => {
     expect(stored.state?.planningTool).toBeUndefined();
     expect(stored.state?.planningAnchorPortalId).toBeUndefined();
     expect(stored.state?.planningPortalPath).toBeUndefined();
+    expect(stored.state?.selectedPlannedItemId).toBeUndefined();
+    expect(stored.state?.selectedPlannedItemType).toBeUndefined();
   });
 
   it('requires explicit confirmation before creating planned link paths', () => {
@@ -162,5 +170,38 @@ describe('store persistence', () => {
     expect(useStore.getState().plannedMarkers).toHaveLength(1);
     expect(useStore.getState().planningAnchorPortalId).toBeNull();
     expect(useStore.getState().planningPortalPath).toEqual([]);
+  });
+
+  it('selects and deletes individual planned items', () => {
+    useStore.setState((state) => ({
+      ...state,
+      plannedLinks: [
+        {
+          id: 'planned-link:portal-a:portal-b:1',
+          fromPortalId: 'portal-a',
+          toPortalId: 'portal-b',
+          createdAt: 1,
+        },
+      ],
+      plannedMarkers: [
+        {
+          id: 'planned-marker:2',
+          lat: 52.371094,
+          lng: 4.906375,
+          label: 'Marker 1',
+          color: 'blue',
+          portalId: 'portal-a',
+          createdAt: 2,
+        },
+      ],
+    }));
+
+    useStore.getState().selectPlannedItem('planned-link:portal-a:portal-b:1', 'link');
+    useStore.getState().deleteSelectedPlannedItem();
+
+    expect(useStore.getState().plannedLinks).toHaveLength(0);
+    expect(useStore.getState().plannedMarkers).toHaveLength(1);
+    expect(useStore.getState().selectedPlannedItemId).toBeNull();
+    expect(useStore.getState().selectedPlannedItemType).toBeNull();
   });
 });

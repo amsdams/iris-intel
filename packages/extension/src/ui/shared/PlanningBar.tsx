@@ -10,6 +10,8 @@ export function PlanningBar(): JSX.Element | null {
     const planningTool = useStore((state) => state.planningTool);
     const planningAnchorPortalId = useStore((state) => state.planningAnchorPortalId);
     const planningPortalPath = useStore((state) => state.planningPortalPath);
+    const selectedPlannedItemId = useStore((state) => state.selectedPlannedItemId);
+    const selectedPlannedItemType = useStore((state) => state.selectedPlannedItemType);
     const plannedLinks = useStore((state) => state.plannedLinks);
     const plannedMarkers = useStore((state) => state.plannedMarkers);
     const portals = useStore((state) => state.portals);
@@ -18,6 +20,8 @@ export function PlanningBar(): JSX.Element | null {
     const createPlannedLink = useStore((state) => state.createPlannedLink);
     const undoPlannedItem = useStore((state) => state.undoPlannedItem);
     const clearPlanningSelection = useStore((state) => state.clearPlanningSelection);
+    const selectPlannedItem = useStore((state) => state.selectPlannedItem);
+    const deleteSelectedPlannedItem = useStore((state) => state.deleteSelectedPlannedItem);
     const clearPlannedLinks = useStore((state) => state.clearPlannedLinks);
 
     if (!planningMode) {
@@ -29,6 +33,7 @@ export function PlanningBar(): JSX.Element | null {
     const linkCountToAdd = Math.max(0, planningPortalPath.length - 1);
     const isMarkerTool = planningTool === 'markers';
     const activePlannedItemCount = isMarkerTool ? plannedMarkers.length : plannedLinks.length;
+    const selectedLabel = selectedPlannedItemType === 'link' ? 'Selected link' : selectedPlannedItemType === 'marker' ? 'Selected marker' : null;
     const clearDisabled = activePlannedItemCount === 0 && !planningAnchorPortalId && planningPortalPath.length === 0;
     const clearTitle = isMarkerTool ? 'Clear all planned markers' : 'Clear all planned links';
     const handleClear = (): void => {
@@ -53,9 +58,9 @@ export function PlanningBar(): JSX.Element | null {
                             : 'Tap a portal to set source'}
                 </span>
                 <span className="iris-planning-status iris-planning-status-secondary">
-                    {isMarkerTool
+                    {selectedLabel ?? (isMarkerTool
                         ? (anchor ? 'Choose a marker color for this portal' : 'Tap a portal before adding a marker')
-                        : linkCountToAdd > 0 ? `Preview shown. Add ${linkCountToAdd === 1 ? 'Link' : 'Links'} to save.` : 'Tap portals to preview links'}
+                        : linkCountToAdd > 0 ? `Preview shown. Add ${linkCountToAdd === 1 ? 'Link' : 'Links'} to save.` : 'Tap portals to preview links')}
                 </span>
                 <span className="iris-planning-count">
                     {plannedLinks.length} links · {plannedMarkers.length} markers
@@ -104,11 +109,22 @@ export function PlanningBar(): JSX.Element | null {
                         className="iris-planning-btn"
                         onClick={() => {
                             clearPlanningSelection();
+                            selectPlannedItem(null);
                             setConfirmClear(false);
                         }}
                         disabled={!planningAnchorPortalId && planningPortalPath.length === 0}
                     >
                         Reset
+                    </button>
+                    <button
+                        className="iris-planning-btn"
+                        onClick={() => {
+                            deleteSelectedPlannedItem();
+                            setConfirmClear(false);
+                        }}
+                        disabled={!selectedPlannedItemId}
+                    >
+                        Delete
                     </button>
                     <button
                         className="iris-planning-btn"

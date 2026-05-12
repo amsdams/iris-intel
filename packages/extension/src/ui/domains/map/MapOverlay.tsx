@@ -183,7 +183,8 @@ function buildPlannedLinkFeatures(
   plannedMarkers: PlannedMarker[],
   portals: Record<string, Portal>,
   links: Record<string, Link>,
-  planningPortalPath: string[]
+  planningPortalPath: string[],
+  selectedPlannedItemId: string | null
 ): GeoJSON.Feature[] {
   const features: GeoJSON.Feature[] = [];
   const loadedLinks = Object.values(links);
@@ -207,6 +208,9 @@ function buildPlannedLinkFeatures(
         },
         properties: {
           id: plannedLink.id,
+          plannedType: 'link',
+          plannedItemType: 'link',
+          selected: selectedPlannedItemId === plannedLink.id,
           color: PLANNED_LINK_COLOR,
           opacity: 0.92,
         },
@@ -314,6 +318,8 @@ function buildPlannedLinkFeatures(
         label: plannedMarker.label,
         portalId: plannedMarker.portalId,
         plannedType: 'marker',
+        plannedItemType: 'marker',
+        selected: selectedPlannedItemId === plannedMarker.id,
         color: PLANNED_MARKER_COLORS[plannedMarker.color] ?? PLANNED_MARKER_COLORS.blue,
         opacity: 0.95,
       },
@@ -375,6 +381,7 @@ export function MapOverlay(): JSX.Element {
   const planningTool = useStore((state) => state.planningTool);
   const planningAnchorPortalId = useStore((state) => state.planningAnchorPortalId);
   const planningPortalPath = useStore((state) => state.planningPortalPath);
+  const selectedPlannedItemId = useStore((state) => state.selectedPlannedItemId);
   const plannedLinksEnabled = useStore((state) => state.pluginStates['planned-links'] ?? false);
   const selectedPortalId = useStore((state) => state.selectedPortalId);
   const selectedFieldId = useStore((state) => state.selectedFieldId);
@@ -686,10 +693,11 @@ export function MapOverlay(): JSX.Element {
           plannedMarkers,
           state.portals,
           state.links,
-          activePlanningPath
+          activePlanningPath,
+          selectedPlannedItemId
       ) : [],
     });
-  }, [plannedLinks, plannedMarkers, planningMode, planningTool, planningAnchorPortalId, planningPortalPath, plannedLinksEnabled, styleLoaded]);
+  }, [plannedLinks, plannedMarkers, planningMode, planningTool, planningAnchorPortalId, planningPortalPath, selectedPlannedItemId, plannedLinksEnabled, styleLoaded]);
 
   useEffect((): undefined | (() => void) => {
     if (!map.current || !styleLoaded) return;
@@ -706,7 +714,8 @@ export function MapOverlay(): JSX.Element {
           state.plannedMarkers,
           state.portals,
           state.links,
-          activePlanningPath
+          activePlanningPath,
+          state.selectedPlannedItemId
         ) : [],
       });
     };
@@ -1105,7 +1114,7 @@ export function MapOverlay(): JSX.Element {
             source: 'planned-links',
             filter: ['all', ['==', '$type', 'LineString'], ['!=', 'plannedType', 'crossing']],
             paint: {
-              'line-width': 3,
+              'line-width': ['case', ['==', ['get', 'selected'], true], 6, 3],
               'line-color': PLANNED_LINK_COLOR,
               'line-opacity': 0.92,
               'line-dasharray': [2, 2],
@@ -1279,9 +1288,35 @@ export function MapOverlay(): JSX.Element {
               ],
               'circle-color': ['coalesce', ['get', 'color'], PLANNED_LINK_COLOR],
               'circle-opacity': 0.9,
-              'circle-stroke-width': 2,
-              'circle-stroke-color': '#000',
-              'circle-stroke-opacity': 0.85,
+              'circle-stroke-width': ['case', ['==', ['get', 'selected'], true], 4, 2],
+              'circle-stroke-color': ['case', ['==', ['get', 'selected'], true], '#fff', '#000'],
+              'circle-stroke-opacity': ['case', ['==', ['get', 'selected'], true], 1, 0.85],
+            },
+          },
+          {
+            id: 'planned-link-hitbox',
+            type: 'line',
+            source: 'planned-links',
+            filter: ['all', ['==', '$type', 'LineString'], ['==', 'plannedItemType', 'link']],
+            paint: {
+              'line-width': 22,
+              'line-color': '#fff',
+              'line-opacity': 0,
+            },
+          },
+          {
+            id: 'planned-marker-hitbox',
+            type: 'circle',
+            source: 'planned-links',
+            filter: ['all', ['==', '$type', 'Point'], ['==', 'plannedItemType', 'marker']],
+            paint: {
+              'circle-radius': [
+                'interpolate', ['linear'], ['zoom'],
+                10, 14,
+                15, 20,
+              ],
+              'circle-color': '#fff',
+              'circle-opacity': 0,
             },
           },
           {
@@ -1375,6 +1410,21 @@ export function MapOverlay(): JSX.Element {
     ): void => {
         if (!map.current) return;
         const state = useStore.getState();
+        const plannedFeature = map.current.queryRenderedFeatures(e.point, {
+            layers: ['planned-marker-hitbox', 'planned-link-hitbox', 'planned-markers', 'planned-links'],
+        }).find((feature) =>
+            feature.properties?.plannedItemType === 'marker' ||
+            feature.properties?.plannedItemType === 'link'
+        );
+
+        if (plannedFeature?.properties?.id && plannedFeature.properties.plannedItemType) {
+            state.selectPlannedItem(
+                String(plannedFeature.properties.id),
+                plannedFeature.properties.plannedItemType === 'marker' ? 'marker' : 'link'
+            );
+            return;
+        }
+
         const portalThreshold = options.portalThreshold ?? (state.planningMode ? TOUCH_PORTAL_THRESHOLD_PX : undefined);
         const selection = resolveMapSelection({
             portals: state.portals,
