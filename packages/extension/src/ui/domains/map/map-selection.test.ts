@@ -1,7 +1,7 @@
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {resolveMapSelection} from './map-selection';
 import {globalSpatialIndex} from '@iris/core';
-import type {Portal} from '@iris/core';
+import type {PlannedLink, PlannedMarker, Portal} from '@iris/core';
 
 function makeProject(scale = 100): (lng: number, lat: number) => {x: number; y: number} {
   return (lng: number, lat: number) => ({
@@ -169,5 +169,99 @@ describe('resolveMapSelection', () => {
     });
 
     expect(result).toEqual({linkId, reason: 'link'});
+  });
+
+  it('prefers planned markers before portals', () => {
+    const portals = {
+      portal: makePortal('portal', 1, 1),
+    };
+    const plannedMarkers: PlannedMarker[] = [{
+      id: 'planned-marker:1',
+      lat: 1,
+      lng: 1,
+      label: 'Marker 1',
+      color: 'blue',
+      portalId: 'portal',
+      createdAt: 1,
+    }];
+
+    const result = resolveMapSelection({
+      portals,
+      fields: {},
+      links: {},
+      plannedMarkers,
+      point: {x: 100, y: 100},
+      lng: 1,
+      lat: 1,
+      zoom: 12,
+      project: makeProject(),
+    });
+
+    expect(result).toEqual({plannedMarkerId: 'planned-marker:1', reason: 'planned-marker'});
+  });
+
+  it('prefers portals before planned links', () => {
+    const portals = {
+      a: makePortal('a', 0, 0),
+      b: makePortal('b', 2, 0),
+    };
+    const plannedLinks: PlannedLink[] = [{
+      id: 'planned-link:a:b:1',
+      fromPortalId: 'a',
+      toPortalId: 'b',
+      createdAt: 1,
+    }];
+
+    const result = resolveMapSelection({
+      portals,
+      fields: {},
+      links: {},
+      plannedLinks,
+      point: {x: 0, y: 0},
+      lng: 0,
+      lat: 0,
+      zoom: 12,
+      project: makeProject(),
+    });
+
+    expect(result).toEqual({portalId: 'a', reason: 'portal'});
+  });
+
+  it('detects planned links before Intel links and fields', () => {
+    const portals = {
+      a: makePortal('a', 0, 0),
+      b: makePortal('b', 2, 0),
+    };
+    const plannedLinks: PlannedLink[] = [{
+      id: 'planned-link:a:b:1',
+      fromPortalId: 'a',
+      toPortalId: 'b',
+      createdAt: 1,
+    }];
+
+    const result = resolveMapSelection({
+      portals,
+      fields: {},
+      links: {
+        intel: {
+          id: 'intel',
+          team: 'E',
+          fromPortalId: 'a',
+          fromLat: 0,
+          fromLng: 0,
+          toPortalId: 'b',
+          toLat: 0,
+          toLng: 2,
+        },
+      },
+      plannedLinks,
+      point: {x: 100, y: 0},
+      lng: 1,
+      lat: 0,
+      zoom: 12,
+      project: makeProject(),
+    });
+
+    expect(result).toEqual({plannedLinkId: 'planned-link:a:b:1', reason: 'planned-link'});
   });
 });

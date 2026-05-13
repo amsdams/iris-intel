@@ -1,4 +1,4 @@
-import {EntityLogic, Field, globalSpatialIndex, Link, Portal} from '@iris/core';
+import {EntityLogic, Field, globalSpatialIndex, Link, PlannedLink, PlannedMarker, Portal} from '@iris/core';
 
 export interface MapPoint {
   x: number;
@@ -11,6 +11,8 @@ export interface MapSelectionContext {
   portals: Record<string, Portal>;
   fields: Record<string, Field>;
   links: Record<string, Link>;
+  plannedLinks?: PlannedLink[];
+  plannedMarkers?: PlannedMarker[];
   point: MapPoint;
   lng: number;
   lat: number;
@@ -18,6 +20,8 @@ export interface MapSelectionContext {
   project: MapProjector;
   portalThreshold?: number;
   linkThreshold?: number;
+  plannedLinkThreshold?: number;
+  plannedMarkerThreshold?: number;
   coordinateTolerance?: number;
   fastPathPortalCount?: number;
 }
@@ -25,7 +29,9 @@ export interface MapSelectionContext {
 export type MapSelectionResult = 
   | { portalId: string; reason: 'portal' }
   | { fieldId: string; reason: 'field' }
-  | { linkId: string; reason: 'link' };
+  | { linkId: string; reason: 'link' }
+  | { plannedLinkId: string; reason: 'planned-link' }
+  | { plannedMarkerId: string; reason: 'planned-marker' };
 
 function squaredDistance(a: MapPoint, b: MapPoint): number {
   const dx = a.x - b.x;
@@ -66,6 +72,8 @@ export function resolveMapSelection(context: MapSelectionContext): MapSelectionR
     portals,
     fields,
     links,
+    plannedLinks = [],
+    plannedMarkers = [],
     point,
     lng,
     lat,
@@ -73,6 +81,8 @@ export function resolveMapSelection(context: MapSelectionContext): MapSelectionR
     project,
     portalThreshold = 20,
     linkThreshold = 10,
+    plannedLinkThreshold = 22,
+    plannedMarkerThreshold = 20,
     coordinateTolerance = 0.01,
     fastPathPortalCount = 400,
   } = context;
@@ -98,6 +108,24 @@ export function resolveMapSelection(context: MapSelectionContext): MapSelectionR
     });
   }
 
+  let nearestPlannedMarker: PlannedMarker | null = null;
+  let nearestPlannedMarkerDistanceSq = plannedMarkerThreshold * plannedMarkerThreshold;
+
+  for (const marker of plannedMarkers) {
+    const projected = project(marker.lng, marker.lat);
+    if (!projected) continue;
+
+    const distance = squaredDistance(projected, point);
+    if (distance < nearestPlannedMarkerDistanceSq) {
+      nearestPlannedMarkerDistanceSq = distance;
+      nearestPlannedMarker = marker;
+    }
+  }
+
+  if (nearestPlannedMarker) {
+    return {plannedMarkerId: nearestPlannedMarker.id, reason: 'planned-marker'};
+  }
+
   let nearestPortal: Portal | null = null;
   let nearestPortalDistanceSq = portalThreshold * portalThreshold;
 
@@ -117,6 +145,29 @@ export function resolveMapSelection(context: MapSelectionContext): MapSelectionR
 
   if (nearestPortal) {
     return {portalId: nearestPortal.id, reason: 'portal'};
+  }
+
+  let nearestPlannedLink: PlannedLink | null = null;
+  let nearestPlannedLinkDistSq = plannedLinkThreshold * plannedLinkThreshold;
+
+  for (const plannedLink of plannedLinks) {
+    const from = portals[plannedLink.fromPortalId];
+    const to = portals[plannedLink.toPortalId];
+    if (!from || !to) continue;
+
+    const p1 = project(from.lng, from.lat);
+    const p2 = project(to.lng, to.lat);
+    if (!p1 || !p2) continue;
+
+    const distSq = distSqToSegment(point, p1, p2);
+    if (distSq < nearestPlannedLinkDistSq) {
+      nearestPlannedLinkDistSq = distSq;
+      nearestPlannedLink = plannedLink;
+    }
+  }
+
+  if (nearestPlannedLink) {
+    return {plannedLinkId: nearestPlannedLink.id, reason: 'planned-link'};
   }
 
   // If no portal hit, check links (higher priority than fields)

@@ -1425,20 +1425,13 @@ export function MapOverlay(): JSX.Element {
     ): void => {
         if (!map.current) return;
         const state = useStore.getState();
-        const plannedMarkerFeature = map.current.queryRenderedFeatures(e.point, {
-            layers: ['planned-marker-hitbox', 'planned-markers'],
-        }).find((feature) => feature.properties?.plannedItemType === 'marker');
-
-        if (plannedMarkerFeature?.properties?.id) {
-            state.selectPlannedItem(String(plannedMarkerFeature.properties.id), 'marker');
-            return;
-        }
-
         const portalThreshold = options.portalThreshold ?? (state.planningMode ? TOUCH_PORTAL_THRESHOLD_PX : undefined);
         const selection = resolveMapSelection({
             portals: state.portals,
             fields: state.fields,
             links: state.links,
+            plannedLinks: state.pluginStates['planned-links'] && state.plannedShowLinks ? state.plannedLinks : [],
+            plannedMarkers: state.pluginStates['planned-links'] && state.plannedShowMarkers ? state.plannedMarkers : [],
             point: e.point,
             lng: e.lngLat.lng,
             lat: e.lngLat.lat,
@@ -1450,30 +1443,27 @@ export function MapOverlay(): JSX.Element {
             portalThreshold,
         });
 
-        if (selection?.reason === 'portal') {
-            emitPortalClick(document, selection.portalId);
-            return;
-        }
-
-        const plannedFeature = map.current.queryRenderedFeatures(e.point, {
-            layers: ['planned-link-hitbox', 'planned-links'],
-        }).find((feature) =>
-            feature.properties?.plannedItemType === 'link'
-        );
-
-        if (plannedFeature?.properties?.id) {
-            state.selectPlannedItem(String(plannedFeature.properties.id), 'link');
-            return;
-        }
-
-        if (selection) {
-            if (selection.reason === 'field') {
-              state.selectField(selection.fieldId);
-            } else if (selection.reason === 'link') {
-              state.selectLink(selection.linkId);
-            }
-        } else {
+        if (!selection) {
             state.selectPortal(null);
+            return;
+        }
+
+        switch (selection.reason) {
+            case 'planned-marker':
+                state.selectPlannedItem(selection.plannedMarkerId, 'marker');
+                break;
+            case 'portal':
+                emitPortalClick(document, selection.portalId);
+                break;
+            case 'planned-link':
+                state.selectPlannedItem(selection.plannedLinkId, 'link');
+                break;
+            case 'field':
+                state.selectField(selection.fieldId);
+                break;
+            case 'link':
+                state.selectLink(selection.linkId);
+                break;
         }
     };
 
