@@ -32,7 +32,15 @@ export function DockDrawer({ tab, onClose, onAction, showMap }: DockDrawerProps)
         <div className="iris-dock-drawer">
             <div className="iris-drawer-header">
                 <h3 className="iris-drawer-title">{DRAWER_TITLES[tab]}</h3>
-                <button className="iris-drawer-close" onClick={onClose}>✕</button>
+                <button
+                    type="button"
+                    className="iris-drawer-close"
+                    onClick={onClose}
+                    aria-label="Close drawer"
+                    title="Close drawer"
+                >
+                    ✕
+                </button>
             </div>
             <div className="iris-drawer-content">
                 {tab === 'intel' && <AgentTab onAction={onAction} />}

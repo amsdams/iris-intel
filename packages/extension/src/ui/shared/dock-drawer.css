@@ -47,6 +47,13 @@
     opacity: 0.6;
 }
 
+.iris-drawer-close:hover,
+.iris-drawer-close:focus-visible {
+    color: var(--iris-accent);
+    opacity: 1;
+    outline: none;
+}
+
 .iris-drawer-content {
     flex: 1;
     overflow-y: auto;

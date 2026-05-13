@@ -778,6 +778,8 @@ Tasks:
 | Refactor COMM / Passcode Popups to pure CSS      | Done   | migrated to comm.css and passcodes.css                                                |
 | Refactor Inventory / Missions Popups to pure CSS | Done   | migrated to inventory.css and missions.css                                            |
 | Standardize common utility classes in base.css   | Done   | added flex, gap, margin, and text utilities                                           |
+| Standardize input and button styling             | Done   | introduced .iris-input and .iris-button in base.css                                   |
+| Generalize choice item styling                   | Done   | introduced .iris-choice-item for boxed interactive labels                             |
 | Generalize popup styling in base.css             | Done   | base `.iris-popup` handles standard padding and variables                             |
 | Unify popup width and centering                  | Done   | all major popups use `iris-popup-center iris-popup-medium`                            |
 | Fix inconsistent popup internal padding          | Done   | moved padding to .iris-popup-content; standardized internal spacing for major domains |
@@ -788,6 +790,7 @@ Tasks:
 | Decide mobile popup focus/minimize model         | Open   | evaluate one-primary-popup focus or minimized chips later if bottom sheets still stack too aggressively on small screens |
 | Tune mobile bottom-sheet height                  | Done   | mobile popup sheets now use a slightly taller 72dvh/640px cap after adding the shared sheet handle |
 | Add mobile bottom-sheet handle affordance        | Done   | shared `Popup` now renders a mobile-only sheet handle using the centralized popup shell and `base.css` |
+| Label shared close controls                      | Done   | popup and drawer close buttons now expose explicit labels/titles and consistent focus/hover styling |
 | Add primary-popup focus behavior on mobile       | Open   | consider closing other primary popups when opening stats/portal/link/field/player details while keeping COMM independent if useful |
 | Add portal popup action row                      | Open   | keep all details but make high-frequency actions such as Missions, copy/navigation, or map movement easier to reach near the top |
 | Review mobile back/escape close behavior         | Open   | consider closing the active bottom sheet before broader overlay state changes; treat as later UX work because it touches global interaction |
@@ -802,8 +805,6 @@ Notes:
 - fixed the same stale update pattern for plugin-rendered MapLibre visual fills; level/health fill overlays now update the `plugin-features` source immediately when visual overlay state changes
 - added a Tactical Drawer Clear All action that resets faction, level, health, and portal-history filters to their show-all defaults
 - tightened mobile drawer presentation by removing unused bottom padding, using safe-area padding, and switching drawer headers to explicit user-facing labels
-| Standardize input and button styling             | Done   | introduced .iris-input and .iris-button in base.css                                   |
-| Generalize choice item styling                   | Done   | introduced .iris-choice-item for boxed interactive labels                             |
 
 ### Semantic colors are shared instead of locally improvised
 

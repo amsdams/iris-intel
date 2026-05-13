@@ -194,6 +194,12 @@
     z-index: 1;
 }
 
+.iris-popup-close:hover,
+.iris-popup-close:focus-visible {
+    color: var(--iris-accent);
+    outline: none;
+}
+
 .iris-popup-sheet-handle {
     display: none;
 }
