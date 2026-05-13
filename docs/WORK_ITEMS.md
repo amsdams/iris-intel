@@ -406,6 +406,8 @@ Tasks:
 | Explicit State Naming Prefixing               | Done   | refactored store to use `layerShow`, `filterShow`, and `activeVisualOverlay` prefixes   |
 | Integrated Plugin Toggles                     | Done   | highlighters and player-tracker visibility integrated directly into drawer tabs         |
 | Active Overlay Persistence                    | Done   | `activeVisualOverlayIds` now survives hard refreshes via localStorage                   |
+| Use user-facing drawer titles                 | Done   | drawer headers now use explicit labels such as Agent, Map, Tactical, Layers, Visuals, and System instead of raw tab ids |
+| Tighten drawer height and spacing             | Done   | removed the old dock-reserved bottom padding and tightened drawer header/section spacing while keeping button targets unchanged |
 
 ### Faction and player styling is consistent
 
@@ -799,6 +801,7 @@ Notes:
 - fixed a stale viewport sync path where drawer layer toggles and portal history filters updated store state but did not rebuild MapLibre sources until the next pan/zoom
 - fixed the same stale update pattern for plugin-rendered MapLibre visual fills; level/health fill overlays now update the `plugin-features` source immediately when visual overlay state changes
 - added a Tactical Drawer Clear All action that resets faction, level, health, and portal-history filters to their show-all defaults
+- tightened mobile drawer presentation by removing unused bottom padding, using safe-area padding, and switching drawer headers to explicit user-facing labels
 | Standardize input and button styling             | Done   | introduced .iris-input and .iris-button in base.css                                   |
 | Generalize choice item styling                   | Done   | introduced .iris-choice-item for boxed interactive labels                             |
 

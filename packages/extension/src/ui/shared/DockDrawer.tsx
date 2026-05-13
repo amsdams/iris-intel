@@ -9,6 +9,15 @@ import { SystemTab } from './drawer/SystemTab';
 
 export type DrawerTab = 'intel' | 'nav' | 'tactical' | 'layers' | 'highlighters' | 'system' | null;
 
+const DRAWER_TITLES: Record<Exclude<DrawerTab, null>, string> = {
+    intel: 'Agent',
+    nav: 'Map',
+    tactical: 'Tactical',
+    layers: 'Layers',
+    highlighters: 'Visuals',
+    system: 'System',
+};
+
 interface DockDrawerProps {
     tab: DrawerTab;
     onClose: () => void;
@@ -22,7 +31,7 @@ export function DockDrawer({ tab, onClose, onAction, showMap }: DockDrawerProps)
     return (
         <div className="iris-dock-drawer">
             <div className="iris-drawer-header">
-                <h3 className="iris-drawer-title">{tab.toUpperCase()} CONTROL</h3>
+                <h3 className="iris-drawer-title">{DRAWER_TITLES[tab]}</h3>
                 <button className="iris-drawer-close" onClick={onClose}>✕</button>
             </div>
             <div className="iris-drawer-content">
