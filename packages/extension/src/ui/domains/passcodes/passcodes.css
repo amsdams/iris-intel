@@ -27,6 +27,14 @@
   color: var(--iris-error-color, #ff7a7a);
 }
 
+.iris-passcode-status-stale {
+  color: var(--iris-warning-color, #ffd166);
+}
+
+.iris-passcode-result-stale {
+  opacity: 0.55;
+}
+
 .iris-passcode-results {
   display: flex;
   flex-direction: column;

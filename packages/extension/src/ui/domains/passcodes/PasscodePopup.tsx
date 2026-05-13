@@ -11,6 +11,7 @@ interface PasscodePopupProps {
 
 export function PasscodePopup({ onClose }: PasscodePopupProps): JSX.Element {
   const [passcode, setPasscode] = useState('');
+  const [lastSubmittedPasscode, setLastSubmittedPasscode] = useState<string | null>(null);
   const themeId = useStore((state) => state.themeId);
   const theme = THEMES[themeId] || THEMES.INGRESS;
   const status = useStore((state) => state.passcodeRedeemStatus);
@@ -21,6 +22,7 @@ export function PasscodePopup({ onClose }: PasscodePopupProps): JSX.Element {
   const submit = (): void => {
     const trimmed = passcode.trim();
     if (!trimmed || status === 'sending') return;
+    setLastSubmittedPasscode(trimmed);
 
     window.postMessage({
       type: 'IRIS_PASSCODE_REDEEM_REQUEST',
@@ -32,6 +34,10 @@ export function PasscodePopup({ onClose }: PasscodePopupProps): JSX.Element {
     clearState();
     onClose();
   };
+
+  const trimmedPasscode = passcode.trim();
+  const hasResult = status === 'success' || status === 'error';
+  const resultIsStale = hasResult && lastSubmittedPasscode !== null && trimmedPasscode !== lastSubmittedPasscode;
 
   const isModReward = (name: string): boolean => {
     const normalized = name.toUpperCase();
@@ -109,18 +115,24 @@ export function PasscodePopup({ onClose }: PasscodePopupProps): JSX.Element {
           </button>
         </div>
 
+        {resultIsStale && (
+          <div className="iris-passcode-status iris-passcode-status-stale">
+            Result shown is for the previous passcode. Submit again to check the current input.
+          </div>
+        )}
+
         {status === 'sending' && (
           <div className="iris-passcode-status">Redeeming passcode...</div>
         )}
 
         {error && (
-          <div className="iris-passcode-status iris-passcode-status-error">
+          <div className={`iris-passcode-status iris-passcode-status-error ${resultIsStale ? 'iris-passcode-result-stale' : ''}`}>
             {error}
           </div>
         )}
 
         {rewards && (
-          <div className="iris-passcode-results">
+          <div className={`iris-passcode-results ${resultIsStale ? 'iris-passcode-result-stale' : ''}`}>
             <div className="iris-passcode-results-title">
               Passcode confirmed. Acquired items:
             </div>

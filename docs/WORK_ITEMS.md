@@ -323,6 +323,7 @@ Tasks:
 | Rename score labels              | Done   | `Global Scoreboard`, `Region Scores`    |
 | Rename menu utility labels       | Done   | `Passcodes`, `Map Style`, `Diagnostics` |
 | Clean up map mode toggle wording | Done   | `Use Intel Map` / `Use IRIS Map`        |
+| Add passcode result stale state  | Done   | passcode popup now marks previous success/error results stale when the input changes before the next submit |
 
 ### Search UX should explain current scope better
 
@@ -894,14 +895,13 @@ Tasks:
 
 ## Current Next Pickup
 
-1. **[Passcodes]** Add a "Stale" state to the passcode redemption UI for already-used codes.
-2. **[Draw Tools]** Refine mobile marker selection and decide whether marker taps should prefer edit/delete or portal selection in each mode.
-3. **[Draw Tools]** Add marker colour/label editing for selected planned markers.
-4. **[Performance]** Compare stationary vs moving field-render modes if mobile panning still needs tuning.
-5. **[Plugin Overlay]** Add IITC-style label overlap thinning.
-6. **[Plugin Overlay]** Implement a "Single Highlighter" selection model.
-7. **[Debug]** Add Portal GUIDs to Portal Details when the DEBUG theme is active.
-8. **[Dependencies]** Apply low-risk patch/minor npm dependency updates separately from major migrations.
+1. **[Draw Tools]** Refine mobile marker selection and decide whether marker taps should prefer edit/delete or portal selection in each mode.
+2. **[Draw Tools]** Add marker colour/label editing for selected planned markers.
+3. **[Performance]** Compare stationary vs moving field-render modes if mobile panning still needs tuning.
+4. **[Plugin Overlay]** Add IITC-style label overlap thinning.
+5. **[Plugin Overlay]** Implement a "Single Highlighter" selection model.
+6. **[Debug]** Add Portal GUIDs to Portal Details when the DEBUG theme is active.
+7. **[Dependencies]** Apply low-risk patch/minor npm dependency updates separately from major migrations.
 
 ## Snapshot And Reference Sources
 
