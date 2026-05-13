@@ -79,6 +79,7 @@ export function Popup({ onClose, title, children, style, className, contentClass
 
     return (
         <div ref={popupRef} style={finalStyle} className={`iris-popup ${noScroll ? 'iris-popup-no-scroll' : ''} ${className ?? ''}`}>
+            <div className="iris-popup-sheet-handle" aria-hidden="true" />
             <button onClick={onClose} className="iris-popup-close">✕</button>
 
             {/* Drag Handle: Title or a spacer if no title */}

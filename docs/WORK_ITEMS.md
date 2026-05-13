@@ -784,7 +784,7 @@ Tasks:
 | Close drawer after launching popup content       | Done   | drawer actions that open popups now dismiss the drawer so mobile bottom-sheet popups are immediately visible; map visibility toggle stays in place |
 | Decide mobile popup focus/minimize model         | Open   | evaluate one-primary-popup focus or minimized chips later if bottom sheets still stack too aggressively on small screens |
 | Tune mobile bottom-sheet height                  | Open   | evaluate 68dvh versus a slightly taller contextual sheet such as 72dvh if portal details still feel cramped |
-| Add mobile bottom-sheet handle affordance        | Open   | add a subtle visual handle at the top of mobile sheets so the presentation reads as an intentional bottom sheet |
+| Add mobile bottom-sheet handle affordance        | Done   | shared `Popup` now renders a mobile-only sheet handle using the centralized popup shell and `base.css` |
 | Add primary-popup focus behavior on mobile       | Open   | consider closing other primary popups when opening stats/portal/link/field/player details while keeping COMM independent if useful |
 | Add portal popup action row                      | Open   | keep all details but make high-frequency actions such as Missions, copy/navigation, or map movement easier to reach near the top |
 | Review mobile back/escape close behavior         | Open   | consider closing the active bottom sheet before broader overlay state changes; treat as later UX work because it touches global interaction |
