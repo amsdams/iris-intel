@@ -22,6 +22,7 @@ export interface MapSelectionContext {
   linkThreshold?: number;
   plannedLinkThreshold?: number;
   plannedMarkerThreshold?: number;
+  plannedMarkerPriority?: 'before-portals' | 'after-portals';
   coordinateTolerance?: number;
   fastPathPortalCount?: number;
 }
@@ -83,6 +84,7 @@ export function resolveMapSelection(context: MapSelectionContext): MapSelectionR
     linkThreshold = 10,
     plannedLinkThreshold = 22,
     plannedMarkerThreshold = 20,
+    plannedMarkerPriority = 'before-portals',
     coordinateTolerance = 0.01,
     fastPathPortalCount = 400,
   } = context;
@@ -122,7 +124,7 @@ export function resolveMapSelection(context: MapSelectionContext): MapSelectionR
     }
   }
 
-  if (nearestPlannedMarker) {
+  if (nearestPlannedMarker && plannedMarkerPriority === 'before-portals') {
     return {plannedMarkerId: nearestPlannedMarker.id, reason: 'planned-marker'};
   }
 
@@ -145,6 +147,10 @@ export function resolveMapSelection(context: MapSelectionContext): MapSelectionR
 
   if (nearestPortal) {
     return {portalId: nearestPortal.id, reason: 'portal'};
+  }
+
+  if (nearestPlannedMarker) {
+    return {plannedMarkerId: nearestPlannedMarker.id, reason: 'planned-marker'};
   }
 
   let nearestPlannedLink: PlannedLink | null = null;

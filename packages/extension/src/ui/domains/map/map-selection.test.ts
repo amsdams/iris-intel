@@ -200,6 +200,36 @@ describe('resolveMapSelection', () => {
     expect(result).toEqual({plannedMarkerId: 'planned-marker:1', reason: 'planned-marker'});
   });
 
+  it('can prefer portals before planned markers for link planning', () => {
+    const portals = {
+      portal: makePortal('portal', 1, 1),
+    };
+    const plannedMarkers: PlannedMarker[] = [{
+      id: 'planned-marker:1',
+      lat: 1,
+      lng: 1,
+      label: 'Marker 1',
+      color: 'blue',
+      portalId: 'portal',
+      createdAt: 1,
+    }];
+
+    const result = resolveMapSelection({
+      portals,
+      fields: {},
+      links: {},
+      plannedMarkers,
+      point: {x: 100, y: 100},
+      lng: 1,
+      lat: 1,
+      zoom: 12,
+      project: makeProject(),
+      plannedMarkerPriority: 'after-portals',
+    });
+
+    expect(result).toEqual({portalId: 'portal', reason: 'portal'});
+  });
+
   it('prefers portals before planned links', () => {
     const portals = {
       a: makePortal('a', 0, 0),

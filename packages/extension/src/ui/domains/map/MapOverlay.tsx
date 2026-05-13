@@ -1413,6 +1413,7 @@ export function MapOverlay(): JSX.Element {
                 return projected ? {x: projected.x, y: projected.y} : null;
             },
             portalThreshold,
+            plannedMarkerPriority: state.planningMode && state.planningTool === 'links' ? 'after-portals' : 'before-portals',
         });
 
         if (!selection) {
