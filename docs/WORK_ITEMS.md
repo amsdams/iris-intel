@@ -384,7 +384,7 @@ Tasks:
 | Task                                          | Status | Notes                                                                                   |
 |-----------------------------------------------|--------|-----------------------------------------------------------------------------------------|
 | Remove static Topbar                          | Done   | purges screen-top chrome entirely                                                       |
-| Implement Floating Action Button (FAB)        | Done   | moved Geolocate to bottom-right thumb zone; auto-adjusts height when drawers open       |
+| Implement Floating Action Button (FAB)        | Done   | moved Geolocate to a fixed top-left map action so it stays clear of the bottom dock, drawers, planning bar, and mobile sheets |
 | Move Location Search to Popup                 | Done   | accessible via Nav Dashboard; clean full-screen input experience                        |
 | Map interaction backdrop                      | Done   | tapping anywhere on the map backdrop instantly dismisses open drawers                   |
 

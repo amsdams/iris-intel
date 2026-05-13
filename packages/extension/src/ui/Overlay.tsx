@@ -209,7 +209,6 @@ export function IRISOverlay(): JSX.Element {
                 onClick={handleGeolocate} 
                 disabled={locating}
                 title="Navigate to Me"
-                style={{ bottom: activeDrawerTab ? '48vh' : '100px', transition: 'bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
             >
                 {locating ? '...' : '◎'}
             </button>
