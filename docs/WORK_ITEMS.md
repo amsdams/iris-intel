@@ -783,7 +783,7 @@ Tasks:
 | Tighten portal popup mobile density              | Done   | portal/link/field details keep all sections while using shorter images, tighter spacing, and two-column mod/resonator grids on mobile |
 | Close drawer after launching popup content       | Done   | drawer actions that open popups now dismiss the drawer so mobile bottom-sheet popups are immediately visible; map visibility toggle stays in place |
 | Decide mobile popup focus/minimize model         | Open   | evaluate one-primary-popup focus or minimized chips later if bottom sheets still stack too aggressively on small screens |
-| Tune mobile bottom-sheet height                  | Open   | evaluate 68dvh versus a slightly taller contextual sheet such as 72dvh if portal details still feel cramped |
+| Tune mobile bottom-sheet height                  | Done   | mobile popup sheets now use a slightly taller 72dvh/640px cap after adding the shared sheet handle |
 | Add mobile bottom-sheet handle affordance        | Done   | shared `Popup` now renders a mobile-only sheet handle using the centralized popup shell and `base.css` |
 | Add primary-popup focus behavior on mobile       | Open   | consider closing other primary popups when opening stats/portal/link/field/player details while keeping COMM independent if useful |
 | Add portal popup action row                      | Open   | keep all details but make high-frequency actions such as Missions, copy/navigation, or map movement easier to reach near the top |
@@ -797,6 +797,7 @@ Notes:
 
 - fixed a stale viewport sync path where drawer layer toggles and portal history filters updated store state but did not rebuild MapLibre sources until the next pan/zoom
 - fixed the same stale update pattern for plugin-rendered MapLibre visual fills; level/health fill overlays now update the `plugin-features` source immediately when visual overlay state changes
+- added a Tactical Drawer Clear All action that resets faction, level, health, and portal-history filters to their show-all defaults
 | Standardize input and button styling             | Done   | introduced .iris-input and .iris-button in base.css                                   |
 | Generalize choice item styling                   | Done   | introduced .iris-choice-item for boxed interactive labels                             |
 
@@ -893,16 +894,14 @@ Tasks:
 
 ## Current Next Pickup
 
-1. **[Performance]** Compare stationary vs moving field-render modes if mobile panning still needs tuning.
-2. **[Draw Tools]** Improve mobile portal selection for planned-link anchors, then add item-level select/delete.
-3. **[Popup UX]** Revisit portal/link/field popup content density against docs and IITC expectations.
-4. **[Plugin Overlay]** Add IITC-style label overlap thinning.
-5. **[Plugin Overlay]** Implement a "Single Highlighter" selection model.
-6. **[Ergonomics]** Evaluate "Swipe down to close" for the new Dock Drawer.
-7. **[Tactical]** Add a "Clear All Filters" button to the Tactical Drawer.
-8. **[Debug]** Add Portal GUIDs to Portal Details when the DEBUG theme is active.
-9. **[Player Tracker]** Add "Guess player level" based on highest resonator seen.
-10. **[Passcodes]** Add a "Stale" state to the passcode redemption UI for already-used codes.
+1. **[Passcodes]** Add a "Stale" state to the passcode redemption UI for already-used codes.
+2. **[Draw Tools]** Refine mobile marker selection and decide whether marker taps should prefer edit/delete or portal selection in each mode.
+3. **[Draw Tools]** Add marker colour/label editing for selected planned markers.
+4. **[Performance]** Compare stationary vs moving field-render modes if mobile panning still needs tuning.
+5. **[Plugin Overlay]** Add IITC-style label overlap thinning.
+6. **[Plugin Overlay]** Implement a "Single Highlighter" selection model.
+7. **[Debug]** Add Portal GUIDs to Portal Details when the DEBUG theme is active.
+8. **[Dependencies]** Apply low-risk patch/minor npm dependency updates separately from major migrations.
 
 ## Snapshot And Reference Sources
 

@@ -22,9 +22,18 @@ export function TacticalTab(): JSX.Element {
     const toggleFilterCaptured = useStore((state) => state.toggleFilterCaptured);
     const filterShowScanned = useStore((state) => state.filterShowScanned);
     const toggleFilterScanned = useStore((state) => state.toggleFilterScanned);
+    const resetTacticalFilters = useStore((state) => state.resetTacticalFilters);
 
     return (
         <Fragment>
+            <div className="iris-drawer-section-label">Filter Actions</div>
+            <div className="iris-drawer-grid">
+                <button className="iris-drawer-btn" onClick={resetTacticalFilters}>
+                    <div className="iris-drawer-btn-icon">↺</div>
+                    <div className="iris-drawer-btn-label">Clear All</div>
+                </button>
+            </div>
+
             <div className="iris-drawer-section-label">Faction Filters</div>
             <div className="iris-drawer-scroll-group">
                 <button className={`iris-drawer-btn ${filterShowEnlightened ? 'iris-drawer-btn-active' : ''}`} onClick={toggleFilterEnlightened}>

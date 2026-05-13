@@ -495,7 +495,7 @@
         width: auto !important;
         min-width: 0 !important;
         max-width: none !important;
-        max-height: min(68dvh, 620px);
+        max-height: min(72dvh, 640px);
         transform: none !important;
         border-radius: 10px 10px 8px 8px;
     }

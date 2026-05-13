@@ -427,6 +427,7 @@ interface SettingsSlice extends IRISSettings {
     toggleFilterVisited: () => void;
     toggleFilterCaptured: () => void;
     toggleFilterScanned: () => void;
+    resetTacticalFilters: () => void;
     toggleAllowRotation: () => void;
     toggleAllowPitch: () => void;
     toggleDebugLogging: () => void;
@@ -684,6 +685,17 @@ const createSettingsSlice: StateCreator<IRISState, [], [], SettingsSlice> = (set
         const next: HistoryFilterState = state.filterShowScanned === 'ALL' ? 'TRUE' : (state.filterShowScanned === 'TRUE' ? 'FALSE' : 'ALL');
         return { filterShowScanned: next };
     }),
+    resetTacticalFilters: () => set(() => ({
+        filterShowResistance: DEFAULT_SETTINGS.filterShowResistance,
+        filterShowEnlightened: DEFAULT_SETTINGS.filterShowEnlightened,
+        filterShowMachina: DEFAULT_SETTINGS.filterShowMachina,
+        filterShowUnclaimedPortals: DEFAULT_SETTINGS.filterShowUnclaimedPortals,
+        filterShowLevel: { ...DEFAULT_SETTINGS.filterShowLevel },
+        filterShowHealth: { ...DEFAULT_SETTINGS.filterShowHealth },
+        filterShowVisited: DEFAULT_SETTINGS.filterShowVisited,
+        filterShowCaptured: DEFAULT_SETTINGS.filterShowCaptured,
+        filterShowScanned: DEFAULT_SETTINGS.filterShowScanned,
+    })),
     toggleAllowRotation: () => set((state) => ({ allowRotation: !state.allowRotation })),
     toggleAllowPitch: () => set((state) => ({ allowPitch: !state.allowPitch })),
     toggleDebugLogging: () => set((state) => ({ debugLogging: !state.debugLogging })),
