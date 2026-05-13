@@ -707,10 +707,8 @@ export function MapOverlay(): JSX.Element {
     const markerVisibility = plannedLinksEnabled && plannedShowMarkers ? 'visible' : 'none';
 
     setLayerVisibilityIfExists(map.current, 'planned-links', linkVisibility);
-    setLayerVisibilityIfExists(map.current, 'planned-link-hitbox', linkVisibility);
     setLayerVisibilityIfExists(map.current, 'planned-crossings', linkVisibility);
     setLayerVisibilityIfExists(map.current, 'planned-markers', markerVisibility);
-    setLayerVisibilityIfExists(map.current, 'planned-marker-hitbox', markerVisibility);
     setLayerVisibilityIfExists(map.current, 'planned-anchor', plannedLinksEnabled && planningMode ? 'visible' : 'none');
   }, [plannedLinksEnabled, plannedShowLinks, plannedShowMarkers, planningMode, styleLoaded]);
 
@@ -1306,32 +1304,6 @@ export function MapOverlay(): JSX.Element {
               'circle-stroke-width': ['case', ['==', ['get', 'selected'], true], 4, 2],
               'circle-stroke-color': ['case', ['==', ['get', 'selected'], true], '#fff', '#000'],
               'circle-stroke-opacity': ['case', ['==', ['get', 'selected'], true], 1, 0.85],
-            },
-          },
-          {
-            id: 'planned-link-hitbox',
-            type: 'line',
-            source: 'planned-links',
-            filter: ['all', ['==', '$type', 'LineString'], ['==', 'plannedItemType', 'link']],
-            paint: {
-              'line-width': 22,
-              'line-color': '#fff',
-              'line-opacity': 0,
-            },
-          },
-          {
-            id: 'planned-marker-hitbox',
-            type: 'circle',
-            source: 'planned-links',
-            filter: ['all', ['==', '$type', 'Point'], ['==', 'plannedItemType', 'marker']],
-            paint: {
-              'circle-radius': [
-                'interpolate', ['linear'], ['zoom'],
-                10, 14,
-                15, 20,
-              ],
-              'circle-color': '#fff',
-              'circle-opacity': 0,
             },
           },
           {
