@@ -2,11 +2,14 @@ export const PAGE_MAP_RUNTIME_MESSAGES = {
     qrfProbe: 'IRIS_PAGE_MAP_RUNTIME_QRF_POC',
     irisDataProbe: 'IRIS_PAGE_MAP_RUNTIME_IRIS_DATA_QRF_POC',
     visibleProbe: 'IRIS_PAGE_MAP_RUNTIME_VISIBLE_POC',
+    fullMapProbe: 'IRIS_PAGE_MAP_RUNTIME_FULL_MAP_POC',
     hideVisibleProbe: 'IRIS_PAGE_MAP_RUNTIME_HIDE_VISIBLE_POC',
     syncSnapshot: 'IRIS_PAGE_MAP_RUNTIME_SYNC_SNAPSHOT',
     syncData: 'IRIS_PAGE_MAP_RUNTIME_SYNC_DATA',
     syncLayers: 'IRIS_PAGE_MAP_RUNTIME_SYNC_LAYERS',
     syncCamera: 'IRIS_PAGE_MAP_RUNTIME_SYNC_CAMERA',
+    syncSelection: 'IRIS_PAGE_MAP_RUNTIME_SYNC_SELECTION',
+    syncTiles: 'IRIS_PAGE_MAP_RUNTIME_SYNC_TILES',
     cameraChanged: 'IRIS_PAGE_MAP_RUNTIME_CAMERA_CHANGED',
     result: 'IRIS_PAGE_MAP_RUNTIME_QRF_POC_RESULT',
     selection: 'IRIS_PAGE_MAP_RUNTIME_SELECTION',
@@ -31,15 +34,20 @@ export interface PageMapRuntimeDataPayload {
     zoom?: number;
     camera?: PageMapRuntimeCamera;
     layers?: PageMapRuntimeLayerVisibility;
+    tiles?: string[];
     data?: {
         portals?: GeoJSON.FeatureCollection;
         links?: GeoJSON.FeatureCollection;
         fields?: GeoJSON.FeatureCollection;
+        selectedPortal?: GeoJSON.FeatureCollection;
+        selectedLink?: GeoJSON.FeatureCollection;
+        selectedField?: GeoJSON.FeatureCollection;
     };
 }
 
 export interface PageMapRuntimeCommandMessage extends PageMapRuntimeDataPayload {
     type?: string;
+    diagnostic?: boolean;
 }
 
 export interface PageMapRuntimeResultMessage {

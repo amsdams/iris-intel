@@ -1,5 +1,5 @@
 import { h, JSX } from 'preact';
-import { useState, useEffect, useCallback } from 'preact/hooks';
+import { useState, useEffect, useCallback, useRef } from 'preact/hooks';
 import { useStore } from '@iris/core';
 import { MapOverlay } from './domains/map/MapOverlay';
 import { PlayerStatsPopup } from './domains/player/PlayerStatsPopup';
@@ -29,15 +29,45 @@ import { MockToolsBar } from './shared/MockToolsBar';
 import { PlanningBar } from './shared/PlanningBar';
 import {
     PAGE_MAP_RUNTIME_MESSAGES,
+    PageMapRuntimeCameraChangedMessage,
     PageMapRuntimeSelectionMessage,
 } from '../shared/page-map-runtime-protocol';
-import {buildPageMapRuntimeSnapshotMessage} from './domains/map/page-map-runtime-snapshot';
+import {buildPageMapRuntimeSnapshotMessage, getMapThemeTiles} from './domains/map/page-map-runtime-snapshot';
 
 // ---------------------------------------------------------------------------
 // IRISOverlay
 // ---------------------------------------------------------------------------
 
-const PAGE_MAP_RUNTIME_SYNC_DEBOUNCE_MS = 300;
+const PAGE_MAP_RUNTIME_INITIAL_SYNC_DEBOUNCE_MS = 300;
+const PAGE_MAP_RUNTIME_DATA_SYNC_DEBOUNCE_MS = 300;
+const PAGE_MAP_RUNTIME_CAMERA_SYNC_DEBOUNCE_MS = 80;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null;
+}
+
+function isPageRuntimeCameraChangedMessage(
+    value: unknown
+): value is PageMapRuntimeCameraChangedMessage & {camera: {lat: number; lng: number; zoom: number}} {
+    if (!isRecord(value) || value.type !== PAGE_MAP_RUNTIME_MESSAGES.cameraChanged || !isRecord(value.camera)) {
+        return false;
+    }
+
+    return typeof value.camera.lat === 'number' &&
+        typeof value.camera.lng === 'number' &&
+        typeof value.camera.zoom === 'number';
+}
+
+function isPageRuntimeSelectionMessage(
+    value: unknown
+): value is PageMapRuntimeSelectionMessage & {selection: {id: string; kind: string}} {
+    if (!isRecord(value) || value.type !== PAGE_MAP_RUNTIME_MESSAGES.selection || !isRecord(value.selection)) {
+        return false;
+    }
+
+    return typeof value.selection.id === 'string' &&
+        typeof value.selection.kind === 'string';
+}
 
 export function IRISOverlay(): JSX.Element {
     const sessionStatus = useStore((state) => state.sessionStatus);
@@ -57,6 +87,7 @@ export function IRISOverlay(): JSX.Element {
     const [showNavigationPopup, setShowNavigationPopup] = useState(false);
     const [showSearchPopup, setShowSearchPopup] = useState(false);
     const [showSelectionInfo, setShowSelectionInfo] = useState(false);
+    const [usePageRuntimeMap, setUsePageRuntimeMap] = useState(false);
     
     const [activeDrawerTab, setActiveDrawerTab] = useState<DrawerTab>(null);
     const [locating, setLocating] = useState(false);
@@ -68,8 +99,10 @@ export function IRISOverlay(): JSX.Element {
     const links = useStore((state) => state.links);
     const fields = useStore((state) => state.fields);
     const mapState = useStore((state) => state.mapState);
+    const mapThemeId = useStore((state) => state.mapThemeId);
     const layerShowLinks = useStore((state) => state.layerShowLinks);
     const layerShowFields = useStore((state) => state.layerShowFields);
+    const pageRuntimeInitialSyncDoneRef = useRef(false);
 
     // If selection is cleared externally, hide the info popup
     useEffect(() => {
@@ -148,12 +181,16 @@ export function IRISOverlay(): JSX.Element {
     useEffect(() => {
         const themeHandler = (): void => toggleThemePopup();
         const exportHandler = (): void => toggleExportPopup();
+        const pageRuntimeMapShowHandler = (): void => setUsePageRuntimeMap(true);
+        const pageRuntimeMapHideHandler = (): void => setUsePageRuntimeMap(false);
         const selectionInfoOpenHandler = (): void => {
             setActiveDrawerTab(null);
             setShowSelectionInfo(true);
         };
         document.addEventListener('iris:plugin:theme:toggle', themeHandler);
         document.addEventListener('iris:plugin:export:toggle', exportHandler);
+        document.addEventListener('iris:page-runtime-map:show', pageRuntimeMapShowHandler);
+        document.addEventListener('iris:page-runtime-map:hide', pageRuntimeMapHideHandler);
         document.addEventListener('iris:selection-info:open', selectionInfoOpenHandler);
         const missionsOpenHandler = (event: Event): void => {
             const detail = (event as CustomEvent<{ portalId?: string | null }>).detail;
@@ -164,18 +201,26 @@ export function IRISOverlay(): JSX.Element {
         return (): void => {
             document.removeEventListener('iris:plugin:theme:toggle', themeHandler);
             document.removeEventListener('iris:plugin:export:toggle', exportHandler);
+            document.removeEventListener('iris:page-runtime-map:show', pageRuntimeMapShowHandler);
+            document.removeEventListener('iris:page-runtime-map:hide', pageRuntimeMapHideHandler);
             document.removeEventListener('iris:selection-info:open', selectionInfoOpenHandler);
             document.removeEventListener('iris:missions:open', missionsOpenHandler);
         };
     }, [toggleExportPopup, toggleThemePopup]);
 
     useEffect(() => {
-        const handler = (event: MessageEvent<PageMapRuntimeSelectionMessage>): void => {
+        const handler = (event: MessageEvent<unknown>): void => {
             if (event.origin !== location.origin) return;
-            if (event.data?.type !== PAGE_MAP_RUNTIME_MESSAGES.selection) return;
+            if (isPageRuntimeCameraChangedMessage(event.data)) {
+                const camera = event.data.camera;
+                if (usePageRuntimeMap) {
+                    useStore.getState().updateMapState(camera.lat, camera.lng, camera.zoom);
+                }
+                return;
+            }
+            if (!isPageRuntimeSelectionMessage(event.data)) return;
 
             const selection = event.data.selection;
-            if (!selection?.id) return;
 
             const store = useStore.getState();
             if (selection.kind === 'portal') {
@@ -196,23 +241,110 @@ export function IRISOverlay(): JSX.Element {
 
         window.addEventListener('message', handler);
         return (): void => window.removeEventListener('message', handler);
-    }, []);
+    }, [usePageRuntimeMap]);
 
     useEffect(() => {
         const timeout = window.setTimeout(() => {
+            const state = useStore.getState();
             window.postMessage(buildPageMapRuntimeSnapshotMessage({
                 type: PAGE_MAP_RUNTIME_MESSAGES.syncSnapshot,
+                portals: state.portals,
+                links: state.links,
+                fields: state.fields,
+                mapState: state.mapState,
+                mapThemeId: state.mapThemeId,
+                layerShowLinks: state.layerShowLinks,
+                layerShowFields: state.layerShowFields,
+                selectedPortalId: state.selectedPortalId,
+                selectedLinkId: state.selectedLinkId,
+                selectedFieldId: state.selectedFieldId,
+            }), '*');
+            pageRuntimeInitialSyncDoneRef.current = true;
+        }, PAGE_MAP_RUNTIME_INITIAL_SYNC_DEBOUNCE_MS);
+
+        return (): void => window.clearTimeout(timeout);
+    }, []);
+
+    useEffect(() => {
+        if (!pageRuntimeInitialSyncDoneRef.current) return;
+
+        const timeout = window.setTimeout(() => {
+            const state = useStore.getState();
+            window.postMessage(buildPageMapRuntimeSnapshotMessage({
+                type: PAGE_MAP_RUNTIME_MESSAGES.syncData,
                 portals,
                 links,
                 fields,
-                mapState,
-                layerShowLinks,
-                layerShowFields,
+                mapState: state.mapState,
+                mapThemeId: state.mapThemeId,
+                layerShowLinks: state.layerShowLinks,
+                layerShowFields: state.layerShowFields,
+                selectedPortalId: state.selectedPortalId,
+                selectedLinkId: state.selectedLinkId,
+                selectedFieldId: state.selectedFieldId,
             }), '*');
-        }, PAGE_MAP_RUNTIME_SYNC_DEBOUNCE_MS);
+        }, PAGE_MAP_RUNTIME_DATA_SYNC_DEBOUNCE_MS);
 
         return (): void => window.clearTimeout(timeout);
-    }, [portals, links, fields, mapState, layerShowLinks, layerShowFields]);
+    }, [portals, links, fields]);
+
+    useEffect(() => {
+        if (!pageRuntimeInitialSyncDoneRef.current) return;
+
+        const timeout = window.setTimeout(() => {
+            window.postMessage({
+                type: PAGE_MAP_RUNTIME_MESSAGES.syncCamera,
+                camera: {
+                    lat: mapState.lat,
+                    lng: mapState.lng,
+                    zoom: mapState.zoom,
+                },
+            }, '*');
+        }, PAGE_MAP_RUNTIME_CAMERA_SYNC_DEBOUNCE_MS);
+
+        return (): void => window.clearTimeout(timeout);
+    }, [mapState]);
+
+    useEffect(() => {
+        if (!pageRuntimeInitialSyncDoneRef.current) return;
+
+        window.postMessage({
+            type: PAGE_MAP_RUNTIME_MESSAGES.syncLayers,
+            layers: {
+                portals: true,
+                links: layerShowLinks,
+                fields: layerShowFields,
+            },
+        }, '*');
+    }, [layerShowLinks, layerShowFields]);
+
+    useEffect(() => {
+        if (!pageRuntimeInitialSyncDoneRef.current) return;
+
+        const state = useStore.getState();
+        window.postMessage(buildPageMapRuntimeSnapshotMessage({
+            type: PAGE_MAP_RUNTIME_MESSAGES.syncSelection,
+            portals: state.portals,
+            links: state.links,
+            fields: state.fields,
+            mapState: state.mapState,
+            mapThemeId: state.mapThemeId,
+            layerShowLinks: state.layerShowLinks,
+            layerShowFields: state.layerShowFields,
+            selectedPortalId,
+            selectedLinkId,
+            selectedFieldId,
+        }), '*');
+    }, [selectedPortalId, selectedLinkId, selectedFieldId]);
+
+    useEffect(() => {
+        if (!pageRuntimeInitialSyncDoneRef.current) return;
+
+        window.postMessage({
+            type: PAGE_MAP_RUNTIME_MESSAGES.syncTiles,
+            tiles: getMapThemeTiles(mapThemeId),
+        }, '*');
+    }, [mapThemeId]);
 
     if (sessionStatus === 'initial_login_required') {
         return (
@@ -226,7 +358,7 @@ export function IRISOverlay(): JSX.Element {
         <div className="iris-overlay-root">
             <SessionAlert />
             
-            <div style={{ display: showMap ? 'block' : 'none' }}>
+            <div style={{ display: showMap && !usePageRuntimeMap ? 'block' : 'none' }}>
                 <MapOverlay />
             </div>
             <MockToolsBar />

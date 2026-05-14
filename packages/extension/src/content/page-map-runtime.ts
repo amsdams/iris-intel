@@ -13,6 +13,10 @@ interface SetDataGeoJsonSource {
     setData: (data: GeoJSON.FeatureCollection) => void;
 }
 
+interface SetTilesRasterSource {
+    setTiles: (tiles: string[]) => void;
+}
+
 let pageMapPromise: Promise<maplibregl.Map> | null = null;
 let suppressNextCameraChangedEvent = false;
 
@@ -24,6 +28,8 @@ const DEFAULT_LAYER_VISIBILITY: PageMapRuntimeLayerVisibility = {
 
 let currentLayerVisibility: PageMapRuntimeLayerVisibility = DEFAULT_LAYER_VISIBILITY;
 
+type RuntimeDisplayMode = 'hidden' | 'probe' | 'full';
+
 function createRuntimeContainer(): HTMLDivElement {
     const existing = document.getElementById('iris-page-map-runtime');
     if (existing instanceof HTMLDivElement) {
@@ -33,25 +39,45 @@ function createRuntimeContainer(): HTMLDivElement {
     const container = document.createElement('div');
     container.id = 'iris-page-map-runtime';
     container.style.position = 'fixed';
-    container.style.right = '12px';
-    container.style.top = '72px';
-    container.style.width = '128px';
-    container.style.height = '128px';
-    container.style.pointerEvents = 'none';
-    container.style.opacity = '0';
-    container.style.zIndex = '10060';
-    container.style.border = '1px solid #37e6ff';
     container.style.background = '#000';
+    setRuntimeContainerMode(container, 'hidden');
     document.documentElement.appendChild(container);
     return container;
 }
 
+function setRuntimeContainerMode(container: HTMLDivElement, mode: RuntimeDisplayMode): void {
+    container.style.position = 'fixed';
+    container.style.background = '#000';
+    if (mode === 'full') {
+        container.style.left = '0';
+        container.style.top = '0';
+        container.style.right = 'auto';
+        container.style.width = '100vw';
+        container.style.height = '100vh';
+        container.style.pointerEvents = 'auto';
+        container.style.opacity = '1';
+        container.style.zIndex = '9998';
+        container.style.border = '0';
+        return;
+    }
+
+    container.style.left = 'auto';
+    container.style.right = '12px';
+    container.style.top = '72px';
+    container.style.width = mode === 'probe' ? '320px' : '128px';
+    container.style.height = mode === 'probe' ? '240px' : '128px';
+    container.style.pointerEvents = mode === 'probe' ? 'auto' : 'none';
+    container.style.opacity = mode === 'probe' ? '0.92' : '0';
+    container.style.zIndex = '10060';
+    container.style.border = '1px solid #37e6ff';
+}
+
 function setRuntimeContainerVisible(visible: boolean): void {
-    const container = createRuntimeContainer();
-    container.style.width = visible ? '320px' : '128px';
-    container.style.height = visible ? '240px' : '128px';
-    container.style.pointerEvents = visible ? 'auto' : 'none';
-    container.style.opacity = visible ? '0.92' : '0';
+    setRuntimeContainerMode(createRuntimeContainer(), visible ? 'probe' : 'hidden');
+}
+
+function setRuntimeContainerFullMap(): void {
+    setRuntimeContainerMode(createRuntimeContainer(), 'full');
 }
 
 function getPageMap(): Promise<maplibregl.Map> {
@@ -65,6 +91,12 @@ function getPageMap(): Promise<maplibregl.Map> {
             style: {
                 version: 8,
                 sources: {
+                    osm: {
+                        type: 'raster',
+                        tiles: ['https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'],
+                        tileSize: 256,
+                        maxzoom: 20,
+                    },
                     'poc-source': {
                         type: 'geojson',
                         data: {
@@ -88,7 +120,15 @@ function getPageMap(): Promise<maplibregl.Map> {
                         type: 'geojson',
                         data: {type: 'FeatureCollection', features: []},
                     },
+                    'iris-poc-portal-selected': {
+                        type: 'geojson',
+                        data: {type: 'FeatureCollection', features: []},
+                    },
                     'iris-poc-links': {
+                        type: 'geojson',
+                        data: {type: 'FeatureCollection', features: []},
+                    },
+                    'iris-poc-link-selected': {
                         type: 'geojson',
                         data: {type: 'FeatureCollection', features: []},
                     },
@@ -96,8 +136,26 @@ function getPageMap(): Promise<maplibregl.Map> {
                         type: 'geojson',
                         data: {type: 'FeatureCollection', features: []},
                     },
+                    'iris-poc-field-selected': {
+                        type: 'geojson',
+                        data: {type: 'FeatureCollection', features: []},
+                    },
                 },
                 layers: [
+                    {
+                        id: 'osm',
+                        type: 'raster',
+                        source: 'osm',
+                    },
+                    {
+                        id: 'iris-poc-field-selected',
+                        type: 'line',
+                        source: 'iris-poc-field-selected',
+                        paint: {
+                            'line-color': '#ffffff',
+                            'line-width': 3,
+                        },
+                    },
                     {
                         id: 'iris-poc-fields',
                         type: 'fill',
@@ -111,6 +169,15 @@ function getPageMap(): Promise<maplibregl.Map> {
                                 '#999999',
                             ],
                             'fill-opacity': 0.25,
+                        },
+                    },
+                    {
+                        id: 'iris-poc-link-selected',
+                        type: 'line',
+                        source: 'iris-poc-link-selected',
+                        paint: {
+                            'line-color': '#ffffff',
+                            'line-width': 4,
                         },
                     },
                     {
@@ -157,6 +224,23 @@ function getPageMap(): Promise<maplibregl.Map> {
                             ],
                             'circle-stroke-width': 1,
                             'circle-stroke-color': '#ffffff',
+                        },
+                    },
+                    {
+                        id: 'iris-poc-portal-selected',
+                        type: 'circle',
+                        source: 'iris-poc-portal-selected',
+                        paint: {
+                            'circle-radius': [
+                                'interpolate', ['linear'], ['zoom'],
+                                3, 3,
+                                10, 6,
+                                15, 12,
+                            ],
+                            'circle-color': 'transparent',
+                            'circle-stroke-width': 3,
+                            'circle-stroke-color': '#ffffff',
+                            'circle-stroke-opacity': 0.8,
                         },
                     },
                 ],
@@ -247,6 +331,13 @@ function setGeoJsonSourceData(map: maplibregl.Map, sourceId: string, data: GeoJS
     }
 }
 
+function setRasterTiles(map: maplibregl.Map, sourceId: string, tiles: string[]): void {
+    const source = map.getSource(sourceId);
+    if (source && 'setTiles' in source) {
+        (source as SetTilesRasterSource).setTiles(tiles);
+    }
+}
+
 function getVisibleIrisLayerIds(): string[] {
     return [
         currentLayerVisibility.portals ? 'iris-poc-portals' : null,
@@ -265,6 +356,8 @@ function setIrisLayerVisibility(map: maplibregl.Map, visibility: PageMapRuntimeL
     setLayerVisibility(map, 'iris-poc-portals', visibility.portals);
     setLayerVisibility(map, 'iris-poc-links', visibility.links);
     setLayerVisibility(map, 'iris-poc-fields', visibility.fields);
+    setLayerVisibility(map, 'iris-poc-link-selected', visibility.links);
+    setLayerVisibility(map, 'iris-poc-field-selected', visibility.fields);
 }
 
 function getEmptyFeatureCollection(): GeoJSON.FeatureCollection {
@@ -275,6 +368,13 @@ function setIrisData(map: maplibregl.Map, message: PageMapRuntimeCommandMessage)
     setGeoJsonSourceData(map, 'iris-poc-portals', message.data?.portals ?? getEmptyFeatureCollection());
     setGeoJsonSourceData(map, 'iris-poc-links', message.data?.links ?? getEmptyFeatureCollection());
     setGeoJsonSourceData(map, 'iris-poc-fields', message.data?.fields ?? getEmptyFeatureCollection());
+    setSelectedData(map, message);
+}
+
+function setSelectedData(map: maplibregl.Map, message: PageMapRuntimeCommandMessage): void {
+    setGeoJsonSourceData(map, 'iris-poc-portal-selected', message.data?.selectedPortal ?? getEmptyFeatureCollection());
+    setGeoJsonSourceData(map, 'iris-poc-link-selected', message.data?.selectedLink ?? getEmptyFeatureCollection());
+    setGeoJsonSourceData(map, 'iris-poc-field-selected', message.data?.selectedField ?? getEmptyFeatureCollection());
 }
 
 function getIrisDataCounts(message: PageMapRuntimeCommandMessage): Record<string, unknown> {
@@ -429,6 +529,20 @@ async function runVisibleRuntimePoc(message: PageMapRuntimeCommandMessage): Prom
     });
 }
 
+async function runFullMapRuntimePoc(message: PageMapRuntimeCommandMessage): Promise<void> {
+    setRuntimeContainerFullMap();
+    const map = await getPageMap();
+    map.resize();
+    await applySnapshot(map, message);
+    postDiagnosticResult('PAGE FULL MAP RUNTIME', {
+        visible: true,
+        sourceCounts: getIrisDataCounts(message),
+        visibleLayers: getVisibleIrisLayerIds(),
+        camera: {...getMapCamera(map)},
+        note: 'Page-world map is now the full viewport map surface.',
+    });
+}
+
 function runHideVisibleRuntimePoc(): void {
     setRuntimeContainerVisible(false);
     postDiagnosticResult('PAGE HIDE VISIBLE RUNTIME', {
@@ -440,10 +554,12 @@ async function runSyncDataPoc(message: PageMapRuntimeCommandMessage): Promise<vo
     const map = await getPageMap();
     setIrisData(map, message);
     await waitForMapIdle(map);
-    postDiagnosticResult('PAGE SYNC DATA', {
-        sourceCounts: getIrisDataCounts(message),
-        camera: {...getMapCamera(map)},
-    });
+    if (message.diagnostic) {
+        postDiagnosticResult('PAGE SYNC DATA', {
+            sourceCounts: getIrisDataCounts(message),
+            camera: {...getMapCamera(map)},
+        });
+    }
 }
 
 async function runSyncLayersPoc(message: PageMapRuntimeCommandMessage): Promise<void> {
@@ -451,7 +567,9 @@ async function runSyncLayersPoc(message: PageMapRuntimeCommandMessage): Promise<
 
     const map = await getPageMap();
     setIrisLayerVisibility(map, message.layers);
-    postDiagnosticResult('PAGE SYNC LAYERS', {...message.layers});
+    if (message.diagnostic) {
+        postDiagnosticResult('PAGE SYNC LAYERS', {...message.layers});
+    }
 }
 
 async function runSyncCameraPoc(message: PageMapRuntimeCommandMessage): Promise<void> {
@@ -459,17 +577,45 @@ async function runSyncCameraPoc(message: PageMapRuntimeCommandMessage): Promise<
 
     const map = await getPageMap();
     syncMapCamera(map, message.camera);
-    postDiagnosticResult('PAGE SYNC CAMERA', {...getMapCamera(map)});
+    if (message.diagnostic) {
+        postDiagnosticResult('PAGE SYNC CAMERA', {...getMapCamera(map)});
+    }
+}
+
+async function runSyncSelectionPoc(message: PageMapRuntimeCommandMessage): Promise<void> {
+    const map = await getPageMap();
+    setSelectedData(map, message);
+    if (message.diagnostic) {
+        postDiagnosticResult('PAGE SYNC SELECTION', {
+            selectedPortal: message.data?.selectedPortal?.features.length ?? 0,
+            selectedLink: message.data?.selectedLink?.features.length ?? 0,
+            selectedField: message.data?.selectedField?.features.length ?? 0,
+        });
+    }
+}
+
+async function runSyncTilesPoc(message: PageMapRuntimeCommandMessage): Promise<void> {
+    if (!message.tiles?.length) return;
+
+    const map = await getPageMap();
+    setRasterTiles(map, 'osm', message.tiles);
+    if (message.diagnostic) {
+        postDiagnosticResult('PAGE SYNC TILES', {
+            tileCount: message.tiles.length,
+        });
+    }
 }
 
 async function runSyncSnapshotPoc(message: PageMapRuntimeCommandMessage): Promise<void> {
     const map = await getPageMap();
     await applySnapshot(map, message);
-    postDiagnosticResult('PAGE SYNC SNAPSHOT', {
-        sourceCounts: getIrisDataCounts(message),
-        visibleLayers: getVisibleIrisLayerIds(),
-        camera: {...getMapCamera(map)},
-    });
+    if (message.diagnostic) {
+        postDiagnosticResult('PAGE SYNC SNAPSHOT', {
+            sourceCounts: getIrisDataCounts(message),
+            visibleLayers: getVisibleIrisLayerIds(),
+            camera: {...getMapCamera(map)},
+        });
+    }
 }
 
 async function applySnapshot(map: maplibregl.Map, message: PageMapRuntimeCommandMessage): Promise<void> {
@@ -479,6 +625,9 @@ async function applySnapshot(map: maplibregl.Map, message: PageMapRuntimeCommand
     }
     if (message.layers) {
         setIrisLayerVisibility(map, message.layers);
+    }
+    if (message.tiles?.length) {
+        setRasterTiles(map, 'osm', message.tiles);
     }
     setIrisData(map, message);
     await waitForMapIdle(map);
@@ -499,6 +648,10 @@ window.addEventListener('message', (event: MessageEvent<PageMapRuntimeCommandMes
         void runVisibleRuntimePoc(event.data);
     }
 
+    if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.fullMapProbe) {
+        void runFullMapRuntimePoc(event.data);
+    }
+
     if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.hideVisibleProbe) {
         runHideVisibleRuntimePoc();
     }
@@ -517,6 +670,14 @@ window.addEventListener('message', (event: MessageEvent<PageMapRuntimeCommandMes
 
     if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.syncCamera) {
         void runSyncCameraPoc(event.data);
+    }
+
+    if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.syncSelection) {
+        void runSyncSelectionPoc(event.data);
+    }
+
+    if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.syncTiles) {
+        void runSyncTilesPoc(event.data);
     }
 });
 

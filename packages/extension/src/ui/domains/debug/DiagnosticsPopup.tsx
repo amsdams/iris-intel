@@ -155,6 +155,9 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
     const activeVisualOverlayIds = useStore((state) => state.activeVisualOverlayIds);
     const layerShowFields = useStore((state) => state.layerShowFields);
     const layerShowLinks = useStore((state) => state.layerShowLinks);
+    const selectedPortalId = useStore((state) => state.selectedPortalId);
+    const selectedLinkId = useStore((state) => state.selectedLinkId);
+    const selectedFieldId = useStore((state) => state.selectedFieldId);
 
     const [countdown, setCountdown] = useState<number | null>(null);
     const [, setNow] = useState(() => Date.now());
@@ -293,12 +296,17 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
     const buildPageRuntimeIrisDataMessage = (type: string): PageMapRuntimeCommandMessage =>
         buildPageMapRuntimeSnapshotMessage({
             type,
+            diagnostic: true,
             portals,
             links,
             fields,
             mapState,
+            mapThemeId,
             layerShowLinks,
             layerShowFields,
+            selectedPortalId,
+            selectedLinkId,
+            selectedFieldId,
         });
 
     const runPageMapRuntimeIrisDataPoc = (): void => {
@@ -311,7 +319,15 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
         }, '*');
     };
 
+    const runFullPageMapRuntimePoc = (): void => {
+        document.dispatchEvent(new CustomEvent('iris:page-runtime-map:show'));
+        window.postMessage({
+            ...buildPageRuntimeIrisDataMessage(PAGE_MAP_RUNTIME_MESSAGES.fullMapProbe),
+        }, '*');
+    };
+
     const hideVisiblePageMapRuntimePoc = (): void => {
+        document.dispatchEvent(new CustomEvent('iris:page-runtime-map:hide'));
         window.postMessage({type: PAGE_MAP_RUNTIME_MESSAGES.hideVisibleProbe}, '*');
     };
 
@@ -326,6 +342,7 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
     const syncPageMapRuntimeLayers = (): void => {
         window.postMessage({
             type: PAGE_MAP_RUNTIME_MESSAGES.syncLayers,
+            diagnostic: true,
             layers: {
                 portals: true,
                 links: layerShowLinks,
@@ -337,6 +354,7 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
     const syncPageMapRuntimeCamera = (): void => {
         window.postMessage({
             type: PAGE_MAP_RUNTIME_MESSAGES.syncCamera,
+            diagnostic: true,
             camera: {
                 lat: mapState.lat,
                 lng: mapState.lng,
@@ -617,6 +635,9 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                                     </button>
                                     <button className="iris-button iris-debug-copy-btn" onClick={runVisiblePageMapRuntimePoc}>
                                         PAGE VISIBLE
+                                    </button>
+                                    <button className="iris-button iris-debug-copy-btn" onClick={runFullPageMapRuntimePoc}>
+                                        PAGE FULL
                                     </button>
                                     <button className="iris-button iris-debug-copy-btn" onClick={hideVisiblePageMapRuntimePoc}>
                                         HIDE VISIBLE
