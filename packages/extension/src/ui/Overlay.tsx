@@ -31,10 +31,13 @@ import {
     PAGE_MAP_RUNTIME_MESSAGES,
     PageMapRuntimeSelectionMessage,
 } from '../shared/page-map-runtime-protocol';
+import {buildPageMapRuntimeSnapshotMessage} from './domains/map/page-map-runtime-snapshot';
 
 // ---------------------------------------------------------------------------
 // IRISOverlay
 // ---------------------------------------------------------------------------
+
+const PAGE_MAP_RUNTIME_SYNC_DEBOUNCE_MS = 300;
 
 export function IRISOverlay(): JSX.Element {
     const sessionStatus = useStore((state) => state.sessionStatus);
@@ -61,6 +64,12 @@ export function IRISOverlay(): JSX.Element {
     const selectedPortalId = useStore((state) => state.selectedPortalId);
     const selectedFieldId = useStore((state) => state.selectedFieldId);
     const selectedLinkId = useStore((state) => state.selectedLinkId);
+    const portals = useStore((state) => state.portals);
+    const links = useStore((state) => state.links);
+    const fields = useStore((state) => state.fields);
+    const mapState = useStore((state) => state.mapState);
+    const layerShowLinks = useStore((state) => state.layerShowLinks);
+    const layerShowFields = useStore((state) => state.layerShowFields);
 
     // If selection is cleared externally, hide the info popup
     useEffect(() => {
@@ -188,6 +197,22 @@ export function IRISOverlay(): JSX.Element {
         window.addEventListener('message', handler);
         return (): void => window.removeEventListener('message', handler);
     }, []);
+
+    useEffect(() => {
+        const timeout = window.setTimeout(() => {
+            window.postMessage(buildPageMapRuntimeSnapshotMessage({
+                type: PAGE_MAP_RUNTIME_MESSAGES.syncSnapshot,
+                portals,
+                links,
+                fields,
+                mapState,
+                layerShowLinks,
+                layerShowFields,
+            }), '*');
+        }, PAGE_MAP_RUNTIME_SYNC_DEBOUNCE_MS);
+
+        return (): void => window.clearTimeout(timeout);
+    }, [portals, links, fields, mapState, layerShowLinks, layerShowFields]);
 
     if (sessionStatus === 'initial_login_required') {
         return (

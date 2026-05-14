@@ -24,7 +24,7 @@
     },
     {
       "matches": ["*://intel.ingress.com/*"],
-      "js": ["src/content/page-map-runtime-poc.ts"],
+      "js": ["src/content/page-map-runtime.ts"],
       "run_at": "document_idle",
       "world": "MAIN"
     }

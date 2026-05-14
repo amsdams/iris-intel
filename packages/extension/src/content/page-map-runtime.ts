@@ -13,7 +13,7 @@ interface SetDataGeoJsonSource {
     setData: (data: GeoJSON.FeatureCollection) => void;
 }
 
-let pocMapPromise: Promise<maplibregl.Map> | null = null;
+let pageMapPromise: Promise<maplibregl.Map> | null = null;
 let suppressNextCameraChangedEvent = false;
 
 const DEFAULT_LAYER_VISIBILITY: PageMapRuntimeLayerVisibility = {
@@ -24,14 +24,14 @@ const DEFAULT_LAYER_VISIBILITY: PageMapRuntimeLayerVisibility = {
 
 let currentLayerVisibility: PageMapRuntimeLayerVisibility = DEFAULT_LAYER_VISIBILITY;
 
-function createPocContainer(): HTMLDivElement {
-    const existing = document.getElementById('iris-page-map-runtime-poc');
+function createRuntimeContainer(): HTMLDivElement {
+    const existing = document.getElementById('iris-page-map-runtime');
     if (existing instanceof HTMLDivElement) {
         return existing;
     }
 
     const container = document.createElement('div');
-    container.id = 'iris-page-map-runtime-poc';
+    container.id = 'iris-page-map-runtime';
     container.style.position = 'fixed';
     container.style.right = '12px';
     container.style.top = '72px';
@@ -46,22 +46,22 @@ function createPocContainer(): HTMLDivElement {
     return container;
 }
 
-function setPocContainerVisible(visible: boolean): void {
-    const container = createPocContainer();
+function setRuntimeContainerVisible(visible: boolean): void {
+    const container = createRuntimeContainer();
     container.style.width = visible ? '320px' : '128px';
     container.style.height = visible ? '240px' : '128px';
     container.style.pointerEvents = visible ? 'auto' : 'none';
     container.style.opacity = visible ? '0.92' : '0';
 }
 
-function getPocMap(): Promise<maplibregl.Map> {
-    if (pocMapPromise) {
-        return pocMapPromise;
+function getPageMap(): Promise<maplibregl.Map> {
+    if (pageMapPromise) {
+        return pageMapPromise;
     }
 
-    pocMapPromise = new Promise((resolve) => {
+    pageMapPromise = new Promise((resolve) => {
         const map = new maplibregl.Map({
-            container: createPocContainer(),
+            container: createRuntimeContainer(),
             style: {
                 version: 8,
                 sources: {
@@ -180,7 +180,7 @@ function getPocMap(): Promise<maplibregl.Map> {
                     camera,
                 };
                 window.postMessage(message, '*');
-                postPocResult('PAGE CAMERA CHANGED', {...camera});
+                postDiagnosticResult('PAGE CAMERA CHANGED', {...camera});
             });
 
             map.on('click', (event) => {
@@ -195,14 +195,14 @@ function getPocMap(): Promise<maplibregl.Map> {
                     sample: summarizeFeature(features[0]),
                 };
                 console.info('[IRIS page map runtime visible click POC]', summary);
-                postPocResult('PAGE VISIBLE CLICK', summary);
+                postDiagnosticResult('PAGE VISIBLE CLICK', summary);
                 postSelection(features[0]);
             });
             resolve(map);
         });
     });
 
-    return pocMapPromise;
+    return pageMapPromise;
 }
 
 function getMapCamera(map: maplibregl.Map): PageMapRuntimeCamera {
@@ -310,7 +310,7 @@ function getFirstPointFeature(collection: GeoJSON.FeatureCollection | undefined)
     return feature ?? null;
 }
 
-function postPocResult(label: string, summary: Record<string, unknown>): void {
+function postDiagnosticResult(label: string, summary: Record<string, unknown>): void {
     const message: PageMapRuntimeResultMessage = {
         type: PAGE_MAP_RUNTIME_MESSAGES.result,
         label,
@@ -338,7 +338,7 @@ function postSelection(feature: maplibregl.MapGeoJSONFeature | undefined): void 
 }
 
 async function runPageMapRuntimePoc(): Promise<void> {
-    const map = await getPocMap();
+    const map = await getPageMap();
     const point = map.project([0, 0]);
     const startedAt = performance.now();
     const features = map.queryRenderedFeatures(point, {layers: ['poc-point']});
@@ -356,11 +356,11 @@ async function runPageMapRuntimePoc(): Promise<void> {
     };
 
     console.info('[IRIS page map runtime POC]', summary);
-    postPocResult('PAGE RUNTIME', summary);
+    postDiagnosticResult('PAGE RUNTIME', summary);
 }
 
 async function runPageMapRuntimeIrisDataPoc(message: PageMapRuntimeCommandMessage): Promise<void> {
-    const map = await getPocMap();
+    const map = await getPageMap();
     const firstPortal = getFirstPointFeature(message.data?.portals);
     const firstPortalCoordinates = firstPortal
         ? [firstPortal.geometry.coordinates[0], firstPortal.geometry.coordinates[1]] as [number, number]
@@ -412,15 +412,15 @@ async function runPageMapRuntimeIrisDataPoc(message: PageMapRuntimeCommandMessag
     };
 
     console.info('[IRIS page map runtime IRIS data POC]', summary);
-    postPocResult('PAGE IRIS DATA', summary);
+    postDiagnosticResult('PAGE IRIS DATA', summary);
 }
 
 async function runVisibleRuntimePoc(message: PageMapRuntimeCommandMessage): Promise<void> {
-    setPocContainerVisible(true);
-    const map = await getPocMap();
+    setRuntimeContainerVisible(true);
+    const map = await getPageMap();
     map.resize();
     await applySnapshot(map, message);
-    postPocResult('PAGE VISIBLE RUNTIME', {
+    postDiagnosticResult('PAGE VISIBLE RUNTIME', {
         visible: true,
         sourceCounts: getIrisDataCounts(message),
         visibleLayers: getVisibleIrisLayerIds(),
@@ -430,17 +430,17 @@ async function runVisibleRuntimePoc(message: PageMapRuntimeCommandMessage): Prom
 }
 
 function runHideVisibleRuntimePoc(): void {
-    setPocContainerVisible(false);
-    postPocResult('PAGE HIDE VISIBLE RUNTIME', {
+    setRuntimeContainerVisible(false);
+    postDiagnosticResult('PAGE HIDE VISIBLE RUNTIME', {
         visible: false,
     });
 }
 
 async function runSyncDataPoc(message: PageMapRuntimeCommandMessage): Promise<void> {
-    const map = await getPocMap();
+    const map = await getPageMap();
     setIrisData(map, message);
     await waitForMapIdle(map);
-    postPocResult('PAGE SYNC DATA', {
+    postDiagnosticResult('PAGE SYNC DATA', {
         sourceCounts: getIrisDataCounts(message),
         camera: {...getMapCamera(map)},
     });
@@ -449,23 +449,23 @@ async function runSyncDataPoc(message: PageMapRuntimeCommandMessage): Promise<vo
 async function runSyncLayersPoc(message: PageMapRuntimeCommandMessage): Promise<void> {
     if (!message.layers) return;
 
-    const map = await getPocMap();
+    const map = await getPageMap();
     setIrisLayerVisibility(map, message.layers);
-    postPocResult('PAGE SYNC LAYERS', {...message.layers});
+    postDiagnosticResult('PAGE SYNC LAYERS', {...message.layers});
 }
 
 async function runSyncCameraPoc(message: PageMapRuntimeCommandMessage): Promise<void> {
     if (!message.camera) return;
 
-    const map = await getPocMap();
+    const map = await getPageMap();
     syncMapCamera(map, message.camera);
-    postPocResult('PAGE SYNC CAMERA', {...getMapCamera(map)});
+    postDiagnosticResult('PAGE SYNC CAMERA', {...getMapCamera(map)});
 }
 
 async function runSyncSnapshotPoc(message: PageMapRuntimeCommandMessage): Promise<void> {
-    const map = await getPocMap();
+    const map = await getPageMap();
     await applySnapshot(map, message);
-    postPocResult('PAGE SYNC SNAPSHOT', {
+    postDiagnosticResult('PAGE SYNC SNAPSHOT', {
         sourceCounts: getIrisDataCounts(message),
         visibleLayers: getVisibleIrisLayerIds(),
         camera: {...getMapCamera(map)},
@@ -520,4 +520,4 @@ window.addEventListener('message', (event: MessageEvent<PageMapRuntimeCommandMes
     }
 });
 
-console.info('IRIS page map runtime POC loaded');
+console.info('IRIS page map runtime loaded');

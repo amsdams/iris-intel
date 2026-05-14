@@ -8,8 +8,10 @@ import {THEMES} from "../../theme";
 import {emitQueryRenderedFeaturesProbe, QueryRenderedFeaturesProbeMode} from '../map/map-events';
 import {
     PAGE_MAP_RUNTIME_MESSAGES,
+    PageMapRuntimeCommandMessage,
     PageMapRuntimeResultMessage,
 } from '../../../shared/page-map-runtime-protocol';
+import {buildPageMapRuntimeSnapshotMessage} from '../map/page-map-runtime-snapshot';
 
 const POLLED_ENDPOINT_LABELS: Partial<Record<EndpointKey, string>> = {
     plexts: 'next auto refresh',
@@ -288,72 +290,16 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
         window.postMessage({type: PAGE_MAP_RUNTIME_MESSAGES.qrfProbe}, '*');
     };
 
-    const buildPageRuntimeIrisDataMessage = (type: string): Record<string, unknown> => ({
-        type,
-        center: {lat: mapState.lat, lng: mapState.lng},
-        zoom: mapState.zoom,
-        camera: {
-            lat: mapState.lat,
-            lng: mapState.lng,
-            zoom: mapState.zoom,
-        },
-        layers: {
-            portals: true,
-            links: layerShowLinks,
-            fields: layerShowFields,
-        },
-        data: {
-            portals: {
-                type: 'FeatureCollection',
-                features: Object.values(portals).map((portal) => ({
-                    type: 'Feature',
-                    geometry: {type: 'Point', coordinates: [portal.lng, portal.lat]},
-                    properties: {
-                        id: portal.id,
-                        team: portal.team,
-                        level: portal.level ?? 0,
-                        health: portal.health ?? 100,
-                    },
-                })),
-            },
-            links: {
-                type: 'FeatureCollection',
-                features: Object.values(links).map((link) => ({
-                    type: 'Feature',
-                    geometry: {
-                        type: 'LineString',
-                        coordinates: [
-                            [link.fromLng, link.fromLat],
-                            [link.toLng, link.toLat],
-                        ],
-                    },
-                    properties: {
-                        id: link.id,
-                        team: link.team,
-                    },
-                })),
-            },
-            fields: {
-                type: 'FeatureCollection',
-                features: Object.values(fields)
-                    .filter((field) => field.points.length >= 3)
-                    .map((field) => ({
-                        type: 'Feature',
-                        geometry: {
-                            type: 'Polygon',
-                            coordinates: [[
-                                ...field.points.map((point) => [point.lng, point.lat]),
-                                [field.points[0].lng, field.points[0].lat],
-                            ]],
-                        },
-                        properties: {
-                            id: field.id,
-                            team: field.team,
-                        },
-                    })),
-            },
-        },
-    });
+    const buildPageRuntimeIrisDataMessage = (type: string): PageMapRuntimeCommandMessage =>
+        buildPageMapRuntimeSnapshotMessage({
+            type,
+            portals,
+            links,
+            fields,
+            mapState,
+            layerShowLinks,
+            layerShowFields,
+        });
 
     const runPageMapRuntimeIrisDataPoc = (): void => {
         window.postMessage(buildPageRuntimeIrisDataMessage(PAGE_MAP_RUNTIME_MESSAGES.irisDataProbe), '*');
