@@ -155,9 +155,6 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
     const activeVisualOverlayIds = useStore((state) => state.activeVisualOverlayIds);
     const layerShowFields = useStore((state) => state.layerShowFields);
     const layerShowLinks = useStore((state) => state.layerShowLinks);
-    const selectedPortalId = useStore((state) => state.selectedPortalId);
-    const selectedLinkId = useStore((state) => state.selectedLinkId);
-    const selectedFieldId = useStore((state) => state.selectedFieldId);
 
     const [countdown, setCountdown] = useState<number | null>(null);
     const [, setNow] = useState(() => Date.now());
@@ -294,20 +291,47 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
     };
 
     const buildPageRuntimeIrisDataMessage = (type: string): PageMapRuntimeCommandMessage =>
-        buildPageMapRuntimeSnapshotMessage({
+    {
+        const state = useStore.getState();
+        return buildPageMapRuntimeSnapshotMessage({
             type,
             diagnostic: true,
-            portals,
-            links,
-            fields,
-            mapState,
-            mapThemeId,
-            layerShowLinks,
-            layerShowFields,
-            selectedPortalId,
-            selectedLinkId,
-            selectedFieldId,
+            portals: state.portals,
+            links: state.links,
+            fields: state.fields,
+            artifacts: state.artifacts,
+            mockOrnaments: state.mockOrnaments,
+            missionDetails: state.missionDetails,
+            pluginFeatures: state.pluginFeatures,
+            plannedLinks: state.plannedLinks,
+            plannedMarkers: state.plannedMarkers,
+            planningTool: state.planningTool,
+            planningAnchorPortalId: state.planningAnchorPortalId,
+            planningPortalPath: state.planningPortalPath,
+            mapState: state.mapState,
+            mapThemeId: state.mapThemeId,
+            layerShowLinks: state.layerShowLinks,
+            layerShowFields: state.layerShowFields,
+            layerShowOrnaments: state.layerShowOrnaments,
+            layerShowArtifacts: state.layerShowArtifacts,
+            filterShowResistance: state.filterShowResistance,
+            filterShowEnlightened: state.filterShowEnlightened,
+            filterShowMachina: state.filterShowMachina,
+            filterShowUnclaimedPortals: state.filterShowUnclaimedPortals,
+            filterShowLevel: state.filterShowLevel,
+            filterShowHealth: state.filterShowHealth,
+            filterShowVisited: state.filterShowVisited,
+            filterShowCaptured: state.filterShowCaptured,
+            filterShowScanned: state.filterShowScanned,
+            selectedPortalId: state.selectedPortalId,
+            selectedLinkId: state.selectedLinkId,
+            selectedFieldId: state.selectedFieldId,
+            selectedPlannedItemId: state.selectedPlannedItemId,
+            plannedLinksEnabled: state.pluginStates['planned-links'] ?? false,
+            plannedShowLinks: state.plannedShowLinks,
+            plannedShowMarkers: state.plannedShowMarkers,
         });
+    };
 
     const runPageMapRuntimeIrisDataPoc = (): void => {
         window.postMessage(buildPageRuntimeIrisDataMessage(PAGE_MAP_RUNTIME_MESSAGES.irisDataProbe), '*');

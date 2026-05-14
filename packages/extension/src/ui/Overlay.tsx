@@ -77,6 +77,48 @@ function isPageRuntimeSelectionMessage(
         typeof value.selection.kind === 'string';
 }
 
+function buildPageRuntimeSnapshotFromStore(type: string, diagnostic?: boolean): ReturnType<typeof buildPageMapRuntimeSnapshotMessage> {
+    const state = useStore.getState();
+    return buildPageMapRuntimeSnapshotMessage({
+        type,
+        diagnostic,
+        portals: state.portals,
+        links: state.links,
+        fields: state.fields,
+        artifacts: state.artifacts,
+        mockOrnaments: state.mockOrnaments,
+        missionDetails: state.missionDetails,
+        pluginFeatures: state.pluginFeatures,
+        plannedLinks: state.plannedLinks,
+        plannedMarkers: state.plannedMarkers,
+        planningTool: state.planningTool,
+        planningAnchorPortalId: state.planningAnchorPortalId,
+        planningPortalPath: state.planningPortalPath,
+        mapState: state.mapState,
+        mapThemeId: state.mapThemeId,
+        layerShowLinks: state.layerShowLinks,
+        layerShowFields: state.layerShowFields,
+        layerShowOrnaments: state.layerShowOrnaments,
+        layerShowArtifacts: state.layerShowArtifacts,
+        filterShowResistance: state.filterShowResistance,
+        filterShowEnlightened: state.filterShowEnlightened,
+        filterShowMachina: state.filterShowMachina,
+        filterShowUnclaimedPortals: state.filterShowUnclaimedPortals,
+        filterShowLevel: state.filterShowLevel,
+        filterShowHealth: state.filterShowHealth,
+        filterShowVisited: state.filterShowVisited,
+        filterShowCaptured: state.filterShowCaptured,
+        filterShowScanned: state.filterShowScanned,
+        selectedPortalId: state.selectedPortalId,
+        selectedLinkId: state.selectedLinkId,
+        selectedFieldId: state.selectedFieldId,
+        selectedPlannedItemId: state.selectedPlannedItemId,
+        plannedLinksEnabled: state.pluginStates['planned-links'] ?? false,
+        plannedShowLinks: state.plannedShowLinks,
+        plannedShowMarkers: state.plannedShowMarkers,
+    });
+}
+
 export function IRISOverlay(): JSX.Element {
     const sessionStatus = useStore((state) => state.sessionStatus);
     const [showPlayerStatsPopup, setShowPlayerStatsPopup] = useState(false);
@@ -95,7 +137,7 @@ export function IRISOverlay(): JSX.Element {
     const [showNavigationPopup, setShowNavigationPopup] = useState(false);
     const [showSearchPopup, setShowSearchPopup] = useState(false);
     const [showSelectionInfo, setShowSelectionInfo] = useState(false);
-    const [usePageRuntimeMap, setUsePageRuntimeMap] = useState(false);
+    const [usePageRuntimeMap, setUsePageRuntimeMap] = useState(true);
     
     const [activeDrawerTab, setActiveDrawerTab] = useState<DrawerTab>(null);
     const [locating, setLocating] = useState(false);
@@ -110,7 +152,32 @@ export function IRISOverlay(): JSX.Element {
     const mapThemeId = useStore((state) => state.mapThemeId);
     const layerShowLinks = useStore((state) => state.layerShowLinks);
     const layerShowFields = useStore((state) => state.layerShowFields);
+    const layerShowOrnaments = useStore((state) => state.layerShowOrnaments);
+    const layerShowArtifacts = useStore((state) => state.layerShowArtifacts);
+    const artifacts = useStore((state) => state.artifacts);
+    const mockOrnaments = useStore((state) => state.mockOrnaments);
+    const missionDetails = useStore((state) => state.missionDetails);
+    const pluginFeatures = useStore((state) => state.pluginFeatures);
+    const plannedLinks = useStore((state) => state.plannedLinks);
+    const plannedMarkers = useStore((state) => state.plannedMarkers);
+    const planningTool = useStore((state) => state.planningTool);
+    const planningAnchorPortalId = useStore((state) => state.planningAnchorPortalId);
+    const planningPortalPath = useStore((state) => state.planningPortalPath);
+    const selectedPlannedItemId = useStore((state) => state.selectedPlannedItemId);
+    const plannedLinksEnabled = useStore((state) => state.pluginStates['planned-links'] ?? false);
+    const plannedShowLinks = useStore((state) => state.plannedShowLinks);
+    const plannedShowMarkers = useStore((state) => state.plannedShowMarkers);
+    const filterShowResistance = useStore((state) => state.filterShowResistance);
+    const filterShowEnlightened = useStore((state) => state.filterShowEnlightened);
+    const filterShowMachina = useStore((state) => state.filterShowMachina);
+    const filterShowUnclaimedPortals = useStore((state) => state.filterShowUnclaimedPortals);
+    const filterShowLevel = useStore((state) => state.filterShowLevel);
+    const filterShowHealth = useStore((state) => state.filterShowHealth);
+    const filterShowVisited = useStore((state) => state.filterShowVisited);
+    const filterShowCaptured = useStore((state) => state.filterShowCaptured);
+    const filterShowScanned = useStore((state) => state.filterShowScanned);
     const pageRuntimeInitialSyncDoneRef = useRef(false);
+    const pageRuntimeStartsInFullMapRef = useRef(showMap && usePageRuntimeMap);
 
     // If selection is cleared externally, hide the info popup
     useEffect(() => {
@@ -231,12 +298,25 @@ export function IRISOverlay(): JSX.Element {
                 }
                 return;
             }
+            if (isRecord(event.data) && event.data.type === PAGE_MAP_RUNTIME_MESSAGES.ready) {
+                if (showMap && usePageRuntimeMap) {
+                    window.postMessage(buildPageRuntimeSnapshotFromStore(PAGE_MAP_RUNTIME_MESSAGES.fullMapProbe), '*');
+                    pageRuntimeInitialSyncDoneRef.current = true;
+                }
+                return;
+            }
             if (!isPageRuntimeSelectionMessage(event.data)) return;
 
             const selection = event.data.selection;
 
             const store = useStore.getState();
             if (selection.kind === 'portal') {
+                if (store.planningMode) {
+                    store.selectPlanningPortal(selection.id);
+                    setShowSelectionInfo(false);
+                    return;
+                }
+
                 store.selectPortal(selection.id);
                 window.postMessage({type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: selection.id}, '*');
                 setActiveDrawerTab(null);
@@ -254,52 +334,74 @@ export function IRISOverlay(): JSX.Element {
 
         window.addEventListener('message', handler);
         return (): void => window.removeEventListener('message', handler);
-    }, [usePageRuntimeMap]);
+    }, [showMap, usePageRuntimeMap]);
 
     useEffect(() => {
-        const timeout = window.setTimeout(() => {
-            const state = useStore.getState();
-            window.postMessage(buildPageMapRuntimeSnapshotMessage({
-                type: PAGE_MAP_RUNTIME_MESSAGES.syncSnapshot,
-                portals: state.portals,
-                links: state.links,
-                fields: state.fields,
-                mapState: state.mapState,
-                mapThemeId: state.mapThemeId,
-                layerShowLinks: state.layerShowLinks,
-                layerShowFields: state.layerShowFields,
-                selectedPortalId: state.selectedPortalId,
-                selectedLinkId: state.selectedLinkId,
-                selectedFieldId: state.selectedFieldId,
-            }), '*');
+        const retryDelays = [
+            PAGE_MAP_RUNTIME_INITIAL_SYNC_DEBOUNCE_MS,
+            1000,
+            2500,
+        ];
+        const timeouts = retryDelays.map((delay) => window.setTimeout(() => {
+            window.postMessage(buildPageRuntimeSnapshotFromStore(
+                pageRuntimeStartsInFullMapRef.current
+                    ? PAGE_MAP_RUNTIME_MESSAGES.fullMapProbe
+                    : PAGE_MAP_RUNTIME_MESSAGES.syncSnapshot
+            ), '*');
             pageRuntimeInitialSyncDoneRef.current = true;
-        }, PAGE_MAP_RUNTIME_INITIAL_SYNC_DEBOUNCE_MS);
+        }, delay));
 
-        return (): void => window.clearTimeout(timeout);
+        return (): void => timeouts.forEach((timeout) => window.clearTimeout(timeout));
     }, []);
 
     useEffect(() => {
         if (!pageRuntimeInitialSyncDoneRef.current) return;
 
+        if (showMap && usePageRuntimeMap) {
+            window.postMessage(buildPageRuntimeSnapshotFromStore(PAGE_MAP_RUNTIME_MESSAGES.fullMapProbe), '*');
+            return;
+        }
+
+        window.postMessage({type: PAGE_MAP_RUNTIME_MESSAGES.hideVisibleProbe}, '*');
+    }, [showMap, usePageRuntimeMap]);
+
+    useEffect(() => {
+        if (!pageRuntimeInitialSyncDoneRef.current) return;
+
         const timeout = window.setTimeout(() => {
-            const state = useStore.getState();
-            window.postMessage(buildPageMapRuntimeSnapshotMessage({
-                type: PAGE_MAP_RUNTIME_MESSAGES.syncData,
-                portals,
-                links,
-                fields,
-                mapState: state.mapState,
-                mapThemeId: state.mapThemeId,
-                layerShowLinks: state.layerShowLinks,
-                layerShowFields: state.layerShowFields,
-                selectedPortalId: state.selectedPortalId,
-                selectedLinkId: state.selectedLinkId,
-                selectedFieldId: state.selectedFieldId,
-            }), '*');
+            window.postMessage(buildPageRuntimeSnapshotFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
         }, PAGE_MAP_RUNTIME_DATA_SYNC_DEBOUNCE_MS);
 
         return (): void => window.clearTimeout(timeout);
-    }, [portals, links, fields]);
+    }, [
+        portals,
+        links,
+        fields,
+        artifacts,
+        mockOrnaments,
+        missionDetails,
+        pluginFeatures,
+        plannedLinks,
+        plannedMarkers,
+        planningTool,
+        planningAnchorPortalId,
+        planningPortalPath,
+        selectedPlannedItemId,
+        plannedLinksEnabled,
+        plannedShowLinks,
+        plannedShowMarkers,
+        layerShowOrnaments,
+        layerShowArtifacts,
+        filterShowResistance,
+        filterShowEnlightened,
+        filterShowMachina,
+        filterShowUnclaimedPortals,
+        filterShowLevel,
+        filterShowHealth,
+        filterShowVisited,
+        filterShowCaptured,
+        filterShowScanned,
+    ]);
 
     useEffect(() => {
         if (!pageRuntimeInitialSyncDoneRef.current) return;
@@ -334,21 +436,8 @@ export function IRISOverlay(): JSX.Element {
     useEffect(() => {
         if (!pageRuntimeInitialSyncDoneRef.current) return;
 
-        const state = useStore.getState();
-        window.postMessage(buildPageMapRuntimeSnapshotMessage({
-            type: PAGE_MAP_RUNTIME_MESSAGES.syncSelection,
-            portals: state.portals,
-            links: state.links,
-            fields: state.fields,
-            mapState: state.mapState,
-            mapThemeId: state.mapThemeId,
-            layerShowLinks: state.layerShowLinks,
-            layerShowFields: state.layerShowFields,
-            selectedPortalId,
-            selectedLinkId,
-            selectedFieldId,
-        }), '*');
-    }, [selectedPortalId, selectedLinkId, selectedFieldId]);
+        window.postMessage(buildPageRuntimeSnapshotFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncSelection), '*');
+    }, [selectedPortalId, selectedLinkId, selectedFieldId, selectedPlannedItemId]);
 
     useEffect(() => {
         if (!pageRuntimeInitialSyncDoneRef.current) return;

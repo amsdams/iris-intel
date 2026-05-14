@@ -141,6 +141,30 @@ function getPageMap(): Promise<maplibregl.Map> {
                         type: 'geojson',
                         data: {type: 'FeatureCollection', features: []},
                     },
+                    'iris-poc-artifacts': {
+                        type: 'geojson',
+                        data: {type: 'FeatureCollection', features: []},
+                    },
+                    'iris-poc-ornaments': {
+                        type: 'geojson',
+                        data: {type: 'FeatureCollection', features: []},
+                    },
+                    'iris-poc-mission-route': {
+                        type: 'geojson',
+                        data: {type: 'FeatureCollection', features: []},
+                    },
+                    'iris-poc-mission-waypoints': {
+                        type: 'geojson',
+                        data: {type: 'FeatureCollection', features: []},
+                    },
+                    'iris-poc-plugin-features': {
+                        type: 'geojson',
+                        data: {type: 'FeatureCollection', features: []},
+                    },
+                    'iris-poc-planned-features': {
+                        type: 'geojson',
+                        data: {type: 'FeatureCollection', features: []},
+                    },
                 },
                 layers: [
                     {
@@ -179,6 +203,40 @@ function getPageMap(): Promise<maplibregl.Map> {
                         paint: {
                             'line-color': '#ffffff',
                             'line-width': 4,
+                        },
+                    },
+                    {
+                        id: 'iris-poc-planned-links',
+                        type: 'line',
+                        source: 'iris-poc-planned-features',
+                        filter: ['all', ['==', '$type', 'LineString'], ['!=', 'plannedType', 'crossing']],
+                        paint: {
+                            'line-width': ['case', ['==', ['get', 'selected'], true], 6, 3],
+                            'line-color': ['coalesce', ['get', 'color'], '#37e6ff'],
+                            'line-opacity': ['coalesce', ['get', 'opacity'], 0.92],
+                            'line-dasharray': [2, 2],
+                        },
+                    },
+                    {
+                        id: 'iris-poc-plugin-lines',
+                        type: 'line',
+                        source: 'iris-poc-plugin-features',
+                        filter: ['==', '$type', 'LineString'],
+                        paint: {
+                            'line-width': ['coalesce', ['get', 'weight'], 3],
+                            'line-dasharray': [5, 8],
+                            'line-color': ['coalesce', ['get', 'color'], '#37e6ff'],
+                            'line-opacity': ['coalesce', ['get', 'opacity'], 1],
+                        },
+                    },
+                    {
+                        id: 'iris-poc-mission-route',
+                        type: 'line',
+                        source: 'iris-poc-mission-route',
+                        paint: {
+                            'line-width': 4,
+                            'line-color': '#EF8E2E',
+                            'line-opacity': 0.7,
                         },
                     },
                     {
@@ -242,6 +300,199 @@ function getPageMap(): Promise<maplibregl.Map> {
                             'circle-stroke-width': 3,
                             'circle-stroke-color': '#ffffff',
                             'circle-stroke-opacity': 0.8,
+                        },
+                    },
+                    {
+                        id: 'iris-poc-mission-waypoints',
+                        type: 'circle',
+                        source: 'iris-poc-mission-waypoints',
+                        paint: {
+                            'circle-radius': [
+                                'interpolate', ['linear'], ['zoom'],
+                                3, 3,
+                                10, 6,
+                                15, 10,
+                            ],
+                            'circle-color': '#EF8E2E',
+                            'circle-stroke-width': 2,
+                            'circle-stroke-color': '#ffffff',
+                        },
+                    },
+                    {
+                        id: 'iris-poc-artifacts',
+                        type: 'circle',
+                        source: 'iris-poc-artifacts',
+                        paint: {
+                            'circle-radius': [
+                                'interpolate', ['linear'], ['zoom'],
+                                3, 3,
+                                10, 7,
+                                15, 14,
+                            ],
+                            'circle-color': 'transparent',
+                            'circle-stroke-width': 2.5,
+                            'circle-stroke-color': '#FF00FF',
+                            'circle-stroke-opacity': 0.85,
+                        },
+                    },
+                    {
+                        id: 'iris-poc-ornaments',
+                        type: 'circle',
+                        source: 'iris-poc-ornaments',
+                        paint: {
+                            'circle-radius': [
+                                'interpolate', ['linear'], ['zoom'],
+                                3, 2,
+                                10, 4,
+                                15, 10,
+                            ],
+                            'circle-color': 'transparent',
+                            'circle-stroke-width': 2,
+                            'circle-stroke-color': '#FFCE00',
+                            'circle-stroke-opacity': 0.8,
+                        },
+                    },
+                    {
+                        id: 'iris-poc-plugin-points',
+                        type: 'circle',
+                        source: 'iris-poc-plugin-features',
+                        filter: [
+                            'all',
+                            ['==', '$type', 'Point'],
+                            ['!=', 'isPlayerMarker', true],
+                            ['!=', 'isHtmlMarker', true],
+                            ['!=', 'isLabelMarker', true],
+                        ],
+                        paint: {
+                            'circle-radius': 8,
+                            'circle-color': ['coalesce', ['get', 'color'], '#37e6ff'],
+                            'circle-stroke-width': 2,
+                            'circle-stroke-color': '#ffffff',
+                            'circle-opacity': ['coalesce', ['get', 'opacity'], 1],
+                            'circle-stroke-opacity': ['coalesce', ['get', 'opacity'], 1],
+                        },
+                    },
+                    {
+                        id: 'iris-poc-plugin-html-points',
+                        type: 'circle',
+                        source: 'iris-poc-plugin-features',
+                        filter: [
+                            'all',
+                            ['==', '$type', 'Point'],
+                            ['==', 'isHtmlMarker', true],
+                            ['!=', 'isLabelMarker', true],
+                        ],
+                        paint: {
+                            'circle-radius': 7,
+                            'circle-color': ['coalesce', ['get', 'color'], '#37e6ff'],
+                            'circle-stroke-width': 2,
+                            'circle-stroke-color': '#ffffff',
+                            'circle-opacity': ['coalesce', ['get', 'opacity'], 1],
+                            'circle-stroke-opacity': ['coalesce', ['get', 'opacity'], 1],
+                        },
+                    },
+                    {
+                        id: 'iris-poc-plugin-player-points',
+                        type: 'circle',
+                        source: 'iris-poc-plugin-features',
+                        filter: ['all', ['==', '$type', 'Point'], ['==', 'isPlayerMarker', true]],
+                        paint: {
+                            'circle-radius': [
+                                'interpolate', ['linear'], ['zoom'],
+                                10, 5,
+                                15, 8,
+                            ],
+                            'circle-color': ['coalesce', ['get', 'color'], '#ffffff'],
+                            'circle-stroke-width': 2,
+                            'circle-stroke-color': '#ffffff',
+                            'circle-opacity': ['coalesce', ['get', 'opacity'], 1],
+                            'circle-stroke-opacity': ['coalesce', ['get', 'opacity'], 1],
+                        },
+                    },
+                    {
+                        id: 'iris-poc-planned-anchor',
+                        type: 'circle',
+                        source: 'iris-poc-planned-features',
+                        filter: ['all', ['==', '$type', 'Point'], ['any', ['==', 'plannedType', 'anchor'], ['==', 'plannedType', 'target']]],
+                        paint: {
+                            'circle-radius': [
+                                'interpolate', ['linear'], ['zoom'],
+                                10, 7,
+                                15, 12,
+                            ],
+                            'circle-color': 'transparent',
+                            'circle-stroke-width': 3,
+                            'circle-stroke-color': '#37e6ff',
+                            'circle-stroke-opacity': 0.95,
+                        },
+                    },
+                    {
+                        id: 'iris-poc-planned-markers',
+                        type: 'circle',
+                        source: 'iris-poc-planned-features',
+                        filter: ['all', ['==', '$type', 'Point'], ['==', 'plannedType', 'marker']],
+                        paint: {
+                            'circle-radius': [
+                                'interpolate', ['linear'], ['zoom'],
+                                10, 5,
+                                15, 9,
+                            ],
+                            'circle-color': ['coalesce', ['get', 'color'], '#37e6ff'],
+                            'circle-opacity': 0.9,
+                            'circle-stroke-width': ['case', ['==', ['get', 'selected'], true], 4, 2],
+                            'circle-stroke-color': ['case', ['==', ['get', 'selected'], true], '#ffffff', '#000000'],
+                            'circle-stroke-opacity': ['case', ['==', ['get', 'selected'], true], 1, 0.85],
+                        },
+                    },
+                    {
+                        id: 'iris-poc-planned-crossings',
+                        type: 'line',
+                        source: 'iris-poc-planned-features',
+                        filter: ['all', ['==', '$type', 'LineString'], ['==', 'plannedType', 'crossing']],
+                        paint: {
+                            'line-width': 4,
+                            'line-color': '#ff4d4d',
+                            'line-opacity': 0.95,
+                            'line-dasharray': [1, 1],
+                        },
+                    },
+                    {
+                        id: 'iris-poc-plugin-labels',
+                        type: 'symbol',
+                        source: 'iris-poc-plugin-features',
+                        filter: ['all', ['==', '$type', 'Point'], ['==', 'isLabelMarker', true]],
+                        layout: {
+                            'text-field': ['coalesce', ['get', 'label'], ''],
+                            'text-size': 11,
+                            'text-anchor': 'center',
+                            'text-allow-overlap': true,
+                            'text-ignore-placement': true,
+                        },
+                        paint: {
+                            'text-color': ['coalesce', ['get', 'color'], '#ffffff'],
+                            'text-halo-color': '#000000',
+                            'text-halo-width': 1.6,
+                            'text-opacity': ['coalesce', ['get', 'opacity'], 1],
+                        },
+                    },
+                    {
+                        id: 'iris-poc-plugin-player-labels',
+                        type: 'symbol',
+                        source: 'iris-poc-plugin-features',
+                        filter: ['all', ['==', '$type', 'Point'], ['==', 'isPlayerMarker', true]],
+                        layout: {
+                            'text-field': ['coalesce', ['get', 'label'], ['get', 'name'], ''],
+                            'text-size': 11,
+                            'text-anchor': 'left',
+                            'text-offset': [0.9, 0],
+                            'text-allow-overlap': true,
+                            'text-ignore-placement': true,
+                        },
+                        paint: {
+                            'text-color': '#ffffff',
+                            'text-halo-color': '#000000',
+                            'text-halo-width': 1.6,
+                            'text-opacity': ['coalesce', ['get', 'opacity'], 1],
                         },
                     },
                 ],
@@ -381,6 +632,12 @@ function setIrisData(map: maplibregl.Map, message: PageMapRuntimeCommandMessage)
     setGeoJsonSourceData(map, 'iris-poc-portals', message.data?.portals ?? getEmptyFeatureCollection());
     setGeoJsonSourceData(map, 'iris-poc-links', message.data?.links ?? getEmptyFeatureCollection());
     setGeoJsonSourceData(map, 'iris-poc-fields', message.data?.fields ?? getEmptyFeatureCollection());
+    setGeoJsonSourceData(map, 'iris-poc-artifacts', message.data?.artifacts ?? getEmptyFeatureCollection());
+    setGeoJsonSourceData(map, 'iris-poc-ornaments', message.data?.ornaments ?? getEmptyFeatureCollection());
+    setGeoJsonSourceData(map, 'iris-poc-mission-route', message.data?.missionRoute ?? getEmptyFeatureCollection());
+    setGeoJsonSourceData(map, 'iris-poc-mission-waypoints', message.data?.missionWaypoints ?? getEmptyFeatureCollection());
+    setGeoJsonSourceData(map, 'iris-poc-plugin-features', message.data?.pluginFeatures ?? getEmptyFeatureCollection());
+    setGeoJsonSourceData(map, 'iris-poc-planned-features', message.data?.plannedFeatures ?? getEmptyFeatureCollection());
     setSelectedData(map, message);
 }
 
@@ -693,5 +950,7 @@ window.addEventListener('message', (event: MessageEvent<PageMapRuntimeCommandMes
         void runSyncTilesPoc(event.data);
     }
 });
+
+window.postMessage({type: PAGE_MAP_RUNTIME_MESSAGES.ready}, '*');
 
 console.info('IRIS page map runtime loaded');

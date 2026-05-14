@@ -10,6 +10,7 @@ export const PAGE_MAP_RUNTIME_MESSAGES = {
     syncCamera: 'IRIS_PAGE_MAP_RUNTIME_SYNC_CAMERA',
     syncSelection: 'IRIS_PAGE_MAP_RUNTIME_SYNC_SELECTION',
     syncTiles: 'IRIS_PAGE_MAP_RUNTIME_SYNC_TILES',
+    ready: 'IRIS_PAGE_MAP_RUNTIME_READY',
     cameraChanged: 'IRIS_PAGE_MAP_RUNTIME_CAMERA_CHANGED',
     result: 'IRIS_PAGE_MAP_RUNTIME_QRF_POC_RESULT',
     selection: 'IRIS_PAGE_MAP_RUNTIME_SELECTION',
@@ -49,6 +50,12 @@ export interface PageMapRuntimeDataPayload {
         selectedPortal?: GeoJSON.FeatureCollection;
         selectedLink?: GeoJSON.FeatureCollection;
         selectedField?: GeoJSON.FeatureCollection;
+        artifacts?: GeoJSON.FeatureCollection;
+        ornaments?: GeoJSON.FeatureCollection;
+        missionRoute?: GeoJSON.FeatureCollection;
+        missionWaypoints?: GeoJSON.FeatureCollection;
+        pluginFeatures?: GeoJSON.FeatureCollection;
+        plannedFeatures?: GeoJSON.FeatureCollection;
     };
 }
 
