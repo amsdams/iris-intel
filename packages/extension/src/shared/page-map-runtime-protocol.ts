@@ -16,7 +16,7 @@ export const PAGE_MAP_RUNTIME_MESSAGES = {
     selection: 'IRIS_PAGE_MAP_RUNTIME_SELECTION',
 } as const;
 
-export type PageMapRuntimeSelectionKind = 'portal' | 'link' | 'field';
+export type PageMapRuntimeSelectionKind = 'portal' | 'link' | 'field' | 'planned-link' | 'planned-marker';
 
 export interface PageMapRuntimeCamera {
     lat: number;
@@ -43,6 +43,10 @@ export interface PageMapRuntimeDataPayload {
     camera?: PageMapRuntimeCamera;
     layers?: PageMapRuntimeLayerVisibility;
     tiles?: string[];
+    planning?: {
+        enabled: boolean;
+        tool: 'links' | 'markers';
+    };
     data?: {
         portals?: GeoJSON.FeatureCollection;
         links?: GeoJSON.FeatureCollection;
@@ -75,12 +79,14 @@ export interface PageMapRuntimeSelectionMessage {
     selection?: {
         id?: string;
         kind?: string;
+        openInfo?: boolean;
     };
 }
 
 export interface PageMapRuntimeSelectionPayload {
     id: string;
     kind: PageMapRuntimeSelectionKind;
+    openInfo?: boolean;
 }
 
 export interface PageMapRuntimeCameraChangedMessage {

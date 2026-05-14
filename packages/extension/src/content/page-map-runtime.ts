@@ -28,6 +28,10 @@ const DEFAULT_LAYER_VISIBILITY: PageMapRuntimeLayerVisibility = {
 };
 
 let currentLayerVisibility: PageMapRuntimeLayerVisibility = DEFAULT_LAYER_VISIBILITY;
+let currentPlanningState: {enabled: boolean; tool: 'links' | 'markers'} = {
+    enabled: false,
+    tool: 'links',
+};
 
 type RuntimeDisplayMode = 'hidden' | 'probe' | 'full';
 
@@ -161,6 +165,10 @@ function getPageMap(): Promise<maplibregl.Map> {
                         type: 'geojson',
                         data: {type: 'FeatureCollection', features: []},
                     },
+                    'iris-poc-plugin-highlights': {
+                        type: 'geojson',
+                        data: {type: 'FeatureCollection', features: []},
+                    },
                     'iris-poc-planned-features': {
                         type: 'geojson',
                         data: {type: 'FeatureCollection', features: []},
@@ -186,14 +194,9 @@ function getPageMap(): Promise<maplibregl.Map> {
                         type: 'fill',
                         source: 'iris-poc-fields',
                         paint: {
-                            'fill-color': [
-                                'match', ['get', 'team'],
-                                'E', '#03fe03',
-                                'R', '#0088ff',
-                                'M', '#ff0028',
-                                '#999999',
-                            ],
-                            'fill-opacity': 0.25,
+                            'fill-color': ['coalesce', ['get', 'color'], '#999999'],
+                            'fill-opacity': 0.3,
+                            'fill-antialias': false,
                         },
                     },
                     {
@@ -244,14 +247,9 @@ function getPageMap(): Promise<maplibregl.Map> {
                         type: 'line',
                         source: 'iris-poc-links',
                         paint: {
-                            'line-color': [
-                                'match', ['get', 'team'],
-                                'E', '#03fe03',
-                                'R', '#0088ff',
-                                'M', '#ff0028',
-                                '#999999',
-                            ],
+                            'line-color': ['coalesce', ['get', 'color'], '#999999'],
                             'line-width': 2,
+                            'line-opacity': 1,
                         },
                     },
                     {
@@ -270,19 +268,19 @@ function getPageMap(): Promise<maplibregl.Map> {
                         paint: {
                             'circle-radius': [
                                 'interpolate', ['linear'], ['zoom'],
+                                3, 1,
                                 10, 2,
                                 15, 6,
                             ],
-                            'circle-color': [
-                                'match', ['get', 'team'],
-                                'E', '#03fe03',
-                                'R', '#0088ff',
-                                'M', '#ff0028',
-                                'N', '#aaaaaa',
-                                '#999999',
+                            'circle-color': ['coalesce', ['get', 'color'], '#999999'],
+                            'circle-opacity': [
+                                'interpolate', ['linear'], ['coalesce', ['get', 'health'], 100],
+                                0, 0.1,
+                                100, 0.7,
                             ],
-                            'circle-stroke-width': 1,
-                            'circle-stroke-color': '#ffffff',
+                            'circle-stroke-width': 1.5,
+                            'circle-stroke-color': ['coalesce', ['get', 'color'], '#999999'],
+                            'circle-stroke-opacity': 1,
                         },
                     },
                     {
@@ -373,6 +371,24 @@ function getPageMap(): Promise<maplibregl.Map> {
                         },
                     },
                     {
+                        id: 'iris-poc-plugin-portal-highlights',
+                        type: 'circle',
+                        source: 'iris-poc-plugin-highlights',
+                        filter: ['==', '$type', 'Point'],
+                        paint: {
+                            'circle-radius': [
+                                'interpolate', ['linear'], ['zoom'],
+                                10, 5,
+                                15, 9,
+                            ],
+                            'circle-color': ['coalesce', ['get', 'color'], '#ffffff'],
+                            'circle-opacity': ['coalesce', ['get', 'opacity'], 0.9],
+                            'circle-stroke-width': 2,
+                            'circle-stroke-color': ['coalesce', ['get', 'teamColor'], '#ffffff'],
+                            'circle-stroke-opacity': ['coalesce', ['get', 'opacity'], 1],
+                        },
+                    },
+                    {
                         id: 'iris-poc-plugin-html-points',
                         type: 'circle',
                         source: 'iris-poc-plugin-features',
@@ -395,12 +411,12 @@ function getPageMap(): Promise<maplibregl.Map> {
                         id: 'iris-poc-plugin-player-points',
                         type: 'circle',
                         source: 'iris-poc-plugin-features',
-                        filter: ['all', ['==', '$type', 'Point'], ['==', 'isPlayerMarker', true]],
+                        filter: ['all', ['==', '$type', 'Point'], ['any', ['==', 'isPlayerMarker', true], ['==', 'isPlayerMarker', 'true']]],
                         paint: {
                             'circle-radius': [
                                 'interpolate', ['linear'], ['zoom'],
-                                10, 5,
-                                15, 8,
+                                10, 7,
+                                15, 10,
                             ],
                             'circle-color': ['coalesce', ['get', 'color'], '#ffffff'],
                             'circle-stroke-width': 2,
@@ -479,7 +495,7 @@ function getPageMap(): Promise<maplibregl.Map> {
                         id: 'iris-poc-plugin-player-labels',
                         type: 'symbol',
                         source: 'iris-poc-plugin-features',
-                        filter: ['all', ['==', '$type', 'Point'], ['==', 'isPlayerMarker', true]],
+                        filter: ['all', ['==', '$type', 'Point'], ['any', ['==', 'isPlayerMarker', true], ['==', 'isPlayerMarker', 'true']]],
                         layout: {
                             'text-field': ['coalesce', ['get', 'label'], ['get', 'name'], ''],
                             'text-size': 11,
@@ -524,7 +540,7 @@ function getPageMap(): Promise<maplibregl.Map> {
             map.on('click', (event) => {
                 const startedAt = performance.now();
                 const features = map.queryRenderedFeatures(event.point, {
-                    layers: getVisibleIrisLayerIds(),
+                    layers: getClickableIrisLayerIds(),
                 });
                 const summary = {
                     count: features.length,
@@ -534,7 +550,14 @@ function getPageMap(): Promise<maplibregl.Map> {
                 };
                 console.info('[IRIS page map runtime visible click POC]', summary);
                 postDiagnosticResult('PAGE VISIBLE CLICK', summary);
-                postSelection(features[0]);
+                postSelection(features);
+            });
+            map.on('contextmenu', (event) => {
+                event.preventDefault();
+                const features = map.queryRenderedFeatures(event.point, {
+                    layers: getClickableIrisLayerIds(),
+                });
+                postSelection(features, true);
             });
             resolve(map);
         });
@@ -599,6 +622,7 @@ function setRasterTiles(map: maplibregl.Map, sourceId: string, tiles: string[]):
     const source = map.getSource(sourceId);
     if (source && 'setTiles' in source) {
         (source as SetTilesRasterSource).setTiles(tiles);
+        map.triggerRepaint();
     }
 }
 
@@ -608,6 +632,14 @@ function getVisibleIrisLayerIds(): string[] {
         currentLayerVisibility.links ? 'iris-poc-links' : null,
         currentLayerVisibility.fields ? 'iris-poc-fields' : null,
     ].filter((layerId): layerId is string => Boolean(layerId));
+}
+
+function getClickableIrisLayerIds(): string[] {
+    return [
+        'iris-poc-planned-markers',
+        'iris-poc-planned-links',
+        ...getVisibleIrisLayerIds(),
+    ].filter((layerId) => Boolean(layerId));
 }
 
 function setLayerVisibility(map: maplibregl.Map, layerId: string, visible: boolean): void {
@@ -629,6 +661,9 @@ function getEmptyFeatureCollection(): GeoJSON.FeatureCollection {
 }
 
 function setIrisData(map: maplibregl.Map, message: PageMapRuntimeCommandMessage): void {
+    if (message.planning) {
+        currentPlanningState = message.planning;
+    }
     setGeoJsonSourceData(map, 'iris-poc-portals', message.data?.portals ?? getEmptyFeatureCollection());
     setGeoJsonSourceData(map, 'iris-poc-links', message.data?.links ?? getEmptyFeatureCollection());
     setGeoJsonSourceData(map, 'iris-poc-fields', message.data?.fields ?? getEmptyFeatureCollection());
@@ -636,9 +671,38 @@ function setIrisData(map: maplibregl.Map, message: PageMapRuntimeCommandMessage)
     setGeoJsonSourceData(map, 'iris-poc-ornaments', message.data?.ornaments ?? getEmptyFeatureCollection());
     setGeoJsonSourceData(map, 'iris-poc-mission-route', message.data?.missionRoute ?? getEmptyFeatureCollection());
     setGeoJsonSourceData(map, 'iris-poc-mission-waypoints', message.data?.missionWaypoints ?? getEmptyFeatureCollection());
-    setGeoJsonSourceData(map, 'iris-poc-plugin-features', message.data?.pluginFeatures ?? getEmptyFeatureCollection());
+    setPluginFeatureData(map, message.data?.pluginFeatures ?? getEmptyFeatureCollection());
     setGeoJsonSourceData(map, 'iris-poc-planned-features', message.data?.plannedFeatures ?? getEmptyFeatureCollection());
     setSelectedData(map, message);
+}
+
+function setPluginFeatureData(map: maplibregl.Map, features: GeoJSON.FeatureCollection): void {
+    const portalHighlights: GeoJSON.Feature[] = [];
+    const remainingFeatures: GeoJSON.Feature[] = [];
+
+    for (const feature of features.features) {
+        const id = getFeatureId(feature);
+        if (id.startsWith('portal-level:') || id.startsWith('portal-recharge:')) {
+            portalHighlights.push(feature);
+        } else {
+            remainingFeatures.push(feature);
+        }
+    }
+
+    setGeoJsonSourceData(map, 'iris-poc-plugin-features', {
+        type: 'FeatureCollection',
+        features: remainingFeatures,
+    });
+    setGeoJsonSourceData(map, 'iris-poc-plugin-highlights', {
+        type: 'FeatureCollection',
+        features: portalHighlights,
+    });
+}
+
+function getFeatureId(feature: GeoJSON.Feature): string {
+    if (typeof feature.id === 'string') return feature.id;
+    const properties = feature.properties as Record<string, unknown> | null;
+    return typeof properties?.id === 'string' ? properties.id : '';
 }
 
 function setSelectedData(map: maplibregl.Map, message: PageMapRuntimeCommandMessage): void {
@@ -689,22 +753,53 @@ function postDiagnosticResult(label: string, summary: Record<string, unknown>): 
     window.postMessage(message, '*');
 }
 
-function postSelection(feature: maplibregl.MapGeoJSONFeature | undefined): void {
+function postSelection(features: maplibregl.MapGeoJSONFeature[], openInfo = false): void {
+    const feature = getSelectableFeature(features);
     if (!feature) return;
     const properties = feature.properties as Record<string, unknown>;
     const id = properties.id;
     if (typeof id !== 'string') return;
 
     const layerId = feature.layer.id;
-    if (layerId !== 'iris-poc-portals' && layerId !== 'iris-poc-links' && layerId !== 'iris-poc-fields') {
+    if (
+        layerId !== 'iris-poc-portals' &&
+        layerId !== 'iris-poc-links' &&
+        layerId !== 'iris-poc-fields' &&
+        layerId !== 'iris-poc-planned-links' &&
+        layerId !== 'iris-poc-planned-markers'
+    ) {
         return;
     }
 
     const selection: PageMapRuntimeSelectionPayload = {
         id,
-        kind: layerId === 'iris-poc-portals' ? 'portal' : layerId === 'iris-poc-links' ? 'link' : 'field',
+        kind: getSelectionKind(layerId),
+        openInfo,
     };
     window.postMessage({type: PAGE_MAP_RUNTIME_MESSAGES.selection, selection}, '*');
+}
+
+function getSelectableFeature(features: maplibregl.MapGeoJSONFeature[]): maplibregl.MapGeoJSONFeature | undefined {
+    const portals = features.find((feature) => feature.layer.id === 'iris-poc-portals');
+    if (currentPlanningState.enabled && currentPlanningState.tool === 'links' && portals) {
+        return portals;
+    }
+
+    return features.find((feature) =>
+        feature.layer.id === 'iris-poc-planned-markers' ||
+        feature.layer.id === 'iris-poc-planned-links' ||
+        feature.layer.id === 'iris-poc-portals' ||
+        feature.layer.id === 'iris-poc-links' ||
+        feature.layer.id === 'iris-poc-fields'
+    );
+}
+
+function getSelectionKind(layerId: string): PageMapRuntimeSelectionPayload['kind'] {
+    if (layerId === 'iris-poc-portals') return 'portal';
+    if (layerId === 'iris-poc-links') return 'link';
+    if (layerId === 'iris-poc-fields') return 'field';
+    if (layerId === 'iris-poc-planned-links') return 'planned-link';
+    return 'planned-marker';
 }
 
 async function runPageMapRuntimePoc(): Promise<void> {

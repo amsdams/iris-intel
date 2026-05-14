@@ -1,6 +1,6 @@
 import {Artifact, Field, HistoryFilterState, Link, MissionDetails, PlannedLink, PlannedMarker, PlanningTool, Portal} from '@iris/core';
 import {PageMapRuntimeCommandMessage} from '../../../shared/page-map-runtime-protocol';
-import {MAP_THEMES} from '../../theme';
+import {MAP_THEMES, THEMES} from '../../theme';
 import {
     buildArtifactFeatures,
     buildMissionRouteFeatures,
@@ -27,10 +27,12 @@ interface BuildPageMapRuntimeSnapshotOptions {
     pluginFeatures: GeoJSON.FeatureCollection;
     plannedLinks: PlannedLink[];
     plannedMarkers: PlannedMarker[];
+    planningMode: boolean;
     planningTool: PlanningTool;
     planningAnchorPortalId: string | null;
     planningPortalPath: string[];
     mapState: MapStateSnapshot;
+    themeId: string;
     mapThemeId: string;
     layerShowLinks: boolean;
     layerShowFields: boolean;
@@ -68,6 +70,10 @@ export function buildPageMapRuntimeSnapshotMessage(
             zoom: options.mapState.zoom,
         },
         tiles: getMapThemeTiles(options.mapThemeId),
+        planning: {
+            enabled: options.planningMode,
+            tool: options.planningTool,
+        },
         layers: {
             portals: true,
             links: options.layerShowLinks,
@@ -77,9 +83,9 @@ export function buildPageMapRuntimeSnapshotMessage(
             portals: buildPortalFeatureCollection(options),
             links: buildLinkFeatureCollection(options),
             fields: buildFieldFeatureCollection(options),
-            selectedPortal: buildSelectedPortalFeatureCollection(options.portals, options.selectedPortalId),
-            selectedLink: buildSelectedLinkFeatureCollection(options.links, options.selectedLinkId),
-            selectedField: buildSelectedFieldFeatureCollection(options.fields, options.selectedFieldId),
+            selectedPortal: buildSelectedPortalFeatureCollection(options.portals, options.selectedPortalId, options),
+            selectedLink: buildSelectedLinkFeatureCollection(options.links, options.selectedLinkId, options),
+            selectedField: buildSelectedFieldFeatureCollection(options.fields, options.selectedFieldId, options),
             artifacts: toFeatureCollection(buildArtifactFeatures(options.artifacts, options.portals, {
                 showArtifacts: options.layerShowArtifacts,
             })),
@@ -97,7 +103,7 @@ export function buildPageMapRuntimeSnapshotMessage(
             })),
             missionRoute: toFeatureCollection(buildMissionRouteFeatures(options.missionDetails)),
             missionWaypoints: toFeatureCollection(buildMissionWaypointFeatures(options.missionDetails)),
-            pluginFeatures: options.pluginFeatures,
+            pluginFeatures: buildPluginFeatureCollection(options),
             plannedFeatures: toFeatureCollection(buildPlannedFeatures(options)),
         },
     };
@@ -141,6 +147,33 @@ function isPortalVisible(portal: Portal, options: BuildPageMapRuntimeSnapshotOpt
     return true;
 }
 
+function getTeamColor(team: string, options: BuildPageMapRuntimeSnapshotOptions): string {
+    const theme = THEMES[options.themeId] || THEMES.INGRESS;
+    if (team === 'E') return theme.E;
+    if (team === 'R') return theme.R;
+    if (team === 'M') return theme.M;
+    return theme.N;
+}
+
+function buildPluginFeatureCollection(options: BuildPageMapRuntimeSnapshotOptions): GeoJSON.FeatureCollection {
+    return {
+        type: 'FeatureCollection',
+        features: options.pluginFeatures.features.map((feature) => {
+            const properties = feature.properties as Record<string, unknown> | null;
+            const team = typeof properties?.team === 'string' ? properties.team : null;
+            if (!team) return feature;
+
+            return {
+                ...feature,
+                properties: {
+                    ...properties,
+                    teamColor: getTeamColor(team, options),
+                },
+            };
+        }),
+    };
+}
+
 function buildPortalFeatureCollection(options: BuildPageMapRuntimeSnapshotOptions): GeoJSON.FeatureCollection {
     return {
         type: 'FeatureCollection',
@@ -152,6 +185,7 @@ function buildPortalFeatureCollection(options: BuildPageMapRuntimeSnapshotOption
                 properties: {
                     id: portal.id,
                     team: portal.team,
+                    color: getTeamColor(portal.team, options),
                     level: portal.level ?? 0,
                     health: portal.health ?? 100,
                 },
@@ -161,7 +195,8 @@ function buildPortalFeatureCollection(options: BuildPageMapRuntimeSnapshotOption
 
 function buildSelectedPortalFeatureCollection(
     portals: Record<string, Portal>,
-    selectedPortalId: string | null
+    selectedPortalId: string | null,
+    options: BuildPageMapRuntimeSnapshotOptions
 ): GeoJSON.FeatureCollection {
     const portal = selectedPortalId ? portals[selectedPortalId] : null;
     if (!portal) {
@@ -176,6 +211,7 @@ function buildSelectedPortalFeatureCollection(
             properties: {
                 id: portal.id,
                 team: portal.team,
+                color: getTeamColor(portal.team, options),
                 level: portal.level ?? 0,
                 health: portal.health ?? 100,
             },
@@ -185,7 +221,8 @@ function buildSelectedPortalFeatureCollection(
 
 function buildSelectedLinkFeatureCollection(
     links: Record<string, Link>,
-    selectedLinkId: string | null
+    selectedLinkId: string | null,
+    options: BuildPageMapRuntimeSnapshotOptions
 ): GeoJSON.FeatureCollection {
     const link = selectedLinkId ? links[selectedLinkId] : null;
     if (!link) {
@@ -206,6 +243,7 @@ function buildSelectedLinkFeatureCollection(
             properties: {
                 id: link.id,
                 team: link.team,
+                color: getTeamColor(link.team, options),
             },
         }],
     };
@@ -213,7 +251,8 @@ function buildSelectedLinkFeatureCollection(
 
 function buildSelectedFieldFeatureCollection(
     fields: Record<string, Field>,
-    selectedFieldId: string | null
+    selectedFieldId: string | null,
+    options: BuildPageMapRuntimeSnapshotOptions
 ): GeoJSON.FeatureCollection {
     const field = selectedFieldId ? fields[selectedFieldId] : null;
     if (!field || field.points.length < 3) {
@@ -234,6 +273,7 @@ function buildSelectedFieldFeatureCollection(
             properties: {
                 id: field.id,
                 team: field.team,
+                color: getTeamColor(field.team, options),
             },
         }],
     };
@@ -256,6 +296,7 @@ function buildLinkFeatureCollection(options: BuildPageMapRuntimeSnapshotOptions)
                 properties: {
                     id: link.id,
                     team: link.team,
+                    color: getTeamColor(link.team, options),
                 },
             })),
     };
@@ -279,6 +320,7 @@ function buildFieldFeatureCollection(options: BuildPageMapRuntimeSnapshotOptions
                 properties: {
                     id: field.id,
                     team: field.team,
+                    color: getTeamColor(field.team, options),
                 },
             })),
     };

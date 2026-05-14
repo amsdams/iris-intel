@@ -91,10 +91,12 @@ function buildPageRuntimeSnapshotFromStore(type: string, diagnostic?: boolean): 
         pluginFeatures: state.pluginFeatures,
         plannedLinks: state.plannedLinks,
         plannedMarkers: state.plannedMarkers,
+        planningMode: state.planningMode,
         planningTool: state.planningTool,
         planningAnchorPortalId: state.planningAnchorPortalId,
         planningPortalPath: state.planningPortalPath,
         mapState: state.mapState,
+        themeId: state.themeId,
         mapThemeId: state.mapThemeId,
         layerShowLinks: state.layerShowLinks,
         layerShowFields: state.layerShowFields,
@@ -149,6 +151,7 @@ export function IRISOverlay(): JSX.Element {
     const links = useStore((state) => state.links);
     const fields = useStore((state) => state.fields);
     const mapState = useStore((state) => state.mapState);
+    const themeId = useStore((state) => state.themeId);
     const mapThemeId = useStore((state) => state.mapThemeId);
     const layerShowLinks = useStore((state) => state.layerShowLinks);
     const layerShowFields = useStore((state) => state.layerShowFields);
@@ -160,6 +163,7 @@ export function IRISOverlay(): JSX.Element {
     const pluginFeatures = useStore((state) => state.pluginFeatures);
     const plannedLinks = useStore((state) => state.plannedLinks);
     const plannedMarkers = useStore((state) => state.plannedMarkers);
+    const planningMode = useStore((state) => state.planningMode);
     const planningTool = useStore((state) => state.planningTool);
     const planningAnchorPortalId = useStore((state) => state.planningAnchorPortalId);
     const planningPortalPath = useStore((state) => state.planningPortalPath);
@@ -308,6 +312,7 @@ export function IRISOverlay(): JSX.Element {
             if (!isPageRuntimeSelectionMessage(event.data)) return;
 
             const selection = event.data.selection;
+            const shouldOpenInfo = selection.openInfo === true;
 
             const store = useStore.getState();
             if (selection.kind === 'portal') {
@@ -320,15 +325,21 @@ export function IRISOverlay(): JSX.Element {
                 store.selectPortal(selection.id);
                 window.postMessage({type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: selection.id}, '*');
                 setActiveDrawerTab(null);
-                setShowSelectionInfo(true);
+                setShowSelectionInfo(shouldOpenInfo);
             } else if (selection.kind === 'link') {
                 store.selectLink(selection.id);
                 setActiveDrawerTab(null);
-                setShowSelectionInfo(true);
+                setShowSelectionInfo(shouldOpenInfo);
             } else if (selection.kind === 'field') {
                 store.selectField(selection.id);
                 setActiveDrawerTab(null);
-                setShowSelectionInfo(true);
+                setShowSelectionInfo(shouldOpenInfo);
+            } else if (selection.kind === 'planned-link') {
+                store.selectPlannedItem(selection.id, 'link');
+                setShowSelectionInfo(false);
+            } else if (selection.kind === 'planned-marker') {
+                store.selectPlannedItem(selection.id, 'marker');
+                setShowSelectionInfo(false);
             }
         };
 
@@ -383,6 +394,7 @@ export function IRISOverlay(): JSX.Element {
         pluginFeatures,
         plannedLinks,
         plannedMarkers,
+        planningMode,
         planningTool,
         planningAnchorPortalId,
         planningPortalPath,
@@ -401,6 +413,7 @@ export function IRISOverlay(): JSX.Element {
         filterShowVisited,
         filterShowCaptured,
         filterShowScanned,
+        themeId,
     ]);
 
     useEffect(() => {
