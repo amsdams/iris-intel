@@ -6,6 +6,10 @@ import { IRIS_VERSION_LABEL } from '../../../version';
 import './debug.css';
 import {THEMES} from "../../theme";
 import {emitQueryRenderedFeaturesProbe, QueryRenderedFeaturesProbeMode} from '../map/map-events';
+import {
+    PAGE_MAP_RUNTIME_MESSAGES,
+    PageMapRuntimeResultMessage,
+} from '../../../shared/page-map-runtime-protocol';
 
 const POLLED_ENDPOINT_LABELS: Partial<Record<EndpointKey, string>> = {
     plexts: 'next auto refresh',
@@ -151,6 +155,7 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
     const [countdown, setCountdown] = useState<number | null>(null);
     const [, setNow] = useState(() => Date.now());
     const [copyStatus, setCopyStatus] = useState<string | null>(null);
+    const [pageRuntimePocResult, setPageRuntimePocResult] = useState<string>('not run');
 
     useEffect(() => {
         if (addressStatus !== 'pending' || !addressNextLookupAt) {
@@ -169,6 +174,20 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
     useEffect(() => {
         const interval = window.setInterval(() => setNow(Date.now()), 1000);
         return (): void => clearInterval(interval);
+    }, []);
+
+    useEffect(() => {
+        const handler = (event: MessageEvent<PageMapRuntimeResultMessage>): void => {
+            if (event.origin !== location.origin) return;
+            if (event.data?.type !== PAGE_MAP_RUNTIME_MESSAGES.result) return;
+
+            const label = event.data.label ?? 'PAGE RUNTIME';
+            const summary = event.data.summary ?? {};
+            setPageRuntimePocResult(`${label}: ${JSON.stringify(summary)}`);
+        };
+
+        window.addEventListener('message', handler);
+        return (): void => window.removeEventListener('message', handler);
     }, []);
 
     const isStale = discoveredLocation && lastResolvedLatLng && (
@@ -261,6 +280,88 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
 
     const runQueryRenderedFeaturesProbe = (mode: QueryRenderedFeaturesProbeMode): void => {
         emitQueryRenderedFeaturesProbe(document, mode);
+    };
+
+    const runPageMapRuntimePoc = (): void => {
+        window.postMessage({type: PAGE_MAP_RUNTIME_MESSAGES.qrfProbe}, '*');
+    };
+
+    const buildPageRuntimeIrisDataMessage = (type: string): Record<string, unknown> => ({
+        type,
+        center: {lat: mapState.lat, lng: mapState.lng},
+        zoom: mapState.zoom,
+        data: {
+            portals: {
+                type: 'FeatureCollection',
+                features: Object.values(portals).map((portal) => ({
+                    type: 'Feature',
+                    geometry: {type: 'Point', coordinates: [portal.lng, portal.lat]},
+                    properties: {
+                        id: portal.id,
+                        team: portal.team,
+                        level: portal.level ?? 0,
+                        health: portal.health ?? 100,
+                    },
+                })),
+            },
+            links: {
+                type: 'FeatureCollection',
+                features: Object.values(links).map((link) => ({
+                    type: 'Feature',
+                    geometry: {
+                        type: 'LineString',
+                        coordinates: [
+                            [link.fromLng, link.fromLat],
+                            [link.toLng, link.toLat],
+                        ],
+                    },
+                    properties: {
+                        id: link.id,
+                        team: link.team,
+                    },
+                })),
+            },
+            fields: {
+                type: 'FeatureCollection',
+                features: Object.values(fields)
+                    .filter((field) => field.points.length >= 3)
+                    .map((field) => ({
+                        type: 'Feature',
+                        geometry: {
+                            type: 'Polygon',
+                            coordinates: [[
+                                ...field.points.map((point) => [point.lng, point.lat]),
+                                [field.points[0].lng, field.points[0].lat],
+                            ]],
+                        },
+                        properties: {
+                            id: field.id,
+                            team: field.team,
+                        },
+                    })),
+            },
+        },
+    });
+
+    const runPageMapRuntimeIrisDataPoc = (): void => {
+        window.postMessage(buildPageRuntimeIrisDataMessage(PAGE_MAP_RUNTIME_MESSAGES.irisDataProbe), '*');
+    };
+
+    const runVisiblePageMapRuntimePoc = (): void => {
+        window.postMessage({
+            ...buildPageRuntimeIrisDataMessage(PAGE_MAP_RUNTIME_MESSAGES.visibleProbe),
+        }, '*');
+    };
+
+    const syncPageMapRuntimeCamera = (): void => {
+        window.postMessage({
+            type: PAGE_MAP_RUNTIME_MESSAGES.syncCamera,
+            camera: {
+                lat: mapState.lat,
+                lng: mapState.lng,
+                zoom: mapState.zoom,
+            },
+        }, '*');
     };
 
     return (
@@ -510,6 +611,10 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                                 <span className="iris-debug-value">console output; errors are not caught</span>
                             </div>
                             <div className="iris-debug-endpoint-details">
+                                <div className="iris-debug-row">
+                                    <span className="iris-debug-label-indent">Last page-world result</span>
+                                    <span className="iris-debug-value iris-debug-poc-result">{pageRuntimePocResult}</span>
+                                </div>
                                 <div className="iris-debug-actions">
                                     <button className="iris-button iris-debug-copy-btn" onClick={() => runQueryRenderedFeaturesProbe('center-all')}>
                                         CENTER ALL
@@ -522,6 +627,18 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                                     </button>
                                     <button className="iris-button iris-debug-copy-btn" onClick={() => runQueryRenderedFeaturesProbe('viewport-iris-layers')}>
                                         VIEW IRIS
+                                    </button>
+                                    <button className="iris-button iris-debug-copy-btn" onClick={runPageMapRuntimePoc}>
+                                        PAGE RUNTIME
+                                    </button>
+                                    <button className="iris-button iris-debug-copy-btn" onClick={runPageMapRuntimeIrisDataPoc}>
+                                        PAGE IRIS DATA
+                                    </button>
+                                    <button className="iris-button iris-debug-copy-btn" onClick={runVisiblePageMapRuntimePoc}>
+                                        PAGE VISIBLE
+                                    </button>
+                                    <button className="iris-button iris-debug-copy-btn" onClick={syncPageMapRuntimeCamera}>
+                                        SYNC CAMERA
                                     </button>
                                 </div>
                             </div>

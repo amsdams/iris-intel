@@ -27,6 +27,10 @@ import { DockDrawer, DrawerTab } from './shared/DockDrawer';
 import { LocationSearchPopup } from './shared/LocationSearchPopup';
 import { MockToolsBar } from './shared/MockToolsBar';
 import { PlanningBar } from './shared/PlanningBar';
+import {
+    PAGE_MAP_RUNTIME_MESSAGES,
+    PageMapRuntimeSelectionMessage,
+} from '../shared/page-map-runtime-protocol';
 
 // ---------------------------------------------------------------------------
 // IRISOverlay
@@ -155,6 +159,35 @@ export function IRISOverlay(): JSX.Element {
             document.removeEventListener('iris:missions:open', missionsOpenHandler);
         };
     }, [toggleExportPopup, toggleThemePopup]);
+
+    useEffect(() => {
+        const handler = (event: MessageEvent<PageMapRuntimeSelectionMessage>): void => {
+            if (event.origin !== location.origin) return;
+            if (event.data?.type !== PAGE_MAP_RUNTIME_MESSAGES.selection) return;
+
+            const selection = event.data.selection;
+            if (!selection?.id) return;
+
+            const store = useStore.getState();
+            if (selection.kind === 'portal') {
+                store.selectPortal(selection.id);
+                window.postMessage({type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: selection.id}, '*');
+                setActiveDrawerTab(null);
+                setShowSelectionInfo(true);
+            } else if (selection.kind === 'link') {
+                store.selectLink(selection.id);
+                setActiveDrawerTab(null);
+                setShowSelectionInfo(true);
+            } else if (selection.kind === 'field') {
+                store.selectField(selection.id);
+                setActiveDrawerTab(null);
+                setShowSelectionInfo(true);
+            }
+        };
+
+        window.addEventListener('message', handler);
+        return (): void => window.removeEventListener('message', handler);
+    }, []);
 
     if (sessionStatus === 'initial_login_required') {
         return (

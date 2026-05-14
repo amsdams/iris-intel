@@ -21,6 +21,12 @@
       "js": ["src/content/interceptor.ts"],
       "run_at": "document_start",
       "world": "MAIN"
+    },
+    {
+      "matches": ["*://intel.ingress.com/*"],
+      "js": ["src/content/page-map-runtime-poc.ts"],
+      "run_at": "document_idle",
+      "world": "MAIN"
     }
   ],
   "permissions": ["storage", "tabs"],
