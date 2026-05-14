@@ -1,5 +1,7 @@
-import { create, StateCreator } from 'zustand';
-import { subscribeWithSelector, persist } from 'zustand/middleware';
+import { useSyncExternalStore } from 'preact/compat';
+import { createStore } from 'zustand/vanilla';
+import type { StateCreator } from 'zustand/vanilla';
+import { subscribeWithSelector, persist, createJSONStorage } from 'zustand/middleware';
 import { EntityLogic } from './logic/EntityLogic';
 import { globalSpatialIndex } from './SpatialIndex';
 
@@ -1483,9 +1485,9 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
     })),
 });
 
-export const useStore = create<IRISState>()(
-    subscribeWithSelector(
-        persist(
+const irisStore = createStore<IRISState>()(
+    persist(
+        subscribeWithSelector(
             (...a) => ({
                 ...createSettingsSlice(...a),
                 ...createEntitiesSlice(...a),
@@ -1493,8 +1495,10 @@ export const useStore = create<IRISState>()(
                 ...createPlayerSlice(...a),
                 ...createDiagnosticsSlice(...a),
             }),
+        ),
             {
                 name: 'iris-settings',
+                storage: createJSONStorage(() => globalThis.localStorage),
                 partialize: (state) => ({
                     pluginStates: state.pluginStates,
                     themeId: state.themeId,
@@ -1540,4 +1544,21 @@ export const useStore = create<IRISState>()(
                     }
                 }
             }
-        )));
+    ));
+
+type StoreSelector<T> = (state: IRISState) => T;
+type IRISUseStore = {
+    (): IRISState;
+    <T>(selector: StoreSelector<T>): T;
+} & typeof irisStore;
+
+function useIrisStore(): IRISState;
+function useIrisStore<T>(selector: StoreSelector<T>): T;
+function useIrisStore<T>(selector?: StoreSelector<T>): IRISState | T {
+    return useSyncExternalStore(
+        irisStore.subscribe,
+        () => selector ? selector(irisStore.getState()) : irisStore.getState(),
+    );
+}
+
+export const useStore = Object.assign(useIrisStore, irisStore) as IRISUseStore;

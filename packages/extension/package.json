@@ -1,6 +1,6 @@
 {
   "name": "@iris/extension",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -20,7 +20,7 @@
     "@iris/core": "*",
     "maplibre-gl": "^4.0.0",
     "preact": "^10.29.1",
-    "zustand": "^4.0.0"
+    "zustand": "^5.0.13"
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.7.0",

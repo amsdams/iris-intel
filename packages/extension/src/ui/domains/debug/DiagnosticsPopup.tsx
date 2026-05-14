@@ -54,7 +54,39 @@ function formatCount(value: number | undefined): string {
     return typeof value === 'number' ? value.toLocaleString() : '-';
 }
 
-function buildPerfSummary(perf: MapPerfDiagnostics): string {
+interface PerfSummaryContext {
+    versionLabel: string;
+    mapThemeId: string;
+    activeVisualOverlayIds: string[];
+}
+
+function getBrowserLabel(): string {
+    const ua = navigator.userAgent;
+    const match =
+        ua.match(/Edg\/([\d.]+)/) ??
+        ua.match(/Firefox\/([\d.]+)/) ??
+        ua.match(/Chrome\/([\d.]+)/) ??
+        ua.match(/Version\/([\d.]+).*Safari/);
+
+    if (!match) return 'Unknown';
+    if (ua.includes('Edg/')) return `Edge ${match[1]}`;
+    if (ua.includes('Firefox/')) return `Firefox ${match[1]}`;
+    if (ua.includes('Chrome/')) return `Chrome ${match[1]}`;
+    return `Safari ${match[1]}`;
+}
+
+function buildEnvironmentSummary(context: PerfSummaryContext): string {
+    const pointer = window.matchMedia?.('(pointer: coarse)').matches ? 'coarse' : 'fine';
+    const hover = window.matchMedia?.('(hover: hover)').matches ? 'yes' : 'no';
+    const viewport = `${window.innerWidth}x${window.innerHeight}`;
+    const dpr = Number.isFinite(window.devicePixelRatio) ? window.devicePixelRatio.toFixed(2) : '-';
+    const touchPoints = navigator.maxTouchPoints ?? 0;
+    const overlays = context.activeVisualOverlayIds.length > 0 ? context.activeVisualOverlayIds.join(',') : 'none';
+
+    return `CONTEXT ${context.versionLabel} browser ${getBrowserLabel()} platform ${navigator.platform || '-'} viewport ${viewport} dpr ${dpr} touch ${touchPoints} pointer ${pointer} hover ${hover} mapStyle ${context.mapThemeId} overlays ${overlays}`;
+}
+
+function buildPerfSummary(perf: MapPerfDiagnostics, context: PerfSummaryContext): string {
     const viewport = perf.viewport;
     const html = perf.htmlMarkers;
     const frame = perf.frame;
@@ -66,6 +98,7 @@ function buildPerfSummary(perf: MapPerfDiagnostics): string {
             .join(' | ')
         : '';
     return [
+        buildEnvironmentSummary(context),
         viewport
             ? `VIEWPORT ${formatMs(viewport.totalMs)} z ${viewport.zoom?.toFixed(2) ?? '-'} buffer ${viewport.queryBufferDegrees?.toFixed(4) ?? '-'} query ${formatMs(viewport.queryMs)} setData ${formatMs(viewport.setDataMs)} items ${formatCount(viewport.itemCount)} P ${formatCount(viewport.portalCount)} L ${formatCount(viewport.linkCount)} F ${formatCount(viewport.fieldCount)} art ${formatCount(viewport.artifactCount)} orn ${formatCount(viewport.ornamentCount)} plugin ${formatCount(viewport.pluginCount)}`
             : 'VIEWPORT no sample',
@@ -111,6 +144,8 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
     const addressNextLookupAt = useStore((state) => state.addressNextLookupAt);
     const endpointDiagnostics = useStore((state) => state.endpointDiagnostics);
     const mapPerfDiagnostics = useStore((state) => state.mapPerfDiagnostics);
+    const mapThemeId = useStore((state) => state.mapThemeId);
+    const activeVisualOverlayIds = useStore((state) => state.activeVisualOverlayIds);
 
     const [countdown, setCountdown] = useState<number | null>(null);
     const [, setNow] = useState(() => Date.now());
@@ -212,7 +247,11 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
     const framePerf = mapPerfDiagnostics.frame;
 
     const copyPerfSummary = (): void => {
-        const text = buildPerfSummary(mapPerfDiagnostics);
+        const text = buildPerfSummary(mapPerfDiagnostics, {
+            versionLabel: IRIS_VERSION_LABEL,
+            mapThemeId,
+            activeVisualOverlayIds,
+        });
         navigator.clipboard?.writeText(text)
             .then(() => setCopyStatus('Copied'))
             .catch(() => setCopyStatus('Copy failed'));
