@@ -5,6 +5,7 @@ import { Popup } from '../../shared/Popup';
 import { IRIS_VERSION_LABEL } from '../../../version';
 import './debug.css';
 import {THEMES} from "../../theme";
+import {emitQueryRenderedFeaturesProbe, QueryRenderedFeaturesProbeMode} from '../map/map-events';
 
 const POLLED_ENDPOINT_LABELS: Partial<Record<EndpointKey, string>> = {
     plexts: 'next auto refresh',
@@ -258,6 +259,10 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
         window.setTimeout(() => setCopyStatus(null), 1600);
     };
 
+    const runQueryRenderedFeaturesProbe = (mode: QueryRenderedFeaturesProbeMode): void => {
+        emitQueryRenderedFeaturesProbe(document, mode);
+    };
+
     return (
         <Popup
             onClose={onClose}
@@ -495,6 +500,32 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                             />
                             Show map navigation controls
                         </label>
+                    </div>
+
+                    <div className="iris-debug-section-title">QUERY RENDERED FEATURES POC</div>
+                    <div className="iris-debug-table">
+                        <div className="iris-debug-row iris-debug-row-endpoint">
+                            <div className="iris-debug-endpoint-main">
+                                <span className="iris-debug-label">Probe</span>
+                                <span className="iris-debug-value">console output; errors are not caught</span>
+                            </div>
+                            <div className="iris-debug-endpoint-details">
+                                <div className="iris-debug-actions">
+                                    <button className="iris-button iris-debug-copy-btn" onClick={() => runQueryRenderedFeaturesProbe('center-all')}>
+                                        CENTER ALL
+                                    </button>
+                                    <button className="iris-button iris-debug-copy-btn" onClick={() => runQueryRenderedFeaturesProbe('center-iris-layers')}>
+                                        CENTER IRIS
+                                    </button>
+                                    <button className="iris-button iris-debug-copy-btn" onClick={() => runQueryRenderedFeaturesProbe('viewport-all')}>
+                                        VIEW ALL
+                                    </button>
+                                    <button className="iris-button iris-debug-copy-btn" onClick={() => runQueryRenderedFeaturesProbe('viewport-iris-layers')}>
+                                        VIEW IRIS
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

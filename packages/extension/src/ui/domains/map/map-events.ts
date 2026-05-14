@@ -6,6 +6,16 @@ export interface SelectionInfoOpenDetail {
   reason: 'secondary-interaction';
 }
 
+export type QueryRenderedFeaturesProbeMode =
+  | 'center-all'
+  | 'center-iris-layers'
+  | 'viewport-all'
+  | 'viewport-iris-layers';
+
+export interface QueryRenderedFeaturesProbeDetail {
+  mode: QueryRenderedFeaturesProbeMode;
+}
+
 export interface PortalClickEventLike {
   type: string;
   detail: PortalClickDetail;
@@ -48,6 +58,19 @@ export function createSelectionInfoOpenEvent(): Event {
 
 export function emitSelectionInfoOpen(target: { dispatchEvent: (event: Event) => boolean }): void {
   target.dispatchEvent(createSelectionInfoOpenEvent());
+}
+
+export function createQueryRenderedFeaturesProbeEvent(mode: QueryRenderedFeaturesProbeMode): Event {
+  return new CustomEvent('iris:debug:query-rendered-features', {
+    detail: {mode} satisfies QueryRenderedFeaturesProbeDetail,
+  });
+}
+
+export function emitQueryRenderedFeaturesProbe(
+  target: { dispatchEvent: (event: Event) => boolean },
+  mode: QueryRenderedFeaturesProbeMode
+): void {
+  target.dispatchEvent(createQueryRenderedFeaturesProbeEvent(mode));
 }
 
 export function installPortalSelectionBridge({

@@ -37,6 +37,13 @@
     font-size: 0.72em;
 }
 
+.iris-debug-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 4px 8px;
+}
+
 .iris-debug-table {
     display: flex;
     flex-direction: column;

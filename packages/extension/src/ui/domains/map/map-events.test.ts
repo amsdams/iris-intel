@@ -1,5 +1,10 @@
 import {describe, expect, it, vi} from 'vitest';
-import {createSelectionInfoOpenEvent, emitPortalClick, installPortalSelectionBridge} from './map-events';
+import {
+  createQueryRenderedFeaturesProbeEvent,
+  createSelectionInfoOpenEvent,
+  emitPortalClick,
+  installPortalSelectionBridge,
+} from './map-events';
 
 class FakeTarget {
   private listeners = new Map<string, Set<(event: Event) => void>>();
@@ -80,5 +85,14 @@ describe('createSelectionInfoOpenEvent', () => {
 
     expect(event.type).toBe('iris:selection-info:open');
     expect(event.detail).toEqual({reason: 'secondary-interaction'});
+  });
+});
+
+describe('createQueryRenderedFeaturesProbeEvent', () => {
+  it('creates the diagnostics probe event with the requested mode', () => {
+    const event = createQueryRenderedFeaturesProbeEvent('center-iris-layers') as CustomEvent;
+
+    expect(event.type).toBe('iris:debug:query-rendered-features');
+    expect(event.detail).toEqual({mode: 'center-iris-layers'});
   });
 });

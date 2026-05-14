@@ -14,7 +14,12 @@ import {
   buildPortalFeatures,
   toFeatureCollection,
 } from './feature-builders';
-import {emitPortalClick, emitSelectionInfoOpen, installPortalSelectionBridge} from './map-events';
+import {
+  emitPortalClick,
+  emitSelectionInfoOpen,
+  installPortalSelectionBridge,
+  QueryRenderedFeaturesProbeDetail,
+} from './map-events';
 import {resolveMapSelection} from './map-selection';
 
 type PluginFeatureProperties = {
@@ -53,6 +58,22 @@ const PLANNED_MARKER_COLORS: Record<PlannedMarker['color'], string> = {
   blue: '#37e6ff',
   green: '#49ff7a',
 };
+const QUERY_RENDERED_FEATURES_IRIS_LAYERS = [
+  'fields',
+  'links',
+  'planned-links',
+  'plugin-lines',
+  'mission-route',
+  'portals',
+  'portal-selected',
+  'mission-waypoints',
+  'artifacts',
+  'ornaments',
+  'plugin-points',
+  'planned-anchor',
+  'planned-markers',
+  'planned-crossings',
+];
 
 interface PlainMapInteraction {
   point: { x: number; y: number };
@@ -1510,6 +1531,30 @@ export function MapOverlay(): JSX.Element {
     const contextMenuTarget = map.current.getCanvasContainer();
     contextMenuTarget.addEventListener('contextmenu', handleNativeContextMenu, { capture: true });
 
+    const handleQueryRenderedFeaturesProbe = (event: Event): void => {
+        if (!map.current) return;
+        const {mode} = (event as CustomEvent<QueryRenderedFeaturesProbeDetail>).detail;
+        const center = map.current.project(map.current.getCenter());
+        const layers = QUERY_RENDERED_FEATURES_IRIS_LAYERS.filter((layerId) => map.current?.getLayer(layerId));
+        const startedAt = performance.now();
+        const features = mode === 'center-all'
+            ? map.current.queryRenderedFeatures(center)
+            : mode === 'center-iris-layers'
+              ? map.current.queryRenderedFeatures(center, {layers})
+              : mode === 'viewport-all'
+                ? map.current.queryRenderedFeatures()
+                : map.current.queryRenderedFeatures({layers});
+
+        console.info('[IRIS queryRenderedFeatures POC]', {
+            mode,
+            count: features.length,
+            elapsedMs: Math.round(performance.now() - startedAt),
+            center: {x: Math.round(center.x), y: Math.round(center.y)},
+            layers: mode.endsWith('iris-layers') ? layers : 'all',
+        });
+    };
+    document.addEventListener('iris:debug:query-rendered-features', handleQueryRenderedFeaturesProbe);
+
     const removePortalSelectionBridge = installPortalSelectionBridge({
       target: document,
       windowLike: window,
@@ -1626,6 +1671,7 @@ export function MapOverlay(): JSX.Element {
       markerRegistry.forEach(({ marker }) => marker.remove());
       markerRegistry.clear();
       contextMenuTarget.removeEventListener('contextmenu', handleNativeContextMenu, { capture: true });
+      document.removeEventListener('iris:debug:query-rendered-features', handleQueryRenderedFeaturesProbe);
       map.current?.remove();
       removePortalSelectionBridge();
     };
