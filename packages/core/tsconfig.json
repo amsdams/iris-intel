@@ -1,0 +1,7 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "types": ["geojson"]
+  },
+  "include": ["src/**/*", "../plugin-sdk/src/**/*"]
+}

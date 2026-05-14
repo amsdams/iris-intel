@@ -66,7 +66,7 @@
     "globals": "^17.6.0",
     "stylelint": "^17.11.1",
     "stylelint-config-standard": "^40.0.0",
-    "typescript": "^5.0.0",
+    "typescript": "^6.0.3",
     "typescript-eslint": "^8.59.3",
     "vite": "^6.4.2",
     "vite-plugin-web-extension": "^4.5.1",

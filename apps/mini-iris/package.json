@@ -1,6 +1,6 @@
 {
   "name": "mini-iris",
-  "version": "1.0.31",
+  "version": "1.0.32",
   "private": true,
   "type": "module",
   "scripts": {
@@ -23,7 +23,7 @@
     "@preact/preset-vite": "^2.7.0",
     "@types/rbush": "^4.0.0",
     "archiver": "^8.0.0",
-    "typescript": "^5.4.5",
+    "typescript": "^6.0.3",
     "vite": "^6.4.2"
   }
 }
