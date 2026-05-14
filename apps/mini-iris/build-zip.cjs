@@ -1,9 +1,9 @@
 const fs = require('fs');
 const path = require('path');
-const archiver = require('archiver');
 
 async function zipDirectory(sourceDir, outPath, extraFiles) {
-    const archive = archiver('zip', { zlib: { level: 9 } });
+    const { ZipArchive } = await import('archiver');
+    const archive = new ZipArchive({ zlib: { level: 9 } });
     const stream = fs.createWriteStream(outPath);
 
     return new Promise((resolve, reject) => {

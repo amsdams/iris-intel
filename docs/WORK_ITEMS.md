@@ -546,6 +546,7 @@ Tasks:
 | Pre-aggregate portal key count labels                                         | Done   | key labels now use pre-aggregated inventory key counts instead of recursively recounting capsules per portal; mobile currently uses the same HTML marker path as portal level labels for visibility |
 | Move portal key count labels off HTML markers                                 | Open   | MapLibre symbol labels worked on desktop but did not appear on mobile; revisit later with mobile-specific rendering/profiling before replacing the visible HTML marker fallback |
 | Add on-map mock tools bar                                                     | Done   | when mock tools are enabled in Diagnostics, a compact top-of-map bar exposes artifact, ornament, inventory, key, and passcode mock toggles without reopening popups                 |
+| Investigate responsive horizontal overflow                                    | Open   | DevTools ASUS Zenbook Fold emulation (`853x1280`) and desktop widths below `1279px` can expose a horizontal scrollbar around the mock tools bar; audit this and similar fixed/toolbar surfaces |
 | Add heavy mock key inventory for loaded portals                               | Done   | diagnostics mock tools can now load 500 portal keys distributed across currently loaded portals, split between loose keys and a mock capsule for key-overlay performance testing |
 | Add debug-only mock artifacts flow for local testing                          | Done   | diagnostics can now synthesize artifact data from currently loaded portals and clear it again without relying on live events                                              |
 | Add `Artifacts` and `Ornaments` filter toggles                                | Done   | artifacts now have an explicit filter toggle, and ornaments now parse from portal entity payloads into a separate overlay layer with its own filter toggle                |
@@ -794,6 +795,7 @@ Tasks:
 | Add primary-popup focus behavior on mobile       | Open   | consider closing other primary popups when opening stats/portal/link/field/player details while keeping COMM independent if useful |
 | Add portal popup action row                      | Open   | keep all details but make high-frequency actions such as Missions, copy/navigation, or map movement easier to reach near the top |
 | Review mobile back/escape close behavior         | Open   | consider closing the active bottom sheet before broader overlay state changes; treat as later UX work because it touches global interaction |
+| Extract internal UI primitives                   | Open   | larger cleanup: start drawer-first with `DrawerSection`, `DrawerButton`, `DrawerGrid`, and `DrawerScrollGroup`; avoid third-party UI library unless behavior primitives are needed |
 
 ### Map layer and filter toggles update immediately
 
@@ -893,9 +895,10 @@ Tasks:
 
 | Task                                                | Status        | Notes                                                                                                                                                                                                                                                                 |
 |-----------------------------------------------------|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Review outdated npm dependencies                    | Investigating | `npm outdated --workspaces --long` and root `npm outdated --long` found routine updates; `npm audit --workspaces` reports 0 vulnerabilities. Vite is currently not reported as outdated by npm.                                                                       |
-| Apply low-risk patch/minor dependency updates       | Open          | likely safe batch: `preact` 10.29.0 -> 10.29.1, `vite-plugin-web-extension` 4.5.0 -> 4.5.1, `vitest` 4.1.3 -> 4.1.6, `@types/chrome` 0.1.38 -> 0.1.42, `typescript-eslint`/parser/plugin 8.57.2 -> 8.59.3, `eslint-plugin-react-hooks` 7.0.1 -> 7.1.1, `globals` 17.4.0 -> 17.6.0, `stylelint` 17.6.0 -> 17.11.0 |
-| Evaluate major dependency migrations separately     | Open          | larger risk updates need dedicated testing: `maplibre-gl` 4.7.1 -> 5.24.0, `zustand` 4.5.7 -> 5.0.13, `archiver` 7.0.1 -> 8.0.0, `typescript` 5.9.3 -> 6.0.3                                                                                     |
+| Review outdated npm dependencies                    | Done          | latest review shows `npm audit --workspaces` reports 0 vulnerabilities; only major migrations remain after the patch/minor update pass                                                                                                                               |
+| Apply low-risk patch/minor dependency updates       | Done          | updated tracked manifests for `preact` 10.29.1, `vite-plugin-web-extension` 4.5.1, `vitest` 4.1.6, `@types/chrome` 0.1.42, `typescript-eslint`/parser/plugin 8.59.3, `eslint-plugin-react-hooks` 7.1.1, `globals` 17.6.0, and `stylelint` 17.11.1 |
+| Migrate mini-IRIS packaging to `archiver` 8          | Done          | `build-zip.cjs` now uses the ESM `ZipArchive` import path; `npm run build:mini-iris` creates fresh `.zip` and `.xpi` packages successfully                                                                                                                           |
+| Evaluate remaining major dependency migrations separately | Open     | larger risk updates need dedicated testing: `maplibre-gl` 4.7.1 -> 5.24.0, `zustand` 4.5.7 -> 5.0.13, `typescript` 5.9.3 -> 6.0.3                                                                                                                                   |
 
 ## Current Next Pickup
 
