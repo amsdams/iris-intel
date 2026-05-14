@@ -223,6 +223,31 @@ function setGeoJsonSourceData(map: maplibregl.Map, sourceId: string, data: GeoJS
     }
 }
 
+function getEmptyFeatureCollection(): GeoJSON.FeatureCollection {
+    return {type: 'FeatureCollection', features: []};
+}
+
+function setIrisData(map: maplibregl.Map, message: PageMapRuntimeCommandMessage): void {
+    setGeoJsonSourceData(map, 'iris-poc-portals', message.data?.portals ?? getEmptyFeatureCollection());
+    setGeoJsonSourceData(map, 'iris-poc-links', message.data?.links ?? getEmptyFeatureCollection());
+    setGeoJsonSourceData(map, 'iris-poc-fields', message.data?.fields ?? getEmptyFeatureCollection());
+}
+
+function getIrisDataCounts(message: PageMapRuntimeCommandMessage): Record<string, unknown> {
+    return {
+        portals: message.data?.portals?.features.length ?? 0,
+        links: message.data?.links?.features.length ?? 0,
+        fields: message.data?.fields?.features.length ?? 0,
+    };
+}
+
+function waitForMapIdle(map: maplibregl.Map): Promise<void> {
+    return new Promise<void>((resolve) => {
+        map.once('idle', () => resolve());
+        map.triggerRepaint();
+    });
+}
+
 function summarizeFeature(feature: maplibregl.MapGeoJSONFeature | undefined): Record<string, unknown> | null {
     if (!feature) return null;
 
@@ -309,14 +334,8 @@ async function runPageMapRuntimeIrisDataPoc(message: PageMapRuntimeCommandMessag
         });
     }
 
-    setGeoJsonSourceData(map, 'iris-poc-portals', message.data?.portals ?? {type: 'FeatureCollection', features: []});
-    setGeoJsonSourceData(map, 'iris-poc-links', message.data?.links ?? {type: 'FeatureCollection', features: []});
-    setGeoJsonSourceData(map, 'iris-poc-fields', message.data?.fields ?? {type: 'FeatureCollection', features: []});
-
-    await new Promise<void>((resolve) => {
-        map.once('idle', () => resolve());
-        map.triggerRepaint();
-    });
+    setIrisData(map, message);
+    await waitForMapIdle(map);
 
     const center = map.project(map.getCenter());
     const firstPortalPoint = firstPortalCoordinates ? map.project(firstPortalCoordinates) : null;
@@ -338,11 +357,7 @@ async function runPageMapRuntimeIrisDataPoc(message: PageMapRuntimeCommandMessag
         firstPortalCount: firstPortalFeatures.length,
         viewportCount: viewportFeatures.length,
         elapsedMs: Math.round(performance.now() - startedAt),
-        sourceCounts: {
-            portals: message.data?.portals?.features.length ?? 0,
-            links: message.data?.links?.features.length ?? 0,
-            fields: message.data?.fields?.features.length ?? 0,
-        },
+        sourceCounts: getIrisDataCounts(message),
         center: {x: Math.round(center.x), y: Math.round(center.y)},
         firstPortalPoint: firstPortalPoint ? {x: Math.round(firstPortalPoint.x), y: Math.round(firstPortalPoint.y)} : null,
         centerSample: summarizeFeature(centerFeatures[0]),
@@ -362,6 +377,16 @@ async function runVisibleRuntimePoc(message: PageMapRuntimeCommandMessage): Prom
     postPocResult('PAGE VISIBLE RUNTIME', {
         visible: true,
         note: 'Click features in the cyan bordered page-world map pane.',
+    });
+}
+
+async function runSyncDataPoc(message: PageMapRuntimeCommandMessage): Promise<void> {
+    const map = await getPocMap();
+    setIrisData(map, message);
+    await waitForMapIdle(map);
+    postPocResult('PAGE SYNC DATA', {
+        sourceCounts: getIrisDataCounts(message),
+        camera: {...getMapCamera(map)},
     });
 }
 
@@ -386,6 +411,10 @@ window.addEventListener('message', (event: MessageEvent<PageMapRuntimeCommandMes
 
     if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.visibleProbe) {
         void runVisibleRuntimePoc(event.data);
+    }
+
+    if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.syncData) {
+        void runSyncDataPoc(event.data);
     }
 
     if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.syncCamera) {

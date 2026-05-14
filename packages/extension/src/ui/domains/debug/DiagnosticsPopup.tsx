@@ -353,6 +353,10 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
         }, '*');
     };
 
+    const syncPageMapRuntimeData = (): void => {
+        window.postMessage(buildPageRuntimeIrisDataMessage(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
+    };
+
     const syncPageMapRuntimeCamera = (): void => {
         window.postMessage({
             type: PAGE_MAP_RUNTIME_MESSAGES.syncCamera,
@@ -636,6 +640,9 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                                     </button>
                                     <button className="iris-button iris-debug-copy-btn" onClick={runVisiblePageMapRuntimePoc}>
                                         PAGE VISIBLE
+                                    </button>
+                                    <button className="iris-button iris-debug-copy-btn" onClick={syncPageMapRuntimeData}>
+                                        SYNC DATA
                                     </button>
                                     <button className="iris-button iris-debug-copy-btn" onClick={syncPageMapRuntimeCamera}>
                                         SYNC CAMERA
