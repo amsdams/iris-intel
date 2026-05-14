@@ -151,6 +151,8 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
     const mapPerfDiagnostics = useStore((state) => state.mapPerfDiagnostics);
     const mapThemeId = useStore((state) => state.mapThemeId);
     const activeVisualOverlayIds = useStore((state) => state.activeVisualOverlayIds);
+    const layerShowFields = useStore((state) => state.layerShowFields);
+    const layerShowLinks = useStore((state) => state.layerShowLinks);
 
     const [countdown, setCountdown] = useState<number | null>(null);
     const [, setNow] = useState(() => Date.now());
@@ -290,6 +292,16 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
         type,
         center: {lat: mapState.lat, lng: mapState.lng},
         zoom: mapState.zoom,
+        camera: {
+            lat: mapState.lat,
+            lng: mapState.lng,
+            zoom: mapState.zoom,
+        },
+        layers: {
+            portals: true,
+            links: layerShowLinks,
+            fields: layerShowFields,
+        },
         data: {
             portals: {
                 type: 'FeatureCollection',
@@ -353,8 +365,27 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
         }, '*');
     };
 
+    const hideVisiblePageMapRuntimePoc = (): void => {
+        window.postMessage({type: PAGE_MAP_RUNTIME_MESSAGES.hideVisibleProbe}, '*');
+    };
+
     const syncPageMapRuntimeData = (): void => {
         window.postMessage(buildPageRuntimeIrisDataMessage(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
+    };
+
+    const syncPageMapRuntimeSnapshot = (): void => {
+        window.postMessage(buildPageRuntimeIrisDataMessage(PAGE_MAP_RUNTIME_MESSAGES.syncSnapshot), '*');
+    };
+
+    const syncPageMapRuntimeLayers = (): void => {
+        window.postMessage({
+            type: PAGE_MAP_RUNTIME_MESSAGES.syncLayers,
+            layers: {
+                portals: true,
+                links: layerShowLinks,
+                fields: layerShowFields,
+            },
+        }, '*');
     };
 
     const syncPageMapRuntimeCamera = (): void => {
@@ -641,8 +672,17 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                                     <button className="iris-button iris-debug-copy-btn" onClick={runVisiblePageMapRuntimePoc}>
                                         PAGE VISIBLE
                                     </button>
+                                    <button className="iris-button iris-debug-copy-btn" onClick={hideVisiblePageMapRuntimePoc}>
+                                        HIDE VISIBLE
+                                    </button>
+                                    <button className="iris-button iris-debug-copy-btn" onClick={syncPageMapRuntimeSnapshot}>
+                                        SYNC SNAPSHOT
+                                    </button>
                                     <button className="iris-button iris-debug-copy-btn" onClick={syncPageMapRuntimeData}>
                                         SYNC DATA
+                                    </button>
+                                    <button className="iris-button iris-debug-copy-btn" onClick={syncPageMapRuntimeLayers}>
+                                        SYNC LAYERS
                                     </button>
                                     <button className="iris-button iris-debug-copy-btn" onClick={syncPageMapRuntimeCamera}>
                                         SYNC CAMERA

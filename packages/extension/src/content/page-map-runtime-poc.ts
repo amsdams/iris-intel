@@ -4,6 +4,7 @@ import {
     PageMapRuntimeCamera,
     PageMapRuntimeCameraChangedMessage,
     PageMapRuntimeCommandMessage,
+    PageMapRuntimeLayerVisibility,
     PageMapRuntimeResultMessage,
     PageMapRuntimeSelectionPayload,
 } from '../shared/page-map-runtime-protocol';
@@ -14,6 +15,14 @@ interface SetDataGeoJsonSource {
 
 let pocMapPromise: Promise<maplibregl.Map> | null = null;
 let suppressNextCameraChangedEvent = false;
+
+const DEFAULT_LAYER_VISIBILITY: PageMapRuntimeLayerVisibility = {
+    portals: true,
+    links: true,
+    fields: true,
+};
+
+let currentLayerVisibility: PageMapRuntimeLayerVisibility = DEFAULT_LAYER_VISIBILITY;
 
 function createPocContainer(): HTMLDivElement {
     const existing = document.getElementById('iris-page-map-runtime-poc');
@@ -177,7 +186,7 @@ function getPocMap(): Promise<maplibregl.Map> {
             map.on('click', (event) => {
                 const startedAt = performance.now();
                 const features = map.queryRenderedFeatures(event.point, {
-                    layers: ['iris-poc-portals', 'iris-poc-links', 'iris-poc-fields'],
+                    layers: getVisibleIrisLayerIds(),
                 });
                 const summary = {
                     count: features.length,
@@ -216,11 +225,46 @@ function syncMapCamera(map: maplibregl.Map, camera: PageMapRuntimeCamera): void 
     }, 0);
 }
 
+function getMessageCamera(message: PageMapRuntimeCommandMessage): PageMapRuntimeCamera | null {
+    if (message.camera) {
+        return message.camera;
+    }
+    if (message.center) {
+        return {
+            lat: message.center.lat,
+            lng: message.center.lng,
+            zoom: message.zoom ?? 15,
+        };
+    }
+
+    return null;
+}
+
 function setGeoJsonSourceData(map: maplibregl.Map, sourceId: string, data: GeoJSON.FeatureCollection): void {
     const source = map.getSource(sourceId);
     if (source && 'setData' in source) {
         (source as SetDataGeoJsonSource).setData(data);
     }
+}
+
+function getVisibleIrisLayerIds(): string[] {
+    return [
+        currentLayerVisibility.portals ? 'iris-poc-portals' : null,
+        currentLayerVisibility.links ? 'iris-poc-links' : null,
+        currentLayerVisibility.fields ? 'iris-poc-fields' : null,
+    ].filter((layerId): layerId is string => Boolean(layerId));
+}
+
+function setLayerVisibility(map: maplibregl.Map, layerId: string, visible: boolean): void {
+    if (!map.getLayer(layerId)) return;
+    map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none');
+}
+
+function setIrisLayerVisibility(map: maplibregl.Map, visibility: PageMapRuntimeLayerVisibility): void {
+    currentLayerVisibility = visibility;
+    setLayerVisibility(map, 'iris-poc-portals', visibility.portals);
+    setLayerVisibility(map, 'iris-poc-links', visibility.links);
+    setLayerVisibility(map, 'iris-poc-fields', visibility.fields);
 }
 
 function getEmptyFeatureCollection(): GeoJSON.FeatureCollection {
@@ -339,17 +383,18 @@ async function runPageMapRuntimeIrisDataPoc(message: PageMapRuntimeCommandMessag
 
     const center = map.project(map.getCenter());
     const firstPortalPoint = firstPortalCoordinates ? map.project(firstPortalCoordinates) : null;
+    const visibleLayers = getVisibleIrisLayerIds();
     const startedAt = performance.now();
     const centerFeatures = map.queryRenderedFeatures(center, {
-        layers: ['iris-poc-portals', 'iris-poc-links', 'iris-poc-fields'],
+        layers: visibleLayers,
     });
     const firstPortalFeatures = firstPortalPoint
         ? map.queryRenderedFeatures(firstPortalPoint, {
-            layers: ['iris-poc-portals', 'iris-poc-links', 'iris-poc-fields'],
+            layers: visibleLayers,
         })
         : [];
     const viewportFeatures = map.queryRenderedFeatures({
-        layers: ['iris-poc-portals', 'iris-poc-links', 'iris-poc-fields'],
+        layers: visibleLayers,
     });
 
     const summary = {
@@ -358,6 +403,7 @@ async function runPageMapRuntimeIrisDataPoc(message: PageMapRuntimeCommandMessag
         viewportCount: viewportFeatures.length,
         elapsedMs: Math.round(performance.now() - startedAt),
         sourceCounts: getIrisDataCounts(message),
+        visibleLayers,
         center: {x: Math.round(center.x), y: Math.round(center.y)},
         firstPortalPoint: firstPortalPoint ? {x: Math.round(firstPortalPoint.x), y: Math.round(firstPortalPoint.y)} : null,
         centerSample: summarizeFeature(centerFeatures[0]),
@@ -373,10 +419,20 @@ async function runVisibleRuntimePoc(message: PageMapRuntimeCommandMessage): Prom
     setPocContainerVisible(true);
     const map = await getPocMap();
     map.resize();
-    await runPageMapRuntimeIrisDataPoc(message);
+    await applySnapshot(map, message);
     postPocResult('PAGE VISIBLE RUNTIME', {
         visible: true,
+        sourceCounts: getIrisDataCounts(message),
+        visibleLayers: getVisibleIrisLayerIds(),
+        camera: {...getMapCamera(map)},
         note: 'Click features in the cyan bordered page-world map pane.',
+    });
+}
+
+function runHideVisibleRuntimePoc(): void {
+    setPocContainerVisible(false);
+    postPocResult('PAGE HIDE VISIBLE RUNTIME', {
+        visible: false,
     });
 }
 
@@ -390,12 +446,42 @@ async function runSyncDataPoc(message: PageMapRuntimeCommandMessage): Promise<vo
     });
 }
 
+async function runSyncLayersPoc(message: PageMapRuntimeCommandMessage): Promise<void> {
+    if (!message.layers) return;
+
+    const map = await getPocMap();
+    setIrisLayerVisibility(map, message.layers);
+    postPocResult('PAGE SYNC LAYERS', {...message.layers});
+}
+
 async function runSyncCameraPoc(message: PageMapRuntimeCommandMessage): Promise<void> {
     if (!message.camera) return;
 
     const map = await getPocMap();
     syncMapCamera(map, message.camera);
     postPocResult('PAGE SYNC CAMERA', {...getMapCamera(map)});
+}
+
+async function runSyncSnapshotPoc(message: PageMapRuntimeCommandMessage): Promise<void> {
+    const map = await getPocMap();
+    await applySnapshot(map, message);
+    postPocResult('PAGE SYNC SNAPSHOT', {
+        sourceCounts: getIrisDataCounts(message),
+        visibleLayers: getVisibleIrisLayerIds(),
+        camera: {...getMapCamera(map)},
+    });
+}
+
+async function applySnapshot(map: maplibregl.Map, message: PageMapRuntimeCommandMessage): Promise<void> {
+    const camera = getMessageCamera(message);
+    if (camera) {
+        syncMapCamera(map, camera);
+    }
+    if (message.layers) {
+        setIrisLayerVisibility(map, message.layers);
+    }
+    setIrisData(map, message);
+    await waitForMapIdle(map);
 }
 
 window.addEventListener('message', (event: MessageEvent<PageMapRuntimeCommandMessage>) => {
@@ -413,8 +499,20 @@ window.addEventListener('message', (event: MessageEvent<PageMapRuntimeCommandMes
         void runVisibleRuntimePoc(event.data);
     }
 
+    if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.hideVisibleProbe) {
+        runHideVisibleRuntimePoc();
+    }
+
+    if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.syncSnapshot) {
+        void runSyncSnapshotPoc(event.data);
+    }
+
     if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.syncData) {
         void runSyncDataPoc(event.data);
+    }
+
+    if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.syncLayers) {
+        void runSyncLayersPoc(event.data);
     }
 
     if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.syncCamera) {
