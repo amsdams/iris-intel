@@ -900,7 +900,8 @@ Tasks:
 | Migrate mini-IRIS packaging to `archiver` 8          | Done          | `build-zip.cjs` now uses the ESM `ZipArchive` import path; `npm run build:mini-iris` creates fresh `.zip` and `.xpi` packages successfully                                                                                                                           |
 | Make extension package output names explicit         | Open          | align IRIS and mini-IRIS build output logs and artifact names so generated files include product name plus timestamp, e.g. `mini-iris-2026-05-14T14-56-15.xpi` and `iris-2026-05-14T14-56-15.xpi` |
 | Migrate shared state to `zustand` 5                  | Done          | `@iris/core` now uses the vanilla store API plus a Preact-compatible `useSyncExternalStore` hook so tests and Preact builds avoid a React runtime dependency                                                                                                      |
-| Evaluate remaining major dependency migrations separately | Open     | larger risk updates need dedicated testing: `maplibre-gl` 4.7.1 -> 5.24.0 and `typescript` 5.9.3 -> 6.0.3                                                                                                                                                         |
+| Migrate map rendering to `maplibre-gl` 5             | Done          | manifests now target `maplibre-gl` 5.24.0; builds pass for IRIS Chrome/Firefox plus mini-IRIS, desktop/mobile smoke tests passed, and IRIS 0.1.3 benchmark samples were recorded; follow-up panning/selection work remains separate |
+| Evaluate remaining major dependency migrations separately | Open     | larger risk update still needs dedicated testing: `typescript` 5.9.3 -> 6.0.3                                                                                                                                                                                        |
 
 ## Current Next Pickup
 
