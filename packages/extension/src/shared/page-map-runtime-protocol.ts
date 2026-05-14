@@ -23,6 +23,13 @@ export interface PageMapRuntimeCamera {
     zoom: number;
 }
 
+export interface PageMapRuntimeBounds {
+    minLatE6: number;
+    minLngE6: number;
+    maxLatE6: number;
+    maxLngE6: number;
+}
+
 export interface PageMapRuntimeLayerVisibility {
     portals: boolean;
     links: boolean;
@@ -72,4 +79,5 @@ export interface PageMapRuntimeSelectionPayload {
 export interface PageMapRuntimeCameraChangedMessage {
     type?: string;
     camera?: PageMapRuntimeCamera;
+    bounds?: PageMapRuntimeBounds;
 }

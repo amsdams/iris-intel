@@ -48,14 +48,22 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isPageRuntimeCameraChangedMessage(
     value: unknown
-): value is PageMapRuntimeCameraChangedMessage & {camera: {lat: number; lng: number; zoom: number}} {
+): value is PageMapRuntimeCameraChangedMessage & {
+    camera: {lat: number; lng: number; zoom: number};
+    bounds: {minLatE6: number; minLngE6: number; maxLatE6: number; maxLngE6: number};
+} {
     if (!isRecord(value) || value.type !== PAGE_MAP_RUNTIME_MESSAGES.cameraChanged || !isRecord(value.camera)) {
         return false;
     }
 
     return typeof value.camera.lat === 'number' &&
         typeof value.camera.lng === 'number' &&
-        typeof value.camera.zoom === 'number';
+        typeof value.camera.zoom === 'number' &&
+        isRecord(value.bounds) &&
+        typeof value.bounds.minLatE6 === 'number' &&
+        typeof value.bounds.minLngE6 === 'number' &&
+        typeof value.bounds.maxLatE6 === 'number' &&
+        typeof value.bounds.maxLngE6 === 'number';
 }
 
 function isPageRuntimeSelectionMessage(
@@ -214,7 +222,12 @@ export function IRISOverlay(): JSX.Element {
             if (isPageRuntimeCameraChangedMessage(event.data)) {
                 const camera = event.data.camera;
                 if (usePageRuntimeMap) {
-                    useStore.getState().updateMapState(camera.lat, camera.lng, camera.zoom);
+                    window.postMessage({
+                        type: 'IRIS_MOVE_MAP',
+                        center: {lat: camera.lat, lng: camera.lng},
+                        zoom: camera.zoom,
+                        bounds: event.data.bounds,
+                    }, '*');
                 }
                 return;
             }

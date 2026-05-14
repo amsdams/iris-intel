@@ -1,6 +1,7 @@
 import maplibregl from 'maplibre-gl';
 import {
     PAGE_MAP_RUNTIME_MESSAGES,
+    PageMapRuntimeBounds,
     PageMapRuntimeCamera,
     PageMapRuntimeCameraChangedMessage,
     PageMapRuntimeCommandMessage,
@@ -259,12 +260,14 @@ function getPageMap(): Promise<maplibregl.Map> {
                 }
 
                 const camera = getMapCamera(map);
+                const bounds = getMapBounds(map);
                 const message: PageMapRuntimeCameraChangedMessage = {
                     type: PAGE_MAP_RUNTIME_MESSAGES.cameraChanged,
                     camera,
+                    bounds,
                 };
                 window.postMessage(message, '*');
-                postDiagnosticResult('PAGE CAMERA CHANGED', {...camera});
+                postDiagnosticResult('PAGE CAMERA CHANGED', {...camera, bounds});
             });
 
             map.on('click', (event) => {
@@ -295,6 +298,16 @@ function getMapCamera(map: maplibregl.Map): PageMapRuntimeCamera {
         lat: center.lat,
         lng: center.lng,
         zoom: map.getZoom(),
+    };
+}
+
+function getMapBounds(map: maplibregl.Map): PageMapRuntimeBounds {
+    const bounds = map.getBounds();
+    return {
+        minLatE6: Math.round(bounds.getSouth() * 1e6),
+        minLngE6: Math.round(bounds.getWest() * 1e6),
+        maxLatE6: Math.round(bounds.getNorth() * 1e6),
+        maxLngE6: Math.round(bounds.getEast() * 1e6),
     };
 }
 
