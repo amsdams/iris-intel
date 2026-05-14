@@ -14,7 +14,7 @@ import {
   buildPortalFeatures,
   toFeatureCollection,
 } from './feature-builders';
-import {emitPortalClick, installPortalSelectionBridge} from './map-events';
+import {emitPortalClick, emitSelectionInfoOpen, installPortalSelectionBridge} from './map-events';
 import {resolveMapSelection} from './map-selection';
 
 type PluginFeatureProperties = {
@@ -45,6 +45,7 @@ const PAN_BENCHMARK_SETTLE_MS = 600;
 const PLANNED_LINK_COLOR = '#37e6ff';
 const PLANNED_CROSSLINK_COLOR = '#ff4d4d';
 const TOUCH_TAP_MOVE_THRESHOLD_PX = 18;
+const TOUCH_LONG_PRESS_MS = 600;
 const TOUCH_PORTAL_THRESHOLD_PX = 32;
 const PLANNED_MARKER_COLORS: Record<PlannedMarker['color'], string> = {
   white: '#ffffff',
@@ -52,6 +53,11 @@ const PLANNED_MARKER_COLORS: Record<PlannedMarker['color'], string> = {
   blue: '#37e6ff',
   green: '#49ff7a',
 };
+
+interface PlainMapInteraction {
+  point: { x: number; y: number };
+  lngLat: { lng: number; lat: number };
+}
 
 interface MarkerRegistryEntry {
   marker: maplibregl.Marker;
@@ -143,6 +149,33 @@ function isCurrentMapView(mapInstance: maplibregl.Map, lat: number, lng: number,
 
 function isMobileMapViewport(): boolean {
   return typeof window !== 'undefined' && window.matchMedia('(max-width: 768px), (pointer: coarse)').matches;
+}
+
+function toPlainMapInteraction(
+  event: { point: { x: number; y: number }; lngLat: { lng: number; lat: number } }
+): PlainMapInteraction {
+  return {
+    point: { x: event.point.x, y: event.point.y },
+    lngLat: { lng: event.lngLat.lng, lat: event.lngLat.lat },
+  };
+}
+
+function getPlainCanvasInteraction(mapInstance: maplibregl.Map, event: MouseEvent): PlainMapInteraction | null {
+  const rect = mapInstance.getCanvas().getBoundingClientRect();
+  const point = {
+    x: event.clientX - rect.left,
+    y: event.clientY - rect.top,
+  };
+
+  if (point.x < 0 || point.y < 0 || point.x > rect.width || point.y > rect.height) {
+    return null;
+  }
+
+  const lngLat = mapInstance.unproject([point.x, point.y]);
+  return {
+    point,
+    lngLat: { lng: lngLat.lng, lat: lngLat.lat },
+  };
 }
 
 function getViewportQueryBufferDegrees(bounds: maplibregl.LngLatBounds): number {
@@ -413,7 +446,10 @@ export function MapOverlay(): JSX.Element {
     const touchState = useRef({
       maxFingers: 0,
       hasMoved: false,
-      startPoint: { x: 0, y: 0 }
+      startPoint: { x: 0, y: 0 },
+      longPressTimer: null as number | null,
+      longPressHandled: false,
+      startInteraction: null as PlainMapInteraction | null,
     });
 
   const getMapThemeTiles = (id: string): string[] => {
@@ -1392,8 +1428,8 @@ export function MapOverlay(): JSX.Element {
     });
 
     const handleInteraction = (
-      e: maplibregl.MapMouseEvent | maplibregl.MapTouchEvent,
-      options: { portalThreshold?: number } = {}
+      interaction: PlainMapInteraction,
+      options: { openSelectionInfo?: boolean; portalThreshold?: number } = {}
     ): void => {
         if (!map.current) return;
         const state = useStore.getState();
@@ -1404,16 +1440,18 @@ export function MapOverlay(): JSX.Element {
             links: state.links,
             plannedLinks: state.pluginStates['planned-links'] && state.plannedShowLinks ? state.plannedLinks : [],
             plannedMarkers: state.pluginStates['planned-links'] && state.plannedShowMarkers ? state.plannedMarkers : [],
-            point: e.point,
-            lng: e.lngLat.lng,
-            lat: e.lngLat.lat,
+            point: interaction.point,
+            lng: interaction.lngLat.lng,
+            lat: interaction.lngLat.lat,
             zoom: map.current.getZoom(),
             project: (lng, lat) => {
                 const projected = map.current?.project([lng, lat]);
                 return projected ? {x: projected.x, y: projected.y} : null;
             },
             portalThreshold,
-            plannedMarkerPriority: state.planningMode && state.planningTool === 'links' ? 'after-portals' : 'before-portals',
+            plannedMarkerPriority: options.openSelectionInfo || (state.planningMode && state.planningTool === 'links')
+                ? 'after-portals'
+                : 'before-portals',
         });
 
         if (!selection) {
@@ -1427,6 +1465,9 @@ export function MapOverlay(): JSX.Element {
                 break;
             case 'portal':
                 emitPortalClick(document, selection.portalId);
+                if (options.openSelectionInfo && !state.planningMode) {
+                    emitSelectionInfoOpen(document);
+                }
                 break;
             case 'planned-link':
                 state.selectPlannedItem(selection.plannedLinkId, 'link');
@@ -1440,7 +1481,34 @@ export function MapOverlay(): JSX.Element {
         }
     };
 
-    map.current.on('click', handleInteraction);
+    const handleMapClick = (e: maplibregl.MapMouseEvent): void => {
+        handleInteraction(toPlainMapInteraction(e));
+    };
+
+    let lastNativeContextMenuAt = 0;
+    let lastTouchLongPressAt = 0;
+    const handleNativeContextMenu = (event: MouseEvent): void => {
+        if (!map.current) return;
+        const interaction = getPlainCanvasInteraction(map.current, event);
+        if (!interaction) return;
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (performance.now() - lastTouchLongPressAt < 800) return;
+        lastNativeContextMenuAt = performance.now();
+        handleInteraction(interaction, { openSelectionInfo: true, portalThreshold: TOUCH_PORTAL_THRESHOLD_PX });
+    };
+
+    const handleMapContextMenu = (e: maplibregl.MapMouseEvent): void => {
+        if (performance.now() - lastNativeContextMenuAt < 50) return;
+        e.preventDefault();
+        handleInteraction(toPlainMapInteraction(e), { openSelectionInfo: true, portalThreshold: TOUCH_PORTAL_THRESHOLD_PX });
+    };
+
+    map.current.on('click', handleMapClick);
+    map.current.on('contextmenu', handleMapContextMenu);
+    const contextMenuTarget = map.current.getCanvasContainer();
+    contextMenuTarget.addEventListener('contextmenu', handleNativeContextMenu, { capture: true });
 
     const removePortalSelectionBridge = installPortalSelectionBridge({
       target: document,
@@ -1450,11 +1518,36 @@ export function MapOverlay(): JSX.Element {
       isPlanningMode: () => useStore.getState().planningMode,
     });
 
+    const clearTouchLongPress = (): void => {
+        if (touchState.current.longPressTimer !== null) {
+            window.clearTimeout(touchState.current.longPressTimer);
+            touchState.current.longPressTimer = null;
+        }
+    };
+
     map.current.on('touchstart', (e: maplibregl.MapTouchEvent) => {
+        clearTouchLongPress();
         touchState.current.maxFingers = Math.max(touchState.current.maxFingers, e.points.length);
         if (e.points.length === 1) {
             touchState.current.startPoint = {x: e.point.x, y: e.point.y};
             touchState.current.hasMoved = false;
+            touchState.current.longPressHandled = false;
+            touchState.current.startInteraction = toPlainMapInteraction(e);
+            touchState.current.longPressTimer = window.setTimeout(() => {
+                if (
+                    touchState.current.maxFingers === 1 &&
+                    !touchState.current.hasMoved &&
+                    touchState.current.startInteraction
+                ) {
+                    touchState.current.longPressHandled = true;
+                    lastTouchLongPressAt = performance.now();
+                    handleInteraction(touchState.current.startInteraction, { openSelectionInfo: true, portalThreshold: TOUCH_PORTAL_THRESHOLD_PX });
+                }
+                touchState.current.longPressTimer = null;
+            }, TOUCH_LONG_PRESS_MS);
+        } else {
+            touchState.current.startInteraction = null;
+            touchState.current.longPressHandled = false;
         }
     });
 
@@ -1464,20 +1557,25 @@ export function MapOverlay(): JSX.Element {
             const dy = e.point.y - touchState.current.startPoint.y;
             if (Math.sqrt(dx * dx + dy * dy) > TOUCH_TAP_MOVE_THRESHOLD_PX) {
                 touchState.current.hasMoved = true;
+                clearTouchLongPress();
             }
         } else {
             touchState.current.hasMoved = true;
+            clearTouchLongPress();
         }
     });
 
     map.current.on('touchend', (e: maplibregl.MapTouchEvent) => {
-        if (touchState.current.maxFingers === 1 && !touchState.current.hasMoved) {
-            handleInteraction(e, { portalThreshold: TOUCH_PORTAL_THRESHOLD_PX });
+        clearTouchLongPress();
+        if (touchState.current.maxFingers === 1 && !touchState.current.hasMoved && !touchState.current.longPressHandled) {
+            handleInteraction(toPlainMapInteraction(e), { portalThreshold: TOUCH_PORTAL_THRESHOLD_PX });
         }
 
         if (e.originalEvent.touches.length === 0) {
             touchState.current.maxFingers = 0;
             touchState.current.hasMoved = false;
+            touchState.current.longPressHandled = false;
+            touchState.current.startInteraction = null;
         }
     });
 
@@ -1493,14 +1591,15 @@ export function MapOverlay(): JSX.Element {
         lastMove = now;
 
         if (!map.current) return;
+        const interaction = toPlainMapInteraction(e);
         const state = useStore.getState();
         const selection = resolveMapSelection({
             portals: state.portals,
             fields: state.fields,
             links: state.links,
-            point: e.point,
-            lng: e.lngLat.lng,
-            lat: e.lngLat.lat,
+            point: interaction.point,
+            lng: interaction.lngLat.lng,
+            lat: interaction.lngLat.lat,
             zoom: map.current.getZoom(),
             project: (lng, lat) => {
                 const projected = map.current?.project([lng, lat]);
@@ -1517,6 +1616,7 @@ export function MapOverlay(): JSX.Element {
         htmlMarkerSettleTimer.current = null;
       }
       stopPanBenchmark();
+      clearTouchLongPress();
       applyMovingRenderMode(false);
       stopMovingFrameSample();
       if (scheduledViewportSyncFrame.current !== null) {
@@ -1525,6 +1625,7 @@ export function MapOverlay(): JSX.Element {
       }
       markerRegistry.forEach(({ marker }) => marker.remove());
       markerRegistry.clear();
+      contextMenuTarget.removeEventListener('contextmenu', handleNativeContextMenu, { capture: true });
       map.current?.remove();
       removePortalSelectionBridge();
     };

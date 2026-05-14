@@ -1,5 +1,5 @@
 import {describe, expect, it, vi} from 'vitest';
-import {emitPortalClick, installPortalSelectionBridge} from './map-events';
+import {createSelectionInfoOpenEvent, emitPortalClick, installPortalSelectionBridge} from './map-events';
 
 class FakeTarget {
   private listeners = new Map<string, Set<(event: Event) => void>>();
@@ -71,5 +71,14 @@ describe('installPortalSelectionBridge', () => {
     expect(postMessage).not.toHaveBeenCalled();
 
     cleanup();
+  });
+});
+
+describe('createSelectionInfoOpenEvent', () => {
+  it('creates the direct selection-info open event for secondary interactions', () => {
+    const event = createSelectionInfoOpenEvent() as CustomEvent;
+
+    expect(event.type).toBe('iris:selection-info:open');
+    expect(event.detail).toEqual({reason: 'secondary-interaction'});
   });
 });

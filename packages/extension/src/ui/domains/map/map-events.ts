@@ -2,6 +2,10 @@ export interface PortalClickDetail {
   id: string;
 }
 
+export interface SelectionInfoOpenDetail {
+  reason: 'secondary-interaction';
+}
+
 export interface PortalClickEventLike {
   type: string;
   detail: PortalClickDetail;
@@ -34,6 +38,16 @@ export function emitPortalClick(
   id: string
 ): void {
   target.dispatchEvent(createPortalClickEvent(id) as Event);
+}
+
+export function createSelectionInfoOpenEvent(): Event {
+  return new CustomEvent('iris:selection-info:open', {
+    detail: {reason: 'secondary-interaction'} satisfies SelectionInfoOpenDetail,
+  });
+}
+
+export function emitSelectionInfoOpen(target: { dispatchEvent: (event: Event) => boolean }): void {
+  target.dispatchEvent(createSelectionInfoOpenEvent());
 }
 
 export function installPortalSelectionBridge({

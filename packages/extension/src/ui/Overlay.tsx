@@ -135,8 +135,13 @@ export function IRISOverlay(): JSX.Element {
     useEffect(() => {
         const themeHandler = (): void => toggleThemePopup();
         const exportHandler = (): void => toggleExportPopup();
+        const selectionInfoOpenHandler = (): void => {
+            setActiveDrawerTab(null);
+            setShowSelectionInfo(true);
+        };
         document.addEventListener('iris:plugin:theme:toggle', themeHandler);
         document.addEventListener('iris:plugin:export:toggle', exportHandler);
+        document.addEventListener('iris:selection-info:open', selectionInfoOpenHandler);
         const missionsOpenHandler = (event: Event): void => {
             const detail = (event as CustomEvent<{ portalId?: string | null }>).detail;
             useStore.getState().setMissionsPortalId(detail?.portalId ?? null);
@@ -146,6 +151,7 @@ export function IRISOverlay(): JSX.Element {
         return (): void => {
             document.removeEventListener('iris:plugin:theme:toggle', themeHandler);
             document.removeEventListener('iris:plugin:export:toggle', exportHandler);
+            document.removeEventListener('iris:selection-info:open', selectionInfoOpenHandler);
             document.removeEventListener('iris:missions:open', missionsOpenHandler);
         };
     }, [toggleExportPopup, toggleThemePopup]);
