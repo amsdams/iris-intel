@@ -690,6 +690,11 @@ Tasks:
 | Migrate page-world interaction events                                    | Done   | page-world map emits plain camera, selection, contextmenu, draw-tool, and benchmark messages back to extension UI without exposing MapLibre feature objects across worlds |
 | Retire duplicate content-world MapLibre runtime after migration          | Done   | page-world rendering owns the normal map surface and the old `MapOverlay` fallback is no longer mounted; keep the old component file only as a reference until remaining styling/interaction parity is verified |
 | Remove old `MapOverlay` reference implementation                         | Open   | old renderer is no longer mounted; delete the component after theme switching, secondary overlay styling, player tracker parity, mobile long-press, and diagnostics are covered |
+| Keep page-world migration notes in tracked docs                          | Done   | `docs/PAGE_WORLD_MAP_RUNTIME.md` is ignored locally, so committed migration status now lives in this work log and benchmark details live in `docs/PERF_BENCHMARKS.md` |
+| Scope MapLibre Marker pin experiment                                     | Open   | test `maplibregl.Marker` DOM pins for planned markers first, then player tracker; compare against current GeoJSON/symbol layers for styling control, mobile tap behavior, Firefox safety, and marker cleanup |
+| Prototype planned marker pins with MapLibre Marker                       | Open   | render planned markers as DOM pins anchored to portal coordinates while keeping saved state, selection/delete behavior, and Firefox-safe hit testing unchanged |
+| Prototype player tracker pins with MapLibre Marker                       | Open   | after planned marker pins are understood, evaluate player tracker pins with labels, faction styling, multiple players at one portal, zoom gating, and COMM/update cleanup; mobile testing can happen later |
+| Decide marker renderer ownership                                         | Open   | decide whether pins belong in the page-world runtime, extension UI, or a narrow plugin marker bridge; avoid reviving extension-world `queryRenderedFeatures` for production selection |
 | Decide whether crosslink display should also compare against drawn links | Open   | `quick-draw-links` supports existing, drawn, or both                                    |
 | Support moving or copying links from one anchor portal to another        | Open   | useful for fast route/plan variants if interaction model stays understandable on mobile |
 | Support selecting and deleting individual planned items                  | Done   | tapping a saved planned link or marker selects it, highlights it, and enables Delete in the planning bar |
@@ -954,13 +959,15 @@ Tasks:
 
 ## Current Next Pickup
 
-1. **[Draw Tools]** Refine mobile marker selection and decide whether marker taps should prefer edit/delete or portal selection in each mode.
-2. **[Draw Tools]** Add marker colour/label editing for selected planned markers.
-3. **[Performance]** Compare stationary vs moving field-render modes if mobile panning still needs tuning.
-4. **[Plugin Overlay]** Add IITC-style label overlap thinning.
-5. **[Plugin Overlay]** Implement a "Single Highlighter" selection model.
-6. **[Debug]** Add Portal GUIDs to Portal Details when the DEBUG theme is active.
-7. **[Dependencies]** Apply low-risk patch/minor npm dependency updates separately from major migrations.
+1. **[Marker Rendering]** Prototype MapLibre Marker pins for planned markers on desktop first, keeping current GeoJSON markers as the fallback.
+2. **[Marker Rendering]** If planned marker pins behave well, evaluate player tracker pins and co-located player handling.
+3. **[Draw Tools]** Refine marker selection/edit/delete UX after the pin experiment clarifies renderer behavior.
+4. **[Draw Tools]** Add marker colour/label editing for selected planned markers.
+5. **[Page-World]** Keep Firefox Mobile long-press refinement for a later mobile-test session.
+6. **[Performance]** Compare stationary vs moving field-render modes if mobile panning still needs tuning.
+7. **[Plugin Overlay]** Add IITC-style label overlap thinning.
+8. **[Plugin Overlay]** Implement a "Single Highlighter" selection model.
+9. **[Debug]** Add Portal GUIDs to Portal Details when the DEBUG theme is active.
 
 ## Snapshot And Reference Sources
 
