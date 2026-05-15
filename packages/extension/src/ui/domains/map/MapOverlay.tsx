@@ -1207,9 +1207,14 @@ export function MapOverlay(): JSX.Element {
             type: 'line',
             source: 'mission-route',
             paint: {
-              'line-width': 4,
+              'line-width': [
+                'interpolate', ['linear'], ['zoom'],
+                3, 2,
+                10, 3.5,
+                15, 5,
+              ],
               'line-color': SEMANTIC_COLORS.MISSION,
-              'line-opacity': 0.7,
+              'line-opacity': 0.85,
             },
           },
           {
@@ -1263,8 +1268,15 @@ export function MapOverlay(): JSX.Element {
                 15, 10,
               ],
               'circle-color': SEMANTIC_COLORS.MISSION,
-              'circle-stroke-width': 2,
+              'circle-opacity': 0.9,
+              'circle-stroke-width': [
+                'interpolate', ['linear'], ['zoom'],
+                3, 1.5,
+                10, 2,
+                15, 2.75,
+              ],
               'circle-stroke-color': '#fff',
+              'circle-stroke-opacity': 0.95,
             },
           },
           {
