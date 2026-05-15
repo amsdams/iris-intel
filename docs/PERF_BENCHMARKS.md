@@ -18,6 +18,7 @@ when evaluating major dependency migrations or rendering changes.
 | 0.1.4   | Page-world map                | Desktop Mac | Chrome 148  | OSM     | player-tracker                          | n/a    | n/a     | n/a    | n/a    | n/a     | n/a      | n/a       | n/a  | 17ms      | 17ms   | 33ms  | 60  | 0/540       |
 | 0.1.4   | Page-world map                | Mobile ARM  | Firefox 149 | OSM     | player-tracker                          | n/a    | n/a     | n/a    | n/a    | n/a     | n/a      | n/a       | n/a  | 18ms      | 18ms   | 50ms  | 57  | 1/511       |
 | 0.1.4   | Page-world source diagnostics | Desktop Mac | Chrome 148  | OSM     | player-tracker                          | 27,576 | 9,215   | 11,294 | 4,601  | 133     | 0ms      | 0ms       | n/a  | 9ms       | 10ms   | 118ms | 106 | 12/951      |
+| 0.1.4   | Page-world source diagnostics | Desktop Mac | Chrome 148  | OSM     | player-tracker                          | 12,554 | 3,167   | 6,386  | 2,937  | 17      | 0ms      | 0ms       | n/a  | 9ms       | 9ms    | 66ms  | 117 | 4/1,053     |
 
 ## Readout
 
@@ -39,6 +40,9 @@ when evaluating major dependency migrations or rendering changes.
 - Later page-world diagnostics restored `VIEWPORT`/`SOURCES` as source-update timing. They are not the old
   extension-world spatial query timings; `HTML` remains absent because the page-world renderer does not use the old
   HTML marker sync path.
+- The two restored page-world Chrome samples show why entity mix matters: average frame time stayed around `9ms`, but
+  the high-ornament sample (`2,333` ornaments) had more slow frames and a higher max frame than the lower-ornament
+  sample (`47` ornaments).
 
 ## 2026-05-14 - IRIS 0.1.2 - Chrome Desktop - Zustand 5
 
@@ -223,7 +227,7 @@ old extension-world spatial query and HTML marker path.
 CONTEXT IRIS 0.1.4 browser Chrome 148.0.0.0 platform MacIntel viewport 1726x958 dpr 2.00 touch 0 pointer fine hover yes mapStyle OSM overlays player-tracker
 VIEWPORT 0ms z 14.36 buffer n/a query 0ms setData 0ms items 27,576 P 9,215 L 11,294 F 4,601 art 0 orn 2,333 plugin 133
 SOURCES portals 9,215/0ms | links 11,294/0ms | fields 4,601/0ms | artifacts 0/0ms | ornaments 2,333/0ms | plugin-features 133/0ms
-HTML no sample
+HTML n/a
 FRAME 9018ms avg 9ms max 118ms fps 106 slow 12/951 bench 3 median 10ms range 9ms-10ms benchMax 118ms
 ```
 
@@ -232,3 +236,20 @@ Notes:
 - This is a much larger desktop source snapshot than the first copied Chrome page-world sample, especially ornaments.
 - Average frame time stayed low, but worst frame and slow-frame count increased, so compare future samples with similar
   entity and ornament counts.
+
+### Chrome Desktop - Restored Source Diagnostics - Lower Ornament Count
+
+```text
+CONTEXT IRIS 0.1.4 browser Chrome 148.0.0.0 platform MacIntel viewport 1728x958 dpr 2.00 touch 0 pointer fine hover yes mapStyle OSM overlays player-tracker
+VIEWPORT source 0ms z 14.36 buffer n/a query n/a setData 0ms items 12,554 P 3,167 L 6,386 F 2,937 art 0 orn 47 plugin 17
+SOURCES portals 3,167/0ms | links 6,386/0ms | fields 2,937/0ms | artifacts 0/0ms | ornaments 47/0ms | plugin-features 17/0ms
+HTML n/a
+FRAME 9012ms avg 9ms max 66ms fps 117 slow 4/1,053 bench 3 median 9ms range 8ms-9ms benchMax 66ms
+```
+
+Notes:
+
+- With fewer entities and far fewer ornaments, average frame time remained similar, while max frame time and slow-frame
+  count improved.
+- Keep ornament count visible in future benchmark comparisons because it appears to affect occasional stutter more than
+  average frame time.

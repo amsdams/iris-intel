@@ -365,14 +365,20 @@ function getPageMap(): Promise<maplibregl.Map> {
                         paint: {
                             'circle-radius': [
                                 'interpolate', ['linear'], ['zoom'],
-                                3, 2,
-                                10, 4,
-                                15, 10,
+                                3, 3,
+                                10, 5,
+                                15, 11,
                             ],
-                            'circle-color': 'transparent',
-                            'circle-stroke-width': 2,
+                            'circle-color': '#FFCE00',
+                            'circle-opacity': 0.16,
+                            'circle-stroke-width': [
+                                'interpolate', ['linear'], ['zoom'],
+                                3, 1.5,
+                                10, 2.25,
+                                15, 3,
+                            ],
                             'circle-stroke-color': '#FFCE00',
-                            'circle-stroke-opacity': 0.8,
+                            'circle-stroke-opacity': 0.95,
                         },
                     },
                     {

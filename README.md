@@ -96,12 +96,16 @@ The interceptor uses both **prototype patching** for `XMLHttpRequest` and a **fu
 | `mini-iris` | `npm run build:mini-iris` | `npm run check:mini-iris` | `npm run clean:mini-iris` | `npm run package:mini-iris` | `npm run release:mini-iris` |
 | `all` | `npm run build:all` | `npm run check:all` | `npm run clean:all` | `npm run package:all` | `npm run release:all` |
 
-Release packages are written next to each app:
+Command semantics:
 
 - `build:*` creates unpacked browser-extension output for local loading.
 - `package:*` creates timestamped ZIP/XPI files and refreshes the unpacked output first.
 - `release:*` currently aliases the matching product package flow.
-- IRIS unpacked builds: `packages/extension/dist` for Chrome and `packages/extension/dist-firefox` for Firefox.
+
+Package outputs:
+
+- IRIS unpacked builds: `npm run build:iris` writes the Chrome build to `packages/extension/dist`; `npm run package:iris`
+  refreshes both `packages/extension/dist` and `packages/extension/dist-firefox` before packaging.
 - IRIS packages: `packages/extension/builds/iris-chrome-<timestamp>.zip` and `packages/extension/builds/iris-firefox-<timestamp>.xpi`.
 - mini-IRIS unpacked build: `apps/mini-iris/dist`.
 - mini-IRIS packages: `apps/mini-iris/builds/mini-iris-<timestamp>.zip` and `apps/mini-iris/builds/mini-iris-<timestamp>.xpi`.
