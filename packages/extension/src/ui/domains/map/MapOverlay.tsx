@@ -1545,7 +1545,7 @@ export function MapOverlay(): JSX.Element {
                 ? map.current.queryRenderedFeatures()
                 : map.current.queryRenderedFeatures({layers});
 
-        console.info('[IRIS queryRenderedFeatures POC]', {
+        console.info('[IRIS queryRenderedFeatures diagnostic]', {
             mode,
             count: features.length,
             elapsedMs: Math.round(performance.now() - startedAt),

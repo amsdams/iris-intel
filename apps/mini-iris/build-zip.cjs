@@ -25,7 +25,7 @@ async function zipDirectory(sourceDir, outPath, extraFiles) {
 
 (async () => {
     try {
-        console.log('Building ZIP/XPI package...');
+        console.log('Building mini-IRIS ZIP/XPI packages...');
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
         const distDir = path.join(__dirname, 'dist');
         const buildsDir = path.join(__dirname, 'builds');
@@ -34,8 +34,8 @@ async function zipDirectory(sourceDir, outPath, extraFiles) {
             fs.mkdirSync(buildsDir);
         }
 
-        const zipPath = path.join(buildsDir, `extension-${timestamp}.zip`);
-        const xpiPath = path.join(buildsDir, `extension-${timestamp}.xpi`);
+        const zipPath = path.join(buildsDir, `mini-iris-${timestamp}.zip`);
+        const xpiPath = path.join(buildsDir, `mini-iris-${timestamp}.xpi`);
         const manifestPath = path.join(__dirname, 'manifest.json');
         
         // Copy manifest to dist for unpacked loading
@@ -46,10 +46,10 @@ async function zipDirectory(sourceDir, outPath, extraFiles) {
         // Also create a .xpi copy for convenience
         fs.copyFileSync(zipPath, xpiPath);
         
-        console.log(`Success! Package created at: ${zipPath}`);
-        console.log(`Success! Package created at: ${xpiPath}`);
+        console.log(`Success! ZIP package created at: ${zipPath}`);
+        console.log(`Success! XPI package created at: ${xpiPath}`);
     } catch (err) {
-        console.error('Failed to create ZIP package:', err);
+        console.error('Failed to create mini-IRIS packages:', err);
         process.exit(1);
     }
 })();

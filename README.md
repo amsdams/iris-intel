@@ -96,6 +96,13 @@ The interceptor uses both **prototype patching** for `XMLHttpRequest` and a **fu
 | `mini-iris` | `npm run build:mini-iris` | `npm run check:mini-iris` | `npm run clean:mini-iris` | None |
 | `all` | `npm run build:all` | `npm run check:all` | `npm run clean:all` | None |
 
+Release packages are written next to each app:
+
+- IRIS unpacked builds: `packages/extension/dist` for Chrome and `packages/extension/dist-firefox` for Firefox.
+- IRIS packages: `packages/extension/builds/iris-chrome-<timestamp>.zip` and `packages/extension/builds/iris-firefox-<timestamp>.xpi`.
+- mini-IRIS unpacked build: `apps/mini-iris/dist`.
+- mini-IRIS packages: `apps/mini-iris/builds/mini-iris-<timestamp>.zip` and `apps/mini-iris/builds/mini-iris-<timestamp>.xpi`.
+
 ### Prerequisites
 
 - Node.js 18+

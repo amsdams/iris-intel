@@ -139,74 +139,55 @@ function getPageMap(): Promise<maplibregl.Map> {
                         tileSize: 256,
                         maxzoom: 20,
                     },
-                    'poc-source': {
-                        type: 'geojson',
-                        data: {
-                            type: 'FeatureCollection',
-                            features: [
-                                {
-                                    type: 'Feature',
-                                    properties: {
-                                        id: 'page-runtime-poc-point',
-                                        source: 'page-world',
-                                    },
-                                    geometry: {
-                                        type: 'Point',
-                                        coordinates: [0, 0],
-                                    },
-                                },
-                            ],
-                        },
-                    },
-                    'iris-poc-portals': {
+                    'iris-map-portals': {
                         type: 'geojson',
                         data: {type: 'FeatureCollection', features: []},
                     },
-                    'iris-poc-portal-selected': {
+                    'iris-map-portal-selected': {
                         type: 'geojson',
                         data: {type: 'FeatureCollection', features: []},
                     },
-                    'iris-poc-links': {
+                    'iris-map-links': {
                         type: 'geojson',
                         data: {type: 'FeatureCollection', features: []},
                     },
-                    'iris-poc-link-selected': {
+                    'iris-map-link-selected': {
                         type: 'geojson',
                         data: {type: 'FeatureCollection', features: []},
                     },
-                    'iris-poc-fields': {
+                    'iris-map-fields': {
                         type: 'geojson',
                         data: {type: 'FeatureCollection', features: []},
                     },
-                    'iris-poc-field-selected': {
+                    'iris-map-field-selected': {
                         type: 'geojson',
                         data: {type: 'FeatureCollection', features: []},
                     },
-                    'iris-poc-artifacts': {
+                    'iris-map-artifacts': {
                         type: 'geojson',
                         data: {type: 'FeatureCollection', features: []},
                     },
-                    'iris-poc-ornaments': {
+                    'iris-map-ornaments': {
                         type: 'geojson',
                         data: {type: 'FeatureCollection', features: []},
                     },
-                    'iris-poc-mission-route': {
+                    'iris-map-mission-route': {
                         type: 'geojson',
                         data: {type: 'FeatureCollection', features: []},
                     },
-                    'iris-poc-mission-waypoints': {
+                    'iris-map-mission-waypoints': {
                         type: 'geojson',
                         data: {type: 'FeatureCollection', features: []},
                     },
-                    'iris-poc-plugin-features': {
+                    'iris-map-plugin-features': {
                         type: 'geojson',
                         data: {type: 'FeatureCollection', features: []},
                     },
-                    'iris-poc-plugin-highlights': {
+                    'iris-map-plugin-highlights': {
                         type: 'geojson',
                         data: {type: 'FeatureCollection', features: []},
                     },
-                    'iris-poc-planned-features': {
+                    'iris-map-planned-features': {
                         type: 'geojson',
                         data: {type: 'FeatureCollection', features: []},
                     },
@@ -218,18 +199,18 @@ function getPageMap(): Promise<maplibregl.Map> {
                         source: 'osm',
                     },
                     {
-                        id: 'iris-poc-field-selected',
+                        id: 'iris-map-field-selected',
                         type: 'line',
-                        source: 'iris-poc-field-selected',
+                        source: 'iris-map-field-selected',
                         paint: {
                             'line-color': '#ffffff',
                             'line-width': 3,
                         },
                     },
                     {
-                        id: 'iris-poc-fields',
+                        id: 'iris-map-fields',
                         type: 'fill',
-                        source: 'iris-poc-fields',
+                        source: 'iris-map-fields',
                         paint: {
                             'fill-color': ['coalesce', ['get', 'color'], '#999999'],
                             'fill-opacity': 0.3,
@@ -237,18 +218,18 @@ function getPageMap(): Promise<maplibregl.Map> {
                         },
                     },
                     {
-                        id: 'iris-poc-link-selected',
+                        id: 'iris-map-link-selected',
                         type: 'line',
-                        source: 'iris-poc-link-selected',
+                        source: 'iris-map-link-selected',
                         paint: {
                             'line-color': '#ffffff',
                             'line-width': 4,
                         },
                     },
                     {
-                        id: 'iris-poc-planned-links',
+                        id: 'iris-map-planned-links',
                         type: 'line',
-                        source: 'iris-poc-planned-features',
+                        source: 'iris-map-planned-features',
                         filter: ['all', ['==', '$type', 'LineString'], ['!=', 'plannedType', 'crossing']],
                         paint: {
                             'line-width': ['case', ['==', ['get', 'selected'], true], 6, 3],
@@ -258,9 +239,9 @@ function getPageMap(): Promise<maplibregl.Map> {
                         },
                     },
                     {
-                        id: 'iris-poc-plugin-lines',
+                        id: 'iris-map-plugin-lines',
                         type: 'line',
-                        source: 'iris-poc-plugin-features',
+                        source: 'iris-map-plugin-features',
                         filter: ['==', '$type', 'LineString'],
                         paint: {
                             'line-width': ['coalesce', ['get', 'weight'], 3],
@@ -270,9 +251,9 @@ function getPageMap(): Promise<maplibregl.Map> {
                         },
                     },
                     {
-                        id: 'iris-poc-mission-route',
+                        id: 'iris-map-mission-route',
                         type: 'line',
-                        source: 'iris-poc-mission-route',
+                        source: 'iris-map-mission-route',
                         paint: {
                             'line-width': 4,
                             'line-color': '#EF8E2E',
@@ -280,9 +261,9 @@ function getPageMap(): Promise<maplibregl.Map> {
                         },
                     },
                     {
-                        id: 'iris-poc-links',
+                        id: 'iris-map-links',
                         type: 'line',
-                        source: 'iris-poc-links',
+                        source: 'iris-map-links',
                         paint: {
                             'line-color': ['coalesce', ['get', 'color'], '#999999'],
                             'line-width': 2,
@@ -290,18 +271,9 @@ function getPageMap(): Promise<maplibregl.Map> {
                         },
                     },
                     {
-                        id: 'poc-point',
+                        id: 'iris-map-portals',
                         type: 'circle',
-                        source: 'poc-source',
-                        paint: {
-                            'circle-radius': 24,
-                            'circle-color': '#37e6ff',
-                        },
-                    },
-                    {
-                        id: 'iris-poc-portals',
-                        type: 'circle',
-                        source: 'iris-poc-portals',
+                        source: 'iris-map-portals',
                         paint: {
                             'circle-radius': [
                                 'interpolate', ['linear'], ['zoom'],
@@ -321,9 +293,9 @@ function getPageMap(): Promise<maplibregl.Map> {
                         },
                     },
                     {
-                        id: 'iris-poc-portal-selected',
+                        id: 'iris-map-portal-selected',
                         type: 'circle',
-                        source: 'iris-poc-portal-selected',
+                        source: 'iris-map-portal-selected',
                         paint: {
                             'circle-radius': [
                                 'interpolate', ['linear'], ['zoom'],
@@ -338,9 +310,9 @@ function getPageMap(): Promise<maplibregl.Map> {
                         },
                     },
                     {
-                        id: 'iris-poc-mission-waypoints',
+                        id: 'iris-map-mission-waypoints',
                         type: 'circle',
-                        source: 'iris-poc-mission-waypoints',
+                        source: 'iris-map-mission-waypoints',
                         paint: {
                             'circle-radius': [
                                 'interpolate', ['linear'], ['zoom'],
@@ -354,9 +326,9 @@ function getPageMap(): Promise<maplibregl.Map> {
                         },
                     },
                     {
-                        id: 'iris-poc-artifacts',
+                        id: 'iris-map-artifacts',
                         type: 'circle',
-                        source: 'iris-poc-artifacts',
+                        source: 'iris-map-artifacts',
                         paint: {
                             'circle-radius': [
                                 'interpolate', ['linear'], ['zoom'],
@@ -371,9 +343,9 @@ function getPageMap(): Promise<maplibregl.Map> {
                         },
                     },
                     {
-                        id: 'iris-poc-ornaments',
+                        id: 'iris-map-ornaments',
                         type: 'circle',
-                        source: 'iris-poc-ornaments',
+                        source: 'iris-map-ornaments',
                         paint: {
                             'circle-radius': [
                                 'interpolate', ['linear'], ['zoom'],
@@ -388,9 +360,9 @@ function getPageMap(): Promise<maplibregl.Map> {
                         },
                     },
                     {
-                        id: 'iris-poc-plugin-points',
+                        id: 'iris-map-plugin-points',
                         type: 'circle',
-                        source: 'iris-poc-plugin-features',
+                        source: 'iris-map-plugin-features',
                         filter: [
                             'all',
                             ['==', '$type', 'Point'],
@@ -408,9 +380,9 @@ function getPageMap(): Promise<maplibregl.Map> {
                         },
                     },
                     {
-                        id: 'iris-poc-plugin-portal-highlights',
+                        id: 'iris-map-plugin-portal-highlights',
                         type: 'circle',
-                        source: 'iris-poc-plugin-highlights',
+                        source: 'iris-map-plugin-highlights',
                         filter: ['==', '$type', 'Point'],
                         paint: {
                             'circle-radius': [
@@ -426,9 +398,9 @@ function getPageMap(): Promise<maplibregl.Map> {
                         },
                     },
                     {
-                        id: 'iris-poc-plugin-html-points',
+                        id: 'iris-map-plugin-html-points',
                         type: 'circle',
-                        source: 'iris-poc-plugin-features',
+                        source: 'iris-map-plugin-features',
                         filter: [
                             'all',
                             ['==', '$type', 'Point'],
@@ -445,9 +417,9 @@ function getPageMap(): Promise<maplibregl.Map> {
                         },
                     },
                     {
-                        id: 'iris-poc-plugin-player-points',
+                        id: 'iris-map-plugin-player-points',
                         type: 'circle',
-                        source: 'iris-poc-plugin-features',
+                        source: 'iris-map-plugin-features',
                         filter: ['all', ['==', '$type', 'Point'], ['any', ['==', 'isPlayerMarker', true], ['==', 'isPlayerMarker', 'true']]],
                         paint: {
                             'circle-radius': [
@@ -463,9 +435,9 @@ function getPageMap(): Promise<maplibregl.Map> {
                         },
                     },
                     {
-                        id: 'iris-poc-planned-anchor',
+                        id: 'iris-map-planned-anchor',
                         type: 'circle',
-                        source: 'iris-poc-planned-features',
+                        source: 'iris-map-planned-features',
                         filter: ['all', ['==', '$type', 'Point'], ['any', ['==', 'plannedType', 'anchor'], ['==', 'plannedType', 'target']]],
                         paint: {
                             'circle-radius': [
@@ -480,9 +452,9 @@ function getPageMap(): Promise<maplibregl.Map> {
                         },
                     },
                     {
-                        id: 'iris-poc-planned-markers',
+                        id: 'iris-map-planned-markers',
                         type: 'circle',
-                        source: 'iris-poc-planned-features',
+                        source: 'iris-map-planned-features',
                         filter: ['all', ['==', '$type', 'Point'], ['==', 'plannedType', 'marker']],
                         paint: {
                             'circle-radius': [
@@ -498,9 +470,9 @@ function getPageMap(): Promise<maplibregl.Map> {
                         },
                     },
                     {
-                        id: 'iris-poc-planned-crossings',
+                        id: 'iris-map-planned-crossings',
                         type: 'line',
-                        source: 'iris-poc-planned-features',
+                        source: 'iris-map-planned-features',
                         filter: ['all', ['==', '$type', 'LineString'], ['==', 'plannedType', 'crossing']],
                         paint: {
                             'line-width': 4,
@@ -510,9 +482,9 @@ function getPageMap(): Promise<maplibregl.Map> {
                         },
                     },
                     {
-                        id: 'iris-poc-plugin-labels',
+                        id: 'iris-map-plugin-labels',
                         type: 'symbol',
-                        source: 'iris-poc-plugin-features',
+                        source: 'iris-map-plugin-features',
                         filter: ['all', ['==', '$type', 'Point'], ['==', 'isLabelMarker', true]],
                         layout: {
                             'text-field': ['coalesce', ['get', 'label'], ''],
@@ -529,9 +501,9 @@ function getPageMap(): Promise<maplibregl.Map> {
                         },
                     },
                     {
-                        id: 'iris-poc-plugin-player-labels',
+                        id: 'iris-map-plugin-player-labels',
                         type: 'symbol',
-                        source: 'iris-poc-plugin-features',
+                        source: 'iris-map-plugin-features',
                         filter: ['all', ['==', '$type', 'Point'], ['any', ['==', 'isPlayerMarker', true], ['==', 'isPlayerMarker', 'true']]],
                         layout: {
                             'text-field': ['coalesce', ['get', 'label'], ['get', 'name'], ''],
@@ -574,7 +546,7 @@ function getPageMap(): Promise<maplibregl.Map> {
                     bounds,
                 };
                 window.postMessage(message, '*');
-                postDiagnosticResult('PAGE CAMERA CHANGED', {...camera, bounds});
+                postDiagnosticResult('MAP CAMERA CHANGED', {...camera, bounds});
             });
 
             map.on('click', (event) => {
@@ -588,8 +560,8 @@ function getPageMap(): Promise<maplibregl.Map> {
                     point: {x: Math.round(event.point.x), y: Math.round(event.point.y)},
                     sample: summarizeFeature(features[0]),
                 };
-                console.info('[IRIS page map runtime click]', summary);
-                postDiagnosticResult('PAGE MAP CLICK', summary);
+                console.info('[IRIS map runtime click]', summary);
+                postDiagnosticResult('MAP CLICK', summary);
                 postSelection(features);
             });
             map.on('contextmenu', (event) => {
@@ -668,16 +640,16 @@ function setRasterTiles(map: maplibregl.Map, sourceId: string, tiles: string[]):
 
 function getVisibleIrisLayerIds(): string[] {
     return [
-        currentLayerVisibility.portals ? 'iris-poc-portals' : null,
-        currentLayerVisibility.links ? 'iris-poc-links' : null,
-        currentLayerVisibility.fields ? 'iris-poc-fields' : null,
+        currentLayerVisibility.portals ? 'iris-map-portals' : null,
+        currentLayerVisibility.links ? 'iris-map-links' : null,
+        currentLayerVisibility.fields ? 'iris-map-fields' : null,
     ].filter((layerId): layerId is string => Boolean(layerId));
 }
 
 function getClickableIrisLayerIds(): string[] {
     return [
-        'iris-poc-planned-markers',
-        'iris-poc-planned-links',
+        'iris-map-planned-markers',
+        'iris-map-planned-links',
         ...getVisibleIrisLayerIds(),
     ].filter((layerId) => Boolean(layerId));
 }
@@ -689,11 +661,11 @@ function setLayerVisibility(map: maplibregl.Map, layerId: string, visible: boole
 
 function setIrisLayerVisibility(map: maplibregl.Map, visibility: PageMapRuntimeLayerVisibility): void {
     currentLayerVisibility = visibility;
-    setLayerVisibility(map, 'iris-poc-portals', visibility.portals);
-    setLayerVisibility(map, 'iris-poc-links', visibility.links);
-    setLayerVisibility(map, 'iris-poc-fields', visibility.fields);
-    setLayerVisibility(map, 'iris-poc-link-selected', visibility.links);
-    setLayerVisibility(map, 'iris-poc-field-selected', visibility.fields);
+    setLayerVisibility(map, 'iris-map-portals', visibility.portals);
+    setLayerVisibility(map, 'iris-map-links', visibility.links);
+    setLayerVisibility(map, 'iris-map-fields', visibility.fields);
+    setLayerVisibility(map, 'iris-map-link-selected', visibility.links);
+    setLayerVisibility(map, 'iris-map-field-selected', visibility.fields);
 }
 
 function getEmptyFeatureCollection(): GeoJSON.FeatureCollection {
@@ -704,15 +676,15 @@ function setIrisData(map: maplibregl.Map, message: PageMapRuntimeCommandMessage)
     if (message.planning) {
         currentPlanningState = message.planning;
     }
-    setGeoJsonSourceData(map, 'iris-poc-portals', message.data?.portals ?? getEmptyFeatureCollection());
-    setGeoJsonSourceData(map, 'iris-poc-links', message.data?.links ?? getEmptyFeatureCollection());
-    setGeoJsonSourceData(map, 'iris-poc-fields', message.data?.fields ?? getEmptyFeatureCollection());
-    setGeoJsonSourceData(map, 'iris-poc-artifacts', message.data?.artifacts ?? getEmptyFeatureCollection());
-    setGeoJsonSourceData(map, 'iris-poc-ornaments', message.data?.ornaments ?? getEmptyFeatureCollection());
-    setGeoJsonSourceData(map, 'iris-poc-mission-route', message.data?.missionRoute ?? getEmptyFeatureCollection());
-    setGeoJsonSourceData(map, 'iris-poc-mission-waypoints', message.data?.missionWaypoints ?? getEmptyFeatureCollection());
+    setGeoJsonSourceData(map, 'iris-map-portals', message.data?.portals ?? getEmptyFeatureCollection());
+    setGeoJsonSourceData(map, 'iris-map-links', message.data?.links ?? getEmptyFeatureCollection());
+    setGeoJsonSourceData(map, 'iris-map-fields', message.data?.fields ?? getEmptyFeatureCollection());
+    setGeoJsonSourceData(map, 'iris-map-artifacts', message.data?.artifacts ?? getEmptyFeatureCollection());
+    setGeoJsonSourceData(map, 'iris-map-ornaments', message.data?.ornaments ?? getEmptyFeatureCollection());
+    setGeoJsonSourceData(map, 'iris-map-mission-route', message.data?.missionRoute ?? getEmptyFeatureCollection());
+    setGeoJsonSourceData(map, 'iris-map-mission-waypoints', message.data?.missionWaypoints ?? getEmptyFeatureCollection());
     setPluginFeatureData(map, message.data?.pluginFeatures ?? getEmptyFeatureCollection());
-    setGeoJsonSourceData(map, 'iris-poc-planned-features', message.data?.plannedFeatures ?? getEmptyFeatureCollection());
+    setGeoJsonSourceData(map, 'iris-map-planned-features', message.data?.plannedFeatures ?? getEmptyFeatureCollection());
     setSelectedData(map, message);
 }
 
@@ -729,11 +701,11 @@ function setPluginFeatureData(map: maplibregl.Map, features: GeoJSON.FeatureColl
         }
     }
 
-    setGeoJsonSourceData(map, 'iris-poc-plugin-features', {
+    setGeoJsonSourceData(map, 'iris-map-plugin-features', {
         type: 'FeatureCollection',
         features: remainingFeatures,
     });
-    setGeoJsonSourceData(map, 'iris-poc-plugin-highlights', {
+    setGeoJsonSourceData(map, 'iris-map-plugin-highlights', {
         type: 'FeatureCollection',
         features: portalHighlights,
     });
@@ -746,9 +718,9 @@ function getFeatureId(feature: GeoJSON.Feature): string {
 }
 
 function setSelectedData(map: maplibregl.Map, message: PageMapRuntimeCommandMessage): void {
-    setGeoJsonSourceData(map, 'iris-poc-portal-selected', message.data?.selectedPortal ?? getEmptyFeatureCollection());
-    setGeoJsonSourceData(map, 'iris-poc-link-selected', message.data?.selectedLink ?? getEmptyFeatureCollection());
-    setGeoJsonSourceData(map, 'iris-poc-field-selected', message.data?.selectedField ?? getEmptyFeatureCollection());
+    setGeoJsonSourceData(map, 'iris-map-portal-selected', message.data?.selectedPortal ?? getEmptyFeatureCollection());
+    setGeoJsonSourceData(map, 'iris-map-link-selected', message.data?.selectedLink ?? getEmptyFeatureCollection());
+    setGeoJsonSourceData(map, 'iris-map-field-selected', message.data?.selectedField ?? getEmptyFeatureCollection());
 }
 
 function getIrisDataCounts(message: PageMapRuntimeCommandMessage): Record<string, unknown> {
@@ -794,11 +766,11 @@ function postSelection(features: maplibregl.MapGeoJSONFeature[], openInfo = fals
 
     const layerId = feature.layer.id;
     if (
-        layerId !== 'iris-poc-portals' &&
-        layerId !== 'iris-poc-links' &&
-        layerId !== 'iris-poc-fields' &&
-        layerId !== 'iris-poc-planned-links' &&
-        layerId !== 'iris-poc-planned-markers'
+        layerId !== 'iris-map-portals' &&
+        layerId !== 'iris-map-links' &&
+        layerId !== 'iris-map-fields' &&
+        layerId !== 'iris-map-planned-links' &&
+        layerId !== 'iris-map-planned-markers'
     ) {
         return;
     }
@@ -812,25 +784,25 @@ function postSelection(features: maplibregl.MapGeoJSONFeature[], openInfo = fals
 }
 
 function getSelectableFeature(features: maplibregl.MapGeoJSONFeature[]): maplibregl.MapGeoJSONFeature | undefined {
-    const portals = features.find((feature) => feature.layer.id === 'iris-poc-portals');
+    const portals = features.find((feature) => feature.layer.id === 'iris-map-portals');
     if (currentPlanningState.enabled && currentPlanningState.tool === 'links' && portals) {
         return portals;
     }
 
     return features.find((feature) =>
-        feature.layer.id === 'iris-poc-planned-markers' ||
-        feature.layer.id === 'iris-poc-planned-links' ||
-        feature.layer.id === 'iris-poc-portals' ||
-        feature.layer.id === 'iris-poc-links' ||
-        feature.layer.id === 'iris-poc-fields'
+        feature.layer.id === 'iris-map-planned-markers' ||
+        feature.layer.id === 'iris-map-planned-links' ||
+        feature.layer.id === 'iris-map-portals' ||
+        feature.layer.id === 'iris-map-links' ||
+        feature.layer.id === 'iris-map-fields'
     );
 }
 
 function getSelectionKind(layerId: string): PageMapRuntimeSelectionPayload['kind'] {
-    if (layerId === 'iris-poc-portals') return 'portal';
-    if (layerId === 'iris-poc-links') return 'link';
-    if (layerId === 'iris-poc-fields') return 'field';
-    if (layerId === 'iris-poc-planned-links') return 'planned-link';
+    if (layerId === 'iris-map-portals') return 'portal';
+    if (layerId === 'iris-map-links') return 'link';
+    if (layerId === 'iris-map-fields') return 'field';
+    if (layerId === 'iris-map-planned-links') return 'planned-link';
     return 'planned-marker';
 }
 
@@ -1022,7 +994,7 @@ async function showPageMapRuntime(message: PageMapRuntimeCommandMessage): Promis
     const map = await getPageMap();
     map.resize();
     await applySnapshot(map, message);
-    postDiagnosticResult('PAGE MAP RUNTIME', {
+    postDiagnosticResult('MAP RUNTIME', {
         visible: true,
         sourceCounts: getIrisDataCounts(message),
         visibleLayers: getVisibleIrisLayerIds(),
@@ -1032,7 +1004,7 @@ async function showPageMapRuntime(message: PageMapRuntimeCommandMessage): Promis
 
 function hidePageMapRuntime(): void {
     setRuntimeContainerVisible(false);
-    postDiagnosticResult('PAGE MAP RUNTIME', {
+    postDiagnosticResult('MAP RUNTIME', {
         visible: false,
     });
 }
@@ -1042,7 +1014,7 @@ async function syncPageMapData(message: PageMapRuntimeCommandMessage): Promise<v
     setIrisData(map, message);
     await waitForMapIdle(map);
     if (message.diagnostic) {
-        postDiagnosticResult('PAGE SYNC DATA', {
+        postDiagnosticResult('MAP SYNC DATA', {
             sourceCounts: getIrisDataCounts(message),
             camera: {...getMapCamera(map)},
         });
@@ -1055,7 +1027,7 @@ async function syncPageMapLayers(message: PageMapRuntimeCommandMessage): Promise
     const map = await getPageMap();
     setIrisLayerVisibility(map, message.layers);
     if (message.diagnostic) {
-        postDiagnosticResult('PAGE SYNC LAYERS', {...message.layers});
+        postDiagnosticResult('MAP SYNC LAYERS', {...message.layers});
     }
 }
 
@@ -1065,7 +1037,7 @@ async function syncPageMapCamera(message: PageMapRuntimeCommandMessage): Promise
     const map = await getPageMap();
     syncMapCamera(map, message.camera);
     if (message.diagnostic) {
-        postDiagnosticResult('PAGE SYNC CAMERA', {...getMapCamera(map)});
+        postDiagnosticResult('MAP SYNC CAMERA', {...getMapCamera(map)});
     }
 }
 
@@ -1073,7 +1045,7 @@ async function syncPageMapSelection(message: PageMapRuntimeCommandMessage): Prom
     const map = await getPageMap();
     setSelectedData(map, message);
     if (message.diagnostic) {
-        postDiagnosticResult('PAGE SYNC SELECTION', {
+        postDiagnosticResult('MAP SYNC SELECTION', {
             selectedPortal: message.data?.selectedPortal?.features.length ?? 0,
             selectedLink: message.data?.selectedLink?.features.length ?? 0,
             selectedField: message.data?.selectedField?.features.length ?? 0,
@@ -1087,7 +1059,7 @@ async function syncPageMapTiles(message: PageMapRuntimeCommandMessage): Promise<
     const map = await getPageMap();
     setRasterTiles(map, 'osm', message.tiles);
     if (message.diagnostic) {
-        postDiagnosticResult('PAGE SYNC TILES', {
+        postDiagnosticResult('MAP SYNC TILES', {
             tileCount: message.tiles.length,
         });
     }
@@ -1097,7 +1069,7 @@ async function syncPageMapSnapshot(message: PageMapRuntimeCommandMessage): Promi
     const map = await getPageMap();
     await applySnapshot(map, message);
     if (message.diagnostic) {
-        postDiagnosticResult('PAGE SYNC SNAPSHOT', {
+        postDiagnosticResult('MAP SYNC SNAPSHOT', {
             sourceCounts: getIrisDataCounts(message),
             visibleLayers: getVisibleIrisLayerIds(),
             camera: {...getMapCamera(map)},
@@ -1163,4 +1135,4 @@ window.addEventListener('message', (event: MessageEvent<PageMapRuntimeCommandMes
 
 window.postMessage({type: PAGE_MAP_RUNTIME_MESSAGES.ready}, '*');
 
-console.info('IRIS page map runtime loaded');
+console.info('IRIS map runtime loaded');
