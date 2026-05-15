@@ -212,6 +212,7 @@ const PlayerTrackerPlugin: IRISPlugin = {
             // Force Machina
             const upper = (playerName || '').toUpperCase();
             if (upper === 'MACHINA' || upper === '__MACHINA__') plrTeam = 'MACHINA';
+            actionMarkup.push(m);
           } else if ((type === 'PORTAL' || type === 'LINK') && !lat && !lng) {
             // Take the FIRST portal in markup as player location (IITC style)
             if (typeof data.latE6 === 'number' && typeof data.lngE6 === 'number') {

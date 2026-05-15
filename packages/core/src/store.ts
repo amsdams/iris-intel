@@ -5,6 +5,16 @@ import { subscribeWithSelector, persist, createJSONStorage } from 'zustand/middl
 import { EntityLogic } from './logic/EntityLogic';
 import { globalSpatialIndex } from './SpatialIndex';
 
+function getFeatureIdentity(feature: GeoJSON.Feature | null | undefined): string | number | null {
+    if (!feature) return null;
+    if (typeof feature.id === 'string' || typeof feature.id === 'number') return feature.id;
+
+    const properties = feature.properties;
+    if (!properties) return null;
+    const propertyId = properties.id;
+    return typeof propertyId === 'string' || typeof propertyId === 'number' ? propertyId : null;
+}
+
 export interface PlayerStats {
     nickname: string;
     level: number | null;
@@ -978,7 +988,14 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
     removeMenuItem: (id) => set((state) => ({
         menuItems: state.menuItems.filter((i) => i.id !== id)
     })),
-    setPluginFeatures: (features) => set(() => ({ pluginFeatures: features })),
+    setPluginFeatures: (features) => set((state) => {
+        const selectedFeatureId = getFeatureIdentity(state.selectedPluginFeature);
+        const selectedPluginFeature = selectedFeatureId === null
+            ? state.selectedPluginFeature
+            : features.features.find((feature) => getFeatureIdentity(feature) === selectedFeatureId) ?? state.selectedPluginFeature;
+
+        return { pluginFeatures: features, selectedPluginFeature };
+    }),
     setDiscoveredLocation: (location) => set(() => ({ discoveredLocation: location })),
     reverseGeocode: async (lat: number, lng: number, portalId?: string): Promise<void> => {
         const { lastResolvedLatLng, portalAddresses, debugLogging } = useStore.getState();
