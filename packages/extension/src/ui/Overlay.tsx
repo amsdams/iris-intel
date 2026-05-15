@@ -1,7 +1,6 @@
 import { h, JSX } from 'preact';
 import { useState, useEffect, useCallback, useRef } from 'preact/hooks';
-import { useStore } from '@iris/core';
-import { MapOverlay } from './domains/map/MapOverlay';
+import { MapPerfSnapshot, useStore } from '@iris/core';
 import { PlayerStatsPopup } from './domains/player/PlayerStatsPopup';
 import { DiagnosticsPopup } from './domains/debug/DiagnosticsPopup';
 import { PortalInfoPopup } from './domains/portal/PortalInfoPopup';
@@ -77,6 +76,33 @@ function isPageRuntimeSelectionMessage(
         typeof value.selection.kind === 'string';
 }
 
+function isPageRuntimeFrameBenchmarkMessage(value: unknown): value is {type: string; snapshot: Record<string, unknown>} {
+    return isRecord(value) &&
+        value.type === PAGE_MAP_RUNTIME_MESSAGES.frameBenchmark &&
+        isRecord(value.snapshot);
+}
+
+function toFrameSnapshot(snapshot: Record<string, unknown>): MapPerfSnapshot {
+    const getNumber = (key: string, fallback = 0): number =>
+        typeof snapshot[key] === 'number' ? snapshot[key] : fallback;
+
+    return {
+        type: 'frame',
+        time: getNumber('time', Date.now()),
+        totalMs: getNumber('totalMs'),
+        frameCount: getNumber('frameCount'),
+        averageFrameMs: getNumber('averageFrameMs'),
+        maxFrameMs: getNumber('maxFrameMs'),
+        slowFrameCount: getNumber('slowFrameCount'),
+        estimatedFps: getNumber('estimatedFps'),
+        benchmarkRunCount: getNumber('benchmarkRunCount'),
+        benchmarkMedianAverageFrameMs: getNumber('benchmarkMedianAverageFrameMs'),
+        benchmarkMinAverageFrameMs: getNumber('benchmarkMinAverageFrameMs'),
+        benchmarkMaxAverageFrameMs: getNumber('benchmarkMaxAverageFrameMs'),
+        benchmarkMaxFrameMs: getNumber('benchmarkMaxFrameMs'),
+    };
+}
+
 function buildPageRuntimeSnapshotFromStore(type: string, diagnostic?: boolean): ReturnType<typeof buildPageMapRuntimeSnapshotMessage> {
     const state = useStore.getState();
     return buildPageMapRuntimeSnapshotMessage({
@@ -139,7 +165,6 @@ export function IRISOverlay(): JSX.Element {
     const [showNavigationPopup, setShowNavigationPopup] = useState(false);
     const [showSearchPopup, setShowSearchPopup] = useState(false);
     const [showSelectionInfo, setShowSelectionInfo] = useState(false);
-    const [usePageRuntimeMap, setUsePageRuntimeMap] = useState(true);
     
     const [activeDrawerTab, setActiveDrawerTab] = useState<DrawerTab>(null);
     const [locating, setLocating] = useState(false);
@@ -181,7 +206,7 @@ export function IRISOverlay(): JSX.Element {
     const filterShowCaptured = useStore((state) => state.filterShowCaptured);
     const filterShowScanned = useStore((state) => state.filterShowScanned);
     const pageRuntimeInitialSyncDoneRef = useRef(false);
-    const pageRuntimeStartsInFullMapRef = useRef(showMap && usePageRuntimeMap);
+    const pageRuntimeStartsInFullMapRef = useRef(showMap);
 
     // If selection is cleared externally, hide the info popup
     useEffect(() => {
@@ -260,16 +285,12 @@ export function IRISOverlay(): JSX.Element {
     useEffect(() => {
         const themeHandler = (): void => toggleThemePopup();
         const exportHandler = (): void => toggleExportPopup();
-        const pageRuntimeMapShowHandler = (): void => setUsePageRuntimeMap(true);
-        const pageRuntimeMapHideHandler = (): void => setUsePageRuntimeMap(false);
         const selectionInfoOpenHandler = (): void => {
             setActiveDrawerTab(null);
             setShowSelectionInfo(true);
         };
         document.addEventListener('iris:plugin:theme:toggle', themeHandler);
         document.addEventListener('iris:plugin:export:toggle', exportHandler);
-        document.addEventListener('iris:page-runtime-map:show', pageRuntimeMapShowHandler);
-        document.addEventListener('iris:page-runtime-map:hide', pageRuntimeMapHideHandler);
         document.addEventListener('iris:selection-info:open', selectionInfoOpenHandler);
         const missionsOpenHandler = (event: Event): void => {
             const detail = (event as CustomEvent<{ portalId?: string | null }>).detail;
@@ -280,8 +301,6 @@ export function IRISOverlay(): JSX.Element {
         return (): void => {
             document.removeEventListener('iris:plugin:theme:toggle', themeHandler);
             document.removeEventListener('iris:plugin:export:toggle', exportHandler);
-            document.removeEventListener('iris:page-runtime-map:show', pageRuntimeMapShowHandler);
-            document.removeEventListener('iris:page-runtime-map:hide', pageRuntimeMapHideHandler);
             document.removeEventListener('iris:selection-info:open', selectionInfoOpenHandler);
             document.removeEventListener('iris:missions:open', missionsOpenHandler);
         };
@@ -292,7 +311,7 @@ export function IRISOverlay(): JSX.Element {
             if (event.origin !== location.origin) return;
             if (isPageRuntimeCameraChangedMessage(event.data)) {
                 const camera = event.data.camera;
-                if (usePageRuntimeMap) {
+                if (showMap) {
                     window.postMessage({
                         type: 'IRIS_MOVE_MAP',
                         center: {lat: camera.lat, lng: camera.lng},
@@ -303,10 +322,14 @@ export function IRISOverlay(): JSX.Element {
                 return;
             }
             if (isRecord(event.data) && event.data.type === PAGE_MAP_RUNTIME_MESSAGES.ready) {
-                if (showMap && usePageRuntimeMap) {
-                    window.postMessage(buildPageRuntimeSnapshotFromStore(PAGE_MAP_RUNTIME_MESSAGES.fullMapProbe), '*');
+                if (showMap) {
+                    window.postMessage(buildPageRuntimeSnapshotFromStore(PAGE_MAP_RUNTIME_MESSAGES.showMap), '*');
                     pageRuntimeInitialSyncDoneRef.current = true;
                 }
+                return;
+            }
+            if (isPageRuntimeFrameBenchmarkMessage(event.data)) {
+                useStore.getState().setMapPerfSnapshot(toFrameSnapshot(event.data.snapshot));
                 return;
             }
             if (!isPageRuntimeSelectionMessage(event.data)) return;
@@ -345,7 +368,7 @@ export function IRISOverlay(): JSX.Element {
 
         window.addEventListener('message', handler);
         return (): void => window.removeEventListener('message', handler);
-    }, [showMap, usePageRuntimeMap]);
+    }, [showMap]);
 
     useEffect(() => {
         const retryDelays = [
@@ -356,7 +379,7 @@ export function IRISOverlay(): JSX.Element {
         const timeouts = retryDelays.map((delay) => window.setTimeout(() => {
             window.postMessage(buildPageRuntimeSnapshotFromStore(
                 pageRuntimeStartsInFullMapRef.current
-                    ? PAGE_MAP_RUNTIME_MESSAGES.fullMapProbe
+                    ? PAGE_MAP_RUNTIME_MESSAGES.showMap
                     : PAGE_MAP_RUNTIME_MESSAGES.syncSnapshot
             ), '*');
             pageRuntimeInitialSyncDoneRef.current = true;
@@ -368,13 +391,13 @@ export function IRISOverlay(): JSX.Element {
     useEffect(() => {
         if (!pageRuntimeInitialSyncDoneRef.current) return;
 
-        if (showMap && usePageRuntimeMap) {
-            window.postMessage(buildPageRuntimeSnapshotFromStore(PAGE_MAP_RUNTIME_MESSAGES.fullMapProbe), '*');
+        if (showMap) {
+            window.postMessage(buildPageRuntimeSnapshotFromStore(PAGE_MAP_RUNTIME_MESSAGES.showMap), '*');
             return;
         }
 
-        window.postMessage({type: PAGE_MAP_RUNTIME_MESSAGES.hideVisibleProbe}, '*');
-    }, [showMap, usePageRuntimeMap]);
+        window.postMessage({type: PAGE_MAP_RUNTIME_MESSAGES.hideMap}, '*');
+    }, [showMap]);
 
     useEffect(() => {
         if (!pageRuntimeInitialSyncDoneRef.current) return;
@@ -473,9 +496,6 @@ export function IRISOverlay(): JSX.Element {
         <div className="iris-overlay-root">
             <SessionAlert />
             
-            <div style={{ display: showMap && !usePageRuntimeMap ? 'block' : 'none' }}>
-                <MapOverlay />
-            </div>
             <MockToolsBar />
             <PlanningBar />
 

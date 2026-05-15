@@ -5,13 +5,6 @@ import { Popup } from '../../shared/Popup';
 import { IRIS_VERSION_LABEL } from '../../../version';
 import './debug.css';
 import {THEMES} from "../../theme";
-import {emitQueryRenderedFeaturesProbe, QueryRenderedFeaturesProbeMode} from '../map/map-events';
-import {
-    PAGE_MAP_RUNTIME_MESSAGES,
-    PageMapRuntimeCommandMessage,
-    PageMapRuntimeResultMessage,
-} from '../../../shared/page-map-runtime-protocol';
-import {buildPageMapRuntimeSnapshotMessage} from '../map/page-map-runtime-snapshot';
 
 const POLLED_ENDPOINT_LABELS: Partial<Record<EndpointKey, string>> = {
     plexts: 'next auto refresh',
@@ -153,13 +146,10 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
     const mapPerfDiagnostics = useStore((state) => state.mapPerfDiagnostics);
     const mapThemeId = useStore((state) => state.mapThemeId);
     const activeVisualOverlayIds = useStore((state) => state.activeVisualOverlayIds);
-    const layerShowFields = useStore((state) => state.layerShowFields);
-    const layerShowLinks = useStore((state) => state.layerShowLinks);
 
     const [countdown, setCountdown] = useState<number | null>(null);
     const [, setNow] = useState(() => Date.now());
     const [copyStatus, setCopyStatus] = useState<string | null>(null);
-    const [pageRuntimePocResult, setPageRuntimePocResult] = useState<string>('not run');
 
     useEffect(() => {
         if (addressStatus !== 'pending' || !addressNextLookupAt) {
@@ -178,20 +168,6 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
     useEffect(() => {
         const interval = window.setInterval(() => setNow(Date.now()), 1000);
         return (): void => clearInterval(interval);
-    }, []);
-
-    useEffect(() => {
-        const handler = (event: MessageEvent<PageMapRuntimeResultMessage>): void => {
-            if (event.origin !== location.origin) return;
-            if (event.data?.type !== PAGE_MAP_RUNTIME_MESSAGES.result) return;
-
-            const label = event.data.label ?? 'PAGE RUNTIME';
-            const summary = event.data.summary ?? {};
-            setPageRuntimePocResult(`${label}: ${JSON.stringify(summary)}`);
-        };
-
-        window.addEventListener('message', handler);
-        return (): void => window.removeEventListener('message', handler);
     }, []);
 
     const isStale = discoveredLocation && lastResolvedLatLng && (
@@ -282,112 +258,6 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
         window.setTimeout(() => setCopyStatus(null), 1600);
     };
 
-    const runQueryRenderedFeaturesProbe = (mode: QueryRenderedFeaturesProbeMode): void => {
-        emitQueryRenderedFeaturesProbe(document, mode);
-    };
-
-    const runPageMapRuntimePoc = (): void => {
-        window.postMessage({type: PAGE_MAP_RUNTIME_MESSAGES.qrfProbe}, '*');
-    };
-
-    const buildPageRuntimeIrisDataMessage = (type: string): PageMapRuntimeCommandMessage =>
-    {
-        const state = useStore.getState();
-        return buildPageMapRuntimeSnapshotMessage({
-            type,
-            diagnostic: true,
-            portals: state.portals,
-            links: state.links,
-            fields: state.fields,
-            artifacts: state.artifacts,
-            mockOrnaments: state.mockOrnaments,
-            missionDetails: state.missionDetails,
-            pluginFeatures: state.pluginFeatures,
-            plannedLinks: state.plannedLinks,
-            plannedMarkers: state.plannedMarkers,
-            planningMode: state.planningMode,
-            planningTool: state.planningTool,
-            planningAnchorPortalId: state.planningAnchorPortalId,
-            planningPortalPath: state.planningPortalPath,
-            mapState: state.mapState,
-            themeId: state.themeId,
-            mapThemeId: state.mapThemeId,
-            layerShowLinks: state.layerShowLinks,
-            layerShowFields: state.layerShowFields,
-            layerShowOrnaments: state.layerShowOrnaments,
-            layerShowArtifacts: state.layerShowArtifacts,
-            filterShowResistance: state.filterShowResistance,
-            filterShowEnlightened: state.filterShowEnlightened,
-            filterShowMachina: state.filterShowMachina,
-            filterShowUnclaimedPortals: state.filterShowUnclaimedPortals,
-            filterShowLevel: state.filterShowLevel,
-            filterShowHealth: state.filterShowHealth,
-            filterShowVisited: state.filterShowVisited,
-            filterShowCaptured: state.filterShowCaptured,
-            filterShowScanned: state.filterShowScanned,
-            selectedPortalId: state.selectedPortalId,
-            selectedLinkId: state.selectedLinkId,
-            selectedFieldId: state.selectedFieldId,
-            selectedPlannedItemId: state.selectedPlannedItemId,
-            plannedLinksEnabled: state.pluginStates['planned-links'] ?? false,
-            plannedShowLinks: state.plannedShowLinks,
-            plannedShowMarkers: state.plannedShowMarkers,
-        });
-    };
-
-    const runPageMapRuntimeIrisDataPoc = (): void => {
-        window.postMessage(buildPageRuntimeIrisDataMessage(PAGE_MAP_RUNTIME_MESSAGES.irisDataProbe), '*');
-    };
-
-    const runVisiblePageMapRuntimePoc = (): void => {
-        window.postMessage({
-            ...buildPageRuntimeIrisDataMessage(PAGE_MAP_RUNTIME_MESSAGES.visibleProbe),
-        }, '*');
-    };
-
-    const runFullPageMapRuntimePoc = (): void => {
-        document.dispatchEvent(new CustomEvent('iris:page-runtime-map:show'));
-        window.postMessage({
-            ...buildPageRuntimeIrisDataMessage(PAGE_MAP_RUNTIME_MESSAGES.fullMapProbe),
-        }, '*');
-    };
-
-    const hideVisiblePageMapRuntimePoc = (): void => {
-        document.dispatchEvent(new CustomEvent('iris:page-runtime-map:hide'));
-        window.postMessage({type: PAGE_MAP_RUNTIME_MESSAGES.hideVisibleProbe}, '*');
-    };
-
-    const syncPageMapRuntimeData = (): void => {
-        window.postMessage(buildPageRuntimeIrisDataMessage(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
-    };
-
-    const syncPageMapRuntimeSnapshot = (): void => {
-        window.postMessage(buildPageRuntimeIrisDataMessage(PAGE_MAP_RUNTIME_MESSAGES.syncSnapshot), '*');
-    };
-
-    const syncPageMapRuntimeLayers = (): void => {
-        window.postMessage({
-            type: PAGE_MAP_RUNTIME_MESSAGES.syncLayers,
-            diagnostic: true,
-            layers: {
-                portals: true,
-                links: layerShowLinks,
-                fields: layerShowFields,
-            },
-        }, '*');
-    };
-
-    const syncPageMapRuntimeCamera = (): void => {
-        window.postMessage({
-            type: PAGE_MAP_RUNTIME_MESSAGES.syncCamera,
-            diagnostic: true,
-            camera: {
-                lat: mapState.lat,
-                lng: mapState.lng,
-                zoom: mapState.zoom,
-            },
-        }, '*');
-    };
 
     return (
         <Popup
@@ -628,62 +498,6 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                         </label>
                     </div>
 
-                    <div className="iris-debug-section-title">QUERY RENDERED FEATURES POC</div>
-                    <div className="iris-debug-table">
-                        <div className="iris-debug-row iris-debug-row-endpoint">
-                            <div className="iris-debug-endpoint-main">
-                                <span className="iris-debug-label">Probe</span>
-                                <span className="iris-debug-value">console output; errors are not caught</span>
-                            </div>
-                            <div className="iris-debug-endpoint-details">
-                                <div className="iris-debug-row">
-                                    <span className="iris-debug-label-indent">Last page-world result</span>
-                                    <span className="iris-debug-value iris-debug-poc-result">{pageRuntimePocResult}</span>
-                                </div>
-                                <div className="iris-debug-actions">
-                                    <button className="iris-button iris-debug-copy-btn" onClick={() => runQueryRenderedFeaturesProbe('center-all')}>
-                                        CENTER ALL
-                                    </button>
-                                    <button className="iris-button iris-debug-copy-btn" onClick={() => runQueryRenderedFeaturesProbe('center-iris-layers')}>
-                                        CENTER IRIS
-                                    </button>
-                                    <button className="iris-button iris-debug-copy-btn" onClick={() => runQueryRenderedFeaturesProbe('viewport-all')}>
-                                        VIEW ALL
-                                    </button>
-                                    <button className="iris-button iris-debug-copy-btn" onClick={() => runQueryRenderedFeaturesProbe('viewport-iris-layers')}>
-                                        VIEW IRIS
-                                    </button>
-                                    <button className="iris-button iris-debug-copy-btn" onClick={runPageMapRuntimePoc}>
-                                        PAGE RUNTIME
-                                    </button>
-                                    <button className="iris-button iris-debug-copy-btn" onClick={runPageMapRuntimeIrisDataPoc}>
-                                        PAGE IRIS DATA
-                                    </button>
-                                    <button className="iris-button iris-debug-copy-btn" onClick={runVisiblePageMapRuntimePoc}>
-                                        PAGE VISIBLE
-                                    </button>
-                                    <button className="iris-button iris-debug-copy-btn" onClick={runFullPageMapRuntimePoc}>
-                                        PAGE FULL
-                                    </button>
-                                    <button className="iris-button iris-debug-copy-btn" onClick={hideVisiblePageMapRuntimePoc}>
-                                        HIDE VISIBLE
-                                    </button>
-                                    <button className="iris-button iris-debug-copy-btn" onClick={syncPageMapRuntimeSnapshot}>
-                                        SYNC SNAPSHOT
-                                    </button>
-                                    <button className="iris-button iris-debug-copy-btn" onClick={syncPageMapRuntimeData}>
-                                        SYNC DATA
-                                    </button>
-                                    <button className="iris-button iris-debug-copy-btn" onClick={syncPageMapRuntimeLayers}>
-                                        SYNC LAYERS
-                                    </button>
-                                    <button className="iris-button iris-debug-copy-btn" onClick={syncPageMapRuntimeCamera}>
-                                        SYNC CAMERA
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </Popup>

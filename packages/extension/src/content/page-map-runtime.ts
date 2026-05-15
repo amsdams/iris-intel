@@ -18,8 +18,45 @@ interface SetTilesRasterSource {
     setTiles: (tiles: string[]) => void;
 }
 
+interface FrameSnapshot {
+    type: 'frame';
+    time: number;
+    totalMs: number;
+    frameCount: number;
+    averageFrameMs: number;
+    maxFrameMs: number;
+    slowFrameCount: number;
+    estimatedFps: number;
+    benchmarkRunCount?: number;
+    benchmarkMedianAverageFrameMs?: number;
+    benchmarkMinAverageFrameMs?: number;
+    benchmarkMaxAverageFrameMs?: number;
+    benchmarkMaxFrameMs?: number;
+}
+
+interface MovingFrameSample {
+    active: boolean;
+    startedAt: number;
+    lastFrameAt: number | null;
+    frameCount: number;
+    totalFrameMs: number;
+    maxFrameMs: number;
+    slowFrameCount: number;
+    requestId: number | null;
+}
+
 let pageMapPromise: Promise<maplibregl.Map> | null = null;
 let suppressNextCameraChangedEvent = false;
+let panBenchmarkSettleTimer: number | null = null;
+let panBenchmarkAnimation: number | null = null;
+let panBenchmarkActive = false;
+
+const SLOW_FRAME_MS = 34;
+const PAN_BENCHMARK_STEP_PX = 220;
+const PAN_BENCHMARK_RUN_COUNT = 3;
+const PAN_BENCHMARK_RUN_DURATION_MS = 3000;
+const PAN_BENCHMARK_START = {lat: 52.371094, lng: 4.906375, zoom: 14.36};
+const PAN_BENCHMARK_SETTLE_MS = 600;
 
 const DEFAULT_LAYER_VISIBILITY: PageMapRuntimeLayerVisibility = {
     portals: true,
@@ -521,6 +558,9 @@ function getPageMap(): Promise<maplibregl.Map> {
 
         map.once('load', () => {
             map.on('moveend', () => {
+                if (panBenchmarkActive) {
+                    return;
+                }
                 if (suppressNextCameraChangedEvent) {
                     suppressNextCameraChangedEvent = false;
                     return;
@@ -548,8 +588,8 @@ function getPageMap(): Promise<maplibregl.Map> {
                     point: {x: Math.round(event.point.x), y: Math.round(event.point.y)},
                     sample: summarizeFeature(features[0]),
                 };
-                console.info('[IRIS page map runtime visible click POC]', summary);
-                postDiagnosticResult('PAGE VISIBLE CLICK', summary);
+                console.info('[IRIS page map runtime click]', summary);
+                postDiagnosticResult('PAGE MAP CLICK', summary);
                 postSelection(features);
             });
             map.on('contextmenu', (event) => {
@@ -736,14 +776,6 @@ function summarizeFeature(feature: maplibregl.MapGeoJSONFeature | undefined): Re
     };
 }
 
-function getFirstPointFeature(collection: GeoJSON.FeatureCollection | undefined): GeoJSON.Feature<GeoJSON.Point> | null {
-    const feature = collection?.features.find((candidate): candidate is GeoJSON.Feature<GeoJSON.Point> =>
-        candidate.geometry.type === 'Point'
-    );
-
-    return feature ?? null;
-}
-
 function postDiagnosticResult(label: string, summary: Record<string, unknown>): void {
     const message: PageMapRuntimeResultMessage = {
         type: PAGE_MAP_RUNTIME_MESSAGES.result,
@@ -802,120 +834,210 @@ function getSelectionKind(layerId: string): PageMapRuntimeSelectionPayload['kind
     return 'planned-marker';
 }
 
-async function runPageMapRuntimePoc(): Promise<void> {
-    const map = await getPageMap();
-    const point = map.project([0, 0]);
-    const startedAt = performance.now();
-    const features = map.queryRenderedFeatures(point, {layers: ['poc-point']});
-
-    const summary = {
-        count: features.length,
-        elapsedMs: Math.round(performance.now() - startedAt),
-        sample: features[0]
-            ? {
-                layerId: features[0].layer.id,
-                properties: {...features[0].properties},
-                geometryType: features[0].geometry.type,
-            }
-            : null,
+function createFrameSample(): MovingFrameSample {
+    return {
+        active: false,
+        startedAt: 0,
+        lastFrameAt: null,
+        frameCount: 0,
+        totalFrameMs: 0,
+        maxFrameMs: 0,
+        slowFrameCount: 0,
+        requestId: null,
     };
-
-    console.info('[IRIS page map runtime POC]', summary);
-    postDiagnosticResult('PAGE RUNTIME', summary);
 }
 
-async function runPageMapRuntimeIrisDataPoc(message: PageMapRuntimeCommandMessage): Promise<void> {
-    const map = await getPageMap();
-    const firstPortal = getFirstPointFeature(message.data?.portals);
-    const firstPortalCoordinates = firstPortal
-        ? [firstPortal.geometry.coordinates[0], firstPortal.geometry.coordinates[1]] as [number, number]
-        : null;
+function startFrameSample(sample: MovingFrameSample): void {
+    sample.active = true;
+    sample.startedAt = performance.now();
+    sample.lastFrameAt = null;
+    sample.frameCount = 0;
+    sample.totalFrameMs = 0;
+    sample.maxFrameMs = 0;
+    sample.slowFrameCount = 0;
 
-    if (firstPortalCoordinates) {
-        map.jumpTo({
-            center: firstPortalCoordinates,
-            zoom: Math.max(message.zoom ?? map.getZoom(), 15),
-        });
-    } else if (message.center) {
-        map.jumpTo({
-            center: [message.center.lng, message.center.lat],
-            zoom: message.zoom ?? map.getZoom(),
-        });
+    const tick = (now: number): void => {
+        if (!sample.active) return;
+
+        if (sample.lastFrameAt !== null) {
+            const frameMs = now - sample.lastFrameAt;
+            sample.frameCount += 1;
+            sample.totalFrameMs += frameMs;
+            sample.maxFrameMs = Math.max(sample.maxFrameMs, frameMs);
+            if (frameMs >= SLOW_FRAME_MS) {
+                sample.slowFrameCount += 1;
+            }
+        }
+
+        sample.lastFrameAt = now;
+        sample.requestId = window.requestAnimationFrame(tick);
+    };
+
+    sample.requestId = window.requestAnimationFrame(tick);
+}
+
+function stopFrameSample(sample: MovingFrameSample): FrameSnapshot | null {
+    sample.active = false;
+    if (sample.requestId !== null) {
+        window.cancelAnimationFrame(sample.requestId);
+        sample.requestId = null;
     }
 
-    setIrisData(map, message);
-    await waitForMapIdle(map);
+    if (sample.frameCount === 0) return null;
 
-    const center = map.project(map.getCenter());
-    const firstPortalPoint = firstPortalCoordinates ? map.project(firstPortalCoordinates) : null;
-    const visibleLayers = getVisibleIrisLayerIds();
-    const startedAt = performance.now();
-    const centerFeatures = map.queryRenderedFeatures(center, {
-        layers: visibleLayers,
-    });
-    const firstPortalFeatures = firstPortalPoint
-        ? map.queryRenderedFeatures(firstPortalPoint, {
-            layers: visibleLayers,
-        })
-        : [];
-    const viewportFeatures = map.queryRenderedFeatures({
-        layers: visibleLayers,
-    });
+    const averageFrameMs = sample.totalFrameMs / sample.frameCount;
+    return {
+        type: 'frame',
+        time: Date.now(),
+        totalMs: performance.now() - sample.startedAt,
+        frameCount: sample.frameCount,
+        averageFrameMs,
+        maxFrameMs: sample.maxFrameMs,
+        slowFrameCount: sample.slowFrameCount,
+        estimatedFps: Math.round(1000 / averageFrameMs),
+    };
+}
 
-    const summary = {
-        centerCount: centerFeatures.length,
-        firstPortalCount: firstPortalFeatures.length,
-        viewportCount: viewportFeatures.length,
-        elapsedMs: Math.round(performance.now() - startedAt),
-        sourceCounts: getIrisDataCounts(message),
-        visibleLayers,
-        center: {x: Math.round(center.x), y: Math.round(center.y)},
-        firstPortalPoint: firstPortalPoint ? {x: Math.round(firstPortalPoint.x), y: Math.round(firstPortalPoint.y)} : null,
-        centerSample: summarizeFeature(centerFeatures[0]),
-        firstPortalSample: summarizeFeature(firstPortalFeatures[0]),
-        viewportSample: summarizeFeature(viewportFeatures[0]),
+function publishBenchmarkFrameSnapshot(snapshots: FrameSnapshot[]): void {
+    const averageValues = snapshots
+        .map((snapshot) => snapshot.averageFrameMs)
+        .sort((a, b) => a - b);
+    if (averageValues.length === 0) return;
+
+    const middle = Math.floor(averageValues.length / 2);
+    const medianAverageFrameMs = averageValues.length % 2 === 0
+        ? (averageValues[middle - 1] + averageValues[middle]) / 2
+        : averageValues[middle];
+    const totalFrameCount = snapshots.reduce((total, snapshot) => total + snapshot.frameCount, 0);
+    const totalFrameMs = snapshots.reduce(
+        (total, snapshot) => total + (snapshot.averageFrameMs * snapshot.frameCount),
+        0
+    );
+    const averageFrameMs = totalFrameCount > 0 ? totalFrameMs / totalFrameCount : medianAverageFrameMs;
+
+    const snapshot: FrameSnapshot = {
+        type: 'frame',
+        time: Date.now(),
+        totalMs: snapshots.reduce((total, item) => total + item.totalMs, 0),
+        frameCount: totalFrameCount,
+        averageFrameMs,
+        maxFrameMs: Math.max(...snapshots.map((item) => item.maxFrameMs)),
+        slowFrameCount: snapshots.reduce((total, item) => total + item.slowFrameCount, 0),
+        estimatedFps: Math.round(1000 / averageFrameMs),
+        benchmarkRunCount: snapshots.length,
+        benchmarkMedianAverageFrameMs: medianAverageFrameMs,
+        benchmarkMinAverageFrameMs: averageValues[0],
+        benchmarkMaxAverageFrameMs: averageValues[averageValues.length - 1],
+        benchmarkMaxFrameMs: Math.max(...snapshots.map((item) => item.maxFrameMs)),
     };
 
-    console.info('[IRIS page map runtime IRIS data POC]', summary);
-    postDiagnosticResult('PAGE IRIS DATA', summary);
+    window.postMessage({
+        type: PAGE_MAP_RUNTIME_MESSAGES.frameBenchmark,
+        snapshot,
+    }, '*');
 }
 
-async function runVisibleRuntimePoc(message: PageMapRuntimeCommandMessage): Promise<void> {
-    setRuntimeContainerVisible(true);
+function stopPanBenchmark(): void {
+    if (panBenchmarkSettleTimer !== null) {
+        window.clearTimeout(panBenchmarkSettleTimer);
+        panBenchmarkSettleTimer = null;
+    }
+    if (panBenchmarkAnimation !== null) {
+        window.cancelAnimationFrame(panBenchmarkAnimation);
+        panBenchmarkAnimation = null;
+    }
+    panBenchmarkActive = false;
+}
+
+async function runPanBenchmark(): Promise<void> {
     const map = await getPageMap();
-    map.resize();
-    await applySnapshot(map, message);
-    postDiagnosticResult('PAGE VISIBLE RUNTIME', {
-        visible: true,
-        sourceCounts: getIrisDataCounts(message),
-        visibleLayers: getVisibleIrisLayerIds(),
-        camera: {...getMapCamera(map)},
-        note: 'Click features in the cyan bordered page-world map pane.',
+    stopPanBenchmark();
+    map.jumpTo({
+        center: [PAN_BENCHMARK_START.lng, PAN_BENCHMARK_START.lat],
+        zoom: PAN_BENCHMARK_START.zoom,
     });
+
+    const runSnapshots: FrameSnapshot[] = [];
+
+    const runSingleBenchmark = (runIndex: number): void => {
+        map.jumpTo({
+            center: [PAN_BENCHMARK_START.lng, PAN_BENCHMARK_START.lat],
+            zoom: PAN_BENCHMARK_START.zoom,
+        });
+
+        panBenchmarkSettleTimer = window.setTimeout(() => {
+            panBenchmarkSettleTimer = null;
+            panBenchmarkActive = true;
+            const sample = createFrameSample();
+            startFrameSample(sample);
+
+            const startPoint = map.project([PAN_BENCHMARK_START.lng, PAN_BENCHMARK_START.lat]);
+            const startedAt = performance.now();
+
+            const tick = (now: number): void => {
+                if (!panBenchmarkActive) return;
+
+                const elapsed = now - startedAt;
+                const progress = Math.min(elapsed / PAN_BENCHMARK_RUN_DURATION_MS, 1);
+                const offset = Math.sin(progress * Math.PI * 4) * PAN_BENCHMARK_STEP_PX;
+                const center = map.unproject([startPoint.x + offset, startPoint.y]);
+                map.jumpTo({
+                    center: [center.lng, center.lat],
+                    zoom: PAN_BENCHMARK_START.zoom,
+                });
+
+                if (progress < 1) {
+                    panBenchmarkAnimation = window.requestAnimationFrame(tick);
+                    return;
+                }
+
+                panBenchmarkAnimation = null;
+                const snapshot = stopFrameSample(sample);
+                if (snapshot) {
+                    runSnapshots.push(snapshot);
+                }
+
+                if (runIndex + 1 < PAN_BENCHMARK_RUN_COUNT) {
+                    panBenchmarkSettleTimer = window.setTimeout(() => {
+                        runSingleBenchmark(runIndex + 1);
+                    }, PAN_BENCHMARK_SETTLE_MS);
+                    return;
+                }
+
+                panBenchmarkActive = false;
+                publishBenchmarkFrameSnapshot(runSnapshots);
+            };
+
+            panBenchmarkAnimation = window.requestAnimationFrame(tick);
+        }, PAN_BENCHMARK_SETTLE_MS);
+    };
+
+    panBenchmarkSettleTimer = window.setTimeout(() => {
+        runSingleBenchmark(0);
+    }, PAN_BENCHMARK_SETTLE_MS);
 }
 
-async function runFullMapRuntimePoc(message: PageMapRuntimeCommandMessage): Promise<void> {
+async function showPageMapRuntime(message: PageMapRuntimeCommandMessage): Promise<void> {
     setRuntimeContainerFullMap();
     const map = await getPageMap();
     map.resize();
     await applySnapshot(map, message);
-    postDiagnosticResult('PAGE FULL MAP RUNTIME', {
+    postDiagnosticResult('PAGE MAP RUNTIME', {
         visible: true,
         sourceCounts: getIrisDataCounts(message),
         visibleLayers: getVisibleIrisLayerIds(),
         camera: {...getMapCamera(map)},
-        note: 'Page-world map is now the full viewport map surface.',
     });
 }
 
-function runHideVisibleRuntimePoc(): void {
+function hidePageMapRuntime(): void {
     setRuntimeContainerVisible(false);
-    postDiagnosticResult('PAGE HIDE VISIBLE RUNTIME', {
+    postDiagnosticResult('PAGE MAP RUNTIME', {
         visible: false,
     });
 }
 
-async function runSyncDataPoc(message: PageMapRuntimeCommandMessage): Promise<void> {
+async function syncPageMapData(message: PageMapRuntimeCommandMessage): Promise<void> {
     const map = await getPageMap();
     setIrisData(map, message);
     await waitForMapIdle(map);
@@ -927,7 +1049,7 @@ async function runSyncDataPoc(message: PageMapRuntimeCommandMessage): Promise<vo
     }
 }
 
-async function runSyncLayersPoc(message: PageMapRuntimeCommandMessage): Promise<void> {
+async function syncPageMapLayers(message: PageMapRuntimeCommandMessage): Promise<void> {
     if (!message.layers) return;
 
     const map = await getPageMap();
@@ -937,7 +1059,7 @@ async function runSyncLayersPoc(message: PageMapRuntimeCommandMessage): Promise<
     }
 }
 
-async function runSyncCameraPoc(message: PageMapRuntimeCommandMessage): Promise<void> {
+async function syncPageMapCamera(message: PageMapRuntimeCommandMessage): Promise<void> {
     if (!message.camera) return;
 
     const map = await getPageMap();
@@ -947,7 +1069,7 @@ async function runSyncCameraPoc(message: PageMapRuntimeCommandMessage): Promise<
     }
 }
 
-async function runSyncSelectionPoc(message: PageMapRuntimeCommandMessage): Promise<void> {
+async function syncPageMapSelection(message: PageMapRuntimeCommandMessage): Promise<void> {
     const map = await getPageMap();
     setSelectedData(map, message);
     if (message.diagnostic) {
@@ -959,7 +1081,7 @@ async function runSyncSelectionPoc(message: PageMapRuntimeCommandMessage): Promi
     }
 }
 
-async function runSyncTilesPoc(message: PageMapRuntimeCommandMessage): Promise<void> {
+async function syncPageMapTiles(message: PageMapRuntimeCommandMessage): Promise<void> {
     if (!message.tiles?.length) return;
 
     const map = await getPageMap();
@@ -971,7 +1093,7 @@ async function runSyncTilesPoc(message: PageMapRuntimeCommandMessage): Promise<v
     }
 }
 
-async function runSyncSnapshotPoc(message: PageMapRuntimeCommandMessage): Promise<void> {
+async function syncPageMapSnapshot(message: PageMapRuntimeCommandMessage): Promise<void> {
     const map = await getPageMap();
     await applySnapshot(map, message);
     if (message.diagnostic) {
@@ -1001,48 +1123,41 @@ async function applySnapshot(map: maplibregl.Map, message: PageMapRuntimeCommand
 window.addEventListener('message', (event: MessageEvent<PageMapRuntimeCommandMessage>) => {
     if (event.origin !== location.origin) return;
 
-    if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.qrfProbe) {
-        void runPageMapRuntimePoc();
+    if ((event.data as {type?: string})?.type === 'IRIS_RUN_PAN_BENCHMARK') {
+        void runPanBenchmark();
+        return;
     }
 
-    if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.irisDataProbe) {
-        void runPageMapRuntimeIrisDataPoc(event.data);
+    if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.showMap) {
+        void showPageMapRuntime(event.data);
     }
 
-    if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.visibleProbe) {
-        void runVisibleRuntimePoc(event.data);
-    }
-
-    if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.fullMapProbe) {
-        void runFullMapRuntimePoc(event.data);
-    }
-
-    if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.hideVisibleProbe) {
-        runHideVisibleRuntimePoc();
+    if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.hideMap) {
+        hidePageMapRuntime();
     }
 
     if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.syncSnapshot) {
-        void runSyncSnapshotPoc(event.data);
+        void syncPageMapSnapshot(event.data);
     }
 
     if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.syncData) {
-        void runSyncDataPoc(event.data);
+        void syncPageMapData(event.data);
     }
 
     if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.syncLayers) {
-        void runSyncLayersPoc(event.data);
+        void syncPageMapLayers(event.data);
     }
 
     if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.syncCamera) {
-        void runSyncCameraPoc(event.data);
+        void syncPageMapCamera(event.data);
     }
 
     if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.syncSelection) {
-        void runSyncSelectionPoc(event.data);
+        void syncPageMapSelection(event.data);
     }
 
     if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.syncTiles) {
-        void runSyncTilesPoc(event.data);
+        void syncPageMapTiles(event.data);
     }
 });
 
