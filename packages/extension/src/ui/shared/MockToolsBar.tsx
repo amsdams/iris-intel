@@ -19,6 +19,9 @@ export function MockToolsBar(): JSX.Element | null {
     const hasMockInventory = useStore((state) => state.inventory.some((item) => MOCK_INVENTORY_GUID_PATTERN.test(item.guid)));
     const hasMockPortalKeys = useStore((state) => state.inventory.some((item) => item.guid.startsWith('mock-loaded-')));
     const hasMockPasscode = useStore((state) => state.passcodeRewards !== null);
+    const hasMockPlayerTracker = useStore((state) =>
+        state.pluginFeatures.features.some((feature) => String(feature.properties?.id ?? '').startsWith('mock-player:'))
+    );
 
     if (!showMockTools) {
         return null;
@@ -64,6 +67,14 @@ export function MockToolsBar(): JSX.Element | null {
             loadType: 'IRIS_LOAD_MOCK_PASSCODE',
             clearType: 'IRIS_CLEAR_MOCK_PASSCODE',
             active: hasMockPasscode,
+        },
+        {
+            label: '8 Players',
+            loadTitle: 'Load 8 mock players on one portal',
+            clearTitle: 'Clear mock player tracker pins',
+            loadType: 'IRIS_LOAD_MOCK_PLAYER_TRACKER',
+            clearType: 'IRIS_CLEAR_MOCK_PLAYER_TRACKER',
+            active: hasMockPlayerTracker,
         },
     ];
 

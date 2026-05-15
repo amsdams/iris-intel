@@ -76,6 +76,8 @@ interface PlayerMarkerRuntimeData {
     label: string;
     name: string;
     feature: GeoJSON.Feature;
+    spreadIndex: number;
+    spreadCount: number;
 }
 
 interface PlayerMarkerRegistryEntry {
@@ -83,6 +85,23 @@ interface PlayerMarkerRegistryEntry {
     element: HTMLDivElement;
     pin: HTMLDivElement;
     label: HTMLDivElement;
+}
+
+interface PlayerClusterRuntimeData {
+    id: string;
+    key: string;
+    lng: number;
+    lat: number;
+    color: string;
+    count: number;
+    mixedTeams: boolean;
+    expanded: boolean;
+}
+
+interface PlayerClusterRegistryEntry {
+    marker: maplibregl.Marker;
+    element: HTMLDivElement;
+    badge: HTMLDivElement;
 }
 
 interface PinCoreOptions {
@@ -97,6 +116,8 @@ interface PinBodyOptions {
     border: string;
 }
 
+type MarkerOffset = [number, number];
+
 let pageMapPromise: Promise<maplibregl.Map> | null = null;
 let suppressNextCameraChangedEvent = false;
 let panBenchmarkSettleTimer: number | null = null;
@@ -104,6 +125,9 @@ let panBenchmarkAnimation: number | null = null;
 let panBenchmarkActive = false;
 const plannedMarkerRegistry = new Map<string, PlannedMarkerRegistryEntry>();
 const playerMarkerRegistry = new Map<string, PlayerMarkerRegistryEntry>();
+const playerClusterRegistry = new Map<string, PlayerClusterRegistryEntry>();
+const expandedPlayerClusterKeys = new Set<string>();
+let lastPlayerMarkerFeatures: GeoJSON.FeatureCollection = {type: 'FeatureCollection', features: []};
 
 const SLOW_FRAME_MS = 34;
 const PAN_BENCHMARK_STEP_PX = 220;
@@ -111,6 +135,10 @@ const PAN_BENCHMARK_RUN_COUNT = 3;
 const PAN_BENCHMARK_RUN_DURATION_MS = 3000;
 const PAN_BENCHMARK_START = {lat: 52.371094, lng: 4.906375, zoom: 14.36};
 const PAN_BENCHMARK_SETTLE_MS = 600;
+const PLAYER_MARKER_CIRCLE_SPREAD_RADIUS_PX = 26;
+const PLAYER_MARKER_SPIRAL_START_COUNT = 8;
+const PLAYER_MARKER_SPIRAL_STEP_PX = 8;
+const PLAYER_MARKER_SPIRAL_START_RADIUS_PX = 22;
 const SOURCE_COUNT_LABELS: Record<string, string> = {
     'iris-map-portals': 'portals',
     'iris-map-links': 'links',
@@ -593,6 +621,9 @@ function getPageMap(): Promise<maplibregl.Map> {
                 };
                 console.info('[IRIS map runtime click]', summary);
                 postDiagnosticResult('MAP CLICK', summary);
+                if (features.length === 0) {
+                    collapseExpandedPlayerClusters();
+                }
                 postSelection(features);
             });
             map.on('contextmenu', (event) => {
@@ -791,29 +822,73 @@ function isPlayerMarkerFeature(feature: GeoJSON.Feature): boolean {
 }
 
 function syncPlayerMarkerPins(map: maplibregl.Map, features: GeoJSON.FeatureCollection): void {
-    const activeIds = new Set<string>();
+    lastPlayerMarkerFeatures = features;
     const markerFeatures = extractPlayerMarkerRuntimeData(features);
+    const groups = getPlayerMarkerGroups(markerFeatures);
+    pruneExpandedPlayerClusterKeys(groups);
+    const expandedMarkers = getExpandedPlayerMarkers(groups);
+    const clusters = getPlayerClusters(groups);
+    const activeMarkerIds = new Set<string>();
+    const activeClusterIds = new Set<string>();
 
-    for (const playerMarker of markerFeatures) {
-        activeIds.add(playerMarker.id);
+    for (const playerMarker of expandedMarkers) {
+        activeMarkerIds.add(playerMarker.id);
         const existing = playerMarkerRegistry.get(playerMarker.id);
         if (existing) {
             existing.marker.setLngLat([playerMarker.lng, playerMarker.lat]);
+            existing.marker.setOffset(getPlayerMarkerOffset(playerMarker));
             updatePlayerMarkerPinElement(existing, playerMarker);
             continue;
         }
 
         const entry = createPlayerMarkerPinEntry(playerMarker);
-        entry.marker.setLngLat([playerMarker.lng, playerMarker.lat]).addTo(map);
+        entry.marker
+            .setLngLat([playerMarker.lng, playerMarker.lat])
+            .setOffset(getPlayerMarkerOffset(playerMarker))
+            .addTo(map);
         playerMarkerRegistry.set(playerMarker.id, entry);
     }
 
     playerMarkerRegistry.forEach((entry, markerId) => {
-        if (!activeIds.has(markerId)) {
+        if (!activeMarkerIds.has(markerId)) {
             entry.marker.remove();
             playerMarkerRegistry.delete(markerId);
         }
     });
+
+    for (const cluster of clusters) {
+        activeClusterIds.add(cluster.id);
+        const existing = playerClusterRegistry.get(cluster.id);
+        if (existing) {
+            existing.marker.setLngLat([cluster.lng, cluster.lat]);
+            updatePlayerClusterElement(existing, cluster);
+            continue;
+        }
+
+        const entry = createPlayerClusterEntry(cluster);
+        entry.marker.setLngLat([cluster.lng, cluster.lat]).addTo(map);
+        playerClusterRegistry.set(cluster.id, entry);
+    }
+
+    playerClusterRegistry.forEach((entry, clusterId) => {
+        if (!activeClusterIds.has(clusterId)) {
+            entry.marker.remove();
+            playerClusterRegistry.delete(clusterId);
+        }
+    });
+
+}
+
+function resyncPlayerMarkers(): void {
+    getPageMap()
+        .then((map) => syncPlayerMarkerPins(map, lastPlayerMarkerFeatures))
+        .catch(() => undefined);
+}
+
+function collapseExpandedPlayerClusters(): void {
+    if (expandedPlayerClusterKeys.size === 0) return;
+    expandedPlayerClusterKeys.clear();
+    resyncPlayerMarkers();
 }
 
 function extractPlayerMarkerRuntimeData(features: GeoJSON.FeatureCollection): PlayerMarkerRuntimeData[] {
@@ -840,8 +915,109 @@ function extractPlayerMarkerRuntimeData(features: GeoJSON.FeatureCollection): Pl
                     lng: coordinates[0],
                 },
             },
+            spreadIndex: 0,
+            spreadCount: 1,
         }];
     });
+}
+
+function getPlayerMarkerGroups(markers: PlayerMarkerRuntimeData[]): Map<string, PlayerMarkerRuntimeData[]> {
+    const byLocation = new Map<string, PlayerMarkerRuntimeData[]>();
+    for (const marker of markers) {
+        const key = getPlayerMarkerLocationKey(marker);
+        const group = byLocation.get(key);
+        if (group) {
+            group.push(marker);
+        } else {
+            byLocation.set(key, [marker]);
+        }
+    }
+
+    for (const [key, group] of byLocation) {
+        byLocation.set(key, [...group].sort((a, b) => a.id.localeCompare(b.id)));
+    }
+
+    return byLocation;
+}
+
+function pruneExpandedPlayerClusterKeys(groups: Map<string, PlayerMarkerRuntimeData[]>): void {
+    for (const key of expandedPlayerClusterKeys) {
+        const group = groups.get(key);
+        if (!group || group.length <= 1) {
+            expandedPlayerClusterKeys.delete(key);
+        }
+    }
+}
+
+function getExpandedPlayerMarkers(groups: Map<string, PlayerMarkerRuntimeData[]>): PlayerMarkerRuntimeData[] {
+    const markers: PlayerMarkerRuntimeData[] = [];
+    for (const [key, group] of groups) {
+        if (group.length > 1 && !expandedPlayerClusterKeys.has(key)) continue;
+        markers.push(...withPlayerMarkerSpread(group));
+    }
+    return markers;
+}
+
+function getPlayerClusters(groups: Map<string, PlayerMarkerRuntimeData[]>): PlayerClusterRuntimeData[] {
+    const clusters: PlayerClusterRuntimeData[] = [];
+    for (const [key, group] of groups) {
+        if (group.length <= 1) continue;
+        const teams = new Set(group
+            .map((marker) => {
+                const properties = marker.feature.properties as Record<string, unknown> | null;
+                return properties?.team;
+            })
+            .filter((team): team is string => typeof team === 'string'));
+        const mixedTeams = teams.size > 1;
+        clusters.push({
+            id: `player-cluster:${key}`,
+            key,
+            lng: group[0].lng,
+            lat: group[0].lat,
+            color: mixedTeams ? '#37e6ff' : group[0].color,
+            count: group.length,
+            mixedTeams,
+            expanded: expandedPlayerClusterKeys.has(key),
+        });
+    }
+    return clusters;
+}
+
+function withPlayerMarkerSpread(markers: PlayerMarkerRuntimeData[]): PlayerMarkerRuntimeData[] {
+    const byLocation = getPlayerMarkerGroups(markers);
+
+    return markers.map((marker) => {
+        const group = byLocation.get(getPlayerMarkerLocationKey(marker)) ?? [marker];
+        const spreadIndex = group.findIndex((item) => item.id === marker.id);
+        return {
+            ...marker,
+            spreadIndex: Math.max(0, spreadIndex),
+            spreadCount: group.length,
+        };
+    });
+}
+
+function getPlayerMarkerLocationKey(marker: PlayerMarkerRuntimeData): string {
+    return `${marker.lat.toFixed(6)},${marker.lng.toFixed(6)}`;
+}
+
+function getPlayerMarkerOffset(marker: PlayerMarkerRuntimeData): MarkerOffset {
+    if (marker.spreadCount <= 1) return [0, 0];
+
+    if (marker.spreadCount >= PLAYER_MARKER_SPIRAL_START_COUNT) {
+        const angle = marker.spreadIndex * 1.35 - (Math.PI / 2);
+        const radius = PLAYER_MARKER_SPIRAL_START_RADIUS_PX + (marker.spreadIndex * PLAYER_MARKER_SPIRAL_STEP_PX);
+        return [
+            Math.round(Math.cos(angle) * radius),
+            Math.round(Math.sin(angle) * radius),
+        ];
+    }
+
+    const angle = ((Math.PI * 2) / marker.spreadCount) * marker.spreadIndex - (Math.PI / 2);
+    return [
+        Math.round(Math.cos(angle) * PLAYER_MARKER_CIRCLE_SPREAD_RADIUS_PX),
+        Math.round(Math.sin(angle) * PLAYER_MARKER_CIRCLE_SPREAD_RADIUS_PX),
+    ];
 }
 
 function createPlayerMarkerPinEntry(playerMarker: PlayerMarkerRuntimeData): PlayerMarkerRegistryEntry {
@@ -875,6 +1051,65 @@ function createPlayerMarkerPinEntry(playerMarker: PlayerMarkerRuntimeData): Play
     const entry = {marker, element, pin, label};
     updatePlayerMarkerPinElement(entry, playerMarker);
     return entry;
+}
+
+function createPlayerClusterEntry(cluster: PlayerClusterRuntimeData): PlayerClusterRegistryEntry {
+    const element = document.createElement('div');
+    const badge = document.createElement('div');
+
+    element.className = 'iris-page-player-marker-cluster';
+    badge.className = 'iris-page-player-marker-cluster__badge';
+    element.appendChild(badge);
+
+    element.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (expandedPlayerClusterKeys.has(cluster.key)) {
+            expandedPlayerClusterKeys.delete(cluster.key);
+        } else {
+            expandedPlayerClusterKeys.add(cluster.key);
+        }
+        resyncPlayerMarkers();
+    });
+
+    const marker = new maplibregl.Marker({element, anchor: 'center', offset: [0, 0]});
+    const entry = {marker, element, badge};
+    updatePlayerClusterElement(entry, cluster);
+    return entry;
+}
+
+function updatePlayerClusterElement(entry: PlayerClusterRegistryEntry, cluster: PlayerClusterRuntimeData): void {
+    entry.element.title = cluster.expanded ? `Collapse ${cluster.count} players` : `${cluster.count} players`;
+    applyMarkerRootStyles(entry.element, {
+        width: '34px',
+        height: '34px',
+        cursor: 'pointer',
+        pointerEvents: 'auto',
+        opacity: '0.98',
+        filter: 'drop-shadow(0 2px 5px rgba(0,0,0,0.8))',
+    });
+    entry.element.style.borderRadius = '50%';
+    entry.element.style.background = cluster.expanded ? 'rgba(0,0,0,0.78)' : `${cluster.color}33`;
+    entry.element.style.border = `2px solid ${cluster.color}`;
+    entry.element.style.boxShadow = cluster.mixedTeams
+        ? '0 0 0 2px rgba(255,255,255,0.35), inset 0 0 0 2px rgba(0,0,0,0.5)'
+        : 'inset 0 0 0 2px rgba(0,0,0,0.55)';
+
+    entry.badge.textContent = cluster.expanded ? 'x' : String(cluster.count);
+    entry.badge.style.position = 'absolute';
+    entry.badge.style.left = '50%';
+    entry.badge.style.top = '50%';
+    entry.badge.style.transform = 'translate(-50%, -50%)';
+    entry.badge.style.minWidth = '20px';
+    entry.badge.style.height = '20px';
+    entry.badge.style.borderRadius = '999px';
+    entry.badge.style.background = cluster.expanded ? cluster.color : 'rgba(0,0,0,0.82)';
+    entry.badge.style.border = '1px solid rgba(255,255,255,0.9)';
+    entry.badge.style.color = '#ffffff';
+    entry.badge.style.font = '700 12px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    entry.badge.style.lineHeight = '20px';
+    entry.badge.style.textAlign = 'center';
+    entry.badge.style.boxSizing = 'border-box';
 }
 
 function updatePlayerMarkerPinElement(

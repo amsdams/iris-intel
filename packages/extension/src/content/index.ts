@@ -59,6 +59,7 @@ if (window.__irisContentInitialized) {
 let hasInitialPosition = false;
 let inventoryMockPreviousSubscription: boolean | null = null;
 const requestCoordinator = createRequestCoordinator();
+const MOCK_PLAYER_TRACKER_PLUGIN_ID = 'debug-mock-player-tracker';
 
 function buildMockArtifacts(): ArtifactData {
   const state = useStore.getState();
@@ -198,6 +199,71 @@ function buildLoadedPortalKeyInventory(totalKeys = 500): InventoryData {
   }
 
   return { result };
+}
+
+function buildMockCoLocatedPlayerTrackerFeatures(playerCount = 8): GeoJSON.Feature[] {
+  const state = useStore.getState();
+  const portals = Object.values(state.portals);
+  const center = state.mapState;
+  const bounds = center.bounds;
+  const inBoundsPortals = bounds
+    ? portals.filter((portal) =>
+        portal.lat >= bounds.minLatE6 / 1e6 &&
+        portal.lat <= bounds.maxLatE6 / 1e6 &&
+        portal.lng >= bounds.minLngE6 / 1e6 &&
+        portal.lng <= bounds.maxLngE6 / 1e6
+      )
+    : portals;
+
+  const candidates = (inBoundsPortals.length > 0 ? inBoundsPortals : portals)
+    .filter((portal) => portal.team !== 'N')
+    .sort((a, b) => {
+      const distanceA = Math.hypot(a.lat - center.lat, a.lng - center.lng);
+      const distanceB = Math.hypot(b.lat - center.lat, b.lng - center.lng);
+      return distanceA - distanceB;
+    });
+
+  const portal = candidates[0] ?? portals[0];
+  if (!portal) return [];
+
+  const now = Date.now();
+  const names = ['AdaNorth', 'JarvisEast', 'KurezeWest', 'Lightman', 'MistWalker', 'NianticOps', 'ResoRunner', 'ShardScout'];
+
+  return names.slice(0, playerCount).map((name, index): GeoJSON.Feature<GeoJSON.Point> => {
+    const team = index % 2 === 0 ? 'R' : 'E';
+    const color = team === 'R' ? '#0088FF' : '#03DC03';
+    const time = now - index * 60_000;
+    return {
+      type: 'Feature',
+      id: `mock-player:${name}`,
+      geometry: {type: 'Point', coordinates: [portal.lng, portal.lat]},
+      properties: {
+        id: `mock-player:${name}`,
+        name,
+        team,
+        color,
+        opacity: 1,
+        isPlayerMarker: true,
+        label: `${name}, ${index}m`,
+        time,
+        portalName: portal.name || `Portal ${portal.id}`,
+        actions: [{
+          text: `${name} deployed a Resonator on ${portal.name || portal.id}`,
+          time,
+          markup: [
+            ['PLAYER', {plain: name, team}],
+            ['TEXT', {plain: ' deployed a Resonator on '}],
+            ['PORTAL', {
+              name: portal.name || portal.id,
+              plain: portal.name || portal.id,
+              latE6: Math.round(portal.lat * 1e6),
+              lngE6: Math.round(portal.lng * 1e6),
+            }],
+          ],
+        }],
+      },
+    };
+  });
 }
 
 function markMockInventoryLoaded(): void {
@@ -368,6 +434,18 @@ window.addEventListener('message', (event: MessageEvent) => {
 
     case 'IRIS_CLEAR_MOCK_ORNAMENTS': {
       useStore.getState().clearMockOrnaments();
+      break;
+    }
+
+    case 'IRIS_LOAD_MOCK_PLAYER_TRACKER': {
+      const features = buildMockCoLocatedPlayerTrackerFeatures(8);
+      pluginManager.setDebugFeatures(MOCK_PLAYER_TRACKER_PLUGIN_ID, features);
+      console.log(`IRIS: Loaded mock co-located player tracker pins (${features.length})`);
+      break;
+    }
+
+    case 'IRIS_CLEAR_MOCK_PLAYER_TRACKER': {
+      pluginManager.clearDebugFeatures(MOCK_PLAYER_TRACKER_PLUGIN_ID);
       break;
     }
 

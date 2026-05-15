@@ -34,6 +34,15 @@ export class PluginManager {
     this.syncPluginFeatures();
   }
 
+  public setDebugFeatures(id: string, features: GeoJSON.Feature[]): void {
+    this.pluginFeaturesByPlugin.set(id, features);
+    this.syncPluginFeatures();
+  }
+
+  public clearDebugFeatures(id: string): void {
+    this.clearPluginFeatures(id);
+  }
+
   private clearPluginFeatures(id: string): void {
     if (!this.pluginFeaturesByPlugin.has(id)) {
       return;
