@@ -92,19 +92,49 @@
 }
 
 .iris-feature-action-item {
+  margin-bottom: 4px;
+}
+
+.iris-feature-action-message {
+  color: var(--iris-text-base);
   font-size: 0.85em;
-  color: var(--iris-text-muted);
-  margin-bottom: 2px;
+  line-height: 1.4;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--iris-border-dim);
   display: flex;
   align-items: baseline;
 }
 
 .iris-feature-action-time {
-  color: #666;
-  font-size: 0.85em;
+  color: var(--iris-text-muted);
+  font-size: 0.8em;
   margin-right: 6px;
   font-family: monospace;
   white-space: nowrap;
+}
+
+.iris-feature-action-content {
+  overflow-wrap: anywhere;
+}
+
+.iris-feature-action-text {
+  color: var(--iris-text-base);
+}
+
+.iris-feature-action-player {
+  color: var(--iris-feature-action-color, var(--iris-text-primary));
+  font-weight: bold;
+}
+
+.iris-feature-action-portal {
+  color: var(--iris-feature-action-color, var(--iris-accent));
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.iris-feature-action-address {
+  color: var(--iris-text-muted);
+  font-size: 0.9em;
 }
 
 .iris-feature-portal-link {

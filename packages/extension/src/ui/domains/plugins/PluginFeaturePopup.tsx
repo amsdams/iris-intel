@@ -1,5 +1,5 @@
 import { h, JSX } from 'preact';
-import { useStore } from '@iris/core';
+import {normalizeTeam, useStore} from '@iris/core';
 import { Popup } from '../../shared/Popup';
 import {THEMES} from '../../theme';
 import './plugins.css';
@@ -59,12 +59,24 @@ export function PluginFeaturePopup(): JSX.Element | null {
         const text = data.plain || data.name || '';
 
         if (type === 'FACTION' || type === 'PLAYER' || type === 'SENDER' || type === 'AT_PLAYER') {
-            return null;
+            const teamKey = normalizeTeam(data.team) as 'E' | 'R' | 'M' | 'N';
+            const playerText = type === 'AT_PLAYER' && !text.startsWith('@') ? `@${text}` : text;
+            return (
+                <span
+                    key={index}
+                    className="iris-feature-action-markup iris-feature-action-player"
+                    style={{'--iris-feature-action-color': theme[teamKey] || theme.AQUA} as Record<string, string>}
+                >
+                    {playerText}
+                </span>
+            );
         }
 
         if (type === 'PORTAL' || type === 'LINK') {
             const portalNameText = data.name || data.plain || '';
             const portalAddress = data.address || '';
+            const teamKey = normalizeTeam(data.team) as 'E' | 'R' | 'M' | 'N';
+            const color = type === 'PORTAL' ? theme.AQUA : (theme[teamKey] || theme.AQUA);
             const handlePortalClick = (): void => {
                 if (typeof data.latE6 !== 'number' || typeof data.lngE6 !== 'number') return;
 
@@ -78,17 +90,20 @@ export function PluginFeaturePopup(): JSX.Element | null {
             return (
                 <span key={index}>
                     <span
-                        className="iris-feature-portal-link"
+                        className="iris-feature-action-markup iris-feature-action-portal"
+                        style={{'--iris-feature-action-color': color} as Record<string, string>}
                         onClick={handlePortalClick}
                     >
                         {portalNameText}
                     </span>
-                    {portalAddress && portalAddress !== portalNameText ? ` (${portalAddress})` : ''}
+                    {portalAddress && portalAddress !== portalNameText && (
+                        <span className="iris-feature-action-address"> ({portalAddress})</span>
+                    )}
                 </span>
             );
         }
 
-        return <span key={index}>{text}</span>;
+        return <span key={index} className="iris-feature-action-text">{text}</span>;
     };
 
     return (
@@ -139,11 +154,13 @@ export function PluginFeaturePopup(): JSX.Element | null {
                     <div className="iris-feature-actions">
                         <div className="iris-feature-label iris-mb-1">Recent Actions:</div>
                         {actions.map((action, i) => (
-                            <div key={i} className="iris-feature-action-item">
+                            <div key={i} className="iris-feature-action-item iris-feature-action-message">
                                 <span className="iris-feature-action-time">
-                                    [{new Date(action.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}]
+                                    [{new Date(action.time).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false})}]
                                 </span>
-                                {action.markup.length > 0 ? action.markup.map((segment, segmentIndex) => renderActionSegment(segment, segmentIndex)) : action.text}
+                                <span className="iris-feature-action-content">
+                                    {action.markup.length > 0 ? action.markup.map((segment, segmentIndex) => renderActionSegment(segment, segmentIndex)) : action.text}
+                                </span>
                             </div>
                         ))}
                     </div>

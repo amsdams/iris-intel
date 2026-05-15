@@ -405,6 +405,10 @@ export function IRISOverlay(): JSX.Element {
             } else if (selection.kind === 'planned-marker') {
                 store.selectPlannedItem(selection.id, 'marker');
                 setShowSelectionInfo(false);
+            } else if (selection.kind === 'plugin-feature' && selection.feature) {
+                store.setSelectedPluginFeature(selection.feature);
+                setActiveDrawerTab(null);
+                setShowSelectionInfo(false);
             }
         };
 

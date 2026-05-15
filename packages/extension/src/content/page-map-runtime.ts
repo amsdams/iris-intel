@@ -52,11 +52,58 @@ interface SourceUpdatePerformance {
     sourceFeatureCounts: Record<string, number>;
 }
 
+interface PlannedMarkerRuntimeData {
+    id: string;
+    lng: number;
+    lat: number;
+    color: string;
+    selected: boolean;
+    label: string;
+}
+
+interface PlannedMarkerRegistryEntry {
+    marker: maplibregl.Marker;
+    element: HTMLDivElement;
+    pin: HTMLDivElement;
+}
+
+interface PlayerMarkerRuntimeData {
+    id: string;
+    lng: number;
+    lat: number;
+    color: string;
+    opacity: number;
+    label: string;
+    name: string;
+    feature: GeoJSON.Feature;
+}
+
+interface PlayerMarkerRegistryEntry {
+    marker: maplibregl.Marker;
+    element: HTMLDivElement;
+    pin: HTMLDivElement;
+    label: HTMLDivElement;
+}
+
+interface PinCoreOptions {
+    background: string;
+    boxShadow?: string;
+}
+
+interface PinBodyOptions {
+    left: string;
+    top: string;
+    color: string;
+    border: string;
+}
+
 let pageMapPromise: Promise<maplibregl.Map> | null = null;
 let suppressNextCameraChangedEvent = false;
 let panBenchmarkSettleTimer: number | null = null;
 let panBenchmarkAnimation: number | null = null;
 let panBenchmarkActive = false;
+const plannedMarkerRegistry = new Map<string, PlannedMarkerRegistryEntry>();
+const playerMarkerRegistry = new Map<string, PlayerMarkerRegistryEntry>();
 
 const SLOW_FRAME_MS = 34;
 const PAN_BENCHMARK_STEP_PX = 220;
@@ -457,24 +504,6 @@ function getPageMap(): Promise<maplibregl.Map> {
                         },
                     },
                     {
-                        id: 'iris-map-plugin-player-points',
-                        type: 'circle',
-                        source: 'iris-map-plugin-features',
-                        filter: ['all', ['==', '$type', 'Point'], ['any', ['==', 'isPlayerMarker', true], ['==', 'isPlayerMarker', 'true']]],
-                        paint: {
-                            'circle-radius': [
-                                'interpolate', ['linear'], ['zoom'],
-                                10, 7,
-                                15, 10,
-                            ],
-                            'circle-color': ['coalesce', ['get', 'color'], '#ffffff'],
-                            'circle-stroke-width': 2,
-                            'circle-stroke-color': '#ffffff',
-                            'circle-opacity': ['coalesce', ['get', 'opacity'], 1],
-                            'circle-stroke-opacity': ['coalesce', ['get', 'opacity'], 1],
-                        },
-                    },
-                    {
                         id: 'iris-map-planned-anchor',
                         type: 'circle',
                         source: 'iris-map-planned-features',
@@ -489,24 +518,6 @@ function getPageMap(): Promise<maplibregl.Map> {
                             'circle-stroke-width': 3,
                             'circle-stroke-color': '#37e6ff',
                             'circle-stroke-opacity': 0.95,
-                        },
-                    },
-                    {
-                        id: 'iris-map-planned-markers',
-                        type: 'circle',
-                        source: 'iris-map-planned-features',
-                        filter: ['all', ['==', '$type', 'Point'], ['==', 'plannedType', 'marker']],
-                        paint: {
-                            'circle-radius': [
-                                'interpolate', ['linear'], ['zoom'],
-                                10, 5,
-                                15, 9,
-                            ],
-                            'circle-color': ['coalesce', ['get', 'color'], '#37e6ff'],
-                            'circle-opacity': 0.9,
-                            'circle-stroke-width': ['case', ['==', ['get', 'selected'], true], 4, 2],
-                            'circle-stroke-color': ['case', ['==', ['get', 'selected'], true], '#ffffff', '#000000'],
-                            'circle-stroke-opacity': ['case', ['==', ['get', 'selected'], true], 1, 0.85],
                         },
                     },
                     {
@@ -535,26 +546,6 @@ function getPageMap(): Promise<maplibregl.Map> {
                         },
                         paint: {
                             'text-color': ['coalesce', ['get', 'color'], '#ffffff'],
-                            'text-halo-color': '#000000',
-                            'text-halo-width': 1.6,
-                            'text-opacity': ['coalesce', ['get', 'opacity'], 1],
-                        },
-                    },
-                    {
-                        id: 'iris-map-plugin-player-labels',
-                        type: 'symbol',
-                        source: 'iris-map-plugin-features',
-                        filter: ['all', ['==', '$type', 'Point'], ['any', ['==', 'isPlayerMarker', true], ['==', 'isPlayerMarker', 'true']]],
-                        layout: {
-                            'text-field': ['coalesce', ['get', 'label'], ['get', 'name'], ''],
-                            'text-size': 11,
-                            'text-anchor': 'left',
-                            'text-offset': [0.9, 0],
-                            'text-allow-overlap': true,
-                            'text-ignore-placement': true,
-                        },
-                        paint: {
-                            'text-color': '#ffffff',
                             'text-halo-color': '#000000',
                             'text-halo-width': 1.6,
                             'text-opacity': ['coalesce', ['get', 'opacity'], 1],
@@ -715,7 +706,6 @@ function getVisibleIrisLayerIds(): string[] {
 
 function getClickableIrisLayerIds(): string[] {
     return [
-        'iris-map-planned-markers',
         'iris-map-planned-links',
         ...getVisibleIrisLayerIds(),
     ].filter((layerId) => Boolean(layerId));
@@ -744,6 +734,7 @@ function setIrisData(map: maplibregl.Map, message: PageMapRuntimeCommandMessage)
     if (message.planning) {
         currentPlanningState = message.planning;
     }
+    const plannedFeatures = message.data?.plannedFeatures ?? getEmptyFeatureCollection();
     setMeasuredGeoJsonSourceData(map, perf, 'iris-map-portals', message.data?.portals ?? getEmptyFeatureCollection());
     setMeasuredGeoJsonSourceData(map, perf, 'iris-map-links', message.data?.links ?? getEmptyFeatureCollection());
     setMeasuredGeoJsonSourceData(map, perf, 'iris-map-fields', message.data?.fields ?? getEmptyFeatureCollection());
@@ -752,7 +743,8 @@ function setIrisData(map: maplibregl.Map, message: PageMapRuntimeCommandMessage)
     setMeasuredGeoJsonSourceData(map, perf, 'iris-map-mission-route', message.data?.missionRoute ?? getEmptyFeatureCollection());
     setMeasuredGeoJsonSourceData(map, perf, 'iris-map-mission-waypoints', message.data?.missionWaypoints ?? getEmptyFeatureCollection());
     setPluginFeatureData(map, perf, message.data?.pluginFeatures ?? getEmptyFeatureCollection());
-    setMeasuredGeoJsonSourceData(map, perf, 'iris-map-planned-features', message.data?.plannedFeatures ?? getEmptyFeatureCollection());
+    setMeasuredGeoJsonSourceData(map, perf, 'iris-map-planned-features', plannedFeatures);
+    syncPlannedMarkerPins(map, plannedFeatures);
     setSelectedData(map, perf, message);
     publishViewportPerformance(map, message, perf);
 }
@@ -763,12 +755,15 @@ function setPluginFeatureData(
     features: GeoJSON.FeatureCollection
 ): void {
     const portalHighlights: GeoJSON.Feature[] = [];
+    const playerMarkers: GeoJSON.Feature[] = [];
     const remainingFeatures: GeoJSON.Feature[] = [];
 
     for (const feature of features.features) {
         const id = getFeatureId(feature);
         if (id.startsWith('portal-level:') || id.startsWith('portal-recharge:')) {
             portalHighlights.push(feature);
+        } else if (isPlayerMarkerFeature(feature)) {
+            playerMarkers.push(feature);
         } else {
             remainingFeatures.push(feature);
         }
@@ -782,7 +777,301 @@ function setPluginFeatureData(
         type: 'FeatureCollection',
         features: portalHighlights,
     });
+    syncPlayerMarkerPins(map, {
+        type: 'FeatureCollection',
+        features: playerMarkers,
+    });
     perf.sourceFeatureCounts['plugin-features'] = features.features.length;
+}
+
+function isPlayerMarkerFeature(feature: GeoJSON.Feature): boolean {
+    if (feature.geometry.type !== 'Point') return false;
+    const properties = feature.properties as Record<string, unknown> | null;
+    return properties?.isPlayerMarker === true || properties?.isPlayerMarker === 'true';
+}
+
+function syncPlayerMarkerPins(map: maplibregl.Map, features: GeoJSON.FeatureCollection): void {
+    const activeIds = new Set<string>();
+    const markerFeatures = extractPlayerMarkerRuntimeData(features);
+
+    for (const playerMarker of markerFeatures) {
+        activeIds.add(playerMarker.id);
+        const existing = playerMarkerRegistry.get(playerMarker.id);
+        if (existing) {
+            existing.marker.setLngLat([playerMarker.lng, playerMarker.lat]);
+            updatePlayerMarkerPinElement(existing, playerMarker);
+            continue;
+        }
+
+        const entry = createPlayerMarkerPinEntry(playerMarker);
+        entry.marker.setLngLat([playerMarker.lng, playerMarker.lat]).addTo(map);
+        playerMarkerRegistry.set(playerMarker.id, entry);
+    }
+
+    playerMarkerRegistry.forEach((entry, markerId) => {
+        if (!activeIds.has(markerId)) {
+            entry.marker.remove();
+            playerMarkerRegistry.delete(markerId);
+        }
+    });
+}
+
+function extractPlayerMarkerRuntimeData(features: GeoJSON.FeatureCollection): PlayerMarkerRuntimeData[] {
+    return features.features.flatMap((feature): PlayerMarkerRuntimeData[] => {
+        if (feature.geometry.type !== 'Point') return [];
+        const properties = feature.properties as Record<string, unknown> | null;
+        const id = typeof properties?.id === 'string' ? properties.id : typeof feature.id === 'string' ? feature.id : '';
+        const coordinates = feature.geometry.coordinates;
+        if (!id || typeof coordinates[0] !== 'number' || typeof coordinates[1] !== 'number') return [];
+
+        return [{
+            id,
+            lng: coordinates[0],
+            lat: coordinates[1],
+            color: typeof properties?.color === 'string' ? properties.color : '#ffffff',
+            opacity: typeof properties?.opacity === 'number' ? properties.opacity : 1,
+            label: typeof properties?.label === 'string' ? properties.label : typeof properties?.name === 'string' ? properties.name : 'Player',
+            name: typeof properties?.name === 'string' ? properties.name : 'Player',
+            feature: {
+                ...feature,
+                properties: {
+                    ...properties,
+                    lat: coordinates[1],
+                    lng: coordinates[0],
+                },
+            },
+        }];
+    });
+}
+
+function createPlayerMarkerPinEntry(playerMarker: PlayerMarkerRuntimeData): PlayerMarkerRegistryEntry {
+    const element = document.createElement('div');
+    const pin = document.createElement('div');
+    const core = document.createElement('div');
+    const label = document.createElement('div');
+
+    element.className = 'iris-page-player-marker-pin';
+    pin.className = 'iris-page-player-marker-pin__body';
+    core.className = 'iris-page-player-marker-pin__core';
+    label.className = 'iris-page-player-marker-pin__label';
+    pin.appendChild(core);
+    element.appendChild(pin);
+    element.appendChild(label);
+
+    element.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        window.postMessage({
+            type: PAGE_MAP_RUNTIME_MESSAGES.selection,
+            selection: {
+                id: playerMarker.id,
+                kind: 'plugin-feature',
+                feature: playerMarker.feature,
+            } satisfies PageMapRuntimeSelectionPayload,
+        }, '*');
+    });
+
+    const marker = new maplibregl.Marker({element, anchor: 'bottom', offset: [0, 0]});
+    const entry = {marker, element, pin, label};
+    updatePlayerMarkerPinElement(entry, playerMarker);
+    return entry;
+}
+
+function updatePlayerMarkerPinElement(
+    entry: PlayerMarkerRegistryEntry,
+    playerMarker: PlayerMarkerRuntimeData
+): void {
+    entry.element.title = playerMarker.label;
+    applyMarkerRootStyles(entry.element, {
+        width: '150px',
+        height: '42px',
+        cursor: 'pointer',
+        pointerEvents: 'auto',
+        opacity: String(playerMarker.opacity),
+        filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.75))',
+    });
+    applyPinBodyStyles(entry.pin, {
+        left: '65px',
+        top: '2px',
+        color: playerMarker.color,
+        border: '2px solid #ffffff',
+    });
+    applyPinCoreStyles(entry.pin, {background: '#ffffff'});
+
+    entry.label.textContent = playerMarker.label;
+    entry.label.style.position = 'absolute';
+    entry.label.style.left = '90px';
+    entry.label.style.top = '5px';
+    entry.label.style.maxWidth = '125px';
+    entry.label.style.overflow = 'hidden';
+    entry.label.style.textOverflow = 'ellipsis';
+    entry.label.style.whiteSpace = 'nowrap';
+    entry.label.style.color = '#ffffff';
+    entry.label.style.font = '11px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    entry.label.style.fontWeight = '700';
+    entry.label.style.lineHeight = '14px';
+    entry.label.style.textShadow = '0 1px 2px #000, 0 0 3px #000';
+}
+
+function syncPlannedMarkerPins(map: maplibregl.Map, features: GeoJSON.FeatureCollection): void {
+    const activeIds = new Set<string>();
+    const markerFeatures = extractPlannedMarkerRuntimeData(features);
+    const allowPointerEvents = !(currentPlanningState.enabled && currentPlanningState.tool === 'links');
+
+    for (const plannedMarker of markerFeatures) {
+        activeIds.add(plannedMarker.id);
+        const existing = plannedMarkerRegistry.get(plannedMarker.id);
+        if (existing) {
+            existing.marker.setLngLat([plannedMarker.lng, plannedMarker.lat]);
+            updatePlannedMarkerPinElement(existing, plannedMarker, allowPointerEvents);
+            continue;
+        }
+
+        const entry = createPlannedMarkerPinEntry(plannedMarker, allowPointerEvents);
+        entry.marker.setLngLat([plannedMarker.lng, plannedMarker.lat]).addTo(map);
+        plannedMarkerRegistry.set(plannedMarker.id, entry);
+    }
+
+    plannedMarkerRegistry.forEach((entry, markerId) => {
+        if (!activeIds.has(markerId)) {
+            entry.marker.remove();
+            plannedMarkerRegistry.delete(markerId);
+        }
+    });
+}
+
+function extractPlannedMarkerRuntimeData(features: GeoJSON.FeatureCollection): PlannedMarkerRuntimeData[] {
+    return features.features.flatMap((feature): PlannedMarkerRuntimeData[] => {
+        if (feature.geometry.type !== 'Point') return [];
+        const properties = feature.properties as Record<string, unknown> | null;
+        if (properties?.plannedType !== 'marker') return [];
+
+        const id = typeof properties.id === 'string' ? properties.id : typeof feature.id === 'string' ? feature.id : '';
+        const coordinates = feature.geometry.coordinates;
+        if (!id || typeof coordinates[0] !== 'number' || typeof coordinates[1] !== 'number') return [];
+
+        return [{
+            id,
+            lng: coordinates[0],
+            lat: coordinates[1],
+            color: typeof properties.color === 'string' ? properties.color : '#37e6ff',
+            selected: properties.selected === true,
+            label: typeof properties.label === 'string' ? properties.label : 'Planned marker',
+        }];
+    });
+}
+
+function createPlannedMarkerPinEntry(
+    plannedMarker: PlannedMarkerRuntimeData,
+    allowPointerEvents: boolean
+): PlannedMarkerRegistryEntry {
+    const element = document.createElement('div');
+    const pin = document.createElement('div');
+    const core = document.createElement('div');
+
+    element.className = 'iris-page-planned-marker-pin';
+    pin.className = 'iris-page-planned-marker-pin__body';
+    core.className = 'iris-page-planned-marker-pin__core';
+    pin.appendChild(core);
+    element.appendChild(pin);
+
+    element.addEventListener('click', (event) => {
+        if (currentPlanningState.enabled && currentPlanningState.tool === 'links') return;
+        event.preventDefault();
+        event.stopPropagation();
+        window.postMessage({
+            type: PAGE_MAP_RUNTIME_MESSAGES.selection,
+            selection: {
+                id: plannedMarker.id,
+                kind: 'planned-marker',
+                openInfo: false,
+            } satisfies PageMapRuntimeSelectionPayload,
+        }, '*');
+    });
+
+    const marker = new maplibregl.Marker({element, anchor: 'bottom', offset: [0, 0]});
+    const entry = {marker, element, pin};
+    updatePlannedMarkerPinElement(entry, plannedMarker, allowPointerEvents);
+    return entry;
+}
+
+function applyMarkerRootStyles(element: HTMLDivElement, options: {
+    width: string;
+    height: string;
+    cursor: string;
+    pointerEvents: string;
+    opacity: string;
+    filter: string;
+}): void {
+    element.style.position = 'absolute';
+    element.style.top = '0';
+    element.style.left = '0';
+    element.style.willChange = 'transform';
+    element.style.display = 'block';
+    element.style.width = options.width;
+    element.style.height = options.height;
+    element.style.cursor = options.cursor;
+    element.style.pointerEvents = options.pointerEvents;
+    element.style.opacity = options.opacity;
+    element.style.filter = options.filter;
+}
+
+function applyPinBodyStyles(pin: HTMLDivElement, options: PinBodyOptions): void {
+    pin.style.position = 'absolute';
+    pin.style.display = 'block';
+    pin.style.left = options.left;
+    pin.style.top = options.top;
+    pin.style.width = '20px';
+    pin.style.height = '20px';
+    pin.style.background = options.color;
+    pin.style.border = options.border;
+    pin.style.borderRadius = '50% 50% 50% 0';
+    pin.style.transform = 'rotate(-45deg)';
+    pin.style.boxSizing = 'border-box';
+}
+
+function applyPinCoreStyles(pin: HTMLDivElement, options: PinCoreOptions): void {
+    const core = pin.firstElementChild;
+    if (!(core instanceof HTMLDivElement)) return;
+
+    core.style.position = 'absolute';
+    core.style.left = '50%';
+    core.style.top = '50%';
+    core.style.width = '7px';
+    core.style.height = '7px';
+    core.style.marginLeft = '-3.5px';
+    core.style.marginTop = '-3.5px';
+    core.style.borderRadius = '50%';
+    core.style.background = options.background;
+    core.style.transform = 'rotate(45deg)';
+    core.style.boxShadow = options.boxShadow ?? '0 0 0 1px rgba(0,0,0,0.35)';
+}
+
+function updatePlannedMarkerPinElement(
+    entry: PlannedMarkerRegistryEntry,
+    plannedMarker: PlannedMarkerRuntimeData,
+    allowPointerEvents: boolean
+): void {
+    entry.element.title = plannedMarker.label;
+    applyMarkerRootStyles(entry.element, {
+        width: '30px',
+        height: '42px',
+        cursor: allowPointerEvents ? 'pointer' : 'default',
+        pointerEvents: allowPointerEvents ? 'auto' : 'none',
+        opacity: plannedMarker.selected ? '1' : '0.96',
+        filter: plannedMarker.selected
+            ? 'drop-shadow(0 0 8px rgba(255,255,255,0.95)) drop-shadow(0 2px 4px rgba(0,0,0,0.7))'
+            : 'drop-shadow(0 2px 4px rgba(0,0,0,0.75))',
+    });
+    applyPinBodyStyles(entry.pin, {
+        left: '5px',
+        top: '2px',
+        color: plannedMarker.color,
+        border: plannedMarker.selected ? '3px solid #ffffff' : '2px solid rgba(0,0,0,0.88)',
+    });
+    applyPinCoreStyles(entry.pin, {
+        background: plannedMarker.selected ? '#ffffff' : 'rgba(255,255,255,0.9)',
+    });
 }
 
 function getFeatureId(feature: GeoJSON.Feature): string {
@@ -885,8 +1174,7 @@ function postSelection(features: maplibregl.MapGeoJSONFeature[], openInfo = fals
         layerId !== 'iris-map-portals' &&
         layerId !== 'iris-map-links' &&
         layerId !== 'iris-map-fields' &&
-        layerId !== 'iris-map-planned-links' &&
-        layerId !== 'iris-map-planned-markers'
+        layerId !== 'iris-map-planned-links'
     ) {
         return;
     }
@@ -906,7 +1194,6 @@ function getSelectableFeature(features: maplibregl.MapGeoJSONFeature[]): maplibr
     }
 
     return features.find((feature) =>
-        feature.layer.id === 'iris-map-planned-markers' ||
         feature.layer.id === 'iris-map-planned-links' ||
         feature.layer.id === 'iris-map-portals' ||
         feature.layer.id === 'iris-map-links' ||
@@ -918,8 +1205,7 @@ function getSelectionKind(layerId: string): PageMapRuntimeSelectionPayload['kind
     if (layerId === 'iris-map-portals') return 'portal';
     if (layerId === 'iris-map-links') return 'link';
     if (layerId === 'iris-map-fields') return 'field';
-    if (layerId === 'iris-map-planned-links') return 'planned-link';
-    return 'planned-marker';
+    return 'planned-link';
 }
 
 function createFrameSample(): MovingFrameSample {
