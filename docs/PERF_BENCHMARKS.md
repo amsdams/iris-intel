@@ -19,6 +19,7 @@ when evaluating major dependency migrations or rendering changes.
 | 0.1.4   | Page-world map                | Mobile ARM  | Firefox 149 | OSM     | player-tracker                          | n/a    | n/a     | n/a    | n/a    | n/a     | n/a      | n/a       | n/a  | 18ms      | 18ms   | 50ms  | 57  | 1/511       |
 | 0.1.4   | Page-world source diagnostics | Desktop Mac | Chrome 148  | OSM     | player-tracker                          | 27,576 | 9,215   | 11,294 | 4,601  | 133     | 0ms      | 0ms       | n/a  | 9ms       | 10ms   | 118ms | 106 | 12/951      |
 | 0.1.4   | Page-world source diagnostics | Desktop Mac | Chrome 148  | OSM     | player-tracker                          | 12,554 | 3,167   | 6,386  | 2,937  | 17      | 0ms      | 0ms       | n/a  | 9ms       | 9ms    | 66ms  | 117 | 4/1,053     |
+| 0.1.4   | Page-world source diagnostics | Desktop Mac | Chrome 148  | OSM     | player-tracker                          | 14,382 | 4,760   | 6,525  | 2,933  | 17      | 0ms      | 0ms       | n/a  | 9ms       | 9ms    | 67ms  | 114 | 6/1,030     |
 
 ## Readout
 
@@ -262,3 +263,19 @@ Notes:
   count improved.
 - Keep ornament count visible in future benchmark comparisons because it appears to affect occasional stutter more than
   average frame time.
+
+### Chrome Desktop - Post Diagnostics Cleanup
+
+This sample uses the updated copy format without the stale HTML marker row.
+
+```text
+CONTEXT IRIS 0.1.4 browser Chrome 148.0.0.0 platform MacIntel viewport 1728x958 dpr 2.00 touch 0 pointer fine hover yes mapStyle OSM overlays player-tracker
+VIEWPORT source 0ms z 14.36 buffer n/a query n/a setData 0ms items 14,382 P 4,760 L 6,525 F 2,933 art 0 orn 147 plugin 17
+SOURCES portals 4,760/0ms | links 6,525/0ms | fields 2,933/0ms | artifacts 0/0ms | ornaments 147/0ms | plugin-features 17/0ms
+FRAME 9023ms avg 9ms max 67ms fps 114 slow 6/1,030 bench 3 median 9ms range 9ms-9ms benchMax 67ms
+```
+
+Notes:
+
+- Frame timing remains close to the previous lower-ornament source diagnostic sample despite a higher portal and
+  ornament count.
