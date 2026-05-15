@@ -1,8 +1,9 @@
 .iris-bottom-dock {
     position: fixed;
     bottom: 25px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 8px;
+    right: 8px;
+    margin: 0 auto;
     background: rgb(0 0 0 / 80%);
     backdrop-filter: blur(8px);
     border: 1px solid var(--iris-accent-dim, rgb(0 255 255 / 30%));
@@ -16,8 +17,15 @@
     pointer-events: auto;
     box-shadow: 0 4px 15px rgb(0 0 0 / 50%);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    max-width: 98%;
+    box-sizing: border-box;
+    max-width: max-content;
     width: auto;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.iris-bottom-dock::-webkit-scrollbar {
+    display: none;
 }
 
 .iris-bottom-dock:hover {
@@ -129,21 +137,28 @@
 .iris-mock-tools-bar {
     position: fixed;
     top: 14px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 12px;
+    right: 12px;
+    margin: 0 auto;
     z-index: 10004;
     pointer-events: auto;
     display: flex;
     align-items: center;
     gap: 6px;
-    max-width: min(920px, calc(100vw - 24px));
+    box-sizing: border-box;
+    max-width: 920px;
     padding: 6px 8px;
     overflow-x: auto;
+    scrollbar-width: none;
     background: rgb(0 0 0 / 82%);
     border: 1px solid var(--iris-warning-color, #fa0);
     border-radius: 18px;
     box-shadow: 0 4px 15px rgb(0 0 0 / 45%);
     backdrop-filter: blur(8px);
+}
+
+.iris-mock-tools-bar::-webkit-scrollbar {
+    display: none;
 }
 
 .iris-mock-tools-label {
