@@ -96,7 +96,6 @@ function buildEnvironmentSummary(context: PerfSummaryContext): string {
 
 function buildPerfSummary(perf: MapPerfDiagnostics, context: PerfSummaryContext): string {
     const viewport = perf.viewport;
-    const html = perf.htmlMarkers;
     const frame = perf.frame;
     const sourceCounts = viewport?.sourceFeatureCounts ?? {};
     const sourceSetData = viewport?.sourceSetDataMs ?? {};
@@ -111,9 +110,6 @@ function buildPerfSummary(perf: MapPerfDiagnostics, context: PerfSummaryContext)
             ? `VIEWPORT source ${formatMs(viewport.totalMs)} z ${formatOptionalNumber(viewport.zoom, (value) => value.toFixed(2))} buffer ${formatOptionalNumber(viewport.queryBufferDegrees, (value) => value.toFixed(4))} query ${formatOptionalMs(viewport.queryMs)} setData ${formatMs(viewport.setDataMs)} items ${formatCount(viewport.itemCount)} P ${formatCount(viewport.portalCount)} L ${formatCount(viewport.linkCount)} F ${formatCount(viewport.fieldCount)} art ${formatCount(viewport.artifactCount)} orn ${formatCount(viewport.ornamentCount)} plugin ${formatCount(viewport.pluginCount)}`
             : 'VIEWPORT no sample',
         sourceDetails ? `SOURCES ${sourceDetails}` : 'SOURCES no sample',
-        html
-            ? `HTML ${formatMs(html.totalMs)} candidates ${formatCount(html.candidateCount)} active ${formatCount(html.activeCount)} existing ${formatCount(html.existingCount)} created ${formatCount(html.createdCount)} updated ${formatCount(html.updatedCount)} removed ${formatCount(html.removedCount)}`
-            : 'HTML n/a',
         frame
             ? `FRAME ${formatMs(frame.totalMs)} avg ${formatMs(frame.averageFrameMs)} max ${formatMs(frame.maxFrameMs)} fps ${formatCount(frame.estimatedFps)} slow ${formatCount(frame.slowFrameCount)}/${formatCount(frame.frameCount)}${frame.benchmarkRunCount ? ` bench ${formatCount(frame.benchmarkRunCount)} median ${formatMs(frame.benchmarkMedianAverageFrameMs)} range ${formatMs(frame.benchmarkMinAverageFrameMs)}-${formatMs(frame.benchmarkMaxAverageFrameMs)} benchMax ${formatMs(frame.benchmarkMaxFrameMs)}` : ''}`
             : 'FRAME no sample',
@@ -251,7 +247,6 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
         return ENDPOINT_FALLBACK_ORDER.indexOf(a.key) - ENDPOINT_FALLBACK_ORDER.indexOf(b.key);
     });
     const viewportPerf = mapPerfDiagnostics.viewport;
-    const htmlMarkerPerf = mapPerfDiagnostics.htmlMarkers;
     const framePerf = mapPerfDiagnostics.frame;
 
     const copyPerfSummary = (): void => {
@@ -370,30 +365,6 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                                         <span className="iris-debug-label-indent">Sources</span>
                                         <span className="iris-debug-value">
                                             P {formatCount(viewportPerf.sourceFeatureCounts?.portals)}/{formatMs(viewportPerf.sourceSetDataMs?.portals)} | L {formatCount(viewportPerf.sourceFeatureCounts?.links)}/{formatMs(viewportPerf.sourceSetDataMs?.links)} | F {formatCount(viewportPerf.sourceFeatureCounts?.fields)}/{formatMs(viewportPerf.sourceSetDataMs?.fields)}
-                                        </span>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                        <div className="iris-debug-row iris-debug-row-endpoint">
-                            <div className="iris-debug-endpoint-main">
-                                <span className="iris-debug-label">HTML markers</span>
-                                <span className="iris-debug-value">
-                                    {htmlMarkerPerf ? `${formatMs(htmlMarkerPerf.totalMs)} | active ${formatCount(htmlMarkerPerf.activeCount)}` : 'no sample'}
-                                </span>
-                            </div>
-                            {htmlMarkerPerf && (
-                                <div className="iris-debug-endpoint-details">
-                                    <div className="iris-debug-row">
-                                        <span className="iris-debug-label-indent">Counts</span>
-                                        <span className="iris-debug-value">
-                                            candidates {formatCount(htmlMarkerPerf.candidateCount)} | existing {formatCount(htmlMarkerPerf.existingCount)}
-                                        </span>
-                                    </div>
-                                    <div className="iris-debug-row">
-                                        <span className="iris-debug-label-indent">Changes</span>
-                                        <span className="iris-debug-value">
-                                            +{formatCount(htmlMarkerPerf.createdCount)} / ~{formatCount(htmlMarkerPerf.updatedCount)} / -{formatCount(htmlMarkerPerf.removedCount)}
                                         </span>
                                     </div>
                                 </div>

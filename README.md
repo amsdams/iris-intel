@@ -101,6 +101,8 @@ Command semantics:
 - `build:*` creates unpacked browser-extension output for local loading.
 - `package:*` creates timestamped ZIP/XPI files and refreshes the unpacked output first.
 - `release:*` currently aliases the matching product package flow.
+- Prefer product-level root commands (`*:iris`, `*:mini-iris`) for day-to-day work; browser-specific workspace scripts
+  are implementation details of the IRIS package flow.
 
 Package outputs:
 

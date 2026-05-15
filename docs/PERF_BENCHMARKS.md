@@ -35,14 +35,28 @@ when evaluating major dependency migrations or rendering changes.
 - The useful conclusion is: the migration appears functionally safe from smoke testing, desktop did not obviously
   regress, and mobile panning remains the main performance area to investigate separately.
 - After the page-world map migration, Bench moved into the MAIN-world runtime and no longer reports the old
-  `VIEWPORT`, `SOURCES`, or `HTML` samples. Frame timing improved materially in the copied samples, but future
-  comparisons should restore page-world source/update timing so frame cost and data-update cost can be separated.
+  extension-world `HTML` marker sample. The first copied samples were frame-only, while later samples restored
+  page-world source/update timing so frame cost and data-update cost can be separated.
 - Later page-world diagnostics restored `VIEWPORT`/`SOURCES` as source-update timing. They are not the old
-  extension-world spatial query timings; `HTML` remains absent because the page-world renderer does not use the old
-  HTML marker sync path.
+  extension-world spatial query timings.
 - The two restored page-world Chrome samples show why entity mix matters: average frame time stayed around `9ms`, but
   the high-ornament sample (`2,333` ornaments) had more slow frames and a higher max frame than the lower-ornament
   sample (`47` ornaments).
+
+## Fixed Scenario Set
+
+For dependency updates and renderer changes, collect the same small scenario set when possible:
+
+| Scenario | Purpose | Map State | Overlay State |
+|----------|---------|-----------|---------------|
+| Base map | Map engine and tile baseline | Amsterdam, zoom `14.36`, `OSM` unless comparing style costs | All optional overlays off |
+| Default use | Normal daily use | Same center, zoom, style, and live/mock mode as base | Default plugin set only |
+| Labels on | Label-heavy overlay cost | Same center, zoom, style, and live/mock mode as base | Portal level labels and key-count labels on |
+| Draw tools on | Planning overlay cost | Same center, zoom, style, and live/mock mode as base | Draw tools enabled with representative planned links/markers |
+| Heavy overlay | Worst reasonable interactive case | Same center, zoom, style, and live/mock mode as base | Tracker, labels, draw tools, artifacts/ornaments, and keys if useful inventory data is available |
+
+Keep browser, viewport, device mode, DPR, map style, run count, and live/mock mode visible in the copied sample. For
+mobile, keep a manual finger-pan note next to Bench output when the deterministic RAF pan does not match perceived UX.
 
 ## 2026-05-14 - IRIS 0.1.2 - Chrome Desktop - Zustand 5
 
@@ -174,9 +188,9 @@ Context:
 - Benchmark: Mock tools Bench, 3 deterministic RAF-driven runs at Amsterdam zoom `14.36`.
 - Map style: `OSM`.
 - Overlay state: `player-tracker`.
-- Important caveat for the first three samples: `VIEWPORT`, `SOURCES`, and `HTML` show `no sample` because Bench had
-  moved inside the page-world runtime before source-update diagnostics were restored. Those samples mainly compare
-  camera/render frame smoothness.
+- Important caveat for the first three samples: `VIEWPORT` and `SOURCES` show `no sample` because Bench had moved
+  inside the page-world runtime before source-update diagnostics were restored. Those samples mainly compare
+  camera/render frame smoothness. `HTML` marker diagnostics are intentionally absent in page-world mode.
 
 ### Firefox Desktop - Player Tracker Only
 
@@ -184,7 +198,6 @@ Context:
 CONTEXT IRIS 0.1.4 browser Firefox 151.0 platform MacIntel viewport 960x943 dpr 2.00 touch 0 pointer fine hover yes mapStyle OSM overlays player-tracker
 VIEWPORT no sample
 SOURCES no sample
-HTML no sample
 FRAME 9023ms avg 8ms max 36ms fps 122 slow 1/1,102 bench 3 median 8ms range 8ms-8ms benchMax 36ms
 ```
 
@@ -194,7 +207,6 @@ FRAME 9023ms avg 8ms max 36ms fps 122 slow 1/1,102 bench 3 median 8ms range 8ms-
 CONTEXT IRIS 0.1.4 browser Chrome 148.0.0.0 platform MacIntel viewport 960x934 dpr 2.00 touch 0 pointer fine hover yes mapStyle OSM overlays player-tracker
 VIEWPORT no sample
 SOURCES no sample
-HTML no sample
 FRAME 9032ms avg 17ms max 33ms fps 60 slow 0/540 bench 3 median 17ms range 17ms-17ms benchMax 33ms
 ```
 
@@ -204,7 +216,6 @@ FRAME 9032ms avg 17ms max 33ms fps 60 slow 0/540 bench 3 median 17ms range 17ms-
 CONTEXT IRIS 0.1.4 browser Firefox 149.0 platform Linux armv81 viewport 360x704 dpr 3.00 touch 5 pointer coarse hover no mapStyle OSM overlays player-tracker
 VIEWPORT no sample
 SOURCES no sample
-HTML no sample
 FRAME 9038ms avg 18ms max 50ms fps 57 slow 1/511 bench 3 median 18ms range 17ms-18ms benchMax 50ms
 ```
 
@@ -227,7 +238,6 @@ old extension-world spatial query and HTML marker path.
 CONTEXT IRIS 0.1.4 browser Chrome 148.0.0.0 platform MacIntel viewport 1726x958 dpr 2.00 touch 0 pointer fine hover yes mapStyle OSM overlays player-tracker
 VIEWPORT 0ms z 14.36 buffer n/a query 0ms setData 0ms items 27,576 P 9,215 L 11,294 F 4,601 art 0 orn 2,333 plugin 133
 SOURCES portals 9,215/0ms | links 11,294/0ms | fields 4,601/0ms | artifacts 0/0ms | ornaments 2,333/0ms | plugin-features 133/0ms
-HTML n/a
 FRAME 9018ms avg 9ms max 118ms fps 106 slow 12/951 bench 3 median 10ms range 9ms-10ms benchMax 118ms
 ```
 
@@ -243,7 +253,6 @@ Notes:
 CONTEXT IRIS 0.1.4 browser Chrome 148.0.0.0 platform MacIntel viewport 1728x958 dpr 2.00 touch 0 pointer fine hover yes mapStyle OSM overlays player-tracker
 VIEWPORT source 0ms z 14.36 buffer n/a query n/a setData 0ms items 12,554 P 3,167 L 6,386 F 2,937 art 0 orn 47 plugin 17
 SOURCES portals 3,167/0ms | links 6,386/0ms | fields 2,937/0ms | artifacts 0/0ms | ornaments 47/0ms | plugin-features 17/0ms
-HTML n/a
 FRAME 9012ms avg 9ms max 66ms fps 117 slow 4/1,053 bench 3 median 9ms range 8ms-9ms benchMax 66ms
 ```
 
