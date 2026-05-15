@@ -119,14 +119,16 @@ function toRecordOfNumbers(value: unknown): Record<string, number> | undefined {
 function toViewportPerformanceSnapshot(snapshot: Record<string, unknown>): MapPerfSnapshot {
     const getNumber = (key: string, fallback = 0): number =>
         typeof snapshot[key] === 'number' ? snapshot[key] : fallback;
+    const getOptionalNumber = (key: string): number | undefined =>
+        typeof snapshot[key] === 'number' ? snapshot[key] : undefined;
 
     return {
         type: 'viewport',
         time: getNumber('time', Date.now()),
         totalMs: getNumber('totalMs'),
-        queryMs: getNumber('queryMs'),
+        queryMs: getOptionalNumber('queryMs'),
         setDataMs: getNumber('setDataMs'),
-        zoom: getNumber('zoom'),
+        zoom: getOptionalNumber('zoom'),
         sourceSetDataMs: toRecordOfNumbers(snapshot.sourceSetDataMs),
         sourceFeatureCounts: toRecordOfNumbers(snapshot.sourceFeatureCounts),
         itemCount: getNumber('itemCount'),

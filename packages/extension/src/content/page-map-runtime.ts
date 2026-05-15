@@ -798,7 +798,6 @@ function publishViewportPerformance(
         type: 'viewport',
         time: Date.now(),
         totalMs: performance.now() - perf.startedAt,
-        queryMs: 0,
         setDataMs: perf.setDataMs,
         zoom: map.getZoom(),
         sourceSetDataMs: perf.sourceSetDataMs,

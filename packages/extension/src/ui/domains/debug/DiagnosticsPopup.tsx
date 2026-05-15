@@ -58,6 +58,10 @@ function formatOptionalNumber(value: number | undefined, formatter: (value: numb
     return typeof value === 'number' ? formatter(value) : 'n/a';
 }
 
+function formatOptionalMs(value: number | undefined): string {
+    return formatOptionalNumber(value, (numericValue) => `${Math.round(numericValue)}ms`);
+}
+
 interface PerfSummaryContext {
     versionLabel: string;
     mapThemeId: string;
@@ -104,7 +108,7 @@ function buildPerfSummary(perf: MapPerfDiagnostics, context: PerfSummaryContext)
     return [
         buildEnvironmentSummary(context),
         viewport
-            ? `VIEWPORT ${formatMs(viewport.totalMs)} z ${formatOptionalNumber(viewport.zoom, (value) => value.toFixed(2))} buffer ${formatOptionalNumber(viewport.queryBufferDegrees, (value) => value.toFixed(4))} query ${formatMs(viewport.queryMs)} setData ${formatMs(viewport.setDataMs)} items ${formatCount(viewport.itemCount)} P ${formatCount(viewport.portalCount)} L ${formatCount(viewport.linkCount)} F ${formatCount(viewport.fieldCount)} art ${formatCount(viewport.artifactCount)} orn ${formatCount(viewport.ornamentCount)} plugin ${formatCount(viewport.pluginCount)}`
+            ? `VIEWPORT source ${formatMs(viewport.totalMs)} z ${formatOptionalNumber(viewport.zoom, (value) => value.toFixed(2))} buffer ${formatOptionalNumber(viewport.queryBufferDegrees, (value) => value.toFixed(4))} query ${formatOptionalMs(viewport.queryMs)} setData ${formatMs(viewport.setDataMs)} items ${formatCount(viewport.itemCount)} P ${formatCount(viewport.portalCount)} L ${formatCount(viewport.linkCount)} F ${formatCount(viewport.fieldCount)} art ${formatCount(viewport.artifactCount)} orn ${formatCount(viewport.ornamentCount)} plugin ${formatCount(viewport.pluginCount)}`
             : 'VIEWPORT no sample',
         sourceDetails ? `SOURCES ${sourceDetails}` : 'SOURCES no sample',
         html
@@ -359,7 +363,7 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                                     <div className="iris-debug-row">
                                         <span className="iris-debug-label-indent">Other</span>
                                         <span className="iris-debug-value">
-                                            query {formatMs(viewportPerf.queryMs)} | items {formatCount(viewportPerf.itemCount)} | art {formatCount(viewportPerf.artifactCount)} | orn {formatCount(viewportPerf.ornamentCount)}
+                                            query {formatOptionalMs(viewportPerf.queryMs)} | items {formatCount(viewportPerf.itemCount)} | art {formatCount(viewportPerf.artifactCount)} | orn {formatCount(viewportPerf.ornamentCount)}
                                         </span>
                                     </div>
                                     <div className="iris-debug-row">
