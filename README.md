@@ -89,12 +89,12 @@ The interceptor uses both **prototype patching** for `XMLHttpRequest` and a **fu
 
 ## Command Matrix
 
-| Target | Build | Check | Clean | Release |
-|---|---|---|---|---|
-| `core` | `npm run build:core` | `npm run check:core` | `npm run clean:core` | None |
-| `iris` | `npm run build:iris` | `npm run check:iris` | `npm run clean:iris` | `npm run release:iris` |
-| `mini-iris` | `npm run build:mini-iris` | `npm run check:mini-iris` | `npm run clean:mini-iris` | None |
-| `all` | `npm run build:all` | `npm run check:all` | `npm run clean:all` | None |
+| Target | Build | Check | Clean | Package | Release |
+|---|---|---|---|---|---|
+| `core` | `npm run build:core` | `npm run check:core` | `npm run clean:core` | None | None |
+| `iris` | `npm run build:iris` | `npm run check:iris` | `npm run clean:iris` | `npm run package:iris` | `npm run release:iris` |
+| `mini-iris` | `npm run build:mini-iris` | `npm run check:mini-iris` | `npm run clean:mini-iris` | `npm run package:mini-iris` | `npm run release:mini-iris` |
+| `all` | `npm run build:all` | `npm run check:all` | `npm run clean:all` | `npm run package:all` | `npm run release:all` |
 
 Release packages are written next to each app:
 
