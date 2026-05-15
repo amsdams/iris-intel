@@ -45,6 +45,13 @@ interface MovingFrameSample {
     requestId: number | null;
 }
 
+interface SourceUpdatePerformance {
+    startedAt: number;
+    setDataMs: number;
+    sourceSetDataMs: Record<string, number>;
+    sourceFeatureCounts: Record<string, number>;
+}
+
 let pageMapPromise: Promise<maplibregl.Map> | null = null;
 let suppressNextCameraChangedEvent = false;
 let panBenchmarkSettleTimer: number | null = null;
@@ -57,6 +64,15 @@ const PAN_BENCHMARK_RUN_COUNT = 3;
 const PAN_BENCHMARK_RUN_DURATION_MS = 3000;
 const PAN_BENCHMARK_START = {lat: 52.371094, lng: 4.906375, zoom: 14.36};
 const PAN_BENCHMARK_SETTLE_MS = 600;
+const SOURCE_COUNT_LABELS: Record<string, string> = {
+    'iris-map-portals': 'portals',
+    'iris-map-links': 'links',
+    'iris-map-fields': 'fields',
+    'iris-map-artifacts': 'artifacts',
+    'iris-map-ornaments': 'ornaments',
+    'iris-map-plugin-features': 'plugin-features',
+    'iris-map-plugin-highlights': 'plugin-features',
+};
 
 const DEFAULT_LAYER_VISIBILITY: PageMapRuntimeLayerVisibility = {
     portals: true,
@@ -630,6 +646,33 @@ function setGeoJsonSourceData(map: maplibregl.Map, sourceId: string, data: GeoJS
     }
 }
 
+function createSourceUpdatePerformance(): SourceUpdatePerformance {
+    return {
+        startedAt: performance.now(),
+        setDataMs: 0,
+        sourceSetDataMs: {},
+        sourceFeatureCounts: {},
+    };
+}
+
+function setMeasuredGeoJsonSourceData(
+    map: maplibregl.Map,
+    perf: SourceUpdatePerformance,
+    sourceId: string,
+    data: GeoJSON.FeatureCollection
+): void {
+    const source = map.getSource(sourceId);
+    if (!source || !('setData' in source)) return;
+
+    const startedAt = performance.now();
+    (source as SetDataGeoJsonSource).setData(data);
+    const elapsed = performance.now() - startedAt;
+    const sourceLabel = SOURCE_COUNT_LABELS[sourceId] ?? sourceId;
+    perf.setDataMs += elapsed;
+    perf.sourceSetDataMs[sourceLabel] = (perf.sourceSetDataMs[sourceLabel] ?? 0) + elapsed;
+    perf.sourceFeatureCounts[sourceLabel] = data.features.length;
+}
+
 function setRasterTiles(map: maplibregl.Map, sourceId: string, tiles: string[]): void {
     const source = map.getSource(sourceId);
     if (source && 'setTiles' in source) {
@@ -673,22 +716,28 @@ function getEmptyFeatureCollection(): GeoJSON.FeatureCollection {
 }
 
 function setIrisData(map: maplibregl.Map, message: PageMapRuntimeCommandMessage): void {
+    const perf = createSourceUpdatePerformance();
     if (message.planning) {
         currentPlanningState = message.planning;
     }
-    setGeoJsonSourceData(map, 'iris-map-portals', message.data?.portals ?? getEmptyFeatureCollection());
-    setGeoJsonSourceData(map, 'iris-map-links', message.data?.links ?? getEmptyFeatureCollection());
-    setGeoJsonSourceData(map, 'iris-map-fields', message.data?.fields ?? getEmptyFeatureCollection());
-    setGeoJsonSourceData(map, 'iris-map-artifacts', message.data?.artifacts ?? getEmptyFeatureCollection());
-    setGeoJsonSourceData(map, 'iris-map-ornaments', message.data?.ornaments ?? getEmptyFeatureCollection());
-    setGeoJsonSourceData(map, 'iris-map-mission-route', message.data?.missionRoute ?? getEmptyFeatureCollection());
-    setGeoJsonSourceData(map, 'iris-map-mission-waypoints', message.data?.missionWaypoints ?? getEmptyFeatureCollection());
-    setPluginFeatureData(map, message.data?.pluginFeatures ?? getEmptyFeatureCollection());
-    setGeoJsonSourceData(map, 'iris-map-planned-features', message.data?.plannedFeatures ?? getEmptyFeatureCollection());
-    setSelectedData(map, message);
+    setMeasuredGeoJsonSourceData(map, perf, 'iris-map-portals', message.data?.portals ?? getEmptyFeatureCollection());
+    setMeasuredGeoJsonSourceData(map, perf, 'iris-map-links', message.data?.links ?? getEmptyFeatureCollection());
+    setMeasuredGeoJsonSourceData(map, perf, 'iris-map-fields', message.data?.fields ?? getEmptyFeatureCollection());
+    setMeasuredGeoJsonSourceData(map, perf, 'iris-map-artifacts', message.data?.artifacts ?? getEmptyFeatureCollection());
+    setMeasuredGeoJsonSourceData(map, perf, 'iris-map-ornaments', message.data?.ornaments ?? getEmptyFeatureCollection());
+    setMeasuredGeoJsonSourceData(map, perf, 'iris-map-mission-route', message.data?.missionRoute ?? getEmptyFeatureCollection());
+    setMeasuredGeoJsonSourceData(map, perf, 'iris-map-mission-waypoints', message.data?.missionWaypoints ?? getEmptyFeatureCollection());
+    setPluginFeatureData(map, perf, message.data?.pluginFeatures ?? getEmptyFeatureCollection());
+    setMeasuredGeoJsonSourceData(map, perf, 'iris-map-planned-features', message.data?.plannedFeatures ?? getEmptyFeatureCollection());
+    setSelectedData(map, perf, message);
+    publishViewportPerformance(map, message, perf);
 }
 
-function setPluginFeatureData(map: maplibregl.Map, features: GeoJSON.FeatureCollection): void {
+function setPluginFeatureData(
+    map: maplibregl.Map,
+    perf: SourceUpdatePerformance,
+    features: GeoJSON.FeatureCollection
+): void {
     const portalHighlights: GeoJSON.Feature[] = [];
     const remainingFeatures: GeoJSON.Feature[] = [];
 
@@ -701,14 +750,15 @@ function setPluginFeatureData(map: maplibregl.Map, features: GeoJSON.FeatureColl
         }
     }
 
-    setGeoJsonSourceData(map, 'iris-map-plugin-features', {
+    setMeasuredGeoJsonSourceData(map, perf, 'iris-map-plugin-features', {
         type: 'FeatureCollection',
         features: remainingFeatures,
     });
-    setGeoJsonSourceData(map, 'iris-map-plugin-highlights', {
+    setMeasuredGeoJsonSourceData(map, perf, 'iris-map-plugin-highlights', {
         type: 'FeatureCollection',
         features: portalHighlights,
     });
+    perf.sourceFeatureCounts['plugin-features'] = features.features.length;
 }
 
 function getFeatureId(feature: GeoJSON.Feature): string {
@@ -717,10 +767,17 @@ function getFeatureId(feature: GeoJSON.Feature): string {
     return typeof properties?.id === 'string' ? properties.id : '';
 }
 
-function setSelectedData(map: maplibregl.Map, message: PageMapRuntimeCommandMessage): void {
-    setGeoJsonSourceData(map, 'iris-map-portal-selected', message.data?.selectedPortal ?? getEmptyFeatureCollection());
-    setGeoJsonSourceData(map, 'iris-map-link-selected', message.data?.selectedLink ?? getEmptyFeatureCollection());
-    setGeoJsonSourceData(map, 'iris-map-field-selected', message.data?.selectedField ?? getEmptyFeatureCollection());
+function setSelectedData(
+    map: maplibregl.Map,
+    perf: SourceUpdatePerformance | null,
+    message: PageMapRuntimeCommandMessage
+): void {
+    const setData = perf
+        ? (sourceId: string, data: GeoJSON.FeatureCollection): void => setMeasuredGeoJsonSourceData(map, perf, sourceId, data)
+        : (sourceId: string, data: GeoJSON.FeatureCollection): void => setGeoJsonSourceData(map, sourceId, data);
+    setData('iris-map-portal-selected', message.data?.selectedPortal ?? getEmptyFeatureCollection());
+    setData('iris-map-link-selected', message.data?.selectedLink ?? getEmptyFeatureCollection());
+    setData('iris-map-field-selected', message.data?.selectedField ?? getEmptyFeatureCollection());
 }
 
 function getIrisDataCounts(message: PageMapRuntimeCommandMessage): Record<string, unknown> {
@@ -729,6 +786,42 @@ function getIrisDataCounts(message: PageMapRuntimeCommandMessage): Record<string
         links: message.data?.links?.features.length ?? 0,
         fields: message.data?.fields?.features.length ?? 0,
     };
+}
+
+function publishViewportPerformance(
+    map: maplibregl.Map,
+    message: PageMapRuntimeCommandMessage,
+    perf: SourceUpdatePerformance
+): void {
+    const data = message.data;
+    const snapshot = {
+        type: 'viewport',
+        time: Date.now(),
+        totalMs: performance.now() - perf.startedAt,
+        queryMs: 0,
+        setDataMs: perf.setDataMs,
+        zoom: map.getZoom(),
+        sourceSetDataMs: perf.sourceSetDataMs,
+        sourceFeatureCounts: perf.sourceFeatureCounts,
+        itemCount:
+            (data?.portals?.features.length ?? 0) +
+            (data?.links?.features.length ?? 0) +
+            (data?.fields?.features.length ?? 0) +
+            (data?.artifacts?.features.length ?? 0) +
+            (data?.ornaments?.features.length ?? 0) +
+            (data?.pluginFeatures?.features.length ?? 0),
+        portalCount: data?.portals?.features.length ?? 0,
+        linkCount: data?.links?.features.length ?? 0,
+        fieldCount: data?.fields?.features.length ?? 0,
+        artifactCount: data?.artifacts?.features.length ?? 0,
+        ornamentCount: data?.ornaments?.features.length ?? 0,
+        pluginCount: data?.pluginFeatures?.features.length ?? 0,
+    };
+
+    window.postMessage({
+        type: PAGE_MAP_RUNTIME_MESSAGES.viewportPerformance,
+        snapshot,
+    }, '*');
 }
 
 function waitForMapIdle(map: maplibregl.Map): Promise<void> {
@@ -1043,7 +1136,7 @@ async function syncPageMapCamera(message: PageMapRuntimeCommandMessage): Promise
 
 async function syncPageMapSelection(message: PageMapRuntimeCommandMessage): Promise<void> {
     const map = await getPageMap();
-    setSelectedData(map, message);
+    setSelectedData(map, null, message);
     if (message.diagnostic) {
         postDiagnosticResult('MAP SYNC SELECTION', {
             selectedPortal: message.data?.selectedPortal?.features.length ?? 0,

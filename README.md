@@ -98,6 +98,9 @@ The interceptor uses both **prototype patching** for `XMLHttpRequest` and a **fu
 
 Release packages are written next to each app:
 
+- `build:*` creates unpacked browser-extension output for local loading.
+- `package:*` creates timestamped ZIP/XPI files and refreshes the unpacked output first.
+- `release:*` currently aliases the matching product package flow.
 - IRIS unpacked builds: `packages/extension/dist` for Chrome and `packages/extension/dist-firefox` for Firefox.
 - IRIS packages: `packages/extension/builds/iris-chrome-<timestamp>.zip` and `packages/extension/builds/iris-firefox-<timestamp>.xpi`.
 - mini-IRIS unpacked build: `apps/mini-iris/dist`.

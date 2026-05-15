@@ -82,6 +82,12 @@ function isPageRuntimeFrameBenchmarkMessage(value: unknown): value is {type: str
         isRecord(value.snapshot);
 }
 
+function isPageRuntimeViewportPerformanceMessage(value: unknown): value is {type: string; snapshot: Record<string, unknown>} {
+    return isRecord(value) &&
+        value.type === PAGE_MAP_RUNTIME_MESSAGES.viewportPerformance &&
+        isRecord(value.snapshot);
+}
+
 function toFrameSnapshot(snapshot: Record<string, unknown>): MapPerfSnapshot {
     const getNumber = (key: string, fallback = 0): number =>
         typeof snapshot[key] === 'number' ? snapshot[key] : fallback;
@@ -100,6 +106,36 @@ function toFrameSnapshot(snapshot: Record<string, unknown>): MapPerfSnapshot {
         benchmarkMinAverageFrameMs: getNumber('benchmarkMinAverageFrameMs'),
         benchmarkMaxAverageFrameMs: getNumber('benchmarkMaxAverageFrameMs'),
         benchmarkMaxFrameMs: getNumber('benchmarkMaxFrameMs'),
+    };
+}
+
+function toRecordOfNumbers(value: unknown): Record<string, number> | undefined {
+    if (!isRecord(value)) return undefined;
+
+    const entries = Object.entries(value).filter((entry): entry is [string, number] => typeof entry[1] === 'number');
+    return Object.fromEntries(entries);
+}
+
+function toViewportPerformanceSnapshot(snapshot: Record<string, unknown>): MapPerfSnapshot {
+    const getNumber = (key: string, fallback = 0): number =>
+        typeof snapshot[key] === 'number' ? snapshot[key] : fallback;
+
+    return {
+        type: 'viewport',
+        time: getNumber('time', Date.now()),
+        totalMs: getNumber('totalMs'),
+        queryMs: getNumber('queryMs'),
+        setDataMs: getNumber('setDataMs'),
+        zoom: getNumber('zoom'),
+        sourceSetDataMs: toRecordOfNumbers(snapshot.sourceSetDataMs),
+        sourceFeatureCounts: toRecordOfNumbers(snapshot.sourceFeatureCounts),
+        itemCount: getNumber('itemCount'),
+        portalCount: getNumber('portalCount'),
+        linkCount: getNumber('linkCount'),
+        fieldCount: getNumber('fieldCount'),
+        artifactCount: getNumber('artifactCount'),
+        ornamentCount: getNumber('ornamentCount'),
+        pluginCount: getNumber('pluginCount'),
     };
 }
 
@@ -330,6 +366,10 @@ export function IRISOverlay(): JSX.Element {
             }
             if (isPageRuntimeFrameBenchmarkMessage(event.data)) {
                 useStore.getState().setMapPerfSnapshot(toFrameSnapshot(event.data.snapshot));
+                return;
+            }
+            if (isPageRuntimeViewportPerformanceMessage(event.data)) {
+                useStore.getState().setMapPerfSnapshot(toViewportPerformanceSnapshot(event.data.snapshot));
                 return;
             }
             if (!isPageRuntimeSelectionMessage(event.data)) return;

@@ -54,6 +54,10 @@ function formatCount(value: number | undefined): string {
     return typeof value === 'number' ? value.toLocaleString() : '-';
 }
 
+function formatOptionalNumber(value: number | undefined, formatter: (value: number) => string): string {
+    return typeof value === 'number' ? formatter(value) : 'n/a';
+}
+
 interface PerfSummaryContext {
     versionLabel: string;
     mapThemeId: string;
@@ -100,7 +104,7 @@ function buildPerfSummary(perf: MapPerfDiagnostics, context: PerfSummaryContext)
     return [
         buildEnvironmentSummary(context),
         viewport
-            ? `VIEWPORT ${formatMs(viewport.totalMs)} z ${viewport.zoom?.toFixed(2) ?? '-'} buffer ${viewport.queryBufferDegrees?.toFixed(4) ?? '-'} query ${formatMs(viewport.queryMs)} setData ${formatMs(viewport.setDataMs)} items ${formatCount(viewport.itemCount)} P ${formatCount(viewport.portalCount)} L ${formatCount(viewport.linkCount)} F ${formatCount(viewport.fieldCount)} art ${formatCount(viewport.artifactCount)} orn ${formatCount(viewport.ornamentCount)} plugin ${formatCount(viewport.pluginCount)}`
+            ? `VIEWPORT ${formatMs(viewport.totalMs)} z ${formatOptionalNumber(viewport.zoom, (value) => value.toFixed(2))} buffer ${formatOptionalNumber(viewport.queryBufferDegrees, (value) => value.toFixed(4))} query ${formatMs(viewport.queryMs)} setData ${formatMs(viewport.setDataMs)} items ${formatCount(viewport.itemCount)} P ${formatCount(viewport.portalCount)} L ${formatCount(viewport.linkCount)} F ${formatCount(viewport.fieldCount)} art ${formatCount(viewport.artifactCount)} orn ${formatCount(viewport.ornamentCount)} plugin ${formatCount(viewport.pluginCount)}`
             : 'VIEWPORT no sample',
         sourceDetails ? `SOURCES ${sourceDetails}` : 'SOURCES no sample',
         html
