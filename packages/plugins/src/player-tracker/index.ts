@@ -28,6 +28,15 @@ const EXPIRATION_MS = 3 * 60 * 60 * 1000; // 3 hours (IITC default)
 const TICK_MS = 30 * 1000; // 30 seconds update
 const MAX_DISPLAY_EVENTS = 10; // Max events to show in trace
 
+function getPlextFingerprint(plext: Plext): string {
+  return JSON.stringify({
+    time: plext.time,
+    team: plext.team,
+    text: plext.text,
+    markup: plext.markup,
+  });
+}
+
 const PlayerTrackerPlugin: IRISPlugin = {
   manifest: {
     id: 'player-tracker',
@@ -41,7 +50,7 @@ const PlayerTrackerPlugin: IRISPlugin = {
   setup: (api: IRIS_API): void => {
     const trackerApi = api as PlayerTrackerApi;
     const playerHistories = new Map<string, PlayerHistory>();
-    const processedPlextIds = new Set<string>();
+    const processedPlextFingerprints = new Map<string, string>();
 
     // Helper to get average LatLng for an event
     const getLatLngFromEvent = (event: PlayerEvent): [number, number] => {
@@ -178,8 +187,9 @@ const PlayerTrackerPlugin: IRISPlugin = {
       const sorted = [...plexts].sort((a, b) => a.time - b.time);
 
       sorted.forEach((p) => {
-        if (processedPlextIds.has(p.id)) return;
-        processedPlextIds.add(p.id);
+        const fingerprint = getPlextFingerprint(p);
+        if (processedPlextFingerprints.get(p.id) === fingerprint) return;
+        processedPlextFingerprints.set(p.id, fingerprint);
         
         if (p.time < Date.now() - EXPIRATION_MS) return;
         if (!p.markup) return;

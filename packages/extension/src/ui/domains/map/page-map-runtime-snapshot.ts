@@ -15,7 +15,7 @@ interface MapStateSnapshot {
     zoom: number;
 }
 
-interface BuildPageMapRuntimeSnapshotOptions {
+export interface BuildPageMapRuntimeSnapshotOptions {
     type: string;
     diagnostic?: boolean;
     portals: Record<string, Portal>;
@@ -104,6 +104,36 @@ export function buildPageMapRuntimeSnapshotMessage(
             missionRoute: toFeatureCollection(buildMissionRouteFeatures(options.missionDetails)),
             missionWaypoints: toFeatureCollection(buildMissionWaypointFeatures(options.missionDetails)),
             pluginFeatures: buildPluginFeatureCollection(options),
+            plannedFeatures: toFeatureCollection(buildPlannedFeatures(options)),
+        },
+    };
+}
+
+export function buildPageMapRuntimeSelectionMessage(
+    options: BuildPageMapRuntimeSnapshotOptions
+): PageMapRuntimeCommandMessage {
+    return {
+        type: options.type,
+        diagnostic: options.diagnostic,
+        data: {
+            selectedPortal: buildSelectedPortalFeatureCollection(options.portals, options.selectedPortalId, options),
+            selectedLink: buildSelectedLinkFeatureCollection(options.links, options.selectedLinkId, options),
+            selectedField: buildSelectedFieldFeatureCollection(options.fields, options.selectedFieldId, options),
+        },
+    };
+}
+
+export function buildPageMapRuntimePlannedFeaturesMessage(
+    options: BuildPageMapRuntimeSnapshotOptions
+): PageMapRuntimeCommandMessage {
+    return {
+        type: options.type,
+        diagnostic: options.diagnostic,
+        planning: {
+            enabled: options.planningMode,
+            tool: options.planningTool,
+        },
+        data: {
             plannedFeatures: toFeatureCollection(buildPlannedFeatures(options)),
         },
     };
@@ -283,7 +313,7 @@ function buildLinkFeatureCollection(options: BuildPageMapRuntimeSnapshotOptions)
     return {
         type: 'FeatureCollection',
         features: Object.values(options.links)
-            .filter((link) => options.layerShowLinks && isTeamVisible(link.team, options))
+            .filter((link) => isTeamVisible(link.team, options))
             .map((link): GeoJSON.Feature<GeoJSON.LineString> => ({
                 type: 'Feature',
                 geometry: {
@@ -306,7 +336,7 @@ function buildFieldFeatureCollection(options: BuildPageMapRuntimeSnapshotOptions
     return {
         type: 'FeatureCollection',
         features: Object.values(options.fields)
-            .filter((field) => options.layerShowFields && isTeamVisible(field.team, options))
+            .filter((field) => isTeamVisible(field.team, options))
             .filter((field) => field.points.length >= 3)
             .map((field): GeoJSON.Feature<GeoJSON.Polygon> => ({
                 type: 'Feature',

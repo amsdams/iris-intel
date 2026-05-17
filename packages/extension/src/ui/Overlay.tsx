@@ -31,7 +31,12 @@ import {
     PageMapRuntimeCameraChangedMessage,
     PageMapRuntimeSelectionMessage,
 } from '../shared/page-map-runtime-protocol';
-import {buildPageMapRuntimeSnapshotMessage, getMapThemeTiles} from './domains/map/page-map-runtime-snapshot';
+import {
+    buildPageMapRuntimePlannedFeaturesMessage,
+    buildPageMapRuntimeSelectionMessage,
+    buildPageMapRuntimeSnapshotMessage,
+    getMapThemeTiles,
+} from './domains/map/page-map-runtime-snapshot';
 
 // ---------------------------------------------------------------------------
 // IRISOverlay
@@ -141,9 +146,12 @@ function toViewportPerformanceSnapshot(snapshot: Record<string, unknown>): MapPe
     };
 }
 
-function buildPageRuntimeSnapshotFromStore(type: string, diagnostic?: boolean): ReturnType<typeof buildPageMapRuntimeSnapshotMessage> {
+function getPageRuntimeSnapshotOptionsFromStore(
+    type: string,
+    diagnostic?: boolean
+): Parameters<typeof buildPageMapRuntimeSnapshotMessage>[0] {
     const state = useStore.getState();
-    return buildPageMapRuntimeSnapshotMessage({
+    return {
         type,
         diagnostic,
         portals: state.portals,
@@ -182,7 +190,19 @@ function buildPageRuntimeSnapshotFromStore(type: string, diagnostic?: boolean): 
         plannedLinksEnabled: state.pluginStates['planned-links'] ?? false,
         plannedShowLinks: state.plannedShowLinks,
         plannedShowMarkers: state.plannedShowMarkers,
-    });
+    };
+}
+
+function buildPageRuntimeSnapshotFromStore(type: string, diagnostic?: boolean): ReturnType<typeof buildPageMapRuntimeSnapshotMessage> {
+    return buildPageMapRuntimeSnapshotMessage(getPageRuntimeSnapshotOptionsFromStore(type, diagnostic));
+}
+
+function buildPageRuntimeSelectionFromStore(type: string, diagnostic?: boolean): ReturnType<typeof buildPageMapRuntimeSelectionMessage> {
+    return buildPageMapRuntimeSelectionMessage(getPageRuntimeSnapshotOptionsFromStore(type, diagnostic));
+}
+
+function buildPageRuntimePlannedFeaturesFromStore(type: string, diagnostic?: boolean): ReturnType<typeof buildPageMapRuntimePlannedFeaturesMessage> {
+    return buildPageMapRuntimePlannedFeaturesMessage(getPageRuntimeSnapshotOptionsFromStore(type, diagnostic));
 }
 
 export function IRISOverlay(): JSX.Element {
@@ -461,16 +481,6 @@ export function IRISOverlay(): JSX.Element {
         mockOrnaments,
         missionDetails,
         pluginFeatures,
-        plannedLinks,
-        plannedMarkers,
-        planningMode,
-        planningTool,
-        planningAnchorPortalId,
-        planningPortalPath,
-        selectedPlannedItemId,
-        plannedLinksEnabled,
-        plannedShowLinks,
-        plannedShowMarkers,
         layerShowOrnaments,
         layerShowArtifacts,
         filterShowResistance,
@@ -483,6 +493,27 @@ export function IRISOverlay(): JSX.Element {
         filterShowCaptured,
         filterShowScanned,
         themeId,
+    ]);
+
+    useEffect(() => {
+        if (!pageRuntimeInitialSyncDoneRef.current) return;
+
+        const timeout = window.setTimeout(() => {
+            window.postMessage(buildPageRuntimePlannedFeaturesFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
+        }, PAGE_MAP_RUNTIME_DATA_SYNC_DEBOUNCE_MS);
+
+        return (): void => window.clearTimeout(timeout);
+    }, [
+        plannedLinks,
+        plannedMarkers,
+        planningMode,
+        planningTool,
+        planningAnchorPortalId,
+        planningPortalPath,
+        selectedPlannedItemId,
+        plannedLinksEnabled,
+        plannedShowLinks,
+        plannedShowMarkers,
     ]);
 
     useEffect(() => {
@@ -518,8 +549,8 @@ export function IRISOverlay(): JSX.Element {
     useEffect(() => {
         if (!pageRuntimeInitialSyncDoneRef.current) return;
 
-        window.postMessage(buildPageRuntimeSnapshotFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncSelection), '*');
-    }, [selectedPortalId, selectedLinkId, selectedFieldId, selectedPlannedItemId]);
+        window.postMessage(buildPageRuntimeSelectionFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncSelection), '*');
+    }, [selectedPortalId, selectedLinkId, selectedFieldId]);
 
     useEffect(() => {
         if (!pageRuntimeInitialSyncDoneRef.current) return;

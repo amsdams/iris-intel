@@ -150,6 +150,7 @@ const SOURCE_COUNT_LABELS: Record<string, string> = {
     'iris-map-ornaments': 'ornaments',
     'iris-map-plugin-features': 'plugin-features',
     'iris-map-plugin-highlights': 'plugin-features',
+    'iris-map-planned-features': 'planned-features',
 };
 
 const DEFAULT_LAYER_VISIBILITY: PageMapRuntimeLayerVisibility = {
@@ -765,26 +766,39 @@ function setIrisLayerVisibility(map: maplibregl.Map, visibility: PageMapRuntimeL
     setLayerVisibility(map, 'iris-map-field-selected', visibility.fields);
 }
 
-function getEmptyFeatureCollection(): GeoJSON.FeatureCollection {
-    return {type: 'FeatureCollection', features: []};
-}
-
 function setIrisData(map: maplibregl.Map, message: PageMapRuntimeCommandMessage): void {
     const perf = createSourceUpdatePerformance();
     if (message.planning) {
         currentPlanningState = message.planning;
     }
-    const plannedFeatures = message.data?.plannedFeatures ?? getEmptyFeatureCollection();
-    setMeasuredGeoJsonSourceData(map, perf, 'iris-map-portals', message.data?.portals ?? getEmptyFeatureCollection());
-    setMeasuredGeoJsonSourceData(map, perf, 'iris-map-links', message.data?.links ?? getEmptyFeatureCollection());
-    setMeasuredGeoJsonSourceData(map, perf, 'iris-map-fields', message.data?.fields ?? getEmptyFeatureCollection());
-    setMeasuredGeoJsonSourceData(map, perf, 'iris-map-artifacts', message.data?.artifacts ?? getEmptyFeatureCollection());
-    setMeasuredGeoJsonSourceData(map, perf, 'iris-map-ornaments', message.data?.ornaments ?? getEmptyFeatureCollection());
-    setMeasuredGeoJsonSourceData(map, perf, 'iris-map-mission-route', message.data?.missionRoute ?? getEmptyFeatureCollection());
-    setMeasuredGeoJsonSourceData(map, perf, 'iris-map-mission-waypoints', message.data?.missionWaypoints ?? getEmptyFeatureCollection());
-    setPluginFeatureData(map, perf, message.data?.pluginFeatures ?? getEmptyFeatureCollection());
-    setMeasuredGeoJsonSourceData(map, perf, 'iris-map-planned-features', plannedFeatures);
-    syncPlannedMarkerPins(map, plannedFeatures);
+    if (message.data?.portals) {
+        setMeasuredGeoJsonSourceData(map, perf, 'iris-map-portals', message.data.portals);
+    }
+    if (message.data?.links) {
+        setMeasuredGeoJsonSourceData(map, perf, 'iris-map-links', message.data.links);
+    }
+    if (message.data?.fields) {
+        setMeasuredGeoJsonSourceData(map, perf, 'iris-map-fields', message.data.fields);
+    }
+    if (message.data?.artifacts) {
+        setMeasuredGeoJsonSourceData(map, perf, 'iris-map-artifacts', message.data.artifacts);
+    }
+    if (message.data?.ornaments) {
+        setMeasuredGeoJsonSourceData(map, perf, 'iris-map-ornaments', message.data.ornaments);
+    }
+    if (message.data?.missionRoute) {
+        setMeasuredGeoJsonSourceData(map, perf, 'iris-map-mission-route', message.data.missionRoute);
+    }
+    if (message.data?.missionWaypoints) {
+        setMeasuredGeoJsonSourceData(map, perf, 'iris-map-mission-waypoints', message.data.missionWaypoints);
+    }
+    if (message.data?.pluginFeatures) {
+        setPluginFeatureData(map, perf, message.data.pluginFeatures);
+    }
+    if (message.data?.plannedFeatures) {
+        setMeasuredGeoJsonSourceData(map, perf, 'iris-map-planned-features', message.data.plannedFeatures);
+        syncPlannedMarkerPins(map, message.data.plannedFeatures);
+    }
     setSelectedData(map, perf, message);
     publishViewportPerformance(map, message, perf);
 }
@@ -1332,9 +1346,15 @@ function setSelectedData(
     const setData = perf
         ? (sourceId: string, data: GeoJSON.FeatureCollection): void => setMeasuredGeoJsonSourceData(map, perf, sourceId, data)
         : (sourceId: string, data: GeoJSON.FeatureCollection): void => setGeoJsonSourceData(map, sourceId, data);
-    setData('iris-map-portal-selected', message.data?.selectedPortal ?? getEmptyFeatureCollection());
-    setData('iris-map-link-selected', message.data?.selectedLink ?? getEmptyFeatureCollection());
-    setData('iris-map-field-selected', message.data?.selectedField ?? getEmptyFeatureCollection());
+    if (message.data?.selectedPortal) {
+        setData('iris-map-portal-selected', message.data.selectedPortal);
+    }
+    if (message.data?.selectedLink) {
+        setData('iris-map-link-selected', message.data.selectedLink);
+    }
+    if (message.data?.selectedField) {
+        setData('iris-map-field-selected', message.data.selectedField);
+    }
 }
 
 function getIrisDataCounts(message: PageMapRuntimeCommandMessage): Record<string, unknown> {
@@ -1365,7 +1385,8 @@ function publishViewportPerformance(
             (data?.fields?.features.length ?? 0) +
             (data?.artifacts?.features.length ?? 0) +
             (data?.ornaments?.features.length ?? 0) +
-            (data?.pluginFeatures?.features.length ?? 0),
+            (data?.pluginFeatures?.features.length ?? 0) +
+            (data?.plannedFeatures?.features.length ?? 0),
         portalCount: data?.portals?.features.length ?? 0,
         linkCount: data?.links?.features.length ?? 0,
         fieldCount: data?.fields?.features.length ?? 0,
