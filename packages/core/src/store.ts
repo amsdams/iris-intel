@@ -1106,6 +1106,7 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
         planningPortalPath: [],
         selectedPlannedItemId: null,
         selectedPlannedItemType: null,
+        ...(tool === 'links' ? { plannedShowLinks: true } : { plannedShowMarkers: true }),
     })),
     selectPlanningPortal: (portalId) => set((state) => {
         if (!state.planningMode) {

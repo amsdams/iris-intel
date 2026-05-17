@@ -434,13 +434,15 @@ function buildPlannedFeatures(options: BuildPageMapRuntimeSnapshotOptions): GeoJ
 
 function buildPlannedLinkFeatures(options: BuildPageMapRuntimeSnapshotOptions): GeoJSON.Feature[] {
     const features: GeoJSON.Feature[] = [];
-    const loadedLinks = Object.values(options.links).map((link) => ({
-        link,
-        bounds: getSegmentBounds(
-            {lng: link.fromLng, lat: link.fromLat},
-            {lng: link.toLng, lat: link.toLat}
-        ),
-    }));
+    const loadedLinks = options.plannedLinks.length > 0
+        ? Object.values(options.links).map((link) => ({
+            link,
+            bounds: getSegmentBounds(
+                {lng: link.fromLng, lat: link.fromLat},
+                {lng: link.toLng, lat: link.toLat}
+            ),
+        }))
+        : [];
 
     options.plannedLinks.forEach((plannedLink) => {
         const from = options.portals[plannedLink.fromPortalId];
