@@ -162,6 +162,36 @@ export function buildPageMapRuntimeFieldsMessage(
     };
 }
 
+export function buildPageMapRuntimeVisualFilterMessage(
+    options: BuildPageMapRuntimeSnapshotOptions
+): PageMapRuntimeCommandMessage {
+    return {
+        type: options.type,
+        diagnostic: options.diagnostic,
+        data: {
+            portals: buildPortalFeatureCollection(options),
+            links: buildLinkFeatureCollection(options),
+            fields: buildFieldFeatureCollection(options),
+            selectedPortal: buildSelectedPortalFeatureCollection(options.portals, options.selectedPortalId, options),
+            selectedLink: buildSelectedLinkFeatureCollection(options.links, options.selectedLinkId, options),
+            selectedField: buildSelectedFieldFeatureCollection(options.fields, options.selectedFieldId, options),
+            ornaments: toFeatureCollection(buildOrnamentFeatures(options.portals, options.mockOrnaments, {
+                showOrnaments: options.layerShowOrnaments,
+                showResistance: options.filterShowResistance,
+                showEnlightened: options.filterShowEnlightened,
+                showMachina: options.filterShowMachina,
+                showUnclaimedPortals: options.filterShowUnclaimedPortals,
+                showLevel: options.filterShowLevel,
+                showHealth: options.filterShowHealth,
+                showVisited: options.filterShowVisited,
+                showCaptured: options.filterShowCaptured,
+                showScanned: options.filterShowScanned,
+            })),
+            pluginFeatures: buildPluginFeatureCollection(options),
+        },
+    };
+}
+
 export function buildPageMapRuntimePlannedFeaturesMessage(
     options: BuildPageMapRuntimeSnapshotOptions
 ): PageMapRuntimeCommandMessage {

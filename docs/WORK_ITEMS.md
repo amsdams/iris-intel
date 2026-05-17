@@ -990,27 +990,27 @@ Tasks:
 |------------------------------------------------------------|--------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Keep strict Intel request limiting verified                | Done   | `safeIrisFetch` already applies a FIFO concurrency limit of 5 and entity requests are chunked; keep this covered when changing request scheduling so large pans do not starve other Intel traffic       |
 | Disable or fix default portal-name debug logging           | Done   | `portal-names` is now opt-in, removes its stats item on teardown, and unsubscribes from portal updates; this avoids default hot-path console spam and stale subscriptions                              |
-| Split or memoize page-world GeoJSON/source sync by domain  | In Progress | portal, link, field, selection, planned, plugin, artifact, ornament, and mission updates now patch their own sources with a shorter visual debounce; link/field visibility no longer empties source data; continue splitting theme/filter rebuild paths |
+| Split or memoize page-world GeoJSON/source sync by domain  | Done   | portal, link, field, selection, planned, plugin, artifact, ornament, mission, and visual filter/theme updates now patch only affected sources with a short debounce; link/field visibility no longer empties source data |
 | Add `rbush.load()` path for `SpatialIndex.syncAll`         | Done   | full index rebuilds now bulk load prebuilt portal/link/field bbox items and keep the tracker map valid for later incremental removes/updates; covered by focused `SpatialIndex` tests                 |
 | Profile Zustand/UI rerenders during pan                    | Open   | measure before refactoring broad selectors; focus on drawer, diagnostics, plugin states, planning state, and map status during active movement                                                         |
 | Add planned-link crossing prefiltering                     | Done   | planned-link crossing detection now precomputes loaded-link bounding boxes only when saved planned links exist, then skips exact segment checks when segment bounds cannot overlap                    |
 | Standardize domain error reporting into Diagnostics        | Open   | parsers, request coordination, and page-world runtime should report structured recoverable errors instead of mixing console-only and caught-global paths                                                |
 | Add optional message sequence IDs for diagnostics          | Open   | useful for tracing page-world/content/interceptor request-response paths and dropped messages, but lower priority than source sync and measured rerenders                                              |
 | Add stronger benchmark variants for comparison             | Open   | keep fixed scenarios for overlay hidden, lighter moving fields, labels on/off, draw tools on/off, and base-map style so dependency/performance changes compare cleanly                                 |
+| Keep current source counts visible in patch benchmarks     | Done   | page-world diagnostics now keep current portal/link/field/artifact/ornament/plugin/planned source counts while `sourceSetDataMs` still reports only the latest patch timing                            |
 | Add mock player activity plexts for tracker testing        | Open   | add a debug-only mock action with movement, capture/link/field actions, duplicate richer plext updates, and co-located players so player tracker pins, recent actions, and clustering can be tested without live COMM activity |
 | Investigate package split only after measuring bundle cost | Open   | an `@iris/types` or `@iris/utils` split may help later, but it is premature until plugin bundle size or package-boundary cost is a measured issue                                                       |
 
 ## Current Next Pickup
 
-1. **[Performance Architecture]** Continue splitting page-world theme/filter sync so unrelated state changes do not rebuild every source.
-2. **[Performance Architecture]** Profile Zustand/UI rerenders during active pan before refactoring selectors.
-3. **[Diagnostics Architecture]** Standardize recoverable parser/request/runtime errors into Diagnostics.
-4. **[Testability]** Add mock player activity plexts for player tracker testing without live COMM activity.
-5. **[UI Architecture]** Extend shared UI/CSS primitives to drawer buttons, popup action rows, and map controls after visual smoke testing the first pass.
-6. **[Marker Rendering]** Keep MapLibre Marker pins lagging behind mobile pan as a watch item for stale XPI/runtime loads without page refresh.
-7. **[Draw Tools]** Refine marker selection/edit/delete UX after the pin experiment clarified renderer behavior.
-8. **[Performance]** Compare stationary vs moving field-render modes if mobile panning still needs tuning.
-9. **[Plugin Overlay]** Add IITC-style label overlap thinning.
+1. **[Performance Architecture]** Profile Zustand/UI rerenders during active pan before refactoring selectors.
+2. **[Diagnostics Architecture]** Standardize recoverable parser/request/runtime errors into Diagnostics.
+3. **[Testability]** Add mock player activity plexts for player tracker testing without live COMM activity.
+4. **[UI Architecture]** Extend shared UI/CSS primitives to drawer buttons, popup action rows, and map controls after visual smoke testing the first pass.
+5. **[Marker Rendering]** Keep MapLibre Marker pins lagging behind mobile pan as a watch item for stale XPI/runtime loads without page refresh.
+6. **[Draw Tools]** Refine marker selection/edit/delete UX after the pin experiment clarified renderer behavior.
+7. **[Performance]** Compare stationary vs moving field-render modes if mobile panning still needs tuning.
+8. **[Plugin Overlay]** Add IITC-style label overlap thinning.
 
 ## Snapshot And Reference Sources
 

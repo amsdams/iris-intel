@@ -22,6 +22,10 @@ when evaluating major dependency migrations or rendering changes.
 | 0.1.4   | Page-world source diagnostics | Desktop Mac | Chrome 148  | OSM     | player-tracker                          | 14,382 | 4,760   | 6,525  | 2,933  | 17      | 0ms      | 0ms       | n/a  | 9ms       | 9ms    | 67ms  | 114 | 6/1,030     |
 | 0.1.5   | Source-sync split + rbush load | Desktop Mac | Chrome 148  | OSM     | player-tracker                          | 13,922 | 4,510   | 6,392  | 2,882  | 13      | 1ms      | 0ms       | n/a  | 17ms      | 17ms   | 50ms  | 59  | 1/527       |
 | 0.1.5   | Source-sync split + rbush load | Desktop Mac | Chrome 148  | OSM     | player-tracker                          | 13,681 | 4,439   | 6,271  | 2,833  | 13      | 1ms      | 0ms       | n/a  | 17ms      | 17ms   | 33ms  | 60  | 0/539       |
+| 0.1.5   | Domain patch sync              | Desktop Mac | Chrome 148  | OSM     | player-tracker                          | 58     | 0       | 0      | 0      | 58      | 3ms      | 0ms       | n/a  | 17ms      | 17ms   | 67ms  | 57  | 8/519       |
+| 0.1.5   | Domain patch sync              | Desktop Mac | Chrome 148  | OSM     | player-tracker                          | 61     | 0       | 0      | 0      | 61      | 2ms      | 0ms       | n/a  | 17ms      | 17ms   | 18ms  | 60  | 0/541       |
+| 0.1.5   | Domain patch counts fix        | Desktop Mac | Chrome 148  | OSM     | player-tracker                          | 11,518 | 2,410   | 6,199  | 2,884  | 25      | 3ms      | 0ms       | n/a  | 17ms      | 17ms   | 33ms  | 60  | 0/540       |
+| 0.1.5   | Domain patch counts fix        | Desktop Mac | Chrome 148  | OSM     | player-tracker                          | 14,016 | 4,547   | 6,427  | 2,884  | 25      | 2ms      | 0ms       | n/a  | 17ms      | 17ms   | 33ms  | 59  | 0/535       |
 
 ## Readout
 
@@ -48,6 +52,10 @@ when evaluating major dependency migrations or rendering changes.
 - The `0.1.5` source-sync/rbush samples are stable across two runs at a wider `1920x934` viewport: `17ms` median,
   `59-60fps`, and `0-1` slow frames. Treat them as a same-viewport baseline rather than a strict comparison with the
   older `1728x958` samples, where Chrome reported a higher apparent FPS cadence.
+- The later `0.1.5` domain patch sync samples show the new narrow-source behavior: the copied viewport sample can now
+  report only the source that changed, such as `plugin-features`, with portals/links/fields shown as `-/-`.
+- The follow-up domain patch count fix restores current portal/link/field counts while preserving narrow patch timing:
+  `plugin-features 25/0ms` with portals/links/fields counts shown and `-` timing for untouched sources.
 
 ## Fixed Scenario Set
 
@@ -323,3 +331,67 @@ Notes:
   healthy for this viewport/entity mix.
 - Do not compare the `17ms / 60fps` line too literally against older `9ms / 114fps` Chrome samples unless the viewport,
   display refresh cadence, entity counts, and browser scheduling conditions match.
+
+## 2026-05-17 - IRIS 0.1.5 - Domain Patch Sync
+
+Context:
+
+- Purpose: sanity baseline after routine page-world updates were split into narrow domain patches, including visual
+  filter/theme changes.
+- Browser: Chrome 148.0.0.0 on macOS (`MacIntel`), desktop pointer.
+- Viewport: `1469x934`, DPR `2.00`.
+- Map style: `OSM`.
+- Overlay state: `player-tracker`.
+- Benchmark: Diagnostics Bench, 3 deterministic runs at zoom `14.36`.
+- Important caveat: these samples captured a plugin-feature patch, not a full portal/link/field source refresh. That is
+  why portals, links, and fields show `0` in `VIEWPORT` and `-/-` in `SOURCES`.
+
+### Chrome Desktop - Player Tracker Patch - Run 1
+
+```text
+CONTEXT IRIS 0.1.5 browser Chrome 148.0.0.0 platform MacIntel viewport 1469x934 dpr 2.00 touch 0 pointer fine hover yes mapStyle OSM overlays player-tracker
+VIEWPORT source 3ms z 14.36 buffer n/a query n/a setData 0ms items 58 P 0 L 0 F 0 art 0 orn 0 plugin 58
+SOURCES portals -/- | links -/- | fields -/- | artifacts -/- | ornaments -/- | plugin-features 58/0ms
+FRAME 9085ms avg 17ms max 67ms fps 57 slow 8/519 bench 3 median 17ms range 17ms-19ms benchMax 67ms
+```
+
+### Chrome Desktop - Player Tracker Patch - Run 2
+
+```text
+CONTEXT IRIS 0.1.5 browser Chrome 148.0.0.0 platform MacIntel viewport 1469x934 dpr 2.00 touch 0 pointer fine hover yes mapStyle OSM overlays player-tracker
+VIEWPORT source 2ms z 14.36 buffer n/a query n/a setData 0ms items 61 P 0 L 0 F 0 art 0 orn 0 plugin 61
+SOURCES portals -/- | links -/- | fields -/- | artifacts -/- | ornaments -/- | plugin-features 61/0ms
+FRAME 9036ms avg 17ms max 18ms fps 60 slow 0/541 bench 3 median 17ms range 17ms-17ms benchMax 18ms
+```
+
+Notes:
+
+- The narrow `plugin-features` source update confirms the domain patch path is avoiding unrelated portal/link/field
+  source work for tracker-only updates.
+- Frame timing remains at the expected Chrome desktop display cadence around `17ms`; the second run is especially
+  clean with `0` slow frames and `18ms` max.
+
+### Chrome Desktop - Current Source Counts Restored - Run 1
+
+```text
+CONTEXT IRIS 0.1.5 browser Chrome 148.0.0.0 platform MacIntel viewport 1920x934 dpr 2.00 touch 0 pointer fine hover yes mapStyle OSM overlays player-tracker
+VIEWPORT source 3ms z 14.36 buffer n/a query n/a setData 0ms items 11,518 P 2,410 L 6,199 F 2,884 art 0 orn 0 plugin 25
+SOURCES portals 2,410/- | links 6,199/- | fields 2,884/- | artifacts 0/- | ornaments 0/- | plugin-features 25/0ms
+FRAME 9030ms avg 17ms max 33ms fps 60 slow 0/540 bench 3 median 17ms range 17ms-17ms benchMax 33ms
+```
+
+### Chrome Desktop - Current Source Counts Restored - Run 2
+
+```text
+CONTEXT IRIS 0.1.5 browser Chrome 148.0.0.0 platform MacIntel viewport 1920x934 dpr 2.00 touch 0 pointer fine hover yes mapStyle OSM overlays player-tracker
+VIEWPORT source 2ms z 14.36 buffer n/a query n/a setData 0ms items 14,016 P 4,547 L 6,427 F 2,884 art 0 orn 133 plugin 25
+SOURCES portals 4,547/- | links 6,427/- | fields 2,884/- | artifacts 0/- | ornaments 133/- | plugin-features 25/0ms
+FRAME 9037ms avg 17ms max 33ms fps 59 slow 0/535 bench 3 median 17ms range 17ms-17ms benchMax 33ms
+```
+
+Notes:
+
+- Current source counts are visible again while source timings still show only the latest changed source.
+- The `-` timing for portals/links/fields is expected here: those sources were present on the map but were not updated
+  by the latest patch.
+- Both runs stayed clean at `17ms` median and `0` slow frames.

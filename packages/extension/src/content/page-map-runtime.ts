@@ -128,6 +128,15 @@ const playerMarkerRegistry = new Map<string, PlayerMarkerRegistryEntry>();
 const playerClusterRegistry = new Map<string, PlayerClusterRegistryEntry>();
 const expandedPlayerClusterKeys = new Set<string>();
 let lastPlayerMarkerFeatures: GeoJSON.FeatureCollection = {type: 'FeatureCollection', features: []};
+const currentSourceFeatureCounts: Record<string, number> = {
+    portals: 0,
+    links: 0,
+    fields: 0,
+    artifacts: 0,
+    ornaments: 0,
+    'plugin-features': 0,
+    'planned-features': 0,
+};
 
 const SLOW_FRAME_MS = 34;
 const PAN_BENCHMARK_STEP_PX = 220;
@@ -727,6 +736,7 @@ function setMeasuredGeoJsonSourceData(
     perf.setDataMs += elapsed;
     perf.sourceSetDataMs[sourceLabel] = (perf.sourceSetDataMs[sourceLabel] ?? 0) + elapsed;
     perf.sourceFeatureCounts[sourceLabel] = data.features.length;
+    currentSourceFeatureCounts[sourceLabel] = data.features.length;
 }
 
 function setRasterTiles(map: maplibregl.Map, sourceId: string, tiles: string[]): void {
@@ -836,6 +846,7 @@ function setPluginFeatureData(
         features: playerMarkers,
     });
     perf.sourceFeatureCounts['plugin-features'] = features.features.length;
+    currentSourceFeatureCounts['plugin-features'] = features.features.length;
 }
 
 function isPlayerMarkerFeature(feature: GeoJSON.Feature): boolean {
@@ -1370,7 +1381,8 @@ function publishViewportPerformance(
     message: PageMapRuntimeCommandMessage,
     perf: SourceUpdatePerformance
 ): void {
-    const data = message.data;
+    void message;
+    const sourceFeatureCounts = {...currentSourceFeatureCounts};
     const snapshot = {
         type: 'viewport',
         time: Date.now(),
@@ -1378,21 +1390,21 @@ function publishViewportPerformance(
         setDataMs: perf.setDataMs,
         zoom: map.getZoom(),
         sourceSetDataMs: perf.sourceSetDataMs,
-        sourceFeatureCounts: perf.sourceFeatureCounts,
+        sourceFeatureCounts,
         itemCount:
-            (data?.portals?.features.length ?? 0) +
-            (data?.links?.features.length ?? 0) +
-            (data?.fields?.features.length ?? 0) +
-            (data?.artifacts?.features.length ?? 0) +
-            (data?.ornaments?.features.length ?? 0) +
-            (data?.pluginFeatures?.features.length ?? 0) +
-            (data?.plannedFeatures?.features.length ?? 0),
-        portalCount: data?.portals?.features.length ?? 0,
-        linkCount: data?.links?.features.length ?? 0,
-        fieldCount: data?.fields?.features.length ?? 0,
-        artifactCount: data?.artifacts?.features.length ?? 0,
-        ornamentCount: data?.ornaments?.features.length ?? 0,
-        pluginCount: data?.pluginFeatures?.features.length ?? 0,
+            (sourceFeatureCounts.portals ?? 0) +
+            (sourceFeatureCounts.links ?? 0) +
+            (sourceFeatureCounts.fields ?? 0) +
+            (sourceFeatureCounts.artifacts ?? 0) +
+            (sourceFeatureCounts.ornaments ?? 0) +
+            (sourceFeatureCounts['plugin-features'] ?? 0) +
+            (sourceFeatureCounts['planned-features'] ?? 0),
+        portalCount: sourceFeatureCounts.portals ?? 0,
+        linkCount: sourceFeatureCounts.links ?? 0,
+        fieldCount: sourceFeatureCounts.fields ?? 0,
+        artifactCount: sourceFeatureCounts.artifacts ?? 0,
+        ornamentCount: sourceFeatureCounts.ornaments ?? 0,
+        pluginCount: sourceFeatureCounts['plugin-features'] ?? 0,
     };
 
     window.postMessage({

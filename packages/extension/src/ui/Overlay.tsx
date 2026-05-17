@@ -42,6 +42,7 @@ import {
     buildPageMapRuntimePortalsMessage,
     buildPageMapRuntimeSelectionMessage,
     buildPageMapRuntimeSnapshotMessage,
+    buildPageMapRuntimeVisualFilterMessage,
     getMapThemeTiles,
 } from './domains/map/page-map-runtime-snapshot';
 
@@ -50,7 +51,6 @@ import {
 // ---------------------------------------------------------------------------
 
 const PAGE_MAP_RUNTIME_INITIAL_SYNC_DEBOUNCE_MS = 300;
-const PAGE_MAP_RUNTIME_DATA_SYNC_DEBOUNCE_MS = 300;
 const PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS = 80;
 const PAGE_MAP_RUNTIME_CAMERA_SYNC_DEBOUNCE_MS = 80;
 
@@ -219,6 +219,10 @@ function buildPageRuntimeLinksFromStore(type: string, diagnostic?: boolean): Ret
 
 function buildPageRuntimeFieldsFromStore(type: string, diagnostic?: boolean): ReturnType<typeof buildPageMapRuntimeFieldsMessage> {
     return buildPageMapRuntimeFieldsMessage(getPageRuntimeSnapshotOptionsFromStore(type, diagnostic));
+}
+
+function buildPageRuntimeVisualFilterFromStore(type: string, diagnostic?: boolean): ReturnType<typeof buildPageMapRuntimeVisualFilterMessage> {
+    return buildPageMapRuntimeVisualFilterMessage(getPageRuntimeSnapshotOptionsFromStore(type, diagnostic));
 }
 
 function buildPageRuntimePlannedFeaturesFromStore(type: string, diagnostic?: boolean): ReturnType<typeof buildPageMapRuntimePlannedFeaturesMessage> {
@@ -505,8 +509,8 @@ export function IRISOverlay(): JSX.Element {
         if (!pageRuntimeInitialSyncDoneRef.current) return;
 
         const timeout = window.setTimeout(() => {
-            window.postMessage(buildPageRuntimeSnapshotFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
-        }, PAGE_MAP_RUNTIME_DATA_SYNC_DEBOUNCE_MS);
+            window.postMessage(buildPageRuntimeVisualFilterFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
+        }, PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS);
 
         return (): void => window.clearTimeout(timeout);
     }, [
