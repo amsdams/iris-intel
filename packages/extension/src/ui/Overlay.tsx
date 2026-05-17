@@ -33,6 +33,8 @@ import {
 } from '../shared/page-map-runtime-protocol';
 import {
     buildPageMapRuntimeArtifactsMessage,
+    buildPageMapRuntimeFieldsMessage,
+    buildPageMapRuntimeLinksMessage,
     buildPageMapRuntimeMissionMessage,
     buildPageMapRuntimeOrnamentsMessage,
     buildPageMapRuntimePlannedFeaturesMessage,
@@ -204,6 +206,14 @@ function buildPageRuntimeSnapshotFromStore(type: string, diagnostic?: boolean): 
 
 function buildPageRuntimeSelectionFromStore(type: string, diagnostic?: boolean): ReturnType<typeof buildPageMapRuntimeSelectionMessage> {
     return buildPageMapRuntimeSelectionMessage(getPageRuntimeSnapshotOptionsFromStore(type, diagnostic));
+}
+
+function buildPageRuntimeLinksFromStore(type: string, diagnostic?: boolean): ReturnType<typeof buildPageMapRuntimeLinksMessage> {
+    return buildPageMapRuntimeLinksMessage(getPageRuntimeSnapshotOptionsFromStore(type, diagnostic));
+}
+
+function buildPageRuntimeFieldsFromStore(type: string, diagnostic?: boolean): ReturnType<typeof buildPageMapRuntimeFieldsMessage> {
+    return buildPageMapRuntimeFieldsMessage(getPageRuntimeSnapshotOptionsFromStore(type, diagnostic));
 }
 
 function buildPageRuntimePlannedFeaturesFromStore(type: string, diagnostic?: boolean): ReturnType<typeof buildPageMapRuntimePlannedFeaturesMessage> {
@@ -496,8 +506,6 @@ export function IRISOverlay(): JSX.Element {
         return (): void => window.clearTimeout(timeout);
     }, [
         portals,
-        links,
-        fields,
         filterShowResistance,
         filterShowEnlightened,
         filterShowMachina,
@@ -509,6 +517,26 @@ export function IRISOverlay(): JSX.Element {
         filterShowScanned,
         themeId,
     ]);
+
+    useEffect(() => {
+        if (!pageRuntimeInitialSyncDoneRef.current) return;
+
+        const timeout = window.setTimeout(() => {
+            window.postMessage(buildPageRuntimeLinksFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
+        }, PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS);
+
+        return (): void => window.clearTimeout(timeout);
+    }, [links]);
+
+    useEffect(() => {
+        if (!pageRuntimeInitialSyncDoneRef.current) return;
+
+        const timeout = window.setTimeout(() => {
+            window.postMessage(buildPageRuntimeFieldsFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
+        }, PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS);
+
+        return (): void => window.clearTimeout(timeout);
+    }, [fields]);
 
     useEffect(() => {
         if (!pageRuntimeInitialSyncDoneRef.current) return;
@@ -578,6 +606,7 @@ export function IRISOverlay(): JSX.Element {
         plannedLinksEnabled,
         plannedShowLinks,
         plannedShowMarkers,
+        links,
     ]);
 
     useEffect(() => {

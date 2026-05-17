@@ -123,6 +123,32 @@ export function buildPageMapRuntimeSelectionMessage(
     };
 }
 
+export function buildPageMapRuntimeLinksMessage(
+    options: BuildPageMapRuntimeSnapshotOptions
+): PageMapRuntimeCommandMessage {
+    return {
+        type: options.type,
+        diagnostic: options.diagnostic,
+        data: {
+            links: buildLinkFeatureCollection(options),
+            selectedLink: buildSelectedLinkFeatureCollection(options.links, options.selectedLinkId, options),
+        },
+    };
+}
+
+export function buildPageMapRuntimeFieldsMessage(
+    options: BuildPageMapRuntimeSnapshotOptions
+): PageMapRuntimeCommandMessage {
+    return {
+        type: options.type,
+        diagnostic: options.diagnostic,
+        data: {
+            fields: buildFieldFeatureCollection(options),
+            selectedField: buildSelectedFieldFeatureCollection(options.fields, options.selectedFieldId, options),
+        },
+    };
+}
+
 export function buildPageMapRuntimePlannedFeaturesMessage(
     options: BuildPageMapRuntimeSnapshotOptions
 ): PageMapRuntimeCommandMessage {
