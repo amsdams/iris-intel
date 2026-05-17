@@ -141,24 +141,12 @@
     right: 12px;
     margin: 0 auto;
     z-index: 10004;
-    pointer-events: auto;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    box-sizing: border-box;
     max-width: 920px;
     padding: 6px 8px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    background: rgb(0 0 0 / 82%);
-    border: 1px solid var(--iris-warning-color, #fa0);
-    border-radius: 18px;
-    box-shadow: 0 4px 15px rgb(0 0 0 / 45%);
-    backdrop-filter: blur(8px);
-}
 
-.iris-mock-tools-bar::-webkit-scrollbar {
-    display: none;
+    --iris-panel-bg: rgb(0 0 0 / 82%);
+    --iris-panel-border: var(--iris-warning-color, #fa0);
+    --iris-panel-radius: 18px;
 }
 
 .iris-mock-tools-label {
@@ -171,29 +159,17 @@
 }
 
 .iris-mock-tools-btn {
-    flex: 0 0 auto;
-    min-height: 28px;
-    padding: 0 9px;
-    border: 1px solid rgb(255 170 0 / 45%);
-    border-radius: 14px;
-    background: rgb(255 170 0 / 12%);
-    color: #ffd890;
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    cursor: pointer;
-}
-
-.iris-mock-tools-btn:active {
-    background: rgb(255 170 0 / 28%);
-    transform: translateY(1px);
+    --iris-compact-control-border: rgb(255 170 0 / 45%);
+    --iris-compact-control-bg: rgb(255 170 0 / 12%);
+    --iris-compact-control-active-bg: rgb(255 170 0 / 28%);
+    --iris-compact-control-color: #ffd890;
 }
 
 .iris-mock-tools-btn-active {
-    border-color: rgb(255 122 122 / 65%);
-    background: rgb(255 122 122 / 18%);
-    color: #ffb0b0;
-    box-shadow: inset 0 0 0 1px rgb(255 122 122 / 18%);
+    --iris-compact-control-active-border: rgb(255 122 122 / 65%);
+    --iris-compact-control-active-bg: rgb(255 122 122 / 18%);
+    --iris-compact-control-active-color: #ffb0b0;
+    --iris-compact-control-active-shadow: inset 0 0 0 1px rgb(255 122 122 / 18%);
 }
 
 .iris-planning-bar {
@@ -202,17 +178,14 @@
     bottom: 94px;
     transform: translateX(-50%);
     z-index: 10005;
-    pointer-events: auto;
     display: flex;
     align-items: center;
     gap: 10px;
     width: min(620px, calc(100vw - 24px));
     padding: 8px 10px;
-    background: rgb(0 0 0 / 86%);
-    border: 1px solid rgb(55 230 255 / 70%);
-    border-radius: 10px;
-    box-shadow: 0 4px 15px rgb(0 0 0 / 45%);
-    backdrop-filter: blur(8px);
+
+    --iris-panel-bg: rgb(0 0 0 / 86%);
+    --iris-panel-border: rgb(55 230 255 / 70%);
 }
 
 .iris-planning-main {
@@ -301,32 +274,27 @@
 }
 
 .iris-planning-btn {
-    min-height: 28px;
-    padding: 0 9px;
-    border: 1px solid rgb(55 230 255 / 45%);
     border-radius: 7px;
-    background: rgb(55 230 255 / 10%);
-    color: #b9f8ff;
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    cursor: pointer;
-}
 
-.iris-planning-btn:disabled {
-    opacity: 0.42;
-    cursor: default;
+    --iris-compact-control-border: rgb(55 230 255 / 45%);
+    --iris-compact-control-bg: rgb(55 230 255 / 10%);
+    --iris-compact-control-active-bg: rgb(55 230 255 / 16%);
+    --iris-compact-control-color: #b9f8ff;
+    --iris-compact-control-radius: 7px;
 }
 
 .iris-planning-btn-primary {
-    background: rgb(55 230 255 / 90%);
+    --iris-compact-control-bg: rgb(55 230 255 / 90%);
+    --iris-compact-control-active-bg: rgb(55 230 255 / 90%);
+    --iris-compact-control-color: #000;
+
     color: #000;
 }
 
 .iris-planning-btn-danger {
-    border-color: rgb(255 77 77 / 70%);
-    background: rgb(255 77 77 / 18%);
-    color: #ffd0d0;
+    --iris-compact-control-active-border: rgb(255 77 77 / 70%);
+    --iris-compact-control-active-bg: rgb(255 77 77 / 18%);
+    --iris-compact-control-active-color: #ffd0d0;
 }
 
 @media (width <= 600px) {

@@ -843,6 +843,7 @@ Tasks:
 | Refactor Inventory / Missions Popups to pure CSS | Done   | migrated to inventory.css and missions.css                                            |
 | Standardize common utility classes in base.css   | Done   | added flex, gap, margin, and text utilities                                           |
 | Standardize input and button styling             | Done   | introduced .iris-input and .iris-button in base.css                                   |
+| Add shared floating panel and compact control primitives | Done | introduced CSS-first primitives for floating glass panels, horizontal scroll rows, and compact pill controls; mock tools and planning bar now consume them without changing the visual design |
 | Generalize choice item styling                   | Done   | introduced .iris-choice-item for boxed interactive labels                             |
 | Generalize popup styling in base.css             | Done   | base `.iris-popup` handles standard padding and variables                             |
 | Unify popup width and centering                  | Done   | all major popups use `iris-popup-center iris-popup-medium`                            |
@@ -970,7 +971,7 @@ Tasks:
 
 ## Current Next Pickup
 
-1. **[UI Architecture]** Start a small shared UI/CSS primitives pass for repeated buttons, segmented rows, sheets/popups, and toolbar controls without changing the visual design.
+1. **[UI Architecture]** Extend shared UI/CSS primitives to drawer buttons, popup action rows, and map controls after visual smoke testing the first pass.
 2. **[Marker Rendering]** Keep MapLibre Marker pins lagging behind mobile pan as a watch item for stale XPI/runtime loads without page refresh.
 3. **[Draw Tools]** Refine marker selection/edit/delete UX after the pin experiment clarified renderer behavior.
 4. **[Marker Rendering]** Decide later whether center-collapse static expansion is enough or if IITC-style animated spider legs are needed.

@@ -298,6 +298,61 @@
     border-color: var(--iris-text-secondary);
 }
 
+.iris-ui-floating-panel {
+    pointer-events: auto;
+    box-sizing: border-box;
+    background: var(--iris-panel-bg, rgb(0 0 0 / 86%));
+    border: 1px solid var(--iris-panel-border, var(--iris-accent-dim, rgb(0 255 255 / 30%)));
+    border-radius: var(--iris-panel-radius, 10px);
+    box-shadow: var(--iris-panel-shadow, 0 4px 15px rgb(0 0 0 / 45%));
+    backdrop-filter: blur(var(--iris-panel-blur, 8px));
+}
+
+.iris-ui-scroll-row {
+    display: flex;
+    align-items: center;
+    gap: var(--iris-row-gap, 6px);
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.iris-ui-scroll-row::-webkit-scrollbar {
+    display: none;
+}
+
+.iris-ui-compact-pill {
+    flex: 0 0 auto;
+    min-height: var(--iris-compact-control-height, 28px);
+    padding: var(--iris-compact-control-padding, 0 9px);
+    border: 1px solid var(--iris-compact-control-border, rgb(55 230 255 / 45%));
+    border-radius: var(--iris-compact-control-radius, 14px);
+    background: var(--iris-compact-control-bg, rgb(55 230 255 / 10%));
+    color: var(--iris-compact-control-color, #b9f8ff);
+    font-size: var(--iris-compact-control-font-size, 10px);
+    font-weight: 700;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-family: var(--iris-font-family, monospace);
+}
+
+.iris-ui-compact-pill:active {
+    background: var(--iris-compact-control-active-bg, var(--iris-compact-control-bg, rgb(55 230 255 / 16%)));
+    transform: translateY(1px);
+}
+
+.iris-ui-compact-pill:disabled {
+    opacity: 0.42;
+    cursor: default;
+    transform: none;
+}
+
+.iris-ui-compact-pill-active {
+    border-color: var(--iris-compact-control-active-border, var(--iris-compact-control-border));
+    background: var(--iris-compact-control-active-bg, var(--iris-compact-control-bg));
+    color: var(--iris-compact-control-active-color, var(--iris-compact-control-color));
+    box-shadow: var(--iris-compact-control-active-shadow, none);
+}
+
 .iris-input {
     background: var(--iris-bg-alt, #111);
     border: 1px solid var(--iris-border);

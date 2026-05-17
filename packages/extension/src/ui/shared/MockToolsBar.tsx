@@ -79,12 +79,12 @@ export function MockToolsBar(): JSX.Element | null {
     ];
 
     return (
-        <div className="iris-mock-tools-bar" aria-label="Mock data tools">
+        <div className="iris-mock-tools-bar iris-ui-floating-panel iris-ui-scroll-row" aria-label="Mock data tools">
             <span className="iris-mock-tools-label">Mock</span>
             {actions.map((action) => (
                 <button
                     key={action.loadType}
-                    className={`iris-mock-tools-btn ${action.active ? 'iris-mock-tools-btn-active' : ''}`}
+                    className={`iris-mock-tools-btn iris-ui-compact-pill ${action.active ? 'iris-ui-compact-pill-active iris-mock-tools-btn-active' : ''}`}
                     title={action.active ? action.clearTitle : action.loadTitle}
                     onClick={() => window.postMessage({ type: action.active ? action.clearType : action.loadType }, '*')}
                     aria-pressed={action.active}
@@ -93,7 +93,7 @@ export function MockToolsBar(): JSX.Element | null {
                 </button>
             ))}
             <button
-                className="iris-mock-tools-btn"
+                className="iris-mock-tools-btn iris-ui-compact-pill"
                 title="Run a 5 second automated pan benchmark"
                 onClick={() => window.postMessage({ type: 'IRIS_RUN_PAN_BENCHMARK' }, '*')}
             >

@@ -47,7 +47,7 @@ export function PlanningBar(): JSX.Element | null {
     };
 
     return (
-        <div className="iris-planning-bar">
+        <div className="iris-planning-bar iris-ui-floating-panel">
             <div className="iris-planning-main">
                 <span className="iris-planning-kicker">{isMarkerTool ? 'Draw markers' : 'Draw links'}</span>
                 <span className="iris-planning-status">
@@ -87,7 +87,7 @@ export function PlanningBar(): JSX.Element | null {
                     )}
                     {!isMarkerTool && (
                         <button
-                            className="iris-planning-btn iris-planning-btn-primary"
+                            className="iris-planning-btn iris-ui-compact-pill iris-planning-btn-primary"
                             onClick={() => {
                                 createPlannedLink();
                                 setConfirmClear(false);
@@ -97,7 +97,7 @@ export function PlanningBar(): JSX.Element | null {
                             {linkCountToAdd > 1 ? 'Add Links' : 'Add Link'}
                         </button>
                     )}
-                    <button className="iris-planning-btn" onClick={() => {
+                    <button className="iris-planning-btn iris-ui-compact-pill" onClick={() => {
                         setPlanningMode(false);
                         setConfirmClear(false);
                     }}>
@@ -106,7 +106,7 @@ export function PlanningBar(): JSX.Element | null {
                 </div>
                 <div className="iris-planning-action-row iris-planning-action-row-secondary">
                     <button
-                        className="iris-planning-btn"
+                        className="iris-planning-btn iris-ui-compact-pill"
                         onClick={() => {
                             clearPlanningSelection();
                             selectPlannedItem(null);
@@ -117,7 +117,7 @@ export function PlanningBar(): JSX.Element | null {
                         Reset
                     </button>
                     <button
-                        className="iris-planning-btn"
+                        className="iris-planning-btn iris-ui-compact-pill"
                         onClick={() => {
                             deleteSelectedPlannedItem();
                             setConfirmClear(false);
@@ -127,7 +127,7 @@ export function PlanningBar(): JSX.Element | null {
                         Delete
                     </button>
                     <button
-                        className="iris-planning-btn"
+                        className="iris-planning-btn iris-ui-compact-pill"
                         onClick={() => {
                             undoPlannedItem(planningTool);
                             setConfirmClear(false);
@@ -137,7 +137,7 @@ export function PlanningBar(): JSX.Element | null {
                         Undo
                     </button>
                     <button
-                        className={`iris-planning-btn ${confirmClear ? 'iris-planning-btn-danger' : ''}`}
+                        className={`iris-planning-btn iris-ui-compact-pill ${confirmClear ? 'iris-ui-compact-pill-active iris-planning-btn-danger' : ''}`}
                         onClick={handleClear}
                         disabled={clearDisabled}
                         title={confirmClear ? `Click again to ${clearTitle.toLowerCase()}` : clearTitle}
