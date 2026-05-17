@@ -151,6 +151,56 @@ export function buildPageMapRuntimePluginFeaturesMessage(
     };
 }
 
+export function buildPageMapRuntimeArtifactsMessage(
+    options: BuildPageMapRuntimeSnapshotOptions
+): PageMapRuntimeCommandMessage {
+    return {
+        type: options.type,
+        diagnostic: options.diagnostic,
+        data: {
+            artifacts: toFeatureCollection(buildArtifactFeatures(options.artifacts, options.portals, {
+                showArtifacts: options.layerShowArtifacts,
+            })),
+        },
+    };
+}
+
+export function buildPageMapRuntimeOrnamentsMessage(
+    options: BuildPageMapRuntimeSnapshotOptions
+): PageMapRuntimeCommandMessage {
+    return {
+        type: options.type,
+        diagnostic: options.diagnostic,
+        data: {
+            ornaments: toFeatureCollection(buildOrnamentFeatures(options.portals, options.mockOrnaments, {
+                showOrnaments: options.layerShowOrnaments,
+                showResistance: options.filterShowResistance,
+                showEnlightened: options.filterShowEnlightened,
+                showMachina: options.filterShowMachina,
+                showUnclaimedPortals: options.filterShowUnclaimedPortals,
+                showLevel: options.filterShowLevel,
+                showHealth: options.filterShowHealth,
+                showVisited: options.filterShowVisited,
+                showCaptured: options.filterShowCaptured,
+                showScanned: options.filterShowScanned,
+            })),
+        },
+    };
+}
+
+export function buildPageMapRuntimeMissionMessage(
+    options: BuildPageMapRuntimeSnapshotOptions
+): PageMapRuntimeCommandMessage {
+    return {
+        type: options.type,
+        diagnostic: options.diagnostic,
+        data: {
+            missionRoute: toFeatureCollection(buildMissionRouteFeatures(options.missionDetails)),
+            missionWaypoints: toFeatureCollection(buildMissionWaypointFeatures(options.missionDetails)),
+        },
+    };
+}
+
 export function getMapThemeTiles(id: string): string[] {
     const mapTheme = MAP_THEMES[id] || MAP_THEMES.DARK;
     if (mapTheme.url.includes('{s}')) {

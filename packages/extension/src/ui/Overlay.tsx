@@ -32,6 +32,9 @@ import {
     PageMapRuntimeSelectionMessage,
 } from '../shared/page-map-runtime-protocol';
 import {
+    buildPageMapRuntimeArtifactsMessage,
+    buildPageMapRuntimeMissionMessage,
+    buildPageMapRuntimeOrnamentsMessage,
     buildPageMapRuntimePlannedFeaturesMessage,
     buildPageMapRuntimePluginFeaturesMessage,
     buildPageMapRuntimeSelectionMessage,
@@ -45,6 +48,7 @@ import {
 
 const PAGE_MAP_RUNTIME_INITIAL_SYNC_DEBOUNCE_MS = 300;
 const PAGE_MAP_RUNTIME_DATA_SYNC_DEBOUNCE_MS = 300;
+const PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS = 80;
 const PAGE_MAP_RUNTIME_CAMERA_SYNC_DEBOUNCE_MS = 80;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -208,6 +212,18 @@ function buildPageRuntimePlannedFeaturesFromStore(type: string, diagnostic?: boo
 
 function buildPageRuntimePluginFeaturesFromStore(type: string, diagnostic?: boolean): ReturnType<typeof buildPageMapRuntimePluginFeaturesMessage> {
     return buildPageMapRuntimePluginFeaturesMessage(getPageRuntimeSnapshotOptionsFromStore(type, diagnostic));
+}
+
+function buildPageRuntimeArtifactsFromStore(type: string, diagnostic?: boolean): ReturnType<typeof buildPageMapRuntimeArtifactsMessage> {
+    return buildPageMapRuntimeArtifactsMessage(getPageRuntimeSnapshotOptionsFromStore(type, diagnostic));
+}
+
+function buildPageRuntimeOrnamentsFromStore(type: string, diagnostic?: boolean): ReturnType<typeof buildPageMapRuntimeOrnamentsMessage> {
+    return buildPageMapRuntimeOrnamentsMessage(getPageRuntimeSnapshotOptionsFromStore(type, diagnostic));
+}
+
+function buildPageRuntimeMissionFromStore(type: string, diagnostic?: boolean): ReturnType<typeof buildPageMapRuntimeMissionMessage> {
+    return buildPageMapRuntimeMissionMessage(getPageRuntimeSnapshotOptionsFromStore(type, diagnostic));
 }
 
 export function IRISOverlay(): JSX.Element {
@@ -482,11 +498,6 @@ export function IRISOverlay(): JSX.Element {
         portals,
         links,
         fields,
-        artifacts,
-        mockOrnaments,
-        missionDetails,
-        layerShowOrnaments,
-        layerShowArtifacts,
         filterShowResistance,
         filterShowEnlightened,
         filterShowMachina,
@@ -503,8 +514,44 @@ export function IRISOverlay(): JSX.Element {
         if (!pageRuntimeInitialSyncDoneRef.current) return;
 
         const timeout = window.setTimeout(() => {
+            window.postMessage(buildPageRuntimeArtifactsFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
+        }, PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS);
+
+        return (): void => window.clearTimeout(timeout);
+    }, [
+        artifacts,
+        layerShowArtifacts,
+    ]);
+
+    useEffect(() => {
+        if (!pageRuntimeInitialSyncDoneRef.current) return;
+
+        const timeout = window.setTimeout(() => {
+            window.postMessage(buildPageRuntimeOrnamentsFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
+        }, PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS);
+
+        return (): void => window.clearTimeout(timeout);
+    }, [
+        mockOrnaments,
+        layerShowOrnaments,
+    ]);
+
+    useEffect(() => {
+        if (!pageRuntimeInitialSyncDoneRef.current) return;
+
+        const timeout = window.setTimeout(() => {
+            window.postMessage(buildPageRuntimeMissionFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
+        }, PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS);
+
+        return (): void => window.clearTimeout(timeout);
+    }, [missionDetails]);
+
+    useEffect(() => {
+        if (!pageRuntimeInitialSyncDoneRef.current) return;
+
+        const timeout = window.setTimeout(() => {
             window.postMessage(buildPageRuntimePluginFeaturesFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
-        }, PAGE_MAP_RUNTIME_DATA_SYNC_DEBOUNCE_MS);
+        }, PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS);
 
         return (): void => window.clearTimeout(timeout);
     }, [
@@ -517,7 +564,7 @@ export function IRISOverlay(): JSX.Element {
 
         const timeout = window.setTimeout(() => {
             window.postMessage(buildPageRuntimePlannedFeaturesFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
-        }, PAGE_MAP_RUNTIME_DATA_SYNC_DEBOUNCE_MS);
+        }, PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS);
 
         return (): void => window.clearTimeout(timeout);
     }, [
