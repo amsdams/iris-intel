@@ -20,6 +20,8 @@ when evaluating major dependency migrations or rendering changes.
 | 0.1.4   | Page-world source diagnostics | Desktop Mac | Chrome 148  | OSM     | player-tracker                          | 27,576 | 9,215   | 11,294 | 4,601  | 133     | 0ms      | 0ms       | n/a  | 9ms       | 10ms   | 118ms | 106 | 12/951      |
 | 0.1.4   | Page-world source diagnostics | Desktop Mac | Chrome 148  | OSM     | player-tracker                          | 12,554 | 3,167   | 6,386  | 2,937  | 17      | 0ms      | 0ms       | n/a  | 9ms       | 9ms    | 66ms  | 117 | 4/1,053     |
 | 0.1.4   | Page-world source diagnostics | Desktop Mac | Chrome 148  | OSM     | player-tracker                          | 14,382 | 4,760   | 6,525  | 2,933  | 17      | 0ms      | 0ms       | n/a  | 9ms       | 9ms    | 67ms  | 114 | 6/1,030     |
+| 0.1.5   | Source-sync split + rbush load | Desktop Mac | Chrome 148  | OSM     | player-tracker                          | 13,922 | 4,510   | 6,392  | 2,882  | 13      | 1ms      | 0ms       | n/a  | 17ms      | 17ms   | 50ms  | 59  | 1/527       |
+| 0.1.5   | Source-sync split + rbush load | Desktop Mac | Chrome 148  | OSM     | player-tracker                          | 13,681 | 4,439   | 6,271  | 2,833  | 13      | 1ms      | 0ms       | n/a  | 17ms      | 17ms   | 33ms  | 60  | 0/539       |
 
 ## Readout
 
@@ -43,6 +45,9 @@ when evaluating major dependency migrations or rendering changes.
 - The two restored page-world Chrome samples show why entity mix matters: average frame time stayed around `9ms`, but
   the high-ornament sample (`2,333` ornaments) had more slow frames and a higher max frame than the lower-ornament
   sample (`47` ornaments).
+- The `0.1.5` source-sync/rbush samples are stable across two runs at a wider `1920x934` viewport: `17ms` median,
+  `59-60fps`, and `0-1` slow frames. Treat them as a same-viewport baseline rather than a strict comparison with the
+  older `1728x958` samples, where Chrome reported a higher apparent FPS cadence.
 
 ## Fixed Scenario Set
 
@@ -279,3 +284,42 @@ Notes:
 
 - Frame timing remains close to the previous lower-ornament source diagnostic sample despite a higher portal and
   ornament count.
+
+## 2026-05-17 - IRIS 0.1.5 - Source-Sync Split And rbush Bulk Load
+
+Context:
+
+- Purpose: sanity baseline after page-world source sync started patching selected/planned sources separately and
+  `SpatialIndex.syncAll` moved to `rbush.load()`.
+- Browser: Chrome 148.0.0.0 on macOS (`MacIntel`), desktop pointer.
+- Viewport: `1920x934`, DPR `2.00`.
+- Map style: `OSM`.
+- Overlay state: `player-tracker`.
+- Benchmark: Diagnostics Bench, 3 deterministic runs at zoom `14.36`.
+
+### Chrome Desktop - Player Tracker Only - Run 1
+
+```text
+CONTEXT IRIS 0.1.5 browser Chrome 148.0.0.0 platform MacIntel viewport 1920x934 dpr 2.00 touch 0 pointer fine hover yes mapStyle OSM overlays player-tracker
+VIEWPORT source 1ms z 14.36 buffer n/a query n/a setData 0ms items 13,922 P 4,510 L 6,392 F 2,882 art 0 orn 125 plugin 13
+SOURCES portals 4,510/0ms | links 6,392/0ms | fields 2,882/0ms | artifacts 0/0ms | ornaments 125/0ms | plugin-features 13/0ms
+FRAME 9030ms avg 17ms max 50ms fps 59 slow 1/527 bench 3 median 17ms range 17ms-17ms benchMax 50ms
+```
+
+### Chrome Desktop - Player Tracker Only - Run 2
+
+```text
+CONTEXT IRIS 0.1.5 browser Chrome 148.0.0.0 platform MacIntel viewport 1920x934 dpr 2.00 touch 0 pointer fine hover yes mapStyle OSM overlays player-tracker
+VIEWPORT source 1ms z 14.36 buffer n/a query n/a setData 0ms items 13,681 P 4,439 L 6,271 F 2,833 art 0 orn 125 plugin 13
+SOURCES portals 4,439/0ms | links 6,271/0ms | fields 2,833/0ms | artifacts 0/0ms | ornaments 125/0ms | plugin-features 13/0ms
+FRAME 9035ms avg 17ms max 33ms fps 60 slow 0/539 bench 3 median 17ms range 17ms-17ms benchMax 33ms
+```
+
+Notes:
+
+- The two runs are very stable: median frame time stayed at `17ms`, source update time stayed at `1ms`, and `setData`
+  remained `0ms`.
+- The second run had a lower max frame (`33ms` vs `50ms`) and no slow frames, suggesting the current desktop path is
+  healthy for this viewport/entity mix.
+- Do not compare the `17ms / 60fps` line too literally against older `9ms / 114fps` Chrome samples unless the viewport,
+  display refresh cadence, entity counts, and browser scheduling conditions match.

@@ -20,6 +20,43 @@ export class SpatialIndex {
     private index = new RBush<EntityIndexItem>();
     private tracker = new Map<string, EntityIndexItem>();
 
+    private buildPortalItem(portal: Portal): EntityIndexItem {
+        return {
+            minX: portal.lng,
+            minY: portal.lat,
+            maxX: portal.lng,
+            maxY: portal.lat,
+            id: portal.id,
+            type: 'portal'
+        };
+    }
+
+    private buildLinkItem(link: Link): EntityIndexItem {
+        return {
+            minX: Math.min(link.fromLng, link.toLng),
+            minY: Math.min(link.fromLat, link.toLat),
+            maxX: Math.max(link.fromLng, link.toLng),
+            maxY: Math.max(link.fromLat, link.toLat),
+            id: link.id,
+            type: 'link'
+        };
+    }
+
+    private buildFieldItem(field: Field): EntityIndexItem | null {
+        if (field.points.length === 0) return null;
+
+        const lngs = field.points.map(p => p.lng);
+        const lats = field.points.map(p => p.lat);
+        return {
+            minX: Math.min(...lngs),
+            minY: Math.min(...lats),
+            maxX: Math.max(...lngs),
+            maxY: Math.max(...lats),
+            id: field.id,
+            type: 'field'
+        };
+    }
+
     /**
      * Clears the entire index.
      */
@@ -44,14 +81,7 @@ export class SpatialIndex {
      */
     updatePortal(portal: Portal): void {
         this.remove(portal.id);
-        const item: EntityIndexItem = {
-            minX: portal.lng,
-            minY: portal.lat,
-            maxX: portal.lng,
-            maxY: portal.lat,
-            id: portal.id,
-            type: 'portal'
-        };
+        const item = this.buildPortalItem(portal);
         this.index.insert(item);
         this.tracker.set(portal.id, item);
     }
@@ -61,14 +91,7 @@ export class SpatialIndex {
      */
     updateLink(link: Link): void {
         this.remove(link.id);
-        const item: EntityIndexItem = {
-            minX: Math.min(link.fromLng, link.toLng),
-            minY: Math.min(link.fromLat, link.toLat),
-            maxX: Math.max(link.fromLng, link.toLng),
-            maxY: Math.max(link.fromLat, link.toLat),
-            id: link.id,
-            type: 'link'
-        };
+        const item = this.buildLinkItem(link);
         this.index.insert(item);
         this.tracker.set(link.id, item);
     }
@@ -78,16 +101,9 @@ export class SpatialIndex {
      */
     updateField(field: Field): void {
         this.remove(field.id);
-        const lngs = field.points.map(p => p.lng);
-        const lats = field.points.map(p => p.lat);
-        const item: EntityIndexItem = {
-            minX: Math.min(...lngs),
-            minY: Math.min(...lats),
-            maxX: Math.max(...lngs),
-            maxY: Math.max(...lats),
-            id: field.id,
-            type: 'field'
-        };
+        const item = this.buildFieldItem(field);
+        if (!item) return;
+
         this.index.insert(item);
         this.tracker.set(field.id, item);
     }
@@ -111,9 +127,17 @@ export class SpatialIndex {
      */
     syncAll(portals: Record<string, Portal>, links: Record<string, Link>, fields: Record<string, Field>): void {
         this.clear();
-        Object.values(portals).forEach(p => this.updatePortal(p));
-        Object.values(links).forEach(l => this.updateLink(l));
-        Object.values(fields).forEach(f => this.updateField(f));
+
+        const items: EntityIndexItem[] = [
+            ...Object.values(portals).map(p => this.buildPortalItem(p)),
+            ...Object.values(links).map(l => this.buildLinkItem(l)),
+            ...Object.values(fields)
+                .map(f => this.buildFieldItem(f))
+                .filter((item): item is EntityIndexItem => item !== null),
+        ];
+
+        items.forEach(item => this.tracker.set(item.id, item));
+        this.index.load(items);
     }
 }
 
