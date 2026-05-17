@@ -681,7 +681,7 @@ Tasks:
 | Refine page-world player tracker styling and co-located players          | In Progress | player tracker now uses page-world DOM pins with labels, COMM-like recent actions, mock co-located players, cluster-first expansion, and center-collapse behavior; mobile smoke and fuller OMS-style polish remain |
 | Make player tracker recent actions read like COMM messages               | Done   | player tracker popup recent actions now use COMM-like timestamp/message rows, player/team colour, portal/link emphasis, and clickable portal markup |
 | Add page-world long-press/contextmenu info open                          | Done   | contextmenu/right-click opens info directly; Firefox Mobile long-press is tracked separately because browser contextmenu does not trigger reliably there |
-| Support page-world mobile long-press info open                           | Open   | implement explicit touch-hold detection in the page-world runtime instead of relying on browser/MapLibre contextmenu behavior on Firefox Mobile |
+| Support page-world mobile long-press info open                           | In Progress | page-world runtime now has explicit single-touch hold detection with movement cancellation and click suppression; needs Firefox Mobile smoke confirmation |
 | Verify repeated theme/map-style switching in page-world mode             | Done   | code-level verification confirms repeated map-style changes use `syncTiles` without data rebuilds, while app theme changes rebuild source snapshots for themed colours; latest build/type/lint checks cover the path, with visual smoke still useful during browser testing |
 | Polish secondary overlay styling in page-world mode                      | Open   | compare plugin GeoJSON, plugin labels, planned items, and player tracker pins against IITC expectations; artifacts, ornaments, and mission overlays have had first-pass polish |
 | Restore page-world source/update diagnostics                             | Done   | page-world source updates now publish viewport totals, per-source feature counts, and `setData` timings through the diagnostics store; Bench still owns frame timing |
@@ -976,9 +976,9 @@ Tasks:
 4. **[Marker Rendering]** Decide whether center-collapse static expansion is enough or if IITC-style animated spider legs are needed later.
 5. **[Draw Tools]** Refine marker selection/edit/delete UX after the pin experiment clarified renderer behavior.
 6. **[Draw Tools]** Add marker colour/label editing for selected planned markers.
-7. **[Page-World]** Keep Firefox Mobile long-press refinement for a later mobile-test session.
+7. **[Page-World]** Smoke-test Firefox Mobile long-press after the explicit touch-hold implementation.
 8. **[Performance]** Compare stationary vs moving field-render modes if mobile panning still needs tuning.
-8. **[Plugin Overlay]** Add IITC-style label overlap thinning.
+9. **[Plugin Overlay]** Add IITC-style label overlap thinning.
 
 ## Snapshot And Reference Sources
 

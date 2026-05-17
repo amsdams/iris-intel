@@ -139,6 +139,9 @@ const PLAYER_MARKER_CIRCLE_SPREAD_RADIUS_PX = 26;
 const PLAYER_MARKER_SPIRAL_START_COUNT = 8;
 const PLAYER_MARKER_SPIRAL_STEP_PX = 8;
 const PLAYER_MARKER_SPIRAL_START_RADIUS_PX = 22;
+const MOBILE_LONG_PRESS_MS = 650;
+const MOBILE_LONG_PRESS_MOVE_TOLERANCE_PX = 12;
+const MOBILE_LONG_PRESS_CLICK_SUPPRESS_MS = 500;
 const SOURCE_COUNT_LABELS: Record<string, string> = {
     'iris-map-portals': 'portals',
     'iris-map-links': 'links',
@@ -160,6 +163,7 @@ let currentPlanningState: {enabled: boolean; tool: 'links' | 'markers'} = {
     enabled: false,
     tool: 'links',
 };
+let suppressClickUntil = 0;
 
 type RuntimeDisplayMode = 'hidden' | 'probe' | 'full';
 
@@ -609,6 +613,10 @@ function getPageMap(): Promise<maplibregl.Map> {
             });
 
             map.on('click', (event) => {
+                if (Date.now() < suppressClickUntil) {
+                    return;
+                }
+
                 const startedAt = performance.now();
                 const features = map.queryRenderedFeatures(event.point, {
                     layers: getClickableIrisLayerIds(),
@@ -633,6 +641,7 @@ function getPageMap(): Promise<maplibregl.Map> {
                 });
                 postSelection(features, true);
             });
+            installMobileLongPressInfo(map);
             resolve(map);
         });
     });
@@ -1420,6 +1429,88 @@ function postSelection(features: maplibregl.MapGeoJSONFeature[], openInfo = fals
         openInfo,
     };
     window.postMessage({type: PAGE_MAP_RUNTIME_MESSAGES.selection, selection}, '*');
+}
+
+function installMobileLongPressInfo(map: maplibregl.Map): void {
+    const canvas = map.getCanvas();
+    let longPressTimer: number | null = null;
+    let startPoint: {x: number; y: number} | null = null;
+    let didOpenInfo = false;
+
+    const clearLongPressTimer = (): void => {
+        if (longPressTimer !== null) {
+            window.clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+    };
+
+    const getTouchPoint = (touch: Touch): {x: number; y: number} => {
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: touch.clientX - rect.left,
+            y: touch.clientY - rect.top,
+        };
+    };
+
+    const cancelLongPress = (): void => {
+        clearLongPressTimer();
+        startPoint = null;
+    };
+
+    canvas.addEventListener('touchstart', (event) => {
+        if (event.touches.length !== 1) {
+            cancelLongPress();
+            return;
+        }
+
+        didOpenInfo = false;
+        startPoint = getTouchPoint(event.touches[0]);
+        clearLongPressTimer();
+        longPressTimer = window.setTimeout(() => {
+            if (!startPoint) return;
+
+            const startedAt = performance.now();
+            const point = new maplibregl.Point(startPoint.x, startPoint.y);
+            const features = map.queryRenderedFeatures(point, {
+                layers: getClickableIrisLayerIds(),
+            });
+            const summary = {
+                count: features.length,
+                elapsedMs: Math.round(performance.now() - startedAt),
+                point: {x: Math.round(point.x), y: Math.round(point.y)},
+                sample: summarizeFeature(features[0]),
+            };
+            postDiagnosticResult('MAP LONG PRESS', summary);
+            didOpenInfo = features.length > 0;
+            if (didOpenInfo) {
+                suppressClickUntil = Date.now() + MOBILE_LONG_PRESS_CLICK_SUPPRESS_MS;
+            }
+            postSelection(features, true);
+            cancelLongPress();
+        }, MOBILE_LONG_PRESS_MS);
+    }, {passive: true});
+
+    canvas.addEventListener('touchmove', (event) => {
+        if (!startPoint || event.touches.length !== 1) {
+            cancelLongPress();
+            return;
+        }
+
+        const point = getTouchPoint(event.touches[0]);
+        const distance = Math.hypot(point.x - startPoint.x, point.y - startPoint.y);
+        if (distance > MOBILE_LONG_PRESS_MOVE_TOLERANCE_PX) {
+            cancelLongPress();
+        }
+    }, {passive: true});
+
+    canvas.addEventListener('touchend', (event) => {
+        if (didOpenInfo) {
+            event.preventDefault();
+            suppressClickUntil = Date.now() + MOBILE_LONG_PRESS_CLICK_SUPPRESS_MS;
+        }
+        cancelLongPress();
+    });
+    canvas.addEventListener('touchcancel', cancelLongPress, {passive: true});
 }
 
 function getSelectableFeature(features: maplibregl.MapGeoJSONFeature[]): maplibregl.MapGeoJSONFeature | undefined {
