@@ -139,6 +139,18 @@ export function buildPageMapRuntimePlannedFeaturesMessage(
     };
 }
 
+export function buildPageMapRuntimePluginFeaturesMessage(
+    options: BuildPageMapRuntimeSnapshotOptions
+): PageMapRuntimeCommandMessage {
+    return {
+        type: options.type,
+        diagnostic: options.diagnostic,
+        data: {
+            pluginFeatures: buildPluginFeatureCollection(options),
+        },
+    };
+}
+
 export function getMapThemeTiles(id: string): string[] {
     const mapTheme = MAP_THEMES[id] || MAP_THEMES.DARK;
     if (mapTheme.url.includes('{s}')) {

@@ -33,6 +33,7 @@ import {
 } from '../shared/page-map-runtime-protocol';
 import {
     buildPageMapRuntimePlannedFeaturesMessage,
+    buildPageMapRuntimePluginFeaturesMessage,
     buildPageMapRuntimeSelectionMessage,
     buildPageMapRuntimeSnapshotMessage,
     getMapThemeTiles,
@@ -203,6 +204,10 @@ function buildPageRuntimeSelectionFromStore(type: string, diagnostic?: boolean):
 
 function buildPageRuntimePlannedFeaturesFromStore(type: string, diagnostic?: boolean): ReturnType<typeof buildPageMapRuntimePlannedFeaturesMessage> {
     return buildPageMapRuntimePlannedFeaturesMessage(getPageRuntimeSnapshotOptionsFromStore(type, diagnostic));
+}
+
+function buildPageRuntimePluginFeaturesFromStore(type: string, diagnostic?: boolean): ReturnType<typeof buildPageMapRuntimePluginFeaturesMessage> {
+    return buildPageMapRuntimePluginFeaturesMessage(getPageRuntimeSnapshotOptionsFromStore(type, diagnostic));
 }
 
 export function IRISOverlay(): JSX.Element {
@@ -480,7 +485,6 @@ export function IRISOverlay(): JSX.Element {
         artifacts,
         mockOrnaments,
         missionDetails,
-        pluginFeatures,
         layerShowOrnaments,
         layerShowArtifacts,
         filterShowResistance,
@@ -492,6 +496,19 @@ export function IRISOverlay(): JSX.Element {
         filterShowVisited,
         filterShowCaptured,
         filterShowScanned,
+        themeId,
+    ]);
+
+    useEffect(() => {
+        if (!pageRuntimeInitialSyncDoneRef.current) return;
+
+        const timeout = window.setTimeout(() => {
+            window.postMessage(buildPageRuntimePluginFeaturesFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
+        }, PAGE_MAP_RUNTIME_DATA_SYNC_DEBOUNCE_MS);
+
+        return (): void => window.clearTimeout(timeout);
+    }, [
+        pluginFeatures,
         themeId,
     ]);
 
