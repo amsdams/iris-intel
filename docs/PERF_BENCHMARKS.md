@@ -26,6 +26,7 @@ when evaluating major dependency migrations or rendering changes.
 | 0.1.5   | Domain patch sync              | Desktop Mac | Chrome 148  | OSM     | player-tracker                          | 61     | 0       | 0      | 0      | 61      | 2ms      | 0ms       | n/a  | 17ms      | 17ms   | 18ms  | 60  | 0/541       |
 | 0.1.5   | Domain patch counts fix        | Desktop Mac | Chrome 148  | OSM     | player-tracker                          | 11,518 | 2,410   | 6,199  | 2,884  | 25      | 3ms      | 0ms       | n/a  | 17ms      | 17ms   | 33ms  | 60  | 0/540       |
 | 0.1.5   | Domain patch counts fix        | Desktop Mac | Chrome 148  | OSM     | player-tracker                          | 14,016 | 4,547   | 6,427  | 2,884  | 25      | 2ms      | 0ms       | n/a  | 17ms      | 17ms   | 33ms  | 59  | 0/535       |
+| 0.1.5   | Large source count             | Desktop Mac | Chrome 148  | OSM     | player-tracker                          | 105,044 | 29,782 | 52,552 | 21,072 | 280     | 3ms      | 0ms       | n/a  | 17ms      | 17ms   | 150ms | 58  | 4/525       |
 
 ## Readout
 
@@ -56,6 +57,8 @@ when evaluating major dependency migrations or rendering changes.
   report only the source that changed, such as `plugin-features`, with portals/links/fields shown as `-/-`.
 - The follow-up domain patch count fix restores current portal/link/field counts while preserving narrow patch timing:
   `plugin-features 25/0ms` with portals/links/fields counts shown and `-` timing for untouched sources.
+- A later large-source-count sample stayed at `17ms` median with `105,044` current source items, but the `150ms` max
+  frame shows why reducing UI subscriptions and occasional main-thread spikes still matters.
 
 ## Fixed Scenario Set
 
@@ -395,3 +398,18 @@ Notes:
 - The `-` timing for portals/links/fields is expected here: those sources were present on the map but were not updated
   by the latest patch.
 - Both runs stayed clean at `17ms` median and `0` slow frames.
+
+### Chrome Desktop - Large Current Source Count
+
+```text
+CONTEXT IRIS 0.1.5 browser Chrome 148.0.0.0 platform MacIntel viewport 1920x934 dpr 2.00 touch 0 pointer fine hover yes mapStyle OSM overlays player-tracker
+VIEWPORT source 3ms z 14.36 buffer n/a query n/a setData 0ms items 105,044 P 29,782 L 52,552 F 21,072 art 0 orn 1,358 plugin 280
+SOURCES portals 29,782/- | links 52,552/- | fields 21,072/- | artifacts 0/- | ornaments 1,358/- | plugin-features 280/0ms
+FRAME 9023ms avg 17ms max 150ms fps 58 slow 4/525 bench 3 median 17ms range 17ms-18ms benchMax 150ms
+```
+
+Notes:
+
+- The median remains pinned to Chrome's expected desktop cadence, even with `105,044` current source items.
+- The `150ms` max frame and four slow frames are the remaining concern; future work should focus on occasional
+  main-thread spikes rather than average frame cadence alone.

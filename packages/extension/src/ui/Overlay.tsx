@@ -270,10 +270,8 @@ export function IRISOverlay(): JSX.Element {
     const selectedPortalId = useStore((state) => state.selectedPortalId);
     const selectedFieldId = useStore((state) => state.selectedFieldId);
     const selectedLinkId = useStore((state) => state.selectedLinkId);
-    const portals = useStore((state) => state.portals);
-    const links = useStore((state) => state.links);
-    const fields = useStore((state) => state.fields);
-    const mapState = useStore((state) => state.mapState);
+    const hasMissionDetails = useStore((state) => state.missionDetails !== null);
+    const hasSelectedPluginFeature = useStore((state) => state.selectedPluginFeature !== null);
     const themeId = useStore((state) => state.themeId);
     const mapThemeId = useStore((state) => state.mapThemeId);
     const layerShowLinks = useStore((state) => state.layerShowLinks);
@@ -527,34 +525,68 @@ export function IRISOverlay(): JSX.Element {
     ]);
 
     useEffect(() => {
-        if (!pageRuntimeInitialSyncDoneRef.current) return;
+        let portalTimeout: number | null = null;
+        let linkTimeout: number | null = null;
+        let fieldTimeout: number | null = null;
 
-        const timeout = window.setTimeout(() => {
-            window.postMessage(buildPageRuntimePortalsFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
-        }, PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS);
+        const clearPatchTimeout = (timeout: number | null): void => {
+            if (timeout !== null) {
+                window.clearTimeout(timeout);
+            }
+        };
 
-        return (): void => window.clearTimeout(timeout);
-    }, [portals]);
+        const unsubscribePortals = useStore.subscribe(
+            (state) => state.portals,
+            () => {
+                clearPatchTimeout(portalTimeout);
+                portalTimeout = window.setTimeout(() => {
+                    if (!pageRuntimeInitialSyncDoneRef.current) return;
 
-    useEffect(() => {
-        if (!pageRuntimeInitialSyncDoneRef.current) return;
+                    window.postMessage(buildPageRuntimePortalsFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
+                    window.postMessage(buildPageRuntimeArtifactsFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
+                    window.postMessage(buildPageRuntimeOrnamentsFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
+                    window.postMessage(buildPageRuntimePlannedFeaturesFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
+                    portalTimeout = null;
+                }, PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS);
+            }
+        );
 
-        const timeout = window.setTimeout(() => {
-            window.postMessage(buildPageRuntimeLinksFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
-        }, PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS);
+        const unsubscribeLinks = useStore.subscribe(
+            (state) => state.links,
+            () => {
+                clearPatchTimeout(linkTimeout);
+                linkTimeout = window.setTimeout(() => {
+                    if (!pageRuntimeInitialSyncDoneRef.current) return;
 
-        return (): void => window.clearTimeout(timeout);
-    }, [links]);
+                    window.postMessage(buildPageRuntimeLinksFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
+                    window.postMessage(buildPageRuntimePlannedFeaturesFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
+                    linkTimeout = null;
+                }, PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS);
+            }
+        );
 
-    useEffect(() => {
-        if (!pageRuntimeInitialSyncDoneRef.current) return;
+        const unsubscribeFields = useStore.subscribe(
+            (state) => state.fields,
+            () => {
+                clearPatchTimeout(fieldTimeout);
+                fieldTimeout = window.setTimeout(() => {
+                    if (!pageRuntimeInitialSyncDoneRef.current) return;
 
-        const timeout = window.setTimeout(() => {
-            window.postMessage(buildPageRuntimeFieldsFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
-        }, PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS);
+                    window.postMessage(buildPageRuntimeFieldsFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
+                    fieldTimeout = null;
+                }, PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS);
+            }
+        );
 
-        return (): void => window.clearTimeout(timeout);
-    }, [fields]);
+        return (): void => {
+            unsubscribePortals();
+            unsubscribeLinks();
+            unsubscribeFields();
+            clearPatchTimeout(portalTimeout);
+            clearPatchTimeout(linkTimeout);
+            clearPatchTimeout(fieldTimeout);
+        };
+    }, []);
 
     useEffect(() => {
         if (!pageRuntimeInitialSyncDoneRef.current) return;
@@ -566,7 +598,6 @@ export function IRISOverlay(): JSX.Element {
         return (): void => window.clearTimeout(timeout);
     }, [
         artifacts,
-        portals,
         layerShowArtifacts,
     ]);
 
@@ -580,7 +611,6 @@ export function IRISOverlay(): JSX.Element {
         return (): void => window.clearTimeout(timeout);
     }, [
         mockOrnaments,
-        portals,
         layerShowOrnaments,
     ]);
 
@@ -626,26 +656,38 @@ export function IRISOverlay(): JSX.Element {
         plannedLinksEnabled,
         plannedShowLinks,
         plannedShowMarkers,
-        links,
-        portals,
     ]);
 
     useEffect(() => {
-        if (!pageRuntimeInitialSyncDoneRef.current) return;
+        let timeout: number | null = null;
+        const unsubscribe = useStore.subscribe(
+            (state) => state.mapState,
+            (mapState) => {
+                if (!pageRuntimeInitialSyncDoneRef.current) return;
+                if (timeout !== null) {
+                    window.clearTimeout(timeout);
+                }
+                timeout = window.setTimeout(() => {
+                    window.postMessage({
+                        type: PAGE_MAP_RUNTIME_MESSAGES.syncCamera,
+                        camera: {
+                            lat: mapState.lat,
+                            lng: mapState.lng,
+                            zoom: mapState.zoom,
+                        },
+                    }, '*');
+                    timeout = null;
+                }, PAGE_MAP_RUNTIME_CAMERA_SYNC_DEBOUNCE_MS);
+            }
+        );
 
-        const timeout = window.setTimeout(() => {
-            window.postMessage({
-                type: PAGE_MAP_RUNTIME_MESSAGES.syncCamera,
-                camera: {
-                    lat: mapState.lat,
-                    lng: mapState.lng,
-                    zoom: mapState.zoom,
-                },
-            }, '*');
-        }, PAGE_MAP_RUNTIME_CAMERA_SYNC_DEBOUNCE_MS);
-
-        return (): void => window.clearTimeout(timeout);
-    }, [mapState]);
+        return (): void => {
+            unsubscribe();
+            if (timeout !== null) {
+                window.clearTimeout(timeout);
+            }
+        };
+    }, []);
 
     useEffect(() => {
         if (!pageRuntimeInitialSyncDoneRef.current) return;
@@ -698,11 +740,11 @@ export function IRISOverlay(): JSX.Element {
                 />
             )}
 
-            <PortalInfoPopup visible={showSelectionInfo && !!selectedPortalId} onClose={() => setShowSelectionInfo(false)} />
-            <FieldInfoPopup visible={showSelectionInfo && !!selectedFieldId} onClose={() => setShowSelectionInfo(false)} />
-            <LinkInfoPopup visible={showSelectionInfo && !!selectedLinkId} onClose={() => setShowSelectionInfo(false)} />
-            <MissionDetailsPopup />
-            <PluginFeaturePopup />
+            {showSelectionInfo && selectedPortalId && <PortalInfoPopup visible={true} onClose={() => setShowSelectionInfo(false)} />}
+            {showSelectionInfo && selectedFieldId && <FieldInfoPopup visible={true} onClose={() => setShowSelectionInfo(false)} />}
+            {showSelectionInfo && selectedLinkId && <LinkInfoPopup visible={true} onClose={() => setShowSelectionInfo(false)} />}
+            {hasMissionDetails && <MissionDetailsPopup />}
+            {hasSelectedPluginFeature && <PluginFeaturePopup />}
 
             {showCommPopup && <CommPopup onClose={toggleCommPopup} />}
             {showMissionsPopup && <MissionsPopup onClose={toggleMissionsPopup} />}

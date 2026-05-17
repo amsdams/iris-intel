@@ -992,7 +992,10 @@ Tasks:
 | Disable or fix default portal-name debug logging           | Done   | `portal-names` is now opt-in, removes its stats item on teardown, and unsubscribes from portal updates; this avoids default hot-path console spam and stale subscriptions                              |
 | Split or memoize page-world GeoJSON/source sync by domain  | Done   | portal, link, field, selection, planned, plugin, artifact, ornament, mission, and visual filter/theme updates now patch only affected sources with a short debounce; link/field visibility no longer empties source data |
 | Add `rbush.load()` path for `SpatialIndex.syncAll`         | Done   | full index rebuilds now bulk load prebuilt portal/link/field bbox items and keep the tracker map valid for later incremental removes/updates; covered by focused `SpatialIndex` tests                 |
-| Profile Zustand/UI rerenders during pan                    | Open   | measure before refactoring broad selectors; focus on drawer, diagnostics, plugin states, planning state, and map status during active movement                                                         |
+| Reduce overlay rerenders from map-state camera sync        | Done   | `IRISOverlay` no longer subscribes to `mapState` for rendering just to forward camera changes; a direct store subscription now posts debounced page-runtime camera sync during movement                |
+| Reduce overlay rerenders from entity source sync           | Done   | portal/link/field source sync now uses direct store subscriptions to post page-runtime patches, so entity refreshes do not rerender the full overlay tree just to forward map data                    |
+| Avoid hidden popup subscriptions                           | Done   | selection info popups, mission details, and plugin feature details now mount only when active instead of subscribing to store slices while returning `null`                                           |
+| Profile remaining Zustand/UI rerenders during pan          | Open   | measure before broader selector refactors; focus on drawer, diagnostics, plugin states, planning state, and any popup that subscribes to `mapState` while visible                                    |
 | Add planned-link crossing prefiltering                     | Done   | planned-link crossing detection now precomputes loaded-link bounding boxes only when saved planned links exist, then skips exact segment checks when segment bounds cannot overlap                    |
 | Standardize domain error reporting into Diagnostics        | Open   | parsers, request coordination, and page-world runtime should report structured recoverable errors instead of mixing console-only and caught-global paths                                                |
 | Add optional message sequence IDs for diagnostics          | Open   | useful for tracing page-world/content/interceptor request-response paths and dropped messages, but lower priority than source sync and measured rerenders                                              |
@@ -1003,7 +1006,7 @@ Tasks:
 
 ## Current Next Pickup
 
-1. **[Performance Architecture]** Profile Zustand/UI rerenders during active pan before refactoring selectors.
+1. **[Performance Architecture]** Profile remaining Zustand/UI rerenders during active pan before broader selector refactors.
 2. **[Diagnostics Architecture]** Standardize recoverable parser/request/runtime errors into Diagnostics.
 3. **[Testability]** Add mock player activity plexts for player tracker testing without live COMM activity.
 4. **[UI Architecture]** Extend shared UI/CSS primitives to drawer buttons, popup action rows, and map controls after visual smoke testing the first pass.
