@@ -123,6 +123,19 @@ export function buildPageMapRuntimeSelectionMessage(
     };
 }
 
+export function buildPageMapRuntimePortalsMessage(
+    options: BuildPageMapRuntimeSnapshotOptions
+): PageMapRuntimeCommandMessage {
+    return {
+        type: options.type,
+        diagnostic: options.diagnostic,
+        data: {
+            portals: buildPortalFeatureCollection(options),
+            selectedPortal: buildSelectedPortalFeatureCollection(options.portals, options.selectedPortalId, options),
+        },
+    };
+}
+
 export function buildPageMapRuntimeLinksMessage(
     options: BuildPageMapRuntimeSnapshotOptions
 ): PageMapRuntimeCommandMessage {

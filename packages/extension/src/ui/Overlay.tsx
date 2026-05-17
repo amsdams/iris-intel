@@ -39,6 +39,7 @@ import {
     buildPageMapRuntimeOrnamentsMessage,
     buildPageMapRuntimePlannedFeaturesMessage,
     buildPageMapRuntimePluginFeaturesMessage,
+    buildPageMapRuntimePortalsMessage,
     buildPageMapRuntimeSelectionMessage,
     buildPageMapRuntimeSnapshotMessage,
     getMapThemeTiles,
@@ -206,6 +207,10 @@ function buildPageRuntimeSnapshotFromStore(type: string, diagnostic?: boolean): 
 
 function buildPageRuntimeSelectionFromStore(type: string, diagnostic?: boolean): ReturnType<typeof buildPageMapRuntimeSelectionMessage> {
     return buildPageMapRuntimeSelectionMessage(getPageRuntimeSnapshotOptionsFromStore(type, diagnostic));
+}
+
+function buildPageRuntimePortalsFromStore(type: string, diagnostic?: boolean): ReturnType<typeof buildPageMapRuntimePortalsMessage> {
+    return buildPageMapRuntimePortalsMessage(getPageRuntimeSnapshotOptionsFromStore(type, diagnostic));
 }
 
 function buildPageRuntimeLinksFromStore(type: string, diagnostic?: boolean): ReturnType<typeof buildPageMapRuntimeLinksMessage> {
@@ -505,7 +510,6 @@ export function IRISOverlay(): JSX.Element {
 
         return (): void => window.clearTimeout(timeout);
     }, [
-        portals,
         filterShowResistance,
         filterShowEnlightened,
         filterShowMachina,
@@ -517,6 +521,16 @@ export function IRISOverlay(): JSX.Element {
         filterShowScanned,
         themeId,
     ]);
+
+    useEffect(() => {
+        if (!pageRuntimeInitialSyncDoneRef.current) return;
+
+        const timeout = window.setTimeout(() => {
+            window.postMessage(buildPageRuntimePortalsFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
+        }, PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS);
+
+        return (): void => window.clearTimeout(timeout);
+    }, [portals]);
 
     useEffect(() => {
         if (!pageRuntimeInitialSyncDoneRef.current) return;
@@ -548,6 +562,7 @@ export function IRISOverlay(): JSX.Element {
         return (): void => window.clearTimeout(timeout);
     }, [
         artifacts,
+        portals,
         layerShowArtifacts,
     ]);
 
@@ -561,6 +576,7 @@ export function IRISOverlay(): JSX.Element {
         return (): void => window.clearTimeout(timeout);
     }, [
         mockOrnaments,
+        portals,
         layerShowOrnaments,
     ]);
 
@@ -607,6 +623,7 @@ export function IRISOverlay(): JSX.Element {
         plannedShowLinks,
         plannedShowMarkers,
         links,
+        portals,
     ]);
 
     useEffect(() => {
