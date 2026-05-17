@@ -372,12 +372,22 @@ function buildPlannedFeatures(options: BuildPageMapRuntimeSnapshotOptions): GeoJ
 
 function buildPlannedLinkFeatures(options: BuildPageMapRuntimeSnapshotOptions): GeoJSON.Feature[] {
     const features: GeoJSON.Feature[] = [];
-    const loadedLinks = Object.values(options.links);
+    const loadedLinks = Object.values(options.links).map((link) => ({
+        link,
+        bounds: getSegmentBounds(
+            {lng: link.fromLng, lat: link.fromLat},
+            {lng: link.toLng, lat: link.toLat}
+        ),
+    }));
 
     options.plannedLinks.forEach((plannedLink) => {
         const from = options.portals[plannedLink.fromPortalId];
         const to = options.portals[plannedLink.toPortalId];
         if (!from || !to) return;
+        const plannedBounds = getSegmentBounds(
+            {lng: from.lng, lat: from.lat},
+            {lng: to.lng, lat: to.lat}
+        );
 
         features.push({
             type: 'Feature',
@@ -396,7 +406,7 @@ function buildPlannedLinkFeatures(options: BuildPageMapRuntimeSnapshotOptions): 
             },
         });
 
-        loadedLinks.forEach((link) => {
+        loadedLinks.forEach(({link, bounds}) => {
             if (
                 link.fromPortalId === plannedLink.fromPortalId ||
                 link.toPortalId === plannedLink.fromPortalId ||
@@ -405,6 +415,8 @@ function buildPlannedLinkFeatures(options: BuildPageMapRuntimeSnapshotOptions): 
             ) {
                 return;
             }
+
+            if (!segmentBoundsOverlap(plannedBounds, bounds)) return;
 
             if (!segmentsIntersect(
                 {lng: from.lng, lat: from.lat},
@@ -517,6 +529,28 @@ function buildPlannedMarkerFeatures(options: BuildPageMapRuntimeSnapshotOptions)
     }
 
     return features;
+}
+
+function getSegmentBounds(
+    a: {lng: number; lat: number},
+    b: {lng: number; lat: number}
+): {minLng: number; minLat: number; maxLng: number; maxLat: number} {
+    return {
+        minLng: Math.min(a.lng, b.lng),
+        minLat: Math.min(a.lat, b.lat),
+        maxLng: Math.max(a.lng, b.lng),
+        maxLat: Math.max(a.lat, b.lat),
+    };
+}
+
+function segmentBoundsOverlap(
+    a: {minLng: number; minLat: number; maxLng: number; maxLat: number},
+    b: {minLng: number; minLat: number; maxLng: number; maxLat: number}
+): boolean {
+    return a.minLng <= b.maxLng &&
+        a.maxLng >= b.minLng &&
+        a.minLat <= b.maxLat &&
+        a.maxLat >= b.minLat;
 }
 
 function segmentsIntersect(
