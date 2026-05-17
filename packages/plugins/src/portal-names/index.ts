@@ -1,35 +1,41 @@
-import { IRISPlugin, IRIS_API } from '@iris/plugin-sdk';
+import { IRISPlugin, IRIS_API, Portal } from '@iris/plugin-sdk';
+
+let unsubscribePortals: (() => void) | undefined;
 
 const PortalNamesPlugin: IRISPlugin = {
   manifest: {
     id: 'portal-names',
-    name: 'Portal Names Logger',
+    name: 'Portal Names Debug',
     version: '0.1.0',
-    description: 'Logs portal names to the console.',
+    description: 'Shows the latest known portal name for debugging.',
     author: 'IRIS Team',
-    defaultEnabled: true,
+    defaultEnabled: false,
     capabilities: ['stats', 'debug'],
   },
   setup: (api: IRIS_API) => {
-    console.log('Portal Names Plugin setup');
-    
+    unsubscribePortals?.();
+
     let lastPortalName = 'None';
-    
+
+    const updateLastPortal = (portals: Record<string, Portal>): void => {
+      for (const portal of Object.values(portals)) {
+        if (portal.name) {
+          lastPortalName = portal.name;
+        }
+      }
+    };
+
+    updateLastPortal(api.portals.getAll());
     api.ui.addStatsItem('last-portal', 'Last Portal', () => lastPortalName);
 
-    api.portals.subscribe((portals) => {
-      const names = Object.values(portals)
-        .map((p) => p.name)
-        .filter(Boolean);
-      
-      if (names.length > 0) {
-        lastPortalName = names[names.length - 1] as string;
-        console.log(`Portal Names Update: ${names.join(', ')}`);
-      }
+    unsubscribePortals = api.portals.subscribe((portals) => {
+      updateLastPortal(portals);
     });
   },
-  teardown: () => {
-    console.log('Portal Names Plugin teardown');
+  teardown: (api: IRIS_API) => {
+    unsubscribePortals?.();
+    unsubscribePortals = undefined;
+    api.ui.removeStatsItem('last-portal');
   },
 };
 

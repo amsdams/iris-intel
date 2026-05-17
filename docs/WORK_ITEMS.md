@@ -969,15 +969,46 @@ Tasks:
 | Migrate TypeScript to 6.0.3                        | Done          | root/core/extension/mini-IRIS now target `typescript` 6.0.3; root tsconfig uses `moduleResolution: "Bundler"` and core has an explicit scoped tsconfig with GeoJSON types; typecheck/test/lint/builds pass |
 | Evaluate remaining major dependency migrations separately | Done     | `archiver`, `zustand`, `maplibre-gl`, and `typescript` major migrations are complete; continue normal dependency review in future lifecycle passes                                                                                                                                                                                        |
 
+## IRIS Performance And Architecture Review Follow-ups
+
+Status: `Open`
+
+Why:
+
+- page-world rendering, entity refresh ownership, and MapLibre Marker pins are now stable enough to review cross-cutting
+  performance risks instead of only chasing feature regressions
+- recent benchmarks improved substantially, but remaining mobile lag risk is likely architectural: request bursts, full
+  source rebuilds, plugin feature churn, crossing detection work, and UI/store rerenders
+- the external review agreed with local findings on spatial indexing, GeoJSON/source rebuild cost, and diagnostics; the
+  priorities below are adjusted to the current IRIS page-world architecture rather than the older mini-IRIS renderer paths
+
+Tasks:
+
+| Task                                                       | Status | Notes                                                                                                                                                                                                 |
+|------------------------------------------------------------|--------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Keep strict Intel request limiting verified                | Done   | `safeIrisFetch` already applies a FIFO concurrency limit of 5 and entity requests are chunked; keep this covered when changing request scheduling so large pans do not starve other Intel traffic       |
+| Disable or fix default portal-name debug logging           | Done   | `portal-names` is now opt-in, removes its stats item on teardown, and unsubscribes from portal updates; this avoids default hot-path console spam and stale subscriptions                              |
+| Split or memoize page-world GeoJSON/source sync by domain  | Open   | current page-world sync can rebuild portals, links, fields, artifacts, ornaments, plugin features, planned features, and selections from broad state changes; split entity/plugin/selection/theme paths |
+| Add `rbush.load()` path for `SpatialIndex.syncAll`         | Open   | full index rebuilds are still a clear place to use rbush bulk loading instead of clear-plus-individual inserts during startup or large refreshes                                                       |
+| Profile Zustand/UI rerenders during pan                    | Open   | measure before refactoring broad selectors; focus on drawer, diagnostics, plugin states, planning state, and map status during active movement                                                         |
+| Add planned-link crossing prefiltering                     | Open   | current crossing detection is planned links times loaded links; use a spatial or bbox prefilter before adding more draw-tool shapes                                                                    |
+| Standardize domain error reporting into Diagnostics        | Open   | parsers, request coordination, and page-world runtime should report structured recoverable errors instead of mixing console-only and caught-global paths                                                |
+| Add optional message sequence IDs for diagnostics          | Open   | useful for tracing page-world/content/interceptor request-response paths and dropped messages, but lower priority than source sync and measured rerenders                                              |
+| Add stronger benchmark variants for comparison             | Open   | keep fixed scenarios for overlay hidden, lighter moving fields, labels on/off, draw tools on/off, and base-map style so dependency/performance changes compare cleanly                                 |
+| Investigate package split only after measuring bundle cost | Open   | an `@iris/types` or `@iris/utils` split may help later, but it is premature until plugin bundle size or package-boundary cost is a measured issue                                                       |
+
 ## Current Next Pickup
 
-1. **[UI Architecture]** Extend shared UI/CSS primitives to drawer buttons, popup action rows, and map controls after visual smoke testing the first pass.
-2. **[Marker Rendering]** Keep MapLibre Marker pins lagging behind mobile pan as a watch item for stale XPI/runtime loads without page refresh.
-3. **[Draw Tools]** Refine marker selection/edit/delete UX after the pin experiment clarified renderer behavior.
-4. **[Marker Rendering]** Decide later whether center-collapse static expansion is enough or if IITC-style animated spider legs are needed.
-5. **[Draw Tools]** Add marker colour/label editing for selected planned markers.
-6. **[Performance]** Compare stationary vs moving field-render modes if mobile panning still needs tuning.
-7. **[Plugin Overlay]** Add IITC-style label overlap thinning.
+1. **[Performance Architecture]** Split or memoize page-world GeoJSON/source sync by domain so unrelated state changes do not rebuild every source.
+2. **[Performance Architecture]** Add an `rbush.load()` bulk rebuild path for `SpatialIndex.syncAll`.
+3. **[Performance Architecture]** Profile Zustand/UI rerenders during active pan before refactoring selectors.
+4. **[Draw Tools Performance]** Add planned-link crossing prefiltering before expanding draw tools further.
+5. **[Diagnostics Architecture]** Standardize recoverable parser/request/runtime errors into Diagnostics.
+6. **[UI Architecture]** Extend shared UI/CSS primitives to drawer buttons, popup action rows, and map controls after visual smoke testing the first pass.
+7. **[Marker Rendering]** Keep MapLibre Marker pins lagging behind mobile pan as a watch item for stale XPI/runtime loads without page refresh.
+8. **[Draw Tools]** Refine marker selection/edit/delete UX after the pin experiment clarified renderer behavior.
+9. **[Performance]** Compare stationary vs moving field-render modes if mobile panning still needs tuning.
+10. **[Plugin Overlay]** Add IITC-style label overlap thinning.
 
 ## Snapshot And Reference Sources
 
