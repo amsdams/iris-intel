@@ -681,7 +681,7 @@ Tasks:
 | Refine page-world player tracker styling and co-located players          | In Progress | player tracker now uses page-world DOM pins with labels, COMM-like recent actions, mock co-located players, cluster-first expansion, and center-collapse behavior; mobile smoke and fuller OMS-style polish remain |
 | Make player tracker recent actions read like COMM messages               | Done   | player tracker popup recent actions now use COMM-like timestamp/message rows, player/team colour, portal/link emphasis, and clickable portal markup |
 | Add page-world long-press/contextmenu info open                          | Done   | contextmenu/right-click opens info directly; Firefox Mobile long-press is tracked separately because browser contextmenu does not trigger reliably there |
-| Support page-world mobile long-press info open                           | In Progress | page-world runtime now has explicit single-touch hold detection with movement cancellation and click suppression; needs Firefox Mobile smoke confirmation |
+| Support page-world mobile long-press info open                           | Done   | page-world runtime now has explicit single-touch hold detection with movement cancellation and click suppression; Firefox Mobile smoke test passed |
 | Verify repeated theme/map-style switching in page-world mode             | Done   | code-level verification confirms repeated map-style changes use `syncTiles` without data rebuilds, while app theme changes rebuild source snapshots for themed colours; latest build/type/lint checks cover the path, with visual smoke still useful during browser testing |
 | Polish secondary overlay styling in page-world mode                      | Open   | compare plugin GeoJSON, plugin labels, planned items, and player tracker pins against IITC expectations; artifacts, ornaments, and mission overlays have had first-pass polish |
 | Restore page-world source/update diagnostics                             | Done   | page-world source updates now publish viewport totals, per-source feature counts, and `setData` timings through the diagnostics store; Bench still owns frame timing |
@@ -698,11 +698,11 @@ Tasks:
 | Prototype planned marker pins with MapLibre Marker                       | Done   | page-world DOM pins render planned markers from the existing planned-feature snapshot; the old visible GeoJSON circle marker layer has been removed, while source data remains for draw-tool state |
 | Prototype player tracker pins with MapLibre Marker                       | Done   | page-world runtime splits player marker points from plugin GeoJSON and renders them as faction-coloured DOM pins with labels; clicking a pin opens the existing player tracker popup, while tracker trails remain line layers |
 | Extract shared DOM pin styling helpers                                   | Done   | planned marker and player tracker pins now share page-world marker root, pin body, and pin core styling helpers instead of duplicating inline setup |
-| Investigate co-located marker spread/spider behavior                     | In Progress | player tracker pins now cluster identical/near-identical coordinates first; clicking a cluster expands to deterministic circle/spiral offsets, and the center cluster marker becomes the collapse control; full OMS-style animation/legs remain later options |
+| Investigate co-located marker spread/spider behavior                     | In Progress | player tracker pins now cluster identical/near-identical coordinates first; clicking a cluster expands to deterministic circle/spiral offsets, and the center cluster marker becomes the collapse control; mobile smoke looks okay, while full OMS-style animation/legs remain later options |
 | Add mock co-located player tracker pins                                  | Done   | mock tools can load 8 player tracker pins on one loaded portal so the deterministic spread behavior can be tested without waiting for rare live COMM data |
-| Fix MapLibre Marker pins lagging behind mobile pan                       | Open   | on mobile, planned/player DOM pins can appear not to move with the map while panning; investigate whether MapLibre Marker transforms, page-world container sizing, or extension overlay stacking are causing stale positioning |
+| Fix MapLibre Marker pins lagging behind mobile pan                       | Watch  | appears after loading a new XPI on mobile without refreshing the Intel page; normal refreshed-page testing could not reproduce it, so treat as stale runtime/page reload behavior unless it appears after refresh |
 | Decide marker renderer ownership                                         | Done   | baseline pins now belong to the page-world runtime; selection returns plain JSON through the page-world protocol, avoiding extension-world `queryRenderedFeatures` for production selection |
-| Add marker pin acceptance checks                                         | In Progress | desktop smoke is good for planned pins, player tracker pins, popup open, and COMM-like recent actions; mobile Firefox/Chrome verification is still pending |
+| Add marker pin acceptance checks                                         | Done   | desktop and mobile smoke are good for planned pins, player tracker pins, popup open, panning, style switching, planned-link portal taps, and co-located cluster expand/collapse |
 | Profile DOM marker count before expanding pin usage                      | Open   | before moving more overlays to DOM markers, record marker counts and pan feel on desktop/mobile so pins do not quietly reintroduce HTML-marker churn |
 | Consider CSS class extraction for page-world pins                        | Open   | current page-world pin styles are centralized in helpers; if pin variants grow, move static style into injected CSS/classes and keep helpers for dynamic colour/selection state |
 | Expand player tracker popup with previous locations                      | Open   | current popup shows latest portal and recent actions; later carry enough player history to show an IITC-like previous-location list |
@@ -970,15 +970,13 @@ Tasks:
 
 ## Current Next Pickup
 
-1. **[Marker Rendering]** Mobile-smoke planned marker and player tracker pins: visibility, tap target, popup open, panning, style switching, and planned-link portal taps.
-2. **[Marker Rendering]** Investigate mobile MapLibre Marker pins not moving with the map while panning.
-3. **[Marker Rendering]** Mobile-smoke co-located player cluster expand/collapse with the `8 Players` mock tool, including the center collapse marker.
-4. **[Marker Rendering]** Decide whether center-collapse static expansion is enough or if IITC-style animated spider legs are needed later.
-5. **[Draw Tools]** Refine marker selection/edit/delete UX after the pin experiment clarified renderer behavior.
-6. **[Draw Tools]** Add marker colour/label editing for selected planned markers.
-7. **[Page-World]** Smoke-test Firefox Mobile long-press after the explicit touch-hold implementation.
-8. **[Performance]** Compare stationary vs moving field-render modes if mobile panning still needs tuning.
-9. **[Plugin Overlay]** Add IITC-style label overlap thinning.
+1. **[UI Architecture]** Start a small shared UI/CSS primitives pass for repeated buttons, segmented rows, sheets/popups, and toolbar controls without changing the visual design.
+2. **[Marker Rendering]** Keep MapLibre Marker pins lagging behind mobile pan as a watch item for stale XPI/runtime loads without page refresh.
+3. **[Draw Tools]** Refine marker selection/edit/delete UX after the pin experiment clarified renderer behavior.
+4. **[Marker Rendering]** Decide later whether center-collapse static expansion is enough or if IITC-style animated spider legs are needed.
+5. **[Draw Tools]** Add marker colour/label editing for selected planned markers.
+6. **[Performance]** Compare stationary vs moving field-render modes if mobile panning still needs tuning.
+7. **[Plugin Overlay]** Add IITC-style label overlap thinning.
 
 ## Snapshot And Reference Sources
 
