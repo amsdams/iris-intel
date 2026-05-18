@@ -96,15 +96,19 @@ export function LinkInfoPopup({ onClose, visible }: LinkInfoPopupProps): JSX.Ele
                 </div>
 
                 <div className="iris-portal-details-section">
-                    <div className="iris-portal-section-title">LOCATION (FROM)</div>
+                    <div className="iris-portal-section-title">COORDINATES</div>
                     <div className="iris-portal-details-table">
                         <div className="iris-portal-details-row">
-                            <span className="iris-portal-details-label">Lat</span>
-                            <span className="iris-portal-details-value">{link.fromLat.toFixed(6)}</span>
+                            <span className="iris-portal-details-label">From</span>
+                            <span className="iris-portal-details-value">
+                                {link.fromLat.toFixed(6)}, {link.fromLng.toFixed(6)}
+                            </span>
                         </div>
                         <div className="iris-portal-details-row">
-                            <span className="iris-portal-details-label">Lng</span>
-                            <span className="iris-portal-details-value">{link.fromLng.toFixed(6)}</span>
+                            <span className="iris-portal-details-label">To</span>
+                            <span className="iris-portal-details-value">
+                                {link.toLat.toFixed(6)}, {link.toLng.toFixed(6)}
+                            </span>
                         </div>
                     </div>
                 </div>

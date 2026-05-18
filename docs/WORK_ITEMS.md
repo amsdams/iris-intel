@@ -192,12 +192,14 @@ Tasks:
 | Add automated pan benchmark for repeatable mobile samples      | Done   | mock tools now include a debug-only Bench action with selectable zoom, runs a deterministic 3-run pan sample, and records aggregate/median results in FRAME diagnostics |
 | Keep Bench working after page-world migration                  | Done   | Bench now runs inside the page-world map runtime and publishes FRAME benchmark snapshots back to IRIS diagnostics |
 | Record page-world benchmark improvement                        | Done   | page-world Bench samples show Chrome desktop at `17ms / 60fps / 0 slow`, Firefox desktop at `8ms / 122fps / 1 slow`, and Firefox mobile at `18ms / 57fps / 1 slow`; later samples restored source diagnostics |
-| Tune mobile moving-mode link rendering                         | Open   | links still render during movement; if panning remains slow, test whether thinner/fainter moving links improve frame time without losing orientation |
+| Tune low-zoom moving-mode link rendering                       | Open   | expanded Bench now includes `No Links`; next run should compare z8 Normal vs No Links vs No Fields before deciding whether to thin, hide, or simplify links while moving |
 | Make pan benchmark path deterministic under stutter             | Done   | Bench now drives the map by requestAnimationFrame and direct center interpolation instead of animated `panBy`, avoiding path drift from queued mobile pan animations |
 | Add benchmark sample history or run count                       | Done   | Bench now runs 3 samples and reports run count, median average frame time, average range, and worst frame in Diagnostics copy output |
 | Define fixed benchmark scenarios for version comparisons        | Done   | `docs/PERF_BENCHMARKS.md` now defines base map, default use, labels on, draw tools on, and heavy overlay scenarios with fixed center/zoom/style/browser/run-count guidance |
-| Compare stationary vs moving field-render modes                 | Open   | add a debug-only benchmark variant or note-taking flow to compare full fields, hidden-moving fields, and lighter-moving fields on the same device |
+| Compare stationary vs moving field-render modes                 | Open   | expanded Bench now includes `No Fields`; next run should compare z8 Normal vs No Links vs No Fields before deciding whether to hide or simplify fields while moving |
 | Add overlay-hidden benchmark variant                            | Done   | Bench now supports `Base` and `No Plugins`; page-world HTML marker registries stay hidden during those runs even if marker sync fires mid-benchmark |
+| Add entity-layer isolation benchmark variants                   | Done   | Bench now supports `No Links` and `No Fields`, and Batch includes those z8 pan scenarios so low-zoom core entity rendering can be separated from plugin-overlay cost |
+| Make batch benchmark output copyable without clipboard          | Done   | Batch now stores its report in an on-screen selectable textarea and keeps Copy/Show actions after the run because long async batches can lose browser clipboard activation |
 | Add raster/base-map benchmark variant                           | Open   | compare normal raster tiles against a simplified/base-only map style during Bench to isolate tile compositing cost on mobile |
 | Compare RAF jump benchmark against real finger pan samples      | Open   | current Bench is deterministic but may measure `jumpTo` camera update cost; keep manual finger-pan FRAME samples as the real UX reference |
 | Restore page-world viewport/source benchmark diagnostics        | Done   | page-world data sync now publishes viewport source counts and `setData` timings back into Diagnostics; `HTML` remains intentionally absent because page-world no longer uses the old HTML marker sync path |
@@ -974,7 +976,7 @@ Tasks:
 
 ## IRIS Performance And Architecture Review Follow-ups
 
-Status: `Open`
+Status: `Done`
 
 Why:
 
@@ -999,24 +1001,23 @@ Tasks:
 | Profile remaining Zustand/UI rerenders during pan          | Done   | Diagnostics now records lightweight render samples for the overlay/dock/status/planning/mock surfaces and main-thread long task/event-loop spikes; copied bench output includes `LONGTASK` and `UIRENDER` lines before broader selector refactors |
 | Add planned-link crossing prefiltering                     | Done   | planned-link crossing detection now precomputes loaded-link bounding boxes only when saved planned links exist, then skips exact segment checks when segment bounds cannot overlap                    |
 | Standardize domain error reporting into Diagnostics        | Done   | inventory, plext, and portal-details parser failures, active request failures, and page-world runtime task failures now report recoverable domain errors into Diagnostics without changing normal recovery behavior |
-| Investigate multi-popup crash with heavy UI open           | Open   | Chrome `Oh snap` observed with Inventory, Diagnostics, and COMM open together; popup render sampling now includes those heavy popups, and Diagnostics samples map/entity/perf counters once per second instead of subscribing live to its own counters and map movement |
-| Add optional message sequence IDs for diagnostics          | Open   | useful for tracing page-world/content/interceptor request-response paths and dropped messages, but lower priority than source sync and measured rerenders                                              |
-| Add stronger benchmark variants for comparison             | Done   | mock tools Bench now supports `Normal`, `Base`, and `No Plugins` variants; copied frame diagnostics include the variant so map-engine baseline and plugin-overlay costs can be compared cleanly        |
+| Investigate multi-popup crash with heavy UI open           | Blocked | deferred until a fresh Chrome `Oh snap` reproduction is available; popup render sampling now includes those heavy popups, and Diagnostics samples map/entity/perf counters once per second instead of subscribing live to its own counters and map movement |
+| Add optional message sequence IDs for diagnostics          | Blocked | deferred until request/response tracing becomes the next concrete blocker; current diagnostics already cover domain errors, source timings, long tasks, UI renders, entity generations, and plugin mix |
+| Add stronger benchmark variants for comparison             | Done   | mock tools Bench now supports `Normal`, `Base`, `No Plugins`, `No Links`, and `No Fields`; copied frame diagnostics include the variant so map-engine baseline, plugin-overlay, and entity-layer costs can be compared cleanly |
 | Keep current source counts visible in patch benchmarks     | Done   | page-world diagnostics now keep current portal/link/field/artifact/ornament/plugin/planned source counts while `sourceSetDataMs` still reports only the latest patch timing                            |
 | Add mock player activity plexts for tracker testing        | Done   | mock tools now include an `Activity` action that injects 10 mock player activity plexts across nearby loaded portals via the same store path as COMM; player tracker rebuilds from current plexts on update/setup so cleared mock activity cannot reappear after pan without dropping existing live COMM history |
 | Add plugin overlay composition diagnostics                 | Done   | copied Diagnostics output now includes a `PLUGIN` line with total/rendered/html/label/player/highlight/line/fill/point/interactive counts so overlay-heavy samples can identify the active plugin mix |
-| Fix low-zoom globe-wrap link rendering                     | Open   | at low zoom, links crossing or near the antimeridian can render the long way around the globe; sample selected link showed `-43.815944, -176.473163` and length `759.53km`; normalize/split link coordinates without breaking selection |
-| Investigate package split only after measuring bundle cost | Open   | an `@iris/types` or `@iris/utils` split may help later, but it is premature until plugin bundle size or package-boundary cost is a measured issue                                                       |
+| Fix low-zoom globe-wrap link/field rendering               | Done   | render feature builders now split antimeridian-crossing links and field polygons into render-safe geometry so they draw along the short path without changing selection/storage geometry |
+| Investigate package split only after measuring bundle cost | Blocked | an `@iris/types` or `@iris/utils` split may help later, but it is deferred until plugin bundle size or package-boundary cost is a measured issue                                                       |
 
 ## Current Next Pickup
 
-1. **[Performance Architecture]** Reproduce the Inventory + Diagnostics + COMM crash and use `LONGTASK`, `UIRENDER`, and domain errors to identify whether it is DOM/render pressure, request/runtime errors, or memory pressure.
-2. **[Performance Architecture]** Add plugin overlay diagnostics and/or thinning; desktop variant samples show `No Plugins` removes worst-frame spikes, so next measured work should identify which plugin overlay or marker path is responsible.
-3. **[UI Architecture]** Extend shared UI/CSS primitives to drawer buttons, popup action rows, and map controls after visual smoke testing the first pass.
-4. **[Marker Rendering]** Keep MapLibre Marker pins lagging behind mobile pan as a watch item for stale XPI/runtime loads without page refresh.
-5. **[Draw Tools]** Refine marker selection/edit/delete UX after the pin experiment clarified renderer behavior.
-6. **[Performance]** Compare stationary vs moving field-render modes if mobile panning still needs tuning.
-7. **[Plugin Overlay]** Add IITC-style label overlap thinning.
+1. **[Benchmark Validation]** Run the expanded IRIS 0.1.6 Batch on desktop and mobile; compare z8 `normal pan`, `no-links pan`, `no-fields pan`, `base pan`, and `no-plugins pan`.
+2. **[Low-Zoom Entity Rendering]** If z8 Normal remains slower while plugin count is `0`, choose the smallest moving-mode optimization based on the isolation result: link thinning/hiding, field simplification/hiding, or both.
+3. **[Plugin Overlay]** Revisit IITC-style label overlap thinning only if z14 Normal pan spikes correlate with high `pluginMix` label/highlight counts; current z8 samples point away from plugins.
+4. **[Performance Architecture]** Reproduce the Inventory + Diagnostics + COMM crash only after a fresh `Oh snap`; use `LONGTASK`, `UIRENDER`, `ENTITYGEN`, plugin mix, and domain errors to identify whether it is DOM/render pressure, request/runtime errors, or memory pressure.
+5. **[UI Architecture]** Extend shared UI/CSS primitives to drawer buttons, popup action rows, and map controls after visual smoke testing the first pass.
+6. **[Draw Tools]** Refine marker selection/edit/delete UX after the pin experiment clarified renderer behavior.
 
 ## Snapshot And Reference Sources
 

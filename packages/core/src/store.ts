@@ -257,6 +257,8 @@ export interface MapPerfSnapshot {
     benchmarkVariant?: string;
     benchmarkZoom?: number;
     benchmarkMode?: string;
+    benchmarkSourceFeatureCounts?: Record<string, number>;
+    benchmarkPluginFeatureCounts?: Record<string, number>;
 }
 
 export interface MapPerfDiagnostics {

@@ -35,6 +35,8 @@ interface FrameSnapshot {
     benchmarkVariant?: BenchmarkVariant;
     benchmarkZoom?: number;
     benchmarkMode?: BenchmarkMode;
+    benchmarkSourceFeatureCounts?: Record<string, number>;
+    benchmarkPluginFeatureCounts?: Record<string, number>;
 }
 
 interface MovingFrameSample {
@@ -121,7 +123,7 @@ interface PinBodyOptions {
 }
 
 type MarkerOffset = [number, number];
-type BenchmarkVariant = 'normal' | 'base' | 'no-plugins';
+type BenchmarkVariant = 'normal' | 'base' | 'no-plugins' | 'no-links' | 'no-fields';
 type BenchmarkMode = 'pan' | 'zoom';
 
 let pageMapPromise: Promise<maplibregl.Map> | null = null;
@@ -146,6 +148,7 @@ const currentSourceFeatureCounts: Record<string, number> = {
     'plugin-features': 0,
     'planned-features': 0,
 };
+let currentPluginFeatureCounts: Record<string, number> | undefined;
 
 const SLOW_FRAME_MS = 34;
 const PAN_BENCHMARK_STEP_PX = 220;
@@ -201,7 +204,15 @@ let suppressClickUntil = 0;
 type RuntimeDisplayMode = 'hidden' | 'probe' | 'full';
 
 function getBenchmarkVariant(value: unknown): BenchmarkVariant {
-    return value === 'base' || value === 'no-plugins' ? value : 'normal';
+    if (
+        value === 'base' ||
+        value === 'no-plugins' ||
+        value === 'no-links' ||
+        value === 'no-fields'
+    ) {
+        return value;
+    }
+    return 'normal';
 }
 
 function getBenchmarkZoom(value: unknown): number {
@@ -837,9 +848,16 @@ function applyBenchmarkVariant(map: maplibregl.Map, variant: BenchmarkVariant): 
         };
     }
 
-    const layerIdsToHide = variant === 'base'
-        ? (map.getStyle().layers ?? []).map((layer) => layer.id).filter((layerId) => layerId !== 'osm')
-        : BENCHMARK_PLUGIN_LAYER_IDS;
+    let layerIdsToHide: string[];
+    if (variant === 'base') {
+        layerIdsToHide = (map.getStyle().layers ?? []).map((layer) => layer.id).filter((layerId) => layerId !== 'osm');
+    } else if (variant === 'no-links') {
+        layerIdsToHide = ['iris-map-links', 'iris-map-link-selected'];
+    } else if (variant === 'no-fields') {
+        layerIdsToHide = ['iris-map-fields', 'iris-map-field-selected'];
+    } else {
+        layerIdsToHide = BENCHMARK_PLUGIN_LAYER_IDS;
+    }
     const previousLayerVisibility = new Map<string, unknown>();
 
     layerIdsToHide.forEach((layerId) => {
@@ -937,6 +955,7 @@ function setPluginFeatureData(
         highlightCount: portalHighlights.length,
         renderedSourceCount: remainingFeatures.length,
     });
+    currentPluginFeatureCounts = perf.pluginFeatureCounts;
     setMeasuredGeoJsonSourceData(map, perf, 'iris-map-plugin-features', {
         type: 'FeatureCollection',
         features: remainingFeatures,
@@ -1828,6 +1847,8 @@ function publishBenchmarkFrameSnapshot(snapshots: FrameSnapshot[], variant: Benc
         benchmarkVariant: variant,
         benchmarkZoom: zoom,
         benchmarkMode: mode,
+        benchmarkSourceFeatureCounts: {...currentSourceFeatureCounts},
+        benchmarkPluginFeatureCounts: currentPluginFeatureCounts ? {...currentPluginFeatureCounts} : undefined,
     };
 
     window.postMessage({

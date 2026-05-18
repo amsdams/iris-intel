@@ -125,6 +125,8 @@ function toFrameSnapshot(snapshot: Record<string, unknown>): MapPerfSnapshot {
         benchmarkVariant: typeof snapshot.benchmarkVariant === 'string' ? snapshot.benchmarkVariant : undefined,
         benchmarkZoom: typeof snapshot.benchmarkZoom === 'number' ? snapshot.benchmarkZoom : undefined,
         benchmarkMode: typeof snapshot.benchmarkMode === 'string' ? snapshot.benchmarkMode : undefined,
+        benchmarkSourceFeatureCounts: toRecordOfNumbers(snapshot.benchmarkSourceFeatureCounts),
+        benchmarkPluginFeatureCounts: toRecordOfNumbers(snapshot.benchmarkPluginFeatureCounts),
     };
 }
 

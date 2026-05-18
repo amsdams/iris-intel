@@ -8,6 +8,7 @@ import {
     buildOrnamentFeatures,
     toFeatureCollection,
 } from './feature-builders';
+import {buildWrappedLineSegments, buildWrappedPolygonGeometry} from './wrapped-lines';
 
 interface MapStateSnapshot {
     lat: number;
@@ -392,21 +393,19 @@ function buildSelectedLinkFeatureCollection(
 
     return {
         type: 'FeatureCollection',
-        features: [{
+        features: buildWrappedLineSegments([link.fromLng, link.fromLat], [link.toLng, link.toLat]).map((coordinates, segmentIndex) => ({
             type: 'Feature',
+            id: segmentIndex === 0 ? link.id : `${link.id}:${segmentIndex}`,
             geometry: {
                 type: 'LineString',
-                coordinates: [
-                    [link.fromLng, link.fromLat],
-                    [link.toLng, link.toLat],
-                ],
+                coordinates,
             },
             properties: {
                 id: link.id,
                 team: link.team,
                 color: getTeamColor(link.team, options),
             },
-        }],
+        })),
     };
 }
 
@@ -424,13 +423,7 @@ function buildSelectedFieldFeatureCollection(
         type: 'FeatureCollection',
         features: [{
             type: 'Feature',
-            geometry: {
-                type: 'Polygon',
-                coordinates: [[
-                    ...field.points.map((point) => [point.lng, point.lat]),
-                    [field.points[0].lng, field.points[0].lat],
-                ]],
-            },
+            geometry: buildWrappedPolygonGeometry(field.points.map((point) => [point.lng, point.lat])),
             properties: {
                 id: field.id,
                 team: field.team,
@@ -445,21 +438,22 @@ function buildLinkFeatureCollection(options: BuildPageMapRuntimeSnapshotOptions)
         type: 'FeatureCollection',
         features: Object.values(options.links)
             .filter((link) => isTeamVisible(link.team, options))
-            .map((link): GeoJSON.Feature<GeoJSON.LineString> => ({
+            .flatMap((link): GeoJSON.Feature<GeoJSON.LineString>[] => buildWrappedLineSegments(
+                [link.fromLng, link.fromLat],
+                [link.toLng, link.toLat]
+            ).map((coordinates, segmentIndex) => ({
                 type: 'Feature',
+                id: segmentIndex === 0 ? link.id : `${link.id}:${segmentIndex}`,
                 geometry: {
                     type: 'LineString',
-                    coordinates: [
-                        [link.fromLng, link.fromLat],
-                        [link.toLng, link.toLat],
-                    ],
+                    coordinates,
                 },
                 properties: {
                     id: link.id,
                     team: link.team,
                     color: getTeamColor(link.team, options),
                 },
-            })),
+            }))),
     };
 }
 
@@ -469,15 +463,9 @@ function buildFieldFeatureCollection(options: BuildPageMapRuntimeSnapshotOptions
         features: Object.values(options.fields)
             .filter((field) => isTeamVisible(field.team, options))
             .filter((field) => field.points.length >= 3)
-            .map((field): GeoJSON.Feature<GeoJSON.Polygon> => ({
+            .map((field): GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon> => ({
                 type: 'Feature',
-                geometry: {
-                    type: 'Polygon',
-                    coordinates: [[
-                        ...field.points.map((point) => [point.lng, point.lat]),
-                        [field.points[0].lng, field.points[0].lat],
-                    ]],
-                },
+                geometry: buildWrappedPolygonGeometry(field.points.map((point) => [point.lng, point.lat])),
                 properties: {
                     id: field.id,
                     team: field.team,
@@ -522,21 +510,23 @@ function buildPlannedLinkFeatures(options: BuildPageMapRuntimeSnapshotOptions): 
             {lng: to.lng, lat: to.lat}
         );
 
-        features.push({
-            type: 'Feature',
-            id: plannedLink.id,
-            geometry: {
-                type: 'LineString',
-                coordinates: [[from.lng, from.lat], [to.lng, to.lat]],
-            },
-            properties: {
-                id: plannedLink.id,
-                plannedType: 'link',
-                plannedItemType: 'link',
-                selected: options.selectedPlannedItemId === plannedLink.id,
-                color: '#37e6ff',
-                opacity: 0.92,
-            },
+        buildWrappedLineSegments([from.lng, from.lat], [to.lng, to.lat]).forEach((coordinates, segmentIndex) => {
+            features.push({
+                type: 'Feature',
+                id: segmentIndex === 0 ? plannedLink.id : `${plannedLink.id}:${segmentIndex}`,
+                geometry: {
+                    type: 'LineString',
+                    coordinates,
+                },
+                properties: {
+                    id: plannedLink.id,
+                    plannedType: 'link',
+                    plannedItemType: 'link',
+                    selected: options.selectedPlannedItemId === plannedLink.id,
+                    color: '#37e6ff',
+                    opacity: 0.92,
+                },
+            });
         });
 
         loadedLinks.forEach(({link, bounds}) => {
@@ -560,19 +550,23 @@ function buildPlannedLinkFeatures(options: BuildPageMapRuntimeSnapshotOptions): 
                 return;
             }
 
-            features.push({
-                type: 'Feature',
-                id: `planned-crossing:${plannedLink.id}:${link.id}`,
-                geometry: {
-                    type: 'LineString',
-                    coordinates: [[link.fromLng, link.fromLat], [link.toLng, link.toLat]],
-                },
-                properties: {
-                    id: `planned-crossing:${plannedLink.id}:${link.id}`,
-                    plannedType: 'crossing',
-                    color: '#ff4d4d',
-                    opacity: 0.95,
-                },
+            buildWrappedLineSegments([link.fromLng, link.fromLat], [link.toLng, link.toLat]).forEach((coordinates, segmentIndex) => {
+                features.push({
+                    type: 'Feature',
+                    id: segmentIndex === 0
+                        ? `planned-crossing:${plannedLink.id}:${link.id}`
+                        : `planned-crossing:${plannedLink.id}:${link.id}:${segmentIndex}`,
+                    geometry: {
+                        type: 'LineString',
+                        coordinates,
+                    },
+                    properties: {
+                        id: `planned-crossing:${plannedLink.id}:${link.id}`,
+                        plannedType: 'crossing',
+                        color: '#ff4d4d',
+                        opacity: 0.95,
+                    },
+                });
             });
         });
     });
@@ -601,19 +595,23 @@ function buildPlannedLinkFeatures(options: BuildPageMapRuntimeSnapshotOptions): 
         const to = options.portals[toPortalId];
         if (!from || !to) continue;
 
-        features.push({
-            type: 'Feature',
-            id: `planned-preview:${index}:${fromPortalId}:${toPortalId}`,
-            geometry: {
-                type: 'LineString',
-                coordinates: [[from.lng, from.lat], [to.lng, to.lat]],
-            },
-            properties: {
-                id: `planned-preview:${index}:${fromPortalId}:${toPortalId}`,
-                plannedType: 'preview',
-                color: '#37e6ff',
-                opacity: 0.72,
-            },
+        buildWrappedLineSegments([from.lng, from.lat], [to.lng, to.lat]).forEach((coordinates, segmentIndex) => {
+            features.push({
+                type: 'Feature',
+                id: segmentIndex === 0
+                    ? `planned-preview:${index}:${fromPortalId}:${toPortalId}`
+                    : `planned-preview:${index}:${fromPortalId}:${toPortalId}:${segmentIndex}`,
+                geometry: {
+                    type: 'LineString',
+                    coordinates,
+                },
+                properties: {
+                    id: `planned-preview:${index}:${fromPortalId}:${toPortalId}`,
+                    plannedType: 'preview',
+                    color: '#37e6ff',
+                    opacity: 0.72,
+                },
+            });
         });
     }
 

@@ -123,6 +123,20 @@ export function FieldInfoPopup({ onClose, visible }: FieldInfoPopupProps): JSX.E
                         </div>
                     </div>
                 </div>
+
+                <div className="iris-portal-details-section">
+                    <div className="iris-portal-section-title">COORDINATES</div>
+                    <div className="iris-portal-details-table">
+                        {field.points.map((point, index) => (
+                            <div className="iris-portal-details-row" key={`${point.portalId || 'field-point'}:${index}`}>
+                                <span className="iris-portal-details-label">Anchor {index + 1}</span>
+                                <span className="iris-portal-details-value">
+                                    {point.lat.toFixed(6)}, {point.lng.toFixed(6)}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
         </Popup>
     );

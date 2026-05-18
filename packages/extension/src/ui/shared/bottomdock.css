@@ -172,6 +172,48 @@
     --iris-compact-control-active-shadow: inset 0 0 0 1px rgb(255 122 122 / 18%);
 }
 
+.iris-benchmark-report-panel {
+    position: fixed;
+    top: 60px;
+    left: 12px;
+    right: 12px;
+    z-index: 10006;
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 8px;
+
+    --iris-panel-bg: rgb(0 0 0 / 92%);
+    --iris-panel-border: var(--iris-warning-color, #fa0);
+    --iris-panel-radius: 12px;
+}
+
+.iris-benchmark-report-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    color: var(--iris-warning-color, #fa0);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+.iris-benchmark-report-text {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: min(48vh, 360px);
+    resize: vertical;
+    border: 1px solid rgb(255 170 0 / 35%);
+    border-radius: 8px;
+    background: rgb(0 0 0 / 68%);
+    color: #ffd890;
+    font-family: monospace;
+    font-size: 11px;
+    line-height: 1.45;
+    padding: 8px;
+}
+
 .iris-planning-bar {
     position: fixed;
     left: 50%;

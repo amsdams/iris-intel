@@ -1,4 +1,5 @@
 import { Artifact, Field, HistoryFilterState, Link, MissionDetails, Portal } from '@iris/core';
+import {buildWrappedLineSegments, buildWrappedPolygonGeometry} from './wrapped-lines';
 
 type PortalFeatureProperties = {
   id: string;
@@ -18,7 +19,7 @@ type TeamFeatureProperties = {
 
 export type PortalFeature = GeoJSON.Feature<GeoJSON.Point, PortalFeatureProperties>;
 export type LinkFeature = GeoJSON.Feature<GeoJSON.LineString, TeamFeatureProperties>;
-export type FieldFeature = GeoJSON.Feature<GeoJSON.Polygon, TeamFeatureProperties>;
+export type FieldFeature = GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon, TeamFeatureProperties>;
 export type ArtifactFeature = GeoJSON.Feature<GeoJSON.Point, { portalId: string; type: string; ids: string[] }>;
 export type OrnamentFeature = GeoJSON.Feature<GeoJSON.Point, { portalId: string; team: string; ornaments: string[] }>;
 export type MissionRouteFeature = GeoJSON.Feature<GeoJSON.LineString, Record<string, unknown>>;
@@ -124,17 +125,15 @@ export const buildLinkFeatures = (
       if (link.team === 'E' && !filters.showEnlightened) return false;
       return !(link.team === 'M' && !filters.showMachina);
     })
-    .map((link) => ({
-      type: 'Feature',
-      geometry: {
-        type: 'LineString',
-        coordinates: [
-          [link.fromLng, link.fromLat],
-          [link.toLng, link.toLat],
-        ],
-      },
-      properties: { team: link.team } satisfies TeamFeatureProperties,
-    }));
+    .flatMap((link) => buildWrappedLineSegments([link.fromLng, link.fromLat], [link.toLng, link.toLat])
+      .map((coordinates) => ({
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates,
+        },
+        properties: { team: link.team } satisfies TeamFeatureProperties,
+      })));
 
 export const buildFieldFeatures = (
   fields: Record<string, Field>,
@@ -149,13 +148,7 @@ export const buildFieldFeatures = (
     })
     .map((field) => ({
       type: 'Feature',
-      geometry: {
-        type: 'Polygon',
-        coordinates: [[
-          ...field.points.map((point) => [point.lng, point.lat] as [number, number]),
-          [field.points[0].lng, field.points[0].lat],
-        ]],
-      },
+      geometry: buildWrappedPolygonGeometry(field.points.map((point) => [point.lng, point.lat])),
       properties: { team: field.team } satisfies TeamFeatureProperties,
     }));
 

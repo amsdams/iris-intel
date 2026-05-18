@@ -18,6 +18,8 @@ const BENCHMARK_VARIANTS = [
     {label: 'Normal', value: 'normal'},
     {label: 'Base', value: 'base'},
     {label: 'No Plugins', value: 'no-plugins'},
+    {label: 'No Links', value: 'no-links'},
+    {label: 'No Fields', value: 'no-fields'},
 ] as const;
 const BENCHMARK_ZOOMS = [
     {label: 'Z8', value: 8},
@@ -34,12 +36,132 @@ type BenchmarkVariant = typeof BENCHMARK_VARIANTS[number]['value'];
 type BenchmarkZoom = typeof BENCHMARK_ZOOMS[number]['value'];
 type BenchmarkMode = typeof BENCHMARK_MODES[number]['value'];
 
+interface BenchmarkBatchCase {
+    label: string;
+    variant: BenchmarkVariant;
+    zoom: BenchmarkZoom;
+    mode: BenchmarkMode;
+}
+
+const BENCHMARK_BATCH: BenchmarkBatchCase[] = [
+    {label: 'z14 normal pan', variant: 'normal', zoom: 14.36, mode: 'pan'},
+    {label: 'z14 base pan', variant: 'base', zoom: 14.36, mode: 'pan'},
+    {label: 'z14 no-plugins pan', variant: 'no-plugins', zoom: 14.36, mode: 'pan'},
+    {label: 'z14 normal zoom', variant: 'normal', zoom: 14.36, mode: 'zoom'},
+    {label: 'z14 no-plugins zoom', variant: 'no-plugins', zoom: 14.36, mode: 'zoom'},
+    {label: 'z8 normal pan', variant: 'normal', zoom: 8, mode: 'pan'},
+    {label: 'z8 no-links pan', variant: 'no-links', zoom: 8, mode: 'pan'},
+    {label: 'z8 no-fields pan', variant: 'no-fields', zoom: 8, mode: 'pan'},
+    {label: 'z8 base pan', variant: 'base', zoom: 8, mode: 'pan'},
+    {label: 'z8 no-plugins pan', variant: 'no-plugins', zoom: 8, mode: 'pan'},
+];
+
+const BENCHMARK_BATCH_TIMEOUT_MS = 45_000;
+const BENCHMARK_BATCH_POLL_MS = 250;
+
+function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => {
+        window.setTimeout(resolve, ms);
+    });
+}
+
+function formatCount(value: number | undefined): string {
+    return typeof value === 'number' ? value.toLocaleString() : '-';
+}
+
+function formatMs(value: number | undefined): string {
+    return typeof value === 'number' ? `${Math.round(value)}ms` : '-';
+}
+
+function formatPluginCounts(counts: Record<string, number> | undefined): string {
+    if (!counts) return 'pluginMix -';
+    return `pluginMix total ${formatCount(counts.total)} labels ${formatCount(counts.labels)} player ${formatCount(counts.playerMarkers)} highlights ${formatCount(counts.highlights)} lines ${formatCount(counts.lines)} points ${formatCount(counts.points)}`;
+}
+
+function buildBatchReportLine(testCase: BenchmarkBatchCase): string {
+    const state = useStore.getState();
+    const viewport = state.mapPerfDiagnostics.viewport;
+    const frame = state.mapPerfDiagnostics.frame;
+
+    if (!frame) {
+        return `${testCase.label}: FRAME no sample`;
+    }
+    const sourceCounts = frame.benchmarkSourceFeatureCounts ?? viewport?.sourceFeatureCounts ?? {};
+    const pluginCounts = frame.benchmarkPluginFeatureCounts ?? viewport?.pluginFeatureCounts;
+    const itemCount = (sourceCounts.portals ?? viewport?.portalCount ?? 0) +
+        (sourceCounts.links ?? viewport?.linkCount ?? 0) +
+        (sourceCounts.fields ?? viewport?.fieldCount ?? 0) +
+        (sourceCounts.artifacts ?? viewport?.artifactCount ?? 0) +
+        (sourceCounts.ornaments ?? viewport?.ornamentCount ?? 0) +
+        (sourceCounts['plugin-features'] ?? viewport?.pluginCount ?? 0);
+
+    return [
+        testCase.label,
+        `items ${formatCount(itemCount)}`,
+        `P ${formatCount(sourceCounts.portals ?? viewport?.portalCount)}`,
+        `L ${formatCount(sourceCounts.links ?? viewport?.linkCount)}`,
+        `F ${formatCount(sourceCounts.fields ?? viewport?.fieldCount)}`,
+        `orn ${formatCount(sourceCounts.ornaments ?? viewport?.ornamentCount)}`,
+        `plugin ${formatCount(sourceCounts['plugin-features'] ?? viewport?.pluginCount)}`,
+        `sources P ${formatCount(sourceCounts.portals)} L ${formatCount(sourceCounts.links)} F ${formatCount(sourceCounts.fields)}`,
+        `avg ${formatMs(frame.averageFrameMs)}`,
+        `max ${formatMs(frame.maxFrameMs)}`,
+        `fps ${formatCount(frame.estimatedFps)}`,
+        `slow ${formatCount(frame.slowFrameCount)}/${formatCount(frame.frameCount)}`,
+        `median ${formatMs(frame.benchmarkMedianAverageFrameMs)}`,
+        `benchMax ${formatMs(frame.benchmarkMaxFrameMs)}`,
+        formatPluginCounts(pluginCounts),
+    ].join(' | ');
+}
+
+async function waitForBenchmarkResult(testCase: BenchmarkBatchCase, startedAt: number): Promise<void> {
+    const deadline = Date.now() + BENCHMARK_BATCH_TIMEOUT_MS;
+
+    while (Date.now() < deadline) {
+        const frame = useStore.getState().mapPerfDiagnostics.frame;
+        if (
+            frame &&
+            frame.time >= startedAt &&
+            frame.benchmarkVariant === testCase.variant &&
+            frame.benchmarkMode === testCase.mode &&
+            Math.abs((frame.benchmarkZoom ?? 0) - testCase.zoom) < 0.01
+        ) {
+            return;
+        }
+        await sleep(BENCHMARK_BATCH_POLL_MS);
+    }
+
+    throw new Error(`Timed out waiting for ${testCase.label}`);
+}
+
+function buildBatchReport(lines: string[]): string {
+    const viewport = `${window.innerWidth}x${window.innerHeight}`;
+    const dpr = Number.isFinite(window.devicePixelRatio) ? window.devicePixelRatio.toFixed(2) : '-';
+    const context = `IRIS BENCH BATCH browser ${navigator.userAgent.match(/(Chrome|Firefox|Edg|Version)\/[\d.]+/)?.[0] ?? 'unknown'} platform ${navigator.platform || '-'} viewport ${viewport} dpr ${dpr}`;
+    return [context, ...lines].join('\n');
+}
+
+async function copyText(text: string): Promise<void> {
+    if (!navigator.clipboard?.writeText) {
+        throw new Error('Clipboard API unavailable');
+    }
+    await navigator.clipboard.writeText(text);
+}
+
+function showReportFallback(report: string): void {
+    window.prompt('IRIS benchmark batch report', report);
+}
+
 export function MockToolsBar(): JSX.Element | null {
     useRenderDiagnostics('MockToolsBar');
 
     const [benchmarkVariant, setBenchmarkVariant] = useState<BenchmarkVariant>('normal');
     const [benchmarkZoom, setBenchmarkZoom] = useState<BenchmarkZoom>(14.36);
     const [benchmarkMode, setBenchmarkMode] = useState<BenchmarkMode>('pan');
+    const [batchStatus, setBatchStatus] = useState<string>('');
+    const [batchRunning, setBatchRunning] = useState(false);
+    const [lastBatchReport, setLastBatchReport] = useState('');
+    const [showBatchReport, setShowBatchReport] = useState(false);
     const showMockTools = useStore((state) => state.showMockTools);
     const hasMockArtifacts = useStore((state) => Object.keys(state.artifacts).length > 0);
     const hasMockOrnaments = useStore((state) => Object.keys(state.mockOrnaments).length > 0);
@@ -116,63 +238,178 @@ export function MockToolsBar(): JSX.Element | null {
         },
     ];
 
+    const runBenchmarkBatch = async (): Promise<void> => {
+        if (batchRunning) return;
+
+        setBatchRunning(true);
+        setLastBatchReport('');
+        const lines: string[] = [];
+
+        try {
+            for (const [index, testCase] of BENCHMARK_BATCH.entries()) {
+                setBatchStatus(`${index + 1}/${BENCHMARK_BATCH.length} ${testCase.label}`);
+                const startedAt = Date.now();
+                window.postMessage({
+                    type: 'IRIS_RUN_PAN_BENCHMARK',
+                    benchmarkVariant: testCase.variant,
+                    benchmarkZoom: testCase.zoom,
+                    benchmarkMode: testCase.mode,
+                }, '*');
+                await waitForBenchmarkResult(testCase, startedAt);
+                lines.push(buildBatchReportLine(testCase));
+                await sleep(500);
+            }
+
+            const report = buildBatchReport(lines);
+            setLastBatchReport(report);
+            setShowBatchReport(true);
+            setBatchStatus('copying');
+            try {
+                await copyText(report);
+                setBatchStatus('copied');
+            } catch (error) {
+                console.warn('IRIS benchmark batch clipboard copy failed', error);
+                setBatchStatus('copy blocked');
+                showReportFallback(report);
+            }
+        } catch (error) {
+            const report = buildBatchReport(lines);
+            setLastBatchReport(report);
+            if (report.length > 0) setShowBatchReport(true);
+            console.warn('IRIS benchmark batch failed', error, report);
+            setBatchStatus(error instanceof Error ? error.message : 'batch failed');
+        } finally {
+            setBatchRunning(false);
+        }
+    };
+
+    const copyLastBatchReport = async (): Promise<void> => {
+        if (!lastBatchReport) return;
+        try {
+            await copyText(lastBatchReport);
+            setBatchStatus('copied');
+        } catch (error) {
+            console.warn('IRIS benchmark batch clipboard copy failed', error);
+            setBatchStatus('copy blocked');
+            showReportFallback(lastBatchReport);
+        }
+    };
+
+    const showLastBatchReport = (): void => {
+        if (!lastBatchReport) return;
+        setShowBatchReport(true);
+    };
+
     return (
-        <div className="iris-mock-tools-bar iris-ui-floating-panel iris-ui-scroll-row" aria-label="Mock data tools">
-            <span className="iris-mock-tools-label">Mock</span>
-            {actions.map((action) => (
+        <div>
+            <div className="iris-mock-tools-bar iris-ui-floating-panel iris-ui-scroll-row" aria-label="Mock data tools">
+                <span className="iris-mock-tools-label">Mock</span>
+                {actions.map((action) => (
+                    <button
+                        key={action.loadType}
+                        className={`iris-mock-tools-btn iris-ui-compact-pill ${action.active ? 'iris-ui-compact-pill-active iris-mock-tools-btn-active' : ''}`}
+                        title={action.active ? action.clearTitle : action.loadTitle}
+                        onClick={() => window.postMessage({ type: action.active ? action.clearType : action.loadType }, '*')}
+                        aria-pressed={action.active}
+                    >
+                        {action.label}
+                    </button>
+                ))}
                 <button
-                    key={action.loadType}
-                    className={`iris-mock-tools-btn iris-ui-compact-pill ${action.active ? 'iris-ui-compact-pill-active iris-mock-tools-btn-active' : ''}`}
-                    title={action.active ? action.clearTitle : action.loadTitle}
-                    onClick={() => window.postMessage({ type: action.active ? action.clearType : action.loadType }, '*')}
-                    aria-pressed={action.active}
+                    className="iris-mock-tools-btn iris-ui-compact-pill"
+                    title={`Run a 5 second automated ${benchmarkMode} benchmark (${benchmarkVariant}, z${benchmarkZoom})`}
+                    onClick={() => window.postMessage({ type: 'IRIS_RUN_PAN_BENCHMARK', benchmarkVariant, benchmarkZoom, benchmarkMode }, '*')}
                 >
-                    {action.label}
+                    Bench
                 </button>
-            ))}
-            <button
-                className="iris-mock-tools-btn iris-ui-compact-pill"
-                title={`Run a 5 second automated ${benchmarkMode} benchmark (${benchmarkVariant}, z${benchmarkZoom})`}
-                onClick={() => window.postMessage({ type: 'IRIS_RUN_PAN_BENCHMARK', benchmarkVariant, benchmarkZoom, benchmarkMode }, '*')}
-            >
-                Bench
-            </button>
-            <select
-                className="iris-input iris-mock-tools-btn"
-                title="Benchmark variant"
-                value={benchmarkVariant}
-                onChange={(event) => setBenchmarkVariant((event.target as HTMLSelectElement).value as BenchmarkVariant)}
-            >
-                {BENCHMARK_VARIANTS.map((variant) => (
-                    <option key={variant.value} value={variant.value}>
-                        {variant.label}
-                    </option>
-                ))}
-            </select>
-            <select
-                className="iris-input iris-mock-tools-btn"
-                title="Benchmark mode"
-                value={benchmarkMode}
-                onChange={(event) => setBenchmarkMode((event.target as HTMLSelectElement).value as BenchmarkMode)}
-            >
-                {BENCHMARK_MODES.map((mode) => (
-                    <option key={mode.value} value={mode.value}>
-                        {mode.label}
-                    </option>
-                ))}
-            </select>
-            <select
-                className="iris-input iris-mock-tools-btn"
-                title="Benchmark zoom"
-                value={String(benchmarkZoom)}
-                onChange={(event) => setBenchmarkZoom(Number((event.target as HTMLSelectElement).value) as BenchmarkZoom)}
-            >
-                {BENCHMARK_ZOOMS.map((zoom) => (
-                    <option key={zoom.value} value={zoom.value}>
-                        {zoom.label}
-                    </option>
-                ))}
-            </select>
+                <button
+                    className={`iris-mock-tools-btn iris-ui-compact-pill ${batchRunning ? 'iris-ui-compact-pill-active iris-mock-tools-btn-active' : ''}`}
+                    title="Run the standard desktop/mobile benchmark matrix and copy a compact report"
+                    onClick={() => void runBenchmarkBatch()}
+                    disabled={batchRunning}
+                >
+                    {batchRunning ? 'Batch...' : 'Batch'}
+                </button>
+                {lastBatchReport && !batchRunning && (
+                    <button
+                        className="iris-mock-tools-btn iris-ui-compact-pill"
+                        title="Copy the last benchmark batch report again"
+                        onClick={() => void copyLastBatchReport()}
+                    >
+                        Copy Batch
+                    </button>
+                )}
+                {lastBatchReport && !batchRunning && (
+                    <button
+                        className="iris-mock-tools-btn iris-ui-compact-pill"
+                        title="Show the last benchmark batch report in a selectable panel"
+                        onClick={showLastBatchReport}
+                    >
+                        Show Batch
+                    </button>
+                )}
+                {batchStatus && (
+                    <span className="iris-mock-tools-label" title={batchStatus}>
+                        {batchStatus}
+                    </span>
+                )}
+                <select
+                    className="iris-input iris-mock-tools-btn"
+                    title="Benchmark variant"
+                    value={benchmarkVariant}
+                    onChange={(event) => setBenchmarkVariant((event.target as HTMLSelectElement).value as BenchmarkVariant)}
+                >
+                    {BENCHMARK_VARIANTS.map((variant) => (
+                        <option key={variant.value} value={variant.value}>
+                            {variant.label}
+                        </option>
+                    ))}
+                </select>
+                <select
+                    className="iris-input iris-mock-tools-btn"
+                    title="Benchmark mode"
+                    value={benchmarkMode}
+                    onChange={(event) => setBenchmarkMode((event.target as HTMLSelectElement).value as BenchmarkMode)}
+                >
+                    {BENCHMARK_MODES.map((mode) => (
+                        <option key={mode.value} value={mode.value}>
+                            {mode.label}
+                        </option>
+                    ))}
+                </select>
+                <select
+                    className="iris-input iris-mock-tools-btn"
+                    title="Benchmark zoom"
+                    value={String(benchmarkZoom)}
+                    onChange={(event) => setBenchmarkZoom(Number((event.target as HTMLSelectElement).value) as BenchmarkZoom)}
+                >
+                    {BENCHMARK_ZOOMS.map((zoom) => (
+                        <option key={zoom.value} value={zoom.value}>
+                            {zoom.label}
+                        </option>
+                    ))}
+                </select>
+            </div>
+            {showBatchReport && lastBatchReport && (
+                <div className="iris-benchmark-report-panel iris-ui-floating-panel">
+                    <div className="iris-benchmark-report-header">
+                        <span>Benchmark Report</span>
+                        <button
+                            className="iris-mock-tools-btn iris-ui-compact-pill"
+                            title="Close benchmark report"
+                            onClick={() => setShowBatchReport(false)}
+                        >
+                            Close
+                        </button>
+                    </div>
+                    <textarea
+                        className="iris-benchmark-report-text"
+                        readOnly
+                        value={lastBatchReport}
+                        onFocus={(event) => event.currentTarget.select()}
+                    />
+                </div>
+            )}
         </div>
     );
 }
