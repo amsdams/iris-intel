@@ -413,3 +413,56 @@ Notes:
 - The median remains pinned to Chrome's expected desktop cadence, even with `105,044` current source items.
 - The `150ms` max frame and four slow frames are the remaining concern; future work should focus on occasional
   main-thread spikes rather than average frame cadence alone.
+
+## 2026-05-18 - IRIS 0.1.5 - Benchmark Variants
+
+Context:
+
+- Purpose: compare normal rendering against base-map-only and no-plugin benchmark variants after adding Bench variant
+  support.
+- Browser: Chrome 148.0.0.0 on macOS (`MacIntel`), desktop pointer.
+- Viewport: `1920x934`, DPR `2.00`.
+- Map style: `OSM`.
+- Overlay state: `player-tracker`, `portal-key-count-labels`, `portal-health-fill`.
+- Benchmark: Diagnostics Bench, 3 deterministic runs at zoom `14.36`.
+
+### Normal
+
+```text
+CONTEXT IRIS 0.1.5 browser Chrome 148.0.0.0 platform MacIntel viewport 1920x934 dpr 2.00 touch 0 pointer fine hover yes mapStyle OSM overlays player-tracker,portal-key-count-labels,portal-health-fill
+VIEWPORT source 0ms z 14.36 buffer n/a query n/a setData 0ms items 16,146 P 5,104 L 6,489 F 2,904 art 0 orn 178 plugin 1,416
+SOURCES portals 5,104/- | links 6,489/- | fields 2,904/0ms | artifacts 0/- | ornaments 178/- | plugin-features 1,416/-
+FRAME 9039ms avg 17ms max 49ms fps 59 slow 3/532 bench 3 variant normal median 17ms range 17ms-17ms benchMax 49ms
+LONGTASK count 2 max 79ms last 79ms longtask
+UIRENDER recent/total DiagnosticsPopup 1/2 | BottomDock 1/48 | StatusBar 1/270 | IRISOverlay 1/48 | MockToolsBar 1/48 | PlanningBar 1/48 | DockDrawer 1/48
+```
+
+### Base
+
+```text
+CONTEXT IRIS 0.1.5 browser Chrome 148.0.0.0 platform MacIntel viewport 1920x934 dpr 2.00 touch 0 pointer fine hover yes mapStyle OSM overlays player-tracker,portal-key-count-labels,portal-health-fill
+VIEWPORT source 1ms z 14.36 buffer n/a query n/a setData 0ms items 16,146 P 5,104 L 6,489 F 2,904 art 0 orn 178 plugin 1,416
+SOURCES portals 5,104/- | links 6,489/- | fields 2,904/- | artifacts 0/- | ornaments 178/- | plugin-features 1,416/0ms
+FRAME 9036ms avg 17ms max 34ms fps 60 slow 0/540 bench 3 variant base median 17ms range 17ms-17ms benchMax 34ms
+LONGTASK count 2 max 79ms last 79ms longtask
+UIRENDER recent/total DiagnosticsPopup 1/6 | IRISOverlay 1/64 | PlanningBar 1/64 | DockDrawer 1/64 | BottomDock 1/64 | StatusBar 1/344 | MockToolsBar 1/65
+```
+
+### No Plugins
+
+```text
+CONTEXT IRIS 0.1.5 browser Chrome 148.0.0.0 platform MacIntel viewport 1920x934 dpr 2.00 touch 0 pointer fine hover yes mapStyle OSM overlays player-tracker,portal-key-count-labels,portal-health-fill
+VIEWPORT source 1ms z 14.36 buffer n/a query n/a setData 0ms items 16,146 P 5,104 L 6,489 F 2,904 art 0 orn 178 plugin 1,416
+SOURCES portals 5,104/- | links 6,489/- | fields 2,904/- | artifacts 0/- | ornaments 178/- | plugin-features 1,416/0ms
+FRAME 9036ms avg 17ms max 18ms fps 60 slow 0/542 bench 3 variant no-plugins median 17ms range 17ms-17ms benchMax 18ms
+LONGTASK count 2 max 79ms last 79ms longtask
+UIRENDER recent/total DiagnosticsPopup 1/10 | IRISOverlay 1/74 | PlanningBar 1/74 | DockDrawer 1/74 | BottomDock 1/74 | StatusBar 1/391 | MockToolsBar 1/76
+```
+
+Notes:
+
+- Average frame time stayed at the expected desktop cadence in all variants.
+- `No Plugins` was cleanest (`18ms` max, `0` slow frames), while `Normal` had the only slow frames (`49ms` max,
+  `3` slow frames).
+- This points the next performance work toward plugin overlays, marker pins, and label/fill layers rather than base
+  map rendering or core portal/link/field source sync.

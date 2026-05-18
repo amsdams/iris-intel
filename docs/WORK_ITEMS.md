@@ -1009,7 +1009,7 @@ Tasks:
 ## Current Next Pickup
 
 1. **[Performance Architecture]** Reproduce the Inventory + Diagnostics + COMM crash and use `LONGTASK`, `UIRENDER`, and domain errors to identify whether it is DOM/render pressure, request/runtime errors, or memory pressure.
-2. **[Performance Architecture]** Compare `Normal`, `Base`, and `No Plugins` Bench variants on desktop/mobile to decide whether remaining lag is base map rendering, entity layers, plugin markers, or UI churn.
+2. **[Performance Architecture]** Add plugin overlay diagnostics and/or thinning; desktop variant samples show `No Plugins` removes worst-frame spikes, so next measured work should identify which plugin overlay or marker path is responsible.
 3. **[UI Architecture]** Extend shared UI/CSS primitives to drawer buttons, popup action rows, and map controls after visual smoke testing the first pass.
 4. **[Marker Rendering]** Keep MapLibre Marker pins lagging behind mobile pan as a watch item for stale XPI/runtime loads without page refresh.
 5. **[Draw Tools]** Refine marker selection/edit/delete UX after the pin experiment clarified renderer behavior.
