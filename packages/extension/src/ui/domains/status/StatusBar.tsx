@@ -44,6 +44,9 @@ const ENDPOINT_FALLBACK_ORDER: EndpointKey[] = [
     'regionScore',
 ];
 
+const STATUS_FAST_TICK_MS = 1000;
+const STATUS_SLOW_TICK_MS = 60 * 1000;
+
 export function StatusBar(): JSX.Element {
     useRenderDiagnostics('StatusBar');
 
@@ -67,11 +70,6 @@ export function StatusBar(): JSX.Element {
     
     const [isExpanded, setIsExpanded] = useState(false);
     const [, setNow] = useState(() => Date.now());
-
-    useEffect(() => {
-        const interval = window.setInterval(() => setNow(Date.now()), 1000);
-        return (): void => window.clearInterval(interval);
-    }, []);
 
     // Extract endpoint name from URL for cleaner display
     const getEndpointName = (url: string): string => {
@@ -122,6 +120,16 @@ export function StatusBar(): JSX.Element {
     };
 
     const endpointEntries = Object.values(endpointDiagnostics).filter((entry) => entry.key !== 'unknown');
+    const hasEndpointCountdown = endpointEntries.some((entry) => Boolean(entry.nextAutoRefreshAt && POLLED_ENDPOINT_LABELS[entry.key]));
+
+    useEffect(() => {
+        const intervalMs = isExpanded || activeRequests > 0 || hasEndpointCountdown
+            ? STATUS_FAST_TICK_MS
+            : STATUS_SLOW_TICK_MS;
+        const interval = window.setInterval(() => setNow(Date.now()), intervalMs);
+
+        return (): void => window.clearInterval(interval);
+    }, [activeRequests, hasEndpointCountdown, isExpanded]);
 
     const getDerivedEndpointStatus = (entry: EndpointDiagnostics): 'idle' | 'in_flight' | 'success' | 'error' | 'stale' => {
         if (entry.status === 'success' && entry.lastSuccessAt) {
