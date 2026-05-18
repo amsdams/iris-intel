@@ -1,6 +1,7 @@
 import { h, JSX } from 'preact';
 import { useStore } from '@iris/core';
 import { useRenderDiagnostics } from './useRenderDiagnostics';
+import { useState } from 'preact/hooks';
 
 interface MockToolAction {
     label: string;
@@ -13,10 +14,18 @@ interface MockToolAction {
 
 const MOCK_INVENTORY_GUID_PATTERN = /^(xmp|reso|ultra|pc|shield|heat-sink|transmuter|key|ada|jarvis|fracker|battle-beacon|apex|hypercube|drone|entitlement|capsule)-/;
 const MOCK_PLAYER_ACTIVITY_PLEXT_PREFIX = 'mock-player-activity:';
+const BENCHMARK_VARIANTS = [
+    {label: 'Normal', value: 'normal'},
+    {label: 'Base', value: 'base'},
+    {label: 'No Plugins', value: 'no-plugins'},
+] as const;
+
+type BenchmarkVariant = typeof BENCHMARK_VARIANTS[number]['value'];
 
 export function MockToolsBar(): JSX.Element | null {
     useRenderDiagnostics('MockToolsBar');
 
+    const [benchmarkVariant, setBenchmarkVariant] = useState<BenchmarkVariant>('normal');
     const showMockTools = useStore((state) => state.showMockTools);
     const hasMockArtifacts = useStore((state) => Object.keys(state.artifacts).length > 0);
     const hasMockOrnaments = useStore((state) => Object.keys(state.mockOrnaments).length > 0);
@@ -109,11 +118,23 @@ export function MockToolsBar(): JSX.Element | null {
             ))}
             <button
                 className="iris-mock-tools-btn iris-ui-compact-pill"
-                title="Run a 5 second automated pan benchmark"
-                onClick={() => window.postMessage({ type: 'IRIS_RUN_PAN_BENCHMARK' }, '*')}
+                title={`Run a 5 second automated pan benchmark (${benchmarkVariant})`}
+                onClick={() => window.postMessage({ type: 'IRIS_RUN_PAN_BENCHMARK', benchmarkVariant }, '*')}
             >
                 Bench
             </button>
+            <select
+                className="iris-input iris-mock-tools-btn"
+                title="Benchmark variant"
+                value={benchmarkVariant}
+                onChange={(event) => setBenchmarkVariant((event.target as HTMLSelectElement).value as BenchmarkVariant)}
+            >
+                {BENCHMARK_VARIANTS.map((variant) => (
+                    <option key={variant.value} value={variant.value}>
+                        {variant.label}
+                    </option>
+                ))}
+            </select>
         </div>
     );
 }

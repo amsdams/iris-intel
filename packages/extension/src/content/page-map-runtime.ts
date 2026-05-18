@@ -32,6 +32,7 @@ interface FrameSnapshot {
     benchmarkMinAverageFrameMs?: number;
     benchmarkMaxAverageFrameMs?: number;
     benchmarkMaxFrameMs?: number;
+    benchmarkVariant?: BenchmarkVariant;
 }
 
 interface MovingFrameSample {
@@ -117,12 +118,14 @@ interface PinBodyOptions {
 }
 
 type MarkerOffset = [number, number];
+type BenchmarkVariant = 'normal' | 'base' | 'no-plugins';
 
 let pageMapPromise: Promise<maplibregl.Map> | null = null;
 let suppressNextCameraChangedEvent = false;
 let panBenchmarkSettleTimer: number | null = null;
 let panBenchmarkAnimation: number | null = null;
 let panBenchmarkActive = false;
+let panBenchmarkRestoreVisibility: (() => void) | null = null;
 const plannedMarkerRegistry = new Map<string, PlannedMarkerRegistryEntry>();
 const playerMarkerRegistry = new Map<string, PlayerMarkerRegistryEntry>();
 const playerClusterRegistry = new Map<string, PlayerClusterRegistryEntry>();
@@ -168,6 +171,19 @@ const DEFAULT_LAYER_VISIBILITY: PageMapRuntimeLayerVisibility = {
     fields: true,
 };
 
+const BENCHMARK_PLUGIN_LAYER_IDS = [
+    'iris-map-plugin-lines',
+    'iris-map-plugin-points',
+    'iris-map-plugin-portal-highlights',
+    'iris-map-plugin-html-points',
+    'iris-map-plugin-labels',
+    'iris-map-mission-route',
+    'iris-map-mission-waypoints',
+    'iris-map-planned-links',
+    'iris-map-planned-anchor',
+    'iris-map-planned-crossings',
+];
+
 let currentLayerVisibility: PageMapRuntimeLayerVisibility = DEFAULT_LAYER_VISIBILITY;
 let currentPlanningState: {enabled: boolean; tool: 'links' | 'markers'} = {
     enabled: false,
@@ -176,6 +192,10 @@ let currentPlanningState: {enabled: boolean; tool: 'links' | 'markers'} = {
 let suppressClickUntil = 0;
 
 type RuntimeDisplayMode = 'hidden' | 'probe' | 'full';
+
+function getBenchmarkVariant(value: unknown): BenchmarkVariant {
+    return value === 'base' || value === 'no-plugins' ? value : 'normal';
+}
 
 function createRuntimeContainer(): HTMLDivElement {
     const existing = document.getElementById('iris-page-map-runtime');
@@ -764,6 +784,45 @@ function getClickableIrisLayerIds(): string[] {
 function setLayerVisibility(map: maplibregl.Map, layerId: string, visible: boolean): void {
     if (!map.getLayer(layerId)) return;
     map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none');
+}
+
+function setMarkerRegistryVisibility<T extends {element: HTMLElement}>(registry: Map<string, T>, visible: boolean): void {
+    registry.forEach((entry) => {
+        entry.element.style.display = visible ? '' : 'none';
+    });
+}
+
+function applyBenchmarkVariant(map: maplibregl.Map, variant: BenchmarkVariant): () => void {
+    if (variant === 'normal') {
+        return () => undefined;
+    }
+
+    const layerIdsToHide = variant === 'base'
+        ? (map.getStyle().layers ?? []).map((layer) => layer.id).filter((layerId) => layerId !== 'osm')
+        : BENCHMARK_PLUGIN_LAYER_IDS;
+    const previousLayerVisibility = new Map<string, unknown>();
+
+    layerIdsToHide.forEach((layerId) => {
+        if (!map.getLayer(layerId)) return;
+        previousLayerVisibility.set(layerId, map.getLayoutProperty(layerId, 'visibility'));
+        setLayerVisibility(map, layerId, false);
+    });
+
+    setMarkerRegistryVisibility(plannedMarkerRegistry, false);
+    setMarkerRegistryVisibility(playerMarkerRegistry, false);
+    setMarkerRegistryVisibility(playerClusterRegistry, false);
+
+    return () => {
+        layerIdsToHide.forEach((layerId) => {
+            if (!map.getLayer(layerId)) return;
+            const previousVisibility = previousLayerVisibility.get(layerId);
+            map.setLayoutProperty(layerId, 'visibility', previousVisibility === 'none' ? 'none' : 'visible');
+        });
+
+        setMarkerRegistryVisibility(plannedMarkerRegistry, true);
+        setMarkerRegistryVisibility(playerMarkerRegistry, true);
+        setMarkerRegistryVisibility(playerClusterRegistry, true);
+    };
 }
 
 function setIrisLayerVisibility(map: maplibregl.Map, visibility: PageMapRuntimeLayerVisibility): void {
@@ -1652,7 +1711,7 @@ function stopFrameSample(sample: MovingFrameSample): FrameSnapshot | null {
     };
 }
 
-function publishBenchmarkFrameSnapshot(snapshots: FrameSnapshot[]): void {
+function publishBenchmarkFrameSnapshot(snapshots: FrameSnapshot[], variant: BenchmarkVariant): void {
     const averageValues = snapshots
         .map((snapshot) => snapshot.averageFrameMs)
         .sort((a, b) => a - b);
@@ -1683,6 +1742,7 @@ function publishBenchmarkFrameSnapshot(snapshots: FrameSnapshot[]): void {
         benchmarkMinAverageFrameMs: averageValues[0],
         benchmarkMaxAverageFrameMs: averageValues[averageValues.length - 1],
         benchmarkMaxFrameMs: Math.max(...snapshots.map((item) => item.maxFrameMs)),
+        benchmarkVariant: variant,
     };
 
     window.postMessage({
@@ -1700,12 +1760,15 @@ function stopPanBenchmark(): void {
         window.cancelAnimationFrame(panBenchmarkAnimation);
         panBenchmarkAnimation = null;
     }
+    panBenchmarkRestoreVisibility?.();
+    panBenchmarkRestoreVisibility = null;
     panBenchmarkActive = false;
 }
 
-async function runPanBenchmark(): Promise<void> {
+async function runPanBenchmark(variant: BenchmarkVariant = 'normal'): Promise<void> {
     const map = await getPageMap();
     stopPanBenchmark();
+    panBenchmarkRestoreVisibility = applyBenchmarkVariant(map, variant);
     map.jumpTo({
         center: [PAN_BENCHMARK_START.lng, PAN_BENCHMARK_START.lat],
         zoom: PAN_BENCHMARK_START.zoom,
@@ -1759,7 +1822,9 @@ async function runPanBenchmark(): Promise<void> {
                 }
 
                 panBenchmarkActive = false;
-                publishBenchmarkFrameSnapshot(runSnapshots);
+                publishBenchmarkFrameSnapshot(runSnapshots, variant);
+                panBenchmarkRestoreVisibility?.();
+                panBenchmarkRestoreVisibility = null;
             };
 
             panBenchmarkAnimation = window.requestAnimationFrame(tick);
@@ -1878,7 +1943,8 @@ window.addEventListener('message', (event: MessageEvent<PageMapRuntimeCommandMes
     if (event.origin !== location.origin) return;
 
     if ((event.data as {type?: string})?.type === 'IRIS_RUN_PAN_BENCHMARK') {
-        runPageRuntimeTask('pageRuntime:bench', runPanBenchmark);
+        const variant = getBenchmarkVariant((event.data as {benchmarkVariant?: unknown}).benchmarkVariant);
+        runPageRuntimeTask('pageRuntime:bench', () => runPanBenchmark(variant));
         return;
     }
 

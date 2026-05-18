@@ -122,6 +122,7 @@ function toFrameSnapshot(snapshot: Record<string, unknown>): MapPerfSnapshot {
         benchmarkMinAverageFrameMs: getNumber('benchmarkMinAverageFrameMs'),
         benchmarkMaxAverageFrameMs: getNumber('benchmarkMaxAverageFrameMs'),
         benchmarkMaxFrameMs: getNumber('benchmarkMaxFrameMs'),
+        benchmarkVariant: typeof snapshot.benchmarkVariant === 'string' ? snapshot.benchmarkVariant : undefined,
     };
 }
 

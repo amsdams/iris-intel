@@ -1000,7 +1000,7 @@ Tasks:
 | Standardize domain error reporting into Diagnostics        | Done   | inventory, plext, and portal-details parser failures, active request failures, and page-world runtime task failures now report recoverable domain errors into Diagnostics without changing normal recovery behavior |
 | Investigate multi-popup crash with heavy UI open           | Open   | Chrome `Oh snap` observed with Inventory, Diagnostics, and COMM open together; popup render sampling now includes those heavy popups, and Diagnostics samples map/entity/perf counters once per second instead of subscribing live to its own counters and map movement |
 | Add optional message sequence IDs for diagnostics          | Open   | useful for tracing page-world/content/interceptor request-response paths and dropped messages, but lower priority than source sync and measured rerenders                                              |
-| Add stronger benchmark variants for comparison             | Open   | keep fixed scenarios for overlay hidden, lighter moving fields, labels on/off, draw tools on/off, and base-map style so dependency/performance changes compare cleanly                                 |
+| Add stronger benchmark variants for comparison             | Done   | mock tools Bench now supports `Normal`, `Base`, and `No Plugins` variants; copied frame diagnostics include the variant so map-engine baseline and plugin-overlay costs can be compared cleanly        |
 | Keep current source counts visible in patch benchmarks     | Done   | page-world diagnostics now keep current portal/link/field/artifact/ornament/plugin/planned source counts while `sourceSetDataMs` still reports only the latest patch timing                            |
 | Add mock player activity plexts for tracker testing        | Done   | mock tools now include an `Activity` action that injects 10 mock player activity plexts across nearby loaded portals via the same store path as COMM; player tracker rebuilds from current plexts on update/setup so cleared mock activity cannot reappear after pan without dropping existing live COMM history |
 | Fix low-zoom globe-wrap link rendering                     | Open   | at low zoom, links crossing or near the antimeridian can render the long way around the globe; sample selected link showed `-43.815944, -176.473163` and length `759.53km`; normalize/split link coordinates without breaking selection |
@@ -1009,7 +1009,7 @@ Tasks:
 ## Current Next Pickup
 
 1. **[Performance Architecture]** Reproduce the Inventory + Diagnostics + COMM crash and use `LONGTASK`, `UIRENDER`, and domain errors to identify whether it is DOM/render pressure, request/runtime errors, or memory pressure.
-2. **[Performance Architecture]** Use the new `LONGTASK` and `UIRENDER` diagnostics to decide whether remaining lag is UI rerender churn, page-world source work, or base map rendering.
+2. **[Performance Architecture]** Compare `Normal`, `Base`, and `No Plugins` Bench variants on desktop/mobile to decide whether remaining lag is base map rendering, entity layers, plugin markers, or UI churn.
 3. **[UI Architecture]** Extend shared UI/CSS primitives to drawer buttons, popup action rows, and map controls after visual smoke testing the first pass.
 4. **[Marker Rendering]** Keep MapLibre Marker pins lagging behind mobile pan as a watch item for stale XPI/runtime loads without page refresh.
 5. **[Draw Tools]** Refine marker selection/edit/delete UX after the pin experiment clarified renderer behavior.
