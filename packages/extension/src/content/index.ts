@@ -58,6 +58,7 @@ if (window.__irisContentInitialized) {
 
 // Tracks whether MapLibre has been given its initial position
 let hasInitialPosition = false;
+let latestEntityRefreshGeneration = 0;
 let inventoryMockPreviousSubscription: boolean | null = null;
 const requestCoordinator = createRequestCoordinator();
 const MOCK_PLAYER_TRACKER_PLUGIN_ID = 'debug-mock-player-tracker';
@@ -608,6 +609,22 @@ window.addEventListener('message', (event: MessageEvent) => {
         break;
     }
 
+    case 'IRIS_ENTITY_REFRESH_GENERATION': {
+        if (typeof msg.entityGeneration === 'number') {
+            latestEntityRefreshGeneration = Math.max(latestEntityRefreshGeneration, msg.entityGeneration);
+        }
+        break;
+    }
+
+    case 'IRIS_ENTITY_REFRESH_STALE_QUEUED_DROP': {
+        const current = useStore.getState().endpointDiagnostics.entities;
+        useStore.getState().setEndpointMetadata('entities', {
+            staleQueuedDropCount: current.staleQueuedDropCount + 1,
+            lastSkipReason: `dropped stale queued generation ${String(msg.entityGeneration ?? '?')}`,
+        });
+        break;
+    }
+
     case 'IRIS_JS_ERROR': {
         useStore.getState().addJSError({
             message: msg.message as string,
@@ -699,6 +716,15 @@ window.addEventListener('message', (event: MessageEvent) => {
 
       if (url_str.includes('getEntities')) {
         const isActuallyActive = !!isActive;
+        const entityGeneration = typeof msg.entityGeneration === 'number' ? msg.entityGeneration : undefined;
+        if (isActuallyActive && typeof entityGeneration === 'number' && entityGeneration < latestEntityRefreshGeneration) {
+            const current = useStore.getState().endpointDiagnostics.entities;
+            useStore.getState().setEndpointMetadata('entities', {
+                staleResponseIgnoreCount: current.staleResponseIgnoreCount + 1,
+                lastSkipReason: `stale generation ${entityGeneration}`,
+            });
+            break;
+        }
         useStore.getState().setEndpointMetadata('entities', {
             [isActuallyActive ? 'lastActiveSuccessAt' : 'lastPassiveSuccessAt']: Date.now(),
         });

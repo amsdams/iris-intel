@@ -74,6 +74,7 @@ interface PerfSummaryContext {
     versionLabel: string;
     mapThemeId: string;
     activeVisualOverlayIds: string[];
+    endpointDiagnostics: Record<EndpointKey, EndpointDiagnostics>;
     uiRenderDiagnostics: Record<string, UiRenderDiagnosticsEntry>;
     mainThreadDiagnostics: MainThreadDiagnostics;
 }
@@ -115,6 +116,10 @@ function buildPerfSummary(perf: MapPerfDiagnostics, context: PerfSummaryContext)
     const longTask = context.mainThreadDiagnostics.lastLongTask;
     const sourceCounts = viewport?.sourceFeatureCounts ?? {};
     const sourceSetData = viewport?.sourceSetDataMs ?? {};
+    const entityDiagnostics = context.endpointDiagnostics.entities;
+    const entityGenerationDetails = entityDiagnostics.staleQueuedDropCount > 0 || entityDiagnostics.staleResponseIgnoreCount > 0
+        ? `ENTITYGEN staleQueued ${formatCount(entityDiagnostics.staleQueuedDropCount)} staleResponses ${formatCount(entityDiagnostics.staleResponseIgnoreCount)} lastSkip ${entityDiagnostics.lastSkipReason ?? 'none'}`
+        : '';
     const pluginCounts = viewport?.pluginFeatureCounts;
     const pluginDetails = pluginCounts
         ? `PLUGIN total ${formatCount(pluginCounts.total)} rendered ${formatCount(pluginCounts.renderedSource)} html ${formatCount(pluginCounts.htmlMarkers)} labels ${formatCount(pluginCounts.labels)} player ${formatCount(pluginCounts.playerMarkers)} highlights ${formatCount(pluginCounts.highlights)} lines ${formatCount(pluginCounts.lines)} fills ${formatCount(pluginCounts.fills)} points ${formatCount(pluginCounts.points)} interactive ${formatCount(pluginCounts.interactive)}`
@@ -130,9 +135,10 @@ function buildPerfSummary(perf: MapPerfDiagnostics, context: PerfSummaryContext)
             ? `VIEWPORT source ${formatMs(viewport.totalMs)} z ${formatOptionalNumber(viewport.zoom, (value) => value.toFixed(2))} buffer ${formatOptionalNumber(viewport.queryBufferDegrees, (value) => value.toFixed(4))} query ${formatOptionalMs(viewport.queryMs)} setData ${formatMs(viewport.setDataMs)} items ${formatCount(viewport.itemCount)} P ${formatCount(viewport.portalCount)} L ${formatCount(viewport.linkCount)} F ${formatCount(viewport.fieldCount)} art ${formatCount(viewport.artifactCount)} orn ${formatCount(viewport.ornamentCount)} plugin ${formatCount(viewport.pluginCount)}`
             : 'VIEWPORT no sample',
         sourceDetails ? `SOURCES ${sourceDetails}` : 'SOURCES no sample',
+        entityGenerationDetails,
         pluginDetails,
         frame
-            ? `FRAME ${formatMs(frame.totalMs)} avg ${formatMs(frame.averageFrameMs)} max ${formatMs(frame.maxFrameMs)} fps ${formatCount(frame.estimatedFps)} slow ${formatCount(frame.slowFrameCount)}/${formatCount(frame.frameCount)}${frame.benchmarkRunCount ? ` bench ${formatCount(frame.benchmarkRunCount)}${frame.benchmarkVariant ? ` variant ${frame.benchmarkVariant}` : ''}${typeof frame.benchmarkZoom === 'number' ? ` z ${frame.benchmarkZoom.toFixed(2)}` : ''} median ${formatMs(frame.benchmarkMedianAverageFrameMs)} range ${formatMs(frame.benchmarkMinAverageFrameMs)}-${formatMs(frame.benchmarkMaxAverageFrameMs)} benchMax ${formatMs(frame.benchmarkMaxFrameMs)}` : ''}`
+            ? `FRAME ${formatMs(frame.totalMs)} avg ${formatMs(frame.averageFrameMs)} max ${formatMs(frame.maxFrameMs)} fps ${formatCount(frame.estimatedFps)} slow ${formatCount(frame.slowFrameCount)}/${formatCount(frame.frameCount)}${frame.benchmarkRunCount ? ` bench ${formatCount(frame.benchmarkRunCount)}${frame.benchmarkVariant ? ` variant ${frame.benchmarkVariant}` : ''}${frame.benchmarkMode ? ` mode ${frame.benchmarkMode}` : ''}${typeof frame.benchmarkZoom === 'number' ? ` z ${frame.benchmarkZoom.toFixed(2)}` : ''} median ${formatMs(frame.benchmarkMedianAverageFrameMs)} range ${formatMs(frame.benchmarkMinAverageFrameMs)}-${formatMs(frame.benchmarkMaxAverageFrameMs)} benchMax ${formatMs(frame.benchmarkMaxFrameMs)}` : ''}`
             : 'FRAME no sample',
         `LONGTASK count ${formatCount(context.mainThreadDiagnostics.longTaskCount)} max ${formatMs(context.mainThreadDiagnostics.maxLongTaskMs)} last ${longTask ? `${formatMs(longTask.durationMs)} ${longTask.source}` : 'none'}`,
         uiRenderDetails ? `UIRENDER recent/total ${uiRenderDetails}` : 'UIRENDER no sample',
@@ -283,7 +289,10 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
             let modeLabel = `refresh: ${ENDPOINT_REFRESH_MODE_LABELS[entry.key]}`;
             if (entry.key === 'entities' && entry.lastRefreshReason) {
                 const skipPart = entry.lastSkipReason ? ` skip: ${entry.lastSkipReason}` : '';
-                modeLabel += ` (last: ${entry.lastRefreshReason}${skipPart})`;
+                const stalePart = entry.staleQueuedDropCount > 0 || entry.staleResponseIgnoreCount > 0
+                    ? ` stale queued/responses: ${entry.staleQueuedDropCount}/${entry.staleResponseIgnoreCount}`
+                    : '';
+                modeLabel += ` (last: ${entry.lastRefreshReason}${skipPart}${stalePart})`;
             }
             return timerLabel ? `${timerLabel} | ${modeLabel}` : modeLabel;
         }
@@ -317,6 +326,7 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
             versionLabel: IRIS_VERSION_LABEL,
             mapThemeId,
             activeVisualOverlayIds,
+            endpointDiagnostics,
             uiRenderDiagnostics,
             mainThreadDiagnostics,
         });
@@ -447,7 +457,7 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                             <div className="iris-debug-endpoint-main">
                                 <span className="iris-debug-label">Pan frames</span>
                                 <span className="iris-debug-value">
-                                    {framePerf ? `avg ${formatMs(framePerf.averageFrameMs)} | max ${formatMs(framePerf.maxFrameMs)} | fps ${formatCount(framePerf.estimatedFps)}${framePerf.benchmarkRunCount ? ` | bench ${formatCount(framePerf.benchmarkRunCount)}${framePerf.benchmarkVariant ? ` ${framePerf.benchmarkVariant}` : ''}${typeof framePerf.benchmarkZoom === 'number' ? ` z${framePerf.benchmarkZoom.toFixed(2)}` : ''}` : ''}` : 'no sample'}
+                                    {framePerf ? `avg ${formatMs(framePerf.averageFrameMs)} | max ${formatMs(framePerf.maxFrameMs)} | fps ${formatCount(framePerf.estimatedFps)}${framePerf.benchmarkRunCount ? ` | bench ${formatCount(framePerf.benchmarkRunCount)}${framePerf.benchmarkVariant ? ` ${framePerf.benchmarkVariant}` : ''}${framePerf.benchmarkMode ? ` ${framePerf.benchmarkMode}` : ''}${typeof framePerf.benchmarkZoom === 'number' ? ` z${framePerf.benchmarkZoom.toFixed(2)}` : ''}` : ''}` : 'no sample'}
                                 </span>
                             </div>
                             {framePerf && (

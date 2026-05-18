@@ -27,6 +27,10 @@ when evaluating major dependency migrations or rendering changes.
 | 0.1.5   | Domain patch counts fix        | Desktop Mac | Chrome 148  | OSM     | player-tracker                          | 11,518 | 2,410   | 6,199  | 2,884  | 25      | 3ms      | 0ms       | n/a  | 17ms      | 17ms   | 33ms  | 60  | 0/540       |
 | 0.1.5   | Domain patch counts fix        | Desktop Mac | Chrome 148  | OSM     | player-tracker                          | 14,016 | 4,547   | 6,427  | 2,884  | 25      | 2ms      | 0ms       | n/a  | 17ms      | 17ms   | 33ms  | 59  | 0/535       |
 | 0.1.5   | Large source count             | Desktop Mac | Chrome 148  | OSM     | player-tracker                          | 105,044 | 29,782 | 52,552 | 21,072 | 280     | 3ms      | 0ms       | n/a  | 17ms      | 17ms   | 150ms | 58  | 4/525       |
+| 0.1.5   | Pan vs zoom overlay cost        | Desktop Mac | Chrome 148  | OSM     | tracker, health fill, level labels      | 17,518 | 4,773   | 6,571  | 2,965  | 3,002   | 1ms      | 0ms       | n/a  | 17ms      | 17ms   | 68ms  | 58  | 6/523       |
+| 0.1.5   | Pan vs zoom overlay cost        | Desktop Mac | Chrome 148  | OSM     | tracker, health fill, level labels      | 17,518 | 4,773   | 6,571  | 2,965  | 3,002   | 0ms      | 0ms       | n/a  | 17ms      | 17ms   | 34ms  | 60  | 0/541       |
+| 0.1.5   | No-plugin pan variant           | Desktop Mac | Chrome 148  | OSM     | tracker, health fill, level labels      | 17,518 | 4,773   | 6,571  | 2,965  | 3,002   | 0ms      | 0ms       | n/a  | 17ms      | 17ms   | 33ms  | 60  | 0/539       |
+| 0.1.5   | Moving overlay suspension       | Desktop Mac | Chrome 148  | OSM     | tracker, health fill, level labels      | 16,355 | 4,256   | 6,562  | 2,967  | 2,389   | 0ms      | 0ms       | n/a  | 17ms      | 17ms   | 84ms  | 58  | 5/525       |
 
 ## Readout
 
@@ -468,3 +472,72 @@ Notes:
   `3` slow frames).
 - This points the next performance work toward plugin overlays, marker pins, and label/fill layers rather than base
   map rendering or core portal/link/field source sync.
+
+## 2026-05-18 - IRIS 0.1.5 - Pan vs Zoom Overlay Cost
+
+Context:
+
+- Purpose: compare pan and zoom benchmark modes after plugin composition diagnostics were added.
+- Browser: Chrome 148.0.0.0 on macOS (`MacIntel`), desktop pointer.
+- Viewport: `1920x934`, DPR `2.00`.
+- Map style: `OSM`.
+- Overlay state: `player-tracker`, `portal-health-fill`, `portal-level-labels`.
+- Benchmark: Diagnostics Bench, 3 deterministic runs at zoom `14.36`.
+
+### Normal Pan
+
+```text
+CONTEXT IRIS 0.1.5 browser Chrome 148.0.0.0 platform MacIntel viewport 1920x934 dpr 2.00 touch 0 pointer fine hover yes mapStyle OSM overlays player-tracker,portal-health-fill,portal-level-labels
+VIEWPORT source 1ms z 14.36 buffer n/a query n/a setData 0ms items 17,518 P 4,773 L 6,571 F 2,965 art 0 orn 152 plugin 3,002
+SOURCES portals 4,773/- | links 6,571/- | fields 2,965/- | artifacts 0/- | ornaments 152/- | plugin-features 3,002/0ms
+PLUGIN total 3,002 rendered 1,820 html 1,801 labels 1,801 player 4 highlights 1,178 lines 19 fills 0 points 2,983 interactive 0
+FRAME 9027ms avg 17ms max 68ms fps 58 slow 6/523 bench 3 variant normal mode pan z 14.36 median 17ms range 17ms-18ms benchMax 68ms
+LONGTASK count 4 max 76ms last 76ms longtask
+UIRENDER recent/total IRISOverlay 1/37 | StatusBar 1/209 | BottomDock 1/37 | PlanningBar 1/37 | DockDrawer 1/37 | MockToolsBar 1/37
+```
+
+### Normal Zoom
+
+```text
+CONTEXT IRIS 0.1.5 browser Chrome 148.0.0.0 platform MacIntel viewport 1920x934 dpr 2.00 touch 0 pointer fine hover yes mapStyle OSM overlays player-tracker,portal-health-fill,portal-level-labels
+VIEWPORT source 0ms z 14.36 buffer n/a query n/a setData 0ms items 17,518 P 4,773 L 6,571 F 2,965 art 0 orn 152 plugin 3,002
+SOURCES portals 4,773/- | links 6,571/- | fields 2,965/- | artifacts 0/0ms | ornaments 152/- | plugin-features 3,002/-
+FRAME 9042ms avg 17ms max 34ms fps 60 slow 0/541 bench 3 variant normal mode zoom z 14.36 median 17ms range 17ms-17ms benchMax 34ms
+LONGTASK count 4 max 76ms last 76ms longtask
+UIRENDER recent/total IRISOverlay 1/46 | StatusBar 1/250 | BottomDock 1/46 | DockDrawer 1/46 | PlanningBar 1/46 | MockToolsBar 1/47 | DiagnosticsPopup 1/15
+```
+
+### No Plugins Pan
+
+```text
+CONTEXT IRIS 0.1.5 browser Chrome 148.0.0.0 platform MacIntel viewport 1920x934 dpr 2.00 touch 0 pointer fine hover yes mapStyle OSM overlays player-tracker,portal-health-fill,portal-level-labels
+VIEWPORT source 0ms z 14.36 buffer n/a query n/a setData 0ms items 17,518 P 4,773 L 6,571 F 2,965 art 0 orn 152 plugin 3,002
+SOURCES portals 4,773/- | links 6,571/- | fields 2,965/- | artifacts 0/0ms | ornaments 152/- | plugin-features 3,002/-
+FRAME 9041ms avg 17ms max 33ms fps 60 slow 0/539 bench 3 variant no-plugins mode pan z 14.36 median 17ms range 17ms-17ms benchMax 33ms
+LONGTASK count 4 max 76ms last 76ms longtask
+UIRENDER recent/total DiagnosticsPopup 1/30 | StatusBar 1/343 | IRISOverlay 1/65 | DockDrawer 1/65 | BottomDock 1/65 | PlanningBar 1/65 | MockToolsBar 1/68
+```
+
+### Normal Pan With Moving Overlay Suspension
+
+Later sample after pan-mode Bench began hiding plugin labels and portal highlights during active movement:
+
+```text
+CONTEXT IRIS 0.1.5 browser Chrome 148.0.0.0 platform MacIntel viewport 1920x934 dpr 2.00 touch 0 pointer fine hover yes mapStyle OSM overlays player-tracker,portal-health-fill,portal-level-labels
+VIEWPORT source 0ms z 14.36 buffer n/a query n/a setData 0ms items 16,355 P 4,256 L 6,562 F 2,967 art 0 orn 127 plugin 2,389
+SOURCES portals 4,256/- | links 6,562/- | fields 2,967/0ms | artifacts 0/- | ornaments 127/- | plugin-features 2,389/-
+FRAME 9036ms avg 17ms max 84ms fps 58 slow 5/525 bench 3 variant normal mode pan z 14.36 median 17ms range 17ms-18ms benchMax 84ms
+LONGTASK count 10 max 110ms last 62ms longtask
+UIRENDER recent/total DiagnosticsPopup 1/1 | IRISOverlay 1/34 | BottomDock 1/34 | StatusBar 1/207 | DockDrawer 1/34 | PlanningBar 1/34 | MockToolsBar 1/34
+```
+
+Notes:
+
+- Normal pan had slow frames while normal zoom and no-plugin pan were clean on the same source mix.
+- The active plugin mix was dominated by portal level HTML labels (`1,801`) and portal health highlights (`1,178`);
+  player tracker was negligible in this sample (`4` markers, `19` lines).
+- Follow-up change: pan-mode Bench now temporarily hides plugin label and portal-highlight layers during active movement,
+  restoring them after the run, to test an IITC-Mobile-style moving/settled overlay split.
+- The first post-change sample did not improve the worst frame (`84ms`, `5` slow frames), so plugin labels/highlights are
+  not the only remaining pan spike source in that run, or the layer-visibility change itself needs a different timing
+  strategy.

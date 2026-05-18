@@ -60,6 +60,7 @@ export interface InterceptorMessage {
   minLngE6?: number;
   maxLngE6?: number;
   tileKeys?: string[];
+  entityGeneration?: number;
   lastQueryTimestamp?: number;
 }
 

@@ -55,6 +55,7 @@ export function createRequestCoordinator(): RequestCoordinator {
     let entityRetryCount = 0;
     let lastRegionScoreRequestKey: string | null = null;
     let lastEntityCoverageKey: string | null = null;
+    let entityRefreshGeneration = 0;
     let entityUnsub: (() => void) | null = null;
 
     const postMessage = (message: Record<string, unknown>): void => {
@@ -151,6 +152,7 @@ export function createRequestCoordinator(): RequestCoordinator {
             entityRetryCount = 0;
             clearEntityRetry();
         }
+        const generation = entityRefreshGeneration;
 
         // Surgical Fetching: Only request tiles that are not fresh
         let tilesToFetch = payload.tileKeys;
@@ -189,6 +191,7 @@ export function createRequestCoordinator(): RequestCoordinator {
             postMessage({
                 type: 'IRIS_ENTITIES_FETCH',
                 tileKeys: batch,
+                entityGeneration: generation,
             });
         }
 
@@ -414,6 +417,11 @@ export function createRequestCoordinator(): RequestCoordinator {
 
             postMessage({ type: 'IRIS_MOVE_MAP_INTERNAL', center, zoom });
             useStore.getState().updateMapState(center.lat, center.lng, zoom, bounds);
+            entityRefreshGeneration += 1;
+            postMessage({
+                type: 'IRIS_ENTITY_REFRESH_GENERATION',
+                entityGeneration: entityRefreshGeneration,
+            });
 
             if (isWithinStartupGrace()) {
                 return;

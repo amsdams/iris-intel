@@ -25,15 +25,21 @@ const BENCHMARK_ZOOMS = [
     {label: 'Z14.36', value: 14.36},
     {label: 'Z16', value: 16},
 ] as const;
+const BENCHMARK_MODES = [
+    {label: 'Pan', value: 'pan'},
+    {label: 'Zoom', value: 'zoom'},
+] as const;
 
 type BenchmarkVariant = typeof BENCHMARK_VARIANTS[number]['value'];
 type BenchmarkZoom = typeof BENCHMARK_ZOOMS[number]['value'];
+type BenchmarkMode = typeof BENCHMARK_MODES[number]['value'];
 
 export function MockToolsBar(): JSX.Element | null {
     useRenderDiagnostics('MockToolsBar');
 
     const [benchmarkVariant, setBenchmarkVariant] = useState<BenchmarkVariant>('normal');
     const [benchmarkZoom, setBenchmarkZoom] = useState<BenchmarkZoom>(14.36);
+    const [benchmarkMode, setBenchmarkMode] = useState<BenchmarkMode>('pan');
     const showMockTools = useStore((state) => state.showMockTools);
     const hasMockArtifacts = useStore((state) => Object.keys(state.artifacts).length > 0);
     const hasMockOrnaments = useStore((state) => Object.keys(state.mockOrnaments).length > 0);
@@ -126,8 +132,8 @@ export function MockToolsBar(): JSX.Element | null {
             ))}
             <button
                 className="iris-mock-tools-btn iris-ui-compact-pill"
-                title={`Run a 5 second automated pan benchmark (${benchmarkVariant}, z${benchmarkZoom})`}
-                onClick={() => window.postMessage({ type: 'IRIS_RUN_PAN_BENCHMARK', benchmarkVariant, benchmarkZoom }, '*')}
+                title={`Run a 5 second automated ${benchmarkMode} benchmark (${benchmarkVariant}, z${benchmarkZoom})`}
+                onClick={() => window.postMessage({ type: 'IRIS_RUN_PAN_BENCHMARK', benchmarkVariant, benchmarkZoom, benchmarkMode }, '*')}
             >
                 Bench
             </button>
@@ -140,6 +146,18 @@ export function MockToolsBar(): JSX.Element | null {
                 {BENCHMARK_VARIANTS.map((variant) => (
                     <option key={variant.value} value={variant.value}>
                         {variant.label}
+                    </option>
+                ))}
+            </select>
+            <select
+                className="iris-input iris-mock-tools-btn"
+                title="Benchmark mode"
+                value={benchmarkMode}
+                onChange={(event) => setBenchmarkMode((event.target as HTMLSelectElement).value as BenchmarkMode)}
+            >
+                {BENCHMARK_MODES.map((mode) => (
+                    <option key={mode.value} value={mode.value}>
+                        {mode.label}
                     </option>
                 ))}
             </select>

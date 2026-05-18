@@ -34,6 +34,7 @@ interface FrameSnapshot {
     benchmarkMaxFrameMs?: number;
     benchmarkVariant?: BenchmarkVariant;
     benchmarkZoom?: number;
+    benchmarkMode?: BenchmarkMode;
 }
 
 interface MovingFrameSample {
@@ -121,12 +122,14 @@ interface PinBodyOptions {
 
 type MarkerOffset = [number, number];
 type BenchmarkVariant = 'normal' | 'base' | 'no-plugins';
+type BenchmarkMode = 'pan' | 'zoom';
 
 let pageMapPromise: Promise<maplibregl.Map> | null = null;
 let suppressNextCameraChangedEvent = false;
 let panBenchmarkSettleTimer: number | null = null;
 let panBenchmarkAnimation: number | null = null;
 let panBenchmarkActive = false;
+let panBenchmarkMode: BenchmarkMode = 'pan';
 let panBenchmarkRestoreVisibility: (() => void) | null = null;
 let activeBenchmarkVariant: BenchmarkVariant = 'normal';
 const plannedMarkerRegistry = new Map<string, PlannedMarkerRegistryEntry>();
@@ -146,6 +149,7 @@ const currentSourceFeatureCounts: Record<string, number> = {
 
 const SLOW_FRAME_MS = 34;
 const PAN_BENCHMARK_STEP_PX = 220;
+const ZOOM_BENCHMARK_STEP = 1.25;
 const PAN_BENCHMARK_RUN_COUNT = 3;
 const PAN_BENCHMARK_RUN_DURATION_MS = 3000;
 const PAN_BENCHMARK_START = {lat: 52.371094, lng: 4.906375};
@@ -205,6 +209,10 @@ function getBenchmarkZoom(value: unknown): number {
         return 14.36;
     }
     return Math.max(3, Math.min(20, value));
+}
+
+function getBenchmarkMode(value: unknown): BenchmarkMode {
+    return value === 'zoom' ? 'zoom' : 'pan';
 }
 
 function createRuntimeContainer(): HTMLDivElement {
@@ -812,6 +820,11 @@ function shouldShowBenchmarkMarkers(): boolean {
 
 function applyBenchmarkMarkerVisibility(element: HTMLElement): void {
     element.style.display = shouldShowBenchmarkMarkers() ? 'block' : 'none';
+}
+
+function setMovingOverlayVisibility(map: maplibregl.Map, visible: boolean): void {
+    setLayerVisibility(map, 'iris-map-plugin-labels', visible);
+    setLayerVisibility(map, 'iris-map-plugin-portal-highlights', visible);
 }
 
 function applyBenchmarkVariant(map: maplibregl.Map, variant: BenchmarkVariant): () => void {
@@ -1781,7 +1794,7 @@ function stopFrameSample(sample: MovingFrameSample): FrameSnapshot | null {
     };
 }
 
-function publishBenchmarkFrameSnapshot(snapshots: FrameSnapshot[], variant: BenchmarkVariant, zoom: number): void {
+function publishBenchmarkFrameSnapshot(snapshots: FrameSnapshot[], variant: BenchmarkVariant, zoom: number, mode: BenchmarkMode): void {
     const averageValues = snapshots
         .map((snapshot) => snapshot.averageFrameMs)
         .sort((a, b) => a - b);
@@ -1814,6 +1827,7 @@ function publishBenchmarkFrameSnapshot(snapshots: FrameSnapshot[], variant: Benc
         benchmarkMaxFrameMs: Math.max(...snapshots.map((item) => item.maxFrameMs)),
         benchmarkVariant: variant,
         benchmarkZoom: zoom,
+        benchmarkMode: mode,
     };
 
     window.postMessage({
@@ -1834,9 +1848,10 @@ function stopPanBenchmark(): void {
     panBenchmarkRestoreVisibility?.();
     panBenchmarkRestoreVisibility = null;
     panBenchmarkActive = false;
+    panBenchmarkMode = 'pan';
 }
 
-async function runPanBenchmark(variant: BenchmarkVariant = 'normal', zoom = 14.36): Promise<void> {
+async function runPanBenchmark(variant: BenchmarkVariant = 'normal', zoom = 14.36, mode: BenchmarkMode = 'pan'): Promise<void> {
     const map = await getPageMap();
     stopPanBenchmark();
     panBenchmarkRestoreVisibility = applyBenchmarkVariant(map, variant);
@@ -1857,23 +1872,37 @@ async function runPanBenchmark(variant: BenchmarkVariant = 'normal', zoom = 14.3
         panBenchmarkSettleTimer = window.setTimeout(() => {
             panBenchmarkSettleTimer = null;
             panBenchmarkActive = true;
+            panBenchmarkMode = mode;
+            if (panBenchmarkMode === 'pan') {
+                setMovingOverlayVisibility(map, false);
+            }
             const sample = createFrameSample();
             startFrameSample(sample);
 
             const startPoint = map.project([PAN_BENCHMARK_START.lng, PAN_BENCHMARK_START.lat]);
             const startedAt = performance.now();
+            const minZoom = Math.max(3, zoom - ZOOM_BENCHMARK_STEP);
+            const maxZoom = Math.min(20, zoom + ZOOM_BENCHMARK_STEP);
 
             const tick = (now: number): void => {
                 if (!panBenchmarkActive) return;
 
                 const elapsed = now - startedAt;
                 const progress = Math.min(elapsed / PAN_BENCHMARK_RUN_DURATION_MS, 1);
-                const offset = Math.sin(progress * Math.PI * 4) * PAN_BENCHMARK_STEP_PX;
-                const center = map.unproject([startPoint.x + offset, startPoint.y]);
-                map.jumpTo({
-                    center: [center.lng, center.lat],
-                    zoom,
-                });
+                if (mode === 'zoom') {
+                    const zoomProgress = (Math.sin(progress * Math.PI * 4) + 1) / 2;
+                    map.jumpTo({
+                        center: [PAN_BENCHMARK_START.lng, PAN_BENCHMARK_START.lat],
+                        zoom: minZoom + ((maxZoom - minZoom) * zoomProgress),
+                    });
+                } else {
+                    const offset = Math.sin(progress * Math.PI * 4) * PAN_BENCHMARK_STEP_PX;
+                    const center = map.unproject([startPoint.x + offset, startPoint.y]);
+                    map.jumpTo({
+                        center: [center.lng, center.lat],
+                        zoom,
+                    });
+                }
 
                 if (progress < 1) {
                     panBenchmarkAnimation = window.requestAnimationFrame(tick);
@@ -1894,7 +1923,11 @@ async function runPanBenchmark(variant: BenchmarkVariant = 'normal', zoom = 14.3
                 }
 
                 panBenchmarkActive = false;
-                publishBenchmarkFrameSnapshot(runSnapshots, variant, zoom);
+                if (panBenchmarkMode === 'pan') {
+                    setMovingOverlayVisibility(map, true);
+                }
+                panBenchmarkMode = 'pan';
+                publishBenchmarkFrameSnapshot(runSnapshots, variant, zoom, mode);
                 panBenchmarkRestoreVisibility?.();
                 panBenchmarkRestoreVisibility = null;
             };
@@ -2017,7 +2050,8 @@ window.addEventListener('message', (event: MessageEvent<PageMapRuntimeCommandMes
     if ((event.data as {type?: string})?.type === 'IRIS_RUN_PAN_BENCHMARK') {
         const variant = getBenchmarkVariant((event.data as {benchmarkVariant?: unknown}).benchmarkVariant);
         const zoom = getBenchmarkZoom((event.data as {benchmarkZoom?: unknown}).benchmarkZoom);
-        runPageRuntimeTask('pageRuntime:bench', () => runPanBenchmark(variant, zoom));
+        const mode = getBenchmarkMode((event.data as {benchmarkMode?: unknown}).benchmarkMode);
+        runPageRuntimeTask('pageRuntime:bench', () => runPanBenchmark(variant, zoom, mode));
         return;
     }
 

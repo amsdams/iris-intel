@@ -35,6 +35,7 @@ export interface IRISMessage {
   minLngE6?: number;
   maxLngE6?: number;
   tileKeys?: string[];
+  entityGeneration?: number;
   nickname?: string;
   level?: number;
   ap?: number;

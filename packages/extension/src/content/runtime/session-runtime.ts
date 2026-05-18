@@ -21,6 +21,7 @@ export interface SessionRuntime {
     reportSessionExpired: (url: string, status: number, statusText: string) => void;
     reportSessionSuccess: (url: string) => void;
     reportHtmlLoginResponse: (url: string) => void;
+    setLatestEntityGeneration: (generation: number) => void;
     safeIrisFetch: (url: string, options: RequestInit) => Promise<Response>;
 }
 
@@ -144,6 +145,7 @@ export function createSessionRuntime(win: Window, doc: Document): SessionRuntime
 
     const MAX_CONCURRENT_REQUESTS = 5;
     let activeRequestsCount = 0;
+    let latestEntityGeneration = 0;
     const requestQueue: {
         url: string;
         options: RequestInit;
@@ -206,6 +208,19 @@ export function createSessionRuntime(win: Window, doc: Document): SessionRuntime
         if (!request) return;
 
         const { url, options, resolve, reject } = request;
+        const entityGeneration = options._iris_entityGeneration;
+        if (typeof entityGeneration === 'number' && entityGeneration < latestEntityGeneration) {
+            win.postMessage({
+                type: 'IRIS_ENTITY_REFRESH_STALE_QUEUED_DROP',
+                entityGeneration,
+                latestEntityGeneration,
+                time: Date.now(),
+            }, '*');
+            reject(new Error(`IRIS: dropped stale entity request generation ${entityGeneration}; current ${latestEntityGeneration}`));
+            processQueue();
+            return;
+        }
+
         activeRequestsCount++;
 
         (async (): Promise<void> => {
@@ -233,6 +248,9 @@ export function createSessionRuntime(win: Window, doc: Document): SessionRuntime
 
     const safeIrisFetch = (url: string, options: RequestInit): Promise<Response> => {
         return new Promise((resolve, reject) => {
+            if (typeof options._iris_entityGeneration === 'number') {
+                latestEntityGeneration = Math.max(latestEntityGeneration, options._iris_entityGeneration);
+            }
             requestQueue.push({ url, options, resolve, reject });
             processQueue();
         });
@@ -249,6 +267,10 @@ export function createSessionRuntime(win: Window, doc: Document): SessionRuntime
         reportSessionExpired,
         reportSessionSuccess,
         reportHtmlLoginResponse,
+        setLatestEntityGeneration: (generation: number): void => {
+            latestEntityGeneration = Math.max(latestEntityGeneration, generation);
+            processQueue();
+        },
         safeIrisFetch,
     };
 }

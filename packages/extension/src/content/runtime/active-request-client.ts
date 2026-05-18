@@ -17,6 +17,13 @@ export function handleActiveRequestMessage(
     runtime: SessionRuntime,
 ): void {
     switch (msg.type) {
+        case 'IRIS_ENTITY_REFRESH_GENERATION': {
+            if (typeof msg.entityGeneration === 'number') {
+                runtime.setLatestEntityGeneration(msg.entityGeneration);
+            }
+            break;
+        }
+
         case 'IRIS_PLEXTS_FETCH': {
             const { tab, minTimestampMs, maxTimestampMs, ascendingTimestampOrder, minLatE6, maxLatE6, minLngE6, maxLngE6 } = msg;
             runtime.safeIrisFetch('/r/getPlexts', {
@@ -54,6 +61,7 @@ export function handleActiveRequestMessage(
 
         case 'IRIS_ENTITIES_FETCH': {
             const tileKeys = Array.isArray(msg.tileKeys) ? msg.tileKeys : [];
+            const entityGeneration = typeof msg.entityGeneration === 'number' ? msg.entityGeneration : undefined;
             if (tileKeys.length === 0) {
                 break;
             }
@@ -63,7 +71,11 @@ export function handleActiveRequestMessage(
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
                 body: JSON.stringify({ tileKeys }),
                 _iris_active: true,
+                _iris_entityGeneration: entityGeneration,
             }).catch((e) => {
+                if (e instanceof Error && e.message.startsWith('IRIS: dropped stale entity request generation')) {
+                    return;
+                }
                 reportActiveRequestError('request:entities', e, `tiles: ${tileKeys.length}`);
                 console.error('IRIS: Entities fetch failed', e);
             });

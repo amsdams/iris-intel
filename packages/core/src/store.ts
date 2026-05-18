@@ -216,6 +216,8 @@ export interface EndpointDiagnostics {
     lastActiveSuccessAt: number | null;
     lastPassiveSuccessAt: number | null;
     lastCoverageKey: string | null;
+    staleQueuedDropCount: number;
+    staleResponseIgnoreCount: number;
 }
 
 export interface MapPerfSnapshot {
@@ -254,6 +256,7 @@ export interface MapPerfSnapshot {
     benchmarkMaxFrameMs?: number;
     benchmarkVariant?: string;
     benchmarkZoom?: number;
+    benchmarkMode?: string;
 }
 
 export interface MapPerfDiagnostics {
@@ -674,6 +677,8 @@ const createEmptyEndpointDiagnostics = (): Record<EndpointKey, EndpointDiagnosti
             lastActiveSuccessAt: null,
             lastPassiveSuccessAt: null,
             lastCoverageKey: null,
+            staleQueuedDropCount: 0,
+            staleResponseIgnoreCount: 0,
         } satisfies EndpointDiagnostics]),
     ) as Record<EndpointKey, EndpointDiagnostics>;
 
