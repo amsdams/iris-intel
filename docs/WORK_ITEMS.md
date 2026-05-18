@@ -995,7 +995,7 @@ Tasks:
 | Reduce overlay rerenders from map-state camera sync        | Done   | `IRISOverlay` no longer subscribes to `mapState` for rendering just to forward camera changes; a direct store subscription now posts debounced page-runtime camera sync during movement                |
 | Reduce overlay rerenders from entity source sync           | Done   | portal/link/field source sync now uses direct store subscriptions to post page-runtime patches, so entity refreshes do not rerender the full overlay tree just to forward map data                    |
 | Avoid hidden popup subscriptions                           | Done   | selection info popups, mission details, and plugin feature details now mount only when active instead of subscribing to store slices while returning `null`                                           |
-| Profile remaining Zustand/UI rerenders during pan          | Open   | measure before broader selector refactors; focus on drawer, diagnostics, plugin states, planning state, and any popup that subscribes to `mapState` while visible                                    |
+| Profile remaining Zustand/UI rerenders during pan          | Done   | Diagnostics now records lightweight render samples for the overlay/dock/status/planning/mock surfaces and main-thread long task/event-loop spikes; copied bench output includes `LONGTASK` and `UIRENDER` lines before broader selector refactors |
 | Add planned-link crossing prefiltering                     | Done   | planned-link crossing detection now precomputes loaded-link bounding boxes only when saved planned links exist, then skips exact segment checks when segment bounds cannot overlap                    |
 | Standardize domain error reporting into Diagnostics        | Open   | parsers, request coordination, and page-world runtime should report structured recoverable errors instead of mixing console-only and caught-global paths                                                |
 | Add optional message sequence IDs for diagnostics          | Open   | useful for tracing page-world/content/interceptor request-response paths and dropped messages, but lower priority than source sync and measured rerenders                                              |
@@ -1006,9 +1006,9 @@ Tasks:
 
 ## Current Next Pickup
 
-1. **[Performance Architecture]** Profile remaining Zustand/UI rerenders during active pan before broader selector refactors.
-2. **[Diagnostics Architecture]** Standardize recoverable parser/request/runtime errors into Diagnostics.
-3. **[Testability]** Add mock player activity plexts for player tracker testing without live COMM activity.
+1. **[Diagnostics Architecture]** Standardize recoverable parser/request/runtime errors into Diagnostics.
+2. **[Testability]** Add mock player activity plexts for player tracker testing without live COMM activity.
+3. **[Performance Architecture]** Use the new `LONGTASK` and `UIRENDER` diagnostics to decide whether remaining lag is UI rerender churn, page-world source work, or base map rendering.
 4. **[UI Architecture]** Extend shared UI/CSS primitives to drawer buttons, popup action rows, and map controls after visual smoke testing the first pass.
 5. **[Marker Rendering]** Keep MapLibre Marker pins lagging behind mobile pan as a watch item for stale XPI/runtime loads without page refresh.
 6. **[Draw Tools]** Refine marker selection/edit/delete UX after the pin experiment clarified renderer behavior.

@@ -1,10 +1,13 @@
 import { h, JSX } from 'preact';
 import { useState } from 'preact/hooks';
 import { PlannedMarker, useStore } from '@iris/core';
+import { useRenderDiagnostics } from './useRenderDiagnostics';
 
 const MARKER_COLORS: PlannedMarker['color'][] = ['white', 'red', 'blue', 'green'];
 
 export function PlanningBar(): JSX.Element | null {
+    useRenderDiagnostics('PlanningBar');
+
     const [confirmClear, setConfirmClear] = useState(false);
     const planningMode = useStore((state) => state.planningMode);
     const planningTool = useStore((state) => state.planningTool);

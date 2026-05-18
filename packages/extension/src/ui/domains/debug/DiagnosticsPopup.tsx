@@ -1,6 +1,13 @@
 import { h, JSX } from 'preact';
 import { useState, useEffect } from 'preact/hooks';
-import { EndpointDiagnostics, EndpointKey, MapPerfDiagnostics, useStore } from '@iris/core';
+import {
+    EndpointDiagnostics,
+    EndpointKey,
+    MainThreadDiagnostics,
+    MapPerfDiagnostics,
+    UiRenderDiagnosticsEntry,
+    useStore,
+} from '@iris/core';
 import { Popup } from '../../shared/Popup';
 import { IRIS_VERSION_LABEL } from '../../../version';
 import './debug.css';
@@ -66,6 +73,8 @@ interface PerfSummaryContext {
     versionLabel: string;
     mapThemeId: string;
     activeVisualOverlayIds: string[];
+    uiRenderDiagnostics: Record<string, UiRenderDiagnosticsEntry>;
+    mainThreadDiagnostics: MainThreadDiagnostics;
 }
 
 function getBrowserLabel(): string {
@@ -97,6 +106,12 @@ function buildEnvironmentSummary(context: PerfSummaryContext): string {
 function buildPerfSummary(perf: MapPerfDiagnostics, context: PerfSummaryContext): string {
     const viewport = perf.viewport;
     const frame = perf.frame;
+    const uiRenderDetails = Object.values(context.uiRenderDiagnostics)
+        .sort((a, b) => b.lastAt - a.lastAt)
+        .slice(0, 8)
+        .map((entry) => `${entry.name} ${formatCount(entry.lastCount)}/${formatCount(entry.count)}`)
+        .join(' | ');
+    const longTask = context.mainThreadDiagnostics.lastLongTask;
     const sourceCounts = viewport?.sourceFeatureCounts ?? {};
     const sourceSetData = viewport?.sourceSetDataMs ?? {};
     const sourceDetails = viewport
@@ -113,6 +128,8 @@ function buildPerfSummary(perf: MapPerfDiagnostics, context: PerfSummaryContext)
         frame
             ? `FRAME ${formatMs(frame.totalMs)} avg ${formatMs(frame.averageFrameMs)} max ${formatMs(frame.maxFrameMs)} fps ${formatCount(frame.estimatedFps)} slow ${formatCount(frame.slowFrameCount)}/${formatCount(frame.frameCount)}${frame.benchmarkRunCount ? ` bench ${formatCount(frame.benchmarkRunCount)} median ${formatMs(frame.benchmarkMedianAverageFrameMs)} range ${formatMs(frame.benchmarkMinAverageFrameMs)}-${formatMs(frame.benchmarkMaxAverageFrameMs)} benchMax ${formatMs(frame.benchmarkMaxFrameMs)}` : ''}`
             : 'FRAME no sample',
+        `LONGTASK count ${formatCount(context.mainThreadDiagnostics.longTaskCount)} max ${formatMs(context.mainThreadDiagnostics.maxLongTaskMs)} last ${longTask ? `${formatMs(longTask.durationMs)} ${longTask.source}` : 'none'}`,
+        uiRenderDetails ? `UIRENDER recent/total ${uiRenderDetails}` : 'UIRENDER no sample',
     ].join('\n');
 }
 
@@ -148,6 +165,8 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
     const addressNextLookupAt = useStore((state) => state.addressNextLookupAt);
     const endpointDiagnostics = useStore((state) => state.endpointDiagnostics);
     const mapPerfDiagnostics = useStore((state) => state.mapPerfDiagnostics);
+    const uiRenderDiagnostics = useStore((state) => state.uiRenderDiagnostics);
+    const mainThreadDiagnostics = useStore((state) => state.mainThreadDiagnostics);
     const mapThemeId = useStore((state) => state.mapThemeId);
     const activeVisualOverlayIds = useStore((state) => state.activeVisualOverlayIds);
 
@@ -254,6 +273,8 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
             versionLabel: IRIS_VERSION_LABEL,
             mapThemeId,
             activeVisualOverlayIds,
+            uiRenderDiagnostics,
+            mainThreadDiagnostics,
         });
         navigator.clipboard?.writeText(text)
             .then(() => setCopyStatus('Copied'))
@@ -396,6 +417,45 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                                 </div>
                             )}
                         </div>
+                    </div>
+
+                    <div className="iris-debug-section-title">MAIN THREAD</div>
+                    <div className="iris-debug-table">
+                        <div className="iris-debug-row">
+                            <span className="iris-debug-label">Long tasks</span>
+                            <span className="iris-debug-value">
+                                {formatCount(mainThreadDiagnostics.longTaskCount)} | max {formatMs(mainThreadDiagnostics.maxLongTaskMs)}
+                            </span>
+                        </div>
+                        <div className="iris-debug-row">
+                            <span className="iris-debug-label">Last spike</span>
+                            <span className="iris-debug-value">
+                                {mainThreadDiagnostics.lastLongTask
+                                    ? `${formatMs(mainThreadDiagnostics.lastLongTask.durationMs)} | ${mainThreadDiagnostics.lastLongTask.source} | ${formatRelativeTime(mainThreadDiagnostics.lastLongTask.time)}`
+                                    : 'none'}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="iris-debug-section-title">UI RENDERS</div>
+                    <div className="iris-debug-table">
+                        {Object.values(uiRenderDiagnostics)
+                            .sort((a, b) => b.lastAt - a.lastAt)
+                            .slice(0, 8)
+                            .map((entry) => (
+                                <div key={entry.name} className="iris-debug-row">
+                                    <span className="iris-debug-label">{entry.name}</span>
+                                    <span className="iris-debug-value">
+                                        recent {formatCount(entry.lastCount)} | total {formatCount(entry.count)} | {formatRelativeTime(entry.lastAt)}
+                                    </span>
+                                </div>
+                            ))}
+                        {Object.keys(uiRenderDiagnostics).length === 0 && (
+                            <div className="iris-debug-row">
+                                <span className="iris-debug-label">Samples</span>
+                                <span className="iris-debug-value">none yet</span>
+                            </div>
+                        )}
                     </div>
 
                     <div className="iris-debug-section-title">ENDPOINTS</div>

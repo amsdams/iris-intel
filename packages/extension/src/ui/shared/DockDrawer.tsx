@@ -6,6 +6,7 @@ import { TacticalTab } from './drawer/TacticalTab';
 import { LayersTab } from './drawer/LayersTab';
 import { VisualsTab } from './drawer/VisualsTab';
 import { SystemTab } from './drawer/SystemTab';
+import { useRenderDiagnostics } from './useRenderDiagnostics';
 
 export type DrawerTab = 'intel' | 'nav' | 'tactical' | 'layers' | 'highlighters' | 'system' | null;
 
@@ -26,6 +27,8 @@ interface DockDrawerProps {
 }
 
 export function DockDrawer({ tab, onClose, onAction, showMap }: DockDrawerProps): JSX.Element | null {
+    useRenderDiagnostics('DockDrawer');
+
     if (!tab) return null;
 
     return (

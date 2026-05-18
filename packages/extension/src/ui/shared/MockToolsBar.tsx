@@ -1,5 +1,6 @@
 import { h, JSX } from 'preact';
 import { useStore } from '@iris/core';
+import { useRenderDiagnostics } from './useRenderDiagnostics';
 
 interface MockToolAction {
     label: string;
@@ -13,6 +14,8 @@ interface MockToolAction {
 const MOCK_INVENTORY_GUID_PATTERN = /^(xmp|reso|ultra|pc|shield|heat-sink|transmuter|key|ada|jarvis|fracker|battle-beacon|apex|hypercube|drone|entitlement|capsule)-/;
 
 export function MockToolsBar(): JSX.Element | null {
+    useRenderDiagnostics('MockToolsBar');
+
     const showMockTools = useStore((state) => state.showMockTools);
     const hasMockArtifacts = useStore((state) => Object.keys(state.artifacts).length > 0);
     const hasMockOrnaments = useStore((state) => Object.keys(state.mockOrnaments).length > 0);

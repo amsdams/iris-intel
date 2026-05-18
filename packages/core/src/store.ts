@@ -259,6 +259,26 @@ export interface MapPerfDiagnostics {
     frame: MapPerfSnapshot | null;
 }
 
+export interface UiRenderDiagnosticsEntry {
+    name: string;
+    count: number;
+    lastCount: number;
+    lastAt: number;
+}
+
+export interface MainThreadLongTask {
+    time: number;
+    durationMs: number;
+    source: string;
+}
+
+export interface MainThreadDiagnostics {
+    longTaskCount: number;
+    maxLongTaskMs: number;
+    lastLongTask: MainThreadLongTask | null;
+    recentLongTasks: MainThreadLongTask[];
+}
+
 export interface InventoryItemData {
     resource?: {
         resourceType: string;
@@ -581,6 +601,8 @@ interface DiagnosticsSlice {
     lastSessionError: SessionError | null;
     endpointDiagnostics: Record<EndpointKey, EndpointDiagnostics>;
     mapPerfDiagnostics: MapPerfDiagnostics;
+    uiRenderDiagnostics: Record<string, UiRenderDiagnosticsEntry>;
+    mainThreadDiagnostics: MainThreadDiagnostics;
     onRequestStart: (url: string) => void;
     onRequestEnd: () => void;
     addFailedRequest: (request: FailedRequest) => void;
@@ -598,6 +620,8 @@ interface DiagnosticsSlice {
     setEndpointNextAutoRefresh: (key: EndpointKey, nextAutoRefreshAt: number | null) => void;
     setEndpointMetadata: (key: EndpointKey, metadata: Partial<EndpointDiagnostics>) => void;
     setMapPerfSnapshot: (snapshot: MapPerfSnapshot) => void;
+    recordUiRenderSample: (name: string, count: number) => void;
+    recordMainThreadLongTask: (task: MainThreadLongTask) => void;
     clearEndpointDiagnostics: () => void;
 }
 
@@ -1356,6 +1380,13 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
         htmlMarkers: null,
         frame: null,
     },
+    uiRenderDiagnostics: {},
+    mainThreadDiagnostics: {
+        longTaskCount: 0,
+        maxLongTaskMs: 0,
+        lastLongTask: null,
+        recentLongTasks: [],
+    },
     onRequestStart: (url) => set((state) => ({
         activeRequests: state.activeRequests + 1,
         lastRequestUrl: url,
@@ -1490,6 +1521,42 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
             [snapshot.type]: snapshot,
         },
     })),
+    recordUiRenderSample: (name, count) => set((state) => {
+        const existing = state.uiRenderDiagnostics[name];
+        const nextCount = Math.max(0, count);
+
+        return {
+            uiRenderDiagnostics: {
+                ...state.uiRenderDiagnostics,
+                [name]: {
+                    name,
+                    count: (existing?.count ?? 0) + nextCount,
+                    lastCount: nextCount,
+                    lastAt: Date.now(),
+                },
+            },
+        };
+    }),
+    recordMainThreadLongTask: (task) => set((state) => {
+        const durationMs = Math.max(0, Math.round(task.durationMs));
+        const normalizedTask: MainThreadLongTask = {
+            time: task.time,
+            durationMs,
+            source: task.source,
+        };
+
+        return {
+            mainThreadDiagnostics: {
+                longTaskCount: state.mainThreadDiagnostics.longTaskCount + 1,
+                maxLongTaskMs: Math.max(state.mainThreadDiagnostics.maxLongTaskMs, durationMs),
+                lastLongTask: normalizedTask,
+                recentLongTasks: [
+                    normalizedTask,
+                    ...state.mainThreadDiagnostics.recentLongTasks,
+                ].slice(0, 8),
+            },
+        };
+    }),
     clearEndpointDiagnostics: () => set((state) => ({
         endpointDiagnostics: Object.fromEntries(
             Object.entries(state.endpointDiagnostics).map(([key, entry]) => [

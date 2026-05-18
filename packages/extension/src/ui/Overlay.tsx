@@ -26,6 +26,7 @@ import { DockDrawer, DrawerTab } from './shared/DockDrawer';
 import { LocationSearchPopup } from './shared/LocationSearchPopup';
 import { MockToolsBar } from './shared/MockToolsBar';
 import { PlanningBar } from './shared/PlanningBar';
+import { useRenderDiagnostics } from './shared/useRenderDiagnostics';
 import {
     PAGE_MAP_RUNTIME_MESSAGES,
     PageMapRuntimeCameraChangedMessage,
@@ -53,6 +54,8 @@ import {
 const PAGE_MAP_RUNTIME_INITIAL_SYNC_DEBOUNCE_MS = 300;
 const PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS = 80;
 const PAGE_MAP_RUNTIME_CAMERA_SYNC_DEBOUNCE_MS = 80;
+const EVENT_LOOP_LAG_SAMPLE_MS = 1000;
+const EVENT_LOOP_LAG_THRESHOLD_MS = 120;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null;
@@ -246,6 +249,8 @@ function buildPageRuntimeMissionFromStore(type: string, diagnostic?: boolean): R
 }
 
 export function IRISOverlay(): JSX.Element {
+    useRenderDiagnostics('IRISOverlay');
+
     const sessionStatus = useStore((state) => state.sessionStatus);
     const [showPlayerStatsPopup, setShowPlayerStatsPopup] = useState(false);
     const [showInventoryPopup, setShowInventoryPopup] = useState(false);
@@ -473,6 +478,46 @@ export function IRISOverlay(): JSX.Element {
         window.addEventListener('message', handler);
         return (): void => window.removeEventListener('message', handler);
     }, [showMap]);
+
+    useEffect(() => {
+        let observer: PerformanceObserver | null = null;
+        const supportedEntryTypes = typeof PerformanceObserver !== 'undefined'
+            ? PerformanceObserver.supportedEntryTypes ?? []
+            : [];
+
+        if (supportedEntryTypes.includes('longtask')) {
+            observer = new PerformanceObserver((list) => {
+                for (const entry of list.getEntries()) {
+                    useStore.getState().recordMainThreadLongTask({
+                        time: Date.now(),
+                        durationMs: entry.duration,
+                        source: 'longtask',
+                    });
+                }
+            });
+            observer.observe({entryTypes: ['longtask']});
+        }
+
+        let expected = performance.now() + EVENT_LOOP_LAG_SAMPLE_MS;
+        const interval = window.setInterval(() => {
+            const now = performance.now();
+            const drift = now - expected;
+            expected = now + EVENT_LOOP_LAG_SAMPLE_MS;
+
+            if (drift >= EVENT_LOOP_LAG_THRESHOLD_MS) {
+                useStore.getState().recordMainThreadLongTask({
+                    time: Date.now(),
+                    durationMs: drift,
+                    source: 'event-loop',
+                });
+            }
+        }, EVENT_LOOP_LAG_SAMPLE_MS);
+
+        return (): void => {
+            observer?.disconnect();
+            window.clearInterval(interval);
+        };
+    }, []);
 
     useEffect(() => {
         const retryDelays = [

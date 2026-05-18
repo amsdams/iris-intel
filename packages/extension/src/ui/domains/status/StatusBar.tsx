@@ -2,6 +2,7 @@ import { h, JSX } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { EndpointDiagnostics, EndpointKey, useStore } from '@iris/core';
 import { THEMES, UI_COLORS } from '../../theme';
+import { useRenderDiagnostics } from '../../shared/useRenderDiagnostics';
 
 const ENDPOINT_STALE_AFTER_MS: Partial<Record<EndpointKey, number>> = {
     plexts: 2 * 60 * 1000,
@@ -44,6 +45,8 @@ const ENDPOINT_FALLBACK_ORDER: EndpointKey[] = [
 ];
 
 export function StatusBar(): JSX.Element {
+    useRenderDiagnostics('StatusBar');
+
     const activeRequests = useStore((state) => state.activeRequests);
     const lastRequestUrl = useStore((state) => state.lastRequestUrl);
     const failedRequests = useStore((state) => state.failedRequests);

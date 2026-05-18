@@ -2,6 +2,7 @@ import { h, JSX } from 'preact';
 import { useStore } from '@iris/core';
 import { THEMES } from '../theme';
 import { DrawerTab } from './DockDrawer';
+import { useRenderDiagnostics } from './useRenderDiagnostics';
 import './bottomdock.css';
 
 interface BottomDockProps {
@@ -12,6 +13,8 @@ interface BottomDockProps {
 }
 
 export function BottomDock({ activeDashboard, onToggleDashboard, onToggleSelection, isSelectionVisible }: BottomDockProps): JSX.Element {
+    useRenderDiagnostics('BottomDock');
+
     const selectedPortalId = useStore(state => state.selectedPortalId);
     const selectedFieldId = useStore(state => state.selectedFieldId);
     const selectedLinkId = useStore(state => state.selectedLinkId);
