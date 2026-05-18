@@ -133,6 +133,7 @@ export interface IRIS_API {
   map: {
     getCenter: () => { lat: number; lng: number };
     getZoom: () => number;
+    subscribe: (callback: (mapState: { lat: number; lng: number; zoom: number }) => void) => () => void;
     setFeatures: (features: GeoJSON.Feature[]) => void;
   };
   ui: {

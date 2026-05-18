@@ -74,6 +74,8 @@ For dependency updates and renderer changes, collect the same small scenario set
 
 Keep browser, viewport, device mode, DPR, map style, run count, and live/mock mode visible in the copied sample. For
 mobile, keep a manual finger-pan note next to Bench output when the deterministic RAF pan does not match perceived UX.
+Bench now has selectable zoom presets (`Z8`, `Z12`, `Z14.36`, `Z16`), and copied `FRAME` lines include the selected
+benchmark zoom.
 
 ## 2026-05-14 - IRIS 0.1.2 - Chrome Desktop - Zustand 5
 

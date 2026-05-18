@@ -252,6 +252,7 @@ export interface MapPerfSnapshot {
     benchmarkMaxAverageFrameMs?: number;
     benchmarkMaxFrameMs?: number;
     benchmarkVariant?: string;
+    benchmarkZoom?: number;
 }
 
 export interface MapPerfDiagnostics {

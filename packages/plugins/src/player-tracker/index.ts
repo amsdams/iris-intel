@@ -21,12 +21,14 @@ interface PlayerHistory {
 
 interface PlayerTrackerApi extends IRIS_API {
   _playerTrackerUnsub?: () => void;
+  _playerTrackerMapUnsub?: () => void;
   _playerTrackerTicker?: ReturnType<typeof setInterval>;
 }
 
 const EXPIRATION_MS = 3 * 60 * 60 * 1000; // 3 hours (IITC default)
 const TICK_MS = 30 * 1000; // 30 seconds update
 const MAX_DISPLAY_EVENTS = 10; // Max events to show in trace
+const MIN_TRACKER_ZOOM = 9; // IITC hides player tracker below z9.
 
 function getPlextFingerprint(plext: Plext): string {
   return JSON.stringify({
@@ -51,6 +53,8 @@ const PlayerTrackerPlugin: IRISPlugin = {
     const trackerApi = api as PlayerTrackerApi;
     const playerHistories = new Map<string, PlayerHistory>();
     const processedPlextFingerprints = new Map<string, string>();
+    let trackerVisible = api.map.getZoom() >= MIN_TRACKER_ZOOM;
+    let hasPublishedFeatures = false;
 
     // Helper to get average LatLng for an event
     const getLatLngFromEvent = (event: PlayerEvent): [number, number] => {
@@ -105,9 +109,20 @@ const PlayerTrackerPlugin: IRISPlugin = {
         });
     };
 
+    const clearMap = (): void => {
+        if (!hasPublishedFeatures) return;
+        api.map.setFeatures([]);
+        hasPublishedFeatures = false;
+    };
+
     const updateMap = (): void => {
         const now = Date.now();
         discardOldData();
+
+        if (!trackerVisible) {
+            clearMap();
+            return;
+        }
 
         const finalFeatures: GeoJSON.Feature[] = [];
 
@@ -179,10 +194,19 @@ const PlayerTrackerPlugin: IRISPlugin = {
             });
         });
 
-        api.map.setFeatures(finalFeatures);
+        if (finalFeatures.length > 0 || hasPublishedFeatures) {
+            api.map.setFeatures(finalFeatures);
+            hasPublishedFeatures = finalFeatures.length > 0;
+        }
     };
 
     const rebuildFromPlexts = (plexts: Plext[]): void => {
+      if (!trackerVisible) {
+        discardOldData();
+        clearMap();
+        return;
+      }
+
       playerHistories.clear();
       processedPlextFingerprints.clear();
 
@@ -315,15 +339,31 @@ const PlayerTrackerPlugin: IRISPlugin = {
     rebuildFromPlexts(api.plexts.getAll());
 
     const unsubscribe = api.plexts.subscribe(rebuildFromPlexts);
+    const mapUnsubscribe = api.map.subscribe((mapState) => {
+      const shouldShowTracker = mapState.zoom >= MIN_TRACKER_ZOOM;
+      if (shouldShowTracker === trackerVisible) return;
+
+      trackerVisible = shouldShowTracker;
+      if (trackerVisible) {
+        rebuildFromPlexts(api.plexts.getAll());
+      } else {
+        clearMap();
+      }
+    });
 
     const ticker = setInterval(updateMap, TICK_MS);
     trackerApi._playerTrackerUnsub = unsubscribe;
+    trackerApi._playerTrackerMapUnsub = mapUnsubscribe;
     trackerApi._playerTrackerTicker = ticker;
   },
   teardown: (api: IRIS_API): void => {
     const trackerApi = api as PlayerTrackerApi;
     if (trackerApi._playerTrackerUnsub) trackerApi._playerTrackerUnsub();
+    if (trackerApi._playerTrackerMapUnsub) trackerApi._playerTrackerMapUnsub();
     if (trackerApi._playerTrackerTicker) clearInterval(trackerApi._playerTrackerTicker);
+    trackerApi._playerTrackerUnsub = undefined;
+    trackerApi._playerTrackerMapUnsub = undefined;
+    trackerApi._playerTrackerTicker = undefined;
     api.map.setFeatures([]);
   },
 };

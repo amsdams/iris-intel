@@ -100,6 +100,15 @@ export class PluginManager {
           return { lat, lng };
         },
         getZoom: (): number => useStore.getState().mapState.zoom,
+        subscribe: (callback: (mapState: { lat: number; lng: number; zoom: number }) => void): () => void =>
+          useStore.subscribe(
+            (state) => state.mapState,
+            (mapState) => callback({
+              lat: mapState.lat,
+              lng: mapState.lng,
+              zoom: mapState.zoom,
+            })
+          ),
         setFeatures: (features: GeoJSON.Feature[]): void => {
           this.pluginFeaturesByPlugin.set(pluginId, features);
           this.syncPluginFeatures();

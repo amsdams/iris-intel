@@ -33,6 +33,7 @@ interface FrameSnapshot {
     benchmarkMaxAverageFrameMs?: number;
     benchmarkMaxFrameMs?: number;
     benchmarkVariant?: BenchmarkVariant;
+    benchmarkZoom?: number;
 }
 
 interface MovingFrameSample {
@@ -126,6 +127,7 @@ let panBenchmarkSettleTimer: number | null = null;
 let panBenchmarkAnimation: number | null = null;
 let panBenchmarkActive = false;
 let panBenchmarkRestoreVisibility: (() => void) | null = null;
+let activeBenchmarkVariant: BenchmarkVariant = 'normal';
 const plannedMarkerRegistry = new Map<string, PlannedMarkerRegistryEntry>();
 const playerMarkerRegistry = new Map<string, PlayerMarkerRegistryEntry>();
 const playerClusterRegistry = new Map<string, PlayerClusterRegistryEntry>();
@@ -145,7 +147,7 @@ const SLOW_FRAME_MS = 34;
 const PAN_BENCHMARK_STEP_PX = 220;
 const PAN_BENCHMARK_RUN_COUNT = 3;
 const PAN_BENCHMARK_RUN_DURATION_MS = 3000;
-const PAN_BENCHMARK_START = {lat: 52.371094, lng: 4.906375, zoom: 14.36};
+const PAN_BENCHMARK_START = {lat: 52.371094, lng: 4.906375};
 const PAN_BENCHMARK_SETTLE_MS = 600;
 const PLAYER_MARKER_CIRCLE_SPREAD_RADIUS_PX = 26;
 const PLAYER_MARKER_SPIRAL_START_COUNT = 8;
@@ -195,6 +197,13 @@ type RuntimeDisplayMode = 'hidden' | 'probe' | 'full';
 
 function getBenchmarkVariant(value: unknown): BenchmarkVariant {
     return value === 'base' || value === 'no-plugins' ? value : 'normal';
+}
+
+function getBenchmarkZoom(value: unknown): number {
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+        return 14.36;
+    }
+    return Math.max(3, Math.min(20, value));
 }
 
 function createRuntimeContainer(): HTMLDivElement {
@@ -631,15 +640,7 @@ function getPageMap(): Promise<maplibregl.Map> {
                     return;
                 }
 
-                const camera = getMapCamera(map);
-                const bounds = getMapBounds(map);
-                const message: PageMapRuntimeCameraChangedMessage = {
-                    type: PAGE_MAP_RUNTIME_MESSAGES.cameraChanged,
-                    camera,
-                    bounds,
-                };
-                window.postMessage(message, '*');
-                postDiagnosticResult('MAP CAMERA CHANGED', {...camera, bounds});
+                postCameraChanged(map);
             });
 
             map.on('click', (event) => {
@@ -695,6 +696,18 @@ function getMapBounds(map: maplibregl.Map): PageMapRuntimeBounds {
         maxLatE6: Math.round(bounds.getNorth() * 1e6),
         maxLngE6: Math.round(bounds.getEast() * 1e6),
     };
+}
+
+function postCameraChanged(map: maplibregl.Map, label = 'MAP CAMERA CHANGED'): void {
+    const camera = getMapCamera(map);
+    const bounds = getMapBounds(map);
+    const message: PageMapRuntimeCameraChangedMessage = {
+        type: PAGE_MAP_RUNTIME_MESSAGES.cameraChanged,
+        camera,
+        bounds,
+    };
+    window.postMessage(message, '*');
+    postDiagnosticResult(label, {...camera, bounds});
 }
 
 function syncMapCamera(map: maplibregl.Map, camera: PageMapRuntimeCamera): void {
@@ -788,13 +801,26 @@ function setLayerVisibility(map: maplibregl.Map, layerId: string, visible: boole
 
 function setMarkerRegistryVisibility<T extends {element: HTMLElement}>(registry: Map<string, T>, visible: boolean): void {
     registry.forEach((entry) => {
-        entry.element.style.display = visible ? '' : 'none';
+        entry.element.style.display = visible ? 'block' : 'none';
     });
 }
 
+function shouldShowBenchmarkMarkers(): boolean {
+    return activeBenchmarkVariant === 'normal';
+}
+
+function applyBenchmarkMarkerVisibility(element: HTMLElement): void {
+    element.style.display = shouldShowBenchmarkMarkers() ? 'block' : 'none';
+}
+
 function applyBenchmarkVariant(map: maplibregl.Map, variant: BenchmarkVariant): () => void {
+    const previousBenchmarkVariant = activeBenchmarkVariant;
+    activeBenchmarkVariant = variant;
+
     if (variant === 'normal') {
-        return () => undefined;
+        return () => {
+            activeBenchmarkVariant = previousBenchmarkVariant;
+        };
     }
 
     const layerIdsToHide = variant === 'base'
@@ -822,6 +848,7 @@ function applyBenchmarkVariant(map: maplibregl.Map, variant: BenchmarkVariant): 
         setMarkerRegistryVisibility(plannedMarkerRegistry, true);
         setMarkerRegistryVisibility(playerMarkerRegistry, true);
         setMarkerRegistryVisibility(playerClusterRegistry, true);
+        activeBenchmarkVariant = previousBenchmarkVariant;
     };
 }
 
@@ -930,6 +957,7 @@ function syncPlayerMarkerPins(map: maplibregl.Map, features: GeoJSON.FeatureColl
             existing.marker.setLngLat([playerMarker.lng, playerMarker.lat]);
             existing.marker.setOffset(getPlayerMarkerOffset(playerMarker));
             updatePlayerMarkerPinElement(existing, playerMarker);
+            applyBenchmarkMarkerVisibility(existing.element);
             continue;
         }
 
@@ -938,6 +966,7 @@ function syncPlayerMarkerPins(map: maplibregl.Map, features: GeoJSON.FeatureColl
             .setLngLat([playerMarker.lng, playerMarker.lat])
             .setOffset(getPlayerMarkerOffset(playerMarker))
             .addTo(map);
+        applyBenchmarkMarkerVisibility(entry.element);
         playerMarkerRegistry.set(playerMarker.id, entry);
     }
 
@@ -954,11 +983,13 @@ function syncPlayerMarkerPins(map: maplibregl.Map, features: GeoJSON.FeatureColl
         if (existing) {
             existing.marker.setLngLat([cluster.lng, cluster.lat]);
             updatePlayerClusterElement(existing, cluster);
+            applyBenchmarkMarkerVisibility(existing.element);
             continue;
         }
 
         const entry = createPlayerClusterEntry(cluster);
         entry.marker.setLngLat([cluster.lng, cluster.lat]).addTo(map);
+        applyBenchmarkMarkerVisibility(entry.element);
         playerClusterRegistry.set(cluster.id, entry);
     }
 
@@ -1251,11 +1282,13 @@ function syncPlannedMarkerPins(map: maplibregl.Map, features: GeoJSON.FeatureCol
         if (existing) {
             existing.marker.setLngLat([plannedMarker.lng, plannedMarker.lat]);
             updatePlannedMarkerPinElement(existing, plannedMarker, allowPointerEvents);
+            applyBenchmarkMarkerVisibility(existing.element);
             continue;
         }
 
         const entry = createPlannedMarkerPinEntry(plannedMarker, allowPointerEvents);
         entry.marker.setLngLat([plannedMarker.lng, plannedMarker.lat]).addTo(map);
+        applyBenchmarkMarkerVisibility(entry.element);
         plannedMarkerRegistry.set(plannedMarker.id, entry);
     }
 
@@ -1711,7 +1744,7 @@ function stopFrameSample(sample: MovingFrameSample): FrameSnapshot | null {
     };
 }
 
-function publishBenchmarkFrameSnapshot(snapshots: FrameSnapshot[], variant: BenchmarkVariant): void {
+function publishBenchmarkFrameSnapshot(snapshots: FrameSnapshot[], variant: BenchmarkVariant, zoom: number): void {
     const averageValues = snapshots
         .map((snapshot) => snapshot.averageFrameMs)
         .sort((a, b) => a - b);
@@ -1743,6 +1776,7 @@ function publishBenchmarkFrameSnapshot(snapshots: FrameSnapshot[], variant: Benc
         benchmarkMaxAverageFrameMs: averageValues[averageValues.length - 1],
         benchmarkMaxFrameMs: Math.max(...snapshots.map((item) => item.maxFrameMs)),
         benchmarkVariant: variant,
+        benchmarkZoom: zoom,
     };
 
     window.postMessage({
@@ -1765,21 +1799,22 @@ function stopPanBenchmark(): void {
     panBenchmarkActive = false;
 }
 
-async function runPanBenchmark(variant: BenchmarkVariant = 'normal'): Promise<void> {
+async function runPanBenchmark(variant: BenchmarkVariant = 'normal', zoom = 14.36): Promise<void> {
     const map = await getPageMap();
     stopPanBenchmark();
     panBenchmarkRestoreVisibility = applyBenchmarkVariant(map, variant);
     map.jumpTo({
         center: [PAN_BENCHMARK_START.lng, PAN_BENCHMARK_START.lat],
-        zoom: PAN_BENCHMARK_START.zoom,
+        zoom,
     });
+    postCameraChanged(map, 'MAP BENCH CAMERA');
 
     const runSnapshots: FrameSnapshot[] = [];
 
     const runSingleBenchmark = (runIndex: number): void => {
         map.jumpTo({
             center: [PAN_BENCHMARK_START.lng, PAN_BENCHMARK_START.lat],
-            zoom: PAN_BENCHMARK_START.zoom,
+            zoom,
         });
 
         panBenchmarkSettleTimer = window.setTimeout(() => {
@@ -1800,7 +1835,7 @@ async function runPanBenchmark(variant: BenchmarkVariant = 'normal'): Promise<vo
                 const center = map.unproject([startPoint.x + offset, startPoint.y]);
                 map.jumpTo({
                     center: [center.lng, center.lat],
-                    zoom: PAN_BENCHMARK_START.zoom,
+                    zoom,
                 });
 
                 if (progress < 1) {
@@ -1822,7 +1857,7 @@ async function runPanBenchmark(variant: BenchmarkVariant = 'normal'): Promise<vo
                 }
 
                 panBenchmarkActive = false;
-                publishBenchmarkFrameSnapshot(runSnapshots, variant);
+                publishBenchmarkFrameSnapshot(runSnapshots, variant, zoom);
                 panBenchmarkRestoreVisibility?.();
                 panBenchmarkRestoreVisibility = null;
             };
@@ -1944,7 +1979,8 @@ window.addEventListener('message', (event: MessageEvent<PageMapRuntimeCommandMes
 
     if ((event.data as {type?: string})?.type === 'IRIS_RUN_PAN_BENCHMARK') {
         const variant = getBenchmarkVariant((event.data as {benchmarkVariant?: unknown}).benchmarkVariant);
-        runPageRuntimeTask('pageRuntime:bench', () => runPanBenchmark(variant));
+        const zoom = getBenchmarkZoom((event.data as {benchmarkZoom?: unknown}).benchmarkZoom);
+        runPageRuntimeTask('pageRuntime:bench', () => runPanBenchmark(variant, zoom));
         return;
     }
 

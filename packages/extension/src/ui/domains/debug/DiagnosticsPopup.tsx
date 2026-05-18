@@ -127,7 +127,7 @@ function buildPerfSummary(perf: MapPerfDiagnostics, context: PerfSummaryContext)
             : 'VIEWPORT no sample',
         sourceDetails ? `SOURCES ${sourceDetails}` : 'SOURCES no sample',
         frame
-            ? `FRAME ${formatMs(frame.totalMs)} avg ${formatMs(frame.averageFrameMs)} max ${formatMs(frame.maxFrameMs)} fps ${formatCount(frame.estimatedFps)} slow ${formatCount(frame.slowFrameCount)}/${formatCount(frame.frameCount)}${frame.benchmarkRunCount ? ` bench ${formatCount(frame.benchmarkRunCount)}${frame.benchmarkVariant ? ` variant ${frame.benchmarkVariant}` : ''} median ${formatMs(frame.benchmarkMedianAverageFrameMs)} range ${formatMs(frame.benchmarkMinAverageFrameMs)}-${formatMs(frame.benchmarkMaxAverageFrameMs)} benchMax ${formatMs(frame.benchmarkMaxFrameMs)}` : ''}`
+            ? `FRAME ${formatMs(frame.totalMs)} avg ${formatMs(frame.averageFrameMs)} max ${formatMs(frame.maxFrameMs)} fps ${formatCount(frame.estimatedFps)} slow ${formatCount(frame.slowFrameCount)}/${formatCount(frame.frameCount)}${frame.benchmarkRunCount ? ` bench ${formatCount(frame.benchmarkRunCount)}${frame.benchmarkVariant ? ` variant ${frame.benchmarkVariant}` : ''}${typeof frame.benchmarkZoom === 'number' ? ` z ${frame.benchmarkZoom.toFixed(2)}` : ''} median ${formatMs(frame.benchmarkMedianAverageFrameMs)} range ${formatMs(frame.benchmarkMinAverageFrameMs)}-${formatMs(frame.benchmarkMaxAverageFrameMs)} benchMax ${formatMs(frame.benchmarkMaxFrameMs)}` : ''}`
             : 'FRAME no sample',
         `LONGTASK count ${formatCount(context.mainThreadDiagnostics.longTaskCount)} max ${formatMs(context.mainThreadDiagnostics.maxLongTaskMs)} last ${longTask ? `${formatMs(longTask.durationMs)} ${longTask.source}` : 'none'}`,
         uiRenderDetails ? `UIRENDER recent/total ${uiRenderDetails}` : 'UIRENDER no sample',
@@ -434,7 +434,7 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                             <div className="iris-debug-endpoint-main">
                                 <span className="iris-debug-label">Pan frames</span>
                                 <span className="iris-debug-value">
-                                    {framePerf ? `avg ${formatMs(framePerf.averageFrameMs)} | max ${formatMs(framePerf.maxFrameMs)} | fps ${formatCount(framePerf.estimatedFps)}${framePerf.benchmarkRunCount ? ` | bench ${formatCount(framePerf.benchmarkRunCount)}${framePerf.benchmarkVariant ? ` ${framePerf.benchmarkVariant}` : ''}` : ''}` : 'no sample'}
+                                    {framePerf ? `avg ${formatMs(framePerf.averageFrameMs)} | max ${formatMs(framePerf.maxFrameMs)} | fps ${formatCount(framePerf.estimatedFps)}${framePerf.benchmarkRunCount ? ` | bench ${formatCount(framePerf.benchmarkRunCount)}${framePerf.benchmarkVariant ? ` ${framePerf.benchmarkVariant}` : ''}${typeof framePerf.benchmarkZoom === 'number' ? ` z${framePerf.benchmarkZoom.toFixed(2)}` : ''}` : ''}` : 'no sample'}
                                 </span>
                             </div>
                             {framePerf && (
