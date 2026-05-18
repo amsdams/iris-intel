@@ -637,7 +637,6 @@ function getPageMap(): Promise<maplibregl.Map> {
                     point: {x: Math.round(event.point.x), y: Math.round(event.point.y)},
                     sample: summarizeFeature(features[0]),
                 };
-                console.info('[IRIS map runtime click]', summary);
                 postDiagnosticResult('MAP CLICK', summary);
                 if (features.length === 0) {
                     collapseExpandedPlayerClusters();

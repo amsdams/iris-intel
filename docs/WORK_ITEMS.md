@@ -1003,6 +1003,7 @@ Tasks:
 | Add stronger benchmark variants for comparison             | Open   | keep fixed scenarios for overlay hidden, lighter moving fields, labels on/off, draw tools on/off, and base-map style so dependency/performance changes compare cleanly                                 |
 | Keep current source counts visible in patch benchmarks     | Done   | page-world diagnostics now keep current portal/link/field/artifact/ornament/plugin/planned source counts while `sourceSetDataMs` still reports only the latest patch timing                            |
 | Add mock player activity plexts for tracker testing        | Done   | mock tools now include an `Activity` action that injects 10 mock player activity plexts across nearby loaded portals via the same store path as COMM; player tracker rebuilds from current plexts on update/setup so cleared mock activity cannot reappear after pan without dropping existing live COMM history |
+| Fix low-zoom globe-wrap link rendering                     | Open   | at low zoom, links crossing or near the antimeridian can render the long way around the globe; sample selected link showed `-43.815944, -176.473163` and length `759.53km`; normalize/split link coordinates without breaking selection |
 | Investigate package split only after measuring bundle cost | Open   | an `@iris/types` or `@iris/utils` split may help later, but it is premature until plugin bundle size or package-boundary cost is a measured issue                                                       |
 
 ## Current Next Pickup
