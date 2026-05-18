@@ -2,8 +2,12 @@ import { normalizeTeam } from '../index';
 import { Portal } from '../store';
 import { PortalDetailsData } from './intel-types';
 
+interface ParseOptions {
+  onError?: (error: unknown) => void;
+}
+
 export const PortalDetailsParser = {
-  parse: (data: PortalDetailsData, params: { guid?: string }, linkCount = 0): Partial<Portal> | null => {
+  parse: (data: PortalDetailsData, params: { guid?: string }, linkCount = 0, options?: ParseOptions): Partial<Portal> | null => {
     if (!data.result || !Array.isArray(data.result)) return null;
     const details = data.result;
 
@@ -80,6 +84,7 @@ export const PortalDetailsParser = {
         hasMissionsStartingHere: Boolean(details[10]),
       };
     } catch (error) {
+      options?.onError?.(error);
       console.error('IRIS: Failed to parse portal details', error, data);
       return null;
     }

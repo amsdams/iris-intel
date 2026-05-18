@@ -2,8 +2,12 @@ import { normalizeTeam } from '../index';
 import { Plext } from '../store';
 import { PlextData, PlextMarkup } from './intel-types';
 
+interface ParseOptions {
+  onError?: (error: unknown) => void;
+}
+
 export const PlextParser = {
-  parse: (data: PlextData): Plext[] => {
+  parse: (data: PlextData, options?: ParseOptions): Plext[] => {
     if (!data.result) return [];
 
     try {
@@ -32,6 +36,7 @@ export const PlextParser = {
         };
       });
     } catch (error) {
+      options?.onError?.(error);
       console.error('IRIS: Error parsing plexts', error, data);
       return [];
     }

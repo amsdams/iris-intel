@@ -997,7 +997,7 @@ Tasks:
 | Avoid hidden popup subscriptions                           | Done   | selection info popups, mission details, and plugin feature details now mount only when active instead of subscribing to store slices while returning `null`                                           |
 | Profile remaining Zustand/UI rerenders during pan          | Done   | Diagnostics now records lightweight render samples for the overlay/dock/status/planning/mock surfaces and main-thread long task/event-loop spikes; copied bench output includes `LONGTASK` and `UIRENDER` lines before broader selector refactors |
 | Add planned-link crossing prefiltering                     | Done   | planned-link crossing detection now precomputes loaded-link bounding boxes only when saved planned links exist, then skips exact segment checks when segment bounds cannot overlap                    |
-| Standardize domain error reporting into Diagnostics        | Open   | parsers, request coordination, and page-world runtime should report structured recoverable errors instead of mixing console-only and caught-global paths                                                |
+| Standardize domain error reporting into Diagnostics        | In Progress | inventory, plext, and portal-details parser failures now report recoverable domain errors into Diagnostics; request coordination and page-world runtime errors remain follow-up candidates |
 | Add optional message sequence IDs for diagnostics          | Open   | useful for tracing page-world/content/interceptor request-response paths and dropped messages, but lower priority than source sync and measured rerenders                                              |
 | Add stronger benchmark variants for comparison             | Open   | keep fixed scenarios for overlay hidden, lighter moving fields, labels on/off, draw tools on/off, and base-map style so dependency/performance changes compare cleanly                                 |
 | Keep current source counts visible in patch benchmarks     | Done   | page-world diagnostics now keep current portal/link/field/artifact/ornament/plugin/planned source counts while `sourceSetDataMs` still reports only the latest patch timing                            |
@@ -1006,7 +1006,7 @@ Tasks:
 
 ## Current Next Pickup
 
-1. **[Diagnostics Architecture]** Standardize recoverable parser/request/runtime errors into Diagnostics.
+1. **[Diagnostics Architecture]** Extend structured recoverable errors from parser domains to request coordination/page-world runtime where useful.
 2. **[Performance Architecture]** Use the new `LONGTASK` and `UIRENDER` diagnostics to decide whether remaining lag is UI rerender churn, page-world source work, or base map rendering.
 3. **[UI Architecture]** Extend shared UI/CSS primitives to drawer buttons, popup action rows, and map controls after visual smoke testing the first pass.
 4. **[Marker Rendering]** Keep MapLibre Marker pins lagging behind mobile pan as a watch item for stale XPI/runtime loads without page refresh.

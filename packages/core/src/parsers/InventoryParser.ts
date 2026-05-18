@@ -1,6 +1,10 @@
 import { InventoryItem } from '../store';
 import { InventoryData } from './intel-types';
 
+interface ParseOptions {
+  onError?: (error: unknown) => void;
+}
+
 export type InventoryCategory = 'ALL' | 'WEAPONS' | 'RESONATORS' | 'MODS' | 'POWERUPS' | 'CAPSULES' | 'KEYS';
 
 export interface DerivedInventoryItem {
@@ -114,7 +118,7 @@ function getCategoryForResourceType(resourceType: string): Exclude<InventoryCate
 }
 
 export const InventoryParser = {
-  parse: (data: InventoryData): InventoryItem[] => {
+  parse: (data: InventoryData, options?: ParseOptions): InventoryItem[] => {
     if (!data.result) return [];
 
     try {
@@ -127,6 +131,7 @@ export const InventoryParser = {
         } as InventoryItem;
       });
     } catch (error) {
+      options?.onError?.(error);
       console.error('IRIS: Error parsing inventory', error, data);
       return [];
     }

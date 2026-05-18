@@ -167,6 +167,8 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
     const mapPerfDiagnostics = useStore((state) => state.mapPerfDiagnostics);
     const uiRenderDiagnostics = useStore((state) => state.uiRenderDiagnostics);
     const mainThreadDiagnostics = useStore((state) => state.mainThreadDiagnostics);
+    const domainErrors = useStore((state) => state.domainErrors);
+    const clearDomainErrors = useStore((state) => state.clearDomainErrors);
     const mapThemeId = useStore((state) => state.mapThemeId);
     const activeVisualOverlayIds = useStore((state) => state.activeVisualOverlayIds);
 
@@ -454,6 +456,44 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                             <div className="iris-debug-row">
                                 <span className="iris-debug-label">Samples</span>
                                 <span className="iris-debug-value">none yet</span>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="iris-debug-section-header">
+                        <span className="iris-debug-section-title">DOMAIN ERRORS</span>
+                        {domainErrors.length > 0 && (
+                            <button
+                                className="iris-button iris-debug-copy-btn"
+                                onClick={clearDomainErrors}
+                            >
+                                CLEAR
+                            </button>
+                        )}
+                    </div>
+                    <div className="iris-debug-table">
+                        {domainErrors.slice(0, 5).map((error) => (
+                            <div key={`${error.time}-${error.domain}-${error.message}`} className="iris-debug-row iris-debug-row-endpoint">
+                                <div className="iris-debug-endpoint-main">
+                                    <span className="iris-debug-label">{error.domain}</span>
+                                    <span className="iris-debug-value">
+                                        {formatRelativeTime(error.time)} | {error.message}
+                                    </span>
+                                </div>
+                                {error.detail && (
+                                    <div className="iris-debug-endpoint-details">
+                                        <div className="iris-debug-row">
+                                            <span className="iris-debug-label-indent">Detail</span>
+                                            <span className="iris-debug-value">{error.detail}</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                        {domainErrors.length === 0 && (
+                            <div className="iris-debug-row">
+                                <span className="iris-debug-label">Recent</span>
+                                <span className="iris-debug-value">none</span>
                             </div>
                         )}
                     </div>

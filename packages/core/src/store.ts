@@ -279,6 +279,13 @@ export interface MainThreadDiagnostics {
     recentLongTasks: MainThreadLongTask[];
 }
 
+export interface DomainDiagnosticError {
+    time: number;
+    domain: string;
+    message: string;
+    detail?: string;
+}
+
 export interface InventoryItemData {
     resource?: {
         resourceType: string;
@@ -604,6 +611,7 @@ interface DiagnosticsSlice {
     mapPerfDiagnostics: MapPerfDiagnostics;
     uiRenderDiagnostics: Record<string, UiRenderDiagnosticsEntry>;
     mainThreadDiagnostics: MainThreadDiagnostics;
+    domainErrors: DomainDiagnosticError[];
     onRequestStart: (url: string) => void;
     onRequestEnd: () => void;
     addFailedRequest: (request: FailedRequest) => void;
@@ -623,6 +631,8 @@ interface DiagnosticsSlice {
     setMapPerfSnapshot: (snapshot: MapPerfSnapshot) => void;
     recordUiRenderSample: (name: string, count: number) => void;
     recordMainThreadLongTask: (task: MainThreadLongTask) => void;
+    addDomainError: (error: Omit<DomainDiagnosticError, 'time'> & {time?: number}) => void;
+    clearDomainErrors: () => void;
     clearEndpointDiagnostics: () => void;
 }
 
@@ -1391,6 +1401,7 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
         lastLongTask: null,
         recentLongTasks: [],
     },
+    domainErrors: [],
     onRequestStart: (url) => set((state) => ({
         activeRequests: state.activeRequests + 1,
         lastRequestUrl: url,
@@ -1561,6 +1572,13 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
             },
         };
     }),
+    addDomainError: (error) => set((state) => ({
+        domainErrors: [{
+            ...error,
+            time: error.time ?? Date.now(),
+        }, ...state.domainErrors].slice(0, 20),
+    })),
+    clearDomainErrors: () => set({ domainErrors: [] }),
     clearEndpointDiagnostics: () => set((state) => ({
         endpointDiagnostics: Object.fromEntries(
             Object.entries(state.endpointDiagnostics).map(([key, entry]) => [
