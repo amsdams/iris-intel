@@ -1,6 +1,9 @@
 import { IRISPlugin, IRIS_API, Portal } from '@iris/plugin-sdk';
 
 let unsubscribePortalLevels: (() => void) | undefined;
+let unsubscribePortalLevelMap: (() => void) | undefined;
+
+const MIN_LABEL_ZOOM = 14;
 
 const LEVEL_COLORS: Record<number, string> = {
   1: '#FECE5A',
@@ -51,14 +54,35 @@ const PortalLevelLabelsPlugin: IRISPlugin = {
   },
   setup: (api: IRIS_API): void => {
     unsubscribePortalLevels?.();
-    api.map.setFeatures(buildFeatures(api.portals.getAll()));
+    unsubscribePortalLevelMap?.();
+
+    let latestPortals = api.portals.getAll();
+    let labelsVisible = api.map.getZoom() >= MIN_LABEL_ZOOM;
+
+    const syncFeatures = (): void => {
+      api.map.setFeatures(labelsVisible ? buildFeatures(latestPortals) : []);
+    };
+
+    syncFeatures();
+
     unsubscribePortalLevels = api.portals.subscribe((portals) => {
-      api.map.setFeatures(buildFeatures(portals));
+      latestPortals = portals;
+      syncFeatures();
+    });
+
+    unsubscribePortalLevelMap = api.map.subscribe((mapState) => {
+      const shouldShowLabels = mapState.zoom >= MIN_LABEL_ZOOM;
+      if (shouldShowLabels === labelsVisible) return;
+
+      labelsVisible = shouldShowLabels;
+      syncFeatures();
     });
   },
   teardown: (api: IRIS_API): void => {
     unsubscribePortalLevels?.();
+    unsubscribePortalLevelMap?.();
     unsubscribePortalLevels = undefined;
+    unsubscribePortalLevelMap = undefined;
     api.map.setFeatures([]);
   },
 };

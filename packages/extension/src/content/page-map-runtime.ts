@@ -52,6 +52,7 @@ interface SourceUpdatePerformance {
     setDataMs: number;
     sourceSetDataMs: Record<string, number>;
     sourceFeatureCounts: Record<string, number>;
+    pluginFeatureCounts?: Record<string, number>;
 }
 
 interface PlannedMarkerRuntimeData {
@@ -918,6 +919,11 @@ function setPluginFeatureData(
         }
     }
 
+    perf.pluginFeatureCounts = getPluginFeatureCounts(features.features, {
+        playerMarkerCount: playerMarkers.length,
+        highlightCount: portalHighlights.length,
+        renderedSourceCount: remainingFeatures.length,
+    });
     setMeasuredGeoJsonSourceData(map, perf, 'iris-map-plugin-features', {
         type: 'FeatureCollection',
         features: remainingFeatures,
@@ -932,6 +938,36 @@ function setPluginFeatureData(
     });
     perf.sourceFeatureCounts['plugin-features'] = features.features.length;
     currentSourceFeatureCounts['plugin-features'] = features.features.length;
+}
+
+function getPluginFeatureCounts(
+    features: GeoJSON.Feature[],
+    renderedCounts: {playerMarkerCount: number; highlightCount: number; renderedSourceCount: number}
+): Record<string, number> {
+    const counts: Record<string, number> = {
+        total: features.length,
+        renderedSource: renderedCounts.renderedSourceCount,
+        highlights: renderedCounts.highlightCount,
+        playerMarkers: renderedCounts.playerMarkerCount,
+        htmlMarkers: 0,
+        labels: 0,
+        lines: 0,
+        fills: 0,
+        points: 0,
+        interactive: 0,
+    };
+
+    for (const feature of features) {
+        const properties = feature.properties as Record<string, unknown> | null;
+        if (properties?.isHtmlMarker === true || properties?.isHtmlMarker === 'true') counts.htmlMarkers += 1;
+        if (properties?.isLabelMarker === true || properties?.isLabelMarker === 'true') counts.labels += 1;
+        if (properties?.isInteractive === true || properties?.isInteractive === 'true') counts.interactive += 1;
+        if (feature.geometry.type === 'LineString' || feature.geometry.type === 'MultiLineString') counts.lines += 1;
+        if (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon') counts.fills += 1;
+        if (feature.geometry.type === 'Point' || feature.geometry.type === 'MultiPoint') counts.points += 1;
+    }
+
+    return counts;
 }
 
 function isPlayerMarkerFeature(feature: GeoJSON.Feature): boolean {
@@ -1482,6 +1518,7 @@ function publishViewportPerformance(
         zoom: map.getZoom(),
         sourceSetDataMs: perf.sourceSetDataMs,
         sourceFeatureCounts,
+        pluginFeatureCounts: perf.pluginFeatureCounts,
         itemCount:
             (sourceFeatureCounts.portals ?? 0) +
             (sourceFeatureCounts.links ?? 0) +

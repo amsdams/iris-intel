@@ -149,6 +149,7 @@ function toViewportPerformanceSnapshot(snapshot: Record<string, unknown>): MapPe
         zoom: getOptionalNumber('zoom'),
         sourceSetDataMs: toRecordOfNumbers(snapshot.sourceSetDataMs),
         sourceFeatureCounts: toRecordOfNumbers(snapshot.sourceFeatureCounts),
+        pluginFeatureCounts: toRecordOfNumbers(snapshot.pluginFeatureCounts),
         itemCount: getNumber('itemCount'),
         portalCount: getNumber('portalCount'),
         linkCount: getNumber('linkCount'),

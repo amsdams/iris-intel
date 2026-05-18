@@ -3,8 +3,12 @@ import { InventoryParser } from '@iris/core';
 
 let unsubscribePortalKeysInventory: (() => void) | undefined;
 let unsubscribePortalKeysPortals: (() => void) | undefined;
+let unsubscribePortalKeysMap: (() => void) | undefined;
 let latestInventory: InventoryItem[] = [];
 let latestPortals: Record<string, Portal> = {};
+let labelsVisible = false;
+
+const MIN_LABEL_ZOOM = 14;
 
 function buildFeatures(portals: Record<string, Portal>, inventory: InventoryItem[]): GeoJSON.Feature[] {
   const keyCounts = InventoryParser.aggregatePortalKeys(inventory);
@@ -42,7 +46,7 @@ function buildFeatures(portals: Record<string, Portal>, inventory: InventoryItem
 }
 
 function syncFeatures(api: IRIS_API): void {
-  api.map.setFeatures(buildFeatures(latestPortals, latestInventory));
+  api.map.setFeatures(labelsVisible ? buildFeatures(latestPortals, latestInventory) : []);
 }
 
 const PortalKeyCountLabelsPlugin: IRISPlugin = {
@@ -58,9 +62,11 @@ const PortalKeyCountLabelsPlugin: IRISPlugin = {
   setup: (api: IRIS_API): void => {
     unsubscribePortalKeysInventory?.();
     unsubscribePortalKeysPortals?.();
+    unsubscribePortalKeysMap?.();
 
     latestInventory = api.inventory.getAll();
     latestPortals = api.portals.getAll();
+    labelsVisible = api.map.getZoom() >= MIN_LABEL_ZOOM;
     syncFeatures(api);
 
     unsubscribePortalKeysInventory = api.inventory.subscribe((inventory) => {
@@ -72,14 +78,25 @@ const PortalKeyCountLabelsPlugin: IRISPlugin = {
       latestPortals = portals;
       syncFeatures(api);
     });
+
+    unsubscribePortalKeysMap = api.map.subscribe((mapState) => {
+      const shouldShowLabels = mapState.zoom >= MIN_LABEL_ZOOM;
+      if (shouldShowLabels === labelsVisible) return;
+
+      labelsVisible = shouldShowLabels;
+      syncFeatures(api);
+    });
   },
   teardown: (api: IRIS_API): void => {
     unsubscribePortalKeysInventory?.();
     unsubscribePortalKeysPortals?.();
+    unsubscribePortalKeysMap?.();
     unsubscribePortalKeysInventory = undefined;
     unsubscribePortalKeysPortals = undefined;
+    unsubscribePortalKeysMap = undefined;
     latestInventory = [];
     latestPortals = {};
+    labelsVisible = false;
     api.map.setFeatures([]);
   },
 };

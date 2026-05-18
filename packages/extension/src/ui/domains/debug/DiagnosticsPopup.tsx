@@ -115,6 +115,10 @@ function buildPerfSummary(perf: MapPerfDiagnostics, context: PerfSummaryContext)
     const longTask = context.mainThreadDiagnostics.lastLongTask;
     const sourceCounts = viewport?.sourceFeatureCounts ?? {};
     const sourceSetData = viewport?.sourceSetDataMs ?? {};
+    const pluginCounts = viewport?.pluginFeatureCounts;
+    const pluginDetails = pluginCounts
+        ? `PLUGIN total ${formatCount(pluginCounts.total)} rendered ${formatCount(pluginCounts.renderedSource)} html ${formatCount(pluginCounts.htmlMarkers)} labels ${formatCount(pluginCounts.labels)} player ${formatCount(pluginCounts.playerMarkers)} highlights ${formatCount(pluginCounts.highlights)} lines ${formatCount(pluginCounts.lines)} fills ${formatCount(pluginCounts.fills)} points ${formatCount(pluginCounts.points)} interactive ${formatCount(pluginCounts.interactive)}`
+        : '';
     const sourceDetails = viewport
         ? ['portals', 'links', 'fields', 'artifacts', 'ornaments', 'plugin-features']
             .map((sourceId) => `${sourceId} ${formatCount(sourceCounts[sourceId])}/${formatMs(sourceSetData[sourceId])}`)
@@ -126,12 +130,13 @@ function buildPerfSummary(perf: MapPerfDiagnostics, context: PerfSummaryContext)
             ? `VIEWPORT source ${formatMs(viewport.totalMs)} z ${formatOptionalNumber(viewport.zoom, (value) => value.toFixed(2))} buffer ${formatOptionalNumber(viewport.queryBufferDegrees, (value) => value.toFixed(4))} query ${formatOptionalMs(viewport.queryMs)} setData ${formatMs(viewport.setDataMs)} items ${formatCount(viewport.itemCount)} P ${formatCount(viewport.portalCount)} L ${formatCount(viewport.linkCount)} F ${formatCount(viewport.fieldCount)} art ${formatCount(viewport.artifactCount)} orn ${formatCount(viewport.ornamentCount)} plugin ${formatCount(viewport.pluginCount)}`
             : 'VIEWPORT no sample',
         sourceDetails ? `SOURCES ${sourceDetails}` : 'SOURCES no sample',
+        pluginDetails,
         frame
             ? `FRAME ${formatMs(frame.totalMs)} avg ${formatMs(frame.averageFrameMs)} max ${formatMs(frame.maxFrameMs)} fps ${formatCount(frame.estimatedFps)} slow ${formatCount(frame.slowFrameCount)}/${formatCount(frame.frameCount)}${frame.benchmarkRunCount ? ` bench ${formatCount(frame.benchmarkRunCount)}${frame.benchmarkVariant ? ` variant ${frame.benchmarkVariant}` : ''}${typeof frame.benchmarkZoom === 'number' ? ` z ${frame.benchmarkZoom.toFixed(2)}` : ''} median ${formatMs(frame.benchmarkMedianAverageFrameMs)} range ${formatMs(frame.benchmarkMinAverageFrameMs)}-${formatMs(frame.benchmarkMaxAverageFrameMs)} benchMax ${formatMs(frame.benchmarkMaxFrameMs)}` : ''}`
             : 'FRAME no sample',
         `LONGTASK count ${formatCount(context.mainThreadDiagnostics.longTaskCount)} max ${formatMs(context.mainThreadDiagnostics.maxLongTaskMs)} last ${longTask ? `${formatMs(longTask.durationMs)} ${longTask.source}` : 'none'}`,
         uiRenderDetails ? `UIRENDER recent/total ${uiRenderDetails}` : 'UIRENDER no sample',
-    ].join('\n');
+    ].filter((line) => line.length > 0).join('\n');
 }
 
 // ---------------------------------------------------------------------------
@@ -415,6 +420,14 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                                             P {formatCount(viewportPerf.portalCount)} | L {formatCount(viewportPerf.linkCount)} | F {formatCount(viewportPerf.fieldCount)} | Plugin {formatCount(viewportPerf.pluginCount)}
                                         </span>
                                     </div>
+                                    {viewportPerf.pluginFeatureCounts && (
+                                        <div className="iris-debug-row">
+                                            <span className="iris-debug-label-indent">Plugin mix</span>
+                                            <span className="iris-debug-value">
+                                                labels {formatCount(viewportPerf.pluginFeatureCounts.labels)} | html {formatCount(viewportPerf.pluginFeatureCounts.htmlMarkers)} | player {formatCount(viewportPerf.pluginFeatureCounts.playerMarkers)} | fills {formatCount(viewportPerf.pluginFeatureCounts.fills)}
+                                            </span>
+                                        </div>
+                                    )}
                                     <div className="iris-debug-row">
                                         <span className="iris-debug-label-indent">Other</span>
                                         <span className="iris-debug-value">

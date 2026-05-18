@@ -228,6 +228,7 @@ export interface MapPerfSnapshot {
     queryBufferDegrees?: number;
     sourceSetDataMs?: Record<string, number>;
     sourceFeatureCounts?: Record<string, number>;
+    pluginFeatureCounts?: Record<string, number>;
     itemCount?: number;
     portalCount?: number;
     linkCount?: number;
