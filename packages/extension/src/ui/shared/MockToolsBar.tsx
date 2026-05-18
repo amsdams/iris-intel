@@ -12,6 +12,7 @@ interface MockToolAction {
 }
 
 const MOCK_INVENTORY_GUID_PATTERN = /^(xmp|reso|ultra|pc|shield|heat-sink|transmuter|key|ada|jarvis|fracker|battle-beacon|apex|hypercube|drone|entitlement|capsule)-/;
+const MOCK_PLAYER_ACTIVITY_PLEXT_PREFIX = 'mock-player-activity:';
 
 export function MockToolsBar(): JSX.Element | null {
     useRenderDiagnostics('MockToolsBar');
@@ -24,6 +25,9 @@ export function MockToolsBar(): JSX.Element | null {
     const hasMockPasscode = useStore((state) => state.passcodeRewards !== null);
     const hasMockPlayerTracker = useStore((state) =>
         state.pluginFeatures.features.some((feature) => String(feature.properties?.id ?? '').startsWith('mock-player:'))
+    );
+    const hasMockPlayerActivity = useStore((state) =>
+        state.plexts.some((plext) => plext.id.startsWith(MOCK_PLAYER_ACTIVITY_PLEXT_PREFIX))
     );
 
     if (!showMockTools) {
@@ -78,6 +82,14 @@ export function MockToolsBar(): JSX.Element | null {
             loadType: 'IRIS_LOAD_MOCK_PLAYER_TRACKER',
             clearType: 'IRIS_CLEAR_MOCK_PLAYER_TRACKER',
             active: hasMockPlayerTracker,
+        },
+        {
+            label: 'Activity',
+            loadTitle: 'Load 10 mock player activity plexts across nearby portals',
+            clearTitle: 'Clear mock player activity plexts',
+            loadType: 'IRIS_LOAD_MOCK_PLAYER_ACTIVITY',
+            clearType: 'IRIS_CLEAR_MOCK_PLAYER_ACTIVITY',
+            active: hasMockPlayerActivity,
         },
     ];
 

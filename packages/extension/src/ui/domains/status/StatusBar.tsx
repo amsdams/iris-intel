@@ -120,16 +120,15 @@ export function StatusBar(): JSX.Element {
     };
 
     const endpointEntries = Object.values(endpointDiagnostics).filter((entry) => entry.key !== 'unknown');
-    const hasEndpointCountdown = endpointEntries.some((entry) => Boolean(entry.nextAutoRefreshAt && POLLED_ENDPOINT_LABELS[entry.key]));
 
     useEffect(() => {
-        const intervalMs = isExpanded || activeRequests > 0 || hasEndpointCountdown
+        const intervalMs = isExpanded || activeRequests > 0
             ? STATUS_FAST_TICK_MS
             : STATUS_SLOW_TICK_MS;
         const interval = window.setInterval(() => setNow(Date.now()), intervalMs);
 
         return (): void => window.clearInterval(interval);
-    }, [activeRequests, hasEndpointCountdown, isExpanded]);
+    }, [activeRequests, isExpanded]);
 
     const getDerivedEndpointStatus = (entry: EndpointDiagnostics): 'idle' | 'in_flight' | 'success' | 'error' | 'stale' => {
         if (entry.status === 'success' && entry.lastSuccessAt) {

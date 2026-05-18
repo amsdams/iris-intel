@@ -79,6 +79,7 @@ export class PluginManager {
           ),
       },
       plexts: {
+        getAll: (): Plext[] => useStore.getState().plexts,
         subscribe: (callback: (plexts: Plext[]) => void): () => void =>
           useStore.subscribe(
             (state) => state.plexts,

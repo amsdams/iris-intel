@@ -182,7 +182,10 @@ const PlayerTrackerPlugin: IRISPlugin = {
         api.map.setFeatures(finalFeatures);
     };
 
-    const unsubscribe = api.plexts.subscribe((plexts: Plext[]) => {
+    const rebuildFromPlexts = (plexts: Plext[]): void => {
+      playerHistories.clear();
+      processedPlextFingerprints.clear();
+
       // Sort oldest to newest for consistent history building
       const sorted = [...plexts].sort((a, b) => a.time - b.time);
 
@@ -307,7 +310,11 @@ const PlayerTrackerPlugin: IRISPlugin = {
       });
 
       updateMap();
-    });
+    };
+
+    rebuildFromPlexts(api.plexts.getAll());
+
+    const unsubscribe = api.plexts.subscribe(rebuildFromPlexts);
 
     const ticker = setInterval(updateMap, TICK_MS);
     trackerApi._playerTrackerUnsub = unsubscribe;

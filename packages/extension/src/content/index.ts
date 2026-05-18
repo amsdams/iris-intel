@@ -13,6 +13,7 @@ import {
   MissionDetailsData, 
   TopMissionsInBoundsData, 
   ArtifactData,
+  Plext,
   PlayerStatsMessage,
   PasscodeResponseData,
   IntelInventoryItemData
@@ -60,6 +61,7 @@ let hasInitialPosition = false;
 let inventoryMockPreviousSubscription: boolean | null = null;
 const requestCoordinator = createRequestCoordinator();
 const MOCK_PLAYER_TRACKER_PLUGIN_ID = 'debug-mock-player-tracker';
+const MOCK_PLAYER_ACTIVITY_PLEXT_PREFIX = 'mock-player-activity:';
 
 function buildMockArtifacts(): ArtifactData {
   const state = useStore.getState();
@@ -266,6 +268,76 @@ function buildMockCoLocatedPlayerTrackerFeatures(playerCount = 8): GeoJSON.Featu
   });
 }
 
+function buildMockPlayerActivityPlexts(): Plext[] {
+  const state = useStore.getState();
+  const portals = Object.values(state.portals);
+  const center = state.mapState;
+  const bounds = center.bounds;
+  const inBoundsPortals = bounds
+    ? portals.filter((portal) =>
+        portal.lat >= bounds.minLatE6 / 1e6 &&
+        portal.lat <= bounds.maxLatE6 / 1e6 &&
+        portal.lng >= bounds.minLngE6 / 1e6 &&
+        portal.lng <= bounds.maxLngE6 / 1e6
+      )
+    : portals;
+
+  const candidates = (inBoundsPortals.length > 0 ? inBoundsPortals : portals)
+    .filter((portal) => portal.lat !== undefined && portal.lng !== undefined)
+    .sort((a, b) => {
+      const distanceA = Math.hypot(a.lat - center.lat, a.lng - center.lng);
+      const distanceB = Math.hypot(b.lat - center.lat, b.lng - center.lng);
+      return distanceA - distanceB;
+    })
+    .slice(0, 6);
+
+  if (candidates.length === 0) return [];
+
+  const now = Date.now();
+  const players = [
+    {name: 'MockRunner', team: 'R'},
+    {name: 'MockBuilder', team: 'E'},
+    {name: 'MockFieldOps', team: 'R'},
+    {name: 'MockScout', team: 'E'},
+    {name: 'MockReso', team: 'R'},
+    {name: 'MockLinker', team: 'E'},
+    {name: 'MockAnchor', team: 'R'},
+    {name: 'MockCapsule', team: 'E'},
+    {name: 'MockScanner', team: 'R'},
+    {name: 'MockOperator', team: 'E'},
+  ];
+
+  return players.map((player, playerIndex): Plext => {
+    const portal = candidates[playerIndex % candidates.length];
+    const time = now - playerIndex * 45_000;
+    const actionText = playerIndex % 3 === 0
+      ? ' captured '
+      : playerIndex % 3 === 1
+        ? ' deployed a Resonator on '
+        : ' linked ';
+    const portalName = portal.name || portal.id;
+
+    return {
+      id: `${MOCK_PLAYER_ACTIVITY_PLEXT_PREFIX}${player.name}:${time}`,
+      time,
+      text: `${player.name}${actionText}${portalName}`,
+      markup: [
+        ['PLAYER', {plain: player.name, team: player.team}],
+        ['TEXT', {plain: actionText}],
+        ['PORTAL', {
+          plain: portalName,
+          name: portalName,
+          latE6: Math.round(portal.lat * 1e6),
+          lngE6: Math.round(portal.lng * 1e6),
+        }],
+      ],
+      categories: 1,
+      team: player.team,
+      type: 'PLAYER_GENERATED',
+    };
+  });
+}
+
 function markMockInventoryLoaded(): void {
   const now = Date.now();
   useStore.getState().setEndpointMetadata('inventory', {
@@ -446,6 +518,19 @@ window.addEventListener('message', (event: MessageEvent) => {
 
     case 'IRIS_CLEAR_MOCK_PLAYER_TRACKER': {
       pluginManager.clearDebugFeatures(MOCK_PLAYER_TRACKER_PLUGIN_ID);
+      break;
+    }
+
+    case 'IRIS_LOAD_MOCK_PLAYER_ACTIVITY': {
+      const plexts = buildMockPlayerActivityPlexts();
+      useStore.getState().updatePlexts(plexts);
+      console.log(`IRIS: Loaded mock player activity plexts (${plexts.length})`);
+      break;
+    }
+
+    case 'IRIS_CLEAR_MOCK_PLAYER_ACTIVITY': {
+      useStore.getState().removePlextsByIdPrefix(MOCK_PLAYER_ACTIVITY_PLEXT_PREFIX);
+      console.log('IRIS: Cleared mock player activity plexts');
       break;
     }
 

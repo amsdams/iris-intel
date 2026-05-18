@@ -123,6 +123,7 @@ export interface IRIS_API {
     subscribe: (callback: (fields: Record<string, Field>) => void) => () => void;
   };
   plexts: {
+    getAll: () => Plext[];
     subscribe: (callback: (plexts: Plext[]) => void) => () => void;
   };
   inventory: {

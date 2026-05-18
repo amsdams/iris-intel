@@ -1001,19 +1001,18 @@ Tasks:
 | Add optional message sequence IDs for diagnostics          | Open   | useful for tracing page-world/content/interceptor request-response paths and dropped messages, but lower priority than source sync and measured rerenders                                              |
 | Add stronger benchmark variants for comparison             | Open   | keep fixed scenarios for overlay hidden, lighter moving fields, labels on/off, draw tools on/off, and base-map style so dependency/performance changes compare cleanly                                 |
 | Keep current source counts visible in patch benchmarks     | Done   | page-world diagnostics now keep current portal/link/field/artifact/ornament/plugin/planned source counts while `sourceSetDataMs` still reports only the latest patch timing                            |
-| Add mock player activity plexts for tracker testing        | Open   | add a debug-only mock action with movement, capture/link/field actions, duplicate richer plext updates, and co-located players so player tracker pins, recent actions, and clustering can be tested without live COMM activity |
+| Add mock player activity plexts for tracker testing        | Done   | mock tools now include an `Activity` action that injects 10 mock player activity plexts across nearby loaded portals via the same store path as COMM; player tracker rebuilds from current plexts on update/setup so cleared mock activity cannot reappear after pan without dropping existing live COMM history |
 | Investigate package split only after measuring bundle cost | Open   | an `@iris/types` or `@iris/utils` split may help later, but it is premature until plugin bundle size or package-boundary cost is a measured issue                                                       |
 
 ## Current Next Pickup
 
 1. **[Diagnostics Architecture]** Standardize recoverable parser/request/runtime errors into Diagnostics.
-2. **[Testability]** Add mock player activity plexts for player tracker testing without live COMM activity.
-3. **[Performance Architecture]** Use the new `LONGTASK` and `UIRENDER` diagnostics to decide whether remaining lag is UI rerender churn, page-world source work, or base map rendering.
-4. **[UI Architecture]** Extend shared UI/CSS primitives to drawer buttons, popup action rows, and map controls after visual smoke testing the first pass.
-5. **[Marker Rendering]** Keep MapLibre Marker pins lagging behind mobile pan as a watch item for stale XPI/runtime loads without page refresh.
-6. **[Draw Tools]** Refine marker selection/edit/delete UX after the pin experiment clarified renderer behavior.
-7. **[Performance]** Compare stationary vs moving field-render modes if mobile panning still needs tuning.
-8. **[Plugin Overlay]** Add IITC-style label overlap thinning.
+2. **[Performance Architecture]** Use the new `LONGTASK` and `UIRENDER` diagnostics to decide whether remaining lag is UI rerender churn, page-world source work, or base map rendering.
+3. **[UI Architecture]** Extend shared UI/CSS primitives to drawer buttons, popup action rows, and map controls after visual smoke testing the first pass.
+4. **[Marker Rendering]** Keep MapLibre Marker pins lagging behind mobile pan as a watch item for stale XPI/runtime loads without page refresh.
+5. **[Draw Tools]** Refine marker selection/edit/delete UX after the pin experiment clarified renderer behavior.
+6. **[Performance]** Compare stationary vs moving field-render modes if mobile panning still needs tuning.
+7. **[Plugin Overlay]** Add IITC-style label overlap thinning.
 
 ## Snapshot And Reference Sources
 
