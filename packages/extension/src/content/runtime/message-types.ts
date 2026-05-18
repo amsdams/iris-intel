@@ -11,6 +11,8 @@ export interface IRISMessage {
   statusText?: string;
   time?: number;
   message?: string;
+  domain?: string;
+  detail?: string;
   source?: string;
   lineno?: number;
   colno?: number;

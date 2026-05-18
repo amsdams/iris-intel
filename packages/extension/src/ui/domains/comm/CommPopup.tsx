@@ -4,6 +4,7 @@ import { useStore, normalizeTeam, Plext } from '@iris/core';
 import { Popup } from '../../shared/Popup';
 import { THEMES } from '../../theme';
 import './comm.css';
+import { useRenderDiagnostics } from '../../shared/useRenderDiagnostics';
 
 interface CommPopupProps {
     onClose: () => void;
@@ -21,6 +22,8 @@ interface MarkupData {
 type MarkupSegment = [string, string | MarkupData];
 
 export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
+    useRenderDiagnostics('CommPopup');
+
     const plexts = useStore((state) => state.plexts);
     const themeId = useStore((state) => state.themeId);
     const activeTab = useStore((state) => state.activeCommTab);

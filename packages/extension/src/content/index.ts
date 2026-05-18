@@ -619,6 +619,16 @@ window.addEventListener('message', (event: MessageEvent) => {
         break;
     }
 
+    case 'IRIS_DOMAIN_ERROR': {
+        useStore.getState().addDomainError({
+            domain: String(msg.domain ?? 'unknown'),
+            message: String(msg.message ?? 'Unknown domain error'),
+            detail: typeof msg.detail === 'string' ? msg.detail : undefined,
+            time: typeof msg.time === 'number' ? msg.time : Date.now(),
+        });
+        break;
+    }
+
     case 'IRIS_PORTAL_DETAILS_REQUEST': {
       requestCoordinator.handlePortalDetailsRequest(msg);
       break;

@@ -4,6 +4,7 @@ import { Popup } from '../../shared/Popup';
 import { useEffect, useState, useMemo } from 'preact/hooks';
 import { THEMES, UI_COLORS, getItemRarityColor, getModRarityColor } from '../../theme';
 import './inventory.css';
+import { useRenderDiagnostics } from '../../shared/useRenderDiagnostics';
 
 interface GroupedInventoryItem {
     type: string;
@@ -35,6 +36,8 @@ const CATEGORIES: { label: string; value: InventoryCategory }[] = [
 ];
 
 export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Element => {
+    useRenderDiagnostics('InventoryPopup');
+
     const inventory = useStore((state) => state.inventory);
     const hasSubscription = useStore((state) => state.hasSubscription);
     const inventoryEndpoint = useStore((state) => state.endpointDiagnostics.inventory);

@@ -1439,6 +1439,28 @@ function postDiagnosticResult(label: string, summary: Record<string, unknown>): 
     window.postMessage(message, '*');
 }
 
+function reportPageRuntimeError(domain: string, error: unknown, detail?: string): void {
+    const message = error instanceof Error ? error.message : String(error);
+    window.postMessage({
+        type: 'IRIS_DOMAIN_ERROR',
+        domain,
+        message,
+        detail,
+        time: Date.now(),
+    }, '*');
+}
+
+function runPageRuntimeTask(domain: string, task: () => Promise<void> | void): void {
+    try {
+        const result = task();
+        if (result instanceof Promise) {
+            result.catch((error) => reportPageRuntimeError(domain, error));
+        }
+    } catch (error) {
+        reportPageRuntimeError(domain, error);
+    }
+}
+
 function postSelection(features: maplibregl.MapGeoJSONFeature[], openInfo = false): void {
     const feature = getSelectableFeature(features);
     if (!feature) return;
@@ -1857,40 +1879,40 @@ window.addEventListener('message', (event: MessageEvent<PageMapRuntimeCommandMes
     if (event.origin !== location.origin) return;
 
     if ((event.data as {type?: string})?.type === 'IRIS_RUN_PAN_BENCHMARK') {
-        void runPanBenchmark();
+        runPageRuntimeTask('pageRuntime:bench', runPanBenchmark);
         return;
     }
 
     if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.showMap) {
-        void showPageMapRuntime(event.data);
+        runPageRuntimeTask('pageRuntime:showMap', () => showPageMapRuntime(event.data));
     }
 
     if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.hideMap) {
-        hidePageMapRuntime();
+        runPageRuntimeTask('pageRuntime:hideMap', hidePageMapRuntime);
     }
 
     if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.syncSnapshot) {
-        void syncPageMapSnapshot(event.data);
+        runPageRuntimeTask('pageRuntime:syncSnapshot', () => syncPageMapSnapshot(event.data));
     }
 
     if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.syncData) {
-        void syncPageMapData(event.data);
+        runPageRuntimeTask('pageRuntime:syncData', () => syncPageMapData(event.data));
     }
 
     if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.syncLayers) {
-        void syncPageMapLayers(event.data);
+        runPageRuntimeTask('pageRuntime:syncLayers', () => syncPageMapLayers(event.data));
     }
 
     if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.syncCamera) {
-        void syncPageMapCamera(event.data);
+        runPageRuntimeTask('pageRuntime:syncCamera', () => syncPageMapCamera(event.data));
     }
 
     if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.syncSelection) {
-        void syncPageMapSelection(event.data);
+        runPageRuntimeTask('pageRuntime:syncSelection', () => syncPageMapSelection(event.data));
     }
 
     if (event.data?.type === PAGE_MAP_RUNTIME_MESSAGES.syncTiles) {
-        void syncPageMapTiles(event.data);
+        runPageRuntimeTask('pageRuntime:syncTiles', () => syncPageMapTiles(event.data));
     }
 });
 

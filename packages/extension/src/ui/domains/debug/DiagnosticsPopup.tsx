@@ -12,6 +12,7 @@ import { Popup } from '../../shared/Popup';
 import { IRIS_VERSION_LABEL } from '../../../version';
 import './debug.css';
 import {THEMES} from "../../theme";
+import { useRenderDiagnostics } from '../../shared/useRenderDiagnostics';
 
 const POLLED_ENDPOINT_LABELS: Partial<Record<EndpointKey, string>> = {
     plexts: 'next auto refresh',
@@ -141,32 +142,55 @@ interface DiagnosticsPopupProps {
     onClose: () => void;
 }
 
+interface DiagnosticsSample {
+    portalCount: number;
+    linkCount: number;
+    fieldCount: number;
+    mapState: {
+        lat: number;
+        lng: number;
+        zoom: number;
+    };
+    mapPerfDiagnostics: MapPerfDiagnostics;
+    uiRenderDiagnostics: Record<string, UiRenderDiagnosticsEntry>;
+    mainThreadDiagnostics: MainThreadDiagnostics;
+}
+
+function readDiagnosticsSample(): DiagnosticsSample {
+    const state = useStore.getState();
+
+    return {
+        portalCount: Object.keys(state.portals).length,
+        linkCount: Object.keys(state.links).length,
+        fieldCount: Object.keys(state.fields).length,
+        mapState: {
+            lat: state.mapState.lat,
+            lng: state.mapState.lng,
+            zoom: state.mapState.zoom,
+        },
+        mapPerfDiagnostics: state.mapPerfDiagnostics,
+        uiRenderDiagnostics: state.uiRenderDiagnostics,
+        mainThreadDiagnostics: state.mainThreadDiagnostics,
+    };
+}
+
 export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Element {
+    useRenderDiagnostics('DiagnosticsPopup');
+
     const themeId = useStore((state) => state.themeId);
     const theme = THEMES[themeId] || THEMES.INGRESS;
-    const portals = useStore((state) => state.portals);
-    const links = useStore((state) => state.links);
-    const fields = useStore((state) => state.fields);
     const statsItems = useStore((state) => state.statsItems);
-
-    const portalCount = Object.keys(portals).length;
-    const linkCount = Object.keys(links).length;
-    const fieldCount = Object.keys(fields).length;
     const debugLogging = useStore((state) => state.debugLogging);
     const toggleDebugLogging = useStore((state) => state.toggleDebugLogging);
     const showMockTools = useStore((state) => state.showMockTools);
     const toggleShowMockTools = useStore((state) => state.toggleShowMockTools);
     const showMapControls = useStore((state) => state.showMapControls);
     const toggleShowMapControls = useStore((state) => state.toggleShowMapControls);
-    const mapState = useStore((state) => state.mapState);
     const discoveredLocation = useStore((state) => state.discoveredLocation);
     const lastResolvedLatLng = useStore((state) => state.lastResolvedLatLng);
     const addressStatus = useStore((state) => state.addressStatus);
     const addressNextLookupAt = useStore((state) => state.addressNextLookupAt);
     const endpointDiagnostics = useStore((state) => state.endpointDiagnostics);
-    const mapPerfDiagnostics = useStore((state) => state.mapPerfDiagnostics);
-    const uiRenderDiagnostics = useStore((state) => state.uiRenderDiagnostics);
-    const mainThreadDiagnostics = useStore((state) => state.mainThreadDiagnostics);
     const domainErrors = useStore((state) => state.domainErrors);
     const clearDomainErrors = useStore((state) => state.clearDomainErrors);
     const mapThemeId = useStore((state) => state.mapThemeId);
@@ -174,7 +198,17 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
 
     const [countdown, setCountdown] = useState<number | null>(null);
     const [, setNow] = useState(() => Date.now());
+    const [diagnosticsSample, setDiagnosticsSample] = useState(readDiagnosticsSample);
     const [copyStatus, setCopyStatus] = useState<string | null>(null);
+    const {
+        portalCount,
+        linkCount,
+        fieldCount,
+        mapState,
+        mapPerfDiagnostics,
+        uiRenderDiagnostics,
+        mainThreadDiagnostics,
+    } = diagnosticsSample;
 
     useEffect(() => {
         if (addressStatus !== 'pending' || !addressNextLookupAt) {
@@ -191,7 +225,10 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
     }, [addressStatus, addressNextLookupAt]);
 
     useEffect(() => {
-        const interval = window.setInterval(() => setNow(Date.now()), 1000);
+        const interval = window.setInterval(() => {
+            setNow(Date.now());
+            setDiagnosticsSample(readDiagnosticsSample());
+        }, 1000);
         return (): void => clearInterval(interval);
     }, []);
 

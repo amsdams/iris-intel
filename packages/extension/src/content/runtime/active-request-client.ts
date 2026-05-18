@@ -1,6 +1,17 @@
 import { getCsrfToken, InterceptorMessage } from './interceptor-runtime';
 import type { SessionRuntime } from './session-runtime';
 
+function reportActiveRequestError(domain: string, error: unknown, detail?: string): void {
+    const message = error instanceof Error ? error.message : String(error);
+    window.postMessage({
+        type: 'IRIS_DOMAIN_ERROR',
+        domain,
+        message,
+        detail,
+        time: Date.now(),
+    }, '*');
+}
+
 export function handleActiveRequestMessage(
     msg: InterceptorMessage,
     runtime: SessionRuntime,
@@ -21,7 +32,10 @@ export function handleActiveRequestMessage(
                     minLngE6,
                     maxLngE6,
                 }),
-            }).catch((e) => console.error('IRIS: Comm fetch failed', e));
+            }).catch((e) => {
+                reportActiveRequestError('request:plexts', e, String(tab ?? 'unknown'));
+                console.error('IRIS: Comm fetch failed', e);
+            });
             break;
         }
 
@@ -31,7 +45,10 @@ export function handleActiveRequestMessage(
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
                 body: JSON.stringify({ latE6, lngE6 }),
-            }).catch((e) => console.error('IRIS: Region score fetch failed', e));
+            }).catch((e) => {
+                reportActiveRequestError('request:regionScore', e);
+                console.error('IRIS: Region score fetch failed', e);
+            });
             break;
         }
 
@@ -46,7 +63,10 @@ export function handleActiveRequestMessage(
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
                 body: JSON.stringify({ tileKeys }),
                 _iris_active: true,
-            }).catch((e) => console.error('IRIS: Entities fetch failed', e));
+            }).catch((e) => {
+                reportActiveRequestError('request:entities', e, `tiles: ${tileKeys.length}`);
+                console.error('IRIS: Entities fetch failed', e);
+            });
             break;
         }
 
@@ -56,7 +76,10 @@ export function handleActiveRequestMessage(
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
                 body: JSON.stringify({ guid }),
-            }).catch((e) => console.error('IRIS: Portal details fetch failed', e));
+            }).catch((e) => {
+                reportActiveRequestError('request:portalDetails', e, String(guid ?? 'unknown'));
+                console.error('IRIS: Portal details fetch failed', e);
+            });
             break;
         }
 
@@ -66,7 +89,10 @@ export function handleActiveRequestMessage(
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
                 body: JSON.stringify({ guid }),
-            }).catch((e) => console.error('IRIS: Mission details fetch failed', e));
+            }).catch((e) => {
+                reportActiveRequestError('request:missionDetails', e, String(guid ?? 'unknown'));
+                console.error('IRIS: Mission details fetch failed', e);
+            });
             break;
         }
 
@@ -81,7 +107,10 @@ export function handleActiveRequestMessage(
                     southE6: minLatE6,
                     westE6: minLngE6,
                 }),
-            }).catch((e) => console.error('IRIS: Top missions in bounds fetch failed', e));
+            }).catch((e) => {
+                reportActiveRequestError('request:topMissionsInBounds', e);
+                console.error('IRIS: Top missions in bounds fetch failed', e);
+            });
             break;
         }
 
@@ -91,7 +120,10 @@ export function handleActiveRequestMessage(
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
                 body: JSON.stringify({ guid }),
-            }).catch((e) => console.error('IRIS: Top missions for portal fetch failed', e));
+            }).catch((e) => {
+                reportActiveRequestError('request:topMissionsForPortal', e, String(guid ?? 'unknown'));
+                console.error('IRIS: Top missions for portal fetch failed', e);
+            });
             break;
         }
 
@@ -100,7 +132,10 @@ export function handleActiveRequestMessage(
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
                 body: JSON.stringify({}),
-            }).catch((e: Error) => console.debug('IRIS: artifact fetch failed', e));
+            }).catch((e: Error) => {
+                reportActiveRequestError('request:artifacts', e);
+                console.debug('IRIS: artifact fetch failed', e);
+            });
             break;
         }
 
@@ -109,7 +144,10 @@ export function handleActiveRequestMessage(
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
                 body: JSON.stringify({}),
-            }).catch((e: Error) => console.debug('IRIS: subscription check failed (expected if not logged in)', e));
+            }).catch((e: Error) => {
+                reportActiveRequestError('request:subscription', e);
+                console.debug('IRIS: subscription check failed (expected if not logged in)', e);
+            });
             break;
         }
 
@@ -118,7 +156,10 @@ export function handleActiveRequestMessage(
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
                 body: JSON.stringify({}),
-            }).catch((e: Error) => console.debug('IRIS: game score fetch failed', e));
+            }).catch((e: Error) => {
+                reportActiveRequestError('request:gameScore', e);
+                console.debug('IRIS: game score fetch failed', e);
+            });
             break;
         }
 
@@ -128,7 +169,10 @@ export function handleActiveRequestMessage(
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken(document) },
                 body: JSON.stringify({ lastQueryTimestamp }),
-            }).catch((e: Error) => console.debug('IRIS: inventory check failed (expected if not C.O.R.E)', e));
+            }).catch((e: Error) => {
+                reportActiveRequestError('request:inventory', e);
+                console.debug('IRIS: inventory check failed (expected if not C.O.R.E)', e);
+            });
             break;
         }
 
@@ -170,6 +214,7 @@ export function handleActiveRequestMessage(
                     time: Date.now(),
                 }, '*');
             }).catch((e: Error) => {
+                reportActiveRequestError('request:sendPlext', e, String(tab ?? 'unknown'));
                 window.postMessage({
                     type: 'IRIS_COMM_SEND_FAILED',
                     statusText: e.message || 'COMM send failed',
@@ -208,6 +253,7 @@ export function handleActiveRequestMessage(
                     }, '*');
                 }
             }).catch((e: Error) => {
+                reportActiveRequestError('request:redeemReward', e);
                 window.postMessage({
                     type: 'IRIS_PASSCODE_REDEEM_FAILED',
                     statusText: e.message || 'Passcode redemption failed',
@@ -228,7 +274,10 @@ export function handleActiveRequestMessage(
                         zoom: 15,
                     }, '*');
                 },
-                (err) => console.warn('IRIS: Geolocation failed', err),
+                (err) => {
+                    reportActiveRequestError('request:geolocate', err.message || String(err.code));
+                    console.warn('IRIS: Geolocation failed', err);
+                },
             );
             break;
         }
