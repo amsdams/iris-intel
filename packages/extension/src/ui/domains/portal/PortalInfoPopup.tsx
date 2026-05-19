@@ -2,6 +2,7 @@ import {h, JSX} from 'preact';
 import {useEffect, useState} from 'preact/hooks';
 import {PortalMod, PortalResonator, useStore, InventoryParser} from '@iris/core';
 import {Popup} from '../../shared/Popup';
+import {PopupActionButton, PopupActionRow} from '../../shared/PopupActions';
 import {THEMES, TEAM_NAME, UI_COLORS, getModRarityColor} from '../../theme';
 import { getOrnamentLabel } from '../../../content/domains/entities/ornaments';
 
@@ -136,6 +137,7 @@ export function PortalInfoPopup({ onClose, visible }: PortalInfoPopupProps): JSX
                 '--iris-rarity-very-rare': theme.ITEM_RARITY.VERY_RARE || '#b08cff',
                 '--iris-rarity-extremely-rare': theme.ITEM_RARITY.EXTREMELY_RARE || '#f00',
                 '--iris-faction-color': colour,
+                '--iris-popup-action-color': colour,
                 '--iris-portal-address-status-color': theme.AQUA,
             } as Record<string, string>}
         >
@@ -150,7 +152,7 @@ export function PortalInfoPopup({ onClose, visible }: PortalInfoPopupProps): JSX
                     </div>
                 )}
 
-                <div className="iris-portal-name" style={{ color: colour }}>
+                <div className="iris-portal-name">
                     {portal.name || 'Loading...'}
                 </div>
 
@@ -158,12 +160,11 @@ export function PortalInfoPopup({ onClose, visible }: PortalInfoPopupProps): JSX
                     <div className="iris-portal-summary-col">
                         <div className="iris-portal-summary-row">
                             <span className="iris-portal-summary-label">Team</span>
-                            <span
-                                className="iris-portal-summary-value iris-portal-summary-value-faction" style={{ color: colour }}>{teamName}</span>
+                            <span className="iris-portal-summary-value iris-portal-summary-value-faction">{teamName}</span>
                         </div>
                         <div className="iris-portal-summary-row">
                             <span className="iris-portal-summary-label">Owner</span>
-                            <span className="iris-portal-summary-value iris-portal-summary-value-faction"  style={{ color: colour }}>
+                            <span className="iris-portal-summary-value iris-portal-summary-value-faction">
                                 {portal.owner || 'Unknown'}
                             </span>
                         </div>
@@ -241,7 +242,7 @@ export function PortalInfoPopup({ onClose, visible }: PortalInfoPopupProps): JSX
                                     <span className="iris-portal-mod-name">
                                         {m.rarity} {m.name}
                                     </span>
-                                    <span className="iris-portal-mod-owner" style={{ color: colour }}>{m.owner}</span>
+                                    <span className="iris-portal-mod-owner">{m.owner}</span>
                                     {m.stats && Object.keys(m.stats).length > 0 && (
                                         <div className="iris-portal-mod-stats">
                                             {Object.keys(m.stats).map(key => (
@@ -268,7 +269,7 @@ export function PortalInfoPopup({ onClose, visible }: PortalInfoPopupProps): JSX
                                     <div key={i}
                                          className="iris-portal-resonator-item iris-portal-resonator-item-empty">
                                         <div>EMPTY</div>
-                                        <div style={{color: 'transparent'}}>-</div>
+                                        <div className="iris-portal-resonator-placeholder">-</div>
                                     </div>
                                 );
                             }
@@ -292,7 +293,7 @@ export function PortalInfoPopup({ onClose, visible }: PortalInfoPopupProps): JSX
                                         </span>
                                         <span className="iris-portal-resonator-health-text">{healthPct}%</span>
                                     </div>
-                                    <div className="iris-portal-resonator-owner" style={{ color: colour }}>{r.owner}</div>
+                                    <div className="iris-portal-resonator-owner">{r.owner}</div>
                                     <div className="iris-portal-resonator-health-bar"/>
                                 </div>
                             );
@@ -364,40 +365,24 @@ export function PortalInfoPopup({ onClose, visible }: PortalInfoPopupProps): JSX
                         </span>
                     </div>
                 </div>
-                <div className="iris-portal-action-row">
-                    <button
-                        type="button"
-                        className="iris-portal-action-button"
-                        onClick={moveToPortal}
-                    >
+                <PopupActionRow>
+                    <PopupActionButton onClick={moveToPortal}>
                         Center Map
-                    </button>
-                    <button
-                        type="button"
-                        className="iris-portal-action-button"
-                        onClick={copyPortalCoordinates}
-                    >
+                    </PopupActionButton>
+                    <PopupActionButton onClick={copyPortalCoordinates}>
                         {copyStatus || 'Copy Coords'}
-                    </button>
+                    </PopupActionButton>
                     {portalAddress && (
-                        <button
-                            type="button"
-                            className="iris-portal-action-button"
-                            onClick={copyPortalAddress}
-                        >
+                        <PopupActionButton onClick={copyPortalAddress}>
                             Copy Address
-                        </button>
+                        </PopupActionButton>
                     )}
                     {portal.hasMissionsStartingHere && (
-                        <button
-                            type="button"
-                            onClick={openPortalMissions}
-                            className="iris-portal-action-button"
-                        >
+                        <PopupActionButton onClick={openPortalMissions}>
                             Missions
-                        </button>
+                        </PopupActionButton>
                     )}
-                </div>
+                </PopupActionRow>
                 <div className="iris-portal-details-section">
                     <div className="iris-portal-section-title">
                         LOCATION

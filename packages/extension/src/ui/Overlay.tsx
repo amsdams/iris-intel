@@ -356,6 +356,57 @@ export function IRISOverlay(): JSX.Element {
     const toggleNavigationPopup = (): void => setShowNavigationPopup((v) => !v);
     const toggleSearchPopup = (): void => setShowSearchPopup((v) => !v);
 
+    const closeTopOverlay = useCallback((): boolean => {
+        if (activeDrawerTab) {
+            setActiveDrawerTab(null);
+            return true;
+        }
+        if (showSearchPopup) { setShowSearchPopup(false); return true; }
+        if (showNavigationPopup) { setShowNavigationPopup(false); return true; }
+        if (showPluginsPopup) { setShowPluginsPopup(false); return true; }
+        if (showMapSettingsPopup) { setShowMapSettingsPopup(false); return true; }
+        if (showThemePopup) { setShowThemePopup(false); return true; }
+        if (showDiagnosticsPopup) { setShowDiagnosticsPopup(false); return true; }
+        if (showExportPopup) { setShowExportPopup(false); return true; }
+        if (showRegionScorePopup) { setShowRegionScorePopup(false); return true; }
+        if (showGameScorePopup) { setShowGameScorePopup(false); return true; }
+        if (showInventoryPopup) { setShowInventoryPopup(false); return true; }
+        if (showPlayerStatsPopup) { setShowPlayerStatsPopup(false); return true; }
+        if (showPasscodePopup) { setShowPasscodePopup(false); return true; }
+        if (showMissionsPopup) { setShowMissionsPopup(false); return true; }
+        if (showCommPopup) { setShowCommPopup(false); return true; }
+        if (showSelectionInfo) { setShowSelectionInfo(false); return true; }
+        if (hasSelectedPluginFeature) {
+            useStore.getState().setSelectedPluginFeature(null);
+            return true;
+        }
+        if (hasMissionDetails) {
+            useStore.getState().setMissionDetails(null);
+            return true;
+        }
+
+        return false;
+    }, [
+        activeDrawerTab,
+        hasMissionDetails,
+        hasSelectedPluginFeature,
+        showCommPopup,
+        showDiagnosticsPopup,
+        showExportPopup,
+        showGameScorePopup,
+        showInventoryPopup,
+        showMapSettingsPopup,
+        showMissionsPopup,
+        showNavigationPopup,
+        showPasscodePopup,
+        showPlayerStatsPopup,
+        showPluginsPopup,
+        showRegionScorePopup,
+        showSearchPopup,
+        showSelectionInfo,
+        showThemePopup,
+    ]);
+
     const handleGeolocate = (): void => {
         if (!navigator.geolocation) return;
         setLocating(true);
@@ -412,6 +463,19 @@ export function IRISOverlay(): JSX.Element {
             document.removeEventListener('iris:missions:open', missionsOpenHandler);
         };
     }, [toggleExportPopup, toggleThemePopup]);
+
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent): void => {
+            if (event.key !== 'Escape') return;
+            if (closeTopOverlay()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown, true);
+        return (): void => window.removeEventListener('keydown', handleKeyDown, true);
+    }, [closeTopOverlay]);
 
     useEffect(() => {
         const handler = (event: MessageEvent<unknown>): void => {

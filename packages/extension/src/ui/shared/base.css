@@ -287,6 +287,40 @@
     transform: none;
 }
 
+.iris-popup-action-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.iris-popup-action-button {
+    background: transparent;
+    padding: 5px 9px;
+    font-size: 0.8em;
+    font-weight: bold;
+    cursor: pointer;
+    border: 1px solid var(--iris-popup-action-color, var(--iris-faction-color, var(--iris-accent)));
+    border-radius: 4px;
+    color: var(--iris-popup-action-color, var(--iris-faction-color, var(--iris-accent)));
+}
+
+.iris-popup-action-button:hover,
+.iris-popup-action-button:focus-visible {
+    background: rgb(255 255 255 / 8%);
+    outline: none;
+}
+
+.iris-popup-action-button:active {
+    transform: translateY(1px);
+}
+
+.iris-popup-action-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    transform: none;
+}
+
 .iris-btn-secondary {
     background: #333;
     color: var(--iris-text-primary);

@@ -853,7 +853,7 @@ Tasks:
 | Generalize popup styling in base.css             | Done   | base `.iris-popup` handles standard padding and variables                             |
 | Unify popup width and centering                  | Done   | all major popups use `iris-popup-center iris-popup-medium`                            |
 | Fix inconsistent popup internal padding          | Done   | moved padding to .iris-popup-content; standardized internal spacing for major domains |
-| Revisit portal/link/field popup content density  | Open   | improve scanability against the project docs and IITC expectations without changing the shared popup interaction model |
+| Revisit portal/link/field popup content density  | Done   | tightened portal/link/field table spacing, image height, and section gaps while preserving all detail sections and the shared popup interaction model |
 | Add mobile bottom-sheet popup presentation       | Done   | popups keep existing content but become constrained bottom sheets on small screens with internal scrolling and mobile dragging disabled |
 | Tighten portal popup mobile density              | Done   | portal/link/field details keep all sections while using shorter images, tighter spacing, and two-column mod/resonator grids on mobile |
 | Close drawer after launching popup content       | Done   | drawer actions that open popups now dismiss the drawer so mobile bottom-sheet popups are immediately visible; map visibility toggle stays in place |
@@ -863,9 +863,10 @@ Tasks:
 | Label shared close controls                      | Done   | popup and drawer close buttons now expose explicit labels/titles and consistent focus/hover styling |
 | Add primary-popup focus behavior on mobile       | Open   | only implement after the focus model is chosen; likely close other primary popups when opening stats/portal/link/field details while leaving COMM as a separate decision |
 | Add portal popup action row                      | Done   | portal details now expose Center Map, Copy Coords, Copy Address when resolved, and Missions when available below History so core portal facts keep priority |
-| Extract popup action row primitive               | Open   | portal action-row class exists; factor repeated action-button layout into a shared popup primitive once link/field/player/plugin details need comparable actions |
+| Extract popup action row primitive               | Done   | added shared `PopupActionRow` and `PopupActionButton`; portal details use the shared primitive while link/field/player/plugin details can adopt it when they gain comparable actions |
 | Review map-control UI primitives                 | Done   | navigation popup now uses CSS-first nav row/grid/button primitives, location search moved static layout/result styling into shared CSS, drawer backdrop inline layout moved to CSS, and planning/mock/geolocate controls already consume existing shared classes; pan regression from the old unhandled `IRIS_PAN_MAP` path was fixed by using the working `IRIS_MOVE_MAP` path |
-| Review mobile back/escape close behavior         | Open   | consider closing the active bottom sheet before broader overlay state changes; treat as later UX work because it touches global interaction |
+| Review mobile back/escape close behavior         | Done   | Escape now closes the top IRIS surface in order: drawer first, then visible popup/sheet, then selection/plugin/mission details; browser-back history interception is intentionally deferred until the mobile focus model is chosen |
+| Add mobile browser Back close behavior           | Open   | medium-risk follow-up: on mobile, browser Back should close the active IRIS drawer/bottom sheet before normal page navigation; requires history/popstate coordination so it does not trap users or fight Intel URL state |
 | Extract drawer UI primitives                     | Done   | drawer-first pass added shared `DrawerSection` and `DrawerButton` controls and migrated Agent, System, Layers, Map, Tactical, and Visuals tabs; desktop and Chrome device-emulation smoke looked good |
 | Visual smoke test drawer primitives on real mobile | Open | verify drawer button sizing, scroll groups, active states, and tap behavior on an actual mobile browser before using the drawer primitives as the model for other UI areas |
 
