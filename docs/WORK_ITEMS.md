@@ -863,8 +863,11 @@ Tasks:
 | Label shared close controls                      | Done   | popup and drawer close buttons now expose explicit labels/titles and consistent focus/hover styling |
 | Add primary-popup focus behavior on mobile       | Open   | only implement after the focus model is chosen; likely close other primary popups when opening stats/portal/link/field details while leaving COMM as a separate decision |
 | Add portal popup action row                      | Open   | keep all details but make high-frequency actions such as Missions, copy/navigation, or map movement easier to reach near the top |
+| Extract popup action row primitive               | Open   | after the first portal action row lands, factor repeated action-button layout into a shared popup primitive for portal/link/field/player/plugin details instead of adding one-off CSS per popup |
+| Review map-control UI primitives                 | Open   | compare navigation, search, planning, mock tools, and geolocate controls for repeated button/input patterns; extract only if it reduces duplication without changing behavior |
 | Review mobile back/escape close behavior         | Open   | consider closing the active bottom sheet before broader overlay state changes; treat as later UX work because it touches global interaction |
-| Extract internal UI primitives                   | Open   | drawer-first pass added shared `DrawerSection` and `DrawerButton` controls and migrated Agent, System, Layers, Map, Tactical, and Visuals tabs; consider broader primitives only after visual smoke testing |
+| Extract drawer UI primitives                     | Done   | drawer-first pass added shared `DrawerSection` and `DrawerButton` controls and migrated Agent, System, Layers, Map, Tactical, and Visuals tabs; desktop and Chrome device-emulation smoke looked good |
+| Visual smoke test drawer primitives on real mobile | Open | verify drawer button sizing, scroll groups, active states, and tap behavior on an actual mobile browser before using the drawer primitives as the model for other UI areas |
 
 ### Map layer and filter toggles update immediately
 
