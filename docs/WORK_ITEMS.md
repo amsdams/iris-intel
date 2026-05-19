@@ -868,7 +868,12 @@ Tasks:
 | Review mobile back/escape close behavior         | Done   | Escape now closes the top IRIS surface in order: drawer first, then visible popup/sheet, then selection/plugin/mission details; browser-back history interception is intentionally deferred until the mobile focus model is chosen |
 | Add mobile browser Back close behavior           | Open   | medium-risk follow-up: on mobile, browser Back should close the active IRIS drawer/bottom sheet before normal page navigation; requires history/popstate coordination so it does not trap users or fight Intel URL state |
 | Extract drawer UI primitives                     | Done   | drawer-first pass added shared `DrawerSection` and `DrawerButton` controls and migrated Agent, System, Layers, Map, Tactical, and Visuals tabs; desktop and Chrome device-emulation smoke looked good |
-| Visual smoke test drawer primitives on real mobile | Open | verify drawer button sizing, scroll groups, active states, and tap behavior on an actual mobile browser before using the drawer primitives as the model for other UI areas |
+| Visual smoke test drawer primitives on real mobile | Done | real mobile smoke looked fine for drawer button sizing, scroll groups, active states, tap behavior, and close/outside-close behavior; follow-up fixed search GO button styling to better match restrained marker/planning controls |
+| Add planned marker navigation list              | Done   | Map drawer now lists planned markers sorted by distance from current map center; tapping a marker selects/recenters it, labels can be edited inline, and delete requires a confirmation tap |
+| Polish planned marker list mobile selection UX  | Open   | continue testing on real mobile; selection/re-sort/scroll behavior can still feel unstable when choosing markers lower in the distance-sorted list |
+| Decide marker list placement                    | Open   | current first version lives directly in the Map drawer; consider moving behind a Markers button, collapsing by default, or showing it only while marker planning is active |
+| Refine planned marker edit/delete controls      | Open   | evaluate whether inline Edit/Delete is too busy in the drawer; possible follow-ups include row details, swipe/actions menu, or a compact marker details sheet |
+| Add marker list sort/filter controls            | Open   | distance sort is the first default; consider label/name sort, color filter, and search if marker counts grow |
 
 ### Map layer and filter toggles update immediately
 

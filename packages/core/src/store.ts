@@ -570,6 +570,9 @@ interface UISlice {
     createPlannedLink: () => void;
     clearPlanningSelection: () => void;
     addPlannedMarker: (lat: number, lng: number, label?: string, color?: PlannedMarker['color'], portalId?: string) => void;
+    renamePlannedMarker: (id: string, label: string) => void;
+    deletePlannedMarker: (id: string) => void;
+    selectPlannedMarker: (id: string) => void;
     selectPlannedItem: (id: string | null, type?: PlannedItemType | null) => void;
     deleteSelectedPlannedItem: () => void;
     undoPlannedItem: (tool?: PlanningTool) => void;
@@ -1235,6 +1238,26 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
             ],
         };
     }),
+    renamePlannedMarker: (id, label) => set((state) => {
+        const trimmedLabel = label.trim();
+        if (!trimmedLabel) return state;
+
+        return {
+            plannedMarkers: state.plannedMarkers.map((marker) => marker.id === id
+                ? {...marker, label: trimmedLabel}
+                : marker
+            ),
+        };
+    }),
+    deletePlannedMarker: (id) => set((state) => ({
+        plannedMarkers: state.plannedMarkers.filter((marker) => marker.id !== id),
+        selectedPlannedItemId: state.selectedPlannedItemId === id ? null : state.selectedPlannedItemId,
+        selectedPlannedItemType: state.selectedPlannedItemId === id ? null : state.selectedPlannedItemType,
+    })),
+    selectPlannedMarker: (id) => set(() => ({
+        selectedPlannedItemId: id,
+        selectedPlannedItemType: 'marker',
+    })),
     selectPlannedItem: (id, type = null) => set((state) => {
         if (!id || !type) {
             return {

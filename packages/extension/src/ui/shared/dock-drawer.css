@@ -140,3 +140,143 @@
     gap: 8px;
     margin-bottom: 12px;
 }
+
+.iris-drawer-marker-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.iris-drawer-marker-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    padding: 7px 9px;
+    border: 1px solid rgb(255 255 255 / 10%);
+    border-radius: 7px;
+    background: rgb(255 255 255 / 5%);
+    color: var(--iris-text-primary);
+    text-align: left;
+}
+
+.iris-drawer-marker-row:hover {
+    border-color: var(--iris-accent);
+}
+
+.iris-drawer-marker-row-active {
+    border-color: var(--iris-accent);
+    background: rgb(0 255 255 / 10%);
+}
+
+.iris-drawer-marker-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--iris-planned-marker-color, #fff);
+    box-shadow: 0 0 8px var(--iris-planned-marker-color, #fff);
+}
+
+.iris-drawer-marker-row-white { --iris-planned-marker-color: #fff; }
+.iris-drawer-marker-row-red { --iris-planned-marker-color: #ff4d4d; }
+.iris-drawer-marker-row-blue { --iris-planned-marker-color: #37e6ff; }
+.iris-drawer-marker-row-green { --iris-planned-marker-color: #49ff7a; }
+
+.iris-drawer-marker-target {
+    display: grid;
+    grid-template-columns: 10px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 30px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    text-align: left;
+}
+
+.iris-drawer-marker-target:focus-visible {
+    outline: 1px solid var(--iris-accent);
+    outline-offset: 3px;
+}
+
+.iris-drawer-marker-main {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.iris-drawer-marker-label {
+    overflow: hidden;
+    color: var(--iris-text-primary);
+    font-size: 0.78em;
+    font-weight: bold;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.iris-drawer-marker-coords {
+    overflow: hidden;
+    color: var(--iris-text-muted, #888);
+    font-size: 0.68em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.iris-drawer-marker-distance {
+    color: var(--iris-accent);
+    font-size: 0.72em;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.iris-drawer-marker-input {
+    min-width: 0;
+    width: 100%;
+    height: 22px;
+    padding: 2px 5px;
+    border: 1px solid var(--iris-accent);
+    border-radius: 4px;
+    background: rgb(0 0 0 / 45%);
+    color: var(--iris-text-primary);
+    font-size: 0.78em;
+    font-weight: bold;
+}
+
+.iris-drawer-marker-input:focus {
+    outline: none;
+}
+
+.iris-drawer-marker-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-left: 18px;
+}
+
+.iris-drawer-marker-action {
+    padding: 3px 7px;
+    border: 1px solid rgb(255 255 255 / 16%);
+    border-radius: 4px;
+    background: rgb(255 255 255 / 6%);
+    color: var(--iris-text-muted, #888);
+    font-size: 0.68em;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.iris-drawer-marker-action:hover,
+.iris-drawer-marker-action:focus-visible {
+    border-color: var(--iris-accent);
+    color: var(--iris-accent);
+    outline: none;
+}
+
+.iris-drawer-marker-action-danger {
+    border-color: rgb(255 77 77 / 65%);
+    color: #ff9a9a;
+}

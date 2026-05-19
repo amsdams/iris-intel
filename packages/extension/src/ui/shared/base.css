@@ -419,10 +419,34 @@
     border-color: var(--iris-location-search-color, var(--iris-accent));
 }
 
-.iris-location-search-submit,
-.iris-location-search-submit:hover {
-    background: var(--iris-location-search-color, var(--iris-accent));
-    color: #000;
+.iris-location-search-submit {
+    min-width: 44px;
+    padding: 6px 10px;
+    border: 1px solid var(--iris-compact-control-border, rgb(55 230 255 / 45%));
+    border-radius: var(--iris-compact-control-radius, 7px);
+    background: var(--iris-compact-control-bg, rgb(55 230 255 / 10%));
+    color: var(--iris-compact-control-color, #b9f8ff);
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: bold;
+}
+
+.iris-location-search-submit:hover,
+.iris-location-search-submit:focus-visible {
+    background: var(--iris-compact-control-active-bg, rgb(55 230 255 / 16%));
+    border-color: var(--iris-compact-control-active-border, var(--iris-compact-control-border, rgb(55 230 255 / 45%)));
+    color: var(--iris-compact-control-active-color, var(--iris-compact-control-color, #b9f8ff));
+    outline: none;
+}
+
+.iris-location-search-submit:active {
+    transform: translateY(1px);
+}
+
+.iris-location-search-submit:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    transform: none;
 }
 
 .iris-location-search-error {

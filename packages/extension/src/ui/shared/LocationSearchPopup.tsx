@@ -104,7 +104,7 @@ export function LocationSearchPopup({ onClose }: LocationSearchPopupProps): JSX.
                     placeholder="Place or lat,lng"
                 />
                 <button
-                    className="iris-btn iris-location-search-submit"
+                    className="iris-location-search-submit"
                     onClick={search}
                     disabled={searching}
                 >
