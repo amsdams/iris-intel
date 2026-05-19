@@ -864,7 +864,7 @@ Tasks:
 | Add primary-popup focus behavior on mobile       | Open   | only implement after the focus model is chosen; likely close other primary popups when opening stats/portal/link/field details while leaving COMM as a separate decision |
 | Add portal popup action row                      | Open   | keep all details but make high-frequency actions such as Missions, copy/navigation, or map movement easier to reach near the top |
 | Review mobile back/escape close behavior         | Open   | consider closing the active bottom sheet before broader overlay state changes; treat as later UX work because it touches global interaction |
-| Extract internal UI primitives                   | Open   | drawer-first pass started with shared `DrawerSection` and `DrawerButton` controls used by Agent, System, and Layers tabs; continue migrating Map/Tactical/Visuals before considering broader primitives |
+| Extract internal UI primitives                   | Open   | drawer-first pass added shared `DrawerSection` and `DrawerButton` controls and migrated Agent, System, Layers, Map, Tactical, and Visuals tabs; consider broader primitives only after visual smoke testing |
 
 ### Map layer and filter toggles update immediately
 

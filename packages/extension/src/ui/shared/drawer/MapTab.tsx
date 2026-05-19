@@ -1,5 +1,6 @@
 import { h, JSX, Fragment } from 'preact';
 import { useStore } from '@iris/core';
+import {DrawerButton, DrawerSection} from './DrawerControls';
 
 interface MapTabProps {
     onAction: (action: string) => void;
@@ -16,41 +17,19 @@ export function MapTab({ onAction }: MapTabProps): JSX.Element {
 
     return (
         <Fragment>
-            <div className="iris-drawer-section-label">Map Navigation</div>
-            <div className="iris-drawer-grid">
-                <button className="iris-drawer-btn" onClick={() => onAction('search')}>
-                    <div className="iris-drawer-btn-icon">🔍</div>
-                    <div className="iris-drawer-btn-label">Search</div>
-                </button>
-                <button className="iris-drawer-btn" onClick={() => onAction('nav')}>
-                    <div className="iris-drawer-btn-icon">🧭</div>
-                    <div className="iris-drawer-btn-label">Controls</div>
-                </button>
-                <button className="iris-drawer-btn" onClick={() => onAction('missions')}>
-                    <div className="iris-drawer-btn-icon">🚀</div>
-                    <div className="iris-drawer-btn-label">Missions</div>
-                </button>
+            <DrawerSection label="Map Navigation">
+                <DrawerButton icon="🔍" label="Search" onClick={() => onAction('search')} />
+                <DrawerButton icon="🧭" label="Controls" onClick={() => onAction('nav')} />
+                <DrawerButton icon="🚀" label="Missions" onClick={() => onAction('missions')} />
                 {plannedLinksEnabled && (
                     <Fragment>
-                        <button className={`iris-drawer-btn ${plannedShowLinks ? 'iris-drawer-btn-active' : ''}`} onClick={togglePlannedShowLinks}>
-                            <div className="iris-drawer-btn-icon">〰</div>
-                            <div className="iris-drawer-btn-label">Vis Links</div>
-                        </button>
-                        <button className={`iris-drawer-btn ${plannedShowMarkers ? 'iris-drawer-btn-active' : ''}`} onClick={togglePlannedShowMarkers}>
-                            <div className="iris-drawer-btn-icon">◉</div>
-                            <div className="iris-drawer-btn-label">Vis Marks</div>
-                        </button>
-                        <button className={`iris-drawer-btn ${planningMode && planningTool === 'links' ? 'iris-drawer-btn-active' : ''}`} onClick={() => onAction('planning-links')}>
-                            <div className="iris-drawer-btn-icon">↔</div>
-                            <div className="iris-drawer-btn-label">Links</div>
-                        </button>
-                        <button className={`iris-drawer-btn ${planningMode && planningTool === 'markers' ? 'iris-drawer-btn-active' : ''}`} onClick={() => onAction('planning-markers')}>
-                            <div className="iris-drawer-btn-icon">●</div>
-                            <div className="iris-drawer-btn-label">Markers</div>
-                        </button>
+                        <DrawerButton active={plannedShowLinks} icon="〰" label="Vis Links" onClick={togglePlannedShowLinks} />
+                        <DrawerButton active={plannedShowMarkers} icon="◉" label="Vis Marks" onClick={togglePlannedShowMarkers} />
+                        <DrawerButton active={planningMode && planningTool === 'links'} icon="↔" label="Links" onClick={() => onAction('planning-links')} />
+                        <DrawerButton active={planningMode && planningTool === 'markers'} icon="●" label="Markers" onClick={() => onAction('planning-markers')} />
                     </Fragment>
                 )}
-            </div>
+            </DrawerSection>
         </Fragment>
     );
 }

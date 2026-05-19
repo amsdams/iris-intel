@@ -1,5 +1,6 @@
 import { h, JSX, Fragment } from 'preact';
 import { useStore } from '@iris/core';
+import {DrawerButton, DrawerSection} from './DrawerControls';
 
 export function TacticalTab(): JSX.Element {
     const filterShowResistance = useStore((state) => state.filterShowResistance);
@@ -26,73 +27,46 @@ export function TacticalTab(): JSX.Element {
 
     return (
         <Fragment>
-            <div className="iris-drawer-section-label">Filter Actions</div>
-            <div className="iris-drawer-grid">
-                <button className="iris-drawer-btn" onClick={resetTacticalFilters}>
-                    <div className="iris-drawer-btn-icon">↺</div>
-                    <div className="iris-drawer-btn-label">Clear All</div>
-                </button>
-            </div>
+            <DrawerSection label="Filter Actions">
+                <DrawerButton icon="↺" label="Clear All" onClick={resetTacticalFilters} />
+            </DrawerSection>
 
-            <div className="iris-drawer-section-label">Faction Filters</div>
-            <div className="iris-drawer-scroll-group">
-                <button className={`iris-drawer-btn ${filterShowEnlightened ? 'iris-drawer-btn-active' : ''}`} onClick={toggleFilterEnlightened}>
-                    <div className="iris-drawer-btn-icon">💚</div>
-                    <div className="iris-drawer-btn-label">ENL</div>
-                </button>
-                <button className={`iris-drawer-btn ${filterShowResistance ? 'iris-drawer-btn-active' : ''}`} onClick={toggleFilterResistance}>
-                    <div className="iris-drawer-btn-icon">💙</div>
-                    <div className="iris-drawer-btn-label">RES</div>
-                </button>
-                <button className={`iris-drawer-btn ${filterShowMachina ? 'iris-drawer-btn-active' : ''}`} onClick={toggleFilterMachina}>
-                    <div className="iris-drawer-btn-icon">❤️</div>
-                    <div className="iris-drawer-btn-label">MAC</div>
-                </button>
-                <button className={`iris-drawer-btn ${filterShowUnclaimedPortals ? 'iris-drawer-btn-active' : ''}`} onClick={toggleFilterUnclaimedPortals}>
-                    <div className="iris-drawer-btn-icon">🤍</div>
-                    <div className="iris-drawer-btn-label">NEU</div>
-                </button>
-            </div>
+            <DrawerSection label="Faction Filters" scroll>
+                <DrawerButton active={filterShowEnlightened} icon="💚" label="ENL" onClick={toggleFilterEnlightened} />
+                <DrawerButton active={filterShowResistance} icon="💙" label="RES" onClick={toggleFilterResistance} />
+                <DrawerButton active={filterShowMachina} icon="❤️" label="MAC" onClick={toggleFilterMachina} />
+                <DrawerButton active={filterShowUnclaimedPortals} icon="🤍" label="NEU" onClick={toggleFilterUnclaimedPortals} />
+            </DrawerSection>
 
-            <div className="iris-drawer-section-label">Level Filters</div>
-            <div className="iris-drawer-scroll-group">
+            <DrawerSection label="Level Filters" scroll>
                 {[1, 2, 3, 4, 5, 6, 7, 8].map(l => (
-                    <button key={l} className={`iris-drawer-btn ${filterShowLevel[l] ? 'iris-drawer-btn-active' : ''}`} onClick={() => toggleFilterLevel(l)}>
-                        <div className="iris-drawer-btn-label">L{l}</div>
-                    </button>
+                    <DrawerButton key={l} active={filterShowLevel[l]} label={`L${l}`} onClick={() => toggleFilterLevel(l)} />
                 ))}
-            </div>
+            </DrawerSection>
 
-            <div className="iris-drawer-section-label">Health Filters</div>
-            <div className="iris-drawer-scroll-group">
+            <DrawerSection label="Health Filters" scroll>
                 {[25, 50, 75, 100].map(h => (
-                    <button key={h} className={`iris-drawer-btn ${filterShowHealth[h] ? 'iris-drawer-btn-active' : ''}`} onClick={() => toggleFilterHealth(h)}>
-                        <div className="iris-drawer-btn-label">{h}%</div>
-                    </button>
+                    <DrawerButton key={h} active={filterShowHealth[h]} label={`${h}%`} onClick={() => toggleFilterHealth(h)} />
                 ))}
-            </div>
+            </DrawerSection>
 
-            <div className="iris-drawer-section-label">Agent History</div>
-            <div className="iris-drawer-scroll-group">
-                <button 
-                    className={`iris-drawer-btn ${filterShowVisited !== 'ALL' ? 'iris-drawer-btn-active' : ''}`} 
+            <DrawerSection label="Agent History" scroll>
+                <DrawerButton
+                    active={filterShowVisited !== 'ALL'}
+                    label={`Visited: ${filterShowVisited === 'ALL' ? 'All' : (filterShowVisited === 'TRUE' ? 'Yes' : 'No')}`}
                     onClick={toggleFilterVisited}
-                >
-                    <div className="iris-drawer-btn-label">Visited: {filterShowVisited === 'ALL' ? 'All' : (filterShowVisited === 'TRUE' ? 'Yes' : 'No')}</div>
-                </button>
-                <button 
-                    className={`iris-drawer-btn ${filterShowCaptured !== 'ALL' ? 'iris-drawer-btn-active' : ''}`} 
+                />
+                <DrawerButton
+                    active={filterShowCaptured !== 'ALL'}
+                    label={`Captured: ${filterShowCaptured === 'ALL' ? 'All' : (filterShowCaptured === 'TRUE' ? 'Yes' : 'No')}`}
                     onClick={toggleFilterCaptured}
-                >
-                    <div className="iris-drawer-btn-label">Captured: {filterShowCaptured === 'ALL' ? 'All' : (filterShowCaptured === 'TRUE' ? 'Yes' : 'No')}</div>
-                </button>
-                <button 
-                    className={`iris-drawer-btn ${filterShowScanned !== 'ALL' ? 'iris-drawer-btn-active' : ''}`} 
+                />
+                <DrawerButton
+                    active={filterShowScanned !== 'ALL'}
+                    label={`Scanned: ${filterShowScanned === 'ALL' ? 'All' : (filterShowScanned === 'TRUE' ? 'Yes' : 'No')}`}
                     onClick={toggleFilterScanned}
-                >
-                    <div className="iris-drawer-btn-label">Scanned: {filterShowScanned === 'ALL' ? 'All' : (filterShowScanned === 'TRUE' ? 'Yes' : 'No')}</div>
-                </button>
-            </div>
+                />
+            </DrawerSection>
         </Fragment>
     );
 }
