@@ -60,9 +60,71 @@ if (window.__irisContentInitialized) {
 let hasInitialPosition = false;
 let latestEntityRefreshGeneration = 0;
 let inventoryMockPreviousSubscription: boolean | null = null;
+let pendingStartupPosition: { lat: number; lng: number; zoom: number } | null = null;
+let startupPositionTimeoutId: number | null = null;
+let startupPositionUnsubscribe: (() => void) | null = null;
 const requestCoordinator = createRequestCoordinator();
 const MOCK_PLAYER_TRACKER_PLUGIN_ID = 'debug-mock-player-tracker';
 const MOCK_PLAYER_ACTIVITY_PLEXT_PREFIX = 'mock-player-activity:';
+
+function hasStoredMapPosition(): boolean {
+  const { lat, lng } = useStore.getState().mapState;
+  return !(lat === 0 && lng === 0);
+}
+
+function cleanupPendingStartupPosition(): void {
+  if (startupPositionTimeoutId !== null) {
+    window.clearTimeout(startupPositionTimeoutId);
+    startupPositionTimeoutId = null;
+  }
+  if (startupPositionUnsubscribe !== null) {
+    startupPositionUnsubscribe();
+    startupPositionUnsubscribe = null;
+  }
+}
+
+function applyIntelStartupPosition(position: { lat: number; lng: number; zoom: number }): void {
+  const state = useStore.getState();
+  hasInitialPosition = true;
+
+  if (state.rehydrated && hasStoredMapPosition()) {
+    return;
+  }
+
+  state.updateMapState(position.lat, position.lng, position.zoom);
+}
+
+function flushPendingStartupPosition(force = false): void {
+  if (!pendingStartupPosition) return;
+  if (!force && !useStore.getState().rehydrated) return;
+
+  const position = pendingStartupPosition;
+  pendingStartupPosition = null;
+  cleanupPendingStartupPosition();
+  applyIntelStartupPosition(position);
+}
+
+function handleIntelStartupPosition(position: { lat: number; lng: number; zoom: number }): void {
+  if (useStore.getState().rehydrated) {
+    applyIntelStartupPosition(position);
+    return;
+  }
+
+  pendingStartupPosition = position;
+
+  if (startupPositionUnsubscribe === null) {
+    startupPositionUnsubscribe = useStore.subscribe(
+      (state) => state.rehydrated,
+      (rehydrated) => {
+        if (rehydrated) flushPendingStartupPosition();
+      },
+    );
+  }
+
+  if (startupPositionTimeoutId === null) {
+    startupPositionTimeoutId = window.setTimeout(() => flushPendingStartupPosition(true), 1500);
+  }
+}
 
 function buildMockArtifacts(): ArtifactData {
   const state = useStore.getState();
@@ -409,14 +471,7 @@ window.addEventListener('message', (event: MessageEvent) => {
   switch (type) {
     case 'IRIS_INTEL_STARTUP_POSITION': {
       const { lat, lng, zoom } = msg as { lat: number; lng: number; zoom: number };
-      const state = useStore.getState();
-      if (state.rehydrated && !(state.mapState.lat === 0 && state.mapState.lng === 0)) {
-        hasInitialPosition = true;
-        break;
-      }
-
-      hasInitialPosition = true;
-      state.updateMapState(lat, lng, zoom);
+      handleIntelStartupPosition({ lat, lng, zoom });
       break;
     }
 

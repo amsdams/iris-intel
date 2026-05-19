@@ -786,7 +786,7 @@ export function IRISOverlay(): JSX.Element {
             {/* Click-to-close Backdrop for Drawer */}
             {activeDrawerTab && (
                 <div 
-                    style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10009, pointerEvents: 'auto' }} 
+                    className="iris-drawer-backdrop"
                     onClick={() => setActiveDrawerTab(null)} 
                 />
             )}

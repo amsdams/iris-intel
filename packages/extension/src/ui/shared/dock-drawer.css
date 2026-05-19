@@ -15,6 +15,13 @@
     border-radius: 20px 20px 0 0;
 }
 
+.iris-drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10009;
+    pointer-events: auto;
+}
+
 @keyframes iris-drawer-slide-up {
     from { transform: translateY(100%); }
     to { transform: translateY(0); }
