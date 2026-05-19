@@ -89,48 +89,47 @@ export function LocationSearchPopup({ onClose }: LocationSearchPopupProps): JSX.
                 '--iris-popup-border': theme.AQUA,
                 '--iris-popup-shadow': `${theme.AQUA}55`,
                 '--iris-popup-title-color': theme.AQUA,
+                '--iris-location-search-color': theme.AQUA,
+                '--iris-location-search-border': `${theme.AQUA}33`,
             } as Record<string, string>}
         >
-            <div className="iris-search-input-group" style={{ display: 'flex', gap: '8px' }}>
+            <div className="iris-location-search-form">
                 <input
                     type="text"
                     autoFocus
                     value={query}
-                    className="iris-input"
+                    className="iris-input iris-location-search-input"
                     onInput={(e) => setQuery((e.target as HTMLInputElement).value)}
                     onKeyDown={(e) => e.key === 'Enter' && search()}
                     placeholder="Place or lat,lng"
-                    style={{ borderColor: theme.AQUA }}
                 />
                 <button
-                    className="iris-btn"
+                    className="iris-btn iris-location-search-submit"
                     onClick={search}
                     disabled={searching}
-                    style={{ background: theme.AQUA, color: '#000' }}
                 >
                     {searching ? '...' : 'GO'}
                 </button>
             </div>
 
             {error && (
-                <div className="iris-mt-2" style={{ color: '#ff4444', fontSize: '0.85em' }}>
+                <div className="iris-location-search-error">
                     {error}
                 </div>
             )}
 
             {results.length > 0 && (
-                <div className="iris-mt-3" style={{ borderTop: `1px solid ${theme.AQUA}33` }}>
+                <div className="iris-location-search-results">
                     {results.map((result) => (
                         <div
                             key={result.place_id}
-                            className="iris-choice-item iris-mt-2"
+                            className="iris-choice-item iris-location-search-result"
                             onClick={() => navigateToCoordinates(parseFloat(result.lat), parseFloat(result.lon))}
-                            style={{ cursor: 'pointer' }}
                         >
-                            <div style={{ color: theme.AQUA, fontWeight: 'bold' }}>
+                            <div className="iris-location-search-result-title">
                                 {result.display_name.split(',')[0]}
                             </div>
-                            <div className="iris-text-tiny" style={{ opacity: 0.6 }}>
+                            <div className="iris-text-tiny iris-location-search-result-context">
                                 {result.display_name.split(',').slice(1, 3).join(',')}
                             </div>
                         </div>

@@ -376,6 +376,46 @@
     opacity: 0.6;
 }
 
+.iris-location-search-form {
+    display: flex;
+    gap: 8px;
+}
+
+.iris-location-search-input {
+    border-color: var(--iris-location-search-color, var(--iris-accent));
+}
+
+.iris-location-search-submit,
+.iris-location-search-submit:hover {
+    background: var(--iris-location-search-color, var(--iris-accent));
+    color: #000;
+}
+
+.iris-location-search-error {
+    margin-top: 8px;
+    color: var(--iris-error-color, #ff4444);
+    font-size: 0.85em;
+}
+
+.iris-location-search-results {
+    margin-top: 12px;
+    border-top: 1px solid var(--iris-location-search-border, rgb(0 255 255 / 20%));
+}
+
+.iris-location-search-result {
+    margin-top: 8px;
+    cursor: pointer;
+}
+
+.iris-location-search-result-title {
+    color: var(--iris-location-search-color, var(--iris-accent));
+    font-weight: bold;
+}
+
+.iris-location-search-result-context {
+    opacity: 0.6;
+}
+
 .iris-label {
     display: flex;
     align-items: center;

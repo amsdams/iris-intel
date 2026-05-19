@@ -82,3 +82,37 @@
 .iris-map-control-spacer {
   height: 8px;
 }
+
+.iris-map-nav-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.iris-map-nav-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 40px);
+  gap: 10px;
+  justify-content: center;
+}
+
+.iris-map-nav-btn {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  color: var(--iris-map-nav-color, var(--iris-accent));
+  border: 1px solid var(--iris-map-nav-color, var(--iris-accent));
+  background: transparent;
+  font-size: 18px;
+}
+
+.iris-map-nav-zoom-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  color: var(--iris-map-nav-color, var(--iris-accent));
+  font-family: monospace;
+  font-weight: bold;
+}
