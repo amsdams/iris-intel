@@ -103,6 +103,8 @@ export function PortalInfoPopup({ onClose, visible }: PortalInfoPopupProps): JSX
                 '--iris-rarity-rare': theme.ITEM_RARITY.RARE || '#73a8ff',
                 '--iris-rarity-very-rare': theme.ITEM_RARITY.VERY_RARE || '#b08cff',
                 '--iris-rarity-extremely-rare': theme.ITEM_RARITY.EXTREMELY_RARE || '#f00',
+                '--iris-faction-color': colour,
+                '--iris-portal-address-status-color': theme.AQUA,
             } as Record<string, string>}
         >
             <div className="iris-portal-info">
@@ -312,7 +314,7 @@ export function PortalInfoPopup({ onClose, visible }: PortalInfoPopupProps): JSX
                 </div>
 
                 {portal.hasMissionsStartingHere && (
-                    <div style={{marginBottom: '8px'}}>
+                    <div className="iris-portal-action-row">
                         <button
                             onClick={openPortalMissions}
                             className="iris-portal-missions-button"
@@ -357,14 +359,14 @@ export function PortalInfoPopup({ onClose, visible }: PortalInfoPopupProps): JSX
                 </div>
 
                 <div className="iris-portal-details-section">
-                    <div className="iris-portal-address-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div className="iris-portal-address-header">
                         <div className="iris-portal-section-title">ADDRESS</div>
-                        {isAddressStale && <span style={{ color: '#888', fontSize: '0.75em' }}>(stale)</span>}
-                        {addressStatus === 'resolving' && <span style={{ color: theme.AQUA, fontSize: '0.75em' }}>Resolving...</span>}
+                        {isAddressStale && <span className="iris-portal-address-meta">(stale)</span>}
+                        {addressStatus === 'resolving' && <span className="iris-portal-address-meta iris-portal-address-meta-active">Resolving...</span>}
                     </div>
                     <div className="iris-portal-details-table">
                          <div className="iris-portal-details-row">
-                            <span className="iris-portal-details-value" style={{ textAlign: 'left', width: '100%' }}>
+                            <span className="iris-portal-details-value iris-portal-details-value-full">
                                 {portalAddress || (addressStatus === 'resolving' ? 'Resolving...' : '(unknown)')}
                             </span>
                          </div>

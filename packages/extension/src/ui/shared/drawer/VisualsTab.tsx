@@ -17,7 +17,7 @@ export function VisualsTab(): JSX.Element {
         <Fragment>
             <div className="iris-drawer-section-label">Visual Augmentations</div>
             {highlighters.length === 0 ? (
-                <div className="iris-text-small iris-mt-2" style={{ opacity: 0.5, fontStyle: 'italic' }}>
+                <div className="iris-drawer-empty-note">
                     No highlighters enabled.
                 </div>
             ) : (

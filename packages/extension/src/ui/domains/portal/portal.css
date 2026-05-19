@@ -218,6 +218,10 @@
     border-bottom: none;
 }
 
+.iris-portal-details-row-clickable {
+    cursor: pointer;
+}
+
 .iris-portal-details-label {
     color: #888;
     font-size: 0.78em;
@@ -231,6 +235,16 @@
 
 .iris-portal-details-value-faction {
     color: var(--iris-faction-color);
+}
+
+.iris-portal-details-value-link {
+    color: var(--iris-accent);
+    text-decoration: underline;
+}
+
+.iris-portal-details-value-full {
+    width: 100%;
+    text-align: left;
 }
 
 .iris-portal-energy-current {
@@ -357,6 +371,10 @@
     margin-bottom: 8px;
 }
 
+.iris-portal-action-row {
+    margin-bottom: 8px;
+}
+
 .iris-portal-missions-button {
     background: transparent;
     padding: 4px 8px;
@@ -365,6 +383,22 @@
     margin-bottom: 8px;
     border: 1px solid var(--iris-faction-color);
     color: var(--iris-faction-color);
+}
+
+.iris-portal-address-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.iris-portal-address-meta {
+    color: var(--iris-text-muted, #888);
+    font-size: 0.75em;
+}
+
+.iris-portal-address-meta-active {
+    color: var(--iris-portal-address-status-color, var(--iris-accent));
 }
 
 .iris-portal-coords {

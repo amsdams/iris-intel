@@ -62,10 +62,11 @@ export function FieldInfoPopup({ onClose, visible }: FieldInfoPopupProps): JSX.E
                 '--iris-popup-border': colour,
                 '--iris-popup-shadow': `${colour}55`,
                 '--iris-popup-title-color': colour,
+                '--iris-faction-color': colour,
             } as Record<string, string>}
         >
             <div className="iris-portal-info">
-                <div className="iris-portal-name" style={{ color: colour }}>
+                <div className="iris-portal-name">
                     {teamName} Field
                 </div>
 
@@ -73,13 +74,13 @@ export function FieldInfoPopup({ onClose, visible }: FieldInfoPopupProps): JSX.E
                     <div className="iris-portal-summary-col">
                         <div className="iris-portal-summary-row">
                             <span className="iris-portal-summary-label">Mind Units</span>
-                            <span className="iris-portal-summary-value" style={{ color: colour }}>~{estimatedMU.toLocaleString()} MU</span>
+                            <span className="iris-portal-summary-value iris-portal-summary-value-faction">~{estimatedMU.toLocaleString()} MU</span>
                         </div>
                     </div>
                     <div className="iris-portal-summary-col">
                         <div className="iris-portal-summary-row">
                             <span className="iris-portal-summary-label">Team</span>
-                            <span className="iris-portal-summary-value" style={{ color: colour }}>{teamName}</span>
+                            <span className="iris-portal-summary-value iris-portal-summary-value-faction">{teamName}</span>
                         </div>
                     </div>
                 </div>
@@ -92,12 +93,11 @@ export function FieldInfoPopup({ onClose, visible }: FieldInfoPopupProps): JSX.E
                             return (
                                 <div 
                                     key={i} 
-                                    className="iris-portal-details-row"
-                                    style={{ cursor: p ? 'pointer' : 'default' }}
+                                    className={`iris-portal-details-row ${p ? 'iris-portal-details-row-clickable' : ''}`}
                                     onClick={() => p && handlePortalClick(p.id, p.lat, p.lng)}
                                 >
                                     <span className="iris-portal-details-label">Anchor {i+1}</span>
-                                    <span className="iris-portal-details-value" style={{ color: p ? '#00ffff' : colour, textDecoration: p ? 'underline' : 'none' }}>
+                                    <span className={`iris-portal-details-value ${p ? 'iris-portal-details-value-link' : 'iris-portal-details-value-faction'}`}>
                                         {p?.name || 'Unknown Portal'}
                                     </span>
                                 </div>

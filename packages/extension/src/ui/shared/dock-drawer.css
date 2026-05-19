@@ -89,6 +89,14 @@
     letter-spacing: 1px;
 }
 
+.iris-drawer-empty-note {
+    margin-top: 8px;
+    color: var(--iris-text-primary);
+    font-size: 0.85em;
+    font-style: italic;
+    opacity: 0.5;
+}
+
 /* Compact Buttons */
 .iris-drawer-btn {
     background: rgb(255 255 255 / 5%);

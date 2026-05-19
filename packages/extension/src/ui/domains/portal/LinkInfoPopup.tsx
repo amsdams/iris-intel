@@ -47,10 +47,11 @@ export function LinkInfoPopup({ onClose, visible }: LinkInfoPopupProps): JSX.Ele
                 '--iris-popup-border': colour,
                 '--iris-popup-shadow': `${colour}55`,
                 '--iris-popup-title-color': colour,
+                '--iris-faction-color': colour,
             } as Record<string, string>}
         >
             <div className="iris-portal-info">
-                <div className="iris-portal-name" style={{ color: colour }}>
+                <div className="iris-portal-name">
                     {teamName} Link
                 </div>
 
@@ -58,13 +59,13 @@ export function LinkInfoPopup({ onClose, visible }: LinkInfoPopupProps): JSX.Ele
                     <div className="iris-portal-summary-col">
                         <div className="iris-portal-summary-row">
                             <span className="iris-portal-summary-label">Length</span>
-                            <span className="iris-portal-summary-value" style={{ color: colour }}>{distStr}</span>
+                            <span className="iris-portal-summary-value iris-portal-summary-value-faction">{distStr}</span>
                         </div>
                     </div>
                     <div className="iris-portal-summary-col">
                         <div className="iris-portal-summary-row">
                             <span className="iris-portal-summary-label">Team</span>
-                            <span className="iris-portal-summary-value" style={{ color: colour }}>{teamName}</span>
+                            <span className="iris-portal-summary-value iris-portal-summary-value-faction">{teamName}</span>
                         </div>
                     </div>
                 </div>
@@ -73,22 +74,20 @@ export function LinkInfoPopup({ onClose, visible }: LinkInfoPopupProps): JSX.Ele
                     <div className="iris-portal-section-title">ANCHORS</div>
                     <div className="iris-portal-details-table">
                         <div 
-                            className="iris-portal-details-row" 
-                            style={{ cursor: fromPortal ? 'pointer' : 'default' }}
+                            className={`iris-portal-details-row ${fromPortal ? 'iris-portal-details-row-clickable' : ''}`}
                             onClick={() => fromPortal && handlePortalClick(fromPortal.id, fromPortal.lat, fromPortal.lng)}
                         >
                             <span className="iris-portal-details-label">From</span>
-                            <span className="iris-portal-details-value" style={{ color: fromPortal ? '#00ffff' : colour, textDecoration: fromPortal ? 'underline' : 'none' }}>
+                            <span className={`iris-portal-details-value ${fromPortal ? 'iris-portal-details-value-link' : 'iris-portal-details-value-faction'}`}>
                                 {fromPortal?.name || 'Unknown Portal'}
                             </span>
                         </div>
                         <div 
-                            className="iris-portal-details-row" 
-                            style={{ cursor: toPortal ? 'pointer' : 'default' }}
+                            className={`iris-portal-details-row ${toPortal ? 'iris-portal-details-row-clickable' : ''}`}
                             onClick={() => toPortal && handlePortalClick(toPortal.id, toPortal.lat, toPortal.lng)}
                         >
                             <span className="iris-portal-details-label">To</span>
-                            <span className="iris-portal-details-value" style={{ color: toPortal ? '#00ffff' : colour, textDecoration: toPortal ? 'underline' : 'none' }}>
+                            <span className={`iris-portal-details-value ${toPortal ? 'iris-portal-details-value-link' : 'iris-portal-details-value-faction'}`}>
                                 {toPortal?.name || 'Unknown Portal'}
                             </span>
                         </div>
