@@ -1,5 +1,5 @@
 import {h, JSX} from 'preact';
-import { useEffect } from 'preact/hooks';
+import {useEffect, useState} from 'preact/hooks';
 import {PortalMod, PortalResonator, useStore, InventoryParser} from '@iris/core';
 import {Popup} from '../../shared/Popup';
 import {THEMES, TEAM_NAME, UI_COLORS, getModRarityColor} from '../../theme';
@@ -30,6 +30,7 @@ interface PortalInfoPopupProps {
 }
 
 export function PortalInfoPopup({ onClose, visible }: PortalInfoPopupProps): JSX.Element | null {
+    const [copyStatus, setCopyStatus] = useState<string | null>(null);
     const portals = useStore((state) => state.portals);
     const artifacts = useStore((state) => state.artifacts);
     const inventory = useStore((state) => state.inventory);
@@ -86,6 +87,37 @@ export function PortalInfoPopup({ onClose, visible }: PortalInfoPopupProps): JSX
         document.dispatchEvent(
             new CustomEvent('iris:missions:open', {detail: {portalId: portal.id}})
         );
+    };
+
+    const moveToPortal = (): void => {
+        window.postMessage({
+            type: 'IRIS_MOVE_MAP',
+            center: {lat: portal.lat, lng: portal.lng},
+            zoom: 17,
+        }, '*');
+    };
+
+    const copyText = (text: string): void => {
+        if (!navigator.clipboard?.writeText) {
+            setCopyStatus('Copy blocked');
+            return;
+        }
+
+        navigator.clipboard.writeText(text)
+            .then(() => {
+                setCopyStatus('Copied');
+                window.setTimeout(() => setCopyStatus(null), 1600);
+            })
+            .catch(() => setCopyStatus('Copy blocked'));
+    };
+
+    const copyPortalCoordinates = (): void => {
+        copyText(`${portal.lat.toFixed(6)}, ${portal.lng.toFixed(6)}`);
+    };
+
+    const copyPortalAddress = (): void => {
+        if (!portalAddress) return;
+        copyText(portalAddress);
     };
 
     return (
@@ -313,16 +345,6 @@ export function PortalInfoPopup({ onClose, visible }: PortalInfoPopupProps): JSX
                     </div>
                 </div>
 
-                {portal.hasMissionsStartingHere && (
-                    <div className="iris-portal-action-row">
-                        <button
-                            onClick={openPortalMissions}
-                            className="iris-portal-missions-button"
-                        >
-                            Missions Starting Here
-                        </button>
-                    </div>
-                )}
                 <div className="iris-portal-history-section">
                     <div className="iris-portal-section-title">
                         HISTORY
@@ -341,6 +363,40 @@ export function PortalInfoPopup({ onClose, visible }: PortalInfoPopupProps): JSX
                             Scout Controlled
                         </span>
                     </div>
+                </div>
+                <div className="iris-portal-action-row">
+                    <button
+                        type="button"
+                        className="iris-portal-action-button"
+                        onClick={moveToPortal}
+                    >
+                        Center Map
+                    </button>
+                    <button
+                        type="button"
+                        className="iris-portal-action-button"
+                        onClick={copyPortalCoordinates}
+                    >
+                        {copyStatus || 'Copy Coords'}
+                    </button>
+                    {portalAddress && (
+                        <button
+                            type="button"
+                            className="iris-portal-action-button"
+                            onClick={copyPortalAddress}
+                        >
+                            Copy Address
+                        </button>
+                    )}
+                    {portal.hasMissionsStartingHere && (
+                        <button
+                            type="button"
+                            onClick={openPortalMissions}
+                            className="iris-portal-action-button"
+                        >
+                            Missions
+                        </button>
+                    )}
                 </div>
                 <div className="iris-portal-details-section">
                     <div className="iris-portal-section-title">

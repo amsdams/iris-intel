@@ -372,17 +372,31 @@
 }
 
 .iris-portal-action-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
     margin-bottom: 8px;
 }
 
-.iris-portal-missions-button {
+.iris-portal-action-button {
     background: transparent;
-    padding: 4px 8px;
+    padding: 5px 9px;
     font-size: 0.8em;
+    font-weight: bold;
     cursor: pointer;
-    margin-bottom: 8px;
     border: 1px solid var(--iris-faction-color);
+    border-radius: 4px;
     color: var(--iris-faction-color);
+}
+
+.iris-portal-action-button:hover,
+.iris-portal-action-button:focus-visible {
+    background: rgb(255 255 255 / 8%);
+    outline: none;
+}
+
+.iris-portal-action-button:active {
+    transform: translateY(1px);
 }
 
 .iris-portal-address-header {
