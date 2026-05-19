@@ -1,5 +1,6 @@
 import { h, JSX, Fragment } from 'preact';
 import { useStore, pluginManager } from '@iris/core';
+import {DrawerButton, DrawerSection} from './DrawerControls';
 
 export function LayersTab(): JSX.Element {
     const layerShowFields = useStore((state) => state.layerShowFields);
@@ -16,39 +17,25 @@ export function LayersTab(): JSX.Element {
 
     return (
         <Fragment>
-            <div className="iris-drawer-section-label">Structural Layers</div>
-            <div className="iris-drawer-grid">
-                <button className={`iris-drawer-btn ${layerShowFields ? 'iris-drawer-btn-active' : ''}`} onClick={toggleLayerFields}>
-                    <div className="iris-drawer-btn-icon">🌐</div>
-                    <div className="iris-drawer-btn-label">Fields</div>
-                </button>
-                <button className={`iris-drawer-btn ${layerShowLinks ? 'iris-drawer-btn-active' : ''}`} onClick={toggleLayerLinks}>
-                    <div className="iris-drawer-btn-icon">⛓️</div>
-                    <div className="iris-drawer-btn-label">Links</div>
-                </button>
+            <DrawerSection label="Structural Layers">
+                <DrawerButton active={layerShowFields} icon="🌐" label="Fields" onClick={toggleLayerFields} />
+                <DrawerButton active={layerShowLinks} icon="⛓️" label="Links" onClick={toggleLayerLinks} />
                 
                 {pluginStates['player-tracker'] && (
-                    <button 
-                        className={`iris-drawer-btn ${activeVisualOverlayIds.includes('player-tracker') ? 'iris-drawer-btn-active' : ''}`} 
+                    <DrawerButton
+                        active={activeVisualOverlayIds.includes('player-tracker')}
+                        icon="🏃"
+                        label="Players"
                         onClick={() => {
                             toggleVisualOverlay('player-tracker');
                             setTimeout(() => pluginManager.syncVisualOverlays(), 0);
                         }}
-                    >
-                        <div className="iris-drawer-btn-icon">🏃</div>
-                        <div className="iris-drawer-btn-label">Players</div>
-                    </button>
+                    />
                 )}
 
-                <button className={`iris-drawer-btn ${layerShowOrnaments ? 'iris-drawer-btn-active' : ''}`} onClick={toggleLayerOrnaments}>
-                    <div className="iris-drawer-btn-icon">💠</div>
-                    <div className="iris-drawer-btn-label">Event</div>
-                </button>
-                <button className={`iris-drawer-btn ${layerShowArtifacts ? 'iris-drawer-btn-active' : ''}`} onClick={toggleLayerArtifacts}>
-                    <div className="iris-drawer-btn-icon">💎</div>
-                    <div className="iris-drawer-btn-label">Shard</div>
-                </button>
-            </div>
+                <DrawerButton active={layerShowOrnaments} icon="💠" label="Event" onClick={toggleLayerOrnaments} />
+                <DrawerButton active={layerShowArtifacts} icon="💎" label="Shard" onClick={toggleLayerArtifacts} />
+            </DrawerSection>
         </Fragment>
     );
 }

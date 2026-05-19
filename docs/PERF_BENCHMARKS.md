@@ -31,6 +31,9 @@ when evaluating major dependency migrations or rendering changes.
 | 0.1.5   | Pan vs zoom overlay cost        | Desktop Mac | Chrome 148  | OSM     | tracker, health fill, level labels      | 17,518 | 4,773   | 6,571  | 2,965  | 3,002   | 0ms      | 0ms       | n/a  | 17ms      | 17ms   | 34ms  | 60  | 0/541       |
 | 0.1.5   | No-plugin pan variant           | Desktop Mac | Chrome 148  | OSM     | tracker, health fill, level labels      | 17,518 | 4,773   | 6,571  | 2,965  | 3,002   | 0ms      | 0ms       | n/a  | 17ms      | 17ms   | 33ms  | 60  | 0/539       |
 | 0.1.5   | Moving overlay suspension       | Desktop Mac | Chrome 148  | OSM     | tracker, health fill, level labels      | 16,355 | 4,256   | 6,562  | 2,967  | 2,389   | 0ms      | 0ms       | n/a  | 17ms      | 17ms   | 84ms  | 58  | 5/525       |
+| 0.1.6   | z8 entity isolation batch       | Mobile ARM  | Firefox 149 | OSM     | tracker, health fill, level labels      | 18,395 | 5,404   | 9,045  | 3,659  | 223     | n/a      | n/a       | n/a  | 30ms      | 27ms   | 268ms | 34  | 43/302      |
+| 0.1.6   | z8 no-links isolation           | Mobile ARM  | Firefox 149 | OSM     | tracker, health fill, level labels      | 18,395 | 5,404   | 9,045  | 3,659  | 223     | n/a      | n/a       | n/a  | 18ms      | 18ms   | 50ms  | 55  | 3/498       |
+| 0.1.6   | z8 no-fields isolation          | Mobile ARM  | Firefox 149 | OSM     | tracker, health fill, level labels      | 18,395 | 5,404   | 9,045  | 3,659  | 223     | n/a      | n/a       | n/a  | 18ms      | 18ms   | 33ms  | 57  | 0/511       |
 
 ## Readout
 
@@ -541,3 +544,48 @@ Notes:
 - The first post-change sample did not improve the worst frame (`84ms`, `5` slow frames), so plugin labels/highlights are
   not the only remaining pan spike source in that run, or the layer-visibility change itself needs a different timing
   strategy.
+
+## 2026-05-19 - IRIS 0.1.6 - Batch Benchmark Entity Isolation
+
+Context:
+
+- Purpose: use the expanded Batch report to separate plugin-overlay cost from core entity layer cost, especially at
+  low zoom.
+- Desktop browser: Chrome 148.0.0.0 on macOS (`MacIntel`), viewport `1728x934`, DPR `2.00`.
+- Mobile browser: Firefox 149.0 on Linux/Android ARM, viewport `360x704`, DPR `3.00`.
+- Map style: `OSM`.
+- Overlay state: `player-tracker`, `portal-health-fill`, `portal-level-labels`.
+- Network note: desktop was collected on a slow network; z8 entity counts changed mid-batch, so desktop rows are useful
+  for smoke testing the batch tooling but not as a strict A/B.
+
+### Desktop Batch Excerpt
+
+```text
+IRIS BENCH BATCH browser Chrome/148.0.0.0 platform MacIntel viewport 1728x934 dpr 2.00
+z8 normal pan | items 29,547 | P 8,852 | L 13,092 | F 5,347 | orn 1,267 | plugin 989 | avg 9ms | max 83ms | fps 116 | slow 5/1,043 | median 9ms | benchMax 83ms | pluginMix total 989 labels 0 player 0 highlights 989 lines 0 points 989
+z8 no-links pan | items 48,255 | P 13,960 | L 22,672 | F 9,367 | orn 1,267 | plugin 989 | avg 11ms | max 150ms | fps 89 | slow 27/807 | median 8ms | benchMax 150ms | pluginMix total 989 labels 0 player 0 highlights 989 lines 0 points 989
+z8 no-fields pan | items 54,252 | P 15,534 | L 25,829 | F 10,633 | orn 1,267 | plugin 989 | avg 14ms | max 167ms | fps 70 | slow 43/632 | median 14ms | benchMax 167ms | pluginMix total 989 labels 0 player 0 highlights 989 lines 0 points 989
+z8 base pan | items 54,361 | P 15,542 | L 25,919 | F 10,644 | orn 1,267 | plugin 989 | avg 13ms | max 133ms | fps 77 | slow 40/703 | median 12ms | benchMax 133ms | pluginMix total 989 labels 0 player 0 highlights 989 lines 0 points 989
+z8 no-plugins pan | items 54,361 | P 15,542 | L 25,919 | F 10,644 | orn 1,267 | plugin 989 | avg 8ms | max 17ms | fps 120 | slow 0/1,080 | median 8ms | benchMax 17ms | pluginMix total 989 labels 0 player 0 highlights 989 lines 0 points 989
+```
+
+### Mobile Batch Excerpt
+
+```text
+IRIS BENCH BATCH browser Firefox/149.0 platform Linux armv81 viewport 360x704 dpr 3.00
+z8 normal pan | items 18,395 | P 5,404 | L 9,045 | F 3,659 | orn 64 | plugin 223 | avg 30ms | max 268ms | fps 34 | slow 43/302 | median 27ms | benchMax 268ms | pluginMix total 223 labels 0 player 0 highlights 223 lines 0 points 223
+z8 no-links pan | items 18,395 | P 5,404 | L 9,045 | F 3,659 | orn 64 | plugin 223 | avg 18ms | max 50ms | fps 55 | slow 3/498 | median 18ms | benchMax 50ms | pluginMix total 223 labels 0 player 0 highlights 223 lines 0 points 223
+z8 no-fields pan | items 18,395 | P 5,404 | L 9,045 | F 3,659 | orn 64 | plugin 223 | avg 18ms | max 33ms | fps 57 | slow 0/511 | median 18ms | benchMax 33ms | pluginMix total 223 labels 0 player 0 highlights 223 lines 0 points 223
+z8 base pan | items 18,395 | P 5,404 | L 9,045 | F 3,659 | orn 64 | plugin 223 | avg 17ms | max 50ms | fps 58 | slow 3/519 | median 17ms | benchMax 50ms | pluginMix total 223 labels 0 player 0 highlights 223 lines 0 points 223
+z8 no-plugins pan | items 18,395 | P 5,404 | L 9,045 | F 3,659 | orn 64 | plugin 223 | avg 18ms | max 67ms | fps 57 | slow 5/511 | median 18ms | benchMax 67ms | pluginMix total 223 labels 0 player 0 highlights 223 lines 0 points 223
+```
+
+Notes:
+
+- The mobile z8 rows are the cleaner comparison because item/source counts stayed fixed across variants.
+- At z8, plugin mix contained only portal-health highlights (`223`) and no labels/player lines; `No Links` and
+  `No Fields` both returned the mobile run near baseline.
+- `No Fields` was slightly cleaner than `No Links` in this sample (`0` slow frames vs `3`), and hiding/simplifying
+  fields during movement is lower UX risk because links are more useful for orientation while panning.
+- Treat the desktop z8 rows as non-comparable because the slow network allowed live entity loading to change the source
+  mix from `29,547` to `54,361` items during the same batch.

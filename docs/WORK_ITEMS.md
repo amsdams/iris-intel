@@ -192,11 +192,11 @@ Tasks:
 | Add automated pan benchmark for repeatable mobile samples      | Done   | mock tools now include a debug-only Bench action with selectable zoom, runs a deterministic 3-run pan sample, and records aggregate/median results in FRAME diagnostics |
 | Keep Bench working after page-world migration                  | Done   | Bench now runs inside the page-world map runtime and publishes FRAME benchmark snapshots back to IRIS diagnostics |
 | Record page-world benchmark improvement                        | Done   | page-world Bench samples show Chrome desktop at `17ms / 60fps / 0 slow`, Firefox desktop at `8ms / 122fps / 1 slow`, and Firefox mobile at `18ms / 57fps / 1 slow`; later samples restored source diagnostics |
-| Tune low-zoom moving-mode link rendering                       | Open   | expanded Bench now includes `No Links`; next run should compare z8 Normal vs No Links vs No Fields before deciding whether to thin, hide, or simplify links while moving |
+| Tune low-zoom moving-mode link rendering                       | Open   | IRIS 0.1.6 mobile batch on Firefox 149 showed z8 Normal pan at `30ms avg / 43 slow` while `No Links` improved to `18ms avg / 3 slow`; consider thinning or hiding links while actively moving, but compare against the field option first |
 | Make pan benchmark path deterministic under stutter             | Done   | Bench now drives the map by requestAnimationFrame and direct center interpolation instead of animated `panBy`, avoiding path drift from queued mobile pan animations |
 | Add benchmark sample history or run count                       | Done   | Bench now runs 3 samples and reports run count, median average frame time, average range, and worst frame in Diagnostics copy output |
 | Define fixed benchmark scenarios for version comparisons        | Done   | `docs/PERF_BENCHMARKS.md` now defines base map, default use, labels on, draw tools on, and heavy overlay scenarios with fixed center/zoom/style/browser/run-count guidance |
-| Compare stationary vs moving field-render modes                 | Open   | expanded Bench now includes `No Fields`; next run should compare z8 Normal vs No Links vs No Fields before deciding whether to hide or simplify fields while moving |
+| Compare stationary vs moving field-render modes                 | Open   | IRIS 0.1.6 mobile batch on Firefox 149 showed z8 Normal pan at `30ms avg / 43 slow` while `No Fields` improved to `18ms avg / 0 slow`; field simplification/hiding is the lowest-risk first candidate because links are usually more useful for orientation while panning |
 | Add overlay-hidden benchmark variant                            | Done   | Bench now supports `Base` and `No Plugins`; page-world HTML marker registries stay hidden during those runs even if marker sync fires mid-benchmark |
 | Add entity-layer isolation benchmark variants                   | Done   | Bench now supports `No Links` and `No Fields`, and Batch includes those z8 pan scenarios so low-zoom core entity rendering can be separated from plugin-overlay cost |
 | Make batch benchmark output copyable without clipboard          | Done   | Batch now stores its report in an on-screen selectable textarea and keeps Copy/Show actions after the run because long async batches can lose browser clipboard activation |
@@ -864,7 +864,7 @@ Tasks:
 | Add primary-popup focus behavior on mobile       | Open   | only implement after the focus model is chosen; likely close other primary popups when opening stats/portal/link/field details while leaving COMM as a separate decision |
 | Add portal popup action row                      | Open   | keep all details but make high-frequency actions such as Missions, copy/navigation, or map movement easier to reach near the top |
 | Review mobile back/escape close behavior         | Open   | consider closing the active bottom sheet before broader overlay state changes; treat as later UX work because it touches global interaction |
-| Extract internal UI primitives                   | Open   | larger cleanup: start drawer-first with `DrawerSection`, `DrawerButton`, `DrawerGrid`, and `DrawerScrollGroup`; avoid third-party UI library unless behavior primitives are needed |
+| Extract internal UI primitives                   | Open   | drawer-first pass started with shared `DrawerSection` and `DrawerButton` controls used by Agent, System, and Layers tabs; continue migrating Map/Tactical/Visuals before considering broader primitives |
 
 ### Map layer and filter toggles update immediately
 
@@ -1012,8 +1012,8 @@ Tasks:
 
 ## Current Next Pickup
 
-1. **[Benchmark Validation]** Run the expanded IRIS 0.1.6 Batch on desktop and mobile; compare z8 `normal pan`, `no-links pan`, `no-fields pan`, `base pan`, and `no-plugins pan`.
-2. **[Low-Zoom Entity Rendering]** If z8 Normal remains slower while plugin count is `0`, choose the smallest moving-mode optimization based on the isolation result: link thinning/hiding, field simplification/hiding, or both.
+1. **[Low-Zoom Entity Rendering]** Implement the smallest moving-mode optimization for z8 core entity rendering. Current best first candidate: simplify or hide field fills while actively moving, then restore after settle.
+2. **[Benchmark Validation]** After that change, rerun the expanded IRIS 0.1.6 Batch on desktop and mobile and compare z8 `normal pan`, `no-links pan`, `no-fields pan`, `base pan`, and `no-plugins pan`.
 3. **[Plugin Overlay]** Revisit IITC-style label overlap thinning only if z14 Normal pan spikes correlate with high `pluginMix` label/highlight counts; current z8 samples point away from plugins.
 4. **[Performance Architecture]** Reproduce the Inventory + Diagnostics + COMM crash only after a fresh `Oh snap`; use `LONGTASK`, `UIRENDER`, `ENTITYGEN`, plugin mix, and domain errors to identify whether it is DOM/render pressure, request/runtime errors, or memory pressure.
 5. **[UI Architecture]** Extend shared UI/CSS primitives to drawer buttons, popup action rows, and map controls after visual smoke testing the first pass.

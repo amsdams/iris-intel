@@ -1,4 +1,5 @@
 import { h, JSX, Fragment } from 'preact';
+import {DrawerButton, DrawerSection} from './DrawerControls';
 
 interface AgentTabProps {
     onAction: (action: string) => void;
@@ -7,36 +8,16 @@ interface AgentTabProps {
 export function AgentTab({ onAction }: AgentTabProps): JSX.Element {
     return (
         <Fragment>
-            <div className="iris-drawer-section-label">Agent Tools</div>
-            <div className="iris-drawer-grid">
-                <button className="iris-drawer-btn" onClick={() => onAction('stats')}>
-                    <div className="iris-drawer-btn-icon">👤</div>
-                    <div className="iris-drawer-btn-label">Stats</div>
-                </button>
-                <button className="iris-drawer-btn" onClick={() => onAction('inventory')}>
-                    <div className="iris-drawer-btn-icon">🎒</div>
-                    <div className="iris-drawer-btn-label">Items</div>
-                </button>
-                <button className="iris-drawer-btn" onClick={() => onAction('comm')}>
-                    <div className="iris-drawer-btn-icon">💬</div>
-                    <div className="iris-drawer-btn-label">COMM</div>
-                </button>
-                <button className="iris-drawer-btn" onClick={() => onAction('passcodes')}>
-                    <div className="iris-drawer-btn-icon">🔑</div>
-                    <div className="iris-drawer-btn-label">Codes</div>
-                </button>
-            </div>
-            <div className="iris-drawer-section-label">MU Scores</div>
-            <div className="iris-drawer-grid">
-                <button className="iris-drawer-btn" onClick={() => onAction('gameScore')}>
-                    <div className="iris-drawer-btn-icon">📊</div>
-                    <div className="iris-drawer-btn-label">Global</div>
-                </button>
-                <button className="iris-drawer-btn" onClick={() => onAction('regionScore')}>
-                    <div className="iris-drawer-btn-icon">📉</div>
-                    <div className="iris-drawer-btn-label">Cell</div>
-                </button>
-            </div>
+            <DrawerSection label="Agent Tools">
+                <DrawerButton icon="👤" label="Stats" onClick={() => onAction('stats')} />
+                <DrawerButton icon="🎒" label="Items" onClick={() => onAction('inventory')} />
+                <DrawerButton icon="💬" label="COMM" onClick={() => onAction('comm')} />
+                <DrawerButton icon="🔑" label="Codes" onClick={() => onAction('passcodes')} />
+            </DrawerSection>
+            <DrawerSection label="MU Scores">
+                <DrawerButton icon="📊" label="Global" onClick={() => onAction('gameScore')} />
+                <DrawerButton icon="📉" label="Cell" onClick={() => onAction('regionScore')} />
+            </DrawerSection>
         </Fragment>
     );
 }
