@@ -204,4 +204,108 @@ describe('store persistence', () => {
     expect(useStore.getState().selectedPlannedItemId).toBeNull();
     expect(useStore.getState().selectedPlannedItemType).toBeNull();
   });
+
+  it('does not add duplicate planned markers for the same portal or coordinates', () => {
+    useStore.getState().addPlannedMarker(52.371094, 4.906375, 'Marker 1', 'blue', 'portal-a');
+    useStore.getState().addPlannedMarker(52.371094, 4.906375, 'Custom label', 'green', 'portal-a');
+    useStore.getState().addPlannedMarker(52.3710941, 4.9063749, 'Another label', 'red');
+
+    const markers = useStore.getState().plannedMarkers;
+
+    expect(markers).toHaveLength(1);
+    expect(markers[0]).toMatchObject({
+      label: 'Custom label',
+      color: 'red',
+      portalId: 'portal-a',
+    });
+    expect(useStore.getState().selectedPlannedItemId).toBe(markers[0].id);
+    expect(useStore.getState().selectedPlannedItemType).toBe('marker');
+  });
+
+  it('removes duplicate planned markers from persisted storage on rehydrate', async () => {
+    localStorage.setItem('iris-settings', JSON.stringify({
+      state: {
+        plannedMarkers: [
+          {
+            id: 'planned-marker:1',
+            lat: 52.371094,
+            lng: 4.906375,
+            label: 'Marker 1',
+            color: 'blue',
+            portalId: 'portal-a',
+            createdAt: 1,
+          },
+          {
+            id: 'planned-marker:2',
+            lat: 52.371094,
+            lng: 4.906375,
+            label: 'Custom label',
+            color: 'green',
+            portalId: 'portal-a',
+            createdAt: 2,
+          },
+          {
+            id: 'planned-marker:3',
+            lat: 52.3710941,
+            lng: 4.9063749,
+            label: 'Coordinate duplicate',
+            color: 'red',
+            createdAt: 3,
+          },
+        ],
+      },
+    }));
+
+    await useStore.persist.rehydrate();
+
+    expect(useStore.getState().plannedMarkers).toEqual([
+      {
+        id: 'planned-marker:1',
+        lat: 52.371094,
+        lng: 4.906375,
+        label: 'Custom label',
+        color: 'blue',
+        portalId: 'portal-a',
+        createdAt: 1,
+      },
+    ]);
+  });
+
+  it('normalizes persisted planned marker coordinates and drops invalid markers', async () => {
+    localStorage.setItem('iris-settings', JSON.stringify({
+      state: {
+        plannedMarkers: [
+          {
+            id: 'planned-marker:1',
+            lat: 95,
+            lng: 181,
+            label: 'Wrapped marker',
+            color: 'blue',
+            createdAt: 1,
+          },
+          {
+            id: 'planned-marker:2',
+            lat: Number.NaN,
+            lng: 4.906375,
+            label: 'Invalid marker',
+            color: 'green',
+            createdAt: 2,
+          },
+        ],
+      },
+    }));
+
+    await useStore.persist.rehydrate();
+
+    expect(useStore.getState().plannedMarkers).toEqual([
+      {
+        id: 'planned-marker:1',
+        lat: 85.051129,
+        lng: -179,
+        label: 'Wrapped marker',
+        color: 'blue',
+        createdAt: 1,
+      },
+    ]);
+  });
 });

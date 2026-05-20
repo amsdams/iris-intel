@@ -158,6 +158,7 @@
     border-radius: 7px;
     background: rgb(255 255 255 / 5%);
     color: var(--iris-text-primary);
+    cursor: pointer;
     text-align: left;
 }
 
@@ -194,7 +195,6 @@
     border: 0;
     background: transparent;
     color: inherit;
-    cursor: pointer;
     text-align: left;
 }
 
@@ -243,6 +243,7 @@
     border-radius: 4px;
     background: rgb(0 0 0 / 45%);
     color: var(--iris-text-primary);
+    cursor: text;
     font-size: 0.78em;
     font-weight: bold;
 }

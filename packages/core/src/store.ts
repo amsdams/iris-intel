@@ -9,7 +9,7 @@ function getFeatureIdentity(feature: GeoJSON.Feature | null | undefined): string
     if (!feature) return null;
     if (typeof feature.id === 'string' || typeof feature.id === 'number') return feature.id;
 
-    const properties = feature.properties;
+    const properties = feature.properties as Record<string, unknown> | null | undefined;
     if (!properties) return null;
     const propertyId = properties.id;
     return typeof propertyId === 'string' || typeof propertyId === 'number' ? propertyId : null;
@@ -108,6 +108,72 @@ export interface PlannedMarker {
     color: 'white' | 'red' | 'blue' | 'green';
     portalId?: string;
     createdAt: number;
+}
+
+const MAX_MERCATOR_LATITUDE = 85.05112878;
+
+function clampLatitude(lat: number): number {
+    return Math.max(-MAX_MERCATOR_LATITUDE, Math.min(MAX_MERCATOR_LATITUDE, lat));
+}
+
+function normalizeLongitude(lng: number): number {
+    return ((((lng + 180) % 360) + 360) % 360) - 180;
+}
+
+function normalizePlannedMarkerCoordinates(lat: number, lng: number): {lat: number; lng: number} | null {
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    return {
+        lat: Math.round(clampLatitude(lat) * 1e6) / 1e6,
+        lng: Math.round(normalizeLongitude(lng) * 1e6) / 1e6,
+    };
+}
+
+function getPlannedMarkerCoordinateKey(marker: Pick<PlannedMarker, 'lat' | 'lng'>): string {
+    return `${Math.round(marker.lat * 1e6)}:${Math.round(marker.lng * 1e6)}`;
+}
+
+function plannedMarkersMatch(a: PlannedMarker, b: Pick<PlannedMarker, 'lat' | 'lng' | 'portalId'>): boolean {
+    if (a.portalId && b.portalId && a.portalId === b.portalId) return true;
+    return getPlannedMarkerCoordinateKey(a) === getPlannedMarkerCoordinateKey(b);
+}
+
+function isGenericPlannedMarkerLabel(label: string): boolean {
+    return /^Marker \d+$/u.test(label.trim());
+}
+
+function mergePlannedMarker(existing: PlannedMarker, duplicate: PlannedMarker): PlannedMarker {
+    const existingIsGeneric = isGenericPlannedMarkerLabel(existing.label);
+    const duplicateIsGeneric = isGenericPlannedMarkerLabel(duplicate.label);
+
+    return {
+        ...existing,
+        label: existingIsGeneric && !duplicateIsGeneric ? duplicate.label : existing.label,
+        color: existing.color,
+        portalId: existing.portalId ?? duplicate.portalId,
+        createdAt: Math.min(existing.createdAt, duplicate.createdAt),
+    };
+}
+
+function dedupePlannedMarkers(markers: PlannedMarker[]): PlannedMarker[] {
+    const deduped: PlannedMarker[] = [];
+
+    for (const marker of markers) {
+        const normalizedCoordinates = normalizePlannedMarkerCoordinates(marker.lat, marker.lng);
+        if (!normalizedCoordinates) continue;
+        const normalizedMarker = {
+            ...marker,
+            ...normalizedCoordinates,
+        };
+        const existingIndex = deduped.findIndex((existing) => plannedMarkersMatch(existing, normalizedMarker));
+        if (existingIndex === -1) {
+            deduped.push(normalizedMarker);
+            continue;
+        }
+
+        deduped[existingIndex] = mergePlannedMarker(deduped[existingIndex], normalizedMarker);
+    }
+
+    return deduped;
 }
 
 export type PlanningTool = 'links' | 'markers';
@@ -1222,14 +1288,39 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
     })),
     addPlannedMarker: (lat, lng, label, color = 'blue', portalId) => set((state) => {
         const createdAt = Date.now();
+        const normalizedCoordinates = normalizePlannedMarkerCoordinates(lat, lng);
+        if (!normalizedCoordinates) return state;
+
+        const existingMarker = state.plannedMarkers.find((marker) => plannedMarkersMatch(marker, {
+            ...normalizedCoordinates,
+            portalId,
+        }));
+
+        if (existingMarker) {
+            const trimmedLabel = label?.trim();
 
             return {
-                plannedMarkers: [
-                    ...state.plannedMarkers,
+                plannedMarkers: state.plannedMarkers.map((marker) => marker.id === existingMarker.id
+                    ? {
+                        ...marker,
+                        label: trimmedLabel && isGenericPlannedMarkerLabel(marker.label) ? trimmedLabel : marker.label,
+                        color,
+                        portalId: marker.portalId ?? portalId,
+                    }
+                    : marker
+                ),
+                selectedPlannedItemId: existingMarker.id,
+                selectedPlannedItemType: 'marker',
+            };
+        }
+
+        return {
+            plannedMarkers: [
+                ...state.plannedMarkers,
                 {
                     id: `planned-marker:${createdAt}`,
-                    lat,
-                    lng,
+                    lat: normalizedCoordinates.lat,
+                    lng: normalizedCoordinates.lng,
                     label: label || `Marker ${state.plannedMarkers.length + 1}`,
                     color,
                     portalId,
@@ -1319,7 +1410,7 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
 
         return { plannedMarkers: state.plannedMarkers.slice(0, -1), selectedPlannedItemId: null, selectedPlannedItemType: null };
     }),
-    clearPlannedLinks: (tool) => set((state) => {
+    clearPlannedLinks: (tool) => set(() => {
         if (tool === 'links') {
             return {
                 plannedLinks: [],
@@ -1679,6 +1770,15 @@ const irisStore = createStore<IRISState>()(
                     if (state) {
                         if (state.themeId === 'DEFAULT') {
                             state.themeId = 'INGRESS';
+                        }
+                        state.plannedMarkers = dedupePlannedMarkers(Array.isArray(state.plannedMarkers) ? state.plannedMarkers : []);
+                        if (
+                            state.selectedPlannedItemType === 'marker' &&
+                            state.selectedPlannedItemId &&
+                            !state.plannedMarkers.some((marker) => marker.id === state.selectedPlannedItemId)
+                        ) {
+                            state.selectedPlannedItemId = null;
+                            state.selectedPlannedItemType = null;
                         }
                         state.rehydrated = true;
                     }

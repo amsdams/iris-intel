@@ -63,6 +63,7 @@ export function MapTab({ onAction }: MapTabProps): JSX.Element {
     }, [mapState.lat, mapState.lng, pendingScrollMarkerId, plannedMarkers, selectedPlannedItemId]);
 
     const navigateToMarker = (marker: {id: string; lat: number; lng: number}, target: EventTarget | null): void => {
+        if (!Number.isFinite(marker.lat) || !Number.isFinite(marker.lng)) return;
         selectPlannedMarker(marker.id);
         setPendingScrollMarkerId(marker.id);
         setConfirmDeleteMarkerId(null);
@@ -74,6 +75,17 @@ export function MapTab({ onAction }: MapTabProps): JSX.Element {
             center: {lat: marker.lat, lng: marker.lng},
             zoom: Math.max(mapState.zoom, 16),
         }, '*');
+    };
+
+    const navigateToMarkerFromRow = (marker: {id: string; lat: number; lng: number}, event: JSX.TargetedMouseEvent<HTMLDivElement>): void => {
+        const target = event.target;
+        if (
+            target instanceof HTMLElement &&
+            target.closest('.iris-drawer-marker-action, .iris-drawer-marker-input')
+        ) {
+            return;
+        }
+        navigateToMarker(marker, event.currentTarget);
     };
 
     const startEditingMarker = (marker: {id: string; label: string}): void => {
@@ -138,6 +150,7 @@ export function MapTab({ onAction }: MapTabProps): JSX.Element {
                                         key={marker.id}
                                         ref={isSelected ? selectedMarkerRowRef : undefined}
                                         className={`iris-drawer-marker-row iris-drawer-marker-row-${marker.color} ${isSelected ? 'iris-drawer-marker-row-active' : ''}`}
+                                        onClick={isEditing ? undefined : (event): void => navigateToMarkerFromRow(marker, event)}
                                     >
                                         {isEditing ? (
                                             <div className="iris-drawer-marker-target">
@@ -162,10 +175,8 @@ export function MapTab({ onAction }: MapTabProps): JSX.Element {
                                                 </span>
                                             </div>
                                         ) : (
-                                            <button
-                                                type="button"
+                                            <div
                                                 className="iris-drawer-marker-target"
-                                                onClick={(event) => navigateToMarker(marker, event.currentTarget)}
                                             >
                                                 <span className="iris-drawer-marker-swatch" />
                                                 <span className="iris-drawer-marker-main">
@@ -177,21 +188,33 @@ export function MapTab({ onAction }: MapTabProps): JSX.Element {
                                                 <span className="iris-drawer-marker-distance">
                                                     {formatDistance(distanceKm)}
                                                 </span>
-                                            </button>
+                                            </div>
                                         )}
                                         <div className="iris-drawer-marker-actions">
                                             {isEditing ? (
                                                 <Fragment>
-                                                    <button type="button" className="iris-drawer-marker-action" onClick={saveMarkerLabel}>Save</button>
-                                                    <button type="button" className="iris-drawer-marker-action" onClick={cancelMarkerLabelEdit}>Cancel</button>
+                                                    <button type="button" className="iris-drawer-marker-action" onClick={(event) => {
+                                                        event.stopPropagation();
+                                                        saveMarkerLabel();
+                                                    }}>Save</button>
+                                                    <button type="button" className="iris-drawer-marker-action" onClick={(event) => {
+                                                        event.stopPropagation();
+                                                        cancelMarkerLabelEdit();
+                                                    }}>Cancel</button>
                                                 </Fragment>
                                             ) : (
                                                 <Fragment>
-                                                    <button type="button" className="iris-drawer-marker-action" onClick={() => startEditingMarker(marker)}>Edit</button>
+                                                    <button type="button" className="iris-drawer-marker-action" onClick={(event) => {
+                                                        event.stopPropagation();
+                                                        startEditingMarker(marker);
+                                                    }}>Edit</button>
                                                     <button
                                                         type="button"
                                                         className={`iris-drawer-marker-action ${confirmDeleteMarkerId === marker.id ? 'iris-drawer-marker-action-danger' : ''}`}
-                                                        onClick={() => deleteMarker(marker.id)}
+                                                        onClick={(event) => {
+                                                            event.stopPropagation();
+                                                            deleteMarker(marker.id);
+                                                        }}
                                                     >
                                                         {confirmDeleteMarkerId === marker.id ? 'Confirm' : 'Delete'}
                                                     </button>
