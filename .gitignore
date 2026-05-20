@@ -65,3 +65,4 @@ docs/REF-IITC_BUTTON.md
 /docs/*
 !/docs/IRIS_ARCHITECTURE.md
 /apps/mini-iris/builds/
+/tmp/markers-and-links.json
