@@ -866,7 +866,7 @@ Tasks:
 | Extract popup action row primitive               | Done   | added shared `PopupActionRow` and `PopupActionButton`; portal details use the shared primitive while link/field/player/plugin details can adopt it when they gain comparable actions |
 | Extract table primitives                         | Done   | added shared scroll/table/sticky-header classes; Inventory and Region checkpoint history now share table behavior while keeping density-specific padding local |
 | Extract toolbar and segmented control primitives | Done   | added shared toolbar, segmented filter, compact header action, square nav-control, and list-action modifiers; COMM filters, Inventory sort/category controls, inventory/COMM refresh, Navigation popup buttons, and plugin toggles now share interaction styling |
-| Visual smoke test shared control primitives      | Open   | later verification pass: COMM tabs/refresh, Inventory refresh/sort/category/table, Navigation buttons, session/stale alert buttons, plugin toggles, debug copy, passcode submit, and export plugin controls; session/stale alert buttons now consume the shared popup action class |
+| Visual smoke test shared control primitives      | Done   | desktop smoke passed for shared controls after the stateful-control pass; COMM tabs/refresh, Inventory refresh/sort/category/table, Navigation buttons, debug copy, passcode submit, plugin toggles, planning controls, drawer toggles, and Export controls use the shared state styling well enough to pause the epic |
 | Migrate export plugin controls off inline styles | Done   | export-data plugin format buttons now use shared segmented controls, checkboxes use shared checkbox styling, and download uses the shared popup action button default |
 | Review map-control UI primitives                 | Done   | navigation popup now uses CSS-first nav row/grid/button primitives, location search moved static layout/result styling into shared CSS, drawer backdrop inline layout moved to CSS, and planning/mock/geolocate controls already consume existing shared classes; pan regression from the old unhandled `IRIS_PAN_MAP` path was fixed by using the working `IRIS_MOVE_MAP` path |
 | Review mobile back/escape close behavior         | Done   | Escape now closes the top IRIS surface in order: drawer first, then visible popup/sheet, then selection/plugin/mission details; browser-back history interception is intentionally deferred until the mobile focus model is chosen |
@@ -879,6 +879,21 @@ Tasks:
 | Decide marker list placement                    | Open   | current first version lives directly in the Map drawer; consider moving behind a Markers button, collapsing by default, or showing it only while marker planning is active |
 | Refine planned marker edit/delete controls      | Open   | evaluate whether inline Edit/Delete is too busy in the drawer; possible follow-ups include row details, swipe/actions menu, or a compact marker details sheet |
 | Add marker list sort/filter controls            | Open   | distance sort is the first default; consider label/name sort, color filter, and search if marker counts grow |
+
+### Shared UI primitives pause point
+
+Status: `Paused`
+
+Notes:
+
+- shared UI primitives are stable enough to stop this pass and bump version after normal extension smoke testing
+- completed coverage includes popup shells/actions, drawer sections/buttons, list rows/actions, compact pills, segmented controls, tables, inputs, checkboxes/radios, floating panels, mobile bottom sheets, and stateful hover/active/disabled behavior
+- remaining UI cleanup is intentionally deferred rather than blocking the version bump:
+  - optional detail-row/key-value primitive for Diagnostics, portal/link/field details, and plugin feature details
+  - optional CSS size audit for unused selectors, repeated variables, and source-vs-bundle growth
+  - continuing semantic color cleanup for remaining hard-coded/debug/topbar colors
+  - mobile popup focus/back behavior decisions
+  - planned marker list placement, selection, and edit/delete polish
 
 ### Map layer and filter toggles update immediately
 

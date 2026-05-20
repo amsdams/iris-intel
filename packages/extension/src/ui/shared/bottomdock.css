@@ -161,6 +161,9 @@
 .iris-mock-tools-btn {
     --iris-compact-control-border: rgb(255 170 0 / 45%);
     --iris-compact-control-bg: rgb(255 170 0 / 12%);
+    --iris-compact-control-hover-border: rgb(255 170 0 / 68%);
+    --iris-compact-control-hover-bg: rgb(255 170 0 / 18%);
+    --iris-compact-control-hover-color: #ffe1a6;
     --iris-compact-control-active-bg: rgb(255 170 0 / 28%);
     --iris-compact-control-color: #ffd890;
 }
@@ -332,13 +335,15 @@
 
     --iris-compact-control-border: rgb(55 230 255 / 45%);
     --iris-compact-control-bg: rgb(55 230 255 / 10%);
-    --iris-compact-control-active-bg: rgb(55 230 255 / 16%);
     --iris-compact-control-color: #b9f8ff;
     --iris-compact-control-radius: 7px;
 }
 
 .iris-planning-btn-primary {
     --iris-compact-control-bg: rgb(55 230 255 / 90%);
+    --iris-compact-control-hover-border: rgb(55 230 255 / 95%);
+    --iris-compact-control-hover-bg: rgb(55 230 255 / 100%);
+    --iris-compact-control-hover-color: #000;
     --iris-compact-control-active-bg: rgb(55 230 255 / 90%);
     --iris-compact-control-color: #000;
 

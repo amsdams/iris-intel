@@ -382,18 +382,28 @@
     text-transform: uppercase;
     cursor: pointer;
     font-family: var(--iris-font-family, monospace);
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
 }
 
 .iris-ui-compact-pill:active {
-    background: var(--iris-compact-control-active-bg, var(--iris-compact-control-bg, rgb(55 230 255 / 16%)));
     transform: translateY(1px);
 }
 
-.iris-ui-compact-pill:not(:disabled):hover,
-.iris-ui-compact-pill:not(:disabled):focus-visible {
-    border-color: var(--iris-compact-control-active-border, var(--iris-compact-control-border));
-    background: var(--iris-compact-control-active-bg, var(--iris-compact-control-bg, rgb(55 230 255 / 16%)));
-    color: var(--iris-compact-control-active-color, var(--iris-compact-control-color));
+.iris-ui-compact-pill:not(.iris-ui-compact-pill-active):not(:disabled):hover,
+.iris-ui-compact-pill:not(.iris-ui-compact-pill-active):not(:disabled):focus-visible {
+    border-color: var(--iris-compact-control-hover-border, rgb(55 230 255 / 70%));
+    background: var(--iris-compact-control-hover-bg, rgb(55 230 255 / 14%));
+    color: var(--iris-compact-control-hover-color, #d9fbff);
+    box-shadow: var(--iris-compact-control-hover-shadow, none);
+    outline: none;
+}
+
+.iris-ui-compact-pill-active:not(:disabled):hover,
+.iris-ui-compact-pill-active:not(:disabled):focus-visible {
+    border-color: var(--iris-compact-control-active-hover-border, var(--iris-compact-control-active-border, var(--iris-compact-control-border)));
+    background: var(--iris-compact-control-active-hover-bg, var(--iris-compact-control-active-bg, var(--iris-compact-control-bg)));
+    color: var(--iris-compact-control-active-hover-color, var(--iris-compact-control-active-color, var(--iris-compact-control-color)));
+    box-shadow: var(--iris-compact-control-active-hover-shadow, var(--iris-compact-control-active-shadow, none));
     outline: none;
 }
 
@@ -404,10 +414,10 @@
 }
 
 .iris-ui-compact-pill-active {
-    border-color: var(--iris-compact-control-active-border, var(--iris-compact-control-border));
-    background: var(--iris-compact-control-active-bg, var(--iris-compact-control-bg));
-    color: var(--iris-compact-control-active-color, var(--iris-compact-control-color));
-    box-shadow: var(--iris-compact-control-active-shadow, none);
+    border-color: var(--iris-compact-control-active-border, rgb(55 230 255 / 78%));
+    background: var(--iris-compact-control-active-bg, rgb(55 230 255 / 22%));
+    color: var(--iris-compact-control-active-color, #d9fbff);
+    box-shadow: var(--iris-compact-control-active-shadow, inset 0 0 0 1px rgb(55 230 255 / 18%));
 }
 
 .iris-ui-toolbar {
@@ -455,15 +465,26 @@
 
 .iris-ui-segment:hover,
 .iris-ui-segment:focus-visible {
+    outline: none;
+}
+
+.iris-ui-segment:not(.iris-ui-segment-active):hover,
+.iris-ui-segment:not(.iris-ui-segment-active):focus-visible {
     background: var(--iris-ui-segment-hover-bg, rgb(255 255 255 / 5%));
     color: var(--iris-ui-segment-hover-color, var(--iris-accent));
-    outline: none;
 }
 
 .iris-ui-segment-active {
     border-bottom-color: var(--iris-ui-segment-active-color, var(--iris-accent));
+    background: var(--iris-ui-segment-active-bg, rgb(55 230 255 / 8%));
     color: var(--iris-ui-segment-active-color, var(--iris-accent));
     font-weight: 700;
+}
+
+.iris-ui-segment-active:hover,
+.iris-ui-segment-active:focus-visible {
+    background: var(--iris-ui-segment-active-hover-bg, var(--iris-ui-segment-active-bg, rgb(55 230 255 / 10%)));
+    color: var(--iris-ui-segment-active-hover-color, var(--iris-ui-segment-active-color, var(--iris-accent)));
 }
 
 .iris-ui-square-control {
@@ -711,12 +732,14 @@
     font-size: 0.68em;
     font-weight: bold;
     cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
 }
 
 .iris-ui-list-action:hover,
 .iris-ui-list-action:focus-visible {
-    border-color: var(--iris-accent);
-    color: var(--iris-accent);
+    border-color: rgb(255 255 255 / 28%);
+    background: rgb(255 255 255 / 10%);
+    color: var(--iris-text-primary);
     outline: none;
 }
 
@@ -726,9 +749,23 @@
     color: #b9f8ff;
 }
 
+.iris-ui-list-action-primary:hover,
+.iris-ui-list-action-primary:focus-visible {
+    border-color: rgb(55 230 255 / 72%);
+    background: rgb(55 230 255 / 14%);
+    color: #d9fbff;
+}
+
 .iris-ui-list-action-danger {
     border-color: rgb(255 77 77 / 65%);
     color: #ff9a9a;
+}
+
+.iris-ui-list-action-danger:hover,
+.iris-ui-list-action-danger:focus-visible {
+    border-color: rgb(255 77 77 / 78%);
+    background: rgb(255 77 77 / 12%);
+    color: #ffd0d0;
 }
 
 .iris-ui-table-scroll {

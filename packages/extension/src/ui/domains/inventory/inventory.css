@@ -45,8 +45,11 @@
     --iris-compact-control-border: var(--iris-border-dim);
     --iris-compact-control-bg: transparent;
     --iris-compact-control-color: var(--iris-text-muted);
+    --iris-compact-control-hover-border: rgb(255 255 255 / 24%);
+    --iris-compact-control-hover-bg: rgb(255 255 255 / 6%);
+    --iris-compact-control-hover-color: var(--iris-text-primary);
     --iris-compact-control-active-border: var(--iris-aqua);
-    --iris-compact-control-active-bg: transparent;
+    --iris-compact-control-active-bg: rgb(55 230 255 / 8%);
     --iris-compact-control-active-color: var(--iris-aqua);
     --iris-compact-control-active-shadow: inset 0 0 0 1px rgb(0 255 255 / 18%);
     letter-spacing: 0.08em;
@@ -62,9 +65,6 @@
     --iris-compact-control-border: rgb(55 230 255 / 45%);
     --iris-compact-control-bg: rgb(55 230 255 / 10%);
     --iris-compact-control-color: #b9f8ff;
-    --iris-compact-control-active-border: rgb(55 230 255 / 70%);
-    --iris-compact-control-active-bg: rgb(55 230 255 / 16%);
-    --iris-compact-control-active-color: #d9fbff;
 }
 
 .iris-inventory-filter {

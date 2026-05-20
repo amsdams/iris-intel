@@ -9,9 +9,6 @@
     --iris-compact-control-border: rgb(55 230 255 / 45%);
     --iris-compact-control-bg: rgb(55 230 255 / 10%);
     --iris-compact-control-color: #b9f8ff;
-    --iris-compact-control-active-border: rgb(55 230 255 / 70%);
-    --iris-compact-control-active-bg: rgb(55 230 255 / 16%);
-    --iris-compact-control-active-color: #d9fbff;
 }
 
 .iris-comm-tabs {
