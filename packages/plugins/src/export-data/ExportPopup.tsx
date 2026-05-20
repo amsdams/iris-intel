@@ -2,7 +2,8 @@ import { JSX } from 'preact';
 import { useState } from 'preact/hooks';
 import { Field, Link, Portal, useStore } from '@iris/core';
 import { Popup } from '../../../extension/src/ui/shared/Popup';
-import { THEMES, SHARED_STYLES } from '../../../extension/src/ui/theme';
+import { PopupActionButton, PopupActionRow } from '../../../extension/src/ui/shared/PopupActions';
+import { THEMES } from '../../../extension/src/ui/theme';
 import './ExportPopup.css';
 
 interface ExportPopupProps {
@@ -150,13 +151,13 @@ export function ExportPopup({ onClose }: ExportPopupProps): JSX.Element {
             <div className="iris-export-content">
                 <div className="iris-export-section">
                     <div className="iris-export-section-title">FORMAT</div>
-                    <div className="iris-export-format-grid">
+                    <div className="iris-export-format-grid iris-ui-segmented">
                         {(['JSON', 'GEOJSON', 'KML'] as const).map(type => (
                             <button
+                                type="button"
                                 key={type}
                                 onClick={() => setExportType(type)}
-                                className="iris-export-format-btn"
-                                style={SHARED_STYLES.btnStyle(exportType === type, theme.AQUA)}
+                                className={`iris-export-format-btn iris-ui-segment ${exportType === type ? 'iris-ui-segment-active' : ''}`}
                             >
                                 {type}
                             </button>
@@ -167,28 +168,28 @@ export function ExportPopup({ onClose }: ExportPopupProps): JSX.Element {
                 <div className="iris-export-section">
                     <div className="iris-export-section-title">INCLUDE</div>
                     <div className="iris-export-options">
-                        <label className="iris-export-option-label">
-                            <input type="checkbox" checked={includePortals} onChange={e => setIncludePortals((e.target as HTMLInputElement).checked)} />
+                        <label className="iris-export-option-label iris-choice-item iris-label">
+                            <input className="iris-checkbox" type="checkbox" checked={includePortals} onChange={e => setIncludePortals((e.target as HTMLInputElement).checked)} />
                             <span>Portals</span>
                         </label>
-                        <label className="iris-export-option-label">
-                            <input type="checkbox" checked={includeLinks} onChange={e => setIncludeLinks((e.target as HTMLInputElement).checked)} />
+                        <label className="iris-export-option-label iris-choice-item iris-label">
+                            <input className="iris-checkbox" type="checkbox" checked={includeLinks} onChange={e => setIncludeLinks((e.target as HTMLInputElement).checked)} />
                             <span>Links</span>
                         </label>
-                        <label className="iris-export-option-label">
-                            <input type="checkbox" checked={includeFields} onChange={e => setIncludeFields((e.target as HTMLInputElement).checked)} />
+                        <label className="iris-export-option-label iris-choice-item iris-label">
+                            <input className="iris-checkbox" type="checkbox" checked={includeFields} onChange={e => setIncludeFields((e.target as HTMLInputElement).checked)} />
                             <span>Fields</span>
                         </label>
                     </div>
                 </div>
 
-                <button
-                    onClick={doExport}
-                    className="iris-export-submit-btn"
-                    style={SHARED_STYLES.btnStyle(true, theme.AQUA)}
-                >
-                    DOWNLOAD
-                </button>
+                <div className="iris-export-submit-row">
+                    <PopupActionRow>
+                        <PopupActionButton onClick={doExport}>
+                            DOWNLOAD
+                        </PopupActionButton>
+                    </PopupActionRow>
+                </div>
             </div>
         </Popup>
     );

@@ -408,7 +408,7 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                     <div className="iris-debug-section-header">
                         <span className="iris-debug-section-title">MAP PERFORMANCE</span>
                         <button
-                            className="iris-button iris-debug-copy-btn"
+                            className="iris-debug-copy-btn iris-ui-compact-pill"
                             onClick={copyPerfSummary}
                         >
                             {copyStatus || 'COPY'}
@@ -524,7 +524,7 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                         <span className="iris-debug-section-title">DOMAIN ERRORS</span>
                         {domainErrors.length > 0 && (
                             <button
-                                className="iris-button iris-debug-copy-btn"
+                                className="iris-debug-copy-btn iris-ui-compact-pill"
                                 onClick={clearDomainErrors}
                             >
                                 CLEAR

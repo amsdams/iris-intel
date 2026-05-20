@@ -17,14 +17,20 @@
 }
 
 .iris-export-format-grid {
-    display: flex;
-    gap: 5px;
+    --iris-ui-segment-flex: 1 1 0;
+    --iris-ui-segmented-border-bottom: 1px solid rgb(55 230 255 / 42%);
+    --iris-ui-segment-color: rgb(217 251 255 / 76%);
+    --iris-ui-segment-hover-bg: rgb(55 230 255 / 10%);
+    --iris-ui-segment-hover-color: #d9fbff;
+    --iris-ui-segment-active-color: var(--iris-accent);
+
+    background: rgb(0 24 28 / 34%);
+    border-top: 1px solid rgb(55 230 255 / 16%);
 }
 
 .iris-export-format-btn {
-    flex: 1;
-    font-size: 0.7em;
-    padding: 4px;
+    --iris-ui-segment-font-size: 0.72em;
+    --iris-ui-segment-padding: 8px 6px;
 }
 
 .iris-export-options {
@@ -34,15 +40,10 @@
 }
 
 .iris-export-option-label {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    padding: 5px 0;
     font-size: 0.9em;
 }
 
-.iris-export-submit-btn {
+.iris-export-submit-row {
     margin-top: 10px;
-    padding: 8px;
+    margin-bottom: 0;
 }

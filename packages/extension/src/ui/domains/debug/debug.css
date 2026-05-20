@@ -33,8 +33,17 @@
 
 .iris-debug-copy-btn {
     min-height: 24px;
-    padding: 2px 8px;
     font-size: 0.72em;
+
+    --iris-compact-control-height: 24px;
+    --iris-compact-control-padding: 0 8px;
+    --iris-compact-control-radius: 5px;
+    --iris-compact-control-border: rgb(55 230 255 / 45%);
+    --iris-compact-control-bg: rgb(55 230 255 / 10%);
+    --iris-compact-control-color: #b9f8ff;
+    --iris-compact-control-active-border: rgb(55 230 255 / 70%);
+    --iris-compact-control-active-bg: rgb(55 230 255 / 16%);
+    --iris-compact-control-active-color: #d9fbff;
 }
 
 .iris-debug-actions {

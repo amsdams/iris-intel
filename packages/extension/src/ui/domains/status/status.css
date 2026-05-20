@@ -82,6 +82,19 @@
   padding: 6px 10px;
   cursor: pointer;
   font: inherit;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.iris-session-alert-button:hover,
+.iris-session-alert-button:focus-visible {
+  border-color: var(--iris-text-muted);
+  background: rgb(255 255 255 / 10%);
+  color: var(--iris-text-primary);
+  outline: none;
+}
+
+.iris-session-alert-button:active {
+  transform: translateY(1px);
 }
 
 .iris-session-alert-button-primary {
@@ -89,9 +102,21 @@
   color: #faa;
 }
 
+.iris-session-alert-button-primary:hover,
+.iris-session-alert-button-primary:focus-visible {
+  border-color: #ff8080;
+  color: #ffd0d0;
+}
+
 .iris-map-stale-alert-button-primary {
   border-color: rgb(55 230 255 / 55%);
   color: #b9f8ff;
+}
+
+.iris-map-stale-alert-button-primary:hover,
+.iris-map-stale-alert-button-primary:focus-visible {
+  border-color: rgb(55 230 255 / 75%);
+  color: #d9fbff;
 }
 
 .iris-status-bar-collapsed {

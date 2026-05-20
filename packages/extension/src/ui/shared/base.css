@@ -302,9 +302,9 @@
     font-size: 0.8em;
     font-weight: bold;
     cursor: pointer;
-    border: 1px solid var(--iris-popup-action-color, var(--iris-faction-color, var(--iris-accent)));
+    border: 1px solid var(--iris-popup-action-color, var(--iris-accent));
     border-radius: 4px;
-    color: var(--iris-popup-action-color, var(--iris-faction-color, var(--iris-accent)));
+    color: var(--iris-popup-action-color, var(--iris-accent));
 }
 
 .iris-popup-action-button:hover,
