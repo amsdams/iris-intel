@@ -164,6 +164,7 @@ Tasks:
 | Batch tile requests to avoid massive timeouts                          | Done   | `getEntities` requests are now split into chunks of 25 tiles (aligned with IITC)                              |
 | Implement retry logic for failed entity fetches                        | Done   | coordinator now performs up to 3 retries with 5s backoff after a failed fetch                                 |
 | Reduce post-pan UI work on mobile                                      | Done   | map-state updates now no-op for identical views, `MapOverlay` skips same-view camera echoes, and ornaments build from the buffered viewport instead of all loaded portals |
+| Prevent stale/idle refresh popup flicker during refresh                | Open   | the map-stale/idle refresh popup can briefly appear during a normal refresh; it should only appear when user action is needed, not while an expected refresh is already in progress |
 
 ### IITC-style mobile panning performance
 

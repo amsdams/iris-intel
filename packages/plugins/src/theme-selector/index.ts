@@ -7,7 +7,7 @@ const ThemeSelectorPlugin: IRISPlugin = {
     version: '1.1.0',
     description: 'Allows switching between UI themes via a custom popup.',
     author: 'IRIS Team',
-    defaultEnabled: true,
+    defaultEnabled: false,
     capabilities: ['menu', 'stats', 'theme'],
   },
   setup: (api: IRIS_API) => {

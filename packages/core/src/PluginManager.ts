@@ -151,7 +151,7 @@ export class PluginManager {
     if (state[plugin.manifest.id] === undefined) {
       useStore.getState().setPluginEnabled(
         plugin.manifest.id,
-        plugin.manifest.defaultEnabled ?? true
+        plugin.manifest.defaultEnabled ?? false
       );
     }
 

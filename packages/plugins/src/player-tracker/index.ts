@@ -46,7 +46,7 @@ const PlayerTrackerPlugin: IRISPlugin = {
     version: '2.0.0',
     description: 'Visualizes player movement paths from COMM messages.',
     author: 'IRIS Team (DanielOnDiordna inspired)',
-    defaultEnabled: true,
+    defaultEnabled: false,
     capabilities: ['overlay', 'comm', 'highlighter'],
   },
   setup: (api: IRIS_API): void => {
