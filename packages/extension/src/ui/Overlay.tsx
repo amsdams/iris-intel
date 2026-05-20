@@ -440,6 +440,7 @@ export function IRISOverlay(): JSX.Element {
             case 'nav': toggleNavigationPopup(); setActiveDrawerTab(null); break;
             case 'missions': toggleMissionsPopup(); setActiveDrawerTab(null); break;
             case 'marker-map-focus': setActiveDrawerTab(null); break;
+            case 'active-player-map-focus': setActiveDrawerTab(null); break;
             case 'planning-links': useStore.getState().setPlanningTool('links'); setShowSelectionInfo(false); setActiveDrawerTab(null); break;
             case 'planning-markers': useStore.getState().setPlanningTool('markers'); setShowSelectionInfo(false); setActiveDrawerTab(null); break;
             case 'plugins': togglePluginsPopup(); setActiveDrawerTab(null); break;

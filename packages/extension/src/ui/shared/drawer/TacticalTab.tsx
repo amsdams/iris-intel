@@ -1,8 +1,84 @@
 import { h, JSX, Fragment } from 'preact';
-import { useStore } from '@iris/core';
+import { EntityLogic, useStore } from '@iris/core';
 import {DrawerButton, DrawerSection} from './DrawerControls';
 
-export function TacticalTab(): JSX.Element {
+interface TacticalTabProps {
+    onAction: (action: string) => void;
+}
+
+interface ActivePlayerRow {
+    id: string;
+    name: string;
+    team: string;
+    color: string;
+    lat: number;
+    lng: number;
+    time: number | null;
+    portalName: string;
+    actionText: string;
+    distanceKm: number;
+    feature: GeoJSON.Feature;
+}
+
+const MIN_PLAYER_TRACKER_ZOOM = 9;
+
+function isPlayerMarkerFeature(feature: GeoJSON.Feature): boolean {
+    const properties = feature.properties as Record<string, unknown> | null | undefined;
+    return properties?.isPlayerMarker === true || properties?.isPlayerMarker === 'true';
+}
+
+function getStringProperty(properties: GeoJSON.GeoJsonProperties, key: string, fallback = ''): string {
+    const record = properties as Record<string, unknown> | null | undefined;
+    const value = record?.[key];
+    return typeof value === 'string' ? value : fallback;
+}
+
+function getNumberProperty(properties: GeoJSON.GeoJsonProperties, key: string): number | null {
+    const record = properties as Record<string, unknown> | null | undefined;
+    const value = record?.[key];
+    return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function isPlayerAction(value: unknown): value is {text: string; time?: number} {
+    if (typeof value !== 'object' || value === null) return false;
+    const record = value as Record<string, unknown>;
+    return typeof record.text === 'string' &&
+        (record.time === undefined || typeof record.time === 'number');
+}
+
+function getActionText(properties: GeoJSON.GeoJsonProperties): string {
+    const record = properties as Record<string, unknown> | null | undefined;
+    const actions = record?.actions;
+    if (Array.isArray(actions)) {
+        const latestAction = actions
+            .filter(isPlayerAction)
+            .sort((a, b) => (b.time ?? 0) - (a.time ?? 0))[0];
+        if (latestAction?.text) return latestAction.text;
+    }
+
+    const label = getStringProperty(properties, 'label');
+    const name = getStringProperty(properties, 'name');
+    return label && name ? label.replace(name, '').replace(/^,\s*/, '').trim() : '';
+}
+
+function formatAgo(time: number | null): string {
+    if (time === null) return '-';
+    const minutes = Math.max(0, Math.floor((Date.now() - time) / 60000));
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    if (hours < 24) return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ${hours % 24}h`;
+}
+
+function formatDistance(distanceKm: number): string {
+    if (distanceKm < 1) return `${Math.round(distanceKm * 1000)}m`;
+    if (distanceKm < 10) return `${distanceKm.toFixed(1)}km`;
+    return `${Math.round(distanceKm)}km`;
+}
+
+export function TacticalTab({ onAction }: TacticalTabProps): JSX.Element {
     const filterShowResistance = useStore((state) => state.filterShowResistance);
     const toggleFilterResistance = useStore((state) => state.toggleFilterResistance);
     const filterShowEnlightened = useStore((state) => state.filterShowEnlightened);
@@ -24,9 +100,93 @@ export function TacticalTab(): JSX.Element {
     const filterShowScanned = useStore((state) => state.filterShowScanned);
     const toggleFilterScanned = useStore((state) => state.toggleFilterScanned);
     const resetTacticalFilters = useStore((state) => state.resetTacticalFilters);
+    const pluginFeatures = useStore((state) => state.pluginFeatures);
+    const mapState = useStore((state) => state.mapState);
+    const playerTrackerEnabled = useStore((state) => state.pluginStates['player-tracker'] ?? false);
+    const playerTrackerVisible = useStore((state) => state.activeVisualOverlayIds.includes('player-tracker'));
+
+    const activePlayers = pluginFeatures.features
+        .filter(isPlayerMarkerFeature)
+        .flatMap((feature): ActivePlayerRow[] => {
+            if (feature.geometry.type !== 'Point') return [];
+            const [lng, lat] = feature.geometry.coordinates;
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return [];
+
+            const properties = feature.properties;
+            const id = getStringProperty(properties, 'id', typeof feature.id === 'string' ? feature.id : '');
+            const name = getStringProperty(properties, 'name', id.replace(/^player:/u, '') || 'Unknown Player');
+            const team = getStringProperty(properties, 'team', 'UNKNOWN');
+            const color = getStringProperty(properties, 'color', '#ffffff');
+            const time = getNumberProperty(properties, 'time');
+            const portalName = getStringProperty(properties, 'portalName');
+            const actionText = getActionText(properties);
+
+            return [{
+                id: id || `player:${name}`,
+                name,
+                team,
+                color,
+                lat,
+                lng,
+                time,
+                portalName,
+                actionText,
+                distanceKm: EntityLogic.getDistKm(mapState.lat, mapState.lng, lat, lng),
+                feature,
+            }];
+        })
+        .sort((a, b) => (b.time ?? 0) - (a.time ?? 0))
+        .slice(0, 12);
+
+    const navigateToPlayer = (player: ActivePlayerRow): void => {
+        window.postMessage({
+            type: 'IRIS_MOVE_MAP',
+            center: {lat: player.lat, lng: player.lng},
+            zoom: Math.max(mapState.zoom, 16),
+        }, '*');
+        onAction('active-player-map-focus');
+    };
 
     return (
         <Fragment>
+            {playerTrackerEnabled && playerTrackerVisible && (
+                <Fragment>
+                    <div className="iris-drawer-section-label">Active Players</div>
+                    {mapState.zoom < MIN_PLAYER_TRACKER_ZOOM ? (
+                        <div className="iris-drawer-empty-note">
+                            Player Tracker is hidden below z{MIN_PLAYER_TRACKER_ZOOM}.
+                        </div>
+                    ) : activePlayers.length === 0 ? (
+                        <div className="iris-drawer-empty-note">
+                            No recent player activity loaded.
+                        </div>
+                    ) : (
+                        <div className="iris-active-player-list">
+                            {activePlayers.map((player) => (
+                                <button
+                                    key={player.id}
+                                    type="button"
+                                    className="iris-active-player-row"
+                                    onClick={() => navigateToPlayer(player)}
+                                >
+                                    <span className="iris-active-player-swatch" style={{'--iris-active-player-color': player.color} as JSX.CSSProperties} />
+                                    <span className="iris-active-player-main">
+                                        <span className="iris-active-player-name">{player.name}</span>
+                                        <span className="iris-active-player-detail">
+                                            {player.portalName || player.actionText || `${player.lat.toFixed(5)}, ${player.lng.toFixed(5)}`}
+                                        </span>
+                                    </span>
+                                    <span className="iris-active-player-meta">
+                                        <span>{formatAgo(player.time)}</span>
+                                        <span>{formatDistance(player.distanceKm)}</span>
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </Fragment>
+            )}
+
             <DrawerSection label="Filter Actions">
                 <DrawerButton icon="↺" label="Clear All" onClick={resetTacticalFilters} />
             </DrawerSection>

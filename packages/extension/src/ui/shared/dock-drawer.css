@@ -141,6 +141,79 @@
     margin-bottom: 12px;
 }
 
+.iris-active-player-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.iris-active-player-row {
+    display: grid;
+    grid-template-columns: 10px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    padding: 7px 9px;
+    border: 1px solid rgb(255 255 255 / 10%);
+    border-radius: 7px;
+    background: rgb(255 255 255 / 5%);
+    color: var(--iris-text-primary);
+    cursor: pointer;
+    text-align: left;
+}
+
+.iris-active-player-row:hover,
+.iris-active-player-row:focus-visible {
+    border-color: var(--iris-active-player-color, var(--iris-accent));
+    background: rgb(255 255 255 / 8%);
+    outline: none;
+}
+
+.iris-active-player-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--iris-active-player-color, #fff);
+    box-shadow: 0 0 8px var(--iris-active-player-color, #fff);
+}
+
+.iris-active-player-main {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.iris-active-player-name {
+    overflow: hidden;
+    color: var(--iris-text-primary);
+    font-size: 0.78em;
+    font-weight: bold;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.iris-active-player-detail {
+    overflow: hidden;
+    color: var(--iris-text-muted, #888);
+    font-size: 0.68em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.iris-active-player-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    color: var(--iris-accent);
+    font-size: 0.68em;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
 .iris-drawer-marker-list {
     display: flex;
     flex-direction: column;

@@ -48,7 +48,7 @@ export function DockDrawer({ tab, onClose, onAction, showMap }: DockDrawerProps)
             <div className="iris-drawer-content">
                 {tab === 'intel' && <AgentTab onAction={onAction} />}
                 {tab === 'nav' && <MapTab onAction={onAction} />}
-                {tab === 'tactical' && <TacticalTab />}
+                {tab === 'tactical' && <TacticalTab onAction={onAction} />}
                 {tab === 'layers' && <LayersTab />}
                 {tab === 'highlighters' && <VisualsTab />}
                 {tab === 'system' && <SystemTab onAction={onAction} showMap={showMap} onClose={onClose} />}
