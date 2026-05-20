@@ -97,6 +97,44 @@
     opacity: 0.5;
 }
 
+.iris-drawer-backup-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+    margin-bottom: 12px;
+}
+
+.iris-drawer-backup-actions {
+    margin-bottom: 4px;
+}
+
+.iris-drawer-backup-textarea {
+    width: 100%;
+    min-height: 92px;
+    resize: vertical;
+    padding: 7px;
+    border: 1px solid rgb(255 255 255 / 16%);
+    border-radius: 6px;
+    background: rgb(0 0 0 / 45%);
+    color: var(--iris-text-primary);
+    font-size: 0.72em;
+    line-height: 1.35;
+    pointer-events: auto;
+}
+
+.iris-drawer-backup-textarea:focus {
+    border-color: var(--iris-accent);
+    outline: none;
+}
+
+.iris-drawer-backup-status {
+    margin-bottom: 10px;
+    color: var(--iris-text-muted);
+    font-size: 0.72em;
+    line-height: 1.35;
+}
+
 /* Compact Buttons */
 .iris-drawer-btn {
     background: rgb(255 255 255 / 5%);

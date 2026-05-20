@@ -15,7 +15,6 @@ export function SystemTab({ onAction, showMap, onClose }: SystemTabProps): JSX.E
         <Fragment>
             <DrawerSection label="Iris Core">
                 <DrawerButton icon="🧩" label="Manager" onClick={() => onAction('plugins')} />
-                <DrawerButton icon="⚙️" label="Display" onClick={() => onAction('settings')} />
                 <DrawerButton icon="🛠️" label="Debug" onClick={() => onAction('diag')} />
                 <DrawerButton icon="🔄" label={showMap ? 'Intel' : 'IRIS'} onClick={() => onAction('toggle')} />
             </DrawerSection>

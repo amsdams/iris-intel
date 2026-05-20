@@ -1,6 +1,6 @@
 import {h, JSX, Fragment} from 'preact';
 import {useEffect, useRef, useState} from 'preact/hooks';
-import {EntityLogic, useStore} from '@iris/core';
+import {EntityLogic, PlannedLink, PlannedMarker, useStore} from '@iris/core';
 import {DrawerButton, DrawerSection} from './DrawerControls';
 
 interface MapTabProps {
@@ -13,12 +13,16 @@ export function MapTab({ onAction }: MapTabProps): JSX.Element {
     const [editingLabel, setEditingLabel] = useState('');
     const [confirmDeleteMarkerId, setConfirmDeleteMarkerId] = useState<string | null>(null);
     const [pendingScrollMarkerId, setPendingScrollMarkerId] = useState<string | null>(null);
+    const [backupOpen, setBackupOpen] = useState(false);
+    const [backupText, setBackupText] = useState('');
+    const [backupStatus, setBackupStatus] = useState<string | null>(null);
     const mapState = useStore((state) => state.mapState);
     const planningMode = useStore((state) => state.planningMode);
     const planningTool = useStore((state) => state.planningTool);
     const plannedLinksEnabled = useStore((state) => state.pluginStates['planned-links'] ?? false);
     const plannedShowLinks = useStore((state) => state.plannedShowLinks);
     const plannedShowMarkers = useStore((state) => state.plannedShowMarkers);
+    const plannedLinks = useStore((state) => state.plannedLinks);
     const plannedMarkers = useStore((state) => state.plannedMarkers);
     const selectedPlannedItemId = useStore((state) => state.selectedPlannedItemId);
     const togglePlannedShowLinks = useStore((state) => state.togglePlannedShowLinks);
@@ -119,11 +123,125 @@ export function MapTab({ onAction }: MapTabProps): JSX.Element {
         setConfirmDeleteMarkerId(null);
     };
 
+    const buildBackupText = (): string => JSON.stringify({
+        type: 'iris-draw-tools',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        plannedLinks,
+        plannedMarkers,
+    }, null, 2);
+
+    const exportPlannedData = (): void => {
+        const text = buildBackupText();
+        setBackupText(text);
+        setBackupOpen(true);
+        setBackupStatus(`Exported ${plannedLinks.length} links and ${plannedMarkers.length} markers`);
+        navigator.clipboard?.writeText(text).catch(() => undefined);
+    };
+
+    const normalizeImportedLink = (value: unknown): PlannedLink | null => {
+        if (!value || typeof value !== 'object') return null;
+        const candidate = value as Partial<PlannedLink>;
+        if (typeof candidate.fromPortalId !== 'string' || typeof candidate.toPortalId !== 'string') return null;
+        if (!candidate.fromPortalId || !candidate.toPortalId || candidate.fromPortalId === candidate.toPortalId) return null;
+        const createdAt = typeof candidate.createdAt === 'number' && Number.isFinite(candidate.createdAt) ? candidate.createdAt : Date.now();
+        return {
+            id: typeof candidate.id === 'string' && candidate.id ? candidate.id : `planned-link:${candidate.fromPortalId}:${candidate.toPortalId}:${createdAt}`,
+            fromPortalId: candidate.fromPortalId,
+            toPortalId: candidate.toPortalId,
+            createdAt,
+        };
+    };
+
+    const normalizeImportedMarker = (value: unknown): PlannedMarker | null => {
+        if (!value || typeof value !== 'object') return null;
+        const candidate = value as Partial<PlannedMarker>;
+        if (typeof candidate.lat !== 'number' || typeof candidate.lng !== 'number') return null;
+        if (!Number.isFinite(candidate.lat) || !Number.isFinite(candidate.lng)) return null;
+        const color = candidate.color === 'white' || candidate.color === 'red' || candidate.color === 'blue' || candidate.color === 'green'
+            ? candidate.color
+            : 'blue';
+        const createdAt = typeof candidate.createdAt === 'number' && Number.isFinite(candidate.createdAt) ? candidate.createdAt : Date.now();
+        return {
+            id: typeof candidate.id === 'string' && candidate.id ? candidate.id : `planned-marker:${createdAt}`,
+            lat: Math.round(candidate.lat * 1e6) / 1e6,
+            lng: Math.round(candidate.lng * 1e6) / 1e6,
+            label: typeof candidate.label === 'string' && candidate.label.trim() ? candidate.label.trim() : 'Imported marker',
+            color,
+            portalId: typeof candidate.portalId === 'string' && candidate.portalId ? candidate.portalId : undefined,
+            createdAt,
+        };
+    };
+
+    const extractPlannedData = (rawText: string): {plannedLinks: PlannedLink[]; plannedMarkers: PlannedMarker[]} => {
+        const parsed = JSON.parse(rawText) as unknown;
+        const source = parsed && typeof parsed === 'object' && 'state' in parsed && (parsed as {state?: unknown}).state
+            ? (parsed as {state: unknown}).state
+            : parsed;
+
+        if (!source || typeof source !== 'object') {
+            throw new Error('Backup must be a JSON object');
+        }
+
+        const rawLinks = (source as {plannedLinks?: unknown}).plannedLinks;
+        const rawMarkers = (source as {plannedMarkers?: unknown}).plannedMarkers;
+        const importedLinks = Array.isArray(rawLinks) ? rawLinks.map(normalizeImportedLink).filter((link): link is PlannedLink => link !== null) : [];
+        const importedMarkers = Array.isArray(rawMarkers) ? rawMarkers.map(normalizeImportedMarker).filter((marker): marker is PlannedMarker => marker !== null) : [];
+
+        if (importedLinks.length === 0 && importedMarkers.length === 0) {
+            throw new Error('No planned links or markers found');
+        }
+
+        return {plannedLinks: importedLinks, plannedMarkers: importedMarkers};
+    };
+
+    const importPlannedData = (mode: 'merge' | 'replace'): void => {
+        try {
+            const imported = extractPlannedData(backupText);
+            useStore.setState((state) => {
+                const linkKey = (link: PlannedLink): string => [link.fromPortalId, link.toPortalId].sort().join(':');
+                const markerKey = (marker: PlannedMarker): string => marker.portalId || `${Math.round(marker.lat * 1e6)}:${Math.round(marker.lng * 1e6)}`;
+                const nextLinks = mode === 'replace' ? [] : [...state.plannedLinks];
+                const nextMarkers = mode === 'replace' ? [] : [...state.plannedMarkers];
+                const linkKeys = new Set(nextLinks.map(linkKey));
+                const markerKeys = new Set(nextMarkers.map(markerKey));
+
+                for (const link of imported.plannedLinks) {
+                    const key = linkKey(link);
+                    if (linkKeys.has(key)) continue;
+                    linkKeys.add(key);
+                    nextLinks.push(link);
+                }
+
+                for (const marker of imported.plannedMarkers) {
+                    const key = markerKey(marker);
+                    if (markerKeys.has(key)) continue;
+                    markerKeys.add(key);
+                    nextMarkers.push(marker);
+                }
+
+                return {
+                    pluginStates: {...state.pluginStates, 'planned-links': true},
+                    plannedLinks: nextLinks,
+                    plannedMarkers: nextMarkers,
+                    plannedShowLinks: true,
+                    plannedShowMarkers: true,
+                    selectedPlannedItemId: null,
+                    selectedPlannedItemType: null,
+                };
+            });
+            setBackupStatus(`${mode === 'replace' ? 'Replaced with' : 'Merged'} ${imported.plannedLinks.length} links and ${imported.plannedMarkers.length} markers`);
+        } catch (error) {
+            setBackupStatus(error instanceof Error ? error.message : 'Import failed');
+        }
+    };
+
     return (
         <Fragment>
             <DrawerSection label="Map Navigation">
                 <DrawerButton icon="🔍" label="Search" onClick={() => onAction('search')} />
                 <DrawerButton icon="🧭" label="Controls" onClick={() => onAction('nav')} />
+                <DrawerButton icon="⚙️" label="Settings" onClick={() => onAction('settings')} />
                 <DrawerButton icon="🚀" label="Missions" onClick={() => onAction('missions')} />
                 {plannedLinksEnabled && (
                     <Fragment>
@@ -134,6 +252,43 @@ export function MapTab({ onAction }: MapTabProps): JSX.Element {
                     </Fragment>
                 )}
             </DrawerSection>
+            <div>
+                <div className="iris-drawer-section-label">Draw Tools Backup</div>
+                <div className="iris-drawer-backup-actions iris-ui-list-actions">
+                    <button type="button" className="iris-ui-list-action iris-ui-list-action-primary" onClick={exportPlannedData}>
+                        Export
+                    </button>
+                    <button type="button" className="iris-ui-list-action" onClick={() => {
+                        setBackupOpen((open) => !open);
+                        setBackupStatus(null);
+                    }}>
+                        Import
+                    </button>
+                </div>
+                {backupOpen && (
+                    <div className="iris-drawer-backup-panel">
+                        <textarea
+                            className="iris-drawer-backup-textarea"
+                            value={backupText}
+                            placeholder="Paste an iris-draw-tools backup or full iris-settings JSON here."
+                            onInput={(event) => setBackupText((event.target as HTMLTextAreaElement).value)}
+                        />
+                        <div className="iris-drawer-backup-actions iris-ui-list-actions">
+                            <button type="button" className="iris-ui-list-action iris-ui-list-action-primary" onClick={() => importPlannedData('merge')}>
+                                Merge
+                            </button>
+                            <button type="button" className="iris-ui-list-action iris-ui-list-action-danger" onClick={() => importPlannedData('replace')}>
+                                Replace
+                            </button>
+                        </div>
+                    </div>
+                )}
+                {backupStatus && (
+                    <div className="iris-drawer-backup-status">
+                        {backupStatus}
+                    </div>
+                )}
+            </div>
             {plannedLinksEnabled && (
                 <div>
                     <div className="iris-drawer-section-label">Markers by Distance</div>
