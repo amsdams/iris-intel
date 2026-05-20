@@ -21,6 +21,7 @@ export interface IRISMessage {
   passcode?: string;
   text?: string;
   tab?: string;
+  reason?: string;
   minTimestampMs?: number;
   maxTimestampMs?: number;
   ascendingTimestampOrder?: boolean;

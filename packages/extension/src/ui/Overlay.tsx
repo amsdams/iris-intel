@@ -15,6 +15,7 @@ import { MapSettingsPopup } from './domains/map/MapSettingsPopup';
 import { PluginsPopup } from './domains/plugins/PluginsPopup';
 import { StatusBar } from './domains/status/StatusBar';
 import { SessionAlert } from './domains/status/SessionAlert';
+import { MapStaleAlert } from './domains/status/MapStaleAlert';
 import { PluginFeaturePopup } from './domains/plugins/PluginFeaturePopup';
 import { InventoryPopup } from './domains/inventory/InventoryPopup';
 import { MissionDetailsPopup } from './domains/missions/MissionDetailsPopup';
@@ -843,6 +844,7 @@ export function IRISOverlay(): JSX.Element {
     return (
         <div className="iris-overlay-root">
             <SessionAlert />
+            {sessionStatus === 'ok' && <MapStaleAlert />}
             
             <MockToolsBar />
             <PlanningBar />

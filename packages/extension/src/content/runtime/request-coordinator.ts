@@ -27,6 +27,7 @@ export interface RequestCoordinator {
     start: () => void;
     stop: () => void;
     handleMoveMap: (msg: IRISMessage) => void;
+    handleCurrentViewRefresh: (reason: 'manual' | 'resume') => void;
     handleGeolocateRequest: () => void;
     handleInventoryRequest: () => void;
     handleGameScoreRequest: () => void;
@@ -57,6 +58,7 @@ export function createRequestCoordinator(): RequestCoordinator {
     let lastEntityCoverageKey: string | null = null;
     let entityRefreshGeneration = 0;
     let entityUnsub: (() => void) | null = null;
+    let lastResumeRefreshAt = 0;
 
     const postMessage = (message: Record<string, unknown>): void => {
         window.postMessage(message, '*');
@@ -73,6 +75,7 @@ export function createRequestCoordinator(): RequestCoordinator {
         const sessionStatus = useStore.getState().sessionStatus;
         return sessionStatus === 'expired' || sessionStatus === 'initial_login_required';
     };
+    const isOffline = (): boolean => typeof navigator !== 'undefined' && navigator.onLine === false;
     const isWithinStartupGrace = (): boolean => Date.now() < startupGraceUntil;
     const getEndpointDiagnostics = (key: 'artifacts' | 'subscription' | 'inventory' | 'plexts' | 'gameScore' | 'regionScore' | 'entities'): import('@iris/core').EndpointDiagnostics =>
         useStore.getState().endpointDiagnostics[key];
@@ -102,11 +105,19 @@ export function createRequestCoordinator(): RequestCoordinator {
         useStore.getState().cullEntities(lat, lng, ENTITY_CULL_DIST_KM);
     };
 
-    const scheduleEntitiesFetch = (reason: 'startup' | 'move_settle' | 'idle' | 'retry'): void => {
+    const scheduleEntitiesFetch = (reason: 'startup' | 'move_settle' | 'idle' | 'retry' | 'resume' | 'manual'): void => {
         if (isSessionBlocked()) {
             useStore.getState().setEndpointMetadata('entities', {
                 lastRefreshReason: reason,
                 lastSkipReason: 'session blocked',
+            });
+            return;
+        }
+
+        if (isOffline()) {
+            useStore.getState().setEndpointMetadata('entities', {
+                lastRefreshReason: reason,
+                lastSkipReason: 'offline',
             });
             return;
         }
@@ -137,7 +148,8 @@ export function createRequestCoordinator(): RequestCoordinator {
         });
 
         const isSameCoverage = payload.coverageKey === lastEntityCoverageKey;
-        const shouldSkipForFreshness = isSameCoverage && isEndpointFresh('entities', ENTITY_FRESHNESS_TTL_MS);
+        const forceRefresh = reason === 'manual';
+        const shouldSkipForFreshness = !forceRefresh && isSameCoverage && isEndpointFresh('entities', ENTITY_FRESHNESS_TTL_MS);
 
         if (reason !== 'retry' && (isEndpointInFlight('entities') || shouldSkipForFreshness)) {
             const skipReason = isEndpointInFlight('entities') ? 'in-flight' : 'cooldown';
@@ -156,7 +168,7 @@ export function createRequestCoordinator(): RequestCoordinator {
 
         // Surgical Fetching: Only request tiles that are not fresh
         let tilesToFetch = payload.tileKeys;
-        if (reason !== 'retry') {
+        if (reason !== 'retry' && !forceRefresh) {
             const tileFreshness = useStore.getState().tileFreshness;
             const now = Date.now();
             tilesToFetch = payload.tileKeys.filter((key) => {
@@ -205,6 +217,13 @@ export function createRequestCoordinator(): RequestCoordinator {
 
     const scheduleArtifactsFetch = (): void => {
         if (isSessionBlocked()) return;
+        if (isOffline()) {
+            useStore.getState().setEndpointMetadata('artifacts', {
+                lastRefreshReason: 'auto',
+                lastSkipReason: 'offline',
+            });
+            return;
+        }
 
         if (!isEndpointInFlight('artifacts') && !isEndpointFresh('artifacts', ARTIFACTS_STARTUP_DEDUP_MS)) {
             postMessage({ type: 'IRIS_ARTIFACTS_FETCH' });
@@ -213,6 +232,13 @@ export function createRequestCoordinator(): RequestCoordinator {
 
     const schedulePlextPoll = (): void => {
         if (isSessionBlocked()) return;
+        if (isOffline()) {
+            useStore.getState().setEndpointMetadata('plexts', {
+                lastRefreshReason: 'auto',
+                lastSkipReason: 'offline',
+            });
+            return;
+        }
 
         postMessage({
             type: 'IRIS_PLEXTS_REQUEST',
@@ -232,6 +258,25 @@ export function createRequestCoordinator(): RequestCoordinator {
         scheduleEntitiesFetch('startup');
     };
 
+    const refreshCurrentView = (reason: 'manual' | 'resume'): void => {
+        if (isSessionBlocked()) return;
+
+        if (reason === 'resume') {
+            const now = Date.now();
+            if (now - lastResumeRefreshAt < 30000) {
+                return;
+            }
+            lastResumeRefreshAt = now;
+        }
+
+        scheduleArtifactsFetch();
+        scheduleEntitiesFetch(reason);
+        scheduleNextIdleEntitiesPoll();
+        postPlextFetches({
+            minTimestampMs: -1,
+        }, true);
+    };
+
     const buildPlextPayload = (msg: Pick<IRISMessage, 'tab' | 'minTimestampMs' | 'maxTimestampMs' | 'ascendingTimestampOrder'>): Record<string, unknown> | null => {
         const bounds = useStore.getState().mapState.bounds;
         if (!bounds) return null;
@@ -249,6 +294,13 @@ export function createRequestCoordinator(): RequestCoordinator {
         bypassCooldown = false,
     ): void => {
         if (isSessionBlocked()) return;
+        if (isOffline()) {
+            useStore.getState().setEndpointMetadata('plexts', {
+                lastRefreshReason: 'manual',
+                lastSkipReason: 'offline',
+            });
+            return;
+        }
 
         const now = Date.now();
         if (!bypassCooldown && now - lastPlextRequestTime < PLEXT_COOLDOWN_MS) {
@@ -439,6 +491,10 @@ export function createRequestCoordinator(): RequestCoordinator {
                 type: 'IRIS_PLEXTS_REQUEST',
                 minTimestampMs: -1,
             });
+        },
+
+        handleCurrentViewRefresh(reason): void {
+            refreshCurrentView(reason);
         },
 
         handleGeolocateRequest(): void {

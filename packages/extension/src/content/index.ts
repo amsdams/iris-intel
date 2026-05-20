@@ -452,6 +452,18 @@ pluginManager.load(PortalKeyCountLabelsPlugin as IRISPlugin);
 pluginManager.load(PlannedLinksPlugin as IRISPlugin);
 requestCoordinator.start();
 
+const requestResumeRefresh = (): void => {
+  window.postMessage({ type: 'IRIS_REFRESH_CURRENT_VIEW', reason: 'resume' }, '*');
+};
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    requestResumeRefresh();
+  }
+});
+window.addEventListener('focus', requestResumeRefresh);
+window.addEventListener('online', requestResumeRefresh);
+
 window.addEventListener('message', (event: MessageEvent) => {
   const msg = event.data as IRISMessage;
   if (msg?.type?.startsWith('IRIS') && useStore.getState().debugLogging) {
@@ -498,6 +510,11 @@ window.addEventListener('message', (event: MessageEvent) => {
 
     case 'IRIS_MOVE_MAP': {
       requestCoordinator.handleMoveMap(msg);
+      break;
+    }
+
+    case 'IRIS_REFRESH_CURRENT_VIEW': {
+      requestCoordinator.handleCurrentViewRefresh(msg.reason === 'manual' ? 'manual' : 'resume');
       break;
     }
 
