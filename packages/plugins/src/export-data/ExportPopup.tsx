@@ -185,7 +185,7 @@ export function ExportPopup({ onClose }: ExportPopupProps): JSX.Element {
 
                 <div className="iris-export-submit-row">
                     <PopupActionRow>
-                        <PopupActionButton onClick={doExport}>
+                        <PopupActionButton variant="primary" onClick={doExport}>
                             DOWNLOAD
                         </PopupActionButton>
                     </PopupActionRow>

@@ -486,7 +486,6 @@ export interface IRISSettings {
     allowPitch: boolean;
     debugLogging: boolean;
     showMockTools: boolean;
-    showMapControls: boolean;
     plannedShowLinks: boolean;
     plannedShowMarkers: boolean;
 }
@@ -517,7 +516,6 @@ export const DEFAULT_SETTINGS: IRISSettings = {
     allowPitch: true,
     debugLogging: false,
     showMockTools: false,
-    showMapControls: true,
     plannedShowLinks: true,
     plannedShowMarkers: true,
 };
@@ -545,7 +543,6 @@ interface SettingsSlice extends IRISSettings {
     toggleAllowPitch: () => void;
     toggleDebugLogging: () => void;
     toggleShowMockTools: () => void;
-    toggleShowMapControls: () => void;
     togglePlannedShowLinks: () => void;
     togglePlannedShowMarkers: () => void;
 }
@@ -826,7 +823,6 @@ const createSettingsSlice: StateCreator<IRISState, [], [], SettingsSlice> = (set
     toggleAllowPitch: () => set((state) => ({ allowPitch: !state.allowPitch })),
     toggleDebugLogging: () => set((state) => ({ debugLogging: !state.debugLogging })),
     toggleShowMockTools: () => set((state) => ({ showMockTools: !state.showMockTools })),
-    toggleShowMapControls: () => set((state) => ({ showMapControls: !state.showMapControls })),
     togglePlannedShowLinks: () => set((state) => ({ plannedShowLinks: !state.plannedShowLinks })),
     togglePlannedShowMarkers: () => set((state) => ({ plannedShowMarkers: !state.plannedShowMarkers })),
 });
@@ -1745,7 +1741,6 @@ const irisStore = createStore<IRISState>()(
                     filterShowLevel: state.filterShowLevel,
                     debugLogging: state.debugLogging,
                     showMockTools: state.showMockTools,
-                    showMapControls: state.showMapControls,
                     plannedShowLinks: state.plannedShowLinks,
                     plannedShowMarkers: state.plannedShowMarkers,
                     filterShowHealth: state.filterShowHealth,

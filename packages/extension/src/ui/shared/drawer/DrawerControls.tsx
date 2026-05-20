@@ -16,7 +16,7 @@ interface DrawerSectionProps {
 
 export function DrawerButton({active = false, children, icon, label, onClick}: DrawerButtonProps): JSX.Element {
     return (
-        <button className={`iris-drawer-btn ${active ? 'iris-drawer-btn-active' : ''}`} onClick={onClick}>
+        <button className={`iris-drawer-btn ${active ? 'iris-drawer-btn-active' : ''}`} aria-pressed={active} onClick={onClick}>
             {icon && <div className="iris-drawer-btn-icon">{icon}</div>}
             <div className="iris-drawer-btn-label">{label}</div>
             {children}

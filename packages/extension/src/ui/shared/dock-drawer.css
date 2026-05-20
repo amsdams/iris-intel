@@ -115,17 +115,25 @@
 }
 
 .iris-drawer-btn-active {
-    background: rgb(255 255 255 / 10%);
-    border-color: var(--iris-accent);
-    color: var(--iris-accent);
-    box-shadow: 0 0 10px rgb(0 255 255 / 10%);
+    background: rgb(55 230 255 / 18%);
+    border-color: rgb(55 230 255 / 70%);
+    color: #b9f8ff;
+    box-shadow: inset 0 0 0 1px rgb(55 230 255 / 18%), 0 0 10px rgb(0 255 255 / 10%);
 }
 
-.iris-drawer-btn:not(:disabled):hover,
-.iris-drawer-btn:not(:disabled):focus-visible {
+.iris-drawer-btn:not(.iris-drawer-btn-active):not(:disabled):hover,
+.iris-drawer-btn:not(.iris-drawer-btn-active):not(:disabled):focus-visible {
     background: rgb(255 255 255 / 8%);
-    border-color: var(--iris-accent);
-    color: var(--iris-accent);
+    border-color: rgb(255 255 255 / 22%);
+    color: #fff;
+    outline: none;
+}
+
+.iris-drawer-btn-active:not(:disabled):hover,
+.iris-drawer-btn-active:not(:disabled):focus-visible {
+    background: rgb(55 230 255 / 24%);
+    border-color: rgb(55 230 255 / 85%);
+    color: #d9fbff;
     outline: none;
 }
 

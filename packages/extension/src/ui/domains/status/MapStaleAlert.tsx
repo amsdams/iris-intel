@@ -88,7 +88,7 @@ export function MapStaleAlert(): JSX.Element | null {
                 {!isOffline && (
                     <button
                         type="button"
-                        className="iris-session-alert-button iris-map-stale-alert-button-primary"
+                        className="iris-popup-action-button"
                         onClick={refreshMap}
                     >
                         Refresh
@@ -96,7 +96,7 @@ export function MapStaleAlert(): JSX.Element | null {
                 )}
                 <button
                     type="button"
-                    className="iris-session-alert-button"
+                    className="iris-popup-action-button"
                     onClick={() => setDismissedKey(alertKey)}
                 >
                     Dismiss

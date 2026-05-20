@@ -313,6 +313,19 @@
     outline: none;
 }
 
+.iris-popup-action-button-primary {
+    background: var(--iris-accent);
+    border-color: var(--iris-accent);
+    color: #000;
+}
+
+.iris-popup-action-button-primary:hover,
+.iris-popup-action-button-primary:focus-visible {
+    background: var(--iris-accent);
+    color: #000;
+    filter: brightness(1.1);
+}
+
 .iris-popup-action-button:active {
     transform: translateY(1px);
 }
@@ -705,6 +718,12 @@
     border-color: var(--iris-accent);
     color: var(--iris-accent);
     outline: none;
+}
+
+.iris-ui-list-action-primary {
+    border-color: rgb(55 230 255 / 55%);
+    background: rgb(55 230 255 / 8%);
+    color: #b9f8ff;
 }
 
 .iris-ui-list-action-danger {

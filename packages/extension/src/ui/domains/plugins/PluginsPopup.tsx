@@ -48,7 +48,8 @@ export function PluginsPopup({ onClose }: PluginsPopupProps): JSX.Element {
                                         {plugin.manifest.name}
                                     </span>
                                     <button 
-                                        className={`iris-plugin-toggle-btn ${isEnabled ? 'iris-plugin-btn-disable' : 'iris-plugin-btn-enable'}`}
+                                        type="button"
+                                        className={`iris-ui-list-action ${isEnabled ? 'iris-ui-list-action-danger' : 'iris-ui-list-action-primary'}`}
                                         onClick={() => togglePlugin(plugin.manifest.id)}
                                     >
                                         {isEnabled ? 'DISABLE' : 'ENABLE'}

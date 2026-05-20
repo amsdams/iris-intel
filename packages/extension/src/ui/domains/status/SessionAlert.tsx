@@ -45,7 +45,7 @@ export function SessionAlert(): JSX.Element | null {
             <div className="iris-session-alert-actions">
                 <button
                     type="button"
-                    className="iris-session-alert-button iris-session-alert-button-primary"
+                    className="iris-popup-action-button iris-session-alert-button-primary"
                     onClick={openIntelLogin}
                 >
                     Sign In On Intel
@@ -53,7 +53,7 @@ export function SessionAlert(): JSX.Element | null {
                 {!isInitialLogin && (
                     <button
                         type="button"
-                        className="iris-session-alert-button"
+                        className="iris-popup-action-button"
                         onClick={() => window.location.reload()}
                     >
                         Reload After Login
@@ -61,7 +61,7 @@ export function SessionAlert(): JSX.Element | null {
                 )}
                 <button
                     type="button"
-                    className="iris-session-alert-button"
+                    className="iris-popup-action-button"
                     onClick={() => setDismissedErrorTime(lastSessionError.time)}
                 >
                     Dismiss

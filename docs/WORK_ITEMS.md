@@ -865,8 +865,8 @@ Tasks:
 | Add portal popup action row                      | Done   | portal details now expose Center Map, Copy Coords, Copy Address when resolved, and Missions when available below History so core portal facts keep priority |
 | Extract popup action row primitive               | Done   | added shared `PopupActionRow` and `PopupActionButton`; portal details use the shared primitive while link/field/player/plugin details can adopt it when they gain comparable actions |
 | Extract table primitives                         | Done   | added shared scroll/table/sticky-header classes; Inventory and Region checkpoint history now share table behavior while keeping density-specific padding local |
-| Extract toolbar and segmented control primitives | Done   | added shared toolbar, segmented filter, compact header action, and square nav-control classes; COMM filters, Inventory sort/category controls, inventory/COMM refresh, and Navigation popup buttons now share interaction styling |
-| Visual smoke test shared control primitives      | Open   | later verification pass: COMM tabs/refresh, Inventory refresh/sort/category/table, Navigation buttons, session/stale alert buttons, plugin toggles, debug copy, passcode submit, and export plugin controls |
+| Extract toolbar and segmented control primitives | Done   | added shared toolbar, segmented filter, compact header action, square nav-control, and list-action modifiers; COMM filters, Inventory sort/category controls, inventory/COMM refresh, Navigation popup buttons, and plugin toggles now share interaction styling |
+| Visual smoke test shared control primitives      | Open   | later verification pass: COMM tabs/refresh, Inventory refresh/sort/category/table, Navigation buttons, session/stale alert buttons, plugin toggles, debug copy, passcode submit, and export plugin controls; session/stale alert buttons now consume the shared popup action class |
 | Migrate export plugin controls off inline styles | Done   | export-data plugin format buttons now use shared segmented controls, checkboxes use shared checkbox styling, and download uses the shared popup action button default |
 | Review map-control UI primitives                 | Done   | navigation popup now uses CSS-first nav row/grid/button primitives, location search moved static layout/result styling into shared CSS, drawer backdrop inline layout moved to CSS, and planning/mock/geolocate controls already consume existing shared classes; pan regression from the old unhandled `IRIS_PAN_MAP` path was fixed by using the working `IRIS_MOVE_MAP` path |
 | Review mobile back/escape close behavior         | Done   | Escape now closes the top IRIS surface in order: drawer first, then visible popup/sheet, then selection/plugin/mission details; browser-back history interception is intentionally deferred until the mobile focus model is chosen |
@@ -1022,6 +1022,7 @@ Tasks:
 | Add mock player activity plexts for tracker testing        | Done   | mock tools now include an `Activity` action that injects 10 mock player activity plexts across nearby loaded portals via the same store path as COMM; player tracker rebuilds from current plexts on update/setup so cleared mock activity cannot reappear after pan without dropping existing live COMM history |
 | Add plugin overlay composition diagnostics                 | Done   | copied Diagnostics output now includes a `PLUGIN` line with total/rendered/html/label/player/highlight/line/fill/point/interactive counts so overlay-heavy samples can identify the active plugin mix |
 | Fix low-zoom globe-wrap link/field rendering               | Done   | render feature builders now split antimeridian-crossing links and field polygons into render-safe geometry so they draw along the short path without changing selection/storage geometry |
+| Guard tile coverage generation against invalid/extreme bounds | Open | follow up on a Chrome `Oh snap`/debugger stop inside the tile Y loop; clamp WebMercator lat/lng/tile ranges, handle antimeridian coverage explicitly, cap generated tile counts, and report diagnostics instead of risking a runaway coverage loop after hard refresh or rapid map/drawer interaction |
 | Investigate package split only after measuring bundle cost | Blocked | an `@iris/types` or `@iris/utils` split may help later, but it is deferred until plugin bundle size or package-boundary cost is a measured issue                                                       |
 
 ## Current Next Pickup
@@ -1030,8 +1031,9 @@ Tasks:
 2. **[Benchmark Validation]** After that change, rerun the expanded IRIS 0.1.6 Batch on desktop and mobile and compare z8 `normal pan`, `no-links pan`, `no-fields pan`, `base pan`, and `no-plugins pan`.
 3. **[Plugin Overlay]** Revisit IITC-style label overlap thinning only if z14 Normal pan spikes correlate with high `pluginMix` label/highlight counts; current z8 samples point away from plugins.
 4. **[Performance Architecture]** Reproduce the Inventory + Diagnostics + COMM crash only after a fresh `Oh snap`; use `LONGTASK`, `UIRENDER`, `ENTITYGEN`, plugin mix, and domain errors to identify whether it is DOM/render pressure, request/runtime errors, or memory pressure.
-5. **[UI Architecture]** Extend shared UI/CSS primitives to drawer buttons, popup action rows, and map controls after visual smoke testing the first pass.
-6. **[Draw Tools]** Refine marker selection/edit/delete UX after the pin experiment clarified renderer behavior.
+5. **[Performance Architecture]** Inspect tile coverage generation guards if another `Oh snap` or debugger stop points at the tile loop, especially after hard refresh or rapid map/drawer interaction.
+6. **[UI Architecture]** Extend shared UI/CSS primitives to drawer buttons, popup action rows, and map controls after visual smoke testing the first pass.
+7. **[Draw Tools]** Refine marker selection/edit/delete UX after the pin experiment clarified renderer behavior.
 
 ## Snapshot And Reference Sources
 
