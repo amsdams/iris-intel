@@ -748,10 +748,10 @@ Tasks:
 
 | Task                                            | Status | Notes                                                                           |
 |-------------------------------------------------|--------|---------------------------------------------------------------------------------|
-| Decide storage model for drawn items            | Open   | local persistence is expected; reference plugin stores projects in localStorage |
-| Support store/restore of named projects         | Open   | explicit project save/restore is part of the reference value                    |
-| Support export of drawn-plan data               | Open   | reference plugin exports data and portal/link summaries                         |
-| Decide whether import is needed in the baseline | Open   | may be phase 2 of the plugin rather than baseline                               |
+| Decide storage model for drawn items            | Done   | planned links and markers persist in IRIS settings for the baseline; named project storage remains a separate future feature |
+| Support store/restore of named projects         | Open   | explicit named project save/restore is part of the reference value and remains separate from the new baseline JSON backup |
+| Support export of drawn-plan data               | Done   | Map drawer Draw Tools Backup exports planned links and markers as JSON |
+| Decide whether import is needed in the baseline | Done   | baseline import exists now; it supports merge/replace from compact `iris-draw-tools` JSON or a full `iris-settings` JSON object |
 
 Bugs:
 
@@ -1045,11 +1045,11 @@ Tasks:
 ## Current Next Pickup
 
 1. **[Low-Zoom Entity Rendering]** Implement the smallest moving-mode optimization for z8 core entity rendering. Current best first candidate: simplify or hide field fills while actively moving, then restore after settle.
-2. **[Benchmark Validation]** After that change, rerun the expanded IRIS 0.1.6 Batch on desktop and mobile and compare z8 `normal pan`, `no-links pan`, `no-fields pan`, `base pan`, and `no-plugins pan`.
+2. **[Benchmark Validation]** After that change, rerun the expanded IRIS 0.1.7 Batch on desktop and mobile and compare z8 `normal pan`, `no-links pan`, `no-fields pan`, `base pan`, and `no-plugins pan`.
 3. **[Plugin Overlay]** Revisit IITC-style label overlap thinning only if z14 Normal pan spikes correlate with high `pluginMix` label/highlight counts; current z8 samples point away from plugins.
 4. **[Performance Architecture]** Reproduce the Inventory + Diagnostics + COMM crash only after a fresh `Oh snap`; use `LONGTASK`, `UIRENDER`, `ENTITYGEN`, plugin mix, and domain errors to identify whether it is DOM/render pressure, request/runtime errors, or memory pressure.
 5. **[Performance Architecture]** Inspect tile coverage generation guards if another `Oh snap` or debugger stop points at the tile loop, especially after hard refresh or rapid map/drawer interaction.
-6. **[UI Architecture]** Extend shared UI/CSS primitives to drawer buttons, popup action rows, and map controls after visual smoke testing the first pass.
+6. **[UI Architecture]** Resume shared UI/CSS primitives only for the deferred detail-row/CSS-size/semantic-color follow-ups; the main primitives pass is paused after 0.1.7 smoke.
 7. **[Draw Tools]** Refine marker selection/edit/delete UX after the pin experiment clarified renderer behavior.
 
 ## Snapshot And Reference Sources
