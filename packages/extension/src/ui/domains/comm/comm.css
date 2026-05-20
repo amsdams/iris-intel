@@ -1,28 +1,39 @@
 .iris-comm-refresh-btn {
+    min-height: 22px;
     font-size: 9px;
-    padding: 2px 6px;
     margin-right: 8px;
+
+    --iris-compact-control-height: 22px;
+    --iris-compact-control-padding: 0 7px;
+    --iris-compact-control-radius: 5px;
+    --iris-compact-control-border: rgb(55 230 255 / 45%);
+    --iris-compact-control-bg: rgb(55 230 255 / 10%);
+    --iris-compact-control-color: #b9f8ff;
+    --iris-compact-control-active-border: rgb(55 230 255 / 70%);
+    --iris-compact-control-active-bg: rgb(55 230 255 / 16%);
+    --iris-compact-control-active-color: #d9fbff;
 }
 
 .iris-comm-tabs {
-    display: flex;
-    border-bottom: 1px solid var(--iris-border-dim);
     padding: 0 16px;
     margin-bottom: 8px;
+    min-height: 36px;
+    background: rgb(0 24 28 / 62%);
+    border-top: 1px solid rgb(55 230 255 / 24%);
+
+    --iris-ui-segment-padding: 0 12px;
+    --iris-ui-segmented-border-bottom: 1px solid rgb(55 230 255 / 42%);
+    --iris-ui-segment-color: rgb(217 251 255 / 86%);
+    --iris-ui-segment-hover-bg: rgb(55 230 255 / 14%);
+    --iris-ui-segment-hover-color: #d9fbff;
+    --iris-ui-segment-active-color: #37e6ff;
 }
 
 .iris-comm-tab {
-    padding: 8px 12px;
-    cursor: pointer;
-    font-size: 0.8em;
-    color: var(--iris-text-muted);
-    font-weight: normal;
-}
-
-.iris-comm-tab-active {
-    border-bottom: 2px solid var(--iris-aqua);
-    color: var(--iris-aqua);
-    font-weight: bold;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
 }
 
 .iris-comm-scroll-container {

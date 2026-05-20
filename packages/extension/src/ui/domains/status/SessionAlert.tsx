@@ -1,7 +1,6 @@
 import { h, JSX } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { useStore } from '@iris/core';
-import { UI_COLORS } from '../../theme';
 
 export function SessionAlert(): JSX.Element | null {
     const sessionStatus = useStore((state) => state.sessionStatus);
@@ -39,7 +38,7 @@ export function SessionAlert(): JSX.Element | null {
                         ? 'Intel sign-in is required before IRIS can load the dashboard. Sign in on Intel to continue.'
                         : 'Intel sign-in is required before IRIS can continue. Open Intel, sign in, then reload if needed.'}
                 </div>
-                <div className="iris-session-alert-meta" style={{ color: UI_COLORS.TEXT_MUTED }}>
+                <div className="iris-session-alert-meta">
                     {lastSessionError.statusText} ({lastSessionError.status}) - {lastSessionError.url}
                 </div>
             </div>

@@ -30,7 +30,7 @@ export function PluginsPopup({ onClose }: PluginsPopupProps): JSX.Element {
                 '--iris-popup-title-color': theme.AQUA,
             } as Record<string, string>}
         >
-            <div className="iris-plugins-list">
+            <div className="iris-plugins-list iris-ui-list">
                 {availablePlugins.length === 0 ? (
                     <div className="iris-plugins-empty">
                         No plugins loaded.
@@ -41,7 +41,7 @@ export function PluginsPopup({ onClose }: PluginsPopupProps): JSX.Element {
                         return (
                             <div 
                                 key={plugin.manifest.id}
-                                className={`iris-plugin-item ${isEnabled ? 'iris-plugin-item-enabled' : 'iris-plugin-item-disabled'}`}
+                                className={`iris-plugin-item iris-ui-list-row iris-ui-list-row-static ${isEnabled ? 'iris-plugin-item-enabled iris-ui-list-row-active' : 'iris-plugin-item-disabled'}`}
                             >
                                 <div className="iris-plugin-header">
                                     <span className="iris-plugin-name">

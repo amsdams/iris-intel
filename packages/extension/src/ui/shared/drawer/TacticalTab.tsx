@@ -161,18 +161,18 @@ export function TacticalTab({ onAction }: TacticalTabProps): JSX.Element {
                             No recent player activity loaded.
                         </div>
                     ) : (
-                        <div className="iris-active-player-list">
+                        <div className="iris-active-player-list iris-ui-list">
                             {activePlayers.map((player) => (
                                 <button
                                     key={player.id}
                                     type="button"
-                                    className="iris-active-player-row"
+                                    className="iris-active-player-row iris-ui-list-row"
                                     onClick={() => navigateToPlayer(player)}
                                 >
                                     <span className="iris-active-player-swatch" style={{'--iris-active-player-color': player.color} as JSX.CSSProperties} />
-                                    <span className="iris-active-player-main">
-                                        <span className="iris-active-player-name">{player.name}</span>
-                                        <span className="iris-active-player-detail">
+                                    <span className="iris-active-player-main iris-ui-list-main">
+                                        <span className="iris-active-player-name iris-ui-list-title">{player.name}</span>
+                                        <span className="iris-active-player-detail iris-ui-list-meta">
                                             {player.portalName || player.actionText || `${player.lat.toFixed(5)}, ${player.lng.toFixed(5)}`}
                                         </span>
                                     </span>

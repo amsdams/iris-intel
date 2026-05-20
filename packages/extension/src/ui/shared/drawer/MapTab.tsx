@@ -142,7 +142,7 @@ export function MapTab({ onAction }: MapTabProps): JSX.Element {
                             No planned markers.
                         </div>
                     ) : (
-                        <div className="iris-drawer-marker-list">
+                        <div className="iris-drawer-marker-list iris-ui-list">
                             {markerRows.map(({marker, distanceKm}) => {
                                 const isEditing = editingMarkerId === marker.id;
                                 const isSelected = selectedPlannedItemId === marker.id;
@@ -150,13 +150,13 @@ export function MapTab({ onAction }: MapTabProps): JSX.Element {
                                     <div
                                         key={marker.id}
                                         ref={isSelected ? selectedMarkerRowRef : undefined}
-                                        className={`iris-drawer-marker-row iris-drawer-marker-row-${marker.color} ${isSelected ? 'iris-drawer-marker-row-active' : ''}`}
+                                        className={`iris-drawer-marker-row iris-ui-list-row iris-drawer-marker-row-${marker.color} ${isSelected ? 'iris-drawer-marker-row-active iris-ui-list-row-active' : ''}`}
                                         onClick={isEditing ? undefined : (event): void => navigateToMarkerFromRow(marker, event)}
                                     >
                                         {isEditing ? (
                                             <div className="iris-drawer-marker-target">
                                                 <span className="iris-drawer-marker-swatch" />
-                                                <span className="iris-drawer-marker-main">
+                                                <span className="iris-drawer-marker-main iris-ui-list-main">
                                                     <input
                                                         className="iris-drawer-marker-input"
                                                         value={editingLabel}
@@ -167,7 +167,7 @@ export function MapTab({ onAction }: MapTabProps): JSX.Element {
                                                             if (event.key === 'Escape') cancelMarkerLabelEdit();
                                                         }}
                                                     />
-                                                    <span className="iris-drawer-marker-coords">
+                                                    <span className="iris-drawer-marker-coords iris-ui-list-meta">
                                                         {marker.lat.toFixed(5)}, {marker.lng.toFixed(5)}
                                                     </span>
                                                 </span>
@@ -180,9 +180,9 @@ export function MapTab({ onAction }: MapTabProps): JSX.Element {
                                                 className="iris-drawer-marker-target"
                                             >
                                                 <span className="iris-drawer-marker-swatch" />
-                                                <span className="iris-drawer-marker-main">
-                                                    <span className="iris-drawer-marker-label">{marker.label}</span>
-                                                    <span className="iris-drawer-marker-coords">
+                                                <span className="iris-drawer-marker-main iris-ui-list-main">
+                                                    <span className="iris-drawer-marker-label iris-ui-list-title">{marker.label}</span>
+                                                    <span className="iris-drawer-marker-coords iris-ui-list-meta">
                                                         {marker.lat.toFixed(5)}, {marker.lng.toFixed(5)}
                                                     </span>
                                                 </span>
@@ -191,27 +191,27 @@ export function MapTab({ onAction }: MapTabProps): JSX.Element {
                                                 </span>
                                             </div>
                                         )}
-                                        <div className="iris-drawer-marker-actions">
+                                        <div className="iris-drawer-marker-actions iris-ui-list-actions">
                                             {isEditing ? (
                                                 <Fragment>
-                                                    <button type="button" className="iris-drawer-marker-action" onClick={(event) => {
+                                                    <button type="button" className="iris-drawer-marker-action iris-ui-list-action" onClick={(event) => {
                                                         event.stopPropagation();
                                                         saveMarkerLabel();
                                                     }}>Save</button>
-                                                    <button type="button" className="iris-drawer-marker-action" onClick={(event) => {
+                                                    <button type="button" className="iris-drawer-marker-action iris-ui-list-action" onClick={(event) => {
                                                         event.stopPropagation();
                                                         cancelMarkerLabelEdit();
                                                     }}>Cancel</button>
                                                 </Fragment>
                                             ) : (
                                                 <Fragment>
-                                                    <button type="button" className="iris-drawer-marker-action" onClick={(event) => {
+                                                    <button type="button" className="iris-drawer-marker-action iris-ui-list-action" onClick={(event) => {
                                                         event.stopPropagation();
                                                         startEditingMarker(marker);
                                                     }}>Edit</button>
                                                     <button
                                                         type="button"
-                                                        className={`iris-drawer-marker-action ${confirmDeleteMarkerId === marker.id ? 'iris-drawer-marker-action-danger' : ''}`}
+                                                        className={`iris-drawer-marker-action iris-ui-list-action ${confirmDeleteMarkerId === marker.id ? 'iris-drawer-marker-action-danger iris-ui-list-action-danger' : ''}`}
                                                         onClick={(event) => {
                                                             event.stopPropagation();
                                                             deleteMarker(marker.id);

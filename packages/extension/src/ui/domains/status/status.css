@@ -63,6 +63,7 @@
 }
 
 .iris-session-alert-meta {
+  color: var(--iris-text-muted);
   font-size: 10px;
   line-height: 1.3;
   overflow-wrap: anywhere;
@@ -118,7 +119,7 @@
 }
 
 .iris-status-summary {
-  color: #f55;
+  color: var(--iris-error-color, #f55);
   font-weight: bold;
 }
 
@@ -146,7 +147,7 @@
 }
 
 .iris-status-section-net-errors .iris-status-section-title {
-  color: #f55;
+  color: var(--iris-error-color, #f55);
   border-bottom: 1px solid #400;
 }
 
@@ -172,7 +173,7 @@
 
 .iris-status-log-source,
 .iris-status-log-url {
-  color: #888;
+  color: var(--iris-text-muted);
   font-size: 9px;
   word-break: break-all;
   white-space: pre-wrap;
@@ -186,10 +187,31 @@
   line-height: 1.3;
 }
 
+.iris-status-log-message-warning,
+.iris-status-endpoint-stale {
+  color: var(--iris-warning-color, #fa0);
+}
+
+.iris-status-log-message-error,
+.iris-status-endpoint-error {
+  color: var(--iris-error-color, #f55);
+}
+
+.iris-status-log-message-accent,
+.iris-status-endpoint-in-flight,
+.iris-status-endpoint-success {
+  color: var(--iris-accent);
+}
+
+.iris-status-endpoint-idle {
+  color: var(--iris-text-muted);
+}
+
 .iris-status-empty {
   padding: 12px;
   text-align: center;
-  color: #666;
+  color: var(--iris-text-muted);
+  opacity: 0.6;
 }
 
 .iris-status-main-bar {
@@ -221,9 +243,52 @@
   transition: background 0.3s ease, box-shadow 0.3s ease;
 }
 
+.iris-status-led-active {
+  background: var(--iris-accent);
+  box-shadow: 0 0 5px var(--iris-accent);
+}
+
+.iris-status-led-error {
+  background: var(--iris-error-color, #f55);
+  box-shadow: 0 0 5px var(--iris-error-color, #f55);
+}
+
+.iris-status-led-success {
+  background: var(--iris-success-color, #0f0);
+  box-shadow: 0 0 5px var(--iris-success-color, #0f0);
+}
+
+.iris-status-led-idle {
+  background: var(--iris-border);
+}
+
+.iris-status-text-muted {
+  color: var(--iris-text-muted);
+}
+
+.iris-status-text-primary {
+  color: var(--iris-text-primary);
+}
+
+.iris-status-text-error {
+  color: var(--iris-error-color, #f55);
+}
+
+.iris-status-text-warning {
+  color: var(--iris-warning-color, #fa0);
+}
+
+.iris-status-text-accent {
+  color: var(--iris-accent);
+}
+
+.iris-status-text-bold {
+  font-weight: bold;
+}
+
 .iris-status-core {
   margin-left: 12px;
-  color: #b000ff;
+  color: var(--iris-purple-color, #b000ff);
   font-weight: bold;
   font-size: 9px;
 }
@@ -248,6 +313,8 @@
   left: 0;
   height: 100%;
   width: 50%;
+  background: var(--iris-accent);
+  box-shadow: 0 0 5px var(--iris-accent);
   animation: iris-progress 1.5s infinite linear;
 }
 

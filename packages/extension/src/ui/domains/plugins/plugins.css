@@ -1,7 +1,5 @@
 .iris-plugins-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  --iris-ui-list-gap: 10px;
 }
 
 .iris-plugins-empty {
@@ -11,13 +9,9 @@
 }
 
 .iris-plugin-item {
-  background: #111;
-  padding: 10px;
-  border-radius: 4px;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  border: 1px solid #333;
 }
 
 .iris-plugin-item-enabled {
@@ -32,7 +26,7 @@
 
 .iris-plugin-name {
   font-weight: bold;
-  color: #fff;
+  color: var(--iris-text-primary);
 }
 
 .iris-plugin-item-enabled .iris-plugin-name {
@@ -47,6 +41,17 @@
   font-size: 0.75em;
   font-weight: bold;
   cursor: pointer;
+  transition: filter 0.15s ease, transform 0.1s ease;
+}
+
+.iris-plugin-toggle-btn:hover,
+.iris-plugin-toggle-btn:focus-visible {
+  filter: brightness(1.12);
+  outline: none;
+}
+
+.iris-plugin-toggle-btn:active {
+  transform: translateY(1px);
 }
 
 .iris-plugin-btn-enable {
@@ -54,7 +59,7 @@
 }
 
 .iris-plugin-btn-disable {
-  background: #f44;
+  background: var(--iris-error-color, #f44);
 }
 
 .iris-plugin-description {
@@ -64,7 +69,8 @@
 
 .iris-plugin-meta {
   font-size: 0.7em;
-  color: #666;
+  color: var(--iris-text-muted);
+  opacity: 0.65;
 }
 
 .iris-plugin-feature-details {
@@ -146,5 +152,6 @@
 .iris-feature-coords {
   margin-top: 8px;
   font-size: 0.8em;
-  color: #666;
+  color: var(--iris-text-muted);
+  opacity: 0.65;
 }

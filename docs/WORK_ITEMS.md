@@ -864,12 +864,14 @@ Tasks:
 | Add primary-popup focus behavior on mobile       | Open   | only implement after the focus model is chosen; likely close other primary popups when opening stats/portal/link/field details while leaving COMM as a separate decision |
 | Add portal popup action row                      | Done   | portal details now expose Center Map, Copy Coords, Copy Address when resolved, and Missions when available below History so core portal facts keep priority |
 | Extract popup action row primitive               | Done   | added shared `PopupActionRow` and `PopupActionButton`; portal details use the shared primitive while link/field/player/plugin details can adopt it when they gain comparable actions |
+| Extract table primitives                         | Done   | added shared scroll/table/sticky-header classes; Inventory and Region checkpoint history now share table behavior while keeping density-specific padding local |
+| Extract toolbar and segmented control primitives | Done   | added shared toolbar, segmented filter, compact header action, and square nav-control classes; COMM filters, Inventory sort/category controls, inventory/COMM refresh, and Navigation popup buttons now share interaction styling |
 | Review map-control UI primitives                 | Done   | navigation popup now uses CSS-first nav row/grid/button primitives, location search moved static layout/result styling into shared CSS, drawer backdrop inline layout moved to CSS, and planning/mock/geolocate controls already consume existing shared classes; pan regression from the old unhandled `IRIS_PAN_MAP` path was fixed by using the working `IRIS_MOVE_MAP` path |
 | Review mobile back/escape close behavior         | Done   | Escape now closes the top IRIS surface in order: drawer first, then visible popup/sheet, then selection/plugin/mission details; browser-back history interception is intentionally deferred until the mobile focus model is chosen |
 | Add mobile browser Back close behavior           | Open   | medium-risk follow-up: on mobile, browser Back should close the active IRIS drawer/bottom sheet before normal page navigation; requires history/popstate coordination so it does not trap users or fight Intel URL state |
 | Extract drawer UI primitives                     | Done   | drawer-first pass added shared `DrawerSection` and `DrawerButton` controls and migrated Agent, System, Layers, Map, Tactical, and Visuals tabs; desktop and Chrome device-emulation smoke looked good |
 | Visual smoke test drawer primitives on real mobile | Done | real mobile smoke looked fine for drawer button sizing, scroll groups, active states, tap behavior, and close/outside-close behavior; follow-up fixed search GO button styling to better match restrained marker/planning controls |
-| Plan shared UI element styling layer              | Open   | define consistent naming and CSS classes for reusable buttons, inputs, selects, checkboxes, radios, panels/containers, rows, labels, and empty states; migrate feature-specific CSS gradually so local classes mostly own layout/domain behavior instead of visual styling |
+| Plan shared UI element styling layer              | Done   | shared naming now covers buttons, inputs, checkbox/radio labels, floating panels, compact controls, choice items, popup actions, and list rows/actions; missions and planned markers now consume shared list primitives while keeping domain-specific layout locally |
 | Add planned marker navigation list              | Done   | Map drawer now lists planned markers sorted by distance from current map center; tapping a marker selects/recenters it, labels can be edited inline, and delete requires a confirmation tap |
 | Polish planned marker list mobile selection UX  | Open   | continue testing on real mobile; selection/re-sort/scroll behavior can still feel unstable when choosing markers lower in the distance-sorted list |
 | Decide marker list placement                    | Open   | current first version lives directly in the Map drawer; consider moving behind a Markers button, collapsing by default, or showing it only while marker planning is active |
@@ -896,7 +898,7 @@ Tasks:
 | Task                                                | Status      | Notes                                                                                                                                                           |
 |-----------------------------------------------------|-------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Formal semantic color module                        | In Progress | shared theme tokens now separate `LEVELS`, `ITEM_RARITY`, `MOD_RARITY`, and item-type semantics; continuing to normalize naming and usage boundaries            |
-| Reduce hard-coded semantic colors in CSS/components | In Progress | portal details, inventory, and passcode rewards now use shared semantic tokens; continue migrating remaining one-off CSS values in status/debug/topbar surfaces |
+| Reduce hard-coded semantic colors in CSS/components | In Progress | portal details, inventory, passcode rewards, and status surfaces now use shared semantic tokens for common success/warning/error/muted/accent/purple states; continue migrating remaining one-off debug/topbar values |
 
 ## Engineering Standards and Design Patterns
 
@@ -919,7 +921,7 @@ Tasks:
 
 | Task                     | Status | Notes                                                                           |
 |--------------------------|--------|---------------------------------------------------------------------------------|
-| CSS-First Styling Policy | Done   | prefer CSS classes and variables over inline `style` objects                    |
+| CSS-First Styling Policy | Done   | prefer CSS classes and variables over inline `style` objects; latest review moved session/status semantic colors and the status progress/LED styling out of JSX into CSS classes |
 | Mobile-First Layouts     | Done   | assume narrow screens; use 90vw width and centering for small viewports         |
 | Centered Modal Pattern   | Done   | major interactions (Comm, Inventory, Missions) use a centered modal feel        |
 | Theme variable usage     | Done   | define dynamic properties in `base.css` to satisfy IDE and maintain consistency |

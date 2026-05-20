@@ -24,11 +24,11 @@ export function ThemePopup({ onClose }: ThemePopupProps): JSX.Element {
                 '--iris-popup-title-color': theme.AQUA,
             } as Record<string, string>}
         >
-            <div className="iris-theme-settings">
+            <div className="iris-theme-settings iris-ui-list">
                 {Object.keys(THEMES).map((id) => (
                     <label 
                         key={id} 
-                        className={`iris-theme-item iris-label ${themeId === id ? 'iris-theme-item-active' : ''}`}
+                        className={`iris-theme-item iris-label iris-ui-list-row ${themeId === id ? 'iris-theme-item-active iris-ui-list-row-active' : ''}`}
                     >
                         <input
                             type="radio"

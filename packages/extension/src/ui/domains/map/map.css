@@ -98,13 +98,10 @@
 }
 
 .iris-map-nav-btn {
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  color: var(--iris-map-nav-color, var(--iris-accent));
-  border: 1px solid var(--iris-map-nav-color, var(--iris-accent));
-  background: transparent;
-  font-size: 18px;
+  --iris-ui-square-control-color: var(--iris-map-nav-color, var(--iris-accent));
+  --iris-ui-square-control-hover-color: var(--iris-map-nav-color, var(--iris-accent));
+  --iris-ui-square-control-size: 40px;
+  --iris-ui-square-control-font-size: 18px;
 }
 
 .iris-map-nav-zoom-label {

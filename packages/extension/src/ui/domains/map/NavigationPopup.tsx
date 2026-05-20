@@ -83,25 +83,25 @@ export function NavigationPopup({ onClose }: NavigationPopupProps): JSX.Element 
             <div className="iris-navigation-controls">
                 <div className="iris-map-section-title">ZOOM</div>
                 <div className="iris-map-nav-row">
-                    <button className="iris-btn iris-map-nav-btn" onClick={zoomIn} title="Zoom in" aria-label="Zoom in">+</button>
+                    <button className="iris-map-nav-btn iris-ui-square-control" onClick={zoomIn} title="Zoom in" aria-label="Zoom in">+</button>
                     <div className="iris-map-nav-zoom-label">
                         Z{Math.floor(zoom)}
                     </div>
-                    <button className="iris-btn iris-map-nav-btn" onClick={zoomOut} title="Zoom out" aria-label="Zoom out">-</button>
+                    <button className="iris-map-nav-btn iris-ui-square-control" onClick={zoomOut} title="Zoom out" aria-label="Zoom out">-</button>
                 </div>
 
                 <div className="iris-map-section-title">PAN</div>
                 <div className="iris-map-nav-grid">
                     <div />
-                    <button className="iris-btn iris-map-nav-btn" onClick={() => pan(0, -PAN_STEP_PX)} title="Pan north" aria-label="Pan north">↑</button>
+                    <button className="iris-map-nav-btn iris-ui-square-control" onClick={() => pan(0, -PAN_STEP_PX)} title="Pan north" aria-label="Pan north">↑</button>
                     <div />
                     
-                    <button className="iris-btn iris-map-nav-btn" onClick={() => pan(-PAN_STEP_PX, 0)} title="Pan west" aria-label="Pan west">←</button>
+                    <button className="iris-map-nav-btn iris-ui-square-control" onClick={() => pan(-PAN_STEP_PX, 0)} title="Pan west" aria-label="Pan west">←</button>
                     <div />
-                    <button className="iris-btn iris-map-nav-btn" onClick={() => pan(PAN_STEP_PX, 0)} title="Pan east" aria-label="Pan east">→</button>
+                    <button className="iris-map-nav-btn iris-ui-square-control" onClick={() => pan(PAN_STEP_PX, 0)} title="Pan east" aria-label="Pan east">→</button>
                     
                     <div />
-                    <button className="iris-btn iris-map-nav-btn" onClick={() => pan(0, PAN_STEP_PX)} title="Pan south" aria-label="Pan south">↓</button>
+                    <button className="iris-map-nav-btn iris-ui-square-control" onClick={() => pan(0, PAN_STEP_PX)} title="Pan south" aria-label="Pan south">↓</button>
                     <div />
                 </div>
             </div>

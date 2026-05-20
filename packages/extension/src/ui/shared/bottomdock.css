@@ -292,6 +292,18 @@
     background: var(--iris-planning-marker-color);
     box-shadow: 0 0 0 2px rgb(0 0 0 / 80%);
     cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.iris-planning-marker-btn:not(:disabled):hover,
+.iris-planning-marker-btn:not(:disabled):focus-visible {
+    border-color: var(--iris-accent);
+    box-shadow: 0 0 0 2px rgb(0 0 0 / 80%), 0 0 9px var(--iris-planning-marker-color);
+    outline: none;
+}
+
+.iris-planning-marker-btn:not(:disabled):active {
+    transform: translateY(1px);
 }
 
 .iris-planning-marker-btn:disabled {

@@ -35,35 +35,36 @@
 
 .iris-inventory-sort {
     flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
     padding: 0 16px 8px;
 }
 
-.iris-inventory-sort-label {
-    color: var(--iris-text-muted);
-    font-size: 0.72em;
-    letter-spacing: 0.08em;
-}
-
 .iris-inventory-sort-chip {
-    border: 1px solid var(--iris-border-dim);
-    background: transparent;
-    color: var(--iris-text-muted);
-    border-radius: 999px;
-    padding: 3px 10px;
-    font-size: 0.72em;
+    --iris-compact-control-height: 24px;
+    --iris-compact-control-padding: 0 10px;
+    --iris-compact-control-radius: 999px;
+    --iris-compact-control-border: var(--iris-border-dim);
+    --iris-compact-control-bg: transparent;
+    --iris-compact-control-color: var(--iris-text-muted);
+    --iris-compact-control-active-border: var(--iris-aqua);
+    --iris-compact-control-active-bg: transparent;
+    --iris-compact-control-active-color: var(--iris-aqua);
+    --iris-compact-control-active-shadow: inset 0 0 0 1px rgb(0 255 255 / 18%);
     letter-spacing: 0.08em;
-    cursor: pointer;
-    transition: border-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
 }
 
-.iris-inventory-sort-chip-active {
-    border-color: var(--iris-aqua);
-    color: var(--iris-aqua);
-    box-shadow: inset 0 0 0 1px rgb(0 255 255 / 18%);
+.iris-inventory-refresh-btn {
+    min-height: 22px;
+    font-size: 9px;
+
+    --iris-compact-control-height: 22px;
+    --iris-compact-control-padding: 0 7px;
+    --iris-compact-control-radius: 5px;
+    --iris-compact-control-border: rgb(55 230 255 / 45%);
+    --iris-compact-control-bg: rgb(55 230 255 / 10%);
+    --iris-compact-control-color: #b9f8ff;
+    --iris-compact-control-active-border: rgb(55 230 255 / 70%);
+    --iris-compact-control-active-bg: rgb(55 230 255 / 16%);
+    --iris-compact-control-active-color: #d9fbff;
 }
 
 .iris-inventory-filter {
@@ -78,36 +79,16 @@
 
 .iris-inventory-tabs {
     flex-shrink: 0;
-    display: flex;
-    border-bottom: 1px solid var(--iris-border-dim);
     margin-bottom: 0;
-    overflow-x: auto;
-    white-space: nowrap;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
     padding: 0 16px;
     background: var(--iris-popup-bg, rgb(0 0 0 / 96%));
 }
 
-.iris-inventory-tabs::-webkit-scrollbar {
-    display: none;
-}
-
 .iris-inventory-tab {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 12px;
-    cursor: pointer;
-    font-size: 0.75em;
-    color: var(--iris-text-muted);
-    font-weight: normal;
-}
+    --iris-ui-segment-font-size: 0.75em;
 
-.iris-inventory-tab-active {
-    border-bottom: 2px solid var(--iris-aqua);
-    color: var(--iris-aqua);
-    font-weight: bold;
+    display: inline-flex;
+    gap: 6px;
 }
 
 .iris-inventory-tab-count {
@@ -125,22 +106,7 @@
 
 .iris-inventory-scroll-container {
     flex: 1;
-    min-height: 0;
-    overflow-y: auto;
     padding: 0 0 16px;
-}
-
-.iris-inventory-scroll-container::-webkit-scrollbar {
-    width: 4px;
-}
-
-.iris-inventory-scroll-container::-webkit-scrollbar-track {
-    background: rgb(0 0 0 / 10%);
-}
-
-.iris-inventory-scroll-container::-webkit-scrollbar-thumb {
-    background: var(--iris-accent, #0ff);
-    border-radius: 2px;
 }
 
 .iris-inventory-empty {
@@ -151,46 +117,9 @@
 }
 
 .iris-inventory-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.85em;
-}
-
-.iris-inventory-table thead tr {
-    text-align: left;
-    border-bottom: 1px solid var(--iris-border-dim);
-    color: var(--iris-text-muted);
-}
-
-.iris-inventory-table th {
-    padding: 10px 16px;
-    font-weight: bold;
-    font-size: 0.72em;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    background: var(--iris-popup-bg, rgb(0 0 0 / 96%));
-    box-shadow: inset 0 -1px 0 var(--iris-border-dim);
-}
-
-.iris-inventory-table th:last-child {
-    text-align: right;
-}
-
-.iris-inventory-table tr {
-    border-bottom: 1px solid var(--iris-border-dim);
-}
-
-.iris-inventory-table td {
-    padding: 8px 16px;
-}
-
-.iris-inventory-table td:last-child {
-    text-align: right;
-    font-weight: bold;
-    color: var(--iris-accent, var(--iris-aqua));
+    --iris-ui-table-font-size: 0.85em;
+    --iris-ui-table-header-padding: 10px 16px;
+    --iris-ui-table-cell-padding: 8px 16px;
 }
 
 .iris-inventory-item-name {

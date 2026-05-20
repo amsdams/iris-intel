@@ -1,7 +1,6 @@
 import { h, JSX } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { EndpointDiagnostics, EndpointKey, useStore } from '@iris/core';
-import { THEMES, UI_COLORS } from '../../theme';
 import { useRenderDiagnostics } from '../../shared/useRenderDiagnostics';
 
 const ENDPOINT_STALE_AFTER_MS: Partial<Record<EndpointKey, number>> = {
@@ -65,9 +64,6 @@ export function StatusBar(): JSX.Element {
     const lastSessionError = useStore((state) => state.lastSessionError);
     const endpointDiagnostics = useStore((state) => state.endpointDiagnostics);
     const clearEndpointDiagnostics = useStore((state) => state.clearEndpointDiagnostics);
-    const themeId = useStore((state) => state.themeId);
-    const theme = THEMES[themeId] || THEMES.INGRESS;
-    
     const [isExpanded, setIsExpanded] = useState(false);
     const [, setNow] = useState(() => Date.now());
 
@@ -146,21 +142,6 @@ export function StatusBar(): JSX.Element {
         return acc;
     }, {} as Record<'idle' | 'in_flight' | 'success' | 'error' | 'stale', number>);
 
-    const endpointStatusColor = (status: 'idle' | 'in_flight' | 'success' | 'error' | 'stale'): string => {
-        switch (status) {
-            case 'in_flight':
-                return theme.AQUA;
-            case 'success':
-                return UI_COLORS.SUCCESS;
-            case 'error':
-                return UI_COLORS.ERROR;
-            case 'stale':
-                return UI_COLORS.WARNING;
-            default:
-                return UI_COLORS.TEXT_MUTED;
-        }
-    };
-
     const formatCountdown = (entry: EndpointDiagnostics): string | null => {
         if (!entry.nextAutoRefreshAt || !POLLED_ENDPOINT_LABELS[entry.key]) return null;
         if (entry.status === 'in_flight') return 'refreshing now';
@@ -196,6 +177,24 @@ export function StatusBar(): JSX.Element {
     const lastEntitiesSuccessAt = endpointDiagnostics['entities']?.lastSuccessAt;
     const entitiesAgeMinutes = lastEntitiesSuccessAt ? Math.floor((Date.now() - lastEntitiesSuccessAt) / 60000) : null;
     const isEntitiesStale = entitiesAgeMinutes !== null && entitiesAgeMinutes >= ((ENDPOINT_STALE_AFTER_MS['entities'] ?? 300000) / 60000);
+    const endpointStatusClass = (status: 'idle' | 'in_flight' | 'success' | 'error' | 'stale'): string => (
+        `iris-status-endpoint-${status.replace('_', '-')}`
+    );
+    const networkTextClass = activeRequests > 0
+        ? 'iris-status-text-primary'
+        : (hasErrors ? 'iris-status-text-error' : 'iris-status-text-muted');
+    const endpointTextClass = endpointHealthCounts.error
+        ? 'iris-status-text-error'
+        : (endpointHealthCounts.stale ? 'iris-status-text-warning' : 'iris-status-text-muted');
+    const mapDataTextClass = isEntitiesStale
+        ? 'iris-status-text-warning iris-status-text-bold'
+        : 'iris-status-text-muted';
+    const sessionTextClass = sessionStatus === 'expired' || sessionStatus === 'initial_login_required'
+        ? 'iris-status-text-warning'
+        : (sessionStatus === 'recovering' ? 'iris-status-text-accent' : 'iris-status-text-muted');
+    const ledStatusClass = activeRequests > 0
+        ? 'iris-status-led-active'
+        : (hasErrors ? 'iris-status-led-error' : (successfulRequests.length > 0 ? 'iris-status-led-success' : 'iris-status-led-idle'));
 
     return (
         <div 
@@ -220,7 +219,7 @@ export function StatusBar(): JSX.Element {
                         <div className="iris-status-section iris-status-section-session">
                             <div className="iris-status-section-title">SESSION</div>
                             <div className="iris-status-log-entry iris-status-log-entry-error">
-                                <div className="iris-status-log-message iris-status-log-message-network" style={{ color: UI_COLORS.WARNING }}>
+                                <div className="iris-status-log-message iris-status-log-message-network iris-status-log-message-warning">
                                     <span>{lastSessionError ? `[${new Date(lastSessionError.time).toLocaleTimeString()}] ` : ''}{sessionLabel()}</span>
                                     <span>STATUS: {lastSessionError?.status ?? 'N/A'}</span>
                                 </div>
@@ -243,7 +242,7 @@ export function StatusBar(): JSX.Element {
                             <div className="iris-status-section-title">JS ERRORS</div>
                             {jsErrors.map((err) => (
                                 <div key={`js-${err.time}-${err.message}`} className="iris-status-log-entry iris-status-log-entry-error">
-                                    <div className="iris-status-log-message" style={{ color: UI_COLORS.WARNING }}>
+                                    <div className="iris-status-log-message iris-status-log-message-warning">
                                         [{new Date(err.time).toLocaleTimeString()}] {err.message}
                                     </div>
                                     <div className="iris-status-log-source">
@@ -259,7 +258,7 @@ export function StatusBar(): JSX.Element {
                             <div className="iris-status-section-title">MAP INTERACTIONS</div>
                             {interactionLogs.map((log) => (
                                 <div key={`int-${log.time}-${log.type}-${log.layerId}`} className="iris-status-log-entry">
-                                    <div className="iris-status-log-message" style={{ color: theme.AQUA }}>
+                                    <div className="iris-status-log-message iris-status-log-message-accent">
                                         [{new Date(log.time).toLocaleTimeString()}] {log.type.toUpperCase()}: {log.layerId}
                                     </div>
                                     <div className="iris-status-log-url">
@@ -276,7 +275,7 @@ export function StatusBar(): JSX.Element {
                             <div className="iris-status-section-title">NETWORK ERRORS</div>
                             {failedRequests.map((req) => (
                                 <div key={`net-err-${req.time}-${req.url}`} className="iris-status-log-entry iris-status-log-entry-error">
-                                    <div className="iris-status-log-message iris-status-log-message-network" style={{ color: UI_COLORS.ERROR }}>
+                                    <div className="iris-status-log-message iris-status-log-message-network iris-status-log-message-error">
                                         <span>[{new Date(req.time).toLocaleTimeString()}] {getEndpointName(req.url)}</span>
                                         <span>STATUS: {req.status}</span>
                                     </div>
@@ -293,7 +292,7 @@ export function StatusBar(): JSX.Element {
                             <div className="iris-status-section-title">SUCCESSFUL REQUESTS</div>
                             {successfulRequests.map((req) => (
                                 <div key={`net-ok-${req.time}-${req.url}`} className="iris-status-log-entry iris-status-log-entry-ok">
-                                    <div className="iris-status-log-message" style={{ color: theme.AQUA }}>
+                                    <div className="iris-status-log-message iris-status-log-message-accent">
                                         [{new Date(req.time).toLocaleTimeString()}] {getEndpointName(req.url)}
                                     </div>
                                     <div className="iris-status-log-url">
@@ -310,7 +309,7 @@ export function StatusBar(): JSX.Element {
                             const derivedStatus = getDerivedEndpointStatus(entry);
                             return (
                                 <div key={`endpoint-${entry.key}`} className="iris-status-log-entry">
-                                    <div className="iris-status-log-message iris-status-log-message-network" style={{ color: endpointStatusColor(derivedStatus) }}>
+                                    <div className={`iris-status-log-message iris-status-log-message-network ${endpointStatusClass(derivedStatus)}`}>
                                         <span>{entry.key}</span>
                                         <span>{derivedStatus.toUpperCase()}</span>
                                     </div>
@@ -347,22 +346,15 @@ export function StatusBar(): JSX.Element {
 
             <div className="iris-status-main-bar">
                 <div className="iris-status-indicator-group">
-                    <div className="iris-status-led" style={{ 
-                        width: '8px', 
-                        height: '8px', 
-                        borderRadius: '50%', 
-                        background: activeRequests > 0 ? theme.AQUA : (hasErrors ? UI_COLORS.ERROR : (successfulRequests.length > 0 ? UI_COLORS.SUCCESS : '#333')),
-                        boxShadow: activeRequests > 0 ? `0 0 5px ${theme.AQUA}` : (hasErrors ? `0 0 5px ${UI_COLORS.ERROR}` : (successfulRequests.length > 0 ? `0 0 5px ${UI_COLORS.SUCCESS}` : 'none')),
-                        transition: 'background 0.3s ease, box-shadow 0.3s ease'
-                    }} />
-                    <span className="iris-status-text" style={{ color: activeRequests > 0 ? UI_COLORS.TEXT_BASE : (hasErrors ? UI_COLORS.ERROR : UI_COLORS.TEXT_MUTED) }}>
+                    <div className={`iris-status-led ${ledStatusClass}`} />
+                    <span className={`iris-status-text ${networkTextClass}`}>
                         {activeRequests > 0 ? `NET: ${activeRequests} ACTIVE` : 'NET: IDLE'}
                         {successfulRequests.length > 0 && ` (${successfulRequests.length} OK)`}
                         {failedRequests.length > 0 && ` (${failedRequests.length} NET)`}
                         {jsErrors.length > 0 && ` (${jsErrors.length} JS)`}
                     </span>
                     <div className="iris-status-divider" />
-                    <span className="iris-status-text" style={{ color: endpointHealthCounts.error ? UI_COLORS.ERROR : (endpointHealthCounts.stale ? UI_COLORS.WARNING : UI_COLORS.TEXT_MUTED) }}>
+                    <span className={`iris-status-text ${endpointTextClass}`}>
                         ENDPOINTS:
                         {endpointHealthCounts.in_flight ? ` ${endpointHealthCounts.in_flight} ACTIVE` : ''}
                         {endpointHealthCounts.error ? ` ${endpointHealthCounts.error} ERR` : ''}
@@ -372,17 +364,14 @@ export function StatusBar(): JSX.Element {
                     {entitiesAgeMinutes !== null && (
                         <>
                             <div className="iris-status-divider" />
-                            <span className="iris-status-text" style={{ 
-                                color: isEntitiesStale ? UI_COLORS.WARNING : UI_COLORS.TEXT_MUTED,
-                                fontWeight: isEntitiesStale ? 'bold' : 'normal'
-                            }}>
+                            <span className={`iris-status-text ${mapDataTextClass}`}>
                                 MAP DATA: {entitiesAgeMinutes === 0 ? '< 1m' : `${entitiesAgeMinutes}m`} AGO
                             </span>
                         </>
                     )}
 
                     <div className="iris-status-divider" />
-                    <span className="iris-status-text" style={{ color: sessionStatus === 'expired' || sessionStatus === 'initial_login_required' ? UI_COLORS.WARNING : (sessionStatus === 'recovering' ? theme.AQUA : UI_COLORS.TEXT_MUTED) }}>
+                    <span className={`iris-status-text ${sessionTextClass}`}>
                         {sessionLabel()}
                     </span>
                     {hasSubscription && (
@@ -399,10 +388,7 @@ export function StatusBar(): JSX.Element {
 
                 <div className="iris-status-progress-bg">
                     {activeRequests > 0 && (
-                        <div className="iris-status-progress-bar" style={{
-                            background: theme.AQUA,
-                            boxShadow: `0 0 5px ${theme.AQUA}`,
-                        }} />
+                        <div className="iris-status-progress-bar" />
                     )}
                 </div>
             </div>

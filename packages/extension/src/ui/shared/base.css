@@ -44,6 +44,8 @@
     --iris-feature-color: var(--iris-text-primary);
     --iris-error-color: #ff7a7a;
     --iris-warning-color: #fa0;
+    --iris-success-color: #0f0;
+    --iris-purple-color: #b000ff;
     --iris-history-visited: #9b59b6;
     --iris-history-captured: #e74c3c;
     --iris-history-scanned: #f1c40f;
@@ -374,6 +376,14 @@
     transform: translateY(1px);
 }
 
+.iris-ui-compact-pill:not(:disabled):hover,
+.iris-ui-compact-pill:not(:disabled):focus-visible {
+    border-color: var(--iris-compact-control-active-border, var(--iris-compact-control-border));
+    background: var(--iris-compact-control-active-bg, var(--iris-compact-control-bg, rgb(55 230 255 / 16%)));
+    color: var(--iris-compact-control-active-color, var(--iris-compact-control-color));
+    outline: none;
+}
+
 .iris-ui-compact-pill:disabled {
     opacity: 0.42;
     cursor: default;
@@ -385,6 +395,91 @@
     background: var(--iris-compact-control-active-bg, var(--iris-compact-control-bg));
     color: var(--iris-compact-control-active-color, var(--iris-compact-control-color));
     box-shadow: var(--iris-compact-control-active-shadow, none);
+}
+
+.iris-ui-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--iris-ui-toolbar-gap, 8px);
+}
+
+.iris-ui-toolbar-label {
+    flex: 0 0 auto;
+    color: var(--iris-text-muted);
+    font-size: var(--iris-ui-toolbar-label-size, 0.72em);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.iris-ui-segmented {
+    display: flex;
+    align-items: stretch;
+    overflow-x: auto;
+    scrollbar-width: none;
+    border-bottom: var(--iris-ui-segmented-border-bottom, 1px solid var(--iris-border-dim));
+}
+
+.iris-ui-segmented::-webkit-scrollbar {
+    display: none;
+}
+
+.iris-ui-segment {
+    flex: var(--iris-ui-segment-flex, 0 0 auto);
+    padding: var(--iris-ui-segment-padding, 8px 12px);
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: var(--iris-ui-segment-color, var(--iris-text-muted));
+    cursor: pointer;
+    font-size: var(--iris-ui-segment-font-size, 0.8em);
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.iris-ui-segment:hover,
+.iris-ui-segment:focus-visible {
+    background: var(--iris-ui-segment-hover-bg, rgb(255 255 255 / 5%));
+    color: var(--iris-ui-segment-hover-color, var(--iris-accent));
+    outline: none;
+}
+
+.iris-ui-segment-active {
+    border-bottom-color: var(--iris-ui-segment-active-color, var(--iris-accent));
+    color: var(--iris-ui-segment-active-color, var(--iris-accent));
+    font-weight: 700;
+}
+
+.iris-ui-square-control {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--iris-ui-square-control-size, 40px);
+    height: var(--iris-ui-square-control-size, 40px);
+    padding: 0;
+    border: 1px solid var(--iris-ui-square-control-color, var(--iris-accent));
+    border-radius: var(--iris-ui-square-control-radius, 4px);
+    background: var(--iris-ui-square-control-bg, transparent);
+    color: var(--iris-ui-square-control-color, var(--iris-accent));
+    cursor: pointer;
+    font-size: var(--iris-ui-square-control-font-size, 18px);
+    font-weight: bold;
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.iris-ui-square-control:hover,
+.iris-ui-square-control:focus-visible {
+    background: var(--iris-ui-square-control-hover-bg, rgb(255 255 255 / 8%));
+    border-color: var(--iris-ui-square-control-hover-color, var(--iris-ui-square-control-color, var(--iris-accent)));
+    box-shadow: var(--iris-ui-square-control-hover-shadow, 0 0 10px rgb(0 255 255 / 18%));
+    outline: none;
+}
+
+.iris-ui-square-control:active {
+    transform: translateY(1px);
 }
 
 .iris-input {
@@ -514,6 +609,171 @@
 .iris-choice-item-active .iris-label {
     color: var(--iris-accent);
     font-weight: bold;
+}
+
+.iris-ui-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--iris-ui-list-gap, 6px);
+}
+
+.iris-ui-list-row {
+    width: 100%;
+    padding: var(--iris-ui-list-row-padding, 7px 9px);
+    border: 1px solid var(--iris-ui-list-row-border, rgb(255 255 255 / 10%));
+    border-radius: var(--iris-ui-list-row-radius, 7px);
+    background: var(--iris-ui-list-row-bg, rgb(255 255 255 / 5%));
+    color: var(--iris-text-primary);
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.iris-ui-list-row:hover,
+.iris-ui-list-row:focus-visible {
+    border-color: var(--iris-ui-list-row-focus-border, var(--iris-accent));
+    background: var(--iris-ui-list-row-hover-bg, rgb(255 255 255 / 8%));
+    outline: none;
+}
+
+.iris-ui-list-row-active {
+    border-color: var(--iris-ui-list-row-active-border, var(--iris-accent));
+    background: var(--iris-ui-list-row-active-bg, rgb(0 255 255 / 10%));
+}
+
+.iris-ui-list-row-static {
+    cursor: default;
+}
+
+.iris-ui-list-row-static:hover {
+    border-color: var(--iris-ui-list-row-border, rgb(255 255 255 / 10%));
+    background: var(--iris-ui-list-row-bg, rgb(255 255 255 / 5%));
+}
+
+.iris-ui-list-row-static.iris-ui-list-row-active:hover {
+    border-color: var(--iris-ui-list-row-active-border, var(--iris-accent));
+    background: var(--iris-ui-list-row-active-bg, rgb(0 255 255 / 10%));
+}
+
+.iris-ui-list-main {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.iris-ui-list-title {
+    overflow: hidden;
+    color: var(--iris-text-primary);
+    font-size: var(--iris-ui-list-title-size, 0.78em);
+    font-weight: 700;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.iris-ui-list-title-accent {
+    color: var(--iris-accent);
+}
+
+.iris-ui-list-meta {
+    overflow: hidden;
+    color: var(--iris-text-muted);
+    font-size: var(--iris-ui-list-meta-size, 0.68em);
+    text-overflow: ellipsis;
+}
+
+.iris-ui-list-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.iris-ui-list-action {
+    padding: 3px 7px;
+    border: 1px solid rgb(255 255 255 / 16%);
+    border-radius: 4px;
+    background: rgb(255 255 255 / 6%);
+    color: var(--iris-text-muted);
+    font-size: 0.68em;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.iris-ui-list-action:hover,
+.iris-ui-list-action:focus-visible {
+    border-color: var(--iris-accent);
+    color: var(--iris-accent);
+    outline: none;
+}
+
+.iris-ui-list-action-danger {
+    border-color: rgb(255 77 77 / 65%);
+    color: #ff9a9a;
+}
+
+.iris-ui-table-scroll {
+    min-height: 0;
+    overflow: auto;
+}
+
+.iris-ui-table-scroll::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+
+.iris-ui-table-scroll::-webkit-scrollbar-track {
+    background: rgb(0 0 0 / 10%);
+}
+
+.iris-ui-table-scroll::-webkit-scrollbar-thumb {
+    background: var(--iris-accent);
+    border-radius: 2px;
+}
+
+.iris-ui-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--iris-ui-table-font-size, 0.85em);
+}
+
+.iris-ui-table thead tr {
+    text-align: left;
+    border-bottom: 1px solid var(--iris-border-dim);
+    color: var(--iris-text-muted);
+}
+
+.iris-ui-table th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: var(--iris-ui-table-header-padding, 10px 16px);
+    background: var(--iris-popup-bg, rgb(0 0 0 / 96%));
+    box-shadow: inset 0 -1px 0 var(--iris-border-dim);
+    font-size: var(--iris-ui-table-header-font-size, 0.72em);
+    font-weight: bold;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.iris-ui-table tbody tr {
+    border-bottom: 1px solid var(--iris-border-dim);
+}
+
+.iris-ui-table td {
+    padding: var(--iris-ui-table-cell-padding, 8px 16px);
+}
+
+.iris-ui-table-cell-right {
+    text-align: right;
+}
+
+.iris-ui-table-cell-strong {
+    font-weight: bold;
+}
+
+.iris-ui-table-cell-accent {
+    color: var(--iris-accent);
 }
 
 .iris-checkbox,

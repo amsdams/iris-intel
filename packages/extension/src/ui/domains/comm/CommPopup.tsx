@@ -266,22 +266,24 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
             } as Record<string, string>}
             headerExtras={
                 <button 
-                    className="iris-button iris-comm-refresh-btn"
+                    type="button"
+                    className="iris-comm-refresh-btn iris-ui-compact-pill"
                     onClick={handleRefresh}
                 >
                     REFRESH
                 </button>
             }
         >
-            <div className="iris-comm-tabs">
+            <div className="iris-comm-tabs iris-ui-segmented">
                 {['ALL', 'FACTION', 'ALERTS'].map(tab => (
-                    <div 
+                    <button
+                        type="button"
                         key={tab}
-                        className={`iris-comm-tab ${activeTab === tab ? 'iris-comm-tab-active' : ''}`}
+                        className={`iris-comm-tab iris-ui-segment ${activeTab === tab ? 'iris-comm-tab-active iris-ui-segment-active' : ''}`}
                         onClick={() => setActiveTab(tab)}
                     >
                         {tab}
-                    </div>
+                    </button>
                 ))}
             </div>
 

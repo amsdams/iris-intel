@@ -56,9 +56,9 @@ export function RegionScorePopup({ onClose }: RegionScorePopupProps): JSX.Elemen
                             <div className="iris-region-section-title">
                                 TOP AGENTS
                             </div>
-                            <div className="iris-region-agent-list">
+                            <div className="iris-region-agent-list iris-ui-list">
                                 {regionScore.topAgents.map((agent, i) => (
-                                    <div key={i} className="iris-region-agent-row">
+                                    <div key={i} className="iris-region-agent-row iris-ui-list-row iris-ui-list-row-static">
                                         <span className={agent.team === 'RESISTANCE' ? 'iris-score-team-res' : 'iris-score-team-enl'}>
                                             {agent.nick}
                                         </span>
@@ -72,21 +72,21 @@ export function RegionScorePopup({ onClose }: RegionScorePopupProps): JSX.Elemen
                             <div className="iris-region-section-title">
                                 CHECKPOINT HISTORY
                             </div>
-                            <div className="iris-region-history-scroll">
-                                <table className="iris-region-history-table">
-                                    <thead className="iris-region-history-head">
+                            <div className="iris-region-history-scroll iris-ui-table-scroll">
+                                <table className="iris-region-history-table iris-ui-table">
+                                    <thead>
                                         <tr>
                                             <th className="iris-region-history-cell-left">CP</th>
-                                            <th className="iris-region-history-cell-right iris-score-team-enl">ENL</th>
-                                            <th className="iris-region-history-cell-right iris-score-team-res">RES</th>
+                                            <th className="iris-region-history-cell-right iris-ui-table-cell-right iris-score-team-enl">ENL</th>
+                                            <th className="iris-region-history-cell-right iris-ui-table-cell-right iris-score-team-res">RES</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {regionScore.scoreHistory.map((row, i) => (
-                                            <tr key={i} className="iris-region-history-row">
+                                            <tr key={i}>
                                                 <td className="iris-region-history-cell-left">{row[0]}</td>
-                                                <td className="iris-region-history-cell-right">{parseInt(row[1], 10).toLocaleString()}</td>
-                                                <td className="iris-region-history-cell-right">{parseInt(row[2], 10).toLocaleString()}</td>
+                                                <td className="iris-region-history-cell-right iris-ui-table-cell-right">{parseInt(row[1], 10).toLocaleString()}</td>
+                                                <td className="iris-region-history-cell-right iris-ui-table-cell-right">{parseInt(row[2], 10).toLocaleString()}</td>
                                             </tr>
                                         )).reverse()}
                                     </tbody>

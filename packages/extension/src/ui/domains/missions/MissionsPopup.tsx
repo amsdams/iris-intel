@@ -57,7 +57,7 @@ export function MissionsPopup({ onClose }: MissionsPopupProps): JSX.Element {
                 '--iris-popup-title-color': theme.AQUA,
             } as Record<string, string>}
     >
-      <div className="iris-missions-list">
+      <div className="iris-missions-list iris-ui-list">
         <div className="iris-missions-header-card">
           <div className="iris-missions-header-top">
             <div className="iris-missions-source">
@@ -98,7 +98,7 @@ export function MissionsPopup({ onClose }: MissionsPopupProps): JSX.Element {
         {missions.map((mission) => (
           <button
             key={mission.id}
-            className={`iris-mission-list-item ${selectedMissionId === mission.id ? 'iris-mission-list-item-active' : ''}`}
+            className={`iris-mission-list-item iris-ui-list-row ${selectedMissionId === mission.id ? 'iris-mission-list-item-active iris-ui-list-row-active' : ''}`}
             onClick={() => handleMissionClick(mission.id)}
           >
             {mission.logoUrl ? (
@@ -110,8 +110,8 @@ export function MissionsPopup({ onClose }: MissionsPopupProps): JSX.Element {
             ) : (
               <div className="iris-mission-list-logo iris-mission-list-logo-placeholder" />
             )}
-            <div className="iris-mission-list-body">
-              <div className="iris-mission-list-title">
+            <div className="iris-mission-list-body iris-ui-list-main">
+              <div className="iris-mission-list-title iris-ui-list-title iris-ui-list-title-accent">
                 {mission.title}
               </div>
               <div className="iris-mission-list-meta">

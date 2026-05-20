@@ -181,7 +181,8 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
             headerExtras={
                 <div className="iris-flex iris-gap-2">
                     <button 
-                        className="iris-button iris-comm-refresh-btn"
+                        type="button"
+                        className="iris-inventory-refresh-btn iris-ui-compact-pill"
                         onClick={handleRefresh}
                     >
                         REFRESH
@@ -226,25 +227,25 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
                         )}
                     </div>
 
-                    <div className="iris-inventory-sort">
-                        <span className="iris-inventory-sort-label">SORT</span>
+                    <div className="iris-inventory-sort iris-ui-toolbar">
+                        <span className="iris-inventory-sort-label iris-ui-toolbar-label">SORT</span>
                         <button
                             type="button"
-                            className={`iris-inventory-sort-chip ${sortMode === 'COUNT' ? 'iris-inventory-sort-chip-active' : ''}`}
+                            className={`iris-inventory-sort-chip iris-ui-compact-pill ${sortMode === 'COUNT' ? 'iris-inventory-sort-chip-active iris-ui-compact-pill-active' : ''}`}
                             onClick={() => setSortMode('COUNT')}
                         >
                             COUNT
                         </button>
                         <button
                             type="button"
-                            className={`iris-inventory-sort-chip ${sortMode === 'NAME' ? 'iris-inventory-sort-chip-active' : ''}`}
+                            className={`iris-inventory-sort-chip iris-ui-compact-pill ${sortMode === 'NAME' ? 'iris-inventory-sort-chip-active iris-ui-compact-pill-active' : ''}`}
                             onClick={() => setSortMode('NAME')}
                         >
                             NAME
                         </button>
                         <button
                             type="button"
-                            className={`iris-inventory-sort-chip ${sortMode === 'RARITY' ? 'iris-inventory-sort-chip-active' : ''}`}
+                            className={`iris-inventory-sort-chip iris-ui-compact-pill ${sortMode === 'RARITY' ? 'iris-inventory-sort-chip-active iris-ui-compact-pill-active' : ''}`}
                             onClick={() => setSortMode('RARITY')}
                         >
                             RARITY
@@ -261,20 +262,21 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
                         />
                     </div>
 
-                    <div className="iris-inventory-tabs">
+                    <div className="iris-inventory-tabs iris-ui-segmented">
                         {visibleCategories.map(cat => (
-                            <div 
+                            <button
+                                type="button"
                                 key={cat.value}
-                                className={`iris-inventory-tab ${activeCategory === cat.value ? 'iris-inventory-tab-active' : ''}`}
+                                className={`iris-inventory-tab iris-ui-segment ${activeCategory === cat.value ? 'iris-inventory-tab-active iris-ui-segment-active' : ''}`}
                                 onClick={() => setActiveCategory(cat.value)}
                             >
                                 <span>{cat.label}</span>
                                 <span className="iris-inventory-tab-count">{categoryCounts[cat.value]}</span>
-                            </div>
+                            </button>
                         ))}
                     </div>
 
-                    <div className="iris-inventory-scroll-container">
+                    <div className="iris-inventory-scroll-container iris-ui-table-scroll">
                         {inventoryStatus === 'in_flight' && totalCount === 0 ? (
                             <div className="iris-inventory-empty">
                                 Loading inventory from Intel...
@@ -292,11 +294,11 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
                                 {normalizedSearch ? 'No items match the current filter' : 'No items found in this category'}
                             </div>
                         ) : (
-                            <table className="iris-inventory-table">
+                            <table className="iris-inventory-table iris-ui-table">
                                 <thead>
                                     <tr>
                                         <th>ITEM</th>
-                                        <th>COUNT</th>
+                                        <th className="iris-ui-table-cell-right">COUNT</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -317,7 +319,7 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td>
+                                            <td className="iris-ui-table-cell-right iris-ui-table-cell-strong iris-ui-table-cell-accent">
                                                 {item.count}
                                             </td>
                                         </tr>
