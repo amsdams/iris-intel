@@ -75,6 +75,7 @@ export function MapTab({ onAction }: MapTabProps): JSX.Element {
             center: {lat: marker.lat, lng: marker.lng},
             zoom: Math.max(mapState.zoom, 16),
         }, '*');
+        onAction('marker-map-focus');
     };
 
     const navigateToMarkerFromRow = (marker: {id: string; lat: number; lng: number}, event: JSX.TargetedMouseEvent<HTMLDivElement>): void => {

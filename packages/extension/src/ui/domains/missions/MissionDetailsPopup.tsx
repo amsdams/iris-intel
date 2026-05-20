@@ -2,6 +2,7 @@ import { h, JSX } from 'preact';
 import { useStore } from '@iris/core';
 import { Popup } from '../../shared/Popup';
 import { THEMES } from '../../theme';
+import { PopupActionButton, PopupActionRow } from '../../shared/PopupActions';
 import './missions.css';
 
 const WAYPOINT_TYPE_LABELS: Record<number, string> = {
@@ -17,9 +18,13 @@ const WAYPOINT_OBJECTIVE_LABELS: Record<number, string> = {
   5: 'Answer',
 };
 
-export function MissionDetailsPopup(): JSX.Element | null {
+interface MissionDetailsPopupProps {
+  onClose: () => void;
+  onViewMap: () => void;
+}
+
+export function MissionDetailsPopup({ onClose, onViewMap }: MissionDetailsPopupProps): JSX.Element | null {
   const mission = useStore((state) => state.missionDetails);
-  const clearMission = useStore((state) => state.setMissionDetails);
   const missionsPortalId = useStore((state) => state.missionsPortalId);
   const portalName = useStore((state) =>
     state.missionsPortalId ? state.portals[state.missionsPortalId]?.name : null
@@ -55,7 +60,7 @@ export function MissionDetailsPopup(): JSX.Element | null {
 
   return (
     <Popup
-      onClose={() => clearMission(null)}
+      onClose={onClose}
       title="Mission Details"
       className="iris-popup-top-center iris-popup-medium"
       contentClassName="iris-popup-content-no-padding"
@@ -88,6 +93,12 @@ export function MissionDetailsPopup(): JSX.Element | null {
         <div className="iris-mission-title">
           {mission.title}
         </div>
+
+        <PopupActionRow>
+          <PopupActionButton onClick={onViewMap}>
+            View On Map
+          </PopupActionButton>
+        </PopupActionRow>
 
         {mission.author && (
           <div className="iris-mission-meta iris-mission-meta-inline">

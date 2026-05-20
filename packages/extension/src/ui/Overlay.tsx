@@ -274,6 +274,7 @@ export function IRISOverlay(): JSX.Element {
     const [showPasscodePopup, setShowPasscodePopup] = useState(false);
     const [showNavigationPopup, setShowNavigationPopup] = useState(false);
     const [showSearchPopup, setShowSearchPopup] = useState(false);
+    const [showMissionDetailsPopup, setShowMissionDetailsPopup] = useState(false);
     const [showSelectionInfo, setShowSelectionInfo] = useState(false);
     
     const [activeDrawerTab, setActiveDrawerTab] = useState<DrawerTab>(null);
@@ -322,6 +323,10 @@ export function IRISOverlay(): JSX.Element {
             setShowSelectionInfo(false);
         }
     }, [selectedPortalId, selectedFieldId, selectedLinkId]);
+
+    useEffect(() => {
+        setShowMissionDetailsPopup(missionDetails !== null);
+    }, [missionDetails]);
 
     const togglePlayerStatsPopup = (): void => setShowPlayerStatsPopup((v) => !v);
     const toggleInventoryPopup = (): void => {
@@ -374,6 +379,7 @@ export function IRISOverlay(): JSX.Element {
         if (showInventoryPopup) { setShowInventoryPopup(false); return true; }
         if (showPlayerStatsPopup) { setShowPlayerStatsPopup(false); return true; }
         if (showPasscodePopup) { setShowPasscodePopup(false); return true; }
+        if (showMissionDetailsPopup) { setShowMissionDetailsPopup(false); return true; }
         if (showMissionsPopup) { setShowMissionsPopup(false); return true; }
         if (showCommPopup) { setShowCommPopup(false); return true; }
         if (showSelectionInfo) { setShowSelectionInfo(false); return true; }
@@ -397,6 +403,7 @@ export function IRISOverlay(): JSX.Element {
         showGameScorePopup,
         showInventoryPopup,
         showMapSettingsPopup,
+        showMissionDetailsPopup,
         showMissionsPopup,
         showNavigationPopup,
         showPasscodePopup,
@@ -432,6 +439,7 @@ export function IRISOverlay(): JSX.Element {
             case 'search': toggleSearchPopup(); setActiveDrawerTab(null); break;
             case 'nav': toggleNavigationPopup(); setActiveDrawerTab(null); break;
             case 'missions': toggleMissionsPopup(); setActiveDrawerTab(null); break;
+            case 'marker-map-focus': setActiveDrawerTab(null); break;
             case 'planning-links': useStore.getState().setPlanningTool('links'); setShowSelectionInfo(false); setActiveDrawerTab(null); break;
             case 'planning-markers': useStore.getState().setPlanningTool('markers'); setShowSelectionInfo(false); setActiveDrawerTab(null); break;
             case 'plugins': togglePluginsPopup(); setActiveDrawerTab(null); break;
@@ -860,7 +868,18 @@ export function IRISOverlay(): JSX.Element {
             {showSelectionInfo && selectedPortalId && <PortalInfoPopup visible={true} onClose={() => setShowSelectionInfo(false)} />}
             {showSelectionInfo && selectedFieldId && <FieldInfoPopup visible={true} onClose={() => setShowSelectionInfo(false)} />}
             {showSelectionInfo && selectedLinkId && <LinkInfoPopup visible={true} onClose={() => setShowSelectionInfo(false)} />}
-            {hasMissionDetails && <MissionDetailsPopup />}
+            {hasMissionDetails && showMissionDetailsPopup && (
+                <MissionDetailsPopup
+                    onClose={() => {
+                        useStore.getState().setMissionDetails(null);
+                        setShowMissionDetailsPopup(false);
+                    }}
+                    onViewMap={() => {
+                        setShowMissionDetailsPopup(false);
+                        setShowMissionsPopup(false);
+                    }}
+                />
+            )}
             {hasSelectedPluginFeature && <PluginFeaturePopup />}
 
             {showCommPopup && <CommPopup onClose={toggleCommPopup} />}

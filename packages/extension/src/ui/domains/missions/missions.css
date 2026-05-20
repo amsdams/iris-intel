@@ -172,6 +172,7 @@
 .iris-missions-list {
   display: flex;
   flex-direction: column;
+  gap: 8px;
   padding: 0 16px 16px;
 }
 
@@ -192,20 +193,22 @@
   display: flex;
   gap: 12px;
   align-items: flex-start;
-  padding: 12px;
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
-  background: transparent;
+  padding: 10px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 7px;
+  background: rgb(255 255 255 / 5%);
+  color: var(--iris-text-primary);
   text-align: left;
   cursor: pointer;
-  transition: background 0.15s ease;
-  margin: 0 -16px;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .iris-mission-list-logo {
   width: 56px;
   height: 56px;
   object-fit: cover;
-  border: 1px solid var(--iris-border);
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 6px;
   flex: 0 0 auto;
 }
 
@@ -221,12 +224,18 @@
 }
 
 .iris-mission-list-item:hover {
+  border-color: var(--iris-accent, #0ff);
   background: rgb(255 255 255 / 8%);
 }
 
+.iris-mission-list-item:focus-visible {
+  border-color: var(--iris-accent, #0ff);
+  outline: none;
+}
+
 .iris-mission-list-item-active {
-  background: rgb(255 255 255 / 10%);
-  border-left: 3px solid var(--iris-accent);
+  border-color: var(--iris-accent, #0ff);
+  background: rgb(0 255 255 / 10%);
 }
 
 .iris-mission-list-title {
