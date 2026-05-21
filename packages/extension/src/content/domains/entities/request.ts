@@ -2,6 +2,8 @@ import { ZOOM_TO_LEVEL } from '@iris/core';
 
 const DEFAULT_ZOOM_TO_TILES_PER_EDGE = [1, 1, 1, 40, 40, 80, 80, 320, 1000, 2000, 2000, 4000, 8000, 16000, 16000, 32000];
 const MAX_MAP_ZOOM = 21;
+const MAX_MERCATOR_LAT = 85.05112878;
+const MAX_ENTITY_TILE_KEYS = 1024;
 
 interface BoundsE6 {
   minLatE6: number;
@@ -21,6 +23,7 @@ export interface EntityRequestPayload {
   tileKeys: string[];
   coverageKey: string;
   dataZoom: number;
+  diagnostic: string | null;
 }
 
 function getMapZoomTileParameters(zoom: number): TileParams {
@@ -73,7 +76,54 @@ function pointToTileId(params: TileParams, x: number, y: number): string {
   return `${params.zoom}_${x}_${y}_${params.level}_8_100`;
 }
 
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function isFiniteBounds(bounds: BoundsE6, mapZoom: number): boolean {
+  return Number.isFinite(mapZoom) &&
+    Number.isFinite(bounds.minLatE6) &&
+    Number.isFinite(bounds.minLngE6) &&
+    Number.isFinite(bounds.maxLatE6) &&
+    Number.isFinite(bounds.maxLngE6);
+}
+
+function normalizeLng(lng: number): number {
+  return ((((lng + 180) % 360) + 360) % 360) - 180;
+}
+
+function buildTileXRanges(rawWest: number, rawEast: number, params: TileParams): [number, number][] {
+  const minTile = 0;
+  const maxTile = params.tilesPerEdge - 1;
+  if (Math.abs(rawEast - rawWest) >= 360) {
+    return [[minTile, maxTile]];
+  }
+
+  const west = normalizeLng(rawWest);
+  const east = normalizeLng(rawEast);
+  const westTile = clamp(lngToTile(west, params), minTile, maxTile);
+  const eastTile = clamp(lngToTile(east, params), minTile, maxTile);
+
+  if (west <= east) {
+    return [[westTile, eastTile]];
+  }
+
+  return [
+    [westTile, maxTile],
+    [minTile, eastTile],
+  ];
+}
+
 export function buildEntityRequestPayload(bounds: BoundsE6, mapZoom: number): EntityRequestPayload {
+  if (!isFiniteBounds(bounds, mapZoom)) {
+    return {
+      tileKeys: [],
+      coverageKey: 'invalid:non-finite',
+      dataZoom: 0,
+      diagnostic: 'invalid non-finite bounds or zoom',
+    };
+  }
+
   // MapLibre zoom level matches Leaflet/Intel when using 256px tiles.
   // The +1 offset was a remnant of 512px tile assumptions and caused "data overflow" at zoom 14.
   const MAPLIBRE_ZOOM_OFFSET = 0;
@@ -81,25 +131,37 @@ export function buildEntityRequestPayload(bounds: BoundsE6, mapZoom: number): En
 
   const dataZoom = getDataZoomForMapZoom(adjustedZoom);
   const params = getMapZoomTileParameters(dataZoom);
-  const south = bounds.minLatE6 / 1e6;
+  const south = clamp(Math.min(bounds.minLatE6, bounds.maxLatE6) / 1e6, -MAX_MERCATOR_LAT, MAX_MERCATOR_LAT);
+  const north = clamp(Math.max(bounds.minLatE6, bounds.maxLatE6) / 1e6, -MAX_MERCATOR_LAT, MAX_MERCATOR_LAT);
   const west = bounds.minLngE6 / 1e6;
-  const north = bounds.maxLatE6 / 1e6;
   const east = bounds.maxLngE6 / 1e6;
-  const minX = lngToTile(west, params);
-  const maxX = lngToTile(east, params);
-  const minY = latToTile(north, params);
-  const maxY = latToTile(south, params);
+  const minTile = 0;
+  const maxTile = params.tilesPerEdge - 1;
+  const xRanges = buildTileXRanges(west, east, params);
+  const minY = clamp(latToTile(north, params), minTile, maxTile);
+  const maxY = clamp(latToTile(south, params), minTile, maxTile);
   const tileKeys: string[] = [];
+  let capped = false;
 
-  for (let x = minX; x <= maxX; x += 1) {
-    for (let y = minY; y <= maxY; y += 1) {
-      tileKeys.push(pointToTileId(params, x, y));
+  for (const [minX, maxX] of xRanges) {
+    for (let x = minX; x <= maxX; x += 1) {
+      for (let y = minY; y <= maxY; y += 1) {
+        if (tileKeys.length >= MAX_ENTITY_TILE_KEYS) {
+          capped = true;
+          break;
+        }
+        tileKeys.push(pointToTileId(params, x, y));
+      }
+      if (capped) break;
     }
+    if (capped) break;
   }
 
+  const coverageRanges = xRanges.map(([minX, maxX]) => `${minX}-${maxX}`).join(',');
   return {
     tileKeys,
-    coverageKey: `${dataZoom}:${minX}:${maxX}:${minY}:${maxY}:${tileKeys.length}`,
+    coverageKey: `${dataZoom}:${coverageRanges}:${minY}:${maxY}:${tileKeys.length}${capped ? ':capped' : ''}`,
     dataZoom,
+    diagnostic: capped ? `tile coverage capped at ${MAX_ENTITY_TILE_KEYS}` : null,
   };
 }

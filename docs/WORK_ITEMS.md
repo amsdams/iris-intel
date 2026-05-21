@@ -164,7 +164,7 @@ Tasks:
 | Batch tile requests to avoid massive timeouts                          | Done   | `getEntities` requests are now split into chunks of 25 tiles (aligned with IITC)                              |
 | Implement retry logic for failed entity fetches                        | Done   | coordinator now performs up to 3 retries with 5s backoff after a failed fetch                                 |
 | Reduce post-pan UI work on mobile                                      | Done   | map-state updates now no-op for identical views, `MapOverlay` skips same-view camera echoes, and ornaments build from the buffered viewport instead of all loaded portals |
-| Prevent stale/idle refresh popup flicker during refresh                | Open   | the map-stale/idle refresh popup can briefly appear during a normal refresh; it should only appear when user action is needed, not while an expected refresh is already in progress |
+| Prevent stale/idle refresh popup flicker during refresh                | Done   | map-stale alert now stays hidden while requests are active or an expected entity auto-refresh is due within a short grace window, so it should only appear when user action is actually useful |
 
 ### IITC-style mobile panning performance
 
@@ -878,12 +878,11 @@ Tasks:
 | Extract drawer UI primitives                     | Done   | drawer-first pass added shared `DrawerSection` and `DrawerButton` controls and migrated Agent, System, Layers, Map, Tactical, and Visuals tabs; desktop and Chrome device-emulation smoke looked good |
 | Visual smoke test drawer primitives on real mobile | Done | real mobile smoke looked fine for drawer button sizing, scroll groups, active states, tap behavior, and close/outside-close behavior; follow-up fixed search GO button styling to better match restrained marker/planning controls |
 | Normalize drawer button sizing on mobile         | Done   | drawer grid buttons now fill equal-width cells with a shared minimum height and safer label wrapping, while horizontal scroll groups keep their compact behavior |
-| Review UI font size and color consistency        | Open   | audit drawer, popup, status, toolbar, and plugin surfaces for inconsistent type scales, uneven button/control text sizes, mismatched muted/accent/primary colors, text that is too dim, and color choices that no longer match the shared primitive/style-token direction |
+| Review UI font size and color consistency        | Done   | P2 pass normalized obvious drawer/status alert hard-coded text colors onto shared text/accent/error tokens after the shared-control pass; track future inconsistencies as specific UI items |
 | Plan shared UI element styling layer              | Done   | shared naming now covers buttons, inputs, checkbox/radio labels, floating panels, compact controls, choice items, popup actions, and list rows/actions; missions and planned markers now consume shared list primitives while keeping domain-specific layout locally |
 | Add planned marker navigation list              | Done   | Map drawer now lists planned markers sorted by distance from current map center; tapping a marker selects/recenters it, labels can be edited inline, and delete requires a confirmation tap |
 | Add Draw Tools backup import/export             | Done   | Map drawer now exposes Draw Tools Backup with JSON export plus merge/replace import; import accepts either the compact `iris-draw-tools` backup format or a full `iris-settings` JSON object and enables Draw Tools visibility after restore |
 | Move Draw Tools backup controls lower in Map drawer | Done | Draw Tools Backup now sits below the planned marker list so map navigation and marker overview stay higher in the Map drawer |
-| Polish planned marker list mobile selection UX  | Open   | continue testing on real mobile; selection/re-sort/scroll behavior can still feel unstable when choosing markers lower in the distance-sorted list |
 | Decide marker list placement                    | Open   | current first version lives directly in the Map drawer; consider moving behind a Markers button, collapsing by default, or showing it only while marker planning is active |
 | Refine planned marker edit/delete controls      | Open   | evaluate whether inline Edit/Delete is too busy in the drawer; possible follow-ups include row details, swipe/actions menu, or a compact marker details sheet |
 | Add marker list sort/filter controls            | Open   | distance sort is the first default; consider label/name sort, color filter, and search if marker counts grow |
@@ -901,7 +900,7 @@ Notes:
   - optional CSS size audit for unused selectors, repeated variables, and source-vs-bundle growth
   - continuing semantic color cleanup for remaining hard-coded/debug/topbar colors
   - mobile popup focus/back behavior decisions
-  - planned marker list placement, selection, and edit/delete polish
+  - planned marker list placement and edit/delete polish
 
 ### Map layer and filter toggles update immediately
 
@@ -1062,7 +1061,7 @@ Tasks:
 | Add mock player activity plexts for tracker testing        | Done   | mock tools now include an `Activity` action that injects 10 mock player activity plexts across nearby loaded portals via the same store path as COMM; player tracker rebuilds from current plexts on update/setup so cleared mock activity cannot reappear after pan without dropping existing live COMM history |
 | Add plugin overlay composition diagnostics                 | Done   | copied Diagnostics output now includes a `PLUGIN` line with total/rendered/html/label/player/highlight/line/fill/point/interactive counts so overlay-heavy samples can identify the active plugin mix |
 | Fix low-zoom globe-wrap link/field rendering               | Done   | render feature builders now split antimeridian-crossing links and field polygons into render-safe geometry so they draw along the short path without changing selection/storage geometry |
-| Guard tile coverage generation against invalid/extreme bounds | Open | follow up on a Chrome `Oh snap`/debugger stop inside the tile Y loop; clamp WebMercator lat/lng/tile ranges, handle antimeridian coverage explicitly, cap generated tile counts, and report diagnostics instead of risking a runaway coverage loop after hard refresh or rapid map/drawer interaction |
+| Guard tile coverage generation against invalid/extreme bounds | Done | entity coverage generation now rejects non-finite bounds, clamps WebMercator lat/tile ranges, handles antimeridian-crossing bounds, caps extreme tile lists at 1024, and reports diagnostics through endpoint metadata instead of risking a runaway loop |
 | Investigate package split only after measuring bundle cost | Blocked | an `@iris/types` or `@iris/utils` split may help later, but it is deferred until plugin bundle size or package-boundary cost is a measured issue                                                       |
 
 ## Current Next Pickup

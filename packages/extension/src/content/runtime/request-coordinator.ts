@@ -136,14 +136,15 @@ export function createRequestCoordinator(): RequestCoordinator {
         if (payload.tileKeys.length === 0) {
             useStore.getState().setEndpointMetadata('entities', {
                 lastRefreshReason: reason,
-                lastSkipReason: 'no tiles',
+                lastSkipReason: payload.diagnostic ?? 'no tiles',
+                lastCoverageKey: payload.coverageKey,
             });
             return;
         }
 
         useStore.getState().setEndpointMetadata('entities', {
             lastRefreshReason: reason,
-            lastSkipReason: null,
+            lastSkipReason: payload.diagnostic,
             lastCoverageKey: payload.coverageKey,
         });
 

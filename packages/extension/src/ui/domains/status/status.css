@@ -46,13 +46,13 @@
 }
 
 .iris-session-alert-title {
-  color: #ff8080;
+  color: var(--iris-error-color);
   font-weight: bold;
   margin-bottom: 4px;
 }
 
 .iris-map-stale-alert-title {
-  color: #b9f8ff;
+  color: var(--iris-accent);
   font-weight: bold;
   margin-bottom: 4px;
 }
@@ -76,7 +76,7 @@
 }
 
 .iris-session-alert-button-primary {
-  --iris-popup-action-color: #faa;
+  --iris-popup-action-color: var(--iris-error-color);
 }
 
 .iris-status-bar-collapsed {

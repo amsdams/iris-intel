@@ -139,7 +139,7 @@
 .iris-drawer-btn {
     background: rgb(255 255 255 / 5%);
     border: 1px solid rgb(255 255 255 / 10%);
-    color: #fff;
+    color: var(--iris-text-primary);
     padding: 8px 12px;
     border-radius: 8px;
     display: flex;
@@ -164,7 +164,7 @@
 .iris-drawer-btn:not(.iris-drawer-btn-active, :disabled):focus-visible {
     background: rgb(255 255 255 / 8%);
     border-color: rgb(255 255 255 / 22%);
-    color: #fff;
+    color: var(--iris-text-primary);
     outline: none;
 }
 

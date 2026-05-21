@@ -5,6 +5,7 @@ import { useStore } from '@iris/core';
 const CLOSE_VIEW_STALE_MS = 5 * 60 * 1000;
 const FAR_VIEW_STALE_MS = 15 * 60 * 1000;
 const CLOSE_VIEW_ZOOM_THRESHOLD = 12;
+const UPCOMING_REFRESH_GRACE_MS = 5000;
 
 function formatAge(ageMs: number): string {
     const minutes = Math.max(1, Math.round(ageMs / 60000));
@@ -16,6 +17,7 @@ function formatAge(ageMs: number): string {
 
 export function MapStaleAlert(): JSX.Element | null {
     const entityDiagnostics = useStore((state) => state.endpointDiagnostics.entities);
+    const activeRequests = useStore((state) => state.activeRequests);
     const mapState = useStore((state) => state.mapState);
     const sessionStatus = useStore((state) => state.sessionStatus);
     const [now, setNow] = useState(Date.now());
@@ -41,7 +43,18 @@ export function MapStaleAlert(): JSX.Element | null {
         };
     }, []);
 
-    if (sessionStatus !== 'ok' || !mapState.bounds || entityDiagnostics.status === 'in_flight') {
+    const nextAutoRefreshAt = entityDiagnostics.nextAutoRefreshAt;
+    const hasExpectedRefreshSoon = typeof nextAutoRefreshAt === 'number' &&
+        nextAutoRefreshAt >= now - UPCOMING_REFRESH_GRACE_MS &&
+        nextAutoRefreshAt <= now + UPCOMING_REFRESH_GRACE_MS;
+
+    if (
+        sessionStatus !== 'ok' ||
+        !mapState.bounds ||
+        entityDiagnostics.status === 'in_flight' ||
+        activeRequests > 0 ||
+        hasExpectedRefreshSoon
+    ) {
         return null;
     }
 
