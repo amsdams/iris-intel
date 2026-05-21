@@ -741,6 +741,15 @@ function syncMapCamera(map: maplibregl.Map, camera: PageMapRuntimeCamera): void 
     }, 0);
 }
 
+async function resetMapOrientation(): Promise<void> {
+    const map = await getPageMap();
+    map.jumpTo({
+        bearing: 0,
+        pitch: 0,
+    });
+    postCameraChanged(map, 'MAP RESET ORIENTATION');
+}
+
 function getMessageCamera(message: PageMapRuntimeCommandMessage): PageMapRuntimeCamera | null {
     if (message.camera) {
         return message.camera;
@@ -2073,6 +2082,11 @@ window.addEventListener('message', (event: MessageEvent<PageMapRuntimeCommandMes
         const zoom = getBenchmarkZoom((event.data as {benchmarkZoom?: unknown}).benchmarkZoom);
         const mode = getBenchmarkMode((event.data as {benchmarkMode?: unknown}).benchmarkMode);
         runPageRuntimeTask('pageRuntime:bench', () => runPanBenchmark(variant, zoom, mode));
+        return;
+    }
+
+    if ((event.data as {type?: string})?.type === 'IRIS_RESET_MAP_ORIENTATION') {
+        runPageRuntimeTask('pageRuntime:resetOrientation', resetMapOrientation);
         return;
     }
 

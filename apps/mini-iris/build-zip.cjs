@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const packageJson = require('./package.json');
 
 async function zipDirectory(sourceDir, outPath, extraFiles) {
     const { ZipArchive } = await import('archiver');
@@ -27,6 +28,7 @@ async function zipDirectory(sourceDir, outPath, extraFiles) {
     try {
         console.log('Building mini-IRIS ZIP/XPI packages...');
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        const version = packageJson.version;
         const distDir = path.join(__dirname, 'dist');
         const buildsDir = path.join(__dirname, 'builds');
         
@@ -34,8 +36,8 @@ async function zipDirectory(sourceDir, outPath, extraFiles) {
             fs.mkdirSync(buildsDir);
         }
 
-        const zipPath = path.join(buildsDir, `mini-iris-${timestamp}.zip`);
-        const xpiPath = path.join(buildsDir, `mini-iris-${timestamp}.xpi`);
+        const zipPath = path.join(buildsDir, `mini-iris-${version}-${timestamp}.zip`);
+        const xpiPath = path.join(buildsDir, `mini-iris-${version}-${timestamp}.xpi`);
         const manifestPath = path.join(__dirname, 'manifest.json');
         
         // Copy manifest to dist for unpacked loading

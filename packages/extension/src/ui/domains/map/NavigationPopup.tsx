@@ -68,6 +68,10 @@ export function NavigationPopup({ onClose }: NavigationPopupProps): JSX.Element 
         }, '*');
     };
 
+    const resetOrientation = (): void => {
+        window.postMessage({ type: 'IRIS_RESET_MAP_ORIENTATION' }, '*');
+    };
+
     return (
         <Popup
             onClose={onClose}
@@ -103,6 +107,13 @@ export function NavigationPopup({ onClose }: NavigationPopupProps): JSX.Element 
                     <div />
                     <button className="iris-map-nav-btn iris-ui-square-control" onClick={() => pan(0, PAN_STEP_PX)} title="Pan south" aria-label="Pan south">↓</button>
                     <div />
+                </div>
+
+                <div className="iris-map-section-title">ORIENTATION</div>
+                <div className="iris-map-nav-row iris-map-nav-row-last">
+                    <button className="iris-map-nav-reset iris-ui-compact-pill" onClick={resetOrientation} title="Reset rotation and pitch" aria-label="Reset rotation and pitch">
+                        Reset Pitch/Rotation
+                    </button>
                 </div>
             </div>
         </Popup>

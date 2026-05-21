@@ -149,6 +149,7 @@
     cursor: pointer;
     transition: all 0.2s;
     min-width: 60px;
+    min-height: 54px;
     flex-shrink: 0;
 }
 
@@ -159,8 +160,8 @@
     box-shadow: inset 0 0 0 1px rgb(55 230 255 / 18%), 0 0 10px rgb(0 255 255 / 10%);
 }
 
-.iris-drawer-btn:not(.iris-drawer-btn-active):not(:disabled):hover,
-.iris-drawer-btn:not(.iris-drawer-btn-active):not(:disabled):focus-visible {
+.iris-drawer-btn:not(.iris-drawer-btn-active, :disabled):hover,
+.iris-drawer-btn:not(.iris-drawer-btn-active, :disabled):focus-visible {
     background: rgb(255 255 255 / 8%);
     border-color: rgb(255 255 255 / 22%);
     color: #fff;
@@ -185,14 +186,20 @@
     font-family: monospace;
     font-weight: bold;
     text-align: center;
+    overflow-wrap: anywhere;
 }
 
 /* Grid layout for small actions */
 .iris-drawer-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
     margin-bottom: 12px;
+}
+
+.iris-drawer-grid .iris-drawer-btn {
+    width: 100%;
+    min-width: 0;
 }
 
 .iris-active-player-list {

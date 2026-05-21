@@ -389,8 +389,8 @@
     transform: translateY(1px);
 }
 
-.iris-ui-compact-pill:not(.iris-ui-compact-pill-active):not(:disabled):hover,
-.iris-ui-compact-pill:not(.iris-ui-compact-pill-active):not(:disabled):focus-visible {
+.iris-ui-compact-pill:not(.iris-ui-compact-pill-active, :disabled):hover,
+.iris-ui-compact-pill:not(.iris-ui-compact-pill-active, :disabled):focus-visible {
     border-color: var(--iris-compact-control-hover-border, rgb(55 230 255 / 70%));
     background: var(--iris-compact-control-hover-bg, rgb(55 230 255 / 14%));
     color: var(--iris-compact-control-hover-color, #d9fbff);
@@ -580,7 +580,7 @@
 
 .iris-location-search-error {
     margin-top: 8px;
-    color: var(--iris-error-color, #ff4444);
+    color: var(--iris-error-color, #f44);
     font-size: 0.85em;
 }
 

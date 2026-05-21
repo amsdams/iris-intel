@@ -172,6 +172,7 @@
 .iris-missions-list {
   --iris-ui-list-gap: 8px;
   --iris-ui-list-row-padding: 10px;
+
   padding: 0 16px 16px;
 }
 
@@ -213,6 +214,7 @@
 
 .iris-mission-list-title {
   --iris-ui-list-title-size: 0.95em;
+
   font-size: 0.95em;
   overflow: visible;
   white-space: normal;

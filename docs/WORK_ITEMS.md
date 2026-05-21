@@ -871,17 +871,18 @@ Tasks:
 | Visual smoke test shared control primitives      | Done   | desktop smoke passed for shared controls after the stateful-control pass; COMM tabs/refresh, Inventory refresh/sort/category/table, Navigation buttons, debug copy, passcode submit, plugin toggles, planning controls, drawer toggles, and Export controls use the shared state styling well enough to pause the epic |
 | Migrate export plugin controls off inline styles | Done   | export-data plugin format buttons now use shared segmented controls, checkboxes use shared checkbox styling, and download uses the shared popup action button default |
 | Review map-control UI primitives                 | Done   | navigation popup now uses CSS-first nav row/grid/button primitives, location search moved static layout/result styling into shared CSS, drawer backdrop inline layout moved to CSS, and planning/mock/geolocate controls already consume existing shared classes; pan regression from the old unhandled `IRIS_PAN_MAP` path was fixed by using the working `IRIS_MOVE_MAP` path |
-| Add reset rotation/pitch control                 | Open   | check whether MapLibre/native controls already expose this; if not, add a small Map Settings or Navigation action to reset bearing and pitch back to north-up/flat view |
+| Add reset rotation/pitch control                 | Done   | Navigation popup now includes a Reset Pitch/Rotation action that asks the page-world map runtime to jump bearing and pitch back to 0 |
 | Review mobile back/escape close behavior         | Done   | Escape now closes the top IRIS surface in order: drawer first, then visible popup/sheet, then selection/plugin/mission details; browser-back history interception is intentionally deferred until the mobile focus model is chosen |
 | Add mobile browser Back close behavior           | Open   | medium-risk follow-up: on mobile, browser Back should close the active IRIS drawer/bottom sheet before normal page navigation; requires history/popstate coordination so it does not trap users or fight Intel URL state |
 | Decide mobile pull-to-refresh behavior           | Open   | mobile page pull-down can refresh the Intel page and wipe transient UI context; decide whether to allow native refresh, prevent overscroll/pull-to-refresh on the IRIS map surface, or only prevent it while drawers/bottom sheets/planning tools are active |
 | Extract drawer UI primitives                     | Done   | drawer-first pass added shared `DrawerSection` and `DrawerButton` controls and migrated Agent, System, Layers, Map, Tactical, and Visuals tabs; desktop and Chrome device-emulation smoke looked good |
 | Visual smoke test drawer primitives on real mobile | Done | real mobile smoke looked fine for drawer button sizing, scroll groups, active states, tap behavior, and close/outside-close behavior; follow-up fixed search GO button styling to better match restrained marker/planning controls |
-| Normalize drawer button sizing on mobile         | Open   | review all drawer tabs for mixed small/large button treatments and uneven widths; Map Navigation shows the issue with Search/Controls/Settings/Missions versus Draw Tools toggles like `Vis Links`, but the fix should define a consistent mobile sizing rule for drawer buttons generally |
+| Normalize drawer button sizing on mobile         | Done   | drawer grid buttons now fill equal-width cells with a shared minimum height and safer label wrapping, while horizontal scroll groups keep their compact behavior |
+| Review UI font size and color consistency        | Open   | audit drawer, popup, status, toolbar, and plugin surfaces for inconsistent type scales, uneven button/control text sizes, mismatched muted/accent/primary colors, text that is too dim, and color choices that no longer match the shared primitive/style-token direction |
 | Plan shared UI element styling layer              | Done   | shared naming now covers buttons, inputs, checkbox/radio labels, floating panels, compact controls, choice items, popup actions, and list rows/actions; missions and planned markers now consume shared list primitives while keeping domain-specific layout locally |
 | Add planned marker navigation list              | Done   | Map drawer now lists planned markers sorted by distance from current map center; tapping a marker selects/recenters it, labels can be edited inline, and delete requires a confirmation tap |
 | Add Draw Tools backup import/export             | Done   | Map drawer now exposes Draw Tools Backup with JSON export plus merge/replace import; import accepts either the compact `iris-draw-tools` backup format or a full `iris-settings` JSON object and enables Draw Tools visibility after restore |
-| Move Draw Tools backup controls lower in Map drawer | Open | export/import is useful but secondary; move Draw Tools Backup below the marker list or otherwise reduce its priority so navigation, planning toggles, and marker overview stay visually dominant |
+| Move Draw Tools backup controls lower in Map drawer | Done | Draw Tools Backup now sits below the planned marker list so map navigation and marker overview stay higher in the Map drawer |
 | Polish planned marker list mobile selection UX  | Open   | continue testing on real mobile; selection/re-sort/scroll behavior can still feel unstable when choosing markers lower in the distance-sorted list |
 | Decide marker list placement                    | Open   | current first version lives directly in the Map drawer; consider moving behind a Markers button, collapsing by default, or showing it only while marker planning is active |
 | Refine planned marker edit/delete controls      | Open   | evaluate whether inline Edit/Delete is too busy in the drawer; possible follow-ups include row details, swipe/actions menu, or a compact marker details sheet |
@@ -970,6 +971,22 @@ Tasks:
 | Surgical Interception    | Done   | intercept network traffic without modifying Intel's internal logic               |
 | Type-Safe Domain Models  | Done   | moved all Intel types to `intel-types.ts`; strictly typing all incoming payloads |
 
+### Repository Documentation Hygiene
+
+Status: `Open`
+
+Outcome:
+
+- keep contributor-facing repository docs and ignore rules accurate after the IRIS/Page-world/UI migration work
+
+Tasks:
+
+| Task                                              | Status | Notes                                                                                                                                 |
+|---------------------------------------------------|--------|---------------------------------------------------------------------------------------------------------------------------------------|
+| Audit `.gitignore` and local-only generated files | Open   | review ignored backup/temp/build artifacts such as local Draw Tools backups and remove obsolete ignore rules without exposing private data |
+| Review stale top-level markdown docs              | Open   | update or remove outdated README/SKILL/GEMINI/agent guidance and any other stale root markdown so they match the current IRIS architecture |
+| Review stale docs markdown                        | Open   | scan `docs/*.md` for obsolete migration notes, duplicated worklog content, and references that should move into `WORK_ITEMS` or be archived |
+
 ### Linting and Code Quality
 
 Status: `Done`
@@ -1004,6 +1021,7 @@ Tasks:
 | Apply low-risk patch/minor dependency updates       | Done          | updated tracked manifests for `preact` 10.29.1, `vite-plugin-web-extension` 4.5.1, `vitest` 4.1.6, `@types/chrome` 0.1.42, `typescript-eslint`/parser/plugin 8.59.3, `eslint-plugin-react-hooks` 7.1.1, `globals` 17.6.0, and `stylelint` 17.11.1 |
 | Migrate mini-IRIS packaging to `archiver` 8          | Done          | `build-zip.cjs` now uses the ESM `ZipArchive` import path; `npm run package:mini-iris` creates fresh `.zip` and `.xpi` packages successfully                                                                                                                        |
 | Make extension package output names explicit         | Done          | mini-IRIS now writes `apps/mini-iris/builds/mini-iris-<timestamp>.zip/.xpi`; IRIS now writes `packages/extension/builds/iris-chrome-<timestamp>.zip` and `iris-firefox-<timestamp>.xpi` while keeping unpacked builds in `dist`/`dist-firefox` |
+| Include version number in packaged artifact names    | Done          | IRIS and mini-IRIS package scripts now include package version in ZIP/XPI filenames, e.g. `iris-chrome-0.1.7-<timestamp>.zip`, `iris-firefox-0.1.7-<timestamp>.xpi`, and `mini-iris-1.0.32-<timestamp>.zip/.xpi` |
 | Align product build/package/release commands         | Done          | root commands now use the same product-level shape for IRIS and mini-IRIS: `build:*` creates unpacked `dist` output, `package:*` creates ZIP/XPI artifacts, and `release:*` aliases the product package flow |
 | Migrate shared state to `zustand` 5                  | Done          | `@iris/core` now uses the vanilla store API plus a Preact-compatible `useSyncExternalStore` hook so tests and Preact builds avoid a React runtime dependency                                                                                                      |
 | Migrate map rendering to `maplibre-gl` 5             | Done          | manifests now target `maplibre-gl` 5.24.0; builds pass for IRIS Chrome/Firefox plus mini-IRIS, desktop/mobile smoke tests passed, and IRIS 0.1.3 benchmark samples were recorded; follow-up panning/selection work remains separate |

@@ -252,43 +252,6 @@ export function MapTab({ onAction }: MapTabProps): JSX.Element {
                     </Fragment>
                 )}
             </DrawerSection>
-            <div>
-                <div className="iris-drawer-section-label">Draw Tools Backup</div>
-                <div className="iris-drawer-backup-actions iris-ui-list-actions">
-                    <button type="button" className="iris-ui-list-action iris-ui-list-action-primary" onClick={exportPlannedData}>
-                        Export
-                    </button>
-                    <button type="button" className="iris-ui-list-action" onClick={() => {
-                        setBackupOpen((open) => !open);
-                        setBackupStatus(null);
-                    }}>
-                        Import
-                    </button>
-                </div>
-                {backupOpen && (
-                    <div className="iris-drawer-backup-panel">
-                        <textarea
-                            className="iris-drawer-backup-textarea"
-                            value={backupText}
-                            placeholder="Paste an iris-draw-tools backup or full iris-settings JSON here."
-                            onInput={(event) => setBackupText((event.target as HTMLTextAreaElement).value)}
-                        />
-                        <div className="iris-drawer-backup-actions iris-ui-list-actions">
-                            <button type="button" className="iris-ui-list-action iris-ui-list-action-primary" onClick={() => importPlannedData('merge')}>
-                                Merge
-                            </button>
-                            <button type="button" className="iris-ui-list-action iris-ui-list-action-danger" onClick={() => importPlannedData('replace')}>
-                                Replace
-                            </button>
-                        </div>
-                    </div>
-                )}
-                {backupStatus && (
-                    <div className="iris-drawer-backup-status">
-                        {backupStatus}
-                    </div>
-                )}
-            </div>
             {plannedLinksEnabled && (
                 <div>
                     <div className="iris-drawer-section-label">Markers by Distance</div>
@@ -384,6 +347,43 @@ export function MapTab({ onAction }: MapTabProps): JSX.Element {
                     )}
                 </div>
             )}
+            <div>
+                <div className="iris-drawer-section-label">Draw Tools Backup</div>
+                <div className="iris-drawer-backup-actions iris-ui-list-actions">
+                    <button type="button" className="iris-ui-list-action iris-ui-list-action-primary" onClick={exportPlannedData}>
+                        Export
+                    </button>
+                    <button type="button" className="iris-ui-list-action" onClick={() => {
+                        setBackupOpen((open) => !open);
+                        setBackupStatus(null);
+                    }}>
+                        Import
+                    </button>
+                </div>
+                {backupOpen && (
+                    <div className="iris-drawer-backup-panel">
+                        <textarea
+                            className="iris-drawer-backup-textarea"
+                            value={backupText}
+                            placeholder="Paste an iris-draw-tools backup or full iris-settings JSON here."
+                            onInput={(event) => setBackupText((event.target as HTMLTextAreaElement).value)}
+                        />
+                        <div className="iris-drawer-backup-actions iris-ui-list-actions">
+                            <button type="button" className="iris-ui-list-action iris-ui-list-action-primary" onClick={() => importPlannedData('merge')}>
+                                Merge
+                            </button>
+                            <button type="button" className="iris-ui-list-action iris-ui-list-action-danger" onClick={() => importPlannedData('replace')}>
+                                Replace
+                            </button>
+                        </div>
+                    </div>
+                )}
+                {backupStatus && (
+                    <div className="iris-drawer-backup-status">
+                        {backupStatus}
+                    </div>
+                )}
+            </div>
         </Fragment>
     );
 }

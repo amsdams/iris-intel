@@ -90,6 +90,10 @@
   margin-bottom: 20px;
 }
 
+.iris-map-nav-row-last {
+  margin-bottom: 0;
+}
+
 .iris-map-nav-grid {
   display: grid;
   grid-template-columns: repeat(3, 40px);
@@ -102,6 +106,17 @@
   --iris-ui-square-control-hover-color: var(--iris-map-nav-color, var(--iris-accent));
   --iris-ui-square-control-size: 40px;
   --iris-ui-square-control-font-size: 18px;
+}
+
+.iris-map-nav-reset {
+  --iris-compact-control-border: color-mix(in srgb, var(--iris-map-nav-color, var(--iris-accent)) 55%, transparent);
+  --iris-compact-control-bg: color-mix(in srgb, var(--iris-map-nav-color, var(--iris-accent)) 12%, transparent);
+  --iris-compact-control-color: var(--iris-map-nav-color, var(--iris-accent));
+  --iris-compact-control-hover-border: color-mix(in srgb, var(--iris-map-nav-color, var(--iris-accent)) 78%, transparent);
+  --iris-compact-control-hover-bg: color-mix(in srgb, var(--iris-map-nav-color, var(--iris-accent)) 18%, transparent);
+  --iris-compact-control-hover-color: var(--iris-map-nav-color, var(--iris-accent));
+
+  min-width: 150px;
 }
 
 .iris-map-nav-zoom-label {

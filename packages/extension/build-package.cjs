@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const {spawnSync} = require('child_process');
+const packageJson = require('./package.json');
 
 function packageDirectory(sourceDir, outPath) {
     if (!fs.existsSync(sourceDir)) {
@@ -26,6 +27,7 @@ function packageDirectory(sourceDir, outPath) {
 try {
     console.log('Building IRIS ZIP/XPI packages...');
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const version = packageJson.version;
     const rootDir = __dirname;
     const buildsDir = path.join(rootDir, 'builds');
     const chromeDistDir = path.join(rootDir, 'dist');
@@ -41,13 +43,13 @@ try {
     }
 
     if (shouldPackageChrome) {
-        const chromeZipPath = path.join(buildsDir, `iris-chrome-${timestamp}.zip`);
+        const chromeZipPath = path.join(buildsDir, `iris-chrome-${version}-${timestamp}.zip`);
         packageDirectory(chromeDistDir, chromeZipPath);
         console.log(`Success! Chrome package created at: ${chromeZipPath}`);
     }
 
     if (shouldPackageFirefox) {
-        const firefoxXpiPath = path.join(buildsDir, `iris-firefox-${timestamp}.xpi`);
+        const firefoxXpiPath = path.join(buildsDir, `iris-firefox-${version}-${timestamp}.xpi`);
         packageDirectory(firefoxDistDir, firefoxXpiPath);
         console.log(`Success! Firefox package created at: ${firefoxXpiPath}`);
     }
