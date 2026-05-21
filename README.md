@@ -108,9 +108,9 @@ Package outputs:
 
 - IRIS unpacked builds: `npm run build:iris` writes the Chrome build to `packages/extension/dist`; `npm run package:iris`
   refreshes both `packages/extension/dist` and `packages/extension/dist-firefox` before packaging.
-- IRIS packages: `packages/extension/builds/iris-chrome-<timestamp>.zip` and `packages/extension/builds/iris-firefox-<timestamp>.xpi`.
+- IRIS packages: `packages/extension/builds/iris-chrome-<version>-<timestamp>.zip` and `packages/extension/builds/iris-firefox-<version>-<timestamp>.xpi`.
 - mini-IRIS unpacked build: `apps/mini-iris/dist`.
-- mini-IRIS packages: `apps/mini-iris/builds/mini-iris-<timestamp>.zip` and `apps/mini-iris/builds/mini-iris-<timestamp>.xpi`.
+- mini-IRIS packages: `apps/mini-iris/builds/mini-iris-<version>-<timestamp>.zip` and `apps/mini-iris/builds/mini-iris-<version>-<timestamp>.xpi`.
 
 ### Prerequisites
 
@@ -233,7 +233,7 @@ Current first-party plugins include:
 - [ ] **Search Enhancements:**
     - [ ] Portal Search via verified Intel request path
 - [ ] **Plugin System Enhancements:**
-    - [ ] Reduce `MapOverlay` special-casing for HTML plugin markers
+    - [ ] Continue page-world plugin overlay polish for labels, pins, artifacts, and ornaments
     - [ ] Decide whether highlighter-style overlays should stay concurrent or become mutually exclusive
 - [ ] **Performance Optimizations:**
     - [ ] GeoJSON source throttling for extremely dense areas

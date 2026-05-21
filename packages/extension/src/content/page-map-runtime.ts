@@ -1225,6 +1225,32 @@ function createPlayerMarkerPinEntry(playerMarker: PlayerMarkerRuntimeData): Play
     const pin = document.createElement('div');
     const core = document.createElement('div');
     const label = document.createElement('div');
+    let longPressTimer: number | null = null;
+    let touchStart: {x: number; y: number} | null = null;
+    let suppressNextClick = false;
+
+    const openPlayerMarkerInfo = (): void => {
+        window.postMessage({
+            type: PAGE_MAP_RUNTIME_MESSAGES.selection,
+            selection: {
+                id: playerMarker.id,
+                kind: 'plugin-feature',
+                feature: playerMarker.feature,
+            } satisfies PageMapRuntimeSelectionPayload,
+        }, '*');
+    };
+
+    const clearLongPressTimer = (): void => {
+        if (longPressTimer !== null) {
+            window.clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+    };
+
+    const cancelLongPress = (): void => {
+        clearLongPressTimer();
+        touchStart = null;
+    };
 
     element.className = 'iris-page-player-marker-pin';
     pin.className = 'iris-page-player-marker-pin__body';
@@ -1237,15 +1263,52 @@ function createPlayerMarkerPinEntry(playerMarker: PlayerMarkerRuntimeData): Play
     element.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
-        window.postMessage({
-            type: PAGE_MAP_RUNTIME_MESSAGES.selection,
-            selection: {
-                id: playerMarker.id,
-                kind: 'plugin-feature',
-                feature: playerMarker.feature,
-            } satisfies PageMapRuntimeSelectionPayload,
-        }, '*');
+        suppressNextClick = false;
     });
+
+    element.addEventListener('contextmenu', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        openPlayerMarkerInfo();
+    });
+
+    element.addEventListener('touchstart', (event) => {
+        if (event.touches.length !== 1) {
+            cancelLongPress();
+            return;
+        }
+
+        const touch = event.touches[0];
+        touchStart = {x: touch.clientX, y: touch.clientY};
+        clearLongPressTimer();
+        longPressTimer = window.setTimeout(() => {
+            if (!touchStart) return;
+            suppressNextClick = true;
+            openPlayerMarkerInfo();
+            cancelLongPress();
+        }, MOBILE_LONG_PRESS_MS);
+    }, {passive: true});
+
+    element.addEventListener('touchmove', (event) => {
+        if (!touchStart || event.touches.length !== 1) {
+            cancelLongPress();
+            return;
+        }
+
+        const touch = event.touches[0];
+        const distance = Math.hypot(touch.clientX - touchStart.x, touch.clientY - touchStart.y);
+        if (distance > MOBILE_LONG_PRESS_MOVE_TOLERANCE_PX) {
+            cancelLongPress();
+        }
+    }, {passive: true});
+
+    element.addEventListener('touchend', (event) => {
+        if (suppressNextClick) {
+            event.preventDefault();
+        }
+        cancelLongPress();
+    });
+    element.addEventListener('touchcancel', cancelLongPress, {passive: true});
 
     const marker = new maplibregl.Marker({element, anchor: 'bottom', offset: [0, 0]});
     const entry = {marker, element, pin, label};

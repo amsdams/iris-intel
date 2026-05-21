@@ -697,7 +697,7 @@ Tasks:
 | Migrate page-world interaction events                                    | Done   | page-world map emits plain camera, selection, contextmenu, draw-tool, and benchmark messages back to extension UI without exposing MapLibre feature objects across worlds |
 | Retire duplicate content-world MapLibre runtime after migration          | Done   | page-world rendering owns the normal map surface, diagnostics, interaction, draw tools, and marker pins; the old `MapOverlay` fallback is no longer mounted |
 | Remove old `MapOverlay` reference implementation                         | Done   | deleted the unmounted extension-world renderer after page-world source sync, selection, diagnostics, theme switching, draw tools, and pin rendering were covered |
-| Keep page-world migration notes in tracked docs                          | Done   | `docs/PAGE_WORLD_MAP_RUNTIME.md` is ignored locally, so committed migration status now lives in this work log and benchmark details live in `docs/PERF_BENCHMARKS.md` |
+| Keep page-world migration notes in tracked docs                          | Done   | `docs/PAGE_WORLD_MAP_RUNTIME.md` is now an active tracked-doc candidate again, while benchmark details continue to live in `docs/PERF_BENCHMARKS.md` |
 | Document IITC marker pin parity                                          | Done   | IITC Draw Tools uses Leaflet marker pins with coloured SVG div icons and a purple default; IITC Player Activity Tracker uses faction pin icons while its trail lines are magenta/dashed; both register markers with OverlappingMarkerSpiderfier |
 | Scope MapLibre Marker pin experiment                                     | Done   | tested `maplibregl.Marker` DOM pins for planned markers first, then player tracker; page-world ownership works for the baseline and follow-up work is now focused on co-located markers and richer UX |
 | Preserve planned marker portal snapping semantics                        | Done   | planned marker pins still use existing portal-anchored planned-marker snapshot data; later IITC snap-to-nearest-portal behavior can be considered only if free placement is added |
@@ -712,7 +712,7 @@ Tasks:
 | Profile DOM marker count before expanding pin usage                      | Open   | before moving more overlays to DOM markers, record marker counts and pan feel on desktop/mobile so pins do not quietly reintroduce HTML-marker churn |
 | Consider CSS class extraction for page-world pins                        | Open   | current page-world pin styles are centralized in helpers; if pin variants grow, move static style into injected CSS/classes and keep helpers for dynamic colour/selection state |
 | Expand player tracker popup with previous locations                      | Open   | current popup shows latest portal and recent actions; later carry enough player history to show an IITC-like previous-location list |
-| Gate player activity popup behind secondary interaction                  | Open   | player activity pins should not open details on normal tap/click if that conflicts with map navigation; consider opening player activity details only from right-click/context click or mobile long-press, aligned with portal/link info popup behavior |
+| Gate player activity popup behind secondary interaction                  | Done   | page-world player pins no longer open activity details on normal click/tap; right-click/context menu and mobile long-press open the Player Last Activity popup |
 | Decide whether crosslink display should also compare against drawn links | Open   | `quick-draw-links` supports existing, drawn, or both                                    |
 | Support moving or copying links from one anchor portal to another        | Open   | useful for fast route/plan variants if interaction model stays understandable on mobile |
 | Support selecting and deleting individual planned items                  | Done   | tapping a saved planned link or marker selects it, highlights it, and enables Delete in the planning bar |
@@ -982,9 +982,9 @@ Tasks:
 
 | Task                                              | Status | Notes                                                                                                                                 |
 |---------------------------------------------------|--------|---------------------------------------------------------------------------------------------------------------------------------------|
-| Audit `.gitignore` and local-only generated files | Open   | review ignored backup/temp/build artifacts such as local Draw Tools backups and remove obsolete ignore rules without exposing private data |
-| Review stale top-level markdown docs              | Open   | update or remove outdated README/SKILL/GEMINI/agent guidance and any other stale root markdown so they match the current IRIS architecture |
-| Review stale docs markdown                        | Open   | scan `docs/*.md` for obsolete migration notes, duplicated worklog content, and references that should move into `WORK_ITEMS` or be archived |
+| Audit `.gitignore` and local-only generated files | Done   | `.gitignore` now explicitly unignores the active docs kept under `docs/` while leaving captured payloads, local error dumps, builds, and private Draw Tools backups ignored |
+| Review stale top-level markdown docs              | Done   | README package artifact names now include version placeholders and the stale `MapOverlay` plugin-roadmap wording was replaced with page-world overlay polish |
+| Review stale docs markdown                        | Done   | docs index now points at the active architecture/page-world/performance/worklog docs, and the page-world runtime doc reflects the completed mobile long-press work |
 
 ### Linting and Code Quality
 
