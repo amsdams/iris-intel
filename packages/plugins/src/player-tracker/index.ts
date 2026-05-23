@@ -1,23 +1,5 @@
 import { IRISPlugin, IRIS_API, Plext } from '@iris/plugin-sdk';
-
-interface PlayerAction {
-  text: string;
-  markup: Plext['markup'];
-  time: number;
-}
-
-interface PlayerEvent {
-  latlngs: [number, number][]; // Handle multiple coords at same timestamp (resos)
-  time: number;
-  portalName: string;
-  actions: PlayerAction[];
-}
-
-interface PlayerHistory {
-  team: string;
-  color: string;
-  events: PlayerEvent[];
-}
+import {processPlayerTrackerPlexts, type PlayerTrackerEvent, type PlayerTrackerHistory} from '@iris/core';
 
 interface PlayerTrackerApi extends IRIS_API {
   _playerTrackerUnsub?: () => void;
@@ -29,15 +11,6 @@ const EXPIRATION_MS = 3 * 60 * 60 * 1000; // 3 hours (IITC default)
 const TICK_MS = 30 * 1000; // 30 seconds update
 const MAX_DISPLAY_EVENTS = 10; // Max events to show in trace
 const MIN_TRACKER_ZOOM = 9; // IITC hides player tracker below z9.
-
-function getPlextFingerprint(plext: Plext): string {
-  return JSON.stringify({
-    time: plext.time,
-    team: plext.team,
-    text: plext.text,
-    markup: plext.markup,
-  });
-}
 
 const PlayerTrackerPlugin: IRISPlugin = {
   manifest: {
@@ -51,13 +24,13 @@ const PlayerTrackerPlugin: IRISPlugin = {
   },
   setup: (api: IRIS_API): void => {
     const trackerApi = api as PlayerTrackerApi;
-    const playerHistories = new Map<string, PlayerHistory>();
-    const processedPlextFingerprints = new Map<string, string>();
+    let playerHistories = new Map<string, PlayerTrackerHistory>();
+    let processedPlextFingerprints = new Map<string, string>();
     let trackerVisible = api.map.getZoom() >= MIN_TRACKER_ZOOM;
     let hasPublishedFeatures = false;
 
     // Helper to get average LatLng for an event
-    const getLatLngFromEvent = (event: PlayerEvent): [number, number] => {
+    const getLatLngFromEvent = (event: PlayerTrackerEvent): [number, number] => {
         let lats = 0;
         let lngs = 0;
         event.latlngs.forEach(([lat, lng]) => {
@@ -68,9 +41,6 @@ const PlayerTrackerPlugin: IRISPlugin = {
     };
 
     // Helper to check if event has a specific LatLng
-    const eventHasLatLng = (event: PlayerEvent, lat: number, lng: number): boolean =>
-        event.latlngs.some(([eLat, eLng]) => eLat === lat && eLng === lng);
-
     // Player-specific random color based on name hash (IITC style)
     const getPlayerColor = (_name: string, team: string): string => {
         const colors = api.ui.getThemeColors();
@@ -157,7 +127,7 @@ const PlayerTrackerPlugin: IRISPlugin = {
                     },
                     properties: {
                         id: `pt-line:${name}:${curr.time}`,
-                        color: history.color,
+                    color: getPlayerColor(name, history.team),
                         opacity,
                         weight, // Used by some renderers, IRIS uses opacity mostly
                     },
@@ -207,131 +177,15 @@ const PlayerTrackerPlugin: IRISPlugin = {
         return;
       }
 
-      playerHistories.clear();
-      processedPlextFingerprints.clear();
-
-      // Sort oldest to newest for consistent history building
-      const sorted = [...plexts].sort((a, b) => a.time - b.time);
-
-      sorted.forEach((p) => {
-        const fingerprint = getPlextFingerprint(p);
-        if (processedPlextFingerprints.get(p.id) === fingerprint) return;
-        processedPlextFingerprints.set(p.id, fingerprint);
-        
-        if (p.time < Date.now() - EXPIRATION_MS) return;
-        if (!p.markup) return;
-
-        let playerName: string | null = null;
-        let plrTeam: string = p.team || 'NEUTRAL';
-        let lat: number | null = null;
-        let lng: number | null = null;
-        let pName = '';
-        let skipThis = false;
-        const actionParts: string[] = [];
-        const actionMarkup: Plext['markup'] = [];
-
-        for (const m of p.markup) {
-          const [type, data] = m;
-          if (type === 'TEXT') {
-            const txt = data.plain || '';
-            actionParts.push(txt);
-            actionMarkup.push(m);
-            if (txt.includes('destroyed the Link') ||
-                txt.includes('destroyed a Control Field') ||
-                txt.includes('destroyed the') ||
-                txt.includes('Your Link')) {
-              skipThis = true;
-              break;
-            }
-          } else if (type === 'PLAYER' || type === 'SENDER' || type === 'AT_PLAYER' || type === 'FACTION') {
-            playerName = data.plain || null;
-            if (data.team && data.team !== 'NEUTRAL') plrTeam = data.team;
-            // Force Machina
-            const upper = (playerName || '').toUpperCase();
-            if (upper === 'MACHINA' || upper === '__MACHINA__') plrTeam = 'MACHINA';
-            actionMarkup.push(m);
-          } else if ((type === 'PORTAL' || type === 'LINK') && !lat && !lng) {
-            // Take the FIRST portal in markup as player location (IITC style)
-            if (typeof data.latE6 === 'number' && typeof data.lngE6 === 'number') {
-              lat = data.latE6 / 1e6;
-              lng = data.lngE6 / 1e6;
-              pName = data.name || '';
-            }
-            actionMarkup.push(m);
-          } else {
-            actionMarkup.push(m);
-          }
-        }
-
-        if (skipThis || !playerName || lat === null || lng === null) return;
-
-        const action = actionParts.join('').trim();
-
-        let history = playerHistories.get(playerName);
-        if (!history) {
-          history = {
-            team: plrTeam,
-            color: getPlayerColor(playerName, plrTeam),
-            events: [],
-          };
-          playerHistories.set(playerName, history);
-        }
-
-        const actionRecord: PlayerAction | null = action
-          ? {
-              text: action,
-              markup: actionMarkup,
-              time: p.time,
-            }
-          : null;
-
-        // Logic to insert/update event (IITC processNewData style)
-        const evts = history.events;
-        let i = 0;
-        for (i = 0; i < evts.length; i += 1) {
-          if (evts[i].time > p.time) break;
-        }
-
-        const cmp = Math.max(i - 1, 0);
-
-        if (evts.length > 0 && evts[cmp].time === p.time) {
-          // Multiple portals at same time (e.g. resos)
-          if (!eventHasLatLng(evts[cmp], lat, lng)) {
-            evts[cmp].latlngs.push([lat, lng]);
-          }
-          if (actionRecord && !evts[cmp].actions.some((existing) => existing.text === actionRecord.text)) {
-            evts[cmp].actions.push(actionRecord);
-          }
-          return;
-        }
-
-        // Time changed. Is player still at same location?
-        // Check next event
-        if (evts[cmp + 1] && eventHasLatLng(evts[cmp + 1], lat, lng)) {
-          if (actionRecord && !evts[cmp + 1].actions.some((existing) => existing.text === actionRecord.text)) {
-            evts[cmp + 1].actions.push(actionRecord);
-          }
-          return;
-        }
-
-        // Check previous event
-        const sameLoc = evts.length > 0 && eventHasLatLng(evts[cmp], lat, lng);
-        if (sameLoc) {
-          // Same location, just update time to newest
-          evts[cmp].time = p.time;
-          if (actionRecord && !evts[cmp].actions.some((existing) => existing.text === actionRecord.text)) {
-            evts[cmp].actions.push(actionRecord);
-          }
-        } else {
-          // New location, insert
-          evts.splice(i, 0, {
-            latlngs: [[lat, lng]],
-            time: p.time,
-            portalName: pName,
-            actions: actionRecord ? [actionRecord] : [],
-          });
-        }
+      const result = processPlayerTrackerPlexts({
+        plexts,
+        previousHistories: playerHistories,
+        processedPlextFingerprints,
+        expirationMs: EXPIRATION_MS,
+        maxEvents: MAX_DISPLAY_EVENTS,
       });
+      playerHistories = result.histories;
+      processedPlextFingerprints = result.processedPlextFingerprints;
 
       updateMap();
     };

@@ -1,27 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'preact/hooks';
-import { useStore, PlextParser, Plext, createPlextRequestMessage } from '@iris/core';
-import type { PlextData, PlextRequestBounds } from '@iris/core';
+import { useStore, PlextParser, createPlextRequestMessage, processPlayerTrackerPlexts } from '@iris/core';
+import type { Plext, PlextData, PlextRequestBounds, PlayerTrackerHistory } from '@iris/core';
 import { useEndpointTelemetry } from './useEndpointTelemetry';
 import { isIrisDataMessage } from './messages';
 
-export interface PlayerAction {
-    text: string;
-    markup: Plext['markup'];
-    time: number;
-}
-
-export interface PlayerEvent {
-    latlngs: [number, number][];
-    time: number;
-    portalName: string;
-    actions: PlayerAction[];
-}
-
-export interface PlayerHistory {
-    name: string;
-    team: string;
-    events: PlayerEvent[];
-}
+export type PlayerAction = PlayerTrackerHistory['events'][number]['actions'][number];
+export type PlayerHistory = PlayerTrackerHistory;
 
 interface UsePlayerTrackerResult {
     playerHistories: Map<string, PlayerHistory>;
@@ -39,139 +23,28 @@ export function usePlayerTracker(
     const [playerHistories, setPlayerHistories] = useState<Map<string, PlayerHistory>>(new Map());
     const [lastPlextTime, setLastPlextTime] = useState(-1);
     const telemetry = useEndpointTelemetry();
-    const processedPlextIdsRef = useRef<Set<string>>(new Set());
+    const processedPlextFingerprintsRef = useRef<Map<string, string>>(new Map());
 
     const processPlexts = useCallback((plexts: Plext[]) => {
         if (!liveMode) return;
         if (plexts.length === 0) return;
 
-        const freshPlexts = plexts.filter(p => {
-            if (processedPlextIdsRef.current.has(p.id)) return false;
-            processedPlextIdsRef.current.add(p.id);
-            return true;
-        });
-
-        if (freshPlexts.length === 0) return;
-
-        const newMaxTime = Math.max(...freshPlexts.map(p => p.time));
-        const touchedPlayers = new Set<string>();
-        setLastPlextTime(prev => Math.max(prev, newMaxTime));
-
         setPlayerHistories(prev => {
-            const next = new Map(prev);
-            const limit = Date.now() - EXPIRATION_MS;
-
-            // Sort oldest to newest for consistent history building
-            const sorted = [...freshPlexts].sort((a, b) => a.time - b.time);
-
-            sorted.forEach(p => {
-                if (p.time < limit) return;
-                
-                let playerName: string | null = null;
-                let playerTeam = p.team || 'N';
-                let lat: number | null = null;
-                let lng: number | null = null;
-                let pName = '';
-                let skipThis = false;
-                const actionParts: string[] = [];
-                const actionMarkup: Plext['markup'] = [];
-
-                for (const m of p.markup) {
-                    const [type, data] = m;
-                    if (type === 'TEXT') {
-                        const txt = data.plain || '';
-                        actionParts.push(txt);
-                        actionMarkup.push(m);
-                        if (txt.includes('destroyed the Link') ||
-                            txt.includes('destroyed a Control Field') ||
-                            txt.includes('destroyed the') ||
-                            txt.includes('Your Link')) {
-                            skipThis = true;
-                            break;
-                        }
-                    } else if (type === 'PLAYER' || type === 'SENDER' || type === 'AT_PLAYER' || type === 'FACTION') {
-                        playerName = data.plain || data.name || playerName;
-                        if (data.team && data.team !== 'N') {
-                            playerTeam = data.team;
-                        }
-                        const upper = (playerName || '').toUpperCase();
-                        if (upper === 'MACHINA' || upper === '__MACHINA__') {
-                            playerTeam = 'M';
-                        }
-                        actionMarkup.push(m);
-                    } else if ((type === 'PORTAL' || type === 'LINK') && lat === null && lng === null) {
-                        lat = (data.latE6 || 0) / 1e6;
-                        lng = (data.lngE6 || 0) / 1e6;
-                        pName = data.name || '';
-                        actionMarkup.push(m);
-                    } else {
-                        actionMarkup.push(m);
-                    }
-                }
-
-                if (skipThis || !playerName || lat === null || lng === null) return;
-                const actionText = actionParts.join('').trim();
-
-                let history = next.get(playerName);
-                if (!history) {
-                    history = { name: playerName, team: playerTeam, events: [] };
-                    next.set(playerName, history);
-                } else if (playerTeam && history.team !== playerTeam) {
-                    history.team = playerTeam;
-                }
-                touchedPlayers.add(playerName);
-
-                // Logic to update/insert event (IITC style)
-                const evts = history.events;
-                let i = 0;
-                for (i = 0; i < evts.length; i++) {
-                    if (evts[i].time > p.time) break;
-                }
-
-                const cmp = Math.max(i - 1, 0);
-
-                if (evts.length > 0 && evts[cmp].time === p.time) {
-                    // Same timestamp (multiple resos), check if location is new
-                    const alreadyHas = evts[cmp].latlngs.some(ll => ll[0] === lat && ll[1] === lng);
-                    if (!alreadyHas) evts[cmp].latlngs.push([lat, lng]);
-                    if (actionText && !evts[cmp].actions.some((existing) => existing.text === actionText)) {
-                        evts[cmp].actions.push({ text: actionText, markup: actionMarkup, time: p.time });
-                    }
-                    return;
-                }
-
-                // Check if player is still at same location
-                const sameLoc = evts.length > 0 && evts[cmp].latlngs.some(ll => ll[0] === lat && ll[1] === lng);
-                if (sameLoc) {
-                    evts[cmp].time = p.time;
-                    if (actionText && !evts[cmp].actions.some((existing) => existing.text === actionText)) {
-                        evts[cmp].actions.push({ text: actionText, markup: actionMarkup, time: p.time });
-                    }
-                } else {
-                    evts.splice(i, 0, {
-                        latlngs: [[lat, lng]],
-                        time: p.time,
-                        portalName: pName,
-                        actions: actionText ? [{ text: actionText, markup: actionMarkup, time: p.time }] : [],
-                    });
-                }
-
-                // Keep only last 10 locations
-                if (history.events.length > 10) history.events.shift();
-                next.set(playerName, history);
+            const result = processPlayerTrackerPlexts({
+                plexts,
+                previousHistories: prev,
+                processedPlextFingerprints: processedPlextFingerprintsRef.current,
+                expirationMs: EXPIRATION_MS,
             });
-
-            // Global cleanup for expired data
-            next.forEach((history, name) => {
-                const firstValid = history.events.findIndex(e => e.time >= limit);
-                if (firstValid === -1) next.delete(name);
-                else if (firstValid > 0) history.events.splice(0, firstValid);
-            });
-
-            return next;
+            processedPlextFingerprintsRef.current = result.processedPlextFingerprints;
+            if (result.maxPlextTime !== null) {
+                setLastPlextTime(previous => Math.max(previous, result.maxPlextTime ?? previous));
+            }
+            if (result.processedCount > 0) {
+                logEvent(`TRACKER: ${result.processedCount} plexts, ${result.touchedPlayerCount} players`);
+            }
+            return result.histories;
         });
-
-        logEvent(`TRACKER: ${freshPlexts.length} plexts, ${touchedPlayers.size} players`);
     }, [liveMode, logEvent]);
 
     // Message Listener for COMM data
