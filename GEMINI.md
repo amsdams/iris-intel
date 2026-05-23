@@ -18,7 +18,7 @@ This file contains foundational instructions and preferences for the IRIS develo
 
 ## Allowed/Preferred Commands
 - **Build & Release:** Use `npm run release` to build both Chrome and Firefox extensions.
-- **Development:** Use `npm run dev -w packages/extension` for watching changes.
-- **Linting:** Use `npm run lint` or `npx eslint packages/extension/src` for code style checks.
+- **Development:** Use `npm run dev -w apps/iris` for watching changes.
+- **Linting:** Use `npm run lint` or `npx eslint apps/iris/src` for code style checks.
 - **Typechecking:** Use `npm run typecheck` for repository-wide TypeScript verification.
 - **Testing:** (Add project-specific test commands here as they are established).

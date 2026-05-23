@@ -8,15 +8,14 @@ and benchmark samples remain in `docs/PERF_BENCHMARKS.md`.
 
 IRIS is a browser extension backed by shared workspace packages:
 
-- `packages/extension`: the main IRIS browser extension app.
+- `apps/iris`: the main IRIS browser extension app.
 - `apps/mini-iris`: smaller/reference extension app.
 - `packages/core`: shared store, parsers, entity logic, spatial index, plugin manager.
 - `packages/plugin-sdk`: plugin-facing API/types.
 - `packages/plugins`: first-party plugins such as player tracker, portal labels, fills, keys, and draw tools.
 
-`packages/extension` behaves more like an app than a reusable library. Moving it
-to `apps/iris` may make sense later, but do not do that until there is a practical
-reason because it touches builds, packaging, manifests, imports, and docs.
+`apps/iris` is intentionally treated as an app shell. Reusable logic should move
+into `packages/*` only after both IRIS and Mini-IRIS have stable call sites.
 
 ## Component View
 

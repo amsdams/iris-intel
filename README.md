@@ -48,15 +48,15 @@ IRIS overlays a fully interactive [MapLibre GL](https://maplibre.org/) map on to
 ```
 IRIS/
 ├── apps/
+│   ├── iris/              # Main IRIS browser extension app
+│   │   ├── src/
+│   │   │   ├── content/   # Content script + main-world interceptor
+│   │   │   └── ui/        # Preact components, dock, drawer, popups
+│   │   └── vite.config.ts
 │   └── mini-iris/         # Compact secondary app with a different UI and interaction model
 ├── packages/
-│   ├── extension/          # Browser extension (Manifest V3)
-│   │   ├── manifest.json
-│   │   └── src/
-│   │       ├── content/    # Content script + main-world interceptor
-│   │       ├── ui/         # Preact components (Overlay, MapOverlay, Popup)
-│   │       └── core/       # Re-exports from @iris/core
 │   ├── core/               # Shared platform: Zustand store, types, plugin manager
+│   ├── plugin-sdk/         # Plugin-facing API/types
 │   └── plugins/            # First-party plugins (portal-names, player-tracker, etc.)
 ```
 
@@ -106,9 +106,9 @@ Command semantics:
 
 Package outputs:
 
-- IRIS unpacked builds: `npm run build:iris` writes the Chrome build to `packages/extension/dist`; `npm run package:iris`
-  refreshes both `packages/extension/dist` and `packages/extension/dist-firefox` before packaging.
-- IRIS packages: `packages/extension/builds/iris-chrome-<version>-<timestamp>.zip` and `packages/extension/builds/iris-firefox-<version>-<timestamp>.xpi`.
+- IRIS unpacked builds: `npm run build:iris` writes the Chrome build to `apps/iris/dist`; `npm run package:iris`
+  refreshes both `apps/iris/dist` and `apps/iris/dist-firefox` before packaging.
+- IRIS packages: `apps/iris/builds/iris-chrome-<version>-<timestamp>.zip` and `apps/iris/builds/iris-firefox-<version>-<timestamp>.xpi`.
 - mini-IRIS unpacked build: `apps/mini-iris/dist`.
 - mini-IRIS packages: `apps/mini-iris/builds/mini-iris-chrome-<version>-<timestamp>.zip` and `apps/mini-iris/builds/mini-iris-firefox-<version>-<timestamp>.xpi`.
 
@@ -132,14 +132,14 @@ npm run build
 1. Open `chrome://extensions`
 2. Enable **Developer mode** (top right)
 3. Click **Load unpacked**
-4. Select the `packages/extension/dist` folder
+4. Select the `apps/iris/dist` folder
 5. Navigate to `https://intel.ingress.com`
 
 ### Load in Firefox
 
 1. Open `about:debugging`
 2. Click **This Firefox** → **Load Temporary Add-on**
-3. Select `packages/extension/dist-firefox/manifest.json` (Note: Use `dist-firefox` for Firefox-specific builds)
+3. Select `apps/iris/dist-firefox/manifest.json` (Note: Use `dist-firefox` for Firefox-specific builds)
 
 ---
 

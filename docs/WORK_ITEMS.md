@@ -8,11 +8,11 @@ from here when they become tracked work.
 
 ## Current Next Pickup
 
-1. **[Mini-IRIS Polish]** Match the IRIS portal HP colour ramp while preserving the faction ring and compact LVL/HP controls.
-2. **[Mini-IRIS Alignment]** Define compact mini-IRIS non-goals before copying more full-IRIS behavior.
-3. **[Shared Components]** Identify proven shared backend/engine/domain candidates from both apps before package extraction.
-4. **[Release Hygiene]** Align mini-IRIS package artifact names with explicit Chrome/Firefox platform names.
-5. **[App Layout]** Evaluate moving full IRIS to `apps/iris` beside `apps/mini-iris`, but defer the move until path/build churn is clear.
+1. **[App Layout]** Smoke test unpacked IRIS from `apps/iris/dist` in Chrome and `apps/iris/dist-firefox` in Firefox.
+2. **[Mini-IRIS Bench]** Capture the small DBG matrix later: base, LVL, HP, KEY, and 3D variants.
+3. **[Shared Components]** Start the cross-app audit with backend/engine/domain candidates, not shared UI.
+4. **[Release Hygiene]** Keep package artifact naming explicit by browser platform for both apps.
+5. **[Shared Runtime]** Prefer request/data/parsing/entity lifecycle extraction before UI component sharing.
 
 ## Worklog Areas
 
@@ -1058,13 +1058,13 @@ Tasks:
 | Review outdated npm dependencies                    | Done          | latest review shows `npm audit --workspaces` reports 0 vulnerabilities; only major migrations remain after the patch/minor update pass                                                                                                                               |
 | Apply low-risk patch/minor dependency updates       | Done          | updated tracked manifests for `preact` 10.29.1, `vite-plugin-web-extension` 4.5.1, `vitest` 4.1.6, `@types/chrome` 0.1.42, `typescript-eslint`/parser/plugin 8.59.3, `eslint-plugin-react-hooks` 7.1.1, `globals` 17.6.0, and `stylelint` 17.11.1 |
 | Migrate mini-IRIS packaging to `archiver` 8          | Done          | `build-zip.cjs` now uses the ESM `ZipArchive` import path; `npm run package:mini-iris` creates fresh `.zip` and `.xpi` packages successfully                                                                                                                        |
-| Make extension package output names explicit         | Done          | mini-IRIS now writes `apps/mini-iris/builds/mini-iris-chrome-<version>-<timestamp>.zip` and `mini-iris-firefox-<version>-<timestamp>.xpi`; IRIS writes `iris-chrome-<version>-<timestamp>.zip` and `iris-firefox-<version>-<timestamp>.xpi` |
+| Make extension package output names explicit         | Done          | mini-IRIS writes `apps/mini-iris/builds/mini-iris-chrome-<version>-<timestamp>.zip` and `mini-iris-firefox-<version>-<timestamp>.xpi`; IRIS writes `apps/iris/builds/iris-chrome-<version>-<timestamp>.zip` and `iris-firefox-<version>-<timestamp>.xpi` |
 | Include version number in packaged artifact names    | Done          | IRIS and mini-IRIS package scripts now include package version in ZIP/XPI filenames, e.g. `iris-chrome-0.1.7-<timestamp>.zip`, `iris-firefox-0.1.7-<timestamp>.xpi`, and `mini-iris-chrome-1.0.32-<timestamp>.zip` |
 | Align product build/package/release commands         | Done          | root commands now use the same product-level shape for IRIS and mini-IRIS: `build:*` creates unpacked `dist` output, `package:*` creates ZIP/XPI artifacts, and `release:*` aliases the product package flow |
 | Align mini-IRIS artifact names by browser platform   | Done          | mini-IRIS now mirrors the IRIS package naming shape with explicit browser targets: `mini-iris-chrome-<version>-<timestamp>.zip` and `mini-iris-firefox-<version>-<timestamp>.xpi` |
 | Migrate shared state to `zustand` 5                  | Done          | `@iris/core` now uses the vanilla store API plus a Preact-compatible `useSyncExternalStore` hook so tests and Preact builds avoid a React runtime dependency                                                                                                      |
 | Migrate map rendering to `maplibre-gl` 5             | Done          | manifests now target `maplibre-gl` 5.24.0; builds pass for IRIS Chrome/Firefox plus mini-IRIS, desktop/mobile smoke tests passed, and IRIS 0.1.3 benchmark samples were recorded; follow-up panning/selection work remains separate |
-| Migrate TypeScript to 6.0.3                        | Done          | root/core/extension/mini-IRIS now target `typescript` 6.0.3; root tsconfig uses `moduleResolution: "Bundler"` and core has an explicit scoped tsconfig with GeoJSON types; typecheck/test/lint/builds pass |
+| Migrate TypeScript to 6.0.3                        | Done          | root/core/IRIS/mini-IRIS now target `typescript` 6.0.3; root tsconfig uses `moduleResolution: "Bundler"` and core has an explicit scoped tsconfig with GeoJSON types; typecheck/test/lint/builds pass |
 | Evaluate remaining major dependency migrations separately | Done     | `archiver`, `zustand`, `maplibre-gl`, and `typescript` major migrations are complete; continue normal dependency review in future lifecycle passes                                                                                                                                                                                        |
 
 ## Shared Runtime And Package Boundaries
@@ -1075,15 +1075,14 @@ Goal:
 
 - keep IRIS and Mini-IRIS aligned through proven shared backend/engine/domain code
 - avoid turning Mini-IRIS into a second full IRIS shell
-- avoid package splits or app moves until the boundary and build/release costs are clear
+- avoid package splits until the boundary and build/release costs are clear
 
 Principles:
 
 - Shared code should start with non-UI logic: parsers, typed models, entity/map feature builders,
   diagnostics formatting, request freshness helpers, mock data generators, and request policy.
 - App shells should stay app-owned until there are repeated call sites and clear ownership.
-- Prefer an `apps/iris` move only if it makes the app/package split more predictable without
-  creating release churn.
+- Keep app shells under `apps/` and shared backend/engine/domain logic under `packages/`.
 
 Tasks:
 
@@ -1091,7 +1090,7 @@ Tasks:
 |-----------------------------------------------------------|--------|------------------------------------------------------------------------------------------------------------|
 | Define shared-vs-app ownership boundaries                 | Open   | decide which code belongs in app shells versus shared packages before moving files                          |
 | Identify first shared backend/engine extraction candidates | Open   | likely parsers, map feature builders, request freshness helpers, tracker models, diagnostics formatters     |
-| Decide app/package layout for IRIS and mini-IRIS           | Open   | consider moving full IRIS from `packages/extension` to `apps/iris` beside `apps/mini-iris`; measure path/build churn before moving |
+| Decide app/package layout for IRIS and mini-IRIS           | Done   | full IRIS now lives in `apps/iris` beside `apps/mini-iris`; reusable backend/engine/domain packages remain under `packages/` |
 | Defer package chopping until boundaries are proven         | Open   | only split packages after shared usage and bundle/build costs are measured                                  |
 
 ## IRIS Performance And Architecture Review Follow-ups
@@ -1151,7 +1150,7 @@ Principles:
   typed models before shared GUI surfaces.
 - Prefer native MapLibre APIs for Mini-IRIS map selection, context menus, and gesture hooks in the page-world runtime;
   keep the content-world side as a compact UI/data bridge.
-- Keep app-specific UI composition in `packages/extension` and `apps/mini-iris` until component ownership is obvious.
+- Keep app-specific UI composition in `apps/iris` and `apps/mini-iris` until component ownership is obvious.
 
 Non-goals:
 

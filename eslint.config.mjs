@@ -74,7 +74,7 @@ export default tseslint.config(
       'vite.config.ts',
       '**/vite.config.ts.timestamp-*',
       'eslint.config.mjs',
-      'packages/extension/public/**'
+      'apps/iris/public/**'
     ],
   }
 );

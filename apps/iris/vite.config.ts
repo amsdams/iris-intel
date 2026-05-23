@@ -33,7 +33,7 @@ export default defineConfig(({mode}) => ({
     ],
     resolve: {
         alias: {
-            '@iris/core': path.resolve(__dirname, '../core/src'),
+            '@iris/core': path.resolve(__dirname, '../../packages/core/src'),
         },
     },
     define: {

@@ -1,7 +1,7 @@
 import { h, JSX } from 'preact';
 import { useStore } from '@iris/core';
-import { Popup } from '../../../extension/src/ui/shared/Popup';
-import { THEMES } from '../../../extension/src/ui/theme';
+import { Popup } from '../../../../apps/iris/src/ui/shared/Popup';
+import { THEMES } from '../../../../apps/iris/src/ui/theme';
 import './theme-selector.css';
 
 interface ThemePopupProps {

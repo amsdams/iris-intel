@@ -18,15 +18,15 @@ import {
   PasscodeResponseData,
   IntelInventoryItemData
 } from '@iris/core';
-import PortalNamesPlugin from '../../../plugins/src/portal-names';
-import ThemeSelectorPlugin from '../../../plugins/src/theme-selector';
-import PlayerTrackerPlugin from '../../../plugins/src/player-tracker';
-import ExportDataPlugin from '../../../plugins/src/export-data';
-import PortalLevelFillPlugin from '../../../plugins/src/portal-level-fill';
-import PortalHealthFillPlugin from '../../../plugins/src/portal-health-fill';
-import PortalLevelLabelsPlugin from '../../../plugins/src/portal-level-labels';
-import PortalKeyCountLabelsPlugin from '../../../plugins/src/portal-key-count-labels';
-import PlannedLinksPlugin from '../../../plugins/src/planned-links';
+import PortalNamesPlugin from '../../../../packages/plugins/src/portal-names';
+import ThemeSelectorPlugin from '../../../../packages/plugins/src/theme-selector';
+import PlayerTrackerPlugin from '../../../../packages/plugins/src/player-tracker';
+import ExportDataPlugin from '../../../../packages/plugins/src/export-data';
+import PortalLevelFillPlugin from '../../../../packages/plugins/src/portal-level-fill';
+import PortalHealthFillPlugin from '../../../../packages/plugins/src/portal-health-fill';
+import PortalLevelLabelsPlugin from '../../../../packages/plugins/src/portal-level-labels';
+import PortalKeyCountLabelsPlugin from '../../../../packages/plugins/src/portal-key-count-labels';
+import PlannedLinksPlugin from '../../../../packages/plugins/src/planned-links';
 import { IRISPlugin } from '@iris/plugin-sdk';
 import { handleEntities } from './domains/entities/handler';
 import { getKnownOrnamentIds } from './domains/entities/ornaments';

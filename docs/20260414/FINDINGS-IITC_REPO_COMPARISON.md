@@ -122,9 +122,9 @@ IRIS uses a normalized Zustand store in [packages/core/src/store.ts](../../packa
 Compared to IITC:
 
 - entities are stored as plain records, not long-lived marker objects
-- map render is rebuilt from store state in [MapOverlay.tsx](../../packages/extension/src/ui/domains/map/MapOverlay.tsx:1)
+- map render is rebuilt from store state in [MapOverlay.tsx](../../apps/iris/src/ui/domains/map/MapOverlay.tsx:1)
 - passive interception and active fetches are separated
-- auxiliary request policy is coordinated in [request-coordinator.ts](../../packages/extension/src/content/runtime/request-coordinator.ts)
+- auxiliary request policy is coordinated in [request-coordinator.ts](../../apps/iris/src/content/runtime/request-coordinator.ts)
 
 ### 2. Core entity refresh is less IRIS-owned than IITC
 IITC directly owns entity refresh. IRIS mostly piggybacks Intel for core map entities and only actively owns selected auxiliary endpoints.
@@ -138,8 +138,8 @@ That means:
 ### 3. Artifacts and ornaments are currently lighter-weight in IRIS
 IRIS now supports both:
 
-- artifacts via [artifacts/parser.ts](../../packages/extension/src/content/domains/artifacts/parser.ts:1) and artifact rendering in [feature-builders.ts](../../packages/extension/src/ui/domains/map/feature-builders.ts:119)
-- ornaments via entity parsing in [entities/parser.ts](../../packages/extension/src/content/domains/entities/parser.ts:1) and ornament overlay building in [feature-builders.ts](../../packages/extension/src/ui/domains/map/feature-builders.ts:173)
+- artifacts via [artifacts/parser.ts](../../apps/iris/src/content/domains/artifacts/parser.ts:1) and artifact rendering in [feature-builders.ts](../../apps/iris/src/ui/domains/map/feature-builders.ts:119)
+- ornaments via entity parsing in [entities/parser.ts](../../apps/iris/src/content/domains/entities/parser.ts:1) and ornament overlay building in [feature-builders.ts](../../apps/iris/src/ui/domains/map/feature-builders.ts:173)
 
 But compared to IITC:
 

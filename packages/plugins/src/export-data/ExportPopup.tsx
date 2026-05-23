@@ -1,9 +1,9 @@
 import { JSX } from 'preact';
 import { useState } from 'preact/hooks';
 import { Field, Link, Portal, useStore } from '@iris/core';
-import { Popup } from '../../../extension/src/ui/shared/Popup';
-import { PopupActionButton, PopupActionRow } from '../../../extension/src/ui/shared/PopupActions';
-import { THEMES } from '../../../extension/src/ui/theme';
+import { Popup } from '../../../../apps/iris/src/ui/shared/Popup';
+import { PopupActionButton, PopupActionRow } from '../../../../apps/iris/src/ui/shared/PopupActions';
+import { THEMES } from '../../../../apps/iris/src/ui/theme';
 import './ExportPopup.css';
 
 interface ExportPopupProps {
