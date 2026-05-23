@@ -1,5 +1,6 @@
 import { IRISPlugin, IRIS_API, InventoryItem, Portal } from '@iris/plugin-sdk';
 import { InventoryParser } from '@iris/core';
+import { INGRESS_MISC_COLORS } from '@iris/core/ingress-map-style';
 
 let unsubscribePortalKeysInventory: (() => void) | undefined;
 let unsubscribePortalKeysPortals: (() => void) | undefined;
@@ -29,7 +30,7 @@ function buildFeatures(portals: Record<string, Portal>, inventory: InventoryItem
         },
         properties: {
           id: `portal-key-count:${portal.id}`,
-          color: '#D1FFFF',
+          color: INGRESS_MISC_COLORS.KEY,
           label: String(count),
           isHtmlMarker: true,
           isLabelMarker: true,

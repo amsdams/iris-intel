@@ -1,11 +1,12 @@
 import { IRISPlugin, IRIS_API, Portal } from '@iris/plugin-sdk';
+import { INGRESS_HEALTH_COLORS } from '@iris/core/ingress-map-style';
 
 function getRechargeColor(health: number): string | null {
   if (health >= 100) return null;
-  if (health > 85) return '#ffff00';
-  if (health > 50) return '#ff9900';
-  if (health > 15) return '#ff0000';
-  return '#ff00ff';
+  if (health > 85) return INGRESS_HEALTH_COLORS.medium;
+  if (health > 50) return INGRESS_HEALTH_COLORS.warning;
+  if (health > 15) return INGRESS_HEALTH_COLORS.low;
+  return INGRESS_HEALTH_COLORS.critical;
 }
 
 function getRechargeOpacity(health: number): number {

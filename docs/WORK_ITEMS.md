@@ -1186,7 +1186,7 @@ Tasks:
 | Tune Mini-IRIS explicit portal jump behavior                | Done   | explicit portal jumps now use a shorter `easeTo` page-world command instead of a long `flyTo`; geolocation keeps the existing `flyTo` behavior |
 | Normalize Mini-IRIS font usage                              | Open   | smoke testing found mixed-looking fonts across Mini-IRIS surfaces; audit CSS/font-family inheritance and standardize without broad UI redesign |
 | Replace Mini-IRIS player activity pulse with pin marker     | Done   | Mini-IRIS player activity now uses a compact static team-coloured pin marker and no longer runs a per-frame pulse loop for player points |
-| Align Mini-IRIS portal/link/field styling with IRIS         | Open   | compare faction colours, portal radius/stroke, link widths/opacity, field fill opacity, and moving-mode simplification so Mini-IRIS map entities read closer to full IRIS without adding full IRIS UI weight |
+| Align Mini-IRIS portal/link/field styling with IRIS         | Done   | Mini-IRIS, IRIS, and bundled overlay plugins now share core Ingress default colours for teams, levels/resos/XMPs, item rarity, mod rarity, item types, keys/XM/tracker, health, artifacts, ornaments, portal history, and base entity style constants while preserving Mini toggles |
 
 ## Snapshot And Reference Sources
 

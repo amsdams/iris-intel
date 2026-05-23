@@ -17,6 +17,7 @@
     "jsxImportSource": "preact",
     "paths": {
       "@iris/core": ["./packages/core/src"],
+      "@iris/core/*": ["./packages/core/src/*"],
       "@iris/plugin-sdk": ["./packages/plugin-sdk/src"]
     }
   },

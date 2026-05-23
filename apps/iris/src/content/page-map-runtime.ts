@@ -1,4 +1,5 @@
 import maplibregl from 'maplibre-gl';
+import { INGRESS_ENTITY_STYLE, INGRESS_MISC_COLORS } from '@iris/core/ingress-map-style';
 import {
     PAGE_MAP_RUNTIME_MESSAGES,
     PageMapRuntimeBounds,
@@ -368,8 +369,8 @@ function getPageMap(): Promise<maplibregl.Map> {
                         source: 'iris-map-fields',
                         paint: {
                             'fill-color': ['coalesce', ['get', 'color'], '#999999'],
-                            'fill-opacity': 0.3,
-                            'fill-antialias': false,
+                            'fill-opacity': INGRESS_ENTITY_STYLE.fieldFillOpacity,
+                            'fill-antialias': INGRESS_ENTITY_STYLE.fieldAntialias,
                         },
                     },
                     {
@@ -426,8 +427,8 @@ function getPageMap(): Promise<maplibregl.Map> {
                         source: 'iris-map-links',
                         paint: {
                             'line-color': ['coalesce', ['get', 'color'], '#999999'],
-                            'line-width': 2,
-                            'line-opacity': 1,
+                            'line-width': INGRESS_ENTITY_STYLE.linkWidth,
+                            'line-opacity': INGRESS_ENTITY_STYLE.linkOpacity,
                         },
                     },
                     {
@@ -437,17 +438,17 @@ function getPageMap(): Promise<maplibregl.Map> {
                         paint: {
                             'circle-radius': [
                                 'interpolate', ['linear'], ['zoom'],
-                                3, 1,
-                                10, 2,
-                                15, 6,
+                                INGRESS_ENTITY_STYLE.portalRadiusStops[0].zoom, INGRESS_ENTITY_STYLE.portalRadiusStops[0].radius,
+                                INGRESS_ENTITY_STYLE.portalRadiusStops[1].zoom, INGRESS_ENTITY_STYLE.portalRadiusStops[1].radius,
+                                INGRESS_ENTITY_STYLE.portalRadiusStops[2].zoom, INGRESS_ENTITY_STYLE.portalRadiusStops[2].radius,
                             ],
                             'circle-color': ['coalesce', ['get', 'color'], '#999999'],
                             'circle-opacity': [
                                 'interpolate', ['linear'], ['coalesce', ['get', 'health'], 100],
-                                0, 0.1,
-                                100, 0.7,
+                                0, INGRESS_ENTITY_STYLE.portalMinHealthOpacity,
+                                100, INGRESS_ENTITY_STYLE.portalBaseOpacity,
                             ],
-                            'circle-stroke-width': 1.5,
+                            'circle-stroke-width': INGRESS_ENTITY_STYLE.portalStrokeWidth,
                             'circle-stroke-color': ['coalesce', ['get', 'color'], '#999999'],
                             'circle-stroke-opacity': 1,
                         },
@@ -503,7 +504,7 @@ function getPageMap(): Promise<maplibregl.Map> {
                                 10, 7,
                                 15, 14,
                             ],
-                            'circle-color': '#FF00FF',
+                            'circle-color': INGRESS_MISC_COLORS.ARTIFACT,
                             'circle-opacity': 0.12,
                             'circle-stroke-width': [
                                 'interpolate', ['linear'], ['zoom'],
@@ -511,7 +512,7 @@ function getPageMap(): Promise<maplibregl.Map> {
                                 10, 2.5,
                                 15, 3.25,
                             ],
-                            'circle-stroke-color': '#FF00FF',
+                            'circle-stroke-color': INGRESS_MISC_COLORS.ARTIFACT,
                             'circle-stroke-opacity': 0.95,
                         },
                     },
@@ -526,7 +527,7 @@ function getPageMap(): Promise<maplibregl.Map> {
                                 10, 5,
                                 15, 11,
                             ],
-                            'circle-color': '#FFCE00',
+                            'circle-color': INGRESS_MISC_COLORS.ORNAMENT,
                             'circle-opacity': 0.16,
                             'circle-stroke-width': [
                                 'interpolate', ['linear'], ['zoom'],
@@ -534,7 +535,7 @@ function getPageMap(): Promise<maplibregl.Map> {
                                 10, 2.25,
                                 15, 3,
                             ],
-                            'circle-stroke-color': '#FFCE00',
+                            'circle-stroke-color': INGRESS_MISC_COLORS.ORNAMENT,
                             'circle-stroke-opacity': 0.95,
                         },
                     },

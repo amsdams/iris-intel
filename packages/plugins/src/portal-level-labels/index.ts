@@ -1,20 +1,10 @@
 import { IRISPlugin, IRIS_API, Portal } from '@iris/plugin-sdk';
+import { INGRESS_LEVEL_COLORS } from '@iris/core/ingress-map-style';
 
 let unsubscribePortalLevels: (() => void) | undefined;
 let unsubscribePortalLevelMap: (() => void) | undefined;
 
 const MIN_LABEL_ZOOM = 14;
-
-const LEVEL_COLORS: Record<number, string> = {
-  1: '#FECE5A',
-  2: '#FFA630',
-  3: '#FF7315',
-  4: '#E80000',
-  5: '#FF0099',
-  6: '#EE26CD',
-  7: '#C124E0',
-  8: '#9627F4',
-};
 
 function buildFeatures(portals: Record<string, Portal>): GeoJSON.Feature[] {
   return Object.values(portals)
@@ -28,7 +18,7 @@ function buildFeatures(portals: Record<string, Portal>): GeoJSON.Feature[] {
       },
       properties: {
         id: `portal-level-label:${portal.id}`,
-        color: LEVEL_COLORS[portal.level as number] || '#ffffff',
+        color: INGRESS_LEVEL_COLORS[portal.level as keyof typeof INGRESS_LEVEL_COLORS] || '#ffffff',
         label: `L${portal.level}`,
         isHtmlMarker: true,
         isLabelMarker: true,

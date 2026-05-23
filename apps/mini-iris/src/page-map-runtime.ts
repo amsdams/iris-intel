@@ -1,6 +1,7 @@
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { CircleLayerSpecification, SymbolLayerSpecification } from '@maplibre/maplibre-gl-style-spec';
+import { INGRESS_ENTITY_STYLE, INGRESS_HEALTH_COLORS } from '@iris/core/ingress-map-style';
 import { COLORS, INGRESS_COLORS, ITEM_LEVEL_COLORS, MAP_STYLES, PLAYER_TRACKER_COLORS, type MapStyleName } from './MapConstants';
 import {
     MINI_PAGE_MAP_COMMAND,
@@ -42,32 +43,35 @@ const PORTAL_HEALTH_COLOR_EXPR: CirclePaint['circle-color'] = [
     ['any', ['==', ['get', 'team'], 'N'], ['>=', ['coalesce', ['get', 'health'], 100], 100]],
     PORTAL_TEAM_COLOR_EXPR,
     ['>', ['coalesce', ['get', 'health'], 100], 85],
-    '#ffff00',
+    INGRESS_HEALTH_COLORS.medium,
     ['>', ['coalesce', ['get', 'health'], 100], 50],
-    '#ff9900',
+    INGRESS_HEALTH_COLORS.warning,
     ['>', ['coalesce', ['get', 'health'], 100], 15],
-    '#ff0000',
-    '#ff00ff',
+    INGRESS_HEALTH_COLORS.low,
+    INGRESS_HEALTH_COLORS.critical,
 ];
 const PORTAL_HEALTH_LEVEL_COLOR_EXPR: CirclePaint['circle-color'] = [
     'case',
     ['any', ['==', ['get', 'team'], 'N'], ['>=', ['coalesce', ['get', 'health'], 100], 100]],
     PORTAL_LEVEL_COLOR_EXPR,
     ['>', ['coalesce', ['get', 'health'], 100], 85],
-    '#ffff00',
+    INGRESS_HEALTH_COLORS.medium,
     ['>', ['coalesce', ['get', 'health'], 100], 50],
-    '#ff9900',
+    INGRESS_HEALTH_COLORS.warning,
     ['>', ['coalesce', ['get', 'health'], 100], 15],
-    '#ff0000',
-    '#ff00ff',
+    INGRESS_HEALTH_COLORS.low,
+    INGRESS_HEALTH_COLORS.critical,
 ];
 const PORTAL_HEALTH_OPACITY_EXPR: CirclePaint['circle-opacity'] = [
-    'case',
-    ['>=', ['coalesce', ['get', 'health'], 100], 100],
-    1,
-    ['>', ['coalesce', ['get', 'health'], 100], 75],
-    ['+', ['*', ['-', 1, ['/', ['coalesce', ['get', 'health'], 100], 100]], 0.5], 0.5],
-    ['+', ['*', ['-', 1, ['/', ['coalesce', ['get', 'health'], 100], 100]], 0.75], 0.25],
+    'interpolate', ['linear'], ['coalesce', ['get', 'health'], 100],
+    0, INGRESS_ENTITY_STYLE.portalMinHealthOpacity,
+    100, INGRESS_ENTITY_STYLE.portalBaseOpacity,
+];
+const PORTAL_RADIUS_EXPR: CirclePaint['circle-radius'] = [
+    'interpolate', ['linear'], ['zoom'],
+    INGRESS_ENTITY_STYLE.portalRadiusStops[0].zoom, INGRESS_ENTITY_STYLE.portalRadiusStops[0].radius,
+    INGRESS_ENTITY_STYLE.portalRadiusStops[1].zoom, INGRESS_ENTITY_STYLE.portalRadiusStops[1].radius,
+    INGRESS_ENTITY_STYLE.portalRadiusStops[2].zoom, INGRESS_ENTITY_STYLE.portalRadiusStops[2].radius,
 ];
 const SELECTABLE_LAYERS = ['p', 'f-enl', 'f-res', 'f-mac', 'l-enl', 'l-res', 'l-mac'] as const;
 const MOBILE_LONG_PRESS_MS = 650;
@@ -126,12 +130,12 @@ function buildStyle(styleName: MapStyleName): maplibregl.StyleSpecification {
         },
         layers: [
             { id: 'carto', type: 'raster', source: 'carto' },
-            { id: 'f-enl', type: 'fill', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'E']], paint: { 'fill-color': COLORS.E, 'fill-opacity': 0.3 } },
-            { id: 'f-res', type: 'fill', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'R']], paint: { 'fill-color': COLORS.R, 'fill-opacity': 0.3 } },
-            { id: 'f-mac', type: 'fill', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'M']], paint: { 'fill-color': COLORS.M, 'fill-opacity': 0.3 } },
-            { id: 'l-enl', type: 'line', source: 'entities', filter: ['all', ['==', 'type', 'link'], ['==', 'team', 'E']], paint: { 'line-color': COLORS.E, 'line-width': ['coalesce', ['get', 'width'], 2] } },
-            { id: 'l-res', type: 'line', source: 'entities', filter: ['all', ['==', 'type', 'link'], ['==', 'team', 'R']], paint: { 'line-color': COLORS.R, 'line-width': ['coalesce', ['get', 'width'], 2] } },
-            { id: 'l-mac', type: 'line', source: 'entities', filter: ['all', ['==', 'type', 'link'], ['==', 'team', 'M']], paint: { 'line-color': COLORS.M, 'line-width': ['coalesce', ['get', 'width'], 2] } },
+            { id: 'f-enl', type: 'fill', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'E']], paint: { 'fill-color': COLORS.E, 'fill-opacity': INGRESS_ENTITY_STYLE.fieldFillOpacity, 'fill-antialias': INGRESS_ENTITY_STYLE.fieldAntialias } },
+            { id: 'f-res', type: 'fill', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'R']], paint: { 'fill-color': COLORS.R, 'fill-opacity': INGRESS_ENTITY_STYLE.fieldFillOpacity, 'fill-antialias': INGRESS_ENTITY_STYLE.fieldAntialias } },
+            { id: 'f-mac', type: 'fill', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'M']], paint: { 'fill-color': COLORS.M, 'fill-opacity': INGRESS_ENTITY_STYLE.fieldFillOpacity, 'fill-antialias': INGRESS_ENTITY_STYLE.fieldAntialias } },
+            { id: 'l-enl', type: 'line', source: 'entities', filter: ['all', ['==', 'type', 'link'], ['==', 'team', 'E']], paint: { 'line-color': COLORS.E, 'line-width': INGRESS_ENTITY_STYLE.linkWidth, 'line-opacity': INGRESS_ENTITY_STYLE.linkOpacity } },
+            { id: 'l-res', type: 'line', source: 'entities', filter: ['all', ['==', 'type', 'link'], ['==', 'team', 'R']], paint: { 'line-color': COLORS.R, 'line-width': INGRESS_ENTITY_STYLE.linkWidth, 'line-opacity': INGRESS_ENTITY_STYLE.linkOpacity } },
+            { id: 'l-mac', type: 'line', source: 'entities', filter: ['all', ['==', 'type', 'link'], ['==', 'team', 'M']], paint: { 'line-color': COLORS.M, 'line-width': INGRESS_ENTITY_STYLE.linkWidth, 'line-opacity': INGRESS_ENTITY_STYLE.linkOpacity } },
             { id: 'f-ext-enl', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'E']], paint: { 'fill-extrusion-color': COLORS.E, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.5 }, layout: { visibility: 'none' } },
             { id: 'f-ext-res', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'R']], paint: { 'fill-extrusion-color': COLORS.R, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.5 }, layout: { visibility: 'none' } },
             { id: 'f-ext-mac', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'M']], paint: { 'fill-extrusion-color': COLORS.M, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.5 }, layout: { visibility: 'none' } },
@@ -142,13 +146,13 @@ function buildStyle(styleName: MapStyleName): maplibregl.StyleSpecification {
             { id: 'sel-f', type: 'line', source: 'selection', filter: ['==', 'type', 'field'], paint: { 'line-color': '#fff', 'line-width': 3 } },
             { id: 'sel-l', type: 'line', source: 'selection', filter: ['==', 'type', 'link'], paint: { 'line-color': '#fff', 'line-width': 4 } },
             { id: 'sel-p', type: 'circle', source: 'selection', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': 12, 'circle-color': 'transparent', 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 } },
-            { id: 'p', type: 'circle', source: 'entities', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': ['coalesce', ['get', 'radius'], 2], 'circle-color': PORTAL_TEAM_COLOR_EXPR, 'circle-opacity': 1, 'circle-stroke-color': PORTAL_TEAM_COLOR_EXPR, 'circle-stroke-width': 1.5, 'circle-stroke-opacity': 1 } },
-            { id: 'p-history-visited-highlight', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'visitedHighlight', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 5], 'circle-color': 'transparent', 'circle-stroke-color': '#B56DFF', 'circle-stroke-width': 2, 'circle-opacity': 0.9 } },
-            { id: 'p-history-captured-highlight', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'capturedHighlight', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 8], 'circle-color': 'transparent', 'circle-stroke-color': '#FF8A3D', 'circle-stroke-width': 2, 'circle-opacity': 0.9 } },
-            { id: 'p-history-scanned-highlight', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'scannedHighlight', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 11], 'circle-color': 'transparent', 'circle-stroke-color': '#00D9FF', 'circle-stroke-width': 2, 'circle-opacity': 0.9 } },
-            { id: 'p-history-visited-inverse', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'visitedInverse', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 5], 'circle-color': '#B56DFF', 'circle-opacity': 0.14, 'circle-stroke-color': '#B56DFF', 'circle-stroke-width': 2, 'circle-stroke-opacity': 0.85 } },
-            { id: 'p-history-captured-inverse', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'capturedInverse', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 8], 'circle-color': '#FF8A3D', 'circle-opacity': 0.14, 'circle-stroke-color': '#FF8A3D', 'circle-stroke-width': 2, 'circle-stroke-opacity': 0.85 } },
-            { id: 'p-history-scanned-inverse', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'scannedInverse', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 11], 'circle-color': '#00D9FF', 'circle-opacity': 0.14, 'circle-stroke-color': '#00D9FF', 'circle-stroke-width': 2, 'circle-stroke-opacity': 0.85 } },
+            { id: 'p', type: 'circle', source: 'entities', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': PORTAL_RADIUS_EXPR, 'circle-color': PORTAL_TEAM_COLOR_EXPR, 'circle-opacity': INGRESS_ENTITY_STYLE.portalBaseOpacity, 'circle-stroke-color': PORTAL_TEAM_COLOR_EXPR, 'circle-stroke-width': INGRESS_ENTITY_STYLE.portalStrokeWidth, 'circle-stroke-opacity': 1 } },
+            { id: 'p-history-visited-highlight', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'visitedHighlight', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 5], 'circle-color': 'transparent', 'circle-stroke-color': INGRESS_COLORS.VISITED, 'circle-stroke-width': 2, 'circle-opacity': 0.9 } },
+            { id: 'p-history-captured-highlight', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'capturedHighlight', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 8], 'circle-color': 'transparent', 'circle-stroke-color': INGRESS_COLORS.CAPTURED, 'circle-stroke-width': 2, 'circle-opacity': 0.9 } },
+            { id: 'p-history-scanned-highlight', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'scannedHighlight', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 11], 'circle-color': 'transparent', 'circle-stroke-color': INGRESS_COLORS.SCANNED, 'circle-stroke-width': 2, 'circle-opacity': 0.9 } },
+            { id: 'p-history-visited-inverse', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'visitedInverse', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 5], 'circle-color': INGRESS_COLORS.VISITED, 'circle-opacity': 0.14, 'circle-stroke-color': INGRESS_COLORS.VISITED, 'circle-stroke-width': 2, 'circle-stroke-opacity': 0.85 } },
+            { id: 'p-history-captured-inverse', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'capturedInverse', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 8], 'circle-color': INGRESS_COLORS.CAPTURED, 'circle-opacity': 0.14, 'circle-stroke-color': INGRESS_COLORS.CAPTURED, 'circle-stroke-width': 2, 'circle-stroke-opacity': 0.85 } },
+            { id: 'p-history-scanned-inverse', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'scannedInverse', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 11], 'circle-color': INGRESS_COLORS.SCANNED, 'circle-opacity': 0.14, 'circle-stroke-color': INGRESS_COLORS.SCANNED, 'circle-stroke-width': 2, 'circle-stroke-opacity': 0.85 } },
             { id: 'p-key-count-bg', type: 'circle', source: 'entities', filter: ['==', 'type', 'portal-key-count'], paint: { 'circle-color': '#000000', 'circle-radius': 12, 'circle-translate': [0, -18], 'circle-opacity': 0.78, 'circle-stroke-color': ['match', ['get', 'team'], 'E', COLORS.E, 'R', COLORS.R, 'M', COLORS.M, COLORS.N], 'circle-stroke-width': 1.8, 'circle-stroke-opacity': 0.95 } },
             { id: 'p-key-count-total', type: 'symbol', source: 'entities', filter: ['==', 'type', 'portal-key-count'], layout: { 'text-field': ['get', 'totalLabel'], 'text-size': 12, 'text-anchor': 'center', 'text-allow-overlap': true, 'text-ignore-placement': true }, paint: { 'text-color': INGRESS_COLORS.KEY, 'text-halo-color': '#000000', 'text-halo-width': 1.4, 'text-opacity': 1, 'text-translate': [0, -20] } },
             { id: 'p-key-count-split', type: 'symbol', source: 'entities', filter: ['==', 'type', 'portal-key-count'], layout: { 'text-field': ['get', 'splitLabel'], 'text-size': 8, 'text-offset': [0, 0.95], 'text-anchor': 'center', 'text-allow-overlap': true, 'text-ignore-placement': true }, paint: { 'text-color': '#ffffff', 'text-halo-color': '#000000', 'text-halo-width': 1.2, 'text-opacity': 0.95, 'text-translate': [0, -20] } },
@@ -322,7 +326,7 @@ function setPortalPaint(levelColorEnabled: boolean, healthColorEnabled: boolean)
         ? (levelColorEnabled ? PORTAL_HEALTH_LEVEL_COLOR_EXPR : PORTAL_HEALTH_COLOR_EXPR)
         : (levelColorEnabled ? PORTAL_LEVEL_COLOR_EXPR : PORTAL_TEAM_COLOR_EXPR);
     map.setPaintProperty('p', 'circle-color', fillColor);
-    map.setPaintProperty('p', 'circle-opacity', healthColorEnabled ? PORTAL_HEALTH_OPACITY_EXPR : 1);
+    map.setPaintProperty('p', 'circle-opacity', healthColorEnabled ? PORTAL_HEALTH_OPACITY_EXPR : INGRESS_ENTITY_STYLE.portalBaseOpacity);
 }
 
 function initMap(command: Extract<MiniPageMapCommandMessage['command'], { action: 'init' }>): void {

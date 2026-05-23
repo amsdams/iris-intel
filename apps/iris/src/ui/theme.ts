@@ -1,3 +1,14 @@
+import {
+    INGRESS_HEALTH_COLORS,
+    INGRESS_ITEM_RARITY_COLORS,
+    INGRESS_ITEM_TYPE_COLORS,
+    INGRESS_LEVEL_COLORS,
+    INGRESS_MISC_COLORS,
+    INGRESS_MOD_RARITY_COLORS,
+    INGRESS_PORTAL_HISTORY_COLORS,
+    INGRESS_TEAM_COLORS,
+} from '@iris/core/ingress-map-style';
+
 export interface ThemeColors {
     E: string;
     R: string;
@@ -11,32 +22,6 @@ export interface ThemeColors {
     // Backward compatibility alias; prefer ITEM_RARITY for new code.
     RARITY: Record<string, string>;
 }
-
-const INGRESS_LEVELS: Record<number, string> = {
-    1: '#FECE5A',
-    2: '#FFA630',
-    3: '#FF7315',
-    4: '#E80000',
-    5: '#FF0099',
-    6: '#EE26CD',
-    7: '#C124E0',
-    8: '#9627F4',
-};
-
-const INGRESS_ITEM_RARITY = {
-    COMMON: '#8CFFBF',
-    RARE: '#73A8FF',
-    VERY_RARE: '#B08CFF',
-    EXTREMELY_RARE: '#FF0000',
-    VERY_COMMON: '#FFFFFF',
-    SPECIAL: '#D1FFFF',
-};
-
-const INGRESS_MOD_RARITY = {
-    COMMON: '#49EBC3',
-    RARE: '#B68BFF',
-    VERY_RARE: '#F781FF',
-};
 
 const CYBER_ITEM_RARITY = {
     VERY_COMMON: '#FFFFFF',
@@ -56,27 +41,17 @@ const SOFTER_ITEM_RARITY = {
     SPECIAL: '#80DEEA',
 };
 
-const DEFAULT_ITEM_TYPES = {
-    PORTAL_LINK_KEY: '#D1FFFF',
-    MEDIA: '#FFFFFF',
-    CAPSULE: '#73A8FF',
-    KINETIC_CAPSULE: '#8CFFBF',
-    VIRUS: '#B08CFF',
-    POWERUP: '#FFFFFF',
-    AEGIS_SHIELD: '#00D4AA',
-};
-
 const INTEL_DEFAULT_THEME: ThemeColors = {
-    E: '#03DC03',
-    R: '#0088FF',
-    M: '#FF1010',
-    N: '#C0C0C0',
-    AQUA: '#D1FFFF',
-    LEVELS: INGRESS_LEVELS,
-    ITEM_RARITY: INGRESS_ITEM_RARITY,
-    MOD_RARITY: INGRESS_MOD_RARITY,
-    ITEM_TYPES: DEFAULT_ITEM_TYPES,
-    RARITY: INGRESS_ITEM_RARITY,
+    E: INGRESS_TEAM_COLORS.E,
+    R: INGRESS_TEAM_COLORS.R,
+    M: INGRESS_TEAM_COLORS.M,
+    N: INGRESS_TEAM_COLORS.N,
+    AQUA: INGRESS_MISC_COLORS.AQUA,
+    LEVELS: {...INGRESS_LEVEL_COLORS},
+    ITEM_RARITY: {...INGRESS_ITEM_RARITY_COLORS},
+    MOD_RARITY: {...INGRESS_MOD_RARITY_COLORS},
+    ITEM_TYPES: {...INGRESS_ITEM_TYPE_COLORS},
+    RARITY: {...INGRESS_ITEM_RARITY_COLORS},
 };
 
 export const THEMES: Record<string, ThemeColors> = {
@@ -87,14 +62,14 @@ export const THEMES: Record<string, ThemeColors> = {
         M: '#ff0000',
         N: '#ffffff',
         AQUA: '#00ffff',
-        LEVELS: INGRESS_LEVELS,
-        ITEM_RARITY: INGRESS_ITEM_RARITY,
-        MOD_RARITY: INGRESS_MOD_RARITY,
+        LEVELS: {...INGRESS_LEVEL_COLORS},
+        ITEM_RARITY: {...INGRESS_ITEM_RARITY_COLORS},
+        MOD_RARITY: {...INGRESS_MOD_RARITY_COLORS},
         ITEM_TYPES: {
-            ...DEFAULT_ITEM_TYPES,
+            ...INGRESS_ITEM_TYPE_COLORS,
             PORTAL_LINK_KEY: '#00ffff',
         },
-        RARITY: INGRESS_ITEM_RARITY,
+        RARITY: {...INGRESS_ITEM_RARITY_COLORS},
     },
     CYBER: {
         E: '#00ffa3',
@@ -102,7 +77,7 @@ export const THEMES: Record<string, ThemeColors> = {
         M: '#ff0055',
         N: '#e0e0e0',
         AQUA: '#00e5ff',
-        LEVELS: INGRESS_LEVELS,
+        LEVELS: {...INGRESS_LEVEL_COLORS},
         ITEM_RARITY: CYBER_ITEM_RARITY,
         MOD_RARITY: {
             VERY_RARE: '#FF00FF',
@@ -110,10 +85,10 @@ export const THEMES: Record<string, ThemeColors> = {
             COMMON: '#00FF00',
         },
         ITEM_TYPES: {
-            ...DEFAULT_ITEM_TYPES,
+            ...INGRESS_ITEM_TYPE_COLORS,
             PORTAL_LINK_KEY: '#00e5ff',
             POWERUP: '#00e5ff',
-            AEGIS_SHIELD: '#00D4AA',
+            AEGIS_SHIELD: INGRESS_MISC_COLORS.AEGIS_SHIELD,
         },
         RARITY: CYBER_ITEM_RARITY,
     },
@@ -123,7 +98,7 @@ export const THEMES: Record<string, ThemeColors> = {
         M: '#ff5252',
         N: '#cfd8dc',
         AQUA: '#4dd0e1',
-        LEVELS: INGRESS_LEVELS,
+        LEVELS: {...INGRESS_LEVEL_COLORS},
         ITEM_RARITY: SOFTER_ITEM_RARITY,
         MOD_RARITY: {
             VERY_RARE: '#CE93D8',
@@ -131,10 +106,10 @@ export const THEMES: Record<string, ThemeColors> = {
             COMMON: '#A5D6A7',
         },
         ITEM_TYPES: {
-            ...DEFAULT_ITEM_TYPES,
+            ...INGRESS_ITEM_TYPE_COLORS,
             PORTAL_LINK_KEY: '#4dd0e1',
             POWERUP: '#4dd0e1',
-            AEGIS_SHIELD: '#00D4AA',
+            AEGIS_SHIELD: INGRESS_MISC_COLORS.AEGIS_SHIELD,
         },
         RARITY: SOFTER_ITEM_RARITY,
     },
@@ -147,7 +122,7 @@ export function getItemRarityColor(theme: ThemeColors, rarity?: string): string 
 
 export function getModRarityColor(theme: ThemeColors, rarity?: string, name?: string, type?: string): string {
     const isAegis = type === 'EXTRA_SHIELD' || (name && name.toLowerCase().includes('aegis'));
-    if (isAegis) return theme.ITEM_TYPES.AEGIS_SHIELD || '#00D4AA';
+    if (isAegis) return theme.ITEM_TYPES.AEGIS_SHIELD || INGRESS_MISC_COLORS.AEGIS_SHIELD;
     if (!rarity) return UI_COLORS.TEXT_BASE;
     return theme.MOD_RARITY[rarity.toUpperCase()] || UI_COLORS.TEXT_BASE;
 }
@@ -192,15 +167,15 @@ export const UI_COLORS = {
 };
 
 export const SEMANTIC_COLORS = {
-    HISTORY_VISITED: '#9B59B6',
-    HISTORY_CAPTURED: '#E74C3C',
-    HISTORY_SCANNED: '#F1C40F',
+    HISTORY_VISITED: INGRESS_PORTAL_HISTORY_COLORS.visited,
+    HISTORY_CAPTURED: INGRESS_PORTAL_HISTORY_COLORS.captured,
+    HISTORY_SCANNED: INGRESS_PORTAL_HISTORY_COLORS.scanned,
     MISSION: '#EF8E2E',
-    ARTIFACT: '#FF00FF',
-    ORNAMENT: '#FFCE00',
-    HEALTH_HIGH: '#00FF00',
-    HEALTH_MEDIUM: '#FFFF00',
-    HEALTH_LOW: '#FF0000',
+    ARTIFACT: INGRESS_MISC_COLORS.ARTIFACT,
+    ORNAMENT: INGRESS_MISC_COLORS.ORNAMENT,
+    HEALTH_HIGH: INGRESS_HEALTH_COLORS.high,
+    HEALTH_MEDIUM: INGRESS_HEALTH_COLORS.medium,
+    HEALTH_LOW: INGRESS_HEALTH_COLORS.low,
 } as const;
 
 export const FONT_SIZES = {

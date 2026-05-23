@@ -1,6 +1,7 @@
 import { IRISPlugin, IRIS_API, Portal, Link, Field, Plext, InventoryItem } from '@iris/plugin-sdk';
 import { useStore } from './store';
 import { normalizeTeam } from './index';
+import { INGRESS_TEAM_COLORS } from './ingress-map-style';
 
 export class PluginManager {
   private availablePlugins = new Map<string, IRISPlugin>();
@@ -127,10 +128,10 @@ export class PluginManager {
         getTheme: (): string => useStore.getState().themeId,
         getThemeColors: (): { E: string; R: string; M: string; N: string } => {
           return {
-            E: '#03DC03',
-            R: '#0088FF',
-            M: '#FF1010',
-            N: '#C0C0C0',
+            E: INGRESS_TEAM_COLORS.E,
+            R: INGRESS_TEAM_COLORS.R,
+            M: INGRESS_TEAM_COLORS.M,
+            N: INGRESS_TEAM_COLORS.N,
           };
         }
       },

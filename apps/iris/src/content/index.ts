@@ -44,6 +44,7 @@ import { handlePasscodeResponse } from './domains/passcodes/handler';
 import mockPasscodeData from './domains/passcodes/mock.passcode.json';
 import { IRISMessage } from './runtime/message-types';
 import { createRequestCoordinator } from './runtime/request-coordinator';
+import { INGRESS_TEAM_COLORS } from '@iris/core/ingress-map-style';
 
 declare global {
   interface Window {
@@ -296,7 +297,7 @@ function buildMockCoLocatedPlayerTrackerFeatures(playerCount = 8): GeoJSON.Featu
 
   return names.slice(0, playerCount).map((name, index): GeoJSON.Feature<GeoJSON.Point> => {
     const team = index % 2 === 0 ? 'R' : 'E';
-    const color = team === 'R' ? '#0088FF' : '#03DC03';
+    const color = team === 'R' ? INGRESS_TEAM_COLORS.R : INGRESS_TEAM_COLORS.E;
     const time = now - index * 60_000;
     return {
       type: 'Feature',
