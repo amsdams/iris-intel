@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'preact/hooks';
-import { useStore, globalSpatialIndex, getMinLevelForZoom, InventoryParser, type InventoryItem, type PortalKeyCounts } from '@iris/core';
+import { useStore, globalSpatialIndex, getMinLevelForZoom, InventoryParser, buildWrappedLineSegments, buildWrappedPolygonGeometry, type InventoryItem, type PortalKeyCounts } from '@iris/core';
 import { MockDataGenerator } from './MockDataGenerator';
 import { createCirclePolygon } from './GeoUtils';
 import { INGRESS_COLORS } from './MapConstants';
@@ -201,7 +201,14 @@ export function useMapRenderer(
                 const isVisible = currentPatternMode > 0 || currentLiveMode || (p1 && p2 && (p1.level ?? 0) >= minLevel && (p2.level ?? 0) >= minLevel);
                 if (isVisible && p1 && p2) {
                     const baseProps = { id: l.id, type: 'link', team: l.team };
-                    features.push({ type: 'Feature', id: `l-${l.id}`, geometry: { type: 'LineString', coordinates: [[p1.lng, p1.lat], [p2.lng, p2.lat]] }, properties: { ...baseProps, width: Math.max(2, Math.min(4, 2 + ((zoom - 3) / 12) * 2)) } });
+                    buildWrappedLineSegments([p1.lng, p1.lat], [p2.lng, p2.lat]).forEach((coordinates, segmentIndex) => {
+                        features.push({
+                            type: 'Feature',
+                            id: segmentIndex === 0 ? `l-${l.id}` : `l-${l.id}:${segmentIndex}`,
+                            geometry: { type: 'LineString', coordinates },
+                            properties: { ...baseProps, width: Math.max(2, Math.min(4, 2 + ((zoom - 3) / 12) * 2)) },
+                        });
+                    });
                     linkCount += 1;
                     
                     const dx = p2.lng - p1.lng;
@@ -227,10 +234,10 @@ export function useMapRenderer(
                     return (portal?.level ?? 0) >= minLevel;
                 });
                 if (isVisible) {
-                    const poly = [...points.map((p) => [p.lng, p.lat]), [points[0].lng, points[0].lat]];
+                    const poly = buildWrappedPolygonGeometry(points.map((p) => [p.lng, p.lat]));
                     const base_height = 200;
                     const height = base_height + 5;
-                    features.push({ type: 'Feature', id: `f-${f.id}`, geometry: { type: 'Polygon', coordinates: [poly] }, properties: { id: f.id, type: 'field', team: faction, height, base_height } });
+                    features.push({ type: 'Feature', id: `f-${f.id}`, geometry: poly, properties: { id: f.id, type: 'field', team: faction, height, base_height } });
                     fieldCount += 1;
                     
                     points.forEach((p, i: number) => {

@@ -1,4 +1,4 @@
-import {Artifact, Field, HistoryFilterState, Link, MissionDetails, PlannedLink, PlannedMarker, PlanningTool, Portal} from '@iris/core';
+import {Artifact, Field, HistoryFilterState, Link, MissionDetails, PlannedLink, PlannedMarker, PlanningTool, Portal, buildWrappedLineSegments, buildWrappedPolygonGeometry} from '@iris/core';
 import {PageMapRuntimeCommandMessage} from '../../../shared/page-map-runtime-protocol';
 import {MAP_THEMES, THEMES} from '../../theme';
 import {
@@ -8,7 +8,6 @@ import {
     buildOrnamentFeatures,
     toFeatureCollection,
 } from './feature-builders';
-import {buildWrappedLineSegments, buildWrappedPolygonGeometry} from './wrapped-lines';
 
 interface MapStateSnapshot {
     lat: number;

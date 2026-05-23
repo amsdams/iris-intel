@@ -2,6 +2,7 @@ export * from './store';
 export * from './PluginManager';
 export * from './SpatialIndex';
 export * from './logic/EntityLogic';
+export * from './geometry/wrapped-lines';
 export * from './ZoomPolicy';
 export * from './parsers/EntityParser';
 export * from './parsers/PortalDetailsParser';

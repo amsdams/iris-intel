@@ -1,5 +1,4 @@
-import { Artifact, Field, HistoryFilterState, Link, MissionDetails, Portal } from '@iris/core';
-import {buildWrappedLineSegments, buildWrappedPolygonGeometry} from './wrapped-lines';
+import { Artifact, Field, HistoryFilterState, Link, MissionDetails, Portal, buildWrappedLineSegments, buildWrappedPolygonGeometry } from '@iris/core';
 
 type PortalFeatureProperties = {
   id: string;
