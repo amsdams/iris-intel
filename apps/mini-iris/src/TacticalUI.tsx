@@ -25,6 +25,7 @@ interface TacticalUIProps {
     plextBounds: PlextRequestBounds | null;
     playerHistories: Map<string, PlayerHistory>;
     selected: SelectedEntity | null;
+    selectionDetailsRequestKey: number;
     onNav: (action: string) => void;
     onStyle: (style: string) => void;
     onMode: (mode: string) => void;
@@ -41,7 +42,7 @@ interface TacticalUIProps {
     onPortalHealthColorToggle: () => void;
 }
 
-export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBounds, playerHistories, selected, onNav, onStyle, onMode, onPortalClick, onSelectionPanelOpen, onSelectionPanelClose, portalHistoryLayers, onPortalHistoryLayerToggle, keyOverlayEnabled, onKeyOverlayToggle, portalLevelColorEnabled, onPortalLevelColorToggle, portalHealthColorEnabled, onPortalHealthColorToggle }: TacticalUIProps): JSX.Element {
+export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBounds, playerHistories, selected, selectionDetailsRequestKey, onNav, onStyle, onMode, onPortalClick, onSelectionPanelOpen, onSelectionPanelClose, portalHistoryLayers, onPortalHistoryLayerToggle, keyOverlayEnabled, onKeyOverlayToggle, portalLevelColorEnabled, onPortalLevelColorToggle, portalHealthColorEnabled, onPortalHealthColorToggle }: TacticalUIProps): JSX.Element {
     const [openDrawer, setOpenDrawer] = useState<string | null>(null);
     const logRef = useRef<HTMLDivElement>(null);
     
@@ -58,6 +59,16 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBou
             });
         }
     }, [onSelectionPanelClose, selected]);
+
+    useEffect(() => {
+        if (!selected || selectionDetailsRequestKey === 0) return;
+        setOpenDrawer((current) => {
+            if (current !== 'selection') {
+                onSelectionPanelOpen();
+            }
+            return 'selection';
+        });
+    }, [onSelectionPanelOpen, selected, selectionDetailsRequestKey]);
 
     const formatDelay = (ms: number | null | undefined): string => {
         if (typeof ms !== 'number' || !Number.isFinite(ms)) return '';

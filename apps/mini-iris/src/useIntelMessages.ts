@@ -1,16 +1,14 @@
 import { useEffect } from 'preact/hooks';
-import maplibregl from 'maplibre-gl';
 import { useStore, EntityParser, PortalDetailsParser, GameScoreParser, RegionScoreParser, InventoryParser, PlayerParser, PlextParser, Portal, Link, Field } from '@iris/core';
 import type { GameScoreData, IntelMapData, InventoryData, PlextData, PortalDetailsData, RegionScoreData, PlayerStatsMessage as CorePlayerStatsMessage } from '@iris/core';
 import { isIrisDataMessage, isRecord, numberOrNull, stringOrNull } from './messages';
 
 export function useIntelMessages(
-    map: maplibregl.Map | null,
     liveMode: boolean,
     patternMode: number,
     selected: SelectedEntity | null,
     setSelected: (val: SelectedEntity | null) => void,
-    syncToMap: (map: maplibregl.Map, live: boolean, pattern: number) => void,
+    syncToMap: (live: boolean, pattern: number) => void,
     logEvent: (msg: string) => void
 ): void {
     useEffect(() => {
@@ -47,7 +45,7 @@ export function useIntelMessages(
                 const mapFreshness = getResultMap(msg.data);
                 if (mapFreshness) store.setTileFreshness(Object.keys(mapFreshness));
                 logEvent(`Live Data: ${parsed.portals.length}P, ${parsed.links.length}L`);
-                if (map) syncToMap(map, liveMode, patternMode);
+                syncToMap(liveMode, patternMode);
             } else if (msg.url.includes('getPortalDetails')) {
                 const store = useStore.getState();
                 const guid = stringOrNull(parsedParams.guid) ?? '';
@@ -104,7 +102,7 @@ export function useIntelMessages(
         };
         window.addEventListener('message', handler);
         return (): void => window.removeEventListener('message', handler);
-    }, [map, liveMode, patternMode, logEvent, selected, setSelected, syncToMap]);
+    }, [liveMode, patternMode, logEvent, selected, setSelected, syncToMap]);
 }
 
 interface PlayerStatsMessage {

@@ -1,7 +1,7 @@
 import { useCallback } from 'preact/hooks';
-import maplibregl from 'maplibre-gl';
 import type { InventoryItem } from '@iris/core';
 import { MockDataGenerator } from './MockDataGenerator';
+import type { MiniMapCamera } from './pageMapProtocol';
 
 interface UsePatternsResult {
     loadPattern1: () => void;
@@ -10,7 +10,7 @@ interface UsePatternsResult {
 }
 
 export function usePatterns(
-    map: maplibregl.Map | null, 
+    mapState: MiniMapCamera,
     generator: MockDataGenerator, 
     loadedTileKeys: Set<string>,
     logEvent: (msg: string) => void,
@@ -23,9 +23,8 @@ export function usePatterns(
     }, [generator, onMockInventory]);
 
     const loadPattern1 = useCallback((): void => {
-        if (!map) return;
         generator.clear(); loadedTileKeys.clear();
-        const center = map.getCenter();
+        const center = { lat: mapState.lat, lng: mapState.lng };
         // ENL
         generator.addPortal('A', 'E', center.lng - 0.002, center.lat, 8);
         generator.addPortal('B', 'E', center.lng + 0.002, center.lat, 7);
@@ -48,12 +47,11 @@ export function usePatterns(
         generator.addLink('RL-BD', 'R', 'RB', 'RD');
         const inventoryCount = publishMockInventory();
         logEvent(`PATTERN 1: Single Nested (Mirrored). Mock inventory: ${inventoryCount} items.`);
-    }, [map, generator, loadedTileKeys, logEvent, publishMockInventory]);
+    }, [mapState.lat, mapState.lng, generator, loadedTileKeys, logEvent, publishMockInventory]);
 
     const loadPattern2 = useCallback((): void => {
-        if (!map) return;
         generator.clear(); loadedTileKeys.clear();
-        const center = map.getCenter();
+        const center = { lat: mapState.lat, lng: mapState.lng };
         // ENL
         generator.addPortal('A', 'E', center.lng - 0.002, center.lat, 8);
         generator.addPortal('B', 'E', center.lng + 0.002, center.lat, 7);
@@ -78,12 +76,11 @@ export function usePatterns(
         generator.addLink('RL-CD', 'R', 'RC', 'RD');
         const inventoryCount = publishMockInventory();
         logEvent(`PATTERN 2: Nested Diamond (Mirrored). Mock inventory: ${inventoryCount} items.`);
-    }, [map, generator, loadedTileKeys, logEvent, publishMockInventory]);
+    }, [mapState.lat, mapState.lng, generator, loadedTileKeys, logEvent, publishMockInventory]);
 
     const loadPattern3 = useCallback((): void => {
-        if (!map) return;
         generator.clear(); loadedTileKeys.clear();
-        const center = map.getCenter();
+        const center = { lat: mapState.lat, lng: mapState.lng };
         // ENL
         generator.addPortal('A', 'E', center.lng - 0.002, center.lat, 8);
         generator.addPortal('B', 'E', center.lng + 0.002, center.lat, 7);
@@ -126,7 +123,7 @@ export function usePatterns(
         generator.addPortal('N2', 'N', center.lng + 0.002, center.lat + nOff, 0);
         const inventoryCount = publishMockInventory();
         logEvent(`PATTERN 3: Scaled Global (Mirrored). Mock inventory: ${inventoryCount} items.`);
-    }, [map, generator, loadedTileKeys, logEvent, publishMockInventory]);
+    }, [mapState.lat, mapState.lng, generator, loadedTileKeys, logEvent, publishMockInventory]);
 
     return { loadPattern1, loadPattern2, loadPattern3 };
 }

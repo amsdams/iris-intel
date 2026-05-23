@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef } from 'preact/hooks';
-import maplibregl from 'maplibre-gl';
 import { useStore, globalSpatialIndex, getMinLevelForZoom, InventoryParser, type InventoryItem, type PortalKeyCounts } from '@iris/core';
 import { MockDataGenerator } from './MockDataGenerator';
 import { createCirclePolygon } from './GeoUtils';
 import { INGRESS_COLORS } from './MapConstants';
 import type { PortalHistoryLayerState } from './portalHistory';
+import { postMiniPageMapCommand, type MiniMapView } from './pageMapProtocol';
 
 interface UseMapRendererResult {
-    syncToMap: (currentMap: maplibregl.Map, currentLiveMode: boolean, currentPatternMode: number) => void;
+    syncToMap: (currentView: MiniMapView, currentLiveMode: boolean, currentPatternMode: number) => void;
 }
 
 const KEY_OVERLAY_MIN_ZOOM = 14;
@@ -26,7 +26,6 @@ export function useMapRenderer(
     const liveKeyCountsRef = useRef<Record<string, PortalKeyCounts>>({});
     const mockKeyCountsRef = useRef<Record<string, PortalKeyCounts>>({});
     const pendingSetDataRef = useRef<{
-        source: maplibregl.GeoJSONSource;
         data: GeoJSON.FeatureCollection;
     } | null>(null);
 
@@ -44,7 +43,7 @@ export function useMapRenderer(
         if (!pending) return;
 
         pendingSetDataRef.current = null;
-        pending.source.setData(pending.data);
+        postMiniPageMapCommand({ action: 'sync-data', data: pending.data });
     }, []);
 
     useEffect(() => {
@@ -57,8 +56,8 @@ export function useMapRenderer(
         };
     }, []);
 
-    const scheduleSetData = useCallback((source: maplibregl.GeoJSONSource, data: GeoJSON.FeatureCollection): void => {
-        pendingSetDataRef.current = { source, data };
+    const scheduleSetData = useCallback((data: GeoJSON.FeatureCollection): void => {
+        pendingSetDataRef.current = { data };
         if (pendingFrameRef.current !== null) {
             return;
         }
@@ -69,23 +68,22 @@ export function useMapRenderer(
     }, [flushPendingSetData]);
 
     const syncToMap = useCallback((
-        currentMap: maplibregl.Map, 
+        currentView: MiniMapView,
         currentLiveMode: boolean, 
         currentPatternMode: number
     ): void => {
-        if (!currentMap || !currentMap.getStyle()) return;
-        const bounds = currentMap.getBounds();
-        const zoom = currentMap.getZoom();
+        const bounds = currentView.bounds;
+        const zoom = currentView.zoom;
         const minLevel = getMinLevelForZoom(zoom);
         const showKeyOverlay = keyOverlayEnabled && zoom >= KEY_OVERLAY_MIN_ZOOM;
 
         const buffer = 0.05;
         
         const q = {
-            minLat: bounds.getSouth() - buffer,
-            minLng: bounds.getWest() - buffer,
-            maxLat: bounds.getNorth() + buffer,
-            maxLng: bounds.getEast() + buffer
+            minLat: bounds.south - buffer,
+            minLng: bounds.west - buffer,
+            maxLat: bounds.north + buffer,
+            maxLng: bounds.east + buffer
         };
 
         const results = currentLiveMode ? globalSpatialIndex.query(q) : generator.query({ minX: q.minLng, minY: q.minLat, maxX: q.maxLng, maxY: q.maxLat });
@@ -238,11 +236,8 @@ export function useMapRenderer(
             }
         });
 
-        const source = currentMap.getSource('entities') as maplibregl.GeoJSONSource | undefined;
-        if (source) {
-            scheduleSetData(source, { type: 'FeatureCollection', features });
-            logEvent(`RENDERED: ${features.length} items (Min L:${minLevel})`);
-        }
+        scheduleSetData({ type: 'FeatureCollection', features });
+        logEvent(`RENDERED: ${features.length} items (Min L:${minLevel})`);
     }, [generator, keyOverlayEnabled, logEvent, portalHistoryLayers, scheduleSetData]);
 
     return { syncToMap };

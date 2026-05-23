@@ -1,12 +1,9 @@
-import maplibregl from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
-import type { CircleLayerSpecification } from '@maplibre/maplibre-gl-style-spec';
 import { render, h, Fragment } from 'preact';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'preact/hooks';
 import { MockDataGenerator } from './MockDataGenerator';
-import { useStore, globalSpatialIndex, getMinLevelForZoom, getGridSizeForZoom, Portal, Link, Field, type InventoryItem } from '@iris/core';
+import { useStore, getMinLevelForZoom, getGridSizeForZoom, Portal, Link, Field, type InventoryItem } from '@iris/core';
 import { TacticalUI } from './TacticalUI';
-import { COLORS, INGRESS_COLORS, ITEM_LEVEL_COLORS, MAP_STYLES, PLAYER_TRACKER_COLORS } from './MapConstants';
+import { MAP_STYLES, type MapStyleName } from './MapConstants';
 import { LaunchButton } from './LaunchButton';
 import { MapContainer } from './MapContainer';
 import { usePatterns } from './usePatterns';
@@ -19,7 +16,14 @@ import { useEndpointTelemetry } from './useEndpointTelemetry';
 import type { PlextRequestBounds } from './plextRequests';
 import { throttle } from './GeoUtils';
 import { isEndpointStateMessage, numberOrNull, stringOrNull } from './messages';
-import { DEFAULT_PORTAL_HISTORY_LAYERS, PORTAL_HISTORY_COLORS, nextPortalHistoryMode, type PortalHistoryKey, type PortalHistoryLayerState, type PortalHistoryMode } from './portalHistory';
+import { DEFAULT_PORTAL_HISTORY_LAYERS, nextPortalHistoryMode, type PortalHistoryKey, type PortalHistoryLayerState, type PortalHistoryMode } from './portalHistory';
+import {
+    MINI_PAGE_MAP_EVENT,
+    postMiniPageMapCommand,
+    type MiniMapBounds,
+    type MiniMapView,
+    type MiniPageMapEventMessage,
+} from './pageMapProtocol';
 
 console.log("Mini IRIS (TS): Tactical Overlay | v1.3.35 | TypeScript 6 Test");
 
@@ -44,27 +48,9 @@ interface SavedMapState {
     zoom: number;
 }
 
-type MapStyleName = keyof typeof MAP_STYLES;
-
 type SelectedEntity = { type: 'portal'; data: Portal } | { type: 'link'; data: Link } | { type: 'field'; data: Field };
 
 const EMPTY_PLAYER_HISTORIES = new Map<string, PlayerHistory>();
-type CirclePaint = NonNullable<CircleLayerSpecification['paint']>;
-const PORTAL_TEAM_COLOR_EXPR: CirclePaint['circle-color'] = ['match', ['get', 'team'], 'E', COLORS.E, 'R', COLORS.R, 'M', COLORS.M, COLORS.N];
-const PORTAL_LEVEL_COLOR_EXPR: CirclePaint['circle-color'] = [
-    'match',
-    ['get', 'level'],
-    1, ITEM_LEVEL_COLORS[1],
-    2, ITEM_LEVEL_COLORS[2],
-    3, ITEM_LEVEL_COLORS[3],
-    4, ITEM_LEVEL_COLORS[4],
-    5, ITEM_LEVEL_COLORS[5],
-    6, ITEM_LEVEL_COLORS[6],
-    7, ITEM_LEVEL_COLORS[7],
-    8, ITEM_LEVEL_COLORS[8],
-    COLORS.N,
-];
-const PORTAL_HEALTH_OPACITY_EXPR: CirclePaint['circle-opacity'] = ['interpolate', ['linear'], ['coalesce', ['get', 'health'], 100], 0, 0.15, 100, 1];
 
 function readSavedMapState(): SavedMapState | null {
     try {
@@ -98,6 +84,23 @@ function writeSavedMapState(state: SavedMapState): void {
     } catch {
         // Ignore storage failures.
     }
+}
+
+function createFallbackBounds(state: SavedMapState): MiniMapBounds {
+    const span = Math.max(0.002, 0.18 / (2 ** Math.max(0, state.zoom - 8)));
+    return {
+        south: state.lat - span,
+        west: state.lng - span,
+        north: state.lat + span,
+        east: state.lng + span,
+    };
+}
+
+function createMapView(state: SavedMapState, bounds = createFallbackBounds(state)): MiniMapView {
+    return {
+        ...state,
+        bounds,
+    };
 }
 
 function readSavedMapStyle(): MapStyleName {
@@ -220,11 +223,11 @@ function cleanupLegacyStorage(): void {
 }
 
 function TacticalOverlay(): h.JSX.Element {
-    const mapRef = useRef<maplibregl.Map | null>(null);
     const [generator] = useState(() => new MockDataGenerator());
     const [loadedTileKeys] = useState(() => new Set<string>());
     const [events, setEvents] = useState<{time: string, msg: string}[]>([]);
     const [selected, setSelected] = useState<SelectedEntity | null>(null);
+    const [selectionDetailsRequestKey, setSelectionDetailsRequestKey] = useState(0);
     const [savedMapState] = useState(() => readSavedMapState());
     const [initialMapStyle] = useState(() => readSavedMapStyle());
     const [initialPortalHistoryLayers] = useState(() => readSavedPortalHistoryLayers());
@@ -233,6 +236,11 @@ function TacticalOverlay(): h.JSX.Element {
     const [initialPortalHealthColorEnabled] = useState(() => readSavedPortalHealthColorEnabled());
     const [initialMiniIrisOpen] = useState(() => readSavedMiniIrisOpen());
     const [mapState, setMapState] = useState(() => ({
+        zoom: savedMapState?.zoom ?? DEFAULT_MAP_ZOOM,
+        lat: savedMapState?.lat ?? DEFAULT_MAP_CENTER[1],
+        lng: savedMapState?.lng ?? DEFAULT_MAP_CENTER[0],
+    }));
+    const [mapView, setMapView] = useState(() => createMapView({
         zoom: savedMapState?.zoom ?? DEFAULT_MAP_ZOOM,
         lat: savedMapState?.lat ?? DEFAULT_MAP_CENTER[1],
         lng: savedMapState?.lng ?? DEFAULT_MAP_CENTER[0],
@@ -254,6 +262,7 @@ function TacticalOverlay(): h.JSX.Element {
     const lastSettledLoadRef = useRef<{ lat: number; lng: number; zoom: number } | null>(null);
     const lastIntelSyncRef = useRef<{ lat: number; lng: number; zoom: number } | null>(null);
     const mapStateRef = useRef(mapState);
+    const mapViewRef = useRef(mapView);
     const initialOpenAppliedRef = useRef(false);
     const playerTrailDataRef = useRef<GeoJSON.FeatureCollection>({
         type: 'FeatureCollection',
@@ -276,6 +285,10 @@ function TacticalOverlay(): h.JSX.Element {
     useEffect(() => {
         mapStateRef.current = mapState;
     }, [mapState]);
+
+    useEffect(() => {
+        mapViewRef.current = mapView;
+    }, [mapView]);
 
     useEffect(() => {
         cleanupLegacyStorage();
@@ -378,9 +391,12 @@ function TacticalOverlay(): h.JSX.Element {
     }, [logEvent]);
 
     const { syncToMap } = useMapRenderer(generator, logEvent, portalHistoryLayers, keyOverlayEnabled, mockInventory);
-    const { loadPattern1, loadPattern2, loadPattern3 } = usePatterns(mapRef.current, generator, loadedTileKeys, logEvent, setMockInventory);
+    const { loadPattern1, loadPattern2, loadPattern3 } = usePatterns(mapState, generator, loadedTileKeys, logEvent, setMockInventory);
+    const syncCurrentView = useCallback((currentLiveMode: boolean, currentPatternMode: number): void => {
+        syncToMap(mapViewRef.current, currentLiveMode, currentPatternMode);
+    }, [syncToMap]);
     
-    useIntelMessages(mapRef.current, liveMode, patternMode, selected, setSelected, (m, l, p) => syncToMap(m, l, p), logEvent);
+    useIntelMessages(liveMode, patternMode, selected, setSelected, syncCurrentView, logEvent);
     useScores(isVis, liveMode, mapState.lat, mapState.lng);
     usePlayerStats(isVis, liveMode);
     const { playerHistories } = usePlayerTracker(isVis, liveMode, logEvent, plextBounds);
@@ -486,24 +502,22 @@ function TacticalOverlay(): h.JSX.Element {
         playerTrailDataRef.current = playerTrailData;
     }, [playerTrailData]);
 
-    const checkAndLoad = useCallback((currentMap: maplibregl.Map, currentPatternMode: number, currentLiveMode: boolean): void => {
-        if (!currentMap || !currentMap.getStyle()) return;
-
-        const zoom = currentMap.getZoom();
+    const checkAndLoad = useCallback((currentView: MiniMapView, currentPatternMode: number, currentLiveMode: boolean): void => {
+        const zoom = currentView.zoom;
         const minLevel = getMinLevelForZoom(zoom);
         const gridSize = getGridSizeForZoom(zoom);
-        const bounds = currentMap.getBounds();
+        const bounds = currentView.bounds;
         
         if (currentPatternMode > 0 || currentLiveMode) {
-            syncToMap(currentMap, currentLiveMode, currentPatternMode);
+            syncToMap(currentView, currentLiveMode, currentPatternMode);
             return;
         }
 
         if (zoom < 3) return;
-        const startLat = Math.floor(bounds.getSouth() / gridSize);
-        const endLat = Math.floor(bounds.getNorth() / gridSize);
-        const startLng = Math.floor(bounds.getWest() / gridSize);
-        const endLng = Math.floor(bounds.getEast() / gridSize);
+        const startLat = Math.floor(bounds.south / gridSize);
+        const endLat = Math.floor(bounds.north / gridSize);
+        const startLng = Math.floor(bounds.west / gridSize);
+        const endLng = Math.floor(bounds.east / gridSize);
         let addedAny = false;
         for (let lat = startLat; lat <= endLat; lat++) {
             for (let lng = startLng; lng <= endLng; lng++) {
@@ -514,7 +528,7 @@ function TacticalOverlay(): h.JSX.Element {
                 }
             }
         }
-        syncToMap(currentMap, currentLiveMode, currentPatternMode);
+        syncToMap(currentView, currentLiveMode, currentPatternMode);
         if (addedAny) logEvent(`Sim Tiles Loaded (Min L:${minLevel})`);
     }, [loadedTileKeys, syncToMap, logEvent]);
 
@@ -524,34 +538,33 @@ function TacticalOverlay(): h.JSX.Element {
         checkAndLoadRef.current = checkAndLoad;
     }, [checkAndLoad]);
 
-    const throttledSync = useMemo(() => throttle((m: maplibregl.Map): void => {
-        const center = m.getCenter();
-        setMapState({ zoom: m.getZoom(), lat: center.lat, lng: center.lng });
+    const throttledSync = useMemo(() => throttle((view: MiniMapView): void => {
+        setMapState({ zoom: view.zoom, lat: view.lat, lng: view.lng });
+        setMapView(view);
     }, 100), []);
 
-    const scheduleMoveSettleLoad = useCallback((m: maplibregl.Map): void => {
+    const scheduleMoveSettleLoad = useCallback((view: MiniMapView): void => {
         clearMoveSettleTimer();
 
-        const center = m.getCenter();
-        const currentZoom = m.getZoom();
+        const currentZoom = view.zoom;
         const currentLive = liveModeRef.current;
         const currentPattern = patternModeRef.current;
-        const bounds = m.getBounds();
         const nextBounds = {
-            minLatE6: Math.round(bounds.getSouth() * 1e6),
-            minLngE6: Math.round(bounds.getWest() * 1e6),
-            maxLatE6: Math.round(bounds.getNorth() * 1e6),
-            maxLngE6: Math.round(bounds.getEast() * 1e6),
+            minLatE6: Math.round(view.bounds.south * 1e6),
+            minLngE6: Math.round(view.bounds.west * 1e6),
+            maxLatE6: Math.round(view.bounds.north * 1e6),
+            maxLngE6: Math.round(view.bounds.east * 1e6),
         };
 
-        const nextState = { zoom: currentZoom, lat: center.lat, lng: center.lng };
+        const nextState = { zoom: currentZoom, lat: view.lat, lng: view.lng };
         setMapState(nextState);
+        setMapView(view);
         setPlextBounds(nextBounds);
         persistMapState(nextState);
 
         if (currentLive) {
             const lastIntelSync = lastIntelSyncRef.current;
-            const nextIntelSync = { zoom: Math.round(currentZoom), lat: center.lat, lng: center.lng };
+            const nextIntelSync = { zoom: Math.round(currentZoom), lat: view.lat, lng: view.lng };
             if (
                 !lastIntelSync ||
                 Math.abs(lastIntelSync.zoom - nextIntelSync.zoom) >= 1 ||
@@ -570,20 +583,19 @@ function TacticalOverlay(): h.JSX.Element {
             if (
                 lastSettledLoad &&
                 Math.abs(lastSettledLoad.zoom - currentZoom) < 0.01 &&
-                Math.abs(lastSettledLoad.lat - center.lat) < 0.00001 &&
-                Math.abs(lastSettledLoad.lng - center.lng) < 0.00001
+                Math.abs(lastSettledLoad.lat - view.lat) < 0.00001 &&
+                Math.abs(lastSettledLoad.lng - view.lng) < 0.00001
             ) {
                 return;
             }
-            lastSettledLoadRef.current = { zoom: currentZoom, lat: center.lat, lng: center.lng };
-            checkAndLoadRef.current(m, currentPattern, currentLive);
+            lastSettledLoadRef.current = { zoom: currentZoom, lat: view.lat, lng: view.lng };
+            checkAndLoadRef.current(view, currentPattern, currentLive);
         }, settleMs);
     }, [clearMoveSettleTimer, persistMapState]);
 
     const handlePortalClick = useCallback((lat: number, lng: number, name: string): void => {
-        if (!mapRef.current) return;
         logEvent(`Jumping to Portal: ${name}`);
-        mapRef.current.flyTo({ center: [lng, lat], zoom: 17, duration: 2000 });
+        postMiniPageMapCommand({ action: 'fly-to', lat, lng, zoom: 17, duration: 2000 });
         
         const store = useStore.getState();
         const existing = Object.values(store.portals).find(p => Math.abs(p.lat - lat) < 0.0001 && Math.abs(p.lng - lng) < 0.0001);
@@ -631,28 +643,28 @@ function TacticalOverlay(): h.JSX.Element {
     }, []);
 
     useEffect(() => {
-        const m = mapRef.current;
-        if (!m || !m.getLayer('p')) return;
-        m.setPaintProperty('p', 'circle-color', portalLevelColorEnabled ? PORTAL_LEVEL_COLOR_EXPR : PORTAL_TEAM_COLOR_EXPR);
-        m.setPaintProperty('p', 'circle-opacity', portalHealthColorEnabled ? PORTAL_HEALTH_OPACITY_EXPR : 1);
+        postMiniPageMapCommand({
+            action: 'set-portal-paint',
+            levelColorEnabled: portalLevelColorEnabled,
+            healthColorEnabled: portalHealthColorEnabled,
+        });
     }, [portalHealthColorEnabled, portalLevelColorEnabled]);
 
     const handleSelectionPanelOpen = useCallback((): void => {
-        mapRef.current?.panBy([0, 140], { duration: 200 });
+        postMiniPageMapCommand({ action: 'nav', nav: 'down' });
     }, []);
 
     const handleSelectionPanelClose = useCallback((): void => {
-        mapRef.current?.panBy([0, -140], { duration: 200 });
+        postMiniPageMapCommand({ action: 'nav', nav: 'up' });
     }, []);
 
     const openMiniIris = useCallback((): void => {
         setIsVis(true);
         writeSavedMiniIrisOpen(true);
         window.requestAnimationFrame(() => {
-            const map = mapRef.current;
-            if (!map || !map.getStyle()) return;
-            map.resize();
-            checkAndLoad(map, patternModeRef.current, liveModeRef.current);
+            postMiniPageMapCommand({ action: 'set-visible', visible: true });
+            postMiniPageMapCommand({ action: 'resize' });
+            checkAndLoad(mapViewRef.current, patternModeRef.current, liveModeRef.current);
             logEvent("Tactical Map Opened");
         });
     }, [checkAndLoad, logEvent]);
@@ -660,167 +672,89 @@ function TacticalOverlay(): h.JSX.Element {
     const closeMiniIris = useCallback((): void => {
         setIsVis(false);
         writeSavedMiniIrisOpen(false);
+        postMiniPageMapCommand({ action: 'set-visible', visible: false });
     }, []);
 
     useEffect(() => {
-        if (mapRef.current) return; // Only init once
-
         const initialCenter: [number, number] = [
             savedMapState?.lng ?? DEFAULT_MAP_CENTER[0],
             savedMapState?.lat ?? DEFAULT_MAP_CENTER[1],
         ];
         const initialZoom = savedMapState?.zoom ?? DEFAULT_MAP_ZOOM;
-        
-        const m = new maplibregl.Map({
-            container: 'map-poc-container',
-            style: {
-                version: 8,
-                glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
-                sources: {
-                    'carto': { type: 'raster', tiles: MAP_STYLES[initialMapStyle], tileSize: 256 },
-                    'entities': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
-                    'players': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
-                    'selection': { type: 'geojson', data: { type: 'FeatureCollection', features: [] } }
-                },
-                layers: [
-                    { id: 'carto', type: 'raster', source: 'carto' },
-                    { id: 'f-enl', type: 'fill', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'E']], paint: { 'fill-color': COLORS.E, 'fill-opacity': 0.3 } },
-                    { id: 'f-res', type: 'fill', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'R']], paint: { 'fill-color': COLORS.R, 'fill-opacity': 0.3 } },
-                    { id: 'f-mac', type: 'fill', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'M']], paint: { 'fill-color': COLORS.M, 'fill-opacity': 0.3 } },
-                    { id: 'l-enl', type: 'line', source: 'entities', filter: ['all', ['==', 'type', 'link'], ['==', 'team', 'E']], paint: { 'line-color': COLORS.E, 'line-width': ['coalesce', ['get', 'width'], 2] } },
-                    { id: 'l-res', type: 'line', source: 'entities', filter: ['all', ['==', 'type', 'link'], ['==', 'team', 'R']], paint: { 'line-color': COLORS.R, 'line-width': ['coalesce', ['get', 'width'], 2] } },
-                    { id: 'l-mac', type: 'line', source: 'entities', filter: ['all', ['==', 'type', 'link'], ['==', 'team', 'M']], paint: { 'line-color': COLORS.M, 'line-width': ['coalesce', ['get', 'width'], 2] } },
-                    { id: 'f-ext-enl', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'E']], paint: { 'fill-extrusion-color': COLORS.E, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.5 }, layout: { visibility: 'none' } },
-                    { id: 'f-ext-res', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'R']], paint: { 'fill-extrusion-color': COLORS.R, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.5 }, layout: { visibility: 'none' } },
-                    { id: 'f-ext-mac', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'M']], paint: { 'fill-extrusion-color': COLORS.M, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.5 }, layout: { visibility: 'none' } },
-                    { id: 'l-ext-enl', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'link-ext'], ['==', 'team', 'E']], paint: { 'fill-extrusion-color': COLORS.E, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.8 }, layout: { visibility: 'none' } },
-                    { id: 'l-ext-res', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'link-ext'], ['==', 'team', 'R']], paint: { 'fill-extrusion-color': COLORS.R, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.8 }, layout: { visibility: 'none' } },
-                    { id: 'l-ext-mac', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'link-ext'], ['==', 'team', 'M']], paint: { 'fill-extrusion-color': COLORS.M, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.8 }, layout: { visibility: 'none' } },
-                    { id: 'p-ext', type: 'fill-extrusion', source: 'entities', filter: ['==', 'type', 'portal-ext'], paint: { 'fill-extrusion-color': ['match', ['get', 'team'], 'E', COLORS.E, 'R', COLORS.R, 'M', COLORS.M, COLORS.N], 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': 0, 'fill-extrusion-opacity': 0.9 }, layout: { visibility: 'none' } },
-                    { id: 'player-trails', type: 'line', source: 'players', filter: ['==', 'type', 'player-trail'], paint: { 'line-color': PLAYER_TRACKER_COLORS.trail, 'line-width': 3, 'line-opacity': ['interpolate', ['linear'], ['get', 'ageMinutes'], 0, 0.95, 5, 0.75, 20, 0.45, 60, 0.2, 180, 0.08], 'line-blur': 0.6, 'line-dasharray': [1.2, 1.6] } },
-                    { id: 'player-points-glow', type: 'circle', source: 'players', filter: ['==', 'type', 'player-point'], paint: { 'circle-color': PLAYER_TRACKER_COLORS.point, 'circle-radius': ['interpolate', ['linear'], ['get', 'pulse'], 0, 7, 0.5, 13, 1, 7], 'circle-opacity': ['interpolate', ['linear'], ['get', 'pulse'], 0, 0.12, 0.5, 0.26, 1, 0.12] } },
-                    { id: 'player-points', type: 'circle', source: 'players', filter: ['==', 'type', 'player-point'], paint: { 'circle-color': PLAYER_TRACKER_COLORS.point, 'circle-radius': ['interpolate', ['linear'], ['get', 'pulse'], 0, 4.5, 0.5, 6.5, 1, 4.5], 'circle-stroke-width': 2, 'circle-stroke-color': PLAYER_TRACKER_COLORS.stroke, 'circle-opacity': 0.98 } },
-                    { id: 'player-label-bg', type: 'circle', source: 'players', filter: ['==', 'type', 'player-label'], paint: { 'circle-color': ['match', ['get', 'team'], 'E', COLORS.E, 'R', COLORS.R, 'M', COLORS.M, INGRESS_COLORS.XM], 'circle-radius': ['interpolate', ['linear'], ['get', 'count'], 1, 8, 2, 11, 5, 15], 'circle-opacity': 0.08 } },
-                    { id: 'player-labels', type: 'symbol', source: 'players', filter: ['==', 'type', 'player-label'], layout: { 'text-field': ['get', 'label'], 'text-size': 12, 'text-offset': [0, 1.2], 'text-anchor': 'top', 'text-allow-overlap': true, 'text-ignore-placement': true, 'text-max-width': 12 }, paint: { 'text-color': '#ffffff', 'text-halo-color': '#000000', 'text-halo-width': 1.4, 'text-opacity': 0.96 } },
-                    { id: 'sel-f', type: 'line', source: 'selection', filter: ['==', 'type', 'field'], paint: { 'line-color': '#fff', 'line-width': 3 } },
-                    { id: 'sel-l', type: 'line', source: 'selection', filter: ['==', 'type', 'link'], paint: { 'line-color': '#fff', 'line-width': 4 } },
-                    { id: 'sel-p', type: 'circle', source: 'selection', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': 12, 'circle-color': 'transparent', 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 } },
-                    { id: 'p', type: 'circle', source: 'entities', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': ['coalesce', ['get', 'radius'], 2], 'circle-color': PORTAL_TEAM_COLOR_EXPR, 'circle-opacity': 1 } },
-                    { id: 'p-history-visited-highlight', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'visitedHighlight', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 5], 'circle-color': 'transparent', 'circle-stroke-color': PORTAL_HISTORY_COLORS.visited, 'circle-stroke-width': 2, 'circle-opacity': 0.9 } },
-                    { id: 'p-history-captured-highlight', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'capturedHighlight', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 8], 'circle-color': 'transparent', 'circle-stroke-color': PORTAL_HISTORY_COLORS.captured, 'circle-stroke-width': 2, 'circle-opacity': 0.9 } },
-                    { id: 'p-history-scanned-highlight', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'scannedHighlight', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 11], 'circle-color': 'transparent', 'circle-stroke-color': PORTAL_HISTORY_COLORS.scanned, 'circle-stroke-width': 2, 'circle-opacity': 0.9 } },
-                    { id: 'p-history-visited-inverse', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'visitedInverse', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 5], 'circle-color': PORTAL_HISTORY_COLORS.visited, 'circle-opacity': 0.14, 'circle-stroke-color': PORTAL_HISTORY_COLORS.visited, 'circle-stroke-width': 2, 'circle-stroke-opacity': 0.85 } },
-                    { id: 'p-history-captured-inverse', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'capturedInverse', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 8], 'circle-color': PORTAL_HISTORY_COLORS.captured, 'circle-opacity': 0.14, 'circle-stroke-color': PORTAL_HISTORY_COLORS.captured, 'circle-stroke-width': 2, 'circle-stroke-opacity': 0.85 } },
-                    { id: 'p-history-scanned-inverse', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'scannedInverse', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 11], 'circle-color': PORTAL_HISTORY_COLORS.scanned, 'circle-opacity': 0.14, 'circle-stroke-color': PORTAL_HISTORY_COLORS.scanned, 'circle-stroke-width': 2, 'circle-stroke-opacity': 0.85 } },
-                    { id: 'p-key-count-bg', type: 'circle', source: 'entities', filter: ['==', 'type', 'portal-key-count'], paint: { 'circle-color': '#000000', 'circle-radius': 12, 'circle-translate': [0, -18], 'circle-opacity': 0.78, 'circle-stroke-color': ['match', ['get', 'team'], 'E', COLORS.E, 'R', COLORS.R, 'M', COLORS.M, COLORS.N], 'circle-stroke-width': 1.8, 'circle-stroke-opacity': 0.95 } },
-                    { id: 'p-key-count-total', type: 'symbol', source: 'entities', filter: ['==', 'type', 'portal-key-count'], layout: { 'text-field': ['get', 'totalLabel'], 'text-size': 12, 'text-anchor': 'center', 'text-allow-overlap': true, 'text-ignore-placement': true }, paint: { 'text-color': INGRESS_COLORS.KEY, 'text-halo-color': '#000000', 'text-halo-width': 1.4, 'text-opacity': 1, 'text-translate': [0, -20] } },
-                    { id: 'p-key-count-split', type: 'symbol', source: 'entities', filter: ['==', 'type', 'portal-key-count'], layout: { 'text-field': ['get', 'splitLabel'], 'text-size': 8, 'text-offset': [0, 0.95], 'text-anchor': 'center', 'text-allow-overlap': true, 'text-ignore-placement': true }, paint: { 'text-color': '#ffffff', 'text-halo-color': '#000000', 'text-halo-width': 1.2, 'text-opacity': 0.95, 'text-translate': [0, -20] } }
-                ]
-            },
-            center: initialCenter, zoom: initialZoom
+        postMiniPageMapCommand({
+            action: 'init',
+            containerId: 'map-poc-container',
+            center: initialCenter,
+            zoom: initialZoom,
+            styleName: initialMapStyle,
+            visible: initialMiniIrisOpen,
         });
-
-        m.once('load', (): void => {
-            m.resize();
-            const bounds = m.getBounds();
-            setPlextBounds({
-                minLatE6: Math.round(bounds.getSouth() * 1e6),
-                minLngE6: Math.round(bounds.getWest() * 1e6),
-                maxLatE6: Math.round(bounds.getNorth() * 1e6),
-                maxLngE6: Math.round(bounds.getEast() * 1e6),
-            });
-            const playerSource = m.getSource('players') as maplibregl.GeoJSONSource | undefined;
-            if (playerSource) {
-                playerSource.setData(playerTrailDataRef.current);
-            }
-            window.requestAnimationFrame(() => {
-                checkAndLoadRef.current(m, patternModeRef.current, liveModeRef.current);
-            });
-        });
-
-        m.on('movestart', clearMoveSettleTimer);
-        m.on('move', (): void => { throttledSync(m); });
-        m.on('moveend', (): void => { scheduleMoveSettleLoad(m); });
-
-        m.on('click', (e): void => {
-            const isLive = liveModeRef.current;
-            logEvent(`Map Click @ ${e.lngLat.lng.toFixed(4)}, ${e.lngLat.lat.toFixed(4)}`);
-            const pixelBuffer = 40;
-            const pLow = m.unproject([e.point.x - pixelBuffer, e.point.y + pixelBuffer]);
-            const pHigh = m.unproject([e.point.x + pixelBuffer, e.point.y - pixelBuffer]);
-            const qG = { minLat: pLow.lat, minLng: pLow.lng, maxLat: pHigh.lat, maxLng: pHigh.lng };
-            let results: ReturnType<typeof globalSpatialIndex.query>;
-            if (isLive) {
-                useStore.getState().syncIndex();
-                results = globalSpatialIndex.query(qG);
-            } else {
-                results = generator.query({ minX: qG.minLng, minY: qG.minLat, maxX: qG.maxLng, maxY: qG.maxLat });
-            }
-            
-            if (!results || results.length === 0) { 
-                setSelected(null);
-                (m.getSource('selection') as maplibregl.GeoJSONSource)?.setData({ type: 'FeatureCollection', features: [] });
-                return; 
-            }
-
-            const store = useStore.getState();
-            const portals = results.filter(r => r.type === 'portal').map(r => isLive ? store.portals[r.id] : generator.portals.get(r.id)).filter((p): p is Portal => !!p);
-            const links = results.filter(r => r.type === 'link').map(r => isLive ? store.links[r.id] : generator.linksMap.get(r.id)).filter((l): l is Link => !!l);
-            const allFields = results.filter(r => r.type === 'field').map(r => {
-                const f = isLive ? store.fields[r.id] : generator.fieldsMap.get(r.id);
-                return f && generator.isPointInField(e.lngLat, f) ? f : null;
-            }).filter((f): f is Field => !!f);
-
-            const portalHits = portals.map(p => {
-                const screenP = m.project([p.lng, p.lat]);
-                const dist = Math.hypot(screenP.x - e.point.x, screenP.y - e.point.y);
-                return { p, dist };
-            }).filter(h => h.dist < 10).sort((a, b) => a.dist - b.dist);
-
-            if (portalHits.length > 0) {
-                const p = portalHits[0].p;
-                setSelected({ type: 'portal', data: p });
-                if (isLive) window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: p.id }, '*');
-                return;
-            }
-
-            if (allFields.length > 0) {
-                setSelected({ type: 'field', data: allFields[0] });
-                return;
-            }
-
-            const linkHits = links.map(l => {
-                const p1 = m.project([l.fromLng, l.fromLat]);
-                const p2 = m.project([l.toLng, l.toLat]);
-                const A = e.point.x - p1.x; const B = e.point.y - p1.y;
-                const C = p2.x - p1.x; const D = p2.y - p1.y;
-                const dot = A * C + B * D; const len_sq = C * C + D * D;
-                let param = -1; if (len_sq !== 0) param = dot / len_sq;
-                let xx: number, yy: number;
-                if (param < 0) { xx = p1.x; yy = p1.y; }
-                else if (param > 1) { xx = p2.x; yy = p2.y; }
-                else { xx = p1.x + param * C; yy = p1.y + param * D; }
-                const dist = Math.hypot(e.point.x - xx, e.point.y - yy);
-                return { l, dist };
-            }).filter(h => h.dist < 5).sort((a, b) => a.dist - b.dist);
-
-            if (linkHits.length > 0) {
-                setSelected({ type: 'link', data: linkHits[0].l });
-                return;
-            }
-
-            setSelected(null);
-            (m.getSource('selection') as maplibregl.GeoJSONSource)?.setData({ type: 'FeatureCollection', features: [] });
-        });
-
-        mapRef.current = m;
-        return (): void => { m.remove(); mapRef.current = null; };
-    // MapLibre is initialized once; later style changes update the raster source in a separate effect.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [clearMoveSettleTimer, generator, logEvent, savedMapState?.lat, savedMapState?.lng, savedMapState?.zoom, scheduleMoveSettleLoad, throttledSync]);
+    }, [initialMapStyle, initialMiniIrisOpen, savedMapState?.lat, savedMapState?.lng, savedMapState?.zoom]);
 
     useEffect(() => {
-        if (!initialMiniIrisOpen || initialOpenAppliedRef.current || isVis || !mapRef.current) return;
+        const selectById = (kind: 'portal' | 'link' | 'field', id: string, openDetails: boolean): void => {
+            const store = useStore.getState();
+            const requestDetailsOpen = (): void => {
+                if (openDetails) setSelectionDetailsRequestKey((current) => current + 1);
+            };
+            if (kind === 'portal') {
+                const portal = liveModeRef.current ? store.portals[id] : generator.portals.get(id);
+                if (!portal) return;
+                setSelected({ type: 'portal', data: portal });
+                if (liveModeRef.current) window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: portal.id }, '*');
+                requestDetailsOpen();
+                return;
+            }
+            if (kind === 'field') {
+                const field = liveModeRef.current ? store.fields[id] : generator.fieldsMap.get(id);
+                if (field) {
+                    setSelected({ type: 'field', data: field });
+                    requestDetailsOpen();
+                }
+                return;
+            }
+            const link = liveModeRef.current ? store.links[id] : generator.linksMap.get(id);
+            if (link) {
+                setSelected({ type: 'link', data: link });
+                requestDetailsOpen();
+            }
+        };
+
+        const handler = (event: MessageEvent): void => {
+            const data = event.data as Partial<MiniPageMapEventMessage> | undefined;
+            if (!data || data.type !== MINI_PAGE_MAP_EVENT || !data.payload) return;
+
+            if (data.payload.event === 'ready') {
+                setMapView(data.payload.view);
+                setMapState({ zoom: data.payload.view.zoom, lat: data.payload.view.lat, lng: data.payload.view.lng });
+                postMiniPageMapCommand({ action: 'sync-players', data: playerTrailDataRef.current });
+                checkAndLoadRef.current(data.payload.view, patternModeRef.current, liveModeRef.current);
+                return;
+            }
+
+            if (data.payload.event === 'camera') {
+                if (data.payload.settled) scheduleMoveSettleLoad(data.payload.view);
+                else throttledSync(data.payload.view);
+                return;
+            }
+
+            if (data.payload.event === 'selection') {
+                selectById(data.payload.kind, data.payload.id, data.payload.intent === 'details');
+                return;
+            }
+
+            if (data.payload.event === 'clear-selection') {
+                setSelected(null);
+                postMiniPageMapCommand({ action: 'sync-selection', data: { type: 'FeatureCollection', features: [] } });
+            }
+        };
+
+        window.addEventListener('message', handler);
+        return (): void => window.removeEventListener('message', handler);
+    }, [generator, scheduleMoveSettleLoad, throttledSync]);
+
+    useEffect(() => {
+        if (!initialMiniIrisOpen || initialOpenAppliedRef.current || isVis) return;
         initialOpenAppliedRef.current = true;
         openMiniIris();
     }, [initialMiniIrisOpen, isVis, openMiniIris]);
@@ -832,24 +766,22 @@ function TacticalOverlay(): h.JSX.Element {
     }, [clearMoveSettleTimer]);
 
     useEffect(() => {
-        const m = mapRef.current;
-        if (!m || !m.getSource('players')) return;
-        (m.getSource('players') as maplibregl.GeoJSONSource).setData(playerTrailData);
+        postMiniPageMapCommand({ action: 'sync-players', data: playerTrailData });
     }, [playerTrailData]);
 
     useEffect(() => {
-        if (!mapRef.current) return;
-        syncToMap(mapRef.current, liveMode, patternMode);
+        syncToMap(mapViewRef.current, liveMode, patternMode);
     }, [keyOverlayEnabled, liveMode, patternMode, syncToMap]);
 
     // 2. Selection highlights
     useEffect(() => {
-        const m = mapRef.current;
-        if (!m || !selected) return;
-        const selSource = m.getSource('selection') as maplibregl.GeoJSONSource;
-        if (!selSource) return;
         const selFeat: GeoJSON.Feature[] = [];
         const store = useStore.getState();
+
+        if (!selected) {
+            postMiniPageMapCommand({ action: 'sync-selection', data: { type: 'FeatureCollection', features: selFeat } });
+            return;
+        }
 
         if (selected.type === 'portal') {
             const p = selected.data as Portal;
@@ -864,21 +796,18 @@ function TacticalOverlay(): h.JSX.Element {
             const poly = [...f.points.map((p) => [p.lng, p.lat]), [f.points[0].lng, f.points[0].lat]];
             selFeat.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: poly }, properties: { type: 'field' } });
         }
-        selSource.setData({ type: 'FeatureCollection', features: selFeat });
+        postMiniPageMapCommand({ action: 'sync-selection', data: { type: 'FeatureCollection', features: selFeat } });
     }, [selected, liveMode, generator]);
 
     const handleNav = useCallback((action: string): void => {
-        const m = mapRef.current;
-        if (!m) return;
-        if (action === '+') m.zoomIn();
-        else if (action === '-') m.zoomOut();
-        else if (action === '↑') m.panBy([0, -200]);
-        else if (action === '↓') m.panBy([0, 200]);
-        else if (action === '←') m.panBy([-200, 0]);
-        else if (action === '→') m.panBy([200, 0]);
+        if (action === '+') postMiniPageMapCommand({ action: 'nav', nav: '+' });
+        else if (action === '-') postMiniPageMapCommand({ action: 'nav', nav: '-' });
+        else if (action === '↑') postMiniPageMapCommand({ action: 'nav', nav: 'up' });
+        else if (action === '↓') postMiniPageMapCommand({ action: 'nav', nav: 'down' });
+        else if (action === '←') postMiniPageMapCommand({ action: 'nav', nav: 'left' });
+        else if (action === '→') postMiniPageMapCommand({ action: 'nav', nav: 'right' });
         else if (action === 'R') {
-            m.setCenter(DEFAULT_MAP_CENTER);
-            m.setZoom(DEFAULT_MAP_ZOOM);
+            postMiniPageMapCommand({ action: 'nav', nav: 'reset' });
             persistMapState({
                 lat: DEFAULT_MAP_CENTER[1],
                 lng: DEFAULT_MAP_CENTER[0],
@@ -889,7 +818,7 @@ function TacticalOverlay(): h.JSX.Element {
             logEvent("Geolocating...");
             navigator.geolocation.getCurrentPosition((pos): void => {
                 const { latitude, longitude } = pos.coords;
-                m.flyTo({ center: [longitude, latitude], zoom: 16 });
+                postMiniPageMapCommand({ action: 'fly-to', lat: latitude, lng: longitude, zoom: 16, duration: 1200 });
                 logEvent(`Located: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
             }, (err): void => {
                 logEvent(`Location Failed: ${err.message}`);
@@ -898,31 +827,17 @@ function TacticalOverlay(): h.JSX.Element {
     }, [logEvent, persistMapState]);
 
     const handleStyle = useCallback((style: string): void => {
-        const m = mapRef.current;
-        if (!m || !m.getStyle() || !MAP_STYLES[style]) return;
-        if (m.getLayer('carto')) m.removeLayer('carto');
-        if (m.getSource('carto')) m.removeSource('carto');
-        m.addSource('carto', { type: 'raster', tiles: MAP_STYLES[style], tileSize: 256, attribution: style === 'OSM' ? '&copy; OpenStreetMap' : '&copy; CARTO' });
-        const layers = m.getStyle().layers;
-        m.addLayer({ id: 'carto', type: 'raster', source: 'carto' }, layers?.[0]?.id);
+        if (!(style in MAP_STYLES)) return;
+        postMiniPageMapCommand({ action: 'set-style', styleName: style as MapStyleName });
         writeSavedMapStyle(style);
         logEvent(`Style: ${style}`);
     }, [logEvent]);
 
     const handleMode = useCallback((mode: string): void => {
-        const m = mapRef.current;
-        if (!m || !m.getStyle()) return;
         if (mode === '3D') {
             const nextExtrusion = !extrusionEnabled;
             setExtrusionEnabled(nextExtrusion);
-            const visibility = nextExtrusion ? 'visible' : 'none';
-            const flatVisibility = nextExtrusion ? 'none' : 'visible';
-            const layers3D = ['f-ext-enl', 'f-ext-res', 'f-ext-mac', 'l-ext-enl', 'l-ext-res', 'l-ext-mac', 'p-ext'];
-            const layersFlat = ['f-enl', 'f-res', 'f-mac', 'l-enl', 'l-res', 'l-mac', 'p'];
-            layers3D.forEach(id => { if (m.getLayer(id)) m.setLayoutProperty(id, 'visibility', visibility); });
-            layersFlat.forEach(id => { if (m.getLayer(id)) m.setLayoutProperty(id, 'visibility', flatVisibility); });
-            if (nextExtrusion) m.easeTo({ pitch: 60, bearing: -20, duration: 1000 });
-            else m.easeTo({ pitch: 0, bearing: 0, duration: 800 });
+            postMiniPageMapCommand({ action: 'set-extrusion', enabled: nextExtrusion });
             logEvent(`Extrusion: ${nextExtrusion ? 'ON' : 'OFF'}`);
         } else if (mode === 'Src') {
             const currentLiveMode = liveModeRef.current;
@@ -960,13 +875,13 @@ function TacticalOverlay(): h.JSX.Element {
     // 3. Store subscription
     useEffect(() => {
         const unsub = useStore.subscribe((state, prevState): void => {
-            if (liveMode && mapRef.current && (
+            if (liveMode && (
                 state.portals !== prevState.portals ||
                 state.links !== prevState.links ||
                 state.fields !== prevState.fields ||
                 (keyOverlayEnabled && state.inventory !== prevState.inventory)
             )) {
-                syncToMap(mapRef.current, liveMode, patternMode);
+                syncToMap(mapViewRef.current, liveMode, patternMode);
             }
         });
         return (): void => unsub();
@@ -974,15 +889,13 @@ function TacticalOverlay(): h.JSX.Element {
 
     // 4. Pattern loading and data sync
     useEffect(() => {
-        if (!mapRef.current) return;
         if (patternMode === 1) loadPattern1();
         else if (patternMode === 2) loadPattern2();
         else if (patternMode === 3) loadPattern3();
     }, [patternMode, liveMode, loadPattern1, loadPattern2, loadPattern3]);
 
     useEffect(() => {
-        if (!mapRef.current) return;
-        checkAndLoad(mapRef.current, patternMode, liveMode);
+        checkAndLoad(mapViewRef.current, patternMode, liveMode);
     }, [patternMode, liveMode, checkAndLoad]);
 
     return (
@@ -997,6 +910,7 @@ function TacticalOverlay(): h.JSX.Element {
                         plextBounds={plextBounds}
                         playerHistories={visiblePlayerHistories}
                         selected={selected}
+                        selectionDetailsRequestKey={selectionDetailsRequestKey}
                         portalHistoryLayers={portalHistoryLayers}
                         onPortalHistoryLayerToggle={handlePortalHistoryLayerToggle}
                         keyOverlayEnabled={keyOverlayEnabled}
@@ -1028,6 +942,14 @@ function injectInterceptor(): void {
     script.addEventListener('load', () => script.remove());
 }
 
+function injectPageMapRuntime(): void {
+    const script = document.createElement('script');
+    script.src = chrome.runtime.getURL('page-map-runtime.js');
+    script.type = 'text/javascript';
+    (document.head ?? document.documentElement).appendChild(script);
+    script.addEventListener('load', () => script.remove());
+}
+
 function initApp(): void {
     const uiRoot = document.createElement('div');
     document.body.appendChild(uiRoot);
@@ -1035,6 +957,7 @@ function initApp(): void {
 }
 
 injectInterceptor();
+injectPageMapRuntime();
 
 if (document.body) {
     setTimeout(initApp, 500);

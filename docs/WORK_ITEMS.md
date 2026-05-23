@@ -1039,6 +1039,8 @@ Tasks:
 | Make extension package output names explicit         | Done          | mini-IRIS now writes `apps/mini-iris/builds/mini-iris-<timestamp>.zip/.xpi`; IRIS now writes `packages/extension/builds/iris-chrome-<timestamp>.zip` and `iris-firefox-<timestamp>.xpi` while keeping unpacked builds in `dist`/`dist-firefox` |
 | Include version number in packaged artifact names    | Done          | IRIS and mini-IRIS package scripts now include package version in ZIP/XPI filenames, e.g. `iris-chrome-0.1.7-<timestamp>.zip`, `iris-firefox-0.1.7-<timestamp>.xpi`, and `mini-iris-1.0.32-<timestamp>.zip/.xpi` |
 | Align product build/package/release commands         | Done          | root commands now use the same product-level shape for IRIS and mini-IRIS: `build:*` creates unpacked `dist` output, `package:*` creates ZIP/XPI artifacts, and `release:*` aliases the product package flow |
+| Align mini-IRIS artifact names by browser platform   | Open          | mirror the IRIS package naming shape with explicit browser targets, e.g. `mini-iris-chrome-<version>-<timestamp>.zip` and `mini-iris-firefox-<version>-<timestamp>.xpi`, so bench/release artifacts are unambiguous |
+| Decide app/package layout for IRIS and mini-IRIS     | Open          | consider moving full IRIS from `packages/extension` to `apps/iris` so app shells live under `apps/` and reusable backend/engine code stays under `packages/`; measure path/build churn before moving |
 | Migrate shared state to `zustand` 5                  | Done          | `@iris/core` now uses the vanilla store API plus a Preact-compatible `useSyncExternalStore` hook so tests and Preact builds avoid a React runtime dependency                                                                                                      |
 | Migrate map rendering to `maplibre-gl` 5             | Done          | manifests now target `maplibre-gl` 5.24.0; builds pass for IRIS Chrome/Firefox plus mini-IRIS, desktop/mobile smoke tests passed, and IRIS 0.1.3 benchmark samples were recorded; follow-up panning/selection work remains separate |
 | Migrate TypeScript to 6.0.3                        | Done          | root/core/extension/mini-IRIS now target `typescript` 6.0.3; root tsconfig uses `moduleResolution: "Bundler"` and core has an explicit scoped tsconfig with GeoJSON types; typecheck/test/lint/builds pass |
@@ -1097,25 +1099,31 @@ Principles:
 - Extract shared logic only after comparing both call sites.
 - Prefer shared parsers, entity/map feature builders, diagnostics formatting, request policy, mock data generators, and
   typed models before shared GUI surfaces.
+- Prefer native MapLibre APIs for Mini-IRIS map selection, context menus, and gesture hooks in the page-world runtime;
+  keep the content-world side as a compact UI/data bridge.
 - Keep app-specific UI composition in `packages/extension` and `apps/mini-iris` until component ownership is obvious.
 
 Tasks:
 
 | Task                                                       | Status | Notes                                                                                                      |
 |------------------------------------------------------------|--------|------------------------------------------------------------------------------------------------------------|
-| Audit mini-IRIS vs IRIS runtime overlap                    | Open   | compare page-world injection, map lifecycle, request/interceptor flow, diagnostics, and map feature building |
+| Audit mini-IRIS vs IRIS runtime overlap                    | Done   | map ownership was the first proven overlap; Mini-IRIS now uses a compact page-world MapLibre runtime and content-world UI bridge |
 | Define compact mini-IRIS non-goals                         | Open   | explicitly list main-IRIS features that should not migrate into mini-IRIS by default                        |
 | Identify first shared backend/engine extraction candidates  | Open   | likely parsers, map feature builders, request freshness helpers, tracker models, diagnostics formatters     |
-| Migrate mini-IRIS map runtime toward page-world discipline  | Open   | keep the mini UI compact while aligning map ownership, messaging, and hardening with IRIS                   |
+| Migrate mini-IRIS map runtime toward page-world discipline  | Done   | page-world runtime owns MapLibre, rendered-feature selection, explicit mobile touch-hold selection, camera, sources, players, selection highlights, style, and 3D toggles |
+| Smoke test Mini-IRIS page-world map interactions            | Done   | desktop Chrome and mobile testing confirmed map load, portal selection, drawer details, right-click details, and long-press details after the page-world migration |
+| Preserve Mini-IRIS faction ring with level/health toggles   | Done   | page-world portal styling now keeps a faction-coloured stroke/ring while level colouring and health opacity affect the fill |
+| Match IRIS portal HP colour ramp in Mini-IRIS                | Open   | HP mode should use the same health colour semantics as full IRIS, not only opacity, while keeping faction identity readable |
+| Make Mini-IRIS secondary interactions open popups directly  | Done   | page-world contextmenu/right-click and mobile long-press now send a details intent so the compact selection/details drawer opens directly |
 | Defer package chopping until boundaries are proven          | Open   | only split packages after shared usage and bundle/build costs are measured                                  |
 
 ## Current Next Pickup
 
-1. **[Mobile Browser Ergonomics]** Smoke test Back behavior and pull-to-refresh containment on a real mobile browser.
-2. **[Mini-IRIS Alignment]** Start with an audit of mini-IRIS vs IRIS runtime overlap and define compact mini-IRIS non-goals.
-3. **[Shared Components]** Extract only proven shared backend/engine/domain logic first; do not start with broad package chopping.
-4. **[Performance Architecture]** Profile the residual z8 Normal vs No Plugins gap only with a Chrome Performance trace; do not block Mini-IRIS on blind tuning.
-5. **[Draw Tools]** Refine marker selection/edit/delete UX after the pin experiment clarified renderer behavior.
+1. **[Mini-IRIS Polish]** Match the IRIS portal HP colour ramp while preserving the faction ring and compact LVL/HP controls.
+2. **[Mini-IRIS Alignment]** Define compact mini-IRIS non-goals before copying more full-IRIS behavior.
+3. **[Shared Components]** Identify proven shared backend/engine/domain candidates from both apps before package extraction.
+4. **[Release Hygiene]** Align mini-IRIS package artifact names with explicit Chrome/Firefox platform names.
+5. **[App Layout]** Evaluate moving full IRIS to `apps/iris` beside `apps/mini-iris`, but defer the move until path/build churn is clear.
 
 ## Snapshot And Reference Sources
 

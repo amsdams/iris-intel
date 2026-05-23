@@ -41,7 +41,9 @@ export const ITEM_LEVEL_COLORS: Record<number, string> = {
     5: '#FF0099', 6: '#EE26CD', 7: '#C124E0', 8: '#9627F4'
 };
 
-export const MAP_STYLES: Record<string, string[]> = {
+export type MapStyleName = 'Dark' | 'Light' | 'Voyager' | 'OSM';
+
+export const MAP_STYLES: Record<MapStyleName, string[]> = {
     'Dark': [
         'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',
         'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png',

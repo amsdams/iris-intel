@@ -12,12 +12,13 @@
     {
       "matches": ["https://intel.ingress.com/*"],
       "js": ["content.js"],
+      "css": ["mini-iris.css"],
       "run_at": "document_start"
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["interceptor.js"],
+      "resources": ["interceptor.js", "page-map-runtime.js"],
       "matches": ["https://intel.ingress.com/*"]
     }
   ],
