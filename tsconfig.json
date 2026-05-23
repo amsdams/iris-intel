@@ -23,6 +23,8 @@
   "include": [
     "packages/**/*.ts",
     "packages/**/*.tsx",
+    "apps/iris/src/**/*.ts",
+    "apps/iris/src/**/*.tsx",
     "apps/mini-iris/src/**/*.ts",
     "apps/mini-iris/src/**/*.tsx",
     "vitest.setup.ts"
