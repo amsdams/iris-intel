@@ -1,6 +1,6 @@
 import { h, JSX } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
-import { EndpointDiagnostics, EndpointKey, useStore } from '@iris/core';
+import { EndpointDiagnostics, EndpointKey, formatEndpointCountdown, getDerivedEndpointStatus, sortEndpointDiagnostics, useStore } from '@iris/core';
 import { useRenderDiagnostics } from '../../shared/useRenderDiagnostics';
 
 const ENDPOINT_STALE_AFTER_MS: Partial<Record<EndpointKey, number>> = {
@@ -126,53 +126,17 @@ export function StatusBar(): JSX.Element {
         return (): void => window.clearInterval(interval);
     }, [activeRequests, isExpanded]);
 
-    const getDerivedEndpointStatus = (entry: EndpointDiagnostics): 'idle' | 'in_flight' | 'success' | 'error' | 'stale' => {
-        if (entry.status === 'success' && entry.lastSuccessAt) {
-            const staleAfter = ENDPOINT_STALE_AFTER_MS[entry.key];
-            if (staleAfter && Date.now() - entry.lastSuccessAt > staleAfter) {
-                return 'stale';
-            }
-        }
-        return entry.status;
-    };
-
     const endpointHealthCounts = endpointEntries.reduce((acc, entry) => {
-        const status = getDerivedEndpointStatus(entry);
+        const status = getDerivedEndpointStatus(entry, ENDPOINT_STALE_AFTER_MS);
         acc[status] = (acc[status] ?? 0) + 1;
         return acc;
     }, {} as Record<'idle' | 'in_flight' | 'success' | 'error' | 'stale', number>);
 
     const formatCountdown = (entry: EndpointDiagnostics): string | null => {
-        if (!entry.nextAutoRefreshAt || !POLLED_ENDPOINT_LABELS[entry.key]) return null;
-        if (entry.status === 'in_flight') return 'refreshing now';
-
-        const remainingMs = entry.nextAutoRefreshAt - Date.now();
-        if (remainingMs <= 0) return 'due';
-
-        const totalSeconds = Math.ceil(remainingMs / 1000);
-        const minutes = Math.floor(totalSeconds / 60);
-        const seconds = totalSeconds % 60;
-        return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+        return formatEndpointCountdown(entry, POLLED_ENDPOINT_LABELS);
     };
 
-    const getEndpointSortBucket = (entry: EndpointDiagnostics): number => {
-        if (entry.status === 'in_flight') return 0;
-        if (entry.nextAutoRefreshAt) return 1;
-        if (ENDPOINT_REFRESH_MODE_LABELS[entry.key]) return 2;
-        return 3;
-    };
-
-    const sortedEndpointEntries = [...endpointEntries].sort((a, b) => {
-        const bucketDiff = getEndpointSortBucket(a) - getEndpointSortBucket(b);
-        if (bucketDiff !== 0) return bucketDiff;
-
-        if (a.nextAutoRefreshAt && b.nextAutoRefreshAt) {
-            const refreshDiff = a.nextAutoRefreshAt - b.nextAutoRefreshAt;
-            if (refreshDiff !== 0) return refreshDiff;
-        }
-
-        return ENDPOINT_FALLBACK_ORDER.indexOf(a.key) - ENDPOINT_FALLBACK_ORDER.indexOf(b.key);
-    });
+    const sortedEndpointEntries = sortEndpointDiagnostics(endpointEntries, ENDPOINT_REFRESH_MODE_LABELS, ENDPOINT_FALLBACK_ORDER);
 
     const lastEntitiesSuccessAt = endpointDiagnostics['entities']?.lastSuccessAt;
     const entitiesAgeMinutes = lastEntitiesSuccessAt ? Math.floor((Date.now() - lastEntitiesSuccessAt) / 60000) : null;
@@ -306,7 +270,7 @@ export function StatusBar(): JSX.Element {
                     <div className="iris-status-section iris-status-section-endpoints">
                         <div className="iris-status-section-title">ENDPOINT HEALTH</div>
                         {sortedEndpointEntries.map((entry) => {
-                            const derivedStatus = getDerivedEndpointStatus(entry);
+                            const derivedStatus = getDerivedEndpointStatus(entry, ENDPOINT_STALE_AFTER_MS);
                             return (
                                 <div key={`endpoint-${entry.key}`} className="iris-status-log-entry">
                                     <div className={`iris-status-log-message iris-status-log-message-network ${endpointStatusClass(derivedStatus)}`}>

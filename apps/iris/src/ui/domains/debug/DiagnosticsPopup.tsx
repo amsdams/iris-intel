@@ -3,8 +3,12 @@ import { useState, useEffect } from 'preact/hooks';
 import {
     EndpointDiagnostics,
     EndpointKey,
+    formatEndpointCountdown,
+    formatRelativeTime,
+    getDerivedEndpointStatus,
     MainThreadDiagnostics,
     MapPerfDiagnostics,
+    sortEndpointDiagnostics,
     UiRenderDiagnosticsEntry,
     useStore,
 } from '@iris/core';
@@ -247,40 +251,11 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
     );
     const endpointEntries = Object.values(endpointDiagnostics).filter((entry) => entry.key !== 'unknown');
 
-    const getDerivedEndpointStatus = (entry: EndpointDiagnostics): 'idle' | 'in_flight' | 'success' | 'error' | 'stale' => {
-        if (entry.status === 'success' && entry.lastSuccessAt) {
-            const staleAfter = ENDPOINT_STALE_AFTER_MS[entry.key];
-            if (staleAfter && Date.now() - entry.lastSuccessAt > staleAfter) {
-                return 'stale';
-            }
-        }
-        return entry.status;
-    };
-
-    const formatRelativeTime = (time: number | null | undefined): string => {
-        if (!time) return 'never';
-        const seconds = Math.floor((Date.now() - time) / 1000);
-        if (seconds < 60) return `${seconds}s ago`;
-        return `${Math.floor(seconds / 60)}m ago`;
-    };
-
     const getEndpointTimingLabel = (entry: EndpointDiagnostics): string | null => {
         let timerLabel = '';
         if (entry.nextAutoRefreshAt && POLLED_ENDPOINT_LABELS[entry.key]) {
-            if (entry.status === 'in_flight') {
-                timerLabel = `${POLLED_ENDPOINT_LABELS[entry.key]}: refreshing now`;
-            } else {
-                const remainingMs = entry.nextAutoRefreshAt - Date.now();
-                if (remainingMs <= 0) {
-                    timerLabel = `${POLLED_ENDPOINT_LABELS[entry.key]}: due`;
-                } else {
-                    const totalSeconds = Math.ceil(remainingMs / 1000);
-                    const minutes = Math.floor(totalSeconds / 60);
-                    const seconds = totalSeconds % 60;
-                    const formatted = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
-                    timerLabel = `${POLLED_ENDPOINT_LABELS[entry.key]}: ${formatted}`;
-                }
-            }
+            const countdown = formatEndpointCountdown(entry, POLLED_ENDPOINT_LABELS);
+            timerLabel = countdown ? `${POLLED_ENDPOINT_LABELS[entry.key]}: ${countdown}` : '';
         }
 
         if (ENDPOINT_REFRESH_MODE_LABELS[entry.key]) {
@@ -298,24 +273,7 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
         return timerLabel || null;
     };
 
-    const getEndpointSortBucket = (entry: EndpointDiagnostics): number => {
-        if (entry.status === 'in_flight') return 0;
-        if (entry.nextAutoRefreshAt) return 1;
-        if (ENDPOINT_REFRESH_MODE_LABELS[entry.key]) return 2;
-        return 3;
-    };
-
-    const sortedEndpointEntries = [...endpointEntries].sort((a, b) => {
-        const bucketDiff = getEndpointSortBucket(a) - getEndpointSortBucket(b);
-        if (bucketDiff !== 0) return bucketDiff;
-
-        if (a.nextAutoRefreshAt && b.nextAutoRefreshAt) {
-            const refreshDiff = a.nextAutoRefreshAt - b.nextAutoRefreshAt;
-            if (refreshDiff !== 0) return refreshDiff;
-        }
-
-        return ENDPOINT_FALLBACK_ORDER.indexOf(a.key) - ENDPOINT_FALLBACK_ORDER.indexOf(b.key);
-    });
+    const sortedEndpointEntries = sortEndpointDiagnostics(endpointEntries, ENDPOINT_REFRESH_MODE_LABELS, ENDPOINT_FALLBACK_ORDER);
     const viewportPerf = mapPerfDiagnostics.viewport;
     const framePerf = mapPerfDiagnostics.frame;
 
@@ -563,7 +521,7 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                                 <div className="iris-debug-endpoint-main">
                                     <span className="iris-debug-label">{entry.key}</span>
                                     <span className="iris-debug-value">
-                                        {getDerivedEndpointStatus(entry).toUpperCase()}
+                                        {getDerivedEndpointStatus(entry, ENDPOINT_STALE_AFTER_MS).toUpperCase()}
                                         {getEndpointTimingLabel(entry) ? ` | ${getEndpointTimingLabel(entry)}` : ''}
                                     </span>
                                 </div>

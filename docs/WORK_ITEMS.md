@@ -10,7 +10,7 @@ from here when they become tracked work.
 
 1. **[Mini-IRIS Bench]** Capture the small DBG matrix later: base, LVL, HP, KEY, and 3D variants.
 2. **[Shared Runtime]** Continue the cross-app audit with backend/engine/domain candidates, not shared UI.
-3. **[Shared Runtime]** Compare endpoint telemetry queues and diagnostics formatting before extracting more code.
+3. **[Shared Runtime]** Pause further package extraction unless smoke testing shows duplication or regressions; next likely work is Mini-IRIS polish items.
 4. **[Release Hygiene]** Keep package artifact naming explicit by browser platform for both apps.
 5. **[Shared Runtime]** Prefer request/data/parsing/entity lifecycle extraction before UI component sharing.
 
@@ -1089,11 +1089,12 @@ Tasks:
 | Task                                                      | Status | Notes                                                                                                      |
 |-----------------------------------------------------------|--------|------------------------------------------------------------------------------------------------------------|
 | Define shared-vs-app ownership boundaries                 | In Progress | first concrete rule is proven engine helpers can move to `packages/core`; app runtime protocols, UI shells, and product-specific orchestration stay app-owned until both call sites stabilize |
-| Identify first shared backend/engine extraction candidates | In Progress | first extracted candidates are antimeridian-safe map geometry, plain entity GeoJSON builders, the shared COMM plext request contract, and shared player tracker history reduction; next candidates are endpoint telemetry queues and diagnostics formatters |
+| Identify first shared backend/engine extraction candidates | In Progress | extracted candidates now include antimeridian-safe map geometry, plain entity GeoJSON builders, endpoint formatting helpers, the shared COMM plext request contract, and shared player tracker history reduction; pause further extraction unless another concrete duplicate boundary appears |
 | Decide app/package layout for IRIS and mini-IRIS           | Done   | full IRIS now lives in `apps/iris` beside `apps/mini-iris`; reusable backend/engine/domain packages remain under `packages/` |
 | Smoke test unpacked IRIS after app layout move             | Done   | manual Chrome smoke against the moved `apps/iris` build looked good after typecheck/lint/test/build/package validation |
 | Extract shared antimeridian-safe map geometry              | Done   | moved wrapped line/polygon geometry into `packages/core` and switched IRIS plus Mini-IRIS render feature builders to the shared helper |
 | Extract shared plain entity GeoJSON builders               | Done   | moved common portal point, wrapped link line, wrapped field polygon, and FeatureCollection helpers into `packages/core`; app-specific filters, colours, selection, 3D extrusion, and plugin/planning features stay local |
+| Extract shared endpoint/diagnostic formatting helpers      | Done   | moved countdown, relative-time, endpoint stale status, endpoint sorting, and Mini-IRIS compact endpoint badge label helpers into `packages/core`; stores, queues, diagnostics UI, and styling remain app-owned |
 | Extract shared COMM plext request contract                 | Done   | moved plext request bounds/message construction into `packages/core`; IRIS and Mini-IRIS now post the same typed `IRIS_PLEXTS_REQUEST` shape while keeping app-specific scheduling/freshness policy local |
 | Extract shared player tracker history reducer              | Done   | moved COMM markup-to-player-history reduction into `packages/core`; full IRIS player-tracker plugin and Mini-IRIS now share movement parsing while keeping rendering, zoom gates, polling, and UI local |
 | Defer package chopping until boundaries are proven         | Open   | only split packages after shared usage and bundle/build costs are measured                                  |

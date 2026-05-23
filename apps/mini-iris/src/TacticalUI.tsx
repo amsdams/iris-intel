@@ -1,6 +1,6 @@
 import { h, JSX, Fragment } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import type { Field, Link, Portal, PlextRequestBounds } from '@iris/core';
+import {formatCompactEndpointStateLabel, getCompactEndpointStateKind, type Field, type Link, type Portal, type PlextRequestBounds} from '@iris/core';
 import type { PlayerHistory } from './usePlayerTracker';
 import { MapTools } from './MapTools';
 import { DataDock } from './DataDock';
@@ -82,21 +82,6 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBou
         });
     }, [onSelectionPanelOpen, selected, selectionDetailsRequestKey]);
 
-    const formatDelay = (ms: number | null | undefined): string => {
-        if (typeof ms !== 'number' || !Number.isFinite(ms)) return '';
-        const diff = Math.max(0, ms - Date.now());
-        const seconds = Math.ceil(diff / 1000);
-        if (seconds < 60) return `${seconds}s`;
-        const minutes = Math.floor(seconds / 60);
-        const rest = seconds % 60;
-        return `${minutes}m ${rest}s`;
-    };
-
-    const formatCompactDelay = (ms: number | null | undefined): string => {
-        const value = formatDelay(ms);
-        return value ? ` ${value}` : '';
-    };
-
     const entries = (Object.entries(endpointTelemetry) as [EndpointName, EndpointTelemetry | undefined][])
         .filter((entry): entry is [EndpointName, EndpointTelemetry] => entry[1] !== undefined);
     const activeCount = entries.filter(([, value]) => value?.status === 'in_flight').length;
@@ -124,32 +109,8 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBou
         }
     };
 
-    const endpointStateKind = (entry: EndpointTelemetry): 'active' | 'error' | 'cooldown' | 'fresh' | 'idle' => {
-        if (entry.status === 'in_flight') return 'active';
-        if (entry.status === 'error') return 'error';
-        if (entry.cooldownUntil !== null && entry.cooldownUntil > Date.now()) return 'cooldown';
-        if (entry.lastSkipReason === 'fresh') return 'fresh';
-        return 'idle';
-    };
-
-    const endpointStateLabel = (entry: EndpointTelemetry): string => {
-        const kind = endpointStateKind(entry);
-        switch (kind) {
-            case 'active':
-                return `A${entry.inFlightCount > 1 ? `x${entry.inFlightCount}` : ''}`;
-            case 'error':
-                return `E${formatCompactDelay(entry.cooldownUntil)}`;
-            case 'cooldown':
-                return `C${formatCompactDelay(entry.cooldownUntil)}`;
-            case 'fresh':
-                return `F${formatCompactDelay(entry.nextRefreshAt)}`;
-            case 'idle':
-                return 'I';
-        }
-    };
-
     const endpointBadgeStyle = (entry: EndpointTelemetry): Record<string, string> => {
-        const kind = endpointStateKind(entry);
+        const kind = getCompactEndpointStateKind(entry);
         switch (kind) {
             case 'active':
                 return {
@@ -343,7 +304,7 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBou
                                     key={endpoint}
                                     style={{ ...endpointBadgeStyle(entry), padding: '2px 7px', borderRadius: '999px' }}
                                 >
-                                    {endpointLabel(endpoint)} {endpointStateLabel(entry)}
+                                    {endpointLabel(endpoint)} {formatCompactEndpointStateLabel(entry)}
                                 </span>
                             ))}
                         </div>
