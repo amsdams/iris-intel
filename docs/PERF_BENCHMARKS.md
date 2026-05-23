@@ -50,6 +50,7 @@ when evaluating major dependency migrations or rendering changes.
 | 0.1.7   | z8 no-plugins diagnostic        | Desktop Mac | Chrome 148  | OSM     | tracker, health fill, level labels      | 45,114 | 13,389  | 22,259 | 9,334  | 0       | n/a      | n/a       | n/a  | 17ms      | 17ms   | 18ms  | 60  | 0/542       |
 | 0.1.7   | z8 marker-hidden diagnostic     | Desktop Mac | Chrome 148  | OSM     | tracker, health fill, level labels      | 44,252 | 12,603  | 22,218 | 9,337  | 0       | n/a      | n/a       | n/a  | 24ms      | 25ms   | 150ms | 42  | 36/385      |
 | 0.1.7   | z8 movement timing diagnostic   | Desktop Mac | Chrome 148  | OSM     | tracker, health fill, level labels      | 44,140 | 12,592  | 22,111 | 9,343  | 0       | n/a      | n/a       | n/a  | 23ms      | 18ms   | 200ms | 44  | 27/398      |
+| 0.1.7   | z8 full movement suspension     | Desktop Mac | Chrome 148  | OSM     | tracker, health fill, level labels      | 44,253 | 12,592  | 22,230 | 9,337  | 0       | n/a      | n/a       | n/a  | 22ms      | 24ms   | 116ms | 45  | 37/406      |
 
 ## Readout
 
@@ -718,6 +719,9 @@ Notes:
   isolation variants apply their layer hiding before the settle window.
 - The movement-timing diagnostic still shows z8 Normal around `23ms avg`, so the next targeted polish is to suspend all
   nonessential plugin, mission, and planning layers during movement, matching the layer set hidden by `No Plugins`.
+- The full movement suspension batch improves z8 Normal only slightly (`22ms avg`) while all reported optional layers
+  and marker registries are hidden. Treat the remaining gap against `No Plugins` as residual MapLibre/style or browser
+  scheduling work that needs a Chrome Performance trace, not more blind layer toggling.
 - The internal-monitor sample is much faster on average because it appears to run against a 120Hz cadence, but the same
   shape remains: z8 Normal has spikes (`158ms` max, `8` slow frames), while `No Links`, `No Fields`, and `Base` are
   clean.
