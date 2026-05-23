@@ -80,6 +80,20 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPor
     }, [playerHistories]);
 
     const selectionMeta = selected ? getSelectionMeta(selected) : null;
+    const closeOpenDrawer = (): void => {
+        if (openDrawer) onToggle(openDrawer);
+    };
+
+    const closeButton = (label: string): JSX.Element => (
+        <button
+            type="button"
+            onClick={closeOpenDrawer}
+            aria-label={label}
+            style={{ width: '32px', height: '32px', background: 'rgba(255,255,255,0.06)', color: '#ddd', border: '1px solid rgba(255,255,255,0.18)', borderRadius: '4px', font: 'inherit', fontSize: '18px', lineHeight: 1, cursor: 'pointer' }}
+        >
+            x
+        </button>
+    );
 
     const renderPlextMarkup = (p: Plext): JSX.Element[] => {
         return p.markup.map((m, i) => {
@@ -119,13 +133,14 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPor
                             type={selected.type}
                             data={selected.data}
                             colors={COLORS}
+                            onClose={closeOpenDrawer}
                         />
                     </div>
                 )}
                 
                 {/* COMM Panel */}
                 <div style={{ display: openDrawer === 'comm' ? 'flex' : 'none', flexDirection: 'column', background: 'rgba(10,10,10,0.95)', border: '1px solid #00ffff', borderRadius: '12px', height: '400px', color: '#fff', boxShadow: '0 -5px 20px rgba(0,0,0,0.8)', pointerEvents: 'auto', overflow: 'hidden' }}>
-                    <div style={{ display: 'flex', borderBottom: '1px solid #333' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid #333' }}>
                         {(['all', 'faction', 'alerts'] as CommTab[]).map(t => (
                             <div key={t} onClick={() => onCommTabChange(t)} style={{ flex: 1, padding: '10px', textAlign: 'center', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer', background: commTab === t ? 'rgba(0,255,255,0.1)' : 'transparent', color: commTab === t ? '#00ffff' : '#666', borderBottom: commTab === t ? '2px solid #00ffff' : 'none' }}>
                                 {t.toUpperCase()}
@@ -134,6 +149,7 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPor
                         <div onClick={refreshComm} style={{ padding: '10px 12px', textAlign: 'center', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer', color: '#00ffff', borderLeft: '1px solid #222', background: plextBounds ? 'rgba(0,255,255,0.06)' : 'rgba(255,255,255,0.02)' }}>
                             REFRESH
                         </div>
+                        <div style={{ padding: '4px 6px 4px 0' }}>{closeButton('Close COMM')}</div>
                     </div>
                     <div style={{ flex: 1, overflowY: 'auto', padding: '10px', display: 'flex', flexDirection: 'column-reverse', gap: '8px' }}>
                         {filteredPlexts.map(p => (
@@ -148,6 +164,7 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPor
 
                 {/* Player Stats Panel */}
                 <div style={{ display: openDrawer === 'player' ? 'block' : 'none', background: 'rgba(10,10,10,0.95)', border: '1px solid #00ffff', borderRadius: '12px', padding: '15px', color: '#fff', boxShadow: '0 -5px 20px rgba(0,0,0,0.8)', pointerEvents: 'auto' }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '-6px -6px 4px 0' }}>{closeButton('Close player panel')}</div>
                     {playerStats ? (
                         <div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
@@ -235,6 +252,7 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPor
                             >
                                 REFRESH
                             </button>
+                            {closeButton('Close inventory')}
                         </div>
                     </div>
                     {inventory && inventory.length > 0 ? (
@@ -255,6 +273,7 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPor
 
                 {/* Scores Panel */}
                 <div style={{ display: openDrawer === 'scores' ? 'block' : 'none', background: 'rgba(10,10,10,0.95)', border: '1px solid #00ffff', borderRadius: '12px', padding: '15px', color: '#fff', boxShadow: '0 -5px 20px rgba(0,0,0,0.8)', pointerEvents: 'auto' }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '-6px -6px 4px 0' }}>{closeButton('Close scores')}</div>
                     <div style={{ borderBottom: '1px solid #333', paddingBottom: '10px', marginBottom: '10px' }}>
                         <div style={{ color: '#888', fontSize: '10px', marginBottom: '5px', fontWeight: 'bold' }}>GLOBAL MU</div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 'bold' }}>

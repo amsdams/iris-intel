@@ -5,6 +5,7 @@ import { createCirclePolygon } from './GeoUtils';
 import { INGRESS_COLORS } from './MapConstants';
 import type { PortalHistoryLayerState } from './portalHistory';
 import { postMiniPageMapCommand, type MiniMapView } from './pageMapProtocol';
+import type { MiniRenderStats } from './diagnostics';
 
 interface UseMapRendererResult {
     syncToMap: (currentView: MiniMapView, currentLiveMode: boolean, currentPatternMode: number) => void;
@@ -18,6 +19,7 @@ export function useMapRenderer(
     portalHistoryLayers: PortalHistoryLayerState,
     keyOverlayEnabled: boolean,
     mockInventory: InventoryItem[],
+    onRenderStats?: (stats: MiniRenderStats) => void,
 ): UseMapRendererResult {
     const pendingFrameRef = useRef<number | null>(null);
     const liveInventory = useStore((state) => state.inventory);
@@ -72,6 +74,7 @@ export function useMapRenderer(
         currentLiveMode: boolean, 
         currentPatternMode: number
     ): void => {
+        const startedAt = performance.now();
         const bounds = currentView.bounds;
         const zoom = currentView.zoom;
         const minLevel = getMinLevelForZoom(zoom);
@@ -88,6 +91,10 @@ export function useMapRenderer(
 
         const results = currentLiveMode ? globalSpatialIndex.query(q) : generator.query({ minX: q.minLng, minY: q.minLat, maxX: q.maxLng, maxY: q.maxLat });
         const features: GeoJSON.Feature[] = [];
+        let portalCount = 0;
+        let linkCount = 0;
+        let fieldCount = 0;
+        let keyLabelCount = 0;
         const store = useStore.getState();
         const keyCountsByPortal = currentLiveMode ? liveKeyCountsRef.current : mockKeyCountsRef.current;
 
@@ -154,6 +161,7 @@ export function useMapRenderer(
                         scannedInverse: portalHistoryLayers.scanned === 'inverse' && p.scanned === false,
                     };
                     features.push({ type: 'Feature', geometry: { type: 'Point', coordinates: [p.lng, p.lat] }, properties: props });
+                    portalCount += 1;
                     features.push({ 
                         type: 'Feature', 
                         geometry: { type: 'Polygon', coordinates: createCirclePolygon(p.lng, p.lat, 8, 12) }, 
@@ -179,6 +187,7 @@ export function useMapRenderer(
                                     color: INGRESS_COLORS.KEY,
                                 },
                             });
+                            keyLabelCount += 1;
                         }
                     }
                 }
@@ -193,6 +202,7 @@ export function useMapRenderer(
                 if (isVisible && p1 && p2) {
                     const baseProps = { id: l.id, type: 'link', team: l.team };
                     features.push({ type: 'Feature', id: `l-${l.id}`, geometry: { type: 'LineString', coordinates: [[p1.lng, p1.lat], [p2.lng, p2.lat]] }, properties: { ...baseProps, width: Math.max(2, Math.min(4, 2 + ((zoom - 3) / 12) * 2)) } });
+                    linkCount += 1;
                     
                     const dx = p2.lng - p1.lng;
                     const dy = p2.lat - p1.lat;
@@ -221,6 +231,7 @@ export function useMapRenderer(
                     const base_height = 200;
                     const height = base_height + 5;
                     features.push({ type: 'Feature', id: `f-${f.id}`, geometry: { type: 'Polygon', coordinates: [poly] }, properties: { id: f.id, type: 'field', team: faction, height, base_height } });
+                    fieldCount += 1;
                     
                     points.forEach((p, i: number) => {
                         const s = 0.00005;
@@ -237,8 +248,22 @@ export function useMapRenderer(
         });
 
         scheduleSetData({ type: 'FeatureCollection', features });
+        onRenderStats?.({
+            totalFeatures: features.length,
+            portalCount,
+            linkCount,
+            fieldCount,
+            keyLabelCount,
+            playerFeatureCount: 0,
+            queryItemCount: results.length,
+            renderMs: performance.now() - startedAt,
+            minLevel,
+            liveMode: currentLiveMode,
+            patternMode: currentPatternMode,
+            updatedAt: Date.now(),
+        });
         logEvent(`RENDERED: ${features.length} items (Min L:${minLevel})`);
-    }, [generator, keyOverlayEnabled, logEvent, portalHistoryLayers, scheduleSetData]);
+    }, [generator, keyOverlayEnabled, logEvent, onRenderStats, portalHistoryLayers, scheduleSetData]);
 
     return { syncToMap };
 }

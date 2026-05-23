@@ -167,7 +167,7 @@ export function MapTools({ openDrawer, onToggle, onNav, onStyle, onMode, portalH
                     <div
                         className="debug-btn"
                         onClick={onPortalHealthColorToggle}
-                        title={`Portal health opacity: ${portalHealthColorEnabled ? 'on' : 'off'}`}
+                        title={`Portal health coloring: ${portalHealthColorEnabled ? 'on' : 'off'}`}
                         style={{
                             width: '42px',
                             height: '36px',
@@ -187,6 +187,32 @@ export function MapTools({ openDrawer, onToggle, onNav, onStyle, onMode, portalH
                     >
                         HP
                     </div>
+                </div>
+            </div>
+
+            {/* Compact Diagnostics */}
+            <div className="drawer-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                <div
+                    className="debug-btn"
+                    onClick={() => onToggle('diagnostics')}
+                    title="Diagnostics"
+                    style={{
+                        width: '40px',
+                        height: '40px',
+                        background: openDrawer === 'diagnostics' ? 'rgba(0,255,255,0.18)' : 'rgba(34,34,34,0.9)',
+                        color: openDrawer === 'diagnostics' ? '#7ef9ff' : '#fff',
+                        border: `1px solid ${openDrawer === 'diagnostics' ? '#7ef9ff' : '#00ffff'}`,
+                        borderRadius: '50%',
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        pointerEvents: 'auto',
+                    }}
+                >
+                    DBG
                 </div>
             </div>
         </div>

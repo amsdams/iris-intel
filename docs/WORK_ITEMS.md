@@ -1130,6 +1130,8 @@ Tasks:
 | Fix low-zoom globe-wrap link/field rendering               | Done   | render feature builders now split antimeridian-crossing links and field polygons into render-safe geometry so they draw along the short path without changing selection/storage geometry |
 | Guard tile coverage generation against invalid/extreme bounds | Done | entity coverage generation now rejects non-finite bounds, clamps WebMercator lat/tile ranges, handles antimeridian-crossing bounds, caps extreme tile lists at 1024, and reports diagnostics through endpoint metadata instead of risking a runaway loop |
 | Investigate package split only after measuring bundle cost | Blocked | an `@iris/types` or `@iris/utils` split may help later, but it is deferred until plugin bundle size or package-boundary cost is a measured issue                                                       |
+| Consider selected-in-view nudge for IRIS popups            | Open   | Mini-IRIS nudges the map when selection details open/close so the selected object stays visible above the bottom panel; evaluate the same behavior for full IRIS later |
+| Consider smooth jump behavior for explicit IRIS jumps      | Open   | Mini-IRIS uses `flyTo` for explicit portal jumps while IRIS mostly uses `jumpTo`; evaluate only for user-triggered jumps, not ordinary selection |
 
 ## Mini-IRIS Page-World Alignment
 
@@ -1151,16 +1153,27 @@ Principles:
   keep the content-world side as a compact UI/data bridge.
 - Keep app-specific UI composition in `packages/extension` and `apps/mini-iris` until component ownership is obvious.
 
+Non-goals:
+
+- Do not add a full IRIS diagnostics popup; keep `DBG` compact and map-focused.
+- Do not add a Mini-IRIS plugin system yet; reuse proven helpers without hosting arbitrary plugins.
+- Do not chase full drawer/sidebar parity; keep Mini-IRIS bottom-dock and mobile-first.
+- Do not extract shared UI components just because surfaces look similar; wait for stable call sites.
+- Do not migrate full planning/draw-tools into Mini-IRIS yet.
+- Do not add heavy always-on overlays; keep labels, keys, player trails, diagnostics, and visual modes opt-in or zoom-gated.
+- Do not split packages based on theory; start with low-risk shared logic only when both apps already need it.
+
 Tasks:
 
 | Task                                                       | Status | Notes                                                                                                      |
 |------------------------------------------------------------|--------|------------------------------------------------------------------------------------------------------------|
 | Audit mini-IRIS vs IRIS runtime overlap                    | Done   | map ownership was the first proven overlap; Mini-IRIS now uses a compact page-world MapLibre runtime and content-world UI bridge |
-| Define compact mini-IRIS non-goals                         | Open   | explicitly list main-IRIS features that should not migrate into mini-IRIS by default                        |
+| Define compact mini-IRIS non-goals                         | Done   | non-goals now keep Mini-IRIS compact: no full diagnostics popup, plugin system, broad UI parity, draw-tools migration, heavy always-on overlays, or theory-driven package split |
 | Migrate mini-IRIS map runtime toward page-world discipline  | Done   | page-world runtime owns MapLibre, rendered-feature selection, explicit mobile touch-hold selection, camera, sources, players, selection highlights, style, and 3D toggles |
 | Smoke test Mini-IRIS page-world map interactions            | Done   | desktop Chrome and mobile testing confirmed map load, portal selection, drawer details, right-click details, and long-press details after the page-world migration |
+| Add compact Mini-IRIS diagnostics/bench surface             | Done   | `DBG` map tool opens compact entity/source counts, frame stats, render timing, active toggles, and copyable one-line bench output without adding a full IRIS diagnostics popup |
 | Preserve Mini-IRIS faction ring with level/health toggles   | Done   | page-world portal styling now keeps a faction-coloured stroke/ring while level colouring and health opacity affect the fill |
-| Match IRIS portal HP colour ramp in Mini-IRIS                | Open   | HP mode should use the same health colour semantics as full IRIS, not only opacity, while keeping faction identity readable |
+| Match IRIS portal HP colour ramp in Mini-IRIS                | Done   | HP mode now uses the same yellow/orange/red/magenta recharge semantics as full IRIS while preserving the faction-coloured stroke/ring |
 | Make Mini-IRIS secondary interactions open popups directly  | Done   | page-world contextmenu/right-click and mobile long-press now send a details intent so the compact selection/details drawer opens directly |
 
 ## Snapshot And Reference Sources

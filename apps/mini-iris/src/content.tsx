@@ -17,6 +17,7 @@ import type { PlextRequestBounds } from './plextRequests';
 import { throttle } from './GeoUtils';
 import { isEndpointStateMessage, numberOrNull, stringOrNull } from './messages';
 import { DEFAULT_PORTAL_HISTORY_LAYERS, nextPortalHistoryMode, type PortalHistoryKey, type PortalHistoryLayerState, type PortalHistoryMode } from './portalHistory';
+import type { MiniFrameStats, MiniRenderStats } from './diagnostics';
 import {
     MINI_PAGE_MAP_EVENT,
     postMiniPageMapCommand,
@@ -49,8 +50,28 @@ interface SavedMapState {
 }
 
 type SelectedEntity = { type: 'portal'; data: Portal } | { type: 'link'; data: Link } | { type: 'field'; data: Field };
+interface MiniEntityCounts {
+    portals: number;
+    links: number;
+    fields: number;
+    players: number;
+}
 
 const EMPTY_PLAYER_HISTORIES = new Map<string, PlayerHistory>();
+const EMPTY_ENTITY_COUNTS: MiniEntityCounts = {
+    portals: 0,
+    links: 0,
+    fields: 0,
+    players: 0,
+};
+const EMPTY_FRAME_STATS: MiniFrameStats = {
+    avgMs: 0,
+    maxMs: 0,
+    fps: 0,
+    slowFrames: 0,
+    sampleCount: 0,
+    updatedAt: 0,
+};
 
 function readSavedMapState(): SavedMapState | null {
     try {
@@ -253,6 +274,9 @@ function TacticalOverlay(): h.JSX.Element {
     const [portalLevelColorEnabled, setPortalLevelColorEnabled] = useState(initialPortalLevelColorEnabled);
     const [portalHealthColorEnabled, setPortalHealthColorEnabled] = useState(initialPortalHealthColorEnabled);
     const [mockInventory, setMockInventory] = useState<InventoryItem[]>([]);
+    const [renderStats, setRenderStats] = useState<MiniRenderStats | null>(null);
+    const [frameStats, setFrameStats] = useState<MiniFrameStats>(EMPTY_FRAME_STATS);
+    const [entityCounts, setEntityCounts] = useState<MiniEntityCounts>(EMPTY_ENTITY_COUNTS);
     const [extrusionEnabled, setExtrusionEnabled] = useState(false);
     const [isVis, setIsVis] = useState(false);
     const [pulseTick, setPulseTick] = useState(0);
@@ -348,6 +372,59 @@ function TacticalOverlay(): h.JSX.Element {
     const endpointTelemetry = useEndpointTelemetry();
 
     useEffect(() => {
+        if (!isVis) {
+            setFrameStats(EMPTY_FRAME_STATS);
+            return;
+        }
+
+        let frame: number | null = null;
+        let lastFrameTime = performance.now();
+        let sampleStartedAt = lastFrameTime;
+        let totalMs = 0;
+        let maxMs = 0;
+        let slowFrames = 0;
+        let sampleCount = 0;
+
+        const tick = (now: number): void => {
+            const delta = now - lastFrameTime;
+            lastFrameTime = now;
+
+            if (delta > 0 && delta < 1000) {
+                totalMs += delta;
+                maxMs = Math.max(maxMs, delta);
+                slowFrames += delta > 20 ? 1 : 0;
+                sampleCount += 1;
+            }
+
+            if (now - sampleStartedAt >= 1000 && sampleCount > 0) {
+                const avgMs = totalMs / sampleCount;
+                setFrameStats({
+                    avgMs,
+                    maxMs,
+                    fps: Math.round(1000 / avgMs),
+                    slowFrames,
+                    sampleCount,
+                    updatedAt: Date.now(),
+                });
+                sampleStartedAt = now;
+                totalMs = 0;
+                maxMs = 0;
+                slowFrames = 0;
+                sampleCount = 0;
+            }
+
+            frame = window.requestAnimationFrame(tick);
+        };
+
+        frame = window.requestAnimationFrame(tick);
+        return (): void => {
+            if (frame !== null) {
+                window.cancelAnimationFrame(frame);
+            }
+        };
+    }, [isVis]);
+
+    useEffect(() => {
         const formatDelay = (ms: number | null | undefined): string => {
             if (typeof ms !== 'number' || !Number.isFinite(ms)) return '';
             const diff = Math.max(0, ms - Date.now());
@@ -390,17 +467,37 @@ function TacticalOverlay(): h.JSX.Element {
         return (): void => window.removeEventListener('message', handler);
     }, [logEvent]);
 
-    const { syncToMap } = useMapRenderer(generator, logEvent, portalHistoryLayers, keyOverlayEnabled, mockInventory);
-    const { loadPattern1, loadPattern2, loadPattern3 } = usePatterns(mapState, generator, loadedTileKeys, logEvent, setMockInventory);
-    const syncCurrentView = useCallback((currentLiveMode: boolean, currentPatternMode: number): void => {
-        syncToMap(mapViewRef.current, currentLiveMode, currentPatternMode);
-    }, [syncToMap]);
-    
-    useIntelMessages(liveMode, patternMode, selected, setSelected, syncCurrentView, logEvent);
     useScores(isVis, liveMode, mapState.lat, mapState.lng);
     usePlayerStats(isVis, liveMode);
     const { playerHistories } = usePlayerTracker(isVis, liveMode, logEvent, plextBounds);
     const visiblePlayerHistories = liveMode ? playerHistories : EMPTY_PLAYER_HISTORIES;
+    const handleRenderStats = useCallback((stats: MiniRenderStats): void => {
+        setRenderStats(stats);
+        if (!stats.liveMode) {
+            setEntityCounts({
+                portals: generator.portals.size,
+                links: generator.linksMap.size,
+                fields: generator.fieldsMap.size,
+                players: 0,
+            });
+            return;
+        }
+        const store = useStore.getState();
+        setEntityCounts({
+            portals: Object.keys(store.portals).length,
+            links: Object.keys(store.links).length,
+            fields: Object.keys(store.fields).length,
+            players: visiblePlayerHistories.size,
+        });
+    }, [generator, visiblePlayerHistories.size]);
+
+    const { syncToMap } = useMapRenderer(generator, logEvent, portalHistoryLayers, keyOverlayEnabled, mockInventory, handleRenderStats);
+    const { loadPattern1, loadPattern2, loadPattern3 } = usePatterns(mapState, generator, loadedTileKeys, logEvent, setMockInventory);
+    const syncCurrentView = useCallback((currentLiveMode: boolean, currentPatternMode: number): void => {
+        syncToMap(mapViewRef.current, currentLiveMode, currentPatternMode);
+    }, [syncToMap]);
+
+    useIntelMessages(liveMode, patternMode, selected, setSelected, syncCurrentView, logEvent);
     const playerTrailData = useMemo<GeoJSON.FeatureCollection>(() => {
         const features: GeoJSON.Feature[] = [];
         const clusters = new Map<string, { lat: number; lng: number; names: string[]; team: string; count: number }>();
@@ -919,6 +1016,12 @@ function TacticalOverlay(): h.JSX.Element {
                         onPortalLevelColorToggle={handlePortalLevelColorToggle}
                         portalHealthColorEnabled={portalHealthColorEnabled}
                         onPortalHealthColorToggle={handlePortalHealthColorToggle}
+                        liveMode={liveMode}
+                        patternMode={patternMode}
+                        extrusionEnabled={extrusionEnabled}
+                        renderStats={renderStats}
+                        frameStats={frameStats}
+                        entityCounts={entityCounts}
                         onNav={handleNav} onStyle={handleStyle} onMode={handleMode}
                         onPortalClick={handlePortalClick}
                         onSelectionPanelOpen={handleSelectionPanelOpen}

@@ -1,5 +1,5 @@
 import { h, JSX, Fragment } from 'preact';
-import { useEffect, useState, useRef } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Field, Link, Portal } from '@iris/core';
 import type { PlayerHistory } from './usePlayerTracker';
 import { MapTools } from './MapTools';
@@ -8,6 +8,7 @@ import { useComm } from './useComm';
 import type { EndpointName, EndpointTelemetry } from './useEndpointTelemetry';
 import type { PlextRequestBounds } from './plextRequests';
 import type { PortalHistoryKey, PortalHistoryLayerState } from './portalHistory';
+import type { MiniFrameStats, MiniRenderStats } from './diagnostics';
 
 interface EventLogEntry {
     time: string;
@@ -40,11 +41,22 @@ interface TacticalUIProps {
     onPortalLevelColorToggle: () => void;
     portalHealthColorEnabled: boolean;
     onPortalHealthColorToggle: () => void;
+    liveMode: boolean;
+    patternMode: number;
+    extrusionEnabled: boolean;
+    renderStats: MiniRenderStats | null;
+    frameStats: MiniFrameStats;
+    entityCounts: {
+        portals: number;
+        links: number;
+        fields: number;
+        players: number;
+    };
 }
 
-export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBounds, playerHistories, selected, selectionDetailsRequestKey, onNav, onStyle, onMode, onPortalClick, onSelectionPanelOpen, onSelectionPanelClose, portalHistoryLayers, onPortalHistoryLayerToggle, keyOverlayEnabled, onKeyOverlayToggle, portalLevelColorEnabled, onPortalLevelColorToggle, portalHealthColorEnabled, onPortalHealthColorToggle }: TacticalUIProps): JSX.Element {
+export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBounds, playerHistories, selected, selectionDetailsRequestKey, onNav, onStyle, onMode, onPortalClick, onSelectionPanelOpen, onSelectionPanelClose, portalHistoryLayers, onPortalHistoryLayerToggle, keyOverlayEnabled, onKeyOverlayToggle, portalLevelColorEnabled, onPortalLevelColorToggle, portalHealthColorEnabled, onPortalHealthColorToggle, liveMode, patternMode, extrusionEnabled, renderStats, frameStats, entityCounts }: TacticalUIProps): JSX.Element {
     const [openDrawer, setOpenDrawer] = useState<string | null>(null);
-    const logRef = useRef<HTMLDivElement>(null);
+    const handledSelectionDetailsRequestKeyRef = useRef(0);
     
     const { activeTab, setActiveTab, refreshComm } = useComm(true, true, plextBounds);
 
@@ -61,7 +73,8 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBou
     }, [onSelectionPanelClose, selected]);
 
     useEffect(() => {
-        if (!selected || selectionDetailsRequestKey === 0) return;
+        if (!selected || selectionDetailsRequestKey === 0 || selectionDetailsRequestKey === handledSelectionDetailsRequestKeyRef.current) return;
+        handledSelectionDetailsRequestKeyRef.current = selectionDetailsRequestKey;
         setOpenDrawer((current) => {
             if (current !== 'selection') {
                 onSelectionPanelOpen();
@@ -198,27 +211,56 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBou
         }
     };
 
+    const formatMs = (value: number | null | undefined): string => {
+        if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
+        return `${Math.round(value)}ms`;
+    };
+
+    const formatCount = (value: number | null | undefined): string => {
+        if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
+        return value.toLocaleString();
+    };
+
+    const getBrowserLabel = (): string => {
+        const userAgent = navigator.userAgent;
+        const firefox = userAgent.match(/Firefox\/([0-9.]+)/);
+        if (firefox) return `Firefox/${firefox[1]}`;
+        const chrome = userAgent.match(/Chrome\/([0-9.]+)/);
+        if (chrome) return `Chrome/${chrome[1]}`;
+        const safari = userAgent.match(/Version\/([0-9.]+).*Safari\//);
+        if (safari) return `Safari/${safari[1]}`;
+        return 'Unknown';
+    };
+
+    const benchLine = [
+        `MINI IRIS BENCH`,
+        `browser ${getBrowserLabel()}`,
+        `platform ${navigator.platform}`,
+        `viewport ${window.innerWidth}x${window.innerHeight}`,
+        `dpr ${window.devicePixelRatio.toFixed(2)}`,
+        `z${Math.round(zoom)}`,
+        liveMode ? 'mode live' : `mode mock${patternMode}`,
+        `features ${formatCount(renderStats?.totalFeatures)}`,
+        `P ${formatCount(renderStats?.portalCount)}`,
+        `L ${formatCount(renderStats?.linkCount)}`,
+        `F ${formatCount(renderStats?.fieldCount)}`,
+        `keys ${formatCount(renderStats?.keyLabelCount)}`,
+        `sources P ${formatCount(entityCounts.portals)} L ${formatCount(entityCounts.links)} F ${formatCount(entityCounts.fields)}`,
+        `avg ${formatMs(frameStats.avgMs)}`,
+        `max ${formatMs(frameStats.maxMs)}`,
+        `fps ${frameStats.fps}`,
+        `slow ${frameStats.slowFrames}/${frameStats.sampleCount}`,
+        `render ${formatMs(renderStats?.renderMs)}`,
+        `toggles lvl ${portalLevelColorEnabled ? 'on' : 'off'} hp ${portalHealthColorEnabled ? 'on' : 'off'} keys ${keyOverlayEnabled ? 'on' : 'off'} 3d ${extrusionEnabled ? 'on' : 'off'}`,
+    ].join(' | ');
+
+    const copyBenchLine = (): void => {
+        const write = navigator.clipboard?.writeText(benchLine);
+        if (write) void write.catch(() => undefined);
+    };
+
     return (
         <Fragment>
-            {/* Position Log */}
-            <div id="pos-log" style={{ position: 'fixed', top: '10px', left: '10px', background: 'rgba(0,0,0,0.85)', color: '#fff', padding: '4px 8px', fontFamily: 'monospace', fontSize: '11px', borderRadius: '4px', zIndex: 1000006, border: '1px solid #888', pointerEvents: 'none' }}>
-                Z: {zoom.toFixed(2)} | {lat.toFixed(5)}, {lng.toFixed(5)}
-            </div>
-
-            <div id="queue-strip" style={{ position: 'fixed', top: '34px', left: '10px', right: '10px', display: 'flex', gap: '4px', flexWrap: 'wrap', alignItems: 'center', zIndex: 1000005, pointerEvents: 'none', fontFamily: 'monospace', fontSize: '10px' }}>
-                <span style={{ background: 'rgba(8, 28, 28, 0.96)', color: '#7ef9ff', padding: '2px 7px', borderRadius: '999px', border: '1px solid rgba(126, 249, 255, 0.24)', letterSpacing: '0.02em' }}>
-                    Q {activeCount}A {cooldownCount}C {errorCount}E {freshCount}F
-                </span>
-                {entries.map(([endpoint, entry]) => (
-                    <span
-                        key={endpoint}
-                        style={{ ...endpointBadgeStyle(entry), padding: '2px 7px', borderRadius: '999px' }}
-                    >
-                        {endpointLabel(endpoint)} {endpointStateLabel(entry)}
-                    </span>
-                ))}
-            </div>
-
             {/* Top Right: Map Tools */}
             <MapTools
                 openDrawer={openDrawer}
@@ -236,6 +278,87 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBou
                 onPortalHealthColorToggle={onPortalHealthColorToggle}
             />
 
+            {openDrawer === 'diagnostics' && (
+                <div
+                    id="mini-iris-diagnostics"
+                    style={{
+                        position: 'fixed',
+                        top: '10px',
+                        right: '58px',
+                        width: 'min(300px, calc(100vw - 78px))',
+                        maxHeight: 'calc(100vh - 110px)',
+                        overflowY: 'auto',
+                        background: 'rgba(8, 12, 14, 0.94)',
+                        color: '#d8fdfd',
+                        border: '1px solid rgba(126, 249, 255, 0.35)',
+                        borderRadius: '8px',
+                        zIndex: 2000002,
+                        pointerEvents: 'auto',
+                        fontFamily: 'monospace',
+                        fontSize: '11px',
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.42)',
+                    }}
+                >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', padding: '8px 10px', borderBottom: '1px solid rgba(126, 249, 255, 0.2)' }}>
+                        <strong style={{ color: '#7ef9ff', fontSize: '12px' }}>Diagnostics</strong>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <button
+                                type="button"
+                                onClick={copyBenchLine}
+                                style={{ background: 'rgba(0,255,255,0.12)', color: '#7ef9ff', border: '1px solid rgba(126,249,255,0.35)', borderRadius: '4px', padding: '4px 7px', font: 'inherit', cursor: 'pointer' }}
+                            >
+                                Copy
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setOpenDrawer(null)}
+                                aria-label="Close diagnostics"
+                                style={{ width: '32px', height: '32px', background: 'rgba(255,255,255,0.06)', color: '#d8fdfd', border: '1px solid rgba(255,255,255,0.18)', borderRadius: '4px', font: 'inherit', fontSize: '18px', lineHeight: 1, cursor: 'pointer' }}
+                            >
+                                x
+                            </button>
+                        </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '5px 10px', padding: '9px 10px' }}>
+                        <span>Mode</span><span>{liveMode ? 'Live' : `Mock ${patternMode}`}</span>
+                        <span>Camera</span><span>Z{zoom.toFixed(2)} / {lat.toFixed(5)}, {lng.toFixed(5)}</span>
+                        <span>Network</span><span>{activeCount}A / {cooldownCount}C / {errorCount}E / {freshCount}F</span>
+                        <span>Entities</span><span>P {formatCount(entityCounts.portals)} / L {formatCount(entityCounts.links)} / F {formatCount(entityCounts.fields)}</span>
+                        <span>Players</span><span>{formatCount(entityCounts.players)}</span>
+                        <span>Visible</span><span>P {formatCount(renderStats?.portalCount)} / L {formatCount(renderStats?.linkCount)} / F {formatCount(renderStats?.fieldCount)}</span>
+                        <span>Features</span><span>{formatCount(renderStats?.totalFeatures)}</span>
+                        <span>Keys</span><span>{formatCount(renderStats?.keyLabelCount)}</span>
+                        <span>Query</span><span>{formatCount(renderStats?.queryItemCount)}</span>
+                        <span>Build</span><span>{formatMs(renderStats?.renderMs)}</span>
+                        <span>Frame</span><span>{formatMs(frameStats.avgMs)} avg / {formatMs(frameStats.maxMs)} max</span>
+                        <span>FPS</span><span>{frameStats.fps} ({frameStats.slowFrames}/{frameStats.sampleCount} slow)</span>
+                        <span>Toggles</span><span>LVL {portalLevelColorEnabled ? 'on' : 'off'} / HP {portalHealthColorEnabled ? 'on' : 'off'} / KEY {keyOverlayEnabled ? 'on' : 'off'} / 3D {extrusionEnabled ? 'on' : 'off'}</span>
+                    </div>
+                    <div style={{ padding: '8px 10px', borderTop: '1px solid rgba(126, 249, 255, 0.14)', color: '#9fb8b8', overflowWrap: 'anywhere' }}>
+                        {benchLine}
+                    </div>
+                    {entries.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', padding: '8px 10px', borderTop: '1px solid rgba(126, 249, 255, 0.14)' }}>
+                            {entries.map(([endpoint, entry]) => (
+                                <span
+                                    key={endpoint}
+                                    style={{ ...endpointBadgeStyle(entry), padding: '2px 7px', borderRadius: '999px' }}
+                                >
+                                    {endpointLabel(endpoint)} {endpointStateLabel(entry)}
+                                </span>
+                            ))}
+                        </div>
+                    )}
+                    {events.length > 0 && (
+                        <div style={{ padding: '8px 10px', borderTop: '1px solid rgba(126, 249, 255, 0.14)', color: '#7ef9ff' }}>
+                            {events.slice(0, 6).map((e, i) => (
+                                <div key={i} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>[{e.time}] {e.msg}</div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* Bottom: Data & Profile Dock */}
             <DataDock 
                 openDrawer={openDrawer} 
@@ -248,12 +371,6 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBou
                 selected={selected}
             />
 
-            {/* Event Log */}
-            <div id="event-log" ref={logRef} style={{ position: 'fixed', bottom: '85px', left: '10px', right: '10px', height: '60px', background: 'rgba(0,0,0,0.7)', color: '#00ffff', overflowY: 'auto', zIndex: 2000000, fontFamily: 'monospace', padding: '8px', fontSize: '10px', border: '1px solid rgba(0,255,255,0.3)', pointerEvents: 'none', borderRadius: '4px', opacity: 0.6 }}>
-                {events.map((e, i) => (
-                    <div key={i}>[{e.time}] {e.msg}</div>
-                ))}
-            </div>
         </Fragment>
     );
 }

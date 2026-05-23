@@ -7,9 +7,10 @@ interface DashboardProps {
     type: string;
     data: Portal | Link | Field;
     colors: Record<string, string>;
+    onClose?: () => void;
 }
 
-export function Dashboard({ type, data, colors }: DashboardProps): JSX.Element {
+export function Dashboard({ type, data, colors, onClose }: DashboardProps): JSX.Element {
     const teamKey = data.team;
     const teamColor = colors[teamKey] || '#fff';
     const title = `${type.toUpperCase()} DETAILS`;
@@ -217,7 +218,19 @@ export function Dashboard({ type, data, colors }: DashboardProps): JSX.Element {
         <div id="entity-details" style={{ color: '#fff', padding: '0', fontFamily: 'monospace', fontSize: '12px', pointerEvents: 'auto', border: `1px solid ${teamColor}`, borderRadius: '4px', background: 'rgba(0,0,0,0.95)', overflow: 'hidden', boxShadow: `0 0 10px ${teamColor}44` }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '7px 8px', borderBottom: '1px solid #333' }}>
                 <span style={{ color: teamColor, fontWeight: 'bold', fontSize: '11px', letterSpacing: '0.04em' }}>{title}</span>
-                {titleMeta && <span style={{ color: '#aaa', fontSize: '10px', fontWeight: 'bold' }}>{titleMeta}</span>}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {titleMeta && <span style={{ color: '#aaa', fontSize: '10px', fontWeight: 'bold' }}>{titleMeta}</span>}
+                    {onClose && (
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            aria-label="Close details"
+                            style={{ width: '32px', height: '32px', background: 'rgba(255,255,255,0.06)', color: '#ddd', border: '1px solid rgba(255,255,255,0.18)', borderRadius: '4px', font: 'inherit', fontSize: '18px', lineHeight: 1, cursor: 'pointer' }}
+                        >
+                            x
+                        </button>
+                    )}
+                </div>
             </div>
             {type === 'portal' ? renderPortal(data as Portal) : type === 'field' ? renderField(data as Field) : type === 'link' ? renderLink(data as Link) : (
                 <div style={{ padding: '8px' }}>

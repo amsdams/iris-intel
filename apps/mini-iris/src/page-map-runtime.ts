@@ -36,7 +36,38 @@ const PORTAL_LEVEL_COLOR_EXPR: CirclePaint['circle-color'] = [
     8, ITEM_LEVEL_COLORS[8],
     COLORS.N,
 ];
-const PORTAL_HEALTH_OPACITY_EXPR: CirclePaint['circle-opacity'] = ['interpolate', ['linear'], ['coalesce', ['get', 'health'], 100], 0, 0.15, 100, 1];
+const PORTAL_HEALTH_COLOR_EXPR: CirclePaint['circle-color'] = [
+    'case',
+    ['any', ['==', ['get', 'team'], 'N'], ['>=', ['coalesce', ['get', 'health'], 100], 100]],
+    PORTAL_TEAM_COLOR_EXPR,
+    ['>', ['coalesce', ['get', 'health'], 100], 85],
+    '#ffff00',
+    ['>', ['coalesce', ['get', 'health'], 100], 50],
+    '#ff9900',
+    ['>', ['coalesce', ['get', 'health'], 100], 15],
+    '#ff0000',
+    '#ff00ff',
+];
+const PORTAL_HEALTH_LEVEL_COLOR_EXPR: CirclePaint['circle-color'] = [
+    'case',
+    ['any', ['==', ['get', 'team'], 'N'], ['>=', ['coalesce', ['get', 'health'], 100], 100]],
+    PORTAL_LEVEL_COLOR_EXPR,
+    ['>', ['coalesce', ['get', 'health'], 100], 85],
+    '#ffff00',
+    ['>', ['coalesce', ['get', 'health'], 100], 50],
+    '#ff9900',
+    ['>', ['coalesce', ['get', 'health'], 100], 15],
+    '#ff0000',
+    '#ff00ff',
+];
+const PORTAL_HEALTH_OPACITY_EXPR: CirclePaint['circle-opacity'] = [
+    'case',
+    ['>=', ['coalesce', ['get', 'health'], 100], 100],
+    1,
+    ['>', ['coalesce', ['get', 'health'], 100], 75],
+    ['+', ['*', ['-', 1, ['/', ['coalesce', ['get', 'health'], 100], 100]], 0.5], 0.5],
+    ['+', ['*', ['-', 1, ['/', ['coalesce', ['get', 'health'], 100], 100]], 0.75], 0.25],
+];
 const SELECTABLE_LAYERS = ['p', 'f-enl', 'f-res', 'f-mac', 'l-enl', 'l-res', 'l-mac'] as const;
 const MOBILE_LONG_PRESS_MS = 650;
 const MOBILE_LONG_PRESS_MOVE_TOLERANCE_PX = 12;
@@ -215,7 +246,10 @@ function setExtrusion(enabled: boolean): void {
 function setPortalPaint(levelColorEnabled: boolean, healthColorEnabled: boolean): void {
     currentPortalPaint = { levelColorEnabled, healthColorEnabled };
     if (!map?.getLayer('p')) return;
-    map.setPaintProperty('p', 'circle-color', levelColorEnabled ? PORTAL_LEVEL_COLOR_EXPR : PORTAL_TEAM_COLOR_EXPR);
+    const fillColor = healthColorEnabled
+        ? (levelColorEnabled ? PORTAL_HEALTH_LEVEL_COLOR_EXPR : PORTAL_HEALTH_COLOR_EXPR)
+        : (levelColorEnabled ? PORTAL_LEVEL_COLOR_EXPR : PORTAL_TEAM_COLOR_EXPR);
+    map.setPaintProperty('p', 'circle-color', fillColor);
     map.setPaintProperty('p', 'circle-opacity', healthColorEnabled ? PORTAL_HEALTH_OPACITY_EXPR : 1);
 }
 
