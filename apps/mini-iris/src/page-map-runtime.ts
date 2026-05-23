@@ -349,6 +349,9 @@ function handleCommand(command: MiniPageMapCommandMessage['command']): void {
         case 'fly-to':
             map.flyTo({ center: [command.lng, command.lat], zoom: command.zoom, duration: command.duration ?? 0 });
             break;
+        case 'ease-to':
+            map.easeTo({ center: [command.lng, command.lat], zoom: command.zoom, duration: command.duration ?? 0 });
+            break;
         case 'resize':
             map.resize();
             break;

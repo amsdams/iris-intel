@@ -692,7 +692,7 @@ function TacticalOverlay(): h.JSX.Element {
 
     const handlePortalClick = useCallback((lat: number, lng: number, name: string): void => {
         logEvent(`Jumping to Portal: ${name}`);
-        postMiniPageMapCommand({ action: 'fly-to', lat, lng, zoom: 17, duration: 2000 });
+        postMiniPageMapCommand({ action: 'ease-to', lat, lng, zoom: 17, duration: 850 });
         
         const store = useStore.getState();
         const existing = Object.values(store.portals).find(p => Math.abs(p.lat - lat) < 0.0001 && Math.abs(p.lng - lng) < 0.0001);

@@ -41,6 +41,7 @@ export type MiniPageMapCommand =
     | { action: 'set-portal-paint'; levelColorEnabled: boolean; healthColorEnabled: boolean }
     | { action: 'nav'; nav: '+' | '-' | 'up' | 'down' | 'left' | 'right' | 'reset' }
     | { action: 'fly-to'; lat: number; lng: number; zoom: number; duration?: number }
+    | { action: 'ease-to'; lat: number; lng: number; zoom: number; duration?: number }
     | { action: 'resize' };
 
 export type MiniPageMapEvent =

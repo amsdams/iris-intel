@@ -1175,6 +1175,7 @@ Tasks:
 | Preserve Mini-IRIS faction ring with level/health toggles   | Done   | page-world portal styling now keeps a faction-coloured stroke/ring while level colouring and health opacity affect the fill |
 | Match IRIS portal HP colour ramp in Mini-IRIS                | Done   | HP mode now uses the same yellow/orange/red/magenta recharge semantics as full IRIS while preserving the faction-coloured stroke/ring |
 | Make Mini-IRIS secondary interactions open popups directly  | Done   | page-world contextmenu/right-click and mobile long-press now send a details intent so the compact selection/details drawer opens directly |
+| Tune Mini-IRIS explicit portal jump behavior                | Done   | explicit portal jumps now use a shorter `easeTo` page-world command instead of a long `flyTo`; geolocation keeps the existing `flyTo` behavior |
 
 ## Snapshot And Reference Sources
 
