@@ -1,4 +1,14 @@
-import { Artifact, Field, HistoryFilterState, Link, MissionDetails, Portal, buildWrappedLineSegments, buildWrappedPolygonGeometry } from '@iris/core';
+import {
+  Artifact,
+  Field,
+  HistoryFilterState,
+  Link,
+  MissionDetails,
+  Portal,
+  buildFieldPolygonFeature,
+  buildLinkLineFeatures,
+  buildPortalPointFeature,
+} from '@iris/core';
 
 type PortalFeatureProperties = {
   id: string;
@@ -47,13 +57,6 @@ type FieldFilters = TeamVisibility & {
   showFields: boolean;
 };
 
-export const toFeatureCollection = <T extends GeoJSON.Geometry, P extends GeoJSON.GeoJsonProperties>(
-  features: GeoJSON.Feature<T, P>[]
-): GeoJSON.FeatureCollection<T, P> => ({
-  type: 'FeatureCollection',
-  features,
-});
-
 type PortalFilters = TeamVisibility & {
   showLevel: Record<number, boolean>;
   showHealth: Record<number, boolean>;
@@ -97,21 +100,13 @@ export const buildPortalFeatures = (
 
       return true;
     })
-    .map((portal) => ({
-      type: 'Feature',
-      geometry: { type: 'Point', coordinates: [portal.lng, portal.lat] },
-      properties: {
-        id: portal.id,
-        team: portal.team,
+    .map((portal) => buildPortalPointFeature(portal, {
         name: portal.name,
-        level: portal.level || 0,
-        health: portal.health ?? 100,
         visited: !!portal.visited,
         captured: !!portal.captured,
         scanned: !!portal.scanned,
         ornaments: portal.ornaments || [],
-      } satisfies PortalFeatureProperties,
-    }));
+      }) as PortalFeature);
 
 export const buildLinkFeatures = (
   links: Record<string, Link>,
@@ -124,13 +119,9 @@ export const buildLinkFeatures = (
       if (link.team === 'E' && !filters.showEnlightened) return false;
       return !(link.team === 'M' && !filters.showMachina);
     })
-    .flatMap((link) => buildWrappedLineSegments([link.fromLng, link.fromLat], [link.toLng, link.toLat])
-      .map((coordinates) => ({
-        type: 'Feature',
-        geometry: {
-          type: 'LineString',
-          coordinates,
-        },
+    .flatMap((link) => buildLinkLineFeatures(link)
+      .map((feature) => ({
+        ...feature,
         properties: { team: link.team } satisfies TeamFeatureProperties,
       })));
 
@@ -146,8 +137,7 @@ export const buildFieldFeatures = (
       return !(field.team === 'M' && !filters.showMachina);
     })
     .map((field) => ({
-      type: 'Feature',
-      geometry: buildWrappedPolygonGeometry(field.points.map((point) => [point.lng, point.lat])),
+      ...buildFieldPolygonFeature(field),
       properties: { team: field.team } satisfies TeamFeatureProperties,
     }));
 

@@ -5,6 +5,7 @@ export * from './logic/EntityLogic';
 export * from './geometry/wrapped-lines';
 export * from './requests/plext';
 export * from './player-tracker';
+export * from './map-features';
 export * from './ZoomPolicy';
 export * from './parsers/EntityParser';
 export * from './parsers/PortalDetailsParser';

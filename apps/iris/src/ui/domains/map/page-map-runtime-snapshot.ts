@@ -1,4 +1,19 @@
-import {Artifact, Field, HistoryFilterState, Link, MissionDetails, PlannedLink, PlannedMarker, PlanningTool, Portal, buildWrappedLineSegments, buildWrappedPolygonGeometry} from '@iris/core';
+import {
+    Artifact,
+    Field,
+    HistoryFilterState,
+    Link,
+    MissionDetails,
+    PlannedLink,
+    PlannedMarker,
+    PlanningTool,
+    Portal,
+    buildFieldPolygonFeature,
+    buildLinkLineFeatures,
+    buildPortalPointFeature,
+    toFeatureCollection,
+    buildWrappedLineSegments,
+} from '@iris/core';
 import {PageMapRuntimeCommandMessage} from '../../../shared/page-map-runtime-protocol';
 import {MAP_THEMES, THEMES} from '../../theme';
 import {
@@ -6,7 +21,6 @@ import {
     buildMissionRouteFeatures,
     buildMissionWaypointFeatures,
     buildOrnamentFeatures,
-    toFeatureCollection,
 } from './feature-builders';
 
 interface MapStateSnapshot {
@@ -340,16 +354,8 @@ function buildPortalFeatureCollection(options: BuildPageMapRuntimeSnapshotOption
         type: 'FeatureCollection',
         features: Object.values(options.portals)
             .filter((portal) => isPortalVisible(portal, options))
-            .map((portal): GeoJSON.Feature<GeoJSON.Point> => ({
-                type: 'Feature',
-                geometry: {type: 'Point', coordinates: [portal.lng, portal.lat]},
-                properties: {
-                    id: portal.id,
-                    team: portal.team,
-                    color: getTeamColor(portal.team, options),
-                    level: portal.level ?? 0,
-                    health: portal.health ?? 100,
-                },
+            .map((portal): GeoJSON.Feature<GeoJSON.Point> => buildPortalPointFeature(portal, {
+                color: getTeamColor(portal.team, options),
             })),
     };
 }
@@ -367,15 +373,9 @@ function buildSelectedPortalFeatureCollection(
     return {
         type: 'FeatureCollection',
         features: [{
-            type: 'Feature',
-            geometry: {type: 'Point', coordinates: [portal.lng, portal.lat]},
-            properties: {
-                id: portal.id,
-                team: portal.team,
+            ...buildPortalPointFeature(portal, {
                 color: getTeamColor(portal.team, options),
-                level: portal.level ?? 0,
-                health: portal.health ?? 100,
-            },
+            }),
         }],
     };
 }
@@ -392,19 +392,9 @@ function buildSelectedLinkFeatureCollection(
 
     return {
         type: 'FeatureCollection',
-        features: buildWrappedLineSegments([link.fromLng, link.fromLat], [link.toLng, link.toLat]).map((coordinates, segmentIndex) => ({
-            type: 'Feature',
-            id: segmentIndex === 0 ? link.id : `${link.id}:${segmentIndex}`,
-            geometry: {
-                type: 'LineString',
-                coordinates,
-            },
-            properties: {
-                id: link.id,
-                team: link.team,
-                color: getTeamColor(link.team, options),
-            },
-        })),
+        features: buildLinkLineFeatures(link, {
+            color: getTeamColor(link.team, options),
+        }),
     };
 }
 
@@ -421,13 +411,9 @@ function buildSelectedFieldFeatureCollection(
     return {
         type: 'FeatureCollection',
         features: [{
-            type: 'Feature',
-            geometry: buildWrappedPolygonGeometry(field.points.map((point) => [point.lng, point.lat])),
-            properties: {
-                id: field.id,
-                team: field.team,
+            ...buildFieldPolygonFeature(field, {
                 color: getTeamColor(field.team, options),
-            },
+            }),
         }],
     };
 }
@@ -437,22 +423,9 @@ function buildLinkFeatureCollection(options: BuildPageMapRuntimeSnapshotOptions)
         type: 'FeatureCollection',
         features: Object.values(options.links)
             .filter((link) => isTeamVisible(link.team, options))
-            .flatMap((link): GeoJSON.Feature<GeoJSON.LineString>[] => buildWrappedLineSegments(
-                [link.fromLng, link.fromLat],
-                [link.toLng, link.toLat]
-            ).map((coordinates, segmentIndex) => ({
-                type: 'Feature',
-                id: segmentIndex === 0 ? link.id : `${link.id}:${segmentIndex}`,
-                geometry: {
-                    type: 'LineString',
-                    coordinates,
-                },
-                properties: {
-                    id: link.id,
-                    team: link.team,
-                    color: getTeamColor(link.team, options),
-                },
-            }))),
+            .flatMap((link): GeoJSON.Feature<GeoJSON.LineString>[] => buildLinkLineFeatures(link, {
+                color: getTeamColor(link.team, options),
+            })),
     };
 }
 
@@ -462,14 +435,8 @@ function buildFieldFeatureCollection(options: BuildPageMapRuntimeSnapshotOptions
         features: Object.values(options.fields)
             .filter((field) => isTeamVisible(field.team, options))
             .filter((field) => field.points.length >= 3)
-            .map((field): GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon> => ({
-                type: 'Feature',
-                geometry: buildWrappedPolygonGeometry(field.points.map((point) => [point.lng, point.lat])),
-                properties: {
-                    id: field.id,
-                    team: field.team,
-                    color: getTeamColor(field.team, options),
-                },
+            .map((field): GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon> => buildFieldPolygonFeature(field, {
+                color: getTeamColor(field.team, options),
             })),
     };
 }
