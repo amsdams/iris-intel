@@ -1,33 +1,47 @@
-# MapLibre + RBush + Zustand Architecture
-## Spatial Entity Rendering for Ingress-style Maps
+# Mini-IRIS Page-World Map Architecture
+## MapLibre + RBush + Zustand for compact tactical rendering
 
 ---
 
 ## Overview
 
-This document describes the architecture for rendering large numbers of spatial entities
-(portals, links, fields, artifacts, ornaments) on a MapLibre GL map with good performance.
+This document describes the current Mini-IRIS architecture for rendering spatial entities
+(portals, links, fields, artifacts, ornaments, player traces, and highlights) on a MapLibre GL map.
 
-**Core principle:** Three layers with distinct responsibilities that never overlap.
+**Core principle:** MapLibre runs in the page world. The extension/content world owns Preact UI,
+Zustand state, Intel data handling, and GeoJSON derivation. Only plain JSON commands/events cross
+the page/content boundary.
 
 | Layer | Tool | Owns |
 |---|---|---|
 | Spatial indexing | RBush | Geometry lookups, viewport queries |
-| Application state | Zustand | UI state, filtered results, selections |
-| Rendering | MapLibre GL | Drawing, camera, tile layers |
+| Application state | Zustand | UI state, filtered results, selections, preferences |
+| Content bridge | `pageMapProtocol.ts` | Typed command/event contracts between worlds |
+| Rendering runtime | MapLibre GL in `page-map-runtime.ts` | Drawing, camera, tile layers, native feature queries, context menu and touch-hold gestures |
 
 ---
 
-## Modular Hook-based Architecture (v1.2+)
+## Modular Architecture
 
-The mini-IRIS app has migrated from a monolithic `content.tsx` to a modular hook-driven design to ensure maintainability and readability:
+The mini-IRIS app keeps the UI compact while splitting map ownership from extension-owned data and
+state:
 
-- **`useMapRenderer`**: Centralized logic for converting RBush results and Store entities into GeoJSON features for MapLibre. Handles 3D altitudes and geometry approximation (e.g., portal cylinders).
+- **`page-map-runtime.ts`**: Page-world MapLibre runtime. It creates the map, owns sources/layers,
+  applies style and 3D/portal paint updates, calls native `queryRenderedFeatures`, handles
+  `contextmenu` and explicit mobile touch-hold selection, and posts camera/selection events back to
+  the content world.
+- **`pageMapProtocol.ts`**: Plain JSON command/event contract. It keeps page-world and
+  content-world code decoupled from direct object references and extension-world MapLibre access.
+- **`content.tsx`**: Content-world UI coordinator. It injects the page runtime, owns Preact/Zustand
+  state, routes map events into selection/UI state, and sends map commands.
+- **`useMapRenderer`**: Converts RBush results and store entities into GeoJSON FeatureCollections,
+  then sends `sync-data` commands to the page runtime instead of calling MapLibre directly.
 - **`useIntelMessages`**: High-performance listener for the `interceptor.js` stream. Routes incoming data to the correct Zustand store actions and ensures the spatial index is synchronized.
 - **`usePlayerStats`**: Manages C.O.R.E. subscription verification and player statistic polling.
 - **`useComm`**: Orchestrates COMM polling and tab management (ALL / FACTION / ALERTS).
 - **`useScores`**: Periodic global and regional MU standings updates.
-- **`usePatterns`**: Simulation engine for stress testing and visual alignment.
+- **`usePatterns`**: Simulation engine for stress testing and visual alignment, driven by the
+  current page-runtime camera state rather than a direct MapLibre instance.
 
 ---
 
@@ -82,22 +96,35 @@ fieldIndex.load(fields.map(f => ({
 Zustand stores only what React needs to render: the *results* of spatial queries and UI state.
 It never stores the raw geometry data or the RBush trees themselves.
 
-### Viewport → RBush → Zustand → MapLibre sources
+### Page camera → RBush → Zustand → page-world MapLibre sources
 
 ```
-map 'move' / 'moveend' event
-  → extract bbox from map.getBounds()
-  → syncToMap() triggered                  ← RBush query happens here
+page runtime 'moveend' / camera event
+  → MINI_PAGE_MAP_EVENT { type: 'camera' }
+  → content-world sync/check uses bbox     ← RBush query happens here
   → Generate GeoJSON FeatureCollection
-  → MapLibre source.setData(features)
+  → MINI_PAGE_MAP_COMMAND { type: 'sync-data' }
+  → page runtime source.setData(features)
 ```
+
+Selection follows the same boundary:
+
+```
+page runtime queryRenderedFeatures()
+  → MINI_PAGE_MAP_EVENT { type: 'selection', intent: 'select' | 'details' }
+  → content-world selection state and drawer UI
+```
+
+This replaces the older content-world query approach: native MapLibre queries and gesture hooks stay
+in the page world, where the page-owned MapLibre objects are safe to use.
 
 ---
 
 ## Performance Guidelines
 
 ### Throttle viewport handlers
-MapLibre fires `move` every animation frame (~60fps). Always throttle RBush queries or use `moveend` for heavy operations.
+MapLibre fires `move` every animation frame (~60fps). Mini-IRIS should keep heavy RBush queries and
+entity refreshes tied to settled camera updates or explicitly throttled sync paths.
 
 ### Use `setData` not layer filters for visibility
 Calling `map.setFilter(layerId, ...)` is fast for small datasets but degrades at 10k+ features. Prefer updating the source data directly with only the visible subset.
@@ -130,6 +157,8 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 | Feature | Status          | Comparison to IRIS |
 | :--- |:----------------| :--- |
 | **Spatial Indexing** | **DONE**        | Matches IRIS Core (`globalSpatialIndex`). |
+| **Page-world Map Runtime** | **DONE** | Mini-IRIS now owns MapLibre in a compact page-world runtime and uses a plain JSON bridge from content. |
+| **Native Selection / Details Gestures** | **DONE** | Click/tap selects; right-click/contextmenu and mobile long-press open the compact details drawer directly. |
 | **3D Rendering** | **ADVANCED**    | Far superior to IRIS (Cylinders, Floating Beams, Stacking). |
 | **Modular Refactor** | **DONE**        | Clean separation of map, data, and UI concerns. |
 | **Mobile-First UI** | **DONE**        | Bottom Dock UX optimized for thumb-reach. |
@@ -141,7 +170,7 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 | **Player Trail Retention** | **DONE**        | 3 hour window, with fading trail segments and pulsing marker. |
 | **Player Tracker Panel** | **IN PROGRESS** | COMM-derived player histories appear in the player panel and can jump the map to the latest hit. |
 | **Portal History Overlays** | **DONE**        | Visited, captured, and scanned states can be toggled as highlight or inverse rings. |
-| **Selection Details Panel** | **IN PROGRESS** | Portal, link, and field details now open from the dock, with a more readable portal layout and ownership view. |
+| **Selection Details Panel** | **DONE** | Portal, link, and field details open from the dock; secondary map gestures can open the drawer directly. |
 | **Portal Media** | **IN PROGRESS** | Portal thumbnails and full image links are available in the selection details panel. |
 | **Ingress Colour Alignment** | **DONE**        | Faction, portal history, key, C.O.R.E., tracker, item level, and rarity colors now route through shared constants. |
 | **Inventory Key Map Overlay** | **VERIFYING**   | Toggleable key labels show total keys per portal plus loose/capsule split; mobile live-data testing is ongoing. |
@@ -149,7 +178,7 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 | **Mock Map Panning Drift** | **FIXED**       | Mock pattern loading is separated from map data sync so panning and overlay changes do not regenerate mock coordinates. |
 | **Key Overlay Performance** | **IMPROVED**    | Inventory key counts are pre-aggregated by portal and key labels only render at tactical zoom. |
 | **UI Preference Persistence** | **DONE**        | Map position, map style, portal history modes, key overlay state, and Mini IRIS open intent persist via standalone localStorage keys without rendering regressions in current testing. |
-| **Portal Health/Level Visual Modes** | **VERIFYING** | Optional map tool toggles can recolor portals by level and fade portals by health using existing feature properties. |
+| **Portal Health/Level Visual Modes** | **VERIFYING** | Optional map tool toggles can recolor portal fill by level and fade portals by health while preserving the faction ring; HP colour-ramp parity with IRIS remains open. |
 | **Mock Tracker Isolation** | **DONE** | Live COMM-derived player tracker state is hidden while using mock/source mode. |
 | **Mock Data Coverage** | **IMPROVED** | Mock patterns now include deterministic portal level and health variation for visual-mode testing. |
 | **Mobile Startup Entity Sync** | **FIXED** | MapLibre load now resizes and triggers entity sync on the next animation frame; mobile retest confirmed entities render and map style/history/LVL/HP toggles still work. |
@@ -273,13 +302,16 @@ When Extrusion Mode is active, entities take on a physical volume. This requires
 
 ```
 src/
+├── page-map-runtime.ts      # Page-world MapLibre runtime
+├── pageMapProtocol.ts       # Plain JSON map command/event protocol
+├── content.tsx              # Content-world UI/data coordinator
 ├── hooks/
 │   ├── useComm.ts          # COMM logic + Polling
 │   ├── useIntelMessages.ts # Interceptor message handler
-│   ├── useMapRenderer.ts   # Map data synchronization
+│   ├── useMapRenderer.ts   # GeoJSON derivation and page-runtime sync
 │   ├── usePlayerStats.ts   # Stats + CORE logic
 │   ├── useScores.ts        # MU Score management
-│   └── useComm.ts          # COMM Polling and Tab management
+│   └── usePatterns.ts      # Mock/pattern data generation
 ├── components/
 │   ├── DataDock.tsx        # Bottom-dock panels (Player, COMM, Scores)
 │   ├── MapTools.tsx        # Top-right drawers (Nav, Style, Mode)
