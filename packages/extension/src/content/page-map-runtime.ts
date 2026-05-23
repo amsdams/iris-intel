@@ -35,6 +35,8 @@ interface FrameSnapshot {
     benchmarkVariant?: BenchmarkVariant;
     benchmarkZoom?: number;
     benchmarkMode?: BenchmarkMode;
+    benchmarkMovingEntityMode?: MovingEntityRenderMode;
+    benchmarkLayerVisibility?: Record<string, string>;
     benchmarkSourceFeatureCounts?: Record<string, number>;
     benchmarkPluginFeatureCounts?: Record<string, number>;
 }
@@ -134,6 +136,9 @@ let panBenchmarkActive = false;
 let panBenchmarkMode: BenchmarkMode = 'pan';
 let panBenchmarkRestoreVisibility: (() => void) | null = null;
 let activeBenchmarkVariant: BenchmarkVariant = 'normal';
+let movingEntityRenderMode: MovingEntityRenderMode = 'full';
+let movingEntityRenderRestoreTimer: number | null = null;
+let movingOverlayVisible = true;
 const plannedMarkerRegistry = new Map<string, PlannedMarkerRegistryEntry>();
 const playerMarkerRegistry = new Map<string, PlayerMarkerRegistryEntry>();
 const playerClusterRegistry = new Map<string, PlayerClusterRegistryEntry>();
@@ -157,6 +162,9 @@ const PAN_BENCHMARK_RUN_COUNT = 3;
 const PAN_BENCHMARK_RUN_DURATION_MS = 3000;
 const PAN_BENCHMARK_START = {lat: 52.371094, lng: 4.906375};
 const PAN_BENCHMARK_SETTLE_MS = 600;
+const MOVING_ENTITY_SIMPLIFY_MAX_ZOOM = 10.5;
+const MOVING_ENTITY_HIDE_LINKS_MAX_ZOOM = 8.5;
+const MOVING_ENTITY_RESTORE_SETTLE_MS = 180;
 const PLAYER_MARKER_CIRCLE_SPREAD_RADIUS_PX = 26;
 const PLAYER_MARKER_SPIRAL_START_COUNT = 8;
 const PLAYER_MARKER_SPIRAL_STEP_PX = 8;
@@ -202,6 +210,7 @@ let currentPlanningState: {enabled: boolean; tool: 'links' | 'markers'} = {
 let suppressClickUntil = 0;
 
 type RuntimeDisplayMode = 'hidden' | 'probe' | 'full';
+type MovingEntityRenderMode = 'full' | 'simplified' | 'minimal';
 
 function getBenchmarkVariant(value: unknown): BenchmarkVariant {
     if (
@@ -651,10 +660,20 @@ function getPageMap(): Promise<maplibregl.Map> {
         });
 
         map.once('load', () => {
+            map.on('movestart', () => {
+                beginMovingEntityRenderMode(map);
+            });
+            map.on('zoomstart', () => {
+                beginMovingEntityRenderMode(map);
+            });
+            map.on('move', () => {
+                refreshMovingEntityRenderMode(map);
+            });
             map.on('moveend', () => {
                 if (panBenchmarkActive) {
                     return;
                 }
+                scheduleMovingEntityRenderRestore(map);
                 if (suppressNextCameraChangedEvent) {
                     suppressNextCameraChangedEvent = false;
                     return;
@@ -828,23 +847,116 @@ function setLayerVisibility(map: maplibregl.Map, layerId: string, visible: boole
     map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none');
 }
 
+function getLayerVisibility(map: maplibregl.Map, layerId: string): string {
+    if (!map.getLayer(layerId)) return 'missing';
+    return map.getLayoutProperty(layerId, 'visibility') === 'none' ? 'none' : 'visible';
+}
+
+function setLayerPaintProperty(map: maplibregl.Map, layerId: string, property: string, value: unknown): void {
+    if (!map.getLayer(layerId)) return;
+    map.setPaintProperty(layerId, property, value);
+}
+
 function setMarkerRegistryVisibility<T extends {element: HTMLElement}>(registry: Map<string, T>, visible: boolean): void {
     registry.forEach((entry) => {
         entry.element.style.display = visible ? 'block' : 'none';
     });
 }
 
+function getMarkerRegistryVisibility<T extends {element: HTMLElement}>(registry: Map<string, T>): string {
+    if (registry.size === 0) return 'empty';
+    for (const entry of registry.values()) {
+        if (entry.element.style.display !== 'none') return 'visible';
+    }
+    return 'none';
+}
+
 function shouldShowBenchmarkMarkers(): boolean {
     return activeBenchmarkVariant === 'normal';
 }
 
-function applyBenchmarkMarkerVisibility(element: HTMLElement): void {
-    element.style.display = shouldShowBenchmarkMarkers() ? 'block' : 'none';
+function shouldShowRuntimeMarkers(): boolean {
+    return shouldShowBenchmarkMarkers() && movingOverlayVisible;
+}
+
+function applyRuntimeMarkerVisibility(element: HTMLElement): void {
+    element.style.display = shouldShowRuntimeMarkers() ? 'block' : 'none';
 }
 
 function setMovingOverlayVisibility(map: maplibregl.Map, visible: boolean): void {
+    movingOverlayVisible = visible;
     setLayerVisibility(map, 'iris-map-plugin-labels', visible);
     setLayerVisibility(map, 'iris-map-plugin-portal-highlights', visible);
+    setMarkerRegistryVisibility(plannedMarkerRegistry, visible && shouldShowBenchmarkMarkers());
+    setMarkerRegistryVisibility(playerMarkerRegistry, visible && shouldShowBenchmarkMarkers());
+    setMarkerRegistryVisibility(playerClusterRegistry, visible && shouldShowBenchmarkMarkers());
+}
+
+function getMovingEntityRenderMode(map: maplibregl.Map): MovingEntityRenderMode {
+    const zoom = map.getZoom();
+    if (zoom <= MOVING_ENTITY_HIDE_LINKS_MAX_ZOOM) return 'minimal';
+    if (zoom <= MOVING_ENTITY_SIMPLIFY_MAX_ZOOM) return 'simplified';
+    return 'full';
+}
+
+function setMovingEntityRenderMode(map: maplibregl.Map, mode: MovingEntityRenderMode): void {
+    if (movingEntityRenderMode === mode) return;
+    movingEntityRenderMode = mode;
+
+    if (mode === 'minimal') {
+        setLayerVisibility(map, 'iris-map-links', false);
+        setLayerVisibility(map, 'iris-map-link-selected', false);
+        setLayerVisibility(map, 'iris-map-fields', false);
+        setLayerVisibility(map, 'iris-map-field-selected', false);
+        return;
+    }
+
+    if (mode === 'simplified') {
+        setLayerVisibility(map, 'iris-map-links', currentLayerVisibility.links);
+        setLayerVisibility(map, 'iris-map-link-selected', currentLayerVisibility.links);
+        setLayerVisibility(map, 'iris-map-fields', false);
+        setLayerVisibility(map, 'iris-map-field-selected', false);
+        setLayerPaintProperty(map, 'iris-map-links', 'line-width', 1);
+        setLayerPaintProperty(map, 'iris-map-links', 'line-opacity', 0.35);
+        setLayerPaintProperty(map, 'iris-map-link-selected', 'line-width', 2);
+        setLayerPaintProperty(map, 'iris-map-link-selected', 'line-opacity', 0.8);
+        return;
+    }
+
+    setLayerVisibility(map, 'iris-map-links', currentLayerVisibility.links);
+    setLayerVisibility(map, 'iris-map-link-selected', currentLayerVisibility.links);
+    setLayerVisibility(map, 'iris-map-fields', currentLayerVisibility.fields);
+    setLayerVisibility(map, 'iris-map-field-selected', currentLayerVisibility.fields);
+    setLayerPaintProperty(map, 'iris-map-links', 'line-width', 2);
+    setLayerPaintProperty(map, 'iris-map-links', 'line-opacity', 1);
+    setLayerPaintProperty(map, 'iris-map-link-selected', 'line-width', 4);
+    setLayerPaintProperty(map, 'iris-map-link-selected', 'line-opacity', 1);
+}
+
+function clearMovingEntityRenderRestoreTimer(): void {
+    if (movingEntityRenderRestoreTimer !== null) {
+        window.clearTimeout(movingEntityRenderRestoreTimer);
+        movingEntityRenderRestoreTimer = null;
+    }
+}
+
+function beginMovingEntityRenderMode(map: maplibregl.Map): void {
+    clearMovingEntityRenderRestoreTimer();
+    setMovingOverlayVisibility(map, false);
+    refreshMovingEntityRenderMode(map);
+}
+
+function refreshMovingEntityRenderMode(map: maplibregl.Map): void {
+    setMovingEntityRenderMode(map, getMovingEntityRenderMode(map));
+}
+
+function scheduleMovingEntityRenderRestore(map: maplibregl.Map): void {
+    clearMovingEntityRenderRestoreTimer();
+    movingEntityRenderRestoreTimer = window.setTimeout(() => {
+        movingEntityRenderRestoreTimer = null;
+        setMovingEntityRenderMode(map, 'full');
+        setMovingOverlayVisibility(map, true);
+    }, MOVING_ENTITY_RESTORE_SETTLE_MS);
 }
 
 function applyBenchmarkVariant(map: maplibregl.Map, variant: BenchmarkVariant): () => void {
@@ -896,10 +1008,10 @@ function applyBenchmarkVariant(map: maplibregl.Map, variant: BenchmarkVariant): 
 function setIrisLayerVisibility(map: maplibregl.Map, visibility: PageMapRuntimeLayerVisibility): void {
     currentLayerVisibility = visibility;
     setLayerVisibility(map, 'iris-map-portals', visibility.portals);
-    setLayerVisibility(map, 'iris-map-links', visibility.links);
-    setLayerVisibility(map, 'iris-map-fields', visibility.fields);
-    setLayerVisibility(map, 'iris-map-link-selected', visibility.links);
-    setLayerVisibility(map, 'iris-map-field-selected', visibility.fields);
+    setLayerVisibility(map, 'iris-map-links', visibility.links && movingEntityRenderMode !== 'minimal');
+    setLayerVisibility(map, 'iris-map-fields', visibility.fields && movingEntityRenderMode === 'full');
+    setLayerVisibility(map, 'iris-map-link-selected', visibility.links && movingEntityRenderMode !== 'minimal');
+    setLayerVisibility(map, 'iris-map-field-selected', visibility.fields && movingEntityRenderMode === 'full');
 }
 
 function setIrisData(map: maplibregl.Map, message: PageMapRuntimeCommandMessage): void {
@@ -1034,7 +1146,7 @@ function syncPlayerMarkerPins(map: maplibregl.Map, features: GeoJSON.FeatureColl
             existing.marker.setLngLat([playerMarker.lng, playerMarker.lat]);
             existing.marker.setOffset(getPlayerMarkerOffset(playerMarker));
             updatePlayerMarkerPinElement(existing, playerMarker);
-            applyBenchmarkMarkerVisibility(existing.element);
+            applyRuntimeMarkerVisibility(existing.element);
             continue;
         }
 
@@ -1043,7 +1155,7 @@ function syncPlayerMarkerPins(map: maplibregl.Map, features: GeoJSON.FeatureColl
             .setLngLat([playerMarker.lng, playerMarker.lat])
             .setOffset(getPlayerMarkerOffset(playerMarker))
             .addTo(map);
-        applyBenchmarkMarkerVisibility(entry.element);
+        applyRuntimeMarkerVisibility(entry.element);
         playerMarkerRegistry.set(playerMarker.id, entry);
     }
 
@@ -1060,13 +1172,13 @@ function syncPlayerMarkerPins(map: maplibregl.Map, features: GeoJSON.FeatureColl
         if (existing) {
             existing.marker.setLngLat([cluster.lng, cluster.lat]);
             updatePlayerClusterElement(existing, cluster);
-            applyBenchmarkMarkerVisibility(existing.element);
+            applyRuntimeMarkerVisibility(existing.element);
             continue;
         }
 
         const entry = createPlayerClusterEntry(cluster);
         entry.marker.setLngLat([cluster.lng, cluster.lat]).addTo(map);
-        applyBenchmarkMarkerVisibility(entry.element);
+        applyRuntimeMarkerVisibility(entry.element);
         playerClusterRegistry.set(cluster.id, entry);
     }
 
@@ -1422,13 +1534,13 @@ function syncPlannedMarkerPins(map: maplibregl.Map, features: GeoJSON.FeatureCol
         if (existing) {
             existing.marker.setLngLat([plannedMarker.lng, plannedMarker.lat]);
             updatePlannedMarkerPinElement(existing, plannedMarker, allowPointerEvents);
-            applyBenchmarkMarkerVisibility(existing.element);
+            applyRuntimeMarkerVisibility(existing.element);
             continue;
         }
 
         const entry = createPlannedMarkerPinEntry(plannedMarker, allowPointerEvents);
         entry.marker.setLngLat([plannedMarker.lng, plannedMarker.lat]).addTo(map);
-        applyBenchmarkMarkerVisibility(entry.element);
+        applyRuntimeMarkerVisibility(entry.element);
         plannedMarkerRegistry.set(plannedMarker.id, entry);
     }
 
@@ -1885,7 +1997,13 @@ function stopFrameSample(sample: MovingFrameSample): FrameSnapshot | null {
     };
 }
 
-function publishBenchmarkFrameSnapshot(snapshots: FrameSnapshot[], variant: BenchmarkVariant, zoom: number, mode: BenchmarkMode): void {
+function publishBenchmarkFrameSnapshot(
+    map: maplibregl.Map,
+    snapshots: FrameSnapshot[],
+    variant: BenchmarkVariant,
+    zoom: number,
+    mode: BenchmarkMode
+): void {
     const averageValues = snapshots
         .map((snapshot) => snapshot.averageFrameMs)
         .sort((a, b) => a - b);
@@ -1919,6 +2037,16 @@ function publishBenchmarkFrameSnapshot(snapshots: FrameSnapshot[], variant: Benc
         benchmarkVariant: variant,
         benchmarkZoom: zoom,
         benchmarkMode: mode,
+        benchmarkMovingEntityMode: movingEntityRenderMode,
+        benchmarkLayerVisibility: {
+            links: getLayerVisibility(map, 'iris-map-links'),
+            fields: getLayerVisibility(map, 'iris-map-fields'),
+            pluginLabels: getLayerVisibility(map, 'iris-map-plugin-labels'),
+            pluginHighlights: getLayerVisibility(map, 'iris-map-plugin-portal-highlights'),
+            plannedMarkers: getMarkerRegistryVisibility(plannedMarkerRegistry),
+            playerMarkers: getMarkerRegistryVisibility(playerMarkerRegistry),
+            playerClusters: getMarkerRegistryVisibility(playerClusterRegistry),
+        },
         benchmarkSourceFeatureCounts: {...currentSourceFeatureCounts},
         benchmarkPluginFeatureCounts: currentPluginFeatureCounts ? {...currentPluginFeatureCounts} : undefined,
     };
@@ -1929,7 +2057,7 @@ function publishBenchmarkFrameSnapshot(snapshots: FrameSnapshot[], variant: Benc
     }, '*');
 }
 
-function stopPanBenchmark(): void {
+function stopPanBenchmark(map?: maplibregl.Map): void {
     if (panBenchmarkSettleTimer !== null) {
         window.clearTimeout(panBenchmarkSettleTimer);
         panBenchmarkSettleTimer = null;
@@ -1940,13 +2068,18 @@ function stopPanBenchmark(): void {
     }
     panBenchmarkRestoreVisibility?.();
     panBenchmarkRestoreVisibility = null;
+    clearMovingEntityRenderRestoreTimer();
+    if (map) {
+        setMovingEntityRenderMode(map, 'full');
+        setMovingOverlayVisibility(map, true);
+    }
     panBenchmarkActive = false;
     panBenchmarkMode = 'pan';
 }
 
 async function runPanBenchmark(variant: BenchmarkVariant = 'normal', zoom = 14.36, mode: BenchmarkMode = 'pan'): Promise<void> {
     const map = await getPageMap();
-    stopPanBenchmark();
+    stopPanBenchmark(map);
     panBenchmarkRestoreVisibility = applyBenchmarkVariant(map, variant);
     map.jumpTo({
         center: [PAN_BENCHMARK_START.lng, PAN_BENCHMARK_START.lat],
@@ -1957,18 +2090,22 @@ async function runPanBenchmark(variant: BenchmarkVariant = 'normal', zoom = 14.3
     const runSnapshots: FrameSnapshot[] = [];
 
     const runSingleBenchmark = (runIndex: number): void => {
+        panBenchmarkMode = mode;
+        if (panBenchmarkMode === 'pan') {
+            setMovingOverlayVisibility(map, false);
+            setMovingEntityRenderMode(map, getMovingEntityRenderMode(map));
+        }
         map.jumpTo({
             center: [PAN_BENCHMARK_START.lng, PAN_BENCHMARK_START.lat],
             zoom,
         });
+        if (panBenchmarkMode === 'pan') {
+            setMovingEntityRenderMode(map, getMovingEntityRenderMode(map));
+        }
 
         panBenchmarkSettleTimer = window.setTimeout(() => {
             panBenchmarkSettleTimer = null;
             panBenchmarkActive = true;
-            panBenchmarkMode = mode;
-            if (panBenchmarkMode === 'pan') {
-                setMovingOverlayVisibility(map, false);
-            }
             const sample = createFrameSample();
             startFrameSample(sample);
 
@@ -2015,12 +2152,13 @@ async function runPanBenchmark(variant: BenchmarkVariant = 'normal', zoom = 14.3
                     return;
                 }
 
+                publishBenchmarkFrameSnapshot(map, runSnapshots, variant, zoom, mode);
                 panBenchmarkActive = false;
                 if (panBenchmarkMode === 'pan') {
+                    setMovingEntityRenderMode(map, 'full');
                     setMovingOverlayVisibility(map, true);
                 }
                 panBenchmarkMode = 'pan';
-                publishBenchmarkFrameSnapshot(runSnapshots, variant, zoom, mode);
                 panBenchmarkRestoreVisibility?.();
                 panBenchmarkRestoreVisibility = null;
             };

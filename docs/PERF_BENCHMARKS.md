@@ -34,6 +34,21 @@ when evaluating major dependency migrations or rendering changes.
 | 0.1.6   | z8 entity isolation batch       | Mobile ARM  | Firefox 149 | OSM     | tracker, health fill, level labels      | 18,395 | 5,404   | 9,045  | 3,659  | 223     | n/a      | n/a       | n/a  | 30ms      | 27ms   | 268ms | 34  | 43/302      |
 | 0.1.6   | z8 no-links isolation           | Mobile ARM  | Firefox 149 | OSM     | tracker, health fill, level labels      | 18,395 | 5,404   | 9,045  | 3,659  | 223     | n/a      | n/a       | n/a  | 18ms      | 18ms   | 50ms  | 55  | 3/498       |
 | 0.1.6   | z8 no-fields isolation          | Mobile ARM  | Firefox 149 | OSM     | tracker, health fill, level labels      | 18,395 | 5,404   | 9,045  | 3,659  | 223     | n/a      | n/a       | n/a  | 18ms      | 18ms   | 33ms  | 57  | 0/511       |
+| 0.1.7   | z8 entity isolation batch       | Desktop Mac | Chrome 148  | OSM     | tracker, health fill, level labels      | 45,347 | 13,459  | 22,324 | 9,429  | 0       | n/a      | n/a       | n/a  | 25ms      | 27ms   | 133ms | 40  | 45/363      |
+| 0.1.7   | z8 no-links isolation           | Desktop Mac | Chrome 148  | OSM     | tracker, health fill, level labels      | 45,347 | 13,459  | 22,324 | 9,429  | 0       | n/a      | n/a       | n/a  | 17ms      | 17ms   | 33ms  | 60  | 0/541       |
+| 0.1.7   | z8 no-fields isolation          | Desktop Mac | Chrome 148  | OSM     | tracker, health fill, level labels      | 45,347 | 13,459  | 22,324 | 9,429  | 0       | n/a      | n/a       | n/a  | 17ms      | 17ms   | 33ms  | 60  | 0/541       |
+| 0.1.7   | z8 entity isolation batch       | Desktop Mac | Chrome 148  | OSM     | tracker, health fill, level labels      | 40,860 | 10,757  | 21,075 | 9,028  | 0       | n/a      | n/a       | n/a  | 9ms       | 8ms    | 158ms | 109 | 8/978       |
+| 0.1.7   | z8 no-links isolation           | Desktop Mac | Chrome 148  | OSM     | tracker, health fill, level labels      | 40,860 | 10,757  | 21,075 | 9,028  | 0       | n/a      | n/a       | n/a  | 8ms       | 8ms    | 17ms  | 120 | 0/1,079     |
+| 0.1.7   | z8 no-fields isolation          | Desktop Mac | Chrome 148  | OSM     | tracker, health fill, level labels      | 40,860 | 10,757  | 21,075 | 9,028  | 0       | n/a      | n/a       | n/a  | 8ms       | 8ms    | 12ms  | 120 | 0/1,082     |
+| 0.1.7   | z8 entity isolation batch       | Desktop Mac | Chrome 148  | OSM     | tracker, health fill, level labels      | 54,302 | 16,227  | 26,711 | 10,998 | 0       | n/a      | n/a       | n/a  | 45ms      | 49ms   | 183ms | 22  | 78/204      |
+| 0.1.7   | z8 no-links isolation           | Desktop Mac | Chrome 148  | OSM     | tracker, health fill, level labels      | 54,355 | 16,239  | 26,739 | 11,011 | 0       | n/a      | n/a       | n/a  | 17ms      | 17ms   | 18ms  | 60  | 0/541       |
+| 0.1.7   | z8 no-fields isolation          | Desktop Mac | Chrome 148  | OSM     | tracker, health fill, level labels      | 54,355 | 16,239  | 26,739 | 11,011 | 0       | n/a      | n/a       | n/a  | 17ms      | 17ms   | 18ms  | 60  | 0/542       |
+| 0.1.7   | z8 entity isolation batch       | Desktop Mac | Chrome 148  | OSM     | tracker, health fill, level labels      | 44,213 | 12,597  | 22,178 | 9,344  | 0       | n/a      | n/a       | n/a  | 27ms      | 27ms   | 117ms | 38  | 47/340      |
+| 0.1.7   | z8 no-links isolation           | Desktop Mac | Chrome 148  | OSM     | tracker, health fill, level labels      | 44,213 | 12,597  | 22,178 | 9,344  | 0       | n/a      | n/a       | n/a  | 17ms      | 17ms   | 18ms  | 60  | 0/542       |
+| 0.1.7   | z8 no-fields isolation          | Desktop Mac | Chrome 148  | OSM     | tracker, health fill, level labels      | 44,213 | 12,597  | 22,178 | 9,344  | 0       | n/a      | n/a       | n/a  | 17ms      | 17ms   | 18ms  | 60  | 0/542       |
+| 0.1.7   | z8 minimal movement diagnostic  | Desktop Mac | Chrome 148  | OSM     | tracker, health fill, level labels      | 45,114 | 13,389  | 22,259 | 9,334  | 0       | n/a      | n/a       | n/a  | 24ms      | 24ms   | 117ms | 42  | 38/379      |
+| 0.1.7   | z8 no-plugins diagnostic        | Desktop Mac | Chrome 148  | OSM     | tracker, health fill, level labels      | 45,114 | 13,389  | 22,259 | 9,334  | 0       | n/a      | n/a       | n/a  | 17ms      | 17ms   | 18ms  | 60  | 0/542       |
+| 0.1.7   | z8 marker-hidden diagnostic     | Desktop Mac | Chrome 148  | OSM     | tracker, health fill, level labels      | 44,252 | 12,603  | 22,218 | 9,337  | 0       | n/a      | n/a       | n/a  | 24ms      | 25ms   | 150ms | 42  | 36/385      |
 
 ## Readout
 
@@ -589,3 +604,119 @@ Notes:
   fields during movement is lower UX risk because links are more useful for orientation while panning.
 - Treat the desktop z8 rows as non-comparable because the slow network allowed live entity loading to change the source
   mix from `29,547` to `54,361` items during the same batch.
+
+## 2026-05-23 - IRIS 0.1.7 - Expanded Desktop Batch
+
+Context:
+
+- Purpose: compare the expanded Batch scenarios after default plugins were disabled, page-world hardening was added,
+  and player activity pins were gated behind secondary interaction.
+- Browser: Chrome 148.0.0.0 on macOS (`MacIntel`), desktop pointer.
+- Map style: `OSM`.
+- Overlay state shown in UI: `player-tracker`, `portal-health-fill`, `portal-level-labels`.
+- Important caveat: the two desktop samples use different displays/frame budgets. The `1920x934` sample behaves like a
+  60Hz display (`17ms` clean baseline), while the `1728x958` internal-monitor sample behaves like a 120Hz display
+  (`8ms` clean baseline). Keep them separate.
+
+### Desktop 60Hz-Like Batch
+
+```text
+IRIS BENCH BATCH browser Chrome/148.0.0.0 platform MacIntel viewport 1920x934 dpr 2.00
+z14 normal pan | items 13,764 | P 4,609 | L 6,247 | F 2,750 | orn 135 | plugin 23 | sources P 4,609 L 6,247 F 2,750 | avg 17ms | max 50ms | fps 59 | slow 2/533 | median 17ms | benchMax 50ms | pluginMix total 23 labels 0 player 7 highlights 0 lines 16 points 7
+z14 base pan | items 13,766 | P 4,609 | L 6,247 | F 2,750 | orn 135 | plugin 25 | sources P 4,609 L 6,247 F 2,750 | avg 17ms | max 33ms | fps 60 | slow 0/541 | median 17ms | benchMax 33ms | pluginMix total 25 labels 0 player 7 highlights 0 lines 18 points 7
+z14 no-plugins pan | items 13,766 | P 4,609 | L 6,247 | F 2,750 | orn 135 | plugin 25 | sources P 4,609 L 6,247 F 2,750 | avg 17ms | max 33ms | fps 60 | slow 0/540 | median 17ms | benchMax 33ms | pluginMix total 25 labels 0 player 7 highlights 0 lines 18 points 7
+z14 normal zoom | items 13,766 | P 4,609 | L 6,247 | F 2,750 | orn 135 | plugin 25 | sources P 4,609 L 6,247 F 2,750 | avg 17ms | max 18ms | fps 60 | slow 0/542 | median 17ms | benchMax 18ms | pluginMix total 25 labels 0 player 7 highlights 0 lines 18 points 7
+z14 no-plugins zoom | items 13,767 | P 4,609 | L 6,247 | F 2,750 | orn 135 | plugin 26 | sources P 4,609 L 6,247 F 2,750 | avg 17ms | max 33ms | fps 60 | slow 0/541 | median 17ms | benchMax 33ms | pluginMix total 26 labels 0 player 7 highlights 0 lines 19 points 7
+z8 normal pan | items 45,347 | P 13,459 | L 22,324 | F 9,429 | orn 135 | plugin 0 | sources P 13,459 L 22,324 F 9,429 | avg 25ms | max 133ms | fps 40 | slow 45/363 | median 27ms | benchMax 133ms | pluginMix total 0 labels 0 player 0 highlights 0 lines 0 points 0
+z8 no-links pan | items 45,347 | P 13,459 | L 22,324 | F 9,429 | orn 135 | plugin 0 | sources P 13,459 L 22,324 F 9,429 | avg 17ms | max 33ms | fps 60 | slow 0/541 | median 17ms | benchMax 33ms | pluginMix total 0 labels 0 player 0 highlights 0 lines 0 points 0
+z8 no-fields pan | items 45,347 | P 13,459 | L 22,324 | F 9,429 | orn 135 | plugin 0 | sources P 13,459 L 22,324 F 9,429 | avg 17ms | max 33ms | fps 60 | slow 0/541 | median 17ms | benchMax 33ms | pluginMix total 0 labels 0 player 0 highlights 0 lines 0 points 0
+z8 base pan | items 45,347 | P 13,459 | L 22,324 | F 9,429 | orn 135 | plugin 0 | sources P 13,459 L 22,324 F 9,429 | avg 17ms | max 18ms | fps 60 | slow 0/542 | median 17ms | benchMax 18ms | pluginMix total 0 labels 0 player 0 highlights 0 lines 0 points 0
+z8 no-plugins pan | items 45,347 | P 13,459 | L 22,324 | F 9,429 | orn 135 | plugin 0 | sources P 13,459 L 22,324 F 9,429 | avg 17ms | max 33ms | fps 60 | slow 0/541 | median 17ms | benchMax 33ms | pluginMix total 0 labels 0 player 0 highlights 0 lines 0 points 0
+```
+
+### Desktop External Monitor / Larger Source Batch
+
+```text
+IRIS BENCH BATCH browser Chrome/148.0.0.0 platform MacIntel viewport 1920x934 dpr 2.00
+z14 normal pan | items 27,228 | P 8,730 | L 12,891 | F 5,194 | orn 366 | plugin 47 | sources P 8,730 L 12,891 F 5,194 | avg 18ms | max 83ms | fps 55 | slow 11/498 | median 18ms | benchMax 83ms | pluginMix total 47 labels 0 player 17 highlights 0 lines 30 points 17
+z14 base pan | items 27,229 | P 8,730 | L 12,891 | F 5,194 | orn 366 | plugin 48 | sources P 8,730 L 12,891 F 5,194 | avg 17ms | max 33ms | fps 60 | slow 0/541 | median 17ms | benchMax 33ms | pluginMix total 48 labels 0 player 17 highlights 0 lines 31 points 17
+z14 no-plugins pan | items 27,229 | P 8,730 | L 12,891 | F 5,194 | orn 366 | plugin 48 | sources P 8,730 L 12,891 F 5,194 | avg 17ms | max 33ms | fps 60 | slow 0/540 | median 17ms | benchMax 33ms | pluginMix total 48 labels 0 player 17 highlights 0 lines 31 points 17
+z14 normal zoom | items 27,229 | P 8,730 | L 12,891 | F 5,194 | orn 366 | plugin 48 | sources P 8,730 L 12,891 F 5,194 | avg 17ms | max 33ms | fps 60 | slow 0/540 | median 17ms | benchMax 33ms | pluginMix total 48 labels 0 player 17 highlights 0 lines 31 points 17
+z14 no-plugins zoom | items 27,231 | P 8,730 | L 12,891 | F 5,194 | orn 366 | plugin 50 | sources P 8,730 L 12,891 F 5,194 | avg 17ms | max 33ms | fps 60 | slow 0/541 | median 17ms | benchMax 33ms | pluginMix total 50 labels 0 player 17 highlights 0 lines 33 points 17
+z8 normal pan | items 54,302 | P 16,227 | L 26,711 | F 10,998 | orn 366 | plugin 0 | sources P 16,227 L 26,711 F 10,998 | avg 45ms | max 183ms | fps 22 | slow 78/204 | median 49ms | benchMax 183ms | pluginMix total 0 labels 0 player 0 highlights 0 lines 0 points 0
+z8 no-links pan | items 54,355 | P 16,239 | L 26,739 | F 11,011 | orn 366 | plugin 0 | sources P 16,239 L 26,739 F 11,011 | avg 17ms | max 18ms | fps 60 | slow 0/541 | median 17ms | benchMax 18ms | pluginMix total 0 labels 0 player 0 highlights 0 lines 0 points 0
+z8 no-fields pan | items 54,355 | P 16,239 | L 26,739 | F 11,011 | orn 366 | plugin 0 | sources P 16,239 L 26,739 F 11,011 | avg 17ms | max 18ms | fps 60 | slow 0/542 | median 17ms | benchMax 18ms | pluginMix total 0 labels 0 player 0 highlights 0 lines 0 points 0
+z8 base pan | items 54,355 | P 16,239 | L 26,739 | F 11,011 | orn 366 | plugin 0 | sources P 16,239 L 26,739 F 11,011 | avg 17ms | max 18ms | fps 60 | slow 0/543 | median 17ms | benchMax 18ms | pluginMix total 0 labels 0 player 0 highlights 0 lines 0 points 0
+z8 no-plugins pan | items 54,355 | P 16,239 | L 26,739 | F 11,011 | orn 366 | plugin 0 | sources P 16,239 L 26,739 F 11,011 | avg 17ms | max 18ms | fps 60 | slow 0/542 | median 17ms | benchMax 18ms | pluginMix total 0 labels 0 player 0 highlights 0 lines 0 points 0
+```
+
+### Desktop External Monitor / Post Moving-Mode Retest
+
+```text
+IRIS BENCH BATCH browser Chrome/148.0.0.0 platform MacIntel viewport 1920x934 dpr 2.00
+z14 normal pan | items 44,188 | P 12,597 | L 22,094 | F 9,343 | orn 94 | plugin 60 | sources P 12,597 L 22,094 F 9,343 | avg 19ms | max 133ms | fps 51 | slow 17/464 | median 21ms | benchMax 133ms | pluginMix total 60 labels 0 player 37 highlights 0 lines 23 points 37
+z14 base pan | items 44,188 | P 12,597 | L 22,094 | F 9,343 | orn 94 | plugin 60 | sources P 12,597 L 22,094 F 9,343 | avg 17ms | max 18ms | fps 60 | slow 0/542 | median 17ms | benchMax 18ms | pluginMix total 60 labels 0 player 37 highlights 0 lines 23 points 37
+z14 no-plugins pan | items 44,188 | P 12,597 | L 22,094 | F 9,343 | orn 94 | plugin 60 | sources P 12,597 L 22,094 F 9,343 | avg 17ms | max 18ms | fps 60 | slow 0/542 | median 17ms | benchMax 18ms | pluginMix total 60 labels 0 player 37 highlights 0 lines 23 points 37
+z14 normal zoom | items 44,188 | P 12,597 | L 22,094 | F 9,343 | orn 94 | plugin 60 | sources P 12,597 L 22,094 F 9,343 | avg 17ms | max 33ms | fps 60 | slow 0/540 | median 17ms | benchMax 33ms | pluginMix total 60 labels 0 player 37 highlights 0 lines 23 points 37
+z14 no-plugins zoom | items 44,188 | P 12,597 | L 22,094 | F 9,343 | orn 94 | plugin 60 | sources P 12,597 L 22,094 F 9,343 | avg 17ms | max 18ms | fps 60 | slow 0/542 | median 17ms | benchMax 18ms | pluginMix total 60 labels 0 player 37 highlights 0 lines 23 points 37
+z8 normal pan | items 44,213 | P 12,597 | L 22,178 | F 9,344 | orn 94 | plugin 0 | sources P 12,597 L 22,178 F 9,344 | avg 27ms | max 117ms | fps 38 | slow 47/340 | median 27ms | benchMax 117ms | pluginMix total 0 labels 0 player 0 highlights 0 lines 0 points 0
+z8 no-links pan | items 44,213 | P 12,597 | L 22,178 | F 9,344 | orn 94 | plugin 0 | sources P 12,597 L 22,178 F 9,344 | avg 17ms | max 18ms | fps 60 | slow 0/542 | median 17ms | benchMax 18ms | pluginMix total 0 labels 0 player 0 highlights 0 lines 0 points 0
+z8 no-fields pan | items 44,213 | P 12,597 | L 22,178 | F 9,344 | orn 94 | plugin 0 | sources P 12,597 L 22,178 F 9,344 | avg 17ms | max 18ms | fps 60 | slow 0/542 | median 17ms | benchMax 18ms | pluginMix total 0 labels 0 player 0 highlights 0 lines 0 points 0
+z8 base pan | items 44,213 | P 12,597 | L 22,178 | F 9,344 | orn 94 | plugin 0 | sources P 12,597 L 22,178 F 9,344 | avg 17ms | max 18ms | fps 60 | slow 0/542 | median 17ms | benchMax 18ms | pluginMix total 0 labels 0 player 0 highlights 0 lines 0 points 0
+z8 no-plugins pan | items 44,213 | P 12,597 | L 22,178 | F 9,344 | orn 94 | plugin 0 | sources P 12,597 L 22,178 F 9,344 | avg 17ms | max 18ms | fps 60 | slow 0/542 | median 17ms | benchMax 18ms | pluginMix total 0 labels 0 player 0 highlights 0 lines 0 points 0
+```
+
+### Desktop External Monitor / Movement Diagnostic Batch
+
+```text
+IRIS BENCH BATCH browser Chrome/148.0.0.0 platform MacIntel viewport 1920x934 dpr 2.00
+z14 normal pan | items 45,078 | P 13,388 | L 22,149 | F 9,334 | orn 132 | plugin 75 | sources P 13,388 L 22,149 F 9,334 | avg 20ms | max 117ms | fps 51 | slow 17/462 | median 20ms | benchMax 117ms | moveMode full links visible fields visible | pluginMix total 75 labels 0 player 45 highlights 0 lines 30 points 45
+z14 base pan | items 45,078 | P 13,388 | L 22,149 | F 9,334 | orn 132 | plugin 75 | sources P 13,388 L 22,149 F 9,334 | avg 17ms | max 34ms | fps 60 | slow 0/540 | median 17ms | benchMax 34ms | moveMode full links none fields none | pluginMix total 75 labels 0 player 45 highlights 0 lines 30 points 45
+z14 no-plugins pan | items 45,078 | P 13,388 | L 22,149 | F 9,334 | orn 132 | plugin 75 | sources P 13,388 L 22,149 F 9,334 | avg 17ms | max 33ms | fps 60 | slow 0/540 | median 17ms | benchMax 33ms | moveMode full links visible fields visible | pluginMix total 75 labels 0 player 45 highlights 0 lines 30 points 45
+z14 normal zoom | items 45,078 | P 13,388 | L 22,149 | F 9,334 | orn 132 | plugin 75 | sources P 13,388 L 22,149 F 9,334 | avg 17ms | max 33ms | fps 60 | slow 0/540 | median 17ms | benchMax 33ms | moveMode full links visible fields visible | pluginMix total 75 labels 0 player 45 highlights 0 lines 30 points 45
+z14 no-plugins zoom | items 45,078 | P 13,388 | L 22,149 | F 9,334 | orn 132 | plugin 75 | sources P 13,388 L 22,149 F 9,334 | avg 17ms | max 33ms | fps 60 | slow 0/540 | median 17ms | benchMax 33ms | moveMode full links visible fields visible | pluginMix total 75 labels 0 player 45 highlights 0 lines 30 points 45
+z8 normal pan | items 45,114 | P 13,389 | L 22,259 | F 9,334 | orn 132 | plugin 0 | sources P 13,389 L 22,259 F 9,334 | avg 24ms | max 117ms | fps 42 | slow 38/379 | median 24ms | benchMax 117ms | moveMode minimal links none fields none | pluginMix total 0 labels 0 player 0 highlights 0 lines 0 points 0
+z8 no-links pan | items 45,114 | P 13,389 | L 22,259 | F 9,334 | orn 132 | plugin 0 | sources P 13,389 L 22,259 F 9,334 | avg 17ms | max 33ms | fps 60 | slow 0/540 | median 17ms | benchMax 33ms | moveMode minimal links none fields none | pluginMix total 0 labels 0 player 0 highlights 0 lines 0 points 0
+z8 no-fields pan | items 45,114 | P 13,389 | L 22,259 | F 9,334 | orn 132 | plugin 0 | sources P 13,389 L 22,259 F 9,334 | avg 17ms | max 33ms | fps 60 | slow 0/541 | median 17ms | benchMax 33ms | moveMode minimal links none fields none | pluginMix total 0 labels 0 player 0 highlights 0 lines 0 points 0
+z8 base pan | items 45,114 | P 13,389 | L 22,259 | F 9,334 | orn 132 | plugin 0 | sources P 13,389 L 22,259 F 9,334 | avg 17ms | max 34ms | fps 60 | slow 0/540 | median 17ms | benchMax 34ms | moveMode minimal links none fields none | pluginMix total 0 labels 0 player 0 highlights 0 lines 0 points 0
+z8 no-plugins pan | items 45,114 | P 13,389 | L 22,259 | F 9,334 | orn 132 | plugin 0 | sources P 13,389 L 22,259 F 9,334 | avg 17ms | max 18ms | fps 60 | slow 0/542 | median 17ms | benchMax 18ms | moveMode minimal links none fields none | pluginMix total 0 labels 0 player 0 highlights 0 lines 0 points 0
+```
+
+### Desktop Internal Monitor / 120Hz-Like Batch
+
+```text
+IRIS BENCH BATCH browser Chrome/148.0.0.0 platform MacIntel viewport 1728x958 dpr 2.00
+z14 normal pan | items 40,918 | P 10,757 | L 21,075 | F 9,028 | orn 0 | plugin 58 | sources P 10,757 L 21,075 F 9,028 | avg 10ms | max 133ms | fps 101 | slow 19/906 | median 10ms | benchMax 133ms | pluginMix total 58 labels 0 player 27 highlights 0 lines 31 points 27
+z14 base pan | items 40,932 | P 10,757 | L 21,075 | F 9,028 | orn 0 | plugin 72 | sources P 10,757 L 21,075 F 9,028 | avg 8ms | max 17ms | fps 120 | slow 0/1,079 | median 8ms | benchMax 17ms | pluginMix total 72 labels 0 player 31 highlights 0 lines 41 points 31
+z14 no-plugins pan | items 40,932 | P 10,757 | L 21,075 | F 9,028 | orn 0 | plugin 72 | sources P 10,757 L 21,075 F 9,028 | avg 8ms | max 17ms | fps 120 | slow 0/1,081 | median 8ms | benchMax 17ms | pluginMix total 72 labels 0 player 31 highlights 0 lines 41 points 31
+z14 normal zoom | items 40,932 | P 10,757 | L 21,075 | F 9,028 | orn 0 | plugin 72 | sources P 10,757 L 21,075 F 9,028 | avg 8ms | max 17ms | fps 120 | slow 0/1,080 | median 8ms | benchMax 17ms | pluginMix total 72 labels 0 player 31 highlights 0 lines 41 points 31
+z14 no-plugins zoom | items 40,932 | P 10,757 | L 21,075 | F 9,028 | orn 0 | plugin 72 | sources P 10,757 L 21,075 F 9,028 | avg 8ms | max 17ms | fps 120 | slow 0/1,079 | median 8ms | benchMax 17ms | pluginMix total 72 labels 0 player 31 highlights 0 lines 41 points 31
+z8 normal pan | items 40,860 | P 10,757 | L 21,075 | F 9,028 | orn 0 | plugin 0 | sources P 10,757 L 21,075 F 9,028 | avg 9ms | max 158ms | fps 109 | slow 8/978 | median 8ms | benchMax 158ms | pluginMix total 0 labels 0 player 0 highlights 0 lines 0 points 0
+z8 no-links pan | items 40,860 | P 10,757 | L 21,075 | F 9,028 | orn 0 | plugin 0 | sources P 10,757 L 21,075 F 9,028 | avg 8ms | max 17ms | fps 120 | slow 0/1,079 | median 8ms | benchMax 17ms | pluginMix total 0 labels 0 player 0 highlights 0 lines 0 points 0
+z8 no-fields pan | items 40,860 | P 10,757 | L 21,075 | F 9,028 | orn 0 | plugin 0 | sources P 10,757 L 21,075 F 9,028 | avg 8ms | max 12ms | fps 120 | slow 0/1,082 | median 8ms | benchMax 12ms | pluginMix total 0 labels 0 player 0 highlights 0 lines 0 points 0
+z8 base pan | items 40,860 | P 10,757 | L 21,075 | F 9,028 | orn 0 | plugin 0 | sources P 10,757 L 21,075 F 9,028 | avg 8ms | max 18ms | fps 120 | slow 0/1,080 | median 8ms | benchMax 18ms | pluginMix total 0 labels 0 player 0 highlights 0 lines 0 points 0
+z8 no-plugins pan | items 40,868 | P 10,759 | L 21,081 | F 9,028 | orn 0 | plugin 0 | sources P 10,759 L 21,081 F 9,028 | avg 9ms | max 125ms | fps 117 | slow 3/1,061 | median 8ms | benchMax 125ms | pluginMix total 0 labels 0 player 0 highlights 0 lines 0 points 0
+```
+
+Notes:
+
+- Both samples are complete 10-scenario expanded batches.
+- The `1920x934` sample shows a sustained z8 Normal pan regression (`25ms avg`, `40fps`, `45/363` slow frames) while
+  `No Links`, `No Fields`, `Base`, and `No Plugins` all return to the clean `17ms`/`60fps` cadence.
+- The later external-monitor `1920x934` sample with a larger source set worsens the same shape: z8 Normal falls to
+  `45ms avg`, `22fps`, and `78/204` slow frames, while `No Links`, `No Fields`, `Base`, and `No Plugins` all stay at
+  `17ms` with no slow frames.
+- The post moving-mode retest improves z8 Normal from the larger-source `45ms avg` sample to `27ms avg`, but it is
+  still not clean. The next diagnostic batch should include moving render mode and layer visibility in each row to
+  confirm whether z8 Normal is actually benchmarking with links/fields hidden.
+- The movement diagnostic batch confirms z8 Normal is in `moveMode minimal` with `links none` and `fields none`, yet
+  remains slower than `No Plugins` (`24ms avg` vs `17ms avg`). That points at non-source plugin/runtime marker
+  registries rather than core link/field layers.
+- The marker-hidden diagnostic still shows z8 Normal at `24ms avg` while player markers, clusters, and planned markers
+  are hidden or empty. The remaining suspect is the timing of movement-mode layer changes at benchmark start, because
+  isolation variants apply their layer hiding before the settle window.
+- The internal-monitor sample is much faster on average because it appears to run against a 120Hz cadence, but the same
+  shape remains: z8 Normal has spikes (`158ms` max, `8` slow frames), while `No Links`, `No Fields`, and `Base` are
+  clean.
+- Plugin count is effectively zero at z8 in all desktop batches, so these z8 costs point at core link/field/entity
+  rendering during movement rather than plugin overlays.

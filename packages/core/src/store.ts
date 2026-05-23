@@ -323,6 +323,8 @@ export interface MapPerfSnapshot {
     benchmarkVariant?: string;
     benchmarkZoom?: number;
     benchmarkMode?: string;
+    benchmarkMovingEntityMode?: string;
+    benchmarkLayerVisibility?: Record<string, string>;
     benchmarkSourceFeatureCounts?: Record<string, number>;
     benchmarkPluginFeatureCounts?: Record<string, number>;
 }

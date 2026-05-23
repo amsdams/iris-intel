@@ -78,6 +78,19 @@ function formatPluginCounts(counts: Record<string, number> | undefined): string 
     return `pluginMix total ${formatCount(counts.total)} labels ${formatCount(counts.labels)} player ${formatCount(counts.playerMarkers)} highlights ${formatCount(counts.highlights)} lines ${formatCount(counts.lines)} points ${formatCount(counts.points)}`;
 }
 
+function formatBenchmarkRenderMode(frame: {benchmarkMovingEntityMode?: string; benchmarkLayerVisibility?: Record<string, string>}): string {
+    const visibility = frame.benchmarkLayerVisibility;
+    if (!frame.benchmarkMovingEntityMode && !visibility) return 'moveMode -';
+    return [
+        `moveMode ${frame.benchmarkMovingEntityMode ?? '-'}`,
+        `links ${visibility?.links ?? '-'}`,
+        `fields ${visibility?.fields ?? '-'}`,
+        `playerMarkers ${visibility?.playerMarkers ?? '-'}`,
+        `clusters ${visibility?.playerClusters ?? '-'}`,
+        `plannedMarkers ${visibility?.plannedMarkers ?? '-'}`,
+    ].join(' ');
+}
+
 function buildBatchReportLine(testCase: BenchmarkBatchCase): string {
     const state = useStore.getState();
     const viewport = state.mapPerfDiagnostics.viewport;
@@ -110,6 +123,7 @@ function buildBatchReportLine(testCase: BenchmarkBatchCase): string {
         `slow ${formatCount(frame.slowFrameCount)}/${formatCount(frame.frameCount)}`,
         `median ${formatMs(frame.benchmarkMedianAverageFrameMs)}`,
         `benchMax ${formatMs(frame.benchmarkMaxFrameMs)}`,
+        formatBenchmarkRenderMode(frame),
         formatPluginCounts(pluginCounts),
     ].join(' | ');
 }

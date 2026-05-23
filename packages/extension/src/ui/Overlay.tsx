@@ -126,9 +126,18 @@ function toFrameSnapshot(snapshot: Record<string, unknown>): MapPerfSnapshot {
         benchmarkVariant: typeof snapshot.benchmarkVariant === 'string' ? snapshot.benchmarkVariant : undefined,
         benchmarkZoom: typeof snapshot.benchmarkZoom === 'number' ? snapshot.benchmarkZoom : undefined,
         benchmarkMode: typeof snapshot.benchmarkMode === 'string' ? snapshot.benchmarkMode : undefined,
+        benchmarkMovingEntityMode: typeof snapshot.benchmarkMovingEntityMode === 'string' ? snapshot.benchmarkMovingEntityMode : undefined,
+        benchmarkLayerVisibility: toRecordOfStrings(snapshot.benchmarkLayerVisibility),
         benchmarkSourceFeatureCounts: toRecordOfNumbers(snapshot.benchmarkSourceFeatureCounts),
         benchmarkPluginFeatureCounts: toRecordOfNumbers(snapshot.benchmarkPluginFeatureCounts),
     };
+}
+
+function toRecordOfStrings(value: unknown): Record<string, string> | undefined {
+    if (!isRecord(value)) return undefined;
+
+    const entries = Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === 'string');
+    return Object.fromEntries(entries);
 }
 
 function toRecordOfNumbers(value: unknown): Record<string, number> | undefined {
