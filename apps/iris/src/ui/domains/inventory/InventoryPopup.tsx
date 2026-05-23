@@ -1,39 +1,15 @@
 import { JSX } from 'preact';
-import { useStore, normalizeTeam, InventoryParser, InventoryCategory } from '@iris/core';
+import { useStore, normalizeTeam, InventoryParser, INVENTORY_CATEGORIES, type GroupedInventoryItem, type InventoryCategory, type InventorySortMode } from '@iris/core';
 import { Popup } from '../../shared/Popup';
 import { useEffect, useState, useMemo } from 'preact/hooks';
 import { THEMES, UI_COLORS, getItemRarityColor, getModRarityColor } from '../../theme';
 import './inventory.css';
 import { useRenderDiagnostics } from '../../shared/useRenderDiagnostics';
 
-interface GroupedInventoryItem {
-    type: string;
-    name: string;
-    level?: number;
-    rarity?: string;
-    count: number;
-    category: InventoryCategory;
-    moniker?: string;
-}
-
-type InventorySortMode = 'COUNT' | 'NAME' | 'RARITY';
-
-const RARITY_SORT_ORDER: Record<string, number> = {
-    VERY_RARE: 4,
-    RARE: 3,
-    COMMON: 2,
-    VERY_COMMON: 1,
-};
-
-const CATEGORIES: { label: string; value: InventoryCategory }[] = [
-    { label: 'ALL', value: 'ALL' },
-    { label: 'WEAPONS', value: 'WEAPONS' },
-    { label: 'RESONATORS', value: 'RESONATORS' },
-    { label: 'MODS', value: 'MODS' },
-    { label: 'POWERUPS', value: 'POWERUPS' },
-    { label: 'CAPSULES', value: 'CAPSULES' },
-    { label: 'KEYS', value: 'KEYS' },
-];
+const CATEGORIES: { label: string; value: InventoryCategory }[] = INVENTORY_CATEGORIES.map((category) => ({
+    label: category,
+    value: category,
+}));
 
 export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Element => {
     useRenderDiagnostics('InventoryPopup');
@@ -50,67 +26,21 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
     const inventoryHasLoaded = inventoryEndpoint.lastSuccessAt !== null;
 
     const parsedItems = useMemo(
-        (): GroupedInventoryItem[] => InventoryParser.deriveInventoryDisplayItems(inventory).map((item) => ({
-            type: item.type,
-            name: item.name,
-            level: item.level,
-            rarity: item.rarity,
-            moniker: item.moniker,
-            category: item.category,
-            count: 1,
-        })),
+        () => InventoryParser.deriveInventoryDisplayItems(inventory),
         [inventory],
     );
 
-    const groupedItems = useMemo((): GroupedInventoryItem[] => {
-        const groups: Record<string, GroupedInventoryItem> = {};
-
-        const addToGroup = (item: GroupedInventoryItem): void => {
-            const key = `${item.type}-${item.level || ''}-${item.rarity || ''}-${item.name || ''}-${item.moniker || ''}`;
-            if (!groups[key]) {
-                groups[key] = { ...item, count: 0 };
-            }
-            groups[key].count += 1;
-        };
-
-        parsedItems.forEach(item => {
-            addToGroup(item);
-        });
-
-        return Object.values(groups).sort((a, b) => {
-            if (sortMode === 'COUNT' && a.count !== b.count) return b.count - a.count;
-            if (sortMode === 'RARITY') {
-                const rarityDelta = (RARITY_SORT_ORDER[b.rarity || ''] || 0) - (RARITY_SORT_ORDER[a.rarity || ''] || 0);
-                if (rarityDelta !== 0) return rarityDelta;
-            }
-            const nameCompare = a.name.localeCompare(b.name);
-            if (nameCompare !== 0) return nameCompare;
-            if (a.level !== b.level) return (b.level || 0) - (a.level || 0);
-            const monikerCompare = (a.moniker || '').localeCompare(b.moniker || '');
-            if (monikerCompare !== 0) return monikerCompare;
-            return a.category.localeCompare(b.category);
-        });
-    }, [parsedItems, sortMode]);
+    const groupedItems = useMemo(
+        (): GroupedInventoryItem[] => InventoryParser.groupInventoryDisplayItems(parsedItems, sortMode),
+        [parsedItems, sortMode],
+    );
 
     const normalizedSearch = searchText.trim().toLowerCase();
 
-    const categoryCounts = useMemo((): Record<InventoryCategory, number> => {
-        const counts: Record<InventoryCategory, number> = {
-            ALL: parsedItems.length,
-            WEAPONS: 0,
-            RESONATORS: 0,
-            MODS: 0,
-            POWERUPS: 0,
-            CAPSULES: 0,
-            KEYS: 0,
-        };
-
-        parsedItems.forEach((item) => {
-            counts[item.category] += 1;
-        });
-
-        return counts;
-    }, [parsedItems]);
+    const categoryCounts = useMemo(
+        () => InventoryParser.countInventoryCategories(parsedItems),
+        [parsedItems],
+    );
 
     const visibleCategories = useMemo(
         () => CATEGORIES.filter((category) => category.value === 'ALL' || !inventoryHasLoaded || categoryCounts[category.value] > 0),
@@ -123,18 +53,10 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
         }
     }, [activeCategory, visibleCategories]);
 
-    const filteredItems = useMemo((): GroupedInventoryItem[] => {
-        const categoryFiltered = activeCategory === 'ALL'
-            ? groupedItems
-            : groupedItems.filter(item => item.category === activeCategory);
-
-        if (!normalizedSearch) return categoryFiltered;
-
-        return categoryFiltered.filter((item) => {
-            const haystack = `${item.name} ${item.rarity || ''} ${item.moniker || ''} ${item.level ? `L${item.level}` : ''}`.toLowerCase();
-            return haystack.includes(normalizedSearch);
-        });
-    }, [groupedItems, activeCategory, normalizedSearch]);
+    const filteredItems = useMemo(
+        (): GroupedInventoryItem[] => InventoryParser.filterGroupedInventoryItems(groupedItems, activeCategory, normalizedSearch),
+        [groupedItems, activeCategory, normalizedSearch],
+    );
 
     const totalCount = parsedItems.length;
     const showSnapshotBehaviorHint = inventoryHasLoaded && totalCount > 0;

@@ -1084,14 +1084,34 @@ Principles:
 - App shells should stay app-owned until there are repeated call sites and clear ownership.
 - Keep app shells under `apps/` and shared backend/engine/domain logic under `packages/`.
 
+Near-term order:
+
+1. Inventory/display derivation: compare IRIS's richer inventory parser/grouping/display derivation with Mini-IRIS's compact needs, then move only reusable data helpers into `packages/core`.
+2. Map style/domain constants: continue consolidating canonical Intel/Ingress constants and derive non-default theme variants without making app UI themes shared.
+3. Live update pipeline: reduce perceived COMM-to-map lag with targeted, throttled refreshes from actionable plexts before considering broader polling.
+4. Diagnostics/bench formatting: keep copied bench/readout fields aligned through shared formatting helpers where duplication becomes concrete.
+5. Page-world map protocol helpers: share typed protocol helpers only after IRIS and Mini-IRIS call sites stabilize.
+6. Package chopping: split more packages only after shared usage and bundle/build costs are clear.
+
+Live update pipeline sketch:
+
+- Parse actionable portal GUIDs from COMM/plext activity such as capture, deploy, destroy, recharge, mod deploy, link, and field events.
+- Queue dirty portal IDs with short debounce, dedupe, per-portal cooldown, and low concurrency.
+- Refresh affected portals through targeted portal-details/getPortal requests where useful, prioritizing selected and visible portals.
+- For link/field/capture/destroy events, schedule a small delayed entity refresh for current bounds or affected area because portal details may not contain full topology.
+- Keep ordinary polling conservative; this is a freshness hint path, not a new always-on heavy refresh loop.
+
 Tasks:
 
 | Task                                                      | Status | Notes                                                                                                      |
 |-----------------------------------------------------------|--------|------------------------------------------------------------------------------------------------------------|
 | Define shared-vs-app ownership boundaries                 | In Progress | first concrete rule is proven engine helpers can move to `packages/core`; app runtime protocols, UI shells, and product-specific orchestration stay app-owned until both call sites stabilize |
-| Identify first shared backend/engine extraction candidates | In Progress | extracted candidates now include antimeridian-safe map geometry, plain entity GeoJSON builders, endpoint formatting helpers, the shared COMM plext request contract, and shared player tracker history reduction; pause further extraction unless another concrete duplicate boundary appears |
+| Identify first shared backend/engine extraction candidates | In Progress | next candidate is COMM-driven targeted refresh; extracted candidates already include antimeridian-safe map geometry, plain entity GeoJSON builders, endpoint formatting helpers, shared COMM plext request contract, shared player tracker history reduction, shared map style constants, and shared inventory display derivation |
 | Decide app/package layout for IRIS and mini-IRIS           | Done   | full IRIS now lives in `apps/iris` beside `apps/mini-iris`; reusable backend/engine/domain packages remain under `packages/` |
 | Smoke test unpacked IRIS after app layout move             | Done   | manual Chrome smoke against the moved `apps/iris` build looked good after typecheck/lint/test/build/package validation |
+| Audit inventory/display derivation for shared core use     | Done   | moved reusable inventory category lists, grouped display rows, category counts, sort modes, and grouped-item filtering into `packages/core`; IRIS and Mini-IRIS keep their app-owned popup/dock UI and color decisions |
+| Design COMM-driven targeted portal refresh pipeline        | Open   | use actionable plexts as freshness hints: dedupe dirty portal GUIDs, throttle portal-details refreshes, prioritize selected/visible portals, and schedule bounded entity refreshes for link/field topology changes |
+| Derive non-default IRIS themes from INGRESS defaults       | Open   | derive DEBUG, CYBER, and SOFTER from the canonical INGRESS palette through small transform helpers while keeping intentional readability/accent overrides explicit |
 | Extract shared antimeridian-safe map geometry              | Done   | moved wrapped line/polygon geometry into `packages/core` and switched IRIS plus Mini-IRIS render feature builders to the shared helper |
 | Extract shared plain entity GeoJSON builders               | Done   | moved common portal point, wrapped link line, wrapped field polygon, and FeatureCollection helpers into `packages/core`; app-specific filters, colours, selection, 3D extrusion, and plugin/planning features stay local |
 | Extract shared endpoint/diagnostic formatting helpers      | Done   | moved countdown, relative-time, endpoint stale status, endpoint sorting, and Mini-IRIS compact endpoint badge label helpers into `packages/core`; stores, queues, diagnostics UI, and styling remain app-owned |
@@ -1184,7 +1204,9 @@ Tasks:
 | Match IRIS portal HP colour ramp in Mini-IRIS                | Done   | HP mode now uses the same yellow/orange/red/magenta recharge semantics as full IRIS while preserving the faction-coloured stroke/ring |
 | Make Mini-IRIS secondary interactions open popups directly  | Done   | page-world contextmenu/right-click and mobile long-press now send a details intent so the compact selection/details drawer opens directly |
 | Tune Mini-IRIS explicit portal jump behavior                | Done   | explicit portal jumps now use a shorter `easeTo` page-world command instead of a long `flyTo`; geolocation keeps the existing `flyTo` behavior |
-| Normalize Mini-IRIS font usage                              | Open   | smoke testing found mixed-looking fonts across Mini-IRIS surfaces; audit CSS/font-family inheritance and standardize without broad UI redesign |
+| Normalize Mini-IRIS font usage                              | Done   | Mini-IRIS now sets a single root UI font stack with tabular numerals; diagnostics and entity details inherit it, while only the copyable bench line uses a dedicated monospace stack |
+| Add Mini-IRIS inventory mocks                               | Done   | mock source patterns now publish generated inventory into the shared store so the inventory dock can exercise keys, capsules, resonators, weapons, mods, powerups, and viruses without live C.O.R.E. inventory |
+| Hide/show Mini-IRIS event and shard inventory items         | Done   | inventory check accepted for now; keep compact defaults aligned with IRIS behavior for special/event inventory categories and revisit with live Mini-IRIS inventory testing if needed |
 | Replace Mini-IRIS player activity pulse with pin marker     | Done   | Mini-IRIS player activity now uses a compact static team-coloured pin marker and no longer runs a per-frame pulse loop for player points |
 | Align Mini-IRIS portal/link/field styling with IRIS         | Done   | Mini-IRIS, IRIS, and bundled overlay plugins now share core Ingress default colours for teams, levels/resos/XMPs, item rarity, mod rarity, item types, keys/XM/tracker, health, artifacts, ornaments, portal history, and base entity style constants while preserving Mini toggles |
 

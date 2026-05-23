@@ -17,6 +17,7 @@ import { throttle } from './GeoUtils';
 import { isEndpointStateMessage, numberOrNull, stringOrNull } from './messages';
 import { DEFAULT_PORTAL_HISTORY_LAYERS, nextPortalHistoryMode, type PortalHistoryKey, type PortalHistoryLayerState, type PortalHistoryMode } from './portalHistory';
 import type { MiniFrameStats, MiniRenderStats } from './diagnostics';
+import { MINI_IRIS_UI_FONT } from './typography';
 import {
     MINI_PAGE_MAP_EVENT,
     postMiniPageMapCommand,
@@ -473,7 +474,15 @@ function TacticalOverlay(): h.JSX.Element {
     }, [generator, visiblePlayerHistories.size]);
 
     const { syncToMap } = useMapRenderer(generator, logEvent, portalHistoryLayers, keyOverlayEnabled, mockInventory, handleRenderStats);
-    const { loadPattern1, loadPattern2, loadPattern3 } = usePatterns(mapState, generator, loadedTileKeys, logEvent, setMockInventory);
+    const handleMockInventory = useCallback((inventory: InventoryItem[]): void => {
+        setMockInventory(inventory);
+        useStore.getState().setInventory(inventory);
+    }, []);
+    const clearMockInventory = useCallback((): void => {
+        setMockInventory([]);
+        useStore.getState().setInventory([]);
+    }, []);
+    const { loadPattern1, loadPattern2, loadPattern3 } = usePatterns(mapState, generator, loadedTileKeys, logEvent, handleMockInventory);
     const syncCurrentView = useCallback((currentLiveMode: boolean, currentPatternMode: number): void => {
         syncToMap(mapViewRef.current, currentLiveMode, currentPatternMode);
     }, [syncToMap]);
@@ -927,7 +936,7 @@ function TacticalOverlay(): h.JSX.Element {
                 setPatternMode(1);
                 generator.clear();
                 loadedTileKeys.clear();
-                setMockInventory([]);
+                clearMockInventory();
             } else if (currentPatternMode === 1) {
                 patternModeRef.current = 2;
                 setPatternMode(2);
@@ -941,13 +950,13 @@ function TacticalOverlay(): h.JSX.Element {
                 setLiveMode(true);
                 generator.clear();
                 loadedTileKeys.clear();
-                setMockInventory([]);
+                clearMockInventory();
                 if (useStore.getState().hasSubscription) {
                     window.postMessage({ type: 'IRIS_INVENTORY_REQUEST' }, '*');
                 }
             }
         }
-    }, [extrusionEnabled, generator, loadedTileKeys, logEvent]);
+    }, [clearMockInventory, extrusionEnabled, generator, loadedTileKeys, logEvent]);
 
     // 3. Store subscription
     useEffect(() => {
@@ -976,7 +985,7 @@ function TacticalOverlay(): h.JSX.Element {
     }, [patternMode, liveMode, checkAndLoad]);
 
     return (
-        <div id="poc-preact-root" style={{ pointerEvents: 'none' }}>
+        <div id="poc-preact-root" style={{ pointerEvents: 'none', fontFamily: MINI_IRIS_UI_FONT, fontVariantNumeric: 'tabular-nums' }}>
             <MapContainer isVis={isVis} />
             {isVis && (
                 <Fragment>

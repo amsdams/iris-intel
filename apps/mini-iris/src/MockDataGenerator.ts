@@ -74,6 +74,98 @@ export class MockDataGenerator {
         let timestampOffset = 0;
         const nextTimestamp = (): number => MOCK_INVENTORY_TIMESTAMP + timestampOffset++;
 
+        const addLevelItem = (resourceType: string, level: number, count: number, rarity = 'COMMON'): void => {
+            for (let i = 0; i < count; i++) {
+                items.push({
+                    guid: `mock-${resourceType.toLowerCase()}:${level}:${i}`,
+                    timestamp: nextTimestamp(),
+                    resource: { resourceType, resourceRarity: rarity },
+                    resourceWithLevels: { resourceType, level },
+                });
+            }
+        };
+
+        const addMod = (resourceType: string, rarity: string, count: number, displayName?: string): void => {
+            for (let i = 0; i < count; i++) {
+                items.push({
+                    guid: `mock-mod:${resourceType}:${i}`,
+                    timestamp: nextTimestamp(),
+                    modResource: {
+                        resourceType,
+                        rarity,
+                        displayName: displayName ?? resourceType,
+                        stats: {},
+                    },
+                });
+            }
+        };
+
+        addLevelItem('EMITTER_A', 8, 8, 'VERY_COMMON');
+        addLevelItem('EMITTER_A', 7, 6, 'VERY_COMMON');
+        addLevelItem('EMP_BURSTER', 8, 12, 'COMMON');
+        addLevelItem('ULTRA_STRIKE', 8, 6, 'COMMON');
+        addMod('RES_SHIELD', 'COMMON', 4, 'Portal Shield');
+        addMod('MULTIHACK', 'RARE', 2, 'Multi-hack');
+        addMod('ULTRA_LINK_AMP', 'VERY_RARE', 1, 'SoftBank Ultra Link');
+        addMod('EXTRA_SHIELD', 'VERY_RARE', 1, 'Aegis Shield');
+
+        items.push({
+            guid: 'mock-apex',
+            timestamp: nextTimestamp(),
+            resource: { resourceType: 'PLAYER_POWERUP', resourceRarity: 'VERY_RARE' },
+            playerPowerupResource: { playerPowerupEnum: 'APEX' },
+        });
+        items.push({
+            guid: 'mock-fracker',
+            timestamp: nextTimestamp(),
+            resource: { resourceType: 'PORTAL_POWERUP', resourceRarity: 'VERY_RARE' },
+            timedPowerupResource: { designation: 'FRACK', multiplier: 0, multiplierE6: 2000000 },
+        });
+        items.push({
+            guid: 'mock-ada',
+            timestamp: nextTimestamp(),
+            flipCard: { flipCardType: 'ADA' },
+        });
+        items.push({
+            guid: 'mock-jarvis',
+            timestamp: nextTimestamp(),
+            flipCard: { flipCardType: 'JARVIS' },
+        });
+        items.push({
+            guid: 'mock-supply-capsule',
+            timestamp: nextTimestamp(),
+            resource: { resourceType: 'CAPSULE', resourceRarity: 'COMMON' },
+            moniker: { differentiator: 'KIT' },
+            container: {
+                currentCapacity: 100,
+                currentCount: 3,
+                stackableItems: [
+                    {
+                        itemGuids: ['mock-capsule-xmp-1', 'mock-capsule-xmp-2'],
+                        exampleGameEntity: [
+                            'mock-capsule-xmp-template',
+                            nextTimestamp(),
+                            {
+                                resource: { resourceType: 'EMP_BURSTER', resourceRarity: 'COMMON' },
+                                resourceWithLevels: { resourceType: 'EMP_BURSTER', level: 7 },
+                            },
+                        ],
+                    },
+                    {
+                        itemGuids: ['mock-capsule-cube-1'],
+                        exampleGameEntity: [
+                            'mock-capsule-cube-template',
+                            nextTimestamp(),
+                            {
+                                resource: { resourceType: 'POWER_CUBE', resourceRarity: 'COMMON' },
+                                resourceWithLevels: { resourceType: 'POWER_CUBE', level: 8 },
+                            },
+                        ],
+                    },
+                ],
+            },
+        });
+
         this.portals.forEach((portal) => {
             const counts = getDeterministicKeyCounts(portal.id, portal.team);
             const coupler = {

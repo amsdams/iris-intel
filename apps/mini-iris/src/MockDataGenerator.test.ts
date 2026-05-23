@@ -87,6 +87,21 @@ describe('MockDataGenerator', () => {
         expect(gen.fieldsMap.size).toBe(1);
     });
 
+    it('should create useful mock inventory categories', () => {
+        gen.addPortal('a', 'E', 0, 0);
+        gen.addPortal('b', 'R', 1, 1);
+
+        const inventory = gen.createMockInventory();
+
+        expect(inventory.some((item) => item.resourceWithLevels?.resourceType === 'EMITTER_A')).toBe(true);
+        expect(inventory.some((item) => item.resourceWithLevels?.resourceType === 'EMP_BURSTER')).toBe(true);
+        expect(inventory.some((item) => item.modResource?.resourceType === 'ULTRA_LINK_AMP')).toBe(true);
+        expect(inventory.some((item) => item.playerPowerupResource?.playerPowerupEnum === 'APEX')).toBe(true);
+        expect(inventory.some((item) => item.flipCard?.flipCardType === 'ADA')).toBe(true);
+        expect(inventory.some((item) => item.portalCoupler?.portalGuid === 'a')).toBe(true);
+        expect(inventory.some((item) => item.container?.stackableItems.length)).toBe(true);
+    });
+
     it('should detect nesting for fields', () => {
         gen.addPortal('a', 'E', 0, 0);
         gen.addPortal('b', 'E', 10, 0);

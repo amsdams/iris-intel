@@ -8,6 +8,7 @@ import { useComm } from './useComm';
 import type { EndpointName, EndpointTelemetry } from './useEndpointTelemetry';
 import type { PortalHistoryKey, PortalHistoryLayerState } from './portalHistory';
 import type { MiniFrameStats, MiniRenderStats } from './diagnostics';
+import { MINI_IRIS_MONO_FONT } from './typography';
 
 interface EventLogEntry {
     time: string;
@@ -255,8 +256,9 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBou
                         borderRadius: '8px',
                         zIndex: 2000002,
                         pointerEvents: 'auto',
-                        fontFamily: 'monospace',
+                        fontFamily: 'inherit',
                         fontSize: '11px',
+                        lineHeight: 1.35,
                         boxShadow: '0 8px 24px rgba(0,0,0,0.42)',
                     }}
                 >
@@ -295,7 +297,7 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBou
                         <span>FPS</span><span>{frameStats.fps} ({frameStats.slowFrames}/{frameStats.sampleCount} slow)</span>
                         <span>Toggles</span><span>LVL {portalLevelColorEnabled ? 'on' : 'off'} / HP {portalHealthColorEnabled ? 'on' : 'off'} / KEY {keyOverlayEnabled ? 'on' : 'off'} / 3D {extrusionEnabled ? 'on' : 'off'}</span>
                     </div>
-                    <div style={{ padding: '8px 10px', borderTop: '1px solid rgba(126, 249, 255, 0.14)', color: '#9fb8b8', overflowWrap: 'anywhere' }}>
+                    <div style={{ padding: '8px 10px', borderTop: '1px solid rgba(126, 249, 255, 0.14)', color: '#9fb8b8', overflowWrap: 'anywhere', fontFamily: MINI_IRIS_MONO_FONT, fontSize: '10px', lineHeight: 1.35 }}>
                         {benchLine}
                     </div>
                     {entries.length > 0 && (

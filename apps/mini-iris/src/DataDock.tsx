@@ -1,6 +1,6 @@
 import { h, JSX } from 'preact';
 import { useMemo } from 'preact/hooks';
-import { Field, Link, Portal, useStore, InventoryParser, Plext, normalizeTeam, createPlextRequestMessage, type PlextRequestBounds } from '@iris/core';
+import { Field, Link, Portal, useStore, InventoryParser, Plext, normalizeTeam, createPlextRequestMessage, type InventoryCategory, type PlextRequestBounds } from '@iris/core';
 import { COLORS, INGRESS_COLORS, RARITY_COLORS, ITEM_LEVEL_COLORS } from './MapConstants';
 import { formatMU, formatAP } from './GeoUtils';
 import { CommTab } from './useComm';
@@ -8,6 +8,14 @@ import type { PlayerHistory } from './usePlayerTracker';
 import { Dashboard } from './Dashboard';
 
 type SelectedEntity = { type: 'portal'; data: Portal } | { type: 'link'; data: Link } | { type: 'field'; data: Field };
+
+function getInventoryCategoryColor(category: InventoryCategory | string): string {
+    if (category === 'RESONATORS') return ITEM_LEVEL_COLORS[8];
+    if (category === 'WEAPONS') return ITEM_LEVEL_COLORS[4];
+    if (category === 'MODS') return RARITY_COLORS['VERY_RARE'];
+    if (category === 'KEYS') return INGRESS_COLORS.KEY;
+    return '#aaa';
+}
 
 interface DataDockProps {
     openDrawer: string | null;
@@ -30,19 +38,14 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPor
     }, [inventory]);
 
     const inventoryStats = useMemo(() => {
-        const stats: Record<string, { count: number, color: string }> = {};
-        derivedItems.forEach(item => {
-            const cat = item.category;
-            if (!stats[cat]) {
-                stats[cat] = { count: 0, color: '#aaa' };
-                if (cat === 'RESONATORS') stats[cat].color = ITEM_LEVEL_COLORS[8];
-                if (cat === 'WEAPONS') stats[cat].color = ITEM_LEVEL_COLORS[4];
-                if (cat === 'MODS') stats[cat].color = RARITY_COLORS['VERY_RARE'];
-                if (cat === 'KEYS') stats[cat].color = INGRESS_COLORS.KEY;
-            }
-            stats[cat].count++;
-        });
-        return stats;
+        const counts = InventoryParser.countInventoryCategories(derivedItems);
+        return Object.entries(counts)
+            .filter(([cat, count]) => cat !== 'ALL' && count > 0)
+            .map(([cat, count]) => ({
+                category: cat,
+                count,
+                color: getInventoryCategoryColor(cat),
+            }));
     }, [derivedItems]);
 
     // 2. COMM Filtering
@@ -262,9 +265,9 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPor
                     </div>
                     {inventory && inventory.length > 0 ? (
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
-                            {Object.entries(inventoryStats).map(([cat, stat]) => (
-                                <div key={cat} style={{ background: '#1a1a1a', padding: '8px', borderRadius: '6px', border: '1px solid #222', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ color: '#888', fontSize: '10px' }}>{cat}</span>
+                            {inventoryStats.map((stat) => (
+                                <div key={stat.category} style={{ background: '#1a1a1a', padding: '8px', borderRadius: '6px', border: '1px solid #222', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ color: '#888', fontSize: '10px' }}>{stat.category}</span>
                                     <span style={{ color: stat.color, fontWeight: 'bold', fontSize: '13px' }}>{stat.count}</span>
                                 </div>
                             ))}

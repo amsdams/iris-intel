@@ -6,6 +6,7 @@ interface ParseOptions {
 }
 
 export type InventoryCategory = 'ALL' | 'WEAPONS' | 'RESONATORS' | 'MODS' | 'POWERUPS' | 'CAPSULES' | 'KEYS';
+export type InventorySortMode = 'COUNT' | 'NAME' | 'RARITY';
 
 export interface DerivedInventoryItem {
   guid: string;
@@ -18,11 +19,30 @@ export interface DerivedInventoryItem {
   moniker?: string;
 }
 
+export interface GroupedInventoryItem {
+  type: string;
+  name: string;
+  level?: number;
+  rarity?: string;
+  count: number;
+  category: Exclude<InventoryCategory, 'ALL'>;
+  moniker?: string;
+}
+
 export interface PortalKeyCounts {
   total: number;
   loose: number;
   capsule: number;
 }
+
+export const INVENTORY_CATEGORIES: InventoryCategory[] = ['ALL', 'WEAPONS', 'RESONATORS', 'MODS', 'POWERUPS', 'CAPSULES', 'KEYS'];
+
+const RARITY_SORT_ORDER: Record<string, number> = {
+  VERY_RARE: 4,
+  RARE: 3,
+  COMMON: 2,
+  VERY_COMMON: 1,
+};
 
 const INTEL_ITEM_LABELS: Record<string, string> = {
   BOOSTED_POWER_CUBE: 'Hypercube',
@@ -271,6 +291,86 @@ export const InventoryParser = {
     };
 
     return items.flatMap((item) => deriveItemsFromItem(item));
+  },
+
+  groupInventoryDisplayItems: (
+    items: DerivedInventoryItem[],
+    sortMode: InventorySortMode = 'COUNT',
+  ): GroupedInventoryItem[] => {
+    const groups: Record<string, GroupedInventoryItem> = {};
+
+    items.forEach((item) => {
+      const key = `${item.type}-${item.level || ''}-${item.rarity || ''}-${item.name || ''}-${item.moniker || ''}`;
+      if (!groups[key]) {
+        groups[key] = {
+          type: item.type,
+          name: item.name,
+          level: item.level,
+          rarity: item.rarity,
+          moniker: item.moniker,
+          category: item.category,
+          count: 0,
+        };
+      }
+      groups[key].count += 1;
+    });
+
+    return Object.values(groups).sort((a, b) => {
+      if (sortMode === 'COUNT' && a.count !== b.count) return b.count - a.count;
+      if (sortMode === 'RARITY') {
+        const rarityDelta = (RARITY_SORT_ORDER[b.rarity || ''] || 0) - (RARITY_SORT_ORDER[a.rarity || ''] || 0);
+        if (rarityDelta !== 0) return rarityDelta;
+      }
+      const nameCompare = a.name.localeCompare(b.name);
+      if (nameCompare !== 0) return nameCompare;
+      if (a.level !== b.level) return (b.level || 0) - (a.level || 0);
+      const monikerCompare = (a.moniker || '').localeCompare(b.moniker || '');
+      if (monikerCompare !== 0) return monikerCompare;
+      return a.category.localeCompare(b.category);
+    });
+  },
+
+  deriveGroupedInventoryItems: (
+    items: InventoryItem[],
+    sortMode: InventorySortMode = 'COUNT',
+  ): GroupedInventoryItem[] => {
+    return InventoryParser.groupInventoryDisplayItems(InventoryParser.deriveInventoryDisplayItems(items), sortMode);
+  },
+
+  countInventoryCategories: (items: DerivedInventoryItem[]): Record<InventoryCategory, number> => {
+    const counts: Record<InventoryCategory, number> = {
+      ALL: items.length,
+      WEAPONS: 0,
+      RESONATORS: 0,
+      MODS: 0,
+      POWERUPS: 0,
+      CAPSULES: 0,
+      KEYS: 0,
+    };
+
+    items.forEach((item) => {
+      counts[item.category] += 1;
+    });
+
+    return counts;
+  },
+
+  filterGroupedInventoryItems: (
+    items: GroupedInventoryItem[],
+    category: InventoryCategory = 'ALL',
+    searchText = '',
+  ): GroupedInventoryItem[] => {
+    const categoryFiltered = category === 'ALL'
+      ? items
+      : items.filter((item) => item.category === category);
+    const normalizedSearch = searchText.trim().toLowerCase();
+
+    if (!normalizedSearch) return categoryFiltered;
+
+    return categoryFiltered.filter((item) => {
+      const haystack = `${item.name} ${item.rarity || ''} ${item.moniker || ''} ${item.level ? `L${item.level}` : ''}`.toLowerCase();
+      return haystack.includes(normalizedSearch);
+    });
   },
 
   countPortalKeysDetailed: (items: InventoryItem[], portalId: string): PortalKeyCounts => {

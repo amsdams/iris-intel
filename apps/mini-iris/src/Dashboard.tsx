@@ -215,7 +215,7 @@ export function Dashboard({ type, data, colors, onClose }: DashboardProps): JSX.
     };
 
     return (
-        <div id="entity-details" style={{ color: '#fff', padding: '0', fontFamily: 'monospace', fontSize: '12px', pointerEvents: 'auto', border: `1px solid ${teamColor}`, borderRadius: '4px', background: 'rgba(0,0,0,0.95)', overflow: 'hidden', boxShadow: `0 0 10px ${teamColor}44` }}>
+        <div id="entity-details" style={{ color: '#fff', padding: '0', fontFamily: 'inherit', fontSize: '12px', lineHeight: 1.35, pointerEvents: 'auto', border: `1px solid ${teamColor}`, borderRadius: '4px', background: 'rgba(0,0,0,0.95)', overflow: 'hidden', boxShadow: `0 0 10px ${teamColor}44` }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '7px 8px', borderBottom: '1px solid #333' }}>
                 <span style={{ color: teamColor, fontWeight: 'bold', fontSize: '11px', letterSpacing: '0.04em' }}>{title}</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

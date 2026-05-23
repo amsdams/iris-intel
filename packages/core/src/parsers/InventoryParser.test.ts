@@ -321,4 +321,69 @@ describe('InventoryParser', () => {
     expect(nestedPowerCubes[0]?.category).toBe('POWERUPS');
     expect(nestedPowerCubes[0]?.moniker).toBe('C1');
   });
+
+  it('groups, counts, sorts, and filters inventory display items for app UIs', () => {
+    const parsed = InventoryParser.parse({
+      result: [
+        [
+          'reso-1',
+          1,
+          {
+            resourceWithLevels: { resourceType: 'EMITTER_A', level: 8 },
+          },
+        ],
+        [
+          'reso-2',
+          2,
+          {
+            resourceWithLevels: { resourceType: 'EMITTER_A', level: 8 },
+          },
+        ],
+        [
+          'ultra-link-1',
+          3,
+          {
+            modResource: { displayName: 'SoftBank Ultra Link', rarity: 'VERY_RARE', resourceType: 'ULTRA_LINK_AMP' },
+          },
+        ],
+        [
+          'portal-key-1',
+          4,
+          {
+            portalCoupler: {
+              portalGuid: 'portal-a',
+              portalLocation: '0,0',
+              portalImageUrl: '',
+              portalTitle: 'Portal A',
+              portalAddress: '',
+            },
+          },
+        ],
+      ],
+    } as InventoryData);
+
+    const derived = InventoryParser.deriveInventoryDisplayItems(parsed);
+    const grouped = InventoryParser.groupInventoryDisplayItems(derived, 'COUNT');
+    const counts = InventoryParser.countInventoryCategories(derived);
+
+    expect(counts).toMatchObject({
+      ALL: 4,
+      RESONATORS: 2,
+      MODS: 1,
+      KEYS: 1,
+    });
+    expect(grouped[0]).toMatchObject({
+      type: 'EMITTER_A',
+      name: 'Resonator',
+      level: 8,
+      count: 2,
+      category: 'RESONATORS',
+    });
+    expect(InventoryParser.filterGroupedInventoryItems(grouped, 'MODS', 'ultra')).toEqual([
+      expect.objectContaining({type: 'ULTRA_LINK_AMP', count: 1}),
+    ]);
+    expect(InventoryParser.filterGroupedInventoryItems(grouped, 'ALL', 'L8')).toEqual([
+      expect.objectContaining({type: 'EMITTER_A', count: 2}),
+    ]);
+  });
 });
