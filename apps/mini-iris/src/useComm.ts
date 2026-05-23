@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'preact/hooks';
+import { createPlextRequestMessage, type PlextRequestBounds } from '@iris/core';
 import { useEndpointTelemetry } from './useEndpointTelemetry';
-import { createPlextRequestMessage, type PlextRequestBounds } from './plextRequests';
 
 export type CommTab = 'all' | 'faction' | 'alerts';
 
@@ -27,7 +27,13 @@ export function useComm(isVis: boolean, liveMode: boolean, plextBounds: PlextReq
             if (!force && plexts.nextRefreshAt !== null && now < plexts.nextRefreshAt) return;
         }
 
-        const request = createPlextRequestMessage(activeTab.toLowerCase(), plextBounds, -1, -1, true, force);
+        const request = createPlextRequestMessage({
+            tab: activeTab.toLowerCase(),
+            bounds: plextBounds,
+            ascendingTimestampOrder: true,
+            force,
+            requireBounds: true,
+        });
         if (request) {
             window.postMessage(request, '*');
         }

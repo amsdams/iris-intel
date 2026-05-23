@@ -1,7 +1,7 @@
 import { render, h, Fragment } from 'preact';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'preact/hooks';
 import { MockDataGenerator } from './MockDataGenerator';
-import { useStore, getMinLevelForZoom, getGridSizeForZoom, Portal, Link, Field, type InventoryItem } from '@iris/core';
+import { useStore, getMinLevelForZoom, getGridSizeForZoom, Portal, Link, Field, type InventoryItem, type PlextRequestBounds } from '@iris/core';
 import { TacticalUI } from './TacticalUI';
 import { MAP_STYLES, type MapStyleName } from './MapConstants';
 import { LaunchButton } from './LaunchButton';
@@ -13,7 +13,6 @@ import { useScores } from './useScores';
 import { usePlayerStats } from './usePlayerStats';
 import { usePlayerTracker, type PlayerAction, type PlayerHistory } from './usePlayerTracker';
 import { useEndpointTelemetry } from './useEndpointTelemetry';
-import type { PlextRequestBounds } from './plextRequests';
 import { throttle } from './GeoUtils';
 import { isEndpointStateMessage, numberOrNull, stringOrNull } from './messages';
 import { DEFAULT_PORTAL_HISTORY_LAYERS, nextPortalHistoryMode, type PortalHistoryKey, type PortalHistoryLayerState, type PortalHistoryMode } from './portalHistory';

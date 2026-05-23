@@ -1,12 +1,11 @@
 import { h, JSX, Fragment } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import type { Field, Link, Portal } from '@iris/core';
+import type { Field, Link, Portal, PlextRequestBounds } from '@iris/core';
 import type { PlayerHistory } from './usePlayerTracker';
 import { MapTools } from './MapTools';
 import { DataDock } from './DataDock';
 import { useComm } from './useComm';
 import type { EndpointName, EndpointTelemetry } from './useEndpointTelemetry';
-import type { PlextRequestBounds } from './plextRequests';
 import type { PortalHistoryKey, PortalHistoryLayerState } from './portalHistory';
 import type { MiniFrameStats, MiniRenderStats } from './diagnostics';
 

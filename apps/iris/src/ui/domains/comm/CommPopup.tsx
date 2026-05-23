@@ -1,6 +1,6 @@
 import { h, JSX } from 'preact';
 import { useEffect, useState, useRef, useMemo, useCallback } from 'preact/hooks';
-import { useStore, normalizeTeam, Plext } from '@iris/core';
+import { useStore, normalizeTeam, Plext, createPlextRequestMessage } from '@iris/core';
 import { Popup } from '../../shared/Popup';
 import { THEMES } from '../../theme';
 import './comm.css';
@@ -51,11 +51,11 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
     const handleRefresh = useCallback((): void => {
         const currentPlexts = useStore.getState().plexts;
         const minTimestampMs = currentPlexts.length > 0 ? currentPlexts[currentPlexts.length - 1].time : -1;
-        window.postMessage({ 
-            type: 'IRIS_PLEXTS_REQUEST', 
-            minTimestampMs,
+        const request = createPlextRequestMessage({
             tab: activeTab.toLowerCase(),
-        }, '*');
+            minTimestampMs,
+        });
+        if (request) window.postMessage(request, '*');
     }, [activeTab]);
 
     const handleScroll = (): void => {
@@ -74,12 +74,12 @@ export function CommPopup({ onClose }: CommPopupProps): JSX.Element {
             setLoading(true);
             lastRequestTime.current = now;
             const oldestTime = filteredPlexts[0].time;
-            window.postMessage({ 
-                type: 'IRIS_PLEXTS_REQUEST', 
+            const request = createPlextRequestMessage({
+                tab: activeTab.toLowerCase(),
                 maxTimestampMs: oldestTime,
                 ascendingTimestampOrder: false,
-                tab: activeTab.toLowerCase(),
-            }, '*');
+            });
+            if (request) window.postMessage(request, '*');
             
             // Reset loading state after a delay
             setTimeout(() => setLoading(false), 2000);

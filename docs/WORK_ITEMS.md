@@ -10,7 +10,7 @@ from here when they become tracked work.
 
 1. **[Mini-IRIS Bench]** Capture the small DBG matrix later: base, LVL, HP, KEY, and 3D variants.
 2. **[Shared Runtime]** Continue the cross-app audit with backend/engine/domain candidates, not shared UI.
-3. **[Shared Runtime]** Compare request/endpoint telemetry and COMM/player tracker ownership before extracting more code.
+3. **[Shared Runtime]** Compare endpoint telemetry queues and COMM/player tracker ownership before extracting more code.
 4. **[Release Hygiene]** Keep package artifact naming explicit by browser platform for both apps.
 5. **[Shared Runtime]** Prefer request/data/parsing/entity lifecycle extraction before UI component sharing.
 
@@ -1089,10 +1089,11 @@ Tasks:
 | Task                                                      | Status | Notes                                                                                                      |
 |-----------------------------------------------------------|--------|------------------------------------------------------------------------------------------------------------|
 | Define shared-vs-app ownership boundaries                 | In Progress | first concrete rule is proven engine helpers can move to `packages/core`; app runtime protocols, UI shells, and product-specific orchestration stay app-owned until both call sites stabilize |
-| Identify first shared backend/engine extraction candidates | In Progress | first extracted candidate is antimeridian-safe map geometry; next candidates are request/endpoint telemetry, COMM/player tracker models, diagnostics formatters, and entity feature builders |
+| Identify first shared backend/engine extraction candidates | In Progress | first extracted candidates are antimeridian-safe map geometry and the shared COMM plext request contract; next candidates are endpoint telemetry queues, COMM/player tracker models, diagnostics formatters, and entity feature builders |
 | Decide app/package layout for IRIS and mini-IRIS           | Done   | full IRIS now lives in `apps/iris` beside `apps/mini-iris`; reusable backend/engine/domain packages remain under `packages/` |
 | Smoke test unpacked IRIS after app layout move             | Done   | manual Chrome smoke against the moved `apps/iris` build looked good after typecheck/lint/test/build/package validation |
 | Extract shared antimeridian-safe map geometry              | Done   | moved wrapped line/polygon geometry into `packages/core` and switched IRIS plus Mini-IRIS render feature builders to the shared helper |
+| Extract shared COMM plext request contract                 | Done   | moved plext request bounds/message construction into `packages/core`; IRIS and Mini-IRIS now post the same typed `IRIS_PLEXTS_REQUEST` shape while keeping app-specific scheduling/freshness policy local |
 | Defer package chopping until boundaries are proven         | Open   | only split packages after shared usage and bundle/build costs are measured                                  |
 
 ## IRIS Performance And Architecture Review Follow-ups
@@ -1177,6 +1178,7 @@ Tasks:
 | Match IRIS portal HP colour ramp in Mini-IRIS                | Done   | HP mode now uses the same yellow/orange/red/magenta recharge semantics as full IRIS while preserving the faction-coloured stroke/ring |
 | Make Mini-IRIS secondary interactions open popups directly  | Done   | page-world contextmenu/right-click and mobile long-press now send a details intent so the compact selection/details drawer opens directly |
 | Tune Mini-IRIS explicit portal jump behavior                | Done   | explicit portal jumps now use a shorter `easeTo` page-world command instead of a long `flyTo`; geolocation keeps the existing `flyTo` behavior |
+| Normalize Mini-IRIS font usage                              | Open   | smoke testing found mixed-looking fonts across Mini-IRIS surfaces; audit CSS/font-family inheritance and standardize without broad UI redesign |
 
 ## Snapshot And Reference Sources
 

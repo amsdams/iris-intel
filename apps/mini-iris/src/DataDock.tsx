@@ -1,11 +1,10 @@
 import { h, JSX } from 'preact';
 import { useMemo } from 'preact/hooks';
-import { Field, Link, Portal, useStore, InventoryParser, Plext, normalizeTeam } from '@iris/core';
+import { Field, Link, Portal, useStore, InventoryParser, Plext, normalizeTeam, createPlextRequestMessage, type PlextRequestBounds } from '@iris/core';
 import { COLORS, INGRESS_COLORS, RARITY_COLORS, ITEM_LEVEL_COLORS } from './MapConstants';
 import { formatMU, formatAP } from './GeoUtils';
 import { CommTab } from './useComm';
 import type { PlayerHistory } from './usePlayerTracker';
-import { createPlextRequestMessage, type PlextRequestBounds } from './plextRequests';
 import { Dashboard } from './Dashboard';
 
 type SelectedEntity = { type: 'portal'; data: Portal } | { type: 'link'; data: Link } | { type: 'field'; data: Field };
@@ -57,7 +56,13 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPor
     const currentTab = commTab.toLowerCase();
 
     const refreshComm = (): void => {
-        const request = createPlextRequestMessage(currentTab, plextBounds, -1, -1, true, true);
+        const request = createPlextRequestMessage({
+            tab: currentTab,
+            bounds: plextBounds,
+            ascendingTimestampOrder: true,
+            force: true,
+            requireBounds: true,
+        });
         if (request) {
             window.postMessage(request, '*');
         }

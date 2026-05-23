@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'preact/hooks';
-import { useStore, PlextParser, Plext } from '@iris/core';
-import type { PlextData } from '@iris/core';
+import { useStore, PlextParser, Plext, createPlextRequestMessage } from '@iris/core';
+import type { PlextData, PlextRequestBounds } from '@iris/core';
 import { useEndpointTelemetry } from './useEndpointTelemetry';
-import { createPlextRequestMessage, type PlextRequestBounds } from './plextRequests';
 import { isIrisDataMessage } from './messages';
 
 export interface PlayerAction {
@@ -209,7 +208,13 @@ export function usePlayerTracker(
                 if (plexts.nextRefreshAt !== null && now < plexts.nextRefreshAt) return;
             }
 
-            const request = createPlextRequestMessage('all', plextBounds, lastPlextTime, -1, lastPlextTime >= 0);
+            const request = createPlextRequestMessage({
+                tab: 'all',
+                bounds: plextBounds,
+                minTimestampMs: lastPlextTime,
+                ascendingTimestampOrder: lastPlextTime >= 0,
+                requireBounds: true,
+            });
             if (request) {
                 window.postMessage(request, '*');
             }
