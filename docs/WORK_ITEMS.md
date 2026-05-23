@@ -1097,6 +1097,7 @@ Tasks:
 | Extract shared endpoint/diagnostic formatting helpers      | Done   | moved countdown, relative-time, endpoint stale status, endpoint sorting, and Mini-IRIS compact endpoint badge label helpers into `packages/core`; stores, queues, diagnostics UI, and styling remain app-owned |
 | Extract shared COMM plext request contract                 | Done   | moved plext request bounds/message construction into `packages/core`; IRIS and Mini-IRIS now post the same typed `IRIS_PLEXTS_REQUEST` shape while keeping app-specific scheduling/freshness policy local |
 | Extract shared player tracker history reducer              | Done   | moved COMM markup-to-player-history reduction into `packages/core`; full IRIS player-tracker plugin and Mini-IRIS now share movement parsing while keeping rendering, zoom gates, polling, and UI local |
+| Align IRIS and Mini-IRIS diagnostics copy/read order       | Open   | compare DBG/Diagnostics field names and ordering so human-readable fields appear first and copyable bench summaries stay comparable across apps without making Mini-IRIS diagnostics heavy |
 | Defer package chopping until boundaries are proven         | Open   | only split packages after shared usage and bundle/build costs are measured                                  |
 
 ## IRIS Performance And Architecture Review Follow-ups
@@ -1183,7 +1184,7 @@ Tasks:
 | Make Mini-IRIS secondary interactions open popups directly  | Done   | page-world contextmenu/right-click and mobile long-press now send a details intent so the compact selection/details drawer opens directly |
 | Tune Mini-IRIS explicit portal jump behavior                | Done   | explicit portal jumps now use a shorter `easeTo` page-world command instead of a long `flyTo`; geolocation keeps the existing `flyTo` behavior |
 | Normalize Mini-IRIS font usage                              | Open   | smoke testing found mixed-looking fonts across Mini-IRIS surfaces; audit CSS/font-family inheritance and standardize without broad UI redesign |
-| Replace Mini-IRIS player activity pulse with pin marker     | Open   | Mini-IRIS currently uses a purple beating activity circle; evaluate replacing it with a compact pin marker closer to full IRIS while keeping Mini-IRIS lightweight |
+| Replace Mini-IRIS player activity pulse with pin marker     | Done   | Mini-IRIS player activity now uses a compact static team-coloured pin marker and no longer runs a per-frame pulse loop for player points |
 
 ## Snapshot And Reference Sources
 

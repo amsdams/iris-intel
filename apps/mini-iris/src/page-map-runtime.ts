@@ -1,6 +1,6 @@
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import type { CircleLayerSpecification } from '@maplibre/maplibre-gl-style-spec';
+import type { CircleLayerSpecification, SymbolLayerSpecification } from '@maplibre/maplibre-gl-style-spec';
 import { COLORS, INGRESS_COLORS, ITEM_LEVEL_COLORS, MAP_STYLES, PLAYER_TRACKER_COLORS, type MapStyleName } from './MapConstants';
 import {
     MINI_PAGE_MAP_COMMAND,
@@ -22,6 +22,7 @@ let currentPortalPaint = {
 };
 
 type CirclePaint = NonNullable<CircleLayerSpecification['paint']>;
+type SymbolLayout = NonNullable<SymbolLayerSpecification['layout']>;
 const PORTAL_TEAM_COLOR_EXPR: CirclePaint['circle-color'] = ['match', ['get', 'team'], 'E', COLORS.E, 'R', COLORS.R, 'M', COLORS.M, COLORS.N];
 const PORTAL_LEVEL_COLOR_EXPR: CirclePaint['circle-color'] = [
     'match',
@@ -72,6 +73,7 @@ const SELECTABLE_LAYERS = ['p', 'f-enl', 'f-res', 'f-mac', 'l-enl', 'l-res', 'l-
 const MOBILE_LONG_PRESS_MS = 650;
 const MOBILE_LONG_PRESS_MOVE_TOLERANCE_PX = 12;
 const MOBILE_LONG_PRESS_CLICK_SUPPRESS_MS = 500;
+const PLAYER_PIN_ICON_EXPR: SymbolLayout['icon-image'] = ['match', ['get', 'team'], 'E', 'player-pin-e', 'R', 'player-pin-r', 'M', 'player-pin-m', 'player-pin-n'];
 
 function postEvent(payload: MiniPageMapEventMessage['payload']): void {
     window.postMessage({ type: MINI_PAGE_MAP_EVENT, payload } satisfies MiniPageMapEventMessage, '*');
@@ -137,11 +139,6 @@ function buildStyle(styleName: MapStyleName): maplibregl.StyleSpecification {
             { id: 'l-ext-res', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'link-ext'], ['==', 'team', 'R']], paint: { 'fill-extrusion-color': COLORS.R, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.8 }, layout: { visibility: 'none' } },
             { id: 'l-ext-mac', type: 'fill-extrusion', source: 'entities', filter: ['all', ['==', 'type', 'link-ext'], ['==', 'team', 'M']], paint: { 'fill-extrusion-color': COLORS.M, 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': ['get', 'base_height'], 'fill-extrusion-opacity': 0.8 }, layout: { visibility: 'none' } },
             { id: 'p-ext', type: 'fill-extrusion', source: 'entities', filter: ['==', 'type', 'portal-ext'], paint: { 'fill-extrusion-color': ['match', ['get', 'team'], 'E', COLORS.E, 'R', COLORS.R, 'M', COLORS.M, COLORS.N], 'fill-extrusion-height': ['get', 'height'], 'fill-extrusion-base': 0, 'fill-extrusion-opacity': 0.9 }, layout: { visibility: 'none' } },
-            { id: 'player-trails', type: 'line', source: 'players', filter: ['==', 'type', 'player-trail'], paint: { 'line-color': PLAYER_TRACKER_COLORS.trail, 'line-width': 3, 'line-opacity': ['interpolate', ['linear'], ['get', 'ageMinutes'], 0, 0.95, 5, 0.75, 20, 0.45, 60, 0.2, 180, 0.08], 'line-blur': 0.6, 'line-dasharray': [1.2, 1.6] } },
-            { id: 'player-points-glow', type: 'circle', source: 'players', filter: ['==', 'type', 'player-point'], paint: { 'circle-color': PLAYER_TRACKER_COLORS.point, 'circle-radius': ['interpolate', ['linear'], ['get', 'pulse'], 0, 7, 0.5, 13, 1, 7], 'circle-opacity': ['interpolate', ['linear'], ['get', 'pulse'], 0, 0.12, 0.5, 0.26, 1, 0.12] } },
-            { id: 'player-points', type: 'circle', source: 'players', filter: ['==', 'type', 'player-point'], paint: { 'circle-color': PLAYER_TRACKER_COLORS.point, 'circle-radius': ['interpolate', ['linear'], ['get', 'pulse'], 0, 4.5, 0.5, 6.5, 1, 4.5], 'circle-stroke-width': 2, 'circle-stroke-color': PLAYER_TRACKER_COLORS.stroke, 'circle-opacity': 0.98 } },
-            { id: 'player-label-bg', type: 'circle', source: 'players', filter: ['==', 'type', 'player-label'], paint: { 'circle-color': ['match', ['get', 'team'], 'E', COLORS.E, 'R', COLORS.R, 'M', COLORS.M, INGRESS_COLORS.XM], 'circle-radius': ['interpolate', ['linear'], ['get', 'count'], 1, 8, 2, 11, 5, 15], 'circle-opacity': 0.08 } },
-            { id: 'player-labels', type: 'symbol', source: 'players', filter: ['==', 'type', 'player-label'], layout: { 'text-field': ['get', 'label'], 'text-size': 12, 'text-offset': [0, 1.2], 'text-anchor': 'top', 'text-allow-overlap': true, 'text-ignore-placement': true, 'text-max-width': 12 }, paint: { 'text-color': '#ffffff', 'text-halo-color': '#000000', 'text-halo-width': 1.4, 'text-opacity': 0.96 } },
             { id: 'sel-f', type: 'line', source: 'selection', filter: ['==', 'type', 'field'], paint: { 'line-color': '#fff', 'line-width': 3 } },
             { id: 'sel-l', type: 'line', source: 'selection', filter: ['==', 'type', 'link'], paint: { 'line-color': '#fff', 'line-width': 4 } },
             { id: 'sel-p', type: 'circle', source: 'selection', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': 12, 'circle-color': 'transparent', 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 } },
@@ -155,8 +152,83 @@ function buildStyle(styleName: MapStyleName): maplibregl.StyleSpecification {
             { id: 'p-key-count-bg', type: 'circle', source: 'entities', filter: ['==', 'type', 'portal-key-count'], paint: { 'circle-color': '#000000', 'circle-radius': 12, 'circle-translate': [0, -18], 'circle-opacity': 0.78, 'circle-stroke-color': ['match', ['get', 'team'], 'E', COLORS.E, 'R', COLORS.R, 'M', COLORS.M, COLORS.N], 'circle-stroke-width': 1.8, 'circle-stroke-opacity': 0.95 } },
             { id: 'p-key-count-total', type: 'symbol', source: 'entities', filter: ['==', 'type', 'portal-key-count'], layout: { 'text-field': ['get', 'totalLabel'], 'text-size': 12, 'text-anchor': 'center', 'text-allow-overlap': true, 'text-ignore-placement': true }, paint: { 'text-color': INGRESS_COLORS.KEY, 'text-halo-color': '#000000', 'text-halo-width': 1.4, 'text-opacity': 1, 'text-translate': [0, -20] } },
             { id: 'p-key-count-split', type: 'symbol', source: 'entities', filter: ['==', 'type', 'portal-key-count'], layout: { 'text-field': ['get', 'splitLabel'], 'text-size': 8, 'text-offset': [0, 0.95], 'text-anchor': 'center', 'text-allow-overlap': true, 'text-ignore-placement': true }, paint: { 'text-color': '#ffffff', 'text-halo-color': '#000000', 'text-halo-width': 1.2, 'text-opacity': 0.95, 'text-translate': [0, -20] } },
+            { id: 'player-trails', type: 'line', source: 'players', filter: ['==', 'type', 'player-trail'], paint: { 'line-color': PLAYER_TRACKER_COLORS.trail, 'line-width': 3, 'line-opacity': ['interpolate', ['linear'], ['get', 'ageMinutes'], 0, 0.95, 5, 0.75, 20, 0.45, 60, 0.2, 180, 0.08], 'line-blur': 0.6, 'line-dasharray': [1.2, 1.6] } },
+            { id: 'player-pins', type: 'symbol', source: 'players', filter: ['==', 'type', 'player-point'], layout: { 'icon-image': PLAYER_PIN_ICON_EXPR, 'icon-anchor': 'bottom', 'icon-size': 0.82, 'icon-allow-overlap': true, 'icon-ignore-placement': true } },
+            { id: 'player-label-bg', type: 'circle', source: 'players', filter: ['==', 'type', 'player-label'], paint: { 'circle-color': ['match', ['get', 'team'], 'E', COLORS.E, 'R', COLORS.R, 'M', COLORS.M, INGRESS_COLORS.XM], 'circle-radius': ['interpolate', ['linear'], ['get', 'count'], 1, 8, 2, 11, 5, 15], 'circle-opacity': 0.08 } },
+            { id: 'player-labels', type: 'symbol', source: 'players', filter: ['==', 'type', 'player-label'], layout: { 'text-field': ['get', 'label'], 'text-size': 12, 'text-offset': [0, 1.2], 'text-anchor': 'top', 'text-allow-overlap': true, 'text-ignore-placement': true, 'text-max-width': 12 }, paint: { 'text-color': '#ffffff', 'text-halo-color': '#000000', 'text-halo-width': 1.4, 'text-opacity': 0.96 } },
         ],
     };
+}
+
+function createPlayerPinImage(fillColor: string): ImageData {
+    const pixelRatio = 2;
+    const width = 34;
+    const height = 44;
+    const canvas = document.createElement('canvas');
+    canvas.width = width * pixelRatio;
+    canvas.height = height * pixelRatio;
+
+    const context = canvas.getContext('2d');
+    if (!context) {
+        return new ImageData(canvas.width, canvas.height);
+    }
+
+    context.scale(pixelRatio, pixelRatio);
+    const centerX = width / 2;
+    const centerY = 15;
+    const radius = 11;
+    const tipY = 38;
+
+    const tracePin = (): void => {
+        context.beginPath();
+        context.moveTo(centerX, tipY);
+        context.bezierCurveTo(centerX + 4, centerY + 12, centerX + radius, centerY + 7, centerX + radius, centerY);
+        context.bezierCurveTo(centerX + radius, centerY - 7, centerX + 7, centerY - radius, centerX, centerY - radius);
+        context.bezierCurveTo(centerX - 7, centerY - radius, centerX - radius, centerY - 7, centerX - radius, centerY);
+        context.bezierCurveTo(centerX - radius, centerY + 7, centerX - 4, centerY + 12, centerX, tipY);
+        context.closePath();
+    };
+
+    const drawPin = (offsetX: number, offsetY: number, color: string, alpha: number): void => {
+        context.save();
+        context.globalAlpha = alpha;
+        context.translate(offsetX, offsetY);
+        tracePin();
+        context.fillStyle = color;
+        context.fill();
+        context.restore();
+    };
+
+    drawPin(1.5, 2, '#000000', 0.42);
+    tracePin();
+    context.fillStyle = fillColor;
+    context.fill();
+    context.lineWidth = 3;
+    context.strokeStyle = PLAYER_TRACKER_COLORS.stroke;
+    context.stroke();
+
+    context.beginPath();
+    context.arc(centerX, centerY, 3.5, 0, Math.PI * 2);
+    context.fillStyle = '#ffffff';
+    context.globalAlpha = 0.94;
+    context.fill();
+
+    return context.getImageData(0, 0, canvas.width, canvas.height);
+}
+
+function registerPlayerPinImages(currentMap: maplibregl.Map): void {
+    const pins = [
+        ['player-pin-e', COLORS.E],
+        ['player-pin-r', COLORS.R],
+        ['player-pin-m', COLORS.M],
+        ['player-pin-n', PLAYER_TRACKER_COLORS.point],
+    ] as const;
+
+    pins.forEach(([id, color]) => {
+        if (!currentMap.hasImage(id)) {
+            currentMap.addImage(id, createPlayerPinImage(color), { pixelRatio: 2 });
+        }
+    });
 }
 
 function readFeatureString(feature: maplibregl.MapGeoJSONFeature, key: string): string | null {
@@ -272,6 +344,7 @@ function initMap(command: Extract<MiniPageMapCommandMessage['command'], { action
 
     map.once('load', () => {
         if (!map) return;
+        registerPlayerPinImages(map);
         setPortalPaint(currentPortalPaint.levelColorEnabled, currentPortalPaint.healthColorEnabled);
         postEvent({ event: 'ready', view: getView(map) });
     });

@@ -278,7 +278,6 @@ function TacticalOverlay(): h.JSX.Element {
     const [entityCounts, setEntityCounts] = useState<MiniEntityCounts>(EMPTY_ENTITY_COUNTS);
     const [extrusionEnabled, setExtrusionEnabled] = useState(false);
     const [isVis, setIsVis] = useState(false);
-    const [pulseTick, setPulseTick] = useState(0);
     const liveModeRef = useRef(liveMode);
     const patternModeRef = useRef(patternMode);
     const moveSettleTimerRef = useRef<number | null>(null);
@@ -316,23 +315,6 @@ function TacticalOverlay(): h.JSX.Element {
     useEffect(() => {
         cleanupLegacyStorage();
     }, []);
-
-    useEffect(() => {
-        if (!isVis) return;
-
-        let frame: number | null = null;
-        const tick = (): void => {
-            setPulseTick((Date.now() % 1200) / 1200);
-            frame = window.requestAnimationFrame(tick);
-        };
-
-        frame = window.requestAnimationFrame(tick);
-        return (): void => {
-            if (frame !== null) {
-                window.cancelAnimationFrame(frame);
-            }
-        };
-    }, [isVis]);
 
     const persistMapState = useCallback((nextState?: SavedMapState): void => {
         const stateToSave = nextState ?? {
@@ -556,7 +538,6 @@ function TacticalOverlay(): h.JSX.Element {
                         type: 'player-point',
                         portalName: lastEvent.portalName,
                         name,
-                        pulse: pulseTick,
                     },
                 });
 
@@ -592,7 +573,7 @@ function TacticalOverlay(): h.JSX.Element {
             type: 'FeatureCollection',
             features,
         };
-    }, [visiblePlayerHistories, pulseTick]);
+    }, [visiblePlayerHistories]);
 
     useEffect(() => {
         playerTrailDataRef.current = playerTrailData;
