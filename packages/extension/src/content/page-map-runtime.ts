@@ -201,6 +201,7 @@ const BENCHMARK_PLUGIN_LAYER_IDS = [
     'iris-map-planned-anchor',
     'iris-map-planned-crossings',
 ];
+const MOVING_OVERLAY_LAYER_IDS = BENCHMARK_PLUGIN_LAYER_IDS;
 
 let currentLayerVisibility: PageMapRuntimeLayerVisibility = DEFAULT_LAYER_VISIBILITY;
 let currentPlanningState: {enabled: boolean; tool: 'links' | 'markers'} = {
@@ -885,8 +886,7 @@ function applyRuntimeMarkerVisibility(element: HTMLElement): void {
 
 function setMovingOverlayVisibility(map: maplibregl.Map, visible: boolean): void {
     movingOverlayVisible = visible;
-    setLayerVisibility(map, 'iris-map-plugin-labels', visible);
-    setLayerVisibility(map, 'iris-map-plugin-portal-highlights', visible);
+    MOVING_OVERLAY_LAYER_IDS.forEach((layerId) => setLayerVisibility(map, layerId, visible));
     setMarkerRegistryVisibility(plannedMarkerRegistry, visible && shouldShowBenchmarkMarkers());
     setMarkerRegistryVisibility(playerMarkerRegistry, visible && shouldShowBenchmarkMarkers());
     setMarkerRegistryVisibility(playerClusterRegistry, visible && shouldShowBenchmarkMarkers());
@@ -2041,8 +2041,11 @@ function publishBenchmarkFrameSnapshot(
         benchmarkLayerVisibility: {
             links: getLayerVisibility(map, 'iris-map-links'),
             fields: getLayerVisibility(map, 'iris-map-fields'),
+            pluginLines: getLayerVisibility(map, 'iris-map-plugin-lines'),
+            pluginPoints: getLayerVisibility(map, 'iris-map-plugin-points'),
             pluginLabels: getLayerVisibility(map, 'iris-map-plugin-labels'),
             pluginHighlights: getLayerVisibility(map, 'iris-map-plugin-portal-highlights'),
+            plannedLinks: getLayerVisibility(map, 'iris-map-planned-links'),
             plannedMarkers: getMarkerRegistryVisibility(plannedMarkerRegistry),
             playerMarkers: getMarkerRegistryVisibility(playerMarkerRegistry),
             playerClusters: getMarkerRegistryVisibility(playerClusterRegistry),

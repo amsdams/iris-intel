@@ -85,6 +85,8 @@ function formatBenchmarkRenderMode(frame: {benchmarkMovingEntityMode?: string; b
         `moveMode ${frame.benchmarkMovingEntityMode ?? '-'}`,
         `links ${visibility?.links ?? '-'}`,
         `fields ${visibility?.fields ?? '-'}`,
+        `pluginLines ${visibility?.pluginLines ?? '-'}`,
+        `pluginPoints ${visibility?.pluginPoints ?? '-'}`,
         `playerMarkers ${visibility?.playerMarkers ?? '-'}`,
         `clusters ${visibility?.playerClusters ?? '-'}`,
         `plannedMarkers ${visibility?.plannedMarkers ?? '-'}`,
