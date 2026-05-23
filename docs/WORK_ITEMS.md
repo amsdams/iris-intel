@@ -1,5 +1,27 @@
 # Work Items
 
+This is the canonical shared worklog for IRIS, Mini-IRIS, shared runtime/engine work, packaging,
+release hygiene, and deferred architecture decisions.
+
+Use this file for cross-app planning. Keep one-off design notes in focused docs, then link them
+from here when they become tracked work.
+
+## Current Next Pickup
+
+1. **[Mini-IRIS Polish]** Match the IRIS portal HP colour ramp while preserving the faction ring and compact LVL/HP controls.
+2. **[Mini-IRIS Alignment]** Define compact mini-IRIS non-goals before copying more full-IRIS behavior.
+3. **[Shared Components]** Identify proven shared backend/engine/domain candidates from both apps before package extraction.
+4. **[Release Hygiene]** Align mini-IRIS package artifact names with explicit Chrome/Firefox platform names.
+5. **[App Layout]** Evaluate moving full IRIS to `apps/iris` beside `apps/mini-iris`, but defer the move until path/build churn is clear.
+
+## Worklog Areas
+
+- **IRIS:** full extension app, page-world runtime, mobile ergonomics, diagnostics, draw tools, and Intel parity.
+- **Mini-IRIS:** compact/mobile-first app, page-world map runtime, visual parity, and Mini-specific UX.
+- **Shared Runtime / Engine:** parsers, entity/map feature builders, request policy, models, diagnostics formatting, and proven shared utilities.
+- **Packaging / Release:** browser artifact naming, build commands, app layout, dependency maintenance, and release hygiene.
+- **Deferred / Archive:** blocked, completed, or intentionally postponed work retained for context.
+
 ## Status Key
 
 - `Open`
@@ -9,7 +31,7 @@
 - `Investigating`
 - `Reverted`
 
-## Runtime Ownership And Startup Discipline
+## IRIS Runtime Ownership And Startup Discipline
 
 Status: `In Progress`
 
@@ -1040,11 +1062,37 @@ Tasks:
 | Include version number in packaged artifact names    | Done          | IRIS and mini-IRIS package scripts now include package version in ZIP/XPI filenames, e.g. `iris-chrome-0.1.7-<timestamp>.zip`, `iris-firefox-0.1.7-<timestamp>.xpi`, and `mini-iris-1.0.32-<timestamp>.zip/.xpi` |
 | Align product build/package/release commands         | Done          | root commands now use the same product-level shape for IRIS and mini-IRIS: `build:*` creates unpacked `dist` output, `package:*` creates ZIP/XPI artifacts, and `release:*` aliases the product package flow |
 | Align mini-IRIS artifact names by browser platform   | Open          | mirror the IRIS package naming shape with explicit browser targets, e.g. `mini-iris-chrome-<version>-<timestamp>.zip` and `mini-iris-firefox-<version>-<timestamp>.xpi`, so bench/release artifacts are unambiguous |
-| Decide app/package layout for IRIS and mini-IRIS     | Open          | consider moving full IRIS from `packages/extension` to `apps/iris` so app shells live under `apps/` and reusable backend/engine code stays under `packages/`; measure path/build churn before moving |
 | Migrate shared state to `zustand` 5                  | Done          | `@iris/core` now uses the vanilla store API plus a Preact-compatible `useSyncExternalStore` hook so tests and Preact builds avoid a React runtime dependency                                                                                                      |
 | Migrate map rendering to `maplibre-gl` 5             | Done          | manifests now target `maplibre-gl` 5.24.0; builds pass for IRIS Chrome/Firefox plus mini-IRIS, desktop/mobile smoke tests passed, and IRIS 0.1.3 benchmark samples were recorded; follow-up panning/selection work remains separate |
 | Migrate TypeScript to 6.0.3                        | Done          | root/core/extension/mini-IRIS now target `typescript` 6.0.3; root tsconfig uses `moduleResolution: "Bundler"` and core has an explicit scoped tsconfig with GeoJSON types; typecheck/test/lint/builds pass |
 | Evaluate remaining major dependency migrations separately | Done     | `archiver`, `zustand`, `maplibre-gl`, and `typescript` major migrations are complete; continue normal dependency review in future lifecycle passes                                                                                                                                                                                        |
+
+## Shared Runtime And Package Boundaries
+
+Status: `Open`
+
+Goal:
+
+- keep IRIS and Mini-IRIS aligned through proven shared backend/engine/domain code
+- avoid turning Mini-IRIS into a second full IRIS shell
+- avoid package splits or app moves until the boundary and build/release costs are clear
+
+Principles:
+
+- Shared code should start with non-UI logic: parsers, typed models, entity/map feature builders,
+  diagnostics formatting, request freshness helpers, mock data generators, and request policy.
+- App shells should stay app-owned until there are repeated call sites and clear ownership.
+- Prefer an `apps/iris` move only if it makes the app/package split more predictable without
+  creating release churn.
+
+Tasks:
+
+| Task                                                      | Status | Notes                                                                                                      |
+|-----------------------------------------------------------|--------|------------------------------------------------------------------------------------------------------------|
+| Define shared-vs-app ownership boundaries                 | Open   | decide which code belongs in app shells versus shared packages before moving files                          |
+| Identify first shared backend/engine extraction candidates | Open   | likely parsers, map feature builders, request freshness helpers, tracker models, diagnostics formatters     |
+| Decide app/package layout for IRIS and mini-IRIS           | Open   | consider moving full IRIS from `packages/extension` to `apps/iris` beside `apps/mini-iris`; measure path/build churn before moving |
+| Defer package chopping until boundaries are proven         | Open   | only split packages after shared usage and bundle/build costs are measured                                  |
 
 ## IRIS Performance And Architecture Review Follow-ups
 
@@ -1109,21 +1157,11 @@ Tasks:
 |------------------------------------------------------------|--------|------------------------------------------------------------------------------------------------------------|
 | Audit mini-IRIS vs IRIS runtime overlap                    | Done   | map ownership was the first proven overlap; Mini-IRIS now uses a compact page-world MapLibre runtime and content-world UI bridge |
 | Define compact mini-IRIS non-goals                         | Open   | explicitly list main-IRIS features that should not migrate into mini-IRIS by default                        |
-| Identify first shared backend/engine extraction candidates  | Open   | likely parsers, map feature builders, request freshness helpers, tracker models, diagnostics formatters     |
 | Migrate mini-IRIS map runtime toward page-world discipline  | Done   | page-world runtime owns MapLibre, rendered-feature selection, explicit mobile touch-hold selection, camera, sources, players, selection highlights, style, and 3D toggles |
 | Smoke test Mini-IRIS page-world map interactions            | Done   | desktop Chrome and mobile testing confirmed map load, portal selection, drawer details, right-click details, and long-press details after the page-world migration |
 | Preserve Mini-IRIS faction ring with level/health toggles   | Done   | page-world portal styling now keeps a faction-coloured stroke/ring while level colouring and health opacity affect the fill |
 | Match IRIS portal HP colour ramp in Mini-IRIS                | Open   | HP mode should use the same health colour semantics as full IRIS, not only opacity, while keeping faction identity readable |
 | Make Mini-IRIS secondary interactions open popups directly  | Done   | page-world contextmenu/right-click and mobile long-press now send a details intent so the compact selection/details drawer opens directly |
-| Defer package chopping until boundaries are proven          | Open   | only split packages after shared usage and bundle/build costs are measured                                  |
-
-## Current Next Pickup
-
-1. **[Mini-IRIS Polish]** Match the IRIS portal HP colour ramp while preserving the faction ring and compact LVL/HP controls.
-2. **[Mini-IRIS Alignment]** Define compact mini-IRIS non-goals before copying more full-IRIS behavior.
-3. **[Shared Components]** Identify proven shared backend/engine/domain candidates from both apps before package extraction.
-4. **[Release Hygiene]** Align mini-IRIS package artifact names with explicit Chrome/Firefox platform names.
-5. **[App Layout]** Evaluate moving full IRIS to `apps/iris` beside `apps/mini-iris`, but defer the move until path/build churn is clear.
 
 ## Snapshot And Reference Sources
 

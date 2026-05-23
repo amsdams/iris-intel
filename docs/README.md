@@ -8,8 +8,6 @@
 - [`docs/PAGE_WORLD_MAP_RUNTIME.md`](./PAGE_WORLD_MAP_RUNTIME.md) - page-world map runtime reference
 - [`docs/20260414/FINDINGS-IITC_REPO_COMPARISON.md`](./20260414/FINDINGS-IITC_REPO_COMPARISON.md)
 - [`docs/20260414/FINDINGS-IITC_REPO_COMPARISON-GEMINI.md`](./20260414/FINDINGS-IITC_REPO_COMPARISON-GEMINI.md)
-- [`apps/mini-iris/docs/ZUSTAND-RBUSH-MAPLIBRE.md`](../apps/mini-iris/docs/ZUSTAND-RBUSH-MAPLIBRE.md) - mini-IRIS
-  architecture reference
 
 ## Rule
 
