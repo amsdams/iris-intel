@@ -23,6 +23,14 @@ export interface ThemeColors {
     RARITY: Record<string, string>;
 }
 
+type ThemeVariantOverrides = Partial<Omit<ThemeColors, 'LEVELS' | 'ITEM_RARITY' | 'MOD_RARITY' | 'ITEM_TYPES' | 'RARITY'>> & {
+    LEVELS?: Record<number, string>;
+    ITEM_RARITY?: Record<string, string>;
+    MOD_RARITY?: Record<string, string>;
+    ITEM_TYPES?: Record<string, string>;
+    RARITY?: Record<string, string>;
+};
+
 const CYBER_ITEM_RARITY = {
     VERY_COMMON: '#FFFFFF',
     COMMON: '#00FF00',
@@ -54,30 +62,55 @@ const INTEL_DEFAULT_THEME: ThemeColors = {
     RARITY: {...INGRESS_ITEM_RARITY_COLORS},
 };
 
+function createThemeVariant(base: ThemeColors, overrides: ThemeVariantOverrides): ThemeColors {
+    const itemRarity = {
+        ...base.ITEM_RARITY,
+        ...overrides.ITEM_RARITY,
+    };
+
+    return {
+        ...base,
+        ...overrides,
+        LEVELS: {
+            ...base.LEVELS,
+            ...overrides.LEVELS,
+        },
+        ITEM_RARITY: itemRarity,
+        MOD_RARITY: {
+            ...base.MOD_RARITY,
+            ...overrides.MOD_RARITY,
+        },
+        ITEM_TYPES: {
+            ...base.ITEM_TYPES,
+            ...overrides.ITEM_TYPES,
+        },
+        RARITY: overrides.RARITY
+            ? {
+                ...base.RARITY,
+                ...overrides.RARITY,
+            }
+            : itemRarity,
+    };
+}
+
 export const THEMES: Record<string, ThemeColors> = {
     INGRESS: INTEL_DEFAULT_THEME,
-    DEBUG: {
+    DEBUG: createThemeVariant(INTEL_DEFAULT_THEME, {
         E: '#00ff00',
         R: '#0000ff',
         M: '#ff0000',
         N: '#ffffff',
         AQUA: '#00ffff',
-        LEVELS: {...INGRESS_LEVEL_COLORS},
-        ITEM_RARITY: {...INGRESS_ITEM_RARITY_COLORS},
-        MOD_RARITY: {...INGRESS_MOD_RARITY_COLORS},
         ITEM_TYPES: {
-            ...INGRESS_ITEM_TYPE_COLORS,
             PORTAL_LINK_KEY: '#00ffff',
         },
-        RARITY: {...INGRESS_ITEM_RARITY_COLORS},
-    },
-    CYBER: {
+    }),
+    CYBER: createThemeVariant(INTEL_DEFAULT_THEME, {
         E: '#00ffa3',
         R: '#00e5ff',
         M: '#ff0055',
         N: '#e0e0e0',
         AQUA: '#00e5ff',
-        LEVELS: {...INGRESS_LEVEL_COLORS},
         ITEM_RARITY: CYBER_ITEM_RARITY,
         MOD_RARITY: {
             VERY_RARE: '#FF00FF',
@@ -85,20 +118,17 @@ export const THEMES: Record<string, ThemeColors> = {
             COMMON: '#00FF00',
         },
         ITEM_TYPES: {
-            ...INGRESS_ITEM_TYPE_COLORS,
             PORTAL_LINK_KEY: '#00e5ff',
             POWERUP: '#00e5ff',
             AEGIS_SHIELD: INGRESS_MISC_COLORS.AEGIS_SHIELD,
         },
-        RARITY: CYBER_ITEM_RARITY,
-    },
-    SOFTER: {
+    }),
+    SOFTER: createThemeVariant(INTEL_DEFAULT_THEME, {
         E: '#78f400',
         R: '#4fc3f7',
         M: '#ff5252',
         N: '#cfd8dc',
         AQUA: '#4dd0e1',
-        LEVELS: {...INGRESS_LEVEL_COLORS},
         ITEM_RARITY: SOFTER_ITEM_RARITY,
         MOD_RARITY: {
             VERY_RARE: '#CE93D8',
@@ -106,13 +136,11 @@ export const THEMES: Record<string, ThemeColors> = {
             COMMON: '#A5D6A7',
         },
         ITEM_TYPES: {
-            ...INGRESS_ITEM_TYPE_COLORS,
             PORTAL_LINK_KEY: '#4dd0e1',
             POWERUP: '#4dd0e1',
             AEGIS_SHIELD: INGRESS_MISC_COLORS.AEGIS_SHIELD,
         },
-        RARITY: SOFTER_ITEM_RARITY,
-    },
+    }),
 };
 
 export function getItemRarityColor(theme: ThemeColors, rarity?: string): string {
