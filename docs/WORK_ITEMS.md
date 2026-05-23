@@ -419,6 +419,23 @@ Tasks:
 | Use user-facing drawer titles                 | Done   | drawer headers now use explicit labels such as Agent, Map, Tactical, Layers, Visuals, and System instead of raw tab ids |
 | Tighten drawer height and spacing             | Done   | removed the old dock-reserved bottom padding and tightened drawer header/section spacing while keeping button targets unchanged |
 
+### Mobile browser ergonomics
+
+Status: `In Progress`
+
+Outcome:
+
+- mobile browser navigation and gestures should feel deliberate instead of accidentally leaving or refreshing Intel
+- keep this as a final main-IRIS polish pass before starting the larger mini-IRIS alignment work
+
+Tasks:
+
+| Task                                      | Status | Notes                                                                                                           |
+|-------------------------------------------|--------|-----------------------------------------------------------------------------------------------------------------|
+| Back closes IRIS UI before browser nav    | Done   | browser/Android Back now closes the active IRIS drawer, popup, selection, or plugin detail before falling through |
+| Contain map/drawer/popup overscroll       | Done   | IRIS root, page-world map container, popups, and drawers use overscroll containment to reduce accidental pull refresh |
+| Mobile gesture smoke test                 | Open   | verify on device: map pan, drawer scroll, popup scroll, long-press info, Back close order, and browser refresh behavior |
+
 ### Faction and player styling is consistent
 
 Status: `Done`
@@ -1064,15 +1081,41 @@ Tasks:
 | Guard tile coverage generation against invalid/extreme bounds | Done | entity coverage generation now rejects non-finite bounds, clamps WebMercator lat/tile ranges, handles antimeridian-crossing bounds, caps extreme tile lists at 1024, and reports diagnostics through endpoint metadata instead of risking a runaway loop |
 | Investigate package split only after measuring bundle cost | Blocked | an `@iris/types` or `@iris/utils` split may help later, but it is deferred until plugin bundle size or package-boundary cost is a measured issue                                                       |
 
+## Mini-IRIS Page-World Alignment
+
+Status: `Open`
+
+Goal:
+
+- keep mini-IRIS stable and compact while moving it toward the same page-world runtime discipline as IRIS
+- share proven backend/engine/domain components without turning mini-IRIS into a second full IRIS shell
+- avoid package splits until repeated cross-app duplication proves a durable boundary
+
+Principles:
+
+- Preserve mini-IRIS as the compact/mobile-first app.
+- Extract shared logic only after comparing both call sites.
+- Prefer shared parsers, entity/map feature builders, diagnostics formatting, request policy, mock data generators, and
+  typed models before shared GUI surfaces.
+- Keep app-specific UI composition in `packages/extension` and `apps/mini-iris` until component ownership is obvious.
+
+Tasks:
+
+| Task                                                       | Status | Notes                                                                                                      |
+|------------------------------------------------------------|--------|------------------------------------------------------------------------------------------------------------|
+| Audit mini-IRIS vs IRIS runtime overlap                    | Open   | compare page-world injection, map lifecycle, request/interceptor flow, diagnostics, and map feature building |
+| Define compact mini-IRIS non-goals                         | Open   | explicitly list main-IRIS features that should not migrate into mini-IRIS by default                        |
+| Identify first shared backend/engine extraction candidates  | Open   | likely parsers, map feature builders, request freshness helpers, tracker models, diagnostics formatters     |
+| Migrate mini-IRIS map runtime toward page-world discipline  | Open   | keep the mini UI compact while aligning map ownership, messaging, and hardening with IRIS                   |
+| Defer package chopping until boundaries are proven          | Open   | only split packages after shared usage and bundle/build costs are measured                                  |
+
 ## Current Next Pickup
 
-1. **[Low-Zoom Entity Rendering]** Implement the smallest moving-mode optimization for z8 core entity rendering. Current best first candidate: simplify or hide field fills while actively moving, then restore after settle.
-2. **[Benchmark Validation]** After that change, rerun the expanded IRIS 0.1.7 Batch on desktop and mobile and compare z8 `normal pan`, `no-links pan`, `no-fields pan`, `base pan`, and `no-plugins pan`.
-3. **[Plugin Overlay]** Revisit IITC-style label overlap thinning only if z14 Normal pan spikes correlate with high `pluginMix` label/highlight counts; current z8 samples point away from plugins.
-4. **[Performance Architecture]** Reproduce the Inventory + Diagnostics + COMM crash only after a fresh `Oh snap`; use `LONGTASK`, `UIRENDER`, `ENTITYGEN`, plugin mix, and domain errors to identify whether it is DOM/render pressure, request/runtime errors, or memory pressure.
-5. **[Performance Architecture]** Inspect tile coverage generation guards if another `Oh snap` or debugger stop points at the tile loop, especially after hard refresh or rapid map/drawer interaction.
-6. **[UI Architecture]** Resume shared UI/CSS primitives only for the deferred detail-row/CSS-size/semantic-color follow-ups; the main primitives pass is paused after 0.1.7 smoke.
-7. **[Draw Tools]** Refine marker selection/edit/delete UX after the pin experiment clarified renderer behavior.
+1. **[Mobile Browser Ergonomics]** Smoke test Back behavior and pull-to-refresh containment on a real mobile browser.
+2. **[Mini-IRIS Alignment]** Start with an audit of mini-IRIS vs IRIS runtime overlap and define compact mini-IRIS non-goals.
+3. **[Shared Components]** Extract only proven shared backend/engine/domain logic first; do not start with broad package chopping.
+4. **[Performance Architecture]** Profile the residual z8 Normal vs No Plugins gap only with a Chrome Performance trace; do not block Mini-IRIS on blind tuning.
+5. **[Draw Tools]** Refine marker selection/edit/delete UX after the pin experiment clarified renderer behavior.
 
 ## Snapshot And Reference Sources
 

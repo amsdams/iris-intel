@@ -57,6 +57,7 @@ const PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS = 80;
 const PAGE_MAP_RUNTIME_CAMERA_SYNC_DEBOUNCE_MS = 80;
 const EVENT_LOOP_LAG_SAMPLE_MS = 1000;
 const EVENT_LOOP_LAG_THRESHOLD_MS = 120;
+const IRIS_HISTORY_STATE_KEY = '__irisOverlay';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null;
@@ -316,6 +317,8 @@ export function IRISOverlay(): JSX.Element {
     const filterShowScanned = useStore((state) => state.filterShowScanned);
     const pageRuntimeInitialSyncDoneRef = useRef(false);
     const pageRuntimeStartsInFullMapRef = useRef(showMap);
+    const irisHistoryStateActiveRef = useRef(false);
+    const hasDismissibleOverlayRef = useRef(false);
 
     // If selection is cleared externally, hide the info popup
     useEffect(() => {
@@ -415,6 +418,32 @@ export function IRISOverlay(): JSX.Element {
         showThemePopup,
     ]);
 
+    const hasDismissibleOverlay = Boolean(
+        activeDrawerTab ||
+        showSearchPopup ||
+        showNavigationPopup ||
+        showPluginsPopup ||
+        showMapSettingsPopup ||
+        showThemePopup ||
+        showDiagnosticsPopup ||
+        showExportPopup ||
+        showRegionScorePopup ||
+        showGameScorePopup ||
+        showInventoryPopup ||
+        showPlayerStatsPopup ||
+        showPasscodePopup ||
+        showMissionDetailsPopup ||
+        showMissionsPopup ||
+        showCommPopup ||
+        showSelectionInfo ||
+        hasSelectedPluginFeature ||
+        hasMissionDetails
+    );
+
+    useEffect(() => {
+        hasDismissibleOverlayRef.current = hasDismissibleOverlay;
+    }, [hasDismissibleOverlay]);
+
     const handleGeolocate = (): void => {
         if (!navigator.geolocation) return;
         setLocating(true);
@@ -485,6 +514,33 @@ export function IRISOverlay(): JSX.Element {
 
         window.addEventListener('keydown', handleKeyDown, true);
         return (): void => window.removeEventListener('keydown', handleKeyDown, true);
+    }, [closeTopOverlay]);
+
+    useEffect(() => {
+        if (!hasDismissibleOverlay || irisHistoryStateActiveRef.current) return;
+
+        const currentState = isRecord(history.state) ? history.state : {};
+        history.pushState({...currentState, [IRIS_HISTORY_STATE_KEY]: true}, '');
+        irisHistoryStateActiveRef.current = true;
+    }, [hasDismissibleOverlay]);
+
+    useEffect(() => {
+        const handlePopState = (): void => {
+            if (!irisHistoryStateActiveRef.current) return;
+            irisHistoryStateActiveRef.current = false;
+            const closedOverlay = closeTopOverlay();
+            if (!closedOverlay) return;
+
+            window.setTimeout(() => {
+                if (!hasDismissibleOverlayRef.current || irisHistoryStateActiveRef.current) return;
+                const currentState = isRecord(history.state) ? history.state : {};
+                history.pushState({...currentState, [IRIS_HISTORY_STATE_KEY]: true}, '');
+                irisHistoryStateActiveRef.current = true;
+            }, 0);
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return (): void => window.removeEventListener('popstate', handlePopState);
     }, [closeTopOverlay]);
 
     useEffect(() => {

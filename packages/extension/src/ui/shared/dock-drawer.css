@@ -13,6 +13,7 @@
     max-height: 45vh;
     pointer-events: auto;
     border-radius: 20px 20px 0 0;
+    overscroll-behavior: contain;
 }
 
 .iris-drawer-backdrop {
@@ -64,6 +65,8 @@
 .iris-drawer-content {
     flex: 1;
     overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
     padding: 10px 16px calc(18px + env(safe-area-inset-bottom, 0px));
 }
 

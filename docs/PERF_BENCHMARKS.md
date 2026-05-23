@@ -34,6 +34,9 @@ when evaluating major dependency migrations or rendering changes.
 | 0.1.6   | z8 entity isolation batch       | Mobile ARM  | Firefox 149 | OSM     | tracker, health fill, level labels      | 18,395 | 5,404   | 9,045  | 3,659  | 223     | n/a      | n/a       | n/a  | 30ms      | 27ms   | 268ms | 34  | 43/302      |
 | 0.1.6   | z8 no-links isolation           | Mobile ARM  | Firefox 149 | OSM     | tracker, health fill, level labels      | 18,395 | 5,404   | 9,045  | 3,659  | 223     | n/a      | n/a       | n/a  | 18ms      | 18ms   | 50ms  | 55  | 3/498       |
 | 0.1.6   | z8 no-fields isolation          | Mobile ARM  | Firefox 149 | OSM     | tracker, health fill, level labels      | 18,395 | 5,404   | 9,045  | 3,659  | 223     | n/a      | n/a       | n/a  | 18ms      | 18ms   | 33ms  | 57  | 0/511       |
+| 0.1.7   | z8 mobile post-polish batch     | Mobile ARM  | Firefox 149 | OSM     | tracker, health fill, level labels      | 16,205 | 5,366   | 7,174  | 2,905  | 695     | n/a      | n/a       | n/a  | 28ms      | 23ms   | 368ms | 35  | 34/317      |
+| 0.1.7   | z8 mobile no-links isolation    | Mobile ARM  | Firefox 149 | OSM     | tracker, health fill, level labels      | 16,205 | 5,366   | 7,174  | 2,905  | 695     | n/a      | n/a       | n/a  | 18ms      | 18ms   | 50ms  | 55  | 2/495       |
+| 0.1.7   | z8 mobile no-fields isolation   | Mobile ARM  | Firefox 149 | OSM     | tracker, health fill, level labels      | 16,205 | 5,366   | 7,174  | 2,905  | 695     | n/a      | n/a       | n/a  | 18ms      | 18ms   | 50ms  | 56  | 1/505       |
 
 ## Readout
 
@@ -589,3 +592,38 @@ Notes:
   fields during movement is lower UX risk because links are more useful for orientation while panning.
 - Treat the desktop z8 rows as non-comparable because the slow network allowed live entity loading to change the source
   mix from `29,547` to `54,361` items during the same batch.
+
+## 2026-05-23 - IRIS 0.1.7 - Mobile Post-Polish Batch
+
+Context:
+
+- Purpose: mobile sanity batch after IRIS page-world movement and browser ergonomics polish.
+- Browser: Firefox 149.0 on Linux/Android ARM, viewport `360x704`, DPR `3.00`.
+- Map style: `OSM`.
+- Overlay state: `player-tracker`, `portal-health-fill`, `portal-level-labels`.
+- Caveat: copied output does not include the latest `moveMode` / layer visibility columns, so treat it as a performance
+  sample rather than final verification of movement-layer state on mobile.
+
+```text
+IRIS BENCH BATCH browser Firefox/149.0 platform Linux armv81 viewport 360x704 dpr 3.00
+z14 normal pan | items 7,050 | P 2,651 | L 2,565 | F 1,054 | orn 65 | plugin 715 | sources P 2,651 L 2,565 F 1,054 | avg 20ms | max 100ms | fps 51 | slow 12/458 | median 20ms | benchMax 100ms | pluginMix total 715 labels 0 player 3 highlights 695 lines 17 points 698
+z14 base pan | items 7,050 | P 2,651 | L 2,565 | F 1,054 | orn 65 | plugin 715 | sources P 2,651 L 2,565 F 1,054 | avg 17ms | max 50ms | fps 58 | slow 1/525 | median 17ms | benchMax 50ms | pluginMix total 715 labels 0 player 3 highlights 695 lines 17 points 698
+z14 no-plugins pan | items 7,050 | P 2,651 | L 2,565 | F 1,054 | orn 65 | plugin 715 | sources P 2,651 L 2,565 F 1,054 | avg 17ms | max 50ms | fps 58 | slow 1/522 | median 17ms | benchMax 50ms | pluginMix total 715 labels 0 player 3 highlights 695 lines 17 points 698
+z14 normal zoom | items 7,050 | P 2,651 | L 2,565 | F 1,054 | orn 65 | plugin 715 | sources P 2,651 L 2,565 F 1,054 | avg 18ms | max 67ms | fps 54 | slow 5/490 | median 19ms | benchMax 67ms | pluginMix total 715 labels 0 player 3 highlights 695 lines 17 points 698
+z14 no-plugins zoom | items 7,050 | P 2,651 | L 2,565 | F 1,054 | orn 65 | plugin 715 | sources P 2,651 L 2,565 F 1,054 | avg 17ms | max 33ms | fps 58 | slow 0/521 | median 17ms | benchMax 33ms | pluginMix total 715 labels 0 player 3 highlights 695 lines 17 points 698
+z8 normal pan | items 16,205 | P 5,366 | L 7,174 | F 2,905 | orn 65 | plugin 695 | sources P 5,366 L 7,174 F 2,905 | avg 28ms | max 368ms | fps 35 | slow 34/317 | median 23ms | benchMax 368ms | pluginMix total 695 labels 0 player 0 highlights 695 lines 0 points 695
+z8 no-links pan | items 16,205 | P 5,366 | L 7,174 | F 2,905 | orn 65 | plugin 695 | sources P 5,366 L 7,174 F 2,905 | avg 18ms | max 50ms | fps 55 | slow 2/495 | median 18ms | benchMax 50ms | pluginMix total 695 labels 0 player 0 highlights 695 lines 0 points 695
+z8 no-fields pan | items 16,205 | P 5,366 | L 7,174 | F 2,905 | orn 65 | plugin 695 | sources P 5,366 L 7,174 F 2,905 | avg 18ms | max 50ms | fps 56 | slow 1/505 | median 18ms | benchMax 50ms | pluginMix total 695 labels 0 player 0 highlights 695 lines 0 points 695
+z8 base pan | items 16,205 | P 5,366 | L 7,174 | F 2,905 | orn 65 | plugin 695 | sources P 5,366 L 7,174 F 2,905 | avg 18ms | max 33ms | fps 56 | slow 0/507 | median 18ms | benchMax 33ms | pluginMix total 695 labels 0 player 0 highlights 695 lines 0 points 695
+z8 no-plugins pan | items 16,205 | P 5,366 | L 7,174 | F 2,905 | orn 65 | plugin 695 | sources P 5,366 L 7,174 F 2,905 | avg 18ms | max 50ms | fps 56 | slow 1/504 | median 18ms | benchMax 50ms | pluginMix total 695 labels 0 player 0 highlights 695 lines 0 points 695
+```
+
+Notes:
+
+- z14 Normal pan is acceptable but not fully clean: `20ms avg`, `12/458` slow frames, with a large highlight-heavy
+  plugin mix (`695` highlights).
+- z8 Normal remains the main mobile pain point: `28ms avg`, `34/317` slow frames, and a `368ms` worst frame.
+- z8 `No Links`, `No Fields`, `Base`, and `No Plugins` all return to an `18ms` cadence with low slow-frame counts,
+  matching the earlier conclusion that active low-zoom movement needs simplified core/entity rendering.
+- Compared with the 0.1.6 mobile z8 sample, Normal improved slightly (`30ms` -> `28ms`, `43` -> `34` slow frames),
+  but the residual gap is still trace-level work rather than a reason to block mini-IRIS alignment.

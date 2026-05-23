@@ -7,6 +7,7 @@
     pointer-events: none;
     z-index: 9999;
     font-family: monospace;
+    overscroll-behavior: contain;
 
     --iris-font-family: menlo, monaco, consolas, "Liberation Mono", "Courier New", monospace;
     --iris-border: #333;
@@ -180,6 +181,7 @@
     pointer-events: auto;
     display: flex;
     flex-direction: column;
+    overscroll-behavior: contain;
 }
 
 .iris-popup-close {
@@ -236,6 +238,8 @@
 .iris-popup-content {
     flex: 1;
     overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
     display: flex;
     flex-direction: column;
     padding: 16px;

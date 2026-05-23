@@ -244,6 +244,7 @@ function createRuntimeContainer(): HTMLDivElement {
 function setRuntimeContainerMode(container: HTMLDivElement, mode: RuntimeDisplayMode): void {
     container.style.position = 'fixed';
     container.style.background = '#000';
+    container.style.overscrollBehavior = 'contain';
     if (mode === 'full') {
         container.style.left = '0';
         container.style.top = '0';
