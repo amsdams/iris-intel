@@ -1,4 +1,4 @@
-import { useStore } from '@iris/core';
+import { useStore, type Plext } from '@iris/core';
 import { IRISMessage } from './message-types';
 import { buildEntityRequestPayload } from '../domains/entities/request';
 
@@ -18,6 +18,9 @@ const ENTITY_RETRY_LIMIT = 3;
 const ENTITY_RETRY_DELAY_MS = 5000;
 const ENTITY_FRESHNESS_TTL_MS = 10000;
 const TILE_FRESHNESS_TTL_MS = 120000; // 2m per-tile TTL
+const COMM_ACTIVITY_ENTITY_REFRESH_DELAY_MS = 1500;
+const COMM_ACTIVITY_ENTITY_REFRESH_COOLDOWN_MS = 30000;
+const COMM_ACTIVITY_RECENT_MS = 5 * 60 * 1000;
 
 const STARTUP_GRACE_MS = 5000;
 const GAME_SCORE_TTL_MS = 10 * 60 * 1000;
@@ -40,7 +43,7 @@ export interface RequestCoordinator {
     handleMissionsRequest: () => void;
     handlePlextsRequest: (msg: IRISMessage) => void;
     onRequestStart: (url: string) => void;
-    onPlextsDataReceived: (time?: number) => void;
+    onPlextsDataReceived: (time?: number, plexts?: Plext[]) => void;
 }
 
 export function createRequestCoordinator(): RequestCoordinator {
@@ -53,12 +56,14 @@ export function createRequestCoordinator(): RequestCoordinator {
     let cullPollId: number | null = null;
     let entityMoveRefreshTimeoutId: number | null = null;
     let entityRetryTimeoutId: number | null = null;
+    let commActivityRefreshTimeoutId: number | null = null;
     let entityRetryCount = 0;
     let lastRegionScoreRequestKey: string | null = null;
     let lastEntityCoverageKey: string | null = null;
     let entityRefreshGeneration = 0;
     let entityUnsub: (() => void) | null = null;
     let lastResumeRefreshAt = 0;
+    let lastCommActivityEntityRefreshAt = 0;
 
     const postMessage = (message: Record<string, unknown>): void => {
         window.postMessage(message, '*');
@@ -100,12 +105,19 @@ export function createRequestCoordinator(): RequestCoordinator {
         }
     };
 
+    const clearCommActivityRefresh = (): void => {
+        if (commActivityRefreshTimeoutId !== null) {
+            window.clearTimeout(commActivityRefreshTimeoutId);
+            commActivityRefreshTimeoutId = null;
+        }
+    };
+
     const scheduleCulling = (): void => {
         const { lat, lng } = useStore.getState().mapState;
         useStore.getState().cullEntities(lat, lng, ENTITY_CULL_DIST_KM);
     };
 
-    const scheduleEntitiesFetch = (reason: 'startup' | 'move_settle' | 'idle' | 'retry' | 'resume' | 'manual'): void => {
+    const scheduleEntitiesFetch = (reason: 'startup' | 'move_settle' | 'idle' | 'retry' | 'resume' | 'manual' | 'comm_activity'): void => {
         if (isSessionBlocked()) {
             useStore.getState().setEndpointMetadata('entities', {
                 lastRefreshReason: reason,
@@ -149,7 +161,7 @@ export function createRequestCoordinator(): RequestCoordinator {
         });
 
         const isSameCoverage = payload.coverageKey === lastEntityCoverageKey;
-        const forceRefresh = reason === 'manual';
+        const forceRefresh = reason === 'manual' || reason === 'comm_activity';
         const shouldSkipForFreshness = !forceRefresh && isSameCoverage && isEndpointFresh('entities', ENTITY_FRESHNESS_TTL_MS);
 
         if (reason !== 'retry' && (isEndpointInFlight('entities') || shouldSkipForFreshness)) {
@@ -361,6 +373,69 @@ export function createRequestCoordinator(): RequestCoordinator {
         setNextAutoRefresh('entities', Date.now() + interval);
     };
 
+    const hasCurrentViewPortalActivity = (plexts: Plext[]): boolean => {
+        const bounds = useStore.getState().mapState.bounds;
+        if (!bounds) return false;
+
+        const containsLng = (lngE6: number): boolean => {
+            if (bounds.minLngE6 <= bounds.maxLngE6) {
+                return lngE6 >= bounds.minLngE6 && lngE6 <= bounds.maxLngE6;
+            }
+            return lngE6 >= bounds.minLngE6 || lngE6 <= bounds.maxLngE6;
+        };
+
+        const now = Date.now();
+        return plexts.some((plext) => {
+            if (plext.type !== 'PLAYER_GENERATED') return false;
+            if (now - plext.time > COMM_ACTIVITY_RECENT_MS) return false;
+
+            return plext.markup.some(([kind, value]) => {
+                if (kind !== 'PORTAL') return false;
+                const latE6 = value.latE6;
+                const lngE6 = value.lngE6;
+                return typeof latE6 === 'number' &&
+                    typeof lngE6 === 'number' &&
+                    latE6 >= bounds.minLatE6 &&
+                    latE6 <= bounds.maxLatE6 &&
+                    containsLng(lngE6);
+            });
+        });
+    };
+
+    const scheduleCommActivityEntityRefresh = (plexts: Plext[]): void => {
+        if (!hasCurrentViewPortalActivity(plexts)) return;
+
+        const now = Date.now();
+        if (now - lastCommActivityEntityRefreshAt < COMM_ACTIVITY_ENTITY_REFRESH_COOLDOWN_MS) {
+            useStore.getState().setEndpointMetadata('entities', {
+                lastRefreshReason: 'comm_activity',
+                lastSkipReason: 'comm cooldown',
+            });
+            return;
+        }
+
+        if (commActivityRefreshTimeoutId !== null) {
+            useStore.getState().setEndpointMetadata('entities', {
+                lastRefreshReason: 'comm_activity',
+                lastSkipReason: 'comm coalesced',
+            });
+            return;
+        }
+
+        commActivityRefreshTimeoutId = window.setTimeout(() => {
+            commActivityRefreshTimeoutId = null;
+            lastCommActivityEntityRefreshAt = Date.now();
+            scheduleEntitiesFetch('comm_activity');
+            scheduleNextIdleEntitiesPoll();
+        }, COMM_ACTIVITY_ENTITY_REFRESH_DELAY_MS);
+
+        setNextAutoRefresh('entities', Date.now() + COMM_ACTIVITY_ENTITY_REFRESH_DELAY_MS);
+        useStore.getState().setEndpointMetadata('entities', {
+            lastRefreshReason: 'comm_activity',
+            lastSkipReason: 'scheduled',
+        });
+    };
+
     return {
         start(): void {
             startupGraceUntil = Date.now() + STARTUP_GRACE_MS;
@@ -454,6 +529,7 @@ export function createRequestCoordinator(): RequestCoordinator {
 
             clearEntityMoveRefresh();
             clearEntityRetry();
+            clearCommActivityRefresh();
             setNextAutoRefresh('plexts', null);
             setNextAutoRefresh('artifacts', null);
             setNextAutoRefresh('entities', null);
@@ -645,11 +721,14 @@ export function createRequestCoordinator(): RequestCoordinator {
             }
         },
 
-        onPlextsDataReceived(time?: number): void {
+        onPlextsDataReceived(time?: number, plexts?: Plext[]): void {
             if (typeof time === 'number') {
                 lastPlextRequestTime = time;
             } else {
                 lastPlextRequestTime = Date.now();
+            }
+            if (plexts && plexts.length > 0) {
+                scheduleCommActivityEntityRefresh(plexts);
             }
         },
     };

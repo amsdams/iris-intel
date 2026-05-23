@@ -1097,7 +1097,7 @@ Tasks:
 | Extract shared endpoint/diagnostic formatting helpers      | Done   | moved countdown, relative-time, endpoint stale status, endpoint sorting, and Mini-IRIS compact endpoint badge label helpers into `packages/core`; stores, queues, diagnostics UI, and styling remain app-owned |
 | Extract shared COMM plext request contract                 | Done   | moved plext request bounds/message construction into `packages/core`; IRIS and Mini-IRIS now post the same typed `IRIS_PLEXTS_REQUEST` shape while keeping app-specific scheduling/freshness policy local |
 | Extract shared player tracker history reducer              | Done   | moved COMM markup-to-player-history reduction into `packages/core`; full IRIS player-tracker plugin and Mini-IRIS now share movement parsing while keeping rendering, zoom gates, polling, and UI local |
-| Align IRIS and Mini-IRIS diagnostics copy/read order       | Open   | compare DBG/Diagnostics field names and ordering so human-readable fields appear first and copyable bench summaries stay comparable across apps without making Mini-IRIS diagnostics heavy |
+| Align IRIS and Mini-IRIS diagnostics copy/read order       | Done   | Mini-IRIS DBG now keeps human-readable fields first and aligns copied bench field names/order with IRIS around environment, z/mode, items, visible counts, sources, frame stats, render/query, and toggles |
 | Defer package chopping until boundaries are proven         | Open   | only split packages after shared usage and bundle/build costs are measured                                  |
 
 ## IRIS Performance And Architecture Review Follow-ups
@@ -1138,7 +1138,8 @@ Tasks:
 | Investigate package split only after measuring bundle cost | Blocked | an `@iris/types` or `@iris/utils` split may help later, but it is deferred until plugin bundle size or package-boundary cost is a measured issue                                                       |
 | Consider selected-in-view nudge for IRIS popups            | Open   | Mini-IRIS nudges the map when selection details open/close so the selected object stays visible above the bottom panel; evaluate the same behavior for full IRIS later |
 | Consider smooth jump behavior for explicit IRIS jumps      | Open   | Mini-IRIS uses `flyTo` for explicit portal jumps while IRIS mostly uses `jumpTo`; evaluate only for user-triggered jumps, not ordinary selection |
-| Improve entity refresh after live COMM activity            | Open   | player tracker/COMM can reveal activity before portal/link/field state refresh catches up; evaluate whether relevant COMM activity should trigger a conservative current-view entity refresh or shorter refresh delay without increasing Intel request pressure |
+| Consider MapLibre style-image player pins for IRIS         | Open   | Mini-IRIS now renders player activity as team-coloured `addImage`/symbol-layer pins above map entities; evaluate replacing IRIS player marker rendering with the same source/layer approach later |
+| Improve entity refresh after live COMM activity            | Done   | recent `PLAYER_GENERATED` COMM messages with portal coordinates now schedule a short, coalesced current-view entity refresh through the existing coordinator with a dedicated cooldown to avoid extra request pressure |
 
 ## Mini-IRIS Page-World Alignment
 
@@ -1185,6 +1186,7 @@ Tasks:
 | Tune Mini-IRIS explicit portal jump behavior                | Done   | explicit portal jumps now use a shorter `easeTo` page-world command instead of a long `flyTo`; geolocation keeps the existing `flyTo` behavior |
 | Normalize Mini-IRIS font usage                              | Open   | smoke testing found mixed-looking fonts across Mini-IRIS surfaces; audit CSS/font-family inheritance and standardize without broad UI redesign |
 | Replace Mini-IRIS player activity pulse with pin marker     | Done   | Mini-IRIS player activity now uses a compact static team-coloured pin marker and no longer runs a per-frame pulse loop for player points |
+| Align Mini-IRIS portal/link/field styling with IRIS         | Open   | compare faction colours, portal radius/stroke, link widths/opacity, field fill opacity, and moving-mode simplification so Mini-IRIS map entities read closer to full IRIS without adding full IRIS UI weight |
 
 ## Snapshot And Reference Sources
 

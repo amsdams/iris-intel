@@ -198,9 +198,9 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBou
         `platform ${navigator.platform}`,
         `viewport ${window.innerWidth}x${window.innerHeight}`,
         `dpr ${window.devicePixelRatio.toFixed(2)}`,
-        `z${Math.round(zoom)}`,
+        `z${zoom.toFixed(2)}`,
         liveMode ? 'mode live' : `mode mock${patternMode}`,
-        `features ${formatCount(renderStats?.totalFeatures)}`,
+        `items ${formatCount(renderStats?.totalFeatures)}`,
         `P ${formatCount(renderStats?.portalCount)}`,
         `L ${formatCount(renderStats?.linkCount)}`,
         `F ${formatCount(renderStats?.fieldCount)}`,
@@ -211,6 +211,7 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBou
         `fps ${frameStats.fps}`,
         `slow ${frameStats.slowFrames}/${frameStats.sampleCount}`,
         `render ${formatMs(renderStats?.renderMs)}`,
+        `query ${formatCount(renderStats?.queryItemCount)}`,
         `toggles lvl ${portalLevelColorEnabled ? 'on' : 'off'} hp ${portalHealthColorEnabled ? 'on' : 'off'} keys ${keyOverlayEnabled ? 'on' : 'off'} 3d ${extrusionEnabled ? 'on' : 'off'}`,
     ].join(' | ');
 
@@ -283,10 +284,10 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBou
                         <span>Mode</span><span>{liveMode ? 'Live' : `Mock ${patternMode}`}</span>
                         <span>Camera</span><span>Z{zoom.toFixed(2)} / {lat.toFixed(5)}, {lng.toFixed(5)}</span>
                         <span>Network</span><span>{activeCount}A / {cooldownCount}C / {errorCount}E / {freshCount}F</span>
-                        <span>Entities</span><span>P {formatCount(entityCounts.portals)} / L {formatCount(entityCounts.links)} / F {formatCount(entityCounts.fields)}</span>
+                        <span>Sources</span><span>P {formatCount(entityCounts.portals)} / L {formatCount(entityCounts.links)} / F {formatCount(entityCounts.fields)}</span>
                         <span>Players</span><span>{formatCount(entityCounts.players)}</span>
                         <span>Visible</span><span>P {formatCount(renderStats?.portalCount)} / L {formatCount(renderStats?.linkCount)} / F {formatCount(renderStats?.fieldCount)}</span>
-                        <span>Features</span><span>{formatCount(renderStats?.totalFeatures)}</span>
+                        <span>Items</span><span>{formatCount(renderStats?.totalFeatures)}</span>
                         <span>Keys</span><span>{formatCount(renderStats?.keyLabelCount)}</span>
                         <span>Query</span><span>{formatCount(renderStats?.queryItemCount)}</span>
                         <span>Build</span><span>{formatMs(renderStats?.renderMs)}</span>

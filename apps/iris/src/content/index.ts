@@ -806,9 +806,8 @@ window.addEventListener('message', (event: MessageEvent) => {
       } else if (url_str.includes('getPortalDetails')) {
         handlePortalDetails(data as PortalDetailsData, parsedParams as { guid?: string });
       } else if (url_str.includes('getPlexts')) {
-        handlePlexts(data as PlextData, (time) => {
-          requestCoordinator.onPlextsDataReceived(time);
-        });
+        const plexts = handlePlexts(data as PlextData);
+        requestCoordinator.onPlextsDataReceived(Date.now(), plexts);
       } else if (url_str.includes('getGameScore')) {
         handleGameScore(data as GameScoreData);
       } else if (url_str.includes('getRegionScoreDetails')) {
