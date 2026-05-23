@@ -110,7 +110,7 @@ Package outputs:
   refreshes both `packages/extension/dist` and `packages/extension/dist-firefox` before packaging.
 - IRIS packages: `packages/extension/builds/iris-chrome-<version>-<timestamp>.zip` and `packages/extension/builds/iris-firefox-<version>-<timestamp>.xpi`.
 - mini-IRIS unpacked build: `apps/mini-iris/dist`.
-- mini-IRIS packages: `apps/mini-iris/builds/mini-iris-<version>-<timestamp>.zip` and `apps/mini-iris/builds/mini-iris-<version>-<timestamp>.xpi`.
+- mini-IRIS packages: `apps/mini-iris/builds/mini-iris-chrome-<version>-<timestamp>.zip` and `apps/mini-iris/builds/mini-iris-firefox-<version>-<timestamp>.xpi`.
 
 ### Prerequisites
 

@@ -36,20 +36,20 @@ async function zipDirectory(sourceDir, outPath, extraFiles) {
             fs.mkdirSync(buildsDir);
         }
 
-        const zipPath = path.join(buildsDir, `mini-iris-${version}-${timestamp}.zip`);
-        const xpiPath = path.join(buildsDir, `mini-iris-${version}-${timestamp}.xpi`);
+        const chromeZipPath = path.join(buildsDir, `mini-iris-chrome-${version}-${timestamp}.zip`);
+        const firefoxXpiPath = path.join(buildsDir, `mini-iris-firefox-${version}-${timestamp}.xpi`);
         const manifestPath = path.join(__dirname, 'manifest.json');
         
         // Copy manifest to dist for unpacked loading
         fs.copyFileSync(manifestPath, path.join(distDir, 'manifest.json'));
         
-        await zipDirectory(distDir, zipPath, []);
+        await zipDirectory(distDir, chromeZipPath, []);
         
-        // Also create a .xpi copy for convenience
-        fs.copyFileSync(zipPath, xpiPath);
+        // Mini-IRIS currently uses the same built payload for both browser artifacts.
+        fs.copyFileSync(chromeZipPath, firefoxXpiPath);
         
-        console.log(`Success! ZIP package created at: ${zipPath}`);
-        console.log(`Success! XPI package created at: ${xpiPath}`);
+        console.log(`Success! Chrome ZIP package created at: ${chromeZipPath}`);
+        console.log(`Success! Firefox XPI package created at: ${firefoxXpiPath}`);
     } catch (err) {
         console.error('Failed to create mini-IRIS packages:', err);
         process.exit(1);
