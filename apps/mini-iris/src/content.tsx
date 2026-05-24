@@ -1,7 +1,7 @@
 import { render, h, Fragment } from 'preact';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'preact/hooks';
 import { MockDataGenerator } from './MockDataGenerator';
-import { useStore, getMinLevelForZoom, getGridSizeForZoom, boundsToE6, addFrameDelta, createFrameSampleAccumulator, resetFrameSampleAccumulator, Portal, Link, Field, type InventoryItem, type PlextRequestBounds } from '@iris/core';
+import { useStore, getMinLevelForZoom, getGridSizeForZoom, boundsToE6, addFrameDelta, createFrameSampleAccumulator, formatCompactEndpointActivityMessage, resetFrameSampleAccumulator, Portal, Link, Field, type InventoryItem, type PlextRequestBounds } from '@iris/core';
 import { TacticalUI } from './TacticalUI';
 import { MAP_STYLES, type MapStyleName } from './MapConstants';
 import { LaunchButton } from './LaunchButton';
@@ -400,42 +400,20 @@ function TacticalOverlay(): h.JSX.Element {
     }, [isVis]);
 
     useEffect(() => {
-        const formatDelay = (ms: number | null | undefined): string => {
-            if (typeof ms !== 'number' || !Number.isFinite(ms)) return '';
-            const diff = Math.max(0, ms - Date.now());
-            const seconds = Math.ceil(diff / 1000);
-            if (seconds < 60) return `${seconds}s`;
-            const minutes = Math.floor(seconds / 60);
-            const rest = seconds % 60;
-            return `${minutes}m ${rest}s`;
-        };
-
         const handler = (event: MessageEvent): void => {
             const msg: unknown = event.data;
             if (!isEndpointStateMessage(msg)) return;
 
             const endpoint = stringOrNull(msg.endpoint) ?? 'unknown';
-            const status = stringOrNull(msg.status) ?? 'idle';
-            const skipReason = stringOrNull(msg.lastSkipReason) ?? '';
-            const cooldown = formatDelay(numberOrNull(msg.cooldownUntil));
-            const nextRefresh = formatDelay(numberOrNull(msg.nextRefreshAt));
-            const inFlightCount = numberOrNull(msg.inFlightCount) ?? 0;
-
-            if (status === 'in_flight') {
-                logEvent(`NET ${endpoint}: in-flight${inFlightCount > 1 ? ` x${inFlightCount}` : ''}`);
-                return;
-            }
-
-            if (status === 'error') {
-                const suffix = cooldown ? `; backoff ${cooldown}` : '';
-                logEvent(`NET ${endpoint}: error${skipReason ? ` (${skipReason})` : ''}${suffix}`);
-                return;
-            }
-
-            if (skipReason) {
-                const suffix = nextRefresh ? `; next ${nextRefresh}` : '';
-                logEvent(`NET ${endpoint}: skipped ${skipReason}${suffix}`);
-            }
+            const status = stringOrNull(msg.status);
+            const message = formatCompactEndpointActivityMessage(endpoint, {
+                status: status === 'in_flight' ? 'in_flight' : status === 'error' ? 'error' : 'idle',
+                lastSkipReason: stringOrNull(msg.lastSkipReason),
+                cooldownUntil: numberOrNull(msg.cooldownUntil),
+                nextRefreshAt: numberOrNull(msg.nextRefreshAt),
+                inFlightCount: numberOrNull(msg.inFlightCount) ?? undefined,
+            });
+            if (message) logEvent(message);
         };
 
         window.addEventListener('message', handler);

@@ -1,7 +1,11 @@
 import {describe, expect, it} from 'vitest';
 import {
   formatCompactEndpointStateLabel,
+  formatCompactEndpointActivityMessage,
+  formatEndpointErrorActivityMessage,
   formatEndpointCountdown,
+  formatEndpointRequestActivityMessage,
+  formatEndpointSuccessActivityMessage,
   formatFutureDelay,
   formatRelativeTime,
   getCompactEndpointStateKind,
@@ -74,5 +78,19 @@ describe('endpoint formatting helpers', () => {
     expect(formatCompactEndpointStateLabel({status: 'in_flight', inFlightCount: 2})).toBe('Ax2');
     expect(formatCompactEndpointStateLabel({status: 'error', cooldownUntil: 130_000}, 100_000)).toBe('E 30s');
     expect(formatCompactEndpointStateLabel({status: 'idle', lastSkipReason: 'fresh', nextRefreshAt: 130_000}, 100_000)).toBe('F 30s');
+  });
+
+  it('formats endpoint activity log messages', () => {
+    expect(formatEndpointRequestActivityMessage('/r/getEntities')).toBe('request getEntities');
+    expect(formatEndpointSuccessActivityMessage('/r/getEntities', true)).toBe('success getEntities active');
+    expect(formatEndpointSuccessActivityMessage('/r/getEntities', false)).toBe('success getEntities passive');
+    expect(formatEndpointErrorActivityMessage(500, 'Server Error')).toBe('error 500 Server Error');
+  });
+
+  it('formats compact endpoint activity log messages', () => {
+    expect(formatCompactEndpointActivityMessage('portalDetails', {status: 'in_flight', inFlightCount: 3})).toBe('NET portalDetails: in-flight x3');
+    expect(formatCompactEndpointActivityMessage('plexts', {status: 'error', lastSkipReason: 'HTTP 500', cooldownUntil: 130_000}, 100_000)).toBe('NET plexts: error (HTTP 500); backoff 30s');
+    expect(formatCompactEndpointActivityMessage('inventory', {status: 'idle', lastSkipReason: 'fresh', nextRefreshAt: 130_000}, 100_000)).toBe('NET inventory: skipped fresh; next 30s');
+    expect(formatCompactEndpointActivityMessage('inventory', {status: 'idle'})).toBe(null);
   });
 });

@@ -11,6 +11,22 @@ export interface CompactEndpointTelemetry {
   cooldownUntil?: number | null;
 }
 
+export function getEndpointUrlLabel(url: string): string {
+  return url.split('/').pop() || url;
+}
+
+export function formatEndpointRequestActivityMessage(url: string): string {
+  return `request ${getEndpointUrlLabel(url)}`;
+}
+
+export function formatEndpointSuccessActivityMessage(url: string, isActive?: boolean): string {
+  return `success ${getEndpointUrlLabel(url)}${isActive ? ' active' : ' passive'}`;
+}
+
+export function formatEndpointErrorActivityMessage(status: number, statusText: string): string {
+  return `error ${status} ${statusText}`;
+}
+
 export function formatFutureDelay(time: number | null | undefined, now = Date.now()): string | null {
   if (typeof time !== 'number' || !Number.isFinite(time)) return null;
 
@@ -109,4 +125,26 @@ export function formatCompactEndpointStateLabel(entry: CompactEndpointTelemetry,
     case 'idle':
       return 'I';
   }
+}
+
+export function formatCompactEndpointActivityMessage(
+  endpoint: string,
+  entry: CompactEndpointTelemetry,
+  now = Date.now(),
+): string | null {
+  if (entry.status === 'in_flight') {
+    return `NET ${endpoint}: in-flight${(entry.inFlightCount ?? 0) > 1 ? ` x${entry.inFlightCount}` : ''}`;
+  }
+
+  if (entry.status === 'error') {
+    const cooldown = formatFutureDelay(entry.cooldownUntil, now);
+    return `NET ${endpoint}: error${entry.lastSkipReason ? ` (${entry.lastSkipReason})` : ''}${cooldown ? `; backoff ${cooldown}` : ''}`;
+  }
+
+  if (entry.lastSkipReason) {
+    const nextRefresh = formatFutureDelay(entry.nextRefreshAt, now);
+    return `NET ${endpoint}: skipped ${entry.lastSkipReason}${nextRefresh ? `; next ${nextRefresh}` : ''}`;
+  }
+
+  return null;
 }

@@ -5,6 +5,11 @@ import { subscribeWithSelector, persist, createJSONStorage } from 'zustand/middl
 import { EntityLogic } from './logic/EntityLogic';
 import { globalSpatialIndex } from './SpatialIndex';
 import type {BoundsE6} from './geo-bounds';
+import {
+    formatEndpointErrorActivityMessage,
+    formatEndpointRequestActivityMessage,
+    formatEndpointSuccessActivityMessage,
+} from './endpoint-formatting';
 
 function getFeatureIdentity(feature: GeoJSON.Feature | null | undefined): string | number | null {
     if (!feature) return null;
@@ -1529,7 +1534,7 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
         endpointActivityLog: [{
             time: Date.now(),
             endpoint: getEndpointKeyFromUrl(url),
-            message: `request ${url.split('/').pop() ?? url}`,
+            message: formatEndpointRequestActivityMessage(url),
         }, ...state.endpointActivityLog].slice(0, 50),
         endpointDiagnostics: {
             ...state.endpointDiagnostics,
@@ -1551,7 +1556,7 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
             endpointActivityLog: [{
                 time: request.time,
                 endpoint: endpointKey,
-                message: `error ${request.status} ${request.statusText}`,
+                message: formatEndpointErrorActivityMessage(request.status, request.statusText),
             }, ...state.endpointActivityLog].slice(0, 50),
             endpointDiagnostics: {
                 ...state.endpointDiagnostics,
@@ -1580,7 +1585,7 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
             endpointActivityLog: [{
                 time: request.time,
                 endpoint: endpointKey,
-                message: `success ${request.url.split('/').pop() ?? request.url}${request.isActive ? ' active' : ' passive'}`,
+                message: formatEndpointSuccessActivityMessage(request.url, request.isActive),
             }, ...state.endpointActivityLog].slice(0, 50),
             endpointDiagnostics: {
                 ...state.endpointDiagnostics,

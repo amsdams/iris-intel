@@ -1127,6 +1127,7 @@ Tasks:
 | Audit shared health/level/event display derivation         | Open   | evaluate portal health/level display buckets plus event/shard/artifact visibility classification after Mini-IRIS live inventory/event testing; avoid moving UI labels or filters before both apps use the same rules |
 | Extract shared bounds/E6 helpers                           | Done   | moved E6 conversion, finite-bounds validation, longitude normalization, and antimeridian-aware bounds containment into `packages/core`; app request timing, tile coverage generation, and map runtime protocols remain local |
 | Extract shared benchmark frame aggregation helpers         | Done   | moved frame-sample accumulation and multi-run benchmark aggregation math into `packages/core`; IRIS and Mini-IRIS keep RAF scheduling, benchmark controls, copy text, and UI display local |
+| Extract shared endpoint activity log formatting            | Done   | moved request/success/error activity messages and Mini-IRIS compact `NET endpoint` log text into `packages/core`; endpoint stores, telemetry state, retention, and UI rendering stay app-owned |
 | Defer package chopping until boundaries are proven         | Open   | only split packages after shared usage and bundle/build costs are measured                                  |
 
 ## IRIS Performance And Architecture Review Follow-ups
