@@ -1,5 +1,9 @@
 import { isIrisUrl } from './utils';
 
+interface InternalMiniIrisRequestInit extends RequestInit {
+    __miniIrisInternalRequest?: boolean;
+}
+
 /**
  * Hooks into network requests to intercept Intel API data.
  */
@@ -44,8 +48,9 @@ export function installNetworkHooks(): void {
     const originalFetch = window.fetch;
     window.fetch = async function(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
         const url = typeof input === 'string' ? input : (input instanceof URL ? input.toString() : (input as Request).url);
+        const isInternalRequest = (init as InternalMiniIrisRequestInit | undefined)?.__miniIrisInternalRequest === true;
         const response = await originalFetch(input, init);
-        if (isIrisUrl(url)) {
+        if (!isInternalRequest && isIrisUrl(url)) {
             try {
                 const cloned = response.clone();
                 const data: unknown = await cloned.json();

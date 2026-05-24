@@ -9,6 +9,7 @@ import type { EndpointName, EndpointTelemetry } from './useEndpointTelemetry';
 import type { PortalHistoryKey, PortalHistoryLayerState } from './portalHistory';
 import type { MiniFrameStats, MiniRenderStats } from './diagnostics';
 import { MINI_IRIS_MONO_FONT } from './typography';
+import type { PlextDebugSnapshot } from './useIntelMessages';
 
 interface EventLogEntry {
     time: string;
@@ -22,6 +23,7 @@ interface TacticalUIProps {
     lat: number;
     lng: number;
     events: EventLogEntry[];
+    plextDebugSnapshot: PlextDebugSnapshot | null;
     endpointTelemetry: Partial<Record<EndpointName, EndpointTelemetry>>;
     plextBounds: PlextRequestBounds | null;
     playerHistories: Map<string, PlayerHistory>;
@@ -54,8 +56,9 @@ interface TacticalUIProps {
     };
 }
 
-export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBounds, playerHistories, selected, selectionDetailsRequestKey, onNav, onStyle, onMode, onPortalClick, onSelectionPanelOpen, onSelectionPanelClose, portalHistoryLayers, onPortalHistoryLayerToggle, keyOverlayEnabled, onKeyOverlayToggle, portalLevelColorEnabled, onPortalLevelColorToggle, portalHealthColorEnabled, onPortalHealthColorToggle, liveMode, patternMode, extrusionEnabled, renderStats, frameStats, entityCounts }: TacticalUIProps): JSX.Element {
+export function TacticalUI({ zoom, lat, lng, events, plextDebugSnapshot, endpointTelemetry, plextBounds, playerHistories, selected, selectionDetailsRequestKey, onNav, onStyle, onMode, onPortalClick, onSelectionPanelOpen, onSelectionPanelClose, portalHistoryLayers, onPortalHistoryLayerToggle, keyOverlayEnabled, onKeyOverlayToggle, portalLevelColorEnabled, onPortalLevelColorToggle, portalHealthColorEnabled, onPortalHealthColorToggle, liveMode, patternMode, extrusionEnabled, renderStats, frameStats, entityCounts }: TacticalUIProps): JSX.Element {
     const [openDrawer, setOpenDrawer] = useState<string | null>(null);
+    const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
     const handledSelectionDetailsRequestKeyRef = useRef(0);
     
     const { activeTab, setActiveTab, refreshComm } = useComm(true, true, plextBounds);
@@ -216,8 +219,27 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBou
         `toggles lvl ${portalLevelColorEnabled ? 'on' : 'off'} hp ${portalHealthColorEnabled ? 'on' : 'off'} keys ${keyOverlayEnabled ? 'on' : 'off'} 3d ${extrusionEnabled ? 'on' : 'off'}`,
     ].join(' | ');
 
+    const eventLogText = events.map((event) => `[${event.time}] ${event.msg}`).join('\n');
+
     const copyBenchLine = (): void => {
         const write = navigator.clipboard?.writeText(benchLine);
+        if (write) void write.catch(() => undefined);
+    };
+
+    const copyEventLog = (): void => {
+        const write = navigator.clipboard?.writeText(eventLogText);
+        if (write) void write.catch(() => undefined);
+    };
+
+    const copyPlextRaw = (): void => {
+        if (!plextDebugSnapshot) return;
+        const write = navigator.clipboard?.writeText(plextDebugSnapshot.raw);
+        if (write) void write.catch(() => undefined);
+    };
+
+    const copyPlextParsed = (): void => {
+        if (!plextDebugSnapshot) return;
+        const write = navigator.clipboard?.writeText(plextDebugSnapshot.parsed);
         if (write) void write.catch(() => undefined);
     };
 
@@ -226,7 +248,9 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBou
             {/* Top Right: Map Tools */}
             <MapTools
                 openDrawer={openDrawer}
+                diagnosticsOpen={diagnosticsOpen}
                 onToggle={toggleDrawer}
+                onDiagnosticsToggle={() => setDiagnosticsOpen((open) => !open)}
                 onNav={onNav}
                 onStyle={onStyle}
                 onMode={onMode}
@@ -240,7 +264,7 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBou
                 onPortalHealthColorToggle={onPortalHealthColorToggle}
             />
 
-            {openDrawer === 'diagnostics' && (
+            {diagnosticsOpen && (
                 <div
                     id="mini-iris-diagnostics"
                     style={{
@@ -274,7 +298,33 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBou
                             </button>
                             <button
                                 type="button"
-                                onClick={() => setOpenDrawer(null)}
+                                onClick={copyEventLog}
+                                disabled={events.length === 0}
+                                style={{ background: 'rgba(0,255,255,0.08)', color: events.length === 0 ? '#617171' : '#7ef9ff', border: '1px solid rgba(126,249,255,0.25)', borderRadius: '4px', padding: '4px 7px', font: 'inherit', cursor: events.length === 0 ? 'default' : 'pointer' }}
+                            >
+                                Log
+                            </button>
+                            <button
+                                type="button"
+                                onClick={copyPlextRaw}
+                                disabled={!plextDebugSnapshot}
+                                title={plextDebugSnapshot ? `Last COMM raw @ ${plextDebugSnapshot.capturedAt}` : 'No COMM payload captured'}
+                                style={{ background: 'rgba(0,255,255,0.08)', color: !plextDebugSnapshot ? '#617171' : '#7ef9ff', border: '1px solid rgba(126,249,255,0.25)', borderRadius: '4px', padding: '4px 7px', font: 'inherit', cursor: !plextDebugSnapshot ? 'default' : 'pointer' }}
+                            >
+                                Raw
+                            </button>
+                            <button
+                                type="button"
+                                onClick={copyPlextParsed}
+                                disabled={!plextDebugSnapshot}
+                                title={plextDebugSnapshot ? `Last COMM parsed @ ${plextDebugSnapshot.capturedAt}` : 'No COMM payload captured'}
+                                style={{ background: 'rgba(0,255,255,0.08)', color: !plextDebugSnapshot ? '#617171' : '#7ef9ff', border: '1px solid rgba(126,249,255,0.25)', borderRadius: '4px', padding: '4px 7px', font: 'inherit', cursor: !plextDebugSnapshot ? 'default' : 'pointer' }}
+                            >
+                                Parsed
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setDiagnosticsOpen(false)}
                                 aria-label="Close diagnostics"
                                 style={{ width: '32px', height: '32px', background: 'rgba(255,255,255,0.06)', color: '#d8fdfd', border: '1px solid rgba(255,255,255,0.18)', borderRadius: '4px', font: 'inherit', fontSize: '18px', lineHeight: 1, cursor: 'pointer' }}
                             >
@@ -313,9 +363,9 @@ export function TacticalUI({ zoom, lat, lng, events, endpointTelemetry, plextBou
                         </div>
                     )}
                     {events.length > 0 && (
-                        <div style={{ padding: '8px 10px', borderTop: '1px solid rgba(126, 249, 255, 0.14)', color: '#7ef9ff' }}>
-                            {events.slice(0, 6).map((e, i) => (
-                                <div key={i} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>[{e.time}] {e.msg}</div>
+                        <div style={{ maxHeight: '160px', overflowY: 'auto', padding: '8px 10px', borderTop: '1px solid rgba(126, 249, 255, 0.14)', color: '#7ef9ff', fontFamily: MINI_IRIS_MONO_FONT, fontSize: '10px', lineHeight: 1.35 }}>
+                            {events.map((e, i) => (
+                                <div key={`${e.time}-${i}`} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>[{e.time}] {e.msg}</div>
                             ))}
                         </div>
                     )}

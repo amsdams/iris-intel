@@ -132,7 +132,7 @@ export type MissionWaypointPayload = [
 ];
 
 export interface PlextMarkup {
-  0: 'TEXT' | 'PLAYER' | 'PORTAL' | 'SECURE';
+  0: 'TEXT' | 'PLAYER' | 'PORTAL' | 'LINK' | 'SENDER' | 'AT_PLAYER' | 'FACTION' | 'SECURE';
   1: {
     plain?: string;
     team?: string;

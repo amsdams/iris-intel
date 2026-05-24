@@ -5,6 +5,7 @@ export * from './logic/EntityLogic';
 export * from './geometry/wrapped-lines';
 export * from './requests/plext';
 export * from './player-tracker';
+export * from './plext-refresh-hints';
 export * from './map-features';
 export * from './ingress-map-style';
 export * from './endpoint-formatting';

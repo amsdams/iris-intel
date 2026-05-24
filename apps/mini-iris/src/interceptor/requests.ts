@@ -18,6 +18,10 @@ const MAX_FAILURE_BACKOFF_MS = 60 * 1000;
 
 type RequestEndpoint = 'portalDetails' | 'gameScore' | 'regionScore' | 'subscription' | 'inventory' | 'plexts';
 
+interface InternalMiniIrisRequestInit extends RequestInit {
+    __miniIrisInternalRequest?: boolean;
+}
+
 interface EndpointState {
     status: 'idle' | 'in_flight' | 'error';
     inFlightKey: string | null;
@@ -452,14 +456,16 @@ async function handlePlextsRequest(
 
 async function sendIntelRequest(endpoint: RequestEndpoint, key: string, url: string, body: string, errorMsg: string): Promise<void> {
     try {
-        const res = await fetch(url, {
+        const init: InternalMiniIrisRequestInit = {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json', 
                 'X-CSRFToken': getCsrfToken() 
             },
-            body: body
-        });
+            body: body,
+            __miniIrisInternalRequest: true,
+        };
+        const res = await fetch(url, init);
 
         const text = await res.text();
         if (looksLikeLoginHtml(text)) {

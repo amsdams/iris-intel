@@ -204,6 +204,8 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
     const addressStatus = useStore((state) => state.addressStatus);
     const addressNextLookupAt = useStore((state) => state.addressNextLookupAt);
     const endpointDiagnostics = useStore((state) => state.endpointDiagnostics);
+    const endpointActivityLog = useStore((state) => state.endpointActivityLog);
+    const clearEndpointActivityLog = useStore((state) => state.clearEndpointActivityLog);
     const domainErrors = useStore((state) => state.domainErrors);
     const clearDomainErrors = useStore((state) => state.clearDomainErrors);
     const mapThemeId = useStore((state) => state.mapThemeId);
@@ -507,6 +509,34 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                             </div>
                         ))}
                         {domainErrors.length === 0 && (
+                            <div className="iris-debug-row">
+                                <span className="iris-debug-label">Recent</span>
+                                <span className="iris-debug-value">none</span>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="iris-debug-section-header">
+                        <span className="iris-debug-section-title">ENDPOINT LOG</span>
+                        {endpointActivityLog.length > 0 && (
+                            <button
+                                className="iris-debug-copy-btn iris-ui-compact-pill"
+                                onClick={clearEndpointActivityLog}
+                            >
+                                CLEAR
+                            </button>
+                        )}
+                    </div>
+                    <div className="iris-debug-table">
+                        {endpointActivityLog.slice(0, 12).map((entry) => (
+                            <div key={`${entry.time}-${entry.endpoint}-${entry.message}`} className="iris-debug-row">
+                                <span className="iris-debug-label">{entry.endpoint}</span>
+                                <span className="iris-debug-value">
+                                    {formatRelativeTime(entry.time)} | {entry.message}
+                                </span>
+                            </div>
+                        ))}
+                        {endpointActivityLog.length === 0 && (
                             <div className="iris-debug-row">
                                 <span className="iris-debug-label">Recent</span>
                                 <span className="iris-debug-value">none</span>

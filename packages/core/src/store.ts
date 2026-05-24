@@ -286,6 +286,12 @@ export interface EndpointDiagnostics {
     staleResponseIgnoreCount: number;
 }
 
+export interface EndpointActivityLogEntry {
+    time: number;
+    endpoint: EndpointKey;
+    message: string;
+}
+
 export interface MapPerfSnapshot {
     type: 'viewport' | 'htmlMarkers' | 'frame';
     time: number;
@@ -686,6 +692,7 @@ interface DiagnosticsSlice {
     uiRenderDiagnostics: Record<string, UiRenderDiagnosticsEntry>;
     mainThreadDiagnostics: MainThreadDiagnostics;
     domainErrors: DomainDiagnosticError[];
+    endpointActivityLog: EndpointActivityLogEntry[];
     onRequestStart: (url: string) => void;
     onRequestEnd: () => void;
     addFailedRequest: (request: FailedRequest) => void;
@@ -702,6 +709,8 @@ interface DiagnosticsSlice {
     setSessionRecovered: () => void;
     setEndpointNextAutoRefresh: (key: EndpointKey, nextAutoRefreshAt: number | null) => void;
     setEndpointMetadata: (key: EndpointKey, metadata: Partial<EndpointDiagnostics>) => void;
+    addEndpointActivityLog: (entry: Omit<EndpointActivityLogEntry, 'time'> & {time?: number}) => void;
+    clearEndpointActivityLog: () => void;
     setMapPerfSnapshot: (snapshot: MapPerfSnapshot) => void;
     recordUiRenderSample: (name: string, count: number) => void;
     recordMainThreadLongTask: (task: MainThreadLongTask) => void;
@@ -1522,9 +1531,15 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
         recentLongTasks: [],
     },
     domainErrors: [],
+    endpointActivityLog: [],
     onRequestStart: (url) => set((state) => ({
         activeRequests: state.activeRequests + 1,
         lastRequestUrl: url,
+        endpointActivityLog: [{
+            time: Date.now(),
+            endpoint: getEndpointKeyFromUrl(url),
+            message: `request ${url.split('/').pop() ?? url}`,
+        }, ...state.endpointActivityLog].slice(0, 50),
         endpointDiagnostics: {
             ...state.endpointDiagnostics,
             [getEndpointKeyFromUrl(url)]: {
@@ -1542,6 +1557,11 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
         const endpointKey = getEndpointKeyFromUrl(request.url);
         return {
             failedRequests: [request, ...state.failedRequests].slice(0, 50),
+            endpointActivityLog: [{
+                time: request.time,
+                endpoint: endpointKey,
+                message: `error ${request.status} ${request.statusText}`,
+            }, ...state.endpointActivityLog].slice(0, 50),
             endpointDiagnostics: {
                 ...state.endpointDiagnostics,
                 [endpointKey]: {
@@ -1566,6 +1586,11 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
 
         return {
             successfulRequests: [request, ...dedupedSuccessfulRequests].slice(0, 50),
+            endpointActivityLog: [{
+                time: request.time,
+                endpoint: endpointKey,
+                message: `success ${request.url.split('/').pop() ?? request.url}${request.isActive ? ' active' : ' passive'}`,
+            }, ...state.endpointActivityLog].slice(0, 50),
             endpointDiagnostics: {
                 ...state.endpointDiagnostics,
                 [endpointKey]: {
@@ -1650,6 +1675,14 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
             },
         },
     })),
+    addEndpointActivityLog: (entry) => set((state) => ({
+        endpointActivityLog: [{
+            time: entry.time ?? Date.now(),
+            endpoint: entry.endpoint,
+            message: entry.message,
+        }, ...state.endpointActivityLog].slice(0, 50),
+    })),
+    clearEndpointActivityLog: () => set({ endpointActivityLog: [] }),
     setMapPerfSnapshot: (snapshot) => set((state) => ({
         mapPerfDiagnostics: {
             ...state.mapPerfDiagnostics,

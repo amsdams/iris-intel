@@ -5,7 +5,9 @@ import { INGRESS_COLORS, ITEM_LEVEL_COLORS } from './MapConstants';
 
 interface MapToolsProps {
     openDrawer: string | null;
+    diagnosticsOpen: boolean;
     onToggle: (id: string) => void;
+    onDiagnosticsToggle: () => void;
     onNav: (action: string) => void;
     onStyle: (style: string) => void;
     onMode: (mode: string) => void;
@@ -54,7 +56,7 @@ function historyButtonStyle(mode: PortalHistoryMode, color: string): h.JSX.CSSPr
     };
 }
 
-export function MapTools({ openDrawer, onToggle, onNav, onStyle, onMode, portalHistoryLayers, onPortalHistoryLayerToggle, keyOverlayEnabled, onKeyOverlayToggle, portalLevelColorEnabled, onPortalLevelColorToggle, portalHealthColorEnabled, onPortalHealthColorToggle }: MapToolsProps): JSX.Element {
+export function MapTools({ openDrawer, diagnosticsOpen, onToggle, onDiagnosticsToggle, onNav, onStyle, onMode, portalHistoryLayers, onPortalHistoryLayerToggle, keyOverlayEnabled, onKeyOverlayToggle, portalLevelColorEnabled, onPortalLevelColorToggle, portalHealthColorEnabled, onPortalHealthColorToggle }: MapToolsProps): JSX.Element {
     return (
         <div id="map-tools-container" style={{ position: 'fixed', top: '10px', right: '10px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', zIndex: 2000001, pointerEvents: 'none' }}>
             
@@ -194,14 +196,14 @@ export function MapTools({ openDrawer, onToggle, onNav, onStyle, onMode, portalH
             <div className="drawer-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                 <div
                     className="debug-btn"
-                    onClick={() => onToggle('diagnostics')}
+                    onClick={onDiagnosticsToggle}
                     title="Diagnostics"
                     style={{
                         width: '40px',
                         height: '40px',
-                        background: openDrawer === 'diagnostics' ? 'rgba(0,255,255,0.18)' : 'rgba(34,34,34,0.9)',
-                        color: openDrawer === 'diagnostics' ? '#7ef9ff' : '#fff',
-                        border: `1px solid ${openDrawer === 'diagnostics' ? '#7ef9ff' : '#00ffff'}`,
+                        background: diagnosticsOpen ? 'rgba(0,255,255,0.18)' : 'rgba(34,34,34,0.9)',
+                        color: diagnosticsOpen ? '#7ef9ff' : '#fff',
+                        border: `1px solid ${diagnosticsOpen ? '#7ef9ff' : '#00ffff'}`,
                         borderRadius: '50%',
                         fontSize: '11px',
                         fontWeight: 'bold',

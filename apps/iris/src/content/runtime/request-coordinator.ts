@@ -1,4 +1,4 @@
-import { useStore, type Plext } from '@iris/core';
+import { extractPlextPortalRefreshHints, useStore, type Plext, type PlextPortalRefreshHint, type Portal } from '@iris/core';
 import { IRISMessage } from './message-types';
 import { buildEntityRequestPayload } from '../domains/entities/request';
 
@@ -21,6 +21,10 @@ const TILE_FRESHNESS_TTL_MS = 120000; // 2m per-tile TTL
 const COMM_ACTIVITY_ENTITY_REFRESH_DELAY_MS = 1500;
 const COMM_ACTIVITY_ENTITY_REFRESH_COOLDOWN_MS = 30000;
 const COMM_ACTIVITY_RECENT_MS = 5 * 60 * 1000;
+const COMM_ACTIVITY_PORTAL_DETAILS_COOLDOWN_MS = 30000;
+const COMM_ACTIVITY_PORTAL_DETAILS_PENDING_MS = 45000;
+const COMM_ACTIVITY_PORTAL_DETAILS_MAX_PER_BATCH = 3;
+const COMM_ACTIVITY_PORTAL_COORDINATE_TOLERANCE_E6 = 50;
 
 const STARTUP_GRACE_MS = 5000;
 const GAME_SCORE_TTL_MS = 10 * 60 * 1000;
@@ -64,6 +68,8 @@ export function createRequestCoordinator(): RequestCoordinator {
     let entityUnsub: (() => void) | null = null;
     let lastResumeRefreshAt = 0;
     let lastCommActivityEntityRefreshAt = 0;
+    const commPortalDetailRefreshTimes = new Map<string, number>();
+    const commPortalDetailPending = new Set<string>();
 
     const postMessage = (message: Record<string, unknown>): void => {
         window.postMessage(message, '*');
@@ -373,9 +379,9 @@ export function createRequestCoordinator(): RequestCoordinator {
         setNextAutoRefresh('entities', Date.now() + interval);
     };
 
-    const hasCurrentViewPortalActivity = (plexts: Plext[]): boolean => {
+    const getCurrentViewPortalActivityHints = (plexts: Plext[]): PlextPortalRefreshHint[] => {
         const bounds = useStore.getState().mapState.bounds;
-        if (!bounds) return false;
+        if (!bounds) return [];
 
         const containsLng = (lngE6: number): boolean => {
             if (bounds.minLngE6 <= bounds.maxLngE6) {
@@ -385,31 +391,108 @@ export function createRequestCoordinator(): RequestCoordinator {
         };
 
         const now = Date.now();
-        return plexts.some((plext) => {
-            if (plext.type !== 'PLAYER_GENERATED') return false;
-            if (now - plext.time > COMM_ACTIVITY_RECENT_MS) return false;
+        return extractPlextPortalRefreshHints(plexts, {now, maxAgeMs: COMM_ACTIVITY_RECENT_MS})
+            .filter((hint) => hint.latE6 >= bounds.minLatE6 &&
+                hint.latE6 <= bounds.maxLatE6 &&
+                containsLng(hint.lngE6));
+    };
 
-            return plext.markup.some(([kind, value]) => {
-                if (kind !== 'PORTAL') return false;
-                const latE6 = value.latE6;
-                const lngE6 = value.lngE6;
-                return typeof latE6 === 'number' &&
-                    typeof lngE6 === 'number' &&
-                    latE6 >= bounds.minLatE6 &&
-                    latE6 <= bounds.maxLatE6 &&
-                    containsLng(lngE6);
+    const resolvePortalHint = (hint: PlextPortalRefreshHint): Portal | null => {
+        const portals = Object.values(useStore.getState().portals);
+        const normalizedName = hint.name?.trim().toLowerCase();
+        let bestPortal: Portal | null = null;
+        let bestScore = Number.POSITIVE_INFINITY;
+
+        for (const portal of portals) {
+            const latDelta = Math.abs(Math.round(portal.lat * 1e6) - hint.latE6);
+            const lngDelta = Math.abs(Math.round(portal.lng * 1e6) - hint.lngE6);
+            if (latDelta > COMM_ACTIVITY_PORTAL_COORDINATE_TOLERANCE_E6 || lngDelta > COMM_ACTIVITY_PORTAL_COORDINATE_TOLERANCE_E6) continue;
+            const portalName = portal.name?.trim().toLowerCase();
+            const namePenalty = normalizedName && portalName && portalName !== normalizedName ? COMM_ACTIVITY_PORTAL_COORDINATE_TOLERANCE_E6 : 0;
+            const score = latDelta + lngDelta + namePenalty;
+            if (score < bestScore) {
+                bestScore = score;
+                bestPortal = portal;
+            }
+        }
+
+        return bestPortal;
+    };
+
+    const refreshPortalDetailsFromCommHints = (hints: PlextPortalRefreshHint[]): void => {
+        if (hints.length === 0) return;
+
+        const now = Date.now();
+        const resolvedPortalIds = new Set<string>();
+        let resolved = 0;
+        let requested = 0;
+        let pending = 0;
+        let cooldown = 0;
+
+        hints.forEach((hint) => {
+            if (requested >= COMM_ACTIVITY_PORTAL_DETAILS_MAX_PER_BATCH) return;
+            const portal = resolvePortalHint(hint);
+            if (!portal) return;
+            if (resolvedPortalIds.has(portal.id)) return;
+            resolvedPortalIds.add(portal.id);
+            resolved += 1;
+
+            if (commPortalDetailPending.has(portal.id)) {
+                pending += 1;
+                return;
+            }
+
+            const lastRefreshAt = commPortalDetailRefreshTimes.get(portal.id) ?? 0;
+            if (now - lastRefreshAt < COMM_ACTIVITY_PORTAL_DETAILS_COOLDOWN_MS) {
+                cooldown += 1;
+                return;
+            }
+
+            commPortalDetailRefreshTimes.set(portal.id, now);
+            commPortalDetailPending.add(portal.id);
+            window.setTimeout(() => {
+                commPortalDetailPending.delete(portal.id);
+            }, COMM_ACTIVITY_PORTAL_DETAILS_PENDING_MS);
+            requested += 1;
+            postMessage({
+                type: 'IRIS_PORTAL_DETAILS_FETCH',
+                guid: portal.id,
             });
         });
+
+        useStore.getState().setEndpointMetadata('portalDetails', {
+            lastRefreshReason: 'comm_activity',
+            lastSkipReason: requested > 0
+                ? `requested ${requested}/${hints.length} hints (${resolved} known)`
+                : `0/${hints.length} hints (${resolved} known, ${pending} pending, ${cooldown} cooldown)`,
+        });
+        useStore.getState().addEndpointActivityLog({
+            endpoint: 'portalDetails',
+            message: requested > 0
+                ? `comm_activity requested ${requested}/${hints.length} hints (${resolved} known)`
+                : `comm_activity skipped 0/${hints.length} hints (${resolved} known, ${pending} pending, ${cooldown} cooldown)`,
+        });
+
+        if (useStore.getState().debugLogging) {
+            console.log(`IRIS: COMM portal details ${requested}/${hints.length} requested (${resolved} known, ${pending} pending, ${cooldown} cooldown)`);
+        }
     };
 
     const scheduleCommActivityEntityRefresh = (plexts: Plext[]): void => {
-        if (!hasCurrentViewPortalActivity(plexts)) return;
+        const hints = getCurrentViewPortalActivityHints(plexts);
+        if (hints.length === 0) return;
+
+        refreshPortalDetailsFromCommHints(hints);
 
         const now = Date.now();
         if (now - lastCommActivityEntityRefreshAt < COMM_ACTIVITY_ENTITY_REFRESH_COOLDOWN_MS) {
             useStore.getState().setEndpointMetadata('entities', {
                 lastRefreshReason: 'comm_activity',
-                lastSkipReason: 'comm cooldown',
+                lastSkipReason: `comm cooldown (${hints.length} hints)`,
+            });
+            useStore.getState().addEndpointActivityLog({
+                endpoint: 'entities',
+                message: `comm_activity cooldown (${hints.length} hints)`,
             });
             return;
         }
@@ -417,7 +500,11 @@ export function createRequestCoordinator(): RequestCoordinator {
         if (commActivityRefreshTimeoutId !== null) {
             useStore.getState().setEndpointMetadata('entities', {
                 lastRefreshReason: 'comm_activity',
-                lastSkipReason: 'comm coalesced',
+                lastSkipReason: `comm coalesced (${hints.length} hints)`,
+            });
+            useStore.getState().addEndpointActivityLog({
+                endpoint: 'entities',
+                message: `comm_activity coalesced (${hints.length} hints)`,
             });
             return;
         }
@@ -432,7 +519,11 @@ export function createRequestCoordinator(): RequestCoordinator {
         setNextAutoRefresh('entities', Date.now() + COMM_ACTIVITY_ENTITY_REFRESH_DELAY_MS);
         useStore.getState().setEndpointMetadata('entities', {
             lastRefreshReason: 'comm_activity',
-            lastSkipReason: 'scheduled',
+            lastSkipReason: `scheduled (${hints.length} hints)`,
+        });
+        useStore.getState().addEndpointActivityLog({
+            endpoint: 'entities',
+            message: `comm_activity scheduled (${hints.length} hints)`,
         });
     };
 

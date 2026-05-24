@@ -7,7 +7,7 @@ import { MAP_STYLES, type MapStyleName } from './MapConstants';
 import { LaunchButton } from './LaunchButton';
 import { MapContainer } from './MapContainer';
 import { usePatterns } from './usePatterns';
-import { useIntelMessages } from './useIntelMessages';
+import { useIntelMessages, type PlextDebugSnapshot } from './useIntelMessages';
 import { useMapRenderer } from './useMapRenderer';
 import { useScores } from './useScores';
 import { usePlayerStats } from './usePlayerStats';
@@ -247,6 +247,7 @@ function TacticalOverlay(): h.JSX.Element {
     const [generator] = useState(() => new MockDataGenerator());
     const [loadedTileKeys] = useState(() => new Set<string>());
     const [events, setEvents] = useState<{time: string, msg: string}[]>([]);
+    const [plextDebugSnapshot, setPlextDebugSnapshot] = useState<PlextDebugSnapshot | null>(null);
     const [selected, setSelected] = useState<SelectedEntity | null>(null);
     const [selectionDetailsRequestKey, setSelectionDetailsRequestKey] = useState(0);
     const [savedMapState] = useState(() => readSavedMapState());
@@ -293,8 +294,9 @@ function TacticalOverlay(): h.JSX.Element {
     });
 
     const logEvent = useCallback((msg: string): void => {
-        setEvents(prev => [{ time: new Date().toLocaleTimeString(), msg }, ...prev].slice(0, 30));
-        console.log(`[Mini IRIS] ${msg}`);
+        const time = new Date().toLocaleTimeString();
+        setEvents(prev => [{ time, msg }, ...prev].slice(0, 30));
+        console.log(`[Mini IRIS ${time}] ${msg}`);
     }, []);
 
     useEffect(() => {
@@ -487,7 +489,7 @@ function TacticalOverlay(): h.JSX.Element {
         syncToMap(mapViewRef.current, currentLiveMode, currentPatternMode);
     }, [syncToMap]);
 
-    useIntelMessages(liveMode, patternMode, selected, setSelected, syncCurrentView, logEvent);
+    useIntelMessages(liveMode, patternMode, selected, setSelected, syncCurrentView, logEvent, setPlextDebugSnapshot);
     const playerTrailData = useMemo<GeoJSON.FeatureCollection>(() => {
         const features: GeoJSON.Feature[] = [];
         const clusters = new Map<string, { lat: number; lng: number; names: string[]; team: string; count: number }>();
@@ -992,6 +994,7 @@ function TacticalOverlay(): h.JSX.Element {
                     <TacticalUI 
                         zoom={mapState.zoom} lat={mapState.lat} lng={mapState.lng} 
                         events={events}
+                        plextDebugSnapshot={plextDebugSnapshot}
                         endpointTelemetry={endpointTelemetry}
                         plextBounds={plextBounds}
                         playerHistories={visiblePlayerHistories}
