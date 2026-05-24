@@ -13,6 +13,7 @@ import {
     buildPortalPointFeature,
     toFeatureCollection,
     buildWrappedLineSegments,
+    isPortalHealthBucketVisible,
 } from '@iris/core';
 import {PageMapRuntimeCommandMessage} from '../../../shared/page-map-runtime-protocol';
 import {MAP_THEMES, THEMES} from '../../theme';
@@ -305,12 +306,7 @@ function isPortalVisible(portal: Portal, options: BuildPageMapRuntimeSnapshotOpt
     if (!isTeamVisible(portal.team, options)) return false;
     if (portal.level !== undefined && !options.filterShowLevel[portal.level]) return false;
 
-    if (portal.health !== undefined) {
-        if (portal.health <= 25 && !options.filterShowHealth[25]) return false;
-        if (portal.health > 25 && portal.health <= 50 && !options.filterShowHealth[50]) return false;
-        if (portal.health > 50 && portal.health <= 75 && !options.filterShowHealth[75]) return false;
-        if (portal.health > 75 && !options.filterShowHealth[100]) return false;
-    }
+    if (!isPortalHealthBucketVisible(portal.health, options.filterShowHealth)) return false;
 
     if (options.filterShowVisited === 'TRUE' && !portal.visited) return false;
     if (options.filterShowVisited === 'FALSE' && portal.visited) return false;

@@ -12,6 +12,7 @@ export * from './ingress-map-style';
 export * from './benchmark-frames';
 export * from './endpoint-formatting';
 export * from './keyed-refresh';
+export * from './portal-display';
 export * from './diagnostics-formatting';
 export * from './ZoomPolicy';
 export * from './parsers/EntityParser';

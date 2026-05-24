@@ -10,6 +10,7 @@ import {
   buildLinkLineFeatures,
   buildOrnamentPointFeature,
   buildPortalPointFeature,
+  isPortalHealthBucketVisible,
 } from '@iris/core';
 
 type PortalFeatureProperties = {
@@ -83,12 +84,7 @@ export const buildPortalFeatures = (
       if (portal.team === 'E' && !filters.showEnlightened) return false;
       if (portal.level !== undefined && !filters.showLevel[portal.level]) return false;
 
-      if (portal.health !== undefined) {
-        if (portal.health <= 25 && !filters.showHealth[25]) return false;
-        if (portal.health > 25 && portal.health <= 50 && !filters.showHealth[50]) return false;
-        if (portal.health > 50 && portal.health <= 75 && !filters.showHealth[75]) return false;
-        if (portal.health > 75 && !filters.showHealth[100]) return false;
-      }
+      if (!isPortalHealthBucketVisible(portal.health, filters.showHealth)) return false;
 
       // History Filters (Three-way)
       if (filters.showVisited === 'TRUE' && !portal.visited) return false;
@@ -180,12 +176,7 @@ export const buildOrnamentFeatures = (
       if (portal.team === 'E' && !filters.showEnlightened) return false;
       if (portal.level !== undefined && !filters.showLevel[portal.level]) return false;
 
-      if (portal.health !== undefined) {
-        if (portal.health <= 25 && !filters.showHealth[25]) return false;
-        if (portal.health > 25 && portal.health <= 50 && !filters.showHealth[50]) return false;
-        if (portal.health > 50 && portal.health <= 75 && !filters.showHealth[75]) return false;
-        if (portal.health > 75 && !filters.showHealth[100]) return false;
-      }
+      if (!isPortalHealthBucketVisible(portal.health, filters.showHealth)) return false;
 
       return true;
     })
