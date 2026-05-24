@@ -1,4 +1,4 @@
-import type {Plext} from './store';
+import type {Plext, Portal} from './store';
 
 export interface PlextPortalRefreshHint {
   plextId: string;
@@ -15,6 +15,7 @@ export interface ExtractPlextPortalRefreshHintsOptions {
 }
 
 const DEFAULT_MAX_AGE_MS = 5 * 60 * 1000;
+const DEFAULT_PORTAL_COORDINATE_TOLERANCE_E6 = 50;
 
 export function extractPlextPortalRefreshHints(
   plexts: Plext[],
@@ -47,4 +48,35 @@ export function extractPlextPortalRefreshHints(
   }
 
   return Array.from(hints.values());
+}
+
+export interface ResolvePlextPortalRefreshHintOptions {
+  coordinateToleranceE6?: number;
+}
+
+export function resolvePlextPortalRefreshHint(
+  hint: PlextPortalRefreshHint,
+  portals: Iterable<Portal>,
+  options: ResolvePlextPortalRefreshHintOptions = {},
+): Portal | null {
+  const coordinateToleranceE6 = options.coordinateToleranceE6 ?? DEFAULT_PORTAL_COORDINATE_TOLERANCE_E6;
+  const normalizedName = hint.name?.trim().toLowerCase();
+  let bestPortal: Portal | null = null;
+  let bestScore = Number.POSITIVE_INFINITY;
+
+  for (const portal of portals) {
+    const latDelta = Math.abs(Math.round(portal.lat * 1e6) - hint.latE6);
+    const lngDelta = Math.abs(Math.round(portal.lng * 1e6) - hint.lngE6);
+    if (latDelta > coordinateToleranceE6 || lngDelta > coordinateToleranceE6) continue;
+
+    const portalName = portal.name?.trim().toLowerCase();
+    const namePenalty = normalizedName && portalName && portalName !== normalizedName ? coordinateToleranceE6 : 0;
+    const score = latDelta + lngDelta + namePenalty;
+    if (score < bestScore) {
+      bestScore = score;
+      bestPortal = portal;
+    }
+  }
+
+  return bestPortal;
 }

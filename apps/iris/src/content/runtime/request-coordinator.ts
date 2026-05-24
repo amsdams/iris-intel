@@ -1,4 +1,4 @@
-import { extractPlextPortalRefreshHints, useStore, type Plext, type PlextPortalRefreshHint, type Portal } from '@iris/core';
+import { extractPlextPortalRefreshHints, resolvePlextPortalRefreshHint, useStore, type Plext, type PlextPortalRefreshHint } from '@iris/core';
 import { IRISMessage } from './message-types';
 import { buildEntityRequestPayload } from '../domains/entities/request';
 
@@ -24,7 +24,6 @@ const COMM_ACTIVITY_RECENT_MS = 5 * 60 * 1000;
 const COMM_ACTIVITY_PORTAL_DETAILS_COOLDOWN_MS = 30000;
 const COMM_ACTIVITY_PORTAL_DETAILS_PENDING_MS = 45000;
 const COMM_ACTIVITY_PORTAL_DETAILS_MAX_PER_BATCH = 3;
-const COMM_ACTIVITY_PORTAL_COORDINATE_TOLERANCE_E6 = 50;
 
 const STARTUP_GRACE_MS = 5000;
 const GAME_SCORE_TTL_MS = 10 * 60 * 1000;
@@ -397,28 +396,6 @@ export function createRequestCoordinator(): RequestCoordinator {
                 containsLng(hint.lngE6));
     };
 
-    const resolvePortalHint = (hint: PlextPortalRefreshHint): Portal | null => {
-        const portals = Object.values(useStore.getState().portals);
-        const normalizedName = hint.name?.trim().toLowerCase();
-        let bestPortal: Portal | null = null;
-        let bestScore = Number.POSITIVE_INFINITY;
-
-        for (const portal of portals) {
-            const latDelta = Math.abs(Math.round(portal.lat * 1e6) - hint.latE6);
-            const lngDelta = Math.abs(Math.round(portal.lng * 1e6) - hint.lngE6);
-            if (latDelta > COMM_ACTIVITY_PORTAL_COORDINATE_TOLERANCE_E6 || lngDelta > COMM_ACTIVITY_PORTAL_COORDINATE_TOLERANCE_E6) continue;
-            const portalName = portal.name?.trim().toLowerCase();
-            const namePenalty = normalizedName && portalName && portalName !== normalizedName ? COMM_ACTIVITY_PORTAL_COORDINATE_TOLERANCE_E6 : 0;
-            const score = latDelta + lngDelta + namePenalty;
-            if (score < bestScore) {
-                bestScore = score;
-                bestPortal = portal;
-            }
-        }
-
-        return bestPortal;
-    };
-
     const refreshPortalDetailsFromCommHints = (hints: PlextPortalRefreshHint[]): void => {
         if (hints.length === 0) return;
 
@@ -431,7 +408,7 @@ export function createRequestCoordinator(): RequestCoordinator {
 
         hints.forEach((hint) => {
             if (requested >= COMM_ACTIVITY_PORTAL_DETAILS_MAX_PER_BATCH) return;
-            const portal = resolvePortalHint(hint);
+            const portal = resolvePlextPortalRefreshHint(hint, Object.values(useStore.getState().portals));
             if (!portal) return;
             if (resolvedPortalIds.has(portal.id)) return;
             resolvedPortalIds.add(portal.id);

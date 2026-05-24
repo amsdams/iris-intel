@@ -1,10 +1,9 @@
 import { useEffect, useRef } from 'preact/hooks';
-import { useStore, EntityParser, PortalDetailsParser, GameScoreParser, RegionScoreParser, InventoryParser, PlayerParser, PlextParser, extractPlextPortalRefreshHints, Portal, Link, Field } from '@iris/core';
-import type { GameScoreData, IntelMapData, InventoryData, Plext, PlextData, PlextPortalRefreshHint, PortalDetailsData, RegionScoreData, PlayerStatsMessage as CorePlayerStatsMessage } from '@iris/core';
+import { useStore, EntityParser, PortalDetailsParser, GameScoreParser, RegionScoreParser, InventoryParser, PlayerParser, PlextParser, extractPlextPortalRefreshHints, resolvePlextPortalRefreshHint, Portal, Link, Field } from '@iris/core';
+import type { GameScoreData, IntelMapData, InventoryData, Plext, PlextData, PortalDetailsData, RegionScoreData, PlayerStatsMessage as CorePlayerStatsMessage } from '@iris/core';
 import { isIrisDataMessage, isRecord, numberOrNull, stringOrNull } from './messages';
 
 const PLEXT_PORTAL_DETAILS_COOLDOWN_MS = 30_000;
-const PLEXT_PORTAL_COORDINATE_TOLERANCE_E6 = 50;
 const PLEXT_PORTAL_HINT_MAX_AGE_MS = 3 * 60 * 60 * 1000;
 const PLEXT_PORTAL_DETAILS_MAX_PER_BATCH = 5;
 const PLEXT_PORTAL_DETAILS_PENDING_TIMEOUT_MS = 45_000;
@@ -29,29 +28,6 @@ export function useIntelMessages(
     const portalDetailPendingRef = useRef<Set<string>>(new Set());
 
     useEffect(() => {
-        const resolvePortalHint = (hint: PlextPortalRefreshHint): Portal | null => {
-            const store = useStore.getState();
-            const portals = Object.values(store.portals);
-            const normalizedName = hint.name?.trim().toLowerCase();
-            let bestPortal: Portal | null = null;
-            let bestScore = Number.POSITIVE_INFINITY;
-
-            for (const portal of portals) {
-                const latDelta = Math.abs(Math.round(portal.lat * 1e6) - hint.latE6);
-                const lngDelta = Math.abs(Math.round(portal.lng * 1e6) - hint.lngE6);
-                if (latDelta > PLEXT_PORTAL_COORDINATE_TOLERANCE_E6 || lngDelta > PLEXT_PORTAL_COORDINATE_TOLERANCE_E6) continue;
-                const portalName = portal.name?.trim().toLowerCase();
-                const namePenalty = normalizedName && portalName && portalName !== normalizedName ? PLEXT_PORTAL_COORDINATE_TOLERANCE_E6 : 0;
-                const score = latDelta + lngDelta + namePenalty;
-                if (score < bestScore) {
-                    bestScore = score;
-                    bestPortal = portal;
-                }
-            }
-
-            return bestPortal;
-        };
-
         const refreshPortalsFromPlexts = (plexts: ReturnType<typeof PlextParser.parse>): void => {
             if (!liveMode) return;
             const hints = extractPlextPortalRefreshHints(plexts, { maxAgeMs: PLEXT_PORTAL_HINT_MAX_AGE_MS });
@@ -68,7 +44,7 @@ export function useIntelMessages(
             const resolvedPortalIds = new Set<string>();
             hints.forEach((hint) => {
                 if (requested >= PLEXT_PORTAL_DETAILS_MAX_PER_BATCH) return;
-                const portal = resolvePortalHint(hint);
+                const portal = resolvePlextPortalRefreshHint(hint, Object.values(useStore.getState().portals));
                 if (!portal) return;
                 if (resolvedPortalIds.has(portal.id)) return;
                 resolvedPortalIds.add(portal.id);
