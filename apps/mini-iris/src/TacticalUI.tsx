@@ -1,6 +1,6 @@
 import { h, JSX, Fragment } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import {formatCompactEndpointStateLabel, getCompactEndpointStateKind, type Field, type Link, type Portal, type PlextRequestBounds} from '@iris/core';
+import {formatCompactEndpointStateLabel, formatDiagnosticCount, formatDiagnosticMs, getBrowserLabel, getCompactEndpointStateKind, type Field, type Link, type Portal, type PlextRequestBounds} from '@iris/core';
 import type { PlayerHistory } from './usePlayerTracker';
 import { MapTools } from './MapTools';
 import { DataDock } from './DataDock';
@@ -175,47 +175,26 @@ export function TacticalUI({ zoom, lat, lng, events, plextDebugSnapshot, endpoin
         }
     };
 
-    const formatMs = (value: number | null | undefined): string => {
-        if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
-        return `${Math.round(value)}ms`;
-    };
-
-    const formatCount = (value: number | null | undefined): string => {
-        if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
-        return value.toLocaleString();
-    };
-
-    const getBrowserLabel = (): string => {
-        const userAgent = navigator.userAgent;
-        const firefox = userAgent.match(/Firefox\/([0-9.]+)/);
-        if (firefox) return `Firefox/${firefox[1]}`;
-        const chrome = userAgent.match(/Chrome\/([0-9.]+)/);
-        if (chrome) return `Chrome/${chrome[1]}`;
-        const safari = userAgent.match(/Version\/([0-9.]+).*Safari\//);
-        if (safari) return `Safari/${safari[1]}`;
-        return 'Unknown';
-    };
-
     const benchLine = [
-        `MINI IRIS BENCH`,
-        `browser ${getBrowserLabel()}`,
+        'MINI IRIS BENCH',
+        `browser ${getBrowserLabel(navigator.userAgent)}`,
         `platform ${navigator.platform}`,
         `viewport ${window.innerWidth}x${window.innerHeight}`,
-        `dpr ${window.devicePixelRatio.toFixed(2)}`,
+        `dpr ${Number.isFinite(window.devicePixelRatio) ? window.devicePixelRatio.toFixed(2) : '-'}`,
         `z${zoom.toFixed(2)}`,
         liveMode ? 'mode live' : `mode mock${patternMode}`,
-        `items ${formatCount(renderStats?.totalFeatures)}`,
-        `P ${formatCount(renderStats?.portalCount)}`,
-        `L ${formatCount(renderStats?.linkCount)}`,
-        `F ${formatCount(renderStats?.fieldCount)}`,
-        `keys ${formatCount(renderStats?.keyLabelCount)}`,
-        `sources P ${formatCount(entityCounts.portals)} L ${formatCount(entityCounts.links)} F ${formatCount(entityCounts.fields)}`,
-        `avg ${formatMs(frameStats.avgMs)}`,
-        `max ${formatMs(frameStats.maxMs)}`,
+        `items ${formatDiagnosticCount(renderStats?.totalFeatures)}`,
+        `P ${formatDiagnosticCount(renderStats?.portalCount)}`,
+        `L ${formatDiagnosticCount(renderStats?.linkCount)}`,
+        `F ${formatDiagnosticCount(renderStats?.fieldCount)}`,
+        `keys ${formatDiagnosticCount(renderStats?.keyLabelCount)}`,
+        `sources P ${formatDiagnosticCount(entityCounts.portals)} L ${formatDiagnosticCount(entityCounts.links)} F ${formatDiagnosticCount(entityCounts.fields)}`,
+        `avg ${formatDiagnosticMs(frameStats.avgMs)}`,
+        `max ${formatDiagnosticMs(frameStats.maxMs)}`,
         `fps ${frameStats.fps}`,
         `slow ${frameStats.slowFrames}/${frameStats.sampleCount}`,
-        `render ${formatMs(renderStats?.renderMs)}`,
-        `query ${formatCount(renderStats?.queryItemCount)}`,
+        `render ${formatDiagnosticMs(renderStats?.renderMs)}`,
+        `query ${formatDiagnosticCount(renderStats?.queryItemCount)}`,
         `toggles lvl ${portalLevelColorEnabled ? 'on' : 'off'} hp ${portalHealthColorEnabled ? 'on' : 'off'} keys ${keyOverlayEnabled ? 'on' : 'off'} 3d ${extrusionEnabled ? 'on' : 'off'}`,
     ].join(' | ');
 
@@ -286,65 +265,70 @@ export function TacticalUI({ zoom, lat, lng, events, plextDebugSnapshot, endpoin
                         boxShadow: '0 8px 24px rgba(0,0,0,0.42)',
                     }}
                 >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', padding: '8px 10px', borderBottom: '1px solid rgba(126, 249, 255, 0.2)' }}>
-                        <strong style={{ color: '#7ef9ff', fontSize: '12px' }}>Diagnostics</strong>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <button
-                                type="button"
-                                onClick={copyBenchLine}
-                                style={{ background: 'rgba(0,255,255,0.12)', color: '#7ef9ff', border: '1px solid rgba(126,249,255,0.35)', borderRadius: '4px', padding: '4px 7px', font: 'inherit', cursor: 'pointer' }}
-                            >
-                                Copy
-                            </button>
-                            <button
-                                type="button"
-                                onClick={copyEventLog}
-                                disabled={events.length === 0}
-                                style={{ background: 'rgba(0,255,255,0.08)', color: events.length === 0 ? '#617171' : '#7ef9ff', border: '1px solid rgba(126,249,255,0.25)', borderRadius: '4px', padding: '4px 7px', font: 'inherit', cursor: events.length === 0 ? 'default' : 'pointer' }}
-                            >
-                                Log
-                            </button>
-                            <button
-                                type="button"
-                                onClick={copyPlextRaw}
-                                disabled={!plextDebugSnapshot}
-                                title={plextDebugSnapshot ? `Last COMM raw @ ${plextDebugSnapshot.capturedAt}` : 'No COMM payload captured'}
-                                style={{ background: 'rgba(0,255,255,0.08)', color: !plextDebugSnapshot ? '#617171' : '#7ef9ff', border: '1px solid rgba(126,249,255,0.25)', borderRadius: '4px', padding: '4px 7px', font: 'inherit', cursor: !plextDebugSnapshot ? 'default' : 'pointer' }}
-                            >
-                                Raw
-                            </button>
-                            <button
-                                type="button"
-                                onClick={copyPlextParsed}
-                                disabled={!plextDebugSnapshot}
-                                title={plextDebugSnapshot ? `Last COMM parsed @ ${plextDebugSnapshot.capturedAt}` : 'No COMM payload captured'}
-                                style={{ background: 'rgba(0,255,255,0.08)', color: !plextDebugSnapshot ? '#617171' : '#7ef9ff', border: '1px solid rgba(126,249,255,0.25)', borderRadius: '4px', padding: '4px 7px', font: 'inherit', cursor: !plextDebugSnapshot ? 'default' : 'pointer' }}
-                            >
-                                Parsed
-                            </button>
+                    <div style={{ display: 'grid', gap: '7px', padding: '8px 10px', borderBottom: '1px solid rgba(126, 249, 255, 0.2)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                            <strong style={{ color: '#7ef9ff', fontSize: '12px' }}>Diagnostics</strong>
                             <button
                                 type="button"
                                 onClick={() => setDiagnosticsOpen(false)}
                                 aria-label="Close diagnostics"
+                                title="Close diagnostics"
                                 style={{ width: '32px', height: '32px', background: 'rgba(255,255,255,0.06)', color: '#d8fdfd', border: '1px solid rgba(255,255,255,0.18)', borderRadius: '4px', font: 'inherit', fontSize: '18px', lineHeight: 1, cursor: 'pointer' }}
                             >
                                 x
                             </button>
                         </div>
+                        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                            <button
+                                type="button"
+                                onClick={copyBenchLine}
+                                title="Copy the one-line Mini-IRIS bench summary"
+                                style={{ background: 'rgba(0,255,255,0.12)', color: '#7ef9ff', border: '1px solid rgba(126,249,255,0.35)', borderRadius: '4px', padding: '4px 7px', font: 'inherit', cursor: 'pointer' }}
+                            >
+                                Copy Bench
+                            </button>
+                            <button
+                                type="button"
+                                onClick={copyEventLog}
+                                disabled={events.length === 0}
+                                title={events.length === 0 ? 'No diagnostics events captured' : 'Copy recent diagnostics event log'}
+                                style={{ background: 'rgba(0,255,255,0.08)', color: events.length === 0 ? '#617171' : '#7ef9ff', border: '1px solid rgba(126,249,255,0.25)', borderRadius: '4px', padding: '4px 7px', font: 'inherit', cursor: events.length === 0 ? 'default' : 'pointer' }}
+                            >
+                                Copy Log
+                            </button>
+                            <button
+                                type="button"
+                                onClick={copyPlextRaw}
+                                disabled={!plextDebugSnapshot}
+                                title={plextDebugSnapshot ? `Copy raw getPlexts response captured at ${plextDebugSnapshot.capturedAt}` : 'No COMM payload captured'}
+                                style={{ background: 'rgba(0,255,255,0.08)', color: !plextDebugSnapshot ? '#617171' : '#7ef9ff', border: '1px solid rgba(126,249,255,0.25)', borderRadius: '4px', padding: '4px 7px', font: 'inherit', cursor: !plextDebugSnapshot ? 'default' : 'pointer' }}
+                            >
+                                Copy COMM Raw
+                            </button>
+                            <button
+                                type="button"
+                                onClick={copyPlextParsed}
+                                disabled={!plextDebugSnapshot}
+                                title={plextDebugSnapshot ? `Copy parsed COMM summary and refresh hints from ${plextDebugSnapshot.capturedAt}` : 'No COMM payload captured'}
+                                style={{ background: 'rgba(0,255,255,0.08)', color: !plextDebugSnapshot ? '#617171' : '#7ef9ff', border: '1px solid rgba(126,249,255,0.25)', borderRadius: '4px', padding: '4px 7px', font: 'inherit', cursor: !plextDebugSnapshot ? 'default' : 'pointer' }}
+                            >
+                                Copy COMM Summary
+                            </button>
+                        </div>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '5px 10px', padding: '9px 10px' }}>
                         <span>Mode</span><span>{liveMode ? 'Live' : `Mock ${patternMode}`}</span>
-                        <span>Camera</span><span>Z{zoom.toFixed(2)} / {lat.toFixed(5)}, {lng.toFixed(5)}</span>
-                        <span>Network</span><span>{activeCount}A / {cooldownCount}C / {errorCount}E / {freshCount}F</span>
-                        <span>Sources</span><span>P {formatCount(entityCounts.portals)} / L {formatCount(entityCounts.links)} / F {formatCount(entityCounts.fields)}</span>
-                        <span>Players</span><span>{formatCount(entityCounts.players)}</span>
-                        <span>Visible</span><span>P {formatCount(renderStats?.portalCount)} / L {formatCount(renderStats?.linkCount)} / F {formatCount(renderStats?.fieldCount)}</span>
-                        <span>Items</span><span>{formatCount(renderStats?.totalFeatures)}</span>
-                        <span>Keys</span><span>{formatCount(renderStats?.keyLabelCount)}</span>
-                        <span>Query</span><span>{formatCount(renderStats?.queryItemCount)}</span>
-                        <span>Build</span><span>{formatMs(renderStats?.renderMs)}</span>
-                        <span>Frame</span><span>{formatMs(frameStats.avgMs)} avg / {formatMs(frameStats.maxMs)} max</span>
+                        <span>Location</span><span>Z{zoom.toFixed(2)} / {lat.toFixed(5)}, {lng.toFixed(5)}</span>
+                        <span>Entities</span><span>P {formatDiagnosticCount(entityCounts.portals)} / L {formatDiagnosticCount(entityCounts.links)} / F {formatDiagnosticCount(entityCounts.fields)}</span>
+                        <span>Players</span><span>{formatDiagnosticCount(entityCounts.players)}</span>
+                        <span>Viewport</span><span>P {formatDiagnosticCount(renderStats?.portalCount)} / L {formatDiagnosticCount(renderStats?.linkCount)} / F {formatDiagnosticCount(renderStats?.fieldCount)}</span>
+                        <span>Rendered</span><span>{formatDiagnosticCount(renderStats?.totalFeatures)}</span>
+                        <span>Keys</span><span>{formatDiagnosticCount(renderStats?.keyLabelCount)}</span>
+                        <span>Query</span><span>{formatDiagnosticCount(renderStats?.queryItemCount)}</span>
+                        <span>Render</span><span>{formatDiagnosticMs(renderStats?.renderMs)}</span>
+                        <span>Frame</span><span>{formatDiagnosticMs(frameStats.avgMs)} avg / {formatDiagnosticMs(frameStats.maxMs)} max</span>
                         <span>FPS</span><span>{frameStats.fps} ({frameStats.slowFrames}/{frameStats.sampleCount} slow)</span>
+                        <span>Network</span><span>{activeCount}A / {cooldownCount}C / {errorCount}E / {freshCount}F</span>
                         <span>Toggles</span><span>LVL {portalLevelColorEnabled ? 'on' : 'off'} / HP {portalHealthColorEnabled ? 'on' : 'off'} / KEY {keyOverlayEnabled ? 'on' : 'off'} / 3D {extrusionEnabled ? 'on' : 'off'}</span>
                     </div>
                     <div style={{ padding: '8px 10px', borderTop: '1px solid rgba(126, 249, 255, 0.14)', color: '#9fb8b8', overflowWrap: 'anywhere', fontFamily: MINI_IRIS_MONO_FONT, fontSize: '10px', lineHeight: 1.35 }}>

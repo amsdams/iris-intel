@@ -9,6 +9,7 @@ export * from './plext-refresh-hints';
 export * from './map-features';
 export * from './ingress-map-style';
 export * from './endpoint-formatting';
+export * from './diagnostics-formatting';
 export * from './ZoomPolicy';
 export * from './parsers/EntityParser';
 export * from './parsers/PortalDetailsParser';

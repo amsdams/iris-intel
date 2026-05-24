@@ -3,8 +3,14 @@ import { useState, useEffect } from 'preact/hooks';
 import {
     EndpointDiagnostics,
     EndpointKey,
+    buildDiagnosticsEnvironmentSummary,
+    formatDiagnosticCount,
+    formatDiagnosticMs,
     formatEndpointCountdown,
+    formatOptionalDiagnosticMs,
+    formatOptionalDiagnosticNumber,
     formatRelativeTime,
+    getBrowserLabel,
     getDerivedEndpointStatus,
     MainThreadDiagnostics,
     MapPerfDiagnostics,
@@ -58,22 +64,6 @@ const ENDPOINT_STALE_AFTER_MS: Partial<Record<EndpointKey, number>> = {
     regionScore: 5 * 60 * 1000,
 };
 
-function formatMs(value: number | undefined): string {
-    return typeof value === 'number' ? `${Math.round(value)}ms` : '-';
-}
-
-function formatCount(value: number | undefined): string {
-    return typeof value === 'number' ? value.toLocaleString() : '-';
-}
-
-function formatOptionalNumber(value: number | undefined, formatter: (value: number) => string): string {
-    return typeof value === 'number' ? formatter(value) : 'n/a';
-}
-
-function formatOptionalMs(value: number | undefined): string {
-    return formatOptionalNumber(value, (numericValue) => `${Math.round(numericValue)}ms`);
-}
-
 interface PerfSummaryContext {
     versionLabel: string;
     mapThemeId: string;
@@ -83,30 +73,24 @@ interface PerfSummaryContext {
     mainThreadDiagnostics: MainThreadDiagnostics;
 }
 
-function getBrowserLabel(): string {
-    const ua = navigator.userAgent;
-    const match =
-        ua.match(/Edg\/([\d.]+)/) ??
-        ua.match(/Firefox\/([\d.]+)/) ??
-        ua.match(/Chrome\/([\d.]+)/) ??
-        ua.match(/Version\/([\d.]+).*Safari/);
-
-    if (!match) return 'Unknown';
-    if (ua.includes('Edg/')) return `Edge ${match[1]}`;
-    if (ua.includes('Firefox/')) return `Firefox ${match[1]}`;
-    if (ua.includes('Chrome/')) return `Chrome ${match[1]}`;
-    return `Safari ${match[1]}`;
-}
-
 function buildEnvironmentSummary(context: PerfSummaryContext): string {
     const pointer = window.matchMedia?.('(pointer: coarse)').matches ? 'coarse' : 'fine';
     const hover = window.matchMedia?.('(hover: hover)').matches ? 'yes' : 'no';
-    const viewport = `${window.innerWidth}x${window.innerHeight}`;
-    const dpr = Number.isFinite(window.devicePixelRatio) ? window.devicePixelRatio.toFixed(2) : '-';
-    const touchPoints = navigator.maxTouchPoints ?? 0;
     const overlays = context.activeVisualOverlayIds.length > 0 ? context.activeVisualOverlayIds.join(',') : 'none';
 
-    return `CONTEXT ${context.versionLabel} browser ${getBrowserLabel()} platform ${navigator.platform || '-'} viewport ${viewport} dpr ${dpr} touch ${touchPoints} pointer ${pointer} hover ${hover} mapStyle ${context.mapThemeId} overlays ${overlays}`;
+    return buildDiagnosticsEnvironmentSummary(`CONTEXT ${context.versionLabel}`, {
+        browser: getBrowserLabel(navigator.userAgent),
+        platform: navigator.platform || '-',
+        viewportWidth: window.innerWidth,
+        viewportHeight: window.innerHeight,
+        devicePixelRatio: window.devicePixelRatio,
+        touchPoints: navigator.maxTouchPoints ?? 0,
+        pointer,
+        hover,
+    }, {
+        mapStyle: context.mapThemeId,
+        overlays,
+    });
 }
 
 function buildPerfSummary(perf: MapPerfDiagnostics, context: PerfSummaryContext): string {
@@ -115,36 +99,36 @@ function buildPerfSummary(perf: MapPerfDiagnostics, context: PerfSummaryContext)
     const uiRenderDetails = Object.values(context.uiRenderDiagnostics)
         .sort((a, b) => b.lastAt - a.lastAt)
         .slice(0, 8)
-        .map((entry) => `${entry.name} ${formatCount(entry.lastCount)}/${formatCount(entry.count)}`)
+        .map((entry) => `${entry.name} ${formatDiagnosticCount(entry.lastCount)}/${formatDiagnosticCount(entry.count)}`)
         .join(' | ');
     const longTask = context.mainThreadDiagnostics.lastLongTask;
     const sourceCounts = viewport?.sourceFeatureCounts ?? {};
     const sourceSetData = viewport?.sourceSetDataMs ?? {};
     const entityDiagnostics = context.endpointDiagnostics.entities;
     const entityGenerationDetails = entityDiagnostics.staleQueuedDropCount > 0 || entityDiagnostics.staleResponseIgnoreCount > 0
-        ? `ENTITYGEN staleQueued ${formatCount(entityDiagnostics.staleQueuedDropCount)} staleResponses ${formatCount(entityDiagnostics.staleResponseIgnoreCount)} lastSkip ${entityDiagnostics.lastSkipReason ?? 'none'}`
+        ? `ENTITYGEN staleQueued ${formatDiagnosticCount(entityDiagnostics.staleQueuedDropCount)} staleResponses ${formatDiagnosticCount(entityDiagnostics.staleResponseIgnoreCount)} lastSkip ${entityDiagnostics.lastSkipReason ?? 'none'}`
         : '';
     const pluginCounts = viewport?.pluginFeatureCounts;
     const pluginDetails = pluginCounts
-        ? `PLUGIN total ${formatCount(pluginCounts.total)} rendered ${formatCount(pluginCounts.renderedSource)} html ${formatCount(pluginCounts.htmlMarkers)} labels ${formatCount(pluginCounts.labels)} player ${formatCount(pluginCounts.playerMarkers)} highlights ${formatCount(pluginCounts.highlights)} lines ${formatCount(pluginCounts.lines)} fills ${formatCount(pluginCounts.fills)} points ${formatCount(pluginCounts.points)} interactive ${formatCount(pluginCounts.interactive)}`
+        ? `PLUGIN total ${formatDiagnosticCount(pluginCounts.total)} rendered ${formatDiagnosticCount(pluginCounts.renderedSource)} html ${formatDiagnosticCount(pluginCounts.htmlMarkers)} labels ${formatDiagnosticCount(pluginCounts.labels)} player ${formatDiagnosticCount(pluginCounts.playerMarkers)} highlights ${formatDiagnosticCount(pluginCounts.highlights)} lines ${formatDiagnosticCount(pluginCounts.lines)} fills ${formatDiagnosticCount(pluginCounts.fills)} points ${formatDiagnosticCount(pluginCounts.points)} interactive ${formatDiagnosticCount(pluginCounts.interactive)}`
         : '';
     const sourceDetails = viewport
         ? ['portals', 'links', 'fields', 'artifacts', 'ornaments', 'plugin-features']
-            .map((sourceId) => `${sourceId} ${formatCount(sourceCounts[sourceId])}/${formatMs(sourceSetData[sourceId])}`)
+            .map((sourceId) => `${sourceId} ${formatDiagnosticCount(sourceCounts[sourceId])}/${formatDiagnosticMs(sourceSetData[sourceId])}`)
             .join(' | ')
         : '';
     return [
         buildEnvironmentSummary(context),
         viewport
-            ? `VIEWPORT source ${formatMs(viewport.totalMs)} z ${formatOptionalNumber(viewport.zoom, (value) => value.toFixed(2))} buffer ${formatOptionalNumber(viewport.queryBufferDegrees, (value) => value.toFixed(4))} query ${formatOptionalMs(viewport.queryMs)} setData ${formatMs(viewport.setDataMs)} items ${formatCount(viewport.itemCount)} P ${formatCount(viewport.portalCount)} L ${formatCount(viewport.linkCount)} F ${formatCount(viewport.fieldCount)} art ${formatCount(viewport.artifactCount)} orn ${formatCount(viewport.ornamentCount)} plugin ${formatCount(viewport.pluginCount)}`
+            ? `VIEWPORT source ${formatDiagnosticMs(viewport.totalMs)} z ${formatOptionalDiagnosticNumber(viewport.zoom, (value) => value.toFixed(2))} buffer ${formatOptionalDiagnosticNumber(viewport.queryBufferDegrees, (value) => value.toFixed(4))} query ${formatOptionalDiagnosticMs(viewport.queryMs)} setData ${formatDiagnosticMs(viewport.setDataMs)} items ${formatDiagnosticCount(viewport.itemCount)} P ${formatDiagnosticCount(viewport.portalCount)} L ${formatDiagnosticCount(viewport.linkCount)} F ${formatDiagnosticCount(viewport.fieldCount)} art ${formatDiagnosticCount(viewport.artifactCount)} orn ${formatDiagnosticCount(viewport.ornamentCount)} plugin ${formatDiagnosticCount(viewport.pluginCount)}`
             : 'VIEWPORT no sample',
         sourceDetails ? `SOURCES ${sourceDetails}` : 'SOURCES no sample',
         entityGenerationDetails,
         pluginDetails,
         frame
-            ? `FRAME ${formatMs(frame.totalMs)} avg ${formatMs(frame.averageFrameMs)} max ${formatMs(frame.maxFrameMs)} fps ${formatCount(frame.estimatedFps)} slow ${formatCount(frame.slowFrameCount)}/${formatCount(frame.frameCount)}${frame.benchmarkRunCount ? ` bench ${formatCount(frame.benchmarkRunCount)}${frame.benchmarkVariant ? ` variant ${frame.benchmarkVariant}` : ''}${frame.benchmarkMode ? ` mode ${frame.benchmarkMode}` : ''}${typeof frame.benchmarkZoom === 'number' ? ` z ${frame.benchmarkZoom.toFixed(2)}` : ''} median ${formatMs(frame.benchmarkMedianAverageFrameMs)} range ${formatMs(frame.benchmarkMinAverageFrameMs)}-${formatMs(frame.benchmarkMaxAverageFrameMs)} benchMax ${formatMs(frame.benchmarkMaxFrameMs)}` : ''}`
+            ? `FRAME ${formatDiagnosticMs(frame.totalMs)} avg ${formatDiagnosticMs(frame.averageFrameMs)} max ${formatDiagnosticMs(frame.maxFrameMs)} fps ${formatDiagnosticCount(frame.estimatedFps)} slow ${formatDiagnosticCount(frame.slowFrameCount)}/${formatDiagnosticCount(frame.frameCount)}${frame.benchmarkRunCount ? ` bench ${formatDiagnosticCount(frame.benchmarkRunCount)}${frame.benchmarkVariant ? ` variant ${frame.benchmarkVariant}` : ''}${frame.benchmarkMode ? ` mode ${frame.benchmarkMode}` : ''}${typeof frame.benchmarkZoom === 'number' ? ` z ${frame.benchmarkZoom.toFixed(2)}` : ''} median ${formatDiagnosticMs(frame.benchmarkMedianAverageFrameMs)} range ${formatDiagnosticMs(frame.benchmarkMinAverageFrameMs)}-${formatDiagnosticMs(frame.benchmarkMaxAverageFrameMs)} benchMax ${formatDiagnosticMs(frame.benchmarkMaxFrameMs)}` : ''}`
             : 'FRAME no sample',
-        `LONGTASK count ${formatCount(context.mainThreadDiagnostics.longTaskCount)} max ${formatMs(context.mainThreadDiagnostics.maxLongTaskMs)} last ${longTask ? `${formatMs(longTask.durationMs)} ${longTask.source}` : 'none'}`,
+        `LONGTASK count ${formatDiagnosticCount(context.mainThreadDiagnostics.longTaskCount)} max ${formatDiagnosticMs(context.mainThreadDiagnostics.maxLongTaskMs)} last ${longTask ? `${formatDiagnosticMs(longTask.durationMs)} ${longTask.source}` : 'none'}`,
         uiRenderDetails ? `UIRENDER recent/total ${uiRenderDetails}` : 'UIRENDER no sample',
     ].filter((line) => line.length > 0).join('\n');
 }
@@ -377,7 +361,7 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                             <div className="iris-debug-endpoint-main">
                                 <span className="iris-debug-label">Viewport</span>
                                 <span className="iris-debug-value">
-                                    {viewportPerf ? `${formatMs(viewportPerf.totalMs)} | z ${viewportPerf.zoom?.toFixed(2) ?? '-'} | setData ${formatMs(viewportPerf.setDataMs)}` : 'no sample'}
+                                    {viewportPerf ? `${formatDiagnosticMs(viewportPerf.totalMs)} | z ${viewportPerf.zoom?.toFixed(2) ?? '-'} | setData ${formatDiagnosticMs(viewportPerf.setDataMs)}` : 'no sample'}
                                 </span>
                             </div>
                             {viewportPerf && (
@@ -385,27 +369,27 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                                     <div className="iris-debug-row">
                                         <span className="iris-debug-label-indent">Counts</span>
                                         <span className="iris-debug-value">
-                                            P {formatCount(viewportPerf.portalCount)} | L {formatCount(viewportPerf.linkCount)} | F {formatCount(viewportPerf.fieldCount)} | Plugin {formatCount(viewportPerf.pluginCount)}
+                                            P {formatDiagnosticCount(viewportPerf.portalCount)} | L {formatDiagnosticCount(viewportPerf.linkCount)} | F {formatDiagnosticCount(viewportPerf.fieldCount)} | Plugin {formatDiagnosticCount(viewportPerf.pluginCount)}
                                         </span>
                                     </div>
                                     {viewportPerf.pluginFeatureCounts && (
                                         <div className="iris-debug-row">
                                             <span className="iris-debug-label-indent">Plugin mix</span>
                                             <span className="iris-debug-value">
-                                                labels {formatCount(viewportPerf.pluginFeatureCounts.labels)} | html {formatCount(viewportPerf.pluginFeatureCounts.htmlMarkers)} | player {formatCount(viewportPerf.pluginFeatureCounts.playerMarkers)} | fills {formatCount(viewportPerf.pluginFeatureCounts.fills)}
+                                                labels {formatDiagnosticCount(viewportPerf.pluginFeatureCounts.labels)} | html {formatDiagnosticCount(viewportPerf.pluginFeatureCounts.htmlMarkers)} | player {formatDiagnosticCount(viewportPerf.pluginFeatureCounts.playerMarkers)} | fills {formatDiagnosticCount(viewportPerf.pluginFeatureCounts.fills)}
                                             </span>
                                         </div>
                                     )}
                                     <div className="iris-debug-row">
                                         <span className="iris-debug-label-indent">Other</span>
                                         <span className="iris-debug-value">
-                                            query {formatOptionalMs(viewportPerf.queryMs)} | items {formatCount(viewportPerf.itemCount)} | art {formatCount(viewportPerf.artifactCount)} | orn {formatCount(viewportPerf.ornamentCount)}
+                                            query {formatOptionalDiagnosticMs(viewportPerf.queryMs)} | items {formatDiagnosticCount(viewportPerf.itemCount)} | art {formatDiagnosticCount(viewportPerf.artifactCount)} | orn {formatDiagnosticCount(viewportPerf.ornamentCount)}
                                         </span>
                                     </div>
                                     <div className="iris-debug-row">
                                         <span className="iris-debug-label-indent">Sources</span>
                                         <span className="iris-debug-value">
-                                            P {formatCount(viewportPerf.sourceFeatureCounts?.portals)}/{formatMs(viewportPerf.sourceSetDataMs?.portals)} | L {formatCount(viewportPerf.sourceFeatureCounts?.links)}/{formatMs(viewportPerf.sourceSetDataMs?.links)} | F {formatCount(viewportPerf.sourceFeatureCounts?.fields)}/{formatMs(viewportPerf.sourceSetDataMs?.fields)}
+                                            P {formatDiagnosticCount(viewportPerf.sourceFeatureCounts?.portals)}/{formatDiagnosticMs(viewportPerf.sourceSetDataMs?.portals)} | L {formatDiagnosticCount(viewportPerf.sourceFeatureCounts?.links)}/{formatDiagnosticMs(viewportPerf.sourceSetDataMs?.links)} | F {formatDiagnosticCount(viewportPerf.sourceFeatureCounts?.fields)}/{formatDiagnosticMs(viewportPerf.sourceSetDataMs?.fields)}
                                         </span>
                                     </div>
                                 </div>
@@ -415,7 +399,7 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                             <div className="iris-debug-endpoint-main">
                                 <span className="iris-debug-label">Pan frames</span>
                                 <span className="iris-debug-value">
-                                    {framePerf ? `avg ${formatMs(framePerf.averageFrameMs)} | max ${formatMs(framePerf.maxFrameMs)} | fps ${formatCount(framePerf.estimatedFps)}${framePerf.benchmarkRunCount ? ` | bench ${formatCount(framePerf.benchmarkRunCount)}${framePerf.benchmarkVariant ? ` ${framePerf.benchmarkVariant}` : ''}${framePerf.benchmarkMode ? ` ${framePerf.benchmarkMode}` : ''}${typeof framePerf.benchmarkZoom === 'number' ? ` z${framePerf.benchmarkZoom.toFixed(2)}` : ''}` : ''}` : 'no sample'}
+                                    {framePerf ? `avg ${formatDiagnosticMs(framePerf.averageFrameMs)} | max ${formatDiagnosticMs(framePerf.maxFrameMs)} | fps ${formatDiagnosticCount(framePerf.estimatedFps)}${framePerf.benchmarkRunCount ? ` | bench ${formatDiagnosticCount(framePerf.benchmarkRunCount)}${framePerf.benchmarkVariant ? ` ${framePerf.benchmarkVariant}` : ''}${framePerf.benchmarkMode ? ` ${framePerf.benchmarkMode}` : ''}${typeof framePerf.benchmarkZoom === 'number' ? ` z${framePerf.benchmarkZoom.toFixed(2)}` : ''}` : ''}` : 'no sample'}
                                 </span>
                             </div>
                             {framePerf && (
@@ -424,14 +408,14 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                                         <div className="iris-debug-row">
                                             <span className="iris-debug-label-indent">Benchmark</span>
                                             <span className="iris-debug-value">
-                                                median {formatMs(framePerf.benchmarkMedianAverageFrameMs)} | range {formatMs(framePerf.benchmarkMinAverageFrameMs)}-{formatMs(framePerf.benchmarkMaxAverageFrameMs)}
+                                                median {formatDiagnosticMs(framePerf.benchmarkMedianAverageFrameMs)} | range {formatDiagnosticMs(framePerf.benchmarkMinAverageFrameMs)}-{formatDiagnosticMs(framePerf.benchmarkMaxAverageFrameMs)}
                                             </span>
                                         </div>
                                     )}
                                     <div className="iris-debug-row">
                                         <span className="iris-debug-label-indent">Slow frames</span>
                                         <span className="iris-debug-value">
-                                            {formatCount(framePerf.slowFrameCount)} / {formatCount(framePerf.frameCount)} over {formatMs(framePerf.totalMs)}
+                                            {formatDiagnosticCount(framePerf.slowFrameCount)} / {formatDiagnosticCount(framePerf.frameCount)} over {formatDiagnosticMs(framePerf.totalMs)}
                                         </span>
                                     </div>
                                 </div>
@@ -444,14 +428,14 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                         <div className="iris-debug-row">
                             <span className="iris-debug-label">Long tasks</span>
                             <span className="iris-debug-value">
-                                {formatCount(mainThreadDiagnostics.longTaskCount)} | max {formatMs(mainThreadDiagnostics.maxLongTaskMs)}
+                                {formatDiagnosticCount(mainThreadDiagnostics.longTaskCount)} | max {formatDiagnosticMs(mainThreadDiagnostics.maxLongTaskMs)}
                             </span>
                         </div>
                         <div className="iris-debug-row">
                             <span className="iris-debug-label">Last spike</span>
                             <span className="iris-debug-value">
                                 {mainThreadDiagnostics.lastLongTask
-                                    ? `${formatMs(mainThreadDiagnostics.lastLongTask.durationMs)} | ${mainThreadDiagnostics.lastLongTask.source} | ${formatRelativeTime(mainThreadDiagnostics.lastLongTask.time)}`
+                                    ? `${formatDiagnosticMs(mainThreadDiagnostics.lastLongTask.durationMs)} | ${mainThreadDiagnostics.lastLongTask.source} | ${formatRelativeTime(mainThreadDiagnostics.lastLongTask.time)}`
                                     : 'none'}
                             </span>
                         </div>
@@ -466,7 +450,7 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
                                 <div key={entry.name} className="iris-debug-row">
                                     <span className="iris-debug-label">{entry.name}</span>
                                     <span className="iris-debug-value">
-                                        recent {formatCount(entry.lastCount)} | total {formatCount(entry.count)} | {formatRelativeTime(entry.lastAt)}
+                                        recent {formatDiagnosticCount(entry.lastCount)} | total {formatDiagnosticCount(entry.count)} | {formatRelativeTime(entry.lastAt)}
                                     </span>
                                 </div>
                             ))}
