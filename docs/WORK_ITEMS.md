@@ -11,8 +11,7 @@ from here when they become tracked work.
 1. **[Mini-IRIS Bench]** Capture the small DBG matrix later: base, LVL, HP, KEY, and 3D variants.
 2. **[Shared Runtime]** Continue the cross-app audit with backend/engine/domain candidates, not shared UI.
 3. **[Shared Runtime]** Pause further package extraction unless smoke testing shows duplication or regressions; recent Mini-IRIS polish checks are stable enough to resume shared-boundary work.
-4. **[Release Hygiene]** Keep package artifact naming explicit by browser platform for both apps.
-5. **[Shared Runtime]** Prefer request/data/parsing/entity lifecycle extraction before UI component sharing.
+4. **[Shared Runtime]** Prefer request/data/parsing/entity lifecycle extraction before UI component sharing.
 
 ## Worklog Areas
 
@@ -1061,7 +1060,7 @@ Tasks:
 | Make extension package output names explicit         | Done          | mini-IRIS writes `apps/mini-iris/builds/mini-iris-chrome-<version>-<timestamp>.zip` and `mini-iris-firefox-<version>-<timestamp>.xpi`; IRIS writes `apps/iris/builds/iris-chrome-<version>-<timestamp>.zip` and `iris-firefox-<version>-<timestamp>.xpi` |
 | Include version number in packaged artifact names    | Done          | IRIS and mini-IRIS package scripts now include package version in ZIP/XPI filenames, e.g. `iris-chrome-0.1.7-<timestamp>.zip`, `iris-firefox-0.1.7-<timestamp>.xpi`, and `mini-iris-chrome-1.0.32-<timestamp>.zip` |
 | Align product build/package/release commands         | Done          | root commands now use the same product-level shape for IRIS and mini-IRIS: `build:*` creates unpacked `dist` output, `package:*` creates ZIP/XPI artifacts, and `release:*` aliases the product package flow |
-| Align mini-IRIS artifact names by browser platform   | Done          | mini-IRIS now mirrors the IRIS package naming shape with explicit browser targets: `mini-iris-chrome-<version>-<timestamp>.zip` and `mini-iris-firefox-<version>-<timestamp>.xpi` |
+| Align mini-IRIS artifact names by browser platform   | Done          | mini-IRIS now mirrors the IRIS package naming shape with explicit browser targets and per-browser package commands: `package:chrome`, `package:firefox`, `mini-iris-chrome-<version>-<timestamp>.zip`, and `mini-iris-firefox-<version>-<timestamp>.xpi` |
 | Migrate shared state to `zustand` 5                  | Done          | `@iris/core` now uses the vanilla store API plus a Preact-compatible `useSyncExternalStore` hook so tests and Preact builds avoid a React runtime dependency                                                                                                      |
 | Migrate map rendering to `maplibre-gl` 5             | Done          | manifests now target `maplibre-gl` 5.24.0; builds pass for IRIS Chrome/Firefox plus mini-IRIS, desktop/mobile smoke tests passed, and IRIS 0.1.3 benchmark samples were recorded; follow-up panning/selection work remains separate |
 | Migrate TypeScript to 6.0.3                        | Done          | root/core/IRIS/mini-IRIS now target `typescript` 6.0.3; root tsconfig uses `moduleResolution: "Bundler"` and core has an explicit scoped tsconfig with GeoJSON types; typecheck/test/lint/builds pass |
