@@ -1,7 +1,7 @@
 import { h, JSX } from 'preact';
 import { useMemo } from 'preact/hooks';
-import { Field, Link, Portal, useStore, InventoryParser, Plext, normalizeTeam, createPlextRequestMessage, type InventoryCategory, type PlextRequestBounds } from '@iris/core';
-import { COLORS, INGRESS_COLORS, RARITY_COLORS, ITEM_LEVEL_COLORS } from './MapConstants';
+import { Field, Link, Portal, useStore, InventoryParser, Plext, normalizeTeam, createPlextRequestMessage, type PlextRequestBounds } from '@iris/core';
+import { COLORS, INGRESS_COLORS } from './MapConstants';
 import { formatMU, formatAP } from './GeoUtils';
 import { CommTab } from './useComm';
 import type { PlayerHistory } from './usePlayerTracker';
@@ -9,13 +9,7 @@ import { Dashboard } from './Dashboard';
 
 type SelectedEntity = { type: 'portal'; data: Portal } | { type: 'link'; data: Link } | { type: 'field'; data: Field };
 
-function getInventoryCategoryColor(category: InventoryCategory | string): string {
-    if (category === 'RESONATORS') return ITEM_LEVEL_COLORS[8];
-    if (category === 'WEAPONS') return ITEM_LEVEL_COLORS[4];
-    if (category === 'MODS') return RARITY_COLORS['VERY_RARE'];
-    if (category === 'KEYS') return INGRESS_COLORS.KEY;
-    return '#aaa';
-}
+const INVENTORY_CATEGORY_COUNT_COLOR = '#aaa';
 
 interface DataDockProps {
     openDrawer: string | null;
@@ -44,7 +38,7 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPor
             .map(([cat, count]) => ({
                 category: cat,
                 count,
-                color: getInventoryCategoryColor(cat),
+                color: INVENTORY_CATEGORY_COUNT_COLOR,
             }));
     }, [derivedItems]);
 

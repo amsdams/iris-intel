@@ -10,7 +10,7 @@ from here when they become tracked work.
 
 1. **[Mini-IRIS Bench]** Capture the small DBG matrix later: base, LVL, HP, KEY, and 3D variants.
 2. **[Shared Runtime]** Continue the cross-app audit with backend/engine/domain candidates, not shared UI.
-3. **[Shared Runtime]** Pause further package extraction unless smoke testing shows duplication or regressions; next likely work is Mini-IRIS polish items.
+3. **[Shared Runtime]** Pause further package extraction unless smoke testing shows duplication or regressions; recent Mini-IRIS polish checks are stable enough to resume shared-boundary work.
 4. **[Release Hygiene]** Keep package artifact naming explicit by browser platform for both apps.
 5. **[Shared Runtime]** Prefer request/data/parsing/entity lifecycle extraction before UI component sharing.
 
@@ -1106,7 +1106,7 @@ Tasks:
 | Task                                                      | Status | Notes                                                                                                      |
 |-----------------------------------------------------------|--------|------------------------------------------------------------------------------------------------------------|
 | Define shared-vs-app ownership boundaries                 | In Progress | first concrete rule is proven engine helpers can move to `packages/core`; app runtime protocols, UI shells, and product-specific orchestration stay app-owned until both call sites stabilize |
-| Identify first shared backend/engine extraction candidates | In Progress | next candidate is diagnostics/bench formatting; extracted candidates already include antimeridian-safe map geometry, plain entity GeoJSON builders, endpoint formatting helpers, shared COMM plext request contract, shared player tracker history reduction, shared map style constants, shared inventory display derivation, and COMM portal refresh hints |
+| Identify first shared backend/engine extraction candidates | In Progress | extracted candidates already include antimeridian-safe map geometry, plain entity GeoJSON builders, endpoint formatting helpers, shared COMM plext request contract, shared player tracker history reduction, shared map style constants, shared inventory display derivation, COMM portal refresh hints, and neutral diagnostic formatting helpers; remaining candidates stay audit-only until reuse is proven |
 | Decide app/package layout for IRIS and mini-IRIS           | Done   | full IRIS now lives in `apps/iris` beside `apps/mini-iris`; reusable backend/engine/domain packages remain under `packages/` |
 | Smoke test unpacked IRIS after app layout move             | Done   | manual Chrome smoke against the moved `apps/iris` build looked good after typecheck/lint/test/build/package validation |
 | Audit inventory/display derivation for shared core use     | Done   | moved reusable inventory category lists, grouped display rows, category counts, sort modes, and grouped-item filtering into `packages/core`; IRIS and Mini-IRIS keep their app-owned popup/dock UI and color decisions |
@@ -1118,6 +1118,13 @@ Tasks:
 | Extract shared COMM plext request contract                 | Done   | moved plext request bounds/message construction into `packages/core`; IRIS and Mini-IRIS now post the same typed `IRIS_PLEXTS_REQUEST` shape while keeping app-specific scheduling/freshness policy local |
 | Extract shared player tracker history reducer              | Done   | moved COMM markup-to-player-history reduction into `packages/core`; full IRIS player-tracker plugin and Mini-IRIS now share movement parsing while keeping rendering, zoom gates, polling, and UI local |
 | Align IRIS and Mini-IRIS diagnostics copy/read order       | Done   | Mini-IRIS DBG now keeps human-readable fields first and aligns copied bench field names/order with IRIS around environment, z/mode, items, visible counts, sources, frame stats, render/query, and toggles; shared core helpers now format neutral diagnostic counts/timings and browser/environment labels while app-specific bench line assembly stays app-owned |
+| Smoke test cross-app diagnostics comparison                | Done   | copied IRIS Diagnostics and Mini-IRIS DBG bench outputs compare cleanly around environment, viewport/rendered counts, sources, and frame/network context; Mini-IRIS keeps the historical `items` bench label for sample continuity |
+| Audit remaining non-UI shared runtime candidates           | Open   | keep as an audit list, not an extraction mandate: COMM hint-to-known-portal resolver, keyed cooldown/pending/batch-cap helpers, plext debug snapshot formatting, health/level display derivation, event/shard/artifact visibility classification, bounds/E6/tile coverage utilities, bench sample aggregation, endpoint activity log formatting, portal-details merge policy, topology freshness policy, mock data generators, persistence schema helpers, and stable extension protocol builders |
+| Extract shared COMM hint portal resolver if policy stabilizes | Open | both apps now resolve shared COMM hints to known loaded portals by coordinate/name; extract only the pure resolver after live testing confirms matching tolerance/name behavior is durable, keeping request timing and refresh caps app-owned |
+| Extract keyed cooldown/pending/batch-cap primitive if reused | Open | both live-update paths use per-key cooldown, pending guards, and small batch caps; extract a neutral queue/rate helper only if another runtime path needs it or COMM tuning forces another pass |
+| Extract shared plext debug snapshot formatter              | Open   | Mini-IRIS currently owns raw/parsed COMM debug copy; consider core only if full IRIS needs equivalent raw/parsed plext snapshots, and keep sensitive-data copy actions app-owned |
+| Audit shared health/level/event display derivation         | Open   | evaluate portal health/level display buckets plus event/shard/artifact visibility classification after Mini-IRIS live inventory/event testing; avoid moving UI labels or filters before both apps use the same rules |
+| Audit shared bounds and benchmark aggregation utilities    | Open   | bounds/E6 containment, antimeridian viewport checks, tile coverage summaries, and bench sample aggregation are candidates if duplicated again; existing geometry extraction already covers render-safe line/polygon wrapping |
 | Defer package chopping until boundaries are proven         | Open   | only split packages after shared usage and bundle/build costs are measured                                  |
 
 ## IRIS Performance And Architecture Review Follow-ups
@@ -1163,7 +1170,7 @@ Tasks:
 
 ## Mini-IRIS Page-World Alignment
 
-Status: `Open`
+Status: `Done`
 
 Goal:
 
@@ -1210,6 +1217,9 @@ Tasks:
 | Hide/show Mini-IRIS event and shard inventory items         | Done   | inventory check accepted for now; keep compact defaults aligned with IRIS behavior for special/event inventory categories and revisit with live Mini-IRIS inventory testing if needed |
 | Replace Mini-IRIS player activity pulse with pin marker     | Done   | Mini-IRIS player activity now uses a compact static team-coloured pin marker and no longer runs a per-frame pulse loop for player points |
 | Align Mini-IRIS portal/link/field styling with IRIS         | Done   | Mini-IRIS, IRIS, and bundled overlay plugins now share core Ingress default colours for teams, levels/resos/XMPs, item rarity, mod rarity, item types, keys/XM/tracker, health, artifacts, ornaments, portal history, and base entity style constants while preserving Mini toggles |
+| Validate Mini-IRIS COMM-to-map refresh polish               | Done   | live DBG/raw plext testing confirmed actionable COMM markup now produces portal refresh hints, capped portal-detail requests, map resyncs, and readable pending/cooldown logs |
+| Align Mini-IRIS compact inventory category colours          | Done   | inventory category counts now use one neutral colour so compact totals do not imply item level, rarity, or subtype; item-specific colours remain a future detail-view concern |
+| Recheck Mini-IRIS app-facing polish before deeper extraction | Done   | live update path, styling parity, special inventory visibility, and IRIS pickup-later items are tracked; deeper shared candidates remain audit items, not immediate extraction work |
 
 ## Snapshot And Reference Sources
 
