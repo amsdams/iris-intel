@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'preact/hooks';
-import { useStore, globalSpatialIndex, getMinLevelForZoom, InventoryParser, buildFieldPolygonFeature, buildLinkLineFeatures, buildPortalPointFeature, type InventoryItem, type PortalKeyCounts } from '@iris/core';
+import { useStore, globalSpatialIndex, getMinLevelForZoom, InventoryParser, buildArtifactPointFeature, buildFieldPolygonFeature, buildLinkLineFeatures, buildOrnamentPointFeature, buildPortalPointFeature, type InventoryItem, type PortalKeyCounts } from '@iris/core';
 import { MockDataGenerator } from './MockDataGenerator';
 import { createCirclePolygon } from './GeoUtils';
 import { INGRESS_COLORS } from './MapConstants';
@@ -194,18 +194,13 @@ export function useMapRenderer(
                     if (store.layerShowArtifacts) {
                         const artifact = currentLiveMode ? store.artifacts[p.id] : generator.artifacts.get(p.id);
                         if (artifact) {
-                            features.push({
-                                type: 'Feature',
-                                id: `artifact:${p.id}`,
-                                geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
-                                properties: {
+                            features.push(buildArtifactPointFeature(artifact, p, {
                                     id: `artifact:${p.id}`,
                                     type: 'artifact',
                                     portalId: p.id,
                                     artifactType: artifact.type,
                                     count: artifact.ids.length,
-                                },
-                            });
+                            }));
                         }
                     }
 
@@ -214,18 +209,13 @@ export function useMapRenderer(
                             ? [...(p.ornaments || []), ...(store.mockOrnaments[p.id] || [])]
                             : (p.ornaments || []);
                         if (ornaments.length > 0) {
-                            features.push({
-                                type: 'Feature',
-                                id: `ornament:${p.id}`,
-                                geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
-                                properties: {
+                            features.push(buildOrnamentPointFeature(p, ornaments, {
                                     id: `ornament:${p.id}`,
                                     type: 'ornament',
                                     portalId: p.id,
                                     team: faction,
                                     count: ornaments.length,
-                                },
-                            });
+                            }));
                         }
                     }
                 }

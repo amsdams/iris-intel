@@ -5,8 +5,10 @@ import {
   Link,
   MissionDetails,
   Portal,
+  buildArtifactPointFeature,
   buildFieldPolygonFeature,
   buildLinkLineFeatures,
+  buildOrnamentPointFeature,
   buildPortalPointFeature,
 } from '@iris/core';
 
@@ -152,15 +154,11 @@ export const buildArtifactFeatures = (
       const portal = portals[artifact.portalId];
       if (!portal) return null;
 
-      return {
-        type: 'Feature',
-        geometry: { type: 'Point', coordinates: [portal.lng, portal.lat] },
-        properties: {
+      return buildArtifactPointFeature(artifact, portal, {
           portalId: artifact.portalId,
           type: artifact.type,
           ids: artifact.ids,
-        },
-      } as ArtifactFeature;
+        }) as ArtifactFeature;
     })
     .filter((f): f is ArtifactFeature => f !== null));
 
@@ -191,15 +189,14 @@ export const buildOrnamentFeatures = (
 
       return true;
     })
-    .map((portal) => ({
-      type: 'Feature',
-      geometry: { type: 'Point', coordinates: [portal.lng, portal.lat] },
-      properties: {
+    .map((portal) => {
+      const ornaments = [...(portal.ornaments || []), ...(mockOrnaments[portal.id] || [])];
+      return buildOrnamentPointFeature(portal, ornaments, {
         portalId: portal.id,
         team: portal.team,
-        ornaments: [...(portal.ornaments || []), ...(mockOrnaments[portal.id] || [])],
-      },
-    })));
+        ornaments,
+      }) as OrnamentFeature;
+    }));
 
 export const buildMissionRouteFeatures = (mission: MissionDetails | null): MissionRouteFeature[] => {
   if (!mission) return [];

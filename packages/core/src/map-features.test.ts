@@ -1,6 +1,13 @@
 import {describe, expect, it} from 'vitest';
-import {buildFieldPolygonFeature, buildLinkLineFeatures, buildPortalPointFeature, toFeatureCollection} from './map-features';
-import type {Field, Link, Portal} from './store';
+import {
+  buildArtifactPointFeature,
+  buildFieldPolygonFeature,
+  buildLinkLineFeatures,
+  buildOrnamentPointFeature,
+  buildPortalPointFeature,
+  toFeatureCollection,
+} from './map-features';
+import type {Artifact, Field, Link, Portal} from './store';
 
 describe('map feature builders', () => {
   it('builds portal point features with common entity properties', () => {
@@ -62,6 +69,59 @@ describe('map feature builders', () => {
     expect(feature.id).toBe('field-1');
     expect(feature.geometry.type).toBe('MultiPolygon');
     expect(feature.properties).toEqual({id: 'field-1', team: 'M', type: 'field'});
+  });
+
+  it('builds artifact point features with common artifact properties', () => {
+    const artifact: Artifact = {
+      portalId: 'portal-1',
+      type: 'shard',
+      ids: ['artifact-1', 'artifact-2'],
+    };
+    const portal: Portal = {
+      id: 'portal-1',
+      lat: 52,
+      lng: 4,
+      team: 'E',
+    };
+
+    const feature = buildArtifactPointFeature(artifact, portal, {id: 'artifact:portal-1', type: 'artifact'});
+
+    expect(feature).toEqual({
+      type: 'Feature',
+      id: 'artifact:portal-1',
+      geometry: {type: 'Point', coordinates: [4, 52]},
+      properties: {
+        portalId: 'portal-1',
+        artifactType: 'shard',
+        artifactIds: ['artifact-1', 'artifact-2'],
+        id: 'artifact:portal-1',
+        type: 'artifact',
+      },
+    });
+  });
+
+  it('builds ornament point features with common ornament properties', () => {
+    const portal: Portal = {
+      id: 'portal-1',
+      lat: 52,
+      lng: 4,
+      team: 'R',
+    };
+
+    const feature = buildOrnamentPointFeature(portal, ['ornament-a'], {id: 'ornament:portal-1', count: 1});
+
+    expect(feature).toEqual({
+      type: 'Feature',
+      id: 'ornament:portal-1',
+      geometry: {type: 'Point', coordinates: [4, 52]},
+      properties: {
+        portalId: 'portal-1',
+        team: 'R',
+        ornaments: ['ornament-a'],
+        id: 'ornament:portal-1',
+        count: 1,
+      },
+    });
   });
 
   it('wraps features into a FeatureCollection', () => {
