@@ -1,4 +1,4 @@
-import { boundsE6ContainsPoint, extractPlextPortalRefreshHints, resolvePlextPortalRefreshHint, useStore, type Plext, type PlextPortalRefreshHint } from '@iris/core';
+import { boundsE6ContainsPoint, extractPlextPortalRefreshHints, resolvePlextPortalRefreshHint, selectKeyedRefreshBatch, useStore, type Plext, type PlextPortalRefreshHint } from '@iris/core';
 import { IRISMessage } from './message-types';
 import { buildEntityRequestPayload } from '../domains/entities/request';
 
@@ -391,58 +391,45 @@ export function createRequestCoordinator(): RequestCoordinator {
         if (hints.length === 0) return;
 
         const now = Date.now();
-        const resolvedPortalIds = new Set<string>();
-        let resolved = 0;
-        let requested = 0;
-        let pending = 0;
-        let cooldown = 0;
-
-        hints.forEach((hint) => {
-            if (requested >= COMM_ACTIVITY_PORTAL_DETAILS_MAX_PER_BATCH) return;
+        const candidatePortalIds = hints.flatMap((hint) => {
             const portal = resolvePlextPortalRefreshHint(hint, Object.values(useStore.getState().portals));
-            if (!portal) return;
-            if (resolvedPortalIds.has(portal.id)) return;
-            resolvedPortalIds.add(portal.id);
-            resolved += 1;
+            return portal ? [portal.id] : [];
+        });
+        const batch = selectKeyedRefreshBatch(candidatePortalIds, {
+            pendingKeys: commPortalDetailPending,
+            lastRefreshTimes: commPortalDetailRefreshTimes,
+            now,
+            cooldownMs: COMM_ACTIVITY_PORTAL_DETAILS_COOLDOWN_MS,
+            maxBatchSize: COMM_ACTIVITY_PORTAL_DETAILS_MAX_PER_BATCH,
+        });
 
-            if (commPortalDetailPending.has(portal.id)) {
-                pending += 1;
-                return;
-            }
-
-            const lastRefreshAt = commPortalDetailRefreshTimes.get(portal.id) ?? 0;
-            if (now - lastRefreshAt < COMM_ACTIVITY_PORTAL_DETAILS_COOLDOWN_MS) {
-                cooldown += 1;
-                return;
-            }
-
-            commPortalDetailRefreshTimes.set(portal.id, now);
-            commPortalDetailPending.add(portal.id);
+        batch.keys.forEach((portalId) => {
+            commPortalDetailRefreshTimes.set(portalId, now);
+            commPortalDetailPending.add(portalId);
             window.setTimeout(() => {
-                commPortalDetailPending.delete(portal.id);
+                commPortalDetailPending.delete(portalId);
             }, COMM_ACTIVITY_PORTAL_DETAILS_PENDING_MS);
-            requested += 1;
             postMessage({
                 type: 'IRIS_PORTAL_DETAILS_FETCH',
-                guid: portal.id,
+                guid: portalId,
             });
         });
 
         useStore.getState().setEndpointMetadata('portalDetails', {
             lastRefreshReason: 'comm_activity',
-            lastSkipReason: requested > 0
-                ? `requested ${requested}/${hints.length} hints (${resolved} known)`
-                : `0/${hints.length} hints (${resolved} known, ${pending} pending, ${cooldown} cooldown)`,
+            lastSkipReason: batch.keys.length > 0
+                ? `requested ${batch.keys.length}/${hints.length} hints (${batch.knownCount} known)`
+                : `0/${hints.length} hints (${batch.knownCount} known, ${batch.pendingCount} pending, ${batch.cooldownCount} cooldown)`,
         });
         useStore.getState().addEndpointActivityLog({
             endpoint: 'portalDetails',
-            message: requested > 0
-                ? `comm_activity requested ${requested}/${hints.length} hints (${resolved} known)`
-                : `comm_activity skipped 0/${hints.length} hints (${resolved} known, ${pending} pending, ${cooldown} cooldown)`,
+            message: batch.keys.length > 0
+                ? `comm_activity requested ${batch.keys.length}/${hints.length} hints (${batch.knownCount} known)`
+                : `comm_activity skipped 0/${hints.length} hints (${batch.knownCount} known, ${batch.pendingCount} pending, ${batch.cooldownCount} cooldown)`,
         });
 
         if (useStore.getState().debugLogging) {
-            console.log(`IRIS: COMM portal details ${requested}/${hints.length} requested (${resolved} known, ${pending} pending, ${cooldown} cooldown)`);
+            console.log(`IRIS: COMM portal details ${batch.keys.length}/${hints.length} requested (${batch.knownCount} known, ${batch.pendingCount} pending, ${batch.cooldownCount} cooldown)`);
         }
     };
 

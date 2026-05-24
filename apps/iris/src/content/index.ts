@@ -796,7 +796,10 @@ window.addEventListener('message', (event: MessageEvent) => {
       } else if (url_str.includes('getPortalDetails')) {
         handlePortalDetails(data as PortalDetailsData, parsedParams as { guid?: string });
       } else if (url_str.includes('getPlexts')) {
-        const plexts = handlePlexts(data as PlextData);
+        const plextParams = parsedParams as { minTimestampMs?: number; maxTimestampMs?: number } | undefined;
+        const replacePlextWindow = plextParams?.minTimestampMs === -1 &&
+            (plextParams.maxTimestampMs === undefined || plextParams.maxTimestampMs === -1);
+        const plexts = handlePlexts(data as PlextData, { replace: replacePlextWindow });
         requestCoordinator.onPlextsDataReceived(Date.now(), plexts);
       } else if (url_str.includes('getGameScore')) {
         handleGameScore(data as GameScoreData);

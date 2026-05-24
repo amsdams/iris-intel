@@ -15,6 +15,34 @@ describe('removeEntities Repro', () => {
     }));
   });
 
+  it('replaces plext window for fresh bounded COMM views', () => {
+    useStore.getState().updatePlexts([
+      {
+        id: 'old-area',
+        time: 1000,
+        text: 'old area',
+        markup: [],
+        categories: 1,
+        team: 'N',
+        type: 'SYSTEM_BROADCAST',
+      },
+    ]);
+
+    useStore.getState().replacePlexts([
+      {
+        id: 'new-area',
+        time: 2000,
+        text: 'new area',
+        markup: [],
+        categories: 1,
+        team: 'N',
+        type: 'SYSTEM_BROADCAST',
+      },
+    ]);
+
+    expect(useStore.getState().plexts.map((plext) => plext.id)).toEqual(['new-area']);
+  });
+
   it('removes links when a portal is deleted', () => {
     useStore.getState().updatePortals([
       { id: 'portal-a', lat: 1, lng: 2, team: 'E' },

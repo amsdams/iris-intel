@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'preact/hooks';
-import { useStore, EntityParser, PortalDetailsParser, GameScoreParser, RegionScoreParser, InventoryParser, PlayerParser, PlextParser, ArtifactParser, extractPlextPortalRefreshHints, resolvePlextPortalRefreshHint, Portal, Link, Field } from '@iris/core';
+import { useStore, EntityParser, PortalDetailsParser, GameScoreParser, RegionScoreParser, InventoryParser, PlayerParser, PlextParser, ArtifactParser, extractPlextPortalRefreshHints, resolvePlextPortalRefreshHint, selectKeyedRefreshBatch, Portal, Link, Field } from '@iris/core';
 import type { ArtifactData, GameScoreData, IntelMapData, InventoryData, Plext, PlextData, PortalDetailsData, RegionScoreData, PlayerStatsMessage as CorePlayerStatsMessage } from '@iris/core';
 import { isIrisDataMessage, isRecord, numberOrNull, stringOrNull } from './messages';
 
@@ -37,40 +37,31 @@ export function useIntelMessages(
             }
 
             const now = Date.now();
-            let requested = 0;
-            let resolved = 0;
-            let pending = 0;
-            let cooldown = 0;
-            const resolvedPortalIds = new Set<string>();
-            hints.forEach((hint) => {
-                if (requested >= PLEXT_PORTAL_DETAILS_MAX_PER_BATCH) return;
+            const candidatePortalIds = hints.flatMap((hint) => {
                 const portal = resolvePlextPortalRefreshHint(hint, Object.values(useStore.getState().portals));
-                if (!portal) return;
-                if (resolvedPortalIds.has(portal.id)) return;
-                resolvedPortalIds.add(portal.id);
-                resolved += 1;
-                if (portalDetailPendingRef.current.has(portal.id)) {
-                    pending += 1;
-                    return;
-                }
-                const lastRefreshAt = portalDetailRefreshTimesRef.current.get(portal.id) ?? 0;
-                if (now - lastRefreshAt < PLEXT_PORTAL_DETAILS_COOLDOWN_MS) {
-                    cooldown += 1;
-                    return;
-                }
-                portalDetailRefreshTimesRef.current.set(portal.id, now);
-                portalDetailPendingRef.current.add(portal.id);
-                window.setTimeout(() => {
-                    portalDetailPendingRef.current.delete(portal.id);
-                }, PLEXT_PORTAL_DETAILS_PENDING_TIMEOUT_MS);
-                requested += 1;
-                window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: portal.id }, '*');
+                return portal ? [portal.id] : [];
+            });
+            const batch = selectKeyedRefreshBatch(candidatePortalIds, {
+                pendingKeys: portalDetailPendingRef.current,
+                lastRefreshTimes: portalDetailRefreshTimesRef.current,
+                now,
+                cooldownMs: PLEXT_PORTAL_DETAILS_COOLDOWN_MS,
+                maxBatchSize: PLEXT_PORTAL_DETAILS_MAX_PER_BATCH,
             });
 
-            if (requested > 0) {
-                logEvent(`COMM refresh: ${requested} portal${requested === 1 ? '' : 's'} (${hints.length} hints)`);
+            batch.keys.forEach((portalId) => {
+                portalDetailRefreshTimesRef.current.set(portalId, now);
+                portalDetailPendingRef.current.add(portalId);
+                window.setTimeout(() => {
+                    portalDetailPendingRef.current.delete(portalId);
+                }, PLEXT_PORTAL_DETAILS_PENDING_TIMEOUT_MS);
+                window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: portalId }, '*');
+            });
+
+            if (batch.keys.length > 0) {
+                logEvent(`COMM refresh: ${batch.keys.length} portal${batch.keys.length === 1 ? '' : 's'} (${hints.length} hints)`);
             } else if (hints.length > 0) {
-                logEvent(`COMM refresh: 0/${hints.length} hints (${resolved} known, ${pending} pending, ${cooldown} cooldown)`);
+                logEvent(`COMM refresh: 0/${hints.length} hints (${batch.knownCount} known, ${batch.pendingCount} pending, ${batch.cooldownCount} cooldown)`);
             }
         };
 

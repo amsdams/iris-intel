@@ -576,6 +576,7 @@ interface EntitiesSlice {
     setMockOrnaments: (mockOrnaments: Record<string, string[]>) => void;
     clearMockOrnaments: () => void;
     updatePlexts: (plexts: Plext[]) => void;
+    replacePlexts: (plexts: Plext[]) => void;
     removePlextsByIdPrefix: (prefix: string) => void;
     removeEntities: (guids: string[]) => void;
     cullEntities: (centerLat: number, centerLng: number, maxDistKm: number) => void;
@@ -985,6 +986,11 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
     updatePlexts: (newPlexts) => set((state) => {
         const all = [...state.plexts, ...newPlexts];
         const unique = Array.from(new Map(all.map(p => [p.id, p])).values());
+        unique.sort((a, b) => b.time - a.time);
+        return { plexts: unique.slice(0, 1000) };
+    }),
+    replacePlexts: (newPlexts) => set(() => {
+        const unique = Array.from(new Map(newPlexts.map(p => [p.id, p])).values());
         unique.sort((a, b) => b.time - a.time);
         return { plexts: unique.slice(0, 1000) };
     }),
