@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { isEndpointStateMessage, numberOrNull, stringOrNull } from './messages';
 
-export type EndpointName = 'portalDetails' | 'gameScore' | 'regionScore' | 'subscription' | 'inventory' | 'plexts';
+export type EndpointName = 'portalDetails' | 'gameScore' | 'regionScore' | 'subscription' | 'inventory' | 'plexts' | 'artifacts';
 
 export interface EndpointTelemetry {
     status: 'idle' | 'in_flight' | 'error';
@@ -64,7 +64,8 @@ function isEndpointName(value: string | null): value is EndpointName {
         || value === 'regionScore'
         || value === 'subscription'
         || value === 'inventory'
-        || value === 'plexts';
+        || value === 'plexts'
+        || value === 'artifacts';
 }
 
 function isEndpointStatus(value: string | null): value is EndpointTelemetry['status'] {

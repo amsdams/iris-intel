@@ -15,6 +15,10 @@ interface MapToolsProps {
     onPortalHistoryLayerToggle: (key: PortalHistoryKey) => void;
     keyOverlayEnabled: boolean;
     onKeyOverlayToggle: () => void;
+    artifactsEnabled: boolean;
+    onArtifactsToggle: () => void;
+    ornamentsEnabled: boolean;
+    onOrnamentsToggle: () => void;
     portalLevelColorEnabled: boolean;
     onPortalLevelColorToggle: () => void;
     portalHealthColorEnabled: boolean;
@@ -56,7 +60,7 @@ function historyButtonStyle(mode: PortalHistoryMode, color: string): h.JSX.CSSPr
     };
 }
 
-export function MapTools({ openDrawer, diagnosticsOpen, onToggle, onDiagnosticsToggle, onNav, onStyle, onMode, portalHistoryLayers, onPortalHistoryLayerToggle, keyOverlayEnabled, onKeyOverlayToggle, portalLevelColorEnabled, onPortalLevelColorToggle, portalHealthColorEnabled, onPortalHealthColorToggle }: MapToolsProps): JSX.Element {
+export function MapTools({ openDrawer, diagnosticsOpen, onToggle, onDiagnosticsToggle, onNav, onStyle, onMode, portalHistoryLayers, onPortalHistoryLayerToggle, keyOverlayEnabled, onKeyOverlayToggle, artifactsEnabled, onArtifactsToggle, ornamentsEnabled, onOrnamentsToggle, portalLevelColorEnabled, onPortalLevelColorToggle, portalHealthColorEnabled, onPortalHealthColorToggle }: MapToolsProps): JSX.Element {
     return (
         <div id="map-tools-container" style={{ position: 'fixed', top: '10px', right: '10px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', zIndex: 2000001, pointerEvents: 'none' }}>
             
@@ -109,6 +113,29 @@ export function MapTools({ openDrawer, diagnosticsOpen, onToggle, onDiagnosticsT
                             </div>
                         );
                     })}
+                </div>
+            </div>
+
+            {/* Event / Artifact Toggles */}
+            <div className="drawer-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                <div className="debug-btn" onClick={() => onToggle('special-overlays')} title="Event and shard overlays" style={{ width: '40px', height: '40px', background: 'rgba(34,34,34,0.9)', color: '#fff', border: '1px solid #00ffff', borderRadius: '50%', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'auto' }}>◇</div>
+                <div className="drawer-content" style={{ display: openDrawer === 'special-overlays' ? 'flex' : 'none', flexDirection: 'column', gap: '4px', padding: '4px', background: 'rgba(20,20,20,0.9)', borderRadius: '8px', border: '1px solid #00ffff' }}>
+                    <div
+                        className="debug-btn"
+                        onClick={onOrnamentsToggle}
+                        title={`Events: ${ornamentsEnabled ? 'on' : 'off'}`}
+                        style={{ width: '42px', height: '36px', background: ornamentsEnabled ? `${INGRESS_COLORS.ORNAMENT}22` : 'rgba(40,40,40,0.9)', color: ornamentsEnabled ? INGRESS_COLORS.ORNAMENT : '#777', border: `1px solid ${ornamentsEnabled ? INGRESS_COLORS.ORNAMENT : '#555'}`, borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'auto' }}
+                    >
+                        EVT
+                    </div>
+                    <div
+                        className="debug-btn"
+                        onClick={onArtifactsToggle}
+                        title={`Shards: ${artifactsEnabled ? 'on' : 'off'}`}
+                        style={{ width: '42px', height: '36px', background: artifactsEnabled ? `${INGRESS_COLORS.ARTIFACT}22` : 'rgba(40,40,40,0.9)', color: artifactsEnabled ? INGRESS_COLORS.ARTIFACT : '#777', border: `1px solid ${artifactsEnabled ? INGRESS_COLORS.ARTIFACT : '#555'}`, borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'auto' }}
+                    >
+                        SHD
+                    </div>
                 </div>
             </div>
 

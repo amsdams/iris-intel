@@ -280,6 +280,8 @@ function TacticalOverlay(): h.JSX.Element {
     const [entityCounts, setEntityCounts] = useState<MiniEntityCounts>(EMPTY_ENTITY_COUNTS);
     const [extrusionEnabled, setExtrusionEnabled] = useState(false);
     const [isVis, setIsVis] = useState(false);
+    const artifactsEnabled = useStore((state) => state.layerShowArtifacts);
+    const ornamentsEnabled = useStore((state) => state.layerShowOrnaments);
     const liveModeRef = useRef(liveMode);
     const patternModeRef = useRef(patternMode);
     const moveSettleTimerRef = useRef<number | null>(null);
@@ -730,6 +732,15 @@ function TacticalOverlay(): h.JSX.Element {
         });
     }, []);
 
+    const handleArtifactsToggle = useCallback((): void => {
+        useStore.getState().toggleLayerArtifacts();
+        window.postMessage({ type: 'IRIS_ARTIFACTS_REQUEST' }, '*');
+    }, []);
+
+    const handleOrnamentsToggle = useCallback((): void => {
+        useStore.getState().toggleLayerOrnaments();
+    }, []);
+
     useEffect(() => {
         postMiniPageMapCommand({
             action: 'set-portal-paint',
@@ -753,6 +764,7 @@ function TacticalOverlay(): h.JSX.Element {
             postMiniPageMapCommand({ action: 'set-visible', visible: true });
             postMiniPageMapCommand({ action: 'resize' });
             checkAndLoad(mapViewRef.current, patternModeRef.current, liveModeRef.current);
+            if (liveModeRef.current) window.postMessage({ type: 'IRIS_ARTIFACTS_REQUEST' }, '*');
             logEvent("Tactical Map Opened");
         });
     }, [checkAndLoad, logEvent]);
@@ -859,7 +871,7 @@ function TacticalOverlay(): h.JSX.Element {
 
     useEffect(() => {
         syncToMap(mapViewRef.current, liveMode, patternMode);
-    }, [keyOverlayEnabled, liveMode, patternMode, syncToMap]);
+    }, [artifactsEnabled, keyOverlayEnabled, liveMode, ornamentsEnabled, patternMode, syncToMap]);
 
     // 2. Selection highlights
     useEffect(() => {
@@ -956,6 +968,7 @@ function TacticalOverlay(): h.JSX.Element {
                 if (useStore.getState().hasSubscription) {
                     window.postMessage({ type: 'IRIS_INVENTORY_REQUEST' }, '*');
                 }
+                window.postMessage({ type: 'IRIS_ARTIFACTS_REQUEST' }, '*');
             }
         }
     }, [clearMockInventory, extrusionEnabled, generator, loadedTileKeys, logEvent]);
@@ -967,6 +980,10 @@ function TacticalOverlay(): h.JSX.Element {
                 state.portals !== prevState.portals ||
                 state.links !== prevState.links ||
                 state.fields !== prevState.fields ||
+                state.artifacts !== prevState.artifacts ||
+                state.mockOrnaments !== prevState.mockOrnaments ||
+                state.layerShowArtifacts !== prevState.layerShowArtifacts ||
+                state.layerShowOrnaments !== prevState.layerShowOrnaments ||
                 (keyOverlayEnabled && state.inventory !== prevState.inventory)
             )) {
                 syncToMap(mapViewRef.current, liveMode, patternMode);
@@ -1004,6 +1021,10 @@ function TacticalOverlay(): h.JSX.Element {
                         onPortalHistoryLayerToggle={handlePortalHistoryLayerToggle}
                         keyOverlayEnabled={keyOverlayEnabled}
                         onKeyOverlayToggle={handleKeyOverlayToggle}
+                        artifactsEnabled={artifactsEnabled}
+                        onArtifactsToggle={handleArtifactsToggle}
+                        ornamentsEnabled={ornamentsEnabled}
+                        onOrnamentsToggle={handleOrnamentsToggle}
                         portalLevelColorEnabled={portalLevelColorEnabled}
                         onPortalLevelColorToggle={handlePortalLevelColorToggle}
                         portalHealthColorEnabled={portalHealthColorEnabled}

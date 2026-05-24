@@ -3,6 +3,8 @@ import type { InventoryItem } from '@iris/core';
 import { MockDataGenerator } from './MockDataGenerator';
 import type { MiniMapCamera } from './pageMapProtocol';
 
+const MOCK_EVENT_ORNAMENTS = ['pe2', 'pe2_v', 'pe2_start', 'pe2_end'];
+
 interface UsePatternsResult {
     loadPattern1: () => void;
     loadPattern2: () => void;
@@ -21,6 +23,23 @@ export function usePatterns(
         onMockInventory(inventory);
         return inventory.length;
     }, [generator, onMockInventory]);
+
+    const addMockSpecialOverlays = useCallback((portalIds: string[]): { artifacts: number; ornaments: number } => {
+        let artifacts = 0;
+        let ornaments = 0;
+
+        portalIds.forEach((portalId, index) => {
+            if (index < 3 && generator.addArtifact(portalId, index % 2 === 0 ? 'shard' : 'target', [`${index + 1}01`, `${index + 1}02`])) {
+                artifacts += 1;
+            }
+
+            const ornamentId = MOCK_EVENT_ORNAMENTS[index % MOCK_EVENT_ORNAMENTS.length];
+            generator.addOrnament(portalId, ornamentId);
+            ornaments += 1;
+        });
+
+        return { artifacts, ornaments };
+    }, [generator]);
 
     const loadPattern1 = useCallback((): void => {
         generator.clear(); loadedTileKeys.clear();
@@ -45,9 +64,10 @@ export function usePatterns(
         generator.addLink('RL-CA', 'R', 'RC', 'RA');
         generator.addLink('RL-AD', 'R', 'RA', 'RD');
         generator.addLink('RL-BD', 'R', 'RB', 'RD');
+        const special = addMockSpecialOverlays(['A', 'B', 'C', 'RA', 'RB']);
         const inventoryCount = publishMockInventory();
-        logEvent(`PATTERN 1: Single Nested (Mirrored). Mock inventory: ${inventoryCount} items.`);
-    }, [mapState.lat, mapState.lng, generator, loadedTileKeys, logEvent, publishMockInventory]);
+        logEvent(`PATTERN 1: Single Nested (Mirrored). Mock inventory: ${inventoryCount} items. EVT ${special.ornaments}, SHD ${special.artifacts}.`);
+    }, [addMockSpecialOverlays, mapState.lat, mapState.lng, generator, loadedTileKeys, logEvent, publishMockInventory]);
 
     const loadPattern2 = useCallback((): void => {
         generator.clear(); loadedTileKeys.clear();
@@ -74,9 +94,10 @@ export function usePatterns(
         generator.addLink('RL-AD', 'R', 'RA', 'RD');
         generator.addLink('RL-BD', 'R', 'RB', 'RD');
         generator.addLink('RL-CD', 'R', 'RC', 'RD');
+        const special = addMockSpecialOverlays(['A', 'B', 'C', 'D', 'RA', 'RB', 'RC']);
         const inventoryCount = publishMockInventory();
-        logEvent(`PATTERN 2: Nested Diamond (Mirrored). Mock inventory: ${inventoryCount} items.`);
-    }, [mapState.lat, mapState.lng, generator, loadedTileKeys, logEvent, publishMockInventory]);
+        logEvent(`PATTERN 2: Nested Diamond (Mirrored). Mock inventory: ${inventoryCount} items. EVT ${special.ornaments}, SHD ${special.artifacts}.`);
+    }, [addMockSpecialOverlays, mapState.lat, mapState.lng, generator, loadedTileKeys, logEvent, publishMockInventory]);
 
     const loadPattern3 = useCallback((): void => {
         generator.clear(); loadedTileKeys.clear();
@@ -121,9 +142,10 @@ export function usePatterns(
         const nOff = 0.006;
         generator.addPortal('N1', 'N', center.lng - 0.002, center.lat + nOff, 0);
         generator.addPortal('N2', 'N', center.lng + 0.002, center.lat + nOff, 0);
+        const special = addMockSpecialOverlays(['A', 'B', 'C', 'D', 'E', 'RA', 'RB', 'RC', 'RE', 'M1']);
         const inventoryCount = publishMockInventory();
-        logEvent(`PATTERN 3: Scaled Global (Mirrored). Mock inventory: ${inventoryCount} items.`);
-    }, [mapState.lat, mapState.lng, generator, loadedTileKeys, logEvent, publishMockInventory]);
+        logEvent(`PATTERN 3: Scaled Global (Mirrored). Mock inventory: ${inventoryCount} items. EVT ${special.ornaments}, SHD ${special.artifacts}.`);
+    }, [addMockSpecialOverlays, mapState.lat, mapState.lng, generator, loadedTileKeys, logEvent, publishMockInventory]);
 
     return { loadPattern1, loadPattern2, loadPattern3 };
 }

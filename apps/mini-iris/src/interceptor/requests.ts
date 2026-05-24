@@ -11,12 +11,13 @@ const GAME_SCORE_FRESHNESS_MS = 5 * 60 * 1000;
 const REGION_SCORE_FRESHNESS_MS = 5 * 60 * 1000;
 const SUBSCRIPTION_FRESHNESS_MS = 10 * 60 * 1000;
 const INVENTORY_FRESHNESS_MS = 5 * 60 * 1000;
+const ARTIFACTS_FRESHNESS_MS = 5 * 60 * 1000;
 
 const DEFAULT_FAILURE_BACKOFF_MS = 5000;
 const LOGIN_FAILURE_BACKOFF_MS = 60 * 1000;
 const MAX_FAILURE_BACKOFF_MS = 60 * 1000;
 
-type RequestEndpoint = 'portalDetails' | 'gameScore' | 'regionScore' | 'subscription' | 'inventory' | 'plexts';
+type RequestEndpoint = 'portalDetails' | 'gameScore' | 'regionScore' | 'subscription' | 'inventory' | 'plexts' | 'artifacts';
 
 interface InternalMiniIrisRequestInit extends RequestInit {
     __miniIrisInternalRequest?: boolean;
@@ -134,6 +135,20 @@ const endpointState: Record<RequestEndpoint, EndpointState> = {
         failureCount: 0,
         cooldownUntil: null,
     },
+    artifacts: {
+        status: 'idle',
+        inFlightKey: null,
+        inFlightKeys: new Set<string>(),
+        inFlightCount: 0,
+        lastSuccessKey: null,
+        lastSuccessAt: null,
+        lastAttemptKey: null,
+        lastAttemptAt: null,
+        lastSkipReason: null,
+        nextRefreshAt: null,
+        failureCount: 0,
+        cooldownUntil: null,
+    },
 };
 
 const REQUEST_PRIORITIES: Record<RequestEndpoint, number> = {
@@ -142,6 +157,7 @@ const REQUEST_PRIORITIES: Record<RequestEndpoint, number> = {
     inventory: 80,
     gameScore: 70,
     regionScore: 70,
+    artifacts: 65,
     subscription: 60,
 };
 
@@ -181,6 +197,9 @@ export function installRequestHandlers(): void {
                 break;
             case 'IRIS_INVENTORY_REQUEST':
                 enqueueRequest('inventory', 'global', INVENTORY_FRESHNESS_MS, () => handleInventoryRequest(), msg.force === true);
+                break;
+            case 'IRIS_ARTIFACTS_REQUEST':
+                enqueueRequest('artifacts', 'global', ARTIFACTS_FRESHNESS_MS, () => handleArtifactsRequest(), msg.force === true);
                 break;
             case 'IRIS_PLEXTS_REQUEST':
                 {
@@ -424,6 +443,11 @@ async function handleInventoryRequest(): Promise<void> {
     return sendIntelRequest('inventory', 'global', '/r/getInventory', body, 'Inventory Fetch Failed');
 }
 
+async function handleArtifactsRequest(): Promise<void> {
+    const body = JSON.stringify({ v: extractVersion() });
+    return sendIntelRequest('artifacts', 'global', '/r/getArtifactPortals', body, 'Artifacts Fetch Failed');
+}
+
 async function handlePlextsRequest(
     tab: string,
     minTimestampMs: number,
@@ -530,6 +554,8 @@ function getFreshnessMs(endpoint: RequestEndpoint): number {
             return INVENTORY_FRESHNESS_MS;
         case 'plexts':
             return PLEXT_FRESHNESS_MS;
+        case 'artifacts':
+            return ARTIFACTS_FRESHNESS_MS;
     }
 }
 

@@ -102,6 +102,16 @@ describe('MockDataGenerator', () => {
         expect(inventory.some((item) => item.container?.stackableItems.length)).toBe(true);
     });
 
+    it('should attach mock artifacts and ornaments to existing portals', () => {
+        gen.addPortal('a', 'E', 0, 0);
+        gen.addArtifact('a', 'shard', ['101']);
+        gen.addOrnament('a', 'pe2');
+
+        expect(gen.artifacts.get('a')?.type).toBe('shard');
+        expect(gen.portals.get('a')?.ornaments).toEqual(['pe2']);
+        expect(gen.addArtifact('missing', 'target', ['201'])).toBeNull();
+    });
+
     it('should detect nesting for fields', () => {
         gen.addPortal('a', 'E', 0, 0);
         gen.addPortal('b', 'E', 10, 0);

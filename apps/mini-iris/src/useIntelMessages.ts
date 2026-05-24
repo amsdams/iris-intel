@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'preact/hooks';
-import { useStore, EntityParser, PortalDetailsParser, GameScoreParser, RegionScoreParser, InventoryParser, PlayerParser, PlextParser, extractPlextPortalRefreshHints, resolvePlextPortalRefreshHint, Portal, Link, Field } from '@iris/core';
-import type { GameScoreData, IntelMapData, InventoryData, Plext, PlextData, PortalDetailsData, RegionScoreData, PlayerStatsMessage as CorePlayerStatsMessage } from '@iris/core';
+import { useStore, EntityParser, PortalDetailsParser, GameScoreParser, RegionScoreParser, InventoryParser, PlayerParser, PlextParser, ArtifactParser, extractPlextPortalRefreshHints, resolvePlextPortalRefreshHint, Portal, Link, Field } from '@iris/core';
+import type { ArtifactData, GameScoreData, IntelMapData, InventoryData, Plext, PlextData, PortalDetailsData, RegionScoreData, PlayerStatsMessage as CorePlayerStatsMessage } from '@iris/core';
 import { isIrisDataMessage, isRecord, numberOrNull, stringOrNull } from './messages';
 
 const PLEXT_PORTAL_DETAILS_COOLDOWN_MS = 30_000;
@@ -155,6 +155,12 @@ export function useIntelMessages(
                     store.setPlayerStats(parsed.stats);
                     store.setHasSubscription(parsed.hasActiveSubscription);
                 }
+            } else if (msg.url.includes('getArtifactPortals')) {
+                const store = useStore.getState();
+                const artifacts = ArtifactParser.parse(msg.data as ArtifactData);
+                store.updateArtifacts(artifacts);
+                logEvent(`Artifacts: ${artifacts.length}`);
+                syncToMap(liveMode, patternMode);
             } else if (msg.url.includes('getPlexts')) {
                 const store = useStore.getState();
                 const plexts = PlextParser.parse(msg.data as PlextData);

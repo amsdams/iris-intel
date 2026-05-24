@@ -39,6 +39,10 @@ interface TacticalUIProps {
     onPortalHistoryLayerToggle: (key: PortalHistoryKey) => void;
     keyOverlayEnabled: boolean;
     onKeyOverlayToggle: () => void;
+    artifactsEnabled: boolean;
+    onArtifactsToggle: () => void;
+    ornamentsEnabled: boolean;
+    onOrnamentsToggle: () => void;
     portalLevelColorEnabled: boolean;
     onPortalLevelColorToggle: () => void;
     portalHealthColorEnabled: boolean;
@@ -56,7 +60,7 @@ interface TacticalUIProps {
     };
 }
 
-export function TacticalUI({ zoom, lat, lng, events, plextDebugSnapshot, endpointTelemetry, plextBounds, playerHistories, selected, selectionDetailsRequestKey, onNav, onStyle, onMode, onPortalClick, onSelectionPanelOpen, onSelectionPanelClose, portalHistoryLayers, onPortalHistoryLayerToggle, keyOverlayEnabled, onKeyOverlayToggle, portalLevelColorEnabled, onPortalLevelColorToggle, portalHealthColorEnabled, onPortalHealthColorToggle, liveMode, patternMode, extrusionEnabled, renderStats, frameStats, entityCounts }: TacticalUIProps): JSX.Element {
+export function TacticalUI({ zoom, lat, lng, events, plextDebugSnapshot, endpointTelemetry, plextBounds, playerHistories, selected, selectionDetailsRequestKey, onNav, onStyle, onMode, onPortalClick, onSelectionPanelOpen, onSelectionPanelClose, portalHistoryLayers, onPortalHistoryLayerToggle, keyOverlayEnabled, onKeyOverlayToggle, artifactsEnabled, onArtifactsToggle, ornamentsEnabled, onOrnamentsToggle, portalLevelColorEnabled, onPortalLevelColorToggle, portalHealthColorEnabled, onPortalHealthColorToggle, liveMode, patternMode, extrusionEnabled, renderStats, frameStats, entityCounts }: TacticalUIProps): JSX.Element {
     const [openDrawer, setOpenDrawer] = useState<string | null>(null);
     const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
     const handledSelectionDetailsRequestKeyRef = useRef(0);
@@ -110,6 +114,8 @@ export function TacticalUI({ zoom, lat, lng, events, plextDebugSnapshot, endpoin
                 return 'Inv';
             case 'plexts':
                 return 'Comm';
+            case 'artifacts':
+                return 'Shard';
         }
     };
 
@@ -237,6 +243,10 @@ export function TacticalUI({ zoom, lat, lng, events, plextDebugSnapshot, endpoin
                 onPortalHistoryLayerToggle={onPortalHistoryLayerToggle}
                 keyOverlayEnabled={keyOverlayEnabled}
                 onKeyOverlayToggle={onKeyOverlayToggle}
+                artifactsEnabled={artifactsEnabled}
+                onArtifactsToggle={onArtifactsToggle}
+                ornamentsEnabled={ornamentsEnabled}
+                onOrnamentsToggle={onOrnamentsToggle}
                 portalLevelColorEnabled={portalLevelColorEnabled}
                 onPortalLevelColorToggle={onPortalLevelColorToggle}
                 portalHealthColorEnabled={portalHealthColorEnabled}

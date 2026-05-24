@@ -190,6 +190,44 @@ export function useMapRenderer(
                             keyLabelCount += 1;
                         }
                     }
+
+                    if (store.layerShowArtifacts) {
+                        const artifact = currentLiveMode ? store.artifacts[p.id] : generator.artifacts.get(p.id);
+                        if (artifact) {
+                            features.push({
+                                type: 'Feature',
+                                id: `artifact:${p.id}`,
+                                geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
+                                properties: {
+                                    id: `artifact:${p.id}`,
+                                    type: 'artifact',
+                                    portalId: p.id,
+                                    artifactType: artifact.type,
+                                    count: artifact.ids.length,
+                                },
+                            });
+                        }
+                    }
+
+                    if (store.layerShowOrnaments) {
+                        const ornaments = currentLiveMode
+                            ? [...(p.ornaments || []), ...(store.mockOrnaments[p.id] || [])]
+                            : (p.ornaments || []);
+                        if (ornaments.length > 0) {
+                            features.push({
+                                type: 'Feature',
+                                id: `ornament:${p.id}`,
+                                geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
+                                properties: {
+                                    id: `ornament:${p.id}`,
+                                    type: 'ornament',
+                                    portalId: p.id,
+                                    team: faction,
+                                    count: ornaments.length,
+                                },
+                            });
+                        }
+                    }
                 }
             } else if (item.type === 'link') {
                 const l = currentLiveMode ? store.links[item.id] : generator.linksMap.get(item.id);

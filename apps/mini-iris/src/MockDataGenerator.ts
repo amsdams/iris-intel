@@ -1,5 +1,5 @@
 import RBush from 'rbush';
-import { Portal, Link, Field, InventoryItem } from '@iris/core';
+import { Portal, Link, Field, InventoryItem, type Artifact } from '@iris/core';
 
 export type Faction = 'E' | 'R' | 'N' | 'M';
 
@@ -57,6 +57,7 @@ export class MockDataGenerator {
     public portals = new Map<string, Portal>();
     public linksMap = new Map<string, Link>();
     public fieldsMap = new Map<string, Field>();
+    public artifacts = new Map<string, Artifact>();
     private neighborMap = new Map<string, Set<string>>();
     private index = new RBush<EntityIndexItem>();
 
@@ -218,10 +219,27 @@ export class MockDataGenerator {
         return items;
     }
 
+    addArtifact(portalId: string, type: string, ids: string[]): Artifact | null {
+        if (!this.portals.has(portalId)) return null;
+        const artifact = { portalId, type, ids };
+        this.artifacts.set(portalId, artifact);
+        return artifact;
+    }
+
+    addOrnament(portalId: string, ornamentId: string): void {
+        const portal = this.portals.get(portalId);
+        if (!portal) return;
+        const ornaments = portal.ornaments ?? [];
+        if (!ornaments.includes(ornamentId)) {
+            portal.ornaments = [...ornaments, ornamentId];
+        }
+    }
+
     clear(): void {
         this.portals.clear();
         this.linksMap.clear();
         this.fieldsMap.clear();
+        this.artifacts.clear();
         this.neighborMap.clear();
         this.index.clear();
     }
