@@ -9,6 +9,7 @@ export * from './player-tracker';
 export * from './plext-refresh-hints';
 export * from './map-features';
 export * from './ingress-map-style';
+export * from './benchmark-frames';
 export * from './endpoint-formatting';
 export * from './diagnostics-formatting';
 export * from './ZoomPolicy';

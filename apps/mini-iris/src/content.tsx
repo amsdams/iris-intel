@@ -1,7 +1,7 @@
 import { render, h, Fragment } from 'preact';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'preact/hooks';
 import { MockDataGenerator } from './MockDataGenerator';
-import { useStore, getMinLevelForZoom, getGridSizeForZoom, boundsToE6, Portal, Link, Field, type InventoryItem, type PlextRequestBounds } from '@iris/core';
+import { useStore, getMinLevelForZoom, getGridSizeForZoom, boundsToE6, addFrameDelta, createFrameSampleAccumulator, resetFrameSampleAccumulator, Portal, Link, Field, type InventoryItem, type PlextRequestBounds } from '@iris/core';
 import { TacticalUI } from './TacticalUI';
 import { MAP_STYLES, type MapStyleName } from './MapConstants';
 import { LaunchButton } from './LaunchButton';
@@ -365,38 +365,27 @@ function TacticalOverlay(): h.JSX.Element {
 
         let frame: number | null = null;
         let lastFrameTime = performance.now();
-        let sampleStartedAt = lastFrameTime;
-        let totalMs = 0;
-        let maxMs = 0;
-        let slowFrames = 0;
-        let sampleCount = 0;
+        const frameSample = createFrameSampleAccumulator(lastFrameTime);
 
         const tick = (now: number): void => {
             const delta = now - lastFrameTime;
             lastFrameTime = now;
 
             if (delta > 0 && delta < 1000) {
-                totalMs += delta;
-                maxMs = Math.max(maxMs, delta);
-                slowFrames += delta > 20 ? 1 : 0;
-                sampleCount += 1;
+                addFrameDelta(frameSample, delta, 20.000001);
             }
 
-            if (now - sampleStartedAt >= 1000 && sampleCount > 0) {
-                const avgMs = totalMs / sampleCount;
+            if (now - frameSample.startedAt >= 1000 && frameSample.frameCount > 0) {
+                const avgMs = frameSample.totalFrameMs / frameSample.frameCount;
                 setFrameStats({
                     avgMs,
-                    maxMs,
+                    maxMs: frameSample.maxFrameMs,
                     fps: Math.round(1000 / avgMs),
-                    slowFrames,
-                    sampleCount,
+                    slowFrames: frameSample.slowFrameCount,
+                    sampleCount: frameSample.frameCount,
                     updatedAt: Date.now(),
                 });
-                sampleStartedAt = now;
-                totalMs = 0;
-                maxMs = 0;
-                slowFrames = 0;
-                sampleCount = 0;
+                resetFrameSampleAccumulator(frameSample, now);
             }
 
             frame = window.requestAnimationFrame(tick);

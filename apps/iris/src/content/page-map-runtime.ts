@@ -1,4 +1,13 @@
 import maplibregl from 'maplibre-gl';
+import {
+    addFrameDelta,
+    aggregateBenchmarkFrameSnapshots,
+    createFrameSampleAccumulator,
+    finishFrameSample,
+    resetFrameSampleAccumulator,
+    type FrameSampleAccumulator,
+    type FrameSampleSnapshot,
+} from '@iris/core/benchmark-frames';
 import {boundsToE6} from '@iris/core/geo-bounds';
 import { INGRESS_ENTITY_STYLE, INGRESS_MISC_COLORS } from '@iris/core/ingress-map-style';
 import {
@@ -20,15 +29,7 @@ interface SetTilesRasterSource {
     setTiles: (tiles: string[]) => void;
 }
 
-interface FrameSnapshot {
-    type: 'frame';
-    time: number;
-    totalMs: number;
-    frameCount: number;
-    averageFrameMs: number;
-    maxFrameMs: number;
-    slowFrameCount: number;
-    estimatedFps: number;
+interface FrameSnapshot extends FrameSampleSnapshot {
     benchmarkRunCount?: number;
     benchmarkMedianAverageFrameMs?: number;
     benchmarkMinAverageFrameMs?: number;
@@ -43,12 +44,8 @@ interface FrameSnapshot {
 
 interface MovingFrameSample {
     active: boolean;
-    startedAt: number;
     lastFrameAt: number | null;
-    frameCount: number;
-    totalFrameMs: number;
-    maxFrameMs: number;
-    slowFrameCount: number;
+    accumulator: FrameSampleAccumulator;
     requestId: number | null;
 }
 
@@ -1827,36 +1824,22 @@ function getSelectionKind(layerId: string): PageMapRuntimeSelectionPayload['kind
 function createFrameSample(): MovingFrameSample {
     return {
         active: false,
-        startedAt: 0,
         lastFrameAt: null,
-        frameCount: 0,
-        totalFrameMs: 0,
-        maxFrameMs: 0,
-        slowFrameCount: 0,
+        accumulator: createFrameSampleAccumulator(),
         requestId: null,
     };
 }
 
 function startFrameSample(sample: MovingFrameSample): void {
     sample.active = true;
-    sample.startedAt = performance.now();
+    resetFrameSampleAccumulator(sample.accumulator, performance.now());
     sample.lastFrameAt = null;
-    sample.frameCount = 0;
-    sample.totalFrameMs = 0;
-    sample.maxFrameMs = 0;
-    sample.slowFrameCount = 0;
 
     const tick = (now: number): void => {
         if (!sample.active) return;
 
         if (sample.lastFrameAt !== null) {
-            const frameMs = now - sample.lastFrameAt;
-            sample.frameCount += 1;
-            sample.totalFrameMs += frameMs;
-            sample.maxFrameMs = Math.max(sample.maxFrameMs, frameMs);
-            if (frameMs >= SLOW_FRAME_MS) {
-                sample.slowFrameCount += 1;
-            }
+            addFrameDelta(sample.accumulator, now - sample.lastFrameAt, SLOW_FRAME_MS);
         }
 
         sample.lastFrameAt = now;
@@ -1873,58 +1856,18 @@ function stopFrameSample(sample: MovingFrameSample): FrameSnapshot | null {
         sample.requestId = null;
     }
 
-    if (sample.frameCount === 0) return null;
-
-    const averageFrameMs = sample.totalFrameMs / sample.frameCount;
-    return {
-        type: 'frame',
-        time: Date.now(),
-        totalMs: performance.now() - sample.startedAt,
-        frameCount: sample.frameCount,
-        averageFrameMs,
-        maxFrameMs: sample.maxFrameMs,
-        slowFrameCount: sample.slowFrameCount,
-        estimatedFps: Math.round(1000 / averageFrameMs),
-    };
+    return finishFrameSample(sample.accumulator, performance.now());
 }
 
 function publishBenchmarkFrameSnapshot(snapshots: FrameSnapshot[], variant: BenchmarkVariant, zoom: number, mode: BenchmarkMode): void {
-    const averageValues = snapshots
-        .map((snapshot) => snapshot.averageFrameMs)
-        .sort((a, b) => a - b);
-    if (averageValues.length === 0) return;
-
-    const middle = Math.floor(averageValues.length / 2);
-    const medianAverageFrameMs = averageValues.length % 2 === 0
-        ? (averageValues[middle - 1] + averageValues[middle]) / 2
-        : averageValues[middle];
-    const totalFrameCount = snapshots.reduce((total, snapshot) => total + snapshot.frameCount, 0);
-    const totalFrameMs = snapshots.reduce(
-        (total, snapshot) => total + (snapshot.averageFrameMs * snapshot.frameCount),
-        0
-    );
-    const averageFrameMs = totalFrameCount > 0 ? totalFrameMs / totalFrameCount : medianAverageFrameMs;
-
-    const snapshot: FrameSnapshot = {
-        type: 'frame',
-        time: Date.now(),
-        totalMs: snapshots.reduce((total, item) => total + item.totalMs, 0),
-        frameCount: totalFrameCount,
-        averageFrameMs,
-        maxFrameMs: Math.max(...snapshots.map((item) => item.maxFrameMs)),
-        slowFrameCount: snapshots.reduce((total, item) => total + item.slowFrameCount, 0),
-        estimatedFps: Math.round(1000 / averageFrameMs),
-        benchmarkRunCount: snapshots.length,
-        benchmarkMedianAverageFrameMs: medianAverageFrameMs,
-        benchmarkMinAverageFrameMs: averageValues[0],
-        benchmarkMaxAverageFrameMs: averageValues[averageValues.length - 1],
-        benchmarkMaxFrameMs: Math.max(...snapshots.map((item) => item.maxFrameMs)),
-        benchmarkVariant: variant,
-        benchmarkZoom: zoom,
-        benchmarkMode: mode,
-        benchmarkSourceFeatureCounts: {...currentSourceFeatureCounts},
-        benchmarkPluginFeatureCounts: currentPluginFeatureCounts ? {...currentPluginFeatureCounts} : undefined,
-    };
+    const snapshot = aggregateBenchmarkFrameSnapshots(snapshots, {
+        variant,
+        zoom,
+        mode,
+        sourceFeatureCounts: currentSourceFeatureCounts,
+        pluginFeatureCounts: currentPluginFeatureCounts,
+    });
+    if (!snapshot) return;
 
     window.postMessage({
         type: PAGE_MAP_RUNTIME_MESSAGES.frameBenchmark,
