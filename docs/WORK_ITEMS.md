@@ -1124,7 +1124,8 @@ Tasks:
 | Extract keyed cooldown/pending/batch-cap primitive if reused | Open | both live-update paths use per-key cooldown, pending guards, and small batch caps; extract a neutral queue/rate helper only if another runtime path needs it or COMM tuning forces another pass |
 | Extract shared plext debug snapshot formatter              | Open   | Mini-IRIS currently owns raw/parsed COMM debug copy; consider core only if full IRIS needs equivalent raw/parsed plext snapshots, and keep sensitive-data copy actions app-owned |
 | Audit shared health/level/event display derivation         | Open   | evaluate portal health/level display buckets plus event/shard/artifact visibility classification after Mini-IRIS live inventory/event testing; avoid moving UI labels or filters before both apps use the same rules |
-| Audit shared bounds and benchmark aggregation utilities    | Open   | bounds/E6 containment, antimeridian viewport checks, tile coverage summaries, and bench sample aggregation are candidates if duplicated again; existing geometry extraction already covers render-safe line/polygon wrapping |
+| Extract shared bounds/E6 helpers                           | Done   | moved E6 conversion, finite-bounds validation, longitude normalization, and antimeridian-aware bounds containment into `packages/core`; app request timing, tile coverage generation, and map runtime protocols remain local |
+| Audit shared benchmark aggregation utilities               | Open   | bench sample aggregation and copy formatting remain candidates if duplicated again; existing diagnostics formatting covers neutral counts/timings/env labels |
 | Defer package chopping until boundaries are proven         | Open   | only split packages after shared usage and bundle/build costs are measured                                  |
 
 ## IRIS Performance And Architecture Review Follow-ups

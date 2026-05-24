@@ -1,4 +1,5 @@
 import maplibregl from 'maplibre-gl';
+import {boundsToE6} from '@iris/core/geo-bounds';
 import { INGRESS_ENTITY_STYLE, INGRESS_MISC_COLORS } from '@iris/core/ingress-map-style';
 import {
     PAGE_MAP_RUNTIME_MESSAGES,
@@ -712,12 +713,12 @@ function getMapCamera(map: maplibregl.Map): PageMapRuntimeCamera {
 
 function getMapBounds(map: maplibregl.Map): PageMapRuntimeBounds {
     const bounds = map.getBounds();
-    return {
-        minLatE6: Math.round(bounds.getSouth() * 1e6),
-        minLngE6: Math.round(bounds.getWest() * 1e6),
-        maxLatE6: Math.round(bounds.getNorth() * 1e6),
-        maxLngE6: Math.round(bounds.getEast() * 1e6),
-    };
+    return boundsToE6({
+        south: bounds.getSouth(),
+        west: bounds.getWest(),
+        north: bounds.getNorth(),
+        east: bounds.getEast(),
+    });
 }
 
 function postCameraChanged(map: maplibregl.Map, label = 'MAP CAMERA CHANGED'): void {

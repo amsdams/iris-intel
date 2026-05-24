@@ -1,7 +1,7 @@
 import { render, h, Fragment } from 'preact';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'preact/hooks';
 import { MockDataGenerator } from './MockDataGenerator';
-import { useStore, getMinLevelForZoom, getGridSizeForZoom, Portal, Link, Field, type InventoryItem, type PlextRequestBounds } from '@iris/core';
+import { useStore, getMinLevelForZoom, getGridSizeForZoom, boundsToE6, Portal, Link, Field, type InventoryItem, type PlextRequestBounds } from '@iris/core';
 import { TacticalUI } from './TacticalUI';
 import { MAP_STYLES, type MapStyleName } from './MapConstants';
 import { LaunchButton } from './LaunchButton';
@@ -639,12 +639,7 @@ function TacticalOverlay(): h.JSX.Element {
         const currentZoom = view.zoom;
         const currentLive = liveModeRef.current;
         const currentPattern = patternModeRef.current;
-        const nextBounds = {
-            minLatE6: Math.round(view.bounds.south * 1e6),
-            minLngE6: Math.round(view.bounds.west * 1e6),
-            maxLatE6: Math.round(view.bounds.north * 1e6),
-            maxLngE6: Math.round(view.bounds.east * 1e6),
-        };
+        const nextBounds = boundsToE6(view.bounds);
 
         const nextState = { zoom: currentZoom, lat: view.lat, lng: view.lng };
         setMapState(nextState);

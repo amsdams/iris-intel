@@ -1,4 +1,4 @@
-import { extractPlextPortalRefreshHints, resolvePlextPortalRefreshHint, useStore, type Plext, type PlextPortalRefreshHint } from '@iris/core';
+import { boundsE6ContainsPoint, extractPlextPortalRefreshHints, resolvePlextPortalRefreshHint, useStore, type Plext, type PlextPortalRefreshHint } from '@iris/core';
 import { IRISMessage } from './message-types';
 import { buildEntityRequestPayload } from '../domains/entities/request';
 
@@ -382,18 +382,9 @@ export function createRequestCoordinator(): RequestCoordinator {
         const bounds = useStore.getState().mapState.bounds;
         if (!bounds) return [];
 
-        const containsLng = (lngE6: number): boolean => {
-            if (bounds.minLngE6 <= bounds.maxLngE6) {
-                return lngE6 >= bounds.minLngE6 && lngE6 <= bounds.maxLngE6;
-            }
-            return lngE6 >= bounds.minLngE6 || lngE6 <= bounds.maxLngE6;
-        };
-
         const now = Date.now();
         return extractPlextPortalRefreshHints(plexts, {now, maxAgeMs: COMM_ACTIVITY_RECENT_MS})
-            .filter((hint) => hint.latE6 >= bounds.minLatE6 &&
-                hint.latE6 <= bounds.maxLatE6 &&
-                containsLng(hint.lngE6));
+            .filter((hint) => boundsE6ContainsPoint(bounds, hint));
     };
 
     const refreshPortalDetailsFromCommHints = (hints: PlextPortalRefreshHint[]): void => {

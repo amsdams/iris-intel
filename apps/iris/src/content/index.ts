@@ -16,7 +16,8 @@ import {
   Plext,
   PlayerStatsMessage,
   PasscodeResponseData,
-  IntelInventoryItemData
+  IntelInventoryItemData,
+  boundsE6ContainsLatLng
 } from '@iris/core';
 import PortalNamesPlugin from '../../../../packages/plugins/src/portal-names';
 import ThemeSelectorPlugin from '../../../../packages/plugins/src/theme-selector';
@@ -134,10 +135,7 @@ function buildMockArtifacts(): ArtifactData {
 
   const inBoundsPortals = bounds
     ? allPortals.filter((portal) =>
-        portal.lat >= bounds.minLatE6 / 1e6 &&
-        portal.lat <= bounds.maxLatE6 / 1e6 &&
-        portal.lng >= bounds.minLngE6 / 1e6 &&
-        portal.lng <= bounds.maxLngE6 / 1e6
+        boundsE6ContainsLatLng(bounds, portal)
       )
     : [];
 
@@ -168,10 +166,7 @@ function buildMockOrnaments(): Record<string, string[]> {
 
   const inBoundsPortals = bounds
     ? allPortals.filter((portal) =>
-        portal.lat >= bounds.minLatE6 / 1e6 &&
-        portal.lat <= bounds.maxLatE6 / 1e6 &&
-        portal.lng >= bounds.minLngE6 / 1e6 &&
-        portal.lng <= bounds.maxLngE6 / 1e6
+        boundsE6ContainsLatLng(bounds, portal)
       )
     : [];
 
@@ -274,10 +269,7 @@ function buildMockCoLocatedPlayerTrackerFeatures(playerCount = 8): GeoJSON.Featu
   const bounds = center.bounds;
   const inBoundsPortals = bounds
     ? portals.filter((portal) =>
-        portal.lat >= bounds.minLatE6 / 1e6 &&
-        portal.lat <= bounds.maxLatE6 / 1e6 &&
-        portal.lng >= bounds.minLngE6 / 1e6 &&
-        portal.lng <= bounds.maxLngE6 / 1e6
+        boundsE6ContainsLatLng(bounds, portal)
       )
     : portals;
 
@@ -339,10 +331,7 @@ function buildMockPlayerActivityPlexts(): Plext[] {
   const bounds = center.bounds;
   const inBoundsPortals = bounds
     ? portals.filter((portal) =>
-        portal.lat >= bounds.minLatE6 / 1e6 &&
-        portal.lat <= bounds.maxLatE6 / 1e6 &&
-        portal.lng >= bounds.minLngE6 / 1e6 &&
-        portal.lng <= bounds.maxLngE6 / 1e6
+        boundsE6ContainsLatLng(bounds, portal)
       )
     : portals;
 

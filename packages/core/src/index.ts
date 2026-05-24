@@ -3,6 +3,7 @@ export * from './PluginManager';
 export * from './SpatialIndex';
 export * from './logic/EntityLogic';
 export * from './geometry/wrapped-lines';
+export * from './geo-bounds';
 export * from './requests/plext';
 export * from './player-tracker';
 export * from './plext-refresh-hints';

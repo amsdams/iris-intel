@@ -1,9 +1,6 @@
-export interface PlextRequestBounds {
-  minLatE6: number;
-  minLngE6: number;
-  maxLatE6: number;
-  maxLngE6: number;
-}
+import type {BoundsE6} from '../geo-bounds';
+
+export type PlextRequestBounds = BoundsE6;
 
 export interface PlextRequestMessage extends Partial<PlextRequestBounds> {
   type: 'IRIS_PLEXTS_REQUEST';

@@ -1,16 +1,9 @@
-import { ZOOM_TO_LEVEL } from '@iris/core';
+import { ZOOM_TO_LEVEL, e6ToDegrees, isFiniteBoundsE6, normalizeLongitudeDegrees, type BoundsE6 } from '@iris/core';
 
 const DEFAULT_ZOOM_TO_TILES_PER_EDGE = [1, 1, 1, 40, 40, 80, 80, 320, 1000, 2000, 2000, 4000, 8000, 16000, 16000, 32000];
 const MAX_MAP_ZOOM = 21;
 const MAX_MERCATOR_LAT = 85.05112878;
 const MAX_ENTITY_TILE_KEYS = 1024;
-
-interface BoundsE6 {
-  minLatE6: number;
-  minLngE6: number;
-  maxLatE6: number;
-  maxLngE6: number;
-}
 
 interface TileParams {
   level: number;
@@ -80,18 +73,6 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-function isFiniteBounds(bounds: BoundsE6, mapZoom: number): boolean {
-  return Number.isFinite(mapZoom) &&
-    Number.isFinite(bounds.minLatE6) &&
-    Number.isFinite(bounds.minLngE6) &&
-    Number.isFinite(bounds.maxLatE6) &&
-    Number.isFinite(bounds.maxLngE6);
-}
-
-function normalizeLng(lng: number): number {
-  return ((((lng + 180) % 360) + 360) % 360) - 180;
-}
-
 function buildTileXRanges(rawWest: number, rawEast: number, params: TileParams): [number, number][] {
   const minTile = 0;
   const maxTile = params.tilesPerEdge - 1;
@@ -99,8 +80,8 @@ function buildTileXRanges(rawWest: number, rawEast: number, params: TileParams):
     return [[minTile, maxTile]];
   }
 
-  const west = normalizeLng(rawWest);
-  const east = normalizeLng(rawEast);
+  const west = normalizeLongitudeDegrees(rawWest);
+  const east = normalizeLongitudeDegrees(rawEast);
   const westTile = clamp(lngToTile(west, params), minTile, maxTile);
   const eastTile = clamp(lngToTile(east, params), minTile, maxTile);
 
@@ -115,7 +96,7 @@ function buildTileXRanges(rawWest: number, rawEast: number, params: TileParams):
 }
 
 export function buildEntityRequestPayload(bounds: BoundsE6, mapZoom: number): EntityRequestPayload {
-  if (!isFiniteBounds(bounds, mapZoom)) {
+  if (!Number.isFinite(mapZoom) || !isFiniteBoundsE6(bounds)) {
     return {
       tileKeys: [],
       coverageKey: 'invalid:non-finite',
@@ -131,10 +112,10 @@ export function buildEntityRequestPayload(bounds: BoundsE6, mapZoom: number): En
 
   const dataZoom = getDataZoomForMapZoom(adjustedZoom);
   const params = getMapZoomTileParameters(dataZoom);
-  const south = clamp(Math.min(bounds.minLatE6, bounds.maxLatE6) / 1e6, -MAX_MERCATOR_LAT, MAX_MERCATOR_LAT);
-  const north = clamp(Math.max(bounds.minLatE6, bounds.maxLatE6) / 1e6, -MAX_MERCATOR_LAT, MAX_MERCATOR_LAT);
-  const west = bounds.minLngE6 / 1e6;
-  const east = bounds.maxLngE6 / 1e6;
+  const south = clamp(e6ToDegrees(Math.min(bounds.minLatE6, bounds.maxLatE6)), -MAX_MERCATOR_LAT, MAX_MERCATOR_LAT);
+  const north = clamp(e6ToDegrees(Math.max(bounds.minLatE6, bounds.maxLatE6)), -MAX_MERCATOR_LAT, MAX_MERCATOR_LAT);
+  const west = e6ToDegrees(bounds.minLngE6);
+  const east = e6ToDegrees(bounds.maxLngE6);
   const minTile = 0;
   const maxTile = params.tilesPerEdge - 1;
   const xRanges = buildTileXRanges(west, east, params);

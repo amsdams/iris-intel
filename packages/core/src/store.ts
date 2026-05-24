@@ -4,6 +4,7 @@ import type { StateCreator } from 'zustand/vanilla';
 import { subscribeWithSelector, persist, createJSONStorage } from 'zustand/middleware';
 import { EntityLogic } from './logic/EntityLogic';
 import { globalSpatialIndex } from './SpatialIndex';
+import type {BoundsE6} from './geo-bounds';
 
 function getFeatureIdentity(feature: GeoJSON.Feature | null | undefined): string | number | null {
     if (!feature) return null;
@@ -588,12 +589,7 @@ interface UISlice {
         lat: number;
         lng: number;
         zoom: number;
-        bounds?: {
-            minLatE6: number;
-            minLngE6: number;
-            maxLatE6: number;
-            maxLngE6: number;
-        };
+        bounds?: BoundsE6;
     };
     selectedPortalId: string | null;
     selectedFieldId: string | null;
@@ -622,12 +618,7 @@ interface UISlice {
     setPluginFeatures: (features: GeoJSON.FeatureCollection) => void;
     setDiscoveredLocation: (location: string | null) => void;
     reverseGeocode: (lat: number, lng: number, portalId?: string) => Promise<void>;
-    updateMapState: (lat: number, lng: number, zoom: number, bounds?: {
-        minLatE6: number;
-        minLngE6: number;
-        maxLatE6: number;
-        maxLngE6: number;
-    }) => void;
+    updateMapState: (lat: number, lng: number, zoom: number, bounds?: BoundsE6) => void;
     selectPortal: (id: string | null) => void;
     selectField: (id: string | null) => void;
     selectLink: (id: string | null) => void;
