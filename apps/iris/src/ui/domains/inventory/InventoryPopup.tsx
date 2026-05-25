@@ -1,5 +1,5 @@
 import { JSX } from 'preact';
-import { useStore, normalizeTeam, InventoryParser, INVENTORY_CATEGORIES, type GroupedInventoryItem, type InventoryCategory, type InventorySortMode } from '@iris/core';
+import { useStore, normalizeTeam, InventoryParser, INVENTORY_CATEGORIES, createInventoryRequestMessage, type GroupedInventoryItem, type InventoryCategory, type InventorySortMode } from '@iris/core';
 import { Popup } from '../../shared/Popup';
 import { useEffect, useState, useMemo } from 'preact/hooks';
 import { THEMES, UI_COLORS, getItemRarityColor, getModRarityColor } from '../../theme';
@@ -62,7 +62,7 @@ export const InventoryPopup = ({ onClose }: { onClose: () => void }): JSX.Elemen
     const showSnapshotBehaviorHint = inventoryHasLoaded && totalCount > 0;
 
     const handleRefresh = (): void => {
-        window.postMessage({ type: 'IRIS_INVENTORY_REQUEST' }, '*');
+        window.postMessage(createInventoryRequestMessage(), '*');
     };
 
     const getItemColor = (item: GroupedInventoryItem): string => {

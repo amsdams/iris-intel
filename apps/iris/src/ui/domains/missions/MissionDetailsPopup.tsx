@@ -1,5 +1,5 @@
 import { h, JSX } from 'preact';
-import { useStore } from '@iris/core';
+import { createPortalDetailsRequestMessage, useStore } from '@iris/core';
 import { Popup } from '../../shared/Popup';
 import { THEMES } from '../../theme';
 import { PopupActionButton, PopupActionRow } from '../../shared/PopupActions';
@@ -51,10 +51,8 @@ export function MissionDetailsPopup({ onClose, onViewMap }: MissionDetailsPopupP
     }, '*');
 
     if (waypoint.type === 1) {
-      window.postMessage({
-        type: 'IRIS_PORTAL_DETAILS_REQUEST',
-        guid: waypoint.id,
-      }, '*');
+      const request = createPortalDetailsRequestMessage(waypoint.id);
+      if (request) window.postMessage(request, '*');
     }
   };
 

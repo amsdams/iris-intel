@@ -1,6 +1,6 @@
 import { h, JSX, Fragment } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import {formatCompactEndpointStateLabel, formatDiagnosticCount, formatDiagnosticMs, getBrowserLabel, getCompactEndpointStateKind, type Field, type Link, type Portal, type PlextRequestBounds} from '@iris/core';
+import {createGameScoreRequestMessage, createInventoryRequestMessage, createRegionScoreRequestMessage, formatCompactEndpointStateLabel, formatDiagnosticCount, formatDiagnosticMs, getBrowserLabel, getCompactEndpointStateKind, type Field, type Link, type Portal, type PlextRequestBounds} from '@iris/core';
 import type { PlayerHistory } from './usePlayerTracker';
 import { MapTools } from './MapTools';
 import { DataDock } from './DataDock';
@@ -171,10 +171,11 @@ export function TacticalUI({ zoom, lat, lng, events, plextDebugSnapshot, endpoin
             } else if (id === 'player') {
                 window.postMessage({ type: 'IRIS_SUBSCRIPTION_REQUEST' }, '*');
             } else if (id === 'inventory') {
-                window.postMessage({ type: 'IRIS_INVENTORY_REQUEST' }, '*');
+                window.postMessage(createInventoryRequestMessage(), '*');
             } else if (id === 'scores') {
-                window.postMessage({ type: 'IRIS_GAME_SCORE_REQUEST' }, '*');
-                window.postMessage({ type: 'IRIS_REGION_SCORE_REQUEST', lat, lng }, '*');
+                window.postMessage(createGameScoreRequestMessage(), '*');
+                const regionScoreRequest = createRegionScoreRequestMessage(lat, lng);
+                if (regionScoreRequest) window.postMessage(regionScoreRequest, '*');
             } else if (id === 'comm') {
                 refreshComm();
             }

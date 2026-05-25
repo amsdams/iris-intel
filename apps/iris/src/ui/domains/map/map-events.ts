@@ -1,3 +1,5 @@
+import { createPortalDetailsRequestMessage } from '@iris/core';
+
 export interface PortalClickDetail {
   id: string;
 }
@@ -91,7 +93,8 @@ export function installPortalSelectionBridge({
     }
 
     selectPortal(id);
-    windowLike.postMessage({type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: id}, '*');
+    const request = createPortalDetailsRequestMessage(id);
+    if (request) windowLike.postMessage(request, '*');
   };
 
   target.addEventListener('iris:portal:click', onPortalClick);

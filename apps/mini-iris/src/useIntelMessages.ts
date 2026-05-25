@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'preact/hooks';
-import { useStore, EntityParser, GameScoreParser, RegionScoreParser, InventoryParser, PlayerParser, PlextParser, ArtifactParser, extractPlextPortalRefreshHints, parsePortalDetailsForStore, resolvePlextPortalRefreshHint, selectKeyedRefreshBatch, Portal, Link, Field } from '@iris/core';
+import { useStore, EntityParser, GameScoreParser, RegionScoreParser, InventoryParser, PlayerParser, PlextParser, ArtifactParser, createPortalDetailsRequestMessage, extractPlextPortalRefreshHints, parsePortalDetailsForStore, resolvePlextPortalRefreshHint, selectKeyedRefreshBatch, Portal, Link, Field } from '@iris/core';
 import type { ArtifactData, GameScoreData, IntelMapData, InventoryData, Plext, PlextData, PortalDetailsData, RegionScoreData, PlayerStatsMessage as CorePlayerStatsMessage } from '@iris/core';
 import { isIrisDataMessage, isRecord, numberOrNull, stringOrNull } from './messages';
 
@@ -55,7 +55,8 @@ export function useIntelMessages(
                 window.setTimeout(() => {
                     portalDetailPendingRef.current.delete(portalId);
                 }, PLEXT_PORTAL_DETAILS_PENDING_TIMEOUT_MS);
-                window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: portalId }, '*');
+                const request = createPortalDetailsRequestMessage(portalId);
+                if (request) window.postMessage(request, '*');
             });
 
             if (batch.keys.length > 0) {

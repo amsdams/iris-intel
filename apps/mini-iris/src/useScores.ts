@@ -1,4 +1,5 @@
 import { useEffect } from 'preact/hooks';
+import { createGameScoreRequestMessage, createRegionScoreRequestMessage } from '@iris/core';
 import { useEndpointTelemetry } from './useEndpointTelemetry';
 
 const SCORE_POLL_MS = 300000;
@@ -24,8 +25,9 @@ export function useScores(isVis: boolean, liveMode: boolean, lat: number, lng: n
                 if (regionScore.cooldownUntil !== null && now < regionScore.cooldownUntil) return;
                 if (regionScore.nextRefreshAt !== null && now < regionScore.nextRefreshAt) return;
             }
-            window.postMessage({ type: 'IRIS_GAME_SCORE_REQUEST' }, '*');
-            window.postMessage({ type: 'IRIS_REGION_SCORE_REQUEST', lat, lng }, '*');
+            window.postMessage(createGameScoreRequestMessage(), '*');
+            const regionScoreRequest = createRegionScoreRequestMessage(lat, lng);
+            if (regionScoreRequest) window.postMessage(regionScoreRequest, '*');
         };
 
         let timerId: number | null = null;

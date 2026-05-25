@@ -1,7 +1,7 @@
 import { render, h, Fragment } from 'preact';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'preact/hooks';
 import { MockDataGenerator } from './MockDataGenerator';
-import { useStore, getMinLevelForZoom, getGridSizeForZoom, boundsToE6, addFrameDelta, createFrameSampleAccumulator, formatCompactEndpointActivityMessage, isUsableMapCamera, readStorageBoolean, readStorageJson, readStorageString, resetFrameSampleAccumulator, writeStorageBoolean, writeStorageJson, writeStorageString, Portal, Link, Field, type InventoryItem, type PlextRequestBounds } from '@iris/core';
+import { useStore, getMinLevelForZoom, getGridSizeForZoom, boundsToE6, addFrameDelta, createFrameSampleAccumulator, createInventoryRequestMessage, createPortalDetailsRequestMessage, formatCompactEndpointActivityMessage, isUsableMapCamera, readStorageBoolean, readStorageJson, readStorageString, resetFrameSampleAccumulator, writeStorageBoolean, writeStorageJson, writeStorageString, Portal, Link, Field, type InventoryItem, type PlextRequestBounds } from '@iris/core';
 import { TacticalUI } from './TacticalUI';
 import { MAP_STYLES, type MapStyleName } from './MapConstants';
 import { LaunchButton } from './LaunchButton';
@@ -592,7 +592,8 @@ function TacticalOverlay(): h.JSX.Element {
         const existing = Object.values(store.portals).find(p => Math.abs(p.lat - lat) < 0.0001 && Math.abs(p.lng - lng) < 0.0001);
         if (existing) {
             setSelected({ type: 'portal', data: existing });
-            if (liveMode) window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: existing.id }, '*');
+            const request = createPortalDetailsRequestMessage(existing.id);
+            if (liveMode && request) window.postMessage(request, '*');
         } else {
             setSelected({ type: 'portal', data: { id: 'temp', lat, lng, team: 'N', name } as Portal });
         }
@@ -706,7 +707,8 @@ function TacticalOverlay(): h.JSX.Element {
                 const portal = liveModeRef.current ? store.portals[id] : generator.portals.get(id);
                 if (!portal) return;
                 setSelected({ type: 'portal', data: portal });
-                if (liveModeRef.current) window.postMessage({ type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: portal.id }, '*');
+                const request = createPortalDetailsRequestMessage(portal.id);
+                if (liveModeRef.current && request) window.postMessage(request, '*');
                 requestDetailsOpen();
                 return;
             }
@@ -880,7 +882,7 @@ function TacticalOverlay(): h.JSX.Element {
                 loadedTileKeys.clear();
                 clearMockInventory();
                 if (useStore.getState().hasSubscription) {
-                    window.postMessage({ type: 'IRIS_INVENTORY_REQUEST' }, '*');
+                    window.postMessage(createInventoryRequestMessage(), '*');
                 }
                 window.postMessage({ type: 'IRIS_ARTIFACTS_REQUEST' }, '*');
             }

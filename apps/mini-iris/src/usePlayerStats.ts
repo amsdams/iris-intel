@@ -1,5 +1,5 @@
 import { useEffect } from 'preact/hooks';
-import { useStore } from '@iris/core';
+import { createInventoryRequestMessage, useStore } from '@iris/core';
 import { useEndpointTelemetry } from './useEndpointTelemetry';
 
 const SUBSCRIPTION_POLL_MS = 600000;
@@ -69,7 +69,7 @@ export function usePlayerStats(isVis: boolean, liveMode: boolean): void {
                 if (inventory.cooldownUntil !== null && now < inventory.cooldownUntil) return;
                 if (inventory.nextRefreshAt !== null && now < inventory.nextRefreshAt) return;
             }
-            window.postMessage({ type: 'IRIS_INVENTORY_REQUEST' }, '*');
+            window.postMessage(createInventoryRequestMessage(), '*');
         };
 
         let timerId: number | null = null;

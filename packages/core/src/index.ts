@@ -5,6 +5,7 @@ export * from './logic/EntityLogic';
 export * from './geometry/wrapped-lines';
 export * from './geo-bounds';
 export * from './requests/entities';
+export * from './requests/extension-messages';
 export * from './requests/plext';
 export * from './player-tracker';
 export * from './portal-details';

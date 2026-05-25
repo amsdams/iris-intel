@@ -1,6 +1,6 @@
 import { h, JSX } from 'preact';
 import { useMemo } from 'preact/hooks';
-import { Field, Link, Portal, useStore, InventoryParser, Plext, normalizeTeam, createPlextRequestMessage, type PlextRequestBounds } from '@iris/core';
+import { Field, Link, Portal, useStore, InventoryParser, Plext, normalizeTeam, createInventoryRequestMessage, createPlextRequestMessage, type PlextRequestBounds } from '@iris/core';
 import { COLORS, INGRESS_COLORS } from './MapConstants';
 import { formatMU, formatAP } from './GeoUtils';
 import { CommTab } from './useComm';
@@ -66,7 +66,7 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPor
     };
 
     const refreshInventory = (): void => {
-        window.postMessage({ type: 'IRIS_INVENTORY_REQUEST', force: true }, '*');
+        window.postMessage(createInventoryRequestMessage({ force: true }), '*');
     };
 
     const trackedPlayers = useMemo(() => {

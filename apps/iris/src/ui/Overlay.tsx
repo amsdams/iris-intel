@@ -1,6 +1,6 @@
 import { h, JSX } from 'preact';
 import { useState, useEffect, useCallback, useRef } from 'preact/hooks';
-import { clampMapCamera, MapPerfSnapshot, useStore } from '@iris/core';
+import { clampMapCamera, createGameScoreRequestMessage, createInventoryRequestMessage, createPortalDetailsRequestMessage, createRegionScoreRequestMessage, MapPerfSnapshot, useStore } from '@iris/core';
 import { PlayerStatsPopup } from './domains/player/PlayerStatsPopup';
 import { DiagnosticsPopup } from './domains/debug/DiagnosticsPopup';
 import { PortalInfoPopup } from './domains/portal/PortalInfoPopup';
@@ -334,7 +334,7 @@ export function IRISOverlay(): JSX.Element {
 
     const togglePlayerStatsPopup = (): void => setShowPlayerStatsPopup((v) => !v);
     const toggleInventoryPopup = (): void => {
-        if (!showInventoryPopup) window.postMessage({ type: 'IRIS_INVENTORY_REQUEST' }, '*');
+        if (!showInventoryPopup) window.postMessage(createInventoryRequestMessage(), '*');
         setShowInventoryPopup((v) => !v);
     };
     const toggleDiagnosticsPopup = (): void => setShowDiagnosticsPopup((v) => !v);
@@ -343,13 +343,14 @@ export function IRISOverlay(): JSX.Element {
     const toggleMapSettingsPopup = (): void => setShowMapSettingsPopup((v) => !v);
     const togglePluginsPopup = (): void => setShowPluginsPopup((v) => !v);
     const toggleGameScorePopup = (): void => {
-        if (!showGameScorePopup) window.postMessage({ type: 'IRIS_GAME_SCORE_REQUEST' }, '*');
+        if (!showGameScorePopup) window.postMessage(createGameScoreRequestMessage(), '*');
         setShowGameScorePopup((v) => !v);
     };
     const toggleRegionScorePopup = (): void => {
         if (!showRegionScorePopup) {
             const { lat, lng } = useStore.getState().mapState;
-            window.postMessage({ type: 'IRIS_REGION_SCORE_REQUEST', lat, lng }, '*');
+            const request = createRegionScoreRequestMessage(lat, lng);
+            if (request) window.postMessage(request, '*');
         }
         setShowRegionScorePopup((v) => !v);
     };
@@ -588,7 +589,8 @@ export function IRISOverlay(): JSX.Element {
                 }
 
                 store.selectPortal(selection.id);
-                window.postMessage({type: 'IRIS_PORTAL_DETAILS_REQUEST', guid: selection.id}, '*');
+                const request = createPortalDetailsRequestMessage(selection.id);
+                if (request) window.postMessage(request, '*');
                 setActiveDrawerTab(null);
                 setShowSelectionInfo(shouldOpenInfo);
             } else if (selection.kind === 'link') {
