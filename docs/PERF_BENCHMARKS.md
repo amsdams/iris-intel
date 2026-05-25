@@ -106,6 +106,26 @@ mobile, keep a manual finger-pan note next to Bench output when the deterministi
 Bench now has selectable zoom presets (`Z8`, `Z12`, `Z14.36`, `Z16`), and copied `FRAME` lines include the selected
 benchmark zoom.
 
+## Mini-IRIS vs IRIS Cold Comparison Runbook
+
+Use this when comparing the two apps rather than tracking one app over time.
+
+1. Build both extensions from the same checkout: `npm run build:iris` and `npm run build:mini-iris`.
+2. Load one extension at a time in the same browser profile, or use two profiles with the same viewport and DPR.
+3. Hard reload Intel after enabling each extension. The batch buttons do not reload the page; they benchmark the
+   current loaded source set. Do not pan to a different globe area between captures.
+4. Use the same center, map style, viewport, and toggles. Prefer Amsterdam, OSM, desktop `1920x934` when available.
+5. Let entity requests settle, then run the copied batch flow:
+   - IRIS: Mock tools `Batch`, then `Copy Batch` or `Show Batch`.
+   - Mini-IRIS: `DBG` -> `Run Batch`, then `Copy Batch`.
+6. Compare the shared batch cases first: `z14.36 normal pan`, `z14.36 base pan`, `z14.36 normal zoom`, `z8 normal pan`,
+   `z8 no-links pan`, `z8 no-fields pan`, and `z8 base pan`. Treat later app-specific cases such as IRIS
+   `no-plugins` or Mini `no-players` as local isolation checks, not direct cross-app comparisons.
+7. Confirm the report header says `load current-page hardReload manual`, then compare `sources P/L/F` before comparing
+   `avg`, `fps`, or `slow`. If source counts differ materially, treat the frame numbers as different-load samples, not
+   an app renderer comparison.
+8. Paste both reports under a dated section in this file with any manual finger-pan notes.
+
 ## 2026-05-14 - IRIS 0.1.2 - Chrome Desktop - Zustand 5
 
 Context:

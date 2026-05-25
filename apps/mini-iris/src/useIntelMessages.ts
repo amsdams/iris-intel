@@ -18,7 +18,8 @@ export function useIntelMessages(
     syncToMap: (live: boolean, pattern: number) => void,
     logEvent: (msg: string) => void,
     requestTopologyRefreshFromComm: (hintCount: number) => void,
-    onPlextDebugSnapshot?: (snapshot: PlextDebugSnapshot) => void
+    onPlextDebugSnapshot?: (snapshot: PlextDebugSnapshot) => void,
+    onEntitiesData?: (counts: { portals: number; links: number; fields: number }) => void
 ): void {
     const portalDetailRefreshTimesRef = useRef<Map<string, number>>(new Map());
     const portalDetailPendingRef = useRef<Set<string>>(new Set());
@@ -98,6 +99,11 @@ export function useIntelMessages(
                 if (mapFreshness) store.setTileFreshness(Object.keys(mapFreshness));
                 logEvent(`Live Data: ${parsed.portals.length}P, ${parsed.links.length}L`);
                 syncToMap(liveMode, patternMode);
+                onEntitiesData?.({
+                    portals: parsed.portals.length,
+                    links: parsed.links.length,
+                    fields: parsed.fields.length,
+                });
             } else if (msg.url.includes('getPortalDetails')) {
                 const store = useStore.getState();
                 const guid = stringOrNull(parsedParams.guid) ?? '';
@@ -172,7 +178,7 @@ export function useIntelMessages(
         };
         window.addEventListener('message', handler);
         return (): void => window.removeEventListener('message', handler);
-    }, [liveMode, patternMode, logEvent, requestTopologyRefreshFromComm, onPlextDebugSnapshot, selected, setSelected, syncToMap]);
+    }, [liveMode, patternMode, logEvent, requestTopologyRefreshFromComm, onPlextDebugSnapshot, onEntitiesData, selected, setSelected, syncToMap]);
 }
 
 interface PlayerStatsMessage {

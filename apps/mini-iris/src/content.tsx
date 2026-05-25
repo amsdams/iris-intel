@@ -31,6 +31,7 @@ console.log("Mini IRIS (TS): Tactical Overlay | v1.3.35 | TypeScript 6 Test");
 
 const DEFAULT_MAP_CENTER: [number, number] = [4.8952, 52.3702];
 const DEFAULT_MAP_ZOOM = 13;
+const GEOLOCATION_ZOOM = 16;
 const MAP_STATE_STORAGE_KEY = 'iris-poc-map-state';
 const MAP_STYLE_STORAGE_KEY = 'iris-poc-map-style';
 const PORTAL_HISTORY_STORAGE_KEY = 'iris-poc-portal-history-layers';
@@ -43,6 +44,7 @@ const EXPERIMENTAL_PREFS_STORAGE_KEY = 'mini-iris:preferences:v1';
 const EXPERIMENTAL_PREFS_STORAGE_KEY_V2 = 'mini-iris:preferences:v2';
 const COMM_TO_ENTITY_REFRESH_COOLDOWN_MS = 30_000;
 const COMM_TO_ENTITY_REFRESH_MAX_TILES = 64;
+const ENTITY_REQUEST_BATCH_SIZE = 25;
 
 // Keep preferences as small standalone keys; avoid a broad state object that can affect map lifecycle.
 
@@ -211,6 +213,18 @@ function TacticalOverlay(): h.JSX.Element {
     const mapStateRef = useRef(mapState);
     const mapViewRef = useRef(mapView);
     const initialOpenAppliedRef = useRef(false);
+    const benchmarkPreloadRef = useRef<{
+        id: string;
+        reason: string;
+        tileCount: number;
+        dataZoom: number;
+        diagnostic: string | null;
+        expectedResponses: number;
+        receivedResponses: number;
+        portals: number;
+        links: number;
+        fields: number;
+    } | null>(null);
     const playerTrailDataRef = useRef<GeoJSON.FeatureCollection>({
         type: 'FeatureCollection',
         features: [],
@@ -379,6 +393,49 @@ function TacticalOverlay(): h.JSX.Element {
         syncToMap(mapViewRef.current, currentLiveMode, currentPatternMode);
     }, [syncToMap]);
 
+    const requestEntitiesForView = useCallback((view: MiniMapView, reason: string, options: { clearBeforeRequest?: boolean; force?: boolean; preloadId?: string } = {}): void => {
+        if (options.clearBeforeRequest) {
+            useStore.getState().clearMapEntities();
+            syncToMap(view, liveModeRef.current, patternModeRef.current);
+        }
+
+        const payload = buildEntityRequestPayload(boundsToE6(view.bounds), view.zoom);
+        if (options.preloadId) {
+            benchmarkPreloadRef.current = {
+                id: options.preloadId,
+                reason,
+                tileCount: payload.tileKeys.length,
+                dataZoom: payload.dataZoom,
+                diagnostic: payload.diagnostic,
+                expectedResponses: Math.ceil(payload.tileKeys.length / ENTITY_REQUEST_BATCH_SIZE),
+                receivedResponses: 0,
+                portals: 0,
+                links: 0,
+                fields: 0,
+            };
+        }
+        if (payload.tileKeys.length === 0) {
+            logEvent(`Map refresh: ${reason} skipped (${payload.diagnostic ?? 'no tiles'})`);
+            if (options.preloadId) {
+                postMiniPageMapCommand({
+                    action: 'benchmark-preload-complete',
+                    id: options.preloadId,
+                    summary: `request tiles 0 dataZoom ${payload.dataZoom} diagnostic ${payload.diagnostic ?? 'none'}`,
+                });
+                benchmarkPreloadRef.current = null;
+            }
+            return;
+        }
+
+        for (let i = 0; i < payload.tileKeys.length; i += ENTITY_REQUEST_BATCH_SIZE) {
+            const batch = payload.tileKeys.slice(i, i + ENTITY_REQUEST_BATCH_SIZE);
+            const request = createEntitiesRequestMessage(batch, { force: options.force === true });
+            if (request) window.postMessage(request, '*');
+        }
+        const batchCount = Math.ceil(payload.tileKeys.length / ENTITY_REQUEST_BATCH_SIZE);
+        logEvent(`Map refresh: ${payload.tileKeys.length} tile${payload.tileKeys.length === 1 ? '' : 's'} in ${batchCount} batch${batchCount === 1 ? '' : 'es'} from ${reason}`);
+    }, [logEvent, syncToMap]);
+
     const requestTopologyRefreshFromComm = useCallback((hintCount: number): void => {
         if (!liveModeRef.current) return;
 
@@ -415,7 +472,32 @@ function TacticalOverlay(): h.JSX.Element {
         }, 1_500);
     }, [logEvent]);
 
-    useIntelMessages(liveMode, patternMode, selected, setSelected, syncCurrentView, logEvent, requestTopologyRefreshFromComm, setPlextDebugSnapshot);
+    const handleEntitiesData = useCallback((counts: { portals: number; links: number; fields: number }): void => {
+        const preload = benchmarkPreloadRef.current;
+        if (!preload) return;
+        preload.receivedResponses += 1;
+        preload.portals += counts.portals;
+        preload.links += counts.links;
+        preload.fields += counts.fields;
+        if (preload.receivedResponses < preload.expectedResponses) return;
+
+        benchmarkPreloadRef.current = null;
+        postMiniPageMapCommand({
+            action: 'benchmark-preload-complete',
+            id: preload.id,
+            summary: [
+                `request tiles ${preload.tileCount}`,
+                `batches ${preload.expectedResponses}`,
+                `dataZoom ${preload.dataZoom}`,
+                `response P ${preload.portals}`,
+                `L ${preload.links}`,
+                `F ${preload.fields}`,
+                `diagnostic ${preload.diagnostic ?? 'none'}`,
+            ].join(' '),
+        });
+    }, []);
+
+    useIntelMessages(liveMode, patternMode, selected, setSelected, syncCurrentView, logEvent, requestTopologyRefreshFromComm, setPlextDebugSnapshot, handleEntitiesData);
     const playerTrailData = useMemo<GeoJSON.FeatureCollection>(() => {
         const features: GeoJSON.Feature[] = [];
         const clusters = new Map<string, { lat: number; lng: number; names: string[]; team: string; count: number }>();
@@ -524,6 +606,7 @@ function TacticalOverlay(): h.JSX.Element {
         
         if (currentPatternMode > 0 || currentLiveMode) {
             syncToMap(currentView, currentLiveMode, currentPatternMode);
+            if (currentLiveMode) requestEntitiesForView(currentView, 'view');
             return;
         }
 
@@ -544,7 +627,7 @@ function TacticalOverlay(): h.JSX.Element {
         }
         syncToMap(currentView, currentLiveMode, currentPatternMode);
         if (addedAny) logEvent(`Sim Tiles Loaded (Min L:${minLevel})`);
-    }, [loadedTileKeys, syncToMap, logEvent]);
+    }, [loadedTileKeys, requestEntitiesForView, syncToMap, logEvent]);
 
     const checkAndLoadRef = useRef(checkAndLoad);
 
@@ -786,6 +869,20 @@ function TacticalOverlay(): h.JSX.Element {
                 return;
             }
 
+            if (data.payload.event === 'benchmark-preload') {
+                setMapView(data.payload.view);
+                setMapState({ zoom: data.payload.view.zoom, lat: data.payload.view.lat, lng: data.payload.view.lng });
+                setPlextBounds(boundsToE6(data.payload.view.bounds));
+                if (liveModeRef.current) {
+                    requestEntitiesForView(data.payload.view, `bench z${data.payload.zoom.toFixed(2)}`, {
+                        clearBeforeRequest: true,
+                        force: true,
+                        preloadId: data.payload.id,
+                    });
+                }
+                return;
+            }
+
             if (data.payload.event === 'benchmark-batch') {
                 setBenchBatchRunning(false);
                 setBenchBatchReport(data.payload.report);
@@ -801,7 +898,7 @@ function TacticalOverlay(): h.JSX.Element {
 
         window.addEventListener('message', handler);
         return (): void => window.removeEventListener('message', handler);
-    }, [generator, logEvent, scheduleMoveSettleLoad, throttledSync]);
+    }, [generator, logEvent, requestEntitiesForView, scheduleMoveSettleLoad, throttledSync]);
 
     useEffect(() => {
         if (!initialMiniIrisOpen || initialOpenAppliedRef.current || isVis) return;
@@ -877,7 +974,7 @@ function TacticalOverlay(): h.JSX.Element {
             logEvent("Geolocating...");
             navigator.geolocation.getCurrentPosition((pos): void => {
                 const { latitude, longitude } = pos.coords;
-                postMiniPageMapCommand({ action: 'fly-to', lat: latitude, lng: longitude, zoom: 16, duration: 1200 });
+                postMiniPageMapCommand({ action: 'fly-to', lat: latitude, lng: longitude, zoom: GEOLOCATION_ZOOM, duration: 1200 });
                 logEvent(`Located: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
             }, (err): void => {
                 logEvent(`Location Failed: ${err.message}`);

@@ -8,13 +8,12 @@ from here when they become tracked work.
 
 ## Current Next Pickup
 
-1. **[Mini-IRIS Bench]** Capture next Mini/IRIS comparison from cold reloads in the same area/zoom; compare source
-   counts before frame timing because warm IRIS storage can retain entities from previous globe locations.
-2. **[Shared Runtime]** Continue the cross-app audit with backend/engine/domain candidates, not shared UI.
-3. **[Shared Runtime]** Pause further package extraction unless smoke testing shows duplication or regressions; recent
+1. **[Shared Runtime]** Resume the cross-app audit with backend/engine/domain candidates, not shared UI; Mini/IRIS
+   benchmark polishing is paused with follow-up notes captured below.
+2. **[Shared Runtime]** Pause further package extraction unless smoke testing shows duplication or regressions; recent
    Mini-IRIS polish checks are stable enough to resume shared-boundary work.
-4. **[Shared Runtime]** Prefer request/data/parsing/entity lifecycle extraction before UI component sharing.
-5. **[Shared Runtime]** Keep semantic colors in mind as a boundary candidate: IRIS now has a richer active-theme
+3. **[Shared Runtime]** Prefer request/data/parsing/entity lifecycle extraction before UI component sharing.
+4. **[Shared Runtime]** Keep semantic colors in mind as a boundary candidate: IRIS now has a richer active-theme
    contract, but do not extract it to shared core until Mini-IRIS has a matching need or a small shared style-domain
    module becomes clearly useful.
 
@@ -523,6 +522,7 @@ Bugs:
 | Bug                                                                     | Status | Notes                                                                                                                                  |
 |-------------------------------------------------------------------------|--------|----------------------------------------------------------------------------------------------------------------------------------------|
 | Viewport missions popup can stay stuck on "Move the map once" after pan | Done   | preserving existing `mapState.bounds` when sync updates arrive without bounds keeps viewport missions available after pan/startup sync |
+| IRIS can reopen in Accra after extension-manager reload                 | Open   | observed after reloading the IRIS plugin/extension from Firefox extension manager; Mini-IRIS does not show the same behavior, so compare startup camera persistence, Intel startup cookies, and extension reload timing |
 
 ### Portal details show richer derived stats after targeted investigation
 
@@ -1219,6 +1219,38 @@ Tasks:
 | Consider smooth jump behavior for explicit IRIS jumps         | Open    | Mini-IRIS uses `flyTo` for explicit portal jumps while IRIS mostly uses `jumpTo`; evaluate only for user-triggered jumps, not ordinary selection                                                                                                                                                                 |
 | Consider MapLibre style-image player pins for IRIS            | Open    | Mini-IRIS now renders player activity as team-coloured `addImage`/symbol-layer pins above map entities; evaluate replacing IRIS player marker rendering with the same source/layer approach later                                                                                                                |
 | Improve entity refresh after live COMM activity               | Done    | recent COMM messages with portal/link coordinates now use shared refresh hints; IRIS schedules a capped targeted portal-details refresh for known visible portals plus a short, coalesced current-view entity refresh for topology with dedicated cooldowns to avoid extra request pressure                      |
+
+### Mini/IRIS benchmark comparison pause notes
+
+Status: `Open`
+
+Outcome:
+
+- stop polishing benchmark UX for now
+- keep enough evidence to resume later without rediscovering the same issues
+
+Findings:
+
+| Finding                                               | Notes                                                                                                                                                                                                                                            |
+|-------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Source counts dominate the comparison                 | Mini-IRIS consistently renders much less data than IRIS in current samples; compare `sources P/L/F` before frame timing, and treat mismatched source counts as different-load samples rather than renderer wins/losses.                       |
+| The shared scenario matrix is now aligned             | First seven batch rows are shared: `z14.36 normal pan`, `z14.36 base pan`, `z14.36 normal zoom`, `z8 normal pan`, `z8 no-links pan`, `z8 no-fields pan`, and `z8 base pan`; app-specific rows follow after that.                              |
+| Mini z8 request batching was required                 | Mini initially sent a 120-tile z8 `getEntities` request and Intel returned HTTP 400; Mini now batches entity requests in 25-tile chunks like IRIS.                                                                                              |
+| Bench preloads now clear entity storage               | Both apps clear portal/link/field/tile freshness before benchmark preload so warm storage does not contaminate the source set; this is benchmark-only and should not be treated as normal map refresh behavior.                                |
+| Preload diagnostics are useful                        | Mini reports requested tiles, batches, data zoom, and response counts; IRIS reports requested tiles, batches, data zoom, loaded store counts, diagnostics, skip reason, and timeout state.                                                       |
+| IRIS and Mini still derive preload coverage differently | IRIS preload currently uses store/map-state bounds and can request capped coverage after reload; Mini uses page-world MapLibre bounds after jumping the benchmark zoom. A future fair comparison should derive coverage from the same camera/bounds contract in both apps. |
+| Latest Mini/IRIS timings are not apples-to-apples     | Latest Firefox samples had Mini z8 normal around `3.6k` rendered items / `1.2k P` / `1.7k L` / `0.7k F`, while IRIS z8 normal was around `32k` rendered items / `9.2k P` / `16.4k L` / `6.8k F`; Mini's faster frame timing mostly reflects a much lighter current workload. |
+| Preload tile coverage differs by app                  | Latest Mini z14 preload requested `8` tiles and z8 requested `120`; latest IRIS z14 requested up to the `1,024` tile cap and z8 requested `91`. This points to a remaining camera/bounds mismatch before making benchmark claims.                 |
+| App-specific isolation rows are not direct comparisons | IRIS `no-plugins` and Mini `no-players` isolate different rendering paths; use them for local diagnosis only, not cross-app claims.                                                                                                             |
+
+Follow-ups:
+
+| Task                                                       | Status | Notes                                                                                                                                                                                          |
+|------------------------------------------------------------|--------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Share benchmark scenario definitions                       | Open   | move the shared benchmark matrix and app-specific extras into a common module or documented constant so IRIS and Mini cannot drift silently                                                     |
+| Share benchmark preload/coverage calculation               | Open   | compute benchmark tile coverage from an explicit camera and current viewport in the same way for both apps, preferably from page-world MapLibre bounds after the preload camera jump            |
+| Add IRIS response-count preload diagnostics                | Open   | IRIS currently reports loaded store counts after preload; if comparison remains ambiguous, report active entity response counts like Mini does                                                   |
+| Keep benchmark polish paused until needed                  | Open   | current instrumentation is enough to diagnose broad renderer/source-count differences; resume only when comparison quality blocks a concrete performance decision                               |
 
 ## Mini-IRIS Page-World Alignment
 

@@ -1,6 +1,8 @@
 import { getCsrfToken, InterceptorMessage } from './interceptor-runtime';
 import type { SessionRuntime } from './session-runtime';
 
+const GEOLOCATION_ZOOM = 16;
+
 function reportActiveRequestError(domain: string, error: unknown, detail?: string): void {
     const message = error instanceof Error ? error.message : String(error);
     window.postMessage({
@@ -283,7 +285,7 @@ export function handleActiveRequestMessage(
                         type: 'IRIS_INITIAL_POSITION',
                         lat: pos.coords.latitude,
                         lng: pos.coords.longitude,
-                        zoom: 15,
+                        zoom: GEOLOCATION_ZOOM,
                     }, '*');
                 },
                 (err) => {

@@ -1,5 +1,5 @@
 import { h, JSX } from 'preact';
-import { useStore } from '@iris/core';
+import { buildEntityRequestPayload, useStore } from '@iris/core';
 import { useRenderDiagnostics } from './useRenderDiagnostics';
 import { useState } from 'preact/hooks';
 
@@ -44,20 +44,23 @@ interface BenchmarkBatchCase {
 }
 
 const BENCHMARK_BATCH: BenchmarkBatchCase[] = [
-    {label: 'z14 normal pan', variant: 'normal', zoom: 14.36, mode: 'pan'},
-    {label: 'z14 base pan', variant: 'base', zoom: 14.36, mode: 'pan'},
-    {label: 'z14 no-plugins pan', variant: 'no-plugins', zoom: 14.36, mode: 'pan'},
-    {label: 'z14 normal zoom', variant: 'normal', zoom: 14.36, mode: 'zoom'},
-    {label: 'z14 no-plugins zoom', variant: 'no-plugins', zoom: 14.36, mode: 'zoom'},
+    {label: 'z14.36 normal pan', variant: 'normal', zoom: 14.36, mode: 'pan'},
+    {label: 'z14.36 base pan', variant: 'base', zoom: 14.36, mode: 'pan'},
+    {label: 'z14.36 normal zoom', variant: 'normal', zoom: 14.36, mode: 'zoom'},
     {label: 'z8 normal pan', variant: 'normal', zoom: 8, mode: 'pan'},
     {label: 'z8 no-links pan', variant: 'no-links', zoom: 8, mode: 'pan'},
     {label: 'z8 no-fields pan', variant: 'no-fields', zoom: 8, mode: 'pan'},
     {label: 'z8 base pan', variant: 'base', zoom: 8, mode: 'pan'},
+    {label: 'z14.36 no-plugins pan', variant: 'no-plugins', zoom: 14.36, mode: 'pan'},
+    {label: 'z14.36 no-plugins zoom', variant: 'no-plugins', zoom: 14.36, mode: 'zoom'},
     {label: 'z8 no-plugins pan', variant: 'no-plugins', zoom: 8, mode: 'pan'},
 ];
 
 const BENCHMARK_BATCH_TIMEOUT_MS = 45_000;
 const BENCHMARK_BATCH_POLL_MS = 250;
+const BENCHMARK_PRELOAD_MOVE_SETTLE_MS = 3_600;
+const BENCHMARK_PRELOAD_TIMEOUT_MS = 25_000;
+const ENTITY_REQUEST_BATCH_SIZE = 25;
 
 function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => {
@@ -134,10 +137,58 @@ async function waitForBenchmarkResult(testCase: BenchmarkBatchCase, startedAt: n
     throw new Error(`Timed out waiting for ${testCase.label}`);
 }
 
+function buildPreloadSummary(zoom: BenchmarkZoom, timedOut: boolean): string {
+    const state = useStore.getState();
+    const bounds = state.mapState.bounds;
+    const payload = bounds ? buildEntityRequestPayload(bounds, zoom) : null;
+    const entities = state.endpointDiagnostics.entities;
+    const tileCount = payload?.tileKeys.length ?? 0;
+    const batchCount = Math.ceil(tileCount / ENTITY_REQUEST_BATCH_SIZE);
+
+    return [
+        `request tiles ${formatCount(tileCount)}`,
+        `batches ${formatCount(batchCount)}`,
+        `dataZoom ${formatCount(payload?.dataZoom)}`,
+        `loaded P ${formatCount(Object.keys(state.portals).length)}`,
+        `L ${formatCount(Object.keys(state.links).length)}`,
+        `F ${formatCount(Object.keys(state.fields).length)}`,
+        `diagnostic ${payload?.diagnostic ?? 'none'}`,
+        `skip ${entities.lastSkipReason ?? 'none'}`,
+        timedOut ? 'timeout yes' : 'timeout no',
+    ].join(' ');
+}
+
+async function preloadBenchmarkZoom(zoom: BenchmarkZoom): Promise<string> {
+    const state = useStore.getState();
+    const { lat, lng } = state.mapState;
+    const startedAt = Date.now();
+
+    state.clearMapEntities();
+    window.postMessage({ type: 'IRIS_MOVE_MAP', center: { lat, lng }, zoom }, '*');
+    await sleep(BENCHMARK_PRELOAD_MOVE_SETTLE_MS);
+    window.postMessage({ type: 'IRIS_REFRESH_CURRENT_VIEW', reason: 'manual' }, '*');
+
+    const deadline = Date.now() + BENCHMARK_PRELOAD_TIMEOUT_MS;
+    while (Date.now() < deadline) {
+        const entities = useStore.getState().endpointDiagnostics.entities;
+        const hasObservedRefresh =
+            (entities.lastSuccessAt !== null && entities.lastSuccessAt >= startedAt) ||
+            (entities.lastAttemptAt !== null && entities.lastAttemptAt >= startedAt && entities.lastSkipReason !== null);
+        if (entities.status !== 'in_flight' && hasObservedRefresh) {
+            await sleep(500);
+            return buildPreloadSummary(zoom, false);
+        }
+        await sleep(BENCHMARK_BATCH_POLL_MS);
+    }
+
+    return buildPreloadSummary(zoom, true);
+}
+
 function buildBatchReport(lines: string[]): string {
     const viewport = `${window.innerWidth}x${window.innerHeight}`;
     const dpr = Number.isFinite(window.devicePixelRatio) ? window.devicePixelRatio.toFixed(2) : '-';
-    const context = `IRIS BENCH BATCH browser ${navigator.userAgent.match(/(Chrome|Firefox|Edg|Version)\/[\d.]+/)?.[0] ?? 'unknown'} platform ${navigator.platform || '-'} viewport ${viewport} dpr ${dpr}`;
+    const mapState = useStore.getState().mapState;
+    const context = `IRIS BENCH BATCH browser ${navigator.userAgent.match(/(Chrome|Firefox|Edg|Version)\/[\d.]+/)?.[0] ?? 'unknown'} platform ${navigator.platform || '-'} viewport ${viewport} dpr ${dpr} center ${mapState.lat.toFixed(5)},${mapState.lng.toFixed(5)} z${mapState.zoom.toFixed(2)} load current-page hardReload manual`;
     return [context, ...lines].join('\n');
 }
 
@@ -244,9 +295,16 @@ export function MockToolsBar(): JSX.Element | null {
         setBatchRunning(true);
         setLastBatchReport('');
         const lines: string[] = [];
+        let preloadedZoom: BenchmarkZoom | null = null;
 
         try {
             for (const [index, testCase] of BENCHMARK_BATCH.entries()) {
+                if (preloadedZoom !== testCase.zoom) {
+                    setBatchStatus(`preload z${testCase.zoom}`);
+                    const preloadSummary = await preloadBenchmarkZoom(testCase.zoom);
+                    lines.push(`PRELOAD z${testCase.zoom} | ${preloadSummary}`);
+                    preloadedZoom = testCase.zoom;
+                }
                 setBatchStatus(`${index + 1}/${BENCHMARK_BATCH.length} ${testCase.label}`);
                 const startedAt = Date.now();
                 window.postMessage({

@@ -59,6 +59,7 @@ const PAGE_MAP_RUNTIME_CAMERA_SYNC_DEBOUNCE_MS = 80;
 const EVENT_LOOP_LAG_SAMPLE_MS = 1000;
 const EVENT_LOOP_LAG_THRESHOLD_MS = 120;
 const IRIS_HISTORY_STATE_KEY = '__irisOverlay';
+const GEOLOCATION_ZOOM = 16;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null;
@@ -453,7 +454,7 @@ export function IRISOverlay(): JSX.Element {
         setLocating(true);
         navigator.geolocation.getCurrentPosition(
             ({ coords }) => {
-                window.postMessage({ type: 'IRIS_MOVE_MAP', center: { lat: coords.latitude, lng: coords.longitude }, zoom: 15 }, '*');
+                window.postMessage({ type: 'IRIS_MOVE_MAP', center: { lat: coords.latitude, lng: coords.longitude }, zoom: GEOLOCATION_ZOOM }, '*');
                 setLocating(false);
             },
             () => setLocating(false),

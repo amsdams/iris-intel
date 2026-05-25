@@ -56,6 +56,7 @@ export type MiniPageMapCommand =
             extrusionEnabled: boolean;
         };
     }
+    | { action: 'benchmark-preload-complete'; id: string; summary: string }
     | { action: 'nav'; nav: '+' | '-' | 'up' | 'down' | 'left' | 'right' | 'reset' }
     | { action: 'fly-to'; lat: number; lng: number; zoom: number; duration?: number }
     | { action: 'ease-to'; lat: number; lng: number; zoom: number; duration?: number }
@@ -65,6 +66,7 @@ export type MiniPageMapEvent =
     | { event: 'ready'; view: MiniMapView }
     | { event: 'camera'; view: MiniMapView; settled: boolean }
     | { event: 'selection'; kind: MiniMapSelectionKind; id: string; intent: MiniMapSelectionIntent }
+    | { event: 'benchmark-preload'; id: string; view: MiniMapView; zoom: number }
     | { event: 'benchmark-batch'; report: string }
     | { event: 'clear-selection' };
 

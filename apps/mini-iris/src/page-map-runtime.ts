@@ -27,6 +27,8 @@ let currentPortalPaint = {
 let currentEntities: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
 let currentPlayers: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
 let benchmarkActive = false;
+const benchmarkPreloadResolvers = new Map<string, () => void>();
+const benchmarkPreloadSummaries = new Map<string, string>();
 
 type CirclePaint = NonNullable<CircleLayerSpecification['paint']>;
 type SymbolLayout = NonNullable<SymbolLayerSpecification['layout']>;
@@ -87,6 +89,7 @@ const PLAYER_LAYERS = ['player-trails', 'player-pins', 'player-label-bg', 'playe
 const SECONDARY_LAYERS = ['p-artifacts', 'p-ornaments', 'p-key-count-bg', 'p-key-count-total', 'p-key-count-split'] as const;
 const BENCHMARK_RUN_MS = 2200;
 const BENCHMARK_SETTLE_MS = 140;
+const BENCHMARK_PRELOAD_TIMEOUT_MS = 30_000;
 const BENCHMARK_PAN_PX = 280;
 const BENCHMARK_ZOOM_DELTA = 1.35;
 const MOBILE_LONG_PRESS_MS = 650;
@@ -211,6 +214,10 @@ function waitForIdle(currentMap: maplibregl.Map): Promise<void> {
     });
 }
 
+function formatBenchmarkZoom(zoom: number): string {
+    return Number.isInteger(zoom) ? zoom.toFixed(0) : zoom.toFixed(2);
+}
+
 async function runBenchmarkScenario(variant: MiniBenchmarkVariant, zoom: number, mode: MiniBenchmarkMode): Promise<string> {
     if (!map) return '';
     const restoreLayers = applyBenchmarkVariant(variant);
@@ -277,7 +284,7 @@ async function runBenchmarkScenario(variant: MiniBenchmarkVariant, zoom: number,
         const slow = aggregate?.slowFrameCount ?? 0;
         const frames = aggregate?.frameCount ?? 0;
         return [
-            `z${zoom.toFixed(0)} ${variant} ${mode}`,
+            `z${formatBenchmarkZoom(zoom)} ${variant} ${mode}`,
             `items ${visibleCounts.total.toLocaleString()}`,
             `P ${visibleCounts.portals.toLocaleString()}`,
             `L ${visibleCounts.links.toLocaleString()}`,
@@ -299,19 +306,51 @@ async function runBenchmarkScenario(variant: MiniBenchmarkVariant, zoom: number,
     }
 }
 
+function waitForBenchmarkPreload(id: string): Promise<string> {
+    return new Promise((resolve) => {
+        let timeoutId: number | null = null;
+        const finish = (): void => {
+            if (timeoutId !== null) window.clearTimeout(timeoutId);
+            benchmarkPreloadResolvers.delete(id);
+            resolve(benchmarkPreloadSummaries.get(id) ?? 'timeout');
+            benchmarkPreloadSummaries.delete(id);
+        };
+        timeoutId = window.setTimeout(finish, BENCHMARK_PRELOAD_TIMEOUT_MS);
+        benchmarkPreloadResolvers.set(id, finish);
+    });
+}
+
+async function preloadBenchmarkZoom(zoom: number, liveMode: boolean): Promise<string> {
+    if (!map) return 'no map';
+    const center = map.getCenter();
+    map.jumpTo({ center: [center.lng, center.lat], zoom });
+    await waitForIdle(map);
+    if (!liveMode) {
+        await wait(BENCHMARK_SETTLE_MS);
+        return 'mock/no live request';
+    }
+    const id = `${Date.now()}:${Math.random().toString(36).slice(2)}`;
+    const ready = waitForBenchmarkPreload(id);
+    postEvent({ event: 'benchmark-preload', id, view: getView(map), zoom });
+    const summary = await ready;
+    await wait(BENCHMARK_SETTLE_MS);
+    return summary;
+}
+
 async function runBenchmarkBatch(context: Extract<MiniPageMapCommandMessage['command'], { action: 'run-benchmark-batch' }>['context']): Promise<void> {
     if (!map || benchmarkActive) return;
     benchmarkActive = true;
     const originalCenter = map.getCenter();
     const originalZoom = map.getZoom();
     const scenarios: { zoom: number; variant: MiniBenchmarkVariant; mode: MiniBenchmarkMode }[] = [
-        { zoom: 14, variant: 'normal', mode: 'pan' },
-        { zoom: 14, variant: 'base', mode: 'pan' },
-        { zoom: 14, variant: 'normal', mode: 'zoom' },
+        { zoom: 14.36, variant: 'normal', mode: 'pan' },
+        { zoom: 14.36, variant: 'base', mode: 'pan' },
+        { zoom: 14.36, variant: 'normal', mode: 'zoom' },
         { zoom: 8, variant: 'normal', mode: 'pan' },
         { zoom: 8, variant: 'no-links', mode: 'pan' },
         { zoom: 8, variant: 'no-fields', mode: 'pan' },
         { zoom: 8, variant: 'base', mode: 'pan' },
+        { zoom: 14.36, variant: 'no-players', mode: 'pan' },
         { zoom: 8, variant: 'no-players', mode: 'pan' },
     ];
 
@@ -322,12 +361,22 @@ async function runBenchmarkBatch(context: Extract<MiniPageMapCommandMessage['com
             `platform ${navigator.platform}`,
             `viewport ${window.innerWidth}x${window.innerHeight}`,
             `dpr ${Number.isFinite(window.devicePixelRatio) ? window.devicePixelRatio.toFixed(2) : '-'}`,
+            `center ${originalCenter.lat.toFixed(5)},${originalCenter.lng.toFixed(5)}`,
+            `z${originalZoom.toFixed(2)}`,
+            'load current-page',
+            'hardReload manual',
             context.liveMode ? 'mode live' : `mode mock${context.patternMode}`,
             `toggles lvl ${context.portalLevelColorEnabled ? 'on' : 'off'} hp ${context.portalHealthColorEnabled ? 'on' : 'off'} keys ${context.keyOverlayEnabled ? 'on' : 'off'} 3d ${context.extrusionEnabled ? 'on' : 'off'}`,
         ].join(' ');
 
         const lines: string[] = [header];
+        let preloadedZoom: number | null = null;
         for (const scenario of scenarios) {
+            if (preloadedZoom === null || Math.abs(preloadedZoom - scenario.zoom) > 0.01) {
+                const preloadSummary = await preloadBenchmarkZoom(scenario.zoom, context.liveMode);
+                lines.push(`PRELOAD z${formatBenchmarkZoom(scenario.zoom)} | ${preloadSummary}`);
+                preloadedZoom = scenario.zoom;
+            }
             lines.push(await runBenchmarkScenario(scenario.variant, scenario.zoom, scenario.mode));
             await wait(BENCHMARK_SETTLE_MS);
         }
@@ -638,6 +687,10 @@ function handleCommand(command: MiniPageMapCommandMessage['command']): void {
             break;
         case 'run-benchmark-batch':
             void runBenchmarkBatch(command.context);
+            break;
+        case 'benchmark-preload-complete':
+            benchmarkPreloadSummaries.set(command.id, command.summary);
+            benchmarkPreloadResolvers.get(command.id)?.();
             break;
         case 'nav':
             if (command.nav === '+') map.zoomIn();

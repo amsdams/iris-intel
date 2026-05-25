@@ -581,6 +581,7 @@ interface EntitiesSlice {
     updatePortals: (portals: Partial<Portal>[]) => void;
     updateLinks: (links: Partial<Link>[]) => void;
     updateFields: (fields: Partial<Field>[]) => void;
+    clearMapEntities: () => void;
     updateArtifacts: (artifacts: Artifact[]) => void;
     setMockOrnaments: (mockOrnaments: Record<string, string[]>) => void;
     clearMockOrnaments: () => void;
@@ -989,6 +990,15 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
             globalSpatialIndex.updateField(updated);
         });
         return { fields };
+    }),
+    clearMapEntities: () => set(() => {
+        globalSpatialIndex.clear();
+        return {
+            portals: {},
+            links: {},
+            fields: {},
+            tileFreshness: {},
+        };
     }),
     updateArtifacts: (newArtifacts) => set(() => {
         const artifacts: Record<string, Artifact> = {};
