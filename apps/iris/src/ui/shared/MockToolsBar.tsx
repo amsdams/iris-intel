@@ -1,5 +1,5 @@
 import { h, JSX } from 'preact';
-import { ENTITY_REQUEST_BATCH_SIZE, buildEntityRequestPayload, useStore } from '@iris/core';
+import { ENTITY_REQUEST_BATCH_SIZE, IRIS_BENCHMARK_SCENARIOS, buildEntityRequestPayload, useStore, type BenchmarkMode, type BenchmarkScenario, type BenchmarkZoom, type IrisBenchmarkVariant } from '@iris/core';
 import { useRenderDiagnostics } from './useRenderDiagnostics';
 import { useState } from 'preact/hooks';
 
@@ -32,29 +32,10 @@ const BENCHMARK_MODES = [
     {label: 'Zoom', value: 'zoom'},
 ] as const;
 
-type BenchmarkVariant = typeof BENCHMARK_VARIANTS[number]['value'];
-type BenchmarkZoom = typeof BENCHMARK_ZOOMS[number]['value'];
-type BenchmarkMode = typeof BENCHMARK_MODES[number]['value'];
+type BenchmarkVariant = IrisBenchmarkVariant;
+type BenchmarkBatchCase = BenchmarkScenario<IrisBenchmarkVariant>;
 
-interface BenchmarkBatchCase {
-    label: string;
-    variant: BenchmarkVariant;
-    zoom: BenchmarkZoom;
-    mode: BenchmarkMode;
-}
-
-const BENCHMARK_BATCH: BenchmarkBatchCase[] = [
-    {label: 'z14.36 normal pan', variant: 'normal', zoom: 14.36, mode: 'pan'},
-    {label: 'z14.36 base pan', variant: 'base', zoom: 14.36, mode: 'pan'},
-    {label: 'z14.36 normal zoom', variant: 'normal', zoom: 14.36, mode: 'zoom'},
-    {label: 'z8 normal pan', variant: 'normal', zoom: 8, mode: 'pan'},
-    {label: 'z8 no-links pan', variant: 'no-links', zoom: 8, mode: 'pan'},
-    {label: 'z8 no-fields pan', variant: 'no-fields', zoom: 8, mode: 'pan'},
-    {label: 'z8 base pan', variant: 'base', zoom: 8, mode: 'pan'},
-    {label: 'z14.36 no-plugins pan', variant: 'no-plugins', zoom: 14.36, mode: 'pan'},
-    {label: 'z14.36 no-plugins zoom', variant: 'no-plugins', zoom: 14.36, mode: 'zoom'},
-    {label: 'z8 no-plugins pan', variant: 'no-plugins', zoom: 8, mode: 'pan'},
-];
+const BENCHMARK_BATCH: readonly BenchmarkBatchCase[] = IRIS_BENCHMARK_SCENARIOS;
 
 const BENCHMARK_BATCH_TIMEOUT_MS = 45_000;
 const BENCHMARK_BATCH_POLL_MS = 250;

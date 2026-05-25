@@ -1,7 +1,7 @@
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { CircleLayerSpecification, SymbolLayerSpecification } from '@maplibre/maplibre-gl-style-spec';
-import { addFrameDelta, aggregateBenchmarkFrameSnapshots, createFrameSampleAccumulator } from '@iris/core';
+import { MINI_BENCHMARK_SCENARIOS, addFrameDelta, aggregateBenchmarkFrameSnapshots, createFrameSampleAccumulator } from '@iris/core';
 import { INGRESS_ENTITY_STYLE, INGRESS_HEALTH_COLORS, INGRESS_MISC_COLORS, INGRESS_NEUTRAL_PORTAL_COLORS } from '@iris/core/ingress-map-style';
 import { COLORS, INGRESS_COLORS, ITEM_LEVEL_COLORS, MAP_STYLES, PLAYER_TRACKER_COLORS, type MapStyleName } from './MapConstants';
 import {
@@ -342,17 +342,7 @@ async function runBenchmarkBatch(context: Extract<MiniPageMapCommandMessage['com
     benchmarkActive = true;
     const originalCenter = map.getCenter();
     const originalZoom = map.getZoom();
-    const scenarios: { zoom: number; variant: MiniBenchmarkVariant; mode: MiniBenchmarkMode }[] = [
-        { zoom: 14.36, variant: 'normal', mode: 'pan' },
-        { zoom: 14.36, variant: 'base', mode: 'pan' },
-        { zoom: 14.36, variant: 'normal', mode: 'zoom' },
-        { zoom: 8, variant: 'normal', mode: 'pan' },
-        { zoom: 8, variant: 'no-links', mode: 'pan' },
-        { zoom: 8, variant: 'no-fields', mode: 'pan' },
-        { zoom: 8, variant: 'base', mode: 'pan' },
-        { zoom: 14.36, variant: 'no-players', mode: 'pan' },
-        { zoom: 8, variant: 'no-players', mode: 'pan' },
-    ];
+    const scenarios = MINI_BENCHMARK_SCENARIOS;
 
     try {
         const header = [

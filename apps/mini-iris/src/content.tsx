@@ -1,7 +1,7 @@
 import { render, h, Fragment } from 'preact';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'preact/hooks';
 import { MockDataGenerator } from './MockDataGenerator';
-import { useStore, getMinLevelForZoom, getGridSizeForZoom, boundsToE6, addFrameDelta, batchEntityTileKeys, buildEntityRequestPayload, createArtifactsRequestMessage, createEntitiesRequestMessage, createFrameSampleAccumulator, createInventoryRequestMessage, createPortalDetailsRequestMessage, formatCompactEndpointActivityMessage, parseMapCamera, parsePortalHistoryLayerState, parseStringChoice, readStorageBoolean, readStorageJson, readStorageString, resetFrameSampleAccumulator, selectCommTopologyRefresh, writeStorageBoolean, writeStorageJson, writeStorageString, Portal, Link, Field, type InventoryItem, type PlextRequestBounds } from '@iris/core';
+import { useStore, getMinLevelForZoom, getGridSizeForZoom, boundsToE6, addFrameDelta, batchEntityTileKeys, buildEntityRequestPayload, createArtifactsRequestMessage, createEntitiesRequestMessage, createFrameSampleAccumulator, createInventoryRequestMessage, createPortalDetailsRequestMessage, formatCompactEndpointActivityMessage, parseEndpointStateTelemetry, parseMapCamera, parsePortalHistoryLayerState, parseStringChoice, readStorageBoolean, readStorageJson, readStorageString, resetFrameSampleAccumulator, selectCommTopologyRefresh, writeStorageBoolean, writeStorageJson, writeStorageString, Portal, Link, Field, type InventoryItem, type PlextRequestBounds } from '@iris/core';
 import { TacticalUI } from './TacticalUI';
 import { MAP_STYLES, type MapStyleName } from './MapConstants';
 import { LaunchButton } from './LaunchButton';
@@ -15,7 +15,6 @@ import { usePlayerStats } from './usePlayerStats';
 import { usePlayerTracker, type PlayerAction, type PlayerHistory } from './usePlayerTracker';
 import { useEndpointTelemetry } from './useEndpointTelemetry';
 import { throttle } from './GeoUtils';
-import { isEndpointStateMessage, numberOrNull, stringOrNull } from './messages';
 import { DEFAULT_PORTAL_HISTORY_LAYERS, nextPortalHistoryMode, type PortalHistoryKey, type PortalHistoryLayerState } from './portalHistory';
 import type { MiniFrameStats, MiniRenderStats } from './diagnostics';
 import { MINI_IRIS_UI_FONT } from './typography';
@@ -335,17 +334,14 @@ function TacticalOverlay(): h.JSX.Element {
 
     useEffect(() => {
         const handler = (event: MessageEvent): void => {
-            const msg: unknown = event.data;
-            if (!isEndpointStateMessage(msg)) return;
-
-            const endpoint = stringOrNull(msg.endpoint) ?? 'unknown';
-            const status = stringOrNull(msg.status);
-            const message = formatCompactEndpointActivityMessage(endpoint, {
-                status: status === 'in_flight' ? 'in_flight' : status === 'error' ? 'error' : 'idle',
-                lastSkipReason: stringOrNull(msg.lastSkipReason),
-                cooldownUntil: numberOrNull(msg.cooldownUntil),
-                nextRefreshAt: numberOrNull(msg.nextRefreshAt),
-                inFlightCount: numberOrNull(msg.inFlightCount) ?? undefined,
+            const parsed = parseEndpointStateTelemetry(event.data);
+            if (!parsed) return;
+            const message = formatCompactEndpointActivityMessage(parsed.endpoint, {
+                status: parsed.telemetry.status,
+                lastSkipReason: parsed.telemetry.lastSkipReason,
+                cooldownUntil: parsed.telemetry.cooldownUntil,
+                nextRefreshAt: parsed.telemetry.nextRefreshAt,
+                inFlightCount: parsed.telemetry.inFlightCount,
             });
             if (message) logEvent(message);
         };

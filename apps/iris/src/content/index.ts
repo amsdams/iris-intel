@@ -485,22 +485,23 @@ window.addEventListener('message', (event: MessageEvent) => {
 
   switch (type) {
     case 'IRIS_INTEL_STARTUP_POSITION': {
-      const { lat, lng, zoom } = msg as { lat: number; lng: number; zoom: number };
-      handleIntelStartupPosition({ lat, lng, zoom });
+      const camera = parseMapCamera(msg, {rejectNullIsland: false});
+      if (camera) handleIntelStartupPosition(clampMapCamera(camera, {minZoom: IRIS_PAGE_MAP_MIN_ZOOM}));
       break;
     }
 
     case 'IRIS_INTEL_POSITION_SYNC':
     case 'IRIS_INITIAL_POSITION': {
-      const { lat, lng, zoom } = msg as { lat: number; lng: number; zoom: number };
+      const incomingCamera = parseMapCamera(msg, {rejectNullIsland: false});
+      if (!incomingCamera) break;
       hasInitialPosition = true;
       const state = useStore.getState();
       const currentZoom = state.mapState.zoom;
       // If the incoming zoom is an integer (from Intel) and close to our current zoom,
       // it's likely just Intel snapping to integer zoom levels.
       // We keep our fractional zoom to avoid the "bounce" effect.
-      const targetZoom = (Math.abs(currentZoom - zoom) < 0.5) ? currentZoom : zoom;
-      const camera = clampMapCamera({lat, lng, zoom: targetZoom}, {minZoom: IRIS_PAGE_MAP_MIN_ZOOM});
+      const targetZoom = (Math.abs(currentZoom - incomingCamera.zoom) < 0.5) ? currentZoom : incomingCamera.zoom;
+      const camera = clampMapCamera({...incomingCamera, zoom: targetZoom}, {minZoom: IRIS_PAGE_MAP_MIN_ZOOM});
       state.updateMapState(camera.lat, camera.lng, camera.zoom);
       break;
     }

@@ -1,3 +1,5 @@
+import type { RuntimeMapBoundsE6, RuntimeMapCamera } from '@iris/core';
+
 export const PAGE_MAP_RUNTIME_MESSAGES = {
     showMap: 'IRIS_PAGE_MAP_RUNTIME_SHOW_MAP',
     hideMap: 'IRIS_PAGE_MAP_RUNTIME_HIDE_MAP',
@@ -19,18 +21,8 @@ export const IRIS_PAGE_MAP_MIN_ZOOM = 3;
 
 export type PageMapRuntimeSelectionKind = 'portal' | 'link' | 'field' | 'planned-link' | 'planned-marker' | 'plugin-feature';
 
-export interface PageMapRuntimeCamera {
-    lat: number;
-    lng: number;
-    zoom: number;
-}
-
-export interface PageMapRuntimeBounds {
-    minLatE6: number;
-    minLngE6: number;
-    maxLatE6: number;
-    maxLngE6: number;
-}
+export type PageMapRuntimeCamera = RuntimeMapCamera;
+export type PageMapRuntimeBounds = RuntimeMapBoundsE6;
 
 export interface PageMapRuntimeLayerVisibility {
     portals: boolean;

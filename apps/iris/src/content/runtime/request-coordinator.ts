@@ -644,8 +644,15 @@ export function createRequestCoordinator(): RequestCoordinator {
 
         handleGameScoreRequest(): void {
             if (isSessionBlocked()) return;
-            if (isEndpointInFlight('gameScore')) return;
-            if (isEndpointFresh('gameScore', GAME_SCORE_TTL_MS)) return;
+            const diagnostics = getEndpointDiagnostics('gameScore');
+            const gate = evaluateEndpointRequestGate({
+                key: 'global',
+                inFlightKeys: diagnostics.status === 'in_flight' ? new Set(['global']) : undefined,
+                lastSuccessKey: 'global',
+                lastSuccessAt: diagnostics.lastSuccessAt,
+                freshnessMs: GAME_SCORE_TTL_MS,
+            });
+            if (!gate.shouldRun) return;
             postMessage({ type: 'IRIS_GAME_SCORE_FETCH' });
         },
 
@@ -657,10 +664,15 @@ export function createRequestCoordinator(): RequestCoordinator {
             const lngE6 = Math.round(lng * 1e6);
             const requestKey = `${latE6}:${lngE6}`;
 
-            if (isEndpointInFlight('regionScore')) return;
-            if (requestKey === lastRegionScoreRequestKey && isEndpointFresh('regionScore', REGION_SCORE_TTL_MS)) {
-                return;
-            }
+            const diagnostics = getEndpointDiagnostics('regionScore');
+            const gate = evaluateEndpointRequestGate({
+                key: requestKey,
+                inFlightKeys: diagnostics.status === 'in_flight' ? new Set([requestKey]) : undefined,
+                lastSuccessKey: lastRegionScoreRequestKey,
+                lastSuccessAt: diagnostics.lastSuccessAt,
+                freshnessMs: REGION_SCORE_TTL_MS,
+            });
+            if (!gate.shouldRun) return;
 
             lastRegionScoreRequestKey = requestKey;
             postMessage({

@@ -1,6 +1,8 @@
 /**
  * Hooks into Google Maps and Leaflet to synchronize map movements.
  */
+import { parseMapCamera } from '@iris/core';
+
 export function installMapHooks(): void {
     const win = window as WindowWithIntelMaps;
     let hookAttempts = 0;
@@ -56,9 +58,10 @@ export function installMapHooks(): void {
     // Handle sync messages from the 3D Map
     window.addEventListener('message', (e) => {
         const msg: unknown = e.data;
-        if (!isSyncMessage(msg) || !win._iris_intel_map) return;
+        const camera = getSyncCamera(msg);
+        if (!camera || !win._iris_intel_map) return;
 
-        const { lat, lng, zoom } = msg;
+        const { lat, lng, zoom } = camera;
         if (win._iris_map_type === 'gmaps') {
             if (isGoogleMap(win._iris_intel_map)) {
                 win._iris_intel_map.setCenter({ lat, lng });
@@ -101,20 +104,18 @@ interface WindowWithIntelMaps extends Window {
 type HTMLElementWithLeaflet = HTMLElement & Record<string, unknown>;
 
 interface SyncMessage {
-    type: 'IRIS_SYNC_INTEL_MAP';
     lat: number;
     lng: number;
     zoom: number;
 }
 
-function isSyncMessage(value: unknown): value is SyncMessage {
-    return typeof value === 'object'
+function getSyncCamera(value: unknown): SyncMessage | null {
+    const hasSyncType = typeof value === 'object'
         && value !== null
         && 'type' in value
-        && (value as { type?: unknown }).type === 'IRIS_SYNC_INTEL_MAP'
-        && typeof (value as { lat?: unknown }).lat === 'number'
-        && typeof (value as { lng?: unknown }).lng === 'number'
-        && typeof (value as { zoom?: unknown }).zoom === 'number';
+        && (value as { type?: unknown }).type === 'IRIS_SYNC_INTEL_MAP';
+    if (!hasSyncType) return null;
+    return parseMapCamera(value, { rejectNullIsland: false });
 }
 
 function isGoogleMap(value: unknown): value is GoogleMapLike {

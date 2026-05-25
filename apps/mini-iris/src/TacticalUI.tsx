@@ -1,11 +1,10 @@
 import { h, JSX, Fragment } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import {createGameScoreRequestMessage, createInventoryRequestMessage, createRegionScoreRequestMessage, createSubscriptionRequestMessage, formatCompactEndpointStateLabel, formatDiagnosticCount, formatDiagnosticMs, getBrowserLabel, getCompactEndpointStateKind, type Field, type Link, type Portal, type PlextRequestBounds} from '@iris/core';
+import {createGameScoreRequestMessage, createInventoryRequestMessage, createRegionScoreRequestMessage, createSubscriptionRequestMessage, formatCompactEndpointStateLabel, formatDiagnosticCount, formatDiagnosticMs, getBrowserLabel, getCompactEndpointStateKind, type EndpointTelemetry, type EndpointTelemetryName, type Field, type Link, type Portal, type PlextRequestBounds} from '@iris/core';
 import type { PlayerHistory } from './usePlayerTracker';
 import { MapTools } from './MapTools';
 import { DataDock } from './DataDock';
 import { useComm } from './useComm';
-import type { EndpointName, EndpointTelemetry } from './useEndpointTelemetry';
 import type { PortalHistoryKey, PortalHistoryLayerState } from './portalHistory';
 import type { MiniFrameStats, MiniRenderStats } from './diagnostics';
 import { MINI_IRIS_MONO_FONT } from './typography';
@@ -24,7 +23,7 @@ interface TacticalUIProps {
     lng: number;
     events: EventLogEntry[];
     plextDebugSnapshot: PlextDebugSnapshot | null;
-    endpointTelemetry: Partial<Record<EndpointName, EndpointTelemetry>>;
+    endpointTelemetry: Partial<Record<EndpointTelemetryName, EndpointTelemetry>>;
     plextBounds: PlextRequestBounds | null;
     playerHistories: Map<string, PlayerHistory>;
     selected: SelectedEntity | null;
@@ -93,8 +92,8 @@ export function TacticalUI({ zoom, lat, lng, events, plextDebugSnapshot, endpoin
         });
     }, [onSelectionPanelOpen, selected, selectionDetailsRequestKey]);
 
-    const entries = (Object.entries(endpointTelemetry) as [EndpointName, EndpointTelemetry | undefined][])
-        .filter((entry): entry is [EndpointName, EndpointTelemetry] => entry[1] !== undefined);
+    const entries = (Object.entries(endpointTelemetry) as [EndpointTelemetryName, EndpointTelemetry | undefined][])
+        .filter((entry): entry is [EndpointTelemetryName, EndpointTelemetry] => entry[1] !== undefined);
     const activeCount = entries.filter(([, value]) => value?.status === 'in_flight').length;
     const errorCount = entries.filter(([, value]) => value?.status === 'error').length;
     const cooldownCount = entries.filter(([, value]) => value?.cooldownUntil !== null && typeof value?.cooldownUntil === 'number' && value.cooldownUntil > Date.now()).length;
@@ -103,7 +102,7 @@ export function TacticalUI({ zoom, lat, lng, events, plextDebugSnapshot, endpoin
         return typeof next === 'number' && next > Date.now() && value?.status !== 'error';
     }).length;
 
-    const endpointLabel = (endpoint: EndpointName): string => {
+    const endpointLabel = (endpoint: EndpointTelemetryName): string => {
         switch (endpoint) {
             case 'entities':
                 return 'Map';
