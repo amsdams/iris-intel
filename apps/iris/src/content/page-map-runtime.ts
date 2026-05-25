@@ -10,6 +10,11 @@ import {
 } from '@iris/core/benchmark-frames';
 import {boundsToE6} from '@iris/core/geo-bounds';
 import {clampMapCamera} from '@iris/core/map-camera';
+import {
+    runtimeMapSelectionIntentFromOpenInfo,
+    runtimeMapSelectionOpenInfoFromIntent,
+    type RuntimeMapSelectionIntent,
+} from '@iris/core/map-runtime-protocol';
 import { INGRESS_ENTITY_STYLE } from '@iris/core/ingress-map-style';
 import {
     IRIS_PAGE_MAP_MIN_ZOOM,
@@ -1590,7 +1595,8 @@ function createPlannedMarkerPinEntry(
             selection: {
                 id: plannedMarker.id,
                 kind: 'planned-marker',
-                openInfo: false,
+                intent: 'select',
+                openInfo: runtimeMapSelectionOpenInfoFromIntent('select'),
             } satisfies PageMapRuntimeSelectionPayload,
         }, '*');
     });
@@ -1816,10 +1822,12 @@ function postSelection(features: maplibregl.MapGeoJSONFeature[], openInfo = fals
         return;
     }
 
+    const intent: RuntimeMapSelectionIntent = runtimeMapSelectionIntentFromOpenInfo(openInfo);
     const selection: PageMapRuntimeSelectionPayload = {
         id,
         kind: getSelectionKind(layerId),
-        openInfo,
+        intent,
+        openInfo: runtimeMapSelectionOpenInfoFromIntent(intent),
     };
     window.postMessage({type: PAGE_MAP_RUNTIME_MESSAGES.selection, selection}, '*');
 }

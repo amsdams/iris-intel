@@ -1,6 +1,6 @@
 import { h, JSX } from 'preact';
 import { useState, useEffect, useCallback, useRef } from 'preact/hooks';
-import { clampMapCamera, createGameScoreRequestMessage, createInventoryRequestMessage, createPortalDetailsRequestMessage, createRegionScoreRequestMessage, MapPerfSnapshot, useStore } from '@iris/core';
+import { clampMapCamera, createGameScoreRequestMessage, createInventoryRequestMessage, createPortalDetailsRequestMessage, createRegionScoreRequestMessage, MapPerfSnapshot, runtimeMapSelectionIntentFromOpenInfo, useStore } from '@iris/core';
 import { PlayerStatsPopup } from './domains/player/PlayerStatsPopup';
 import { DiagnosticsPopup } from './domains/debug/DiagnosticsPopup';
 import { PortalInfoPopup } from './domains/portal/PortalInfoPopup';
@@ -581,7 +581,7 @@ export function IRISOverlay(): JSX.Element {
             if (!isPageRuntimeSelectionMessage(event.data)) return;
 
             const selection = event.data.selection;
-            const shouldOpenInfo = selection.openInfo === true;
+            const shouldOpenInfo = (selection.intent ?? runtimeMapSelectionIntentFromOpenInfo(selection.openInfo)) === 'details';
 
             const store = useStore.getState();
             if (selection.kind === 'portal') {

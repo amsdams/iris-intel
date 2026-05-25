@@ -10,3 +10,11 @@ export type RuntimeMapSelectionIntent = 'select' | 'details';
 export interface RuntimeMapView extends RuntimeMapCamera {
   bounds: RuntimeMapBoundsDegrees;
 }
+
+export function runtimeMapSelectionIntentFromOpenInfo(openInfo: boolean | null | undefined): RuntimeMapSelectionIntent {
+  return openInfo === true ? 'details' : 'select';
+}
+
+export function runtimeMapSelectionOpenInfoFromIntent(intent: RuntimeMapSelectionIntent): boolean {
+  return intent === 'details';
+}

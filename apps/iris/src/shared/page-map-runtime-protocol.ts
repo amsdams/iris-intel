@@ -1,4 +1,4 @@
-import type { RuntimeMapBoundsE6, RuntimeMapCamera, RuntimeMapEntitySelectionKind } from '@iris/core';
+import type { RuntimeMapBoundsE6, RuntimeMapCamera, RuntimeMapEntitySelectionKind, RuntimeMapSelectionIntent } from '@iris/core';
 
 export const PAGE_MAP_RUNTIME_MESSAGES = {
     showMap: 'IRIS_PAGE_MAP_RUNTIME_SHOW_MAP',
@@ -72,6 +72,7 @@ export interface PageMapRuntimeSelectionMessage {
     selection?: {
         id?: string;
         kind?: string;
+        intent?: RuntimeMapSelectionIntent;
         openInfo?: boolean;
         feature?: GeoJSON.Feature;
     };
@@ -80,6 +81,7 @@ export interface PageMapRuntimeSelectionMessage {
 export interface PageMapRuntimeSelectionPayload {
     id: string;
     kind: PageMapRuntimeSelectionKind;
+    intent?: RuntimeMapSelectionIntent;
     openInfo?: boolean;
     feature?: GeoJSON.Feature;
 }
