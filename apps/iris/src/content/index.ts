@@ -506,8 +506,9 @@ window.addEventListener('message', (event: MessageEvent) => {
       break;
     }
     case 'IRIS_DISCOVERED_LOCATION': {
-      const { location } = msg as { location: string | null };
-      useStore.getState().setDiscoveredLocation(location);
+      const location = typeof msg.location === 'string' ? msg.location : null;
+      const {lat, lng} = useStore.getState().mapState;
+      useStore.getState().setDiscoveredLocation(location, {lat, lng});
       break;
     }
     case 'IRIS_TILE_REQUEST':

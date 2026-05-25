@@ -28,6 +28,7 @@ export * from './diagnostics-formatting';
 export * from './persistence-schema';
 export * from './runtime-messages';
 export * from './endpoint-telemetry';
+export * from './address-state';
 export * from './benchmark-scenarios';
 export * from './map-runtime-protocol';
 export * from './mock-intel';

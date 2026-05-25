@@ -18,6 +18,12 @@ import {
     formatEndpointRequestActivityMessage,
     formatEndpointSuccessActivityMessage,
 } from './endpoint-formatting';
+import {
+    applyResolvedAddress,
+    normalizeResolvedAddress,
+    shouldSkipAddressLookup,
+    type LatLng,
+} from './address-state';
 
 function getFeatureIdentity(feature: GeoJSON.Feature | null | undefined): string | number | null {
     if (!feature) return null;
@@ -632,7 +638,7 @@ interface UISlice {
     addMenuItem: (item: MenuItem) => void;
     removeMenuItem: (id: string) => void;
     setPluginFeatures: (features: GeoJSON.FeatureCollection) => void;
-    setDiscoveredLocation: (location: string | null) => void;
+    setDiscoveredLocation: (location: string | null, latLng?: LatLng) => void;
     reverseGeocode: (lat: number, lng: number, portalId?: string) => Promise<void>;
     updateMapState: (lat: number, lng: number, zoom: number, bounds?: BoundsE6) => void;
     selectPortal: (id: string | null) => void;
@@ -1146,21 +1152,17 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
 
         return { pluginFeatures: features, selectedPluginFeature };
     }),
-    setDiscoveredLocation: (location) => set(() => ({ discoveredLocation: location })),
+    setDiscoveredLocation: (location, latLng) => set((state) => {
+        const normalizedLocation = normalizeResolvedAddress(location);
+        return {
+            discoveredLocation: normalizedLocation,
+            lastResolvedLatLng: normalizedLocation && latLng ? latLng : state.lastResolvedLatLng,
+        };
+    }),
     reverseGeocode: async (lat: number, lng: number, portalId?: string): Promise<void> => {
         const { lastResolvedLatLng, portalAddresses, debugLogging } = useStore.getState();
-        
-        // If it's for a portal and we already have it, don't re-fetch
-        if (portalId && portalAddresses[portalId]) {
-            return;
-        }
 
-        // Use higher precision (0.000001 is ~11cm) to ensure search jumps trigger lookup
-        if (!portalId && lastResolvedLatLng &&
-            Math.abs(lastResolvedLatLng.lat - lat) < 0.000001 &&
-            Math.abs(lastResolvedLatLng.lng - lng) < 0.000001) {
-          return;
-        }
+        if (shouldSkipAddressLookup({lastResolvedLatLng, portalAddresses}, {lat, lng, portalId})) return;
 
         if (reverseGeocodeTimeout) {
             clearTimeout(reverseGeocodeTimeout);
@@ -1185,15 +1187,22 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
                 const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`);
                 if (response.ok) {
                     const data = await response.json() as NominatimResponse;
-                    if (data.display_name) {
-                        const newAddress = data.display_name;
-                        set((state): Partial<IRISState> => ({ 
-                            discoveredLocation: portalId ? state.discoveredLocation : newAddress,
-                            portalAddresses: portalId ? { ...state.portalAddresses, [portalId]: newAddress } as Record<string, string> : state.portalAddresses,
-                            lastResolvedLatLng: portalId ? state.lastResolvedLatLng : { lat, lng },
-                            addressStatus: 'idle'
+                    const displayName = normalizeResolvedAddress(data.display_name);
+                    if (displayName) {
+                        set((state): Partial<IRISState> => ({
+                            ...applyResolvedAddress(state, {
+                                address: displayName,
+                                lat,
+                                lng,
+                                ...(portalId ? {portalId} : {}),
+                            }),
+                            addressStatus: 'idle',
                         }));
+                    } else {
+                        set(() => ({ addressStatus: 'idle' }));
                     }
+                } else {
+                    set(() => ({ addressStatus: 'idle' }));
                 }
             } catch (e) {
                 console.warn('IRIS: Reverse geocoding failed', e);

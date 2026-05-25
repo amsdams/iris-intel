@@ -187,6 +187,7 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
     const lastResolvedLatLng = useStore((state) => state.lastResolvedLatLng);
     const addressStatus = useStore((state) => state.addressStatus);
     const addressNextLookupAt = useStore((state) => state.addressNextLookupAt);
+    const reverseGeocode = useStore((state) => state.reverseGeocode);
     const endpointDiagnostics = useStore((state) => state.endpointDiagnostics);
     const endpointActivityLog = useStore((state) => state.endpointActivityLog);
     const clearEndpointActivityLog = useStore((state) => state.clearEndpointActivityLog);
@@ -235,6 +236,13 @@ export function DiagnosticsPopup({ onClose }: DiagnosticsPopupProps): JSX.Elemen
         Math.abs(lastResolvedLatLng.lat - mapState.lat) > 0.000001 ||
         Math.abs(lastResolvedLatLng.lng - mapState.lng) > 0.000001
     );
+
+    useEffect(() => {
+        if (addressStatus !== 'idle') return;
+        if (discoveredLocation && !isStale) return;
+        reverseGeocode(mapState.lat, mapState.lng);
+    }, [addressStatus, discoveredLocation, isStale, mapState.lat, mapState.lng, reverseGeocode]);
+
     const endpointEntries = Object.values(endpointDiagnostics).filter((entry) => entry.key !== 'unknown');
 
     const getEndpointTimingLabel = (entry: EndpointDiagnostics): string | null => {
