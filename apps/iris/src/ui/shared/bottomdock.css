@@ -30,7 +30,7 @@
 
 .iris-bottom-dock:hover {
     border-color: var(--iris-accent);
-    box-shadow: 0 4px 20px rgb(0 255 255 / 20%);
+    box-shadow: 0 4px 20px var(--iris-dock-shadow, rgb(0 255 255 / 20%));
 }
 
 .iris-dock-btn {

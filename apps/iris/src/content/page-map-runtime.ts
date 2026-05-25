@@ -10,7 +10,7 @@ import {
 } from '@iris/core/benchmark-frames';
 import {boundsToE6} from '@iris/core/geo-bounds';
 import {clampMapCamera} from '@iris/core/map-camera';
-import { INGRESS_ENTITY_STYLE, INGRESS_MISC_COLORS, INGRESS_PORTAL_HISTORY_COLORS } from '@iris/core/ingress-map-style';
+import { INGRESS_ENTITY_STYLE } from '@iris/core/ingress-map-style';
 import {
     IRIS_PAGE_MAP_MIN_ZOOM,
     PAGE_MAP_RUNTIME_MESSAGES,
@@ -437,7 +437,7 @@ function getPageMap(): Promise<maplibregl.Map> {
                                 10, 3.5,
                                 15, 5,
                             ],
-                            'line-color': '#EF8E2E',
+                            'line-color': ['coalesce', ['get', 'color'], '#EF8E2E'],
                             'line-opacity': 0.85,
                         },
                     },
@@ -482,7 +482,7 @@ function getPageMap(): Promise<maplibregl.Map> {
                             'circle-radius': portalRadiusExprWithOffset(5),
                             'circle-color': 'transparent',
                             'circle-stroke-width': 2,
-                            'circle-stroke-color': INGRESS_PORTAL_HISTORY_COLORS.visited,
+                            'circle-stroke-color': ['coalesce', ['get', 'historyVisitedColor'], '#B56DFF'],
                             'circle-opacity': 0.9,
                         },
                     },
@@ -495,7 +495,7 @@ function getPageMap(): Promise<maplibregl.Map> {
                             'circle-radius': portalRadiusExprWithOffset(8),
                             'circle-color': 'transparent',
                             'circle-stroke-width': 2,
-                            'circle-stroke-color': INGRESS_PORTAL_HISTORY_COLORS.captured,
+                            'circle-stroke-color': ['coalesce', ['get', 'historyCapturedColor'], '#FF8A3D'],
                             'circle-opacity': 0.9,
                         },
                     },
@@ -508,7 +508,7 @@ function getPageMap(): Promise<maplibregl.Map> {
                             'circle-radius': portalRadiusExprWithOffset(11),
                             'circle-color': 'transparent',
                             'circle-stroke-width': 2,
-                            'circle-stroke-color': INGRESS_PORTAL_HISTORY_COLORS.scanned,
+                            'circle-stroke-color': ['coalesce', ['get', 'historyScannedColor'], '#00D9FF'],
                             'circle-opacity': 0.9,
                         },
                     },
@@ -519,10 +519,10 @@ function getPageMap(): Promise<maplibregl.Map> {
                         filter: ['==', ['get', 'visitedInverse'], true],
                         paint: {
                             'circle-radius': portalRadiusExprWithOffset(5),
-                            'circle-color': INGRESS_PORTAL_HISTORY_COLORS.visited,
+                            'circle-color': ['coalesce', ['get', 'historyVisitedColor'], '#B56DFF'],
                             'circle-opacity': 0.14,
                             'circle-stroke-width': 2,
-                            'circle-stroke-color': INGRESS_PORTAL_HISTORY_COLORS.visited,
+                            'circle-stroke-color': ['coalesce', ['get', 'historyVisitedColor'], '#B56DFF'],
                             'circle-stroke-opacity': 0.85,
                         },
                     },
@@ -533,10 +533,10 @@ function getPageMap(): Promise<maplibregl.Map> {
                         filter: ['==', ['get', 'capturedInverse'], true],
                         paint: {
                             'circle-radius': portalRadiusExprWithOffset(8),
-                            'circle-color': INGRESS_PORTAL_HISTORY_COLORS.captured,
+                            'circle-color': ['coalesce', ['get', 'historyCapturedColor'], '#FF8A3D'],
                             'circle-opacity': 0.14,
                             'circle-stroke-width': 2,
-                            'circle-stroke-color': INGRESS_PORTAL_HISTORY_COLORS.captured,
+                            'circle-stroke-color': ['coalesce', ['get', 'historyCapturedColor'], '#FF8A3D'],
                             'circle-stroke-opacity': 0.85,
                         },
                     },
@@ -547,10 +547,10 @@ function getPageMap(): Promise<maplibregl.Map> {
                         filter: ['==', ['get', 'scannedInverse'], true],
                         paint: {
                             'circle-radius': portalRadiusExprWithOffset(11),
-                            'circle-color': INGRESS_PORTAL_HISTORY_COLORS.scanned,
+                            'circle-color': ['coalesce', ['get', 'historyScannedColor'], '#00D9FF'],
                             'circle-opacity': 0.14,
                             'circle-stroke-width': 2,
-                            'circle-stroke-color': INGRESS_PORTAL_HISTORY_COLORS.scanned,
+                            'circle-stroke-color': ['coalesce', ['get', 'historyScannedColor'], '#00D9FF'],
                             'circle-stroke-opacity': 0.85,
                         },
                     },
@@ -582,7 +582,7 @@ function getPageMap(): Promise<maplibregl.Map> {
                                 10, 6,
                                 15, 10,
                             ],
-                            'circle-color': '#EF8E2E',
+                            'circle-color': ['coalesce', ['get', 'color'], '#EF8E2E'],
                             'circle-opacity': 0.9,
                             'circle-stroke-width': [
                                 'interpolate', ['linear'], ['zoom'],
@@ -605,7 +605,7 @@ function getPageMap(): Promise<maplibregl.Map> {
                                 10, 7,
                                 15, 14,
                             ],
-                            'circle-color': INGRESS_MISC_COLORS.ARTIFACT,
+                            'circle-color': ['coalesce', ['get', 'color'], '#FF00FF'],
                             'circle-opacity': 0.12,
                             'circle-stroke-width': [
                                 'interpolate', ['linear'], ['zoom'],
@@ -613,7 +613,7 @@ function getPageMap(): Promise<maplibregl.Map> {
                                 10, 2.5,
                                 15, 3.25,
                             ],
-                            'circle-stroke-color': INGRESS_MISC_COLORS.ARTIFACT,
+                            'circle-stroke-color': ['coalesce', ['get', 'color'], '#FF00FF'],
                             'circle-stroke-opacity': 0.95,
                         },
                     },
@@ -628,7 +628,7 @@ function getPageMap(): Promise<maplibregl.Map> {
                                 10, 5,
                                 15, 11,
                             ],
-                            'circle-color': INGRESS_MISC_COLORS.ORNAMENT,
+                            'circle-color': ['coalesce', ['get', 'color'], '#FFCE00'],
                             'circle-opacity': 0.16,
                             'circle-stroke-width': [
                                 'interpolate', ['linear'], ['zoom'],
@@ -636,7 +636,7 @@ function getPageMap(): Promise<maplibregl.Map> {
                                 10, 2.25,
                                 15, 3,
                             ],
-                            'circle-stroke-color': INGRESS_MISC_COLORS.ORNAMENT,
+                            'circle-stroke-color': ['coalesce', ['get', 'color'], '#FFCE00'],
                             'circle-stroke-opacity': 0.95,
                         },
                     },

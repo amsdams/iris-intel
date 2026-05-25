@@ -19,9 +19,8 @@ import {
     isPortalVisibleForDisplay,
     type PortalHistoryLayerState,
 } from '@iris/core';
-import {INGRESS_NEUTRAL_PORTAL_COLORS} from '@iris/core/ingress-map-style';
 import {PageMapRuntimeCommandMessage} from '../../../shared/page-map-runtime-protocol';
-import {MAP_THEMES, THEMES} from '../../theme';
+import {MAP_THEMES, THEMES, type ThemeColors} from '../../theme';
 import {
     buildArtifactFeatures,
     buildMissionRouteFeatures,
@@ -109,9 +108,11 @@ export function buildPageMapRuntimeSnapshotMessage(
             selectedField: buildSelectedFieldFeatureCollection(options.fields, options.selectedFieldId, options),
             artifacts: toFeatureCollection(buildArtifactFeatures(options.artifacts, options.portals, {
                 showArtifacts: options.layerShowArtifacts,
+                color: getTheme(options).MISC.ARTIFACT,
             })),
             ornaments: toFeatureCollection(buildOrnamentFeatures(options.portals, options.mockOrnaments, {
                 showOrnaments: options.layerShowOrnaments,
+                color: getTheme(options).MISC.ORNAMENT,
                 showResistance: options.filterShowResistance,
                 showEnlightened: options.filterShowEnlightened,
                 showMachina: options.filterShowMachina,
@@ -122,8 +123,8 @@ export function buildPageMapRuntimeSnapshotMessage(
                 showCaptured: options.filterShowCaptured,
                 showScanned: options.filterShowScanned,
             })),
-            missionRoute: toFeatureCollection(buildMissionRouteFeatures(options.missionDetails)),
-            missionWaypoints: toFeatureCollection(buildMissionWaypointFeatures(options.missionDetails)),
+            missionRoute: toFeatureCollection(buildMissionRouteFeatures(options.missionDetails, getTheme(options).MISC.MISSION)),
+            missionWaypoints: toFeatureCollection(buildMissionWaypointFeatures(options.missionDetails, getTheme(options).MISC.MISSION)),
             pluginFeatures: buildPluginFeatureCollection(options),
             plannedFeatures: toFeatureCollection(buildPlannedFeatures(options)),
         },
@@ -198,6 +199,7 @@ export function buildPageMapRuntimeVisualFilterMessage(
             selectedField: buildSelectedFieldFeatureCollection(options.fields, options.selectedFieldId, options),
             ornaments: toFeatureCollection(buildOrnamentFeatures(options.portals, options.mockOrnaments, {
                 showOrnaments: options.layerShowOrnaments,
+                color: getTheme(options).MISC.ORNAMENT,
                 showResistance: options.filterShowResistance,
                 showEnlightened: options.filterShowEnlightened,
                 showMachina: options.filterShowMachina,
@@ -250,6 +252,7 @@ export function buildPageMapRuntimeArtifactsMessage(
         data: {
             artifacts: toFeatureCollection(buildArtifactFeatures(options.artifacts, options.portals, {
                 showArtifacts: options.layerShowArtifacts,
+                color: getTheme(options).MISC.ARTIFACT,
             })),
         },
     };
@@ -264,6 +267,7 @@ export function buildPageMapRuntimeOrnamentsMessage(
         data: {
             ornaments: toFeatureCollection(buildOrnamentFeatures(options.portals, options.mockOrnaments, {
                 showOrnaments: options.layerShowOrnaments,
+                color: getTheme(options).MISC.ORNAMENT,
                 showResistance: options.filterShowResistance,
                 showEnlightened: options.filterShowEnlightened,
                 showMachina: options.filterShowMachina,
@@ -285,8 +289,8 @@ export function buildPageMapRuntimeMissionMessage(
         type: options.type,
         diagnostic: options.diagnostic,
         data: {
-            missionRoute: toFeatureCollection(buildMissionRouteFeatures(options.missionDetails)),
-            missionWaypoints: toFeatureCollection(buildMissionWaypointFeatures(options.missionDetails)),
+            missionRoute: toFeatureCollection(buildMissionRouteFeatures(options.missionDetails, getTheme(options).MISC.MISSION)),
+            missionWaypoints: toFeatureCollection(buildMissionWaypointFeatures(options.missionDetails, getTheme(options).MISC.MISSION)),
         },
     };
 }
@@ -314,16 +318,20 @@ function isPortalVisible(portal: Portal, options: BuildPageMapRuntimeSnapshotOpt
     });
 }
 
+function getTheme(options: BuildPageMapRuntimeSnapshotOptions): ThemeColors {
+    return THEMES[options.themeId] || THEMES.INGRESS;
+}
+
 function getTeamColor(team: string, options: BuildPageMapRuntimeSnapshotOptions): string {
-    const theme = THEMES[options.themeId] || THEMES.INGRESS;
+    const theme = getTheme(options);
     if (team === 'E') return theme.E;
     if (team === 'R') return theme.R;
     if (team === 'M') return theme.M;
-    return INGRESS_NEUTRAL_PORTAL_COLORS.fill;
+    return theme.N;
 }
 
 function getPortalStrokeColor(team: string, options: BuildPageMapRuntimeSnapshotOptions): string {
-    if (team === 'N') return INGRESS_NEUTRAL_PORTAL_COLORS.stroke;
+    if (team === 'N') return getTheme(options).MISC.NEUTRAL_STROKE;
     return getTeamColor(team, options);
 }
 
@@ -347,6 +355,7 @@ function buildPluginFeatureCollection(options: BuildPageMapRuntimeSnapshotOption
 }
 
 function buildPortalFeatureCollection(options: BuildPageMapRuntimeSnapshotOptions): GeoJSON.FeatureCollection {
+    const theme = getTheme(options);
     return {
         type: 'FeatureCollection',
         features: Object.values(options.portals)
@@ -354,6 +363,9 @@ function buildPortalFeatureCollection(options: BuildPageMapRuntimeSnapshotOption
             .map((portal): GeoJSON.Feature<GeoJSON.Point> => buildPortalPointFeature(portal, {
                 color: getTeamColor(portal.team, options),
                 strokeColor: getPortalStrokeColor(portal.team, options),
+                historyVisitedColor: theme.HISTORY.visited,
+                historyCapturedColor: theme.HISTORY.captured,
+                historyScannedColor: theme.HISTORY.scanned,
                 ...getPortalHistoryOverlayFlags(portal, options.portalHistoryLayers),
             })),
     };

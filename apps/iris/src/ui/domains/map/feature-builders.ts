@@ -36,8 +36,8 @@ type TeamFeatureProperties = {
 export type PortalFeature = GeoJSON.Feature<GeoJSON.Point, PortalFeatureProperties>;
 export type LinkFeature = GeoJSON.Feature<GeoJSON.LineString, TeamFeatureProperties>;
 export type FieldFeature = GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon, TeamFeatureProperties>;
-export type ArtifactFeature = GeoJSON.Feature<GeoJSON.Point, { portalId: string; type: string; ids: string[] }>;
-export type OrnamentFeature = GeoJSON.Feature<GeoJSON.Point, { portalId: string; team: string; ornaments: string[] }>;
+export type ArtifactFeature = GeoJSON.Feature<GeoJSON.Point, { portalId: string; type: string; ids: string[]; color?: string }>;
+export type OrnamentFeature = GeoJSON.Feature<GeoJSON.Point, { portalId: string; team: string; ornaments: string[]; color?: string }>;
 export type MissionRouteFeature = GeoJSON.Feature<GeoJSON.LineString, Record<string, unknown>>;
 export type MissionWaypointFeature = GeoJSON.Feature<GeoJSON.Point, Record<string, unknown>>;
 
@@ -50,10 +50,12 @@ interface TeamVisibility {
 
 type OrnamentFilters = PortalFilters & {
   showOrnaments: boolean;
+  color?: string;
 };
 
 interface ArtifactFilters {
   showArtifacts: boolean;
+  color?: string;
 }
 
 type LinkFilters = TeamVisibility & {
@@ -130,6 +132,7 @@ export const buildArtifactFeatures = (
           portalId: artifact.portalId,
           type: artifact.type,
           ids: artifact.ids,
+          color: filters.color,
         }) as ArtifactFeature;
     })
     .filter((f): f is ArtifactFeature => f !== null);
@@ -151,10 +154,11 @@ export const buildOrnamentFeatures = (
         portalId: portal.id,
         team: portal.team,
         ornaments,
+        color: filters.color,
       }) as OrnamentFeature;
     });
 
-export const buildMissionRouteFeatures = (mission: MissionDetails | null): MissionRouteFeature[] => {
+export const buildMissionRouteFeatures = (mission: MissionDetails | null, color?: string): MissionRouteFeature[] => {
   if (!mission) return [];
 
   const coordinates = mission.waypoints
@@ -171,11 +175,12 @@ export const buildMissionRouteFeatures = (mission: MissionDetails | null): Missi
     },
     properties: {
       missionId: mission.id,
+      color,
     },
   }];
 };
 
-export const buildMissionWaypointFeatures = (mission: MissionDetails | null): MissionWaypointFeature[] => {
+export const buildMissionWaypointFeatures = (mission: MissionDetails | null, color?: string): MissionWaypointFeature[] => {
   if (!mission) return [];
 
   return mission.waypoints
@@ -191,6 +196,7 @@ export const buildMissionWaypointFeatures = (mission: MissionDetails | null): Mi
         waypointId: waypoint.id,
         index: waypoint.index + 1,
         title: waypoint.title,
+        color,
       },
     }));
 };

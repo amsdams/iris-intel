@@ -65,7 +65,14 @@ export function BottomDock({ activeDashboard, onToggleDashboard, onToggleSelecti
     }
 
     return (
-        <div className="iris-bottom-dock">
+        <div
+            className="iris-bottom-dock"
+            style={{
+                '--iris-accent': theme.AQUA,
+                '--iris-accent-dim': `${theme.AQUA}4d`,
+                '--iris-dock-shadow': `${theme.AQUA}33`,
+            } as Record<string, string>}
+        >
             {selectionBtn}
             {selectionBtn && (
                 <div className="iris-dock-separator" />

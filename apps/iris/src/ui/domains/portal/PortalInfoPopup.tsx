@@ -1,7 +1,6 @@
 import {h, JSX} from 'preact';
 import {useEffect, useState} from 'preact/hooks';
 import {PortalMod, PortalResonator, useStore, InventoryParser, getPortalResonatorEnergySummary, getResonatorEnergyPercent} from '@iris/core';
-import {INGRESS_HEALTH_COLORS} from '@iris/core/ingress-map-style';
 import {Popup} from '../../shared/Popup';
 import {PopupActionButton, PopupActionRow} from '../../shared/PopupActions';
 import {THEMES, TEAM_NAME, UI_COLORS, getModRarityColor} from '../../theme';
@@ -42,6 +41,7 @@ export function PortalInfoPopup({ onClose, visible }: PortalInfoPopupProps): JSX
 
     const themeId = useStore((state) => state.themeId);
     const theme = THEMES[themeId] || THEMES.INGRESS;
+    const healthColors = theme.HEALTH;
     const portalAddresses = useStore((state) => state.portalAddresses);
     const reverseGeocode = useStore((state) => state.reverseGeocode);
     const addressStatus = useStore((state) => state.addressStatus);
@@ -172,7 +172,7 @@ export function PortalInfoPopup({ onClose, visible }: PortalInfoPopupProps): JSX
                             <span className="iris-portal-summary-label">Level</span>
                             <span
                                 className="iris-portal-summary-value iris-portal-summary-value-level"
-                                style={{'--iris-level-color': portal.level !== undefined ? (theme.LEVELS[portal.level] || INGRESS_HEALTH_COLORS.medium) : undefined} as Record<string, string>}
+                                style={{'--iris-level-color': portal.level !== undefined ? (theme.LEVELS[portal.level] || healthColors.medium) : undefined} as Record<string, string>}
                             >
                                 {portal.level !== undefined ? portal.level : 'Unknown'}
                             </span>
@@ -273,7 +273,7 @@ export function PortalInfoPopup({ onClose, visible }: PortalInfoPopupProps): JSX
                             }
                             const healthPct = getResonatorEnergyPercent(r);
                             const resoColor = theme.LEVELS[r.level] || UI_COLORS.BORDER_DIM;
-                            const healthColor = healthPct > 50 ? INGRESS_HEALTH_COLORS.high : (healthPct > 20 ? INGRESS_HEALTH_COLORS.medium : INGRESS_HEALTH_COLORS.low);
+                            const healthColor = healthPct > 50 ? healthColors.high : (healthPct > 20 ? healthColors.medium : healthColors.low);
                             return (
                                 <div
                                     key={i}
