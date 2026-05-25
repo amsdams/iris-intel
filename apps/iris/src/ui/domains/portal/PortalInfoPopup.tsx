@@ -1,6 +1,6 @@
 import {h, JSX} from 'preact';
 import {useEffect, useState} from 'preact/hooks';
-import {PortalMod, PortalResonator, useStore, InventoryParser} from '@iris/core';
+import {PortalMod, PortalResonator, useStore, InventoryParser, getPortalResonatorEnergySummary, getResonatorEnergyPercent} from '@iris/core';
 import {INGRESS_HEALTH_COLORS} from '@iris/core/ingress-map-style';
 import {Popup} from '../../shared/Popup';
 import {PopupActionButton, PopupActionRow} from '../../shared/PopupActions';
@@ -10,8 +10,6 @@ import { getOrnamentLabel } from '../../../content/domains/entities/ornaments';
 // ---------------------------------------------------------------------------
 // PortalInfoPopup
 // ---------------------------------------------------------------------------
-
-const MAX_RESO_ENERGY = [0, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000];
 
 function formatModStat(key: string, val: string | number): string {
     const label = key.replace(/_/g, ' ').toLowerCase();
@@ -77,8 +75,7 @@ export function PortalInfoPopup({ onClose, visible }: PortalInfoPopupProps): JSX
         });
     }
 
-    const totalEnergy = (portal.resonators || []).reduce((sum, resonator) => sum + resonator.energy, 0);
-    const maxEnergy = (portal.resonators || []).reduce((sum, resonator) => sum + (MAX_RESO_ENERGY[resonator.level] || 0), 0);
+    const { totalEnergy, maxEnergy } = getPortalResonatorEnergySummary(portal.resonators);
     const linksIn = Object.values(links).filter((link) => link.toPortalId === portal.id).length;
     const linksOut = Object.values(links).filter((link) => link.fromPortalId === portal.id).length;
     const keyCount = InventoryParser.countPortalKeys(inventory, portal.id);
@@ -274,8 +271,7 @@ export function PortalInfoPopup({ onClose, visible }: PortalInfoPopupProps): JSX
                                     </div>
                                 );
                             }
-                            const resonatorMaxEnergy = MAX_RESO_ENERGY[r.level] || 1000;
-                            const healthPct = Math.round((r.energy / resonatorMaxEnergy) * 100);
+                            const healthPct = getResonatorEnergyPercent(r);
                             const resoColor = theme.LEVELS[r.level] || UI_COLORS.BORDER_DIM;
                             const healthColor = healthPct > 50 ? INGRESS_HEALTH_COLORS.high : (healthPct > 20 ? INGRESS_HEALTH_COLORS.medium : INGRESS_HEALTH_COLORS.low);
                             return (

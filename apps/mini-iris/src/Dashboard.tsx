@@ -1,6 +1,6 @@
 import { h, JSX } from 'preact';
 import { useState } from 'preact/hooks';
-import { EntityLogic, Portal, Link, Field } from '@iris/core';
+import { EntityLogic, Portal, Link, Field, getResonatorEnergyPercent } from '@iris/core';
 import { INGRESS_COLORS, ITEM_LEVEL_COLORS, PORTAL_HISTORY_COLORS, RARITY_COLORS } from './MapConstants';
 
 interface DashboardProps {
@@ -66,7 +66,7 @@ export function Dashboard({ type, data, colors, onClose }: DashboardProps): JSX.
                     {Array.from({ length: 8 }).map((_, i) => {
                         const r = resos[i];
                         const level = r?.level || 0;
-                        const energyPct = r ? (r.energy / (level > 0 ? (level * 1000) : 1000)) * 100 : 0;
+                        const energyPct = getResonatorEnergyPercent(r);
                         const color = ITEM_LEVEL_COLORS[level] || '#333';
                         return (
                             <div key={i} title={r?.owner} style={{ background: '#1a1a1a', border: `1px solid ${color}55`, padding: '2px 1px', position: 'relative', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '2px' }}>
@@ -106,8 +106,7 @@ export function Dashboard({ type, data, colors, onClose }: DashboardProps): JSX.
                         <OwnerColumn title="RESONATORS">
                             {Array.from({ length: 8 }).map((_, i) => {
                                 const r = resos[i];
-                                const maxEnergy = r ? getMaxResonatorEnergy(r.level) : 0;
-                                const healthPct = r && maxEnergy > 0 ? Math.round((r.energy / maxEnergy) * 100) : 0;
+                                const healthPct = getResonatorEnergyPercent(r);
                                 return (
                                     <OwnerRow
                                         key={i}
@@ -269,10 +268,6 @@ function getModShortLabel(mod: { rarity: string; name: string } | undefined): st
     const rarity = mod.rarity === 'VERY_RARE' ? 'VR' : (mod.rarity === 'RARE' ? 'R' : 'C');
     const shortName = mod.name.split(' ').map((w: string) => w[0]).join('');
     return `${rarity}${shortName}`;
-}
-
-function getMaxResonatorEnergy(level: number): number {
-    return [0, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000][level] || 1000;
 }
 
 function getTitleMeta(type: string, data: Portal | Link | Field): string {

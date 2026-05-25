@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {getIngressPortalRadiusForZoom, getPortalHealthBucket, isPortalHealthBucketVisible} from './portal-display';
+import {getIngressPortalRadiusForZoom, getMaxResonatorEnergy, getPortalHealthBucket, getPortalResonatorEnergySummary, getResonatorEnergyPercent, isPortalHealthBucketVisible} from './portal-display';
 
 describe('portal display helpers', () => {
   it('maps portal health to IRIS filter buckets', () => {
@@ -26,5 +26,24 @@ describe('portal display helpers', () => {
     expect(getIngressPortalRadiusForZoom(15)).toBe(6);
     expect(getIngressPortalRadiusForZoom(20)).toBe(6);
     expect(getIngressPortalRadiusForZoom(12.5)).toBe(4);
+  });
+
+  it('derives resonator energy percentages from Intel max energy by level', () => {
+    expect(getMaxResonatorEnergy(1)).toBe(1000);
+    expect(getMaxResonatorEnergy(8)).toBe(6000);
+    expect(getMaxResonatorEnergy(0)).toBe(0);
+    expect(getResonatorEnergyPercent({level: 4, energy: 1250})).toBe(50);
+    expect(getResonatorEnergyPercent({level: 4, energy: 9999})).toBe(100);
+    expect(getResonatorEnergyPercent(null)).toBe(0);
+  });
+
+  it('summarizes portal resonator energy', () => {
+    expect(getPortalResonatorEnergySummary([
+      {level: 1, energy: 500, owner: 'a'},
+      {level: 8, energy: 6000, owner: 'b'},
+    ])).toEqual({
+      totalEnergy: 6500,
+      maxEnergy: 7000,
+    });
   });
 });
