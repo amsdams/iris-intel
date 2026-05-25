@@ -1,5 +1,5 @@
 import { useEffect } from 'preact/hooks';
-import { createInventoryRequestMessage, createPlayerStatsRequestMessage, createSubscriptionRequestMessage, useStore } from '@iris/core';
+import { createInventoryRequestMessage, createPlayerStatsRequestMessage, createSubscriptionRequestMessage, getEndpointTelemetryNextDelay, shouldSkipEndpointTelemetryRequest, useStore } from '@iris/core';
 import { useEndpointTelemetry } from './useEndpointTelemetry';
 
 const SUBSCRIPTION_POLL_MS = 600000;
@@ -30,12 +30,7 @@ export function usePlayerStats(isVis: boolean, liveMode: boolean): void {
 
         const pollSub = (): void => {
             const subscription = telemetry.subscription;
-            const now = Date.now();
-            if (subscription) {
-                if (subscription.status === 'in_flight') return;
-                if (subscription.cooldownUntil !== null && now < subscription.cooldownUntil) return;
-                if (subscription.nextRefreshAt !== null && now < subscription.nextRefreshAt) return;
-            }
+            if (shouldSkipEndpointTelemetryRequest(subscription)) return;
             window.postMessage(createSubscriptionRequestMessage(), '*');
         };
 
@@ -43,9 +38,7 @@ export function usePlayerStats(isVis: boolean, liveMode: boolean): void {
         const schedule = (): void => {
             pollSub();
             const nextDue = Math.max(
-                telemetry.subscription?.nextRefreshAt !== null && telemetry.subscription?.nextRefreshAt !== undefined
-                    ? telemetry.subscription.nextRefreshAt - Date.now()
-                    : SUBSCRIPTION_POLL_MS,
+                getEndpointTelemetryNextDelay(telemetry.subscription, SUBSCRIPTION_POLL_MS),
                 SUBSCRIPTION_POLL_MS,
             );
             timerId = window.setTimeout(schedule, nextDue);
@@ -63,12 +56,7 @@ export function usePlayerStats(isVis: boolean, liveMode: boolean): void {
 
         const pollInv = (): void => {
             const inventory = telemetry.inventory;
-            const now = Date.now();
-            if (inventory) {
-                if (inventory.status === 'in_flight') return;
-                if (inventory.cooldownUntil !== null && now < inventory.cooldownUntil) return;
-                if (inventory.nextRefreshAt !== null && now < inventory.nextRefreshAt) return;
-            }
+            if (shouldSkipEndpointTelemetryRequest(inventory)) return;
             window.postMessage(createInventoryRequestMessage(), '*');
         };
 
@@ -76,9 +64,7 @@ export function usePlayerStats(isVis: boolean, liveMode: boolean): void {
         const schedule = (): void => {
             pollInv();
             const nextDue = Math.max(
-                telemetry.inventory?.nextRefreshAt !== null && telemetry.inventory?.nextRefreshAt !== undefined
-                    ? telemetry.inventory.nextRefreshAt - Date.now()
-                    : INVENTORY_POLL_MS,
+                getEndpointTelemetryNextDelay(telemetry.inventory, INVENTORY_POLL_MS),
                 INVENTORY_POLL_MS,
             );
             timerId = window.setTimeout(schedule, nextDue);

@@ -44,6 +44,11 @@ export interface EndpointTelemetry {
 
 export type EndpointTelemetryMap = Partial<Record<EndpointTelemetryName, EndpointTelemetry>>;
 
+export interface EndpointTelemetryRequestGateOptions {
+  now?: number;
+  force?: boolean;
+}
+
 export function isEndpointStateMessage(value: unknown): value is IrisEndpointStateMessage {
   return isRuntimeRecord(value) && value.type === 'IRIS_ENDPOINT_STATE';
 }
@@ -86,4 +91,29 @@ export function parseEndpointStateTelemetry(value: unknown): {endpoint: Endpoint
       cooldownUntil: numberOrNull(value.cooldownUntil),
     },
   };
+}
+
+export function shouldSkipEndpointTelemetryRequest(
+  telemetry: EndpointTelemetry | null | undefined,
+  options: EndpointTelemetryRequestGateOptions = {},
+): boolean {
+  if (!telemetry) return false;
+  const now = options.now ?? Date.now();
+
+  if (telemetry.status === 'in_flight') return true;
+  if (telemetry.cooldownUntil !== null && now < telemetry.cooldownUntil) return true;
+  if (!options.force && telemetry.nextRefreshAt !== null && now < telemetry.nextRefreshAt) return true;
+  return false;
+}
+
+export function getEndpointTelemetryNextDelay(
+  telemetry: EndpointTelemetry | null | undefined,
+  fallbackMs: number,
+  now = Date.now(),
+): number {
+  if (telemetry?.nextRefreshAt !== null && telemetry?.nextRefreshAt !== undefined) {
+    return Math.max(telemetry.nextRefreshAt - now, fallbackMs);
+  }
+
+  return fallbackMs;
 }

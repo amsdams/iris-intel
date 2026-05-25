@@ -5,8 +5,10 @@ import {
     useStore,
     PlextParser,
     createPlextRequestMessage,
+    getEndpointTelemetryNextDelay,
     processPlayerTrackerPlexts,
     prunePlayerTrackerHistories,
+    shouldSkipEndpointTelemetryRequest,
 } from '@iris/core';
 import type { Plext, PlextData, PlextRequestBounds, PlayerTrackerHistory } from '@iris/core';
 import { useEndpointTelemetry } from './useEndpointTelemetry';
@@ -91,12 +93,7 @@ export function usePlayerTracker(
 
         const poll = (): void => {
             const plexts = telemetry.plexts;
-            const now = Date.now();
-            if (plexts) {
-                if (plexts.status === 'in_flight') return;
-                if (plexts.cooldownUntil !== null && now < plexts.cooldownUntil) return;
-                if (plexts.nextRefreshAt !== null && now < plexts.nextRefreshAt) return;
-            }
+            if (shouldSkipEndpointTelemetryRequest(plexts)) return;
 
             const request = createPlextRequestMessage({
                 tab: 'all',
@@ -114,9 +111,7 @@ export function usePlayerTracker(
         const schedule = (): void => {
             poll();
             const nextDue = Math.max(
-                telemetry.plexts?.nextRefreshAt !== null && telemetry.plexts?.nextRefreshAt !== undefined
-                    ? telemetry.plexts.nextRefreshAt - Date.now()
-                    : PLEXT_POLL_MS,
+                getEndpointTelemetryNextDelay(telemetry.plexts, PLEXT_POLL_MS),
                 PLEXT_POLL_MS,
             );
             timerId = window.setTimeout(schedule, nextDue);

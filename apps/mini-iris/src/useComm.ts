@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'preact/hooks';
-import { createPlextRequestMessage, type PlextRequestBounds } from '@iris/core';
+import { createPlextRequestMessage, getEndpointTelemetryNextDelay, shouldSkipEndpointTelemetryRequest, type PlextRequestBounds } from '@iris/core';
 import { useEndpointTelemetry } from './useEndpointTelemetry';
 
 export type CommTab = 'all' | 'faction' | 'alerts';
@@ -20,12 +20,7 @@ export function useComm(isVis: boolean, liveMode: boolean, plextBounds: PlextReq
         if (!isVis || !liveMode) return;
         if (!plextBounds) return;
         const plexts = telemetry.plexts;
-        const now = Date.now();
-        if (plexts) {
-            if (plexts.status === 'in_flight') return;
-            if (plexts.cooldownUntil !== null && now < plexts.cooldownUntil) return;
-            if (!force && plexts.nextRefreshAt !== null && now < plexts.nextRefreshAt) return;
-        }
+        if (shouldSkipEndpointTelemetryRequest(plexts, {force})) return;
 
         const request = createPlextRequestMessage({
             tab: activeTab.toLowerCase(),
@@ -50,10 +45,7 @@ export function useComm(isVis: boolean, liveMode: boolean, plextBounds: PlextReq
         const schedule = (): void => {
             pollComm();
             const plexts = telemetry.plexts;
-            const now = Date.now();
-            const nextDue = plexts?.nextRefreshAt !== null && plexts?.nextRefreshAt !== undefined
-                ? Math.max(plexts.nextRefreshAt - now, COMM_POLL_MS)
-                : COMM_POLL_MS;
+            const nextDue = getEndpointTelemetryNextDelay(plexts, COMM_POLL_MS);
             timerId = window.setTimeout(schedule, nextDue);
         };
 

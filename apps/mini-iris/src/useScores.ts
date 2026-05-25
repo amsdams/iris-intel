@@ -1,5 +1,5 @@
 import { useEffect } from 'preact/hooks';
-import { createGameScoreRequestMessage, createRegionScoreRequestMessage } from '@iris/core';
+import { createGameScoreRequestMessage, createRegionScoreRequestMessage, getEndpointTelemetryNextDelay, shouldSkipEndpointTelemetryRequest } from '@iris/core';
 import { useEndpointTelemetry } from './useEndpointTelemetry';
 
 const SCORE_POLL_MS = 300000;
@@ -13,18 +13,9 @@ export function useScores(isVis: boolean, liveMode: boolean, lat: number, lng: n
         const pollScores = (): void => {
             const gameScore = telemetry.gameScore;
             const regionScore = telemetry.regionScore;
-            const now = Date.now();
 
-            if (gameScore) {
-                if (gameScore.status === 'in_flight') return;
-                if (gameScore.cooldownUntil !== null && now < gameScore.cooldownUntil) return;
-                if (gameScore.nextRefreshAt !== null && now < gameScore.nextRefreshAt) return;
-            }
-            if (regionScore) {
-                if (regionScore.status === 'in_flight') return;
-                if (regionScore.cooldownUntil !== null && now < regionScore.cooldownUntil) return;
-                if (regionScore.nextRefreshAt !== null && now < regionScore.nextRefreshAt) return;
-            }
+            if (shouldSkipEndpointTelemetryRequest(gameScore)) return;
+            if (shouldSkipEndpointTelemetryRequest(regionScore)) return;
             window.postMessage(createGameScoreRequestMessage(), '*');
             const regionScoreRequest = createRegionScoreRequestMessage(lat, lng);
             if (regionScoreRequest) window.postMessage(regionScoreRequest, '*');
@@ -35,12 +26,8 @@ export function useScores(isVis: boolean, liveMode: boolean, lat: number, lng: n
         const schedule = (): void => {
             pollScores();
             const nextDue = Math.max(
-                telemetry.gameScore?.nextRefreshAt !== null && telemetry.gameScore?.nextRefreshAt !== undefined
-                    ? telemetry.gameScore.nextRefreshAt - Date.now()
-                    : SCORE_POLL_MS,
-                telemetry.regionScore?.nextRefreshAt !== null && telemetry.regionScore?.nextRefreshAt !== undefined
-                    ? telemetry.regionScore.nextRefreshAt - Date.now()
-                    : SCORE_POLL_MS,
+                getEndpointTelemetryNextDelay(telemetry.gameScore, SCORE_POLL_MS),
+                getEndpointTelemetryNextDelay(telemetry.regionScore, SCORE_POLL_MS),
                 SCORE_POLL_MS,
             );
             timerId = window.setTimeout(schedule, nextDue);
