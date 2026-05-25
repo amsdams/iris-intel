@@ -52,6 +52,9 @@ interface TacticalUIProps {
     extrusionEnabled: boolean;
     renderStats: MiniRenderStats | null;
     frameStats: MiniFrameStats;
+    benchBatchRunning: boolean;
+    benchBatchReport: string;
+    onRunBenchBatch: () => void;
     entityCounts: {
         portals: number;
         links: number;
@@ -60,7 +63,7 @@ interface TacticalUIProps {
     };
 }
 
-export function TacticalUI({ zoom, lat, lng, events, plextDebugSnapshot, endpointTelemetry, plextBounds, playerHistories, selected, selectionDetailsRequestKey, onNav, onStyle, onMode, onPortalClick, onSelectionPanelOpen, onSelectionPanelClose, portalHistoryLayers, onPortalHistoryLayerToggle, keyOverlayEnabled, onKeyOverlayToggle, artifactsEnabled, onArtifactsToggle, ornamentsEnabled, onOrnamentsToggle, portalLevelColorEnabled, onPortalLevelColorToggle, portalHealthColorEnabled, onPortalHealthColorToggle, liveMode, patternMode, extrusionEnabled, renderStats, frameStats, entityCounts }: TacticalUIProps): JSX.Element {
+export function TacticalUI({ zoom, lat, lng, events, plextDebugSnapshot, endpointTelemetry, plextBounds, playerHistories, selected, selectionDetailsRequestKey, onNav, onStyle, onMode, onPortalClick, onSelectionPanelOpen, onSelectionPanelClose, portalHistoryLayers, onPortalHistoryLayerToggle, keyOverlayEnabled, onKeyOverlayToggle, artifactsEnabled, onArtifactsToggle, ornamentsEnabled, onOrnamentsToggle, portalLevelColorEnabled, onPortalLevelColorToggle, portalHealthColorEnabled, onPortalHealthColorToggle, liveMode, patternMode, extrusionEnabled, renderStats, frameStats, benchBatchRunning, benchBatchReport, onRunBenchBatch, entityCounts }: TacticalUIProps): JSX.Element {
     const [openDrawer, setOpenDrawer] = useState<string | null>(null);
     const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
     const handledSelectionDetailsRequestKeyRef = useRef(0);
@@ -214,6 +217,12 @@ export function TacticalUI({ zoom, lat, lng, events, plextDebugSnapshot, endpoin
         if (write) void write.catch(() => undefined);
     };
 
+    const copyBenchBatch = (): void => {
+        if (!benchBatchReport) return;
+        const write = navigator.clipboard?.writeText(benchBatchReport);
+        if (write) void write.catch(() => undefined);
+    };
+
     const copyEventLog = (): void => {
         const write = navigator.clipboard?.writeText(eventLogText);
         if (write) void write.catch(() => undefined);
@@ -302,6 +311,24 @@ export function TacticalUI({ zoom, lat, lng, events, plextDebugSnapshot, endpoin
                             </button>
                             <button
                                 type="button"
+                                onClick={onRunBenchBatch}
+                                disabled={benchBatchRunning}
+                                title="Run compact z14/z8 pan and zoom benchmark batch"
+                                style={{ background: 'rgba(0,255,255,0.12)', color: benchBatchRunning ? '#617171' : '#7ef9ff', border: '1px solid rgba(126,249,255,0.35)', borderRadius: '4px', padding: '4px 7px', font: 'inherit', cursor: benchBatchRunning ? 'default' : 'pointer' }}
+                            >
+                                {benchBatchRunning ? 'Batch Running' : 'Run Batch'}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={copyBenchBatch}
+                                disabled={!benchBatchReport}
+                                title={benchBatchReport ? 'Copy the last Mini-IRIS benchmark batch report' : 'No benchmark batch captured'}
+                                style={{ background: 'rgba(0,255,255,0.08)', color: !benchBatchReport ? '#617171' : '#7ef9ff', border: '1px solid rgba(126,249,255,0.25)', borderRadius: '4px', padding: '4px 7px', font: 'inherit', cursor: !benchBatchReport ? 'default' : 'pointer' }}
+                            >
+                                Copy Batch
+                            </button>
+                            <button
+                                type="button"
                                 onClick={copyEventLog}
                                 disabled={events.length === 0}
                                 title={events.length === 0 ? 'No diagnostics events captured' : 'Copy recent diagnostics event log'}
@@ -347,6 +374,13 @@ export function TacticalUI({ zoom, lat, lng, events, plextDebugSnapshot, endpoin
                     <div style={{ padding: '8px 10px', borderTop: '1px solid rgba(126, 249, 255, 0.14)', color: '#9fb8b8', overflowWrap: 'anywhere', fontFamily: MINI_IRIS_MONO_FONT, fontSize: '10px', lineHeight: 1.35 }}>
                         {benchLine}
                     </div>
+                    {benchBatchReport && (
+                        <textarea
+                            readOnly
+                            value={benchBatchReport}
+                            style={{ display: 'block', width: 'calc(100% - 20px)', minHeight: '92px', maxHeight: '160px', margin: '8px 10px', padding: '6px', resize: 'vertical', boxSizing: 'border-box', background: 'rgba(0,0,0,0.38)', color: '#d8fdfd', border: '1px solid rgba(126,249,255,0.2)', borderRadius: '4px', fontFamily: MINI_IRIS_MONO_FONT, fontSize: '10px', lineHeight: 1.35 }}
+                        />
+                    )}
                     {entries.length > 0 && (
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', padding: '8px 10px', borderTop: '1px solid rgba(126, 249, 255, 0.14)' }}>
                             {entries.map(([endpoint, entry]) => (

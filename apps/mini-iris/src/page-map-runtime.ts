@@ -1,11 +1,14 @@
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { CircleLayerSpecification, SymbolLayerSpecification } from '@maplibre/maplibre-gl-style-spec';
+import { addFrameDelta, aggregateBenchmarkFrameSnapshots, createFrameSampleAccumulator } from '@iris/core';
 import { INGRESS_ENTITY_STYLE, INGRESS_HEALTH_COLORS, INGRESS_MISC_COLORS, INGRESS_NEUTRAL_PORTAL_COLORS } from '@iris/core/ingress-map-style';
 import { COLORS, INGRESS_COLORS, ITEM_LEVEL_COLORS, MAP_STYLES, PLAYER_TRACKER_COLORS, type MapStyleName } from './MapConstants';
 import {
     MINI_PAGE_MAP_COMMAND,
     MINI_PAGE_MAP_EVENT,
+    type MiniBenchmarkMode,
+    type MiniBenchmarkVariant,
     type MiniMapSelectionIntent,
     type MiniMapView,
     type MiniPageMapCommandMessage,
@@ -21,6 +24,9 @@ let currentPortalPaint = {
     levelColorEnabled: false,
     healthColorEnabled: false,
 };
+let currentEntities: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
+let currentPlayers: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
+let benchmarkActive = false;
 
 type CirclePaint = NonNullable<CircleLayerSpecification['paint']>;
 type SymbolLayout = NonNullable<SymbolLayerSpecification['layout']>;
@@ -75,6 +81,14 @@ const PORTAL_RADIUS_EXPR: CirclePaint['circle-radius'] = [
     INGRESS_ENTITY_STYLE.portalRadiusStops[2].zoom, INGRESS_ENTITY_STYLE.portalRadiusStops[2].radius,
 ];
 const SELECTABLE_LAYERS = ['p', 'f-enl', 'f-res', 'f-mac', 'l-enl', 'l-res', 'l-mac'] as const;
+const FIELD_LAYERS = ['f-enl', 'f-res', 'f-mac', 'f-ext-enl', 'f-ext-res', 'f-ext-mac'] as const;
+const LINK_LAYERS = ['l-enl', 'l-res', 'l-mac', 'l-ext-enl', 'l-ext-res', 'l-ext-mac'] as const;
+const PLAYER_LAYERS = ['player-trails', 'player-pins', 'player-label-bg', 'player-labels'] as const;
+const SECONDARY_LAYERS = ['p-artifacts', 'p-ornaments', 'p-key-count-bg', 'p-key-count-total', 'p-key-count-split'] as const;
+const BENCHMARK_RUN_MS = 2200;
+const BENCHMARK_SETTLE_MS = 140;
+const BENCHMARK_PAN_PX = 280;
+const BENCHMARK_ZOOM_DELTA = 1.35;
 const MOBILE_LONG_PRESS_MS = 650;
 const MOBILE_LONG_PRESS_MOVE_TOLERANCE_PX = 12;
 const MOBILE_LONG_PRESS_CLICK_SUPPRESS_MS = 500;
@@ -102,6 +116,7 @@ function getView(currentMap: maplibregl.Map): MiniMapView {
 
 function syncCamera(settled: boolean): void {
     if (!map) return;
+    if (benchmarkActive) return;
     postEvent({ event: 'camera', view: getView(map), settled });
 }
 
@@ -115,8 +130,213 @@ function setContainerVisible(visible: boolean): void {
 }
 
 function setSourceData(sourceId: string, data: GeoJSON.FeatureCollection): void {
+    if (sourceId === 'entities') currentEntities = data;
+    if (sourceId === 'players') currentPlayers = data;
     const source = map?.getSource(sourceId) as maplibregl.GeoJSONSource | undefined;
     source?.setData(data);
+}
+
+function countFeatureType(data: GeoJSON.FeatureCollection, type: string): number {
+    return data.features.filter((feature) => feature.properties?.type === type).length;
+}
+
+function getSourceCounts(): { portals: number; links: number; fields: number; keys: number; players: number; total: number } {
+    const portals = countFeatureType(currentEntities, 'portal');
+    const links = countFeatureType(currentEntities, 'link');
+    const fields = countFeatureType(currentEntities, 'field');
+    const keys = countFeatureType(currentEntities, 'portal-key-count');
+    const players = currentPlayers.features.length;
+    return {
+        portals,
+        links,
+        fields,
+        keys,
+        players,
+        total: currentEntities.features.length + players,
+    };
+}
+
+function getVisibleCounts(variant: MiniBenchmarkVariant): { portals: number; links: number; fields: number; keys: number; players: number; total: number } {
+    const counts = getSourceCounts();
+    const visible = {...counts};
+    if (variant === 'base' || variant === 'no-links') visible.links = 0;
+    if (variant === 'base' || variant === 'no-fields') visible.fields = 0;
+    if (variant === 'base' || variant === 'no-players') visible.players = 0;
+    if (variant === 'base') visible.keys = 0;
+    visible.total = visible.portals + visible.links + visible.fields + visible.keys + visible.players;
+    return visible;
+}
+
+function setLayersVisibility(layerIds: readonly string[], visibility: 'visible' | 'none'): void {
+    layerIds.forEach((layerId) => {
+        if (map?.getLayer(layerId)) map.setLayoutProperty(layerId, 'visibility', visibility);
+    });
+}
+
+function applyBenchmarkVariant(variant: MiniBenchmarkVariant): () => void {
+    if (!map) return () => undefined;
+    const layerIds = [...FIELD_LAYERS, ...LINK_LAYERS, ...PLAYER_LAYERS, ...SECONDARY_LAYERS];
+    const previous = new Map<string, unknown>();
+    layerIds.forEach((layerId) => {
+        if (map?.getLayer(layerId)) previous.set(layerId, map.getLayoutProperty(layerId, 'visibility') ?? 'visible');
+    });
+
+    const hideFields = variant === 'base' || variant === 'no-fields';
+    const hideLinks = variant === 'base' || variant === 'no-links';
+    const hidePlayers = variant === 'base' || variant === 'no-players';
+    const hideSecondary = variant === 'base';
+
+    setLayersVisibility(FIELD_LAYERS, hideFields ? 'none' : 'visible');
+    setLayersVisibility(LINK_LAYERS, hideLinks ? 'none' : 'visible');
+    setLayersVisibility(PLAYER_LAYERS, hidePlayers ? 'none' : 'visible');
+    setLayersVisibility(SECONDARY_LAYERS, hideSecondary ? 'none' : 'visible');
+    setPortalPaint(currentPortalPaint.levelColorEnabled, currentPortalPaint.healthColorEnabled);
+
+    return () => {
+        previous.forEach((visibility, layerId) => {
+            if (map?.getLayer(layerId)) map.setLayoutProperty(layerId, 'visibility', visibility);
+        });
+        setPortalPaint(currentPortalPaint.levelColorEnabled, currentPortalPaint.healthColorEnabled);
+    };
+}
+
+function wait(ms: number): Promise<void> {
+    return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function waitForIdle(currentMap: maplibregl.Map): Promise<void> {
+    return new Promise((resolve) => {
+        currentMap.once('idle', () => resolve());
+        currentMap.triggerRepaint();
+    });
+}
+
+async function runBenchmarkScenario(variant: MiniBenchmarkVariant, zoom: number, mode: MiniBenchmarkMode): Promise<string> {
+    if (!map) return '';
+    const restoreLayers = applyBenchmarkVariant(variant);
+    const center = map.getCenter();
+    const originalZoom = map.getZoom();
+    const sourceCounts = getSourceCounts();
+    const visibleCounts = getVisibleCounts(variant);
+    const basePoint = map.project([center.lng, center.lat]);
+
+    try {
+        map.jumpTo({ center: [center.lng, center.lat], zoom });
+        await waitForIdle(map);
+        await wait(BENCHMARK_SETTLE_MS);
+
+        const start = performance.now();
+        const sample = createFrameSampleAccumulator(start);
+        let lastFrameAt: number | null = null;
+
+        await new Promise<void>((resolve) => {
+            const tick = (now: number): void => {
+                if (lastFrameAt !== null) {
+                    const delta = now - lastFrameAt;
+                    if (delta > 0 && delta < 1000) addFrameDelta(sample, delta, 20.000001);
+                }
+                lastFrameAt = now;
+
+                const progress = Math.min((now - start) / BENCHMARK_RUN_MS, 1);
+                if (mode === 'zoom') {
+                    const wave = (Math.sin(progress * Math.PI * 4) + 1) / 2;
+                    map?.jumpTo({ center: [center.lng, center.lat], zoom: zoom - BENCHMARK_ZOOM_DELTA + (BENCHMARK_ZOOM_DELTA * 2 * wave) });
+                } else {
+                    const offset = Math.sin(progress * Math.PI * 4) * BENCHMARK_PAN_PX;
+                    const nextCenter = map?.unproject([basePoint.x + offset, basePoint.y]);
+                    if (nextCenter) map?.jumpTo({ center: [nextCenter.lng, nextCenter.lat], zoom });
+                }
+
+                if (progress < 1) {
+                    window.requestAnimationFrame(tick);
+                } else {
+                    resolve();
+                }
+            };
+            window.requestAnimationFrame(tick);
+        });
+
+        const aggregate = aggregateBenchmarkFrameSnapshots([{
+            type: 'frame',
+            time: Date.now(),
+            totalMs: performance.now() - start,
+            frameCount: sample.frameCount,
+            averageFrameMs: sample.frameCount > 0 ? sample.totalFrameMs / sample.frameCount : 0,
+            maxFrameMs: sample.maxFrameMs,
+            slowFrameCount: sample.slowFrameCount,
+            estimatedFps: sample.frameCount > 0 ? Math.round(1000 / (sample.totalFrameMs / sample.frameCount)) : 0,
+        }], {
+            variant,
+            zoom,
+            mode,
+        });
+
+        const avg = aggregate?.averageFrameMs ?? 0;
+        const max = aggregate?.maxFrameMs ?? 0;
+        const fps = aggregate?.estimatedFps ?? 0;
+        const slow = aggregate?.slowFrameCount ?? 0;
+        const frames = aggregate?.frameCount ?? 0;
+        return [
+            `z${zoom.toFixed(0)} ${variant} ${mode}`,
+            `items ${visibleCounts.total.toLocaleString()}`,
+            `P ${visibleCounts.portals.toLocaleString()}`,
+            `L ${visibleCounts.links.toLocaleString()}`,
+            `F ${visibleCounts.fields.toLocaleString()}`,
+            `keys ${visibleCounts.keys.toLocaleString()}`,
+            `players ${visibleCounts.players.toLocaleString()}`,
+            `sources P ${sourceCounts.portals.toLocaleString()} L ${sourceCounts.links.toLocaleString()} F ${sourceCounts.fields.toLocaleString()}`,
+            `avg ${Math.round(avg)}ms`,
+            `max ${Math.round(max)}ms`,
+            `fps ${fps}`,
+            `slow ${slow}/${frames}`,
+            `median ${Math.round(aggregate?.benchmarkMedianAverageFrameMs ?? avg)}ms`,
+            `benchMax ${Math.round(aggregate?.benchmarkMaxFrameMs ?? max)}ms`,
+        ].join(' | ');
+    } finally {
+        restoreLayers();
+        map.jumpTo({ center: [center.lng, center.lat], zoom: originalZoom });
+        await waitForIdle(map);
+    }
+}
+
+async function runBenchmarkBatch(context: Extract<MiniPageMapCommandMessage['command'], { action: 'run-benchmark-batch' }>['context']): Promise<void> {
+    if (!map || benchmarkActive) return;
+    benchmarkActive = true;
+    const originalCenter = map.getCenter();
+    const originalZoom = map.getZoom();
+    const scenarios: { zoom: number; variant: MiniBenchmarkVariant; mode: MiniBenchmarkMode }[] = [
+        { zoom: 14, variant: 'normal', mode: 'pan' },
+        { zoom: 14, variant: 'base', mode: 'pan' },
+        { zoom: 14, variant: 'normal', mode: 'zoom' },
+        { zoom: 8, variant: 'normal', mode: 'pan' },
+        { zoom: 8, variant: 'no-links', mode: 'pan' },
+        { zoom: 8, variant: 'no-fields', mode: 'pan' },
+        { zoom: 8, variant: 'base', mode: 'pan' },
+        { zoom: 8, variant: 'no-players', mode: 'pan' },
+    ];
+
+    try {
+        const header = [
+            'MINI IRIS BENCH BATCH',
+            `browser ${navigator.userAgent.match(/(Firefox|Chrome)\/[^\s]+/)?.[0] ?? navigator.userAgent}`,
+            `platform ${navigator.platform}`,
+            `viewport ${window.innerWidth}x${window.innerHeight}`,
+            `dpr ${Number.isFinite(window.devicePixelRatio) ? window.devicePixelRatio.toFixed(2) : '-'}`,
+            context.liveMode ? 'mode live' : `mode mock${context.patternMode}`,
+            `toggles lvl ${context.portalLevelColorEnabled ? 'on' : 'off'} hp ${context.portalHealthColorEnabled ? 'on' : 'off'} keys ${context.keyOverlayEnabled ? 'on' : 'off'} 3d ${context.extrusionEnabled ? 'on' : 'off'}`,
+        ].join(' ');
+
+        const lines: string[] = [header];
+        for (const scenario of scenarios) {
+            lines.push(await runBenchmarkScenario(scenario.variant, scenario.zoom, scenario.mode));
+            await wait(BENCHMARK_SETTLE_MS);
+        }
+        postEvent({ event: 'benchmark-batch', report: lines.join('\n') });
+    } finally {
+        map.jumpTo({ center: [originalCenter.lng, originalCenter.lat], zoom: originalZoom });
+        benchmarkActive = false;
+        syncCamera(true);
+    }
 }
 
 function buildStyle(styleName: MapStyleName): maplibregl.StyleSpecification {
@@ -415,6 +635,9 @@ function handleCommand(command: MiniPageMapCommandMessage['command']): void {
             break;
         case 'set-portal-paint':
             setPortalPaint(command.levelColorEnabled, command.healthColorEnabled);
+            break;
+        case 'run-benchmark-batch':
+            void runBenchmarkBatch(command.context);
             break;
         case 'nav':
             if (command.nav === '+') map.zoomIn();

@@ -194,6 +194,8 @@ function TacticalOverlay(): h.JSX.Element {
     const [mockInventory, setMockInventory] = useState<InventoryItem[]>([]);
     const [renderStats, setRenderStats] = useState<MiniRenderStats | null>(null);
     const [frameStats, setFrameStats] = useState<MiniFrameStats>(EMPTY_FRAME_STATS);
+    const [benchBatchRunning, setBenchBatchRunning] = useState(false);
+    const [benchBatchReport, setBenchBatchReport] = useState('');
     const [entityCounts, setEntityCounts] = useState<MiniEntityCounts>(EMPTY_ENTITY_COUNTS);
     const [extrusionEnabled, setExtrusionEnabled] = useState(false);
     const [isVis, setIsVis] = useState(false);
@@ -659,6 +661,24 @@ function TacticalOverlay(): h.JSX.Element {
         useStore.getState().toggleLayerOrnaments();
     }, []);
 
+    const handleRunBenchBatch = useCallback((): void => {
+        if (benchBatchRunning) return;
+        setBenchBatchRunning(true);
+        setBenchBatchReport('');
+        postMiniPageMapCommand({
+            action: 'run-benchmark-batch',
+            context: {
+                liveMode: liveModeRef.current,
+                patternMode: patternModeRef.current,
+                portalLevelColorEnabled,
+                portalHealthColorEnabled,
+                keyOverlayEnabled,
+                extrusionEnabled,
+            },
+        });
+        logEvent('Bench batch started');
+    }, [benchBatchRunning, extrusionEnabled, keyOverlayEnabled, logEvent, portalHealthColorEnabled, portalLevelColorEnabled]);
+
     useEffect(() => {
         postMiniPageMapCommand({
             action: 'set-portal-paint',
@@ -766,6 +786,13 @@ function TacticalOverlay(): h.JSX.Element {
                 return;
             }
 
+            if (data.payload.event === 'benchmark-batch') {
+                setBenchBatchRunning(false);
+                setBenchBatchReport(data.payload.report);
+                logEvent('Bench batch complete');
+                return;
+            }
+
             if (data.payload.event === 'clear-selection') {
                 setSelected(null);
                 postMiniPageMapCommand({ action: 'sync-selection', data: { type: 'FeatureCollection', features: [] } });
@@ -774,7 +801,7 @@ function TacticalOverlay(): h.JSX.Element {
 
         window.addEventListener('message', handler);
         return (): void => window.removeEventListener('message', handler);
-    }, [generator, scheduleMoveSettleLoad, throttledSync]);
+    }, [generator, logEvent, scheduleMoveSettleLoad, throttledSync]);
 
     useEffect(() => {
         if (!initialMiniIrisOpen || initialOpenAppliedRef.current || isVis) return;
@@ -966,6 +993,9 @@ function TacticalOverlay(): h.JSX.Element {
                         extrusionEnabled={extrusionEnabled}
                         renderStats={renderStats}
                         frameStats={frameStats}
+                        benchBatchRunning={benchBatchRunning}
+                        benchBatchReport={benchBatchReport}
+                        onRunBenchBatch={handleRunBenchBatch}
                         entityCounts={entityCounts}
                         onNav={handleNav} onStyle={handleStyle} onMode={handleMode}
                         onPortalClick={handlePortalClick}

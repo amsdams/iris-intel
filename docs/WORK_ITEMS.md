@@ -8,7 +8,7 @@ from here when they become tracked work.
 
 ## Current Next Pickup
 
-1. **[Mini-IRIS Bench]** Capture the small DBG matrix later: base, LVL, HP, KEY, and 3D variants.
+1. **[Mini-IRIS Bench]** Smoke the new compact DBG batch tool and capture a first z14/z8 desktop/mobile baseline.
 2. **[Shared Runtime]** Continue the cross-app audit with backend/engine/domain candidates, not shared UI.
 3. **[Shared Runtime]** Pause further package extraction unless smoke testing shows duplication or regressions; recent
    Mini-IRIS polish checks are stable enough to resume shared-boundary work.
@@ -1259,6 +1259,7 @@ Tasks:
 | Migrate mini-IRIS map runtime toward page-world discipline                    | Done   | page-world runtime owns MapLibre, rendered-feature selection, explicit mobile touch-hold selection, camera, sources, players, selection highlights, style, and 3D toggles                                                                                                          |
 | Smoke test Mini-IRIS page-world map interactions                              | Done   | desktop Chrome and mobile testing confirmed map load, portal selection, drawer details, right-click details, and long-press details after the page-world migration                                                                                                                 |
 | Add compact Mini-IRIS diagnostics/bench surface                               | Done   | `DBG` map tool opens compact entity/source counts, frame stats, render timing, active toggles, and copyable one-line bench output without adding a full IRIS diagnostics popup                                                                                                     |
+| Add compact Mini-IRIS batch benchmark                                         | Done   | `DBG` now has a compact Run Batch/Copy Batch flow that measures z14 normal/base pan, z14 normal zoom, and z8 normal/no-links/no-fields/base/no-players pan in the page-world MapLibre runtime without adding the full IRIS diagnostics surface                                      |
 | Allow Mini-IRIS DBG alongside dock panels                                     | Done   | diagnostics now uses independent open state so `DBG` can remain visible while COMM, inventory, player, scores, or selection panels are open                                                                                                                                        |
 | Preserve Mini-IRIS faction ring with level/health toggles                     | Done   | page-world portal styling now keeps a faction-coloured stroke/ring while level colouring and health opacity affect the fill                                                                                                                                                        |
 | Match IRIS portal HP colour ramp in Mini-IRIS                                 | Done   | HP mode now uses the same yellow/orange/red/magenta recharge semantics as full IRIS while preserving the faction-coloured stroke/ring                                                                                                                                              |

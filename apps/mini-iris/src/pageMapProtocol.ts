@@ -22,6 +22,8 @@ export interface MiniMapView extends MiniMapCamera {
 
 export type MiniMapSelectionKind = 'portal' | 'link' | 'field';
 export type MiniMapSelectionIntent = 'select' | 'details';
+export type MiniBenchmarkVariant = 'normal' | 'base' | 'no-links' | 'no-fields' | 'no-players';
+export type MiniBenchmarkMode = 'pan' | 'zoom';
 
 export type MiniPageMapCommand =
     | {
@@ -43,6 +45,17 @@ export type MiniPageMapCommand =
     | { action: 'set-style'; styleName: MapStyleName }
     | { action: 'set-extrusion'; enabled: boolean }
     | { action: 'set-portal-paint'; levelColorEnabled: boolean; healthColorEnabled: boolean }
+    | {
+        action: 'run-benchmark-batch';
+        context: {
+            liveMode: boolean;
+            patternMode: number;
+            portalLevelColorEnabled: boolean;
+            portalHealthColorEnabled: boolean;
+            keyOverlayEnabled: boolean;
+            extrusionEnabled: boolean;
+        };
+    }
     | { action: 'nav'; nav: '+' | '-' | 'up' | 'down' | 'left' | 'right' | 'reset' }
     | { action: 'fly-to'; lat: number; lng: number; zoom: number; duration?: number }
     | { action: 'ease-to'; lat: number; lng: number; zoom: number; duration?: number }
@@ -52,6 +65,7 @@ export type MiniPageMapEvent =
     | { event: 'ready'; view: MiniMapView }
     | { event: 'camera'; view: MiniMapView; settled: boolean }
     | { event: 'selection'; kind: MiniMapSelectionKind; id: string; intent: MiniMapSelectionIntent }
+    | { event: 'benchmark-batch'; report: string }
     | { event: 'clear-selection' };
 
 export interface MiniPageMapCommandMessage {
