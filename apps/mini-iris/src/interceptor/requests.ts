@@ -1,3 +1,4 @@
+import {evaluateEndpointRequestGate} from '@iris/core';
 import { getCsrfToken, extractVersion } from './utils';
 import { getMessageType, isRecord, numberOrNull, stringOrNull } from '../messages';
 
@@ -246,28 +247,23 @@ function enqueueRequest(endpoint: RequestEndpoint, key: string, freshnessMs: num
         return;
     }
 
-    if (state.inFlightKeys.has(key)) {
-        state.lastSkipReason = 'in-flight';
-        emitEndpointState(endpoint);
-        return;
-    }
+    const gate = evaluateEndpointRequestGate({
+        key,
+        now,
+        force,
+        inFlightKeys: state.inFlightKeys,
+        cooldownUntil: state.cooldownUntil,
+        lastSuccessKey: state.lastSuccessKey,
+        lastSuccessAt: state.lastSuccessAt,
+        freshnessMs,
+        queued: requestQueue.some((task) => task.endpoint === endpoint && task.key === key),
+    });
 
-    if (state.cooldownUntil !== null && now < state.cooldownUntil) {
-        state.lastSkipReason = 'cooldown';
-        state.nextRefreshAt = state.cooldownUntil;
-        emitEndpointState(endpoint);
-        return;
-    }
-
-    if (!force && state.lastSuccessKey === key && state.lastSuccessAt !== null && now - state.lastSuccessAt < freshnessMs) {
-        state.lastSkipReason = 'fresh';
-        state.nextRefreshAt = state.lastSuccessAt + freshnessMs;
-        emitEndpointState(endpoint);
-        return;
-    }
-
-    if (requestQueue.some((task) => task.endpoint === endpoint && task.key === key)) {
-        state.lastSkipReason = 'queued';
+    if (!gate.shouldRun) {
+        state.lastSkipReason = gate.skipReason;
+        if (gate.nextRefreshAt !== null) {
+            state.nextRefreshAt = gate.nextRefreshAt;
+        }
         emitEndpointState(endpoint);
         return;
     }
@@ -296,22 +292,22 @@ function processQueue(): void {
         const state = endpointState[endpoint];
         const now = Date.now();
 
-        if (state.inFlightKeys.has(key)) {
-            state.lastSkipReason = 'in-flight';
-            emitEndpointState(endpoint);
-            continue;
-        }
+        const gate = evaluateEndpointRequestGate({
+            key,
+            now,
+            force,
+            inFlightKeys: state.inFlightKeys,
+            cooldownUntil: state.cooldownUntil,
+            lastSuccessKey: state.lastSuccessKey,
+            lastSuccessAt: state.lastSuccessAt,
+            freshnessMs,
+        });
 
-        if (state.cooldownUntil !== null && now < state.cooldownUntil) {
-            state.lastSkipReason = 'cooldown';
-            state.nextRefreshAt = state.cooldownUntil;
-            emitEndpointState(endpoint);
-            continue;
-        }
-
-        if (!force && state.lastSuccessKey === key && state.lastSuccessAt !== null && now - state.lastSuccessAt < freshnessMs) {
-            state.lastSkipReason = 'fresh';
-            state.nextRefreshAt = state.lastSuccessAt + freshnessMs;
+        if (!gate.shouldRun) {
+            state.lastSkipReason = gate.skipReason;
+            if (gate.nextRefreshAt !== null) {
+                state.nextRefreshAt = gate.nextRefreshAt;
+            }
             emitEndpointState(endpoint);
             continue;
         }

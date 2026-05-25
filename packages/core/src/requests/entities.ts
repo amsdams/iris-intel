@@ -1,4 +1,5 @@
-import { ZOOM_TO_LEVEL, e6ToDegrees, isFiniteBoundsE6, normalizeLongitudeDegrees, type BoundsE6 } from '@iris/core';
+import {ZOOM_TO_LEVEL} from '../ZoomPolicy';
+import {e6ToDegrees, isFiniteBoundsE6, normalizeLongitudeDegrees, type BoundsE6} from '../geo-bounds';
 
 const DEFAULT_ZOOM_TO_TILES_PER_EDGE = [1, 1, 1, 40, 40, 80, 80, 320, 1000, 2000, 2000, 4000, 8000, 16000, 16000, 32000];
 const MAX_MAP_ZOOM = 21;
@@ -21,9 +22,6 @@ export interface EntityRequestPayload {
 
 function getMapZoomTileParameters(zoom: number): TileParams {
   const maxTilesPerEdge = DEFAULT_ZOOM_TO_TILES_PER_EDGE[DEFAULT_ZOOM_TO_TILES_PER_EDGE.length - 1];
-
-  // Portals start appearing as "All Portals" (Level 0+) at zoom 15+.
-  // Below zoom 15, Intel returns portals selectively (e.g., L2+ at zoom 13-14).
   const portalZoomLimit = 15;
 
   return {
@@ -40,17 +38,12 @@ function getDataZoomForMapZoom(mapZoom: number): number {
 
   while (zoom > 0) {
     const nextParams = getMapZoomTileParameters(zoom - 1);
-    
-    // Aligned with IITC's getDataZoomForMapZoom logic
     const changesDetailLevel =
-      nextParams.tilesPerEdge !== originalParams.tilesPerEdge ||
-      nextParams.hasPortals !== originalParams.hasPortals ||
-      nextParams.level !== originalParams.level;
+      nextParams.tilesPerEdge !== originalParams.tilesPerEdge
+      || nextParams.hasPortals !== originalParams.hasPortals
+      || nextParams.level !== originalParams.level;
 
-    if (changesDetailLevel) {
-      break;
-    }
-
+    if (changesDetailLevel) break;
     zoom -= 1;
   }
 
@@ -105,12 +98,7 @@ export function buildEntityRequestPayload(bounds: BoundsE6, mapZoom: number): En
     };
   }
 
-  // MapLibre zoom level matches Leaflet/Intel when using 256px tiles.
-  // The +1 offset was a remnant of 512px tile assumptions and caused "data overflow" at zoom 14.
-  const MAPLIBRE_ZOOM_OFFSET = 0;
-  const adjustedZoom = mapZoom + MAPLIBRE_ZOOM_OFFSET;
-
-  const dataZoom = getDataZoomForMapZoom(adjustedZoom);
+  const dataZoom = getDataZoomForMapZoom(mapZoom);
   const params = getMapZoomTileParameters(dataZoom);
   const south = clamp(e6ToDegrees(Math.min(bounds.minLatE6, bounds.maxLatE6)), -MAX_MERCATOR_LAT, MAX_MERCATOR_LAT);
   const north = clamp(e6ToDegrees(Math.max(bounds.minLatE6, bounds.maxLatE6)), -MAX_MERCATOR_LAT, MAX_MERCATOR_LAT);

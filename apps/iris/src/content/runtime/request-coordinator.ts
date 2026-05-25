@@ -1,6 +1,5 @@
-import { boundsE6ContainsPoint, extractPlextPortalRefreshHints, resolvePlextPortalRefreshHint, selectKeyedRefreshBatch, useStore, type Plext, type PlextPortalRefreshHint } from '@iris/core';
+import { boundsE6ContainsPoint, buildEntityRequestPayload, extractPlextPortalRefreshHints, resolvePlextPortalRefreshHint, selectKeyedRefreshBatch, useStore, type Plext, type PlextPortalRefreshHint } from '@iris/core';
 import { IRISMessage } from './message-types';
-import { buildEntityRequestPayload } from '../domains/entities/request';
 
 const PLEXT_COOLDOWN_MS = 5000;
 

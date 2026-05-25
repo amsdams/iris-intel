@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { buildEntityRequestPayload } from './request';
+import {describe, expect, it} from 'vitest';
+import {buildEntityRequestPayload} from './entities';
 
 describe('buildEntityRequestPayload', () => {
   it('rejects non-finite bounds without generating tiles', () => {
