@@ -1,33 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { EntityParser } from './EntityParser';
-import { IntelMapData, IntelEntityData } from './intel-types';
+import {mockIntelFieldEntity, mockIntelLinkEntity, mockIntelMapData, mockIntelPortalEntity} from '../mock-intel';
 
 describe('EntityParser', () => {
   it('should extract portals from links even if they are not in gameEntities as portals', () => {
-    const data: IntelMapData = {
-      result: {
-        map: {
-          "tile_key": {
-            gameEntities: [
-              [
-                "link_guid",
-                123456789,
-                [
-                  "e",
-                  "E",
-                  "from_portal_guid",
-                  52038381,
-                  4368969,
-                  "to_portal_guid",
-                  52035845,
-                  4366433
-                ] as unknown as IntelEntityData
-              ]
-            ]
-          }
-        }
-      }
-    };
+    const data = mockIntelMapData([mockIntelLinkEntity()]);
 
     const { portals, links } = EntityParser.parse(data);
 
@@ -48,29 +25,7 @@ describe('EntityParser', () => {
   });
 
   it('should extract portals from fields', () => {
-    const data: IntelMapData = {
-      result: {
-        map: {
-          "tile_key": {
-            gameEntities: [
-              [
-                "field_guid",
-                123456789,
-                [
-                  "r",
-                  "R",
-                  [
-                    ["p1_guid", 52026035, 4371883],
-                    ["p2_guid", 52023990, 4367998],
-                    ["p3_guid", 52024231, 4374069]
-                  ]
-                ] as unknown as IntelEntityData
-              ]
-            ]
-          }
-        }
-      }
-    };
+    const data = mockIntelMapData([mockIntelFieldEntity()]);
 
     const { portals, fields } = EntityParser.parse(data);
 
@@ -83,55 +38,18 @@ describe('EntityParser', () => {
   });
 
   it('should not overwrite detailed portal data with placeholder data', () => {
-    const data: IntelMapData = {
-      result: {
-        map: {
-          "tile_key": {
-            gameEntities: [
-              [
-                "portal_guid",
-                123456789,
-                [
-                  "p",
-                  "E",
-                  52038381,
-                  4368969,
-                  5, // level
-                  100, // health
-                  8, // resCount
-                  "ImageUrl",
-                  "Name",
-                  [], // ornaments
-                  true, // visited
-                  false, // captured
-                  "scout", // scoutControlled
-                  "address",
-                  0, // unknown
-                  0, // unknown
-                  "guid",
-                  "team",
-                  1 // history
-                ] as unknown as IntelEntityData
-              ],
-              [
-                "link_guid",
-                123456789,
-                [
-                  "e",
-                  "E",
-                  "portal_guid",
-                  52038381,
-                  4368969,
-                  "other_guid",
-                  52035845,
-                  4366433
-                ] as unknown as IntelEntityData
-              ]
-            ]
-          }
-        }
-      }
-    };
+    const data = mockIntelMapData([
+      mockIntelPortalEntity({
+        guid: 'portal_guid',
+        name: 'Name',
+        visited: true,
+        captured: false,
+        scoutControlled: 'scout',
+        ownerGuid: 'guid',
+        history: 1,
+      }),
+      mockIntelLinkEntity({fromPortalGuid: 'portal_guid', toPortalGuid: 'other_guid'}),
+    ]);
 
     const { portals } = EntityParser.parse(data);
 
@@ -145,40 +63,13 @@ describe('EntityParser', () => {
   });
 
   it('should parse direct portal history flags from map entities without history bits', () => {
-    const data: IntelMapData = {
-      result: {
-        map: {
-          "tile_key": {
-            gameEntities: [
-              [
-                "direct_history_portal_guid",
-                123456789,
-                [
-                  "p",
-                  "E",
-                  52038381,
-                  4368969,
-                  5,
-                  100,
-                  8,
-                  "ImageUrl",
-                  "Name",
-                  [],
-                  false,
-                  true,
-                  "",
-                  "address",
-                  0,
-                  0,
-                  "guid",
-                  "team"
-                ] as unknown as IntelEntityData
-              ]
-            ]
-          }
-        }
-      }
-    };
+    const data = mockIntelMapData([
+      mockIntelPortalEntity({
+        guid: 'direct_history_portal_guid',
+        captured: true,
+        history: 0,
+      }),
+    ]);
 
     const { portals } = EntityParser.parse(data);
     const portal = portals.find(p => p.id === 'direct_history_portal_guid');
@@ -190,41 +81,17 @@ describe('EntityParser', () => {
   });
 
   it('should parse portal history bits for visited captured and scanned', () => {
-    const data: IntelMapData = {
-      result: {
-        map: {
-          "tile_key": {
-            gameEntities: [
-              [
-                "history_portal_guid",
-                123456789,
-                [
-                  "p",
-                  "R",
-                  52038381,
-                  4368969,
-                  6,
-                  95,
-                  8,
-                  "ImageUrl",
-                  "History Portal",
-                  [],
-                  false,
-                  false,
-                  "scout",
-                  "address",
-                  0,
-                  0,
-                  "guid",
-                  "team",
-                  7
-                ] as unknown as IntelEntityData
-              ]
-            ]
-          }
-        }
-      }
-    };
+    const data = mockIntelMapData([
+      mockIntelPortalEntity({
+        guid: 'history_portal_guid',
+        team: 'R',
+        level: 6,
+        health: 95,
+        name: 'History Portal',
+        scoutControlled: 'scout',
+        history: 7,
+      }),
+    ]);
 
     const { portals } = EntityParser.parse(data);
     const portal = portals.find(p => p.id === 'history_portal_guid');

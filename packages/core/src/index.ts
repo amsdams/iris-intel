@@ -30,6 +30,7 @@ export * from './runtime-messages';
 export * from './endpoint-telemetry';
 export * from './benchmark-scenarios';
 export * from './map-runtime-protocol';
+export * from './mock-intel';
 export * from './ZoomPolicy';
 export * from './team';
 export * from './parsers/EntityParser';

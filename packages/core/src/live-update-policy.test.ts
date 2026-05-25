@@ -1,16 +1,15 @@
 import {describe, expect, it} from 'vitest';
 import {getCurrentViewPlextPortalRefreshHints, selectCommTopologyRefresh} from './live-update-policy';
-import type {Plext} from './store';
+import {mockPlext} from './mock-intel';
 
 const now = 1_000_000;
 
-function plext(id: string, latE6: number, lngE6: number, time = now): Plext {
-  return {
+function plext(id: string, latE6: number, lngE6: number, time = now) {
+  return mockPlext({
     id,
     time,
     type: 'SYSTEM_BROADCAST',
     team: 'ENLIGHTENED',
-    categories: 1,
     text: 'activity',
     markup: [
       ['PORTAL', {
@@ -22,7 +21,7 @@ function plext(id: string, latE6: number, lngE6: number, time = now): Plext {
         team: 'ENLIGHTENED',
       }],
     ],
-  };
+  });
 }
 
 describe('getCurrentViewPlextPortalRefreshHints', () => {

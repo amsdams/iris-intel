@@ -1,22 +1,17 @@
 import {describe, expect, it} from 'vitest';
 import {PLAYER_TRACKER_HISTORY_EXPIRATION_MS, prunePlayerTrackerHistories, processPlayerTrackerPlexts} from './player-tracker';
 import type {PlayerTrackerHistory} from './player-tracker';
-import type {Plext} from './store';
+import {mockPlext} from './mock-intel';
 
-function plext(id: string, time: number, player: string, latE6: number, lngE6: number, text = ' deployed a Resonator on '): Plext {
-  return {
+function plext(id: string, time: number, player: string, latE6: number, lngE6: number, text = ' deployed a Resonator on ') {
+  return mockPlext({
     id,
     time,
     text,
-    team: 'E',
-    categories: 1,
-    type: 'PLAYER_GENERATED',
-    markup: [
-      ['PLAYER', {plain: player, team: 'E'}],
-      ['TEXT', {plain: text}],
-      ['PORTAL', {name: 'Portal A', latE6, lngE6}],
-    ],
-  };
+    player,
+    latE6,
+    lngE6,
+  });
 }
 
 describe('processPlayerTrackerPlexts', () => {
