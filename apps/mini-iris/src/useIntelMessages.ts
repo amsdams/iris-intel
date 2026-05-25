@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'preact/hooks';
-import { useStore, EntityParser, GameScoreParser, RegionScoreParser, InventoryParser, PlayerParser, PlextParser, ArtifactParser, createPortalDetailsRequestMessage, extractPlextPortalRefreshHints, parsePortalDetailsForStore, resolvePlextPortalRefreshHint, selectKeyedRefreshBatch, Portal, Link, Field } from '@iris/core';
+import { useStore, EntityParser, GameScoreParser, RegionScoreParser, InventoryParser, PlayerParser, PlextParser, ArtifactParser, createPortalDetailsRequestMessage, extractPlextPortalRefreshHints, mergePortalDetailsForStore, resolvePlextPortalRefreshHint, selectKeyedRefreshBatch, Portal, Link, Field } from '@iris/core';
 import type { ArtifactData, GameScoreData, IntelMapData, InventoryData, Plext, PlextData, PortalDetailsData, RegionScoreData, PlayerStatsMessage as CorePlayerStatsMessage } from '@iris/core';
 import { isIrisDataMessage, isRecord, numberOrNull, stringOrNull } from './messages';
 
@@ -105,17 +105,14 @@ export function useIntelMessages(
                 const guid = stringOrNull(parsedParams.guid) ?? '';
                 if (!guid) return;
                 portalDetailPendingRef.current.delete(guid);
-                const parsed = parsePortalDetailsForStore(msg.data as PortalDetailsData, { guid }, Object.values(store.links), {
+                const result = mergePortalDetailsForStore(msg.data as PortalDetailsData, { guid }, store.portals, Object.values(store.links), {
                     onError: (error) => logEvent(`Details parse failed: ${error instanceof Error ? error.message : String(error)}`),
                 });
-                if (parsed) {
-                    store.updatePortals([parsed]);
-                    logEvent(`Details: ${parsed.name || 'unknown'} | ${parsed.resonators?.length || 0} resos`);
+                if (result) {
+                    store.updatePortals([result.merged]);
+                    logEvent(`Details: ${result.merged.name || 'unknown'} | ${result.merged.resonators?.length || 0} resos`);
                     if (selected?.type === 'portal' && selected.data.id === guid) {
-                        const updatedPortal = useStore.getState().portals[guid];
-                        if (updatedPortal) {
-                            setSelected({ type: 'portal', data: updatedPortal });
-                        }
+                        setSelected({ type: 'portal', data: result.merged });
                     }
                     syncToMap(liveMode, patternMode);
                 }
