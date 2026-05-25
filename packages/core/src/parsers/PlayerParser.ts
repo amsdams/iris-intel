@@ -1,4 +1,4 @@
-import { normalizeTeam } from '../index';
+import { normalizeTeam } from '../team';
 import { PlayerStats } from '../store';
 
 export interface PlayerStatsMessage {

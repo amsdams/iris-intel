@@ -1,4 +1,4 @@
-import { normalizeTeam } from '../index';
+import { normalizeTeam } from '../team';
 import { Portal } from '../store';
 import { PortalDetailsData } from './intel-types';
 

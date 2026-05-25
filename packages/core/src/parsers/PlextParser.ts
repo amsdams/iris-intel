@@ -1,4 +1,4 @@
-import { normalizeTeam } from '../index';
+import { normalizeTeam } from '../team';
 import { Plext } from '../store';
 import { PlextData, PlextMarkup } from './intel-types';
 

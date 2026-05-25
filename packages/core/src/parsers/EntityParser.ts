@@ -1,4 +1,4 @@
-import { normalizeTeam } from '../index';
+import { normalizeTeam } from '../team';
 import { Field, Link, Portal } from '../store';
 import { IntelMapData } from './intel-types';
 

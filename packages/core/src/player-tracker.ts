@@ -1,4 +1,5 @@
 import type {Plext} from './store';
+import {normalizeTeam} from './team';
 
 export type PlayerTrackerPlext = Pick<Plext, 'id' | 'time' | 'text' | 'markup' | 'categories' | 'team'> & {
   type?: Plext['type'];
@@ -118,16 +119,6 @@ function isDestroyOrOwnLinkMessage(text: string): boolean {
     text.includes('Your Link');
 }
 
-function normalizeTrackerTeam(team: string | undefined): string {
-  const candidate = team || 'N';
-  const upper = candidate.toUpperCase();
-  if (upper === 'ENLIGHTENED' || upper === 'E') return 'E';
-  if (upper === 'RESISTANCE' || upper === 'R') return 'R';
-  if (upper === 'MACHINA' || upper === '__MACHINA__') return 'M';
-  if (upper === 'NEUTRAL' || upper === 'N') return 'N';
-  return candidate;
-}
-
 export function processPlayerTrackerPlexts(options: ProcessPlayerTrackerPlextsOptions): ProcessPlayerTrackerPlextsResult {
   const now = options.now ?? Date.now();
   const expirationMs = options.expirationMs ?? PLAYER_TRACKER_HISTORY_EXPIRATION_MS;
@@ -148,7 +139,7 @@ export function processPlayerTrackerPlexts(options: ProcessPlayerTrackerPlextsOp
     if (plext.time < limit) return;
 
     let playerName: string | null = null;
-    let playerTeam = normalizeTrackerTeam(plext.team);
+    let playerTeam = normalizeTeam(plext.team, {fallback: plext.team || 'N'});
     let lat: number | null = null;
     let lng: number | null = null;
     let portalName = '';
@@ -169,9 +160,9 @@ export function processPlayerTrackerPlexts(options: ProcessPlayerTrackerPlextsOp
       } else if (type === 'PLAYER' || type === 'SENDER' || type === 'AT_PLAYER' || type === 'FACTION') {
         playerName = data.plain || data.name || playerName;
         if (data.team && data.team !== 'N' && data.team !== 'NEUTRAL') {
-          playerTeam = normalizeTrackerTeam(data.team);
+          playerTeam = normalizeTeam(data.team, {fallback: data.team});
         }
-        playerTeam = normalizeTrackerTeam(playerName?.toUpperCase() === 'MACHINA' || playerName?.toUpperCase() === '__MACHINA__' ? 'M' : playerTeam);
+        playerTeam = normalizeTeam(playerName?.toUpperCase() === 'MACHINA' || playerName?.toUpperCase() === '__MACHINA__' ? 'M' : playerTeam, {fallback: playerTeam});
         actionMarkup.push(markup);
       } else if ((type === 'PORTAL' || type === 'LINK') && lat === null && lng === null) {
         if (typeof data.latE6 === 'number' && typeof data.lngE6 === 'number') {

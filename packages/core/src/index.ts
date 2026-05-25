@@ -27,6 +27,7 @@ export * from './portal-display';
 export * from './diagnostics-formatting';
 export * from './persistence-schema';
 export * from './ZoomPolicy';
+export * from './team';
 export * from './parsers/EntityParser';
 export * from './parsers/PortalDetailsParser';
 export * from './parsers/ArtifactParser';
@@ -38,22 +39,3 @@ export * from './parsers/RegionScoreParser';
 export * from './parsers/PasscodeParser';
 export * from './parsers/PlayerParser';
 export * from './parsers/intel-types';
-
-/**
- * Normalizes various team strings from Intel API into standard IRIS keys:
- * E: Enlightened
- * R: Resistance
- * M: Neutral, M(Machina)
- * N: Uncaptured, N
- */
-export const normalizeTeam = (team: string | undefined): string => {
-    let result = 'N';
-    if (team) {
-        const t = team.toUpperCase();
-        if (t === 'ENLIGHTENED' || t === 'E') result = 'E';
-        else if (t === 'RESISTANCE' || t === 'R') result = 'R';
-        else if (t === 'MACHINA' || t === 'M' || t === 'ALIENS') result = 'M';
-        else if (t === 'NEUTRAL' || t === 'N') result = 'N';
-    }
-    return result;
-};

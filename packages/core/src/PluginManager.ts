@@ -1,6 +1,6 @@
 import { IRISPlugin, IRIS_API, Portal, Link, Field, Plext, InventoryItem } from '@iris/plugin-sdk';
 import { useStore } from './store';
-import { normalizeTeam } from './index';
+import { normalizeTeam } from './team';
 import { INGRESS_TEAM_COLORS } from './ingress-map-style';
 
 export class PluginManager {
