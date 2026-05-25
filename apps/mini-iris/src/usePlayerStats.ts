@@ -1,5 +1,5 @@
 import { useEffect } from 'preact/hooks';
-import { createInventoryRequestMessage, useStore } from '@iris/core';
+import { createInventoryRequestMessage, createPlayerStatsRequestMessage, createSubscriptionRequestMessage, useStore } from '@iris/core';
 import { useEndpointTelemetry } from './useEndpointTelemetry';
 
 const SUBSCRIPTION_POLL_MS = 600000;
@@ -16,7 +16,7 @@ export function usePlayerStats(isVis: boolean, liveMode: boolean): void {
         if (!isVis || !liveMode || playerStats) return;
 
         const requestPlayerStats = (): void => {
-            window.postMessage({ type: 'IRIS_PLAYER_STATS_REQUEST' }, '*');
+            window.postMessage(createPlayerStatsRequestMessage(), '*');
         };
 
         requestPlayerStats();
@@ -36,7 +36,7 @@ export function usePlayerStats(isVis: boolean, liveMode: boolean): void {
                 if (subscription.cooldownUntil !== null && now < subscription.cooldownUntil) return;
                 if (subscription.nextRefreshAt !== null && now < subscription.nextRefreshAt) return;
             }
-            window.postMessage({ type: 'IRIS_SUBSCRIPTION_REQUEST' }, '*');
+            window.postMessage(createSubscriptionRequestMessage(), '*');
         };
 
         let timerId: number | null = null;

@@ -1,7 +1,7 @@
 import { render, h, Fragment } from 'preact';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'preact/hooks';
 import { MockDataGenerator } from './MockDataGenerator';
-import { useStore, getMinLevelForZoom, getGridSizeForZoom, boundsToE6, addFrameDelta, buildEntityRequestPayload, createFrameSampleAccumulator, createInventoryRequestMessage, createPortalDetailsRequestMessage, formatCompactEndpointActivityMessage, parseMapCamera, parsePortalHistoryLayerState, parseStringChoice, readStorageBoolean, readStorageJson, readStorageString, resetFrameSampleAccumulator, selectCommTopologyRefresh, writeStorageBoolean, writeStorageJson, writeStorageString, Portal, Link, Field, type InventoryItem, type PlextRequestBounds } from '@iris/core';
+import { useStore, getMinLevelForZoom, getGridSizeForZoom, boundsToE6, addFrameDelta, buildEntityRequestPayload, createArtifactsRequestMessage, createEntitiesRequestMessage, createFrameSampleAccumulator, createInventoryRequestMessage, createPortalDetailsRequestMessage, formatCompactEndpointActivityMessage, parseMapCamera, parsePortalHistoryLayerState, parseStringChoice, readStorageBoolean, readStorageJson, readStorageString, resetFrameSampleAccumulator, selectCommTopologyRefresh, writeStorageBoolean, writeStorageJson, writeStorageString, Portal, Link, Field, type InventoryItem, type PlextRequestBounds } from '@iris/core';
 import { TacticalUI } from './TacticalUI';
 import { MAP_STYLES, type MapStyleName } from './MapConstants';
 import { LaunchButton } from './LaunchButton';
@@ -407,7 +407,8 @@ function TacticalOverlay(): h.JSX.Element {
         window.setTimeout(() => {
             commEntityRefreshPendingRef.current = false;
             lastCommEntityRefreshAtRef.current = Date.now();
-            window.postMessage({ type: 'IRIS_ENTITIES_REQUEST', tileKeys: payload.tileKeys, force: true }, '*');
+            const request = createEntitiesRequestMessage(payload.tileKeys, { force: true });
+            if (request) window.postMessage(request, '*');
             logEvent(`Map refresh: ${payload.tileKeys.length} tile${payload.tileKeys.length === 1 ? '' : 's'} from COMM`);
         }, 1_500);
     }, [logEvent]);
@@ -651,7 +652,7 @@ function TacticalOverlay(): h.JSX.Element {
 
     const handleArtifactsToggle = useCallback((): void => {
         useStore.getState().toggleLayerArtifacts();
-        window.postMessage({ type: 'IRIS_ARTIFACTS_REQUEST' }, '*');
+        window.postMessage(createArtifactsRequestMessage(), '*');
     }, []);
 
     const handleOrnamentsToggle = useCallback((): void => {
@@ -681,7 +682,7 @@ function TacticalOverlay(): h.JSX.Element {
             postMiniPageMapCommand({ action: 'set-visible', visible: true });
             postMiniPageMapCommand({ action: 'resize' });
             checkAndLoad(mapViewRef.current, patternModeRef.current, liveModeRef.current);
-            if (liveModeRef.current) window.postMessage({ type: 'IRIS_ARTIFACTS_REQUEST' }, '*');
+            if (liveModeRef.current) window.postMessage(createArtifactsRequestMessage(), '*');
             logEvent("Tactical Map Opened");
         });
     }, [checkAndLoad, logEvent]);
@@ -899,7 +900,7 @@ function TacticalOverlay(): h.JSX.Element {
                 if (useStore.getState().hasSubscription) {
                     window.postMessage(createInventoryRequestMessage(), '*');
                 }
-                window.postMessage({ type: 'IRIS_ARTIFACTS_REQUEST' }, '*');
+                window.postMessage(createArtifactsRequestMessage(), '*');
             }
         }
     }, [clearMockInventory, extrusionEnabled, generator, loadedTileKeys, logEvent]);

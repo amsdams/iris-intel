@@ -1,9 +1,13 @@
 import {describe, expect, it} from 'vitest';
 import {
+  createArtifactsRequestMessage,
+  createEntitiesRequestMessage,
   createGameScoreRequestMessage,
   createInventoryRequestMessage,
+  createPlayerStatsRequestMessage,
   createPortalDetailsRequestMessage,
   createRegionScoreRequestMessage,
+  createSubscriptionRequestMessage,
 } from './extension-messages';
 
 describe('extension request message builders', () => {
@@ -26,6 +30,25 @@ describe('extension request message builders', () => {
       type: 'IRIS_INVENTORY_REQUEST',
       force: true,
     });
+  });
+
+  it('creates entity request messages for valid tile keys', () => {
+    expect(createEntitiesRequestMessage([' tile-a ', '', 'tile-b'], {force: true})).toEqual({
+      type: 'IRIS_ENTITIES_REQUEST',
+      tileKeys: ['tile-a', 'tile-b'],
+      force: true,
+    });
+    expect(createEntitiesRequestMessage(['', '   '])).toBeNull();
+  });
+
+  it('creates simple extension request messages', () => {
+    expect(createArtifactsRequestMessage()).toEqual({type: 'IRIS_ARTIFACTS_REQUEST'});
+    expect(createArtifactsRequestMessage({force: true})).toEqual({
+      type: 'IRIS_ARTIFACTS_REQUEST',
+      force: true,
+    });
+    expect(createSubscriptionRequestMessage()).toEqual({type: 'IRIS_SUBSCRIPTION_REQUEST'});
+    expect(createPlayerStatsRequestMessage()).toEqual({type: 'IRIS_PLAYER_STATS_REQUEST'});
   });
 
   it('creates score request messages', () => {
