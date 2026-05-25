@@ -14,6 +14,7 @@ import {
     toFeatureCollection,
     buildWrappedLineSegments,
     isPortalHealthBucketVisible,
+    matchesPortalHistoryFilters,
 } from '@iris/core';
 import {INGRESS_NEUTRAL_PORTAL_COLORS} from '@iris/core/ingress-map-style';
 import {PageMapRuntimeCommandMessage} from '../../../shared/page-map-runtime-protocol';
@@ -309,14 +310,11 @@ function isPortalVisible(portal: Portal, options: BuildPageMapRuntimeSnapshotOpt
 
     if (!isPortalHealthBucketVisible(portal.health, options.filterShowHealth)) return false;
 
-    if (options.filterShowVisited === 'TRUE' && !portal.visited) return false;
-    if (options.filterShowVisited === 'FALSE' && portal.visited) return false;
-    if (options.filterShowCaptured === 'TRUE' && !portal.captured) return false;
-    if (options.filterShowCaptured === 'FALSE' && portal.captured) return false;
-    if (options.filterShowScanned === 'TRUE' && !portal.scanned) return false;
-    if (options.filterShowScanned === 'FALSE' && portal.scanned) return false;
-
-    return true;
+    return matchesPortalHistoryFilters(portal, {
+        showVisited: options.filterShowVisited,
+        showCaptured: options.filterShowCaptured,
+        showScanned: options.filterShowScanned,
+    });
 }
 
 function getTeamColor(team: string, options: BuildPageMapRuntimeSnapshotOptions): string {

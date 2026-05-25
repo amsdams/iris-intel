@@ -11,6 +11,7 @@ import {
   buildOrnamentPointFeature,
   buildPortalPointFeature,
   isPortalHealthBucketVisible,
+  matchesPortalHistoryFilters,
 } from '@iris/core';
 
 type PortalFeatureProperties = {
@@ -86,17 +87,11 @@ export const buildPortalFeatures = (
 
       if (!isPortalHealthBucketVisible(portal.health, filters.showHealth)) return false;
 
-      // History Filters (Three-way)
-      if (filters.showVisited === 'TRUE' && !portal.visited) return false;
-      if (filters.showVisited === 'FALSE' && portal.visited) return false;
-
-      if (filters.showCaptured === 'TRUE' && !portal.captured) return false;
-      if (filters.showCaptured === 'FALSE' && portal.captured) return false;
-
-      if (filters.showScanned === 'TRUE' && !portal.scanned) return false;
-      if (filters.showScanned === 'FALSE' && portal.scanned) return false;
-
-      return true;
+      return matchesPortalHistoryFilters(portal, {
+        showVisited: filters.showVisited,
+        showCaptured: filters.showCaptured,
+        showScanned: filters.showScanned,
+      });
     })
     .map((portal) => buildPortalPointFeature(portal, {
         name: portal.name,

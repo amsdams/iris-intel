@@ -5,6 +5,7 @@ import { subscribeWithSelector, persist, createJSONStorage } from 'zustand/middl
 import { EntityLogic } from './logic/EntityLogic';
 import { globalSpatialIndex } from './SpatialIndex';
 import type {BoundsE6} from './geo-bounds';
+import type {HistoryFilterState} from './portal-history';
 import {
     formatEndpointErrorActivityMessage,
     formatEndpointRequestActivityMessage,
@@ -474,8 +475,6 @@ export interface MissionSummary {
     rating?: number;
     medianCompletionTime?: string;
 }
-
-export type HistoryFilterState = 'ALL' | 'TRUE' | 'FALSE';
 
 export interface IRISSettings {
     pluginStates: Record<string, boolean>;

@@ -15,7 +15,7 @@ import { usePlayerTracker, type PlayerAction, type PlayerHistory } from './usePl
 import { useEndpointTelemetry } from './useEndpointTelemetry';
 import { throttle } from './GeoUtils';
 import { isEndpointStateMessage, numberOrNull, stringOrNull } from './messages';
-import { DEFAULT_PORTAL_HISTORY_LAYERS, nextPortalHistoryMode, type PortalHistoryKey, type PortalHistoryLayerState, type PortalHistoryMode } from './portalHistory';
+import { DEFAULT_PORTAL_HISTORY_LAYERS, isPortalHistoryMode, nextPortalHistoryMode, type PortalHistoryKey, type PortalHistoryLayerState } from './portalHistory';
 import type { MiniFrameStats, MiniRenderStats } from './diagnostics';
 import { MINI_IRIS_UI_FONT } from './typography';
 import {
@@ -120,10 +120,6 @@ function readSavedMapStyle(): MapStyleName {
 function writeSavedMapStyle(style: string): void {
     if (!(style in MAP_STYLES)) return;
     writeStorageString(MAP_STYLE_STORAGE_KEY, style);
-}
-
-function isPortalHistoryMode(value: unknown): value is PortalHistoryMode {
-    return value === 'off' || value === 'highlight' || value === 'inverse';
 }
 
 function readSavedPortalHistoryLayers(): PortalHistoryLayerState {

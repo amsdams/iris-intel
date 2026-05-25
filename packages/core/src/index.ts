@@ -9,6 +9,7 @@ export * from './requests/extension-messages';
 export * from './requests/plext';
 export * from './player-tracker';
 export * from './portal-details';
+export * from './portal-history';
 export * from './safe-storage';
 export * from './plext-refresh-hints';
 export * from './map-features';

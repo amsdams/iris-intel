@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'preact/hooks';
-import { useStore, globalSpatialIndex, getMinLevelForZoom, InventoryParser, buildArtifactPointFeature, buildFieldPolygonFeature, buildLinkLineFeatures, buildOrnamentPointFeature, buildPortalPointFeature, type InventoryItem, type PortalKeyCounts } from '@iris/core';
+import { useStore, globalSpatialIndex, getMinLevelForZoom, InventoryParser, buildArtifactPointFeature, buildFieldPolygonFeature, buildLinkLineFeatures, buildOrnamentPointFeature, buildPortalPointFeature, getPortalHistoryOverlayFlags, type InventoryItem, type PortalKeyCounts } from '@iris/core';
 import { MockDataGenerator } from './MockDataGenerator';
 import { createCirclePolygon } from './GeoUtils';
 import { INGRESS_COLORS } from './MapConstants';
@@ -153,12 +153,7 @@ export function useMapRenderer(
                         captured: p.captured,
                         scanned: p.scanned,
                         health: p.health ?? 100,
-                        visitedHighlight: portalHistoryLayers.visited === 'highlight' && p.visited === true,
-                        capturedHighlight: portalHistoryLayers.captured === 'highlight' && p.captured === true,
-                        scannedHighlight: portalHistoryLayers.scanned === 'highlight' && p.scanned === true,
-                        visitedInverse: portalHistoryLayers.visited === 'inverse' && p.visited === false,
-                        capturedInverse: portalHistoryLayers.captured === 'inverse' && p.captured === false,
-                        scannedInverse: portalHistoryLayers.scanned === 'inverse' && p.scanned === false,
+                        ...getPortalHistoryOverlayFlags(p, portalHistoryLayers),
                     };
                     features.push(buildPortalPointFeature(p, props));
                     portalCount += 1;
