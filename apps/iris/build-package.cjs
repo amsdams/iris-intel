@@ -33,6 +33,7 @@ try {
     const chromeDistDir = path.join(rootDir, 'dist');
     const firefoxDistDir = path.join(rootDir, 'dist-firefox');
 
+    fs.rmSync(buildsDir, {recursive: true, force: true});
     fs.mkdirSync(buildsDir, {recursive: true});
 
     const target = process.argv[2] ?? 'all';

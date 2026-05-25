@@ -39,6 +39,7 @@ async function zipDirectory(sourceDir, outPath, extraFiles) {
             throw new Error(`Unknown package target: ${target}`);
         }
 
+        fs.rmSync(buildsDir, { recursive: true, force: true });
         fs.mkdirSync(buildsDir, { recursive: true });
 
         const chromeZipPath = path.join(buildsDir, `mini-iris-chrome-${version}-${timestamp}.zip`);
