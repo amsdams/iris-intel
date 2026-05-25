@@ -102,6 +102,8 @@ export function TacticalUI({ zoom, lat, lng, events, plextDebugSnapshot, endpoin
 
     const endpointLabel = (endpoint: EndpointName): string => {
         switch (endpoint) {
+            case 'entities':
+                return 'Map';
             case 'portalDetails':
                 return 'Portal';
             case 'gameScore':

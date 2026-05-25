@@ -1,4 +1,4 @@
-import { boundsE6ContainsPoint, buildEntityRequestPayload, clampMapCamera, extractPlextPortalRefreshHints, resolvePlextPortalRefreshHint, selectKeyedRefreshBatch, useStore, type Plext, type PlextPortalRefreshHint } from '@iris/core';
+import { buildEntityRequestPayload, clampMapCamera, getCurrentViewPlextPortalRefreshHints, resolvePlextPortalRefreshHint, selectCommTopologyRefresh, selectKeyedRefreshBatch, useStore, type Plext, type PlextPortalRefreshHint } from '@iris/core';
 import { IRISMessage } from './message-types';
 import { IRIS_PAGE_MAP_MIN_ZOOM } from '../../shared/page-map-runtime-protocol';
 
@@ -379,12 +379,11 @@ export function createRequestCoordinator(): RequestCoordinator {
     };
 
     const getCurrentViewPortalActivityHints = (plexts: Plext[]): PlextPortalRefreshHint[] => {
-        const bounds = useStore.getState().mapState.bounds;
-        if (!bounds) return [];
-
-        const now = Date.now();
-        return extractPlextPortalRefreshHints(plexts, {now, maxAgeMs: COMM_ACTIVITY_RECENT_MS})
-            .filter((hint) => boundsE6ContainsPoint(bounds, hint));
+        return getCurrentViewPlextPortalRefreshHints(plexts, {
+            bounds: useStore.getState().mapState.bounds,
+            now: Date.now(),
+            maxAgeMs: COMM_ACTIVITY_RECENT_MS,
+        });
     };
 
     const refreshPortalDetailsFromCommHints = (hints: PlextPortalRefreshHint[]): void => {
@@ -440,26 +439,22 @@ export function createRequestCoordinator(): RequestCoordinator {
         refreshPortalDetailsFromCommHints(hints);
 
         const now = Date.now();
-        if (now - lastCommActivityEntityRefreshAt < COMM_ACTIVITY_ENTITY_REFRESH_COOLDOWN_MS) {
-            useStore.getState().setEndpointMetadata('entities', {
-                lastRefreshReason: 'comm_activity',
-                lastSkipReason: `comm cooldown (${hints.length} hints)`,
-            });
-            useStore.getState().addEndpointActivityLog({
-                endpoint: 'entities',
-                message: `comm_activity cooldown (${hints.length} hints)`,
-            });
-            return;
-        }
+        const decision = selectCommTopologyRefresh({
+            hintCount: hints.length,
+            pending: commActivityRefreshTimeoutId !== null,
+            now,
+            lastRefreshAt: lastCommActivityEntityRefreshAt,
+            cooldownMs: COMM_ACTIVITY_ENTITY_REFRESH_COOLDOWN_MS,
+        });
 
-        if (commActivityRefreshTimeoutId !== null) {
+        if (!decision.shouldRefresh) {
             useStore.getState().setEndpointMetadata('entities', {
                 lastRefreshReason: 'comm_activity',
-                lastSkipReason: `comm coalesced (${hints.length} hints)`,
+                lastSkipReason: decision.message.replace(/^comm_activity /, ''),
             });
             useStore.getState().addEndpointActivityLog({
                 endpoint: 'entities',
-                message: `comm_activity coalesced (${hints.length} hints)`,
+                message: decision.message,
             });
             return;
         }
@@ -474,11 +469,11 @@ export function createRequestCoordinator(): RequestCoordinator {
         setNextAutoRefresh('entities', Date.now() + COMM_ACTIVITY_ENTITY_REFRESH_DELAY_MS);
         useStore.getState().setEndpointMetadata('entities', {
             lastRefreshReason: 'comm_activity',
-            lastSkipReason: `scheduled (${hints.length} hints)`,
+            lastSkipReason: decision.message.replace(/^comm_activity /, ''),
         });
         useStore.getState().addEndpointActivityLog({
             endpoint: 'entities',
-            message: `comm_activity scheduled (${hints.length} hints)`,
+            message: decision.message,
         });
     };
 

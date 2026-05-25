@@ -18,7 +18,7 @@ const DEFAULT_FAILURE_BACKOFF_MS = 5000;
 const LOGIN_FAILURE_BACKOFF_MS = 60 * 1000;
 const MAX_FAILURE_BACKOFF_MS = 60 * 1000;
 
-type RequestEndpoint = 'portalDetails' | 'gameScore' | 'regionScore' | 'subscription' | 'inventory' | 'plexts' | 'artifacts';
+type RequestEndpoint = 'entities' | 'portalDetails' | 'gameScore' | 'regionScore' | 'subscription' | 'inventory' | 'plexts' | 'artifacts';
 
 interface InternalMiniIrisRequestInit extends RequestInit {
     __miniIrisInternalRequest?: boolean;
@@ -52,6 +52,20 @@ interface RequestTask {
 const requestQueue: RequestTask[] = [];
 let activeRequests = 0;
 const endpointState: Record<RequestEndpoint, EndpointState> = {
+    entities: {
+        status: 'idle',
+        inFlightKey: null,
+        inFlightKeys: new Set<string>(),
+        inFlightCount: 0,
+        lastSuccessKey: null,
+        lastSuccessAt: null,
+        lastAttemptKey: null,
+        lastAttemptAt: null,
+        lastSkipReason: null,
+        nextRefreshAt: null,
+        failureCount: 0,
+        cooldownUntil: null,
+    },
     portalDetails: {
         status: 'idle',
         inFlightKey: null,
@@ -155,6 +169,7 @@ const endpointState: Record<RequestEndpoint, EndpointState> = {
 const REQUEST_PRIORITIES: Record<RequestEndpoint, number> = {
     portalDetails: 100,
     plexts: 90,
+    entities: 85,
     inventory: 80,
     gameScore: 70,
     regionScore: 70,
@@ -172,6 +187,14 @@ export function installRequestHandlers(): void {
         if (!isRecord(msg) || !type) return;
 
         switch (type) {
+            case 'IRIS_ENTITIES_REQUEST':
+                {
+                    const tileKeys = Array.isArray(msg.tileKeys)
+                        ? msg.tileKeys.filter((value): value is string => typeof value === 'string' && value.length > 0)
+                        : [];
+                    enqueueRequest('entities', keyForEntities(tileKeys), getFreshnessMs('entities'), () => handleEntitiesRequest(tileKeys), msg.force === true);
+                }
+                break;
             case 'IRIS_PORTAL_DETAILS_REQUEST':
                 enqueueRequest('portalDetails', stringOrNull(msg.guid) ?? '', PORTAL_DETAILS_FRESHNESS_MS, () => handlePortalDetailsRequest(stringOrNull(msg.guid) ?? ''));
                 break;
@@ -411,6 +434,13 @@ async function handlePortalDetailsRequest(guid: string): Promise<void> {
     return sendIntelRequest('portalDetails', keyForPortalDetails(guid), '/r/getPortalDetails', body, 'Detail Fetch Failed');
 }
 
+async function handleEntitiesRequest(tileKeys: string[]): Promise<void> {
+    if (tileKeys.length === 0) return;
+
+    const body = JSON.stringify({ tileKeys, v: extractVersion() });
+    return sendIntelRequest('entities', keyForEntities(tileKeys), '/r/getEntities', body, 'Entity Fetch Failed');
+}
+
 async function handleGameScoreRequest(): Promise<void> {
     const body = JSON.stringify({ v: extractVersion() });
     return sendIntelRequest('gameScore', 'global', '/r/getGameScore', body, 'Game Score Fetch Failed');
@@ -518,6 +548,11 @@ function keyForPortalDetails(guid: string): string {
     return guid.trim();
 }
 
+function keyForEntities(tileKeys: string[]): string {
+    if (tileKeys.length === 0) return '';
+    return `${tileKeys.length}:${tileKeys[0]}:${tileKeys[tileKeys.length - 1]}`;
+}
+
 function keyForPlexts(
     tab: string | undefined,
     minTimestampMs: number | undefined,
@@ -538,6 +573,8 @@ function keyForPlexts(
 
 function getFreshnessMs(endpoint: RequestEndpoint): number {
     switch (endpoint) {
+        case 'entities':
+            return PLEXT_FRESHNESS_MS;
         case 'portalDetails':
             return PORTAL_DETAILS_FRESHNESS_MS;
         case 'gameScore':

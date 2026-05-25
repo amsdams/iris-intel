@@ -1,7 +1,7 @@
 import { render, h, Fragment } from 'preact';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'preact/hooks';
 import { MockDataGenerator } from './MockDataGenerator';
-import { useStore, getMinLevelForZoom, getGridSizeForZoom, boundsToE6, addFrameDelta, createFrameSampleAccumulator, createInventoryRequestMessage, createPortalDetailsRequestMessage, formatCompactEndpointActivityMessage, parseMapCamera, parsePortalHistoryLayerState, parseStringChoice, readStorageBoolean, readStorageJson, readStorageString, resetFrameSampleAccumulator, writeStorageBoolean, writeStorageJson, writeStorageString, Portal, Link, Field, type InventoryItem, type PlextRequestBounds } from '@iris/core';
+import { useStore, getMinLevelForZoom, getGridSizeForZoom, boundsToE6, addFrameDelta, buildEntityRequestPayload, createFrameSampleAccumulator, createInventoryRequestMessage, createPortalDetailsRequestMessage, formatCompactEndpointActivityMessage, parseMapCamera, parsePortalHistoryLayerState, parseStringChoice, readStorageBoolean, readStorageJson, readStorageString, resetFrameSampleAccumulator, selectCommTopologyRefresh, writeStorageBoolean, writeStorageJson, writeStorageString, Portal, Link, Field, type InventoryItem, type PlextRequestBounds } from '@iris/core';
 import { TacticalUI } from './TacticalUI';
 import { MAP_STYLES, type MapStyleName } from './MapConstants';
 import { LaunchButton } from './LaunchButton';
@@ -41,6 +41,8 @@ const MINI_IRIS_OPEN_STORAGE_KEY = 'iris-poc-mini-iris-open';
 const MAP_STATE_COOKIE_KEY = 'iris_poc_map_state';
 const EXPERIMENTAL_PREFS_STORAGE_KEY = 'mini-iris:preferences:v1';
 const EXPERIMENTAL_PREFS_STORAGE_KEY_V2 = 'mini-iris:preferences:v2';
+const COMM_TO_ENTITY_REFRESH_COOLDOWN_MS = 30_000;
+const COMM_TO_ENTITY_REFRESH_MAX_TILES = 64;
 
 // Keep preferences as small standalone keys; avoid a broad state object that can affect map lifecycle.
 
@@ -202,6 +204,8 @@ function TacticalOverlay(): h.JSX.Element {
     const moveSettleTimerRef = useRef<number | null>(null);
     const lastSettledLoadRef = useRef<{ lat: number; lng: number; zoom: number } | null>(null);
     const lastIntelSyncRef = useRef<{ lat: number; lng: number; zoom: number } | null>(null);
+    const lastCommEntityRefreshAtRef = useRef(0);
+    const commEntityRefreshPendingRef = useRef(false);
     const mapStateRef = useRef(mapState);
     const mapViewRef = useRef(mapView);
     const initialOpenAppliedRef = useRef(false);
@@ -373,7 +377,42 @@ function TacticalOverlay(): h.JSX.Element {
         syncToMap(mapViewRef.current, currentLiveMode, currentPatternMode);
     }, [syncToMap]);
 
-    useIntelMessages(liveMode, patternMode, selected, setSelected, syncCurrentView, logEvent, setPlextDebugSnapshot);
+    const requestTopologyRefreshFromComm = useCallback((hintCount: number): void => {
+        if (!liveModeRef.current) return;
+
+        const view = mapViewRef.current;
+        const bounds = boundsToE6(view.bounds);
+        const payload = buildEntityRequestPayload(bounds, view.zoom);
+        if (payload.tileKeys.length === 0) {
+            logEvent(`Map refresh: comm_activity skipped (${payload.diagnostic ?? 'no tiles'})`);
+            return;
+        }
+        const now = Date.now();
+        const decision = selectCommTopologyRefresh({
+            hintCount,
+            tileCount: payload.tileKeys.length,
+            maxTileCount: COMM_TO_ENTITY_REFRESH_MAX_TILES,
+            pending: commEntityRefreshPendingRef.current,
+            now,
+            lastRefreshAt: lastCommEntityRefreshAtRef.current,
+            cooldownMs: COMM_TO_ENTITY_REFRESH_COOLDOWN_MS,
+        });
+
+        if (!decision.shouldRefresh) {
+            if (decision.reason !== 'no_hints') logEvent(`Map refresh: ${decision.message}`);
+            return;
+        }
+
+        commEntityRefreshPendingRef.current = true;
+        window.setTimeout(() => {
+            commEntityRefreshPendingRef.current = false;
+            lastCommEntityRefreshAtRef.current = Date.now();
+            window.postMessage({ type: 'IRIS_ENTITIES_REQUEST', tileKeys: payload.tileKeys, force: true }, '*');
+            logEvent(`Map refresh: ${payload.tileKeys.length} tile${payload.tileKeys.length === 1 ? '' : 's'} from COMM`);
+        }, 1_500);
+    }, [logEvent]);
+
+    useIntelMessages(liveMode, patternMode, selected, setSelected, syncCurrentView, logEvent, requestTopologyRefreshFromComm, setPlextDebugSnapshot);
     const playerTrailData = useMemo<GeoJSON.FeatureCollection>(() => {
         const features: GeoJSON.Feature[] = [];
         const clusters = new Map<string, { lat: number; lng: number; names: string[]; team: string; count: number }>();

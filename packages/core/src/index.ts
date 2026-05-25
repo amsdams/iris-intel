@@ -20,6 +20,7 @@ export * from './benchmark-frames';
 export * from './endpoint-formatting';
 export * from './endpoint-request-policy';
 export * from './keyed-refresh';
+export * from './live-update-policy';
 export * from './plext-debug';
 export * from './portal-display';
 export * from './diagnostics-formatting';

@@ -17,6 +17,7 @@ export function useIntelMessages(
     setSelected: (val: SelectedEntity | null) => void,
     syncToMap: (live: boolean, pattern: number) => void,
     logEvent: (msg: string) => void,
+    requestTopologyRefreshFromComm: (hintCount: number) => void,
     onPlextDebugSnapshot?: (snapshot: PlextDebugSnapshot) => void
 ): void {
     const portalDetailRefreshTimesRef = useRef<Map<string, number>>(new Map());
@@ -59,6 +60,8 @@ export function useIntelMessages(
             } else if (hints.length > 0) {
                 logEvent(`COMM refresh: 0/${hints.length} hints (${batch.knownCount} known, ${batch.pendingCount} pending, ${batch.cooldownCount} cooldown)`);
             }
+
+            requestTopologyRefreshFromComm(hints.length);
         };
 
         const handler = (event: MessageEvent): void => {
@@ -165,7 +168,7 @@ export function useIntelMessages(
         };
         window.addEventListener('message', handler);
         return (): void => window.removeEventListener('message', handler);
-    }, [liveMode, patternMode, logEvent, onPlextDebugSnapshot, selected, setSelected, syncToMap]);
+    }, [liveMode, patternMode, logEvent, requestTopologyRefreshFromComm, onPlextDebugSnapshot, selected, setSelected, syncToMap]);
 }
 
 interface PlayerStatsMessage {
