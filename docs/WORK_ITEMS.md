@@ -8,7 +8,8 @@ from here when they become tracked work.
 
 ## Current Next Pickup
 
-1. **[Mini-IRIS Bench]** Smoke the new compact DBG batch tool and capture a first z14/z8 desktop/mobile baseline.
+1. **[Mini-IRIS Bench]** Capture next Mini/IRIS comparison from cold reloads in the same area/zoom; compare source
+   counts before frame timing because warm IRIS storage can retain entities from previous globe locations.
 2. **[Shared Runtime]** Continue the cross-app audit with backend/engine/domain candidates, not shared UI.
 3. **[Shared Runtime]** Pause further package extraction unless smoke testing shows duplication or regressions; recent
    Mini-IRIS polish checks are stable enough to resume shared-boundary work.

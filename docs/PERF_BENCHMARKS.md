@@ -41,6 +41,10 @@ when evaluating major dependency migrations or rendering changes.
 | 0.1.7   | z8 desktop link/field isolation  | Desktop Mac | Firefox 153 | OSM     | player-tracker                          | 43,467 | 12,594  | 21,645 | 9,134  | 0       | n/a      | n/a       | n/a  | 48ms      | 47ms   | 167ms | 21  | 134/186     |
 | 0.1.7   | z8 desktop no-links isolation    | Desktop Mac | Firefox 153 | OSM     | player-tracker                          | 43,591 | 12,616  | 21,719 | 9,162  | 0       | n/a      | n/a       | n/a  | 10ms      | 9ms    | 175ms | 105 | 19/945      |
 | 0.1.7   | z8 desktop no-fields isolation   | Desktop Mac | Firefox 153 | OSM     | player-tracker                          | 43,591 | 12,616  | 21,719 | 9,162  | 0       | n/a      | n/a       | n/a  | 8ms       | 8ms    | 49ms  | 119 | 2/1,070     |
+| Mini 1.0.32 | z14 desktop compact batch      | Desktop Mac | Chrome 148  | n/a     | player-tracker                          | 3,269  | 1,657   | 1,137  | 456    | 19      | n/a      | n/a       | n/a  | 17ms      | 17ms   | 18ms  | 60  | 0/133       |
+| Mini 1.0.32 | z8 desktop compact batch       | Desktop Mac | Chrome 148  | n/a     | player-tracker                          | 3,269  | 1,657   | 1,137  | 456    | 19      | n/a      | n/a       | n/a  | 17ms      | 17ms   | 18ms  | 60  | 0/132       |
+| Mini 1.0.32 | z8 desktop no-links isolation  | Desktop Mac | Chrome 148  | n/a     | player-tracker                          | 2,132  | 1,657   | 0      | 456    | 19      | n/a      | n/a       | n/a  | 17ms      | 17ms   | 18ms  | 60  | 0/132       |
+| Mini 1.0.32 | z8 desktop no-fields isolation | Desktop Mac | Chrome 148  | n/a     | player-tracker                          | 2,813  | 1,657   | 1,137  | 0      | 19      | n/a      | n/a       | n/a  | 17ms      | 17ms   | 18ms  | 60  | 0/132       |
 
 ## Readout
 
@@ -77,6 +81,13 @@ when evaluating major dependency migrations or rendering changes.
   z14 normal pan is healthy (`9ms avg`, `106fps`), while z8 normal pan drops to `48ms avg`/`21fps`; z8 no-links and
   no-fields variants recover to `10ms` and `8ms`, so future tuning should target low-zoom link/field simplification or
   moving-mode degradation rather than plugin overlays.
+- The first Mini-IRIS compact batch baseline is clean after suppressing camera-event feedback during measurement:
+  Chrome desktop stays at `17ms / 60fps / 0 slow` for z14 and z8 variants. It is not directly comparable to the large
+  IRIS z8 batch because Mini only had `1,657P / 1,137L / 456F` loaded versus IRIS's `12,594P / 21,645L / 9,134F`;
+  capture a denser Mini sample later before drawing cross-app scaling conclusions.
+- For Mini/IRIS comparisons, prefer cold reloads in the same area and zoom. Warm IRIS storage after moving between
+  distant globe locations can retain a larger source set until culling/refresh catches up, so compare source counts
+  before treating frame timing as an app renderer difference.
 
 ## Fixed Scenario Set
 
