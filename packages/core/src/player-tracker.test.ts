@@ -1,5 +1,6 @@
 import {describe, expect, it} from 'vitest';
-import {processPlayerTrackerPlexts} from './player-tracker';
+import {PLAYER_TRACKER_HISTORY_EXPIRATION_MS, prunePlayerTrackerHistories, processPlayerTrackerPlexts} from './player-tracker';
+import type {PlayerTrackerHistory} from './player-tracker';
 import type {Plext} from './store';
 
 function plext(id: string, time: number, player: string, latE6: number, lngE6: number, text = ' deployed a Resonator on '): Plext {
@@ -87,5 +88,28 @@ describe('processPlayerTrackerPlexts', () => {
     });
 
     expect(result.histories.size).toBe(0);
+  });
+
+  it('exports the shared default freshness window', () => {
+    expect(PLAYER_TRACKER_HISTORY_EXPIRATION_MS).toBe(3 * 60 * 60 * 1000);
+  });
+
+  it('prunes existing histories with the same freshness policy', () => {
+    const histories = new Map<string, PlayerTrackerHistory>([
+      ['old', {name: 'old', team: 'E', events: [{latlngs: [[52, 4]], time: 1000, portalName: 'Old', actions: []}]}],
+      ['mixed', {
+        name: 'mixed',
+        team: 'R',
+        events: [
+          {latlngs: [[52, 4]], time: 1000, portalName: 'Old', actions: []},
+          {latlngs: [[52.1, 4.1]], time: 9500, portalName: 'Fresh', actions: []},
+        ],
+      }],
+    ]);
+
+    const result = prunePlayerTrackerHistories(histories, {now: 10_000, expirationMs: 1000});
+
+    expect(result.has('old')).toBe(false);
+    expect(result.get('mixed')?.events.map((event) => event.portalName)).toEqual(['Fresh']);
   });
 });

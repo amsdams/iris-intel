@@ -1,5 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'preact/hooks';
-import { useStore, PlextParser, createPlextRequestMessage, processPlayerTrackerPlexts } from '@iris/core';
+import {
+    PLAYER_TRACKER_HISTORY_EXPIRATION_MS,
+    PLAYER_TRACKER_TICK_MS,
+    useStore,
+    PlextParser,
+    createPlextRequestMessage,
+    processPlayerTrackerPlexts,
+    prunePlayerTrackerHistories,
+} from '@iris/core';
 import type { Plext, PlextData, PlextRequestBounds, PlayerTrackerHistory } from '@iris/core';
 import { useEndpointTelemetry } from './useEndpointTelemetry';
 import { isIrisDataMessage } from './messages';
@@ -11,7 +19,6 @@ interface UsePlayerTrackerResult {
     playerHistories: Map<string, PlayerHistory>;
 }
 
-const EXPIRATION_MS = 3 * 60 * 60 * 1000; // 3 hours
 const PLEXT_POLL_MS = 120000;
 
 export function usePlayerTracker(
@@ -34,7 +41,7 @@ export function usePlayerTracker(
                 plexts,
                 previousHistories: prev,
                 processedPlextFingerprints: processedPlextFingerprintsRef.current,
-                expirationMs: EXPIRATION_MS,
+                expirationMs: PLAYER_TRACKER_HISTORY_EXPIRATION_MS,
             });
             processedPlextFingerprintsRef.current = result.processedPlextFingerprints;
             if (result.maxPlextTime !== null) {
@@ -67,6 +74,16 @@ export function usePlayerTracker(
     useEffect(() => {
         processPlexts(plextFeed);
     }, [plextFeed, processPlexts]);
+
+    useEffect(() => {
+        if (!liveMode) return;
+
+        const timerId = window.setInterval(() => {
+            setPlayerHistories(prev => prunePlayerTrackerHistories(prev));
+        }, PLAYER_TRACKER_TICK_MS);
+
+        return (): void => window.clearInterval(timerId);
+    }, [liveMode]);
 
     // Polling effect
     useEffect(() => {

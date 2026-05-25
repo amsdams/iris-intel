@@ -40,8 +40,15 @@ export interface ProcessPlayerTrackerPlextsResult {
   maxPlextTime: number | null;
 }
 
-const DEFAULT_EXPIRATION_MS = 3 * 60 * 60 * 1000;
-const DEFAULT_MAX_EVENTS = 10;
+export const PLAYER_TRACKER_HISTORY_EXPIRATION_MS = 3 * 60 * 60 * 1000;
+export const PLAYER_TRACKER_MAX_DISPLAY_EVENTS = 10;
+export const PLAYER_TRACKER_MIN_ZOOM = 9;
+export const PLAYER_TRACKER_TICK_MS = 30 * 1000;
+
+export interface PrunePlayerTrackerHistoriesOptions {
+  now?: number;
+  expirationMs?: number;
+}
 
 function getPlextFingerprint(plext: PlayerTrackerPlext): string {
   return JSON.stringify({
@@ -79,6 +86,31 @@ function addUniqueAction(event: PlayerTrackerEvent, action: PlayerTrackerAction 
   event.actions.push(action);
 }
 
+export function prunePlayerTrackerHistories(
+  histories: ReadonlyMap<string, PlayerTrackerHistory>,
+  options: PrunePlayerTrackerHistoriesOptions = {},
+): Map<string, PlayerTrackerHistory> {
+  const now = options.now ?? Date.now();
+  const expirationMs = options.expirationMs ?? PLAYER_TRACKER_HISTORY_EXPIRATION_MS;
+  const limit = now - expirationMs;
+  let changed = false;
+  const next = new Map<string, PlayerTrackerHistory>();
+
+  histories.forEach((history, name) => {
+    const firstValidIndex = history.events.findIndex((event) => event.time >= limit);
+    if (firstValidIndex === -1) {
+      changed = true;
+      return;
+    }
+
+    const events = firstValidIndex > 0 ? history.events.slice(firstValidIndex) : history.events;
+    if (events !== history.events) changed = true;
+    next.set(name, events === history.events ? history : {...history, events});
+  });
+
+  return changed ? next : new Map(histories);
+}
+
 function isDestroyOrOwnLinkMessage(text: string): boolean {
   return text.includes('destroyed the Link') ||
     text.includes('destroyed a Control Field') ||
@@ -98,8 +130,8 @@ function normalizeTrackerTeam(team: string | undefined): string {
 
 export function processPlayerTrackerPlexts(options: ProcessPlayerTrackerPlextsOptions): ProcessPlayerTrackerPlextsResult {
   const now = options.now ?? Date.now();
-  const expirationMs = options.expirationMs ?? DEFAULT_EXPIRATION_MS;
-  const maxEvents = options.maxEvents ?? DEFAULT_MAX_EVENTS;
+  const expirationMs = options.expirationMs ?? PLAYER_TRACKER_HISTORY_EXPIRATION_MS;
+  const maxEvents = options.maxEvents ?? PLAYER_TRACKER_MAX_DISPLAY_EVENTS;
   const limit = now - expirationMs;
   const histories = cloneHistories(options.previousHistories ?? new Map());
   const processedFingerprints = new Map<string, string>(options.processedPlextFingerprints ?? new Map<string, string>());
@@ -212,14 +244,10 @@ export function processPlayerTrackerPlexts(options: ProcessPlayerTrackerPlextsOp
     }
   });
 
-  histories.forEach((history, name) => {
-    const firstValidIndex = history.events.findIndex((event) => event.time >= limit);
-    if (firstValidIndex === -1) histories.delete(name);
-    else if (firstValidIndex > 0) history.events.splice(0, firstValidIndex);
-  });
+  const prunedHistories = prunePlayerTrackerHistories(histories, {now, expirationMs});
 
   return {
-    histories,
+    histories: prunedHistories,
     processedPlextFingerprints: processedFingerprints,
     processedCount,
     touchedPlayerCount: touchedPlayers.size,

@@ -1,16 +1,20 @@
 import { IRISPlugin, IRIS_API, Plext } from '@iris/plugin-sdk';
-import {processPlayerTrackerPlexts, type PlayerTrackerEvent, type PlayerTrackerHistory} from '@iris/core';
+import {
+  PLAYER_TRACKER_HISTORY_EXPIRATION_MS,
+  PLAYER_TRACKER_MAX_DISPLAY_EVENTS,
+  PLAYER_TRACKER_MIN_ZOOM,
+  PLAYER_TRACKER_TICK_MS,
+  processPlayerTrackerPlexts,
+  prunePlayerTrackerHistories,
+  type PlayerTrackerEvent,
+  type PlayerTrackerHistory,
+} from '@iris/core';
 
 interface PlayerTrackerApi extends IRIS_API {
   _playerTrackerUnsub?: () => void;
   _playerTrackerMapUnsub?: () => void;
   _playerTrackerTicker?: ReturnType<typeof setInterval>;
 }
-
-const EXPIRATION_MS = 3 * 60 * 60 * 1000; // 3 hours (IITC default)
-const TICK_MS = 30 * 1000; // 30 seconds update
-const MAX_DISPLAY_EVENTS = 10; // Max events to show in trace
-const MIN_TRACKER_ZOOM = 9; // IITC hides player tracker below z9.
 
 const PlayerTrackerPlugin: IRISPlugin = {
   manifest: {
@@ -26,7 +30,7 @@ const PlayerTrackerPlugin: IRISPlugin = {
     const trackerApi = api as PlayerTrackerApi;
     let playerHistories = new Map<string, PlayerTrackerHistory>();
     let processedPlextFingerprints = new Map<string, string>();
-    let trackerVisible = api.map.getZoom() >= MIN_TRACKER_ZOOM;
+    let trackerVisible = api.map.getZoom() >= PLAYER_TRACKER_MIN_ZOOM;
     let hasPublishedFeatures = false;
 
     // Helper to get average LatLng for an event
@@ -68,15 +72,7 @@ const PlayerTrackerPlugin: IRISPlugin = {
     };
 
     const discardOldData = (): void => {
-        const limit = Date.now() - EXPIRATION_MS;
-        playerHistories.forEach((history, playerName) => {
-            const firstValidIndex = history.events.findIndex((e) => e.time >= limit);
-            if (firstValidIndex === -1) {
-                playerHistories.delete(playerName);
-            } else if (firstValidIndex > 0) {
-                history.events.splice(0, firstValidIndex);
-            }
-        });
+        playerHistories = prunePlayerTrackerHistories(playerHistories);
     };
 
     const clearMap = (): void => {
@@ -104,7 +100,7 @@ const PlayerTrackerPlugin: IRISPlugin = {
             
             // 1. Draw Traces (Lines)
             // Show up to MAX_DISPLAY_EVENTS segments
-            const startIndex = Math.max(0, evtsLength - MAX_DISPLAY_EVENTS);
+            const startIndex = Math.max(0, evtsLength - PLAYER_TRACKER_MAX_DISPLAY_EVENTS);
             for (let i = evtsLength - 1; i > startIndex; i -= 1) {
                 const curr = events[i];
                 const prev = events[i-1];
@@ -115,7 +111,7 @@ const PlayerTrackerPlugin: IRISPlugin = {
                 // Don't draw line if same location (should be handled by logic, but safety check)
                 if (currPos[0] === prevPos[0] && currPos[1] === prevPos[1]) continue;
 
-                const ageBucket = Math.floor((now - curr.time) / (EXPIRATION_MS / 4));
+                const ageBucket = Math.floor((now - curr.time) / (PLAYER_TRACKER_HISTORY_EXPIRATION_MS / 4));
                 const opacity = Math.max(0.1, 1 - 0.2 * ageBucket);
                 const weight = Math.max(0.5, 2 - 0.25 * ageBucket);
 
@@ -139,7 +135,7 @@ const PlayerTrackerPlugin: IRISPlugin = {
             const lastPos = getLatLngFromEvent(lastEvent);
             const agoText = formatAgo(lastEvent.time, now);
 
-            const markerAgeBucket = Math.floor((now - lastEvent.time) / (EXPIRATION_MS / 4));
+            const markerAgeBucket = Math.floor((now - lastEvent.time) / (PLAYER_TRACKER_HISTORY_EXPIRATION_MS / 4));
             const markerOpacity = Math.max(0.1, 1 - 0.2 * markerAgeBucket);
 
             finalFeatures.push({
@@ -181,8 +177,8 @@ const PlayerTrackerPlugin: IRISPlugin = {
         plexts,
         previousHistories: playerHistories,
         processedPlextFingerprints,
-        expirationMs: EXPIRATION_MS,
-        maxEvents: MAX_DISPLAY_EVENTS,
+        expirationMs: PLAYER_TRACKER_HISTORY_EXPIRATION_MS,
+        maxEvents: PLAYER_TRACKER_MAX_DISPLAY_EVENTS,
       });
       playerHistories = result.histories;
       processedPlextFingerprints = result.processedPlextFingerprints;
@@ -194,7 +190,7 @@ const PlayerTrackerPlugin: IRISPlugin = {
 
     const unsubscribe = api.plexts.subscribe(rebuildFromPlexts);
     const mapUnsubscribe = api.map.subscribe((mapState) => {
-      const shouldShowTracker = mapState.zoom >= MIN_TRACKER_ZOOM;
+      const shouldShowTracker = mapState.zoom >= PLAYER_TRACKER_MIN_ZOOM;
       if (shouldShowTracker === trackerVisible) return;
 
       trackerVisible = shouldShowTracker;
@@ -205,7 +201,7 @@ const PlayerTrackerPlugin: IRISPlugin = {
       }
     });
 
-    const ticker = setInterval(updateMap, TICK_MS);
+    const ticker = setInterval(updateMap, PLAYER_TRACKER_TICK_MS);
     trackerApi._playerTrackerUnsub = unsubscribe;
     trackerApi._playerTrackerMapUnsub = mapUnsubscribe;
     trackerApi._playerTrackerTicker = ticker;
