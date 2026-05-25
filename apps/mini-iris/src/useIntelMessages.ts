@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'preact/hooks';
-import { useStore, EntityParser, PortalDetailsParser, GameScoreParser, RegionScoreParser, InventoryParser, PlayerParser, PlextParser, ArtifactParser, extractPlextPortalRefreshHints, resolvePlextPortalRefreshHint, selectKeyedRefreshBatch, Portal, Link, Field } from '@iris/core';
+import { useStore, EntityParser, GameScoreParser, RegionScoreParser, InventoryParser, PlayerParser, PlextParser, ArtifactParser, extractPlextPortalRefreshHints, parsePortalDetailsForStore, resolvePlextPortalRefreshHint, selectKeyedRefreshBatch, Portal, Link, Field } from '@iris/core';
 import type { ArtifactData, GameScoreData, IntelMapData, InventoryData, Plext, PlextData, PortalDetailsData, RegionScoreData, PlayerStatsMessage as CorePlayerStatsMessage } from '@iris/core';
 import { isIrisDataMessage, isRecord, numberOrNull, stringOrNull } from './messages';
 
@@ -104,14 +104,17 @@ export function useIntelMessages(
                 const guid = stringOrNull(parsedParams.guid) ?? '';
                 if (!guid) return;
                 portalDetailPendingRef.current.delete(guid);
-                const linksIn = Object.values(store.links).filter((link) => link.toPortalId === guid).length;
-                const linksOut = Object.values(store.links).filter((link) => link.fromPortalId === guid).length;
-                const parsed = PortalDetailsParser.parse(msg.data as PortalDetailsData, { guid }, linksIn + linksOut);
+                const parsed = parsePortalDetailsForStore(msg.data as PortalDetailsData, { guid }, Object.values(store.links), {
+                    onError: (error) => logEvent(`Details parse failed: ${error instanceof Error ? error.message : String(error)}`),
+                });
                 if (parsed) {
                     store.updatePortals([parsed]);
                     logEvent(`Details: ${parsed.name || 'unknown'} | ${parsed.resonators?.length || 0} resos`);
                     if (selected?.type === 'portal' && selected.data.id === guid) {
-                        setSelected({ type: 'portal', data: store.portals[guid] });
+                        const updatedPortal = useStore.getState().portals[guid];
+                        if (updatedPortal) {
+                            setSelected({ type: 'portal', data: updatedPortal });
+                        }
                     }
                     syncToMap(liveMode, patternMode);
                 }
