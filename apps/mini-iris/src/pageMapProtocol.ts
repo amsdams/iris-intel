@@ -1,5 +1,5 @@
 import type { MapStyleName } from './MapConstants';
-import type { BenchmarkMode, MiniBenchmarkVariant as CoreMiniBenchmarkVariant, RuntimeMapBoundsDegrees, RuntimeMapCamera, RuntimeMapView } from '@iris/core';
+import type { BenchmarkMode, MiniBenchmarkVariant as CoreMiniBenchmarkVariant, RuntimeMapBoundsDegrees, RuntimeMapCamera, RuntimeMapEntitySelectionKind, RuntimeMapSelectionIntent, RuntimeMapView } from '@iris/core';
 
 export const MINI_PAGE_MAP_COMMAND = 'MINI_IRIS_PAGE_MAP_COMMAND';
 export const MINI_PAGE_MAP_EVENT = 'MINI_IRIS_PAGE_MAP_EVENT';
@@ -8,8 +8,8 @@ export type MiniMapCamera = RuntimeMapCamera;
 export type MiniMapBounds = RuntimeMapBoundsDegrees;
 export type MiniMapView = RuntimeMapView;
 
-export type MiniMapSelectionKind = 'portal' | 'link' | 'field';
-export type MiniMapSelectionIntent = 'select' | 'details';
+export type MiniMapSelectionKind = RuntimeMapEntitySelectionKind;
+export type MiniMapSelectionIntent = RuntimeMapSelectionIntent;
 export type MiniBenchmarkVariant = CoreMiniBenchmarkVariant;
 export type MiniBenchmarkMode = BenchmarkMode;
 

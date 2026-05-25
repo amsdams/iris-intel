@@ -1,4 +1,4 @@
-import type { RuntimeMapBoundsE6, RuntimeMapCamera } from '@iris/core';
+import type { RuntimeMapBoundsE6, RuntimeMapCamera, RuntimeMapEntitySelectionKind } from '@iris/core';
 
 export const PAGE_MAP_RUNTIME_MESSAGES = {
     showMap: 'IRIS_PAGE_MAP_RUNTIME_SHOW_MAP',
@@ -19,7 +19,7 @@ export const PAGE_MAP_RUNTIME_MESSAGES = {
 
 export const IRIS_PAGE_MAP_MIN_ZOOM = 3;
 
-export type PageMapRuntimeSelectionKind = 'portal' | 'link' | 'field' | 'planned-link' | 'planned-marker' | 'plugin-feature';
+export type PageMapRuntimeSelectionKind = RuntimeMapEntitySelectionKind | 'planned-link' | 'planned-marker' | 'plugin-feature';
 
 export type PageMapRuntimeCamera = RuntimeMapCamera;
 export type PageMapRuntimeBounds = RuntimeMapBoundsE6;

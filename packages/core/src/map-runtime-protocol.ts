@@ -4,6 +4,8 @@ import type {MapCamera} from './map-camera';
 export type RuntimeMapCamera = MapCamera;
 export type RuntimeMapBoundsDegrees = LatLngBoundsDegrees;
 export type RuntimeMapBoundsE6 = BoundsE6;
+export type RuntimeMapEntitySelectionKind = 'portal' | 'link' | 'field';
+export type RuntimeMapSelectionIntent = 'select' | 'details';
 
 export interface RuntimeMapView extends RuntimeMapCamera {
   bounds: RuntimeMapBoundsDegrees;
