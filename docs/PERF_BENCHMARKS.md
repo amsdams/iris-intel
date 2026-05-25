@@ -45,6 +45,12 @@ when evaluating major dependency migrations or rendering changes.
 | Mini 1.0.32 | z8 desktop compact batch       | Desktop Mac | Chrome 148  | n/a     | player-tracker                          | 3,269  | 1,657   | 1,137  | 456    | 19      | n/a      | n/a       | n/a  | 17ms      | 17ms   | 18ms  | 60  | 0/132       |
 | Mini 1.0.32 | z8 desktop no-links isolation  | Desktop Mac | Chrome 148  | n/a     | player-tracker                          | 2,132  | 1,657   | 0      | 456    | 19      | n/a      | n/a       | n/a  | 17ms      | 17ms   | 18ms  | 60  | 0/132       |
 | Mini 1.0.32 | z8 desktop no-fields isolation | Desktop Mac | Chrome 148  | n/a     | player-tracker                          | 2,813  | 1,657   | 1,137  | 0      | 19      | n/a      | n/a       | n/a  | 17ms      | 17ms   | 18ms  | 60  | 0/132       |
+| 0.1.7   | z8 Firefox cold-compare batch   | Desktop Mac | Firefox 153 | OSM     | player-tracker                          | 32,301 | 9,154   | 16,370 | 6,775  | 2       | n/a      | n/a       | n/a  | 19ms      | 26ms   | 192ms | 53  | 82/476      |
+| 0.1.7   | z8 Firefox no-links compare     | Desktop Mac | Firefox 153 | OSM     | player-tracker                          | 32,336 | 9,160   | 16,396 | 6,778  | 2       | n/a      | n/a       | n/a  | 8ms       | 8ms    | 43ms  | 118 | 3/1,064     |
+| 0.1.7   | z8 Firefox no-fields compare    | Desktop Mac | Firefox 153 | OSM     | player-tracker                          | 32,336 | 9,160   | 16,396 | 6,778  | 2       | n/a      | n/a       | n/a  | 8ms       | 8ms    | 17ms  | 120 | 0/1,079     |
+| Mini 1.0.32 | z8 Firefox cold-compare batch | Desktop Mac | Firefox 153 | n/a     | player-tracker                          | 3,628  | 1,171   | 1,724  | 682    | 51      | n/a      | n/a       | n/a  | 8ms       | 8ms    | 17ms  | 120 | 0/263       |
+| Mini 1.0.32 | z8 Firefox no-links compare  | Desktop Mac | Firefox 153 | n/a     | player-tracker                          | 1,907  | 1,174   | 0      | 682    | 51      | n/a      | n/a       | n/a  | 8ms       | 8ms    | 9ms   | 120 | 0/265       |
+| Mini 1.0.32 | z8 Firefox no-fields compare | Desktop Mac | Firefox 153 | n/a     | player-tracker                          | 2,958  | 1,174   | 1,733  | 0      | 51      | n/a      | n/a       | n/a  | 8ms       | 8ms    | 9ms   | 120 | 0/264       |
 
 ## Readout
 
@@ -88,6 +94,9 @@ when evaluating major dependency migrations or rendering changes.
 - For Mini/IRIS comparisons, prefer cold reloads in the same area and zoom. Warm IRIS storage after moving between
   distant globe locations can retain a larger source set until culling/refresh catches up, so compare source counts
   before treating frame timing as an app renderer difference.
+- The Firefox cold-compare rows from 2026-05-25 are useful workload evidence, not an app-vs-app rendering verdict:
+  IRIS z8 normal carried about `9.2kP / 16.4kL / 6.8kF`, while Mini carried about `1.2kP / 1.7kL / 0.7kF`. The shared
+  scenario labels are aligned, but preload/camera coverage still needs one shared contract before cross-app claims.
 
 ## Fixed Scenario Set
 

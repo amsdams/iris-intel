@@ -5,6 +5,7 @@ const DEFAULT_ZOOM_TO_TILES_PER_EDGE = [1, 1, 1, 40, 40, 80, 80, 320, 1000, 2000
 const MAX_MAP_ZOOM = 21;
 const MAX_MERCATOR_LAT = 85.05112878;
 const MAX_ENTITY_TILE_KEYS = 1024;
+export const ENTITY_REQUEST_BATCH_SIZE = 25;
 
 interface TileParams {
   level: number;
@@ -133,4 +134,15 @@ export function buildEntityRequestPayload(bounds: BoundsE6, mapZoom: number): En
     dataZoom,
     diagnostic: capped ? `tile coverage capped at ${MAX_ENTITY_TILE_KEYS}` : null,
   };
+}
+
+export function batchEntityTileKeys(tileKeys: string[], batchSize = ENTITY_REQUEST_BATCH_SIZE): string[][] {
+  const size = Math.max(1, Math.floor(batchSize));
+  const batches: string[][] = [];
+
+  for (let i = 0; i < tileKeys.length; i += size) {
+    batches.push(tileKeys.slice(i, i + size));
+  }
+
+  return batches;
 }

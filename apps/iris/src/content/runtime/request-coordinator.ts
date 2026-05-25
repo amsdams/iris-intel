@@ -1,4 +1,4 @@
-import { buildEntityRequestPayload, clampMapCamera, estimateBoundsE6FromPreviousViewport, getCurrentViewPlextPortalRefreshHints, resolvePlextPortalRefreshHint, selectCommTopologyRefresh, selectKeyedRefreshBatch, shouldBypassPlextCooldownForBoundsChange, useStore, type BoundsE6, type Plext, type PlextPortalRefreshHint } from '@iris/core';
+import { batchEntityTileKeys, buildEntityRequestPayload, clampMapCamera, estimateBoundsE6FromPreviousViewport, getCurrentViewPlextPortalRefreshHints, resolvePlextPortalRefreshHint, selectCommTopologyRefresh, selectKeyedRefreshBatch, shouldBypassPlextCooldownForBoundsChange, useStore, type BoundsE6, type Plext, type PlextPortalRefreshHint } from '@iris/core';
 import { IRISMessage } from './message-types';
 import { IRIS_PAGE_MAP_MIN_ZOOM } from '../../shared/page-map-runtime-protocol';
 
@@ -13,7 +13,6 @@ const ENTITY_IDLE_POLL_CLOSE_MS = 300000; // 5m (z > 12)
 const ENTITY_IDLE_POLL_FAR_MS = 900000;   // 15m (z <= 12)
 const ENTITY_IDLE_ZOOM_THRESHOLD = 12;
 const ENTITY_MOVE_SETTLE_MS = 3000; // IITC-like settle delay
-const ENTITY_BATCH_SIZE = 25;       // IITC-like batch size
 const ENTITY_RETRY_LIMIT = 3;
 const ENTITY_RETRY_DELAY_MS = 5000;
 const ENTITY_FRESHNESS_TTL_MS = 10000;
@@ -217,8 +216,7 @@ export function createRequestCoordinator(): RequestCoordinator {
         lastEntityCoverageKey = payload.coverageKey;
 
         // Batch tileKeys to avoid massive single requests (IITC-like batching)
-        for (let i = 0; i < tilesToFetch.length; i += ENTITY_BATCH_SIZE) {
-            const batch = tilesToFetch.slice(i, i + ENTITY_BATCH_SIZE);
+        for (const batch of batchEntityTileKeys(tilesToFetch)) {
             postMessage({
                 type: 'IRIS_ENTITIES_FETCH',
                 tileKeys: batch,

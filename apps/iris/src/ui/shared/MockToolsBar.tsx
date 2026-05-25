@@ -1,5 +1,5 @@
 import { h, JSX } from 'preact';
-import { buildEntityRequestPayload, useStore } from '@iris/core';
+import { ENTITY_REQUEST_BATCH_SIZE, buildEntityRequestPayload, useStore } from '@iris/core';
 import { useRenderDiagnostics } from './useRenderDiagnostics';
 import { useState } from 'preact/hooks';
 
@@ -60,7 +60,6 @@ const BENCHMARK_BATCH_TIMEOUT_MS = 45_000;
 const BENCHMARK_BATCH_POLL_MS = 250;
 const BENCHMARK_PRELOAD_MOVE_SETTLE_MS = 3_600;
 const BENCHMARK_PRELOAD_TIMEOUT_MS = 25_000;
-const ENTITY_REQUEST_BATCH_SIZE = 25;
 
 function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => {
@@ -173,7 +172,7 @@ async function preloadBenchmarkZoom(zoom: BenchmarkZoom): Promise<string> {
         const entities = useStore.getState().endpointDiagnostics.entities;
         const hasObservedRefresh =
             (entities.lastSuccessAt !== null && entities.lastSuccessAt >= startedAt) ||
-            (entities.lastAttemptAt !== null && entities.lastAttemptAt >= startedAt && entities.lastSkipReason !== null);
+            (entities.lastRequestAt !== null && entities.lastRequestAt >= startedAt && entities.lastSkipReason !== null);
         if (entities.status !== 'in_flight' && hasObservedRefresh) {
             await sleep(500);
             return buildPreloadSummary(zoom, false);

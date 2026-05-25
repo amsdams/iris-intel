@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {buildEntityRequestPayload} from './entities';
+import {ENTITY_REQUEST_BATCH_SIZE, batchEntityTileKeys, buildEntityRequestPayload} from './entities';
 
 describe('buildEntityRequestPayload', () => {
   it('rejects non-finite bounds without generating tiles', () => {
@@ -40,5 +40,18 @@ describe('buildEntityRequestPayload', () => {
     expect(payload.tileKeys).toHaveLength(1024);
     expect(payload.coverageKey).toContain(':capped');
     expect(payload.diagnostic).toBe('tile coverage capped at 1024');
+  });
+
+  it('batches tile keys with the shared Intel request size', () => {
+    const tileKeys = Array.from({ length: ENTITY_REQUEST_BATCH_SIZE + 2 }, (_, index) => `tile-${index}`);
+
+    expect(batchEntityTileKeys(tileKeys)).toEqual([
+      tileKeys.slice(0, ENTITY_REQUEST_BATCH_SIZE),
+      tileKeys.slice(ENTITY_REQUEST_BATCH_SIZE),
+    ]);
+  });
+
+  it('guards custom entity batch sizes', () => {
+    expect(batchEntityTileKeys(['a', 'b', 'c'], 0)).toEqual([['a'], ['b'], ['c']]);
   });
 });

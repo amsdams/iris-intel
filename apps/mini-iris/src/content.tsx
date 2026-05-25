@@ -1,7 +1,7 @@
 import { render, h, Fragment } from 'preact';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'preact/hooks';
 import { MockDataGenerator } from './MockDataGenerator';
-import { useStore, getMinLevelForZoom, getGridSizeForZoom, boundsToE6, addFrameDelta, buildEntityRequestPayload, createArtifactsRequestMessage, createEntitiesRequestMessage, createFrameSampleAccumulator, createInventoryRequestMessage, createPortalDetailsRequestMessage, formatCompactEndpointActivityMessage, parseMapCamera, parsePortalHistoryLayerState, parseStringChoice, readStorageBoolean, readStorageJson, readStorageString, resetFrameSampleAccumulator, selectCommTopologyRefresh, writeStorageBoolean, writeStorageJson, writeStorageString, Portal, Link, Field, type InventoryItem, type PlextRequestBounds } from '@iris/core';
+import { useStore, getMinLevelForZoom, getGridSizeForZoom, boundsToE6, addFrameDelta, batchEntityTileKeys, buildEntityRequestPayload, createArtifactsRequestMessage, createEntitiesRequestMessage, createFrameSampleAccumulator, createInventoryRequestMessage, createPortalDetailsRequestMessage, formatCompactEndpointActivityMessage, parseMapCamera, parsePortalHistoryLayerState, parseStringChoice, readStorageBoolean, readStorageJson, readStorageString, resetFrameSampleAccumulator, selectCommTopologyRefresh, writeStorageBoolean, writeStorageJson, writeStorageString, Portal, Link, Field, type InventoryItem, type PlextRequestBounds } from '@iris/core';
 import { TacticalUI } from './TacticalUI';
 import { MAP_STYLES, type MapStyleName } from './MapConstants';
 import { LaunchButton } from './LaunchButton';
@@ -44,7 +44,6 @@ const EXPERIMENTAL_PREFS_STORAGE_KEY = 'mini-iris:preferences:v1';
 const EXPERIMENTAL_PREFS_STORAGE_KEY_V2 = 'mini-iris:preferences:v2';
 const COMM_TO_ENTITY_REFRESH_COOLDOWN_MS = 30_000;
 const COMM_TO_ENTITY_REFRESH_MAX_TILES = 64;
-const ENTITY_REQUEST_BATCH_SIZE = 25;
 
 // Keep preferences as small standalone keys; avoid a broad state object that can affect map lifecycle.
 
@@ -407,7 +406,7 @@ function TacticalOverlay(): h.JSX.Element {
                 tileCount: payload.tileKeys.length,
                 dataZoom: payload.dataZoom,
                 diagnostic: payload.diagnostic,
-                expectedResponses: Math.ceil(payload.tileKeys.length / ENTITY_REQUEST_BATCH_SIZE),
+                expectedResponses: batchEntityTileKeys(payload.tileKeys).length,
                 receivedResponses: 0,
                 portals: 0,
                 links: 0,
@@ -427,12 +426,12 @@ function TacticalOverlay(): h.JSX.Element {
             return;
         }
 
-        for (let i = 0; i < payload.tileKeys.length; i += ENTITY_REQUEST_BATCH_SIZE) {
-            const batch = payload.tileKeys.slice(i, i + ENTITY_REQUEST_BATCH_SIZE);
+        const batches = batchEntityTileKeys(payload.tileKeys);
+        for (const batch of batches) {
             const request = createEntitiesRequestMessage(batch, { force: options.force === true });
             if (request) window.postMessage(request, '*');
         }
-        const batchCount = Math.ceil(payload.tileKeys.length / ENTITY_REQUEST_BATCH_SIZE);
+        const batchCount = batches.length;
         logEvent(`Map refresh: ${payload.tileKeys.length} tile${payload.tileKeys.length === 1 ? '' : 's'} in ${batchCount} batch${batchCount === 1 ? '' : 'es'} from ${reason}`);
     }, [logEvent, syncToMap]);
 
@@ -466,9 +465,12 @@ function TacticalOverlay(): h.JSX.Element {
         window.setTimeout(() => {
             commEntityRefreshPendingRef.current = false;
             lastCommEntityRefreshAtRef.current = Date.now();
-            const request = createEntitiesRequestMessage(payload.tileKeys, { force: true });
-            if (request) window.postMessage(request, '*');
-            logEvent(`Map refresh: ${payload.tileKeys.length} tile${payload.tileKeys.length === 1 ? '' : 's'} from COMM`);
+            const batches = batchEntityTileKeys(payload.tileKeys);
+            for (const batch of batches) {
+                const request = createEntitiesRequestMessage(batch, { force: true });
+                if (request) window.postMessage(request, '*');
+            }
+            logEvent(`Map refresh: ${payload.tileKeys.length} tile${payload.tileKeys.length === 1 ? '' : 's'} in ${batches.length} batch${batches.length === 1 ? '' : 'es'} from COMM`);
         }, 1_500);
     }, [logEvent]);
 
