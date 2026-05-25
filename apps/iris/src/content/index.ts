@@ -22,7 +22,8 @@ import {
   parseMapCamera,
   readNestedRecord,
   readStorageJson,
-  shouldReplacePlextWindow
+  shouldReplacePlextWindow,
+  mockPlext
 } from '@iris/core';
 import PortalNamesPlugin from '../../../../packages/plugins/src/portal-names';
 import ThemeSelectorPlugin from '../../../../packages/plugins/src/theme-selector';
@@ -383,10 +384,12 @@ function buildMockPlayerActivityPlexts(): Plext[] {
         : ' linked ';
     const portalName = portal.name || portal.id;
 
-    return {
+    return mockPlext({
       id: `${MOCK_PLAYER_ACTIVITY_PLEXT_PREFIX}${player.name}:${time}`,
       time,
       text: `${player.name}${actionText}${portalName}`,
+      team: player.team,
+      type: 'PLAYER_GENERATED',
       markup: [
         ['PLAYER', {plain: player.name, team: player.team}],
         ['TEXT', {plain: actionText}],
@@ -397,10 +400,7 @@ function buildMockPlayerActivityPlexts(): Plext[] {
           lngE6: Math.round(portal.lng * 1e6),
         }],
       ],
-      categories: 1,
-      team: player.team,
-      type: 'PLAYER_GENERATED',
-    };
+    });
   });
 }
 

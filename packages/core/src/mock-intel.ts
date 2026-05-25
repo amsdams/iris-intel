@@ -1,5 +1,5 @@
 import type {IntelEntityData, IntelMapData, IntelTeam, PortalDetailsData} from './parsers/intel-types';
-import type {Link, Plext, Portal} from './store';
+import type {Field, Link, Plext, Portal} from './store';
 
 export interface MockPortalEntityOptions {
   guid?: string;
@@ -206,6 +206,19 @@ export function mockLink(options: Partial<Link> = {}): Link {
     fromLng: 4,
     toLat: 53,
     toLng: 5,
+    ...options,
+  };
+}
+
+export function mockField(options: Partial<Field> = {}): Field {
+  return {
+    id: 'field-a',
+    team: 'E',
+    points: [
+      {portalId: 'portal-a', lat: 52, lng: 4},
+      {portalId: 'portal-b', lat: 53, lng: 5},
+      {portalId: 'portal-c', lat: 54, lng: 6},
+    ],
     ...options,
   };
 }

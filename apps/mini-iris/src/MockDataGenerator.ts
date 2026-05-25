@@ -1,5 +1,5 @@
 import RBush from 'rbush';
-import { Portal, Link, Field, InventoryItem, type Artifact } from '@iris/core';
+import { mockField, mockLink, mockPortal, Portal, Link, Field, InventoryItem, type Artifact } from '@iris/core';
 
 export type Faction = 'E' | 'R' | 'N' | 'M';
 
@@ -263,11 +263,11 @@ export class MockDataGenerator {
 
         const history = team === 'N' ? 0 : getDeterministicHistory(id, team);
 
-        const portal: Portal = { 
-            id, 
-            team, 
-            lng, 
-            lat, 
+        const portal: Portal = mockPortal({
+            id,
+            team,
+            lng,
+            lat,
             level,
             health,
             resCount: team === 'N' ? 0 : 8,
@@ -282,7 +282,7 @@ export class MockDataGenerator {
             scanned: !!(history & 4),
             scoutControlled: !!(history & 4),
             mitigation: { total: team === 'N' ? 0 : 30, shields: team === 'N' ? 0 : 30, links: 0, linkDefenseBoost: 1, excess: 0 }
-        };
+        });
         this.portals.set(id, portal);
         this.neighborMap.set(id, new Set());
         this.index.insert({ minX: lng, minY: lat, maxX: lng, maxY: lat, id, type: 'portal' });
@@ -318,16 +318,16 @@ export class MockDataGenerator {
             }
         }
 
-        const link: Link = { 
-            id: linkId, 
-            team, 
-            fromPortalId: p1.id, 
+        const link: Link = mockLink({
+            id: linkId,
+            team,
+            fromPortalId: p1.id,
             toPortalId: p2.id,
             fromLat: p1.lat,
             fromLng: p1.lng,
             toLat: p2.lat,
             toLng: p2.lng
-        };
+        });
         this.linksMap.set(linkId, link);
         this.index.insert({ minX, minY, maxX, maxY, id: linkId, type: 'link' });
 
@@ -357,15 +357,15 @@ export class MockDataGenerator {
 
         if (!p1 || !p2 || !p3) return null;
 
-        const field: Field = { 
-            id, 
-            team, 
+        const field: Field = mockField({
+            id,
+            team,
             points: [
                 { portalId: p1.id, lat: p1.lat, lng: p1.lng },
                 { portalId: p2.id, lat: p2.lat, lng: p2.lng },
                 { portalId: p3.id, lat: p3.lat, lng: p3.lng }
             ]
-        };
+        });
         this.fieldsMap.set(id, field);
         this.index.insert({
             minX: Math.min(p1.lng, p2.lng, p3.lng),

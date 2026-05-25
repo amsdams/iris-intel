@@ -1,5 +1,5 @@
 import { batchEntityTileKeys, buildEntityRequestPayload, clampMapCamera, estimateBoundsE6FromPreviousViewport, evaluateEndpointRequestGate, getCurrentViewPlextPortalRefreshHints, resolvePlextPortalRefreshHint, selectCommTopologyRefresh, selectKeyedRefreshBatch, shouldBypassPlextCooldownForBoundsChange, useStore, type BoundsE6, type Plext, type PlextPortalRefreshHint } from '@iris/core';
-import { IRISMessage } from './message-types';
+import { IRISMessage, parseIrisMoveMapMessage, parseIrisPortalDetailsRequestMessage, parseIrisRegionScoreRequestMessage } from './message-types';
 import { IRIS_PAGE_MAP_MIN_ZOOM } from '../../shared/page-map-runtime-protocol';
 
 const PLEXT_COOLDOWN_MS = 5000;
@@ -588,15 +588,12 @@ export function createRequestCoordinator(): RequestCoordinator {
         },
 
         handleMoveMap(msg: IRISMessage): void {
-            const { center, zoom, bounds } = msg as {
-                center: { lat: number; lng: number };
-                zoom: number;
-                bounds?: { minLatE6: number; minLngE6: number; maxLatE6: number; maxLngE6: number };
-            };
+            const payload = parseIrisMoveMapMessage(msg);
+            if (!payload) return;
 
             const previousMapState = useStore.getState().mapState;
-            const camera = clampMapCamera({lat: center.lat, lng: center.lng, zoom}, {minZoom: IRIS_PAGE_MAP_MIN_ZOOM});
-            const nextBounds = bounds ?? estimateBoundsE6FromPreviousViewport(
+            const camera = clampMapCamera(payload.camera, {minZoom: IRIS_PAGE_MAP_MIN_ZOOM});
+            const nextBounds = payload.bounds ?? estimateBoundsE6FromPreviousViewport(
                 previousMapState.bounds,
                 previousMapState.zoom,
                 {lat: camera.lat, lng: camera.lng},
@@ -657,11 +654,12 @@ export function createRequestCoordinator(): RequestCoordinator {
         },
 
         handleRegionScoreRequest(msg: IRISMessage): void {
-            const { lat, lng } = msg as { lat: number; lng: number };
+            const payload = parseIrisRegionScoreRequestMessage(msg);
+            if (!payload) return;
             if (isSessionBlocked()) return;
 
-            const latE6 = Math.round(lat * 1e6);
-            const lngE6 = Math.round(lng * 1e6);
+            const latE6 = Math.round(payload.lat * 1e6);
+            const lngE6 = Math.round(payload.lng * 1e6);
             const requestKey = `${latE6}:${lngE6}`;
 
             const diagnostics = getEndpointDiagnostics('regionScore');
@@ -683,9 +681,12 @@ export function createRequestCoordinator(): RequestCoordinator {
         },
 
         handlePortalDetailsRequest(msg: IRISMessage): void {
+            const guid = parseIrisPortalDetailsRequestMessage(msg);
+            if (!guid) return;
+
             postMessage({
                 type: 'IRIS_PORTAL_DETAILS_FETCH',
-                guid: msg.guid as string,
+                guid,
             });
         },
 
