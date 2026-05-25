@@ -2,7 +2,12 @@ export const INGRESS_TEAM_COLORS = {
   E: '#03DC03',
   R: '#0088FF',
   M: '#FF1010',
-  N: '#C0C0C0',
+  N: '#666666',
+} as const;
+
+export const INGRESS_NEUTRAL_PORTAL_COLORS = {
+  fill: INGRESS_TEAM_COLORS.N,
+  stroke: '#FFFFFF',
 } as const;
 
 export const INGRESS_MISC_COLORS = {

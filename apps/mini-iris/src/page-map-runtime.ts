@@ -1,7 +1,7 @@
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { CircleLayerSpecification, SymbolLayerSpecification } from '@maplibre/maplibre-gl-style-spec';
-import { INGRESS_ENTITY_STYLE, INGRESS_HEALTH_COLORS, INGRESS_MISC_COLORS } from '@iris/core/ingress-map-style';
+import { INGRESS_ENTITY_STYLE, INGRESS_HEALTH_COLORS, INGRESS_MISC_COLORS, INGRESS_NEUTRAL_PORTAL_COLORS } from '@iris/core/ingress-map-style';
 import { COLORS, INGRESS_COLORS, ITEM_LEVEL_COLORS, MAP_STYLES, PLAYER_TRACKER_COLORS, type MapStyleName } from './MapConstants';
 import {
     MINI_PAGE_MAP_COMMAND,
@@ -25,6 +25,7 @@ let currentPortalPaint = {
 type CirclePaint = NonNullable<CircleLayerSpecification['paint']>;
 type SymbolLayout = NonNullable<SymbolLayerSpecification['layout']>;
 const PORTAL_TEAM_COLOR_EXPR: CirclePaint['circle-color'] = ['match', ['get', 'team'], 'E', COLORS.E, 'R', COLORS.R, 'M', COLORS.M, COLORS.N];
+const PORTAL_STROKE_COLOR_EXPR: CirclePaint['circle-stroke-color'] = ['match', ['get', 'team'], 'N', INGRESS_NEUTRAL_PORTAL_COLORS.stroke, PORTAL_TEAM_COLOR_EXPR];
 const PORTAL_LEVEL_COLOR_EXPR: CirclePaint['circle-color'] = [
     'match',
     ['get', 'level'],
@@ -146,7 +147,7 @@ function buildStyle(styleName: MapStyleName): maplibregl.StyleSpecification {
             { id: 'sel-f', type: 'line', source: 'selection', filter: ['==', 'type', 'field'], paint: { 'line-color': '#fff', 'line-width': 3 } },
             { id: 'sel-l', type: 'line', source: 'selection', filter: ['==', 'type', 'link'], paint: { 'line-color': '#fff', 'line-width': 4 } },
             { id: 'sel-p', type: 'circle', source: 'selection', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': 12, 'circle-color': 'transparent', 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 } },
-            { id: 'p', type: 'circle', source: 'entities', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': PORTAL_RADIUS_EXPR, 'circle-color': PORTAL_TEAM_COLOR_EXPR, 'circle-opacity': INGRESS_ENTITY_STYLE.portalBaseOpacity, 'circle-stroke-color': PORTAL_TEAM_COLOR_EXPR, 'circle-stroke-width': INGRESS_ENTITY_STYLE.portalStrokeWidth, 'circle-stroke-opacity': 1 } },
+            { id: 'p', type: 'circle', source: 'entities', filter: ['==', 'type', 'portal'], paint: { 'circle-radius': PORTAL_RADIUS_EXPR, 'circle-color': PORTAL_TEAM_COLOR_EXPR, 'circle-opacity': INGRESS_ENTITY_STYLE.portalBaseOpacity, 'circle-stroke-color': PORTAL_STROKE_COLOR_EXPR, 'circle-stroke-width': INGRESS_ENTITY_STYLE.portalStrokeWidth, 'circle-stroke-opacity': 1 } },
             { id: 'p-history-visited-highlight', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'visitedHighlight', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 5], 'circle-color': 'transparent', 'circle-stroke-color': INGRESS_COLORS.VISITED, 'circle-stroke-width': 2, 'circle-opacity': 0.9 } },
             { id: 'p-history-captured-highlight', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'capturedHighlight', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 8], 'circle-color': 'transparent', 'circle-stroke-color': INGRESS_COLORS.CAPTURED, 'circle-stroke-width': 2, 'circle-opacity': 0.9 } },
             { id: 'p-history-scanned-highlight', type: 'circle', source: 'entities', filter: ['all', ['==', 'type', 'portal'], ['==', 'scannedHighlight', true]], paint: { 'circle-radius': ['+', ['coalesce', ['get', 'radius'], 2], 11], 'circle-color': 'transparent', 'circle-stroke-color': INGRESS_COLORS.SCANNED, 'circle-stroke-width': 2, 'circle-opacity': 0.9 } },

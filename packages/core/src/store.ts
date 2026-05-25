@@ -1080,7 +1080,7 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
     lastResolvedLatLng: null,
     addressStatus: 'idle',
     addressNextLookupAt: null,
-    mapState: { lat: 0, lng: 0, zoom: 3 },
+    mapState: { lat: 52.3702, lng: 4.8952, zoom: 13 },
     selectedPortalId: null,
     selectedFieldId: null,
     selectedLinkId: null,

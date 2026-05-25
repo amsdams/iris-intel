@@ -15,6 +15,7 @@ import {
     buildWrappedLineSegments,
     isPortalHealthBucketVisible,
 } from '@iris/core';
+import {INGRESS_NEUTRAL_PORTAL_COLORS} from '@iris/core/ingress-map-style';
 import {PageMapRuntimeCommandMessage} from '../../../shared/page-map-runtime-protocol';
 import {MAP_THEMES, THEMES} from '../../theme';
 import {
@@ -323,7 +324,12 @@ function getTeamColor(team: string, options: BuildPageMapRuntimeSnapshotOptions)
     if (team === 'E') return theme.E;
     if (team === 'R') return theme.R;
     if (team === 'M') return theme.M;
-    return theme.N;
+    return INGRESS_NEUTRAL_PORTAL_COLORS.fill;
+}
+
+function getPortalStrokeColor(team: string, options: BuildPageMapRuntimeSnapshotOptions): string {
+    if (team === 'N') return INGRESS_NEUTRAL_PORTAL_COLORS.stroke;
+    return getTeamColor(team, options);
 }
 
 function buildPluginFeatureCollection(options: BuildPageMapRuntimeSnapshotOptions): GeoJSON.FeatureCollection {
@@ -352,6 +358,7 @@ function buildPortalFeatureCollection(options: BuildPageMapRuntimeSnapshotOption
             .filter((portal) => isPortalVisible(portal, options))
             .map((portal): GeoJSON.Feature<GeoJSON.Point> => buildPortalPointFeature(portal, {
                 color: getTeamColor(portal.team, options),
+                strokeColor: getPortalStrokeColor(portal.team, options),
             })),
     };
 }
@@ -371,6 +378,7 @@ function buildSelectedPortalFeatureCollection(
         features: [{
             ...buildPortalPointFeature(portal, {
                 color: getTeamColor(portal.team, options),
+                strokeColor: getPortalStrokeColor(portal.team, options),
             }),
         }],
     };

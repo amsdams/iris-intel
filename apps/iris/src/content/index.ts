@@ -58,8 +58,9 @@ if (window.__irisContentInitialized) {
 } else {
   window.__irisContentInitialized = true;
 
-// Tracks whether MapLibre has been given its initial position
-let hasInitialPosition = false;
+// The store has a usable default camera; live entity payloads should not choose
+// a startup camera unless an explicit Intel/map sync message does so.
+let hasInitialPosition = true;
 let latestEntityRefreshGeneration = 0;
 let inventoryMockPreviousSubscription: boolean | null = null;
 let pendingStartupPosition: { lat: number; lng: number; zoom: number } | null = null;
@@ -68,10 +69,46 @@ let startupPositionUnsubscribe: (() => void) | null = null;
 const requestCoordinator = createRequestCoordinator();
 const MOCK_PLAYER_TRACKER_PLUGIN_ID = 'debug-mock-player-tracker';
 const MOCK_PLAYER_ACTIVITY_PLEXT_PREFIX = 'mock-player-activity:';
+const IRIS_SETTINGS_STORAGE_KEY = 'iris-settings';
+
+function isFiniteMapPosition(position: { lat: number; lng: number; zoom: number }): boolean {
+  return Number.isFinite(position.lat)
+    && Number.isFinite(position.lng)
+    && Number.isFinite(position.zoom)
+    && Math.abs(position.lat) <= 90
+    && Math.abs(position.lng) <= 180
+    && position.zoom >= 0
+    && position.zoom <= 21;
+}
+
+function isNullIslandFallback(position: { lat: number; lng: number }): boolean {
+  return Math.abs(position.lat) < 1 && Math.abs(position.lng) < 1;
+}
+
+function readPersistedMapPosition(): { lat: number; lng: number; zoom: number } | null {
+  try {
+    const raw = window.localStorage.getItem(IRIS_SETTINGS_STORAGE_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as { state?: { mapState?: unknown } };
+    const mapState = parsed.state?.mapState as Partial<{ lat: number; lng: number; zoom: number }> | undefined;
+    if (
+      typeof mapState?.lat !== 'number' ||
+      typeof mapState.lng !== 'number' ||
+      typeof mapState.zoom !== 'number'
+    ) {
+      return null;
+    }
+
+    const position = { lat: mapState.lat, lng: mapState.lng, zoom: mapState.zoom };
+    return isFiniteMapPosition(position) && !isNullIslandFallback(position) ? position : null;
+  } catch {
+    return null;
+  }
+}
 
 function hasStoredMapPosition(): boolean {
-  const { lat, lng } = useStore.getState().mapState;
-  return !(lat === 0 && lng === 0);
+  return readPersistedMapPosition() !== null;
 }
 
 function cleanupPendingStartupPosition(): void {
@@ -87,13 +124,13 @@ function cleanupPendingStartupPosition(): void {
 
 function applyIntelStartupPosition(position: { lat: number; lng: number; zoom: number }): void {
   const state = useStore.getState();
+
+  // Intel startup cookies can contain stale/fallback locations. IRIS owns the
+  // visible MapLibre camera, so startup cookies only mark initialization; they
+  // should not override persisted/default IRIS camera state.
   hasInitialPosition = true;
-
-  if (state.rehydrated && hasStoredMapPosition()) {
-    return;
-  }
-
-  state.updateMapState(position.lat, position.lng, position.zoom);
+  if (state.rehydrated && hasStoredMapPosition()) return;
+  void position;
 }
 
 function flushPendingStartupPosition(force = false): void {
