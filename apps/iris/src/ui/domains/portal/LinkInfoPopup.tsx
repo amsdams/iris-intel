@@ -1,5 +1,5 @@
 import { h, JSX } from 'preact';
-import { useStore, EntityLogic } from '@iris/core';
+import { useStore, EntityLogic, formatDistanceKm } from '@iris/core';
 import { Popup } from '../../shared/Popup';
 import { THEMES, TEAM_NAME } from '../../theme';
 
@@ -29,7 +29,7 @@ export function LinkInfoPopup({ onClose, visible }: LinkInfoPopupProps): JSX.Ele
     const distKm = (fromPortal && toPortal) 
         ? EntityLogic.getDistKm(fromPortal.lat, fromPortal.lng, toPortal.lat, toPortal.lng)
         : 0;
-    const distStr = distKm < 1 ? `${Math.round(distKm * 1000)}m` : `${distKm.toFixed(2)}km`;
+    const distStr = formatDistanceKm(distKm);
 
     const handlePortalClick = (id: string, lat: number, lng: number): void => {
         onClose();

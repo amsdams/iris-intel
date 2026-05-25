@@ -39,3 +39,8 @@ export function createPlextRequestMessage(options: CreatePlextRequestMessageOpti
     ...(options.force ? { force: true } : {}),
   };
 }
+
+export function shouldReplacePlextWindow(params: { minTimestampMs?: unknown; maxTimestampMs?: unknown } | null | undefined): boolean {
+  return params?.minTimestampMs === -1
+    && (params.maxTimestampMs === undefined || params.maxTimestampMs === -1);
+}

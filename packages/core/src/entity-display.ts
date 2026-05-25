@@ -65,3 +65,25 @@ export function getVisiblePortalOrnaments(
   if (!visible) return [];
   return [...(portal.ornaments || []), ...(mockOrnaments[portal.id] || [])];
 }
+
+export function estimateFieldMindUnits(field: Pick<Field, 'points'>): number {
+  if (field.points.length < 3) return 0;
+  const [p1, p2, p3] = field.points;
+  const area = Math.abs(
+    p1.lng * (p2.lat - p3.lat) +
+    p2.lng * (p3.lat - p1.lat) +
+    p3.lng * (p1.lat - p2.lat),
+  ) / 2;
+
+  return Math.max(1, Math.round(area * 1_000_000));
+}
+
+export function formatDistanceKm(distanceKm: number, options: {compact?: boolean} = {}): string {
+  if (!Number.isFinite(distanceKm) || distanceKm <= 0) return '0m';
+  if (distanceKm < 1) return `${Math.round(distanceKm * 1000)}m`;
+  if (options.compact) {
+    if (distanceKm < 10) return `${distanceKm.toFixed(1)}km`;
+    return `${Math.round(distanceKm)}km`;
+  }
+  return `${distanceKm.toFixed(2)}km`;
+}

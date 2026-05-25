@@ -1,6 +1,6 @@
 import {h, JSX, Fragment} from 'preact';
 import {useEffect, useRef, useState} from 'preact/hooks';
-import {EntityLogic, PlannedLink, PlannedMarker, useStore} from '@iris/core';
+import {EntityLogic, PlannedLink, PlannedMarker, formatDistanceKm, useStore} from '@iris/core';
 import {DrawerButton, DrawerSection} from './DrawerControls';
 
 interface MapTabProps {
@@ -37,12 +37,6 @@ export function MapTab({ onAction }: MapTabProps): JSX.Element {
             distanceKm: EntityLogic.getDistKm(mapState.lat, mapState.lng, marker.lat, marker.lng),
         }))
         .sort((a, b) => a.distanceKm - b.distanceKm);
-
-    const formatDistance = (distanceKm: number): string => {
-        if (distanceKm < 1) return `${Math.round(distanceKm * 1000)}m`;
-        if (distanceKm < 10) return `${distanceKm.toFixed(1)}km`;
-        return `${Math.round(distanceKm)}km`;
-    };
 
     useEffect(() => {
         if (!pendingScrollMarkerId || selectedPlannedItemId !== pendingScrollMarkerId) return;
@@ -290,7 +284,7 @@ export function MapTab({ onAction }: MapTabProps): JSX.Element {
                                                     </span>
                                                 </span>
                                                 <span className="iris-drawer-marker-distance">
-                                                    {formatDistance(distanceKm)}
+                                                    {formatDistanceKm(distanceKm, {compact: true})}
                                                 </span>
                                             </div>
                                         ) : (
@@ -305,7 +299,7 @@ export function MapTab({ onAction }: MapTabProps): JSX.Element {
                                                     </span>
                                                 </span>
                                                 <span className="iris-drawer-marker-distance">
-                                                    {formatDistance(distanceKm)}
+                                                    {formatDistanceKm(distanceKm, {compact: true})}
                                                 </span>
                                             </div>
                                         )}

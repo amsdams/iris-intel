@@ -21,7 +21,8 @@ import {
   clampMapCamera,
   parseMapCamera,
   readNestedRecord,
-  readStorageJson
+  readStorageJson,
+  shouldReplacePlextWindow
 } from '@iris/core';
 import PortalNamesPlugin from '../../../../packages/plugins/src/portal-names';
 import ThemeSelectorPlugin from '../../../../packages/plugins/src/theme-selector';
@@ -810,9 +811,7 @@ window.addEventListener('message', (event: MessageEvent) => {
         handlePortalDetails(data as PortalDetailsData, parsedParams as { guid?: string });
       } else if (url_str.includes('getPlexts')) {
         const plextParams = parsedParams as { minTimestampMs?: number; maxTimestampMs?: number } | undefined;
-        const replacePlextWindow = plextParams?.minTimestampMs === -1 &&
-            (plextParams.maxTimestampMs === undefined || plextParams.maxTimestampMs === -1);
-        const plexts = handlePlexts(data as PlextData, { replace: replacePlextWindow });
+        const plexts = handlePlexts(data as PlextData, { replace: shouldReplacePlextWindow(plextParams) });
         requestCoordinator.onPlextsDataReceived(Date.now(), plexts);
       } else if (url_str.includes('getGameScore')) {
         handleGameScore(data as GameScoreData);

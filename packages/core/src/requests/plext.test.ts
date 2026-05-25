@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {createPlextRequestMessage} from './plext';
+import {createPlextRequestMessage, shouldReplacePlextWindow} from './plext';
 
 describe('createPlextRequestMessage', () => {
   it('creates unbounded plext requests for full IRIS coordinator-owned bounds', () => {
@@ -46,5 +46,13 @@ describe('createPlextRequestMessage', () => {
       bounds: null,
       requireBounds: true,
     })).toBeNull();
+  });
+
+  it('detects full current-window responses that should replace visible COMM', () => {
+    expect(shouldReplacePlextWindow({minTimestampMs: -1, maxTimestampMs: -1})).toBe(true);
+    expect(shouldReplacePlextWindow({minTimestampMs: -1})).toBe(true);
+    expect(shouldReplacePlextWindow({minTimestampMs: 123, maxTimestampMs: -1})).toBe(false);
+    expect(shouldReplacePlextWindow({minTimestampMs: -1, maxTimestampMs: 123})).toBe(false);
+    expect(shouldReplacePlextWindow(null)).toBe(false);
   });
 });

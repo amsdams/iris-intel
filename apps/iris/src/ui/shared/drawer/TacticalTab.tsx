@@ -1,5 +1,5 @@
 import { h, JSX, Fragment } from 'preact';
-import { EntityLogic, PORTAL_HISTORY_KEYS, useStore, type PortalHistoryKey, type PortalHistoryMode } from '@iris/core';
+import { EntityLogic, PORTAL_HISTORY_KEYS, formatDistanceKm, useStore, type PortalHistoryKey, type PortalHistoryMode } from '@iris/core';
 import {DrawerButton, DrawerSection} from './DrawerControls';
 
 interface TacticalTabProps {
@@ -80,12 +80,6 @@ function formatAgo(time: number | null): string {
     if (hours < 24) return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
     const days = Math.floor(hours / 24);
     return `${days}d ${hours % 24}h`;
-}
-
-function formatDistance(distanceKm: number): string {
-    if (distanceKm < 1) return `${Math.round(distanceKm * 1000)}m`;
-    if (distanceKm < 10) return `${distanceKm.toFixed(1)}km`;
-    return `${Math.round(distanceKm)}km`;
 }
 
 export function TacticalTab({ onAction }: TacticalTabProps): JSX.Element {
@@ -190,7 +184,7 @@ export function TacticalTab({ onAction }: TacticalTabProps): JSX.Element {
                                     </span>
                                     <span className="iris-active-player-meta">
                                         <span>{formatAgo(player.time)}</span>
-                                        <span>{formatDistance(player.distanceKm)}</span>
+                                        <span>{formatDistanceKm(player.distanceKm, {compact: true})}</span>
                                     </span>
                                 </button>
                             ))}

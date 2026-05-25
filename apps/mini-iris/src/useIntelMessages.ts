@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'preact/hooks';
-import { useStore, EntityParser, GameScoreParser, RegionScoreParser, InventoryParser, PlayerParser, PlextParser, ArtifactParser, createPortalDetailsRequestMessage, extractPlextPortalRefreshHints, mergePortalDetailsForStore, resolvePlextPortalRefreshHint, selectKeyedRefreshBatch, Portal, Link, Field } from '@iris/core';
+import { useStore, EntityParser, GameScoreParser, RegionScoreParser, InventoryParser, PlayerParser, PlextParser, ArtifactParser, createPortalDetailsRequestMessage, extractPlextPortalRefreshHints, mergePortalDetailsForStore, resolvePlextPortalRefreshHint, selectKeyedRefreshBatch, shouldReplacePlextWindow, Portal, Link, Field } from '@iris/core';
 import { buildPlextDebugSnapshot, type PlextDebugSnapshot } from '@iris/core/plext-debug';
 import type { ArtifactData, GameScoreData, IntelMapData, InventoryData, PlextData, PortalDetailsData, RegionScoreData, PlayerStatsMessage as CorePlayerStatsMessage } from '@iris/core';
 import { isIrisDataMessage, isRecord, numberOrNull, stringOrNull } from './messages';
@@ -160,7 +160,11 @@ export function useIntelMessages(
                     maxRawChars: PLEXT_RAW_DEBUG_MAX_CHARS,
                 }));
                 if (plexts.length > 0) {
-                    store.updatePlexts(plexts);
+                    if (shouldReplacePlextWindow(parsedParams)) {
+                        store.replacePlexts(plexts);
+                    } else {
+                        store.updatePlexts(plexts);
+                    }
                     logEvent(`COMM: ${plexts.length} messages`);
                     refreshPortalsFromPlexts(plexts);
                 }

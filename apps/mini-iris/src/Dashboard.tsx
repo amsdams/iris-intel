@@ -1,6 +1,6 @@
 import { h, JSX } from 'preact';
 import { useState } from 'preact/hooks';
-import { EntityLogic, Portal, Link, Field, getResonatorEnergyPercent } from '@iris/core';
+import { EntityLogic, Portal, Link, Field, estimateFieldMindUnits, formatDistanceKm, getResonatorEnergyPercent } from '@iris/core';
 import { INGRESS_COLORS, ITEM_LEVEL_COLORS, PORTAL_HISTORY_COLORS, RARITY_COLORS } from './MapConstants';
 
 interface DashboardProps {
@@ -145,7 +145,7 @@ export function Dashboard({ type, data, colors, onClose }: DashboardProps): JSX.
     };
 
     const renderField = (field: Field): JSX.Element => {
-        const estimatedMU = calculateEstimatedFieldMu(field);
+        const estimatedMU = estimateFieldMindUnits(field);
         return (
             <div style={{ padding: '8px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3px', marginBottom: '6px' }}>
@@ -179,7 +179,7 @@ export function Dashboard({ type, data, colors, onClose }: DashboardProps): JSX.
 
     const renderLink = (link: Link): JSX.Element => {
         const distKm = EntityLogic.getDistKm(link.fromLat, link.fromLng, link.toLat, link.toLng);
-        const distStr = distKm < 1 ? `${Math.round(distKm * 1000)}m` : `${distKm.toFixed(2)}km`;
+        const distStr = formatDistanceKm(distKm);
         return (
             <div style={{ padding: '8px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3px', marginBottom: '6px' }}>
@@ -277,26 +277,14 @@ function getTitleMeta(type: string, data: Portal | Link | Field): string {
     }
 
     if (type === 'field') {
-        return `~${calculateEstimatedFieldMu(data as Field).toLocaleString()} MU`;
+        return `~${estimateFieldMindUnits(data as Field).toLocaleString()} MU`;
     }
 
     if (type === 'link') {
         const link = data as Link;
         const distKm = EntityLogic.getDistKm(link.fromLat, link.fromLng, link.toLat, link.toLng);
-        return distKm < 1 ? `${Math.round(distKm * 1000)}m` : `${distKm.toFixed(2)}km`;
+        return formatDistanceKm(distKm);
     }
 
     return '';
-}
-
-function calculateEstimatedFieldMu(field: Field): number {
-    if (field.points.length < 3) return 0;
-    const [p1, p2, p3] = field.points;
-    const area = Math.abs(
-        p1.lng * (p2.lat - p3.lat) +
-        p2.lng * (p3.lat - p1.lat) +
-        p3.lng * (p1.lat - p2.lat)
-    ) / 2;
-
-    return Math.max(1, Math.round(area * 1000000));
 }

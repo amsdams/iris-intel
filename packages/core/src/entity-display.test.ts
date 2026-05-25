@@ -1,6 +1,8 @@
 import {describe, expect, it} from 'vitest';
 import {
   getVisiblePortalOrnaments,
+  estimateFieldMindUnits,
+  formatDistanceKm,
   isFieldVisibleForDisplay,
   isLinkVisibleForDisplay,
   isPortalVisibleForDisplay,
@@ -44,5 +46,27 @@ describe('entity display helpers', () => {
     expect(shouldRenderArtifactFeature(artifact, portal, false)).toBe(false);
     expect(getVisiblePortalOrnaments(portal, {'p1': ['mock']}, true)).toEqual(['event', 'mock']);
     expect(getVisiblePortalOrnaments(portal, {'p1': ['mock']}, false)).toEqual([]);
+  });
+
+  it('estimates field MU with the shared rough area heuristic', () => {
+    const field: Field = {
+      id: 'f1',
+      team: 'E',
+      points: [
+        {lat: 0, lng: 0},
+        {lat: 0, lng: 0.01},
+        {lat: 0.01, lng: 0},
+      ],
+    };
+    expect(estimateFieldMindUnits(field)).toBe(50);
+    expect(estimateFieldMindUnits({points: []})).toBe(0);
+  });
+
+  it('formats distances in precise and compact app display modes', () => {
+    expect(formatDistanceKm(0)).toBe('0m');
+    expect(formatDistanceKm(0.123)).toBe('123m');
+    expect(formatDistanceKm(1.234)).toBe('1.23km');
+    expect(formatDistanceKm(1.234, {compact: true})).toBe('1.2km');
+    expect(formatDistanceKm(12.34, {compact: true})).toBe('12km');
   });
 });
