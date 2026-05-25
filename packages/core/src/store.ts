@@ -5,7 +5,13 @@ import { subscribeWithSelector, persist, createJSONStorage } from 'zustand/middl
 import { EntityLogic } from './logic/EntityLogic';
 import { globalSpatialIndex } from './SpatialIndex';
 import type {BoundsE6} from './geo-bounds';
-import type {HistoryFilterState} from './portal-history';
+import {
+    DEFAULT_PORTAL_HISTORY_LAYER_STATE,
+    nextPortalHistoryMode,
+    type HistoryFilterState,
+    type PortalHistoryKey,
+    type PortalHistoryLayerState,
+} from './portal-history';
 import {
     formatEndpointErrorActivityMessage,
     formatEndpointRequestActivityMessage,
@@ -490,6 +496,7 @@ export interface IRISSettings {
     filterShowUnclaimedPortals: boolean;
     filterShowLevel: Record<number, boolean>;
     filterShowHealth: Record<number, boolean>;
+    portalHistoryLayers: PortalHistoryLayerState;
     filterShowVisited: HistoryFilterState;
     filterShowCaptured: HistoryFilterState;
     filterShowScanned: HistoryFilterState;
@@ -520,6 +527,7 @@ export const DEFAULT_SETTINGS: IRISSettings = {
     filterShowHealth: {
         25: true, 50: true, 75: true, 100: true,
     },
+    portalHistoryLayers: { ...DEFAULT_PORTAL_HISTORY_LAYER_STATE },
     filterShowVisited: 'ALL',
     filterShowCaptured: 'ALL',
     filterShowScanned: 'ALL',
@@ -546,6 +554,7 @@ interface SettingsSlice extends IRISSettings {
     toggleFilterUnclaimedPortals: () => void;
     toggleFilterLevel: (level: number) => void;
     toggleFilterHealth: (bucket: number) => void;
+    togglePortalHistoryLayer: (key: PortalHistoryKey) => void;
     toggleFilterVisited: () => void;
     toggleFilterCaptured: () => void;
     toggleFilterScanned: () => void;
@@ -801,6 +810,12 @@ const createSettingsSlice: StateCreator<IRISState, [], [], SettingsSlice> = (set
     toggleFilterHealth: (bucket) => set((state) => ({
         filterShowHealth: { ...state.filterShowHealth, [bucket]: !state.filterShowHealth[bucket] }
     })),
+    togglePortalHistoryLayer: (key) => set((state) => ({
+        portalHistoryLayers: {
+            ...state.portalHistoryLayers,
+            [key]: nextPortalHistoryMode(state.portalHistoryLayers[key]),
+        },
+    })),
     toggleFilterVisited: () => set((state) => {
         const next: HistoryFilterState = state.filterShowVisited === 'ALL' ? 'TRUE' : (state.filterShowVisited === 'TRUE' ? 'FALSE' : 'ALL');
         return { filterShowVisited: next };
@@ -820,6 +835,7 @@ const createSettingsSlice: StateCreator<IRISState, [], [], SettingsSlice> = (set
         filterShowUnclaimedPortals: DEFAULT_SETTINGS.filterShowUnclaimedPortals,
         filterShowLevel: { ...DEFAULT_SETTINGS.filterShowLevel },
         filterShowHealth: { ...DEFAULT_SETTINGS.filterShowHealth },
+        portalHistoryLayers: { ...DEFAULT_SETTINGS.portalHistoryLayers },
         filterShowVisited: DEFAULT_SETTINGS.filterShowVisited,
         filterShowCaptured: DEFAULT_SETTINGS.filterShowCaptured,
         filterShowScanned: DEFAULT_SETTINGS.filterShowScanned,
@@ -1778,6 +1794,7 @@ const irisStore = createStore<IRISState>()(
                     plannedShowLinks: state.plannedShowLinks,
                     plannedShowMarkers: state.plannedShowMarkers,
                     filterShowHealth: state.filterShowHealth,
+                    portalHistoryLayers: state.portalHistoryLayers,
                     filterShowVisited: state.filterShowVisited,
                     filterShowCaptured: state.filterShowCaptured,
                     filterShowScanned: state.filterShowScanned,

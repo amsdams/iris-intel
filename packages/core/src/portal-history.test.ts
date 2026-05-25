@@ -28,7 +28,9 @@ describe('portal history helpers', () => {
       scanned: true,
     }, {
       ...DEFAULT_PORTAL_HISTORY_LAYER_STATE,
+      visited: 'highlight',
       captured: 'inverse',
+      scanned: 'highlight',
     })).toEqual({
       visitedHighlight: true,
       capturedHighlight: false,

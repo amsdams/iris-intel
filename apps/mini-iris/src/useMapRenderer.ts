@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'preact/hooks';
-import { useStore, globalSpatialIndex, getMinLevelForZoom, InventoryParser, buildArtifactPointFeature, buildFieldPolygonFeature, buildLinkLineFeatures, buildOrnamentPointFeature, buildPortalPointFeature, getPortalHistoryOverlayFlags, type InventoryItem, type PortalKeyCounts } from '@iris/core';
+import { useStore, globalSpatialIndex, getIngressPortalRadiusForZoom, getMinLevelForZoom, InventoryParser, buildArtifactPointFeature, buildFieldPolygonFeature, buildLinkLineFeatures, buildOrnamentPointFeature, buildPortalPointFeature, getPortalHistoryOverlayFlags, type InventoryItem, type PortalKeyCounts } from '@iris/core';
 import { MockDataGenerator } from './MockDataGenerator';
 import { createCirclePolygon } from './GeoUtils';
 import { INGRESS_COLORS } from './MapConstants';
@@ -148,7 +148,7 @@ export function useMapRenderer(
                         level,
                         height: towerHeight,
                         base_height: 0,
-                        radius: Math.max(1, Math.min(6, 1 + ((zoom - 3) / 12) * 5)),
+                        radius: getIngressPortalRadiusForZoom(zoom),
                         visited: p.visited,
                         captured: p.captured,
                         scanned: p.scanned,

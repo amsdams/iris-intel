@@ -10,7 +10,7 @@ import {
 } from '@iris/core/benchmark-frames';
 import {boundsToE6} from '@iris/core/geo-bounds';
 import {clampMapCamera} from '@iris/core/map-camera';
-import { INGRESS_ENTITY_STYLE, INGRESS_MISC_COLORS } from '@iris/core/ingress-map-style';
+import { INGRESS_ENTITY_STYLE, INGRESS_MISC_COLORS, INGRESS_PORTAL_HISTORY_COLORS } from '@iris/core/ingress-map-style';
 import {
     IRIS_PAGE_MAP_MIN_ZOOM,
     PAGE_MAP_RUNTIME_MESSAGES,
@@ -165,6 +165,18 @@ const PLAYER_MARKER_SPIRAL_START_RADIUS_PX = 22;
 const MOBILE_LONG_PRESS_MS = 650;
 const MOBILE_LONG_PRESS_MOVE_TOLERANCE_PX = 12;
 const MOBILE_LONG_PRESS_CLICK_SUPPRESS_MS = 500;
+const PORTAL_RADIUS_EXPR: maplibregl.ExpressionSpecification = [
+    'interpolate', ['linear'], ['zoom'],
+    INGRESS_ENTITY_STYLE.portalRadiusStops[0].zoom, INGRESS_ENTITY_STYLE.portalRadiusStops[0].radius,
+    INGRESS_ENTITY_STYLE.portalRadiusStops[1].zoom, INGRESS_ENTITY_STYLE.portalRadiusStops[1].radius,
+    INGRESS_ENTITY_STYLE.portalRadiusStops[2].zoom, INGRESS_ENTITY_STYLE.portalRadiusStops[2].radius,
+];
+const portalRadiusExprWithOffset = (offset: number): maplibregl.ExpressionSpecification => [
+    'interpolate', ['linear'], ['zoom'],
+    INGRESS_ENTITY_STYLE.portalRadiusStops[0].zoom, INGRESS_ENTITY_STYLE.portalRadiusStops[0].radius + offset,
+    INGRESS_ENTITY_STYLE.portalRadiusStops[1].zoom, INGRESS_ENTITY_STYLE.portalRadiusStops[1].radius + offset,
+    INGRESS_ENTITY_STYLE.portalRadiusStops[2].zoom, INGRESS_ENTITY_STYLE.portalRadiusStops[2].radius + offset,
+];
 const SOURCE_COUNT_LABELS: Record<string, string> = {
     'iris-map-portals': 'portals',
     'iris-map-links': 'links',
@@ -175,6 +187,14 @@ const SOURCE_COUNT_LABELS: Record<string, string> = {
     'iris-map-plugin-highlights': 'plugin-features',
     'iris-map-planned-features': 'planned-features',
 };
+const PORTAL_HISTORY_LAYER_IDS = [
+    'iris-map-portal-history-visited',
+    'iris-map-portal-history-captured',
+    'iris-map-portal-history-scanned',
+    'iris-map-portal-history-visited-inverse',
+    'iris-map-portal-history-captured-inverse',
+    'iris-map-portal-history-scanned-inverse',
+] as const;
 
 const DEFAULT_LAYER_VISIBILITY: PageMapRuntimeLayerVisibility = {
     portals: true,
@@ -436,12 +456,7 @@ function getPageMap(): Promise<maplibregl.Map> {
                         type: 'circle',
                         source: 'iris-map-portals',
                         paint: {
-                            'circle-radius': [
-                                'interpolate', ['linear'], ['zoom'],
-                                INGRESS_ENTITY_STYLE.portalRadiusStops[0].zoom, INGRESS_ENTITY_STYLE.portalRadiusStops[0].radius,
-                                INGRESS_ENTITY_STYLE.portalRadiusStops[1].zoom, INGRESS_ENTITY_STYLE.portalRadiusStops[1].radius,
-                                INGRESS_ENTITY_STYLE.portalRadiusStops[2].zoom, INGRESS_ENTITY_STYLE.portalRadiusStops[2].radius,
-                            ],
+                            'circle-radius': PORTAL_RADIUS_EXPR,
                             'circle-color': ['coalesce', ['get', 'color'], '#999999'],
                             'circle-opacity': [
                                 'case',
@@ -456,6 +471,87 @@ function getPageMap(): Promise<maplibregl.Map> {
                             'circle-stroke-width': INGRESS_ENTITY_STYLE.portalStrokeWidth,
                             'circle-stroke-color': ['coalesce', ['get', 'strokeColor'], ['get', 'color'], '#999999'],
                             'circle-stroke-opacity': 1,
+                        },
+                    },
+                    {
+                        id: 'iris-map-portal-history-visited',
+                        type: 'circle',
+                        source: 'iris-map-portals',
+                        filter: ['==', ['get', 'visitedHighlight'], true],
+                        paint: {
+                            'circle-radius': portalRadiusExprWithOffset(5),
+                            'circle-color': 'transparent',
+                            'circle-stroke-width': 2,
+                            'circle-stroke-color': INGRESS_PORTAL_HISTORY_COLORS.visited,
+                            'circle-opacity': 0.9,
+                        },
+                    },
+                    {
+                        id: 'iris-map-portal-history-captured',
+                        type: 'circle',
+                        source: 'iris-map-portals',
+                        filter: ['==', ['get', 'capturedHighlight'], true],
+                        paint: {
+                            'circle-radius': portalRadiusExprWithOffset(8),
+                            'circle-color': 'transparent',
+                            'circle-stroke-width': 2,
+                            'circle-stroke-color': INGRESS_PORTAL_HISTORY_COLORS.captured,
+                            'circle-opacity': 0.9,
+                        },
+                    },
+                    {
+                        id: 'iris-map-portal-history-scanned',
+                        type: 'circle',
+                        source: 'iris-map-portals',
+                        filter: ['==', ['get', 'scannedHighlight'], true],
+                        paint: {
+                            'circle-radius': portalRadiusExprWithOffset(11),
+                            'circle-color': 'transparent',
+                            'circle-stroke-width': 2,
+                            'circle-stroke-color': INGRESS_PORTAL_HISTORY_COLORS.scanned,
+                            'circle-opacity': 0.9,
+                        },
+                    },
+                    {
+                        id: 'iris-map-portal-history-visited-inverse',
+                        type: 'circle',
+                        source: 'iris-map-portals',
+                        filter: ['==', ['get', 'visitedInverse'], true],
+                        paint: {
+                            'circle-radius': portalRadiusExprWithOffset(5),
+                            'circle-color': INGRESS_PORTAL_HISTORY_COLORS.visited,
+                            'circle-opacity': 0.14,
+                            'circle-stroke-width': 2,
+                            'circle-stroke-color': INGRESS_PORTAL_HISTORY_COLORS.visited,
+                            'circle-stroke-opacity': 0.85,
+                        },
+                    },
+                    {
+                        id: 'iris-map-portal-history-captured-inverse',
+                        type: 'circle',
+                        source: 'iris-map-portals',
+                        filter: ['==', ['get', 'capturedInverse'], true],
+                        paint: {
+                            'circle-radius': portalRadiusExprWithOffset(8),
+                            'circle-color': INGRESS_PORTAL_HISTORY_COLORS.captured,
+                            'circle-opacity': 0.14,
+                            'circle-stroke-width': 2,
+                            'circle-stroke-color': INGRESS_PORTAL_HISTORY_COLORS.captured,
+                            'circle-stroke-opacity': 0.85,
+                        },
+                    },
+                    {
+                        id: 'iris-map-portal-history-scanned-inverse',
+                        type: 'circle',
+                        source: 'iris-map-portals',
+                        filter: ['==', ['get', 'scannedInverse'], true],
+                        paint: {
+                            'circle-radius': portalRadiusExprWithOffset(11),
+                            'circle-color': INGRESS_PORTAL_HISTORY_COLORS.scanned,
+                            'circle-opacity': 0.14,
+                            'circle-stroke-width': 2,
+                            'circle-stroke-color': INGRESS_PORTAL_HISTORY_COLORS.scanned,
+                            'circle-stroke-opacity': 0.85,
                         },
                     },
                     {
@@ -905,6 +1001,7 @@ function applyBenchmarkVariant(map: maplibregl.Map, variant: BenchmarkVariant): 
 function setIrisLayerVisibility(map: maplibregl.Map, visibility: PageMapRuntimeLayerVisibility): void {
     currentLayerVisibility = visibility;
     setLayerVisibility(map, 'iris-map-portals', visibility.portals);
+    PORTAL_HISTORY_LAYER_IDS.forEach((layerId) => setLayerVisibility(map, layerId, visibility.portals));
     setLayerVisibility(map, 'iris-map-links', visibility.links);
     setLayerVisibility(map, 'iris-map-fields', visibility.fields);
     setLayerVisibility(map, 'iris-map-link-selected', visibility.links);

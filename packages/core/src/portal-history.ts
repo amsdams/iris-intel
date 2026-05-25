@@ -30,9 +30,9 @@ export interface PortalHistoryFilterState {
 export const PORTAL_HISTORY_KEYS: readonly PortalHistoryKey[] = ['visited', 'captured', 'scanned'];
 
 export const DEFAULT_PORTAL_HISTORY_LAYER_STATE: PortalHistoryLayerState = {
-  visited: 'highlight',
-  captured: 'highlight',
-  scanned: 'highlight',
+  visited: 'off',
+  captured: 'off',
+  scanned: 'off',
 };
 
 export function isPortalHistoryMode(value: unknown): value is PortalHistoryMode {

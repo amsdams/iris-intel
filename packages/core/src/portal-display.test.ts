@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {getPortalHealthBucket, isPortalHealthBucketVisible} from './portal-display';
+import {getIngressPortalRadiusForZoom, getPortalHealthBucket, isPortalHealthBucketVisible} from './portal-display';
 
 describe('portal display helpers', () => {
   it('maps portal health to IRIS filter buckets', () => {
@@ -17,5 +17,14 @@ describe('portal display helpers', () => {
     expect(isPortalHealthBucketVisible(undefined, {25: false, 50: false, 75: false, 100: false})).toBe(true);
     expect(isPortalHealthBucketVisible(20, {25: false, 50: true, 75: true, 100: true})).toBe(false);
     expect(isPortalHealthBucketVisible(80, {25: true, 50: true, 75: true, 100: false})).toBe(false);
+  });
+
+  it('interpolates Intel-style portal radius from shared zoom stops', () => {
+    expect(getIngressPortalRadiusForZoom(Number.NaN)).toBe(1);
+    expect(getIngressPortalRadiusForZoom(3)).toBe(1);
+    expect(getIngressPortalRadiusForZoom(10)).toBe(2);
+    expect(getIngressPortalRadiusForZoom(15)).toBe(6);
+    expect(getIngressPortalRadiusForZoom(20)).toBe(6);
+    expect(getIngressPortalRadiusForZoom(12.5)).toBe(4);
   });
 });

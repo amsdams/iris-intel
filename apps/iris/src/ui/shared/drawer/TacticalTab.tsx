@@ -1,5 +1,5 @@
 import { h, JSX, Fragment } from 'preact';
-import { EntityLogic, useStore } from '@iris/core';
+import { EntityLogic, PORTAL_HISTORY_KEYS, useStore, type PortalHistoryKey, type PortalHistoryMode } from '@iris/core';
 import {DrawerButton, DrawerSection} from './DrawerControls';
 
 interface TacticalTabProps {
@@ -21,6 +21,16 @@ interface ActivePlayerRow {
 }
 
 const MIN_PLAYER_TRACKER_ZOOM = 9;
+const HISTORY_RING_LABELS: Record<PortalHistoryKey, string> = {
+    visited: 'Visited',
+    captured: 'Captured',
+    scanned: 'Scanned',
+};
+const HISTORY_RING_MODE_LABELS: Record<PortalHistoryMode, string> = {
+    off: 'Off',
+    highlight: 'On',
+    inverse: 'Inv',
+};
 
 function isPlayerMarkerFeature(feature: GeoJSON.Feature): boolean {
     const properties = feature.properties as Record<string, unknown> | null | undefined;
@@ -92,6 +102,8 @@ export function TacticalTab({ onAction }: TacticalTabProps): JSX.Element {
     const toggleFilterLevel = useStore((state) => state.toggleFilterLevel);
     const filterShowHealth = useStore((state) => state.filterShowHealth);
     const toggleFilterHealth = useStore((state) => state.toggleFilterHealth);
+    const portalHistoryLayers = useStore((state) => state.portalHistoryLayers);
+    const togglePortalHistoryLayer = useStore((state) => state.togglePortalHistoryLayer);
     
     const filterShowVisited = useStore((state) => state.filterShowVisited);
     const toggleFilterVisited = useStore((state) => state.toggleFilterVisited);
@@ -210,7 +222,21 @@ export function TacticalTab({ onAction }: TacticalTabProps): JSX.Element {
                 ))}
             </DrawerSection>
 
-            <DrawerSection label="Agent History" scroll>
+            <DrawerSection label="History Rings" scroll>
+                {PORTAL_HISTORY_KEYS.map((key) => {
+                    const mode = portalHistoryLayers[key];
+                    return (
+                        <DrawerButton
+                            key={key}
+                            active={mode !== 'off'}
+                            label={`${HISTORY_RING_LABELS[key]}: ${HISTORY_RING_MODE_LABELS[mode]}`}
+                            onClick={() => togglePortalHistoryLayer(key)}
+                        />
+                    );
+                })}
+            </DrawerSection>
+
+            <DrawerSection label="History Filters" scroll>
                 <DrawerButton
                     active={filterShowVisited !== 'ALL'}
                     label={`Visited: ${filterShowVisited === 'ALL' ? 'All' : (filterShowVisited === 'TRUE' ? 'Yes' : 'No')}`}

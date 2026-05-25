@@ -13,8 +13,10 @@ import {
     buildPortalPointFeature,
     toFeatureCollection,
     buildWrappedLineSegments,
+    getPortalHistoryOverlayFlags,
     isPortalHealthBucketVisible,
     matchesPortalHistoryFilters,
+    type PortalHistoryLayerState,
 } from '@iris/core';
 import {INGRESS_NEUTRAL_PORTAL_COLORS} from '@iris/core/ingress-map-style';
 import {PageMapRuntimeCommandMessage} from '../../../shared/page-map-runtime-protocol';
@@ -61,6 +63,7 @@ export interface BuildPageMapRuntimeSnapshotOptions {
     filterShowUnclaimedPortals: boolean;
     filterShowLevel: Record<number, boolean>;
     filterShowHealth: Record<number, boolean>;
+    portalHistoryLayers: PortalHistoryLayerState;
     filterShowVisited: HistoryFilterState;
     filterShowCaptured: HistoryFilterState;
     filterShowScanned: HistoryFilterState;
@@ -357,6 +360,7 @@ function buildPortalFeatureCollection(options: BuildPageMapRuntimeSnapshotOption
             .map((portal): GeoJSON.Feature<GeoJSON.Point> => buildPortalPointFeature(portal, {
                 color: getTeamColor(portal.team, options),
                 strokeColor: getPortalStrokeColor(portal.team, options),
+                ...getPortalHistoryOverlayFlags(portal, options.portalHistoryLayers),
             })),
     };
 }

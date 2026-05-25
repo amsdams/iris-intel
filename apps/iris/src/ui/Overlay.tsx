@@ -200,6 +200,7 @@ function getPageRuntimeSnapshotOptionsFromStore(
         filterShowUnclaimedPortals: state.filterShowUnclaimedPortals,
         filterShowLevel: state.filterShowLevel,
         filterShowHealth: state.filterShowHealth,
+        portalHistoryLayers: state.portalHistoryLayers,
         filterShowVisited: state.filterShowVisited,
         filterShowCaptured: state.filterShowCaptured,
         filterShowScanned: state.filterShowScanned,
@@ -313,6 +314,7 @@ export function IRISOverlay(): JSX.Element {
     const filterShowUnclaimedPortals = useStore((state) => state.filterShowUnclaimedPortals);
     const filterShowLevel = useStore((state) => state.filterShowLevel);
     const filterShowHealth = useStore((state) => state.filterShowHealth);
+    const portalHistoryLayers = useStore((state) => state.portalHistoryLayers);
     const filterShowVisited = useStore((state) => state.filterShowVisited);
     const filterShowCaptured = useStore((state) => state.filterShowCaptured);
     const filterShowScanned = useStore((state) => state.filterShowScanned);
@@ -702,6 +704,7 @@ export function IRISOverlay(): JSX.Element {
         filterShowUnclaimedPortals,
         filterShowLevel,
         filterShowHealth,
+        portalHistoryLayers,
         filterShowVisited,
         filterShowCaptured,
         filterShowScanned,
