@@ -21,6 +21,7 @@ export * from './endpoint-request-policy';
 export * from './keyed-refresh';
 export * from './portal-display';
 export * from './diagnostics-formatting';
+export * from './persistence-schema';
 export * from './ZoomPolicy';
 export * from './parsers/EntityParser';
 export * from './parsers/PortalDetailsParser';

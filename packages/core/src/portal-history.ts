@@ -39,6 +39,21 @@ export function isPortalHistoryMode(value: unknown): value is PortalHistoryMode 
   return value === 'off' || value === 'highlight' || value === 'inverse';
 }
 
+export function parsePortalHistoryLayerState(
+  value: unknown,
+  fallback: PortalHistoryLayerState = DEFAULT_PORTAL_HISTORY_LAYER_STATE
+): PortalHistoryLayerState {
+  const record = typeof value === 'object' && value !== null
+    ? value as Partial<Record<PortalHistoryKey, unknown>>
+    : {};
+
+  return {
+    visited: isPortalHistoryMode(record.visited) ? record.visited : fallback.visited,
+    captured: isPortalHistoryMode(record.captured) ? record.captured : fallback.captured,
+    scanned: isPortalHistoryMode(record.scanned) ? record.scanned : fallback.scanned,
+  };
+}
+
 export function nextPortalHistoryMode(mode: PortalHistoryMode): PortalHistoryMode {
   switch (mode) {
     case 'off':

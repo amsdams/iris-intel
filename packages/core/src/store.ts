@@ -8,6 +8,7 @@ import type {BoundsE6} from './geo-bounds';
 import {
     DEFAULT_PORTAL_HISTORY_LAYER_STATE,
     nextPortalHistoryMode,
+    parsePortalHistoryLayerState,
     type HistoryFilterState,
     type PortalHistoryKey,
     type PortalHistoryLayerState,
@@ -1817,6 +1818,10 @@ const irisStore = createStore<IRISState>()(
                         if (state.themeId === 'DEFAULT') {
                             state.themeId = 'INGRESS';
                         }
+                        state.portalHistoryLayers = parsePortalHistoryLayerState(
+                            state.portalHistoryLayers,
+                            DEFAULT_SETTINGS.portalHistoryLayers
+                        );
                         state.plannedMarkers = dedupePlannedMarkers(Array.isArray(state.plannedMarkers) ? state.plannedMarkers : []);
                         if (
                             state.selectedPlannedItemType === 'marker' &&

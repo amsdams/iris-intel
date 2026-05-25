@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {clampMapCamera, isFiniteMapCamera, isNullIslandMapCamera, isUsableMapCamera} from './map-camera';
+import {clampMapCamera, isFiniteMapCamera, isNullIslandMapCamera, isUsableMapCamera, parseMapCamera} from './map-camera';
 
 describe('map camera validation', () => {
   it('accepts finite in-range cameras', () => {
@@ -41,5 +41,16 @@ describe('map camera validation', () => {
       lng: 4.8952,
       zoom: 18,
     });
+  });
+
+  it('parses persisted camera-like objects through the usable camera guard', () => {
+    expect(parseMapCamera({lat: 52.3702, lng: 4.8952, zoom: 13})).toEqual({
+      lat: 52.3702,
+      lng: 4.8952,
+      zoom: 13,
+    });
+    expect(parseMapCamera({lat: 0, lng: 0, zoom: 13})).toBeNull();
+    expect(parseMapCamera({lat: '52', lng: 4.8952, zoom: 13})).toBeNull();
+    expect(parseMapCamera(null)).toBeNull();
   });
 });

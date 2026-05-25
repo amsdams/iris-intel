@@ -5,6 +5,7 @@ import {
   isPortalHistoryMode,
   matchesPortalHistoryFilters,
   nextPortalHistoryMode,
+  parsePortalHistoryLayerState,
 } from './portal-history';
 
 describe('portal history helpers', () => {
@@ -19,6 +20,18 @@ describe('portal history helpers', () => {
     expect(isPortalHistoryMode('highlight')).toBe(true);
     expect(isPortalHistoryMode('inverse')).toBe(true);
     expect(isPortalHistoryMode('yes')).toBe(false);
+  });
+
+  it('parses persisted portal history layer state with defaults for invalid values', () => {
+    expect(parsePortalHistoryLayerState({
+      visited: 'highlight',
+      captured: 'bad',
+      scanned: 'inverse',
+    })).toEqual({
+      visited: 'highlight',
+      captured: 'off',
+      scanned: 'inverse',
+    });
   });
 
   it('derives highlight and inverse overlay flags from portal history', () => {

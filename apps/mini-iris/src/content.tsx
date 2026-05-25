@@ -1,7 +1,7 @@
 import { render, h, Fragment } from 'preact';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'preact/hooks';
 import { MockDataGenerator } from './MockDataGenerator';
-import { useStore, getMinLevelForZoom, getGridSizeForZoom, boundsToE6, addFrameDelta, createFrameSampleAccumulator, createInventoryRequestMessage, createPortalDetailsRequestMessage, formatCompactEndpointActivityMessage, isUsableMapCamera, readStorageBoolean, readStorageJson, readStorageString, resetFrameSampleAccumulator, writeStorageBoolean, writeStorageJson, writeStorageString, Portal, Link, Field, type InventoryItem, type PlextRequestBounds } from '@iris/core';
+import { useStore, getMinLevelForZoom, getGridSizeForZoom, boundsToE6, addFrameDelta, createFrameSampleAccumulator, createInventoryRequestMessage, createPortalDetailsRequestMessage, formatCompactEndpointActivityMessage, parseMapCamera, parsePortalHistoryLayerState, parseStringChoice, readStorageBoolean, readStorageJson, readStorageString, resetFrameSampleAccumulator, writeStorageBoolean, writeStorageJson, writeStorageString, Portal, Link, Field, type InventoryItem, type PlextRequestBounds } from '@iris/core';
 import { TacticalUI } from './TacticalUI';
 import { MAP_STYLES, type MapStyleName } from './MapConstants';
 import { LaunchButton } from './LaunchButton';
@@ -15,7 +15,7 @@ import { usePlayerTracker, type PlayerAction, type PlayerHistory } from './usePl
 import { useEndpointTelemetry } from './useEndpointTelemetry';
 import { throttle } from './GeoUtils';
 import { isEndpointStateMessage, numberOrNull, stringOrNull } from './messages';
-import { DEFAULT_PORTAL_HISTORY_LAYERS, isPortalHistoryMode, nextPortalHistoryMode, type PortalHistoryKey, type PortalHistoryLayerState } from './portalHistory';
+import { DEFAULT_PORTAL_HISTORY_LAYERS, nextPortalHistoryMode, type PortalHistoryKey, type PortalHistoryLayerState } from './portalHistory';
 import type { MiniFrameStats, MiniRenderStats } from './diagnostics';
 import { MINI_IRIS_UI_FONT } from './typography';
 import {
@@ -74,21 +74,7 @@ const EMPTY_FRAME_STATS: MiniFrameStats = {
 };
 
 function readSavedMapState(): SavedMapState | null {
-    const parsed = readStorageJson<Partial<SavedMapState>>(MAP_STATE_STORAGE_KEY);
-    if (
-        typeof parsed?.lat !== 'number' ||
-        typeof parsed.lng !== 'number' ||
-        typeof parsed.zoom !== 'number'
-    ) {
-        return null;
-    }
-
-    const saved = {
-        lat: parsed.lat,
-        lng: parsed.lng,
-        zoom: parsed.zoom,
-    };
-    return isUsableMapCamera(saved) ? saved : null;
+    return parseMapCamera(readStorageJson<unknown>(MAP_STATE_STORAGE_KEY));
 }
 
 function writeSavedMapState(state: SavedMapState): void {
@@ -113,8 +99,7 @@ function createMapView(state: SavedMapState, bounds = createFallbackBounds(state
 }
 
 function readSavedMapStyle(): MapStyleName {
-    const raw = readStorageString(MAP_STYLE_STORAGE_KEY);
-    return raw && raw in MAP_STYLES ? raw as MapStyleName : 'Dark';
+    return parseStringChoice(readStorageString(MAP_STYLE_STORAGE_KEY), MAP_STYLES, 'Dark');
 }
 
 function writeSavedMapStyle(style: string): void {
@@ -123,13 +108,7 @@ function writeSavedMapStyle(style: string): void {
 }
 
 function readSavedPortalHistoryLayers(): PortalHistoryLayerState {
-    const parsed = readStorageJson<Partial<Record<PortalHistoryKey, unknown>>>(PORTAL_HISTORY_STORAGE_KEY);
-    if (!parsed) return DEFAULT_PORTAL_HISTORY_LAYERS;
-    return {
-        visited: isPortalHistoryMode(parsed.visited) ? parsed.visited : DEFAULT_PORTAL_HISTORY_LAYERS.visited,
-        captured: isPortalHistoryMode(parsed.captured) ? parsed.captured : DEFAULT_PORTAL_HISTORY_LAYERS.captured,
-        scanned: isPortalHistoryMode(parsed.scanned) ? parsed.scanned : DEFAULT_PORTAL_HISTORY_LAYERS.scanned,
-    };
+    return parsePortalHistoryLayerState(readStorageJson<unknown>(PORTAL_HISTORY_STORAGE_KEY), DEFAULT_PORTAL_HISTORY_LAYERS);
 }
 
 function writeSavedPortalHistoryLayers(layers: PortalHistoryLayerState): void {

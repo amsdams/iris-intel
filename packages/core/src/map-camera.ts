@@ -50,3 +50,23 @@ export function clampMapCamera(camera: MapCamera, options: Pick<MapCameraValidat
     zoom: Math.max(minZoom, Math.min(maxZoom, camera.zoom)),
   };
 }
+
+export function parseMapCamera(value: unknown, options: MapCameraValidationOptions = {}): MapCamera | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const candidate = value as Partial<MapCamera>;
+  if (
+    typeof candidate.lat !== 'number' ||
+    typeof candidate.lng !== 'number' ||
+    typeof candidate.zoom !== 'number'
+  ) {
+    return null;
+  }
+
+  const camera = {
+    lat: candidate.lat,
+    lng: candidate.lng,
+    zoom: candidate.zoom,
+  };
+
+  return isUsableMapCamera(camera, options) ? camera : null;
+}
