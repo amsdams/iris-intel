@@ -19,7 +19,8 @@ import {
   IntelInventoryItemData,
   boundsE6ContainsLatLng,
   clampMapCamera,
-  isUsableMapCamera
+  isUsableMapCamera,
+  readStorageJson
 } from '@iris/core';
 import PortalNamesPlugin from '../../../../packages/plugins/src/portal-names';
 import ThemeSelectorPlugin from '../../../../packages/plugins/src/theme-selector';
@@ -75,25 +76,18 @@ const MOCK_PLAYER_ACTIVITY_PLEXT_PREFIX = 'mock-player-activity:';
 const IRIS_SETTINGS_STORAGE_KEY = 'iris-settings';
 
 function readPersistedMapPosition(): { lat: number; lng: number; zoom: number } | null {
-  try {
-    const raw = window.localStorage.getItem(IRIS_SETTINGS_STORAGE_KEY);
-    if (!raw) return null;
-
-    const parsed = JSON.parse(raw) as { state?: { mapState?: unknown } };
-    const mapState = parsed.state?.mapState as Partial<{ lat: number; lng: number; zoom: number }> | undefined;
-    if (
-      typeof mapState?.lat !== 'number' ||
-      typeof mapState.lng !== 'number' ||
-      typeof mapState.zoom !== 'number'
-    ) {
-      return null;
-    }
-
-    const position = { lat: mapState.lat, lng: mapState.lng, zoom: mapState.zoom };
-    return isUsableMapCamera(position) ? clampMapCamera(position, {minZoom: IRIS_PAGE_MAP_MIN_ZOOM}) : null;
-  } catch {
+  const parsed = readStorageJson<{ state?: { mapState?: unknown } }>(IRIS_SETTINGS_STORAGE_KEY);
+  const mapState = parsed?.state?.mapState as Partial<{ lat: number; lng: number; zoom: number }> | undefined;
+  if (
+    typeof mapState?.lat !== 'number' ||
+    typeof mapState.lng !== 'number' ||
+    typeof mapState.zoom !== 'number'
+  ) {
     return null;
   }
+
+  const position = { lat: mapState.lat, lng: mapState.lng, zoom: mapState.zoom };
+  return isUsableMapCamera(position) ? clampMapCamera(position, {minZoom: IRIS_PAGE_MAP_MIN_ZOOM}) : null;
 }
 
 function hasStoredMapPosition(): boolean {

@@ -1,7 +1,7 @@
 import { render, h, Fragment } from 'preact';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'preact/hooks';
 import { MockDataGenerator } from './MockDataGenerator';
-import { useStore, getMinLevelForZoom, getGridSizeForZoom, boundsToE6, addFrameDelta, createFrameSampleAccumulator, formatCompactEndpointActivityMessage, isUsableMapCamera, resetFrameSampleAccumulator, Portal, Link, Field, type InventoryItem, type PlextRequestBounds } from '@iris/core';
+import { useStore, getMinLevelForZoom, getGridSizeForZoom, boundsToE6, addFrameDelta, createFrameSampleAccumulator, formatCompactEndpointActivityMessage, isUsableMapCamera, readStorageBoolean, readStorageJson, readStorageString, resetFrameSampleAccumulator, writeStorageBoolean, writeStorageJson, writeStorageString, Portal, Link, Field, type InventoryItem, type PlextRequestBounds } from '@iris/core';
 import { TacticalUI } from './TacticalUI';
 import { MAP_STYLES, type MapStyleName } from './MapConstants';
 import { LaunchButton } from './LaunchButton';
@@ -74,38 +74,25 @@ const EMPTY_FRAME_STATS: MiniFrameStats = {
 };
 
 function readSavedMapState(): SavedMapState | null {
-    try {
-        const raw = window.localStorage.getItem(MAP_STATE_STORAGE_KEY);
-
-        if (!raw) return null;
-
-        const parsed = JSON.parse(raw) as Partial<SavedMapState>;
-        if (
-            typeof parsed.lat !== 'number' ||
-            typeof parsed.lng !== 'number' ||
-            typeof parsed.zoom !== 'number'
-        ) {
-            return null;
-        }
-
-        const saved = {
-            lat: parsed.lat,
-            lng: parsed.lng,
-            zoom: parsed.zoom,
-        };
-        return isUsableMapCamera(saved) ? saved : null;
-    } catch {
+    const parsed = readStorageJson<Partial<SavedMapState>>(MAP_STATE_STORAGE_KEY);
+    if (
+        typeof parsed?.lat !== 'number' ||
+        typeof parsed.lng !== 'number' ||
+        typeof parsed.zoom !== 'number'
+    ) {
         return null;
     }
+
+    const saved = {
+        lat: parsed.lat,
+        lng: parsed.lng,
+        zoom: parsed.zoom,
+    };
+    return isUsableMapCamera(saved) ? saved : null;
 }
 
 function writeSavedMapState(state: SavedMapState): void {
-    try {
-        const serialized = JSON.stringify(state);
-        window.localStorage.setItem(MAP_STATE_STORAGE_KEY, serialized);
-    } catch {
-        // Ignore storage failures.
-    }
+    writeStorageJson(MAP_STATE_STORAGE_KEY, state);
 }
 
 function createFallbackBounds(state: SavedMapState): MiniMapBounds {
@@ -126,21 +113,13 @@ function createMapView(state: SavedMapState, bounds = createFallbackBounds(state
 }
 
 function readSavedMapStyle(): MapStyleName {
-    try {
-        const raw = window.localStorage.getItem(MAP_STYLE_STORAGE_KEY);
-        return raw && raw in MAP_STYLES ? raw as MapStyleName : 'Dark';
-    } catch {
-        return 'Dark';
-    }
+    const raw = readStorageString(MAP_STYLE_STORAGE_KEY);
+    return raw && raw in MAP_STYLES ? raw as MapStyleName : 'Dark';
 }
 
 function writeSavedMapStyle(style: string): void {
     if (!(style in MAP_STYLES)) return;
-    try {
-        window.localStorage.setItem(MAP_STYLE_STORAGE_KEY, style);
-    } catch {
-        // Ignore storage failures.
-    }
+    writeStorageString(MAP_STYLE_STORAGE_KEY, style);
 }
 
 function isPortalHistoryMode(value: unknown): value is PortalHistoryMode {
@@ -148,90 +127,49 @@ function isPortalHistoryMode(value: unknown): value is PortalHistoryMode {
 }
 
 function readSavedPortalHistoryLayers(): PortalHistoryLayerState {
-    try {
-        const raw = window.localStorage.getItem(PORTAL_HISTORY_STORAGE_KEY);
-        if (!raw) return DEFAULT_PORTAL_HISTORY_LAYERS;
-        const parsed = JSON.parse(raw) as Partial<Record<PortalHistoryKey, unknown>>;
-        return {
-            visited: isPortalHistoryMode(parsed.visited) ? parsed.visited : DEFAULT_PORTAL_HISTORY_LAYERS.visited,
-            captured: isPortalHistoryMode(parsed.captured) ? parsed.captured : DEFAULT_PORTAL_HISTORY_LAYERS.captured,
-            scanned: isPortalHistoryMode(parsed.scanned) ? parsed.scanned : DEFAULT_PORTAL_HISTORY_LAYERS.scanned,
-        };
-    } catch {
-        return DEFAULT_PORTAL_HISTORY_LAYERS;
-    }
+    const parsed = readStorageJson<Partial<Record<PortalHistoryKey, unknown>>>(PORTAL_HISTORY_STORAGE_KEY);
+    if (!parsed) return DEFAULT_PORTAL_HISTORY_LAYERS;
+    return {
+        visited: isPortalHistoryMode(parsed.visited) ? parsed.visited : DEFAULT_PORTAL_HISTORY_LAYERS.visited,
+        captured: isPortalHistoryMode(parsed.captured) ? parsed.captured : DEFAULT_PORTAL_HISTORY_LAYERS.captured,
+        scanned: isPortalHistoryMode(parsed.scanned) ? parsed.scanned : DEFAULT_PORTAL_HISTORY_LAYERS.scanned,
+    };
 }
 
 function writeSavedPortalHistoryLayers(layers: PortalHistoryLayerState): void {
-    try {
-        window.localStorage.setItem(PORTAL_HISTORY_STORAGE_KEY, JSON.stringify(layers));
-    } catch {
-        // Ignore storage failures.
-    }
+    writeStorageJson(PORTAL_HISTORY_STORAGE_KEY, layers);
 }
 
 function readSavedKeyOverlayEnabled(): boolean {
-    try {
-        return window.localStorage.getItem(KEY_OVERLAY_STORAGE_KEY) === 'true';
-    } catch {
-        return false;
-    }
+    return readStorageBoolean(KEY_OVERLAY_STORAGE_KEY);
 }
 
 function writeSavedKeyOverlayEnabled(enabled: boolean): void {
-    try {
-        window.localStorage.setItem(KEY_OVERLAY_STORAGE_KEY, enabled ? 'true' : 'false');
-    } catch {
-        // Ignore storage failures.
-    }
+    writeStorageBoolean(KEY_OVERLAY_STORAGE_KEY, enabled);
 }
 
 function readSavedPortalLevelColorEnabled(): boolean {
-    try {
-        return window.localStorage.getItem(PORTAL_LEVEL_COLOR_STORAGE_KEY) === 'true';
-    } catch {
-        return false;
-    }
+    return readStorageBoolean(PORTAL_LEVEL_COLOR_STORAGE_KEY);
 }
 
 function writeSavedPortalLevelColorEnabled(enabled: boolean): void {
-    try {
-        window.localStorage.setItem(PORTAL_LEVEL_COLOR_STORAGE_KEY, enabled ? 'true' : 'false');
-    } catch {
-        // Ignore storage failures.
-    }
+    writeStorageBoolean(PORTAL_LEVEL_COLOR_STORAGE_KEY, enabled);
 }
 
 function readSavedPortalHealthColorEnabled(): boolean {
-    try {
-        return window.localStorage.getItem(PORTAL_HEALTH_COLOR_STORAGE_KEY) === 'true';
-    } catch {
-        return false;
-    }
+    return readStorageBoolean(PORTAL_HEALTH_COLOR_STORAGE_KEY);
 }
 
 function writeSavedPortalHealthColorEnabled(enabled: boolean): void {
-    try {
-        window.localStorage.setItem(PORTAL_HEALTH_COLOR_STORAGE_KEY, enabled ? 'true' : 'false');
-    } catch {
-        // Ignore storage failures.
-    }
+    writeStorageBoolean(PORTAL_HEALTH_COLOR_STORAGE_KEY, enabled);
 }
 
 function readSavedMiniIrisOpen(): boolean {
-    try {
-        return window.localStorage.getItem(MINI_IRIS_OPEN_STORAGE_KEY) === 'true';
-    } catch {
-        return false;
-    }
+    return readStorageBoolean(MINI_IRIS_OPEN_STORAGE_KEY);
 }
 
 function writeSavedMiniIrisOpen(open: boolean): void {
-    try {
-        window.localStorage.setItem(MINI_IRIS_OPEN_STORAGE_KEY, open ? 'true' : 'false');
-    } catch {
-        // Ignore storage failures.
-    }
+    writeStorageBoolean(MINI_IRIS_OPEN_STORAGE_KEY, open);
 }
 
 function cleanupLegacyStorage(): void {
@@ -751,8 +689,12 @@ function TacticalOverlay(): h.JSX.Element {
             zoom: initialZoom,
             styleName: initialMapStyle,
             visible: initialMiniIrisOpen,
+            portalPaint: {
+                levelColorEnabled: portalLevelColorEnabled,
+                healthColorEnabled: portalHealthColorEnabled,
+            },
         });
-    }, [initialMapStyle, initialMiniIrisOpen, savedMapState?.lat, savedMapState?.lng, savedMapState?.zoom]);
+    }, [initialMapStyle, initialMiniIrisOpen, portalHealthColorEnabled, portalLevelColorEnabled, savedMapState?.lat, savedMapState?.lng, savedMapState?.zoom]);
 
     useEffect(() => {
         const selectById = (kind: 'portal' | 'link' | 'field', id: string, openDetails: boolean): void => {
@@ -834,7 +776,16 @@ function TacticalOverlay(): h.JSX.Element {
 
     useEffect(() => {
         syncToMap(mapViewRef.current, liveMode, patternMode);
-    }, [artifactsEnabled, keyOverlayEnabled, liveMode, ornamentsEnabled, patternMode, syncToMap]);
+    }, [
+        artifactsEnabled,
+        keyOverlayEnabled,
+        liveMode,
+        ornamentsEnabled,
+        patternMode,
+        portalHealthColorEnabled,
+        portalLevelColorEnabled,
+        syncToMap,
+    ]);
 
     // 2. Selection highlights
     useEffect(() => {

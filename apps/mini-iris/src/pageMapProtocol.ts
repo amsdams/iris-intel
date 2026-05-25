@@ -31,6 +31,10 @@ export type MiniPageMapCommand =
         zoom: number;
         styleName: MapStyleName;
         visible: boolean;
+        portalPaint?: {
+            levelColorEnabled: boolean;
+            healthColorEnabled: boolean;
+        };
     }
     | { action: 'set-visible'; visible: boolean }
     | { action: 'sync-data'; data: GeoJSON.FeatureCollection }

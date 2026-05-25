@@ -8,6 +8,7 @@ export * from './requests/entities';
 export * from './requests/plext';
 export * from './player-tracker';
 export * from './portal-details';
+export * from './safe-storage';
 export * from './plext-refresh-hints';
 export * from './map-features';
 export * from './map-camera';

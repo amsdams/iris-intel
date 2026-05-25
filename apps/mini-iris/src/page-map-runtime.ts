@@ -336,7 +336,11 @@ function initMap(command: Extract<MiniPageMapCommandMessage['command'], { action
     container = document.getElementById(command.containerId);
     if (!container) return;
     setContainerVisible(command.visible);
+    if (command.portalPaint) {
+        currentPortalPaint = command.portalPaint;
+    }
     if (map) {
+        setPortalPaint(currentPortalPaint.levelColorEnabled, currentPortalPaint.healthColorEnabled);
         map.resize();
         postEvent({ event: 'ready', view: getView(map) });
         return;
