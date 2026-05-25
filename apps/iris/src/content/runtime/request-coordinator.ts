@@ -1,4 +1,4 @@
-import { buildEntityRequestPayload, clampMapCamera, getCurrentViewPlextPortalRefreshHints, resolvePlextPortalRefreshHint, selectCommTopologyRefresh, selectKeyedRefreshBatch, useStore, type Plext, type PlextPortalRefreshHint } from '@iris/core';
+import { buildEntityRequestPayload, clampMapCamera, estimateBoundsE6FromPreviousViewport, getCurrentViewPlextPortalRefreshHints, resolvePlextPortalRefreshHint, selectCommTopologyRefresh, selectKeyedRefreshBatch, shouldBypassPlextCooldownForBoundsChange, useStore, type BoundsE6, type Plext, type PlextPortalRefreshHint } from '@iris/core';
 import { IRISMessage } from './message-types';
 import { IRIS_PAGE_MAP_MIN_ZOOM } from '../../shared/page-map-runtime-protocol';
 
@@ -67,6 +67,7 @@ export function createRequestCoordinator(): RequestCoordinator {
     let entityUnsub: (() => void) | null = null;
     let lastResumeRefreshAt = 0;
     let lastCommActivityEntityRefreshAt = 0;
+    let lastPlextRequestBounds: BoundsE6 | null = null;
     const commPortalDetailRefreshTimes = new Map<string, number>();
     const commPortalDetailPending = new Set<string>();
 
@@ -329,6 +330,7 @@ export function createRequestCoordinator(): RequestCoordinator {
         if (!basePayload) return;
 
         lastPlextRequestTime = now;
+        lastPlextRequestBounds = useStore.getState().mapState.bounds ?? null;
 
         if (msg.tab) {
             postMessage({
@@ -585,9 +587,16 @@ export function createRequestCoordinator(): RequestCoordinator {
                 bounds?: { minLatE6: number; minLngE6: number; maxLatE6: number; maxLngE6: number };
             };
 
+            const previousMapState = useStore.getState().mapState;
             const camera = clampMapCamera({lat: center.lat, lng: center.lng, zoom}, {minZoom: IRIS_PAGE_MAP_MIN_ZOOM});
+            const nextBounds = bounds ?? estimateBoundsE6FromPreviousViewport(
+                previousMapState.bounds,
+                previousMapState.zoom,
+                {lat: camera.lat, lng: camera.lng},
+                camera.zoom,
+            ) ?? undefined;
             postMessage({ type: 'IRIS_MOVE_MAP_INTERNAL', center: {lat: camera.lat, lng: camera.lng}, zoom: camera.zoom });
-            useStore.getState().updateMapState(camera.lat, camera.lng, camera.zoom, bounds);
+            useStore.getState().updateMapState(camera.lat, camera.lng, camera.zoom, nextBounds);
             entityRefreshGeneration += 1;
             postMessage({
                 type: 'IRIS_ENTITY_REFRESH_GENERATION',
@@ -606,10 +615,10 @@ export function createRequestCoordinator(): RequestCoordinator {
             }, ENTITY_MOVE_SETTLE_MS);
             setNextAutoRefresh('entities', Date.now() + ENTITY_MOVE_SETTLE_MS);
 
-            this.handlePlextsRequest({
-                type: 'IRIS_PLEXTS_REQUEST',
+            const currentPlextBounds = useStore.getState().mapState.bounds;
+            postPlextFetches({
                 minTimestampMs: -1,
-            });
+            }, shouldBypassPlextCooldownForBoundsChange(lastPlextRequestBounds, currentPlextBounds));
         },
 
         handleCurrentViewRefresh(reason): void {

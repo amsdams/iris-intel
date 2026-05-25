@@ -5,6 +5,7 @@ import {
   boundsToE6,
   degreesToE6,
   e6ToDegrees,
+  estimateBoundsE6FromPreviousViewport,
   isFiniteBoundsE6,
   normalizeLongitudeDegrees,
 } from './geo-bounds';
@@ -45,5 +46,33 @@ describe('geo bounds helpers', () => {
     expect(normalizeLongitudeDegrees(181)).toBe(-179);
     expect(normalizeLongitudeDegrees(-181)).toBe(179);
     expect(normalizeLongitudeDegrees(540)).toBe(-180);
+  });
+
+  it('estimates bounds around a new center from a previous viewport span', () => {
+    expect(estimateBoundsE6FromPreviousViewport(
+      {minLatE6: 52_000_000, minLngE6: 4_000_000, maxLatE6: 52_100_000, maxLngE6: 4_200_000},
+      15,
+      {lat: 48.8566, lng: 2.3522},
+      15,
+    )).toEqual({
+      minLatE6: 48_806_600,
+      minLngE6: 2_252_200,
+      maxLatE6: 48_906_600,
+      maxLngE6: 2_452_200,
+    });
+  });
+
+  it('scales estimated bounds when zoom changes', () => {
+    expect(estimateBoundsE6FromPreviousViewport(
+      {minLatE6: 52_000_000, minLngE6: 4_000_000, maxLatE6: 52_100_000, maxLngE6: 4_200_000},
+      15,
+      {lat: 48.8566, lng: 2.3522},
+      14,
+    )).toEqual({
+      minLatE6: 48_756_600,
+      minLngE6: 2_152_200,
+      maxLatE6: 48_956_600,
+      maxLngE6: 2_552_200,
+    });
   });
 });

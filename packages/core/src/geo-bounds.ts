@@ -74,3 +74,33 @@ export function boundsE6ContainsPoint(bounds: BoundsE6, point: LatLngE6): boolea
 export function boundsE6ContainsLatLng(bounds: BoundsE6, point: LatLngDegrees): boolean {
   return boundsE6ContainsPoint(bounds, latLngToE6(point));
 }
+
+function normalizeLongitudeE6(lngE6: number): number {
+  return degreesToE6(normalizeLongitudeDegrees(e6ToDegrees(lngE6)));
+}
+
+export function estimateBoundsE6FromPreviousViewport(
+  previousBounds: BoundsE6 | null | undefined,
+  previousZoom: number,
+  center: LatLngDegrees,
+  zoom: number,
+): BoundsE6 | null {
+  if (!previousBounds || !isFiniteBoundsE6(previousBounds)) return null;
+  if (!Number.isFinite(previousZoom) || !Number.isFinite(zoom)) return null;
+
+  const latSpan = Math.max(1, Math.abs(previousBounds.maxLatE6 - previousBounds.minLatE6));
+  const lngSpan = previousBounds.minLngE6 <= previousBounds.maxLngE6
+    ? previousBounds.maxLngE6 - previousBounds.minLngE6
+    : 360_000_000 - previousBounds.minLngE6 + previousBounds.maxLngE6;
+  const scale = Math.max(1 / 64, Math.min(64, 2 ** (previousZoom - zoom)));
+  const halfLatSpan = Math.max(1, Math.round((latSpan * scale) / 2));
+  const halfLngSpan = Math.max(1, Math.round((Math.max(1, lngSpan) * scale) / 2));
+  const centerE6 = latLngToE6(center);
+
+  return {
+    minLatE6: Math.max(-90_000_000, centerE6.latE6 - halfLatSpan),
+    minLngE6: normalizeLongitudeE6(centerE6.lngE6 - halfLngSpan),
+    maxLatE6: Math.min(90_000_000, centerE6.latE6 + halfLatSpan),
+    maxLngE6: normalizeLongitudeE6(centerE6.lngE6 + halfLngSpan),
+  };
+}
