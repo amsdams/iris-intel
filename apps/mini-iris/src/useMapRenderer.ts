@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'preact/hooks';
-import { useStore, globalSpatialIndex, getIngressPortalRadiusForZoom, getMinLevelForZoom, InventoryParser, buildArtifactPointFeature, buildFieldPolygonFeature, buildLinkLineFeatures, buildOrnamentPointFeature, buildPortalPointFeature, getPortalHistoryOverlayFlags, type InventoryItem, type PortalKeyCounts } from '@iris/core';
+import { useStore, globalSpatialIndex, getIngressPortalRadiusForZoom, getMinLevelForZoom, InventoryParser, buildArtifactPointFeature, buildFieldPolygonFeature, buildLinkLineFeatures, buildOrnamentPointFeature, buildPortalPointFeature, getPortalHistoryOverlayFlags, getVisiblePortalOrnaments, shouldRenderArtifactFeature, type InventoryItem, type PortalKeyCounts } from '@iris/core';
 import { MockDataGenerator } from './MockDataGenerator';
 import { createCirclePolygon } from './GeoUtils';
 import { INGRESS_COLORS } from './MapConstants';
@@ -186,9 +186,9 @@ export function useMapRenderer(
                         }
                     }
 
-                    if (store.layerShowArtifacts) {
+                    {
                         const artifact = currentLiveMode ? store.artifacts[p.id] : generator.artifacts.get(p.id);
-                        if (artifact) {
+                        if (shouldRenderArtifactFeature(artifact, p, store.layerShowArtifacts)) {
                             features.push(buildArtifactPointFeature(artifact, p, {
                                     id: `artifact:${p.id}`,
                                     type: 'artifact',
@@ -199,10 +199,10 @@ export function useMapRenderer(
                         }
                     }
 
-                    if (store.layerShowOrnaments) {
+                    {
                         const ornaments = currentLiveMode
-                            ? [...(p.ornaments || []), ...(store.mockOrnaments[p.id] || [])]
-                            : (p.ornaments || []);
+                            ? getVisiblePortalOrnaments(p, store.mockOrnaments, store.layerShowOrnaments)
+                            : getVisiblePortalOrnaments(p, {}, store.layerShowOrnaments);
                         if (ornaments.length > 0) {
                             features.push(buildOrnamentPointFeature(p, ornaments, {
                                     id: `ornament:${p.id}`,

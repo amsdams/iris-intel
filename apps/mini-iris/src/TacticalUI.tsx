@@ -9,7 +9,7 @@ import type { EndpointName, EndpointTelemetry } from './useEndpointTelemetry';
 import type { PortalHistoryKey, PortalHistoryLayerState } from './portalHistory';
 import type { MiniFrameStats, MiniRenderStats } from './diagnostics';
 import { MINI_IRIS_MONO_FONT } from './typography';
-import type { PlextDebugSnapshot } from './useIntelMessages';
+import type { PlextDebugSnapshot } from '@iris/core/plext-debug';
 
 interface EventLogEntry {
     time: string;

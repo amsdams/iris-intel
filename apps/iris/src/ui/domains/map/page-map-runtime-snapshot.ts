@@ -14,8 +14,9 @@ import {
     toFeatureCollection,
     buildWrappedLineSegments,
     getPortalHistoryOverlayFlags,
-    isPortalHealthBucketVisible,
-    matchesPortalHistoryFilters,
+    isFieldVisibleForDisplay,
+    isLinkVisibleForDisplay,
+    isPortalVisibleForDisplay,
     type PortalHistoryLayerState,
 } from '@iris/core';
 import {INGRESS_NEUTRAL_PORTAL_COLORS} from '@iris/core/ingress-map-style';
@@ -299,21 +300,14 @@ export function getMapThemeTiles(id: string): string[] {
     return [mapTheme.url];
 }
 
-function isTeamVisible(team: string, options: BuildPageMapRuntimeSnapshotOptions): boolean {
-    if (team === 'N') return options.filterShowUnclaimedPortals;
-    if (team === 'M') return options.filterShowMachina;
-    if (team === 'R') return options.filterShowResistance;
-    if (team === 'E') return options.filterShowEnlightened;
-    return true;
-}
-
 function isPortalVisible(portal: Portal, options: BuildPageMapRuntimeSnapshotOptions): boolean {
-    if (!isTeamVisible(portal.team, options)) return false;
-    if (portal.level !== undefined && !options.filterShowLevel[portal.level]) return false;
-
-    if (!isPortalHealthBucketVisible(portal.health, options.filterShowHealth)) return false;
-
-    return matchesPortalHistoryFilters(portal, {
+    return isPortalVisibleForDisplay(portal, {
+        showResistance: options.filterShowResistance,
+        showEnlightened: options.filterShowEnlightened,
+        showMachina: options.filterShowMachina,
+        showUnclaimedPortals: options.filterShowUnclaimedPortals,
+        showLevel: options.filterShowLevel,
+        showHealth: options.filterShowHealth,
         showVisited: options.filterShowVisited,
         showCaptured: options.filterShowCaptured,
         showScanned: options.filterShowScanned,
@@ -428,7 +422,13 @@ function buildLinkFeatureCollection(options: BuildPageMapRuntimeSnapshotOptions)
     return {
         type: 'FeatureCollection',
         features: Object.values(options.links)
-            .filter((link) => isTeamVisible(link.team, options))
+            .filter((link) => isLinkVisibleForDisplay(link, {
+                showLinks: options.layerShowLinks,
+                showResistance: options.filterShowResistance,
+                showEnlightened: options.filterShowEnlightened,
+                showMachina: options.filterShowMachina,
+                showUnclaimedPortals: options.filterShowUnclaimedPortals,
+            }))
             .flatMap((link): GeoJSON.Feature<GeoJSON.LineString>[] => buildLinkLineFeatures(link, {
                 color: getTeamColor(link.team, options),
             })),
@@ -439,7 +439,13 @@ function buildFieldFeatureCollection(options: BuildPageMapRuntimeSnapshotOptions
     return {
         type: 'FeatureCollection',
         features: Object.values(options.fields)
-            .filter((field) => isTeamVisible(field.team, options))
+            .filter((field) => isFieldVisibleForDisplay(field, {
+                showFields: options.layerShowFields,
+                showResistance: options.filterShowResistance,
+                showEnlightened: options.filterShowEnlightened,
+                showMachina: options.filterShowMachina,
+                showUnclaimedPortals: options.filterShowUnclaimedPortals,
+            }))
             .filter((field) => field.points.length >= 3)
             .map((field): GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon> => buildFieldPolygonFeature(field, {
                 color: getTeamColor(field.team, options),

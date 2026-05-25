@@ -10,8 +10,11 @@ import {
   buildLinkLineFeatures,
   buildOrnamentPointFeature,
   buildPortalPointFeature,
-  isPortalHealthBucketVisible,
-  matchesPortalHistoryFilters,
+  getVisiblePortalOrnaments,
+  isFieldVisibleForDisplay,
+  isLinkVisibleForDisplay,
+  isPortalVisibleForDisplay,
+  shouldRenderArtifactFeature,
 } from '@iris/core';
 
 type PortalFeatureProperties = {
@@ -76,22 +79,7 @@ export const buildPortalFeatures = (
 ): PortalFeature[] =>
   Object.values(portals)
     .filter((portal) => {
-      if (selectedPortalId && portal.id === selectedPortalId) return true;
-      if (portal.team === 'N') {
-        return filters.showUnclaimedPortals;
-      }
-      if (portal.team === 'M' && !filters.showMachina) return false;
-      if (portal.team === 'R' && !filters.showResistance) return false;
-      if (portal.team === 'E' && !filters.showEnlightened) return false;
-      if (portal.level !== undefined && !filters.showLevel[portal.level]) return false;
-
-      if (!isPortalHealthBucketVisible(portal.health, filters.showHealth)) return false;
-
-      return matchesPortalHistoryFilters(portal, {
-        showVisited: filters.showVisited,
-        showCaptured: filters.showCaptured,
-        showScanned: filters.showScanned,
-      });
+      return isPortalVisibleForDisplay(portal, filters, {selectedPortalId});
     })
     .map((portal) => buildPortalPointFeature(portal, {
         name: portal.name,
@@ -107,10 +95,7 @@ export const buildLinkFeatures = (
 ): LinkFeature[] =>
   Object.values(links)
     .filter((link) => {
-      if (!filters.showLinks) return false;
-      if (link.team === 'R' && !filters.showResistance) return false;
-      if (link.team === 'E' && !filters.showEnlightened) return false;
-      return !(link.team === 'M' && !filters.showMachina);
+      return isLinkVisibleForDisplay(link, filters);
     })
     .flatMap((link) => buildLinkLineFeatures(link)
       .map((feature) => ({
@@ -124,10 +109,7 @@ export const buildFieldFeatures = (
 ): FieldFeature[] =>
   Object.values(fields)
     .filter((field) => {
-      if (!filters.showFields) return false;
-      if (field.team === 'R' && !filters.showResistance) return false;
-      if (field.team === 'E' && !filters.showEnlightened) return false;
-      return !(field.team === 'M' && !filters.showMachina);
+      return isFieldVisibleForDisplay(field, filters);
     })
     .map((field) => ({
       ...buildFieldPolygonFeature(field),
@@ -139,11 +121,10 @@ export const buildArtifactFeatures = (
   portals: Record<string, Portal>,
   filters: ArtifactFilters
 ): ArtifactFeature[] =>
-  (!filters.showArtifacts ? [] :
   Object.values(artifacts)
     .map((artifact) => {
       const portal = portals[artifact.portalId];
-      if (!portal) return null;
+      if (!shouldRenderArtifactFeature(artifact, portal, filters.showArtifacts)) return null;
 
       return buildArtifactPointFeature(artifact, portal, {
           portalId: artifact.portalId,
@@ -151,38 +132,27 @@ export const buildArtifactFeatures = (
           ids: artifact.ids,
         }) as ArtifactFeature;
     })
-    .filter((f): f is ArtifactFeature => f !== null));
+    .filter((f): f is ArtifactFeature => f !== null);
 
 export const buildOrnamentFeatures = (
   portals: Record<string, Portal>,
   mockOrnaments: Record<string, string[]>,
   filters: OrnamentFilters
 ): OrnamentFeature[] =>
-  (!filters.showOrnaments ? [] :
   Object.values(portals)
     .filter((portal) => {
-      const ornaments = [...(portal.ornaments || []), ...(mockOrnaments[portal.id] || [])];
+      const ornaments = getVisiblePortalOrnaments(portal, mockOrnaments, filters.showOrnaments);
       if (ornaments.length === 0) return false;
-      if (portal.team === 'N') {
-        return filters.showUnclaimedPortals;
-      }
-      if (portal.team === 'M' && !filters.showMachina) return false;
-      if (portal.team === 'R' && !filters.showResistance) return false;
-      if (portal.team === 'E' && !filters.showEnlightened) return false;
-      if (portal.level !== undefined && !filters.showLevel[portal.level]) return false;
-
-      if (!isPortalHealthBucketVisible(portal.health, filters.showHealth)) return false;
-
-      return true;
+      return isPortalVisibleForDisplay(portal, filters);
     })
     .map((portal) => {
-      const ornaments = [...(portal.ornaments || []), ...(mockOrnaments[portal.id] || [])];
+      const ornaments = getVisiblePortalOrnaments(portal, mockOrnaments, filters.showOrnaments);
       return buildOrnamentPointFeature(portal, ornaments, {
         portalId: portal.id,
         team: portal.team,
         ornaments,
       }) as OrnamentFeature;
-    }));
+    });
 
 export const buildMissionRouteFeatures = (mission: MissionDetails | null): MissionRouteFeature[] => {
   if (!mission) return [];

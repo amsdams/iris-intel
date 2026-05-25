@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'preact/hooks';
 import { useStore, EntityParser, GameScoreParser, RegionScoreParser, InventoryParser, PlayerParser, PlextParser, ArtifactParser, createPortalDetailsRequestMessage, extractPlextPortalRefreshHints, mergePortalDetailsForStore, resolvePlextPortalRefreshHint, selectKeyedRefreshBatch, Portal, Link, Field } from '@iris/core';
-import type { ArtifactData, GameScoreData, IntelMapData, InventoryData, Plext, PlextData, PortalDetailsData, RegionScoreData, PlayerStatsMessage as CorePlayerStatsMessage } from '@iris/core';
+import { buildPlextDebugSnapshot, type PlextDebugSnapshot } from '@iris/core/plext-debug';
+import type { ArtifactData, GameScoreData, IntelMapData, InventoryData, PlextData, PortalDetailsData, RegionScoreData, PlayerStatsMessage as CorePlayerStatsMessage } from '@iris/core';
 import { isIrisDataMessage, isRecord, numberOrNull, stringOrNull } from './messages';
 
 const PLEXT_PORTAL_DETAILS_COOLDOWN_MS = 30_000;
@@ -8,12 +9,6 @@ const PLEXT_PORTAL_HINT_MAX_AGE_MS = 3 * 60 * 60 * 1000;
 const PLEXT_PORTAL_DETAILS_MAX_PER_BATCH = 5;
 const PLEXT_PORTAL_DETAILS_PENDING_TIMEOUT_MS = 45_000;
 const PLEXT_RAW_DEBUG_MAX_CHARS = 120_000;
-
-export interface PlextDebugSnapshot {
-    capturedAt: string;
-    raw: string;
-    parsed: string;
-}
 
 export function useIntelMessages(
     liveMode: boolean,
@@ -156,7 +151,11 @@ export function useIntelMessages(
             } else if (msg.url.includes('getPlexts')) {
                 const store = useStore.getState();
                 const plexts = PlextParser.parse(msg.data as PlextData);
-                onPlextDebugSnapshot?.(buildPlextDebugSnapshot(msg.data, msg.params, plexts));
+                onPlextDebugSnapshot?.(buildPlextDebugSnapshot(msg.data, msg.params, plexts, {
+                    title: 'Mini-IRIS COMM parsed snapshot',
+                    maxAgeMs: PLEXT_PORTAL_HINT_MAX_AGE_MS,
+                    maxRawChars: PLEXT_RAW_DEBUG_MAX_CHARS,
+                }));
                 if (plexts.length > 0) {
                     store.updatePlexts(plexts);
                     logEvent(`COMM: ${plexts.length} messages`);
@@ -184,43 +183,6 @@ interface PlayerStatsMessage {
 }
 
 type SelectedEntity = { type: 'portal'; data: Portal } | { type: 'link'; data: Link } | { type: 'field'; data: Field };
-
-function buildPlextDebugSnapshot(data: unknown, params: unknown, plexts: Plext[]): PlextDebugSnapshot {
-    const capturedAt = new Date().toLocaleTimeString();
-    const hints = extractPlextPortalRefreshHints(plexts, { maxAgeMs: PLEXT_PORTAL_HINT_MAX_AGE_MS });
-    const raw = truncateDebugText(JSON.stringify({ capturedAt, params, data }, null, 2), PLEXT_RAW_DEBUG_MAX_CHARS);
-    const parsedLines = [
-        `Mini-IRIS COMM parsed snapshot @ ${capturedAt}`,
-        `plexts ${plexts.length}`,
-        `refreshHints ${hints.length}`,
-        ...hints.map((hint, index) => `hint ${index + 1}: ${hint.name ?? '-'} @ ${hint.latE6},${hint.lngE6} reason=${hint.reason} plext=${hint.plextId}`),
-        '',
-        ...plexts.map(formatPlextForDebug),
-    ];
-    return { capturedAt, raw, parsed: parsedLines.join('\n') };
-}
-
-function truncateDebugText(value: string, maxChars: number): string {
-    if (value.length <= maxChars) return value;
-    return `${value.slice(0, maxChars)}\n... truncated ${value.length - maxChars} chars`;
-}
-
-function formatPlextForDebug(plext: Plext, index: number): string {
-    const timestamp = Number.isFinite(plext.time) ? new Date(plext.time).toLocaleTimeString() : String(plext.time);
-    const markup = plext.markup
-        .map(([kind, value]) => {
-            const label = value.name ?? value.plain ?? value.team ?? '-';
-            const coords = typeof value.latE6 === 'number' && typeof value.lngE6 === 'number' ? ` @ ${value.latE6},${value.lngE6}` : '';
-            const address = value.address ? ` (${value.address})` : '';
-            return `${kind}:${label}${coords}${address}`;
-        })
-        .join(' | ');
-    return [
-        `${index + 1}. ${timestamp} ${plext.type} team=${plext.team} categories=${plext.categories} id=${plext.id}`,
-        `text: ${plext.text}`,
-        `markup: ${markup || '-'}`,
-    ].join('\n');
-}
 
 function isPlayerStatsMessage(value: unknown): value is PlayerStatsMessage {
     return isRecord(value)
