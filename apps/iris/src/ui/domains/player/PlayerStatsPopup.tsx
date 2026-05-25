@@ -1,5 +1,5 @@
 import { h, JSX } from 'preact';
-import { useStore } from '@iris/core';
+import { formatActionPoints, getPlayerLevelProgress, useStore } from '@iris/core';
 import { Popup } from '../../shared/Popup';
 import { THEMES, UI_COLORS } from '../../theme';
 import './player.css';
@@ -19,6 +19,11 @@ export function PlayerStatsPopup({ onClose }: PlayerStatsPopupProps): JSX.Elemen
 
     const team = (playerStats?.team as 'E' | 'R' | 'M' | 'N') || 'N';
     const colour = theme[team] || UI_COLORS.TEXT_BASE;
+    const levelProgress = playerStats ? getPlayerLevelProgress({
+        ap: playerStats.ap,
+        minApForCurrentLevel: playerStats.min_ap_for_current_level,
+        minApForNextLevel: playerStats.min_ap_for_next_level,
+    }) : null;
 
     return (
         <Popup
@@ -46,7 +51,7 @@ export function PlayerStatsPopup({ onClose }: PlayerStatsPopupProps): JSX.Elemen
                             <div className="iris-player-meta-row">
                                 <span>Level {playerStats.level}</span>
                                 {playerStats.ap !== null && (
-                                    <span className="iris-player-ap">{playerStats.ap.toLocaleString()} AP</span>
+                                    <span className="iris-player-ap">{formatActionPoints(playerStats.ap)} AP</span>
                                 )}
                             </div>
 
@@ -68,23 +73,21 @@ export function PlayerStatsPopup({ onClose }: PlayerStatsPopupProps): JSX.Elemen
                                 </div>
                             )}
 
-                            {playerStats.min_ap_for_next_level !== undefined && playerStats.min_ap_for_next_level > 0 && (
+                            {levelProgress?.hasNextLevel && playerStats.min_ap_for_next_level !== undefined && (
                                 <div className="iris-stats-progress">
                                     <div className="iris-stats-label-row">
                                         <span>Next Level</span>
-                                        <span>{playerStats.min_ap_for_next_level.toLocaleString()} AP</span>
+                                        <span>{formatActionPoints(playerStats.min_ap_for_next_level)} AP</span>
                                     </div>
-                                    {playerStats.ap !== null && playerStats.min_ap_for_current_level !== undefined && (
-                                        <div className="iris-stats-bar-bg">
-                                            <div 
-                                                className="iris-stats-bar-fill"
-                                                style={{ 
-                                                    '--iris-progress': `${Math.min(100, ((playerStats.ap - playerStats.min_ap_for_current_level) / (playerStats.min_ap_for_next_level - playerStats.min_ap_for_current_level)) * 100)}%`, 
-                                                    '--iris-progress-color': colour,
-                                                } as Record<string, string>} 
-                                            />
-                                        </div>
-                                    )}
+                                    <div className="iris-stats-bar-bg">
+                                        <div
+                                            className="iris-stats-bar-fill"
+                                            style={{
+                                                '--iris-progress': `${levelProgress.percent}%`,
+                                                '--iris-progress-color': colour,
+                                            } as Record<string, string>}
+                                        />
+                                    </div>
                                 </div>
                             )}
 

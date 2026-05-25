@@ -21,10 +21,6 @@ export function formatMU(val: number): string {
     return val.toString();
 }
 
-export function formatAP(val: number): string {
-    return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
-
 export function debounce<T extends (...args: never[]) => unknown>(fn: T, delay: number): (...args: Parameters<T>) => void {
     let timeoutId: number | null = null;
     return (...args: Parameters<T>): void => {

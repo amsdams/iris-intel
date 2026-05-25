@@ -8,6 +8,7 @@ export * from './requests/entities';
 export * from './requests/extension-messages';
 export * from './requests/plext';
 export * from './player-tracker';
+export * from './player-display';
 export * from './portal-details';
 export * from './portal-history';
 export * from './safe-storage';

@@ -1,8 +1,8 @@
 import { h, JSX } from 'preact';
 import { useMemo } from 'preact/hooks';
-import { Field, Link, Portal, useStore, InventoryParser, Plext, normalizeTeam, createInventoryRequestMessage, createPlextRequestMessage, type PlextRequestBounds } from '@iris/core';
+import { Field, Link, Portal, useStore, InventoryParser, Plext, normalizeTeam, createInventoryRequestMessage, createPlextRequestMessage, formatActionPoints, getPlayerLevelProgress, type PlextRequestBounds } from '@iris/core';
 import { COLORS, INGRESS_COLORS } from './MapConstants';
-import { formatMU, formatAP } from './GeoUtils';
+import { formatMU } from './GeoUtils';
 import { CommTab } from './useComm';
 import type { PlayerHistory } from './usePlayerTracker';
 import { Dashboard } from './Dashboard';
@@ -24,6 +24,11 @@ interface DataDockProps {
 
 export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPortalClick, plextBounds, playerHistories, selected }: DataDockProps): JSX.Element {
     const { gameScore, regionScore, playerStats, hasSubscription, inventory, plexts } = useStore();
+    const playerLevelProgress = playerStats ? getPlayerLevelProgress({
+        ap: playerStats.ap,
+        minApForCurrentLevel: playerStats.min_ap_for_current_level,
+        minApForNextLevel: playerStats.min_ap_for_next_level,
+    }) : null;
 
     // 1. Inventory Stats
     const derivedItems = useMemo(() => {
@@ -176,13 +181,13 @@ export function DataDock({ openDrawer, onToggle, commTab, onCommTabChange, onPor
                             <div style={{ background: '#1a1a1a', padding: '10px', borderRadius: '8px', marginBottom: '10px', border: '1px solid #333' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                                     <span style={{ color: '#888', fontSize: '11px' }}>LEVEL {playerStats.level}</span>
-                                    <span style={{ color: '#fff', fontSize: '11px', fontWeight: 'bold' }}>{formatAP(playerStats.ap || 0)} AP</span>
+                                    <span style={{ color: '#fff', fontSize: '11px', fontWeight: 'bold' }}>{formatActionPoints(playerStats.ap)} AP</span>
                                 </div>
-                                {playerStats.min_ap_for_next_level && playerStats.min_ap_for_next_level > 0 ? (
+                                {playerLevelProgress?.hasNextLevel ? (
                                     <div style={{ width: '100%', height: '6px', background: '#333', borderRadius: '3px', overflow: 'hidden' }}>
-                                        <div style={{ 
-                                            width: `${Math.min(100, ((playerStats.ap || 0) - (playerStats.min_ap_for_current_level || 0)) / ((playerStats.min_ap_for_next_level || 0) - (playerStats.min_ap_for_current_level || 0)) * 100)}%`, 
-                                            height: '100%', 
+                                        <div style={{
+                                            width: `${playerLevelProgress.percent}%`,
+                                            height: '100%',
                                             background: COLORS[normalizeTeam(playerStats.team) as keyof typeof COLORS] || INGRESS_COLORS.XM,
                                             boxShadow: '0 0 10px rgba(0,255,255,0.5)'
                                         }}></div>
