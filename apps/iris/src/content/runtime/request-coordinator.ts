@@ -1,4 +1,4 @@
-import { batchEntityTileKeys, buildEntityRequestPayload, clampMapCamera, estimateBoundsE6FromPreviousViewport, getCurrentViewPlextPortalRefreshHints, resolvePlextPortalRefreshHint, selectCommTopologyRefresh, selectKeyedRefreshBatch, shouldBypassPlextCooldownForBoundsChange, useStore, type BoundsE6, type Plext, type PlextPortalRefreshHint } from '@iris/core';
+import { batchEntityTileKeys, buildEntityRequestPayload, clampMapCamera, estimateBoundsE6FromPreviousViewport, evaluateEndpointRequestGate, getCurrentViewPlextPortalRefreshHints, resolvePlextPortalRefreshHint, selectCommTopologyRefresh, selectKeyedRefreshBatch, shouldBypassPlextCooldownForBoundsChange, useStore, type BoundsE6, type Plext, type PlextPortalRefreshHint } from '@iris/core';
 import { IRISMessage } from './message-types';
 import { IRIS_PAGE_MAP_MIN_ZOOM } from '../../shared/page-map-runtime-protocol';
 
@@ -165,12 +165,21 @@ export function createRequestCoordinator(): RequestCoordinator {
             lastCoverageKey: payload.coverageKey,
         });
 
-        const isSameCoverage = payload.coverageKey === lastEntityCoverageKey;
         const forceRefresh = reason === 'manual' || reason === 'comm_activity';
-        const shouldSkipForFreshness = !forceRefresh && isSameCoverage && isEndpointFresh('entities', ENTITY_FRESHNESS_TTL_MS);
+        const entitiesDiagnostics = getEndpointDiagnostics('entities');
+        const requestGate = reason === 'retry'
+            ? {shouldRun: true as const, skipReason: null, nextRefreshAt: null}
+            : evaluateEndpointRequestGate({
+                key: payload.coverageKey,
+                force: forceRefresh,
+                inFlightKeys: entitiesDiagnostics.status === 'in_flight' ? new Set([payload.coverageKey]) : undefined,
+                lastSuccessKey: lastEntityCoverageKey,
+                lastSuccessAt: entitiesDiagnostics.lastSuccessAt,
+                freshnessMs: ENTITY_FRESHNESS_TTL_MS,
+            });
 
-        if (reason !== 'retry' && (isEndpointInFlight('entities') || shouldSkipForFreshness)) {
-            const skipReason = isEndpointInFlight('entities') ? 'in-flight' : 'cooldown';
+        if (!requestGate.shouldRun) {
+            const skipReason = requestGate.skipReason === 'fresh' ? 'cooldown' : requestGate.skipReason;
             useStore.getState().setEndpointMetadata('entities', { lastSkipReason: skipReason });
             if (debugLogging) {
                 console.log(`IRIS: Skipping entities fetch (${reason}): ${skipReason}`);
