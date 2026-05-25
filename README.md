@@ -106,8 +106,8 @@ Command semantics:
 
 Package outputs:
 
-- IRIS unpacked builds: `npm run build:iris` writes the Chrome build to `apps/iris/dist`; `npm run package:iris`
-  refreshes both `apps/iris/dist` and `apps/iris/dist-firefox` before packaging.
+- IRIS unpacked builds: `npm run build:iris` writes the Chrome build to `apps/iris/dist/chrome`; `npm run package:iris`
+  refreshes both `apps/iris/dist/chrome` and `apps/iris/dist/firefox` before packaging.
 - IRIS packages: `apps/iris/builds/iris-chrome-<version>-<timestamp>.zip` and `apps/iris/builds/iris-firefox-<version>-<timestamp>.xpi`.
 - mini-IRIS unpacked build: `apps/mini-iris/dist`.
 - mini-IRIS packages: `apps/mini-iris/builds/mini-iris-chrome-<version>-<timestamp>.zip` and `apps/mini-iris/builds/mini-iris-firefox-<version>-<timestamp>.xpi`.
@@ -132,14 +132,14 @@ npm run build
 1. Open `chrome://extensions`
 2. Enable **Developer mode** (top right)
 3. Click **Load unpacked**
-4. Select the `apps/iris/dist` folder
+4. Select the `apps/iris/dist/chrome` folder
 5. Navigate to `https://intel.ingress.com`
 
 ### Load in Firefox
 
 1. Open `about:debugging`
 2. Click **This Firefox** → **Load Temporary Add-on**
-3. Select `apps/iris/dist-firefox/manifest.json` (Note: Use `dist-firefox` for Firefox-specific builds)
+3. Select `apps/iris/dist/firefox/manifest.json` (Note: Use `dist/firefox` for Firefox-specific builds)
 
 ---
 

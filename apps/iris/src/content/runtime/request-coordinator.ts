@@ -1,5 +1,6 @@
-import { boundsE6ContainsPoint, buildEntityRequestPayload, extractPlextPortalRefreshHints, resolvePlextPortalRefreshHint, selectKeyedRefreshBatch, useStore, type Plext, type PlextPortalRefreshHint } from '@iris/core';
+import { boundsE6ContainsPoint, buildEntityRequestPayload, clampMapCamera, extractPlextPortalRefreshHints, resolvePlextPortalRefreshHint, selectKeyedRefreshBatch, useStore, type Plext, type PlextPortalRefreshHint } from '@iris/core';
 import { IRISMessage } from './message-types';
+import { IRIS_PAGE_MAP_MIN_ZOOM } from '../../shared/page-map-runtime-protocol';
 
 const PLEXT_COOLDOWN_MS = 5000;
 
@@ -589,8 +590,9 @@ export function createRequestCoordinator(): RequestCoordinator {
                 bounds?: { minLatE6: number; minLngE6: number; maxLatE6: number; maxLngE6: number };
             };
 
-            postMessage({ type: 'IRIS_MOVE_MAP_INTERNAL', center, zoom });
-            useStore.getState().updateMapState(center.lat, center.lng, zoom, bounds);
+            const camera = clampMapCamera({lat: center.lat, lng: center.lng, zoom}, {minZoom: IRIS_PAGE_MAP_MIN_ZOOM});
+            postMessage({ type: 'IRIS_MOVE_MAP_INTERNAL', center: {lat: camera.lat, lng: camera.lng}, zoom: camera.zoom });
+            useStore.getState().updateMapState(camera.lat, camera.lng, camera.zoom, bounds);
             entityRefreshGeneration += 1;
             postMessage({
                 type: 'IRIS_ENTITY_REFRESH_GENERATION',

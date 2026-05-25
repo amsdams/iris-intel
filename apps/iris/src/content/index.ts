@@ -17,7 +17,9 @@ import {
   PlayerStatsMessage,
   PasscodeResponseData,
   IntelInventoryItemData,
-  boundsE6ContainsLatLng
+  boundsE6ContainsLatLng,
+  clampMapCamera,
+  isUsableMapCamera
 } from '@iris/core';
 import PortalNamesPlugin from '../../../../packages/plugins/src/portal-names';
 import ThemeSelectorPlugin from '../../../../packages/plugins/src/theme-selector';
@@ -46,6 +48,7 @@ import mockPasscodeData from './domains/passcodes/mock.passcode.json';
 import { IRISMessage } from './runtime/message-types';
 import { createRequestCoordinator } from './runtime/request-coordinator';
 import { INGRESS_TEAM_COLORS } from '@iris/core/ingress-map-style';
+import { IRIS_PAGE_MAP_MIN_ZOOM } from '../shared/page-map-runtime-protocol';
 
 declare global {
   interface Window {
@@ -71,20 +74,6 @@ const MOCK_PLAYER_TRACKER_PLUGIN_ID = 'debug-mock-player-tracker';
 const MOCK_PLAYER_ACTIVITY_PLEXT_PREFIX = 'mock-player-activity:';
 const IRIS_SETTINGS_STORAGE_KEY = 'iris-settings';
 
-function isFiniteMapPosition(position: { lat: number; lng: number; zoom: number }): boolean {
-  return Number.isFinite(position.lat)
-    && Number.isFinite(position.lng)
-    && Number.isFinite(position.zoom)
-    && Math.abs(position.lat) <= 90
-    && Math.abs(position.lng) <= 180
-    && position.zoom >= 0
-    && position.zoom <= 21;
-}
-
-function isNullIslandFallback(position: { lat: number; lng: number }): boolean {
-  return Math.abs(position.lat) < 1 && Math.abs(position.lng) < 1;
-}
-
 function readPersistedMapPosition(): { lat: number; lng: number; zoom: number } | null {
   try {
     const raw = window.localStorage.getItem(IRIS_SETTINGS_STORAGE_KEY);
@@ -101,7 +90,7 @@ function readPersistedMapPosition(): { lat: number; lng: number; zoom: number } 
     }
 
     const position = { lat: mapState.lat, lng: mapState.lng, zoom: mapState.zoom };
-    return isFiniteMapPosition(position) && !isNullIslandFallback(position) ? position : null;
+    return isUsableMapCamera(position) ? clampMapCamera(position, {minZoom: IRIS_PAGE_MAP_MIN_ZOOM}) : null;
   } catch {
     return null;
   }
@@ -524,7 +513,8 @@ window.addEventListener('message', (event: MessageEvent) => {
       // it's likely just Intel snapping to integer zoom levels.
       // We keep our fractional zoom to avoid the "bounce" effect.
       const targetZoom = (Math.abs(currentZoom - zoom) < 0.5) ? currentZoom : zoom;
-      state.updateMapState(lat, lng, targetZoom);
+      const camera = clampMapCamera({lat, lng, zoom: targetZoom}, {minZoom: IRIS_PAGE_MAP_MIN_ZOOM});
+      state.updateMapState(camera.lat, camera.lng, camera.zoom);
       break;
     }
     case 'IRIS_DISCOVERED_LOCATION': {

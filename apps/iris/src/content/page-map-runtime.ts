@@ -9,8 +9,10 @@ import {
     type FrameSampleSnapshot,
 } from '@iris/core/benchmark-frames';
 import {boundsToE6} from '@iris/core/geo-bounds';
+import {clampMapCamera} from '@iris/core/map-camera';
 import { INGRESS_ENTITY_STYLE, INGRESS_MISC_COLORS } from '@iris/core/ingress-map-style';
 import {
+    IRIS_PAGE_MAP_MIN_ZOOM,
     PAGE_MAP_RUNTIME_MESSAGES,
     PageMapRuntimeBounds,
     PageMapRuntimeCamera,
@@ -651,6 +653,7 @@ function getPageMap(): Promise<maplibregl.Map> {
             },
             center: [0, 0],
             zoom: 2,
+            minZoom: IRIS_PAGE_MAP_MIN_ZOOM,
             interactive: true,
             attributionControl: false,
         });
@@ -706,11 +709,11 @@ function getPageMap(): Promise<maplibregl.Map> {
 
 function getMapCamera(map: maplibregl.Map): PageMapRuntimeCamera {
     const center = map.getCenter();
-    return {
+    return clampMapCamera({
         lat: center.lat,
         lng: center.lng,
         zoom: map.getZoom(),
-    };
+    }, {minZoom: IRIS_PAGE_MAP_MIN_ZOOM});
 }
 
 function getMapBounds(map: maplibregl.Map): PageMapRuntimeBounds {
@@ -736,10 +739,11 @@ function postCameraChanged(map: maplibregl.Map, label = 'MAP CAMERA CHANGED'): v
 }
 
 function syncMapCamera(map: maplibregl.Map, camera: PageMapRuntimeCamera): void {
+    const clampedCamera = clampMapCamera(camera, {minZoom: IRIS_PAGE_MAP_MIN_ZOOM});
     suppressNextCameraChangedEvent = true;
     map.jumpTo({
-        center: [camera.lng, camera.lat],
-        zoom: camera.zoom,
+        center: [clampedCamera.lng, clampedCamera.lat],
+        zoom: clampedCamera.zoom,
     });
     window.setTimeout(() => {
         suppressNextCameraChangedEvent = false;

@@ -1,6 +1,6 @@
 import { h, JSX } from 'preact';
 import { useState, useEffect, useCallback, useRef } from 'preact/hooks';
-import { MapPerfSnapshot, useStore } from '@iris/core';
+import { clampMapCamera, MapPerfSnapshot, useStore } from '@iris/core';
 import { PlayerStatsPopup } from './domains/player/PlayerStatsPopup';
 import { DiagnosticsPopup } from './domains/debug/DiagnosticsPopup';
 import { PortalInfoPopup } from './domains/portal/PortalInfoPopup';
@@ -29,6 +29,7 @@ import { MockToolsBar } from './shared/MockToolsBar';
 import { PlanningBar } from './shared/PlanningBar';
 import { useRenderDiagnostics } from './shared/useRenderDiagnostics';
 import {
+    IRIS_PAGE_MAP_MIN_ZOOM,
     PAGE_MAP_RUNTIME_MESSAGES,
     PageMapRuntimeCameraChangedMessage,
     PageMapRuntimeSelectionMessage,
@@ -547,7 +548,7 @@ export function IRISOverlay(): JSX.Element {
         const handler = (event: MessageEvent<unknown>): void => {
             if (event.origin !== location.origin) return;
             if (isPageRuntimeCameraChangedMessage(event.data)) {
-                const camera = event.data.camera;
+                const camera = clampMapCamera(event.data.camera, {minZoom: IRIS_PAGE_MAP_MIN_ZOOM});
                 if (showMap) {
                     window.postMessage({
                         type: 'IRIS_MOVE_MAP',
@@ -849,12 +850,13 @@ export function IRISOverlay(): JSX.Element {
                     window.clearTimeout(timeout);
                 }
                 timeout = window.setTimeout(() => {
+                    const camera = clampMapCamera(mapState, {minZoom: IRIS_PAGE_MAP_MIN_ZOOM});
                     window.postMessage({
                         type: PAGE_MAP_RUNTIME_MESSAGES.syncCamera,
                         camera: {
-                            lat: mapState.lat,
-                            lng: mapState.lng,
-                            zoom: mapState.zoom,
+                            lat: camera.lat,
+                            lng: camera.lng,
+                            zoom: camera.zoom,
                         },
                     }, '*');
                     timeout = null;

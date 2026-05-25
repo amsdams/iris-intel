@@ -41,6 +41,6 @@ export default defineConfig(({mode}) => ({
         __IRIS_GIT_SHA__: JSON.stringify(shortGitSha),
     },
     build: {
-        outDir: mode === 'firefox' ? 'dist-firefox' : 'dist',
+        outDir: mode === 'firefox' ? 'dist/firefox' : 'dist/chrome',
     },
 }));

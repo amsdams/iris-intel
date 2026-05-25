@@ -15,6 +15,8 @@ export const PAGE_MAP_RUNTIME_MESSAGES = {
     selection: 'IRIS_PAGE_MAP_RUNTIME_SELECTION',
 } as const;
 
+export const IRIS_PAGE_MAP_MIN_ZOOM = 3;
+
 export type PageMapRuntimeSelectionKind = 'portal' | 'link' | 'field' | 'planned-link' | 'planned-marker' | 'plugin-feature';
 
 export interface PageMapRuntimeCamera {

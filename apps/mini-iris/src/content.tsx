@@ -1,7 +1,7 @@
 import { render, h, Fragment } from 'preact';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'preact/hooks';
 import { MockDataGenerator } from './MockDataGenerator';
-import { useStore, getMinLevelForZoom, getGridSizeForZoom, boundsToE6, addFrameDelta, createFrameSampleAccumulator, formatCompactEndpointActivityMessage, resetFrameSampleAccumulator, Portal, Link, Field, type InventoryItem, type PlextRequestBounds } from '@iris/core';
+import { useStore, getMinLevelForZoom, getGridSizeForZoom, boundsToE6, addFrameDelta, createFrameSampleAccumulator, formatCompactEndpointActivityMessage, isUsableMapCamera, resetFrameSampleAccumulator, Portal, Link, Field, type InventoryItem, type PlextRequestBounds } from '@iris/core';
 import { TacticalUI } from './TacticalUI';
 import { MAP_STYLES, type MapStyleName } from './MapConstants';
 import { LaunchButton } from './LaunchButton';
@@ -88,11 +88,12 @@ function readSavedMapState(): SavedMapState | null {
             return null;
         }
 
-        return {
+        const saved = {
             lat: parsed.lat,
             lng: parsed.lng,
             zoom: parsed.zoom,
         };
+        return isUsableMapCamera(saved) ? saved : null;
     } catch {
         return null;
     }

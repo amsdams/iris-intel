@@ -30,8 +30,8 @@ try {
     const version = packageJson.version;
     const rootDir = __dirname;
     const buildsDir = path.join(rootDir, 'builds');
-    const chromeDistDir = path.join(rootDir, 'dist');
-    const firefoxDistDir = path.join(rootDir, 'dist-firefox');
+    const chromeDistDir = path.join(rootDir, 'dist', 'chrome');
+    const firefoxDistDir = path.join(rootDir, 'dist', 'firefox');
 
     fs.rmSync(buildsDir, {recursive: true, force: true});
     fs.mkdirSync(buildsDir, {recursive: true});
