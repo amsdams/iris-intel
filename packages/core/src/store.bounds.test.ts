@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useStore } from './store';
 
-describe('updateMapState', () => {
+describe('map state updates', () => {
   beforeEach(async () => {
     localStorage.clear();
     useStore.persist.clearStorage();
@@ -17,7 +17,7 @@ describe('updateMapState', () => {
     }));
   });
 
-  it('preserves existing bounds when an update omits bounds', () => {
+  it('preserves existing bounds for camera-only updates', () => {
     const initialBounds = {
       minLatE6: 1,
       minLngE6: 2,
@@ -25,10 +25,10 @@ describe('updateMapState', () => {
       maxLngE6: 4,
     };
 
-    useStore.getState().updateMapState(10, 20, 12, initialBounds);
+    useStore.getState().updateMapViewport(10, 20, 12, initialBounds);
     expect(useStore.getState().mapState.bounds).toEqual(initialBounds);
 
-    useStore.getState().updateMapState(11, 21, 13);
+    useStore.getState().updateMapCamera(11, 21, 13);
 
     expect(useStore.getState().mapState.lat).toBe(11);
     expect(useStore.getState().mapState.lng).toBe(21);
@@ -36,7 +36,7 @@ describe('updateMapState', () => {
     expect(useStore.getState().mapState.bounds).toEqual(initialBounds);
   });
 
-  it('does not replace map state for identical view updates', () => {
+  it('does not replace map state for identical viewport updates', () => {
     const bounds = {
       minLatE6: 1,
       minLngE6: 2,
@@ -44,10 +44,10 @@ describe('updateMapState', () => {
       maxLngE6: 4,
     };
 
-    useStore.getState().updateMapState(10, 20, 12, bounds);
+    useStore.getState().updateMapViewport(10, 20, 12, bounds);
     const previousMapState = useStore.getState().mapState;
 
-    useStore.getState().updateMapState(10, 20, 12, bounds);
+    useStore.getState().updateMapViewport(10, 20, 12, bounds);
 
     expect(useStore.getState().mapState).toBe(previousMapState);
   });

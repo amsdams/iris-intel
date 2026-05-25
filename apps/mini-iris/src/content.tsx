@@ -1,7 +1,7 @@
 import { render, h, Fragment } from 'preact';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'preact/hooks';
 import { MockDataGenerator } from './MockDataGenerator';
-import { useStore, getMinLevelForZoom, getGridSizeForZoom, boundsToE6, addFrameDelta, batchEntityTileKeys, buildEntityRequestPayload, createArtifactsRequestMessage, createEntitiesRequestMessage, createFrameSampleAccumulator, createInventoryRequestMessage, createPortalDetailsRequestMessage, formatCompactEndpointActivityMessage, parseEndpointStateTelemetry, parseMapCamera, parsePortalHistoryLayerState, parseStringChoice, readStorageBoolean, readStorageJson, readStorageString, resetFrameSampleAccumulator, selectCommTopologyRefresh, writeStorageBoolean, writeStorageJson, writeStorageString, Portal, Link, Field, type InventoryItem, type PlextRequestBounds } from '@iris/core';
+import { useStore, getMinLevelForZoom, getGridSizeForZoom, boundsToE6, addFrameDelta, applyMapCameraUpdate, applyMapViewportUpdate, batchEntityTileKeys, buildEntityRequestPayload, createArtifactsRequestMessage, createEntitiesRequestMessage, createFrameSampleAccumulator, createInventoryRequestMessage, createPortalDetailsRequestMessage, formatCompactEndpointActivityMessage, parseEndpointStateTelemetry, parseMapCamera, parsePortalHistoryLayerState, parseStringChoice, readStorageBoolean, readStorageJson, readStorageString, resetFrameSampleAccumulator, selectCommTopologyRefresh, writeStorageBoolean, writeStorageJson, writeStorageString, Portal, Link, Field, type InventoryItem, type PlextRequestBounds } from '@iris/core';
 import { TacticalUI } from './TacticalUI';
 import { MAP_STYLES, type MapStyleName } from './MapConstants';
 import { LaunchButton } from './LaunchButton';
@@ -99,6 +99,14 @@ function createMapView(state: SavedMapState, bounds = createFallbackBounds(state
         ...state,
         bounds,
     };
+}
+
+function miniMapBoundsEqual(a: MiniMapBounds | undefined, b: MiniMapBounds | undefined): boolean {
+    return !!a && !!b &&
+        Math.abs(a.south - b.south) < 0.000001 &&
+        Math.abs(a.west - b.west) < 0.000001 &&
+        Math.abs(a.north - b.north) < 0.000001 &&
+        Math.abs(a.east - b.east) < 0.000001;
 }
 
 function readSavedMapStyle(): MapStyleName {
@@ -634,8 +642,8 @@ function TacticalOverlay(): h.JSX.Element {
     }, [checkAndLoad]);
 
     const throttledSync = useMemo(() => throttle((view: MiniMapView): void => {
-        setMapState({ zoom: view.zoom, lat: view.lat, lng: view.lng });
-        setMapView(view);
+        setMapState((current) => applyMapCameraUpdate(current, view));
+        setMapView((current) => applyMapViewportUpdate(current, view, miniMapBoundsEqual));
     }, 100), []);
 
     const scheduleMoveSettleLoad = useCallback((view: MiniMapView): void => {
@@ -646,9 +654,9 @@ function TacticalOverlay(): h.JSX.Element {
         const currentPattern = patternModeRef.current;
         const nextBounds = boundsToE6(view.bounds);
 
-        const nextState = { zoom: currentZoom, lat: view.lat, lng: view.lng };
+        const nextState = applyMapCameraUpdate(mapStateRef.current, view);
         setMapState(nextState);
-        setMapView(view);
+        setMapView((current) => applyMapViewportUpdate(current, view, miniMapBoundsEqual));
         setPlextBounds(nextBounds);
         persistMapState(nextState);
 
@@ -849,10 +857,11 @@ function TacticalOverlay(): h.JSX.Element {
             if (!data || data.type !== MINI_PAGE_MAP_EVENT || !data.payload) return;
 
             if (data.payload.event === 'ready') {
-                setMapView(data.payload.view);
-                setMapState({ zoom: data.payload.view.zoom, lat: data.payload.view.lat, lng: data.payload.view.lng });
+                const {view} = data.payload;
+                setMapView((current) => applyMapViewportUpdate(current, view, miniMapBoundsEqual));
+                setMapState((current) => applyMapCameraUpdate(current, view));
                 postMiniPageMapCommand({ action: 'sync-players', data: playerTrailDataRef.current });
-                checkAndLoadRef.current(data.payload.view, patternModeRef.current, liveModeRef.current);
+                checkAndLoadRef.current(view, patternModeRef.current, liveModeRef.current);
                 return;
             }
 
@@ -868,11 +877,12 @@ function TacticalOverlay(): h.JSX.Element {
             }
 
             if (data.payload.event === 'benchmark-preload') {
-                setMapView(data.payload.view);
-                setMapState({ zoom: data.payload.view.zoom, lat: data.payload.view.lat, lng: data.payload.view.lng });
-                setPlextBounds(boundsToE6(data.payload.view.bounds));
+                const {view} = data.payload;
+                setMapView((current) => applyMapViewportUpdate(current, view, miniMapBoundsEqual));
+                setMapState((current) => applyMapCameraUpdate(current, view));
+                setPlextBounds(boundsToE6(view.bounds));
                 if (liveModeRef.current) {
-                    requestEntitiesForView(data.payload.view, `bench z${data.payload.zoom.toFixed(2)}`, {
+                    requestEntitiesForView(view, `bench z${data.payload.zoom.toFixed(2)}`, {
                         clearBeforeRequest: true,
                         force: true,
                         preloadId: data.payload.id,

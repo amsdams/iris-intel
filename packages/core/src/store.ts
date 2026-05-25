@@ -24,6 +24,7 @@ import {
     shouldSkipAddressLookup,
     type LatLng,
 } from './address-state';
+import {applyMapCameraUpdate, applyMapViewportUpdate} from './map-state-update';
 
 function getFeatureIdentity(feature: GeoJSON.Feature | null | undefined): string | number | null {
     if (!feature) return null;
@@ -640,6 +641,8 @@ interface UISlice {
     setPluginFeatures: (features: GeoJSON.FeatureCollection) => void;
     setDiscoveredLocation: (location: string | null, latLng?: LatLng) => void;
     reverseGeocode: (lat: number, lng: number, portalId?: string) => Promise<void>;
+    updateMapCamera: (lat: number, lng: number, zoom: number) => void;
+    updateMapViewport: (lat: number, lng: number, zoom: number, bounds: BoundsE6) => void;
     updateMapState: (lat: number, lng: number, zoom: number, bounds?: BoundsE6) => void;
     selectPortal: (id: string | null) => void;
     selectField: (id: string | null) => void;
@@ -1210,36 +1213,28 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
             }
         }, REVERSE_GEOCODE_DEBOUNCE_MS);
     },
-    updateMapState: (lat, lng, zoom, bounds) => set((state) => {
-        const nextBounds = bounds ?? state.mapState.bounds;
-        const currentBounds = state.mapState.bounds;
-        const sameBounds = !nextBounds && !currentBounds ? true : !!nextBounds && !!currentBounds &&
-            nextBounds.minLatE6 === currentBounds.minLatE6 &&
-            nextBounds.minLngE6 === currentBounds.minLngE6 &&
-            nextBounds.maxLatE6 === currentBounds.maxLatE6 &&
-            nextBounds.maxLngE6 === currentBounds.maxLngE6;
-
-        if (
-            Math.abs(state.mapState.lat - lat) < 0.000001 &&
-            Math.abs(state.mapState.lng - lng) < 0.000001 &&
-            Math.abs(state.mapState.zoom - zoom) < 0.001 &&
-            sameBounds
-        ) {
-            return state;
-        }
-
-        return {
-            mapState: {
-                lat,
-                lng,
-                zoom,
-                // Intel sync updates do not always carry bounds; preserve the last
-                // known viewport so viewport-dependent UI (for example missions)
-                // does not regress back to an uninitialized state.
-                bounds: nextBounds,
-            }
-        };
+    updateMapCamera: (lat, lng, zoom) => set((state) => {
+        const mapState = applyMapCameraUpdate(state.mapState, {lat, lng, zoom});
+        return mapState === state.mapState ? state : {mapState};
     }),
+    updateMapViewport: (lat, lng, zoom, bounds) => set((state) => {
+        const mapState = applyMapViewportUpdate(state.mapState, {lat, lng, zoom, bounds}, (a, b) =>
+            !!a && !!b &&
+            a.minLatE6 === b.minLatE6 &&
+            a.minLngE6 === b.minLngE6 &&
+            a.maxLatE6 === b.maxLatE6 &&
+            a.maxLngE6 === b.maxLngE6
+        );
+        return mapState === state.mapState ? state : {mapState};
+    }),
+    updateMapState: (lat, lng, zoom, bounds) => {
+        const store = useStore.getState();
+        if (bounds) {
+            store.updateMapViewport(lat, lng, zoom, bounds);
+        } else {
+            store.updateMapCamera(lat, lng, zoom);
+        }
+    },
     selectPortal: (id) => set(() => ({ selectedPortalId: id, selectedFieldId: null, selectedLinkId: null })),
     selectField: (id) => set(() => ({ selectedFieldId: id, selectedPortalId: null, selectedLinkId: null })),
     selectLink: (id) => set(() => ({ selectedLinkId: id, selectedPortalId: null, selectedFieldId: null })),

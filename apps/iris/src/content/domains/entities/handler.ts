@@ -13,7 +13,7 @@ export function handleEntities(
     setHasInitialPosition();
     const mid = portals[Math.floor(portals.length / 2)];
     if (mid.lat !== undefined && mid.lng !== undefined) {
-      store.updateMapState(mid.lat, mid.lng, 15);
+      store.updateMapCamera(mid.lat, mid.lng, 15);
     }
   }
 

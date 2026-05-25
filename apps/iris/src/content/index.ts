@@ -502,7 +502,7 @@ window.addEventListener('message', (event: MessageEvent) => {
       // We keep our fractional zoom to avoid the "bounce" effect.
       const targetZoom = (Math.abs(currentZoom - incomingCamera.zoom) < 0.5) ? currentZoom : incomingCamera.zoom;
       const camera = clampMapCamera({...incomingCamera, zoom: targetZoom}, {minZoom: IRIS_PAGE_MAP_MIN_ZOOM});
-      state.updateMapState(camera.lat, camera.lng, camera.zoom);
+      state.updateMapCamera(camera.lat, camera.lng, camera.zoom);
       break;
     }
     case 'IRIS_DISCOVERED_LOCATION': {

@@ -12,6 +12,6 @@ export function handleMissionDetails(data: MissionDetailsData): void {
 
   if (firstWaypointWithCoords?.lat !== undefined && firstWaypointWithCoords.lng !== undefined) {
     const { zoom } = useStore.getState().mapState;
-    useStore.getState().updateMapState(firstWaypointWithCoords.lat, firstWaypointWithCoords.lng, Math.max(zoom, 15));
+    useStore.getState().updateMapCamera(firstWaypointWithCoords.lat, firstWaypointWithCoords.lng, Math.max(zoom, 15));
   }
 }

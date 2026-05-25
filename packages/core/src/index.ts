@@ -15,6 +15,7 @@ export * from './safe-storage';
 export * from './plext-refresh-hints';
 export * from './map-features';
 export * from './map-camera';
+export * from './map-state-update';
 export * from './entity-display';
 export * from './ingress-map-style';
 export * from './benchmark-frames';

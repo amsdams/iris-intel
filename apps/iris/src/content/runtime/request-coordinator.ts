@@ -600,7 +600,11 @@ export function createRequestCoordinator(): RequestCoordinator {
                 camera.zoom,
             ) ?? undefined;
             postMessage({ type: 'IRIS_MOVE_MAP_INTERNAL', center: {lat: camera.lat, lng: camera.lng}, zoom: camera.zoom });
-            useStore.getState().updateMapState(camera.lat, camera.lng, camera.zoom, nextBounds);
+            if (nextBounds) {
+                useStore.getState().updateMapViewport(camera.lat, camera.lng, camera.zoom, nextBounds);
+            } else {
+                useStore.getState().updateMapCamera(camera.lat, camera.lng, camera.zoom);
+            }
             entityRefreshGeneration += 1;
             postMessage({
                 type: 'IRIS_ENTITY_REFRESH_GENERATION',
