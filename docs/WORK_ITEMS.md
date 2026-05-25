@@ -13,6 +13,9 @@ from here when they become tracked work.
 3. **[Shared Runtime]** Pause further package extraction unless smoke testing shows duplication or regressions; recent
    Mini-IRIS polish checks are stable enough to resume shared-boundary work.
 4. **[Shared Runtime]** Prefer request/data/parsing/entity lifecycle extraction before UI component sharing.
+5. **[Shared Runtime]** Keep semantic colors in mind as a boundary candidate: IRIS now has a richer active-theme
+   contract, but do not extract it to shared core until Mini-IRIS has a matching need or a small shared style-domain
+   module becomes clearly useful.
 
 ## Worklog Areas
 
@@ -974,7 +977,7 @@ Tasks:
 
 | Task                                                | Status      | Notes                                                                                                                                                                                                                 |
 |-----------------------------------------------------|-------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Formal semantic color module                        | In Progress | shared theme tokens now separate faction, level, rarity, item-type, history, health, and misc map semantics; continue normalizing naming and usage boundaries before extracting beyond IRIS                                                                  |
+| Formal semantic color module                        | In Progress | shared theme tokens now separate faction, level, rarity, item-type, history, health, and misc map semantics; IRIS also themes page-world history rings, mission/artifact/ornament layers, neutral stroke, popup health colors, and dock accent. Keep as an IRIS-local contract for now; revisit extraction only after Mini-IRIS needs the same semantic surface |
 | Reduce hard-coded semantic colors in CSS/components | In Progress | portal details, inventory, passcode rewards, and status surfaces now use shared semantic tokens for common success/warning/error/muted/accent/purple states; continue migrating remaining one-off debug/topbar values |
 
 ## Engineering Standards and Design Patterns

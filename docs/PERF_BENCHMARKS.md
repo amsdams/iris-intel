@@ -37,6 +37,10 @@ when evaluating major dependency migrations or rendering changes.
 | 0.1.7   | z8 mobile post-polish batch     | Mobile ARM  | Firefox 149 | OSM     | tracker, health fill, level labels      | 16,205 | 5,366   | 7,174  | 2,905  | 695     | n/a      | n/a       | n/a  | 28ms      | 23ms   | 368ms | 35  | 34/317      |
 | 0.1.7   | z8 mobile no-links isolation    | Mobile ARM  | Firefox 149 | OSM     | tracker, health fill, level labels      | 16,205 | 5,366   | 7,174  | 2,905  | 695     | n/a      | n/a       | n/a  | 18ms      | 18ms   | 50ms  | 55  | 2/495       |
 | 0.1.7   | z8 mobile no-fields isolation   | Mobile ARM  | Firefox 149 | OSM     | tracker, health fill, level labels      | 16,205 | 5,366   | 7,174  | 2,905  | 695     | n/a      | n/a       | n/a  | 18ms      | 18ms   | 50ms  | 56  | 1/505       |
+| 0.1.7   | z14 desktop post-polish batch    | Desktop Mac | Firefox 153 | OSM     | player-tracker                          | 11,539 | 3,644   | 5,378  | 2,383  | 40      | n/a      | n/a       | n/a  | 9ms       | 9ms    | 124ms | 106 | 11/959      |
+| 0.1.7   | z8 desktop link/field isolation  | Desktop Mac | Firefox 153 | OSM     | player-tracker                          | 43,467 | 12,594  | 21,645 | 9,134  | 0       | n/a      | n/a       | n/a  | 48ms      | 47ms   | 167ms | 21  | 134/186     |
+| 0.1.7   | z8 desktop no-links isolation    | Desktop Mac | Firefox 153 | OSM     | player-tracker                          | 43,591 | 12,616  | 21,719 | 9,162  | 0       | n/a      | n/a       | n/a  | 10ms      | 9ms    | 175ms | 105 | 19/945      |
+| 0.1.7   | z8 desktop no-fields isolation   | Desktop Mac | Firefox 153 | OSM     | player-tracker                          | 43,591 | 12,616  | 21,719 | 9,162  | 0       | n/a      | n/a       | n/a  | 8ms       | 8ms    | 49ms  | 119 | 2/1,070     |
 
 ## Readout
 
@@ -69,6 +73,10 @@ when evaluating major dependency migrations or rendering changes.
   `plugin-features 25/0ms` with portals/links/fields counts shown and `-` timing for untouched sources.
 - A later large-source-count sample stayed at `17ms` median with `105,044` current source items, but the `150ms` max
   frame shows why reducing UI subscriptions and occasional main-thread spikes still matters.
+- The 2026-05-25 Firefox desktop batch confirms the remaining heavy path is low zoom with all links and fields visible:
+  z14 normal pan is healthy (`9ms avg`, `106fps`), while z8 normal pan drops to `48ms avg`/`21fps`; z8 no-links and
+  no-fields variants recover to `10ms` and `8ms`, so future tuning should target low-zoom link/field simplification or
+  moving-mode degradation rather than plugin overlays.
 
 ## Fixed Scenario Set
 
