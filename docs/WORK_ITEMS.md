@@ -8,12 +8,14 @@ from here when they become tracked work.
 
 ## Current Next Pickup
 
-1. **[Shared Runtime]** Resume the cross-app audit with backend/engine/domain candidates, not shared UI; Mini/IRIS
+1. **[Benchmark Tooling]** Add request/source lifecycle instrumentation before changing IRIS request lifecycle or map
+   sync behavior, so improvements from the IITC/IRIS comparison can be measured instead of inferred from FPS alone.
+2. **[Shared Runtime]** Resume the cross-app audit with backend/engine/domain candidates, not shared UI; Mini/IRIS
    benchmark polishing is paused with follow-up notes captured below.
-2. **[Shared Runtime]** Pause further package extraction unless smoke testing shows duplication or regressions; recent
+3. **[Shared Runtime]** Pause further package extraction unless smoke testing shows duplication or regressions; recent
    Mini-IRIS polish checks are stable enough to resume shared-boundary work.
-3. **[Shared Runtime]** Prefer request/data/parsing/entity lifecycle extraction before UI component sharing.
-4. **[Shared Runtime]** Keep semantic colors in mind as a boundary candidate: IRIS now has a richer active-theme
+4. **[Shared Runtime]** Prefer request/data/parsing/entity lifecycle extraction before UI component sharing.
+5. **[Shared Runtime]** Keep semantic colors in mind as a boundary candidate: IRIS now has a richer active-theme
    contract, but do not extract it to shared core until Mini-IRIS has a matching need or a small shared style-domain
    module becomes clearly useful.
 
@@ -1230,6 +1232,122 @@ Tasks:
 | Consider MapLibre style-image player pins for IRIS            | Open    | Mini-IRIS now renders player activity as team-coloured `addImage`/symbol-layer pins above map entities; evaluate replacing IRIS player marker rendering with the same source/layer approach later                                                                                                                |
 | Improve entity refresh after live COMM activity               | Done    | recent COMM messages with portal/link coordinates now use shared refresh hints; IRIS schedules a capped targeted portal-details refresh for known visible portals plus a short, coalesced current-view entity refresh for topology with dedicated cooldowns to avoid extra request pressure                      |
 
+## Benchmark Tooling For Request Lifecycle And Map Sync
+
+Status: `Open`
+
+Related design note:
+
+- `docs/20260414/IITC_IRIS_REQUEST_LIFECYCLE_MAP_SYNC.md`
+
+Why:
+
+- before changing IRIS request lifecycle, source publication, or map sync scheduling, benchmarks need to explain whether
+  a change reduced real work during interaction
+- current batch reports are good at frame timing and layer isolation, but they do not yet show whether network
+  responses, parsing, store merges, source publication, or long tasks overlapped with panning
+- this epic supports the Request Lifecycle and Map Sync work by making before/after comparisons measurable in one copied
+  batch report
+
+Outcome:
+
+- copied benchmark output should distinguish pure render/frame cost from request/source-update interference
+- normal-use lag reports should be traceable to endpoint activity, source publication, long tasks, or UI rendering
+- request lifecycle changes should have a small, repeatable before/after report format instead of relying on subjective
+  panning feel alone
+
+Principles:
+
+- keep the human-readable copied batch report; add compact fields rather than replacing it with raw JSON
+- prefer per-scenario deltas over global counters so each row can explain its own workload
+- record workload identity first, then performance; never compare FPS without tile/source counts
+- add JSON export only after the compact text report has the right fields
+- do not resume broad benchmark UX polish unless it blocks a concrete request-lifecycle decision
+
+### Phase 1: Request and Workload Counters
+
+Status: `In Progress`
+
+Tasks:
+
+| Task                                             | Status | Notes                                                                                                                                     |
+|--------------------------------------------------|--------|-------------------------------------------------------------------------------------------------------------------------------------------|
+| Add benchmark-window endpoint counter snapshots  | Done   | IRIS batch rows now report per-window endpoint request/success/failure counts for entities plus non-zero portal-details, plexts, artifacts, inventory, score, region score, and unknown activity |
+| Add entity request tile/batch deltas             | In Progress | batch rows now include current tile count, fresh tile count, batch count, data zoom, active/passive entity successes, and stale generation drop/ignore deltas; benchmark preload now sends explicit viewport-estimated bounds with the target zoom; exact scheduler fresh-skip count is still not recorded |
+| Add compact workload signature per scenario      | Done   | batch rows now include zoom, tiles, fresh tiles, batches, data zoom, source P/L/F/plugin counts, center, and viewport                    |
+| Add IRIS active response-count preload summary   | Done   | preload rows now include endpoint counters and stale entity deltas in addition to loaded store counts                                      |
+| Keep Mini/IRIS shared batch labels unchanged     | Open   | preserve the existing first seven shared rows while adding fields so older pasted results remain readable                                  |
+
+### Phase 2: Source Publication and Moving Overlap
+
+Status: `In Progress`
+
+Tasks:
+
+| Task                                                | Status | Notes                                                                                                                                                      |
+|-----------------------------------------------------|--------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Count page-world source publications per scenario   | In Progress | page-world runtime now exposes logical source sync count, individual source `setData` call count/time, reason counts, and per-source call/time deltas; per-source max remains open |
+| Track whether map is actively moving                | In Progress | page-world runtime now tracks `movestart`/`moveend` plus active synthetic benchmark state for source-overlap classification; manual input capture remains open |
+| Report source updates while moving                  | Done   | batch rows now report logical syncs, individual `setData` calls, and `setData` time that happened while the map was moving as `sourceDelta ... movingSyncs ... movingCalls ... movingSetData ...` |
+| Report network responses while moving               | Open   | count entity/plext/portal-detail responses that land while the map is moving                                                                               |
+| Add source-update reason labels                     | Open   | classify updates as entities, portal-details, COMM activity, selection, plugins, planning, visual filters, benchmark preload, or unknown                   |
+| Preserve urgent update path in diagnostics wording  | Open   | distinguish selection/camera updates from heavy entity/plugin source updates so future scheduler changes can defer only non-urgent work                    |
+
+### Phase 3: Long Task, UI Render, and Stable Frame Context
+
+Status: `Open`
+
+Tasks:
+
+| Task                                             | Status | Notes                                                                                                                                   |
+|--------------------------------------------------|--------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| Add per-scenario long-task deltas                | Open   | include long-task count, max duration, and whether max long task overlapped with moving                                                 |
+| Add per-scenario UI render deltas                | Open   | compactly report top changed UI surfaces from existing render diagnostics when a scenario has unexpected slow frames                    |
+| Split scenario timing into phases                | Open   | distinguish preload, settle wait, benchmark pan/zoom window, and post-window source updates                                             |
+| Add "stable after scenario" wait/sample          | Open   | after each scenario, record whether source/endpoint activity continued after frame sampling stopped                                     |
+| Define thresholds for noisy runs                 | Open   | mark rows as noisy when source updates, network responses, or long tasks overlap with a supposed pure render benchmark                  |
+| Add manual interaction capture mode              | Open   | current Bench is deterministic synthetic camera movement, not real human drag/finger input; add a 5-10s capture window later so manual panning reports the same net/source/longtask/workload fields |
+
+### Phase 4: Export, Comparison, and History
+
+Status: `Open`
+
+Tasks:
+
+| Task                                      | Status | Notes                                                                                                                           |
+|-------------------------------------------|--------|---------------------------------------------------------------------------------------------------------------------------------|
+| Add JSON export beside copied text report | Open   | keep text as primary, but include machine-readable scenario objects for local diff scripts                                      |
+| Add local compare script for two reports  | Open   | compare scenario rows by workload signature and highlight deltas in frame time, slow frames, requests, source updates, and max |
+| Add benchmark history capture guidance    | Open   | document where to paste before/after rows for request lifecycle work in `docs/PERF_BENCHMARKS.md`                              |
+| Add optional git revision/build metadata  | Open   | include commit hash or package version when available so copied reports can be tied to a build                                 |
+| Decide whether Mini should emit same JSON | Open   | after IRIS fields stabilize, align Mini output where semantics match without forcing app-specific diagnostics                   |
+
+Benchmark capture slots:
+
+| Date | Build / Commit | Device | Browser | Scenario Set | Result | Notes |
+|------|----------------|--------|---------|--------------|--------|-------|
+| TBD  | baseline before request/map-sync changes | Desktop Mac | Firefox | shared IRIS batch | Open | capture after Phase 1/2 fields land |
+| TBD  | baseline before request/map-sync changes | Mobile ARM | Firefox | shared IRIS batch plus manual pan note | Open | capture after Phase 1/2 fields land |
+| TBD  | after first scheduler/source-publication change | Desktop Mac | Firefox | same as baseline | Open | compare workload signature before reading FPS |
+| TBD  | after first scheduler/source-publication change | Mobile ARM | Firefox | same as baseline | Open | check moving-overlap and long-task deltas first |
+
+Candidate report additions:
+
+```text
+net entities req 2 ok 2 fail 0 active 2 passive 0 tiles 49 freshSkip 12 batches 2 staleDrop 0 staleIgnore 0
+sources updates 4 moving 2 setData 11ms max 7ms P 1/1ms L 1/6ms F 1/3ms plugins 1/1ms
+overlap movingResponses 1 movingSource 2 movingSetData 9ms movingLongTasks 1
+workload z8:49tiles:P5089:L8684:F3465:plugin2:center52.37109,4.90637:viewport960x943
+```
+
+Exit criteria:
+
+- a copied IRIS batch can show whether a scenario was clean or contaminated by request/source work
+- a request lifecycle change can be compared against a previous build with the same workload signature
+- mobile panning reports can say whether lag coincided with network response, source publication, long task, UI render,
+  or pure renderer cost
+- only after this is in place, start changing IRIS request lifecycle and map sync scheduling from the IITC/IRIS findings
+
 ### Mini/IRIS benchmark comparison pause notes
 
 Status: `Open`
@@ -1252,6 +1370,7 @@ Findings:
 | Latest Mini/IRIS timings are not apples-to-apples     | Latest Firefox samples had Mini z8 normal around `3.6k` rendered items / `1.2k P` / `1.7k L` / `0.7k F`, while IRIS z8 normal was around `32k` rendered items / `9.2k P` / `16.4k L` / `6.8k F`; Mini's faster frame timing mostly reflects a much lighter current workload. |
 | Preload tile coverage differs by app                  | Latest Mini z14 preload requested `8` tiles and z8 requested `120`; latest IRIS z14 requested up to the `1,024` tile cap and z8 requested `91`. This points to a remaining camera/bounds mismatch before making benchmark claims.                 |
 | App-specific isolation rows are not direct comparisons | IRIS `no-plugins` and Mini `no-players` isolate different rendering paths; use them for local diagnosis only, not cross-app claims.                                                                                                             |
+| Normal-use lag needs network/source-update context     | Current batch reports explain frame cost and visible source counts, but not whether `getEntities` responses, parsing, store updates, source `setData`, or long tasks landed during the measured pan. Phone lag reports need endpoint/source deltas per scenario before we can distinguish renderer regression from population/network hitches. |
 
 Follow-ups:
 
@@ -1260,6 +1379,7 @@ Follow-ups:
 | Share benchmark scenario definitions                       | Done   | shared matrix and app-specific extras now live in `packages/core`; IRIS and Mini-IRIS consume the same ordered scenario constants so labels/order cannot drift silently                         |
 | Share benchmark preload/coverage calculation               | Open   | compute benchmark tile coverage from an explicit camera and current viewport in the same way for both apps, preferably from page-world MapLibre bounds after the preload camera jump            |
 | Add IRIS response-count preload diagnostics                | Open   | IRIS currently reports loaded store counts after preload; if comparison remains ambiguous, report active entity response counts like Mini does                                                   |
+| Add per-scenario endpoint/source delta diagnostics         | Open   | promoted into the dedicated `Benchmark Tooling For Request Lifecycle And Map Sync` epic; keep this row as the Mini/IRIS comparison reminder |
 | Keep benchmark polish paused until needed                  | Open   | current instrumentation is enough to diagnose broad renderer/source-count differences; resume only when comparison quality blocks a concrete performance decision                               |
 
 ## Mini-IRIS Page-World Alignment

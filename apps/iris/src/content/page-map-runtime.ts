@@ -58,6 +58,7 @@ interface MovingFrameSample {
 
 interface SourceUpdatePerformance {
     startedAt: number;
+    reason: string;
     setDataMs: number;
     sourceSetDataMs: Record<string, number>;
     sourceFeatureCounts: Record<string, number>;
@@ -155,6 +156,18 @@ const currentSourceFeatureCounts: Record<string, number> = {
     'planned-features': 0,
 };
 let currentPluginFeatureCounts: Record<string, number> | undefined;
+let mapIsMoving = false;
+let lastMapMoveStartAt = 0;
+let lastMapMoveEndAt = 0;
+let sourceSyncCount = 0;
+let movingSourceSyncCount = 0;
+let sourceUpdateCount = 0;
+let sourceUpdateSetDataMs = 0;
+let movingSourceUpdateCount = 0;
+let movingSourceUpdateSetDataMs = 0;
+const sourceUpdateCallCounts: Record<string, number> = {};
+const sourceUpdateCallMs: Record<string, number> = {};
+const sourceUpdateReasons: Record<string, number> = {};
 
 const SLOW_FRAME_MS = 34;
 const PAN_BENCHMARK_STEP_PX = 220;
@@ -760,7 +773,13 @@ function getPageMap(): Promise<maplibregl.Map> {
         });
 
         map.once('load', () => {
+            map.on('movestart', () => {
+                mapIsMoving = true;
+                lastMapMoveStartAt = Date.now();
+            });
             map.on('moveend', () => {
+                mapIsMoving = false;
+                lastMapMoveEndAt = Date.now();
                 if (panBenchmarkActive) {
                     return;
                 }
@@ -882,9 +901,14 @@ function setGeoJsonSourceData(map: maplibregl.Map, sourceId: string, data: GeoJS
     }
 }
 
-function createSourceUpdatePerformance(): SourceUpdatePerformance {
+function isMapActivelyMoving(): boolean {
+    return mapIsMoving || panBenchmarkActive;
+}
+
+function createSourceUpdatePerformance(reason: string): SourceUpdatePerformance {
     return {
         startedAt: performance.now(),
+        reason,
         setDataMs: 0,
         sourceSetDataMs: {},
         sourceFeatureCounts: {},
@@ -904,6 +928,15 @@ function setMeasuredGeoJsonSourceData(
     (source as SetDataGeoJsonSource).setData(data);
     const elapsed = performance.now() - startedAt;
     const sourceLabel = SOURCE_COUNT_LABELS[sourceId] ?? sourceId;
+    const moving = isMapActivelyMoving();
+    sourceUpdateCount += 1;
+    sourceUpdateSetDataMs += elapsed;
+    sourceUpdateCallCounts[sourceLabel] = (sourceUpdateCallCounts[sourceLabel] ?? 0) + 1;
+    sourceUpdateCallMs[sourceLabel] = (sourceUpdateCallMs[sourceLabel] ?? 0) + elapsed;
+    if (moving) {
+        movingSourceUpdateCount += 1;
+        movingSourceUpdateSetDataMs += elapsed;
+    }
     perf.setDataMs += elapsed;
     perf.sourceSetDataMs[sourceLabel] = (perf.sourceSetDataMs[sourceLabel] ?? 0) + elapsed;
     perf.sourceFeatureCounts[sourceLabel] = data.features.length;
@@ -1013,8 +1046,13 @@ function setIrisLayerVisibility(map: maplibregl.Map, visibility: PageMapRuntimeL
     setLayerVisibility(map, 'iris-map-field-selected', visibility.fields);
 }
 
-function setIrisData(map: maplibregl.Map, message: PageMapRuntimeCommandMessage): void {
-    const perf = createSourceUpdatePerformance();
+function setIrisData(map: maplibregl.Map, message: PageMapRuntimeCommandMessage, reason = 'syncData'): void {
+    const perf = createSourceUpdatePerformance(reason);
+    sourceSyncCount += 1;
+    sourceUpdateReasons[reason] = (sourceUpdateReasons[reason] ?? 0) + 1;
+    if (isMapActivelyMoving()) {
+        movingSourceSyncCount += 1;
+    }
     if (message.planning) {
         currentPlanningState = message.planning;
     }
@@ -1749,6 +1787,18 @@ function publishViewportPerformance(
         artifactCount: sourceFeatureCounts.artifacts ?? 0,
         ornamentCount: sourceFeatureCounts.ornaments ?? 0,
         pluginCount: sourceFeatureCounts['plugin-features'] ?? 0,
+        sourceSyncCount,
+        movingSourceSyncCount,
+        sourceUpdateCount,
+        sourceUpdateSetDataMs,
+        movingSourceUpdateCount,
+        movingSourceUpdateSetDataMs,
+        sourceUpdateCallCounts: {...sourceUpdateCallCounts},
+        sourceUpdateCallMs: {...sourceUpdateCallMs},
+        sourceUpdateReasons: {...sourceUpdateReasons},
+        mapMoving: isMapActivelyMoving(),
+        lastMapMoveStartAt,
+        lastMapMoveEndAt,
     };
 
     window.postMessage({
@@ -2116,7 +2166,7 @@ function hidePageMapRuntime(): void {
 
 async function syncPageMapData(message: PageMapRuntimeCommandMessage): Promise<void> {
     const map = await getPageMap();
-    setIrisData(map, message);
+    setIrisData(map, message, 'syncData');
     await waitForMapIdle(map);
     if (message.diagnostic) {
         postDiagnosticResult('MAP SYNC DATA', {
@@ -2193,7 +2243,7 @@ async function applySnapshot(map: maplibregl.Map, message: PageMapRuntimeCommand
     if (message.tiles?.length) {
         setRasterTiles(map, 'osm', message.tiles);
     }
-    setIrisData(map, message);
+    setIrisData(map, message, 'syncSnapshot');
     await waitForMapIdle(map);
 }
 

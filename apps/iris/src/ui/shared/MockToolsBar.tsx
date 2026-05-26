@@ -1,5 +1,5 @@
 import { h, JSX } from 'preact';
-import { ENTITY_REQUEST_BATCH_SIZE, IRIS_BENCHMARK_SCENARIOS, buildEntityRequestPayload, useStore, type BenchmarkMode, type BenchmarkScenario, type BenchmarkZoom, type IrisBenchmarkVariant } from '@iris/core';
+import { ENTITY_REQUEST_BATCH_SIZE, IRIS_BENCHMARK_SCENARIOS, buildEntityRequestPayload, useStore, type BenchmarkMode, type BenchmarkScenario, type BenchmarkZoom, type BoundsE6, type EndpointKey, type IrisBenchmarkVariant } from '@iris/core';
 import { useRenderDiagnostics } from './useRenderDiagnostics';
 import { useState } from 'preact/hooks';
 
@@ -41,6 +41,40 @@ const BENCHMARK_BATCH_TIMEOUT_MS = 45_000;
 const BENCHMARK_BATCH_POLL_MS = 250;
 const BENCHMARK_PRELOAD_MOVE_SETTLE_MS = 3_600;
 const BENCHMARK_PRELOAD_TIMEOUT_MS = 25_000;
+const BENCHMARK_ENDPOINT_KEYS: readonly EndpointKey[] = ['entities', 'portalDetails', 'plexts', 'artifacts', 'inventory', 'gameScore', 'regionScore', 'unknown'];
+const BENCHMARK_TILE_SIZE = 512;
+const MAX_MERCATOR_LAT = 85.05112878;
+
+interface BenchmarkEndpointCounter {
+    request: number;
+    success: number;
+    active: number;
+    passive: number;
+    failure: number;
+}
+
+type BenchmarkEndpointCounterMap = Record<EndpointKey, BenchmarkEndpointCounter>;
+
+interface BenchmarkEntityCounterSnapshot {
+    staleQueuedDropCount: number;
+    staleResponseIgnoreCount: number;
+}
+
+interface BenchmarkWindowSnapshot {
+    startedAt: number;
+    entities: BenchmarkEntityCounterSnapshot;
+    longTaskCount: number;
+    maxLongTaskMs: number;
+    sourceSyncCount: number;
+    movingSourceSyncCount: number;
+    sourceUpdateCount: number;
+    sourceUpdateSetDataMs: number;
+    movingSourceUpdateCount: number;
+    movingSourceUpdateSetDataMs: number;
+    sourceUpdateCallCounts: Record<string, number>;
+    sourceUpdateCallMs: Record<string, number>;
+    sourceUpdateReasons: Record<string, number>;
+}
 
 function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => {
@@ -56,12 +90,207 @@ function formatMs(value: number | undefined): string {
     return typeof value === 'number' ? `${Math.round(value)}ms` : '-';
 }
 
+function clamp(value: number, min: number, max: number): number {
+    return Math.max(min, Math.min(max, value));
+}
+
+function lngToMercatorX(lng: number, worldSize: number): number {
+    return ((lng + 180) / 360) * worldSize;
+}
+
+function latToMercatorY(lat: number, worldSize: number): number {
+    const clampedLat = clamp(lat, -MAX_MERCATOR_LAT, MAX_MERCATOR_LAT);
+    const sin = Math.sin((clampedLat * Math.PI) / 180);
+    return (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * worldSize;
+}
+
+function mercatorXToLng(x: number, worldSize: number): number {
+    return (x / worldSize) * 360 - 180;
+}
+
+function mercatorYToLat(y: number, worldSize: number): number {
+    const y2 = 0.5 - y / worldSize;
+    return 90 - (360 * Math.atan(Math.exp(-y2 * 2 * Math.PI))) / Math.PI;
+}
+
+function estimateBenchmarkViewportBounds(lat: number, lng: number, zoom: BenchmarkZoom): BoundsE6 {
+    const worldSize = BENCHMARK_TILE_SIZE * Math.pow(2, zoom);
+    const centerX = lngToMercatorX(lng, worldSize);
+    const centerY = latToMercatorY(lat, worldSize);
+    const west = mercatorXToLng(centerX - window.innerWidth / 2, worldSize);
+    const east = mercatorXToLng(centerX + window.innerWidth / 2, worldSize);
+    const north = mercatorYToLat(centerY - window.innerHeight / 2, worldSize);
+    const south = mercatorYToLat(centerY + window.innerHeight / 2, worldSize);
+
+    return {
+        minLatE6: Math.round(Math.min(south, north) * 1e6),
+        minLngE6: Math.round(west * 1e6),
+        maxLatE6: Math.round(Math.max(south, north) * 1e6),
+        maxLngE6: Math.round(east * 1e6),
+    };
+}
+
+function createEndpointCounters(): BenchmarkEndpointCounterMap {
+    const counters = {} as BenchmarkEndpointCounterMap;
+    BENCHMARK_ENDPOINT_KEYS.forEach((key) => {
+        counters[key] = {
+            request: 0,
+            success: 0,
+            active: 0,
+            passive: 0,
+            failure: 0,
+        };
+    });
+    return counters;
+}
+
+function takeBenchmarkWindowSnapshot(startedAt = Date.now()): BenchmarkWindowSnapshot {
+    const state = useStore.getState();
+    const entities = state.endpointDiagnostics.entities;
+    const viewport = state.mapPerfDiagnostics.viewport;
+
+    return {
+        startedAt,
+        entities: {
+            staleQueuedDropCount: entities.staleQueuedDropCount,
+            staleResponseIgnoreCount: entities.staleResponseIgnoreCount,
+        },
+        longTaskCount: state.mainThreadDiagnostics.longTaskCount,
+        maxLongTaskMs: state.mainThreadDiagnostics.maxLongTaskMs,
+        sourceSyncCount: viewport?.sourceSyncCount ?? 0,
+        movingSourceSyncCount: viewport?.movingSourceSyncCount ?? 0,
+        sourceUpdateCount: viewport?.sourceUpdateCount ?? 0,
+        sourceUpdateSetDataMs: viewport?.sourceUpdateSetDataMs ?? 0,
+        movingSourceUpdateCount: viewport?.movingSourceUpdateCount ?? 0,
+        movingSourceUpdateSetDataMs: viewport?.movingSourceUpdateSetDataMs ?? 0,
+        sourceUpdateCallCounts: viewport?.sourceUpdateCallCounts ? {...viewport.sourceUpdateCallCounts} : {},
+        sourceUpdateCallMs: viewport?.sourceUpdateCallMs ? {...viewport.sourceUpdateCallMs} : {},
+        sourceUpdateReasons: viewport?.sourceUpdateReasons ? {...viewport.sourceUpdateReasons} : {},
+    };
+}
+
+function getBenchmarkEndpointCounters(startedAt: number, finishedAt = Date.now()): BenchmarkEndpointCounterMap {
+    const counters = createEndpointCounters();
+    const activity = useStore.getState().endpointActivityLog;
+
+    activity.forEach((entry) => {
+        if (entry.time < startedAt || entry.time > finishedAt) return;
+        const counter = counters[entry.endpoint] ?? counters.unknown;
+        if (entry.message.startsWith('request ')) {
+            counter.request += 1;
+        } else if (entry.message.startsWith('success ')) {
+            counter.success += 1;
+            if (entry.message.endsWith(' active')) {
+                counter.active += 1;
+            } else if (entry.message.endsWith(' passive')) {
+                counter.passive += 1;
+            }
+        } else if (entry.message.startsWith('error ')) {
+            counter.failure += 1;
+        }
+    });
+
+    return counters;
+}
+
+function formatEndpointCounter(key: EndpointKey, counter: BenchmarkEndpointCounter): string | null {
+    const total = counter.request + counter.success + counter.failure;
+    const alwaysShow = key === 'entities';
+    if (!alwaysShow && total === 0) return null;
+
+    return `${key} req ${formatCount(counter.request)} ok ${formatCount(counter.success)} active ${formatCount(counter.active)} passive ${formatCount(counter.passive)} fail ${formatCount(counter.failure)}`;
+}
+
+function formatBenchmarkEndpointCounters(counters: BenchmarkEndpointCounterMap): string {
+    const parts = BENCHMARK_ENDPOINT_KEYS
+        .map((key) => formatEndpointCounter(key, counters[key]))
+        .filter((part): part is string => Boolean(part));
+    return `net ${parts.join(' ; ')}`;
+}
+
+function formatBenchmarkEntityDeltas(snapshot: BenchmarkWindowSnapshot): string {
+    const entities = useStore.getState().endpointDiagnostics.entities;
+    const staleDrop = Math.max(0, entities.staleQueuedDropCount - snapshot.entities.staleQueuedDropCount);
+    const staleIgnore = Math.max(0, entities.staleResponseIgnoreCount - snapshot.entities.staleResponseIgnoreCount);
+    return `entityDelta staleDrop ${formatCount(staleDrop)} staleIgnore ${formatCount(staleIgnore)} skip ${entities.lastSkipReason ?? 'none'}`;
+}
+
+function formatBenchmarkLongTaskDelta(snapshot: BenchmarkWindowSnapshot): string {
+    const diagnostics = useStore.getState().mainThreadDiagnostics;
+    const count = Math.max(0, diagnostics.longTaskCount - snapshot.longTaskCount);
+    const recentMax = diagnostics.recentLongTasks
+        .filter((task) => task.time >= snapshot.startedAt)
+        .reduce((max, task) => Math.max(max, task.durationMs), 0);
+    const max = recentMax || Math.max(0, diagnostics.maxLongTaskMs - snapshot.maxLongTaskMs);
+    return `longtask count ${formatCount(count)} max ${formatMs(max)}`;
+}
+
+function formatBenchmarkSourceDelta(snapshot: BenchmarkWindowSnapshot): string {
+    const viewport = useStore.getState().mapPerfDiagnostics.viewport;
+    const syncCount = Math.max(0, (viewport?.sourceSyncCount ?? 0) - snapshot.sourceSyncCount);
+    const movingSyncCount = Math.max(0, (viewport?.movingSourceSyncCount ?? 0) - snapshot.movingSourceSyncCount);
+    const updateCount = Math.max(0, (viewport?.sourceUpdateCount ?? 0) - snapshot.sourceUpdateCount);
+    const setDataMs = Math.max(0, (viewport?.sourceUpdateSetDataMs ?? 0) - snapshot.sourceUpdateSetDataMs);
+    const movingCount = Math.max(0, (viewport?.movingSourceUpdateCount ?? 0) - snapshot.movingSourceUpdateCount);
+    const movingSetDataMs = Math.max(0, (viewport?.movingSourceUpdateSetDataMs ?? 0) - snapshot.movingSourceUpdateSetDataMs);
+    const callCounts = viewport?.sourceUpdateCallCounts ?? {};
+    const callMs = viewport?.sourceUpdateCallMs ?? {};
+    const sourceSummary = Object.keys(callCounts)
+        .map((source) => {
+            const count = Math.max(0, callCounts[source] - (snapshot.sourceUpdateCallCounts[source] ?? 0));
+            if (count === 0) return null;
+            const elapsed = Math.max(0, (callMs[source] ?? 0) - (snapshot.sourceUpdateCallMs[source] ?? 0));
+            return `${source}:${formatCount(count)}/${formatMs(elapsed)}`;
+        })
+        .filter((part): part is string => Boolean(part))
+        .join(',');
+    const nextReasons = viewport?.sourceUpdateReasons ?? {};
+    const reasonSummary = Object.entries(nextReasons)
+        .map(([reason, count]) => [reason, Math.max(0, count - (snapshot.sourceUpdateReasons[reason] ?? 0))] as const)
+        .filter(([, count]) => count > 0)
+        .map(([reason, count]) => `${reason}:${formatCount(count)}`)
+        .join(',');
+
+    return `sourceDelta syncs ${formatCount(syncCount)} movingSyncs ${formatCount(movingSyncCount)} calls ${formatCount(updateCount)} movingCalls ${formatCount(movingCount)} setData ${formatMs(setDataMs)} movingSetData ${formatMs(movingSetDataMs)} sources ${sourceSummary || 'none'} reasons ${reasonSummary || 'none'}`;
+}
+
+function formatBenchmarkWorkload(testCase: BenchmarkBatchCase, sourceCounts: Record<string, number>): string {
+    const state = useStore.getState();
+    const viewport = `${window.innerWidth}x${window.innerHeight}`;
+    const bounds = state.mapState.bounds;
+    const payload = bounds ? buildEntityRequestPayload(bounds, testCase.zoom) : null;
+    const tileKeys = payload?.tileKeys ?? [];
+    const tileFreshness = state.tileFreshness;
+    const now = Date.now();
+    const freshTiles = tileKeys.filter((key) => {
+        const lastUpdate = tileFreshness[key];
+        return typeof lastUpdate === 'number' && now - lastUpdate <= 120_000;
+    }).length;
+    const batchCount = Math.ceil(tileKeys.length / ENTITY_REQUEST_BATCH_SIZE);
+    const center = `${state.mapState.lat.toFixed(5)},${state.mapState.lng.toFixed(5)}`;
+
+    return [
+        'workload',
+        `z${testCase.zoom}`,
+        `${formatCount(tileKeys.length)}tiles`,
+        `${formatCount(freshTiles)}fresh`,
+        `${formatCount(batchCount)}batches`,
+        `dataZoom ${formatCount(payload?.dataZoom)}`,
+        `P${formatCount(sourceCounts.portals)}`,
+        `L${formatCount(sourceCounts.links)}`,
+        `F${formatCount(sourceCounts.fields)}`,
+        `plugin${formatCount(sourceCounts['plugin-features'])}`,
+        `center ${center}`,
+        `viewport ${viewport}`,
+    ].join(' ');
+}
+
 function formatPluginCounts(counts: Record<string, number> | undefined): string {
     if (!counts) return 'pluginMix -';
     return `pluginMix total ${formatCount(counts.total)} labels ${formatCount(counts.labels)} player ${formatCount(counts.playerMarkers)} highlights ${formatCount(counts.highlights)} lines ${formatCount(counts.lines)} points ${formatCount(counts.points)}`;
 }
 
-function buildBatchReportLine(testCase: BenchmarkBatchCase): string {
+function buildBatchReportLine(testCase: BenchmarkBatchCase, snapshot: BenchmarkWindowSnapshot, finishedAt = Date.now()): string {
     const state = useStore.getState();
     const viewport = state.mapPerfDiagnostics.viewport;
     const frame = state.mapPerfDiagnostics.frame;
@@ -93,6 +322,11 @@ function buildBatchReportLine(testCase: BenchmarkBatchCase): string {
         `slow ${formatCount(frame.slowFrameCount)}/${formatCount(frame.frameCount)}`,
         `median ${formatMs(frame.benchmarkMedianAverageFrameMs)}`,
         `benchMax ${formatMs(frame.benchmarkMaxFrameMs)}`,
+        formatBenchmarkEndpointCounters(getBenchmarkEndpointCounters(snapshot.startedAt, finishedAt)),
+        formatBenchmarkEntityDeltas(snapshot),
+        formatBenchmarkSourceDelta(snapshot),
+        formatBenchmarkLongTaskDelta(snapshot),
+        formatBenchmarkWorkload(testCase, sourceCounts),
         formatPluginCounts(pluginCounts),
     ].join(' | ');
 }
@@ -117,13 +351,14 @@ async function waitForBenchmarkResult(testCase: BenchmarkBatchCase, startedAt: n
     throw new Error(`Timed out waiting for ${testCase.label}`);
 }
 
-function buildPreloadSummary(zoom: BenchmarkZoom, timedOut: boolean): string {
+function buildPreloadSummary(zoom: BenchmarkZoom, timedOut: boolean, snapshot: BenchmarkWindowSnapshot): string {
     const state = useStore.getState();
     const bounds = state.mapState.bounds;
     const payload = bounds ? buildEntityRequestPayload(bounds, zoom) : null;
     const entities = state.endpointDiagnostics.entities;
     const tileCount = payload?.tileKeys.length ?? 0;
     const batchCount = Math.ceil(tileCount / ENTITY_REQUEST_BATCH_SIZE);
+    const endpointCounters = getBenchmarkEndpointCounters(snapshot.startedAt);
 
     return [
         `request tiles ${formatCount(tileCount)}`,
@@ -134,6 +369,9 @@ function buildPreloadSummary(zoom: BenchmarkZoom, timedOut: boolean): string {
         `F ${formatCount(Object.keys(state.fields).length)}`,
         `diagnostic ${payload?.diagnostic ?? 'none'}`,
         `skip ${entities.lastSkipReason ?? 'none'}`,
+        formatBenchmarkEndpointCounters(endpointCounters),
+        formatBenchmarkEntityDeltas(snapshot),
+        formatBenchmarkSourceDelta(snapshot),
         timedOut ? 'timeout yes' : 'timeout no',
     ].join(' ');
 }
@@ -142,9 +380,11 @@ async function preloadBenchmarkZoom(zoom: BenchmarkZoom): Promise<string> {
     const state = useStore.getState();
     const { lat, lng } = state.mapState;
     const startedAt = Date.now();
+    const snapshot = takeBenchmarkWindowSnapshot(startedAt);
+    const bounds = estimateBenchmarkViewportBounds(lat, lng, zoom);
 
     state.clearMapEntities();
-    window.postMessage({ type: 'IRIS_MOVE_MAP', center: { lat, lng }, zoom }, '*');
+    window.postMessage({ type: 'IRIS_MOVE_MAP', center: { lat, lng }, zoom, bounds }, '*');
     await sleep(BENCHMARK_PRELOAD_MOVE_SETTLE_MS);
     window.postMessage({ type: 'IRIS_REFRESH_CURRENT_VIEW', reason: 'manual' }, '*');
 
@@ -156,12 +396,12 @@ async function preloadBenchmarkZoom(zoom: BenchmarkZoom): Promise<string> {
             (entities.lastRequestAt !== null && entities.lastRequestAt >= startedAt && entities.lastSkipReason !== null);
         if (entities.status !== 'in_flight' && hasObservedRefresh) {
             await sleep(500);
-            return buildPreloadSummary(zoom, false);
+            return buildPreloadSummary(zoom, false, snapshot);
         }
         await sleep(BENCHMARK_BATCH_POLL_MS);
     }
 
-    return buildPreloadSummary(zoom, true);
+    return buildPreloadSummary(zoom, true, snapshot);
 }
 
 function buildBatchReport(lines: string[]): string {
@@ -287,6 +527,7 @@ export function MockToolsBar(): JSX.Element | null {
                 }
                 setBatchStatus(`${index + 1}/${BENCHMARK_BATCH.length} ${testCase.label}`);
                 const startedAt = Date.now();
+                const snapshot = takeBenchmarkWindowSnapshot(startedAt);
                 window.postMessage({
                     type: 'IRIS_RUN_PAN_BENCHMARK',
                     benchmarkVariant: testCase.variant,
@@ -294,7 +535,7 @@ export function MockToolsBar(): JSX.Element | null {
                     benchmarkMode: testCase.mode,
                 }, '*');
                 await waitForBenchmarkResult(testCase, startedAt);
-                lines.push(buildBatchReportLine(testCase));
+                lines.push(buildBatchReportLine(testCase, snapshot));
                 await sleep(500);
             }
 
