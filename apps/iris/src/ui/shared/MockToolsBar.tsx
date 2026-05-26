@@ -39,9 +39,10 @@ const BENCHMARK_BATCH: readonly BenchmarkBatchCase[] = IRIS_BENCHMARK_SCENARIOS;
 
 const BENCHMARK_BATCH_TIMEOUT_MS = 45_000;
 const BENCHMARK_BATCH_POLL_MS = 250;
-const BENCHMARK_IDLE_QUIET_MS = 750;
+const BENCHMARK_IDLE_QUIET_MS = 1_500;
+const BENCHMARK_IDLE_CONFIRM_MS = 500;
 const BENCHMARK_PENDING_REFRESH_WINDOW_MS = 2_000;
-const BENCHMARK_IDLE_TIMEOUT_MS = 10_000;
+const BENCHMARK_IDLE_TIMEOUT_MS = 15_000;
 const BENCHMARK_PRELOAD_MOVE_SETTLE_MS = 750;
 const BENCHMARK_PRELOAD_TIMEOUT_MS = 25_000;
 const BENCHMARK_PRELOAD_RETRY_MS = 1_000;
@@ -243,6 +244,26 @@ function hasBenchmarkEndpointInFlight(): boolean {
     ));
 }
 
+function isBenchmarkNetworkQuiet(): boolean {
+    const state = useStore.getState();
+    const latestActivityAt = state.endpointActivityLog.reduce((latest, entry) => Math.max(latest, entry.time), 0);
+    const quietForMs = latestActivityAt > 0 ? Date.now() - latestActivityAt : BENCHMARK_IDLE_QUIET_MS;
+    const now = Date.now();
+    const entityNextRefreshAt = state.endpointDiagnostics.entities.nextAutoRefreshAt;
+    const entityNextRefreshInMs = typeof entityNextRefreshAt === 'number' ? entityNextRefreshAt - now : null;
+    const hasPendingSoonEntityRefresh =
+        entityNextRefreshInMs !== null &&
+        entityNextRefreshInMs >= 0 &&
+        entityNextRefreshInMs <= BENCHMARK_PENDING_REFRESH_WINDOW_MS;
+
+    return (
+        state.activeRequests === 0 &&
+        !hasBenchmarkEndpointInFlight() &&
+        !hasPendingSoonEntityRefresh &&
+        quietForMs >= BENCHMARK_IDLE_QUIET_MS
+    );
+}
+
 function snapshotBenchmarkEntityPass(): BenchmarkEntityPassSnapshot {
     const entities = useStore.getState().endpointDiagnostics.entities;
 
@@ -438,23 +459,10 @@ async function waitForBenchmarkQuietWindow(timeoutMs = BENCHMARK_IDLE_TIMEOUT_MS
     const deadline = Date.now() + timeoutMs;
 
     while (Date.now() < deadline) {
-        const state = useStore.getState();
-        const latestActivityAt = state.endpointActivityLog.reduce((latest, entry) => Math.max(latest, entry.time), 0);
-        const quietForMs = latestActivityAt > 0 ? Date.now() - latestActivityAt : BENCHMARK_IDLE_QUIET_MS;
-        const now = Date.now();
-        const entityNextRefreshAt = state.endpointDiagnostics.entities.nextAutoRefreshAt;
-        const entityNextRefreshInMs = typeof entityNextRefreshAt === 'number' ? entityNextRefreshAt - now : null;
-        const hasPendingSoonEntityRefresh =
-            entityNextRefreshInMs !== null &&
-            entityNextRefreshInMs >= 0 &&
-            entityNextRefreshInMs <= BENCHMARK_PENDING_REFRESH_WINDOW_MS;
-        const isQuiet =
-            state.activeRequests === 0 &&
-            !hasBenchmarkEndpointInFlight() &&
-            !hasPendingSoonEntityRefresh &&
-            quietForMs >= BENCHMARK_IDLE_QUIET_MS;
-
-        if (isQuiet) return true;
+        if (isBenchmarkNetworkQuiet()) {
+            await sleep(BENCHMARK_IDLE_CONFIRM_MS);
+            if (isBenchmarkNetworkQuiet()) return true;
+        }
         await sleep(BENCHMARK_BATCH_POLL_MS);
     }
 

@@ -261,11 +261,27 @@ These are the concrete IITC semantics that are not yet aligned and are worth con
 | Gap | IITC behavior | Current IRIS behavior | Why it matters |
 |-----|---------------|-----------------------|----------------|
 | Unified map-data pass | One object owns queued tiles, active requests, retries, render queue, status, and pass end. | Request coordinator, interceptor/session runtime, store, and page-world source sync still each own part of the lifecycle; IRIS now adds compact entity-pass diagnostics for pass id, generation, reason, requested/total/fresh tiles, batches, and data zoom. | Diagnostics make pass ownership gaps visible, but they are not yet the unified lifecycle object. |
+| COMM-triggered topology refresh ownership | COMM lifecycle is bounds-aware and request-timer driven, but it is not the same object as the map-data pass. | IRIS has useful COMM-derived topology hints and now defers COMM topology refreshes while the page-world map is moving or synthetic Bench is running; ownership still lives beside the map-data pass rather than inside it. | COMM can improve live freshness, but its independent timers need explicit coordination so they do not surprise render windows or benchmark timing. |
 | Tile-granular retry/fallback | Tracks per-tile errors/timeouts/retries and can render stale cache after retry exhaustion. | Retries are endpoint/generation oriented. | Better behavior for partial tile holes or intermittent Intel tile failures. |
 | Source-publication pass lifecycle | Processes entity chunks and pauses that queue during movement. | Coalesces MapLibre source snapshots; movement deferral protects publication, not parsing/store merge/source construction; copied benchmarks show source update counts and moving overlap but not a single publication pass id/reason. | Large source snapshots may still cost more than incremental mutation, and source updates are harder to attribute to an entity/selection/plugin/planning cause. |
 | IITC hook lifecycle | Fires map-data and entity lifecycle hooks around refresh and render. | Typed plugins publish feature sources and do not receive full IITC-compatible lifecycle events. | Needed only if semantic plugin compatibility becomes a goal. |
 
 ## Main Performance Questions
+
+### Did the benchmark work improve smoothness?
+
+It improved both measurement quality and some real request/source behavior, but the two should be separated:
+
+- Measurement quality improved substantially. Synthetic Bench camera moves no longer drive the live Intel map, Batch waits
+  for a confirmed quiet network window, entity in-flight counters are drain-aware, entity-pass diagnostics distinguish
+  `current` work from carried context, and COMM topology refreshes are deferred while the page-world map is moving or
+  Bench is running.
+- Runtime smoothness improved where request/source churn was the cause. Move-settle fetches now skip covered bounds,
+  heavy low-zoom link/field layers are hidden while moving, entity source publication is coalesced, and COMM-derived
+  refreshes no longer land inside active movement windows.
+- The latest desktop batches are now near the browser/device ceiling in most rows. That means remaining desktop smoothness
+  work is unlikely to come from more entity request scheduling alone; it should target residual passive artifact/plext
+  completions, mobile-only spikes, and source/render costs.
 
 ### Does IRIS publish source updates while the user is panning?
 
@@ -311,8 +327,10 @@ bounds-sensitive COMM requests; it does not appear to drive the same typed map-r
 Possible improvement:
 
 - Add normal-use diagnostics showing "COMM hint -> request -> parse -> source update" chains.
-- Suppress or defer COMM-driven source publication during active pan/zoom.
+- Keep COMM-driven entity refresh deferred during active pan/zoom or explicit benchmark windows.
 - Batch portal-detail refreshes and entity refreshes into a single post-move flush.
+- Make pending COMM topology timers visible in entity-pass diagnostics so quiet-window logic can distinguish "idle" from
+  "about to refresh because COMM activity fired".
 
 ## What to Port Semantically From IITC Next
 

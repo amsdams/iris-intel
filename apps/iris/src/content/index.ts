@@ -487,6 +487,7 @@ window.addEventListener('message', (event: MessageEvent) => {
   switch (type) {
     case PAGE_MAP_RUNTIME_MESSAGES.movement: {
       pageMapMoving = msg.moving === true;
+      requestCoordinator.handlePageMapMovement(pageMapMoving);
       break;
     }
 

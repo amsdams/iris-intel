@@ -45,6 +45,7 @@ export interface RequestCoordinator {
     handleMissionDetailsRequest: (msg: IRISMessage) => void;
     handleMissionsRequest: () => void;
     handlePlextsRequest: (msg: IRISMessage) => void;
+    handlePageMapMovement: (moving: boolean) => void;
     onRequestStart: (url: string) => void;
     onPlextsDataReceived: (time?: number, plexts?: Plext[]) => void;
 }
@@ -60,6 +61,7 @@ export function createRequestCoordinator(): RequestCoordinator {
     let entityMoveRefreshTimeoutId: number | null = null;
     let entityRetryTimeoutId: number | null = null;
     let commActivityRefreshTimeoutId: number | null = null;
+    let commActivityDeferredFlushTimeoutId: number | null = null;
     let entityRetryCount = 0;
     let lastRegionScoreRequestKey: string | null = null;
     let lastEntityCoverageKey: string | null = null;
@@ -72,6 +74,8 @@ export function createRequestCoordinator(): RequestCoordinator {
     let lastResumeRefreshAt = 0;
     let lastCommActivityEntityRefreshAt = 0;
     let lastPlextRequestBounds: BoundsE6 | null = null;
+    let pageMapMoving = false;
+    let pendingCommActivityPlexts: Plext[] | null = null;
     const commPortalDetailRefreshTimes = new Map<string, number>();
     const commPortalDetailPending = new Set<string>();
 
@@ -118,10 +122,26 @@ export function createRequestCoordinator(): RequestCoordinator {
     };
 
     const clearCommActivityRefresh = (): void => {
+        pendingCommActivityPlexts = null;
         if (commActivityRefreshTimeoutId !== null) {
             window.clearTimeout(commActivityRefreshTimeoutId);
             commActivityRefreshTimeoutId = null;
         }
+        if (commActivityDeferredFlushTimeoutId !== null) {
+            window.clearTimeout(commActivityDeferredFlushTimeoutId);
+            commActivityDeferredFlushTimeoutId = null;
+        }
+    };
+
+    const setCommActivityDeferred = (hintCount: number, reason: string): void => {
+        useStore.getState().setEndpointMetadata('entities', {
+            lastRefreshReason: 'comm_activity',
+            lastSkipReason: reason,
+        });
+        useStore.getState().addEndpointActivityLog({
+            endpoint: 'entities',
+            message: `comm_activity deferred (${hintCount} hints, ${reason})`,
+        });
     };
 
     const scheduleCulling = (): void => {
@@ -509,6 +529,12 @@ export function createRequestCoordinator(): RequestCoordinator {
         const hints = getCurrentViewPortalActivityHints(plexts);
         if (hints.length === 0) return;
 
+        if (pageMapMoving) {
+            pendingCommActivityPlexts = plexts;
+            setCommActivityDeferred(hints.length, 'moving');
+            return;
+        }
+
         refreshPortalDetailsFromCommHints(hints);
 
         const now = Date.now();
@@ -856,6 +882,26 @@ export function createRequestCoordinator(): RequestCoordinator {
 
         handlePlextsRequest(msg: IRISMessage): void {
             postPlextFetches(msg, false);
+        },
+
+        handlePageMapMovement(moving: boolean): void {
+            pageMapMoving = moving;
+            if (commActivityDeferredFlushTimeoutId !== null) {
+                window.clearTimeout(commActivityDeferredFlushTimeoutId);
+                commActivityDeferredFlushTimeoutId = null;
+            }
+            if (moving || !pendingCommActivityPlexts) return;
+
+            const plexts = pendingCommActivityPlexts;
+            pendingCommActivityPlexts = null;
+            commActivityDeferredFlushTimeoutId = window.setTimeout(() => {
+                commActivityDeferredFlushTimeoutId = null;
+                if (pageMapMoving) {
+                    pendingCommActivityPlexts = plexts;
+                    return;
+                }
+                scheduleCommActivityEntityRefresh(plexts);
+            }, ENTITY_MOVE_SETTLE_MS);
         },
 
         onRequestStart(url: string): void {

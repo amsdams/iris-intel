@@ -1280,9 +1280,18 @@ Tasks:
 | Eagerly drain stale queued entity requests       | Done   | session-runtime now removes queued older-generation entity requests as soon as a newer entity generation is known, instead of waiting for each stale request to reach the front of the queue |
 | Prevent duplicate preload move-settle fetches    | Done   | manual/resume refresh now clears pending move-settle and COMM-activity entity refreshes, forced entity refreshes bypass stale in-flight gates, benchmark preload uses an entity-only manual request, snapshots the completed manual pass before later quiet-wait activity can overwrite it, retries until it observes a non-skipped manual entity pass, and Batch waits out near-term entity auto-refreshes before preloading |
 | Remove prompt fallback from batch copy            | Done   | benchmark copy failures now leave the in-app report panel open instead of also opening the browser prompt; the panel auto-selects the report and exposes Copy/Select All controls for blocked clipboard cases |
+| Isolate synthetic Bench camera from live map moves | Done   | page-world Bench camera setup now updates only the benchmark MapLibre runtime and no longer posts a camera change back into `IRIS_MOVE_MAP`, preventing synthetic Bench runs from moving Intel and creating native passive `getEntities` noise |
+| Drain ambient network before scenario timing      | Done   | Batch now requires a longer quiet window plus a confirmation re-check before preload/scenario windows, reducing delayed native passive Intel responses in timed rows |
+| Track COMM-activity refresh leakage into Bench    | Done   | coordinator now defers COMM-derived topology refreshes while the page-world map is moving or synthetic Bench is running, and the page runtime keeps benchmark movement signalled until the run actually ends |
 | Add compact workload signature per scenario      | Done   | batch rows now include zoom, tiles, fresh tiles, batches, data zoom, source P/L/F/plugin counts, center, and viewport                    |
 | Add IRIS active response-count preload summary   | Done   | preload rows now include endpoint counters and stale entity deltas in addition to loaded store counts                                      |
 | Keep Mini/IRIS shared batch labels unchanged     | Open   | preserve the existing first seven shared rows while adding fields so older pasted results remain readable                                  |
+
+Wrap-up:
+
+- Bench rows are now much better isolated from live Intel/passive traffic: synthetic camera moves no longer move the real Intel map, scenario timing waits for a confirmed quiet network window, and COMM-derived topology refreshes are deferred while Bench/page-world movement is active.
+- The latest desktop batch shows the intended shape: timed z14/z8 rows mostly carry the completed preload pass, report `net entities req 0`, and avoid mid-row `comm_activity` active entity passes.
+- This improved confidence in the measurements and removed several real sources of pan-time request/source churn. It is not a full renderer smoothness rewrite; remaining smoothness work should focus on residual passive artifact/plext completions, mobile validation, and source/render cost rather than more entity-fetch scheduling.
 
 ### Phase 2: Source Publication and Moving Overlap
 

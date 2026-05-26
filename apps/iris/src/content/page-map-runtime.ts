@@ -791,12 +791,12 @@ function getPageMap(): Promise<maplibregl.Map> {
             map.on('moveend', () => {
                 mapIsMoving = false;
                 lastMapMoveEndAt = Date.now();
-                postMapMovement(false);
                 updateLowZoomMovingEntityLayerVisibility(map);
                 schedulePendingSyncDataFlush(map);
                 if (panBenchmarkActive) {
                     return;
                 }
+                postMapMovement(false);
                 if (suppressNextCameraChangedEvent) {
                     suppressNextCameraChangedEvent = false;
                     return;
@@ -2261,6 +2261,7 @@ async function runPanBenchmark(variant: BenchmarkVariant = 'normal', zoom = 14.3
                 }
 
                 panBenchmarkActive = false;
+                postMapMovement(false);
                 flushPendingSyncData(map);
                 if (panBenchmarkMode === 'pan') {
                     setMovingOverlayVisibility(map, true);
