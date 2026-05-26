@@ -798,3 +798,37 @@ Comparison:
   `18ms / 56fps / 2 slow / max 67ms`, and now closely matches the z8 isolation rows.
 - The later mobile z8 No Plugins row in the same pasted run was noisy (`24ms`, `18` slow frames, `2` long tasks,
   `736ms` max long task, and active entity traffic), so treat it as contaminated rather than a rendering regression.
+
+### Follow-Up: Fetched-Bounds Containment Phone Variance
+
+Change under test:
+
+- Move-settle entity refresh skips when the current viewport is covered by fresh tile-aligned fetched bounds.
+- Rows should show `skip covered by fetched bounds`; remaining bad rows are more likely carryover async work or device
+  long tasks than unnecessary move-settle fetch scheduling.
+
+```text
+DESKTOP Firefox/153.0 viewport 960x943 DPR 2.00
+z8 normal pan | items 17,339 | P 5,102 | L 8,734 | F 3,499 | avg 8ms | max 27ms | fps 119 | slow 0/1,076 | entityDelta staleDrop 0 staleIgnore 0 skip covered by fetched bounds
+z8 no-links pan | items 17,339 | P 5,102 | L 8,734 | F 3,499 | avg 8ms | max 26ms | fps 120 | slow 0/1,078 | entityDelta staleDrop 0 staleIgnore 0 skip covered by fetched bounds
+z8 base pan | items 17,342 | P 5,102 | L 8,737 | F 3,499 | avg 9ms | max 75ms | fps 117 | slow 4/1,058 | entityDelta staleDrop 0 staleIgnore 0 skip covered by fetched bounds
+
+MOBILE Firefox/149.0 viewport 360x704 DPR 3.00, first sample
+z8 normal pan | items 9.687 | P 2.913 | L 4.844 | F 1.930 | avg 22ms | max 67ms | fps 46 | slow 11/415 | entityDelta staleDrop 2 staleIgnore 4 skip covered by fetched bounds | longtask count 1 max 605ms
+z8 no-links pan | items 9.687 | P 2.913 | L 4.844 | F 1.930 | avg 26ms | max 67ms | fps 39 | slow 25/354 | entityDelta staleDrop 0 staleIgnore 0 skip covered by fetched bounds
+z8 base pan | items 9.689 | P 2.913 | L 4.846 | F 1.930 | avg 22ms | max 318ms | fps 46 | slow 13/414 | entityDelta staleDrop 0 staleIgnore 0 skip cooldown (21 hints) | longtask count 1 max 282ms
+
+MOBILE Firefox/149.0 viewport 360x704 DPR 3.00, repeat sample
+z8 normal pan | items 9.687 | P 2.914 | L 4.843 | F 1.930 | avg 34ms | max 318ms | fps 30 | slow 40/273 | entityDelta staleDrop 0 staleIgnore 8 skip covered by fetched bounds | longtask count 3 max 473ms
+z8 no-links pan | items 9.692 | P 2.914 | L 4.848 | F 1.930 | avg 32ms | max 535ms | fps 31 | slow 36/291 | entityDelta staleDrop 0 staleIgnore 0 skip covered by fetched bounds | longtask count 1 max 957ms
+z8 no-fields pan | items 9.692 | P 2.914 | L 4.848 | F 1.930 | avg 21ms | max 67ms | fps 47 | slow 12/422 | entityDelta staleDrop 0 staleIgnore 0 skip covered by fetched bounds
+z8 base pan | items 9.692 | P 2.914 | L 4.848 | F 1.930 | avg 18ms | max 50ms | fps 54 | slow 2/490 | entityDelta staleDrop 0 staleIgnore 0 skip covered by fetched bounds
+```
+
+Comparison:
+
+- Fetched-bounds containment is confirmed: both desktop and phone repeatedly report `skip covered by fetched bounds`.
+- Desktop remains clean in z8 normal after the skip.
+- Phone remains variable. The repeat sample has worse active rows despite the same skip behavior, with long tasks and
+  stale/active entity work showing up inside scenario windows. This justified adding compact entity-pass diagnostics and
+  a quiet-window wait between batch scenarios before further request lifecycle changes.

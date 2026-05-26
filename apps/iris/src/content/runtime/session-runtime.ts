@@ -153,6 +153,25 @@ export function createSessionRuntime(win: Window, doc: Document): SessionRuntime
         reject: (reason?: unknown) => void;
     }[] = [];
 
+    const dropStaleQueuedEntityRequests = (): void => {
+        for (let index = requestQueue.length - 1; index >= 0; index -= 1) {
+            const request = requestQueue[index];
+            const entityGeneration = request.options._iris_entityGeneration;
+            if (typeof entityGeneration !== 'number' || entityGeneration >= latestEntityGeneration) {
+                continue;
+            }
+
+            requestQueue.splice(index, 1);
+            win.postMessage({
+                type: 'IRIS_ENTITY_REFRESH_STALE_QUEUED_DROP',
+                entityGeneration,
+                latestEntityGeneration,
+                time: Date.now(),
+            }, '*');
+            request.reject(new Error(`IRIS: dropped stale entity request generation ${entityGeneration}; current ${latestEntityGeneration}`));
+        }
+    };
+
     const observeIntelVersion = (candidate?: string | null): void => {
         if (candidate && candidate !== intelVersion) {
             intelVersion = candidate;
@@ -250,6 +269,7 @@ export function createSessionRuntime(win: Window, doc: Document): SessionRuntime
         return new Promise((resolve, reject) => {
             if (typeof options._iris_entityGeneration === 'number') {
                 latestEntityGeneration = Math.max(latestEntityGeneration, options._iris_entityGeneration);
+                dropStaleQueuedEntityRequests();
             }
             requestQueue.push({ url, options, resolve, reject });
             processQueue();
@@ -269,6 +289,7 @@ export function createSessionRuntime(win: Window, doc: Document): SessionRuntime
         reportHtmlLoginResponse,
         setLatestEntityGeneration: (generation: number): void => {
             latestEntityGeneration = Math.max(latestEntityGeneration, generation);
+            dropStaleQueuedEntityRequests();
             processQueue();
         },
         safeIrisFetch,

@@ -17,6 +17,8 @@ describe('Diagnostics Slice', () => {
         expect(diagnostics.lastActiveSuccessAt).toBe(null);
         expect(diagnostics.lastPassiveSuccessAt).toBe(null);
         expect(diagnostics.lastCoverageKey).toBe(null);
+        expect(diagnostics.lastPassId).toBe(null);
+        expect(diagnostics.lastPassRequestedTiles).toBe(0);
     });
 
     it('updates endpoint metadata correctly', () => {

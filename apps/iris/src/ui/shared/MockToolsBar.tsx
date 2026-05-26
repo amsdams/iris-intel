@@ -39,6 +39,8 @@ const BENCHMARK_BATCH: readonly BenchmarkBatchCase[] = IRIS_BENCHMARK_SCENARIOS;
 
 const BENCHMARK_BATCH_TIMEOUT_MS = 45_000;
 const BENCHMARK_BATCH_POLL_MS = 250;
+const BENCHMARK_IDLE_QUIET_MS = 750;
+const BENCHMARK_IDLE_TIMEOUT_MS = 10_000;
 const BENCHMARK_PRELOAD_MOVE_SETTLE_MS = 3_600;
 const BENCHMARK_PRELOAD_TIMEOUT_MS = 25_000;
 const BENCHMARK_ENDPOINT_KEYS: readonly EndpointKey[] = ['entities', 'portalDetails', 'plexts', 'artifacts', 'inventory', 'gameScore', 'regionScore', 'unknown'];
@@ -220,6 +222,13 @@ function formatBenchmarkEntityDeltas(snapshot: BenchmarkWindowSnapshot): string 
     return `entityDelta staleDrop ${formatCount(staleDrop)} staleIgnore ${formatCount(staleIgnore)} skip ${entities.lastSkipReason ?? 'none'}`;
 }
 
+function formatBenchmarkEntityPass(snapshot: BenchmarkWindowSnapshot): string {
+    const entities = useStore.getState().endpointDiagnostics.entities;
+    if (entities.lastPassId === null) return 'entityPass none';
+    const scope = entities.lastPassStartedAt !== null && entities.lastPassStartedAt >= snapshot.startedAt ? 'current' : 'carry';
+    return `entityPass ${scope} id ${formatCount(entities.lastPassId)} gen ${formatCount(entities.lastPassGeneration ?? undefined)} reason ${entities.lastPassReason ?? '-'} req ${formatCount(entities.lastPassRequestedTiles)}/${formatCount(entities.lastPassTotalTiles)} fresh ${formatCount(entities.lastPassFreshTiles)} batches ${formatCount(entities.lastPassBatchCount)} dataZoom ${formatCount(entities.lastPassDataZoom ?? undefined)}`;
+}
+
 function formatBenchmarkLongTaskDelta(snapshot: BenchmarkWindowSnapshot): string {
     const diagnostics = useStore.getState().mainThreadDiagnostics;
     const count = Math.max(0, diagnostics.longTaskCount - snapshot.longTaskCount);
@@ -329,6 +338,7 @@ function buildBatchReportLine(testCase: BenchmarkBatchCase, snapshot: BenchmarkW
         `benchMax ${formatMs(frame.benchmarkMaxFrameMs)}`,
         formatBenchmarkEndpointCounters(getBenchmarkEndpointCounters(snapshot.startedAt, finishedAt)),
         formatBenchmarkEntityDeltas(snapshot),
+        formatBenchmarkEntityPass(snapshot),
         formatBenchmarkSourceDelta(snapshot),
         formatBenchmarkLongTaskDelta(snapshot),
         formatBenchmarkWorkload(testCase, sourceCounts),
@@ -376,9 +386,29 @@ function buildPreloadSummary(zoom: BenchmarkZoom, timedOut: boolean, snapshot: B
         `skip ${entities.lastSkipReason ?? 'none'}`,
         formatBenchmarkEndpointCounters(endpointCounters),
         formatBenchmarkEntityDeltas(snapshot),
+        formatBenchmarkEntityPass(snapshot),
         formatBenchmarkSourceDelta(snapshot),
         timedOut ? 'timeout yes' : 'timeout no',
     ].join(' ');
+}
+
+async function waitForBenchmarkQuietWindow(timeoutMs = BENCHMARK_IDLE_TIMEOUT_MS): Promise<boolean> {
+    const deadline = Date.now() + timeoutMs;
+
+    while (Date.now() < deadline) {
+        const state = useStore.getState();
+        const latestActivityAt = state.endpointActivityLog.reduce((latest, entry) => Math.max(latest, entry.time), 0);
+        const quietForMs = latestActivityAt > 0 ? Date.now() - latestActivityAt : BENCHMARK_IDLE_QUIET_MS;
+        const isQuiet =
+            state.activeRequests === 0 &&
+            state.endpointDiagnostics.entities.status !== 'in_flight' &&
+            quietForMs >= BENCHMARK_IDLE_QUIET_MS;
+
+        if (isQuiet) return true;
+        await sleep(BENCHMARK_BATCH_POLL_MS);
+    }
+
+    return false;
 }
 
 async function preloadBenchmarkZoom(zoom: BenchmarkZoom): Promise<string> {
@@ -400,7 +430,7 @@ async function preloadBenchmarkZoom(zoom: BenchmarkZoom): Promise<string> {
             (entities.lastSuccessAt !== null && entities.lastSuccessAt >= startedAt) ||
             (entities.lastRequestAt !== null && entities.lastRequestAt >= startedAt && entities.lastSkipReason !== null);
         if (entities.status !== 'in_flight' && hasObservedRefresh) {
-            await sleep(500);
+            await waitForBenchmarkQuietWindow();
             return buildPreloadSummary(zoom, false, snapshot);
         }
         await sleep(BENCHMARK_BATCH_POLL_MS);
@@ -531,6 +561,7 @@ export function MockToolsBar(): JSX.Element | null {
                     preloadedZoom = testCase.zoom;
                 }
                 setBatchStatus(`${index + 1}/${BENCHMARK_BATCH.length} ${testCase.label}`);
+                await waitForBenchmarkQuietWindow();
                 const startedAt = Date.now();
                 const snapshot = takeBenchmarkWindowSnapshot(startedAt);
                 window.postMessage({

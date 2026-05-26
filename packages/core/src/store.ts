@@ -304,6 +304,15 @@ export interface EndpointDiagnostics {
     lastActiveSuccessAt: number | null;
     lastPassiveSuccessAt: number | null;
     lastCoverageKey: string | null;
+    lastPassId: number | null;
+    lastPassStartedAt: number | null;
+    lastPassReason: string | null;
+    lastPassGeneration: number | null;
+    lastPassTotalTiles: number;
+    lastPassRequestedTiles: number;
+    lastPassFreshTiles: number;
+    lastPassBatchCount: number;
+    lastPassDataZoom: number | null;
     staleQueuedDropCount: number;
     staleResponseIgnoreCount: number;
 }
@@ -781,6 +790,15 @@ const createEmptyEndpointDiagnostics = (): Record<EndpointKey, EndpointDiagnosti
             lastActiveSuccessAt: null,
             lastPassiveSuccessAt: null,
             lastCoverageKey: null,
+            lastPassId: null,
+            lastPassStartedAt: null,
+            lastPassReason: null,
+            lastPassGeneration: null,
+            lastPassTotalTiles: 0,
+            lastPassRequestedTiles: 0,
+            lastPassFreshTiles: 0,
+            lastPassBatchCount: 0,
+            lastPassDataZoom: null,
             staleQueuedDropCount: 0,
             staleResponseIgnoreCount: 0,
         } satisfies EndpointDiagnostics]),
