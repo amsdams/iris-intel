@@ -1293,6 +1293,8 @@ Tasks:
 | Report network responses while moving               | Done   | page-world runtime now posts movement state to content diagnostics, successful endpoint log entries carry `isMoving`, and copied batch `net` counters include a per-endpoint `moving` success count |
 | Add source-update reason labels                     | Open   | classify updates as entities, portal-details, COMM activity, selection, plugins, planning, visual filters, benchmark preload, or unknown                   |
 | Preserve urgent update path in diagnostics wording  | Open   | distinguish selection/camera updates from heavy entity/plugin source updates so future scheduler changes can defer only non-urgent work                    |
+| Suspend heavy low-zoom entity layers while moving   | Done   | z10 and below now temporarily hides the main link/field layers during active movement and restores them on move end; selected link/field layers remain visible, and z14 behavior is unchanged |
+| Port IITC center-first tile request ordering        | Done   | shared entity request payloads now sort generated tile keys by distance from the viewport/bounds center before batching, so IRIS and Mini request central data first like IITC |
 | Investigate player track pin flicker after pan      | Open   | manual smoke looked normal overall after deferred source sync, but player track pins can briefly hide/show after panning; check tracker source freshness, deferred flush timing, and layer ordering before changing behavior |
 
 ### Phase 3: Long Task, UI Render, and Stable Frame Context

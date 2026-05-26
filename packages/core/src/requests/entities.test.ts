@@ -42,6 +42,24 @@ describe('buildEntityRequestPayload', () => {
     expect(payload.diagnostic).toBe('tile coverage capped at 1024');
   });
 
+  it('orders requested tiles from viewport center outward', () => {
+    const payload = buildEntityRequestPayload({
+      minLatE6: -400_000,
+      minLngE6: -400_000,
+      maxLatE6: 400_000,
+      maxLngE6: 400_000,
+    }, 8);
+
+    expect(payload.tileKeys.length).toBeGreaterThan(4);
+    expect(payload.tileKeys[0]).toBe('8_499_499_5_8_100');
+    expect(payload.tileKeys.slice(0, 4).sort()).toEqual([
+      '8_499_499_5_8_100',
+      '8_499_500_5_8_100',
+      '8_500_499_5_8_100',
+      '8_500_500_5_8_100',
+    ]);
+  });
+
   it('batches tile keys with the shared Intel request size', () => {
     const tileKeys = Array.from({ length: ENTITY_REQUEST_BATCH_SIZE + 2 }, (_, index) => `tile-${index}`);
 

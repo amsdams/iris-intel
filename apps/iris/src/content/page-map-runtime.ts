@@ -180,6 +180,7 @@ const PAN_BENCHMARK_RUN_DURATION_MS = 3000;
 const PAN_BENCHMARK_START = {lat: 52.371094, lng: 4.906375};
 const PAN_BENCHMARK_SETTLE_MS = 600;
 const DEFERRED_SOURCE_SYNC_SETTLE_MS = 120;
+const LOW_ZOOM_MOVING_ENTITY_SUSPEND_ZOOM = 10;
 const PLAYER_MARKER_CIRCLE_SPREAD_RADIUS_PX = 26;
 const PLAYER_MARKER_SPIRAL_START_COUNT = 8;
 const PLAYER_MARKER_SPIRAL_STEP_PX = 8;
@@ -238,6 +239,7 @@ const BENCHMARK_PLUGIN_LAYER_IDS = [
 ];
 
 let currentLayerVisibility: PageMapRuntimeLayerVisibility = DEFAULT_LAYER_VISIBILITY;
+let lowZoomEntityLayersSuspended = false;
 let currentPlanningState: {enabled: boolean; tool: 'links' | 'markers'} = {
     enabled: false,
     tool: 'links',
@@ -781,11 +783,16 @@ function getPageMap(): Promise<maplibregl.Map> {
                 mapIsMoving = true;
                 lastMapMoveStartAt = Date.now();
                 postMapMovement(true);
+                updateLowZoomMovingEntityLayerVisibility(map);
+            });
+            map.on('move', () => {
+                updateLowZoomMovingEntityLayerVisibility(map);
             });
             map.on('moveend', () => {
                 mapIsMoving = false;
                 lastMapMoveEndAt = Date.now();
                 postMapMovement(false);
+                updateLowZoomMovingEntityLayerVisibility(map);
                 schedulePendingSyncDataFlush(map);
                 if (panBenchmarkActive) {
                     return;
@@ -997,6 +1004,29 @@ function setMovingOverlayVisibility(map: maplibregl.Map, visible: boolean): void
     setLayerVisibility(map, 'iris-map-plugin-portal-highlights', visible);
 }
 
+function shouldSuspendLowZoomEntityLayers(map: maplibregl.Map): boolean {
+    return activeBenchmarkVariant === 'normal' &&
+        isMapActivelyMoving() &&
+        map.getZoom() <= LOW_ZOOM_MOVING_ENTITY_SUSPEND_ZOOM;
+}
+
+function setCoreEntityLayerVisibility(map: maplibregl.Map): void {
+    const suspendLinksAndFields = lowZoomEntityLayersSuspended;
+    setLayerVisibility(map, 'iris-map-portals', currentLayerVisibility.portals);
+    PORTAL_HISTORY_LAYER_IDS.forEach((layerId) => setLayerVisibility(map, layerId, currentLayerVisibility.portals));
+    setLayerVisibility(map, 'iris-map-links', currentLayerVisibility.links && !suspendLinksAndFields);
+    setLayerVisibility(map, 'iris-map-fields', currentLayerVisibility.fields && !suspendLinksAndFields);
+    setLayerVisibility(map, 'iris-map-link-selected', currentLayerVisibility.links);
+    setLayerVisibility(map, 'iris-map-field-selected', currentLayerVisibility.fields);
+}
+
+function updateLowZoomMovingEntityLayerVisibility(map: maplibregl.Map): void {
+    const nextSuspended = shouldSuspendLowZoomEntityLayers(map);
+    if (nextSuspended === lowZoomEntityLayersSuspended) return;
+    lowZoomEntityLayersSuspended = nextSuspended;
+    setCoreEntityLayerVisibility(map);
+}
+
 function applyBenchmarkVariant(map: maplibregl.Map, variant: BenchmarkVariant): () => void {
     const previousBenchmarkVariant = activeBenchmarkVariant;
     activeBenchmarkVariant = variant;
@@ -1045,12 +1075,8 @@ function applyBenchmarkVariant(map: maplibregl.Map, variant: BenchmarkVariant): 
 
 function setIrisLayerVisibility(map: maplibregl.Map, visibility: PageMapRuntimeLayerVisibility): void {
     currentLayerVisibility = visibility;
-    setLayerVisibility(map, 'iris-map-portals', visibility.portals);
-    PORTAL_HISTORY_LAYER_IDS.forEach((layerId) => setLayerVisibility(map, layerId, visibility.portals));
-    setLayerVisibility(map, 'iris-map-links', visibility.links);
-    setLayerVisibility(map, 'iris-map-fields', visibility.fields);
-    setLayerVisibility(map, 'iris-map-link-selected', visibility.links);
-    setLayerVisibility(map, 'iris-map-field-selected', visibility.fields);
+    updateLowZoomMovingEntityLayerVisibility(map);
+    setCoreEntityLayerVisibility(map);
 }
 
 function setIrisData(map: maplibregl.Map, message: PageMapRuntimeCommandMessage, reason = 'syncData'): void {

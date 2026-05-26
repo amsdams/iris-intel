@@ -52,11 +52,19 @@ function getDataZoomForMapZoom(mapZoom: number): number {
 }
 
 function lngToTile(lng: number, params: TileParams): number {
-  return Math.floor(((lng + 180) / 360) * params.tilesPerEdge);
+  return Math.floor(lngToTileFloat(lng, params));
 }
 
 function latToTile(lat: number, params: TileParams): number {
-  return Math.floor(((1 - Math.log(Math.tan((lat * Math.PI) / 180) + 1 / Math.cos((lat * Math.PI) / 180)) / Math.PI) / 2) * params.tilesPerEdge);
+  return Math.floor(latToTileFloat(lat, params));
+}
+
+function lngToTileFloat(lng: number, params: TileParams): number {
+  return ((lng + 180) / 360) * params.tilesPerEdge;
+}
+
+function latToTileFloat(lat: number, params: TileParams): number {
+  return ((1 - Math.log(Math.tan((lat * Math.PI) / 180) + 1 / Math.cos((lat * Math.PI) / 180)) / Math.PI) / 2) * params.tilesPerEdge;
 }
 
 function pointToTileId(params: TileParams, x: number, y: number): string {
@@ -89,6 +97,23 @@ function buildTileXRanges(rawWest: number, rawEast: number, params: TileParams):
   ];
 }
 
+function getBoundsCenterLng(rawWest: number, rawEast: number): number {
+  if (Math.abs(rawEast - rawWest) >= 360) return 0;
+
+  const west = normalizeLongitudeDegrees(rawWest);
+  const east = normalizeLongitudeDegrees(rawEast);
+  if (west <= east) {
+    return (west + east) / 2;
+  }
+
+  return normalizeLongitudeDegrees(west + ((east + 360 - west) / 2));
+}
+
+function getWrappedTileDelta(a: number, b: number, tilesPerEdge: number): number {
+  const direct = Math.abs(a - b);
+  return Math.min(direct, tilesPerEdge - direct);
+}
+
 export function buildEntityRequestPayload(bounds: BoundsE6, mapZoom: number): EntityRequestPayload {
   if (!Number.isFinite(mapZoom) || !isFiniteBoundsE6(bounds)) {
     return {
@@ -110,23 +135,34 @@ export function buildEntityRequestPayload(bounds: BoundsE6, mapZoom: number): En
   const xRanges = buildTileXRanges(west, east, params);
   const minY = clamp(latToTile(north, params), minTile, maxTile);
   const maxY = clamp(latToTile(south, params), minTile, maxTile);
-  const tileKeys: string[] = [];
+  const centerLng = getBoundsCenterLng(west, east);
+  const centerLat = (north + south) / 2;
+  const centerX = lngToTileFloat(centerLng, params);
+  const centerY = latToTileFloat(centerLat, params);
+  const tileEntries: Array<{key: string; distanceSquared: number}> = [];
   let capped = false;
 
   for (const [minX, maxX] of xRanges) {
     for (let x = minX; x <= maxX; x += 1) {
       for (let y = minY; y <= maxY; y += 1) {
-        if (tileKeys.length >= MAX_ENTITY_TILE_KEYS) {
+        if (tileEntries.length >= MAX_ENTITY_TILE_KEYS) {
           capped = true;
           break;
         }
-        tileKeys.push(pointToTileId(params, x, y));
+        const dx = getWrappedTileDelta(x + 0.5, centerX, params.tilesPerEdge);
+        const dy = (y + 0.5) - centerY;
+        tileEntries.push({
+          key: pointToTileId(params, x, y),
+          distanceSquared: dx * dx + dy * dy,
+        });
       }
       if (capped) break;
     }
     if (capped) break;
   }
 
+  tileEntries.sort((a, b) => a.distanceSquared - b.distanceSquared || a.key.localeCompare(b.key));
+  const tileKeys = tileEntries.map((entry) => entry.key);
   const coverageRanges = xRanges.map(([minX, maxX]) => `${minX}-${maxX}`).join(',');
   return {
     tileKeys,
