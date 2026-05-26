@@ -60,6 +60,8 @@ export interface PageMapRuntimeDataPayload {
 export interface PageMapRuntimeCommandMessage extends PageMapRuntimeDataPayload {
     type?: string;
     diagnostic?: boolean;
+    syncReason?: string;
+    syncReasons?: string[];
 }
 
 export interface PageMapRuntimeResultMessage {

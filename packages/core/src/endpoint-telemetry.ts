@@ -100,7 +100,7 @@ export function shouldSkipEndpointTelemetryRequest(
   if (!telemetry) return false;
   const now = options.now ?? Date.now();
 
-  if (telemetry.status === 'in_flight') return true;
+  if (telemetry.status === 'in_flight' || telemetry.inFlightCount > 0) return true;
   if (telemetry.cooldownUntil !== null && now < telemetry.cooldownUntil) return true;
   if (!options.force && telemetry.nextRefreshAt !== null && now < telemetry.nextRefreshAt) return true;
   return false;

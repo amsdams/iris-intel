@@ -832,3 +832,33 @@ Comparison:
 - Phone remains variable. The repeat sample has worse active rows despite the same skip behavior, with long tasks and
   stale/active entity work showing up inside scenario windows. This justified adding compact entity-pass diagnostics and
   a quiet-window wait between batch scenarios before further request lifecycle changes.
+
+### Follow-Up: Entity-Pass Preload Capture and Quiet Scenario Windows
+
+Change under test:
+
+- Benchmark preload uses an entity-only manual refresh and captures the completed manual entity pass before later quiet
+  wait or COMM activity can overwrite the preload row.
+- Batch scenario windows wait for active endpoint work and near-term entity auto-refreshes before timing.
+- Copy fallback stays inside the report panel instead of using browser prompt/alert UI.
+
+```text
+DESKTOP Firefox/153.0 viewport 960x943 DPR 2.00
+PRELOAD z14.36 | request tiles 4 batches 1 dataZoom 13 loaded P 1,200 L 2,392 F 1,110 | entityPass current id 3 gen 7 reason manual req 4/4 fresh 0 batches 1 dataZoom 13
+z14.36 normal pan | items 7,265 | P 1,783 | L 3,781 | F 1,688 | avg 9ms | max 92ms | fps 115 | slow 6/1,034 | entityDelta staleDrop 0 staleIgnore 0 skip covered by fetched bounds | entityPass current id 4 gen 10 reason move_settle req 0/4 fresh 4 batches 0 dataZoom 13
+z14.36 base pan | items 7,265 | P 1,783 | L 3,781 | F 1,688 | avg 8ms | max 29ms | fps 120 | slow 0/1,080 | entityPass current id 5 gen 13 reason move_settle req 0/4 fresh 4 batches 0 dataZoom 13
+z14.36 normal zoom | items 7,265 | P 1,783 | L 3,781 | F 1,688 | avg 8ms | max 33ms | fps 118 | slow 0/1,066 | entityPass current id 6 gen 16 reason move_settle req 0/4 fresh 4 batches 0 dataZoom 13
+PRELOAD z8 | request tiles 72 batches 3 dataZoom 8 loaded P 5,111 L 8,809 F 3,562 | entityPass current id 7 gen 17 reason manual req 72/72 fresh 0 batches 3 dataZoom 8
+z8 normal pan | items 17,482 | P 5,111 | L 8,809 | F 3,562 | avg 8ms | max 34ms | fps 119 | slow 1/1,075 | entityPass current id 9 gen 20 reason move_settle req 0/72 fresh 72 batches 0 dataZoom 8 | sourceDelta syncs 0 movingSyncs 0 calls 0 movingCalls 0
+z8 no-links pan | items 17,482 | P 5,111 | L 8,809 | F 3,562 | avg 8ms | max 30ms | fps 120 | slow 0/1,078 | sourceDelta syncs 0 movingSyncs 0 calls 0 movingCalls 0
+z8 no-fields pan | items 17,491 | P 5,111 | L 8,818 | F 3,562 | avg 8ms | max 50ms | fps 119 | slow 1/1,069 | sourceDelta syncs 1 movingSyncs 0 calls 5 movingCalls 0
+z8 base pan | items 17,491 | P 5,111 | L 8,818 | F 3,562 | avg 8ms | max 25ms | fps 119 | slow 0/1,077 | sourceDelta syncs 0 movingSyncs 0 calls 0 movingCalls 0
+```
+
+Comparison:
+
+- Preload rows now clearly show the intended manual pass: z14.36 `req 4/4` and z8 `req 72/72`, both captured before
+  later move-settle or COMM activity can replace the diagnostic.
+- Desktop z8 is effectively clean in this run: normal pan is `8ms / 119fps / 1 slow / max 34ms`, and the isolation rows
+  are similarly stable.
+- Remaining z14.36 normal pan spikes are small and isolated; the base and zoom rows are clean.

@@ -32,17 +32,16 @@ import {
     IRIS_PAGE_MAP_MIN_ZOOM,
     PAGE_MAP_RUNTIME_MESSAGES,
     PageMapRuntimeCameraChangedMessage,
+    PageMapRuntimeCommandMessage,
     PageMapRuntimeSelectionMessage,
 } from '../shared/page-map-runtime-protocol';
 import {
     buildPageMapRuntimeArtifactsMessage,
-    buildPageMapRuntimeFieldsMessage,
-    buildPageMapRuntimeLinksMessage,
+    buildPageMapRuntimeEntitiesMessage,
     buildPageMapRuntimeMissionMessage,
     buildPageMapRuntimeOrnamentsMessage,
     buildPageMapRuntimePlannedFeaturesMessage,
     buildPageMapRuntimePluginFeaturesMessage,
-    buildPageMapRuntimePortalsMessage,
     buildPageMapRuntimeSelectionMessage,
     buildPageMapRuntimeSnapshotMessage,
     buildPageMapRuntimeVisualFilterMessage,
@@ -232,16 +231,8 @@ function buildPageRuntimeSelectionFromStore(type: string, diagnostic?: boolean):
     return buildPageMapRuntimeSelectionMessage(getPageRuntimeSnapshotOptionsFromStore(type, diagnostic));
 }
 
-function buildPageRuntimePortalsFromStore(type: string, diagnostic?: boolean): ReturnType<typeof buildPageMapRuntimePortalsMessage> {
-    return buildPageMapRuntimePortalsMessage(getPageRuntimeSnapshotOptionsFromStore(type, diagnostic));
-}
-
-function buildPageRuntimeLinksFromStore(type: string, diagnostic?: boolean): ReturnType<typeof buildPageMapRuntimeLinksMessage> {
-    return buildPageMapRuntimeLinksMessage(getPageRuntimeSnapshotOptionsFromStore(type, diagnostic));
-}
-
-function buildPageRuntimeFieldsFromStore(type: string, diagnostic?: boolean): ReturnType<typeof buildPageMapRuntimeFieldsMessage> {
-    return buildPageMapRuntimeFieldsMessage(getPageRuntimeSnapshotOptionsFromStore(type, diagnostic));
+function buildPageRuntimeEntitiesFromStore(type: string, diagnostic?: boolean): ReturnType<typeof buildPageMapRuntimeEntitiesMessage> {
+    return buildPageMapRuntimeEntitiesMessage(getPageRuntimeSnapshotOptionsFromStore(type, diagnostic));
 }
 
 function buildPageRuntimeVisualFilterFromStore(type: string, diagnostic?: boolean): ReturnType<typeof buildPageMapRuntimeVisualFilterMessage> {
@@ -266,6 +257,20 @@ function buildPageRuntimeOrnamentsFromStore(type: string, diagnostic?: boolean):
 
 function buildPageRuntimeMissionFromStore(type: string, diagnostic?: boolean): ReturnType<typeof buildPageMapRuntimeMissionMessage> {
     return buildPageMapRuntimeMissionMessage(getPageRuntimeSnapshotOptionsFromStore(type, diagnostic));
+}
+
+function withPageRuntimeSyncReason<T extends PageMapRuntimeCommandMessage>(message: T, reason: string): T {
+    return {
+        ...message,
+        syncReason: reason,
+    };
+}
+
+function withPageRuntimeSyncReasons<T extends PageMapRuntimeCommandMessage>(message: T, reasons: string[]): T {
+    return {
+        ...message,
+        syncReasons: reasons,
+    };
 }
 
 export function IRISOverlay(): JSX.Element {
@@ -574,7 +579,7 @@ export function IRISOverlay(): JSX.Element {
             }
             if (isRecord(event.data) && event.data.type === PAGE_MAP_RUNTIME_MESSAGES.ready) {
                 if (showMap) {
-                    window.postMessage(buildPageRuntimeSnapshotFromStore(PAGE_MAP_RUNTIME_MESSAGES.showMap), '*');
+                    window.postMessage(withPageRuntimeSyncReason(buildPageRuntimeSnapshotFromStore(PAGE_MAP_RUNTIME_MESSAGES.showMap), 'snapshot'), '*');
                     pageRuntimeInitialSyncDoneRef.current = true;
                 }
                 return;
@@ -677,11 +682,11 @@ export function IRISOverlay(): JSX.Element {
             2500,
         ];
         const timeouts = retryDelays.map((delay) => window.setTimeout(() => {
-            window.postMessage(buildPageRuntimeSnapshotFromStore(
+            window.postMessage(withPageRuntimeSyncReason(buildPageRuntimeSnapshotFromStore(
                 pageRuntimeStartsInFullMapRef.current
                     ? PAGE_MAP_RUNTIME_MESSAGES.showMap
                     : PAGE_MAP_RUNTIME_MESSAGES.syncSnapshot
-            ), '*');
+            ), 'snapshot'), '*');
             pageRuntimeInitialSyncDoneRef.current = true;
         }, delay));
 
@@ -692,7 +697,7 @@ export function IRISOverlay(): JSX.Element {
         if (!pageRuntimeInitialSyncDoneRef.current) return;
 
         if (showMap) {
-            window.postMessage(buildPageRuntimeSnapshotFromStore(PAGE_MAP_RUNTIME_MESSAGES.showMap), '*');
+            window.postMessage(withPageRuntimeSyncReason(buildPageRuntimeSnapshotFromStore(PAGE_MAP_RUNTIME_MESSAGES.showMap), 'snapshot'), '*');
             return;
         }
 
@@ -703,7 +708,7 @@ export function IRISOverlay(): JSX.Element {
         if (!pageRuntimeInitialSyncDoneRef.current) return;
 
         const timeout = window.setTimeout(() => {
-            window.postMessage(buildPageRuntimeVisualFilterFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
+            window.postMessage(withPageRuntimeSyncReason(buildPageRuntimeVisualFilterFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), 'visual-filters'), '*');
         }, PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS);
 
         return (): void => window.clearTimeout(timeout);
@@ -722,66 +727,51 @@ export function IRISOverlay(): JSX.Element {
     ]);
 
     useEffect(() => {
-        let portalTimeout: number | null = null;
-        let linkTimeout: number | null = null;
-        let fieldTimeout: number | null = null;
+        let entityTimeout: number | null = null;
 
-        const clearPatchTimeout = (timeout: number | null): void => {
-            if (timeout !== null) {
-                window.clearTimeout(timeout);
-            }
+        const clearEntityPatchTimeout = (): void => {
+            if (entityTimeout === null) return;
+            window.clearTimeout(entityTimeout);
+            entityTimeout = null;
+        };
+
+        const scheduleEntityPatchSync = (): void => {
+            clearEntityPatchTimeout();
+            entityTimeout = window.setTimeout(() => {
+                if (pageRuntimeInitialSyncDoneRef.current) {
+                    window.postMessage(withPageRuntimeSyncReasons(buildPageRuntimeEntitiesFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), [
+                        'entities:portals',
+                        'entities:links',
+                        'entities:fields',
+                        'entities:artifacts',
+                        'entities:ornaments',
+                        'planning',
+                    ]), '*');
+                }
+                entityTimeout = null;
+            }, PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS);
         };
 
         const unsubscribePortals = useStore.subscribe(
             (state) => state.portals,
-            () => {
-                clearPatchTimeout(portalTimeout);
-                portalTimeout = window.setTimeout(() => {
-                    if (!pageRuntimeInitialSyncDoneRef.current) return;
-
-                    window.postMessage(buildPageRuntimePortalsFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
-                    window.postMessage(buildPageRuntimeArtifactsFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
-                    window.postMessage(buildPageRuntimeOrnamentsFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
-                    window.postMessage(buildPageRuntimePlannedFeaturesFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
-                    portalTimeout = null;
-                }, PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS);
-            }
+            scheduleEntityPatchSync
         );
 
         const unsubscribeLinks = useStore.subscribe(
             (state) => state.links,
-            () => {
-                clearPatchTimeout(linkTimeout);
-                linkTimeout = window.setTimeout(() => {
-                    if (!pageRuntimeInitialSyncDoneRef.current) return;
-
-                    window.postMessage(buildPageRuntimeLinksFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
-                    window.postMessage(buildPageRuntimePlannedFeaturesFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
-                    linkTimeout = null;
-                }, PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS);
-            }
+            scheduleEntityPatchSync
         );
 
         const unsubscribeFields = useStore.subscribe(
             (state) => state.fields,
-            () => {
-                clearPatchTimeout(fieldTimeout);
-                fieldTimeout = window.setTimeout(() => {
-                    if (!pageRuntimeInitialSyncDoneRef.current) return;
-
-                    window.postMessage(buildPageRuntimeFieldsFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
-                    fieldTimeout = null;
-                }, PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS);
-            }
+            scheduleEntityPatchSync
         );
 
         return (): void => {
             unsubscribePortals();
             unsubscribeLinks();
             unsubscribeFields();
-            clearPatchTimeout(portalTimeout);
-            clearPatchTimeout(linkTimeout);
-            clearPatchTimeout(fieldTimeout);
+            clearEntityPatchTimeout();
         };
     }, []);
 
@@ -789,7 +779,7 @@ export function IRISOverlay(): JSX.Element {
         if (!pageRuntimeInitialSyncDoneRef.current) return;
 
         const timeout = window.setTimeout(() => {
-            window.postMessage(buildPageRuntimeArtifactsFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
+            window.postMessage(withPageRuntimeSyncReason(buildPageRuntimeArtifactsFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), 'artifacts'), '*');
         }, PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS);
 
         return (): void => window.clearTimeout(timeout);
@@ -802,7 +792,7 @@ export function IRISOverlay(): JSX.Element {
         if (!pageRuntimeInitialSyncDoneRef.current) return;
 
         const timeout = window.setTimeout(() => {
-            window.postMessage(buildPageRuntimeOrnamentsFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
+            window.postMessage(withPageRuntimeSyncReason(buildPageRuntimeOrnamentsFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), 'ornaments'), '*');
         }, PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS);
 
         return (): void => window.clearTimeout(timeout);
@@ -815,7 +805,7 @@ export function IRISOverlay(): JSX.Element {
         if (!pageRuntimeInitialSyncDoneRef.current) return;
 
         const timeout = window.setTimeout(() => {
-            window.postMessage(buildPageRuntimeMissionFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
+            window.postMessage(withPageRuntimeSyncReason(buildPageRuntimeMissionFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), 'mission'), '*');
         }, PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS);
 
         return (): void => window.clearTimeout(timeout);
@@ -825,7 +815,7 @@ export function IRISOverlay(): JSX.Element {
         if (!pageRuntimeInitialSyncDoneRef.current) return;
 
         const timeout = window.setTimeout(() => {
-            window.postMessage(buildPageRuntimePluginFeaturesFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
+            window.postMessage(withPageRuntimeSyncReason(buildPageRuntimePluginFeaturesFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), 'plugins'), '*');
         }, PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS);
 
         return (): void => window.clearTimeout(timeout);
@@ -838,7 +828,7 @@ export function IRISOverlay(): JSX.Element {
         if (!pageRuntimeInitialSyncDoneRef.current) return;
 
         const timeout = window.setTimeout(() => {
-            window.postMessage(buildPageRuntimePlannedFeaturesFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), '*');
+            window.postMessage(withPageRuntimeSyncReason(buildPageRuntimePlannedFeaturesFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncData), 'planning'), '*');
         }, PAGE_MAP_RUNTIME_PATCH_SYNC_DEBOUNCE_MS);
 
         return (): void => window.clearTimeout(timeout);
@@ -903,7 +893,7 @@ export function IRISOverlay(): JSX.Element {
     useEffect(() => {
         if (!pageRuntimeInitialSyncDoneRef.current) return;
 
-        window.postMessage(buildPageRuntimeSelectionFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncSelection), '*');
+        window.postMessage(withPageRuntimeSyncReason(buildPageRuntimeSelectionFromStore(PAGE_MAP_RUNTIME_MESSAGES.syncSelection), 'selection'), '*');
     }, [selectedPortalId, selectedLinkId, selectedFieldId]);
 
     useEffect(() => {

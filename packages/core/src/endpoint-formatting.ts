@@ -61,12 +61,12 @@ export function getDerivedEndpointStatus(
 }
 
 export function formatEndpointCountdown(
-  entry: Pick<EndpointDiagnostics, 'key' | 'status' | 'nextAutoRefreshAt'>,
+  entry: Pick<EndpointDiagnostics, 'key' | 'status' | 'inFlightCount' | 'nextAutoRefreshAt'>,
   polledEndpointLabels: Partial<Record<EndpointKey, string>>,
   now = Date.now(),
 ): string | null {
   if (!entry.nextAutoRefreshAt || !polledEndpointLabels[entry.key]) return null;
-  if (entry.status === 'in_flight') return 'refreshing now';
+  if (entry.status === 'in_flight' || entry.inFlightCount > 0) return 'refreshing now';
 
   const remaining = formatFutureDelay(entry.nextAutoRefreshAt, now);
   if (!remaining) return null;
@@ -79,7 +79,7 @@ export function sortEndpointDiagnostics(
   fallbackOrder: EndpointKey[],
 ): EndpointDiagnostics[] {
   const getSortBucket = (entry: EndpointDiagnostics): number => {
-    if (entry.status === 'in_flight') return 0;
+    if (entry.status === 'in_flight' || entry.inFlightCount > 0) return 0;
     if (entry.nextAutoRefreshAt) return 1;
     if (refreshModeLabels[entry.key]) return 2;
     return 3;
@@ -99,7 +99,7 @@ export function sortEndpointDiagnostics(
 }
 
 export function getCompactEndpointStateKind(entry: CompactEndpointTelemetry, now = Date.now()): CompactEndpointStateKind {
-  if (entry.status === 'in_flight') return 'active';
+  if (entry.status === 'in_flight' || (entry.inFlightCount ?? 0) > 0) return 'active';
   if (entry.status === 'error') return 'error';
   if (entry.cooldownUntil !== null && entry.cooldownUntil !== undefined && entry.cooldownUntil > now) return 'cooldown';
   if (entry.lastSkipReason === 'fresh') return 'fresh';
@@ -132,7 +132,7 @@ export function formatCompactEndpointActivityMessage(
   entry: CompactEndpointTelemetry,
   now = Date.now(),
 ): string | null {
-  if (entry.status === 'in_flight') {
+  if (entry.status === 'in_flight' || (entry.inFlightCount ?? 0) > 0) {
     return `NET ${endpoint}: in-flight${(entry.inFlightCount ?? 0) > 1 ? ` x${entry.inFlightCount}` : ''}`;
   }
 

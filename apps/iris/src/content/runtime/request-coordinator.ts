@@ -94,8 +94,10 @@ export function createRequestCoordinator(): RequestCoordinator {
     const isWithinStartupGrace = (): boolean => Date.now() < startupGraceUntil;
     const getEndpointDiagnostics = (key: 'artifacts' | 'subscription' | 'inventory' | 'plexts' | 'gameScore' | 'regionScore' | 'entities'): import('@iris/core').EndpointDiagnostics =>
         useStore.getState().endpointDiagnostics[key];
-    const isEndpointInFlight = (key: 'artifacts' | 'subscription' | 'inventory' | 'plexts' | 'gameScore' | 'regionScore' | 'entities'): boolean =>
-        getEndpointDiagnostics(key).status === 'in_flight';
+    const isEndpointInFlight = (key: 'artifacts' | 'subscription' | 'inventory' | 'plexts' | 'gameScore' | 'regionScore' | 'entities'): boolean => {
+        const diagnostics = getEndpointDiagnostics(key);
+        return diagnostics.status === 'in_flight' || diagnostics.inFlightCount > 0;
+    };
     const isEndpointFresh = (key: 'artifacts' | 'subscription' | 'inventory' | 'plexts' | 'gameScore' | 'regionScore' | 'entities', ttlMs: number): boolean => {
         const lastSuccessAt = getEndpointDiagnostics(key).lastSuccessAt;
         return typeof lastSuccessAt === 'number' && Date.now() - lastSuccessAt < ttlMs;
@@ -220,7 +222,7 @@ export function createRequestCoordinator(): RequestCoordinator {
             : evaluateEndpointRequestGate({
                 key: payload.coverageKey,
                 force: forceRefresh,
-                inFlightKeys: !forceRefresh && entitiesDiagnostics.status === 'in_flight' ? new Set([payload.coverageKey]) : undefined,
+                inFlightKeys: !forceRefresh && isEndpointInFlight('entities') ? new Set([payload.coverageKey]) : undefined,
                 lastSuccessKey: lastEntityCoverageKey,
                 lastSuccessAt: entitiesDiagnostics.lastSuccessAt,
                 freshnessMs: ENTITY_FRESHNESS_TTL_MS,
@@ -714,7 +716,7 @@ export function createRequestCoordinator(): RequestCoordinator {
             const diagnostics = getEndpointDiagnostics('gameScore');
             const gate = evaluateEndpointRequestGate({
                 key: 'global',
-                inFlightKeys: diagnostics.status === 'in_flight' ? new Set(['global']) : undefined,
+                inFlightKeys: isEndpointInFlight('gameScore') ? new Set(['global']) : undefined,
                 lastSuccessKey: 'global',
                 lastSuccessAt: diagnostics.lastSuccessAt,
                 freshnessMs: GAME_SCORE_TTL_MS,
@@ -735,7 +737,7 @@ export function createRequestCoordinator(): RequestCoordinator {
             const diagnostics = getEndpointDiagnostics('regionScore');
             const gate = evaluateEndpointRequestGate({
                 key: requestKey,
-                inFlightKeys: diagnostics.status === 'in_flight' ? new Set([requestKey]) : undefined,
+                inFlightKeys: isEndpointInFlight('regionScore') ? new Set([requestKey]) : undefined,
                 lastSuccessKey: lastRegionScoreRequestKey,
                 lastSuccessAt: diagnostics.lastSuccessAt,
                 freshnessMs: REGION_SCORE_TTL_MS,

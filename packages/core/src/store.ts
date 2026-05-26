@@ -292,6 +292,7 @@ export type EndpointKey =
 export interface EndpointDiagnostics {
     key: EndpointKey;
     status: EndpointStatus;
+    inFlightCount: number;
     lastRequestAt: number | null;
     lastSuccessAt: number | null;
     lastErrorAt: number | null;
@@ -730,7 +731,7 @@ interface DiagnosticsSlice {
     domainErrors: DomainDiagnosticError[];
     endpointActivityLog: EndpointActivityLogEntry[];
     onRequestStart: (url: string) => void;
-    onRequestEnd: () => void;
+    onRequestEnd: (url?: string) => void;
     addFailedRequest: (request: FailedRequest) => void;
     clearFailedRequests: () => void;
     addSuccessfulRequest: (request: SuccessfulRequest) => void;
@@ -778,6 +779,7 @@ const createEmptyEndpointDiagnostics = (): Record<EndpointKey, EndpointDiagnosti
         ENDPOINT_KEYS.map((key) => [key, {
             key,
             status: 'idle',
+            inFlightCount: 0,
             lastRequestAt: null,
             lastSuccessAt: null,
             lastErrorAt: null,
@@ -1593,27 +1595,55 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
     },
     domainErrors: [],
     endpointActivityLog: [],
-    onRequestStart: (url) => set((state) => ({
-        activeRequests: state.activeRequests + 1,
-        lastRequestUrl: url,
-        endpointActivityLog: [{
-            time: Date.now(),
-            endpoint: getEndpointKeyFromUrl(url),
-            message: formatEndpointRequestActivityMessage(url),
-        }, ...state.endpointActivityLog].slice(0, 50),
-        endpointDiagnostics: {
-            ...state.endpointDiagnostics,
-            [getEndpointKeyFromUrl(url)]: {
-                ...state.endpointDiagnostics[getEndpointKeyFromUrl(url)],
-                status: 'in_flight',
-                lastRequestAt: Date.now(),
-                lastUrl: url,
+    onRequestStart: (url) => set((state) => {
+        const now = Date.now();
+        const endpointKey = getEndpointKeyFromUrl(url);
+        const endpoint = state.endpointDiagnostics[endpointKey];
+        return {
+            activeRequests: state.activeRequests + 1,
+            lastRequestUrl: url,
+            endpointActivityLog: [{
+                time: now,
+                endpoint: endpointKey,
+                message: formatEndpointRequestActivityMessage(url),
+            }, ...state.endpointActivityLog].slice(0, 50),
+            endpointDiagnostics: {
+                ...state.endpointDiagnostics,
+                [endpointKey]: {
+                    ...endpoint,
+                    status: 'in_flight',
+                    inFlightCount: endpoint.inFlightCount + 1,
+                    lastRequestAt: now,
+                    lastUrl: url,
+                },
             },
-        },
-    })),
-    onRequestEnd: () => set((state) => ({
-        activeRequests: Math.max(0, state.activeRequests - 1)
-    })),
+        };
+    }),
+    onRequestEnd: (url) => set((state) => {
+        if (!url) {
+            return { activeRequests: Math.max(0, state.activeRequests - 1) };
+        }
+
+        const endpointKey = getEndpointKeyFromUrl(url);
+        const endpoint = state.endpointDiagnostics[endpointKey];
+        const nextInFlightCount = Math.max(0, endpoint.inFlightCount - 1);
+
+        return {
+            activeRequests: Math.max(0, state.activeRequests - 1),
+            endpointDiagnostics: {
+                ...state.endpointDiagnostics,
+                [endpointKey]: {
+                    ...endpoint,
+                    inFlightCount: nextInFlightCount,
+                    status: nextInFlightCount > 0
+                        ? 'in_flight'
+                        : endpoint.status === 'in_flight' && endpoint.lastSuccessAt !== null
+                            ? 'success'
+                            : endpoint.status,
+                },
+            },
+        };
+    }),
     addFailedRequest: (request) => set((state) => {
         const endpointKey = getEndpointKeyFromUrl(request.url);
         return {
@@ -1628,6 +1658,7 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
                 [endpointKey]: {
                     ...state.endpointDiagnostics[endpointKey],
                     status: 'error',
+                    inFlightCount: Math.max(0, state.endpointDiagnostics[endpointKey].inFlightCount),
                     lastErrorAt: request.time,
                     lastErrorStatus: request.status,
                     lastErrorText: request.statusText,
@@ -1657,7 +1688,7 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
                 ...state.endpointDiagnostics,
                 [endpointKey]: {
                     ...state.endpointDiagnostics[endpointKey],
-                    status: 'success',
+                    status: state.endpointDiagnostics[endpointKey].inFlightCount > 0 ? 'in_flight' : 'success',
                     lastSuccessAt: request.time,
                     lastActiveSuccessAt: request.isActive ? request.time : state.endpointDiagnostics[endpointKey].lastActiveSuccessAt,
                     lastPassiveSuccessAt: !request.isActive ? request.time : state.endpointDiagnostics[endpointKey].lastPassiveSuccessAt,

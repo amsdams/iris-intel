@@ -884,6 +884,19 @@ function syncMapCamera(map: maplibregl.Map, camera: PageMapRuntimeCamera): void 
     }, 0);
 }
 
+function jumpToBenchmarkCamera(map: maplibregl.Map, zoom: number): void {
+    suppressNextCameraChangedEvent = true;
+    map.jumpTo({
+        center: [PAN_BENCHMARK_START.lng, PAN_BENCHMARK_START.lat],
+        zoom,
+    });
+    window.setTimeout(() => {
+        if (!panBenchmarkActive) {
+            suppressNextCameraChangedEvent = false;
+        }
+    }, PAN_BENCHMARK_SETTLE_MS);
+}
+
 async function resetMapOrientation(): Promise<void> {
     const map = await getPageMap();
     map.jumpTo({
@@ -1079,10 +1092,27 @@ function setIrisLayerVisibility(map: maplibregl.Map, visibility: PageMapRuntimeL
     setCoreEntityLayerVisibility(map);
 }
 
-function setIrisData(map: maplibregl.Map, message: PageMapRuntimeCommandMessage, reason = 'syncData'): void {
-    const perf = createSourceUpdatePerformance(reason);
+function getExplicitSyncReasons(message: PageMapRuntimeCommandMessage): string[] {
+    const reasons = [
+        ...(Array.isArray(message.syncReasons) ? message.syncReasons : []),
+        ...(typeof message.syncReason === 'string' ? [message.syncReason] : []),
+    ].filter((reason) => reason.length > 0);
+
+    return Array.from(new Set(reasons));
+}
+
+function getSourceUpdateReasons(message: PageMapRuntimeCommandMessage, fallbackReason: string): string[] {
+    const reasons = getExplicitSyncReasons(message);
+    return reasons.length > 0 ? reasons : [fallbackReason];
+}
+
+function setIrisData(map: maplibregl.Map, message: PageMapRuntimeCommandMessage, fallbackReason = 'syncData'): void {
+    const reasons = getSourceUpdateReasons(message, fallbackReason);
+    const perf = createSourceUpdatePerformance(reasons.join(','));
     sourceSyncCount += 1;
-    sourceUpdateReasons[reason] = (sourceUpdateReasons[reason] ?? 0) + 1;
+    reasons.forEach((reason) => {
+        sourceUpdateReasons[reason] = (sourceUpdateReasons[reason] ?? 0) + 1;
+    });
     if (isMapActivelyMoving()) {
         movingSourceSyncCount += 1;
     }
@@ -1126,10 +1156,16 @@ function mergePageMapDataMessages(
     next: PageMapRuntimeCommandMessage
 ): PageMapRuntimeCommandMessage {
     if (!previous) return next;
+    const syncReasons = Array.from(new Set([
+        ...getExplicitSyncReasons(previous),
+        ...getExplicitSyncReasons(next),
+    ]));
 
     return {
         ...previous,
         ...next,
+        syncReason: undefined,
+        syncReasons,
         data: {
             ...(previous.data ?? {}),
             ...(next.data ?? {}),
@@ -2158,19 +2194,18 @@ async function runPanBenchmark(variant: BenchmarkVariant = 'normal', zoom = 14.3
     const map = await getPageMap();
     stopPanBenchmark();
     panBenchmarkRestoreVisibility = applyBenchmarkVariant(map, variant);
-    map.jumpTo({
-        center: [PAN_BENCHMARK_START.lng, PAN_BENCHMARK_START.lat],
+    jumpToBenchmarkCamera(map, zoom);
+    postDiagnosticResult('MAP BENCH CAMERA', {
+        lat: PAN_BENCHMARK_START.lat,
+        lng: PAN_BENCHMARK_START.lng,
         zoom,
+        bounds: getMapBounds(map),
     });
-    postCameraChanged(map, 'MAP BENCH CAMERA');
 
     const runSnapshots: FrameSnapshot[] = [];
 
     const runSingleBenchmark = (runIndex: number): void => {
-        map.jumpTo({
-            center: [PAN_BENCHMARK_START.lng, PAN_BENCHMARK_START.lat],
-            zoom,
-        });
+        jumpToBenchmarkCamera(map, zoom);
 
         panBenchmarkSettleTimer = window.setTimeout(() => {
             panBenchmarkSettleTimer = null;
@@ -2307,7 +2342,17 @@ async function syncPageMapCamera(message: PageMapRuntimeCommandMessage): Promise
 
 async function syncPageMapSelection(message: PageMapRuntimeCommandMessage): Promise<void> {
     const map = await getPageMap();
-    setSelectedData(map, null, message);
+    const reasons = getSourceUpdateReasons(message, 'selection');
+    const perf = createSourceUpdatePerformance(reasons.join(','));
+    sourceSyncCount += 1;
+    reasons.forEach((reason) => {
+        sourceUpdateReasons[reason] = (sourceUpdateReasons[reason] ?? 0) + 1;
+    });
+    if (isMapActivelyMoving()) {
+        movingSourceSyncCount += 1;
+    }
+    setSelectedData(map, perf, message);
+    publishViewportPerformance(map, message, perf);
     if (message.diagnostic) {
         postDiagnosticResult('MAP SYNC SELECTION', {
             selectedPortal: message.data?.selectedPortal?.features.length ?? 0,

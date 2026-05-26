@@ -59,7 +59,7 @@ export function installPassiveInterception(runtime: SessionRuntime): void {
                         statusText: 'Login HTML returned instead of Intel API JSON',
                         time: Date.now(),
                     }, '*');
-                    window.postMessage({ type: 'IRIS_REQUEST_END' }, '*');
+                    window.postMessage({ type: 'IRIS_REQUEST_END', url }, '*');
                     return;
                 }
 
@@ -73,7 +73,7 @@ export function installPassiveInterception(runtime: SessionRuntime): void {
                         console.error('IRIS: Interceptor failed to parse JSON', e, url);
                     }
                 } finally {
-                    window.postMessage({ type: 'IRIS_REQUEST_END' }, '*');
+                    window.postMessage({ type: 'IRIS_REQUEST_END', url }, '*');
                 }
             });
 
@@ -85,7 +85,7 @@ export function installPassiveInterception(runtime: SessionRuntime): void {
                     statusText: this.statusText,
                     time: Date.now(),
                 }, '*');
-                window.postMessage({ type: 'IRIS_REQUEST_END' }, '*');
+                window.postMessage({ type: 'IRIS_REQUEST_END', url }, '*');
             });
         } else if (url.includes('/r/')) {
             this.addEventListener('load', function (this: XMLHttpRequestAugmented) {
@@ -156,7 +156,7 @@ export function installPassiveInterception(runtime: SessionRuntime): void {
                 }, '*');
                 throw e;
             } finally {
-                window.postMessage({ type: 'IRIS_REQUEST_END' }, '*');
+                window.postMessage({ type: 'IRIS_REQUEST_END', url }, '*');
             }
         } else if (url.includes('/r/')) {
             try {

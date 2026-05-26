@@ -237,6 +237,12 @@ function formatBenchmarkEntityDeltas(snapshot: BenchmarkWindowSnapshot): string 
     return `entityDelta staleDrop ${formatCount(staleDrop)} staleIgnore ${formatCount(staleIgnore)} skip ${entities.lastSkipReason ?? 'none'}`;
 }
 
+function hasBenchmarkEndpointInFlight(): boolean {
+    return Object.values(useStore.getState().endpointDiagnostics).some((entry) => (
+        entry.status === 'in_flight' || entry.inFlightCount > 0
+    ));
+}
+
 function snapshotBenchmarkEntityPass(): BenchmarkEntityPassSnapshot {
     const entities = useStore.getState().endpointDiagnostics.entities;
 
@@ -444,7 +450,7 @@ async function waitForBenchmarkQuietWindow(timeoutMs = BENCHMARK_IDLE_TIMEOUT_MS
             entityNextRefreshInMs <= BENCHMARK_PENDING_REFRESH_WINDOW_MS;
         const isQuiet =
             state.activeRequests === 0 &&
-            state.endpointDiagnostics.entities.status !== 'in_flight' &&
+            !hasBenchmarkEndpointInFlight() &&
             !hasPendingSoonEntityRefresh &&
             quietForMs >= BENCHMARK_IDLE_QUIET_MS;
 
@@ -486,6 +492,7 @@ async function preloadBenchmarkZoom(zoom: BenchmarkZoom): Promise<string> {
 
         if (
             entities.status !== 'in_flight' &&
+            entities.inFlightCount === 0 &&
             manualPassStillMissing &&
             Date.now() - lastManualRefreshAt >= BENCHMARK_PRELOAD_RETRY_MS
         ) {
@@ -493,7 +500,7 @@ async function preloadBenchmarkZoom(zoom: BenchmarkZoom): Promise<string> {
             requestManualPreload();
         }
 
-        if (entities.status !== 'in_flight' && hasObservedManualPass && !manualPassSkippedInFlight) {
+        if (entities.status !== 'in_flight' && entities.inFlightCount === 0 && hasObservedManualPass && !manualPassSkippedInFlight) {
             const passSnapshot = snapshotBenchmarkEntityPass();
             await waitForBenchmarkQuietWindow();
             return buildPreloadSummary(zoom, false, snapshot, passSnapshot);

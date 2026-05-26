@@ -16,6 +16,7 @@ describe('Diagnostics Slice', () => {
         expect(diagnostics.lastRefreshReason).toBe(null);
         expect(diagnostics.lastActiveSuccessAt).toBe(null);
         expect(diagnostics.lastPassiveSuccessAt).toBe(null);
+        expect(diagnostics.inFlightCount).toBe(0);
         expect(diagnostics.lastCoverageKey).toBe(null);
         expect(diagnostics.lastPassId).toBe(null);
         expect(diagnostics.lastPassRequestedTiles).toBe(0);
@@ -78,5 +79,30 @@ describe('Diagnostics Slice', () => {
         expect(entry.endpoint).toBe('entities');
         expect(entry.message).toBe('success getEntities active');
         expect(entry.isMoving).toBe(true);
+    });
+
+    it('tracks endpoint in-flight counts across batched requests', () => {
+        const state = useStore.getState();
+
+        state.onRequestStart('/r/getEntities');
+        state.onRequestStart('/r/getEntities');
+
+        expect(useStore.getState().endpointDiagnostics.entities.status).toBe('in_flight');
+        expect(useStore.getState().endpointDiagnostics.entities.inFlightCount).toBe(2);
+
+        useStore.getState().addSuccessfulRequest({
+            url: '/r/getEntities',
+            time: 123,
+            isActive: true,
+        });
+        useStore.getState().onRequestEnd('/r/getEntities');
+
+        expect(useStore.getState().endpointDiagnostics.entities.status).toBe('in_flight');
+        expect(useStore.getState().endpointDiagnostics.entities.inFlightCount).toBe(1);
+
+        useStore.getState().onRequestEnd('/r/getEntities');
+
+        expect(useStore.getState().endpointDiagnostics.entities.status).toBe('success');
+        expect(useStore.getState().endpointDiagnostics.entities.inFlightCount).toBe(0);
     });
 });

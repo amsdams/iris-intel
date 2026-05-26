@@ -184,6 +184,45 @@ export function buildPageMapRuntimeFieldsMessage(
     };
 }
 
+export function buildPageMapRuntimeEntitiesMessage(
+    options: BuildPageMapRuntimeSnapshotOptions
+): PageMapRuntimeCommandMessage {
+    return {
+        type: options.type,
+        diagnostic: options.diagnostic,
+        planning: {
+            enabled: options.planningMode,
+            tool: options.planningTool,
+        },
+        data: {
+            portals: buildPortalFeatureCollection(options),
+            links: buildLinkFeatureCollection(options),
+            fields: buildFieldFeatureCollection(options),
+            selectedPortal: buildSelectedPortalFeatureCollection(options.portals, options.selectedPortalId, options),
+            selectedLink: buildSelectedLinkFeatureCollection(options.links, options.selectedLinkId, options),
+            selectedField: buildSelectedFieldFeatureCollection(options.fields, options.selectedFieldId, options),
+            artifacts: toFeatureCollection(buildArtifactFeatures(options.artifacts, options.portals, {
+                showArtifacts: options.layerShowArtifacts,
+                color: getTheme(options).MISC.ARTIFACT,
+            })),
+            ornaments: toFeatureCollection(buildOrnamentFeatures(options.portals, options.mockOrnaments, {
+                showOrnaments: options.layerShowOrnaments,
+                color: getTheme(options).MISC.ORNAMENT,
+                showResistance: options.filterShowResistance,
+                showEnlightened: options.filterShowEnlightened,
+                showMachina: options.filterShowMachina,
+                showUnclaimedPortals: options.filterShowUnclaimedPortals,
+                showLevel: options.filterShowLevel,
+                showHealth: options.filterShowHealth,
+                showVisited: options.filterShowVisited,
+                showCaptured: options.filterShowCaptured,
+                showScanned: options.filterShowScanned,
+            })),
+            plannedFeatures: toFeatureCollection(buildPlannedFeatures(options)),
+        },
+    };
+}
+
 export function buildPageMapRuntimeVisualFilterMessage(
     options: BuildPageMapRuntimeSnapshotOptions
 ): PageMapRuntimeCommandMessage {

@@ -642,7 +642,7 @@ window.addEventListener('message', (event: MessageEvent) => {
     }
 
     case 'IRIS_REQUEST_END': {
-        useStore.getState().onRequestEnd();
+        useStore.getState().onRequestEnd(typeof msg.url === 'string' ? msg.url : undefined);
         break;
     }
 
