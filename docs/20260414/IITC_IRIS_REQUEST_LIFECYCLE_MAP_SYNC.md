@@ -60,20 +60,20 @@ may be accidental complexity that we should keep refining toward IITC's proven s
 | Concept                        | IITC-CE                                                                                                                                                                               | IRIS                                                                                                                                                                                   | Practical implication                                                                                                                                                    |
 |--------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Runtime ownership              | One page-world runtime around global `window.map`, Leaflet layers, globals, and hooks.                                                                                                | Split runtime: extension/content app owns typed store and UI; page-world script owns MapLibre map and sources; communication happens via messages.                                     | IRIS has clearer type boundaries, but every map sync and data update crosses runtime boundaries.                                                                         |
-| Map movement start             | `MapDataRequest.mapMoveStart` sets status to `paused`, clears the refresh timeout, and pauses the render queue.                                                                       | Camera messages update store state and bump entity generation; there is no equivalent global render-queue pause for MapLibre source publication.                                       | IITC explicitly protects interaction from render work. IRIS may still publish source updates while the user is panning.                                                  |
+| Map movement start             | `MapDataRequest.mapMoveStart` sets status to `paused`, clears the refresh timeout, and pauses the render queue.                                                                       | Camera messages update store state and bump entity generation. Page-world MapLibre movement now marks runtime movement state, coalesces non-urgent `syncData` source publication while moving, and reports moving network/source overlap in benchmarks. | IRIS is now closer to IITC's interaction-protection semantics for source publication, while request scheduling and entity refresh pass ownership remain less centralized. |
 | Map movement end               | `mapMoveEnd` checks whether current bounds are inside fetched data bounds at the same zoom, then either resumes existing timer or schedules `MOVE_REFRESH` after 3 seconds.           | `handleMoveMap` schedules `ENTITY_MOVE_SETTLE_MS = 3000`, estimates or uses bounds, updates store camera/viewport, and schedules a move-settle fetch.                                  | IRIS copied the 3s settle idea, but the "already covered by fetched data bounds" logic is only partially represented by coverage/freshness keys.                         |
 | Tile math                      | `map_data_calc_tools.js` uses Intel tile params, `getDataZoomForMapZoom`, bounds-to-tile loops, and quadkey-like IDs.                                                                 | `packages/core/src/requests/entities.ts` implements similar tile math with `buildEntityRequestPayload`, `getDataZoomForMapZoom`, coverage keys, and a max tile cap.                    | This is a strong semantic port area. Differences should be audited carefully because tile count differences directly affect benchmarks.                                  |
 | Request batching               | IITC uses `MAX_REQUESTS = 5`, `NUM_TILES_PER_REQUEST = 25`, adaptive bucket sizing, and per-tile retry accounting.                                                                    | IRIS uses `batchEntityTileKeys`, currently batching tile keys before posting `IRIS_ENTITIES_FETCH`; active request behavior is split across coordinator/interceptor/session runtime.   | IRIS recently moved closer to IITC. Remaining difference: IITC has one queue that knows active request count, retries, and render progress together.                     |
 | Cache model                    | IITC has `DataCache`; fresh tiles are rendered from cache immediately, stale data can be used after retry exhaustion, and tile freshness is central to queue construction.            | IRIS has store-level `tileFreshness`, endpoint freshness, coverage keys, and entity culling. Responses merge into normalized store state.                                              | IRIS can avoid requests, but does not have the same "render fresh cache first, then stream missing tiles into the render queue" lifecycle.                               |
 | Request cancellation/staleness | IITC does not abort map-data requests; it ignores returned tiles that are no longer wanted because the tile is no longer in `queuedTiles`.                                            | IRIS uses entity refresh generations. Stale active entity work can be dropped in session runtime and stale responses are ignored with diagnostics counters.                            | Both avoid applying stale map data, but via different mechanisms. IRIS's generation model fits extension messaging better.                                               |
 | Retry semantics                | IITC tracks tile-specific `error`, `RETRY`, `TIMEOUT`, unaccounted tiles, retry counts, stale-cache fallback, and different queue delays.                                             | IRIS has endpoint request gate, endpoint diagnostics, retry count for entity endpoint failures, and per-endpoint cooldown/freshness.                                                   | IITC's retry is tile-granular. IRIS retry is more endpoint/generation oriented. Tile-granular retry may be worth porting later if holes or 400/timeout behavior persist. |
-| Render scheduling              | IITC has a render queue, batch size, pause delay, and `pauseRenderQueue` during map movement. It processes deleted GUIDs and entities in chunks.                                      | IRIS parses and stores entities, then publishes GeoJSON source snapshots to MapLibre; the page runtime measures `setData` cost but generally receives full source updates.             | This is one of the largest conceptual differences. IITC mutates object layers incrementally; IRIS often republishes source collections.                                  |
+| Render scheduling              | IITC has a render queue, batch size, pause delay, and `pauseRenderQueue` during map movement. It processes deleted GUIDs and entities in chunks.                                      | IRIS parses and stores entities, then publishes GeoJSON source snapshots to MapLibre. Non-urgent `syncData` publication is now deferred/coalesced while moving, with urgent camera/selection/snapshot paths still immediate. | IRIS now ports the spirit of IITC's movement pause for source publication, but not IITC's incremental entity render queue or tile-level render pass.                      |
 | Entity rendering               | IITC creates/updates Leaflet portal markers, links, and fields, including placeholder portals from links/fields, and fires entity hooks.                                              | IRIS parses Intel arrays into typed `Portal`, `Link`, `Field`, creates placeholder portals in `EntityParser`, and converts store state to GeoJSON features for MapLibre.               | IRIS preserves major semantics, but hook timing and update granularity differ from IITC.                                                                                 |
 | End-of-render cleanup          | IITC tracks seen portal/link/field GUIDs during a render pass and removes unseen entities at `endRenderPass`.                                                                         | IRIS store merges updates and culls by distance/time; entity removal is explicit via deleted GUIDs and store culling, not tied to a single render pass.                                | IRIS may keep broader state than current visible pass. That helps richer UI, but can make source rebuilds heavier unless filtered aggressively.                          |
 | Portal details                 | IITC `portalDetail.request` has a per-guid request queue, `DataCache`, parses details, updates the portal entity through `render.createPortalEntity`, and fires `portalDetailLoaded`. | IRIS posts `IRIS_PORTAL_DETAILS_FETCH`; response handling merges detail data into store and UI state. Selection protocol now has shared intent/open-info conversion.                   | IITC portal details directly improve the map object. IRIS details improve the typed store and then derived UI/map snapshots.                                             |
 | COMM map coupling              | IITC COMM requests use current map bounds, detect meaningful bounding-box changes, clear channel state on large changes, avoid duplicate channel requests, and use refresh timers.    | IRIS has plext polling, manual COMM fetches, send-then-refresh, and COMM-derived portal/entity refresh hints. It can schedule entity refresh after activity.                           | IRIS has richer topology refresh hints, but this is a potential source of normal-use request bursts and map updates during interaction.                                  |
 | Idle behavior                  | IITC checks `window.isIdle()` before refreshes and has idle resume delay.                                                                                                             | IRIS has idle entity polls, visibility/session/offline checks, startup grace, and endpoint next-auto-refresh diagnostics.                                                              | IRIS is more explicit diagnostically, but less centralized than IITC's `MapDataRequest` state machine.                                                                   |
-| Diagnostics/status             | IITC status is short/long/progress and displayed in the status bar. Debug tiles can show tile state.                                                                                  | IRIS tracks endpoint diagnostics, activity logs, source feature counts, source `setData` times, viewport performance samples, stale drops, coverage keys, and benchmark preload lines. | IRIS has better observability for modern profiling, but not yet enough normal-use network/source overlap diagnostics.                                                    |
+| Diagnostics/status             | IITC status is short/long/progress and displayed in the status bar. Debug tiles can show tile state.                                                                                  | IRIS tracks endpoint diagnostics, activity logs, source feature counts, source `setData` times, viewport performance samples, stale drops, coverage keys, benchmark preload lines, and per-scenario moving network/source overlap. | IRIS now has stronger observability than IITC for before/after profiling; normal-use request/source chain diagnostics are still a future refinement.                      |
 | Plugin integration             | IITC has global hooks like `mapDataRefreshStart`, `mapDataRefreshEnd`, `requestFinished`, `portalAdded`, `linkAdded`, `fieldAdded`, `portalRemoved`, and `portalDetailLoaded`.        | IRIS has a typed plugin manager and plugin feature source publication. It does not expose the full IITC hook lifecycle as a compatibility layer.                                       | This is a semantic-port gap. Existing IITC plugins expect event timing around data and entity mutation, not just a rendered feature source.                              |
 | Extension wrapper              | IITC-Button mainly injects/runs IITC and provides an XHR sandbox/popup/plugin management. It is not where the core map-data lifecycle lives.                                          | IRIS extension code owns much more of the actual app runtime: request coordination, store, diagnostics, UI, and page-runtime sync.                                                     | Comparing IRIS to IITC-Button alone is misleading; the relevant lifecycle is in IITC-CE core.                                                                            |
 
@@ -248,15 +248,16 @@ explicit scheduler, a clean typed architecture can still produce bad user-percei
 
 ### Does IRIS publish source updates while the user is panning?
 
-IITC pauses the render queue during map movement. IRIS should measure whether entity responses, COMM refreshes, plugin
-feature updates, or selection updates call MapLibre `setData` during active movement.
+IITC pauses the render queue during map movement. IRIS now tracks active page-world movement, reports whether endpoint
+successes and source updates land during movement, and coalesces non-urgent `syncData` source publication until after
+movement settles.
 
 Possible improvement:
 
-- Track `isMoving` in page runtime/content state.
-- Queue non-critical source updates while moving.
-- Flush once at move-settle or idle frame.
-- Allow urgent selection/camera updates through.
+- Keep urgent selection/camera updates immediate.
+- Repeat mobile benchmarks to confirm the structural improvement translates into stable phone smoothness.
+- Investigate remaining moving-overlap rows as request scheduling, long-task, or renderer issues rather than source
+  publication alone.
 
 ### Are broad GeoJSON source updates too coarse?
 
@@ -301,7 +302,8 @@ Possible improvement:
 
 2. **Interaction-aware render/source queue**
 
-   Port the spirit of `pauseRenderQueue`: do not perform non-urgent source publication during active movement.
+   Partially aligned. IRIS now ports the spirit of `pauseRenderQueue` for non-urgent MapLibre source publication during
+   movement. Remaining work is around request scheduling, refresh-pass ownership, and unchanged-source suppression.
 
 3. **Geometric coverage containment**
 
@@ -326,8 +328,9 @@ Possible improvement:
 These are worth adding before more request/map scheduler changes:
 
 - Per scenario: count active entity requests, passive entity responses, COMM requests, portal-detail requests, and
-  source publications.
-- Per scenario: record whether each source publication happened while the map was moving.
+  source publications. Done for compact endpoint/source counters; deeper request-chain timing remains open.
+- Per scenario: record whether each source publication and successful endpoint response happened while the map was
+  moving.
 - Per source update: record reason (`entities`, `portal-details`, `comm-activity`, `selection`, `plugins`,
   `bench-preload`, etc.).
 - Per entity refresh pass: record requested tile count, skipped fresh tile count, active batch count, retry count, parse
@@ -338,11 +341,13 @@ These are worth adding before more request/map scheduler changes:
 ## Current Read
 
 IRIS is a semantic port for the data model, tile math, placeholder portals, and much of the user-facing behavior. It is
-not yet a semantic port of IITC's map-data state machine. The biggest divergence is render scheduling:
+now also partly aligned with IITC's interaction-aware render timing: non-urgent source publication is deferred during
+movement and the benchmark can show moving network/source overlap. It is still not a semantic port of IITC's map-data
+state machine. The biggest remaining divergence is refresh-pass ownership:
 
 - IITC has one queue that pauses during movement and streams tile responses into incremental Leaflet mutations.
-- IRIS has a modern typed pipeline that can publish large GeoJSON source snapshots into MapLibre, sometimes
-  independently of user interaction.
+- IRIS has a modern typed pipeline with coalesced post-move source publication, but requests, store merges, and source
+  publication are still coordinated across separate content/page-world paths.
 
 The next practical work should not be a literal IITC port. It should be an IITC-informed scheduler/refinement pass:
 

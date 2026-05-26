@@ -245,6 +245,7 @@ export interface SuccessfulRequest {
     url: string;
     time: number;
     isActive?: boolean;
+    isMoving?: boolean;
 }
 
 export interface JSError {
@@ -311,6 +312,7 @@ export interface EndpointActivityLogEntry {
     time: number;
     endpoint: EndpointKey;
     message: string;
+    isMoving?: boolean;
 }
 
 export interface MapPerfSnapshot {
@@ -1631,6 +1633,7 @@ const createDiagnosticsSlice: StateCreator<IRISState, [], [], DiagnosticsSlice> 
                 time: request.time,
                 endpoint: endpointKey,
                 message: formatEndpointSuccessActivityMessage(request.url, request.isActive),
+                isMoving: request.isMoving,
             }, ...state.endpointActivityLog].slice(0, 50),
             endpointDiagnostics: {
                 ...state.endpointDiagnostics,

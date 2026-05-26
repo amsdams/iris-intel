@@ -50,6 +50,7 @@ interface BenchmarkEndpointCounter {
     success: number;
     active: number;
     passive: number;
+    moving: number;
     failure: number;
 }
 
@@ -138,6 +139,7 @@ function createEndpointCounters(): BenchmarkEndpointCounterMap {
             success: 0,
             active: 0,
             passive: 0,
+            moving: 0,
             failure: 0,
         };
     });
@@ -180,6 +182,9 @@ function getBenchmarkEndpointCounters(startedAt: number, finishedAt = Date.now()
             counter.request += 1;
         } else if (entry.message.startsWith('success ')) {
             counter.success += 1;
+            if (entry.isMoving === true) {
+                counter.moving += 1;
+            }
             if (entry.message.endsWith(' active')) {
                 counter.active += 1;
             } else if (entry.message.endsWith(' passive')) {
@@ -198,7 +203,7 @@ function formatEndpointCounter(key: EndpointKey, counter: BenchmarkEndpointCount
     const alwaysShow = key === 'entities';
     if (!alwaysShow && total === 0) return null;
 
-    return `${key} req ${formatCount(counter.request)} ok ${formatCount(counter.success)} active ${formatCount(counter.active)} passive ${formatCount(counter.passive)} fail ${formatCount(counter.failure)}`;
+    return `${key} req ${formatCount(counter.request)} ok ${formatCount(counter.success)} active ${formatCount(counter.active)} passive ${formatCount(counter.passive)} moving ${formatCount(counter.moving)} fail ${formatCount(counter.failure)}`;
 }
 
 function formatBenchmarkEndpointCounters(counters: BenchmarkEndpointCounterMap): string {

@@ -24,6 +24,7 @@ import {
     PageMapRuntimeCameraChangedMessage,
     PageMapRuntimeCommandMessage,
     PageMapRuntimeLayerVisibility,
+    PageMapRuntimeMovementMessage,
     PageMapRuntimeResultMessage,
     PageMapRuntimeSelectionPayload,
 } from '../shared/page-map-runtime-protocol';
@@ -140,6 +141,8 @@ let panBenchmarkAnimation: number | null = null;
 let panBenchmarkActive = false;
 let panBenchmarkMode: BenchmarkMode = 'pan';
 let panBenchmarkRestoreVisibility: (() => void) | null = null;
+let pendingSyncDataMessage: PageMapRuntimeCommandMessage | null = null;
+let pendingSyncDataTimer: number | null = null;
 let activeBenchmarkVariant: BenchmarkVariant = 'normal';
 const plannedMarkerRegistry = new Map<string, PlannedMarkerRegistryEntry>();
 const playerMarkerRegistry = new Map<string, PlayerMarkerRegistryEntry>();
@@ -176,6 +179,7 @@ const PAN_BENCHMARK_RUN_COUNT = 3;
 const PAN_BENCHMARK_RUN_DURATION_MS = 3000;
 const PAN_BENCHMARK_START = {lat: 52.371094, lng: 4.906375};
 const PAN_BENCHMARK_SETTLE_MS = 600;
+const DEFERRED_SOURCE_SYNC_SETTLE_MS = 120;
 const PLAYER_MARKER_CIRCLE_SPREAD_RADIUS_PX = 26;
 const PLAYER_MARKER_SPIRAL_START_COUNT = 8;
 const PLAYER_MARKER_SPIRAL_STEP_PX = 8;
@@ -776,10 +780,13 @@ function getPageMap(): Promise<maplibregl.Map> {
             map.on('movestart', () => {
                 mapIsMoving = true;
                 lastMapMoveStartAt = Date.now();
+                postMapMovement(true);
             });
             map.on('moveend', () => {
                 mapIsMoving = false;
                 lastMapMoveEndAt = Date.now();
+                postMapMovement(false);
+                schedulePendingSyncDataFlush(map);
                 if (panBenchmarkActive) {
                     return;
                 }
@@ -1086,6 +1093,61 @@ function setIrisData(map: maplibregl.Map, message: PageMapRuntimeCommandMessage,
     }
     setSelectedData(map, perf, message);
     publishViewportPerformance(map, message, perf);
+}
+
+function mergePageMapDataMessages(
+    previous: PageMapRuntimeCommandMessage | null,
+    next: PageMapRuntimeCommandMessage
+): PageMapRuntimeCommandMessage {
+    if (!previous) return next;
+
+    return {
+        ...previous,
+        ...next,
+        data: {
+            ...(previous.data ?? {}),
+            ...(next.data ?? {}),
+        },
+        planning: next.planning ?? previous.planning,
+        layers: next.layers ?? previous.layers,
+        tiles: next.tiles ?? previous.tiles,
+        diagnostic: previous.diagnostic || next.diagnostic,
+    };
+}
+
+function clearPendingSyncDataTimer(): void {
+    if (pendingSyncDataTimer !== null) {
+        window.clearTimeout(pendingSyncDataTimer);
+        pendingSyncDataTimer = null;
+    }
+}
+
+function flushPendingSyncData(map: maplibregl.Map): void {
+    const pending = pendingSyncDataMessage;
+    if (!pending) return;
+
+    pendingSyncDataMessage = null;
+    clearPendingSyncDataTimer();
+    setIrisData(map, pending, 'syncDataDeferred');
+    void waitForMapIdle(map);
+}
+
+function schedulePendingSyncDataFlush(map: maplibregl.Map): void {
+    if (pendingSyncDataTimer !== null) return;
+
+    pendingSyncDataTimer = window.setTimeout(() => {
+        pendingSyncDataTimer = null;
+        if (isMapActivelyMoving()) {
+            schedulePendingSyncDataFlush(map);
+            return;
+        }
+        flushPendingSyncData(map);
+    }, DEFERRED_SOURCE_SYNC_SETTLE_MS);
+}
+
+function deferSyncData(map: maplibregl.Map, message: PageMapRuntimeCommandMessage): void {
+    pendingSyncDataMessage = mergePageMapDataMessages(pendingSyncDataMessage, message);
+    schedulePendingSyncDataFlush(map);
 }
 
 function setPluginFeatureData(
@@ -1833,6 +1895,15 @@ function postDiagnosticResult(label: string, summary: Record<string, unknown>): 
     window.postMessage(message, '*');
 }
 
+function postMapMovement(moving: boolean): void {
+    const message: PageMapRuntimeMovementMessage = {
+        type: PAGE_MAP_RUNTIME_MESSAGES.movement,
+        moving,
+        time: Date.now(),
+    };
+    window.postMessage(message, '*');
+}
+
 function reportPageRuntimeError(domain: string, error: unknown, detail?: string): void {
     const message = error instanceof Error ? error.message : String(error);
     window.postMessage({
@@ -2052,6 +2123,9 @@ function stopPanBenchmark(): void {
     panBenchmarkRestoreVisibility = null;
     panBenchmarkActive = false;
     panBenchmarkMode = 'pan';
+    if (pageMapPromise) {
+        void pageMapPromise.then((map) => flushPendingSyncData(map));
+    }
 }
 
 async function runPanBenchmark(variant: BenchmarkVariant = 'normal', zoom = 14.36, mode: BenchmarkMode = 'pan'): Promise<void> {
@@ -2126,6 +2200,7 @@ async function runPanBenchmark(variant: BenchmarkVariant = 'normal', zoom = 14.3
                 }
 
                 panBenchmarkActive = false;
+                flushPendingSyncData(map);
                 if (panBenchmarkMode === 'pan') {
                     setMovingOverlayVisibility(map, true);
                 }
@@ -2166,7 +2241,15 @@ function hidePageMapRuntime(): void {
 
 async function syncPageMapData(message: PageMapRuntimeCommandMessage): Promise<void> {
     const map = await getPageMap();
-    setIrisData(map, message, 'syncData');
+    if (isMapActivelyMoving()) {
+        deferSyncData(map, message);
+        return;
+    }
+
+    const messageToApply = mergePageMapDataMessages(pendingSyncDataMessage, message);
+    pendingSyncDataMessage = null;
+    clearPendingSyncDataTimer();
+    setIrisData(map, messageToApply, messageToApply === message ? 'syncData' : 'syncDataDeferred');
     await waitForMapIdle(map);
     if (message.diagnostic) {
         postDiagnosticResult('MAP SYNC DATA', {

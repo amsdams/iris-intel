@@ -212,6 +212,7 @@ Tasks:
 |---------------------------------------------------------------|--------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Pause expensive overlay work during active map movement       | Done   | HTML marker sync now defers while the user is actively moving/zooming the map and resumes after a short settle delay                                                                                                                                                      |
 | Coalesce viewport source rebuilds                             | Done   | `moveend`, `zoomend`, and portal/link/field store updates now schedule one animation-frame viewport sync instead of stacking direct calls                                                                                                                                 |
+| Defer non-urgent page-world source sync while moving          | Done   | page-world `syncData` messages now coalesce while the map is actively moving or synthetic Bench is running, then flush the latest per-source payload after movement settles; camera/selection/snapshot paths still apply immediately                                      |
 | Add debug timing for map panning hotspots                     | Done   | debug logging now reports throttled viewport sync and HTML marker sync timings/counts so mobile panning bottlenecks can be measured                                                                                                                                       |
 | Surface map performance samples in Diagnostics                | Done   | latest viewport and HTML marker timing/count samples are shown in Diagnostics with zoom, per-source counts/timings, browser/device context, and a copy button for mobile testing                                                                                          |
 | Skip hover hit-testing while the map is moving                | Done   | desktop hover selection now avoids spatial hit-testing during active map movement and clears the cursor while dragging                                                                                                                                                    |
@@ -1289,9 +1290,10 @@ Tasks:
 | Count page-world source publications per scenario   | In Progress | page-world runtime now exposes logical source sync count, individual source `setData` call count/time, reason counts, and per-source call/time deltas; per-source max remains open |
 | Track whether map is actively moving                | In Progress | page-world runtime now tracks `movestart`/`moveend` plus active synthetic benchmark state for source-overlap classification; manual input capture remains open |
 | Report source updates while moving                  | Done   | batch rows now report logical syncs, individual `setData` calls, and `setData` time that happened while the map was moving as `sourceDelta ... movingSyncs ... movingCalls ... movingSetData ...` |
-| Report network responses while moving               | Open   | count entity/plext/portal-detail responses that land while the map is moving                                                                               |
+| Report network responses while moving               | Done   | page-world runtime now posts movement state to content diagnostics, successful endpoint log entries carry `isMoving`, and copied batch `net` counters include a per-endpoint `moving` success count |
 | Add source-update reason labels                     | Open   | classify updates as entities, portal-details, COMM activity, selection, plugins, planning, visual filters, benchmark preload, or unknown                   |
 | Preserve urgent update path in diagnostics wording  | Open   | distinguish selection/camera updates from heavy entity/plugin source updates so future scheduler changes can defer only non-urgent work                    |
+| Investigate player track pin flicker after pan      | Open   | manual smoke looked normal overall after deferred source sync, but player track pins can briefly hide/show after panning; check tracker source freshness, deferred flush timing, and layer ordering before changing behavior |
 
 ### Phase 3: Long Task, UI Render, and Stable Frame Context
 
@@ -1301,7 +1303,7 @@ Tasks:
 
 | Task                                             | Status | Notes                                                                                                                                   |
 |--------------------------------------------------|--------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| Add per-scenario long-task deltas                | Open   | include long-task count, max duration, and whether max long task overlapped with moving                                                 |
+| Add per-scenario long-task deltas                | Done   | batch rows now report long-task count and max duration per scenario; overlap classification with moving remains a later refinement      |
 | Add per-scenario UI render deltas                | Open   | compactly report top changed UI surfaces from existing render diagnostics when a scenario has unexpected slow frames                    |
 | Split scenario timing into phases                | Open   | distinguish preload, settle wait, benchmark pan/zoom window, and post-window source updates                                             |
 | Add "stable after scenario" wait/sample          | Open   | after each scenario, record whether source/endpoint activity continued after frame sampling stopped                                     |
@@ -1326,10 +1328,10 @@ Benchmark capture slots:
 
 | Date | Build / Commit | Device | Browser | Scenario Set | Result | Notes |
 |------|----------------|--------|---------|--------------|--------|-------|
-| TBD  | baseline before request/map-sync changes | Desktop Mac | Firefox | shared IRIS batch | Open | capture after Phase 1/2 fields land |
-| TBD  | baseline before request/map-sync changes | Mobile ARM | Firefox | shared IRIS batch plus manual pan note | Open | capture after Phase 1/2 fields land |
-| TBD  | after first scheduler/source-publication change | Desktop Mac | Firefox | same as baseline | Open | compare workload signature before reading FPS |
-| TBD  | after first scheduler/source-publication change | Mobile ARM | Firefox | same as baseline | Open | check moving-overlap and long-task deltas first |
+| 2026-05-26 | baseline before request/map-sync changes | Desktop Mac | Firefox | shared IRIS batch | Captured | see `docs/PERF_BENCHMARKS.md`; z8 Normal had `83` moving source calls and `27` slow frames |
+| 2026-05-26 | baseline before request/map-sync changes | Mobile ARM | Firefox | shared IRIS batch plus manual pan note | Captured | see `docs/PERF_BENCHMARKS.md`; preload bounds fixed and z8 Normal had no moving source calls in the clean baseline |
+| 2026-05-26 | after deferred source sync while moving | Desktop Mac | Firefox | same as baseline | Captured | moving source calls dropped to `0`; z8 Normal improved to `9ms / 113fps / 7 slow` |
+| 2026-05-26 | after deferred source sync while moving | Mobile ARM | Firefox | same as baseline | Captured | moving source calls dropped to `0`, but z8 Normal still had a long task and `10` slow frames; repeat before claiming a phone win |
 
 Candidate report additions:
 

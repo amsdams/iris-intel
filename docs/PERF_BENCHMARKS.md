@@ -675,3 +675,93 @@ Notes:
   matching the earlier conclusion that active low-zoom movement needs simplified core/entity rendering.
 - Compared with the 0.1.6 mobile z8 sample, Normal improved slightly (`30ms` -> `28ms`, `43` -> `34` slow frames),
   but the residual gap is still trace-level work rather than a reason to block mini-IRIS alignment.
+
+## 2026-05-26 - IRIS 0.1.7 - Request/Source Lifecycle Benchmark Tooling
+
+Context:
+
+- Purpose: baseline before applying Request Lifecycle and Map Sync runtime changes.
+- Change under test: benchmark output now includes endpoint deltas, entity stale deltas, source sync/call deltas,
+  per-source `setData` call/time counts, moving overlap, long-task deltas, and workload signatures.
+- Desktop browser: Firefox 153.0 on macOS (`MacIntel`), viewport `960x943`, DPR `2.00`.
+- Mobile browser: Firefox 149.0 on Linux/Android ARM, viewport `360x704`, DPR `3.00`.
+- Map style: `OSM`.
+- Benchmark preload fix: preload now sends explicit viewport-estimated bounds for the target zoom, avoiding stale
+  wide-bounds z14 preload on phone.
+
+### Desktop Firefox Summary
+
+```text
+IRIS BENCH BATCH browser Firefox/153.0 platform MacIntel viewport 960x943 dpr 2.00 center 52.37109,4.90637 z8.00
+PRELOAD z14.36 | request tiles 4 batches 1 dataZoom 13 loaded P 1,461 L 2,952 F 1,318 diagnostic none
+z14.36 normal pan | items 7,391 | P 1,823 | L 3,846 | F 1,706 | avg 8ms | max 100ms | fps 120 | slow 4/1,084 | sourceDelta syncs 38 movingSyncs 13 calls 59 movingCalls 21 setData 1ms movingSetData 0ms
+PRELOAD z8 | request tiles 72 batches 3 dataZoom 8 loaded P 4,524 L 7,650 F 3,148 diagnostic none
+z8 normal pan | items 17,250 | P 5,084 | L 8,688 | F 3,477 | avg 11ms | max 158ms | fps 92 | slow 27/828 | net entities req 22 ok 28 | sourceDelta syncs 81 movingSyncs 54 calls 124 movingCalls 83 setData 2ms movingSetData 1ms
+z8 no-links pan | items 17,250 | P 5,084 | L 8,688 | F 3,477 | avg 8ms | max 26ms | fps 120 | slow 0/1,080 | net entities req 0 ok 0 | sourceDelta syncs 0 movingSyncs 0 calls 0 movingCalls 0
+z8 no-fields pan | items 17,250 | P 5,084 | L 8,688 | F 3,477 | avg 8ms | max 19ms | fps 120 | slow 0/1,081 | net entities req 0 ok 0 | sourceDelta syncs 1 movingSyncs 1 calls 1 movingCalls 1
+z8 base pan | items 17,255 | P 5,084 | L 8,693 | F 3,477 | avg 9ms | max 142ms | fps 115 | slow 2/1,039 | net entities req 3 ok 3 | sourceDelta syncs 6 movingSyncs 6 calls 10 movingCalls 10
+```
+
+### Mobile Firefox Summary
+
+```text
+IRIS BENCH BATCH browser Firefox/149.0 platform Linux armv81 viewport 360x704 dpr 3.00 center 52.37109,4.90637 z8.00
+PRELOAD z14.36 | request tiles 4 batches 1 dataZoom 13 loaded P 1.204 L 2.226 F 896 diagnostic none
+z14.36 normal pan | items 4.337 | P 1.204 | L 2.226 | F 896 | avg 18ms | max 50ms | fps 57 | slow 2/512 | net entities req 0 ok 0 | sourceDelta syncs 1 movingSyncs 1 calls 2 movingCalls 2
+PRELOAD z8 | request tiles 28 batches 2 dataZoom 8 loaded P 2.875 L 4.770 F 1.896 diagnostic none
+z8 normal pan | items 9.542 | P 2.875 | L 4.771 | F 1.896 | avg 17ms | max 67ms | fps 58 | slow 1/524 | net entities req 3 ok 5 | sourceDelta syncs 10 movingSyncs 0 calls 16 movingCalls 0 setData 1ms movingSetData 0ms
+z8 no-links pan | items 9.542 | P 2.875 | L 4.771 | F 1.896 | avg 17ms | max 33ms | fps 59 | slow 0/529 | net entities req 0 ok 0 | sourceDelta syncs 0 movingSyncs 0 calls 0 movingCalls 0
+z8 no-fields pan | items 9.542 | P 2.875 | L 4.771 | F 1.896 | avg 17ms | max 50ms | fps 59 | slow 1/528 | net entities req 0 ok 0 | sourceDelta syncs 0 movingSyncs 0 calls 0 movingCalls 0
+z8 base pan | items 9.544 | P 2.875 | L 4.773 | F 1.896 | avg 18ms | max 368ms | fps 56 | slow 4/506 | net entities req 2 ok 2 | sourceDelta syncs 6 movingSyncs 6 calls 10 movingCalls 10
+```
+
+Notes:
+
+- The benchmark preload bound fix worked on phone: z14 preload now requests `4` tiles instead of the earlier capped
+  `1,024` tile coverage.
+- Desktop z8 Normal still shows source/network overlap and low-zoom entity renderer cost: `11ms avg`, `27` slow frames,
+  `22/28` entity activity, and `83` moving source calls.
+- Desktop z8 No Links / No Fields are clean at `8ms` average and `120fps`, reinforcing links/fields as the main
+  low-zoom renderer cost when the sample is not polluted by source updates.
+- Mobile z8 Normal is now much cleaner after the preload fix: `17ms avg`, `58fps`, and only `1` slow frame with no
+  moving source calls. This is a useful pre-runtime-change baseline.
+- The remaining suspicious mobile row is z8 Base with a `368ms` max frame despite `0ms` source work and no long task;
+  keep this as a possible browser/GC/tile-pipeline sampling artifact until reproduced.
+
+### Post-Change: Defer Non-Urgent Source Sync While Moving
+
+Change:
+
+- Page-world `syncData` updates are coalesced while the map is moving and flushed after movement settles.
+- Camera, selection, and snapshot paths stay immediate.
+- Smoke result: normal behavior looked unchanged after manual testing.
+- Follow-up: player track pin can hide/show after pan; verify whether deferred source sync, tracker pruning, or layer
+  ordering causes a visible flicker.
+
+```text
+DESKTOP Firefox/153.0 viewport 960x943 DPR 2.00
+PRELOAD z14.36 | request tiles 4 batches 1 dataZoom 13 loaded P 1,716 L 3,549 F 1,558 diagnostic none
+z14.36 normal pan | items 7,393 | P 1,820 | L 3,844 | F 1,709 | avg 8ms | max 50ms | fps 119 | slow 1/1,075 | sourceDelta syncs 18 movingSyncs 0 calls 33 movingCalls 0 reasons syncData:17,syncDataDeferred:1
+PRELOAD z8 | request tiles 72 batches 3 dataZoom 8 loaded P 4,862 L 8,236 F 3,321 diagnostic none
+z8 normal pan | items 17,273 | P 5,095 | L 8,693 | F 3,485 | avg 9ms | max 100ms | fps 113 | slow 7/1,017 | net entities req 18 ok 21 | sourceDelta syncs 33 movingSyncs 0 calls 59 movingCalls 0 setData 1ms movingSetData 0ms reasons syncData:32,syncDataDeferred:1
+z8 no-links pan | items 17,273 | P 5,095 | L 8,693 | F 3,485 | avg 8ms | max 21ms | fps 120 | slow 0/1,079 | sourceDelta syncs 0 movingSyncs 0 calls 0 movingCalls 0
+z8 no-fields pan | items 17,273 | P 5,095 | L 8,693 | F 3,485 | avg 8ms | max 20ms | fps 120 | slow 0/1,078 | sourceDelta syncs 0 movingSyncs 0 calls 0 movingCalls 0
+z8 base pan | items 17,277 | P 5,095 | L 8,697 | F 3,485 | avg 9ms | max 100ms | fps 117 | slow 2/1,058 | sourceDelta syncs 1 movingSyncs 0 calls 6 movingCalls 0 reasons syncDataDeferred:1
+
+MOBILE Firefox/149.0 viewport 360x704 DPR 3.00
+PRELOAD z14.36 | request tiles 4 batches 1 dataZoom 13 loaded P 1.138 L 2.033 F 841 diagnostic none
+z14.36 normal pan | items 4.334 | P 1.201 | L 2.214 | F 899 | avg 18ms | max 100ms | fps 57 | slow 3/515 | sourceDelta syncs 9 movingSyncs 0 calls 19 movingCalls 0 reasons syncData:8,syncDataDeferred:1 | longtask count 1 max 199ms
+PRELOAD z8 | request tiles 28 batches 2 dataZoom 8 loaded P 2.744 L 4.380 F 1.742 diagnostic none
+z8 normal pan | items 9.570 | P 2.885 | L 4.784 | F 1.901 | avg 19ms | max 134ms | fps 52 | slow 10/450 | net entities req 9 ok 9 | sourceDelta syncs 26 movingSyncs 0 calls 48 movingCalls 0 setData 3ms movingSetData 0ms reasons syncData:25,syncDataDeferred:1 | longtask count 1 max 285ms
+z8 no-links pan | items 9.570 | P 2.885 | L 4.784 | F 1.901 | avg 17ms | max 33ms | fps 59 | slow 0/530 | sourceDelta syncs 0 movingSyncs 0 calls 0 movingCalls 0
+z8 no-fields pan | items 9.570 | P 2.885 | L 4.784 | F 1.901 | avg 18ms | max 218ms | fps 57 | slow 2/510 | sourceDelta syncs 1 movingSyncs 0 calls 5 movingCalls 0 reasons syncDataDeferred:1
+z8 base pan | items 9.570 | P 2.885 | L 4.784 | F 1.901 | avg 17ms | max 33ms | fps 59 | slow 0/533 | sourceDelta syncs 0 movingSyncs 0 calls 0 movingCalls 0
+```
+
+Comparison:
+
+- Desktop z8 Normal improved from `11ms / 92fps / 27 slow / max 158ms` to `9ms / 113fps / 7 slow / max 100ms`.
+- Desktop z8 Normal moving source calls dropped from `83` to `0`, so the scheduler change did what it was meant to do.
+- Mobile z8 Normal no longer has moving source calls, but the run is noisier than the previous clean baseline
+  (`19ms / 52fps / 10 slow`) and still shows a long task. Treat phone smoothness as improved structurally, not proven
+  faster until repeated mobile samples stabilize.

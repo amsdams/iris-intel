@@ -62,6 +62,7 @@ export interface IRISMessage {
   lastQueryTimestamp?: number;
   location?: string | null;
   isActive?: boolean;
+  moving?: boolean;
   dx?: number;
   dy?: number;
 }

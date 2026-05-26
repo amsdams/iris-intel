@@ -13,6 +13,7 @@ export const PAGE_MAP_RUNTIME_MESSAGES = {
     cameraChanged: 'IRIS_PAGE_MAP_RUNTIME_CAMERA_CHANGED',
     frameBenchmark: 'IRIS_PAGE_MAP_RUNTIME_FRAME_BENCHMARK',
     viewportPerformance: 'IRIS_PAGE_MAP_RUNTIME_VIEWPORT_PERFORMANCE',
+    movement: 'IRIS_PAGE_MAP_RUNTIME_MOVEMENT',
     result: 'IRIS_PAGE_MAP_RUNTIME_RESULT',
     selection: 'IRIS_PAGE_MAP_RUNTIME_SELECTION',
 } as const;
@@ -90,4 +91,10 @@ export interface PageMapRuntimeCameraChangedMessage {
     type?: string;
     camera?: PageMapRuntimeCamera;
     bounds?: PageMapRuntimeBounds;
+}
+
+export interface PageMapRuntimeMovementMessage {
+    type?: string;
+    moving?: boolean;
+    time?: number;
 }

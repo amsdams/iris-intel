@@ -52,7 +52,7 @@ import mockPasscodeData from './domains/passcodes/mock.passcode.json';
 import { IRISMessage } from './runtime/message-types';
 import { createRequestCoordinator } from './runtime/request-coordinator';
 import { INGRESS_TEAM_COLORS } from '@iris/core/ingress-map-style';
-import { IRIS_PAGE_MAP_MIN_ZOOM } from '../shared/page-map-runtime-protocol';
+import { IRIS_PAGE_MAP_MIN_ZOOM, PAGE_MAP_RUNTIME_MESSAGES } from '../shared/page-map-runtime-protocol';
 
 declare global {
   interface Window {
@@ -69,6 +69,7 @@ if (window.__irisContentInitialized) {
 // a startup camera unless an explicit Intel/map sync message does so.
 let hasInitialPosition = true;
 let latestEntityRefreshGeneration = 0;
+let pageMapMoving = false;
 let inventoryMockPreviousSubscription: boolean | null = null;
 let pendingStartupPosition: { lat: number; lng: number; zoom: number } | null = null;
 let startupPositionTimeoutId: number | null = null;
@@ -484,6 +485,11 @@ window.addEventListener('message', (event: MessageEvent) => {
   const { type, url, data, params, isActive } = msg;
 
   switch (type) {
+    case PAGE_MAP_RUNTIME_MESSAGES.movement: {
+      pageMapMoving = msg.moving === true;
+      break;
+    }
+
     case 'IRIS_INTEL_STARTUP_POSITION': {
       const camera = parseMapCamera(msg, {rejectNullIsland: false});
       if (camera) handleIntelStartupPosition(clampMapCamera(camera, {minZoom: IRIS_PAGE_MAP_MIN_ZOOM}));
@@ -682,7 +688,8 @@ window.addEventListener('message', (event: MessageEvent) => {
         useStore.getState().addSuccessfulRequest({
             url: msg.url as string,
             time: msg.time as number,
-            isActive: msg.isActive
+            isActive: msg.isActive,
+            isMoving: pageMapMoving,
         });
         break;
     }

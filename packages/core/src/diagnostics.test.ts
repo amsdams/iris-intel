@@ -63,4 +63,18 @@ describe('Diagnostics Slice', () => {
         expect(diagnostics.lastRefreshReason).toBe(null);
         expect(diagnostics.nextAutoRefreshAt).toBe(123456789);
     });
+
+    it('records whether successful requests landed while the map was moving', () => {
+        useStore.getState().addSuccessfulRequest({
+            url: '/r/getEntities',
+            time: 123,
+            isActive: true,
+            isMoving: true,
+        });
+
+        const entry = useStore.getState().endpointActivityLog[0];
+        expect(entry.endpoint).toBe('entities');
+        expect(entry.message).toBe('success getEntities active');
+        expect(entry.isMoving).toBe(true);
+    });
 });
