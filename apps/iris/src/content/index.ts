@@ -530,6 +530,11 @@ window.addEventListener('message', (event: MessageEvent) => {
       break;
     }
 
+    case 'IRIS_BENCHMARK_PRELOAD_ENTITIES': {
+      requestCoordinator.handleBenchmarkEntitiesPreload();
+      break;
+    }
+
     case 'IRIS_MOVE_MAP_INTERNAL':
     case 'IRIS_GEOLOCATE':
       break;

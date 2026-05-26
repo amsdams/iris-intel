@@ -1,7 +1,7 @@
 import { h, JSX } from 'preact';
 import { ENTITY_REQUEST_BATCH_SIZE, IRIS_BENCHMARK_SCENARIOS, buildEntityRequestPayload, useStore, type BenchmarkMode, type BenchmarkScenario, type BenchmarkZoom, type BoundsE6, type EndpointKey, type IrisBenchmarkVariant } from '@iris/core';
 import { useRenderDiagnostics } from './useRenderDiagnostics';
-import { useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 
 interface MockToolAction {
     label: string;
@@ -40,9 +40,11 @@ const BENCHMARK_BATCH: readonly BenchmarkBatchCase[] = IRIS_BENCHMARK_SCENARIOS;
 const BENCHMARK_BATCH_TIMEOUT_MS = 45_000;
 const BENCHMARK_BATCH_POLL_MS = 250;
 const BENCHMARK_IDLE_QUIET_MS = 750;
+const BENCHMARK_PENDING_REFRESH_WINDOW_MS = 2_000;
 const BENCHMARK_IDLE_TIMEOUT_MS = 10_000;
-const BENCHMARK_PRELOAD_MOVE_SETTLE_MS = 3_600;
+const BENCHMARK_PRELOAD_MOVE_SETTLE_MS = 750;
 const BENCHMARK_PRELOAD_TIMEOUT_MS = 25_000;
+const BENCHMARK_PRELOAD_RETRY_MS = 1_000;
 const BENCHMARK_ENDPOINT_KEYS: readonly EndpointKey[] = ['entities', 'portalDetails', 'plexts', 'artifacts', 'inventory', 'gameScore', 'regionScore', 'unknown'];
 const BENCHMARK_TILE_SIZE = 512;
 const MAX_MERCATOR_LAT = 85.05112878;
@@ -61,6 +63,19 @@ type BenchmarkEndpointCounterMap = Record<EndpointKey, BenchmarkEndpointCounter>
 interface BenchmarkEntityCounterSnapshot {
     staleQueuedDropCount: number;
     staleResponseIgnoreCount: number;
+}
+
+interface BenchmarkEntityPassSnapshot {
+    lastPassId: number | null;
+    lastPassStartedAt: number | null;
+    lastPassReason: string | null;
+    lastPassGeneration: number | null;
+    lastPassTotalTiles: number;
+    lastPassRequestedTiles: number;
+    lastPassFreshTiles: number;
+    lastPassBatchCount: number;
+    lastPassDataZoom: number | null;
+    lastSkipReason: string | null;
 }
 
 interface BenchmarkWindowSnapshot {
@@ -222,11 +237,27 @@ function formatBenchmarkEntityDeltas(snapshot: BenchmarkWindowSnapshot): string 
     return `entityDelta staleDrop ${formatCount(staleDrop)} staleIgnore ${formatCount(staleIgnore)} skip ${entities.lastSkipReason ?? 'none'}`;
 }
 
-function formatBenchmarkEntityPass(snapshot: BenchmarkWindowSnapshot): string {
+function snapshotBenchmarkEntityPass(): BenchmarkEntityPassSnapshot {
     const entities = useStore.getState().endpointDiagnostics.entities;
-    if (entities.lastPassId === null) return 'entityPass none';
-    const scope = entities.lastPassStartedAt !== null && entities.lastPassStartedAt >= snapshot.startedAt ? 'current' : 'carry';
-    return `entityPass ${scope} id ${formatCount(entities.lastPassId)} gen ${formatCount(entities.lastPassGeneration ?? undefined)} reason ${entities.lastPassReason ?? '-'} req ${formatCount(entities.lastPassRequestedTiles)}/${formatCount(entities.lastPassTotalTiles)} fresh ${formatCount(entities.lastPassFreshTiles)} batches ${formatCount(entities.lastPassBatchCount)} dataZoom ${formatCount(entities.lastPassDataZoom ?? undefined)}`;
+
+    return {
+        lastPassId: entities.lastPassId,
+        lastPassStartedAt: entities.lastPassStartedAt,
+        lastPassReason: entities.lastPassReason,
+        lastPassGeneration: entities.lastPassGeneration,
+        lastPassTotalTiles: entities.lastPassTotalTiles,
+        lastPassRequestedTiles: entities.lastPassRequestedTiles,
+        lastPassFreshTiles: entities.lastPassFreshTiles,
+        lastPassBatchCount: entities.lastPassBatchCount,
+        lastPassDataZoom: entities.lastPassDataZoom,
+        lastSkipReason: entities.lastSkipReason,
+    };
+}
+
+function formatBenchmarkEntityPass(snapshot: BenchmarkWindowSnapshot, pass = snapshotBenchmarkEntityPass()): string {
+    if (pass.lastPassId === null) return 'entityPass none';
+    const scope = pass.lastPassStartedAt !== null && pass.lastPassStartedAt >= snapshot.startedAt ? 'current' : 'carry';
+    return `entityPass ${scope} id ${formatCount(pass.lastPassId)} gen ${formatCount(pass.lastPassGeneration ?? undefined)} reason ${pass.lastPassReason ?? '-'} req ${formatCount(pass.lastPassRequestedTiles)}/${formatCount(pass.lastPassTotalTiles)} fresh ${formatCount(pass.lastPassFreshTiles)} batches ${formatCount(pass.lastPassBatchCount)} dataZoom ${formatCount(pass.lastPassDataZoom ?? undefined)}`;
 }
 
 function formatBenchmarkLongTaskDelta(snapshot: BenchmarkWindowSnapshot): string {
@@ -366,7 +397,12 @@ async function waitForBenchmarkResult(testCase: BenchmarkBatchCase, startedAt: n
     throw new Error(`Timed out waiting for ${testCase.label}`);
 }
 
-function buildPreloadSummary(zoom: BenchmarkZoom, timedOut: boolean, snapshot: BenchmarkWindowSnapshot): string {
+function buildPreloadSummary(
+    zoom: BenchmarkZoom,
+    timedOut: boolean,
+    snapshot: BenchmarkWindowSnapshot,
+    passSnapshot?: BenchmarkEntityPassSnapshot,
+): string {
     const state = useStore.getState();
     const bounds = state.mapState.bounds;
     const payload = bounds ? buildEntityRequestPayload(bounds, zoom) : null;
@@ -383,10 +419,10 @@ function buildPreloadSummary(zoom: BenchmarkZoom, timedOut: boolean, snapshot: B
         `L ${formatCount(Object.keys(state.links).length)}`,
         `F ${formatCount(Object.keys(state.fields).length)}`,
         `diagnostic ${payload?.diagnostic ?? 'none'}`,
-        `skip ${entities.lastSkipReason ?? 'none'}`,
+        `skip ${passSnapshot?.lastSkipReason ?? entities.lastSkipReason ?? 'none'}`,
         formatBenchmarkEndpointCounters(endpointCounters),
         formatBenchmarkEntityDeltas(snapshot),
-        formatBenchmarkEntityPass(snapshot),
+        formatBenchmarkEntityPass(snapshot, passSnapshot),
         formatBenchmarkSourceDelta(snapshot),
         timedOut ? 'timeout yes' : 'timeout no',
     ].join(' ');
@@ -399,9 +435,17 @@ async function waitForBenchmarkQuietWindow(timeoutMs = BENCHMARK_IDLE_TIMEOUT_MS
         const state = useStore.getState();
         const latestActivityAt = state.endpointActivityLog.reduce((latest, entry) => Math.max(latest, entry.time), 0);
         const quietForMs = latestActivityAt > 0 ? Date.now() - latestActivityAt : BENCHMARK_IDLE_QUIET_MS;
+        const now = Date.now();
+        const entityNextRefreshAt = state.endpointDiagnostics.entities.nextAutoRefreshAt;
+        const entityNextRefreshInMs = typeof entityNextRefreshAt === 'number' ? entityNextRefreshAt - now : null;
+        const hasPendingSoonEntityRefresh =
+            entityNextRefreshInMs !== null &&
+            entityNextRefreshInMs >= 0 &&
+            entityNextRefreshInMs <= BENCHMARK_PENDING_REFRESH_WINDOW_MS;
         const isQuiet =
             state.activeRequests === 0 &&
             state.endpointDiagnostics.entities.status !== 'in_flight' &&
+            !hasPendingSoonEntityRefresh &&
             quietForMs >= BENCHMARK_IDLE_QUIET_MS;
 
         if (isQuiet) return true;
@@ -421,17 +465,38 @@ async function preloadBenchmarkZoom(zoom: BenchmarkZoom): Promise<string> {
     state.clearMapEntities();
     window.postMessage({ type: 'IRIS_MOVE_MAP', center: { lat, lng }, zoom, bounds }, '*');
     await sleep(BENCHMARK_PRELOAD_MOVE_SETTLE_MS);
-    window.postMessage({ type: 'IRIS_REFRESH_CURRENT_VIEW', reason: 'manual' }, '*');
+    let lastManualRefreshAt = 0;
+
+    const requestManualPreload = (): void => {
+        lastManualRefreshAt = Date.now();
+        window.postMessage({ type: 'IRIS_BENCHMARK_PRELOAD_ENTITIES' }, '*');
+    };
+
+    requestManualPreload();
 
     const deadline = Date.now() + BENCHMARK_PRELOAD_TIMEOUT_MS;
     while (Date.now() < deadline) {
         const entities = useStore.getState().endpointDiagnostics.entities;
-        const hasObservedRefresh =
-            (entities.lastSuccessAt !== null && entities.lastSuccessAt >= startedAt) ||
-            (entities.lastRequestAt !== null && entities.lastRequestAt >= startedAt && entities.lastSkipReason !== null);
-        if (entities.status !== 'in_flight' && hasObservedRefresh) {
+        const hasObservedManualPass =
+            entities.lastPassStartedAt !== null &&
+            entities.lastPassStartedAt >= startedAt &&
+            entities.lastPassReason === 'manual';
+        const manualPassSkippedInFlight = hasObservedManualPass && entities.lastSkipReason === 'in-flight';
+        const manualPassStillMissing = !hasObservedManualPass || manualPassSkippedInFlight;
+
+        if (
+            entities.status !== 'in_flight' &&
+            manualPassStillMissing &&
+            Date.now() - lastManualRefreshAt >= BENCHMARK_PRELOAD_RETRY_MS
+        ) {
             await waitForBenchmarkQuietWindow();
-            return buildPreloadSummary(zoom, false, snapshot);
+            requestManualPreload();
+        }
+
+        if (entities.status !== 'in_flight' && hasObservedManualPass && !manualPassSkippedInFlight) {
+            const passSnapshot = snapshotBenchmarkEntityPass();
+            await waitForBenchmarkQuietWindow();
+            return buildPreloadSummary(zoom, false, snapshot, passSnapshot);
         }
         await sleep(BENCHMARK_BATCH_POLL_MS);
     }
@@ -454,10 +519,6 @@ async function copyText(text: string): Promise<void> {
     await navigator.clipboard.writeText(text);
 }
 
-function showReportFallback(report: string): void {
-    window.prompt('IRIS benchmark batch report', report);
-}
-
 export function MockToolsBar(): JSX.Element | null {
     useRenderDiagnostics('MockToolsBar');
 
@@ -468,6 +529,7 @@ export function MockToolsBar(): JSX.Element | null {
     const [batchRunning, setBatchRunning] = useState(false);
     const [lastBatchReport, setLastBatchReport] = useState('');
     const [showBatchReport, setShowBatchReport] = useState(false);
+    const batchReportTextRef = useRef<HTMLTextAreaElement | null>(null);
     const showMockTools = useStore((state) => state.showMockTools);
     const hasMockArtifacts = useStore((state) => Object.keys(state.artifacts).length > 0);
     const hasMockOrnaments = useStore((state) => Object.keys(state.mockOrnaments).length > 0);
@@ -480,6 +542,30 @@ export function MockToolsBar(): JSX.Element | null {
     const hasMockPlayerActivity = useStore((state) =>
         state.plexts.some((plext) => plext.id.startsWith(MOCK_PLAYER_ACTIVITY_PLEXT_PREFIX))
     );
+
+    const selectLastBatchReport = (): void => {
+        const reportText = batchReportTextRef.current;
+        if (!reportText) return;
+        reportText.focus();
+        reportText.select();
+    };
+
+    const revealBatchReport = (): void => {
+        setShowBatchReport(true);
+        window.setTimeout(selectLastBatchReport, 0);
+    };
+
+    const showLastBatchReport = (): void => {
+        if (!lastBatchReport) return;
+        revealBatchReport();
+    };
+
+    useEffect(() => {
+        if (!showBatchReport || !lastBatchReport) return undefined;
+
+        const timeoutId = window.setTimeout(selectLastBatchReport, 0);
+        return () => window.clearTimeout(timeoutId);
+    }, [showBatchReport, lastBatchReport]);
 
     if (!showMockTools) {
         return null;
@@ -556,6 +642,7 @@ export function MockToolsBar(): JSX.Element | null {
             for (const [index, testCase] of BENCHMARK_BATCH.entries()) {
                 if (preloadedZoom !== testCase.zoom) {
                     setBatchStatus(`preload z${testCase.zoom}`);
+                    await waitForBenchmarkQuietWindow();
                     const preloadSummary = await preloadBenchmarkZoom(testCase.zoom);
                     lines.push(`PRELOAD z${testCase.zoom} | ${preloadSummary}`);
                     preloadedZoom = testCase.zoom;
@@ -585,7 +672,7 @@ export function MockToolsBar(): JSX.Element | null {
             } catch (error) {
                 console.warn('IRIS benchmark batch clipboard copy failed', error);
                 setBatchStatus('copy blocked');
-                showReportFallback(report);
+                revealBatchReport();
             }
         } catch (error) {
             const report = buildBatchReport(lines);
@@ -606,13 +693,8 @@ export function MockToolsBar(): JSX.Element | null {
         } catch (error) {
             console.warn('IRIS benchmark batch clipboard copy failed', error);
             setBatchStatus('copy blocked');
-            showReportFallback(lastBatchReport);
+            revealBatchReport();
         }
-    };
-
-    const showLastBatchReport = (): void => {
-        if (!lastBatchReport) return;
-        setShowBatchReport(true);
     };
 
     return (
@@ -709,15 +791,32 @@ export function MockToolsBar(): JSX.Element | null {
                 <div className="iris-benchmark-report-panel iris-ui-floating-panel">
                     <div className="iris-benchmark-report-header">
                         <span>Benchmark Report</span>
-                        <button
-                            className="iris-mock-tools-btn iris-ui-compact-pill"
-                            title="Close benchmark report"
-                            onClick={() => setShowBatchReport(false)}
-                        >
-                            Close
-                        </button>
+                        <div className="iris-benchmark-report-actions">
+                            <button
+                                className="iris-mock-tools-btn iris-ui-compact-pill"
+                                title="Copy benchmark report"
+                                onClick={() => void copyLastBatchReport()}
+                            >
+                                Copy
+                            </button>
+                            <button
+                                className="iris-mock-tools-btn iris-ui-compact-pill"
+                                title="Select the full benchmark report"
+                                onClick={selectLastBatchReport}
+                            >
+                                Select All
+                            </button>
+                            <button
+                                className="iris-mock-tools-btn iris-ui-compact-pill"
+                                title="Close benchmark report"
+                                onClick={() => setShowBatchReport(false)}
+                            >
+                                Close
+                            </button>
+                        </div>
                     </div>
                     <textarea
+                        ref={batchReportTextRef}
                         className="iris-benchmark-report-text"
                         readOnly
                         value={lastBatchReport}

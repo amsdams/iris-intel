@@ -202,6 +202,12 @@
     margin-bottom: 6px;
 }
 
+.iris-benchmark-report-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
 .iris-benchmark-report-text {
     box-sizing: border-box;
     width: 100%;

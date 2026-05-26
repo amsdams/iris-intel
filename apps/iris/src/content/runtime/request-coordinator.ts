@@ -33,6 +33,7 @@ export interface RequestCoordinator {
     stop: () => void;
     handleMoveMap: (msg: IRISMessage) => void;
     handleCurrentViewRefresh: (reason: 'manual' | 'resume') => void;
+    handleBenchmarkEntitiesPreload: () => void;
     handleGeolocateRequest: () => void;
     handleInventoryRequest: () => void;
     handleGameScoreRequest: () => void;
@@ -219,7 +220,7 @@ export function createRequestCoordinator(): RequestCoordinator {
             : evaluateEndpointRequestGate({
                 key: payload.coverageKey,
                 force: forceRefresh,
-                inFlightKeys: entitiesDiagnostics.status === 'in_flight' ? new Set([payload.coverageKey]) : undefined,
+                inFlightKeys: !forceRefresh && entitiesDiagnostics.status === 'in_flight' ? new Set([payload.coverageKey]) : undefined,
                 lastSuccessKey: lastEntityCoverageKey,
                 lastSuccessAt: entitiesDiagnostics.lastSuccessAt,
                 freshnessMs: ENTITY_FRESHNESS_TTL_MS,
@@ -345,12 +346,23 @@ export function createRequestCoordinator(): RequestCoordinator {
             lastResumeRefreshAt = now;
         }
 
+        clearEntityMoveRefresh();
+        clearCommActivityRefresh();
         scheduleArtifactsFetch();
         scheduleEntitiesFetch(reason);
         scheduleNextIdleEntitiesPoll();
         postPlextFetches({
             minTimestampMs: -1,
         }, true);
+    };
+
+    const refreshBenchmarkEntitiesOnly = (): void => {
+        if (isSessionBlocked()) return;
+
+        clearEntityMoveRefresh();
+        clearCommActivityRefresh();
+        scheduleEntitiesFetch('manual');
+        scheduleNextIdleEntitiesPoll();
     };
 
     const buildPlextPayload = (msg: Pick<IRISMessage, 'tab' | 'minTimestampMs' | 'maxTimestampMs' | 'ascendingTimestampOrder'>): Record<string, unknown> | null => {
@@ -681,6 +693,10 @@ export function createRequestCoordinator(): RequestCoordinator {
 
         handleCurrentViewRefresh(reason): void {
             refreshCurrentView(reason);
+        },
+
+        handleBenchmarkEntitiesPreload(): void {
+            refreshBenchmarkEntitiesOnly();
         },
 
         handleGeolocateRequest(): void {
