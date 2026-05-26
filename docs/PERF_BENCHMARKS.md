@@ -765,3 +765,36 @@ Comparison:
 - Mobile z8 Normal no longer has moving source calls, but the run is noisier than the previous clean baseline
   (`19ms / 52fps / 10 slow`) and still shows a long task. Treat phone smoothness as improved structurally, not proven
   faster until repeated mobile samples stabilize.
+
+### Post-Change: Low-Zoom Movement Simplification and Center-First Tiles
+
+Change:
+
+- At z10 and below, IRIS temporarily hides the main link/field layers while the map is moving and restores them on
+  move end. Selected link/field layers remain visible.
+- Entity tile request payloads now sort generated tile keys by distance from viewport center before batching, matching
+  IITC's center-first request priority.
+
+```text
+DESKTOP Firefox/153.0 viewport 960x943 DPR 2.00
+PRELOAD z8 | request tiles 72 batches 3 dataZoom 8 loaded P 5,095 L 8,720 F 3,491 diagnostic none
+z8 normal pan | items 17,306 | P 5,095 | L 8,720 | F 3,491 | avg 8ms | max 29ms | fps 119 | slow 0/1,076 | net entities req 0 ok 1 active 1 passive 0 moving 0 fail 0 | sourceDelta syncs 3 movingSyncs 0 calls 5 movingCalls 0 setData 0ms movingSetData 0ms
+z8 no-links pan | items 17,306 | P 5,095 | L 8,720 | F 3,491 | avg 8ms | max 27ms | fps 120 | slow 0/1,077 | moving 0 | sourceDelta syncs 0 movingSyncs 0 calls 0 movingCalls 0
+z8 no-fields pan | items 17,306 | P 5,095 | L 8,720 | F 3,491 | avg 8ms | max 26ms | fps 119 | slow 0/1,073 | moving 0 | sourceDelta syncs 0 movingSyncs 0 calls 0 movingCalls 0
+z8 base pan | items 17,310 | P 5,095 | L 8,724 | F 3,491 | avg 9ms | max 100ms | fps 117 | slow 3/1,054 | moving 0 | sourceDelta syncs 1 movingSyncs 0 calls 5 movingCalls 0
+
+MOBILE Firefox/149.0 viewport 360x704 DPR 3.00
+PRELOAD z8 | request tiles 28 batches 2 dataZoom 8 loaded P 2.906 L 4.825 F 1.922 diagnostic none
+z8 normal pan | items 9.653 | P 2.906 | L 4.825 | F 1.922 | avg 18ms | max 67ms | fps 56 | slow 2/508 | net entities req 0 ok 0 active 0 passive 0 moving 0 fail 0 | sourceDelta syncs 4 movingSyncs 0 calls 6 movingCalls 0 setData 1ms movingSetData 0ms | longtask count 1 max 182ms
+z8 no-links pan | items 9.653 | P 2.906 | L 4.825 | F 1.922 | avg 18ms | max 50ms | fps 57 | slow 1/514 | moving 0 | sourceDelta syncs 0 movingSyncs 0 calls 0 movingCalls 0
+z8 no-fields pan | items 9.653 | P 2.906 | L 4.825 | F 1.922 | avg 17ms | max 50ms | fps 57 | slow 1/517 | moving 0 | sourceDelta syncs 0 movingSyncs 0 calls 0 movingCalls 0
+z8 base pan | items 9.653 | P 2.906 | L 4.825 | F 1.922 | avg 17ms | max 217ms | fps 57 | slow 1/515 | moving 0 | sourceDelta syncs 1 movingSyncs 0 calls 5 movingCalls 0
+```
+
+Comparison:
+
+- Desktop z8 Normal is now clean: `8ms / 119fps / 0 slow / max 29ms`, with no moving endpoint/source overlap.
+- Mobile z8 Normal improved from the previous poor sample (`24ms / 42fps / 21 slow / max 335ms`) to
+  `18ms / 56fps / 2 slow / max 67ms`, and now closely matches the z8 isolation rows.
+- The later mobile z8 No Plugins row in the same pasted run was noisy (`24ms`, `18` slow frames, `2` long tasks,
+  `736ms` max long task, and active entity traffic), so treat it as contaminated rather than a rendering regression.

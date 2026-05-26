@@ -69,7 +69,7 @@ Status legend:
 |--------------------------------|---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Runtime ownership              | Different by design | One page-world runtime around global `window.map`, Leaflet layers, globals, and hooks.                                                                                                | Split runtime: extension/content app owns typed store and UI; page-world script owns MapLibre map and sources; communication happens via messages.                                     | Keep the split, but keep diagnostics strong because every map sync and data update crosses runtime boundaries.                                                          |
 | Map movement start             | Partial             | `MapDataRequest.mapMoveStart` sets status to `paused`, clears the refresh timeout, and pauses the render queue.                                                                       | Page-world MapLibre movement marks runtime movement state, coalesces non-urgent `syncData` source publication while moving, and reports moving network/source overlap in benchmarks.  | Source-publication protection is aligned in spirit; request scheduling and entity refresh pass ownership remain less centralized than IITC.                              |
-| Map movement end               | Partial             | `mapMoveEnd` checks whether current bounds are inside fetched data bounds at the same zoom, then either resumes existing timer or schedules `MOVE_REFRESH` after 3 seconds.           | `handleMoveMap` schedules `ENTITY_MOVE_SETTLE_MS = 3000`, estimates or uses bounds, updates store camera/viewport, and schedules a move-settle fetch.                                  | Add geometric fetched-bounds containment so small moves inside loaded data can skip more work like IITC.                                                                |
+| Map movement end               | Mostly aligned      | `mapMoveEnd` checks whether current bounds are inside fetched data bounds at the same zoom, then either resumes existing timer or schedules `MOVE_REFRESH` after 3 seconds.           | `handleMoveMap` schedules `ENTITY_MOVE_SETTLE_MS = 3000`; move-settle entity refresh now skips when the current viewport is inside the last tile-aligned fetched data bounds at the same floored zoom and data is still fresh. | Remaining difference: IRIS still lacks one unified pass object that owns the timer, request queue, retries, render queue, and final refresh status.                    |
 | Tile math                      | Mostly aligned      | `map_data_calc_tools.js` uses Intel tile params, `getDataZoomForMapZoom`, bounds-to-tile loops, and quadkey-like IDs.                                                                 | `packages/core/src/requests/entities.ts` implements similar tile math with `buildEntityRequestPayload`, `getDataZoomForMapZoom`, coverage keys, antimeridian handling, and a max cap. | Keep auditing because tile count differences directly affect benchmarks; otherwise this is one of the strongest semantic-port areas.                                    |
 | Tile request priority          | Aligned             | Missing/stale tiles are sorted by projected distance from the map center before they enter `queuedTiles`, so central data is requested first.                                          | `buildEntityRequestPayload` now sorts generated tile keys by distance from the viewport/bounds center before batching, so IRIS and Mini request central data first.                    | Keep an eye on capped extreme coverage: center-first ordering applies to the generated candidate set, while the safety cap still prevents unbounded tile lists.          |
 | Request batching/concurrency   | Partial             | IITC uses `MAX_REQUESTS = 5`, `NUM_TILES_PER_REQUEST = 25`, adaptive bucket sizing, and per-tile retry accounting.                                                                    | IRIS batches tile keys in 25s and uses strict request limiting, but active request behavior is split across coordinator/interceptor/session runtime.                                   | Batching/concurrency are close; one unified map-data pass would make active count, retry, and render progress easier to reason about.                                  |
@@ -260,7 +260,6 @@ These are the concrete IITC semantics that are not yet aligned and are worth con
 
 | Gap | IITC behavior | Current IRIS behavior | Why it matters |
 |-----|---------------|-----------------------|----------------|
-| Fetched-bounds containment | Skips move refresh if new bounds are inside previously fetched bounds at same map zoom. | Uses coverage keys and per-tile freshness, but not a direct fetched-bounds containment check. | Small pans may request/check more than IITC. |
 | Unified map-data pass | One object owns queued tiles, active requests, retries, render queue, status, and pass end. | Request coordinator, interceptor/session runtime, store, and page-world source sync each own part of the lifecycle. | Harder to explain "why did this request/render happen now?" |
 | Tile-granular retry/fallback | Tracks per-tile errors/timeouts/retries and can render stale cache after retry exhaustion. | Retries are endpoint/generation oriented. | Better behavior for partial tile holes or intermittent Intel tile failures. |
 | Incremental render queue | Processes entity chunks and pauses that queue during movement. | Coalesces MapLibre source snapshots; movement deferral protects publication, not parsing/store merge/source construction. | Large source snapshots may still cost more than incremental mutation. |
@@ -329,16 +328,12 @@ Possible improvement:
    that suspends the heavy main link/field layers during active movement. Remaining work is around request scheduling,
    refresh-pass ownership, and unchanged-source suppression.
 
-3. **Geometric coverage containment**
-
-   Port IITC's "new bounds contained by fetched data bounds at same zoom" check, adapted to IRIS bounds and data zoom.
-
-4. **Tile-level retry/fallback**
+3. **Tile-level retry/fallback**
 
    Keep endpoint diagnostics, but investigate whether tile-specific retry and stale-tile fallback would reduce
    empty/holey map states.
 
-5. **IITC hook lifecycle compatibility layer**
+4. **IITC hook lifecycle compatibility layer**
 
    If plugin compatibility becomes a goal, define typed equivalents for `mapDataRefreshStart`, `mapDataRefreshEnd`,
    `portalAdded`, `portalRemoved`, `linkAdded`, `fieldAdded`, and `portalDetailLoaded`.

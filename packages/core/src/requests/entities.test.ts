@@ -12,6 +12,7 @@ describe('buildEntityRequestPayload', () => {
 
     expect(payload.tileKeys).toHaveLength(0);
     expect(payload.coverageKey).toBe('invalid:non-finite');
+    expect(payload.dataBounds).toBe(null);
     expect(payload.diagnostic).toBe('invalid non-finite bounds or zoom');
   });
 
@@ -26,6 +27,8 @@ describe('buildEntityRequestPayload', () => {
     expect(payload.tileKeys.length).toBeGreaterThan(0);
     expect(payload.tileKeys.length).toBeLessThan(128);
     expect(payload.coverageKey).toContain(',');
+    expect(payload.dataBounds).not.toBe(null);
+    expect(payload.dataBounds?.minLngE6).toBeGreaterThan(payload.dataBounds?.maxLngE6 ?? 0);
     expect(payload.diagnostic).toBe(null);
   });
 
@@ -58,6 +61,22 @@ describe('buildEntityRequestPayload', () => {
       '8_500_499_5_8_100',
       '8_500_500_5_8_100',
     ]);
+  });
+
+  it('returns tile-aligned data bounds that contain the requested viewport', () => {
+    const bounds = {
+      minLatE6: 52_300_000,
+      minLngE6: 4_800_000,
+      maxLatE6: 52_400_000,
+      maxLngE6: 4_950_000,
+    };
+    const payload = buildEntityRequestPayload(bounds, 14.36);
+
+    expect(payload.dataBounds).not.toBe(null);
+    expect(payload.dataBounds!.minLatE6).toBeLessThanOrEqual(bounds.minLatE6);
+    expect(payload.dataBounds!.maxLatE6).toBeGreaterThanOrEqual(bounds.maxLatE6);
+    expect(payload.dataBounds!.minLngE6).toBeLessThanOrEqual(bounds.minLngE6);
+    expect(payload.dataBounds!.maxLngE6).toBeGreaterThanOrEqual(bounds.maxLngE6);
   });
 
   it('batches tile keys with the shared Intel request size', () => {

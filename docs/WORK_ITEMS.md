@@ -1295,6 +1295,7 @@ Tasks:
 | Preserve urgent update path in diagnostics wording  | Open   | distinguish selection/camera updates from heavy entity/plugin source updates so future scheduler changes can defer only non-urgent work                    |
 | Suspend heavy low-zoom entity layers while moving   | Done   | z10 and below now temporarily hides the main link/field layers during active movement and restores them on move end; selected link/field layers remain visible, and z14 behavior is unchanged |
 | Port IITC center-first tile request ordering        | Done   | shared entity request payloads now sort generated tile keys by distance from the viewport/bounds center before batching, so IRIS and Mini request central data first like IITC |
+| Port IITC fetched-bounds containment skip           | Done   | entity request payloads now expose tile-aligned data bounds, and IRIS move-settle refresh skips with `covered by fetched bounds` when the current viewport is inside the last fresh fetched data bounds at the same floored zoom |
 | Investigate player track pin flicker after pan      | Open   | manual smoke looked normal overall after deferred source sync, but player track pins can briefly hide/show after panning; check tracker source freshness, deferred flush timing, and layer ordering before changing behavior |
 
 ### Phase 3: Long Task, UI Render, and Stable Frame Context

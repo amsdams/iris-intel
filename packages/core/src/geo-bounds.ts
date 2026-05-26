@@ -75,6 +75,20 @@ export function boundsE6ContainsLatLng(bounds: BoundsE6, point: LatLngDegrees): 
   return boundsE6ContainsPoint(bounds, latLngToE6(point));
 }
 
+export function boundsE6ContainsBounds(container: BoundsE6, contained: BoundsE6): boolean {
+  if (!isFiniteBoundsE6(container) || !isFiniteBoundsE6(contained)) return false;
+
+  const south = Math.min(contained.minLatE6, contained.maxLatE6);
+  const north = Math.max(contained.minLatE6, contained.maxLatE6);
+  const west = contained.minLngE6;
+  const east = contained.maxLngE6;
+
+  return boundsE6ContainsPoint(container, {latE6: south, lngE6: west}) &&
+    boundsE6ContainsPoint(container, {latE6: south, lngE6: east}) &&
+    boundsE6ContainsPoint(container, {latE6: north, lngE6: west}) &&
+    boundsE6ContainsPoint(container, {latE6: north, lngE6: east});
+}
+
 function normalizeLongitudeE6(lngE6: number): number {
   return degreesToE6(normalizeLongitudeDegrees(e6ToDegrees(lngE6)));
 }

@@ -1,5 +1,5 @@
 import {ZOOM_TO_LEVEL} from '../ZoomPolicy';
-import {e6ToDegrees, isFiniteBoundsE6, normalizeLongitudeDegrees, type BoundsE6} from '../geo-bounds';
+import {boundsToE6, e6ToDegrees, isFiniteBoundsE6, normalizeLongitudeDegrees, type BoundsE6} from '../geo-bounds';
 
 const DEFAULT_ZOOM_TO_TILES_PER_EDGE = [1, 1, 1, 40, 40, 80, 80, 320, 1000, 2000, 2000, 4000, 8000, 16000, 16000, 32000];
 const MAX_MAP_ZOOM = 21;
@@ -17,6 +17,7 @@ interface TileParams {
 export interface EntityRequestPayload {
   tileKeys: string[];
   coverageKey: string;
+  dataBounds: BoundsE6 | null;
   dataZoom: number;
   diagnostic: string | null;
 }
@@ -71,6 +72,15 @@ function pointToTileId(params: TileParams, x: number, y: number): string {
   return `${params.zoom}_${x}_${y}_${params.level}_8_100`;
 }
 
+function tileToLng(x: number, params: TileParams): number {
+  return (x / params.tilesPerEdge) * 360 - 180;
+}
+
+function tileToLat(y: number, params: TileParams): number {
+  const n = Math.PI - (2 * Math.PI * y) / params.tilesPerEdge;
+  return (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+}
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
@@ -114,11 +124,25 @@ function getWrappedTileDelta(a: number, b: number, tilesPerEdge: number): number
   return Math.min(direct, tilesPerEdge - direct);
 }
 
+function buildDataBoundsE6(xRanges: [number, number][], minY: number, maxY: number, params: TileParams): BoundsE6 | null {
+  if (xRanges.length === 0) return null;
+
+  const firstRange = xRanges[0];
+  const lastRange = xRanges[xRanges.length - 1];
+  return boundsToE6({
+    south: tileToLat(maxY + 1, params),
+    west: tileToLng(firstRange[0], params),
+    north: tileToLat(minY, params),
+    east: tileToLng(lastRange[1] + 1, params),
+  });
+}
+
 export function buildEntityRequestPayload(bounds: BoundsE6, mapZoom: number): EntityRequestPayload {
   if (!Number.isFinite(mapZoom) || !isFiniteBoundsE6(bounds)) {
     return {
       tileKeys: [],
       coverageKey: 'invalid:non-finite',
+      dataBounds: null,
       dataZoom: 0,
       diagnostic: 'invalid non-finite bounds or zoom',
     };
@@ -167,6 +191,7 @@ export function buildEntityRequestPayload(bounds: BoundsE6, mapZoom: number): En
   return {
     tileKeys,
     coverageKey: `${dataZoom}:${coverageRanges}:${minY}:${maxY}:${tileKeys.length}${capped ? ':capped' : ''}`,
+    dataBounds: buildDataBoundsE6(xRanges, minY, maxY, params),
     dataZoom,
     diagnostic: capped ? `tile coverage capped at ${MAX_ENTITY_TILE_KEYS}` : null,
   };

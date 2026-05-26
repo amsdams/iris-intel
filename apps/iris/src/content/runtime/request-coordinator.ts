@@ -1,4 +1,4 @@
-import { batchEntityTileKeys, buildEntityRequestPayload, clampMapCamera, estimateBoundsE6FromPreviousViewport, evaluateEndpointRequestGate, getCurrentViewPlextPortalRefreshHints, resolvePlextPortalRefreshHint, selectCommTopologyRefresh, selectKeyedRefreshBatch, shouldBypassPlextCooldownForBoundsChange, useStore, type BoundsE6, type Plext, type PlextPortalRefreshHint } from '@iris/core';
+import { batchEntityTileKeys, boundsE6ContainsBounds, buildEntityRequestPayload, clampMapCamera, estimateBoundsE6FromPreviousViewport, evaluateEndpointRequestGate, getCurrentViewPlextPortalRefreshHints, resolvePlextPortalRefreshHint, selectCommTopologyRefresh, selectKeyedRefreshBatch, shouldBypassPlextCooldownForBoundsChange, useStore, type BoundsE6, type Plext, type PlextPortalRefreshHint } from '@iris/core';
 import { IRISMessage, parseIrisMoveMapMessage, parseIrisPortalDetailsRequestMessage, parseIrisRegionScoreRequestMessage } from './message-types';
 import { IRIS_PAGE_MAP_MIN_ZOOM } from '../../shared/page-map-runtime-protocol';
 
@@ -62,6 +62,8 @@ export function createRequestCoordinator(): RequestCoordinator {
     let entityRetryCount = 0;
     let lastRegionScoreRequestKey: string | null = null;
     let lastEntityCoverageKey: string | null = null;
+    let lastEntityFetchedDataBounds: BoundsE6 | null = null;
+    let lastEntityFetchedMapZoom: number | null = null;
     let entityRefreshGeneration = 0;
     let entityUnsub: (() => void) | null = null;
     let lastResumeRefreshAt = 0;
@@ -167,6 +169,24 @@ export function createRequestCoordinator(): RequestCoordinator {
 
         const forceRefresh = reason === 'manual' || reason === 'comm_activity';
         const entitiesDiagnostics = getEndpointDiagnostics('entities');
+        const isCoveredByPreviousDataBounds =
+            reason === 'move_settle' &&
+            !forceRefresh &&
+            payload.dataBounds !== null &&
+            lastEntityFetchedDataBounds !== null &&
+            lastEntityFetchedMapZoom !== null &&
+            Math.floor(lastEntityFetchedMapZoom) === Math.floor(zoom) &&
+            entitiesDiagnostics.lastSuccessAt !== null &&
+            Date.now() - entitiesDiagnostics.lastSuccessAt <= TILE_FRESHNESS_TTL_MS &&
+            boundsE6ContainsBounds(lastEntityFetchedDataBounds, bounds);
+
+        if (isCoveredByPreviousDataBounds) {
+            useStore.getState().setEndpointMetadata('entities', { lastSkipReason: 'covered by fetched bounds' });
+            if (debugLogging) {
+                console.log(`IRIS: Skipping entities fetch (${reason}): covered by fetched bounds`);
+            }
+            return;
+        }
         const requestGate = reason === 'retry'
             ? {shouldRun: true as const, skipReason: null, nextRefreshAt: null}
             : evaluateEndpointRequestGate({
@@ -223,6 +243,8 @@ export function createRequestCoordinator(): RequestCoordinator {
         }
 
         lastEntityCoverageKey = payload.coverageKey;
+        lastEntityFetchedDataBounds = payload.dataBounds;
+        lastEntityFetchedMapZoom = zoom;
 
         // Batch tileKeys to avoid massive single requests (IITC-like batching)
         for (const batch of batchEntityTileKeys(tilesToFetch)) {
