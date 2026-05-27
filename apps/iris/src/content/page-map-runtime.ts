@@ -48,6 +48,12 @@ interface FrameSnapshot extends FrameSampleSnapshot {
     benchmarkMode?: BenchmarkMode;
     benchmarkSourceFeatureCounts?: Record<string, number>;
     benchmarkPluginFeatureCounts?: Record<string, number>;
+    benchmarkStableTotalMs?: number;
+    benchmarkStableFrameCount?: number;
+    benchmarkStableAverageFrameMs?: number;
+    benchmarkStableMaxFrameMs?: number;
+    benchmarkStableSlowFrameCount?: number;
+    benchmarkStableEstimatedFps?: number;
 }
 
 interface MovingFrameSample {
@@ -196,6 +202,7 @@ const PAN_BENCHMARK_RUN_COUNT = 3;
 const PAN_BENCHMARK_RUN_DURATION_MS = 3000;
 const PAN_BENCHMARK_START = {lat: 52.371094, lng: 4.906375};
 const PAN_BENCHMARK_SETTLE_MS = 600;
+const PAN_BENCHMARK_STABLE_SAMPLE_MS = 900;
 const DEFERRED_SOURCE_SYNC_SETTLE_MS = 120;
 const BENCHMARK_COLD_SOURCE_HOLD_MS = 350;
 const BENCHMARK_COLD_SOURCE_WINDOW_MS =
@@ -2257,15 +2264,30 @@ function stopFrameSample(sample: MovingFrameSample): FrameSnapshot | null {
     return finishFrameSample(sample.accumulator, performance.now());
 }
 
-function publishBenchmarkFrameSnapshot(snapshots: FrameSnapshot[], variant: BenchmarkVariant, zoom: number, mode: BenchmarkMode): void {
+function publishBenchmarkFrameSnapshot(
+    snapshots: FrameSnapshot[],
+    variant: BenchmarkVariant,
+    zoom: number,
+    mode: BenchmarkMode,
+    stableSnapshot?: FrameSnapshot | null
+): void {
     const snapshot = aggregateBenchmarkFrameSnapshots(snapshots, {
         variant,
         zoom,
         mode,
         sourceFeatureCounts: currentSourceFeatureCounts,
         pluginFeatureCounts: currentPluginFeatureCounts,
-    });
+    }) as FrameSnapshot | null;
     if (!snapshot) return;
+
+    if (stableSnapshot) {
+        snapshot.benchmarkStableTotalMs = stableSnapshot.totalMs;
+        snapshot.benchmarkStableFrameCount = stableSnapshot.frameCount;
+        snapshot.benchmarkStableAverageFrameMs = stableSnapshot.averageFrameMs;
+        snapshot.benchmarkStableMaxFrameMs = stableSnapshot.maxFrameMs;
+        snapshot.benchmarkStableSlowFrameCount = stableSnapshot.slowFrameCount;
+        snapshot.benchmarkStableEstimatedFps = stableSnapshot.estimatedFps;
+    }
 
     window.postMessage({
         type: PAGE_MAP_RUNTIME_MESSAGES.frameBenchmark,
@@ -2388,12 +2410,18 @@ async function runPanBenchmark(variant: BenchmarkVariant = 'normal', zoom = 14.3
                     setMovingOverlayVisibility(map, true);
                 }
                 panBenchmarkMode = 'pan';
-                publishBenchmarkFrameSnapshot(runSnapshots, variant, zoom, mode);
                 if (!liveLoad) {
                     schedulePendingSyncDataFlush(map);
                 }
-                panBenchmarkRestoreVisibility?.();
-                panBenchmarkRestoreVisibility = null;
+                const stableSample = createFrameSample();
+                startFrameSample(stableSample);
+                panBenchmarkSettleTimer = window.setTimeout(() => {
+                    panBenchmarkSettleTimer = null;
+                    const stableSnapshot = stopFrameSample(stableSample);
+                    publishBenchmarkFrameSnapshot(runSnapshots, variant, zoom, mode, stableSnapshot);
+                    panBenchmarkRestoreVisibility?.();
+                    panBenchmarkRestoreVisibility = null;
+                }, PAN_BENCHMARK_STABLE_SAMPLE_MS);
             };
 
             panBenchmarkAnimation = window.requestAnimationFrame(tick);

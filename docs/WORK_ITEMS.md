@@ -154,7 +154,7 @@ Goal:
 
 ### Entity refresh ownership becomes an IRIS concern
 
-Status: `Open`
+Status: `In Progress`
 
 Outcome:
 
@@ -1338,11 +1338,12 @@ Tasks:
 |--------------------------------------------------|--------|-----------------------------------------------------------------------------------------------------------------------------------------|
 | Add per-scenario long-task deltas                | Done   | batch rows now report long-task count and max duration per scenario; overlap classification with moving remains a later refinement      |
 | Add per-scenario UI render deltas                | Open   | compactly report top changed UI surfaces from existing render diagnostics when a scenario has unexpected slow frames                    |
-| Split scenario timing into phases                | Open   | distinguish preload, settle wait, benchmark pan/zoom window, and post-window source updates                                             |
-| Add "stable after scenario" wait/sample          | Open   | after each scenario, record whether source/endpoint activity continued after frame sampling stopped                                     |
+| Split scenario timing into phases                | In Progress | first pass now separates movement-frame stats from a short post-move `stable` frame sample in copied rows; preload/settle/post-source subphase labels remain open |
+| Add "stable after scenario" wait/sample          | In Progress | copied rows now report `stable avg/max/fps/slow` after each synthetic movement window so deferred post-move work can show up separately from pan smoothness |
 | Define thresholds for noisy runs                 | Done   | copied batch rows now include `noise clean` or compact causes (`net-moving`, `source-moving`, `longtask`) based on moving endpoint successes, moving source `setData`, and long-task deltas |
 | Add live-load benchmark mode                     | Done | opt-in `Live Bench` now runs the selected variant/zoom/mode through the same wait/copy/report panel path as `Batch`, forces an entity refresh at synthetic movement start, and bypasses the cold-source hold for that run so request/source/render contention can be measured separately from isolated `Batch` rows; toolbar cleanup removed the older single-run `Bench` button and hides Live Bench variant/mode/zoom selectors behind `Bench Options` |
 | Add manual interaction capture mode              | Open   | current Bench is deterministic synthetic camera movement, not real human drag/finger input; add a 5-10s capture window later so manual panning reports the same net/source/longtask/workload fields |
+| Evaluate cold source partitioning                | Open   | only pursue if Phase 3 stable/post-move samples show large changed cold sources still cause visible stutter; candidate approaches are spatial tile/region sources or semantic partitions, not urgent live entity batches by default |
 
 ### Phase 4: Export, Comparison, and History
 

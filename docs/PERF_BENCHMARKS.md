@@ -1036,3 +1036,17 @@ Phase 2 close-out:
 - Use `Live Bench` only when measuring intentional request/source/render contention.
 - Current desktop validation shows isolated rows are clean enough to move on to Phase 3 diagnostics: UI render deltas,
   phase timing, post-scenario stability, and manual interaction capture.
+
+### Phase 3 Start: Stable After Movement Sample
+
+Change under test:
+
+- Copied benchmark rows now include a `stable avg ... max ... fps ... slow ...` segment.
+- The stable sample runs briefly after the synthetic movement window and after deferred cold source publication is allowed
+  to flush, so post-move stutter is visible separately from pan/zoom movement smoothness.
+
+Expected signal:
+
+- A healthy isolated row should have both good movement stats and good stable stats.
+- If movement looks smooth but a deferred source publication freezes the map afterward, `stable max` and `stable slow`
+  should expose that before we consider cold source partitioning.

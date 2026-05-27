@@ -110,6 +110,8 @@ function isPageRuntimeViewportPerformanceMessage(value: unknown): value is {type
 function toFrameSnapshot(snapshot: Record<string, unknown>): MapPerfSnapshot {
     const getNumber = (key: string, fallback = 0): number =>
         typeof snapshot[key] === 'number' ? snapshot[key] : fallback;
+    const getOptionalNumber = (key: string): number | undefined =>
+        typeof snapshot[key] === 'number' ? snapshot[key] : undefined;
 
     return {
         type: 'frame',
@@ -130,6 +132,12 @@ function toFrameSnapshot(snapshot: Record<string, unknown>): MapPerfSnapshot {
         benchmarkMode: typeof snapshot.benchmarkMode === 'string' ? snapshot.benchmarkMode : undefined,
         benchmarkSourceFeatureCounts: toRecordOfNumbers(snapshot.benchmarkSourceFeatureCounts),
         benchmarkPluginFeatureCounts: toRecordOfNumbers(snapshot.benchmarkPluginFeatureCounts),
+        benchmarkStableTotalMs: getOptionalNumber('benchmarkStableTotalMs'),
+        benchmarkStableFrameCount: getOptionalNumber('benchmarkStableFrameCount'),
+        benchmarkStableAverageFrameMs: getOptionalNumber('benchmarkStableAverageFrameMs'),
+        benchmarkStableMaxFrameMs: getOptionalNumber('benchmarkStableMaxFrameMs'),
+        benchmarkStableSlowFrameCount: getOptionalNumber('benchmarkStableSlowFrameCount'),
+        benchmarkStableEstimatedFps: getOptionalNumber('benchmarkStableEstimatedFps'),
     };
 }
 

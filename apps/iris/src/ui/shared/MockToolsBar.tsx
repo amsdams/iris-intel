@@ -489,6 +489,11 @@ function formatPluginCounts(counts: Record<string, number> | undefined): string 
     return `pluginMix total ${formatCount(counts.total)} labels ${formatCount(counts.labels)} player ${formatCount(counts.playerMarkers)} highlights ${formatCount(counts.highlights)} lines ${formatCount(counts.lines)} points ${formatCount(counts.points)}`;
 }
 
+function formatBenchmarkStableFrame(frame: NonNullable<ReturnType<typeof useStore.getState>['mapPerfDiagnostics']['frame']>): string {
+    if (typeof frame.benchmarkStableAverageFrameMs !== 'number') return 'stable none';
+    return `stable avg ${formatMs(frame.benchmarkStableAverageFrameMs)} max ${formatMs(frame.benchmarkStableMaxFrameMs)} fps ${formatCount(frame.benchmarkStableEstimatedFps)} slow ${formatCount(frame.benchmarkStableSlowFrameCount)}/${formatCount(frame.benchmarkStableFrameCount)}`;
+}
+
 function buildBatchReportLine(testCase: BenchmarkBatchCase, snapshot: BenchmarkWindowSnapshot, finishedAt = Date.now()): string {
     const state = useStore.getState();
     const viewport = state.mapPerfDiagnostics.viewport;
@@ -522,6 +527,7 @@ function buildBatchReportLine(testCase: BenchmarkBatchCase, snapshot: BenchmarkW
         `slow ${formatCount(frame.slowFrameCount)}/${formatCount(frame.frameCount)}`,
         `median ${formatMs(frame.benchmarkMedianAverageFrameMs)}`,
         `benchMax ${formatMs(frame.benchmarkMaxFrameMs)}`,
+        formatBenchmarkStableFrame(frame),
         formatBenchmarkNoise(snapshot, endpointCounters),
         formatBenchmarkEndpointCounters(endpointCounters),
         formatBenchmarkEntityDeltas(snapshot),

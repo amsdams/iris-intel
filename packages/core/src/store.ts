@@ -387,6 +387,12 @@ export interface MapPerfSnapshot {
     benchmarkMode?: string;
     benchmarkSourceFeatureCounts?: Record<string, number>;
     benchmarkPluginFeatureCounts?: Record<string, number>;
+    benchmarkStableTotalMs?: number;
+    benchmarkStableFrameCount?: number;
+    benchmarkStableAverageFrameMs?: number;
+    benchmarkStableMaxFrameMs?: number;
+    benchmarkStableSlowFrameCount?: number;
+    benchmarkStableEstimatedFps?: number;
 }
 
 export interface MapPerfDiagnostics {
