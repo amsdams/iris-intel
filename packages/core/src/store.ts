@@ -347,6 +347,14 @@ export interface MapPerfSnapshot {
     sourceUpdateCallMs?: Record<string, number>;
     sourceUpdateSkippedUnchangedCounts?: Record<string, number>;
     sourceUpdateReasons?: Record<string, number>;
+    sourcePassId?: number;
+    sourcePassStartedAt?: number;
+    sourcePassReason?: string;
+    sourcePassMoving?: boolean;
+    sourcePassSourceCount?: number;
+    sourcePassSetDataCalls?: number;
+    sourcePassSkippedUnchangedCount?: number;
+    sourcePassSetDataMs?: number;
     pluginFeatureCounts?: Record<string, number>;
     itemCount?: number;
     portalCount?: number;

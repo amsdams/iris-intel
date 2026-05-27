@@ -58,9 +58,15 @@ interface MovingFrameSample {
 }
 
 interface SourceUpdatePerformance {
+    passId: number;
     startedAt: number;
+    wallStartedAt: number;
     reason: string;
+    moving: boolean;
     setDataMs: number;
+    sourceCount: number;
+    setDataCalls: number;
+    skippedUnchangedCount: number;
     sourceSetDataMs: Record<string, number>;
     sourceFeatureCounts: Record<string, number>;
     sourceSkippedUnchangedCounts: Record<string, number>;
@@ -171,6 +177,7 @@ let sourceUpdateSkippedUnchangedCount = 0;
 let movingSourceUpdateCount = 0;
 let movingSourceUpdateSetDataMs = 0;
 let movingSourceUpdateSkippedUnchangedCount = 0;
+let sourcePassSequence = 0;
 const sourceUpdateCallCounts: Record<string, number> = {};
 const sourceUpdateCallMs: Record<string, number> = {};
 const sourceUpdateSkippedUnchangedCounts: Record<string, number> = {};
@@ -960,9 +967,15 @@ function isMapActivelyMoving(): boolean {
 
 function createSourceUpdatePerformance(reason: string): SourceUpdatePerformance {
     return {
+        passId: ++sourcePassSequence,
         startedAt: performance.now(),
+        wallStartedAt: Date.now(),
         reason,
+        moving: isMapActivelyMoving(),
         setDataMs: 0,
+        sourceCount: 0,
+        setDataCalls: 0,
+        skippedUnchangedCount: 0,
         sourceSetDataMs: {},
         sourceFeatureCounts: {},
         sourceSkippedUnchangedCounts: {},
@@ -978,6 +991,7 @@ function setMeasuredGeoJsonSourceData(
     const source = map.getSource(sourceId);
     if (!source || !('setData' in source)) return;
 
+    perf.sourceCount += 1;
     const signature = getFeatureCollectionSignature(data);
     if (sourceDataSignatures.get(sourceId) === signature) {
         const sourceLabel = SOURCE_COUNT_LABELS[sourceId] ?? sourceId;
@@ -987,6 +1001,7 @@ function setMeasuredGeoJsonSourceData(
         if (moving) {
             movingSourceUpdateSkippedUnchangedCount += 1;
         }
+        perf.skippedUnchangedCount += 1;
         perf.sourceSkippedUnchangedCounts[sourceLabel] = (perf.sourceSkippedUnchangedCounts[sourceLabel] ?? 0) + 1;
         perf.sourceFeatureCounts[sourceLabel] = data.features.length;
         currentSourceFeatureCounts[sourceLabel] = data.features.length;
@@ -1008,6 +1023,7 @@ function setMeasuredGeoJsonSourceData(
         movingSourceUpdateSetDataMs += elapsed;
     }
     perf.setDataMs += elapsed;
+    perf.setDataCalls += 1;
     perf.sourceSetDataMs[sourceLabel] = (perf.sourceSetDataMs[sourceLabel] ?? 0) + elapsed;
     perf.sourceFeatureCounts[sourceLabel] = data.features.length;
     currentSourceFeatureCounts[sourceLabel] = data.features.length;
@@ -1966,6 +1982,14 @@ function publishViewportPerformance(
         sourceUpdateCallMs: {...sourceUpdateCallMs},
         sourceUpdateSkippedUnchangedCounts: {...sourceUpdateSkippedUnchangedCounts},
         sourceUpdateReasons: {...sourceUpdateReasons},
+        sourcePassId: perf.passId,
+        sourcePassStartedAt: perf.wallStartedAt,
+        sourcePassReason: perf.reason,
+        sourcePassMoving: perf.moving,
+        sourcePassSourceCount: perf.sourceCount,
+        sourcePassSetDataCalls: perf.setDataCalls,
+        sourcePassSkippedUnchangedCount: perf.skippedUnchangedCount,
+        sourcePassSetDataMs: perf.setDataMs,
         mapMoving: isMapActivelyMoving(),
         lastMapMoveStartAt,
         lastMapMoveEndAt,

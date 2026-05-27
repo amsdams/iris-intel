@@ -948,5 +948,28 @@ Read:
 
 - Use `noise clean` rows for isolated renderer/source-count comparisons.
 - Use caused noise rows to diagnose why a sample should not be compared directly, without discarding the row entirely.
+
+### Follow-Up: Source Publication Pass Summary
+
+Change under test:
+
+- Copied preload and timed rows now include `sourcePass`, mirroring the earlier `entityPass` summary.
+- The row records whether the last source publication pass is `current` or `carry`, plus pass id, reason string, moving
+  state, source count, real `setData` calls, unchanged skips, and pass `setData` time.
+- This is diagnostics-only. It does not change source scheduling; it makes the next scheduler change attributable.
+
+Expected shape:
+
+```text
+sourcePass current id 12 reason entities:portals,entities:links,plugins moving no sources 10 calls 3 skipped 7 setData 1ms
+sourcePass carry id 12 reason entities:portals,entities:links,plugins moving no sources 10 calls 3 skipped 7 setData 1ms
+```
+
+Read:
+
+- `current` means a source publication pass was created during that benchmark/preload window.
+- `carry` means the row is measuring against an already completed source pass, which is usually what we want for
+  isolated renderer rows.
+- `calls 0 skipped N` is now clearly a no-op publication pass instead of hidden `setData` work.
 - The latest desktop sample shows the classifier doing the intended thing: clean z14/z8 rows stay clean, while otherwise
   good rows with moving passive artifact/plext completions are marked as noise without implying a renderer regression.

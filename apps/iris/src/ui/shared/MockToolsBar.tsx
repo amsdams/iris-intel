@@ -82,6 +82,17 @@ interface BenchmarkEntityPassSnapshot {
     lastSkipReason: string | null;
 }
 
+interface BenchmarkSourcePassSnapshot {
+    lastPassId: number | null;
+    lastPassStartedAt: number | null;
+    lastPassReason: string | null;
+    lastPassMoving: boolean;
+    lastPassSourceCount: number;
+    lastPassSetDataCalls: number;
+    lastPassSkippedUnchangedCount: number;
+    lastPassSetDataMs: number;
+}
+
 interface BenchmarkWindowSnapshot {
     startedAt: number;
     entities: BenchmarkEntityCounterSnapshot;
@@ -318,6 +329,27 @@ function formatBenchmarkEntityPass(snapshot: BenchmarkWindowSnapshot, pass = sna
     return `entityPass ${scope} id ${formatCount(pass.lastPassId)} gen ${formatCount(pass.lastPassGeneration ?? undefined)} reason ${pass.lastPassReason ?? '-'} req ${formatCount(pass.lastPassRequestedTiles)}/${formatCount(pass.lastPassTotalTiles)} fresh ${formatCount(pass.lastPassFreshTiles)} batches ${formatCount(pass.lastPassBatchCount)} dataZoom ${formatCount(pass.lastPassDataZoom ?? undefined)}`;
 }
 
+function snapshotBenchmarkSourcePass(): BenchmarkSourcePassSnapshot {
+    const viewport = useStore.getState().mapPerfDiagnostics.viewport;
+
+    return {
+        lastPassId: viewport?.sourcePassId ?? null,
+        lastPassStartedAt: viewport?.sourcePassStartedAt ?? null,
+        lastPassReason: viewport?.sourcePassReason ?? null,
+        lastPassMoving: viewport?.sourcePassMoving ?? false,
+        lastPassSourceCount: viewport?.sourcePassSourceCount ?? 0,
+        lastPassSetDataCalls: viewport?.sourcePassSetDataCalls ?? 0,
+        lastPassSkippedUnchangedCount: viewport?.sourcePassSkippedUnchangedCount ?? 0,
+        lastPassSetDataMs: viewport?.sourcePassSetDataMs ?? 0,
+    };
+}
+
+function formatBenchmarkSourcePass(snapshot: BenchmarkWindowSnapshot, pass = snapshotBenchmarkSourcePass()): string {
+    if (pass.lastPassId === null) return 'sourcePass none';
+    const scope = pass.lastPassStartedAt !== null && pass.lastPassStartedAt >= snapshot.startedAt ? 'current' : 'carry';
+    return `sourcePass ${scope} id ${formatCount(pass.lastPassId)} reason ${pass.lastPassReason ?? '-'} moving ${pass.lastPassMoving ? 'yes' : 'no'} sources ${formatCount(pass.lastPassSourceCount)} calls ${formatCount(pass.lastPassSetDataCalls)} skipped ${formatCount(pass.lastPassSkippedUnchangedCount)} setData ${formatMs(pass.lastPassSetDataMs)}`;
+}
+
 function formatBenchmarkLongTaskDelta(snapshot: BenchmarkWindowSnapshot): string {
     const diagnostics = useStore.getState().mainThreadDiagnostics;
     const count = Math.max(0, diagnostics.longTaskCount - snapshot.longTaskCount);
@@ -475,6 +507,7 @@ function buildBatchReportLine(testCase: BenchmarkBatchCase, snapshot: BenchmarkW
         formatBenchmarkEndpointCounters(endpointCounters),
         formatBenchmarkEntityDeltas(snapshot),
         formatBenchmarkEntityPass(snapshot),
+        formatBenchmarkSourcePass(snapshot),
         formatBenchmarkSourceDelta(snapshot),
         formatBenchmarkLongTaskDelta(snapshot),
         formatBenchmarkWorkload(testCase, sourceCounts),
@@ -528,6 +561,7 @@ function buildPreloadSummary(
         formatBenchmarkEndpointCounters(endpointCounters),
         formatBenchmarkEntityDeltas(snapshot),
         formatBenchmarkEntityPass(snapshot, passSnapshot),
+        formatBenchmarkSourcePass(snapshot),
         formatBenchmarkSourceDelta(snapshot),
         timedOut ? 'timeout yes' : 'timeout no',
     ].join(' ');
