@@ -31,9 +31,12 @@ const BENCHMARK_MODES = [
     {label: 'Pan', value: 'pan'},
     {label: 'Zoom', value: 'zoom'},
 ] as const;
+const URGENT_SOURCE_REASONS = new Set(['selection', 'visual-filters']);
+const HEAVY_SOURCE_REASONS = new Set(['plugins', 'planning', 'artifacts', 'ornaments', 'mission']);
 
 type BenchmarkVariant = IrisBenchmarkVariant;
 type BenchmarkBatchCase = BenchmarkScenario<IrisBenchmarkVariant>;
+type SourceReasonClass = 'urgent' | 'heavy' | 'snapshot' | 'other';
 
 const BENCHMARK_BATCH: readonly BenchmarkBatchCase[] = IRIS_BENCHMARK_SCENARIOS;
 
@@ -110,6 +113,26 @@ function formatCount(value: number | undefined): string {
 
 function formatMs(value: number | undefined): string {
     return typeof value === 'number' ? `${Math.round(value)}ms` : '-';
+}
+
+function classifySourceReason(reason: string): SourceReasonClass {
+    if (URGENT_SOURCE_REASONS.has(reason)) return 'urgent';
+    if (reason === 'snapshot') return 'snapshot';
+    if (reason.startsWith('entities:') || HEAVY_SOURCE_REASONS.has(reason)) return 'heavy';
+    return 'other';
+}
+
+function formatSourceReasonMix(reasonDeltas: Array<readonly [string, number]>): string {
+    const totals: Record<SourceReasonClass, number> = {
+        urgent: 0,
+        heavy: 0,
+        snapshot: 0,
+        other: 0,
+    };
+    reasonDeltas.forEach(([reason, count]) => {
+        totals[classifySourceReason(reason)] += count;
+    });
+    return `urgent:${formatCount(totals.urgent)},heavy:${formatCount(totals.heavy)},snapshot:${formatCount(totals.snapshot)},other:${formatCount(totals.other)}`;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -305,6 +328,32 @@ function formatBenchmarkLongTaskDelta(snapshot: BenchmarkWindowSnapshot): string
     return `longtask count ${formatCount(count)} max ${formatMs(max)}`;
 }
 
+function getBenchmarkLongTaskCount(snapshot: BenchmarkWindowSnapshot): number {
+    return Math.max(0, useStore.getState().mainThreadDiagnostics.longTaskCount - snapshot.longTaskCount);
+}
+
+function getBenchmarkMovingSourceCallCount(snapshot: BenchmarkWindowSnapshot): number {
+    const viewport = useStore.getState().mapPerfDiagnostics.viewport;
+    return Math.max(0, (viewport?.movingSourceUpdateCount ?? 0) - snapshot.movingSourceUpdateCount);
+}
+
+function getBenchmarkMovingEndpointSuccessCount(counters: BenchmarkEndpointCounterMap): number {
+    return BENCHMARK_ENDPOINT_KEYS.reduce((total, key) => total + counters[key].moving, 0);
+}
+
+function formatBenchmarkNoise(snapshot: BenchmarkWindowSnapshot, counters: BenchmarkEndpointCounterMap): string {
+    const movingNet = getBenchmarkMovingEndpointSuccessCount(counters);
+    const movingSources = getBenchmarkMovingSourceCallCount(snapshot);
+    const longTasks = getBenchmarkLongTaskCount(snapshot);
+    const reasons = [
+        movingNet > 0 ? `net-moving:${formatCount(movingNet)}` : null,
+        movingSources > 0 ? `source-moving:${formatCount(movingSources)}` : null,
+        longTasks > 0 ? `longtask:${formatCount(longTasks)}` : null,
+    ].filter((reason): reason is string => Boolean(reason));
+
+    return `noise ${reasons.length > 0 ? reasons.join(',') : 'clean'}`;
+}
+
 function formatBenchmarkSourceDelta(snapshot: BenchmarkWindowSnapshot): string {
     const viewport = useStore.getState().mapPerfDiagnostics.viewport;
     const syncCount = Math.max(0, (viewport?.sourceSyncCount ?? 0) - snapshot.sourceSyncCount);
@@ -342,13 +391,15 @@ function formatBenchmarkSourceDelta(snapshot: BenchmarkWindowSnapshot): string {
         .filter((part): part is string => Boolean(part))
         .join(',');
     const nextReasons = viewport?.sourceUpdateReasons ?? {};
-    const reasonSummary = Object.entries(nextReasons)
+    const reasonDeltas = Object.entries(nextReasons)
         .map(([reason, count]) => [reason, Math.max(0, count - (snapshot.sourceUpdateReasons[reason] ?? 0))] as const)
-        .filter(([, count]) => count > 0)
+        .filter(([, count]) => count > 0);
+    const reasonSummary = reasonDeltas
         .map(([reason, count]) => `${reason}:${formatCount(count)}`)
         .join(',');
+    const reasonMixSummary = formatSourceReasonMix(reasonDeltas);
 
-    return `sourceDelta syncs ${formatCount(syncCount)} movingSyncs ${formatCount(movingSyncCount)} calls ${formatCount(updateCount)} skipped ${formatCount(skippedUnchangedCount)} movingCalls ${formatCount(movingCount)} movingSkipped ${formatCount(movingSkippedUnchangedCount)} setData ${formatMs(setDataMs)} movingSetData ${formatMs(movingSetDataMs)} sources ${sourceSummary || 'none'} skippedSources ${skippedSummary || 'none'} reasons ${reasonSummary || 'none'}`;
+    return `sourceDelta syncs ${formatCount(syncCount)} movingSyncs ${formatCount(movingSyncCount)} calls ${formatCount(updateCount)} skipped ${formatCount(skippedUnchangedCount)} movingCalls ${formatCount(movingCount)} movingSkipped ${formatCount(movingSkippedUnchangedCount)} setData ${formatMs(setDataMs)} movingSetData ${formatMs(movingSetDataMs)} sources ${sourceSummary || 'none'} skippedSources ${skippedSummary || 'none'} reasonMix ${reasonMixSummary} reasons ${reasonSummary || 'none'}`;
 }
 
 function formatBenchmarkWorkload(testCase: BenchmarkBatchCase, sourceCounts: Record<string, number>): string {
@@ -403,6 +454,7 @@ function buildBatchReportLine(testCase: BenchmarkBatchCase, snapshot: BenchmarkW
         (sourceCounts.artifacts ?? viewport?.artifactCount ?? 0) +
         (sourceCounts.ornaments ?? viewport?.ornamentCount ?? 0) +
         (sourceCounts['plugin-features'] ?? viewport?.pluginCount ?? 0);
+    const endpointCounters = getBenchmarkEndpointCounters(snapshot.startedAt, finishedAt);
 
     return [
         testCase.label,
@@ -419,7 +471,8 @@ function buildBatchReportLine(testCase: BenchmarkBatchCase, snapshot: BenchmarkW
         `slow ${formatCount(frame.slowFrameCount)}/${formatCount(frame.frameCount)}`,
         `median ${formatMs(frame.benchmarkMedianAverageFrameMs)}`,
         `benchMax ${formatMs(frame.benchmarkMaxFrameMs)}`,
-        formatBenchmarkEndpointCounters(getBenchmarkEndpointCounters(snapshot.startedAt, finishedAt)),
+        formatBenchmarkNoise(snapshot, endpointCounters),
+        formatBenchmarkEndpointCounters(endpointCounters),
         formatBenchmarkEntityDeltas(snapshot),
         formatBenchmarkEntityPass(snapshot),
         formatBenchmarkSourceDelta(snapshot),

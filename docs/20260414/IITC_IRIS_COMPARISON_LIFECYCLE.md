@@ -210,4 +210,3 @@ Based on the audit gaps, the following work is required to bring IRIS to parity 
 IRIS is a "Semantic Port" of the IITC request lifecycle, not a literal one. It preserves the hard-won performance heuristics of IITC (tile math, settle delays, containment checks) while adapting them to a modern, split-world architecture.
 
 The current implementation is an excellent foundation, but the "setData Hammer" and "Generation-level Retries" are the primary technical debts preventing it from feeling as robust as the original. Executing **Epic 1** and **Epic 2** should be the highest priority for the next development cycle.
-

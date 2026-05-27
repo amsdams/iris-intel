@@ -48,6 +48,8 @@ when evaluating major dependency migrations or rendering changes.
 | 0.1.7   | z8 Firefox cold-compare batch   | Desktop Mac | Firefox 153 | OSM     | player-tracker                          | 32,301 | 9,154   | 16,370 | 6,775  | 2       | n/a      | n/a       | n/a  | 19ms      | 26ms   | 192ms | 53  | 82/476      |
 | 0.1.7   | z8 Firefox no-links compare     | Desktop Mac | Firefox 153 | OSM     | player-tracker                          | 32,336 | 9,160   | 16,396 | 6,778  | 2       | n/a      | n/a       | n/a  | 8ms       | 8ms    | 43ms  | 118 | 3/1,064     |
 | 0.1.7   | z8 Firefox no-fields compare    | Desktop Mac | Firefox 153 | OSM     | player-tracker                          | 32,336 | 9,160   | 16,396 | 6,778  | 2       | n/a      | n/a       | n/a  | 8ms       | 8ms    | 17ms  | 120 | 0/1,079     |
+| 0.1.7   | z14 source reasonMix validation | Desktop Mac | Firefox 153 | OSM     | player-tracker                          | 7,122  | 1,740   | 3,673  | 1,648  | 61      | n/a      | 0ms       | n/a  | 9ms       | 9ms    | 25ms  | 116 | 0/1,043     |
+| 0.1.7   | z8 source reasonMix validation  | Desktop Mac | Firefox 153 | OSM     | player-tracker                          | 17,570 | 5,133   | 8,860  | 3,577  | 0       | n/a      | 0ms       | n/a  | 9ms       | 9ms    | 25ms  | 110 | 0/996       |
 | Mini 1.0.32 | z8 Firefox cold-compare batch | Desktop Mac | Firefox 153 | n/a     | player-tracker                          | 3,628  | 1,171   | 1,724  | 682    | 51      | n/a      | n/a       | n/a  | 8ms       | 8ms    | 17ms  | 120 | 0/263       |
 | Mini 1.0.32 | z8 Firefox no-links compare  | Desktop Mac | Firefox 153 | n/a     | player-tracker                          | 1,907  | 1,174   | 0      | 682    | 51      | n/a      | n/a       | n/a  | 8ms       | 8ms    | 9ms   | 120 | 0/265       |
 | Mini 1.0.32 | z8 Firefox no-fields compare | Desktop Mac | Firefox 153 | n/a     | player-tracker                          | 2,958  | 1,174   | 1,733  | 0      | 51      | n/a      | n/a       | n/a  | 8ms       | 8ms    | 9ms   | 120 | 0/264       |
@@ -889,3 +891,62 @@ Read:
 - Timed desktop rows remain clean: `119-120fps`, no long tasks, and `setData 0ms` in the scenario windows shown here.
 - Preload rows still expose the larger source-publication volume, which is useful context but should not be compared
   directly with timed pan/zoom windows.
+
+### Follow-Up: Source Reason Mix Wording
+
+Change under test:
+
+- Copied `sourceDelta` rows now summarize update reasons as `reasonMix urgent/heavy/snapshot/other`.
+- `selection` and `visual-filters` count as urgent; entity, plugin, planning, artifact, ornament, and mission updates
+  count as heavy. This is diagnostics-only and does not change source scheduling.
+
+```text
+DESKTOP Firefox/153.0 viewport 960x943 DPR 2.00
+PRELOAD z14.36 | request tiles 4 batches 1 dataZoom 13 loaded P 1,740 L 3,673 F 1,648 | sourceDelta syncs 19 calls 28 skipped 66 setData 1ms sources portals:8/0ms,links:8/0ms,fields:8/0ms reasonMix urgent:0,heavy:59,snapshot:0,other:0 reasons plugins:11,entities:portals:8,entities:links:8,entities:fields:8,entities:artifacts:8,entities:ornaments:8,planning:8
+z14.36 normal pan | items 7,122 | P 1,740 | L 3,673 | F 1,648 | avg 9ms | max 25ms | fps 116 | slow 0/1,043 | sourceDelta syncs 1 calls 0 skipped 2 setData 0ms sources none skippedSources plugin-features:2 reasonMix urgent:0,heavy:1,snapshot:0,other:0 reasons plugins:1
+z14.36 base pan | items 7,122 | P 1,740 | L 3,673 | F 1,648 | avg 8ms | max 33ms | fps 119 | slow 0/1,072 | sourceDelta syncs 0 calls 0 skipped 0 reasonMix urgent:0,heavy:0,snapshot:0,other:0 reasons none
+PRELOAD z8 | request tiles 72 batches 3 dataZoom 8 loaded P 5,133 L 8,860 F 3,577 | sourceDelta syncs 73 calls 94 skipped 353 setData 6ms reasonMix urgent:0,heavy:288,snapshot:0,other:0
+z8 normal pan | items 17,570 | P 5,133 | L 8,860 | F 3,577 | avg 9ms | max 25ms | fps 110 | slow 0/996 | sourceDelta syncs 0 calls 0 skipped 0 setData 0ms sources none skippedSources none reasonMix urgent:0,heavy:0,snapshot:0,other:0 reasons none
+z8 no-fields pan | items 17,570 | P 5,133 | L 8,860 | F 3,577 | avg 9ms | max 29ms | fps 117 | slow 0/1,052 | sourceDelta syncs 1 calls 0 skipped 1 setData 0ms sources none skippedSources artifacts:1 reasonMix urgent:0,heavy:1,snapshot:0,other:0 reasons artifacts:1
+```
+
+Read:
+
+- The reason mix field is present and classifies the observed source work as heavy, with no urgent updates in these
+  benchmark windows.
+- Timed rows remain behaviorally clean: no long tasks, no entity requests inside the main z14/z8 pan rows, and no real
+  `setData` calls where only unchanged plugin/artifact updates arrived.
+- The summary table now records representative z14/z8 rows for this milestone; the detailed section remains the source
+  of truth for endpoint/source diagnostics that do not fit the older table schema.
+
+### Follow-Up: Noisy Row Classification
+
+Change under test:
+
+- Copied batch rows now include `noise clean` when no known benchmark-interference signal landed in the scenario window.
+- Rows are marked with compact causes when applicable: `net-moving`, `source-moving`, and/or `longtask`.
+- This classifies measurement contamination only. Slow frames still remain performance data and are not automatically
+  treated as noise.
+
+Expected shape:
+
+```text
+z8 normal pan | ... | noise clean | net entities req 0 ok 0 ... | sourceDelta syncs 0 ... | longtask count 0 max 0ms
+z8 no-fields pan | ... | noise net-moving:8,longtask:1 | net ... moving 8 ... | sourceDelta ... | longtask count 1 max 197ms
+```
+
+Observed desktop validation:
+
+```text
+z14.36 normal pan | items 7,124 | P 1,732 | L 3,673 | F 1,648 | avg 8ms | max 20ms | fps 119 | slow 0/1,075 | noise net-moving:1 | net artifacts req 1 ok 1 active 0 passive 1 moving 1 fail 0 | sourceDelta syncs 1 calls 0 skipped 3 setData 0ms | longtask count 0 max 0ms
+z14.36 base pan | items 7,124 | P 1,732 | L 3,673 | F 1,648 | avg 8ms | max 33ms | fps 119 | slow 0/1,076 | noise clean | net entities req 0 ok 0 active 0 passive 0 moving 0 fail 0 | sourceDelta syncs 0 calls 0 skipped 0 | longtask count 0 max 0ms
+z8 normal pan | items 17,583 | P 5,137 | L 8,861 | F 3,585 | avg 8ms | max 28ms | fps 120 | slow 0/1,079 | noise clean | net entities req 0 ok 0 active 0 passive 0 moving 0 fail 0 | sourceDelta syncs 0 calls 0 skipped 0 | longtask count 0 max 0ms
+z8 no-plugins pan | items 17,587 | P 5,136 | L 8,867 | F 3,584 | avg 8ms | max 32ms | fps 119 | slow 0/1,072 | noise net-moving:2 | net plexts req 1 ok 1 active 0 passive 1 moving 1 fail 0 ; artifacts req 1 ok 1 active 0 passive 1 moving 1 fail 0 | sourceDelta syncs 1 calls 0 skipped 1 | longtask count 0 max 0ms
+```
+
+Read:
+
+- Use `noise clean` rows for isolated renderer/source-count comparisons.
+- Use caused noise rows to diagnose why a sample should not be compared directly, without discarding the row entirely.
+- The latest desktop sample shows the classifier doing the intended thing: clean z14/z8 rows stay clean, while otherwise
+  good rows with moving passive artifact/plext completions are marked as noise without implying a renderer regression.

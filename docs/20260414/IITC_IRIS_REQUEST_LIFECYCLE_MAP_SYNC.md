@@ -372,10 +372,14 @@ These are worth adding before more request/map scheduler changes:
   `entities:portals`, `entities:links`, `entities:fields`, `plugins`, `planning`, `selection`, `visual-filters`, and
   `snapshot`, and deferred/coalesced publication preserves the combined reasons in benchmark rows. Portal/link/field
   store changes now also share one debounced entity patch publication instead of posting separate source messages per
-  entity slice.
+  entity slice. Copied rows also summarize those reasons as `reasonMix urgent/heavy/snapshot/other`, keeping
+  selection/filter updates visibly separate from heavy entity/plugin/planning publication before more scheduling changes.
 - Per entity refresh pass: requested tile count, skipped fresh tile count, batch count, generation, reason, and data zoom
   are now recorded in copied benchmark rows. Remaining gaps are active batch completion, retry count, parse time, store
   merge time, source build time, source `setData` time, and stable-frame delay.
+- Per scenario: classify isolated benchmark rows as `noise clean` or explain measurement interference with
+  `net-moving`, `source-moving`, and `longtask` causes. This keeps slow-frame data intact while making contaminated
+  comparisons obvious.
 - In normal diagnostics: expose latest "request/source overlap" event so phone lag can be correlated with network and
   rendering.
 
