@@ -347,7 +347,10 @@ function snapshotBenchmarkSourcePass(): BenchmarkSourcePassSnapshot {
 function formatBenchmarkSourcePass(snapshot: BenchmarkWindowSnapshot, pass = snapshotBenchmarkSourcePass()): string {
     if (pass.lastPassId === null) return 'sourcePass none';
     const scope = pass.lastPassStartedAt !== null && pass.lastPassStartedAt >= snapshot.startedAt ? 'current' : 'carry';
-    return `sourcePass ${scope} id ${formatCount(pass.lastPassId)} reason ${pass.lastPassReason ?? '-'} moving ${pass.lastPassMoving ? 'yes' : 'no'} sources ${formatCount(pass.lastPassSourceCount)} calls ${formatCount(pass.lastPassSetDataCalls)} skipped ${formatCount(pass.lastPassSkippedUnchangedCount)} setData ${formatMs(pass.lastPassSetDataMs)}`;
+    const viewport = useStore.getState().mapPerfDiagnostics.viewport;
+    const passCount = Math.max(0, (viewport?.sourceSyncCount ?? 0) - snapshot.sourceSyncCount);
+    const movingPassCount = Math.max(0, (viewport?.movingSourceSyncCount ?? 0) - snapshot.movingSourceSyncCount);
+    return `sourcePass ${scope} id ${formatCount(pass.lastPassId)} passes ${formatCount(passCount)} movingPasses ${formatCount(movingPassCount)} reason ${pass.lastPassReason ?? '-'} passMoving ${pass.lastPassMoving ? 'yes' : 'no'} sources ${formatCount(pass.lastPassSourceCount)} calls ${formatCount(pass.lastPassSetDataCalls)} skipped ${formatCount(pass.lastPassSkippedUnchangedCount)} setData ${formatMs(pass.lastPassSetDataMs)}`;
 }
 
 function formatBenchmarkLongTaskDelta(snapshot: BenchmarkWindowSnapshot): string {

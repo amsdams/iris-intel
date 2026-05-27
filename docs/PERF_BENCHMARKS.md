@@ -954,15 +954,16 @@ Read:
 Change under test:
 
 - Copied preload and timed rows now include `sourcePass`, mirroring the earlier `entityPass` summary.
-- The row records whether the last source publication pass is `current` or `carry`, plus pass id, reason string, moving
-  state, source count, real `setData` calls, unchanged skips, and pass `setData` time.
+- The row records whether the last source publication pass is `current` or `carry`, the number of source passes in the
+  row window, moving source pass count, plus the latest pass id, reason string, moving state, source count, real
+  `setData` calls, unchanged skips, and pass `setData` time.
 - This is diagnostics-only. It does not change source scheduling; it makes the next scheduler change attributable.
 
 Expected shape:
 
 ```text
-sourcePass current id 12 reason entities:portals,entities:links,plugins moving no sources 10 calls 3 skipped 7 setData 1ms
-sourcePass carry id 12 reason entities:portals,entities:links,plugins moving no sources 10 calls 3 skipped 7 setData 1ms
+sourcePass current id 12 passes 4 movingPasses 0 reason entities:portals,entities:links,plugins passMoving no sources 10 calls 3 skipped 7 setData 1ms
+sourcePass carry id 12 passes 0 movingPasses 0 reason entities:portals,entities:links,plugins passMoving no sources 10 calls 3 skipped 7 setData 1ms
 ```
 
 Read:
@@ -970,6 +971,8 @@ Read:
 - `current` means a source publication pass was created during that benchmark/preload window.
 - `carry` means the row is measuring against an already completed source pass, which is usually what we want for
   isolated renderer rows.
+- `passes` is the source publication pass count inside the row window; this prevents preload rows from looking like
+  they only did the final tiny plugin/artifact pass when many entity/planning passes happened earlier in the same row.
 - `calls 0 skipped N` is now clearly a no-op publication pass instead of hidden `setData` work.
 - The latest desktop sample shows the classifier doing the intended thing: clean z14/z8 rows stay clean, while otherwise
   good rows with moving passive artifact/plext completions are marked as noise without implying a renderer regression.

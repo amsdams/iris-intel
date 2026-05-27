@@ -346,8 +346,8 @@ Possible improvement:
    Partially aligned. IRIS now ports the spirit of `pauseRenderQueue` for non-urgent MapLibre source publication during
    movement. For the mobile z8 renderer bottleneck, IRIS also uses a MapLibre-specific low-zoom movement simplification
    that suspends the heavy main link/field layers during active movement. Source publication pass ownership now has a
-   first compact diagnostic: copied rows report `sourcePass current/carry id ... reason ... moving ... sources ... calls
-   ... skipped ... setData ...`. The remaining practical gap is behavioral ownership, not visibility: decide whether
+   first compact diagnostic: copied rows report `sourcePass current/carry id ... passes ... movingPasses ... reason ...
+   passMoving ... sources ... calls ... skipped ... setData ...`. The remaining practical gap is behavioral ownership, not visibility: decide whether
    heavy entity/plugin/planning source passes should be scheduled separately from urgent selection/filter publication.
 
 3. **Tile-level retry/fallback**
@@ -375,9 +375,10 @@ These are worth adding before more request/map scheduler changes:
   store changes now also share one debounced entity patch publication instead of posting separate source messages per
   entity slice. Copied rows also summarize those reasons as `reasonMix urgent/heavy/snapshot/other`, keeping
   selection/filter updates visibly separate from heavy entity/plugin/planning publication before more scheduling changes.
-- Per source publication pass: copied rows now report the latest source publication pass id, current/carry scope,
-  reason string, moving flag, source count, real `setData` calls, unchanged skips, and pass `setData` time. This is
-  diagnostics-only; it makes pass ownership attributable before changing the scheduler.
+- Per source publication pass: copied rows now report window source pass count, moving pass count, latest source
+  publication pass id, current/carry scope, reason string, latest-pass moving flag, source count, real `setData` calls,
+  unchanged skips, and pass `setData` time. This is diagnostics-only; it makes pass ownership attributable before
+  changing the scheduler.
 - Per entity refresh pass: requested tile count, skipped fresh tile count, batch count, generation, reason, and data zoom
   are now recorded in copied benchmark rows. Remaining gaps are active batch completion, retry count, parse time, store
   merge time, source build time, source `setData` time, and stable-frame delay.
