@@ -862,3 +862,30 @@ Comparison:
 - Desktop z8 is effectively clean in this run: normal pan is `8ms / 119fps / 1 slow / max 34ms`, and the isolation rows
   are similarly stable.
 - Remaining z14.36 normal pan spikes are small and isolated; the base and zoom rows are clean.
+
+### Post-Change: Unchanged Source Skip Diagnostics
+
+Change under test:
+
+- Page-world source publication now skips unchanged FeatureCollections using a full geometry/properties signature.
+- Copied batch rows report unchanged skips separately from real `setData` calls as `skipped`, `movingSkipped`, and
+  `skippedSources`.
+- Theme/style updates remain covered because the signature includes feature properties, not just ids/counts.
+
+```text
+DESKTOP Firefox/153.0 viewport 960x943 DPR 2.00
+PRELOAD z14.36 | request tiles 4 batches 1 dataZoom 13 loaded P 1,750 L 3,702 F 1,653 | sourceDelta syncs 24 calls 32 skipped 93 setData 0ms sources portals:9/0ms,links:10/0ms,fields:8/0ms skippedSources portals:2,links:1,fields:3,artifacts:11,ornaments:10,plugin-features:24,planned-features:9
+z14.36 normal pan | items 7,132 | P 1,750 | L 3,702 | F 1,653 | avg 8ms | max 19ms | fps 119 | slow 0/1,074 | sourceDelta syncs 1 movingSyncs 0 calls 0 skipped 3 movingCalls 0 movingSkipped 0 setData 0ms movingSetData 0ms sources none skippedSources artifacts:1,plugin-features:2
+z14.36 base pan | items 7,132 | P 1,750 | L 3,702 | F 1,653 | avg 8ms | max 25ms | fps 119 | slow 0/1,078 | sourceDelta syncs 1 calls 0 skipped 2 sources none skippedSources plugin-features:2
+z14.36 normal zoom | items 7,132 | P 1,750 | L 3,702 | F 1,653 | avg 8ms | max 27ms | fps 119 | slow 0/1,076 | sourceDelta syncs 0 calls 0 skipped 0 sources none skippedSources none
+PRELOAD z8 | request tiles 72 batches 3 dataZoom 8 loaded P 5,141 L 8,863 F 3,581 | sourceDelta syncs 84 calls 117 skipped 373 setData 2ms sources portals:37/1ms,links:42/0ms,fields:36/1ms skippedSources portals:9,links:4,fields:10,artifacts:46,ornaments:46,plugin-features:75,planned-features:45
+z8 no-plugins pan | items 17,588 | P 5,141 | L 8,866 | F 3,581 | avg 8ms | max 26ms | fps 119 | slow 0/1,071 | sourceDelta syncs 0 calls 0 skipped 0 sources none skippedSources none
+```
+
+Read:
+
+- The new wording is doing its job: rows with source messages but no real MapLibre publication now say
+  `calls 0 skipped ...` instead of looking like missing diagnostics.
+- Timed desktop rows remain clean: `119-120fps`, no long tasks, and `setData 0ms` in the scenario windows shown here.
+- Preload rows still expose the larger source-publication volume, which is useful context but should not be compared
+  directly with timed pan/zoom windows.

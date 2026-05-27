@@ -339,10 +339,13 @@ export interface MapPerfSnapshot {
     movingSourceSyncCount?: number;
     sourceUpdateCount?: number;
     sourceUpdateSetDataMs?: number;
+    sourceUpdateSkippedUnchangedCount?: number;
     movingSourceUpdateCount?: number;
     movingSourceUpdateSetDataMs?: number;
+    movingSourceUpdateSkippedUnchangedCount?: number;
     sourceUpdateCallCounts?: Record<string, number>;
     sourceUpdateCallMs?: Record<string, number>;
+    sourceUpdateSkippedUnchangedCounts?: Record<string, number>;
     sourceUpdateReasons?: Record<string, number>;
     pluginFeatureCounts?: Record<string, number>;
     itemCount?: number;

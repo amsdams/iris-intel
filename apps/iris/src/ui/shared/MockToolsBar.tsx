@@ -88,10 +88,13 @@ interface BenchmarkWindowSnapshot {
     movingSourceSyncCount: number;
     sourceUpdateCount: number;
     sourceUpdateSetDataMs: number;
+    sourceUpdateSkippedUnchangedCount: number;
     movingSourceUpdateCount: number;
     movingSourceUpdateSetDataMs: number;
+    movingSourceUpdateSkippedUnchangedCount: number;
     sourceUpdateCallCounts: Record<string, number>;
     sourceUpdateCallMs: Record<string, number>;
+    sourceUpdateSkippedUnchangedCounts: Record<string, number>;
     sourceUpdateReasons: Record<string, number>;
 }
 
@@ -181,10 +184,15 @@ function takeBenchmarkWindowSnapshot(startedAt = Date.now()): BenchmarkWindowSna
         movingSourceSyncCount: viewport?.movingSourceSyncCount ?? 0,
         sourceUpdateCount: viewport?.sourceUpdateCount ?? 0,
         sourceUpdateSetDataMs: viewport?.sourceUpdateSetDataMs ?? 0,
+        sourceUpdateSkippedUnchangedCount: viewport?.sourceUpdateSkippedUnchangedCount ?? 0,
         movingSourceUpdateCount: viewport?.movingSourceUpdateCount ?? 0,
         movingSourceUpdateSetDataMs: viewport?.movingSourceUpdateSetDataMs ?? 0,
+        movingSourceUpdateSkippedUnchangedCount: viewport?.movingSourceUpdateSkippedUnchangedCount ?? 0,
         sourceUpdateCallCounts: viewport?.sourceUpdateCallCounts ? {...viewport.sourceUpdateCallCounts} : {},
         sourceUpdateCallMs: viewport?.sourceUpdateCallMs ? {...viewport.sourceUpdateCallMs} : {},
+        sourceUpdateSkippedUnchangedCounts: viewport?.sourceUpdateSkippedUnchangedCounts
+            ? {...viewport.sourceUpdateSkippedUnchangedCounts}
+            : {},
         sourceUpdateReasons: viewport?.sourceUpdateReasons ? {...viewport.sourceUpdateReasons} : {},
     };
 }
@@ -303,8 +311,16 @@ function formatBenchmarkSourceDelta(snapshot: BenchmarkWindowSnapshot): string {
     const movingSyncCount = Math.max(0, (viewport?.movingSourceSyncCount ?? 0) - snapshot.movingSourceSyncCount);
     const updateCount = Math.max(0, (viewport?.sourceUpdateCount ?? 0) - snapshot.sourceUpdateCount);
     const setDataMs = Math.max(0, (viewport?.sourceUpdateSetDataMs ?? 0) - snapshot.sourceUpdateSetDataMs);
+    const skippedUnchangedCount = Math.max(
+        0,
+        (viewport?.sourceUpdateSkippedUnchangedCount ?? 0) - snapshot.sourceUpdateSkippedUnchangedCount
+    );
     const movingCount = Math.max(0, (viewport?.movingSourceUpdateCount ?? 0) - snapshot.movingSourceUpdateCount);
     const movingSetDataMs = Math.max(0, (viewport?.movingSourceUpdateSetDataMs ?? 0) - snapshot.movingSourceUpdateSetDataMs);
+    const movingSkippedUnchangedCount = Math.max(
+        0,
+        (viewport?.movingSourceUpdateSkippedUnchangedCount ?? 0) - snapshot.movingSourceUpdateSkippedUnchangedCount
+    );
     const callCounts = viewport?.sourceUpdateCallCounts ?? {};
     const callMs = viewport?.sourceUpdateCallMs ?? {};
     const sourceSummary = Object.keys(callCounts)
@@ -316,6 +332,15 @@ function formatBenchmarkSourceDelta(snapshot: BenchmarkWindowSnapshot): string {
         })
         .filter((part): part is string => Boolean(part))
         .join(',');
+    const skippedCounts = viewport?.sourceUpdateSkippedUnchangedCounts ?? {};
+    const skippedSummary = Object.keys(skippedCounts)
+        .map((source) => {
+            const count = Math.max(0, skippedCounts[source] - (snapshot.sourceUpdateSkippedUnchangedCounts[source] ?? 0));
+            if (count === 0) return null;
+            return `${source}:${formatCount(count)}`;
+        })
+        .filter((part): part is string => Boolean(part))
+        .join(',');
     const nextReasons = viewport?.sourceUpdateReasons ?? {};
     const reasonSummary = Object.entries(nextReasons)
         .map(([reason, count]) => [reason, Math.max(0, count - (snapshot.sourceUpdateReasons[reason] ?? 0))] as const)
@@ -323,7 +348,7 @@ function formatBenchmarkSourceDelta(snapshot: BenchmarkWindowSnapshot): string {
         .map(([reason, count]) => `${reason}:${formatCount(count)}`)
         .join(',');
 
-    return `sourceDelta syncs ${formatCount(syncCount)} movingSyncs ${formatCount(movingSyncCount)} calls ${formatCount(updateCount)} movingCalls ${formatCount(movingCount)} setData ${formatMs(setDataMs)} movingSetData ${formatMs(movingSetDataMs)} sources ${sourceSummary || 'none'} reasons ${reasonSummary || 'none'}`;
+    return `sourceDelta syncs ${formatCount(syncCount)} movingSyncs ${formatCount(movingSyncCount)} calls ${formatCount(updateCount)} skipped ${formatCount(skippedUnchangedCount)} movingCalls ${formatCount(movingCount)} movingSkipped ${formatCount(movingSkippedUnchangedCount)} setData ${formatMs(setDataMs)} movingSetData ${formatMs(movingSetDataMs)} sources ${sourceSummary || 'none'} skippedSources ${skippedSummary || 'none'} reasons ${reasonSummary || 'none'}`;
 }
 
 function formatBenchmarkWorkload(testCase: BenchmarkBatchCase, sourceCounts: Record<string, number>): string {

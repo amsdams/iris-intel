@@ -63,6 +63,7 @@ interface SourceUpdatePerformance {
     setDataMs: number;
     sourceSetDataMs: Record<string, number>;
     sourceFeatureCounts: Record<string, number>;
+    sourceSkippedUnchangedCounts: Record<string, number>;
     pluginFeatureCounts?: Record<string, number>;
 }
 
@@ -166,11 +167,15 @@ let sourceSyncCount = 0;
 let movingSourceSyncCount = 0;
 let sourceUpdateCount = 0;
 let sourceUpdateSetDataMs = 0;
+let sourceUpdateSkippedUnchangedCount = 0;
 let movingSourceUpdateCount = 0;
 let movingSourceUpdateSetDataMs = 0;
+let movingSourceUpdateSkippedUnchangedCount = 0;
 const sourceUpdateCallCounts: Record<string, number> = {};
 const sourceUpdateCallMs: Record<string, number> = {};
+const sourceUpdateSkippedUnchangedCounts: Record<string, number> = {};
 const sourceUpdateReasons: Record<string, number> = {};
+const sourceDataSignatures = new Map<string, string>();
 
 const SLOW_FRAME_MS = 34;
 const PAN_BENCHMARK_STEP_PX = 220;
@@ -937,6 +942,18 @@ function setGeoJsonSourceData(map: maplibregl.Map, sourceId: string, data: GeoJS
     }
 }
 
+function getFeatureSignature(feature: GeoJSON.Feature): string {
+    return JSON.stringify([
+        feature.id ?? null,
+        feature.geometry,
+        feature.properties ?? null,
+    ]);
+}
+
+function getFeatureCollectionSignature(data: GeoJSON.FeatureCollection): string {
+    return `${data.features.length}|${data.features.map(getFeatureSignature).join('|')}`;
+}
+
 function isMapActivelyMoving(): boolean {
     return mapIsMoving || panBenchmarkActive;
 }
@@ -948,6 +965,7 @@ function createSourceUpdatePerformance(reason: string): SourceUpdatePerformance 
         setDataMs: 0,
         sourceSetDataMs: {},
         sourceFeatureCounts: {},
+        sourceSkippedUnchangedCounts: {},
     };
 }
 
@@ -959,6 +977,22 @@ function setMeasuredGeoJsonSourceData(
 ): void {
     const source = map.getSource(sourceId);
     if (!source || !('setData' in source)) return;
+
+    const signature = getFeatureCollectionSignature(data);
+    if (sourceDataSignatures.get(sourceId) === signature) {
+        const sourceLabel = SOURCE_COUNT_LABELS[sourceId] ?? sourceId;
+        const moving = isMapActivelyMoving();
+        sourceUpdateSkippedUnchangedCount += 1;
+        sourceUpdateSkippedUnchangedCounts[sourceLabel] = (sourceUpdateSkippedUnchangedCounts[sourceLabel] ?? 0) + 1;
+        if (moving) {
+            movingSourceUpdateSkippedUnchangedCount += 1;
+        }
+        perf.sourceSkippedUnchangedCounts[sourceLabel] = (perf.sourceSkippedUnchangedCounts[sourceLabel] ?? 0) + 1;
+        perf.sourceFeatureCounts[sourceLabel] = data.features.length;
+        currentSourceFeatureCounts[sourceLabel] = data.features.length;
+        return;
+    }
+    sourceDataSignatures.set(sourceId, signature);
 
     const startedAt = performance.now();
     (source as SetDataGeoJsonSource).setData(data);
@@ -1924,10 +1958,13 @@ function publishViewportPerformance(
         movingSourceSyncCount,
         sourceUpdateCount,
         sourceUpdateSetDataMs,
+        sourceUpdateSkippedUnchangedCount,
         movingSourceUpdateCount,
         movingSourceUpdateSetDataMs,
+        movingSourceUpdateSkippedUnchangedCount,
         sourceUpdateCallCounts: {...sourceUpdateCallCounts},
         sourceUpdateCallMs: {...sourceUpdateCallMs},
+        sourceUpdateSkippedUnchangedCounts: {...sourceUpdateSkippedUnchangedCounts},
         sourceUpdateReasons: {...sourceUpdateReasons},
         mapMoving: isMapActivelyMoving(),
         lastMapMoveStartAt,
