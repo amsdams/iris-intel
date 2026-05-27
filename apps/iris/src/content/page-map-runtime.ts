@@ -152,6 +152,8 @@ let pageMapPromise: Promise<maplibregl.Map> | null = null;
 let suppressNextCameraChangedEvent = false;
 let panBenchmarkSettleTimer: number | null = null;
 let panBenchmarkAnimation: number | null = null;
+let manualBenchmarkTimer: number | null = null;
+let manualBenchmarkSample: MovingFrameSample | null = null;
 let panBenchmarkActive = false;
 let panBenchmarkMode: BenchmarkMode = 'pan';
 let panBenchmarkLiveLoad = false;
@@ -203,6 +205,7 @@ const PAN_BENCHMARK_RUN_DURATION_MS = 3000;
 const PAN_BENCHMARK_START = {lat: 52.371094, lng: 4.906375};
 const PAN_BENCHMARK_SETTLE_MS = 600;
 const PAN_BENCHMARK_STABLE_SAMPLE_MS = 900;
+const MANUAL_BENCHMARK_DURATION_MS = 8_000;
 const DEFERRED_SOURCE_SYNC_SETTLE_MS = 120;
 const BENCHMARK_COLD_SOURCE_HOLD_MS = 350;
 const BENCHMARK_COLD_SOURCE_WINDOW_MS =
@@ -2316,8 +2319,46 @@ function stopPanBenchmark(flushPending = true): void {
     }
 }
 
+function stopManualBenchmark(publish = false, zoom = 14.36): void {
+    if (manualBenchmarkTimer !== null) {
+        window.clearTimeout(manualBenchmarkTimer);
+        manualBenchmarkTimer = null;
+    }
+    if (!manualBenchmarkSample) return;
+
+    const snapshot = stopFrameSample(manualBenchmarkSample);
+    manualBenchmarkSample = null;
+    if (publish && snapshot) {
+        publishBenchmarkFrameSnapshot([snapshot], 'normal', zoom, 'pan');
+    }
+}
+
+async function runManualBenchmark(durationMs = MANUAL_BENCHMARK_DURATION_MS, benchmarkZoom?: number): Promise<void> {
+    const map = await getPageMap();
+    stopPanBenchmark(true);
+    stopManualBenchmark(false);
+
+    const zoom = typeof benchmarkZoom === 'number' && Number.isFinite(benchmarkZoom) ? benchmarkZoom : map.getZoom();
+    const sample = createFrameSample();
+    manualBenchmarkSample = sample;
+    startFrameSample(sample);
+    postDiagnosticResult('MAP BENCH MANUAL', {
+        durationMs,
+        lat: map.getCenter().lat,
+        lng: map.getCenter().lng,
+        zoom,
+        bounds: getMapBounds(map),
+    });
+
+    manualBenchmarkTimer = window.setTimeout(() => {
+        manualBenchmarkTimer = null;
+        stopManualBenchmark(true, zoom);
+    }, durationMs);
+}
+
 async function runPanBenchmark(variant: BenchmarkVariant = 'normal', zoom = 14.36, mode: BenchmarkMode = 'pan', liveLoad = false): Promise<void> {
     const map = await getPageMap();
+    stopManualBenchmark(false);
     stopPanBenchmark(false);
     panBenchmarkLiveLoad = liveLoad;
     if (liveLoad) {
@@ -2569,6 +2610,16 @@ window.addEventListener('message', (event: MessageEvent<PageMapRuntimeCommandMes
         const mode = getBenchmarkMode((event.data as {benchmarkMode?: unknown}).benchmarkMode);
         const liveLoad = (event.data as {benchmarkLiveLoad?: unknown}).benchmarkLiveLoad === true;
         runPageRuntimeTask('pageRuntime:bench', () => runPanBenchmark(variant, zoom, mode, liveLoad));
+        return;
+    }
+
+    if ((event.data as {type?: string})?.type === 'IRIS_RUN_MANUAL_BENCHMARK') {
+        const duration = Number((event.data as {benchmarkDurationMs?: unknown}).benchmarkDurationMs);
+        const durationMs = Number.isFinite(duration)
+            ? Math.max(1_000, Math.min(30_000, duration))
+            : MANUAL_BENCHMARK_DURATION_MS;
+        const zoom = getBenchmarkZoom((event.data as {benchmarkZoom?: unknown}).benchmarkZoom);
+        runPageRuntimeTask('pageRuntime:manualBench', () => runManualBenchmark(durationMs, zoom));
         return;
     }
 

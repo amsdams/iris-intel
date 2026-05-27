@@ -35,7 +35,14 @@ const URGENT_SOURCE_REASONS = new Set(['selection', 'visual-filters']);
 const HEAVY_SOURCE_REASONS = new Set(['plugins', 'planning', 'artifacts', 'ornaments', 'mission']);
 
 type BenchmarkVariant = IrisBenchmarkVariant;
-type BenchmarkBatchCase = BenchmarkScenario<IrisBenchmarkVariant>;
+interface BenchmarkReportCase {
+    label: string;
+    variant: BenchmarkVariant;
+    zoom: number;
+    mode: BenchmarkMode;
+}
+
+type BenchmarkBatchCase = BenchmarkReportCase;
 type SourceReasonClass = 'urgent' | 'heavy' | 'snapshot' | 'other';
 
 const BENCHMARK_BATCH: readonly BenchmarkBatchCase[] = IRIS_BENCHMARK_SCENARIOS;
@@ -49,6 +56,7 @@ const BENCHMARK_IDLE_TIMEOUT_MS = 15_000;
 const BENCHMARK_PRELOAD_MOVE_SETTLE_MS = 750;
 const BENCHMARK_PRELOAD_TIMEOUT_MS = 25_000;
 const BENCHMARK_PRELOAD_RETRY_MS = 1_000;
+const BENCHMARK_MANUAL_CAPTURE_MS = 8_000;
 const BENCHMARK_ENDPOINT_KEYS: readonly EndpointKey[] = ['entities', 'portalDetails', 'plexts', 'artifacts', 'inventory', 'gameScore', 'regionScore', 'unknown'];
 const BENCHMARK_TILE_SIZE = 512;
 const MAX_MERCATOR_LAT = 85.05112878;
@@ -809,12 +817,13 @@ export function MockToolsBar(): JSX.Element | null {
 
         try {
             for (const [index, testCase] of BENCHMARK_BATCH.entries()) {
-                if (preloadedZoom !== testCase.zoom) {
-                    setBatchStatus(`preload z${testCase.zoom}`);
+                const batchZoom = testCase.zoom as BenchmarkZoom;
+                if (preloadedZoom !== batchZoom) {
+                    setBatchStatus(`preload z${batchZoom}`);
                     await waitForBenchmarkQuietWindow();
-                    const preloadSummary = await preloadBenchmarkZoom(testCase.zoom);
-                    lines.push(`PRELOAD z${testCase.zoom} | ${preloadSummary}`);
-                    preloadedZoom = testCase.zoom;
+                    const preloadSummary = await preloadBenchmarkZoom(batchZoom);
+                    lines.push(`PRELOAD z${batchZoom} | ${preloadSummary}`);
+                    preloadedZoom = batchZoom;
                 }
                 setBatchStatus(`${index + 1}/${BENCHMARK_BATCH.length} ${testCase.label}`);
                 await waitForBenchmarkQuietWindow();
@@ -895,6 +904,51 @@ export function MockToolsBar(): JSX.Element | null {
         } catch (error) {
             console.warn('IRIS live benchmark failed', error);
             setBatchStatus(error instanceof Error ? error.message : 'live failed');
+        } finally {
+            setBatchRunning(false);
+        }
+    };
+
+    const runManualBenchmark = async (): Promise<void> => {
+        if (batchRunning) return;
+
+        const zoom = useStore.getState().mapState.zoom;
+        const testCase: BenchmarkBatchCase = {
+            label: `manual ${BENCHMARK_MANUAL_CAPTURE_MS / 1000}s z${zoom.toFixed(2)} normal pan`,
+            variant: 'normal',
+            zoom,
+            mode: 'pan',
+        };
+
+        setBatchRunning(true);
+        setLastBatchReport('');
+        setBatchStatus(`capture ${BENCHMARK_MANUAL_CAPTURE_MS / 1000}s`);
+        try {
+            await waitForBenchmarkQuietWindow();
+            const startedAt = Date.now();
+            const snapshot = takeBenchmarkWindowSnapshot(startedAt);
+            window.postMessage({
+                type: 'IRIS_RUN_MANUAL_BENCHMARK',
+                benchmarkDurationMs: BENCHMARK_MANUAL_CAPTURE_MS,
+                benchmarkZoom: zoom,
+            }, '*');
+            await waitForBenchmarkResult(testCase, startedAt);
+
+            const report = buildBatchReport([buildBatchReportLine(testCase, snapshot)], 'MANUAL');
+            setLastBatchReport(report);
+            setShowBatchReport(true);
+            setBatchStatus('copying');
+            try {
+                await copyText(report);
+                setBatchStatus('copied');
+            } catch (error) {
+                console.warn('IRIS manual benchmark clipboard copy failed', error);
+                setBatchStatus('copy blocked');
+                revealBatchReport();
+            }
+        } catch (error) {
+            console.warn('IRIS manual benchmark failed', error);
+            setBatchStatus(error instanceof Error ? error.message : 'manual failed');
         } finally {
             setBatchRunning(false);
         }
@@ -1012,6 +1066,14 @@ export function MockToolsBar(): JSX.Element | null {
                                 </option>
                             ))}
                         </select>
+                        <button
+                            className="iris-mock-tools-btn iris-ui-compact-pill"
+                            title="Capture 8 seconds of real manual map interaction using the same benchmark diagnostics"
+                            onClick={() => void runManualBenchmark()}
+                            disabled={batchRunning}
+                        >
+                            Capture Drag
+                        </button>
                     </>
                 )}
             </div>

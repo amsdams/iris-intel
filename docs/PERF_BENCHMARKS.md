@@ -1068,3 +1068,30 @@ Change under test:
   changed during the scenario window.
 - This is intended to distinguish map/render-source cost from popup/dock/debug UI churn when a row has unexpected slow
   frames.
+
+Observed validation:
+
+- The first desktop batch with `ui renders` showed the field working and mostly reporting `none` or small toolbar/dock
+  deltas. Representative rows included `ui renders none`, `MockToolsBar:1`, and occasional dock/status changes.
+- One z8 row reported `StatusBar:10` alongside `noise net-moving:2`, but long-task and stable samples stayed clean.
+- Current evidence does not point at React UI churn as the benchmark bottleneck; keep the field as context for future
+  outlier rows.
+
+### Phase 3 Follow-Up: Manual Interaction Capture
+
+Change under test:
+
+- `Bench Options` now includes `Capture Drag`, which records an 8-second real manual interaction window instead of
+  driving the map with synthetic pan/zoom.
+- The copied report is labeled `IRIS BENCH MANUAL` and keeps the same frame, network, source, long-task, UI-render,
+  workload, and plugin-mix fields as Batch/Live rows.
+
+Observed validation:
+
+- First desktop z16 manual capture validated the path with a heavier real display than the synthetic Batch rows:
+  `18,923` items, including `1,894` ornaments and `1,264` plugin features.
+- Smoothness stayed healthy at `avg 9ms`, `max 75ms`, `fps 117`, and `slow 1/937`, with `longtask count 0`.
+- Source publication was not a hammer in this capture: `sourceDelta calls 6`, `setData 2ms`, `movingSetData 0ms`,
+  with per-source maxima only `0-1ms`.
+- UI render deltas were visible (`StatusBar:44`, toolbar/dock/planning single digits), but they coincided with clean
+  frame and long-task stats rather than a UI-driven stall.
