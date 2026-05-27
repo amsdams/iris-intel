@@ -1291,7 +1291,7 @@ Wrap-up:
 
 - Bench rows are now much better isolated from live Intel/passive traffic: synthetic camera moves no longer move the real Intel map, scenario timing waits for a confirmed quiet network window, and COMM-derived topology refreshes are deferred while Bench/page-world movement is active.
 - The latest desktop batch shows the intended shape: timed z14/z8 rows mostly carry the completed preload pass, report `net entities req 0`, and avoid mid-row `comm_activity` active entity passes.
-- This improved confidence in the measurements and removed several real sources of pan-time request/source churn. It is not a full renderer smoothness rewrite; remaining smoothness work should focus on residual passive artifact/plext completions, mobile validation, and source/render cost rather than more entity-fetch scheduling.
+- This improved confidence in the isolated render benchmark and removed several real sources of pan-time request/source churn. It is not a full renderer smoothness rewrite; remaining smoothness work should focus on residual passive artifact/plext completions, mobile validation, source/render cost, and a separate live-load mode that intentionally measures request/source contention during movement.
 
 ### Phase 2: Source Publication and Moving Overlap
 
@@ -1311,7 +1311,7 @@ Tasks:
 | Suspend heavy low-zoom entity layers while moving   | Done   | z10 and below now temporarily hides the main link/field layers during active movement and restores them on move end; selected link/field layers remain visible, and z14 behavior is unchanged |
 | Port IITC center-first tile request ordering        | Done   | shared entity request payloads now sort generated tile keys by distance from the viewport/bounds center before batching, so IRIS and Mini request central data first like IITC |
 | Port IITC fetched-bounds containment skip           | Done   | entity request payloads now expose tile-aligned data bounds, and IRIS move-settle refresh skips with `covered by fetched bounds` when the current viewport is inside the last fresh fetched data bounds at the same floored zoom |
-| Investigate player track pin flicker after pan      | Open   | manual smoke looked normal overall after deferred source sync, but player track pins can briefly hide/show after panning; check tracker source freshness, deferred flush timing, and layer ordering before changing behavior |
+| Investigate player track pin flicker after pan      | In Progress | first fix skipped no-op camera `jumpTo`; stronger fix keeps player-tracker history/fingerprints across COMM-window replacements so pan-triggered plext refreshes do not briefly clear and recreate both player pins and trails; if flicker remains, evaluate Mini-IRIS-style `addImage`/symbol-layer player pins |
 
 ### Phase 3: Long Task, UI Render, and Stable Frame Context
 
@@ -1326,6 +1326,7 @@ Tasks:
 | Split scenario timing into phases                | Open   | distinguish preload, settle wait, benchmark pan/zoom window, and post-window source updates                                             |
 | Add "stable after scenario" wait/sample          | Open   | after each scenario, record whether source/endpoint activity continued after frame sampling stopped                                     |
 | Define thresholds for noisy runs                 | Open   | mark rows as noisy when source updates, network responses, or long tasks overlap with a supposed pure render benchmark                  |
+| Add live-load benchmark mode                     | Open   | add an opt-in Bench mode that allows or triggers entity/source updates during pan/zoom so request, parse, store, source, and render contention can be measured separately from the isolated static-map benchmark |
 | Add manual interaction capture mode              | Open   | current Bench is deterministic synthetic camera movement, not real human drag/finger input; add a 5-10s capture window later so manual panning reports the same net/source/longtask/workload fields |
 
 ### Phase 4: Export, Comparison, and History

@@ -874,6 +874,15 @@ function postCameraChanged(map: maplibregl.Map, label = 'MAP CAMERA CHANGED'): v
 
 function syncMapCamera(map: maplibregl.Map, camera: PageMapRuntimeCamera): void {
     const clampedCamera = clampMapCamera(camera, {minZoom: IRIS_PAGE_MAP_MIN_ZOOM});
+    const currentCamera = getMapCamera(map);
+    if (
+        Math.abs(currentCamera.lat - clampedCamera.lat) < 0.000001 &&
+        Math.abs(currentCamera.lng - clampedCamera.lng) < 0.000001 &&
+        Math.abs(currentCamera.zoom - clampedCamera.zoom) < 0.001
+    ) {
+        return;
+    }
+
     suppressNextCameraChangedEvent = true;
     map.jumpTo({
         center: [clampedCamera.lng, clampedCamera.lat],

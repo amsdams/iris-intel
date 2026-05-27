@@ -29,6 +29,7 @@ const PlayerTrackerPlugin: IRISPlugin = {
   setup: (api: IRIS_API): void => {
     const trackerApi = api as PlayerTrackerApi;
     let playerHistories = new Map<string, PlayerTrackerHistory>();
+    let processedPlextFingerprints = new Map<string, string>();
     let trackerVisible = api.map.getZoom() >= PLAYER_TRACKER_MIN_ZOOM;
     let hasPublishedFeatures = false;
 
@@ -174,10 +175,13 @@ const PlayerTrackerPlugin: IRISPlugin = {
 
       const result = processPlayerTrackerPlexts({
         plexts,
+        previousHistories: playerHistories,
+        processedPlextFingerprints,
         expirationMs: PLAYER_TRACKER_HISTORY_EXPIRATION_MS,
         maxEvents: PLAYER_TRACKER_MAX_DISPLAY_EVENTS,
       });
       playerHistories = result.histories;
+      processedPlextFingerprints = result.processedPlextFingerprints;
 
       updateMap();
     };
