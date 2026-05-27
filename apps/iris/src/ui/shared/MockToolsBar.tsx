@@ -91,6 +91,7 @@ interface BenchmarkSourcePassSnapshot {
     lastPassSetDataCalls: number;
     lastPassSkippedUnchangedCount: number;
     lastPassSetDataMs: number;
+    lastPassMaxSetDataMs: number;
 }
 
 interface BenchmarkWindowSnapshot {
@@ -108,6 +109,8 @@ interface BenchmarkWindowSnapshot {
     movingSourceUpdateSkippedUnchangedCount: number;
     sourceUpdateCallCounts: Record<string, number>;
     sourceUpdateCallMs: Record<string, number>;
+    sourceUpdateCallMaxMs: Record<string, number>;
+    sourceUpdateCallMaxAt: Record<string, number>;
     sourceUpdateSkippedUnchangedCounts: Record<string, number>;
     sourceUpdateReasons: Record<string, number>;
 }
@@ -224,6 +227,8 @@ function takeBenchmarkWindowSnapshot(startedAt = Date.now()): BenchmarkWindowSna
         movingSourceUpdateSkippedUnchangedCount: viewport?.movingSourceUpdateSkippedUnchangedCount ?? 0,
         sourceUpdateCallCounts: viewport?.sourceUpdateCallCounts ? {...viewport.sourceUpdateCallCounts} : {},
         sourceUpdateCallMs: viewport?.sourceUpdateCallMs ? {...viewport.sourceUpdateCallMs} : {},
+        sourceUpdateCallMaxMs: viewport?.sourceUpdateCallMaxMs ? {...viewport.sourceUpdateCallMaxMs} : {},
+        sourceUpdateCallMaxAt: viewport?.sourceUpdateCallMaxAt ? {...viewport.sourceUpdateCallMaxAt} : {},
         sourceUpdateSkippedUnchangedCounts: viewport?.sourceUpdateSkippedUnchangedCounts
             ? {...viewport.sourceUpdateSkippedUnchangedCounts}
             : {},
@@ -341,6 +346,7 @@ function snapshotBenchmarkSourcePass(): BenchmarkSourcePassSnapshot {
         lastPassSetDataCalls: viewport?.sourcePassSetDataCalls ?? 0,
         lastPassSkippedUnchangedCount: viewport?.sourcePassSkippedUnchangedCount ?? 0,
         lastPassSetDataMs: viewport?.sourcePassSetDataMs ?? 0,
+        lastPassMaxSetDataMs: viewport?.sourcePassMaxSetDataMs ?? 0,
     };
 }
 
@@ -350,7 +356,7 @@ function formatBenchmarkSourcePass(snapshot: BenchmarkWindowSnapshot, pass = sna
     const viewport = useStore.getState().mapPerfDiagnostics.viewport;
     const passCount = Math.max(0, (viewport?.sourceSyncCount ?? 0) - snapshot.sourceSyncCount);
     const movingPassCount = Math.max(0, (viewport?.movingSourceSyncCount ?? 0) - snapshot.movingSourceSyncCount);
-    return `sourcePass ${scope} id ${formatCount(pass.lastPassId)} passes ${formatCount(passCount)} movingPasses ${formatCount(movingPassCount)} reason ${pass.lastPassReason ?? '-'} passMoving ${pass.lastPassMoving ? 'yes' : 'no'} sources ${formatCount(pass.lastPassSourceCount)} calls ${formatCount(pass.lastPassSetDataCalls)} skipped ${formatCount(pass.lastPassSkippedUnchangedCount)} setData ${formatMs(pass.lastPassSetDataMs)}`;
+    return `sourcePass ${scope} id ${formatCount(pass.lastPassId)} passes ${formatCount(passCount)} movingPasses ${formatCount(movingPassCount)} reason ${pass.lastPassReason ?? '-'} passMoving ${pass.lastPassMoving ? 'yes' : 'no'} sources ${formatCount(pass.lastPassSourceCount)} calls ${formatCount(pass.lastPassSetDataCalls)} skipped ${formatCount(pass.lastPassSkippedUnchangedCount)} setData ${formatMs(pass.lastPassSetDataMs)} max ${formatMs(pass.lastPassMaxSetDataMs)}`;
 }
 
 function formatBenchmarkLongTaskDelta(snapshot: BenchmarkWindowSnapshot): string {
@@ -407,12 +413,22 @@ function formatBenchmarkSourceDelta(snapshot: BenchmarkWindowSnapshot): string {
     );
     const callCounts = viewport?.sourceUpdateCallCounts ?? {};
     const callMs = viewport?.sourceUpdateCallMs ?? {};
+    const callMaxMs = viewport?.sourceUpdateCallMaxMs ?? {};
+    const callMaxAt = viewport?.sourceUpdateCallMaxAt ?? {};
     const sourceSummary = Object.keys(callCounts)
         .map((source) => {
             const count = Math.max(0, callCounts[source] - (snapshot.sourceUpdateCallCounts[source] ?? 0));
             if (count === 0) return null;
             const elapsed = Math.max(0, (callMs[source] ?? 0) - (snapshot.sourceUpdateCallMs[source] ?? 0));
             return `${source}:${formatCount(count)}/${formatMs(elapsed)}`;
+        })
+        .filter((part): part is string => Boolean(part))
+        .join(',');
+    const maxSourceSummary = Object.keys(callMaxMs)
+        .map((source) => {
+            const maxAt = callMaxAt[source] ?? 0;
+            if (maxAt <= (snapshot.sourceUpdateCallMaxAt[source] ?? snapshot.startedAt)) return null;
+            return `${source}:${formatMs(callMaxMs[source])}`;
         })
         .filter((part): part is string => Boolean(part))
         .join(',');
@@ -434,7 +450,7 @@ function formatBenchmarkSourceDelta(snapshot: BenchmarkWindowSnapshot): string {
         .join(',');
     const reasonMixSummary = formatSourceReasonMix(reasonDeltas);
 
-    return `sourceDelta syncs ${formatCount(syncCount)} movingSyncs ${formatCount(movingSyncCount)} calls ${formatCount(updateCount)} skipped ${formatCount(skippedUnchangedCount)} movingCalls ${formatCount(movingCount)} movingSkipped ${formatCount(movingSkippedUnchangedCount)} setData ${formatMs(setDataMs)} movingSetData ${formatMs(movingSetDataMs)} sources ${sourceSummary || 'none'} skippedSources ${skippedSummary || 'none'} reasonMix ${reasonMixSummary} reasons ${reasonSummary || 'none'}`;
+    return `sourceDelta syncs ${formatCount(syncCount)} movingSyncs ${formatCount(movingSyncCount)} calls ${formatCount(updateCount)} skipped ${formatCount(skippedUnchangedCount)} movingCalls ${formatCount(movingCount)} movingSkipped ${formatCount(movingSkippedUnchangedCount)} setData ${formatMs(setDataMs)} movingSetData ${formatMs(movingSetDataMs)} sources ${sourceSummary || 'none'} maxSources ${maxSourceSummary || 'none'} skippedSources ${skippedSummary || 'none'} reasonMix ${reasonMixSummary} reasons ${reasonSummary || 'none'}`;
 }
 
 function formatBenchmarkWorkload(testCase: BenchmarkBatchCase, sourceCounts: Record<string, number>): string {
@@ -634,11 +650,11 @@ async function preloadBenchmarkZoom(zoom: BenchmarkZoom): Promise<string> {
     return buildPreloadSummary(zoom, true, snapshot);
 }
 
-function buildBatchReport(lines: string[]): string {
+function buildBatchReport(lines: string[], kind = 'BATCH'): string {
     const viewport = `${window.innerWidth}x${window.innerHeight}`;
     const dpr = Number.isFinite(window.devicePixelRatio) ? window.devicePixelRatio.toFixed(2) : '-';
     const mapState = useStore.getState().mapState;
-    const context = `IRIS BENCH BATCH browser ${navigator.userAgent.match(/(Chrome|Firefox|Edg|Version)\/[\d.]+/)?.[0] ?? 'unknown'} platform ${navigator.platform || '-'} viewport ${viewport} dpr ${dpr} center ${mapState.lat.toFixed(5)},${mapState.lng.toFixed(5)} z${mapState.zoom.toFixed(2)} load current-page hardReload manual`;
+    const context = `IRIS BENCH ${kind} browser ${navigator.userAgent.match(/(Chrome|Firefox|Edg|Version)\/[\d.]+/)?.[0] ?? 'unknown'} platform ${navigator.platform || '-'} viewport ${viewport} dpr ${dpr} center ${mapState.lat.toFixed(5)},${mapState.lng.toFixed(5)} z${mapState.zoom.toFixed(2)} load current-page hardReload manual`;
     return [context, ...lines].join('\n');
 }
 
@@ -655,6 +671,7 @@ export function MockToolsBar(): JSX.Element | null {
     const [benchmarkVariant, setBenchmarkVariant] = useState<BenchmarkVariant>('normal');
     const [benchmarkZoom, setBenchmarkZoom] = useState<BenchmarkZoom>(14.36);
     const [benchmarkMode, setBenchmarkMode] = useState<BenchmarkMode>('pan');
+    const [showBenchmarkOptions, setShowBenchmarkOptions] = useState(false);
     const [batchStatus, setBatchStatus] = useState<string>('');
     const [batchRunning, setBatchRunning] = useState(false);
     const [lastBatchReport, setLastBatchReport] = useState('');
@@ -815,6 +832,52 @@ export function MockToolsBar(): JSX.Element | null {
         }
     };
 
+    const runLiveBenchmark = async (): Promise<void> => {
+        if (batchRunning) return;
+
+        const testCase: BenchmarkBatchCase = {
+            label: `live z${benchmarkZoom} ${benchmarkVariant} ${benchmarkMode}`,
+            variant: benchmarkVariant,
+            zoom: benchmarkZoom,
+            mode: benchmarkMode,
+        };
+
+        setBatchRunning(true);
+        setLastBatchReport('');
+        setBatchStatus(`live ${benchmarkVariant} z${benchmarkZoom}`);
+        try {
+            await waitForBenchmarkQuietWindow();
+            const startedAt = Date.now();
+            const snapshot = takeBenchmarkWindowSnapshot(startedAt);
+            window.postMessage({
+                type: 'IRIS_RUN_PAN_BENCHMARK',
+                benchmarkVariant,
+                benchmarkZoom,
+                benchmarkMode,
+                benchmarkLiveLoad: true,
+            }, '*');
+            await waitForBenchmarkResult(testCase, startedAt);
+
+            const report = buildBatchReport([buildBatchReportLine(testCase, snapshot)], 'LIVE');
+            setLastBatchReport(report);
+            setShowBatchReport(true);
+            setBatchStatus('copying');
+            try {
+                await copyText(report);
+                setBatchStatus('copied');
+            } catch (error) {
+                console.warn('IRIS live benchmark clipboard copy failed', error);
+                setBatchStatus('copy blocked');
+                revealBatchReport();
+            }
+        } catch (error) {
+            console.warn('IRIS live benchmark failed', error);
+            setBatchStatus(error instanceof Error ? error.message : 'live failed');
+        } finally {
+            setBatchRunning(false);
+        }
+    };
+
     const copyLastBatchReport = async (): Promise<void> => {
         if (!lastBatchReport) return;
         try {
@@ -844,10 +907,11 @@ export function MockToolsBar(): JSX.Element | null {
                 ))}
                 <button
                     className="iris-mock-tools-btn iris-ui-compact-pill"
-                    title={`Run a 5 second automated ${benchmarkMode} benchmark (${benchmarkVariant}, z${benchmarkZoom})`}
-                    onClick={() => window.postMessage({ type: 'IRIS_RUN_PAN_BENCHMARK', benchmarkVariant, benchmarkZoom, benchmarkMode }, '*')}
+                    title={`Run a live-load ${benchmarkMode} benchmark that forces entity refresh during movement (${benchmarkVariant}, z${benchmarkZoom})`}
+                    onClick={() => void runLiveBenchmark()}
+                    disabled={batchRunning}
                 >
-                    Bench
+                    {batchRunning && batchStatus.startsWith('live ') ? 'Live...' : 'Live Bench'}
                 </button>
                 <button
                     className={`iris-mock-tools-btn iris-ui-compact-pill ${batchRunning ? 'iris-ui-compact-pill-active iris-mock-tools-btn-active' : ''}`}
@@ -880,42 +944,54 @@ export function MockToolsBar(): JSX.Element | null {
                         {batchStatus}
                     </span>
                 )}
-                <select
-                    className="iris-input iris-mock-tools-btn"
-                    title="Benchmark variant"
-                    value={benchmarkVariant}
-                    onChange={(event) => setBenchmarkVariant((event.target as HTMLSelectElement).value as BenchmarkVariant)}
+                <button
+                    className={`iris-mock-tools-btn iris-ui-compact-pill ${showBenchmarkOptions ? 'iris-ui-compact-pill-active iris-mock-tools-btn-active' : ''}`}
+                    title="Show Live Bench variant, mode, and zoom controls"
+                    onClick={() => setShowBenchmarkOptions((visible) => !visible)}
+                    aria-pressed={showBenchmarkOptions}
                 >
-                    {BENCHMARK_VARIANTS.map((variant) => (
-                        <option key={variant.value} value={variant.value}>
-                            {variant.label}
-                        </option>
-                    ))}
-                </select>
-                <select
-                    className="iris-input iris-mock-tools-btn"
-                    title="Benchmark mode"
-                    value={benchmarkMode}
-                    onChange={(event) => setBenchmarkMode((event.target as HTMLSelectElement).value as BenchmarkMode)}
-                >
-                    {BENCHMARK_MODES.map((mode) => (
-                        <option key={mode.value} value={mode.value}>
-                            {mode.label}
-                        </option>
-                    ))}
-                </select>
-                <select
-                    className="iris-input iris-mock-tools-btn"
-                    title="Benchmark zoom"
-                    value={String(benchmarkZoom)}
-                    onChange={(event) => setBenchmarkZoom(Number((event.target as HTMLSelectElement).value) as BenchmarkZoom)}
-                >
-                    {BENCHMARK_ZOOMS.map((zoom) => (
-                        <option key={zoom.value} value={zoom.value}>
-                            {zoom.label}
-                        </option>
-                    ))}
-                </select>
+                    Bench Options
+                </button>
+                {showBenchmarkOptions && (
+                    <>
+                        <select
+                            className="iris-input iris-mock-tools-btn"
+                            title="Live Bench variant"
+                            value={benchmarkVariant}
+                            onChange={(event) => setBenchmarkVariant((event.target as HTMLSelectElement).value as BenchmarkVariant)}
+                        >
+                            {BENCHMARK_VARIANTS.map((variant) => (
+                                <option key={variant.value} value={variant.value}>
+                                    {variant.label}
+                                </option>
+                            ))}
+                        </select>
+                        <select
+                            className="iris-input iris-mock-tools-btn"
+                            title="Live Bench mode"
+                            value={benchmarkMode}
+                            onChange={(event) => setBenchmarkMode((event.target as HTMLSelectElement).value as BenchmarkMode)}
+                        >
+                            {BENCHMARK_MODES.map((mode) => (
+                                <option key={mode.value} value={mode.value}>
+                                    {mode.label}
+                                </option>
+                            ))}
+                        </select>
+                        <select
+                            className="iris-input iris-mock-tools-btn"
+                            title="Live Bench zoom"
+                            value={String(benchmarkZoom)}
+                            onChange={(event) => setBenchmarkZoom(Number((event.target as HTMLSelectElement).value) as BenchmarkZoom)}
+                        >
+                            {BENCHMARK_ZOOMS.map((zoom) => (
+                                <option key={zoom.value} value={zoom.value}>
+                                    {zoom.label}
+                                </option>
+                            ))}
+                        </select>
+                    </>
+                )}
             </div>
             {showBatchReport && lastBatchReport && (
                 <div className="iris-benchmark-report-panel iris-ui-floating-panel">

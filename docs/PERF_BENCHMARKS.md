@@ -976,3 +976,63 @@ Read:
 - `calls 0 skipped N` is now clearly a no-op publication pass instead of hidden `setData` work.
 - The latest desktop sample shows the classifier doing the intended thing: clean z14/z8 rows stay clean, while otherwise
   good rows with moving passive artifact/plext completions are marked as noise without implying a renderer regression.
+
+### Follow-Up: Hot/Cold Source Publication Split
+
+Change under test:
+
+- Page-world source scheduling now treats `selection` and `visual-filters` as hot source sync reasons that may publish
+  immediately during active movement.
+- Cold entity/plugin/planning/artifact/ornament/mission source sync still uses the deferred/coalesced movement queue.
+- Synthetic Bench now holds cold source work from scenario start through row publication, then flushes shortly after, so
+  isolated timed rows should no longer include pre-sample or final post-benchmark cold no-op flushes in their
+  source pass/window deltas.
+
+Expected bench signal:
+
+- Isolated timed rows should usually show `sourcePass carry ... passes 0 movingPasses 0` and `sourceDelta syncs 0`.
+- Rows with real passive moving traffic should still show `noise net-moving:N`; this change does not hide network noise.
+- If a user changes selection or visual filters while moving, `sourcePass ... passMoving yes` is acceptable because those
+  are intentionally hot updates.
+
+Observed validation:
+
+- The latest desktop batch shows the target isolated shape on clean timed rows: `sourcePass carry ... passes 0
+  movingPasses 0`, `sourceDelta syncs 0`, and `setData 0ms`.
+- Rows with passive endpoint overlap still show `noise net-moving`, but no source publication landed inside those rows.
+- This validates the hot/cold split for isolated Bench. Further contention work should happen in a separate live-load
+  benchmark mode rather than by making isolated rows noisier.
+
+### Follow-Up: Live-Load Benchmark Mode
+
+Change under test:
+
+- The mock toolbar now has an opt-in `Live Bench` button for the selected variant, zoom, and pan/zoom mode.
+- The older single-run `Bench` button was removed during toolbar cleanup. `Batch` is the default isolated benchmark, and
+  Live Bench variant/mode/zoom selectors are hidden behind `Bench Options`.
+- Unlike isolated `Bench`/`Batch`, `Live Bench` intentionally forces an entity refresh at synthetic movement start and
+  bypasses the cold-source hold for that run.
+- Use this when we want to measure request, parse, store, source publication, and render contention together.
+
+Expected signal:
+
+- `net entities` should show active entity request activity inside or near the movement window.
+- `sourcePass` / `sourceDelta` may show current passes and real `setData` inside the measured run; this is expected for
+  live-load mode.
+- Rows now include `sourcePass ... max Nms` and `sourceDelta ... maxSources source:Nms` so single expensive source
+  publications are visible even when aggregate `setData` time stays small.
+- Do not compare live-load rows directly with isolated `Batch` rows. They answer different questions.
+
+Observed validation:
+
+- First copied Live Bench sample showed the intended active overlap shape: `net entities req 24 ok 24 active 24 passive
+  0 moving 24`, `sourcePass current ... movingPasses 8 ... passMoving yes`, and `sourceDelta syncs 8 movingSyncs 8`.
+- That run did not reproduce a `setData` hammer: it reported `calls 0`, `setData 0ms`, and only unchanged skips, while
+  frame smoothness stayed usable at `avg 9ms`, `max 59ms`, `fps 107`, `slow 6/966`.
+
+Phase 2 close-out:
+
+- Use `Batch` for isolated render smoothness comparisons.
+- Use `Live Bench` only when measuring intentional request/source/render contention.
+- Current desktop validation shows isolated rows are clean enough to move on to Phase 3 diagnostics: UI render deltas,
+  phase timing, post-scenario stability, and manual interaction capture.

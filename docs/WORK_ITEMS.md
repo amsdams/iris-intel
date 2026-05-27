@@ -1295,14 +1295,26 @@ Wrap-up:
 
 ### Phase 2: Source Publication and Moving Overlap
 
-Status: `In Progress`
+Status: `Done`
+
+Wrap-up:
+
+- Phase 2 made benchmark rows attributable instead of ambiguous: copied reports now separate endpoint overlap, source
+  syncs, real `setData` calls, unchanged skips, source publication pass ownership, per-source max costs, and reason
+  classes.
+- Isolated `Batch` rows are now the default smoothness comparison path. They hold cold source work outside the measured
+  movement window and label residual passive endpoint overlap as noise instead of hiding it.
+- `Live Bench` is now the explicit contention path. It forces an entity refresh during synthetic movement and copies a
+  single-row report for request/source/render overlap analysis.
+- No current benchmark shows a `setData` hammer inside isolated rows; the remaining diagnostics work belongs to Phase 3
+  stable-frame/UI-render context or to future manual interaction capture.
 
 Tasks:
 
 | Task                                                | Status | Notes                                                                                                                                                      |
 |-----------------------------------------------------|--------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Count page-world source publications per scenario   | In Progress | page-world runtime now exposes logical source sync count, individual source `setData` call count/time, reason counts, and per-source call/time deltas; unchanged source snapshots now skip redundant `setData` using a full geometry/properties signature so theme/style updates still publish, and copied bench rows now report `skipped`/`skippedSources` so `syncs > calls` is explicit; per-source max remains open |
-| Track whether map is actively moving                | In Progress | page-world runtime now tracks `movestart`/`moveend` plus active synthetic benchmark state for source-overlap classification; manual input capture remains open |
+| Count page-world source publications per scenario   | Done | page-world runtime now exposes logical source sync count, individual source `setData` call count/time, reason counts, per-source call/time deltas, per-source max timings, and source publication pass summaries; unchanged source snapshots skip redundant `setData` using a full geometry/properties signature so theme/style updates still publish, and copied bench rows report `skipped`/`skippedSources` so `syncs > calls` is explicit |
+| Track whether map is actively moving                | Done | page-world runtime now tracks `movestart`/`moveend` plus active synthetic benchmark state for source-overlap classification; manual input capture is tracked separately in Phase 3 |
 | Report source updates while moving                  | Done   | batch rows now report logical syncs, individual `setData` calls, and `setData` time that happened while the map was moving as `sourceDelta ... movingSyncs ... movingCalls ... movingSetData ...` |
 | Report network responses while moving               | Done   | page-world runtime now posts movement state to content diagnostics, successful endpoint log entries carry `isMoving`, and copied batch `net` counters include a per-endpoint `moving` success count |
 | Add source-update reason labels                     | Done   | page-runtime sync messages now carry source reasons such as `entities:portals`, `entities:links`, `entities:fields`, `plugins`, `planning`, `selection`, `visual-filters`, and `snapshot`; deferred/coalesced sync preserves the combined reasons in copied benchmark rows |
@@ -1310,10 +1322,11 @@ Tasks:
 | Clarify unchanged source publication skips          | Done   | copied bench rows now report unchanged snapshot skips separately from real `setData` calls as `skipped`, `movingSkipped`, and `skippedSources`; latest desktop bench confirms rows like `syncs 1 calls 0 skipped 3` are readable instead of ambiguous |
 | Coalesce entity source publication                   | Done   | portal/link/field store changes now share one debounced entity patch publication that includes core entities, selected entities, artifacts, ornaments, and planned features instead of posting separate source messages per slice |
 | Preserve urgent update path in diagnostics wording  | Done   | copied `sourceDelta` rows now include `reasonMix urgent/heavy/snapshot/other` so selection/filter source updates stay visibly separate from entity/plugin/planning publication before future scheduler changes |
+| Split hot/cold source publication during movement   | Done   | page-world runtime now lets hot `selection`/`visual-filters` source sync publish immediately during active movement while cold entity/plugin/planning/artifact/ornament/mission sync remains deferred; synthetic Bench holds cold source work from scenario start through row publication, then flushes shortly after. Latest desktop bench validates the target shape: clean timed rows report `sourcePass carry ... passes 0 movingPasses 0` and `sourceDelta syncs 0`, while passive overlap remains visible as `noise net-moving`. |
 | Suspend heavy low-zoom entity layers while moving   | Done   | z10 and below now temporarily hides the main link/field layers during active movement and restores them on move end; selected link/field layers remain visible, and z14 behavior is unchanged |
 | Port IITC center-first tile request ordering        | Done   | shared entity request payloads now sort generated tile keys by distance from the viewport/bounds center before batching, so IRIS and Mini request central data first like IITC |
 | Port IITC fetched-bounds containment skip           | Done   | entity request payloads now expose tile-aligned data bounds, and IRIS move-settle refresh skips with `covered by fetched bounds` when the current viewport is inside the last fresh fetched data bounds at the same floored zoom |
-| Investigate player track pin flicker after pan      | In Progress | first fix skipped no-op camera `jumpTo`; stronger fix keeps player-tracker history/fingerprints across COMM-window replacements so pan-triggered plext refreshes do not briefly clear and recreate both player pins and trails; if flicker remains, evaluate Mini-IRIS-style `addImage`/symbol-layer player pins |
+| Investigate player track pin flicker after pan      | Done | no current repro after skipping no-op camera `jumpTo` and keeping player-tracker history/fingerprints across COMM-window replacements; if flicker returns, evaluate Mini-IRIS-style `addImage`/symbol-layer player pins |
 
 ### Phase 3: Long Task, UI Render, and Stable Frame Context
 
@@ -1328,7 +1341,7 @@ Tasks:
 | Split scenario timing into phases                | Open   | distinguish preload, settle wait, benchmark pan/zoom window, and post-window source updates                                             |
 | Add "stable after scenario" wait/sample          | Open   | after each scenario, record whether source/endpoint activity continued after frame sampling stopped                                     |
 | Define thresholds for noisy runs                 | Done   | copied batch rows now include `noise clean` or compact causes (`net-moving`, `source-moving`, `longtask`) based on moving endpoint successes, moving source `setData`, and long-task deltas |
-| Add live-load benchmark mode                     | Open   | add an opt-in Bench mode that allows or triggers entity/source updates during pan/zoom so request, parse, store, source, and render contention can be measured separately from the isolated static-map benchmark |
+| Add live-load benchmark mode                     | Done | opt-in `Live Bench` now runs the selected variant/zoom/mode through the same wait/copy/report panel path as `Batch`, forces an entity refresh at synthetic movement start, and bypasses the cold-source hold for that run so request/source/render contention can be measured separately from isolated `Batch` rows; toolbar cleanup removed the older single-run `Bench` button and hides Live Bench variant/mode/zoom selectors behind `Bench Options` |
 | Add manual interaction capture mode              | Open   | current Bench is deterministic synthetic camera movement, not real human drag/finger input; add a 5-10s capture window later so manual panning reports the same net/source/longtask/workload fields |
 
 ### Phase 4: Export, Comparison, and History

@@ -68,6 +68,7 @@ interface SourceUpdatePerformance {
     setDataCalls: number;
     skippedUnchangedCount: number;
     sourceSetDataMs: Record<string, number>;
+    sourceMaxSetDataMs: Record<string, number>;
     sourceFeatureCounts: Record<string, number>;
     sourceSkippedUnchangedCounts: Record<string, number>;
     pluginFeatureCounts?: Record<string, number>;
@@ -147,9 +148,11 @@ let panBenchmarkSettleTimer: number | null = null;
 let panBenchmarkAnimation: number | null = null;
 let panBenchmarkActive = false;
 let panBenchmarkMode: BenchmarkMode = 'pan';
+let panBenchmarkLiveLoad = false;
 let panBenchmarkRestoreVisibility: (() => void) | null = null;
 let pendingSyncDataMessage: PageMapRuntimeCommandMessage | null = null;
 let pendingSyncDataTimer: number | null = null;
+let coldSourceSyncHoldUntil = 0;
 let activeBenchmarkVariant: BenchmarkVariant = 'normal';
 const plannedMarkerRegistry = new Map<string, PlannedMarkerRegistryEntry>();
 const playerMarkerRegistry = new Map<string, PlayerMarkerRegistryEntry>();
@@ -180,6 +183,8 @@ let movingSourceUpdateSkippedUnchangedCount = 0;
 let sourcePassSequence = 0;
 const sourceUpdateCallCounts: Record<string, number> = {};
 const sourceUpdateCallMs: Record<string, number> = {};
+const sourceUpdateCallMaxMs: Record<string, number> = {};
+const sourceUpdateCallMaxAt: Record<string, number> = {};
 const sourceUpdateSkippedUnchangedCounts: Record<string, number> = {};
 const sourceUpdateReasons: Record<string, number> = {};
 const sourceDataSignatures = new Map<string, string>();
@@ -192,10 +197,16 @@ const PAN_BENCHMARK_RUN_DURATION_MS = 3000;
 const PAN_BENCHMARK_START = {lat: 52.371094, lng: 4.906375};
 const PAN_BENCHMARK_SETTLE_MS = 600;
 const DEFERRED_SOURCE_SYNC_SETTLE_MS = 120;
+const BENCHMARK_COLD_SOURCE_HOLD_MS = 350;
+const BENCHMARK_COLD_SOURCE_WINDOW_MS =
+    (PAN_BENCHMARK_SETTLE_MS * (PAN_BENCHMARK_RUN_COUNT + 1)) +
+    (PAN_BENCHMARK_RUN_DURATION_MS * PAN_BENCHMARK_RUN_COUNT) +
+    BENCHMARK_COLD_SOURCE_HOLD_MS;
 const LOW_ZOOM_MOVING_ENTITY_SUSPEND_ZOOM = 10;
 const PLAYER_MARKER_CIRCLE_SPREAD_RADIUS_PX = 26;
 const PLAYER_MARKER_SPIRAL_START_COUNT = 8;
 const PLAYER_MARKER_SPIRAL_STEP_PX = 8;
+const HOT_SOURCE_SYNC_REASONS = new Set(['selection', 'visual-filters']);
 const PLAYER_MARKER_SPIRAL_START_RADIUS_PX = 22;
 const MOBILE_LONG_PRESS_MS = 650;
 const MOBILE_LONG_PRESS_MOVE_TOLERANCE_PX = 12;
@@ -977,6 +988,7 @@ function createSourceUpdatePerformance(reason: string): SourceUpdatePerformance 
         setDataCalls: 0,
         skippedUnchangedCount: 0,
         sourceSetDataMs: {},
+        sourceMaxSetDataMs: {},
         sourceFeatureCounts: {},
         sourceSkippedUnchangedCounts: {},
     };
@@ -1018,6 +1030,10 @@ function setMeasuredGeoJsonSourceData(
     sourceUpdateSetDataMs += elapsed;
     sourceUpdateCallCounts[sourceLabel] = (sourceUpdateCallCounts[sourceLabel] ?? 0) + 1;
     sourceUpdateCallMs[sourceLabel] = (sourceUpdateCallMs[sourceLabel] ?? 0) + elapsed;
+    if (elapsed >= (sourceUpdateCallMaxMs[sourceLabel] ?? 0)) {
+        sourceUpdateCallMaxMs[sourceLabel] = elapsed;
+        sourceUpdateCallMaxAt[sourceLabel] = Date.now();
+    }
     if (moving) {
         movingSourceUpdateCount += 1;
         movingSourceUpdateSetDataMs += elapsed;
@@ -1025,6 +1041,7 @@ function setMeasuredGeoJsonSourceData(
     perf.setDataMs += elapsed;
     perf.setDataCalls += 1;
     perf.sourceSetDataMs[sourceLabel] = (perf.sourceSetDataMs[sourceLabel] ?? 0) + elapsed;
+    perf.sourceMaxSetDataMs[sourceLabel] = Math.max(perf.sourceMaxSetDataMs[sourceLabel] ?? 0, elapsed);
     perf.sourceFeatureCounts[sourceLabel] = data.features.length;
     currentSourceFeatureCounts[sourceLabel] = data.features.length;
 }
@@ -1165,6 +1182,16 @@ function getSourceUpdateReasons(message: PageMapRuntimeCommandMessage, fallbackR
     return reasons.length > 0 ? reasons : [fallbackReason];
 }
 
+function isHotSourceSyncMessage(message: PageMapRuntimeCommandMessage): boolean {
+    const reasons = getExplicitSyncReasons(message);
+    return reasons.length > 0 && reasons.every((reason) => HOT_SOURCE_SYNC_REASONS.has(reason));
+}
+
+function shouldDeferColdSourceSync(): boolean {
+    if (panBenchmarkLiveLoad) return false;
+    return isMapActivelyMoving() || Date.now() < coldSourceSyncHoldUntil;
+}
+
 function setIrisData(map: maplibregl.Map, message: PageMapRuntimeCommandMessage, fallbackReason = 'syncData'): void {
     const reasons = getSourceUpdateReasons(message, fallbackReason);
     const perf = createSourceUpdatePerformance(reasons.join(','));
@@ -1256,14 +1283,15 @@ function flushPendingSyncData(map: maplibregl.Map): void {
 function schedulePendingSyncDataFlush(map: maplibregl.Map): void {
     if (pendingSyncDataTimer !== null) return;
 
+    const waitMs = Math.max(DEFERRED_SOURCE_SYNC_SETTLE_MS, coldSourceSyncHoldUntil - Date.now());
     pendingSyncDataTimer = window.setTimeout(() => {
         pendingSyncDataTimer = null;
-        if (isMapActivelyMoving()) {
+        if (shouldDeferColdSourceSync()) {
             schedulePendingSyncDataFlush(map);
             return;
         }
         flushPendingSyncData(map);
-    }, DEFERRED_SOURCE_SYNC_SETTLE_MS);
+    }, waitMs);
 }
 
 function deferSyncData(map: maplibregl.Map, message: PageMapRuntimeCommandMessage): void {
@@ -1980,6 +2008,8 @@ function publishViewportPerformance(
         movingSourceUpdateSkippedUnchangedCount,
         sourceUpdateCallCounts: {...sourceUpdateCallCounts},
         sourceUpdateCallMs: {...sourceUpdateCallMs},
+        sourceUpdateCallMaxMs: {...sourceUpdateCallMaxMs},
+        sourceUpdateCallMaxAt: {...sourceUpdateCallMaxAt},
         sourceUpdateSkippedUnchangedCounts: {...sourceUpdateSkippedUnchangedCounts},
         sourceUpdateReasons: {...sourceUpdateReasons},
         sourcePassId: perf.passId,
@@ -1990,6 +2020,7 @@ function publishViewportPerformance(
         sourcePassSetDataCalls: perf.setDataCalls,
         sourcePassSkippedUnchangedCount: perf.skippedUnchangedCount,
         sourcePassSetDataMs: perf.setDataMs,
+        sourcePassMaxSetDataMs: Math.max(0, ...Object.values(perf.sourceMaxSetDataMs)),
         mapMoving: isMapActivelyMoving(),
         lastMapMoveStartAt,
         lastMapMoveEndAt,
@@ -2242,7 +2273,7 @@ function publishBenchmarkFrameSnapshot(snapshots: FrameSnapshot[], variant: Benc
     }, '*');
 }
 
-function stopPanBenchmark(): void {
+function stopPanBenchmark(flushPending = true): void {
     if (panBenchmarkSettleTimer !== null) {
         window.clearTimeout(panBenchmarkSettleTimer);
         panBenchmarkSettleTimer = null;
@@ -2255,14 +2286,25 @@ function stopPanBenchmark(): void {
     panBenchmarkRestoreVisibility = null;
     panBenchmarkActive = false;
     panBenchmarkMode = 'pan';
+    panBenchmarkLiveLoad = false;
+    if (!flushPending) return;
+    coldSourceSyncHoldUntil = 0;
     if (pageMapPromise) {
         void pageMapPromise.then((map) => flushPendingSyncData(map));
     }
 }
 
-async function runPanBenchmark(variant: BenchmarkVariant = 'normal', zoom = 14.36, mode: BenchmarkMode = 'pan'): Promise<void> {
+async function runPanBenchmark(variant: BenchmarkVariant = 'normal', zoom = 14.36, mode: BenchmarkMode = 'pan', liveLoad = false): Promise<void> {
     const map = await getPageMap();
-    stopPanBenchmark();
+    stopPanBenchmark(false);
+    panBenchmarkLiveLoad = liveLoad;
+    if (liveLoad) {
+        coldSourceSyncHoldUntil = 0;
+        flushPendingSyncData(map);
+    } else {
+        coldSourceSyncHoldUntil = Date.now() + BENCHMARK_COLD_SOURCE_WINDOW_MS;
+        schedulePendingSyncDataFlush(map);
+    }
     panBenchmarkRestoreVisibility = applyBenchmarkVariant(map, variant);
     jumpToBenchmarkCamera(map, zoom);
     postDiagnosticResult('MAP BENCH CAMERA', {
@@ -2281,6 +2323,10 @@ async function runPanBenchmark(variant: BenchmarkVariant = 'normal', zoom = 14.3
             panBenchmarkSettleTimer = null;
             panBenchmarkActive = true;
             panBenchmarkMode = mode;
+            panBenchmarkLiveLoad = liveLoad;
+            if (liveLoad) {
+                window.postMessage({type: 'IRIS_BENCHMARK_PRELOAD_ENTITIES'}, '*');
+            }
             if (panBenchmarkMode === 'pan') {
                 setMovingOverlayVisibility(map, false);
             }
@@ -2331,13 +2377,21 @@ async function runPanBenchmark(variant: BenchmarkVariant = 'normal', zoom = 14.3
                 }
 
                 panBenchmarkActive = false;
+                if (liveLoad) {
+                    panBenchmarkLiveLoad = false;
+                } else {
+                    coldSourceSyncHoldUntil = Date.now() + BENCHMARK_COLD_SOURCE_HOLD_MS;
+                    clearPendingSyncDataTimer();
+                }
                 postMapMovement(false);
-                flushPendingSyncData(map);
                 if (panBenchmarkMode === 'pan') {
                     setMovingOverlayVisibility(map, true);
                 }
                 panBenchmarkMode = 'pan';
                 publishBenchmarkFrameSnapshot(runSnapshots, variant, zoom, mode);
+                if (!liveLoad) {
+                    schedulePendingSyncDataFlush(map);
+                }
                 panBenchmarkRestoreVisibility?.();
                 panBenchmarkRestoreVisibility = null;
             };
@@ -2373,7 +2427,13 @@ function hidePageMapRuntime(): void {
 
 async function syncPageMapData(message: PageMapRuntimeCommandMessage): Promise<void> {
     const map = await getPageMap();
-    if (isMapActivelyMoving()) {
+    if (isHotSourceSyncMessage(message)) {
+        setIrisData(map, message, 'syncDataHot');
+        await waitForMapIdle(map);
+        return;
+    }
+
+    if (shouldDeferColdSourceSync()) {
         deferSyncData(map, message);
         return;
     }
@@ -2479,7 +2539,8 @@ window.addEventListener('message', (event: MessageEvent<PageMapRuntimeCommandMes
         const variant = getBenchmarkVariant((event.data as {benchmarkVariant?: unknown}).benchmarkVariant);
         const zoom = getBenchmarkZoom((event.data as {benchmarkZoom?: unknown}).benchmarkZoom);
         const mode = getBenchmarkMode((event.data as {benchmarkMode?: unknown}).benchmarkMode);
-        runPageRuntimeTask('pageRuntime:bench', () => runPanBenchmark(variant, zoom, mode));
+        const liveLoad = (event.data as {benchmarkLiveLoad?: unknown}).benchmarkLiveLoad === true;
+        runPageRuntimeTask('pageRuntime:bench', () => runPanBenchmark(variant, zoom, mode, liveLoad));
         return;
     }
 

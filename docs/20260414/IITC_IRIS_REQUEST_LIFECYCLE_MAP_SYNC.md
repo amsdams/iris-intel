@@ -347,8 +347,10 @@ Possible improvement:
    movement. For the mobile z8 renderer bottleneck, IRIS also uses a MapLibre-specific low-zoom movement simplification
    that suspends the heavy main link/field layers during active movement. Source publication pass ownership now has a
    first compact diagnostic: copied rows report `sourcePass current/carry id ... passes ... movingPasses ... reason ...
-   passMoving ... sources ... calls ... skipped ... setData ...`. The remaining practical gap is behavioral ownership, not visibility: decide whether
-   heavy entity/plugin/planning source passes should be scheduled separately from urgent selection/filter publication.
+   passMoving ... sources ... calls ... skipped ... setData ...`. The first behavioral split is also in place: hot
+   `selection`/`visual-filters` source sync can publish immediately during movement, while cold entity/plugin/planning
+   source sync remains deferred/coalesced until movement settles. Remaining ownership work is to decide whether cold
+   source classes need separate queues or different flush timing outside Bench.
 
 3. **Tile-level retry/fallback**
 
@@ -377,8 +379,16 @@ These are worth adding before more request/map scheduler changes:
   selection/filter updates visibly separate from heavy entity/plugin/planning publication before more scheduling changes.
 - Per source publication pass: copied rows now report window source pass count, moving pass count, latest source
   publication pass id, current/carry scope, reason string, latest-pass moving flag, source count, real `setData` calls,
-  unchanged skips, and pass `setData` time. This is diagnostics-only; it makes pass ownership attributable before
-  changing the scheduler.
+  unchanged skips, pass `setData` time, and pass max `setData` time. `sourceDelta` rows also report timestamped
+  per-source max timings as `maxSources`, so a single expensive source publication is attributable. This is
+  diagnostics-only; it makes pass ownership attributable before changing the scheduler.
+- Source publication scheduling: hot source reasons (`selection`, `visual-filters`) are now allowed to publish during
+  active movement; cold reasons continue through the deferred/coalesced movement queue. Synthetic Bench holds cold
+  source work from scenario start through row publication, then flushes shortly after, so isolated rows measure the
+  render window before post-window cold publication.
+- Live-load measurement: an opt-in `Live Bench` path now intentionally forces an entity refresh at synthetic movement
+  start, bypasses the cold-source hold for that run, and publishes a copyable single-row report. Use it to measure
+  request/source/render contention separately from isolated static-map rows.
 - Per entity refresh pass: requested tile count, skipped fresh tile count, batch count, generation, reason, and data zoom
   are now recorded in copied benchmark rows. Remaining gaps are active batch completion, retry count, parse time, store
   merge time, source build time, source `setData` time, and stable-frame delay.
