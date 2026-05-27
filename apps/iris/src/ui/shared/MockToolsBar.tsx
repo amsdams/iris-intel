@@ -113,6 +113,7 @@ interface BenchmarkWindowSnapshot {
     sourceUpdateCallMaxAt: Record<string, number>;
     sourceUpdateSkippedUnchangedCounts: Record<string, number>;
     sourceUpdateReasons: Record<string, number>;
+    uiRenderCounts: Record<string, number>;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -233,6 +234,9 @@ function takeBenchmarkWindowSnapshot(startedAt = Date.now()): BenchmarkWindowSna
             ? {...viewport.sourceUpdateSkippedUnchangedCounts}
             : {},
         sourceUpdateReasons: viewport?.sourceUpdateReasons ? {...viewport.sourceUpdateReasons} : {},
+        uiRenderCounts: Object.fromEntries(
+            Object.entries(state.uiRenderDiagnostics).map(([name, entry]) => [name, entry.count])
+        ),
     };
 }
 
@@ -489,6 +493,17 @@ function formatPluginCounts(counts: Record<string, number> | undefined): string 
     return `pluginMix total ${formatCount(counts.total)} labels ${formatCount(counts.labels)} player ${formatCount(counts.playerMarkers)} highlights ${formatCount(counts.highlights)} lines ${formatCount(counts.lines)} points ${formatCount(counts.points)}`;
 }
 
+function formatBenchmarkUiRenderDelta(snapshot: BenchmarkWindowSnapshot): string {
+    const entries = Object.entries(useStore.getState().uiRenderDiagnostics)
+        .map(([name, entry]) => [name, Math.max(0, entry.count - (snapshot.uiRenderCounts[name] ?? 0))] as const)
+        .filter(([, count]) => count > 0)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 4)
+        .map(([name, count]) => `${name}:${formatCount(count)}`);
+
+    return `ui renders ${entries.length > 0 ? entries.join(',') : 'none'}`;
+}
+
 function formatBenchmarkStableFrame(frame: NonNullable<ReturnType<typeof useStore.getState>['mapPerfDiagnostics']['frame']>): string {
     if (typeof frame.benchmarkStableAverageFrameMs !== 'number') return 'stable none';
     return `stable avg ${formatMs(frame.benchmarkStableAverageFrameMs)} max ${formatMs(frame.benchmarkStableMaxFrameMs)} fps ${formatCount(frame.benchmarkStableEstimatedFps)} slow ${formatCount(frame.benchmarkStableSlowFrameCount)}/${formatCount(frame.benchmarkStableFrameCount)}`;
@@ -535,6 +550,7 @@ function buildBatchReportLine(testCase: BenchmarkBatchCase, snapshot: BenchmarkW
         formatBenchmarkSourcePass(snapshot),
         formatBenchmarkSourceDelta(snapshot),
         formatBenchmarkLongTaskDelta(snapshot),
+        formatBenchmarkUiRenderDelta(snapshot),
         formatBenchmarkWorkload(testCase, sourceCounts),
         formatPluginCounts(pluginCounts),
     ].join(' | ');

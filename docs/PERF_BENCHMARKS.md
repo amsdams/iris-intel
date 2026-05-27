@@ -1050,3 +1050,21 @@ Expected signal:
 - A healthy isolated row should have both good movement stats and good stable stats.
 - If movement looks smooth but a deferred source publication freezes the map afterward, `stable max` and `stable slow`
   should expose that before we consider cold source partitioning.
+
+Observed validation:
+
+- Desktop Batch showed clean movement and stable phases. Representative rows stayed around `avg 8ms`, `fps 119-124`,
+  with `stable avg 8ms max 9ms fps 120 slow 0/107`.
+- Phone Batch also stayed stable: movement rows were mostly `avg 17-18ms`, `fps 55-60`, and stable samples were mostly
+  `stable avg 17ms`, `max 17-33ms`, `slow 0`.
+- No desktop or phone row showed the feared "smooth pan, freeze after stop" pattern, so cold source partitioning remains
+  deferred pending later evidence.
+
+### Phase 3 Follow-Up: UI Render Deltas
+
+Change under test:
+
+- Copied benchmark rows now include `ui renders`, a compact top-list of UI components whose render-diagnostic counters
+  changed during the scenario window.
+- This is intended to distinguish map/render-source cost from popup/dock/debug UI churn when a row has unexpected slow
+  frames.
