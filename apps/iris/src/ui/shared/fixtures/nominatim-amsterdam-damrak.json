@@ -1,0 +1,152 @@
+[
+  {
+    "place_id": 156388310,
+    "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+    "osm_type": "way",
+    "osm_id": 29474840,
+    "lat": "52.3761096",
+    "lon": "4.8980545",
+    "class": "waterway",
+    "type": "canal",
+    "place_rank": 20,
+    "importance": 0.4216117942344225,
+    "addresstype": "canal",
+    "name": "Damrak",
+    "display_name": "Damrak, Centrum, Amsterdam, North Holland, Netherlands, 1012 JP, Netherlands",
+    "boundingbox": [
+      "52.3756419",
+      "52.3767500",
+      "4.8973472",
+      "4.8985257"
+    ],
+    "geojson": {
+      "type": "LineString",
+      "coordinates": [
+        [
+          4.8973472,
+          52.3756419
+        ],
+        [
+          4.8976694,
+          52.3759009
+        ],
+        [
+          4.8980471,
+          52.3761037
+        ],
+        [
+          4.8984874,
+          52.3764544
+        ],
+        [
+          4.8985257,
+          52.37675
+        ]
+      ]
+    }
+  },
+  {
+    "place_id": 155986794,
+    "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+    "osm_type": "way",
+    "osm_id": 1323622740,
+    "lat": "52.3768599",
+    "lon": "4.8987017",
+    "class": "waterway",
+    "type": "canal",
+    "place_rank": 20,
+    "importance": 0.4216117942344225,
+    "addresstype": "canal",
+    "name": "Damrak",
+    "display_name": "Damrak, Centrum, Amsterdam, North Holland, Netherlands, 1012 AC, Netherlands",
+    "boundingbox": [
+      "52.3767500",
+      "52.3769698",
+      "4.8985257",
+      "4.8988777"
+    ],
+    "geojson": {
+      "type": "LineString",
+      "coordinates": [
+        [
+          4.8985257,
+          52.37675
+        ],
+        [
+          4.8988777,
+          52.3769698
+        ]
+      ]
+    }
+  },
+  {
+    "place_id": 155670778,
+    "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+    "osm_type": "way",
+    "osm_id": 1384004132,
+    "lat": "52.3789718",
+    "lon": "4.9852547",
+    "class": "waterway",
+    "type": "canal",
+    "place_rank": 20,
+    "importance": 0.13341601510643167,
+    "addresstype": "canal",
+    "name": "Damrak",
+    "display_name": "Damrak, Noord, Durgerdam, Amsterdam, North Holland, Netherlands, 1026 CB, Netherlands",
+    "boundingbox": [
+      "52.3779608",
+      "52.3800981",
+      "4.9825715",
+      "4.9881112"
+    ],
+    "geojson": {
+      "type": "LineString",
+      "coordinates": [
+        [
+          4.9825715,
+          52.3800981
+        ],
+        [
+          4.9827521,
+          52.3797815
+        ],
+        [
+          4.9827904,
+          52.3796938
+        ],
+        [
+          4.9828657,
+          52.379636
+        ],
+        [
+          4.9834799,
+          52.379334
+        ],
+        [
+          4.9839824,
+          52.3792128
+        ],
+        [
+          4.9855148,
+          52.3789225
+        ],
+        [
+          4.9868362,
+          52.378547
+        ],
+        [
+          4.9874549,
+          52.3783516
+        ],
+        [
+          4.9879234,
+          52.3780602
+        ],
+        [
+          4.9881112,
+          52.3779608
+        ]
+      ]
+    }
+  }
+]

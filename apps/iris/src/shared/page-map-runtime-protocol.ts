@@ -54,6 +54,7 @@ export interface PageMapRuntimeDataPayload {
         missionWaypoints?: GeoJSON.FeatureCollection;
         pluginFeatures?: GeoJSON.FeatureCollection;
         plannedFeatures?: GeoJSON.FeatureCollection;
+        searchHighlight?: GeoJSON.FeatureCollection;
     };
 }
 

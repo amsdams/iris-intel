@@ -424,6 +424,10 @@ function getPageMap(): Promise<maplibregl.Map> {
                         type: 'geojson',
                         data: {type: 'FeatureCollection', features: []},
                     },
+                    'iris-map-search-highlight': {
+                        type: 'geojson',
+                        data: {type: 'FeatureCollection', features: []},
+                    },
                 },
                 layers: [
                     {
@@ -528,6 +532,51 @@ function getPageMap(): Promise<maplibregl.Map> {
                             'circle-stroke-width': INGRESS_ENTITY_STYLE.portalStrokeWidth,
                             'circle-stroke-color': ['coalesce', ['get', 'strokeColor'], ['get', 'color'], '#999999'],
                             'circle-stroke-opacity': 1,
+                        },
+                    },
+                    {
+                        id: 'iris-map-search-highlight-fill',
+                        type: 'fill',
+                        source: 'iris-map-search-highlight',
+                        filter: ['==', '$type', 'Polygon'],
+                        paint: {
+                            'fill-color': '#ff3b30',
+                            'fill-opacity': 0.08,
+                        },
+                    },
+                    {
+                        id: 'iris-map-search-highlight-line',
+                        type: 'line',
+                        source: 'iris-map-search-highlight',
+                        filter: ['any', ['==', '$type', 'Polygon'], ['==', '$type', 'LineString']],
+                        paint: {
+                            'line-color': '#ff3b30',
+                            'line-width': [
+                                'interpolate', ['linear'], ['zoom'],
+                                3, 2,
+                                10, 3,
+                                15, 5,
+                            ],
+                            'line-opacity': 0.95,
+                        },
+                    },
+                    {
+                        id: 'iris-map-search-highlight-point',
+                        type: 'circle',
+                        source: 'iris-map-search-highlight',
+                        filter: ['==', '$type', 'Point'],
+                        paint: {
+                            'circle-radius': [
+                                'interpolate', ['linear'], ['zoom'],
+                                3, 4,
+                                10, 7,
+                                15, 11,
+                            ],
+                            'circle-color': '#ff3b30',
+                            'circle-opacity': 0.9,
+                            'circle-stroke-width': 2,
+                            'circle-stroke-color': '#ffffff',
+                            'circle-stroke-opacity': 0.95,
                         },
                     },
                     {
@@ -1242,6 +1291,9 @@ function setIrisData(map: maplibregl.Map, message: PageMapRuntimeCommandMessage,
     if (message.data?.plannedFeatures) {
         setMeasuredGeoJsonSourceData(map, perf, 'iris-map-planned-features', message.data.plannedFeatures);
         syncPlannedMarkerPins(map, message.data.plannedFeatures);
+    }
+    if (message.data?.searchHighlight) {
+        setMeasuredGeoJsonSourceData(map, perf, 'iris-map-search-highlight', message.data.searchHighlight);
     }
     setSelectedData(map, perf, message);
     publishViewportPerformance(map, message, perf);

@@ -1,7 +1,11 @@
 import { h, JSX } from 'preact';
-import { ENTITY_REQUEST_BATCH_SIZE, IRIS_BENCHMARK_SCENARIOS, buildEntityRequestPayload, useStore, type BenchmarkMode, type BenchmarkScenario, type BenchmarkZoom, type BoundsE6, type EndpointKey, type IrisBenchmarkVariant } from '@iris/core';
+import { ENTITY_REQUEST_BATCH_SIZE, IRIS_BENCHMARK_SCENARIOS, buildEntityRequestPayload, boundsToE6, useStore, type BenchmarkMode, type BenchmarkZoom, type BoundsE6, type EndpointKey, type IrisBenchmarkVariant } from '@iris/core';
 import { useRenderDiagnostics } from './useRenderDiagnostics';
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { PAGE_MAP_RUNTIME_MESSAGES } from '../../shared/page-map-runtime-protocol';
+import { estimateLocationSearchZoom, estimateViewportBounds, type ViewportDimensions } from './location-search-viewport';
+import amsterdamNominatimResults from './fixtures/nominatim-amsterdam-nederland.json';
+import damrakNominatimResults from './fixtures/nominatim-amsterdam-damrak.json';
 
 interface MockToolAction {
     label: string;
@@ -12,8 +16,32 @@ interface MockToolAction {
     active: boolean;
 }
 
+interface MockNominatimResult {
+    place_id: number;
+    display_name: string;
+    lat: string;
+    lon: string;
+    class: string;
+    type: string;
+    name: string;
+    boundingbox: string[];
+    geojson?: GeoJSON.Geometry;
+}
+
 const MOCK_INVENTORY_GUID_PATTERN = /^(xmp|reso|ultra|pc|shield|heat-sink|transmuter|key|ada|jarvis|fracker|battle-beacon|apex|hypercube|drone|entitlement|capsule)-/;
 const MOCK_PLAYER_ACTIVITY_PLEXT_PREFIX = 'mock-player-activity:';
+const MOCK_LOCATION_RESULTS: Record<string, {label: string; title: string; results: MockNominatimResult[]}> = {
+    damrak: {
+        label: 'Damrak',
+        title: 'Show mock Nominatim Damrak canal results',
+        results: damrakNominatimResults as MockNominatimResult[],
+    },
+    amsterdam: {
+        label: 'Amsterdam',
+        title: 'Show mock Nominatim Amsterdam boundary results',
+        results: amsterdamNominatimResults as MockNominatimResult[],
+    },
+};
 const BENCHMARK_VARIANTS = [
     {label: 'Normal', value: 'normal'},
     {label: 'Base', value: 'base'},
@@ -145,7 +173,7 @@ function classifySourceReason(reason: string): SourceReasonClass {
     return 'other';
 }
 
-function formatSourceReasonMix(reasonDeltas: Array<readonly [string, number]>): string {
+function formatSourceReasonMix(reasonDeltas: (readonly [string, number])[]): string {
     const totals: Record<SourceReasonClass, number> = {
         urgent: 0,
         heavy: 0,
@@ -196,6 +224,125 @@ function estimateBenchmarkViewportBounds(lat: number, lng: number, zoom: Benchma
         maxLatE6: Math.round(Math.max(south, north) * 1e6),
         maxLngE6: Math.round(east * 1e6),
     };
+}
+
+function parseMockResultBounds(result: MockNominatimResult): BoundsE6 | null {
+    const [southValue, northValue, westValue, eastValue] = result.boundingbox;
+    const south = Number(southValue);
+    const north = Number(northValue);
+    const west = Number(westValue);
+    const east = Number(eastValue);
+    if (![south, north, west, east].every(Number.isFinite)) return null;
+    return boundsToE6({south, west, north, east});
+}
+
+function geometryFromBounds(bounds: BoundsE6): GeoJSON.Polygon {
+    const south = bounds.minLatE6 / 1e6;
+    const west = bounds.minLngE6 / 1e6;
+    const north = bounds.maxLatE6 / 1e6;
+    const east = bounds.maxLngE6 / 1e6;
+    return {
+        type: 'Polygon',
+        coordinates: [[
+            [west, south],
+            [east, south],
+            [east, north],
+            [west, north],
+            [west, south],
+        ]],
+    };
+}
+
+function isMockBoundaryResult(result: MockNominatimResult): boolean {
+    return result.class === 'boundary' && result.type === 'administrative';
+}
+
+function geometryFromMockResult(result: MockNominatimResult, bounds: BoundsE6 | null): GeoJSON.Geometry {
+    if (result.geojson) return result.geojson;
+    if (isMockBoundaryResult(result)) {
+        return {
+            type: 'Point',
+            coordinates: [Number(result.lon), Number(result.lat)],
+        };
+    }
+    return bounds ? geometryFromBounds(bounds) : {
+        type: 'Point',
+        coordinates: [Number(result.lon), Number(result.lat)],
+    };
+}
+
+function combineBounds(bounds: BoundsE6[]): BoundsE6 | null {
+    if (bounds.length === 0) return null;
+    return bounds.reduce((combined, next) => ({
+        minLatE6: Math.min(combined.minLatE6, next.minLatE6),
+        minLngE6: Math.min(combined.minLngE6, next.minLngE6),
+        maxLatE6: Math.max(combined.maxLatE6, next.maxLatE6),
+        maxLngE6: Math.max(combined.maxLngE6, next.maxLngE6),
+    }));
+}
+
+function centerFromBounds(bounds: BoundsE6): {lat: number; lng: number} {
+    return {
+        lat: (bounds.minLatE6 + bounds.maxLatE6) / 2e6,
+        lng: (bounds.minLngE6 + bounds.maxLngE6) / 2e6,
+    };
+}
+
+function publishMockLocationResults(results: MockNominatimResult[]): void {
+    const resultBounds = results.map(parseMockResultBounds).filter((bounds): bounds is BoundsE6 => bounds !== null);
+    const combinedBounds = combineBounds(resultBounds);
+
+    window.postMessage({
+        type: PAGE_MAP_RUNTIME_MESSAGES.syncData,
+        syncReason: 'mock-location',
+        data: {
+            searchHighlight: {
+                type: 'FeatureCollection',
+                features: results.map((result, index): GeoJSON.Feature => {
+                    const bounds = parseMockResultBounds(result);
+                    return {
+                        type: 'Feature',
+                        properties: {
+                            id: `mock-location:${result.place_id}`,
+                            label: result.display_name,
+                            name: result.name,
+                            class: result.class,
+                            type: result.type,
+                            order: index + 1,
+                        },
+                        geometry: geometryFromMockResult(result, bounds),
+                    };
+                }),
+            },
+        },
+    }, '*');
+
+    if (!combinedBounds) return;
+    const dimensions: ViewportDimensions = {width: window.innerWidth, height: window.innerHeight};
+    const zoom = estimateLocationSearchZoom(combinedBounds, dimensions);
+    const center = centerFromBounds(combinedBounds);
+    window.postMessage({
+        type: 'IRIS_MOVE_MAP',
+        center,
+        zoom,
+        bounds: estimateViewportBounds(center, zoom, dimensions),
+    }, '*');
+}
+
+function clearMockLocationResults(): void {
+    window.postMessage({
+        type: PAGE_MAP_RUNTIME_MESSAGES.syncData,
+        syncReason: 'mock-location',
+        data: {
+            searchHighlight: {type: 'FeatureCollection', features: []},
+        },
+    }, '*');
+}
+
+function formatMockLocationOption(result: MockNominatimResult, index: number): string {
+    const parts = result.display_name.split(',').map((part) => part.trim()).filter(Boolean);
+    const context = parts.slice(1, 4).join(', ');
+    return `${index + 1}. ${result.type} ${result.place_id}${context ? ` - ${context}` : ''}`;
 }
 
 function createEndpointCounters(): BenchmarkEndpointCounterMap {
@@ -706,6 +853,7 @@ export function MockToolsBar(): JSX.Element | null {
     const [batchRunning, setBatchRunning] = useState(false);
     const [lastBatchReport, setLastBatchReport] = useState('');
     const [showBatchReport, setShowBatchReport] = useState(false);
+    const [activeMockLocation, setActiveMockLocation] = useState<string | null>(null);
     const batchReportTextRef = useRef<HTMLTextAreaElement | null>(null);
     const showMockTools = useStore((state) => state.showMockTools);
     const hasMockArtifacts = useStore((state) => Object.keys(state.artifacts).length > 0);
@@ -741,7 +889,7 @@ export function MockToolsBar(): JSX.Element | null {
         if (!showBatchReport || !lastBatchReport) return undefined;
 
         const timeoutId = window.setTimeout(selectLastBatchReport, 0);
-        return () => window.clearTimeout(timeoutId);
+        return (): void => window.clearTimeout(timeoutId);
     }, [showBatchReport, lastBatchReport]);
 
     if (!showMockTools) {
@@ -966,6 +1114,20 @@ export function MockToolsBar(): JSX.Element | null {
         }
     };
 
+    const showMockLocationResult = (key: string, placeId: number): void => {
+        const dataset = MOCK_LOCATION_RESULTS[key];
+        if (!dataset) return;
+        const result = dataset.results.find((candidate) => candidate.place_id === placeId);
+        if (!result) return;
+        publishMockLocationResults([result]);
+        setActiveMockLocation(`${key}:${placeId}`);
+    };
+
+    const clearMockLocations = (): void => {
+        clearMockLocationResults();
+        setActiveMockLocation(null);
+    };
+
     return (
         <div>
             <div className="iris-mock-tools-bar iris-ui-floating-panel iris-ui-scroll-row" aria-label="Mock data tools">
@@ -981,6 +1143,38 @@ export function MockToolsBar(): JSX.Element | null {
                         {action.label}
                     </button>
                 ))}
+                <span className="iris-mock-tools-label">Places</span>
+                {Object.entries(MOCK_LOCATION_RESULTS).map(([key, dataset]) => (
+                    <select
+                        key={key}
+                        className="iris-input iris-mock-tools-btn"
+                        title={dataset.title}
+                        value={activeMockLocation?.startsWith(`${key}:`) ? activeMockLocation.split(':')[1] : ''}
+                        onChange={(event): void => {
+                            const value = Number((event.target as HTMLSelectElement).value);
+                            if (Number.isFinite(value)) {
+                                showMockLocationResult(key, value);
+                            }
+                        }}
+                    >
+                        <option value="">
+                            {dataset.label}
+                        </option>
+                        {dataset.results.map((result, index) => (
+                            <option key={result.place_id} value={result.place_id}>
+                                {formatMockLocationOption(result, index)}
+                            </option>
+                        ))}
+                    </select>
+                ))}
+                <button
+                    className="iris-mock-tools-btn iris-ui-compact-pill"
+                    title="Clear mock place results from the map"
+                    onClick={clearMockLocations}
+                    disabled={!activeMockLocation}
+                >
+                    Clear Places
+                </button>
                 <button
                     className="iris-mock-tools-btn iris-ui-compact-pill"
                     title={`Run a live-load ${benchmarkMode} benchmark that forces entity refresh during movement (${benchmarkVariant}, z${benchmarkZoom})`}

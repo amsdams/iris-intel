@@ -40,7 +40,7 @@ from here when they become tracked work.
 
 ## IRIS Runtime Ownership And Startup Discipline
 
-Status: `In Progress`
+Status: `Done`
 
 Goal:
 
@@ -194,6 +194,12 @@ Tasks:
 | Implement retry logic for failed entity fetches                        | Done   | coordinator now performs up to 3 retries with 5s backoff after a failed fetch                                                                                                                  |
 | Reduce post-pan UI work on mobile                                      | Done   | map-state updates now no-op for identical views, `MapOverlay` skips same-view camera echoes, and ornaments build from the buffered viewport instead of all loaded portals                      |
 | Prevent stale/idle refresh popup flicker during refresh                | Done   | map-stale alert now stays hidden while requests are active or an expected entity auto-refresh is due within a short grace window, so it should only appear when user action is actually useful |
+
+Bugs:
+
+| Bug                                                                  | Status        | Notes                                                                                                                                                                                                                                                                                           |
+|----------------------------------------------------------------------|---------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| IRIS shows fewer same-area entities than IITC at zoomed-out comparable areas | Investigating | user observed phone-vs-phone IITC/IRIS mismatch; expectation is that settled IRIS should show the same portal/link/field entities as Intel/IITC for comparable area, zoom, and filters. Treat as correctness/parity, not only performance. Use geolocation search to put both apps on the same named area, capture same-phone z14/z15/z16 counts, and inspect request coverage/filtering when large differences appear. |
 
 ### IITC-style mobile panning performance
 
@@ -368,17 +374,20 @@ Tasks:
 
 ### Search UX should explain current scope better
 
-Status: `Done`
+Status: `In Progress`
 
 Outcome:
 
 - make it clear that search currently means coordinates/location search, not Intel portal-name search
+- make place/street search land on a comparable area to IITC by respecting geocoder bounds/geometry instead of always
+  jumping to street-level zoom
 
 Tasks:
 
-| Task                        | Status | Notes                                                                                                                        |
-|-----------------------------|--------|------------------------------------------------------------------------------------------------------------------------------|
-| Clarify search UX in topbar | Done   | placeholder and error wording now keep search scoped to place/coordinate search without implying hidden Intel portal-name UI |
+| Task                                      | Status      | Notes                                                                                                                                     |
+|-------------------------------------------|-------------|-------------------------------------------------------------------------------------------------------------------------------------------|
+| Clarify search UX in topbar               | Done        | placeholder and error wording now keep search scoped to place/coordinate lookup without implying hidden Intel portal-name UI              |
+| Fit location search to result bounds      | Done        | Nominatim search now requests `polygon_geojson`, draws a red temporary search highlight, uses MapLibre/WebMercator viewport math, caps bounded place/street results at overview zoom, centers bounded results on the bounding-box center, and sends estimated visible viewport bounds through the move path instead of reusing the geocoder result bounds for entity requests. |
 
 Bugs:
 

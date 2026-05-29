@@ -1,15 +1,21 @@
 import { h, JSX } from 'preact';
 import { useState } from 'preact/hooks';
-import { useStore } from '@iris/core';
+import { boundsToE6, useStore, type BoundsE6 } from '@iris/core';
 import { Popup } from '../shared/Popup';
 import { THEMES } from '../theme';
+import { PAGE_MAP_RUNTIME_MESSAGES } from '../../shared/page-map-runtime-protocol';
+import { estimateLocationSearchZoom, estimateViewportBounds, type ViewportDimensions } from './location-search-viewport';
 
 interface NominatimResult {
     place_id: number;
     display_name: string;
     lat: string;
     lon: string;
+    class?: string;
     type: string;
+    addresstype?: string;
+    boundingbox?: [string, string, string, string];
+    geojson?: GeoJSON.Geometry;
 }
 
 interface LocationSearchPopupProps {
@@ -25,11 +31,79 @@ export function LocationSearchPopup({ onClose }: LocationSearchPopupProps): JSX.
     const themeId = useStore((state) => state.themeId);
     const theme = THEMES[themeId] || THEMES.INGRESS;
 
-    const navigateToCoordinates = (lat: number, lng: number, _label?: string): void => {
+    const parseResultBounds = (result: NominatimResult): BoundsE6 | null => {
+        const box = result.boundingbox;
+        if (!box || box.length !== 4) return null;
+        const south = Number(box[0]);
+        const north = Number(box[1]);
+        const west = Number(box[2]);
+        const east = Number(box[3]);
+        if (![south, north, west, east].every(Number.isFinite)) return null;
+        if (Math.abs(south) > 90 || Math.abs(north) > 90 || Math.abs(west) > 180 || Math.abs(east) > 180) return null;
+        return boundsToE6({south, west, north, east});
+    };
+
+    const centerFromBounds = (bounds: BoundsE6): {lat: number; lng: number} => ({
+        lat: (bounds.minLatE6 + bounds.maxLatE6) / 2e6,
+        lng: (bounds.minLngE6 + bounds.maxLngE6) / 2e6,
+    });
+
+    const geometryFromBounds = (bounds: BoundsE6): GeoJSON.Polygon => {
+        const south = bounds.minLatE6 / 1e6;
+        const west = bounds.minLngE6 / 1e6;
+        const north = bounds.maxLatE6 / 1e6;
+        const east = bounds.maxLngE6 / 1e6;
+        return {
+            type: 'Polygon',
+            coordinates: [[
+                [west, south],
+                [east, south],
+                [east, north],
+                [west, north],
+                [west, south],
+            ]],
+        };
+    };
+
+    const isSupportedGeometry = (value: unknown): value is GeoJSON.Geometry => {
+        if (!value || typeof value !== 'object' || !('type' in value)) return false;
+        return ['Point', 'MultiPoint', 'LineString', 'MultiLineString', 'Polygon', 'MultiPolygon'].includes(String((value as {type?: unknown}).type));
+    };
+
+    const publishSearchHighlight = (result: NominatimResult | null, lat: number, lng: number, bounds: BoundsE6 | null): void => {
+        const geometry = result && isSupportedGeometry(result.geojson)
+            ? result.geojson
+            : bounds
+                ? geometryFromBounds(bounds)
+                : {type: 'Point', coordinates: [lng, lat]} as GeoJSON.Point;
+        window.postMessage({
+            type: PAGE_MAP_RUNTIME_MESSAGES.syncData,
+            syncReason: 'search',
+            data: {
+                searchHighlight: {
+                    type: 'FeatureCollection',
+                    features: [{
+                        type: 'Feature',
+                        properties: {id: 'search-highlight', label: result?.display_name ?? 'Search result'},
+                        geometry,
+                    }],
+                },
+            },
+        }, '*');
+    };
+
+    const navigateToCoordinates = (lat: number, lng: number, result?: NominatimResult): void => {
+        const resultBounds = result ? parseResultBounds(result) : null;
+        const dimensions: ViewportDimensions = {width: window.innerWidth, height: window.innerHeight};
+        const zoom = estimateLocationSearchZoom(resultBounds, dimensions);
+        const center = resultBounds ? centerFromBounds(resultBounds) : {lat, lng};
+        const viewportBounds = estimateViewportBounds(center, zoom, dimensions);
+        publishSearchHighlight(result ?? null, lat, lng, resultBounds);
         window.postMessage({
             type: 'IRIS_MOVE_MAP',
-            center: { lat, lng },
-            zoom: 15,
+            center,
+            zoom,
+            bounds: viewportBounds,
         }, '*');
         onClose();
     };
@@ -59,7 +133,7 @@ export function LocationSearchPopup({ onClose }: LocationSearchPopupProps): JSX.
 
         try {
             const res = await fetch(
-                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(trimmedQuery)}&format=json&limit=5`,
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(trimmedQuery)}&format=json&limit=5&polygon_geojson=1`,
                 { headers: { 'Accept-Language': 'en' } }
             );
             const data = await res.json() as NominatimResult[];
@@ -69,7 +143,7 @@ export function LocationSearchPopup({ onClose }: LocationSearchPopupProps): JSX.
             }
             if (data.length === 1) {
                 const r = data[0];
-                navigateToCoordinates(parseFloat(r.lat), parseFloat(r.lon));
+                navigateToCoordinates(parseFloat(r.lat), parseFloat(r.lon), r);
                 return;
             }
             setResults(data);
@@ -124,7 +198,7 @@ export function LocationSearchPopup({ onClose }: LocationSearchPopupProps): JSX.
                         <div
                             key={result.place_id}
                             className="iris-choice-item iris-location-search-result"
-                            onClick={() => navigateToCoordinates(parseFloat(result.lat), parseFloat(result.lon))}
+                            onClick={() => navigateToCoordinates(parseFloat(result.lat), parseFloat(result.lon), result)}
                         >
                             <div className="iris-location-search-result-title">
                                 {result.display_name.split(',')[0]}
