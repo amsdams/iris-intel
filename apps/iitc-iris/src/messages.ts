@@ -39,6 +39,11 @@ export interface IitcIrisMessage {
   damagedPortals?: number;
   links?: number;
   fields?: number;
+  viewportPortals?: number;
+  viewportRealPortals?: number;
+  viewportPlaceholderPortals?: number;
+  viewportLinks?: number;
+  viewportFields?: number;
   requestedTiles?: number;
   returnedTiles?: number;
   nonEmptyTiles?: number;

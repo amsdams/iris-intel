@@ -50,6 +50,11 @@ interface EntityFetchState {
   damagedPortals: number;
   links: number;
   fields: number;
+  viewportPortals: number;
+  viewportRealPortals: number;
+  viewportPlaceholderPortals: number;
+  viewportLinks: number;
+  viewportFields: number;
   requestedTiles: number;
   returnedTiles: number;
   nonEmptyTiles: number;
@@ -58,6 +63,52 @@ interface EntityFetchState {
   recoveredTileKeys: string[];
   emptyTileKeys: string[];
   nonEmptyTileKeys: string[];
+}
+
+interface ParsedViewInput {
+  lat: number;
+  lng: number;
+  zoom?: number;
+}
+
+function clampView(view: ParsedViewInput): ParsedViewInput {
+  return {
+    lat: Math.max(-85.051128, Math.min(85.051128, view.lat)),
+    lng: Math.max(-180, Math.min(179.999999, view.lng)),
+    zoom: view.zoom === undefined ? undefined : Math.max(0, Math.min(21, view.zoom)),
+  };
+}
+
+function parseViewInput(value: string): ParsedViewInput | null {
+  const text = value.trim();
+  if (!text) return null;
+
+  try {
+    const url = new URL(text);
+    const ll = url.searchParams.get('ll') ?? url.searchParams.get('pll');
+    const z = url.searchParams.get('z');
+    if (ll) {
+      const [latText, lngText] = ll.split(',');
+      const parsed = {
+        lat: Number(latText),
+        lng: Number(lngText),
+        zoom: z ? Number(z) : undefined,
+      };
+      if (Number.isFinite(parsed.lat) && Number.isFinite(parsed.lng) && (parsed.zoom === undefined || Number.isFinite(parsed.zoom))) return clampView(parsed);
+    }
+  } catch {
+    // Fall through to coordinate parsing.
+  }
+
+  const [latText, lngText, zoomText] = text.split(/[,\s]+/).filter(Boolean);
+  const parsed = {
+    lat: Number(latText),
+    lng: Number(lngText),
+    zoom: zoomText ? Number(zoomText) : undefined,
+  };
+  if (!Number.isFinite(parsed.lat) || !Number.isFinite(parsed.lng)) return null;
+  if (parsed.zoom !== undefined && !Number.isFinite(parsed.zoom)) return null;
+  return clampView(parsed);
 }
 
 function getExtensionUrl(path: string): string {
@@ -91,6 +142,8 @@ function createPlan(camera: CameraState): IitcMapDataPlan | null {
 function App(): h.JSX.Element {
   const [status, setStatus] = useState('booting');
   const [copyStatus, setCopyStatus] = useState('');
+  const [viewInput, setViewInput] = useState('');
+  const [viewInputStatus, setViewInputStatus] = useState('');
   const [layerSettings, setLayerSettings] = useState<IitcIrisLayerSettings>({
     fields: true,
     links: true,
@@ -121,6 +174,11 @@ function App(): h.JSX.Element {
     damagedPortals: 0,
     links: 0,
     fields: 0,
+    viewportPortals: 0,
+    viewportRealPortals: 0,
+    viewportPlaceholderPortals: 0,
+    viewportLinks: 0,
+    viewportFields: 0,
     requestedTiles: 0,
     returnedTiles: 0,
     nonEmptyTiles: 0,
@@ -162,6 +220,7 @@ function App(): h.JSX.Element {
     } : null,
     entities: {
       status: entityFetch.status,
+      complete: entityFetch.status === 'entities ready',
       portals: entityFetch.portals,
       realPortals: entityFetch.realPortals,
       placeholderPortals: entityFetch.placeholderPortals,
@@ -171,6 +230,13 @@ function App(): h.JSX.Element {
       damagedPortals: entityFetch.damagedPortals,
       links: entityFetch.links,
       fields: entityFetch.fields,
+      viewport: {
+        portals: entityFetch.viewportPortals,
+        realPortals: entityFetch.viewportRealPortals,
+        placeholderPortals: entityFetch.viewportPlaceholderPortals,
+        links: entityFetch.viewportLinks,
+        fields: entityFetch.viewportFields,
+      },
       requestedTiles: entityFetch.requestedTiles,
       returnedTiles: entityFetch.returnedTiles,
       nonEmptyTiles: entityFetch.nonEmptyTiles,
@@ -213,6 +279,24 @@ function App(): h.JSX.Element {
     } satisfies IitcIrisMessage, '*');
   };
 
+  const jumpToViewInput = (): void => {
+    const parsed = parseViewInput(viewInput);
+    if (!parsed) {
+      setViewInputStatus('bad view');
+      window.setTimeout(() => setViewInputStatus(''), 1600);
+      return;
+    }
+
+    window.postMessage({
+      type: IITC_IRIS_MESSAGES.setView,
+      lat: parsed.lat,
+      lng: parsed.lng,
+      zoom: parsed.zoom ?? camera.zoom,
+    } satisfies IitcIrisMessage, '*');
+    setViewInputStatus('jumped');
+    window.setTimeout(() => setViewInputStatus(''), 1200);
+  };
+
   useEffect(() => {
     const onMessage = (event: MessageEvent<IitcIrisMessage>): void => {
       if (event.source !== window) return;
@@ -244,6 +328,11 @@ function App(): h.JSX.Element {
           damagedPortals: event.data.damagedPortals ?? current.damagedPortals,
           links: event.data.links ?? current.links,
           fields: event.data.fields ?? current.fields,
+          viewportPortals: event.data.viewportPortals ?? current.viewportPortals,
+          viewportRealPortals: event.data.viewportRealPortals ?? current.viewportRealPortals,
+          viewportPlaceholderPortals: event.data.viewportPlaceholderPortals ?? current.viewportPlaceholderPortals,
+          viewportLinks: event.data.viewportLinks ?? current.viewportLinks,
+          viewportFields: event.data.viewportFields ?? current.viewportFields,
           requestedTiles: event.data.requestedTiles ?? current.requestedTiles,
           returnedTiles: event.data.returnedTiles ?? current.returnedTiles,
           nonEmptyTiles: event.data.nonEmptyTiles ?? current.nonEmptyTiles,
@@ -284,6 +373,24 @@ function App(): h.JSX.Element {
             {preset.label}
           </button>
         ))}
+        <form
+          className="iitc-iris-jump"
+          onSubmit={(event) => {
+            event.preventDefault();
+            jumpToViewInput();
+          }}
+        >
+          <input
+            className="iitc-iris-jump-input"
+            type="text"
+            value={viewInput}
+            onInput={(event) => setViewInput((event.currentTarget as HTMLInputElement).value)}
+            placeholder="lat,lng,z or Intel URL"
+            title="Paste lat,lng,z or an Intel URL with ll and z"
+          />
+          <button className="iitc-iris-preset" type="submit">Jump</button>
+        </form>
+        {viewInputStatus && <span className="iitc-iris-status">{viewInputStatus}</span>}
         {copyStatus && <span className="iitc-iris-status">{copyStatus}</span>}
         <span className="iitc-iris-status">{status}</span>
         <span className="iitc-iris-status">z {camera.zoom.toFixed(2)}</span>
@@ -309,6 +416,7 @@ function App(): h.JSX.Element {
         <span className="iitc-iris-status">dmg {entityFetch.damagedPortals}</span>
         <span className="iitc-iris-status">l {entityFetch.links}</span>
         <span className="iitc-iris-status">f {entityFetch.fields}</span>
+        <span className="iitc-iris-status iitc-iris-compare">compare vp P/L/F {entityFetch.viewportPortals}/{entityFetch.viewportLinks}/{entityFetch.viewportFields}</span>
         <span className="iitc-iris-status">rt {entityFetch.returnedTiles}/{entityFetch.requestedTiles}</span>
         <span className="iitc-iris-status">nt {entityFetch.nonEmptyTiles}</span>
         {entityFetch.retryRequests > 0 && <span className="iitc-iris-status">retry {entityFetch.retryRequests}</span>}

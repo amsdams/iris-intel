@@ -84,7 +84,9 @@ Current status:
 
 - The dock shows zoom, data zoom, summary availability, tile span, fetch state, entity totals, real/placeholder/ornament portal counts, and copy-to-clipboard diagnostics.
 - The dock has fixed Amsterdam and Damrak view presets for repeatable IITC/IITC IRIS comparisons.
-- Fixture/mock selector and free search are not yet implemented in IITC IRIS.
+- The dock can jump to arbitrary comparison views from `lat,lng,z` text or Intel URLs with `ll` and `z` query params.
+- Visual parity comparisons should use the dock's viewport P/L/F counts and copied `entities.viewport` block; total fetched counts include padded request bounds and placeholder support entities.
+- Fixture/mock selector and place-name geocoding are not yet implemented in IITC IRIS.
 
 ## Pass 6: Replacement Readiness - Not Started
 

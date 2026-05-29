@@ -54,6 +54,11 @@
   font-weight: 700;
 }
 
+.iitc-iris-compare {
+  color: #ffffff;
+  font-weight: 700;
+}
+
 .iitc-iris-copy,
 .iitc-iris-preset {
   appearance: none;
@@ -76,6 +81,26 @@
 .iitc-iris-preset {
   min-width: 46px;
   text-align: center;
+}
+
+.iitc-iris-jump {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.iitc-iris-jump-input {
+  width: 170px;
+  min-width: 120px;
+  height: 22px;
+  box-sizing: border-box;
+  border: 1px solid rgb(95 180 255 / 30%);
+  border-radius: 4px;
+  background: rgb(10 18 25 / 88%);
+  color: #e8f4ff;
+  font: inherit;
+  letter-spacing: 0;
+  padding: 2px 6px;
 }
 
 .iitc-iris-login {

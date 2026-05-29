@@ -517,6 +517,45 @@ function countReturnedTiles(response: IitcGetEntitiesResponse): {
   };
 }
 
+function isLatLngInBounds(latE6: number, lngE6: number, bounds: IitcMapDataPlan['viewportBounds']): boolean {
+  const lat = latE6 / 1e6;
+  const lng = lngE6 / 1e6;
+  return lat >= bounds.south && lat <= bounds.north && lng >= bounds.west && lng <= bounds.east;
+}
+
+function countViewportEntities(entities: IitcIrisRenderEntities | undefined, bounds?: IitcMapDataPlan['viewportBounds']): {
+  viewportPortals: number;
+  viewportRealPortals: number;
+  viewportPlaceholderPortals: number;
+  viewportLinks: number;
+  viewportFields: number;
+} {
+  if (!entities || !bounds) {
+    return {
+      viewportPortals: 0,
+      viewportRealPortals: 0,
+      viewportPlaceholderPortals: 0,
+      viewportLinks: 0,
+      viewportFields: 0,
+    };
+  }
+
+  const viewportPortals = entities.portals.filter((portal) => isLatLngInBounds(portal.latE6, portal.lngE6, bounds));
+  const viewportLinks = entities.links.filter((link) =>
+    isLatLngInBounds(link.oLatE6, link.oLngE6, bounds) ||
+    isLatLngInBounds(link.dLatE6, link.dLngE6, bounds));
+  const viewportFields = entities.fields.filter((field) =>
+    field.points.some((point) => isLatLngInBounds(point.latE6, point.lngE6, bounds)));
+
+  return {
+    viewportPortals: viewportPortals.length,
+    viewportRealPortals: viewportPortals.filter((portal) => !portal.isPlaceholder).length,
+    viewportPlaceholderPortals: viewportPortals.filter((portal) => portal.isPlaceholder).length,
+    viewportLinks: viewportLinks.length,
+    viewportFields: viewportFields.length,
+  };
+}
+
 function postEntityStatus(
   status: string,
   entities?: IitcIrisRenderEntities,
@@ -524,6 +563,7 @@ function postEntityStatus(
     requestedTiles: number;
     returnedTiles: number;
     nonEmptyTiles: number;
+    viewportBounds?: IitcMapDataPlan['viewportBounds'];
     retryRequests?: number;
     retriedTileKeys?: string[];
     recoveredTileKeys?: string[];
@@ -541,6 +581,7 @@ function postEntityStatus(
   },
 ): void {
   const portals = entities?.portals ?? [];
+  const viewportCounts = countViewportEntities(entities, tileDiagnostics.viewportBounds);
   const authRequired = /login html|missing csrftoken/i.test(status);
   window.postMessage({
     type: IITC_IRIS_MESSAGES.entityStatus,
@@ -555,6 +596,7 @@ function postEntityStatus(
     damagedPortals: portals.filter((portal) => !portal.isPlaceholder && portal.health !== undefined && portal.health < 100).length,
     links: entities?.links.length ?? 0,
     fields: entities?.fields.length ?? 0,
+    ...viewportCounts,
     requestedTiles: tileDiagnostics.requestedTiles,
     returnedTiles: tileDiagnostics.returnedTiles,
     nonEmptyTiles: tileDiagnostics.nonEmptyTiles,
@@ -721,6 +763,7 @@ async function refreshEntities(): Promise<void> {
       requestedTiles: plan.tileKeys.length,
       returnedTiles: 0,
       nonEmptyTiles: 0,
+      viewportBounds: plan.viewportBounds,
       retryRequests: 0,
       retriedTileKeys: [],
       recoveredTileKeys: [],
@@ -739,6 +782,7 @@ async function refreshEntities(): Promise<void> {
         requestedTiles: plan.tileKeys.length,
         returnedTiles,
         nonEmptyTiles,
+        viewportBounds: plan.viewportBounds,
         emptyTileKeys,
         nonEmptyTileKeys,
       });
@@ -769,6 +813,7 @@ async function refreshEntities(): Promise<void> {
             requestedTiles: plan.tileKeys.length,
             returnedTiles,
             nonEmptyTiles,
+            viewportBounds: plan.viewportBounds,
             retryRequests,
             retriedTileKeys: [...retriedTileKeys],
             recoveredTileKeys,
@@ -790,6 +835,7 @@ async function refreshEntities(): Promise<void> {
       requestedTiles: plan.tileKeys.length,
       returnedTiles,
       nonEmptyTiles,
+      viewportBounds: plan.viewportBounds,
       retryRequests,
       retriedTileKeys: [...retriedTileKeys],
       recoveredTileKeys,
