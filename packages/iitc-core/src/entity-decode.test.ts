@@ -66,4 +66,19 @@ describe('IITC entity decoding', () => {
     expect(isIitcFakeFieldEdgeLink(fakeLink[0])).toBe(true);
     expect(decodeIitcGameEntities([fakeLink, realLink]).links[realLink[0]]).toMatchObject({guid: realLink[0]});
   });
+
+  it('decodes artifact brief data from portal summaries', () => {
+    const artifactPortal: IitcRawGameEntity = [
+      'artifact.16',
+      123,
+      ['p', 'E', 52_373_000, 4_895_000, 6, 80, 8, 'image', 'Artifact Portal', ['sc5_p'], false, false, [[['jarvis', 'fragment-1']], [['jarvis']]], 123],
+    ];
+
+    expect(decodeIitcGameEntities([artifactPortal]).portals['artifact.16']).toMatchObject({
+      artifactBrief: {
+        fragment: {jarvis: ['fragment-1']},
+        target: {jarvis: []},
+      },
+    });
+  });
 });

@@ -26,6 +26,13 @@ Acceptance:
 - The new core produces the same map-data request shapes as IITC-CE for the first Amsterdam and Damrak test views.
 - Tile state transitions are covered by tests before renderer integration.
 
+Current status:
+
+- Tile math, zoom/data-zoom selection, request key generation, and basic batching are ported.
+- IITC IRIS currently has a temporary runtime compatibility shim for live Intel tile holes: returned-empty summary tiles are retried as single-tile requests, and response merging keeps a non-empty tile payload over a later empty payload for the same tile.
+- This shim exists because the core port does not yet include IITC-CE's full tile lifecycle: tile cache state, active request accounting, tile-specific retry/error counters, timeout handling, and stale-cache fallback.
+- The shim should remain while validating live parity, but the intended replacement is a closer IITC-CE-derived request queue in `packages/iitc-core`, not permanent ad hoc runtime policy.
+
 ## Pass 3: Entity Decode - Partial
 
 - Port IITC-CE map entity parsing into `packages/iitc-core`.
@@ -41,7 +48,8 @@ Current status:
 
 - Portals, links, fields, placeholder portals, fake field-edge link filtering, and ornament IDs are decoded.
 - Fixture tests cover low-zoom placeholder behavior and zoom-15 summary/ornament behavior.
-- Artifact, shard, and event decoding still need dedicated fixtures and tests.
+- Artifact brief decoding is wired with a synthetic parser test, but live artifact behavior is unverified because Intel is not currently returning artifact portal payloads in the available test responses.
+- Shard and event decoding still need dedicated live fixtures and tests.
 
 ## Pass 4: Leaflet Rendering - Partial
 
@@ -57,9 +65,10 @@ Acceptance:
 Current status:
 
 - Typed npm Leaflet is bundled into `iitc-iris`.
-- Fields, links, placeholder portals, real portals, health rings, and ornament rings render.
+- Fields, links, placeholder portals, real portals, health rings, ornament rings, and simple artifact rings render.
+- Artifact rendering is wired but unverified against live Intel data; keep it simple until a real artifact fixture or HAR is available.
 - Layer ordering and visual parity are only approximate.
-- Artifact, shard, event, portal labels, and plugin/highlighter parity are not done.
+- Shard, event, portal label polish, and plugin/highlighter parity are not done.
 
 ## Pass 5: Comparison UI - Started
 

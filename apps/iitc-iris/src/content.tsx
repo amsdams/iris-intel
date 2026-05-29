@@ -11,6 +11,7 @@ const LAYER_TOGGLE_LABELS: [keyof IitcIrisLayerSettings, string][] = [
   ['links', 'LN'],
   ['portals', 'P'],
   ['ornaments', 'OR'],
+  ['artifacts', 'AR'],
   ['labels', 'LV'],
   ['tiles', 'T'],
 ];
@@ -40,6 +41,7 @@ interface EntityFetchState {
   realPortals: number;
   placeholderPortals: number;
   ornamentPortals: number;
+  artifactPortals: number;
   levelLabels: number;
   damagedPortals: number;
   links: number;
@@ -47,6 +49,9 @@ interface EntityFetchState {
   requestedTiles: number;
   returnedTiles: number;
   nonEmptyTiles: number;
+  retryRequests: number;
+  retriedTileKeys: string[];
+  recoveredTileKeys: string[];
   emptyTileKeys: string[];
   nonEmptyTileKeys: string[];
 }
@@ -85,6 +90,7 @@ function App(): h.JSX.Element {
     links: true,
     portals: true,
     ornaments: true,
+    artifacts: true,
     labels: true,
     tiles: false,
   });
@@ -104,6 +110,7 @@ function App(): h.JSX.Element {
     realPortals: 0,
     placeholderPortals: 0,
     ornamentPortals: 0,
+    artifactPortals: 0,
     levelLabels: 0,
     damagedPortals: 0,
     links: 0,
@@ -111,6 +118,9 @@ function App(): h.JSX.Element {
     requestedTiles: 0,
     returnedTiles: 0,
     nonEmptyTiles: 0,
+    retryRequests: 0,
+    retriedTileKeys: [],
+    recoveredTileKeys: [],
     emptyTileKeys: [],
     nonEmptyTileKeys: [],
   });
@@ -143,6 +153,7 @@ function App(): h.JSX.Element {
       realPortals: entityFetch.realPortals,
       placeholderPortals: entityFetch.placeholderPortals,
       ornamentPortals: entityFetch.ornamentPortals,
+      artifactPortals: entityFetch.artifactPortals,
       levelLabels: entityFetch.levelLabels,
       damagedPortals: entityFetch.damagedPortals,
       links: entityFetch.links,
@@ -150,6 +161,9 @@ function App(): h.JSX.Element {
       requestedTiles: entityFetch.requestedTiles,
       returnedTiles: entityFetch.returnedTiles,
       nonEmptyTiles: entityFetch.nonEmptyTiles,
+      retryRequests: entityFetch.retryRequests,
+      retriedTileKeys: entityFetch.retriedTileKeys,
+      recoveredTileKeys: entityFetch.recoveredTileKeys,
       emptyTileKeys: entityFetch.emptyTileKeys,
       nonEmptyTileKeys: entityFetch.nonEmptyTileKeys,
       authRequired: entityFetch.authRequired,
@@ -203,6 +217,7 @@ function App(): h.JSX.Element {
           realPortals: event.data.realPortals ?? current.realPortals,
           placeholderPortals: event.data.placeholderPortals ?? current.placeholderPortals,
           ornamentPortals: event.data.ornamentPortals ?? current.ornamentPortals,
+          artifactPortals: event.data.artifactPortals ?? current.artifactPortals,
           levelLabels: event.data.levelLabels ?? current.levelLabels,
           damagedPortals: event.data.damagedPortals ?? current.damagedPortals,
           links: event.data.links ?? current.links,
@@ -210,6 +225,9 @@ function App(): h.JSX.Element {
           requestedTiles: event.data.requestedTiles ?? current.requestedTiles,
           returnedTiles: event.data.returnedTiles ?? current.returnedTiles,
           nonEmptyTiles: event.data.nonEmptyTiles ?? current.nonEmptyTiles,
+          retryRequests: event.data.retryRequests ?? current.retryRequests,
+          retriedTileKeys: event.data.retriedTileKeys ?? current.retriedTileKeys,
+          recoveredTileKeys: event.data.recoveredTileKeys ?? current.recoveredTileKeys,
           emptyTileKeys: event.data.emptyTileKeys ?? current.emptyTileKeys,
           nonEmptyTileKeys: event.data.nonEmptyTileKeys ?? current.nonEmptyTileKeys,
         }));
@@ -253,12 +271,14 @@ function App(): h.JSX.Element {
         <span className="iitc-iris-status">real {entityFetch.realPortals}</span>
         <span className="iitc-iris-status">ph {entityFetch.placeholderPortals}</span>
         <span className="iitc-iris-status">orn {entityFetch.ornamentPortals}</span>
+        <span className="iitc-iris-status">art {entityFetch.artifactPortals}</span>
         <span className="iitc-iris-status">lvl {entityFetch.levelLabels}</span>
         <span className="iitc-iris-status">dmg {entityFetch.damagedPortals}</span>
         <span className="iitc-iris-status">l {entityFetch.links}</span>
         <span className="iitc-iris-status">f {entityFetch.fields}</span>
         <span className="iitc-iris-status">rt {entityFetch.returnedTiles}/{entityFetch.requestedTiles}</span>
         <span className="iitc-iris-status">nt {entityFetch.nonEmptyTiles}</span>
+        {entityFetch.retryRequests > 0 && <span className="iitc-iris-status">retry {entityFetch.retryRequests}</span>}
         <span className="iitc-iris-divider" />
         <span className="iitc-iris-status">Layers</span>
         {LAYER_TOGGLE_LABELS.map(([key, label]) => (

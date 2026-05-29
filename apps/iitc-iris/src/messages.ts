@@ -33,6 +33,7 @@ export interface IitcIrisMessage {
   realPortals?: number;
   placeholderPortals?: number;
   ornamentPortals?: number;
+  artifactPortals?: number;
   levelLabels?: number;
   damagedPortals?: number;
   links?: number;
@@ -40,6 +41,9 @@ export interface IitcIrisMessage {
   requestedTiles?: number;
   returnedTiles?: number;
   nonEmptyTiles?: number;
+  retryRequests?: number;
+  retriedTileKeys?: string[];
+  recoveredTileKeys?: string[];
   emptyTileKeys?: string[];
   nonEmptyTileKeys?: string[];
   layerSettings?: IitcIrisLayerSettings;
@@ -50,8 +54,15 @@ export interface IitcIrisLayerSettings {
   links: boolean;
   portals: boolean;
   ornaments: boolean;
+  artifacts: boolean;
   labels: boolean;
   tiles: boolean;
+}
+
+export interface IitcIrisRenderArtifact {
+  role: 'fragment' | 'target';
+  type: string;
+  ids: string[];
 }
 
 export interface IitcIrisRenderPortal {
@@ -62,6 +73,7 @@ export interface IitcIrisRenderPortal {
   level?: number;
   health?: number;
   ornaments?: string[];
+  artifacts?: IitcIrisRenderArtifact[];
   isPlaceholder: boolean;
 }
 

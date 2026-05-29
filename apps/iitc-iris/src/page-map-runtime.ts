@@ -1,6 +1,6 @@
 import L, {type Layer as LeafletLayer, type Map as LeafletMap} from 'leaflet';
-import {IITC_IRIS_MESSAGES, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisRenderEntities} from './messages';
-import {createIitcMapDataPlan, decodeIitcGetEntitiesResponse, type IitcGetEntitiesResponse, type IitcMapDataPlan, type IitcMapTilePayload} from '@iris/iitc-core';
+import {IITC_IRIS_MESSAGES, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisRenderArtifact, type IitcIrisRenderEntities} from './messages';
+import {createIitcMapDataPlan, decodeIitcGetEntitiesResponse, type IitcArtifactBrief, type IitcGetEntitiesResponse, type IitcMapDataPlan, type IitcMapTilePayload} from '@iris/iitc-core';
 
 const DEFAULT_CENTER: [number, number] = [52.3730796, 4.8924534];
 const DEFAULT_ZOOM = 11;
@@ -15,6 +15,7 @@ const DEFAULT_LAYER_SETTINGS: IitcIrisLayerSettings = {
   links: true,
   portals: true,
   ornaments: true,
+  artifacts: true,
   labels: true,
   tiles: false,
 };
@@ -147,6 +148,7 @@ declare global {
       links: LeafletLayer[];
       portals: LeafletLayer[];
       ornaments: LeafletLayer[];
+      artifacts: LeafletLayer[];
       labels: LeafletLayer[];
     };
   }
@@ -165,6 +167,7 @@ const HEALTH_COLORS = {
   low: '#ff0000',
   critical: '#ff00ff',
 } as const;
+const ARTIFACT_COLOR = '#ff00ff';
 const LEVEL_COLORS = ['#666666', '#fece5a', '#ffa630', '#ff7315', '#e80000', '#ff0099', '#ee26cd', '#c124e0', '#9627f4'] as const;
 const LEVEL_TO_WEIGHT = [1.5, 1.5, 1.5, 1.5, 1.5, 1.75, 1.75, 2, 2] as const;
 const LEVEL_TO_RADIUS = [6, 6, 6, 6, 7, 7, 8, 9, 10] as const;
@@ -220,6 +223,30 @@ function getHealthOpacity(health: number): number {
   return (1 - health / 100) * 0.75 + 0.25;
 }
 
+function artifactIdsFromValue(value: unknown[]): string[] {
+  const flattened: unknown[] = [];
+  for (const entry of value) {
+    if (Array.isArray(entry)) flattened.push(...entry);
+    else flattened.push(entry);
+  }
+  const ids = flattened.filter((entry): entry is string => typeof entry === 'string' && entry.length > 0);
+  return ids.length > 0 ? ids : [];
+}
+
+function toRenderArtifacts(artifactBrief: IitcArtifactBrief | null | undefined): IitcIrisRenderArtifact[] | undefined {
+  if (!artifactBrief) return undefined;
+
+  const artifacts: IitcIrisRenderArtifact[] = [];
+  for (const [type, value] of Object.entries(artifactBrief.fragment)) {
+    artifacts.push({role: 'fragment', type, ids: artifactIdsFromValue(value)});
+  }
+  for (const [type, value] of Object.entries(artifactBrief.target)) {
+    artifacts.push({role: 'target', type, ids: artifactIdsFromValue(value)});
+  }
+
+  return artifacts.length > 0 ? artifacts : undefined;
+}
+
 function ensureLayers(): NonNullable<Window['__iitcIrisLayers']> {
   if (window.__iitcIrisLayers) return window.__iitcIrisLayers;
 
@@ -229,6 +256,7 @@ function ensureLayers(): NonNullable<Window['__iitcIrisLayers']> {
     links: [],
     portals: [],
     ornaments: [],
+    artifacts: [],
     labels: [],
   };
   return window.__iitcIrisLayers;
@@ -268,6 +296,7 @@ function clearAllRenderedLayers(): void {
   clearRenderedLayers(layers.links);
   clearRenderedLayers(layers.portals);
   clearRenderedLayers(layers.ornaments);
+  clearRenderedLayers(layers.artifacts);
   clearRenderedLayers(layers.labels);
 }
 
@@ -277,6 +306,7 @@ function clearEntityLayers(): void {
   clearRenderedLayers(layers.links);
   clearRenderedLayers(layers.portals);
   clearRenderedLayers(layers.ornaments);
+  clearRenderedLayers(layers.artifacts);
   clearRenderedLayers(layers.labels);
 }
 
@@ -386,6 +416,18 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
       addRenderedLayer(layers.labels, createLevelLabelMarker(latLng, portal.level, portal.team));
     }
 
+    if (layerSettings.artifacts && !portal.isPlaceholder && portal.artifacts && portal.artifacts.length > 0) {
+      addRenderedLayer(layers.artifacts, L.circleMarker(latLng, {
+        radius: radius + 7,
+        color: ARTIFACT_COLOR,
+        fillOpacity: 0,
+        opacity: 0.95,
+        pane: getLayerPane('artifacts'),
+        weight: portal.artifacts.some((artifact) => artifact.role === 'target') ? 4 : 2.5,
+        interactive: false,
+      }));
+    }
+
     if (layerSettings.ornaments && portal.ornaments && portal.ornaments.length > 0) {
       for (const ornament of portal.ornaments) {
         addRenderedLayer(layers.ornaments, createOrnamentMarker(latLng, ornament, radius));
@@ -470,12 +512,18 @@ function postEntityStatus(
     requestedTiles: number;
     returnedTiles: number;
     nonEmptyTiles: number;
+    retryRequests?: number;
+    retriedTileKeys?: string[];
+    recoveredTileKeys?: string[];
     emptyTileKeys: string[];
     nonEmptyTileKeys: string[];
   } = {
     requestedTiles: 0,
     returnedTiles: 0,
     nonEmptyTiles: 0,
+    retryRequests: 0,
+    retriedTileKeys: [],
+    recoveredTileKeys: [],
     emptyTileKeys: [],
     nonEmptyTileKeys: [],
   },
@@ -490,6 +538,7 @@ function postEntityStatus(
     realPortals: portals.filter((portal) => !portal.isPlaceholder).length,
     placeholderPortals: portals.filter((portal) => portal.isPlaceholder).length,
     ornamentPortals: portals.filter((portal) => portal.ornaments && portal.ornaments.length > 0).length,
+    artifactPortals: portals.filter((portal) => portal.artifacts && portal.artifacts.length > 0).length,
     levelLabels: portals.filter((portal) => !portal.isPlaceholder && portal.level !== undefined).length,
     damagedPortals: portals.filter((portal) => !portal.isPlaceholder && portal.health !== undefined && portal.health < 100).length,
     links: entities?.links.length ?? 0,
@@ -497,6 +546,9 @@ function postEntityStatus(
     requestedTiles: tileDiagnostics.requestedTiles,
     returnedTiles: tileDiagnostics.returnedTiles,
     nonEmptyTiles: tileDiagnostics.nonEmptyTiles,
+    retryRequests: tileDiagnostics.retryRequests ?? 0,
+    retriedTileKeys: tileDiagnostics.retriedTileKeys ?? [],
+    recoveredTileKeys: tileDiagnostics.recoveredTileKeys ?? [],
     emptyTileKeys: tileDiagnostics.emptyTileKeys,
     nonEmptyTileKeys: tileDiagnostics.nonEmptyTileKeys,
   } satisfies IitcIrisMessage, '*');
@@ -591,6 +643,7 @@ function toRenderEntities(response: IitcGetEntitiesResponse, generation: number)
       level: portal.level,
       health: portal.health,
       ornaments: portal.ornaments,
+      artifacts: toRenderArtifacts(portal.artifactBrief),
       isPlaceholder: portal.isPlaceholder,
     })),
     links: Object.values(decoded.links).map((link) => ({
@@ -666,6 +719,9 @@ async function refreshEntities(): Promise<void> {
       requestedTiles: plan.tileKeys.length,
       returnedTiles: 0,
       nonEmptyTiles: 0,
+      retryRequests: 0,
+      retriedTileKeys: [],
+      recoveredTileKeys: [],
       emptyTileKeys: [],
       nonEmptyTileKeys: [],
     });
@@ -688,6 +744,9 @@ async function refreshEntities(): Promise<void> {
 
     if (generation !== latestFetchGeneration) return;
     let mergedResponse = mergeEntityResponses(responses);
+    const initialEmptyTileKeys = getReturnedEmptyTileKeys(mergedResponse, plan.tileKeys);
+    const retriedTileKeys = new Set<string>();
+    let retryRequests = 0;
     if (plan.tileParams.hasPortals) {
       for (let pass = 1; pass <= EMPTY_TILE_RETRY_PASSES; pass += 1) {
         const retryTileKeys = getReturnedEmptyTileKeys(mergedResponse, plan.tileKeys).slice(0, EMPTY_TILE_RETRY_LIMIT);
@@ -697,14 +756,20 @@ async function refreshEntities(): Promise<void> {
         for (let index = 0; index < retryBatches.length; index += 1) {
           const response = await fetchEntityBatch(retryBatches[index], version);
           if (generation !== latestFetchGeneration) return;
+          retryRequests += 1;
+          for (const tileKey of retryBatches[index]) retriedTileKeys.add(tileKey);
           responses.push(response);
           mergedResponse = mergeEntityResponses(responses);
           const entities = toRenderEntities(mergedResponse, generation);
           const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys} = countReturnedTiles(mergedResponse);
+          const recoveredTileKeys = initialEmptyTileKeys.filter((tileKey) => nonEmptyTileKeys.includes(tileKey));
           postEntityStatus(`retry ${pass} ${index + 1}/${retryBatches.length}`, entities, {
             requestedTiles: plan.tileKeys.length,
             returnedTiles,
             nonEmptyTiles,
+            retryRequests,
+            retriedTileKeys: [...retriedTileKeys],
+            recoveredTileKeys,
             emptyTileKeys,
             nonEmptyTileKeys,
           });
@@ -714,6 +779,7 @@ async function refreshEntities(): Promise<void> {
 
     const entities = toRenderEntities(mergedResponse, generation);
     const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys} = countReturnedTiles(mergedResponse);
+    const recoveredTileKeys = initialEmptyTileKeys.filter((tileKey) => nonEmptyTileKeys.includes(tileKey));
     latestPlan = plan;
     latestResponse = mergedResponse;
     renderEntities(entities);
@@ -722,6 +788,9 @@ async function refreshEntities(): Promise<void> {
       requestedTiles: plan.tileKeys.length,
       returnedTiles,
       nonEmptyTiles,
+      retryRequests,
+      retriedTileKeys: [...retriedTileKeys],
+      recoveredTileKeys,
       emptyTileKeys,
       nonEmptyTileKeys,
     });
@@ -777,6 +846,7 @@ function createIitcIrisPanes(map: LeafletMap): void {
     ['links', 420],
     ['portals', 430],
     ['ornaments', 440],
+    ['artifacts', 445],
     ['labels', 450],
   ];
 
