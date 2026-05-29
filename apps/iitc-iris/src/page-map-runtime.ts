@@ -62,6 +62,21 @@ let baseLayer: TileLayer | undefined;
 let dataSource: IitcIrisDataSourceSettings = {mode: 'live'};
 let refreshTimer: number | undefined;
 
+interface TileDiagnostics {
+  requestedTiles: number;
+  returnedTiles: number;
+  nonEmptyTiles: number;
+  viewportBounds?: IitcMapDataPlan['viewportBounds'];
+  retryRequests?: number;
+  retriedTileKeys?: string[];
+  recoveredTileKeys?: string[];
+  emptyTileKeys: string[];
+  nonEmptyTileKeys: string[];
+}
+
+let latestEntityStatus = 'idle';
+let latestTileDiagnostics: TileDiagnostics | undefined;
+
 interface StoredMapView {
   lat: number;
   lng: number;
@@ -597,6 +612,11 @@ function renderLatestTileDebug(): void {
   renderTileDebug(latestPlan, latestResponse);
 }
 
+function repostLatestEntityStatus(): void {
+  if (!latestEntities || !latestTileDiagnostics) return;
+  postEntityStatus(latestEntityStatus, latestEntities, latestTileDiagnostics);
+}
+
 function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
   if (event.source !== window) return;
   if (event.data?.type === IITC_IRIS_MESSAGES.setView) {
@@ -612,12 +632,14 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
     layerSettings = event.data.layerSettings;
     if (latestEntities) renderEntities(latestEntities);
     renderLatestTileDebug();
+    repostLatestEntityStatus();
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.layerSettings && event.data.baseLayerId) {
     setBaseLayer(event.data.baseLayerId);
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.dataSourceSettings && event.data.dataSource) {
     dataSource = event.data.dataSource;
+    latestFetchGeneration += 1;
     latestRequestKey = '';
     scheduleEntityRefresh();
   }
@@ -687,17 +709,7 @@ function countViewportEntities(entities: IitcIrisRenderEntities | undefined, bou
 function postEntityStatus(
   status: string,
   entities?: IitcIrisRenderEntities,
-  tileDiagnostics: {
-    requestedTiles: number;
-    returnedTiles: number;
-    nonEmptyTiles: number;
-    viewportBounds?: IitcMapDataPlan['viewportBounds'];
-    retryRequests?: number;
-    retriedTileKeys?: string[];
-    recoveredTileKeys?: string[];
-    emptyTileKeys: string[];
-    nonEmptyTileKeys: string[];
-  } = {
+  tileDiagnostics: TileDiagnostics = {
     requestedTiles: 0,
     returnedTiles: 0,
     nonEmptyTiles: 0,
@@ -711,6 +723,8 @@ function postEntityStatus(
   const portals = entities?.portals ?? [];
   const viewportCounts = countViewportEntities(entities, tileDiagnostics.viewportBounds);
   const authRequired = /login html|missing csrftoken/i.test(status);
+  latestEntityStatus = status;
+  latestTileDiagnostics = tileDiagnostics;
   window.postMessage({
     type: IITC_IRIS_MESSAGES.entityStatus,
     status,
