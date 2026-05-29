@@ -65,8 +65,9 @@ Acceptance:
 Current status:
 
 - Typed npm Leaflet is bundled into `iitc-iris`.
-- Fields, links, placeholder portals, real portals, health rings, ornament rings, and simple artifact rings render.
-- Optional detail overlays now have an explicit render policy: health rings, ornaments, artifact rings, and level labels only draw when detailed portal data is available at zoom 14+ and the matching layer toggle is enabled. Base fields, links, and portals remain independent of that policy.
+- Fields, links, placeholder portals, real portals, level fill, health fill, ornaments, level labels, and simple artifact rings render.
+- Optional detail styling now has an explicit render policy: level fill, health fill, ornaments, artifact rings, and level labels only draw when detailed portal data is available at zoom 14+ and the matching layer toggle is enabled. Base fields, links, and portals remain independent of that policy.
+- Base renderer styling is closer to IITC-CE: team-coloured portal fills, IITC portal radius/weight scaling, 0.25 field fill opacity, full-opacity links, orange neutral portals, and text-only portal level labels with simple overlap thinning.
 - Artifact rendering is wired but unverified against live Intel data; keep it simple until a real artifact fixture or HAR is available.
 - Layer ordering and visual parity are only approximate.
 - Shard, event, portal label polish, and plugin/highlighter parity are not done.
@@ -88,10 +89,22 @@ Current status:
 - The dock can jump to arbitrary comparison views from `lat,lng,z` text, Intel map URLs with `ll` and `z`, or IITC-CE portal links with `pll`.
 - The dock can copy the current view back out as an Intel URL.
 - The dock has base-map switches for CartoDB Dark Matter, CartoDB Positron, and OpenStreetMap, with the selected base map persisted for repeatable visual comparisons.
-- Layer toggles are persisted; the default comparison view enables only fields, links, and portals while leaving ornaments, artifacts, labels, and tile debug off.
+- Layer toggles are persisted; the default comparison view enables only fields, links, and portals while leaving level fill, health fill, ornaments, artifacts, labels, and tile debug off.
+- Current layer toggles:
+  - `F`: fields.
+  - `LN`: links.
+  - `P`: portals.
+  - `LF`: portal body fill by IITC level colours, matching IITC-CE's `Level Color` highlighter behavior.
+  - `HF`: portal body fill by recharge status, matching IITC-CE's `Needs Recharge (Health)` highlighter behavior.
+  - `OR`: ornament image overlays.
+  - `AR`: artifact rings.
+  - `LV`: portal level labels.
+  - `T`: tile debug rectangles.
+- Optional detail styling (`LF`, `HF`, `OR`, `AR`, `LV`) only renders when detailed portal data is available at zoom 14+; toggles may be enabled in the dock but still hidden in low-zoom placeholder mode.
+- The dock has a data-source switch for live Intel data, bundled Amsterdam z10/z14 fixtures, and a Damrak z15 fixture extracted from an IITC HAR. Fixture mode renders deterministic saved `getEntities` responses and jumps to the matching view.
 - Copied diagnostics include `renderPolicy`, so comparison snapshots show whether optional detail overlays were eligible to render.
 - Visual parity comparisons should use the dock's viewport P/L/F counts and copied `entities.viewport` block; total fetched counts include padded request bounds and placeholder support entities.
-- Fixture/mock selector and place-name geocoding are not yet implemented in IITC IRIS.
+- Mock controls and place-name geocoding are not yet implemented in IITC IRIS.
 
 ## Pass 6: Replacement Readiness - Not Started
 

@@ -18,7 +18,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["page-map-runtime.js", "leaflet.css"],
+      "resources": ["page-map-runtime.js", "leaflet.css", "fixtures/*.json"],
       "matches": ["https://intel.ingress.com/*"]
     }
   ],

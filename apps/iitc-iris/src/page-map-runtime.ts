@@ -1,5 +1,5 @@
 import L, {type Layer as LeafletLayer, type Map as LeafletMap, type TileLayer} from 'leaflet';
-import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderPolicy} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisDataSourceSettings, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderPolicy} from './messages';
 import {
   createIitcEmptyTileRetryBatches,
   createIitcMapDataPlan,
@@ -44,6 +44,8 @@ const DEFAULT_LAYER_SETTINGS: IitcIrisLayerSettings = {
   fields: true,
   links: true,
   portals: true,
+  levelFill: false,
+  healthFill: false,
   ornaments: false,
   artifacts: false,
   labels: false,
@@ -57,6 +59,7 @@ let latestResponse: IitcGetEntitiesResponse | undefined;
 let layerSettings: IitcIrisLayerSettings = DEFAULT_LAYER_SETTINGS;
 let baseLayerId: IitcIrisBaseLayerId = DEFAULT_BASE_LAYER_ID;
 let baseLayer: TileLayer | undefined;
+let dataSource: IitcIrisDataSourceSettings = {mode: 'live'};
 let refreshTimer: number | undefined;
 
 interface StoredMapView {
@@ -224,20 +227,23 @@ declare global {
 const TEAM_COLORS = {
   E: '#03dc03',
   R: '#0088ff',
-  N: '#666666',
+  N: '#ff6600',
   M: '#ff1010',
 } as const;
 const HEALTH_COLORS = {
-  high: '#00ff00',
-  medium: '#ffff00',
-  warning: '#ff9900',
-  low: '#ff0000',
-  critical: '#ff00ff',
+  cond85: '#ffff00',
+  cond70: '#ffa500',
+  cond60: '#ff8c00',
+  cond45: '#ff0000',
+  cond30: '#ff0000',
+  cond15: '#ff0000',
+  cond0: '#ff00ff',
 } as const;
 const ARTIFACT_COLOR = '#ff00ff';
-const LEVEL_COLORS = ['#666666', '#fece5a', '#ffa630', '#ff7315', '#e80000', '#ff0099', '#ee26cd', '#c124e0', '#9627f4'] as const;
-const LEVEL_TO_WEIGHT = [1.5, 1.5, 1.5, 1.5, 1.5, 1.75, 1.75, 2, 2] as const;
-const LEVEL_TO_RADIUS = [6, 6, 6, 6, 7, 7, 8, 9, 10] as const;
+const LEVEL_COLORS = ['#000000', '#fece5a', '#ffa630', '#ff7315', '#e40000', '#fd2992', '#eb26cd', '#c124e0', '#9627f4'] as const;
+const LEVEL_TO_WEIGHT = [2, 2, 2, 2, 2, 3, 3, 4, 4] as const;
+const LEVEL_TO_RADIUS = [7, 7, 7, 7, 8, 8, 9, 10, 11] as const;
+const LEVEL_LABEL_COLLISION_SIZE = 15;
 
 function toLatLng(latE6: number, lngE6: number): [number, number] {
   return [latE6 / 1e6, lngE6 / 1e6];
@@ -248,7 +254,7 @@ function getTeamColor(team: keyof typeof TEAM_COLORS): string {
 }
 
 function getPortalMarkerScale(zoom: number): number {
-  return zoom >= 15 ? 1 : zoom >= 12 ? 0.8 : zoom >= 10 ? 0.55 : 0.35;
+  return zoom >= 14 ? 1 : zoom >= 11 ? 0.8 : zoom >= 8 ? 0.65 : 0.5;
 }
 
 function getPortalLevel(level: number | undefined, isPlaceholder: boolean): number {
@@ -267,27 +273,44 @@ function getPortalWeight(level: number | undefined, isPlaceholder: boolean): num
   return LEVEL_TO_WEIGHT[getPortalLevel(level, isPlaceholder)] * Math.sqrt(scale);
 }
 
-function getPortalFillOpacity(health: number | undefined, isPlaceholder: boolean): number {
-  if (isPlaceholder) return 0.2;
-  if (health === undefined) return 0.7;
-  return Math.max(0.1, Math.min(0.7, health / 100 * 0.7));
+function getPortalFillOpacity(_health: number | undefined, _level: number | undefined, _team: keyof typeof TEAM_COLORS, _isPlaceholder: boolean): number {
+  if (getPortalHealthFillColor(_health, _team)) return getPortalHealthFillOpacity(_health ?? 100);
+  if (getPortalLevelFillColor(_level, _team, _isPlaceholder)) return 0.6;
+  return 0.5;
 }
 
-function getPortalFillColor(team: keyof typeof TEAM_COLORS, level: number | undefined, isPlaceholder: boolean): string {
-  if (isPlaceholder) return getTeamColor(team);
-  return LEVEL_COLORS[getPortalLevel(level, false)] ?? getTeamColor(team);
+function getPortalFillColor(team: keyof typeof TEAM_COLORS, level: number | undefined, isPlaceholder: boolean, health: number | undefined): string {
+  const healthColor = getPortalHealthFillColor(health, team);
+  if (healthColor) return healthColor;
+  const levelColor = getPortalLevelFillColor(level, team, isPlaceholder);
+  if (levelColor) return levelColor;
+  return getTeamColor(team);
 }
 
-function getHealthColor(health: number): string {
-  if (health > 85) return HEALTH_COLORS.medium;
-  if (health > 50) return HEALTH_COLORS.warning;
-  if (health > 15) return HEALTH_COLORS.low;
-  return HEALTH_COLORS.critical;
+function getPortalLevelFillColor(level: number | undefined, team: keyof typeof TEAM_COLORS, isPlaceholder: boolean): string | null {
+  if (!layerSettings.levelFill || isPlaceholder || team === 'N' || level === undefined) return null;
+  return LEVEL_COLORS[getPortalLevel(level, false)] ?? null;
 }
 
-function getHealthOpacity(health: number): number {
-  if (health > 75) return (1 - health / 100) * 0.5 + 0.5;
-  return (1 - health / 100) * 0.75 + 0.25;
+function getPortalHealthFillColor(health: number | undefined, team: keyof typeof TEAM_COLORS): string | null {
+  if (!layerSettings.healthFill || team === 'N' || health === undefined || health >= 100) return null;
+  if (health > 85) return HEALTH_COLORS.cond85;
+  if (health > 70) return HEALTH_COLORS.cond70;
+  if (health > 60) return HEALTH_COLORS.cond60;
+  if (health > 45) return HEALTH_COLORS.cond45;
+  if (health > 30) return HEALTH_COLORS.cond30;
+  if (health > 15) return HEALTH_COLORS.cond15;
+  return HEALTH_COLORS.cond0;
+}
+
+function getPortalHealthFillOpacity(health: number): number {
+  if (health > 85) return 0.5;
+  if (health > 70) return 0.5;
+  if (health > 60) return 0.5;
+  if (health > 45) return 0.4;
+  if (health > 30) return 0.6;
+  if (health > 15) return 0.8;
+  return 1;
 }
 
 function artifactIdsFromValue(value: unknown[]): string[] {
@@ -401,14 +424,41 @@ function createLevelLabelMarker(latLng: [number, number], level: number, team: k
     icon: L.divIcon({
       className: `iitc-iris-level-label iitc-iris-level-label-${team}`,
       html: String(level),
-      iconSize: [18, 18],
-      iconAnchor: [9, 9],
+      iconSize: [12, 12],
+      iconAnchor: [6, 6],
     }),
     interactive: false,
     keyboard: false,
     pane: getLayerPane('labels'),
     zIndexOffset: 1000,
   });
+}
+
+function getVisibleLevelLabelGuids(portals: IitcIrisRenderEntities['portals']): Set<string> {
+  const map = window.__iitcIrisMap;
+  if (!map) return new Set();
+
+  const candidates = portals
+    .filter((portal) => !portal.isPlaceholder && portal.level !== undefined)
+    .map((portal) => ({
+      guid: portal.guid,
+      level: getPortalLevel(portal.level, false),
+      point: map.project(L.latLng(portal.latE6 / 1e6, portal.lngE6 / 1e6)),
+    }))
+    .sort((a, b) => b.level - a.level || a.guid.localeCompare(b.guid));
+
+  const visible = new Set<string>();
+  const keptPoints: L.Point[] = [];
+  for (const candidate of candidates) {
+    const overlaps = keptPoints.some((point) =>
+      Math.abs(point.x - candidate.point.x) <= LEVEL_LABEL_COLLISION_SIZE &&
+      Math.abs(point.y - candidate.point.y) <= LEVEL_LABEL_COLLISION_SIZE);
+    if (overlaps) continue;
+    visible.add(candidate.guid);
+    keptPoints.push(candidate.point);
+  }
+
+  return visible;
 }
 
 function getRenderPolicy(): IitcIrisRenderPolicy {
@@ -418,7 +468,8 @@ function getRenderPolicy(): IitcIrisRenderPolicy {
   return {
     optionalOverlayMinZoom: OPTIONAL_OVERLAY_MIN_ZOOM,
     detailedPortals,
-    health: layerSettings.ornaments && optionalOverlaysVisible,
+    levelFill: layerSettings.levelFill && optionalOverlaysVisible,
+    healthFill: layerSettings.healthFill && optionalOverlaysVisible,
     ornaments: layerSettings.ornaments && optionalOverlaysVisible,
     artifacts: layerSettings.artifacts && optionalOverlaysVisible,
     labels: layerSettings.labels && optionalOverlaysVisible,
@@ -429,6 +480,7 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
   if (!window.__iitcIrisMap) return;
   const layers = ensureLayers();
   const renderPolicy = getRenderPolicy();
+  const visibleLevelLabelGuids = renderPolicy.labels ? getVisibleLevelLabelGuids(entities.portals) : new Set<string>();
 
   latestEntities = entities;
   clearEntityLayers();
@@ -439,7 +491,7 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
       addRenderedLayer(layers.fields, L.polygon(field.points.map((point) => toLatLng(point.latE6, point.lngE6)), {
         color: getTeamColor(field.team),
         fillColor: getTeamColor(field.team),
-        fillOpacity: 0.18,
+        fillOpacity: 0.25,
         opacity: 0,
         pane: getLayerPane('fields'),
         renderer: getLayerRenderer('fields'),
@@ -453,7 +505,7 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
     for (const link of entities.links) {
       addRenderedLayer(layers.links, L.polyline([toLatLng(link.oLatE6, link.oLngE6), toLatLng(link.dLatE6, link.dLngE6)], {
         color: getTeamColor(link.team),
-        opacity: 0.85,
+        opacity: 1,
         pane: getLayerPane('links'),
         renderer: getLayerRenderer('links'),
         weight: 2,
@@ -471,8 +523,12 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
       addRenderedLayer(layers.portals, L.circleMarker(latLng, {
         radius,
         color,
-        fillColor: getPortalFillColor(portal.team, portal.level, portal.isPlaceholder),
-        fillOpacity: getPortalFillOpacity(portal.health, portal.isPlaceholder),
+        fillColor: renderPolicy.healthFill || renderPolicy.levelFill
+          ? getPortalFillColor(portal.team, portal.level, portal.isPlaceholder, portal.health)
+          : getTeamColor(portal.team),
+        fillOpacity: renderPolicy.healthFill || renderPolicy.levelFill
+          ? getPortalFillOpacity(portal.health, portal.level, portal.team, portal.isPlaceholder)
+          : 0.5,
         opacity: portal.isPlaceholder ? 0.6 : 1,
         pane: getLayerPane('portals'),
         renderer: getLayerRenderer('portals'),
@@ -482,19 +538,7 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
       }));
     }
 
-    if (renderPolicy.health && !portal.isPlaceholder && portal.health !== undefined && portal.health < 100) {
-      addRenderedLayer(layers.ornaments, L.circleMarker(latLng, {
-        radius: radius + 3,
-        color: getHealthColor(portal.health),
-        fillOpacity: 0,
-        opacity: getHealthOpacity(portal.health),
-        pane: getLayerPane('ornaments'),
-        weight: 2,
-        interactive: false,
-      }));
-    }
-
-    if (renderPolicy.labels && !portal.isPlaceholder && portal.level !== undefined) {
+    if (renderPolicy.labels && visibleLevelLabelGuids.has(portal.guid) && portal.level !== undefined) {
       addRenderedLayer(layers.labels, createLevelLabelMarker(latLng, portal.level, portal.team));
     }
 
@@ -571,6 +615,11 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.layerSettings && event.data.baseLayerId) {
     setBaseLayer(event.data.baseLayerId);
+  }
+  if (event.data?.type === IITC_IRIS_MESSAGES.dataSourceSettings && event.data.dataSource) {
+    dataSource = event.data.dataSource;
+    latestRequestKey = '';
+    scheduleEntityRefresh();
   }
 }
 
@@ -685,6 +734,7 @@ function postEntityStatus(
     emptyTileKeys: tileDiagnostics.emptyTileKeys,
     nonEmptyTileKeys: tileDiagnostics.nonEmptyTileKeys,
     baseLayerId,
+    dataSource,
     renderPolicy: getRenderPolicy(),
   } satisfies IitcIrisMessage, '*');
 }
@@ -817,6 +867,12 @@ async function fetchEntityBatch(tileKeys: string[], version: string): Promise<Ii
   }
 }
 
+async function fetchFixtureResponse(source: Extract<IitcIrisDataSourceSettings, {mode: 'fixture'}>): Promise<IitcGetEntitiesResponse> {
+  const response = await fetch(source.url);
+  if (!response.ok) throw new Error(`fixture ${source.label} failed HTTP ${response.status}`);
+  return await response.json() as IitcGetEntitiesResponse;
+}
+
 function scheduleEntityRefresh(): void {
   window.clearTimeout(refreshTimer);
   refreshTimer = window.setTimeout(() => {
@@ -830,14 +886,50 @@ async function refreshEntities(): Promise<void> {
     if (!plan || plan.tileKeys.length === 0) return;
 
     const requestKey = plan.tileKeys.join('|');
-    if (requestKey === latestRequestKey) return;
-    latestRequestKey = requestKey;
+    const sourceKey = dataSource.mode === 'fixture' ? `fixture:${dataSource.id}` : 'live';
+    const refreshKey = `${sourceKey}|${requestKey}`;
+    if (refreshKey === latestRequestKey) return;
+    latestRequestKey = refreshKey;
+
+    const generation = latestFetchGeneration + 1;
+    latestFetchGeneration = generation;
+
+    if (dataSource.mode === 'fixture') {
+      postEntityStatus(`loading fixture ${dataSource.label}`, undefined, {
+        requestedTiles: plan.tileKeys.length,
+        returnedTiles: 0,
+        nonEmptyTiles: 0,
+        viewportBounds: plan.viewportBounds,
+        retryRequests: 0,
+        retriedTileKeys: [],
+        recoveredTileKeys: [],
+        emptyTileKeys: [],
+        nonEmptyTileKeys: [],
+      });
+      const fixtureResponse = await fetchFixtureResponse(dataSource);
+      if (generation !== latestFetchGeneration) return;
+      const entities = toRenderEntities(fixtureResponse, generation);
+      const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys} = countReturnedTiles(fixtureResponse);
+      latestPlan = plan;
+      latestResponse = fixtureResponse;
+      renderEntities(entities);
+      renderTileDebug(plan, fixtureResponse);
+      postEntityStatus(`fixture ${dataSource.label}`, entities, {
+        requestedTiles: plan.tileKeys.length,
+        returnedTiles,
+        nonEmptyTiles,
+        viewportBounds: plan.viewportBounds,
+        retryRequests: 0,
+        retriedTileKeys: [],
+        recoveredTileKeys: [],
+        emptyTileKeys,
+        nonEmptyTileKeys,
+      });
+      return;
+    }
 
     const version = extractVersion();
     if (!version) throw new Error('waiting for Intel version');
-
-    const generation = latestFetchGeneration;
-    latestFetchGeneration = generation;
     const batches = plan.requestBatches;
     const responses: IitcGetEntitiesResponse[] = [];
     postEntityStatus(`fetching ${plan.tileKeys.length} tiles`, undefined, {

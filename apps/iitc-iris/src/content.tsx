@@ -1,7 +1,7 @@
 import {h, render} from 'preact';
 import {useEffect, useMemo, useState} from 'preact/hooks';
 import './iitc-iris.css';
-import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisRenderPolicy} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisDataSourceSettings, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisRenderPolicy} from './messages';
 import {
   createIitcMapDataPlan,
   IITC_EMPTY_TILE_RETRY_BATCH_SIZE,
@@ -15,6 +15,7 @@ import {
 const REQUEST_BOUNDS_PADDING_RATIO = 0.25;
 const BASE_LAYER_STORAGE_KEY = 'iitc-iris:base-layer';
 const LAYER_SETTINGS_STORAGE_KEY = 'iitc-iris:layer-settings';
+const DATA_SOURCE_STORAGE_KEY = 'iitc-iris:data-source';
 const VIEW_PRESETS = [
   {id: 'amsterdam-z10', label: 'AMS 10', lat: 52.3730796, lng: 4.8924534, zoom: 10},
   {id: 'amsterdam-z15', label: 'AMS 15', lat: 52.3730796, lng: 4.8924534, zoom: 15},
@@ -25,10 +26,45 @@ const BASE_LAYER_OPTIONS: {id: IitcIrisBaseLayerId; label: string; title: string
   {id: 'cartodb-positron', label: 'Light', title: 'CartoDB Positron'},
   {id: 'osm', label: 'OSM', title: 'OpenStreetMap'},
 ];
+const DATA_SOURCE_OPTIONS = [
+  {id: 'live', label: 'Live', title: 'Fetch live Intel getEntities responses', mode: 'live' as const},
+  {
+    id: 'ams-z10',
+    label: 'AMS F10',
+    title: 'Amsterdam fixture from docs/update-map/get-entities-z10.json',
+    mode: 'fixture' as const,
+    fixturePath: 'fixtures/get-entities-z10.json',
+    lat: 52.3730796,
+    lng: 4.8924534,
+    zoom: 10,
+  },
+  {
+    id: 'ams-z14',
+    label: 'AMS F14',
+    title: 'Amsterdam fixture from docs/update-map/get-entities-z14.json',
+    mode: 'fixture' as const,
+    fixturePath: 'fixtures/get-entities-z14.json',
+    lat: 52.3730796,
+    lng: 4.8924534,
+    zoom: 14,
+  },
+  {
+    id: 'dam-iitc-z15',
+    label: 'DAM IITC',
+    title: 'Damrak fixture extracted from IITC HAR getEntities response',
+    mode: 'fixture' as const,
+    fixturePath: 'fixtures/get-entities-damrak-iitc-z15.json',
+    lat: 52.3761096,
+    lng: 4.8980545,
+    zoom: 15,
+  },
+] as const;
 const LAYER_TOGGLE_LABELS: [keyof IitcIrisLayerSettings, string][] = [
   ['fields', 'F'],
   ['links', 'LN'],
   ['portals', 'P'],
+  ['levelFill', 'LF'],
+  ['healthFill', 'HF'],
   ['ornaments', 'OR'],
   ['artifacts', 'AR'],
   ['labels', 'LV'],
@@ -38,6 +74,8 @@ const DEFAULT_LAYER_SETTINGS: IitcIrisLayerSettings = {
   fields: true,
   links: true,
   portals: true,
+  levelFill: false,
+  healthFill: false,
   ornaments: false,
   artifacts: false,
   labels: false,
@@ -46,7 +84,8 @@ const DEFAULT_LAYER_SETTINGS: IitcIrisLayerSettings = {
 const DEFAULT_RENDER_POLICY: IitcIrisRenderPolicy = {
   optionalOverlayMinZoom: 14,
   detailedPortals: false,
-  health: false,
+  levelFill: false,
+  healthFill: false,
   ornaments: false,
   artifacts: false,
   labels: false,
@@ -88,6 +127,7 @@ interface EntityFetchState {
   emptyTileKeys: string[];
   nonEmptyTileKeys: string[];
   baseLayerId: IitcIrisBaseLayerId;
+  dataSource: IitcIrisDataSourceSettings;
   renderPolicy: IitcIrisRenderPolicy;
 }
 
@@ -168,6 +208,8 @@ function loadStoredLayerSettings(): IitcIrisLayerSettings {
       fields: typeof parsed.fields === 'boolean' ? parsed.fields : DEFAULT_LAYER_SETTINGS.fields,
       links: typeof parsed.links === 'boolean' ? parsed.links : DEFAULT_LAYER_SETTINGS.links,
       portals: typeof parsed.portals === 'boolean' ? parsed.portals : DEFAULT_LAYER_SETTINGS.portals,
+      levelFill: typeof parsed.levelFill === 'boolean' ? parsed.levelFill : DEFAULT_LAYER_SETTINGS.levelFill,
+      healthFill: typeof parsed.healthFill === 'boolean' ? parsed.healthFill : DEFAULT_LAYER_SETTINGS.healthFill,
       ornaments: typeof parsed.ornaments === 'boolean' ? parsed.ornaments : DEFAULT_LAYER_SETTINGS.ornaments,
       artifacts: typeof parsed.artifacts === 'boolean' ? parsed.artifacts : DEFAULT_LAYER_SETTINGS.artifacts,
       labels: typeof parsed.labels === 'boolean' ? parsed.labels : DEFAULT_LAYER_SETTINGS.labels,
@@ -178,12 +220,40 @@ function loadStoredLayerSettings(): IitcIrisLayerSettings {
   }
 }
 
+function loadStoredDataSourceId(): typeof DATA_SOURCE_OPTIONS[number]['id'] {
+  try {
+    const value = window.localStorage.getItem(DATA_SOURCE_STORAGE_KEY);
+    return DATA_SOURCE_OPTIONS.some((option) => option.id === value) ? value as typeof DATA_SOURCE_OPTIONS[number]['id'] : 'live';
+  } catch {
+    return 'live';
+  }
+}
+
 function storeLayerSettings(value: IitcIrisLayerSettings): void {
   try {
     window.localStorage.setItem(LAYER_SETTINGS_STORAGE_KEY, JSON.stringify(value));
   } catch {
     // Layer preferences are optional.
   }
+}
+
+function storeDataSourceId(value: string): void {
+  try {
+    window.localStorage.setItem(DATA_SOURCE_STORAGE_KEY, value);
+  } catch {
+    // Data source preference is optional.
+  }
+}
+
+function createDataSourceSettings(id: typeof DATA_SOURCE_OPTIONS[number]['id']): IitcIrisDataSourceSettings {
+  const option = DATA_SOURCE_OPTIONS.find((candidate) => candidate.id === id) ?? DATA_SOURCE_OPTIONS[0];
+  if (option.mode === 'live') return {mode: 'live'};
+  return {
+    mode: 'fixture',
+    id: option.id,
+    label: option.label,
+    url: getExtensionUrl(option.fixturePath),
+  };
 }
 
 function injectScript(src: string): void {
@@ -223,6 +293,7 @@ function App(): h.JSX.Element {
   const [viewInput, setViewInput] = useState('');
   const [viewInputStatus, setViewInputStatus] = useState('');
   const [baseLayerId, setBaseLayerId] = useState<IitcIrisBaseLayerId>(() => loadStoredBaseLayerId());
+  const [dataSourceId, setDataSourceId] = useState<typeof DATA_SOURCE_OPTIONS[number]['id']>(() => loadStoredDataSourceId());
   const [layerSettings, setLayerSettings] = useState<IitcIrisLayerSettings>(() => loadStoredLayerSettings());
   const [camera, setCamera] = useState<CameraState>({
     lat: 52.3730796,
@@ -259,13 +330,16 @@ function App(): h.JSX.Element {
     emptyTileKeys: [],
     nonEmptyTileKeys: [],
     baseLayerId: loadStoredBaseLayerId(),
+    dataSource: createDataSourceSettings(loadStoredDataSourceId()),
     renderPolicy: DEFAULT_RENDER_POLICY,
   });
   const plan: IitcMapDataPlan | null = useMemo(() => createPlan(camera), [camera]);
   const summaryMode = plan?.tileParams.hasPortals ? 'summary' : 'placeholder';
   const requestBatches = plan?.requestBatches.map((batch) => batch.length) ?? [];
   const intelUrl = createIntelUrl(camera);
-  const detailOverlaysActive = entityFetch.renderPolicy.health ||
+  const dataSource = useMemo(() => createDataSourceSettings(dataSourceId), [dataSourceId]);
+  const detailOverlaysActive = entityFetch.renderPolicy.levelFill ||
+    entityFetch.renderPolicy.healthFill ||
     entityFetch.renderPolicy.ornaments ||
     entityFetch.renderPolicy.artifacts ||
     entityFetch.renderPolicy.labels;
@@ -327,6 +401,7 @@ function App(): h.JSX.Element {
       authRequired: entityFetch.authRequired,
     },
     baseLayerId,
+    dataSource,
     layers: layerSettings,
     renderPolicy: entityFetch.renderPolicy,
     collision: entityFetch.collision,
@@ -435,6 +510,7 @@ function App(): h.JSX.Element {
           emptyTileKeys: event.data.emptyTileKeys ?? current.emptyTileKeys,
           nonEmptyTileKeys: event.data.nonEmptyTileKeys ?? current.nonEmptyTileKeys,
           baseLayerId: event.data.baseLayerId ?? current.baseLayerId,
+          dataSource: event.data.dataSource ?? current.dataSource,
           renderPolicy: event.data.renderPolicy ?? current.renderPolicy,
         }));
         if (event.data.baseLayerId) setBaseLayerId(event.data.baseLayerId);
@@ -453,6 +529,26 @@ function App(): h.JSX.Element {
       baseLayerId,
     } satisfies IitcIrisMessage, '*');
   }, [baseLayerId, layerSettings]);
+
+  useEffect(() => {
+    storeDataSourceId(dataSourceId);
+    window.postMessage({
+      type: IITC_IRIS_MESSAGES.dataSourceSettings,
+      dataSource,
+    } satisfies IitcIrisMessage, '*');
+  }, [dataSource, dataSourceId]);
+
+  const setDataSource = (id: typeof DATA_SOURCE_OPTIONS[number]['id']): void => {
+    setDataSourceId(id);
+    const option = DATA_SOURCE_OPTIONS.find((candidate) => candidate.id === id);
+    if (!option || option.mode === 'live') return;
+    window.postMessage({
+      type: IITC_IRIS_MESSAGES.setView,
+      lat: option.lat,
+      lng: option.lng,
+      zoom: option.zoom,
+    } satisfies IitcIrisMessage, '*');
+  };
 
   return (
     <div className="iitc-iris-shell">
@@ -527,6 +623,19 @@ function App(): h.JSX.Element {
           {entityFetch.retryRequests > 0 && <span className="iitc-iris-status">retry {entityFetch.retryRequests}</span>}
         </div>
         <div className="iitc-iris-dock-row">
+          <span className="iitc-iris-status">Data</span>
+          {DATA_SOURCE_OPTIONS.map((option) => (
+            <button
+              key={option.id}
+              className={`iitc-iris-layer-toggle iitc-iris-source-toggle ${dataSourceId === option.id ? 'iitc-iris-layer-toggle-active' : ''}`}
+              type="button"
+              onClick={() => setDataSource(option.id)}
+              title={option.title}
+            >
+              {option.label}
+            </button>
+          ))}
+          <span className="iitc-iris-divider" />
           <span className="iitc-iris-status">Base</span>
           {BASE_LAYER_OPTIONS.map((option) => (
             <button

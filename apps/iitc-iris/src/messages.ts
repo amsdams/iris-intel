@@ -7,6 +7,7 @@ export const IITC_IRIS_MESSAGES = {
   entitiesResponse: 'IITC_IRIS_ENTITIES_RESPONSE',
   entityStatus: 'IITC_IRIS_ENTITY_STATUS',
   layerSettings: 'IITC_IRIS_LAYER_SETTINGS',
+  dataSourceSettings: 'IITC_IRIS_DATA_SOURCE_SETTINGS',
   setView: 'IITC_IRIS_SET_VIEW',
 } as const;
 
@@ -54,6 +55,7 @@ export interface IitcIrisMessage {
   nonEmptyTileKeys?: string[];
   layerSettings?: IitcIrisLayerSettings;
   baseLayerId?: IitcIrisBaseLayerId;
+  dataSource?: IitcIrisDataSourceSettings;
   renderPolicy?: IitcIrisRenderPolicy;
 }
 
@@ -61,6 +63,8 @@ export interface IitcIrisLayerSettings {
   fields: boolean;
   links: boolean;
   portals: boolean;
+  levelFill: boolean;
+  healthFill: boolean;
   ornaments: boolean;
   artifacts: boolean;
   labels: boolean;
@@ -69,10 +73,15 @@ export interface IitcIrisLayerSettings {
 
 export type IitcIrisBaseLayerId = 'osm' | 'cartodb-dark-matter' | 'cartodb-positron';
 
+export type IitcIrisDataSourceSettings =
+  | {mode: 'live'}
+  | {mode: 'fixture'; id: string; label: string; url: string};
+
 export interface IitcIrisRenderPolicy {
   optionalOverlayMinZoom: number;
   detailedPortals: boolean;
-  health: boolean;
+  levelFill: boolean;
+  healthFill: boolean;
   ornaments: boolean;
   artifacts: boolean;
   labels: boolean;
