@@ -68,8 +68,11 @@ docs/REF-IITC_BUTTON.md
 !/docs/PERF_BENCHMARKS.md
 !/docs/README.md
 !/docs/WORK_ITEMS.md
+!/docs/IITC_IRIS_PORT_PLAN.md
 !/docs/20260414/
 !/docs/20260414/*.md
 /apps/mini-iris/builds/
 /tmp/markers-and-links.json
 /apps/iris/builds/
+/apps/iitc-iris/builds/
+/apps/iitc-iris/dist/

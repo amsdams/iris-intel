@@ -15,7 +15,6 @@ const ENTITY_IDLE_ZOOM_THRESHOLD = 12;
 const ENTITY_MOVE_SETTLE_MS = 3000; // IITC-like settle delay
 const ENTITY_RETRY_LIMIT = 3;
 const ENTITY_RETRY_DELAY_MS = 5000;
-const ENTITY_FRESHNESS_TTL_MS = 10000;
 const TILE_FRESHNESS_TTL_MS = 120000; // 2m per-tile TTL
 const COMM_ACTIVITY_ENTITY_REFRESH_DELAY_MS = 1500;
 const COMM_ACTIVITY_ENTITY_REFRESH_COOLDOWN_MS = 30000;
@@ -64,7 +63,6 @@ export function createRequestCoordinator(): RequestCoordinator {
     let commActivityDeferredFlushTimeoutId: number | null = null;
     let entityRetryCount = 0;
     let lastRegionScoreRequestKey: string | null = null;
-    let lastEntityCoverageKey: string | null = null;
     let lastEntityFetchedDataBounds: BoundsE6 | null = null;
     let lastEntityFetchedMapZoom: number | null = null;
     let lastEntityFetchedDataBoundsRequestAt: number | null = null;
@@ -158,6 +156,9 @@ export function createRequestCoordinator(): RequestCoordinator {
         }).length;
     };
 
+    const areAllEntityTilesFresh = (tileKeys: string[]): boolean =>
+        tileKeys.length > 0 && countFreshEntityTiles(tileKeys) === tileKeys.length;
+
     const setEntityPassMetadata = (
         reason: 'startup' | 'move_settle' | 'idle' | 'retry' | 'resume' | 'manual' | 'comm_activity',
         payload: ReturnType<typeof buildEntityRequestPayload>,
@@ -228,6 +229,7 @@ export function createRequestCoordinator(): RequestCoordinator {
             entitiesDiagnostics.lastSuccessAt !== null &&
             entitiesDiagnostics.lastSuccessAt >= lastEntityFetchedDataBoundsRequestAt &&
             Date.now() - entitiesDiagnostics.lastSuccessAt <= TILE_FRESHNESS_TTL_MS &&
+            areAllEntityTilesFresh(payload.tileKeys) &&
             boundsE6ContainsBounds(lastEntityFetchedDataBounds, bounds);
 
         if (isCoveredByPreviousDataBounds) {
@@ -237,22 +239,10 @@ export function createRequestCoordinator(): RequestCoordinator {
             }
             return;
         }
-        const requestGate = reason === 'retry'
-            ? {shouldRun: true as const, skipReason: null, nextRefreshAt: null}
-            : evaluateEndpointRequestGate({
-                key: payload.coverageKey,
-                force: forceRefresh,
-                inFlightKeys: !forceRefresh && isEndpointInFlight('entities') ? new Set([payload.coverageKey]) : undefined,
-                lastSuccessKey: lastEntityCoverageKey,
-                lastSuccessAt: entitiesDiagnostics.lastSuccessAt,
-                freshnessMs: ENTITY_FRESHNESS_TTL_MS,
-            });
-
-        if (!requestGate.shouldRun) {
-            const skipReason = requestGate.skipReason === 'fresh' ? 'cooldown' : requestGate.skipReason;
-            setEntityPassMetadata(reason, payload, 0, generation, skipReason);
+        if (reason !== 'retry' && !forceRefresh && isEndpointInFlight('entities')) {
+            setEntityPassMetadata(reason, payload, 0, generation, 'in-flight');
             if (debugLogging) {
-                console.log(`IRIS: Skipping entities fetch (${reason}): ${skipReason}`);
+                console.log(`IRIS: Skipping entities fetch (${reason}): in-flight`);
             }
             return;
         }
@@ -292,7 +282,6 @@ export function createRequestCoordinator(): RequestCoordinator {
         }
 
         setEntityPassMetadata(reason, payload, tilesToFetch.length, generation, payload.diagnostic);
-        lastEntityCoverageKey = payload.coverageKey;
         lastEntityFetchedDataBounds = payload.dataBounds;
         lastEntityFetchedMapZoom = zoom;
         lastEntityFetchedDataBoundsRequestAt = Date.now();

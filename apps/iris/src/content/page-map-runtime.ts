@@ -212,7 +212,6 @@ const BENCHMARK_COLD_SOURCE_WINDOW_MS =
     (PAN_BENCHMARK_SETTLE_MS * (PAN_BENCHMARK_RUN_COUNT + 1)) +
     (PAN_BENCHMARK_RUN_DURATION_MS * PAN_BENCHMARK_RUN_COUNT) +
     BENCHMARK_COLD_SOURCE_HOLD_MS;
-const LOW_ZOOM_MOVING_ENTITY_SUSPEND_ZOOM = 10;
 const PLAYER_MARKER_CIRCLE_SPREAD_RADIUS_PX = 26;
 const PLAYER_MARKER_SPIRAL_START_COUNT = 8;
 const PLAYER_MARKER_SPIRAL_STEP_PX = 8;
@@ -1153,9 +1152,7 @@ function setMovingOverlayVisibility(map: maplibregl.Map, visible: boolean): void
 }
 
 function shouldSuspendLowZoomEntityLayers(map: maplibregl.Map): boolean {
-    return activeBenchmarkVariant === 'normal' &&
-        isMapActivelyMoving() &&
-        map.getZoom() <= LOW_ZOOM_MOVING_ENTITY_SUSPEND_ZOOM;
+    return false;
 }
 
 function setCoreEntityLayerVisibility(map: maplibregl.Map): void {
