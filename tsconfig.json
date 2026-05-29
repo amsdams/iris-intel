@@ -18,6 +18,8 @@
     "paths": {
       "@iris/core": ["./packages/core/src"],
       "@iris/core/*": ["./packages/core/src/*"],
+      "@iris/iitc-core": ["./packages/iitc-core/src"],
+      "@iris/iitc-core/*": ["./packages/iitc-core/src/*"],
       "@iris/plugin-sdk": ["./packages/plugin-sdk/src"]
     }
   },
@@ -28,6 +30,8 @@
     "apps/iris/src/**/*.tsx",
     "apps/mini-iris/src/**/*.ts",
     "apps/mini-iris/src/**/*.tsx",
+    "apps/iitc-iris/src/**/*.ts",
+    "apps/iitc-iris/src/**/*.tsx",
     "vitest.setup.ts"
   ],
   "exclude": ["node_modules"]

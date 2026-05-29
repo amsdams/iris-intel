@@ -1,0 +1,31 @@
+{
+  "name": "iitc-iris",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build && vite build --config vite.page-map.config.ts && node copy-assets.cjs",
+    "package": "npm run build && node build-zip.cjs",
+    "package:chrome": "npm run build && node build-zip.cjs chrome",
+    "package:firefox": "npm run build && node build-zip.cjs firefox",
+    "clean": "rm -rf dist builds",
+    "check": "npm run lint && npm run typecheck && npm run test",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix"
+  },
+  "dependencies": {
+    "@iris/iitc-core": "*",
+    "@types/leaflet": "^1.9.21",
+    "leaflet": "^1.9.4",
+    "preact": "^10.29.1"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.7.0",
+    "archiver": "^8.0.0",
+    "typescript": "^6.0.3",
+    "vite": "^6.4.2"
+  }
+}

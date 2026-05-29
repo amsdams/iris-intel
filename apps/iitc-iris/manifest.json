@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "IITC IRIS",
+  "version": "0.1.0",
+  "description": "IITC-parity IRIS track with Leaflet rendering",
+  "host_permissions": [
+    "https://intel.ingress.com/*",
+    "https://*.tile.openstreetmap.org/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://intel.ingress.com/*"],
+      "js": ["content.js"],
+      "css": ["iitc-iris.css", "leaflet.css"],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["page-map-runtime.js", "leaflet.css"],
+      "matches": ["https://intel.ingress.com/*"]
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "iitc-iris@iris.debug",
+      "strict_min_version": "109.0"
+    }
+  }
+}
