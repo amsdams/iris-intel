@@ -2,9 +2,22 @@ import {h, render} from 'preact';
 import {useEffect, useMemo, useState} from 'preact/hooks';
 import './iitc-iris.css';
 import {IITC_IRIS_MESSAGES, type IitcIrisLayerSettings, type IitcIrisMessage} from './messages';
-import {createIitcMapDataPlan, IITC_LIVE_COMPAT_TILES_PER_REQUEST, type IitcBounds, type IitcMapDataPlan} from '@iris/iitc-core';
+import {
+  createIitcMapDataPlan,
+  IITC_EMPTY_TILE_RETRY_BATCH_SIZE,
+  IITC_EMPTY_TILE_RETRY_LIMIT,
+  IITC_EMPTY_TILE_RETRY_PASSES,
+  IITC_LIVE_COMPAT_TILES_PER_REQUEST,
+  type IitcBounds,
+  type IitcMapDataPlan,
+} from '@iris/iitc-core';
 
 const REQUEST_BOUNDS_PADDING_RATIO = 0.25;
+const VIEW_PRESETS = [
+  {id: 'amsterdam-z10', label: 'AMS 10', lat: 52.3730796, lng: 4.8924534, zoom: 10},
+  {id: 'amsterdam-z15', label: 'AMS 15', lat: 52.3730796, lng: 4.8924534, zoom: 15},
+  {id: 'damrak-z15', label: 'DAM 15', lat: 52.3761096, lng: 4.8980545, zoom: 15},
+] as const;
 const LAYER_TOGGLE_LABELS: [keyof IitcIrisLayerSettings, string][] = [
   ['fields', 'F'],
   ['links', 'LN'],
@@ -137,6 +150,14 @@ function App(): h.JSX.Element {
       yRange: plan.yRange,
       firstBatchSize: requestBatches[0] ?? 0,
       requestBatches,
+      requestPolicy: {
+        name: 'live-compat',
+        tilesPerRequest: IITC_LIVE_COMPAT_TILES_PER_REQUEST,
+        sequentialRequestBatches: true,
+        emptyTileRetryPasses: IITC_EMPTY_TILE_RETRY_PASSES,
+        emptyTileRetryBatchSize: IITC_EMPTY_TILE_RETRY_BATCH_SIZE,
+        emptyTileRetryLimit: IITC_EMPTY_TILE_RETRY_LIMIT,
+      },
       dataBounds: plan.dataBounds,
     } : null,
     entities: {
@@ -181,6 +202,15 @@ function App(): h.JSX.Element {
 
   const toggleLayerSetting = (key: keyof IitcIrisLayerSettings): void => {
     setLayerSettings((current) => ({...current, [key]: !current[key]}));
+  };
+
+  const jumpToPreset = (preset: typeof VIEW_PRESETS[number]): void => {
+    window.postMessage({
+      type: IITC_IRIS_MESSAGES.setView,
+      lat: preset.lat,
+      lng: preset.lng,
+      zoom: preset.zoom,
+    } satisfies IitcIrisMessage, '*');
   };
 
   useEffect(() => {
@@ -243,6 +273,17 @@ function App(): h.JSX.Element {
       <div className="iitc-iris-dock">
         <span className="iitc-iris-title">IITC IRIS</span>
         <button className="iitc-iris-copy" type="button" onClick={copyDockText} title="Copy JSON diagnostics">Copy JSON</button>
+        {VIEW_PRESETS.map((preset) => (
+          <button
+            key={preset.id}
+            className="iitc-iris-preset"
+            type="button"
+            onClick={() => jumpToPreset(preset)}
+            title={`${preset.label} ${preset.lat.toFixed(6)},${preset.lng.toFixed(6)}`}
+          >
+            {preset.label}
+          </button>
+        ))}
         {copyStatus && <span className="iitc-iris-status">{copyStatus}</span>}
         <span className="iitc-iris-status">{status}</span>
         <span className="iitc-iris-status">z {camera.zoom.toFixed(2)}</span>

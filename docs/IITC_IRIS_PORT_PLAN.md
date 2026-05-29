@@ -28,10 +28,10 @@ Acceptance:
 
 Current status:
 
-- Tile math, zoom/data-zoom selection, request key generation, and basic batching are ported.
-- IITC IRIS currently has a temporary runtime compatibility shim for live Intel tile holes: returned-empty summary tiles are retried as single-tile requests, and response merging keeps a non-empty tile payload over a later empty payload for the same tile.
+- Tile math, zoom/data-zoom selection, request key generation, basic batching, and the live-compat batch policy are ported.
+- IITC IRIS currently uses a temporary core-owned compatibility policy for live Intel tile holes: summary tile requests run in sequential 5-tile batches, returned-empty summary tiles are retried as single-tile requests, and response merging keeps a non-empty tile payload over a later empty payload for the same tile.
 - This shim exists because the core port does not yet include IITC-CE's full tile lifecycle: tile cache state, active request accounting, tile-specific retry/error counters, timeout handling, and stale-cache fallback.
-- The shim should remain while validating live parity, but the intended replacement is a closer IITC-CE-derived request queue in `packages/iitc-core`, not permanent ad hoc runtime policy.
+- The compatibility policy should remain while validating live parity, but the intended replacement is a closer IITC-CE-derived request queue in `packages/iitc-core`, not permanent ad hoc runtime policy.
 
 ## Pass 3: Entity Decode - Partial
 
@@ -83,6 +83,7 @@ Acceptance:
 Current status:
 
 - The dock shows zoom, data zoom, summary availability, tile span, fetch state, entity totals, real/placeholder/ornament portal counts, and copy-to-clipboard diagnostics.
+- The dock has fixed Amsterdam and Damrak view presets for repeatable IITC/IITC IRIS comparisons.
 - Fixture/mock selector and free search are not yet implemented in IITC IRIS.
 
 ## Pass 6: Replacement Readiness - Not Started

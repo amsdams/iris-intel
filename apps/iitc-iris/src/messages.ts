@@ -7,6 +7,7 @@ export const IITC_IRIS_MESSAGES = {
   entitiesResponse: 'IITC_IRIS_ENTITIES_RESPONSE',
   entityStatus: 'IITC_IRIS_ENTITY_STATUS',
   layerSettings: 'IITC_IRIS_LAYER_SETTINGS',
+  setView: 'IITC_IRIS_SET_VIEW',
 } as const;
 
 export type IitcIrisMessageType = typeof IITC_IRIS_MESSAGES[keyof typeof IITC_IRIS_MESSAGES];

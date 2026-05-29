@@ -54,7 +54,8 @@
   font-weight: 700;
 }
 
-.iitc-iris-copy {
+.iitc-iris-copy,
+.iitc-iris-preset {
   appearance: none;
   border: 1px solid rgb(95 180 255 / 40%);
   border-radius: 4px;
@@ -66,9 +67,15 @@
   cursor: pointer;
 }
 
-.iitc-iris-copy:hover {
+.iitc-iris-copy:hover,
+.iitc-iris-preset:hover {
   border-color: rgb(101 217 255 / 80%);
   background: rgb(10 45 64 / 96%);
+}
+
+.iitc-iris-preset {
+  min-width: 46px;
+  text-align: center;
 }
 
 .iitc-iris-login {

@@ -479,6 +479,12 @@ function renderLatestTileDebug(): void {
 
 function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
   if (event.source !== window) return;
+  if (event.data?.type === IITC_IRIS_MESSAGES.setView) {
+    const map = window.__iitcIrisMap;
+    if (!map || typeof event.data.lat !== 'number' || typeof event.data.lng !== 'number') return;
+    const zoom = typeof event.data.zoom === 'number' ? event.data.zoom : map.getZoom();
+    map.setView([event.data.lat, event.data.lng], zoom);
+  }
   if (event.data?.type === IITC_IRIS_MESSAGES.renderEntities && event.data.entities) {
     renderEntities(event.data.entities);
   }
