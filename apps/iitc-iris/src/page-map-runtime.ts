@@ -1,5 +1,5 @@
-import L, {type Layer as LeafletLayer, type Map as LeafletMap} from 'leaflet';
-import {IITC_IRIS_MESSAGES, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisRenderArtifact, type IitcIrisRenderEntities} from './messages';
+import L, {type Layer as LeafletLayer, type Map as LeafletMap, type TileLayer} from 'leaflet';
+import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderPolicy} from './messages';
 import {
   createIitcEmptyTileRetryBatches,
   createIitcMapDataPlan,
@@ -15,14 +15,38 @@ import {
 const DEFAULT_CENTER: [number, number] = [52.3730796, 4.8924534];
 const DEFAULT_ZOOM = 11;
 const MAP_VIEW_STORAGE_KEY = 'iitc-iris:map-view';
+const BASE_LAYER_STORAGE_KEY = 'iitc-iris:base-layer';
 const REQUEST_BOUNDS_PADDING_RATIO = 0.25;
+const OPTIONAL_OVERLAY_MIN_ZOOM = 14;
+const DEFAULT_BASE_LAYER_ID: IitcIrisBaseLayerId = 'cartodb-dark-matter';
+const BASE_LAYERS: Record<IitcIrisBaseLayerId, {
+  url: string;
+  attribution: string;
+  maxZoom: number;
+}> = {
+  osm: {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: 'OpenStreetMap',
+    maxZoom: 19,
+  },
+  'cartodb-dark-matter': {
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    attribution: 'OpenStreetMap, CARTO',
+    maxZoom: 20,
+  },
+  'cartodb-positron': {
+    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    attribution: 'OpenStreetMap, CARTO',
+    maxZoom: 20,
+  },
+};
 const DEFAULT_LAYER_SETTINGS: IitcIrisLayerSettings = {
   fields: true,
   links: true,
   portals: true,
-  ornaments: true,
-  artifacts: true,
-  labels: true,
+  ornaments: false,
+  artifacts: false,
+  labels: false,
   tiles: false,
 };
 let latestFetchGeneration = 0;
@@ -31,6 +55,8 @@ let latestEntities: IitcIrisRenderEntities | undefined;
 let latestPlan: IitcMapDataPlan | undefined;
 let latestResponse: IitcGetEntitiesResponse | undefined;
 let layerSettings: IitcIrisLayerSettings = DEFAULT_LAYER_SETTINGS;
+let baseLayerId: IitcIrisBaseLayerId = DEFAULT_BASE_LAYER_ID;
+let baseLayer: TileLayer | undefined;
 let refreshTimer: number | undefined;
 
 interface StoredMapView {
@@ -95,6 +121,27 @@ function storeMapView(view: StoredMapView): void {
   }
 }
 
+function isBaseLayerId(value: string | null): value is IitcIrisBaseLayerId {
+  return value === 'osm' || value === 'cartodb-dark-matter' || value === 'cartodb-positron';
+}
+
+function loadStoredBaseLayerId(): IitcIrisBaseLayerId {
+  try {
+    const value = window.localStorage.getItem(BASE_LAYER_STORAGE_KEY);
+    return isBaseLayerId(value) ? value : DEFAULT_BASE_LAYER_ID;
+  } catch {
+    return DEFAULT_BASE_LAYER_ID;
+  }
+}
+
+function storeBaseLayerId(value: IitcIrisBaseLayerId): void {
+  try {
+    window.localStorage.setItem(BASE_LAYER_STORAGE_KEY, value);
+  } catch {
+    // Base layer preference is optional.
+  }
+}
+
 function setIntelMapCookie(name: string, value: string): void {
   document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=31536000; SameSite=Lax`;
 }
@@ -115,6 +162,20 @@ function syncUrlMapView(view: StoredMapView): void {
   } catch {
     // URL sync is diagnostic-only; ignore restricted history cases.
   }
+}
+
+function setBaseLayer(nextBaseLayerId: IitcIrisBaseLayerId): void {
+  const map = window.__iitcIrisMap;
+  if (!map) return;
+
+  const config = BASE_LAYERS[nextBaseLayerId];
+  if (baseLayer) map.removeLayer(baseLayer);
+  baseLayer = L.tileLayer(config.url, {
+    maxZoom: config.maxZoom,
+    attribution: config.attribution,
+  }).addTo(map);
+  baseLayerId = nextBaseLayerId;
+  storeBaseLayerId(nextBaseLayerId);
 }
 
 function postMapMoved(): void {
@@ -350,9 +411,24 @@ function createLevelLabelMarker(latLng: [number, number], level: number, team: k
   });
 }
 
+function getRenderPolicy(): IitcIrisRenderPolicy {
+  const mapZoom = window.__iitcIrisMap?.getZoom() ?? DEFAULT_ZOOM;
+  const detailedPortals = latestPlan?.tileParams.hasPortals ?? false;
+  const optionalOverlaysVisible = detailedPortals && mapZoom >= OPTIONAL_OVERLAY_MIN_ZOOM;
+  return {
+    optionalOverlayMinZoom: OPTIONAL_OVERLAY_MIN_ZOOM,
+    detailedPortals,
+    health: layerSettings.ornaments && optionalOverlaysVisible,
+    ornaments: layerSettings.ornaments && optionalOverlaysVisible,
+    artifacts: layerSettings.artifacts && optionalOverlaysVisible,
+    labels: layerSettings.labels && optionalOverlaysVisible,
+  };
+}
+
 function renderEntities(entities: IitcIrisRenderEntities): void {
   if (!window.__iitcIrisMap) return;
   const layers = ensureLayers();
+  const renderPolicy = getRenderPolicy();
 
   latestEntities = entities;
   clearEntityLayers();
@@ -406,7 +482,7 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
       }));
     }
 
-    if (layerSettings.ornaments && !portal.isPlaceholder && portal.health !== undefined && portal.health < 100) {
+    if (renderPolicy.health && !portal.isPlaceholder && portal.health !== undefined && portal.health < 100) {
       addRenderedLayer(layers.ornaments, L.circleMarker(latLng, {
         radius: radius + 3,
         color: getHealthColor(portal.health),
@@ -418,11 +494,11 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
       }));
     }
 
-    if (layerSettings.labels && !portal.isPlaceholder && portal.level !== undefined) {
+    if (renderPolicy.labels && !portal.isPlaceholder && portal.level !== undefined) {
       addRenderedLayer(layers.labels, createLevelLabelMarker(latLng, portal.level, portal.team));
     }
 
-    if (layerSettings.artifacts && !portal.isPlaceholder && portal.artifacts && portal.artifacts.length > 0) {
+    if (renderPolicy.artifacts && !portal.isPlaceholder && portal.artifacts && portal.artifacts.length > 0) {
       addRenderedLayer(layers.artifacts, L.circleMarker(latLng, {
         radius: radius + 7,
         color: ARTIFACT_COLOR,
@@ -434,7 +510,7 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
       }));
     }
 
-    if (layerSettings.ornaments && portal.ornaments && portal.ornaments.length > 0) {
+    if (renderPolicy.ornaments && portal.ornaments && portal.ornaments.length > 0) {
       for (const ornament of portal.ornaments) {
         addRenderedLayer(layers.ornaments, createOrnamentMarker(latLng, ornament, radius));
       }
@@ -492,6 +568,9 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
     layerSettings = event.data.layerSettings;
     if (latestEntities) renderEntities(latestEntities);
     renderLatestTileDebug();
+  }
+  if (event.data?.type === IITC_IRIS_MESSAGES.layerSettings && event.data.baseLayerId) {
+    setBaseLayer(event.data.baseLayerId);
   }
 }
 
@@ -605,6 +684,8 @@ function postEntityStatus(
     recoveredTileKeys: tileDiagnostics.recoveredTileKeys ?? [],
     emptyTileKeys: tileDiagnostics.emptyTileKeys,
     nonEmptyTileKeys: tileDiagnostics.nonEmptyTileKeys,
+    baseLayerId,
+    renderPolicy: getRenderPolicy(),
   } satisfies IitcIrisMessage, '*');
 }
 
@@ -873,10 +954,7 @@ function boot(): void {
   window.__iitcIrisMapContainer = container;
   createIitcIrisPanes(map);
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: 'OpenStreetMap',
-  }).addTo(map);
+  setBaseLayer(loadStoredBaseLayerId());
   L.control.zoom({position: 'topright'}).addTo(map);
 
   map.on('moveend', postMapMoved);

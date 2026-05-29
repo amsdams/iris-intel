@@ -66,6 +66,7 @@ Current status:
 
 - Typed npm Leaflet is bundled into `iitc-iris`.
 - Fields, links, placeholder portals, real portals, health rings, ornament rings, and simple artifact rings render.
+- Optional detail overlays now have an explicit render policy: health rings, ornaments, artifact rings, and level labels only draw when detailed portal data is available at zoom 14+ and the matching layer toggle is enabled. Base fields, links, and portals remain independent of that policy.
 - Artifact rendering is wired but unverified against live Intel data; keep it simple until a real artifact fixture or HAR is available.
 - Layer ordering and visual parity are only approximate.
 - Shard, event, portal label polish, and plugin/highlighter parity are not done.
@@ -84,7 +85,11 @@ Current status:
 
 - The dock shows zoom, data zoom, summary availability, tile span, fetch state, entity totals, real/placeholder/ornament portal counts, and copy-to-clipboard diagnostics.
 - The dock has fixed Amsterdam and Damrak view presets for repeatable IITC/IITC IRIS comparisons.
-- The dock can jump to arbitrary comparison views from `lat,lng,z` text or Intel URLs with `ll` and `z` query params.
+- The dock can jump to arbitrary comparison views from `lat,lng,z` text, Intel map URLs with `ll` and `z`, or IITC-CE portal links with `pll`.
+- The dock can copy the current view back out as an Intel URL.
+- The dock has base-map switches for CartoDB Dark Matter, CartoDB Positron, and OpenStreetMap, with the selected base map persisted for repeatable visual comparisons.
+- Layer toggles are persisted; the default comparison view enables only fields, links, and portals while leaving ornaments, artifacts, labels, and tile debug off.
+- Copied diagnostics include `renderPolicy`, so comparison snapshots show whether optional detail overlays were eligible to render.
 - Visual parity comparisons should use the dock's viewport P/L/F counts and copied `entities.viewport` block; total fetched counts include padded request bounds and placeholder support entities.
 - Fixture/mock selector and place-name geocoding are not yet implemented in IITC IRIS.
 

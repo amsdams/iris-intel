@@ -53,6 +53,8 @@ export interface IitcIrisMessage {
   emptyTileKeys?: string[];
   nonEmptyTileKeys?: string[];
   layerSettings?: IitcIrisLayerSettings;
+  baseLayerId?: IitcIrisBaseLayerId;
+  renderPolicy?: IitcIrisRenderPolicy;
 }
 
 export interface IitcIrisLayerSettings {
@@ -63,6 +65,17 @@ export interface IitcIrisLayerSettings {
   artifacts: boolean;
   labels: boolean;
   tiles: boolean;
+}
+
+export type IitcIrisBaseLayerId = 'osm' | 'cartodb-dark-matter' | 'cartodb-positron';
+
+export interface IitcIrisRenderPolicy {
+  optionalOverlayMinZoom: number;
+  detailedPortals: boolean;
+  health: boolean;
+  ornaments: boolean;
+  artifacts: boolean;
+  labels: boolean;
 }
 
 export interface IitcIrisRenderArtifact {

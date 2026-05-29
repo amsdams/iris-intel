@@ -5,6 +5,7 @@
   "description": "IITC-parity IRIS track with Leaflet rendering",
   "host_permissions": [
     "https://intel.ingress.com/*",
+    "https://*.basemaps.cartocdn.com/*",
     "https://*.tile.openstreetmap.org/*"
   ],
   "content_scripts": [
