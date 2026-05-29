@@ -94,8 +94,25 @@ export interface PortalDetailsData {
   ];
 }
 
+export type ArtifactPortalSummary = [
+  'p',
+  IntelTeam,
+  number,
+  number,
+  number,
+  number,
+  number,
+  string,
+  string,
+  string[],
+  unknown,
+  unknown,
+  [[string, ...unknown[]][], [string, ...unknown[]][]],
+  number,
+];
+
 export interface ArtifactData {
-  result?: [string, number, [string, string[]]][];
+  result?: [string, number, [string, string[]]][] | Record<string, ArtifactPortalSummary>;
 }
 
 export interface GameScoreData {

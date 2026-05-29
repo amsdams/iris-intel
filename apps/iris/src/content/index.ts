@@ -169,7 +169,7 @@ function buildMockArtifacts(): ArtifactData {
       [
         index % 2 === 0 ? 'shard' : 'target',
         [`${index + 1}01`, `${index + 1}02`],
-      ],
+      ] as [string, string[]],
     ]),
   };
 }
@@ -454,6 +454,20 @@ pluginManager.load(PortalHealthFillPlugin as IRISPlugin);
 pluginManager.load(PortalLevelLabelsPlugin as IRISPlugin);
 pluginManager.load(PortalKeyCountLabelsPlugin as IRISPlugin);
 pluginManager.load(PlannedLinksPlugin as IRISPlugin);
+
+if (useStore.getState().rehydrated) {
+  void pluginManager.reconcileEnabledPlugins();
+} else {
+  const unsubscribePluginRehydrate = useStore.subscribe(
+    (state) => state.rehydrated,
+    (rehydrated) => {
+      if (!rehydrated) return;
+      unsubscribePluginRehydrate();
+      void pluginManager.reconcileEnabledPlugins();
+    },
+  );
+}
+
 requestCoordinator.start();
 
 const requestResumeRefresh = (): void => {

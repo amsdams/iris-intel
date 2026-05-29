@@ -73,13 +73,16 @@ export function buildFieldPolygonFeature(
 
 export function buildArtifactPointFeature(
   artifact: Artifact,
-  portal: Portal,
+  portal: Portal | null | undefined,
   properties: FeatureProperties = {},
 ): GeoJSON.Feature<GeoJSON.Point> {
+  const lng = portal?.lng ?? artifact.lng ?? 0;
+  const lat = portal?.lat ?? artifact.lat ?? 0;
+
   return {
     type: 'Feature',
     id: featureIdFromProperties(`artifact:${artifact.portalId}`, properties),
-    geometry: {type: 'Point', coordinates: [portal.lng, portal.lat]},
+    geometry: {type: 'Point', coordinates: [lng, lat]},
     properties: {
       portalId: artifact.portalId,
       artifactType: artifact.type,

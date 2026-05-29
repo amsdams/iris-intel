@@ -39,6 +39,7 @@ function endpoint(partial: Partial<EndpointDiagnostics> & Pick<EndpointDiagnosti
     lastPassFreshTiles: partial.lastPassFreshTiles ?? 0,
     lastPassBatchCount: partial.lastPassBatchCount ?? 0,
     lastPassDataZoom: partial.lastPassDataZoom ?? null,
+    inFlightCount: partial.inFlightCount ?? 0,
     staleQueuedDropCount: partial.staleQueuedDropCount ?? 0,
     staleResponseIgnoreCount: partial.staleResponseIgnoreCount ?? 0,
   };

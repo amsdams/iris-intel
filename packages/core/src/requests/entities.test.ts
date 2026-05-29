@@ -25,7 +25,7 @@ describe('buildEntityRequestPayload', () => {
     }, 8);
 
     expect(payload.tileKeys.length).toBeGreaterThan(0);
-    expect(payload.tileKeys.length).toBeLessThan(128);
+    expect(payload.tileKeys.length).toBeLessThan(256);
     expect(payload.coverageKey).toContain(',');
     expect(payload.dataBounds).not.toBe(null);
     expect(payload.dataBounds?.minLngE6).toBeGreaterThan(payload.dataBounds?.maxLngE6 ?? 0);
@@ -54,13 +54,36 @@ describe('buildEntityRequestPayload', () => {
     }, 8);
 
     expect(payload.tileKeys.length).toBeGreaterThan(4);
-    expect(payload.tileKeys[0]).toBe('8_499_499_5_8_100');
+    expect(payload.tileKeys[0]).toBe('9_1000_1000_5_8_100');
     expect(payload.tileKeys.slice(0, 4).sort()).toEqual([
-      '8_499_499_5_8_100',
-      '8_499_500_5_8_100',
-      '8_500_499_5_8_100',
-      '8_500_500_5_8_100',
+      '9_1000_1000_5_8_100',
+      '9_1000_999_5_8_100',
+      '9_999_1000_5_8_100',
+      '9_999_999_5_8_100',
     ]);
+  });
+
+  it('matches IITC request detail levels at IRIS visible map zooms', () => {
+    const bounds = {
+      minLatE6: 52_300_000,
+      minLngE6: 4_800_000,
+      maxLatE6: 52_400_000,
+      maxLngE6: 4_950_000,
+    };
+
+    const cases = [
+      {mapZoom: 8, dataZoom: 9, level: 5},
+      {mapZoom: 10, dataZoom: 11, level: 4},
+      {mapZoom: 12, dataZoom: 13, level: 2},
+      {mapZoom: 14, dataZoom: 15, level: 0},
+      {mapZoom: 15, dataZoom: 15, level: 0},
+    ];
+
+    cases.forEach(({mapZoom, dataZoom, level}) => {
+      const payload = buildEntityRequestPayload(bounds, mapZoom);
+      expect(payload.dataZoom).toBe(dataZoom);
+      expect(payload.tileKeys[0]).toMatch(new RegExp(`^${dataZoom}_\\d+_\\d+_${level}_8_100$`));
+    });
   });
 
   it('returns tile-aligned data bounds that contain the requested viewport', () => {

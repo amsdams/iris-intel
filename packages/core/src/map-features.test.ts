@@ -100,6 +100,21 @@ describe('map feature builders', () => {
     });
   });
 
+  it('builds artifact point features from artifact coordinates when the portal is not in store', () => {
+    const artifact: Artifact = {
+      portalId: 'portal-1',
+      type: 'shard',
+      ids: ['artifact-1'],
+      lat: 52,
+      lng: 4,
+    };
+
+    expect(buildArtifactPointFeature(artifact, undefined).geometry).toEqual({
+      type: 'Point',
+      coordinates: [4, 52],
+    });
+  });
+
   it('builds ornament point features with common ornament properties', () => {
     const portal: Portal = {
       id: 'portal-1',

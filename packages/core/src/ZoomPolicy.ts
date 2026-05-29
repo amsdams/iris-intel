@@ -1,5 +1,5 @@
 
-export const ZOOM_TO_LEVEL = [8, 8, 8, 8, 7, 7, 6, 5, 5, 4, 3, 3, 2, 1, 1, 0, 0];
+export const ZOOM_TO_LEVEL = [8, 8, 8, 8, 7, 7, 7, 6, 6, 5, 4, 4, 3, 2, 2, 0, 0];
 
 /**
  * Returns the minimum portal level that should be visible at a given zoom level.

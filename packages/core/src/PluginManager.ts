@@ -6,6 +6,7 @@ import { INGRESS_TEAM_COLORS } from './ingress-map-style';
 export class PluginManager {
   private availablePlugins = new Map<string, IRISPlugin>();
   private pluginFeaturesByPlugin = new Map<string, GeoJSON.Feature[]>();
+  private setupPluginIds = new Set<string>();
 
   private syncPluginFeatures(): void {
     const activeVisualOverlayIds = useStore.getState().activeVisualOverlayIds;
@@ -141,6 +142,43 @@ export class PluginManager {
     };
   }
 
+  private async setupPlugin(plugin: IRISPlugin): Promise<void> {
+    if (this.setupPluginIds.has(plugin.manifest.id)) return;
+
+    await plugin.setup(this.createApi(plugin.manifest.id));
+    this.setupPluginIds.add(plugin.manifest.id);
+    console.log(`IRIS: Plugin ${plugin.manifest.name} enabled`);
+  }
+
+  private async teardownPlugin(plugin: IRISPlugin): Promise<void> {
+    if (!this.setupPluginIds.has(plugin.manifest.id)) return;
+
+    if (plugin.teardown) {
+      await plugin.teardown(this.createApi(plugin.manifest.id));
+    }
+    this.setupPluginIds.delete(plugin.manifest.id);
+    this.clearPluginFeatures(plugin.manifest.id);
+    console.log(`IRIS: Plugin ${plugin.manifest.name} disabled`);
+  }
+
+  async reconcileEnabledPlugins(): Promise<void> {
+    const states = useStore.getState().pluginStates;
+
+    for (const plugin of this.availablePlugins.values()) {
+      const enabled = states[plugin.manifest.id] ?? false;
+
+      try {
+        if (enabled) {
+          await this.setupPlugin(plugin);
+        } else {
+          await this.teardownPlugin(plugin);
+        }
+      } catch (e) {
+        console.error(`IRIS: Error reconciling plugin ${plugin.manifest.id}`, e);
+      }
+    }
+  }
+
   async load(plugin: IRISPlugin): Promise<void> {
     if (this.availablePlugins.has(plugin.manifest.id)) {
       return;
@@ -158,8 +196,7 @@ export class PluginManager {
 
     if (useStore.getState().pluginStates[plugin.manifest.id]) {
       try {
-        await plugin.setup(this.createApi(plugin.manifest.id));
-        console.log(`IRIS: Plugin ${plugin.manifest.name} enabled`);
+        await this.setupPlugin(plugin);
       } catch (e) {
         console.error(`IRIS: Error enabling plugin ${plugin.manifest.id}`, e);
       }
@@ -177,14 +214,9 @@ export class PluginManager {
 
     try {
       if (enabled) {
-        await plugin.setup(this.createApi(id));
-        console.log(`IRIS: Plugin ${plugin.manifest.name} enabled`);
+        await this.setupPlugin(plugin);
       } else {
-        if (plugin.teardown) {
-          await plugin.teardown(this.createApi(id));
-        }
-        this.clearPluginFeatures(id);
-        console.log(`IRIS: Plugin ${plugin.manifest.name} disabled`);
+        await this.teardownPlugin(plugin);
       }
     } catch (e) {
       console.error(`IRIS: Error toggling plugin ${id}`, e);

@@ -54,7 +54,7 @@ export function shouldRenderArtifactFeature(
   portal: Portal | null | undefined,
   visible: boolean,
 ): artifact is Artifact {
-  return visible && !!artifact && !!portal;
+  return visible && !!artifact && (!!portal || (typeof artifact.lat === 'number' && typeof artifact.lng === 'number'));
 }
 
 export function getVisiblePortalOrnaments(

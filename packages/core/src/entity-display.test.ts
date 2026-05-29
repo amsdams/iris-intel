@@ -43,6 +43,7 @@ describe('entity display helpers', () => {
     const artifact: Artifact = {portalId: 'p1', type: 'shard', ids: ['s1']};
     const portal: Portal = {id: 'p1', lat: 52, lng: 4, team: 'E', ornaments: ['event']};
     expect(shouldRenderArtifactFeature(artifact, portal, true)).toBe(true);
+    expect(shouldRenderArtifactFeature({...artifact, lat: 52, lng: 4}, undefined, true)).toBe(true);
     expect(shouldRenderArtifactFeature(artifact, portal, false)).toBe(false);
     expect(getVisiblePortalOrnaments(portal, {'p1': ['mock']}, true)).toEqual(['event', 'mock']);
     expect(getVisiblePortalOrnaments(portal, {'p1': ['mock']}, false)).toEqual([]);

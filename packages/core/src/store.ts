@@ -210,6 +210,13 @@ export interface Artifact {
     portalId: string;
     type: string;
     ids: string[];
+    lat?: number;
+    lng?: number;
+    team?: string;
+    level?: number;
+    health?: number;
+    name?: string;
+    ornaments?: string[];
 }
 
 export interface Plext {
@@ -1010,6 +1017,15 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
             if (result.changed) changed = true;
         }
 
+        // Tile freshness only means "we still have the tile's entities in store".
+        // If entity culling removed map data, avoid later surgical fetch skips that
+        // would treat now-missing tile contents as fresh.
+        if (changed) {
+            Object.keys(tileFreshness).forEach((key) => {
+                delete tileFreshness[key];
+            });
+        }
+
         // Also cull old tile freshness entries (older than 1 hour)
         const oneHourAgo = Date.now() - 3600000;
         const nextTileFreshness: Record<string, number> = {};
@@ -1063,7 +1079,7 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
     updateArtifacts: (newArtifacts) => set(() => {
         const artifacts: Record<string, Artifact> = {};
         newArtifacts.forEach((a) => {
-            artifacts[a.portalId] = a;
+            artifacts[`${a.portalId}:${a.type}`] = a;
         });
         return { artifacts };
     }),

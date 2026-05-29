@@ -6,6 +6,7 @@ const MAX_MAP_ZOOM = 21;
 const MAX_MERCATOR_LAT = 85.05112878;
 const MAX_ENTITY_TILE_KEYS = 1024;
 export const ENTITY_REQUEST_BATCH_SIZE = 25;
+const MAPLIBRE_TO_INTEL_ZOOM_OFFSET = 1;
 
 interface TileParams {
   level: number;
@@ -35,7 +36,7 @@ function getMapZoomTileParameters(zoom: number): TileParams {
 }
 
 function getDataZoomForMapZoom(mapZoom: number): number {
-  let zoom = Math.max(0, Math.min(MAX_MAP_ZOOM, Math.floor(mapZoom)));
+  let zoom = Math.max(0, Math.min(MAX_MAP_ZOOM, Math.floor(mapZoom + MAPLIBRE_TO_INTEL_ZOOM_OFFSET)));
   const originalParams = getMapZoomTileParameters(zoom);
 
   while (zoom > 0) {
@@ -43,7 +44,7 @@ function getDataZoomForMapZoom(mapZoom: number): number {
     const changesDetailLevel =
       nextParams.tilesPerEdge !== originalParams.tilesPerEdge
       || nextParams.hasPortals !== originalParams.hasPortals
-      || nextParams.level !== originalParams.level;
+      || nextParams.level * Number(nextParams.hasPortals) !== originalParams.level * Number(originalParams.hasPortals);
 
     if (changesDetailLevel) break;
     zoom -= 1;

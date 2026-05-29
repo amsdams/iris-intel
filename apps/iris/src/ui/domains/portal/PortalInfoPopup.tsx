@@ -37,7 +37,9 @@ export function PortalInfoPopup({ onClose, visible }: PortalInfoPopupProps): JSX
     const links = useStore((state) => state.links);
     const selectedPortalId = useStore((state) => state.selectedPortalId);
     const portal = selectedPortalId ? portals[selectedPortalId] : null;
-    const artifact = selectedPortalId ? artifacts[selectedPortalId] : null;
+    const artifact = selectedPortalId
+        ? Object.values(artifacts).find((candidate) => candidate.portalId === selectedPortalId) ?? null
+        : null;
 
     const themeId = useStore((state) => state.themeId);
     const theme = THEMES[themeId] || THEMES.INGRESS;

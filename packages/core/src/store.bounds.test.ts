@@ -138,4 +138,17 @@ describe('removeEntities', () => {
     expect(useStore.getState().fields['field-a-b-c']).toBeUndefined();
     expect(useStore.getState().fields['field-b-c-d']).toBeDefined();
   });
+
+  it('clears tile freshness when culling removes stored entities', () => {
+    useStore.getState().updatePortals([
+      { id: 'near', lat: 0, lng: 0, team: 'R' },
+      { id: 'far', lat: 50, lng: 50, team: 'E' },
+    ]);
+    useStore.getState().setTileFreshness(['13_1_1_1_8_100']);
+
+    useStore.getState().cullEntities(0, 0, 10);
+
+    expect(useStore.getState().portals.far).toBeUndefined();
+    expect(useStore.getState().tileFreshness).toEqual({});
+  });
 });
