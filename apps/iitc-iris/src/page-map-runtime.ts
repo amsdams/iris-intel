@@ -1,15 +1,21 @@
 import L, {type Layer as LeafletLayer, type Map as LeafletMap} from 'leaflet';
 import {IITC_IRIS_MESSAGES, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisRenderArtifact, type IitcIrisRenderEntities} from './messages';
-import {createIitcMapDataPlan, decodeIitcGetEntitiesResponse, type IitcArtifactBrief, type IitcGetEntitiesResponse, type IitcMapDataPlan, type IitcMapTilePayload} from '@iris/iitc-core';
+import {
+  createIitcEmptyTileRetryBatches,
+  createIitcMapDataPlan,
+  decodeIitcGetEntitiesResponse,
+  IITC_EMPTY_TILE_RETRY_PASSES,
+  IITC_LIVE_COMPAT_TILES_PER_REQUEST,
+  type IitcArtifactBrief,
+  type IitcGetEntitiesResponse,
+  type IitcMapDataPlan,
+  type IitcMapTilePayload,
+} from '@iris/iitc-core';
 
 const DEFAULT_CENTER: [number, number] = [52.3730796, 4.8924534];
 const DEFAULT_ZOOM = 11;
 const MAP_VIEW_STORAGE_KEY = 'iitc-iris:map-view';
 const REQUEST_BOUNDS_PADDING_RATIO = 0.25;
-const ENTITY_TILES_PER_REQUEST = 5;
-const EMPTY_TILE_RETRY_PASSES = 2;
-const EMPTY_TILE_RETRY_BATCH_SIZE = 1;
-const EMPTY_TILE_RETRY_LIMIT = 40;
 const DEFAULT_LAYER_SETTINGS: IitcIrisLayerSettings = {
   fields: true,
   links: true,
@@ -592,6 +598,8 @@ function createPlanFromMap(): IitcMapDataPlan | null {
     east: bounds.getEast(),
   }, {lat: center.lat, lng: center.lng}, map.getZoom(), {
     boundsPaddingRatio: REQUEST_BOUNDS_PADDING_RATIO,
+    tilesPerRequest: IITC_LIVE_COMPAT_TILES_PER_REQUEST,
+    sequentialRequestBatches: true,
   });
 }
 
@@ -611,18 +619,6 @@ function mergeEntityResponses(responses: IitcGetEntitiesResponse[]): IitcGetEnti
   }
 
   return {result: {map}};
-}
-
-function createTileBatches(tileKeys: string[], batchSize: number): string[][] {
-  const batches: string[][] = [];
-  for (let index = 0; index < tileKeys.length; index += batchSize) {
-    batches.push(tileKeys.slice(index, index + batchSize));
-  }
-  return batches;
-}
-
-function createEntityBatches(tileKeys: string[]): string[][] {
-  return createTileBatches(tileKeys, ENTITY_TILES_PER_REQUEST);
 }
 
 function getReturnedEmptyTileKeys(response: IitcGetEntitiesResponse, requestedTileKeys: string[]): string[] {
@@ -713,7 +709,7 @@ async function refreshEntities(): Promise<void> {
 
     const generation = latestFetchGeneration;
     latestFetchGeneration = generation;
-    const batches = createEntityBatches(plan.tileKeys);
+    const batches = plan.requestBatches;
     const responses: IitcGetEntitiesResponse[] = [];
     postEntityStatus(`fetching ${plan.tileKeys.length} tiles`, undefined, {
       requestedTiles: plan.tileKeys.length,
@@ -748,11 +744,11 @@ async function refreshEntities(): Promise<void> {
     const retriedTileKeys = new Set<string>();
     let retryRequests = 0;
     if (plan.tileParams.hasPortals) {
-      for (let pass = 1; pass <= EMPTY_TILE_RETRY_PASSES; pass += 1) {
-        const retryTileKeys = getReturnedEmptyTileKeys(mergedResponse, plan.tileKeys).slice(0, EMPTY_TILE_RETRY_LIMIT);
+      for (let pass = 1; pass <= IITC_EMPTY_TILE_RETRY_PASSES; pass += 1) {
+        const retryTileKeys = getReturnedEmptyTileKeys(mergedResponse, plan.tileKeys);
         if (retryTileKeys.length === 0) break;
 
-        const retryBatches = createTileBatches(retryTileKeys, EMPTY_TILE_RETRY_BATCH_SIZE);
+        const retryBatches = createIitcEmptyTileRetryBatches(retryTileKeys);
         for (let index = 0; index < retryBatches.length; index += 1) {
           const response = await fetchEntityBatch(retryBatches[index], version);
           if (generation !== latestFetchGeneration) return;

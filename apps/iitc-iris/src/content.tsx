@@ -2,10 +2,9 @@ import {h, render} from 'preact';
 import {useEffect, useMemo, useState} from 'preact/hooks';
 import './iitc-iris.css';
 import {IITC_IRIS_MESSAGES, type IitcIrisLayerSettings, type IitcIrisMessage} from './messages';
-import {createIitcMapDataPlan, type IitcBounds, type IitcMapDataPlan} from '@iris/iitc-core';
+import {createIitcMapDataPlan, IITC_LIVE_COMPAT_TILES_PER_REQUEST, type IitcBounds, type IitcMapDataPlan} from '@iris/iitc-core';
 
 const REQUEST_BOUNDS_PADDING_RATIO = 0.25;
-const ENTITY_TILES_PER_REQUEST = 5;
 const LAYER_TOGGLE_LABELS: [keyof IitcIrisLayerSettings, string][] = [
   ['fields', 'F'],
   ['links', 'LN'],
@@ -15,14 +14,6 @@ const LAYER_TOGGLE_LABELS: [keyof IitcIrisLayerSettings, string][] = [
   ['labels', 'LV'],
   ['tiles', 'T'],
 ];
-
-function getRuntimeRequestBatchSizes(tileCount: number): number[] {
-  const batches: number[] = [];
-  for (let index = 0; index < tileCount; index += ENTITY_TILES_PER_REQUEST) {
-    batches.push(Math.min(ENTITY_TILES_PER_REQUEST, tileCount - index));
-  }
-  return batches;
-}
 
 interface CameraState {
   lat: number;
@@ -75,6 +66,8 @@ function createPlan(camera: CameraState): IitcMapDataPlan | null {
   try {
     return createIitcMapDataPlan(camera.bounds, {lat: camera.lat, lng: camera.lng}, camera.zoom, {
       boundsPaddingRatio: REQUEST_BOUNDS_PADDING_RATIO,
+      tilesPerRequest: IITC_LIVE_COMPAT_TILES_PER_REQUEST,
+      sequentialRequestBatches: true,
     });
   } catch (error) {
     console.warn('[IITC IRIS] Failed to create map data plan', error);
@@ -126,7 +119,7 @@ function App(): h.JSX.Element {
   });
   const plan: IitcMapDataPlan | null = useMemo(() => createPlan(camera), [camera]);
   const summaryMode = plan?.tileParams.hasPortals ? 'summary' : 'placeholder';
-  const runtimeRequestBatches = getRuntimeRequestBatchSizes(plan?.tileKeys.length ?? 0);
+  const requestBatches = plan?.requestBatches.map((batch) => batch.length) ?? [];
   const dockDiagnostics = {
     app: 'IITC IRIS',
     status,
@@ -142,9 +135,8 @@ function App(): h.JSX.Element {
       tiles: plan.tiles.length,
       xRange: plan.xRange,
       yRange: plan.yRange,
-      firstBatchSize: runtimeRequestBatches[0] ?? 0,
-      requestBatches: runtimeRequestBatches,
-      coreRequestBatches: plan.requestBatches.map((batch) => batch.length),
+      firstBatchSize: requestBatches[0] ?? 0,
+      requestBatches,
       dataBounds: plan.dataBounds,
     } : null,
     entities: {
@@ -259,7 +251,7 @@ function App(): h.JSX.Element {
         <span className="iitc-iris-status">tiles {plan?.tiles.length ?? '-'}</span>
         <span className="iitc-iris-status">x {plan ? `${plan.xRange[0]}-${plan.xRange[1]}` : '-'}</span>
         <span className="iitc-iris-status">y {plan ? `${plan.yRange[0]}-${plan.yRange[1]}` : '-'}</span>
-        <span className="iitc-iris-status">batch {runtimeRequestBatches[0] ?? 0}</span>
+        <span className="iitc-iris-status">batch {requestBatches[0] ?? 0}</span>
         {entityFetch.collision && <span className="iitc-iris-status iitc-iris-warning">old IRIS active</span>}
         {entityFetch.authRequired && (
           <button className="iitc-iris-login" type="button" onClick={openIntelLogin} title="Open Intel login">

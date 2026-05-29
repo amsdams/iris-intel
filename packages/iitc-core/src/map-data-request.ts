@@ -4,6 +4,10 @@ export const IITC_MAX_LATITUDE = 85.051128;
 export const IITC_MAX_LONGITUDE = 179.999999;
 export const IITC_MAX_REQUESTS = 5;
 export const IITC_NUM_TILES_PER_REQUEST = 25;
+export const IITC_LIVE_COMPAT_TILES_PER_REQUEST = 5;
+export const IITC_EMPTY_TILE_RETRY_PASSES = 2;
+export const IITC_EMPTY_TILE_RETRY_BATCH_SIZE = 1;
+export const IITC_EMPTY_TILE_RETRY_LIMIT = 40;
 
 export interface IitcLatLng {
   lat: number;
@@ -41,6 +45,8 @@ export interface IitcMapDataPlan {
 export interface IitcMapDataPlanOptions {
   minZoom?: number;
   boundsPaddingRatio?: number;
+  tilesPerRequest?: number;
+  sequentialRequestBatches?: boolean;
 }
 
 export interface IitcRequestBatchOptions {
@@ -49,6 +55,11 @@ export interface IitcRequestBatchOptions {
   activeRequestCount?: number;
   tileErrorCount?: Record<string, number>;
   maxTileRetries?: number;
+}
+
+export interface IitcEmptyTileRetryOptions {
+  retryLimit?: number;
+  retryBatchSize?: number;
 }
 
 function clamp(value: number, max: number, min: number): number {
@@ -160,6 +171,25 @@ export function createIitcRequestBatches(tileKeys: string[], options: IitcReques
   return batches;
 }
 
+export function createIitcSequentialTileBatches(tileKeys: string[], batchSize: number): string[][] {
+  const batches: string[][] = [];
+  const safeBatchSize = Math.max(1, Math.floor(batchSize));
+  for (let index = 0; index < tileKeys.length; index += safeBatchSize) {
+    batches.push(tileKeys.slice(index, index + safeBatchSize));
+  }
+  return batches;
+}
+
+export function createIitcLiveCompatRequestBatches(tileKeys: string[]): string[][] {
+  return createIitcSequentialTileBatches(tileKeys, IITC_LIVE_COMPAT_TILES_PER_REQUEST);
+}
+
+export function createIitcEmptyTileRetryBatches(tileKeys: string[], options: IitcEmptyTileRetryOptions = {}): string[][] {
+  const retryLimit = Math.max(0, Math.floor(options.retryLimit ?? IITC_EMPTY_TILE_RETRY_LIMIT));
+  const retryBatchSize = Math.max(1, Math.floor(options.retryBatchSize ?? IITC_EMPTY_TILE_RETRY_BATCH_SIZE));
+  return createIitcSequentialTileBatches(tileKeys.slice(0, retryLimit), retryBatchSize);
+}
+
 export function createIitcMapDataPlan(
   bounds: IitcBounds,
   center: IitcLatLng,
@@ -168,6 +198,8 @@ export function createIitcMapDataPlan(
 ): IitcMapDataPlan {
   const minZoom = typeof options === 'number' ? options : options.minZoom ?? 0;
   const boundsPaddingRatio = typeof options === 'number' ? 0 : options.boundsPaddingRatio ?? 0;
+  const tilesPerRequest = typeof options === 'number' ? undefined : options.tilesPerRequest;
+  const sequentialRequestBatches = typeof options === 'number' ? false : options.sequentialRequestBatches ?? false;
   const viewportBounds = clampIitcBounds(bounds);
   const requestBounds = clampIitcBounds(expandBounds(viewportBounds, boundsPaddingRatio));
   const dataZoom = getIitcDataZoomForMapZoom(mapZoom, minZoom);
@@ -221,6 +253,8 @@ export function createIitcMapDataPlan(
     yRange: [y1, y2],
     tiles,
     tileKeys,
-    requestBatches: createIitcRequestBatches(tileKeys),
+    requestBatches: sequentialRequestBatches && tilesPerRequest
+      ? createIitcSequentialTileBatches(tileKeys, tilesPerRequest)
+      : createIitcRequestBatches(tileKeys, {tilesPerRequest}),
   };
 }

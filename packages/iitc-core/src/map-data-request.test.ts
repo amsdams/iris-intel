@@ -2,6 +2,8 @@ import {describe, expect, it} from 'vitest';
 import {
   clampIitcBounds,
   createIitcMapDataPlan,
+  createIitcEmptyTileRetryBatches,
+  createIitcLiveCompatRequestBatches,
   createIitcRequestBatches,
   getIitcMapZoomTileParameters,
   iitcTileToLat,
@@ -55,5 +57,23 @@ describe('IITC map data request planning', () => {
 
     expect(batches).toHaveLength(5);
     expect(batches.map((batch) => batch.length)).toEqual([16, 16, 16, 16, 16]);
+  });
+
+  it('creates live-compatible sequential request and empty-tile retry batches', () => {
+    const tileKeys = Array.from({length: 12}, (_, index) => `15_${index}_0_1_8_100`);
+
+    expect(createIitcLiveCompatRequestBatches(tileKeys).map((batch) => batch.length)).toEqual([5, 5, 2]);
+    expect(createIitcEmptyTileRetryBatches(tileKeys, {retryLimit: 7}).map((batch) => batch.length)).toEqual([1, 1, 1, 1, 1, 1, 1]);
+  });
+
+  it('can put live-compatible batches directly in the map data plan', () => {
+    const plan = createIitcMapDataPlan(
+      {south: 52.35830440667059, west: 4.960670471191407, north: 52.37620175110521, east: 5.032424926757813},
+      {lat: 52.36725398525056, lng: 4.99654769897461},
+      15,
+      {boundsPaddingRatio: 0.25, tilesPerRequest: 5, sequentialRequestBatches: true},
+    );
+
+    expect(plan.requestBatches.every((batch) => batch.length <= 5)).toBe(true);
   });
 });
