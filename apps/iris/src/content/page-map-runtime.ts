@@ -730,9 +730,9 @@ function getPageMap(): Promise<maplibregl.Map> {
                         paint: {
                             'circle-radius': [
                                 'interpolate', ['linear'], ['zoom'],
-                                3, 3,
-                                10, 5,
-                                15, 11,
+                                3, ['+', 3, ['*', ['coalesce', ['get', 'ornamentIndex'], 0], 1.5]],
+                                10, ['+', 5, ['*', ['coalesce', ['get', 'ornamentIndex'], 0], 2]],
+                                15, ['+', 11, ['*', ['coalesce', ['get', 'ornamentIndex'], 0], 2.5]],
                             ],
                             'circle-color': ['coalesce', ['get', 'color'], '#FFCE00'],
                             'circle-opacity': 0.16,

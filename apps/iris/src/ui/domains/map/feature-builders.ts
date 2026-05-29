@@ -37,7 +37,7 @@ export type PortalFeature = GeoJSON.Feature<GeoJSON.Point, PortalFeatureProperti
 export type LinkFeature = GeoJSON.Feature<GeoJSON.LineString, TeamFeatureProperties>;
 export type FieldFeature = GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon, TeamFeatureProperties>;
 export type ArtifactFeature = GeoJSON.Feature<GeoJSON.Point, { portalId: string; type: string; ids: string[]; color?: string }>;
-export type OrnamentFeature = GeoJSON.Feature<GeoJSON.Point, { portalId: string; team: string; ornaments: string[]; color?: string }>;
+export type OrnamentFeature = GeoJSON.Feature<GeoJSON.Point, { portalId: string; team: string; ornaments: string[]; ornament: string; ornamentIndex: number; ornamentCount: number; color?: string }>;
 export type MissionRouteFeature = GeoJSON.Feature<GeoJSON.LineString, Record<string, unknown>>;
 export type MissionWaypointFeature = GeoJSON.Feature<GeoJSON.Point, Record<string, unknown>>;
 
@@ -145,17 +145,22 @@ export const buildOrnamentFeatures = (
   Object.values(portals)
     .filter((portal) => {
       const ornaments = getVisiblePortalOrnaments(portal, mockOrnaments, filters.showOrnaments);
-      if (ornaments.length === 0) return false;
-      return isPortalVisibleForDisplay(portal, filters);
+      return ornaments.length > 0;
     })
-    .map((portal) => {
+    .flatMap((portal) => {
       const ornaments = getVisiblePortalOrnaments(portal, mockOrnaments, filters.showOrnaments);
-      return buildOrnamentPointFeature(portal, ornaments, {
-        portalId: portal.id,
-        team: portal.team,
-        ornaments,
-        color: filters.color,
-      }) as OrnamentFeature;
+      return ornaments.map((ornament, index) =>
+        buildOrnamentPointFeature(portal, [ornament], {
+          id: `ornament:${portal.id}:${ornament}:${index}`,
+          portalId: portal.id,
+          team: portal.team,
+          ornaments,
+          ornament,
+          ornamentIndex: index,
+          ornamentCount: ornaments.length,
+          color: filters.color,
+        }) as OrnamentFeature
+      );
     });
 
 export const buildMissionRouteFeatures = (mission: MissionDetails | null, color?: string): MissionRouteFeature[] => {

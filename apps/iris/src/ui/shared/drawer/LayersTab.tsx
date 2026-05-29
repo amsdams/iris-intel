@@ -33,8 +33,8 @@ export function LayersTab(): JSX.Element {
                     />
                 )}
 
-                <DrawerButton active={layerShowOrnaments} icon="💠" label="Event" onClick={toggleLayerOrnaments} />
-                <DrawerButton active={layerShowArtifacts} icon="💎" label="Shard" onClick={toggleLayerArtifacts} />
+                <DrawerButton active={layerShowOrnaments} icon="💠" label="Ornaments" onClick={toggleLayerOrnaments} />
+                <DrawerButton active={layerShowArtifacts} icon="💎" label="Artifacts" onClick={toggleLayerArtifacts} />
             </DrawerSection>
         </Fragment>
     );
