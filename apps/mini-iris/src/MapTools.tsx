@@ -1,7 +1,19 @@
 import { h, JSX } from 'preact';
+import { useState } from 'preact/hooks';
 import type { PortalHistoryKey, PortalHistoryLayerState, PortalHistoryMode } from './portalHistory';
 import { PORTAL_HISTORY_COLORS } from './portalHistory';
 import { INGRESS_COLORS, ITEM_LEVEL_COLORS } from './MapConstants';
+import { postMiniPageMapCommand } from './pageMapProtocol';
+import {
+    buildSearchHighlight,
+    centerFromBounds,
+    combineBounds,
+    estimateLocationSearchZoom,
+    parseNominatimBounds,
+    type NominatimResult,
+} from './locationSearch';
+import amsterdamNominatimResults from './fixtures/nominatim-amsterdam-nederland.json';
+import damrakNominatimResults from './fixtures/nominatim-amsterdam-damrak.json';
 
 interface MapToolsProps {
     openDrawer: string | null;
@@ -37,6 +49,67 @@ const HISTORY_MODE_LABELS: Record<PortalHistoryMode, string> = {
     inverse: 'Inv',
 };
 
+const FIXTURE_LOCATION_RESULTS: Record<string, {label: string; title: string; results: NominatimResult[]}> = {
+    amsterdam: {
+        label: 'Amsterdam',
+        title: 'Show captured Amsterdam Nederland Nominatim results',
+        results: amsterdamNominatimResults as NominatimResult[],
+    },
+    damrak: {
+        label: 'Damrak',
+        title: 'Show captured Amsterdam Damrak Nominatim results',
+        results: damrakNominatimResults as NominatimResult[],
+    },
+};
+
+function parseCoordinateQuery(value: string): {lat: number; lng: number} | null {
+    const match = value.trim().match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);
+    if (!match) return null;
+    const lat = Number(match[1]);
+    const lng = Number(match[2]);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+    return {lat, lng};
+}
+
+function publishLocationResults(results: NominatimResult[]): void {
+    const bounds = combineBounds(results.map(parseNominatimBounds).filter((candidate): candidate is NonNullable<typeof candidate> => candidate !== null));
+    const first = results[0];
+    const center = bounds
+        ? centerFromBounds(bounds)
+        : {lat: Number(first.lat), lng: Number(first.lon)};
+    const dimensions = {width: window.innerWidth, height: window.innerHeight};
+    const zoom = estimateLocationSearchZoom(bounds, dimensions);
+
+    postMiniPageMapCommand({action: 'sync-search-highlight', data: buildSearchHighlight(results)});
+    postMiniPageMapCommand({action: 'fly-to', lat: center.lat, lng: center.lng, zoom, duration: 350});
+}
+
+function publishCoordinateResult(lat: number, lng: number): void {
+    postMiniPageMapCommand({
+        action: 'sync-search-highlight',
+        data: {
+            type: 'FeatureCollection',
+            features: [{
+                type: 'Feature',
+                properties: {id: 'mini-search:coordinate', label: `${lat.toFixed(6)}, ${lng.toFixed(6)}`, type: 'coordinate'},
+                geometry: {type: 'Point', coordinates: [lng, lat]},
+            }],
+        },
+    });
+    postMiniPageMapCommand({action: 'fly-to', lat, lng, zoom: 15, duration: 350});
+}
+
+function clearLocationResults(): void {
+    postMiniPageMapCommand({action: 'sync-search-highlight', data: {type: 'FeatureCollection', features: []}});
+}
+
+function formatFixtureOption(result: NominatimResult, index: number): string {
+    const parts = result.display_name.split(',').map((part) => part.trim()).filter(Boolean);
+    const context = parts.slice(1, 3).join(', ');
+    return `${index + 1}. ${result.type}${context ? ` - ${context}` : ''}`;
+}
+
 function historyButtonStyle(mode: PortalHistoryMode, color: string): h.JSX.CSSProperties {
     const isOff = mode === 'off';
     const isInverse = mode === 'inverse';
@@ -61,6 +134,48 @@ function historyButtonStyle(mode: PortalHistoryMode, color: string): h.JSX.CSSPr
 }
 
 export function MapTools({ openDrawer, diagnosticsOpen, onToggle, onDiagnosticsToggle, onNav, onStyle, onMode, portalHistoryLayers, onPortalHistoryLayerToggle, keyOverlayEnabled, onKeyOverlayToggle, artifactsEnabled, onArtifactsToggle, ornamentsEnabled, onOrnamentsToggle, portalLevelColorEnabled, onPortalLevelColorToggle, portalHealthColorEnabled, onPortalHealthColorToggle }: MapToolsProps): JSX.Element {
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searching, setSearching] = useState(false);
+    const [searchError, setSearchError] = useState('');
+    const [searchResults, setSearchResults] = useState<NominatimResult[]>([]);
+
+    const runSearch = async (): Promise<void> => {
+        const trimmed = searchQuery.trim();
+        if (!trimmed || searching) return;
+
+        const coords = parseCoordinateQuery(trimmed);
+        if (coords) {
+            setSearchError('');
+            setSearchResults([]);
+            publishCoordinateResult(coords.lat, coords.lng);
+            return;
+        }
+
+        setSearching(true);
+        setSearchError('');
+        setSearchResults([]);
+        try {
+            const response = await fetch(
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(trimmed)}&format=json&limit=5&polygon_geojson=1`,
+                {headers: {'Accept-Language': 'en'}}
+            );
+            const results = await response.json() as NominatimResult[];
+            if (results.length === 0) {
+                setSearchError('Not found');
+                return;
+            }
+            if (results.length === 1) {
+                publishLocationResults(results);
+                return;
+            }
+            setSearchResults(results);
+        } catch {
+            setSearchError('Search failed');
+        } finally {
+            setSearching(false);
+        }
+    };
+
     return (
         <div id="map-tools-container" style={{ position: 'fixed', top: '10px', right: '10px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px', zIndex: 2000001, pointerEvents: 'none' }}>
             
@@ -71,6 +186,63 @@ export function MapTools({ openDrawer, diagnosticsOpen, onToggle, onDiagnosticsT
                     {['🎯', 'R', '+', '-', '↑', '↓', '←', '→'].map(l => (
                         <div key={l} className="debug-btn" onClick={() => onNav(l)} style={{ width: '36px', height: '36px', background: 'rgba(40,40,40,0.9)', color: '#fff', border: '1px solid #555', borderRadius: '4px', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'auto' }}>{l}</div>
                     ))}
+                </div>
+            </div>
+
+            {/* Places Drawer */}
+            <div className="drawer-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                <div className="debug-btn" onClick={() => onToggle('places')} title="Search places" style={{ width: '40px', height: '40px', background: 'rgba(34,34,34,0.9)', color: '#fff', border: '1px solid #00ffff', borderRadius: '50%', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'auto' }}>LOC</div>
+                <div className="drawer-content" style={{ display: openDrawer === 'places' ? 'flex' : 'none', flexDirection: 'column', gap: '6px', width: 'min(280px, calc(100vw - 70px))', padding: '8px', background: 'rgba(20,20,20,0.94)', borderRadius: '8px', border: '1px solid #00ffff', pointerEvents: 'auto' }}>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                        <input
+                            value={searchQuery}
+                            onInput={(event): void => setSearchQuery((event.target as HTMLInputElement).value)}
+                            onKeyDown={(event): void => {
+                                if (event.key === 'Enter') void runSearch();
+                            }}
+                            placeholder="Place or lat,lng"
+                            style={{ flex: 1, minWidth: 0, height: '32px', background: 'rgba(0,0,0,0.45)', color: '#eaffff', border: '1px solid rgba(0,255,255,0.35)', borderRadius: '4px', padding: '0 8px', font: 'inherit', fontSize: '12px' }}
+                        />
+                        <button type="button" onClick={() => void runSearch()} disabled={searching} style={{ height: '32px', minWidth: '44px', background: 'rgba(0,255,255,0.12)', color: searching ? '#708080' : '#7ef9ff', border: '1px solid rgba(126,249,255,0.35)', borderRadius: '4px', font: 'inherit', fontSize: '11px', fontWeight: 'bold', cursor: searching ? 'default' : 'pointer' }}>
+                            {searching ? '...' : 'GO'}
+                        </button>
+                    </div>
+                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                        {Object.entries(FIXTURE_LOCATION_RESULTS).map(([key, fixture]) => (
+                            <select
+                                key={key}
+                                title={fixture.title}
+                                value=""
+                                onChange={(event): void => {
+                                    const placeId = Number((event.target as HTMLSelectElement).value);
+                                    const result = fixture.results.find((candidate) => candidate.place_id === placeId);
+                                    if (result) publishLocationResults([result]);
+                                }}
+                                style={{ height: '30px', maxWidth: '126px', background: 'rgba(40,40,40,0.9)', color: '#d8fdfd', border: '1px solid rgba(126,249,255,0.35)', borderRadius: '4px', padding: '0 6px', font: 'inherit', fontSize: '11px', cursor: 'pointer' }}
+                            >
+                                <option value="">{fixture.label}</option>
+                                {fixture.results.map((result, index) => (
+                                    <option key={result.place_id} value={result.place_id}>
+                                        {formatFixtureOption(result, index)}
+                                    </option>
+                                ))}
+                            </select>
+                        ))}
+                        <button type="button" onClick={clearLocationResults} style={{ height: '30px', background: 'rgba(40,40,40,0.9)', color: '#ffb7b7', border: '1px solid rgba(255,80,80,0.35)', borderRadius: '4px', padding: '0 8px', font: 'inherit', fontSize: '11px', cursor: 'pointer' }}>
+                            Clear
+                        </button>
+                    </div>
+                    {searchError && <div style={{ color: '#ffb7b7', fontSize: '11px' }}>{searchError}</div>}
+                    {searchResults.length > 0 && (
+                        <div style={{ display: 'grid', gap: '4px', maxHeight: '170px', overflowY: 'auto' }}>
+                            {searchResults.map((result) => (
+                                <button key={result.place_id} type="button" onClick={(): void => publishLocationResults([result])} style={{ background: 'rgba(255,255,255,0.05)', color: '#eaffff', border: '1px solid rgba(255,255,255,0.14)', borderRadius: '4px', padding: '6px 7px', font: 'inherit', fontSize: '11px', textAlign: 'left', cursor: 'pointer' }}>
+                                    <strong style={{ color: '#7ef9ff' }}>{result.display_name.split(',')[0]}</strong>
+                                    <span style={{ display: 'block', color: '#a9caca', marginTop: '2px' }}>{result.display_name.split(',').slice(1, 4).join(',')}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
 

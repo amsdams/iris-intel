@@ -387,9 +387,13 @@ function buildStyle(styleName: MapStyleName): maplibregl.StyleSpecification {
             entities: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
             players: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
             selection: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
+            searchHighlight: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
         },
         layers: [
             { id: 'carto', type: 'raster', source: 'carto' },
+            { id: 'search-highlight-fill', type: 'fill', source: 'searchHighlight', filter: ['==', '$type', 'Polygon'], paint: { 'fill-color': '#ff3b30', 'fill-opacity': 0.08 } },
+            { id: 'search-highlight-line', type: 'line', source: 'searchHighlight', filter: ['any', ['==', '$type', 'Polygon'], ['==', '$type', 'LineString']], paint: { 'line-color': '#ff3b30', 'line-width': ['interpolate', ['linear'], ['zoom'], 3, 2, 10, 3, 15, 5], 'line-opacity': 0.95 } },
+            { id: 'search-highlight-point', type: 'circle', source: 'searchHighlight', filter: ['==', '$type', 'Point'], paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 3, 4, 10, 7, 15, 11], 'circle-color': '#ff3b30', 'circle-opacity': 0.9, 'circle-stroke-width': 2, 'circle-stroke-color': '#ffffff', 'circle-stroke-opacity': 0.95 } },
             { id: 'f-enl', type: 'fill', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'E']], paint: { 'fill-color': COLORS.E, 'fill-opacity': INGRESS_ENTITY_STYLE.fieldFillOpacity, 'fill-antialias': INGRESS_ENTITY_STYLE.fieldAntialias } },
             { id: 'f-res', type: 'fill', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'R']], paint: { 'fill-color': COLORS.R, 'fill-opacity': INGRESS_ENTITY_STYLE.fieldFillOpacity, 'fill-antialias': INGRESS_ENTITY_STYLE.fieldAntialias } },
             { id: 'f-mac', type: 'fill', source: 'entities', filter: ['all', ['==', 'type', 'field'], ['==', 'team', 'M']], paint: { 'fill-color': COLORS.M, 'fill-opacity': INGRESS_ENTITY_STYLE.fieldFillOpacity, 'fill-antialias': INGRESS_ENTITY_STYLE.fieldAntialias } },
@@ -663,6 +667,9 @@ function handleCommand(command: MiniPageMapCommandMessage['command']): void {
             break;
         case 'sync-selection':
             setSourceData('selection', command.data);
+            break;
+        case 'sync-search-highlight':
+            setSourceData('searchHighlight', command.data);
             break;
         case 'set-style': {
             const source = map.getSource('carto') as { setTiles?: (tiles: string[]) => void } | undefined;

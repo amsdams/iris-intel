@@ -30,6 +30,7 @@ export type MiniPageMapCommand =
     | { action: 'sync-data'; data: GeoJSON.FeatureCollection }
     | { action: 'sync-players'; data: GeoJSON.FeatureCollection }
     | { action: 'sync-selection'; data: GeoJSON.FeatureCollection }
+    | { action: 'sync-search-highlight'; data: GeoJSON.FeatureCollection }
     | { action: 'set-style'; styleName: MapStyleName }
     | { action: 'set-extrusion'; enabled: boolean }
     | { action: 'set-portal-paint'; levelColorEnabled: boolean; healthColorEnabled: boolean }
