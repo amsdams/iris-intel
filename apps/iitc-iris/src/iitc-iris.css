@@ -41,7 +41,7 @@
 }
 
 .iitc-iris-title {
-  color: #65d9ff;
+  color: #00d9ff;
   font-weight: 700;
 }
 
@@ -52,4 +52,95 @@
 .iitc-iris-warning {
   color: #ffd166;
   font-weight: 700;
+}
+
+.iitc-iris-copy {
+  appearance: none;
+  border: 1px solid rgb(95 180 255 / 40%);
+  border-radius: 4px;
+  background: rgb(7 31 45 / 92%);
+  color: #e8f4ff;
+  font: inherit;
+  font-weight: 700;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+.iitc-iris-copy:hover {
+  border-color: rgb(101 217 255 / 80%);
+  background: rgb(10 45 64 / 96%);
+}
+
+.iitc-iris-login {
+  appearance: none;
+  border: 1px solid rgb(255 209 102 / 70%);
+  border-radius: 4px;
+  background: rgb(67 43 3 / 92%);
+  color: #ffd166;
+  font: inherit;
+  font-weight: 700;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+.iitc-iris-login:hover {
+  border-color: rgb(255 209 102 / 95%);
+  background: rgb(91 58 5 / 96%);
+}
+
+.iitc-iris-divider {
+  width: 1px;
+  height: 16px;
+  background: rgb(95 180 255 / 28%);
+}
+
+.iitc-iris-layer-toggle {
+  appearance: none;
+  min-width: 20px;
+  height: 20px;
+  border: 1px solid rgb(95 180 255 / 30%);
+  border-radius: 4px;
+  background: rgb(10 18 25 / 82%);
+  color: #7894aa;
+  font: 700 11px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.iitc-iris-layer-toggle-active {
+  border-color: rgb(101 217 255 / 80%);
+  background: rgb(7 31 45 / 92%);
+  color: #e8f4ff;
+}
+
+.iitc-iris-ornament-icon {
+  pointer-events: none;
+}
+
+.iitc-iris-level-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid #b8b8b8;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 76%);
+  box-sizing: border-box;
+  color: #fff;
+  font: 700 10px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  text-shadow: 0 1px 2px #000;
+  pointer-events: none;
+}
+
+.iitc-iris-level-label-E {
+  border-color: #03dc03;
+}
+
+.iitc-iris-level-label-R {
+  border-color: #0088ff;
+}
+
+.iitc-iris-level-label-M {
+  border-color: #ff1010;
 }

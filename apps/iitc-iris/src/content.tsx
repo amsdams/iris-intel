@@ -1,8 +1,27 @@
 import {h, render} from 'preact';
 import {useEffect, useMemo, useState} from 'preact/hooks';
 import './iitc-iris.css';
-import {IITC_IRIS_MESSAGES, type IitcIrisMessage} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisLayerSettings, type IitcIrisMessage} from './messages';
 import {createIitcMapDataPlan, type IitcBounds, type IitcMapDataPlan} from '@iris/iitc-core';
+
+const REQUEST_BOUNDS_PADDING_RATIO = 0.25;
+const ENTITY_TILES_PER_REQUEST = 5;
+const LAYER_TOGGLE_LABELS: [keyof IitcIrisLayerSettings, string][] = [
+  ['fields', 'F'],
+  ['links', 'LN'],
+  ['portals', 'P'],
+  ['ornaments', 'OR'],
+  ['labels', 'LV'],
+  ['tiles', 'T'],
+];
+
+function getRuntimeRequestBatchSizes(tileCount: number): number[] {
+  const batches: number[] = [];
+  for (let index = 0; index < tileCount; index += ENTITY_TILES_PER_REQUEST) {
+    batches.push(Math.min(ENTITY_TILES_PER_REQUEST, tileCount - index));
+  }
+  return batches;
+}
 
 interface CameraState {
   lat: number;
@@ -13,12 +32,23 @@ interface CameraState {
 
 interface EntityFetchState {
   status: string;
+  authRequired: boolean;
   generation: number;
   key: string;
   collision: boolean;
   portals: number;
+  realPortals: number;
+  placeholderPortals: number;
+  ornamentPortals: number;
+  levelLabels: number;
+  damagedPortals: number;
   links: number;
   fields: number;
+  requestedTiles: number;
+  returnedTiles: number;
+  nonEmptyTiles: number;
+  emptyTileKeys: string[];
+  nonEmptyTileKeys: string[];
 }
 
 function getExtensionUrl(path: string): string {
@@ -38,7 +68,9 @@ function createPlan(camera: CameraState): IitcMapDataPlan | null {
   if (!camera.bounds) return null;
 
   try {
-    return createIitcMapDataPlan(camera.bounds, {lat: camera.lat, lng: camera.lng}, camera.zoom);
+    return createIitcMapDataPlan(camera.bounds, {lat: camera.lat, lng: camera.lng}, camera.zoom, {
+      boundsPaddingRatio: REQUEST_BOUNDS_PADDING_RATIO,
+    });
   } catch (error) {
     console.warn('[IITC IRIS] Failed to create map data plan', error);
     return null;
@@ -47,6 +79,15 @@ function createPlan(camera: CameraState): IitcMapDataPlan | null {
 
 function App(): h.JSX.Element {
   const [status, setStatus] = useState('booting');
+  const [copyStatus, setCopyStatus] = useState('');
+  const [layerSettings, setLayerSettings] = useState<IitcIrisLayerSettings>({
+    fields: true,
+    links: true,
+    portals: true,
+    ornaments: true,
+    labels: true,
+    tiles: false,
+  });
   const [camera, setCamera] = useState<CameraState>({
     lat: 52.3730796,
     lng: 4.8924534,
@@ -55,14 +96,86 @@ function App(): h.JSX.Element {
   });
   const [entityFetch, setEntityFetch] = useState<EntityFetchState>({
     status: 'idle',
+    authRequired: false,
     generation: 0,
     key: '',
     collision: false,
     portals: 0,
+    realPortals: 0,
+    placeholderPortals: 0,
+    ornamentPortals: 0,
+    levelLabels: 0,
+    damagedPortals: 0,
     links: 0,
     fields: 0,
+    requestedTiles: 0,
+    returnedTiles: 0,
+    nonEmptyTiles: 0,
+    emptyTileKeys: [],
+    nonEmptyTileKeys: [],
   });
   const plan: IitcMapDataPlan | null = useMemo(() => createPlan(camera), [camera]);
+  const summaryMode = plan?.tileParams.hasPortals ? 'summary' : 'placeholder';
+  const runtimeRequestBatches = getRuntimeRequestBatchSizes(plan?.tileKeys.length ?? 0);
+  const dockDiagnostics = {
+    app: 'IITC IRIS',
+    status,
+    camera: {
+      lat: camera.lat,
+      lng: camera.lng,
+      zoom: camera.zoom,
+      bounds: camera.bounds,
+    },
+    plan: plan ? {
+      dataZoom: plan.dataZoom,
+      mode: summaryMode,
+      tiles: plan.tiles.length,
+      xRange: plan.xRange,
+      yRange: plan.yRange,
+      firstBatchSize: runtimeRequestBatches[0] ?? 0,
+      requestBatches: runtimeRequestBatches,
+      coreRequestBatches: plan.requestBatches.map((batch) => batch.length),
+      dataBounds: plan.dataBounds,
+    } : null,
+    entities: {
+      status: entityFetch.status,
+      portals: entityFetch.portals,
+      realPortals: entityFetch.realPortals,
+      placeholderPortals: entityFetch.placeholderPortals,
+      ornamentPortals: entityFetch.ornamentPortals,
+      levelLabels: entityFetch.levelLabels,
+      damagedPortals: entityFetch.damagedPortals,
+      links: entityFetch.links,
+      fields: entityFetch.fields,
+      requestedTiles: entityFetch.requestedTiles,
+      returnedTiles: entityFetch.returnedTiles,
+      nonEmptyTiles: entityFetch.nonEmptyTiles,
+      emptyTileKeys: entityFetch.emptyTileKeys,
+      nonEmptyTileKeys: entityFetch.nonEmptyTileKeys,
+      authRequired: entityFetch.authRequired,
+    },
+    layers: layerSettings,
+    collision: entityFetch.collision,
+  };
+  const copyDockText = (): void => {
+    void navigator.clipboard.writeText(JSON.stringify(dockDiagnostics, null, 2))
+      .then(() => {
+        setCopyStatus('json copied');
+        window.setTimeout(() => setCopyStatus(''), 1200);
+      })
+      .catch(() => {
+        setCopyStatus('copy failed');
+        window.setTimeout(() => setCopyStatus(''), 1600);
+      });
+  };
+
+  const openIntelLogin = (): void => {
+    window.location.assign('https://intel.ingress.com/intel');
+  };
+
+  const toggleLayerSetting = (key: keyof IitcIrisLayerSettings): void => {
+    setLayerSettings((current) => ({...current, [key]: !current[key]}));
+  };
 
   useEffect(() => {
     const onMessage = (event: MessageEvent<IitcIrisMessage>): void => {
@@ -85,9 +198,20 @@ function App(): h.JSX.Element {
         setEntityFetch((current) => ({
           ...current,
           status: event.data.status ?? current.status,
+          authRequired: event.data.authRequired ?? current.authRequired,
           portals: event.data.portals ?? current.portals,
+          realPortals: event.data.realPortals ?? current.realPortals,
+          placeholderPortals: event.data.placeholderPortals ?? current.placeholderPortals,
+          ornamentPortals: event.data.ornamentPortals ?? current.ornamentPortals,
+          levelLabels: event.data.levelLabels ?? current.levelLabels,
+          damagedPortals: event.data.damagedPortals ?? current.damagedPortals,
           links: event.data.links ?? current.links,
           fields: event.data.fields ?? current.fields,
+          requestedTiles: event.data.requestedTiles ?? current.requestedTiles,
+          returnedTiles: event.data.returnedTiles ?? current.returnedTiles,
+          nonEmptyTiles: event.data.nonEmptyTiles ?? current.nonEmptyTiles,
+          emptyTileKeys: event.data.emptyTileKeys ?? current.emptyTileKeys,
+          nonEmptyTileKeys: event.data.nonEmptyTileKeys ?? current.nonEmptyTileKeys,
         }));
       }
     };
@@ -96,23 +220,58 @@ function App(): h.JSX.Element {
     return (): void => window.removeEventListener('message', onMessage);
   }, []);
 
+  useEffect(() => {
+    window.postMessage({
+      type: IITC_IRIS_MESSAGES.layerSettings,
+      layerSettings,
+    } satisfies IitcIrisMessage, '*');
+  }, [layerSettings]);
+
   return (
     <div className="iitc-iris-shell">
       <div id="iitc-iris-map" className="iitc-iris-map" />
       <div className="iitc-iris-dock">
         <span className="iitc-iris-title">IITC IRIS</span>
+        <button className="iitc-iris-copy" type="button" onClick={copyDockText} title="Copy JSON diagnostics">Copy JSON</button>
+        {copyStatus && <span className="iitc-iris-status">{copyStatus}</span>}
         <span className="iitc-iris-status">{status}</span>
         <span className="iitc-iris-status">z {camera.zoom.toFixed(2)}</span>
         <span className="iitc-iris-status">data z {plan?.dataZoom ?? '-'}</span>
+        <span className="iitc-iris-status">mode {summaryMode}</span>
         <span className="iitc-iris-status">tiles {plan?.tiles.length ?? '-'}</span>
         <span className="iitc-iris-status">x {plan ? `${plan.xRange[0]}-${plan.xRange[1]}` : '-'}</span>
         <span className="iitc-iris-status">y {plan ? `${plan.yRange[0]}-${plan.yRange[1]}` : '-'}</span>
-        <span className="iitc-iris-status">batch {plan?.requestBatches[0]?.length ?? 0}</span>
+        <span className="iitc-iris-status">batch {runtimeRequestBatches[0] ?? 0}</span>
         {entityFetch.collision && <span className="iitc-iris-status iitc-iris-warning">old IRIS active</span>}
+        {entityFetch.authRequired && (
+          <button className="iitc-iris-login" type="button" onClick={openIntelLogin} title="Open Intel login">
+            Intel Login
+          </button>
+        )}
         <span className="iitc-iris-status">{entityFetch.status}</span>
         <span className="iitc-iris-status">p {entityFetch.portals}</span>
+        <span className="iitc-iris-status">real {entityFetch.realPortals}</span>
+        <span className="iitc-iris-status">ph {entityFetch.placeholderPortals}</span>
+        <span className="iitc-iris-status">orn {entityFetch.ornamentPortals}</span>
+        <span className="iitc-iris-status">lvl {entityFetch.levelLabels}</span>
+        <span className="iitc-iris-status">dmg {entityFetch.damagedPortals}</span>
         <span className="iitc-iris-status">l {entityFetch.links}</span>
         <span className="iitc-iris-status">f {entityFetch.fields}</span>
+        <span className="iitc-iris-status">rt {entityFetch.returnedTiles}/{entityFetch.requestedTiles}</span>
+        <span className="iitc-iris-status">nt {entityFetch.nonEmptyTiles}</span>
+        <span className="iitc-iris-divider" />
+        <span className="iitc-iris-status">Layers</span>
+        {LAYER_TOGGLE_LABELS.map(([key, label]) => (
+          <button
+            key={key}
+            className={`iitc-iris-layer-toggle ${layerSettings[key] ? 'iitc-iris-layer-toggle-active' : ''}`}
+            type="button"
+            onClick={() => toggleLayerSetting(key)}
+            title={`Toggle ${key}`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
     </div>
   );

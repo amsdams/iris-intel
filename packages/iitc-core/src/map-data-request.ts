@@ -38,6 +38,11 @@ export interface IitcMapDataPlan {
   requestBatches: string[][];
 }
 
+export interface IitcMapDataPlanOptions {
+  minZoom?: number;
+  boundsPaddingRatio?: number;
+}
+
 export interface IitcRequestBatchOptions {
   maxRequests?: number;
   tilesPerRequest?: number;
@@ -56,6 +61,19 @@ function normalizeBounds(bounds: IitcBounds): IitcBounds {
     west: Math.min(bounds.west, bounds.east),
     north: Math.max(bounds.south, bounds.north),
     east: Math.max(bounds.west, bounds.east),
+  };
+}
+
+function expandBounds(bounds: IitcBounds, ratio: number): IitcBounds {
+  const paddingRatio = Math.max(0, ratio);
+  const latPadding = (bounds.north - bounds.south) * paddingRatio;
+  const lngPadding = (bounds.east - bounds.west) * paddingRatio;
+
+  return {
+    south: bounds.south - latPadding,
+    west: bounds.west - lngPadding,
+    north: bounds.north + latPadding,
+    east: bounds.east + lngPadding,
   };
 }
 
@@ -142,16 +160,24 @@ export function createIitcRequestBatches(tileKeys: string[], options: IitcReques
   return batches;
 }
 
-export function createIitcMapDataPlan(bounds: IitcBounds, center: IitcLatLng, mapZoom: number, minZoom = 0): IitcMapDataPlan {
+export function createIitcMapDataPlan(
+  bounds: IitcBounds,
+  center: IitcLatLng,
+  mapZoom: number,
+  options: IitcMapDataPlanOptions | number = {},
+): IitcMapDataPlan {
+  const minZoom = typeof options === 'number' ? options : options.minZoom ?? 0;
+  const boundsPaddingRatio = typeof options === 'number' ? 0 : options.boundsPaddingRatio ?? 0;
   const viewportBounds = clampIitcBounds(bounds);
+  const requestBounds = clampIitcBounds(expandBounds(viewportBounds, boundsPaddingRatio));
   const dataZoom = getIitcDataZoomForMapZoom(mapZoom, minZoom);
   const tileParams = getIitcMapZoomTileParameters(dataZoom);
   const centerPoint = projectLatLng(center, mapZoom);
 
-  const x1 = lngToIitcTile(viewportBounds.west, tileParams);
-  const x2 = lngToIitcTile(viewportBounds.east, tileParams);
-  const y1 = latToIitcTile(viewportBounds.north, tileParams);
-  const y2 = latToIitcTile(viewportBounds.south, tileParams);
+  const x1 = lngToIitcTile(requestBounds.west, tileParams);
+  const x2 = lngToIitcTile(requestBounds.east, tileParams);
+  const y1 = latToIitcTile(requestBounds.north, tileParams);
+  const y2 = latToIitcTile(requestBounds.south, tileParams);
 
   const dataBounds = {
     south: iitcTileToLat(y2 + 1, tileParams),

@@ -6,6 +6,7 @@ export const IITC_IRIS_MESSAGES = {
   fetchEntities: 'IITC_IRIS_FETCH_ENTITIES',
   entitiesResponse: 'IITC_IRIS_ENTITIES_RESPONSE',
   entityStatus: 'IITC_IRIS_ENTITY_STATUS',
+  layerSettings: 'IITC_IRIS_LAYER_SETTINGS',
 } as const;
 
 export type IitcIrisMessageType = typeof IITC_IRIS_MESSAGES[keyof typeof IITC_IRIS_MESSAGES];
@@ -27,9 +28,30 @@ export interface IitcIrisMessage {
   data?: unknown;
   error?: string;
   status?: string;
+  authRequired?: boolean;
   portals?: number;
+  realPortals?: number;
+  placeholderPortals?: number;
+  ornamentPortals?: number;
+  levelLabels?: number;
+  damagedPortals?: number;
   links?: number;
   fields?: number;
+  requestedTiles?: number;
+  returnedTiles?: number;
+  nonEmptyTiles?: number;
+  emptyTileKeys?: string[];
+  nonEmptyTileKeys?: string[];
+  layerSettings?: IitcIrisLayerSettings;
+}
+
+export interface IitcIrisLayerSettings {
+  fields: boolean;
+  links: boolean;
+  portals: boolean;
+  ornaments: boolean;
+  labels: boolean;
+  tiles: boolean;
 }
 
 export interface IitcIrisRenderPortal {

@@ -1,23 +1,132 @@
-import L, {type Map as LeafletMap, type Path as LeafletPath} from 'leaflet';
-import {IITC_IRIS_MESSAGES, type IitcIrisMessage, type IitcIrisRenderEntities} from './messages';
-import {createIitcMapDataPlan, decodeIitcGetEntitiesResponse, type IitcGetEntitiesResponse, type IitcMapDataPlan} from '@iris/iitc-core';
+import L, {type Layer as LeafletLayer, type Map as LeafletMap} from 'leaflet';
+import {IITC_IRIS_MESSAGES, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisRenderEntities} from './messages';
+import {createIitcMapDataPlan, decodeIitcGetEntitiesResponse, type IitcGetEntitiesResponse, type IitcMapDataPlan, type IitcMapTilePayload} from '@iris/iitc-core';
 
 const DEFAULT_CENTER: [number, number] = [52.3730796, 4.8924534];
 const DEFAULT_ZOOM = 11;
+const MAP_VIEW_STORAGE_KEY = 'iitc-iris:map-view';
+const REQUEST_BOUNDS_PADDING_RATIO = 0.25;
+const ENTITY_TILES_PER_REQUEST = 5;
+const EMPTY_TILE_RETRY_PASSES = 2;
+const EMPTY_TILE_RETRY_BATCH_SIZE = 1;
+const EMPTY_TILE_RETRY_LIMIT = 40;
+const DEFAULT_LAYER_SETTINGS: IitcIrisLayerSettings = {
+  fields: true,
+  links: true,
+  portals: true,
+  ornaments: true,
+  labels: true,
+  tiles: false,
+};
 let latestFetchGeneration = 0;
 let latestRequestKey = '';
+let latestEntities: IitcIrisRenderEntities | undefined;
+let latestPlan: IitcMapDataPlan | undefined;
+let latestResponse: IitcGetEntitiesResponse | undefined;
+let layerSettings: IitcIrisLayerSettings = DEFAULT_LAYER_SETTINGS;
 let refreshTimer: number | undefined;
+
+interface StoredMapView {
+  lat: number;
+  lng: number;
+  zoom: number;
+}
+
+function isStoredMapView(value: unknown): value is StoredMapView {
+  if (!value || typeof value !== 'object') return false;
+  const view = value as Partial<StoredMapView>;
+  return typeof view.lat === 'number' && Number.isFinite(view.lat) &&
+    typeof view.lng === 'number' && Number.isFinite(view.lng) &&
+    typeof view.zoom === 'number' && Number.isFinite(view.zoom);
+}
+
+function loadStoredMapView(): StoredMapView {
+  try {
+    const value = window.localStorage.getItem(MAP_VIEW_STORAGE_KEY);
+    if (!value) return {lat: DEFAULT_CENTER[0], lng: DEFAULT_CENTER[1], zoom: DEFAULT_ZOOM};
+    const parsed = JSON.parse(value) as unknown;
+    if (!isStoredMapView(parsed)) return {lat: DEFAULT_CENTER[0], lng: DEFAULT_CENTER[1], zoom: DEFAULT_ZOOM};
+    return {
+      lat: Math.max(-85.051128, Math.min(85.051128, parsed.lat)),
+      lng: Math.max(-180, Math.min(179.999999, parsed.lng)),
+      zoom: Math.max(0, Math.min(21, parsed.zoom)),
+    };
+  } catch {
+    return {lat: DEFAULT_CENTER[0], lng: DEFAULT_CENTER[1], zoom: DEFAULT_ZOOM};
+  }
+}
+
+function loadUrlMapView(): StoredMapView | null {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const ll = params.get('ll');
+    const z = params.get('z');
+    if (!ll || !z) return null;
+
+    const [latText, lngText] = ll.split(',');
+    const view = {
+      lat: Number(latText),
+      lng: Number(lngText),
+      zoom: Number(z),
+    };
+    if (!isStoredMapView(view)) return null;
+    return {
+      lat: Math.max(-85.051128, Math.min(85.051128, view.lat)),
+      lng: Math.max(-180, Math.min(179.999999, view.lng)),
+      zoom: Math.max(0, Math.min(21, view.zoom)),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function storeMapView(view: StoredMapView): void {
+  try {
+    window.localStorage.setItem(MAP_VIEW_STORAGE_KEY, JSON.stringify(view));
+  } catch {
+    // Local storage is optional; map sync should keep working when unavailable.
+  }
+}
+
+function setIntelMapCookie(name: string, value: string): void {
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=31536000; SameSite=Lax`;
+}
+
+function syncIntelMapCookies(view: StoredMapView): void {
+  setIntelMapCookie('ingress.intelmap.shflt', 'hdn');
+  setIntelMapCookie('ingress.intelmap.lat', String(view.lat));
+  setIntelMapCookie('ingress.intelmap.lng', String(view.lng));
+  setIntelMapCookie('ingress.intelmap.zoom', String(Math.round(view.zoom)));
+}
+
+function syncUrlMapView(view: StoredMapView): void {
+  try {
+    const url = new URL(window.location.href);
+    url.searchParams.set('ll', `${view.lat.toFixed(6)},${view.lng.toFixed(6)}`);
+    url.searchParams.set('z', String(Math.round(view.zoom * 100) / 100));
+    window.history.replaceState(window.history.state, '', url);
+  } catch {
+    // URL sync is diagnostic-only; ignore restricted history cases.
+  }
+}
 
 function postMapMoved(): void {
   const map = window.__iitcIrisMap;
   if (!map) return;
+  latestFetchGeneration += 1;
+  latestRequestKey = '';
   const center = map.getCenter();
   const bounds = map.getBounds();
+  const zoom = map.getZoom();
+  const view = {lat: center.lat, lng: center.lng, zoom};
+  storeMapView(view);
+  syncIntelMapCookies(view);
+  syncUrlMapView(view);
   window.postMessage({
     type: IITC_IRIS_MESSAGES.mapMoved,
     lat: center.lat,
     lng: center.lng,
-    zoom: map.getZoom(),
+    zoom,
     bounds: {
       south: bounds.getSouth(),
       west: bounds.getWest(),
@@ -33,20 +142,32 @@ declare global {
     __iitcIrisMap?: LeafletMap;
     __iitcIrisMapContainer?: HTMLElement;
     __iitcIrisLayers?: {
-      fields: LeafletPath[];
-      links: LeafletPath[];
-      portals: LeafletPath[];
-      ornaments: LeafletPath[];
+      tiles: LeafletLayer[];
+      fields: LeafletLayer[];
+      links: LeafletLayer[];
+      portals: LeafletLayer[];
+      ornaments: LeafletLayer[];
+      labels: LeafletLayer[];
     };
   }
 }
 
 const TEAM_COLORS = {
-  E: '#03dcff',
-  R: '#00ff73',
-  N: '#b8b8b8',
-  M: '#ffce35',
+  E: '#03dc03',
+  R: '#0088ff',
+  N: '#666666',
+  M: '#ff1010',
 } as const;
+const HEALTH_COLORS = {
+  high: '#00ff00',
+  medium: '#ffff00',
+  warning: '#ff9900',
+  low: '#ff0000',
+  critical: '#ff00ff',
+} as const;
+const LEVEL_COLORS = ['#666666', '#fece5a', '#ffa630', '#ff7315', '#e80000', '#ff0099', '#ee26cd', '#c124e0', '#9627f4'] as const;
+const LEVEL_TO_WEIGHT = [1.5, 1.5, 1.5, 1.5, 1.5, 1.75, 1.75, 2, 2] as const;
+const LEVEL_TO_RADIUS = [6, 6, 6, 6, 7, 7, 8, 9, 10] as const;
 
 function toLatLng(latE6: number, lngE6: number): [number, number] {
   return [latE6 / 1e6, lngE6 / 1e6];
@@ -56,88 +177,256 @@ function getTeamColor(team: keyof typeof TEAM_COLORS): string {
   return TEAM_COLORS[team] ?? TEAM_COLORS.N;
 }
 
+function getPortalMarkerScale(zoom: number): number {
+  return zoom >= 15 ? 1 : zoom >= 12 ? 0.8 : zoom >= 10 ? 0.55 : 0.35;
+}
+
+function getPortalLevel(level: number | undefined, isPlaceholder: boolean): number {
+  if (isPlaceholder) return 0;
+  return Math.max(0, Math.min(8, Math.floor(level ?? 0)));
+}
+
+function getPortalRadius(level: number | undefined, isPlaceholder: boolean): number {
+  const scale = getPortalMarkerScale(window.__iitcIrisMap?.getZoom() ?? DEFAULT_ZOOM);
+  return LEVEL_TO_RADIUS[getPortalLevel(level, isPlaceholder)] * scale;
+}
+
+function getPortalWeight(level: number | undefined, isPlaceholder: boolean): number {
+  if (isPlaceholder) return 1;
+  const scale = getPortalMarkerScale(window.__iitcIrisMap?.getZoom() ?? DEFAULT_ZOOM);
+  return LEVEL_TO_WEIGHT[getPortalLevel(level, isPlaceholder)] * Math.sqrt(scale);
+}
+
+function getPortalFillOpacity(health: number | undefined, isPlaceholder: boolean): number {
+  if (isPlaceholder) return 0.2;
+  if (health === undefined) return 0.7;
+  return Math.max(0.1, Math.min(0.7, health / 100 * 0.7));
+}
+
+function getPortalFillColor(team: keyof typeof TEAM_COLORS, level: number | undefined, isPlaceholder: boolean): string {
+  if (isPlaceholder) return getTeamColor(team);
+  return LEVEL_COLORS[getPortalLevel(level, false)] ?? getTeamColor(team);
+}
+
+function getHealthColor(health: number): string {
+  if (health > 85) return HEALTH_COLORS.medium;
+  if (health > 50) return HEALTH_COLORS.warning;
+  if (health > 15) return HEALTH_COLORS.low;
+  return HEALTH_COLORS.critical;
+}
+
+function getHealthOpacity(health: number): number {
+  if (health > 75) return (1 - health / 100) * 0.5 + 0.5;
+  return (1 - health / 100) * 0.75 + 0.25;
+}
+
 function ensureLayers(): NonNullable<Window['__iitcIrisLayers']> {
   if (window.__iitcIrisLayers) return window.__iitcIrisLayers;
 
   window.__iitcIrisLayers = {
+    tiles: [],
     fields: [],
     links: [],
     portals: [],
     ornaments: [],
+    labels: [],
   };
   return window.__iitcIrisLayers;
 }
 
-function clearRenderedPaths(paths: LeafletPath[]): void {
-  while (paths.length > 0) {
-    const path = paths.pop();
-    path?.remove();
+function clearRenderedLayers(layers: LeafletLayer[]): void {
+  while (layers.length > 0) {
+    const layer = layers.pop();
+    layer?.remove();
   }
 }
 
-function addRenderedPath(paths: LeafletPath[], path: LeafletPath): void {
+function addRenderedLayer(layers: LeafletLayer[], layer: LeafletLayer): void {
   const map = window.__iitcIrisMap;
   if (!map) return;
-  path.addTo(map);
-  paths.push(path);
+  layer.addTo(map);
+  layers.push(layer);
+}
+
+function getLayerPane(layerKey: keyof IitcIrisLayerSettings): string {
+  return `iitc-iris-${layerKey}`;
+}
+
+function getLayerRenderer(layerKey: 'fields' | 'links' | 'portals'): L.Renderer | undefined {
+  const map = window.__iitcIrisMap;
+  if (!map) return undefined;
+  const rendererKey = `__iitcIris${layerKey[0].toUpperCase()}${layerKey.slice(1)}Renderer`;
+  const runtimeMap = map as LeafletMap & Record<string, L.Renderer | undefined>;
+  runtimeMap[rendererKey] ??= L.canvas({pane: getLayerPane(layerKey)});
+  return runtimeMap[rendererKey];
+}
+
+function clearAllRenderedLayers(): void {
+  const layers = ensureLayers();
+  clearRenderedLayers(layers.tiles);
+  clearRenderedLayers(layers.fields);
+  clearRenderedLayers(layers.links);
+  clearRenderedLayers(layers.portals);
+  clearRenderedLayers(layers.ornaments);
+  clearRenderedLayers(layers.labels);
+}
+
+function clearEntityLayers(): void {
+  const layers = ensureLayers();
+  clearRenderedLayers(layers.fields);
+  clearRenderedLayers(layers.links);
+  clearRenderedLayers(layers.portals);
+  clearRenderedLayers(layers.ornaments);
+  clearRenderedLayers(layers.labels);
+}
+
+function createOrnamentMarker(latLng: [number, number], ornament: string, portalRadius: number): LeafletLayer {
+  const size = Math.max(28, Math.round(60 * getPortalMarkerScale(window.__iitcIrisMap?.getZoom() ?? DEFAULT_ZOOM)));
+  const iconUrl = `https://commondatastorage.googleapis.com/ingress.com/img/map_icons/marker_images/${ornament}.png`;
+
+  return L.marker(latLng, {
+    icon: L.icon({
+      iconUrl,
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
+      className: 'iitc-iris-ornament-icon',
+    }),
+    interactive: false,
+    keyboard: false,
+    opacity: 0.65,
+    pane: getLayerPane('ornaments'),
+    zIndexOffset: Math.round(portalRadius),
+  });
+}
+
+function createLevelLabelMarker(latLng: [number, number], level: number, team: keyof typeof TEAM_COLORS): LeafletLayer {
+  return L.marker(latLng, {
+    icon: L.divIcon({
+      className: `iitc-iris-level-label iitc-iris-level-label-${team}`,
+      html: String(level),
+      iconSize: [18, 18],
+      iconAnchor: [9, 9],
+    }),
+    interactive: false,
+    keyboard: false,
+    pane: getLayerPane('labels'),
+    zIndexOffset: 1000,
+  });
 }
 
 function renderEntities(entities: IitcIrisRenderEntities): void {
-  const layers = ensureLayers();
   if (!window.__iitcIrisMap) return;
+  const layers = ensureLayers();
 
-  clearRenderedPaths(layers.fields);
-  clearRenderedPaths(layers.links);
-  clearRenderedPaths(layers.portals);
-  clearRenderedPaths(layers.ornaments);
+  latestEntities = entities;
+  clearEntityLayers();
 
-  for (const field of entities.fields) {
-    if (field.points.length !== 3) continue;
-    addRenderedPath(layers.fields, L.polygon(field.points.map((point) => toLatLng(point.latE6, point.lngE6)), {
-      color: getTeamColor(field.team),
-      fillColor: getTeamColor(field.team),
-      fillOpacity: 0.18,
-      opacity: 0,
-      weight: 0,
-      interactive: false,
-    }));
+  if (layerSettings.fields) {
+    for (const field of entities.fields) {
+      if (field.points.length !== 3) continue;
+      addRenderedLayer(layers.fields, L.polygon(field.points.map((point) => toLatLng(point.latE6, point.lngE6)), {
+        color: getTeamColor(field.team),
+        fillColor: getTeamColor(field.team),
+        fillOpacity: 0.18,
+        opacity: 0,
+        pane: getLayerPane('fields'),
+        renderer: getLayerRenderer('fields'),
+        weight: 0,
+        interactive: false,
+      }));
+    }
   }
 
-  for (const link of entities.links) {
-    addRenderedPath(layers.links, L.polyline([toLatLng(link.oLatE6, link.oLngE6), toLatLng(link.dLatE6, link.dLngE6)], {
-      color: getTeamColor(link.team),
-      opacity: 0.85,
-      weight: 2,
-      interactive: false,
-    }));
-  }
-
-  for (const portal of entities.portals) {
-    const color = getTeamColor(portal.team);
-    const latLng = toLatLng(portal.latE6, portal.lngE6);
-    const radius = portal.isPlaceholder ? 2.5 : Math.max(4, Math.min(8, (portal.level ?? 1) + 1));
-
-    addRenderedPath(layers.portals, L.circleMarker(latLng, {
-      radius,
-      color,
-      fillColor: color,
-      fillOpacity: portal.isPlaceholder ? 0.35 : 0.75,
-      opacity: portal.isPlaceholder ? 0.65 : 1,
-      weight: portal.isPlaceholder ? 1 : 2,
-      interactive: false,
-    }));
-
-    if (portal.ornaments && portal.ornaments.length > 0) {
-      addRenderedPath(layers.ornaments, L.circleMarker(latLng, {
-        radius: radius + 5,
-        color: '#ffce35',
-        fillOpacity: 0,
-        opacity: 0.95,
+  if (layerSettings.links) {
+    for (const link of entities.links) {
+      addRenderedLayer(layers.links, L.polyline([toLatLng(link.oLatE6, link.oLngE6), toLatLng(link.dLatE6, link.dLngE6)], {
+        color: getTeamColor(link.team),
+        opacity: 0.85,
+        pane: getLayerPane('links'),
+        renderer: getLayerRenderer('links'),
         weight: 2,
         interactive: false,
       }));
     }
   }
+
+  for (const portal of entities.portals) {
+    const color = getTeamColor(portal.team);
+    const latLng = toLatLng(portal.latE6, portal.lngE6);
+    const radius = getPortalRadius(portal.level, portal.isPlaceholder);
+
+    if (layerSettings.portals) {
+      addRenderedLayer(layers.portals, L.circleMarker(latLng, {
+        radius,
+        color,
+        fillColor: getPortalFillColor(portal.team, portal.level, portal.isPlaceholder),
+        fillOpacity: getPortalFillOpacity(portal.health, portal.isPlaceholder),
+        opacity: portal.isPlaceholder ? 0.6 : 1,
+        pane: getLayerPane('portals'),
+        renderer: getLayerRenderer('portals'),
+        weight: getPortalWeight(portal.level, portal.isPlaceholder),
+        dashArray: portal.isPlaceholder ? '1,2' : undefined,
+        interactive: false,
+      }));
+    }
+
+    if (layerSettings.ornaments && !portal.isPlaceholder && portal.health !== undefined && portal.health < 100) {
+      addRenderedLayer(layers.ornaments, L.circleMarker(latLng, {
+        radius: radius + 3,
+        color: getHealthColor(portal.health),
+        fillOpacity: 0,
+        opacity: getHealthOpacity(portal.health),
+        pane: getLayerPane('ornaments'),
+        weight: 2,
+        interactive: false,
+      }));
+    }
+
+    if (layerSettings.labels && !portal.isPlaceholder && portal.level !== undefined) {
+      addRenderedLayer(layers.labels, createLevelLabelMarker(latLng, portal.level, portal.team));
+    }
+
+    if (layerSettings.ornaments && portal.ornaments && portal.ornaments.length > 0) {
+      for (const ornament of portal.ornaments) {
+        addRenderedLayer(layers.ornaments, createOrnamentMarker(latLng, ornament, radius));
+      }
+    }
+  }
+}
+
+function renderTileDebug(plan: IitcMapDataPlan, response: IitcGetEntitiesResponse): void {
+  if (!window.__iitcIrisMap) return;
+  const layers = ensureLayers();
+  clearRenderedLayers(layers.tiles);
+  if (!layerSettings.tiles) return;
+
+  const tilePayloads = response.result?.map ?? {};
+  for (const tile of plan.tiles) {
+    const payload = tilePayloads[tile.id];
+    const entityCount = payload?.gameEntities?.length ?? 0;
+    const color = payload ? (entityCount > 0 ? '#00ff73' : '#ffce00') : '#ff1010';
+
+    addRenderedLayer(layers.tiles, L.rectangle([
+      [tile.bounds.south, tile.bounds.west],
+      [tile.bounds.north, tile.bounds.east],
+    ], {
+      color,
+      fillColor: color,
+      fillOpacity: entityCount > 0 ? 0.08 : 0.14,
+      opacity: 0.75,
+      pane: getLayerPane('tiles'),
+      weight: 1,
+      interactive: false,
+    }));
+  }
+}
+
+function renderLatestTileDebug(): void {
+  if (!latestPlan || !latestResponse) {
+    clearRenderedLayers(ensureLayers().tiles);
+    return;
+  }
+  renderTileDebug(latestPlan, latestResponse);
 }
 
 function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
@@ -145,15 +434,71 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
   if (event.data?.type === IITC_IRIS_MESSAGES.renderEntities && event.data.entities) {
     renderEntities(event.data.entities);
   }
+  if (event.data?.type === IITC_IRIS_MESSAGES.layerSettings && event.data.layerSettings) {
+    layerSettings = event.data.layerSettings;
+    if (latestEntities) renderEntities(latestEntities);
+    renderLatestTileDebug();
+  }
 }
 
-function postEntityStatus(status: string, entities?: IitcIrisRenderEntities): void {
+function countReturnedTiles(response: IitcGetEntitiesResponse): {
+  returnedTiles: number;
+  nonEmptyTiles: number;
+  emptyTileKeys: string[];
+  nonEmptyTileKeys: string[];
+} {
+  const entries = Object.entries(response.result?.map ?? {});
+  const emptyTileKeys: string[] = [];
+  const nonEmptyTileKeys: string[] = [];
+  for (const [tileKey, tile] of entries) {
+    if ((tile.gameEntities?.length ?? 0) > 0) nonEmptyTileKeys.push(tileKey);
+    else emptyTileKeys.push(tileKey);
+  }
+
+  return {
+    returnedTiles: entries.length,
+    nonEmptyTiles: nonEmptyTileKeys.length,
+    emptyTileKeys,
+    nonEmptyTileKeys,
+  };
+}
+
+function postEntityStatus(
+  status: string,
+  entities?: IitcIrisRenderEntities,
+  tileDiagnostics: {
+    requestedTiles: number;
+    returnedTiles: number;
+    nonEmptyTiles: number;
+    emptyTileKeys: string[];
+    nonEmptyTileKeys: string[];
+  } = {
+    requestedTiles: 0,
+    returnedTiles: 0,
+    nonEmptyTiles: 0,
+    emptyTileKeys: [],
+    nonEmptyTileKeys: [],
+  },
+): void {
+  const portals = entities?.portals ?? [];
+  const authRequired = /login html|missing csrftoken/i.test(status);
   window.postMessage({
     type: IITC_IRIS_MESSAGES.entityStatus,
     status,
-    portals: entities?.portals.length,
-    links: entities?.links.length,
-    fields: entities?.fields.length,
+    authRequired,
+    portals: portals.length,
+    realPortals: portals.filter((portal) => !portal.isPlaceholder).length,
+    placeholderPortals: portals.filter((portal) => portal.isPlaceholder).length,
+    ornamentPortals: portals.filter((portal) => portal.ornaments && portal.ornaments.length > 0).length,
+    levelLabels: portals.filter((portal) => !portal.isPlaceholder && portal.level !== undefined).length,
+    damagedPortals: portals.filter((portal) => !portal.isPlaceholder && portal.health !== undefined && portal.health < 100).length,
+    links: entities?.links.length ?? 0,
+    fields: entities?.fields.length ?? 0,
+    requestedTiles: tileDiagnostics.requestedTiles,
+    returnedTiles: tileDiagnostics.returnedTiles,
+    nonEmptyTiles: tileDiagnostics.nonEmptyTiles,
+    emptyTileKeys: tileDiagnostics.emptyTileKeys,
+    nonEmptyTileKeys: tileDiagnostics.nonEmptyTileKeys,
   } satisfies IitcIrisMessage, '*');
 }
 
@@ -178,8 +523,8 @@ function extractVersion(): string {
   return '';
 }
 
-function looksLikeLoginHtml(text: string): boolean {
-  return /<html|<!doctype|login|signin/i.test(text);
+function looksLikeHtml(text: string): boolean {
+  return /^\s*(?:<!doctype\s+html|<html|<head|<body)\b/i.test(text);
 }
 
 function createPlanFromMap(): IitcMapDataPlan | null {
@@ -193,24 +538,44 @@ function createPlanFromMap(): IitcMapDataPlan | null {
     west: bounds.getWest(),
     north: bounds.getNorth(),
     east: bounds.getEast(),
-  }, {lat: center.lat, lng: center.lng}, map.getZoom());
+  }, {lat: center.lat, lng: center.lng}, map.getZoom(), {
+    boundsPaddingRatio: REQUEST_BOUNDS_PADDING_RATIO,
+  });
 }
 
-function createTileKeyChunks(tileKeys: string[], chunkSize = 25): string[][] {
-  const chunks: string[][] = [];
-  for (let index = 0; index < tileKeys.length; index += chunkSize) {
-    chunks.push(tileKeys.slice(index, index + chunkSize));
-  }
-  return chunks;
+function countTileEntities(tile: IitcMapTilePayload | undefined): number {
+  return tile?.gameEntities?.length ?? 0;
 }
 
 function mergeEntityResponses(responses: IitcGetEntitiesResponse[]): IitcGetEntitiesResponse {
   const map: NonNullable<NonNullable<IitcGetEntitiesResponse['result']>['map']> = {};
   for (const response of responses) {
-    Object.assign(map, response.result?.map ?? {});
+    for (const [tileKey, tile] of Object.entries(response.result?.map ?? {})) {
+      const existing = map[tileKey];
+      if (!existing || countTileEntities(tile) > countTileEntities(existing)) {
+        map[tileKey] = tile;
+      }
+    }
   }
 
   return {result: {map}};
+}
+
+function createTileBatches(tileKeys: string[], batchSize: number): string[][] {
+  const batches: string[][] = [];
+  for (let index = 0; index < tileKeys.length; index += batchSize) {
+    batches.push(tileKeys.slice(index, index + batchSize));
+  }
+  return batches;
+}
+
+function createEntityBatches(tileKeys: string[]): string[][] {
+  return createTileBatches(tileKeys, ENTITY_TILES_PER_REQUEST);
+}
+
+function getReturnedEmptyTileKeys(response: IitcGetEntitiesResponse, requestedTileKeys: string[]): string[] {
+  const tilePayloads = response.result?.map ?? {};
+  return requestedTileKeys.filter((tileKey) => tilePayloads[tileKey] && countTileEntities(tilePayloads[tileKey]) === 0);
 }
 
 function toRenderEntities(response: IitcGetEntitiesResponse, generation: number): IitcIrisRenderEntities {
@@ -245,22 +610,33 @@ function toRenderEntities(response: IitcGetEntitiesResponse, generation: number)
 }
 
 async function fetchEntityBatch(tileKeys: string[], version: string): Promise<IitcGetEntitiesResponse> {
+  const csrfToken = getCsrfToken();
+  if (!csrfToken) throw new Error('getEntities missing csrftoken');
+
   const response = await fetch('/r/getEntities', {
     method: 'POST',
     credentials: 'include',
     headers: {
-      'Content-Type': 'application/json',
-      'X-CSRFToken': getCsrfToken(),
+      'Accept': 'application/json, text/javascript, */*; q=0.01',
+      'Content-Type': 'application/json; charset=utf-8',
+      'X-CSRFToken': csrfToken,
+      'X-Requested-With': 'XMLHttpRequest',
     },
     body: JSON.stringify({tileKeys, v: version}),
   });
   const text = await response.text();
 
-  if (looksLikeLoginHtml(text)) throw new Error('getEntities returned login html');
+  if (looksLikeHtml(text)) {
+    throw new Error(`getEntities returned login html HTTP ${response.status}${response.redirected ? ' redirected' : ''}`);
+  }
   if (!response.ok) throw new Error(`getEntities failed HTTP ${response.status}`);
   if (!text.trim()) throw new Error('getEntities returned empty response');
 
-  return JSON.parse(text) as IitcGetEntitiesResponse;
+  try {
+    return JSON.parse(text) as IitcGetEntitiesResponse;
+  } catch (error) {
+    throw new Error(`getEntities returned non-JSON HTTP ${response.status}: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
 
 function scheduleEntityRefresh(): void {
@@ -282,25 +658,76 @@ async function refreshEntities(): Promise<void> {
     const version = extractVersion();
     if (!version) throw new Error('waiting for Intel version');
 
-    const generation = latestFetchGeneration + 1;
+    const generation = latestFetchGeneration;
     latestFetchGeneration = generation;
-    const batches = createTileKeyChunks(plan.tileKeys);
+    const batches = createEntityBatches(plan.tileKeys);
     const responses: IitcGetEntitiesResponse[] = [];
-    postEntityStatus(`fetching ${plan.tileKeys.length} tiles`);
+    postEntityStatus(`fetching ${plan.tileKeys.length} tiles`, undefined, {
+      requestedTiles: plan.tileKeys.length,
+      returnedTiles: 0,
+      nonEmptyTiles: 0,
+      emptyTileKeys: [],
+      nonEmptyTileKeys: [],
+    });
 
     for (let index = 0; index < batches.length; index += 1) {
       const response = await fetchEntityBatch(batches[index], version);
       if (generation !== latestFetchGeneration) return;
       responses.push(response);
-      const entities = toRenderEntities(mergeEntityResponses(responses), generation);
-      renderEntities(entities);
-      postEntityStatus(`batch ${index + 1}/${batches.length}`, entities);
+      const mergedResponse = mergeEntityResponses(responses);
+      const entities = toRenderEntities(mergedResponse, generation);
+      const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys} = countReturnedTiles(mergedResponse);
+      postEntityStatus(`batch ${index + 1}/${batches.length}`, entities, {
+        requestedTiles: plan.tileKeys.length,
+        returnedTiles,
+        nonEmptyTiles,
+        emptyTileKeys,
+        nonEmptyTileKeys,
+      });
     }
 
-    const entities = toRenderEntities(mergeEntityResponses(responses), generation);
+    if (generation !== latestFetchGeneration) return;
+    let mergedResponse = mergeEntityResponses(responses);
+    if (plan.tileParams.hasPortals) {
+      for (let pass = 1; pass <= EMPTY_TILE_RETRY_PASSES; pass += 1) {
+        const retryTileKeys = getReturnedEmptyTileKeys(mergedResponse, plan.tileKeys).slice(0, EMPTY_TILE_RETRY_LIMIT);
+        if (retryTileKeys.length === 0) break;
+
+        const retryBatches = createTileBatches(retryTileKeys, EMPTY_TILE_RETRY_BATCH_SIZE);
+        for (let index = 0; index < retryBatches.length; index += 1) {
+          const response = await fetchEntityBatch(retryBatches[index], version);
+          if (generation !== latestFetchGeneration) return;
+          responses.push(response);
+          mergedResponse = mergeEntityResponses(responses);
+          const entities = toRenderEntities(mergedResponse, generation);
+          const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys} = countReturnedTiles(mergedResponse);
+          postEntityStatus(`retry ${pass} ${index + 1}/${retryBatches.length}`, entities, {
+            requestedTiles: plan.tileKeys.length,
+            returnedTiles,
+            nonEmptyTiles,
+            emptyTileKeys,
+            nonEmptyTileKeys,
+          });
+        }
+      }
+    }
+
+    const entities = toRenderEntities(mergedResponse, generation);
+    const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys} = countReturnedTiles(mergedResponse);
+    latestPlan = plan;
+    latestResponse = mergedResponse;
     renderEntities(entities);
-    postEntityStatus('entities ready', entities);
+    renderTileDebug(plan, mergedResponse);
+    postEntityStatus('entities ready', entities, {
+      requestedTiles: plan.tileKeys.length,
+      returnedTiles,
+      nonEmptyTiles,
+      emptyTileKeys,
+      nonEmptyTileKeys,
+    });
   } catch (error) {
+    latestRequestKey = '';
+    clearAllRenderedLayers();
     postEntityStatus(error instanceof Error ? error.message : String(error));
   }
 }
@@ -319,13 +746,15 @@ function boot(): void {
     window.__iitcIrisLayers = undefined;
   }
 
+  const storedView = loadUrlMapView() ?? loadStoredMapView();
   const map = L.map(container, {
     zoomControl: false,
     preferCanvas: true,
-  }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+  }).setView([storedView.lat, storedView.lng], storedView.zoom);
 
   window.__iitcIrisMap = map;
   window.__iitcIrisMapContainer = container;
+  createIitcIrisPanes(map);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
@@ -339,6 +768,24 @@ function boot(): void {
     postMapMoved();
     window.postMessage({type: IITC_IRIS_MESSAGES.pageReady}, '*');
   }, 0);
+}
+
+function createIitcIrisPanes(map: LeafletMap): void {
+  const panes: [keyof IitcIrisLayerSettings, number][] = [
+    ['tiles', 405],
+    ['fields', 410],
+    ['links', 420],
+    ['portals', 430],
+    ['ornaments', 440],
+    ['labels', 450],
+  ];
+
+  for (const [key, zIndex] of panes) {
+    const paneName = getLayerPane(key);
+    const pane = map.getPane(paneName) ?? map.createPane(paneName);
+    pane.style.zIndex = String(zIndex);
+    pane.style.pointerEvents = 'none';
+  }
 }
 
 window.addEventListener('IITC_IRIS_CONTAINER_READY', boot);
