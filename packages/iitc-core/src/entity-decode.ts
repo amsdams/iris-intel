@@ -7,6 +7,12 @@ export interface IitcArtifactBrief {
   target: Record<string, unknown[]>;
 }
 
+export interface IitcPortalArtifact {
+  role: 'fragment' | 'target';
+  type: string;
+  ids: string[];
+}
+
 export interface IitcDecodedPortal extends IitcPortal {
   timestamp: number;
   resCount?: number;
@@ -81,6 +87,29 @@ function decodeArtifactArray(values: unknown[]): Record<string, unknown[]> {
   }
 
   return result;
+}
+
+function artifactIdsFromValue(value: unknown[]): string[] {
+  const flattened: unknown[] = [];
+  for (const entry of value) {
+    if (Array.isArray(entry)) flattened.push(...entry);
+    else flattened.push(entry);
+  }
+  return flattened.filter((entry): entry is string => typeof entry === 'string' && entry.length > 0);
+}
+
+export function getIitcPortalArtifacts(artifactBrief: IitcArtifactBrief | null | undefined): IitcPortalArtifact[] {
+  if (!artifactBrief) return [];
+
+  const artifacts: IitcPortalArtifact[] = [];
+  for (const [type, value] of Object.entries(artifactBrief.fragment)) {
+    artifacts.push({role: 'fragment', type, ids: artifactIdsFromValue(value)});
+  }
+  for (const [type, value] of Object.entries(artifactBrief.target)) {
+    artifacts.push({role: 'target', type, ids: artifactIdsFromValue(value)});
+  }
+
+  return artifacts;
 }
 
 export function isIitcFakeFieldEdgeLink(guid: string): boolean {

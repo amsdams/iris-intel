@@ -1,7 +1,7 @@
 import {readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {describe, expect, it} from 'vitest';
-import {decodeIitcGameEntities, decodeIitcGetEntitiesResponse, isIitcFakeFieldEdgeLink, type IitcGetEntitiesResponse, type IitcRawGameEntity} from './index';
+import {decodeIitcGameEntities, decodeIitcGetEntitiesResponse, getIitcPortalArtifacts, isIitcFakeFieldEdgeLink, type IitcGetEntitiesResponse, type IitcRawGameEntity} from './index';
 
 function readFixture(path: string): IitcGetEntitiesResponse {
   return JSON.parse(readFileSync(resolve(import.meta.dirname, '../../..', path), 'utf8')) as IitcGetEntitiesResponse;
@@ -74,11 +74,17 @@ describe('IITC entity decoding', () => {
       ['p', 'E', 52_373_000, 4_895_000, 6, 80, 8, 'image', 'Artifact Portal', ['sc5_p'], false, false, [[['jarvis', 'fragment-1']], [['jarvis']]], 123],
     ];
 
-    expect(decodeIitcGameEntities([artifactPortal]).portals['artifact.16']).toMatchObject({
+    const portal = decodeIitcGameEntities([artifactPortal]).portals['artifact.16'];
+
+    expect(portal).toMatchObject({
       artifactBrief: {
         fragment: {jarvis: ['fragment-1']},
         target: {jarvis: []},
       },
     });
+    expect(getIitcPortalArtifacts(portal.artifactBrief)).toEqual([
+      {role: 'fragment', type: 'jarvis', ids: ['fragment-1']},
+      {role: 'target', type: 'jarvis', ids: []},
+    ]);
   });
 });

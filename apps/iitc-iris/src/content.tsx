@@ -16,6 +16,7 @@ const REQUEST_BOUNDS_PADDING_RATIO = 0.25;
 const BASE_LAYER_STORAGE_KEY = 'iitc-iris:base-layer';
 const LAYER_SETTINGS_STORAGE_KEY = 'iitc-iris:layer-settings';
 const DATA_SOURCE_STORAGE_KEY = 'iitc-iris:data-source';
+const DEBUG_DOCK_STORAGE_KEY = 'iitc-iris:debug-dock';
 const VIEW_PRESETS = [
   {id: 'amsterdam-z10', label: 'AMS 10', lat: 52.3730796, lng: 4.8924534, zoom: 10},
   {id: 'amsterdam-z15', label: 'AMS 15', lat: 52.3730796, lng: 4.8924534, zoom: 15},
@@ -122,6 +123,7 @@ interface EntityFetchState {
   requestedTiles: number;
   returnedTiles: number;
   nonEmptyTiles: number;
+  elapsedMs: number | null;
   retryRequests: number;
   retriedTileKeys: string[];
   recoveredTileKeys: string[];
@@ -143,6 +145,15 @@ interface ParsedViewInput {
   lat: number;
   lng: number;
   zoom?: number;
+}
+
+interface InnerStatusView {
+  portalText: string;
+  mapText: string;
+  mapTitle: string;
+  progressPercent: number | null;
+  activeRequests: number;
+  failedRequests: number;
 }
 
 function clampView(view: ParsedViewInput): ParsedViewInput {
@@ -253,6 +264,22 @@ function storeDataSourceId(value: string): void {
   }
 }
 
+function loadStoredDebugDockVisible(): boolean {
+  try {
+    return window.localStorage.getItem(DEBUG_DOCK_STORAGE_KEY) !== 'false';
+  } catch {
+    return true;
+  }
+}
+
+function storeDebugDockVisible(value: boolean): void {
+  try {
+    window.localStorage.setItem(DEBUG_DOCK_STORAGE_KEY, value ? 'true' : 'false');
+  } catch {
+    // Debug visibility is optional.
+  }
+}
+
 function createDataSourceSettings(id: typeof DATA_SOURCE_OPTIONS[number]['id']): IitcIrisDataSourceSettings {
   const option = DATA_SOURCE_OPTIONS.find((candidate) => candidate.id === id) ?? DATA_SOURCE_OPTIONS[0];
   if (option.mode === 'live') return {mode: 'live'};
@@ -289,6 +316,7 @@ function entityFetchStateFromMessage(message: IitcIrisMessage, current: EntityFe
     requestedTiles: message.requestedTiles ?? 0,
     returnedTiles: message.returnedTiles ?? 0,
     nonEmptyTiles: message.nonEmptyTiles ?? 0,
+    elapsedMs: message.elapsedMs ?? null,
     retryRequests: message.retryRequests ?? 0,
     retriedTileKeys: message.retriedTileKeys ?? [],
     recoveredTileKeys: message.recoveredTileKeys ?? [],
@@ -338,11 +366,61 @@ function createIntelUrl(camera: CameraState): string {
   return `https://intel.ingress.com/intel?ll=${lat},${lng}&z=${zoom}`;
 }
 
+function formatLinkLength(meters: number): string {
+  return meters > 1000 ? `${meters / 1000}km` : `${meters}m`;
+}
+
+function formatElapsedSeconds(milliseconds: number): string {
+  return (Math.round(milliseconds / 100) / 10).toFixed(1);
+}
+
+function createInnerStatusView(plan: IitcMapDataPlan | null, entityFetch: EntityFetchState): InnerStatusView {
+  const portalText = plan?.tileParams.hasPortals
+    ? 'portals'
+    : `links: ${plan && plan.tileParams.minLinkLength > 0 ? `>${formatLinkLength(plan.tileParams.minLinkLength)}` : 'all links'}`;
+  const loading = entityFetch.requestedTiles > 0 && entityFetch.returnedTiles < entityFetch.requestedTiles;
+  const activeRequests = entityFetch.queue?.activeRequests ?? (loading ? 1 : 0);
+  const failedRequests = entityFetch.queue?.failedTiles ?? entityFetch.errorTileKeys.length;
+  const progressPercent = loading ? Math.floor((entityFetch.returnedTiles / entityFetch.requestedTiles) * 100) : null;
+
+  let mapText = entityFetch.status;
+  if (entityFetch.authRequired) {
+    mapText = 'login';
+  } else if (loading) {
+    mapText = 'loading';
+  } else if (entityFetch.status === 'entities ready') {
+    mapText = failedRequests > 0 ? 'errors' : 'done';
+  }
+
+  const cachedTiles = entityFetch.entitySource === 'cache' ? entityFetch.returnedTiles : 0;
+  const loadedTiles = entityFetch.entitySource === 'cache' ? 0 : entityFetch.returnedTiles;
+  const remainingTiles = Math.max(0, entityFetch.requestedTiles - entityFetch.returnedTiles);
+  const retryText = entityFetch.retryRequests > 0 ? `, ${entityFetch.retryRequests} retried` : '';
+  const sourceText = entityFetch.entitySource === 'idle' ? '' : `, source ${entityFetch.entitySource}`;
+  const finalTimeText = !loading && entityFetch.elapsedMs !== null ? `, in ${formatElapsedSeconds(entityFetch.elapsedMs)} seconds` : '';
+  const tileProgressText = !loading && entityFetch.elapsedMs !== null
+    ? `Tiles: ${cachedTiles} cached, ${loadedTiles} loaded${retryText}${finalTimeText}${sourceText}`
+    : `Tiles: ${cachedTiles} cached, ${loadedTiles} loaded, ${remainingTiles} remaining${retryText}${sourceText}`;
+  const mapTitle = entityFetch.requestedTiles > 0
+    ? tileProgressText
+    : `${entityFetch.status}${sourceText}`;
+
+  return {
+    portalText,
+    mapText,
+    mapTitle,
+    progressPercent,
+    activeRequests,
+    failedRequests,
+  };
+}
+
 function App(): h.JSX.Element {
   const [status, setStatus] = useState('booting');
   const [copyStatus, setCopyStatus] = useState('');
   const [viewInput, setViewInput] = useState('');
   const [viewInputStatus, setViewInputStatus] = useState('');
+  const [debugDockVisible, setDebugDockVisible] = useState(() => loadStoredDebugDockVisible());
   const [baseLayerId, setBaseLayerId] = useState<IitcIrisBaseLayerId>(() => loadStoredBaseLayerId());
   const [dataSourceId, setDataSourceId] = useState<typeof DATA_SOURCE_OPTIONS[number]['id']>(() => loadStoredDataSourceId());
   const [layerSettings, setLayerSettings] = useState<IitcIrisLayerSettings>(() => loadStoredLayerSettings());
@@ -376,6 +454,7 @@ function App(): h.JSX.Element {
     requestedTiles: 0,
     returnedTiles: 0,
     nonEmptyTiles: 0,
+    elapsedMs: null,
     retryRequests: 0,
     retriedTileKeys: [],
     recoveredTileKeys: [],
@@ -397,6 +476,7 @@ function App(): h.JSX.Element {
   const requestBatches = plan?.requestBatches.map((batch) => batch.length) ?? [];
   const intelUrl = createIntelUrl(camera);
   const dataSource = useMemo(() => createDataSourceSettings(dataSourceId), [dataSourceId]);
+  const innerStatus = createInnerStatusView(plan, entityFetch);
   const detailOverlaysActive = entityFetch.renderPolicy.levelFill ||
     entityFetch.renderPolicy.healthFill ||
     entityFetch.renderPolicy.ornaments ||
@@ -453,6 +533,7 @@ function App(): h.JSX.Element {
       requestedTiles: entityFetch.requestedTiles,
       returnedTiles: entityFetch.returnedTiles,
       nonEmptyTiles: entityFetch.nonEmptyTiles,
+      elapsedMs: entityFetch.elapsedMs,
       retryRequests: entityFetch.retryRequests,
       retriedTileKeys: entityFetch.retriedTileKeys,
       recoveredTileKeys: entityFetch.recoveredTileKeys,
@@ -495,6 +576,14 @@ function App(): h.JSX.Element {
         setCopyStatus('copy failed');
         window.setTimeout(() => setCopyStatus(''), 1600);
       });
+  };
+
+  const toggleDebugDock = (): void => {
+    setDebugDockVisible((current) => {
+      const next = !current;
+      storeDebugDockVisible(next);
+      return next;
+    });
   };
 
   const openIntelLogin = (): void => {
@@ -612,6 +701,14 @@ function App(): h.JSX.Element {
       <div className="iitc-iris-dock">
         <div className="iitc-iris-dock-row">
           <span className="iitc-iris-title">IITC IRIS</span>
+          <button
+            className={`iitc-iris-copy ${debugDockVisible ? 'iitc-iris-debug-active' : ''}`}
+            type="button"
+            onClick={toggleDebugDock}
+            title="Show or hide debug diagnostics"
+          >
+            Debug
+          </button>
           <button className="iitc-iris-copy" type="button" onClick={copyDockText} title="Copy JSON diagnostics">Copy JSON</button>
           <button className="iitc-iris-copy" type="button" onClick={copyIntelUrl} title="Copy current view as an Intel URL">Copy URL</button>
           {VIEW_PRESETS.map((preset) => (
@@ -645,6 +742,22 @@ function App(): h.JSX.Element {
           {viewInputStatus && <span className="iitc-iris-status">{viewInputStatus}</span>}
           {copyStatus && <span className="iitc-iris-status">{copyStatus}</span>}
         </div>
+        <div id="iitc-iris-innerstatus" className="iitc-iris-innerstatus">
+          <span className="help portallevel" title="Indicates portal levels/link lengths displayed. Zoom in to display more.">{innerStatus.portalText}</span>
+          <span className="map">
+            <b>map</b>:{' '}
+            <span className="help" title={innerStatus.mapTitle}>{innerStatus.mapText}</span>
+            {innerStatus.progressPercent !== null && ` ${innerStatus.progressPercent}%`}
+          </span>
+          {innerStatus.activeRequests > 0 && <span>{innerStatus.activeRequests} requests</span>}
+          {innerStatus.failedRequests > 0 && <span className="failed-request">{innerStatus.failedRequests} failed</span>}
+          {entityFetch.collision && <span className="failed-request">old IRIS active</span>}
+          {entityFetch.authRequired && (
+            <button className="iitc-iris-login iitc-iris-innerstatus-login" type="button" onClick={openIntelLogin} title="Open Intel login">
+              Intel Login
+            </button>
+          )}
+        </div>
         <div className="iitc-iris-dock-row">
           <span className="iitc-iris-status">View</span>
           <div className="iitc-iris-pan-grid" aria-label="Pan controls">
@@ -657,7 +770,7 @@ function App(): h.JSX.Element {
           <button className="iitc-iris-nav-button" type="button" onClick={() => zoomMap(-1)} title="Zoom out">-</button>
           <span className="iitc-iris-status">step 25%</span>
         </div>
-        <div className="iitc-iris-dock-row">
+        {debugDockVisible && <div className="iitc-iris-dock-row iitc-iris-debug-row">
           <span className="iitc-iris-status">{status}</span>
           <span className="iitc-iris-status">z {camera.zoom.toFixed(2)}</span>
           <span className="iitc-iris-status">data z {plan?.dataZoom ?? '-'}</span>
@@ -673,8 +786,8 @@ function App(): h.JSX.Element {
               Intel Login
             </button>
           )}
-        </div>
-        <div className="iitc-iris-dock-row">
+        </div>}
+        {debugDockVisible && <div className="iitc-iris-dock-row iitc-iris-debug-row">
           <span className="iitc-iris-status">{entityFetch.status}</span>
           <span className="iitc-iris-status">src {entityFetch.entitySource}</span>
           <span className="iitc-iris-status">p {entityFetch.portals}</span>
@@ -689,8 +802,9 @@ function App(): h.JSX.Element {
           <span className="iitc-iris-status iitc-iris-compare">compare vp P/L/F {entityFetch.viewportPortals}/{entityFetch.viewportLinks}/{entityFetch.viewportFields}</span>
           <span className="iitc-iris-status">rt {entityFetch.returnedTiles}/{entityFetch.requestedTiles}</span>
           <span className="iitc-iris-status">nt {entityFetch.nonEmptyTiles}</span>
+          {entityFetch.elapsedMs !== null && <span className="iitc-iris-status">in {formatElapsedSeconds(entityFetch.elapsedMs)}s</span>}
           {entityFetch.retryRequests > 0 && <span className="iitc-iris-status">retry {entityFetch.retryRequests}</span>}
-        </div>
+        </div>}
         <div className="iitc-iris-dock-row">
           <span className="iitc-iris-status">Data</span>
           {DATA_SOURCE_OPTIONS.map((option) => (

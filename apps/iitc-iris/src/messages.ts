@@ -50,6 +50,7 @@ export interface IitcIrisMessage {
   requestedTiles?: number;
   returnedTiles?: number;
   nonEmptyTiles?: number;
+  elapsedMs?: number;
   retryRequests?: number;
   retriedTileKeys?: string[];
   recoveredTileKeys?: string[];

@@ -59,6 +59,7 @@ Current status:
 - Portals, links, fields, placeholder portals, fake field-edge link filtering, and ornament IDs are decoded.
 - Fixture tests cover low-zoom placeholder behavior and zoom-15 summary/ornament behavior.
 - Artifact brief decoding is wired with a synthetic parser test, but live artifact behavior is unverified because Intel is not currently returning artifact portal payloads in the available test responses.
+- Artifact brief normalization for renderer-facing fragment/target entries now lives in `packages/iitc-core`; IITC IRIS renders the core artifact entry shape directly.
 - Shard and event decoding still need dedicated live fixtures and tests.
 
 ## Pass 4: Leaflet Rendering - Partial

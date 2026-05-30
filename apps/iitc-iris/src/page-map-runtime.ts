@@ -12,14 +12,15 @@ import {
   decodeIitcGetEntitiesResponse,
   getIitcRecoveredTileKeys,
   getIitcReusableCacheClassification,
+  getIitcPortalArtifacts,
   IITC_EMPTY_TILE_RETRY_PASSES,
   IITC_LIVE_COMPAT_TILES_PER_REQUEST,
   markIitcTileQueueStale,
   markIitcTileRequestStarted,
   mergeIitcGetEntitiesResponses,
-  type IitcArtifactBrief,
   type IitcGetEntitiesResponse,
   type IitcMapDataPlan,
+  type IitcPortalArtifact,
   type IitcTileQueueState,
 } from '@iris/iitc-core';
 
@@ -79,6 +80,7 @@ interface TileDiagnostics {
   requestedTiles: number;
   returnedTiles: number;
   nonEmptyTiles: number;
+  elapsedMs?: number;
   viewportBounds?: IitcMapDataPlan['viewportBounds'];
   retryRequests?: number;
   retriedTileKeys?: string[];
@@ -355,27 +357,7 @@ function getPortalHealthFillOpacity(health: number): number {
   return 1;
 }
 
-function artifactIdsFromValue(value: unknown[]): string[] {
-  const flattened: unknown[] = [];
-  for (const entry of value) {
-    if (Array.isArray(entry)) flattened.push(...entry);
-    else flattened.push(entry);
-  }
-  const ids = flattened.filter((entry): entry is string => typeof entry === 'string' && entry.length > 0);
-  return ids.length > 0 ? ids : [];
-}
-
-function toRenderArtifacts(artifactBrief: IitcArtifactBrief | null | undefined): IitcIrisRenderArtifact[] | undefined {
-  if (!artifactBrief) return undefined;
-
-  const artifacts: IitcIrisRenderArtifact[] = [];
-  for (const [type, value] of Object.entries(artifactBrief.fragment)) {
-    artifacts.push({role: 'fragment', type, ids: artifactIdsFromValue(value)});
-  }
-  for (const [type, value] of Object.entries(artifactBrief.target)) {
-    artifacts.push({role: 'target', type, ids: artifactIdsFromValue(value)});
-  }
-
+function toRenderArtifacts(artifacts: IitcPortalArtifact[]): IitcIrisRenderArtifact[] | undefined {
   return artifacts.length > 0 ? artifacts : undefined;
 }
 
@@ -719,6 +701,7 @@ function postEntityStatus(
     requestedTiles: 0,
     returnedTiles: 0,
     nonEmptyTiles: 0,
+    elapsedMs: undefined,
     retryRequests: 0,
     retriedTileKeys: [],
     recoveredTileKeys: [],
@@ -757,6 +740,7 @@ function postEntityStatus(
     requestedTiles: tileDiagnostics.requestedTiles,
     returnedTiles: tileDiagnostics.returnedTiles,
     nonEmptyTiles: tileDiagnostics.nonEmptyTiles,
+    elapsedMs: tileDiagnostics.elapsedMs,
     retryRequests: tileDiagnostics.retryRequests ?? 0,
     retriedTileKeys: tileDiagnostics.retriedTileKeys ?? [],
     recoveredTileKeys: tileDiagnostics.recoveredTileKeys ?? [],
@@ -854,7 +838,7 @@ function toRenderEntities(response: IitcGetEntitiesResponse, generation: number)
       level: portal.level,
       health: portal.health,
       ornaments: portal.ornaments,
-      artifacts: toRenderArtifacts(portal.artifactBrief),
+      artifacts: toRenderArtifacts(getIitcPortalArtifacts(portal.artifactBrief)),
       isPlaceholder: portal.isPlaceholder,
     })),
     links: Object.values(decoded.links).map((link) => ({
@@ -918,6 +902,7 @@ function scheduleEntityRefresh(): void {
 }
 
 async function refreshEntities(): Promise<void> {
+  const refreshStartTime = performance.now();
   let generation = latestFetchGeneration;
   let activeQueueState: IitcTileQueueState | undefined;
   let abortController: AbortController | undefined;
@@ -949,6 +934,7 @@ async function refreshEntities(): Promise<void> {
         requestedTiles: plan.tileKeys.length,
         returnedTiles: cachedClassification.returnedTiles,
         nonEmptyTiles: cachedClassification.nonEmptyTiles,
+        elapsedMs: performance.now() - refreshStartTime,
         viewportBounds: plan.viewportBounds,
         retryRequests: 0,
         retriedTileKeys: [],
@@ -995,6 +981,7 @@ async function refreshEntities(): Promise<void> {
         requestedTiles: plan.tileKeys.length,
         returnedTiles,
         nonEmptyTiles,
+        elapsedMs: performance.now() - refreshStartTime,
         viewportBounds: plan.viewportBounds,
         retryRequests: 0,
         retriedTileKeys: [],
@@ -1138,6 +1125,7 @@ async function refreshEntities(): Promise<void> {
       requestedTiles: plan.tileKeys.length,
       returnedTiles,
       nonEmptyTiles,
+      elapsedMs: performance.now() - refreshStartTime,
       viewportBounds: plan.viewportBounds,
       retryRequests,
       retriedTileKeys: [...retriedTileKeys],

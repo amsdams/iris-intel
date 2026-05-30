@@ -53,6 +53,38 @@
   font-weight: 700;
 }
 
+.iitc-iris-innerstatus {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  max-width: 100%;
+  color: #d7e7f5;
+}
+
+.iitc-iris-innerstatus .portallevel {
+  color: #ffffbb;
+  font-weight: 700;
+}
+
+.iitc-iris-innerstatus .map b {
+  color: #ffffff;
+}
+
+.iitc-iris-innerstatus .help {
+  cursor: help;
+}
+
+.iitc-iris-innerstatus .failed-request {
+  color: #ff7676;
+  font-weight: 700;
+}
+
+.iitc-iris-innerstatus-login {
+  height: 20px;
+  padding: 1px 6px;
+}
+
 .iitc-iris-status {
   color: #c7d8e8;
 }
@@ -84,6 +116,16 @@
 .iitc-iris-preset:hover {
   border-color: rgb(101 217 255 / 80%);
   background: rgb(10 45 64 / 96%);
+}
+
+.iitc-iris-debug-active {
+  border-color: rgb(101 217 255 / 80%);
+  background: rgb(7 31 45 / 92%);
+}
+
+.iitc-iris-debug-row {
+  padding-top: 2px;
+  border-top: 1px solid rgb(95 180 255 / 16%);
 }
 
 .iitc-iris-preset {
