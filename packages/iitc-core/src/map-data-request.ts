@@ -121,6 +121,7 @@ export interface IitcTileQueueState {
 export interface IitcTileQueueApplyOptions {
   maxTileRetries?: number;
   staleTileKeys?: string[];
+  retryReturnedEmptyTiles?: boolean;
 }
 
 export interface IitcTileQueueApplyResult {
@@ -293,14 +294,21 @@ export function applyIitcTileRequestResponseToQueue(
   options: IitcTileQueueApplyOptions = {},
 ): IitcTileQueueApplyResult {
   const classification = classifyIitcTileRequestResponse(response, requestedTileKeys, success);
+  const returnedEmptyRetryTileKeys = options.retryReturnedEmptyTiles && response
+    ? getIitcReturnedEmptyTileKeys(response, requestedTileKeys)
+    : [];
+  const successTileKeys = removeMany(classification.successTileKeys, returnedEmptyRetryTileKeys);
   let nextState: IitcTileQueueState = {
     ...state,
     activeRequestCount: Math.max(0, state.activeRequestCount - 1),
     requestedTileKeys: removeMany(state.requestedTileKeys, requestedTileKeys),
-    queuedTileKeys: removeMany(state.queuedTileKeys, classification.successTileKeys),
-    successTileKeys: unique([...state.successTileKeys, ...classification.successTileKeys]),
+    queuedTileKeys: removeMany(state.queuedTileKeys, successTileKeys),
+    successTileKeys: unique([...state.successTileKeys, ...successTileKeys]),
   };
 
+  for (const tileKey of returnedEmptyRetryTileKeys) {
+    nextState = requeueIitcTile(nextState, tileKey, false, options);
+  }
   for (const tileKey of classification.serverRetryTileKeys) {
     nextState = requeueIitcTile(nextState, tileKey, false, options);
   }

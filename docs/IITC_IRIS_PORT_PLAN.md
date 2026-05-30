@@ -33,6 +33,7 @@ Current status:
 - IITC IRIS currently uses a temporary core-owned compatibility policy for live Intel tile holes: summary tile requests run in sequential 5-tile batches, returned-empty summary tiles are retried as single-tile requests, and response merging keeps a non-empty tile payload over a later empty payload for the same tile.
 - Live-compat retry selection now comes from `packages/iitc-core`: the runtime retries returned-empty compatibility tiles plus explicit IITC response retry buckets such as timeout, error, and unaccounted tiles.
 - Core now has an immutable IITC tile queue state model covering queued, requested, successful, failed, stale, active-request, and tile-error-count state; tests cover success removal, timeout requeueing, server retry without error-count increments, and retry-limit fail/stale behavior.
+- IITC IRIS now uses that core queue state to drive live-compat retry selection while keeping the conservative existing batch shape; returned-empty summary tiles are an explicit compatibility option in the core queue.
 - Response merge, tile-return diagnostics, requested-tile response classification, and IITC-style request response buckets now live in `packages/iitc-core` with tests, so the runtime no longer owns richer-payload merging, empty-tile detection, unaccounted-tile detection, or recovered-tile accounting.
 - This shim exists because the core port does not yet include IITC-CE's full tile lifecycle: tile cache state, active request accounting, tile-specific retry/error counters, timeout handling, and stale-cache fallback.
 - The compatibility policy should remain while validating live parity, but the intended replacement is a closer IITC-CE-derived request queue in `packages/iitc-core`, not permanent ad hoc runtime policy.
@@ -90,6 +91,7 @@ Current status:
 
 - The dock shows zoom, data zoom, summary availability, tile span, fetch state, entity totals, real/placeholder/ornament portal counts, and copy-to-clipboard diagnostics.
 - Copied diagnostics include IITC-style request response buckets (`serverRetryTileKeys`, `timeoutTileKeys`, `errorTileKeys`, `responseRetryTileKeys`, and `queueDelayReasons`) so slow-network retries can be separated from returned-empty tile recovery.
+- Copied diagnostics also include core queue-state counters so the immutable queue model can be compared against the current live runtime loop before it replaces scheduling.
 - The dock has fixed Amsterdam and Damrak view presets for repeatable IITC/IITC IRIS comparisons.
 - The dock can jump to arbitrary comparison views from `lat,lng,z` text, Intel map URLs with `ll` and `z`, or IITC-CE portal links with `pll`.
 - The dock can copy the current view back out as an Intel URL.

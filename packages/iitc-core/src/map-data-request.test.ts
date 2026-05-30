@@ -245,6 +245,22 @@ describe('IITC map data request planning', () => {
     expect(state.tileErrorCount.timeout).toBe(1);
   });
 
+  it('can keep returned-empty summary tiles queued for live-compatible recovery', () => {
+    const started = markIitcTileRequestStarted(createIitcTileQueueState(['empty', 'ok']), ['empty', 'ok']);
+    const {state} = applyIitcTileRequestResponseToQueue(started, {
+      result: {
+        map: {
+          empty: {gameEntities: []},
+          ok: {gameEntities: [['ok.1', 1, ['p', 'E', 1, 2]]]},
+        },
+      },
+    }, ['empty', 'ok'], true, {retryReturnedEmptyTiles: true});
+
+    expect(state.successTileKeys).toEqual(['ok']);
+    expect(state.queuedTileKeys).toEqual(['empty']);
+    expect(state.tileErrorCount).toEqual({});
+  });
+
   it('keeps server retry tiles retryable without incrementing tile errors', () => {
     const started = markIitcTileRequestStarted(createIitcTileQueueState(['a', 'b']), ['a', 'b']);
     const {state} = applyIitcTileRequestResponseToQueue(started, {error: 'RETRY'}, ['a', 'b']);

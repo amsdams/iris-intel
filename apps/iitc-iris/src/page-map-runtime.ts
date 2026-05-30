@@ -1,19 +1,22 @@
 import L, {type Layer as LeafletLayer, type Map as LeafletMap, type TileLayer} from 'leaflet';
-import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisDataSourceSettings, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderPolicy} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisDataSourceSettings, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisQueueDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderPolicy} from './messages';
 import {
+  applyIitcTileRequestResponseToQueue,
   classifyIitcGetEntitiesResponse,
   classifyIitcTileRequestResponse,
+  createIitcTileQueueState,
   createIitcEmptyTileRetryBatches,
   createIitcMapDataPlan,
   decodeIitcGetEntitiesResponse,
-  getIitcLiveCompatRetryTileKeys,
   getIitcRecoveredTileKeys,
   IITC_EMPTY_TILE_RETRY_PASSES,
   IITC_LIVE_COMPAT_TILES_PER_REQUEST,
+  markIitcTileRequestStarted,
   mergeIitcGetEntitiesResponses,
   type IitcArtifactBrief,
   type IitcGetEntitiesResponse,
   type IitcMapDataPlan,
+  type IitcTileQueueState,
 } from '@iris/iitc-core';
 
 const DEFAULT_CENTER: [number, number] = [52.3730796, 4.8924534];
@@ -82,6 +85,7 @@ interface TileDiagnostics {
   errorTileKeys?: string[];
   responseRetryTileKeys?: string[];
   queueDelayReasons?: string[];
+  queue?: IitcIrisQueueDiagnostics | null;
 }
 
 let latestEntityStatus = 'idle';
@@ -713,6 +717,7 @@ function postEntityStatus(
     errorTileKeys: [],
     responseRetryTileKeys: [],
     queueDelayReasons: [],
+    queue: null,
   },
 ): void {
   const portals = entities?.portals ?? [];
@@ -748,10 +753,23 @@ function postEntityStatus(
     errorTileKeys: tileDiagnostics.errorTileKeys ?? [],
     responseRetryTileKeys: tileDiagnostics.responseRetryTileKeys ?? [],
     queueDelayReasons: tileDiagnostics.queueDelayReasons ?? [],
+    queue: tileDiagnostics.queue ?? undefined,
     baseLayerId,
     dataSource,
     renderPolicy: getRenderPolicy(),
   } satisfies IitcIrisMessage, '*');
+}
+
+function toQueueDiagnostics(state: IitcTileQueueState): IitcIrisQueueDiagnostics {
+  return {
+    queuedTiles: state.queuedTileKeys.length,
+    requestedTiles: state.requestedTileKeys.length,
+    successTiles: state.successTileKeys.length,
+    failedTiles: state.failedTileKeys.length,
+    staleTiles: state.staleTileKeys.length,
+    activeRequests: state.activeRequestCount,
+    tileErrorCount: state.tileErrorCount,
+  };
 }
 
 function classifyTileDiagnostics(response: IitcGetEntitiesResponse, plan: IitcMapDataPlan): Pick<TileDiagnostics, 'returnedTiles' | 'nonEmptyTiles' | 'emptyTileKeys' | 'nonEmptyTileKeys' | 'unaccountedTileKeys'> {
@@ -954,6 +972,7 @@ async function refreshEntities(): Promise<void> {
         nonEmptyTileKeys,
         unaccountedTileKeys,
         ...emptyResponseBucketDiagnostics(),
+        queue: null,
       });
       return;
     }
@@ -963,6 +982,7 @@ async function refreshEntities(): Promise<void> {
     const batches = plan.requestBatches;
     const responses: IitcGetEntitiesResponse[] = [];
     const bucketDiagnostics = emptyResponseBucketDiagnostics();
+    let queueState = createIitcTileQueueState(plan.tileKeys);
     postEntityStatus(`fetching ${plan.tileKeys.length} tiles`, undefined, {
       requestedTiles: plan.tileKeys.length,
       returnedTiles: 0,
@@ -975,11 +995,16 @@ async function refreshEntities(): Promise<void> {
       nonEmptyTileKeys: [],
       unaccountedTileKeys: [],
       ...bucketDiagnostics,
+      queue: toQueueDiagnostics(queueState),
     });
 
     for (let index = 0; index < batches.length; index += 1) {
+      queueState = markIitcTileRequestStarted(queueState, batches[index]);
       const response = await fetchEntityBatch(batches[index], version);
       if (generation !== latestFetchGeneration) return;
+      queueState = applyIitcTileRequestResponseToQueue(queueState, response, batches[index], true, {
+        retryReturnedEmptyTiles: true,
+      }).state;
       collectResponseBucketDiagnostics(response, batches[index], bucketDiagnostics);
       responses.push(response);
       const mergedResponse = mergeIitcGetEntitiesResponses(responses);
@@ -994,23 +1019,28 @@ async function refreshEntities(): Promise<void> {
         nonEmptyTileKeys,
         unaccountedTileKeys,
         ...bucketDiagnostics,
+        queue: toQueueDiagnostics(queueState),
       });
     }
 
     if (generation !== latestFetchGeneration) return;
     let mergedResponse = mergeIitcGetEntitiesResponses(responses);
-    const initialRetryTileKeys = getIitcLiveCompatRetryTileKeys(mergedResponse, plan.tileKeys);
+    const initialRetryTileKeys = [...queueState.queuedTileKeys];
     const retriedTileKeys = new Set<string>();
     let retryRequests = 0;
     if (plan.tileParams.hasPortals) {
       for (let pass = 1; pass <= IITC_EMPTY_TILE_RETRY_PASSES; pass += 1) {
-        const retryTileKeys = getIitcLiveCompatRetryTileKeys(mergedResponse, plan.tileKeys);
+        const retryTileKeys = [...queueState.queuedTileKeys];
         if (retryTileKeys.length === 0) break;
 
         const retryBatches = createIitcEmptyTileRetryBatches(retryTileKeys);
         for (let index = 0; index < retryBatches.length; index += 1) {
+          queueState = markIitcTileRequestStarted(queueState, retryBatches[index]);
           const response = await fetchEntityBatch(retryBatches[index], version);
           if (generation !== latestFetchGeneration) return;
+          queueState = applyIitcTileRequestResponseToQueue(queueState, response, retryBatches[index], true, {
+            retryReturnedEmptyTiles: true,
+          }).state;
           collectResponseBucketDiagnostics(response, retryBatches[index], bucketDiagnostics);
           retryRequests += 1;
           for (const tileKey of retryBatches[index]) retriedTileKeys.add(tileKey);
@@ -1031,6 +1061,7 @@ async function refreshEntities(): Promise<void> {
             nonEmptyTileKeys,
             unaccountedTileKeys,
             ...bucketDiagnostics,
+            queue: toQueueDiagnostics(queueState),
           });
         }
       }
@@ -1055,6 +1086,7 @@ async function refreshEntities(): Promise<void> {
       nonEmptyTileKeys,
       unaccountedTileKeys,
       ...bucketDiagnostics,
+      queue: toQueueDiagnostics(queueState),
     });
   } catch (error) {
     latestRequestKey = '';

@@ -1,7 +1,7 @@
 import {h, render} from 'preact';
 import {useEffect, useMemo, useState} from 'preact/hooks';
 import './iitc-iris.css';
-import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisDataSourceSettings, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisRenderPolicy} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisDataSourceSettings, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisQueueDiagnostics, type IitcIrisRenderPolicy} from './messages';
 import {
   createIitcMapDataPlan,
   IITC_EMPTY_TILE_RETRY_BATCH_SIZE,
@@ -132,6 +132,7 @@ interface EntityFetchState {
   errorTileKeys: string[];
   responseRetryTileKeys: string[];
   queueDelayReasons: string[];
+  queue: IitcIrisQueueDiagnostics | null;
   baseLayerId: IitcIrisBaseLayerId;
   dataSource: IitcIrisDataSourceSettings;
   renderPolicy: IitcIrisRenderPolicy;
@@ -341,6 +342,7 @@ function App(): h.JSX.Element {
     errorTileKeys: [],
     responseRetryTileKeys: [],
     queueDelayReasons: [],
+    queue: null,
     baseLayerId: loadStoredBaseLayerId(),
     dataSource: createDataSourceSettings(loadStoredDataSourceId()),
     renderPolicy: DEFAULT_RENDER_POLICY,
@@ -416,6 +418,7 @@ function App(): h.JSX.Element {
       errorTileKeys: entityFetch.errorTileKeys,
       responseRetryTileKeys: entityFetch.responseRetryTileKeys,
       queueDelayReasons: entityFetch.queueDelayReasons,
+      queue: entityFetch.queue,
       authRequired: entityFetch.authRequired,
     },
     baseLayerId,
@@ -542,6 +545,7 @@ function App(): h.JSX.Element {
           errorTileKeys: event.data.errorTileKeys ?? current.errorTileKeys,
           responseRetryTileKeys: event.data.responseRetryTileKeys ?? current.responseRetryTileKeys,
           queueDelayReasons: event.data.queueDelayReasons ?? current.queueDelayReasons,
+          queue: event.data.queue ?? current.queue,
           baseLayerId: event.data.baseLayerId ?? current.baseLayerId,
           dataSource: event.data.dataSource ?? current.dataSource,
           renderPolicy: event.data.renderPolicy ?? current.renderPolicy,

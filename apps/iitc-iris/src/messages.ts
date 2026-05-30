@@ -59,10 +59,21 @@ export interface IitcIrisMessage {
   errorTileKeys?: string[];
   responseRetryTileKeys?: string[];
   queueDelayReasons?: string[];
+  queue?: IitcIrisQueueDiagnostics;
   layerSettings?: IitcIrisLayerSettings;
   baseLayerId?: IitcIrisBaseLayerId;
   dataSource?: IitcIrisDataSourceSettings;
   renderPolicy?: IitcIrisRenderPolicy;
+}
+
+export interface IitcIrisQueueDiagnostics {
+  queuedTiles: number;
+  requestedTiles: number;
+  successTiles: number;
+  failedTiles: number;
+  staleTiles: number;
+  activeRequests: number;
+  tileErrorCount: Record<string, number>;
 }
 
 export interface IitcIrisLayerSettings {
