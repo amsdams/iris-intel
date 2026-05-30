@@ -152,17 +152,59 @@ const ORNAMENT_DEFINITIONS: Record<string, OrnamentDefinition> = {
   bb_s: {layer: 'Battle'},
   sc4_p: {layer: 'Scouting'},
   sc5_p: {layer: 'Scouting'},
-  ap1: {layer: 'Anomaly', url: 'https://iitc.app/extras/ornaments/ornament-ap1.svg'},
-  ap1_v: {layer: 'Anomaly', url: 'https://iitc.app/extras/ornaments/ornament-ap1_v.svg'},
-  ap2: {layer: 'Anomaly', url: 'https://iitc.app/extras/ornaments/ornament-ap2.svg'},
-  ap2_v: {layer: 'Anomaly', url: 'https://iitc.app/extras/ornaments/ornament-ap2_v.svg'},
-  ap3: {layer: 'Anomaly', url: 'https://iitc.app/extras/ornaments/ornament-ap3.svg'},
-  ap3_v: {layer: 'Anomaly', url: 'https://iitc.app/extras/ornaments/ornament-ap3_v.svg'},
-  ap5: {layer: 'Anomaly', url: 'https://iitc.app/extras/ornaments/ornament-ap5.svg'},
-  ap5_v: {layer: 'Anomaly', url: 'https://iitc.app/extras/ornaments/ornament-ap5_v.svg'},
-  peFRACK: {layer: 'Fracker', url: 'https://iitc.app/extras/ornaments/ornament-Fracker.svg'},
-  peTOASTY: {url: 'https://iitc.app/extras/ornaments/ornament-TOASTY.svg', offset: [0, 0.5]},
+  ap1: {layer: 'Anomaly'},
+  ap1_v: {layer: 'Anomaly'},
+  ap2: {layer: 'Anomaly'},
+  ap2_v: {layer: 'Anomaly'},
+  ap3: {layer: 'Anomaly'},
+  ap3_v: {layer: 'Anomaly'},
+  ap5: {layer: 'Anomaly'},
+  ap5_v: {layer: 'Anomaly'},
+  peBB_BATTLE: {layer: 'Battle'},
+  peBB_BATTLE_RARE: {layer: 'Battle'},
+  peBN_BLM: {layer: 'Beacons'},
+  peBN_ENL_WINNER: {layer: 'Battle'},
+  'peBN_ENL_WINNER-60': {layer: 'Battle'},
+  peBN_MHN_LOGO: {layer: 'Beacons'},
+  peBN_MHN_PALICO: {layer: 'Beacons'},
+  peBN_PEACE: {layer: 'Beacons'},
+  peBN_RES_WINNER: {layer: 'Battle'},
+  'peBN_RES_WINNER-60': {layer: 'Battle'},
+  peBN_TIED_WINNER: {layer: 'Battle'},
+  'peBN_TIED_WINNER-60': {layer: 'Battle'},
+  'peBR_REWARD-10_125_38': {layer: 'Battle'},
+  'peBR_REWARD-10_150_75': {layer: 'Battle'},
+  'peBR_REWARD-10_175_113': {layer: 'Battle'},
+  'peBR_REWARD-10_200_150': {layer: 'Battle'},
+  'peBR_REWARD-10_225_188': {layer: 'Battle'},
+  'peBR_REWARD-10_250_225': {layer: 'Battle'},
+  peENL: {layer: 'Beacons'},
+  peFRACK: {layer: 'Fracker'},
+  peFW_ENL: {layer: 'Beacons'},
+  peFW_RES: {layer: 'Beacons'},
+  peLOOK: {layer: 'Shards'},
+  peMAGNUSRE: {layer: 'Beacons'},
+  peMEET: {layer: 'Beacons'},
+  peNIA: {layer: 'Beacons'},
+  peRES: {layer: 'Beacons'},
+  peTOASTY: {layer: 'Beacons'},
+  peVIALUX: {layer: 'Beacons'},
 };
+
+function getOrnamentDefinition(ornament: string): OrnamentDefinition | undefined {
+  const exactDefinition = ORNAMENT_DEFINITIONS[ornament];
+  if (exactDefinition) return exactDefinition;
+
+  if (/^ap\d+(?:_(?:v|start|end))?$/.test(ornament)) return {layer: 'Anomaly'};
+  if (/^sc\d+_p$/.test(ornament)) return {layer: 'Scouting'};
+  if (ornament === 'bb_s' || ornament.startsWith('peBB_') || ornament.startsWith('peBR_')) return {layer: 'Battle'};
+  if (/^peBN_(?:ENL|RES|TIED)_WINNER(?:-\d+)?$/.test(ornament)) return {layer: 'Battle'};
+  if (ornament === 'peFRACK') return {layer: 'Fracker'};
+  if (ornament === 'peLOOK') return {layer: 'Shards'};
+  if (ornament.startsWith('pe')) return {layer: 'Beacons'};
+
+  return undefined;
+}
 
 let latestEntityStatus = 'idle';
 let latestTileDiagnostics: TileDiagnostics | undefined;
@@ -513,7 +555,7 @@ function clearEntityLayers(): void {
 }
 
 function createOrnamentMarker(latLng: [number, number], ornament: string, portalRadius: number): LeafletLayer {
-  const definition = ORNAMENT_DEFINITIONS[ornament];
+  const definition = getOrnamentDefinition(ornament);
   const size = Math.round(60 * getPortalMarkerScale(window.__iitcIrisMap?.getZoom() ?? DEFAULT_ZOOM));
   const iconUrl = definition?.url ?? `https://commondatastorage.googleapis.com/ingress.com/img/map_icons/marker_images/${ornament}.png`;
   const offset = definition?.url && definition.offset ? definition.offset : [0, 0];
@@ -578,7 +620,7 @@ function loadOrnamentVisibilitySettings(): OrnamentVisibilitySettings {
 }
 
 function isExcludedOrnament(ornament: string, settings: OrnamentVisibilitySettings): boolean {
-  const layerName = ORNAMENT_DEFINITIONS[ornament]?.layer;
+  const layerName = getOrnamentDefinition(ornament)?.layer;
   return settings.excludedPatterns.some((pattern) => ornament.startsWith(pattern)) ||
     settings.hiddenKnown[ornament] === true ||
     (layerName !== undefined && settings.layerStatus[layerName] === false);
@@ -873,6 +915,8 @@ function countViewportEntities(entities: IitcIrisRenderEntities | undefined, bou
   viewportPlaceholderPortals: number;
   viewportLinks: number;
   viewportFields: number;
+  viewportOrnamentPortals: number;
+  viewportOrnamentMarkers: number;
   viewportArtifactPortals: number;
   viewportArtifactMarkers: number;
 } {
@@ -883,6 +927,8 @@ function countViewportEntities(entities: IitcIrisRenderEntities | undefined, bou
       viewportPlaceholderPortals: 0,
       viewportLinks: 0,
       viewportFields: 0,
+      viewportOrnamentPortals: 0,
+      viewportOrnamentMarkers: 0,
       viewportArtifactPortals: 0,
       viewportArtifactMarkers: 0,
     };
@@ -901,6 +947,8 @@ function countViewportEntities(entities: IitcIrisRenderEntities | undefined, bou
     viewportPlaceholderPortals: viewportPortals.filter((portal) => portal.isPlaceholder).length,
     viewportLinks: viewportLinks.length,
     viewportFields: viewportFields.length,
+    viewportOrnamentPortals: viewportPortals.filter((portal) => portal.ornaments && portal.ornaments.length > 0).length,
+    viewportOrnamentMarkers: viewportPortals.reduce((count, portal) => count + (portal.ornaments?.length ?? 0), 0),
     viewportArtifactPortals: viewportPortals.filter((portal) => portal.artifacts && portal.artifacts.length > 0).length,
     viewportArtifactMarkers: viewportPortals.reduce((count, portal) => count + (portal.artifacts?.length ?? 0), 0),
   };

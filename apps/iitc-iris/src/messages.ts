@@ -57,6 +57,8 @@ export interface IitcIrisMessage {
   viewportPlaceholderPortals?: number;
   viewportLinks?: number;
   viewportFields?: number;
+  viewportOrnamentPortals?: number;
+  viewportOrnamentMarkers?: number;
   viewportArtifactPortals?: number;
   viewportArtifactMarkers?: number;
   requestedTiles?: number;

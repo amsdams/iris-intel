@@ -157,6 +157,8 @@ interface EntityFetchState {
   viewportPlaceholderPortals: number;
   viewportLinks: number;
   viewportFields: number;
+  viewportOrnamentPortals: number;
+  viewportOrnamentMarkers: number;
   viewportArtifactPortals: number;
   viewportArtifactMarkers: number;
   requestedTiles: number;
@@ -374,6 +376,8 @@ function entityFetchStateFromMessage(message: IitcIrisMessage, current: EntityFe
     viewportPlaceholderPortals: message.viewportPlaceholderPortals ?? 0,
     viewportLinks: message.viewportLinks ?? 0,
     viewportFields: message.viewportFields ?? 0,
+    viewportOrnamentPortals: message.viewportOrnamentPortals ?? 0,
+    viewportOrnamentMarkers: message.viewportOrnamentMarkers ?? 0,
     viewportArtifactPortals: message.viewportArtifactPortals ?? 0,
     viewportArtifactMarkers: message.viewportArtifactMarkers ?? 0,
     requestedTiles: message.requestedTiles ?? 0,
@@ -522,6 +526,8 @@ function App(): h.JSX.Element {
     viewportPlaceholderPortals: 0,
     viewportLinks: 0,
     viewportFields: 0,
+    viewportOrnamentPortals: 0,
+    viewportOrnamentMarkers: 0,
     viewportArtifactPortals: 0,
     viewportArtifactMarkers: 0,
     requestedTiles: 0,
@@ -616,6 +622,8 @@ function App(): h.JSX.Element {
         placeholderPortals: entityFetch.viewportPlaceholderPortals,
         links: entityFetch.viewportLinks,
         fields: entityFetch.viewportFields,
+        ornamentPortals: entityFetch.viewportOrnamentPortals,
+        ornamentMarkers: entityFetch.viewportOrnamentMarkers,
         artifactPortals: entityFetch.viewportArtifactPortals,
         artifactMarkers: entityFetch.viewportArtifactMarkers,
       },
