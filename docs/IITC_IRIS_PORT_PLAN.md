@@ -129,13 +129,47 @@ Current status:
   - `AR`: artifact rings.
   - `LV`: portal level labels.
   - `T`: tile debug rectangles.
-- Optional detail styling (`LF`, `HF`, `OR`, `AR`, `LV`) only renders when detailed portal data is available at zoom 14+; toggles may be enabled in the dock but still hidden in low-zoom placeholder mode.
+- Optional portal styling (`LF`, `HF`, `LV`) only renders when detailed portal data is available at zoom 14+; toggles may be enabled in the dock but still hidden in low-zoom placeholder mode. `OR` and `AR` follow IITC-CE overlay behavior and can render at any zoom when their data is available.
 - The dock has a data-source switch for live Intel data, bundled Amsterdam z10/z14 fixtures, and a Damrak z15 fixture extracted from an IITC HAR. Fixture mode renders deterministic saved `getEntities` responses and jumps to the matching view.
 - Copied diagnostics include `renderPolicy`, so comparison snapshots show whether optional detail overlays were eligible to render.
 - Visual parity comparisons should use the dock's viewport P/L/F counts and copied `entities.viewport` block; total fetched counts include padded request bounds and placeholder support entities.
 - Mock controls and place-name geocoding are not yet implemented in IITC IRIS.
 
-## Pass 6: Replacement Readiness - Not Started
+## Pass 6: Portal Selection and Details - Next
+
+- Port IITC-like portal selection as the next comparison surface before broader side request/UI systems.
+- Keep the first pass narrow: click/select a portal, render the selected portal highlight, expose selected GUID/title/team/level in the dock or innerstatus row, clear selection, and preserve selection across entity refreshes when the selected portal is still present.
+- Add a portal details panel after the selection baseline is stable. The details panel should start with title, team, level, health, resonators, mods, owner, ornaments, artifacts, and basic link/field context where the decoded data supports it.
+- Use portal selection/details to validate richer entity decoding and to anchor later COMM, inventory, artifact, and ornament comparisons.
+
+Acceptance:
+
+- Selecting the same portal in IITC-CE and IITC IRIS produces visually comparable selected-marker behavior.
+- Selection remains coherent after pan/zoom refreshes and cached same-bounds renders.
+- Copied diagnostics include selected portal identity and enough selected-portal data to compare against IITC details.
+
+Current status:
+
+- Not started.
+- This is the recommended next implementation pass.
+
+## Pass 7: IITC Side Request/UI Systems - Not Started
+
+- Port IITC side systems that require their own request lifecycle and UI, after portal selection is available as a stable anchor.
+- Suggested order:
+  - COMM / plexts: request lifecycle, parsing, filters, message list, map-linked portal/player references where available.
+  - Scores: request behavior, faction score display, checkpoint/cycle status.
+  - Passcodes: request/submit flow, feedback states, history/errors if IITC exposes them.
+  - Inventory: request lifecycle, item/key parsing, grouping/filtering, counts, and a dedicated panel.
+  - Additional IITC request surfaces and plugin-derived UI can be added after these core systems are validated.
+
+Acceptance:
+
+- Each side system has an explicit copied diagnostic block for request state, elapsed time, error/auth state, and decoded counts.
+- UI panels are compact enough to compare with IITC without relying on the debug dock.
+- Request behavior is documented where it intentionally differs from IITC-CE.
+
+## Pass 8: Replacement Readiness - Not Started
 
 - Compare IITC IRIS, Mini-IRIS, current IRIS, and IITC-CE on the same views.
 - Document mismatches as intentional differences or blockers.
