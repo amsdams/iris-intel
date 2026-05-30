@@ -111,7 +111,15 @@ interface EntityFetchState {
   realPortals: number;
   placeholderPortals: number;
   ornamentPortals: number;
+  drawnOrnamentMarkers: number;
+  hiddenOrnamentMarkers: number;
+  ornamentTypes: Record<string, number>;
   artifactPortals: number;
+  artifactFetchStatus: string;
+  artifactFetchPortalCount: number;
+  artifactFetchTypes: string[];
+  artifactFetchElapsedMs: number | null;
+  artifactFetchError: string;
   levelLabels: number;
   damagedPortals: number;
   links: number;
@@ -304,7 +312,15 @@ function entityFetchStateFromMessage(message: IitcIrisMessage, current: EntityFe
     realPortals: message.realPortals ?? 0,
     placeholderPortals: message.placeholderPortals ?? 0,
     ornamentPortals: message.ornamentPortals ?? 0,
+    drawnOrnamentMarkers: message.drawnOrnamentMarkers ?? 0,
+    hiddenOrnamentMarkers: message.hiddenOrnamentMarkers ?? 0,
+    ornamentTypes: message.ornamentTypes ?? {},
     artifactPortals: message.artifactPortals ?? 0,
+    artifactFetchStatus: message.artifactFetchStatus ?? 'disabled',
+    artifactFetchPortalCount: message.artifactFetchPortalCount ?? 0,
+    artifactFetchTypes: message.artifactFetchTypes ?? [],
+    artifactFetchElapsedMs: message.artifactFetchElapsedMs ?? null,
+    artifactFetchError: message.artifactFetchError ?? '',
     levelLabels: message.levelLabels ?? 0,
     damagedPortals: message.damagedPortals ?? 0,
     links: message.links ?? 0,
@@ -440,7 +456,15 @@ function App(): h.JSX.Element {
     realPortals: 0,
     placeholderPortals: 0,
     ornamentPortals: 0,
+    drawnOrnamentMarkers: 0,
+    hiddenOrnamentMarkers: 0,
+    ornamentTypes: {},
     artifactPortals: 0,
+    artifactFetchStatus: 'disabled',
+    artifactFetchPortalCount: 0,
+    artifactFetchTypes: [],
+    artifactFetchElapsedMs: null,
+    artifactFetchError: '',
     levelLabels: 0,
     damagedPortals: 0,
     links: 0,
@@ -518,7 +542,18 @@ function App(): h.JSX.Element {
       realPortals: entityFetch.realPortals,
       placeholderPortals: entityFetch.placeholderPortals,
       ornamentPortals: entityFetch.ornamentPortals,
+      drawnOrnamentMarkers: entityFetch.drawnOrnamentMarkers,
+      hiddenOrnamentMarkers: entityFetch.hiddenOrnamentMarkers,
+      ornamentTypes: entityFetch.ornamentTypes,
       artifactPortals: entityFetch.artifactPortals,
+      artifactFetch: {
+        status: entityFetch.artifactFetchStatus,
+        portalCount: entityFetch.artifactFetchPortalCount,
+        types: entityFetch.artifactFetchTypes,
+        elapsedMs: entityFetch.artifactFetchElapsedMs,
+        elapsedSeconds: entityFetch.artifactFetchElapsedMs === null ? null : Number(formatElapsedSeconds(entityFetch.artifactFetchElapsedMs)),
+        error: entityFetch.artifactFetchError || undefined,
+      },
       levelLabels: entityFetch.levelLabels,
       damagedPortals: entityFetch.damagedPortals,
       links: entityFetch.links,
@@ -795,7 +830,10 @@ function App(): h.JSX.Element {
           <span className="iitc-iris-status">real {entityFetch.realPortals}</span>
           <span className="iitc-iris-status">ph {entityFetch.placeholderPortals}</span>
           <span className="iitc-iris-status">orn {entityFetch.ornamentPortals}</span>
+          <span className="iitc-iris-status">ornDraw {entityFetch.drawnOrnamentMarkers}</span>
+          <span className="iitc-iris-status">ornHide {entityFetch.hiddenOrnamentMarkers}</span>
           <span className="iitc-iris-status">art {entityFetch.artifactPortals}</span>
+          <span className="iitc-iris-status">artFetch {entityFetch.artifactFetchStatus}:{entityFetch.artifactFetchPortalCount}</span>
           <span className="iitc-iris-status">lvl {entityFetch.levelLabels}</span>
           <span className="iitc-iris-status">dmg {entityFetch.damagedPortals}</span>
           <span className="iitc-iris-status">l {entityFetch.links}</span>

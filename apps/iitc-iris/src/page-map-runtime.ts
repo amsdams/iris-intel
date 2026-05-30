@@ -9,6 +9,7 @@ import {
   createIitcTileQueueRequestBatches,
   createIitcEmptyTileRetryBatches,
   createIitcMapDataPlan,
+  decodeIitcGameEntities,
   decodeIitcGetEntitiesResponse,
   getIitcRecoveredTileKeys,
   getIitcReusableCacheClassification,
@@ -20,6 +21,7 @@ import {
   type IitcGetEntitiesResponse,
   type IitcMapDataPlan,
   type IitcPortalArtifact,
+  type IitcRawGameEntity,
   type IitcTileQueueState,
 } from '@iris/iitc-core';
 
@@ -67,6 +69,7 @@ let latestRequestKey = '';
 let latestEntities: IitcIrisRenderEntities | undefined;
 let latestPlan: IitcMapDataPlan | undefined;
 let latestResponse: IitcGetEntitiesResponse | undefined;
+let latestArtifactEntities: IitcRawGameEntity[] = [];
 let layerSettings: IitcIrisLayerSettings = DEFAULT_LAYER_SETTINGS;
 let baseLayerId: IitcIrisBaseLayerId = DEFAULT_BASE_LAYER_ID;
 let baseLayer: TileLayer | undefined;
@@ -101,8 +104,66 @@ interface TileBatchResult {
   error?: unknown;
 }
 
+interface ArtifactFetchDiagnostics {
+  status: string;
+  portalCount: number;
+  types: string[];
+  elapsedMs?: number;
+  error?: string;
+}
+
+interface ArtifactPortalsResponse {
+  error?: string;
+  result?: unknown;
+}
+
+interface OrnamentVisibilitySettings {
+  excludedPatterns: string[];
+  hiddenKnown: Record<string, boolean>;
+  layerStatus: Record<string, boolean>;
+}
+
+interface OrnamentDiagnostics {
+  drawnMarkers: number;
+  hiddenMarkers: number;
+  types: Record<string, number>;
+}
+
+interface OrnamentDefinition {
+  layer?: string;
+  url?: string;
+  offset?: [number, number];
+  opacity?: number;
+}
+
+const ORNAMENT_DEFINITIONS: Record<string, OrnamentDefinition> = {
+  bb_s: {layer: 'Battle'},
+  sc4_p: {layer: 'Scouting'},
+  sc5_p: {layer: 'Scouting'},
+  ap1: {layer: 'Anomaly', url: 'https://iitc.app/extras/ornaments/ornament-ap1.svg'},
+  ap1_v: {layer: 'Anomaly', url: 'https://iitc.app/extras/ornaments/ornament-ap1_v.svg'},
+  ap2: {layer: 'Anomaly', url: 'https://iitc.app/extras/ornaments/ornament-ap2.svg'},
+  ap2_v: {layer: 'Anomaly', url: 'https://iitc.app/extras/ornaments/ornament-ap2_v.svg'},
+  ap3: {layer: 'Anomaly', url: 'https://iitc.app/extras/ornaments/ornament-ap3.svg'},
+  ap3_v: {layer: 'Anomaly', url: 'https://iitc.app/extras/ornaments/ornament-ap3_v.svg'},
+  ap5: {layer: 'Anomaly', url: 'https://iitc.app/extras/ornaments/ornament-ap5.svg'},
+  ap5_v: {layer: 'Anomaly', url: 'https://iitc.app/extras/ornaments/ornament-ap5_v.svg'},
+  peFRACK: {layer: 'Fracker', url: 'https://iitc.app/extras/ornaments/ornament-Fracker.svg'},
+  peTOASTY: {url: 'https://iitc.app/extras/ornaments/ornament-TOASTY.svg', offset: [0, 0.5]},
+};
+
 let latestEntityStatus = 'idle';
 let latestTileDiagnostics: TileDiagnostics | undefined;
+let latestArtifactDiagnostics: ArtifactFetchDiagnostics = {
+  status: 'disabled',
+  portalCount: 0,
+  types: [],
+};
+let latestOrnamentDiagnostics: OrnamentDiagnostics = {
+  drawnMarkers: 0,
+  hiddenMarkers: 0,
+  types: {},
+};
 
 interface StoredMapView {
   lat: number;
@@ -365,6 +426,17 @@ function toRenderArtifacts(artifacts: IitcPortalArtifact[]): IitcIrisRenderArtif
   return artifacts.length > 0 ? artifacts : undefined;
 }
 
+function isRawGameEntity(value: unknown): value is IitcRawGameEntity {
+  return Array.isArray(value) &&
+    typeof value[0] === 'string' &&
+    typeof value[1] === 'number' &&
+    Array.isArray(value[2]);
+}
+
+function isPortalSummary(value: unknown): value is unknown[] {
+  return Array.isArray(value) && value[0] === 'p';
+}
+
 function ensureLayers(): NonNullable<Window['__iitcIrisLayers']> {
   if (window.__iitcIrisLayers) return window.__iitcIrisLayers;
 
@@ -429,22 +501,83 @@ function clearEntityLayers(): void {
 }
 
 function createOrnamentMarker(latLng: [number, number], ornament: string, portalRadius: number): LeafletLayer {
-  const size = Math.max(28, Math.round(60 * getPortalMarkerScale(window.__iitcIrisMap?.getZoom() ?? DEFAULT_ZOOM)));
-  const iconUrl = `https://commondatastorage.googleapis.com/ingress.com/img/map_icons/marker_images/${ornament}.png`;
+  const definition = ORNAMENT_DEFINITIONS[ornament];
+  const size = Math.round(60 * getPortalMarkerScale(window.__iitcIrisMap?.getZoom() ?? DEFAULT_ZOOM));
+  const iconUrl = definition?.url ?? `https://commondatastorage.googleapis.com/ingress.com/img/map_icons/marker_images/${ornament}.png`;
+  const offset = definition?.url && definition.offset ? definition.offset : [0, 0];
+  const anchor: [number, number] = [
+    size * offset[0] + size / 2,
+    size * offset[1] + size / 2,
+  ];
 
   return L.marker(latLng, {
     icon: L.icon({
       iconUrl,
       iconSize: [size, size],
-      iconAnchor: [size / 2, size / 2],
+      iconAnchor: anchor,
       className: 'iitc-iris-ornament-icon',
     }),
     interactive: false,
     keyboard: false,
-    opacity: 0.65,
+    opacity: definition?.opacity ?? 0.6,
     pane: getLayerPane('ornaments'),
     zIndexOffset: Math.round(portalRadius),
   });
+}
+
+function loadOrnamentVisibilitySettings(): OrnamentVisibilitySettings {
+  let excludedPatterns: string[] = [];
+  let hiddenKnown: Record<string, boolean> = {};
+  let layerStatus: Record<string, boolean> = {};
+  try {
+    const rawExcluded = window.localStorage.getItem('excludedOrnaments');
+    const parsedExcluded: unknown = rawExcluded ? JSON.parse(rawExcluded) : [];
+    if (Array.isArray(parsedExcluded)) {
+      excludedPatterns = parsedExcluded.filter((value): value is string => typeof value === 'string' && value.length > 0);
+    }
+  } catch {
+    excludedPatterns = [];
+  }
+  try {
+    const rawKnown = window.localStorage.getItem('knownOrnaments');
+    const parsedKnown: unknown = rawKnown ? JSON.parse(rawKnown) : {};
+    if (parsedKnown && typeof parsedKnown === 'object' && !Array.isArray(parsedKnown)) {
+      hiddenKnown = Object.fromEntries(
+        Object.entries(parsedKnown).filter((entry): entry is [string, boolean] =>
+          typeof entry[0] === 'string' && typeof entry[1] === 'boolean'),
+      );
+    }
+  } catch {
+    hiddenKnown = {};
+  }
+  try {
+    const rawLayers = window.localStorage.getItem('ingress.intelmap.layergroupdisplayed');
+    const parsedLayers: unknown = rawLayers ? JSON.parse(rawLayers) : {};
+    if (parsedLayers && typeof parsedLayers === 'object' && !Array.isArray(parsedLayers)) {
+      layerStatus = Object.fromEntries(
+        Object.entries(parsedLayers).filter((entry): entry is [string, boolean] =>
+          typeof entry[0] === 'string' && typeof entry[1] === 'boolean'),
+      );
+    }
+  } catch {
+    layerStatus = {};
+  }
+  return {excludedPatterns, hiddenKnown, layerStatus};
+}
+
+function isExcludedOrnament(ornament: string, settings: OrnamentVisibilitySettings): boolean {
+  const layerName = ORNAMENT_DEFINITIONS[ornament]?.layer;
+  return settings.excludedPatterns.some((pattern) => ornament.startsWith(pattern)) ||
+    settings.hiddenKnown[ornament] === true ||
+    (layerName !== undefined && settings.layerStatus[layerName] === false);
+}
+
+function createEmptyOrnamentDiagnostics(): OrnamentDiagnostics {
+  return {
+    drawnMarkers: 0,
+    hiddenMarkers: 0,
+    types: {},
+  };
 }
 
 function createArtifactMarker(latLng: [number, number], artifact: IitcIrisRenderArtifact): LeafletLayer {
@@ -529,6 +662,8 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
   if (!window.__iitcIrisMap) return;
   const layers = ensureLayers();
   const renderPolicy = getRenderPolicy();
+  const ornamentVisibility = loadOrnamentVisibilitySettings();
+  const ornamentDiagnostics = createEmptyOrnamentDiagnostics();
   const visibleLevelLabelGuids = renderPolicy.labels ? getVisibleLevelLabelGuids(entities.portals) : new Set<string>();
 
   latestEntities = entities;
@@ -599,10 +734,17 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
 
     if (renderPolicy.ornaments && portal.ornaments && portal.ornaments.length > 0) {
       for (const ornament of portal.ornaments) {
+        ornamentDiagnostics.types[ornament] = (ornamentDiagnostics.types[ornament] ?? 0) + 1;
+        if (isExcludedOrnament(ornament, ornamentVisibility)) {
+          ornamentDiagnostics.hiddenMarkers += 1;
+          continue;
+        }
+        ornamentDiagnostics.drawnMarkers += 1;
         addRenderedLayer(layers.ornaments, createOrnamentMarker(latLng, ornament, radius));
       }
     }
   }
+  latestOrnamentDiagnostics = ornamentDiagnostics;
 }
 
 function renderTileDebug(plan: IitcMapDataPlan, response: IitcGetEntitiesResponse): void {
@@ -750,7 +892,15 @@ function postEntityStatus(
     realPortals: portals.filter((portal) => !portal.isPlaceholder).length,
     placeholderPortals: portals.filter((portal) => portal.isPlaceholder).length,
     ornamentPortals: portals.filter((portal) => portal.ornaments && portal.ornaments.length > 0).length,
+    drawnOrnamentMarkers: latestOrnamentDiagnostics.drawnMarkers,
+    hiddenOrnamentMarkers: latestOrnamentDiagnostics.hiddenMarkers,
+    ornamentTypes: latestOrnamentDiagnostics.types,
     artifactPortals: portals.filter((portal) => portal.artifacts && portal.artifacts.length > 0).length,
+    artifactFetchStatus: latestArtifactDiagnostics.status,
+    artifactFetchPortalCount: latestArtifactDiagnostics.portalCount,
+    artifactFetchTypes: latestArtifactDiagnostics.types,
+    artifactFetchElapsedMs: latestArtifactDiagnostics.elapsedMs,
+    artifactFetchError: latestArtifactDiagnostics.error,
     levelLabels: portals.filter((portal) => !portal.isPlaceholder && portal.level !== undefined).length,
     damagedPortals: portals.filter((portal) => !portal.isPlaceholder && portal.health !== undefined && portal.health < 100).length,
     links: entities?.links.length ?? 0,
@@ -842,8 +992,12 @@ function createPlanFromMap(): IitcMapDataPlan | null {
   });
 }
 
-function toRenderEntities(response: IitcGetEntitiesResponse, generation: number): IitcIrisRenderEntities {
+function toRenderEntities(response: IitcGetEntitiesResponse, generation: number, artifactEntities: IitcRawGameEntity[] = []): IitcIrisRenderEntities {
   const decoded = decodeIitcGetEntitiesResponse(response);
+  if (artifactEntities.length > 0) {
+    const artifactDecoded = decodeIitcGameEntities(artifactEntities);
+    Object.assign(decoded.portals, artifactDecoded.portals);
+  }
 
   return {
     generation,
@@ -911,6 +1065,71 @@ async function fetchFixtureResponse(source: Extract<IitcIrisDataSourceSettings, 
   return await response.json() as IitcGetEntitiesResponse;
 }
 
+function getArtifactTypes(entities: IitcRawGameEntity[]): string[] {
+  const types = new Set<string>();
+  for (const portal of Object.values(decodeIitcGameEntities(entities).portals)) {
+    for (const artifact of getIitcPortalArtifacts(portal.artifactBrief)) types.add(artifact.type);
+  }
+  return [...types].sort();
+}
+
+function resetArtifactDiagnostics(status = 'disabled'): void {
+  latestArtifactDiagnostics = {
+    status,
+    portalCount: 0,
+    types: [],
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function getArtifactPortalResultEntries(result: unknown): [string, unknown][] {
+  if (!isRecord(result)) return [];
+  const nestedPortals = result.portals;
+  if (isRecord(nestedPortals)) return Object.entries(nestedPortals);
+  return Object.entries(result);
+}
+
+function toArtifactRawGameEntity(guid: string, value: unknown): IitcRawGameEntity | null {
+  if (isRawGameEntity(value)) return value;
+  if (!isPortalSummary(value)) return null;
+  const timestamp = typeof value[13] === 'number' && Number.isFinite(value[13]) ? value[13] : Date.now();
+  return [guid, timestamp, value];
+}
+
+async function fetchArtifactPortals(version: string, signal?: AbortSignal): Promise<IitcRawGameEntity[]> {
+  const csrfToken = getCsrfToken();
+  if (!csrfToken) throw new Error('getArtifactPortals missing csrftoken');
+
+  const response = await fetch('/r/getArtifactPortals', {
+    method: 'POST',
+    credentials: 'include',
+    signal,
+    headers: {
+      'Accept': 'application/json, text/javascript, */*; q=0.01',
+      'Content-Type': 'application/json; charset=utf-8',
+      'X-CSRFToken': csrfToken,
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+    body: JSON.stringify({v: version}),
+  });
+  const text = await response.text();
+
+  if (looksLikeHtml(text)) {
+    throw new Error(`getArtifactPortals returned login html HTTP ${response.status}${response.redirected ? ' redirected' : ''}`);
+  }
+  if (!response.ok) throw new Error(`getArtifactPortals failed HTTP ${response.status}`);
+  if (!text.trim()) throw new Error('getArtifactPortals returned empty response');
+
+  const parsed = JSON.parse(text) as ArtifactPortalsResponse;
+  if (parsed.error || !parsed.result) return [];
+  return getArtifactPortalResultEntries(parsed.result)
+    .map(([guid, value]) => toArtifactRawGameEntity(guid, value))
+    .filter((entity): entity is IitcRawGameEntity => entity !== null);
+}
+
 function isAuthLikeError(error: unknown): boolean {
   return error instanceof Error && /login html|missing csrftoken/i.test(error.message);
 }
@@ -932,6 +1151,39 @@ async function fetchEntityBatchResult(tileKeys: string[], version: string, signa
     return {tileKeys, response: await fetchEntityBatch(tileKeys, version, signal)};
   } catch (error) {
     return {tileKeys, error};
+  }
+}
+
+async function fetchArtifactEntitiesForRender(version: string, signal: AbortSignal): Promise<IitcRawGameEntity[]> {
+  const startTime = performance.now();
+  latestArtifactDiagnostics = {
+    status: 'loading',
+    portalCount: 0,
+    types: [],
+  };
+
+  try {
+    const entities = await fetchArtifactPortals(version, signal);
+    latestArtifactEntities = entities;
+    latestArtifactDiagnostics = {
+      status: entities.length > 0 ? 'ready' : 'empty',
+      portalCount: entities.length,
+      types: getArtifactTypes(entities),
+      elapsedMs: performance.now() - startTime,
+    };
+    return entities;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') throw error;
+    if (isAuthLikeError(error)) throw error;
+    latestArtifactEntities = [];
+    latestArtifactDiagnostics = {
+      status: 'error',
+      portalCount: 0,
+      types: [],
+      elapsedMs: performance.now() - startTime,
+      error: error instanceof Error ? error.message : String(error),
+    };
+    return [];
   }
 }
 
@@ -967,7 +1219,18 @@ async function refreshEntities(): Promise<void> {
       latestRequestKey = refreshKey;
       generation = latestFetchGeneration + 1;
       latestFetchGeneration = generation;
-      const entities = toRenderEntities(latestResponse, generation);
+      let artifactEntities = latestArtifactEntities;
+      if (latestArtifactDiagnostics.status === 'disabled') {
+        const version = extractVersion();
+        if (version) {
+          abortController = new AbortController();
+          currentFetchAbortController = abortController;
+          artifactEntities = await fetchArtifactEntitiesForRender(version, abortController.signal);
+          if (generation !== latestFetchGeneration) return;
+          if (currentFetchAbortController === abortController) currentFetchAbortController = undefined;
+        }
+      }
+      const entities = toRenderEntities(latestResponse, generation, artifactEntities);
       latestPlan = plan;
       renderEntities(entities);
       renderTileDebug(plan, latestResponse);
@@ -996,6 +1259,8 @@ async function refreshEntities(): Promise<void> {
     latestFetchGeneration = generation;
 
     if (dataSource.mode === 'fixture') {
+      latestArtifactEntities = [];
+      resetArtifactDiagnostics('fixture-disabled');
       postEntityStatus(`loading fixture ${dataSource.label}`, undefined, {
         requestedTiles: plan.tileKeys.length,
         returnedTiles: 0,
@@ -1043,6 +1308,7 @@ async function refreshEntities(): Promise<void> {
     abortController = new AbortController();
     const liveAbortController = abortController;
     currentFetchAbortController = abortController;
+    const artifactEntitiesPromise = fetchArtifactEntitiesForRender(version, liveAbortController.signal);
     const responses: IitcGetEntitiesResponse[] = [];
     let bucketDiagnostics = createIitcResponseBucketDiagnostics();
     let queueState = createIitcTileQueueState(plan.tileKeys);
@@ -1166,7 +1432,13 @@ async function refreshEntities(): Promise<void> {
       }
     }
 
-    const entities = toRenderEntities(mergedResponse, generation);
+    const artifactEntities = await artifactEntitiesPromise;
+    if (generation !== latestFetchGeneration) {
+      queueState = markIitcTileQueueStale(queueState);
+      activeQueueState = queueState;
+      return;
+    }
+    const entities = toRenderEntities(mergedResponse, generation, artifactEntities);
     const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyTileDiagnostics(mergedResponse, plan);
     const recoveredTileKeys = getIitcRecoveredTileKeys(initialRetryTileKeys, nonEmptyTileKeys);
     latestPlan = plan;

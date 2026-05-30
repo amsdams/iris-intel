@@ -60,6 +60,7 @@ Current status:
 - Fixture tests cover low-zoom placeholder behavior and zoom-15 summary/ornament behavior.
 - Artifact brief decoding is wired with a synthetic parser test, but live artifact behavior is unverified because Intel is not currently returning artifact portal payloads in the available test responses.
 - Artifact brief normalization for renderer-facing fragment/target entries now lives in `packages/iitc-core`; IITC IRIS renders the core artifact entry shape directly.
+- IITC IRIS fetches `/r/getArtifactPortals` in live mode as an IITC-style artifact subsystem request, independent of the `AR` visual layer toggle. Returned IITC-shaped `guid -> portal summary` artifact responses are normalized into renderable entities, injected into the rendered portal set, and reported with endpoint status/count/type diagnostics in copied debug JSON. The New Jersey Orion HAR captured during setup returned `{"result":{}}`, so non-empty live artifact payloads still need validation.
 - Shard and event decoding still need dedicated live fixtures and tests.
 
 ## Pass 4: Leaflet Rendering - Partial
@@ -77,11 +78,15 @@ Current status:
 
 - Typed npm Leaflet is bundled into `iitc-iris`.
 - Fields, links, placeholder portals, real portals, level fill, health fill, ornaments, level labels, and IITC-style artifact/shard marker icons render.
+- Ornament rendering honors IITC's `excludedOrnaments`, `knownOrnaments`, and `ingress.intelmap.layergroupdisplayed` localStorage settings for known ornament sublayers such as `Anomaly`, `Scouting`, and `Battle`, so ornaments hidden in IITC's default layer configuration are not drawn in IITC IRIS either.
+- IITC IRIS uses the IITC ornament icon definitions for common anomaly/scouting/battle IDs currently seen in fixtures/HARs, including the custom `ap1` SVG rather than the raw stock marker image.
+- Copied diagnostics include drawn/hidden ornament marker counts and ornament type counts, making IITC ornament exclusion and visual parity checks easier.
 - Optional detail styling now has an explicit render policy: level fill, health fill, ornaments, artifact rings, and level labels only draw when detailed portal data is available at zoom 14+ and the matching layer toggle is enabled. Base fields, links, and portals remain independent of that policy.
 - Base renderer styling is closer to IITC-CE: team-coloured portal fills, IITC portal radius/weight scaling, 0.25 field fill opacity, full-opacity links, orange neutral portals, and text-only portal level labels with simple overlap thinning.
-- Artifact rendering is wired with IITC's marker image convention (`{type}_shard.png` and `{type}_shard_target.png`) but remains unverified against live Intel data until a real artifact fixture or HAR is available.
+- Artifact rendering is wired with IITC's marker image convention (`{type}_shard.png` and `{type}_shard_target.png`) and can use either artifact briefs from `getEntities` or the live `/r/getArtifactPortals` endpoint. The `AR` toggle controls marker visibility only, not whether the endpoint is fetched, but non-empty live Intel data still needs validation with a real artifact fixture or HAR.
 - Layer ordering and visual parity are only approximate.
 - Shard, event, portal label polish, and plugin/highlighter parity are not done.
+- Visual comparisons against an IITC-CE install with plugins enabled must account for plugin overlays. For example, Player Tracker markers are expected to appear in IITC-CE but not IITC IRIS until plugin parity work starts.
 
 ## Pass 5: Comparison UI - Started
 
@@ -99,6 +104,7 @@ Current status:
 - Copied diagnostics include IITC-style request response buckets (`serverRetryTileKeys`, `timeoutTileKeys`, `errorTileKeys`, `responseRetryTileKeys`, and `queueDelayReasons`) so slow-network retries can be separated from returned-empty tile recovery.
 - Copied diagnostics also include core queue-state counters so the immutable queue model can be compared against the current live runtime loop before it replaces scheduling.
 - Copied diagnostics include `elapsedMs` and `elapsedSeconds`; these are useful for trend comparison, but exact parity with IITC still depends on matching all request lifecycle timing semantics.
+- Copied diagnostics include `entities.artifactFetch` so artifact-event tests can tell whether `/r/getArtifactPortals` was disabled, empty, ready, errored, or blocked by login HTML.
 - Cached same-bounds renders explicitly clear queue diagnostics, so copied snapshots do not mix the current tile plan with stale queue counters from the previous network fetch.
 - Copied diagnostics and the dock now show entity source (`live`, `cache`, or `fixture`) so pan/zoom lifecycle tests can distinguish network fetches from cached same-bounds renders.
 - The dock replaces entity diagnostic snapshots on each status message instead of partially merging them, preventing stale retry/source/queue fields from leaking across live/cache/fixture transitions.

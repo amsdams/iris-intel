@@ -37,7 +37,15 @@ export interface IitcIrisMessage {
   realPortals?: number;
   placeholderPortals?: number;
   ornamentPortals?: number;
+  drawnOrnamentMarkers?: number;
+  hiddenOrnamentMarkers?: number;
+  ornamentTypes?: Record<string, number>;
   artifactPortals?: number;
+  artifactFetchStatus?: string;
+  artifactFetchPortalCount?: number;
+  artifactFetchTypes?: string[];
+  artifactFetchElapsedMs?: number;
+  artifactFetchError?: string;
   levelLabels?: number;
   damagedPortals?: number;
   links?: number;
