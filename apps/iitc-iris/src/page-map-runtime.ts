@@ -5,6 +5,7 @@ import {
   classifyIitcGetEntitiesResponse,
   classifyIitcTileRequestResponse,
   createIitcTileQueueState,
+  createIitcTileQueueRequestBatches,
   createIitcEmptyTileRetryBatches,
   createIitcMapDataPlan,
   decodeIitcGetEntitiesResponse,
@@ -979,10 +980,14 @@ async function refreshEntities(): Promise<void> {
 
     const version = extractVersion();
     if (!version) throw new Error('waiting for Intel version');
-    const batches = plan.requestBatches;
     const responses: IitcGetEntitiesResponse[] = [];
     const bucketDiagnostics = emptyResponseBucketDiagnostics();
     let queueState = createIitcTileQueueState(plan.tileKeys);
+    const batches = createIitcTileQueueRequestBatches(queueState, {
+      maxRequests: plan.requestBatches.length,
+      tilesPerRequest: IITC_LIVE_COMPAT_TILES_PER_REQUEST,
+      activeRequestCount: 0,
+    });
     postEntityStatus(`fetching ${plan.tileKeys.length} tiles`, undefined, {
       requestedTiles: plan.tileKeys.length,
       returnedTiles: 0,
@@ -1034,22 +1039,28 @@ async function refreshEntities(): Promise<void> {
         if (retryTileKeys.length === 0) break;
 
         const retryBatches = createIitcEmptyTileRetryBatches(retryTileKeys);
-        for (let index = 0; index < retryBatches.length; index += 1) {
-          queueState = markIitcTileRequestStarted(queueState, retryBatches[index]);
-          const response = await fetchEntityBatch(retryBatches[index], version);
+        const queueRetryBatches = retryBatches.flatMap((batch) => createIitcTileQueueRequestBatches(queueState, {
+          maxRequests: 1,
+          tilesPerRequest: batch.length,
+          activeRequestCount: 0,
+          pendingTileKeys: batch,
+        }));
+        for (let index = 0; index < queueRetryBatches.length; index += 1) {
+          queueState = markIitcTileRequestStarted(queueState, queueRetryBatches[index]);
+          const response = await fetchEntityBatch(queueRetryBatches[index], version);
           if (generation !== latestFetchGeneration) return;
-          queueState = applyIitcTileRequestResponseToQueue(queueState, response, retryBatches[index], true, {
+          queueState = applyIitcTileRequestResponseToQueue(queueState, response, queueRetryBatches[index], true, {
             retryReturnedEmptyTiles: true,
           }).state;
-          collectResponseBucketDiagnostics(response, retryBatches[index], bucketDiagnostics);
+          collectResponseBucketDiagnostics(response, queueRetryBatches[index], bucketDiagnostics);
           retryRequests += 1;
-          for (const tileKey of retryBatches[index]) retriedTileKeys.add(tileKey);
+          for (const tileKey of queueRetryBatches[index]) retriedTileKeys.add(tileKey);
           responses.push(response);
           mergedResponse = mergeIitcGetEntitiesResponses(responses);
           const entities = toRenderEntities(mergedResponse, generation);
           const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyTileDiagnostics(mergedResponse, plan);
           const recoveredTileKeys = getIitcRecoveredTileKeys(initialRetryTileKeys, nonEmptyTileKeys);
-          postEntityStatus(`retry ${pass} ${index + 1}/${retryBatches.length}`, entities, {
+          postEntityStatus(`retry ${pass} ${index + 1}/${queueRetryBatches.length}`, entities, {
             requestedTiles: plan.tileKeys.length,
             returnedTiles,
             nonEmptyTiles,

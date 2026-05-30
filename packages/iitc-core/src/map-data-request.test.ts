@@ -5,6 +5,7 @@ import {
   clampIitcBounds,
   applyIitcTileRequestResponseToQueue,
   createIitcTileQueueState,
+  createIitcTileQueueRequestBatches,
   createIitcMapDataPlan,
   createIitcEmptyTileRetryBatches,
   createIitcLiveCompatRequestBatches,
@@ -243,6 +244,22 @@ describe('IITC map data request planning', () => {
     expect(state.successTileKeys).toEqual(['ok']);
     expect(state.queuedTileKeys).toEqual(['later', 'timeout']);
     expect(state.tileErrorCount.timeout).toBe(1);
+  });
+
+  it('creates request batches from queued tiles while excluding active requests', () => {
+    const state = markIitcTileRequestStarted(createIitcTileQueueState(['a', 'b', 'c', 'd', 'e', 'f']), ['b']);
+
+    expect(createIitcTileQueueRequestBatches(state, {
+      maxRequests: 1,
+      tilesPerRequest: 3,
+      activeRequestCount: 0,
+    })).toEqual([['a', 'c', 'd']]);
+    expect(createIitcTileQueueRequestBatches(state, {
+      maxRequests: 1,
+      tilesPerRequest: 5,
+      activeRequestCount: 0,
+      pendingTileKeys: ['c', 'f'],
+    })).toEqual([['c', 'f']]);
   });
 
   it('can keep returned-empty summary tiles queued for live-compatible recovery', () => {

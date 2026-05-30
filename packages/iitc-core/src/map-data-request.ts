@@ -129,6 +129,10 @@ export interface IitcTileQueueApplyResult {
   classification: IitcTileRequestResponseClassification;
 }
 
+export interface IitcTileQueueRequestBatchOptions extends IitcRequestBatchOptions {
+  pendingTileKeys?: string[];
+}
+
 function clamp(value: number, max: number, min: number): number {
   return Math.max(min, Math.min(max, value));
 }
@@ -323,6 +327,23 @@ export function applyIitcTileRequestResponseToQueue(
   }
 
   return {state: nextState, classification};
+}
+
+export function createIitcTileQueueRequestBatches(
+  state: IitcTileQueueState,
+  options: IitcTileQueueRequestBatchOptions = {},
+): string[][] {
+  const requestedTileKeySet = new Set(state.requestedTileKeys);
+  const allowedTileKeys = options.pendingTileKeys ? new Set(options.pendingTileKeys) : null;
+  const pendingTileKeys = state.queuedTileKeys.filter((tileKey) =>
+    !requestedTileKeySet.has(tileKey) &&
+    (!allowedTileKeys || allowedTileKeys.has(tileKey)));
+
+  return createIitcRequestBatches(pendingTileKeys, {
+    ...options,
+    activeRequestCount: options.activeRequestCount ?? state.activeRequestCount,
+    tileErrorCount: options.tileErrorCount ?? state.tileErrorCount,
+  });
 }
 
 export function createIitcRequestBatches(tileKeys: string[], options: IitcRequestBatchOptions = {}): string[][] {
