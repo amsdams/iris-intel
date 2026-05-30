@@ -979,6 +979,7 @@ function postEntityStatus(
 ): void {
   const portals = entities?.portals ?? [];
   const artifactCounts = countRenderArtifacts(portals);
+  const renderPolicy = getRenderPolicy();
   const viewportCounts = countViewportEntities(entities, tileDiagnostics.viewportBounds);
   const authRequired = /login html|missing csrftoken/i.test(status);
   latestEntityStatus = status;
@@ -996,7 +997,7 @@ function postEntityStatus(
     hiddenOrnamentMarkers: latestOrnamentDiagnostics.hiddenMarkers,
     ornamentTypes: latestOrnamentDiagnostics.types,
     artifactPortals: artifactCounts.portals,
-    drawnArtifactMarkers: artifactCounts.markers,
+    drawnArtifactMarkers: renderPolicy.artifacts ? artifactCounts.drawnMarkers : 0,
     artifactTypes: artifactCounts.types,
     artifactFetchStatus: latestArtifactDiagnostics.status,
     artifactFetchPortalCount: latestArtifactDiagnostics.portalCount,
@@ -1178,23 +1179,26 @@ function getArtifactTypes(entities: IitcRawGameEntity[]): string[] {
 function countRenderArtifacts(portals: IitcIrisRenderPortal[]): {
   portals: number;
   markers: number;
+  drawnMarkers: number;
   types: Record<string, number>;
 } {
   const types: Record<string, number> = {};
   let artifactPortals = 0;
   let artifactMarkers = 0;
+  let drawnArtifactMarkers = 0;
 
   for (const portal of portals) {
     if (!portal.artifacts || portal.artifacts.length === 0) continue;
     artifactPortals += 1;
     for (const artifact of portal.artifacts) {
       artifactMarkers += 1;
+      if (!portal.isPlaceholder) drawnArtifactMarkers += 1;
       const key = `${artifact.role}:${artifact.type}`;
       types[key] = (types[key] ?? 0) + 1;
     }
   }
 
-  return {portals: artifactPortals, markers: artifactMarkers, types};
+  return {portals: artifactPortals, markers: artifactMarkers, drawnMarkers: drawnArtifactMarkers, types};
 }
 
 function resetArtifactDiagnostics(status = 'disabled'): void {
