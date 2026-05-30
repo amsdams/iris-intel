@@ -10,6 +10,7 @@ import {
   createIitcEmptyTileRetryBatches,
   createIitcLiveCompatRequestBatches,
   createIitcRequestBatches,
+  getIitcReusableCacheClassification,
   getIitcLiveCompatRetryTileKeys,
   getIitcRecoveredTileKeys,
   getIitcReturnedEmptyTileKeys,
@@ -111,6 +112,39 @@ describe('IITC map data request planning', () => {
       mapZoom: 14,
       viewportBounds: {south: 52.36, west: 4.87, north: 52.38, east: 4.91},
     })).toBe(true);
+  });
+
+  it('reuses cached responses only when bounds and tile coverage match', () => {
+    const fetched = {
+      mapZoom: 15,
+      dataBounds: {south: 52.35, west: 4.86, north: 52.39, east: 4.93},
+    };
+    const response: IitcGetEntitiesResponse = {
+      result: {
+        map: {
+          a: {gameEntities: [['a.1', 1, ['p', 'E', 1, 2]]]},
+          b: {gameEntities: []},
+        },
+      },
+    };
+
+    const reusable = getIitcReusableCacheClassification(fetched, {
+      mapZoom: 15,
+      viewportBounds: {south: 52.36, west: 4.87, north: 52.38, east: 4.91},
+      tileKeys: ['a', 'b'],
+    }, response);
+
+    expect(reusable?.returnedTiles).toBe(2);
+    expect(getIitcReusableCacheClassification(fetched, {
+      mapZoom: 15,
+      viewportBounds: {south: 52.36, west: 4.87, north: 52.38, east: 4.91},
+      tileKeys: ['a', 'missing'],
+    }, response)).toBeNull();
+    expect(getIitcReusableCacheClassification(fetched, {
+      mapZoom: 15,
+      viewportBounds: {south: 52.36, west: 4.87, north: 52.38, east: 4.94},
+      tileKeys: ['a', 'b'],
+    }, response)).toBeNull();
   });
 
   it('merges getEntities responses using richer tile payloads', () => {

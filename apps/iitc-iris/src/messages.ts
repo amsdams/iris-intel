@@ -12,6 +12,7 @@ export const IITC_IRIS_MESSAGES = {
 } as const;
 
 export type IitcIrisMessageType = typeof IITC_IRIS_MESSAGES[keyof typeof IITC_IRIS_MESSAGES];
+export type IitcIrisEntitySource = 'live' | 'cache' | 'fixture';
 
 export interface IitcIrisMessage {
   type: IitcIrisMessageType;
@@ -30,6 +31,7 @@ export interface IitcIrisMessage {
   data?: unknown;
   error?: string;
   status?: string;
+  entitySource?: IitcIrisEntitySource;
   authRequired?: boolean;
   portals?: number;
   realPortals?: number;

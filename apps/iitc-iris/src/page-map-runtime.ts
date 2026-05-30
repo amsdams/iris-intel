@@ -1,5 +1,5 @@
 import L, {type Layer as LeafletLayer, type Map as LeafletMap, type TileLayer} from 'leaflet';
-import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisDataSourceSettings, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisQueueDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderPolicy} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisQueueDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderPolicy} from './messages';
 import {
   applyIitcTileRequestResponseToQueue,
   classifyIitcGetEntitiesResponse,
@@ -10,12 +10,12 @@ import {
   createIitcMapDataPlan,
   decodeIitcGetEntitiesResponse,
   getIitcRecoveredTileKeys,
+  getIitcReusableCacheClassification,
   IITC_EMPTY_TILE_RETRY_PASSES,
   IITC_LIVE_COMPAT_TILES_PER_REQUEST,
   markIitcTileQueueStale,
   markIitcTileRequestStarted,
   mergeIitcGetEntitiesResponses,
-  shouldRefreshIitcMapData,
   type IitcArtifactBrief,
   type IitcGetEntitiesResponse,
   type IitcMapDataPlan,
@@ -74,6 +74,7 @@ let refreshTimer: number | undefined;
 let currentFetchAbortController: AbortController | undefined;
 
 interface TileDiagnostics {
+  entitySource?: IitcIrisEntitySource;
   requestedTiles: number;
   returnedTiles: number;
   nonEmptyTiles: number;
@@ -729,6 +730,7 @@ function postEntityStatus(
     responseRetryTileKeys: [],
     queueDelayReasons: [],
     queue: null,
+    entitySource: 'live',
   },
 ): void {
   const portals = entities?.portals ?? [];
@@ -739,6 +741,7 @@ function postEntityStatus(
   window.postMessage({
     type: IITC_IRIS_MESSAGES.entityStatus,
     status,
+    entitySource: tileDiagnostics.entitySource ?? 'live',
     authRequired,
     portals: portals.length,
     realPortals: portals.filter((portal) => !portal.isPlaceholder).length,
@@ -949,40 +952,37 @@ async function refreshEntities(): Promise<void> {
     const refreshKey = `${sourceKey}|${requestKey}`;
     if (refreshKey === latestRequestKey) return;
 
-    if (
-      dataSource.mode === 'live' &&
-      latestPlan &&
-      latestResponse &&
-      !shouldRefreshIitcMapData(
-        {mapZoom: latestPlan.mapZoom, dataBounds: latestPlan.dataBounds},
-        {mapZoom: plan.mapZoom, viewportBounds: plan.viewportBounds},
+    const cachedClassification = dataSource.mode === 'live'
+      ? getIitcReusableCacheClassification(
+        latestPlan ? {mapZoom: latestPlan.mapZoom, dataBounds: latestPlan.dataBounds} : null,
+        {mapZoom: plan.mapZoom, viewportBounds: plan.viewportBounds, tileKeys: plan.tileKeys},
+        latestResponse,
       )
-    ) {
-      const cachedClassification = classifyIitcGetEntitiesResponse(latestResponse, plan.tileKeys);
-      if (cachedClassification.unaccountedTileKeys.length === 0) {
-        latestRequestKey = refreshKey;
-        generation = latestFetchGeneration + 1;
-        latestFetchGeneration = generation;
-        const entities = toRenderEntities(latestResponse, generation);
-        latestPlan = plan;
-        renderEntities(entities);
-        renderTileDebug(plan, latestResponse);
-        postEntityStatus('entities ready', entities, {
-          requestedTiles: plan.tileKeys.length,
-          returnedTiles: cachedClassification.returnedTiles,
-          nonEmptyTiles: cachedClassification.nonEmptyTiles,
-          viewportBounds: plan.viewportBounds,
-          retryRequests: 0,
-          retriedTileKeys: [],
-          recoveredTileKeys: [],
-          emptyTileKeys: cachedClassification.emptyTileKeys,
-          nonEmptyTileKeys: cachedClassification.nonEmptyTileKeys,
-          unaccountedTileKeys: cachedClassification.unaccountedTileKeys,
-          ...emptyResponseBucketDiagnostics(),
-          queue: null,
-        });
-        return;
-      }
+      : null;
+    if (cachedClassification && latestResponse) {
+      latestRequestKey = refreshKey;
+      generation = latestFetchGeneration + 1;
+      latestFetchGeneration = generation;
+      const entities = toRenderEntities(latestResponse, generation);
+      latestPlan = plan;
+      renderEntities(entities);
+      renderTileDebug(plan, latestResponse);
+      postEntityStatus('entities ready', entities, {
+        requestedTiles: plan.tileKeys.length,
+        returnedTiles: cachedClassification.returnedTiles,
+        nonEmptyTiles: cachedClassification.nonEmptyTiles,
+        viewportBounds: plan.viewportBounds,
+        retryRequests: 0,
+        retriedTileKeys: [],
+        recoveredTileKeys: [],
+        emptyTileKeys: cachedClassification.emptyTileKeys,
+        nonEmptyTileKeys: cachedClassification.nonEmptyTileKeys,
+        unaccountedTileKeys: cachedClassification.unaccountedTileKeys,
+        ...emptyResponseBucketDiagnostics(),
+        queue: null,
+        entitySource: 'cache',
+      });
+      return;
     }
 
     latestRequestKey = refreshKey;
@@ -1003,6 +1003,7 @@ async function refreshEntities(): Promise<void> {
         nonEmptyTileKeys: [],
         unaccountedTileKeys: [],
         ...emptyResponseBucketDiagnostics(),
+        entitySource: 'fixture',
       });
       const fixtureResponse = await fetchFixtureResponse(dataSource);
       if (generation !== latestFetchGeneration) return;
@@ -1025,6 +1026,7 @@ async function refreshEntities(): Promise<void> {
         unaccountedTileKeys,
         ...emptyResponseBucketDiagnostics(),
         queue: null,
+        entitySource: 'fixture',
       });
       return;
     }

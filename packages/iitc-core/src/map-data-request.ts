@@ -61,6 +61,10 @@ export interface IitcNextDataParams {
   viewportBounds: IitcBounds;
 }
 
+export interface IitcNextDataCacheParams extends IitcNextDataParams {
+  tileKeys: string[];
+}
+
 export interface IitcRequestBatchOptions {
   maxRequests?: number;
   tilesPerRequest?: number;
@@ -192,6 +196,17 @@ export function shouldRefreshIitcMapData(previous: IitcFetchedDataParams | null 
   if (!previous) return true;
   if (previous.mapZoom !== next.mapZoom) return true;
   return !iitcBoundsContainsBounds(previous.dataBounds, next.viewportBounds);
+}
+
+export function getIitcReusableCacheClassification(
+  previous: IitcFetchedDataParams | null | undefined,
+  next: IitcNextDataCacheParams,
+  response: IitcGetEntitiesResponse | null | undefined,
+): IitcTileResponseClassification | null {
+  if (!response || shouldRefreshIitcMapData(previous, next)) return null;
+
+  const classification = classifyIitcGetEntitiesResponse(response, next.tileKeys);
+  return classification.unaccountedTileKeys.length === 0 ? classification : null;
 }
 
 export function lngToIitcTile(lng: number, params: IitcTileParams): number {

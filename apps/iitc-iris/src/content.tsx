@@ -1,7 +1,7 @@
 import {h, render} from 'preact';
 import {useEffect, useMemo, useState} from 'preact/hooks';
 import './iitc-iris.css';
-import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisDataSourceSettings, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisQueueDiagnostics, type IitcIrisRenderPolicy} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisQueueDiagnostics, type IitcIrisRenderPolicy} from './messages';
 import {
   createIitcMapDataPlan,
   IITC_EMPTY_TILE_RETRY_BATCH_SIZE,
@@ -100,6 +100,7 @@ interface CameraState {
 
 interface EntityFetchState {
   status: string;
+  entitySource: IitcIrisEntitySource | 'idle';
   authRequired: boolean;
   generation: number;
   key: string;
@@ -310,6 +311,7 @@ function App(): h.JSX.Element {
   });
   const [entityFetch, setEntityFetch] = useState<EntityFetchState>({
     status: 'idle',
+    entitySource: 'idle',
     authRequired: false,
     generation: 0,
     key: '',
@@ -387,6 +389,7 @@ function App(): h.JSX.Element {
     } : null,
     entities: {
       status: entityFetch.status,
+      source: entityFetch.entitySource,
       complete: entityFetch.status === 'entities ready',
       portals: entityFetch.portals,
       realPortals: entityFetch.realPortals,
@@ -531,6 +534,7 @@ function App(): h.JSX.Element {
         setEntityFetch((current) => ({
           ...current,
           status: event.data.status ?? current.status,
+          entitySource: event.data.entitySource ?? current.entitySource,
           authRequired: event.data.authRequired ?? current.authRequired,
           portals: event.data.portals ?? current.portals,
           realPortals: event.data.realPortals ?? current.realPortals,
@@ -666,6 +670,7 @@ function App(): h.JSX.Element {
         </div>
         <div className="iitc-iris-dock-row">
           <span className="iitc-iris-status">{entityFetch.status}</span>
+          <span className="iitc-iris-status">src {entityFetch.entitySource}</span>
           <span className="iitc-iris-status">p {entityFetch.portals}</span>
           <span className="iitc-iris-status">real {entityFetch.realPortals}</span>
           <span className="iitc-iris-status">ph {entityFetch.placeholderPortals}</span>
