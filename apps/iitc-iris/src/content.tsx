@@ -491,6 +491,15 @@ function App(): h.JSX.Element {
       }
       if (event.data?.type === IITC_IRIS_MESSAGES.pageReady) {
         setStatus('leaflet ready');
+        window.postMessage({
+          type: IITC_IRIS_MESSAGES.layerSettings,
+          layerSettings,
+          baseLayerId,
+        } satisfies IitcIrisMessage, '*');
+        window.postMessage({
+          type: IITC_IRIS_MESSAGES.dataSourceSettings,
+          dataSource,
+        } satisfies IitcIrisMessage, '*');
       }
       if (event.data?.type === IITC_IRIS_MESSAGES.mapMoved) {
         setCamera((current) => ({
@@ -542,7 +551,7 @@ function App(): h.JSX.Element {
 
     window.addEventListener('message', onMessage);
     return (): void => window.removeEventListener('message', onMessage);
-  }, []);
+  }, [baseLayerId, dataSource, layerSettings]);
 
   useEffect(() => {
     storeLayerSettings(layerSettings);

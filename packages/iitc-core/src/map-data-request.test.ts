@@ -3,6 +3,8 @@ import {
   classifyIitcGetEntitiesResponse,
   classifyIitcTileRequestResponse,
   clampIitcBounds,
+  applyIitcTileRequestResponseToQueue,
+  createIitcTileQueueState,
   createIitcMapDataPlan,
   createIitcEmptyTileRetryBatches,
   createIitcLiveCompatRequestBatches,
@@ -16,6 +18,7 @@ import {
   iitcBoundsContainsBounds,
   latToIitcTile,
   lngToIitcTile,
+  markIitcTileRequestStarted,
   mergeIitcGetEntitiesResponses,
   pointToIitcTileId,
   shouldRefreshIitcMapData,
@@ -221,5 +224,54 @@ describe('IITC map data request planning', () => {
       'fail',
       'missing',
     ]);
+  });
+
+  it('tracks IITC tile queue success and timeout requeue state', () => {
+    const started = markIitcTileRequestStarted(createIitcTileQueueState(['ok', 'timeout', 'later']), ['ok', 'timeout']);
+    const {state, classification} = applyIitcTileRequestResponseToQueue(started, {
+      result: {
+        map: {
+          ok: {gameEntities: [['ok.1', 1, ['p', 'E', 1, 2]]]},
+          timeout: {error: 'TIMEOUT'},
+        },
+      },
+    }, ['ok', 'timeout']);
+
+    expect(classification.timeoutTileKeys).toEqual(['timeout']);
+    expect(state.activeRequestCount).toBe(0);
+    expect(state.requestedTileKeys).toEqual([]);
+    expect(state.successTileKeys).toEqual(['ok']);
+    expect(state.queuedTileKeys).toEqual(['later', 'timeout']);
+    expect(state.tileErrorCount.timeout).toBe(1);
+  });
+
+  it('keeps server retry tiles retryable without incrementing tile errors', () => {
+    const started = markIitcTileRequestStarted(createIitcTileQueueState(['a', 'b']), ['a', 'b']);
+    const {state} = applyIitcTileRequestResponseToQueue(started, {error: 'RETRY'}, ['a', 'b']);
+
+    expect(state.queuedTileKeys).toEqual(['a', 'b']);
+    expect(state.requestedTileKeys).toEqual([]);
+    expect(state.tileErrorCount).toEqual({});
+  });
+
+  it('fails or stales error tiles after the IITC retry limit', () => {
+    let state = markIitcTileRequestStarted(createIitcTileQueueState(['failed', 'stale']), ['failed', 'stale']);
+    for (let index = 0; index < 6; index += 1) {
+      const result = applyIitcTileRequestResponseToQueue(state, {
+        result: {
+          map: {
+            failed: {error: 'ERROR'},
+            stale: {error: 'ERROR'},
+          },
+        },
+      }, ['failed', 'stale'], true, {maxTileRetries: 5, staleTileKeys: ['stale']});
+      state = index < 5 ? markIitcTileRequestStarted(result.state, ['failed', 'stale']) : result.state;
+    }
+
+    expect(state.queuedTileKeys).toEqual([]);
+    expect(state.failedTileKeys).toEqual(['failed']);
+    expect(state.staleTileKeys).toEqual(['stale']);
+    expect(state.tileErrorCount.failed).toBe(6);
+    expect(state.tileErrorCount.stale).toBe(6);
   });
 });

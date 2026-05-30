@@ -108,6 +108,26 @@ export interface IitcTileRequestResponseClassification {
   queueDelayReason: IitcRequestQueueDelayReason;
 }
 
+export interface IitcTileQueueState {
+  queuedTileKeys: string[];
+  requestedTileKeys: string[];
+  successTileKeys: string[];
+  failedTileKeys: string[];
+  staleTileKeys: string[];
+  tileErrorCount: Record<string, number>;
+  activeRequestCount: number;
+}
+
+export interface IitcTileQueueApplyOptions {
+  maxTileRetries?: number;
+  staleTileKeys?: string[];
+}
+
+export interface IitcTileQueueApplyResult {
+  state: IitcTileQueueState;
+  classification: IitcTileRequestResponseClassification;
+}
+
 function clamp(value: number, max: number, min: number): number {
   return Math.max(min, Math.min(max, value));
 }
@@ -200,6 +220,101 @@ function projectLatLng(latLng: IitcLatLng, zoom: number): {x: number; y: number}
     x: ((latLng.lng + 180) / 360) * scale,
     y: (0.5 - Math.log((1 + sinLat) / (1 - sinLat)) / (4 * Math.PI)) * scale,
   };
+}
+
+function unique(values: string[]): string[] {
+  return Array.from(new Set(values));
+}
+
+function removeMany(values: string[], toRemove: string[]): string[] {
+  const removeSet = new Set(toRemove);
+  return values.filter((value) => !removeSet.has(value));
+}
+
+function moveToEnd(values: string[], value: string): string[] {
+  return [...values.filter((entry) => entry !== value), value];
+}
+
+export function createIitcTileQueueState(tileKeys: string[]): IitcTileQueueState {
+  return {
+    queuedTileKeys: unique(tileKeys),
+    requestedTileKeys: [],
+    successTileKeys: [],
+    failedTileKeys: [],
+    staleTileKeys: [],
+    tileErrorCount: {},
+    activeRequestCount: 0,
+  };
+}
+
+export function markIitcTileRequestStarted(state: IitcTileQueueState, tileKeys: string[]): IitcTileQueueState {
+  return {
+    ...state,
+    requestedTileKeys: unique([...state.requestedTileKeys, ...tileKeys]),
+    activeRequestCount: state.activeRequestCount + 1,
+  };
+}
+
+function requeueIitcTile(state: IitcTileQueueState, tileKey: string, isError: boolean, options: IitcTileQueueApplyOptions): IitcTileQueueState {
+  if (!state.queuedTileKeys.includes(tileKey)) return state;
+
+  const maxTileRetries = options.maxTileRetries ?? IITC_MAX_TILE_RETRIES;
+  const tileErrorCount = {...state.tileErrorCount};
+  let retryLimitHit = false;
+
+  if (isError) {
+    tileErrorCount[tileKey] = (tileErrorCount[tileKey] ?? 0) + 1;
+    retryLimitHit = tileErrorCount[tileKey] > maxTileRetries;
+  }
+
+  if (!retryLimitHit) {
+    return {
+      ...state,
+      tileErrorCount,
+      queuedTileKeys: moveToEnd(state.queuedTileKeys, tileKey),
+    };
+  }
+
+  const hasStaleTile = options.staleTileKeys?.includes(tileKey) ?? false;
+  return {
+    ...state,
+    tileErrorCount,
+    queuedTileKeys: removeMany(state.queuedTileKeys, [tileKey]),
+    staleTileKeys: hasStaleTile ? unique([...state.staleTileKeys, tileKey]) : state.staleTileKeys,
+    failedTileKeys: hasStaleTile ? state.failedTileKeys : unique([...state.failedTileKeys, tileKey]),
+  };
+}
+
+export function applyIitcTileRequestResponseToQueue(
+  state: IitcTileQueueState,
+  response: IitcGetEntitiesResponse | null | undefined,
+  requestedTileKeys: string[],
+  success = true,
+  options: IitcTileQueueApplyOptions = {},
+): IitcTileQueueApplyResult {
+  const classification = classifyIitcTileRequestResponse(response, requestedTileKeys, success);
+  let nextState: IitcTileQueueState = {
+    ...state,
+    activeRequestCount: Math.max(0, state.activeRequestCount - 1),
+    requestedTileKeys: removeMany(state.requestedTileKeys, requestedTileKeys),
+    queuedTileKeys: removeMany(state.queuedTileKeys, classification.successTileKeys),
+    successTileKeys: unique([...state.successTileKeys, ...classification.successTileKeys]),
+  };
+
+  for (const tileKey of classification.serverRetryTileKeys) {
+    nextState = requeueIitcTile(nextState, tileKey, false, options);
+  }
+  for (const tileKey of classification.timeoutTileKeys) {
+    nextState = requeueIitcTile(nextState, tileKey, true, options);
+  }
+  for (const tileKey of classification.errorTileKeys) {
+    nextState = requeueIitcTile(nextState, tileKey, true, options);
+  }
+  for (const tileKey of classification.unaccountedTileKeys) {
+    nextState = requeueIitcTile(nextState, tileKey, true, options);
+  }
+
+  return {state: nextState, classification};
 }
 
 export function createIitcRequestBatches(tileKeys: string[], options: IitcRequestBatchOptions = {}): string[][] {
