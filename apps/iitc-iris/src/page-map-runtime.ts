@@ -288,7 +288,6 @@ const HEALTH_COLORS = {
   cond15: '#ff0000',
   cond0: '#ff00ff',
 } as const;
-const ARTIFACT_COLOR = '#ff00ff';
 const LEVEL_COLORS = ['#000000', '#fece5a', '#ffa630', '#ff7315', '#e40000', '#fd2992', '#eb26cd', '#c124e0', '#9627f4'] as const;
 const LEVEL_TO_WEIGHT = [2, 2, 2, 2, 2, 3, 3, 4, 4] as const;
 const LEVEL_TO_RADIUS = [7, 7, 7, 7, 8, 8, 9, 10, 11] as const;
@@ -448,6 +447,27 @@ function createOrnamentMarker(latLng: [number, number], ornament: string, portal
   });
 }
 
+function createArtifactMarker(latLng: [number, number], artifact: IitcIrisRenderArtifact): LeafletLayer {
+  const isTarget = artifact.role === 'target';
+  const size = isTarget ? 50 : 30;
+  const suffix = isTarget ? 'shard_target' : 'shard';
+  const iconUrl = `https://commondatastorage.googleapis.com/ingress.com/img/map_icons/marker_images/${artifact.type}_${suffix}.png`;
+
+  return L.marker(latLng, {
+    icon: L.icon({
+      iconUrl,
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
+      className: 'iitc-iris-artifact-icon',
+    }),
+    interactive: false,
+    keyboard: false,
+    opacity: isTarget ? 1 : 0.6,
+    pane: getLayerPane('artifacts'),
+    zIndexOffset: isTarget ? 1200 : 1100,
+  });
+}
+
 function createLevelLabelMarker(latLng: [number, number], level: number, team: keyof typeof TEAM_COLORS): LeafletLayer {
   return L.marker(latLng, {
     icon: L.divIcon({
@@ -572,15 +592,9 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
     }
 
     if (renderPolicy.artifacts && !portal.isPlaceholder && portal.artifacts && portal.artifacts.length > 0) {
-      addRenderedLayer(layers.artifacts, L.circleMarker(latLng, {
-        radius: radius + 7,
-        color: ARTIFACT_COLOR,
-        fillOpacity: 0,
-        opacity: 0.95,
-        pane: getLayerPane('artifacts'),
-        weight: portal.artifacts.some((artifact) => artifact.role === 'target') ? 4 : 2.5,
-        interactive: false,
-      }));
+      for (const artifact of portal.artifacts) {
+        addRenderedLayer(layers.artifacts, createArtifactMarker(latLng, artifact));
+      }
     }
 
     if (renderPolicy.ornaments && portal.ornaments && portal.ornaments.length > 0) {

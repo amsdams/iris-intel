@@ -76,10 +76,10 @@ Acceptance:
 Current status:
 
 - Typed npm Leaflet is bundled into `iitc-iris`.
-- Fields, links, placeholder portals, real portals, level fill, health fill, ornaments, level labels, and simple artifact rings render.
+- Fields, links, placeholder portals, real portals, level fill, health fill, ornaments, level labels, and IITC-style artifact/shard marker icons render.
 - Optional detail styling now has an explicit render policy: level fill, health fill, ornaments, artifact rings, and level labels only draw when detailed portal data is available at zoom 14+ and the matching layer toggle is enabled. Base fields, links, and portals remain independent of that policy.
 - Base renderer styling is closer to IITC-CE: team-coloured portal fills, IITC portal radius/weight scaling, 0.25 field fill opacity, full-opacity links, orange neutral portals, and text-only portal level labels with simple overlap thinning.
-- Artifact rendering is wired but unverified against live Intel data; keep it simple until a real artifact fixture or HAR is available.
+- Artifact rendering is wired with IITC's marker image convention (`{type}_shard.png` and `{type}_shard_target.png`) but remains unverified against live Intel data until a real artifact fixture or HAR is available.
 - Layer ordering and visual parity are only approximate.
 - Shard, event, portal label polish, and plugin/highlighter parity are not done.
 
