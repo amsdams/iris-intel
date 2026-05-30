@@ -6,8 +6,8 @@ import {
   createIitcEmptyTileRetryBatches,
   createIitcMapDataPlan,
   decodeIitcGetEntitiesResponse,
+  getIitcLiveCompatRetryTileKeys,
   getIitcRecoveredTileKeys,
-  getIitcReturnedEmptyTileKeys,
   IITC_EMPTY_TILE_RETRY_PASSES,
   IITC_LIVE_COMPAT_TILES_PER_REQUEST,
   mergeIitcGetEntitiesResponses,
@@ -999,12 +999,12 @@ async function refreshEntities(): Promise<void> {
 
     if (generation !== latestFetchGeneration) return;
     let mergedResponse = mergeIitcGetEntitiesResponses(responses);
-    const initialEmptyTileKeys = getIitcReturnedEmptyTileKeys(mergedResponse, plan.tileKeys);
+    const initialRetryTileKeys = getIitcLiveCompatRetryTileKeys(mergedResponse, plan.tileKeys);
     const retriedTileKeys = new Set<string>();
     let retryRequests = 0;
     if (plan.tileParams.hasPortals) {
       for (let pass = 1; pass <= IITC_EMPTY_TILE_RETRY_PASSES; pass += 1) {
-        const retryTileKeys = getIitcReturnedEmptyTileKeys(mergedResponse, plan.tileKeys);
+        const retryTileKeys = getIitcLiveCompatRetryTileKeys(mergedResponse, plan.tileKeys);
         if (retryTileKeys.length === 0) break;
 
         const retryBatches = createIitcEmptyTileRetryBatches(retryTileKeys);
@@ -1018,7 +1018,7 @@ async function refreshEntities(): Promise<void> {
           mergedResponse = mergeIitcGetEntitiesResponses(responses);
           const entities = toRenderEntities(mergedResponse, generation);
           const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyTileDiagnostics(mergedResponse, plan);
-          const recoveredTileKeys = getIitcRecoveredTileKeys(initialEmptyTileKeys, nonEmptyTileKeys);
+          const recoveredTileKeys = getIitcRecoveredTileKeys(initialRetryTileKeys, nonEmptyTileKeys);
           postEntityStatus(`retry ${pass} ${index + 1}/${retryBatches.length}`, entities, {
             requestedTiles: plan.tileKeys.length,
             returnedTiles,
@@ -1038,7 +1038,7 @@ async function refreshEntities(): Promise<void> {
 
     const entities = toRenderEntities(mergedResponse, generation);
     const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyTileDiagnostics(mergedResponse, plan);
-    const recoveredTileKeys = getIitcRecoveredTileKeys(initialEmptyTileKeys, nonEmptyTileKeys);
+    const recoveredTileKeys = getIitcRecoveredTileKeys(initialRetryTileKeys, nonEmptyTileKeys);
     latestPlan = plan;
     latestResponse = mergedResponse;
     renderEntities(entities);

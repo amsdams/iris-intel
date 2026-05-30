@@ -7,6 +7,7 @@ import {
   createIitcEmptyTileRetryBatches,
   createIitcLiveCompatRequestBatches,
   createIitcRequestBatches,
+  getIitcLiveCompatRetryTileKeys,
   getIitcRecoveredTileKeys,
   getIitcReturnedEmptyTileKeys,
   getIitcMapZoomTileParameters,
@@ -200,5 +201,25 @@ describe('IITC map data request planning', () => {
       retryTileKeys: ['a'],
       queueDelayReason: 'error',
     });
+  });
+
+  it('selects live-compatible retry tiles from empty and IITC error buckets', () => {
+    const response: IitcGetEntitiesResponse = {
+      result: {
+        map: {
+          empty: {gameEntities: []},
+          ok: {gameEntities: [['ok.1', 1, ['p', 'E', 1, 2]]]},
+          timeout: {error: 'TIMEOUT'},
+          fail: {error: 'ERROR'},
+        },
+      },
+    };
+
+    expect(getIitcLiveCompatRetryTileKeys(response, ['empty', 'ok', 'timeout', 'fail', 'missing'])).toEqual([
+      'empty',
+      'timeout',
+      'fail',
+      'missing',
+    ]);
   });
 });

@@ -31,6 +31,7 @@ Current status:
 - Tile math, zoom/data-zoom selection, request key generation, basic batching, and the live-compat batch policy are ported.
 - The IITC same-zoom refresh skip rule is ported in core: a move does not need a new request when the new viewport remains inside the previously fetched data bounds.
 - IITC IRIS currently uses a temporary core-owned compatibility policy for live Intel tile holes: summary tile requests run in sequential 5-tile batches, returned-empty summary tiles are retried as single-tile requests, and response merging keeps a non-empty tile payload over a later empty payload for the same tile.
+- Live-compat retry selection now comes from `packages/iitc-core`: the runtime retries returned-empty compatibility tiles plus explicit IITC response retry buckets such as timeout, error, and unaccounted tiles.
 - Response merge, tile-return diagnostics, requested-tile response classification, and IITC-style request response buckets now live in `packages/iitc-core` with tests, so the runtime no longer owns richer-payload merging, empty-tile detection, unaccounted-tile detection, or recovered-tile accounting.
 - This shim exists because the core port does not yet include IITC-CE's full tile lifecycle: tile cache state, active request accounting, tile-specific retry/error counters, timeout handling, and stale-cache fallback.
 - The compatibility policy should remain while validating live parity, but the intended replacement is a closer IITC-CE-derived request queue in `packages/iitc-core`, not permanent ad hoc runtime policy.

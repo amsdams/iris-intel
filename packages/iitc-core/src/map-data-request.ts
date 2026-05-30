@@ -329,6 +329,12 @@ export function getIitcReturnedEmptyTileKeys(response: IitcGetEntitiesResponse, 
   return classifyIitcGetEntitiesResponse(response, requestedTileKeys, {retryReturnedEmptyTiles: true}).emptyTileKeys;
 }
 
+export function getIitcLiveCompatRetryTileKeys(response: IitcGetEntitiesResponse, requestedTileKeys: string[]): string[] {
+  const returnedEmptyTileKeys = getIitcReturnedEmptyTileKeys(response, requestedTileKeys);
+  const responseRetryTileKeys = classifyIitcTileRequestResponse(response, requestedTileKeys).retryTileKeys;
+  return Array.from(new Set([...returnedEmptyTileKeys, ...responseRetryTileKeys]));
+}
+
 export function getIitcRecoveredTileKeys(initialEmptyTileKeys: string[], nonEmptyTileKeys: string[]): string[] {
   return initialEmptyTileKeys.filter((tileKey) => nonEmptyTileKeys.includes(tileKey));
 }
