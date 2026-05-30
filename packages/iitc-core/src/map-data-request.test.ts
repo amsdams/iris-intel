@@ -1,5 +1,7 @@
 import {describe, expect, it} from 'vitest';
 import {
+  classifyIitcGetEntitiesResponse,
+  classifyIitcTileRequestResponse,
   clampIitcBounds,
   createIitcMapDataPlan,
   createIitcEmptyTileRetryBatches,
@@ -10,10 +12,12 @@ import {
   getIitcMapZoomTileParameters,
   iitcTileToLat,
   iitcTileToLng,
+  iitcBoundsContainsBounds,
   latToIitcTile,
   lngToIitcTile,
   mergeIitcGetEntitiesResponses,
   pointToIitcTileId,
+  shouldRefreshIitcMapData,
   summarizeIitcReturnedTiles,
   type IitcGetEntitiesResponse,
 } from './index';
@@ -82,6 +86,27 @@ describe('IITC map data request planning', () => {
     expect(plan.requestBatches.every((batch) => batch.length <= 5)).toBe(true);
   });
 
+  it('matches IITC refresh skipping for same-zoom moves inside fetched bounds', () => {
+    const fetched = {
+      mapZoom: 15,
+      dataBounds: {south: 52.35, west: 4.86, north: 52.39, east: 4.93},
+    };
+
+    expect(iitcBoundsContainsBounds(fetched.dataBounds, {south: 52.36, west: 4.87, north: 52.38, east: 4.91})).toBe(true);
+    expect(shouldRefreshIitcMapData(fetched, {
+      mapZoom: 15,
+      viewportBounds: {south: 52.36, west: 4.87, north: 52.38, east: 4.91},
+    })).toBe(false);
+    expect(shouldRefreshIitcMapData(fetched, {
+      mapZoom: 15,
+      viewportBounds: {south: 52.36, west: 4.87, north: 52.38, east: 4.94},
+    })).toBe(true);
+    expect(shouldRefreshIitcMapData(fetched, {
+      mapZoom: 14,
+      viewportBounds: {south: 52.36, west: 4.87, north: 52.38, east: 4.91},
+    })).toBe(true);
+  });
+
   it('merges getEntities responses using richer tile payloads', () => {
     const emptyThenFull: IitcGetEntitiesResponse[] = [
       {result: {map: {a: {gameEntities: []}, b: {gameEntities: [['b.1', 1, ['p', 'E', 1, 2]]]}}}},
@@ -111,5 +136,69 @@ describe('IITC map data request planning', () => {
     });
     expect(getIitcReturnedEmptyTileKeys(response, ['a', 'b', 'c'])).toEqual(['a']);
     expect(getIitcRecoveredTileKeys(['a', 'b', 'c'], ['b', 'd'])).toEqual(['b']);
+  });
+
+  it('classifies requested tile response state for IITC-style lifecycle handling', () => {
+    const response: IitcGetEntitiesResponse = {
+      result: {
+        map: {
+          a: {gameEntities: []},
+          b: {gameEntities: [['b.1', 1, ['p', 'E', 1, 2]]]},
+          unrelated: {gameEntities: [['u.1', 1, ['p', 'R', 3, 4]]]},
+        },
+      },
+    };
+
+    expect(classifyIitcGetEntitiesResponse(response, ['a', 'b', 'c'])).toEqual({
+      requestedTiles: 3,
+      returnedTiles: 2,
+      nonEmptyTiles: 1,
+      returnedTileKeys: ['a', 'b'],
+      emptyTileKeys: ['a'],
+      nonEmptyTileKeys: ['b'],
+      unaccountedTileKeys: ['c'],
+      successTileKeys: ['a', 'b'],
+      retryTileKeys: [],
+    });
+    expect(
+      classifyIitcGetEntitiesResponse(response, ['a', 'b', 'c'], {
+        retryReturnedEmptyTiles: true,
+        retryUnaccountedTiles: true,
+      }).retryTileKeys,
+    ).toEqual(['a', 'c']);
+  });
+
+  it('classifies IITC request response buckets and queue delay reasons', () => {
+    const mixedResponse: IitcGetEntitiesResponse = {
+      result: {
+        map: {
+          ok: {gameEntities: [['ok.1', 1, ['p', 'E', 1, 2]]]},
+          timeout: {error: 'TIMEOUT'},
+          fail: {error: 'ERROR'},
+        },
+      },
+    };
+
+    expect(classifyIitcTileRequestResponse(mixedResponse, ['ok', 'timeout', 'fail', 'missing'])).toEqual({
+      requestedTiles: 4,
+      returnedTileKeys: ['ok', 'timeout', 'fail'],
+      successTileKeys: ['ok'],
+      serverRetryTileKeys: [],
+      timeoutTileKeys: ['timeout'],
+      errorTileKeys: ['fail'],
+      unaccountedTileKeys: ['missing'],
+      retryTileKeys: ['timeout', 'fail', 'missing'],
+      queueDelayReason: 'error',
+    });
+    expect(classifyIitcTileRequestResponse({error: 'RETRY'}, ['a', 'b'])).toMatchObject({
+      serverRetryTileKeys: ['a', 'b'],
+      retryTileKeys: ['a', 'b'],
+      queueDelayReason: 'server-retry',
+    });
+    expect(classifyIitcTileRequestResponse(null, ['a'], false)).toMatchObject({
+      errorTileKeys: ['a'],
+      retryTileKeys: ['a'],
+      queueDelayReason: 'error',
+    });
   });
 });

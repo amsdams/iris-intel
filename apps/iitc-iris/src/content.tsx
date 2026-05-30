@@ -126,6 +126,12 @@ interface EntityFetchState {
   recoveredTileKeys: string[];
   emptyTileKeys: string[];
   nonEmptyTileKeys: string[];
+  unaccountedTileKeys: string[];
+  serverRetryTileKeys: string[];
+  timeoutTileKeys: string[];
+  errorTileKeys: string[];
+  responseRetryTileKeys: string[];
+  queueDelayReasons: string[];
   baseLayerId: IitcIrisBaseLayerId;
   dataSource: IitcIrisDataSourceSettings;
   renderPolicy: IitcIrisRenderPolicy;
@@ -329,6 +335,12 @@ function App(): h.JSX.Element {
     recoveredTileKeys: [],
     emptyTileKeys: [],
     nonEmptyTileKeys: [],
+    unaccountedTileKeys: [],
+    serverRetryTileKeys: [],
+    timeoutTileKeys: [],
+    errorTileKeys: [],
+    responseRetryTileKeys: [],
+    queueDelayReasons: [],
     baseLayerId: loadStoredBaseLayerId(),
     dataSource: createDataSourceSettings(loadStoredDataSourceId()),
     renderPolicy: DEFAULT_RENDER_POLICY,
@@ -398,6 +410,12 @@ function App(): h.JSX.Element {
       recoveredTileKeys: entityFetch.recoveredTileKeys,
       emptyTileKeys: entityFetch.emptyTileKeys,
       nonEmptyTileKeys: entityFetch.nonEmptyTileKeys,
+      unaccountedTileKeys: entityFetch.unaccountedTileKeys,
+      serverRetryTileKeys: entityFetch.serverRetryTileKeys,
+      timeoutTileKeys: entityFetch.timeoutTileKeys,
+      errorTileKeys: entityFetch.errorTileKeys,
+      responseRetryTileKeys: entityFetch.responseRetryTileKeys,
+      queueDelayReasons: entityFetch.queueDelayReasons,
       authRequired: entityFetch.authRequired,
     },
     baseLayerId,
@@ -509,6 +527,12 @@ function App(): h.JSX.Element {
           recoveredTileKeys: event.data.recoveredTileKeys ?? current.recoveredTileKeys,
           emptyTileKeys: event.data.emptyTileKeys ?? current.emptyTileKeys,
           nonEmptyTileKeys: event.data.nonEmptyTileKeys ?? current.nonEmptyTileKeys,
+          unaccountedTileKeys: event.data.unaccountedTileKeys ?? current.unaccountedTileKeys,
+          serverRetryTileKeys: event.data.serverRetryTileKeys ?? current.serverRetryTileKeys,
+          timeoutTileKeys: event.data.timeoutTileKeys ?? current.timeoutTileKeys,
+          errorTileKeys: event.data.errorTileKeys ?? current.errorTileKeys,
+          responseRetryTileKeys: event.data.responseRetryTileKeys ?? current.responseRetryTileKeys,
+          queueDelayReasons: event.data.queueDelayReasons ?? current.queueDelayReasons,
           baseLayerId: event.data.baseLayerId ?? current.baseLayerId,
           dataSource: event.data.dataSource ?? current.dataSource,
           renderPolicy: event.data.renderPolicy ?? current.renderPolicy,

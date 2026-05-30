@@ -5,6 +5,7 @@ export const IITC_MAX_LATITUDE = 85.051128;
 export const IITC_MAX_LONGITUDE = 179.999999;
 export const IITC_MAX_REQUESTS = 5;
 export const IITC_NUM_TILES_PER_REQUEST = 25;
+export const IITC_MAX_TILE_RETRIES = 5;
 export const IITC_LIVE_COMPAT_TILES_PER_REQUEST = 5;
 export const IITC_EMPTY_TILE_RETRY_PASSES = 2;
 export const IITC_EMPTY_TILE_RETRY_BATCH_SIZE = 1;
@@ -50,6 +51,16 @@ export interface IitcMapDataPlanOptions {
   sequentialRequestBatches?: boolean;
 }
 
+export interface IitcFetchedDataParams {
+  mapZoom: number;
+  dataBounds: IitcBounds;
+}
+
+export interface IitcNextDataParams {
+  mapZoom: number;
+  viewportBounds: IitcBounds;
+}
+
 export interface IitcRequestBatchOptions {
   maxRequests?: number;
   tilesPerRequest?: number;
@@ -68,6 +79,33 @@ export interface IitcReturnedTileSummary {
   nonEmptyTiles: number;
   emptyTileKeys: string[];
   nonEmptyTileKeys: string[];
+}
+
+export interface IitcTileResponseClassificationOptions {
+  retryReturnedEmptyTiles?: boolean;
+  retryUnaccountedTiles?: boolean;
+}
+
+export interface IitcTileResponseClassification extends IitcReturnedTileSummary {
+  requestedTiles: number;
+  returnedTileKeys: string[];
+  unaccountedTileKeys: string[];
+  successTileKeys: string[];
+  retryTileKeys: string[];
+}
+
+export type IitcRequestQueueDelayReason = 'normal' | 'server-retry' | 'timeout' | 'error' | 'unaccounted';
+
+export interface IitcTileRequestResponseClassification {
+  requestedTiles: number;
+  returnedTileKeys: string[];
+  successTileKeys: string[];
+  serverRetryTileKeys: string[];
+  timeoutTileKeys: string[];
+  errorTileKeys: string[];
+  unaccountedTileKeys: string[];
+  retryTileKeys: string[];
+  queueDelayReason: IitcRequestQueueDelayReason;
 }
 
 function clamp(value: number, max: number, min: number): number {
@@ -114,6 +152,21 @@ export function clampIitcBounds(bounds: IitcBounds): IitcBounds {
     north: northEast.lat,
     east: northEast.lng,
   };
+}
+
+export function iitcBoundsContainsBounds(outer: IitcBounds, inner: IitcBounds): boolean {
+  const normalizedOuter = clampIitcBounds(outer);
+  const normalizedInner = clampIitcBounds(inner);
+  return normalizedOuter.south <= normalizedInner.south &&
+    normalizedOuter.west <= normalizedInner.west &&
+    normalizedOuter.north >= normalizedInner.north &&
+    normalizedOuter.east >= normalizedInner.east;
+}
+
+export function shouldRefreshIitcMapData(previous: IitcFetchedDataParams | null | undefined, next: IitcNextDataParams): boolean {
+  if (!previous) return true;
+  if (previous.mapZoom !== next.mapZoom) return true;
+  return !iitcBoundsContainsBounds(previous.dataBounds, next.viewportBounds);
 }
 
 export function lngToIitcTile(lng: number, params: IitcTileParams): number {
@@ -166,7 +219,7 @@ export function createIitcRequestBatches(tileKeys: string[], options: IitcReques
 
     for (let i = 0; i < numTilesThisRequest; i += 1) {
       retryTotal += options.tileErrorCount?.[pendingTiles[i]] ?? 0;
-      if (retryTotal > (options.maxTileRetries ?? 5)) {
+      if (retryTotal > (options.maxTileRetries ?? IITC_MAX_TILE_RETRIES)) {
         numTilesThisRequest = i;
         break;
       }
@@ -235,13 +288,106 @@ export function summarizeIitcReturnedTiles(response: IitcGetEntitiesResponse): I
   };
 }
 
-export function getIitcReturnedEmptyTileKeys(response: IitcGetEntitiesResponse, requestedTileKeys: string[]): string[] {
+export function classifyIitcGetEntitiesResponse(
+  response: IitcGetEntitiesResponse,
+  requestedTileKeys: string[],
+  options: IitcTileResponseClassificationOptions = {},
+): IitcTileResponseClassification {
   const tilePayloads = response.result?.map ?? {};
-  return requestedTileKeys.filter((tileKey) => tilePayloads[tileKey] && countIitcTileEntities(tilePayloads[tileKey]) === 0);
+  const returnedTileKeys = requestedTileKeys.filter((tileKey) => Object.prototype.hasOwnProperty.call(tilePayloads, tileKey));
+  const returnedTileKeySet = new Set(returnedTileKeys);
+  const emptyTileKeys: string[] = [];
+  const nonEmptyTileKeys: string[] = [];
+  const unaccountedTileKeys = requestedTileKeys.filter((tileKey) => !returnedTileKeySet.has(tileKey));
+
+  for (const tileKey of returnedTileKeys) {
+    if (countIitcTileEntities(tilePayloads[tileKey]) > 0) nonEmptyTileKeys.push(tileKey);
+    else emptyTileKeys.push(tileKey);
+  }
+
+  const retryTileKeys = [
+    ...(options.retryReturnedEmptyTiles ? emptyTileKeys : []),
+    ...(options.retryUnaccountedTiles ? unaccountedTileKeys : []),
+  ];
+  const retryTileKeySet = new Set(retryTileKeys);
+  const successTileKeys = returnedTileKeys.filter((tileKey) => !retryTileKeySet.has(tileKey));
+
+  return {
+    requestedTiles: requestedTileKeys.length,
+    returnedTiles: returnedTileKeys.length,
+    nonEmptyTiles: nonEmptyTileKeys.length,
+    returnedTileKeys,
+    emptyTileKeys,
+    nonEmptyTileKeys,
+    unaccountedTileKeys,
+    successTileKeys,
+    retryTileKeys,
+  };
+}
+
+export function getIitcReturnedEmptyTileKeys(response: IitcGetEntitiesResponse, requestedTileKeys: string[]): string[] {
+  return classifyIitcGetEntitiesResponse(response, requestedTileKeys, {retryReturnedEmptyTiles: true}).emptyTileKeys;
 }
 
 export function getIitcRecoveredTileKeys(initialEmptyTileKeys: string[], nonEmptyTileKeys: string[]): string[] {
   return initialEmptyTileKeys.filter((tileKey) => nonEmptyTileKeys.includes(tileKey));
+}
+
+export function classifyIitcTileRequestResponse(
+  response: IitcGetEntitiesResponse | null | undefined,
+  requestedTileKeys: string[],
+  success = true,
+): IitcTileRequestResponseClassification {
+  const returnedTileKeys: string[] = [];
+  const successTileKeys: string[] = [];
+  const serverRetryTileKeys: string[] = [];
+  const timeoutTileKeys: string[] = [];
+  const errorTileKeys: string[] = [];
+  const unaccountedTileKeys: string[] = [];
+
+  if (!success || !response?.result) {
+    if (response?.error === 'RETRY') serverRetryTileKeys.push(...requestedTileKeys);
+    else errorTileKeys.push(...requestedTileKeys);
+  } else {
+    const tilePayloads = response.result.map ?? {};
+    for (const tileKey of requestedTileKeys) {
+      if (!Object.prototype.hasOwnProperty.call(tilePayloads, tileKey)) {
+        unaccountedTileKeys.push(tileKey);
+        continue;
+      }
+
+      returnedTileKeys.push(tileKey);
+      const tile = tilePayloads[tileKey];
+      if (tile.error === 'TIMEOUT') timeoutTileKeys.push(tileKey);
+      else if (tile.error) errorTileKeys.push(tileKey);
+      else successTileKeys.push(tileKey);
+    }
+  }
+
+  const retryTileKeys = [
+    ...serverRetryTileKeys,
+    ...timeoutTileKeys,
+    ...errorTileKeys,
+    ...unaccountedTileKeys,
+  ];
+  const queueDelayReason: IitcRequestQueueDelayReason =
+    errorTileKeys.length > 0 ? 'error' :
+      unaccountedTileKeys.length > 0 ? 'unaccounted' :
+        timeoutTileKeys.length > 0 ? 'timeout' :
+          serverRetryTileKeys.length > 0 ? 'server-retry' :
+            'normal';
+
+  return {
+    requestedTiles: requestedTileKeys.length,
+    returnedTileKeys,
+    successTileKeys,
+    serverRetryTileKeys,
+    timeoutTileKeys,
+    errorTileKeys,
+    unaccountedTileKeys,
+    retryTileKeys,
+    queueDelayReason,
+  };
 }
 
 export function createIitcMapDataPlan(

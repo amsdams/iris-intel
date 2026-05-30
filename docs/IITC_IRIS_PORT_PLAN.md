@@ -29,8 +29,9 @@ Acceptance:
 Current status:
 
 - Tile math, zoom/data-zoom selection, request key generation, basic batching, and the live-compat batch policy are ported.
+- The IITC same-zoom refresh skip rule is ported in core: a move does not need a new request when the new viewport remains inside the previously fetched data bounds.
 - IITC IRIS currently uses a temporary core-owned compatibility policy for live Intel tile holes: summary tile requests run in sequential 5-tile batches, returned-empty summary tiles are retried as single-tile requests, and response merging keeps a non-empty tile payload over a later empty payload for the same tile.
-- Response merge and tile-return diagnostics now live in `packages/iitc-core` with tests, so the runtime no longer owns richer-payload merging, empty-tile detection, or recovered-tile accounting.
+- Response merge, tile-return diagnostics, requested-tile response classification, and IITC-style request response buckets now live in `packages/iitc-core` with tests, so the runtime no longer owns richer-payload merging, empty-tile detection, unaccounted-tile detection, or recovered-tile accounting.
 - This shim exists because the core port does not yet include IITC-CE's full tile lifecycle: tile cache state, active request accounting, tile-specific retry/error counters, timeout handling, and stale-cache fallback.
 - The compatibility policy should remain while validating live parity, but the intended replacement is a closer IITC-CE-derived request queue in `packages/iitc-core`, not permanent ad hoc runtime policy.
 
@@ -86,6 +87,7 @@ Acceptance:
 Current status:
 
 - The dock shows zoom, data zoom, summary availability, tile span, fetch state, entity totals, real/placeholder/ornament portal counts, and copy-to-clipboard diagnostics.
+- Copied diagnostics include IITC-style request response buckets (`serverRetryTileKeys`, `timeoutTileKeys`, `errorTileKeys`, `responseRetryTileKeys`, and `queueDelayReasons`) so slow-network retries can be separated from returned-empty tile recovery.
 - The dock has fixed Amsterdam and Damrak view presets for repeatable IITC/IITC IRIS comparisons.
 - The dock can jump to arbitrary comparison views from `lat,lng,z` text, Intel map URLs with `ll` and `z`, or IITC-CE portal links with `pll`.
 - The dock can copy the current view back out as an Intel URL.
@@ -95,7 +97,7 @@ Current status:
   - `F`: fields.
   - `LN`: links.
   - `P`: portals.
-  - `LF`: portal body fill by IITC level colours, matching IITC-CE's `Level Color` highlighter behavior.
+  - `LF`: portal body fill by IITC level colours, matching IITC-CE's `Level Color` highlighter behavior, including neutral portals with an orange outline and level-coloured body.
   - `HF`: portal body fill by recharge status, matching IITC-CE's `Needs Recharge (Health)` highlighter behavior.
   - `OR`: ornament image overlays.
   - `AR`: artifact rings.

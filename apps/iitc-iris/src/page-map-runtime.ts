@@ -1,6 +1,8 @@
 import L, {type Layer as LeafletLayer, type Map as LeafletMap, type TileLayer} from 'leaflet';
 import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisDataSourceSettings, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderPolicy} from './messages';
 import {
+  classifyIitcGetEntitiesResponse,
+  classifyIitcTileRequestResponse,
   createIitcEmptyTileRetryBatches,
   createIitcMapDataPlan,
   decodeIitcGetEntitiesResponse,
@@ -9,7 +11,6 @@ import {
   IITC_EMPTY_TILE_RETRY_PASSES,
   IITC_LIVE_COMPAT_TILES_PER_REQUEST,
   mergeIitcGetEntitiesResponses,
-  summarizeIitcReturnedTiles,
   type IitcArtifactBrief,
   type IitcGetEntitiesResponse,
   type IitcMapDataPlan,
@@ -75,6 +76,12 @@ interface TileDiagnostics {
   recoveredTileKeys?: string[];
   emptyTileKeys: string[];
   nonEmptyTileKeys: string[];
+  unaccountedTileKeys: string[];
+  serverRetryTileKeys?: string[];
+  timeoutTileKeys?: string[];
+  errorTileKeys?: string[];
+  responseRetryTileKeys?: string[];
+  queueDelayReasons?: string[];
 }
 
 let latestEntityStatus = 'idle';
@@ -307,7 +314,7 @@ function getPortalFillColor(team: keyof typeof TEAM_COLORS, level: number | unde
 }
 
 function getPortalLevelFillColor(level: number | undefined, team: keyof typeof TEAM_COLORS, isPlaceholder: boolean): string | null {
-  if (!layerSettings.levelFill || isPlaceholder || team === 'N' || level === undefined) return null;
+  if (!layerSettings.levelFill || isPlaceholder || level === undefined) return null;
   return LEVEL_COLORS[getPortalLevel(level, false)] ?? null;
 }
 
@@ -700,6 +707,12 @@ function postEntityStatus(
     recoveredTileKeys: [],
     emptyTileKeys: [],
     nonEmptyTileKeys: [],
+    unaccountedTileKeys: [],
+    serverRetryTileKeys: [],
+    timeoutTileKeys: [],
+    errorTileKeys: [],
+    responseRetryTileKeys: [],
+    queueDelayReasons: [],
   },
 ): void {
   const portals = entities?.portals ?? [];
@@ -729,10 +742,50 @@ function postEntityStatus(
     recoveredTileKeys: tileDiagnostics.recoveredTileKeys ?? [],
     emptyTileKeys: tileDiagnostics.emptyTileKeys,
     nonEmptyTileKeys: tileDiagnostics.nonEmptyTileKeys,
+    unaccountedTileKeys: tileDiagnostics.unaccountedTileKeys,
+    serverRetryTileKeys: tileDiagnostics.serverRetryTileKeys ?? [],
+    timeoutTileKeys: tileDiagnostics.timeoutTileKeys ?? [],
+    errorTileKeys: tileDiagnostics.errorTileKeys ?? [],
+    responseRetryTileKeys: tileDiagnostics.responseRetryTileKeys ?? [],
+    queueDelayReasons: tileDiagnostics.queueDelayReasons ?? [],
     baseLayerId,
     dataSource,
     renderPolicy: getRenderPolicy(),
   } satisfies IitcIrisMessage, '*');
+}
+
+function classifyTileDiagnostics(response: IitcGetEntitiesResponse, plan: IitcMapDataPlan): Pick<TileDiagnostics, 'returnedTiles' | 'nonEmptyTiles' | 'emptyTileKeys' | 'nonEmptyTileKeys' | 'unaccountedTileKeys'> {
+  const classification = classifyIitcGetEntitiesResponse(response, plan.tileKeys);
+  return {
+    returnedTiles: classification.returnedTiles,
+    nonEmptyTiles: classification.nonEmptyTiles,
+    emptyTileKeys: classification.emptyTileKeys,
+    nonEmptyTileKeys: classification.nonEmptyTileKeys,
+    unaccountedTileKeys: classification.unaccountedTileKeys,
+  };
+}
+
+function emptyResponseBucketDiagnostics(): Required<Pick<TileDiagnostics, 'serverRetryTileKeys' | 'timeoutTileKeys' | 'errorTileKeys' | 'responseRetryTileKeys' | 'queueDelayReasons'>> {
+  return {
+    serverRetryTileKeys: [],
+    timeoutTileKeys: [],
+    errorTileKeys: [],
+    responseRetryTileKeys: [],
+    queueDelayReasons: [],
+  };
+}
+
+function collectResponseBucketDiagnostics(
+  response: IitcGetEntitiesResponse,
+  tileKeys: string[],
+  bucketDiagnostics: Required<Pick<TileDiagnostics, 'serverRetryTileKeys' | 'timeoutTileKeys' | 'errorTileKeys' | 'responseRetryTileKeys' | 'queueDelayReasons'>>,
+): void {
+  const classification = classifyIitcTileRequestResponse(response, tileKeys);
+  bucketDiagnostics.serverRetryTileKeys.push(...classification.serverRetryTileKeys);
+  bucketDiagnostics.timeoutTileKeys.push(...classification.timeoutTileKeys);
+  bucketDiagnostics.errorTileKeys.push(...classification.errorTileKeys);
+  bucketDiagnostics.responseRetryTileKeys.push(...classification.retryTileKeys);
+  if (classification.queueDelayReason !== 'normal') bucketDiagnostics.queueDelayReasons.push(classification.queueDelayReason);
 }
 
 function getCsrfToken(): string {
@@ -878,11 +931,13 @@ async function refreshEntities(): Promise<void> {
         recoveredTileKeys: [],
         emptyTileKeys: [],
         nonEmptyTileKeys: [],
+        unaccountedTileKeys: [],
+        ...emptyResponseBucketDiagnostics(),
       });
       const fixtureResponse = await fetchFixtureResponse(dataSource);
       if (generation !== latestFetchGeneration) return;
       const entities = toRenderEntities(fixtureResponse, generation);
-      const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys} = summarizeIitcReturnedTiles(fixtureResponse);
+      const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyTileDiagnostics(fixtureResponse, plan);
       latestPlan = plan;
       latestResponse = fixtureResponse;
       renderEntities(entities);
@@ -897,6 +952,8 @@ async function refreshEntities(): Promise<void> {
         recoveredTileKeys: [],
         emptyTileKeys,
         nonEmptyTileKeys,
+        unaccountedTileKeys,
+        ...emptyResponseBucketDiagnostics(),
       });
       return;
     }
@@ -905,6 +962,7 @@ async function refreshEntities(): Promise<void> {
     if (!version) throw new Error('waiting for Intel version');
     const batches = plan.requestBatches;
     const responses: IitcGetEntitiesResponse[] = [];
+    const bucketDiagnostics = emptyResponseBucketDiagnostics();
     postEntityStatus(`fetching ${plan.tileKeys.length} tiles`, undefined, {
       requestedTiles: plan.tileKeys.length,
       returnedTiles: 0,
@@ -915,15 +973,18 @@ async function refreshEntities(): Promise<void> {
       recoveredTileKeys: [],
       emptyTileKeys: [],
       nonEmptyTileKeys: [],
+      unaccountedTileKeys: [],
+      ...bucketDiagnostics,
     });
 
     for (let index = 0; index < batches.length; index += 1) {
       const response = await fetchEntityBatch(batches[index], version);
       if (generation !== latestFetchGeneration) return;
+      collectResponseBucketDiagnostics(response, batches[index], bucketDiagnostics);
       responses.push(response);
       const mergedResponse = mergeIitcGetEntitiesResponses(responses);
       const entities = toRenderEntities(mergedResponse, generation);
-      const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys} = summarizeIitcReturnedTiles(mergedResponse);
+      const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyTileDiagnostics(mergedResponse, plan);
       postEntityStatus(`batch ${index + 1}/${batches.length}`, entities, {
         requestedTiles: plan.tileKeys.length,
         returnedTiles,
@@ -931,6 +992,8 @@ async function refreshEntities(): Promise<void> {
         viewportBounds: plan.viewportBounds,
         emptyTileKeys,
         nonEmptyTileKeys,
+        unaccountedTileKeys,
+        ...bucketDiagnostics,
       });
     }
 
@@ -948,12 +1011,13 @@ async function refreshEntities(): Promise<void> {
         for (let index = 0; index < retryBatches.length; index += 1) {
           const response = await fetchEntityBatch(retryBatches[index], version);
           if (generation !== latestFetchGeneration) return;
+          collectResponseBucketDiagnostics(response, retryBatches[index], bucketDiagnostics);
           retryRequests += 1;
           for (const tileKey of retryBatches[index]) retriedTileKeys.add(tileKey);
           responses.push(response);
           mergedResponse = mergeIitcGetEntitiesResponses(responses);
           const entities = toRenderEntities(mergedResponse, generation);
-          const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys} = summarizeIitcReturnedTiles(mergedResponse);
+          const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyTileDiagnostics(mergedResponse, plan);
           const recoveredTileKeys = getIitcRecoveredTileKeys(initialEmptyTileKeys, nonEmptyTileKeys);
           postEntityStatus(`retry ${pass} ${index + 1}/${retryBatches.length}`, entities, {
             requestedTiles: plan.tileKeys.length,
@@ -965,13 +1029,15 @@ async function refreshEntities(): Promise<void> {
             recoveredTileKeys,
             emptyTileKeys,
             nonEmptyTileKeys,
+            unaccountedTileKeys,
+            ...bucketDiagnostics,
           });
         }
       }
     }
 
     const entities = toRenderEntities(mergedResponse, generation);
-    const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys} = summarizeIitcReturnedTiles(mergedResponse);
+    const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyTileDiagnostics(mergedResponse, plan);
     const recoveredTileKeys = getIitcRecoveredTileKeys(initialEmptyTileKeys, nonEmptyTileKeys);
     latestPlan = plan;
     latestResponse = mergedResponse;
@@ -987,6 +1053,8 @@ async function refreshEntities(): Promise<void> {
       recoveredTileKeys,
       emptyTileKeys,
       nonEmptyTileKeys,
+      unaccountedTileKeys,
+      ...bucketDiagnostics,
     });
   } catch (error) {
     latestRequestKey = '';

@@ -38,9 +38,11 @@ export interface IitcDecodedEntitySet {
 export interface IitcMapTilePayload {
   gameEntities?: IitcRawGameEntity[];
   deletedGameEntityGuids?: string[];
+  error?: string;
 }
 
 export interface IitcGetEntitiesResponse {
+  error?: string;
   result?: {
     map?: Record<string, IitcMapTilePayload>;
   };

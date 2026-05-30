@@ -53,6 +53,12 @@ export interface IitcIrisMessage {
   recoveredTileKeys?: string[];
   emptyTileKeys?: string[];
   nonEmptyTileKeys?: string[];
+  unaccountedTileKeys?: string[];
+  serverRetryTileKeys?: string[];
+  timeoutTileKeys?: string[];
+  errorTileKeys?: string[];
+  responseRetryTileKeys?: string[];
+  queueDelayReasons?: string[];
   layerSettings?: IitcIrisLayerSettings;
   baseLayerId?: IitcIrisBaseLayerId;
   dataSource?: IitcIrisDataSourceSettings;
