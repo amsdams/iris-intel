@@ -59,7 +59,7 @@ export interface IitcIrisMessage {
   errorTileKeys?: string[];
   responseRetryTileKeys?: string[];
   queueDelayReasons?: string[];
-  queue?: IitcIrisQueueDiagnostics;
+  queue?: IitcIrisQueueDiagnostics | null;
   layerSettings?: IitcIrisLayerSettings;
   baseLayerId?: IitcIrisBaseLayerId;
   dataSource?: IitcIrisDataSourceSettings;

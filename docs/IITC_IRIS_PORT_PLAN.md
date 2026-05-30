@@ -35,6 +35,8 @@ Current status:
 - Core now has an immutable IITC tile queue state model covering queued, requested, successful, failed, stale, active-request, and tile-error-count state; tests cover success removal, timeout requeueing, server retry without error-count increments, and retry-limit fail/stale behavior.
 - IITC IRIS now uses that core queue state to drive live-compat retry selection while keeping the conservative existing batch shape; returned-empty summary tiles are an explicit compatibility option in the core queue.
 - Runtime request batch construction now goes through core queue helpers for initial and retry phases, while preserving the current conservative live-compat batch limits.
+- Runtime fetch cancellation is explicit: pan/zoom and data-source changes abort the active `getEntities` request, and core queue state can mark obsolete queued/requested tiles as stale instead of letting old responses race the newest map view.
+- IITC IRIS now uses the core same-zoom refresh-skip rule in live mode: if a pan stays inside the fetched padded data bounds and the cached response covers the current tile plan, the map re-renders from cached entities instead of issuing a new `getEntities` request.
 - Response merge, tile-return diagnostics, requested-tile response classification, and IITC-style request response buckets now live in `packages/iitc-core` with tests, so the runtime no longer owns richer-payload merging, empty-tile detection, unaccounted-tile detection, or recovered-tile accounting.
 - This shim exists because the core port does not yet include IITC-CE's full tile lifecycle: tile cache state, active request accounting, tile-specific retry/error counters, timeout handling, and stale-cache fallback.
 - The compatibility policy should remain while validating live parity, but the intended replacement is a closer IITC-CE-derived request queue in `packages/iitc-core`, not permanent ad hoc runtime policy.
@@ -93,8 +95,10 @@ Current status:
 - The dock shows zoom, data zoom, summary availability, tile span, fetch state, entity totals, real/placeholder/ornament portal counts, and copy-to-clipboard diagnostics.
 - Copied diagnostics include IITC-style request response buckets (`serverRetryTileKeys`, `timeoutTileKeys`, `errorTileKeys`, `responseRetryTileKeys`, and `queueDelayReasons`) so slow-network retries can be separated from returned-empty tile recovery.
 - Copied diagnostics also include core queue-state counters so the immutable queue model can be compared against the current live runtime loop before it replaces scheduling.
+- Cached same-bounds renders explicitly clear queue diagnostics, so copied snapshots do not mix the current tile plan with stale queue counters from the previous network fetch.
 - The dock has fixed Amsterdam and Damrak view presets for repeatable IITC/IITC IRIS comparisons.
 - The dock can jump to arbitrary comparison views from `lat,lng,z` text, Intel map URLs with `ll` and `z`, or IITC-CE portal links with `pll`.
+- The dock has 25%-viewport pan buttons and +/- zoom buttons; these use the same Leaflet `setView` path as presets and therefore exercise the same move/zoom request lifecycle as mouse interaction.
 - The dock can copy the current view back out as an Intel URL.
 - The dock has base-map switches for CartoDB Dark Matter, CartoDB Positron, and OpenStreetMap, with the selected base map persisted for repeatable visual comparisons.
 - Layer toggles are persisted; the default comparison view enables only fields, links, and portals while leaving level fill, health fill, ornaments, artifacts, labels, and tile debug off.

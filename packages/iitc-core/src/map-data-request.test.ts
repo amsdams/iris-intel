@@ -19,6 +19,7 @@ import {
   iitcBoundsContainsBounds,
   latToIitcTile,
   lngToIitcTile,
+  markIitcTileQueueStale,
   markIitcTileRequestStarted,
   mergeIitcGetEntitiesResponses,
   pointToIitcTileId,
@@ -260,6 +261,16 @@ describe('IITC map data request planning', () => {
       activeRequestCount: 0,
       pendingTileKeys: ['c', 'f'],
     })).toEqual([['c', 'f']]);
+  });
+
+  it('marks an obsolete queue as stale and inactive', () => {
+    const state = markIitcTileRequestStarted(createIitcTileQueueState(['a', 'b', 'c']), ['b']);
+    const staleState = markIitcTileQueueStale(state);
+
+    expect(staleState.queuedTileKeys).toEqual([]);
+    expect(staleState.requestedTileKeys).toEqual([]);
+    expect(staleState.staleTileKeys).toEqual(['a', 'b', 'c']);
+    expect(staleState.activeRequestCount).toBe(0);
   });
 
   it('can keep returned-empty summary tiles queued for live-compatible recovery', () => {

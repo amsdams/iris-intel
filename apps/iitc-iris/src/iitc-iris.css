@@ -91,6 +91,57 @@
   text-align: center;
 }
 
+.iitc-iris-nav-button {
+  appearance: none;
+  width: 24px;
+  height: 22px;
+  border: 1px solid rgb(95 180 255 / 40%);
+  border-radius: 4px;
+  background: rgb(7 31 45 / 92%);
+  color: #e8f4ff;
+  font: 700 11px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  cursor: pointer;
+}
+
+.iitc-iris-nav-button:hover {
+  border-color: rgb(101 217 255 / 80%);
+  background: rgb(10 45 64 / 96%);
+}
+
+.iitc-iris-nav-button:disabled {
+  border-color: rgb(95 180 255 / 18%);
+  background: rgb(10 18 25 / 50%);
+  color: #4f6575;
+  cursor: default;
+}
+
+.iitc-iris-pan-grid {
+  display: grid;
+  grid-template-columns: 24px 24px 24px;
+  grid-template-rows: 22px 22px;
+  gap: 3px;
+}
+
+.iitc-iris-pan-north {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.iitc-iris-pan-west {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.iitc-iris-pan-east {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.iitc-iris-pan-south {
+  grid-column: 2;
+  grid-row: 2;
+}
+
 .iitc-iris-jump {
   display: flex;
   gap: 4px;

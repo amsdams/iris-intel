@@ -12,8 +12,10 @@ import {
   getIitcRecoveredTileKeys,
   IITC_EMPTY_TILE_RETRY_PASSES,
   IITC_LIVE_COMPAT_TILES_PER_REQUEST,
+  markIitcTileQueueStale,
   markIitcTileRequestStarted,
   mergeIitcGetEntitiesResponses,
+  shouldRefreshIitcMapData,
   type IitcArtifactBrief,
   type IitcGetEntitiesResponse,
   type IitcMapDataPlan,
@@ -69,6 +71,7 @@ let baseLayerId: IitcIrisBaseLayerId = DEFAULT_BASE_LAYER_ID;
 let baseLayer: TileLayer | undefined;
 let dataSource: IitcIrisDataSourceSettings = {mode: 'live'};
 let refreshTimer: number | undefined;
+let currentFetchAbortController: AbortController | undefined;
 
 interface TileDiagnostics {
   requestedTiles: number;
@@ -212,11 +215,17 @@ function setBaseLayer(nextBaseLayerId: IitcIrisBaseLayerId): void {
   storeBaseLayerId(nextBaseLayerId);
 }
 
+function cancelActiveEntityFetch(): void {
+  currentFetchAbortController?.abort();
+  currentFetchAbortController = undefined;
+}
+
 function postMapMoved(): void {
   const map = window.__iitcIrisMap;
   if (!map) return;
   latestFetchGeneration += 1;
   latestRequestKey = '';
+  cancelActiveEntityFetch();
   const center = map.getCenter();
   const bounds = map.getBounds();
   const zoom = map.getZoom();
@@ -657,6 +666,7 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
     dataSource = event.data.dataSource;
     latestFetchGeneration += 1;
     latestRequestKey = '';
+    cancelActiveEntityFetch();
     scheduleEntityRefresh();
   }
 }
@@ -754,7 +764,7 @@ function postEntityStatus(
     errorTileKeys: tileDiagnostics.errorTileKeys ?? [],
     responseRetryTileKeys: tileDiagnostics.responseRetryTileKeys ?? [],
     queueDelayReasons: tileDiagnostics.queueDelayReasons ?? [],
-    queue: tileDiagnostics.queue ?? undefined,
+    queue: tileDiagnostics.queue,
     baseLayerId,
     dataSource,
     renderPolicy: getRenderPolicy(),
@@ -882,13 +892,14 @@ function toRenderEntities(response: IitcGetEntitiesResponse, generation: number)
   };
 }
 
-async function fetchEntityBatch(tileKeys: string[], version: string): Promise<IitcGetEntitiesResponse> {
+async function fetchEntityBatch(tileKeys: string[], version: string, signal?: AbortSignal): Promise<IitcGetEntitiesResponse> {
   const csrfToken = getCsrfToken();
   if (!csrfToken) throw new Error('getEntities missing csrftoken');
 
   const response = await fetch('/r/getEntities', {
     method: 'POST',
     credentials: 'include',
+    signal,
     headers: {
       'Accept': 'application/json, text/javascript, */*; q=0.01',
       'Content-Type': 'application/json; charset=utf-8',
@@ -926,6 +937,9 @@ function scheduleEntityRefresh(): void {
 }
 
 async function refreshEntities(): Promise<void> {
+  let generation = latestFetchGeneration;
+  let activeQueueState: IitcTileQueueState | undefined;
+  let abortController: AbortController | undefined;
   try {
     const plan = createPlanFromMap();
     if (!plan || plan.tileKeys.length === 0) return;
@@ -934,9 +948,46 @@ async function refreshEntities(): Promise<void> {
     const sourceKey = dataSource.mode === 'fixture' ? `fixture:${dataSource.id}` : 'live';
     const refreshKey = `${sourceKey}|${requestKey}`;
     if (refreshKey === latestRequestKey) return;
+
+    if (
+      dataSource.mode === 'live' &&
+      latestPlan &&
+      latestResponse &&
+      !shouldRefreshIitcMapData(
+        {mapZoom: latestPlan.mapZoom, dataBounds: latestPlan.dataBounds},
+        {mapZoom: plan.mapZoom, viewportBounds: plan.viewportBounds},
+      )
+    ) {
+      const cachedClassification = classifyIitcGetEntitiesResponse(latestResponse, plan.tileKeys);
+      if (cachedClassification.unaccountedTileKeys.length === 0) {
+        latestRequestKey = refreshKey;
+        generation = latestFetchGeneration + 1;
+        latestFetchGeneration = generation;
+        const entities = toRenderEntities(latestResponse, generation);
+        latestPlan = plan;
+        renderEntities(entities);
+        renderTileDebug(plan, latestResponse);
+        postEntityStatus('entities ready', entities, {
+          requestedTiles: plan.tileKeys.length,
+          returnedTiles: cachedClassification.returnedTiles,
+          nonEmptyTiles: cachedClassification.nonEmptyTiles,
+          viewportBounds: plan.viewportBounds,
+          retryRequests: 0,
+          retriedTileKeys: [],
+          recoveredTileKeys: [],
+          emptyTileKeys: cachedClassification.emptyTileKeys,
+          nonEmptyTileKeys: cachedClassification.nonEmptyTileKeys,
+          unaccountedTileKeys: cachedClassification.unaccountedTileKeys,
+          ...emptyResponseBucketDiagnostics(),
+          queue: null,
+        });
+        return;
+      }
+    }
+
     latestRequestKey = refreshKey;
 
-    const generation = latestFetchGeneration + 1;
+    generation = latestFetchGeneration + 1;
     latestFetchGeneration = generation;
 
     if (dataSource.mode === 'fixture') {
@@ -980,9 +1031,13 @@ async function refreshEntities(): Promise<void> {
 
     const version = extractVersion();
     if (!version) throw new Error('waiting for Intel version');
+    cancelActiveEntityFetch();
+    abortController = new AbortController();
+    currentFetchAbortController = abortController;
     const responses: IitcGetEntitiesResponse[] = [];
     const bucketDiagnostics = emptyResponseBucketDiagnostics();
     let queueState = createIitcTileQueueState(plan.tileKeys);
+    activeQueueState = queueState;
     const batches = createIitcTileQueueRequestBatches(queueState, {
       maxRequests: plan.requestBatches.length,
       tilesPerRequest: IITC_LIVE_COMPAT_TILES_PER_REQUEST,
@@ -1005,11 +1060,16 @@ async function refreshEntities(): Promise<void> {
 
     for (let index = 0; index < batches.length; index += 1) {
       queueState = markIitcTileRequestStarted(queueState, batches[index]);
-      const response = await fetchEntityBatch(batches[index], version);
-      if (generation !== latestFetchGeneration) return;
+      const response = await fetchEntityBatch(batches[index], version, abortController.signal);
+      if (generation !== latestFetchGeneration) {
+        queueState = markIitcTileQueueStale(queueState);
+        activeQueueState = queueState;
+        return;
+      }
       queueState = applyIitcTileRequestResponseToQueue(queueState, response, batches[index], true, {
         retryReturnedEmptyTiles: true,
       }).state;
+      activeQueueState = queueState;
       collectResponseBucketDiagnostics(response, batches[index], bucketDiagnostics);
       responses.push(response);
       const mergedResponse = mergeIitcGetEntitiesResponses(responses);
@@ -1028,7 +1088,11 @@ async function refreshEntities(): Promise<void> {
       });
     }
 
-    if (generation !== latestFetchGeneration) return;
+    if (generation !== latestFetchGeneration) {
+      queueState = markIitcTileQueueStale(queueState);
+      activeQueueState = queueState;
+      return;
+    }
     let mergedResponse = mergeIitcGetEntitiesResponses(responses);
     const initialRetryTileKeys = [...queueState.queuedTileKeys];
     const retriedTileKeys = new Set<string>();
@@ -1047,11 +1111,16 @@ async function refreshEntities(): Promise<void> {
         }));
         for (let index = 0; index < queueRetryBatches.length; index += 1) {
           queueState = markIitcTileRequestStarted(queueState, queueRetryBatches[index]);
-          const response = await fetchEntityBatch(queueRetryBatches[index], version);
-          if (generation !== latestFetchGeneration) return;
+          const response = await fetchEntityBatch(queueRetryBatches[index], version, abortController.signal);
+          if (generation !== latestFetchGeneration) {
+            queueState = markIitcTileQueueStale(queueState);
+            activeQueueState = queueState;
+            return;
+          }
           queueState = applyIitcTileRequestResponseToQueue(queueState, response, queueRetryBatches[index], true, {
             retryReturnedEmptyTiles: true,
           }).state;
+          activeQueueState = queueState;
           collectResponseBucketDiagnostics(response, queueRetryBatches[index], bucketDiagnostics);
           retryRequests += 1;
           for (const tileKey of queueRetryBatches[index]) retriedTileKeys.add(tileKey);
@@ -1099,7 +1168,14 @@ async function refreshEntities(): Promise<void> {
       ...bucketDiagnostics,
       queue: toQueueDiagnostics(queueState),
     });
+    if (currentFetchAbortController === abortController) currentFetchAbortController = undefined;
   } catch (error) {
+    if (generation !== latestFetchGeneration || (error instanceof DOMException && error.name === 'AbortError')) {
+      if (activeQueueState) activeQueueState = markIitcTileQueueStale(activeQueueState);
+      if (currentFetchAbortController === abortController) currentFetchAbortController = undefined;
+      return;
+    }
+    if (currentFetchAbortController === abortController) currentFetchAbortController = undefined;
     latestRequestKey = '';
     clearAllRenderedLayers();
     postEntityStatus(error instanceof Error ? error.message : String(error));

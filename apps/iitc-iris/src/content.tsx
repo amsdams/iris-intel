@@ -459,13 +459,33 @@ function App(): h.JSX.Element {
     setLayerSettings((current) => ({...current, [key]: !current[key]}));
   };
 
-  const jumpToPreset = (preset: typeof VIEW_PRESETS[number]): void => {
+  const setMapView = (lat: number, lng: number, zoom = camera.zoom): void => {
+    const clamped = clampView({lat, lng, zoom});
     window.postMessage({
       type: IITC_IRIS_MESSAGES.setView,
-      lat: preset.lat,
-      lng: preset.lng,
-      zoom: preset.zoom,
+      lat: clamped.lat,
+      lng: clamped.lng,
+      zoom: clamped.zoom ?? camera.zoom,
     } satisfies IitcIrisMessage, '*');
+  };
+
+  const panMap = (direction: 'north' | 'south' | 'west' | 'east'): void => {
+    if (!camera.bounds) return;
+    const latStep = (camera.bounds.north - camera.bounds.south) * 0.25;
+    const lngStep = (camera.bounds.east - camera.bounds.west) * 0.25;
+    const lat = camera.lat + (direction === 'north' ? latStep : direction === 'south' ? -latStep : 0);
+    const lng = camera.lng + (direction === 'east' ? lngStep : direction === 'west' ? -lngStep : 0);
+    setMapView(lat, lng);
+  };
+
+  const zoomMap = (delta: number): void => {
+    setMapView(camera.lat, camera.lng, camera.zoom + delta);
+  };
+
+  const canPan = camera.bounds !== null;
+
+  const jumpToPreset = (preset: typeof VIEW_PRESETS[number]): void => {
+    setMapView(preset.lat, preset.lng, preset.zoom);
   };
 
   const jumpToViewInput = (): void => {
@@ -476,12 +496,7 @@ function App(): h.JSX.Element {
       return;
     }
 
-    window.postMessage({
-      type: IITC_IRIS_MESSAGES.setView,
-      lat: parsed.lat,
-      lng: parsed.lng,
-      zoom: parsed.zoom ?? camera.zoom,
-    } satisfies IitcIrisMessage, '*');
+    setMapView(parsed.lat, parsed.lng, parsed.zoom ?? camera.zoom);
     setViewInputStatus('jumped');
     window.setTimeout(() => setViewInputStatus(''), 1200);
   };
@@ -545,7 +560,7 @@ function App(): h.JSX.Element {
           errorTileKeys: event.data.errorTileKeys ?? current.errorTileKeys,
           responseRetryTileKeys: event.data.responseRetryTileKeys ?? current.responseRetryTileKeys,
           queueDelayReasons: event.data.queueDelayReasons ?? current.queueDelayReasons,
-          queue: event.data.queue ?? current.queue,
+          queue: event.data.queue === undefined ? current.queue : event.data.queue,
           baseLayerId: event.data.baseLayerId ?? current.baseLayerId,
           dataSource: event.data.dataSource ?? current.dataSource,
           renderPolicy: event.data.renderPolicy ?? current.renderPolicy,
@@ -578,12 +593,7 @@ function App(): h.JSX.Element {
     setDataSourceId(id);
     const option = DATA_SOURCE_OPTIONS.find((candidate) => candidate.id === id);
     if (!option || option.mode === 'live') return;
-    window.postMessage({
-      type: IITC_IRIS_MESSAGES.setView,
-      lat: option.lat,
-      lng: option.lng,
-      zoom: option.zoom,
-    } satisfies IitcIrisMessage, '*');
+    setMapView(option.lat, option.lng, option.zoom);
   };
 
   return (
@@ -624,6 +634,18 @@ function App(): h.JSX.Element {
           </form>
           {viewInputStatus && <span className="iitc-iris-status">{viewInputStatus}</span>}
           {copyStatus && <span className="iitc-iris-status">{copyStatus}</span>}
+        </div>
+        <div className="iitc-iris-dock-row">
+          <span className="iitc-iris-status">View</span>
+          <div className="iitc-iris-pan-grid" aria-label="Pan controls">
+            <button className="iitc-iris-nav-button iitc-iris-pan-north" type="button" disabled={!canPan} onClick={() => panMap('north')} title="Pan north">N</button>
+            <button className="iitc-iris-nav-button iitc-iris-pan-west" type="button" disabled={!canPan} onClick={() => panMap('west')} title="Pan west">W</button>
+            <button className="iitc-iris-nav-button iitc-iris-pan-east" type="button" disabled={!canPan} onClick={() => panMap('east')} title="Pan east">E</button>
+            <button className="iitc-iris-nav-button iitc-iris-pan-south" type="button" disabled={!canPan} onClick={() => panMap('south')} title="Pan south">S</button>
+          </div>
+          <button className="iitc-iris-nav-button" type="button" onClick={() => zoomMap(1)} title="Zoom in">+</button>
+          <button className="iitc-iris-nav-button" type="button" onClick={() => zoomMap(-1)} title="Zoom out">-</button>
+          <span className="iitc-iris-status">step 25%</span>
         </div>
         <div className="iitc-iris-dock-row">
           <span className="iitc-iris-status">{status}</span>

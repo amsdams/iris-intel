@@ -260,6 +260,22 @@ export function markIitcTileRequestStarted(state: IitcTileQueueState, tileKeys: 
   };
 }
 
+export function markIitcTileQueueStale(state: IitcTileQueueState): IitcTileQueueState {
+  const staleTileKeys = unique([
+    ...state.staleTileKeys,
+    ...state.queuedTileKeys,
+    ...state.requestedTileKeys,
+  ]);
+
+  return {
+    ...state,
+    queuedTileKeys: [],
+    requestedTileKeys: [],
+    staleTileKeys,
+    activeRequestCount: 0,
+  };
+}
+
 function requeueIitcTile(state: IitcTileQueueState, tileKey: string, isError: boolean, options: IitcTileQueueApplyOptions): IitcTileQueueState {
   if (!state.queuedTileKeys.includes(tileKey)) return state;
 
