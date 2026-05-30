@@ -873,6 +873,8 @@ function countViewportEntities(entities: IitcIrisRenderEntities | undefined, bou
   viewportPlaceholderPortals: number;
   viewportLinks: number;
   viewportFields: number;
+  viewportArtifactPortals: number;
+  viewportArtifactMarkers: number;
 } {
   if (!entities || !bounds) {
     return {
@@ -881,6 +883,8 @@ function countViewportEntities(entities: IitcIrisRenderEntities | undefined, bou
       viewportPlaceholderPortals: 0,
       viewportLinks: 0,
       viewportFields: 0,
+      viewportArtifactPortals: 0,
+      viewportArtifactMarkers: 0,
     };
   }
 
@@ -897,6 +901,8 @@ function countViewportEntities(entities: IitcIrisRenderEntities | undefined, bou
     viewportPlaceholderPortals: viewportPortals.filter((portal) => portal.isPlaceholder).length,
     viewportLinks: viewportLinks.length,
     viewportFields: viewportFields.length,
+    viewportArtifactPortals: viewportPortals.filter((portal) => portal.artifacts && portal.artifacts.length > 0).length,
+    viewportArtifactMarkers: viewportPortals.reduce((count, portal) => count + (portal.artifacts?.length ?? 0), 0),
   };
 }
 
@@ -924,6 +930,7 @@ function postEntityStatus(
   },
 ): void {
   const portals = entities?.portals ?? [];
+  const artifactCounts = countRenderArtifacts(portals);
   const viewportCounts = countViewportEntities(entities, tileDiagnostics.viewportBounds);
   const authRequired = /login html|missing csrftoken/i.test(status);
   latestEntityStatus = status;
@@ -940,7 +947,9 @@ function postEntityStatus(
     drawnOrnamentMarkers: latestOrnamentDiagnostics.drawnMarkers,
     hiddenOrnamentMarkers: latestOrnamentDiagnostics.hiddenMarkers,
     ornamentTypes: latestOrnamentDiagnostics.types,
-    artifactPortals: portals.filter((portal) => portal.artifacts && portal.artifacts.length > 0).length,
+    artifactPortals: artifactCounts.portals,
+    drawnArtifactMarkers: artifactCounts.markers,
+    artifactTypes: artifactCounts.types,
     artifactFetchStatus: latestArtifactDiagnostics.status,
     artifactFetchPortalCount: latestArtifactDiagnostics.portalCount,
     artifactFetchTypes: latestArtifactDiagnostics.types,
@@ -1116,6 +1125,28 @@ function getArtifactTypes(entities: IitcRawGameEntity[]): string[] {
     for (const artifact of getIitcPortalArtifacts(portal.artifactBrief)) types.add(artifact.type);
   }
   return [...types].sort();
+}
+
+function countRenderArtifacts(portals: IitcIrisRenderPortal[]): {
+  portals: number;
+  markers: number;
+  types: Record<string, number>;
+} {
+  const types: Record<string, number> = {};
+  let artifactPortals = 0;
+  let artifactMarkers = 0;
+
+  for (const portal of portals) {
+    if (!portal.artifacts || portal.artifacts.length === 0) continue;
+    artifactPortals += 1;
+    for (const artifact of portal.artifacts) {
+      artifactMarkers += 1;
+      const key = `${artifact.role}:${artifact.type}`;
+      types[key] = (types[key] ?? 0) + 1;
+    }
+  }
+
+  return {portals: artifactPortals, markers: artifactMarkers, types};
 }
 
 function resetArtifactDiagnostics(status = 'disabled'): void {

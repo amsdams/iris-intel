@@ -41,6 +41,8 @@ export interface IitcIrisMessage {
   hiddenOrnamentMarkers?: number;
   ornamentTypes?: Record<string, number>;
   artifactPortals?: number;
+  drawnArtifactMarkers?: number;
+  artifactTypes?: Record<string, number>;
   artifactFetchStatus?: string;
   artifactFetchPortalCount?: number;
   artifactFetchTypes?: string[];
@@ -55,6 +57,8 @@ export interface IitcIrisMessage {
   viewportPlaceholderPortals?: number;
   viewportLinks?: number;
   viewportFields?: number;
+  viewportArtifactPortals?: number;
+  viewportArtifactMarkers?: number;
   requestedTiles?: number;
   returnedTiles?: number;
   nonEmptyTiles?: number;

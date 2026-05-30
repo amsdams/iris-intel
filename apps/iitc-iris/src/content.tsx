@@ -141,6 +141,8 @@ interface EntityFetchState {
   hiddenOrnamentMarkers: number;
   ornamentTypes: Record<string, number>;
   artifactPortals: number;
+  drawnArtifactMarkers: number;
+  artifactTypes: Record<string, number>;
   artifactFetchStatus: string;
   artifactFetchPortalCount: number;
   artifactFetchTypes: string[];
@@ -155,6 +157,8 @@ interface EntityFetchState {
   viewportPlaceholderPortals: number;
   viewportLinks: number;
   viewportFields: number;
+  viewportArtifactPortals: number;
+  viewportArtifactMarkers: number;
   requestedTiles: number;
   returnedTiles: number;
   nonEmptyTiles: number;
@@ -354,6 +358,8 @@ function entityFetchStateFromMessage(message: IitcIrisMessage, current: EntityFe
     hiddenOrnamentMarkers: message.hiddenOrnamentMarkers ?? 0,
     ornamentTypes: message.ornamentTypes ?? {},
     artifactPortals: message.artifactPortals ?? 0,
+    drawnArtifactMarkers: message.drawnArtifactMarkers ?? 0,
+    artifactTypes: message.artifactTypes ?? {},
     artifactFetchStatus: message.artifactFetchStatus ?? 'disabled',
     artifactFetchPortalCount: message.artifactFetchPortalCount ?? 0,
     artifactFetchTypes: message.artifactFetchTypes ?? [],
@@ -368,6 +374,8 @@ function entityFetchStateFromMessage(message: IitcIrisMessage, current: EntityFe
     viewportPlaceholderPortals: message.viewportPlaceholderPortals ?? 0,
     viewportLinks: message.viewportLinks ?? 0,
     viewportFields: message.viewportFields ?? 0,
+    viewportArtifactPortals: message.viewportArtifactPortals ?? 0,
+    viewportArtifactMarkers: message.viewportArtifactMarkers ?? 0,
     requestedTiles: message.requestedTiles ?? 0,
     returnedTiles: message.returnedTiles ?? 0,
     nonEmptyTiles: message.nonEmptyTiles ?? 0,
@@ -498,6 +506,8 @@ function App(): h.JSX.Element {
     hiddenOrnamentMarkers: 0,
     ornamentTypes: {},
     artifactPortals: 0,
+    drawnArtifactMarkers: 0,
+    artifactTypes: {},
     artifactFetchStatus: 'disabled',
     artifactFetchPortalCount: 0,
     artifactFetchTypes: [],
@@ -512,6 +522,8 @@ function App(): h.JSX.Element {
     viewportPlaceholderPortals: 0,
     viewportLinks: 0,
     viewportFields: 0,
+    viewportArtifactPortals: 0,
+    viewportArtifactMarkers: 0,
     requestedTiles: 0,
     returnedTiles: 0,
     nonEmptyTiles: 0,
@@ -584,6 +596,8 @@ function App(): h.JSX.Element {
       hiddenOrnamentMarkers: entityFetch.hiddenOrnamentMarkers,
       ornamentTypes: entityFetch.ornamentTypes,
       artifactPortals: entityFetch.artifactPortals,
+      drawnArtifactMarkers: entityFetch.drawnArtifactMarkers,
+      artifactTypes: entityFetch.artifactTypes,
       artifactFetch: {
         status: entityFetch.artifactFetchStatus,
         portalCount: entityFetch.artifactFetchPortalCount,
@@ -602,6 +616,8 @@ function App(): h.JSX.Element {
         placeholderPortals: entityFetch.viewportPlaceholderPortals,
         links: entityFetch.viewportLinks,
         fields: entityFetch.viewportFields,
+        artifactPortals: entityFetch.viewportArtifactPortals,
+        artifactMarkers: entityFetch.viewportArtifactMarkers,
       },
       requestedTiles: entityFetch.requestedTiles,
       returnedTiles: entityFetch.returnedTiles,
@@ -871,6 +887,7 @@ function App(): h.JSX.Element {
           <span className="iitc-iris-status">ornDraw {entityFetch.drawnOrnamentMarkers}</span>
           <span className="iitc-iris-status">ornHide {entityFetch.hiddenOrnamentMarkers}</span>
           <span className="iitc-iris-status">art {entityFetch.artifactPortals}</span>
+          <span className="iitc-iris-status">artDraw {entityFetch.drawnArtifactMarkers}</span>
           <span className="iitc-iris-status">artFetch {entityFetch.artifactFetchStatus}:{entityFetch.artifactFetchPortalCount}</span>
           <span className="iitc-iris-status">lvl {entityFetch.levelLabels}</span>
           <span className="iitc-iris-status">dmg {entityFetch.damagedPortals}</span>
