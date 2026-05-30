@@ -112,6 +112,14 @@ export interface IitcTileRequestResponseClassification {
   queueDelayReason: IitcRequestQueueDelayReason;
 }
 
+export interface IitcResponseBucketDiagnostics {
+  serverRetryTileKeys: string[];
+  timeoutTileKeys: string[];
+  errorTileKeys: string[];
+  responseRetryTileKeys: string[];
+  queueDelayReasons: IitcRequestQueueDelayReason[];
+}
+
 export interface IitcTileQueueState {
   queuedTileKeys: string[];
   requestedTileKeys: string[];
@@ -207,6 +215,33 @@ export function getIitcReusableCacheClassification(
 
   const classification = classifyIitcGetEntitiesResponse(response, next.tileKeys);
   return classification.unaccountedTileKeys.length === 0 ? classification : null;
+}
+
+export function createIitcResponseBucketDiagnostics(): IitcResponseBucketDiagnostics {
+  return {
+    serverRetryTileKeys: [],
+    timeoutTileKeys: [],
+    errorTileKeys: [],
+    responseRetryTileKeys: [],
+    queueDelayReasons: [],
+  };
+}
+
+export function appendIitcResponseBucketDiagnostics(
+  diagnostics: IitcResponseBucketDiagnostics,
+  response: IitcGetEntitiesResponse,
+  tileKeys: string[],
+): IitcResponseBucketDiagnostics {
+  const classification = classifyIitcTileRequestResponse(response, tileKeys);
+  return {
+    serverRetryTileKeys: [...diagnostics.serverRetryTileKeys, ...classification.serverRetryTileKeys],
+    timeoutTileKeys: [...diagnostics.timeoutTileKeys, ...classification.timeoutTileKeys],
+    errorTileKeys: [...diagnostics.errorTileKeys, ...classification.errorTileKeys],
+    responseRetryTileKeys: [...diagnostics.responseRetryTileKeys, ...classification.retryTileKeys],
+    queueDelayReasons: classification.queueDelayReason === 'normal'
+      ? diagnostics.queueDelayReasons
+      : [...diagnostics.queueDelayReasons, classification.queueDelayReason],
+  };
 }
 
 export function lngToIitcTile(lng: number, params: IitcTileParams): number {

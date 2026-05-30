@@ -1,9 +1,10 @@
 import L, {type Layer as LeafletLayer, type Map as LeafletMap, type TileLayer} from 'leaflet';
 import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisQueueDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderPolicy} from './messages';
 import {
+  appendIitcResponseBucketDiagnostics,
   applyIitcTileRequestResponseToQueue,
   classifyIitcGetEntitiesResponse,
-  classifyIitcTileRequestResponse,
+  createIitcResponseBucketDiagnostics,
   createIitcTileQueueState,
   createIitcTileQueueRequestBatches,
   createIitcEmptyTileRetryBatches,
@@ -797,29 +798,6 @@ function classifyTileDiagnostics(response: IitcGetEntitiesResponse, plan: IitcMa
   };
 }
 
-function emptyResponseBucketDiagnostics(): Required<Pick<TileDiagnostics, 'serverRetryTileKeys' | 'timeoutTileKeys' | 'errorTileKeys' | 'responseRetryTileKeys' | 'queueDelayReasons'>> {
-  return {
-    serverRetryTileKeys: [],
-    timeoutTileKeys: [],
-    errorTileKeys: [],
-    responseRetryTileKeys: [],
-    queueDelayReasons: [],
-  };
-}
-
-function collectResponseBucketDiagnostics(
-  response: IitcGetEntitiesResponse,
-  tileKeys: string[],
-  bucketDiagnostics: Required<Pick<TileDiagnostics, 'serverRetryTileKeys' | 'timeoutTileKeys' | 'errorTileKeys' | 'responseRetryTileKeys' | 'queueDelayReasons'>>,
-): void {
-  const classification = classifyIitcTileRequestResponse(response, tileKeys);
-  bucketDiagnostics.serverRetryTileKeys.push(...classification.serverRetryTileKeys);
-  bucketDiagnostics.timeoutTileKeys.push(...classification.timeoutTileKeys);
-  bucketDiagnostics.errorTileKeys.push(...classification.errorTileKeys);
-  bucketDiagnostics.responseRetryTileKeys.push(...classification.retryTileKeys);
-  if (classification.queueDelayReason !== 'normal') bucketDiagnostics.queueDelayReasons.push(classification.queueDelayReason);
-}
-
 function getCsrfToken(): string {
   const cookies = document.cookie.split(';').map((cookie) => cookie.trim());
   const csrfCookie = cookies.find((cookie) => cookie.startsWith('csrftoken='));
@@ -978,7 +956,7 @@ async function refreshEntities(): Promise<void> {
         emptyTileKeys: cachedClassification.emptyTileKeys,
         nonEmptyTileKeys: cachedClassification.nonEmptyTileKeys,
         unaccountedTileKeys: cachedClassification.unaccountedTileKeys,
-        ...emptyResponseBucketDiagnostics(),
+          ...createIitcResponseBucketDiagnostics(),
         queue: null,
         entitySource: 'cache',
       });
@@ -1002,7 +980,7 @@ async function refreshEntities(): Promise<void> {
         emptyTileKeys: [],
         nonEmptyTileKeys: [],
         unaccountedTileKeys: [],
-        ...emptyResponseBucketDiagnostics(),
+        ...createIitcResponseBucketDiagnostics(),
         entitySource: 'fixture',
       });
       const fixtureResponse = await fetchFixtureResponse(dataSource);
@@ -1024,7 +1002,7 @@ async function refreshEntities(): Promise<void> {
         emptyTileKeys,
         nonEmptyTileKeys,
         unaccountedTileKeys,
-        ...emptyResponseBucketDiagnostics(),
+        ...createIitcResponseBucketDiagnostics(),
         queue: null,
         entitySource: 'fixture',
       });
@@ -1037,7 +1015,7 @@ async function refreshEntities(): Promise<void> {
     abortController = new AbortController();
     currentFetchAbortController = abortController;
     const responses: IitcGetEntitiesResponse[] = [];
-    const bucketDiagnostics = emptyResponseBucketDiagnostics();
+    let bucketDiagnostics = createIitcResponseBucketDiagnostics();
     let queueState = createIitcTileQueueState(plan.tileKeys);
     activeQueueState = queueState;
     const batches = createIitcTileQueueRequestBatches(queueState, {
@@ -1072,7 +1050,7 @@ async function refreshEntities(): Promise<void> {
         retryReturnedEmptyTiles: true,
       }).state;
       activeQueueState = queueState;
-      collectResponseBucketDiagnostics(response, batches[index], bucketDiagnostics);
+      bucketDiagnostics = appendIitcResponseBucketDiagnostics(bucketDiagnostics, response, batches[index]);
       responses.push(response);
       const mergedResponse = mergeIitcGetEntitiesResponses(responses);
       const entities = toRenderEntities(mergedResponse, generation);
@@ -1123,7 +1101,7 @@ async function refreshEntities(): Promise<void> {
             retryReturnedEmptyTiles: true,
           }).state;
           activeQueueState = queueState;
-          collectResponseBucketDiagnostics(response, queueRetryBatches[index], bucketDiagnostics);
+          bucketDiagnostics = appendIitcResponseBucketDiagnostics(bucketDiagnostics, response, queueRetryBatches[index]);
           retryRequests += 1;
           for (const tileKey of queueRetryBatches[index]) retriedTileKeys.add(tileKey);
           responses.push(response);

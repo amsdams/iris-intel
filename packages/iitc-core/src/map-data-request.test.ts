@@ -4,11 +4,13 @@ import {
   classifyIitcTileRequestResponse,
   clampIitcBounds,
   applyIitcTileRequestResponseToQueue,
+  appendIitcResponseBucketDiagnostics,
   createIitcTileQueueState,
   createIitcTileQueueRequestBatches,
   createIitcMapDataPlan,
   createIitcEmptyTileRetryBatches,
   createIitcLiveCompatRequestBatches,
+  createIitcResponseBucketDiagnostics,
   createIitcRequestBatches,
   getIitcReusableCacheClassification,
   getIitcLiveCompatRetryTileKeys,
@@ -240,6 +242,25 @@ describe('IITC map data request planning', () => {
       retryTileKeys: ['a'],
       queueDelayReason: 'error',
     });
+  });
+
+  it('accumulates response bucket diagnostics immutably', () => {
+    const start = createIitcResponseBucketDiagnostics();
+    const next = appendIitcResponseBucketDiagnostics(start, {
+      result: {
+        map: {
+          ok: {gameEntities: [['ok.1', 1, ['p', 'E', 1, 2]]]},
+          timeout: {error: 'TIMEOUT'},
+          fail: {error: 'ERROR'},
+        },
+      },
+    }, ['ok', 'timeout', 'fail', 'missing']);
+
+    expect(start.timeoutTileKeys).toEqual([]);
+    expect(next.timeoutTileKeys).toEqual(['timeout']);
+    expect(next.errorTileKeys).toEqual(['fail']);
+    expect(next.responseRetryTileKeys).toEqual(['timeout', 'fail', 'missing']);
+    expect(next.queueDelayReasons).toEqual(['error']);
   });
 
   it('selects live-compatible retry tiles from empty and IITC error buckets', () => {

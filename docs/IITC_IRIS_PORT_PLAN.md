@@ -39,6 +39,7 @@ Current status:
 - IITC IRIS now uses the core same-zoom refresh-skip rule in live mode: if a pan stays inside the fetched padded data bounds and the cached response covers the current tile plan, the map re-renders from cached entities instead of issuing a new `getEntities` request.
 - Cached-response reuse is now a core decision: `packages/iitc-core` checks both fetched-bounds coverage and requested tile coverage before IITC IRIS uses a cached live response.
 - Response merge, tile-return diagnostics, requested-tile response classification, and IITC-style request response buckets now live in `packages/iitc-core` with tests, so the runtime no longer owns richer-payload merging, empty-tile detection, unaccounted-tile detection, or recovered-tile accounting.
+- Response bucket diagnostic accumulation now also lives in `packages/iitc-core`, so live retry/timeout/error accounting is immutable and tested outside the page runtime.
 - This shim exists because the core port does not yet include IITC-CE's full tile lifecycle: tile cache state, active request accounting, tile-specific retry/error counters, timeout handling, and stale-cache fallback.
 - The compatibility policy should remain while validating live parity, but the intended replacement is a closer IITC-CE-derived request queue in `packages/iitc-core`, not permanent ad hoc runtime policy.
 
