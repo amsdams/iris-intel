@@ -7,7 +7,8 @@ import {
   IITC_EMPTY_TILE_RETRY_BATCH_SIZE,
   IITC_EMPTY_TILE_RETRY_LIMIT,
   IITC_EMPTY_TILE_RETRY_PASSES,
-  IITC_LIVE_COMPAT_TILES_PER_REQUEST,
+  IITC_MAX_REQUESTS,
+  IITC_NUM_TILES_PER_REQUEST,
   type IitcBounds,
   type IitcMapDataPlan,
 } from '@iris/iitc-core';
@@ -350,8 +351,6 @@ function createPlan(camera: CameraState): IitcMapDataPlan | null {
   try {
     return createIitcMapDataPlan(camera.bounds, {lat: camera.lat, lng: camera.lng}, camera.zoom, {
       boundsPaddingRatio: REQUEST_BOUNDS_PADDING_RATIO,
-      tilesPerRequest: IITC_LIVE_COMPAT_TILES_PER_REQUEST,
-      sequentialRequestBatches: true,
     });
   } catch (error) {
     console.warn('[IITC IRIS] Failed to create map data plan', error);
@@ -501,9 +500,10 @@ function App(): h.JSX.Element {
       firstBatchSize: requestBatches[0] ?? 0,
       requestBatches,
       requestPolicy: {
-        name: 'live-compat',
-        tilesPerRequest: IITC_LIVE_COMPAT_TILES_PER_REQUEST,
-        sequentialRequestBatches: true,
+        name: 'iitc-concurrent',
+        maxRequests: IITC_MAX_REQUESTS,
+        tilesPerRequest: IITC_NUM_TILES_PER_REQUEST,
+        sequentialRequestBatches: false,
         emptyTileRetryPasses: IITC_EMPTY_TILE_RETRY_PASSES,
         emptyTileRetryBatchSize: IITC_EMPTY_TILE_RETRY_BATCH_SIZE,
         emptyTileRetryLimit: IITC_EMPTY_TILE_RETRY_LIMIT,
@@ -534,6 +534,7 @@ function App(): h.JSX.Element {
       returnedTiles: entityFetch.returnedTiles,
       nonEmptyTiles: entityFetch.nonEmptyTiles,
       elapsedMs: entityFetch.elapsedMs,
+      elapsedSeconds: entityFetch.elapsedMs === null ? null : Number(formatElapsedSeconds(entityFetch.elapsedMs)),
       retryRequests: entityFetch.retryRequests,
       retriedTileKeys: entityFetch.retriedTileKeys,
       recoveredTileKeys: entityFetch.recoveredTileKeys,

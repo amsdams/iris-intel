@@ -14,7 +14,6 @@ import {
   getIitcReusableCacheClassification,
   getIitcPortalArtifacts,
   IITC_EMPTY_TILE_RETRY_PASSES,
-  IITC_LIVE_COMPAT_TILES_PER_REQUEST,
   markIitcTileQueueStale,
   markIitcTileRequestStarted,
   mergeIitcGetEntitiesResponses,
@@ -94,6 +93,12 @@ interface TileDiagnostics {
   responseRetryTileKeys?: string[];
   queueDelayReasons?: string[];
   queue?: IitcIrisQueueDiagnostics | null;
+}
+
+interface TileBatchResult {
+  tileKeys: string[];
+  response?: IitcGetEntitiesResponse;
+  error?: unknown;
 }
 
 let latestEntityStatus = 'idle';
@@ -820,8 +825,6 @@ function createPlanFromMap(): IitcMapDataPlan | null {
     east: bounds.getEast(),
   }, {lat: center.lat, lng: center.lng}, map.getZoom(), {
     boundsPaddingRatio: REQUEST_BOUNDS_PADDING_RATIO,
-    tilesPerRequest: IITC_LIVE_COMPAT_TILES_PER_REQUEST,
-    sequentialRequestBatches: true,
   });
 }
 
@@ -892,6 +895,30 @@ async function fetchFixtureResponse(source: Extract<IitcIrisDataSourceSettings, 
   const response = await fetch(source.url);
   if (!response.ok) throw new Error(`fixture ${source.label} failed HTTP ${response.status}`);
   return await response.json() as IitcGetEntitiesResponse;
+}
+
+function isAuthLikeError(error: unknown): boolean {
+  return error instanceof Error && /login html|missing csrftoken/i.test(error.message);
+}
+
+function appendRequestErrorDiagnostics(
+  diagnostics: ReturnType<typeof createIitcResponseBucketDiagnostics>,
+  tileKeys: string[],
+): ReturnType<typeof createIitcResponseBucketDiagnostics> {
+  return {
+    ...diagnostics,
+    errorTileKeys: [...diagnostics.errorTileKeys, ...tileKeys],
+    responseRetryTileKeys: [...diagnostics.responseRetryTileKeys, ...tileKeys],
+    queueDelayReasons: [...diagnostics.queueDelayReasons, 'error'],
+  };
+}
+
+async function fetchEntityBatchResult(tileKeys: string[], version: string, signal: AbortSignal): Promise<TileBatchResult> {
+  try {
+    return {tileKeys, response: await fetchEntityBatch(tileKeys, version, signal)};
+  } catch (error) {
+    return {tileKeys, error};
+  }
 }
 
 function scheduleEntityRefresh(): void {
@@ -1000,16 +1027,17 @@ async function refreshEntities(): Promise<void> {
     if (!version) throw new Error('waiting for Intel version');
     cancelActiveEntityFetch();
     abortController = new AbortController();
+    const liveAbortController = abortController;
     currentFetchAbortController = abortController;
     const responses: IitcGetEntitiesResponse[] = [];
     let bucketDiagnostics = createIitcResponseBucketDiagnostics();
     let queueState = createIitcTileQueueState(plan.tileKeys);
     activeQueueState = queueState;
-    const batches = createIitcTileQueueRequestBatches(queueState, {
-      maxRequests: plan.requestBatches.length,
-      tilesPerRequest: IITC_LIVE_COMPAT_TILES_PER_REQUEST,
-      activeRequestCount: 0,
-    });
+    const batches = createIitcTileQueueRequestBatches(queueState);
+    for (const batch of batches) {
+      queueState = markIitcTileRequestStarted(queueState, batch);
+    }
+    activeQueueState = queueState;
     postEntityStatus(`fetching ${plan.tileKeys.length} tiles`, undefined, {
       requestedTiles: plan.tileKeys.length,
       returnedTiles: 0,
@@ -1025,20 +1053,30 @@ async function refreshEntities(): Promise<void> {
       queue: toQueueDiagnostics(queueState),
     });
 
-    for (let index = 0; index < batches.length; index += 1) {
-      queueState = markIitcTileRequestStarted(queueState, batches[index]);
-      const response = await fetchEntityBatch(batches[index], version, abortController.signal);
-      if (generation !== latestFetchGeneration) {
-        queueState = markIitcTileQueueStale(queueState);
-        activeQueueState = queueState;
-        return;
-      }
-      queueState = applyIitcTileRequestResponseToQueue(queueState, response, batches[index], true, {
-        retryReturnedEmptyTiles: true,
-      }).state;
+    const batchResults = await Promise.all(batches.map((batch) => fetchEntityBatchResult(batch, version, liveAbortController.signal)));
+    if (generation !== latestFetchGeneration) {
+      queueState = markIitcTileQueueStale(queueState);
       activeQueueState = queueState;
-      bucketDiagnostics = appendIitcResponseBucketDiagnostics(bucketDiagnostics, response, batches[index]);
-      responses.push(response);
+      return;
+    }
+    const authError = batchResults.find((result) => result.error && isAuthLikeError(result.error))?.error;
+    if (authError) throw authError;
+
+    for (let index = 0; index < batchResults.length; index += 1) {
+      const result = batchResults[index];
+      if (result.response) {
+        queueState = applyIitcTileRequestResponseToQueue(queueState, result.response, result.tileKeys, true, {
+          retryReturnedEmptyTiles: true,
+        }).state;
+        bucketDiagnostics = appendIitcResponseBucketDiagnostics(bucketDiagnostics, result.response, result.tileKeys);
+        responses.push(result.response);
+      } else {
+        queueState = applyIitcTileRequestResponseToQueue(queueState, null, result.tileKeys, false, {
+          retryReturnedEmptyTiles: true,
+        }).state;
+        bucketDiagnostics = appendRequestErrorDiagnostics(bucketDiagnostics, result.tileKeys);
+      }
+      activeQueueState = queueState;
       const mergedResponse = mergeIitcGetEntitiesResponses(responses);
       const entities = toRenderEntities(mergedResponse, generation);
       const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyTileDiagnostics(mergedResponse, plan);
