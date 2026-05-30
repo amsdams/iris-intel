@@ -706,8 +706,8 @@ function getRenderPolicy(): IitcIrisRenderPolicy {
     detailedPortals,
     levelFill: layerSettings.levelFill && optionalOverlaysVisible,
     healthFill: layerSettings.healthFill && optionalOverlaysVisible,
-    ornaments: layerSettings.ornaments && optionalOverlaysVisible,
-    artifacts: layerSettings.artifacts && optionalOverlaysVisible,
+    ornaments: layerSettings.ornaments,
+    artifacts: layerSettings.artifacts,
     labels: layerSettings.labels && optionalOverlaysVisible,
   };
 }
