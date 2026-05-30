@@ -4,12 +4,15 @@ import {
   createIitcEmptyTileRetryBatches,
   createIitcMapDataPlan,
   decodeIitcGetEntitiesResponse,
+  getIitcRecoveredTileKeys,
+  getIitcReturnedEmptyTileKeys,
   IITC_EMPTY_TILE_RETRY_PASSES,
   IITC_LIVE_COMPAT_TILES_PER_REQUEST,
+  mergeIitcGetEntitiesResponses,
+  summarizeIitcReturnedTiles,
   type IitcArtifactBrief,
   type IitcGetEntitiesResponse,
   type IitcMapDataPlan,
-  type IitcMapTilePayload,
 } from '@iris/iitc-core';
 
 const DEFAULT_CENTER: [number, number] = [52.3730796, 4.8924534];
@@ -185,6 +188,7 @@ function syncUrlMapView(view: StoredMapView): void {
 function setBaseLayer(nextBaseLayerId: IitcIrisBaseLayerId): void {
   const map = window.__iitcIrisMap;
   if (!map) return;
+  if (baseLayer && baseLayerId === nextBaseLayerId) return;
 
   const config = BASE_LAYERS[nextBaseLayerId];
   if (baseLayer) map.removeLayer(baseLayer);
@@ -645,28 +649,6 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
   }
 }
 
-function countReturnedTiles(response: IitcGetEntitiesResponse): {
-  returnedTiles: number;
-  nonEmptyTiles: number;
-  emptyTileKeys: string[];
-  nonEmptyTileKeys: string[];
-} {
-  const entries = Object.entries(response.result?.map ?? {});
-  const emptyTileKeys: string[] = [];
-  const nonEmptyTileKeys: string[] = [];
-  for (const [tileKey, tile] of entries) {
-    if ((tile.gameEntities?.length ?? 0) > 0) nonEmptyTileKeys.push(tileKey);
-    else emptyTileKeys.push(tileKey);
-  }
-
-  return {
-    returnedTiles: entries.length,
-    nonEmptyTiles: nonEmptyTileKeys.length,
-    emptyTileKeys,
-    nonEmptyTileKeys,
-  };
-}
-
 function isLatLngInBounds(latE6: number, lngE6: number, bounds: IitcMapDataPlan['viewportBounds']): boolean {
   const lat = latE6 / 1e6;
   const lng = lngE6 / 1e6;
@@ -796,29 +778,6 @@ function createPlanFromMap(): IitcMapDataPlan | null {
   });
 }
 
-function countTileEntities(tile: IitcMapTilePayload | undefined): number {
-  return tile?.gameEntities?.length ?? 0;
-}
-
-function mergeEntityResponses(responses: IitcGetEntitiesResponse[]): IitcGetEntitiesResponse {
-  const map: NonNullable<NonNullable<IitcGetEntitiesResponse['result']>['map']> = {};
-  for (const response of responses) {
-    for (const [tileKey, tile] of Object.entries(response.result?.map ?? {})) {
-      const existing = map[tileKey];
-      if (!existing || countTileEntities(tile) > countTileEntities(existing)) {
-        map[tileKey] = tile;
-      }
-    }
-  }
-
-  return {result: {map}};
-}
-
-function getReturnedEmptyTileKeys(response: IitcGetEntitiesResponse, requestedTileKeys: string[]): string[] {
-  const tilePayloads = response.result?.map ?? {};
-  return requestedTileKeys.filter((tileKey) => tilePayloads[tileKey] && countTileEntities(tilePayloads[tileKey]) === 0);
-}
-
 function toRenderEntities(response: IitcGetEntitiesResponse, generation: number): IitcIrisRenderEntities {
   const decoded = decodeIitcGetEntitiesResponse(response);
 
@@ -923,7 +882,7 @@ async function refreshEntities(): Promise<void> {
       const fixtureResponse = await fetchFixtureResponse(dataSource);
       if (generation !== latestFetchGeneration) return;
       const entities = toRenderEntities(fixtureResponse, generation);
-      const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys} = countReturnedTiles(fixtureResponse);
+      const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys} = summarizeIitcReturnedTiles(fixtureResponse);
       latestPlan = plan;
       latestResponse = fixtureResponse;
       renderEntities(entities);
@@ -962,9 +921,9 @@ async function refreshEntities(): Promise<void> {
       const response = await fetchEntityBatch(batches[index], version);
       if (generation !== latestFetchGeneration) return;
       responses.push(response);
-      const mergedResponse = mergeEntityResponses(responses);
+      const mergedResponse = mergeIitcGetEntitiesResponses(responses);
       const entities = toRenderEntities(mergedResponse, generation);
-      const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys} = countReturnedTiles(mergedResponse);
+      const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys} = summarizeIitcReturnedTiles(mergedResponse);
       postEntityStatus(`batch ${index + 1}/${batches.length}`, entities, {
         requestedTiles: plan.tileKeys.length,
         returnedTiles,
@@ -976,13 +935,13 @@ async function refreshEntities(): Promise<void> {
     }
 
     if (generation !== latestFetchGeneration) return;
-    let mergedResponse = mergeEntityResponses(responses);
-    const initialEmptyTileKeys = getReturnedEmptyTileKeys(mergedResponse, plan.tileKeys);
+    let mergedResponse = mergeIitcGetEntitiesResponses(responses);
+    const initialEmptyTileKeys = getIitcReturnedEmptyTileKeys(mergedResponse, plan.tileKeys);
     const retriedTileKeys = new Set<string>();
     let retryRequests = 0;
     if (plan.tileParams.hasPortals) {
       for (let pass = 1; pass <= IITC_EMPTY_TILE_RETRY_PASSES; pass += 1) {
-        const retryTileKeys = getReturnedEmptyTileKeys(mergedResponse, plan.tileKeys);
+        const retryTileKeys = getIitcReturnedEmptyTileKeys(mergedResponse, plan.tileKeys);
         if (retryTileKeys.length === 0) break;
 
         const retryBatches = createIitcEmptyTileRetryBatches(retryTileKeys);
@@ -992,10 +951,10 @@ async function refreshEntities(): Promise<void> {
           retryRequests += 1;
           for (const tileKey of retryBatches[index]) retriedTileKeys.add(tileKey);
           responses.push(response);
-          mergedResponse = mergeEntityResponses(responses);
+          mergedResponse = mergeIitcGetEntitiesResponses(responses);
           const entities = toRenderEntities(mergedResponse, generation);
-          const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys} = countReturnedTiles(mergedResponse);
-          const recoveredTileKeys = initialEmptyTileKeys.filter((tileKey) => nonEmptyTileKeys.includes(tileKey));
+          const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys} = summarizeIitcReturnedTiles(mergedResponse);
+          const recoveredTileKeys = getIitcRecoveredTileKeys(initialEmptyTileKeys, nonEmptyTileKeys);
           postEntityStatus(`retry ${pass} ${index + 1}/${retryBatches.length}`, entities, {
             requestedTiles: plan.tileKeys.length,
             returnedTiles,
@@ -1012,8 +971,8 @@ async function refreshEntities(): Promise<void> {
     }
 
     const entities = toRenderEntities(mergedResponse, generation);
-    const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys} = countReturnedTiles(mergedResponse);
-    const recoveredTileKeys = initialEmptyTileKeys.filter((tileKey) => nonEmptyTileKeys.includes(tileKey));
+    const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys} = summarizeIitcReturnedTiles(mergedResponse);
+    const recoveredTileKeys = getIitcRecoveredTileKeys(initialEmptyTileKeys, nonEmptyTileKeys);
     latestPlan = plan;
     latestResponse = mergedResponse;
     renderEntities(entities);

@@ -5,12 +5,17 @@ import {
   createIitcEmptyTileRetryBatches,
   createIitcLiveCompatRequestBatches,
   createIitcRequestBatches,
+  getIitcRecoveredTileKeys,
+  getIitcReturnedEmptyTileKeys,
   getIitcMapZoomTileParameters,
   iitcTileToLat,
   iitcTileToLng,
   latToIitcTile,
   lngToIitcTile,
+  mergeIitcGetEntitiesResponses,
   pointToIitcTileId,
+  summarizeIitcReturnedTiles,
+  type IitcGetEntitiesResponse,
 } from './index';
 
 describe('IITC map data request planning', () => {
@@ -75,5 +80,36 @@ describe('IITC map data request planning', () => {
     );
 
     expect(plan.requestBatches.every((batch) => batch.length <= 5)).toBe(true);
+  });
+
+  it('merges getEntities responses using richer tile payloads', () => {
+    const emptyThenFull: IitcGetEntitiesResponse[] = [
+      {result: {map: {a: {gameEntities: []}, b: {gameEntities: [['b.1', 1, ['p', 'E', 1, 2]]]}}}},
+      {result: {map: {a: {gameEntities: [['a.1', 1, ['p', 'R', 3, 4]]]}, b: {gameEntities: []}}}},
+    ];
+
+    const merged = mergeIitcGetEntitiesResponses(emptyThenFull);
+    expect(merged.result?.map?.a?.gameEntities).toHaveLength(1);
+    expect(merged.result?.map?.b?.gameEntities).toHaveLength(1);
+  });
+
+  it('summarizes returned, empty, non-empty, and recovered tiles', () => {
+    const response: IitcGetEntitiesResponse = {
+      result: {
+        map: {
+          a: {gameEntities: []},
+          b: {gameEntities: [['b.1', 1, ['p', 'E', 1, 2]]]},
+        },
+      },
+    };
+
+    expect(summarizeIitcReturnedTiles(response)).toEqual({
+      returnedTiles: 2,
+      nonEmptyTiles: 1,
+      emptyTileKeys: ['a'],
+      nonEmptyTileKeys: ['b'],
+    });
+    expect(getIitcReturnedEmptyTileKeys(response, ['a', 'b', 'c'])).toEqual(['a']);
+    expect(getIitcRecoveredTileKeys(['a', 'b', 'c'], ['b', 'd'])).toEqual(['b']);
   });
 });

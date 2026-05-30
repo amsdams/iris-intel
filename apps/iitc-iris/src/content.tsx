@@ -513,7 +513,6 @@ function App(): h.JSX.Element {
           dataSource: event.data.dataSource ?? current.dataSource,
           renderPolicy: event.data.renderPolicy ?? current.renderPolicy,
         }));
-        if (event.data.baseLayerId) setBaseLayerId(event.data.baseLayerId);
       }
     };
 

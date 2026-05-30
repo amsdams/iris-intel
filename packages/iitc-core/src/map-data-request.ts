@@ -1,4 +1,5 @@
 import {getIitcDataZoomForMapZoom, getIitcMapZoomTileParameters, type IitcTileParams} from './tile-params';
+import type {IitcGetEntitiesResponse, IitcMapTilePayload} from './entity-decode';
 
 export const IITC_MAX_LATITUDE = 85.051128;
 export const IITC_MAX_LONGITUDE = 179.999999;
@@ -60,6 +61,13 @@ export interface IitcRequestBatchOptions {
 export interface IitcEmptyTileRetryOptions {
   retryLimit?: number;
   retryBatchSize?: number;
+}
+
+export interface IitcReturnedTileSummary {
+  returnedTiles: number;
+  nonEmptyTiles: number;
+  emptyTileKeys: string[];
+  nonEmptyTileKeys: string[];
 }
 
 function clamp(value: number, max: number, min: number): number {
@@ -188,6 +196,52 @@ export function createIitcEmptyTileRetryBatches(tileKeys: string[], options: Iit
   const retryLimit = Math.max(0, Math.floor(options.retryLimit ?? IITC_EMPTY_TILE_RETRY_LIMIT));
   const retryBatchSize = Math.max(1, Math.floor(options.retryBatchSize ?? IITC_EMPTY_TILE_RETRY_BATCH_SIZE));
   return createIitcSequentialTileBatches(tileKeys.slice(0, retryLimit), retryBatchSize);
+}
+
+export function countIitcTileEntities(tile: IitcMapTilePayload | undefined): number {
+  return tile?.gameEntities?.length ?? 0;
+}
+
+export function mergeIitcGetEntitiesResponses(responses: IitcGetEntitiesResponse[]): IitcGetEntitiesResponse {
+  const map: NonNullable<NonNullable<IitcGetEntitiesResponse['result']>['map']> = {};
+
+  for (const response of responses) {
+    for (const [tileKey, tile] of Object.entries(response.result?.map ?? {})) {
+      const existing = map[tileKey];
+      if (!existing || countIitcTileEntities(tile) > countIitcTileEntities(existing)) {
+        map[tileKey] = tile;
+      }
+    }
+  }
+
+  return {result: {map}};
+}
+
+export function summarizeIitcReturnedTiles(response: IitcGetEntitiesResponse): IitcReturnedTileSummary {
+  const entries = Object.entries(response.result?.map ?? {});
+  const emptyTileKeys: string[] = [];
+  const nonEmptyTileKeys: string[] = [];
+
+  for (const [tileKey, tile] of entries) {
+    if (countIitcTileEntities(tile) > 0) nonEmptyTileKeys.push(tileKey);
+    else emptyTileKeys.push(tileKey);
+  }
+
+  return {
+    returnedTiles: entries.length,
+    nonEmptyTiles: nonEmptyTileKeys.length,
+    emptyTileKeys,
+    nonEmptyTileKeys,
+  };
+}
+
+export function getIitcReturnedEmptyTileKeys(response: IitcGetEntitiesResponse, requestedTileKeys: string[]): string[] {
+  const tilePayloads = response.result?.map ?? {};
+  return requestedTileKeys.filter((tileKey) => tilePayloads[tileKey] && countIitcTileEntities(tilePayloads[tileKey]) === 0);
+}
+
+export function getIitcRecoveredTileKeys(initialEmptyTileKeys: string[], nonEmptyTileKeys: string[]): string[] {
+  return initialEmptyTileKeys.filter((tileKey) => nonEmptyTileKeys.includes(tileKey));
 }
 
 export function createIitcMapDataPlan(
