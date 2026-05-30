@@ -61,10 +61,24 @@ const DATA_SOURCE_OPTIONS = [
     zoom: 15,
   },
 ] as const;
-const LAYER_TOGGLE_LABELS: [keyof IitcIrisLayerSettings, string][] = [
+const CORE_LAYER_TOGGLE_LABELS: [keyof IitcIrisLayerSettings, string][] = [
   ['fields', 'F'],
   ['links', 'LN'],
   ['portals', 'P'],
+  ['unclaimedPortals', 'U'],
+  ['level1Portals', 'L1'],
+  ['level2Portals', 'L2'],
+  ['level3Portals', 'L3'],
+  ['level4Portals', 'L4'],
+  ['level5Portals', 'L5'],
+  ['level6Portals', 'L6'],
+  ['level7Portals', 'L7'],
+  ['level8Portals', 'L8'],
+  ['resistance', 'RES'],
+  ['enlightened', 'ENL'],
+  ['machina', 'MAC'],
+];
+const DETAIL_LAYER_TOGGLE_LABELS: [keyof IitcIrisLayerSettings, string][] = [
   ['levelFill', 'LF'],
   ['healthFill', 'HF'],
   ['ornaments', 'OR'],
@@ -76,6 +90,18 @@ const DEFAULT_LAYER_SETTINGS: IitcIrisLayerSettings = {
   fields: true,
   links: true,
   portals: true,
+  unclaimedPortals: true,
+  level1Portals: true,
+  level2Portals: true,
+  level3Portals: true,
+  level4Portals: true,
+  level5Portals: true,
+  level6Portals: true,
+  level7Portals: true,
+  level8Portals: true,
+  resistance: true,
+  enlightened: true,
+  machina: true,
   levelFill: false,
   healthFill: false,
   ornaments: false,
@@ -236,6 +262,18 @@ function loadStoredLayerSettings(): IitcIrisLayerSettings {
       fields: typeof parsed.fields === 'boolean' ? parsed.fields : DEFAULT_LAYER_SETTINGS.fields,
       links: typeof parsed.links === 'boolean' ? parsed.links : DEFAULT_LAYER_SETTINGS.links,
       portals: typeof parsed.portals === 'boolean' ? parsed.portals : DEFAULT_LAYER_SETTINGS.portals,
+      unclaimedPortals: typeof parsed.unclaimedPortals === 'boolean' ? parsed.unclaimedPortals : DEFAULT_LAYER_SETTINGS.unclaimedPortals,
+      level1Portals: typeof parsed.level1Portals === 'boolean' ? parsed.level1Portals : DEFAULT_LAYER_SETTINGS.level1Portals,
+      level2Portals: typeof parsed.level2Portals === 'boolean' ? parsed.level2Portals : DEFAULT_LAYER_SETTINGS.level2Portals,
+      level3Portals: typeof parsed.level3Portals === 'boolean' ? parsed.level3Portals : DEFAULT_LAYER_SETTINGS.level3Portals,
+      level4Portals: typeof parsed.level4Portals === 'boolean' ? parsed.level4Portals : DEFAULT_LAYER_SETTINGS.level4Portals,
+      level5Portals: typeof parsed.level5Portals === 'boolean' ? parsed.level5Portals : DEFAULT_LAYER_SETTINGS.level5Portals,
+      level6Portals: typeof parsed.level6Portals === 'boolean' ? parsed.level6Portals : DEFAULT_LAYER_SETTINGS.level6Portals,
+      level7Portals: typeof parsed.level7Portals === 'boolean' ? parsed.level7Portals : DEFAULT_LAYER_SETTINGS.level7Portals,
+      level8Portals: typeof parsed.level8Portals === 'boolean' ? parsed.level8Portals : DEFAULT_LAYER_SETTINGS.level8Portals,
+      resistance: typeof parsed.resistance === 'boolean' ? parsed.resistance : DEFAULT_LAYER_SETTINGS.resistance,
+      enlightened: typeof parsed.enlightened === 'boolean' ? parsed.enlightened : DEFAULT_LAYER_SETTINGS.enlightened,
+      machina: typeof parsed.machina === 'boolean' ? parsed.machina : DEFAULT_LAYER_SETTINGS.machina,
       levelFill: typeof parsed.levelFill === 'boolean' ? parsed.levelFill : DEFAULT_LAYER_SETTINGS.levelFill,
       healthFill: typeof parsed.healthFill === 'boolean' ? parsed.healthFill : DEFAULT_LAYER_SETTINGS.healthFill,
       ornaments: typeof parsed.ornaments === 'boolean' ? parsed.ornaments : DEFAULT_LAYER_SETTINGS.ornaments,
@@ -871,8 +909,21 @@ function App(): h.JSX.Element {
             </button>
           ))}
           <span className="iitc-iris-divider" />
-          <span className="iitc-iris-status">Layers</span>
-          {LAYER_TOGGLE_LABELS.map(([key, label]) => (
+          <span className="iitc-iris-status">Core</span>
+          {CORE_LAYER_TOGGLE_LABELS.map(([key, label]) => (
+            <button
+              key={key}
+              className={`iitc-iris-layer-toggle ${layerSettings[key] ? 'iitc-iris-layer-toggle-active' : ''}`}
+              type="button"
+              onClick={() => toggleLayerSetting(key)}
+              title={`Toggle ${key}`}
+            >
+              {label}
+            </button>
+          ))}
+          <span className="iitc-iris-divider" />
+          <span className="iitc-iris-status">Detail</span>
+          {DETAIL_LAYER_TOGGLE_LABELS.map(([key, label]) => (
             <button
               key={key}
               className={`iitc-iris-layer-toggle ${layerSettings[key] ? 'iitc-iris-layer-toggle-active' : ''}`}

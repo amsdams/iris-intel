@@ -91,6 +91,18 @@ export interface IitcIrisLayerSettings {
   fields: boolean;
   links: boolean;
   portals: boolean;
+  unclaimedPortals: boolean;
+  level1Portals: boolean;
+  level2Portals: boolean;
+  level3Portals: boolean;
+  level4Portals: boolean;
+  level5Portals: boolean;
+  level6Portals: boolean;
+  level7Portals: boolean;
+  level8Portals: boolean;
+  resistance: boolean;
+  enlightened: boolean;
+  machina: boolean;
   levelFill: boolean;
   healthFill: boolean;
   ornaments: boolean;

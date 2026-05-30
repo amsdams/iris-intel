@@ -1,5 +1,5 @@
 import L, {type Layer as LeafletLayer, type Map as LeafletMap, type TileLayer} from 'leaflet';
-import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisQueueDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderPolicy} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisQueueDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy} from './messages';
 import {
   appendIitcResponseBucketDiagnostics,
   applyIitcTileRequestResponseToQueue,
@@ -57,6 +57,18 @@ const DEFAULT_LAYER_SETTINGS: IitcIrisLayerSettings = {
   fields: true,
   links: true,
   portals: true,
+  unclaimedPortals: true,
+  level1Portals: true,
+  level2Portals: true,
+  level3Portals: true,
+  level4Portals: true,
+  level5Portals: true,
+  level6Portals: true,
+  level7Portals: true,
+  level8Portals: true,
+  resistance: true,
+  enlightened: true,
+  machina: true,
   levelFill: false,
   healthFill: false,
   ornaments: false,
@@ -658,81 +670,114 @@ function getRenderPolicy(): IitcIrisRenderPolicy {
   };
 }
 
+function isTeamLayerVisible(team: 'E' | 'R' | 'N' | 'M'): boolean {
+  if (team === 'R') return layerSettings.resistance;
+  if (team === 'E') return layerSettings.enlightened;
+  if (team === 'M') return layerSettings.machina;
+  return layerSettings.unclaimedPortals;
+}
+
+function isPortalLevelLayerVisible(portal: IitcIrisRenderPortal): boolean {
+  if (portal.team === 'N' || portal.isPlaceholder || portal.level === undefined || portal.level < 1 || portal.level > 8) {
+    return layerSettings.unclaimedPortals;
+  }
+
+  const levelKey = `level${portal.level}Portals` as keyof IitcIrisLayerSettings;
+  return layerSettings[levelKey];
+}
+
+function isPortalVisible(portal: IitcIrisRenderPortal): boolean {
+  return layerSettings.portals && isTeamLayerVisible(portal.team) && isPortalLevelLayerVisible(portal);
+}
+
+function isLinkVisible(link: IitcIrisRenderLink): boolean {
+  return layerSettings.links && isTeamLayerVisible(link.team);
+}
+
+function isFieldVisible(field: IitcIrisRenderField): boolean {
+  return layerSettings.fields && isTeamLayerVisible(field.team);
+}
+
 function renderEntities(entities: IitcIrisRenderEntities): void {
   if (!window.__iitcIrisMap) return;
   const layers = ensureLayers();
   const renderPolicy = getRenderPolicy();
   const ornamentVisibility = loadOrnamentVisibilitySettings();
   const ornamentDiagnostics = createEmptyOrnamentDiagnostics();
-  const visibleLevelLabelGuids = renderPolicy.labels ? getVisibleLevelLabelGuids(entities.portals) : new Set<string>();
+  const visiblePortals = entities.portals.filter(isPortalVisible);
+  const visibleLevelLabelGuids = renderPolicy.labels ? getVisibleLevelLabelGuids(visiblePortals) : new Set<string>();
 
   latestEntities = entities;
   clearEntityLayers();
 
-  if (layerSettings.fields) {
-    for (const field of entities.fields) {
-      if (field.points.length !== 3) continue;
-      addRenderedLayer(layers.fields, L.polygon(field.points.map((point) => toLatLng(point.latE6, point.lngE6)), {
-        color: getTeamColor(field.team),
-        fillColor: getTeamColor(field.team),
-        fillOpacity: 0.25,
-        opacity: 0,
-        pane: getLayerPane('fields'),
-        renderer: getLayerRenderer('fields'),
-        weight: 0,
-        interactive: false,
-      }));
-    }
+  for (const field of entities.fields) {
+    if (!isFieldVisible(field) || field.points.length !== 3) continue;
+    addRenderedLayer(layers.fields, L.polygon(field.points.map((point) => toLatLng(point.latE6, point.lngE6)), {
+      color: getTeamColor(field.team),
+      fillColor: getTeamColor(field.team),
+      fillOpacity: 0.25,
+      opacity: 0,
+      pane: getLayerPane('fields'),
+      renderer: getLayerRenderer('fields'),
+      weight: 0,
+      interactive: false,
+    }));
   }
 
-  if (layerSettings.links) {
-    for (const link of entities.links) {
-      addRenderedLayer(layers.links, L.polyline([toLatLng(link.oLatE6, link.oLngE6), toLatLng(link.dLatE6, link.dLngE6)], {
-        color: getTeamColor(link.team),
-        opacity: 1,
-        pane: getLayerPane('links'),
-        renderer: getLayerRenderer('links'),
-        weight: 2,
-        interactive: false,
-      }));
-    }
+  for (const link of entities.links) {
+    if (!isLinkVisible(link)) continue;
+    addRenderedLayer(layers.links, L.polyline([toLatLng(link.oLatE6, link.oLngE6), toLatLng(link.dLatE6, link.dLngE6)], {
+      color: getTeamColor(link.team),
+      opacity: 1,
+      pane: getLayerPane('links'),
+      renderer: getLayerRenderer('links'),
+      weight: 2,
+      interactive: false,
+    }));
   }
 
-  for (const portal of entities.portals) {
+  for (const portal of visiblePortals) {
     const color = getTeamColor(portal.team);
     const latLng = toLatLng(portal.latE6, portal.lngE6);
     const radius = getPortalRadius(portal.level, portal.isPlaceholder);
 
-    if (layerSettings.portals) {
-      addRenderedLayer(layers.portals, L.circleMarker(latLng, {
-        radius,
-        color,
-        fillColor: renderPolicy.healthFill || renderPolicy.levelFill
-          ? getPortalFillColor(portal.team, portal.level, portal.isPlaceholder, portal.health)
-          : getTeamColor(portal.team),
-        fillOpacity: renderPolicy.healthFill || renderPolicy.levelFill
-          ? getPortalFillOpacity(portal.health, portal.level, portal.team, portal.isPlaceholder)
-          : 0.5,
-        opacity: portal.isPlaceholder ? 0.6 : 1,
-        pane: getLayerPane('portals'),
-        renderer: getLayerRenderer('portals'),
-        weight: getPortalWeight(portal.level, portal.isPlaceholder),
-        dashArray: portal.isPlaceholder ? '1,2' : undefined,
-        interactive: false,
-      }));
-    }
+    addRenderedLayer(layers.portals, L.circleMarker(latLng, {
+      radius,
+      color,
+      fillColor: renderPolicy.healthFill || renderPolicy.levelFill
+        ? getPortalFillColor(portal.team, portal.level, portal.isPlaceholder, portal.health)
+        : getTeamColor(portal.team),
+      fillOpacity: renderPolicy.healthFill || renderPolicy.levelFill
+        ? getPortalFillOpacity(portal.health, portal.level, portal.team, portal.isPlaceholder)
+        : 0.5,
+      opacity: portal.isPlaceholder ? 0.6 : 1,
+      pane: getLayerPane('portals'),
+      renderer: getLayerRenderer('portals'),
+      weight: getPortalWeight(portal.level, portal.isPlaceholder),
+      dashArray: portal.isPlaceholder ? '1,2' : undefined,
+      interactive: false,
+    }));
 
     if (renderPolicy.labels && visibleLevelLabelGuids.has(portal.guid) && portal.level !== undefined) {
       addRenderedLayer(layers.labels, createLevelLabelMarker(latLng, portal.level, portal.team));
     }
+  }
 
-    if (renderPolicy.artifacts && !portal.isPlaceholder && portal.artifacts && portal.artifacts.length > 0) {
+  if (renderPolicy.artifacts) {
+    for (const portal of entities.portals) {
+      if (portal.isPlaceholder || !portal.artifacts || portal.artifacts.length === 0) continue;
+      const latLng = toLatLng(portal.latE6, portal.lngE6);
       for (const artifact of portal.artifacts) {
         addRenderedLayer(layers.artifacts, createArtifactMarker(latLng, artifact));
       }
     }
+  }
 
-    if (renderPolicy.ornaments && portal.ornaments && portal.ornaments.length > 0) {
+  if (renderPolicy.ornaments) {
+    for (const portal of entities.portals) {
+      if (!portal.ornaments || portal.ornaments.length === 0) continue;
+      const latLng = toLatLng(portal.latE6, portal.lngE6);
+      const radius = getPortalRadius(portal.level, portal.isPlaceholder);
       for (const ornament of portal.ornaments) {
         ornamentDiagnostics.types[ornament] = (ornamentDiagnostics.types[ornament] ?? 0) + 1;
         if (isExcludedOrnament(ornament, ornamentVisibility)) {

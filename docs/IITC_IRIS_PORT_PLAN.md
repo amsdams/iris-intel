@@ -78,6 +78,7 @@ Current status:
 
 - Typed npm Leaflet is bundled into `iitc-iris`.
 - Fields, links, placeholder portals, real portals, level fill, health fill, ornaments, level labels, and IITC-style artifact/shard marker icons render.
+- Core IITC-style entity filters are available in the dock: unclaimed/placeholder portals, portal levels 1-8, and Resistance/Enlightened/Machina faction filters. The faction filters apply to portals, links, and fields, matching IITC-CE's default overlay semantics; ornament and artifact overlays remain independent IITC-style overlays when their own `OR`/`AR` layers are enabled.
 - Ornament rendering honors IITC's `excludedOrnaments`, `knownOrnaments`, and `ingress.intelmap.layergroupdisplayed` localStorage settings for known ornament sublayers such as `Anomaly`, `Scouting`, and `Battle`, so ornaments hidden in IITC's default layer configuration are not drawn in IITC IRIS either.
 - IITC IRIS uses the IITC ornament icon definitions for common anomaly/scouting/battle IDs currently seen in fixtures/HARs, including the custom `ap1` SVG rather than the raw stock marker image.
 - Copied diagnostics include drawn/hidden ornament marker counts and ornament type counts, making IITC ornament exclusion and visual parity checks easier.
@@ -118,6 +119,9 @@ Current status:
   - `F`: fields.
   - `LN`: links.
   - `P`: portals.
+  - `U`: unclaimed and placeholder portals.
+  - `L1`..`L8`: portal levels 1 through 8.
+  - `RES`, `ENL`, `MAC`: faction filters for portals, links, and fields.
   - `LF`: portal body fill by IITC level colours, matching IITC-CE's `Level Color` highlighter behavior, including neutral portals with an orange outline and level-coloured body.
   - `HF`: portal body fill by recharge status, matching IITC-CE's `Needs Recharge (Health)` highlighter behavior.
   - `OR`: ornament image overlays.
