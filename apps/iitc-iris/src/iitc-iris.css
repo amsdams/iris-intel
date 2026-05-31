@@ -265,6 +265,62 @@
   gap: 4px;
 }
 
+.iitc-iris-portal-summary,
+.iitc-iris-panel-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  min-width: 0;
+}
+
+.iitc-iris-portal-summary-cell,
+.iitc-iris-panel-summary > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 5px 6px;
+  border: 1px solid rgb(95 180 255 / 18%);
+  border-radius: 4px;
+  background: rgb(10 18 25 / 58%);
+}
+
+.iitc-iris-portal-summary-cell b,
+.iitc-iris-panel-summary b {
+  min-width: 0;
+  overflow: hidden;
+  color: #ffffff;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iitc-iris-panel-summary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.iitc-iris-panel-summary small {
+  overflow: hidden;
+  color: #91a6b7;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iitc-iris-health-track {
+  position: relative;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: rgb(128 150 165 / 18%);
+}
+
+.iitc-iris-health-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: var(--portal-team-color);
+}
+
 .iitc-iris-portal-action {
   appearance: none;
   min-width: 0;
@@ -317,9 +373,21 @@
   min-width: 0;
 }
 
+.iitc-iris-debug-grid {
+  padding-top: 4px;
+  border-top: 1px solid rgb(95 180 255 / 12%);
+}
+
 .iitc-iris-portal-section {
   display: grid;
   gap: 4px;
+}
+
+.iitc-iris-portal-facts {
+  padding: 5px 6px;
+  border: 1px solid rgb(95 180 255 / 14%);
+  border-radius: 4px;
+  background: rgb(10 18 25 / 44%);
 }
 
 .iitc-iris-resonator-grid,
@@ -348,11 +416,13 @@
 }
 
 .iitc-iris-resonator-slot {
+  position: relative;
+  overflow: hidden;
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
-  gap: 4px;
+  gap: 2px 4px;
   align-items: baseline;
-  min-height: 24px;
+  min-height: 34px;
   padding: 3px 5px;
   font: 700 11px/1.2 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
@@ -378,6 +448,27 @@
   text-align: right;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.iitc-iris-resonator-owner {
+  grid-column: 1 / -1;
+  min-width: 0;
+  overflow: hidden;
+  color: #91a6b7;
+  font-size: 10px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iitc-iris-resonator-fill {
+  position: absolute;
+  right: auto;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: var(--portal-team-color);
+  opacity: 0.9;
 }
 
 .iitc-iris-mod-slot {
@@ -467,6 +558,44 @@
   color: #4f6575;
 }
 
+.iitc-iris-panel-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+  margin-top: 2px;
+  padding-top: 5px;
+  border-top: 1px solid rgb(95 180 255 / 10%);
+}
+
+.iitc-iris-diagnostics-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.iitc-iris-diagnostics-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  padding: 1px 6px;
+  border: 1px solid rgb(95 180 255 / 22%);
+  border-radius: 4px;
+  background: rgb(10 18 25 / 46%);
+  color: #91a6b7;
+  font: 700 10px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  cursor: help;
+  text-transform: uppercase;
+}
+
+.iitc-iris-diagnostics-chip:hover {
+  border-color: rgb(105 210 255 / 50%);
+  color: #c7d8e8;
+}
+
 .iitc-iris-comm-list {
   display: grid;
   gap: 4px;
@@ -475,7 +604,8 @@
 
 .iitc-iris-comm-row {
   display: grid;
-  gap: 2px;
+  grid-template-columns: 68px minmax(0, 1fr);
+  gap: 3px 8px;
   min-width: 0;
   padding: 5px 6px;
   border: 1px solid rgb(95 180 255 / 18%);
@@ -483,13 +613,35 @@
   background: rgb(10 18 25 / 62%);
 }
 
-.iitc-iris-comm-text {
+.iitc-iris-comm-meta {
+  display: grid;
+  gap: 1px;
+  align-content: start;
+  min-width: 0;
+}
+
+.iitc-iris-comm-meta b {
+  color: inherit;
+  font-size: 11px;
+}
+
+.iitc-iris-comm-meta small {
   min-width: 0;
   overflow: hidden;
+  color: #91a6b7;
+  font-size: 9px;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.iitc-iris-comm-text {
+  min-width: 0;
   color: #e8f4ff;
   font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .iitc-iris-comm-text.is-narrowcast {
@@ -527,6 +679,163 @@
   text-decoration: underline;
 }
 
+.iitc-iris-comm-context {
+  grid-column: 2;
+  min-width: 0;
+  overflow: hidden;
+  color: #91a6b7;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iitc-iris-empty-state {
+  padding: 8px 6px;
+  border: 1px dashed rgb(95 180 255 / 20%);
+  border-radius: 4px;
+  color: #91a6b7;
+}
+
+.iitc-iris-score-block {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 6px;
+  border: 1px solid rgb(95 180 255 / 18%);
+  border-radius: 4px;
+  background: rgb(10 18 25 / 62%);
+}
+
+.iitc-iris-score-heading,
+.iitc-iris-score-pair {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.iitc-iris-score-heading {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.iitc-iris-score-pair {
+  font-size: 11px;
+}
+
+.iitc-iris-score-pair > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iitc-iris-score-bar {
+  --enl-percent: 50%;
+
+  display: flex;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: rgb(128 150 165 / 18%);
+}
+
+.iitc-iris-score-bar-enl {
+  width: var(--enl-percent);
+  background: #04c748;
+}
+
+.iitc-iris-score-bar-res {
+  flex: 1;
+  background: #00a2ff;
+}
+
+.iitc-iris-agent-list {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.iitc-iris-agent-row {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+  padding: 3px 6px;
+  border: 1px solid rgb(95 180 255 / 14%);
+  border-radius: 4px;
+  background: rgb(10 18 25 / 46%);
+}
+
+.iitc-iris-agent-row b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iitc-iris-inventory-selected {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 5px 6px;
+  border: 1px solid rgb(95 180 255 / 14%);
+  border-radius: 4px;
+  background: rgb(10 18 25 / 44%);
+}
+
+.iitc-iris-inventory-selected b {
+  min-width: 0;
+  overflow: hidden;
+  color: #ffffff;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iitc-iris-inventory-section {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.iitc-iris-inventory-list {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.iitc-iris-inventory-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  gap: 2px 8px;
+  align-items: baseline;
+  min-width: 0;
+  padding: 4px 6px;
+  border: 1px solid rgb(95 180 255 / 14%);
+  border-radius: 4px;
+  background: rgb(10 18 25 / 46%);
+}
+
+.iitc-iris-inventory-row span,
+.iitc-iris-inventory-row small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iitc-iris-inventory-row b {
+  color: #ffffff;
+}
+
+.iitc-iris-inventory-row small {
+  grid-column: 1 / -1;
+  color: #91a6b7;
+  font-size: 10px;
+  text-transform: lowercase;
+}
+
 .is-enlightened {
   color: #04c748;
 }
@@ -540,35 +849,123 @@
 }
 
 @media (max-width: 760px) {
+  .iitc-iris-dock {
+    top: 8px;
+    right: 8px;
+    left: 8px;
+    max-width: none;
+    padding: 6px 8px;
+  }
+
+  .iitc-iris-dock > .iitc-iris-dock-row:not(:first-child):not(.iitc-iris-debug-row) {
+    display: none;
+  }
+
+  .iitc-iris-dock-row:first-child .iitc-iris-copy:not(:first-of-type),
+  .iitc-iris-dock-row:first-child .iitc-iris-preset,
+  .iitc-iris-dock-row:first-child .iitc-iris-jump {
+    display: none;
+  }
+
+  .iitc-iris-innerstatus {
+    gap: 6px;
+    font-size: 11px;
+  }
+
   .iitc-iris-map-controls {
     top: auto;
     right: 8px;
-    bottom: 8px;
+    bottom: 56px;
     left: 8px;
+    z-index: 10002;
+    display: none;
     width: auto;
-    max-height: 38vh;
+    max-height: min(58vh, 420px);
+    border-radius: 8px 8px 6px 6px;
   }
 
   .iitc-iris-portal-side-panel {
     top: auto;
     right: 8px;
-    bottom: calc(38vh + 16px);
+    bottom: 56px;
     left: 8px;
+    z-index: 10002;
+    display: none;
     width: auto;
-    max-height: calc(58vh - 24px);
+    max-height: min(64vh, 480px);
+    border-radius: 8px 8px 6px 6px;
   }
 
   .iitc-iris-portal-side-panel-stacked {
-    bottom: calc(70vh + 24px);
-    max-height: calc(30vh - 32px);
+    max-height: min(64vh, 480px);
   }
 
   .iitc-iris-request-side-panel {
     right: 8px;
-    bottom: calc(38vh + 16px);
+    bottom: 56px;
     left: 8px;
+    z-index: 10002;
+    display: none;
     width: auto;
-    max-height: 32vh;
+    max-height: min(64vh, 480px);
+    border-radius: 8px 8px 6px 6px;
+  }
+
+  .iitc-iris-mobile-sheet-layers .iitc-iris-map-controls,
+  .iitc-iris-mobile-sheet-portal .iitc-iris-portal-side-panel,
+  .iitc-iris-mobile-sheet-comm .iitc-iris-request-side-panel,
+  .iitc-iris-mobile-sheet-scores .iitc-iris-request-side-panel,
+  .iitc-iris-mobile-sheet-passcodes .iitc-iris-request-side-panel,
+  .iitc-iris-mobile-sheet-inventory .iitc-iris-request-side-panel {
+    display: grid;
+  }
+
+  .iitc-iris-mobile-sheet-map .iitc-iris-map-controls,
+  .iitc-iris-mobile-sheet-map .iitc-iris-portal-side-panel,
+  .iitc-iris-mobile-sheet-map .iitc-iris-request-side-panel {
+    display: none;
+  }
+
+  .iitc-iris-mobile-tabbar {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    left: 8px;
+    z-index: 10003;
+    display: grid !important;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 4px;
+    box-sizing: border-box;
+    padding: 5px;
+    border: 1px solid rgb(95 180 255 / 32%);
+    border-radius: 8px;
+    background: rgb(2 10 16 / 92%);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 38%);
+    pointer-events: auto;
+  }
+
+  .iitc-iris-mobile-tab {
+    appearance: none;
+    min-width: 0;
+    min-height: 32px;
+    padding: 3px 2px;
+    border: 1px solid rgb(95 180 255 / 18%);
+    border-radius: 5px;
+    background: rgb(7 31 45 / 72%);
+    color: #c7d8e8;
+    font: 700 10px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    cursor: pointer;
+  }
+
+  .iitc-iris-mobile-tab.is-active {
+    border-color: rgb(105 210 255 / 70%);
+    background: rgb(12 48 68 / 96%);
+    color: #ffffff;
+  }
+
+  .iitc-iris-mobile-tab:disabled {
+    color: #526675;
+    cursor: default;
   }
 
   .iitc-iris-resonator-grid,
@@ -579,6 +976,19 @@
   .iitc-iris-resonator-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  .iitc-iris-portal-summary,
+  .iitc-iris-panel-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .iitc-iris-comm-row {
+    grid-template-columns: 58px minmax(0, 1fr);
+  }
+}
+
+.iitc-iris-mobile-tabbar {
+  display: none;
 }
 
 .iitc-iris-warning {
@@ -618,6 +1028,102 @@
 .iitc-iris-debug-row {
   padding-top: 2px;
   border-top: 1px solid rgb(95 180 255 / 16%);
+}
+
+.iitc-iris-sheet-tabbar {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  left: 12px;
+  z-index: 10003;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 4px;
+  box-sizing: border-box;
+  width: min(560px, calc(100vw - 24px));
+  margin: 0 auto;
+  padding: 5px;
+  border: 1px solid rgb(95 180 255 / 32%);
+  border-radius: 8px;
+  background: rgb(2 10 16 / 92%);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 38%);
+  pointer-events: auto;
+}
+
+.iitc-iris-sheet-tab {
+  appearance: none;
+  min-width: 0;
+  min-height: 32px;
+  padding: 3px 2px;
+  border: 1px solid rgb(95 180 255 / 18%);
+  border-radius: 5px;
+  background: rgb(7 31 45 / 72%);
+  color: #c7d8e8;
+  font: 700 10px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  cursor: pointer;
+}
+
+.iitc-iris-sheet-tab.is-active {
+  border-color: rgb(105 210 255 / 70%);
+  background: rgb(12 48 68 / 96%);
+  color: #ffffff;
+}
+
+.iitc-iris-sheet-tab:disabled {
+  color: #526675;
+  cursor: default;
+}
+
+.iitc-iris-map-controls,
+.iitc-iris-portal-side-panel,
+.iitc-iris-request-side-panel {
+  top: auto;
+  right: 12px;
+  bottom: 64px;
+  left: 12px;
+  z-index: 10002;
+  display: none;
+  width: min(560px, calc(100vw - 24px));
+  max-height: min(64vh, 520px);
+  margin: 0 auto;
+  border-radius: 8px 8px 6px 6px;
+}
+
+.iitc-iris-sheet-layers .iitc-iris-map-controls,
+.iitc-iris-sheet-portal .iitc-iris-portal-side-panel,
+.iitc-iris-sheet-comm .iitc-iris-request-side-panel,
+.iitc-iris-sheet-scores .iitc-iris-request-side-panel,
+.iitc-iris-sheet-inventory .iitc-iris-request-side-panel {
+  display: grid;
+}
+
+.iitc-iris-sheet-map .iitc-iris-map-controls,
+.iitc-iris-sheet-map .iitc-iris-portal-side-panel,
+.iitc-iris-sheet-map .iitc-iris-request-side-panel {
+  display: none;
+}
+
+.iitc-iris-portal-side-panel-stacked {
+  max-height: min(64vh, 520px);
+}
+
+@media (max-width: 760px) {
+  .iitc-iris-sheet-tabbar {
+    right: 8px;
+    bottom: 8px;
+    left: 8px;
+    width: auto;
+  }
+
+  .iitc-iris-map-controls,
+  .iitc-iris-portal-side-panel,
+  .iitc-iris-request-side-panel {
+    right: 8px;
+    bottom: 56px;
+    left: 8px;
+    width: auto;
+    max-height: min(64vh, 480px);
+  }
 }
 
 .iitc-iris-preset {

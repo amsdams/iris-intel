@@ -7,4 +7,5 @@ export * from './portal-details';
 export * from './comm';
 export * from './artifact';
 export * from './ornaments';
+export * from './inventory';
 export * from './types';

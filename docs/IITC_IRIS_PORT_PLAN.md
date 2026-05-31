@@ -100,9 +100,9 @@ Current map lifecycle audit:
 | Tile math/data zoom      | `map_data_calc_tools.js` tile params and adjusted data zoom                                                     | Mostly aligned in `packages/iitc-core` with tests                                                                                           | Keep validating against IITC fixtures                                      |
 | Initial request batching | `MapDataRequest.processRequestQueue`: max 5 requests, up to 25 tiles, dynamic bucket sizing, centre-first order | Core has centre-first tile ordering and IITC dynamic batch helpers; runtime still drives fixed initial waves instead of the full queue loop | Move runtime orchestration onto core queue helpers end-to-end              |
 | Retry lifecycle          | `requeueTile`, `handleResponse`, retry limit, timeout/error distinction, smaller batches after retries          | Partially aligned; retry accounting exists, but returned-empty placeholder recovery remains a compatibility shim                            | Replace shim with IITC-derived queue behavior                              |
-| Tile cache               | `DataCache` per tile, fresh/stale decisions                                                                     | Partially aligned; `IitcDataCache` stores tile payloads and renders fresh cached tiles, but whole-response same-bounds reuse still exists   | Replace remaining whole-response cache path with tile cache decisions      |
-| Stale fallback           | Retry exhaustion renders stale tile via `cache-stale` when possible                                             | Partially aligned; retry-exhausted tiles can render stale cached payloads, but needs live validation and better copied diagnostics          | Validate live and report stale tile keys distinctly                        |
-| Render queue             | `pushRenderQueue` and `processRenderQueue` incrementally render cached, network, and stale tiles                | Partially aligned; IITC-named render queue facade handles `cache-fresh`, `ok`, and `cache-stale`, but still drains into merged renders     | Port true process/drain timing and surgical render mutation                |
+| Tile cache               | `DataCache` per tile, fresh/stale decisions                                                                     | Acceptable for now; `IitcDataCache` stores tile payloads and live copies proved `cacheFreshTiles` can cover 131/132 and 132/132 tiles       | Park until deeper map-lifecycle pass replaces whole-response shortcut      |
+| Stale fallback           | Retry exhaustion renders stale tile via `cache-stale` when possible                                             | Wired but unproven under live retry exhaustion; copied diagnostics now expose `cacheStaleTiles` and `cacheStaleTileKeys`                   | Park unless live copies show cached tiles still ending as partial          |
+| Render queue             | `pushRenderQueue` and `processRenderQueue` incrementally render cached, network, and stale tiles                | Acceptable for now; IITC-named render queue facade handles `cache-fresh`, `ok`, and `cache-stale`, with low first-render timings proven    | Park true surgical render mutation until map-lifecycle pass resumes        |
 | Move lifecycle           | `mapMoveStart` pauses render queue; old non-cancelled tile responses ignored if no longer wanted                | Partially aligned; IRIS aborts active fetches and generation-checks responses                                                               | Revisit when porting IITC queue/cache                                      |
 | Artifacts                | IITC artifact subsystem is separate from base map-data tile lifecycle                                           | Mostly aligned after deferring artifact fetch until first map render; live non-empty payload still unverified                               | Keep as documented temporary sequencing until artifact parity is validated |
 
@@ -118,10 +118,13 @@ Adherence summary after 2026-05-31 audit:
 - Does not yet adhere: complete replacement of whole-response cache reuse with per-tile cache decisions, full
   `MapDataRequest` render queue drain timing, surgical map-data mutation, and IITC movement behavior where old map-data
   requests are not aborted but ignored tile-by-tile if no longer wanted.
-- Immediate next map lifecycle porting target: validate stale fallback live on low-zoom retry exhaustion, expose
-  `cache-fresh`/`cache-stale` tile diagnostics, then move runtime orchestration fully onto the IITC queue/cache/render
-  facades. Do not add further map-load “improvements” until those IITC lifecycle concepts are ported or explicitly
-  deferred.
+- Map lifecycle is parked as acceptable for current UI parity work. Live copies on 2026-05-31 proved per-tile fresh
+  cache and render queue behavior (`cacheFreshTiles` 131/132 and 132/132, first render around 0.1s). Stale fallback is
+  wired and diagnosed but remains live-unproven because the test cases did not produce retry exhaustion for previously
+  cached tiles. Retry diagnostics are intentionally noisy: `retryRequests` counts retry HTTP batches and
+  `retriedTileKeys` includes tiles that recovered. Treat retry volume as a bug only if retries occur for fresh cached
+  tiles, cached stale tiles still end as partial, or IITC-CE comparison shows a materially different retry pattern on
+  the same viewport.
 
 ## Pass 1: Scaffold - Done
 
@@ -446,8 +449,30 @@ Current status:
   timestamp continuation, transformed markup, map-linked portal references, and nickname-click insertion into chat
   input. Send-plext support is implemented for `all` and `faction` but still needs live user verification; plugin hook
   equivalents for nickname clicks are not ported yet.
-- Score, passcode, and inventory panels intentionally do not yet issue requests. Existing Mini-IRIS/IRIS request and
-  parser code has been identified as local reference material for those implementation slices.
+- COMM is good enough to unblock other UI panels. Remaining COMM work is polish/live verification rather than a blocker:
+  send-plext verification, plugin hook compatibility, and richer interaction can be deferred.
+- Scores now has first-pass core wiring. The panel requests IITC-CE core endpoints `getGameScore` and
+  `getRegionScoreDetails`, displays global faction MU totals/percentages plus compact regional score diagnostics, and
+  includes the scores state in copied dock diagnostics. Remaining work is the richer IITC region scoreboard view
+  (checkpoint table/chart/timers/top-agent details) and live validation against Intel responses.
+- UI polish pass: selected portal details now use compact IITC-like stat cells, health/resonator energy bars, richer
+  resonator owner display, and less cramped history/mitigation details. COMM now keeps normal request diagnostics out of
+  the way unless debug/error state is active and uses denser message rows with stronger portal/player affordances. Scores
+  now has global and regional ENL/RES split bars plus top-agent previews when Intel returns them.
+- Follow-up polish moved portal facts below mods and collapsed panel request diagnostics into hoverable request chips for
+  COMM, Scores, and Inventory so live-use panels stay focused while raw endpoint context remains available for testing.
+- The request chips now live in panel footers. Inventory has a more dedicated layout for item totals, selected-portal key
+  counts, top item rows, and top key rows now that live inventory responses have been observed working.
+- UI shell now uses the bottom tab bar and one-sheet-at-a-time model on desktop and mobile. Passcode redemption is folded
+  into the Inventory sheet, keeping the primary tabs to Map, Layers, Portal, COMM, Scores, and Inventory while preserving
+  the map-first Mini-IRIS feel.
+- Passcodes are now wired as a core Intel panel using IITC's `redeemReward` request shape. The panel sanitizes printable
+  passcodes, posts `/r/redeemReward`, and displays AP/XM/other/item rewards with endpoint diagnostics in the footer.
+  Live reward formatting can be refined further after testing real passcode responses.
+- Inventory is core Intel API parity for IITC IRIS because it is backed by Intel's `/r/getInventory` endpoint. Port the
+  request lifecycle and parser directly from IITC/Intel behavior into the IITC IRIS code path; do not depend on or copy
+  the existing IRIS inventory implementation. Plugin-like inventory extensions, player tracker, draw tools, and richer
+  key overlays can be classified separately after the core inventory panel works.
 
 ## Pass 8: Replacement Readiness - Not Started
 

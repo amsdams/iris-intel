@@ -13,6 +13,12 @@ export const IITC_IRIS_MESSAGES = {
   requestComm: 'IITC_IRIS_REQUEST_COMM',
   sendComm: 'IITC_IRIS_SEND_COMM',
   commStatus: 'IITC_IRIS_COMM_STATUS',
+  requestScores: 'IITC_IRIS_REQUEST_SCORES',
+  scoresStatus: 'IITC_IRIS_SCORES_STATUS',
+  requestPasscode: 'IITC_IRIS_REQUEST_PASSCODE',
+  passcodeStatus: 'IITC_IRIS_PASSCODE_STATUS',
+  requestInventory: 'IITC_IRIS_REQUEST_INVENTORY',
+  inventoryStatus: 'IITC_IRIS_INVENTORY_STATUS',
 } as const;
 
 export type IitcIrisMessageType = typeof IITC_IRIS_MESSAGES[keyof typeof IITC_IRIS_MESSAGES];
@@ -92,9 +98,13 @@ export interface IitcIrisMessage {
   selectedPortal?: IitcIrisSelectedPortal | null;
   portalDetails?: IitcIrisPortalDetailsState | null;
   comm?: IitcIrisCommState;
+  scores?: IitcIrisScoresState;
+  passcode?: IitcIrisPasscodeState;
+  inventory?: IitcIrisInventoryState;
   commTab?: IitcIrisCommTab;
   commOlder?: boolean;
   commMessage?: string;
+  passcodeText?: string;
 }
 
 export type IitcIrisCommTab = 'all' | 'faction' | 'alerts';
@@ -158,6 +168,88 @@ export interface IitcIrisCommMessagePart {
     lngE6?: number;
     guid?: string;
   };
+}
+
+export interface IitcIrisScoresState {
+  status: 'idle' | 'loading' | 'ready' | 'empty' | 'error' | 'auth';
+  requestState: 'idle' | 'loading' | 'ready' | 'error' | 'auth';
+  game?: {
+    enlightened: number;
+    resistance: number;
+    enlightenedPercent: number;
+    resistancePercent: number;
+  };
+  region?: {
+    status: 'idle' | 'loading' | 'ready' | 'empty' | 'error' | 'auth';
+    name?: string;
+    enlightenedAvg?: number;
+    resistanceAvg?: number;
+    checkpoints?: number;
+    lastCheckpoint?: number;
+    topAgents?: number;
+    topAgentList?: {
+      nick: string;
+      team: 'E' | 'R' | 'N' | 'M';
+    }[];
+    center?: {
+      latE6: number;
+      lngE6: number;
+    };
+    error?: string;
+  };
+  elapsedMs?: number;
+  error?: string;
+}
+
+export interface IitcIrisInventoryState {
+  status: 'idle' | 'loading' | 'ready' | 'empty' | 'error' | 'auth';
+  requestState: 'idle' | 'loading' | 'ready' | 'error' | 'auth';
+  items: number;
+  rawItems?: number;
+  keys: number;
+  portalsWithKeys: number;
+  capsules: number;
+  selectedPortalGuid?: string;
+  selectedPortalTitle?: string;
+  portalKeysForSelectedPortal: null | {
+    total: number;
+    capsule: number;
+    loose: number;
+    capsules: Record<string, number>;
+  };
+  topItems?: {
+    label: string;
+    type: string;
+    count: number;
+    level?: number;
+    rarity?: string;
+  }[];
+  topKeys?: {
+    portalGuid: string;
+    portalTitle?: string;
+    count: number;
+    capsule: number;
+  }[];
+  elapsedMs?: number;
+  error?: string;
+}
+
+export interface IitcIrisPasscodeRewardItem {
+  label: string;
+  count?: number;
+  level?: number;
+}
+
+export interface IitcIrisPasscodeState {
+  status: 'idle' | 'loading' | 'ready' | 'empty' | 'error' | 'auth';
+  requestState: 'idle' | 'loading' | 'ready' | 'error' | 'auth';
+  passcode?: string;
+  ap?: number;
+  xm?: number;
+  other?: string[];
+  items?: IitcIrisPasscodeRewardItem[];
+  elapsedMs?: number;
+  error?: string;
 }
 
 export interface IitcIrisQueueDiagnostics {

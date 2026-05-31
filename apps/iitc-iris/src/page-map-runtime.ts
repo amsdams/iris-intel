@@ -1,5 +1,5 @@
 import L, {type Layer as LeafletLayer, type Map as LeafletMap, type TileLayer} from 'leaflet';
-import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisSelectedPortal} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisScoresState, type IitcIrisSelectedPortal} from './messages';
 import {
   appendIitcResponseBucketDiagnostics,
   applyIitcTileRequestResponseToQueue,
@@ -17,6 +17,7 @@ import {
   genIitcCommPostData,
   genIitcCommSendPlextPostData,
   getIitcCommChannelMessages,
+  getIitcInventoryPortalKeyCount,
   getIitcOrnamentDefinition,
   getIitcRecoveredTileKeys,
   getIitcReusableCacheClassification,
@@ -31,13 +32,16 @@ import {
   markIitcTileRequestStarted,
   mergeIitcGetEntitiesResponses,
   parseIitcOrnamentVisibilitySettings,
+  parseIitcInventoryResponse,
   parseIitcPortalDetailsResponse,
   renderIitcCommMarkup,
+  summarizeIitcInventory,
   writeIitcCommDataToHash,
   type IitcCommChannel,
   type IitcCommChannelData,
   type IitcCommMessage,
   type IitcGetEntitiesResponse,
+  type IitcInventorySummary,
   type IitcMapDataPlan,
   type IitcMapTilePayload,
   type IitcPortalDetailsResponse,
@@ -118,7 +122,22 @@ let refreshTimer: number | undefined;
 let currentFetchAbortController: AbortController | undefined;
 let currentPortalDetailsAbortController: AbortController | undefined;
 let currentCommAbortController: AbortController | undefined;
+let currentScoresAbortController: AbortController | undefined;
+let currentPasscodeAbortController: AbortController | undefined;
+let currentInventoryAbortController: AbortController | undefined;
 let latestCommState: IitcIrisCommState = {status: 'idle', tab: loadStoredCommTab(), messages: 0};
+let latestScoresState: IitcIrisScoresState = {status: 'idle', requestState: 'idle', region: {status: 'idle'}};
+let latestPasscodeState: IitcIrisPasscodeState = {status: 'idle', requestState: 'idle'};
+let latestInventorySummary: IitcInventorySummary | undefined;
+let latestInventoryState: IitcIrisInventoryState = {
+  status: 'idle',
+  requestState: 'idle',
+  items: 0,
+  keys: 0,
+  portalsWithKeys: 0,
+  capsules: 0,
+  portalKeysForSelectedPortal: null,
+};
 const commChannelsData: Record<IitcCommChannel, IitcCommChannelData> = {
   all: createIitcCommChannelData(),
   faction: createIitcCommChannelData(),
@@ -329,6 +348,21 @@ function cancelActivePortalDetailsFetch(): void {
 function cancelActiveCommFetch(): void {
   currentCommAbortController?.abort();
   currentCommAbortController = undefined;
+}
+
+function cancelActiveScoresFetch(): void {
+  currentScoresAbortController?.abort();
+  currentScoresAbortController = undefined;
+}
+
+function cancelActivePasscodeFetch(): void {
+  currentPasscodeAbortController?.abort();
+  currentPasscodeAbortController = undefined;
+}
+
+function cancelActiveInventoryFetch(): void {
+  currentInventoryAbortController?.abort();
+  currentInventoryAbortController = undefined;
 }
 
 function postMapMoved(): void {
@@ -701,6 +735,8 @@ function renderSelectedPortal(visiblePortals: IitcIrisRenderPortal[]): void {
 function selectPortal(portal: IitcIrisRenderPortal): void {
   selectedPortalGuid = portal.guid;
   selectedPortal = toSelectedPortal(portal);
+  refreshInventorySelectedPortalState();
+  postInventoryState();
   void refreshSelectedPortalDetails(portal.guid);
   if (latestEntities) renderEntities(latestEntities);
   repostLatestEntityStatus();
@@ -710,6 +746,8 @@ function clearPortalSelection(): void {
   selectedPortalGuid = undefined;
   selectedPortal = null;
   latestPortalDetails = null;
+  refreshInventorySelectedPortalState();
+  postInventoryState();
   cancelActivePortalDetailsFetch();
   clearRenderedLayers(ensureLayers().selectedPortal);
   repostLatestEntityStatus();
@@ -947,6 +985,27 @@ function postCommState(): void {
   } satisfies IitcIrisMessage, '*');
 }
 
+function postScoresState(): void {
+  window.postMessage({
+    type: IITC_IRIS_MESSAGES.scoresStatus,
+    scores: latestScoresState,
+  } satisfies IitcIrisMessage, '*');
+}
+
+function postPasscodeState(): void {
+  window.postMessage({
+    type: IITC_IRIS_MESSAGES.passcodeStatus,
+    passcode: latestPasscodeState,
+  } satisfies IitcIrisMessage, '*');
+}
+
+function postInventoryState(): void {
+  window.postMessage({
+    type: IITC_IRIS_MESSAGES.inventoryStatus,
+    inventory: latestInventoryState,
+  } satisfies IitcIrisMessage, '*');
+}
+
 function uniqueStrings(values: string[] | undefined): string[] {
   return values ? [...new Set(values)] : [];
 }
@@ -967,6 +1026,15 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.sendComm) {
     void sendComm(normalizeCommTab(event.data.commTab), event.data.commMessage);
+  }
+  if (event.data?.type === IITC_IRIS_MESSAGES.requestScores) {
+    void refreshScores();
+  }
+  if (event.data?.type === IITC_IRIS_MESSAGES.requestPasscode) {
+    void redeemPasscode(event.data.passcodeText);
+  }
+  if (event.data?.type === IITC_IRIS_MESSAGES.requestInventory) {
+    void refreshInventory();
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.renderEntities && event.data.entities) {
     renderEntities(event.data.entities);
@@ -1305,7 +1373,14 @@ async function fetchComm(
     throw new Error(`getPlexts returned login html HTTP ${response.status}${response.redirected ? ' redirected' : ''}`);
   }
 
-  const parsed = JSON.parse(text) as unknown;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text) as unknown;
+  } catch (error) {
+    if (!response.ok) throw new Error(`getPlexts HTTP ${response.status}`);
+    throw error;
+  }
+  if (!response.ok) throw new Error(`getPlexts HTTP ${response.status}`);
   const error = parsed && typeof parsed === 'object' ? (parsed as {error?: unknown}).error : undefined;
   if (typeof error === 'string' && error) throw new Error(error);
   return parsed;
@@ -1333,10 +1408,364 @@ async function postSendPlext(payload: NonNullable<ReturnType<typeof genIitcCommS
     throw new Error(`sendPlext returned login html HTTP ${response.status}${response.redirected ? ' redirected' : ''}`);
   }
 
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text) as unknown;
+  } catch (error) {
+    if (!response.ok) throw new Error(`sendPlext HTTP ${response.status}`);
+    throw error;
+  }
+  if (!response.ok) throw new Error(`sendPlext HTTP ${response.status}`);
+  const error = parsed && typeof parsed === 'object' ? (parsed as {error?: unknown}).error : undefined;
+  if (typeof error === 'string' && error) throw new Error(error);
+  return parsed;
+}
+
+async function postIntelEndpoint(endpoint: string, payload: Record<string, unknown>, signal?: AbortSignal): Promise<unknown> {
+  const csrfToken = getCsrfToken();
+  if (!csrfToken) throw new Error(`${endpoint} missing csrftoken`);
+  const version = extractVersion();
+  if (!version) throw new Error(`${endpoint} missing Intel version`);
+
+  const response = await fetch(`/r/${endpoint}`, {
+    method: 'POST',
+    credentials: 'include',
+    signal,
+    headers: {
+      'Accept': 'application/json, text/javascript, */*; q=0.01',
+      'Content-Type': 'application/json; charset=utf-8',
+      'X-CSRFToken': csrfToken,
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+    body: JSON.stringify({...payload, v: version}),
+  });
+  const text = await response.text();
+
+  if (looksLikeHtml(text)) {
+    throw new Error(`${endpoint} returned login html HTTP ${response.status}${response.redirected ? ' redirected' : ''}`);
+  }
+
   const parsed = JSON.parse(text) as unknown;
   const error = parsed && typeof parsed === 'object' ? (parsed as {error?: unknown}).error : undefined;
   if (typeof error === 'string' && error) throw new Error(error);
   return parsed;
+}
+
+function numberFromUnknown(value: unknown): number | undefined {
+  const number = typeof value === 'number' ? value : typeof value === 'string' ? Number.parseInt(value, 10) : Number.NaN;
+  return Number.isFinite(number) ? number : undefined;
+}
+
+function parseGameScoreResponse(response: unknown): NonNullable<IitcIrisScoresState['game']> | undefined {
+  const result = response && typeof response === 'object' ? (response as {result?: unknown}).result : undefined;
+  if (!Array.isArray(result)) return undefined;
+  const enlightened = numberFromUnknown(result[0]);
+  const resistance = numberFromUnknown(result[1]);
+  if (enlightened === undefined || resistance === undefined) return undefined;
+  const total = Math.max(1, enlightened + resistance);
+  return {
+    enlightened,
+    resistance,
+    enlightenedPercent: (enlightened / total) * 100,
+    resistancePercent: (resistance / total) * 100,
+  };
+}
+
+function parseRegionScoreResponse(response: unknown, center: NonNullable<IitcIrisScoresState['region']>['center']): NonNullable<IitcIrisScoresState['region']> {
+  const result = response && typeof response === 'object' ? (response as {result?: unknown}).result : undefined;
+  if (!result || typeof result !== 'object') return {status: 'empty', center};
+  const region = result as {
+    regionName?: unknown;
+    gameScore?: unknown;
+    scoreHistory?: unknown;
+    topAgents?: unknown;
+  };
+  const gameScore = Array.isArray(region.gameScore) ? region.gameScore : [];
+  const scoreHistory = Array.isArray(region.scoreHistory) ? region.scoreHistory : [];
+  const topAgents = Array.isArray(region.topAgents) ? region.topAgents : [];
+  const topAgentList = topAgents
+    .map((agent) => {
+      const candidate = agent && typeof agent === 'object' ? agent as {nick?: unknown; team?: unknown} : {};
+      const team = candidate.team === 'RESISTANCE'
+        ? 'R'
+        : candidate.team === 'ENLIGHTENED'
+          ? 'E'
+          : candidate.team === 'MACHINA'
+            ? 'M'
+            : 'N';
+      return typeof candidate.nick === 'string' ? {nick: candidate.nick, team} : undefined;
+    })
+    .filter((agent): agent is {nick: string; team: 'E' | 'R' | 'N' | 'M'} => agent !== undefined);
+  const checkpointIndexes = scoreHistory
+    .map((entry) => Array.isArray(entry) ? numberFromUnknown(entry[0]) : undefined)
+    .filter((value): value is number => value !== undefined);
+
+  return {
+    status: 'ready',
+    name: typeof region.regionName === 'string' ? region.regionName : undefined,
+    enlightenedAvg: numberFromUnknown(gameScore[0]),
+    resistanceAvg: numberFromUnknown(gameScore[1]),
+    checkpoints: scoreHistory.length,
+    lastCheckpoint: checkpointIndexes.length > 0 ? Math.max(...checkpointIndexes) : undefined,
+    topAgents: topAgents.length,
+    topAgentList,
+    center,
+  };
+}
+
+function sanitizePasscode(value: unknown): string {
+  return typeof value === 'string' ? value.replace(/[^\x20-\x7E]+/g, '').trim() : '';
+}
+
+function parsePasscodeRewards(response: unknown, passcode: string, elapsedMs: number): IitcIrisPasscodeState {
+  const data = response && typeof response === 'object' ? response as {rewards?: unknown} : {};
+  const rewards = data.rewards && typeof data.rewards === 'object' ? data.rewards as {
+    ap?: unknown;
+    xm?: unknown;
+    other?: unknown;
+    inventory?: unknown;
+  } : undefined;
+  if (!rewards) throw new Error('unexpected passcode response');
+
+  const items: IitcIrisPasscodeRewardItem[] = [];
+  const inventory = Array.isArray(rewards.inventory) ? rewards.inventory : [];
+  for (const entry of inventory) {
+    const type = entry && typeof entry === 'object' ? entry as {name?: unknown; awards?: unknown} : {};
+    const label = typeof type.name === 'string' ? type.name : 'Item';
+    const awards = Array.isArray(type.awards) ? type.awards : [];
+    for (const award of awards) {
+      const item = award && typeof award === 'object' ? award as {count?: unknown; level?: unknown} : {};
+      items.push({
+        label,
+        count: numberFromUnknown(item.count) ?? 1,
+        level: numberFromUnknown(item.level),
+      });
+    }
+  }
+
+  const other = Array.isArray(rewards.other)
+    ? rewards.other.filter((item): item is string => typeof item === 'string')
+    : undefined;
+  const ap = numberFromUnknown(rewards.ap);
+  const xm = numberFromUnknown(rewards.xm);
+
+  return {
+    status: other?.length || items.length > 0 || (ap ?? 0) > 0 || (xm ?? 0) > 0 ? 'ready' : 'empty',
+    requestState: 'ready',
+    passcode,
+    ap,
+    xm,
+    other,
+    items,
+    elapsedMs,
+  };
+}
+
+function createInventoryStateFromSummary(
+  summary: IitcInventorySummary,
+  status: IitcIrisInventoryState['status'],
+  requestState: IitcIrisInventoryState['requestState'],
+  elapsedMs?: number,
+): IitcIrisInventoryState {
+  const selectedKeyCount = getIitcInventoryPortalKeyCount(summary, selectedPortalGuid);
+  const capsuleKeyTotal = selectedKeyCount
+    ? Object.values(selectedKeyCount.capsuleCounts).reduce((sum, count) => sum + count, 0)
+    : 0;
+
+  return {
+    status,
+    requestState,
+    items: summary.totalItems,
+    rawItems: summary.rawItems,
+    keys: summary.keyCounts.reduce((sum, keyCount) => sum + keyCount.count, 0),
+    portalsWithKeys: summary.keyCounts.length,
+    capsules: summary.capsuleCounts.length,
+    selectedPortalGuid,
+    selectedPortalTitle: selectedPortal?.title,
+    portalKeysForSelectedPortal: selectedKeyCount ? {
+      total: selectedKeyCount.count,
+      capsule: capsuleKeyTotal,
+      loose: selectedKeyCount.count - capsuleKeyTotal,
+      capsules: selectedKeyCount.capsuleCounts,
+    } : null,
+    topItems: summary.itemCounts
+      .slice()
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+      .slice(0, 10)
+      .map((item) => ({
+        label: item.label,
+        type: item.type,
+        count: item.count,
+        level: item.level,
+        rarity: item.rarity,
+      })),
+    topKeys: summary.keyCounts
+      .slice()
+      .sort((a, b) => b.count - a.count || (a.portalTitle ?? '').localeCompare(b.portalTitle ?? ''))
+      .slice(0, 8)
+      .map((keyCount) => ({
+        portalGuid: keyCount.portalGuid,
+        portalTitle: keyCount.portalTitle,
+        count: keyCount.count,
+        capsule: Object.values(keyCount.capsuleCounts).reduce((sum, count) => sum + count, 0),
+      })),
+    elapsedMs,
+  };
+}
+
+function refreshInventorySelectedPortalState(): void {
+  if (!latestInventorySummary) return;
+  latestInventoryState = createInventoryStateFromSummary(
+    latestInventorySummary,
+    latestInventoryState.status,
+    latestInventoryState.requestState,
+    latestInventoryState.elapsedMs,
+  );
+}
+
+async function refreshScores(): Promise<void> {
+  cancelActiveScoresFetch();
+  const center = getMapCenterE6();
+  if (!center) {
+    latestScoresState = {status: 'error', requestState: 'error', region: {status: 'error'}, error: 'missing map center'};
+    postScoresState();
+    return;
+  }
+
+  const abortController = new AbortController();
+  currentScoresAbortController = abortController;
+  const startedAt = performance.now();
+  latestScoresState = {
+    ...latestScoresState,
+    status: 'loading',
+    requestState: 'loading',
+    error: undefined,
+    region: {
+      ...(latestScoresState.region ?? {status: 'idle'}),
+      status: 'loading',
+      center,
+      error: undefined,
+    },
+  };
+  postScoresState();
+
+  try {
+    const [gameResponse, regionResponse] = await Promise.all([
+      postIntelEndpoint('getGameScore', {}, abortController.signal),
+      postIntelEndpoint('getRegionScoreDetails', center, abortController.signal),
+    ]);
+    const game = parseGameScoreResponse(gameResponse);
+    const region = parseRegionScoreResponse(regionResponse, center);
+    latestScoresState = {
+      status: game || region.status === 'ready' ? 'ready' : 'empty',
+      requestState: 'ready',
+      game,
+      region,
+      elapsedMs: performance.now() - startedAt,
+    };
+    postScoresState();
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') return;
+    const status = error instanceof Error && /login html|missing csrftoken/i.test(error.message) ? 'auth' : 'error';
+    latestScoresState = {
+      ...latestScoresState,
+      status,
+      requestState: status,
+      elapsedMs: performance.now() - startedAt,
+      region: {
+        ...(latestScoresState.region ?? {status: 'idle'}),
+        status,
+        center,
+        error: error instanceof Error ? error.message : String(error),
+      },
+      error: error instanceof Error ? error.message : String(error),
+    };
+    postScoresState();
+  } finally {
+    if (currentScoresAbortController === abortController) currentScoresAbortController = undefined;
+  }
+}
+
+async function redeemPasscode(passcodeInput: unknown): Promise<void> {
+  const passcode = sanitizePasscode(passcodeInput);
+  cancelActivePasscodeFetch();
+  if (!passcode) {
+    latestPasscodeState = {status: 'error', requestState: 'error', error: 'missing passcode'};
+    postPasscodeState();
+    return;
+  }
+
+  const abortController = new AbortController();
+  currentPasscodeAbortController = abortController;
+  const startedAt = performance.now();
+  latestPasscodeState = {
+    ...latestPasscodeState,
+    status: 'loading',
+    requestState: 'loading',
+    passcode,
+    error: undefined,
+  };
+  postPasscodeState();
+
+  try {
+    const response = await postIntelEndpoint('redeemReward', {passcode}, abortController.signal);
+    latestPasscodeState = parsePasscodeRewards(response, passcode, performance.now() - startedAt);
+    postPasscodeState();
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') return;
+    const status = error instanceof Error && /login html|missing csrftoken/i.test(error.message) ? 'auth' : 'error';
+    latestPasscodeState = {
+      ...latestPasscodeState,
+      status,
+      requestState: status,
+      passcode,
+      elapsedMs: performance.now() - startedAt,
+      error: error instanceof Error ? error.message : String(error),
+    };
+    postPasscodeState();
+  } finally {
+    if (currentPasscodeAbortController === abortController) currentPasscodeAbortController = undefined;
+  }
+}
+
+async function refreshInventory(): Promise<void> {
+  cancelActiveInventoryFetch();
+  const abortController = new AbortController();
+  currentInventoryAbortController = abortController;
+  const startedAt = performance.now();
+  latestInventoryState = {
+    ...latestInventoryState,
+    status: 'loading',
+    requestState: 'loading',
+    error: undefined,
+  };
+  postInventoryState();
+
+  try {
+    const response = await postIntelEndpoint('getInventory', {lastQueryTimestamp: 0}, abortController.signal);
+    const rawItems = parseIitcInventoryResponse(response);
+    latestInventorySummary = summarizeIitcInventory(rawItems);
+    latestInventoryState = createInventoryStateFromSummary(
+      latestInventorySummary,
+      rawItems.length > 0 ? 'ready' : 'empty',
+      'ready',
+      performance.now() - startedAt,
+    );
+    postInventoryState();
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') return;
+    const status = error instanceof Error && /login html|missing csrftoken/i.test(error.message) ? 'auth' : 'error';
+    latestInventoryState = {
+      ...latestInventoryState,
+      status,
+      requestState: status,
+      elapsedMs: performance.now() - startedAt,
+      error: error instanceof Error ? error.message : String(error),
+    };
+    postInventoryState();
+  } finally {
+    if (currentInventoryAbortController === abortController) currentInventoryAbortController = undefined;
+  }
 }
 
 async function sendComm(tab: IitcCommChannel, message: unknown): Promise<void> {
