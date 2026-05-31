@@ -1,5 +1,5 @@
 import L, {type Layer as LeafletLayer, type Map as LeafletMap, type TileLayer} from 'leaflet';
-import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
 import {
   appendIitcResponseBucketDiagnostics,
   applyIitcTileRequestResponseToQueue,
@@ -70,6 +70,8 @@ const FAST_MOVE_REFRESH_DELAY_MS = 250;
 const IITC_MOVE_REFRESH_DELAY_MS = 3000;
 const ENABLE_STALE_GENERATION_CACHE_WARMING = false;
 const PLAYER_TRACKER_COMM_REFRESH_MS = 120_000;
+const SEARCH_AUTO_MIN_LENGTH = 3;
+const NOMINATIM_SEARCH_URL = 'https://nominatim.openstreetmap.org/search?format=json&polygon_geojson=1&q=';
 const IITC_IRIS_ASSET_BASE_URL = (() => {
   const script = document.currentScript instanceof HTMLScriptElement ? document.currentScript.src : '';
   return script ? new URL('.', script).toString() : '';
@@ -142,6 +144,8 @@ const mapDataCache = new IitcDataCache<IitcMapTilePayload>();
 let selectedPortalGuid: string | undefined;
 let selectedPortal: IitcIrisSelectedPortal | null = null;
 let latestPortalDetails: IitcIrisPortalDetailsState | null = null;
+let latestSearchSequence = 0;
+let latestSearchState: IitcIrisSearchState = {status: 'idle', term: '', confirmed: false, results: [], localResults: 0};
 const portalHistoryByGuid = new Map<string, NonNullable<IitcIrisRenderPortal['history']>>();
 let latestArtifactEntities: IitcRawGameEntity[] = [];
 let layerSettings: IitcIrisLayerSettings = DEFAULT_LAYER_SETTINGS;
@@ -475,6 +479,7 @@ declare global {
       artifacts: LeafletLayer[];
       labels: LeafletLayer[];
       playerTracker: LeafletLayer[];
+      search: LeafletLayer[];
     };
   }
 }
@@ -498,7 +503,7 @@ const LEVEL_COLORS = ['#000000', '#fece5a', '#ffa630', '#ff7315', '#e40000', '#f
 const LEVEL_TO_WEIGHT = [2, 2, 2, 2, 2, 3, 3, 4, 4] as const;
 const LEVEL_TO_RADIUS = [7, 7, 7, 7, 8, 8, 9, 10, 11] as const;
 const LEVEL_LABEL_COLLISION_SIZE = 15;
-type IitcIrisLayerPaneKey = keyof IitcIrisLayerSettings | 'selectedPortal';
+type IitcIrisLayerPaneKey = keyof IitcIrisLayerSettings | 'selectedPortal' | 'search';
 
 function toLatLng(latE6: number, lngE6: number): [number, number] {
   return [latE6 / 1e6, lngE6 / 1e6];
@@ -642,6 +647,7 @@ function ensureLayers(): NonNullable<Window['__iitcIrisLayers']> {
     artifacts: [],
     labels: [],
     playerTracker: [],
+    search: [],
   };
   return window.__iitcIrisLayers;
 }
@@ -868,6 +874,274 @@ function clearPortalSelection(): void {
   cancelActivePortalDetailsFetch();
   clearRenderedLayers(ensureLayers().selectedPortal);
   repostLatestEntityStatus();
+}
+
+function describeSearchPortal(portal: IitcIrisRenderPortal): string {
+  const team = portal.team === 'R' ? 'RES' : portal.team === 'E' ? 'ENL' : portal.team === 'M' ? 'MAC' : 'NEU';
+  const level = portal.level === undefined || portal.isPlaceholder ? 'L-' : `L${portal.level}`;
+  const health = portal.health === undefined || portal.isPlaceholder ? '-' : `${Math.round(portal.health)}%`;
+  const resonators = portal.resCount === undefined || portal.isPlaceholder ? '-' : `${portal.resCount} Resonators`;
+  return `${team}, ${level}, ${health}, ${resonators}`;
+}
+
+function normalizeSearchText(value: string | undefined): string {
+  return (value ?? '').trim().toLowerCase();
+}
+
+function createPortalSearchResult(portal: IitcIrisRenderPortal, type: IitcIrisSearchResult['type'] = 'portal'): IitcIrisSearchResult {
+  return {
+    id: `${type}:${portal.guid}`,
+    type,
+    title: portal.title || portal.guid,
+    description: describeSearchPortal(portal),
+    lat: portal.latE6 / 1e6,
+    lng: portal.lngE6 / 1e6,
+    guid: portal.guid,
+    team: portal.team,
+    level: portal.level,
+    health: portal.health,
+  };
+}
+
+function getLocalSearchResults(term: string): IitcIrisSearchResult[] {
+  const normalized = normalizeSearchText(term);
+  if ((normalized.length < SEARCH_AUTO_MIN_LENGTH && normalized.length > 0) || !latestEntities) return [];
+  const results: IitcIrisSearchResult[] = [];
+  if (normalized.length === 0) return results;
+
+  const guidMatch = normalized.match(/[0-9a-f]{32}\.[0-9a-f]{2}/);
+  if (guidMatch) {
+    const portal = latestEntities.portals.find((candidate) => candidate.guid.toLowerCase() === guidMatch[0]);
+    if (portal) results.push(createPortalSearchResult(portal, 'guid'));
+  }
+
+  for (const portal of latestEntities.portals) {
+    if (!normalizeSearchText(portal.title).includes(normalized)) continue;
+    if (results.some((result) => result.guid === portal.guid)) continue;
+    results.push(createPortalSearchResult(portal));
+    if (results.length >= 20) break;
+  }
+
+  return results;
+}
+
+function parseSearchCoordinateResults(term: string): IitcIrisSearchResult[] {
+  const added = new Set<string>();
+  const results: IitcIrisSearchResult[] = [];
+  const addResult = (lat: number, lng: number): void => {
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return;
+    const title = `${lat.toFixed(6)},${lng.toFixed(6)}`;
+    if (added.has(title)) return;
+    added.add(title);
+    results.push({id: `coordinate:${title}`, type: 'coordinate', title, description: 'geo coordinates', lat, lng});
+  };
+
+  const decimalMatches = term.replace(/%2C/gi, ',').match(/[+-]?\d+\.\d+, ?[+-]?\d+\.\d+/g);
+  decimalMatches?.forEach((location) => {
+    const [lat, lng] = location.split(',').map(Number);
+    addResult(lat, lng);
+  });
+
+  const dmsRegex = /(\d{1,3})°(\d{1,2})'(\d{1,2}(?:\.\d+)?)?"\s*([NS]),?\s*(\d{1,3})°(\d{1,2})'(\d{1,2}(?:\.\d+)?)?"\s*([EW])/g;
+  for (const match of term.matchAll(dmsRegex)) {
+    const parseDms = (deg: string, min: string, sec: string, dir: string): number => {
+      const decimal = Number(deg) + Number(min) / 60 + Number(sec) / 3600;
+      return dir === 'S' || dir === 'W' ? -decimal : decimal;
+    };
+    addResult(parseDms(match[1], match[2], match[3], match[4]), parseDms(match[5], match[6], match[7], match[8]));
+  }
+
+  return results;
+}
+
+interface NominatimResult {
+  place_id?: number | string;
+  display_name?: string;
+  type?: string;
+  lat?: string;
+  lon?: string;
+  icon?: string;
+  boundingbox?: [string, string, string, string];
+  geojson?: unknown;
+}
+
+async function fetchNominatimSearchResults(term: string): Promise<IitcIrisSearchResult[]> {
+  const map = window.__iitcIrisMap;
+  if (!map) return [];
+  const bounds = map.getBounds();
+  const viewbox = `&viewbox=${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}`;
+  const seen = new Set<string>();
+  const results: IitcIrisSearchResult[] = [];
+
+  const fetchResults = async (bounded: boolean): Promise<boolean> => {
+    const response = await fetch(`${NOMINATIM_SEARCH_URL}${encodeURIComponent(term)}${viewbox}${bounded ? '&bounded=1' : ''}`);
+    const data = await response.json() as NominatimResult[];
+    if (bounded && data.length === 0) return false;
+    for (const item of data) {
+      const key = String(item.place_id ?? `${item.lat},${item.lon},${item.display_name}`);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const lat = Number(item.lat);
+      const lng = Number(item.lon);
+      const result: IitcIrisSearchResult = {
+        id: `address:${key}`,
+        type: 'address',
+        title: item.display_name || `${lat.toFixed(6)},${lng.toFixed(6)}`,
+        description: item.type ? `Type: ${item.type}` : 'OpenStreetMap',
+        lat,
+        lng,
+        icon: item.icon,
+        geojson: item.geojson,
+      };
+      if (item.boundingbox) {
+        const [south, north, west, east] = item.boundingbox.map(Number);
+        result.bounds = {south, west, north, east};
+      }
+      results.push(result);
+      if (results.length >= 10) break;
+    }
+    return data.length > 0;
+  };
+
+  const hadBoundedResults = await fetchResults(true);
+  if (!hadBoundedResults) await fetchResults(false);
+  return results;
+}
+
+function postSearchState(search: IitcIrisSearchState): void {
+  latestSearchState = search;
+  window.postMessage({
+    type: IITC_IRIS_MESSAGES.searchStatus,
+    search,
+  } satisfies IitcIrisMessage, '*');
+}
+
+async function runSearch(term: string | undefined, confirmed = false): Promise<void> {
+  const searchTerm = (term ?? '').trim();
+  latestSearchSequence += 1;
+  const sequence = latestSearchSequence;
+  clearRenderedLayers(ensureLayers().search);
+
+  if (!searchTerm) {
+    postSearchState({status: 'idle', term: '', confirmed, results: [], localResults: 0});
+    return;
+  }
+  if (searchTerm.length < SEARCH_AUTO_MIN_LENGTH && !confirmed) return;
+
+  const localResults = [...getLocalSearchResults(searchTerm), ...parseSearchCoordinateResults(searchTerm)];
+  const initialStatus: IitcIrisSearchState['status'] = confirmed ? 'loading' : localResults.length > 0 ? 'ready' : 'empty';
+  postSearchState({status: initialStatus, term: searchTerm, confirmed, results: localResults, localResults: localResults.length});
+
+  if (!confirmed) return;
+
+  try {
+    const onlineResults = await fetchNominatimSearchResults(searchTerm);
+    if (sequence !== latestSearchSequence) return;
+    const combined = [...localResults, ...onlineResults];
+    postSearchState({
+      status: combined.length > 0 ? 'ready' : 'empty',
+      term: searchTerm,
+      confirmed,
+      results: combined.length > 0 ? combined : [{id: 'empty:osm', type: 'empty', title: 'No results on OpenStreetMap'}],
+      localResults: localResults.length,
+      onlineResults: onlineResults.length,
+    });
+  } catch (error) {
+    if (sequence !== latestSearchSequence) return;
+    postSearchState({
+      status: localResults.length > 0 ? 'ready' : 'error',
+      term: searchTerm,
+      confirmed,
+      results: localResults,
+      localResults: localResults.length,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
+function clearSearch(): void {
+  latestSearchSequence += 1;
+  clearRenderedLayers(ensureLayers().search);
+  postSearchState({status: 'idle', term: '', confirmed: false, results: [], localResults: 0});
+}
+
+function selectSearchResult(result: IitcIrisSearchResult | undefined, zoom = false): void {
+  if (!result || result.type === 'empty') return;
+  const map = window.__iitcIrisMap;
+  if (!map) return;
+  clearRenderedLayers(ensureLayers().search);
+
+  if (result.guid && latestEntities) {
+    const portal = latestEntities.portals.find((candidate) => candidate.guid === result.guid);
+    if (portal) {
+      const latLng = toLatLng(portal.latE6, portal.lngE6);
+      if (zoom) map.setView(latLng, DEFAULT_ZOOM);
+      else if (!map.getBounds().contains(latLng)) map.setView(latLng);
+      selectPortal(portal);
+      return;
+    }
+  }
+
+  if (result.bounds) {
+    const bounds = L.latLngBounds([result.bounds.south, result.bounds.west], [result.bounds.north, result.bounds.east]);
+    map.fitBounds(bounds, {maxZoom: DEFAULT_ZOOM});
+    addRenderedLayer(ensureLayers().search, createSearchResultLayer(result, bounds));
+    return;
+  }
+
+  if (typeof result.lat === 'number' && typeof result.lng === 'number') {
+    const latLng: [number, number] = [result.lat, result.lng];
+    map.setView(latLng, zoom ? DEFAULT_ZOOM : map.getZoom());
+    addRenderedLayer(ensureLayers().search, L.circleMarker(latLng, {
+      pane: getLayerPane('search'),
+      radius: 8,
+      color: '#ff3b30',
+      fillColor: '#ff3b30',
+      fillOpacity: 0.24,
+      weight: 2,
+      interactive: false,
+    }));
+  }
+}
+
+function createSearchResultLayer(result: IitcIrisSearchResult, bounds?: L.LatLngBounds): LeafletLayer {
+  const options: L.PathOptions = {
+    pane: getLayerPane('search'),
+    interactive: false,
+    color: '#ff3b30',
+    fill: false,
+    weight: 2,
+    opacity: 0.8,
+  };
+
+  if (result.geojson && typeof result.geojson === 'object') {
+    return L.geoJSON(result.geojson as GeoJSON.GeoJsonObject, {
+      ...options,
+      pointToLayer: (_feature, latLng) => L.marker(latLng, {
+        pane: getLayerPane('search'),
+        icon: L.divIcon({
+          className: 'iitc-iris-search-marker',
+          iconSize: [18, 18],
+          iconAnchor: [9, 9],
+        }),
+        title: result.title,
+        interactive: false,
+      }),
+    });
+  }
+
+  if (bounds) {
+    return L.rectangle(bounds, options);
+  }
+
+  const latLng: [number, number] = [result.lat ?? 0, result.lng ?? 0];
+  return L.circleMarker(latLng, {
+    ...options,
+    radius: 8,
+    fillColor: '#ff3b30',
+    fillOpacity: 0.24,
+  });
 }
 
 function createLevelLabelMarker(latLng: [number, number], level: number, team: keyof typeof TEAM_COLORS): LeafletLayer {
@@ -1480,6 +1754,15 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.requestInventory) {
     void refreshInventory();
+  }
+  if (event.data?.type === IITC_IRIS_MESSAGES.searchRequest) {
+    void runSearch(event.data.searchTerm, event.data.searchConfirmed === true);
+  }
+  if (event.data?.type === IITC_IRIS_MESSAGES.searchSelect) {
+    selectSearchResult(event.data.searchResult, event.data.searchZoom === true);
+  }
+  if (event.data?.type === IITC_IRIS_MESSAGES.searchClear) {
+    clearSearch();
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.renderEntities && event.data.entities) {
     renderEntities(event.data.entities);
@@ -3149,6 +3432,7 @@ function createIitcIrisPanes(map: LeafletMap): void {
     ['artifacts', 445],
     ['selectedPortal', 448],
     ['playerTracker', 449],
+    ['search', 451],
     ['labels', 450],
   ];
 

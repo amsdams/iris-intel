@@ -1,7 +1,7 @@
 import {h, render} from 'preact';
 import {useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import './iitc-iris.css';
-import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisPasscodeState, type IitcIrisPlayerTrackerDiagnostics, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisPasscodeState, type IitcIrisPlayerTrackerDiagnostics, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
 import {
   createIitcMapDataPlan,
   IITC_MAX_REQUESTS,
@@ -106,6 +106,7 @@ const SIDE_PANEL_OPTIONS = [
   {id: 'comm', label: 'COMM', title: 'COMM messages'},
   {id: 'scores', label: 'Scores', title: 'Scores'},
   {id: 'inventory', label: 'Inventory', title: 'Inventory'},
+  {id: 'passcode', label: 'Passcode', title: 'Passcode redemption'},
 ] as const;
 const COMM_TABS: {id: IitcIrisCommTab; label: string}[] = [
   {id: 'all', label: 'All'},
@@ -156,6 +157,13 @@ const EMPTY_REQUEST_DIAGNOSTICS: IitcIrisRequestDiagnostics = {
   activeRequests: 0,
   activeByEndpoint: {},
   active: [],
+};
+const EMPTY_SEARCH_STATE: IitcIrisSearchState = {
+  status: 'idle',
+  term: '',
+  confirmed: false,
+  results: [],
+  localResults: 0,
 };
 
 interface CameraState {
@@ -232,7 +240,7 @@ interface EntityFetchState {
 }
 
 type SidePanelId = typeof SIDE_PANEL_OPTIONS[number]['id'];
-type SheetId = 'map' | 'layers' | 'portal' | 'system' | SidePanelId;
+type SheetId = 'map' | 'layers' | 'view' | 'search' | 'portal' | 'system' | SidePanelId;
 type PrimaryMenuId = 'map' | 'portal' | 'agent' | 'comm' | 'system';
 
 interface ParsedViewInput {
@@ -515,7 +523,7 @@ function isSidePanelId(value: string | null): value is SidePanelId {
 }
 
 function isSheetId(value: string | null): value is SheetId {
-  return value === 'map' || value === 'layers' || value === 'portal' || value === 'system' || isSidePanelId(value);
+  return value === 'map' || value === 'layers' || value === 'view' || value === 'search' || value === 'portal' || value === 'system' || isSidePanelId(value);
 }
 
 function isCommTab(value: string | null): value is IitcIrisCommTab {
@@ -524,7 +532,7 @@ function isCommTab(value: string | null): value is IitcIrisCommTab {
 
 function getPrimaryMenuId(sheet: SheetId): PrimaryMenuId {
   if (sheet === 'portal') return 'portal';
-  if (sheet === 'agent' || sheet === 'inventory') return 'agent';
+  if (sheet === 'agent' || sheet === 'inventory' || sheet === 'passcode') return 'agent';
   if (sheet === 'comm') return 'comm';
   if (sheet === 'system') return 'system';
   return 'map';
@@ -849,6 +857,8 @@ function App(): h.JSX.Element {
   const [scenarioStatus, setScenarioStatus] = useState('');
   const [scenarioRuns, setScenarioRuns] = useState<ScenarioRun[]>([]);
   const [activeScenarioRunId, setActiveScenarioRunId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchState, setSearchState] = useState<IitcIrisSearchState>(EMPTY_SEARCH_STATE);
   const [viewInput, setViewInput] = useState('');
   const [viewInputStatus, setViewInputStatus] = useState('');
   const [debugDockVisible, setDebugDockVisible] = useState(() => loadStoredDebugDockVisible());
@@ -1360,6 +1370,29 @@ function App(): h.JSX.Element {
     } satisfies IitcIrisMessage, '*');
   };
 
+  const requestSearch = (term: string, confirmed = false): void => {
+    window.postMessage({
+      type: IITC_IRIS_MESSAGES.searchRequest,
+      searchTerm: term,
+      searchConfirmed: confirmed,
+    } satisfies IitcIrisMessage, '*');
+  };
+
+  const clearSearch = (): void => {
+    setSearchTerm('');
+    setSearchState(EMPTY_SEARCH_STATE);
+    window.postMessage({type: IITC_IRIS_MESSAGES.searchClear} satisfies IitcIrisMessage, '*');
+  };
+
+  const selectSearchResult = (result: IitcIrisSearchResult, zoom = false): void => {
+    window.postMessage({
+      type: IITC_IRIS_MESSAGES.searchSelect,
+      searchResult: result,
+      searchZoom: zoom,
+    } satisfies IitcIrisMessage, '*');
+    if (result.type === 'portal' || result.type === 'guid') openSheet('portal');
+  };
+
   const focusCommPortal = (latE6?: number, lngE6?: number): void => {
     if (latE6 === undefined || lngE6 === undefined) return;
     setMapView(latE6 / 1_000_000, lngE6 / 1_000_000, Math.max(camera.zoom, 15));
@@ -1472,6 +1505,9 @@ function App(): h.JSX.Element {
       if (event.data?.type === IITC_IRIS_MESSAGES.agentStatus && event.data.agent) {
         setAgentState(event.data.agent);
       }
+      if (event.data?.type === IITC_IRIS_MESSAGES.searchStatus && event.data.search) {
+        setSearchState(event.data.search);
+      }
     };
 
     window.addEventListener('message', onMessage);
@@ -1547,6 +1583,17 @@ function App(): h.JSX.Element {
   }, [activeSidePanel, inventoryState.status]);
 
   useEffect(() => {
+    const term = searchTerm.trim();
+    if (term.length === 0) {
+      setSearchState(EMPTY_SEARCH_STATE);
+      window.postMessage({type: IITC_IRIS_MESSAGES.searchClear} satisfies IitcIrisMessage, '*');
+      return;
+    }
+    const timer = window.setTimeout(() => requestSearch(term, false), 100);
+    return (): void => window.clearTimeout(timer);
+  }, [searchTerm]);
+
+  useEffect(() => {
     if (activeSidePanel !== 'comm') return;
     const list = commListRef.current;
     if (!list) return;
@@ -1577,8 +1624,64 @@ function App(): h.JSX.Element {
   return (
     <div className={`iitc-iris-shell iitc-iris-sheet-${activeSheet} ${entityFetch.selectedPortal ? 'iitc-iris-has-selected-portal' : ''}`}>
       <div id="iitc-iris-map" className="iitc-iris-map" />
+      {activeSheet === 'search' && (
+        <aside className="iitc-iris-request-side-panel iitc-iris-search-panel" role="search" aria-label="Search">
+          <div className="iitc-iris-request-panel-header">
+            <span className="iitc-iris-selected-title">Search</span>
+            <span className="iitc-iris-status">{searchState.status}</span>
+            <button className="iitc-iris-clear-selection" type="button" onClick={() => openSheet('map')} title="Close search">x</button>
+          </div>
+          <div className="iitc-iris-request-panel-body">
+          <form
+            className="iitc-iris-search-box"
+            onSubmit={(event) => {
+              event.preventDefault();
+              requestSearch(searchTerm, true);
+            }}
+          >
+            <input
+              className="iitc-iris-search-input"
+              type="search"
+              value={searchTerm}
+              placeholder="Search portal or address"
+              title="Type to search loaded portals. Press Enter to search OpenStreetMap."
+              onInput={(event) => setSearchTerm(event.currentTarget.value)}
+            />
+            {searchTerm && (
+              <button className="iitc-iris-search-clear" type="button" onClick={clearSearch} title="Clear search">x</button>
+            )}
+          </form>
+          {searchTerm.trim().length > 0 && (
+            <div className="iitc-iris-search-results">
+              <div className="iitc-iris-search-status">
+                <span>{searchState.status === 'loading' ? 'searching online' : searchState.results.length > 0 ? `${searchState.results.length} results` : searchTerm.trim().length < 3 ? 'type 3+ chars' : 'no local results'}</span>
+                {!searchState.confirmed && searchTerm.trim().length >= 3 && <span>Enter for address</span>}
+              </div>
+              {searchState.results.map((result) => (
+                <button
+                  className={`iitc-iris-search-result iitc-iris-search-result-${result.type}`}
+                  type="button"
+                  onClick={() => selectSearchResult(result)}
+                  onDblClick={(event) => {
+                    event.preventDefault();
+                    selectSearchResult(result, true);
+                  }}
+                  disabled={result.type === 'empty'}
+                  key={result.id}
+                  title={result.title}
+                >
+                  <span className={result.team ? getCommTeamClass(result.team) : ''}>{result.title}</span>
+                  {result.description && <small>{result.description}</small>}
+                </button>
+              ))}
+              {searchState.error && <span className="iitc-iris-warning">{searchState.error}</span>}
+            </div>
+          )}
+          </div>
+        </aside>
+      )}
       <aside className="iitc-iris-map-controls" aria-label="Map controls">
-        <div className="iitc-iris-map-controls-section">
+        {activeSheet === 'view' && <div className="iitc-iris-map-controls-section">
           <span className="iitc-iris-status">View</span>
           <div className="iitc-iris-map-control-row">
             <div className="iitc-iris-pan-grid" aria-label="Pan controls">
@@ -1590,8 +1693,8 @@ function App(): h.JSX.Element {
             <button className="iitc-iris-nav-button" type="button" onClick={() => zoomMap(1)} title="Zoom in">+</button>
             <button className="iitc-iris-nav-button" type="button" onClick={() => zoomMap(-1)} title="Zoom out">-</button>
           </div>
-        </div>
-        <div className="iitc-iris-map-controls-section">
+        </div>}
+        {activeSheet === 'view' && <div className="iitc-iris-map-controls-section">
           <span className="iitc-iris-status">Base</span>
           <div className="iitc-iris-map-control-row">
             {BASE_LAYER_OPTIONS.map((option) => (
@@ -1606,8 +1709,8 @@ function App(): h.JSX.Element {
               </button>
             ))}
           </div>
-        </div>
-        <div className="iitc-iris-map-controls-section">
+        </div>}
+        {activeSheet === 'layers' && <div className="iitc-iris-map-controls-section">
           <span className="iitc-iris-status">Core</span>
           <div className="iitc-iris-map-control-row">
             {CORE_LAYER_TOGGLE_LABELS.map(([key, label]) => (
@@ -1622,8 +1725,8 @@ function App(): h.JSX.Element {
               </button>
             ))}
           </div>
-        </div>
-        <div className="iitc-iris-map-controls-section">
+        </div>}
+        {activeSheet === 'layers' && <div className="iitc-iris-map-controls-section">
           <span className="iitc-iris-status">Detail</span>
           <div className="iitc-iris-map-control-row">
             {DETAIL_LAYER_TOGGLE_LABELS.map(([key, label]) => (
@@ -1638,8 +1741,8 @@ function App(): h.JSX.Element {
               </button>
             ))}
           </div>
-        </div>
-        <div className="iitc-iris-map-controls-section">
+        </div>}
+        {activeSheet === 'layers' && <div className="iitc-iris-map-controls-section">
           <span className="iitc-iris-status">History</span>
           <div className="iitc-iris-map-control-row">
             {PORTAL_DATA_LAYER_LABELS.map(([key, label, title]) => (
@@ -1654,7 +1757,7 @@ function App(): h.JSX.Element {
               </button>
             ))}
           </div>
-        </div>
+        </div>}
       </aside>
       {activeSheet === 'system' && (
         <aside className="iitc-iris-system-panel" aria-label="System controls">
@@ -1917,8 +2020,9 @@ function App(): h.JSX.Element {
           {activePrimaryMenu === 'map' && (
             <>
               <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'layers' ? 'is-active' : ''}`} type="button" onClick={() => openSheet('layers')}>Layers</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'view' ? 'is-active' : ''}`} type="button" onClick={() => openSheet('view')}>View</button>
               <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'scores' ? 'is-active' : ''}`} type="button" onClick={() => openSheet('scores')}>Scores</button>
-              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'map' ? 'is-active' : ''}`} type="button" onClick={() => openSheet('map')}>Hide</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'search' ? 'is-active' : ''}`} type="button" onClick={() => openSheet('search')}>Search</button>
             </>
           )}
           {activePrimaryMenu === 'portal' && (
@@ -1928,6 +2032,7 @@ function App(): h.JSX.Element {
             <>
               <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'agent' ? 'is-active' : ''}`} type="button" onClick={() => openSheet('agent')}>Profile</button>
               <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'inventory' ? 'is-active' : ''}`} type="button" onClick={() => openSheet('inventory')}>Inventory</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'passcode' ? 'is-active' : ''}`} type="button" onClick={() => openSheet('passcode')}>Passcode</button>
             </>
           )}
           {activePrimaryMenu === 'comm' && (
@@ -2111,11 +2216,13 @@ function App(): h.JSX.Element {
                 ? commState.status
 	                : activeSidePanel === 'scores'
 	                  ? scoresState.status
-	                  : activeSidePanel === 'inventory'
-	                    ? inventoryState.status
-	                    : activeSidePanel === 'agent'
-	                      ? agentState.status
-	                      : 'idle'}
+		                  : activeSidePanel === 'inventory'
+		                    ? inventoryState.status
+		                    : activeSidePanel === 'passcode'
+		                      ? passcodeState.status
+		                      : activeSidePanel === 'agent'
+		                        ? agentState.status
+		                        : 'idle'}
 	            </span>
 	            <button className="iitc-iris-clear-selection" type="button" onClick={closeSidePanel} title={`Close ${activeSidePanelOption.title}`}>x</button>
 	          </div>
@@ -2456,58 +2563,6 @@ function App(): h.JSX.Element {
                   </div>
                 )}
               </div>
-              <div className="iitc-iris-inventory-section">
-                <span className="iitc-iris-status">Passcode</span>
-                <form
-                  className="iitc-iris-passcode-form"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    redeemPasscode();
-                  }}
-                >
-                  <input
-                    className="iitc-iris-passcode-input"
-                    type="text"
-                    value={passcodeDraft}
-                    placeholder="passcode"
-                    disabled={passcodeState.status === 'loading'}
-                    onInput={(event) => setPasscodeDraft(event.currentTarget.value)}
-                  />
-                  <button className="iitc-iris-portal-action" type="submit" disabled={!passcodeDraft.trim() || passcodeState.status === 'loading'}>
-                    {passcodeState.status === 'loading' ? 'Redeeming' : 'Redeem'}
-                  </button>
-                </form>
-                <div className="iitc-iris-panel-summary">
-                  <span><b>{formatInteger(passcodeState.ap)}</b><small>AP</small></span>
-                  <span><b>{formatInteger(passcodeState.xm)}</b><small>XM</small></span>
-                  <span><b>{formatInteger(passcodeState.items?.reduce((sum, item) => sum + (item.count ?? 1), 0))}</b><small>items</small></span>
-                </div>
-                {passcodeState.other && passcodeState.other.length > 0 && (
-                  <div className="iitc-iris-inventory-list">
-                    {passcodeState.other.map((reward) => (
-                      <div className="iitc-iris-inventory-row" key={reward}>
-                        <span>{reward}</span>
-                        <b>1</b>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {passcodeState.items && passcodeState.items.length > 0 && (
-                  <div className="iitc-iris-inventory-list">
-                    {passcodeState.items.map((item, index) => (
-                      <div className="iitc-iris-inventory-row" key={`${item.label}-${item.level ?? ''}-${index}`}>
-                        <span>{item.label}{item.level ? ` L${item.level}` : ''}</span>
-                        <b>{item.count ?? 1}</b>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {(passcodeState.status === 'empty' || passcodeState.error) && (
-                  <div className={passcodeState.error ? 'iitc-iris-warning' : 'iitc-iris-empty-state'}>
-                    {passcodeState.error || 'Passcode returned no rewards.'}
-                  </div>
-                )}
-              </div>
               <div className="iitc-iris-panel-footer">
                 <span
                   className="iitc-iris-diagnostics-chip"
@@ -2519,6 +2574,62 @@ function App(): h.JSX.Element {
                 >
                   request
                 </span>
+                {inventoryState.error && <span className="iitc-iris-warning">{inventoryState.error}</span>}
+              </div>
+            </div>
+          )}
+          {activeSidePanel === 'passcode' && (
+            <div className="iitc-iris-request-panel-body">
+              <form
+                className="iitc-iris-passcode-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  redeemPasscode();
+                }}
+              >
+                <input
+                  className="iitc-iris-passcode-input"
+                  type="text"
+                  value={passcodeDraft}
+                  placeholder="passcode"
+                  disabled={passcodeState.status === 'loading'}
+                  onInput={(event) => setPasscodeDraft(event.currentTarget.value)}
+                />
+                <button className="iitc-iris-portal-action" type="submit" disabled={!passcodeDraft.trim() || passcodeState.status === 'loading'}>
+                  {passcodeState.status === 'loading' ? 'Redeeming' : 'Redeem'}
+                </button>
+              </form>
+              <div className="iitc-iris-panel-summary">
+                <span><b>{formatInteger(passcodeState.ap)}</b><small>AP</small></span>
+                <span><b>{formatInteger(passcodeState.xm)}</b><small>XM</small></span>
+                <span><b>{formatInteger(passcodeState.items?.reduce((sum, item) => sum + (item.count ?? 1), 0))}</b><small>items</small></span>
+              </div>
+              {passcodeState.other && passcodeState.other.length > 0 && (
+                <div className="iitc-iris-inventory-list">
+                  {passcodeState.other.map((reward) => (
+                    <div className="iitc-iris-inventory-row" key={reward}>
+                      <span>{reward}</span>
+                      <b>1</b>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {passcodeState.items && passcodeState.items.length > 0 && (
+                <div className="iitc-iris-inventory-list">
+                  {passcodeState.items.map((item, index) => (
+                    <div className="iitc-iris-inventory-row" key={`${item.label}-${item.level ?? ''}-${index}`}>
+                      <span>{item.label}{item.level ? ` L${item.level}` : ''}</span>
+                      <b>{item.count ?? 1}</b>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {(passcodeState.status === 'empty' || passcodeState.error) && (
+                <div className={passcodeState.error ? 'iitc-iris-warning' : 'iitc-iris-empty-state'}>
+                  {passcodeState.error || 'Passcode returned no rewards.'}
+                </div>
+              )}
+              <div className="iitc-iris-panel-footer">
                 <span
                   className="iitc-iris-diagnostics-chip"
                   title={[
@@ -2526,9 +2637,8 @@ function App(): h.JSX.Element {
                     `passcode: ${passcodeState.passcode ?? '-'}`,
                   ].join('\n')}
                 >
-                  passcode
+                  request
                 </span>
-                {inventoryState.error && <span className="iitc-iris-warning">{inventoryState.error}</span>}
               </div>
             </div>
           )}

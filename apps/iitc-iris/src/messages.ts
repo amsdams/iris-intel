@@ -22,6 +22,10 @@ export const IITC_IRIS_MESSAGES = {
   inventoryStatus: 'IITC_IRIS_INVENTORY_STATUS',
   requestStatus: 'IITC_IRIS_REQUEST_STATUS',
   agentStatus: 'IITC_IRIS_AGENT_STATUS',
+  searchRequest: 'IITC_IRIS_SEARCH_REQUEST',
+  searchStatus: 'IITC_IRIS_SEARCH_STATUS',
+  searchSelect: 'IITC_IRIS_SEARCH_SELECT',
+  searchClear: 'IITC_IRIS_SEARCH_CLEAR',
 } as const;
 
 export type IitcIrisMessageType = typeof IITC_IRIS_MESSAGES[keyof typeof IITC_IRIS_MESSAGES];
@@ -111,10 +115,46 @@ export interface IitcIrisMessage {
   passcode?: IitcIrisPasscodeState;
   inventory?: IitcIrisInventoryState;
   agent?: IitcIrisAgentState;
+  search?: IitcIrisSearchState;
+  searchTerm?: string;
+  searchConfirmed?: boolean;
+  searchResult?: IitcIrisSearchResult;
+  searchZoom?: boolean;
   commTab?: IitcIrisCommTab;
   commOlder?: boolean;
   commMessage?: string;
   passcodeText?: string;
+}
+
+export interface IitcIrisSearchResult {
+  id: string;
+  type: 'portal' | 'address' | 'coordinate' | 'guid' | 'empty';
+  title: string;
+  description?: string;
+  lat?: number;
+  lng?: number;
+  bounds?: {
+    south: number;
+    west: number;
+    north: number;
+    east: number;
+  };
+  geojson?: unknown;
+  guid?: string;
+  team?: 'E' | 'R' | 'N' | 'M';
+  level?: number;
+  health?: number;
+  icon?: string;
+}
+
+export interface IitcIrisSearchState {
+  status: 'idle' | 'loading' | 'ready' | 'empty' | 'error';
+  term: string;
+  confirmed: boolean;
+  results: IitcIrisSearchResult[];
+  localResults: number;
+  onlineResults?: number;
+  error?: string;
 }
 
 export type IitcIrisCommTab = 'all' | 'faction' | 'alerts';
