@@ -2,6 +2,40 @@
 
 Goal: build a clean IITC-compatible IRIS track with a Mini-IRIS-sized UI shell and an IITC-CE-derived core. This track should use the same map library family as IITC-CE and avoid depending on the current IRIS map renderer while the port is being validated.
 
+Porting rule: prefer IITC-CE file names, public method names, data model names, and UI concepts when adding ported behavior. Diverge only when TypeScript packaging, extension boundaries, or deliberate product decisions require it, and document the reason in this plan near the relevant pass. Existing IRIS/Mini-IRIS names can be used as local reference material, but they should not become the default naming source for IITC IRIS.
+
+## Porting Doctrine
+
+The goal is behavioral parity with IITC-CE without importing its incidental complexity. IITC IRIS should preserve IITC concepts and seams so comparison and debugging stay cheap, while using modern TypeScript boundaries, tests, and small modules to avoid carrying over hard-to-maintain structure.
+
+Non-functional requirements:
+
+- Source of truth: use `reference/IITC-CE` first for behavior, naming, request shape, lifecycle, and UI concepts. Use current IRIS/Mini-IRIS only as implementation reference or migration context.
+- Name compatibility: keep IITC names for recognizable domains such as `comm`, `parseMsgData`, `portalDetails`, `getEntities`, `artifacts`, `ornaments`, `links`, `fields`, `portals`, and layer/UI concepts. Do not rename a concept just because a cleaner generic name exists.
+- Structure freedom: do not copy IITC file layout, globals, DOM coupling, or mutation-heavy flow when those are incidental. A cleaner module boundary is allowed if exported names and behavior remain easy to map back to IITC.
+- Parity harness first: every ported subsystem needs copied diagnostics, fixture/live comparison points, and focused tests before broader UI polish.
+- Behavioral deltas must be explicit: if IITC IRIS intentionally differs from IITC-CE, document why in this plan and expose enough diagnostics to verify the impact.
+- Thin runtime, tested core: request planning, parsing, decoding, classification, and derived counters should live in `packages/iitc-core`; the extension runtime should mostly wire Leaflet, browser APIs, and UI messages.
+- Avoid “smart” rewrites before parity: simplify internals only after the equivalent IITC behavior is understood, named, and covered by tests or diagnostics.
+- Keep user-facing UI comparable: core map workflows should look and behave close enough to IITC-CE that screenshot and live-state comparisons are meaningful. Debug and fixture controls can remain IITC IRIS-specific, but should stay visually separate.
+
+Required process for each new subsystem:
+
+1. Identify the IITC-CE source files under `reference/IITC-CE` and record them in the pass notes before implementing.
+2. List the IITC public concepts being ported: file/module name, function names, endpoint names, data fields, UI pane/control names, and lifecycle events.
+3. Choose IITC-aligned names at the boundary first. For example, prefer `comm.ts` plus `parseMsgData` over a cleaner but less traceable `plext.ts` parser name.
+4. If a cleaner internal split is useful, keep a small IITC-named facade that maps directly back to the IITC source. The facade is the debugging contract.
+5. Add tests or copied diagnostics that prove the IITC behavior before adding larger UI or architectural cleanup.
+6. Document every intentional divergence in this plan with the reason, expected effect, and how to compare it against IITC-CE.
+
+Naming checklist before creating a new file or exported function:
+
+- Is there an IITC file or function with this responsibility? Use that name or an obvious TypeScript variant.
+- Is the word from Intel payload terminology but not IITC module terminology, such as `plext`? Use it inside field/types where accurate, but prefer the IITC module concept at file/API boundaries, such as `comm`.
+- Would a future debugger know where to look in `reference/IITC-CE` from this name? If not, rename or add a documented facade.
+- Is the new name borrowed from current IRIS/Mini-IRIS? Treat that as suspect unless the pass explicitly documents why IITC naming is not appropriate.
+- Is the divergence only for code cleanliness? Keep the IITC name at the boundary and hide the cleaner structure inside.
+
 ## Pass 1: Scaffold - Done
 
 - Add `packages/iitc-core` as the porting target for IITC-CE request lifecycle, zoom semantics, entity decoding, and renderer-facing model code.
@@ -116,10 +150,11 @@ Current status:
 - The dock replaces entity diagnostic snapshots on each status message instead of partially merging them, preventing stale retry/source/queue fields from leaking across live/cache/fixture transitions.
 - The dock has fixed Amsterdam and Damrak view presets for repeatable IITC/IITC IRIS comparisons.
 - The dock can jump to arbitrary comparison views from `lat,lng,z` text, Intel map URLs with `ll` and `z`, or IITC-CE portal links with `pll`.
-- The dock has 25%-viewport pan buttons and +/- zoom buttons; these use the same Leaflet `setView` path as presets and therefore exercise the same move/zoom request lifecycle as mouse interaction.
+- The floating map-controls panel has 25%-viewport pan buttons and +/- zoom buttons; these use the same Leaflet `setView` path as presets and therefore exercise the same move/zoom request lifecycle as mouse interaction.
 - The dock can copy the current view back out as an Intel URL.
-- The dock has base-map switches for CartoDB Dark Matter, CartoDB Positron, and OpenStreetMap, with the selected base map persisted for repeatable visual comparisons.
+- The floating map-controls panel has base-map switches for CartoDB Dark Matter, CartoDB Positron, and OpenStreetMap, with the selected base map persisted for repeatable visual comparisons.
 - Layer toggles are persisted; the default comparison view enables only fields, links, and portals while leaving level fill, health fill, ornaments, artifacts, labels, and tile debug off.
+- Base map, core/detail layer toggles, side-system tabs, and pan/zoom controls live outside the main debug/comparison dock. The data-source switch remains in the dock because it is comparison/fixture infrastructure rather than IITC-style map UI.
 - Current layer toggles:
   - `F`: fields.
   - `LN`: links.
@@ -144,6 +179,7 @@ Current status:
 - Port IITC-like portal selection as the next comparison surface before broader side request/UI systems.
 - Keep the first pass narrow: click/select a portal, render the selected portal highlight, expose selected GUID/title/team/level in the dock or innerstatus row, clear selection, and preserve selection across entity refreshes when the selected portal is still present.
 - Add a portal details panel after the selection baseline is stable. The details panel should start with title, team, level, health, resonators, mods, owner, ornaments, artifacts, and basic link/field context where the decoded data supports it.
+- Align core map UI with IITC-CE for comparison: selected portal details should live in an IITC-like side panel, while Mini-IRIS-style debug/copy controls stay collapsed in the comparison dock.
 - Use portal selection/details to validate richer entity decoding and to anchor later COMM, inventory, artifact, and ornament comparisons.
 
 Acceptance:
@@ -157,14 +193,14 @@ Current status:
 - First selection baseline is in progress: visible portal markers are clickable, the selected portal gets a separate orange Leaflet highlight ring, the compact innerstatus row shows the selected portal, selection can be cleared, and copied diagnostics include `selectedPortal`.
 - A compact selected-portal summary row now uses the currently decoded map entity data: image, title, team, level, health, resonator count, mission flag, ornament/artifact counts, and basic link/field context from decoded map links/fields.
 - Selecting a portal now starts a `/r/getPortalDetails` request. `packages/iitc-core` parses the IITC-shaped details response into owner, mods, resonators, history flags, mission flag, and derived mitigation; IITC IRIS exposes request status and parsed detail data in the selected row and copied diagnostics.
-- A compact portal details panel now renders the fetched details outside the debug JSON: owner, mitigation, history flags, resonator chips, mods, and selected link/field context.
-- The first pass intentionally does not yet include IITC-style resonator/mod spatial grid parity, portal action buttons, inventory key counts, or IITC plugin/highlighter interactions.
+- A compact portal details panel now renders as a separate IITC-like right-side selected portal panel instead of expanding the main comparison dock. It shows a faction-colored shell, owner, mitigation, history flags, stable mod slots, a portal-centered resonator layout, selected link/field context, and safe portal actions for zoom/copy link/copy GUID.
+- The first pass intentionally does not yet include verified IITC resonator compass-slot parity, deploy/recharge/link action wiring, inventory key counts, or IITC plugin/highlighter interactions.
 
-## Pass 7: IITC Side Request/UI Systems - Not Started
+## Pass 7: IITC Side Request/UI Systems - Started
 
 - Port IITC side systems that require their own request lifecycle and UI, after portal selection is available as a stable anchor.
 - Suggested order:
-  - COMM / plexts: request lifecycle, parsing, filters, message list, map-linked portal/player references where available.
+  - COMM: `/r/getPlexts` request lifecycle, `comm.parseMsgData`-style parsing, filters, message list, map-linked portal/player references where available.
   - Scores: request behavior, faction score display, checkpoint/cycle status.
   - Passcodes: request/submit flow, feedback states, history/errors if IITC exposes them.
   - Inventory: request lifecycle, item/key parsing, grouping/filtering, counts, and a dedicated panel.
@@ -175,6 +211,12 @@ Acceptance:
 - Each side system has an explicit copied diagnostic block for request state, elapsed time, error/auth state, and decoded counts.
 - UI panels are compact enough to compare with IITC without relying on the debug dock.
 - Request behavior is documented where it intentionally differs from IITC-CE.
+
+Current status:
+
+- A compact IITC IRIS side-panel shell now exists for COMM, Scores, Passcodes, and Inventory. The panels persist their open/closed state, show explicit request state, and copied diagnostics include a `sidePanels` block.
+- The COMM panel can issue a narrow `/r/getPlexts` request for the current map bounds and reports status, elapsed time, auth/error state, bounds, raw message count, and a compact recent-message preview parsed through `packages/iitc-core/src/comm.ts`. The parser now deliberately follows IITC-CE `comm.parseMsgData` semantics for team normalization, public/secure/alert categories, sender/player extraction, auto messages, and narrowcasts instead of copying the IRIS-core store shape. Full channel filters, send-plext support, and map-linked portal/player rendering are still pending.
+- Score, passcode, and inventory panels intentionally do not yet issue requests. Existing Mini-IRIS/IRIS request and parser code has been identified as local reference material for those implementation slices.
 
 ## Pass 8: Replacement Readiness - Not Started
 

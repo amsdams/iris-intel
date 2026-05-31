@@ -1,5 +1,5 @@
 import L, {type Layer as LeafletLayer, type Map as LeafletMap, type TileLayer} from 'leaflet';
-import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisSelectedPortal} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisSelectedPortal} from './messages';
 import {
   appendIitcResponseBucketDiagnostics,
   applyIitcTileRequestResponseToQueue,
@@ -21,7 +21,9 @@ import {
   markIitcTileQueueStale,
   markIitcTileRequestStarted,
   mergeIitcGetEntitiesResponses,
+  parseIitcCommResponse,
   parseIitcPortalDetailsResponse,
+  type IitcCommMessage,
   type IitcGetEntitiesResponse,
   type IitcMapDataPlan,
   type IitcPortalDetailsResponse,
@@ -97,6 +99,8 @@ let dataSource: IitcIrisDataSourceSettings = {mode: 'live'};
 let refreshTimer: number | undefined;
 let currentFetchAbortController: AbortController | undefined;
 let currentPortalDetailsAbortController: AbortController | undefined;
+let currentCommAbortController: AbortController | undefined;
+let latestCommState: IitcIrisCommState = {status: 'idle', tab: 'all', messages: 0};
 
 interface TileDiagnostics {
   entitySource?: IitcIrisEntitySource;
@@ -357,6 +361,11 @@ function cancelActiveEntityFetch(): void {
 function cancelActivePortalDetailsFetch(): void {
   currentPortalDetailsAbortController?.abort();
   currentPortalDetailsAbortController = undefined;
+}
+
+function cancelActiveCommFetch(): void {
+  currentCommAbortController?.abort();
+  currentCommAbortController = undefined;
 }
 
 function postMapMoved(): void {
@@ -986,6 +995,17 @@ function repostLatestEntityStatus(): void {
   postEntityStatus(latestEntityStatus, latestEntities, latestTileDiagnostics);
 }
 
+function postCommState(): void {
+  window.postMessage({
+    type: IITC_IRIS_MESSAGES.commStatus,
+    comm: latestCommState,
+  } satisfies IitcIrisMessage, '*');
+}
+
+function uniqueStrings(values: string[] | undefined): string[] {
+  return values ? [...new Set(values)] : [];
+}
+
 function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
   if (event.source !== window) return;
   if (event.data?.type === IITC_IRIS_MESSAGES.setView) {
@@ -996,6 +1016,9 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.clearPortalSelection) {
     clearPortalSelection();
+  }
+  if (event.data?.type === IITC_IRIS_MESSAGES.requestComm) {
+    void refreshComm();
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.renderEntities && event.data.entities) {
     renderEntities(event.data.entities);
@@ -1130,23 +1153,24 @@ function postEntityStatus(
     nonEmptyTiles: tileDiagnostics.nonEmptyTiles,
     elapsedMs: tileDiagnostics.elapsedMs,
     retryRequests: tileDiagnostics.retryRequests ?? 0,
-    retriedTileKeys: tileDiagnostics.retriedTileKeys ?? [],
-    recoveredTileKeys: tileDiagnostics.recoveredTileKeys ?? [],
+    retriedTileKeys: uniqueStrings(tileDiagnostics.retriedTileKeys),
+    recoveredTileKeys: uniqueStrings(tileDiagnostics.recoveredTileKeys),
     emptyTileKeys: tileDiagnostics.emptyTileKeys,
     nonEmptyTileKeys: tileDiagnostics.nonEmptyTileKeys,
     unaccountedTileKeys: tileDiagnostics.unaccountedTileKeys,
-    serverRetryTileKeys: tileDiagnostics.serverRetryTileKeys ?? [],
-    timeoutTileKeys: tileDiagnostics.timeoutTileKeys ?? [],
-    errorTileKeys: tileDiagnostics.errorTileKeys ?? [],
-    responseRetryTileKeys: tileDiagnostics.responseRetryTileKeys ?? [],
-    queueDelayReasons: tileDiagnostics.queueDelayReasons ?? [],
-    partialTileKeys: tileDiagnostics.partialTileKeys ?? [],
+    serverRetryTileKeys: uniqueStrings(tileDiagnostics.serverRetryTileKeys),
+    timeoutTileKeys: uniqueStrings(tileDiagnostics.timeoutTileKeys),
+    errorTileKeys: uniqueStrings(tileDiagnostics.errorTileKeys),
+    responseRetryTileKeys: uniqueStrings(tileDiagnostics.responseRetryTileKeys),
+    queueDelayReasons: uniqueStrings(tileDiagnostics.queueDelayReasons),
+    partialTileKeys: uniqueStrings(tileDiagnostics.partialTileKeys),
     queue: tileDiagnostics.queue,
     baseLayerId,
     dataSource,
     renderPolicy: getRenderPolicy(),
     selectedPortal,
     portalDetails: latestPortalDetails,
+    comm: latestCommState,
   } satisfies IitcIrisMessage, '*');
 }
 
@@ -1225,6 +1249,136 @@ async function fetchPortalDetails(guid: string, version: string, signal?: AbortS
   const parsed = JSON.parse(text) as IitcPortalDetailsResponse;
   if (parsed.error) throw new Error(parsed.error);
   return parsed;
+}
+
+function getCurrentCommBounds(): NonNullable<IitcIrisCommState['bounds']> | undefined {
+  const map = window.__iitcIrisMap;
+  if (!map) return undefined;
+  const bounds = map.getBounds();
+  return {
+    minLatE6: Math.round(bounds.getSouth() * 1_000_000),
+    minLngE6: Math.round(bounds.getWest() * 1_000_000),
+    maxLatE6: Math.round(bounds.getNorth() * 1_000_000),
+    maxLngE6: Math.round(bounds.getEast() * 1_000_000),
+  };
+}
+
+function countCommResponseMessages(response: unknown): number {
+  if (!response || typeof response !== 'object') return 0;
+  const result = (response as {result?: unknown}).result;
+  return Array.isArray(result) ? result.length : 0;
+}
+
+function toCommMessagePreview(message: IitcCommMessage): NonNullable<IitcIrisCommState['recent']>[number] {
+  const players = [
+    message.player.name,
+    ...message.mentions,
+  ].filter((value): value is string => typeof value === 'string' && value.length > 0);
+
+  return {
+    id: message.guid,
+    time: message.time,
+    text: message.text,
+    team: message.team,
+    type: message.type,
+    public: message.public,
+    secure: message.secure,
+    alert: message.alert,
+    auto: message.auto,
+    narrowcast: message.narrowcast,
+    player: message.player.name,
+    playerTeam: message.player.team,
+    portals: message.markup
+      .filter(([type]) => type === 'PORTAL')
+      .map(([, value]) => ({
+        name: value.name,
+        address: value.address,
+        latE6: value.latE6,
+        lngE6: value.lngE6,
+      })),
+    players: [...new Set(players)],
+  };
+}
+
+async function fetchComm(version: string, bounds: NonNullable<IitcIrisCommState['bounds']> | undefined, signal?: AbortSignal): Promise<unknown> {
+  const csrfToken = getCsrfToken();
+  if (!csrfToken) throw new Error('getPlexts missing csrftoken');
+
+  const response = await fetch('/r/getPlexts', {
+    method: 'POST',
+    credentials: 'include',
+    signal,
+    headers: {
+      'Accept': 'application/json, text/javascript, */*; q=0.01',
+      'Content-Type': 'application/json; charset=utf-8',
+      'X-CSRFToken': csrfToken,
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+    body: JSON.stringify({
+      tab: 'all',
+      minTimestampMs: -1,
+      maxTimestampMs: -1,
+      ascendingTimestampOrder: false,
+      ...bounds,
+      v: version,
+    }),
+  });
+  const text = await response.text();
+
+  if (looksLikeHtml(text)) {
+    throw new Error(`getPlexts returned login html HTTP ${response.status}${response.redirected ? ' redirected' : ''}`);
+  }
+
+  const parsed = JSON.parse(text) as unknown;
+  const error = parsed && typeof parsed === 'object' ? (parsed as {error?: unknown}).error : undefined;
+  if (typeof error === 'string' && error) throw new Error(error);
+  return parsed;
+}
+
+async function refreshComm(): Promise<void> {
+  cancelActiveCommFetch();
+  const version = extractVersion();
+  const bounds = getCurrentCommBounds();
+  if (!version) {
+    latestCommState = {status: 'error', tab: 'all', messages: 0, bounds, error: 'waiting for Intel version'};
+    postCommState();
+    return;
+  }
+
+  const abortController = new AbortController();
+  currentCommAbortController = abortController;
+  const startedAt = performance.now();
+  latestCommState = {status: 'loading', tab: 'all', messages: 0, bounds};
+  postCommState();
+
+  try {
+    const response = await fetchComm(version, bounds, abortController.signal);
+    const elapsedMs = performance.now() - startedAt;
+    const messages = countCommResponseMessages(response);
+    const commMessages = parseIitcCommResponse(response);
+    latestCommState = {
+      status: messages > 0 ? 'ready' : 'empty',
+      tab: 'all',
+      messages,
+      recent: commMessages.slice(0, 8).map(toCommMessagePreview),
+      elapsedMs,
+      bounds,
+    };
+    postCommState();
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') return;
+    latestCommState = {
+      status: error instanceof Error && /login html|missing csrftoken/i.test(error.message) ? 'auth' : 'error',
+      tab: 'all',
+      messages: 0,
+      elapsedMs: performance.now() - startedAt,
+      bounds,
+      error: error instanceof Error ? error.message : String(error),
+    };
+    postCommState();
+  } finally {
+    if (currentCommAbortController === abortController) currentCommAbortController = undefined;
+  }
 }
 
 function toPortalDetailsState(

@@ -10,6 +10,8 @@ export const IITC_IRIS_MESSAGES = {
   dataSourceSettings: 'IITC_IRIS_DATA_SOURCE_SETTINGS',
   setView: 'IITC_IRIS_SET_VIEW',
   clearPortalSelection: 'IITC_IRIS_CLEAR_PORTAL_SELECTION',
+  requestComm: 'IITC_IRIS_REQUEST_COMM',
+  commStatus: 'IITC_IRIS_COMM_STATUS',
 } as const;
 
 export type IitcIrisMessageType = typeof IITC_IRIS_MESSAGES[keyof typeof IITC_IRIS_MESSAGES];
@@ -85,6 +87,44 @@ export interface IitcIrisMessage {
   renderPolicy?: IitcIrisRenderPolicy;
   selectedPortal?: IitcIrisSelectedPortal | null;
   portalDetails?: IitcIrisPortalDetailsState | null;
+  comm?: IitcIrisCommState;
+}
+
+export interface IitcIrisCommState {
+  status: 'idle' | 'loading' | 'ready' | 'empty' | 'error' | 'auth';
+  tab: string;
+  messages: number;
+  recent?: IitcIrisCommMessage[];
+  elapsedMs?: number;
+  error?: string;
+  bounds?: {
+    minLatE6: number;
+    minLngE6: number;
+    maxLatE6: number;
+    maxLngE6: number;
+  };
+}
+
+export interface IitcIrisCommMessage {
+  id: string;
+  time: number;
+  text: string;
+  team: string;
+  type: string;
+  public?: boolean;
+  secure?: boolean;
+  alert?: boolean;
+  auto?: boolean;
+  narrowcast?: boolean;
+  player?: string;
+  playerTeam?: string;
+  portals: {
+    name?: string;
+    address?: string;
+    latE6?: number;
+    lngE6?: number;
+  }[];
+  players: string[];
 }
 
 export interface IitcIrisQueueDiagnostics {
