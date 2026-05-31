@@ -184,6 +184,34 @@ describe('writeIitcCommDataToHash', () => {
     expect(older.channelData.newestGUID).toBe('newer');
     expect(getIitcCommChannelMessages(older.channelData).map((message) => message.guid)).toEqual(['older-b', 'older-a', 'middle', 'newer']);
   });
+
+  it('appends newer ascending continuation messages like IITC COMM storage', () => {
+    const initial = writeIitcCommDataToHash({
+      result: [
+        ['newer', 3000, {plext: {text: 'newer', markup: [], categories: 1, team: 'RESISTANCE', plextType: 'SYSTEM_BROADCAST'}}],
+        ['middle', 2000, {plext: {text: 'middle', markup: [], categories: 1, team: 'RESISTANCE', plextType: 'SYSTEM_BROADCAST'}}],
+      ],
+    }, createIitcCommChannelData());
+
+    const newer = writeIitcCommDataToHash({
+      result: [
+        ['newest-a', 4000, {plext: {text: 'newest a', markup: [], categories: 1, team: 'ENLIGHTENED', plextType: 'SYSTEM_BROADCAST'}}],
+        ['newest-b', 5000, {plext: {text: 'newest b', markup: [], categories: 1, team: 'ENLIGHTENED', plextType: 'SYSTEM_BROADCAST'}}],
+      ],
+    }, initial.channelData, false, true);
+
+    expect(newer).toMatchObject({
+      responseMessages: 2,
+      parsedMessages: 2,
+      addedMessages: 2,
+      oldMessagesWereAdded: false,
+    });
+    expect(newer.channelData.oldestTimestamp).toBe(2000);
+    expect(newer.channelData.oldestGUID).toBe('middle');
+    expect(newer.channelData.newestTimestamp).toBe(5000);
+    expect(newer.channelData.newestGUID).toBe('newest-b');
+    expect(getIitcCommChannelMessages(newer.channelData).map((message) => message.guid)).toEqual(['middle', 'newer', 'newest-a', 'newest-b']);
+  });
 });
 
 describe('genIitcCommPostData', () => {

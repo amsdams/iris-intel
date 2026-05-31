@@ -18,6 +18,8 @@ import {
   genIitcCommSendPlextPostData,
   getIitcCommChannelMessages,
   getIitcInventoryPortalKeyCount,
+  getIitcPlayerTrackerDiagnostics,
+  getIitcPlayerTrackerLatLng,
   getIitcOrnamentDefinition,
   getIitcRecoveredTileKeys,
   getIitcPortalArtifacts,
@@ -25,6 +27,11 @@ import {
   IITC_EMPTY_TILE_RETRY_PASSES,
   IITC_MAX_TILE_RETRIES,
   IITC_NUM_TILES_PER_REQUEST,
+  IITC_PLAYER_TRACKER_LINE_COLOR,
+  IITC_PLAYER_TRACKER_MAX_DISPLAY_EVENTS,
+  IITC_PLAYER_TRACKER_MAX_TIME,
+  IITC_PLAYER_TRACKER_MIN_OPACITY,
+  IITC_PLAYER_TRACKER_MIN_ZOOM,
   IitcDataCache,
   markIitcTileQueueComplete,
   markIitcTileQueueStale,
@@ -33,6 +40,8 @@ import {
   parseIitcOrnamentVisibilitySettings,
   parseIitcInventoryResponse,
   parseIitcPortalDetailsResponse,
+  processIitcPlayerTrackerData,
+  pruneIitcPlayerTrackerStored,
   renderIitcCommMarkup,
   summarizeIitcInventory,
   writeIitcCommDataToHash,
@@ -46,6 +55,8 @@ import {
   type IitcPortalDetailsResponse,
   type IitcPortalArtifact,
   type IitcOrnamentVisibilitySettings,
+  type IitcPlayerTrackerDiagnostics,
+  type IitcPlayerTrackerStored,
   type IitcRawGameEntity,
   type IitcRenderQueueTileStatus,
   pushIitcRenderQueueTile,
@@ -62,6 +73,7 @@ const OPTIONAL_OVERLAY_MIN_ZOOM = 14;
 const FAST_MOVE_REFRESH_DELAY_MS = 250;
 const IITC_MOVE_REFRESH_DELAY_MS = 3000;
 const ENABLE_STALE_GENERATION_CACHE_WARMING = false;
+const PLAYER_TRACKER_COMM_REFRESH_MS = 120_000;
 const DEFAULT_BASE_LAYER_ID: IitcIrisBaseLayerId = 'cartodb-dark-matter';
 const BASE_LAYERS: Record<IitcIrisBaseLayerId, {
   url: string;
@@ -106,6 +118,10 @@ const DEFAULT_LAYER_SETTINGS: IitcIrisLayerSettings = {
   artifacts: false,
   labels: false,
   tiles: false,
+  playerTracker: false,
+  playerTrackerResistance: false,
+  playerTrackerEnlightened: false,
+  playerTrackerMachina: false,
   historyCaptured: 'off',
   historyVisited: 'off',
   historyScoutControlled: 'off',
@@ -148,6 +164,12 @@ let latestInventoryState: IitcIrisInventoryState = {
   capsules: 0,
   portalKeysForSelectedPortal: null,
 };
+let playerTrackerStored: IitcPlayerTrackerStored = {};
+let playerTrackerLatestCommTime: number | null = null;
+let playerTrackerDiagnostics: IitcPlayerTrackerDiagnostics = getIitcPlayerTrackerDiagnostics(playerTrackerStored);
+let playerTrackerRefreshTimer: number | undefined;
+let currentPlayerTrackerCommAbortController: AbortController | undefined;
+const playerTrackerProcessedCommGuids = new Set<string>();
 const commChannelsData: Record<IitcCommChannel, IitcCommChannelData> = {
   all: createIitcCommChannelData(),
   faction: createIitcCommChannelData(),
@@ -411,6 +433,7 @@ function postMapMoved(): void {
     },
   }, '*');
   scheduleEntityRefresh(lifecycleSettings.iitcMovementDelay ? IITC_MOVE_REFRESH_DELAY_MS : FAST_MOVE_REFRESH_DELAY_MS);
+  schedulePlayerTrackerRefresh();
 }
 
 declare global {
@@ -426,6 +449,7 @@ declare global {
       ornaments: LeafletLayer[];
       artifacts: LeafletLayer[];
       labels: LeafletLayer[];
+      playerTracker: LeafletLayer[];
     };
   }
 }
@@ -592,6 +616,7 @@ function ensureLayers(): NonNullable<Window['__iitcIrisLayers']> {
     ornaments: [],
     artifacts: [],
     labels: [],
+    playerTracker: [],
   };
   return window.__iitcIrisLayers;
 }
@@ -633,6 +658,7 @@ function clearAllRenderedLayers(): void {
   clearRenderedLayers(layers.ornaments);
   clearRenderedLayers(layers.artifacts);
   clearRenderedLayers(layers.labels);
+  clearRenderedLayers(layers.playerTracker);
 }
 
 function clearEntityLayers(): void {
@@ -1045,6 +1071,129 @@ function renderLatestTileDebug(): void {
   renderTileDebug(latestPlan, latestResponse);
 }
 
+function formatPlayerTrackerAgo(time: number, now = Date.now()): string {
+  const seconds = Math.max(0, Math.floor((now - time) / 1000));
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  if (days > 0) return `${days}d${hours % 24}h${minutes % 60}m`;
+  if (hours > 0) return `${hours}h${minutes % 60}m`;
+  return `${minutes}m`;
+}
+
+function createPlayerTrackerPopup(playerName: string, player: IitcPlayerTrackerStored[string]): HTMLElement {
+  const root = document.createElement('div');
+  root.className = 'iitc-iris-player-tracker-popup';
+  const title = document.createElement('strong');
+  title.className = `iitc-iris-player-tracker-name iitc-iris-player-tracker-${player.team}`;
+  title.textContent = playerName;
+  root.append(title);
+
+  const last = player.events[player.events.length - 1];
+  const lastLatLng = getIitcPlayerTrackerLatLng(last);
+  const current = document.createElement('div');
+  current.textContent = `${formatPlayerTrackerAgo(last.time)} ago`;
+  root.append(current);
+  const link = document.createElement('button');
+  link.type = 'button';
+  link.className = 'iitc-iris-player-tracker-link';
+  link.textContent = last.name || last.address || 'portal';
+  link.addEventListener('click', () => {
+    window.__iitcIrisMap?.setView(lastLatLng, Math.max(window.__iitcIrisMap.getZoom(), DEFAULT_ZOOM));
+  });
+  root.append(link);
+
+  const previous = player.events.slice(-IITC_PLAYER_TRACKER_MAX_DISPLAY_EVENTS, -1).reverse();
+  if (previous.length > 0) {
+    const label = document.createElement('div');
+    label.className = 'iitc-iris-player-tracker-previous';
+    label.textContent = 'previous locations:';
+    root.append(label);
+    for (const event of previous) {
+      const row = document.createElement('div');
+      row.className = 'iitc-iris-player-tracker-row';
+      row.textContent = `${formatPlayerTrackerAgo(event.time)} ago - ${event.name || event.address || 'portal'}`;
+      root.append(row);
+    }
+  }
+
+  return root;
+}
+
+function createPlayerTrackerMarker(latLng: [number, number], playerName: string, team: keyof typeof TEAM_COLORS, opacity: number): LeafletLayer {
+  return L.marker(latLng, {
+    icon: L.divIcon({
+      className: `iitc-iris-player-tracker-marker iitc-iris-player-tracker-marker-${team}`,
+      html: `<span>${playerName.slice(0, 1).toUpperCase()}</span>`,
+      iconSize: [22, 30],
+      iconAnchor: [11, 30],
+    }),
+    opacity,
+    keyboard: false,
+    pane: getLayerPane('playerTracker'),
+    title: playerName,
+  });
+}
+
+function isPlayerTrackerTeamVisible(team: keyof typeof TEAM_COLORS): boolean {
+  if (team === 'R') return layerSettings.playerTrackerResistance || layerSettings.playerTracker;
+  if (team === 'E') return layerSettings.playerTrackerEnlightened || layerSettings.playerTracker;
+  if (team === 'M') return layerSettings.playerTrackerMachina || layerSettings.playerTracker;
+  return false;
+}
+
+function renderPlayerTracker(): void {
+  const layers = ensureLayers();
+  clearRenderedLayers(layers.playerTracker);
+  playerTrackerStored = pruneIitcPlayerTrackerStored(playerTrackerStored);
+
+  if (!isPlayerTrackerVisible()) {
+    updatePlayerTrackerDiagnostics(0, 0);
+    repostLatestEntityStatus();
+    return;
+  }
+
+  const now = Date.now();
+  const split = IITC_PLAYER_TRACKER_MAX_TIME / 4;
+  let markers = 0;
+  let traces = 0;
+
+  for (const [playerName, player] of Object.entries(playerTrackerStored)) {
+    if (player.events.length === 0) continue;
+    if (!isPlayerTrackerTeamVisible(player.team)) continue;
+
+    for (let index = 1; index < player.events.length; index += 1) {
+      const current = player.events[index];
+      const previous = player.events[index - 1];
+      const currentLatLng = getIitcPlayerTrackerLatLng(current);
+      const previousLatLng = getIitcPlayerTrackerLatLng(previous);
+      if (currentLatLng[0] === previousLatLng[0] && currentLatLng[1] === previousLatLng[1]) continue;
+      const ageBucket = Math.min(Math.trunc((now - current.time) / split), 3);
+      addRenderedLayer(layers.playerTracker, L.polyline([previousLatLng, currentLatLng], {
+        pane: getLayerPane('playerTracker'),
+        color: IITC_PLAYER_TRACKER_LINE_COLOR,
+        weight: 2 - 0.25 * ageBucket,
+        opacity: 1 - 0.2 * ageBucket,
+        dashArray: '5,8',
+        interactive: false,
+      }));
+      traces += 1;
+    }
+
+    const last = player.events[player.events.length - 1];
+    const lastLatLng = getIitcPlayerTrackerLatLng(last);
+    const relativeOpacity = 1 - (now - last.time) / IITC_PLAYER_TRACKER_MAX_TIME;
+    const opacity = IITC_PLAYER_TRACKER_MIN_OPACITY + (1 - IITC_PLAYER_TRACKER_MIN_OPACITY) * Math.max(0, relativeOpacity);
+    const marker = createPlayerTrackerMarker(lastLatLng, playerName, player.team, opacity);
+    marker.bindPopup(createPlayerTrackerPopup(playerName, player), {offset: L.point(0, -24)});
+    addRenderedLayer(layers.playerTracker, marker);
+    markers += 1;
+  }
+
+  updatePlayerTrackerDiagnostics(markers, traces);
+  repostLatestEntityStatus();
+}
+
 function repostLatestEntityStatus(): void {
   if (!latestEntities || !latestTileDiagnostics) return;
   postEntityStatus(latestEntityStatus, latestEntities, latestTileDiagnostics);
@@ -1076,6 +1225,69 @@ function postInventoryState(): void {
     type: IITC_IRIS_MESSAGES.inventoryStatus,
     inventory: latestInventoryState,
   } satisfies IitcIrisMessage, '*');
+}
+
+function isPlayerTrackerVisible(): boolean {
+  const map = window.__iitcIrisMap;
+  return (layerSettings.playerTracker ||
+    layerSettings.playerTrackerResistance ||
+    layerSettings.playerTrackerEnlightened ||
+    layerSettings.playerTrackerMachina) && !!map && map.getZoom() >= IITC_PLAYER_TRACKER_MIN_ZOOM;
+}
+
+function updatePlayerTrackerDiagnostics(markers = playerTrackerDiagnostics.markers, traces = playerTrackerDiagnostics.traces): void {
+  playerTrackerDiagnostics = getIitcPlayerTrackerDiagnostics(playerTrackerStored, {
+    enabled: layerSettings.playerTracker ||
+      layerSettings.playerTrackerResistance ||
+      layerSettings.playerTrackerEnlightened ||
+      layerSettings.playerTrackerMachina,
+    visible: isPlayerTrackerVisible(),
+    markers,
+    traces,
+    latestCommTime: playerTrackerLatestCommTime,
+    minZoom: IITC_PLAYER_TRACKER_MIN_ZOOM,
+    maxAgeMs: IITC_PLAYER_TRACKER_MAX_TIME,
+  });
+}
+
+function cancelActivePlayerTrackerFetch(): void {
+  currentPlayerTrackerCommAbortController?.abort();
+  currentPlayerTrackerCommAbortController = undefined;
+}
+
+function clearPlayerTrackerRefreshTimer(): void {
+  if (playerTrackerRefreshTimer !== undefined) {
+    window.clearTimeout(playerTrackerRefreshTimer);
+    playerTrackerRefreshTimer = undefined;
+  }
+}
+
+function schedulePlayerTrackerRefresh(delayMs = 250): void {
+  clearPlayerTrackerRefreshTimer();
+  if (!isPlayerTrackerVisible()) {
+    cancelActivePlayerTrackerFetch();
+    renderPlayerTracker();
+    return;
+  }
+  playerTrackerRefreshTimer = window.setTimeout(() => {
+    playerTrackerRefreshTimer = undefined;
+    void refreshPlayerTrackerComm();
+  }, delayMs);
+}
+
+function processPlayerTrackerCommMessages(messages: IitcCommMessage[]): void {
+  const newMessages = messages.filter((message) => {
+    if (playerTrackerProcessedCommGuids.has(message.guid)) return false;
+    playerTrackerProcessedCommGuids.add(message.guid);
+    return true;
+  });
+  if (newMessages.length === 0) {
+    playerTrackerStored = pruneIitcPlayerTrackerStored(playerTrackerStored);
+    return;
+  }
+  const result = processIitcPlayerTrackerData(newMessages, playerTrackerStored);
+  playerTrackerStored = result.stored;
+  playerTrackerLatestCommTime = result.maxMessageTime ?? playerTrackerLatestCommTime;
 }
 
 function uniqueStrings(values: string[] | undefined): string[] {
@@ -1115,6 +1327,8 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
     layerSettings = event.data.layerSettings;
     if (latestEntities) renderEntities(latestEntities);
     renderLatestTileDebug();
+    renderPlayerTracker();
+    schedulePlayerTrackerRefresh();
     repostLatestEntityStatus();
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.layerSettings && event.data.baseLayerId) {
@@ -1269,6 +1483,7 @@ function postEntityStatus(
     queue: tileDiagnostics.queue,
     renderQueue: tileDiagnostics.renderQueue,
     timing: tileDiagnostics.timing,
+    playerTracker: playerTrackerDiagnostics,
     baseLayerId,
     dataSource,
     renderPolicy: getRenderPolicy(),
@@ -1968,10 +2183,15 @@ async function refreshComm(tab: IitcCommChannel = normalizeCommTab(latestCommSta
     const response = await fetchComm(version, tab, bounds, getOlderMsgs, abortController.signal);
     const elapsedMs = performance.now() - startedAt;
     const messages = countCommResponseMessages(response);
-    const writeResult = writeIitcCommDataToHash(response, commChannelsData[tab], getOlderMsgs);
+    const isAscendingOrder = !getOlderMsgs && commChannelsData[tab].newestTimestamp > -1;
+    const writeResult = writeIitcCommDataToHash(response, commChannelsData[tab], getOlderMsgs, isAscendingOrder);
     commChannelsData[tab] = writeResult.channelData;
     const commMessages = getIitcCommChannelMessages(commChannelsData[tab]);
-    const previewMessages = getOlderMsgs ? commMessages.slice(0, 12) : commMessages.slice(-12).reverse();
+    if (tab === 'all') {
+      processPlayerTrackerCommMessages(commMessages);
+      renderPlayerTracker();
+    }
+    const previewMessages = getOlderMsgs ? commMessages.slice(0, 12) : commMessages.slice(-12);
     latestCommState = {
       status: commMessages.length > 0 ? 'ready' : 'empty',
       tab,
@@ -2001,6 +2221,39 @@ async function refreshComm(tab: IitcCommChannel = normalizeCommTab(latestCommSta
     postCommState();
   } finally {
     if (currentCommAbortController === abortController) currentCommAbortController = undefined;
+  }
+}
+
+async function refreshPlayerTrackerComm(): Promise<void> {
+  if (!isPlayerTrackerVisible()) {
+    renderPlayerTracker();
+    return;
+  }
+  cancelActivePlayerTrackerFetch();
+  const version = extractVersion();
+  const bounds = getCurrentCommBounds();
+  if (!version || !bounds) {
+    renderPlayerTracker();
+    return;
+  }
+
+  const abortController = new AbortController();
+  currentPlayerTrackerCommAbortController = abortController;
+
+  try {
+    const response = await fetchComm(version, 'all', bounds, false, abortController.signal);
+    const writeResult = writeIitcCommDataToHash(response, commChannelsData.all, false, commChannelsData.all.newestTimestamp > -1);
+    commChannelsData.all = writeResult.channelData;
+    const messages = getIitcCommChannelMessages(commChannelsData.all);
+    processPlayerTrackerCommMessages(messages);
+    renderPlayerTracker();
+  } catch (error) {
+    if (!(error instanceof DOMException && error.name === 'AbortError')) {
+      renderPlayerTracker();
+    }
+  } finally {
+    if (currentPlayerTrackerCommAbortController === abortController) currentPlayerTrackerCommAbortController = undefined;
+    if (isPlayerTrackerVisible()) schedulePlayerTrackerRefresh(PLAYER_TRACKER_COMM_REFRESH_MS);
   }
 }
 
@@ -2778,6 +3031,10 @@ function boot(): void {
 
   map.on('movestart', postMapMoveStarted);
   map.on('moveend', postMapMoved);
+  map.on('zoomend', () => {
+    renderPlayerTracker();
+    schedulePlayerTrackerRefresh();
+  });
   window.setTimeout(() => {
     map.invalidateSize();
     postMapMoved();
@@ -2794,6 +3051,7 @@ function createIitcIrisPanes(map: LeafletMap): void {
     ['ornaments', 440],
     ['artifacts', 445],
     ['selectedPortal', 448],
+    ['playerTracker', 449],
     ['labels', 450],
   ];
 

@@ -5,6 +5,7 @@ export * from './data-cache';
 export * from './map-data-render-queue';
 export * from './portal-details';
 export * from './comm';
+export * from './player-tracker';
 export * from './artifact';
 export * from './ornaments';
 export * from './inventory';

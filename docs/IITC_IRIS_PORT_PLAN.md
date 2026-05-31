@@ -214,6 +214,17 @@ Current status:
   latency. Remaining lifecycle parity gaps are accepted for now: surgical render mutation is not ported, stale fallback
   is wired but live-unproven, and old responses are still generation-filtered rather than checked tile-by-tile against
   the current wanted set.
+- Player Tracker MVP: IITC IRIS now has live faction-split player tracker toggles (`PTR`, `PTE`, `PTM`) fed from `/r/getPlexts` all-COMM
+  data. Core history reduction lives in `packages/iitc-core/src/player-tracker.ts` and follows IITC
+  `player-activity-tracker.js` behavior for the three-hour history window, z9 visibility gate, ignored destroyed
+  link/field messages, same-time portal grouping, averaged event coordinates, faction marker pins, and dashed magenta
+  traces. The tracker pane is non-blocking so normal portal selection is not swallowed by the overlay; marker popups
+  remain available on marker hits. Copied diagnostics expose player/event/marker/trace counts and latest COMM time. Full IITC plugin parity is
+  still intentionally out of scope: search integration, ctrl/cmd nickname centering, add-ons, and OMS-grade co-located
+  marker behavior remain later work.
+- COMM parity note: IRIS stores and previews COMM oldest-to-newest like IITC `comm.renderData`, and continuation fetches
+  now pass IITC's `ascendingTimestampOrder` write semantics through to storage. This keeps the visible order and GUID
+  continuity comparable against stock IITC.
 - Large initial tile plans are executed across all 25-tile request batches in waves of up to five concurrent requests,
   instead of stopping after only the first concurrent wave. This fixes low-zoom views such as z10 where the plan can
   contain more than 125 tiles.

@@ -1,7 +1,7 @@
 import {h, render} from 'preact';
 import {useEffect, useMemo, useState} from 'preact/hooks';
 import './iitc-iris.css';
-import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisPasscodeState, type IitcIrisPlayerTrackerDiagnostics, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
 import {
   createIitcMapDataPlan,
   IITC_EMPTY_TILE_RETRY_BATCH_SIZE,
@@ -93,6 +93,9 @@ const DETAIL_LAYER_TOGGLE_LABELS: [BooleanLayerSettingKey, string][] = [
   ['artifacts', 'AR'],
   ['labels', 'LV'],
   ['tiles', 'T'],
+  ['playerTrackerResistance', 'PTR'],
+  ['playerTrackerEnlightened', 'PTE'],
+  ['playerTrackerMachina', 'PTM'],
 ];
 const PORTAL_DATA_LAYER_LABELS: [TriStateLayerSettingKey, string, string][] = [
   ['historyCaptured', 'CAP', 'Captured history'],
@@ -133,6 +136,10 @@ const DEFAULT_LAYER_SETTINGS: IitcIrisLayerSettings = {
   artifacts: false,
   labels: false,
   tiles: false,
+  playerTracker: false,
+  playerTrackerResistance: false,
+  playerTrackerEnlightened: false,
+  playerTrackerMachina: false,
   historyCaptured: 'off',
   historyVisited: 'off',
   historyScoutControlled: 'off',
@@ -213,6 +220,7 @@ interface EntityFetchState {
   queue: IitcIrisQueueDiagnostics | null;
   renderQueue: IitcIrisRenderQueueDiagnostics | null;
   timing: IitcIrisMapTimingDiagnostics | null;
+  playerTracker: IitcIrisPlayerTrackerDiagnostics | null;
   baseLayerId: IitcIrisBaseLayerId;
   dataSource: IitcIrisDataSourceSettings;
   renderPolicy: IitcIrisRenderPolicy;
@@ -379,6 +387,7 @@ function loadStoredLayerSettings(): IitcIrisLayerSettings {
     if (!value) return DEFAULT_LAYER_SETTINGS;
     const parsed = JSON.parse(value) as unknown;
     if (!isLayerSettings(parsed)) return DEFAULT_LAYER_SETTINGS;
+    const legacyPlayerTracker = typeof parsed.playerTracker === 'boolean' ? parsed.playerTracker : undefined;
     return {
       fields: typeof parsed.fields === 'boolean' ? parsed.fields : DEFAULT_LAYER_SETTINGS.fields,
       links: typeof parsed.links === 'boolean' ? parsed.links : DEFAULT_LAYER_SETTINGS.links,
@@ -401,6 +410,16 @@ function loadStoredLayerSettings(): IitcIrisLayerSettings {
       artifacts: typeof parsed.artifacts === 'boolean' ? parsed.artifacts : DEFAULT_LAYER_SETTINGS.artifacts,
       labels: typeof parsed.labels === 'boolean' ? parsed.labels : DEFAULT_LAYER_SETTINGS.labels,
       tiles: typeof parsed.tiles === 'boolean' ? parsed.tiles : DEFAULT_LAYER_SETTINGS.tiles,
+      playerTracker: DEFAULT_LAYER_SETTINGS.playerTracker,
+      playerTrackerResistance: typeof parsed.playerTrackerResistance === 'boolean'
+        ? parsed.playerTrackerResistance
+        : legacyPlayerTracker ?? DEFAULT_LAYER_SETTINGS.playerTrackerResistance,
+      playerTrackerEnlightened: typeof parsed.playerTrackerEnlightened === 'boolean'
+        ? parsed.playerTrackerEnlightened
+        : legacyPlayerTracker ?? DEFAULT_LAYER_SETTINGS.playerTrackerEnlightened,
+      playerTrackerMachina: typeof parsed.playerTrackerMachina === 'boolean'
+        ? parsed.playerTrackerMachina
+        : legacyPlayerTracker ?? DEFAULT_LAYER_SETTINGS.playerTrackerMachina,
       historyCaptured: isTriStateLayer(parsed.historyCaptured) ? parsed.historyCaptured : DEFAULT_LAYER_SETTINGS.historyCaptured,
       historyVisited: isTriStateLayer(parsed.historyVisited) ? parsed.historyVisited : DEFAULT_LAYER_SETTINGS.historyVisited,
       historyScoutControlled: isTriStateLayer(parsed.historyScoutControlled) ? parsed.historyScoutControlled : DEFAULT_LAYER_SETTINGS.historyScoutControlled,
@@ -609,6 +628,7 @@ function entityFetchStateFromMessage(message: IitcIrisMessage, current: EntityFe
     queue: message.queue ?? null,
     renderQueue: message.renderQueue ?? null,
     timing: message.timing ?? null,
+    playerTracker: message.playerTracker ?? current.playerTracker,
     baseLayerId: message.baseLayerId ?? current.baseLayerId,
     dataSource: message.dataSource ?? current.dataSource,
     renderPolicy: message.renderPolicy ?? current.renderPolicy,
@@ -896,6 +916,7 @@ function App(): h.JSX.Element {
     queue: null,
     renderQueue: null,
     timing: null,
+    playerTracker: null,
     baseLayerId: loadStoredBaseLayerId(),
     dataSource: createDataSourceSettings(loadStoredDataSourceId()),
     renderPolicy: DEFAULT_RENDER_POLICY,
@@ -1008,6 +1029,7 @@ function App(): h.JSX.Element {
       queue: entityFetch.queue,
       renderQueue: entityFetch.renderQueue,
       timing: entityFetch.timing,
+      playerTracker: entityFetch.playerTracker,
       authRequired: entityFetch.authRequired,
     },
     baseLayerId,
@@ -1589,6 +1611,7 @@ function App(): h.JSX.Element {
               {entityFetch.timing?.initialMs !== undefined && <span className="iitc-iris-status">init {formatElapsedSeconds(entityFetch.timing.initialMs)}s</span>}
               {entityFetch.timing?.retryMs !== undefined && <span className="iitc-iris-status">retryT {formatElapsedSeconds(entityFetch.timing.retryMs)}s</span>}
               {entityFetch.retryRequests > 0 && <span className="iitc-iris-status">retry {entityFetch.retryRequests}</span>}
+              {entityFetch.playerTracker && <span className="iitc-iris-status">pt {entityFetch.playerTracker.players}/{entityFetch.playerTracker.events}</span>}
               {entityFetch.selectedPortal && (
                 <>
                   <span className="iitc-iris-status iitc-iris-compare">sel {formatSelectedPortal(entityFetch.selectedPortal)}</span>
@@ -1993,7 +2016,7 @@ function App(): h.JSX.Element {
                 <div className="iitc-iris-empty-state">No COMM messages for this channel and map bounds.</div>
               )}
               {commState.recent && commState.recent.length > 0 && (
-                <div className="iitc-iris-comm-list">
+                <div className="iitc-iris-comm-list iitc-iris-scroll-region">
                   {commState.recent.map((message) => (
                     <div className="iitc-iris-comm-row" key={message.id}>
                       <span className={`iitc-iris-comm-meta ${getCommTeamClass(message.team)}`}>
@@ -2170,99 +2193,101 @@ function App(): h.JSX.Element {
                   <b>{inventoryState.selectedPortalTitle}</b>
                 </div>
               )}
-              {inventoryState.portalKeysForSelectedPortal && Object.keys(inventoryState.portalKeysForSelectedPortal.capsules).length > 0 && (
+              <div className="iitc-iris-scroll-region iitc-iris-inventory-scroll">
+                {inventoryState.portalKeysForSelectedPortal && Object.keys(inventoryState.portalKeysForSelectedPortal.capsules).length > 0 && (
+                  <div className="iitc-iris-inventory-section">
+                    <span className="iitc-iris-status">Selected key capsules</span>
+                    <div className="iitc-iris-inventory-list">
+                      {Object.entries(inventoryState.portalKeysForSelectedPortal.capsules).map(([capsule, count]) => (
+                        <div className="iitc-iris-inventory-row" key={capsule}>
+                          <span>{capsule}</span>
+                          <b>{count}</b>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="iitc-iris-inventory-section">
-                  <span className="iitc-iris-status">Selected key capsules</span>
-                  <div className="iitc-iris-inventory-list">
-                    {Object.entries(inventoryState.portalKeysForSelectedPortal.capsules).map(([capsule, count]) => (
-                      <div className="iitc-iris-inventory-row" key={capsule}>
-                        <span>{capsule}</span>
-                        <b>{count}</b>
-                      </div>
-                    ))}
+                  <span className="iitc-iris-status">Passcode</span>
+                  <form
+                    className="iitc-iris-passcode-form"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      redeemPasscode();
+                    }}
+                  >
+                    <input
+                      className="iitc-iris-passcode-input"
+                      type="text"
+                      value={passcodeDraft}
+                      placeholder="passcode"
+                      disabled={passcodeState.status === 'loading'}
+                      onInput={(event) => setPasscodeDraft(event.currentTarget.value)}
+                    />
+                    <button className="iitc-iris-portal-action" type="submit" disabled={!passcodeDraft.trim() || passcodeState.status === 'loading'}>
+                      {passcodeState.status === 'loading' ? 'Redeeming' : 'Redeem'}
+                    </button>
+                  </form>
+                  <div className="iitc-iris-panel-summary">
+                    <span><b>{formatInteger(passcodeState.ap)}</b><small>AP</small></span>
+                    <span><b>{formatInteger(passcodeState.xm)}</b><small>XM</small></span>
+                    <span><b>{formatInteger(passcodeState.items?.reduce((sum, item) => sum + (item.count ?? 1), 0))}</b><small>items</small></span>
                   </div>
+                  {passcodeState.other && passcodeState.other.length > 0 && (
+                    <div className="iitc-iris-inventory-list">
+                      {passcodeState.other.map((reward) => (
+                        <div className="iitc-iris-inventory-row" key={reward}>
+                          <span>{reward}</span>
+                          <b>1</b>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {passcodeState.items && passcodeState.items.length > 0 && (
+                    <div className="iitc-iris-inventory-list">
+                      {passcodeState.items.map((item, index) => (
+                        <div className="iitc-iris-inventory-row" key={`${item.label}-${item.level ?? ''}-${index}`}>
+                          <span>{item.label}{item.level ? ` L${item.level}` : ''}</span>
+                          <b>{item.count ?? 1}</b>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {(passcodeState.status === 'empty' || passcodeState.error) && (
+                    <div className={passcodeState.error ? 'iitc-iris-warning' : 'iitc-iris-empty-state'}>
+                      {passcodeState.error || 'Passcode returned no rewards.'}
+                    </div>
+                  )}
                 </div>
-              )}
-              <div className="iitc-iris-inventory-section">
-                <span className="iitc-iris-status">Passcode</span>
-                <form
-                  className="iitc-iris-passcode-form"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    redeemPasscode();
-                  }}
-                >
-                  <input
-                    className="iitc-iris-passcode-input"
-                    type="text"
-                    value={passcodeDraft}
-                    placeholder="passcode"
-                    disabled={passcodeState.status === 'loading'}
-                    onInput={(event) => setPasscodeDraft(event.currentTarget.value)}
-                  />
-                  <button className="iitc-iris-portal-action" type="submit" disabled={!passcodeDraft.trim() || passcodeState.status === 'loading'}>
-                    {passcodeState.status === 'loading' ? 'Redeeming' : 'Redeem'}
-                  </button>
-                </form>
-                <div className="iitc-iris-panel-summary">
-                  <span><b>{formatInteger(passcodeState.ap)}</b><small>AP</small></span>
-                  <span><b>{formatInteger(passcodeState.xm)}</b><small>XM</small></span>
-                  <span><b>{formatInteger(passcodeState.items?.reduce((sum, item) => sum + (item.count ?? 1), 0))}</b><small>items</small></span>
-                </div>
-                {passcodeState.other && passcodeState.other.length > 0 && (
-                  <div className="iitc-iris-inventory-list">
-                    {passcodeState.other.map((reward) => (
-                      <div className="iitc-iris-inventory-row" key={reward}>
-                        <span>{reward}</span>
-                        <b>1</b>
-                      </div>
-                    ))}
+                {inventoryState.topItems && inventoryState.topItems.length > 0 && (
+                  <div className="iitc-iris-inventory-section">
+                    <span className="iitc-iris-status">Top items</span>
+                    <div className="iitc-iris-inventory-list">
+                      {inventoryState.topItems.map((item) => (
+                        <div className="iitc-iris-inventory-row" key={`${item.type}-${item.level ?? ''}-${item.rarity ?? ''}-${item.label}`}>
+                          <span>{item.label}{item.level ? ` L${item.level}` : ''}</span>
+                          <b>{item.count}</b>
+                          {item.rarity && <small>{item.rarity.replace(/_/g, ' ')}</small>}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
-                {passcodeState.items && passcodeState.items.length > 0 && (
-                  <div className="iitc-iris-inventory-list">
-                    {passcodeState.items.map((item, index) => (
-                      <div className="iitc-iris-inventory-row" key={`${item.label}-${item.level ?? ''}-${index}`}>
-                        <span>{item.label}{item.level ? ` L${item.level}` : ''}</span>
-                        <b>{item.count ?? 1}</b>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {(passcodeState.status === 'empty' || passcodeState.error) && (
-                  <div className={passcodeState.error ? 'iitc-iris-warning' : 'iitc-iris-empty-state'}>
-                    {passcodeState.error || 'Passcode returned no rewards.'}
+                {inventoryState.topKeys && inventoryState.topKeys.length > 0 && (
+                  <div className="iitc-iris-inventory-section">
+                    <span className="iitc-iris-status">Top keys</span>
+                    <div className="iitc-iris-inventory-list">
+                      {inventoryState.topKeys.map((key) => (
+                        <div className="iitc-iris-inventory-row" key={key.portalGuid} title={key.portalGuid}>
+                          <span>{key.portalTitle || key.portalGuid}</span>
+                          <b>{key.count}</b>
+                          {key.capsule > 0 && <small>{key.capsule} capsule</small>}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
-              {inventoryState.topItems && inventoryState.topItems.length > 0 && (
-                <div className="iitc-iris-inventory-section">
-                  <span className="iitc-iris-status">Top items</span>
-                  <div className="iitc-iris-inventory-list">
-                    {inventoryState.topItems.map((item) => (
-                      <div className="iitc-iris-inventory-row" key={`${item.type}-${item.level ?? ''}-${item.rarity ?? ''}-${item.label}`}>
-                        <span>{item.label}{item.level ? ` L${item.level}` : ''}</span>
-                        <b>{item.count}</b>
-                        {item.rarity && <small>{item.rarity.replace(/_/g, ' ')}</small>}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {inventoryState.topKeys && inventoryState.topKeys.length > 0 && (
-                <div className="iitc-iris-inventory-section">
-                  <span className="iitc-iris-status">Top keys</span>
-                  <div className="iitc-iris-inventory-list">
-                    {inventoryState.topKeys.map((key) => (
-                      <div className="iitc-iris-inventory-row" key={key.portalGuid} title={key.portalGuid}>
-                        <span>{key.portalTitle || key.portalGuid}</span>
-                        <b>{key.count}</b>
-                        {key.capsule > 0 && <small>{key.capsule} capsule</small>}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
               <div className="iitc-iris-panel-footer">
                 <span
                   className="iitc-iris-diagnostics-chip"

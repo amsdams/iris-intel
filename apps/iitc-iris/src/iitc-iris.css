@@ -500,11 +500,12 @@
   bottom: 12px;
   z-index: 9999;
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 8px;
   width: min(360px, calc(100vw - 24px));
   max-height: min(42vh, 360px);
   box-sizing: border-box;
-  overflow: auto;
+  overflow: hidden;
   padding: 8px 10px;
   border: 1px solid rgb(95 180 255 / 34%);
   border-radius: 6px;
@@ -514,6 +515,11 @@
   font-size: 12px;
   letter-spacing: 0;
   pointer-events: auto;
+}
+
+.iitc-iris-system-panel {
+  grid-template-rows: none;
+  overflow: auto;
 }
 
 .iitc-iris-panel-topbar {
@@ -531,11 +537,21 @@
 }
 
 .iitc-iris-request-panel-body {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 6px;
+  min-height: 0;
   min-width: 0;
+  overflow: hidden;
   padding-top: 6px;
   border-top: 1px solid rgb(95 180 255 / 18%);
+}
+
+.iitc-iris-scroll-region {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 2px;
 }
 
 .iitc-iris-passcode-form {
@@ -805,6 +821,11 @@
   display: grid;
   gap: 4px;
   min-width: 0;
+}
+
+.iitc-iris-inventory-scroll {
+  display: grid;
+  gap: 6px;
 }
 
 .iitc-iris-inventory-list {
@@ -1237,4 +1258,98 @@
   color: #ffffff;
   font: 800 10px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   pointer-events: none;
+}
+
+.iitc-iris-player-tracker-marker {
+  width: 22px;
+  height: 30px;
+  pointer-events: auto;
+}
+
+.iitc-iris-player-tracker-marker::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 0;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgb(255 255 255 / 92%);
+  border-radius: 50% 50% 50% 0;
+  background: var(--iitc-iris-player-tracker-color, #ffffff);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 65%);
+  transform: rotate(-45deg);
+}
+
+.iitc-iris-player-tracker-marker span {
+  position: absolute;
+  left: 5px;
+  top: 3px;
+  z-index: 1;
+  width: 12px;
+  color: #071018;
+  font: 800 9px/12px Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  text-align: center;
+  transform: none;
+}
+
+.iitc-iris-player-tracker-marker-R {
+  --iitc-iris-player-tracker-color: #0088ff;
+}
+
+.iitc-iris-player-tracker-marker-E {
+  --iitc-iris-player-tracker-color: #03dc03;
+}
+
+.iitc-iris-player-tracker-marker-M {
+  --iitc-iris-player-tracker-color: #ff1010;
+}
+
+.iitc-iris-player-tracker-popup {
+  min-width: 180px;
+  color: #dbefff;
+  font: 12px/1.35 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.iitc-iris-player-tracker-name {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.iitc-iris-player-tracker-R {
+  color: #66b8ff;
+}
+
+.iitc-iris-player-tracker-E {
+  color: #72f572;
+}
+
+.iitc-iris-player-tracker-M {
+  color: #ff6464;
+}
+
+.iitc-iris-player-tracker-link {
+  appearance: none;
+  display: block;
+  max-width: 220px;
+  border: 0;
+  background: transparent;
+  color: #8fd3ff;
+  font: inherit;
+  padding: 0;
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.iitc-iris-player-tracker-previous {
+  margin-top: 8px;
+  color: #a9bfd1;
+}
+
+.iitc-iris-player-tracker-row {
+  max-width: 240px;
+  overflow: hidden;
+  color: #dbefff;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

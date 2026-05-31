@@ -95,6 +95,7 @@ export interface IitcIrisMessage {
   queue?: IitcIrisQueueDiagnostics | null;
   renderQueue?: IitcIrisRenderQueueDiagnostics | null;
   timing?: IitcIrisMapTimingDiagnostics | null;
+  playerTracker?: IitcIrisPlayerTrackerDiagnostics;
   layerSettings?: IitcIrisLayerSettings;
   baseLayerId?: IitcIrisBaseLayerId;
   dataSource?: IitcIrisDataSourceSettings;
@@ -287,6 +288,18 @@ export interface IitcIrisMapTimingDiagnostics {
   movementDelayMs?: number;
 }
 
+export interface IitcIrisPlayerTrackerDiagnostics {
+  enabled: boolean;
+  visible: boolean;
+  players: number;
+  events: number;
+  markers: number;
+  traces: number;
+  latestCommTime: number | null;
+  minZoom: number;
+  maxAgeMs: number;
+}
+
 export interface IitcIrisLifecycleSettings {
   iitcMovementDelay: boolean;
 }
@@ -315,6 +328,10 @@ export interface IitcIrisLayerSettings {
   artifacts: boolean;
   labels: boolean;
   tiles: boolean;
+  playerTracker: boolean;
+  playerTrackerResistance: boolean;
+  playerTrackerEnlightened: boolean;
+  playerTrackerMachina: boolean;
   historyCaptured: IitcIrisTriStateLayer;
   historyVisited: IitcIrisTriStateLayer;
   historyScoutControlled: IitcIrisTriStateLayer;
