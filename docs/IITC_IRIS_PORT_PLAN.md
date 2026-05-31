@@ -98,9 +98,9 @@ Current map lifecycle audit:
 | Area                     | IITC-CE contract                                                                                                | IITC IRIS status                                                                                                                            | Action                                                                     |
 |--------------------------|-----------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
 | Tile math/data zoom      | `map_data_calc_tools.js` tile params and adjusted data zoom                                                     | Mostly aligned in `packages/iitc-core` with tests                                                                                           | Keep validating against IITC fixtures                                      |
-| Initial request batching | `MapDataRequest.processRequestQueue`: max 5 requests, up to 25 tiles, dynamic bucket sizing, centre-first order | Core has centre-first tile ordering and IITC dynamic batch helpers; runtime still drives fixed initial waves instead of the full queue loop | Move runtime orchestration onto core queue helpers end-to-end              |
-| Retry lifecycle          | `requeueTile`, `handleResponse`, retry limit, timeout/error distinction, smaller batches after retries          | Partially aligned; retry accounting exists, but returned-empty placeholder recovery remains a compatibility shim; retry-phase request failures can still bypass the same bucketed `handleResponse(undefined, tiles, false)` path used by initial batch failures | Replace shim with IITC-derived queue behavior                              |
-| Tile cache               | `DataCache` per tile, fresh/stale decisions                                                                     | Acceptable for now; `IitcDataCache` stores tile payloads and live copies proved `cacheFreshTiles` can cover 131/132 and 132/132 tiles       | Park until deeper map-lifecycle pass replaces whole-response shortcut      |
+| Initial request batching | `MapDataRequest.processRequestQueue`: max 5 requests, up to 25 tiles, dynamic bucket sizing, centre-first order | Runtime now uses core IITC queue batch helpers for initial live request waves while limiting the initial phase to one attempt per tile before compatibility retries | Validate live timing against IITC-CE on large low-zoom and dense high-zoom views |
+| Retry lifecycle          | `requeueTile`, `handleResponse`, retry limit, timeout/error distinction, smaller batches after retries          | Retry request failures now flow through the same core response-bucket classifier and queue apply path as initial failures; returned-empty placeholder recovery remains a compatibility shim | Replace returned-empty shim with IITC-derived queue behavior after live validation |
+| Tile cache               | `DataCache` per tile, fresh/stale decisions                                                                     | Same-bounds live refreshes now flow through `IitcDataCache` per-tile fresh/stale decisions instead of the broad whole-response reuse shortcut | Validate cache-fresh/cache-stale behavior during live same-bounds pans and reloads |
 | Stale fallback           | Retry exhaustion renders stale tile via `cache-stale` when possible                                             | Wired but unproven under live retry exhaustion; copied diagnostics now expose `cacheStaleTiles` and `cacheStaleTileKeys`                   | Park unless live copies show cached tiles still ending as partial          |
 | Render queue             | `pushRenderQueue` and `processRenderQueue` incrementally render cached, network, and stale tiles                | Acceptable for now; IITC-named render queue facade handles `cache-fresh`, `ok`, and `cache-stale`, with low first-render timings proven    | Park true surgical render mutation until map-lifecycle pass resumes        |
 | Move lifecycle           | `mapMoveStart` pauses render queue; old non-cancelled tile responses ignored if no longer wanted                | Partially aligned; IRIS aborts active fetches and generation-checks responses                                                               | Revisit when porting IITC queue/cache                                      |
@@ -111,14 +111,13 @@ Adherence summary after 2026-05-31 audit:
 - Adheres: IITC tile parameters/data zoom, tile key shape, centre-first tile ordering, max request and tile-per-request
   constants, response bucket classification, timeout/server-retry/error distinction, and copied diagnostics for live
   comparison.
-- Partially adheres: dynamic request batching exists in core but is not the single runtime driver; `IitcDataCache` and an
-  IITC-named render queue facade now exist; retry-exhausted tiles can use stale cached payloads; progressive rendering
-  still drains to merged renders instead of true IITC surgical mutation batches; retry-limit state exists but
-  returned-empty high-zoom recovery is still a compatibility path; retry request failures during the runtime retry loop
-  are not yet handled through the same response-bucket path as IITC `handleResponse`.
-- Does not yet adhere: complete replacement of whole-response cache reuse with per-tile cache decisions, full
-  `MapDataRequest` render queue drain timing, surgical map-data mutation, and IITC movement behavior where old map-data
-  requests are not aborted but ignored tile-by-tile if no longer wanted.
+- Partially adheres: dynamic request batching exists in core and now drives initial live request waves; `IitcDataCache`
+  and an IITC-named render queue facade now exist; retry-exhausted tiles can use stale cached payloads; progressive
+  rendering still drains to merged renders instead of true IITC surgical mutation batches; retry-limit state exists and
+  retry request failures use the same response-bucket path as initial failures, but returned-empty high-zoom recovery is
+  still a compatibility path.
+- Does not yet adhere: full `MapDataRequest` render queue drain timing, surgical map-data mutation, and IITC movement
+  behavior where old map-data requests are not aborted but ignored tile-by-tile if no longer wanted.
 - Map lifecycle is parked as acceptable for current UI parity work. Live copies on 2026-05-31 proved per-tile fresh
   cache and render queue behavior (`cacheFreshTiles` 131/132 and 132/132, first render around 0.1s). Stale fallback is
   wired and diagnosed but remains live-unproven because the test cases did not produce retry exhaustion for previously
@@ -173,6 +172,14 @@ Current status:
 - Runtime request batch construction now goes through core queue helpers for initial and retry phases. The initial phase
   uses IITC-style concurrent request buckets; the retry phase remains conservative while live empty-tile behavior is
   validated.
+- Milestone A update: initial live request waves now use `createIitcTileQueueRequestBatches` from the active queue state
+  instead of fixed sequential wave construction, while preserving one initial attempt per tile before compatibility
+  retries.
+- Milestone A update: retry request failures now call the same core response-bucket classifier and queue apply path as
+  initial request failures, matching IITC's `handleResponse(undefined, tiles, false)` shape more closely.
+- Milestone A update: the live runtime no longer uses the broad same-bounds whole-response cache shortcut; same-bounds
+  pans now pass through the per-tile `IitcDataCache` fresh/stale path, while exact duplicate request keys can still
+  no-op.
 - Large initial tile plans are executed across all 25-tile request batches in waves of up to five concurrent requests,
   instead of stopping after only the first concurrent wave. This fixes low-zoom views such as z10 where the plan can
   contain more than 125 tiles.
@@ -181,11 +188,8 @@ Current status:
 - Runtime fetch cancellation is explicit: pan/zoom and data-source changes abort the active `getEntities` request, and
   core queue state can mark obsolete queued/requested tiles as stale instead of letting old responses race the newest
   map view.
-- IITC IRIS now uses the core same-zoom refresh-skip rule in live mode: if a pan stays inside the fetched padded data
-  bounds and the cached response covers the current tile plan, the map re-renders from cached entities instead of
-  issuing a new `getEntities` request.
-- Cached-response reuse is now a core decision: `packages/iitc-core` checks both fetched-bounds coverage and requested
-  tile coverage before IITC IRIS uses a cached live response.
+- IITC IRIS keeps the core same-zoom refresh-skip helper for tests/reference, but the live runtime now favors
+  tile-indexed `IitcDataCache` decisions over whole-response reuse when a pan stays inside fetched padded bounds.
 - Response merge, tile-return diagnostics, requested-tile response classification, and IITC-style request response
   buckets now live in `packages/iitc-core` with tests, so the runtime no longer owns richer-payload merging, empty-tile
   detection, unaccounted-tile detection, or recovered-tile accounting.
@@ -198,8 +202,8 @@ Current status:
   tile payloads, renders fresh cached tiles as `cache-fresh`, and can render retry-exhausted cached payloads as
   `cache-stale`.
 - Important lifecycle gap: stale fallback is partially ported but not yet fully validated against IITC-CE. IITC IRIS
-  still needs copied `cache-fresh`/`cache-stale` tile diagnostics and removal of the remaining whole-response cache
-  shortcut before the gap can be considered closed.
+  has copied `cache-fresh`/`cache-stale` tile diagnostics and no longer uses the broad whole-response cache shortcut,
+  but retry exhaustion with stale cached payloads still needs live validation before the gap can be considered closed.
 - Important performance/parity gap: live z15 views can still take tens of seconds when many summary tiles timeout and
   recover, even with `successTiles === requestedTiles` and no partials. IITC IRIS now renders the merged live response
   progressively after initial batches and throttled retry progress, closer to IITC-CE's render queue behavior; copied
@@ -325,10 +329,10 @@ Current status:
   with IITC still depends on matching all request lifecycle timing semantics.
 - Copied diagnostics include `entities.artifactFetch` so artifact-event tests can tell whether `/r/getArtifactPortals`
   was disabled, empty, ready, errored, or blocked by login HTML.
-- Cached same-bounds renders explicitly clear queue diagnostics, so copied snapshots do not mix the current tile plan
-  with stale queue counters from the previous network fetch.
-- Copied diagnostics and the dock now show entity source (`live`, `cache`, or `fixture`) so pan/zoom lifecycle tests can
-  distinguish network fetches from cached same-bounds renders.
+- Per-tile cached renders explicitly report cache-fresh/cache-stale diagnostics, so copied snapshots do not mix the
+  current tile plan with stale queue counters from the previous network fetch.
+- Copied diagnostics and the System sheet now show entity source (`live`, `cache`, or `fixture`) so pan/zoom lifecycle
+  tests can distinguish network fetches from cached same-bounds renders.
 - The dock replaces entity diagnostic snapshots on each status message instead of partially merging them, preventing
   stale retry/source/queue fields from leaking across live/cache/fixture transitions.
 - The System sheet has fixed Amsterdam and Damrak view presets for repeatable IITC/IITC IRIS comparisons.
@@ -393,7 +397,7 @@ IITC-CE source references:
 Acceptance:
 
 - Selecting the same portal in IITC-CE and IITC IRIS produces visually comparable selected-marker behavior.
-- Selection remains coherent after pan/zoom refreshes and cached same-bounds renders.
+- Selection remains coherent after pan/zoom refreshes and per-tile cached renders.
 - Copied diagnostics include selected portal identity and enough selected-portal data to compare against IITC details.
 
 Current status:

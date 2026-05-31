@@ -229,10 +229,11 @@ export function createIitcResponseBucketDiagnostics(): IitcResponseBucketDiagnos
 
 export function appendIitcResponseBucketDiagnostics(
   diagnostics: IitcResponseBucketDiagnostics,
-  response: IitcGetEntitiesResponse,
+  response: IitcGetEntitiesResponse | null | undefined,
   tileKeys: string[],
+  success = true,
 ): IitcResponseBucketDiagnostics {
-  const classification = classifyIitcTileRequestResponse(response, tileKeys);
+  const classification = classifyIitcTileRequestResponse(response, tileKeys, success);
   return {
     serverRetryTileKeys: [...diagnostics.serverRetryTileKeys, ...classification.serverRetryTileKeys],
     timeoutTileKeys: [...diagnostics.timeoutTileKeys, ...classification.timeoutTileKeys],

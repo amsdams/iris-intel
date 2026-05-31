@@ -364,6 +364,19 @@ describe('IITC map data request planning', () => {
     expect(state.tileErrorCount).toEqual({});
   });
 
+  it('accumulates failed request diagnostics through the same response bucket classifier', () => {
+    const diagnostics = appendIitcResponseBucketDiagnostics(
+      createIitcResponseBucketDiagnostics(),
+      undefined,
+      ['a', 'b'],
+      false,
+    );
+
+    expect(diagnostics.errorTileKeys).toEqual(['a', 'b']);
+    expect(diagnostics.responseRetryTileKeys).toEqual(['a', 'b']);
+    expect(diagnostics.queueDelayReasons).toEqual(['error']);
+  });
+
   it('fails or stales error tiles after the IITC retry limit', () => {
     let state = markIitcTileRequestStarted(createIitcTileQueueState(['failed', 'stale']), ['failed', 'stale']);
     for (let index = 0; index < 6; index += 1) {
