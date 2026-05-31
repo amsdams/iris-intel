@@ -90,7 +90,9 @@ export interface IitcIrisMessage {
   partialTileKeys?: string[];
   cacheFreshTileKeys?: string[];
   cacheStaleTileKeys?: string[];
+  staleGenerationCacheWarmTileKeys?: string[];
   queue?: IitcIrisQueueDiagnostics | null;
+  renderQueue?: IitcIrisRenderQueueDiagnostics | null;
   layerSettings?: IitcIrisLayerSettings;
   baseLayerId?: IitcIrisBaseLayerId;
   dataSource?: IitcIrisDataSourceSettings;
@@ -261,6 +263,16 @@ export interface IitcIrisQueueDiagnostics {
   staleTiles: number;
   activeRequests: number;
   tileErrorCount: Record<string, number>;
+}
+
+export interface IitcIrisRenderQueueDiagnostics {
+  queuedTiles: number;
+  renderedTiles: number;
+  renderedOkTiles: number;
+  renderedCacheFreshTiles: number;
+  renderedCacheStaleTiles: number;
+  lastRenderedTileStatus: 'ok' | 'cache-fresh' | 'cache-stale' | null;
+  renderedTileKeys: string[];
 }
 
 export type IitcIrisTriStateLayer = 'off' | 'on' | 'invert';

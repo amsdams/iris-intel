@@ -102,8 +102,8 @@ Current map lifecycle audit:
 | Retry lifecycle          | `requeueTile`, `handleResponse`, retry limit, timeout/error distinction, smaller batches after retries          | Retry request failures now flow through the same core response-bucket classifier and queue apply path as initial failures; returned-empty placeholder recovery remains a compatibility shim | Replace returned-empty shim with IITC-derived queue behavior after live validation |
 | Tile cache               | `DataCache` per tile, fresh/stale decisions                                                                     | Same-bounds live refreshes now flow through `IitcDataCache` per-tile fresh/stale decisions instead of the broad whole-response reuse shortcut | Validate cache-fresh/cache-stale behavior during live same-bounds pans and reloads |
 | Stale fallback           | Retry exhaustion renders stale tile via `cache-stale` when possible                                             | Wired but unproven under live retry exhaustion; copied diagnostics now expose `cacheStaleTiles` and `cacheStaleTileKeys`                   | Park unless live copies show cached tiles still ending as partial          |
-| Render queue             | `pushRenderQueue` and `processRenderQueue` incrementally render cached, network, and stale tiles                | Acceptable for now; IITC-named render queue facade handles `cache-fresh`, `ok`, and `cache-stale`, with low first-render timings proven    | Park true surgical render mutation until map-lifecycle pass resumes        |
-| Move lifecycle           | `mapMoveStart` pauses render queue; old non-cancelled tile responses ignored if no longer wanted                | Partially aligned; IRIS aborts active fetches and generation-checks responses                                                               | Revisit when porting IITC queue/cache                                      |
+| Render queue             | `pushRenderQueue` and `processRenderQueue` incrementally render cached, network, and stale tiles                | IITC-named render queue facade handles `cache-fresh`, `ok`, and `cache-stale`; copied diagnostics now expose rendered queue tile counts/statuses, but rendering still drains to merged responses | Use live diagnostics to validate flow before surgical render mutation       |
+| Move lifecycle           | `mapMoveStart` pauses render queue; old non-cancelled tile responses ignored if no longer wanted                | Milestone B started: IRIS now invalidates render generations on `movestart`, clears pending refresh timers, suppresses movement progress renders, and does not abort old map-data fetches when a new live viewport starts; stale-generation cache warming is gated off after live tests showed no benefit | Validate fast pan/zoom behavior against IITC-CE; move toward tile-by-tile wanted checks |
 | Artifacts                | IITC artifact subsystem is separate from base map-data tile lifecycle                                           | Mostly aligned after deferring artifact fetch until first map render; live non-empty payload still unverified                               | Keep as documented temporary sequencing until artifact parity is validated |
 
 Adherence summary after 2026-05-31 audit:
@@ -116,8 +116,9 @@ Adherence summary after 2026-05-31 audit:
   rendering still drains to merged renders instead of true IITC surgical mutation batches; retry-limit state exists and
   retry request failures use the same response-bucket path as initial failures, but returned-empty high-zoom recovery is
   still a compatibility path.
-- Does not yet adhere: full `MapDataRequest` render queue drain timing, surgical map-data mutation, and IITC movement
-  behavior where old map-data requests are not aborted but ignored tile-by-tile if no longer wanted.
+- Does not yet adhere: full `MapDataRequest` render queue drain timing and surgical map-data mutation. Movement behavior
+  is closer after the Milestone B `movestart` pass, but old map-data responses are still ignored by generation rather
+  than IITC's tile-by-tile wanted checks.
 - Map lifecycle is parked as acceptable for current UI parity work. Live copies on 2026-05-31 proved per-tile fresh
   cache and render queue behavior (`cacheFreshTiles` 131/132 and 132/132, first render around 0.1s). Stale fallback is
   wired and diagnosed but remains live-unproven because the test cases did not produce retry exhaustion for previously
@@ -180,6 +181,24 @@ Current status:
 - Milestone A update: the live runtime no longer uses the broad same-bounds whole-response cache shortcut; same-bounds
   pans now pass through the per-tile `IitcDataCache` fresh/stale path, while exact duplicate request keys can still
   no-op.
+- Milestone B update: the live runtime now listens to `movestart`, clears pending refresh timers, invalidates the active
+  render generation, suppresses progress renders while the map is moving, and lets old map-data requests finish instead
+  of aborting them solely because movement ended.
+- Milestone B update: starting a new live viewport request no longer aborts the previous map-data request; old responses
+  are ignored by generation checks. In-progress copied diagnostics now include cached first-render entities and
+  non-empty cached tile keys instead of reporting an empty entity block while cached tiles are visible.
+- Milestone B update: throttled progress status messages now report entity counts from the last actually rendered
+  progress frame, avoiding mixed copies where fetch counters came from a newer response but ornament draw counters came
+  from the previous render.
+- Milestone B update: copied diagnostics now include a separate `renderQueue` block with rendered tile counts split by
+  `ok`, `cache-fresh`, and `cache-stale`, plus rendered tile keys and last rendered tile status. This keeps fetch queue
+  and render queue parity evidence separate before true surgical render mutation.
+- Milestone B update: successful tile payloads from old non-aborted map-data responses were tested as cache warmers,
+  matching IITC's split where old responses can warm cache but are not rendered unless the tile is still wanted. Live
+  copies repeatedly showed `staleGenerationCacheWarmTiles: 0` while slow views correlated with high timeout retry
+  volume, so stale-generation cache warming is gated off by default as a temporary IRIS divergence.
+- Milestone B update: copied diagnostics keep `staleGenerationCacheWarmTiles` and `staleGenerationCacheWarmTileKeys` so
+  this gated behavior can be re-enabled and measured later if IITC-style movement/download delays are ported.
 - Large initial tile plans are executed across all 25-tile request batches in waves of up to five concurrent requests,
   instead of stopping after only the first concurrent wave. This fixes low-zoom views such as z10 where the plan can
   contain more than 125 tiles.

@@ -1,7 +1,7 @@
 import {h, render} from 'preact';
 import {useEffect, useMemo, useState} from 'preact/hooks';
 import './iitc-iris.css';
-import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRenderPolicy, type IitcIrisScoresState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
 import {
   createIitcMapDataPlan,
   IITC_EMPTY_TILE_RETRY_BATCH_SIZE,
@@ -208,7 +208,9 @@ interface EntityFetchState {
   partialTileKeys: string[];
   cacheFreshTileKeys: string[];
   cacheStaleTileKeys: string[];
+  staleGenerationCacheWarmTileKeys: string[];
   queue: IitcIrisQueueDiagnostics | null;
+  renderQueue: IitcIrisRenderQueueDiagnostics | null;
   baseLayerId: IitcIrisBaseLayerId;
   dataSource: IitcIrisDataSourceSettings;
   renderPolicy: IitcIrisRenderPolicy;
@@ -569,7 +571,9 @@ function entityFetchStateFromMessage(message: IitcIrisMessage, current: EntityFe
     partialTileKeys: message.partialTileKeys ?? [],
     cacheFreshTileKeys: message.cacheFreshTileKeys ?? [],
     cacheStaleTileKeys: message.cacheStaleTileKeys ?? [],
+    staleGenerationCacheWarmTileKeys: message.staleGenerationCacheWarmTileKeys ?? current.staleGenerationCacheWarmTileKeys,
     queue: message.queue ?? null,
+    renderQueue: message.renderQueue ?? null,
     baseLayerId: message.baseLayerId ?? current.baseLayerId,
     dataSource: message.dataSource ?? current.dataSource,
     renderPolicy: message.renderPolicy ?? current.renderPolicy,
@@ -850,7 +854,9 @@ function App(): h.JSX.Element {
     partialTileKeys: [],
     cacheFreshTileKeys: [],
     cacheStaleTileKeys: [],
+    staleGenerationCacheWarmTileKeys: [],
     queue: null,
+    renderQueue: null,
     baseLayerId: loadStoredBaseLayerId(),
     dataSource: createDataSourceSettings(loadStoredDataSourceId()),
     renderPolicy: DEFAULT_RENDER_POLICY,
@@ -958,7 +964,10 @@ function App(): h.JSX.Element {
       cacheFreshTileKeys: entityFetch.cacheFreshTileKeys,
       cacheStaleTiles: entityFetch.cacheStaleTileKeys.length,
       cacheStaleTileKeys: entityFetch.cacheStaleTileKeys,
+      staleGenerationCacheWarmTiles: entityFetch.staleGenerationCacheWarmTileKeys.length,
+      staleGenerationCacheWarmTileKeys: entityFetch.staleGenerationCacheWarmTileKeys,
       queue: entityFetch.queue,
+      renderQueue: entityFetch.renderQueue,
       authRequired: entityFetch.authRequired,
     },
     baseLayerId,

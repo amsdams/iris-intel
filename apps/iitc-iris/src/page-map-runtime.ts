@@ -1,5 +1,5 @@
 import L, {type Layer as LeafletLayer, type Map as LeafletMap, type TileLayer} from 'leaflet';
-import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisScoresState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
 import {
   appendIitcResponseBucketDiagnostics,
   applyIitcTileRequestResponseToQueue,
@@ -47,6 +47,7 @@ import {
   type IitcPortalArtifact,
   type IitcOrnamentVisibilitySettings,
   type IitcRawGameEntity,
+  type IitcRenderQueueTileStatus,
   pushIitcRenderQueueTile,
   type IitcTileQueueState,
 } from '@iris/iitc-core';
@@ -58,6 +59,7 @@ const BASE_LAYER_STORAGE_KEY = 'iitc-iris:base-layer';
 const COMM_TAB_STORAGE_KEY = 'iitc-chat-tab';
 const REQUEST_BOUNDS_PADDING_RATIO = 0.25;
 const OPTIONAL_OVERLAY_MIN_ZOOM = 14;
+const ENABLE_STALE_GENERATION_CACHE_WARMING = false;
 const DEFAULT_BASE_LAYER_ID: IitcIrisBaseLayerId = 'cartodb-dark-matter';
 const BASE_LAYERS: Record<IitcIrisBaseLayerId, {
   url: string;
@@ -123,6 +125,7 @@ let baseLayerId: IitcIrisBaseLayerId = DEFAULT_BASE_LAYER_ID;
 let baseLayer: TileLayer | undefined;
 let dataSource: IitcIrisDataSourceSettings = {mode: 'live'};
 let refreshTimer: number | undefined;
+let mapMoveInProgress = false;
 let currentFetchAbortController: AbortController | undefined;
 let currentPortalDetailsAbortController: AbortController | undefined;
 let currentCommAbortController: AbortController | undefined;
@@ -170,7 +173,9 @@ interface TileDiagnostics {
   partialTileKeys?: string[];
   cacheFreshTileKeys?: string[];
   cacheStaleTileKeys?: string[];
+  staleGenerationCacheWarmTileKeys?: string[];
   queue?: IitcIrisQueueDiagnostics | null;
+  renderQueue?: IitcIrisRenderQueueDiagnostics | null;
 }
 
 interface TileBatchResult {
@@ -369,12 +374,19 @@ function cancelActiveInventoryFetch(): void {
   currentInventoryAbortController = undefined;
 }
 
+function postMapMoveStarted(): void {
+  mapMoveInProgress = true;
+  latestFetchGeneration += 1;
+  latestRequestKey = '';
+  window.clearTimeout(refreshTimer);
+}
+
 function postMapMoved(): void {
   const map = window.__iitcIrisMap;
   if (!map) return;
+  mapMoveInProgress = false;
   latestFetchGeneration += 1;
   latestRequestKey = '';
-  cancelActiveEntityFetch();
   const center = map.getCenter();
   const bounds = map.getBounds();
   const zoom = map.getZoom();
@@ -1187,7 +1199,9 @@ function postEntityStatus(
     partialTileKeys: [],
     cacheFreshTileKeys: [],
     cacheStaleTileKeys: [],
+    staleGenerationCacheWarmTileKeys: [],
     queue: null,
+    renderQueue: null,
     entitySource: 'live',
   },
 ): void {
@@ -1242,7 +1256,9 @@ function postEntityStatus(
     partialTileKeys: uniqueStrings(tileDiagnostics.partialTileKeys),
     cacheFreshTileKeys: uniqueStrings(tileDiagnostics.cacheFreshTileKeys),
     cacheStaleTileKeys: uniqueStrings(tileDiagnostics.cacheStaleTileKeys),
+    staleGenerationCacheWarmTileKeys: uniqueStrings(tileDiagnostics.staleGenerationCacheWarmTileKeys),
     queue: tileDiagnostics.queue,
+    renderQueue: tileDiagnostics.renderQueue,
     baseLayerId,
     dataSource,
     renderPolicy: getRenderPolicy(),
@@ -1263,6 +1279,47 @@ function toQueueDiagnostics(state: IitcTileQueueState, partialTileKeys: string[]
     staleTiles: state.staleTileKeys.length,
     activeRequests: state.activeRequestCount,
     tileErrorCount: state.tileErrorCount,
+  };
+}
+
+function createEmptyRenderQueueDiagnostics(): IitcIrisRenderQueueDiagnostics {
+  return {
+    queuedTiles: 0,
+    renderedTiles: 0,
+    renderedOkTiles: 0,
+    renderedCacheFreshTiles: 0,
+    renderedCacheStaleTiles: 0,
+    lastRenderedTileStatus: null,
+    renderedTileKeys: [],
+  };
+}
+
+function appendRenderQueueDiagnostics(
+  diagnostics: IitcIrisRenderQueueDiagnostics,
+  tileStatuses: Record<string, IitcRenderQueueTileStatus>,
+): IitcIrisRenderQueueDiagnostics {
+  const renderedTileKeys = Object.keys(tileStatuses);
+  let renderedOkTiles = diagnostics.renderedOkTiles;
+  let renderedCacheFreshTiles = diagnostics.renderedCacheFreshTiles;
+  let renderedCacheStaleTiles = diagnostics.renderedCacheStaleTiles;
+  let lastRenderedTileStatus = diagnostics.lastRenderedTileStatus;
+
+  for (const tileKey of renderedTileKeys) {
+    const status = tileStatuses[tileKey];
+    if (status === 'ok') renderedOkTiles += 1;
+    if (status === 'cache-fresh') renderedCacheFreshTiles += 1;
+    if (status === 'cache-stale') renderedCacheStaleTiles += 1;
+    lastRenderedTileStatus = status;
+  }
+
+  return {
+    queuedTiles: 0,
+    renderedTiles: diagnostics.renderedTiles + renderedTileKeys.length,
+    renderedOkTiles,
+    renderedCacheFreshTiles,
+    renderedCacheStaleTiles,
+    lastRenderedTileStatus,
+    renderedTileKeys: uniqueStrings([...diagnostics.renderedTileKeys, ...renderedTileKeys]),
   };
 }
 
@@ -2219,6 +2276,35 @@ async function fetchEntityBatchResult(tileKeys: string[], version: string, signa
   }
 }
 
+function storeSuccessfulTilePayloads(response: IitcGetEntitiesResponse | undefined, tileKeys: string[]): string[] {
+  const storedTileKeys: string[] = [];
+  if (!response) return storedTileKeys;
+  for (const tileKey of tileKeys) {
+    const tile = response.result?.map?.[tileKey];
+    if (tile && !tile.error) {
+      mapDataCache.store(tileKey, tile);
+      storedTileKeys.push(tileKey);
+    }
+  }
+  return storedTileKeys;
+}
+
+function storeSuccessfulBatchResultPayloads(results: TileBatchResult[]): string[] {
+  return results.flatMap((result) => storeSuccessfulTilePayloads(result.response, result.tileKeys));
+}
+
+function recordStaleGenerationCacheWarmTileKeys(tileKeys: string[]): void {
+  if (tileKeys.length === 0 || !latestTileDiagnostics) return;
+  latestTileDiagnostics = {
+    ...latestTileDiagnostics,
+    staleGenerationCacheWarmTileKeys: uniqueStrings([
+      ...(latestTileDiagnostics.staleGenerationCacheWarmTileKeys ?? []),
+      ...tileKeys,
+    ]),
+  };
+  if (latestEntities) postEntityStatus(latestEntityStatus, latestEntities, latestTileDiagnostics);
+}
+
 async function fetchArtifactEntitiesForRender(version: string, signal: AbortSignal): Promise<IitcRawGameEntity[]> {
   const startTime = performance.now();
   latestArtifactDiagnostics = {
@@ -2301,6 +2387,7 @@ async function refreshEntities(): Promise<void> {
         nonEmptyTileKeys: [],
         unaccountedTileKeys: [],
         ...createIitcResponseBucketDiagnostics(),
+        renderQueue: null,
         entitySource: 'fixture',
       });
       const fixtureResponse = await fetchFixtureResponse(dataSource);
@@ -2325,6 +2412,7 @@ async function refreshEntities(): Promise<void> {
         unaccountedTileKeys,
         ...createIitcResponseBucketDiagnostics(),
         queue: null,
+        renderQueue: null,
         entitySource: 'fixture',
       });
       return;
@@ -2332,10 +2420,10 @@ async function refreshEntities(): Promise<void> {
 
     const version = extractVersion();
     if (!version) throw new Error('waiting for Intel version');
-    cancelActiveEntityFetch();
     abortController = new AbortController();
     const liveAbortController = abortController;
     currentFetchAbortController = abortController;
+    latestPlan = plan;
     let artifactEntitiesPromise: Promise<IitcRawGameEntity[]> | undefined;
     const getArtifactEntitiesPromise = (): Promise<IitcRawGameEntity[]> => {
       artifactEntitiesPromise ??= fetchArtifactEntitiesForRender(version, liveAbortController.signal);
@@ -2343,6 +2431,7 @@ async function refreshEntities(): Promise<void> {
     };
     const responses: IitcGetEntitiesResponse[] = [];
     let renderQueue = createIitcRenderQueueState();
+    let renderQueueDiagnostics = createEmptyRenderQueueDiagnostics();
     let bucketDiagnostics = createIitcResponseBucketDiagnostics();
     const freshCachedTileKeys: string[] = [];
     const staleCachedTileKeys: string[] = [];
@@ -2361,9 +2450,10 @@ async function refreshEntities(): Promise<void> {
     activeQueueState = queueState;
     let firstRenderElapsedMs: number | undefined;
     let lastProgressRenderTime = 0;
-    const renderLiveProgress = (response: IitcGetEntitiesResponse, entities: IitcIrisRenderEntities, force = false): void => {
+    const renderLiveProgress = (response: IitcGetEntitiesResponse, entities: IitcIrisRenderEntities, force = false): IitcIrisRenderEntities | undefined => {
+      if (mapMoveInProgress) return latestEntities;
       const now = performance.now();
-      if (!force && firstRenderElapsedMs !== undefined && now - lastProgressRenderTime < 500) return;
+      if (!force && firstRenderElapsedMs !== undefined && now - lastProgressRenderTime < 500) return latestEntities;
       renderEntities(entities);
       renderTileDebug(plan, response);
       lastProgressRenderTime = now;
@@ -2371,35 +2461,56 @@ async function refreshEntities(): Promise<void> {
         firstRenderElapsedMs = now - refreshStartTime;
         void getArtifactEntitiesPromise().catch(() => []);
       }
+      return entities;
     };
     const drainRenderQueue = (): IitcGetEntitiesResponse => {
+      renderQueueDiagnostics = {
+        ...renderQueueDiagnostics,
+        queuedTiles: renderQueue.entries.length,
+      };
       const drainResult = drainIitcRenderQueueToResponse(renderQueue, mergeIitcGetEntitiesResponses(responses));
       renderQueue = drainResult.state;
+      renderQueueDiagnostics = appendRenderQueueDiagnostics(renderQueueDiagnostics, drainResult.tileStatuses);
       responses.length = 0;
       responses.push(drainResult.response);
       return drainResult.response;
     };
+    let progressResponse: IitcGetEntitiesResponse | undefined;
+    let progressEntities: IitcIrisRenderEntities | undefined;
     if (freshCachedTileKeys.length > 0) {
       const cachedResponse = drainRenderQueue();
       const entities = toRenderEntities(cachedResponse, generation);
-      renderLiveProgress(cachedResponse, entities, true);
+      latestPlan = plan;
+      progressResponse = cachedResponse;
+      progressEntities = entities;
+      progressEntities = renderLiveProgress(cachedResponse, entities, true);
     }
-    postEntityStatus(`fetching ${plan.tileKeys.length} tiles`, undefined, {
+    const cachedDiagnostics = progressResponse
+      ? classifyTileDiagnostics(progressResponse, plan)
+      : {
+        returnedTiles: freshCachedTileKeys.length,
+        nonEmptyTiles: freshCachedTileKeys.length,
+        emptyTileKeys: [],
+        nonEmptyTileKeys: freshCachedTileKeys,
+        unaccountedTileKeys: [],
+      };
+    postEntityStatus(`fetching ${plan.tileKeys.length} tiles`, progressEntities, {
       requestedTiles: plan.tileKeys.length,
-      returnedTiles: freshCachedTileKeys.length,
-      nonEmptyTiles: freshCachedTileKeys.length,
+      returnedTiles: cachedDiagnostics.returnedTiles,
+      nonEmptyTiles: cachedDiagnostics.nonEmptyTiles,
       firstRenderElapsedMs,
       viewportBounds: plan.viewportBounds,
       retryRequests: 0,
       retriedTileKeys: [],
       recoveredTileKeys: [],
-      emptyTileKeys: [],
-      nonEmptyTileKeys: [],
+      emptyTileKeys: cachedDiagnostics.emptyTileKeys,
+      nonEmptyTileKeys: cachedDiagnostics.nonEmptyTileKeys,
       unaccountedTileKeys: [],
       ...bucketDiagnostics,
       cacheFreshTileKeys: freshCachedTileKeys,
       cacheStaleTileKeys: staleCachedTileKeys,
       queue: toQueueDiagnostics(queueState),
+      renderQueue: renderQueueDiagnostics,
     });
 
     const initialPendingTileKeys = new Set(queueTileKeys);
@@ -2417,6 +2528,9 @@ async function refreshEntities(): Promise<void> {
 
       const batchResults = await Promise.all(waveBatches.map((batch) => fetchEntityBatchResult(batch, version, liveAbortController.signal)));
       if (generation !== latestFetchGeneration) {
+        if (ENABLE_STALE_GENERATION_CACHE_WARMING) {
+          recordStaleGenerationCacheWarmTileKeys(storeSuccessfulBatchResultPayloads(batchResults));
+        }
         queueState = markIitcTileQueueStale(queueState);
         activeQueueState = queueState;
         return;
@@ -2450,8 +2564,8 @@ async function refreshEntities(): Promise<void> {
         const entities = toRenderEntities(mergedResponse, generation);
         const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyTileDiagnostics(mergedResponse, plan);
         initialRequestCount += 1;
-        renderLiveProgress(mergedResponse, entities, initialRequestCount === 1);
-        postEntityStatus(`batch ${initialRequestCount}`, entities, {
+        const statusEntities = renderLiveProgress(mergedResponse, entities, initialRequestCount === 1);
+        postEntityStatus(`batch ${initialRequestCount}`, statusEntities, {
           requestedTiles: plan.tileKeys.length,
           returnedTiles,
           nonEmptyTiles,
@@ -2464,6 +2578,7 @@ async function refreshEntities(): Promise<void> {
           cacheFreshTileKeys: freshCachedTileKeys,
           cacheStaleTileKeys: staleCachedTileKeys,
           queue: toQueueDiagnostics(queueState),
+          renderQueue: renderQueueDiagnostics,
         });
       }
     }
@@ -2498,6 +2613,9 @@ async function refreshEntities(): Promise<void> {
         queueState = markIitcTileRequestStarted(queueState, batchTileKeys);
         const result = await fetchEntityBatchResult(batchTileKeys, version, abortController.signal);
         if (generation !== latestFetchGeneration) {
+          if (ENABLE_STALE_GENERATION_CACHE_WARMING) {
+            recordStaleGenerationCacheWarmTileKeys(storeSuccessfulTilePayloads(result.response, result.tileKeys));
+          }
           queueState = markIitcTileQueueStale(queueState);
           activeQueueState = queueState;
           return;
@@ -2534,8 +2652,8 @@ async function refreshEntities(): Promise<void> {
         const entities = toRenderEntities(mergedResponse, generation);
         const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyTileDiagnostics(mergedResponse, plan);
         const recoveredTileKeys = getIitcRecoveredTileKeys(initialRetryTileKeys, nonEmptyTileKeys);
-        renderLiveProgress(mergedResponse, entities);
-        postEntityStatus(`retry ${pass} ${index + 1}/${queueRetryBatches.length}`, entities, {
+        const statusEntities = renderLiveProgress(mergedResponse, entities);
+        postEntityStatus(`retry ${pass} ${index + 1}/${queueRetryBatches.length}`, statusEntities, {
           requestedTiles: plan.tileKeys.length,
           returnedTiles,
           nonEmptyTiles,
@@ -2551,6 +2669,7 @@ async function refreshEntities(): Promise<void> {
           cacheFreshTileKeys: freshCachedTileKeys,
           cacheStaleTileKeys: staleCachedTileKeys,
           queue: toQueueDiagnostics(queueState),
+          renderQueue: renderQueueDiagnostics,
         });
       }
     }
@@ -2589,6 +2708,7 @@ async function refreshEntities(): Promise<void> {
       cacheStaleTileKeys: staleCachedTileKeys,
       partialTileKeys,
       queue: toQueueDiagnostics(queueState, partialTileKeys),
+      renderQueue: renderQueueDiagnostics,
     });
     if (currentFetchAbortController === abortController) currentFetchAbortController = undefined;
   } catch (error) {
@@ -2631,6 +2751,7 @@ function boot(): void {
   setBaseLayer(loadStoredBaseLayerId());
   L.control.zoom({position: 'topright'}).addTo(map);
 
+  map.on('movestart', postMapMoveStarted);
   map.on('moveend', postMapMoved);
   window.setTimeout(() => {
     map.invalidateSize();
