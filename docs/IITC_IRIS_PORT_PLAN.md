@@ -99,7 +99,7 @@ Current map lifecycle audit:
 |--------------------------|-----------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
 | Tile math/data zoom      | `map_data_calc_tools.js` tile params and adjusted data zoom                                                     | Mostly aligned in `packages/iitc-core` with tests                                                                                           | Keep validating against IITC fixtures                                      |
 | Initial request batching | `MapDataRequest.processRequestQueue`: max 5 requests, up to 25 tiles, dynamic bucket sizing, centre-first order | Core has centre-first tile ordering and IITC dynamic batch helpers; runtime still drives fixed initial waves instead of the full queue loop | Move runtime orchestration onto core queue helpers end-to-end              |
-| Retry lifecycle          | `requeueTile`, `handleResponse`, retry limit, timeout/error distinction, smaller batches after retries          | Partially aligned; retry accounting exists, but returned-empty placeholder recovery remains a compatibility shim                            | Replace shim with IITC-derived queue behavior                              |
+| Retry lifecycle          | `requeueTile`, `handleResponse`, retry limit, timeout/error distinction, smaller batches after retries          | Partially aligned; retry accounting exists, but returned-empty placeholder recovery remains a compatibility shim; retry-phase request failures can still bypass the same bucketed `handleResponse(undefined, tiles, false)` path used by initial batch failures | Replace shim with IITC-derived queue behavior                              |
 | Tile cache               | `DataCache` per tile, fresh/stale decisions                                                                     | Acceptable for now; `IitcDataCache` stores tile payloads and live copies proved `cacheFreshTiles` can cover 131/132 and 132/132 tiles       | Park until deeper map-lifecycle pass replaces whole-response shortcut      |
 | Stale fallback           | Retry exhaustion renders stale tile via `cache-stale` when possible                                             | Wired but unproven under live retry exhaustion; copied diagnostics now expose `cacheStaleTiles` and `cacheStaleTileKeys`                   | Park unless live copies show cached tiles still ending as partial          |
 | Render queue             | `pushRenderQueue` and `processRenderQueue` incrementally render cached, network, and stale tiles                | Acceptable for now; IITC-named render queue facade handles `cache-fresh`, `ok`, and `cache-stale`, with low first-render timings proven    | Park true surgical render mutation until map-lifecycle pass resumes        |
@@ -114,7 +114,8 @@ Adherence summary after 2026-05-31 audit:
 - Partially adheres: dynamic request batching exists in core but is not the single runtime driver; `IitcDataCache` and an
   IITC-named render queue facade now exist; retry-exhausted tiles can use stale cached payloads; progressive rendering
   still drains to merged renders instead of true IITC surgical mutation batches; retry-limit state exists but
-  returned-empty high-zoom recovery is still a compatibility path.
+  returned-empty high-zoom recovery is still a compatibility path; retry request failures during the runtime retry loop
+  are not yet handled through the same response-bucket path as IITC `handleResponse`.
 - Does not yet adhere: complete replacement of whole-response cache reuse with per-tile cache decisions, full
   `MapDataRequest` render queue drain timing, surgical map-data mutation, and IITC movement behavior where old map-data
   requests are not aborted but ignored tile-by-tile if no longer wanted.
@@ -309,8 +310,9 @@ Acceptance:
 
 Current status:
 
-- The dock shows zoom, data zoom, summary availability, tile span, fetch state, entity totals, real/placeholder/ornament
-  portal counts, and copy-to-clipboard diagnostics.
+- The System sheet shows zoom, data zoom, summary availability, tile span, fetch state, entity totals,
+  real/placeholder/ornament portal counts, and copy-to-clipboard diagnostics. Earlier versions used a floating debug
+  dock; that UI has been moved into the System sheet so map-first use has no permanent top-left debug panel.
 - Copied diagnostics include IITC-style request response buckets (`serverRetryTileKeys`, `timeoutTileKeys`,
   `errorTileKeys`, `responseRetryTileKeys`, and `queueDelayReasons`) so slow-network retries can be separated from
   returned-empty tile recovery.
@@ -329,8 +331,8 @@ Current status:
   distinguish network fetches from cached same-bounds renders.
 - The dock replaces entity diagnostic snapshots on each status message instead of partially merging them, preventing
   stale retry/source/queue fields from leaking across live/cache/fixture transitions.
-- The dock has fixed Amsterdam and Damrak view presets for repeatable IITC/IITC IRIS comparisons.
-- The dock can jump to arbitrary comparison views from `lat,lng,z` text, Intel map URLs with `ll` and `z`, or IITC-CE
+- The System sheet has fixed Amsterdam and Damrak view presets for repeatable IITC/IITC IRIS comparisons.
+- The System sheet can jump to arbitrary comparison views from `lat,lng,z` text, Intel map URLs with `ll` and `z`, or IITC-CE
   portal links with `pll`.
 - The floating map-controls panel has 25%-viewport pan buttons and +/- zoom buttons; these use the same Leaflet
   `setView` path as presets and therefore exercise the same move/zoom request lifecycle as mouse interaction.
@@ -339,9 +341,9 @@ Current status:
   with the selected base map persisted for repeatable visual comparisons.
 - Layer toggles are persisted; the default comparison view enables only fields, links, and portals while leaving level
   fill, health fill, ornaments, artifacts, labels, and tile debug off.
-- Base map, core/detail layer toggles, side-system tabs, and pan/zoom controls live outside the main debug/comparison
-  dock. The data-source switch remains in the dock because it is comparison/fixture infrastructure rather than
-  IITC-style map UI.
+- Base map, core/detail layer toggles, side-system tabs, and pan/zoom controls live outside the debug/comparison
+  controls. The data-source switch now lives in the System sheet because it is comparison/fixture infrastructure rather
+  than IITC-style map UI.
 - Current layer toggles:
     - `F`: fields.
     - `LN`: links.
@@ -359,9 +361,9 @@ Current status:
 - Optional portal styling (`LF`, `HF`, `LV`) only renders when detailed portal data is available at zoom 14+; toggles
   may be enabled in the dock but still hidden in low-zoom placeholder mode. `OR` and `AR` follow IITC-CE overlay
   behavior and can render at any zoom when their data is available.
-- The dock has a data-source switch for live Intel data, bundled Amsterdam z10/z14 fixtures, and a Damrak z15 fixture
-  extracted from an IITC HAR. Fixture mode renders deterministic saved `getEntities` responses and jumps to the matching
-  view.
+- The System sheet has a data-source switch for live Intel data, bundled Amsterdam z10/z14 fixtures, and a Damrak z15
+  fixture extracted from an IITC HAR. Fixture mode renders deterministic saved `getEntities` responses and jumps to the
+  matching view.
 - Copied diagnostics include `renderPolicy`, so comparison snapshots show whether optional detail overlays were eligible
   to render.
 - Visual parity comparisons should use the dock's viewport P/L/F counts and copied `entities.viewport` block; total
@@ -429,6 +431,9 @@ IITC-CE source references:
 - `reference/IITC-CE/core/code/comm.js`
 - `reference/IITC-CE/core/code/chat.js`
 - `reference/IITC-CE/core/code/sidebar.js`
+- `reference/IITC-CE/core/code/entity_decode.js` for extended portal history bits in `getEntities`.
+- `reference/IITC-CE/plugins/highlight-portal-history.js` for visited/captured/scout-controlled highlighter behavior.
+- `reference/IITC-CE/plugins/keys-on-map.js` and `reference/IITC-CE/plugins/keys.js` for key-count map labels.
 
 Acceptance:
 
@@ -464,8 +469,8 @@ Current status:
 - The request chips now live in panel footers. Inventory has a more dedicated layout for item totals, selected-portal key
   counts, top item rows, and top key rows now that live inventory responses have been observed working.
 - UI shell now uses the bottom tab bar and one-sheet-at-a-time model on desktop and mobile. Passcode redemption is folded
-  into the Inventory sheet, keeping the primary tabs to Map, Layers, Portal, COMM, Scores, and Inventory while preserving
-  the map-first Mini-IRIS feel.
+  into the Inventory sheet, keeping the primary tabs to Map, Layers, Portal, COMM, Scores, Inventory, and System while
+  preserving the map-first Mini-IRIS feel.
 - Passcodes are now wired as a core Intel panel using IITC's `redeemReward` request shape. The panel sanitizes printable
   passcodes, posts `/r/redeemReward`, and displays AP/XM/other/item rewards with endpoint diagnostics in the footer.
   Live reward formatting can be refined further after testing real passcode responses.
@@ -474,10 +479,15 @@ Current status:
   the existing IRIS inventory implementation. Plugin-like inventory extensions, player tracker, draw tools, and richer
   key overlays can be classified separately after the core inventory panel works.
 - First-pass history/key overlays are intentionally low risk and IITC-aligned: the Layers sheet has tri-state controls
-  for captured, visited, scout-controlled, and key count (`off`, `on`, `invert`). The runtime styles portals using known
-  `/r/getPortalDetails` history data and `/r/getInventory` key counts by GUID, following IITC highlighter/plugin
-  behavior from `plugins/uniques.js`, `plugins/keys.js`, and the community non-captured/visited/scout highlighters. This
-  pass does not add bulk history fetching or hide portals; broader plugin/highlighter parity remains later work.
+  for captured, visited, scout-controlled, and key count (`off`, `on`, `invert`). The runtime styles portals using
+  extended `getEntities` history bits when present, remembered `/r/getPortalDetails` history data, and `/r/getInventory`
+  key counts by GUID, following IITC behavior from `core/code/entity_decode.js`, `plugins/highlight-portal-history.js`,
+  `plugins/keys.js`, and `plugins/keys-on-map.js`. Inverted history modes treat missing history as a target
+  (`VIS!` means not known visited, `CAP!` means not known captured, and `SC!` means not known scout-controlled). This
+  pass does not add bulk history fetching or hide/filter behavior; broader plugin/highlighter parity remains later work.
+- The System sheet now owns app-level comparison/debug controls: copied diagnostics, Intel URL copy, fixture/live data
+  source, view presets, jump input, and debug rows. This is an intentional product-shell divergence from IITC-CE’s
+  sidebar/dropdown placement, kept separate from core map workflows so visual map comparisons remain meaningful.
 
 ## Pass 8: Replacement Readiness - Not Started
 

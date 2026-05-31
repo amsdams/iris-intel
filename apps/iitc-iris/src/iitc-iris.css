@@ -493,7 +493,8 @@
   background: rgb(10 18 25 / 42%);
 }
 
-.iitc-iris-request-side-panel {
+.iitc-iris-request-side-panel,
+.iitc-iris-system-panel {
   position: absolute;
   right: 12px;
   bottom: 12px;
@@ -513,6 +514,13 @@
   font-size: 12px;
   letter-spacing: 0;
   pointer-events: auto;
+}
+
+.iitc-iris-panel-topbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  gap: 8px;
+  align-items: center;
 }
 
 .iitc-iris-request-panel-header {
@@ -976,7 +984,7 @@
   left: 12px;
   z-index: 10003;
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 4px;
   box-sizing: border-box;
   width: min(560px, calc(100vw - 24px));
@@ -1015,7 +1023,8 @@
 
 .iitc-iris-map-controls,
 .iitc-iris-portal-side-panel,
-.iitc-iris-request-side-panel {
+.iitc-iris-request-side-panel,
+.iitc-iris-system-panel {
   top: auto;
   right: 12px;
   bottom: 64px;
@@ -1032,13 +1041,15 @@
 .iitc-iris-sheet-portal .iitc-iris-portal-side-panel,
 .iitc-iris-sheet-comm .iitc-iris-request-side-panel,
 .iitc-iris-sheet-scores .iitc-iris-request-side-panel,
-.iitc-iris-sheet-inventory .iitc-iris-request-side-panel {
+.iitc-iris-sheet-inventory .iitc-iris-request-side-panel,
+.iitc-iris-sheet-system .iitc-iris-system-panel {
   display: grid;
 }
 
 .iitc-iris-sheet-map .iitc-iris-map-controls,
 .iitc-iris-sheet-map .iitc-iris-portal-side-panel,
-.iitc-iris-sheet-map .iitc-iris-request-side-panel {
+.iitc-iris-sheet-map .iitc-iris-request-side-panel,
+.iitc-iris-sheet-map .iitc-iris-system-panel {
   display: none;
 }
 

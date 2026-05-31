@@ -1,4 +1,4 @@
-import type {IitcField, IitcLink, IitcPortal, IitcTeam} from './types';
+import type {IitcField, IitcLink, IitcPortal, IitcPortalHistory, IitcTeam} from './types';
 import {parseIitcArtifactBrief, type IitcArtifactBrief} from './artifact';
 
 export type IitcRawGameEntity = [string, number, unknown[]];
@@ -45,6 +45,9 @@ export interface IitcGetEntitiesResponse {
 }
 
 const FAKE_FIELD_EDGE_LINK_PATTERN = /^[0-9a-f]{32}\.b_[ab][bc]$/;
+const SUMMARY_PORTAL_DATA_LENGTH = 14;
+const DETAILED_PORTAL_DATA_LENGTH = SUMMARY_PORTAL_DATA_LENGTH + 4;
+const EXTENDED_PORTAL_DATA_LENGTH = DETAILED_PORTAL_DATA_LENGTH + 1;
 
 function asTeam(value: unknown): IitcTeam {
   if (value === 'E' || value === 'R' || value === 'N' || value === 'M') return value;
@@ -57,6 +60,16 @@ function asNumber(value: unknown, fallback = 0): number {
 
 function asString(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value : fallback;
+}
+
+export function parseIitcHistoryDetail(value: unknown): IitcPortalHistory {
+  const raw = asNumber(value);
+  return {
+    raw,
+    visited: Boolean(raw & 1),
+    captured: Boolean(raw & 2),
+    scoutControlled: Boolean(raw & 4),
+  };
 }
 
 export function isIitcFakeFieldEdgeLink(guid: string): boolean {
@@ -73,15 +86,16 @@ export function decodeIitcPortalEntity(entity: IitcRawGameEntity, isPlaceholder 
     team: asTeam(data[1]),
     latE6: asNumber(data[2]),
     lngE6: asNumber(data[3]),
-    level: data.length >= 14 ? asNumber(data[4]) : undefined,
-    health: data.length >= 14 ? asNumber(data[5]) : undefined,
-    resCount: data.length >= 14 ? asNumber(data[6]) : undefined,
-    image: data.length >= 14 ? asString(data[7]) : undefined,
-    title: data.length >= 14 ? asString(data[8]) : undefined,
+    level: data.length >= SUMMARY_PORTAL_DATA_LENGTH ? asNumber(data[4]) : undefined,
+    health: data.length >= SUMMARY_PORTAL_DATA_LENGTH ? asNumber(data[5]) : undefined,
+    resCount: data.length >= SUMMARY_PORTAL_DATA_LENGTH ? asNumber(data[6]) : undefined,
+    image: data.length >= SUMMARY_PORTAL_DATA_LENGTH ? asString(data[7]) : undefined,
+    title: data.length >= SUMMARY_PORTAL_DATA_LENGTH ? asString(data[8]) : undefined,
     ornaments: Array.isArray(data[9]) ? data[9].filter((value): value is string => typeof value === 'string') : undefined,
-    mission: data.length >= 14 ? Boolean(data[10]) : undefined,
-    mission50plus: data.length >= 14 ? Boolean(data[11]) : undefined,
-    artifactBrief: data.length >= 14 ? parseIitcArtifactBrief(data[12]) : undefined,
+    mission: data.length >= SUMMARY_PORTAL_DATA_LENGTH ? Boolean(data[10]) : undefined,
+    mission50plus: data.length >= SUMMARY_PORTAL_DATA_LENGTH ? Boolean(data[11]) : undefined,
+    artifactBrief: data.length >= SUMMARY_PORTAL_DATA_LENGTH ? parseIitcArtifactBrief(data[12]) : undefined,
+    history: data.length >= EXTENDED_PORTAL_DATA_LENGTH ? parseIitcHistoryDetail(data[DETAILED_PORTAL_DATA_LENGTH]) : undefined,
     isPlaceholder,
     ent: entity,
   };

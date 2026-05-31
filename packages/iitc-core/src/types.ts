@@ -9,6 +9,14 @@ export interface IitcPortal {
   health?: number;
   title?: string;
   ornaments?: string[];
+  history?: IitcPortalHistory;
+}
+
+export interface IitcPortalHistory {
+  raw: number;
+  visited: boolean;
+  captured: boolean;
+  scoutControlled: boolean;
 }
 
 export interface IitcLink {

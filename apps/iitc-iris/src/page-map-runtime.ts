@@ -505,7 +505,8 @@ function getPortalHealthFillOpacity(health: number): number {
 }
 
 function triStateMatches(mode: IitcIrisTriStateLayer, value: boolean | undefined): boolean {
-  if (mode === 'off' || value === undefined) return false;
+  if (mode === 'off') return false;
+  if (value === undefined) return mode === 'invert';
   return mode === 'invert' ? !value : value;
 }
 
@@ -959,7 +960,7 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
       addRenderedLayer(layers.labels, createLevelLabelMarker(latLng, portal.level, portal.team));
     }
     const keyCount = getPortalKeyCount(portal.guid);
-    if (layerSettings.keyCount !== 'off' && keyCount !== undefined && keyCount > 0) {
+    if (layerSettings.keyCount === 'on' && keyCount !== undefined && keyCount > 0) {
       addRenderedLayer(layers.labels, createKeyCountMarker(latLng, keyCount, radius));
     }
   }
@@ -2041,23 +2042,27 @@ function toRenderEntities(response: IitcGetEntitiesResponse, generation: number,
 
   return {
     generation,
-    portals: Object.values(decoded.portals).map((portal) => ({
-      guid: portal.guid,
-      title: portal.title,
-      image: portal.image,
-      team: portal.team,
-      latE6: portal.latE6,
-      lngE6: portal.lngE6,
-      level: portal.level,
-      health: portal.health,
-      resCount: portal.resCount,
-      mission: portal.mission,
-      mission50plus: portal.mission50plus,
-      ornaments: portal.ornaments,
-      artifacts: toRenderArtifacts(getIitcPortalArtifacts(portal.artifactBrief)),
-      history: portalHistoryByGuid.get(portal.guid),
-      isPlaceholder: portal.isPlaceholder,
-    })),
+    portals: Object.values(decoded.portals).map((portal) => {
+      const history = portal.history ?? portalHistoryByGuid.get(portal.guid);
+      if (portal.history) portalHistoryByGuid.set(portal.guid, portal.history);
+      return {
+        guid: portal.guid,
+        title: portal.title,
+        image: portal.image,
+        team: portal.team,
+        latE6: portal.latE6,
+        lngE6: portal.lngE6,
+        level: portal.level,
+        health: portal.health,
+        resCount: portal.resCount,
+        mission: portal.mission,
+        mission50plus: portal.mission50plus,
+        ornaments: portal.ornaments,
+        artifacts: toRenderArtifacts(getIitcPortalArtifacts(portal.artifactBrief)),
+        history,
+        isPlaceholder: portal.isPlaceholder,
+      };
+    }),
     links: Object.values(decoded.links).map((link) => ({
       guid: link.guid,
       team: link.team,

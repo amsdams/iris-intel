@@ -87,4 +87,21 @@ describe('IITC entity decoding', () => {
       {role: 'target', type: 'jarvis', ids: []},
     ]);
   });
+
+  it('decodes extended portal history bits like IITC', () => {
+    const historyPortal: IitcRawGameEntity = [
+      'history.16',
+      123,
+      ['p', 'R', 52_373_000, 4_895_000, 6, 80, 8, 'image', 'History Portal', [], false, false, null, 123, [], [], 'owner', null, 3],
+    ];
+
+    const portal = decodeIitcGameEntities([historyPortal]).portals['history.16'];
+
+    expect(portal.history).toEqual({
+      raw: 3,
+      visited: true,
+      captured: true,
+      scoutControlled: false,
+    });
+  });
 });
