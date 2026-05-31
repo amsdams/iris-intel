@@ -326,6 +326,21 @@ export function markIitcTileQueueStale(state: IitcTileQueueState): IitcTileQueue
   };
 }
 
+export function markIitcTileQueueComplete(state: IitcTileQueueState): IitcTileQueueState {
+  const unresolvedTileKeys = unique([
+    ...state.queuedTileKeys,
+    ...state.requestedTileKeys,
+  ]);
+
+  return {
+    ...state,
+    queuedTileKeys: [],
+    requestedTileKeys: [],
+    failedTileKeys: unique([...state.failedTileKeys, ...unresolvedTileKeys]),
+    activeRequestCount: 0,
+  };
+}
+
 function requeueIitcTile(state: IitcTileQueueState, tileKey: string, isError: boolean, options: IitcTileQueueApplyOptions): IitcTileQueueState {
   if (!state.queuedTileKeys.includes(tileKey)) return state;
 

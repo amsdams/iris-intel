@@ -15,6 +15,7 @@ import {
   getIitcReusableCacheClassification,
   getIitcPortalArtifacts,
   IITC_EMPTY_TILE_RETRY_PASSES,
+  markIitcTileQueueComplete,
   markIitcTileQueueStale,
   markIitcTileRequestStarted,
   mergeIitcGetEntitiesResponses,
@@ -1569,6 +1570,8 @@ async function refreshEntities(): Promise<void> {
     const entities = toRenderEntities(mergedResponse, generation, artifactEntities);
     const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyTileDiagnostics(mergedResponse, plan);
     const recoveredTileKeys = getIitcRecoveredTileKeys(initialRetryTileKeys, nonEmptyTileKeys);
+    queueState = markIitcTileQueueComplete(queueState);
+    activeQueueState = queueState;
     latestPlan = plan;
     latestResponse = mergedResponse;
     renderEntities(entities);

@@ -22,6 +22,7 @@ import {
   iitcBoundsContainsBounds,
   latToIitcTile,
   lngToIitcTile,
+  markIitcTileQueueComplete,
   markIitcTileQueueStale,
   markIitcTileRequestStarted,
   mergeIitcGetEntitiesResponses,
@@ -326,6 +327,16 @@ describe('IITC map data request planning', () => {
     expect(staleState.requestedTileKeys).toEqual([]);
     expect(staleState.staleTileKeys).toEqual(['a', 'b', 'c']);
     expect(staleState.activeRequestCount).toBe(0);
+  });
+
+  it('marks unresolved queue tiles failed when request processing is complete', () => {
+    const state = markIitcTileRequestStarted(createIitcTileQueueState(['a', 'b', 'c']), ['b']);
+    const completeState = markIitcTileQueueComplete(state);
+
+    expect(completeState.queuedTileKeys).toEqual([]);
+    expect(completeState.requestedTileKeys).toEqual([]);
+    expect(completeState.failedTileKeys).toEqual(['a', 'b', 'c']);
+    expect(completeState.activeRequestCount).toBe(0);
   });
 
   it('can keep returned-empty summary tiles queued for live-compatible recovery', () => {
