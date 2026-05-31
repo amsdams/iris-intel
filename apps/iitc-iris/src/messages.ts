@@ -20,6 +20,8 @@ export const IITC_IRIS_MESSAGES = {
   passcodeStatus: 'IITC_IRIS_PASSCODE_STATUS',
   requestInventory: 'IITC_IRIS_REQUEST_INVENTORY',
   inventoryStatus: 'IITC_IRIS_INVENTORY_STATUS',
+  requestStatus: 'IITC_IRIS_REQUEST_STATUS',
+  agentStatus: 'IITC_IRIS_AGENT_STATUS',
 } as const;
 
 export type IitcIrisMessageType = typeof IITC_IRIS_MESSAGES[keyof typeof IITC_IRIS_MESSAGES];
@@ -95,6 +97,7 @@ export interface IitcIrisMessage {
   queue?: IitcIrisQueueDiagnostics | null;
   renderQueue?: IitcIrisRenderQueueDiagnostics | null;
   timing?: IitcIrisMapTimingDiagnostics | null;
+  requestDiagnostics?: IitcIrisRequestDiagnostics;
   playerTracker?: IitcIrisPlayerTrackerDiagnostics;
   layerSettings?: IitcIrisLayerSettings;
   baseLayerId?: IitcIrisBaseLayerId;
@@ -107,6 +110,7 @@ export interface IitcIrisMessage {
   scores?: IitcIrisScoresState;
   passcode?: IitcIrisPasscodeState;
   inventory?: IitcIrisInventoryState;
+  agent?: IitcIrisAgentState;
   commTab?: IitcIrisCommTab;
   commOlder?: boolean;
   commMessage?: string;
@@ -136,6 +140,24 @@ export interface IitcIrisCommState {
     maxLatE6: number;
     maxLngE6: number;
   };
+}
+
+export interface IitcIrisAgentState {
+  status: 'idle' | 'ready' | 'missing';
+  nickname?: string;
+  team?: 'E' | 'R' | 'N';
+  level?: number;
+  ap?: number;
+  energy?: number;
+  xmCapacity?: number;
+  availableInvites?: number;
+  minApForCurrentLevel?: number;
+  minApForNextLevel?: number;
+  xmPercent?: number;
+  levelPercent?: number;
+  apToNextLevel?: number;
+  maxLevel?: boolean;
+  staticFromPage?: boolean;
 }
 
 export interface IitcIrisCommMessage {
@@ -267,6 +289,17 @@ export interface IitcIrisQueueDiagnostics {
   staleTiles: number;
   activeRequests: number;
   tileErrorCount: Record<string, number>;
+}
+
+export interface IitcIrisRequestDiagnostics {
+  activeRequests: number;
+  activeByEndpoint: Record<string, number>;
+  active: Array<{
+    id: number;
+    endpoint: string;
+    group?: string;
+    elapsedMs: number;
+  }>;
 }
 
 export interface IitcIrisRenderQueueDiagnostics {

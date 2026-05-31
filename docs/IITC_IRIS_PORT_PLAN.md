@@ -537,6 +537,10 @@ Current status:
 - The System sheet now owns app-level comparison/debug controls: copied diagnostics, Intel URL copy, fixture/live data
   source, view presets, jump input, and debug rows. This is an intentional product-shell divergence from IITC-CE’s
   sidebar/dropdown placement, kept separate from core map workflows so visual map comparisons remain meaningful.
+- Map data request lifecycle now follows IITC-CE's active refill model: initial requests keep up to five active
+  `getEntities` calls, each completed response immediately opens a slot for the next queued batch, and tile
+  timeout/error retries are requeued through the same flow up to the IITC retry limit. This replaces the earlier
+  wave-barrier behavior where IRIS waited for all active requests in a wave before starting more work.
 
 ## Pass 8: Replacement Readiness - Not Started
 

@@ -319,6 +319,38 @@ describe('IITC map data request planning', () => {
     })).toEqual([['c', 'f']]);
   });
 
+  it('refills open request slots as IITC responses complete', () => {
+    let state = createIitcTileQueueState(['a', 'b', 'c', 'd', 'e', 'f', 'g']);
+    const firstBatches = createIitcTileQueueRequestBatches(state, {
+      maxRequests: 2,
+      tilesPerRequest: 3,
+    });
+    expect(firstBatches).toEqual([['a', 'b', 'c'], ['d', 'e', 'f']]);
+
+    for (const batch of firstBatches) state = markIitcTileRequestStarted(state, batch);
+    expect(state.activeRequestCount).toBe(2);
+    expect(createIitcTileQueueRequestBatches(state, {
+      maxRequests: 2,
+      tilesPerRequest: 3,
+    })).toEqual([]);
+
+    state = applyIitcTileRequestResponseToQueue(state, {
+      result: {
+        map: {
+          a: {gameEntities: []},
+          b: {gameEntities: []},
+          c: {gameEntities: []},
+        },
+      },
+    }, ['a', 'b', 'c']).state;
+
+    expect(state.activeRequestCount).toBe(1);
+    expect(createIitcTileQueueRequestBatches(state, {
+      maxRequests: 2,
+      tilesPerRequest: 3,
+    })).toEqual([['g']]);
+  });
+
   it('marks an obsolete queue as stale and inactive', () => {
     const state = markIitcTileRequestStarted(createIitcTileQueueState(['a', 'b', 'c']), ['b']);
     const staleState = markIitcTileQueueStale(state);

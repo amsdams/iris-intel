@@ -1,5 +1,5 @@
 import L, {type Layer as LeafletLayer, type Map as LeafletMap, type TileLayer} from 'leaflet';
-import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
 import {
   appendIitcResponseBucketDiagnostics,
   applyIitcTileRequestResponseToQueue,
@@ -7,7 +7,6 @@ import {
   createIitcResponseBucketDiagnostics,
   createIitcTileQueueState,
   createIitcTileQueueRequestBatches,
-  createIitcEmptyTileRetryBatches,
   createIitcCommChannelData,
   createIitcRenderQueueState,
   createIitcMapDataPlan,
@@ -24,9 +23,6 @@ import {
   getIitcRecoveredTileKeys,
   getIitcPortalArtifacts,
   isIitcExcludedOrnament,
-  IITC_EMPTY_TILE_RETRY_PASSES,
-  IITC_MAX_TILE_RETRIES,
-  IITC_NUM_TILES_PER_REQUEST,
   IITC_PLAYER_TRACKER_LINE_COLOR,
   IITC_PLAYER_TRACKER_MAX_DISPLAY_EVENTS,
   IITC_PLAYER_TRACKER_MAX_TIME,
@@ -74,6 +70,16 @@ const FAST_MOVE_REFRESH_DELAY_MS = 250;
 const IITC_MOVE_REFRESH_DELAY_MS = 3000;
 const ENABLE_STALE_GENERATION_CACHE_WARMING = false;
 const PLAYER_TRACKER_COMM_REFRESH_MS = 120_000;
+const IITC_IRIS_ASSET_BASE_URL = (() => {
+  const script = document.currentScript instanceof HTMLScriptElement ? document.currentScript.src : '';
+  return script ? new URL('.', script).toString() : '';
+})();
+const PLAYER_TRACKER_MARKER_ICON_OPTIONS = {
+  iconSize: [25, 41] as [number, number],
+  iconAnchor: [12, 41] as [number, number],
+  popupAnchor: [1, -34] as [number, number],
+  shadowSize: [41, 41] as [number, number],
+};
 const DEFAULT_BASE_LAYER_ID: IitcIrisBaseLayerId = 'cartodb-dark-matter';
 const BASE_LAYERS: Record<IitcIrisBaseLayerId, {
   url: string;
@@ -170,6 +176,25 @@ let playerTrackerDiagnostics: IitcPlayerTrackerDiagnostics = getIitcPlayerTracke
 let playerTrackerRefreshTimer: number | undefined;
 let currentPlayerTrackerCommAbortController: AbortController | undefined;
 const playerTrackerProcessedCommGuids = new Set<string>();
+let nextIitcRequestId = 1;
+const activeIitcRequests = new Map<number, {
+  endpoint: string;
+  group?: string;
+  startedAt: number;
+}>();
+
+interface IitcPagePlayer {
+  ap?: unknown;
+  available_invites?: unknown;
+  energy?: unknown;
+  min_ap_for_current_level?: unknown;
+  min_ap_for_next_level?: unknown;
+  nickname?: unknown;
+  team?: unknown;
+  verified_level?: unknown;
+  level?: unknown;
+  xm_capacity?: unknown;
+}
 const commChannelsData: Record<IitcCommChannel, IitcCommChannelData> = {
   all: createIitcCommChannelData(),
   faction: createIitcCommChannelData(),
@@ -1083,55 +1108,89 @@ function formatPlayerTrackerAgo(time: number, now = Date.now()): string {
 
 function createPlayerTrackerPopup(playerName: string, player: IitcPlayerTrackerStored[string]): HTMLElement {
   const root = document.createElement('div');
-  root.className = 'iitc-iris-player-tracker-popup';
-  const title = document.createElement('strong');
-  title.className = `iitc-iris-player-tracker-name iitc-iris-player-tracker-${player.team}`;
+  root.className = 'plugin-player-tracker-popup iitc-iris-player-tracker-popup';
+  const title = document.createElement('span');
+  title.className = `nickname ${player.team === 'R' ? 'res' : player.team === 'E' ? 'enl' : 'mac'} iitc-iris-player-tracker-name iitc-iris-player-tracker-${player.team}`;
   title.textContent = playerName;
   root.append(title);
 
   const last = player.events[player.events.length - 1];
-  const lastLatLng = getIitcPlayerTrackerLatLng(last);
-  const current = document.createElement('div');
-  current.textContent = `${formatPlayerTrackerAgo(last.time)} ago`;
-  root.append(current);
-  const link = document.createElement('button');
-  link.type = 'button';
-  link.className = 'iitc-iris-player-tracker-link';
-  link.textContent = last.name || last.address || 'portal';
-  link.addEventListener('click', () => {
-    window.__iitcIrisMap?.setView(lastLatLng, Math.max(window.__iitcIrisMap.getZoom(), DEFAULT_ZOOM));
-  });
-  root.append(link);
+  root.append(document.createElement('br'));
+  root.append(document.createTextNode(formatPlayerTrackerAgo(last.time)));
+  root.append(document.createElement('br'));
+  root.append(createPlayerTrackerPortalLink(last));
 
   const previous = player.events.slice(-IITC_PLAYER_TRACKER_MAX_DISPLAY_EVENTS, -1).reverse();
   if (previous.length > 0) {
-    const label = document.createElement('div');
-    label.className = 'iitc-iris-player-tracker-previous';
-    label.textContent = 'previous locations:';
-    root.append(label);
+    root.append(document.createElement('br'));
+    root.append(document.createElement('br'));
+    root.append(document.createTextNode('previous locations:'));
+    root.append(document.createElement('br'));
+
+    const table = document.createElement('table');
+    table.className = 'iitc-iris-player-tracker-previous-table';
     for (const event of previous) {
-      const row = document.createElement('div');
-      row.className = 'iitc-iris-player-tracker-row';
-      row.textContent = `${formatPlayerTrackerAgo(event.time)} ago - ${event.name || event.address || 'portal'}`;
-      root.append(row);
+      const row = document.createElement('tr');
+      const ageCell = document.createElement('td');
+      ageCell.textContent = `${formatPlayerTrackerAgo(event.time)} ago`;
+      const portalCell = document.createElement('td');
+      portalCell.append(createPlayerTrackerPortalLink(event));
+      row.append(ageCell, portalCell);
+      table.append(row);
     }
+    root.append(table);
   }
 
   return root;
 }
 
-function createPlayerTrackerMarker(latLng: [number, number], playerName: string, team: keyof typeof TEAM_COLORS, opacity: number): LeafletLayer {
+function createPlayerTrackerPortalLink(event: IitcPlayerTrackerStored[string]['events'][number]): HTMLButtonElement {
+  const latLng = getIitcPlayerTrackerLatLng(event);
+  const link = document.createElement('button');
+  link.type = 'button';
+  link.className = 'iitc-iris-player-tracker-link';
+  link.textContent = event.name || event.address || 'portal';
+  link.title = event.address ? `${event.name || 'portal'}\n${event.address}` : link.textContent;
+  link.addEventListener('click', (clickEvent) => {
+    clickEvent.preventDefault();
+    window.__iitcIrisMap?.setView(latLng, Math.max(window.__iitcIrisMap.getZoom(), DEFAULT_ZOOM));
+  });
+  link.addEventListener('dblclick', (clickEvent) => {
+    clickEvent.preventDefault();
+    window.__iitcIrisMap?.setView(latLng, DEFAULT_ZOOM);
+  });
+  return link;
+}
+
+function createPlayerTrackerMarker(latLng: [number, number], playerName: string, team: keyof typeof TEAM_COLORS, opacity: number, latestTime: number): LeafletLayer {
+  const icon = getPlayerTrackerMarkerIcon(team, playerName);
   return L.marker(latLng, {
-    icon: L.divIcon({
-      className: `iitc-iris-player-tracker-marker iitc-iris-player-tracker-marker-${team}`,
-      html: `<span>${playerName.slice(0, 1).toUpperCase()}</span>`,
-      iconSize: [22, 30],
-      iconAnchor: [11, 30],
-    }),
+    icon,
     opacity,
     keyboard: false,
     pane: getLayerPane('playerTracker'),
-    title: playerName,
+    title: `${playerName}, ${formatPlayerTrackerAgo(latestTime)} ago`,
+  });
+}
+
+function getPlayerTrackerMarkerIcon(team: keyof typeof TEAM_COLORS, playerName: string): L.Icon | L.DivIcon {
+  if ((team === 'R' || team === 'E') && IITC_IRIS_ASSET_BASE_URL) {
+    const color = team === 'R' ? 'blue' : 'green';
+    return L.icon({
+      iconUrl: `${IITC_IRIS_ASSET_BASE_URL}images/marker-${color}.png`,
+      iconRetinaUrl: `${IITC_IRIS_ASSET_BASE_URL}images/marker-${color}-2x.png`,
+      shadowUrl: `${IITC_IRIS_ASSET_BASE_URL}images/marker-shadow.png`,
+      className: `iitc-iris-player-tracker-marker-image iitc-iris-player-tracker-marker-${team}`,
+      ...PLAYER_TRACKER_MARKER_ICON_OPTIONS,
+    });
+  }
+
+  return L.divIcon({
+    className: `iitc-iris-player-tracker-marker iitc-iris-player-tracker-marker-${team}`,
+    html: `<span>${playerName.slice(0, 1).toUpperCase()}</span>`,
+    iconSize: [22, 30],
+    iconAnchor: [11, 30],
+    popupAnchor: [1, -24],
   });
 }
 
@@ -1184,8 +1243,10 @@ function renderPlayerTracker(): void {
     const lastLatLng = getIitcPlayerTrackerLatLng(last);
     const relativeOpacity = 1 - (now - last.time) / IITC_PLAYER_TRACKER_MAX_TIME;
     const opacity = IITC_PLAYER_TRACKER_MIN_OPACITY + (1 - IITC_PLAYER_TRACKER_MIN_OPACITY) * Math.max(0, relativeOpacity);
-    const marker = createPlayerTrackerMarker(lastLatLng, playerName, player.team, opacity);
-    marker.bindPopup(createPlayerTrackerPopup(playerName, player), {offset: L.point(0, -24)});
+    const marker = createPlayerTrackerMarker(lastLatLng, playerName, player.team, opacity, last.time);
+    marker.bindPopup(createPlayerTrackerPopup(playerName, player), {
+      className: 'iitc-iris-player-tracker-leaflet-popup',
+    });
     addRenderedLayer(layers.playerTracker, marker);
     markers += 1;
   }
@@ -1199,10 +1260,107 @@ function repostLatestEntityStatus(): void {
   postEntityStatus(latestEntityStatus, latestEntities, latestTileDiagnostics);
 }
 
+function getIitcRequestDiagnostics(): IitcIrisRequestDiagnostics {
+  const activeByEndpoint: Record<string, number> = {};
+  const now = performance.now();
+  const active = [...activeIitcRequests.entries()].map(([id, request]) => {
+    activeByEndpoint[request.endpoint] = (activeByEndpoint[request.endpoint] ?? 0) + 1;
+    return {
+      id,
+      endpoint: request.endpoint,
+      group: request.group,
+      elapsedMs: Math.round(now - request.startedAt),
+    };
+  });
+  return {
+    activeRequests: active.length,
+    activeByEndpoint,
+    active,
+  };
+}
+
+function toFiniteNumber(value: unknown): number | undefined {
+  const numberValue = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
+  return Number.isFinite(numberValue) ? numberValue : undefined;
+}
+
+function getAgentTeam(team: unknown): IitcIrisAgentState['team'] {
+  if (team === 'ENLIGHTENED' || team === 'E') return 'E';
+  if (team === 'RESISTANCE' || team === 'R') return 'R';
+  return 'N';
+}
+
+function getIitcAgentState(): IitcIrisAgentState {
+  const player = (window as Window & {PLAYER?: IitcPagePlayer}).PLAYER;
+  if (!player || typeof player.nickname !== 'string' || !player.nickname) return {status: 'missing'};
+
+  const level = toFiniteNumber(player.verified_level) ?? toFiniteNumber(player.level);
+  const ap = toFiniteNumber(player.ap);
+  const minApForCurrentLevel = toFiniteNumber(player.min_ap_for_current_level);
+  const minApForNextLevel = toFiniteNumber(player.min_ap_for_next_level);
+  const energy = toFiniteNumber(player.energy);
+  const xmCapacity = toFiniteNumber(player.xm_capacity);
+  const availableInvites = toFiniteNumber(player.available_invites);
+  const levelSpan = minApForNextLevel !== undefined && minApForCurrentLevel !== undefined
+    ? minApForNextLevel - minApForCurrentLevel
+    : 0;
+  const maxLevel = minApForNextLevel === undefined || minApForNextLevel <= 0 || levelSpan <= 0;
+  const levelPercent = maxLevel || ap === undefined || minApForCurrentLevel === undefined
+    ? maxLevel ? 100 : undefined
+    : Math.max(0, Math.min(100, Math.round(((ap - minApForCurrentLevel) / levelSpan) * 100)));
+  const xmPercent = energy !== undefined && xmCapacity !== undefined && xmCapacity > 0
+    ? Math.max(0, Math.min(100, Math.round((energy / xmCapacity) * 100)))
+    : undefined;
+
+  return {
+    status: 'ready',
+    nickname: player.nickname,
+    team: getAgentTeam(player.team),
+    level,
+    ap,
+    energy,
+    xmCapacity,
+    availableInvites,
+    minApForCurrentLevel,
+    minApForNextLevel,
+    xmPercent,
+    levelPercent,
+    apToNextLevel: maxLevel || ap === undefined || minApForNextLevel === undefined ? undefined : Math.max(0, minApForNextLevel - ap),
+    maxLevel,
+    staticFromPage: true,
+  };
+}
+
+function postAgentState(): void {
+  window.postMessage({
+    type: IITC_IRIS_MESSAGES.agentStatus,
+    agent: getIitcAgentState(),
+  } satisfies IitcIrisMessage, '*');
+}
+
+function postRequestDiagnostics(): void {
+  window.postMessage({
+    type: IITC_IRIS_MESSAGES.requestStatus,
+    requestDiagnostics: getIitcRequestDiagnostics(),
+  } satisfies IitcIrisMessage, '*');
+}
+
+function beginIitcRequest(endpoint: string, group?: string): () => void {
+  const id = nextIitcRequestId;
+  nextIitcRequestId += 1;
+  activeIitcRequests.set(id, {endpoint, group, startedAt: performance.now()});
+  postRequestDiagnostics();
+  return () => {
+    if (!activeIitcRequests.delete(id)) return;
+    postRequestDiagnostics();
+  };
+}
+
 function postCommState(): void {
   window.postMessage({
     type: IITC_IRIS_MESSAGES.commStatus,
     comm: latestCommState,
+    requestDiagnostics: getIitcRequestDiagnostics(),
   } satisfies IitcIrisMessage, '*');
 }
 
@@ -1210,6 +1368,7 @@ function postScoresState(): void {
   window.postMessage({
     type: IITC_IRIS_MESSAGES.scoresStatus,
     scores: latestScoresState,
+    requestDiagnostics: getIitcRequestDiagnostics(),
   } satisfies IitcIrisMessage, '*');
 }
 
@@ -1217,6 +1376,7 @@ function postPasscodeState(): void {
   window.postMessage({
     type: IITC_IRIS_MESSAGES.passcodeStatus,
     passcode: latestPasscodeState,
+    requestDiagnostics: getIitcRequestDiagnostics(),
   } satisfies IitcIrisMessage, '*');
 }
 
@@ -1224,6 +1384,7 @@ function postInventoryState(): void {
   window.postMessage({
     type: IITC_IRIS_MESSAGES.inventoryStatus,
     inventory: latestInventoryState,
+    requestDiagnostics: getIitcRequestDiagnostics(),
   } satisfies IitcIrisMessage, '*');
 }
 
@@ -1483,6 +1644,7 @@ function postEntityStatus(
     queue: tileDiagnostics.queue,
     renderQueue: tileDiagnostics.renderQueue,
     timing: tileDiagnostics.timing,
+    requestDiagnostics: getIitcRequestDiagnostics(),
     playerTracker: playerTrackerDiagnostics,
     baseLayerId,
     dataSource,
@@ -1584,11 +1746,25 @@ function looksLikeHtml(text: string): boolean {
   return /^\s*(?:<!doctype\s+html|<html|<head|<body)\b/i.test(text);
 }
 
+async function fetchIitcEndpointText(
+  endpoint: string,
+  init: RequestInit,
+  group?: string,
+): Promise<{response: Response; text: string}> {
+  const finish = beginIitcRequest(endpoint, group);
+  try {
+    const response = await fetch(`/r/${endpoint}`, init);
+    return {response, text: await response.text()};
+  } finally {
+    finish();
+  }
+}
+
 async function fetchPortalDetails(guid: string, version: string, signal?: AbortSignal): Promise<IitcPortalDetailsResponse> {
   const csrfToken = getCsrfToken();
   if (!csrfToken) throw new Error('getPortalDetails missing csrftoken');
 
-  const response = await fetch('/r/getPortalDetails', {
+  const {response, text} = await fetchIitcEndpointText('getPortalDetails', {
     method: 'POST',
     credentials: 'include',
     signal,
@@ -1599,8 +1775,7 @@ async function fetchPortalDetails(guid: string, version: string, signal?: AbortS
       'X-Requested-With': 'XMLHttpRequest',
     },
     body: JSON.stringify({guid, v: version}),
-  });
-  const text = await response.text();
+  }, 'portal-details');
 
   if (looksLikeHtml(text)) {
     throw new Error(`getPortalDetails returned login html HTTP ${response.status}${response.redirected ? ' redirected' : ''}`);
@@ -1693,7 +1868,7 @@ async function fetchComm(
     version,
   });
 
-  const response = await fetch('/r/getPlexts', {
+  const {response, text} = await fetchIitcEndpointText('getPlexts', {
     method: 'POST',
     credentials: 'include',
     signal,
@@ -1704,8 +1879,7 @@ async function fetchComm(
       'X-Requested-With': 'XMLHttpRequest',
     },
     body: JSON.stringify(postData),
-  });
-  const text = await response.text();
+  }, tab === 'all' ? 'comm-all' : `comm-${tab}`);
 
   if (looksLikeHtml(text)) {
     throw new Error(`getPlexts returned login html HTTP ${response.status}${response.redirected ? ' redirected' : ''}`);
@@ -1728,7 +1902,7 @@ async function postSendPlext(payload: NonNullable<ReturnType<typeof genIitcCommS
   const csrfToken = getCsrfToken();
   if (!csrfToken) throw new Error('sendPlext missing csrftoken');
 
-  const response = await fetch('/r/sendPlext', {
+  const {response, text} = await fetchIitcEndpointText('sendPlext', {
     method: 'POST',
     credentials: 'include',
     signal,
@@ -1739,8 +1913,7 @@ async function postSendPlext(payload: NonNullable<ReturnType<typeof genIitcCommS
       'X-Requested-With': 'XMLHttpRequest',
     },
     body: JSON.stringify(payload),
-  });
-  const text = await response.text();
+  }, `comm-send-${payload.tab}`);
 
   if (looksLikeHtml(text)) {
     throw new Error(`sendPlext returned login html HTTP ${response.status}${response.redirected ? ' redirected' : ''}`);
@@ -1765,7 +1938,7 @@ async function postIntelEndpoint(endpoint: string, payload: Record<string, unkno
   const version = extractVersion();
   if (!version) throw new Error(`${endpoint} missing Intel version`);
 
-  const response = await fetch(`/r/${endpoint}`, {
+  const {response, text} = await fetchIitcEndpointText(endpoint, {
     method: 'POST',
     credentials: 'include',
     signal,
@@ -1776,8 +1949,7 @@ async function postIntelEndpoint(endpoint: string, payload: Record<string, unkno
       'X-Requested-With': 'XMLHttpRequest',
     },
     body: JSON.stringify({...payload, v: version}),
-  });
-  const text = await response.text();
+  }, endpoint);
 
   if (looksLikeHtml(text)) {
     throw new Error(`${endpoint} returned login html HTTP ${response.status}${response.redirected ? ' redirected' : ''}`);
@@ -2169,11 +2341,13 @@ async function refreshComm(tab: IitcCommChannel = normalizeCommTab(latestCommSta
   currentCommAbortController = abortController;
   const startedAt = performance.now();
   latestCommState = {
+    ...latestCommState,
     status: 'loading',
     tab,
     messages: getIitcCommChannelMessages(commChannelsData[tab]).length,
     requestOlder: getOlderMsgs,
     bounds,
+    recent: latestCommState.tab === tab ? latestCommState.recent : undefined,
     oldestTimestamp: commChannelsData[tab].oldestTimestamp,
     newestTimestamp: commChannelsData[tab].newestTimestamp,
   };
@@ -2191,7 +2365,6 @@ async function refreshComm(tab: IitcCommChannel = normalizeCommTab(latestCommSta
       processPlayerTrackerCommMessages(commMessages);
       renderPlayerTracker();
     }
-    const previewMessages = getOlderMsgs ? commMessages.slice(0, 12) : commMessages.slice(-12);
     latestCommState = {
       status: commMessages.length > 0 ? 'ready' : 'empty',
       tab,
@@ -2200,7 +2373,7 @@ async function refreshComm(tab: IitcCommChannel = normalizeCommTab(latestCommSta
       addedMessages: writeResult.addedMessages,
       requestOlder: getOlderMsgs,
       oldMessagesWereAdded: writeResult.oldMessagesWereAdded,
-      recent: previewMessages.map(toCommMessagePreview),
+      recent: commMessages.map(toCommMessagePreview),
       elapsedMs,
       bounds,
       oldestTimestamp: commChannelsData[tab].oldestTimestamp,
@@ -2404,7 +2577,7 @@ async function fetchEntityBatch(tileKeys: string[], version: string, signal?: Ab
   const csrfToken = getCsrfToken();
   if (!csrfToken) throw new Error('getEntities missing csrftoken');
 
-  const response = await fetch('/r/getEntities', {
+  const {response, text} = await fetchIitcEndpointText('getEntities', {
     method: 'POST',
     credentials: 'include',
     signal,
@@ -2415,8 +2588,7 @@ async function fetchEntityBatch(tileKeys: string[], version: string, signal?: Ab
       'X-Requested-With': 'XMLHttpRequest',
     },
     body: JSON.stringify({tileKeys, v: version}),
-  });
-  const text = await response.text();
+  }, 'entities');
 
   if (looksLikeHtml(text)) {
     throw new Error(`getEntities returned login html HTTP ${response.status}${response.redirected ? ' redirected' : ''}`);
@@ -2500,7 +2672,7 @@ async function fetchArtifactPortals(version: string, signal?: AbortSignal): Prom
   const csrfToken = getCsrfToken();
   if (!csrfToken) throw new Error('getArtifactPortals missing csrftoken');
 
-  const response = await fetch('/r/getArtifactPortals', {
+  const {response, text} = await fetchIitcEndpointText('getArtifactPortals', {
     method: 'POST',
     credentials: 'include',
     signal,
@@ -2511,8 +2683,7 @@ async function fetchArtifactPortals(version: string, signal?: AbortSignal): Prom
       'X-Requested-With': 'XMLHttpRequest',
     },
     body: JSON.stringify({v: version}),
-  });
-  const text = await response.text();
+  }, 'artifacts');
 
   if (looksLikeHtml(text)) {
     throw new Error(`getArtifactPortals returned login html HTTP ${response.status}${response.redirected ? ' redirected' : ''}`);
@@ -2550,10 +2721,6 @@ function storeSuccessfulTilePayloads(response: IitcGetEntitiesResponse | undefin
     }
   }
   return storedTileKeys;
-}
-
-function storeSuccessfulBatchResultPayloads(results: TileBatchResult[]): string[] {
-  return results.flatMap((result) => storeSuccessfulTilePayloads(result.response, result.tileKeys));
 }
 
 function recordStaleGenerationCacheWarmTileKeys(tileKeys: string[]): void {
@@ -2599,14 +2766,6 @@ async function fetchArtifactEntitiesForRender(version: string, signal: AbortSign
     };
     return [];
   }
-}
-
-function createSequentialBatches(tileKeys: string[], batchSize: number): string[][] {
-  const batches: string[][] = [];
-  for (let index = 0; index < tileKeys.length; index += batchSize) {
-    batches.push(tileKeys.slice(index, index + batchSize));
-  }
-  return batches;
 }
 
 function scheduleEntityRefresh(delayMs = FAST_MOVE_REFRESH_DELAY_MS): void {
@@ -2781,77 +2940,103 @@ async function refreshEntities(): Promise<void> {
       timing: timingDiagnostics,
     });
 
-    const initialPendingTileKeys = new Set(queueTileKeys);
     let initialRequestCount = 0;
-    const initialStartTime = performance.now();
-    while (initialPendingTileKeys.size > 0) {
-      const waveBatches = createIitcTileQueueRequestBatches(queueState, {
-        pendingTileKeys: queueState.queuedTileKeys.filter((tileKey) => initialPendingTileKeys.has(tileKey)),
-      });
-      if (waveBatches.length === 0) break;
-      for (const batch of waveBatches) {
-        queueState = markIitcTileRequestStarted(queueState, batch);
-        for (const tileKey of batch) initialPendingTileKeys.delete(tileKey);
+    let mergedResponse = mergeIitcGetEntitiesResponses(responses);
+    const retriedTileKeys = new Set<string>();
+    let retryRequests = 0;
+    const processCompletedBatch = (result: TileBatchResult, startedAsRetry: boolean): void => {
+      if (result.error && isAuthLikeError(result.error)) throw result.error;
+      const previousStaleTileKeys = new Set(queueState.staleTileKeys);
+
+      if (result.response) {
+        for (const tileKey of result.tileKeys) {
+          const tile = result.response.result?.map?.[tileKey];
+          if (tile && !tile.error) {
+            mapDataCache.store(tileKey, tile);
+            renderQueue = pushIitcRenderQueueTile(renderQueue, tileKey, tile, 'ok');
+          }
+        }
+      }
+
+      queueState = applyIitcTileRequestResponseToQueue(queueState, result.response ?? null, result.tileKeys, result.response !== undefined, {
+        staleTileKeys: queueState.queuedTileKeys.filter((tileKey) => mapDataCache.get(tileKey) !== undefined),
+      }).state;
+      for (const tileKey of queueState.staleTileKeys) {
+        if (previousStaleTileKeys.has(tileKey)) continue;
+        const staleTile = mapDataCache.get(tileKey);
+        if (staleTile) {
+          staleCachedTileKeys.push(tileKey);
+          renderQueue = pushIitcRenderQueueTile(renderQueue, tileKey, staleTile, 'cache-stale');
+        }
       }
       activeQueueState = queueState;
-
-      const batchResults = await Promise.all(waveBatches.map((batch) => fetchEntityBatchResult(batch, version, liveAbortController.signal)));
-      if (generation !== latestFetchGeneration) {
-        if (ENABLE_STALE_GENERATION_CACHE_WARMING) {
-          recordStaleGenerationCacheWarmTileKeys(storeSuccessfulBatchResultPayloads(batchResults));
-        }
-        queueState = markIitcTileQueueStale(queueState);
-        activeQueueState = queueState;
-        return;
+      bucketDiagnostics = appendIitcResponseBucketDiagnostics(bucketDiagnostics, result.response ?? null, result.tileKeys, result.response !== undefined);
+      if (startedAsRetry) {
+        retryRequests += 1;
+        for (const tileKey of result.tileKeys) retriedTileKeys.add(tileKey);
       }
-      const authError = batchResults.find((result) => result.error && isAuthLikeError(result.error))?.error;
-      if (authError) throw authError;
+      if (result.response) responses.push(result.response);
+      mergedResponse = drainRenderQueue();
+      const entities = toRenderEntities(mergedResponse, generation);
+      const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyTileDiagnostics(mergedResponse, plan);
+      initialRequestCount += 1;
+      const recoveredTileKeys = getIitcRecoveredTileKeys([...retriedTileKeys], nonEmptyTileKeys);
+      const statusEntities = renderLiveProgress(mergedResponse, entities, initialRequestCount === 1);
+      postEntityStatus(startedAsRetry ? `retry ${retryRequests}` : `batch ${initialRequestCount}`, statusEntities, {
+        requestedTiles: plan.tileKeys.length,
+        returnedTiles,
+        nonEmptyTiles,
+        firstRenderElapsedMs,
+        viewportBounds: plan.viewportBounds,
+        retryRequests,
+        retriedTileKeys: [...retriedTileKeys],
+        recoveredTileKeys,
+        emptyTileKeys,
+        nonEmptyTileKeys,
+        unaccountedTileKeys,
+        ...bucketDiagnostics,
+        cacheFreshTileKeys: freshCachedTileKeys,
+        cacheStaleTileKeys: staleCachedTileKeys,
+        queue: toQueueDiagnostics(queueState),
+        renderQueue: renderQueueDiagnostics,
+        timing: timingDiagnostics,
+      });
+    };
+    const runIitcRefillQueue = async (): Promise<boolean> => {
+      const inFlight = new Map<number, Promise<{id: number; result: TileBatchResult; startedAsRetry: boolean}>>();
+      let requestId = 0;
+      const fillOpenRequestSlots = (): void => {
+        const batches = createIitcTileQueueRequestBatches(queueState);
+        for (const batch of batches) {
+          const startedAsRetry = batch.some((tileKey) => (queueState.tileErrorCount[tileKey] ?? 0) > 0);
+          queueState = markIitcTileRequestStarted(queueState, batch);
+          activeQueueState = queueState;
+          const id = requestId;
+          requestId += 1;
+          inFlight.set(id, fetchEntityBatchResult(batch, version, liveAbortController.signal)
+            .then((result) => ({id, result, startedAsRetry})));
+        }
+      };
 
-      for (let index = 0; index < batchResults.length; index += 1) {
-        const result = batchResults[index];
-        if (result.response) {
-          for (const tileKey of result.tileKeys) {
-            const tile = result.response.result?.map?.[tileKey];
-            if (tile && !tile.error) {
-              mapDataCache.store(tileKey, tile);
-              renderQueue = pushIitcRenderQueueTile(renderQueue, tileKey, tile, 'ok');
-            }
+      fillOpenRequestSlots();
+      while (inFlight.size > 0) {
+        const settled = await Promise.race(inFlight.values());
+        inFlight.delete(settled.id);
+        if (generation !== latestFetchGeneration) {
+          if (ENABLE_STALE_GENERATION_CACHE_WARMING) {
+            recordStaleGenerationCacheWarmTileKeys(storeSuccessfulTilePayloads(settled.result.response, settled.result.tileKeys));
           }
-          queueState = applyIitcTileRequestResponseToQueue(queueState, result.response, result.tileKeys, true, {
-            retryReturnedEmptyTiles: plan.tileParams.hasPortals,
-          }).state;
-          bucketDiagnostics = appendIitcResponseBucketDiagnostics(bucketDiagnostics, result.response, result.tileKeys);
-          responses.push(result.response);
-        } else {
-          queueState = applyIitcTileRequestResponseToQueue(queueState, null, result.tileKeys, false, {
-            retryReturnedEmptyTiles: plan.tileParams.hasPortals,
-          }).state;
-          bucketDiagnostics = appendIitcResponseBucketDiagnostics(bucketDiagnostics, null, result.tileKeys, false);
+          queueState = markIitcTileQueueStale(queueState);
+          activeQueueState = queueState;
+          return false;
         }
-        activeQueueState = queueState;
-        const mergedResponse = drainRenderQueue();
-        const entities = toRenderEntities(mergedResponse, generation);
-        const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyTileDiagnostics(mergedResponse, plan);
-        initialRequestCount += 1;
-        const statusEntities = renderLiveProgress(mergedResponse, entities, initialRequestCount === 1);
-        postEntityStatus(`batch ${initialRequestCount}`, statusEntities, {
-          requestedTiles: plan.tileKeys.length,
-          returnedTiles,
-          nonEmptyTiles,
-          firstRenderElapsedMs,
-          viewportBounds: plan.viewportBounds,
-          emptyTileKeys,
-          nonEmptyTileKeys,
-          unaccountedTileKeys,
-          ...bucketDiagnostics,
-          cacheFreshTileKeys: freshCachedTileKeys,
-          cacheStaleTileKeys: staleCachedTileKeys,
-          queue: toQueueDiagnostics(queueState),
-          renderQueue: renderQueueDiagnostics,
-          timing: timingDiagnostics,
-        });
+        processCompletedBatch(settled.result, settled.startedAsRetry);
+        fillOpenRequestSlots();
       }
-    }
+      return true;
+    };
+    const initialStartTime = performance.now();
+    if (!(await runIitcRefillQueue())) return;
     timingDiagnostics.initialMs = performance.now() - initialStartTime;
 
     if (generation !== latestFetchGeneration) {
@@ -2859,95 +3044,6 @@ async function refreshEntities(): Promise<void> {
       activeQueueState = queueState;
       return;
     }
-    let mergedResponse = mergeIitcGetEntitiesResponses(responses);
-    const initialRetryTileKeys = [...queueState.queuedTileKeys];
-    const retriedTileKeys = new Set<string>();
-    let retryRequests = 0;
-    const retryPasses = plan.tileParams.hasPortals ? IITC_EMPTY_TILE_RETRY_PASSES : IITC_MAX_TILE_RETRIES;
-    const retryStartTime = performance.now();
-    for (let pass = 1; pass <= retryPasses; pass += 1) {
-      const retryTileKeys = [...queueState.queuedTileKeys];
-      if (retryTileKeys.length === 0) break;
-
-      const retryBatches = plan.tileParams.hasPortals
-        ? createIitcEmptyTileRetryBatches(retryTileKeys)
-        : createSequentialBatches(retryTileKeys, IITC_NUM_TILES_PER_REQUEST);
-      const queueRetryBatches = plan.tileParams.hasPortals
-        ? retryBatches.flatMap((batch) => createIitcTileQueueRequestBatches(queueState, {
-          maxRequests: 1,
-          tilesPerRequest: batch.length,
-          activeRequestCount: 0,
-          pendingTileKeys: batch,
-        }))
-        : retryBatches;
-      for (let index = 0; index < queueRetryBatches.length; index += 1) {
-        const batchTileKeys = queueRetryBatches[index];
-        queueState = markIitcTileRequestStarted(queueState, batchTileKeys);
-        const result = await fetchEntityBatchResult(batchTileKeys, version, abortController.signal);
-        if (generation !== latestFetchGeneration) {
-          if (ENABLE_STALE_GENERATION_CACHE_WARMING) {
-            recordStaleGenerationCacheWarmTileKeys(storeSuccessfulTilePayloads(result.response, result.tileKeys));
-          }
-          queueState = markIitcTileQueueStale(queueState);
-          activeQueueState = queueState;
-          return;
-        }
-        if (result.error && isAuthLikeError(result.error)) throw result.error;
-        const previousStaleTileKeys = new Set(queueState.staleTileKeys);
-        if (result.response) {
-          for (const tileKey of result.tileKeys) {
-            const tile = result.response.result?.map?.[tileKey];
-            if (tile && !tile.error) {
-              mapDataCache.store(tileKey, tile);
-              renderQueue = pushIitcRenderQueueTile(renderQueue, tileKey, tile, 'ok');
-            }
-          }
-        }
-        queueState = applyIitcTileRequestResponseToQueue(queueState, result.response ?? null, result.tileKeys, result.response !== undefined, {
-          staleTileKeys: queueState.queuedTileKeys.filter((tileKey) => mapDataCache.get(tileKey) !== undefined),
-          retryReturnedEmptyTiles: plan.tileParams.hasPortals,
-        }).state;
-        for (const tileKey of queueState.staleTileKeys) {
-          if (previousStaleTileKeys.has(tileKey)) continue;
-          const staleTile = mapDataCache.get(tileKey);
-          if (staleTile) {
-            staleCachedTileKeys.push(tileKey);
-            renderQueue = pushIitcRenderQueueTile(renderQueue, tileKey, staleTile, 'cache-stale');
-          }
-        }
-        activeQueueState = queueState;
-        bucketDiagnostics = appendIitcResponseBucketDiagnostics(bucketDiagnostics, result.response ?? null, result.tileKeys, result.response !== undefined);
-        retryRequests += 1;
-        for (const tileKey of result.tileKeys) retriedTileKeys.add(tileKey);
-        if (result.response) responses.push(result.response);
-        mergedResponse = drainRenderQueue();
-        const entities = toRenderEntities(mergedResponse, generation);
-        const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyTileDiagnostics(mergedResponse, plan);
-        const recoveredTileKeys = getIitcRecoveredTileKeys(initialRetryTileKeys, nonEmptyTileKeys);
-        const statusEntities = renderLiveProgress(mergedResponse, entities);
-        postEntityStatus(`retry ${pass} ${index + 1}/${queueRetryBatches.length}`, statusEntities, {
-          requestedTiles: plan.tileKeys.length,
-          returnedTiles,
-          nonEmptyTiles,
-          firstRenderElapsedMs,
-          viewportBounds: plan.viewportBounds,
-          retryRequests,
-          retriedTileKeys: [...retriedTileKeys],
-          recoveredTileKeys,
-          emptyTileKeys,
-          nonEmptyTileKeys,
-          unaccountedTileKeys,
-          ...bucketDiagnostics,
-          cacheFreshTileKeys: freshCachedTileKeys,
-          cacheStaleTileKeys: staleCachedTileKeys,
-          queue: toQueueDiagnostics(queueState),
-          renderQueue: renderQueueDiagnostics,
-          timing: timingDiagnostics,
-        });
-      }
-    }
-    timingDiagnostics.retryMs = performance.now() - retryStartTime;
-
     const artifactWaitStartTime = performance.now();
     const artifactEntities = await getArtifactEntitiesPromise();
     timingDiagnostics.artifactWaitMs = performance.now() - artifactWaitStartTime;
@@ -2958,7 +3054,7 @@ async function refreshEntities(): Promise<void> {
     }
     const entities = toRenderEntities(mergedResponse, generation, artifactEntities);
     const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyTileDiagnostics(mergedResponse, plan);
-    const recoveredTileKeys = getIitcRecoveredTileKeys(initialRetryTileKeys, nonEmptyTileKeys);
+    const recoveredTileKeys = getIitcRecoveredTileKeys([...retriedTileKeys], nonEmptyTileKeys);
     queueState = markIitcTileQueueComplete(queueState);
     const partialTileKeys = plan.tileParams.hasPortals ? [] : [...queueState.failedTileKeys];
     activeQueueState = queueState;
@@ -3035,11 +3131,12 @@ function boot(): void {
     renderPlayerTracker();
     schedulePlayerTrackerRefresh();
   });
-  window.setTimeout(() => {
-    map.invalidateSize();
-    postMapMoved();
-    window.postMessage({type: IITC_IRIS_MESSAGES.pageReady}, '*');
-  }, 0);
+	  window.setTimeout(() => {
+	    map.invalidateSize();
+	    postMapMoved();
+	    postAgentState();
+	    window.postMessage({type: IITC_IRIS_MESSAGES.pageReady}, '*');
+	  }, 0);
 }
 
 function createIitcIrisPanes(map: LeafletMap): void {
