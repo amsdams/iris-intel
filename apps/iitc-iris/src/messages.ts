@@ -11,6 +11,7 @@ export const IITC_IRIS_MESSAGES = {
   setView: 'IITC_IRIS_SET_VIEW',
   clearPortalSelection: 'IITC_IRIS_CLEAR_PORTAL_SELECTION',
   requestComm: 'IITC_IRIS_REQUEST_COMM',
+  sendComm: 'IITC_IRIS_SEND_COMM',
   commStatus: 'IITC_IRIS_COMM_STATUS',
 } as const;
 
@@ -68,6 +69,7 @@ export interface IitcIrisMessage {
   returnedTiles?: number;
   nonEmptyTiles?: number;
   elapsedMs?: number;
+  firstRenderElapsedMs?: number;
   retryRequests?: number;
   retriedTileKeys?: string[];
   recoveredTileKeys?: string[];
@@ -88,15 +90,28 @@ export interface IitcIrisMessage {
   selectedPortal?: IitcIrisSelectedPortal | null;
   portalDetails?: IitcIrisPortalDetailsState | null;
   comm?: IitcIrisCommState;
+  commTab?: IitcIrisCommTab;
+  commOlder?: boolean;
+  commMessage?: string;
 }
+
+export type IitcIrisCommTab = 'all' | 'faction' | 'alerts';
 
 export interface IitcIrisCommState {
   status: 'idle' | 'loading' | 'ready' | 'empty' | 'error' | 'auth';
-  tab: string;
+  tab: IitcIrisCommTab;
   messages: number;
+  responseMessages?: number;
+  addedMessages?: number;
+  requestOlder?: boolean;
+  oldMessagesWereAdded?: boolean;
+  sendStatus?: 'idle' | 'sending' | 'sent' | 'error' | 'auth';
+  sendError?: string;
   recent?: IitcIrisCommMessage[];
   elapsedMs?: number;
   error?: string;
+  oldestTimestamp?: number;
+  newestTimestamp?: number;
   bounds?: {
     minLatE6: number;
     minLngE6: number;
@@ -118,6 +133,7 @@ export interface IitcIrisCommMessage {
   narrowcast?: boolean;
   player?: string;
   playerTeam?: string;
+  parts: IitcIrisCommMessagePart[];
   portals: {
     name?: string;
     address?: string;
@@ -125,6 +141,21 @@ export interface IitcIrisCommMessage {
     lngE6?: number;
   }[];
   players: string[];
+}
+
+export interface IitcIrisCommMessagePart {
+  type: 'text' | 'portal' | 'faction' | 'player' | 'unknown';
+  text: string;
+  team?: string;
+  at?: boolean;
+  sender?: boolean;
+  portal?: {
+    name?: string;
+    address?: string;
+    latE6?: number;
+    lngE6?: number;
+    guid?: string;
+  };
 }
 
 export interface IitcIrisQueueDiagnostics {

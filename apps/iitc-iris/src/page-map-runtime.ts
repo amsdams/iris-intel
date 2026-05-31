@@ -8,12 +8,18 @@ import {
   createIitcTileQueueState,
   createIitcTileQueueRequestBatches,
   createIitcEmptyTileRetryBatches,
+  createIitcCommChannelData,
   createIitcMapDataPlan,
   decodeIitcGameEntities,
   decodeIitcGetEntitiesResponse,
+  genIitcCommPostData,
+  genIitcCommSendPlextPostData,
+  getIitcCommChannelMessages,
+  getIitcOrnamentDefinition,
   getIitcRecoveredTileKeys,
   getIitcReusableCacheClassification,
   getIitcPortalArtifacts,
+  isIitcExcludedOrnament,
   IITC_EMPTY_TILE_RETRY_PASSES,
   IITC_MAX_TILE_RETRIES,
   IITC_NUM_TILES_PER_REQUEST,
@@ -21,13 +27,18 @@ import {
   markIitcTileQueueStale,
   markIitcTileRequestStarted,
   mergeIitcGetEntitiesResponses,
-  parseIitcCommResponse,
+  parseIitcOrnamentVisibilitySettings,
   parseIitcPortalDetailsResponse,
+  renderIitcCommMarkup,
+  writeIitcCommDataToHash,
+  type IitcCommChannel,
+  type IitcCommChannelData,
   type IitcCommMessage,
   type IitcGetEntitiesResponse,
   type IitcMapDataPlan,
   type IitcPortalDetailsResponse,
   type IitcPortalArtifact,
+  type IitcOrnamentVisibilitySettings,
   type IitcRawGameEntity,
   type IitcTileQueueState,
 } from '@iris/iitc-core';
@@ -36,6 +47,7 @@ const DEFAULT_CENTER: [number, number] = [52.3730796, 4.8924534];
 const DEFAULT_ZOOM = 11;
 const MAP_VIEW_STORAGE_KEY = 'iitc-iris:map-view';
 const BASE_LAYER_STORAGE_KEY = 'iitc-iris:base-layer';
+const COMM_TAB_STORAGE_KEY = 'iitc-chat-tab';
 const REQUEST_BOUNDS_PADDING_RATIO = 0.25;
 const OPTIONAL_OVERLAY_MIN_ZOOM = 14;
 const DEFAULT_BASE_LAYER_ID: IitcIrisBaseLayerId = 'cartodb-dark-matter';
@@ -100,7 +112,12 @@ let refreshTimer: number | undefined;
 let currentFetchAbortController: AbortController | undefined;
 let currentPortalDetailsAbortController: AbortController | undefined;
 let currentCommAbortController: AbortController | undefined;
-let latestCommState: IitcIrisCommState = {status: 'idle', tab: 'all', messages: 0};
+let latestCommState: IitcIrisCommState = {status: 'idle', tab: loadStoredCommTab(), messages: 0};
+const commChannelsData: Record<IitcCommChannel, IitcCommChannelData> = {
+  all: createIitcCommChannelData(),
+  faction: createIitcCommChannelData(),
+  alerts: createIitcCommChannelData(),
+};
 
 interface TileDiagnostics {
   entitySource?: IitcIrisEntitySource;
@@ -108,6 +125,7 @@ interface TileDiagnostics {
   returnedTiles: number;
   nonEmptyTiles: number;
   elapsedMs?: number;
+  firstRenderElapsedMs?: number;
   viewportBounds?: IitcMapDataPlan['viewportBounds'];
   retryRequests?: number;
   retriedTileKeys?: string[];
@@ -143,81 +161,10 @@ interface ArtifactPortalsResponse {
   result?: unknown;
 }
 
-interface OrnamentVisibilitySettings {
-  excludedPatterns: string[];
-  hiddenKnown: Record<string, boolean>;
-  layerStatus: Record<string, boolean>;
-}
-
 interface OrnamentDiagnostics {
   drawnMarkers: number;
   hiddenMarkers: number;
   types: Record<string, number>;
-}
-
-interface OrnamentDefinition {
-  layer?: string;
-  url?: string;
-  offset?: [number, number];
-  opacity?: number;
-}
-
-const ORNAMENT_DEFINITIONS: Record<string, OrnamentDefinition> = {
-  bb_s: {layer: 'Battle'},
-  sc4_p: {layer: 'Scouting'},
-  sc5_p: {layer: 'Scouting'},
-  ap1: {layer: 'Anomaly'},
-  ap1_v: {layer: 'Anomaly'},
-  ap2: {layer: 'Anomaly'},
-  ap2_v: {layer: 'Anomaly'},
-  ap3: {layer: 'Anomaly'},
-  ap3_v: {layer: 'Anomaly'},
-  ap5: {layer: 'Anomaly'},
-  ap5_v: {layer: 'Anomaly'},
-  peBB_BATTLE: {layer: 'Battle'},
-  peBB_BATTLE_RARE: {layer: 'Battle'},
-  peBN_BLM: {layer: 'Beacons'},
-  peBN_ENL_WINNER: {layer: 'Battle'},
-  'peBN_ENL_WINNER-60': {layer: 'Battle'},
-  peBN_MHN_LOGO: {layer: 'Beacons'},
-  peBN_MHN_PALICO: {layer: 'Beacons'},
-  peBN_PEACE: {layer: 'Beacons'},
-  peBN_RES_WINNER: {layer: 'Battle'},
-  'peBN_RES_WINNER-60': {layer: 'Battle'},
-  peBN_TIED_WINNER: {layer: 'Battle'},
-  'peBN_TIED_WINNER-60': {layer: 'Battle'},
-  'peBR_REWARD-10_125_38': {layer: 'Battle'},
-  'peBR_REWARD-10_150_75': {layer: 'Battle'},
-  'peBR_REWARD-10_175_113': {layer: 'Battle'},
-  'peBR_REWARD-10_200_150': {layer: 'Battle'},
-  'peBR_REWARD-10_225_188': {layer: 'Battle'},
-  'peBR_REWARD-10_250_225': {layer: 'Battle'},
-  peENL: {layer: 'Beacons'},
-  peFRACK: {layer: 'Fracker'},
-  peFW_ENL: {layer: 'Beacons'},
-  peFW_RES: {layer: 'Beacons'},
-  peLOOK: {layer: 'Shards'},
-  peMAGNUSRE: {layer: 'Beacons'},
-  peMEET: {layer: 'Beacons'},
-  peNIA: {layer: 'Beacons'},
-  peRES: {layer: 'Beacons'},
-  peTOASTY: {layer: 'Beacons'},
-  peVIALUX: {layer: 'Beacons'},
-};
-
-function getOrnamentDefinition(ornament: string): OrnamentDefinition | undefined {
-  const exactDefinition = ORNAMENT_DEFINITIONS[ornament];
-  if (exactDefinition) return exactDefinition;
-
-  if (/^ap\d+(?:_(?:v|start|end))?$/.test(ornament)) return {layer: 'Anomaly'};
-  if (/^sc\d+_p$/.test(ornament)) return {layer: 'Scouting'};
-  if (ornament === 'bb_s' || ornament.startsWith('peBB_') || ornament.startsWith('peBR_')) return {layer: 'Battle'};
-  if (/^peBN_(?:ENL|RES|TIED)_WINNER(?:-\d+)?$/.test(ornament)) return {layer: 'Battle'};
-  if (ornament === 'peFRACK') return {layer: 'Fracker'};
-  if (ornament === 'peLOOK') return {layer: 'Shards'};
-  if (ornament.startsWith('pe')) return {layer: 'Beacons'};
-
-  return undefined;
 }
 
 let latestEntityStatus = 'idle';
@@ -313,6 +260,14 @@ function storeBaseLayerId(value: IitcIrisBaseLayerId): void {
     window.localStorage.setItem(BASE_LAYER_STORAGE_KEY, value);
   } catch {
     // Base layer preference is optional.
+  }
+}
+
+function loadStoredCommTab(): IitcCommChannel {
+  try {
+    return normalizeCommTab(window.localStorage.getItem(COMM_TAB_STORAGE_KEY));
+  } catch {
+    return 'all';
   }
 }
 
@@ -584,7 +539,7 @@ function clearEntityLayers(): void {
 }
 
 function createOrnamentMarker(latLng: [number, number], ornament: string, portalRadius: number): LeafletLayer {
-  const definition = getOrnamentDefinition(ornament);
+  const definition = getIitcOrnamentDefinition(ornament);
   const size = Math.round(60 * getPortalMarkerScale(window.__iitcIrisMap?.getZoom() ?? DEFAULT_ZOOM));
   const iconUrl = definition?.url ?? `https://commondatastorage.googleapis.com/ingress.com/img/map_icons/marker_images/${ornament}.png`;
   const offset = definition?.url && definition.offset ? definition.offset : [0, 0];
@@ -608,51 +563,33 @@ function createOrnamentMarker(latLng: [number, number], ornament: string, portal
   });
 }
 
-function loadOrnamentVisibilitySettings(): OrnamentVisibilitySettings {
-  let excludedPatterns: string[] = [];
-  let hiddenKnown: Record<string, boolean> = {};
-  let layerStatus: Record<string, boolean> = {};
+function loadOrnamentVisibilitySettings(): IitcOrnamentVisibilitySettings {
+  let excludedOrnaments: unknown = [];
+  let knownOrnaments: unknown = {};
+  let layerGroupDisplayed: unknown = {};
   try {
     const rawExcluded = window.localStorage.getItem('excludedOrnaments');
-    const parsedExcluded: unknown = rawExcluded ? JSON.parse(rawExcluded) : [];
-    if (Array.isArray(parsedExcluded)) {
-      excludedPatterns = parsedExcluded.filter((value): value is string => typeof value === 'string' && value.length > 0);
-    }
+    excludedOrnaments = rawExcluded ? JSON.parse(rawExcluded) : [];
   } catch {
-    excludedPatterns = [];
+    excludedOrnaments = [];
   }
   try {
     const rawKnown = window.localStorage.getItem('knownOrnaments');
-    const parsedKnown: unknown = rawKnown ? JSON.parse(rawKnown) : {};
-    if (parsedKnown && typeof parsedKnown === 'object' && !Array.isArray(parsedKnown)) {
-      hiddenKnown = Object.fromEntries(
-        Object.entries(parsedKnown).filter((entry): entry is [string, boolean] =>
-          typeof entry[0] === 'string' && typeof entry[1] === 'boolean'),
-      );
-    }
+    knownOrnaments = rawKnown ? JSON.parse(rawKnown) : {};
   } catch {
-    hiddenKnown = {};
+    knownOrnaments = {};
   }
   try {
     const rawLayers = window.localStorage.getItem('ingress.intelmap.layergroupdisplayed');
-    const parsedLayers: unknown = rawLayers ? JSON.parse(rawLayers) : {};
-    if (parsedLayers && typeof parsedLayers === 'object' && !Array.isArray(parsedLayers)) {
-      layerStatus = Object.fromEntries(
-        Object.entries(parsedLayers).filter((entry): entry is [string, boolean] =>
-          typeof entry[0] === 'string' && typeof entry[1] === 'boolean'),
-      );
-    }
+    layerGroupDisplayed = rawLayers ? JSON.parse(rawLayers) : {};
   } catch {
-    layerStatus = {};
+    layerGroupDisplayed = {};
   }
-  return {excludedPatterns, hiddenKnown, layerStatus};
-}
-
-function isExcludedOrnament(ornament: string, settings: OrnamentVisibilitySettings): boolean {
-  const layerName = getOrnamentDefinition(ornament)?.layer;
-  return settings.excludedPatterns.some((pattern) => ornament.startsWith(pattern)) ||
-    settings.hiddenKnown[ornament] === true ||
-    (layerName !== undefined && settings.layerStatus[layerName] === false);
+  return parseIitcOrnamentVisibilitySettings({
+    excludedOrnaments,
+    knownOrnaments,
+    layerGroupDisplayed,
+  });
 }
 
 function createEmptyOrnamentDiagnostics(): OrnamentDiagnostics {
@@ -942,7 +879,7 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
       const radius = getPortalRadius(portal.level, portal.isPlaceholder);
       for (const ornament of portal.ornaments) {
         ornamentDiagnostics.types[ornament] = (ornamentDiagnostics.types[ornament] ?? 0) + 1;
-        if (isExcludedOrnament(ornament, ornamentVisibility)) {
+        if (isIitcExcludedOrnament(ornament, ornamentVisibility)) {
           ornamentDiagnostics.hiddenMarkers += 1;
           continue;
         }
@@ -1018,7 +955,10 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
     clearPortalSelection();
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.requestComm) {
-    void refreshComm();
+    void refreshComm(normalizeCommTab(event.data.commTab), event.data.commOlder === true);
+  }
+  if (event.data?.type === IITC_IRIS_MESSAGES.sendComm) {
+    void sendComm(normalizeCommTab(event.data.commTab), event.data.commMessage);
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.renderEntities && event.data.entities) {
     renderEntities(event.data.entities);
@@ -1100,6 +1040,7 @@ function postEntityStatus(
     returnedTiles: 0,
     nonEmptyTiles: 0,
     elapsedMs: undefined,
+    firstRenderElapsedMs: undefined,
     retryRequests: 0,
     retriedTileKeys: [],
     recoveredTileKeys: [],
@@ -1152,6 +1093,7 @@ function postEntityStatus(
     returnedTiles: tileDiagnostics.returnedTiles,
     nonEmptyTiles: tileDiagnostics.nonEmptyTiles,
     elapsedMs: tileDiagnostics.elapsedMs,
+    firstRenderElapsedMs: tileDiagnostics.firstRenderElapsedMs,
     retryRequests: tileDiagnostics.retryRequests ?? 0,
     retriedTileKeys: uniqueStrings(tileDiagnostics.retriedTileKeys),
     recoveredTileKeys: uniqueStrings(tileDiagnostics.recoveredTileKeys),
@@ -1263,10 +1205,24 @@ function getCurrentCommBounds(): NonNullable<IitcIrisCommState['bounds']> | unde
   };
 }
 
+function getMapCenterE6(): {latE6: number; lngE6: number} | undefined {
+  const map = window.__iitcIrisMap;
+  if (!map) return undefined;
+  const center = map.getCenter();
+  return {
+    latE6: Math.round(center.lat * 1_000_000),
+    lngE6: Math.round(center.lng * 1_000_000),
+  };
+}
+
 function countCommResponseMessages(response: unknown): number {
   if (!response || typeof response !== 'object') return 0;
   const result = (response as {result?: unknown}).result;
   return Array.isArray(result) ? result.length : 0;
+}
+
+function normalizeCommTab(tab: unknown): IitcCommChannel {
+  return tab === 'faction' || tab === 'alerts' ? tab : 'all';
 }
 
 function toCommMessagePreview(message: IitcCommMessage): NonNullable<IitcIrisCommState['recent']>[number] {
@@ -1288,6 +1244,7 @@ function toCommMessagePreview(message: IitcCommMessage): NonNullable<IitcIrisCom
     narrowcast: message.narrowcast,
     player: message.player.name,
     playerTeam: message.player.team,
+    parts: renderIitcCommMarkup(message),
     portals: message.markup
       .filter(([type]) => type === 'PORTAL')
       .map(([, value]) => ({
@@ -1300,9 +1257,23 @@ function toCommMessagePreview(message: IitcCommMessage): NonNullable<IitcIrisCom
   };
 }
 
-async function fetchComm(version: string, bounds: NonNullable<IitcIrisCommState['bounds']> | undefined, signal?: AbortSignal): Promise<unknown> {
+async function fetchComm(
+  version: string,
+  tab: IitcCommChannel,
+  bounds: NonNullable<IitcIrisCommState['bounds']> | undefined,
+  getOlderMsgs: boolean,
+  signal?: AbortSignal,
+): Promise<unknown> {
   const csrfToken = getCsrfToken();
   if (!csrfToken) throw new Error('getPlexts missing csrftoken');
+  if (!bounds) throw new Error('getPlexts missing map bounds');
+  const postData = genIitcCommPostData({
+    channel: tab,
+    bounds,
+    storageHash: commChannelsData[tab],
+    getOlderMsgs,
+    version,
+  });
 
   const response = await fetch('/r/getPlexts', {
     method: 'POST',
@@ -1314,14 +1285,7 @@ async function fetchComm(version: string, bounds: NonNullable<IitcIrisCommState[
       'X-CSRFToken': csrfToken,
       'X-Requested-With': 'XMLHttpRequest',
     },
-    body: JSON.stringify({
-      tab: 'all',
-      minTimestampMs: -1,
-      maxTimestampMs: -1,
-      ascendingTimestampOrder: false,
-      ...bounds,
-      v: version,
-    }),
+    body: JSON.stringify(postData),
   });
   const text = await response.text();
 
@@ -1335,12 +1299,89 @@ async function fetchComm(version: string, bounds: NonNullable<IitcIrisCommState[
   return parsed;
 }
 
-async function refreshComm(): Promise<void> {
+async function postSendPlext(payload: NonNullable<ReturnType<typeof genIitcCommSendPlextPostData>>, signal?: AbortSignal): Promise<unknown> {
+  const csrfToken = getCsrfToken();
+  if (!csrfToken) throw new Error('sendPlext missing csrftoken');
+
+  const response = await fetch('/r/sendPlext', {
+    method: 'POST',
+    credentials: 'include',
+    signal,
+    headers: {
+      'Accept': 'application/json, text/javascript, */*; q=0.01',
+      'Content-Type': 'application/json; charset=utf-8',
+      'X-CSRFToken': csrfToken,
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+    body: JSON.stringify(payload),
+  });
+  const text = await response.text();
+
+  if (looksLikeHtml(text)) {
+    throw new Error(`sendPlext returned login html HTTP ${response.status}${response.redirected ? ' redirected' : ''}`);
+  }
+
+  const parsed = JSON.parse(text) as unknown;
+  const error = parsed && typeof parsed === 'object' ? (parsed as {error?: unknown}).error : undefined;
+  if (typeof error === 'string' && error) throw new Error(error);
+  return parsed;
+}
+
+async function sendComm(tab: IitcCommChannel, message: unknown): Promise<void> {
+  const text = typeof message === 'string' ? message : '';
+  const center = getMapCenterE6();
+  const payload = center ? genIitcCommSendPlextPostData({
+    channel: tab,
+    message: text,
+    ...center,
+  }) : null;
+  if (!payload) {
+    latestCommState = {
+      ...latestCommState,
+      tab,
+      sendStatus: 'error',
+      sendError: tab === 'alerts' ? "can't send to alerts" : 'empty message or missing map center',
+    };
+    postCommState();
+    return;
+  }
+
+  const abortController = new AbortController();
+  latestCommState = {
+    ...latestCommState,
+    tab,
+    sendStatus: 'sending',
+    sendError: undefined,
+  };
+  postCommState();
+
+  try {
+    await postSendPlext(payload, abortController.signal);
+    latestCommState = {
+      ...latestCommState,
+      tab,
+      sendStatus: 'sent',
+      sendError: undefined,
+    };
+    postCommState();
+    await refreshComm(tab);
+  } catch (error) {
+    latestCommState = {
+      ...latestCommState,
+      tab,
+      sendStatus: error instanceof Error && /login html|missing csrftoken/i.test(error.message) ? 'auth' : 'error',
+      sendError: error instanceof Error ? error.message : String(error),
+    };
+    postCommState();
+  }
+}
+
+async function refreshComm(tab: IitcCommChannel = normalizeCommTab(latestCommState.tab), getOlderMsgs = false): Promise<void> {
   cancelActiveCommFetch();
   const version = extractVersion();
   const bounds = getCurrentCommBounds();
   if (!version) {
-    latestCommState = {status: 'error', tab: 'all', messages: 0, bounds, error: 'waiting for Intel version'};
+    latestCommState = {status: 'error', tab, messages: getIitcCommChannelMessages(commChannelsData[tab]).length, requestOlder: getOlderMsgs, bounds, error: 'waiting for Intel version'};
     postCommState();
     return;
   }
@@ -1348,29 +1389,47 @@ async function refreshComm(): Promise<void> {
   const abortController = new AbortController();
   currentCommAbortController = abortController;
   const startedAt = performance.now();
-  latestCommState = {status: 'loading', tab: 'all', messages: 0, bounds};
+  latestCommState = {
+    status: 'loading',
+    tab,
+    messages: getIitcCommChannelMessages(commChannelsData[tab]).length,
+    requestOlder: getOlderMsgs,
+    bounds,
+    oldestTimestamp: commChannelsData[tab].oldestTimestamp,
+    newestTimestamp: commChannelsData[tab].newestTimestamp,
+  };
   postCommState();
 
   try {
-    const response = await fetchComm(version, bounds, abortController.signal);
+    const response = await fetchComm(version, tab, bounds, getOlderMsgs, abortController.signal);
     const elapsedMs = performance.now() - startedAt;
     const messages = countCommResponseMessages(response);
-    const commMessages = parseIitcCommResponse(response);
+    const writeResult = writeIitcCommDataToHash(response, commChannelsData[tab], getOlderMsgs);
+    commChannelsData[tab] = writeResult.channelData;
+    const commMessages = getIitcCommChannelMessages(commChannelsData[tab]);
+    const previewMessages = getOlderMsgs ? commMessages.slice(0, 12) : commMessages.slice(-12).reverse();
     latestCommState = {
-      status: messages > 0 ? 'ready' : 'empty',
-      tab: 'all',
-      messages,
-      recent: commMessages.slice(0, 8).map(toCommMessagePreview),
+      status: commMessages.length > 0 ? 'ready' : 'empty',
+      tab,
+      messages: commMessages.length,
+      responseMessages: messages,
+      addedMessages: writeResult.addedMessages,
+      requestOlder: getOlderMsgs,
+      oldMessagesWereAdded: writeResult.oldMessagesWereAdded,
+      recent: previewMessages.map(toCommMessagePreview),
       elapsedMs,
       bounds,
+      oldestTimestamp: commChannelsData[tab].oldestTimestamp,
+      newestTimestamp: commChannelsData[tab].newestTimestamp,
     };
     postCommState();
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') return;
     latestCommState = {
       status: error instanceof Error && /login html|missing csrftoken/i.test(error.message) ? 'auth' : 'error',
-      tab: 'all',
-      messages: 0,
+      tab,
+      messages: getIitcCommChannelMessages(commChannelsData[tab]).length,
+      requestOlder: getOlderMsgs,
       elapsedMs: performance.now() - startedAt,
       bounds,
       error: error instanceof Error ? error.message : String(error),
@@ -1830,11 +1889,28 @@ async function refreshEntities(): Promise<void> {
     abortController = new AbortController();
     const liveAbortController = abortController;
     currentFetchAbortController = abortController;
-    const artifactEntitiesPromise = fetchArtifactEntitiesForRender(version, liveAbortController.signal);
+    let artifactEntitiesPromise: Promise<IitcRawGameEntity[]> | undefined;
+    const getArtifactEntitiesPromise = (): Promise<IitcRawGameEntity[]> => {
+      artifactEntitiesPromise ??= fetchArtifactEntitiesForRender(version, liveAbortController.signal);
+      return artifactEntitiesPromise;
+    };
     const responses: IitcGetEntitiesResponse[] = [];
     let bucketDiagnostics = createIitcResponseBucketDiagnostics();
     let queueState = createIitcTileQueueState(plan.tileKeys);
     activeQueueState = queueState;
+    let firstRenderElapsedMs: number | undefined;
+    let lastProgressRenderTime = 0;
+    const renderLiveProgress = (response: IitcGetEntitiesResponse, entities: IitcIrisRenderEntities, force = false): void => {
+      const now = performance.now();
+      if (!force && firstRenderElapsedMs !== undefined && now - lastProgressRenderTime < 500) return;
+      renderEntities(entities);
+      renderTileDebug(plan, response);
+      lastProgressRenderTime = now;
+      if (firstRenderElapsedMs === undefined) {
+        firstRenderElapsedMs = now - refreshStartTime;
+        void getArtifactEntitiesPromise().catch(() => []);
+      }
+    };
     postEntityStatus(`fetching ${plan.tileKeys.length} tiles`, undefined, {
       requestedTiles: plan.tileKeys.length,
       returnedTiles: 0,
@@ -1886,10 +1962,12 @@ async function refreshEntities(): Promise<void> {
         const entities = toRenderEntities(mergedResponse, generation);
         const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyTileDiagnostics(mergedResponse, plan);
         const completedBatches = waveStart + index + 1;
+        renderLiveProgress(mergedResponse, entities, completedBatches === 1);
         postEntityStatus(`batch ${completedBatches}/${initialBatches.length}`, entities, {
           requestedTiles: plan.tileKeys.length,
           returnedTiles,
           nonEmptyTiles,
+          firstRenderElapsedMs,
           viewportBounds: plan.viewportBounds,
           emptyTileKeys,
           nonEmptyTileKeys,
@@ -1945,10 +2023,12 @@ async function refreshEntities(): Promise<void> {
         const entities = toRenderEntities(mergedResponse, generation);
         const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyTileDiagnostics(mergedResponse, plan);
         const recoveredTileKeys = getIitcRecoveredTileKeys(initialRetryTileKeys, nonEmptyTileKeys);
+        renderLiveProgress(mergedResponse, entities);
         postEntityStatus(`retry ${pass} ${index + 1}/${queueRetryBatches.length}`, entities, {
           requestedTiles: plan.tileKeys.length,
           returnedTiles,
           nonEmptyTiles,
+          firstRenderElapsedMs,
           viewportBounds: plan.viewportBounds,
           retryRequests,
           retriedTileKeys: [...retriedTileKeys],
@@ -1962,7 +2042,7 @@ async function refreshEntities(): Promise<void> {
       }
     }
 
-    const artifactEntities = await artifactEntitiesPromise;
+    const artifactEntities = await getArtifactEntitiesPromise();
     if (generation !== latestFetchGeneration) {
       queueState = markIitcTileQueueStale(queueState);
       activeQueueState = queueState;
@@ -1983,6 +2063,7 @@ async function refreshEntities(): Promise<void> {
       returnedTiles,
       nonEmptyTiles,
       elapsedMs: performance.now() - refreshStartTime,
+      firstRenderElapsedMs,
       viewportBounds: plan.viewportBounds,
       retryRequests,
       retriedTileKeys: [...retriedTileKeys],

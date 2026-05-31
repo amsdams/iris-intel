@@ -83,6 +83,35 @@
   min-width: 0;
 }
 
+.iitc-iris-segmented-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2px;
+  min-width: 0;
+}
+
+.iitc-iris-segmented-button {
+  appearance: none;
+  min-width: 0;
+  padding: 4px 6px;
+  border: 1px solid rgb(95 180 255 / 24%);
+  background: rgb(6 20 30 / 88%);
+  color: #9fb3c5;
+  font: 700 11px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  cursor: pointer;
+}
+
+.iitc-iris-segmented-button.is-active {
+  border-color: rgb(105 210 255 / 70%);
+  background: rgb(12 48 68 / 96%);
+  color: #e8f4ff;
+}
+
+.iitc-iris-segmented-button:disabled {
+  color: #4f6575;
+  cursor: default;
+}
+
 .iitc-iris-title {
   color: #00d9ff;
   font-weight: 700;
@@ -416,6 +445,13 @@
   gap: 6px;
 }
 
+.iitc-iris-comm-send-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  gap: 6px;
+  min-width: 0;
+}
+
 .iitc-iris-passcode-input {
   min-width: 0;
   box-sizing: border-box;
@@ -454,6 +490,53 @@
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.iitc-iris-comm-text.is-narrowcast {
+  color: #f3d37a;
+}
+
+.iitc-iris-comm-portal {
+  appearance: none;
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #8fcfff;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.iitc-iris-comm-player,
+.iitc-iris-comm-faction {
+  color: #c8d5e0;
+}
+
+.iitc-iris-comm-player {
+  appearance: none;
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.iitc-iris-comm-player:hover {
+  text-decoration: underline;
+}
+
+.is-enlightened {
+  color: #04c748;
+}
+
+.is-resistance {
+  color: #00a2ff;
+}
+
+.is-machina {
+  color: #ff4d57;
 }
 
 @media (max-width: 760px) {

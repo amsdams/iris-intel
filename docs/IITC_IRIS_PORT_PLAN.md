@@ -1,45 +1,132 @@
 # IITC IRIS Port Plan
 
-Goal: build a clean IITC-compatible IRIS track with a Mini-IRIS-sized UI shell and an IITC-CE-derived core. This track should use the same map library family as IITC-CE and avoid depending on the current IRIS map renderer while the port is being validated.
+Goal: build a clean IITC-compatible IRIS track with a Mini-IRIS-sized UI shell and an IITC-CE-derived core. This track
+should use the same map library family as IITC-CE and avoid depending on the current IRIS map renderer while the port is
+being validated.
 
-Porting rule: prefer IITC-CE file names, public method names, data model names, and UI concepts when adding ported behavior. Diverge only when TypeScript packaging, extension boundaries, or deliberate product decisions require it, and document the reason in this plan near the relevant pass. Existing IRIS/Mini-IRIS names can be used as local reference material, but they should not become the default naming source for IITC IRIS.
+Porting rule: prefer IITC-CE file names, public method names, data model names, and UI concepts when adding ported
+behavior. Diverge only when TypeScript packaging, extension boundaries, or deliberate product decisions require it, and
+document the reason in this plan near the relevant pass. Existing IRIS/Mini-IRIS names can be used as local reference
+material, but they should not become the default naming source for IITC IRIS.
 
 ## Porting Doctrine
 
-The goal is behavioral parity with IITC-CE without importing its incidental complexity. IITC IRIS should preserve IITC concepts and seams so comparison and debugging stay cheap, while using modern TypeScript boundaries, tests, and small modules to avoid carrying over hard-to-maintain structure.
+The goal is behavioral parity with IITC-CE without importing its incidental complexity. IITC IRIS should preserve IITC
+concepts and seams so comparison and debugging stay cheap, while using modern TypeScript boundaries, tests, and small
+modules to avoid carrying over hard-to-maintain structure.
 
 Non-functional requirements:
 
-- Source of truth: use `reference/IITC-CE` first for behavior, naming, request shape, lifecycle, and UI concepts. Use current IRIS/Mini-IRIS only as implementation reference or migration context.
-- Name compatibility: keep IITC names for recognizable domains such as `comm`, `parseMsgData`, `portalDetails`, `getEntities`, `artifacts`, `ornaments`, `links`, `fields`, `portals`, and layer/UI concepts. Do not rename a concept just because a cleaner generic name exists.
-- Structure freedom: do not copy IITC file layout, globals, DOM coupling, or mutation-heavy flow when those are incidental. A cleaner module boundary is allowed if exported names and behavior remain easy to map back to IITC.
-- Parity harness first: every ported subsystem needs copied diagnostics, fixture/live comparison points, and focused tests before broader UI polish.
-- Behavioral deltas must be explicit: if IITC IRIS intentionally differs from IITC-CE, document why in this plan and expose enough diagnostics to verify the impact.
-- Thin runtime, tested core: request planning, parsing, decoding, classification, and derived counters should live in `packages/iitc-core`; the extension runtime should mostly wire Leaflet, browser APIs, and UI messages.
-- Avoid “smart” rewrites before parity: simplify internals only after the equivalent IITC behavior is understood, named, and covered by tests or diagnostics.
-- Keep user-facing UI comparable: core map workflows should look and behave close enough to IITC-CE that screenshot and live-state comparisons are meaningful. Debug and fixture controls can remain IITC IRIS-specific, but should stay visually separate.
+- Source of truth: use `reference/IITC-CE` first for behavior, naming, request shape, lifecycle, and UI concepts. Use
+  current IRIS/Mini-IRIS only as implementation reference or migration context.
+- Parity before improvement: the first acceptable version of any core map workflow is the IITC-CE behavior, not a
+  cleaner IRIS-style reinterpretation. Optimization, UX redesign, and architectural simplification are allowed only
+  after parity is demonstrated or the divergence is documented as temporary.
+- Name compatibility: keep IITC names for recognizable domains such as `comm`, `parseMsgData`, `portalDetails`,
+  `getEntities`, `artifacts`, `ornaments`, `links`, `fields`, `portals`, and layer/UI concepts. Do not rename a concept
+  just because a cleaner generic name exists.
+- Structure freedom: do not copy IITC file layout, globals, DOM coupling, or mutation-heavy flow when those are
+  incidental. A cleaner module boundary is allowed if exported names and behavior remain easy to map back to IITC.
+- Parity harness first: every ported subsystem needs copied diagnostics, fixture/live comparison points, and focused
+  tests before broader UI polish.
+- Behavioral deltas must be explicit: if IITC IRIS intentionally differs from IITC-CE, document why in this plan and
+  expose enough diagnostics to verify the impact.
+- Thin runtime, tested core: request planning, parsing, decoding, classification, and derived counters should live in
+  `packages/iitc-core`; the extension runtime should mostly wire Leaflet, browser APIs, and UI messages.
+- Avoid “smart” rewrites before parity: simplify internals only after the equivalent IITC behavior is understood, named,
+  and covered by tests or diagnostics.
+- Keep user-facing UI comparable: core map workflows should look and behave close enough to IITC-CE that screenshot and
+  live-state comparisons are meaningful. Debug and fixture controls can remain IITC IRIS-specific, but should stay
+  visually separate.
 
 Required process for each new subsystem:
 
 1. Identify the IITC-CE source files under `reference/IITC-CE` and record them in the pass notes before implementing.
-2. List the IITC public concepts being ported: file/module name, function names, endpoint names, data fields, UI pane/control names, and lifecycle events.
-3. Choose IITC-aligned names at the boundary first. For example, prefer `comm.ts` plus `parseMsgData` over a cleaner but less traceable `plext.ts` parser name.
-4. If a cleaner internal split is useful, keep a small IITC-named facade that maps directly back to the IITC source. The facade is the debugging contract.
+2. List the IITC public concepts being ported: file/module name, function names, endpoint names, data fields, UI
+   pane/control names, and lifecycle events.
+3. Choose IITC-aligned names at the boundary first. For example, prefer `comm.ts` plus `parseMsgData` over a cleaner but
+   less traceable `plext.ts` parser name.
+4. If a cleaner internal split is useful, keep a small IITC-named facade that maps directly back to the IITC source. The
+   facade is the debugging contract.
 5. Add tests or copied diagnostics that prove the IITC behavior before adding larger UI or architectural cleanup.
-6. Document every intentional divergence in this plan with the reason, expected effect, and how to compare it against IITC-CE.
+6. Document every intentional divergence in this plan with the reason, expected effect, and how to compare it against
+   IITC-CE.
 
 Naming checklist before creating a new file or exported function:
 
 - Is there an IITC file or function with this responsibility? Use that name or an obvious TypeScript variant.
-- Is the word from Intel payload terminology but not IITC module terminology, such as `plext`? Use it inside field/types where accurate, but prefer the IITC module concept at file/API boundaries, such as `comm`.
-- Would a future debugger know where to look in `reference/IITC-CE` from this name? If not, rename or add a documented facade.
-- Is the new name borrowed from current IRIS/Mini-IRIS? Treat that as suspect unless the pass explicitly documents why IITC naming is not appropriate.
+- Is the word from Intel payload terminology but not IITC module terminology, such as `plext`? Use it inside field/types
+  where accurate, but prefer the IITC module concept at file/API boundaries, such as `comm`.
+- Would a future debugger know where to look in `reference/IITC-CE` from this name? If not, rename or add a documented
+  facade.
+- Is the new name borrowed from current IRIS/Mini-IRIS? Treat that as suspect unless the pass explicitly documents why
+  IITC naming is not appropriate.
 - Is the divergence only for code cleanliness? Keep the IITC name at the boundary and hide the cleaner structure inside.
+
+### Map Lifecycle Doctrine
+
+Map lifecycle is the highest-risk part of the port. For request scheduling, tile cache, stale fallback, render queue
+timing, and map-data status, IITC-CE is the contract. IITC IRIS should port the `MapDataRequest` lifecycle directly
+enough that live behavior can be compared line-by-line with:
+
+- `reference/IITC-CE/core/code/map_data_request.js`
+- `reference/IITC-CE/core/code/data_cache.js`
+- `reference/IITC-CE/core/code/map_data_render.js`
+- `reference/IITC-CE/core/code/map_data_debug.js`
+- `reference/IITC-CE/core/code/map_data_calc_tools.js`
+
+Required map lifecycle rules:
+
+- Use an IITC-style tile-indexed cache, not only whole-response reuse. Fresh cached tiles should enter the render queue
+  as `cache-fresh`.
+- On retry exhaustion, use stale cached tile data when available and count/report it as stale/out-of-date, matching IITC
+  `cache-stale`; do not silently replace this with `partialTileKeys` except as a temporary documented gap.
+- Preserve IITC request queue semantics: centre-first tile ordering, `MAX_REQUESTS`, `NUM_TILES_PER_REQUEST`, dynamic
+  bucket sizing, retry-count-based smaller batches, request delay constants, and timeout/error retry distinction.
+- Preserve IITC render queue semantics: render cached/network/stale tiles through a queue, process incrementally, and
+  end the request only after the render queue is drained.
+- Preserve map movement lifecycle: pause rendering on move start, refresh on move end, avoid aborting map-data requests
+  merely because a newer request started, and ignore old tile responses by checking whether their tile is still wanted.
+- Keep optional side requests, such as artifacts, out of the critical map-data lifecycle unless IITC-CE does otherwise.
+  If sequencing differs, document it as temporary and expose diagnostics.
+- Do not solve map lifecycle problems with IRIS-style broad fetch/merge/render shortcuts when an IITC lifecycle concept
+  exists. Port the IITC concept first, then decide whether a cleaner implementation can preserve the same observable
+  behavior.
+
+Current map lifecycle audit:
+
+| Area                     | IITC-CE contract                                                                                                | IITC IRIS status                                                                                                                            | Action                                                                     |
+|--------------------------|-----------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
+| Tile math/data zoom      | `map_data_calc_tools.js` tile params and adjusted data zoom                                                     | Mostly aligned in `packages/iitc-core` with tests                                                                                           | Keep validating against IITC fixtures                                      |
+| Initial request batching | `MapDataRequest.processRequestQueue`: max 5 requests, up to 25 tiles, dynamic bucket sizing, centre-first order | Core has centre-first tile ordering and IITC dynamic batch helpers; runtime still drives fixed initial waves instead of the full queue loop | Move runtime orchestration onto core queue helpers end-to-end              |
+| Retry lifecycle          | `requeueTile`, `handleResponse`, retry limit, timeout/error distinction, smaller batches after retries          | Partially aligned; retry accounting exists, but returned-empty placeholder recovery remains a compatibility shim                            | Replace shim with IITC-derived queue behavior                              |
+| Tile cache               | `DataCache` per tile, fresh/stale decisions                                                                     | Not aligned; whole-response/same-bounds cache plus diagnostics                                                                              | Port tile-indexed cache next for map parity                                |
+| Stale fallback           | Retry exhaustion renders stale tile via `cache-stale` when possible                                             | Not aligned; exhausted placeholder tiles become `partialTileKeys`                                                                           | Highest-priority map parity gap                                            |
+| Render queue             | `pushRenderQueue` and `processRenderQueue` incrementally render cached, network, and stale tiles                | Partially aligned; progressive merged render exists, but not IITC tile render queue                                                         | Port render queue semantics after/with tile cache                          |
+| Move lifecycle           | `mapMoveStart` pauses render queue; old non-cancelled tile responses ignored if no longer wanted                | Partially aligned; IRIS aborts active fetches and generation-checks responses                                                               | Revisit when porting IITC queue/cache                                      |
+| Artifacts                | IITC artifact subsystem is separate from base map-data tile lifecycle                                           | Mostly aligned after deferring artifact fetch until first map render; live non-empty payload still unverified                               | Keep as documented temporary sequencing until artifact parity is validated |
+
+Adherence summary after 2026-05-31 audit:
+
+- Adheres: IITC tile parameters/data zoom, tile key shape, centre-first tile ordering, max request and tile-per-request
+  constants, response bucket classification, timeout/server-retry/error distinction, and copied diagnostics for live
+  comparison.
+- Partially adheres: dynamic request batching exists in core but is not the single runtime driver; progressive rendering
+  exists but is merged-response based instead of tile render queue based; retry-limit state exists but returned-empty
+  low-zoom recovery is still a compatibility path.
+- Does not yet adhere: per-tile `DataCache`, `cache-fresh`/`cache-stale` render sources, stale tile fallback after retry
+  exhaustion, `MapDataRequest` render queue drain semantics, and IITC movement behavior where old map-data requests are
+  not aborted but ignored tile-by-tile if no longer wanted.
+- Immediate next map lifecycle porting target: implement IITC-style tile cache plus stale fallback, then replace
+  merged-progress rendering with an IITC-named render queue facade. Do not add further map-load “improvements” until
+  those IITC lifecycle concepts are ported or explicitly deferred.
 
 ## Pass 1: Scaffold - Done
 
-- Add `packages/iitc-core` as the porting target for IITC-CE request lifecycle, zoom semantics, entity decoding, and renderer-facing model code.
-- Add `apps/iitc-iris` as a new extension app with a minimal shell, separate build/package scripts, and vendored IITC-CE Leaflet assets.
+- Add `packages/iitc-core` as the porting target for IITC-CE request lifecycle, zoom semantics, entity decoding, and
+  renderer-facing model code.
+- Add `apps/iitc-iris` as a new extension app with a minimal shell, separate build/package scripts, and vendored IITC-CE
+  Leaflet assets.
 - Keep the app loadable before adding entity rendering, so later regressions are easier to isolate.
 
 Acceptance:
@@ -62,29 +149,70 @@ Acceptance:
 
 Current status:
 
-- Tile math, zoom/data-zoom selection, request key generation, basic batching, and the live-compat batch policy are ported.
-- The IITC same-zoom refresh skip rule is ported in core: a move does not need a new request when the new viewport remains inside the previously fetched data bounds.
-- IITC IRIS now uses the core IITC request batch shape for the first live request wave: up to 5 concurrent requests with dynamically sized batches capped at 25 tiles/request. Returned-empty summary tiles are still retried as single-tile compatibility requests, and response merging keeps a non-empty tile payload over a later empty payload for the same tile.
-- Live-compat retry selection now comes from `packages/iitc-core`: the runtime retries returned-empty compatibility tiles plus explicit IITC response retry buckets such as timeout, error, and unaccounted tiles.
-- Core now has an immutable IITC tile queue state model covering queued, requested, successful, failed, stale, active-request, and tile-error-count state; tests cover success removal, timeout requeueing, server retry without error-count increments, and retry-limit fail/stale behavior.
-- IITC IRIS now uses that core queue state to drive live-compat retry selection while keeping the conservative existing batch shape; returned-empty summary tiles are an explicit compatibility option in the core queue.
-- Runtime request batch construction now goes through core queue helpers for initial and retry phases. The initial phase uses IITC-style concurrent request buckets; the retry phase remains conservative while live empty-tile behavior is validated.
-- Large initial tile plans are executed across all 25-tile request batches in waves of up to five concurrent requests, instead of stopping after only the first concurrent wave. This fixes low-zoom views such as z10 where the plan can contain more than 125 tiles.
-- Placeholder-mode timeout retries now use the IITC-style per-tile retry limit, and final exhausted low-zoom placeholder tiles are reported as partial coverage instead of hard request failures.
-- Runtime fetch cancellation is explicit: pan/zoom and data-source changes abort the active `getEntities` request, and core queue state can mark obsolete queued/requested tiles as stale instead of letting old responses race the newest map view.
-- IITC IRIS now uses the core same-zoom refresh-skip rule in live mode: if a pan stays inside the fetched padded data bounds and the cached response covers the current tile plan, the map re-renders from cached entities instead of issuing a new `getEntities` request.
-- Cached-response reuse is now a core decision: `packages/iitc-core` checks both fetched-bounds coverage and requested tile coverage before IITC IRIS uses a cached live response.
-- Response merge, tile-return diagnostics, requested-tile response classification, and IITC-style request response buckets now live in `packages/iitc-core` with tests, so the runtime no longer owns richer-payload merging, empty-tile detection, unaccounted-tile detection, or recovered-tile accounting.
-- Response bucket diagnostic accumulation now also lives in `packages/iitc-core`, so live retry/timeout/error accounting is immutable and tested outside the page runtime.
-- The remaining shim exists around returned-empty summary tile recovery: the core queue has IITC-style active request accounting, tile-specific retry/error counters, response bucket classification, and stale marking, but the runtime still performs explicit single-tile empty recovery until live parity is validated.
-- Important lifecycle gap: IITC-CE can keep and render stale tile data after retry exhaustion. IITC IRIS currently reports final exhausted placeholder tiles as `partialTileKeys`, but it does not yet maintain a per-tile stale-payload fallback. Porting stale tile fallback is required for the same low-zoom failure experience as IITC-CE.
-- The compatibility retry policy should remain while validating live parity, but the intended replacement is a closer IITC-CE-derived request queue in `packages/iitc-core`, not permanent ad hoc runtime policy.
+- Tile math, zoom/data-zoom selection, request key generation, basic batching, and the live-compat batch policy are
+  ported.
+- The IITC same-zoom refresh skip rule is ported in core: a move does not need a new request when the new viewport
+  remains inside the previously fetched data bounds.
+- IITC IRIS now uses the core IITC request batch shape for the first live request wave: up to 5 concurrent requests with
+  dynamically sized batches capped at 25 tiles/request. Returned-empty summary tiles are still retried as single-tile
+  compatibility requests, and response merging keeps a non-empty tile payload over a later empty payload for the same
+  tile.
+- Live-compat retry selection now comes from `packages/iitc-core`: the runtime retries returned-empty compatibility
+  tiles plus explicit IITC response retry buckets such as timeout, error, and unaccounted tiles.
+- Core now has an immutable IITC tile queue state model covering queued, requested, successful, failed, stale,
+  active-request, and tile-error-count state; tests cover success removal, timeout requeueing, server retry without
+  error-count increments, and retry-limit fail/stale behavior.
+- IITC IRIS now uses that core queue state to drive live-compat retry selection while keeping the conservative existing
+  batch shape; returned-empty summary tiles are an explicit compatibility option in the core queue.
+- Runtime request batch construction now goes through core queue helpers for initial and retry phases. The initial phase
+  uses IITC-style concurrent request buckets; the retry phase remains conservative while live empty-tile behavior is
+  validated.
+- Large initial tile plans are executed across all 25-tile request batches in waves of up to five concurrent requests,
+  instead of stopping after only the first concurrent wave. This fixes low-zoom views such as z10 where the plan can
+  contain more than 125 tiles.
+- Placeholder-mode timeout retries now use the IITC-style per-tile retry limit, and final exhausted low-zoom placeholder
+  tiles are reported as partial coverage instead of hard request failures.
+- Runtime fetch cancellation is explicit: pan/zoom and data-source changes abort the active `getEntities` request, and
+  core queue state can mark obsolete queued/requested tiles as stale instead of letting old responses race the newest
+  map view.
+- IITC IRIS now uses the core same-zoom refresh-skip rule in live mode: if a pan stays inside the fetched padded data
+  bounds and the cached response covers the current tile plan, the map re-renders from cached entities instead of
+  issuing a new `getEntities` request.
+- Cached-response reuse is now a core decision: `packages/iitc-core` checks both fetched-bounds coverage and requested
+  tile coverage before IITC IRIS uses a cached live response.
+- Response merge, tile-return diagnostics, requested-tile response classification, and IITC-style request response
+  buckets now live in `packages/iitc-core` with tests, so the runtime no longer owns richer-payload merging, empty-tile
+  detection, unaccounted-tile detection, or recovered-tile accounting.
+- Response bucket diagnostic accumulation now also lives in `packages/iitc-core`, so live retry/timeout/error accounting
+  is immutable and tested outside the page runtime.
+- The remaining shim exists around returned-empty summary tile recovery: the core queue has IITC-style active request
+  accounting, tile-specific retry/error counters, response bucket classification, and stale marking, but the runtime
+  still performs explicit single-tile empty recovery until live parity is validated.
+- Important lifecycle gap: IITC-CE can keep and render stale tile data after retry exhaustion. IITC IRIS currently
+  reports final exhausted placeholder tiles as `partialTileKeys`, but it does not yet maintain a per-tile stale-payload
+  fallback. Porting stale tile fallback is required for the same low-zoom failure experience as IITC-CE.
+- Important performance/parity gap: live z15 views can still take tens of seconds when many summary tiles timeout and
+  recover, even with `successTiles === requestedTiles` and no partials. IITC IRIS now renders the merged live response
+  progressively after initial batches and throttled retry progress, closer to IITC-CE's render queue behavior; copied
+  diagnostics include final elapsed time and first visible render timing. Continue comparing against IITC-CE on the same
+  viewport for retry count, timeout tile pattern, stale/partial data use, and whether remaining delay comes from
+  cache/stale fallback or retry policy.
+- The compatibility retry policy should remain while validating live parity, but the intended replacement is a closer
+  IITC-CE-derived request queue in `packages/iitc-core`, not permanent ad hoc runtime policy.
 
 ## Pass 3: Entity Decode - Partial
 
 - Port IITC-CE map entity parsing into `packages/iitc-core`.
-- Preserve IITC concepts and names where they make comparison easier: portals, links, fields, ornaments, artifacts, shards, events.
+- Preserve IITC concepts and names where they make comparison easier: portals, links, fields, ornaments, artifacts,
+  shards, events.
 - Decode fixtures from `docs/har` and `docs/update-map` without rendering concerns mixed in.
+
+IITC-CE source references:
+
+- `reference/IITC-CE/core/code/map_data_render.js`
+- `reference/IITC-CE/core/code/portal_marker.js`
+- `reference/IITC-CE/core/code/ornaments.js`
+- `reference/IITC-CE/core/code/sidebar.js` and IITC's `window.artifact` setup path for artifact lifecycle.
 
 Acceptance:
 
@@ -95,9 +223,15 @@ Current status:
 
 - Portals, links, fields, placeholder portals, fake field-edge link filtering, and ornament IDs are decoded.
 - Fixture tests cover low-zoom placeholder behavior and zoom-15 summary/ornament behavior.
-- Artifact brief decoding is wired with a synthetic parser test, but live artifact behavior is unverified because Intel is not currently returning artifact portal payloads in the available test responses.
-- Artifact brief normalization for renderer-facing fragment/target entries now lives in `packages/iitc-core`; IITC IRIS renders the core artifact entry shape directly.
-- IITC IRIS fetches `/r/getArtifactPortals` in live mode as an IITC-style artifact subsystem request, independent of the `AR` visual layer toggle. Returned IITC-shaped `guid -> portal summary` artifact responses are normalized into renderable entities, injected into the rendered portal set, and reported with endpoint status/count/type diagnostics in copied debug JSON. The New Jersey Orion HAR captured during setup returned `{"result":{}}`, so non-empty live artifact payloads still need validation.
+- Artifact brief decoding is wired with a synthetic parser test, but live artifact behavior is unverified because Intel
+  is not currently returning artifact portal payloads in the available test responses.
+- Artifact brief normalization for renderer-facing fragment/target entries now lives behind the IITC-named
+  `packages/iitc-core/src/artifact.ts` facade; IITC IRIS renders the core artifact entry shape directly.
+- IITC IRIS fetches `/r/getArtifactPortals` in live mode as an IITC-style artifact subsystem request, independent of the
+  `AR` visual layer toggle. Returned IITC-shaped `guid -> portal summary` artifact responses are normalized into
+  renderable entities, injected into the rendered portal set, and reported with endpoint status/count/type diagnostics
+  in copied debug JSON. The New Jersey Orion HAR captured during setup returned `{"result":{}}`, so non-empty live
+  artifact payloads still need validation.
 - Shard and event decoding still need dedicated live fixtures and tests.
 
 ## Pass 4: Leaflet Rendering - Partial
@@ -105,6 +239,13 @@ Current status:
 - Add portal, link, field, ornament, artifact, shard, and event layers using Leaflet primitives compatible with IITC-CE.
 - Match IITC zoom visibility rules first, then refine visual styling.
 - Keep renderer state independent from request lifecycle state.
+
+IITC-CE source references:
+
+- `reference/IITC-CE/core/code/map_data_render.js`
+- `reference/IITC-CE/core/code/ornaments.js`
+- `reference/IITC-CE/core/code/portal_marker.js`
+- `reference/IITC-CE/core/code/portal_detail_display.js` for artifact display conventions.
 
 Acceptance:
 
@@ -114,18 +255,39 @@ Acceptance:
 Current status:
 
 - Typed npm Leaflet is bundled into `iitc-iris`.
-- Fields, links, placeholder portals, real portals, level fill, health fill, ornaments, level labels, and IITC-style artifact/shard marker icons render.
-- Core IITC-style entity filters are available in the dock: unclaimed/placeholder portals, portal levels 1-8, and Resistance/Enlightened/Machina faction filters. The faction filters apply to portals, links, and fields, matching IITC-CE's default overlay semantics; ornament and artifact overlays remain independent IITC-style overlays when their own `OR`/`AR` layers are enabled.
-- Ornament rendering honors IITC's `excludedOrnaments`, `knownOrnaments`, and `ingress.intelmap.layergroupdisplayed` localStorage settings for known ornament sublayers such as `Anomaly`, `Scouting`, `Battle`, `Beacons`, `Fracker`, and `Shards`, so ornaments hidden in IITC's default layer configuration are not drawn in IITC IRIS either.
-- IITC IRIS uses IITC core stock ornament marker images for common anomaly/scouting/battle/beacon/fracker/shard IDs currently seen in fixtures/HARs, while retaining IITC-style sublayer classification for those groups.
-- Dynamic ornament IDs are supported by exact known-ID mappings plus IITC-style prefix classification for future `ap*`, `sc*_p`, `peBB_*`, `peBR_*`, winner `peBN_*`, `peFRACK`, `peLOOK`, and other `pe*` beacon IDs; unknown IDs still render through IITC's stock marker image URL.
-- Copied diagnostics include drawn/hidden ornament marker counts and ornament type counts, making IITC ornament exclusion and visual parity checks easier.
-- Optional detail styling now has an explicit render policy: level fill, health fill, and level labels only draw when detailed portal data is available at zoom 14+ and the matching layer toggle is enabled. Ornament and artifact overlays follow IITC-CE more closely and can draw at any zoom when their data is available and their layer toggle is enabled. Base fields, links, and portals remain independent of that policy.
-- Base renderer styling is closer to IITC-CE: team-coloured portal fills, IITC portal radius/weight scaling, 0.25 field fill opacity, full-opacity links, orange neutral portals, and text-only portal level labels with simple overlap thinning.
-- Artifact rendering is wired with IITC's marker image convention (`{type}_shard.png` and `{type}_shard_target.png`) and can use either artifact briefs from `getEntities` or the live `/r/getArtifactPortals` endpoint. The `AR` toggle controls marker visibility only, not whether the endpoint is fetched, but non-empty live Intel data still needs validation with a real artifact fixture or HAR.
+- Fields, links, placeholder portals, real portals, level fill, health fill, ornaments, level labels, and IITC-style
+  artifact/shard marker icons render.
+- Core IITC-style entity filters are available in the dock: unclaimed/placeholder portals, portal levels 1-8, and
+  Resistance/Enlightened/Machina faction filters. The faction filters apply to portals, links, and fields, matching
+  IITC-CE's default overlay semantics; ornament and artifact overlays remain independent IITC-style overlays when their
+  own `OR`/`AR` layers are enabled.
+- Ornament rendering honors IITC's `excludedOrnaments`, `knownOrnaments`, and `ingress.intelmap.layergroupdisplayed`
+  localStorage settings through the IITC-named `packages/iitc-core/src/ornaments.ts` facade for known ornament sublayers
+  such as `Anomaly`, `Scouting`, `Battle`, `Beacons`, `Fracker`, and `Shards`, so ornaments hidden in IITC's default
+  layer configuration are not drawn in IITC IRIS either.
+- IITC IRIS uses IITC core stock ornament marker images for common anomaly/scouting/battle/beacon/fracker/shard IDs
+  currently seen in fixtures/HARs, while retaining IITC-style sublayer classification for those groups in
+  `packages/iitc-core/src/ornaments.ts`.
+- Dynamic ornament IDs are supported by exact known-ID mappings plus IITC-style prefix classification for future `ap*`,
+  `sc*_p`, `peBB_*`, `peBR_*`, winner `peBN_*`, `peFRACK`, `peLOOK`, and other `pe*` beacon IDs; unknown IDs still
+  render through IITC's stock marker image URL.
+- Copied diagnostics include drawn/hidden ornament marker counts and ornament type counts, making IITC ornament
+  exclusion and visual parity checks easier.
+- Optional detail styling now has an explicit render policy: level fill, health fill, and level labels only draw when
+  detailed portal data is available at zoom 14+ and the matching layer toggle is enabled. Ornament and artifact overlays
+  follow IITC-CE more closely and can draw at any zoom when their data is available and their layer toggle is enabled.
+  Base fields, links, and portals remain independent of that policy.
+- Base renderer styling is closer to IITC-CE: team-coloured portal fills, IITC portal radius/weight scaling, 0.25 field
+  fill opacity, full-opacity links, orange neutral portals, and text-only portal level labels with simple overlap
+  thinning.
+- Artifact rendering is wired with IITC's marker image convention (`{type}_shard.png` and `{type}_shard_target.png`) and
+  can use either artifact briefs from `getEntities` or the live `/r/getArtifactPortals` endpoint. The `AR` toggle
+  controls marker visibility only, not whether the endpoint is fetched, but non-empty live Intel data still needs
+  validation with a real artifact fixture or HAR.
 - Layer ordering and visual parity are only approximate.
 - Shard, event, portal label polish, and plugin/highlighter parity are not done.
-- Visual comparisons against an IITC-CE install with plugins enabled must account for plugin overlays. For example, Player Tracker markers are expected to appear in IITC-CE but not IITC IRIS until plugin parity work starts.
+- Visual comparisons against an IITC-CE install with plugins enabled must account for plugin overlays. For example,
+  Player Tracker markers are expected to appear in IITC-CE but not IITC IRIS until plugin parity work starts.
 
 ## Pass 5: Comparison UI - Started
 
@@ -139,48 +301,84 @@ Acceptance:
 
 Current status:
 
-- The dock shows zoom, data zoom, summary availability, tile span, fetch state, entity totals, real/placeholder/ornament portal counts, and copy-to-clipboard diagnostics.
-- Copied diagnostics include IITC-style request response buckets (`serverRetryTileKeys`, `timeoutTileKeys`, `errorTileKeys`, `responseRetryTileKeys`, and `queueDelayReasons`) so slow-network retries can be separated from returned-empty tile recovery.
-- Copied diagnostics also include core queue-state counters so the immutable queue model can be compared against the current live runtime loop before it replaces scheduling.
-- Copied diagnostics include `partialTileKeys` and `queue.partialTiles` for low-zoom placeholder tiles that exhausted timeout retries without becoming hard request failures. These should eventually become `staleTiles` once per-tile stale-payload fallback is ported.
-- Copied diagnostics include `elapsedMs` and `elapsedSeconds`; these are useful for trend comparison, but exact parity with IITC still depends on matching all request lifecycle timing semantics.
-- Copied diagnostics include `entities.artifactFetch` so artifact-event tests can tell whether `/r/getArtifactPortals` was disabled, empty, ready, errored, or blocked by login HTML.
-- Cached same-bounds renders explicitly clear queue diagnostics, so copied snapshots do not mix the current tile plan with stale queue counters from the previous network fetch.
-- Copied diagnostics and the dock now show entity source (`live`, `cache`, or `fixture`) so pan/zoom lifecycle tests can distinguish network fetches from cached same-bounds renders.
-- The dock replaces entity diagnostic snapshots on each status message instead of partially merging them, preventing stale retry/source/queue fields from leaking across live/cache/fixture transitions.
+- The dock shows zoom, data zoom, summary availability, tile span, fetch state, entity totals, real/placeholder/ornament
+  portal counts, and copy-to-clipboard diagnostics.
+- Copied diagnostics include IITC-style request response buckets (`serverRetryTileKeys`, `timeoutTileKeys`,
+  `errorTileKeys`, `responseRetryTileKeys`, and `queueDelayReasons`) so slow-network retries can be separated from
+  returned-empty tile recovery.
+- Copied diagnostics also include core queue-state counters so the immutable queue model can be compared against the
+  current live runtime loop before it replaces scheduling.
+- Copied diagnostics include `partialTileKeys` and `queue.partialTiles` for low-zoom placeholder tiles that exhausted
+  timeout retries without becoming hard request failures. These should eventually become `staleTiles` once per-tile
+  stale-payload fallback is ported.
+- Copied diagnostics include `elapsedMs` and `elapsedSeconds`; these are useful for trend comparison, but exact parity
+  with IITC still depends on matching all request lifecycle timing semantics.
+- Copied diagnostics include `entities.artifactFetch` so artifact-event tests can tell whether `/r/getArtifactPortals`
+  was disabled, empty, ready, errored, or blocked by login HTML.
+- Cached same-bounds renders explicitly clear queue diagnostics, so copied snapshots do not mix the current tile plan
+  with stale queue counters from the previous network fetch.
+- Copied diagnostics and the dock now show entity source (`live`, `cache`, or `fixture`) so pan/zoom lifecycle tests can
+  distinguish network fetches from cached same-bounds renders.
+- The dock replaces entity diagnostic snapshots on each status message instead of partially merging them, preventing
+  stale retry/source/queue fields from leaking across live/cache/fixture transitions.
 - The dock has fixed Amsterdam and Damrak view presets for repeatable IITC/IITC IRIS comparisons.
-- The dock can jump to arbitrary comparison views from `lat,lng,z` text, Intel map URLs with `ll` and `z`, or IITC-CE portal links with `pll`.
-- The floating map-controls panel has 25%-viewport pan buttons and +/- zoom buttons; these use the same Leaflet `setView` path as presets and therefore exercise the same move/zoom request lifecycle as mouse interaction.
+- The dock can jump to arbitrary comparison views from `lat,lng,z` text, Intel map URLs with `ll` and `z`, or IITC-CE
+  portal links with `pll`.
+- The floating map-controls panel has 25%-viewport pan buttons and +/- zoom buttons; these use the same Leaflet
+  `setView` path as presets and therefore exercise the same move/zoom request lifecycle as mouse interaction.
 - The dock can copy the current view back out as an Intel URL.
-- The floating map-controls panel has base-map switches for CartoDB Dark Matter, CartoDB Positron, and OpenStreetMap, with the selected base map persisted for repeatable visual comparisons.
-- Layer toggles are persisted; the default comparison view enables only fields, links, and portals while leaving level fill, health fill, ornaments, artifacts, labels, and tile debug off.
-- Base map, core/detail layer toggles, side-system tabs, and pan/zoom controls live outside the main debug/comparison dock. The data-source switch remains in the dock because it is comparison/fixture infrastructure rather than IITC-style map UI.
+- The floating map-controls panel has base-map switches for CartoDB Dark Matter, CartoDB Positron, and OpenStreetMap,
+  with the selected base map persisted for repeatable visual comparisons.
+- Layer toggles are persisted; the default comparison view enables only fields, links, and portals while leaving level
+  fill, health fill, ornaments, artifacts, labels, and tile debug off.
+- Base map, core/detail layer toggles, side-system tabs, and pan/zoom controls live outside the main debug/comparison
+  dock. The data-source switch remains in the dock because it is comparison/fixture infrastructure rather than
+  IITC-style map UI.
 - Current layer toggles:
-  - `F`: fields.
-  - `LN`: links.
-  - `P`: portals.
-  - `U`: unclaimed and placeholder portals.
-  - `L1`..`L8`: portal levels 1 through 8.
-  - `RES`, `ENL`, `MAC`: faction filters for portals, links, and fields.
-  - `LF`: portal body fill by IITC level colours, matching IITC-CE's `Level Color` highlighter behavior, including neutral portals with an orange outline and level-coloured body.
-  - `HF`: portal body fill by recharge status, matching IITC-CE's `Needs Recharge (Health)` highlighter behavior.
-  - `OR`: ornament image overlays.
-  - `AR`: artifact rings.
-  - `LV`: portal level labels.
-  - `T`: tile debug rectangles.
-- Optional portal styling (`LF`, `HF`, `LV`) only renders when detailed portal data is available at zoom 14+; toggles may be enabled in the dock but still hidden in low-zoom placeholder mode. `OR` and `AR` follow IITC-CE overlay behavior and can render at any zoom when their data is available.
-- The dock has a data-source switch for live Intel data, bundled Amsterdam z10/z14 fixtures, and a Damrak z15 fixture extracted from an IITC HAR. Fixture mode renders deterministic saved `getEntities` responses and jumps to the matching view.
-- Copied diagnostics include `renderPolicy`, so comparison snapshots show whether optional detail overlays were eligible to render.
-- Visual parity comparisons should use the dock's viewport P/L/F counts and copied `entities.viewport` block; total fetched counts include padded request bounds and placeholder support entities.
+    - `F`: fields.
+    - `LN`: links.
+    - `P`: portals.
+    - `U`: unclaimed and placeholder portals.
+    - `L1`..`L8`: portal levels 1 through 8.
+    - `RES`, `ENL`, `MAC`: faction filters for portals, links, and fields.
+    - `LF`: portal body fill by IITC level colours, matching IITC-CE's `Level Color` highlighter behavior, including
+      neutral portals with an orange outline and level-coloured body.
+    - `HF`: portal body fill by recharge status, matching IITC-CE's `Needs Recharge (Health)` highlighter behavior.
+    - `OR`: ornament image overlays.
+    - `AR`: artifact rings.
+    - `LV`: portal level labels.
+    - `T`: tile debug rectangles.
+- Optional portal styling (`LF`, `HF`, `LV`) only renders when detailed portal data is available at zoom 14+; toggles
+  may be enabled in the dock but still hidden in low-zoom placeholder mode. `OR` and `AR` follow IITC-CE overlay
+  behavior and can render at any zoom when their data is available.
+- The dock has a data-source switch for live Intel data, bundled Amsterdam z10/z14 fixtures, and a Damrak z15 fixture
+  extracted from an IITC HAR. Fixture mode renders deterministic saved `getEntities` responses and jumps to the matching
+  view.
+- Copied diagnostics include `renderPolicy`, so comparison snapshots show whether optional detail overlays were eligible
+  to render.
+- Visual parity comparisons should use the dock's viewport P/L/F counts and copied `entities.viewport` block; total
+  fetched counts include padded request bounds and placeholder support entities.
 - Mock controls and place-name geocoding are not yet implemented in IITC IRIS.
 
 ## Pass 6: Portal Selection and Details - Started
 
 - Port IITC-like portal selection as the next comparison surface before broader side request/UI systems.
-- Keep the first pass narrow: click/select a portal, render the selected portal highlight, expose selected GUID/title/team/level in the dock or innerstatus row, clear selection, and preserve selection across entity refreshes when the selected portal is still present.
-- Add a portal details panel after the selection baseline is stable. The details panel should start with title, team, level, health, resonators, mods, owner, ornaments, artifacts, and basic link/field context where the decoded data supports it.
-- Align core map UI with IITC-CE for comparison: selected portal details should live in an IITC-like side panel, while Mini-IRIS-style debug/copy controls stay collapsed in the comparison dock.
-- Use portal selection/details to validate richer entity decoding and to anchor later COMM, inventory, artifact, and ornament comparisons.
+- Keep the first pass narrow: click/select a portal, render the selected portal highlight, expose selected
+  GUID/title/team/level in the dock or innerstatus row, clear selection, and preserve selection across entity refreshes
+  when the selected portal is still present.
+- Add a portal details panel after the selection baseline is stable. The details panel should start with title, team,
+  level, health, resonators, mods, owner, ornaments, artifacts, and basic link/field context where the decoded data
+  supports it.
+- Align core map UI with IITC-CE for comparison: selected portal details should live in an IITC-like side panel, while
+  Mini-IRIS-style debug/copy controls stay collapsed in the comparison dock.
+- Use portal selection/details to validate richer entity decoding and to anchor later COMM, inventory, artifact, and
+  ornament comparisons.
+
+IITC-CE source references:
+
+- `reference/IITC-CE/core/code/portal_detail.js`
+- `reference/IITC-CE/core/code/portal_detail_display.js`
+- `reference/IITC-CE/core/code/portal_detail_display_tools.js`
 
 Acceptance:
 
@@ -190,33 +388,61 @@ Acceptance:
 
 Current status:
 
-- First selection baseline is in progress: visible portal markers are clickable, the selected portal gets a separate orange Leaflet highlight ring, the compact innerstatus row shows the selected portal, selection can be cleared, and copied diagnostics include `selectedPortal`.
-- A compact selected-portal summary row now uses the currently decoded map entity data: image, title, team, level, health, resonator count, mission flag, ornament/artifact counts, and basic link/field context from decoded map links/fields.
-- Selecting a portal now starts a `/r/getPortalDetails` request. `packages/iitc-core` parses the IITC-shaped details response into owner, mods, resonators, history flags, mission flag, and derived mitigation; IITC IRIS exposes request status and parsed detail data in the selected row and copied diagnostics.
-- A compact portal details panel now renders as a separate IITC-like right-side selected portal panel instead of expanding the main comparison dock. It shows a faction-colored shell, owner, mitigation, history flags, stable mod slots, a portal-centered resonator layout, selected link/field context, and safe portal actions for zoom/copy link/copy GUID.
-- The first pass intentionally does not yet include verified IITC resonator compass-slot parity, deploy/recharge/link action wiring, inventory key counts, or IITC plugin/highlighter interactions.
+- First selection baseline is in progress: visible portal markers are clickable, the selected portal gets a separate
+  orange Leaflet highlight ring, the compact innerstatus row shows the selected portal, selection can be cleared, and
+  copied diagnostics include `selectedPortal`.
+- A compact selected-portal summary row now uses the currently decoded map entity data: image, title, team, level,
+  health, resonator count, mission flag, ornament/artifact counts, and basic link/field context from decoded map
+  links/fields.
+- Selecting a portal now starts a `/r/getPortalDetails` request. `packages/iitc-core` parses the IITC-shaped details
+  response into owner, mods, resonators, history flags, mission flag, and derived mitigation; IITC IRIS exposes request
+  status and parsed detail data in the selected row and copied diagnostics.
+- A compact portal details panel now renders as a separate IITC-like right-side selected portal panel instead of
+  expanding the main comparison dock. It shows a faction-colored shell, owner, mitigation, history flags, stable mod
+  slots, a portal-centered resonator layout, selected link/field context, and safe portal actions for zoom/copy
+  link/copy GUID.
+- The first pass intentionally does not yet include verified IITC resonator compass-slot parity, deploy/recharge/link
+  action wiring, inventory key counts, or IITC plugin/highlighter interactions.
 
 ## Pass 7: IITC Side Request/UI Systems - Started
 
-- Port IITC side systems that require their own request lifecycle and UI, after portal selection is available as a stable anchor.
+- Port IITC side systems that require their own request lifecycle and UI, after portal selection is available as a
+  stable anchor.
 - Suggested order:
-  - COMM: `/r/getPlexts` request lifecycle, `comm.parseMsgData`-style parsing, filters, message list, map-linked portal/player references where available.
-  - Scores: request behavior, faction score display, checkpoint/cycle status.
-  - Passcodes: request/submit flow, feedback states, history/errors if IITC exposes them.
-  - Inventory: request lifecycle, item/key parsing, grouping/filtering, counts, and a dedicated panel.
-  - Additional IITC request surfaces and plugin-derived UI can be added after these core systems are validated.
+    - COMM: `/r/getPlexts` request lifecycle, `comm.parseMsgData`-style parsing, filters, message list, map-linked
+      portal/player references where available.
+    - Scores: request behavior, faction score display, checkpoint/cycle status.
+    - Passcodes: request/submit flow, feedback states, history/errors if IITC exposes them.
+    - Inventory: request lifecycle, item/key parsing, grouping/filtering, counts, and a dedicated panel.
+    - Additional IITC request surfaces and plugin-derived UI can be added after these core systems are validated.
+
+IITC-CE source references:
+
+- `reference/IITC-CE/core/code/comm.js`
+- `reference/IITC-CE/core/code/chat.js`
+- `reference/IITC-CE/core/code/sidebar.js`
 
 Acceptance:
 
-- Each side system has an explicit copied diagnostic block for request state, elapsed time, error/auth state, and decoded counts.
+- Each side system has an explicit copied diagnostic block for request state, elapsed time, error/auth state, and
+  decoded counts.
 - UI panels are compact enough to compare with IITC without relying on the debug dock.
 - Request behavior is documented where it intentionally differs from IITC-CE.
 
 Current status:
 
-- A compact IITC IRIS side-panel shell now exists for COMM, Scores, Passcodes, and Inventory. The panels persist their open/closed state, show explicit request state, and copied diagnostics include a `sidePanels` block.
-- The COMM panel can issue a narrow `/r/getPlexts` request for the current map bounds and reports status, elapsed time, auth/error state, bounds, raw message count, and a compact recent-message preview parsed through `packages/iitc-core/src/comm.ts`. The parser now deliberately follows IITC-CE `comm.parseMsgData` semantics for team normalization, public/secure/alert categories, sender/player extraction, auto messages, and narrowcasts instead of copying the IRIS-core store shape. Full channel filters, send-plext support, and map-linked portal/player rendering are still pending.
-- Score, passcode, and inventory panels intentionally do not yet issue requests. Existing Mini-IRIS/IRIS request and parser code has been identified as local reference material for those implementation slices.
+- A compact IITC IRIS side-panel shell now exists for COMM, Scores, Passcodes, and Inventory. The panels persist their
+  open/closed state, show explicit request state, and copied diagnostics include a `sidePanels` block.
+- The COMM panel can issue `/r/getPlexts` requests for IITC-style `all`, `faction`, and `alerts` channels and reports
+  status, elapsed time, auth/error state, bounds, response count, added count, stored message count, older-message
+  continuation, and compact message previews parsed through `packages/iitc-core/src/comm.ts`. The parser and channel
+  state deliberately follow IITC-CE `comm.parseMsgData`, `_genPostData`, `_writeDataToHash`, and render-markup semantics
+  for team normalization, public/secure/alert categories, sender/player extraction, auto messages, narrowcasts, dedupe,
+  timestamp continuation, transformed markup, map-linked portal references, and nickname-click insertion into chat
+  input. Send-plext support is implemented for `all` and `faction` but still needs live user verification; plugin hook
+  equivalents for nickname clicks are not ported yet.
+- Score, passcode, and inventory panels intentionally do not yet issue requests. Existing Mini-IRIS/IRIS request and
+  parser code has been identified as local reference material for those implementation slices.
 
 ## Pass 8: Replacement Readiness - Not Started
 

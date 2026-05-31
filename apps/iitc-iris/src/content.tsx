@@ -1,7 +1,7 @@
 import {h, render} from 'preact';
 import {useEffect, useMemo, useState} from 'preact/hooks';
 import './iitc-iris.css';
-import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRenderPolicy, type IitcIrisSelectedPortal} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRenderPolicy, type IitcIrisSelectedPortal} from './messages';
 import {
   createIitcMapDataPlan,
   IITC_EMPTY_TILE_RETRY_BATCH_SIZE,
@@ -20,6 +20,7 @@ const LAYER_SETTINGS_STORAGE_KEY = 'iitc-iris:layer-settings';
 const DATA_SOURCE_STORAGE_KEY = 'iitc-iris:data-source';
 const DEBUG_DOCK_STORAGE_KEY = 'iitc-iris:debug-dock';
 const SIDE_PANEL_STORAGE_KEY = 'iitc-iris:side-panel';
+const COMM_TAB_STORAGE_KEY = 'iitc-chat-tab';
 const VIEW_PRESETS = [
   {id: 'amsterdam-z10', label: 'AMS 10', lat: 52.3730796, lng: 4.8924534, zoom: 10},
   {id: 'amsterdam-z15', label: 'AMS 15', lat: 52.3730796, lng: 4.8924534, zoom: 15},
@@ -90,11 +91,16 @@ const DETAIL_LAYER_TOGGLE_LABELS: [keyof IitcIrisLayerSettings, string][] = [
 ];
 const RESONATOR_PANEL_ORDER: (number | null)[] = [0, 1, 2, 3, null, 4, 5, 6, 7];
 const SIDE_PANEL_OPTIONS = [
-  {id: 'comm', label: 'COMM', title: 'COMM plexts'},
+  {id: 'comm', label: 'COMM', title: 'COMM messages'},
   {id: 'scores', label: 'Scores', title: 'Scores'},
   {id: 'passcodes', label: 'Passcode', title: 'Passcodes'},
   {id: 'inventory', label: 'Inventory', title: 'Inventory'},
 ] as const;
+const COMM_TABS: {id: IitcIrisCommTab; label: string}[] = [
+  {id: 'all', label: 'All'},
+  {id: 'faction', label: 'Faction'},
+  {id: 'alerts', label: 'Alerts'},
+];
 const DEFAULT_LAYER_SETTINGS: IitcIrisLayerSettings = {
   fields: true,
   links: true,
@@ -174,6 +180,7 @@ interface EntityFetchState {
   returnedTiles: number;
   nonEmptyTiles: number;
   elapsedMs: number | null;
+  firstRenderElapsedMs: number | null;
   retryRequests: number;
   retriedTileKeys: string[];
   recoveredTileKeys: string[];
@@ -351,6 +358,27 @@ function isSidePanelId(value: string | null): value is SidePanelId {
   return SIDE_PANEL_OPTIONS.some((option) => option.id === value);
 }
 
+function isCommTab(value: string | null): value is IitcIrisCommTab {
+  return value === 'all' || value === 'faction' || value === 'alerts';
+}
+
+function loadStoredCommTab(): IitcIrisCommTab {
+  try {
+    const value = window.localStorage.getItem(COMM_TAB_STORAGE_KEY);
+    return isCommTab(value) ? value : 'all';
+  } catch {
+    return 'all';
+  }
+}
+
+function storeCommTab(value: IitcIrisCommTab): void {
+  try {
+    window.localStorage.setItem(COMM_TAB_STORAGE_KEY, value);
+  } catch {
+    // COMM tab preference is optional.
+  }
+}
+
 function loadStoredSidePanelId(): SidePanelId | null {
   try {
     const value = window.localStorage.getItem(SIDE_PANEL_STORAGE_KEY);
@@ -423,6 +451,7 @@ function entityFetchStateFromMessage(message: IitcIrisMessage, current: EntityFe
     returnedTiles: message.returnedTiles ?? 0,
     nonEmptyTiles: message.nonEmptyTiles ?? 0,
     elapsedMs: message.elapsedMs ?? null,
+    firstRenderElapsedMs: message.firstRenderElapsedMs ?? current.firstRenderElapsedMs,
     retryRequests: message.retryRequests ?? 0,
     retriedTileKeys: message.retriedTileKeys ?? [],
     recoveredTileKeys: message.recoveredTileKeys ?? [],
@@ -551,6 +580,13 @@ function formatCommTime(time: number): string {
   return new Date(time).toLocaleTimeString();
 }
 
+function getCommTeamClass(team?: string): string {
+  if (team === 'E') return 'is-enlightened';
+  if (team === 'R') return 'is-resistance';
+  if (team === 'M') return 'is-machina';
+  return '';
+}
+
 function createInnerStatusView(plan: IitcMapDataPlan | null, entityFetch: EntityFetchState): InnerStatusView {
   const portalText = plan?.tileParams.hasPortals
     ? 'portals'
@@ -600,7 +636,8 @@ function App(): h.JSX.Element {
   const [viewInputStatus, setViewInputStatus] = useState('');
   const [debugDockVisible, setDebugDockVisible] = useState(() => loadStoredDebugDockVisible());
   const [activeSidePanel, setActiveSidePanel] = useState<SidePanelId | null>(() => loadStoredSidePanelId());
-  const [commState, setCommState] = useState<IitcIrisCommState>({status: 'idle', tab: 'all', messages: 0});
+  const [commState, setCommState] = useState<IitcIrisCommState>(() => ({status: 'idle', tab: loadStoredCommTab(), messages: 0}));
+  const [commDraft, setCommDraft] = useState('');
   const [baseLayerId, setBaseLayerId] = useState<IitcIrisBaseLayerId>(() => loadStoredBaseLayerId());
   const [dataSourceId, setDataSourceId] = useState<typeof DATA_SOURCE_OPTIONS[number]['id']>(() => loadStoredDataSourceId());
   const [layerSettings, setLayerSettings] = useState<IitcIrisLayerSettings>(() => loadStoredLayerSettings());
@@ -649,6 +686,7 @@ function App(): h.JSX.Element {
     returnedTiles: 0,
     nonEmptyTiles: 0,
     elapsedMs: null,
+    firstRenderElapsedMs: null,
     retryRequests: 0,
     retriedTileKeys: [],
     recoveredTileKeys: [],
@@ -751,6 +789,8 @@ function App(): h.JSX.Element {
       nonEmptyTiles: entityFetch.nonEmptyTiles,
       elapsedMs: entityFetch.elapsedMs,
       elapsedSeconds: entityFetch.elapsedMs === null ? null : Number(formatElapsedSeconds(entityFetch.elapsedMs)),
+      firstRenderMs: entityFetch.firstRenderElapsedMs,
+      firstRenderSeconds: entityFetch.firstRenderElapsedMs === null ? null : Number(formatElapsedSeconds(entityFetch.firstRenderElapsedMs)),
       retryRequests: entityFetch.retryRequests,
       retriedTileKeys: entityFetch.retriedTileKeys,
       recoveredTileKeys: entityFetch.recoveredTileKeys,
@@ -854,10 +894,30 @@ function App(): h.JSX.Element {
     storeSidePanelId(null);
   };
 
-  const refreshComm = (): void => {
+  const refreshComm = (tab: IitcIrisCommTab = commState.tab, older = false): void => {
+    storeCommTab(tab);
     window.postMessage({
       type: IITC_IRIS_MESSAGES.requestComm,
+      commTab: tab,
+      commOlder: older,
     } satisfies IitcIrisMessage, '*');
+  };
+
+  const sendComm = (): void => {
+    const message = commDraft.trim();
+    if (!message || commState.tab === 'alerts') return;
+    window.postMessage({
+      type: IITC_IRIS_MESSAGES.sendComm,
+      commTab: commState.tab,
+      commMessage: message,
+    } satisfies IitcIrisMessage, '*');
+    setCommDraft('');
+  };
+
+  const addCommNickname = (nickname: string): void => {
+    const normalized = nickname.replace(/^@/, '').trim();
+    if (!normalized) return;
+    setCommDraft((current) => `${current.trim()} @${normalized} `.trimStart());
   };
 
   const openIntelLogin = (): void => {
@@ -876,6 +936,11 @@ function App(): h.JSX.Element {
       lng: clamped.lng,
       zoom: clamped.zoom ?? camera.zoom,
     } satisfies IitcIrisMessage, '*');
+  };
+
+  const focusCommPortal = (latE6?: number, lngE6?: number): void => {
+    if (latE6 === undefined || lngE6 === undefined) return;
+    setMapView(latE6 / 1_000_000, lngE6 / 1_000_000, Math.max(camera.zoom, 15));
   };
 
   const panMap = (direction: 'north' | 'south' | 'west' | 'east'): void => {
@@ -978,6 +1043,25 @@ function App(): h.JSX.Element {
       dataSource,
     } satisfies IitcIrisMessage, '*');
   }, [dataSource, dataSourceId]);
+
+  useEffect(() => {
+    if (activeSidePanel !== 'comm' || commState.status !== 'idle') return;
+    const postCommRequest = (): void => {
+      storeCommTab(commState.tab);
+      window.postMessage({
+        type: IITC_IRIS_MESSAGES.requestComm,
+        commTab: commState.tab,
+      } satisfies IitcIrisMessage, '*');
+    };
+    postCommRequest();
+    const retryTimers = [
+      window.setTimeout(postCommRequest, 500),
+      window.setTimeout(postCommRequest, 1500),
+    ];
+    return (): void => {
+      retryTimers.forEach((timer) => window.clearTimeout(timer));
+    };
+  }, [activeSidePanel, commState.status, commState.tab]);
 
   const setDataSource = (id: typeof DATA_SOURCE_OPTIONS[number]['id']): void => {
     setDataSourceId(id);
@@ -1330,14 +1414,55 @@ function App(): h.JSX.Element {
           </div>
           {activeSidePanel === 'comm' && (
             <div className="iitc-iris-request-panel-body">
+              <div className="iitc-iris-segmented-row" role="tablist" aria-label="COMM channel">
+                {COMM_TABS.map((tab) => (
+                  <button
+                    className={`iitc-iris-segmented-button ${commState.tab === tab.id ? 'is-active' : ''}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={commState.tab === tab.id}
+                    onClick={() => refreshComm(tab.id)}
+                    disabled={commState.status === 'loading' && commState.tab === tab.id}
+                    key={tab.id}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
               <div className="iitc-iris-map-control-row">
-                <button className="iitc-iris-portal-action" type="button" onClick={refreshComm} disabled={commState.status === 'loading'} title="Fetch COMM plexts for the current map bounds">
+                <button className="iitc-iris-portal-action" type="button" onClick={() => refreshComm()} disabled={commState.status === 'loading'} title="Fetch COMM messages for the current map bounds">
                   {commState.status === 'loading' ? 'Loading' : 'Refresh'}
+                </button>
+                <button className="iitc-iris-portal-action" type="button" onClick={() => refreshComm(commState.tab, true)} disabled={commState.status === 'loading' || commState.oldestTimestamp === undefined || commState.oldestTimestamp < 0} title="Fetch older COMM messages before the current oldest timestamp">
+                  Older
                 </button>
                 <span className={`iitc-iris-status ${commState.status === 'error' || commState.status === 'auth' ? 'iitc-iris-warning' : ''}`}>
                   {commState.status}{commState.elapsedMs !== undefined ? ` ${formatElapsedSeconds(commState.elapsedMs)}s` : ''}
                 </span>
               </div>
+              <form
+                className="iitc-iris-comm-send-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  sendComm();
+                }}
+              >
+                <input
+                  className="iitc-iris-passcode-input"
+                  value={commDraft}
+                  placeholder={commState.tab === 'faction' ? 'tell faction:' : commState.tab === 'all' ? 'broadcast:' : "can't send to alerts"}
+                  disabled={commState.tab === 'alerts' || commState.sendStatus === 'sending'}
+                  onInput={(event) => setCommDraft(event.currentTarget.value)}
+                />
+                <button className="iitc-iris-portal-action" type="submit" disabled={!commDraft.trim() || commState.tab === 'alerts' || commState.sendStatus === 'sending'}>
+                  {commState.sendStatus === 'sending' ? 'Sending' : 'Send'}
+                </button>
+              </form>
+              {(commState.sendStatus === 'sent' || commState.sendError) && (
+                <span className={`iitc-iris-status ${commState.sendError ? 'iitc-iris-warning' : ''}`}>
+                  send {commState.sendError || commState.sendStatus}
+                </span>
+              )}
               <div className="iitc-iris-portal-panel-grid">
                 <span className="iitc-iris-status">request</span>
                 <span>/r/getPlexts {commState.tab}</span>
@@ -1345,6 +1470,14 @@ function App(): h.JSX.Element {
                 <span>{commState.bounds ? `${commState.bounds.minLatE6},${commState.bounds.minLngE6} to ${commState.bounds.maxLatE6},${commState.bounds.maxLngE6}` : '-'}</span>
                 <span className="iitc-iris-status">messages</span>
                 <span>{commState.messages}</span>
+                <span className="iitc-iris-status">response</span>
+                <span>{commState.responseMessages ?? '-'}</span>
+                <span className="iitc-iris-status">added</span>
+                <span>{commState.addedMessages ?? '-'}</span>
+                <span className="iitc-iris-status">older</span>
+                <span>{commState.requestOlder ? (commState.oldMessagesWereAdded ? 'added' : 'none') : '-'}</span>
+                <span className="iitc-iris-status">time range</span>
+                <span>{commState.oldestTimestamp !== undefined && commState.newestTimestamp !== undefined ? `${formatCommTime(commState.oldestTimestamp)} to ${formatCommTime(commState.newestTimestamp)}` : '-'}</span>
                 {commState.error && (
                   <>
                     <span className="iitc-iris-status">error</span>
@@ -1354,15 +1487,49 @@ function App(): h.JSX.Element {
               </div>
               {commState.recent && commState.recent.length > 0 && (
                 <div className="iitc-iris-comm-list">
-                  {commState.recent.map((plext) => (
-                    <div className="iitc-iris-comm-row" key={plext.id}>
+                  {commState.recent.map((message) => (
+                    <div className="iitc-iris-comm-row" key={message.id}>
                       <span className="iitc-iris-status">
-                        {formatCommTime(plext.time)} {plext.team || '-'} {plext.secure ? 'secure' : plext.public ? 'public' : ''}{plext.alert ? ' alert' : ''}{plext.auto ? ' auto' : ''}
+                        {formatCommTime(message.time)} {message.team || '-'} {message.secure ? 'secure' : message.public ? 'public' : ''}{message.alert ? ' alert' : ''}{message.auto ? ' auto' : ''}
                       </span>
-                      <span className="iitc-iris-comm-text">{plext.text || plext.type}</span>
-                      {(plext.players.length > 0 || plext.portals.length > 0) && (
+                      <span className={`iitc-iris-comm-text ${message.narrowcast ? 'is-narrowcast' : ''}`}>
+                        {message.parts.length > 0 ? message.parts.map((part, index) => {
+                          const key = `${message.id}-${index}`;
+                          if (part.type === 'portal') {
+                            return (
+                              <button
+                                className="iitc-iris-comm-portal"
+                                type="button"
+                                title={part.portal?.address || part.text}
+                                onClick={() => focusCommPortal(part.portal?.latE6, part.portal?.lngE6)}
+                                key={key}
+                              >
+                                {part.text}
+                              </button>
+                            );
+                          }
+                          if (part.type === 'player') {
+                            return (
+                              <button
+                                className={`iitc-iris-comm-player ${getCommTeamClass(part.team)} ${part.at ? 'is-at' : ''}`}
+                                type="button"
+                                onClick={() => addCommNickname(part.text)}
+                                title={`Message ${part.text}`}
+                                key={key}
+                              >
+                                {part.at ? '@' : ''}{part.text}
+                              </button>
+                            );
+                          }
+                          if (part.type === 'faction') {
+                            return <span className={`iitc-iris-comm-faction ${getCommTeamClass(part.team)}`} key={key}>{part.text}</span>;
+                          }
+                          return <span className={getCommTeamClass(part.team)} key={key}>{part.text}</span>;
+                        }) : (message.text || message.type)}
+                      </span>
+                      {(message.players.length > 0 || message.portals.length > 0) && (
                         <span className="iitc-iris-status">
-                          {[...plext.players, ...plext.portals.map((portal) => portal.name || portal.address || 'portal')].slice(0, 3).join(' / ')}
+                          {[...message.players, ...message.portals.map((portal) => portal.name || portal.address || 'portal')].slice(0, 3).join(' / ')}
                         </span>
                       )}
                     </div>
