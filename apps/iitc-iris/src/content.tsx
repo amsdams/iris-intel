@@ -1,7 +1,8 @@
 import {h, render} from 'preact';
 import {useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import './iitc-iris.css';
-import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisPasscodeState, type IitcIrisPlayerTrackerDiagnostics, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
+import {formatIitcColorVars, getIitcItemColor, getIitcLevelColor, getIitcRarityColor, IITC_RESONATOR_ENERGY} from './iitc-colors';
+import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisPasscodeState, type IitcIrisPlayerTrackerDiagnostics, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
 import {
   createIitcMapDataPlan,
   IITC_MAX_REQUESTS,
@@ -20,6 +21,9 @@ const DEBUG_DOCK_STORAGE_KEY = 'iitc-iris:debug-dock';
 const SIDE_PANEL_STORAGE_KEY = 'iitc-iris:side-panel';
 const ACTIVE_SHEET_STORAGE_KEY = 'iitc-iris:active-sheet';
 const MAP_VIEW_STORAGE_KEY = 'iitc-iris:map-view';
+const PORTAL_SECTION_STORAGE_KEY = 'iitc-iris:portal-sections';
+const SHORTCUTS_ENABLED_STORAGE_KEY = 'iitc-iris:shortcuts-enabled';
+const MAP_FOCUS_MODE_STORAGE_KEY = 'iitc-iris:map-focus-mode';
 const COMM_TAB_STORAGE_KEY = 'iitc-chat-tab';
 const VIEW_PRESETS = [
   {id: 'amsterdam-z10', label: 'AMS 10', lat: 52.3730796, lng: 4.8924534, zoom: 10},
@@ -66,39 +70,41 @@ const DATA_SOURCE_OPTIONS = [
 ] as const;
 type TriStateLayerSettingKey = 'historyCaptured' | 'historyVisited' | 'historyScoutControlled' | 'keyCount';
 type BooleanLayerSettingKey = Exclude<keyof IitcIrisLayerSettings, TriStateLayerSettingKey>;
-const CORE_LAYER_TOGGLE_LABELS: [BooleanLayerSettingKey, string][] = [
-  ['fields', 'F'],
-  ['links', 'LN'],
-  ['portals', 'P'],
-  ['unclaimedPortals', 'U'],
-  ['level1Portals', 'L1'],
-  ['level2Portals', 'L2'],
-  ['level3Portals', 'L3'],
-  ['level4Portals', 'L4'],
-  ['level5Portals', 'L5'],
-  ['level6Portals', 'L6'],
-  ['level7Portals', 'L7'],
-  ['level8Portals', 'L8'],
-  ['resistance', 'RES'],
-  ['enlightened', 'ENL'],
-  ['machina', 'MAC'],
+const CORE_LAYER_TOGGLE_LABELS: [BooleanLayerSettingKey, string, string][] = [
+  ['fields', 'F', 'Fields'],
+  ['links', 'LN', 'Links'],
+  ['portals', 'P', 'Portals'],
+  ['unclaimedPortals', 'U', 'Unclaimed portals'],
+  ['level1Portals', 'L1', 'Level 1 portals'],
+  ['level2Portals', 'L2', 'Level 2 portals'],
+  ['level3Portals', 'L3', 'Level 3 portals'],
+  ['level4Portals', 'L4', 'Level 4 portals'],
+  ['level5Portals', 'L5', 'Level 5 portals'],
+  ['level6Portals', 'L6', 'Level 6 portals'],
+  ['level7Portals', 'L7', 'Level 7 portals'],
+  ['level8Portals', 'L8', 'Level 8 portals'],
+  ['resistance', 'RES', 'Resistance portals'],
+  ['enlightened', 'ENL', 'Enlightened portals'],
+  ['machina', 'MAC', 'Machina portals'],
 ];
-const DETAIL_LAYER_TOGGLE_LABELS: [BooleanLayerSettingKey, string][] = [
-  ['levelFill', 'LF'],
-  ['healthFill', 'HF'],
-  ['ornaments', 'OR'],
-  ['artifacts', 'AR'],
-  ['labels', 'LV'],
-  ['tiles', 'T'],
-  ['playerTrackerResistance', 'PTR'],
-  ['playerTrackerEnlightened', 'PTE'],
-  ['playerTrackerMachina', 'PTM'],
+const DETAIL_LAYER_TOGGLE_LABELS: [BooleanLayerSettingKey, string, string][] = [
+  ['levelFill', 'LF', 'Level fill'],
+  ['healthFill', 'HF', 'Health fill'],
+  ['ornaments', 'OR', 'Ornaments'],
+  ['artifacts', 'AR', 'Artifacts'],
+  ['labels', 'LV', 'Level labels'],
+  ['tiles', 'T', 'Tile debug overlay'],
+  ['playerTrackerResistance', 'PTR', 'Resistance player tracker'],
+  ['playerTrackerEnlightened', 'PTE', 'Enlightened player tracker'],
+  ['playerTrackerMachina', 'PTM', 'Machina player tracker'],
+];
+const DETAIL_TRI_STATE_LAYER_LABELS: [TriStateLayerSettingKey, string, string][] = [
+  ['keyCount', 'KEY', 'Portal key count'],
 ];
 const PORTAL_DATA_LAYER_LABELS: [TriStateLayerSettingKey, string, string][] = [
   ['historyCaptured', 'CAP', 'Captured history'],
   ['historyVisited', 'VIS', 'Visited history'],
   ['historyScoutControlled', 'SC', 'Scout controlled history'],
-  ['keyCount', 'KEY', 'Portal key count'],
 ];
 const RESONATOR_PANEL_ORDER: (number | null)[] = [0, 1, 2, 3, null, 4, 5, 6, 7];
 const SIDE_PANEL_OPTIONS = [
@@ -240,8 +246,9 @@ interface EntityFetchState {
 }
 
 type SidePanelId = typeof SIDE_PANEL_OPTIONS[number]['id'];
-type SheetId = 'map' | 'layers' | 'view' | 'search' | 'portal' | 'system' | SidePanelId;
+type SheetId = 'map' | 'layers' | 'view' | 'search' | 'portal' | 'system' | 'help' | SidePanelId;
 type PrimaryMenuId = 'map' | 'portal' | 'agent' | 'comm' | 'system';
+type PortalSectionId = 'mods' | 'resonators' | 'facts';
 
 interface ParsedViewInput {
   lat: number;
@@ -523,18 +530,24 @@ function isSidePanelId(value: string | null): value is SidePanelId {
 }
 
 function isSheetId(value: string | null): value is SheetId {
-  return value === 'map' || value === 'layers' || value === 'view' || value === 'search' || value === 'portal' || value === 'system' || isSidePanelId(value);
+  return value === 'map' || value === 'layers' || value === 'view' || value === 'search' || value === 'portal' || value === 'system' || value === 'help' || isSidePanelId(value);
 }
 
 function isCommTab(value: string | null): value is IitcIrisCommTab {
   return value === 'all' || value === 'faction' || value === 'alerts';
 }
 
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  const tagName = target.tagName.toLowerCase();
+  return tagName === 'input' || tagName === 'textarea' || tagName === 'select' || target.isContentEditable;
+}
+
 function getPrimaryMenuId(sheet: SheetId): PrimaryMenuId {
   if (sheet === 'portal') return 'portal';
   if (sheet === 'agent' || sheet === 'inventory' || sheet === 'passcode') return 'agent';
   if (sheet === 'comm') return 'comm';
-  if (sheet === 'system') return 'system';
+  if (sheet === 'system' || sheet === 'help') return 'system';
   return 'map';
 }
 
@@ -579,6 +592,46 @@ function storeActiveSheet(value: SheetId): void {
     window.localStorage.setItem(ACTIVE_SHEET_STORAGE_KEY, value);
   } catch {
     // Sheet preference is optional.
+  }
+}
+
+function loadStoredPortalSections(): Record<PortalSectionId, boolean> {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(PORTAL_SECTION_STORAGE_KEY) ?? '{}') as Partial<Record<PortalSectionId, boolean>>;
+    return {
+      mods: typeof parsed.mods === 'boolean' ? parsed.mods : true,
+      resonators: typeof parsed.resonators === 'boolean' ? parsed.resonators : true,
+      facts: typeof parsed.facts === 'boolean' ? parsed.facts : false,
+    };
+  } catch {
+    return {mods: true, resonators: true, facts: false};
+  }
+}
+
+function storePortalSections(value: Record<PortalSectionId, boolean>): void {
+  try {
+    window.localStorage.setItem(PORTAL_SECTION_STORAGE_KEY, JSON.stringify(value));
+  } catch {
+    // Portal section state is optional.
+  }
+}
+
+function loadStoredBoolean(key: string, fallback: boolean): boolean {
+  try {
+    const value = window.localStorage.getItem(key);
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function storeBoolean(key: string, value: boolean): void {
+  try {
+    window.localStorage.setItem(key, value ? 'true' : 'false');
+  } catch {
+    // Boolean preferences are optional.
   }
 }
 
@@ -764,19 +817,22 @@ function formatTeamClass(team: string): string {
   return 'iitc-iris-team-neutral';
 }
 
-function formatPortalDetailsElapsed(details: IitcIrisPortalDetailsState | null): string {
-  if (!details?.elapsedMs) return '';
-  return ` ${formatElapsedSeconds(details.elapsedMs)}s`;
-}
-
 function formatResonatorEnergy(energy: number): string {
   return energy >= 1000 ? `${Math.round(energy / 100) / 10}k` : String(energy);
 }
 
 function formatResonatorEnergyPercent(level: number, energy: number): number {
-  const maxEnergyByLevel = [0, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000];
-  const maxEnergy = maxEnergyByLevel[level] ?? 1000;
+  const normalizedLevel = Math.max(0, Math.min(8, Math.floor(level)));
+  const maxEnergy = IITC_RESONATOR_ENERGY[normalizedLevel] ?? 1000;
   return Math.max(0, Math.min(100, Math.round((energy / maxEnergy) * 100)));
+}
+
+function getResonatorHealthColor(percent: number): string {
+  if (percent >= 85) return '#38f06e';
+  if (percent >= 70) return '#c8f03d';
+  if (percent >= 45) return '#ffd23f';
+  if (percent >= 20) return '#ff8a2a';
+  return '#ff3b4f';
 }
 
 function formatModName(name: string): string {
@@ -791,6 +847,48 @@ function formatModStats(stats: Record<string, string | number>): string {
     if (value !== undefined) parts.push(`${key.toLowerCase().replace(/_/g, ' ')} ${value}`);
   }
   return parts.slice(0, 2).join(', ');
+}
+
+function getPanelStatusClass(status: string | undefined): string {
+  if (status === 'loading') return 'is-loading';
+  if (status === 'ready') return 'is-ready';
+  if (status === 'empty' || status === 'idle' || status === 'waiting') return 'is-muted';
+  if (status === 'error' || status === 'auth') return 'is-warning';
+  return '';
+}
+
+function formatItemBadge(item: {level?: number; rarity?: string; type?: string}): string {
+  if (item.level !== undefined) return `L${item.level}`;
+  if (item.rarity === 'VERY_RARE') return 'VR';
+  if (item.rarity === 'RARE') return 'R';
+  if (item.rarity === 'COMMON') return 'C';
+  if (item.type?.includes('CAPSULE')) return 'CAP';
+  return 'IT';
+}
+
+function formatCommActor(message: IitcIrisCommMessage): string {
+  return message.player || message.players[0] || (message.auto ? 'system' : 'unknown');
+}
+
+function normalizeCommText(value: string): string {
+  return value.replace(/\s+/g, ' ').replace(/^\s*[,.:;-]\s*/, '').trimStart();
+}
+
+function getCommDisplayParts(message: IitcIrisCommMessage): IitcIrisCommMessage['parts'] {
+  const actor = formatCommActor(message).replace(/^@/, '').toLowerCase();
+  return message.parts.filter((part) => {
+    if (part.type !== 'player') return true;
+    return part.text.replace(/^@/, '').toLowerCase() !== actor;
+  }).map((part, index) => part.type === 'text' && index === 0 ? {...part, text: normalizeCommText(part.text)} : part)
+    .filter((part) => part.type !== 'text' || part.text.length > 0);
+}
+
+function formatCommContextTitle(message: IitcIrisCommMessage): string {
+  const context = [
+    ...message.players.map((player) => `player: ${player}`),
+    ...message.portals.map((portal) => `portal: ${portal.name || portal.address || 'portal'}`),
+  ];
+  return context.length > 0 ? context.join('\n') : message.text || message.type;
 }
 
 function formatCommTime(time: number): string {
@@ -859,6 +957,13 @@ function App(): h.JSX.Element {
   const [activeScenarioRunId, setActiveScenarioRunId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchState, setSearchState] = useState<IitcIrisSearchState>(EMPTY_SEARCH_STATE);
+  const [activeSearchResultIndex, setActiveSearchResultIndex] = useState(0);
+  const [portalImageOpen, setPortalImageOpen] = useState(false);
+  const [portalSections, setPortalSections] = useState<Record<PortalSectionId, boolean>>(() => loadStoredPortalSections());
+  const [shortcutsEnabled, setShortcutsEnabled] = useState(() => loadStoredBoolean(SHORTCUTS_ENABLED_STORAGE_KEY, true));
+  const [mapFocusMode, setMapFocusMode] = useState(() => loadStoredBoolean(MAP_FOCUS_MODE_STORAGE_KEY, false));
+  const [commUserAtBottom, setCommUserAtBottom] = useState(true);
+  const [commNewBelow, setCommNewBelow] = useState(false);
   const [viewInput, setViewInput] = useState('');
   const [viewInputStatus, setViewInputStatus] = useState('');
   const [debugDockVisible, setDebugDockVisible] = useState(() => loadStoredDebugDockVisible());
@@ -886,6 +991,8 @@ function App(): h.JSX.Element {
   const commListRef = useRef<HTMLDivElement | null>(null);
   const commOlderScrollHeightRef = useRef<number | null>(null);
   const commOlderRequestPendingRef = useRef(false);
+  const commStickToBottomRef = useRef(true);
+  const commLatestTimestampRef = useRef<number | undefined>(undefined);
   const [baseLayerId, setBaseLayerId] = useState<IitcIrisBaseLayerId>(() => loadStoredBaseLayerId());
   const [dataSourceId, setDataSourceId] = useState<typeof DATA_SOURCE_OPTIONS[number]['id']>(() => loadStoredDataSourceId());
   const [lifecycleSettings, setLifecycleSettings] = useState<IitcIrisLifecycleSettings>(() => loadStoredLifecycleSettings());
@@ -970,6 +1077,10 @@ function App(): h.JSX.Element {
     entityFetch.renderPolicy.ornaments ||
     entityFetch.renderPolicy.artifacts ||
     entityFetch.renderPolicy.labels;
+  const selectedPortalDetails = entityFetch.selectedPortal && entityFetch.portalDetails?.guid === entityFetch.selectedPortal.guid
+    ? entityFetch.portalDetails
+    : null;
+  const selectedPortalDetailsStatus = selectedPortalDetails?.status ?? 'waiting';
   const dockDiagnostics = {
     app: 'IITC IRIS',
     status,
@@ -1101,6 +1212,9 @@ function App(): h.JSX.Element {
   const activeScenarioRun = scenarioRuns.find((run) => run.id === activeScenarioRunId && run.status === 'running') ?? null;
   const latestScenarioRun = scenarioRuns.length > 0 ? scenarioRuns[scenarioRuns.length - 1] : null;
   const scenarioSnapCount = scenarioRuns.reduce((total, run) => total + run.snapshots.length, 0);
+  const scenarioProgressRun = activeScenarioRun ?? latestScenarioRun;
+  const scenarioProgressLabels = scenarioProgressRun ? new Set(scenarioProgressRun.snapshots.map((snapshot) => snapshot.label)) : new Set<string>();
+  const scenarioExpectedSteps = ['previous', 'before-pan-south', 'reload', 'in-progress', 'done'];
 
   const startScenarioRun = (name: string, settings: IitcIrisLifecycleSettings): void => {
     if (activeScenarioRun) {
@@ -1124,17 +1238,7 @@ function App(): h.JSX.Element {
   const captureScenarioSnapshot = (label: string): void => {
     const runId = activeScenarioRunId;
     if (!runId) {
-      const manualRunId = `manual-${Date.now()}`;
-      setScenarioRuns((current) => [...current, {
-        id: manualRunId,
-        name: 'manual',
-        startedAt: new Date().toISOString(),
-        status: 'running',
-        lifecycleSettings,
-        snapshots: [createScenarioSnapshot(label)],
-      }]);
-      setActiveScenarioRunId(manualRunId);
-      setScenarioStatusBriefly(`manual: ${label} captured`);
+      setScenarioStatusBriefly('start a scenario first');
       return;
     }
     setScenarioRuns((current) => current.map((run) => run.id === runId
@@ -1248,6 +1352,19 @@ function App(): h.JSX.Element {
       });
   };
 
+  const copySelectedPortalTitle = (): void => {
+    if (!entityFetch.selectedPortal) return;
+    void navigator.clipboard.writeText(entityFetch.selectedPortal.title || entityFetch.selectedPortal.guid)
+      .then(() => {
+        setCopyStatus('portal title copied');
+        window.setTimeout(() => setCopyStatus(''), 1200);
+      })
+      .catch(() => {
+        setCopyStatus('copy failed');
+        window.setTimeout(() => setCopyStatus(''), 1600);
+      });
+  };
+
   const toggleDebugDock = (): void => {
     setDebugDockVisible((current) => {
       const next = !current;
@@ -1306,7 +1423,20 @@ function App(): h.JSX.Element {
   const handleCommScroll = (): void => {
     const list = commListRef.current;
     if (!list || activeSidePanel !== 'comm' || commState.status === 'loading' || commOlderRequestPendingRef.current) return;
+    const atBottom = list.scrollHeight - list.scrollTop - list.clientHeight <= 10;
+    commStickToBottomRef.current = atBottom;
+    setCommUserAtBottom(atBottom);
+    if (atBottom) setCommNewBelow(false);
     if (list.scrollTop <= 8) requestOlderComm();
+  };
+
+  const jumpCommToLatest = (): void => {
+    const list = commListRef.current;
+    if (!list) return;
+    list.scrollTop = list.scrollHeight;
+    commStickToBottomRef.current = true;
+    setCommUserAtBottom(true);
+    setCommNewBelow(false);
   };
 
   const refreshScores = (): void => {
@@ -1381,16 +1511,63 @@ function App(): h.JSX.Element {
   const clearSearch = (): void => {
     setSearchTerm('');
     setSearchState(EMPTY_SEARCH_STATE);
+    setActiveSearchResultIndex(0);
     window.postMessage({type: IITC_IRIS_MESSAGES.searchClear} satisfies IitcIrisMessage, '*');
   };
 
+  const previewSearchResult = (result: IitcIrisSearchResult | null): void => {
+    window.postMessage({
+      type: IITC_IRIS_MESSAGES.searchPreview,
+      searchResult: result ?? undefined,
+    } satisfies IitcIrisMessage, '*');
+  };
+
   const selectSearchResult = (result: IitcIrisSearchResult, zoom = false): void => {
+    if (result.type === 'empty') return;
     window.postMessage({
       type: IITC_IRIS_MESSAGES.searchSelect,
       searchResult: result,
       searchZoom: zoom,
     } satisfies IitcIrisMessage, '*');
-    if (result.type === 'portal' || result.type === 'guid') openSheet('portal');
+    if (mapFocusMode) closeSheets();
+    else if (result.type === 'portal' || result.type === 'guid') openSheet('portal');
+  };
+
+  const moveSearchSelection = (delta: number): void => {
+    const selectableResults = searchState.results.filter((result) => result.type !== 'empty');
+    if (selectableResults.length === 0) return;
+    setActiveSearchResultIndex((current) => (current + delta + selectableResults.length) % selectableResults.length);
+  };
+
+  const selectActiveSearchResult = (zoom = false): boolean => {
+    const result = searchState.results.filter((candidate) => candidate.type !== 'empty')[activeSearchResultIndex];
+    if (!result) return false;
+    selectSearchResult(result, zoom);
+    return true;
+  };
+
+  const handleSearchKeyDown = (event: h.JSX.TargetedKeyboardEvent<HTMLInputElement>): void => {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      moveSearchSelection(1);
+      return;
+    }
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      moveSearchSelection(-1);
+      return;
+    }
+    if (event.key === 'Enter' && selectActiveSearchResult(event.shiftKey)) {
+      event.preventDefault();
+    }
+  };
+
+  const setPortalSectionOpen = (section: PortalSectionId, open: boolean): void => {
+    setPortalSections((current) => {
+      const next = {...current, [section]: open};
+      storePortalSections(next);
+      return next;
+    });
   };
 
   const focusCommPortal = (latE6?: number, lngE6?: number): void => {
@@ -1417,15 +1594,32 @@ function App(): h.JSX.Element {
     } satisfies IitcIrisMessage, '*');
   };
 
+  const closeSheets = (): void => {
+    setPortalImageOpen(false);
+    openSheet('map');
+  };
+
   const focusSelectedPortal = (): void => {
     if (!entityFetch.selectedPortal) return;
     const {lat, lng} = getPortalLatLng(entityFetch.selectedPortal);
     setMapView(lat, lng, Math.max(17, camera.zoom));
+    if (mapFocusMode) closeSheets();
   };
 
   const canPan = camera.bounds !== null;
   const activeSidePanelOption = SIDE_PANEL_OPTIONS.find((option) => option.id === activeSidePanel) ?? null;
   const activePrimaryMenu = getPrimaryMenuId(activeSheet);
+  const activeSidePanelStatus = activeSidePanel === 'comm'
+    ? commState.status
+    : activeSidePanel === 'scores'
+      ? scoresState.status
+      : activeSidePanel === 'inventory'
+        ? inventoryState.status
+        : activeSidePanel === 'passcode'
+          ? passcodeState.status
+          : activeSidePanel === 'agent'
+            ? agentState.status
+            : 'idle';
   const openCommPanel = (tab?: IitcIrisCommTab): void => {
     if (tab) refreshComm(tab);
     openSheet('comm');
@@ -1540,6 +1734,14 @@ function App(): h.JSX.Element {
   }, [lifecycleSettings]);
 
   useEffect(() => {
+    storeBoolean(SHORTCUTS_ENABLED_STORAGE_KEY, shortcutsEnabled);
+  }, [shortcutsEnabled]);
+
+  useEffect(() => {
+    storeBoolean(MAP_FOCUS_MODE_STORAGE_KEY, mapFocusMode);
+  }, [mapFocusMode]);
+
+  useEffect(() => {
     if (activeSidePanel !== 'comm' || commState.status !== 'idle') return;
     const postCommRequest = (): void => {
       storeCommTab(commState.tab);
@@ -1586,12 +1788,23 @@ function App(): h.JSX.Element {
     const term = searchTerm.trim();
     if (term.length === 0) {
       setSearchState(EMPTY_SEARCH_STATE);
+      setActiveSearchResultIndex(0);
       window.postMessage({type: IITC_IRIS_MESSAGES.searchClear} satisfies IitcIrisMessage, '*');
       return;
     }
     const timer = window.setTimeout(() => requestSearch(term, false), 100);
     return (): void => window.clearTimeout(timer);
   }, [searchTerm]);
+
+  useEffect(() => {
+    setActiveSearchResultIndex(0);
+  }, [searchState.term, searchState.results.length]);
+
+  useEffect(() => {
+    if (activeSheet !== 'search') return;
+    const result = searchState.results.filter((candidate) => candidate.type !== 'empty')[activeSearchResultIndex];
+    previewSearchResult(result ?? null);
+  }, [activeSheet, activeSearchResultIndex, searchState.results]);
 
   useEffect(() => {
     if (activeSidePanel !== 'comm') return;
@@ -1610,9 +1823,113 @@ function App(): h.JSX.Element {
       }
       commOlderScrollHeightRef.current = null;
       commOlderRequestPendingRef.current = false;
-      list.scrollTop = list.scrollHeight;
+      if (commStickToBottomRef.current || commState.sendStatus === 'sending' || commState.sendStatus === 'sent') {
+        list.scrollTop = list.scrollHeight;
+        setCommUserAtBottom(true);
+      }
     });
   }, [activeSidePanel, commState.tab, commState.status, commState.newestTimestamp, commState.messages, commState.recent?.length, commState.requestOlder, commState.oldMessagesWereAdded, commState.sendStatus]);
+
+  useEffect(() => {
+    if (activeSidePanel !== 'comm') {
+      commLatestTimestampRef.current = commState.newestTimestamp;
+      return;
+    }
+    const previous = commLatestTimestampRef.current;
+    const current = commState.newestTimestamp;
+    if (previous !== undefined && current !== undefined && current > previous && !commStickToBottomRef.current) {
+      setCommNewBelow(true);
+    }
+    commLatestTimestampRef.current = current;
+  }, [activeSidePanel, commState.newestTimestamp]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (isEditableTarget(event.target)) return;
+      const key = event.key.toLowerCase();
+      if (event.key === 'Escape') {
+        if (portalImageOpen) {
+          event.preventDefault();
+          setPortalImageOpen(false);
+          return;
+        }
+        event.preventDefault();
+        closeSheets();
+        return;
+      }
+      if (!shortcutsEnabled) return;
+      if (event.key === '?' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        event.preventDefault();
+        openSheet('help');
+        return;
+      }
+      const menuShortcut = (!event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) ||
+        (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey);
+      if (menuShortcut) {
+        if (key === 'm') {
+          event.preventDefault();
+          openSheet(activePrimaryMenu === 'map' && activeSheet !== 'map' ? 'map' : 'layers');
+          return;
+        }
+        if (key === 'p' && entityFetch.selectedPortal) {
+          event.preventDefault();
+          openSheet('portal');
+          return;
+        }
+        if (key === 'a') {
+          event.preventDefault();
+          openSheet('agent');
+          return;
+        }
+        if (key === 'c') {
+          event.preventDefault();
+          openCommPanel();
+          return;
+        }
+        if (key === 's') {
+          event.preventDefault();
+          openSheet('system');
+          return;
+        }
+      }
+      if (event.key === '/') {
+        event.preventDefault();
+        openSheet('search');
+        return;
+      }
+      if (event.key === '+' || event.key === '=') {
+        event.preventDefault();
+        zoomMap(1);
+        return;
+      }
+      if (event.key === '-' || event.key === '_') {
+        event.preventDefault();
+        zoomMap(-1);
+        return;
+      }
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        panMap('north');
+        return;
+      }
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        panMap('south');
+        return;
+      }
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        panMap('west');
+        return;
+      }
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        panMap('east');
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return (): void => window.removeEventListener('keydown', onKeyDown);
+  }, [activePrimaryMenu, activeSheet, entityFetch.selectedPortal, portalImageOpen, camera, shortcutsEnabled]);
 
   const setDataSource = (id: typeof DATA_SOURCE_OPTIONS[number]['id']): void => {
     setDataSourceId(id);
@@ -1620,15 +1937,33 @@ function App(): h.JSX.Element {
     if (!option || option.mode === 'live') return;
     setMapView(option.lat, option.lng, option.zoom);
   };
+  let searchSelectableIndex = -1;
+  const renderedSearchResults = searchState.results.map((result) => ({
+    result,
+    selectableIndex: result.type === 'empty' ? -1 : ++searchSelectableIndex,
+  }));
+  const groupedSearchResults = [
+    {id: 'portals', label: 'Loaded portals', items: renderedSearchResults.filter(({result}) => result.type === 'portal' || result.type === 'guid')},
+    {id: 'addresses', label: 'Addresses', items: renderedSearchResults.filter(({result}) => result.type === 'address')},
+    {id: 'coordinates', label: 'Coordinates', items: renderedSearchResults.filter(({result}) => result.type === 'coordinate')},
+    {id: 'notices', label: 'Notices', items: renderedSearchResults.filter(({result}) => result.type === 'empty')},
+  ].filter((group) => group.items.length > 0);
+  const activeSearchResult = searchState.results.filter((result) => result.type !== 'empty')[activeSearchResultIndex];
 
   return (
     <div className={`iitc-iris-shell iitc-iris-sheet-${activeSheet} ${entityFetch.selectedPortal ? 'iitc-iris-has-selected-portal' : ''}`}>
       <div id="iitc-iris-map" className="iitc-iris-map" />
+      {activeSheet === 'map' && searchState.term && searchState.results.length > 0 && (
+        <div className="iitc-iris-map-search-badge">
+          <span title={activeSearchResult?.title || searchState.term}>search: {activeSearchResult?.title || searchState.term}</span>
+          <button type="button" onClick={clearSearch} title="Clear search overlay">x</button>
+        </div>
+      )}
       {activeSheet === 'search' && (
         <aside className="iitc-iris-request-side-panel iitc-iris-search-panel" role="search" aria-label="Search">
           <div className="iitc-iris-request-panel-header">
             <span className="iitc-iris-selected-title">Search</span>
-            <span className="iitc-iris-status">{searchState.status}</span>
+            <span className={`iitc-iris-status iitc-iris-panel-state ${getPanelStatusClass(searchState.status)}`}>{searchState.status}</span>
             <button className="iitc-iris-clear-selection" type="button" onClick={() => openSheet('map')} title="Close search">x</button>
           </div>
           <div className="iitc-iris-request-panel-body">
@@ -1646,6 +1981,7 @@ function App(): h.JSX.Element {
               placeholder="Search portal or address"
               title="Type to search loaded portals. Press Enter to search OpenStreetMap."
               onInput={(event) => setSearchTerm(event.currentTarget.value)}
+              onKeyDown={handleSearchKeyDown}
             />
             {searchTerm && (
               <button className="iitc-iris-search-clear" type="button" onClick={clearSearch} title="Clear search">x</button>
@@ -1657,30 +1993,69 @@ function App(): h.JSX.Element {
                 <span>{searchState.status === 'loading' ? 'searching online' : searchState.results.length > 0 ? `${searchState.results.length} results` : searchTerm.trim().length < 3 ? 'type 3+ chars' : 'no local results'}</span>
                 {!searchState.confirmed && searchTerm.trim().length >= 3 && <span>Enter for address</span>}
               </div>
-              {searchState.results.map((result) => (
-                <button
-                  className={`iitc-iris-search-result iitc-iris-search-result-${result.type}`}
-                  type="button"
-                  onClick={() => selectSearchResult(result)}
-                  onDblClick={(event) => {
-                    event.preventDefault();
-                    selectSearchResult(result, true);
-                  }}
-                  disabled={result.type === 'empty'}
-                  key={result.id}
-                  title={result.title}
-                >
-                  <span className={result.team ? getCommTeamClass(result.team) : ''}>{result.title}</span>
-                  {result.description && <small>{result.description}</small>}
-                </button>
+              {groupedSearchResults.map((group) => (
+                <div className="iitc-iris-search-result-group" key={group.id}>
+                  <span className="iitc-iris-search-result-heading">
+                    {group.label}
+                    <b>{group.items.length}</b>
+                  </span>
+                  {group.items.map(({result, selectableIndex}) => (
+                    <button
+                      className={`iitc-iris-search-result iitc-iris-search-result-${result.type} ${selectableIndex === activeSearchResultIndex ? 'is-active' : ''}`}
+                      type="button"
+                      onClick={() => selectSearchResult(result)}
+                      onDblClick={(event) => {
+                        event.preventDefault();
+                        selectSearchResult(result, true);
+                      }}
+                      disabled={result.type === 'empty'}
+                      key={result.id}
+                      onMouseEnter={() => {
+                        if (selectableIndex >= 0) setActiveSearchResultIndex(selectableIndex);
+                        previewSearchResult(result);
+                      }}
+                      onFocus={() => previewSearchResult(result)}
+                      title={result.title}
+                    >
+                      <span className="iitc-iris-search-result-main">
+                        <span className="iitc-iris-search-result-type">{result.type === 'coordinate' ? 'coords' : result.type}</span>
+                        <span className={result.team ? getCommTeamClass(result.team) : ''}>{result.title}</span>
+                      </span>
+                      {result.description && <small>{result.description}</small>}
+                    </button>
+                  ))}
+                </div>
               ))}
               {searchState.error && <span className="iitc-iris-warning">{searchState.error}</span>}
             </div>
           )}
+          <div className="iitc-iris-panel-footer">
+            <span
+              className="iitc-iris-diagnostics-chip"
+              title={[
+                searchState.confirmed ? 'request: Nominatim search' : 'request: local portal search only',
+                `local: ${searchState.localResults}`,
+                `online: ${searchState.onlineResults ?? '-'}`,
+              ].join('\n')}
+            >
+              {searchState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(searchState.elapsedMs)}s` : 'request'}
+            </span>
+            {searchState.results.length > 0 && (
+              <button className="iitc-iris-diagnostics-chip iitc-iris-chip-button" type="button" onClick={clearSearch} title="Clear search results and map overlay">
+                clear overlay
+              </button>
+            )}
+          </div>
           </div>
         </aside>
       )}
       <aside className="iitc-iris-map-controls" aria-label="Map controls">
+        {(activeSheet === 'view' || activeSheet === 'layers') && (
+          <div className="iitc-iris-panel-topbar">
+            <span className="iitc-iris-selected-title">{activeSheet === 'view' ? 'View' : 'Layers'}</span>
+            <button className="iitc-iris-clear-selection" type="button" onClick={closeSheets} title={`Close ${activeSheet}`}>x</button>
+          </div>
+        )}
         {activeSheet === 'view' && <div className="iitc-iris-map-controls-section">
           <span className="iitc-iris-status">View</span>
           <div className="iitc-iris-map-control-row">
@@ -1713,13 +2088,13 @@ function App(): h.JSX.Element {
         {activeSheet === 'layers' && <div className="iitc-iris-map-controls-section">
           <span className="iitc-iris-status">Core</span>
           <div className="iitc-iris-map-control-row">
-            {CORE_LAYER_TOGGLE_LABELS.map(([key, label]) => (
+            {CORE_LAYER_TOGGLE_LABELS.map(([key, label, title]) => (
               <button
                 key={key}
                 className={`iitc-iris-layer-toggle ${layerSettings[key] ? 'iitc-iris-layer-toggle-active' : ''}`}
                 type="button"
                 onClick={() => toggleLayerSetting(key)}
-                title={`Toggle ${key}`}
+                title={`${title}: ${layerSettings[key] ? 'on' : 'off'}`}
               >
                 {label}
               </button>
@@ -1729,15 +2104,26 @@ function App(): h.JSX.Element {
         {activeSheet === 'layers' && <div className="iitc-iris-map-controls-section">
           <span className="iitc-iris-status">Detail</span>
           <div className="iitc-iris-map-control-row">
-            {DETAIL_LAYER_TOGGLE_LABELS.map(([key, label]) => (
+            {DETAIL_LAYER_TOGGLE_LABELS.map(([key, label, title]) => (
               <button
                 key={key}
                 className={`iitc-iris-layer-toggle ${layerSettings[key] ? 'iitc-iris-layer-toggle-active' : ''}`}
                 type="button"
                 onClick={() => toggleLayerSetting(key)}
-                title={`Toggle ${key}`}
+                title={`${title}: ${layerSettings[key] ? 'on' : 'off'}`}
               >
                 {label}
+              </button>
+            ))}
+            {DETAIL_TRI_STATE_LAYER_LABELS.map(([key, label, title]) => (
+              <button
+                key={key}
+                className={`iitc-iris-layer-toggle ${layerSettings[key] !== 'off' ? 'iitc-iris-layer-toggle-active' : ''} ${layerSettings[key] === 'invert' ? 'iitc-iris-layer-toggle-invert' : ''}`}
+                type="button"
+                onClick={() => cycleTriStateLayerSetting(key)}
+                title={`${title}: ${layerSettings[key]}`}
+              >
+                {layerSettings[key] === 'invert' ? `${label}!` : label}
               </button>
             ))}
           </div>
@@ -1794,6 +2180,29 @@ function App(): h.JSX.Element {
                   Intel Login
                 </button>
               )}
+            </div>
+          </div>
+          <div className="iitc-iris-map-controls-section">
+            <span className="iitc-iris-status">Interaction</span>
+            <div className="iitc-iris-map-control-row">
+              <button
+                className={`iitc-iris-layer-toggle ${shortcutsEnabled ? 'iitc-iris-layer-toggle-active' : ''}`}
+                type="button"
+                onClick={() => setShortcutsEnabled((current) => !current)}
+                title="Enable plain keyboard shortcuts when focus is not in a text field"
+              >
+                Shortcuts
+              </button>
+              <button
+                className={`iitc-iris-layer-toggle ${mapFocusMode ? 'iitc-iris-layer-toggle-active' : ''}`}
+                type="button"
+                onClick={() => setMapFocusMode((current) => !current)}
+                title="Auto-close panels after navigation actions that move the map"
+              >
+                Map Focus
+              </button>
+              <span className="iitc-iris-status">{shortcutsEnabled ? 'keys on' : 'keys off'}</span>
+              <span className="iitc-iris-status">{mapFocusMode ? 'auto close' : 'stay open'}</span>
             </div>
           </div>
           <div className="iitc-iris-map-controls-section">
@@ -1952,12 +2361,26 @@ function App(): h.JSX.Element {
               <button className="iitc-iris-portal-action" type="button" onClick={copyScenarioRun} title="Copy all scenario runs as JSON">Copy Runs</button>
               <button className="iitc-iris-preset" type="button" onClick={clearScenarioRuns}>Clear</button>
               {activeScenarioRun
-                ? <span className="iitc-iris-status">{activeScenarioRun.name}: {activeScenarioRun.snapshots.length} snaps, running</span>
+                ? <span className="iitc-iris-status iitc-iris-panel-state is-loading">{activeScenarioRun.name}: running</span>
                 : latestScenarioRun
-                  ? <span className="iitc-iris-status">{scenarioRuns.length} runs, {scenarioSnapCount} snaps</span>
+                  ? <span className="iitc-iris-status iitc-iris-panel-state is-ready">{scenarioRuns.length} runs, {scenarioSnapCount} snaps</span>
                   : <span className="iitc-iris-status">no run</span>}
               {scenarioStatus && <span className="iitc-iris-status">{scenarioStatus}</span>}
             </div>
+            {scenarioProgressRun && (
+              <div className="iitc-iris-scenario-progress" title={`${scenarioProgressRun.name} ${scenarioProgressRun.status}`}>
+                {scenarioExpectedSteps.map((label) => {
+                  const doneLabel = label === 'done'
+                    ? scenarioProgressLabels.has('done') || scenarioProgressLabels.has('done-active')
+                    : scenarioProgressLabels.has(label);
+                  return (
+                    <span className={doneLabel ? 'is-done' : ''} key={label}>
+                      {label === 'before-pan-south' ? 'pan-south' : label}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
           </div>
           <div className="iitc-iris-map-controls-section">
             <span className="iitc-iris-status">Data</span>
@@ -1983,6 +2406,7 @@ function App(): h.JSX.Element {
             className={`iitc-iris-sheet-tab ${activePrimaryMenu === 'map' ? 'is-active' : ''}`}
             type="button"
             onClick={() => openSheet(activePrimaryMenu === 'map' && activeSheet !== 'map' ? 'map' : 'layers')}
+            title="Map menu (M)"
           >
             Map
           </button>
@@ -1991,6 +2415,7 @@ function App(): h.JSX.Element {
             type="button"
             onClick={() => openSheet('portal')}
             disabled={!entityFetch.selectedPortal}
+            title="Portal menu (P)"
           >
             Portal
           </button>
@@ -1998,6 +2423,7 @@ function App(): h.JSX.Element {
             className={`iitc-iris-sheet-tab ${activePrimaryMenu === 'agent' ? 'is-active' : ''}`}
             type="button"
             onClick={() => openSheet('agent')}
+            title="Agent menu (A)"
           >
             Agent
           </button>
@@ -2005,6 +2431,7 @@ function App(): h.JSX.Element {
             className={`iitc-iris-sheet-tab ${activePrimaryMenu === 'comm' ? 'is-active' : ''}`}
             type="button"
             onClick={() => openCommPanel()}
+            title="COMM menu (C)"
           >
             COMM
           </button>
@@ -2012,6 +2439,7 @@ function App(): h.JSX.Element {
             className={`iitc-iris-sheet-tab ${activePrimaryMenu === 'system' ? 'is-active' : ''}`}
             type="button"
             onClick={() => openSheet('system')}
+            title="System menu (S)"
           >
             System
           </button>
@@ -2051,50 +2479,72 @@ function App(): h.JSX.Element {
             </>
           )}
           {activePrimaryMenu === 'system' && (
-            <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'system' ? 'is-active' : ''}`} type="button" onClick={() => openSheet('system')}>Diagnostics</button>
+            <>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'system' ? 'is-active' : ''}`} type="button" onClick={() => openSheet('system')}>Diagnostics</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'help' ? 'is-active' : ''}`} type="button" onClick={() => openSheet('help')}>Shortcuts</button>
+            </>
           )}
         </div>
       </nav>
       {entityFetch.selectedPortal && (
         <aside className={`iitc-iris-portal-side-panel ${formatTeamClass(entityFetch.selectedPortal.team)} ${activeSidePanel ? 'iitc-iris-portal-side-panel-stacked' : ''}`} aria-label="Selected portal details">
           <div className="iitc-iris-portal-side-header">
-            {entityFetch.selectedPortal.image && (
-              <img
-                className="iitc-iris-selected-image"
-                src={entityFetch.selectedPortal.image}
-                alt=""
-              />
+            {entityFetch.selectedPortal.image ? (
+              <button className="iitc-iris-selected-image-button" type="button" onClick={() => setPortalImageOpen(true)} title="Open portal image preview">
+                <img
+                  className="iitc-iris-selected-image"
+                  src={entityFetch.selectedPortal.image}
+                  alt=""
+                />
+              </button>
+            ) : (
+              <span className="iitc-iris-selected-image-placeholder" title="No portal image">No image</span>
             )}
             <div className="iitc-iris-portal-side-title">
-              <span className="iitc-iris-selected-title" title={entityFetch.selectedPortal.guid}>
-                {entityFetch.selectedPortal.title || entityFetch.selectedPortal.guid}
+              <span className="iitc-iris-selected-title-row">
+                <span className="iitc-iris-selected-title" title={entityFetch.selectedPortal.guid}>
+                  {entityFetch.selectedPortal.title || entityFetch.selectedPortal.guid}
+                </span>
+                <span className={`iitc-iris-status iitc-iris-panel-state ${getPanelStatusClass(selectedPortalDetailsStatus)}`}>
+                  {selectedPortalDetailsStatus}
+                </span>
               </span>
-              <span className="iitc-iris-status">
-                {formatTeamLabel(entityFetch.selectedPortal.team)}
-                {entityFetch.selectedPortal.isPlaceholder || entityFetch.selectedPortal.level === undefined ? ' placeholder' : ` L${entityFetch.selectedPortal.level}`}
-                {' '}hp {formatPortalHealth(entityFetch.selectedPortal)}
-                {entityFetch.selectedPortal.resCount !== undefined && ` res ${entityFetch.selectedPortal.resCount}`}
-              </span>
+              {selectedPortalDetails?.owner && (
+                <span className="iitc-iris-portal-owner-prominent" title={`Owner: ${selectedPortalDetails.owner}`}>
+                  <small>owner</small>
+                  <b className={getCommTeamClass(entityFetch.selectedPortal.team)}>{selectedPortalDetails.owner}</b>
+                </span>
+              )}
             </div>
             <button className="iitc-iris-clear-selection" type="button" onClick={clearPortalSelection} title="Clear selected portal">x</button>
           </div>
+          <div className="iitc-iris-portal-scroll-body">
           <div className="iitc-iris-portal-actions" aria-label="Selected portal actions">
             <button className="iitc-iris-portal-action" type="button" onClick={focusSelectedPortal} title="Center and zoom to this portal">Zoom</button>
+            <button className="iitc-iris-portal-action" type="button" onClick={copySelectedPortalTitle} title="Copy portal title">Title</button>
             <button className="iitc-iris-portal-action" type="button" onClick={copySelectedPortalLink} title="Copy Intel portal link">Link</button>
             <button className="iitc-iris-portal-action" type="button" onClick={copySelectedPortalGuid} title="Copy portal GUID">GUID</button>
           </div>
           <div className="iitc-iris-portal-summary">
             <span className="iitc-iris-portal-summary-cell">
               <span className="iitc-iris-status">level</span>
-              <b>{entityFetch.selectedPortal.isPlaceholder || entityFetch.selectedPortal.level === undefined ? '-' : `L${entityFetch.selectedPortal.level}`}</b>
+              <b
+                className="iitc-iris-portal-level-value"
+                style={formatIitcColorVars(getIitcLevelColor(entityFetch.selectedPortal.level))}
+              >
+                {entityFetch.selectedPortal.isPlaceholder || entityFetch.selectedPortal.level === undefined ? '-' : `L${entityFetch.selectedPortal.level}`}
+              </b>
             </span>
             <span className="iitc-iris-portal-summary-cell">
               <span className="iitc-iris-status">health</span>
               <b>{formatPortalHealth(entityFetch.selectedPortal)}</b>
+              <span className="iitc-iris-summary-mini-track" aria-hidden="true">
+                <span style={`width: ${formatPortalHealthPercent(entityFetch.selectedPortal)}%;`} />
+              </span>
             </span>
             <span className="iitc-iris-portal-summary-cell">
               <span className="iitc-iris-status">res</span>
-              <b>{entityFetch.selectedPortal.resCount ?? '-'}</b>
+              <b>{entityFetch.selectedPortal.resCount !== undefined ? `${entityFetch.selectedPortal.resCount}/8` : '-'}</b>
             </span>
             <span className="iitc-iris-portal-summary-cell">
               <span className="iitc-iris-status">links</span>
@@ -2107,29 +2557,31 @@ function App(): h.JSX.Element {
           <div className="iitc-iris-portal-panel">
             <div className="iitc-iris-portal-panel-header">
               <span className="iitc-iris-status">details</span>
-              {entityFetch.portalDetails && entityFetch.portalDetails.guid === entityFetch.selectedPortal.guid ? (
-                <span className={`iitc-iris-status ${entityFetch.portalDetails.status === 'error' || entityFetch.portalDetails.status === 'auth' ? 'iitc-iris-warning' : ''}`}>
-                  {entityFetch.portalDetails.status}{formatPortalDetailsElapsed(entityFetch.portalDetails)}
-                </span>
-              ) : (
-                <span className="iitc-iris-status">waiting</span>
-              )}
-              {entityFetch.portalDetails?.error && <span className="iitc-iris-status iitc-iris-warning">{entityFetch.portalDetails.error}</span>}
+              {selectedPortalDetails?.error && <span className="iitc-iris-status iitc-iris-warning">{selectedPortalDetails.error}</span>}
             </div>
-            {entityFetch.portalDetails?.status === 'ready' && entityFetch.portalDetails.guid === entityFetch.selectedPortal.guid && (
+            {selectedPortalDetailsStatus !== 'ready' && (
+              <div className="iitc-iris-empty-state">
+                {selectedPortalDetailsStatus === 'loading' ? 'Fetching portal details...' : 'Waiting for portal details.'}
+              </div>
+            )}
+            {selectedPortalDetails?.status === 'ready' && (
               <>
-                <div className="iitc-iris-portal-section">
-                  <span className="iitc-iris-status">Mods</span>
+                <details className="iitc-iris-portal-section" open={portalSections.mods} onToggle={(event) => setPortalSectionOpen('mods', event.currentTarget.open)}>
+                  <summary className="iitc-iris-section-summary">Mods</summary>
                   <div className="iitc-iris-mod-grid">
                     {Array.from({ length: 4 }, (_, index) => {
                       const mod = entityFetch.portalDetails?.mods?.[index];
                       const modStats = mod ? formatModStats(mod.stats) : '';
                       return (
-                        <div className={`iitc-iris-mod-slot ${mod ? '' : 'iitc-iris-empty-slot'}`} key={`mod-${index}`}>
+                        <div
+                          className={`iitc-iris-mod-slot ${mod ? '' : 'iitc-iris-empty-slot'}`}
+                          key={`mod-${index}`}
+                          style={formatIitcColorVars(getIitcRarityColor(mod?.rarity))}
+                        >
                           {mod ? (
                             <>
-                              <span className="iitc-iris-portal-mod-name">{mod.rarity} {formatModName(mod.name)}</span>
-                              <span className="iitc-iris-status">{mod.owner}</span>
+                              <span className="iitc-iris-portal-mod-name">{mod.rarity.replace(/_/g, ' ')} {formatModName(mod.name)}</span>
+                              <span className={`iitc-iris-status iitc-iris-agent-name ${getCommTeamClass(entityFetch.selectedPortal?.team)}`}>{mod.owner}</span>
                               {modStats && <span className="iitc-iris-status">{modStats}</span>}
                             </>
                           ) : (
@@ -2139,38 +2591,9 @@ function App(): h.JSX.Element {
                       );
                     })}
                   </div>
-                </div>
-                <div className="iitc-iris-portal-panel-grid iitc-iris-portal-facts">
-                  <span className="iitc-iris-status">owner</span>
-                  <span>{entityFetch.portalDetails.owner || '-'}</span>
-                  <span className="iitc-iris-status">mitigation</span>
-                  <span>
-                    {entityFetch.portalDetails.mitigation
-                      ? `${Math.round(entityFetch.portalDetails.mitigation.total)} total, ${Math.round(entityFetch.portalDetails.mitigation.shields)} shields, ${Math.round(entityFetch.portalDetails.mitigation.links)} links`
-                      : '-'}
-                  </span>
-                  <span className="iitc-iris-status">history</span>
-                  <span>
-                    {entityFetch.portalDetails.history
-                      ? [
-                        entityFetch.portalDetails.history.captured ? 'captured' : 'not captured',
-                        entityFetch.portalDetails.history.visited ? 'visited' : 'not visited',
-                        entityFetch.portalDetails.history.scoutControlled ? 'scout controlled' : 'not scout controlled',
-                      ].join(' / ')
-                      : '-'}
-                  </span>
-                  <span className="iitc-iris-status">topology</span>
-                  <span>
-                    {entityFetch.selectedPortal.links.count} links ({entityFetch.selectedPortal.links.outgoing} out/{entityFetch.selectedPortal.links.incoming} in), {entityFetch.selectedPortal.fields.count} fields
-                  </span>
-                  <span className="iitc-iris-status">markers</span>
-                  <span>
-                    {entityFetch.selectedPortal.ornaments.length} ornaments, {entityFetch.selectedPortal.artifacts.length} artifacts
-                    {(entityFetch.selectedPortal.mission || entityFetch.selectedPortal.mission50plus) && ', mission'}
-                  </span>
-                </div>
-                <div className="iitc-iris-portal-section">
-                  <span className="iitc-iris-status">Resonators</span>
+                </details>
+                <details className="iitc-iris-portal-section" open={portalSections.resonators} onToggle={(event) => setPortalSectionOpen('resonators', event.currentTarget.open)}>
+                  <summary className="iitc-iris-section-summary">Resonators</summary>
                   <div className="iitc-iris-resonator-grid">
                     {RESONATOR_PANEL_ORDER.map((resonatorIndex, panelIndex) => {
                       if (resonatorIndex === null) {
@@ -2181,18 +2604,21 @@ function App(): h.JSX.Element {
                         );
                       }
                       const resonator = entityFetch.portalDetails?.resonators?.[resonatorIndex];
+                      const resonatorHealth = resonator ? formatResonatorEnergyPercent(resonator.level, resonator.energy) : 0;
                       return (
                         <span
                           className={`iitc-iris-resonator-slot ${resonator ? '' : 'iitc-iris-empty-slot'}`}
                           key={`resonator-${panelIndex}`}
-                          title={resonator ? `${resonator.owner} ${resonator.energy} XM` : 'empty resonator slot'}
+                          style={resonator ? `${formatIitcColorVars(getIitcLevelColor(resonator.level)) ?? ''} --iitc-iris-resonator-health: ${getResonatorHealthColor(resonatorHealth)};` : undefined}
+                          title={resonator ? `${resonator.owner} ${resonator.energy} XM, ${resonatorHealth}% charged` : 'empty resonator slot'}
                         >
                           {resonator ? (
                             <>
                               <span className="iitc-iris-resonator-level">L{resonator.level}</span>
                               <span className="iitc-iris-resonator-energy">{formatResonatorEnergy(resonator.energy)}</span>
-                              <span className="iitc-iris-resonator-owner">{resonator.owner}</span>
-                              <span className="iitc-iris-resonator-fill" style={`width: ${formatResonatorEnergyPercent(resonator.level, resonator.energy)}%;`} />
+                              <span className={`iitc-iris-resonator-owner ${getCommTeamClass(entityFetch.selectedPortal?.team)}`}>{resonator.owner}</span>
+                              <span className="iitc-iris-resonator-percent">{resonatorHealth}%</span>
+                              <span className="iitc-iris-resonator-fill" style={`width: ${resonatorHealth}%;`} />
                             </>
                           ) : (
                             <span className="iitc-iris-status">empty</span>
@@ -2201,9 +2627,93 @@ function App(): h.JSX.Element {
                       );
                     })}
                   </div>
+                </details>
+                <details className="iitc-iris-portal-section" open={portalSections.facts} onToggle={(event) => setPortalSectionOpen('facts', event.currentTarget.open)}>
+                  <summary className="iitc-iris-section-summary">Facts</summary>
+                  <div className="iitc-iris-portal-panel-grid iitc-iris-portal-facts">
+                    <span className="iitc-iris-status">owner</span>
+                    <span className={`iitc-iris-agent-name ${getCommTeamClass(entityFetch.selectedPortal.team)}`}>{selectedPortalDetails.owner || '-'}</span>
+                    <span className="iitc-iris-status">mitigation</span>
+                    <span>
+                      {selectedPortalDetails.mitigation
+                        ? `${Math.round(selectedPortalDetails.mitigation.total)} total, ${Math.round(selectedPortalDetails.mitigation.shields)} shields, ${Math.round(selectedPortalDetails.mitigation.links)} links`
+                        : '-'}
+                    </span>
+                    <span className="iitc-iris-status">history</span>
+                    <span>
+                      {selectedPortalDetails.history
+                        ? [
+                          selectedPortalDetails.history.captured ? 'captured' : 'not captured',
+                          selectedPortalDetails.history.visited ? 'visited' : 'not visited',
+                          selectedPortalDetails.history.scoutControlled ? 'scout controlled' : 'not scout controlled',
+                        ].join(' / ')
+                        : '-'}
+                    </span>
+                    <span className="iitc-iris-status">topology</span>
+                    <span>
+                      {entityFetch.selectedPortal.links.count} links ({entityFetch.selectedPortal.links.outgoing} out/{entityFetch.selectedPortal.links.incoming} in), {entityFetch.selectedPortal.fields.count} fields
+                    </span>
+                    <span className="iitc-iris-status">markers</span>
+                    <span>
+                      {entityFetch.selectedPortal.ornaments.length} ornaments, {entityFetch.selectedPortal.artifacts.length} artifacts
+                      {(entityFetch.selectedPortal.mission || entityFetch.selectedPortal.mission50plus) && ', mission'}
+                    </span>
+                  </div>
+                </details>
+                <div className="iitc-iris-panel-footer">
+                  <span
+                    className="iitc-iris-diagnostics-chip"
+                    title={[
+                      'request: /r/getPortalDetails',
+                      `guid: ${entityFetch.selectedPortal.guid}`,
+                    ].join('\n')}
+                  >
+                    {selectedPortalDetails.cached ? 'cached' : selectedPortalDetails.elapsedMs !== undefined ? `request ${formatElapsedSeconds(selectedPortalDetails.elapsedMs)}s` : 'request'}
+                  </span>
                 </div>
               </>
             )}
+          </div>
+          </div>
+        </aside>
+      )}
+      {portalImageOpen && entityFetch.selectedPortal?.image && (
+        <div className="iitc-iris-image-preview-backdrop" role="dialog" aria-modal="true" aria-label="Portal image preview" onClick={() => setPortalImageOpen(false)}>
+          <div className="iitc-iris-image-preview" onClick={(event) => event.stopPropagation()}>
+            <div className="iitc-iris-request-panel-header">
+              <span className="iitc-iris-selected-title">{entityFetch.selectedPortal.title || 'Portal image'}</span>
+              <button className="iitc-iris-clear-selection" type="button" onClick={() => setPortalImageOpen(false)} title="Close image preview">x</button>
+            </div>
+            <img src={entityFetch.selectedPortal.image} alt={entityFetch.selectedPortal.title || 'Portal image'} />
+            <div className="iitc-iris-image-preview-caption">
+              <b>{entityFetch.selectedPortal.title || 'Selected portal'}</b>
+              <span>{entityFetch.selectedPortal.guid}</span>
+            </div>
+          </div>
+        </div>
+      )}
+      {activeSheet === 'help' && (
+        <aside className="iitc-iris-request-side-panel iitc-iris-help-panel" aria-label="Shortcuts">
+          <div className="iitc-iris-request-panel-header">
+            <span className="iitc-iris-selected-title">Shortcuts</span>
+            <button className="iitc-iris-clear-selection" type="button" onClick={closeSheets} title="Close shortcuts">x</button>
+          </div>
+          <div className="iitc-iris-request-panel-body">
+            <div className="iitc-iris-shortcut-grid">
+              <span>Pan map</span><b>Arrow keys</b>
+              <span>Zoom map</span><b>+ / -</b>
+              <span>Search</span><b>/</b>
+              <span>Close sheets</span><b>Esc</b>
+              <span>Map menu</span><b>M</b>
+              <span>Portal menu</span><b>P</b>
+              <span>Agent menu</span><b>A</b>
+              <span>COMM menu</span><b>C</b>
+              <span>System menu</span><b>S</b>
+              <span>Help</span><b>?</b>
+              <span>Shortcuts toggle</span><b>System / Interaction</b>
+              <span>Search result</span><b>Up / Down / Enter</b>
+              <span>Zoom result</span><b>Shift+Enter</b>
+            </div>
           </div>
         </aside>
       )}
@@ -2211,19 +2721,9 @@ function App(): h.JSX.Element {
         <aside className="iitc-iris-request-side-panel" aria-label={`${activeSidePanelOption.title} panel`}>
           <div className="iitc-iris-request-panel-header">
             <span className="iitc-iris-selected-title">{activeSidePanelOption.label}</span>
-            <span className="iitc-iris-status">
-              {activeSidePanel === 'comm'
-                ? commState.status
-	                : activeSidePanel === 'scores'
-	                  ? scoresState.status
-		                  : activeSidePanel === 'inventory'
-		                    ? inventoryState.status
-		                    : activeSidePanel === 'passcode'
-		                      ? passcodeState.status
-		                      : activeSidePanel === 'agent'
-		                        ? agentState.status
-		                        : 'idle'}
-	            </span>
+            <span className={`iitc-iris-status iitc-iris-panel-state ${getPanelStatusClass(activeSidePanelStatus)}`}>
+              {activeSidePanelStatus}
+            </span>
 	            <button className="iitc-iris-clear-selection" type="button" onClick={closeSidePanel} title={`Close ${activeSidePanelOption.title}`}>x</button>
 	          </div>
 	          {activeSidePanel === 'agent' && (
@@ -2307,9 +2807,11 @@ function App(): h.JSX.Element {
                 <button className="iitc-iris-portal-action" type="button" onClick={requestOlderComm} disabled={commState.status === 'loading' || commState.oldestTimestamp === undefined || commState.oldestTimestamp < 0} title="Fetch older COMM messages before the current oldest timestamp">
                   Older
                 </button>
-                <span className={`iitc-iris-status ${commState.status === 'error' || commState.status === 'auth' ? 'iitc-iris-warning' : ''}`}>
-                  {commState.status}{commState.elapsedMs !== undefined ? ` ${formatElapsedSeconds(commState.elapsedMs)}s` : ''}
-                </span>
+                {(!commUserAtBottom || commNewBelow) && (
+                  <button className="iitc-iris-portal-action" type="button" onClick={jumpCommToLatest} title="Jump to latest COMM message">
+                    {commNewBelow ? 'New' : 'Latest'}
+                  </button>
+                )}
               </div>
               <div className="iitc-iris-panel-summary">
                 <span><b>{formatInteger(commState.messages)}</b><small>messages</small></span>
@@ -2321,56 +2823,61 @@ function App(): h.JSX.Element {
               )}
               {commState.recent && commState.recent.length > 0 && (
                 <div className="iitc-iris-comm-list iitc-iris-scroll-region" ref={commListRef} onScroll={handleCommScroll}>
-                  {commState.recent.map((message) => (
-                    <div className="iitc-iris-comm-row" key={message.id}>
-                      <span className={`iitc-iris-comm-meta ${getCommTeamClass(message.team)}`}>
-                        <b>{formatCommTime(message.time)}</b>
-                        <small>{message.team || '-'}</small>
-                        {message.alert && <small>alert</small>}
-                        {message.narrowcast && <small>direct</small>}
-                      </span>
-                      <span className={`iitc-iris-comm-text ${message.narrowcast ? 'is-narrowcast' : ''}`}>
-                        {message.parts.length > 0 ? message.parts.map((part, index) => {
-                          const key = `${message.id}-${index}`;
-                          if (part.type === 'portal') {
-                            return (
-                              <button
-                                className="iitc-iris-comm-portal"
-                                type="button"
-                                title={part.portal?.address || part.text}
-                                onClick={() => focusCommPortal(part.portal?.latE6, part.portal?.lngE6)}
-                                key={key}
-                              >
-                                {part.text}
-                              </button>
-                            );
-                          }
-                          if (part.type === 'player') {
-                            return (
-                              <button
-                                className={`iitc-iris-comm-player ${getCommTeamClass(part.team)} ${part.at ? 'is-at' : ''}`}
-                                type="button"
-                                onClick={() => addCommNickname(part.text)}
-                                title={`Message ${part.text}`}
-                                key={key}
-                              >
-                                {part.at ? '@' : ''}{part.text}
-                              </button>
-                            );
-                          }
-                          if (part.type === 'faction') {
-                            return <span className={`iitc-iris-comm-faction ${getCommTeamClass(part.team)}`} key={key}>{part.text}</span>;
-                          }
-                          return <span className={getCommTeamClass(part.team)} key={key}>{part.text}</span>;
-                        }) : (message.text || message.type)}
-                      </span>
-                      {(message.players.length > 0 || message.portals.length > 0) && (
-                        <span className="iitc-iris-comm-context">
-                          {[...message.players, ...message.portals.map((portal) => portal.name || portal.address || 'portal')].slice(0, 3).join(' / ')}
+                  {commState.requestOlder && commState.status === 'loading' && <span className="iitc-iris-comm-divider">loading older messages</span>}
+                  {commState.requestOlder && commState.oldMessagesWereAdded && <span className="iitc-iris-comm-divider">older messages loaded</span>}
+                  {commState.recent.map((message) => {
+                    const displayParts = getCommDisplayParts(message);
+                    return (
+                      <div className={`iitc-iris-comm-row ${message.alert ? 'is-alert' : ''} ${message.narrowcast ? 'is-direct' : ''}`} key={message.id} title={formatCommContextTitle(message)}>
+                        <span className={`iitc-iris-comm-meta ${getCommTeamClass(message.team)}`}>
+                          <b>{formatCommTime(message.time)}</b>
+                          <span className="iitc-iris-comm-tags">
+                            {message.auto && <small>system</small>}
+                            {message.alert && <small>alert</small>}
+                            {message.narrowcast && <small>direct</small>}
+                          </span>
                         </span>
-                      )}
-                    </div>
-                  ))}
+                        <span className={`iitc-iris-comm-text ${message.narrowcast ? 'is-narrowcast' : ''}`}>
+                          <span className={`iitc-iris-comm-actor ${getCommTeamClass(message.playerTeam || message.team)}`}>
+                            {formatCommActor(message)}
+                          </span>
+                          {displayParts.length > 0 ? displayParts.map((part, index) => {
+                            const key = `${message.id}-${index}`;
+                            if (part.type === 'portal') {
+                              return (
+                                <button
+                                  className="iitc-iris-comm-portal"
+                                  type="button"
+                                  title={part.portal?.address || part.text}
+                                  onClick={() => focusCommPortal(part.portal?.latE6, part.portal?.lngE6)}
+                                  key={key}
+                                >
+                                  {part.text}
+                                </button>
+                              );
+                            }
+                            if (part.type === 'player') {
+                              return (
+                                <button
+                                  className={`iitc-iris-comm-player ${getCommTeamClass(part.team)} ${part.at ? 'is-at' : ''}`}
+                                  type="button"
+                                  onClick={() => addCommNickname(part.text)}
+                                  title={`Message ${part.text}`}
+                                  key={key}
+                                >
+                                  {part.at ? '@' : ''}{part.text}
+                                </button>
+                              );
+                            }
+                            if (part.type === 'faction') {
+                              return <span className={`iitc-iris-comm-faction ${getCommTeamClass(part.team)}`} key={key}>{part.text}</span>;
+                            }
+                            return <span className={getCommTeamClass(part.team)} key={key}>{part.text}</span>;
+                          }) : (message.text || message.type)}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
               <form
@@ -2406,7 +2913,7 @@ function App(): h.JSX.Element {
                     `older: ${commState.requestOlder ? (commState.oldMessagesWereAdded ? 'added' : 'none') : '-'}`,
                   ].join('\n')}
                 >
-                  request
+                  {commState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(commState.elapsedMs)}s` : 'request'}
                 </span>
                 {commState.error && <span className="iitc-iris-warning">{commState.error}</span>}
               </div>
@@ -2419,7 +2926,7 @@ function App(): h.JSX.Element {
                   {scoresState.status === 'loading' ? 'Loading' : 'Refresh'}
                 </button>
                 <span className={`iitc-iris-status ${scoresState.status === 'error' || scoresState.status === 'auth' ? 'iitc-iris-warning' : ''}`}>
-                  {scoresState.status}{scoresState.elapsedMs !== undefined ? ` ${formatElapsedSeconds(scoresState.elapsedMs)}s` : ''}
+                  {scoresState.status}
                 </span>
               </div>
               <div className="iitc-iris-score-block">
@@ -2479,7 +2986,7 @@ function App(): h.JSX.Element {
                     `center: ${scoresState.region?.center ? `${scoresState.region.center.latE6},${scoresState.region.center.lngE6}` : '-'}`,
                   ].join('\n')}
                 >
-                  request
+                  {scoresState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(scoresState.elapsedMs)}s` : 'request'}
                 </span>
                 {(scoresState.error || scoresState.region?.error) && <span className="iitc-iris-warning">{scoresState.error || scoresState.region?.error}</span>}
               </div>
@@ -2492,7 +2999,7 @@ function App(): h.JSX.Element {
                   {inventoryState.status === 'loading' ? 'Loading' : 'Refresh'}
                 </button>
                 <span className={`iitc-iris-status ${inventoryState.status === 'error' || inventoryState.status === 'auth' ? 'iitc-iris-warning' : ''}`}>
-                  {inventoryState.status}{inventoryState.elapsedMs !== undefined ? ` ${formatElapsedSeconds(inventoryState.elapsedMs)}s` : ''}
+                  {inventoryState.status}
                 </span>
               </div>
               <div className="iitc-iris-panel-summary">
@@ -2539,8 +3046,12 @@ function App(): h.JSX.Element {
                     <span className="iitc-iris-status">Top items</span>
                     <div className="iitc-iris-inventory-list">
                       {inventoryState.topItems.map((item) => (
-                        <div className="iitc-iris-inventory-row" key={`${item.type}-${item.level ?? ''}-${item.rarity ?? ''}-${item.label}`}>
-                          <span>{item.label}{item.level ? ` L${item.level}` : ''}</span>
+                        <div
+                          className="iitc-iris-inventory-row"
+                          key={`${item.type}-${item.level ?? ''}-${item.rarity ?? ''}-${item.label}`}
+                          style={formatIitcColorVars(getIitcItemColor(item))}
+                        >
+                          <span><b className="iitc-iris-item-badge">{formatItemBadge(item)}</b>{item.label}{item.level ? ` L${item.level}` : ''}</span>
                           <b>{item.count}</b>
                           {item.rarity && <small>{item.rarity.replace(/_/g, ' ')}</small>}
                         </div>
@@ -2572,7 +3083,7 @@ function App(): h.JSX.Element {
                     `selected portal: ${inventoryState.selectedPortalGuid ?? '-'}`,
                   ].join('\n')}
                 >
-                  request
+                  {inventoryState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(inventoryState.elapsedMs)}s` : 'request'}
                 </span>
                 {inventoryState.error && <span className="iitc-iris-warning">{inventoryState.error}</span>}
               </div>
@@ -2617,8 +3128,12 @@ function App(): h.JSX.Element {
               {passcodeState.items && passcodeState.items.length > 0 && (
                 <div className="iitc-iris-inventory-list">
                   {passcodeState.items.map((item, index) => (
-                    <div className="iitc-iris-inventory-row" key={`${item.label}-${item.level ?? ''}-${index}`}>
-                      <span>{item.label}{item.level ? ` L${item.level}` : ''}</span>
+                    <div
+                      className="iitc-iris-inventory-row"
+                      key={`${item.label}-${item.level ?? ''}-${index}`}
+                      style={formatIitcColorVars(getIitcLevelColor(item.level))}
+                    >
+                      <span><b className="iitc-iris-item-badge">{formatItemBadge(item)}</b>{item.label}{item.level ? ` L${item.level}` : ''}</span>
                       <b>{item.count ?? 1}</b>
                     </div>
                   ))}
@@ -2637,7 +3152,7 @@ function App(): h.JSX.Element {
                     `passcode: ${passcodeState.passcode ?? '-'}`,
                   ].join('\n')}
                 >
-                  request
+                  {passcodeState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(passcodeState.elapsedMs)}s` : 'request'}
                 </span>
               </div>
             </div>

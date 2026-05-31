@@ -517,12 +517,14 @@ Current status:
   COMM, Scores, and Inventory so live-use panels stay focused while raw endpoint context remains available for testing.
 - The request chips now live in panel footers. Inventory has a more dedicated layout for item totals, selected-portal key
   counts, top item rows, and top key rows now that live inventory responses have been observed working.
-- UI shell now uses the bottom tab bar and one-sheet-at-a-time model on desktop and mobile. Passcode redemption is folded
-  into the Inventory sheet, keeping the primary tabs to Map, Layers, Portal, COMM, Scores, Inventory, and System while
-  preserving the map-first Mini-IRIS feel.
+- UI shell now uses a two-layer bottom menu and a one-sheet-at-a-time model on desktop and mobile. The primary layer is
+  `Map`, `Portal`, `Agent`, `COMM`, and `System`; the secondary layer exposes domain actions such as `Layers`, `View`,
+  `Scores`, `Search`, `Profile`, `Inventory`, `Passcode`, COMM tabs, and diagnostics. This keeps the map-first
+  Mini-IRIS feel while leaving room for IITC-style side systems without adding a permanent crowded toolbar.
 - Passcodes are now wired as a core Intel panel using IITC's `redeemReward` request shape. The panel sanitizes printable
   passcodes, posts `/r/redeemReward`, and displays AP/XM/other/item rewards with endpoint diagnostics in the footer.
-  Live reward formatting can be refined further after testing real passcode responses.
+  Passcode redemption is now its own Agent-domain menu item and opens in the same bottom sheet style as the other side
+  systems. Live reward formatting can be refined further after testing real passcode responses.
 - Inventory is core Intel API parity for IITC IRIS because it is backed by Intel's `/r/getInventory` endpoint. Port the
   request lifecycle and parser directly from IITC/Intel behavior into the IITC IRIS code path; do not depend on or copy
   the existing IRIS inventory implementation. Plugin-like inventory extensions, player tracker, draw tools, and richer
@@ -541,6 +543,59 @@ Current status:
   `getEntities` calls, each completed response immediately opens a slot for the next queued batch, and tile
   timeout/error retries are requeued through the same flow up to the IITC retry limit. This replaces the earlier
   wave-barrier behavior where IRIS waited for all active requests in a wave before starting more work.
+- Search is now a Map-domain sheet rather than a floating panel. It searches loaded portals first, accepts coordinates,
+  and uses Nominatim/OpenStreetMap geocoding on confirmed search with IITC-style result ordering: portal matches,
+  coordinate matches, then geocoder results in service order. Geocoder requests include `polygon_geojson=1`; selected
+  polygon/bounds results render a red preview layer and fit the view with IITC-aligned max zoom behavior. Remaining
+  search parity gap: IITC previews result geometry on hover and removes it on mouseout, while IITC IRIS currently draws
+  geometry on selection.
+- COMM scrolling now follows the IITC mental model more closely: the message list is oldest-to-newest, scrolling to the
+  older edge requests continuation messages, and new messages keep the user at the newest edge when appropriate.
+- Player tracker popups and pins are closer to IITC's plugin: Resistance/Enlightened use IITC marker images, popup
+  content shows nickname, age, portal link, and previous locations, and styling now follows the IITC IRIS dark sheet/map
+  look instead of a default white Leaflet popup.
+- Agent profile reads the page `PLAYER` data that IITC uses for level/AP/XM/invite/progress style details and exposes it
+  under the Agent menu. Inventory and Passcode are separate Agent-domain sheets.
+- Active request diagnostics now include `getEntities`, `getPlexts`, portal details, scores, inventory, passcodes, and
+  other side requests so IITC vs IITC IRIS comparisons can see when non-entity work overlaps map movement or rendering.
+
+### Menu Symbol Guidance
+
+The two-layer menu can use symbols, but do not use ASCII art or decorative Unicode pictures as the primary navigation
+language. They are inconsistent across browsers/fonts, can shift compact button layout, and often produce weak screen
+reader output unless every button is carefully labelled.
+
+Current recommendation:
+
+- Keep short text labels for primary domains until the menu hierarchy stabilizes: `Map`, `Portal`, `Agent`, `COMM`,
+  `System`.
+- Use concise text/abbreviations for dense layer toggles where IITC already does this well: `F`, `LN`, `P`, `L1`..`L8`,
+  `RES`, `ENL`, `MAC`, `VIS`, `CAP`, `KEY`.
+- If the primary menu needs icons later, prefer a small controlled monochrome SVG icon set or an installed icon library
+  over raw Unicode. Every icon-only button must keep `title` and `aria-label`, and the visible icon should be treated as
+  presentation rather than the source of meaning.
+- Unicode is acceptable for a few universal controls where glyph rendering is stable and already familiar, such as `+`,
+  `-`, `x`, or arrow-like pan controls, but avoid emoji, box art, and multi-character ASCII images in the menu.
+
+### Unprioritized IITC Parity Backlog
+
+These findings are intentionally not prioritized yet; they capture missing IITC concepts so later planning can choose
+what to port natively and what to leave out.
+
+| Area | Status | Notes |
+|------|--------|-------|
+| Hook/plugin lifecycle | Open | IITC has `addHook`/`runHooks`, plugin setup, toolbox entries, dialogs, panes, layer chooser integration, and portal highlighter registration. IITC IRIS currently has fixed native systems and should add thin registries before porting many plugin concepts. |
+| Portal highlighter framework | Open | Add an IITC-style highlighter registry before adding more highlighters. Likely first native highlighters: high level, missing resonators, needs recharge, portal history, ornaments, and hide team. |
+| Search hover preview | Open | IITC renders geocoder/portal result geometry on hover and clears it on mouseout. IITC IRIS currently renders selection geometry only. |
+| Bookmarks and saved map/portal sets | Open | High-value IITC workflow still missing. Should be designed around persistent saved portals/views before broad plugin parity. |
+| Keys workflows | Partial | Basic key counts and inventory parsing exist. Missing richer IITC `keys`/`keys-on-map` workflows, key search/list views, and saved key-management affordances. |
+| Draw/planning tools | Open | IITC `draw-tools` concepts are not ported: lines, polygons, circles, import/export, and planning interactions. This should be a dedicated pass. |
+| Link analysis layers | Open | Missing cross-links, link direction, linked portals, tidy/fly/done links, and related planning helpers. |
+| Portal list/count views | Open | Missing IITC-style viewport portal tables, portal counts, and analysis lists. |
+| Missions/uniques/history workflows | Partial | Portal history indicators exist; full missions, uniques, and richer history list workflows are not ported. |
+| Map utility plugins | Open | Missing user location, minimap, scale bar, zoom slider, privacy view, overlay KML, and similar utility plugins. |
+| COMM/player plugin ecosystem | Partial | COMM and player tracker work, but richer COMM filters/hooks, nickname plugin interactions, and player level guess are not ported. |
+| Dialog/sidebar/statusbar model | Diverged | IITC IRIS intentionally uses bottom sheets and a two-layer menu instead of IITC's sidebar/statusbar/dropdown model. Keep this documented as product-shell divergence. |
 
 ## Pass 8: Replacement Readiness - Not Started
 

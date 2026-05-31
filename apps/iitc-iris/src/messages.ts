@@ -25,6 +25,7 @@ export const IITC_IRIS_MESSAGES = {
   searchRequest: 'IITC_IRIS_SEARCH_REQUEST',
   searchStatus: 'IITC_IRIS_SEARCH_STATUS',
   searchSelect: 'IITC_IRIS_SEARCH_SELECT',
+  searchPreview: 'IITC_IRIS_SEARCH_PREVIEW',
   searchClear: 'IITC_IRIS_SEARCH_CLEAR',
 } as const;
 
@@ -154,6 +155,7 @@ export interface IitcIrisSearchState {
   results: IitcIrisSearchResult[];
   localResults: number;
   onlineResults?: number;
+  elapsedMs?: number;
   error?: string;
 }
 
@@ -499,6 +501,7 @@ export interface IitcIrisPortalDetailsState {
   status: 'idle' | 'loading' | 'ready' | 'error' | 'auth';
   guid?: string;
   elapsedMs?: number;
+  cached?: boolean;
   error?: string;
   owner?: string;
   mods?: IitcIrisPortalMod[];

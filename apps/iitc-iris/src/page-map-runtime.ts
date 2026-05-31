@@ -1,5 +1,6 @@
 import L, {type Layer as LeafletLayer, type Map as LeafletMap, type TileLayer} from 'leaflet';
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
+import {IITC_LEVEL_COLORS, IITC_TEAM_COLORS} from './iitc-colors';
 import {
   appendIitcResponseBucketDiagnostics,
   applyIitcTileRequestResponseToQueue,
@@ -144,6 +145,7 @@ const mapDataCache = new IitcDataCache<IitcMapTilePayload>();
 let selectedPortalGuid: string | undefined;
 let selectedPortal: IitcIrisSelectedPortal | null = null;
 let latestPortalDetails: IitcIrisPortalDetailsState | null = null;
+const portalDetailsCache = new Map<string, IitcIrisPortalDetailsState>();
 let latestSearchSequence = 0;
 let latestSearchState: IitcIrisSearchState = {status: 'idle', term: '', confirmed: false, results: [], localResults: 0};
 const portalHistoryByGuid = new Map<string, NonNullable<IitcIrisRenderPortal['history']>>();
@@ -484,12 +486,7 @@ declare global {
   }
 }
 
-const TEAM_COLORS = {
-  E: '#03dc03',
-  R: '#0088ff',
-  N: '#ff6600',
-  M: '#ff1010',
-} as const;
+const TEAM_COLORS = IITC_TEAM_COLORS;
 const HEALTH_COLORS = {
   cond85: '#ffff00',
   cond70: '#ffa500',
@@ -499,7 +496,7 @@ const HEALTH_COLORS = {
   cond15: '#ff0000',
   cond0: '#ff00ff',
 } as const;
-const LEVEL_COLORS = ['#000000', '#fece5a', '#ffa630', '#ff7315', '#e40000', '#fd2992', '#eb26cd', '#c124e0', '#9627f4'] as const;
+const LEVEL_COLORS = IITC_LEVEL_COLORS;
 const LEVEL_TO_WEIGHT = [2, 2, 2, 2, 2, 3, 3, 4, 4] as const;
 const LEVEL_TO_RADIUS = [7, 7, 7, 7, 8, 8, 9, 10, 11] as const;
 const LEVEL_LABEL_COLLISION_SIZE = 15;
@@ -1035,6 +1032,7 @@ async function runSearch(term: string | undefined, confirmed = false): Promise<v
 
   if (!confirmed) return;
 
+  const startedAt = performance.now();
   try {
     const onlineResults = await fetchNominatimSearchResults(searchTerm);
     if (sequence !== latestSearchSequence) return;
@@ -1046,6 +1044,7 @@ async function runSearch(term: string | undefined, confirmed = false): Promise<v
       results: combined.length > 0 ? combined : [{id: 'empty:osm', type: 'empty', title: 'No results on OpenStreetMap'}],
       localResults: localResults.length,
       onlineResults: onlineResults.length,
+      elapsedMs: performance.now() - startedAt,
     });
   } catch (error) {
     if (sequence !== latestSearchSequence) return;
@@ -1055,6 +1054,7 @@ async function runSearch(term: string | undefined, confirmed = false): Promise<v
       confirmed,
       results: localResults,
       localResults: localResults.length,
+      elapsedMs: performance.now() - startedAt,
       error: error instanceof Error ? error.message : String(error),
     });
   }
@@ -1064,6 +1064,36 @@ function clearSearch(): void {
   latestSearchSequence += 1;
   clearRenderedLayers(ensureLayers().search);
   postSearchState({status: 'idle', term: '', confirmed: false, results: [], localResults: 0});
+}
+
+function previewSearchResult(result: IitcIrisSearchResult | undefined): void {
+  clearRenderedLayers(ensureLayers().search);
+  if (!result || result.type === 'empty') return;
+  if (result.guid && latestEntities) {
+    const portal = latestEntities.portals.find((candidate) => candidate.guid === result.guid);
+    if (portal) {
+      const latLng = toLatLng(portal.latE6, portal.lngE6);
+      addRenderedLayer(ensureLayers().search, L.circleMarker(latLng, {
+        pane: getLayerPane('search'),
+        radius: Math.max(10, getPortalRadius(portal.level, portal.isPlaceholder) + 4),
+        color: '#ff3b30',
+        fillColor: '#ff3b30',
+        fillOpacity: 0.18,
+        opacity: 0.9,
+        weight: 2,
+        interactive: false,
+      }));
+      return;
+    }
+  }
+  if (result.bounds) {
+    const bounds = L.latLngBounds([result.bounds.south, result.bounds.west], [result.bounds.north, result.bounds.east]);
+    addRenderedLayer(ensureLayers().search, createSearchResultLayer(result, bounds));
+    return;
+  }
+  if (typeof result.lat === 'number' && typeof result.lng === 'number') {
+    addRenderedLayer(ensureLayers().search, createSearchResultLayer(result));
+  }
 }
 
 function selectSearchResult(result: IitcIrisSearchResult | undefined, zoom = false): void {
@@ -1760,6 +1790,9 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.searchSelect) {
     selectSearchResult(event.data.searchResult, event.data.searchZoom === true);
+  }
+  if (event.data?.type === IITC_IRIS_MESSAGES.searchPreview) {
+    previewSearchResult(event.data.searchResult);
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.searchClear) {
     clearSearch();
@@ -2736,6 +2769,11 @@ function toPortalDetailsState(
 
 async function refreshSelectedPortalDetails(guid: string): Promise<void> {
   cancelActivePortalDetailsFetch();
+  const cachedDetails = portalDetailsCache.get(guid);
+  if (cachedDetails) {
+    latestPortalDetails = {...cachedDetails, cached: true};
+    repostLatestEntityStatus();
+  }
   const version = extractVersion();
   if (!version) {
     latestPortalDetails = {status: 'error', guid, error: 'waiting for Intel version'};
@@ -2746,8 +2784,10 @@ async function refreshSelectedPortalDetails(guid: string): Promise<void> {
   const abortController = new AbortController();
   currentPortalDetailsAbortController = abortController;
   const startedAt = performance.now();
-  latestPortalDetails = {status: 'loading', guid};
-  repostLatestEntityStatus();
+  if (!cachedDetails) {
+    latestPortalDetails = {status: 'loading', guid};
+    repostLatestEntityStatus();
+  }
 
   try {
     const response = await fetchPortalDetails(guid, version, abortController.signal);
@@ -2758,6 +2798,8 @@ async function refreshSelectedPortalDetails(guid: string): Promise<void> {
       latestPortalDetails = {status: 'error', guid, elapsedMs: performance.now() - startedAt, error: 'empty portal details'};
     } else {
       latestPortalDetails = toPortalDetailsState(details, performance.now() - startedAt);
+      portalDetailsCache.set(guid, latestPortalDetails);
+      if (portalDetailsCache.size > 12) portalDetailsCache.delete(portalDetailsCache.keys().next().value as string);
       if (latestPortalDetails.history) portalHistoryByGuid.set(guid, latestPortalDetails.history);
       const currentEntities = latestEntities;
       const portal = currentEntities?.portals.find((candidate) => candidate.guid === guid);
