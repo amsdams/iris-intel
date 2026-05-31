@@ -8,6 +8,7 @@ export const IITC_IRIS_MESSAGES = {
   entityStatus: 'IITC_IRIS_ENTITY_STATUS',
   layerSettings: 'IITC_IRIS_LAYER_SETTINGS',
   dataSourceSettings: 'IITC_IRIS_DATA_SOURCE_SETTINGS',
+  lifecycleSettings: 'IITC_IRIS_LIFECYCLE_SETTINGS',
   setView: 'IITC_IRIS_SET_VIEW',
   clearPortalSelection: 'IITC_IRIS_CLEAR_PORTAL_SELECTION',
   requestComm: 'IITC_IRIS_REQUEST_COMM',
@@ -93,9 +94,11 @@ export interface IitcIrisMessage {
   staleGenerationCacheWarmTileKeys?: string[];
   queue?: IitcIrisQueueDiagnostics | null;
   renderQueue?: IitcIrisRenderQueueDiagnostics | null;
+  timing?: IitcIrisMapTimingDiagnostics | null;
   layerSettings?: IitcIrisLayerSettings;
   baseLayerId?: IitcIrisBaseLayerId;
   dataSource?: IitcIrisDataSourceSettings;
+  lifecycleSettings?: IitcIrisLifecycleSettings;
   renderPolicy?: IitcIrisRenderPolicy;
   selectedPortal?: IitcIrisSelectedPortal | null;
   portalDetails?: IitcIrisPortalDetailsState | null;
@@ -273,6 +276,19 @@ export interface IitcIrisRenderQueueDiagnostics {
   renderedCacheStaleTiles: number;
   lastRenderedTileStatus: 'ok' | 'cache-fresh' | 'cache-stale' | null;
   renderedTileKeys: string[];
+}
+
+export interface IitcIrisMapTimingDiagnostics {
+  cacheMs?: number;
+  initialMs?: number;
+  retryMs?: number;
+  artifactWaitMs?: number;
+  totalMs?: number;
+  movementDelayMs?: number;
+}
+
+export interface IitcIrisLifecycleSettings {
+  iitcMovementDelay: boolean;
 }
 
 export type IitcIrisTriStateLayer = 'off' | 'on' | 'invert';

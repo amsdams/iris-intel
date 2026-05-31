@@ -1,7 +1,7 @@
 import {h, render} from 'preact';
 import {useEffect, useMemo, useState} from 'preact/hooks';
 import './iitc-iris.css';
-import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
 import {
   createIitcMapDataPlan,
   IITC_EMPTY_TILE_RETRY_BATCH_SIZE,
@@ -18,6 +18,7 @@ const REQUEST_BOUNDS_PADDING_RATIO = 0.25;
 const BASE_LAYER_STORAGE_KEY = 'iitc-iris:base-layer';
 const LAYER_SETTINGS_STORAGE_KEY = 'iitc-iris:layer-settings';
 const DATA_SOURCE_STORAGE_KEY = 'iitc-iris:data-source';
+const LIFECYCLE_SETTINGS_STORAGE_KEY = 'iitc-iris:lifecycle-settings';
 const DEBUG_DOCK_STORAGE_KEY = 'iitc-iris:debug-dock';
 const SIDE_PANEL_STORAGE_KEY = 'iitc-iris:side-panel';
 const ACTIVE_SHEET_STORAGE_KEY = 'iitc-iris:active-sheet';
@@ -211,6 +212,7 @@ interface EntityFetchState {
   staleGenerationCacheWarmTileKeys: string[];
   queue: IitcIrisQueueDiagnostics | null;
   renderQueue: IitcIrisRenderQueueDiagnostics | null;
+  timing: IitcIrisMapTimingDiagnostics | null;
   baseLayerId: IitcIrisBaseLayerId;
   dataSource: IitcIrisDataSourceSettings;
   renderPolicy: IitcIrisRenderPolicy;
@@ -240,6 +242,19 @@ interface InnerStatusView {
   progressPercent: number | null;
   activeRequests: number;
   failedRequests: number;
+}
+
+interface ScenarioSnapshot {
+  label: string;
+  capturedAt: string;
+  diagnostics: unknown;
+}
+
+interface ScenarioRun {
+  name: string;
+  startedAt: string;
+  lifecycleSettings: IitcIrisLifecycleSettings;
+  snapshots: ScenarioSnapshot[];
 }
 
 function clampView(view: ParsedViewInput): ParsedViewInput {
@@ -405,6 +420,17 @@ function loadStoredDataSourceId(): typeof DATA_SOURCE_OPTIONS[number]['id'] {
   }
 }
 
+function loadStoredLifecycleSettings(): IitcIrisLifecycleSettings {
+  try {
+    const value = window.localStorage.getItem(LIFECYCLE_SETTINGS_STORAGE_KEY);
+    if (!value) return {iitcMovementDelay: false};
+    const parsed = JSON.parse(value) as Partial<IitcIrisLifecycleSettings>;
+    return {iitcMovementDelay: parsed.iitcMovementDelay === true};
+  } catch {
+    return {iitcMovementDelay: false};
+  }
+}
+
 function storeLayerSettings(value: IitcIrisLayerSettings): void {
   try {
     window.localStorage.setItem(LAYER_SETTINGS_STORAGE_KEY, JSON.stringify(value));
@@ -418,6 +444,14 @@ function storeDataSourceId(value: string): void {
     window.localStorage.setItem(DATA_SOURCE_STORAGE_KEY, value);
   } catch {
     // Data source preference is optional.
+  }
+}
+
+function storeLifecycleSettings(value: IitcIrisLifecycleSettings): void {
+  try {
+    window.localStorage.setItem(LIFECYCLE_SETTINGS_STORAGE_KEY, JSON.stringify(value));
+  } catch {
+    // Lifecycle diagnostics are optional.
   }
 }
 
@@ -574,6 +608,7 @@ function entityFetchStateFromMessage(message: IitcIrisMessage, current: EntityFe
     staleGenerationCacheWarmTileKeys: message.staleGenerationCacheWarmTileKeys ?? current.staleGenerationCacheWarmTileKeys,
     queue: message.queue ?? null,
     renderQueue: message.renderQueue ?? null,
+    timing: message.timing ?? null,
     baseLayerId: message.baseLayerId ?? current.baseLayerId,
     dataSource: message.dataSource ?? current.dataSource,
     renderPolicy: message.renderPolicy ?? current.renderPolicy,
@@ -771,6 +806,8 @@ function createInnerStatusView(plan: IitcMapDataPlan | null, entityFetch: Entity
 function App(): h.JSX.Element {
   const [status, setStatus] = useState('booting');
   const [copyStatus, setCopyStatus] = useState('');
+  const [scenarioStatus, setScenarioStatus] = useState('');
+  const [scenarioRun, setScenarioRun] = useState<ScenarioRun | null>(null);
   const [viewInput, setViewInput] = useState('');
   const [viewInputStatus, setViewInputStatus] = useState('');
   const [debugDockVisible, setDebugDockVisible] = useState(() => loadStoredDebugDockVisible());
@@ -795,6 +832,7 @@ function App(): h.JSX.Element {
   const [passcodeDraft, setPasscodeDraft] = useState('');
   const [baseLayerId, setBaseLayerId] = useState<IitcIrisBaseLayerId>(() => loadStoredBaseLayerId());
   const [dataSourceId, setDataSourceId] = useState<typeof DATA_SOURCE_OPTIONS[number]['id']>(() => loadStoredDataSourceId());
+  const [lifecycleSettings, setLifecycleSettings] = useState<IitcIrisLifecycleSettings>(() => loadStoredLifecycleSettings());
   const [layerSettings, setLayerSettings] = useState<IitcIrisLayerSettings>(() => loadStoredLayerSettings());
   const [camera, setCamera] = useState<CameraState>(() => ({
     ...loadInitialMapView(),
@@ -857,6 +895,7 @@ function App(): h.JSX.Element {
     staleGenerationCacheWarmTileKeys: [],
     queue: null,
     renderQueue: null,
+    timing: null,
     baseLayerId: loadStoredBaseLayerId(),
     dataSource: createDataSourceSettings(loadStoredDataSourceId()),
     renderPolicy: DEFAULT_RENDER_POLICY,
@@ -968,10 +1007,12 @@ function App(): h.JSX.Element {
       staleGenerationCacheWarmTileKeys: entityFetch.staleGenerationCacheWarmTileKeys,
       queue: entityFetch.queue,
       renderQueue: entityFetch.renderQueue,
+      timing: entityFetch.timing,
       authRequired: entityFetch.authRequired,
     },
     baseLayerId,
     dataSource,
+    lifecycleSettings,
     layers: layerSettings,
     renderPolicy: entityFetch.renderPolicy,
     selectedPortal: entityFetch.selectedPortal,
@@ -985,6 +1026,62 @@ function App(): h.JSX.Element {
     },
     collision: entityFetch.collision,
   };
+  const createScenarioSnapshot = (label: string, settings = lifecycleSettings): ScenarioSnapshot => ({
+    label,
+    capturedAt: new Date().toISOString(),
+    diagnostics: {
+      ...dockDiagnostics,
+      lifecycleSettings: settings,
+    },
+  });
+
+  const setScenarioStatusBriefly = (value: string): void => {
+    setScenarioStatus(value);
+    window.setTimeout(() => setScenarioStatus(''), 1800);
+  };
+
+  const startScenarioRun = (name: string, settings: IitcIrisLifecycleSettings): void => {
+    setLifecycleSettings(settings);
+    setScenarioRun({
+      name,
+      startedAt: new Date().toISOString(),
+      lifecycleSettings: settings,
+      snapshots: [createScenarioSnapshot('previous', settings)],
+    });
+    setScenarioStatusBriefly(`${name} started`);
+  };
+
+  const captureScenarioSnapshot = (label: string): void => {
+    setScenarioRun((current) => {
+      const run = current ?? {
+        name: 'manual',
+        startedAt: new Date().toISOString(),
+        lifecycleSettings,
+        snapshots: [],
+      };
+      return {
+        ...run,
+        snapshots: [...run.snapshots, createScenarioSnapshot(label, run.lifecycleSettings)],
+      };
+    });
+    setScenarioStatusBriefly(`${label} captured`);
+  };
+
+  const copyScenarioRun = (): void => {
+    const payload = scenarioRun ?? {
+      name: 'current',
+      startedAt: new Date().toISOString(),
+      lifecycleSettings,
+      snapshots: [createScenarioSnapshot('current')],
+    };
+    void navigator.clipboard.writeText(JSON.stringify({
+      ...payload,
+      copiedAt: new Date().toISOString(),
+    }, null, 2))
+      .then(() => setScenarioStatusBriefly('scenario copied'))
+      .catch(() => setScenarioStatusBriefly('copy failed'));
+  };
+
   const copyDockText = (): void => {
     void navigator.clipboard.writeText(JSON.stringify(dockDiagnostics, null, 2))
       .then(() => {
@@ -1212,6 +1309,10 @@ function App(): h.JSX.Element {
           type: IITC_IRIS_MESSAGES.dataSourceSettings,
           dataSource,
         } satisfies IitcIrisMessage, '*');
+        window.postMessage({
+          type: IITC_IRIS_MESSAGES.lifecycleSettings,
+          lifecycleSettings,
+        } satisfies IitcIrisMessage, '*');
       }
       if (event.data?.type === IITC_IRIS_MESSAGES.mapMoved) {
         setCamera((current) => ({
@@ -1241,7 +1342,7 @@ function App(): h.JSX.Element {
 
     window.addEventListener('message', onMessage);
     return (): void => window.removeEventListener('message', onMessage);
-  }, [baseLayerId, dataSource, layerSettings]);
+  }, [baseLayerId, dataSource, layerSettings, lifecycleSettings]);
 
   useEffect(() => {
     storeLayerSettings(layerSettings);
@@ -1259,6 +1360,14 @@ function App(): h.JSX.Element {
       dataSource,
     } satisfies IitcIrisMessage, '*');
   }, [dataSource, dataSourceId]);
+
+  useEffect(() => {
+    storeLifecycleSettings(lifecycleSettings);
+    window.postMessage({
+      type: IITC_IRIS_MESSAGES.lifecycleSettings,
+      lifecycleSettings,
+    } satisfies IitcIrisMessage, '*');
+  }, [lifecycleSettings]);
 
   useEffect(() => {
     if (activeSidePanel !== 'comm' || commState.status !== 'idle') return;
@@ -1477,6 +1586,8 @@ function App(): h.JSX.Element {
               <span className="iitc-iris-status">rt {entityFetch.returnedTiles}/{entityFetch.requestedTiles}</span>
               <span className="iitc-iris-status">nt {entityFetch.nonEmptyTiles}</span>
               {entityFetch.elapsedMs !== null && <span className="iitc-iris-status">in {formatElapsedSeconds(entityFetch.elapsedMs)}s</span>}
+              {entityFetch.timing?.initialMs !== undefined && <span className="iitc-iris-status">init {formatElapsedSeconds(entityFetch.timing.initialMs)}s</span>}
+              {entityFetch.timing?.retryMs !== undefined && <span className="iitc-iris-status">retryT {formatElapsedSeconds(entityFetch.timing.retryMs)}s</span>}
               {entityFetch.retryRequests > 0 && <span className="iitc-iris-status">retry {entityFetch.retryRequests}</span>}
               {entityFetch.selectedPortal && (
                 <>
@@ -1527,6 +1638,63 @@ function App(): h.JSX.Element {
               <button className="iitc-iris-preset" type="submit">Jump</button>
               {viewInputStatus && <span className="iitc-iris-status">{viewInputStatus}</span>}
             </form>
+          </div>
+          <div className="iitc-iris-map-controls-section">
+            <span className="iitc-iris-status">Lifecycle</span>
+            <div className="iitc-iris-map-control-row">
+              <button
+                className={`iitc-iris-layer-toggle iitc-iris-system-toggle ${lifecycleSettings.iitcMovementDelay ? 'iitc-iris-layer-toggle-active' : ''}`}
+                type="button"
+                onClick={() => setLifecycleSettings((current) => ({...current, iitcMovementDelay: !current.iitcMovementDelay}))}
+                title="Compare current fast refresh with IITC-style delayed refresh after map movement"
+              >
+                IITC Delay
+              </button>
+              <span className="iitc-iris-status">{lifecycleSettings.iitcMovementDelay ? '3s move delay' : 'fast move'}</span>
+            </div>
+          </div>
+          <div className="iitc-iris-map-controls-section">
+            <span className="iitc-iris-status">Scenarios</span>
+            <div className="iitc-iris-map-control-row">
+              <button
+                className="iitc-iris-preset"
+                type="button"
+                onClick={() => startScenarioRun('fast-pan', {iitcMovementDelay: false})}
+                title="Start a scenario with the current fast post-move refresh"
+              >
+                Fast
+              </button>
+              <button
+                className="iitc-iris-preset"
+                type="button"
+                onClick={() => startScenarioRun('iitc-delay-pan', {iitcMovementDelay: true})}
+                title="Start a scenario with IITC-style delayed post-move refresh"
+              >
+                Delay
+              </button>
+              <button
+                className="iitc-iris-preset"
+                type="button"
+                disabled={!canPan}
+                onClick={() => {
+                  panMap('south');
+                  setScenarioStatusBriefly('panned south');
+                }}
+                title="Pan south for a repeatable movement scenario"
+              >
+                Pan S
+              </button>
+              <button className="iitc-iris-preset" type="button" onClick={() => captureScenarioSnapshot('reload')} title="Capture the current diagnostics after the selected scenario mode has refreshed">Reload</button>
+              <button className="iitc-iris-preset" type="button" onClick={() => captureScenarioSnapshot('in-progress')} title="Capture the current copied diagnostics as the in-progress point">In Prog</button>
+              <button className="iitc-iris-preset" type="button" onClick={() => captureScenarioSnapshot('done')} title="Capture the current copied diagnostics as the done point">Done</button>
+              <button className="iitc-iris-portal-action" type="button" onClick={copyScenarioRun} title="Copy the current scenario bundle as JSON">Copy Run</button>
+              <button className="iitc-iris-preset" type="button" onClick={() => {
+                setScenarioRun(null);
+                setScenarioStatusBriefly('scenario cleared');
+              }}>Clear</button>
+              {scenarioRun && <span className="iitc-iris-status">{scenarioRun.snapshots.length} snaps</span>}
+              {scenarioStatus && <span className="iitc-iris-status">{scenarioStatus}</span>}
+            </div>
           </div>
           <div className="iitc-iris-map-controls-section">
             <span className="iitc-iris-status">Data</span>

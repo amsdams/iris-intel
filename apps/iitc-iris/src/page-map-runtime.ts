@@ -1,5 +1,5 @@
 import L, {type Layer as LeafletLayer, type Map as LeafletMap, type TileLayer} from 'leaflet';
-import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
 import {
   appendIitcResponseBucketDiagnostics,
   applyIitcTileRequestResponseToQueue,
@@ -59,6 +59,8 @@ const BASE_LAYER_STORAGE_KEY = 'iitc-iris:base-layer';
 const COMM_TAB_STORAGE_KEY = 'iitc-chat-tab';
 const REQUEST_BOUNDS_PADDING_RATIO = 0.25;
 const OPTIONAL_OVERLAY_MIN_ZOOM = 14;
+const FAST_MOVE_REFRESH_DELAY_MS = 250;
+const IITC_MOVE_REFRESH_DELAY_MS = 3000;
 const ENABLE_STALE_GENERATION_CACHE_WARMING = false;
 const DEFAULT_BASE_LAYER_ID: IitcIrisBaseLayerId = 'cartodb-dark-matter';
 const BASE_LAYERS: Record<IitcIrisBaseLayerId, {
@@ -124,6 +126,7 @@ let layerSettings: IitcIrisLayerSettings = DEFAULT_LAYER_SETTINGS;
 let baseLayerId: IitcIrisBaseLayerId = DEFAULT_BASE_LAYER_ID;
 let baseLayer: TileLayer | undefined;
 let dataSource: IitcIrisDataSourceSettings = {mode: 'live'};
+let lifecycleSettings: IitcIrisLifecycleSettings = {iitcMovementDelay: false};
 let refreshTimer: number | undefined;
 let mapMoveInProgress = false;
 let currentFetchAbortController: AbortController | undefined;
@@ -176,6 +179,7 @@ interface TileDiagnostics {
   staleGenerationCacheWarmTileKeys?: string[];
   queue?: IitcIrisQueueDiagnostics | null;
   renderQueue?: IitcIrisRenderQueueDiagnostics | null;
+  timing?: IitcIrisMapTimingDiagnostics | null;
 }
 
 interface TileBatchResult {
@@ -406,7 +410,7 @@ function postMapMoved(): void {
       east: bounds.getEast(),
     },
   }, '*');
-  scheduleEntityRefresh();
+  scheduleEntityRefresh(lifecycleSettings.iitcMovementDelay ? IITC_MOVE_REFRESH_DELAY_MS : FAST_MOVE_REFRESH_DELAY_MS);
 }
 
 declare global {
@@ -1123,6 +1127,10 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
     cancelActiveEntityFetch();
     scheduleEntityRefresh();
   }
+  if (event.data?.type === IITC_IRIS_MESSAGES.lifecycleSettings && event.data.lifecycleSettings) {
+    lifecycleSettings = event.data.lifecycleSettings;
+    repostLatestEntityStatus();
+  }
 }
 
 function isLatLngInBounds(latE6: number, lngE6: number, bounds: IitcMapDataPlan['viewportBounds']): boolean {
@@ -1202,6 +1210,7 @@ function postEntityStatus(
     staleGenerationCacheWarmTileKeys: [],
     queue: null,
     renderQueue: null,
+    timing: null,
     entitySource: 'live',
   },
 ): void {
@@ -1259,6 +1268,7 @@ function postEntityStatus(
     staleGenerationCacheWarmTileKeys: uniqueStrings(tileDiagnostics.staleGenerationCacheWarmTileKeys),
     queue: tileDiagnostics.queue,
     renderQueue: tileDiagnostics.renderQueue,
+    timing: tileDiagnostics.timing,
     baseLayerId,
     dataSource,
     renderPolicy: getRenderPolicy(),
@@ -2346,11 +2356,11 @@ function createSequentialBatches(tileKeys: string[], batchSize: number): string[
   return batches;
 }
 
-function scheduleEntityRefresh(): void {
+function scheduleEntityRefresh(delayMs = FAST_MOVE_REFRESH_DELAY_MS): void {
   window.clearTimeout(refreshTimer);
   refreshTimer = window.setTimeout(() => {
     void refreshEntities();
-  }, 250);
+  }, delayMs);
 }
 
 async function refreshEntities(): Promise<void> {
@@ -2424,6 +2434,9 @@ async function refreshEntities(): Promise<void> {
     const liveAbortController = abortController;
     currentFetchAbortController = abortController;
     latestPlan = plan;
+    const timingDiagnostics: IitcIrisMapTimingDiagnostics = {
+      movementDelayMs: lifecycleSettings.iitcMovementDelay ? IITC_MOVE_REFRESH_DELAY_MS : FAST_MOVE_REFRESH_DELAY_MS,
+    };
     let artifactEntitiesPromise: Promise<IitcRawGameEntity[]> | undefined;
     const getArtifactEntitiesPromise = (): Promise<IitcRawGameEntity[]> => {
       artifactEntitiesPromise ??= fetchArtifactEntitiesForRender(version, liveAbortController.signal);
@@ -2484,6 +2497,7 @@ async function refreshEntities(): Promise<void> {
       progressResponse = cachedResponse;
       progressEntities = entities;
       progressEntities = renderLiveProgress(cachedResponse, entities, true);
+      timingDiagnostics.cacheMs = performance.now() - refreshStartTime;
     }
     const cachedDiagnostics = progressResponse
       ? classifyTileDiagnostics(progressResponse, plan)
@@ -2511,10 +2525,12 @@ async function refreshEntities(): Promise<void> {
       cacheStaleTileKeys: staleCachedTileKeys,
       queue: toQueueDiagnostics(queueState),
       renderQueue: renderQueueDiagnostics,
+      timing: timingDiagnostics,
     });
 
     const initialPendingTileKeys = new Set(queueTileKeys);
     let initialRequestCount = 0;
+    const initialStartTime = performance.now();
     while (initialPendingTileKeys.size > 0) {
       const waveBatches = createIitcTileQueueRequestBatches(queueState, {
         pendingTileKeys: queueState.queuedTileKeys.filter((tileKey) => initialPendingTileKeys.has(tileKey)),
@@ -2579,9 +2595,11 @@ async function refreshEntities(): Promise<void> {
           cacheStaleTileKeys: staleCachedTileKeys,
           queue: toQueueDiagnostics(queueState),
           renderQueue: renderQueueDiagnostics,
+          timing: timingDiagnostics,
         });
       }
     }
+    timingDiagnostics.initialMs = performance.now() - initialStartTime;
 
     if (generation !== latestFetchGeneration) {
       queueState = markIitcTileQueueStale(queueState);
@@ -2593,6 +2611,7 @@ async function refreshEntities(): Promise<void> {
     const retriedTileKeys = new Set<string>();
     let retryRequests = 0;
     const retryPasses = plan.tileParams.hasPortals ? IITC_EMPTY_TILE_RETRY_PASSES : IITC_MAX_TILE_RETRIES;
+    const retryStartTime = performance.now();
     for (let pass = 1; pass <= retryPasses; pass += 1) {
       const retryTileKeys = [...queueState.queuedTileKeys];
       if (retryTileKeys.length === 0) break;
@@ -2670,11 +2689,15 @@ async function refreshEntities(): Promise<void> {
           cacheStaleTileKeys: staleCachedTileKeys,
           queue: toQueueDiagnostics(queueState),
           renderQueue: renderQueueDiagnostics,
+          timing: timingDiagnostics,
         });
       }
     }
+    timingDiagnostics.retryMs = performance.now() - retryStartTime;
 
+    const artifactWaitStartTime = performance.now();
     const artifactEntities = await getArtifactEntitiesPromise();
+    timingDiagnostics.artifactWaitMs = performance.now() - artifactWaitStartTime;
     if (generation !== latestFetchGeneration) {
       queueState = markIitcTileQueueStale(queueState);
       activeQueueState = queueState;
@@ -2690,6 +2713,7 @@ async function refreshEntities(): Promise<void> {
     latestResponse = mergedResponse;
     renderEntities(entities);
     renderTileDebug(plan, mergedResponse);
+    timingDiagnostics.totalMs = performance.now() - refreshStartTime;
     postEntityStatus('entities ready', entities, {
       requestedTiles: plan.tileKeys.length,
       returnedTiles,
@@ -2709,6 +2733,7 @@ async function refreshEntities(): Promise<void> {
       partialTileKeys,
       queue: toQueueDiagnostics(queueState, partialTileKeys),
       renderQueue: renderQueueDiagnostics,
+      timing: timingDiagnostics,
     });
     if (currentFetchAbortController === abortController) currentFetchAbortController = undefined;
   } catch (error) {

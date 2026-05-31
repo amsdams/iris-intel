@@ -199,6 +199,21 @@ Current status:
   volume, so stale-generation cache warming is gated off by default as a temporary IRIS divergence.
 - Milestone B update: copied diagnostics keep `staleGenerationCacheWarmTiles` and `staleGenerationCacheWarmTileKeys` so
   this gated behavior can be re-enabled and measured later if IITC-style movement/download delays are ported.
+- Stabilization update: System sheet now has an `IITC Delay` dev toggle. Default remains the current fast post-move
+  refresh; enabling the toggle waits 3s after `moveend`, approximating IITC's movement refresh delay for live
+  comparison without changing default behavior.
+- Stabilization update: copied diagnostics now include `entities.timing` with cache, initial request, retry, artifact
+  wait, total, and movement-delay timings. Use this before more lifecycle changes so perceived slowness can be tied to
+  initial requests, retries, artifact wait, or the movement-delay setting.
+- Stabilization update: System sheet now has scenario buttons for live lifecycle comparison. `Fast` and `Delay` start
+  runs with the chosen movement-delay setting and a `previous` snapshot so stale pre-mode diagnostics are explicit,
+  `Pan S` provides a repeatable movement action, and manual `Reload`/`In Prog`/`Done` snapshots can be copied as one JSON
+  bundle with `Copy Run`. This is diagnostic UI only; it does not change map-data behavior.
+- Stabilization decision: default lifecycle stays on the fast 250ms post-move refresh. The IITC-style 3s movement delay
+  remains a diagnostic comparison toggle because it can reduce retry pressure on some live runs but increases perceived
+  latency. Remaining lifecycle parity gaps are accepted for now: surgical render mutation is not ported, stale fallback
+  is wired but live-unproven, and old responses are still generation-filtered rather than checked tile-by-tile against
+  the current wanted set.
 - Large initial tile plans are executed across all 25-tile request batches in waves of up to five concurrent requests,
   instead of stopping after only the first concurrent wave. This fixes low-zoom views such as z10 where the plan can
   contain more than 125 tiles.
