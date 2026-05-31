@@ -1,7 +1,7 @@
 import {h, render} from 'preact';
 import {useEffect, useMemo, useState} from 'preact/hooks';
 import './iitc-iris.css';
-import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRenderPolicy, type IitcIrisScoresState, type IitcIrisSelectedPortal} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRenderPolicy, type IitcIrisScoresState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
 import {
   createIitcMapDataPlan,
   IITC_EMPTY_TILE_RETRY_BATCH_SIZE,
@@ -64,7 +64,9 @@ const DATA_SOURCE_OPTIONS = [
     zoom: 15,
   },
 ] as const;
-const CORE_LAYER_TOGGLE_LABELS: [keyof IitcIrisLayerSettings, string][] = [
+type TriStateLayerSettingKey = 'historyCaptured' | 'historyVisited' | 'historyScoutControlled' | 'keyCount';
+type BooleanLayerSettingKey = Exclude<keyof IitcIrisLayerSettings, TriStateLayerSettingKey>;
+const CORE_LAYER_TOGGLE_LABELS: [BooleanLayerSettingKey, string][] = [
   ['fields', 'F'],
   ['links', 'LN'],
   ['portals', 'P'],
@@ -81,13 +83,19 @@ const CORE_LAYER_TOGGLE_LABELS: [keyof IitcIrisLayerSettings, string][] = [
   ['enlightened', 'ENL'],
   ['machina', 'MAC'],
 ];
-const DETAIL_LAYER_TOGGLE_LABELS: [keyof IitcIrisLayerSettings, string][] = [
+const DETAIL_LAYER_TOGGLE_LABELS: [BooleanLayerSettingKey, string][] = [
   ['levelFill', 'LF'],
   ['healthFill', 'HF'],
   ['ornaments', 'OR'],
   ['artifacts', 'AR'],
   ['labels', 'LV'],
   ['tiles', 'T'],
+];
+const PORTAL_DATA_LAYER_LABELS: [TriStateLayerSettingKey, string, string][] = [
+  ['historyCaptured', 'CAP', 'Captured history'],
+  ['historyVisited', 'VIS', 'Visited history'],
+  ['historyScoutControlled', 'SC', 'Scout controlled history'],
+  ['keyCount', 'KEY', 'Portal key count'],
 ];
 const RESONATOR_PANEL_ORDER: (number | null)[] = [0, 1, 2, 3, null, 4, 5, 6, 7];
 const SIDE_PANEL_OPTIONS = [
@@ -122,6 +130,10 @@ const DEFAULT_LAYER_SETTINGS: IitcIrisLayerSettings = {
   artifacts: false,
   labels: false,
   tiles: false,
+  historyCaptured: 'off',
+  historyVisited: 'off',
+  historyScoutControlled: 'off',
+  keyCount: 'off',
 };
 const DEFAULT_RENDER_POLICY: IitcIrisRenderPolicy = {
   optionalOverlayMinZoom: 14,
@@ -281,6 +293,16 @@ function isLayerSettings(value: unknown): value is Partial<IitcIrisLayerSettings
   return !!value && typeof value === 'object';
 }
 
+function isTriStateLayer(value: unknown): value is IitcIrisTriStateLayer {
+  return value === 'off' || value === 'on' || value === 'invert';
+}
+
+function nextTriStateLayer(value: IitcIrisTriStateLayer): IitcIrisTriStateLayer {
+  if (value === 'off') return 'on';
+  if (value === 'on') return 'invert';
+  return 'off';
+}
+
 function loadStoredLayerSettings(): IitcIrisLayerSettings {
   try {
     const value = window.localStorage.getItem(LAYER_SETTINGS_STORAGE_KEY);
@@ -309,6 +331,10 @@ function loadStoredLayerSettings(): IitcIrisLayerSettings {
       artifacts: typeof parsed.artifacts === 'boolean' ? parsed.artifacts : DEFAULT_LAYER_SETTINGS.artifacts,
       labels: typeof parsed.labels === 'boolean' ? parsed.labels : DEFAULT_LAYER_SETTINGS.labels,
       tiles: typeof parsed.tiles === 'boolean' ? parsed.tiles : DEFAULT_LAYER_SETTINGS.tiles,
+      historyCaptured: isTriStateLayer(parsed.historyCaptured) ? parsed.historyCaptured : DEFAULT_LAYER_SETTINGS.historyCaptured,
+      historyVisited: isTriStateLayer(parsed.historyVisited) ? parsed.historyVisited : DEFAULT_LAYER_SETTINGS.historyVisited,
+      historyScoutControlled: isTriStateLayer(parsed.historyScoutControlled) ? parsed.historyScoutControlled : DEFAULT_LAYER_SETTINGS.historyScoutControlled,
+      keyCount: isTriStateLayer(parsed.keyCount) ? parsed.keyCount : DEFAULT_LAYER_SETTINGS.keyCount,
     };
   } catch {
     return DEFAULT_LAYER_SETTINGS;
@@ -1012,8 +1038,12 @@ function App(): h.JSX.Element {
     window.location.assign('https://intel.ingress.com/intel');
   };
 
-  const toggleLayerSetting = (key: keyof IitcIrisLayerSettings): void => {
+  const toggleLayerSetting = (key: BooleanLayerSettingKey): void => {
     setLayerSettings((current) => ({...current, [key]: !current[key]}));
+  };
+
+  const cycleTriStateLayerSetting = (key: TriStateLayerSettingKey): void => {
+    setLayerSettings((current) => ({...current, [key]: nextTriStateLayer(current[key])}));
   };
 
   const setMapView = (lat: number, lng: number, zoom = camera.zoom): void => {
@@ -1380,6 +1410,22 @@ function App(): h.JSX.Element {
                 title={`Toggle ${key}`}
               >
                 {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="iitc-iris-map-controls-section">
+          <span className="iitc-iris-status">History</span>
+          <div className="iitc-iris-map-control-row">
+            {PORTAL_DATA_LAYER_LABELS.map(([key, label, title]) => (
+              <button
+                key={key}
+                className={`iitc-iris-layer-toggle ${layerSettings[key] !== 'off' ? 'iitc-iris-layer-toggle-active' : ''} ${layerSettings[key] === 'invert' ? 'iitc-iris-layer-toggle-invert' : ''}`}
+                type="button"
+                onClick={() => cycleTriStateLayerSetting(key)}
+                title={`${title}: ${layerSettings[key]}`}
+              >
+                {layerSettings[key] === 'invert' ? `${label}!` : label}
               </button>
             ))}
           </div>

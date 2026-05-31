@@ -911,63 +911,6 @@
     border-radius: 8px 8px 6px 6px;
   }
 
-  .iitc-iris-mobile-sheet-layers .iitc-iris-map-controls,
-  .iitc-iris-mobile-sheet-portal .iitc-iris-portal-side-panel,
-  .iitc-iris-mobile-sheet-comm .iitc-iris-request-side-panel,
-  .iitc-iris-mobile-sheet-scores .iitc-iris-request-side-panel,
-  .iitc-iris-mobile-sheet-passcodes .iitc-iris-request-side-panel,
-  .iitc-iris-mobile-sheet-inventory .iitc-iris-request-side-panel {
-    display: grid;
-  }
-
-  .iitc-iris-mobile-sheet-map .iitc-iris-map-controls,
-  .iitc-iris-mobile-sheet-map .iitc-iris-portal-side-panel,
-  .iitc-iris-mobile-sheet-map .iitc-iris-request-side-panel {
-    display: none;
-  }
-
-  .iitc-iris-mobile-tabbar {
-    position: absolute;
-    right: 8px;
-    bottom: 8px;
-    left: 8px;
-    z-index: 10003;
-    display: grid !important;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 4px;
-    box-sizing: border-box;
-    padding: 5px;
-    border: 1px solid rgb(95 180 255 / 32%);
-    border-radius: 8px;
-    background: rgb(2 10 16 / 92%);
-    box-shadow: 0 8px 24px rgb(0 0 0 / 38%);
-    pointer-events: auto;
-  }
-
-  .iitc-iris-mobile-tab {
-    appearance: none;
-    min-width: 0;
-    min-height: 32px;
-    padding: 3px 2px;
-    border: 1px solid rgb(95 180 255 / 18%);
-    border-radius: 5px;
-    background: rgb(7 31 45 / 72%);
-    color: #c7d8e8;
-    font: 700 10px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    cursor: pointer;
-  }
-
-  .iitc-iris-mobile-tab.is-active {
-    border-color: rgb(105 210 255 / 70%);
-    background: rgb(12 48 68 / 96%);
-    color: #ffffff;
-  }
-
-  .iitc-iris-mobile-tab:disabled {
-    color: #526675;
-    cursor: default;
-  }
-
   .iitc-iris-resonator-grid,
   .iitc-iris-mod-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -985,10 +928,6 @@
   .iitc-iris-comm-row {
     grid-template-columns: 58px minmax(0, 1fr);
   }
-}
-
-.iitc-iris-mobile-tabbar {
-  display: none;
 }
 
 .iitc-iris-warning {
@@ -1255,6 +1194,11 @@
   color: #e8f4ff;
 }
 
+.iitc-iris-layer-toggle-invert {
+  border-color: rgb(255 209 102 / 75%);
+  color: #ffe6a3;
+}
+
 .iitc-iris-ornament-icon {
   pointer-events: none;
 }
@@ -1268,5 +1212,18 @@
   font: 700 10px/12px monospace;
   text-align: center;
   text-shadow: 0 0 1px #000, 0 0 1em #000, 0 0 0.2em #000;
+  pointer-events: none;
+}
+
+.iitc-iris-key-count-label {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 14px;
+  border: 1px solid rgb(255 255 255 / 78%);
+  border-radius: 4px;
+  background: rgb(2 10 16 / 88%);
+  color: #ffffff;
+  font: 800 10px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   pointer-events: none;
 }

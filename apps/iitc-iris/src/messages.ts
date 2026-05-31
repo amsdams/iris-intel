@@ -263,6 +263,8 @@ export interface IitcIrisQueueDiagnostics {
   tileErrorCount: Record<string, number>;
 }
 
+export type IitcIrisTriStateLayer = 'off' | 'on' | 'invert';
+
 export interface IitcIrisLayerSettings {
   fields: boolean;
   links: boolean;
@@ -285,6 +287,10 @@ export interface IitcIrisLayerSettings {
   artifacts: boolean;
   labels: boolean;
   tiles: boolean;
+  historyCaptured: IitcIrisTriStateLayer;
+  historyVisited: IitcIrisTriStateLayer;
+  historyScoutControlled: IitcIrisTriStateLayer;
+  keyCount: IitcIrisTriStateLayer;
 }
 
 export type IitcIrisBaseLayerId = 'osm' | 'cartodb-dark-matter' | 'cartodb-positron';
@@ -323,6 +329,11 @@ export interface IitcIrisRenderPortal {
   mission50plus?: boolean;
   ornaments?: string[];
   artifacts?: IitcIrisRenderArtifact[];
+  history?: {
+    visited: boolean;
+    captured: boolean;
+    scoutControlled: boolean;
+  };
   isPlaceholder: boolean;
 }
 

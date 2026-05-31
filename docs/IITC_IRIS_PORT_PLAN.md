@@ -473,6 +473,11 @@ Current status:
   request lifecycle and parser directly from IITC/Intel behavior into the IITC IRIS code path; do not depend on or copy
   the existing IRIS inventory implementation. Plugin-like inventory extensions, player tracker, draw tools, and richer
   key overlays can be classified separately after the core inventory panel works.
+- First-pass history/key overlays are intentionally low risk and IITC-aligned: the Layers sheet has tri-state controls
+  for captured, visited, scout-controlled, and key count (`off`, `on`, `invert`). The runtime styles portals using known
+  `/r/getPortalDetails` history data and `/r/getInventory` key counts by GUID, following IITC highlighter/plugin
+  behavior from `plugins/uniques.js`, `plugins/keys.js`, and the community non-captured/visited/scout highlighters. This
+  pass does not add bulk history fetching or hide portals; broader plugin/highlighter parity remains later work.
 
 ## Pass 8: Replacement Readiness - Not Started
 

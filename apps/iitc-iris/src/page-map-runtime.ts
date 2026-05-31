@@ -1,5 +1,5 @@
 import L, {type Layer as LeafletLayer, type Map as LeafletMap, type TileLayer} from 'leaflet';
-import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisScoresState, type IitcIrisSelectedPortal} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisScoresState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
 import {
   appendIitcResponseBucketDiagnostics,
   applyIitcTileRequestResponseToQueue,
@@ -103,6 +103,10 @@ const DEFAULT_LAYER_SETTINGS: IitcIrisLayerSettings = {
   artifacts: false,
   labels: false,
   tiles: false,
+  historyCaptured: 'off',
+  historyVisited: 'off',
+  historyScoutControlled: 'off',
+  keyCount: 'off',
 };
 let latestFetchGeneration = 0;
 let latestRequestKey = '';
@@ -113,6 +117,7 @@ const mapDataCache = new IitcDataCache<IitcMapTilePayload>();
 let selectedPortalGuid: string | undefined;
 let selectedPortal: IitcIrisSelectedPortal | null = null;
 let latestPortalDetails: IitcIrisPortalDetailsState | null = null;
+const portalHistoryByGuid = new Map<string, NonNullable<IitcIrisRenderPortal['history']>>();
 let latestArtifactEntities: IitcRawGameEntity[] = [];
 let layerSettings: IitcIrisLayerSettings = DEFAULT_LAYER_SETTINGS;
 let baseLayerId: IitcIrisBaseLayerId = DEFAULT_BASE_LAYER_ID;
@@ -499,6 +504,51 @@ function getPortalHealthFillOpacity(health: number): number {
   return 1;
 }
 
+function triStateMatches(mode: IitcIrisTriStateLayer, value: boolean | undefined): boolean {
+  if (mode === 'off' || value === undefined) return false;
+  return mode === 'invert' ? !value : value;
+}
+
+function getPortalKeyCount(portalGuid: string): number | undefined {
+  if (!latestInventorySummary) return undefined;
+  return getIitcInventoryPortalKeyCount(latestInventorySummary, portalGuid)?.count ?? 0;
+}
+
+function getPortalDataOverlayStyle(portal: IitcIrisRenderPortal): Partial<L.CircleMarkerOptions> {
+  const history = portal.history ?? portalHistoryByGuid.get(portal.guid);
+  const keyCount = getPortalKeyCount(portal.guid);
+
+  if (triStateMatches(layerSettings.historyScoutControlled, history?.scoutControlled)) {
+    return {color: '#4ee7ff', fillColor: '#4ee7ff', fillOpacity: 0.75, opacity: 1, weight: Math.max(3, getPortalWeight(portal.level, portal.isPlaceholder) + 1)};
+  }
+  if (triStateMatches(layerSettings.historyCaptured, history?.captured)) {
+    return {color: '#ffe66d', fillColor: '#ffe66d', fillOpacity: 0.72, opacity: 1, weight: Math.max(3, getPortalWeight(portal.level, portal.isPlaceholder) + 1)};
+  }
+  if (triStateMatches(layerSettings.historyVisited, history?.visited)) {
+    return {color: '#fb6fff', fillColor: '#fb6fff', fillOpacity: 0.72, opacity: 1, weight: Math.max(3, getPortalWeight(portal.level, portal.isPlaceholder) + 1)};
+  }
+  if (triStateMatches(layerSettings.keyCount, keyCount !== undefined && keyCount > 0)) {
+    return {color: '#ffffff', fillColor: '#ffffff', fillOpacity: 0.68, opacity: 1, weight: Math.max(3, getPortalWeight(portal.level, portal.isPlaceholder) + 1)};
+  }
+
+  return {};
+}
+
+function createKeyCountMarker(latLng: [number, number], count: number, portalRadius: number): LeafletLayer {
+  return L.marker(latLng, {
+    icon: L.divIcon({
+      className: 'iitc-iris-key-count-label',
+      html: String(count),
+      iconSize: [20, 14],
+      iconAnchor: [10, portalRadius + 12],
+    }),
+    interactive: false,
+    keyboard: false,
+    pane: getLayerPane('labels'),
+    zIndexOffset: 1001,
+  });
+}
+
 function toRenderArtifacts(artifacts: IitcPortalArtifact[]): IitcIrisRenderArtifact[] | undefined {
   return artifacts.length > 0 ? artifacts : undefined;
 }
@@ -823,7 +873,7 @@ function isPortalLevelLayerVisible(portal: IitcIrisRenderPortal): boolean {
   }
 
   const levelKey = `level${portal.level}Portals` as keyof IitcIrisLayerSettings;
-  return layerSettings[levelKey];
+  return layerSettings[levelKey] === true;
 }
 
 function isPortalVisible(portal: IitcIrisRenderPortal): boolean {
@@ -880,6 +930,7 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
     const color = getTeamColor(portal.team);
     const latLng = toLatLng(portal.latE6, portal.lngE6);
     const radius = getPortalRadius(portal.level, portal.isPlaceholder);
+    const dataOverlayStyle = getPortalDataOverlayStyle(portal);
 
     const marker = L.circleMarker(latLng, {
       radius,
@@ -896,6 +947,7 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
       weight: getPortalWeight(portal.level, portal.isPlaceholder),
       dashArray: portal.isPlaceholder ? '1,2' : undefined,
       interactive: true,
+      ...dataOverlayStyle,
     });
     marker.on('click', (event) => {
       L.DomEvent.stop(event);
@@ -905,6 +957,10 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
 
     if (renderPolicy.labels && visibleLevelLabelGuids.has(portal.guid) && portal.level !== undefined) {
       addRenderedLayer(layers.labels, createLevelLabelMarker(latLng, portal.level, portal.team));
+    }
+    const keyCount = getPortalKeyCount(portal.guid);
+    if (layerSettings.keyCount !== 'off' && keyCount !== undefined && keyCount > 0) {
+      addRenderedLayer(layers.labels, createKeyCountMarker(latLng, keyCount, radius));
     }
   }
 
@@ -1926,6 +1982,7 @@ async function refreshSelectedPortalDetails(guid: string): Promise<void> {
       latestPortalDetails = {status: 'error', guid, elapsedMs: performance.now() - startedAt, error: 'empty portal details'};
     } else {
       latestPortalDetails = toPortalDetailsState(details, performance.now() - startedAt);
+      if (latestPortalDetails.history) portalHistoryByGuid.set(guid, latestPortalDetails.history);
       const currentEntities = latestEntities;
       const portal = currentEntities?.portals.find((candidate) => candidate.guid === guid);
       if (currentEntities && portal) {
@@ -1938,6 +1995,7 @@ async function refreshSelectedPortalDetails(guid: string): Promise<void> {
         portal.health = details.health;
         portal.resCount = details.resCount;
         portal.mission = details.hasMissionsStartingHere;
+        portal.history = latestPortalDetails.history;
         portal.isPlaceholder = false;
         selectedPortal = toSelectedPortal(portal);
         renderEntities(currentEntities);
@@ -1997,6 +2055,7 @@ function toRenderEntities(response: IitcGetEntitiesResponse, generation: number,
       mission50plus: portal.mission50plus,
       ornaments: portal.ornaments,
       artifacts: toRenderArtifacts(getIitcPortalArtifacts(portal.artifactBrief)),
+      history: portalHistoryByGuid.get(portal.guid),
       isPlaceholder: portal.isPlaceholder,
     })),
     links: Object.values(decoded.links).map((link) => ({
