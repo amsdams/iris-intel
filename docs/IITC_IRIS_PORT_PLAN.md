@@ -63,6 +63,78 @@ Naming checklist before creating a new file or exported function:
   IITC naming is not appropriate.
 - Is the divergence only for code cleanliness? Keep the IITC name at the boundary and hide the cleaner structure inside.
 
+## Current Wrap-Up Status - 2026-05-31
+
+IITC IRIS is in a usable parity/polish checkpoint. The extension now has the core IITC live-map path, entity rendering,
+portal details, COMM, scores, inventory, passcodes, agent profile, player tracker, search, diagnostics, and a two-layer
+menu model wired into one-sheet-at-a-time UI. The current build/package pass succeeded after the latest UI work:
+
+- `npm run typecheck:iitc-iris`
+- `npm run package:iitc-iris`
+- Latest known artifacts:
+  - `apps/iitc-iris/builds/iitc-iris-chrome-0.1.0-2026-05-31T21-21-38.zip`
+  - `apps/iitc-iris/builds/iitc-iris-firefox-0.1.0-2026-05-31T21-21-38.xpi`
+
+Recent completed progress:
+
+- Map lifecycle: IITC-style active refill request scheduling is in place for `getEntities`; active request diagnostics now
+  include entities, COMM/plexts, portal details, scores, inventory, passcodes, and other side requests so IITC/IITC IRIS
+  comparisons can see overlap clearly.
+- Scenario diagnostics: scenario runs are labelled more clearly, copied results include run IDs/status/snapshots, and
+  scenario controls no longer invite accidental overlapping runs.
+- Menu/UI shell: primary domains are `Map`, `Portal`, `Agent`, `COMM`, and `System`; secondary actions live above the
+  main menu in sheets. All current sheets should have close affordances and `Esc` closes open sheets.
+- Search: moved into the Map sheet, searches loaded portals first, supports coordinates, uses Nominatim with
+  `polygon_geojson=1`, follows IITC-style result ordering, aligns selected-result zoom behavior, and keeps selected map
+  geometry visible after the sheet closes until explicitly cleared.
+- Portal details: owner and faction state are more prominent, status/level coloring follows IITC palette concepts,
+  resonator health uses clearer bars, the header stays sticky while details scroll, selected portal details can use a
+  cached state to avoid loading flashes, and the portal image can open larger.
+- COMM: oldest/newest scrolling now behaves closer to IITC, older-message continuation requests are wired, new-message
+  behavior keeps the user at the newest edge when appropriate, and message rows reduce duplicate actor/portal context
+  while keeping map-linked references and diagnostic context available.
+- Agent/player systems: player profile reads IITC-style page player data, inventory and passcode are separate
+  Agent-domain sheets, player tracker pins/popups use faction marker imagery and the IITC IRIS dark look.
+- UX polish: faction colors are applied more consistently to agents/owners/actors, request elapsed/ready chips moved to
+  consistent panel footers or headers, keyboard shortcuts and a shortcuts sheet exist, and map keyboard focus can be
+  controlled from System settings.
+
+Intentional divergences and accepted gaps for this checkpoint:
+
+- IITC IRIS keeps the bottom-sheet/two-layer menu model instead of porting IITC's sidebar/dropdown/statusbar shell. This
+  is a deliberate product-shell divergence; core workflows should still stay comparable.
+- Fast map movement can use a shorter movement delay than IITC. Keep it as a diagnostics/product choice, but compare
+  against IITC with delay settings called out in copied snapshots.
+- Search selection geometry persists after closing the sheet. This is intentional for IRIS usability; IITC-style hover
+  preview/clear-on-mouseout remains a parity backlog item.
+- Full IITC surgical render-queue mutation and tile-by-tile wanted checks are not fully ported. The current generation
+  filtering/render facade is acceptable for this UI checkpoint, but should not be mistaken for complete `MapDataRequest`
+  parity.
+- Retry-exhausted stale fallback is wired and diagnosed but still needs a live case that proves cached stale tiles render
+  exactly like IITC.
+- Artifact non-empty live payloads, richer player tracker plugin behavior, plugin hooks, draw tools, highlighters,
+  bookmarks, portal lists, and broader planning workflows remain later passes.
+
+General improvement backlog before calling this replacement-ready:
+
+- Add a small IITC-style registry layer for highlighters/plugins before porting many one-off plugin features.
+- Decompose the large `apps/iitc-iris/src/content.tsx` into focused sheets/components/hooks once behavior settles:
+  suggested first cuts are `SearchSheet`, `PortalSheet`, `CommSheet`, `SystemSheet`, menu state, and keyboard shortcuts.
+- Add focused tests around the new pure logic that is easy to isolate: COMM display de-duplication, search result
+  ordering/grouping, portal details cached/loading state, and shortcut/menu state transitions.
+- Run a visual/mobile pass with screenshots for the main sheets, portal details, COMM scrolling, selected search
+  geometry, player tracker popup, and keyboard focus states.
+- Continue IITC comparison passes on active requests during map movement: entity requests, `getPlexts`, portal details,
+  inventory, scores, passcodes, and geocoder requests should all have expected overlap/idle behavior documented.
+- Keep reducing visible diagnostic noise in normal UI while preserving copied diagnostics for live parity reports.
+
+Cleanup assessment:
+
+- A code cleanup pass is useful but not required before wrapping this checkpoint. The highest-value cleanup is extracting
+  the oversized content UI into smaller modules; that is a refactor risk and should be done as its own pass after current
+  testing, not mixed into the wrap-up. A low-risk cleanup pass can still scan for stale debug text, unused labels, and
+  inconsistent close/elapsed affordances before a release build.
+
 ### Map Lifecycle Doctrine
 
 Map lifecycle is the highest-risk part of the port. For request scheduling, tile cache, stale fallback, render queue
