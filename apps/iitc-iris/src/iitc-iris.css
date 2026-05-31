@@ -80,6 +80,28 @@
   font-weight: 700;
 }
 
+.iitc-iris-innerstatus .selected-portal {
+  color: #ffb347;
+  font-weight: 700;
+}
+
+.iitc-iris-clear-selection {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 1px solid rgb(255 179 71 / 55%);
+  border-radius: 4px;
+  background: rgb(45 24 7 / 86%);
+  color: #ffb347;
+  font: 700 11px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  cursor: pointer;
+}
+
+.iitc-iris-clear-selection:hover {
+  border-color: rgb(255 179 71 / 90%);
+  background: rgb(64 32 7 / 94%);
+}
+
 .iitc-iris-innerstatus-login {
   height: 20px;
   padding: 1px 6px;
@@ -87,6 +109,101 @@
 
 .iitc-iris-status {
   color: #c7d8e8;
+}
+
+.iitc-iris-selected-details {
+  max-width: 520px;
+  padding-top: 2px;
+  border-top: 1px solid rgb(255 179 71 / 18%);
+}
+
+.iitc-iris-selected-image {
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgb(255 179 71 / 35%);
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.iitc-iris-selected-title {
+  max-width: 220px;
+  overflow: hidden;
+  color: #ffffff;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iitc-iris-portal-panel {
+  display: grid;
+  gap: 8px;
+  width: min(520px, calc(100vw - 48px));
+  max-width: 100%;
+  padding-top: 6px;
+  border-top: 1px solid rgb(255 179 71 / 18%);
+  color: #d7e7f5;
+}
+
+.iitc-iris-portal-panel-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.iitc-iris-portal-panel-grid {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 4px 10px;
+  align-items: baseline;
+}
+
+.iitc-iris-portal-panel-grid > span {
+  min-width: 0;
+}
+
+.iitc-iris-portal-section {
+  display: grid;
+  gap: 4px;
+}
+
+.iitc-iris-portal-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.iitc-iris-portal-chip {
+  min-width: 48px;
+  box-sizing: border-box;
+  padding: 2px 5px;
+  border: 1px solid rgb(95 180 255 / 24%);
+  border-radius: 4px;
+  background: rgb(10 18 25 / 76%);
+  color: #e8f4ff;
+  font: 700 11px/1.2 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  text-align: center;
+}
+
+.iitc-iris-portal-mod-list {
+  display: grid;
+  gap: 4px;
+}
+
+.iitc-iris-portal-mod {
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) minmax(80px, 1fr) minmax(120px, 1.4fr);
+  gap: 6px;
+  align-items: baseline;
+}
+
+.iitc-iris-portal-mod-name {
+  min-width: 0;
+  overflow: hidden;
+  color: #ffffff;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .iitc-iris-warning {

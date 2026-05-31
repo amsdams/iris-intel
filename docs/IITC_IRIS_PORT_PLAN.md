@@ -35,12 +35,15 @@ Current status:
 - Core now has an immutable IITC tile queue state model covering queued, requested, successful, failed, stale, active-request, and tile-error-count state; tests cover success removal, timeout requeueing, server retry without error-count increments, and retry-limit fail/stale behavior.
 - IITC IRIS now uses that core queue state to drive live-compat retry selection while keeping the conservative existing batch shape; returned-empty summary tiles are an explicit compatibility option in the core queue.
 - Runtime request batch construction now goes through core queue helpers for initial and retry phases. The initial phase uses IITC-style concurrent request buckets; the retry phase remains conservative while live empty-tile behavior is validated.
+- Large initial tile plans are executed across all 25-tile request batches in waves of up to five concurrent requests, instead of stopping after only the first concurrent wave. This fixes low-zoom views such as z10 where the plan can contain more than 125 tiles.
+- Placeholder-mode timeout retries now use the IITC-style per-tile retry limit, and final exhausted low-zoom placeholder tiles are reported as partial coverage instead of hard request failures.
 - Runtime fetch cancellation is explicit: pan/zoom and data-source changes abort the active `getEntities` request, and core queue state can mark obsolete queued/requested tiles as stale instead of letting old responses race the newest map view.
 - IITC IRIS now uses the core same-zoom refresh-skip rule in live mode: if a pan stays inside the fetched padded data bounds and the cached response covers the current tile plan, the map re-renders from cached entities instead of issuing a new `getEntities` request.
 - Cached-response reuse is now a core decision: `packages/iitc-core` checks both fetched-bounds coverage and requested tile coverage before IITC IRIS uses a cached live response.
 - Response merge, tile-return diagnostics, requested-tile response classification, and IITC-style request response buckets now live in `packages/iitc-core` with tests, so the runtime no longer owns richer-payload merging, empty-tile detection, unaccounted-tile detection, or recovered-tile accounting.
 - Response bucket diagnostic accumulation now also lives in `packages/iitc-core`, so live retry/timeout/error accounting is immutable and tested outside the page runtime.
 - The remaining shim exists around returned-empty summary tile recovery: the core queue has IITC-style active request accounting, tile-specific retry/error counters, response bucket classification, and stale marking, but the runtime still performs explicit single-tile empty recovery until live parity is validated.
+- Important lifecycle gap: IITC-CE can keep and render stale tile data after retry exhaustion. IITC IRIS currently reports final exhausted placeholder tiles as `partialTileKeys`, but it does not yet maintain a per-tile stale-payload fallback. Porting stale tile fallback is required for the same low-zoom failure experience as IITC-CE.
 - The compatibility retry policy should remain while validating live parity, but the intended replacement is a closer IITC-CE-derived request queue in `packages/iitc-core`, not permanent ad hoc runtime policy.
 
 ## Pass 3: Entity Decode - Partial
@@ -105,6 +108,7 @@ Current status:
 - The dock shows zoom, data zoom, summary availability, tile span, fetch state, entity totals, real/placeholder/ornament portal counts, and copy-to-clipboard diagnostics.
 - Copied diagnostics include IITC-style request response buckets (`serverRetryTileKeys`, `timeoutTileKeys`, `errorTileKeys`, `responseRetryTileKeys`, and `queueDelayReasons`) so slow-network retries can be separated from returned-empty tile recovery.
 - Copied diagnostics also include core queue-state counters so the immutable queue model can be compared against the current live runtime loop before it replaces scheduling.
+- Copied diagnostics include `partialTileKeys` and `queue.partialTiles` for low-zoom placeholder tiles that exhausted timeout retries without becoming hard request failures. These should eventually become `staleTiles` once per-tile stale-payload fallback is ported.
 - Copied diagnostics include `elapsedMs` and `elapsedSeconds`; these are useful for trend comparison, but exact parity with IITC still depends on matching all request lifecycle timing semantics.
 - Copied diagnostics include `entities.artifactFetch` so artifact-event tests can tell whether `/r/getArtifactPortals` was disabled, empty, ready, errored, or blocked by login HTML.
 - Cached same-bounds renders explicitly clear queue diagnostics, so copied snapshots do not mix the current tile plan with stale queue counters from the previous network fetch.
@@ -135,7 +139,7 @@ Current status:
 - Visual parity comparisons should use the dock's viewport P/L/F counts and copied `entities.viewport` block; total fetched counts include padded request bounds and placeholder support entities.
 - Mock controls and place-name geocoding are not yet implemented in IITC IRIS.
 
-## Pass 6: Portal Selection and Details - Next
+## Pass 6: Portal Selection and Details - Started
 
 - Port IITC-like portal selection as the next comparison surface before broader side request/UI systems.
 - Keep the first pass narrow: click/select a portal, render the selected portal highlight, expose selected GUID/title/team/level in the dock or innerstatus row, clear selection, and preserve selection across entity refreshes when the selected portal is still present.
@@ -150,8 +154,11 @@ Acceptance:
 
 Current status:
 
-- Not started.
-- This is the recommended next implementation pass.
+- First selection baseline is in progress: visible portal markers are clickable, the selected portal gets a separate orange Leaflet highlight ring, the compact innerstatus row shows the selected portal, selection can be cleared, and copied diagnostics include `selectedPortal`.
+- A compact selected-portal summary row now uses the currently decoded map entity data: image, title, team, level, health, resonator count, mission flag, ornament/artifact counts, and basic link/field context from decoded map links/fields.
+- Selecting a portal now starts a `/r/getPortalDetails` request. `packages/iitc-core` parses the IITC-shaped details response into owner, mods, resonators, history flags, mission flag, and derived mitigation; IITC IRIS exposes request status and parsed detail data in the selected row and copied diagnostics.
+- A compact portal details panel now renders the fetched details outside the debug JSON: owner, mitigation, history flags, resonator chips, mods, and selected link/field context.
+- The first pass intentionally does not yet include IITC-style resonator/mod spatial grid parity, portal action buttons, inventory key counts, or IITC plugin/highlighter interactions.
 
 ## Pass 7: IITC Side Request/UI Systems - Not Started
 

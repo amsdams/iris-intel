@@ -1,5 +1,5 @@
 import L, {type Layer as LeafletLayer, type Map as LeafletMap, type TileLayer} from 'leaflet';
-import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisQueueDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisSelectedPortal} from './messages';
 import {
   appendIitcResponseBucketDiagnostics,
   applyIitcTileRequestResponseToQueue,
@@ -15,12 +15,16 @@ import {
   getIitcReusableCacheClassification,
   getIitcPortalArtifacts,
   IITC_EMPTY_TILE_RETRY_PASSES,
+  IITC_MAX_TILE_RETRIES,
+  IITC_NUM_TILES_PER_REQUEST,
   markIitcTileQueueComplete,
   markIitcTileQueueStale,
   markIitcTileRequestStarted,
   mergeIitcGetEntitiesResponses,
+  parseIitcPortalDetailsResponse,
   type IitcGetEntitiesResponse,
   type IitcMapDataPlan,
+  type IitcPortalDetailsResponse,
   type IitcPortalArtifact,
   type IitcRawGameEntity,
   type IitcTileQueueState,
@@ -82,6 +86,9 @@ let latestRequestKey = '';
 let latestEntities: IitcIrisRenderEntities | undefined;
 let latestPlan: IitcMapDataPlan | undefined;
 let latestResponse: IitcGetEntitiesResponse | undefined;
+let selectedPortalGuid: string | undefined;
+let selectedPortal: IitcIrisSelectedPortal | null = null;
+let latestPortalDetails: IitcIrisPortalDetailsState | null = null;
 let latestArtifactEntities: IitcRawGameEntity[] = [];
 let layerSettings: IitcIrisLayerSettings = DEFAULT_LAYER_SETTINGS;
 let baseLayerId: IitcIrisBaseLayerId = DEFAULT_BASE_LAYER_ID;
@@ -89,6 +96,7 @@ let baseLayer: TileLayer | undefined;
 let dataSource: IitcIrisDataSourceSettings = {mode: 'live'};
 let refreshTimer: number | undefined;
 let currentFetchAbortController: AbortController | undefined;
+let currentPortalDetailsAbortController: AbortController | undefined;
 
 interface TileDiagnostics {
   entitySource?: IitcIrisEntitySource;
@@ -108,6 +116,7 @@ interface TileDiagnostics {
   errorTileKeys?: string[];
   responseRetryTileKeys?: string[];
   queueDelayReasons?: string[];
+  partialTileKeys?: string[];
   queue?: IitcIrisQueueDiagnostics | null;
 }
 
@@ -345,6 +354,11 @@ function cancelActiveEntityFetch(): void {
   currentFetchAbortController = undefined;
 }
 
+function cancelActivePortalDetailsFetch(): void {
+  currentPortalDetailsAbortController?.abort();
+  currentPortalDetailsAbortController = undefined;
+}
+
 function postMapMoved(): void {
   const map = window.__iitcIrisMap;
   if (!map) return;
@@ -382,6 +396,7 @@ declare global {
       fields: LeafletLayer[];
       links: LeafletLayer[];
       portals: LeafletLayer[];
+      selectedPortal: LeafletLayer[];
       ornaments: LeafletLayer[];
       artifacts: LeafletLayer[];
       labels: LeafletLayer[];
@@ -408,6 +423,7 @@ const LEVEL_COLORS = ['#000000', '#fece5a', '#ffa630', '#ff7315', '#e40000', '#f
 const LEVEL_TO_WEIGHT = [2, 2, 2, 2, 2, 3, 3, 4, 4] as const;
 const LEVEL_TO_RADIUS = [7, 7, 7, 7, 8, 8, 9, 10, 11] as const;
 const LEVEL_LABEL_COLLISION_SIZE = 15;
+type IitcIrisLayerPaneKey = keyof IitcIrisLayerSettings | 'selectedPortal';
 
 function toLatLng(latE6: number, lngE6: number): [number, number] {
   return [latE6 / 1e6, lngE6 / 1e6];
@@ -500,6 +516,7 @@ function ensureLayers(): NonNullable<Window['__iitcIrisLayers']> {
     fields: [],
     links: [],
     portals: [],
+    selectedPortal: [],
     ornaments: [],
     artifacts: [],
     labels: [],
@@ -521,7 +538,7 @@ function addRenderedLayer(layers: LeafletLayer[], layer: LeafletLayer): void {
   layers.push(layer);
 }
 
-function getLayerPane(layerKey: keyof IitcIrisLayerSettings): string {
+function getLayerPane(layerKey: IitcIrisLayerPaneKey): string {
   return `iitc-iris-${layerKey}`;
 }
 
@@ -540,6 +557,7 @@ function clearAllRenderedLayers(): void {
   clearRenderedLayers(layers.fields);
   clearRenderedLayers(layers.links);
   clearRenderedLayers(layers.portals);
+  clearRenderedLayers(layers.selectedPortal);
   clearRenderedLayers(layers.ornaments);
   clearRenderedLayers(layers.artifacts);
   clearRenderedLayers(layers.labels);
@@ -550,6 +568,7 @@ function clearEntityLayers(): void {
   clearRenderedLayers(layers.fields);
   clearRenderedLayers(layers.links);
   clearRenderedLayers(layers.portals);
+  clearRenderedLayers(layers.selectedPortal);
   clearRenderedLayers(layers.ornaments);
   clearRenderedLayers(layers.artifacts);
   clearRenderedLayers(layers.labels);
@@ -654,6 +673,92 @@ function createArtifactMarker(latLng: [number, number], artifact: IitcIrisRender
     pane: getLayerPane('artifacts'),
     zIndexOffset: isTarget ? 1200 : 1100,
   });
+}
+
+function toSelectedPortal(portal: IitcIrisRenderPortal): IitcIrisSelectedPortal {
+  const incomingLinks = latestEntities?.links.filter((link) => link.dGuid === portal.guid) ?? [];
+  const outgoingLinks = latestEntities?.links.filter((link) => link.oGuid === portal.guid) ?? [];
+  const linkGuids = [...outgoingLinks, ...incomingLinks].map((link) => link.guid);
+  const fieldGuids = latestEntities?.fields
+    .filter((field) => field.points.some((point) => point.guid === portal.guid))
+    .map((field) => field.guid) ?? [];
+
+  return {
+    guid: portal.guid,
+    title: portal.title,
+    image: portal.image,
+    team: portal.team,
+    latE6: portal.latE6,
+    lngE6: portal.lngE6,
+    level: portal.level,
+    health: portal.health,
+    resCount: portal.resCount,
+    mission: portal.mission,
+    mission50plus: portal.mission50plus,
+    isPlaceholder: portal.isPlaceholder,
+    ornaments: portal.ornaments ?? [],
+    artifacts: portal.artifacts ?? [],
+    links: {
+      count: linkGuids.length,
+      incoming: incomingLinks.length,
+      outgoing: outgoingLinks.length,
+      guids: linkGuids,
+    },
+    fields: {
+      count: fieldGuids.length,
+      guids: fieldGuids,
+    },
+  };
+}
+
+function createSelectedPortalMarker(portal: IitcIrisRenderPortal): LeafletLayer {
+  const radius = Math.max(10, getPortalRadius(portal.level, portal.isPlaceholder) + 5);
+  return L.circleMarker(toLatLng(portal.latE6, portal.lngE6), {
+    radius,
+    color: '#ff9900',
+    fill: false,
+    opacity: 1,
+    pane: getLayerPane('selectedPortal'),
+    weight: 4,
+    interactive: false,
+  });
+}
+
+function renderSelectedPortal(visiblePortals: IitcIrisRenderPortal[]): void {
+  const layers = ensureLayers();
+  clearRenderedLayers(layers.selectedPortal);
+  if (!selectedPortalGuid) {
+    selectedPortal = null;
+    return;
+  }
+
+  const portal = latestEntities?.portals.find((candidate) => candidate.guid === selectedPortalGuid);
+  if (!portal) {
+    selectedPortalGuid = undefined;
+    selectedPortal = null;
+    return;
+  }
+
+  selectedPortal = toSelectedPortal(portal);
+  if (!visiblePortals.some((candidate) => candidate.guid === portal.guid)) return;
+  addRenderedLayer(layers.selectedPortal, createSelectedPortalMarker(portal));
+}
+
+function selectPortal(portal: IitcIrisRenderPortal): void {
+  selectedPortalGuid = portal.guid;
+  selectedPortal = toSelectedPortal(portal);
+  void refreshSelectedPortalDetails(portal.guid);
+  if (latestEntities) renderEntities(latestEntities);
+  repostLatestEntityStatus();
+}
+
+function clearPortalSelection(): void {
+  selectedPortalGuid = undefined;
+  selectedPortal = null;
+  latestPortalDetails = null;
+  cancelActivePortalDetailsFetch();
+  clearRenderedLayers(ensureLayers().selectedPortal);
+  repostLatestEntityStatus();
 }
 
 function createLevelLabelMarker(latLng: [number, number], level: number, team: keyof typeof TEAM_COLORS): LeafletLayer {
@@ -784,7 +889,7 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
     const latLng = toLatLng(portal.latE6, portal.lngE6);
     const radius = getPortalRadius(portal.level, portal.isPlaceholder);
 
-    addRenderedLayer(layers.portals, L.circleMarker(latLng, {
+    const marker = L.circleMarker(latLng, {
       radius,
       color,
       fillColor: renderPolicy.healthFill || renderPolicy.levelFill
@@ -798,8 +903,13 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
       renderer: getLayerRenderer('portals'),
       weight: getPortalWeight(portal.level, portal.isPlaceholder),
       dashArray: portal.isPlaceholder ? '1,2' : undefined,
-      interactive: false,
-    }));
+      interactive: true,
+    });
+    marker.on('click', (event) => {
+      L.DomEvent.stop(event);
+      selectPortal(portal);
+    });
+    addRenderedLayer(layers.portals, marker);
 
     if (renderPolicy.labels && visibleLevelLabelGuids.has(portal.guid) && portal.level !== undefined) {
       addRenderedLayer(layers.labels, createLevelLabelMarker(latLng, portal.level, portal.team));
@@ -832,6 +942,7 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
       }
     }
   }
+  renderSelectedPortal(visiblePortals);
   latestOrnamentDiagnostics = ornamentDiagnostics;
 }
 
@@ -882,6 +993,9 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
     if (!map || typeof event.data.lat !== 'number' || typeof event.data.lng !== 'number') return;
     const zoom = typeof event.data.zoom === 'number' ? event.data.zoom : map.getZoom();
     map.setView([event.data.lat, event.data.lng], zoom);
+  }
+  if (event.data?.type === IITC_IRIS_MESSAGES.clearPortalSelection) {
+    clearPortalSelection();
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.renderEntities && event.data.entities) {
     renderEntities(event.data.entities);
@@ -974,6 +1088,7 @@ function postEntityStatus(
     errorTileKeys: [],
     responseRetryTileKeys: [],
     queueDelayReasons: [],
+    partialTileKeys: [],
     queue: null,
     entitySource: 'live',
   },
@@ -1025,19 +1140,24 @@ function postEntityStatus(
     errorTileKeys: tileDiagnostics.errorTileKeys ?? [],
     responseRetryTileKeys: tileDiagnostics.responseRetryTileKeys ?? [],
     queueDelayReasons: tileDiagnostics.queueDelayReasons ?? [],
+    partialTileKeys: tileDiagnostics.partialTileKeys ?? [],
     queue: tileDiagnostics.queue,
     baseLayerId,
     dataSource,
     renderPolicy: getRenderPolicy(),
+    selectedPortal,
+    portalDetails: latestPortalDetails,
   } satisfies IitcIrisMessage, '*');
 }
 
-function toQueueDiagnostics(state: IitcTileQueueState): IitcIrisQueueDiagnostics {
+function toQueueDiagnostics(state: IitcTileQueueState, partialTileKeys: string[] = []): IitcIrisQueueDiagnostics {
+  const partialTileKeySet = new Set(partialTileKeys);
   return {
     queuedTiles: state.queuedTileKeys.length,
     requestedTiles: state.requestedTileKeys.length,
     successTiles: state.successTileKeys.length,
-    failedTiles: state.failedTileKeys.length,
+    failedTiles: state.failedTileKeys.filter((tileKey) => !partialTileKeySet.has(tileKey)).length,
+    partialTiles: partialTileKeys.length,
     staleTiles: state.staleTileKeys.length,
     activeRequests: state.activeRequestCount,
     tileErrorCount: state.tileErrorCount,
@@ -1080,6 +1200,110 @@ function looksLikeHtml(text: string): boolean {
   return /^\s*(?:<!doctype\s+html|<html|<head|<body)\b/i.test(text);
 }
 
+async function fetchPortalDetails(guid: string, version: string, signal?: AbortSignal): Promise<IitcPortalDetailsResponse> {
+  const csrfToken = getCsrfToken();
+  if (!csrfToken) throw new Error('getPortalDetails missing csrftoken');
+
+  const response = await fetch('/r/getPortalDetails', {
+    method: 'POST',
+    credentials: 'include',
+    signal,
+    headers: {
+      'Accept': 'application/json, text/javascript, */*; q=0.01',
+      'Content-Type': 'application/json; charset=utf-8',
+      'X-CSRFToken': csrfToken,
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+    body: JSON.stringify({guid, v: version}),
+  });
+  const text = await response.text();
+
+  if (looksLikeHtml(text)) {
+    throw new Error(`getPortalDetails returned login html HTTP ${response.status}${response.redirected ? ' redirected' : ''}`);
+  }
+
+  const parsed = JSON.parse(text) as IitcPortalDetailsResponse;
+  if (parsed.error) throw new Error(parsed.error);
+  return parsed;
+}
+
+function toPortalDetailsState(
+  details: NonNullable<ReturnType<typeof parseIitcPortalDetailsResponse>>,
+  elapsedMs: number,
+): IitcIrisPortalDetailsState {
+  return {
+    status: 'ready',
+    guid: details.guid,
+    elapsedMs,
+    owner: details.owner,
+    mods: details.mods,
+    resonators: details.resonators,
+    history: {
+      visited: details.visited,
+      captured: details.captured,
+      scoutControlled: details.scoutControlled,
+    },
+    mitigation: details.mitigation,
+    hasMissionsStartingHere: details.hasMissionsStartingHere,
+  };
+}
+
+async function refreshSelectedPortalDetails(guid: string): Promise<void> {
+  cancelActivePortalDetailsFetch();
+  const version = extractVersion();
+  if (!version) {
+    latestPortalDetails = {status: 'error', guid, error: 'waiting for Intel version'};
+    repostLatestEntityStatus();
+    return;
+  }
+
+  const abortController = new AbortController();
+  currentPortalDetailsAbortController = abortController;
+  const startedAt = performance.now();
+  latestPortalDetails = {status: 'loading', guid};
+  repostLatestEntityStatus();
+
+  try {
+    const response = await fetchPortalDetails(guid, version, abortController.signal);
+    if (selectedPortalGuid !== guid) return;
+    const linkCount = selectedPortal?.links.count ?? 0;
+    const details = parseIitcPortalDetailsResponse(response, guid, linkCount);
+    if (!details) {
+      latestPortalDetails = {status: 'error', guid, elapsedMs: performance.now() - startedAt, error: 'empty portal details'};
+    } else {
+      latestPortalDetails = toPortalDetailsState(details, performance.now() - startedAt);
+      const currentEntities = latestEntities;
+      const portal = currentEntities?.portals.find((candidate) => candidate.guid === guid);
+      if (currentEntities && portal) {
+        portal.title = details.title || portal.title;
+        portal.image = details.image || portal.image;
+        portal.team = details.team;
+        portal.latE6 = details.latE6;
+        portal.lngE6 = details.lngE6;
+        portal.level = details.level;
+        portal.health = details.health;
+        portal.resCount = details.resCount;
+        portal.mission = details.hasMissionsStartingHere;
+        portal.isPlaceholder = false;
+        selectedPortal = toSelectedPortal(portal);
+        renderEntities(currentEntities);
+      }
+    }
+    repostLatestEntityStatus();
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') return;
+    latestPortalDetails = {
+      status: error instanceof Error && /login html|missing csrftoken/i.test(error.message) ? 'auth' : 'error',
+      guid,
+      elapsedMs: performance.now() - startedAt,
+      error: error instanceof Error ? error.message : String(error),
+    };
+    repostLatestEntityStatus();
+  } finally {
+    if (currentPortalDetailsAbortController === abortController) currentPortalDetailsAbortController = undefined;
+  }
+}
+
 function createPlanFromMap(): IitcMapDataPlan | null {
   const map = window.__iitcIrisMap;
   if (!map) return null;
@@ -1107,11 +1331,16 @@ function toRenderEntities(response: IitcGetEntitiesResponse, generation: number,
     generation,
     portals: Object.values(decoded.portals).map((portal) => ({
       guid: portal.guid,
+      title: portal.title,
+      image: portal.image,
       team: portal.team,
       latE6: portal.latE6,
       lngE6: portal.lngE6,
       level: portal.level,
       health: portal.health,
+      resCount: portal.resCount,
+      mission: portal.mission,
+      mission50plus: portal.mission50plus,
       ornaments: portal.ornaments,
       artifacts: toRenderArtifacts(getIitcPortalArtifacts(portal.artifactBrief)),
       isPlaceholder: portal.isPlaceholder,
@@ -1119,15 +1348,17 @@ function toRenderEntities(response: IitcGetEntitiesResponse, generation: number,
     links: Object.values(decoded.links).map((link) => ({
       guid: link.guid,
       team: link.team,
+      oGuid: link.oGuid,
       oLatE6: link.oLatE6,
       oLngE6: link.oLngE6,
+      dGuid: link.dGuid,
       dLatE6: link.dLatE6,
       dLngE6: link.dLngE6,
     })),
     fields: Object.values(decoded.fields).map((field) => ({
       guid: field.guid,
       team: field.team,
-      points: field.points.map((point) => ({latE6: point.latE6, lngE6: point.lngE6})),
+      points: field.points.map((point) => ({guid: point.guid, latE6: point.latE6, lngE6: point.lngE6})),
     })),
   };
 }
@@ -1316,6 +1547,14 @@ async function fetchArtifactEntitiesForRender(version: string, signal: AbortSign
   }
 }
 
+function createSequentialBatches(tileKeys: string[], batchSize: number): string[][] {
+  const batches: string[][] = [];
+  for (let index = 0; index < tileKeys.length; index += batchSize) {
+    batches.push(tileKeys.slice(index, index + batchSize));
+  }
+  return batches;
+}
+
 function scheduleEntityRefresh(): void {
   window.clearTimeout(refreshTimer);
   refreshTimer = window.setTimeout(() => {
@@ -1442,11 +1681,6 @@ async function refreshEntities(): Promise<void> {
     let bucketDiagnostics = createIitcResponseBucketDiagnostics();
     let queueState = createIitcTileQueueState(plan.tileKeys);
     activeQueueState = queueState;
-    const batches = createIitcTileQueueRequestBatches(queueState);
-    for (const batch of batches) {
-      queueState = markIitcTileRequestStarted(queueState, batch);
-    }
-    activeQueueState = queueState;
     postEntityStatus(`fetching ${plan.tileKeys.length} tiles`, undefined, {
       requestedTiles: plan.tileKeys.length,
       returnedTiles: 0,
@@ -1462,44 +1696,54 @@ async function refreshEntities(): Promise<void> {
       queue: toQueueDiagnostics(queueState),
     });
 
-    const batchResults = await Promise.all(batches.map((batch) => fetchEntityBatchResult(batch, version, liveAbortController.signal)));
-    if (generation !== latestFetchGeneration) {
-      queueState = markIitcTileQueueStale(queueState);
-      activeQueueState = queueState;
-      return;
-    }
-    const authError = batchResults.find((result) => result.error && isAuthLikeError(result.error))?.error;
-    if (authError) throw authError;
-
-    for (let index = 0; index < batchResults.length; index += 1) {
-      const result = batchResults[index];
-      if (result.response) {
-        queueState = applyIitcTileRequestResponseToQueue(queueState, result.response, result.tileKeys, true, {
-          retryReturnedEmptyTiles: true,
-        }).state;
-        bucketDiagnostics = appendIitcResponseBucketDiagnostics(bucketDiagnostics, result.response, result.tileKeys);
-        responses.push(result.response);
-      } else {
-        queueState = applyIitcTileRequestResponseToQueue(queueState, null, result.tileKeys, false, {
-          retryReturnedEmptyTiles: true,
-        }).state;
-        bucketDiagnostics = appendRequestErrorDiagnostics(bucketDiagnostics, result.tileKeys);
+    const initialBatches = createSequentialBatches(plan.tileKeys, IITC_NUM_TILES_PER_REQUEST);
+    for (let waveStart = 0; waveStart < initialBatches.length; waveStart += 5) {
+      const waveBatches = initialBatches.slice(waveStart, waveStart + 5);
+      for (const batch of waveBatches) {
+        queueState = markIitcTileRequestStarted(queueState, batch);
       }
       activeQueueState = queueState;
-      const mergedResponse = mergeIitcGetEntitiesResponses(responses);
-      const entities = toRenderEntities(mergedResponse, generation);
-      const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyTileDiagnostics(mergedResponse, plan);
-      postEntityStatus(`batch ${index + 1}/${batches.length}`, entities, {
-        requestedTiles: plan.tileKeys.length,
-        returnedTiles,
-        nonEmptyTiles,
-        viewportBounds: plan.viewportBounds,
-        emptyTileKeys,
-        nonEmptyTileKeys,
-        unaccountedTileKeys,
-        ...bucketDiagnostics,
-        queue: toQueueDiagnostics(queueState),
-      });
+
+      const batchResults = await Promise.all(waveBatches.map((batch) => fetchEntityBatchResult(batch, version, liveAbortController.signal)));
+      if (generation !== latestFetchGeneration) {
+        queueState = markIitcTileQueueStale(queueState);
+        activeQueueState = queueState;
+        return;
+      }
+      const authError = batchResults.find((result) => result.error && isAuthLikeError(result.error))?.error;
+      if (authError) throw authError;
+
+      for (let index = 0; index < batchResults.length; index += 1) {
+        const result = batchResults[index];
+        if (result.response) {
+          queueState = applyIitcTileRequestResponseToQueue(queueState, result.response, result.tileKeys, true, {
+            retryReturnedEmptyTiles: plan.tileParams.hasPortals,
+          }).state;
+          bucketDiagnostics = appendIitcResponseBucketDiagnostics(bucketDiagnostics, result.response, result.tileKeys);
+          responses.push(result.response);
+        } else {
+          queueState = applyIitcTileRequestResponseToQueue(queueState, null, result.tileKeys, false, {
+            retryReturnedEmptyTiles: plan.tileParams.hasPortals,
+          }).state;
+          bucketDiagnostics = appendRequestErrorDiagnostics(bucketDiagnostics, result.tileKeys);
+        }
+        activeQueueState = queueState;
+        const mergedResponse = mergeIitcGetEntitiesResponses(responses);
+        const entities = toRenderEntities(mergedResponse, generation);
+        const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyTileDiagnostics(mergedResponse, plan);
+        const completedBatches = waveStart + index + 1;
+        postEntityStatus(`batch ${completedBatches}/${initialBatches.length}`, entities, {
+          requestedTiles: plan.tileKeys.length,
+          returnedTiles,
+          nonEmptyTiles,
+          viewportBounds: plan.viewportBounds,
+          emptyTileKeys,
+          nonEmptyTileKeys,
+          unaccountedTileKeys,
+          ...bucketDiagnostics,
+          queue: toQueueDiagnostics(queueState),
+        });
+      }
     }
 
     if (generation !== latestFetchGeneration) {
@@ -1511,53 +1755,56 @@ async function refreshEntities(): Promise<void> {
     const initialRetryTileKeys = [...queueState.queuedTileKeys];
     const retriedTileKeys = new Set<string>();
     let retryRequests = 0;
-    if (plan.tileParams.hasPortals) {
-      for (let pass = 1; pass <= IITC_EMPTY_TILE_RETRY_PASSES; pass += 1) {
-        const retryTileKeys = [...queueState.queuedTileKeys];
-        if (retryTileKeys.length === 0) break;
+    const retryPasses = plan.tileParams.hasPortals ? IITC_EMPTY_TILE_RETRY_PASSES : IITC_MAX_TILE_RETRIES;
+    for (let pass = 1; pass <= retryPasses; pass += 1) {
+      const retryTileKeys = [...queueState.queuedTileKeys];
+      if (retryTileKeys.length === 0) break;
 
-        const retryBatches = createIitcEmptyTileRetryBatches(retryTileKeys);
-        const queueRetryBatches = retryBatches.flatMap((batch) => createIitcTileQueueRequestBatches(queueState, {
+      const retryBatches = plan.tileParams.hasPortals
+        ? createIitcEmptyTileRetryBatches(retryTileKeys)
+        : createSequentialBatches(retryTileKeys, IITC_NUM_TILES_PER_REQUEST);
+      const queueRetryBatches = plan.tileParams.hasPortals
+        ? retryBatches.flatMap((batch) => createIitcTileQueueRequestBatches(queueState, {
           maxRequests: 1,
           tilesPerRequest: batch.length,
           activeRequestCount: 0,
           pendingTileKeys: batch,
-        }));
-        for (let index = 0; index < queueRetryBatches.length; index += 1) {
-          queueState = markIitcTileRequestStarted(queueState, queueRetryBatches[index]);
-          const response = await fetchEntityBatch(queueRetryBatches[index], version, abortController.signal);
-          if (generation !== latestFetchGeneration) {
-            queueState = markIitcTileQueueStale(queueState);
-            activeQueueState = queueState;
-            return;
-          }
-          queueState = applyIitcTileRequestResponseToQueue(queueState, response, queueRetryBatches[index], true, {
-            retryReturnedEmptyTiles: true,
-          }).state;
+        }))
+        : retryBatches;
+      for (let index = 0; index < queueRetryBatches.length; index += 1) {
+        queueState = markIitcTileRequestStarted(queueState, queueRetryBatches[index]);
+        const response = await fetchEntityBatch(queueRetryBatches[index], version, abortController.signal);
+        if (generation !== latestFetchGeneration) {
+          queueState = markIitcTileQueueStale(queueState);
           activeQueueState = queueState;
-          bucketDiagnostics = appendIitcResponseBucketDiagnostics(bucketDiagnostics, response, queueRetryBatches[index]);
-          retryRequests += 1;
-          for (const tileKey of queueRetryBatches[index]) retriedTileKeys.add(tileKey);
-          responses.push(response);
-          mergedResponse = mergeIitcGetEntitiesResponses(responses);
-          const entities = toRenderEntities(mergedResponse, generation);
-          const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyTileDiagnostics(mergedResponse, plan);
-          const recoveredTileKeys = getIitcRecoveredTileKeys(initialRetryTileKeys, nonEmptyTileKeys);
-          postEntityStatus(`retry ${pass} ${index + 1}/${queueRetryBatches.length}`, entities, {
-            requestedTiles: plan.tileKeys.length,
-            returnedTiles,
-            nonEmptyTiles,
-            viewportBounds: plan.viewportBounds,
-            retryRequests,
-            retriedTileKeys: [...retriedTileKeys],
-            recoveredTileKeys,
-            emptyTileKeys,
-            nonEmptyTileKeys,
-            unaccountedTileKeys,
-            ...bucketDiagnostics,
-            queue: toQueueDiagnostics(queueState),
-          });
+          return;
         }
+        queueState = applyIitcTileRequestResponseToQueue(queueState, response, queueRetryBatches[index], true, {
+          retryReturnedEmptyTiles: plan.tileParams.hasPortals,
+        }).state;
+        activeQueueState = queueState;
+        bucketDiagnostics = appendIitcResponseBucketDiagnostics(bucketDiagnostics, response, queueRetryBatches[index]);
+        retryRequests += 1;
+        for (const tileKey of queueRetryBatches[index]) retriedTileKeys.add(tileKey);
+        responses.push(response);
+        mergedResponse = mergeIitcGetEntitiesResponses(responses);
+        const entities = toRenderEntities(mergedResponse, generation);
+        const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyTileDiagnostics(mergedResponse, plan);
+        const recoveredTileKeys = getIitcRecoveredTileKeys(initialRetryTileKeys, nonEmptyTileKeys);
+        postEntityStatus(`retry ${pass} ${index + 1}/${queueRetryBatches.length}`, entities, {
+          requestedTiles: plan.tileKeys.length,
+          returnedTiles,
+          nonEmptyTiles,
+          viewportBounds: plan.viewportBounds,
+          retryRequests,
+          retriedTileKeys: [...retriedTileKeys],
+          recoveredTileKeys,
+          emptyTileKeys,
+          nonEmptyTileKeys,
+          unaccountedTileKeys,
+          ...bucketDiagnostics,
+          queue: toQueueDiagnostics(queueState),
+        });
       }
     }
 
@@ -1571,6 +1818,7 @@ async function refreshEntities(): Promise<void> {
     const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyTileDiagnostics(mergedResponse, plan);
     const recoveredTileKeys = getIitcRecoveredTileKeys(initialRetryTileKeys, nonEmptyTileKeys);
     queueState = markIitcTileQueueComplete(queueState);
+    const partialTileKeys = plan.tileParams.hasPortals ? [] : [...queueState.failedTileKeys];
     activeQueueState = queueState;
     latestPlan = plan;
     latestResponse = mergedResponse;
@@ -1589,7 +1837,8 @@ async function refreshEntities(): Promise<void> {
       nonEmptyTileKeys,
       unaccountedTileKeys,
       ...bucketDiagnostics,
-      queue: toQueueDiagnostics(queueState),
+      partialTileKeys,
+      queue: toQueueDiagnostics(queueState, partialTileKeys),
     });
     if (currentFetchAbortController === abortController) currentFetchAbortController = undefined;
   } catch (error) {
@@ -1641,21 +1890,22 @@ function boot(): void {
 }
 
 function createIitcIrisPanes(map: LeafletMap): void {
-  const panes: [keyof IitcIrisLayerSettings, number][] = [
+  const panes: [IitcIrisLayerPaneKey, number, string?][] = [
     ['tiles', 405],
     ['fields', 410],
     ['links', 420],
-    ['portals', 430],
+    ['portals', 430, 'auto'],
     ['ornaments', 440],
     ['artifacts', 445],
+    ['selectedPortal', 448],
     ['labels', 450],
   ];
 
-  for (const [key, zIndex] of panes) {
+  for (const [key, zIndex, pointerEvents = 'none'] of panes) {
     const paneName = getLayerPane(key);
     const pane = map.getPane(paneName) ?? map.createPane(paneName);
     pane.style.zIndex = String(zIndex);
-    pane.style.pointerEvents = 'none';
+    pane.style.pointerEvents = pointerEvents;
   }
 }
 

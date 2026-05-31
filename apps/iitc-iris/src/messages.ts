@@ -9,6 +9,7 @@ export const IITC_IRIS_MESSAGES = {
   layerSettings: 'IITC_IRIS_LAYER_SETTINGS',
   dataSourceSettings: 'IITC_IRIS_DATA_SOURCE_SETTINGS',
   setView: 'IITC_IRIS_SET_VIEW',
+  clearPortalSelection: 'IITC_IRIS_CLEAR_PORTAL_SELECTION',
 } as const;
 
 export type IitcIrisMessageType = typeof IITC_IRIS_MESSAGES[keyof typeof IITC_IRIS_MESSAGES];
@@ -76,11 +77,14 @@ export interface IitcIrisMessage {
   errorTileKeys?: string[];
   responseRetryTileKeys?: string[];
   queueDelayReasons?: string[];
+  partialTileKeys?: string[];
   queue?: IitcIrisQueueDiagnostics | null;
   layerSettings?: IitcIrisLayerSettings;
   baseLayerId?: IitcIrisBaseLayerId;
   dataSource?: IitcIrisDataSourceSettings;
   renderPolicy?: IitcIrisRenderPolicy;
+  selectedPortal?: IitcIrisSelectedPortal | null;
+  portalDetails?: IitcIrisPortalDetailsState | null;
 }
 
 export interface IitcIrisQueueDiagnostics {
@@ -88,6 +92,7 @@ export interface IitcIrisQueueDiagnostics {
   requestedTiles: number;
   successTiles: number;
   failedTiles: number;
+  partialTiles?: number;
   staleTiles: number;
   activeRequests: number;
   tileErrorCount: Record<string, number>;
@@ -141,21 +146,91 @@ export interface IitcIrisRenderArtifact {
 
 export interface IitcIrisRenderPortal {
   guid: string;
+  title?: string;
+  image?: string;
   team: 'E' | 'R' | 'N' | 'M';
   latE6: number;
   lngE6: number;
   level?: number;
   health?: number;
+  resCount?: number;
+  mission?: boolean;
+  mission50plus?: boolean;
   ornaments?: string[];
   artifacts?: IitcIrisRenderArtifact[];
   isPlaceholder: boolean;
 }
 
+export interface IitcIrisSelectedPortal {
+  guid: string;
+  title?: string;
+  image?: string;
+  team: 'E' | 'R' | 'N' | 'M';
+  latE6: number;
+  lngE6: number;
+  level?: number;
+  health?: number;
+  resCount?: number;
+  mission?: boolean;
+  mission50plus?: boolean;
+  isPlaceholder: boolean;
+  ornaments: string[];
+  artifacts: IitcIrisRenderArtifact[];
+  links: {
+    count: number;
+    incoming: number;
+    outgoing: number;
+    guids: string[];
+  };
+  fields: {
+    count: number;
+    guids: string[];
+  };
+}
+
+export interface IitcIrisPortalMod {
+  owner: string;
+  name: string;
+  rarity: string;
+  stats: Record<string, string | number>;
+}
+
+export interface IitcIrisPortalResonator {
+  owner: string;
+  level: number;
+  energy: number;
+}
+
+export interface IitcIrisPortalDetailsState {
+  status: 'idle' | 'loading' | 'ready' | 'error' | 'auth';
+  guid?: string;
+  elapsedMs?: number;
+  error?: string;
+  owner?: string;
+  mods?: IitcIrisPortalMod[];
+  resonators?: IitcIrisPortalResonator[];
+  history?: {
+    visited: boolean;
+    captured: boolean;
+    scoutControlled: boolean;
+  };
+  mitigation?: {
+    total: number;
+    shields: number;
+    links: number;
+    linkDefenseBoost: number;
+    excess: number;
+  };
+  hasMissionsStartingHere?: boolean;
+}
+
 export interface IitcIrisRenderLink {
   guid: string;
   team: 'E' | 'R' | 'N' | 'M';
+  oGuid?: string;
   oLatE6: number;
   oLngE6: number;
+  dGuid?: string;
   dLatE6: number;
   dLngE6: number;
 }
@@ -163,7 +238,7 @@ export interface IitcIrisRenderLink {
 export interface IitcIrisRenderField {
   guid: string;
   team: 'E' | 'R' | 'N' | 'M';
-  points: {latE6: number; lngE6: number}[];
+  points: {guid?: string; latE6: number; lngE6: number}[];
 }
 
 export interface IitcIrisRenderEntities {

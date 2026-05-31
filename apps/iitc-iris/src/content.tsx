@@ -1,13 +1,14 @@
 import {h, render} from 'preact';
 import {useEffect, useMemo, useState} from 'preact/hooks';
 import './iitc-iris.css';
-import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisQueueDiagnostics, type IitcIrisRenderPolicy} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisLayerSettings, type IitcIrisMessage, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRenderPolicy, type IitcIrisSelectedPortal} from './messages';
 import {
   createIitcMapDataPlan,
   IITC_EMPTY_TILE_RETRY_BATCH_SIZE,
   IITC_EMPTY_TILE_RETRY_LIMIT,
   IITC_EMPTY_TILE_RETRY_PASSES,
   IITC_MAX_REQUESTS,
+  IITC_MAX_TILE_RETRIES,
   IITC_NUM_TILES_PER_REQUEST,
   type IitcBounds,
   type IitcMapDataPlan,
@@ -176,10 +177,13 @@ interface EntityFetchState {
   errorTileKeys: string[];
   responseRetryTileKeys: string[];
   queueDelayReasons: string[];
+  partialTileKeys: string[];
   queue: IitcIrisQueueDiagnostics | null;
   baseLayerId: IitcIrisBaseLayerId;
   dataSource: IitcIrisDataSourceSettings;
   renderPolicy: IitcIrisRenderPolicy;
+  selectedPortal: IitcIrisSelectedPortal | null;
+  portalDetails: IitcIrisPortalDetailsState | null;
 }
 
 interface ParsedViewInput {
@@ -395,10 +399,13 @@ function entityFetchStateFromMessage(message: IitcIrisMessage, current: EntityFe
     errorTileKeys: message.errorTileKeys ?? [],
     responseRetryTileKeys: message.responseRetryTileKeys ?? [],
     queueDelayReasons: message.queueDelayReasons ?? [],
+    partialTileKeys: message.partialTileKeys ?? [],
     queue: message.queue ?? null,
     baseLayerId: message.baseLayerId ?? current.baseLayerId,
     dataSource: message.dataSource ?? current.dataSource,
     renderPolicy: message.renderPolicy ?? current.renderPolicy,
+    selectedPortal: message.selectedPortal === undefined ? current.selectedPortal : message.selectedPortal,
+    portalDetails: message.portalDetails === undefined ? current.portalDetails : message.portalDetails,
   };
 }
 
@@ -424,6 +431,14 @@ function createPlan(camera: CameraState): IitcMapDataPlan | null {
   }
 }
 
+function createSequentialBatches(tileKeys: string[], batchSize: number): string[][] {
+  const batches: string[][] = [];
+  for (let index = 0; index < tileKeys.length; index += batchSize) {
+    batches.push(tileKeys.slice(index, index + batchSize));
+  }
+  return batches;
+}
+
 function createIntelUrl(camera: CameraState): string {
   const lat = camera.lat.toFixed(6);
   const lng = camera.lng.toFixed(6);
@@ -437,6 +452,41 @@ function formatLinkLength(meters: number): string {
 
 function formatElapsedSeconds(milliseconds: number): string {
   return (Math.round(milliseconds / 100) / 10).toFixed(1);
+}
+
+function formatSelectedPortal(portal: IitcIrisSelectedPortal | null): string {
+  if (!portal) return 'none';
+  const label = portal.title || portal.guid.slice(0, 8);
+  const level = portal.isPlaceholder || portal.level === undefined ? 'P' : `L${portal.level}`;
+  return `${label} ${portal.team}${level}`;
+}
+
+function formatPortalHealth(portal: IitcIrisSelectedPortal): string {
+  if (portal.isPlaceholder || portal.health === undefined) return '-';
+  return `${Math.round(portal.health)}%`;
+}
+
+function formatPortalDetailsElapsed(details: IitcIrisPortalDetailsState | null): string {
+  if (!details?.elapsedMs) return '';
+  return ` ${formatElapsedSeconds(details.elapsedMs)}s`;
+}
+
+function formatResonatorEnergy(energy: number): string {
+  return energy >= 1000 ? `${Math.round(energy / 100) / 10}k` : String(energy);
+}
+
+function formatModName(name: string): string {
+  return name.replace(/^Portal\s+/i, '').replace(/_/g, ' ');
+}
+
+function formatModStats(stats: Record<string, string | number>): string {
+  const preferredStats = ['MITIGATION', 'REMOVAL_STICKINESS', 'FORCE_AMPLIFIER', 'LINK_RANGE_MULTIPLIER', 'HACK_SPEED', 'HIT_BONUS', 'ATTACK_FREQUENCY'];
+  const parts: string[] = [];
+  for (const key of preferredStats) {
+    const value = stats[key];
+    if (value !== undefined) parts.push(`${key.toLowerCase().replace(/_/g, ' ')} ${value}`);
+  }
+  return parts.slice(0, 2).join(', ');
 }
 
 function createInnerStatusView(plan: IitcMapDataPlan | null, entityFetch: EntityFetchState): InnerStatusView {
@@ -461,10 +511,11 @@ function createInnerStatusView(plan: IitcMapDataPlan | null, entityFetch: Entity
   const loadedTiles = entityFetch.entitySource === 'cache' ? 0 : entityFetch.returnedTiles;
   const remainingTiles = Math.max(0, entityFetch.requestedTiles - entityFetch.returnedTiles);
   const retryText = entityFetch.retryRequests > 0 ? `, ${entityFetch.retryRequests} retried` : '';
+  const partialText = entityFetch.queue?.partialTiles ? `, ${entityFetch.queue.partialTiles} partial` : '';
   const sourceText = entityFetch.entitySource === 'idle' ? '' : `, source ${entityFetch.entitySource}`;
   const finalTimeText = !loading && entityFetch.elapsedMs !== null ? `, in ${formatElapsedSeconds(entityFetch.elapsedMs)} seconds` : '';
   const tileProgressText = !loading && entityFetch.elapsedMs !== null
-    ? `Tiles: ${cachedTiles} cached, ${loadedTiles} loaded${retryText}${finalTimeText}${sourceText}`
+    ? `Tiles: ${cachedTiles} cached, ${loadedTiles} loaded${retryText}${partialText}${finalTimeText}${sourceText}`
     : `Tiles: ${cachedTiles} cached, ${loadedTiles} loaded, ${remainingTiles} remaining${retryText}${sourceText}`;
   const mapTitle = entityFetch.requestedTiles > 0
     ? tileProgressText
@@ -545,14 +596,17 @@ function App(): h.JSX.Element {
     errorTileKeys: [],
     responseRetryTileKeys: [],
     queueDelayReasons: [],
+    partialTileKeys: [],
     queue: null,
     baseLayerId: loadStoredBaseLayerId(),
     dataSource: createDataSourceSettings(loadStoredDataSourceId()),
     renderPolicy: DEFAULT_RENDER_POLICY,
+    selectedPortal: null,
+    portalDetails: null,
   });
   const plan: IitcMapDataPlan | null = useMemo(() => createPlan(camera), [camera]);
   const summaryMode = plan?.tileParams.hasPortals ? 'summary' : 'placeholder';
-  const requestBatches = plan?.requestBatches.map((batch) => batch.length) ?? [];
+  const requestBatches = plan ? createSequentialBatches(plan.tileKeys, IITC_NUM_TILES_PER_REQUEST).map((batch) => batch.length) : [];
   const intelUrl = createIntelUrl(camera);
   const dataSource = useMemo(() => createDataSourceSettings(dataSourceId), [dataSourceId]);
   const innerStatus = createInnerStatusView(plan, entityFetch);
@@ -587,6 +641,7 @@ function App(): h.JSX.Element {
         emptyTileRetryPasses: IITC_EMPTY_TILE_RETRY_PASSES,
         emptyTileRetryBatchSize: IITC_EMPTY_TILE_RETRY_BATCH_SIZE,
         emptyTileRetryLimit: IITC_EMPTY_TILE_RETRY_LIMIT,
+        placeholderTimeoutRetryPasses: IITC_MAX_TILE_RETRIES,
       },
       dataBounds: plan.dataBounds,
     } : null,
@@ -643,6 +698,7 @@ function App(): h.JSX.Element {
       errorTileKeys: entityFetch.errorTileKeys,
       responseRetryTileKeys: entityFetch.responseRetryTileKeys,
       queueDelayReasons: entityFetch.queueDelayReasons,
+      partialTileKeys: entityFetch.partialTileKeys,
       queue: entityFetch.queue,
       authRequired: entityFetch.authRequired,
     },
@@ -650,6 +706,8 @@ function App(): h.JSX.Element {
     dataSource,
     layers: layerSettings,
     renderPolicy: entityFetch.renderPolicy,
+    selectedPortal: entityFetch.selectedPortal,
+    portalDetails: entityFetch.portalDetails,
     collision: entityFetch.collision,
   };
   const copyDockText = (): void => {
@@ -713,6 +771,12 @@ function App(): h.JSX.Element {
 
   const zoomMap = (delta: number): void => {
     setMapView(camera.lat, camera.lng, camera.zoom + delta);
+  };
+
+  const clearPortalSelection = (): void => {
+    window.postMessage({
+      type: IITC_IRIS_MESSAGES.clearPortalSelection,
+    } satisfies IitcIrisMessage, '*');
   };
 
   const canPan = camera.bounds !== null;
@@ -849,6 +913,14 @@ function App(): h.JSX.Element {
           </span>
           {innerStatus.activeRequests > 0 && <span>{innerStatus.activeRequests} requests</span>}
           {innerStatus.failedRequests > 0 && <span className="failed-request">{innerStatus.failedRequests} failed</span>}
+          {entityFetch.selectedPortal && (
+            <>
+              <span className="selected-portal" title={entityFetch.selectedPortal.guid}>
+                selected {formatSelectedPortal(entityFetch.selectedPortal)}
+              </span>
+              <button className="iitc-iris-clear-selection" type="button" onClick={clearPortalSelection} title="Clear selected portal">x</button>
+            </>
+          )}
           {entityFetch.collision && <span className="failed-request">old IRIS active</span>}
           {entityFetch.authRequired && (
             <button className="iitc-iris-login iitc-iris-innerstatus-login" type="button" onClick={openIntelLogin} title="Open Intel login">
@@ -856,6 +928,107 @@ function App(): h.JSX.Element {
             </button>
           )}
         </div>
+        {entityFetch.selectedPortal && (
+          <div className="iitc-iris-dock-row iitc-iris-selected-details">
+            {entityFetch.selectedPortal.image && (
+              <img
+                className="iitc-iris-selected-image"
+                src={entityFetch.selectedPortal.image}
+                alt=""
+              />
+            )}
+            <span className="iitc-iris-selected-title" title={entityFetch.selectedPortal.guid}>
+              {entityFetch.selectedPortal.title || entityFetch.selectedPortal.guid}
+            </span>
+            <span className="iitc-iris-status">
+              {entityFetch.selectedPortal.team}
+              {entityFetch.selectedPortal.isPlaceholder || entityFetch.selectedPortal.level === undefined ? ' placeholder' : ` L${entityFetch.selectedPortal.level}`}
+            </span>
+            <span className="iitc-iris-status">hp {formatPortalHealth(entityFetch.selectedPortal)}</span>
+            {entityFetch.selectedPortal.resCount !== undefined && <span className="iitc-iris-status">res {entityFetch.selectedPortal.resCount}</span>}
+            {entityFetch.portalDetails && entityFetch.portalDetails.guid === entityFetch.selectedPortal.guid && (
+              <span className={`iitc-iris-status ${entityFetch.portalDetails.status === 'error' || entityFetch.portalDetails.status === 'auth' ? 'iitc-iris-warning' : ''}`}>
+                details {entityFetch.portalDetails.status}{formatPortalDetailsElapsed(entityFetch.portalDetails)}
+              </span>
+            )}
+            {entityFetch.portalDetails?.owner && <span className="iitc-iris-status">owner {entityFetch.portalDetails.owner}</span>}
+            {entityFetch.portalDetails?.resonators && <span className="iitc-iris-status">resos {entityFetch.portalDetails.resonators.length}</span>}
+            {entityFetch.portalDetails?.mods && <span className="iitc-iris-status">mods {entityFetch.portalDetails.mods.filter(Boolean).length}</span>}
+            {entityFetch.portalDetails?.mitigation && <span className="iitc-iris-status">mit {Math.round(entityFetch.portalDetails.mitigation.total)}</span>}
+            {entityFetch.portalDetails?.history && (
+              <span className="iitc-iris-status">
+                hist {entityFetch.portalDetails.history.captured ? 'C' : '-'}{entityFetch.portalDetails.history.visited ? 'V' : '-'}{entityFetch.portalDetails.history.scoutControlled ? 'S' : '-'}
+              </span>
+            )}
+            <span className="iitc-iris-status">
+              links {entityFetch.selectedPortal.links.count}
+              {entityFetch.selectedPortal.links.count > 0 && ` (${entityFetch.selectedPortal.links.outgoing} out/${entityFetch.selectedPortal.links.incoming} in)`}
+            </span>
+            <span className="iitc-iris-status">fields {entityFetch.selectedPortal.fields.count}</span>
+            {entityFetch.selectedPortal.ornaments.length > 0 && <span className="iitc-iris-status">orn {entityFetch.selectedPortal.ornaments.length}</span>}
+            {entityFetch.selectedPortal.artifacts.length > 0 && <span className="iitc-iris-status">art {entityFetch.selectedPortal.artifacts.length}</span>}
+            {(entityFetch.selectedPortal.mission || entityFetch.selectedPortal.mission50plus) && <span className="iitc-iris-status">mission</span>}
+          </div>
+        )}
+        {entityFetch.selectedPortal && entityFetch.portalDetails && entityFetch.portalDetails.guid === entityFetch.selectedPortal.guid && (
+          <div className="iitc-iris-portal-panel">
+            <div className="iitc-iris-portal-panel-header">
+              <span className="iitc-iris-selected-title">Portal details</span>
+              <span className={`iitc-iris-status ${entityFetch.portalDetails.status === 'error' || entityFetch.portalDetails.status === 'auth' ? 'iitc-iris-warning' : ''}`}>
+                {entityFetch.portalDetails.status}{formatPortalDetailsElapsed(entityFetch.portalDetails)}
+              </span>
+              {entityFetch.portalDetails.error && <span className="iitc-iris-status iitc-iris-warning">{entityFetch.portalDetails.error}</span>}
+            </div>
+            {entityFetch.portalDetails.status === 'ready' && (
+              <>
+                <div className="iitc-iris-portal-panel-grid">
+                  <span className="iitc-iris-status">owner</span>
+                  <span>{entityFetch.portalDetails.owner || '-'}</span>
+                  <span className="iitc-iris-status">mitigation</span>
+                  <span>
+                    {entityFetch.portalDetails.mitigation
+                      ? `${Math.round(entityFetch.portalDetails.mitigation.total)} total, ${Math.round(entityFetch.portalDetails.mitigation.shields)} shields, ${Math.round(entityFetch.portalDetails.mitigation.links)} links`
+                      : '-'}
+                  </span>
+                  <span className="iitc-iris-status">history</span>
+                  <span>
+                    {entityFetch.portalDetails.history
+                      ? `${entityFetch.portalDetails.history.captured ? 'captured' : 'not captured'}, ${entityFetch.portalDetails.history.visited ? 'visited' : 'not visited'}, ${entityFetch.portalDetails.history.scoutControlled ? 'scout controlled' : 'not scout controlled'}`
+                      : '-'}
+                  </span>
+                  <span className="iitc-iris-status">topology</span>
+                  <span>
+                    {entityFetch.selectedPortal.links.count} links ({entityFetch.selectedPortal.links.outgoing} out/{entityFetch.selectedPortal.links.incoming} in), {entityFetch.selectedPortal.fields.count} fields
+                  </span>
+                </div>
+                <div className="iitc-iris-portal-section">
+                  <span className="iitc-iris-status">Resonators</span>
+                  <div className="iitc-iris-portal-chip-row">
+                    {(entityFetch.portalDetails.resonators ?? []).map((resonator, index) => (
+                      <span className="iitc-iris-portal-chip" key={`${resonator.owner}-${resonator.level}-${index}`} title={`${resonator.owner} ${resonator.energy} XM`}>
+                        L{resonator.level} {formatResonatorEnergy(resonator.energy)}
+                      </span>
+                    ))}
+                    {(entityFetch.portalDetails.resonators ?? []).length === 0 && <span className="iitc-iris-status">none</span>}
+                  </div>
+                </div>
+                <div className="iitc-iris-portal-section">
+                  <span className="iitc-iris-status">Mods</span>
+                  <div className="iitc-iris-portal-mod-list">
+                    {(entityFetch.portalDetails.mods ?? []).map((mod, index) => (
+                      <div className="iitc-iris-portal-mod" key={`${mod.owner}-${mod.name}-${index}`}>
+                        <span className="iitc-iris-portal-mod-name">{mod.rarity} {formatModName(mod.name)}</span>
+                        <span className="iitc-iris-status">{mod.owner}</span>
+                        {formatModStats(mod.stats) && <span className="iitc-iris-status">{formatModStats(mod.stats)}</span>}
+                      </div>
+                    ))}
+                    {(entityFetch.portalDetails.mods ?? []).length === 0 && <span className="iitc-iris-status">none</span>}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
         <div className="iitc-iris-dock-row">
           <span className="iitc-iris-status">View</span>
           <div className="iitc-iris-pan-grid" aria-label="Pan controls">
@@ -906,6 +1079,12 @@ function App(): h.JSX.Element {
           <span className="iitc-iris-status">nt {entityFetch.nonEmptyTiles}</span>
           {entityFetch.elapsedMs !== null && <span className="iitc-iris-status">in {formatElapsedSeconds(entityFetch.elapsedMs)}s</span>}
           {entityFetch.retryRequests > 0 && <span className="iitc-iris-status">retry {entityFetch.retryRequests}</span>}
+          {entityFetch.selectedPortal && (
+            <>
+              <span className="iitc-iris-status iitc-iris-compare">sel {formatSelectedPortal(entityFetch.selectedPortal)}</span>
+              <button className="iitc-iris-preset" type="button" onClick={clearPortalSelection} title="Clear selected portal">Clear Sel</button>
+            </>
+          )}
         </div>}
         <div className="iitc-iris-dock-row">
           <span className="iitc-iris-status">Data</span>
