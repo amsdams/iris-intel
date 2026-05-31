@@ -82,6 +82,8 @@ export interface IitcIrisMessage {
   responseRetryTileKeys?: string[];
   queueDelayReasons?: string[];
   partialTileKeys?: string[];
+  cacheFreshTileKeys?: string[];
+  cacheStaleTileKeys?: string[];
   queue?: IitcIrisQueueDiagnostics | null;
   layerSettings?: IitcIrisLayerSettings;
   baseLayerId?: IitcIrisBaseLayerId;

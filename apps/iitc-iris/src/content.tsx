@@ -193,6 +193,8 @@ interface EntityFetchState {
   responseRetryTileKeys: string[];
   queueDelayReasons: string[];
   partialTileKeys: string[];
+  cacheFreshTileKeys: string[];
+  cacheStaleTileKeys: string[];
   queue: IitcIrisQueueDiagnostics | null;
   baseLayerId: IitcIrisBaseLayerId;
   dataSource: IitcIrisDataSourceSettings;
@@ -464,6 +466,8 @@ function entityFetchStateFromMessage(message: IitcIrisMessage, current: EntityFe
     responseRetryTileKeys: message.responseRetryTileKeys ?? [],
     queueDelayReasons: message.queueDelayReasons ?? [],
     partialTileKeys: message.partialTileKeys ?? [],
+    cacheFreshTileKeys: message.cacheFreshTileKeys ?? [],
+    cacheStaleTileKeys: message.cacheStaleTileKeys ?? [],
     queue: message.queue ?? null,
     baseLayerId: message.baseLayerId ?? current.baseLayerId,
     dataSource: message.dataSource ?? current.dataSource,
@@ -699,6 +703,8 @@ function App(): h.JSX.Element {
     responseRetryTileKeys: [],
     queueDelayReasons: [],
     partialTileKeys: [],
+    cacheFreshTileKeys: [],
+    cacheStaleTileKeys: [],
     queue: null,
     baseLayerId: loadStoredBaseLayerId(),
     dataSource: createDataSourceSettings(loadStoredDataSourceId()),
@@ -803,6 +809,10 @@ function App(): h.JSX.Element {
       responseRetryTileKeys: entityFetch.responseRetryTileKeys,
       queueDelayReasons: entityFetch.queueDelayReasons,
       partialTileKeys: entityFetch.partialTileKeys,
+      cacheFreshTiles: entityFetch.cacheFreshTileKeys.length,
+      cacheFreshTileKeys: entityFetch.cacheFreshTileKeys,
+      cacheStaleTiles: entityFetch.cacheStaleTileKeys.length,
+      cacheStaleTileKeys: entityFetch.cacheStaleTileKeys,
       queue: entityFetch.queue,
       authRequired: entityFetch.authRequired,
     },
