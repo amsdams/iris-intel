@@ -1123,6 +1123,7 @@ function App(): h.JSX.Element {
     ? entityFetch.portalDetails
     : null;
   const selectedPortalDetailsStatus = selectedPortalDetails?.status ?? 'waiting';
+  const selectedPortalHasMissions = Boolean(entityFetch.selectedPortal?.mission || entityFetch.selectedPortal?.mission50plus);
   const dockDiagnostics = {
     app: 'IITC IRIS',
     status,
@@ -1499,6 +1500,12 @@ function App(): h.JSX.Element {
       type: IITC_IRIS_MESSAGES.requestMissions,
       missionSource: source,
     } satisfies IitcIrisMessage, '*');
+  };
+
+  const openSelectedPortalMissions = (): void => {
+    if (!entityFetch.selectedPortal) return;
+    openSheet('missions');
+    refreshMissions('portal');
   };
 
   const requestMissionDetails = (missionGuid: string): void => {
@@ -2617,6 +2624,9 @@ function App(): h.JSX.Element {
             <button className="iitc-iris-portal-action" type="button" onClick={copySelectedPortalTitle} title="Copy portal title">Title</button>
             <button className="iitc-iris-portal-action" type="button" onClick={copySelectedPortalLink} title="Copy Intel portal link">Link</button>
             <button className="iitc-iris-portal-action" type="button" onClick={copySelectedPortalGuid} title="Copy portal GUID">GUID</button>
+            {selectedPortalHasMissions && (
+              <button className="iitc-iris-portal-action" type="button" onClick={openSelectedPortalMissions} title="Fetch missions starting at this portal">Missions</button>
+            )}
           </div>
           <div className="iitc-iris-portal-summary">
             <span className="iitc-iris-portal-summary-cell">
@@ -3110,6 +3120,9 @@ function App(): h.JSX.Element {
                 <button className="iitc-iris-portal-action" type="button" onClick={() => refreshMissions('portal')} disabled={!entityFetch.selectedPortal || missionsState.status === 'loading'} title="Fetch top missions starting at the selected portal">
                   Portal
                 </button>
+                <a className="iitc-iris-portal-action iitc-iris-mission-create-link" href="https://missions.ingress.com/" target="_blank" rel="noreferrer" title="Open the Ingress Mission Authoring Tool">
+                  Create
+                </a>
                 <button className="iitc-iris-portal-action" type="button" onClick={() => refreshMissions()} disabled={missionsState.status === 'loading'} title="Refresh current mission source">
                   {missionsState.status === 'loading' ? 'Loading' : 'Refresh'}
                 </button>
