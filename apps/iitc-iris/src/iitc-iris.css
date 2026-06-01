@@ -1057,6 +1057,173 @@
   color: #c7d8e8;
 }
 
+.iitc-iris-mission-list,
+.iitc-iris-mission-waypoint-list {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.iitc-iris-mission-row,
+.iitc-iris-mission-waypoint {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  padding: 5px;
+  border: 1px solid rgb(95 180 255 / 16%);
+  border-radius: 5px;
+  background: rgb(9 20 28 / 58%);
+  color: #d7e7f5;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.iitc-iris-mission-row:hover,
+.iitc-iris-mission-row.is-active,
+.iitc-iris-mission-waypoint:hover {
+  border-color: rgb(255 230 70 / 45%);
+  background: rgb(50 46 12 / 42%);
+}
+
+.iitc-iris-mission-row img,
+.iitc-iris-mission-details-head img {
+  width: 42px;
+  height: 42px;
+  border-radius: 4px;
+  object-fit: cover;
+  background: rgb(0 0 0 / 45%);
+}
+
+.iitc-iris-mission-row span,
+.iitc-iris-mission-details-head span,
+.iitc-iris-mission-waypoint span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.iitc-iris-mission-row > span {
+  grid-column: 2;
+}
+
+.iitc-iris-mission-row b,
+.iitc-iris-mission-details-head b,
+.iitc-iris-mission-waypoint strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iitc-iris-mission-row small,
+.iitc-iris-mission-details-head small,
+.iitc-iris-mission-waypoint small {
+  overflow: hidden;
+  color: #8ea6b8;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iitc-iris-mission-details {
+  display: grid;
+  gap: 7px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgb(95 180 255 / 12%);
+}
+
+.iitc-iris-mission-details-head {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.iitc-iris-mission-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-width: 0;
+}
+
+.iitc-iris-mission-metrics > span {
+  display: grid;
+  gap: 1px;
+  min-width: 64px;
+  padding: 4px 6px;
+  border: 1px solid rgb(95 180 255 / 14%);
+  border-radius: 4px;
+  background: rgb(10 18 25 / 42%);
+}
+
+.iitc-iris-mission-metrics b {
+  overflow: hidden;
+  color: #e8f4ff;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iitc-iris-mission-metrics small {
+  overflow: hidden;
+  color: #8ea6b8;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.iitc-iris-mission-description {
+  max-height: 72px;
+  margin: 0;
+  overflow: auto;
+  color: #b9cbd8;
+  line-height: 1.35;
+}
+
+.iitc-iris-mission-waypoint {
+  grid-template-columns: 24px minmax(0, 1fr);
+}
+
+.iitc-iris-mission-waypoint > b {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgb(255 230 70 / 52%);
+  border-radius: 50%;
+  color: #ffeb70;
+}
+
+.iitc-iris-mission-waypoint.is-hidden > b {
+  border-color: rgb(160 170 180 / 38%);
+  color: #9aaabd;
+}
+
+.iitc-iris-mission-waypoint-marker {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  border: 2px solid rgb(255 235 80 / 92%);
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: 0 0 8px rgb(255 235 80 / 32%);
+  color: #ffeb70;
+  font: 800 11px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.iitc-iris-mission-waypoint-marker.is-start {
+  border-color: rgb(42 255 145 / 90%);
+  color: #60ffad;
+}
+
+.iitc-iris-mission-waypoint-marker.is-hidden {
+  border-style: dashed;
+  opacity: 0.84;
+}
+
 .iitc-iris-comm-list {
   display: grid;
   gap: 4px;
@@ -1574,6 +1741,19 @@
   box-shadow: inset 2px 0 0 var(--iitc-iris-item-color);
 }
 
+button.iitc-iris-inventory-row {
+  width: 100%;
+  color: #d7e7f5;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+button.iitc-iris-inventory-row:hover {
+  border-color: rgb(95 180 255 / 38%);
+  background: rgb(13 30 42 / 72%);
+}
+
 .iitc-iris-inventory-row span,
 .iitc-iris-inventory-row small {
   min-width: 0;
@@ -1854,6 +2034,7 @@
 .iitc-iris-sheet-agent .iitc-iris-request-side-panel,
 .iitc-iris-sheet-comm .iitc-iris-request-side-panel,
 .iitc-iris-sheet-scores .iitc-iris-request-side-panel,
+.iitc-iris-sheet-missions .iitc-iris-request-side-panel,
 .iitc-iris-sheet-inventory .iitc-iris-request-side-panel,
 .iitc-iris-sheet-passcode .iitc-iris-request-side-panel,
 .iitc-iris-sheet-search .iitc-iris-request-side-panel,

@@ -1,5 +1,5 @@
 import L, {type Layer as LeafletLayer, type Map as LeafletMap, type TileLayer} from 'leaflet';
-import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisSubscriptionState, type IitcIrisTriStateLayer} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionDetails, type IitcIrisMissionSource, type IitcIrisMissionSummary, type IitcIrisMissionsState, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisSubscriptionState, type IitcIrisTriStateLayer} from './messages';
 import {IITC_LEVEL_COLORS, IITC_TEAM_COLORS} from './iitc-colors';
 import {
   appendIitcResponseBucketDiagnostics,
@@ -18,6 +18,7 @@ import {
   genIitcCommSendPlextPostData,
   getIitcCommChannelMessages,
   getIitcInventoryPortalKeyCount,
+  getIitcMissionBounds,
   getIitcPlayerTrackerDiagnostics,
   getIitcPlayerTrackerLatLng,
   getIitcOrnamentDefinition,
@@ -36,17 +37,22 @@ import {
   mergeIitcGetEntitiesResponses,
   parseIitcOrnamentVisibilitySettings,
   parseIitcInventoryResponse,
+  parseIitcMissionDetailsResponse,
+  parseIitcTopMissionsResponse,
   parseIitcPortalDetailsResponse,
   processIitcPlayerTrackerData,
   pruneIitcPlayerTrackerStored,
   renderIitcCommMarkup,
   summarizeIitcInventory,
   writeIitcCommDataToHash,
+  formatIitcMissionDuration,
   type IitcCommChannel,
   type IitcCommChannelData,
   type IitcCommMessage,
   type IitcGetEntitiesResponse,
   type IitcInventorySummary,
+  type IitcMissionDetails as CoreIitcMissionDetails,
+  type IitcMissionSummary as CoreIitcMissionSummary,
   type IitcMapDataPlan,
   type IitcMapTilePayload,
   type IitcPortalDetailsResponse,
@@ -73,6 +79,7 @@ const ENABLE_STALE_GENERATION_CACHE_WARMING = false;
 const PLAYER_TRACKER_COMM_REFRESH_MS = 120_000;
 const SEARCH_AUTO_MIN_LENGTH = 3;
 const NOMINATIM_SEARCH_URL = 'https://nominatim.openstreetmap.org/search?format=json&polygon_geojson=1&q=';
+const MISSION_ROUTE_COLOR = '#404000';
 const IITC_IRIS_ASSET_BASE_URL = (() => {
   const script = document.currentScript instanceof HTMLScriptElement ? document.currentScript.src : '';
   return script ? new URL('.', script).toString() : '';
@@ -164,6 +171,8 @@ let currentScoresAbortController: AbortController | undefined;
 let currentPasscodeAbortController: AbortController | undefined;
 let currentInventoryAbortController: AbortController | undefined;
 let currentSubscriptionAbortController: AbortController | undefined;
+let currentMissionsAbortController: AbortController | undefined;
+let currentMissionDetailsAbortController: AbortController | undefined;
 let currentSubscriptionPromise: Promise<IitcIrisSubscriptionState> | undefined;
 let latestCommState: IitcIrisCommState = {status: 'idle', tab: loadStoredCommTab(), messages: 0};
 let latestScoresState: IitcIrisScoresState = {status: 'idle', requestState: 'idle', region: {status: 'idle'}};
@@ -179,6 +188,12 @@ let latestInventoryState: IitcIrisInventoryState = {
   portalsWithKeys: 0,
   capsules: 0,
   portalKeysForSelectedPortal: null,
+};
+let latestMissionsState: IitcIrisMissionsState = {
+  status: 'idle',
+  requestState: 'idle',
+  missions: [],
+  detailsStatus: 'idle',
 };
 let playerTrackerStored: IitcPlayerTrackerStored = {};
 let playerTrackerLatestCommTime: number | null = null;
@@ -486,6 +501,7 @@ declare global {
       labels: LeafletLayer[];
       playerTracker: LeafletLayer[];
       search: LeafletLayer[];
+      missions: LeafletLayer[];
     };
   }
 }
@@ -504,7 +520,7 @@ const LEVEL_COLORS = IITC_LEVEL_COLORS;
 const LEVEL_TO_WEIGHT = [2, 2, 2, 2, 2, 3, 3, 4, 4] as const;
 const LEVEL_TO_RADIUS = [7, 7, 7, 7, 8, 8, 9, 10, 11] as const;
 const LEVEL_LABEL_COLLISION_SIZE = 15;
-type IitcIrisLayerPaneKey = keyof IitcIrisLayerSettings | 'selectedPortal' | 'search';
+type IitcIrisLayerPaneKey = keyof IitcIrisLayerSettings | 'selectedPortal' | 'search' | 'missions';
 
 function toLatLng(latE6: number, lngE6: number): [number, number] {
   return [latE6 / 1e6, lngE6 / 1e6];
@@ -649,6 +665,7 @@ function ensureLayers(): NonNullable<Window['__iitcIrisLayers']> {
     labels: [],
     playerTracker: [],
     search: [],
+    missions: [],
   };
   return window.__iitcIrisLayers;
 }
@@ -691,6 +708,7 @@ function clearAllRenderedLayers(): void {
   clearRenderedLayers(layers.artifacts);
   clearRenderedLayers(layers.labels);
   clearRenderedLayers(layers.playerTracker);
+  clearRenderedLayers(layers.missions);
 }
 
 function clearEntityLayers(): void {
@@ -864,6 +882,32 @@ function selectPortal(portal: IitcIrisRenderPortal): void {
   void refreshSelectedPortalDetails(portal.guid);
   if (latestEntities) renderEntities(latestEntities);
   repostLatestEntityStatus();
+}
+
+function findPortalByGuidOrLatLng(guid: string | undefined, lat: number | undefined, lng: number | undefined): IitcIrisRenderPortal | undefined {
+  if (!latestEntities) return undefined;
+  if (guid) {
+    const portal = latestEntities.portals.find((candidate) => candidate.guid === guid);
+    if (portal) return portal;
+  }
+  if (lat === undefined || lng === undefined) return undefined;
+  const latE6 = Math.round(lat * 1_000_000);
+  const lngE6 = Math.round(lng * 1_000_000);
+  return latestEntities.portals.find((portal) => Math.abs(portal.latE6 - latE6) <= 1 && Math.abs(portal.lngE6 - lngE6) <= 1);
+}
+
+function focusPortal(guid: string | undefined, lat: number | undefined, lng: number | undefined, zoom: number | undefined): void {
+  const map = window.__iitcIrisMap;
+  if (!map) return;
+  const portal = findPortalByGuidOrLatLng(guid, lat, lng);
+  if (portal) {
+    const latLng = toLatLng(portal.latE6, portal.lngE6);
+    map.setView(latLng, zoom ?? Math.max(map.getZoom(), 15));
+    selectPortal(portal);
+    return;
+  }
+  if (lat === undefined || lng === undefined) return;
+  map.setView([lat, lng], zoom ?? Math.max(map.getZoom(), 15));
 }
 
 function clearPortalSelection(): void {
@@ -1461,11 +1505,12 @@ function createPlayerTrackerPortalLink(event: IitcPlayerTrackerStored[string]['e
   link.title = event.address ? `${event.name || 'portal'}\n${event.address}` : link.textContent;
   link.addEventListener('click', (clickEvent) => {
     clickEvent.preventDefault();
-    window.__iitcIrisMap?.setView(latLng, Math.max(window.__iitcIrisMap.getZoom(), DEFAULT_ZOOM));
+    const map = window.__iitcIrisMap;
+    focusPortal(undefined, latLng[0], latLng[1], map ? Math.max(map.getZoom(), DEFAULT_ZOOM) : DEFAULT_ZOOM);
   });
   link.addEventListener('dblclick', (clickEvent) => {
     clickEvent.preventDefault();
-    window.__iitcIrisMap?.setView(latLng, DEFAULT_ZOOM);
+    focusPortal(undefined, latLng[0], latLng[1], DEFAULT_ZOOM);
   });
   return link;
 }
@@ -1701,6 +1746,232 @@ function postInventoryState(): void {
   } satisfies IitcIrisMessage, '*');
 }
 
+function postMissionsState(): void {
+  window.postMessage({
+    type: IITC_IRIS_MESSAGES.missionsStatus,
+    missions: latestMissionsState,
+    requestDiagnostics: getIitcRequestDiagnostics(),
+  } satisfies IitcIrisMessage, '*');
+}
+
+function toIrisMissionSummary(mission: CoreIitcMissionSummary): IitcIrisMissionSummary {
+  return {
+    guid: mission.guid,
+    title: mission.title,
+    image: mission.image,
+    ratingE6: mission.ratingE6,
+    ratingPercent: mission.ratingE6 === undefined ? undefined : Math.round(mission.ratingE6 / 10_000),
+    medianCompletionTimeMs: mission.medianCompletionTimeMs,
+    durationLabel: formatIitcMissionDuration(mission.medianCompletionTimeMs),
+  };
+}
+
+function toIrisMissionDetails(mission: CoreIitcMissionDetails): IitcIrisMissionDetails {
+  return {
+    ...toIrisMissionSummary(mission),
+    description: mission.description,
+    authorNickname: mission.authorNickname,
+    authorTeam: mission.authorTeam,
+    typeNum: mission.typeNum,
+    type: mission.type,
+    numUniqueCompletedPlayers: mission.numUniqueCompletedPlayers,
+    waypoints: mission.waypoints,
+    routeLengthMeters: mission.routeLengthMeters,
+    bounds: getIitcMissionBounds(mission) ?? undefined,
+  };
+}
+
+function sortMissionSummaries(missions: IitcIrisMissionSummary[]): IitcIrisMissionSummary[] {
+  const collator = new Intl.Collator(undefined, {numeric: true, sensitivity: 'base'});
+  return missions.slice().sort((a, b) => collator.compare(a.title, b.title));
+}
+
+function getCurrentMissionBoundsPayload(): {northE6: number; southE6: number; westE6: number; eastE6: number} | undefined {
+  const map = window.__iitcIrisMap;
+  if (!map) return undefined;
+  const bounds = map.getBounds();
+  return {
+    northE6: Math.round(bounds.getNorth() * 1_000_000),
+    southE6: Math.round(bounds.getSouth() * 1_000_000),
+    westE6: Math.round(bounds.getWest() * 1_000_000),
+    eastE6: Math.round(bounds.getEast() * 1_000_000),
+  };
+}
+
+function cancelActiveMissionsFetch(): void {
+  currentMissionsAbortController?.abort();
+  currentMissionsAbortController = undefined;
+}
+
+function cancelActiveMissionDetailsFetch(): void {
+  currentMissionDetailsAbortController?.abort();
+  currentMissionDetailsAbortController = undefined;
+}
+
+function clearMissionOverlay(): void {
+  clearRenderedLayers(ensureLayers().missions);
+}
+
+function renderMissionOverlay(mission: IitcIrisMissionDetails | undefined): void {
+  clearMissionOverlay();
+  if (!mission) return;
+  const layers = ensureLayers();
+  const points = mission.waypoints
+    .flatMap((waypoint) => waypoint.latE6 !== undefined && waypoint.lngE6 !== undefined
+      ? [{waypoint, latLng: toLatLng(waypoint.latE6, waypoint.lngE6)}]
+      : []);
+  if (points.length === 0) return;
+
+  if (points.length > 1) {
+    addRenderedLayer(layers.missions, L.polyline(points.map((point) => point.latLng), {
+      color: MISSION_ROUTE_COLOR,
+      opacity: 1,
+      pane: getLayerPane('missions'),
+      weight: 2,
+      dashArray: mission.typeNum === 2 ? '1,5' : undefined,
+      interactive: false,
+    }));
+  }
+
+  points.forEach(({waypoint, latLng}, index) => {
+    const isStart = index === 0;
+    const portal = waypoint.portalGuid && latestEntities
+      ? latestEntities.portals.find((candidate) => candidate.guid === waypoint.portalGuid)
+      : undefined;
+    const marker = L.circleMarker(latLng, {
+      radius: portal ? Math.max(5, getPortalRadius(portal.level, portal.isPlaceholder) * 1.75) : 5,
+      weight: isStart ? 3 : 3,
+      opacity: 1,
+      color: isStart ? '#A6A600' : MISSION_ROUTE_COLOR,
+      fill: false,
+      dashArray: waypoint.hidden ? '2,4' : undefined,
+      interactive: false,
+      pane: getLayerPane('missions'),
+    });
+    addRenderedLayer(layers.missions, marker);
+  });
+}
+
+async function refreshMissions(source: IitcIrisMissionSource = 'view'): Promise<void> {
+  cancelActiveMissionsFetch();
+  cancelActiveMissionDetailsFetch();
+  clearMissionOverlay();
+  const abortController = new AbortController();
+  currentMissionsAbortController = abortController;
+  const startedAt = performance.now();
+  const portalGuid = source === 'portal' ? selectedPortalGuid : undefined;
+  const portalTitle = source === 'portal' ? selectedPortal?.title : undefined;
+  latestMissionsState = {
+    status: 'loading',
+    requestState: 'loading',
+    source,
+    caption: source === 'portal' ? `Missions at ${portalTitle || portalGuid || 'selected portal'}` : 'Missions in view',
+    portalGuid,
+    portalTitle,
+    missions: [],
+    selectedMission: undefined,
+    detailsStatus: 'idle',
+    error: undefined,
+  };
+  postMissionsState();
+
+  const payload = source === 'portal'
+    ? portalGuid ? {guid: portalGuid} : undefined
+    : getCurrentMissionBoundsPayload();
+  if (!payload) {
+    latestMissionsState = {
+      ...latestMissionsState,
+      status: 'error',
+      requestState: 'error',
+      elapsedMs: performance.now() - startedAt,
+      error: source === 'portal' ? 'select a portal first' : 'missing map bounds',
+    };
+    postMissionsState();
+    return;
+  }
+
+  try {
+    const response = await postIntelEndpoint(
+      source === 'portal' ? 'getTopMissionsForPortal' : 'getTopMissionsInBounds',
+      payload,
+      abortController.signal,
+    );
+    const missions = sortMissionSummaries(parseIitcTopMissionsResponse(response).map(toIrisMissionSummary));
+    latestMissionsState = {
+      ...latestMissionsState,
+      status: missions.length > 0 ? 'ready' : 'empty',
+      requestState: 'ready',
+      missions,
+      elapsedMs: performance.now() - startedAt,
+    };
+    postMissionsState();
+    if (source === 'portal' && missions.length === 1) void refreshMissionDetails(missions[0].guid);
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') return;
+    const status = error instanceof Error && /login html|missing csrftoken/i.test(error.message) ? 'auth' : 'error';
+    latestMissionsState = {
+      ...latestMissionsState,
+      status,
+      requestState: status,
+      elapsedMs: performance.now() - startedAt,
+      error: error instanceof Error ? error.message : String(error),
+    };
+    postMissionsState();
+  } finally {
+    if (currentMissionsAbortController === abortController) currentMissionsAbortController = undefined;
+  }
+}
+
+async function refreshMissionDetails(guid: unknown): Promise<void> {
+  const missionGuid = typeof guid === 'string' ? guid : '';
+  if (!missionGuid) return;
+  cancelActiveMissionDetailsFetch();
+  const abortController = new AbortController();
+  currentMissionDetailsAbortController = abortController;
+  const startedAt = performance.now();
+  latestMissionsState = {
+    ...latestMissionsState,
+    detailsStatus: 'loading',
+    selectedMission: latestMissionsState.selectedMission?.guid === missionGuid ? latestMissionsState.selectedMission : undefined,
+    error: undefined,
+  };
+  postMissionsState();
+
+  try {
+    const response = await postIntelEndpoint('getMissionDetails', {guid: missionGuid}, abortController.signal);
+    const details = parseIitcMissionDetailsResponse(response);
+    const selectedMission = details ? toIrisMissionDetails(details) : undefined;
+    latestMissionsState = {
+      ...latestMissionsState,
+      detailsStatus: selectedMission ? 'ready' : 'empty',
+      selectedMission,
+      detailsElapsedMs: performance.now() - startedAt,
+    };
+    renderMissionOverlay(selectedMission);
+    postMissionsState();
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') return;
+    const status = error instanceof Error && /login html|missing csrftoken/i.test(error.message) ? 'auth' : 'error';
+    latestMissionsState = {
+      ...latestMissionsState,
+      detailsStatus: status,
+      detailsElapsedMs: performance.now() - startedAt,
+      error: error instanceof Error ? error.message : String(error),
+    };
+    renderMissionOverlay(undefined);
+    postMissionsState();
+  } finally {
+    if (currentMissionDetailsAbortController === abortController) currentMissionDetailsAbortController = undefined;
+  }
+}
+
+function zoomToSelectedMission(): void {
+  const map = window.__iitcIrisMap;
+  const bounds = latestMissionsState.selectedMission?.bounds;
+  if (!map || !bounds) return;
+  map.fitBounds(L.latLngBounds([bounds.south, bounds.west], [bounds.north, bounds.east]), {maxZoom: DEFAULT_ZOOM});
+}
+
 function isPlayerTrackerVisible(): boolean {
   const map = window.__iitcIrisMap;
   return (layerSettings.playerTracker ||
@@ -1776,6 +2047,9 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
     const zoom = typeof event.data.zoom === 'number' ? event.data.zoom : map.getZoom();
     map.setView([event.data.lat, event.data.lng], zoom);
   }
+  if (event.data?.type === IITC_IRIS_MESSAGES.focusPortal) {
+    focusPortal(event.data.portalGuid, event.data.portalLat, event.data.portalLng, event.data.zoom);
+  }
   if (event.data?.type === IITC_IRIS_MESSAGES.clearPortalSelection) {
     clearPortalSelection();
   }
@@ -1793,6 +2067,15 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.requestInventory) {
     void refreshInventory();
+  }
+  if (event.data?.type === IITC_IRIS_MESSAGES.requestMissions) {
+    void refreshMissions(event.data.missionSource);
+  }
+  if (event.data?.type === IITC_IRIS_MESSAGES.requestMissionDetails) {
+    void refreshMissionDetails(event.data.missionGuid);
+  }
+  if (event.data?.type === IITC_IRIS_MESSAGES.missionZoom) {
+    zoomToSelectedMission();
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.searchRequest) {
     void runSearch(event.data.searchTerm, event.data.searchConfirmed === true);
@@ -3538,6 +3821,7 @@ function createIitcIrisPanes(map: LeafletMap): void {
     ['artifacts', 445],
     ['selectedPortal', 448],
     ['playerTracker', 449],
+    ['missions', 449, 'auto'],
     ['search', 451],
     ['labels', 450],
   ];

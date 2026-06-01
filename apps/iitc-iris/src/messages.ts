@@ -10,6 +10,7 @@ export const IITC_IRIS_MESSAGES = {
   dataSourceSettings: 'IITC_IRIS_DATA_SOURCE_SETTINGS',
   lifecycleSettings: 'IITC_IRIS_LIFECYCLE_SETTINGS',
   setView: 'IITC_IRIS_SET_VIEW',
+  focusPortal: 'IITC_IRIS_FOCUS_PORTAL',
   clearPortalSelection: 'IITC_IRIS_CLEAR_PORTAL_SELECTION',
   requestComm: 'IITC_IRIS_REQUEST_COMM',
   sendComm: 'IITC_IRIS_SEND_COMM',
@@ -20,6 +21,10 @@ export const IITC_IRIS_MESSAGES = {
   passcodeStatus: 'IITC_IRIS_PASSCODE_STATUS',
   requestInventory: 'IITC_IRIS_REQUEST_INVENTORY',
   inventoryStatus: 'IITC_IRIS_INVENTORY_STATUS',
+  requestMissions: 'IITC_IRIS_REQUEST_MISSIONS',
+  requestMissionDetails: 'IITC_IRIS_REQUEST_MISSION_DETAILS',
+  missionZoom: 'IITC_IRIS_MISSION_ZOOM',
+  missionsStatus: 'IITC_IRIS_MISSIONS_STATUS',
   requestStatus: 'IITC_IRIS_REQUEST_STATUS',
   agentStatus: 'IITC_IRIS_AGENT_STATUS',
   searchRequest: 'IITC_IRIS_SEARCH_REQUEST',
@@ -115,6 +120,7 @@ export interface IitcIrisMessage {
   scores?: IitcIrisScoresState;
   passcode?: IitcIrisPasscodeState;
   inventory?: IitcIrisInventoryState;
+  missions?: IitcIrisMissionsState;
   agent?: IitcIrisAgentState;
   search?: IitcIrisSearchState;
   searchTerm?: string;
@@ -125,6 +131,12 @@ export interface IitcIrisMessage {
   commOlder?: boolean;
   commMessage?: string;
   passcodeText?: string;
+  missionSource?: IitcIrisMissionSource;
+  missionGuid?: string;
+  portalGuid?: string;
+  portalLat?: number;
+  portalLng?: number;
+  openPortal?: boolean;
 }
 
 export interface IitcIrisSearchResult {
@@ -311,6 +323,65 @@ export interface IitcIrisSubscriptionState {
   hasActive?: boolean;
   elapsedMs?: number;
   checkedAt?: number;
+  error?: string;
+}
+
+export type IitcIrisMissionSource = 'view' | 'portal';
+
+export interface IitcIrisMissionSummary {
+  guid: string;
+  title: string;
+  image?: string;
+  ratingE6?: number;
+  ratingPercent?: number;
+  medianCompletionTimeMs?: number;
+  durationLabel?: string;
+}
+
+export interface IitcIrisMissionWaypoint {
+  index: number;
+  hidden: boolean;
+  guid: string;
+  title: string;
+  typeNum: number;
+  type: string;
+  objectiveNum: number;
+  objective: string;
+  latE6?: number;
+  lngE6?: number;
+  portalGuid?: string;
+  portalTitle?: string;
+}
+
+export interface IitcIrisMissionDetails extends IitcIrisMissionSummary {
+  description: string;
+  authorNickname?: string;
+  authorTeam?: 'E' | 'R' | 'N' | 'M';
+  typeNum?: number;
+  type?: string;
+  numUniqueCompletedPlayers?: number;
+  waypoints: IitcIrisMissionWaypoint[];
+  routeLengthMeters?: number;
+  bounds?: {
+    south: number;
+    west: number;
+    north: number;
+    east: number;
+  };
+}
+
+export interface IitcIrisMissionsState {
+  status: 'idle' | 'loading' | 'ready' | 'empty' | 'error' | 'auth';
+  requestState: 'idle' | 'loading' | 'ready' | 'error' | 'auth';
+  source?: IitcIrisMissionSource;
+  caption?: string;
+  portalGuid?: string;
+  portalTitle?: string;
+  missions: IitcIrisMissionSummary[];
+  selectedMission?: IitcIrisMissionDetails;
+  detailsStatus?: 'idle' | 'loading' | 'ready' | 'empty' | 'error' | 'auth';
+  elapsedMs?: number;
+  detailsElapsedMs?: number;
   error?: string;
 }
 

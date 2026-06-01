@@ -2,7 +2,7 @@ import {h, render} from 'preact';
 import {useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import './iitc-iris.css';
 import {formatIitcColorVars, getIitcItemColor, getIitcLevelColor, getIitcRarityColor, IITC_RESONATOR_ENERGY} from './iitc-colors';
-import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisPasscodeState, type IitcIrisPlayerTrackerDiagnostics, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPlayerTrackerDiagnostics, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
 import {
   createIitcMapDataPlan,
   IITC_MAX_REQUESTS,
@@ -111,6 +111,7 @@ const SIDE_PANEL_OPTIONS = [
   {id: 'agent', label: 'Agent', title: 'Agent status'},
   {id: 'comm', label: 'COMM', title: 'COMM messages'},
   {id: 'scores', label: 'Scores', title: 'Scores'},
+  {id: 'missions', label: 'Missions', title: 'Missions'},
   {id: 'inventory', label: 'Inventory', title: 'Inventory'},
   {id: 'passcode', label: 'Passcode', title: 'Passcode redemption'},
 ] as const;
@@ -170,6 +171,12 @@ const EMPTY_SEARCH_STATE: IitcIrisSearchState = {
   confirmed: false,
   results: [],
   localResults: 0,
+};
+const EMPTY_MISSIONS_STATE: IitcIrisMissionsState = {
+  status: 'idle',
+  requestState: 'idle',
+  missions: [],
+  detailsStatus: 'idle',
 };
 
 interface CameraState {
@@ -763,6 +770,23 @@ function formatElapsedSeconds(milliseconds: number): string {
   return (Math.round(milliseconds / 100) / 10).toFixed(1);
 }
 
+function formatMissionRating(ratingE6: number | undefined): string {
+  if (ratingE6 === undefined) return '-';
+  return `${Math.round(ratingE6 / 10_000)}%`;
+}
+
+function formatMissionDuration(milliseconds: number | undefined, label: string | undefined): string {
+  if (label) return label;
+  if (milliseconds === undefined || milliseconds <= 0) return '-';
+  const minutes = Math.max(1, Math.round(milliseconds / 60000));
+  return minutes >= 60 ? `${Math.floor(minutes / 60)}h ${minutes % 60}m` : `${minutes}m`;
+}
+
+function formatDistance(meters: number | undefined): string {
+  if (meters === undefined || !Number.isFinite(meters) || meters <= 0) return '-';
+  return meters > 1000 ? `${Math.round(meters / 100) / 10}km` : `${Math.round(meters * 10) / 10}m`;
+}
+
 function formatInteger(value: number | undefined): string {
   return value === undefined || !Number.isFinite(value) ? '-' : value.toLocaleString();
 }
@@ -991,6 +1015,7 @@ function App(): h.JSX.Element {
   const [agentState, setAgentState] = useState<IitcIrisAgentState>(() => ({status: 'idle'}));
   const [commState, setCommState] = useState<IitcIrisCommState>(() => ({status: 'idle', tab: loadStoredCommTab(), messages: 0}));
   const [scoresState, setScoresState] = useState<IitcIrisScoresState>(() => ({status: 'idle', requestState: 'idle', region: {status: 'idle'}}));
+  const [missionsState, setMissionsState] = useState<IitcIrisMissionsState>(() => EMPTY_MISSIONS_STATE);
   const [passcodeState, setPasscodeState] = useState<IitcIrisPasscodeState>(() => ({status: 'idle', requestState: 'idle'}));
   const [requestDiagnostics, setRequestDiagnostics] = useState<IitcIrisRequestDiagnostics>(EMPTY_REQUEST_DIAGNOSTICS);
   const [inventoryState, setInventoryState] = useState<IitcIrisInventoryState>(() => ({
@@ -1207,6 +1232,7 @@ function App(): h.JSX.Element {
       agent: agentState,
       comm: commState,
       scores: scoresState,
+      missions: missionsState,
       passcodes: passcodeState,
       inventory: inventoryState,
     },
@@ -1468,6 +1494,26 @@ function App(): h.JSX.Element {
     } satisfies IitcIrisMessage, '*');
   };
 
+  const refreshMissions = (source: IitcIrisMissionSource = missionsState.source ?? 'view'): void => {
+    window.postMessage({
+      type: IITC_IRIS_MESSAGES.requestMissions,
+      missionSource: source,
+    } satisfies IitcIrisMessage, '*');
+  };
+
+  const requestMissionDetails = (missionGuid: string): void => {
+    window.postMessage({
+      type: IITC_IRIS_MESSAGES.requestMissionDetails,
+      missionGuid,
+    } satisfies IitcIrisMessage, '*');
+  };
+
+  const zoomToMission = (): void => {
+    window.postMessage({
+      type: IITC_IRIS_MESSAGES.missionZoom,
+    } satisfies IitcIrisMessage, '*');
+  };
+
   const redeemPasscode = (): void => {
     const passcode = passcodeDraft.replace(/[^\x20-\x7E]+/g, '').trim();
     if (!passcode || passcodeState.status === 'loading') return;
@@ -1587,9 +1633,19 @@ function App(): h.JSX.Element {
     });
   };
 
-  const focusCommPortal = (latE6?: number, lngE6?: number): void => {
+  const focusPortalReference = (portalGuid?: string, latE6?: number, lngE6?: number, zoom = Math.max(camera.zoom, 15)): void => {
+    window.postMessage({
+      type: IITC_IRIS_MESSAGES.focusPortal,
+      portalGuid,
+      portalLat: latE6 === undefined ? undefined : latE6 / 1_000_000,
+      portalLng: lngE6 === undefined ? undefined : lngE6 / 1_000_000,
+      zoom,
+    } satisfies IitcIrisMessage, '*');
+  };
+
+  const focusCommPortal = (latE6?: number, lngE6?: number, portalGuid?: string): void => {
     if (latE6 === undefined || lngE6 === undefined) return;
-    setMapView(latE6 / 1_000_000, lngE6 / 1_000_000, Math.max(camera.zoom, 15));
+    focusPortalReference(portalGuid, latE6, lngE6);
   };
 
   const panMap = (direction: 'north' | 'south' | 'west' | 'east'): void => {
@@ -1625,18 +1681,22 @@ function App(): h.JSX.Element {
 
   const canPan = camera.bounds !== null;
   const activeSidePanelOption = SIDE_PANEL_OPTIONS.find((option) => option.id === activeSidePanel) ?? null;
-  const activePrimaryMenu = getPrimaryMenuId(activeSheet);
+  const activePrimaryMenu = activeSheet === 'missions' && missionsState.source === 'portal'
+    ? 'portal'
+    : getPrimaryMenuId(activeSheet);
   const activeSidePanelStatus = activeSidePanel === 'comm'
     ? commState.status
     : activeSidePanel === 'scores'
       ? scoresState.status
-      : activeSidePanel === 'inventory'
-        ? inventoryState.status
-        : activeSidePanel === 'passcode'
-          ? passcodeState.status
-          : activeSidePanel === 'agent'
-            ? agentState.status
-            : 'idle';
+      : activeSidePanel === 'missions'
+        ? missionsState.status
+        : activeSidePanel === 'inventory'
+          ? inventoryState.status
+          : activeSidePanel === 'passcode'
+            ? passcodeState.status
+            : activeSidePanel === 'agent'
+              ? agentState.status
+              : 'idle';
   const openCommPanel = (tab?: IitcIrisCommTab): void => {
     if (tab) refreshComm(tab);
     openSheet('comm');
@@ -1708,6 +1768,10 @@ function App(): h.JSX.Element {
       }
       if (event.data?.type === IITC_IRIS_MESSAGES.inventoryStatus && event.data.inventory) {
         setInventoryState(event.data.inventory);
+        if (event.data.requestDiagnostics) setRequestDiagnostics(event.data.requestDiagnostics);
+      }
+      if (event.data?.type === IITC_IRIS_MESSAGES.missionsStatus && event.data.missions) {
+        setMissionsState(event.data.missions);
         if (event.data.requestDiagnostics) setRequestDiagnostics(event.data.requestDiagnostics);
       }
       if (event.data?.type === IITC_IRIS_MESSAGES.requestStatus && event.data.requestDiagnostics) {
@@ -2468,10 +2532,14 @@ function App(): h.JSX.Element {
               <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'view' ? 'is-active' : ''}`} type="button" onClick={() => openSheet('view')}>View</button>
               <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'scores' ? 'is-active' : ''}`} type="button" onClick={() => openSheet('scores')}>Scores</button>
               <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'search' ? 'is-active' : ''}`} type="button" onClick={() => openSheet('search')}>Search</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'missions' && missionsState.source !== 'portal' ? 'is-active' : ''}`} type="button" onClick={() => { openSheet('missions'); refreshMissions('view'); }}>Missions</button>
             </>
           )}
           {activePrimaryMenu === 'portal' && (
-            <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'portal' ? 'is-active' : ''}`} type="button" onClick={() => openSheet('portal')} disabled={!entityFetch.selectedPortal}>Details</button>
+            <>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'portal' ? 'is-active' : ''}`} type="button" onClick={() => openSheet('portal')} disabled={!entityFetch.selectedPortal}>Details</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'missions' && missionsState.source === 'portal' ? 'is-active' : ''}`} type="button" onClick={() => { openSheet('missions'); refreshMissions('portal'); }} disabled={!entityFetch.selectedPortal}>Missions</button>
+            </>
           )}
           {activePrimaryMenu === 'agent' && (
             <>
@@ -2882,7 +2950,7 @@ function App(): h.JSX.Element {
                                   className="iitc-iris-comm-portal"
                                   type="button"
                                   title={part.portal?.address || part.text}
-                                  onClick={() => focusCommPortal(part.portal?.latE6, part.portal?.lngE6)}
+                                  onClick={() => focusCommPortal(part.portal?.latE6, part.portal?.lngE6, part.portal?.guid)}
                                   key={key}
                                 >
                                   {part.text}
@@ -3025,6 +3093,127 @@ function App(): h.JSX.Element {
               </div>
             </div>
           )}
+          {activeSidePanel === 'missions' && (
+            <div className="iitc-iris-request-panel-body">
+              <div className="iitc-iris-map-control-row">
+                <button className="iitc-iris-portal-action" type="button" onClick={() => refreshMissions('view')} disabled={missionsState.status === 'loading'} title="Fetch top missions in the current map view">
+                  View
+                </button>
+                <button className="iitc-iris-portal-action" type="button" onClick={() => refreshMissions('portal')} disabled={!entityFetch.selectedPortal || missionsState.status === 'loading'} title="Fetch top missions starting at the selected portal">
+                  Portal
+                </button>
+                <button className="iitc-iris-portal-action" type="button" onClick={() => refreshMissions()} disabled={missionsState.status === 'loading'} title="Refresh current mission source">
+                  {missionsState.status === 'loading' ? 'Loading' : 'Refresh'}
+                </button>
+              </div>
+              <div className="iitc-iris-panel-summary">
+                <span><b>{formatInteger(missionsState.missions.length)}</b><small>{missionsState.source === 'portal' ? 'portal missions' : 'view missions'}</small></span>
+                <span><b>{missionsState.selectedMission?.waypoints.length ?? '-'}</b><small>waypoints</small></span>
+                <span><b>{formatDistance(missionsState.selectedMission?.routeLengthMeters)}</b><small>length</small></span>
+              </div>
+              {missionsState.caption && (
+                <div className="iitc-iris-inventory-selected" title={missionsState.portalGuid}>
+                  <span className="iitc-iris-status">{missionsState.source === 'portal' ? 'portal' : 'view'}</span>
+                  <b>{missionsState.caption}</b>
+                </div>
+              )}
+              {(missionsState.status === 'empty' || (missionsState.missions.length === 0 && missionsState.status !== 'loading' && missionsState.status !== 'idle')) && (
+                <div className="iitc-iris-empty-state">No missions found for this source.</div>
+              )}
+              <div className="iitc-iris-scroll-region iitc-iris-missions-scroll">
+                {missionsState.missions.length > 0 && (
+                  <div className="iitc-iris-mission-list">
+                    {missionsState.missions.map((mission) => (
+                      <button
+                        className={`iitc-iris-mission-row ${missionsState.selectedMission?.guid === mission.guid ? 'is-active' : ''}`}
+                        type="button"
+                        key={mission.guid}
+                        onClick={() => requestMissionDetails(mission.guid)}
+                        disabled={missionsState.detailsStatus === 'loading' && missionsState.selectedMission?.guid === mission.guid}
+                        title={mission.guid}
+                      >
+                        {mission.image && <img src={mission.image} alt="" loading="lazy" />}
+                        <span>
+                          <b>{mission.title}</b>
+                          <small>{formatMissionRating(mission.ratingE6)} rating · {formatMissionDuration(mission.medianCompletionTimeMs, mission.durationLabel)}</small>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {missionsState.selectedMission && (
+                  <div className="iitc-iris-mission-details">
+                    <div className="iitc-iris-mission-details-head">
+                      {missionsState.selectedMission.image && <img src={missionsState.selectedMission.image} alt="" loading="lazy" />}
+                      <span>
+                        <b>{missionsState.selectedMission.title}</b>
+                        <small>
+                          {missionsState.selectedMission.authorNickname ? (
+                            <span className={getCommTeamClass(missionsState.selectedMission.authorTeam)}>
+                              {missionsState.selectedMission.authorNickname}
+                            </span>
+                          ) : 'unknown author'}
+                        </small>
+                      </span>
+                    </div>
+                    <div className="iitc-iris-mission-metrics">
+                      <span title="Average rating"><b>{formatMissionRating(missionsState.selectedMission.ratingE6)}</b><small>rating</small></span>
+                      <span title="Typical duration"><b>{formatMissionDuration(missionsState.selectedMission.medianCompletionTimeMs, missionsState.selectedMission.durationLabel)}</b><small>typical</small></span>
+                      <span title="Length of this mission. The actual distance required may vary."><b>{formatDistance(missionsState.selectedMission.routeLengthMeters)}</b><small>length</small></span>
+                      <span title="Unique players who have completed this mission"><b>{formatInteger(missionsState.selectedMission.numUniqueCompletedPlayers)}</b><small>agents</small></span>
+                      <span title={`${missionsState.selectedMission.type ?? 'Unknown'} mission with ${missionsState.selectedMission.waypoints.length} waypoints`}><b>{missionsState.selectedMission.waypoints.length}</b><small>waypoints</small></span>
+                      <span title="Mission order"><b>{missionsState.selectedMission.type ?? '-'}</b><small>order</small></span>
+                    </div>
+                    {missionsState.selectedMission.description && (
+                      <p className="iitc-iris-mission-description">{missionsState.selectedMission.description}</p>
+                    )}
+                    <button className="iitc-iris-portal-action" type="button" onClick={zoomToMission} disabled={!missionsState.selectedMission.bounds} title="Zoom to mission route">
+                      Zoom
+                    </button>
+                    <div className="iitc-iris-mission-waypoint-list">
+                      {missionsState.selectedMission.waypoints.map((waypoint) => (
+                        <button
+                          className={`iitc-iris-mission-waypoint ${waypoint.hidden ? 'is-hidden' : ''}`}
+                          type="button"
+                          key={`${waypoint.guid}-${waypoint.index}`}
+                          onClick={() => {
+                            if (waypoint.latE6 !== undefined && waypoint.lngE6 !== undefined) {
+                              focusPortalReference(waypoint.portalGuid, waypoint.latE6, waypoint.lngE6);
+                            }
+                          }}
+                          disabled={waypoint.latE6 === undefined || waypoint.lngE6 === undefined}
+                          title={waypoint.portalGuid || waypoint.guid}
+                        >
+                          <b>{waypoint.index + 1}</b>
+                          <span>
+                            <strong>{waypoint.hidden ? 'Hidden waypoint' : waypoint.title}</strong>
+                            <small>{waypoint.objective} · {waypoint.type}</small>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="iitc-iris-panel-footer">
+                <span
+                  className="iitc-iris-diagnostics-chip"
+                  title={[
+                    missionsState.source === 'portal' ? 'request: /r/getTopMissionsForPortal' : 'request: /r/getTopMissionsInBounds',
+                    `portal: ${missionsState.portalGuid ?? '-'}`,
+                  ].join('\n')}
+                >
+                  {missionsState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(missionsState.elapsedMs)}s` : 'request'}
+                </span>
+                {missionsState.detailsElapsedMs !== undefined && (
+                  <span className="iitc-iris-diagnostics-chip" title="request: /r/getMissionDetails">
+                    details {formatElapsedSeconds(missionsState.detailsElapsedMs)}s
+                  </span>
+                )}
+                {missionsState.error && <span className="iitc-iris-warning">{missionsState.error}</span>}
+              </div>
+            </div>
+          )}
           {activeSidePanel === 'inventory' && (
             <div className="iitc-iris-request-panel-body">
               <div className="iitc-iris-map-control-row">
@@ -3100,11 +3289,11 @@ function App(): h.JSX.Element {
                     <span className="iitc-iris-status">Top keys</span>
                     <div className="iitc-iris-inventory-list">
                       {inventoryState.topKeys.map((key) => (
-                        <div className="iitc-iris-inventory-row" key={key.portalGuid} title={key.portalGuid}>
+                        <button className="iitc-iris-inventory-row iitc-iris-inventory-key-row" type="button" key={key.portalGuid} title={key.portalGuid} onClick={() => focusPortalReference(key.portalGuid, undefined, undefined)}>
                           <span>{key.portalTitle || key.portalGuid}</span>
                           <b>{key.count}</b>
                           {key.capsule > 0 && <small>{key.capsule} capsule</small>}
-                        </div>
+                        </button>
                       ))}
                     </div>
                   </div>

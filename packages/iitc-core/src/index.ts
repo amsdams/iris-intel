@@ -9,4 +9,5 @@ export * from './player-tracker';
 export * from './artifact';
 export * from './ornaments';
 export * from './inventory';
+export * from './missions';
 export * from './types';

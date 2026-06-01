@@ -95,6 +95,11 @@ Recent completed progress:
   while keeping map-linked references and diagnostic context available.
 - Agent/player systems: player profile reads IITC-style page player data, inventory and passcode are separate
   Agent-domain sheets, player tracker pins/popups use faction marker imagery and the IITC IRIS dark look.
+- Missions: first-pass Missions support is wired from the IITC Missions plugin concepts into the IRIS sheet model:
+  `getTopMissionsInBounds`, `getTopMissionsForPortal`, and `getMissionDetails` are available from Map/Portal Missions,
+  mission summaries/details parse through `packages/iitc-core/src/missions.ts`, selected mission routes draw on the map,
+  route length/type/rating/duration/waypoint details are shown, and mission zoom uses IITC-style bounds with
+  `DEFAULT_ZOOM` as the max zoom.
 - UX polish: faction colors are applied more consistently to agents/owners/actors, request elapsed/ready chips moved to
   consistent panel footers or headers, keyboard shortcuts and a shortcuts sheet exist, and map keyboard focus can be
   controlled from System settings.
@@ -112,8 +117,51 @@ Intentional divergences and accepted gaps for this checkpoint:
   parity.
 - Retry-exhausted stale fallback is wired and diagnosed but still needs a live case that proves cached stale tiles render
   exactly like IITC.
+- Missions intentionally use explicit IRIS sheet actions rather than IITC's dialog collapse/expand refresh lifecycle.
+  Portal mission enrichment from `mission` / `mission50plus` is documented but parked after an early attempt caused
+  confusing Map/Portal Missions source switching. IITC mission caching and progress/checkmark state are not ported yet.
 - Artifact non-empty live payloads, richer player tracker plugin behavior, plugin hooks, draw tools, highlighters,
   bookmarks, portal lists, and broader planning workflows remain later passes.
+
+### Missions Port Pass - 2026-06-01
+
+IITC source references:
+
+- `reference/IITC-CE/plugins/missions.js`
+- `reference/IITC-CE/plugins/missions.css`
+- `reference/IITC-CE/core/code/portal_marker.js` for portal detail fields `mission` and `mission50plus`
+- `reference/IITC-CE/plugins/images/mission-type-*.png` and `mission-length.png` for later visual parity
+
+Ported IITC concepts and names:
+
+- Endpoints: `getTopMissionsInBounds`, `getTopMissionsForPortal`, `getMissionDetails`
+- Parser/core facade: `packages/iitc-core/src/missions.ts` with `parseIitcTopMissionsResponse`,
+  `parseIitcMissionDetailsResponse`, `decodeIitcMissionSummary`, `decodeIitcMission`,
+  `decodeIitcMissionWaypoint`, `getIitcMissionBounds`, and `formatIitcMissionDuration`
+- Mission domain values: sequential/non-sequential/hidden mission order, portal/field-trip waypoint target,
+  waypoint objectives, rating, median completion time, unique completed players, route length, and mission bounds
+- Runtime/UI wiring: `IITC_IRIS_REQUEST_MISSIONS`, `IITC_IRIS_REQUEST_MISSION_DETAILS`,
+  `IITC_IRIS_MISSION_ZOOM`, and `IITC_IRIS_MISSIONS_STATUS`
+
+Current implementation choices:
+
+- Map Missions and Portal Missions are explicit IRIS sheet actions. Unlike IITC's dialog lifecycle, opening/collapsing
+  the sheet does not automatically re-request missions; this avoids duplicate request aborts in the extension shell.
+- Mission list sorting follows IITC's natural alphanumeric title sort in the runtime before display.
+- Mission route rendering uses IITC plugin route colors (`#404000` and `#A6A600`) and a separate Leaflet mission pane.
+- Portal waypoint buttons use the existing IRIS portal-link navigation path so a loaded portal can be selected as well
+  as panned/zoomed to.
+
+Known gaps before calling Missions parity-complete:
+
+- IITC portal detail enrichment adds a `Missions` link only when portal details include `mission` or `mission50plus`.
+  Reintroduce this carefully after the Map/Portal source switching bugs are settled.
+- IITC caches mission details for 3 days and portal mission summaries for 3 weeks. IRIS currently does not cache mission
+  responses beyond current runtime state.
+- IITC mission progress/checkmark state, sync, app panes/dialog behavior, mission type/length icons, distance-to-mission,
+  and Create New Mission link are not ported.
+- Live comparison still needs copied diagnostics for request count/source, mission order, route bounds, and portal
+  mission single-result behavior.
 
 General improvement backlog before calling this replacement-ready:
 
@@ -127,7 +175,8 @@ General improvement backlog before calling this replacement-ready:
 - Continue IITC comparison passes on active requests during map movement: entity requests, `getPlexts`, portal details,
   inventory, scores, passcodes, and geocoder requests should all have expected overlap/idle behavior documented.
 - Add missing known Intel/IITC-plugin request surfaces to the backlog and expose them in UI when ported:
-  `getHasActiveSubscription`, `getTopMissionsInBounds`, `getTopMissionsForPortal`, and `getMissionDetails`.
+  keep expanding beyond the already started `getHasActiveSubscription` and Missions endpoints as new IITC/plugin
+  request surfaces are verified.
 - Add IITC-style long-press/right-click interactions for map and portal context actions. This should work across desktop
   right click and mobile long press, with clear touch behavior that does not fight normal map panning.
 - Make portal navigation from COMM, search, player tracker, inventory keys, and other portal links select the portal as
@@ -667,6 +716,9 @@ Current status:
   under the Agent menu. Inventory and Passcode are separate Agent-domain sheets.
 - Active request diagnostics now include `getEntities`, `getPlexts`, portal details, scores, inventory, passcodes, and
   other side requests so IITC vs IITC IRIS comparisons can see when non-entity work overlaps map movement or rendering.
+- Missions first pass is now a native, read-only smart-port of IITC's missions plugin: `Map -> Missions` calls
+  `/r/getTopMissionsInBounds`, `Portal -> Missions` calls `/r/getTopMissionsForPortal`, details call
+  `/r/getMissionDetails`, and selected mission routes/waypoints render on the map.
 
 ### Menu Symbol Guidance
 
@@ -699,13 +751,13 @@ what to port natively and what to leave out.
 | Long-press/right-click context | Open | Port IITC-style context interactions for map and portal actions. Support desktop right click and mobile long press without breaking map drag/pan gestures. |
 | Portal-link navigation selection | Open | Navigating from COMM, search, player tracker, inventory keys, or other portal links should also select the portal and open/prepare the normal portal details context when possible. |
 | C.O.R.E. subscription check | Open | Current IRIS/Mini-IRIS use `/r/getHasActiveSubscription` to track Intel inventory access, show C.O.R.E. status, and gate inventory polling/UI. IITC-CE reference core does not use this endpoint, so port it as an Intel capability rather than IITC core parity. |
-| Mission endpoints | Open | IITC missions plugin uses `/r/getTopMissionsInBounds`, `/r/getTopMissionsForPortal`, and `/r/getMissionDetails`. Port as a plugin-style vertical slice with map/portal UI entry points. |
+| Mission endpoints | Partial | First read-only vertical slice exists: top missions in view, selected-portal missions, details, route/waypoint map overlay, and elapsed diagnostics. Remaining parity: persistent IITC-style mission caches, richer dialog actions, completed/progress state, uniques/history integrations, and plugin hooks. |
 | Bookmarks and saved map/portal sets | Open | High-value IITC workflow still missing. Should be designed around persistent saved portals/views before broad plugin parity. |
 | Keys workflows | Partial | Basic key counts and inventory parsing exist. Missing richer IITC `keys`/`keys-on-map` workflows, key search/list views, and saved key-management affordances. |
 | Draw/planning tools | Open | IITC `draw-tools` concepts are not ported: lines, polygons, circles, import/export, and planning interactions. This should be a dedicated pass. |
 | Link analysis layers | Open | Missing cross-links, link direction, linked portals, tidy/fly/done links, and related planning helpers. |
 | Portal list/count views | Open | Missing IITC-style viewport portal tables, portal counts, and analysis lists. |
-| Missions/uniques/history workflows | Partial | Portal history indicators exist; full missions, uniques, and richer history list workflows are not ported. |
+| Missions/uniques/history workflows | Partial | Portal history indicators and mission discovery/details exist. Missing full completed/progress workflows, uniques, and richer history list workflows. |
 | Map utility plugins | Open | Missing user location, minimap, scale bar, zoom slider, privacy view, overlay KML, and similar utility plugins. |
 | COMM/player plugin ecosystem | Partial | COMM and player tracker work, but richer COMM filters/hooks, nickname plugin interactions, and player level guess are not ported. |
 | Dialog/sidebar/statusbar model | Diverged | IITC IRIS intentionally uses bottom sheets and a two-layer menu instead of IITC's sidebar/statusbar/dropdown model. Keep this documented as product-shell divergence. |
