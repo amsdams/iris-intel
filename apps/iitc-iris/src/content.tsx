@@ -1866,6 +1866,14 @@ function App(): h.JSX.Element {
   }, [activeSidePanel, inventoryState.status]);
 
   useEffect(() => {
+    if (activeSidePanel !== 'missions') return;
+    if (missionsState.source !== 'portal' || missionsState.status === 'loading') return;
+    const selectedPortalGuid = entityFetch.selectedPortal?.guid;
+    if (!selectedPortalGuid || selectedPortalGuid === missionsState.portalGuid) return;
+    refreshMissions('portal');
+  }, [activeSidePanel, entityFetch.selectedPortal?.guid, missionsState.portalGuid, missionsState.source, missionsState.status]);
+
+  useEffect(() => {
     const term = searchTerm.trim();
     if (term.length === 0) {
       setSearchState(EMPTY_SEARCH_STATE);

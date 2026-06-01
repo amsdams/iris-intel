@@ -156,6 +156,10 @@ Known gaps before calling Missions parity-complete:
 
 - IITC portal detail enrichment adds a `Missions` link only when portal details include `mission` or `mission50plus`.
   Reintroduce this carefully after the Map/Portal source switching bugs are settled.
+- Portal Missions currently refreshes when the Missions sheet is already showing portal-source data and the selected
+  portal changes, but unlike core portal details it is not part of every portal selection. Revisit this after comparing
+  vanilla Intel mission behavior and IITC plugin behavior: decide whether Portal Missions should stay sheet-scoped,
+  become a portal-detail enrichment action, or adopt a cached selection-driven model.
 - IITC caches mission details for 3 days and portal mission summaries for 3 weeks. IRIS currently does not cache mission
   responses beyond current runtime state.
 - IITC mission progress/checkmark state, sync, app panes/dialog behavior, mission type/length icons, distance-to-mission,

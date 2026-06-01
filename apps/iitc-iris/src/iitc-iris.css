@@ -2244,6 +2244,22 @@ button.iitc-iris-inventory-row:hover {
   pointer-events: none;
 }
 
+.iitc-iris-mission-waypoint-label {
+  width: 12px;
+  height: 12px;
+  border: 0;
+  background: transparent;
+  color: #ffffbb;
+  font: 700 10px/12px monospace;
+  text-align: center;
+  text-shadow: 0 0 1px #000, 0 0 1em #000, 0 0 0.2em #000;
+  pointer-events: none;
+}
+
+.iitc-iris-mission-waypoint-label.is-start {
+  color: #ffff66;
+}
+
 .iitc-iris-player-tracker-marker {
   width: 22px;
   height: 30px;

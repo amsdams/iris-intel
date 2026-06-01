@@ -19,6 +19,7 @@ import {
   getIitcCommChannelMessages,
   getIitcInventoryPortalKeyCount,
   getIitcMissionBounds,
+  IITC_MISSION_ORDER,
   getIitcPlayerTrackerDiagnostics,
   getIitcPlayerTrackerLatLng,
   getIitcOrnamentDefinition,
@@ -1822,13 +1823,12 @@ function renderMissionOverlay(mission: IitcIrisMissionDetails | undefined): void
       : []);
   if (points.length === 0) return;
 
-  if (points.length > 1) {
+  if (mission.typeNum === IITC_MISSION_ORDER.sequential && points.length > 1) {
     addRenderedLayer(layers.missions, L.polyline(points.map((point) => point.latLng), {
       color: MISSION_ROUTE_COLOR,
       opacity: 1,
       pane: getLayerPane('missions'),
       weight: 2,
-      dashArray: mission.typeNum === 2 ? '1,5' : undefined,
       interactive: false,
     }));
   }
@@ -1849,7 +1849,30 @@ function renderMissionOverlay(mission: IitcIrisMissionDetails | undefined): void
       pane: getLayerPane('missions'),
     });
     addRenderedLayer(layers.missions, marker);
+
+    const label = L.marker(latLng, {
+      icon: L.divIcon({
+        className: `iitc-iris-mission-waypoint-label ${isStart ? 'is-start' : ''}`,
+        html: String(index + 1),
+        iconSize: [12, 12],
+        iconAnchor: [6, 6],
+      }),
+      interactive: false,
+      keyboard: false,
+      pane: getLayerPane('missions'),
+    });
+    addRenderedLayer(layers.missions, label);
   });
+}
+
+function panToMissionStart(mission: IitcIrisMissionDetails | undefined): void {
+  const map = window.__iitcIrisMap;
+  const start = mission?.waypoints.find((waypoint) => waypoint.latE6 !== undefined && waypoint.lngE6 !== undefined);
+  if (!map || !start || start.latE6 === undefined || start.lngE6 === undefined) return;
+  const latLng = toLatLng(start.latE6, start.lngE6);
+  if (!map.getBounds().contains(latLng)) {
+    map.panTo(latLng);
+  }
 }
 
 async function refreshMissions(source: IitcIrisMissionSource = 'view'): Promise<void> {
@@ -1948,6 +1971,7 @@ async function refreshMissionDetails(guid: unknown): Promise<void> {
       detailsElapsedMs: performance.now() - startedAt,
     };
     renderMissionOverlay(selectedMission);
+    panToMissionStart(selectedMission);
     postMissionsState();
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') return;
