@@ -2606,14 +2606,6 @@ function App(): h.JSX.Element {
       <nav className="iitc-iris-sheet-tabbar" aria-label="Panels">
         <div className="iitc-iris-sheet-tabbar-primary">
           <button
-            className={`iitc-iris-sheet-tab ${activePrimaryMenu === 'map' ? 'is-active' : ''}`}
-            type="button"
-            onClick={() => openSheet(activePrimaryMenu === 'map' && activeSheet !== 'map' ? 'map' : 'layers')}
-            title="Map menu (M)"
-          >
-            Map
-          </button>
-          <button
             className={`iitc-iris-sheet-tab ${activePrimaryMenu === 'portal' ? 'is-active' : ''}`}
             type="button"
             onClick={() => openSheet('portal')}
@@ -2621,6 +2613,14 @@ function App(): h.JSX.Element {
             title="Portal menu (P)"
           >
             Portal
+          </button>
+          <button
+            className={`iitc-iris-sheet-tab ${activePrimaryMenu === 'map' ? 'is-active' : ''}`}
+            type="button"
+            onClick={() => openSheet(activePrimaryMenu === 'map' && activeSheet !== 'map' ? 'map' : 'layers')}
+            title="Map menu (M)"
+          >
+            Map
           </button>
           <button
             className={`iitc-iris-sheet-tab ${activePrimaryMenu === 'agent' ? 'is-active' : ''}`}

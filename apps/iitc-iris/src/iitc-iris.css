@@ -2007,6 +2007,7 @@ button.iitc-iris-inventory-row:hover {
 }
 
 .iitc-iris-sheet-tabbar {
+  --iitc-iris-tabbar-clearance: 96px;
   position: absolute;
   right: 12px;
   bottom: 12px;
@@ -2038,9 +2039,24 @@ button.iitc-iris-inventory-row:hover {
 
 .iitc-iris-sheet-tabbar-secondary {
   grid-row: 1;
-  grid-template-columns: repeat(auto-fit, minmax(68px, 1fr));
+  grid-auto-columns: minmax(72px, max-content);
+  grid-auto-flow: column;
+  grid-template-columns: none;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
   padding-bottom: 5px;
   border-bottom: 1px solid rgb(95 180 255 / 16%);
+  scrollbar-width: thin;
+  white-space: nowrap;
+}
+
+.iitc-iris-sheet-tabbar-secondary::-webkit-scrollbar {
+  height: 3px;
+}
+
+.iitc-iris-sheet-tabbar-secondary::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgb(95 180 255 / 32%);
 }
 
 .iitc-iris-sheet-tab {
@@ -2147,7 +2163,7 @@ button.iitc-iris-inventory-row:hover {
   .iitc-iris-request-side-panel,
   .iitc-iris-search {
     right: 8px;
-    bottom: 96px;
+    bottom: var(--iitc-iris-tabbar-clearance, 96px);
     left: 8px;
     width: auto;
     max-height: min(64vh, 480px);

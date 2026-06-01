@@ -191,6 +191,9 @@ General improvement backlog before calling this replacement-ready:
 - Decompose the large `apps/iitc-iris/src/content.tsx` into focused sheets/components/hooks once behavior settles:
   suggested first cuts are `SearchSheet`, `PortalSheet`, `MissionsSheet`, `CommSheet`, `SystemSheet`, menu state, and
   keyboard shortcuts.
+- Revisit mobile menu architecture after live use. Current mitigation keeps submenus to one horizontal scroll row; later
+  options include icon-first submenus, an overflow "More" action, per-primary compact drawers, or promoting rarely used
+  actions into their sheets instead of the tabbar.
 - Add focused tests around the new pure logic that is easy to isolate: COMM display de-duplication, search result
   ordering/grouping, portal details cached/loading state, mission sorting, mission cache TTL behavior, selected mission
   state transitions, and shortcut/menu state transitions.
