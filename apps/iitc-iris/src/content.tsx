@@ -771,6 +771,30 @@ function formatPercent(value: number | undefined): string {
   return value === undefined || !Number.isFinite(value) ? '-' : `${Math.round(value)}%`;
 }
 
+function formatSubscriptionLabel(subscription: IitcIrisInventoryState['subscription']): string {
+  if (!subscription || subscription.status === 'unknown') return 'C.O.R.E. unknown';
+  if (subscription.status === 'loading') return 'checking C.O.R.E.';
+  if (subscription.status === 'active') return 'C.O.R.E. active';
+  if (subscription.status === 'inactive') return 'C.O.R.E. inactive';
+  if (subscription.status === 'auth') return 'C.O.R.E. auth';
+  return 'C.O.R.E. error';
+}
+
+function formatSubscriptionBadge(subscription: IitcIrisInventoryState['subscription']): string {
+  if (!subscription || subscription.status === 'unknown') return 'C.O.R.E. ?';
+  if (subscription.status === 'loading') return 'C.O.R.E. ...';
+  if (subscription.status === 'active') return 'C.O.R.E.';
+  if (subscription.status === 'inactive') return 'no C.O.R.E.';
+  return 'C.O.R.E. !';
+}
+
+function getSubscriptionStatusClass(subscription: IitcIrisInventoryState['subscription']): string {
+  if (!subscription || subscription.status === 'unknown') return 'is-unknown';
+  if (subscription.status === 'active') return 'is-active';
+  if (subscription.status === 'loading') return 'is-loading';
+  return 'is-inactive';
+}
+
 function formatScoreLead(enlightened: number | undefined, resistance: number | undefined): string {
   if (enlightened === undefined || resistance === undefined) return '-';
   if (enlightened === resistance) return 'tied';
@@ -972,6 +996,7 @@ function App(): h.JSX.Element {
   const [inventoryState, setInventoryState] = useState<IitcIrisInventoryState>(() => ({
     status: 'idle',
     requestState: 'idle',
+    subscription: {status: 'unknown'},
     items: 0,
     keys: 0,
     portalsWithKeys: 0,
@@ -2729,6 +2754,15 @@ function App(): h.JSX.Element {
 	                        <strong className={getCommTeamClass(agentState.team)}>{agentState.nickname}</strong>
 	                        <small>{agentState.team === 'R' ? 'Resistance' : agentState.team === 'E' ? 'Enlightened' : 'Neutral'}</small>
 	                      </span>
+	                      <span
+	                        className={`iitc-iris-core-badge ${getSubscriptionStatusClass(agentState.subscription)}`}
+	                        title={[
+	                          formatSubscriptionLabel(agentState.subscription),
+	                          agentState.subscription?.elapsedMs !== undefined ? `request: ${formatElapsedSeconds(agentState.subscription.elapsedMs)}s` : 'request: pending',
+	                        ].join('\n')}
+	                      >
+	                        {formatSubscriptionBadge(agentState.subscription)}
+	                      </span>
 	                    </div>
 	                    <div className="iitc-iris-panel-summary">
 	                      <span><b>{formatInteger(agentState.ap)}</b><small>AP</small></span>
@@ -2762,12 +2796,19 @@ function App(): h.JSX.Element {
 	                      className="iitc-iris-diagnostics-chip"
 	                      title={[
 	                        'source: window.PLAYER inline Intel data',
+	                        `subscription: ${formatSubscriptionLabel(agentState.subscription)}`,
+	                        agentState.subscription?.elapsedMs !== undefined ? `subscription request: ${formatElapsedSeconds(agentState.subscription.elapsedMs)}s` : 'subscription request: pending',
 	                        'matches IITC sidebar static stats behavior',
 	                        'reload page to refresh agent stats',
 	                      ].join('\n')}
 	                    >
-	                      static page stats
+	                      {formatSubscriptionLabel(agentState.subscription)}
 	                    </span>
+	                    {agentState.subscription?.elapsedMs !== undefined && (
+	                      <span className="iitc-iris-diagnostics-chip">
+	                        core {formatElapsedSeconds(agentState.subscription.elapsedMs)}s
+	                      </span>
+	                    )}
 	                  </div>
 	                </>
 	              ) : (
@@ -2993,6 +3034,9 @@ function App(): h.JSX.Element {
                 <span className={`iitc-iris-status ${inventoryState.status === 'error' || inventoryState.status === 'auth' ? 'iitc-iris-warning' : ''}`}>
                   {inventoryState.status}
                 </span>
+                <span className={`iitc-iris-status ${getSubscriptionStatusClass(inventoryState.subscription)}`}>
+                  {formatSubscriptionLabel(inventoryState.subscription)}
+                </span>
               </div>
               <div className="iitc-iris-panel-summary">
                 <span><b>{formatInteger(inventoryState.items)} / 2500</b><small>items</small></span>
@@ -3071,12 +3115,22 @@ function App(): h.JSX.Element {
                   className="iitc-iris-diagnostics-chip"
                   title={[
                     'request: /r/getInventory lastQueryTimestamp=0',
+                    'subscription request: /r/getHasActiveSubscription',
+                    `subscription: ${formatSubscriptionLabel(inventoryState.subscription)}`,
                     `raw: ${formatInteger(inventoryState.rawItems)}`,
                     `selected portal: ${inventoryState.selectedPortalGuid ?? '-'}`,
                   ].join('\n')}
                 >
                   {inventoryState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(inventoryState.elapsedMs)}s` : 'request'}
                 </span>
+                {inventoryState.subscription?.elapsedMs !== undefined && (
+                  <span
+                    className="iitc-iris-diagnostics-chip"
+                    title="request: /r/getHasActiveSubscription"
+                  >
+                    core {formatElapsedSeconds(inventoryState.subscription.elapsedMs)}s
+                  </span>
+                )}
                 {inventoryState.error && <span className="iitc-iris-warning">{inventoryState.error}</span>}
               </div>
             </div>

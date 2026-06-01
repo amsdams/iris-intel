@@ -200,6 +200,7 @@ export interface IitcIrisAgentState {
   apToNextLevel?: number;
   maxLevel?: boolean;
   staticFromPage?: boolean;
+  subscription?: IitcIrisSubscriptionState;
 }
 
 export interface IitcIrisCommMessage {
@@ -274,6 +275,7 @@ export interface IitcIrisScoresState {
 export interface IitcIrisInventoryState {
   status: 'idle' | 'loading' | 'ready' | 'empty' | 'error' | 'auth';
   requestState: 'idle' | 'loading' | 'ready' | 'error' | 'auth';
+  subscription?: IitcIrisSubscriptionState;
   items: number;
   rawItems?: number;
   keys: number;
@@ -301,6 +303,14 @@ export interface IitcIrisInventoryState {
     capsule: number;
   }[];
   elapsedMs?: number;
+  error?: string;
+}
+
+export interface IitcIrisSubscriptionState {
+  status: 'unknown' | 'loading' | 'active' | 'inactive' | 'error' | 'auth';
+  hasActive?: boolean;
+  elapsedMs?: number;
+  checkedAt?: number;
   error?: string;
 }
 

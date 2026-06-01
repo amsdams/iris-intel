@@ -126,6 +126,8 @@ General improvement backlog before calling this replacement-ready:
   geometry, player tracker popup, and keyboard focus states.
 - Continue IITC comparison passes on active requests during map movement: entity requests, `getPlexts`, portal details,
   inventory, scores, passcodes, and geocoder requests should all have expected overlap/idle behavior documented.
+- Add missing known Intel/IITC-plugin request surfaces to the backlog and expose them in UI when ported:
+  `getHasActiveSubscription`, `getTopMissionsInBounds`, `getTopMissionsForPortal`, and `getMissionDetails`.
 - Add IITC-style long-press/right-click interactions for map and portal context actions. This should work across desktop
   right click and mobile long press, with clear touch behavior that does not fight normal map panning.
 - Make portal navigation from COMM, search, player tracker, inventory keys, and other portal links select the portal as
@@ -696,6 +698,8 @@ what to port natively and what to leave out.
 | Search hover preview | Open | IITC renders geocoder/portal result geometry on hover and clears it on mouseout. IITC IRIS currently renders selection geometry only. |
 | Long-press/right-click context | Open | Port IITC-style context interactions for map and portal actions. Support desktop right click and mobile long press without breaking map drag/pan gestures. |
 | Portal-link navigation selection | Open | Navigating from COMM, search, player tracker, inventory keys, or other portal links should also select the portal and open/prepare the normal portal details context when possible. |
+| C.O.R.E. subscription check | Open | Current IRIS/Mini-IRIS use `/r/getHasActiveSubscription` to track Intel inventory access, show C.O.R.E. status, and gate inventory polling/UI. IITC-CE reference core does not use this endpoint, so port it as an Intel capability rather than IITC core parity. |
+| Mission endpoints | Open | IITC missions plugin uses `/r/getTopMissionsInBounds`, `/r/getTopMissionsForPortal`, and `/r/getMissionDetails`. Port as a plugin-style vertical slice with map/portal UI entry points. |
 | Bookmarks and saved map/portal sets | Open | High-value IITC workflow still missing. Should be designed around persistent saved portals/views before broad plugin parity. |
 | Keys workflows | Partial | Basic key counts and inventory parsing exist. Missing richer IITC `keys`/`keys-on-map` workflows, key search/list views, and saved key-management affordances. |
 | Draw/planning tools | Open | IITC `draw-tools` concepts are not ported: lines, polygons, circles, import/export, and planning interactions. This should be a dedicated pass. |

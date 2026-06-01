@@ -1,5 +1,5 @@
 import L, {type Layer as LeafletLayer, type Map as LeafletMap, type TileLayer} from 'leaflet';
-import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisSubscriptionState, type IitcIrisTriStateLayer} from './messages';
 import {IITC_LEVEL_COLORS, IITC_TEAM_COLORS} from './iitc-colors';
 import {
   appendIitcResponseBucketDiagnostics,
@@ -163,13 +163,17 @@ let currentCommAbortController: AbortController | undefined;
 let currentScoresAbortController: AbortController | undefined;
 let currentPasscodeAbortController: AbortController | undefined;
 let currentInventoryAbortController: AbortController | undefined;
+let currentSubscriptionAbortController: AbortController | undefined;
+let currentSubscriptionPromise: Promise<IitcIrisSubscriptionState> | undefined;
 let latestCommState: IitcIrisCommState = {status: 'idle', tab: loadStoredCommTab(), messages: 0};
 let latestScoresState: IitcIrisScoresState = {status: 'idle', requestState: 'idle', region: {status: 'idle'}};
 let latestPasscodeState: IitcIrisPasscodeState = {status: 'idle', requestState: 'idle'};
+let latestSubscriptionState: IitcIrisSubscriptionState = {status: 'unknown'};
 let latestInventorySummary: IitcInventorySummary | undefined;
 let latestInventoryState: IitcIrisInventoryState = {
   status: 'idle',
   requestState: 'idle',
+  subscription: latestSubscriptionState,
   items: 0,
   keys: 0,
   portalsWithKeys: 0,
@@ -1632,6 +1636,7 @@ function getIitcAgentState(): IitcIrisAgentState {
     apToNextLevel: maxLevel || ap === undefined || minApForNextLevel === undefined ? undefined : Math.max(0, minApForNextLevel - ap),
     maxLevel,
     staticFromPage: true,
+    subscription: latestSubscriptionState,
   };
 }
 
@@ -1685,6 +1690,10 @@ function postPasscodeState(): void {
 }
 
 function postInventoryState(): void {
+  latestInventoryState = {
+    ...latestInventoryState,
+    subscription: latestSubscriptionState,
+  };
   window.postMessage({
     type: IITC_IRIS_MESSAGES.inventoryStatus,
     inventory: latestInventoryState,
@@ -2277,6 +2286,58 @@ async function postIntelEndpoint(endpoint: string, payload: Record<string, unkno
   return parsed;
 }
 
+function setSubscriptionState(nextState: IitcIrisSubscriptionState): void {
+  latestSubscriptionState = nextState;
+  postAgentState();
+  postInventoryState();
+}
+
+async function refreshSubscriptionStatus(): Promise<IitcIrisSubscriptionState> {
+  if (currentSubscriptionPromise) return currentSubscriptionPromise;
+
+  const abortController = new AbortController();
+  currentSubscriptionAbortController = abortController;
+  const startedAt = performance.now();
+  setSubscriptionState({...latestSubscriptionState, status: 'loading', error: undefined});
+
+  currentSubscriptionPromise = (async () => {
+    try {
+      const response = await postIntelEndpoint('getHasActiveSubscription', {}, abortController.signal);
+      const hasActive = parseSubscriptionResponse(response);
+      const nextState: IitcIrisSubscriptionState = {
+        status: hasActive ? 'active' : 'inactive',
+        hasActive,
+        elapsedMs: performance.now() - startedAt,
+        checkedAt: Date.now(),
+      };
+      setSubscriptionState(nextState);
+      return nextState;
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return latestSubscriptionState;
+      const status = error instanceof Error && /login html|missing csrftoken/i.test(error.message) ? 'auth' : 'error';
+      const nextState: IitcIrisSubscriptionState = {
+        status,
+        hasActive: false,
+        elapsedMs: performance.now() - startedAt,
+        checkedAt: Date.now(),
+        error: error instanceof Error ? error.message : String(error),
+      };
+      setSubscriptionState(nextState);
+      return nextState;
+    } finally {
+      if (currentSubscriptionAbortController === abortController) currentSubscriptionAbortController = undefined;
+      currentSubscriptionPromise = undefined;
+    }
+  })();
+
+  return currentSubscriptionPromise;
+}
+
+function parseSubscriptionResponse(response: unknown): boolean {
+  const result = response && typeof response === 'object' ? (response as {result?: unknown}).result : undefined;
+  return result === true;
+}
+
 function numberFromUnknown(value: unknown): number | undefined {
   const number = typeof value === 'number' ? value : typeof value === 'string' ? Number.parseInt(value, 10) : Number.NaN;
   return Number.isFinite(number) ? number : undefined;
@@ -2401,6 +2462,7 @@ function createInventoryStateFromSummary(
   return {
     status,
     requestState,
+    subscription: latestSubscriptionState,
     items: summary.totalItems,
     rawItems: summary.rawItems,
     keys: summary.keyCounts.reduce((sum, keyCount) => sum + keyCount.count, 0),
@@ -2568,6 +2630,7 @@ async function refreshInventory(): Promise<void> {
   postInventoryState();
 
   try {
+    void refreshSubscriptionStatus();
     const response = await postIntelEndpoint('getInventory', {lastQueryTimestamp: 0}, abortController.signal);
     const rawItems = parseIitcInventoryResponse(response);
     latestInventorySummary = summarizeIitcInventory(rawItems);
@@ -3460,6 +3523,7 @@ function boot(): void {
 	    map.invalidateSize();
 	    postMapMoved();
 	    postAgentState();
+	    void refreshSubscriptionStatus();
 	    window.postMessage({type: IITC_IRIS_MESSAGES.pageReady}, '*');
 	  }, 0);
 }
