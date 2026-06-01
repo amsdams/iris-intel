@@ -126,6 +126,11 @@ General improvement backlog before calling this replacement-ready:
   geometry, player tracker popup, and keyboard focus states.
 - Continue IITC comparison passes on active requests during map movement: entity requests, `getPlexts`, portal details,
   inventory, scores, passcodes, and geocoder requests should all have expected overlap/idle behavior documented.
+- Add IITC-style long-press/right-click interactions for map and portal context actions. This should work across desktop
+  right click and mobile long press, with clear touch behavior that does not fight normal map panning.
+- Make portal navigation from COMM, search, player tracker, inventory keys, and other portal links select the portal as
+  well as pan/zoom to it. The selected portal should open the normal portal context/details path when the entity is
+  loaded, and use a graceful loading/missing state when only a GUID or lat/lng is known.
 - Keep reducing visible diagnostic noise in normal UI while preserving copied diagnostics for live parity reports.
 
 Cleanup assessment:
@@ -134,6 +139,36 @@ Cleanup assessment:
   the oversized content UI into smaller modules; that is a refactor risk and should be done as its own pass after current
   testing, not mixed into the wrap-up. A low-risk cleanup pass can still scan for stale debug text, unused labels, and
   inconsistent close/elapsed affordances before a release build.
+
+Long-term refactor/plugin sequence after the current parity checkpoint:
+
+1. Small IITC parity refactor. Keep this narrow and behavior-preserving. Extract IITC-named facades and pure helpers for
+   code we compare against IITC often: `comm`, `portalDetails`, `search`, `mapDataRequest`, `playerTracker`, portal-link
+   navigation, long-press/right-click context handling, and request diagnostics. Add focused tests where helpers are
+   pure. Do this before larger UI cleanup so later smart-ports have stable IITC-shaped landing zones.
+2. IITC plugin/core foundation. Before adding many plugins, add a thin IITC-style registry/facade layer for hooks,
+   highlighters, toolbox/menu entries, map context actions, layer registration, and portal detail extensions. This
+   belongs after the small parity refactor and before porting plugin volume, because plugins need stable extension points
+   more than they need a fully refactored UI shell.
+3. Port selected IITC plugins in small vertical slices. Start with high-value plugins whose contracts exercise the new
+   registry without requiring a full architecture rewrite: highlighters, bookmarks/saved views, keys workflows,
+   long-press/right-click context actions, portal lists/counts, and small map utilities. Each plugin should document
+   whether logic lives in `packages/iitc-core`, the extension runtime, or UI-only code.
+4. UI refactor. Split the large content UI into sheets/components/hooks after the parity/plugin extension points are
+   stable enough: `SearchSheet`, `PortalSheet`, `CommSheet`, `AgentSheet`, `SystemSheet`, menu state, keyboard shortcuts,
+   elapsed/request chips, and common faction/portal display helpers. Keep the two-layer IRIS shell as the product
+   decision unless replacement-readiness work says otherwise.
+5. Larger core refactor. Do this later, after plugin behavior proves which concepts truly belong in core. The goal is to
+   move stable, UI-independent IITC concepts into `packages/iitc-core` without turning core into a browser/plugin
+   runtime. Good core candidates: entity decoding, map-data lifecycle, search ordering/geometry normalization, COMM
+   parsing/display model, portal details normalization, inventory/key parsing, highlighter predicates, and plugin
+   registry types. Poor core candidates: DOM rendering, sheet layout, browser storage, Leaflet marker instances, and
+   extension messaging.
+
+If the goal is more IITC plugins in core, do not wait for the big core refactor. First add the thin plugin/core
+foundation in step 2, then port plugins one by one in step 3. As patterns repeat, promote stable pure logic into
+`packages/iitc-core`; keep UI/runtime wiring in the extension. The later big core refactor should consolidate proven
+patterns, not guess the architecture before plugin behavior is understood.
 
 ### Map Lifecycle Doctrine
 
@@ -659,6 +694,8 @@ what to port natively and what to leave out.
 | Hook/plugin lifecycle | Open | IITC has `addHook`/`runHooks`, plugin setup, toolbox entries, dialogs, panes, layer chooser integration, and portal highlighter registration. IITC IRIS currently has fixed native systems and should add thin registries before porting many plugin concepts. |
 | Portal highlighter framework | Open | Add an IITC-style highlighter registry before adding more highlighters. Likely first native highlighters: high level, missing resonators, needs recharge, portal history, ornaments, and hide team. |
 | Search hover preview | Open | IITC renders geocoder/portal result geometry on hover and clears it on mouseout. IITC IRIS currently renders selection geometry only. |
+| Long-press/right-click context | Open | Port IITC-style context interactions for map and portal actions. Support desktop right click and mobile long press without breaking map drag/pan gestures. |
+| Portal-link navigation selection | Open | Navigating from COMM, search, player tracker, inventory keys, or other portal links should also select the portal and open/prepare the normal portal details context when possible. |
 | Bookmarks and saved map/portal sets | Open | High-value IITC workflow still missing. Should be designed around persistent saved portals/views before broad plugin parity. |
 | Keys workflows | Partial | Basic key counts and inventory parsing exist. Missing richer IITC `keys`/`keys-on-map` workflows, key search/list views, and saved key-management affordances. |
 | Draw/planning tools | Open | IITC `draw-tools` concepts are not ported: lines, polygons, circles, import/export, and planning interactions. This should be a dedicated pass. |

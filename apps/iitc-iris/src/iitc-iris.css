@@ -808,7 +808,7 @@
 
 .iitc-iris-resonator-slot {
   --iitc-iris-item-color: var(--portal-team-color);
-  --iitc-iris-resonator-health: #38f06e;
+  --iitc-iris-resonator-health: var(--iitc-iris-item-color);
   position: relative;
   overflow: hidden;
   display: grid;

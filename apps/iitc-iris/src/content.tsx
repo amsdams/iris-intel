@@ -827,14 +827,6 @@ function formatResonatorEnergyPercent(level: number, energy: number): number {
   return Math.max(0, Math.min(100, Math.round((energy / maxEnergy) * 100)));
 }
 
-function getResonatorHealthColor(percent: number): string {
-  if (percent >= 85) return '#38f06e';
-  if (percent >= 70) return '#c8f03d';
-  if (percent >= 45) return '#ffd23f';
-  if (percent >= 20) return '#ff8a2a';
-  return '#ff3b4f';
-}
-
 function formatModName(name: string): string {
   return name.replace(/^Portal\s+/i, '').replace(/_/g, ' ');
 }
@@ -2609,7 +2601,7 @@ function App(): h.JSX.Element {
                         <span
                           className={`iitc-iris-resonator-slot ${resonator ? '' : 'iitc-iris-empty-slot'}`}
                           key={`resonator-${panelIndex}`}
-                          style={resonator ? `${formatIitcColorVars(getIitcLevelColor(resonator.level)) ?? ''} --iitc-iris-resonator-health: ${getResonatorHealthColor(resonatorHealth)};` : undefined}
+                          style={resonator ? `${formatIitcColorVars(getIitcLevelColor(resonator.level)) ?? ''}` : undefined}
                           title={resonator ? `${resonator.owner} ${resonator.energy} XM, ${resonatorHealth}% charged` : 'empty resonator slot'}
                         >
                           {resonator ? (
