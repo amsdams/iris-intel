@@ -380,6 +380,8 @@ export interface IitcIrisMissionsState {
   missions: IitcIrisMissionSummary[];
   selectedMission?: IitcIrisMissionDetails;
   detailsStatus?: 'idle' | 'loading' | 'ready' | 'empty' | 'error' | 'auth';
+  cached?: boolean;
+  detailsCached?: boolean;
   elapsedMs?: number;
   detailsElapsedMs?: number;
   error?: string;

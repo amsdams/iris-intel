@@ -154,28 +154,51 @@ Current implementation choices:
 
 Known gaps before calling Missions parity-complete:
 
+- Next session: run a live IITC vs IITC-IRIS mission validation pass before adding more mission features. Check when IITC
+  calls `getTopMissionsInBounds` vs `getTopMissionsForPortal`, mission ordering for view/portal results, single-result
+  detail behavior, portal-source refresh behavior after selecting another portal, hidden/non-sequential route rendering,
+  and route bounds/zoom behavior for spread-out missions.
 - IITC portal detail enrichment adds a `Missions` link only when portal details include `mission` or `mission50plus`.
-  Reintroduce this carefully after the Map/Portal source switching bugs are settled.
+  IRIS now shows a portal mission enrichment card and action using portal details flags plus cached portal mission counts;
+  continue validating source switching and selected-portal update behavior.
 - Portal Missions currently refreshes when the Missions sheet is already showing portal-source data and the selected
   portal changes, but unlike core portal details it is not part of every portal selection. Revisit this after comparing
   vanilla Intel mission behavior and IITC plugin behavior: decide whether Portal Missions should stay sheet-scoped,
   become a portal-detail enrichment action, or adopt a cached selection-driven model.
-- IITC caches mission details for 3 days and portal mission summaries for 3 weeks. IRIS currently does not cache mission
-  responses beyond current runtime state.
+- IITC caches mission details for 3 days and portal mission summaries for 3 weeks. IRIS now mirrors those TTLs with
+  page-session runtime caches and visible cache-hit chips; persistent localStorage-style mission caches remain unported.
 - IITC mission progress/checkmark state, sync, app panes/dialog behavior, mission type/length icons, distance-to-mission,
   and Create New Mission link are not ported.
+- Likely next implementation after validation: mission progress/checkmark/sync, if request and selection behavior is stable.
+- Add mission distance-to-start once map/user-location behavior is clearer. IITC has distance-oriented mission affordances
+  that should be ported only after the selected mission, first waypoint, and route bounds behavior is stable.
+- Revisit Mission `First`, `Zoom`, and expanded-row border treatment after more live testing. Current behavior is usable,
+  but needs polish around zoom level expectations, waypoint selection semantics, and whether expanded rows need a softer
+  visual boundary.
+- Define one consistent zoom/focus contract for Mission `First`, mission waypoint clicks, mission `Zoom`, COMM portal
+  links, search results, inventory keys, and player tracker portal links. Avoid each surface evolving different pan,
+  selection, and zoom behavior.
+- Add IITC-style long-press/right-click parity for mission waypoints and mission map overlays after the general map/portal
+  context interaction model is settled.
 - Live comparison still needs copied diagnostics for request count/source, mission order, route bounds, and portal
   mission single-result behavior.
 
 General improvement backlog before calling this replacement-ready:
 
 - Add a small IITC-style registry layer for highlighters/plugins before porting many one-off plugin features.
+- Decide plugin/core strategy for smart ports: keep endpoint parsing and domain normalization in `@iris/iitc-core`, while
+  leaving app-specific sheet/menu/runtime behavior in IITC-IRIS until another app needs the same surface.
 - Decompose the large `apps/iitc-iris/src/content.tsx` into focused sheets/components/hooks once behavior settles:
-  suggested first cuts are `SearchSheet`, `PortalSheet`, `CommSheet`, `SystemSheet`, menu state, and keyboard shortcuts.
+  suggested first cuts are `SearchSheet`, `PortalSheet`, `MissionsSheet`, `CommSheet`, `SystemSheet`, menu state, and
+  keyboard shortcuts.
 - Add focused tests around the new pure logic that is easy to isolate: COMM display de-duplication, search result
-  ordering/grouping, portal details cached/loading state, and shortcut/menu state transitions.
-- Run a visual/mobile pass with screenshots for the main sheets, portal details, COMM scrolling, selected search
+  ordering/grouping, portal details cached/loading state, mission sorting, mission cache TTL behavior, selected mission
+  state transitions, and shortcut/menu state transitions.
+- Run a visual/mobile pass with screenshots for the main sheets, portal details, Missions, COMM scrolling, selected search
   geometry, player tracker popup, and keyboard focus states.
+- Smart-port IITC/Intel-style browser geolocation: add a controlled "current location" action that requests browser
+  location permission, pans/zooms to the current position, and handles denied/unavailable location cleanly without
+  fighting normal map movement.
 - Continue IITC comparison passes on active requests during map movement: entity requests, `getPlexts`, portal details,
   inventory, scores, passcodes, and geocoder requests should all have expected overlap/idle behavior documented.
 - Add missing known Intel/IITC-plugin request surfaces to the backlog and expose them in UI when ported:
@@ -187,6 +210,29 @@ General improvement backlog before calling this replacement-ready:
   well as pan/zoom to it. The selected portal should open the normal portal context/details path when the entity is
   loaded, and use a graceful loading/missing state when only a GUID or lat/lng is known.
 - Keep reducing visible diagnostic noise in normal UI while preserving copied diagnostics for live parity reports.
+
+Runtime policy notes to settle:
+
+- Permission/manifest audit: review geolocation, clipboard, downloads, host permissions, and browser-specific behavior
+  before release packaging. Keep permission prompts tied to clear user actions.
+- Live auth failure UX: align `auth` and login-required states across entities, missions, inventory, passcodes, scores,
+  search/geocoder, portal details, and subscription checks.
+- Request cancellation policy: document intended abort behavior for map movement, sheet close, source switch, portal
+  selection changes, retry/refill queues, and requests that intentionally continue after a panel is hidden.
+- Cache policy matrix: document every cache, TTL, key, invalidation rule, memory-only vs persistent storage, and when
+  stale data is acceptable. Include map tile/entity cache, portal details, missions, inventory-derived key counts, search,
+  COMM, scores, and subscription status.
+
+Release and quality backlog:
+
+- Mobile ergonomics pass: check sheet height, sticky headers/footers, map gestures, long-press conflicts, keyboard
+  shortcuts on mobile browsers, and whether dense panels remain usable in portrait.
+- Accessibility baseline: verify focus order, Escape behavior, button labels/titles, reduced-motion expectations, and
+  color contrast for faction, rarity, mission, warning, and disabled states.
+- Release checklist: record exact build/package commands, artifact naming, smoke-test routes, fixture locations, and the
+  minimum live-Intel checks before sharing a package.
+- Dirty worktree policy: keep the current discipline explicit in the plan. Do not reset user changes; inspect touched
+  files before cleanup/refactor; keep generated artifacts and unrelated edits separate from behavior changes.
 
 Cleanup assessment:
 

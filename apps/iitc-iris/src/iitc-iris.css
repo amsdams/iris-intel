@@ -679,6 +679,43 @@
   background: var(--portal-team-color);
 }
 
+.iitc-iris-portal-mission-enrichment {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 6px;
+  align-items: center;
+  padding: 6px;
+  border: 1px solid rgb(166 166 0 / 52%);
+  border-radius: 4px;
+  background: linear-gradient(90deg, rgb(64 64 0 / 42%), rgb(10 18 25 / 72%));
+  color: #f2f0b0;
+}
+
+.iitc-iris-portal-mission-enrichment > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.iitc-iris-portal-mission-enrichment small,
+.iitc-iris-portal-mission-meta {
+  overflow: hidden;
+  color: #c7c383;
+  font-size: 10px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.iitc-iris-portal-mission-enrichment b {
+  overflow: hidden;
+  color: #ffffff;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .iitc-iris-portal-action {
   appearance: none;
   min-width: 0;
@@ -734,7 +771,8 @@
   align-items: baseline;
 }
 
-.iitc-iris-portal-panel-grid > span {
+.iitc-iris-portal-panel-grid > span,
+.iitc-iris-portal-panel-grid > div {
   min-width: 0;
 }
 
@@ -1071,6 +1109,19 @@
   min-width: 0;
 }
 
+.iitc-iris-mission-entry {
+  display: grid;
+  gap: 0;
+  min-width: 0;
+}
+
+.iitc-iris-mission-entry:has(.iitc-iris-mission-row.is-active) {
+  overflow: hidden;
+  border: 1px solid rgb(255 230 70 / 35%);
+  border-radius: 6px;
+  background: rgb(50 46 12 / 22%);
+}
+
 .iitc-iris-mission-row,
 .iitc-iris-mission-waypoint {
   display: grid;
@@ -1136,17 +1187,39 @@
 .iitc-iris-mission-details {
   display: grid;
   gap: 7px;
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid rgb(95 180 255 / 12%);
+  padding: 8px;
+  border-top: 1px solid rgb(255 230 70 / 24%);
+  background: rgb(8 15 20 / 46%);
 }
 
-.iitc-iris-mission-details-head {
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
+.iitc-iris-mission-expanded-top {
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
   min-width: 0;
+}
+
+.iitc-iris-mission-expanded-top .iitc-iris-status b {
+  color: var(--portal-team-color, #e8f4ff);
+}
+
+.iitc-iris-mission-author.is-enlightened {
+  color: #04c748;
+}
+
+.iitc-iris-mission-author.is-resistance {
+  color: #00a2ff;
+}
+
+.iitc-iris-mission-author.is-machina {
+  color: #ff4d57;
+}
+
+.iitc-iris-mission-detail-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
 }
 
 .iitc-iris-mission-metrics {

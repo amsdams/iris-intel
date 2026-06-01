@@ -81,6 +81,9 @@ const PLAYER_TRACKER_COMM_REFRESH_MS = 120_000;
 const SEARCH_AUTO_MIN_LENGTH = 3;
 const NOMINATIM_SEARCH_URL = 'https://nominatim.openstreetmap.org/search?format=json&polygon_geojson=1&q=';
 const MISSION_ROUTE_COLOR = '#404000';
+const MISSION_OVERVIEW_MAX_ZOOM = 15;
+const MISSION_DETAILS_CACHE_MS = 3 * 24 * 60 * 60 * 1000;
+const PORTAL_MISSIONS_CACHE_MS = 21 * 24 * 60 * 60 * 1000;
 const IITC_IRIS_ASSET_BASE_URL = (() => {
   const script = document.currentScript instanceof HTMLScriptElement ? document.currentScript.src : '';
   return script ? new URL('.', script).toString() : '';
@@ -196,6 +199,8 @@ let latestMissionsState: IitcIrisMissionsState = {
   missions: [],
   detailsStatus: 'idle',
 };
+const missionDetailsCache = new Map<string, {time: number; data: IitcIrisMissionDetails}>();
+const portalMissionsCache = new Map<string, {time: number; data: IitcIrisMissionSummary[]}>();
 let playerTrackerStored: IitcPlayerTrackerStored = {};
 let playerTrackerLatestCommTime: number | null = null;
 let playerTrackerDiagnostics: IitcPlayerTrackerDiagnostics = getIitcPlayerTrackerDiagnostics(playerTrackerStored);
@@ -1787,6 +1792,34 @@ function sortMissionSummaries(missions: IitcIrisMissionSummary[]): IitcIrisMissi
   return missions.slice().sort((a, b) => collator.compare(a.title, b.title));
 }
 
+function getFreshPortalMissionsCache(portalGuid: string): IitcIrisMissionSummary[] | undefined {
+  const cached = portalMissionsCache.get(portalGuid);
+  if (!cached || cached.time <= Date.now() - PORTAL_MISSIONS_CACHE_MS) {
+    if (cached) portalMissionsCache.delete(portalGuid);
+    return undefined;
+  }
+  return cached.data.slice();
+}
+
+function setPortalMissionsCache(portalGuid: string, missions: IitcIrisMissionSummary[]): void {
+  portalMissionsCache.set(portalGuid, {time: Date.now(), data: missions.slice()});
+  if (portalMissionsCache.size > 50) portalMissionsCache.delete(portalMissionsCache.keys().next().value as string);
+}
+
+function getFreshMissionDetailsCache(missionGuid: string): IitcIrisMissionDetails | undefined {
+  const cached = missionDetailsCache.get(missionGuid);
+  if (!cached || cached.time <= Date.now() - MISSION_DETAILS_CACHE_MS) {
+    if (cached) missionDetailsCache.delete(missionGuid);
+    return undefined;
+  }
+  return cached.data;
+}
+
+function setMissionDetailsCache(missionGuid: string, mission: IitcIrisMissionDetails): void {
+  missionDetailsCache.set(missionGuid, {time: Date.now(), data: mission});
+  if (missionDetailsCache.size > 100) missionDetailsCache.delete(missionDetailsCache.keys().next().value as string);
+}
+
 function getCurrentMissionBoundsPayload(): {northE6: number; southE6: number; westE6: number; eastE6: number} | undefined {
   const map = window.__iitcIrisMap;
   if (!map) return undefined;
@@ -1870,20 +1903,40 @@ function panToMissionStart(mission: IitcIrisMissionDetails | undefined): void {
   const start = mission?.waypoints.find((waypoint) => waypoint.latE6 !== undefined && waypoint.lngE6 !== undefined);
   if (!map || !start || start.latE6 === undefined || start.lngE6 === undefined) return;
   const latLng = toLatLng(start.latE6, start.lngE6);
-  if (!map.getBounds().contains(latLng)) {
-    map.panTo(latLng);
-  }
+  map.panTo(latLng);
 }
 
 async function refreshMissions(source: IitcIrisMissionSource = 'view'): Promise<void> {
   cancelActiveMissionsFetch();
   cancelActiveMissionDetailsFetch();
   clearMissionOverlay();
-  const abortController = new AbortController();
-  currentMissionsAbortController = abortController;
   const startedAt = performance.now();
   const portalGuid = source === 'portal' ? selectedPortalGuid : undefined;
   const portalTitle = source === 'portal' ? selectedPortal?.title : undefined;
+  const cachedPortalMissions = portalGuid ? getFreshPortalMissionsCache(portalGuid) : undefined;
+  if (source === 'portal' && portalGuid && cachedPortalMissions) {
+    latestMissionsState = {
+      status: cachedPortalMissions.length > 0 ? 'ready' : 'empty',
+      requestState: 'ready',
+      source,
+      caption: `Missions at ${portalTitle || portalGuid}`,
+      portalGuid,
+      portalTitle,
+      missions: cachedPortalMissions,
+      selectedMission: undefined,
+      detailsStatus: 'idle',
+      cached: true,
+      detailsCached: false,
+      elapsedMs: 0,
+      error: undefined,
+    };
+    postMissionsState();
+    if (cachedPortalMissions.length === 1) void refreshMissionDetails(cachedPortalMissions[0].guid);
+    return;
+  }
+
+  const abortController = new AbortController();
+  currentMissionsAbortController = abortController;
   latestMissionsState = {
     status: 'loading',
     requestState: 'loading',
@@ -1894,6 +1947,8 @@ async function refreshMissions(source: IitcIrisMissionSource = 'view'): Promise<
     missions: [],
     selectedMission: undefined,
     detailsStatus: 'idle',
+    cached: false,
+    detailsCached: false,
     error: undefined,
   };
   postMissionsState();
@@ -1920,11 +1975,13 @@ async function refreshMissions(source: IitcIrisMissionSource = 'view'): Promise<
       abortController.signal,
     );
     const missions = sortMissionSummaries(parseIitcTopMissionsResponse(response).map(toIrisMissionSummary));
+    if (source === 'portal' && portalGuid) setPortalMissionsCache(portalGuid, missions);
     latestMissionsState = {
       ...latestMissionsState,
       status: missions.length > 0 ? 'ready' : 'empty',
       requestState: 'ready',
       missions,
+      cached: false,
       elapsedMs: performance.now() - startedAt,
     };
     postMissionsState();
@@ -1949,6 +2006,22 @@ async function refreshMissionDetails(guid: unknown): Promise<void> {
   const missionGuid = typeof guid === 'string' ? guid : '';
   if (!missionGuid) return;
   cancelActiveMissionDetailsFetch();
+  const cachedMission = getFreshMissionDetailsCache(missionGuid);
+  if (cachedMission) {
+    latestMissionsState = {
+      ...latestMissionsState,
+      detailsStatus: 'ready',
+      selectedMission: cachedMission,
+      detailsCached: true,
+      detailsElapsedMs: 0,
+      error: undefined,
+    };
+    renderMissionOverlay(cachedMission);
+    panToMissionStart(cachedMission);
+    postMissionsState();
+    return;
+  }
+
   const abortController = new AbortController();
   currentMissionDetailsAbortController = abortController;
   const startedAt = performance.now();
@@ -1956,6 +2029,7 @@ async function refreshMissionDetails(guid: unknown): Promise<void> {
     ...latestMissionsState,
     detailsStatus: 'loading',
     selectedMission: latestMissionsState.selectedMission?.guid === missionGuid ? latestMissionsState.selectedMission : undefined,
+    detailsCached: false,
     error: undefined,
   };
   postMissionsState();
@@ -1964,10 +2038,12 @@ async function refreshMissionDetails(guid: unknown): Promise<void> {
     const response = await postIntelEndpoint('getMissionDetails', {guid: missionGuid}, abortController.signal);
     const details = parseIitcMissionDetailsResponse(response);
     const selectedMission = details ? toIrisMissionDetails(details) : undefined;
+    if (selectedMission) setMissionDetailsCache(missionGuid, selectedMission);
     latestMissionsState = {
       ...latestMissionsState,
       detailsStatus: selectedMission ? 'ready' : 'empty',
       selectedMission,
+      detailsCached: false,
       detailsElapsedMs: performance.now() - startedAt,
     };
     renderMissionOverlay(selectedMission);
@@ -1993,7 +2069,7 @@ function zoomToSelectedMission(): void {
   const map = window.__iitcIrisMap;
   const bounds = latestMissionsState.selectedMission?.bounds;
   if (!map || !bounds) return;
-  map.fitBounds(L.latLngBounds([bounds.south, bounds.west], [bounds.north, bounds.east]), {maxZoom: DEFAULT_ZOOM});
+  map.fitBounds(L.latLngBounds([bounds.south, bounds.west], [bounds.north, bounds.east]), {maxZoom: MISSION_OVERVIEW_MAX_ZOOM});
 }
 
 function isPlayerTrackerVisible(): boolean {

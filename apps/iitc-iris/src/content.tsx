@@ -1123,7 +1123,30 @@ function App(): h.JSX.Element {
     ? entityFetch.portalDetails
     : null;
   const selectedPortalDetailsStatus = selectedPortalDetails?.status ?? 'waiting';
-  const selectedPortalHasMissions = Boolean(entityFetch.selectedPortal?.mission || entityFetch.selectedPortal?.mission50plus);
+  const selectedPortalMissionState = entityFetch.selectedPortal &&
+    missionsState.source === 'portal' &&
+    missionsState.portalGuid === entityFetch.selectedPortal.guid
+    ? missionsState
+    : null;
+  const selectedPortalHasMissions = Boolean(
+    entityFetch.selectedPortal?.mission ||
+    entityFetch.selectedPortal?.mission50plus ||
+    selectedPortalDetails?.hasMissionsStartingHere ||
+    selectedPortalMissionState,
+  );
+  const selectedPortalMissionSummary = selectedPortalMissionState
+    ? selectedPortalMissionState.status === 'loading'
+      ? 'Loading'
+      : selectedPortalMissionState.status === 'empty'
+        ? '0 starting here'
+        : selectedPortalMissionState.status === 'ready'
+          ? `${formatInteger(selectedPortalMissionState.missions.length)} starting here`
+          : selectedPortalMissionState.status
+    : entityFetch.selectedPortal?.mission50plus
+      ? '50+ starting here'
+      : selectedPortalHasMissions
+        ? 'Starting here'
+        : '';
   const dockDiagnostics = {
     app: 'IITC IRIS',
     status,
@@ -1648,6 +1671,90 @@ function App(): h.JSX.Element {
       portalLng: lngE6 === undefined ? undefined : lngE6 / 1_000_000,
       zoom,
     } satisfies IitcIrisMessage, '*');
+  };
+
+  const formatMissionOrderLabel = (order?: string): string => {
+    if (!order) return 'any order';
+    return order.replace(/_/g, ' ').toLowerCase();
+  };
+
+  const formatMissionRowMeta = (mission: IitcIrisMissionsState['missions'][number]): string => {
+    const selected = missionsState.selectedMission?.guid === mission.guid ? missionsState.selectedMission : undefined;
+    const parts = [
+      `${formatMissionRating(mission.ratingE6)} rating`,
+      formatMissionDuration(mission.medianCompletionTimeMs, mission.durationLabel),
+    ];
+    if (selected) {
+      parts.push(`${selected.waypoints.length} waypoints`);
+      parts.push(formatDistance(selected.routeLengthMeters));
+      parts.push(formatMissionOrderLabel(selected.type));
+    }
+    return parts.filter((part) => part && part !== '-').join(' · ');
+  };
+
+  const renderSelectedMissionDetails = (): h.JSX.Element | null => {
+    if (!missionsState.selectedMission) return null;
+    const firstWaypoint = missionsState.selectedMission.waypoints.find((waypoint) => waypoint.latE6 !== undefined && waypoint.lngE6 !== undefined);
+    return (
+      <div className="iitc-iris-mission-details">
+        <div className="iitc-iris-mission-expanded-top">
+          <span className="iitc-iris-status">
+            {missionsState.selectedMission.authorNickname ? (
+              <>
+                by <b className={`iitc-iris-mission-author ${getCommTeamClass(missionsState.selectedMission.authorTeam)}`}>{missionsState.selectedMission.authorNickname}</b>
+              </>
+            ) : 'unknown author'}
+          </span>
+        </div>
+        <div className="iitc-iris-mission-metrics">
+          <span title="Average rating"><b>{formatMissionRating(missionsState.selectedMission.ratingE6)}</b><small>rating</small></span>
+          <span title="Typical duration"><b>{formatMissionDuration(missionsState.selectedMission.medianCompletionTimeMs, missionsState.selectedMission.durationLabel)}</b><small>typical</small></span>
+          <span title="Length of this mission. The actual distance required may vary."><b>{formatDistance(missionsState.selectedMission.routeLengthMeters)}</b><small>length</small></span>
+          <span title="Unique players who have completed this mission"><b>{formatInteger(missionsState.selectedMission.numUniqueCompletedPlayers)}</b><small>agents</small></span>
+          <span title={`${missionsState.selectedMission.type ?? 'Unknown'} mission with ${missionsState.selectedMission.waypoints.length} waypoints`}><b>{missionsState.selectedMission.waypoints.length}</b><small>waypoints</small></span>
+          <span title="Mission order"><b>{formatMissionOrderLabel(missionsState.selectedMission.type)}</b><small>order</small></span>
+        </div>
+        <div className="iitc-iris-mission-detail-actions">
+          <button
+            className="iitc-iris-portal-action"
+            type="button"
+            onClick={() => firstWaypoint && focusPortalReference(firstWaypoint.portalGuid, firstWaypoint.latE6, firstWaypoint.lngE6, Math.max(camera.zoom, 17))}
+            disabled={!firstWaypoint}
+            title="Pan to the first visible waypoint and select it when the portal is loaded"
+          >
+            First
+          </button>
+          <button className="iitc-iris-portal-action" type="button" onClick={zoomToMission} disabled={!missionsState.selectedMission.bounds} title="Zoom to mission route">
+            Zoom
+          </button>
+        </div>
+        {missionsState.selectedMission.description && (
+          <p className="iitc-iris-mission-description">{missionsState.selectedMission.description}</p>
+        )}
+        <div className="iitc-iris-mission-waypoint-list">
+          {missionsState.selectedMission.waypoints.map((waypoint) => (
+            <button
+              className={`iitc-iris-mission-waypoint ${waypoint.hidden ? 'is-hidden' : ''}`}
+              type="button"
+              key={`${waypoint.guid}-${waypoint.index}`}
+              onClick={() => {
+                if (waypoint.latE6 !== undefined && waypoint.lngE6 !== undefined) {
+                  focusPortalReference(waypoint.portalGuid, waypoint.latE6, waypoint.lngE6);
+                }
+              }}
+              disabled={waypoint.latE6 === undefined || waypoint.lngE6 === undefined}
+              title={waypoint.portalGuid || waypoint.guid}
+            >
+              <b>{waypoint.index + 1}</b>
+              <span>
+                <strong>{waypoint.hidden ? 'Hidden waypoint' : waypoint.title}</strong>
+                <small>{waypoint.objective} · {waypoint.type}</small>
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   const focusCommPortal = (latE6?: number, lngE6?: number, portalGuid?: string): void => {
@@ -2761,6 +2868,29 @@ function App(): h.JSX.Element {
                       {entityFetch.selectedPortal.ornaments.length} ornaments, {entityFetch.selectedPortal.artifacts.length} artifacts
                       {(entityFetch.selectedPortal.mission || entityFetch.selectedPortal.mission50plus) && ', mission'}
                     </span>
+                    <span className="iitc-iris-status">missions</span>
+                    <div>
+                      {selectedPortalHasMissions ? (
+                        <div className="iitc-iris-portal-mission-enrichment">
+                          <span>
+                            <small>missions</small>
+                            <b>{selectedPortalMissionSummary}</b>
+                          </span>
+                          <span className="iitc-iris-portal-mission-meta">
+                            {selectedPortalMissionState
+                              ? selectedPortalMissionState.cached
+                                ? 'cached'
+                                : selectedPortalMissionState.elapsedMs !== undefined
+                                  ? `request ${formatElapsedSeconds(selectedPortalMissionState.elapsedMs)}s`
+                                  : selectedPortalMissionState.status
+                              : 'from portal details'}
+                          </span>
+                          <button className="iitc-iris-portal-action" type="button" onClick={openSelectedPortalMissions} disabled={selectedPortalMissionState?.status === 'loading'} title="Open missions starting at this portal">
+                            {selectedPortalMissionState?.status === 'loading' ? 'Loading' : 'Open'}
+                          </button>
+                        </div>
+                      ) : '-'}
+                    </div>
                   </div>
                 </details>
                 <div className="iitc-iris-panel-footer">
@@ -3138,81 +3268,42 @@ function App(): h.JSX.Element {
                   <b>{missionsState.caption}</b>
                 </div>
               )}
-              {(missionsState.status === 'empty' || (missionsState.missions.length === 0 && missionsState.status !== 'loading' && missionsState.status !== 'idle')) && (
-                <div className="iitc-iris-empty-state">No missions found for this source.</div>
+              {missionsState.status === 'loading' && (
+                <div className="iitc-iris-empty-state">
+                  {missionsState.source === 'portal' ? 'Fetching missions starting at this portal...' : 'Fetching missions in the current map view...'}
+                </div>
+              )}
+              {missionsState.status === 'empty' && (
+                <div className="iitc-iris-empty-state">
+                  {missionsState.source === 'portal' ? 'No missions start at this portal.' : 'No missions found in this map view.'}
+                </div>
+              )}
+              {(missionsState.status === 'error' || missionsState.status === 'auth') && missionsState.missions.length === 0 && (
+                <div className="iitc-iris-empty-state">
+                  {missionsState.status === 'auth' ? 'Mission request needs an authenticated Intel session.' : 'Mission request failed.'}
+                </div>
               )}
               <div className="iitc-iris-scroll-region iitc-iris-missions-scroll">
                 {missionsState.missions.length > 0 && (
                   <div className="iitc-iris-mission-list">
                     {missionsState.missions.map((mission) => (
-                      <button
-                        className={`iitc-iris-mission-row ${missionsState.selectedMission?.guid === mission.guid ? 'is-active' : ''}`}
-                        type="button"
-                        key={mission.guid}
-                        onClick={() => requestMissionDetails(mission.guid)}
-                        disabled={missionsState.detailsStatus === 'loading' && missionsState.selectedMission?.guid === mission.guid}
-                        title={mission.guid}
-                      >
-                        {mission.image && <img src={mission.image} alt="" loading="lazy" />}
-                        <span>
-                          <b>{mission.title}</b>
-                          <small>{formatMissionRating(mission.ratingE6)} rating · {formatMissionDuration(mission.medianCompletionTimeMs, mission.durationLabel)}</small>
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {missionsState.selectedMission && (
-                  <div className="iitc-iris-mission-details">
-                    <div className="iitc-iris-mission-details-head">
-                      {missionsState.selectedMission.image && <img src={missionsState.selectedMission.image} alt="" loading="lazy" />}
-                      <span>
-                        <b>{missionsState.selectedMission.title}</b>
-                        <small>
-                          {missionsState.selectedMission.authorNickname ? (
-                            <span className={getCommTeamClass(missionsState.selectedMission.authorTeam)}>
-                              {missionsState.selectedMission.authorNickname}
-                            </span>
-                          ) : 'unknown author'}
-                        </small>
-                      </span>
-                    </div>
-                    <div className="iitc-iris-mission-metrics">
-                      <span title="Average rating"><b>{formatMissionRating(missionsState.selectedMission.ratingE6)}</b><small>rating</small></span>
-                      <span title="Typical duration"><b>{formatMissionDuration(missionsState.selectedMission.medianCompletionTimeMs, missionsState.selectedMission.durationLabel)}</b><small>typical</small></span>
-                      <span title="Length of this mission. The actual distance required may vary."><b>{formatDistance(missionsState.selectedMission.routeLengthMeters)}</b><small>length</small></span>
-                      <span title="Unique players who have completed this mission"><b>{formatInteger(missionsState.selectedMission.numUniqueCompletedPlayers)}</b><small>agents</small></span>
-                      <span title={`${missionsState.selectedMission.type ?? 'Unknown'} mission with ${missionsState.selectedMission.waypoints.length} waypoints`}><b>{missionsState.selectedMission.waypoints.length}</b><small>waypoints</small></span>
-                      <span title="Mission order"><b>{missionsState.selectedMission.type ?? '-'}</b><small>order</small></span>
-                    </div>
-                    {missionsState.selectedMission.description && (
-                      <p className="iitc-iris-mission-description">{missionsState.selectedMission.description}</p>
-                    )}
-                    <button className="iitc-iris-portal-action" type="button" onClick={zoomToMission} disabled={!missionsState.selectedMission.bounds} title="Zoom to mission route">
-                      Zoom
-                    </button>
-                    <div className="iitc-iris-mission-waypoint-list">
-                      {missionsState.selectedMission.waypoints.map((waypoint) => (
+                      <div className="iitc-iris-mission-entry" key={mission.guid}>
                         <button
-                          className={`iitc-iris-mission-waypoint ${waypoint.hidden ? 'is-hidden' : ''}`}
+                          className={`iitc-iris-mission-row ${missionsState.selectedMission?.guid === mission.guid ? 'is-active' : ''}`}
                           type="button"
-                          key={`${waypoint.guid}-${waypoint.index}`}
-                          onClick={() => {
-                            if (waypoint.latE6 !== undefined && waypoint.lngE6 !== undefined) {
-                              focusPortalReference(waypoint.portalGuid, waypoint.latE6, waypoint.lngE6);
-                            }
-                          }}
-                          disabled={waypoint.latE6 === undefined || waypoint.lngE6 === undefined}
-                          title={waypoint.portalGuid || waypoint.guid}
+                          onClick={() => requestMissionDetails(mission.guid)}
+                          disabled={missionsState.detailsStatus === 'loading' && missionsState.selectedMission?.guid === mission.guid}
+                          title={mission.guid}
                         >
-                          <b>{waypoint.index + 1}</b>
+                          {mission.image && <img src={mission.image} alt="" loading="lazy" />}
                           <span>
-                            <strong>{waypoint.hidden ? 'Hidden waypoint' : waypoint.title}</strong>
-                            <small>{waypoint.objective} · {waypoint.type}</small>
+                            <b>{mission.title}</b>
+                            <small>{formatMissionRowMeta(mission)}</small>
                           </span>
                         </button>
-                      ))}
-                    </div>
+                        {missionsState.selectedMission?.guid === mission.guid && renderSelectedMissionDetails()}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -3224,11 +3315,15 @@ function App(): h.JSX.Element {
                     `portal: ${missionsState.portalGuid ?? '-'}`,
                   ].join('\n')}
                 >
-                  {missionsState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(missionsState.elapsedMs)}s` : 'request'}
+                  {missionsState.cached
+                    ? 'cached'
+                    : missionsState.elapsedMs !== undefined
+                      ? `request ${formatElapsedSeconds(missionsState.elapsedMs)}s`
+                      : 'request'}
                 </span>
                 {missionsState.detailsElapsedMs !== undefined && (
                   <span className="iitc-iris-diagnostics-chip" title="request: /r/getMissionDetails">
-                    details {formatElapsedSeconds(missionsState.detailsElapsedMs)}s
+                    {missionsState.detailsCached ? 'details cached' : `details ${formatElapsedSeconds(missionsState.detailsElapsedMs)}s`}
                   </span>
                 )}
                 {missionsState.error && <span className="iitc-iris-warning">{missionsState.error}</span>}
