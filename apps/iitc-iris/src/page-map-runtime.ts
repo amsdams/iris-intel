@@ -3821,7 +3821,7 @@ function createIitcIrisPanes(map: LeafletMap): void {
     ['artifacts', 445],
     ['selectedPortal', 448],
     ['playerTracker', 449],
-    ['missions', 449, 'auto'],
+    ['missions', 449],
     ['search', 451],
     ['labels', 450],
   ];
