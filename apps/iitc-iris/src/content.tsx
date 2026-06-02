@@ -2,6 +2,7 @@ import {h, render} from 'preact';
 import {useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import './iitc-iris.css';
 import {formatIitcColorVars, getIitcItemColor, getIitcLevelColor, getIitcRarityColor, IITC_RESONATOR_ENERGY} from './iitc-colors';
+import {formatSubscriptionBadge, formatSubscriptionLabel, getAuthErrorMessage, getPanelStatusClass, getSubscriptionStatusClass} from './ui-status';
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPlayerTrackerDiagnostics, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
 import {
   createIitcMapDataPlan,
@@ -816,30 +817,6 @@ function formatPercent(value: number | undefined): string {
   return value === undefined || !Number.isFinite(value) ? '-' : `${Math.round(value)}%`;
 }
 
-function formatSubscriptionLabel(subscription: IitcIrisInventoryState['subscription']): string {
-  if (!subscription || subscription.status === 'unknown') return 'C.O.R.E. unknown';
-  if (subscription.status === 'loading') return 'checking C.O.R.E.';
-  if (subscription.status === 'active') return 'C.O.R.E. active';
-  if (subscription.status === 'inactive') return 'C.O.R.E. inactive';
-  if (subscription.status === 'auth') return 'C.O.R.E. auth';
-  return 'C.O.R.E. error';
-}
-
-function formatSubscriptionBadge(subscription: IitcIrisInventoryState['subscription']): string {
-  if (!subscription || subscription.status === 'unknown') return 'C.O.R.E. ?';
-  if (subscription.status === 'loading') return 'C.O.R.E. ...';
-  if (subscription.status === 'active') return 'C.O.R.E.';
-  if (subscription.status === 'inactive') return 'no C.O.R.E.';
-  return 'C.O.R.E. !';
-}
-
-function getSubscriptionStatusClass(subscription: IitcIrisInventoryState['subscription']): string {
-  if (!subscription || subscription.status === 'unknown') return 'is-unknown';
-  if (subscription.status === 'active') return 'is-active';
-  if (subscription.status === 'loading') return 'is-loading';
-  return 'is-inactive';
-}
-
 function formatScoreLead(enlightened: number | undefined, resistance: number | undefined): string {
   if (enlightened === undefined || resistance === undefined) return '-';
   if (enlightened === resistance) return 'tied';
@@ -908,21 +885,6 @@ function formatModStats(stats: Record<string, string | number>): string {
     if (value !== undefined) parts.push(`${key.toLowerCase().replace(/_/g, ' ')} ${value}`);
   }
   return parts.slice(0, 2).join(', ');
-}
-
-function getPanelStatusClass(status: string | undefined): string {
-  if (status === 'loading') return 'is-loading';
-  if (status === 'ready') return 'is-ready';
-  if (status === 'empty' || status === 'idle' || status === 'waiting') return 'is-muted';
-  if (status === 'error' || status === 'auth') return 'is-warning';
-  return '';
-}
-
-function getAuthErrorMessage(status?: string, error?: string): string {
-  if (status === 'auth' || /missing csrftoken|missing Intel version|waiting for Intel version|login html/i.test(error ?? '')) {
-    return 'Intel login required.';
-  }
-  return error ?? '';
 }
 
 function formatItemBadge(item: {level?: number; rarity?: string; type?: string}): string {
@@ -1650,6 +1612,13 @@ function App(): h.JSX.Element {
     } satisfies IitcIrisMessage, '*');
   };
 
+  const inlineAuthActions = (
+    <span className="iitc-iris-inline-auth">
+      <button type="button" onClick={openIntelLogin} title="Open Intel login">Login</button>
+      <button type="button" onClick={retryAuthRequest} title="Retry after login">Retry</button>
+    </span>
+  );
+
   const toggleLayerSetting = (key: BooleanLayerSettingKey): void => {
     setLayerSettings((current) => ({...current, [key]: !current[key]}));
   };
@@ -1901,17 +1870,17 @@ function App(): h.JSX.Element {
     ? 'portal'
     : getPrimaryMenuId(activeSheet);
   const activeSidePanelStatus = activeSidePanel === 'comm'
-    ? commState.status
+    ? commState.status === 'auth' || commState.sendStatus === 'auth' ? 'auth' : commState.status
     : activeSidePanel === 'scores'
-      ? scoresState.status
+      ? scoresState.status === 'auth' || scoresState.region?.status === 'auth' ? 'auth' : scoresState.status
       : activeSidePanel === 'missions'
-        ? missionsState.status
+        ? missionsState.status === 'auth' || missionsState.detailsStatus === 'auth' ? 'auth' : missionsState.status
         : activeSidePanel === 'inventory'
-          ? inventoryState.status
+          ? inventoryState.status === 'auth' || inventoryState.subscription?.status === 'auth' ? 'auth' : inventoryState.status
           : activeSidePanel === 'passcode'
             ? passcodeState.status
             : activeSidePanel === 'agent'
-              ? agentState.status
+              ? agentState.status === 'missing' || agentState.subscription?.status === 'auth' ? 'auth' : agentState.status
               : 'idle';
   const authSources = [
     entityFetch.authRequired ? 'map' : null,
@@ -1928,9 +1897,7 @@ function App(): h.JSX.Element {
       ? `${authSources[0]} needs an authenticated Intel session`
       : `${authSources.length} requests need an authenticated Intel session`
     : '';
-  const activePanelNeedsAuth = activeSidePanelStatus === 'auth' ||
-    (activeSidePanel === 'comm' && commState.sendStatus === 'auth') ||
-    (activeSidePanel === 'agent' && agentState.status === 'missing');
+  const activePanelNeedsAuth = activeSidePanelStatus === 'auth';
   const openCommPanel = (tab?: IitcIrisCommTab): void => {
     if (tab) refreshComm(tab);
     openSheet('comm');
@@ -2329,8 +2296,10 @@ function App(): h.JSX.Element {
         <aside className="iitc-iris-request-side-panel iitc-iris-search-panel" role="search" aria-label="Search">
           <div className="iitc-iris-request-panel-header">
             <span className="iitc-iris-selected-title">Search</span>
-            <span className={`iitc-iris-status iitc-iris-panel-state ${getPanelStatusClass(searchState.status)}`}>{searchState.status}</span>
-            <button className="iitc-iris-clear-selection" type="button" onClick={() => openSheet('map')} title="Close search">x</button>
+            <span className="iitc-iris-panel-header-actions">
+              <span className={`iitc-iris-status iitc-iris-panel-state ${getPanelStatusClass(searchState.status)}`}>{searchState.status}</span>
+              <button className="iitc-iris-clear-selection" type="button" onClick={() => openSheet('map')} title="Close search">x</button>
+            </span>
           </div>
           <div className="iitc-iris-request-panel-body">
           <form
@@ -2419,7 +2388,9 @@ function App(): h.JSX.Element {
         {(activeSheet === 'view' || activeSheet === 'layers') && (
           <div className="iitc-iris-panel-topbar">
             <span className="iitc-iris-selected-title">{activeSheet === 'view' ? 'View' : 'Layers'}</span>
-            <button className="iitc-iris-clear-selection" type="button" onClick={closeSheets} title={`Close ${activeSheet}`}>x</button>
+            <span className="iitc-iris-panel-header-actions">
+              <button className="iitc-iris-clear-selection" type="button" onClick={closeSheets} title={`Close ${activeSheet}`}>x</button>
+            </span>
           </div>
         )}
         {activeSheet === 'view' && <div className="iitc-iris-map-controls-section">
@@ -2517,7 +2488,9 @@ function App(): h.JSX.Element {
         <aside className="iitc-iris-system-panel" aria-label="System controls">
           <div className="iitc-iris-panel-topbar">
             <span className="iitc-iris-selected-title">System</span>
-            <span className="iitc-iris-status">UI and diagnostics</span>
+            <span className="iitc-iris-panel-header-actions">
+              <span className="iitc-iris-status">UI and diagnostics</span>
+            </span>
           </div>
           <div className="iitc-iris-map-controls-section">
             <span className="iitc-iris-status">Status</span>
@@ -2932,17 +2905,16 @@ function App(): h.JSX.Element {
           <div className="iitc-iris-portal-panel">
             <div className="iitc-iris-portal-panel-header">
               <span className="iitc-iris-status">details</span>
-              {selectedPortalDetails?.error && (
-                <span className="iitc-iris-status iitc-iris-warning" title={selectedPortalDetails.error}>
-                  {getAuthErrorMessage(selectedPortalDetails.status, selectedPortalDetails.error)}
-                </span>
-              )}
-              {selectedPortalDetailsStatus === 'auth' && (
-                <span className="iitc-iris-inline-auth">
-                  <button type="button" onClick={openIntelLogin} title="Open Intel login">Login</button>
-                  <button type="button" onClick={retryAuthRequest} title="Retry after login">Retry</button>
-                </span>
-              )}
+              <span className="iitc-iris-panel-header-actions">
+                {selectedPortalDetails?.error && (
+                  <span className="iitc-iris-status iitc-iris-warning" title={selectedPortalDetails.error}>
+                    {getAuthErrorMessage(selectedPortalDetails.status, selectedPortalDetails.error)}
+                  </span>
+                )}
+                {selectedPortalDetailsStatus === 'auth' && (
+                  inlineAuthActions
+                )}
+              </span>
             </div>
             {selectedPortalDetailsStatus !== 'ready' && (
               <div className="iitc-iris-empty-state">
@@ -3090,7 +3062,9 @@ function App(): h.JSX.Element {
           <div className="iitc-iris-image-preview" onClick={(event) => event.stopPropagation()}>
             <div className="iitc-iris-request-panel-header">
               <span className="iitc-iris-selected-title">{entityFetch.selectedPortal.title || 'Portal image'}</span>
-              <button className="iitc-iris-clear-selection" type="button" onClick={() => setPortalImageOpen(false)} title="Close image preview">x</button>
+              <span className="iitc-iris-panel-header-actions">
+                <button className="iitc-iris-clear-selection" type="button" onClick={() => setPortalImageOpen(false)} title="Close image preview">x</button>
+              </span>
             </div>
             <img src={entityFetch.selectedPortal.image} alt={entityFetch.selectedPortal.title || 'Portal image'} />
             <div className="iitc-iris-image-preview-caption">
@@ -3104,7 +3078,9 @@ function App(): h.JSX.Element {
         <aside className="iitc-iris-request-side-panel iitc-iris-help-panel" aria-label="Shortcuts">
           <div className="iitc-iris-request-panel-header">
             <span className="iitc-iris-selected-title">Shortcuts</span>
-            <button className="iitc-iris-clear-selection" type="button" onClick={closeSheets} title="Close shortcuts">x</button>
+            <span className="iitc-iris-panel-header-actions">
+              <button className="iitc-iris-clear-selection" type="button" onClick={closeSheets} title="Close shortcuts">x</button>
+            </span>
           </div>
           <div className="iitc-iris-request-panel-body">
             <div className="iitc-iris-shortcut-grid">
@@ -3129,16 +3105,15 @@ function App(): h.JSX.Element {
         <aside className="iitc-iris-request-side-panel" aria-label={`${activeSidePanelOption.title} panel`}>
           <div className="iitc-iris-request-panel-header">
             <span className="iitc-iris-selected-title">{activeSidePanelOption.label}</span>
-            <span className={`iitc-iris-status iitc-iris-panel-state ${getPanelStatusClass(activeSidePanelStatus)}`}>
-              {activeSidePanelStatus}
-            </span>
-            {activePanelNeedsAuth && (
-              <span className="iitc-iris-inline-auth">
-                <button type="button" onClick={openIntelLogin} title="Open Intel login">Login</button>
-                <button type="button" onClick={retryAuthRequest} title={`Retry ${activeSidePanelOption.title}`}>Retry</button>
+            <span className="iitc-iris-panel-header-actions">
+              <span className={`iitc-iris-status iitc-iris-panel-state ${getPanelStatusClass(activeSidePanelStatus)}`}>
+                {activeSidePanelStatus}
               </span>
-            )}
+              {activePanelNeedsAuth && (
+                inlineAuthActions
+              )}
 	            <button className="iitc-iris-clear-selection" type="button" onClick={closeSidePanel} title={`Close ${activeSidePanelOption.title}`}>x</button>
+            </span>
 	          </div>
 	          {activeSidePanel === 'agent' && (
 	            <div className="iitc-iris-request-panel-body">
@@ -3209,7 +3184,9 @@ function App(): h.JSX.Element {
 	                  </div>
 	                </>
 	              ) : (
-	                <div className="iitc-iris-empty-state">Agent stats were not available on this Intel page.</div>
+	                <div className="iitc-iris-empty-state">
+	                  Agent stats require an authenticated Intel session.
+	                </div>
 	              )}
 	            </div>
 	          )}
@@ -3248,7 +3225,10 @@ function App(): h.JSX.Element {
                 <span><b>{formatInteger(commState.addedMessages)}</b><small>added</small></span>
                 <span><b>{commState.oldestTimestamp !== undefined && commState.newestTimestamp !== undefined ? `${formatCommTime(commState.oldestTimestamp)} - ${formatCommTime(commState.newestTimestamp)}` : '-'}</b><small>range</small></span>
               </div>
-              {(commState.status === 'empty' || (!commState.recent?.length && commState.status !== 'loading' && commState.status !== 'idle')) && (
+              {commState.status === 'auth' && (
+                <div className="iitc-iris-empty-state">COMM requires an authenticated Intel session.</div>
+              )}
+              {(commState.status === 'empty' || (!commState.recent?.length && commState.status !== 'loading' && commState.status !== 'idle' && commState.status !== 'auth')) && (
                 <div className="iitc-iris-empty-state">No COMM messages for this channel and map bounds.</div>
               )}
               {commState.recent && commState.recent.length > 0 && (
@@ -3345,7 +3325,11 @@ function App(): h.JSX.Element {
                 >
                   {commState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(commState.elapsedMs)}s` : 'request'}
                 </span>
-                {commState.error && <span className="iitc-iris-warning" title={commState.error}>{getAuthErrorMessage(commState.status, commState.error)}</span>}
+                {commState.error && (
+                  <span className="iitc-iris-warning" title={commState.error}>
+                    {commState.status === 'auth' ? 'COMM requires an authenticated Intel session.' : getAuthErrorMessage(commState.status, commState.error)}
+                  </span>
+                )}
               </div>
             </div>
           )}
@@ -3420,7 +3404,9 @@ function App(): h.JSX.Element {
                 </span>
                 {(scoresState.error || scoresState.region?.error) && (
                   <span className="iitc-iris-warning" title={scoresState.error || scoresState.region?.error}>
-                    {getAuthErrorMessage(scoresState.status, scoresState.error || scoresState.region?.error)}
+                    {scoresState.status === 'auth' || scoresState.region?.status === 'auth'
+                      ? 'Scores require an authenticated Intel session.'
+                      : getAuthErrorMessage(scoresState.status, scoresState.error || scoresState.region?.error)}
                   </span>
                 )}
               </div>
@@ -3465,7 +3451,7 @@ function App(): h.JSX.Element {
               )}
               {(missionsState.status === 'error' || missionsState.status === 'auth') && missionsState.missions.length === 0 && (
                 <div className="iitc-iris-empty-state">
-                  {missionsState.status === 'auth' ? 'Mission request needs an authenticated Intel session.' : 'Mission request failed.'}
+                  {missionsState.status === 'auth' ? 'Missions require an authenticated Intel session.' : 'Mission request failed.'}
                 </div>
               )}
               <div className="iitc-iris-scroll-region iitc-iris-missions-scroll">
@@ -3511,7 +3497,13 @@ function App(): h.JSX.Element {
                     {missionsState.detailsCached ? 'details cached' : `details ${formatElapsedSeconds(missionsState.detailsElapsedMs)}s`}
                   </span>
                 )}
-                {missionsState.error && <span className="iitc-iris-warning" title={missionsState.error}>{getAuthErrorMessage(missionsState.status, missionsState.error)}</span>}
+                {missionsState.error && (
+                  <span className="iitc-iris-warning" title={missionsState.error}>
+                    {missionsState.status === 'auth' || missionsState.detailsStatus === 'auth'
+                      ? 'Missions require an authenticated Intel session.'
+                      : getAuthErrorMessage(missionsState.status, missionsState.error)}
+                  </span>
+                )}
               </div>
             </div>
           )}
@@ -3621,7 +3613,13 @@ function App(): h.JSX.Element {
                     core {formatElapsedSeconds(inventoryState.subscription.elapsedMs)}s
                   </span>
                 )}
-                {inventoryState.error && <span className="iitc-iris-warning" title={inventoryState.error}>{getAuthErrorMessage(inventoryState.status, inventoryState.error)}</span>}
+                {inventoryState.error && (
+                  <span className="iitc-iris-warning" title={inventoryState.error}>
+                    {inventoryState.status === 'auth'
+                      ? 'Inventory requires an authenticated Intel session.'
+                      : getAuthErrorMessage(inventoryState.status, inventoryState.error)}
+                  </span>
+                )}
               </div>
             </div>
           )}
@@ -3677,7 +3675,11 @@ function App(): h.JSX.Element {
               )}
               {(passcodeState.status === 'empty' || passcodeState.error) && (
                 <div className={passcodeState.error ? 'iitc-iris-warning' : 'iitc-iris-empty-state'}>
-                  {passcodeState.error ? getAuthErrorMessage(passcodeState.status, passcodeState.error) : 'Passcode returned no rewards.'}
+                  {passcodeState.error
+                    ? passcodeState.status === 'auth'
+                      ? 'Passcode redemption requires an authenticated Intel session.'
+                      : getAuthErrorMessage(passcodeState.status, passcodeState.error)
+                    : 'Passcode returned no rewards.'}
                 </div>
               )}
               <div className="iitc-iris-panel-footer">

@@ -234,6 +234,24 @@ General improvement backlog before calling this replacement-ready:
   text. Panels show a consistent "Intel login required" message and keep the raw error in diagnostic/title context.
 - Auth UX polish: affected panels now include compact inline Login/Retry actions in addition to the global map-level
   recovery banner, so recovery is available without opening System diagnostics.
+- Auth recovery stabilization - 2026-06-02:
+  - User-facing auth recovery is now split into one clear surface per panel: the panel header owns status plus
+    Login/Retry actions, while the body/footer only explains which data is blocked.
+  - Side-panel header status collapses nested auth states into `auth`, including COMM send auth, Scores region auth,
+    Missions details auth, Inventory subscription auth, and Agent missing/subscription auth. This avoids panels showing
+    `idle` while a child request is actually waiting for Intel login.
+  - Panel headers now use a shared right-aligned action group for status chips, inline auth buttons, and close buttons.
+    Status chips and inline auth controls are explicitly sized to the same 18px control height.
+  - Panel refresh remains manual by product choice for now. Map pan/zoom should not automatically re-request Missions,
+    COMM, Scores, Inventory, Passcode, or Search. Later polish may add a non-requesting "view changed / refresh
+    available" hint for Missions or COMM.
+  - Latest auth stabilization validation passed:
+    `npm run typecheck:iitc-iris`,
+    `npm run test --workspace @iris/iitc-core -- missions.test.ts`,
+    and `npm run package:iitc-iris`.
+    Latest artifacts:
+    `apps/iitc-iris/builds/iitc-iris-chrome-0.1.0-2026-06-02T17-39-23.zip` and
+    `apps/iitc-iris/builds/iitc-iris-firefox-0.1.0-2026-06-02T17-39-23.xpi`.
 - Continue IITC comparison passes on active requests during map movement: entity requests, `getPlexts`, portal details,
   inventory, scores, passcodes, and geocoder requests should all have expected overlap/idle behavior documented.
 - Add missing known Intel/IITC-plugin request surfaces to the backlog and expose them in UI when ported:
@@ -270,6 +288,9 @@ Runtime policy notes to settle:
 - Refactor caution: `content.tsx` and `page-map-runtime.ts` are large enough to slow safe edits. Do not do a broad split
   before lifecycle behavior stabilizes; after request cancellation policy settles, do targeted extraction around auth
   recovery helpers, request/panel status helpers, side-panel header/actions, and runtime request lifecycle helpers.
+- Targeted cleanup started: pure panel/auth/subscription status formatting moved from `content.tsx` into
+  `apps/iitc-iris/src/ui-status.ts`. Keep the next cleanup similarly narrow: side-panel header/action rendering first,
+  then runtime request lifecycle helpers once live cancellation behavior is validated.
 - Cache policy matrix: document every cache, TTL, key, invalidation rule, memory-only vs persistent storage, and when
   stale data is acceptable. Include map tile/entity cache, portal details, missions, inventory-derived key counts, search,
   COMM, scores, and subscription status.
