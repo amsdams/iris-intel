@@ -14,6 +14,7 @@ export const IITC_IRIS_MESSAGES = {
   focusPortal: 'IITC_IRIS_FOCUS_PORTAL',
   clearPortalSelection: 'IITC_IRIS_CLEAR_PORTAL_SELECTION',
   requestComm: 'IITC_IRIS_REQUEST_COMM',
+  cancelPanelRequests: 'IITC_IRIS_CANCEL_PANEL_REQUESTS',
   sendComm: 'IITC_IRIS_SEND_COMM',
   commStatus: 'IITC_IRIS_COMM_STATUS',
   requestScores: 'IITC_IRIS_REQUEST_SCORES',

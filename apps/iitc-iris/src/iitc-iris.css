@@ -415,6 +415,73 @@
   padding: 1px 6px;
 }
 
+.iitc-iris-auth-recovery {
+  position: absolute;
+  z-index: 1220;
+  top: 10px;
+  left: 50%;
+  display: flex;
+  max-width: min(520px, calc(100vw - 24px));
+  min-height: 30px;
+  box-sizing: border-box;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border: 1px solid rgb(255 209 102 / 58%);
+  border-radius: 6px;
+  background: rgb(24 20 11 / 94%);
+  color: #ffe8a6;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 38%);
+  font-size: 12px;
+  font-weight: 700;
+  transform: translateX(-50%);
+}
+
+.iitc-iris-auth-recovery span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iitc-iris-auth-recovery button {
+  appearance: none;
+  height: 20px;
+  border: 1px solid rgb(255 209 102 / 70%);
+  border-radius: 4px;
+  background: rgb(67 43 3 / 92%);
+  color: #ffd166;
+  font: 700 11px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  cursor: pointer;
+}
+
+.iitc-iris-auth-recovery button:hover {
+  border-color: rgb(255 209 102 / 95%);
+  background: rgb(91 58 5 / 96%);
+}
+
+.iitc-iris-inline-auth {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.iitc-iris-inline-auth button {
+  appearance: none;
+  height: 18px;
+  border: 1px solid rgb(255 209 102 / 58%);
+  border-radius: 4px;
+  background: rgb(67 43 3 / 82%);
+  color: #ffd166;
+  font: 700 10px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  cursor: pointer;
+}
+
+.iitc-iris-inline-auth button:hover {
+  border-color: rgb(255 209 102 / 90%);
+  background: rgb(91 58 5 / 92%);
+}
+
 .iitc-iris-status {
   color: #c7d8e8;
 }

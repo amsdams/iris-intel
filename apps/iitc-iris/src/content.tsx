@@ -24,7 +24,9 @@ const MAP_VIEW_STORAGE_KEY = 'iitc-iris:map-view';
 const PORTAL_SECTION_STORAGE_KEY = 'iitc-iris:portal-sections';
 const SHORTCUTS_ENABLED_STORAGE_KEY = 'iitc-iris:shortcuts-enabled';
 const MAP_FOCUS_MODE_STORAGE_KEY = 'iitc-iris:map-focus-mode';
+const LOGIN_BYPASS_STORAGE_KEY = 'iitc-iris:login-bypass-until';
 const COMM_TAB_STORAGE_KEY = 'iitc-chat-tab';
+const LOGIN_BYPASS_MS = 5 * 60 * 1000;
 const VIEW_PRESETS = [
   {id: 'amsterdam-z10', label: 'AMS 10', lat: 52.3730796, lng: 4.8924534, zoom: 10},
   {id: 'amsterdam-z15', label: 'AMS 15', lat: 52.3730796, lng: 4.8924534, zoom: 15},
@@ -916,6 +918,13 @@ function getPanelStatusClass(status: string | undefined): string {
   return '';
 }
 
+function getAuthErrorMessage(status?: string, error?: string): string {
+  if (status === 'auth' || /missing csrftoken|missing Intel version|waiting for Intel version|login html/i.test(error ?? '')) {
+    return 'Intel login required.';
+  }
+  return error ?? '';
+}
+
 function formatItemBadge(item: {level?: number; rarity?: string; type?: string}): string {
   if (item.level !== undefined) return `L${item.level}`;
   if (item.rarity === 'VERY_RARE') return 'VR';
@@ -1472,6 +1481,7 @@ function App(): h.JSX.Element {
   };
 
   const closeSidePanel = (): void => {
+    window.postMessage({type: IITC_IRIS_MESSAGES.cancelPanelRequests} satisfies IitcIrisMessage, '*');
     setActiveSidePanel(null);
     setActiveSheet('map');
     storeSidePanelId(null);
@@ -1485,6 +1495,9 @@ function App(): h.JSX.Element {
       setActiveSidePanel(sheet);
       storeSidePanelId(sheet);
       return;
+    }
+    if (activeSidePanel) {
+      window.postMessage({type: IITC_IRIS_MESSAGES.cancelPanelRequests} satisfies IitcIrisMessage, '*');
     }
     setActiveSidePanel(null);
     storeSidePanelId(null);
@@ -1592,7 +1605,49 @@ function App(): h.JSX.Element {
   };
 
   const openIntelLogin = (): void => {
+    try {
+      window.sessionStorage.setItem(LOGIN_BYPASS_STORAGE_KEY, String(Date.now() + LOGIN_BYPASS_MS));
+    } catch {
+      // Login recovery still works without session storage.
+    }
+    document.getElementById('iitc-iris-root')?.remove();
+    if (window.location.origin === 'https://intel.ingress.com' && window.location.pathname === '/intel') {
+      window.location.reload();
+      return;
+    }
     window.location.assign('https://intel.ingress.com/intel');
+  };
+
+  const retryAuthRequest = (): void => {
+    if (activeSidePanel === 'comm') {
+      refreshComm(commState.tab);
+      return;
+    }
+    if (activeSidePanel === 'scores') {
+      refreshScores();
+      return;
+    }
+    if (activeSidePanel === 'missions') {
+      refreshMissions();
+      return;
+    }
+    if (activeSidePanel === 'inventory') {
+      refreshInventory();
+      return;
+    }
+    if (activeSidePanel === 'passcode' && (passcodeDraft.trim() || passcodeState.passcode)) {
+      const passcode = passcodeDraft.trim() || passcodeState.passcode || '';
+      setPasscodeDraft(passcode);
+      window.postMessage({
+        type: IITC_IRIS_MESSAGES.requestPasscode,
+        passcodeText: passcode,
+      } satisfies IitcIrisMessage, '*');
+      return;
+    }
+    window.postMessage({
+      type: IITC_IRIS_MESSAGES.dataSourceSettings,
+      dataSource,
+    } satisfies IitcIrisMessage, '*');
   };
 
   const toggleLayerSetting = (key: BooleanLayerSettingKey): void => {
@@ -1858,6 +1913,24 @@ function App(): h.JSX.Element {
             : activeSidePanel === 'agent'
               ? agentState.status
               : 'idle';
+  const authSources = [
+    entityFetch.authRequired ? 'map' : null,
+    selectedPortalDetails?.status === 'auth' ? 'portal details' : null,
+    commState.status === 'auth' || commState.sendStatus === 'auth' ? 'COMM' : null,
+    scoresState.status === 'auth' || scoresState.region?.status === 'auth' ? 'scores' : null,
+    missionsState.status === 'auth' || missionsState.detailsStatus === 'auth' ? 'missions' : null,
+    inventoryState.status === 'auth' || inventoryState.subscription?.status === 'auth' ? 'inventory' : null,
+    passcodeState.status === 'auth' ? 'passcode' : null,
+    agentState.status === 'missing' || agentState.subscription?.status === 'auth' ? 'agent' : null,
+  ].filter((source): source is string => source !== null);
+  const authRecoveryText = authSources.length > 0
+    ? authSources.length === 1
+      ? `${authSources[0]} needs an authenticated Intel session`
+      : `${authSources.length} requests need an authenticated Intel session`
+    : '';
+  const activePanelNeedsAuth = activeSidePanelStatus === 'auth' ||
+    (activeSidePanel === 'comm' && commState.sendStatus === 'auth') ||
+    (activeSidePanel === 'agent' && agentState.status === 'missing');
   const openCommPanel = (tab?: IitcIrisCommTab): void => {
     if (tab) refreshComm(tab);
     openSheet('comm');
@@ -2239,6 +2312,13 @@ function App(): h.JSX.Element {
   return (
     <div className={`iitc-iris-shell iitc-iris-sheet-${activeSheet} ${entityFetch.selectedPortal ? 'iitc-iris-has-selected-portal' : ''}`}>
       <div id="iitc-iris-map" className="iitc-iris-map" />
+      {authRecoveryText && (
+        <div className="iitc-iris-auth-recovery" role="status" aria-live="polite">
+          <span>{authRecoveryText}</span>
+          <button type="button" onClick={openIntelLogin} title="Open Intel login">Login</button>
+          <button type="button" onClick={retryAuthRequest} title="Retry the latest affected request">Retry</button>
+        </div>
+      )}
       {activeSheet === 'map' && searchState.term && searchState.results.length > 0 && (
         <div className="iitc-iris-map-search-badge">
           <span title={activeSearchResult?.title || searchState.term}>search: {activeSearchResult?.title || searchState.term}</span>
@@ -2852,7 +2932,17 @@ function App(): h.JSX.Element {
           <div className="iitc-iris-portal-panel">
             <div className="iitc-iris-portal-panel-header">
               <span className="iitc-iris-status">details</span>
-              {selectedPortalDetails?.error && <span className="iitc-iris-status iitc-iris-warning">{selectedPortalDetails.error}</span>}
+              {selectedPortalDetails?.error && (
+                <span className="iitc-iris-status iitc-iris-warning" title={selectedPortalDetails.error}>
+                  {getAuthErrorMessage(selectedPortalDetails.status, selectedPortalDetails.error)}
+                </span>
+              )}
+              {selectedPortalDetailsStatus === 'auth' && (
+                <span className="iitc-iris-inline-auth">
+                  <button type="button" onClick={openIntelLogin} title="Open Intel login">Login</button>
+                  <button type="button" onClick={retryAuthRequest} title="Retry after login">Retry</button>
+                </span>
+              )}
             </div>
             {selectedPortalDetailsStatus !== 'ready' && (
               <div className="iitc-iris-empty-state">
@@ -3042,6 +3132,12 @@ function App(): h.JSX.Element {
             <span className={`iitc-iris-status iitc-iris-panel-state ${getPanelStatusClass(activeSidePanelStatus)}`}>
               {activeSidePanelStatus}
             </span>
+            {activePanelNeedsAuth && (
+              <span className="iitc-iris-inline-auth">
+                <button type="button" onClick={openIntelLogin} title="Open Intel login">Login</button>
+                <button type="button" onClick={retryAuthRequest} title={`Retry ${activeSidePanelOption.title}`}>Retry</button>
+              </span>
+            )}
 	            <button className="iitc-iris-clear-selection" type="button" onClick={closeSidePanel} title={`Close ${activeSidePanelOption.title}`}>x</button>
 	          </div>
 	          {activeSidePanel === 'agent' && (
@@ -3233,8 +3329,8 @@ function App(): h.JSX.Element {
                 </button>
               </form>
               {(commState.sendStatus === 'sent' || commState.sendError) && (
-                <span className={`iitc-iris-status ${commState.sendError ? 'iitc-iris-warning' : ''}`}>
-                  send {commState.sendError || commState.sendStatus}
+                <span className={`iitc-iris-status ${commState.sendError ? 'iitc-iris-warning' : ''}`} title={commState.sendError}>
+                  send {commState.sendError ? getAuthErrorMessage(commState.sendStatus, commState.sendError) : commState.sendStatus}
                 </span>
               )}
               <div className="iitc-iris-panel-footer">
@@ -3249,7 +3345,7 @@ function App(): h.JSX.Element {
                 >
                   {commState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(commState.elapsedMs)}s` : 'request'}
                 </span>
-                {commState.error && <span className="iitc-iris-warning">{commState.error}</span>}
+                {commState.error && <span className="iitc-iris-warning" title={commState.error}>{getAuthErrorMessage(commState.status, commState.error)}</span>}
               </div>
             </div>
           )}
@@ -3322,7 +3418,11 @@ function App(): h.JSX.Element {
                 >
                   {scoresState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(scoresState.elapsedMs)}s` : 'request'}
                 </span>
-                {(scoresState.error || scoresState.region?.error) && <span className="iitc-iris-warning">{scoresState.error || scoresState.region?.error}</span>}
+                {(scoresState.error || scoresState.region?.error) && (
+                  <span className="iitc-iris-warning" title={scoresState.error || scoresState.region?.error}>
+                    {getAuthErrorMessage(scoresState.status, scoresState.error || scoresState.region?.error)}
+                  </span>
+                )}
               </div>
             </div>
           )}
@@ -3411,7 +3511,7 @@ function App(): h.JSX.Element {
                     {missionsState.detailsCached ? 'details cached' : `details ${formatElapsedSeconds(missionsState.detailsElapsedMs)}s`}
                   </span>
                 )}
-                {missionsState.error && <span className="iitc-iris-warning">{missionsState.error}</span>}
+                {missionsState.error && <span className="iitc-iris-warning" title={missionsState.error}>{getAuthErrorMessage(missionsState.status, missionsState.error)}</span>}
               </div>
             </div>
           )}
@@ -3521,7 +3621,7 @@ function App(): h.JSX.Element {
                     core {formatElapsedSeconds(inventoryState.subscription.elapsedMs)}s
                   </span>
                 )}
-                {inventoryState.error && <span className="iitc-iris-warning">{inventoryState.error}</span>}
+                {inventoryState.error && <span className="iitc-iris-warning" title={inventoryState.error}>{getAuthErrorMessage(inventoryState.status, inventoryState.error)}</span>}
               </div>
             </div>
           )}
@@ -3577,7 +3677,7 @@ function App(): h.JSX.Element {
               )}
               {(passcodeState.status === 'empty' || passcodeState.error) && (
                 <div className={passcodeState.error ? 'iitc-iris-warning' : 'iitc-iris-empty-state'}>
-                  {passcodeState.error || 'Passcode returned no rewards.'}
+                  {passcodeState.error ? getAuthErrorMessage(passcodeState.status, passcodeState.error) : 'Passcode returned no rewards.'}
                 </div>
               )}
               <div className="iitc-iris-panel-footer">
@@ -3609,9 +3709,31 @@ function createRoot(): HTMLElement {
   return root;
 }
 
+function hasIntelDashboardBootstrap(): boolean {
+  return document.querySelector('script[src*="gen_dashboard_"]') !== null;
+}
+
+function shouldBypassForIntelLogin(): boolean {
+  try {
+    const value = Number(window.sessionStorage.getItem(LOGIN_BYPASS_STORAGE_KEY) ?? 0);
+    if (!Number.isFinite(value) || value <= Date.now() || hasIntelDashboardBootstrap()) {
+      window.sessionStorage.removeItem(LOGIN_BYPASS_STORAGE_KEY);
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function mount(): void {
   if (!document.body) {
     window.setTimeout(mount, 50);
+    return;
+  }
+
+  if (shouldBypassForIntelLogin()) {
+    window.setTimeout(mount, 1000);
     return;
   }
 

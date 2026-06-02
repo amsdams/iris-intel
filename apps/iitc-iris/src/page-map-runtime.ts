@@ -171,6 +171,7 @@ let baseLayer: TileLayer | undefined;
 let dataSource: IitcIrisDataSourceSettings = {mode: 'live'};
 let lifecycleSettings: IitcIrisLifecycleSettings = {iitcMovementDelay: false};
 let refreshTimer: number | undefined;
+let authRecoveryActive = false;
 let mapMoveInProgress = false;
 let currentFetchAbortController: AbortController | undefined;
 let currentPortalDetailsAbortController: AbortController | undefined;
@@ -459,6 +460,16 @@ function cancelActivePasscodeFetch(): void {
 function cancelActiveInventoryFetch(): void {
   currentInventoryAbortController?.abort();
   currentInventoryAbortController = undefined;
+}
+
+function cancelActivePanelRequests(): void {
+  cancelActivePortalDetailsFetch();
+  cancelActiveCommFetch();
+  cancelActiveScoresFetch();
+  cancelActivePasscodeFetch();
+  cancelActiveInventoryFetch();
+  cancelActiveMissionsFetch();
+  cancelActiveMissionDetailsFetch();
 }
 
 function postMapMoveStarted(): void {
@@ -2151,7 +2162,7 @@ async function refreshMissions(source: IitcIrisMissionSource = 'view'): Promise<
     if (source === 'portal' && missions.length === 1) void refreshMissionDetails(missions[0].guid);
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') return;
-    const status = error instanceof Error && /login html|missing csrftoken/i.test(error.message) ? 'auth' : 'error';
+    const status = isIitcAuthError(error) ? 'auth' : 'error';
     latestMissionsState = {
       ...latestMissionsState,
       status,
@@ -2214,7 +2225,7 @@ async function refreshMissionDetails(guid: unknown): Promise<void> {
     postMissionsState();
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') return;
-    const status = error instanceof Error && /login html|missing csrftoken/i.test(error.message) ? 'auth' : 'error';
+    const status = isIitcAuthError(error) ? 'auth' : 'error';
     latestMissionsState = {
       ...latestMissionsState,
       detailsStatus: status,
@@ -2272,6 +2283,7 @@ function clearPlayerTrackerRefreshTimer(): void {
 
 function schedulePlayerTrackerRefresh(delayMs = 250): void {
   clearPlayerTrackerRefreshTimer();
+  if (authRecoveryActive && dataSource.mode === 'live') return;
   if (!isPlayerTrackerVisible()) {
     cancelActivePlayerTrackerFetch();
     renderPlayerTracker();
@@ -2318,6 +2330,9 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.clearPortalSelection) {
     clearPortalSelection();
+  }
+  if (event.data?.type === IITC_IRIS_MESSAGES.cancelPanelRequests) {
+    cancelActivePanelRequests();
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.requestComm) {
     void refreshComm(normalizeCommTab(event.data.commTab), event.data.commOlder === true);
@@ -2374,6 +2389,7 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
     latestFetchGeneration += 1;
     latestRequestKey = '';
     cancelActiveEntityFetch();
+    setAuthRecoveryActive(false);
     scheduleEntityRefresh();
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.lifecycleSettings && event.data.lifecycleSettings) {
@@ -2467,7 +2483,8 @@ function postEntityStatus(
   const artifactCounts = countRenderArtifacts(portals);
   const renderPolicy = getRenderPolicy();
   const viewportCounts = countViewportEntities(entities, tileDiagnostics.viewportBounds);
-  const authRequired = /login html|missing csrftoken/i.test(status);
+  const authRequired = isIitcAuthMessage(status);
+  setAuthRecoveryActive(authRequired);
   latestEntityStatus = status;
   latestTileDiagnostics = tileDiagnostics;
   window.postMessage({
@@ -2620,6 +2637,30 @@ function looksLikeHtml(text: string): boolean {
   return /^\s*(?:<!doctype\s+html|<html|<head|<body)\b/i.test(text);
 }
 
+function isIitcAuthMessage(message: string): boolean {
+  return /login html|missing csrftoken|missing Intel version|waiting for Intel version/i.test(message);
+}
+
+function isIitcAuthError(error: unknown): boolean {
+  return error instanceof Error && isIitcAuthMessage(error.message);
+}
+
+function createIitcAuthError(endpoint: string, response: Response): Error {
+  return new Error(`${endpoint} returned login html HTTP ${response.status}${response.redirected ? ' redirected' : ''}`);
+}
+
+function createMissingIntelVersionError(endpoint: string): Error {
+  return new Error(`${endpoint} missing Intel version`);
+}
+
+function setAuthRecoveryActive(active: boolean): void {
+  authRecoveryActive = active;
+  if (active) {
+    window.clearTimeout(refreshTimer);
+    clearPlayerTrackerRefreshTimer();
+  }
+}
+
 async function fetchIitcEndpointText(
   endpoint: string,
   init: RequestInit,
@@ -2652,7 +2693,7 @@ async function fetchPortalDetails(guid: string, version: string, signal?: AbortS
   }, 'portal-details');
 
   if (looksLikeHtml(text)) {
-    throw new Error(`getPortalDetails returned login html HTTP ${response.status}${response.redirected ? ' redirected' : ''}`);
+    throw createIitcAuthError('getPortalDetails', response);
   }
 
   const parsed = JSON.parse(text) as IitcPortalDetailsResponse;
@@ -2756,7 +2797,7 @@ async function fetchComm(
   }, tab === 'all' ? 'comm-all' : `comm-${tab}`);
 
   if (looksLikeHtml(text)) {
-    throw new Error(`getPlexts returned login html HTTP ${response.status}${response.redirected ? ' redirected' : ''}`);
+    throw createIitcAuthError('getPlexts', response);
   }
 
   let parsed: unknown;
@@ -2790,7 +2831,7 @@ async function postSendPlext(payload: NonNullable<ReturnType<typeof genIitcCommS
   }, `comm-send-${payload.tab}`);
 
   if (looksLikeHtml(text)) {
-    throw new Error(`sendPlext returned login html HTTP ${response.status}${response.redirected ? ' redirected' : ''}`);
+    throw createIitcAuthError('sendPlext', response);
   }
 
   let parsed: unknown;
@@ -2826,7 +2867,7 @@ async function postIntelEndpoint(endpoint: string, payload: Record<string, unkno
   }, endpoint);
 
   if (looksLikeHtml(text)) {
-    throw new Error(`${endpoint} returned login html HTTP ${response.status}${response.redirected ? ' redirected' : ''}`);
+    throw createIitcAuthError(endpoint, response);
   }
 
   const parsed = JSON.parse(text) as unknown;
@@ -2863,7 +2904,7 @@ async function refreshSubscriptionStatus(): Promise<IitcIrisSubscriptionState> {
       return nextState;
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return latestSubscriptionState;
-      const status = error instanceof Error && /login html|missing csrftoken/i.test(error.message) ? 'auth' : 'error';
+      const status = isIitcAuthError(error) ? 'auth' : 'error';
       const nextState: IitcIrisSubscriptionState = {
         status,
         hasActive: false,
@@ -3103,7 +3144,7 @@ async function refreshScores(): Promise<void> {
     postScoresState();
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') return;
-    const status = error instanceof Error && /login html|missing csrftoken/i.test(error.message) ? 'auth' : 'error';
+    const status = isIitcAuthError(error) ? 'auth' : 'error';
     latestScoresState = {
       ...latestScoresState,
       status,
@@ -3150,7 +3191,7 @@ async function redeemPasscode(passcodeInput: unknown): Promise<void> {
     postPasscodeState();
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') return;
-    const status = error instanceof Error && /login html|missing csrftoken/i.test(error.message) ? 'auth' : 'error';
+    const status = isIitcAuthError(error) ? 'auth' : 'error';
     latestPasscodeState = {
       ...latestPasscodeState,
       status,
@@ -3192,7 +3233,7 @@ async function refreshInventory(): Promise<void> {
     postInventoryState();
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') return;
-    const status = error instanceof Error && /login html|missing csrftoken/i.test(error.message) ? 'auth' : 'error';
+    const status = isIitcAuthError(error) ? 'auth' : 'error';
     latestInventoryState = {
       ...latestInventoryState,
       status,
@@ -3248,7 +3289,7 @@ async function sendComm(tab: IitcCommChannel, message: unknown): Promise<void> {
     latestCommState = {
       ...latestCommState,
       tab,
-      sendStatus: error instanceof Error && /login html|missing csrftoken/i.test(error.message) ? 'auth' : 'error',
+      sendStatus: isIitcAuthError(error) ? 'auth' : 'error',
       sendError: error instanceof Error ? error.message : String(error),
     };
     postCommState();
@@ -3260,7 +3301,7 @@ async function refreshComm(tab: IitcCommChannel = normalizeCommTab(latestCommSta
   const version = extractVersion();
   const bounds = getCurrentCommBounds();
   if (!version) {
-    latestCommState = {status: 'error', tab, messages: getIitcCommChannelMessages(commChannelsData[tab]).length, requestOlder: getOlderMsgs, bounds, error: 'waiting for Intel version'};
+    latestCommState = {status: 'auth', tab, messages: getIitcCommChannelMessages(commChannelsData[tab]).length, requestOlder: getOlderMsgs, bounds, error: 'missing Intel version'};
     postCommState();
     return;
   }
@@ -3311,7 +3352,7 @@ async function refreshComm(tab: IitcCommChannel = normalizeCommTab(latestCommSta
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') return;
     latestCommState = {
-      status: error instanceof Error && /login html|missing csrftoken/i.test(error.message) ? 'auth' : 'error',
+      status: isIitcAuthError(error) ? 'auth' : 'error',
       tab,
       messages: getIitcCommChannelMessages(commChannelsData[tab]).length,
       requestOlder: getOlderMsgs,
@@ -3388,7 +3429,7 @@ async function refreshSelectedPortalDetails(guid: string): Promise<void> {
   }
   const version = extractVersion();
   if (!version) {
-    latestPortalDetails = {status: 'error', guid, error: 'waiting for Intel version'};
+    latestPortalDetails = {status: 'auth', guid, error: 'missing Intel version'};
     repostLatestEntityStatus();
     return;
   }
@@ -3435,7 +3476,7 @@ async function refreshSelectedPortalDetails(guid: string): Promise<void> {
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') return;
     latestPortalDetails = {
-      status: error instanceof Error && /login html|missing csrftoken/i.test(error.message) ? 'auth' : 'error',
+      status: isIitcAuthError(error) ? 'auth' : 'error',
       guid,
       elapsedMs: performance.now() - startedAt,
       error: error instanceof Error ? error.message : String(error),
@@ -3528,7 +3569,7 @@ async function fetchEntityBatch(tileKeys: string[], version: string, signal?: Ab
   }, 'entities');
 
   if (looksLikeHtml(text)) {
-    throw new Error(`getEntities returned login html HTTP ${response.status}${response.redirected ? ' redirected' : ''}`);
+    throw createIitcAuthError('getEntities', response);
   }
   if (!response.ok) throw new Error(`getEntities failed HTTP ${response.status}`);
   if (!text.trim()) throw new Error('getEntities returned empty response');
@@ -3636,7 +3677,7 @@ async function fetchArtifactPortals(version: string, signal?: AbortSignal): Prom
 }
 
 function isAuthLikeError(error: unknown): boolean {
-  return error instanceof Error && /login html|missing csrftoken/i.test(error.message);
+  return isIitcAuthError(error);
 }
 
 async function fetchEntityBatchResult(tileKeys: string[], version: string, signal: AbortSignal): Promise<TileBatchResult> {
@@ -3707,6 +3748,7 @@ async function fetchArtifactEntitiesForRender(version: string, signal: AbortSign
 
 function scheduleEntityRefresh(delayMs = FAST_MOVE_REFRESH_DELAY_MS): void {
   window.clearTimeout(refreshTimer);
+  if (authRecoveryActive && dataSource.mode === 'live') return;
   refreshTimer = window.setTimeout(() => {
     void refreshEntities();
   }, delayMs);
@@ -3778,7 +3820,7 @@ async function refreshEntities(): Promise<void> {
     }
 
     const version = extractVersion();
-    if (!version) throw new Error('waiting for Intel version');
+    if (!version) throw createMissingIntelVersionError('getEntities');
     abortController = new AbortController();
     const liveAbortController = abortController;
     currentFetchAbortController = abortController;

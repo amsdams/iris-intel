@@ -213,9 +213,27 @@ General improvement backlog before calling this replacement-ready:
   pans/zooms with IITC's max zoom 13 behavior, and draws a current-location pin with an accuracy circle. Follow-up:
   keep distance-to-portal and mission distance-to-start as later plugin-style smart ports. They should be revisited
   after the base current-location behavior has had more live comparison time against IITC.
-- Prioritize login-expiry/auth recovery UX after Missions stabilizes: detect when Intel requests start returning login
-  HTML or auth-required responses, show a consistent "login again" state across map data and side panels, and provide a
-  clear refresh/retry path after the user reauthenticates.
+- Login-expiry/auth recovery UX first pass is started. IITC's boot behavior treats missing `PLAYER.nickname` as the
+  login/account boundary; IRIS additionally centralizes post-boot Intel request auth classification and shows a shared
+  map-level Login/Retry recovery prompt when map data, portal details, COMM, scores, missions, inventory, passcode, or
+  subscription requests report `auth`. Follow-up: live-test expired sessions across Chrome/Firefox and decide whether to
+  pause automatic background retries while the login prompt is active.
+- Follow-up fix from live testing: missing Intel version and missing page `PLAYER` are now treated as auth/bootstrap
+  failures for UI recovery. This avoids empty-map / "waiting for Intel version" states after cleared browser storage or
+  expired sessions.
+- Follow-up fix from live testing: the Login recovery action reloads the current Intel `/intel` page when already there,
+  instead of assigning the same URL and appearing inert.
+- Follow-up fix from live testing: the Login recovery action now sets a short session bypass before reload/navigation so
+  IITC IRIS does not immediately remount over Intel's own sign-in/account page.
+- Follow-up fix from live testing: the login bypass now polls and clears itself once Intel's authenticated dashboard
+  bootstrap script appears, so IITC IRIS can remount automatically after successful original Intel login.
+- Auth hardening: while an auth/bootstrap failure is active for live map data, automatic entity refresh and player-tracker
+  COMM polling are paused. Explicit Retry clears the pause and attempts the current request again; successful map data
+  status clears the auth pause.
+- Auth UX polish: raw auth/bootstrap errors such as `missing csrftoken` are no longer shown as primary user-facing sheet
+  text. Panels show a consistent "Intel login required" message and keep the raw error in diagnostic/title context.
+- Auth UX polish: affected panels now include compact inline Login/Retry actions in addition to the global map-level
+  recovery banner, so recovery is available without opening System diagnostics.
 - Continue IITC comparison passes on active requests during map movement: entity requests, `getPlexts`, portal details,
   inventory, scores, passcodes, and geocoder requests should all have expected overlap/idle behavior documented.
 - Add missing known Intel/IITC-plugin request surfaces to the backlog and expose them in UI when ported:
@@ -234,8 +252,24 @@ Runtime policy notes to settle:
   before release packaging. Keep permission prompts tied to clear user actions.
 - Live auth failure UX: align `auth` and login-required states across entities, missions, inventory, passcodes, scores,
   search/geocoder, portal details, and subscription checks.
-- Request cancellation policy: document intended abort behavior for map movement, sheet close, source switch, portal
-  selection changes, retry/refill queues, and requests that intentionally continue after a panel is hidden.
+- Request cancellation policy first pass:
+  - Map data: map move, live/fixture data-source switch, and generation changes abort or ignore stale `getEntities`
+    work. Entity fetches are not cancelled just because a sheet closes.
+  - Auth recovery: live automatic entity refresh and player-tracker COMM polling pause while auth recovery is active;
+    explicit Retry clears the pause.
+  - Portal selection: selecting/clearing a portal cancels in-flight portal details for the previous portal. Cached
+    details may remain visible until the new portal enters loading/ready state.
+  - Sheet close / switch to non-side-panel sheets: transient panel requests are cancelled via
+    `IITC_IRIS_CANCEL_PANEL_REQUESTS` for portal details, COMM, scores, passcodes, inventory, missions, and mission
+    details. Map data and subscription status are intentionally not treated as panel-transient.
+  - Source switch inside Missions: switching view/portal missions cancels active mission list and detail requests.
+  - Requests that may continue while hidden: subscription status can continue because it feeds Agent/Inventory state and
+    is short-lived; search/geocoder is local to the map/search overlay and should get its own cancellation policy later.
+  Follow-up: verify live request diagnostics for aborted panel requests and decide whether closing COMM should preserve
+  or cancel older-message requests when the user immediately reopens COMM.
+- Refactor caution: `content.tsx` and `page-map-runtime.ts` are large enough to slow safe edits. Do not do a broad split
+  before lifecycle behavior stabilizes; after request cancellation policy settles, do targeted extraction around auth
+  recovery helpers, request/panel status helpers, side-panel header/actions, and runtime request lifecycle helpers.
 - Cache policy matrix: document every cache, TTL, key, invalidation rule, memory-only vs persistent storage, and when
   stale data is acceptable. Include map tile/entity cache, portal details, missions, inventory-derived key counts, search,
   COMM, scores, and subscription status.
