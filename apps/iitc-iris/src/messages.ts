@@ -336,6 +336,13 @@ export interface IitcIrisMissionSummary {
   ratingPercent?: number;
   medianCompletionTimeMs?: number;
   durationLabel?: string;
+  authorNickname?: string;
+  authorTeam?: 'E' | 'R' | 'N' | 'M';
+  typeNum?: number;
+  type?: string;
+  numUniqueCompletedPlayers?: number;
+  waypointCount?: number;
+  routeLengthMeters?: number;
 }
 
 export interface IitcIrisMissionWaypoint {

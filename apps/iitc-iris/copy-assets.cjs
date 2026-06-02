@@ -20,4 +20,9 @@ fs.copyFileSync(path.join(iitcPluginImageDir, 'marker-blue.png'), path.join(imag
 fs.copyFileSync(path.join(iitcPluginImageDir, 'marker-blue-2x.png'), path.join(imageDir, 'marker-blue-2x.png'));
 fs.copyFileSync(path.join(iitcPluginImageDir, 'marker-green.png'), path.join(imageDir, 'marker-green.png'));
 fs.copyFileSync(path.join(iitcPluginImageDir, 'marker-green-2x.png'), path.join(imageDir, 'marker-green-2x.png'));
+fs.copyFileSync(path.join(iitcPluginImageDir, 'mission-length.png'), path.join(imageDir, 'mission-length.png'));
+fs.copyFileSync(path.join(iitcPluginImageDir, 'mission-type-hidden.png'), path.join(imageDir, 'mission-type-hidden.png'));
+fs.copyFileSync(path.join(iitcPluginImageDir, 'mission-type-random.png'), path.join(imageDir, 'mission-type-random.png'));
+fs.copyFileSync(path.join(iitcPluginImageDir, 'mission-type-sequential.png'), path.join(imageDir, 'mission-type-sequential.png'));
+fs.copyFileSync(path.join(iitcPluginImageDir, 'mission-type-unknown.png'), path.join(imageDir, 'mission-type-unknown.png'));
 fs.copyFileSync(path.join(iitcCoreImageDir, 'marker-shadow.png'), path.join(imageDir, 'marker-shadow.png'));

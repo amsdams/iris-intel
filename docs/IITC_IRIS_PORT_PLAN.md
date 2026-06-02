@@ -119,7 +119,7 @@ Intentional divergences and accepted gaps for this checkpoint:
   exactly like IITC.
 - Missions intentionally use explicit IRIS sheet actions rather than IITC's dialog collapse/expand refresh lifecycle.
   Portal mission enrichment from `mission` / `mission50plus` is documented but parked after an early attempt caused
-  confusing Map/Portal Missions source switching. IITC mission caching and progress/checkmark state are not ported yet.
+  confusing Map/Portal Missions source switching. IITC mission progress/checkmark state is not ported yet.
 - Artifact non-empty live payloads, richer player tracker plugin behavior, plugin hooks, draw tools, highlighters,
   bookmarks, portal lists, and broader planning workflows remain later passes.
 
@@ -166,18 +166,24 @@ Known gaps before calling Missions parity-complete:
   vanilla Intel mission behavior and IITC plugin behavior: decide whether Portal Missions should stay sheet-scoped,
   become a portal-detail enrichment action, or adopt a cached selection-driven model.
 - IITC caches mission details for 3 days and portal mission summaries for 3 weeks. IRIS now mirrors those TTLs with
-  page-session runtime caches and visible cache-hit chips; persistent localStorage-style mission caches remain unported.
-- IITC mission progress/checkmark state, sync, app panes/dialog behavior, mission type/length icons, distance-to-mission,
-  and Create New Mission link are not ported.
-- Likely next implementation after validation: mission progress/checkmark/sync, if request and selection behavior is stable.
+  persistent localStorage-backed caches, runtime cache hits, and visible cache-hit chips.
+- Stabilization note: portal mission summary cache is intentionally kept summary-only. Rich row metadata is always
+  re-enriched from the shorter-lived mission details cache so author/length/completed/order data cannot outlive the
+  3-day details TTL via the 3-week portal summary cache.
+- IITC mission progress/checkmark state is local plugin state, not Intel-backed mission progress: IITC stores checked
+  missions and checked waypoints in localStorage and can optionally sync them through `plugin.sync`. Keep this as a later
+  optional personal-checklist feature unless user value becomes clear.
+- IITC app panes/dialog behavior, distance-to-mission, and Create New Mission link are not ported.
+- Mission UI parity polish has started with restrained IITC-style metric icons in expanded mission details. Keep mission
+  icon work focused on stabilizing the Missions feature before expanding icon coverage elsewhere.
 - Add mission distance-to-start once map/user-location behavior is clearer. IITC has distance-oriented mission affordances
   that should be ported only after the selected mission, first waypoint, and route bounds behavior is stable.
 - Revisit Mission `First`, `Zoom`, and expanded-row border treatment after more live testing. Current behavior is usable,
   but needs polish around zoom level expectations, waypoint selection semantics, and whether expanded rows need a softer
   visual boundary.
-- Define one consistent zoom/focus contract for Mission `First`, mission waypoint clicks, mission `Zoom`, COMM portal
-  links, search results, inventory keys, and player tracker portal links. Avoid each surface evolving different pan,
-  selection, and zoom behavior.
+- Define one consistent zoom/focus contract for Mission `First`, mission waypoint clicks, COMM portal links, search
+  results, inventory keys, and player tracker portal links. Mission `Zoom` already uses IITC-style mission bounds and
+  `DEFAULT_ZOOM`; the IRIS-only waypoint pan action remains broader navigation polish, not a Missions parity blocker.
 - Add IITC-style long-press/right-click parity for mission waypoints and mission map overlays after the general map/portal
   context interaction model is settled.
 - Live comparison still needs copied diagnostics for request count/source, mission order, route bounds, and portal
@@ -194,6 +200,9 @@ General improvement backlog before calling this replacement-ready:
 - Revisit mobile menu architecture after live use. Current mitigation keeps submenus to one horizontal scroll row; later
   options include icon-first submenus, an overflow "More" action, per-primary compact drawers, or promoting rarely used
   actions into their sheets instead of the tabbar.
+- Add a later icon-scanning pass only after Missions stabilizes. Use icons where they reduce scan time without replacing
+  text labels. Candidate areas: portal actions/detail facts, inventory item categories, passcode reward rows, search
+  result types, and COMM event/action types.
 - Add focused tests around the new pure logic that is easy to isolate: COMM display de-duplication, search result
   ordering/grouping, portal details cached/loading state, mission sorting, mission cache TTL behavior, selected mission
   state transitions, and shortcut/menu state transitions.

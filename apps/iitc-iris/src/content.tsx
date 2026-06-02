@@ -178,6 +178,12 @@ const EMPTY_MISSIONS_STATE: IitcIrisMissionsState = {
   missions: [],
   detailsStatus: 'idle',
 };
+const IITC_TM_ICON_BASE = 'https://commondatastorage.googleapis.com/ingress.com/img/tm_icons';
+const MISSION_TYPE_IMAGE_BY_TYPE_NUM: Record<number, string> = {
+  1: 'mission-type-sequential.png',
+  2: 'mission-type-random.png',
+  3: 'mission-type-hidden.png',
+};
 
 interface CameraState {
   lat: number;
@@ -394,6 +400,18 @@ function parseViewInput(value: string): ParsedViewInput | null {
 
 function getExtensionUrl(path: string): string {
   return chrome.runtime.getURL(path);
+}
+
+function getMissionTypeIcon(typeNum?: number): string {
+  return getExtensionUrl(`images/${MISSION_TYPE_IMAGE_BY_TYPE_NUM[typeNum ?? 0] ?? 'mission-type-unknown.png'}`);
+}
+
+function getMissionMetricIcon(name: 'rating' | 'time' | 'length' | 'agents' | 'waypoints' | 'order'): string {
+  if (name === 'rating') return `${IITC_TM_ICON_BASE}/like.png`;
+  if (name === 'time') return `${IITC_TM_ICON_BASE}/time.png`;
+  if (name === 'agents') return `${IITC_TM_ICON_BASE}/players.png`;
+  if (name === 'length') return getExtensionUrl('images/mission-length.png');
+  return getMissionTypeIcon();
 }
 
 function isBaseLayerId(value: string | null): value is IitcIrisBaseLayerId {
@@ -1680,21 +1698,48 @@ function App(): h.JSX.Element {
 
   const formatMissionRowMeta = (mission: IitcIrisMissionsState['missions'][number]): string => {
     const selected = missionsState.selectedMission?.guid === mission.guid ? missionsState.selectedMission : undefined;
+    if (selected) {
+      return [
+        `${formatMissionRating(mission.ratingE6)} rating`,
+        formatMissionDuration(mission.medianCompletionTimeMs, mission.durationLabel),
+      ].filter((part) => part && part !== '-').join(' · ');
+    }
+    const waypointCount = mission.waypointCount;
+    const routeLengthMeters = mission.routeLengthMeters;
+    const orderType = mission.type;
+    const completedAgents = mission.numUniqueCompletedPlayers;
+    const author = mission.authorNickname;
     const parts = [
       `${formatMissionRating(mission.ratingE6)} rating`,
       formatMissionDuration(mission.medianCompletionTimeMs, mission.durationLabel),
     ];
-    if (selected) {
-      parts.push(`${selected.waypoints.length} waypoints`);
-      parts.push(formatDistance(selected.routeLengthMeters));
-      parts.push(formatMissionOrderLabel(selected.type));
-    }
+    if (author) parts.push(`by ${author}`);
+    if (routeLengthMeters !== undefined) parts.push(formatDistance(routeLengthMeters));
+    if (completedAgents !== undefined) parts.push(`${formatInteger(completedAgents)} agents`);
+    if (waypointCount !== undefined) parts.push(`${waypointCount} waypoints`);
+    if (orderType) parts.push(formatMissionOrderLabel(orderType));
     return parts.filter((part) => part && part !== '-').join(' · ');
   };
 
   const renderSelectedMissionDetails = (): h.JSX.Element | null => {
     if (!missionsState.selectedMission) return null;
     const firstWaypoint = missionsState.selectedMission.waypoints.find((waypoint) => waypoint.latE6 !== undefined && waypoint.lngE6 !== undefined);
+    const renderMissionMetric = (
+      icon: 'rating' | 'time' | 'length' | 'agents' | 'waypoints' | 'order',
+      value: string | number,
+      label: string,
+      title: string,
+    ): h.JSX.Element => (
+      <span title={title}>
+        <img
+          src={icon === 'waypoints' || icon === 'order' ? getMissionTypeIcon(missionsState.selectedMission?.typeNum) : getMissionMetricIcon(icon)}
+          alt=""
+          loading="lazy"
+        />
+        <b>{value}</b>
+        <small>{label}</small>
+      </span>
+    );
     return (
       <div className="iitc-iris-mission-details">
         <div className="iitc-iris-mission-expanded-top">
@@ -1707,12 +1752,12 @@ function App(): h.JSX.Element {
           </span>
         </div>
         <div className="iitc-iris-mission-metrics">
-          <span title="Average rating"><b>{formatMissionRating(missionsState.selectedMission.ratingE6)}</b><small>rating</small></span>
-          <span title="Typical duration"><b>{formatMissionDuration(missionsState.selectedMission.medianCompletionTimeMs, missionsState.selectedMission.durationLabel)}</b><small>typical</small></span>
-          <span title="Length of this mission. The actual distance required may vary."><b>{formatDistance(missionsState.selectedMission.routeLengthMeters)}</b><small>length</small></span>
-          <span title="Unique players who have completed this mission"><b>{formatInteger(missionsState.selectedMission.numUniqueCompletedPlayers)}</b><small>agents</small></span>
-          <span title={`${missionsState.selectedMission.type ?? 'Unknown'} mission with ${missionsState.selectedMission.waypoints.length} waypoints`}><b>{missionsState.selectedMission.waypoints.length}</b><small>waypoints</small></span>
-          <span title="Mission order"><b>{formatMissionOrderLabel(missionsState.selectedMission.type)}</b><small>order</small></span>
+          {renderMissionMetric('rating', formatMissionRating(missionsState.selectedMission.ratingE6), 'rating', 'Average rating')}
+          {renderMissionMetric('time', formatMissionDuration(missionsState.selectedMission.medianCompletionTimeMs, missionsState.selectedMission.durationLabel), 'typical', 'Typical duration')}
+          {renderMissionMetric('length', formatDistance(missionsState.selectedMission.routeLengthMeters), 'length', 'Length of this mission. The actual distance required may vary.')}
+          {renderMissionMetric('agents', formatInteger(missionsState.selectedMission.numUniqueCompletedPlayers), 'agents', 'Unique players who have completed this mission')}
+          {renderMissionMetric('waypoints', missionsState.selectedMission.waypoints.length, 'waypoints', `${missionsState.selectedMission.type ?? 'Unknown'} mission with ${missionsState.selectedMission.waypoints.length} waypoints`)}
+          {renderMissionMetric('order', formatMissionOrderLabel(missionsState.selectedMission.type), 'order', 'Mission order')}
         </div>
         <div className="iitc-iris-mission-detail-actions">
           <button

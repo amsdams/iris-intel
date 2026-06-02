@@ -84,6 +84,10 @@ const MISSION_ROUTE_COLOR = '#404000';
 const MISSION_OVERVIEW_MAX_ZOOM = 15;
 const MISSION_DETAILS_CACHE_MS = 3 * 24 * 60 * 60 * 1000;
 const PORTAL_MISSIONS_CACHE_MS = 21 * 24 * 60 * 60 * 1000;
+const MISSION_DETAILS_CACHE_STORAGE_KEY = 'iitc-iris:missions:details-cache';
+const PORTAL_MISSIONS_CACHE_STORAGE_KEY = 'iitc-iris:missions:portal-cache';
+const MISSION_DETAILS_CACHE_STORAGE_MAX_CHARS = 2_000_000;
+const PORTAL_MISSIONS_CACHE_STORAGE_MAX_CHARS = 1_000_000;
 const IITC_IRIS_ASSET_BASE_URL = (() => {
   const script = document.currentScript instanceof HTMLScriptElement ? document.currentScript.src : '';
   return script ? new URL('.', script).toString() : '';
@@ -199,8 +203,9 @@ let latestMissionsState: IitcIrisMissionsState = {
   missions: [],
   detailsStatus: 'idle',
 };
-const missionDetailsCache = new Map<string, {time: number; data: IitcIrisMissionDetails}>();
-const portalMissionsCache = new Map<string, {time: number; data: IitcIrisMissionSummary[]}>();
+type MissionCacheEntry<T> = {time: number; data: T};
+const missionDetailsCache = new Map<string, MissionCacheEntry<IitcIrisMissionDetails>>();
+const portalMissionsCache = new Map<string, MissionCacheEntry<IitcIrisMissionSummary[]>>();
 let playerTrackerStored: IitcPlayerTrackerStored = {};
 let playerTrackerLatestCommTime: number | null = null;
 let playerTrackerDiagnostics: IitcPlayerTrackerDiagnostics = getIitcPlayerTrackerDiagnostics(playerTrackerStored);
@@ -1772,6 +1777,18 @@ function toIrisMissionSummary(mission: CoreIitcMissionSummary): IitcIrisMissionS
   };
 }
 
+function toMissionCacheSummary(mission: IitcIrisMissionSummary): IitcIrisMissionSummary {
+  return {
+    guid: mission.guid,
+    title: mission.title,
+    image: mission.image,
+    ratingE6: mission.ratingE6,
+    ratingPercent: mission.ratingPercent,
+    medianCompletionTimeMs: mission.medianCompletionTimeMs,
+    durationLabel: mission.durationLabel,
+  };
+}
+
 function toIrisMissionDetails(mission: CoreIitcMissionDetails): IitcIrisMissionDetails {
   return {
     ...toIrisMissionSummary(mission),
@@ -1792,24 +1809,130 @@ function sortMissionSummaries(missions: IitcIrisMissionSummary[]): IitcIrisMissi
   return missions.slice().sort((a, b) => collator.compare(a.title, b.title));
 }
 
+function getMissionSummaryDetails(missionGuid: string): Partial<IitcIrisMissionSummary> | undefined {
+  const details = getFreshMissionDetailsCache(missionGuid);
+  if (!details) return undefined;
+  return {
+    authorNickname: details.authorNickname,
+    authorTeam: details.authorTeam,
+    typeNum: details.typeNum,
+    type: details.type,
+    numUniqueCompletedPlayers: details.numUniqueCompletedPlayers,
+    waypointCount: details.waypoints.length,
+    routeLengthMeters: details.routeLengthMeters,
+  };
+}
+
+function enrichMissionSummariesWithCache(missions: IitcIrisMissionSummary[]): IitcIrisMissionSummary[] {
+  return missions.map((mission) => ({
+    ...toMissionCacheSummary(mission),
+    ...getMissionSummaryDetails(mission.guid),
+  }));
+}
+
+function isMissionCacheEntry<T>(value: unknown, isData: (data: unknown) => data is T): value is MissionCacheEntry<T> {
+  if (!value || typeof value !== 'object') return false;
+  const entry = value as {time?: unknown; data?: unknown};
+  return Number.isFinite(entry.time) && isData(entry.data);
+}
+
+function isMissionSummaryArray(value: unknown): value is IitcIrisMissionSummary[] {
+  return Array.isArray(value);
+}
+
+function isMissionDetails(value: unknown): value is IitcIrisMissionDetails {
+  return !!value && typeof value === 'object' && typeof (value as {guid?: unknown}).guid === 'string';
+}
+
+function loadMissionCache<T>(
+  key: string,
+  cache: Map<string, MissionCacheEntry<T>>,
+  isData: (data: unknown) => data is T,
+): void {
+  try {
+    const stored = window.localStorage.getItem(key);
+    if (!stored) return;
+    const parsed = JSON.parse(stored) as unknown;
+    if (!parsed || typeof parsed !== 'object') return;
+    for (const [guid, value] of Object.entries(parsed)) {
+      if (isMissionCacheEntry(value, isData)) cache.set(guid, value);
+    }
+  } catch {
+    // Ignore corrupt or inaccessible mission caches; live requests can refill them.
+  }
+}
+
+function pruneMissionCache<T>(cache: Map<string, MissionCacheEntry<T>>, maxAgeMs: number): void {
+  const expiredBefore = Date.now() - maxAgeMs;
+  for (const [guid, entry] of cache.entries()) {
+    if (entry.time <= expiredBefore) cache.delete(guid);
+  }
+}
+
+function trimMissionCacheEntries<T>(cache: Map<string, MissionCacheEntry<T>>, maxEntries: number): void {
+  while (cache.size > maxEntries) {
+    const oldest = [...cache.entries()].sort((a, b) => a[1].time - b[1].time)[0]?.[0];
+    if (!oldest) return;
+    cache.delete(oldest);
+  }
+}
+
+function storeMissionCache<T>(key: string, cache: Map<string, MissionCacheEntry<T>>, maxChars: number): void {
+  try {
+    let entries = [...cache.entries()].sort((a, b) => b[1].time - a[1].time);
+    let serialized = JSON.stringify(Object.fromEntries(entries));
+    while (serialized.length > maxChars && entries.length > 1) {
+      const oldest = entries.pop();
+      if (oldest) cache.delete(oldest[0]);
+      serialized = JSON.stringify(Object.fromEntries(entries));
+    }
+    window.localStorage.setItem(key, serialized);
+  } catch {
+    // Storage quota/private-mode failures should not block mission display.
+  }
+}
+
+function storePortalMissionsCache(): void {
+  pruneMissionCache(portalMissionsCache, PORTAL_MISSIONS_CACHE_MS);
+  trimMissionCacheEntries(portalMissionsCache, 50);
+  storeMissionCache(PORTAL_MISSIONS_CACHE_STORAGE_KEY, portalMissionsCache, PORTAL_MISSIONS_CACHE_STORAGE_MAX_CHARS);
+}
+
+function storeMissionDetailsCache(): void {
+  pruneMissionCache(missionDetailsCache, MISSION_DETAILS_CACHE_MS);
+  trimMissionCacheEntries(missionDetailsCache, 100);
+  storeMissionCache(MISSION_DETAILS_CACHE_STORAGE_KEY, missionDetailsCache, MISSION_DETAILS_CACHE_STORAGE_MAX_CHARS);
+}
+
+loadMissionCache(PORTAL_MISSIONS_CACHE_STORAGE_KEY, portalMissionsCache, isMissionSummaryArray);
+loadMissionCache(MISSION_DETAILS_CACHE_STORAGE_KEY, missionDetailsCache, isMissionDetails);
+storePortalMissionsCache();
+storeMissionDetailsCache();
+
 function getFreshPortalMissionsCache(portalGuid: string): IitcIrisMissionSummary[] | undefined {
   const cached = portalMissionsCache.get(portalGuid);
   if (!cached || cached.time <= Date.now() - PORTAL_MISSIONS_CACHE_MS) {
-    if (cached) portalMissionsCache.delete(portalGuid);
+    if (cached) {
+      portalMissionsCache.delete(portalGuid);
+      storePortalMissionsCache();
+    }
     return undefined;
   }
   return cached.data.slice();
 }
 
 function setPortalMissionsCache(portalGuid: string, missions: IitcIrisMissionSummary[]): void {
-  portalMissionsCache.set(portalGuid, {time: Date.now(), data: missions.slice()});
-  if (portalMissionsCache.size > 50) portalMissionsCache.delete(portalMissionsCache.keys().next().value as string);
+  portalMissionsCache.set(portalGuid, {time: Date.now(), data: missions.map(toMissionCacheSummary)});
+  storePortalMissionsCache();
 }
 
 function getFreshMissionDetailsCache(missionGuid: string): IitcIrisMissionDetails | undefined {
   const cached = missionDetailsCache.get(missionGuid);
   if (!cached || cached.time <= Date.now() - MISSION_DETAILS_CACHE_MS) {
-    if (cached) missionDetailsCache.delete(missionGuid);
+    if (cached) {
+      missionDetailsCache.delete(missionGuid);
+      storeMissionDetailsCache();
+    }
     return undefined;
   }
   return cached.data;
@@ -1817,7 +1940,13 @@ function getFreshMissionDetailsCache(missionGuid: string): IitcIrisMissionDetail
 
 function setMissionDetailsCache(missionGuid: string, mission: IitcIrisMissionDetails): void {
   missionDetailsCache.set(missionGuid, {time: Date.now(), data: mission});
-  if (missionDetailsCache.size > 100) missionDetailsCache.delete(missionDetailsCache.keys().next().value as string);
+  storeMissionDetailsCache();
+  latestMissionsState = {
+    ...latestMissionsState,
+    missions: latestMissionsState.missions.map((summary) => summary.guid === missionGuid
+      ? {...summary, ...getMissionSummaryDetails(missionGuid)}
+      : summary),
+  };
 }
 
 function getCurrentMissionBoundsPayload(): {northE6: number; southE6: number; westE6: number; eastE6: number} | undefined {
@@ -1915,14 +2044,15 @@ async function refreshMissions(source: IitcIrisMissionSource = 'view'): Promise<
   const portalTitle = source === 'portal' ? selectedPortal?.title : undefined;
   const cachedPortalMissions = portalGuid ? getFreshPortalMissionsCache(portalGuid) : undefined;
   if (source === 'portal' && portalGuid && cachedPortalMissions) {
+    const missions = enrichMissionSummariesWithCache(cachedPortalMissions);
     latestMissionsState = {
-      status: cachedPortalMissions.length > 0 ? 'ready' : 'empty',
+      status: missions.length > 0 ? 'ready' : 'empty',
       requestState: 'ready',
       source,
       caption: `Missions at ${portalTitle || portalGuid}`,
       portalGuid,
       portalTitle,
-      missions: cachedPortalMissions,
+      missions,
       selectedMission: undefined,
       detailsStatus: 'idle',
       cached: true,
@@ -1931,7 +2061,7 @@ async function refreshMissions(source: IitcIrisMissionSource = 'view'): Promise<
       error: undefined,
     };
     postMissionsState();
-    if (cachedPortalMissions.length === 1) void refreshMissionDetails(cachedPortalMissions[0].guid);
+    if (missions.length === 1) void refreshMissionDetails(missions[0].guid);
     return;
   }
 
@@ -1974,8 +2104,9 @@ async function refreshMissions(source: IitcIrisMissionSource = 'view'): Promise<
       payload,
       abortController.signal,
     );
-    const missions = sortMissionSummaries(parseIitcTopMissionsResponse(response).map(toIrisMissionSummary));
-    if (source === 'portal' && portalGuid) setPortalMissionsCache(portalGuid, missions);
+    const missionSummaries = sortMissionSummaries(parseIitcTopMissionsResponse(response).map(toIrisMissionSummary));
+    if (source === 'portal' && portalGuid) setPortalMissionsCache(portalGuid, missionSummaries);
+    const missions = enrichMissionSummariesWithCache(missionSummaries);
     latestMissionsState = {
       ...latestMissionsState,
       status: missions.length > 0 ? 'ready' : 'empty',
