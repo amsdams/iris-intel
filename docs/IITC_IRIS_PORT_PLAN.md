@@ -130,7 +130,7 @@ IITC source references:
 - `reference/IITC-CE/plugins/missions.js`
 - `reference/IITC-CE/plugins/missions.css`
 - `reference/IITC-CE/core/code/portal_marker.js` for portal detail fields `mission` and `mission50plus`
-- `reference/IITC-CE/plugins/images/mission-type-*.png` and `mission-length.png` for later visual parity
+- `reference/IITC-CE/plugins/images/mission-type-*.png` and `mission-length.png` for mission metric icon parity
 
 Ported IITC concepts and names:
 
@@ -151,13 +151,15 @@ Current implementation choices:
 - Mission route rendering uses IITC plugin route colors (`#404000` and `#A6A600`) and a separate Leaflet mission pane.
 - Portal waypoint buttons use the existing IRIS portal-link navigation path so a loaded portal can be selected as well
   as panned/zoomed to.
+- Mission `Zoom` uses IITC-style mission bounds with max zoom 15. Live comparison looked acceptable for now.
+- Mission rows use summary response data first, then show IITC-style richer row metadata only when mission details are
+  cached. Expanded mission details use a 3-column metric grid with restrained IITC-style icons and text labels.
 
 Known gaps before calling Missions parity-complete:
 
-- Next session: run a live IITC vs IITC-IRIS mission validation pass before adding more mission features. Check when IITC
-  calls `getTopMissionsInBounds` vs `getTopMissionsForPortal`, mission ordering for view/portal results, single-result
-  detail behavior, portal-source refresh behavior after selecting another portal, hidden/non-sequential route rendering,
-  and route bounds/zoom behavior for spread-out missions.
+- Live IITC vs IITC-IRIS comparison has not shown blockers. Accepted divergences: IRIS does not auto-refresh Missions in
+  view on map move, and non-sequential missions do not draw a connecting dashed route. Continue watching copied
+  diagnostics for request count/source and mission ordering, but route bounds/zoom is acceptable for now.
 - IITC portal detail enrichment adds a `Missions` link only when portal details include `mission` or `mission50plus`.
   IRIS now shows a portal mission enrichment card and action using portal details flags plus cached portal mission counts;
   continue validating source switching and selected-portal update behavior.
@@ -174,8 +176,8 @@ Known gaps before calling Missions parity-complete:
   missions and checked waypoints in localStorage and can optionally sync them through `plugin.sync`. Keep this as a later
   optional personal-checklist feature unless user value becomes clear.
 - IITC app panes/dialog behavior, distance-to-mission, and Create New Mission link are not ported.
-- Mission UI parity polish has started with restrained IITC-style metric icons in expanded mission details. Keep mission
-  icon work focused on stabilizing the Missions feature before expanding icon coverage elsewhere.
+- Mission UI parity polish has started with restrained IITC-style metric icons in expanded mission details. Keep broader
+  icon work parked until Missions remains stable in live use.
 - Add mission distance-to-start once map/user-location behavior is clearer. IITC has distance-oriented mission affordances
   that should be ported only after the selected mission, first waypoint, and route bounds behavior is stable.
 - Revisit Mission `First`, `Zoom`, and expanded-row border treatment after more live testing. Current behavior is usable,
@@ -186,8 +188,8 @@ Known gaps before calling Missions parity-complete:
   `DEFAULT_ZOOM`; the IRIS-only waypoint pan action remains broader navigation polish, not a Missions parity blocker.
 - Add IITC-style long-press/right-click parity for mission waypoints and mission map overlays after the general map/portal
   context interaction model is settled.
-- Live comparison still needs copied diagnostics for request count/source, mission order, route bounds, and portal
-  mission single-result behavior.
+- Remaining mission validation should be opportunistic: copied diagnostics for request count/source, mission order, and
+  portal mission single-result behavior are useful, but no longer block the current Missions checkpoint.
 
 General improvement backlog before calling this replacement-ready:
 
