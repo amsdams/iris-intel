@@ -180,9 +180,8 @@ Known gaps before calling Missions parity-complete:
   icon work parked until Missions remains stable in live use.
 - Add mission distance-to-start once map/user-location behavior is clearer. IITC has distance-oriented mission affordances
   that should be ported only after the selected mission, first waypoint, and route bounds behavior is stable.
-- Revisit Mission `First`, `Zoom`, and expanded-row border treatment after more live testing. Current behavior is usable,
-  but needs polish around zoom level expectations, waypoint selection semantics, and whether expanded rows need a softer
-  visual boundary.
+- Park Mission `First` and waypoint-click focus polish until after the current Missions checkpoint. Current behavior is
+  usable; later work should decide whether `First` and waypoint clicks pan, zoom, select, or open portal details.
 - Define one consistent zoom/focus contract for Mission `First`, mission waypoint clicks, COMM portal links, search
   results, inventory keys, and player tracker portal links. Mission `Zoom` already uses IITC-style mission bounds and
   `DEFAULT_ZOOM`; the IRIS-only waypoint pan action remains broader navigation polish, not a Missions parity blocker.
@@ -213,6 +212,9 @@ General improvement backlog before calling this replacement-ready:
 - Smart-port IITC/Intel-style browser geolocation: add a controlled "current location" action that requests browser
   location permission, pans/zooms to the current position, and handles denied/unavailable location cleanly without
   fighting normal map movement.
+- Prioritize login-expiry/auth recovery UX after Missions stabilizes: detect when Intel requests start returning login
+  HTML or auth-required responses, show a consistent "login again" state across map data and side panels, and provide a
+  clear refresh/retry path after the user reauthenticates.
 - Continue IITC comparison passes on active requests during map movement: entity requests, `getPlexts`, portal details,
   inventory, scores, passcodes, and geocoder requests should all have expected overlap/idle behavior documented.
 - Add missing known Intel/IITC-plugin request surfaces to the backlog and expose them in UI when ported:
