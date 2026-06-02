@@ -513,6 +513,7 @@ declare global {
       playerTracker: LeafletLayer[];
       search: LeafletLayer[];
       missions: LeafletLayer[];
+      userLocation: LeafletLayer[];
     };
   }
 }
@@ -531,7 +532,7 @@ const LEVEL_COLORS = IITC_LEVEL_COLORS;
 const LEVEL_TO_WEIGHT = [2, 2, 2, 2, 2, 3, 3, 4, 4] as const;
 const LEVEL_TO_RADIUS = [7, 7, 7, 7, 8, 8, 9, 10, 11] as const;
 const LEVEL_LABEL_COLLISION_SIZE = 15;
-type IitcIrisLayerPaneKey = keyof IitcIrisLayerSettings | 'selectedPortal' | 'search' | 'missions';
+type IitcIrisLayerPaneKey = keyof IitcIrisLayerSettings | 'selectedPortal' | 'search' | 'missions' | 'userLocation';
 
 function toLatLng(latE6: number, lngE6: number): [number, number] {
   return [latE6 / 1e6, lngE6 / 1e6];
@@ -677,6 +678,7 @@ function ensureLayers(): NonNullable<Window['__iitcIrisLayers']> {
     playerTracker: [],
     search: [],
     missions: [],
+    userLocation: [],
   };
   return window.__iitcIrisLayers;
 }
@@ -720,6 +722,7 @@ function clearAllRenderedLayers(): void {
   clearRenderedLayers(layers.labels);
   clearRenderedLayers(layers.playerTracker);
   clearRenderedLayers(layers.missions);
+  clearRenderedLayers(layers.userLocation);
 }
 
 function clearEntityLayers(): void {
@@ -1192,6 +1195,35 @@ function selectSearchResult(result: IitcIrisSearchResult | undefined, zoom = fal
       interactive: false,
     }));
   }
+}
+
+function renderUserLocation(lat: number | undefined, lng: number | undefined, accuracy: number | undefined): void {
+  const layers = ensureLayers();
+  clearRenderedLayers(layers.userLocation);
+  if (typeof lat !== 'number' || typeof lng !== 'number') return;
+  const latLng: [number, number] = [lat, lng];
+  if (typeof accuracy === 'number' && Number.isFinite(accuracy) && accuracy > 0) {
+    addRenderedLayer(layers.userLocation, L.circle(latLng, {
+      radius: accuracy,
+      color: '#65d9ff',
+      fillColor: '#65d9ff',
+      fillOpacity: 0.08,
+      opacity: 0.24,
+      pane: getLayerPane('userLocation'),
+      interactive: false,
+      weight: 1,
+    }));
+  }
+  addRenderedLayer(layers.userLocation, L.marker(latLng, {
+    icon: L.divIcon({
+      className: 'iitc-iris-user-location-pin',
+      html: '<span></span>',
+      iconSize: [22, 30],
+      iconAnchor: [11, 30],
+    }),
+    pane: getLayerPane('userLocation'),
+    interactive: false,
+  }));
 }
 
 function createSearchResultLayer(result: IitcIrisSearchResult, bounds?: L.LatLngBounds): LeafletLayer {
@@ -2277,6 +2309,9 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
     if (!map || typeof event.data.lat !== 'number' || typeof event.data.lng !== 'number') return;
     const zoom = typeof event.data.zoom === 'number' ? event.data.zoom : map.getZoom();
     map.setView([event.data.lat, event.data.lng], zoom);
+  }
+  if (event.data?.type === IITC_IRIS_MESSAGES.setUserLocation) {
+    renderUserLocation(event.data.userLat, event.data.userLng, event.data.userAccuracy);
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.focusPortal) {
     focusPortal(event.data.portalGuid, event.data.portalLat, event.data.portalLng, event.data.zoom);
@@ -4054,6 +4089,7 @@ function createIitcIrisPanes(map: LeafletMap): void {
     ['playerTracker', 449],
     ['missions', 449],
     ['search', 451],
+    ['userLocation', 452],
     ['labels', 450],
   ];
 

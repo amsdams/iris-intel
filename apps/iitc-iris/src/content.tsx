@@ -178,6 +178,7 @@ const EMPTY_MISSIONS_STATE: IitcIrisMissionsState = {
   missions: [],
   detailsStatus: 'idle',
 };
+const GEOLOCATION_MAX_ZOOM = 13;
 const IITC_TM_ICON_BASE = 'https://commondatastorage.googleapis.com/ingress.com/img/tm_icons';
 const MISSION_TYPE_IMAGE_BY_TYPE_NUM: Record<number, string> = {
   1: 'mission-type-sequential.png',
@@ -1024,6 +1025,7 @@ function App(): h.JSX.Element {
   const [commNewBelow, setCommNewBelow] = useState(false);
   const [viewInput, setViewInput] = useState('');
   const [viewInputStatus, setViewInputStatus] = useState('');
+  const [geolocationStatus, setGeolocationStatus] = useState('');
   const [debugDockVisible, setDebugDockVisible] = useState(() => loadStoredDebugDockVisible());
   const [activeSheet, setActiveSheet] = useState<SheetId>(() => loadStoredActiveSheet());
   const [activeSidePanel, setActiveSidePanel] = useState<SidePanelId | null>(() => {
@@ -1878,6 +1880,42 @@ function App(): h.JSX.Element {
     window.setTimeout(() => setViewInputStatus(''), 1200);
   };
 
+  const locateBrowserPosition = (): void => {
+    if (!navigator.geolocation) {
+      setGeolocationStatus('unavailable');
+      window.setTimeout(() => setGeolocationStatus(''), 1800);
+      return;
+    }
+    setGeolocationStatus('locating...');
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        window.postMessage({
+          type: IITC_IRIS_MESSAGES.setUserLocation,
+          userLat: position.coords.latitude,
+          userLng: position.coords.longitude,
+          userAccuracy: position.coords.accuracy,
+        } satisfies IitcIrisMessage, '*');
+        setMapView(position.coords.latitude, position.coords.longitude, GEOLOCATION_MAX_ZOOM);
+        setGeolocationStatus(position.coords.accuracy ? `located +/- ${Math.round(position.coords.accuracy)}m` : 'located');
+        window.setTimeout(() => setGeolocationStatus(''), 2200);
+      },
+      (error) => {
+        const message = error.code === error.PERMISSION_DENIED
+          ? 'permission denied'
+          : error.code === error.POSITION_UNAVAILABLE
+            ? 'unavailable'
+            : 'timeout';
+        setGeolocationStatus(message);
+        window.setTimeout(() => setGeolocationStatus(''), 2200);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 60_000,
+        timeout: 10_000,
+      },
+    );
+  };
+
   useEffect(() => {
     const onMessage = (event: MessageEvent<IitcIrisMessage>): void => {
       if (event.source !== window) return;
@@ -2315,7 +2353,9 @@ function App(): h.JSX.Element {
             </div>
             <button className="iitc-iris-nav-button" type="button" onClick={() => zoomMap(1)} title="Zoom in">+</button>
             <button className="iitc-iris-nav-button" type="button" onClick={() => zoomMap(-1)} title="Zoom out">-</button>
+            <button className="iitc-iris-nav-button iitc-iris-nav-button-wide" type="button" onClick={locateBrowserPosition} title="Pan to current browser location">Locate</button>
           </div>
+          {geolocationStatus && <span className="iitc-iris-map-control-status">{geolocationStatus}</span>}
         </div>}
         {activeSheet === 'view' && <div className="iitc-iris-map-controls-section">
           <span className="iitc-iris-status">Base</span>

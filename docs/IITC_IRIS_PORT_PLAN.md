@@ -209,9 +209,10 @@ General improvement backlog before calling this replacement-ready:
   state transitions, and shortcut/menu state transitions.
 - Run a visual/mobile pass with screenshots for the main sheets, portal details, Missions, COMM scrolling, selected search
   geometry, player tracker popup, and keyboard focus states.
-- Smart-port IITC/Intel-style browser geolocation: add a controlled "current location" action that requests browser
-  location permission, pans/zooms to the current position, and handles denied/unavailable location cleanly without
-  fighting normal map movement.
+- Browser geolocation is started: Map -> View has a user-triggered Locate action that requests browser location,
+  pans/zooms with IITC's max zoom 13 behavior, and draws a current-location pin with an accuracy circle. Follow-up:
+  keep distance-to-portal and mission distance-to-start as later plugin-style smart ports. They should be revisited
+  after the base current-location behavior has had more live comparison time against IITC.
 - Prioritize login-expiry/auth recovery UX after Missions stabilizes: detect when Intel requests start returning login
   HTML or auth-required responses, show a consistent "login again" state across map data and side panels, and provide a
   clear refresh/retry path after the user reauthenticates.
@@ -824,7 +825,7 @@ what to port natively and what to leave out.
 | Link analysis layers | Open | Missing cross-links, link direction, linked portals, tidy/fly/done links, and related planning helpers. |
 | Portal list/count views | Open | Missing IITC-style viewport portal tables, portal counts, and analysis lists. |
 | Missions/uniques/history workflows | Partial | Portal history indicators and mission discovery/details exist. Missing full completed/progress workflows, uniques, and richer history list workflows. |
-| Map utility plugins | Open | Missing user location, minimap, scale bar, zoom slider, privacy view, overlay KML, and similar utility plugins. |
+| Map utility plugins | Partial | Browser geolocation locate action and current-location pin exist. Missing distance integration, minimap, scale bar, zoom slider, privacy view, overlay KML, and similar utility plugins. |
 | COMM/player plugin ecosystem | Partial | COMM and player tracker work, but richer COMM filters/hooks, nickname plugin interactions, and player level guess are not ported. |
 | Dialog/sidebar/statusbar model | Diverged | IITC IRIS intentionally uses bottom sheets and a two-layer menu instead of IITC's sidebar/statusbar/dropdown model. Keep this documented as product-shell divergence. |
 

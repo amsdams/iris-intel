@@ -10,6 +10,7 @@ export const IITC_IRIS_MESSAGES = {
   dataSourceSettings: 'IITC_IRIS_DATA_SOURCE_SETTINGS',
   lifecycleSettings: 'IITC_IRIS_LIFECYCLE_SETTINGS',
   setView: 'IITC_IRIS_SET_VIEW',
+  setUserLocation: 'IITC_IRIS_SET_USER_LOCATION',
   focusPortal: 'IITC_IRIS_FOCUS_PORTAL',
   clearPortalSelection: 'IITC_IRIS_CLEAR_PORTAL_SELECTION',
   requestComm: 'IITC_IRIS_REQUEST_COMM',
@@ -127,6 +128,9 @@ export interface IitcIrisMessage {
   searchConfirmed?: boolean;
   searchResult?: IitcIrisSearchResult;
   searchZoom?: boolean;
+  userLat?: number;
+  userLng?: number;
+  userAccuracy?: number;
   commTab?: IitcIrisCommTab;
   commOlder?: boolean;
   commMessage?: string;
