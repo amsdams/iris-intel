@@ -2482,13 +2482,13 @@ function App(): h.JSX.Element {
           <span className="iitc-iris-status">View</span>
           <div className="iitc-iris-map-control-row">
             <div className="iitc-iris-pan-grid" aria-label="Pan controls">
-              <button className="iitc-iris-nav-button iitc-iris-pan-north" type="button" disabled={!canPan} onClick={() => panMap('north')} title="Pan north">N</button>
-              <button className="iitc-iris-nav-button iitc-iris-pan-west" type="button" disabled={!canPan} onClick={() => panMap('west')} title="Pan west">W</button>
-              <button className="iitc-iris-nav-button iitc-iris-pan-east" type="button" disabled={!canPan} onClick={() => panMap('east')} title="Pan east">E</button>
-              <button className="iitc-iris-nav-button iitc-iris-pan-south" type="button" disabled={!canPan} onClick={() => panMap('south')} title="Pan south">S</button>
+              <button className="iitc-iris-nav-button iitc-iris-pan-north" type="button" disabled={!canPan} onClick={() => panMap('north')} title="Pan north" aria-label="Pan north">N</button>
+              <button className="iitc-iris-nav-button iitc-iris-pan-west" type="button" disabled={!canPan} onClick={() => panMap('west')} title="Pan west" aria-label="Pan west">W</button>
+              <button className="iitc-iris-nav-button iitc-iris-pan-east" type="button" disabled={!canPan} onClick={() => panMap('east')} title="Pan east" aria-label="Pan east">E</button>
+              <button className="iitc-iris-nav-button iitc-iris-pan-south" type="button" disabled={!canPan} onClick={() => panMap('south')} title="Pan south" aria-label="Pan south">S</button>
             </div>
-            <button className="iitc-iris-nav-button" type="button" onClick={() => zoomMap(1)} title="Zoom in">+</button>
-            <button className="iitc-iris-nav-button" type="button" onClick={() => zoomMap(-1)} title="Zoom out">-</button>
+            <button className="iitc-iris-nav-button" type="button" onClick={() => zoomMap(1)} title="Zoom in" aria-label="Zoom in">+</button>
+            <button className="iitc-iris-nav-button" type="button" onClick={() => zoomMap(-1)} title="Zoom out" aria-label="Zoom out">-</button>
             <button className="iitc-iris-nav-button iitc-iris-nav-button-wide" type="button" onClick={locateBrowserPosition} title="Pan to current browser location">Locate</button>
           </div>
           {geolocationStatus && <span className="iitc-iris-map-control-status">{geolocationStatus}</span>}
@@ -2833,6 +2833,7 @@ function App(): h.JSX.Element {
             type="button"
             onClick={() => togglePrimaryMenu('portal')}
             disabled={!entityFetch.selectedPortal}
+            aria-pressed={activePrimaryMenu === 'portal'}
             title="Portal menu (P)"
           >
             Portal
@@ -2841,6 +2842,7 @@ function App(): h.JSX.Element {
             className={`iitc-iris-sheet-tab ${activePrimaryMenu === 'map' ? 'is-active' : ''}`}
             type="button"
             onClick={() => togglePrimaryMenu('map')}
+            aria-pressed={activePrimaryMenu === 'map'}
             title="Map menu (M)"
           >
             Map
@@ -2849,6 +2851,7 @@ function App(): h.JSX.Element {
             className={`iitc-iris-sheet-tab ${activePrimaryMenu === 'agent' ? 'is-active' : ''}`}
             type="button"
             onClick={() => togglePrimaryMenu('agent')}
+            aria-pressed={activePrimaryMenu === 'agent'}
             title="Agent menu (A)"
           >
             Agent
@@ -2857,6 +2860,7 @@ function App(): h.JSX.Element {
             className={`iitc-iris-sheet-tab ${activePrimaryMenu === 'comm' ? 'is-active' : ''}`}
             type="button"
             onClick={() => togglePrimaryMenu('comm')}
+            aria-pressed={activePrimaryMenu === 'comm'}
             title="COMM menu (C)"
           >
             COMM
@@ -2865,6 +2869,7 @@ function App(): h.JSX.Element {
             className={`iitc-iris-sheet-tab ${activePrimaryMenu === 'system' ? 'is-active' : ''}`}
             type="button"
             onClick={() => togglePrimaryMenu('system')}
+            aria-pressed={activePrimaryMenu === 'system'}
             title="System menu (S)"
           >
             System
@@ -2873,24 +2878,24 @@ function App(): h.JSX.Element {
         <div className="iitc-iris-sheet-tabbar-secondary">
           {activePrimaryMenu === 'map' && (
             <>
-              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'layers' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('layers')}>Layers</button>
-              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'view' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('view')}>View</button>
-              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'scores' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('scores')}>Scores</button>
-              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'search' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('search')}>Search</button>
-              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'missions' && missionsState.source !== 'portal' ? 'is-active' : ''}`} type="button" onClick={() => toggleMissionsSheet('view')}>Missions</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'layers' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('layers')} aria-pressed={activeSheet === 'layers'}>Layers</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'view' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('view')} aria-pressed={activeSheet === 'view'}>View</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'scores' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('scores')} aria-pressed={activeSheet === 'scores'}>Scores</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'search' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('search')} aria-pressed={activeSheet === 'search'}>Search</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'missions' && missionsState.source !== 'portal' ? 'is-active' : ''}`} type="button" onClick={() => toggleMissionsSheet('view')} aria-pressed={activeSheet === 'missions' && missionsState.source !== 'portal'}>Missions</button>
             </>
           )}
           {activePrimaryMenu === 'portal' && (
             <>
-              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'portal' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('portal')} disabled={!entityFetch.selectedPortal}>Details</button>
-              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'missions' && missionsState.source === 'portal' ? 'is-active' : ''}`} type="button" onClick={() => toggleMissionsSheet('portal')} disabled={!entityFetch.selectedPortal}>Missions</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'portal' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('portal')} disabled={!entityFetch.selectedPortal} aria-pressed={activeSheet === 'portal'}>Details</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'missions' && missionsState.source === 'portal' ? 'is-active' : ''}`} type="button" onClick={() => toggleMissionsSheet('portal')} disabled={!entityFetch.selectedPortal} aria-pressed={activeSheet === 'missions' && missionsState.source === 'portal'}>Missions</button>
             </>
           )}
           {activePrimaryMenu === 'agent' && (
             <>
-              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'agent' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('agent')}>Profile</button>
-              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'inventory' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('inventory')}>Inventory</button>
-              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'passcode' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('passcode')}>Passcode</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'agent' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('agent')} aria-pressed={activeSheet === 'agent'}>Profile</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'inventory' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('inventory')} aria-pressed={activeSheet === 'inventory'}>Inventory</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'passcode' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('passcode')} aria-pressed={activeSheet === 'passcode'}>Passcode</button>
             </>
           )}
           {activePrimaryMenu === 'comm' && (
@@ -2901,6 +2906,7 @@ function App(): h.JSX.Element {
                   type="button"
                   onClick={() => selectCommTab(tab.id)}
                   disabled={commState.status === 'loading' && commState.tab === tab.id}
+                  aria-pressed={activeSheet === 'comm' && commState.tab === tab.id}
                   key={tab.id}
                 >
                   {tab.label}
@@ -2910,8 +2916,8 @@ function App(): h.JSX.Element {
           )}
           {activePrimaryMenu === 'system' && (
             <>
-              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'system' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('system')}>Diagnostics</button>
-              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'help' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('help')}>Shortcuts</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'system' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('system')} aria-pressed={activeSheet === 'system'}>Diagnostics</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'help' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('help')} aria-pressed={activeSheet === 'help'}>Shortcuts</button>
             </>
           )}
         </div>
@@ -3173,14 +3179,14 @@ function App(): h.JSX.Element {
             <div className="iitc-iris-shortcut-grid">
               <span>Pan map</span><b>Arrow keys</b>
               <span>Zoom map</span><b>+ / -</b>
-              <span>Search</span><b>/</b>
+              <span>Toggle Search</span><b>/</b>
               <span>Close sheets</span><b>Esc</b>
-              <span>Map menu</span><b>M</b>
-              <span>Portal menu</span><b>P</b>
-              <span>Agent menu</span><b>A</b>
-              <span>COMM menu</span><b>C</b>
-              <span>System menu</span><b>S</b>
-              <span>Help</span><b>?</b>
+              <span>Toggle Map</span><b>M</b>
+              <span>Toggle Portal</span><b>P</b>
+              <span>Toggle Agent</span><b>A</b>
+              <span>Toggle COMM</span><b>C</b>
+              <span>Toggle System</span><b>S</b>
+              <span>Toggle Shortcuts</span><b>?</b>
               <span>Shortcuts toggle</span><b>System / Interaction</b>
               <span>Search result</span><b>Up / Down / Enter</b>
               <span>Zoom result</span><b>Shift+Enter</b>
