@@ -52,6 +52,9 @@ Required process for each new subsystem:
 6. Document every intentional divergence in this plan with the reason, expected effect, and how to compare it against
    IITC-CE.
 
+Validation rule: after validating IITC IRIS code changes, run `npm run package:iitc-iris` from the repository root so the
+extension build and ZIP/XPI packaging are checked. Documentation-only changes do not require this package step.
+
 Naming checklist before creating a new file or exported function:
 
 - Is there an IITC file or function with this responsibility? Use that name or an obvious TypeScript variant.

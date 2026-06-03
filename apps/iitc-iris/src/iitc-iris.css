@@ -20,6 +20,17 @@
   z-index: 0;
 }
 
+.iitc-iris-sheet-backdrop {
+  appearance: none;
+  position: absolute;
+  inset: 0;
+  z-index: 9997;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: default;
+}
+
 .iitc-iris-search-box {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -627,9 +638,9 @@
   top: 0;
   z-index: 1;
   display: grid;
-  grid-template-columns: 72px minmax(0, 1fr) 18px;
+  grid-template-columns: 72px minmax(0, 1fr) max-content;
   gap: 8px;
-  align-items: center;
+  align-items: start;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--portal-team-soft);
   background: linear-gradient(180deg, rgb(2 10 16 / 96%), rgb(2 10 16 / 88%));
