@@ -1919,6 +1919,7 @@ function App(): h.JSX.Element {
   };
 
   const selectCommTab = (tab: IitcIrisCommTab): void => {
+    if (activeSheet === 'comm' && commState.tab === tab) return;
     refreshComm(tab);
     if (activeSheet !== 'comm') openSheet('comm');
   };
@@ -2267,7 +2268,7 @@ function App(): h.JSX.Element {
       if (!shortcutsEnabled) return;
       if (event.key === '?' && !event.ctrlKey && !event.metaKey && !event.altKey) {
         event.preventDefault();
-        openSheet('help');
+        toggleSheet('help');
         return;
       }
       const menuShortcut = (!event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) ||
@@ -2275,33 +2276,33 @@ function App(): h.JSX.Element {
       if (menuShortcut) {
         if (key === 'm') {
           event.preventDefault();
-          openSheet(activePrimaryMenu === 'map' && activeSheet !== 'map' ? 'map' : 'layers');
+          togglePrimaryMenu('map');
           return;
         }
         if (key === 'p' && entityFetch.selectedPortal) {
           event.preventDefault();
-          openSheet('portal');
+          togglePrimaryMenu('portal');
           return;
         }
         if (key === 'a') {
           event.preventDefault();
-          openSheet('agent');
+          togglePrimaryMenu('agent');
           return;
         }
         if (key === 'c') {
           event.preventDefault();
-          openCommPanel();
+          togglePrimaryMenu('comm');
           return;
         }
         if (key === 's') {
           event.preventDefault();
-          openSheet('system');
+          togglePrimaryMenu('system');
           return;
         }
       }
       if (event.key === '/') {
         event.preventDefault();
-        openSheet('search');
+        toggleSheet('search');
         return;
       }
       if (event.key === '+' || event.key === '=') {
@@ -2373,7 +2374,7 @@ function App(): h.JSX.Element {
       {activeSheet === 'map' && searchState.term && searchState.results.length > 0 && (
         <div className="iitc-iris-map-search-badge">
           <span title={activeSearchResult?.title || searchState.term}>search: {activeSearchResult?.title || searchState.term}</span>
-          <button type="button" onClick={clearSearch} title="Clear search overlay">x</button>
+          <button type="button" onClick={clearSearch} title="Clear search overlay" aria-label="Clear search overlay">x</button>
         </div>
       )}
       {activeSheet === 'search' && (
@@ -2403,7 +2404,7 @@ function App(): h.JSX.Element {
               onKeyDown={handleSearchKeyDown}
             />
             {searchTerm && (
-              <button className="iitc-iris-search-clear" type="button" onClick={clearSearch} title="Clear search">x</button>
+              <button className="iitc-iris-search-clear" type="button" onClick={clearSearch} title="Clear search" aria-label="Clear search">x</button>
             )}
           </form>
           {searchTerm.trim().length > 0 && (

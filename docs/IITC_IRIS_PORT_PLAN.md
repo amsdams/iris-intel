@@ -255,6 +255,16 @@ General improvement backlog before calling this replacement-ready:
     Latest artifacts:
     `apps/iitc-iris/builds/iitc-iris-chrome-0.1.0-2026-06-02T17-39-23.zip` and
     `apps/iitc-iris/builds/iitc-iris-firefox-0.1.0-2026-06-02T17-39-23.xpi`.
+- Sheet/menu stabilization - 2026-06-03:
+  - Primary menu clicks and keyboard shortcuts now share the same toggle model: selecting the active primary sheet closes
+    back to the map, while selecting it from the map opens the default sheet for that domain.
+  - Portal selection still auto-opens portal details once per selected portal, but manually closing details keeps the
+    sheet closed until a different portal is selected.
+  - COMM channel selection follows IITC's `chat.chooseTab` model more closely: switching channels renders cached
+    channel data from runtime memory immediately, then refreshes `getPlexts`; clicking the active channel is a no-op and
+    explicit reload remains on the Refresh button.
+  - Compact sheet close/clear buttons use the shared header action group, uppercase `X`, and explicit `aria-label`
+    values.
 - Continue IITC comparison passes on active requests during map movement: entity requests, `getPlexts`, portal details,
   inventory, scores, passcodes, and geocoder requests should all have expected overlap/idle behavior documented.
 - Add missing known Intel/IITC-plugin request surfaces to the backlog and expose them in UI when ported:
