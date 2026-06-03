@@ -2503,6 +2503,7 @@ function App(): h.JSX.Element {
                 type="button"
                 onClick={() => setBaseLayerId(option.id)}
                 title={option.title}
+                aria-pressed={baseLayerId === option.id}
               >
                 {option.label}
               </button>
@@ -2519,6 +2520,7 @@ function App(): h.JSX.Element {
                 type="button"
                 onClick={() => toggleLayerSetting(key)}
                 title={`${title}: ${layerSettings[key] ? 'on' : 'off'}`}
+                aria-pressed={layerSettings[key]}
               >
                 {label}
               </button>
@@ -2535,6 +2537,7 @@ function App(): h.JSX.Element {
                 type="button"
                 onClick={() => toggleLayerSetting(key)}
                 title={`${title}: ${layerSettings[key] ? 'on' : 'off'}`}
+                aria-pressed={layerSettings[key]}
               >
                 {label}
               </button>
@@ -2546,6 +2549,8 @@ function App(): h.JSX.Element {
                 type="button"
                 onClick={() => cycleTriStateLayerSetting(key)}
                 title={`${title}: ${layerSettings[key]}`}
+                aria-label={`${title}: ${layerSettings[key]}`}
+                aria-pressed={layerSettings[key] !== 'off'}
               >
                 {layerSettings[key] === 'invert' ? `${label}!` : label}
               </button>
@@ -2562,6 +2567,8 @@ function App(): h.JSX.Element {
                 type="button"
                 onClick={() => cycleTriStateLayerSetting(key)}
                 title={`${title}: ${layerSettings[key]}`}
+                aria-label={`${title}: ${layerSettings[key]}`}
+                aria-pressed={layerSettings[key] !== 'off'}
               >
                 {layerSettings[key] === 'invert' ? `${label}!` : label}
               </button>
@@ -2616,6 +2623,7 @@ function App(): h.JSX.Element {
                 type="button"
                 onClick={() => setShortcutsEnabled((current) => !current)}
                 title="Enable plain keyboard shortcuts when focus is not in a text field"
+                aria-pressed={shortcutsEnabled}
               >
                 Shortcuts
               </button>
@@ -2624,6 +2632,7 @@ function App(): h.JSX.Element {
                 type="button"
                 onClick={() => setMapFocusMode((current) => !current)}
                 title="Auto-close panels after navigation actions that move the map"
+                aria-pressed={mapFocusMode}
               >
                 Map Focus
               </button>
@@ -2639,6 +2648,7 @@ function App(): h.JSX.Element {
                 type="button"
                 onClick={toggleDebugDock}
                 title="Show or hide debug diagnostic rows"
+                aria-pressed={debugDockVisible}
               >
                 Debug
               </button>
@@ -2745,6 +2755,7 @@ function App(): h.JSX.Element {
                 type="button"
                 onClick={() => setLifecycleSettings((current) => ({...current, iitcMovementDelay: !current.iitcMovementDelay}))}
                 title="Compare current fast refresh with IITC-style delayed refresh after map movement"
+                aria-pressed={lifecycleSettings.iitcMovementDelay}
               >
                 IITC Delay
               </button>
@@ -2818,6 +2829,7 @@ function App(): h.JSX.Element {
                   type="button"
                   onClick={() => setDataSource(option.id)}
                   title={option.title}
+                  aria-pressed={dataSourceId === option.id}
                 >
                   {option.label}
                 </button>
@@ -3187,7 +3199,7 @@ function App(): h.JSX.Element {
               <span>Toggle COMM</span><b>C</b>
               <span>Toggle System</span><b>S</b>
               <span>Toggle Shortcuts</span><b>?</b>
-              <span>Shortcuts toggle</span><b>System / Interaction</b>
+              <span>Keyboard setting</span><b>System / Interaction</b>
               <span>Search result</span><b>Up / Down / Enter</b>
               <span>Zoom result</span><b>Shift+Enter</b>
             </div>
