@@ -1918,6 +1918,11 @@ function App(): h.JSX.Element {
     openSheet('comm');
   };
 
+  const selectCommTab = (tab: IitcIrisCommTab): void => {
+    refreshComm(tab);
+    if (activeSheet !== 'comm') openSheet('comm');
+  };
+
   const toggleCommPanel = (tab?: IitcIrisCommTab): void => {
     if (activeSheet === 'comm' && (!tab || commState.tab === tab)) {
       closeSheetToMap();
@@ -2893,7 +2898,7 @@ function App(): h.JSX.Element {
                 <button
                   className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'comm' && commState.tab === tab.id ? 'is-active' : ''}`}
                   type="button"
-                  onClick={() => toggleCommPanel(tab.id)}
+                  onClick={() => selectCommTab(tab.id)}
                   disabled={commState.status === 'loading' && commState.tab === tab.id}
                   key={tab.id}
                 >
@@ -3280,7 +3285,7 @@ function App(): h.JSX.Element {
                     type="button"
                     role="tab"
                     aria-selected={commState.tab === tab.id}
-                    onClick={() => refreshComm(tab.id)}
+                    onClick={() => selectCommTab(tab.id)}
                     disabled={commState.status === 'loading' && commState.tab === tab.id}
                     key={tab.id}
                   >

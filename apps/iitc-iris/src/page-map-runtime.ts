@@ -3309,14 +3309,15 @@ async function refreshComm(tab: IitcCommChannel = normalizeCommTab(latestCommSta
   const abortController = new AbortController();
   currentCommAbortController = abortController;
   const startedAt = performance.now();
+  const cachedCommMessages = getIitcCommChannelMessages(commChannelsData[tab]);
   latestCommState = {
     ...latestCommState,
     status: 'loading',
     tab,
-    messages: getIitcCommChannelMessages(commChannelsData[tab]).length,
+    messages: cachedCommMessages.length,
     requestOlder: getOlderMsgs,
     bounds,
-    recent: latestCommState.tab === tab ? latestCommState.recent : undefined,
+    recent: cachedCommMessages.map(toCommMessagePreview),
     oldestTimestamp: commChannelsData[tab].oldestTimestamp,
     newestTimestamp: commChannelsData[tab].newestTimestamp,
   };
