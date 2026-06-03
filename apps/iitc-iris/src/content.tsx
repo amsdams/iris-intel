@@ -2382,7 +2382,7 @@ function App(): h.JSX.Element {
             <span className="iitc-iris-selected-title">Search</span>
             <span className="iitc-iris-panel-header-actions">
               <span className={`iitc-iris-status iitc-iris-panel-state ${getPanelStatusClass(searchState.status)}`}>{searchState.status}</span>
-              <button className="iitc-iris-clear-selection" type="button" onClick={() => openSheet('map')} title="Close search">x</button>
+              <button className="iitc-iris-clear-selection" type="button" onClick={() => openSheet('map')} title="Close search" aria-label="Close search">X</button>
             </span>
           </div>
           <div className="iitc-iris-request-panel-body">
@@ -2473,7 +2473,7 @@ function App(): h.JSX.Element {
           <div className="iitc-iris-panel-topbar">
             <span className="iitc-iris-selected-title">{activeSheet === 'view' ? 'View' : 'Layers'}</span>
             <span className="iitc-iris-panel-header-actions">
-              <button className="iitc-iris-clear-selection" type="button" onClick={closeSheets} title={`Close ${activeSheet}`}>x</button>
+              <button className="iitc-iris-clear-selection" type="button" onClick={closeSheets} title={`Close ${activeSheet}`} aria-label={`Close ${activeSheet}`}>X</button>
             </span>
           </div>
         )}
@@ -2596,7 +2596,7 @@ function App(): h.JSX.Element {
                   <span className="selected-portal" title={entityFetch.selectedPortal.guid}>
                     selected {formatSelectedPortal(entityFetch.selectedPortal)}
                   </span>
-                  <button className="iitc-iris-clear-selection" type="button" onClick={clearPortalSelection} title="Clear selected portal">x</button>
+                  <button className="iitc-iris-clear-selection" type="button" onClick={clearPortalSelection} title="Clear selected portal" aria-label="Clear selected portal">X</button>
                 </>
               )}
               {entityFetch.collision && <span className="failed-request">old IRIS active</span>}
@@ -2946,7 +2946,7 @@ function App(): h.JSX.Element {
               )}
             </div>
             <span className="iitc-iris-panel-header-actions">
-              <button className="iitc-iris-clear-selection" type="button" onClick={closeSheetToMap} title="Close portal details">x</button>
+              <button className="iitc-iris-clear-selection" type="button" onClick={closeSheetToMap} title="Close portal details" aria-label="Close portal details">X</button>
             </span>
           </div>
           <div className="iitc-iris-portal-scroll-body">
@@ -3149,7 +3149,7 @@ function App(): h.JSX.Element {
             <div className="iitc-iris-request-panel-header">
               <span className="iitc-iris-selected-title">{entityFetch.selectedPortal.title || 'Portal image'}</span>
               <span className="iitc-iris-panel-header-actions">
-                <button className="iitc-iris-clear-selection" type="button" onClick={() => setPortalImageOpen(false)} title="Close image preview">x</button>
+                <button className="iitc-iris-clear-selection" type="button" onClick={() => setPortalImageOpen(false)} title="Close image preview" aria-label="Close image preview">X</button>
               </span>
             </div>
             <img src={entityFetch.selectedPortal.image} alt={entityFetch.selectedPortal.title || 'Portal image'} />
@@ -3165,7 +3165,7 @@ function App(): h.JSX.Element {
           <div className="iitc-iris-request-panel-header">
             <span className="iitc-iris-selected-title">Shortcuts</span>
             <span className="iitc-iris-panel-header-actions">
-              <button className="iitc-iris-clear-selection" type="button" onClick={closeSheets} title="Close shortcuts">x</button>
+              <button className="iitc-iris-clear-selection" type="button" onClick={closeSheets} title="Close shortcuts" aria-label="Close shortcuts">X</button>
             </span>
           </div>
           <div className="iitc-iris-request-panel-body">
@@ -3198,7 +3198,7 @@ function App(): h.JSX.Element {
               {activePanelNeedsAuth && (
                 inlineAuthActions
               )}
-	            <button className="iitc-iris-clear-selection" type="button" onClick={closeSidePanel} title={`Close ${activeSidePanelOption.title}`}>x</button>
+	            <button className="iitc-iris-clear-selection" type="button" onClick={closeSidePanel} title={`Close ${activeSidePanelOption.title}`} aria-label={`Close ${activeSidePanelOption.title}`}>X</button>
             </span>
 	          </div>
 	          {activeSidePanel === 'agent' && (
