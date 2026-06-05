@@ -341,19 +341,24 @@ Long-term refactor/plugin sequence after the current parity checkpoint:
    code we compare against IITC often: `comm`, `portalDetails`, `search`, `mapDataRequest`, `playerTracker`, portal-link
    navigation, long-press/right-click context handling, and request diagnostics. Add focused tests where helpers are
    pure. Do this before larger UI cleanup so later smart-ports have stable IITC-shaped landing zones.
-2. IITC plugin/core foundation. Before adding many plugins, add a thin IITC-style registry/facade layer for hooks,
+2. Fresh IITC reference audit for unknown unknowns. Before assuming the current backlog is complete, reread
+   `reference/IITC-CE/core/code` and categorize `reference/IITC-CE/plugins` against IITC IRIS. Produce a concrete
+   missing-parity table with IITC source file/plugin, IRIS status, importance, and recommended pass. This should catch
+   subtle core rendering/lifecycle gaps and high-value plugin workflows that the current plan only knows about from
+   prior porting work.
+3. IITC plugin/core foundation. Before adding many plugins, add a thin IITC-style registry/facade layer for hooks,
    highlighters, toolbox/menu entries, map context actions, layer registration, and portal detail extensions. This
    belongs after the small parity refactor and before porting plugin volume, because plugins need stable extension points
    more than they need a fully refactored UI shell.
-3. Port selected IITC plugins in small vertical slices. Start with high-value plugins whose contracts exercise the new
+4. Port selected IITC plugins in small vertical slices. Start with high-value plugins whose contracts exercise the new
    registry without requiring a full architecture rewrite: highlighters, bookmarks/saved views, keys workflows,
    long-press/right-click context actions, portal lists/counts, and small map utilities. Each plugin should document
    whether logic lives in `packages/iitc-core`, the extension runtime, or UI-only code.
-4. UI refactor. Split the large content UI into sheets/components/hooks after the parity/plugin extension points are
+5. UI refactor. Split the large content UI into sheets/components/hooks after the parity/plugin extension points are
    stable enough: `SearchSheet`, `PortalSheet`, `CommSheet`, `AgentSheet`, `SystemSheet`, menu state, keyboard shortcuts,
    elapsed/request chips, and common faction/portal display helpers. Keep the two-layer IRIS shell as the product
    decision unless replacement-readiness work says otherwise.
-5. Larger core refactor. Do this later, after plugin behavior proves which concepts truly belong in core. The goal is to
+6. Larger core refactor. Do this later, after plugin behavior proves which concepts truly belong in core. The goal is to
    move stable, UI-independent IITC concepts into `packages/iitc-core` without turning core into a browser/plugin
    runtime. Good core candidates: entity decoding, map-data lifecycle, search ordering/geometry normalization, COMM
    parsing/display model, portal details normalization, inventory/key parsing, highlighter predicates, and plugin
@@ -934,6 +939,7 @@ what to port natively and what to leave out.
 | Hook/plugin lifecycle | Open | IITC has `addHook`/`runHooks`, plugin setup, toolbox entries, dialogs, panes, layer chooser integration, and portal highlighter registration. IITC IRIS currently has fixed native systems and should add thin registries before porting many plugin concepts. |
 | Portal highlighter framework | Open | Add an IITC-style highlighter registry before adding more highlighters. Likely first native highlighters: high level, missing resonators, needs recharge, portal history, ornaments, and hide team. |
 | Search hover preview | Partial | Search results now render portal/address/coordinate preview geometry on hover/focus and clear it on mouseout/blur. Broader IITC-style hover preview affordances outside the search sheet remain later. |
+| Geodesic link rendering | Open | Long links are currently drawn as straight Leaflet polylines in projected map space. IITC/Intel-style long links should render as sampled geodesic/great-circle arcs, with selected-link highlight and link hit-testing using the same sampled geometry. Plan as two passes: minimal sampler/threshold correctness first, then segment-count/diagnostic/performance tuning. |
 | Long-press/right-click context | Partial | Portal and mission-waypoint right-click/mobile long-press now select the portal and open the normal portal sheet/details path. Link/field right-click and map long-press/right-click now open View context with object metadata, selected-object highlight, copy actions, and clickable faction-colored anchors. Normal portal click/tap remains lightweight selection: it highlights the Portal menu and exposes Details/Missions sub-tabs, but does not force-open the portal sheet. Portal menu stays portal-only; a generic Selection menu remains later. Richer map-context/plugin actions remain later. |
 | Portal-link navigation selection | Partial | COMM, player tracker, mission waypoint, and inventory-key portal links now use IITC-shaped `zoomToAndShowPortal` / `selectPortalByLatLng` semantics with pending selection when the target portal is not loaded. Search result selection already uses the normal portal selection path for loaded portals; broader map-context actions remain separate. |
 | C.O.R.E. subscription check | Open | Current IRIS/Mini-IRIS use `/r/getHasActiveSubscription` to track Intel inventory access, show C.O.R.E. status, and gate inventory polling/UI. IITC-CE reference core does not use this endpoint, so port it as an Intel capability rather than IITC core parity. |
