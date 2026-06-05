@@ -14,6 +14,7 @@ export const IITC_IRIS_MESSAGES = {
   zoomToAndShowPortal: 'IITC_IRIS_ZOOM_TO_AND_SHOW_PORTAL',
   clearPortalSelection: 'IITC_IRIS_CLEAR_PORTAL_SELECTION',
   mapContext: 'IITC_IRIS_MAP_CONTEXT',
+  requestMapContext: 'IITC_IRIS_REQUEST_MAP_CONTEXT',
   requestComm: 'IITC_IRIS_REQUEST_COMM',
   cancelPanelRequests: 'IITC_IRIS_CANCEL_PANEL_REQUESTS',
   sendComm: 'IITC_IRIS_SEND_COMM',
@@ -143,6 +144,8 @@ export interface IitcIrisMessage {
   portalGuid?: string;
   portalLat?: number;
   portalLng?: number;
+  clientX?: number;
+  clientY?: number;
   openPortal?: boolean;
 }
 

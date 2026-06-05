@@ -2510,7 +2510,20 @@ function App(): h.JSX.Element {
     <div className={`iitc-iris-shell iitc-iris-sheet-${activeSheet} ${entityFetch.selectedPortal ? 'iitc-iris-has-selected-portal' : ''}`}>
       <div id="iitc-iris-map" className="iitc-iris-map" />
       {activeSheet !== 'map' && (
-        <button className="iitc-iris-sheet-backdrop" type="button" onClick={closeSheetToMap} aria-label="Close open sheet" />
+        <button
+          className="iitc-iris-sheet-backdrop"
+          type="button"
+          onClick={closeSheetToMap}
+          onContextMenu={(event) => {
+            event.preventDefault();
+            window.postMessage({
+              type: IITC_IRIS_MESSAGES.requestMapContext,
+              clientX: event.clientX,
+              clientY: event.clientY,
+            } satisfies IitcIrisMessage, '*');
+          }}
+          aria-label="Close open sheet"
+        />
       )}
       {authRecoveryText && (
         <div className="iitc-iris-auth-recovery" role="status" aria-live="polite">
@@ -2582,7 +2595,9 @@ function App(): h.JSX.Element {
                         if (selectableIndex >= 0) setActiveSearchResultIndex(selectableIndex);
                         previewSearchResult(result);
                       }}
+                      onMouseLeave={() => previewSearchResult(null)}
                       onFocus={() => previewSearchResult(result)}
+                      onBlur={() => previewSearchResult(null)}
                       title={result.title}
                     >
                       <span className="iitc-iris-search-result-main">

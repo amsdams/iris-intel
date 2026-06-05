@@ -1,5 +1,5 @@
 import L, {type Layer as LeafletLayer, type LeafletMouseEvent, type Map as LeafletMap, type TileLayer} from 'leaflet';
-import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionDetails, type IitcIrisMissionSource, type IitcIrisMissionSummary, type IitcIrisMissionsState, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisSubscriptionState, type IitcIrisTriStateLayer} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionDetails, type IitcIrisMissionSource, type IitcIrisMissionSummary, type IitcIrisMissionWaypoint, type IitcIrisMissionsState, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisSubscriptionState, type IitcIrisTriStateLayer} from './messages';
 import {IITC_LEVEL_COLORS, IITC_TEAM_COLORS} from './iitc-colors';
 import {
   appendIitcResponseBucketDiagnostics,
@@ -166,6 +166,7 @@ let selectedPortal: IitcIrisSelectedPortal | null = null;
 let pendingPortalSelection: {guid?: string; lat?: number; lng?: number} | null = null;
 let latestPortalDetails: IitcIrisPortalDetailsState | null = null;
 let suppressPortalClickUntil = 0;
+let lastContextPostAt = 0;
 const portalDetailsCache = new Map<string, IitcIrisPortalDetailsState>();
 let latestSearchSequence = 0;
 let latestSearchState: IitcIrisSearchState = {status: 'idle', term: '', confirmed: false, results: [], localResults: 0};
@@ -917,6 +918,7 @@ function selectPortal(portal: IitcIrisRenderPortal, rerender = true): void {
 
 function postMapContext(lat: number, lng: number, portal?: IitcIrisRenderPortal): void {
   const map = window.__iitcIrisMap;
+  lastContextPostAt = performance.now();
   window.postMessage({
     type: IITC_IRIS_MESSAGES.mapContext,
     contextTarget: portal ? 'portal' : 'map',
@@ -929,11 +931,45 @@ function postMapContext(lat: number, lng: number, portal?: IitcIrisRenderPortal)
   } satisfies IitcIrisMessage, '*');
 }
 
+function postPortalContextReference(guid: string | undefined, lat: number, lng: number): void {
+  const map = window.__iitcIrisMap;
+  lastContextPostAt = performance.now();
+  window.postMessage({
+    type: IITC_IRIS_MESSAGES.mapContext,
+    contextTarget: 'portal',
+    lat,
+    lng,
+    zoom: map?.getZoom(),
+    portalGuid: guid,
+    portalLat: lat,
+    portalLng: lng,
+  } satisfies IitcIrisMessage, '*');
+}
+
 function openPortalContext(portal: IitcIrisRenderPortal, event?: LeafletMouseEvent): void {
   if (event) L.DomEvent.stop(event);
   suppressPortalClickUntil = Date.now() + LONG_PRESS_CLICK_SUPPRESS_MS;
   selectPortal(portal);
   postMapContext(portal.latE6 / 1_000_000, portal.lngE6 / 1_000_000, portal);
+}
+
+function openMapContextAtPoint(point: L.Point): void {
+  const map = window.__iitcIrisMap;
+  if (!map) return;
+  const portal = findContextPortalAtPoint(point);
+  if (portal) {
+    openPortalContext(portal);
+    return;
+  }
+  const latLng = map.containerPointToLatLng(point);
+  postMapContext(latLng.lat, latLng.lng);
+}
+
+function openMapContextAtClientPoint(clientX: number, clientY: number): void {
+  const map = window.__iitcIrisMap;
+  if (!map) return;
+  const rect = map.getContainer().getBoundingClientRect();
+  openMapContextAtPoint(L.point(clientX - rect.left, clientY - rect.top));
 }
 
 function findContextPortalAtPoint(point: L.Point): IitcIrisRenderPortal | undefined {
@@ -990,6 +1026,32 @@ function zoomToAndShowPortal(guid: string | undefined, lat: number | undefined, 
   }
   pendingPortalSelection = {guid, lat, lng};
   map.setView([lat, lng], zoom ?? Math.max(map.getZoom(), 15));
+}
+
+function selectMissionWaypoint(waypoint: IitcIrisMissionWaypoint): void {
+  const map = window.__iitcIrisMap;
+  if (!map || waypoint.latE6 === undefined || waypoint.lngE6 === undefined) return;
+  zoomToAndShowPortal(
+    waypoint.portalGuid,
+    waypoint.latE6 / 1_000_000,
+    waypoint.lngE6 / 1_000_000,
+    Math.max(map.getZoom(), 15),
+  );
+}
+
+function openMissionWaypointContext(waypoint: IitcIrisMissionWaypoint, event?: LeafletMouseEvent): void {
+  if (event) L.DomEvent.stop(event);
+  if (waypoint.latE6 === undefined || waypoint.lngE6 === undefined) return;
+  const lat = waypoint.latE6 / 1_000_000;
+  const lng = waypoint.lngE6 / 1_000_000;
+  const portal = findPortalByGuidOrLatLng(waypoint.portalGuid, lat, lng);
+  if (portal) {
+    openPortalContext(portal);
+    return;
+  }
+  suppressPortalClickUntil = Date.now() + LONG_PRESS_CLICK_SUPPRESS_MS;
+  zoomToAndShowPortal(waypoint.portalGuid, lat, lng, undefined);
+  postPortalContextReference(waypoint.portalGuid, lat, lng);
 }
 
 function clearPortalSelection(): void {
@@ -2114,9 +2176,15 @@ function renderMissionOverlay(mission: IitcIrisMissionDetails | undefined): void
       color: isStart ? '#A6A600' : MISSION_ROUTE_COLOR,
       fill: false,
       dashArray: waypoint.hidden ? '2,4' : undefined,
-      interactive: false,
+      interactive: true,
       pane: getLayerPane('missions'),
     });
+    marker.on('click', (event) => {
+      L.DomEvent.stop(event);
+      if (Date.now() < suppressPortalClickUntil) return;
+      selectMissionWaypoint(waypoint);
+    });
+    marker.on('contextmenu', (event) => openMissionWaypointContext(waypoint, event));
     addRenderedLayer(layers.missions, marker);
 
     const label = L.marker(latLng, {
@@ -2394,6 +2462,11 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.clearPortalSelection) {
     clearPortalSelection();
+  }
+  if (event.data?.type === IITC_IRIS_MESSAGES.requestMapContext) {
+    if (typeof event.data.clientX === 'number' && typeof event.data.clientY === 'number') {
+      openMapContextAtClientPoint(event.data.clientX, event.data.clientY);
+    }
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.cancelPanelRequests) {
     cancelActivePanelRequests();
@@ -4166,15 +4239,8 @@ function installContextLongPress(map: LeafletMap): void {
     start = {x: touch.clientX - rect.left, y: touch.clientY - rect.top};
     timer = window.setTimeout(() => {
       if (!start) return;
-      const point = L.point(start.x, start.y);
-      const portal = findContextPortalAtPoint(point);
       suppressPortalClickUntil = Date.now() + LONG_PRESS_CLICK_SUPPRESS_MS;
-      if (portal) {
-        openPortalContext(portal);
-      } else {
-        const latLng = map.containerPointToLatLng(point);
-        postMapContext(latLng.lat, latLng.lng);
-      }
+      openMapContextAtPoint(L.point(start.x, start.y));
       clear();
     }, LONG_PRESS_MS);
   }, {passive: true});
@@ -4190,6 +4256,16 @@ function installContextLongPress(map: LeafletMap): void {
 
   container.addEventListener('touchend', clear, {passive: true});
   container.addEventListener('touchcancel', clear, {passive: true});
+
+  container.addEventListener('contextmenu', (event) => {
+    event.preventDefault();
+    const startedAt = performance.now();
+    window.setTimeout(() => {
+      if (lastContextPostAt >= startedAt) return;
+      const rect = container.getBoundingClientRect();
+      openMapContextAtPoint(L.point(event.clientX - rect.left, event.clientY - rect.top));
+    }, 0);
+  }, {capture: true});
 }
 
 function boot(): void {
