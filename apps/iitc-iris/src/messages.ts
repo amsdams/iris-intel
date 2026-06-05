@@ -119,7 +119,12 @@ export interface IitcIrisMessage {
   renderPolicy?: IitcIrisRenderPolicy;
   selectedPortal?: IitcIrisSelectedPortal | null;
   portalDetails?: IitcIrisPortalDetailsState | null;
-  contextTarget?: 'map' | 'portal';
+  contextTarget?: 'map' | 'portal' | 'link' | 'field';
+  contextGuid?: string;
+  contextTeam?: 'E' | 'R' | 'N' | 'M';
+  contextPortalGuids?: string[];
+  contextPortalAnchors?: IitcIrisMapContextPortalAnchor[];
+  contextDistanceMeters?: number;
   comm?: IitcIrisCommState;
   scores?: IitcIrisScoresState;
   passcode?: IitcIrisPasscodeState;
@@ -144,6 +149,13 @@ export interface IitcIrisMessage {
   portalLat?: number;
   portalLng?: number;
   openPortal?: boolean;
+}
+
+export interface IitcIrisMapContextPortalAnchor {
+  guid?: string;
+  label: string;
+  latE6: number;
+  lngE6: number;
 }
 
 export interface IitcIrisSearchResult {

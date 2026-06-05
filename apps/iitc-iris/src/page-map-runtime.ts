@@ -1,5 +1,5 @@
 import L, {type Layer as LeafletLayer, type LeafletMouseEvent, type Map as LeafletMap, type TileLayer} from 'leaflet';
-import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionDetails, type IitcIrisMissionSource, type IitcIrisMissionSummary, type IitcIrisMissionWaypoint, type IitcIrisMissionsState, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisSubscriptionState, type IitcIrisTriStateLayer} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionDetails, type IitcIrisMissionSource, type IitcIrisMissionSummary, type IitcIrisMissionWaypoint, type IitcIrisMissionsState, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisSubscriptionState, type IitcIrisTriStateLayer} from './messages';
 import {IITC_LEVEL_COLORS, IITC_TEAM_COLORS} from './iitc-colors';
 import {createIitcIrisMapContextMessage, installIitcIrisContextGestures} from './map-context-runtime';
 import {
@@ -82,6 +82,7 @@ const LONG_PRESS_MS = 600;
 const LONG_PRESS_MOVE_TOLERANCE_PX = 12;
 const LONG_PRESS_CLICK_SUPPRESS_MS = 700;
 const PORTAL_CONTEXT_HIT_TOLERANCE_PX = 10;
+const LINK_CONTEXT_HIT_TOLERANCE_PX = 7;
 const PLAYER_TRACKER_COMM_REFRESH_MS = 120_000;
 const SEARCH_AUTO_MIN_LENGTH = 3;
 const NOMINATIM_SEARCH_URL = 'https://nominatim.openstreetmap.org/search?format=json&polygon_geojson=1&q=';
@@ -164,6 +165,7 @@ let latestResponse: IitcGetEntitiesResponse | undefined;
 const mapDataCache = new IitcDataCache<IitcMapTilePayload>();
 let selectedPortalGuid: string | undefined;
 let selectedPortal: IitcIrisSelectedPortal | null = null;
+let selectedMapObject: {type: 'link' | 'field'; guid: string} | null = null;
 let pendingPortalSelection: {guid?: string; lat?: number; lng?: number} | null = null;
 let latestPortalDetails: IitcIrisPortalDetailsState | null = null;
 let suppressPortalClickUntil = 0;
@@ -526,6 +528,7 @@ declare global {
       links: LeafletLayer[];
       portals: LeafletLayer[];
       selectedPortal: LeafletLayer[];
+      selectedMapObject: LeafletLayer[];
       ornaments: LeafletLayer[];
       artifacts: LeafletLayer[];
       labels: LeafletLayer[];
@@ -551,7 +554,7 @@ const LEVEL_COLORS = IITC_LEVEL_COLORS;
 const LEVEL_TO_WEIGHT = [2, 2, 2, 2, 2, 3, 3, 4, 4] as const;
 const LEVEL_TO_RADIUS = [7, 7, 7, 7, 8, 8, 9, 10, 11] as const;
 const LEVEL_LABEL_COLLISION_SIZE = 15;
-type IitcIrisLayerPaneKey = keyof IitcIrisLayerSettings | 'selectedPortal' | 'search' | 'missions' | 'userLocation';
+type IitcIrisLayerPaneKey = keyof IitcIrisLayerSettings | 'selectedPortal' | 'selectedMapObject' | 'search' | 'missions' | 'userLocation';
 
 function toLatLng(latE6: number, lngE6: number): [number, number] {
   return [latE6 / 1e6, lngE6 / 1e6];
@@ -691,6 +694,7 @@ function ensureLayers(): NonNullable<Window['__iitcIrisLayers']> {
     links: [],
     portals: [],
     selectedPortal: [],
+    selectedMapObject: [],
     ornaments: [],
     artifacts: [],
     labels: [],
@@ -736,6 +740,7 @@ function clearAllRenderedLayers(): void {
   clearRenderedLayers(layers.links);
   clearRenderedLayers(layers.portals);
   clearRenderedLayers(layers.selectedPortal);
+  clearRenderedLayers(layers.selectedMapObject);
   clearRenderedLayers(layers.ornaments);
   clearRenderedLayers(layers.artifacts);
   clearRenderedLayers(layers.labels);
@@ -750,6 +755,7 @@ function clearEntityLayers(): void {
   clearRenderedLayers(layers.links);
   clearRenderedLayers(layers.portals);
   clearRenderedLayers(layers.selectedPortal);
+  clearRenderedLayers(layers.selectedMapObject);
   clearRenderedLayers(layers.ornaments);
   clearRenderedLayers(layers.artifacts);
   clearRenderedLayers(layers.labels);
@@ -887,6 +893,27 @@ function createSelectedPortalMarker(portal: IitcIrisRenderPortal): LeafletLayer 
   });
 }
 
+function createSelectedLinkMarker(link: IitcIrisRenderLink): LeafletLayer {
+  return L.polyline([toLatLng(link.oLatE6, link.oLngE6), toLatLng(link.dLatE6, link.dLngE6)], {
+    color: '#ff9900',
+    opacity: 0.95,
+    pane: getLayerPane('selectedMapObject'),
+    weight: 5,
+    interactive: false,
+  });
+}
+
+function createSelectedFieldMarker(field: IitcIrisRenderField): LeafletLayer {
+  return L.polygon(field.points.map((point) => toLatLng(point.latE6, point.lngE6)), {
+    color: '#ff9900',
+    fill: false,
+    opacity: 0.95,
+    pane: getLayerPane('selectedMapObject'),
+    weight: 4,
+    interactive: false,
+  });
+}
+
 function renderSelectedPortal(visiblePortals: IitcIrisRenderPortal[]): void {
   const layers = ensureLayers();
   clearRenderedLayers(layers.selectedPortal);
@@ -906,7 +933,33 @@ function renderSelectedPortal(visiblePortals: IitcIrisRenderPortal[]): void {
   addRenderedLayer(layers.selectedPortal, createSelectedPortalMarker(portal));
 }
 
+function renderSelectedMapObject(): void {
+  const layers = ensureLayers();
+  clearRenderedLayers(layers.selectedMapObject);
+  if (!selectedMapObject || !latestEntities) return;
+
+  if (selectedMapObject.type === 'link') {
+    const link = latestEntities.links.find((candidate) => candidate.guid === selectedMapObject?.guid);
+    if (link && isLinkVisible(link)) addRenderedLayer(layers.selectedMapObject, createSelectedLinkMarker(link));
+    return;
+  }
+
+  const field = latestEntities.fields.find((candidate) => candidate.guid === selectedMapObject?.guid);
+  if (field && isFieldVisible(field) && field.points.length >= 3) addRenderedLayer(layers.selectedMapObject, createSelectedFieldMarker(field));
+}
+
+function selectMapObject(type: 'link' | 'field', guid: string): void {
+  selectedMapObject = {type, guid};
+  renderSelectedMapObject();
+}
+
+function clearSelectedMapObject(): void {
+  selectedMapObject = null;
+  clearRenderedLayers(ensureLayers().selectedMapObject);
+}
+
 function selectPortal(portal: IitcIrisRenderPortal, rerender = true): void {
+  selectedMapObject = null;
   selectedPortalGuid = portal.guid;
   selectedPortal = toSelectedPortal(portal);
   pendingPortalSelection = null;
@@ -936,6 +989,27 @@ function postPortalContextReference(guid: string | undefined, lat: number, lng: 
   }), '*');
 }
 
+function postMapObjectContext(
+  contextTarget: 'link' | 'field',
+  lat: number,
+  lng: number,
+  object: {guid: string; team: 'E' | 'R' | 'N' | 'M'; portalGuids: string[]; portalAnchors: IitcIrisMapContextPortalAnchor[]; distanceMeters?: number},
+): void {
+  const map = window.__iitcIrisMap;
+  lastContextPostAt = performance.now();
+  window.postMessage(createIitcIrisMapContextMessage({
+    contextTarget,
+    lat,
+    lng,
+    zoom: map?.getZoom(),
+    contextGuid: object.guid,
+    contextTeam: object.team,
+    contextPortalGuids: object.portalGuids,
+    contextPortalAnchors: object.portalAnchors,
+    contextDistanceMeters: object.distanceMeters,
+  }), '*');
+}
+
 function openPortalContext(portal: IitcIrisRenderPortal, event?: LeafletMouseEvent): void {
   if (event) L.DomEvent.stop(event);
   suppressPortalClickUntil = Date.now() + LONG_PRESS_CLICK_SUPPRESS_MS;
@@ -951,7 +1025,34 @@ function openMapContextAtPoint(point: L.Point): void {
     openPortalContext(portal);
     return;
   }
+  const link = findContextLinkAtPoint(point);
+  if (link) {
+    const latLng = map.containerPointToLatLng(point);
+    selectMapObject('link', link.guid);
+    postMapObjectContext('link', latLng.lat, latLng.lng, {
+      guid: link.guid,
+      team: link.team,
+      portalGuids: getLinkPortalGuids(link),
+      portalAnchors: getLinkPortalAnchors(link),
+      distanceMeters: getLinkDistanceMeters(link),
+    });
+    return;
+  }
+  const field = findContextFieldAtPoint(point);
+  if (field) {
+    const latLng = map.containerPointToLatLng(point);
+    selectMapObject('field', field.guid);
+    postMapObjectContext('field', latLng.lat, latLng.lng, {
+      guid: field.guid,
+      team: field.team,
+      portalGuids: getFieldPortalGuids(field),
+      portalAnchors: getFieldPortalAnchors(field),
+      distanceMeters: getFieldPerimeterMeters(field),
+    });
+    return;
+  }
   const latLng = map.containerPointToLatLng(point);
+  clearSelectedMapObject();
   postMapContext(latLng.lat, latLng.lng);
 }
 
@@ -969,6 +1070,135 @@ function findContextPortalAtPoint(point: L.Point): IitcIrisRenderPortal | undefi
     if (!nearest || distance < nearest.distance) nearest = {portal, distance};
   }
   return nearest?.portal;
+}
+
+function getPointToSegmentDistance(point: L.Point, start: L.Point, end: L.Point): number {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  if (dx === 0 && dy === 0) return point.distanceTo(start);
+  const t = Math.max(0, Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / (dx * dx + dy * dy)));
+  return point.distanceTo(L.point(start.x + t * dx, start.y + t * dy));
+}
+
+function getDistanceMeters(from: {latE6: number; lngE6: number}, to: {latE6: number; lngE6: number}): number {
+  const earthRadiusMeters = 6_371_000;
+  const lat1 = from.latE6 / 1_000_000 * Math.PI / 180;
+  const lat2 = to.latE6 / 1_000_000 * Math.PI / 180;
+  const deltaLat = lat2 - lat1;
+  const deltaLng = (to.lngE6 - from.lngE6) / 1_000_000 * Math.PI / 180;
+  const a = Math.sin(deltaLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) ** 2;
+  return earthRadiusMeters * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function getPortalLabelByGuid(guid: string | undefined, fallback: string): string {
+  if (!guid || !latestEntities) return fallback;
+  const portal = latestEntities.portals.find((candidate) => candidate.guid === guid);
+  return portal?.title || guid;
+}
+
+function getLinkPortalGuids(link: IitcIrisRenderLink): string[] {
+  return [link.oGuid, link.dGuid].filter((guid): guid is string => Boolean(guid));
+}
+
+function getLinkPortalAnchors(link: IitcIrisRenderLink): IitcIrisMapContextPortalAnchor[] {
+  return [
+    {
+      guid: link.oGuid,
+      label: getPortalLabelByGuid(link.oGuid, `${(link.oLatE6 / 1_000_000).toFixed(6)}, ${(link.oLngE6 / 1_000_000).toFixed(6)}`),
+      latE6: link.oLatE6,
+      lngE6: link.oLngE6,
+    },
+    {
+      guid: link.dGuid,
+      label: getPortalLabelByGuid(link.dGuid, `${(link.dLatE6 / 1_000_000).toFixed(6)}, ${(link.dLngE6 / 1_000_000).toFixed(6)}`),
+      latE6: link.dLatE6,
+      lngE6: link.dLngE6,
+    },
+  ];
+}
+
+function getLinkDistanceMeters(link: IitcIrisRenderLink): number {
+  return getDistanceMeters(
+    {latE6: link.oLatE6, lngE6: link.oLngE6},
+    {latE6: link.dLatE6, lngE6: link.dLngE6},
+  );
+}
+
+function getFieldPortalGuids(field: IitcIrisRenderField): string[] {
+  return field.points.map((fieldPoint) => fieldPoint.guid).filter((guid): guid is string => Boolean(guid));
+}
+
+function getFieldPortalAnchors(field: IitcIrisRenderField): IitcIrisMapContextPortalAnchor[] {
+  return field.points.map((fieldPoint) => ({
+    guid: fieldPoint.guid,
+    label: getPortalLabelByGuid(
+      fieldPoint.guid,
+      `${(fieldPoint.latE6 / 1_000_000).toFixed(6)}, ${(fieldPoint.lngE6 / 1_000_000).toFixed(6)}`,
+    ),
+    latE6: fieldPoint.latE6,
+    lngE6: fieldPoint.lngE6,
+  }));
+}
+
+function getFieldPerimeterMeters(field: IitcIrisRenderField): number | undefined {
+  if (field.points.length < 2) return undefined;
+  return field.points.reduce((total, point, index) => {
+    const next = field.points[(index + 1) % field.points.length];
+    return total + getDistanceMeters(point, next);
+  }, 0);
+}
+
+function findContextLinkAtPoint(point: L.Point): IitcIrisRenderLink | undefined {
+  const map = window.__iitcIrisMap;
+  if (!map || !latestEntities) return undefined;
+
+  let nearest: {link: IitcIrisRenderLink; distance: number} | undefined;
+  for (const link of latestEntities.links) {
+    if (!isLinkVisible(link)) continue;
+    const start = map.latLngToContainerPoint(toLatLng(link.oLatE6, link.oLngE6));
+    const end = map.latLngToContainerPoint(toLatLng(link.dLatE6, link.dLngE6));
+    const distance = getPointToSegmentDistance(point, start, end);
+    if (distance > LINK_CONTEXT_HIT_TOLERANCE_PX) continue;
+    if (!nearest || distance < nearest.distance) nearest = {link, distance};
+  }
+  return nearest?.link;
+}
+
+function isPointInPolygon(point: L.Point, polygon: L.Point[]): boolean {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i, i += 1) {
+    const a = polygon[i];
+    const b = polygon[j];
+    const intersects = (a.y > point.y) !== (b.y > point.y) &&
+      point.x < ((b.x - a.x) * (point.y - a.y)) / (b.y - a.y) + a.x;
+    if (intersects) inside = !inside;
+  }
+  return inside;
+}
+
+function getPolygonArea(points: L.Point[]): number {
+  let area = 0;
+  for (let index = 0; index < points.length; index += 1) {
+    const current = points[index];
+    const next = points[(index + 1) % points.length];
+    area += current.x * next.y - next.x * current.y;
+  }
+  return Math.abs(area / 2);
+}
+
+function findContextFieldAtPoint(point: L.Point): IitcIrisRenderField | undefined {
+  const map = window.__iitcIrisMap;
+  if (!map || !latestEntities) return undefined;
+
+  let smallest: {field: IitcIrisRenderField; area: number} | undefined;
+  for (const field of latestEntities.fields) {
+    if (!isFieldVisible(field) || field.points.length < 3) continue;
+    const polygon = field.points.map((fieldPoint) => map.latLngToContainerPoint(toLatLng(fieldPoint.latE6, fieldPoint.lngE6)));
+    if (!isPointInPolygon(point, polygon)) continue;
+    const area = getPolygonArea(polygon);
+    if (!smallest || area < smallest.area) smallest = {field, area};
+  }
+  return smallest?.field;
 }
 
 function findPortalByGuidOrLatLng(guid: string | undefined, lat: number | undefined, lng: number | undefined): IitcIrisRenderPortal | undefined {
@@ -1573,6 +1803,7 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
     }
   }
   renderSelectedPortal(visiblePortals);
+  renderSelectedMapObject();
   latestOrnamentDiagnostics = ornamentDiagnostics;
 }
 
@@ -4237,7 +4468,7 @@ function boot(): void {
   map.on('moveend', postMapMoved);
   map.on('contextmenu', (event) => {
     L.DomEvent.stop(event);
-    postMapContext(event.latlng.lat, event.latlng.lng);
+    openMapContextAtPoint(event.containerPoint);
   });
   map.on('zoomend', () => {
     renderPlayerTracker();
@@ -4262,6 +4493,7 @@ function createIitcIrisPanes(map: LeafletMap): void {
     ['ornaments', 440],
     ['artifacts', 445],
     ['selectedPortal', 448],
+    ['selectedMapObject', 448],
     ['playerTracker', 449],
     ['missions', 449],
     ['search', 451],

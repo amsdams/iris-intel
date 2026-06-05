@@ -272,8 +272,10 @@ General improvement backlog before calling this replacement-ready:
   request surfaces are verified.
 - Continue IITC-style long-press/right-click interactions for map and portal context actions. Portal context now works
   across desktop right click and mobile long press by selecting the portal and opening the normal portal sheet/details
-  path. Plain map context events expose a compact View-sheet action row for centering the map and copying coordinates or
-  an Intel URL; richer map-context/plugin actions still need a dedicated action model.
+  path. Link/field context now opens the View sheet with object metadata, selected-object highlighting, copy actions,
+  and faction-colored clickable anchor rows that jump/select anchor portals. Plain map context events expose a compact
+  View-sheet action row for centering the map and copying coordinates or an Intel URL. The Portal menu remains
+  portal-only for now; a generic Selection menu for portal/link/field objects remains a later design decision.
 - Make portal navigation from COMM, search, player tracker, inventory keys, and other portal links select the portal as
   well as pan/zoom to it. The selected portal should open the normal portal context/details path when the entity is
   loaded, and use a graceful loading/missing state when only a GUID or lat/lng is known.
@@ -932,7 +934,7 @@ what to port natively and what to leave out.
 | Hook/plugin lifecycle | Open | IITC has `addHook`/`runHooks`, plugin setup, toolbox entries, dialogs, panes, layer chooser integration, and portal highlighter registration. IITC IRIS currently has fixed native systems and should add thin registries before porting many plugin concepts. |
 | Portal highlighter framework | Open | Add an IITC-style highlighter registry before adding more highlighters. Likely first native highlighters: high level, missing resonators, needs recharge, portal history, ornaments, and hide team. |
 | Search hover preview | Partial | Search results now render portal/address/coordinate preview geometry on hover/focus and clear it on mouseout/blur. Broader IITC-style hover preview affordances outside the search sheet remain later. |
-| Long-press/right-click context | Partial | Portal and mission-waypoint right-click/mobile long-press now select the portal and open the normal portal sheet/details path. Normal portal click/tap remains lightweight selection: it highlights the Portal menu and exposes Details/Missions sub-tabs, but does not force-open the portal sheet. Plain map context events expose center/copy-coordinate/copy-URL actions in the View sheet; richer map-context/plugin actions remain later. |
+| Long-press/right-click context | Partial | Portal and mission-waypoint right-click/mobile long-press now select the portal and open the normal portal sheet/details path. Link/field right-click and map long-press/right-click now open View context with object metadata, selected-object highlight, copy actions, and clickable faction-colored anchors. Normal portal click/tap remains lightweight selection: it highlights the Portal menu and exposes Details/Missions sub-tabs, but does not force-open the portal sheet. Portal menu stays portal-only; a generic Selection menu remains later. Richer map-context/plugin actions remain later. |
 | Portal-link navigation selection | Partial | COMM, player tracker, mission waypoint, and inventory-key portal links now use IITC-shaped `zoomToAndShowPortal` / `selectPortalByLatLng` semantics with pending selection when the target portal is not loaded. Search result selection already uses the normal portal selection path for loaded portals; broader map-context actions remain separate. |
 | C.O.R.E. subscription check | Open | Current IRIS/Mini-IRIS use `/r/getHasActiveSubscription` to track Intel inventory access, show C.O.R.E. status, and gate inventory polling/UI. IITC-CE reference core does not use this endpoint, so port it as an Intel capability rather than IITC core parity. |
 | Mission endpoints | Partial | First read-only vertical slice exists: top missions in view, selected-portal missions, details, route/waypoint map overlay, and elapsed diagnostics. Remaining parity: persistent IITC-style mission caches, richer dialog actions, completed/progress state, uniques/history integrations, and plugin hooks. |

@@ -3,7 +3,7 @@ import {useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import './iitc-iris.css';
 import {formatIitcColorVars, getIitcItemColor, getIitcLevelColor, getIitcRarityColor, IITC_RESONATOR_ENERGY} from './iitc-colors';
 import {formatSubscriptionBadge, formatSubscriptionLabel, getAuthErrorMessage, getPanelStatusClass, getSubscriptionStatusClass} from './ui-status';
-import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPlayerTrackerDiagnostics, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPlayerTrackerDiagnostics, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
 import {
   createIitcMapDataPlan,
   IITC_MAX_REQUESTS,
@@ -331,6 +331,12 @@ interface MapContextSelection {
   lat: number;
   lng: number;
   zoom: number;
+  target: 'map' | 'link' | 'field';
+  guid?: string;
+  team?: 'E' | 'R' | 'N' | 'M';
+  portalGuids?: string[];
+  portalAnchors?: IitcIrisMapContextPortalAnchor[];
+  distanceMeters?: number;
 }
 
 function isScenarioSettled(diagnostics: unknown): boolean {
@@ -964,6 +970,12 @@ function formatTeamClass(team: string): string {
   return 'iitc-iris-team-neutral';
 }
 
+function formatMapObjectDistance(meters: number | undefined): string {
+  if (meters === undefined || !Number.isFinite(meters)) return '-';
+  if (meters >= 1000) return `${(meters / 1000).toFixed(meters >= 10_000 ? 1 : 2)} km`;
+  return `${Math.round(meters)} m`;
+}
+
 function formatResonatorEnergy(energy: number): string {
   return energy >= 1000 ? `${Math.round(energy / 100) / 10}k` : String(energy);
 }
@@ -1518,6 +1530,32 @@ function App(): h.JSX.Element {
       });
   };
 
+  const copyMapContextGuid = (): void => {
+    if (!mapContext?.guid) return;
+    void navigator.clipboard.writeText(mapContext.guid)
+      .then(() => {
+        setCopyStatus(`${mapContext.target} guid copied`);
+        window.setTimeout(() => setCopyStatus(''), 1200);
+      })
+      .catch(() => {
+        setCopyStatus('copy failed');
+        window.setTimeout(() => setCopyStatus(''), 1600);
+      });
+  };
+
+  const copyMapContextPortalGuids = (): void => {
+    if (!mapContext?.portalGuids?.length) return;
+    void navigator.clipboard.writeText(mapContext.portalGuids.join('\n'))
+      .then(() => {
+        setCopyStatus('anchor guids copied');
+        window.setTimeout(() => setCopyStatus(''), 1200);
+      })
+      .catch(() => {
+        setCopyStatus('copy failed');
+        window.setTimeout(() => setCopyStatus(''), 1600);
+      });
+  };
+
   const centerMapContext = (): void => {
     if (!mapContext) return;
     setMapView(mapContext.lat, mapContext.lng, mapContext.zoom);
@@ -1872,6 +1910,10 @@ function App(): h.JSX.Element {
     } satisfies IitcIrisMessage, '*');
   };
 
+  const selectMapContextAnchor = (anchor: IitcIrisMapContextPortalAnchor): void => {
+    zoomToAndShowPortal(anchor.guid, anchor.latE6, anchor.lngE6);
+  };
+
   const selectPortalByLatLng = (latE6?: number, lngE6?: number, portalGuid?: string): void => {
     if (latE6 === undefined || lngE6 === undefined) return;
     zoomToAndShowPortal(portalGuid, latE6, lngE6);
@@ -2204,7 +2246,18 @@ function App(): h.JSX.Element {
           setActiveSheet('portal');
           storeActiveSheet('portal');
         } else if (typeof event.data.lat === 'number' && typeof event.data.lng === 'number') {
-          setMapContext({lat: event.data.lat, lng: event.data.lng, zoom: event.data.zoom ?? camera.zoom});
+          const target = event.data.contextTarget === 'link' || event.data.contextTarget === 'field' ? event.data.contextTarget : 'map';
+          setMapContext({
+            lat: event.data.lat,
+            lng: event.data.lng,
+            zoom: event.data.zoom ?? camera.zoom,
+            target,
+            guid: event.data.contextGuid,
+            team: event.data.contextTeam,
+            portalGuids: event.data.contextPortalGuids,
+            portalAnchors: event.data.contextPortalAnchors,
+            distanceMeters: event.data.contextDistanceMeters,
+          });
           if (activeSidePanel) {
             window.postMessage({type: IITC_IRIS_MESSAGES.cancelPanelRequests} satisfies IitcIrisMessage, '*');
           }
@@ -2213,7 +2266,7 @@ function App(): h.JSX.Element {
           storeSidePanelId(null);
           setActiveSheet('view');
           storeActiveSheet('view');
-          setStatus(`map context ${event.data.lat.toFixed(6)},${event.data.lng.toFixed(6)}`);
+          setStatus(`${target} context ${event.data.lat.toFixed(6)},${event.data.lng.toFixed(6)}`);
         }
       }
       if (event.data?.type === IITC_IRIS_MESSAGES.entityStatus) {
@@ -2642,6 +2695,26 @@ function App(): h.JSX.Element {
         </div>}
         {activeSheet === 'view' && mapContext && <div className="iitc-iris-map-controls-section">
           <span className="iitc-iris-status">Context</span>
+          {mapContext.target !== 'map' && <div className="iitc-iris-map-context-row">
+            <span className="iitc-iris-map-context-coords" title={mapContext.guid}>
+              {mapContext.target === 'link' ? 'Link' : 'Field'}
+              {mapContext.team ? `, ${formatTeamLabel(mapContext.team)}` : ''}
+            </span>
+            {mapContext.guid && <button className="iitc-iris-portal-action" type="button" onClick={copyMapContextGuid} title={`Copy ${mapContext.target} GUID`}>GUID</button>}
+            {mapContext.portalGuids?.length ? <button className="iitc-iris-portal-action" type="button" onClick={copyMapContextPortalGuids} title="Copy anchor portal GUIDs">Anchors</button> : null}
+          </div>}
+          {mapContext.target !== 'map' && mapContext.distanceMeters !== undefined && <div className="iitc-iris-map-context-row">
+            <span className="iitc-iris-map-context-coords">
+              {mapContext.target === 'link' ? 'Length' : 'Edge total'}: {formatMapObjectDistance(mapContext.distanceMeters)}
+            </span>
+          </div>}
+          {mapContext.target !== 'map' && mapContext.portalAnchors?.length ? mapContext.portalAnchors.map((anchor, index) => (
+            <div className="iitc-iris-map-context-row" key={`${anchor.guid || 'anchor'}-${index}`}>
+              <button className={`iitc-iris-map-context-anchor ${mapContext.team ? formatTeamClass(mapContext.team) : ''}`} type="button" onClick={() => selectMapContextAnchor(anchor)} title="Center and select this anchor portal">
+                {mapContext.target === 'link' ? (index === 0 ? 'From' : 'To') : `Anchor ${index + 1}`}: {anchor.label}
+              </button>
+            </div>
+          )) : null}
           <div className="iitc-iris-map-context-row">
             <span className="iitc-iris-map-context-coords" title={`${mapContext.lat},${mapContext.lng}`}>
               {mapContext.lat.toFixed(6)}, {mapContext.lng.toFixed(6)}
