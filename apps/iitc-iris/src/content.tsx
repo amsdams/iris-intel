@@ -327,6 +327,12 @@ interface ScenarioRun {
   snapshots: ScenarioSnapshot[];
 }
 
+interface MapContextSelection {
+  lat: number;
+  lng: number;
+  zoom: number;
+}
+
 function isScenarioSettled(diagnostics: unknown): boolean {
   const view = diagnostics as {
     entities?: {
@@ -1092,9 +1098,9 @@ function App(): h.JSX.Element {
   const [viewInput, setViewInput] = useState('');
   const [viewInputStatus, setViewInputStatus] = useState('');
   const [geolocationStatus, setGeolocationStatus] = useState('');
+  const [mapContext, setMapContext] = useState<MapContextSelection | null>(null);
   const [debugDockVisible, setDebugDockVisible] = useState(() => loadStoredDebugDockVisible());
   const [activeSheet, setActiveSheet] = useState<SheetId>(() => loadStoredActiveSheet());
-  const autoOpenedPortalGuid = useRef<string | null>(null);
   const [activeSidePanel, setActiveSidePanel] = useState<SidePanelId | null>(() => {
     const sheet = loadStoredActiveSheet();
     return isSidePanelId(sheet) ? sheet : null;
@@ -1483,6 +1489,38 @@ function App(): h.JSX.Element {
         setCopyStatus('copy failed');
         window.setTimeout(() => setCopyStatus(''), 1600);
       });
+  };
+
+  const copyMapContextLatLng = (): void => {
+    if (!mapContext) return;
+    void navigator.clipboard.writeText(`${mapContext.lat.toFixed(6)},${mapContext.lng.toFixed(6)}`)
+      .then(() => {
+        setCopyStatus('coords copied');
+        window.setTimeout(() => setCopyStatus(''), 1200);
+      })
+      .catch(() => {
+        setCopyStatus('copy failed');
+        window.setTimeout(() => setCopyStatus(''), 1600);
+      });
+  };
+
+  const copyMapContextUrl = (): void => {
+    if (!mapContext) return;
+    const url = `https://intel.ingress.com/intel?ll=${mapContext.lat.toFixed(6)},${mapContext.lng.toFixed(6)}&z=${Math.round(mapContext.zoom)}`;
+    void navigator.clipboard.writeText(url)
+      .then(() => {
+        setCopyStatus('context url copied');
+        window.setTimeout(() => setCopyStatus(''), 1200);
+      })
+      .catch(() => {
+        setCopyStatus('copy failed');
+        window.setTimeout(() => setCopyStatus(''), 1600);
+      });
+  };
+
+  const centerMapContext = (): void => {
+    if (!mapContext) return;
+    setMapView(mapContext.lat, mapContext.lng, mapContext.zoom);
   };
 
   const copySelectedPortalLink = (): void => {
@@ -1989,6 +2027,8 @@ function App(): h.JSX.Element {
   const activeSidePanelOption = SIDE_PANEL_OPTIONS.find((option) => option.id === activeSidePanel) ?? null;
   const activePrimaryMenu = activeSheet === 'missions' && missionsState.source === 'portal'
     ? 'portal'
+    : activeSheet === 'map' && entityFetch.selectedPortal
+      ? 'portal'
     : getPrimaryMenuId(activeSheet);
   const activeSidePanelStatus = activeSidePanel === 'comm'
     ? commState.status === 'auth' || commState.sendStatus === 'auth' ? 'auth' : commState.status
@@ -2153,6 +2193,29 @@ function App(): h.JSX.Element {
           bounds: event.data.bounds ?? current.bounds,
         }));
       }
+      if (event.data?.type === IITC_IRIS_MESSAGES.mapContext) {
+        if (event.data.contextTarget === 'portal') {
+          if (activeSidePanel) {
+            window.postMessage({type: IITC_IRIS_MESSAGES.cancelPanelRequests} satisfies IitcIrisMessage, '*');
+          }
+          setPortalImageOpen(false);
+          setActiveSidePanel(null);
+          storeSidePanelId(null);
+          setActiveSheet('portal');
+          storeActiveSheet('portal');
+        } else if (typeof event.data.lat === 'number' && typeof event.data.lng === 'number') {
+          setMapContext({lat: event.data.lat, lng: event.data.lng, zoom: event.data.zoom ?? camera.zoom});
+          if (activeSidePanel) {
+            window.postMessage({type: IITC_IRIS_MESSAGES.cancelPanelRequests} satisfies IitcIrisMessage, '*');
+          }
+          setPortalImageOpen(false);
+          setActiveSidePanel(null);
+          storeSidePanelId(null);
+          setActiveSheet('view');
+          storeActiveSheet('view');
+          setStatus(`map context ${event.data.lat.toFixed(6)},${event.data.lng.toFixed(6)}`);
+        }
+      }
       if (event.data?.type === IITC_IRIS_MESSAGES.entityStatus) {
         setEntityFetch((current) => entityFetchStateFromMessage(event.data, current));
         if (event.data.requestDiagnostics) setRequestDiagnostics(event.data.requestDiagnostics);
@@ -2191,7 +2254,7 @@ function App(): h.JSX.Element {
 
     window.addEventListener('message', onMessage);
     return (): void => window.removeEventListener('message', onMessage);
-  }, [baseLayerId, dataSource, layerSettings, lifecycleSettings]);
+  }, [activeSidePanel, baseLayerId, dataSource, layerSettings, lifecycleSettings]);
 
   useEffect(() => {
     storeLayerSettings(layerSettings);
@@ -2276,27 +2339,6 @@ function App(): h.JSX.Element {
     if (!selectedPortalGuid || selectedPortalGuid === missionsState.portalGuid) return;
     refreshMissions('portal');
   }, [activeSidePanel, entityFetch.selectedPortal?.guid, missionsState.portalGuid, missionsState.source, missionsState.status]);
-
-  useEffect(() => {
-    const selectedPortalGuid = entityFetch.selectedPortal?.guid ?? null;
-    if (!selectedPortalGuid) {
-      autoOpenedPortalGuid.current = null;
-      return;
-    }
-    if (activePrimaryMenu === 'portal') {
-      autoOpenedPortalGuid.current = selectedPortalGuid;
-      return;
-    }
-    if (autoOpenedPortalGuid.current === selectedPortalGuid) return;
-    autoOpenedPortalGuid.current = selectedPortalGuid;
-    if (activeSidePanel) {
-      window.postMessage({type: IITC_IRIS_MESSAGES.cancelPanelRequests} satisfies IitcIrisMessage, '*');
-    }
-    setActiveSidePanel(null);
-    storeSidePanelId(null);
-    setActiveSheet('portal');
-    storeActiveSheet('portal');
-  }, [activePrimaryMenu, activeSidePanel, entityFetch.selectedPortal?.guid]);
 
   useEffect(() => {
     const term = searchTerm.trim();
@@ -2598,6 +2640,17 @@ function App(): h.JSX.Element {
             <button className="iitc-iris-nav-button iitc-iris-nav-button-wide" type="button" onClick={locateBrowserPosition} title="Pan to current browser location">Locate</button>
           </div>
           {geolocationStatus && <span className="iitc-iris-map-control-status">{geolocationStatus}</span>}
+        </div>}
+        {activeSheet === 'view' && mapContext && <div className="iitc-iris-map-controls-section">
+          <span className="iitc-iris-status">Context</span>
+          <div className="iitc-iris-map-context-row">
+            <span className="iitc-iris-map-context-coords" title={`${mapContext.lat},${mapContext.lng}`}>
+              {mapContext.lat.toFixed(6)}, {mapContext.lng.toFixed(6)}
+            </span>
+            <button className="iitc-iris-portal-action" type="button" onClick={centerMapContext} title="Center map on this context point">Center</button>
+            <button className="iitc-iris-portal-action" type="button" onClick={copyMapContextLatLng} title="Copy context coordinates">LL</button>
+            <button className="iitc-iris-portal-action" type="button" onClick={copyMapContextUrl} title="Copy Intel URL for this context point">URL</button>
+          </div>
         </div>}
         {activeSheet === 'view' && <div className="iitc-iris-map-controls-section">
           <span className="iitc-iris-status">Base</span>

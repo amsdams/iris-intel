@@ -1,4 +1,4 @@
-import L, {type Layer as LeafletLayer, type Map as LeafletMap, type TileLayer} from 'leaflet';
+import L, {type Layer as LeafletLayer, type LeafletMouseEvent, type Map as LeafletMap, type TileLayer} from 'leaflet';
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionDetails, type IitcIrisMissionSource, type IitcIrisMissionSummary, type IitcIrisMissionsState, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisSubscriptionState, type IitcIrisTriStateLayer} from './messages';
 import {IITC_LEVEL_COLORS, IITC_TEAM_COLORS} from './iitc-colors';
 import {
@@ -77,6 +77,10 @@ const OPTIONAL_OVERLAY_MIN_ZOOM = 14;
 const FAST_MOVE_REFRESH_DELAY_MS = 250;
 const IITC_MOVE_REFRESH_DELAY_MS = 3000;
 const ENABLE_STALE_GENERATION_CACHE_WARMING = false;
+const LONG_PRESS_MS = 600;
+const LONG_PRESS_MOVE_TOLERANCE_PX = 12;
+const LONG_PRESS_CLICK_SUPPRESS_MS = 700;
+const PORTAL_CONTEXT_HIT_TOLERANCE_PX = 10;
 const PLAYER_TRACKER_COMM_REFRESH_MS = 120_000;
 const SEARCH_AUTO_MIN_LENGTH = 3;
 const NOMINATIM_SEARCH_URL = 'https://nominatim.openstreetmap.org/search?format=json&polygon_geojson=1&q=';
@@ -161,6 +165,7 @@ let selectedPortalGuid: string | undefined;
 let selectedPortal: IitcIrisSelectedPortal | null = null;
 let pendingPortalSelection: {guid?: string; lat?: number; lng?: number} | null = null;
 let latestPortalDetails: IitcIrisPortalDetailsState | null = null;
+let suppressPortalClickUntil = 0;
 const portalDetailsCache = new Map<string, IitcIrisPortalDetailsState>();
 let latestSearchSequence = 0;
 let latestSearchState: IitcIrisSearchState = {status: 'idle', term: '', confirmed: false, results: [], localResults: 0};
@@ -910,6 +915,43 @@ function selectPortal(portal: IitcIrisRenderPortal, rerender = true): void {
   repostLatestEntityStatus();
 }
 
+function postMapContext(lat: number, lng: number, portal?: IitcIrisRenderPortal): void {
+  const map = window.__iitcIrisMap;
+  window.postMessage({
+    type: IITC_IRIS_MESSAGES.mapContext,
+    contextTarget: portal ? 'portal' : 'map',
+    lat,
+    lng,
+    zoom: map?.getZoom(),
+    portalGuid: portal?.guid,
+    portalLat: portal ? portal.latE6 / 1_000_000 : undefined,
+    portalLng: portal ? portal.lngE6 / 1_000_000 : undefined,
+  } satisfies IitcIrisMessage, '*');
+}
+
+function openPortalContext(portal: IitcIrisRenderPortal, event?: LeafletMouseEvent): void {
+  if (event) L.DomEvent.stop(event);
+  suppressPortalClickUntil = Date.now() + LONG_PRESS_CLICK_SUPPRESS_MS;
+  selectPortal(portal);
+  postMapContext(portal.latE6 / 1_000_000, portal.lngE6 / 1_000_000, portal);
+}
+
+function findContextPortalAtPoint(point: L.Point): IitcIrisRenderPortal | undefined {
+  const map = window.__iitcIrisMap;
+  if (!map || !latestEntities) return undefined;
+
+  let nearest: {portal: IitcIrisRenderPortal; distance: number} | undefined;
+  for (const portal of latestEntities.portals) {
+    if (!isPortalVisible(portal)) continue;
+    const portalPoint = map.latLngToContainerPoint(toLatLng(portal.latE6, portal.lngE6));
+    const distance = point.distanceTo(portalPoint);
+    const hitTolerance = getPortalRadius(portal.level, portal.isPlaceholder) + PORTAL_CONTEXT_HIT_TOLERANCE_PX;
+    if (distance > hitTolerance) continue;
+    if (!nearest || distance < nearest.distance) nearest = {portal, distance};
+  }
+  return nearest?.portal;
+}
+
 function findPortalByGuidOrLatLng(guid: string | undefined, lat: number | undefined, lng: number | undefined): IitcIrisRenderPortal | undefined {
   if (!latestEntities) return undefined;
   if (guid) {
@@ -1444,8 +1486,10 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
     });
     marker.on('click', (event) => {
       L.DomEvent.stop(event);
+      if (Date.now() < suppressPortalClickUntil) return;
       selectPortal(portal);
     });
+    marker.on('contextmenu', (event) => openPortalContext(portal, event));
     addRenderedLayer(layers.portals, marker);
 
     if (renderPolicy.labels && visibleLevelLabelGuids.has(portal.guid) && portal.level !== undefined) {
@@ -4098,6 +4142,56 @@ async function refreshEntities(): Promise<void> {
   }
 }
 
+function installContextLongPress(map: LeafletMap): void {
+  const container = map.getContainer();
+  let timer: number | null = null;
+  let start: {x: number; y: number} | null = null;
+
+  const clear = (): void => {
+    if (timer !== null) {
+      window.clearTimeout(timer);
+      timer = null;
+    }
+    start = null;
+  };
+
+  container.addEventListener('touchstart', (event) => {
+    if (event.touches.length !== 1) {
+      clear();
+      return;
+    }
+
+    const touch = event.touches[0];
+    const rect = container.getBoundingClientRect();
+    start = {x: touch.clientX - rect.left, y: touch.clientY - rect.top};
+    timer = window.setTimeout(() => {
+      if (!start) return;
+      const point = L.point(start.x, start.y);
+      const portal = findContextPortalAtPoint(point);
+      suppressPortalClickUntil = Date.now() + LONG_PRESS_CLICK_SUPPRESS_MS;
+      if (portal) {
+        openPortalContext(portal);
+      } else {
+        const latLng = map.containerPointToLatLng(point);
+        postMapContext(latLng.lat, latLng.lng);
+      }
+      clear();
+    }, LONG_PRESS_MS);
+  }, {passive: true});
+
+  container.addEventListener('touchmove', (event) => {
+    if (!start || event.touches.length !== 1) return;
+    const touch = event.touches[0];
+    const rect = container.getBoundingClientRect();
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    if (Math.hypot(x - start.x, y - start.y) > LONG_PRESS_MOVE_TOLERANCE_PX) clear();
+  }, {passive: true});
+
+  container.addEventListener('touchend', clear, {passive: true});
+  container.addEventListener('touchcancel', clear, {passive: true});
+}
+
 function boot(): void {
   const container = document.getElementById('iitc-iris-map');
   if (!container) {
@@ -4116,6 +4210,7 @@ function boot(): void {
   const map = L.map(container, {
     zoomControl: false,
     preferCanvas: true,
+    tapHold: true,
   }).setView([storedView.lat, storedView.lng], storedView.zoom);
 
   window.__iitcIrisMap = map;
@@ -4127,10 +4222,15 @@ function boot(): void {
 
   map.on('movestart', postMapMoveStarted);
   map.on('moveend', postMapMoved);
+  map.on('contextmenu', (event) => {
+    L.DomEvent.stop(event);
+    postMapContext(event.latlng.lat, event.latlng.lng);
+  });
   map.on('zoomend', () => {
     renderPlayerTracker();
     schedulePlayerTrackerRefresh();
   });
+  installContextLongPress(map);
 	  window.setTimeout(() => {
 	    map.invalidateSize();
 	    postMapMoved();

@@ -270,15 +270,18 @@ General improvement backlog before calling this replacement-ready:
 - Add missing known Intel/IITC-plugin request surfaces to the backlog and expose them in UI when ported:
   keep expanding beyond the already started `getHasActiveSubscription` and Missions endpoints as new IITC/plugin
   request surfaces are verified.
-- Add IITC-style long-press/right-click interactions for map and portal context actions. This should work across desktop
-  right click and mobile long press, with clear touch behavior that does not fight normal map panning.
+- Continue IITC-style long-press/right-click interactions for map and portal context actions. Portal context now works
+  across desktop right click and mobile long press by selecting the portal and opening the normal portal sheet/details
+  path. Plain map context events expose a compact View-sheet action row for centering the map and copying coordinates or
+  an Intel URL; richer map-context/plugin actions still need a dedicated action model.
 - Make portal navigation from COMM, search, player tracker, inventory keys, and other portal links select the portal as
   well as pan/zoom to it. The selected portal should open the normal portal context/details path when the entity is
   loaded, and use a graceful loading/missing state when only a GUID or lat/lng is known.
   - Portal-link/navigation contract pass - 2026-06-05: runtime and UI boundary names now follow IITC concepts more
     closely with `zoomToAndShowPortal` and `selectPortalByLatLng`. Portal links keep a pending GUID/lat/lng selection
     when the target portal is not currently loaded, then select the portal through the normal details path when matching
-    entity data arrives. Long-press/right-click context interactions remain a later pass.
+    entity data arrives. Portal context interactions now use the same selected-portal details path; richer map-context
+    actions remain a later pass.
 - Keep reducing visible diagnostic noise in normal UI while preserving copied diagnostics for live parity reports.
 
 Runtime policy notes to settle:
@@ -397,8 +400,8 @@ Current map lifecycle audit:
 | Tile math/data zoom      | `map_data_calc_tools.js` tile params and adjusted data zoom                                                     | Mostly aligned in `packages/iitc-core` with tests                                                                                           | Keep validating against IITC fixtures                                      |
 | Initial request batching | `MapDataRequest.processRequestQueue`: max 5 requests, up to 25 tiles, dynamic bucket sizing, centre-first order | Runtime now uses core IITC queue batch helpers for initial live request waves while limiting the initial phase to one attempt per tile before compatibility retries | Validate live timing against IITC-CE on large low-zoom and dense high-zoom views |
 | Retry lifecycle          | `requeueTile`, `handleResponse`, retry limit, timeout/error distinction, smaller batches after retries          | Retry request failures now flow through the same core response-bucket classifier and queue apply path as initial failures; returned-empty placeholder recovery remains a compatibility shim | Replace returned-empty shim with IITC-derived queue behavior after live validation |
-| Tile cache               | `DataCache` per tile, fresh/stale decisions                                                                     | Same-bounds live refreshes now flow through `IitcDataCache` per-tile fresh/stale decisions instead of the broad whole-response reuse shortcut | Validate cache-fresh/cache-stale behavior during live same-bounds pans and reloads |
-| Stale fallback           | Retry exhaustion renders stale tile via `cache-stale` when possible                                             | Wired but unproven under live retry exhaustion; copied diagnostics now expose `cacheStaleTiles` and `cacheStaleTileKeys`                   | Park unless live copies show cached tiles still ending as partial          |
+| Tile cache               | `DataCache` per tile, fresh/stale decisions                                                                     | Cache-fresh behavior is accepted after repeated 2026-06-05 Amsterdam z15 live copies showed same-bounds renders staying cache-fresh with no warning strings | Keep as watch-only; reopen only if copied summaries warn about fresh cached tiles being retried |
+| Stale fallback           | Retry exhaustion renders stale tile via `cache-stale` when possible                                             | Wired but unproven under live retry exhaustion; copied diagnostics expose `cacheStaleTiles` and `cacheStaleTileKeys`, while current live runs kept `cacheStaleTiles` at 0 | Park unless live copies show cached tiles still ending as partial          |
 | Render queue             | `pushRenderQueue` and `processRenderQueue` incrementally render cached, network, and stale tiles                | IITC-named render queue facade handles `cache-fresh`, `ok`, and `cache-stale`; copied diagnostics now expose rendered queue tile counts/statuses, but rendering still drains to merged responses | Use live diagnostics to validate flow before surgical render mutation       |
 | Move lifecycle           | `mapMoveStart` pauses render queue; old non-cancelled tile responses ignored if no longer wanted                | Milestone B started: IRIS now invalidates render generations on `movestart`, clears pending refresh timers, suppresses movement progress renders, and does not abort old map-data fetches when a new live viewport starts; stale-generation cache warming is gated off after live tests showed no benefit | Validate fast pan/zoom behavior against IITC-CE; move toward tile-by-tile wanted checks |
 | Artifacts                | IITC artifact subsystem is separate from base map-data tile lifecycle                                           | Mostly aligned after deferring artifact fetch until first map render; live non-empty payload still unverified                               | Keep as documented temporary sequencing until artifact parity is validated |
@@ -434,6 +437,10 @@ Adherence summary after 2026-05-31 audit:
   caught the request mid-flight (`complete: false`, 34/36 rendered, 2 queued retry tiles), then the following snapshots
   completed cleanly with 36/36 rendered, no partials, and no warning strings. `cacheStaleTiles` remained 0, so stale
   fallback is still a live-unproven branch rather than an active defect.
+- Cache-fresh/retry wrap-up: current evidence is sufficient to park this as accepted for the active parity pass. Reopen
+  only for a copied summary warning, fresh cached tile retries, retry exhaustion that leaves visible partials, or an
+  IITC-CE side-by-side showing a materially different retry pattern on the same viewport. True `cache-stale` fallback
+  remains watch-only until a live stale-cache retry-exhaustion case appears.
 
 Map lifecycle validation runbook - 2026-06-05:
 
@@ -925,8 +932,8 @@ what to port natively and what to leave out.
 | Hook/plugin lifecycle | Open | IITC has `addHook`/`runHooks`, plugin setup, toolbox entries, dialogs, panes, layer chooser integration, and portal highlighter registration. IITC IRIS currently has fixed native systems and should add thin registries before porting many plugin concepts. |
 | Portal highlighter framework | Open | Add an IITC-style highlighter registry before adding more highlighters. Likely first native highlighters: high level, missing resonators, needs recharge, portal history, ornaments, and hide team. |
 | Search hover preview | Open | IITC renders geocoder/portal result geometry on hover and clears it on mouseout. IITC IRIS currently renders selection geometry only. |
-| Long-press/right-click context | Open | Port IITC-style context interactions for map and portal actions. Support desktop right click and mobile long press without breaking map drag/pan gestures. |
-| Portal-link navigation selection | Partial | COMM, player tracker, mission waypoint, and inventory-key portal links now use IITC-shaped `zoomToAndShowPortal` / `selectPortalByLatLng` semantics with pending selection when the target portal is not loaded. Search result selection already uses the normal portal selection path for loaded portals; broader context/long-press actions remain separate. |
+| Long-press/right-click context | Partial | Portal right-click and mobile long-press now select the portal and open the normal portal sheet/details path. Normal portal click/tap remains lightweight selection: it highlights the Portal menu and exposes Details/Missions sub-tabs, but does not force-open the portal sheet. Plain map context events expose center/copy-coordinate/copy-URL actions in the View sheet; richer map-context/plugin actions remain later. |
+| Portal-link navigation selection | Partial | COMM, player tracker, mission waypoint, and inventory-key portal links now use IITC-shaped `zoomToAndShowPortal` / `selectPortalByLatLng` semantics with pending selection when the target portal is not loaded. Search result selection already uses the normal portal selection path for loaded portals; broader map-context actions remain separate. |
 | C.O.R.E. subscription check | Open | Current IRIS/Mini-IRIS use `/r/getHasActiveSubscription` to track Intel inventory access, show C.O.R.E. status, and gate inventory polling/UI. IITC-CE reference core does not use this endpoint, so port it as an Intel capability rather than IITC core parity. |
 | Mission endpoints | Partial | First read-only vertical slice exists: top missions in view, selected-portal missions, details, route/waypoint map overlay, and elapsed diagnostics. Remaining parity: persistent IITC-style mission caches, richer dialog actions, completed/progress state, uniques/history integrations, and plugin hooks. |
 | Bookmarks and saved map/portal sets | Open | High-value IITC workflow still missing. Should be designed around persistent saved portals/views before broad plugin parity. |

@@ -13,6 +13,7 @@ export const IITC_IRIS_MESSAGES = {
   setUserLocation: 'IITC_IRIS_SET_USER_LOCATION',
   zoomToAndShowPortal: 'IITC_IRIS_ZOOM_TO_AND_SHOW_PORTAL',
   clearPortalSelection: 'IITC_IRIS_CLEAR_PORTAL_SELECTION',
+  mapContext: 'IITC_IRIS_MAP_CONTEXT',
   requestComm: 'IITC_IRIS_REQUEST_COMM',
   cancelPanelRequests: 'IITC_IRIS_CANCEL_PANEL_REQUESTS',
   sendComm: 'IITC_IRIS_SEND_COMM',
@@ -118,6 +119,7 @@ export interface IitcIrisMessage {
   renderPolicy?: IitcIrisRenderPolicy;
   selectedPortal?: IitcIrisSelectedPortal | null;
   portalDetails?: IitcIrisPortalDetailsState | null;
+  contextTarget?: 'map' | 'portal';
   comm?: IitcIrisCommState;
   scores?: IitcIrisScoresState;
   passcode?: IitcIrisPasscodeState;
