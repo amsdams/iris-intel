@@ -1,6 +1,7 @@
 import L, {type Layer as LeafletLayer, type LeafletMouseEvent, type Map as LeafletMap, type TileLayer} from 'leaflet';
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionDetails, type IitcIrisMissionSource, type IitcIrisMissionSummary, type IitcIrisMissionWaypoint, type IitcIrisMissionsState, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisSubscriptionState, type IitcIrisTriStateLayer} from './messages';
 import {IITC_LEVEL_COLORS, IITC_TEAM_COLORS} from './iitc-colors';
+import {createIitcIrisMapContextMessage, installIitcIrisContextGestures} from './map-context-runtime';
 import {
   appendIitcResponseBucketDiagnostics,
   applyIitcTileRequestResponseToQueue,
@@ -919,31 +920,20 @@ function selectPortal(portal: IitcIrisRenderPortal, rerender = true): void {
 function postMapContext(lat: number, lng: number, portal?: IitcIrisRenderPortal): void {
   const map = window.__iitcIrisMap;
   lastContextPostAt = performance.now();
-  window.postMessage({
-    type: IITC_IRIS_MESSAGES.mapContext,
-    contextTarget: portal ? 'portal' : 'map',
-    lat,
-    lng,
-    zoom: map?.getZoom(),
-    portalGuid: portal?.guid,
-    portalLat: portal ? portal.latE6 / 1_000_000 : undefined,
-    portalLng: portal ? portal.lngE6 / 1_000_000 : undefined,
-  } satisfies IitcIrisMessage, '*');
+  window.postMessage(createIitcIrisMapContextMessage({lat, lng, zoom: map?.getZoom(), portal}), '*');
 }
 
 function postPortalContextReference(guid: string | undefined, lat: number, lng: number): void {
   const map = window.__iitcIrisMap;
   lastContextPostAt = performance.now();
-  window.postMessage({
-    type: IITC_IRIS_MESSAGES.mapContext,
-    contextTarget: 'portal',
+  window.postMessage(createIitcIrisMapContextMessage({
     lat,
     lng,
     zoom: map?.getZoom(),
     portalGuid: guid,
     portalLat: lat,
     portalLng: lng,
-  } satisfies IitcIrisMessage, '*');
+  }), '*');
 }
 
 function openPortalContext(portal: IitcIrisRenderPortal, event?: LeafletMouseEvent): void {
@@ -4204,56 +4194,15 @@ async function refreshEntities(): Promise<void> {
 }
 
 function installContextLongPress(map: LeafletMap): void {
-  const container = map.getContainer();
-  let timer: number | null = null;
-  let start: {x: number; y: number} | null = null;
-
-  const clear = (): void => {
-    if (timer !== null) {
-      window.clearTimeout(timer);
-      timer = null;
-    }
-    start = null;
-  };
-
-  container.addEventListener('touchstart', (event) => {
-    if (event.touches.length !== 1) {
-      clear();
-      return;
-    }
-
-    const touch = event.touches[0];
-    const rect = container.getBoundingClientRect();
-    start = {x: touch.clientX - rect.left, y: touch.clientY - rect.top};
-    timer = window.setTimeout(() => {
-      if (!start) return;
+  installIitcIrisContextGestures(map, {
+    longPressMs: LONG_PRESS_MS,
+    moveTolerancePx: LONG_PRESS_MOVE_TOLERANCE_PX,
+    onLongPressStarted: () => {
       suppressPortalClickUntil = Date.now() + LONG_PRESS_CLICK_SUPPRESS_MS;
-      openMapContextAtPoint(L.point(start.x, start.y));
-      clear();
-    }, LONG_PRESS_MS);
-  }, {passive: true});
-
-  container.addEventListener('touchmove', (event) => {
-    if (!start || event.touches.length !== 1) return;
-    const touch = event.touches[0];
-    const rect = container.getBoundingClientRect();
-    const x = touch.clientX - rect.left;
-    const y = touch.clientY - rect.top;
-    if (Math.hypot(x - start.x, y - start.y) > LONG_PRESS_MOVE_TOLERANCE_PX) clear();
-  }, {passive: true});
-
-  container.addEventListener('touchend', clear, {passive: true});
-  container.addEventListener('touchcancel', clear, {passive: true});
-
-  container.addEventListener('contextmenu', (event) => {
-    event.preventDefault();
-    const startedAt = performance.now();
-    window.setTimeout(() => {
-      if (lastContextPostAt >= startedAt) return;
-      const rect = container.getBoundingClientRect();
-      openMapContextAtPoint(L.point(event.clientX - rect.left, event.clientY - rect.top));
-    }, 0);
-  }, {capture: true});
+    },
+    onContextPoint: openMapContextAtPoint,
+    getLastContextPostAt: () => lastContextPostAt,
+  });
 }
 
 function boot(): void {
