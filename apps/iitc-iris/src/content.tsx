@@ -294,6 +294,29 @@ interface ScenarioSnapshot {
   diagnostics: unknown;
 }
 
+interface ScenarioSnapshotSummary {
+  complete?: boolean;
+  source?: string;
+  requestedTiles?: number;
+  returnedTiles?: number;
+  nonEmptyTiles?: number;
+  retryRequests: number;
+  retriedTiles: number;
+  recoveredTiles: number;
+  partialTiles: number;
+  cacheFreshTiles: number;
+  cacheStaleTiles: number;
+  renderQueue?: {
+    renderedTiles?: number;
+    ok?: number;
+    cacheFresh?: number;
+    cacheStale?: number;
+    lastStatus?: string | null;
+  };
+  timing?: IitcIrisMapTimingDiagnostics | null;
+  warnings: string[];
+}
+
 interface ScenarioRun {
   id: string;
   name: string;
@@ -315,6 +338,78 @@ function isScenarioSettled(diagnostics: unknown): boolean {
   return view.entities?.complete === true &&
     (view.requests?.activeRequests ?? 0) === 0 &&
     (view.entities?.queue?.activeRequests ?? 0) === 0;
+}
+
+function readStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+}
+
+function countIntersection(left: string[], right: string[]): number {
+  const rightSet = new Set(right);
+  return left.filter((item) => rightSet.has(item)).length;
+}
+
+function createScenarioSnapshotSummary(diagnostics: unknown): ScenarioSnapshotSummary {
+  const view = diagnostics as {
+    entities?: {
+      complete?: boolean;
+      source?: string;
+      entitySource?: string;
+      requestedTiles?: number;
+      returnedTiles?: number;
+      nonEmptyTiles?: number;
+      retryRequests?: number;
+      retriedTileKeys?: unknown;
+      recoveredTileKeys?: unknown;
+      partialTileKeys?: unknown;
+      cacheFreshTileKeys?: unknown;
+      cacheStaleTileKeys?: unknown;
+      renderQueue?: IitcIrisRenderQueueDiagnostics | null;
+      timing?: IitcIrisMapTimingDiagnostics | null;
+    };
+  };
+  const entities = view.entities ?? {};
+  const retriedTileKeys = readStringArray(entities.retriedTileKeys);
+  const recoveredTileKeys = readStringArray(entities.recoveredTileKeys);
+  const partialTileKeys = readStringArray(entities.partialTileKeys);
+  const cacheFreshTileKeys = readStringArray(entities.cacheFreshTileKeys);
+  const cacheStaleTileKeys = readStringArray(entities.cacheStaleTileKeys);
+  const freshRetried = countIntersection(cacheFreshTileKeys, retriedTileKeys);
+  const stalePartial = countIntersection(cacheStaleTileKeys, partialTileKeys);
+  const renderQueue = entities.renderQueue ?? undefined;
+  const renderedStatusTotal = renderQueue
+    ? renderQueue.renderedOkTiles + renderQueue.renderedCacheFreshTiles + renderQueue.renderedCacheStaleTiles
+    : 0;
+  const warnings = [
+    freshRetried > 0 ? `${freshRetried} fresh cached tiles were retried` : null,
+    stalePartial > 0 ? `${stalePartial} stale cached tiles ended partial` : null,
+    renderQueue && renderQueue.renderedTiles !== renderedStatusTotal
+      ? `rendered tile count ${renderQueue.renderedTiles} differs from status total ${renderedStatusTotal}`
+      : null,
+  ].filter((warning): warning is string => warning !== null);
+
+  return {
+    complete: entities.complete,
+    source: entities.source ?? entities.entitySource,
+    requestedTiles: entities.requestedTiles,
+    returnedTiles: entities.returnedTiles,
+    nonEmptyTiles: entities.nonEmptyTiles,
+    retryRequests: entities.retryRequests ?? 0,
+    retriedTiles: retriedTileKeys.length,
+    recoveredTiles: recoveredTileKeys.length,
+    partialTiles: partialTileKeys.length,
+    cacheFreshTiles: cacheFreshTileKeys.length,
+    cacheStaleTiles: cacheStaleTileKeys.length,
+    renderQueue: renderQueue ? {
+      renderedTiles: renderQueue.renderedTiles,
+      ok: renderQueue.renderedOkTiles,
+      cacheFresh: renderQueue.renderedCacheFreshTiles,
+      cacheStale: renderQueue.renderedCacheStaleTiles,
+      lastStatus: renderQueue.lastRenderedTileStatus,
+    } : undefined,
+    timing: entities.timing,
+    warnings,
+  };
 }
 
 function clampView(view: ParsedViewInput): ParsedViewInput {
@@ -1339,6 +1434,13 @@ function App(): h.JSX.Element {
   };
 
   const copyScenarioRun = (): void => {
+    const summarizeRun = (run: ScenarioRun): ScenarioRun => ({
+      ...run,
+      snapshots: run.snapshots.map((snapshot) => ({
+        ...snapshot,
+        summary: createScenarioSnapshotSummary(snapshot.diagnostics),
+      })),
+    });
     const currentRun = {
       id: `current-${Date.now()}`,
       name: 'current',
@@ -1347,7 +1449,7 @@ function App(): h.JSX.Element {
       lifecycleSettings,
       snapshots: [createScenarioSnapshot('current')],
     };
-    const runs = scenarioRuns.length > 0 ? scenarioRuns : [currentRun];
+    const runs = (scenarioRuns.length > 0 ? scenarioRuns : [currentRun]).map(summarizeRun);
     const latest = runs.length > 0 ? runs[runs.length - 1] : currentRun;
     void navigator.clipboard.writeText(JSON.stringify({
       runs,

@@ -423,6 +423,44 @@ Adherence summary after 2026-05-31 audit:
   `retriedTileKeys` includes tiles that recovered. Treat retry volume as a bug only if retries occur for fresh cached
   tiles, cached stale tiles still end as partial, or IITC-CE comparison shows a materially different retry pattern on
   the same viewport.
+- Live copy on 2026-06-05 for Amsterdam z15 showed healthy cache-fresh and retry-recovery behavior: same-bounds
+  snapshots rendered 42/42 cache-fresh tiles with no retries, while the south-pan reload rendered 36 cache-fresh tiles
+  and 6 network `ok` tiles, with 2 timeout-retried tiles recovered and no partials or warning strings. This validates
+  the current cache-fresh/retry accounting for that dense view. It still does not close stale fallback parity because
+  `cacheStaleTiles` remained 0.
+- A second 2026-06-05 Amsterdam z15 copy showed the same pattern across Fast and IITC-delay scenario runs: same-bounds
+  snapshots rendered 36/36 cache-fresh tiles, Fast pan recovered 4 timeout-retried tiles after 2 retry requests, and
+  IITC-delay pan recovered 2 timeout-retried tiles after 1 retry request. One delay-run reload snapshot intentionally
+  caught the request mid-flight (`complete: false`, 34/36 rendered, 2 queued retry tiles), then the following snapshots
+  completed cleanly with 36/36 rendered, no partials, and no warning strings. `cacheStaleTiles` remained 0, so stale
+  fallback is still a live-unproven branch rather than an active defect.
+
+Map lifecycle validation runbook - 2026-06-05:
+
+- Use the System -> Scenarios controls for repeatable live captures. Start with `Start Fast`, capture `Snap Before Pan S`,
+  run the built-in south pan, then capture `Snap Reload`, `Snap Prog` if requests are still active, and `Snap Done`.
+  Repeat with `Start Delay` to compare against the IITC-style movement delay.
+- Capture at least three live view types before changing lifecycle behavior:
+  - same-bounds pan/reload after an already successful render, to confirm `cacheFreshTiles` and `renderQueue.ok/cache-fresh`
+    dominate without unexpected retries;
+  - a large low-zoom view, such as Amsterdam z10, to inspect request waves, low-zoom partial placeholders, and retry
+    volume;
+  - a dense high-zoom view, such as Damrak z15, to inspect timeout/retry behavior and first visible render timing.
+- Copy each scenario run with `Copy Runs` and compare these fields first:
+  `entities.cacheFreshTiles`, `entities.cacheFreshTileKeys`, `entities.cacheStaleTiles`,
+  `entities.cacheStaleTileKeys`, `entities.partialTileKeys`, `entities.retryRequests`,
+  `entities.retriedTileKeys`, `entities.queue`, `entities.renderQueue`, and `entities.timing`.
+  Copied scenario snapshots include a derived `summary` block with these counts and warning strings for fresh-cached
+  retries, stale-cached partials, and render-queue counter mismatches.
+- Treat the run as healthy when same-bounds renders mostly report `cache-fresh`, retry tiles either recover or are
+  explainable by low-zoom placeholder coverage, and render-queue statuses match the visible source (`cache-fresh`, `ok`,
+  or `cache-stale`).
+- Treat the run as a lifecycle parity bug when fresh cached tiles are retried unnecessarily, a tile with stale cached
+  payload still ends as partial after retry exhaustion, `renderQueue` counters do not match rendered tile counts, or Fast
+  vs Delay shows a retry pattern that diverges materially from IITC-CE on the same viewport.
+- Do not start surgical render mutation or tile-by-tile wanted-check rewrites until a copied run demonstrates a concrete
+  mismatch. If no mismatch is found, document the live evidence and keep map lifecycle parked while continuing UI/plugin
+  parity work.
 
 ## Pass 1: Scaffold - Done
 
