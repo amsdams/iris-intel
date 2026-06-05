@@ -1722,14 +1722,19 @@ function App(): h.JSX.Element {
     });
   };
 
-  const focusPortalReference = (portalGuid?: string, latE6?: number, lngE6?: number, zoom = Math.max(camera.zoom, 15)): void => {
+  const zoomToAndShowPortal = (portalGuid?: string, latE6?: number, lngE6?: number, zoom = Math.max(camera.zoom, 15)): void => {
     window.postMessage({
-      type: IITC_IRIS_MESSAGES.focusPortal,
+      type: IITC_IRIS_MESSAGES.zoomToAndShowPortal,
       portalGuid,
       portalLat: latE6 === undefined ? undefined : latE6 / 1_000_000,
       portalLng: lngE6 === undefined ? undefined : lngE6 / 1_000_000,
       zoom,
     } satisfies IitcIrisMessage, '*');
+  };
+
+  const selectPortalByLatLng = (latE6?: number, lngE6?: number, portalGuid?: string): void => {
+    if (latE6 === undefined || lngE6 === undefined) return;
+    zoomToAndShowPortal(portalGuid, latE6, lngE6);
   };
 
   const formatMissionOrderLabel = (order?: string): string => {
@@ -1804,7 +1809,7 @@ function App(): h.JSX.Element {
           <button
             className="iitc-iris-portal-action"
             type="button"
-            onClick={() => firstWaypoint && focusPortalReference(firstWaypoint.portalGuid, firstWaypoint.latE6, firstWaypoint.lngE6, Math.max(camera.zoom, 17))}
+            onClick={() => firstWaypoint && zoomToAndShowPortal(firstWaypoint.portalGuid, firstWaypoint.latE6, firstWaypoint.lngE6, Math.max(camera.zoom, 17))}
             disabled={!firstWaypoint}
             title="Pan to the first visible waypoint and select it when the portal is loaded"
           >
@@ -1825,7 +1830,7 @@ function App(): h.JSX.Element {
               key={`${waypoint.guid}-${waypoint.index}`}
               onClick={() => {
                 if (waypoint.latE6 !== undefined && waypoint.lngE6 !== undefined) {
-                  focusPortalReference(waypoint.portalGuid, waypoint.latE6, waypoint.lngE6);
+                  zoomToAndShowPortal(waypoint.portalGuid, waypoint.latE6, waypoint.lngE6);
                 }
               }}
               disabled={waypoint.latE6 === undefined || waypoint.lngE6 === undefined}
@@ -1843,9 +1848,8 @@ function App(): h.JSX.Element {
     );
   };
 
-  const focusCommPortal = (latE6?: number, lngE6?: number, portalGuid?: string): void => {
-    if (latE6 === undefined || lngE6 === undefined) return;
-    focusPortalReference(portalGuid, latE6, lngE6);
+  const selectCommPortal = (latE6?: number, lngE6?: number, portalGuid?: string): void => {
+    selectPortalByLatLng(latE6, lngE6, portalGuid);
   };
 
   const panMap = (direction: 'north' | 'south' | 'west' | 'east'): void => {
@@ -3364,7 +3368,7 @@ function App(): h.JSX.Element {
                                   className="iitc-iris-comm-portal"
                                   type="button"
                                   title={part.portal?.address || part.text}
-                                  onClick={() => focusCommPortal(part.portal?.latE6, part.portal?.lngE6, part.portal?.guid)}
+                                  onClick={() => selectCommPortal(part.portal?.latE6, part.portal?.lngE6, part.portal?.guid)}
                                   key={key}
                                 >
                                   {part.text}
@@ -3687,7 +3691,7 @@ function App(): h.JSX.Element {
                     <span className="iitc-iris-status">Top keys</span>
                     <div className="iitc-iris-inventory-list">
                       {inventoryState.topKeys.map((key) => (
-                        <button className="iitc-iris-inventory-row iitc-iris-inventory-key-row" type="button" key={key.portalGuid} title={key.portalGuid} onClick={() => focusPortalReference(key.portalGuid, undefined, undefined)}>
+                        <button className="iitc-iris-inventory-row iitc-iris-inventory-key-row" type="button" key={key.portalGuid} title={key.portalGuid} onClick={() => zoomToAndShowPortal(key.portalGuid, undefined, undefined)}>
                           <span>{key.portalTitle || key.portalGuid}</span>
                           <b>{key.count}</b>
                           {key.capsule > 0 && <small>{key.capsule} capsule</small>}

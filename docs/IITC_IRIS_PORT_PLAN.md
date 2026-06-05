@@ -275,6 +275,10 @@ General improvement backlog before calling this replacement-ready:
 - Make portal navigation from COMM, search, player tracker, inventory keys, and other portal links select the portal as
   well as pan/zoom to it. The selected portal should open the normal portal context/details path when the entity is
   loaded, and use a graceful loading/missing state when only a GUID or lat/lng is known.
+  - Portal-link/navigation contract pass - 2026-06-05: runtime and UI boundary names now follow IITC concepts more
+    closely with `zoomToAndShowPortal` and `selectPortalByLatLng`. Portal links keep a pending GUID/lat/lng selection
+    when the target portal is not currently loaded, then select the portal through the normal details path when matching
+    entity data arrives. Long-press/right-click context interactions remain a later pass.
 - Keep reducing visible diagnostic noise in normal UI while preserving copied diagnostics for live parity reports.
 
 Runtime policy notes to settle:
@@ -884,7 +888,7 @@ what to port natively and what to leave out.
 | Portal highlighter framework | Open | Add an IITC-style highlighter registry before adding more highlighters. Likely first native highlighters: high level, missing resonators, needs recharge, portal history, ornaments, and hide team. |
 | Search hover preview | Open | IITC renders geocoder/portal result geometry on hover and clears it on mouseout. IITC IRIS currently renders selection geometry only. |
 | Long-press/right-click context | Open | Port IITC-style context interactions for map and portal actions. Support desktop right click and mobile long press without breaking map drag/pan gestures. |
-| Portal-link navigation selection | Open | Navigating from COMM, search, player tracker, inventory keys, or other portal links should also select the portal and open/prepare the normal portal details context when possible. |
+| Portal-link navigation selection | Partial | COMM, player tracker, mission waypoint, and inventory-key portal links now use IITC-shaped `zoomToAndShowPortal` / `selectPortalByLatLng` semantics with pending selection when the target portal is not loaded. Search result selection already uses the normal portal selection path for loaded portals; broader context/long-press actions remain separate. |
 | C.O.R.E. subscription check | Open | Current IRIS/Mini-IRIS use `/r/getHasActiveSubscription` to track Intel inventory access, show C.O.R.E. status, and gate inventory polling/UI. IITC-CE reference core does not use this endpoint, so port it as an Intel capability rather than IITC core parity. |
 | Mission endpoints | Partial | First read-only vertical slice exists: top missions in view, selected-portal missions, details, route/waypoint map overlay, and elapsed diagnostics. Remaining parity: persistent IITC-style mission caches, richer dialog actions, completed/progress state, uniques/history integrations, and plugin hooks. |
 | Bookmarks and saved map/portal sets | Open | High-value IITC workflow still missing. Should be designed around persistent saved portals/views before broad plugin parity. |

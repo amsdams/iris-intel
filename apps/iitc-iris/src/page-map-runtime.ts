@@ -159,6 +159,7 @@ let latestResponse: IitcGetEntitiesResponse | undefined;
 const mapDataCache = new IitcDataCache<IitcMapTilePayload>();
 let selectedPortalGuid: string | undefined;
 let selectedPortal: IitcIrisSelectedPortal | null = null;
+let pendingPortalSelection: {guid?: string; lat?: number; lng?: number} | null = null;
 let latestPortalDetails: IitcIrisPortalDetailsState | null = null;
 const portalDetailsCache = new Map<string, IitcIrisPortalDetailsState>();
 let latestSearchSequence = 0;
@@ -889,7 +890,6 @@ function renderSelectedPortal(visiblePortals: IitcIrisRenderPortal[]): void {
 
   const portal = latestEntities?.portals.find((candidate) => candidate.guid === selectedPortalGuid);
   if (!portal) {
-    selectedPortalGuid = undefined;
     selectedPortal = null;
     return;
   }
@@ -899,13 +899,14 @@ function renderSelectedPortal(visiblePortals: IitcIrisRenderPortal[]): void {
   addRenderedLayer(layers.selectedPortal, createSelectedPortalMarker(portal));
 }
 
-function selectPortal(portal: IitcIrisRenderPortal): void {
+function selectPortal(portal: IitcIrisRenderPortal, rerender = true): void {
   selectedPortalGuid = portal.guid;
   selectedPortal = toSelectedPortal(portal);
+  pendingPortalSelection = null;
   refreshInventorySelectedPortalState();
   postInventoryState();
   void refreshSelectedPortalDetails(portal.guid);
-  if (latestEntities) renderEntities(latestEntities);
+  if (rerender && latestEntities) renderEntities(latestEntities);
   repostLatestEntityStatus();
 }
 
@@ -921,23 +922,38 @@ function findPortalByGuidOrLatLng(guid: string | undefined, lat: number | undefi
   return latestEntities.portals.find((portal) => Math.abs(portal.latE6 - latE6) <= 1 && Math.abs(portal.lngE6 - lngE6) <= 1);
 }
 
-function focusPortal(guid: string | undefined, lat: number | undefined, lng: number | undefined, zoom: number | undefined): void {
+function selectPortalByLatLng(lat: number | undefined, lng: number | undefined): IitcIrisRenderPortal | undefined {
+  const portal = findPortalByGuidOrLatLng(undefined, lat, lng);
+  if (portal) {
+    selectPortal(portal);
+    return portal;
+  }
+  if (lat !== undefined && lng !== undefined) pendingPortalSelection = {lat, lng};
+  return undefined;
+}
+
+function zoomToAndShowPortal(guid: string | undefined, lat: number | undefined, lng: number | undefined, zoom: number | undefined): void {
   const map = window.__iitcIrisMap;
   if (!map) return;
-  const portal = findPortalByGuidOrLatLng(guid, lat, lng);
+  const portal = guid ? findPortalByGuidOrLatLng(guid, lat, lng) : selectPortalByLatLng(lat, lng);
   if (portal) {
     const latLng = toLatLng(portal.latE6, portal.lngE6);
     map.setView(latLng, zoom ?? Math.max(map.getZoom(), 15));
-    selectPortal(portal);
+    if (guid) selectPortal(portal);
     return;
   }
-  if (lat === undefined || lng === undefined) return;
+  if (lat === undefined || lng === undefined) {
+    if (guid) pendingPortalSelection = {guid};
+    return;
+  }
+  pendingPortalSelection = {guid, lat, lng};
   map.setView([lat, lng], zoom ?? Math.max(map.getZoom(), 15));
 }
 
 function clearPortalSelection(): void {
   selectedPortalGuid = undefined;
   selectedPortal = null;
+  pendingPortalSelection = null;
   latestPortalDetails = null;
   refreshInventorySelectedPortalState();
   postInventoryState();
@@ -1371,6 +1387,10 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
   const visibleLevelLabelGuids = renderPolicy.labels ? getVisibleLevelLabelGuids(visiblePortals) : new Set<string>();
 
   latestEntities = entities;
+  if (pendingPortalSelection) {
+    const portal = findPortalByGuidOrLatLng(pendingPortalSelection.guid, pendingPortalSelection.lat, pendingPortalSelection.lng);
+    if (portal) selectPortal(portal, false);
+  }
   clearEntityLayers();
 
   for (const field of entities.fields) {
@@ -1560,11 +1580,11 @@ function createPlayerTrackerPortalLink(event: IitcPlayerTrackerStored[string]['e
   link.addEventListener('click', (clickEvent) => {
     clickEvent.preventDefault();
     const map = window.__iitcIrisMap;
-    focusPortal(undefined, latLng[0], latLng[1], map ? Math.max(map.getZoom(), DEFAULT_ZOOM) : DEFAULT_ZOOM);
+    zoomToAndShowPortal(undefined, latLng[0], latLng[1], map ? Math.max(map.getZoom(), DEFAULT_ZOOM) : DEFAULT_ZOOM);
   });
   link.addEventListener('dblclick', (clickEvent) => {
     clickEvent.preventDefault();
-    focusPortal(undefined, latLng[0], latLng[1], DEFAULT_ZOOM);
+    zoomToAndShowPortal(undefined, latLng[0], latLng[1], DEFAULT_ZOOM);
   });
   return link;
 }
@@ -2325,8 +2345,8 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
   if (event.data?.type === IITC_IRIS_MESSAGES.setUserLocation) {
     renderUserLocation(event.data.userLat, event.data.userLng, event.data.userAccuracy);
   }
-  if (event.data?.type === IITC_IRIS_MESSAGES.focusPortal) {
-    focusPortal(event.data.portalGuid, event.data.portalLat, event.data.portalLng, event.data.zoom);
+  if (event.data?.type === IITC_IRIS_MESSAGES.zoomToAndShowPortal) {
+    zoomToAndShowPortal(event.data.portalGuid, event.data.portalLat, event.data.portalLng, event.data.zoom);
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.clearPortalSelection) {
     clearPortalSelection();

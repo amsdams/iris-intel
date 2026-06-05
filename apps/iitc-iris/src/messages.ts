@@ -11,7 +11,7 @@ export const IITC_IRIS_MESSAGES = {
   lifecycleSettings: 'IITC_IRIS_LIFECYCLE_SETTINGS',
   setView: 'IITC_IRIS_SET_VIEW',
   setUserLocation: 'IITC_IRIS_SET_USER_LOCATION',
-  focusPortal: 'IITC_IRIS_FOCUS_PORTAL',
+  zoomToAndShowPortal: 'IITC_IRIS_ZOOM_TO_AND_SHOW_PORTAL',
   clearPortalSelection: 'IITC_IRIS_CLEAR_PORTAL_SELECTION',
   requestComm: 'IITC_IRIS_REQUEST_COMM',
   cancelPanelRequests: 'IITC_IRIS_CANCEL_PANEL_REQUESTS',
