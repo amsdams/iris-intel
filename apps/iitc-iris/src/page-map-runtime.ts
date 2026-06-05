@@ -965,13 +965,6 @@ function openMapContextAtPoint(point: L.Point): void {
   postMapContext(latLng.lat, latLng.lng);
 }
 
-function openMapContextAtClientPoint(clientX: number, clientY: number): void {
-  const map = window.__iitcIrisMap;
-  if (!map) return;
-  const rect = map.getContainer().getBoundingClientRect();
-  openMapContextAtPoint(L.point(clientX - rect.left, clientY - rect.top));
-}
-
 function findContextPortalAtPoint(point: L.Point): IitcIrisRenderPortal | undefined {
   const map = window.__iitcIrisMap;
   if (!map || !latestEntities) return undefined;
@@ -2462,11 +2455,6 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.clearPortalSelection) {
     clearPortalSelection();
-  }
-  if (event.data?.type === IITC_IRIS_MESSAGES.requestMapContext) {
-    if (typeof event.data.clientX === 'number' && typeof event.data.clientY === 'number') {
-      openMapContextAtClientPoint(event.data.clientX, event.data.clientY);
-    }
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.cancelPanelRequests) {
     cancelActivePanelRequests();

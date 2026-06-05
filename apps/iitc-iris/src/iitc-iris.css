@@ -20,17 +20,6 @@
   z-index: 0;
 }
 
-.iitc-iris-sheet-backdrop {
-  appearance: none;
-  position: absolute;
-  inset: 0;
-  z-index: 9997;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  cursor: default;
-}
-
 .iitc-iris-search-box {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
