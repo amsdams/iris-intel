@@ -17,7 +17,7 @@ modules to avoid carrying over hard-to-maintain structure.
 
 Non-functional requirements:
 
-- Source of truth: use `reference/IITC-CE` first for behavior, naming, request shape, lifecycle, and UI concepts. Use
+- Source of truth: use `reference/ingress-intel-total-conversion` first for behavior, naming, request shape, lifecycle, and UI concepts. Use
   current IRIS/Mini-IRIS only as implementation reference or migration context.
 - Parity before improvement: the first acceptable version of any core map workflow is the IITC-CE behavior, not a
   cleaner IRIS-style reinterpretation. Optimization, UX redesign, and architectural simplification are allowed only
@@ -41,7 +41,7 @@ Non-functional requirements:
 
 Required process for each new subsystem:
 
-1. Identify the IITC-CE source files under `reference/IITC-CE` and record them in the pass notes before implementing.
+1. Identify the IITC-CE source files under `reference/ingress-intel-total-conversion` and record them in the pass notes before implementing.
 2. List the IITC public concepts being ported: file/module name, function names, endpoint names, data fields, UI
    pane/control names, and lifecycle events.
 3. Choose IITC-aligned names at the boundary first. For example, prefer `comm.ts` plus `parseMsgData` over a cleaner but
@@ -55,28 +55,36 @@ Required process for each new subsystem:
 Validation rule: after validating IITC IRIS code changes, run `npm run package:iitc-iris` from the repository root so the
 extension build and ZIP/XPI packaging are checked. Documentation-only changes do not require this package step.
 
+Current local reference checkout: `reference/ingress-intel-total-conversion`. Older notes may refer to the same IITC-CE
+lineage by repository name; new source references should use the local path above so searches and comparisons are
+directly reproducible.
+
 Naming checklist before creating a new file or exported function:
 
 - Is there an IITC file or function with this responsibility? Use that name or an obvious TypeScript variant.
 - Is the word from Intel payload terminology but not IITC module terminology, such as `plext`? Use it inside field/types
   where accurate, but prefer the IITC module concept at file/API boundaries, such as `comm`.
-- Would a future debugger know where to look in `reference/IITC-CE` from this name? If not, rename or add a documented
-  facade.
+- Would a future debugger know where to look in `reference/ingress-intel-total-conversion` from this name? If not,
+  rename or add a documented facade.
 - Is the new name borrowed from current IRIS/Mini-IRIS? Treat that as suspect unless the pass explicitly documents why
   IITC naming is not appropriate.
 - Is the divergence only for code cleanliness? Keep the IITC name at the boundary and hide the cleaner structure inside.
 
-## Current Wrap-Up Status - 2026-05-31
+## Current Wrap-Up Status - 2026-06-06
 
 IITC IRIS is in a usable parity/polish checkpoint. The extension now has the core IITC live-map path, entity rendering,
 portal details, COMM, scores, inventory, passcodes, agent profile, player tracker, search, diagnostics, and a two-layer
-menu model wired into one-sheet-at-a-time UI. The current build/package pass succeeded after the latest UI work:
+menu model wired into one-sheet-at-a-time UI. The latest local validation status:
 
 - `npm run typecheck:iitc-iris`
 - `npm run package:iitc-iris`
+- `npm run test:iitc-core` is not currently green: 55/57 tests pass, but the entity-decode fixture tests fail because
+  `docs/update-map/get-entities-z12.json` and `docs/update-map/get-entities-z14.json` are missing from the checkout.
+  This is a parity-harness gap, not an observed runtime/package failure. Restore those fixtures or replace the tests
+  with checked-in sanitized fixtures before treating `test:iitc-core` as healthy again.
 - Latest known artifacts:
-  - `apps/iitc-iris/builds/iitc-iris-chrome-0.1.0-2026-05-31T21-21-38.zip`
-  - `apps/iitc-iris/builds/iitc-iris-firefox-0.1.0-2026-05-31T21-21-38.xpi`
+  - `apps/iitc-iris/builds/iitc-iris-chrome-0.1.0-2026-06-06T17-15-48.zip`
+  - `apps/iitc-iris/builds/iitc-iris-firefox-0.1.0-2026-06-06T17-15-48.xpi`
 
 Recent completed progress:
 
@@ -88,8 +96,9 @@ Recent completed progress:
 - Menu/UI shell: primary domains are `Map`, `Portal`, `Agent`, `COMM`, and `System`; secondary actions live above the
   main menu in sheets. All current sheets should have close affordances and `Esc` closes open sheets.
 - Search: moved into the Map sheet, searches loaded portals first, supports coordinates, uses Nominatim with
-  `polygon_geojson=1`, follows IITC-style result ordering, aligns selected-result zoom behavior, and keeps selected map
-  geometry visible after the sheet closes until explicitly cleared.
+  `polygon_geojson=1`, follows IITC-style result ordering, aligns selected-result zoom behavior, and supports
+  hover/focus preview geometry that clears on mouseout/blur. Selected map geometry still remains visible after the sheet
+  closes until explicitly cleared.
 - Portal details: owner and faction state are more prominent, status/level coloring follows IITC palette concepts,
   resonator health uses clearer bars, the header stays sticky while details scroll, selected portal details can use a
   cached state to avoid loading flashes, and the portal image can open larger.
@@ -113,8 +122,9 @@ Intentional divergences and accepted gaps for this checkpoint:
   is a deliberate product-shell divergence; core workflows should still stay comparable.
 - Fast map movement can use a shorter movement delay than IITC. Keep it as a diagnostics/product choice, but compare
   against IITC with delay settings called out in copied snapshots.
-- Search selection geometry persists after closing the sheet. This is intentional for IRIS usability; IITC-style hover
-  preview/clear-on-mouseout remains a parity backlog item.
+- Search selection geometry persists after closing the sheet. This is intentional for IRIS usability. IITC-style
+  hover/focus preview inside the search sheet is implemented; broader IITC hover-preview affordances outside the search
+  sheet remain backlog.
 - Full IITC surgical render-queue mutation and tile-by-tile wanted checks are not fully ported. The current generation
   filtering/render facade is acceptable for this UI checkpoint, but should not be mistaken for complete `MapDataRequest`
   parity.
@@ -125,15 +135,19 @@ Intentional divergences and accepted gaps for this checkpoint:
   confusing Map/Portal Missions source switching. IITC mission progress/checkmark state is not ported yet.
 - Artifact non-empty live payloads, richer player tracker plugin behavior, plugin hooks, draw tools, highlighters,
   bookmarks, portal lists, and broader planning workflows remain later passes.
+- Packaging no longer requires local debug captures or the old `reference/IITC-CE` folder name. `copy-assets.cjs` prefers
+  `reference/ingress-intel-total-conversion`, falls back to the old folder name if present, writes empty fixture JSON
+  when optional captured `getEntities` fixtures are missing, and uses fallback marker/transparent PNG assets only when
+  reference images are unavailable.
 
 ### Missions Port Pass - 2026-06-01
 
 IITC source references:
 
-- `reference/IITC-CE/plugins/missions.js`
-- `reference/IITC-CE/plugins/missions.css`
-- `reference/IITC-CE/core/code/portal_marker.js` for portal detail fields `mission` and `mission50plus`
-- `reference/IITC-CE/plugins/images/mission-type-*.png` and `mission-length.png` for mission metric icon parity
+- `reference/ingress-intel-total-conversion/plugins/missions.js`
+- `reference/ingress-intel-total-conversion/plugins/missions.css`
+- `reference/ingress-intel-total-conversion/core/code/portal_marker.js` for portal detail fields `mission` and `mission50plus`
+- `reference/ingress-intel-total-conversion/plugins/images/mission-type-*.png` and `mission-length.png` for mission metric icon parity
 
 Ported IITC concepts and names:
 
@@ -342,7 +356,7 @@ Long-term refactor/plugin sequence after the current parity checkpoint:
    navigation, long-press/right-click context handling, and request diagnostics. Add focused tests where helpers are
    pure. Do this before larger UI cleanup so later smart-ports have stable IITC-shaped landing zones.
 2. Fresh IITC reference audit for unknown unknowns. Before assuming the current backlog is complete, reread
-   `reference/IITC-CE/core/code` and categorize `reference/IITC-CE/plugins` against IITC IRIS. Produce a concrete
+   `reference/ingress-intel-total-conversion/core/code` and categorize `reference/ingress-intel-total-conversion/plugins` against IITC IRIS. Produce a concrete
    missing-parity table with IITC source file/plugin, IRIS status, importance, and recommended pass. This should catch
    subtle core rendering/lifecycle gaps and high-value plugin workflows that the current plan only knows about from
    prior porting work.
@@ -376,11 +390,11 @@ Map lifecycle is the highest-risk part of the port. For request scheduling, tile
 timing, and map-data status, IITC-CE is the contract. IITC IRIS should port the `MapDataRequest` lifecycle directly
 enough that live behavior can be compared line-by-line with:
 
-- `reference/IITC-CE/core/code/map_data_request.js`
-- `reference/IITC-CE/core/code/data_cache.js`
-- `reference/IITC-CE/core/code/map_data_render.js`
-- `reference/IITC-CE/core/code/map_data_debug.js`
-- `reference/IITC-CE/core/code/map_data_calc_tools.js`
+- `reference/ingress-intel-total-conversion/core/code/map_data_request.js`
+- `reference/ingress-intel-total-conversion/core/code/data_cache.js`
+- `reference/ingress-intel-total-conversion/core/code/map_data_render.js`
+- `reference/ingress-intel-total-conversion/core/code/map_data_debug.js`
+- `reference/ingress-intel-total-conversion/core/code/map_data_calc_tools.js`
 
 Required map lifecycle rules:
 
@@ -490,6 +504,13 @@ Acceptance:
 - `npm run test:iitc-core`
 - `npm run typecheck:iitc-iris`
 - `npm run package:iitc-iris`
+
+Current verification caveat - 2026-06-06:
+
+- `npm run typecheck:iitc-iris` and `npm run package:iitc-iris` pass.
+- `npm run test:iitc-core` currently fails only on missing fixture files used by two entity-decode parity tests:
+  `docs/update-map/get-entities-z12.json` and `docs/update-map/get-entities-z14.json`. Keep Pass 1's intended
+  acceptance target, but treat the fixture harness as degraded until those inputs are restored or replaced.
 
 ## Pass 2: Request Lifecycle - Done
 
@@ -616,10 +637,10 @@ Current status:
 
 IITC-CE source references:
 
-- `reference/IITC-CE/core/code/map_data_render.js`
-- `reference/IITC-CE/core/code/portal_marker.js`
-- `reference/IITC-CE/core/code/ornaments.js`
-- `reference/IITC-CE/core/code/sidebar.js` and IITC's `window.artifact` setup path for artifact lifecycle.
+- `reference/ingress-intel-total-conversion/core/code/map_data_render.js`
+- `reference/ingress-intel-total-conversion/core/code/portal_marker.js`
+- `reference/ingress-intel-total-conversion/core/code/ornaments.js`
+- `reference/ingress-intel-total-conversion/core/code/sidebar.js` and IITC's `window.artifact` setup path for artifact lifecycle.
 
 Acceptance:
 
@@ -649,10 +670,10 @@ Current status:
 
 IITC-CE source references:
 
-- `reference/IITC-CE/core/code/map_data_render.js`
-- `reference/IITC-CE/core/code/ornaments.js`
-- `reference/IITC-CE/core/code/portal_marker.js`
-- `reference/IITC-CE/core/code/portal_detail_display.js` for artifact display conventions.
+- `reference/ingress-intel-total-conversion/core/code/map_data_render.js`
+- `reference/ingress-intel-total-conversion/core/code/ornaments.js`
+- `reference/ingress-intel-total-conversion/core/code/portal_marker.js`
+- `reference/ingress-intel-total-conversion/core/code/portal_detail_display.js` for artifact display conventions.
 
 Acceptance:
 
@@ -760,13 +781,17 @@ Current status:
   may be enabled in the dock but still hidden in low-zoom placeholder mode. `OR` and `AR` follow IITC-CE overlay
   behavior and can render at any zoom when their data is available.
 - The System sheet has a data-source switch for live Intel data, bundled Amsterdam z10/z14 fixtures, and a Damrak z15
-  fixture extracted from an IITC HAR. Fixture mode renders deterministic saved `getEntities` responses and jumps to the
-  matching view.
+  fixture extracted from an IITC HAR. When those fixture files are present, fixture mode renders deterministic saved
+  `getEntities` responses and jumps to the matching view. When the optional captured JSON files are missing from the
+  checkout, packaging writes empty valid fixture fallbacks so the extension can still build, but fixture mode is not
+  useful for visual parity until real fixtures are restored.
 - Copied diagnostics include `renderPolicy`, so comparison snapshots show whether optional detail overlays were eligible
   to render.
 - Visual parity comparisons should use the dock's viewport P/L/F counts and copied `entities.viewport` block; total
   fetched counts include padded request bounds and placeholder support entities.
-- Mock controls and place-name geocoding are not yet implemented in IITC IRIS.
+- Mock controls are not yet implemented in IITC IRIS. Place-name geocoding now exists through confirmed Nominatim
+  search with `polygon_geojson=1`; remaining search parity is hover/preview behavior beyond the search sheet and
+  broader IITC search UI affordances.
 
 ## Pass 6: Portal Selection and Details - Started
 
@@ -784,9 +809,9 @@ Current status:
 
 IITC-CE source references:
 
-- `reference/IITC-CE/core/code/portal_detail.js`
-- `reference/IITC-CE/core/code/portal_detail_display.js`
-- `reference/IITC-CE/core/code/portal_detail_display_tools.js`
+- `reference/ingress-intel-total-conversion/core/code/portal_detail.js`
+- `reference/ingress-intel-total-conversion/core/code/portal_detail_display.js`
+- `reference/ingress-intel-total-conversion/core/code/portal_detail_display_tools.js`
 
 Acceptance:
 
@@ -826,12 +851,12 @@ Current status:
 
 IITC-CE source references:
 
-- `reference/IITC-CE/core/code/comm.js`
-- `reference/IITC-CE/core/code/chat.js`
-- `reference/IITC-CE/core/code/sidebar.js`
-- `reference/IITC-CE/core/code/entity_decode.js` for extended portal history bits in `getEntities`.
-- `reference/IITC-CE/plugins/highlight-portal-history.js` for visited/captured/scout-controlled highlighter behavior.
-- `reference/IITC-CE/plugins/keys-on-map.js` and `reference/IITC-CE/plugins/keys.js` for key-count map labels.
+- `reference/ingress-intel-total-conversion/core/code/comm.js`
+- `reference/ingress-intel-total-conversion/core/code/chat.js`
+- `reference/ingress-intel-total-conversion/core/code/sidebar.js`
+- `reference/ingress-intel-total-conversion/core/code/entity_decode.js` for extended portal history bits in `getEntities`.
+- `reference/ingress-intel-total-conversion/plugins/highlight-portal-history.js` for visited/captured/scout-controlled highlighter behavior.
+- `reference/ingress-intel-total-conversion/plugins/keys-on-map.js` and `reference/ingress-intel-total-conversion/plugins/keys.js` for key-count map labels.
 
 Acceptance:
 
@@ -943,7 +968,7 @@ what to port natively and what to leave out.
 | Long-press/right-click context | Partial | Portal and mission-waypoint right-click/mobile long-press now select the portal and open the normal portal sheet/details path. Link/field right-click and map long-press/right-click now open View context with object metadata, selected-object highlight, copy actions, and clickable faction-colored anchors. Normal portal click/tap remains lightweight selection: it highlights the Portal menu and exposes Details/Missions sub-tabs, but does not force-open the portal sheet. Portal menu stays portal-only; a generic Selection menu remains later. Richer map-context/plugin actions remain later. |
 | Portal-link navigation selection | Partial | COMM, player tracker, mission waypoint, and inventory-key portal links now use IITC-shaped `zoomToAndShowPortal` / `selectPortalByLatLng` semantics with pending selection when the target portal is not loaded. Search result selection already uses the normal portal selection path for loaded portals; broader map-context actions remain separate. |
 | C.O.R.E. subscription check | Open | Current IRIS/Mini-IRIS use `/r/getHasActiveSubscription` to track Intel inventory access, show C.O.R.E. status, and gate inventory polling/UI. IITC-CE reference core does not use this endpoint, so port it as an Intel capability rather than IITC core parity. |
-| Mission endpoints | Partial | First read-only vertical slice exists: top missions in view, selected-portal missions, details, route/waypoint map overlay, and elapsed diagnostics. Remaining parity: persistent IITC-style mission caches, richer dialog actions, completed/progress state, uniques/history integrations, and plugin hooks. |
+| Mission endpoints | Partial | First read-only vertical slice exists: top missions in view, selected-portal missions, details, route/waypoint map overlay, elapsed diagnostics, and IITC-style persistent cache TTLs for mission details and portal mission summaries. Remaining parity: richer dialog actions, completed/progress checkmark state, distance-to-start/focus polish, uniques/history integrations, and plugin hooks. |
 | Bookmarks and saved map/portal sets | Open | High-value IITC workflow still missing. Should be designed around persistent saved portals/views before broad plugin parity. |
 | Keys workflows | Partial | Basic key counts and inventory parsing exist. Missing richer IITC `keys`/`keys-on-map` workflows, key search/list views, and saved key-management affordances. |
 | Draw/planning tools | Open | IITC `draw-tools` concepts are not ported: lines, polygons, circles, import/export, and planning interactions. This should be a dedicated pass. |
