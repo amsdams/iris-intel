@@ -35,6 +35,7 @@ export const IITC_IRIS_MESSAGES = {
   searchSelect: 'IITC_IRIS_SEARCH_SELECT',
   searchPreview: 'IITC_IRIS_SEARCH_PREVIEW',
   searchClear: 'IITC_IRIS_SEARCH_CLEAR',
+  drawTools: 'IITC_IRIS_DRAW_TOOLS',
 } as const;
 
 export type IitcIrisMessageType = typeof IITC_IRIS_MESSAGES[keyof typeof IITC_IRIS_MESSAGES];
@@ -136,6 +137,10 @@ export interface IitcIrisMessage {
   searchConfirmed?: boolean;
   searchResult?: IitcIrisSearchResult;
   searchZoom?: boolean;
+  drawToolsAction?: 'addMarker' | 'addPolyline' | 'deleteAt' | 'clear';
+  drawToolsItemType?: 'polyline' | 'marker';
+  drawToolsColor?: string;
+  drawToolsLatLngs?: IitcIrisDrawToolsLatLng[];
   userLat?: number;
   userLng?: number;
   userAccuracy?: number;
@@ -149,6 +154,11 @@ export interface IitcIrisMessage {
   portalLat?: number;
   portalLng?: number;
   openPortal?: boolean;
+}
+
+export interface IitcIrisDrawToolsLatLng {
+  lat: number;
+  lng: number;
 }
 
 export interface IitcIrisMapContextPortalAnchor {
@@ -445,12 +455,12 @@ export interface IitcIrisQueueDiagnostics {
 export interface IitcIrisRequestDiagnostics {
   activeRequests: number;
   activeByEndpoint: Record<string, number>;
-  active: Array<{
+  active: {
     id: number;
     endpoint: string;
     group?: string;
     elapsedMs: number;
-  }>;
+  }[];
 }
 
 export interface IitcIrisRenderQueueDiagnostics {
@@ -512,6 +522,8 @@ export interface IitcIrisLayerSettings {
   artifacts: boolean;
   labels: boolean;
   tiles: boolean;
+  drawnLinks: boolean;
+  drawnMarkers: boolean;
   playerTracker: boolean;
   playerTrackerResistance: boolean;
   playerTrackerEnlightened: boolean;

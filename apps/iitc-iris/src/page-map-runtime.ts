@@ -21,6 +21,8 @@ import {
   getIitcCommChannelMessages,
   getIitcInventoryPortalKeyCount,
   getIitcMissionBounds,
+  IITC_DRAW_TOOLS_DEFAULT_COLOR,
+  IITC_DRAW_TOOLS_KEY_STORAGE,
   IITC_MISSION_ORDER,
   getIitcPlayerTrackerDiagnostics,
   getIitcPlayerTrackerLatLng,
@@ -40,18 +42,23 @@ import {
   mergeIitcGetEntitiesResponses,
   parseIitcOrnamentVisibilitySettings,
   parseIitcInventoryResponse,
+  parseIitcDrawToolsLayer,
   parseIitcMissionDetailsResponse,
   parseIitcTopMissionsResponse,
   parseIitcPortalDetailsResponse,
   processIitcPlayerTrackerData,
   pruneIitcPlayerTrackerStored,
   renderIitcCommMarkup,
+  serializeIitcDrawToolsLayer,
   summarizeIitcInventory,
   writeIitcCommDataToHash,
   formatIitcMissionDuration,
   type IitcCommChannel,
   type IitcCommChannelData,
   type IitcCommMessage,
+  type IitcDrawToolsItem,
+  type IitcDrawToolsMarker,
+  type IitcDrawToolsPolyline,
   type IitcGetEntitiesResponse,
   type IitcInventorySummary,
   type IitcMissionDetails as CoreIitcMissionDetails,
@@ -93,9 +100,12 @@ const MISSION_DETAILS_CACHE_MS = 3 * 24 * 60 * 60 * 1000;
 const PORTAL_MISSIONS_CACHE_MS = 21 * 24 * 60 * 60 * 1000;
 const MISSION_DETAILS_CACHE_STORAGE_KEY = 'iitc-iris:missions:details-cache';
 const PORTAL_MISSIONS_CACHE_STORAGE_KEY = 'iitc-iris:missions:portal-cache';
+const DRAW_TOOLS_LINE_WEIGHT = 4;
+const DRAW_TOOLS_LINE_OPACITY = 0.5;
+const DRAW_TOOLS_CROSSING_COLOR = '#ff4d4d';
 const MISSION_DETAILS_CACHE_STORAGE_MAX_CHARS = 2_000_000;
 const PORTAL_MISSIONS_CACHE_STORAGE_MAX_CHARS = 1_000_000;
-const IITC_IRIS_ASSET_BASE_URL = (() => {
+const IITC_IRIS_ASSET_BASE_URL = ((): string => {
   const script = document.currentScript instanceof HTMLScriptElement ? document.currentScript.src : '';
   return script ? new URL('.', script).toString() : '';
 })();
@@ -149,6 +159,8 @@ const DEFAULT_LAYER_SETTINGS: IitcIrisLayerSettings = {
   artifacts: false,
   labels: false,
   tiles: false,
+  drawnLinks: true,
+  drawnMarkers: true,
   playerTracker: false,
   playerTrackerResistance: false,
   playerTrackerEnlightened: false,
@@ -215,7 +227,7 @@ let latestMissionsState: IitcIrisMissionsState = {
   missions: [],
   detailsStatus: 'idle',
 };
-type MissionCacheEntry<T> = {time: number; data: T};
+interface MissionCacheEntry<T> {time: number; data: T}
 const missionDetailsCache = new Map<string, MissionCacheEntry<IitcIrisMissionDetails>>();
 const portalMissionsCache = new Map<string, MissionCacheEntry<IitcIrisMissionSummary[]>>();
 let playerTrackerStored: IitcPlayerTrackerStored = {};
@@ -533,6 +545,7 @@ declare global {
       ornaments: LeafletLayer[];
       artifacts: LeafletLayer[];
       labels: LeafletLayer[];
+      drawnItems: LeafletLayer[];
       playerTracker: LeafletLayer[];
       search: LeafletLayer[];
       missions: LeafletLayer[];
@@ -555,7 +568,7 @@ const LEVEL_COLORS = IITC_LEVEL_COLORS;
 const LEVEL_TO_WEIGHT = [2, 2, 2, 2, 2, 3, 3, 4, 4] as const;
 const LEVEL_TO_RADIUS = [7, 7, 7, 7, 8, 8, 9, 10, 11] as const;
 const LEVEL_LABEL_COLLISION_SIZE = 15;
-type IitcIrisLayerPaneKey = keyof IitcIrisLayerSettings | 'selectedPortal' | 'selectedMapObject' | 'search' | 'missions' | 'userLocation';
+type IitcIrisLayerPaneKey = keyof IitcIrisLayerSettings | 'drawnItems' | 'selectedPortal' | 'selectedMapObject' | 'search' | 'missions' | 'userLocation';
 
 function toLatLng(latE6: number, lngE6: number): [number, number] {
   return [latE6 / 1e6, lngE6 / 1e6];
@@ -699,6 +712,7 @@ function ensureLayers(): NonNullable<Window['__iitcIrisLayers']> {
     ornaments: [],
     artifacts: [],
     labels: [],
+    drawnItems: [],
     playerTracker: [],
     search: [],
     missions: [],
@@ -734,6 +748,245 @@ function getLayerRenderer(layerKey: 'fields' | 'links' | 'portals'): L.Renderer 
   return runtimeMap[rendererKey];
 }
 
+function loadIitcDrawToolsItems(): IitcDrawToolsItem[] {
+  try {
+    const stored = window.localStorage.getItem(IITC_DRAW_TOOLS_KEY_STORAGE);
+    return stored ? parseIitcDrawToolsLayer(stored) : [];
+  } catch (error) {
+    console.warn(`draw-tools: failed to load data from localStorage: ${error instanceof Error ? error.message : String(error)}`);
+    return [];
+  }
+}
+
+function saveIitcDrawToolsItems(items: readonly IitcDrawToolsItem[]): void {
+  window.localStorage.setItem(IITC_DRAW_TOOLS_KEY_STORAGE, serializeIitcDrawToolsLayer(items));
+}
+
+function getIitcDrawToolsRenderColor(color: string | undefined): string {
+  if (!color) return IITC_DRAW_TOOLS_DEFAULT_COLOR;
+  return /^#[0-9a-f]{3,8}$/i.test(color) ? color : IITC_DRAW_TOOLS_DEFAULT_COLOR;
+}
+
+function distanceToSegmentMeters(
+  point: {lat: number; lng: number},
+  start: {lat: number; lng: number},
+  end: {lat: number; lng: number},
+): number {
+  const map = window.__iitcIrisMap;
+  if (!map) return Infinity;
+  const zoom = map.getZoom();
+  const pointLayer = map.project([point.lat, point.lng], zoom);
+  const startLayer = map.project([start.lat, start.lng], zoom);
+  const endLayer = map.project([end.lat, end.lng], zoom);
+  const segmentX = endLayer.x - startLayer.x;
+  const segmentY = endLayer.y - startLayer.y;
+  const segmentLengthSquared = segmentX * segmentX + segmentY * segmentY;
+  const t = segmentLengthSquared === 0 ? 0 : Math.max(0, Math.min(1, ((pointLayer.x - startLayer.x) * segmentX + (pointLayer.y - startLayer.y) * segmentY) / segmentLengthSquared));
+  const closest = map.unproject([startLayer.x + segmentX * t, startLayer.y + segmentY * t], zoom);
+  return map.distance([point.lat, point.lng], closest);
+}
+
+function getIitcDrawToolsItemDistanceMeters(item: IitcDrawToolsItem, lat: number, lng: number): number {
+  const map = window.__iitcIrisMap;
+  if (!map) return Infinity;
+  const point = {lat, lng};
+
+  if (item.type === 'marker') return map.distance([lat, lng], [item.latLng.lat, item.latLng.lng]);
+  if (item.type !== 'polyline') return Infinity;
+
+  let closest = Infinity;
+  for (let index = 1; index < item.latLngs.length; index += 1) {
+    closest = Math.min(closest, distanceToSegmentMeters(point, item.latLngs[index - 1], item.latLngs[index]));
+  }
+  return closest;
+}
+
+function getIitcSegmentBounds(
+  a: {lng: number; lat: number},
+  b: {lng: number; lat: number},
+): {minLng: number; minLat: number; maxLng: number; maxLat: number} {
+  return {
+    minLng: Math.min(a.lng, b.lng),
+    minLat: Math.min(a.lat, b.lat),
+    maxLng: Math.max(a.lng, b.lng),
+    maxLat: Math.max(a.lat, b.lat),
+  };
+}
+
+function iitcSegmentBoundsOverlap(
+  a: {minLng: number; minLat: number; maxLng: number; maxLat: number},
+  b: {minLng: number; minLat: number; maxLng: number; maxLat: number},
+): boolean {
+  return a.minLng <= b.maxLng &&
+    a.maxLng >= b.minLng &&
+    a.minLat <= b.maxLat &&
+    a.maxLat >= b.minLat;
+}
+
+function iitcSegmentsIntersect(
+  a: {lng: number; lat: number},
+  b: {lng: number; lat: number},
+  c: {lng: number; lat: number},
+  d: {lng: number; lat: number},
+): boolean {
+  const denominator = ((a.lng - b.lng) * (c.lat - d.lat)) - ((a.lat - b.lat) * (c.lng - d.lng));
+  if (Math.abs(denominator) < 1e-12) return false;
+
+  const t = (((a.lng - c.lng) * (c.lat - d.lat)) - ((a.lat - c.lat) * (c.lng - d.lng))) / denominator;
+  const u = -(((a.lng - b.lng) * (a.lat - c.lat)) - ((a.lat - b.lat) * (a.lng - c.lng))) / denominator;
+  return t > 0 && t < 1 && u > 0 && u < 1;
+}
+
+function deleteIitcDrawToolsItemAt(lat: number, lng: number, itemType?: 'polyline' | 'marker'): boolean {
+  const items = loadIitcDrawToolsItems();
+  let bestIndex = -1;
+  let bestDistance = Infinity;
+
+  items.forEach((item, index) => {
+    if (itemType && item.type !== itemType) return;
+    const distance = getIitcDrawToolsItemDistanceMeters(item, lat, lng);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestIndex = index;
+    }
+  });
+
+  if (bestIndex === -1 || bestDistance > 100) return false;
+  saveIitcDrawToolsItems(items.filter((_, index) => index !== bestIndex));
+  renderIitcDrawTools();
+  return true;
+}
+
+function applyIitcDrawToolsAction(message: IitcIrisMessage): void {
+  const action = message.drawToolsAction;
+  if (!action) return;
+
+  if (action === 'clear') {
+    saveIitcDrawToolsItems(message.drawToolsItemType
+      ? loadIitcDrawToolsItems().filter((item) => item.type !== message.drawToolsItemType)
+      : []);
+    renderIitcDrawTools();
+    return;
+  }
+
+  if (action === 'deleteAt') {
+    if (message.drawToolsLatLngs?.[0]) {
+      deleteIitcDrawToolsItemAt(message.drawToolsLatLngs[0].lat, message.drawToolsLatLngs[0].lng, message.drawToolsItemType);
+    }
+    return;
+  }
+
+  const items = loadIitcDrawToolsItems();
+  if (action === 'addMarker' && message.drawToolsLatLngs?.[0]) {
+    const latLng = message.drawToolsLatLngs[0];
+    saveIitcDrawToolsItems([...items, {
+      type: 'marker',
+      latLng,
+      color: message.drawToolsColor ?? IITC_DRAW_TOOLS_DEFAULT_COLOR,
+    }]);
+    renderIitcDrawTools();
+    return;
+  }
+
+  if (action === 'addPolyline' && message.drawToolsLatLngs && message.drawToolsLatLngs.length >= 2) {
+    saveIitcDrawToolsItems([...items, {
+      type: 'polyline',
+      latLngs: message.drawToolsLatLngs,
+      color: message.drawToolsColor ?? IITC_DRAW_TOOLS_DEFAULT_COLOR,
+    }]);
+    renderIitcDrawTools();
+  }
+}
+
+function createIitcDrawToolsMarkerIcon(color = IITC_DRAW_TOOLS_DEFAULT_COLOR): L.DivIcon {
+  const markerColor = getIitcDrawToolsRenderColor(color);
+  return L.divIcon({
+    className: 'iitc-iris-draw-tools-marker',
+    html: `<span style="--iitc-iris-draw-tools-marker-color:${markerColor}"></span>`,
+    iconSize: [24, 32],
+    iconAnchor: [12, 32],
+  });
+}
+
+function createIitcDrawToolsPolyline(item: IitcDrawToolsPolyline): LeafletLayer {
+  return createIitcGeodesicPolyline(item.latLngs.map((latLng) => [latLng.lat, latLng.lng]), {
+    pane: getLayerPane('drawnItems'),
+    color: getIitcDrawToolsRenderColor(item.color),
+    weight: DRAW_TOOLS_LINE_WEIGHT,
+    opacity: DRAW_TOOLS_LINE_OPACITY,
+    fill: false,
+    interactive: false,
+  });
+}
+
+function createIitcDrawToolsCrossingLink(link: IitcIrisRenderLink): LeafletLayer {
+  return createIitcGeodesicPolyline([toLatLng(link.oLatE6, link.oLngE6), toLatLng(link.dLatE6, link.dLngE6)], {
+    pane: getLayerPane('drawnItems'),
+    color: DRAW_TOOLS_CROSSING_COLOR,
+    opacity: 0.95,
+    weight: 4,
+    dashArray: '4,4',
+    interactive: false,
+  });
+}
+
+function renderIitcDrawToolsCrossings(items: readonly IitcDrawToolsItem[]): void {
+  const layers = ensureLayers();
+  if (!latestEntities || !layerSettings.drawnLinks || !layerSettings.links) return;
+
+  const drawnSegments = items
+    .filter((item): item is IitcDrawToolsPolyline => item.type === 'polyline')
+    .flatMap((item) => item.latLngs.slice(1).map((latLng, index) => ({
+      a: {lat: item.latLngs[index].lat, lng: item.latLngs[index].lng},
+      b: {lat: latLng.lat, lng: latLng.lng},
+    })));
+  if (drawnSegments.length === 0) return;
+
+  const crossingLinkGuids = new Set<string>();
+  for (const link of latestEntities.links) {
+    if (!isLinkVisible(link)) continue;
+    const linkSegment = {
+      a: {lat: link.oLatE6 / 1_000_000, lng: link.oLngE6 / 1_000_000},
+      b: {lat: link.dLatE6 / 1_000_000, lng: link.dLngE6 / 1_000_000},
+    };
+    const linkBounds = getIitcSegmentBounds(linkSegment.a, linkSegment.b);
+    if (drawnSegments.some((drawnSegment) => (
+      iitcSegmentBoundsOverlap(getIitcSegmentBounds(drawnSegment.a, drawnSegment.b), linkBounds) &&
+      iitcSegmentsIntersect(drawnSegment.a, drawnSegment.b, linkSegment.a, linkSegment.b)
+    ))) {
+      crossingLinkGuids.add(link.guid);
+    }
+  }
+
+  for (const link of latestEntities.links) {
+    if (crossingLinkGuids.has(link.guid)) addRenderedLayer(layers.drawnItems, createIitcDrawToolsCrossingLink(link));
+  }
+}
+
+function createIitcDrawToolsMarker(item: IitcDrawToolsMarker): LeafletLayer {
+  return L.marker([item.latLng.lat, item.latLng.lng], {
+    pane: getLayerPane('drawnItems'),
+    icon: createIitcDrawToolsMarkerIcon(item.color),
+    interactive: false,
+    keyboard: false,
+    zIndexOffset: 2000,
+  });
+}
+
+function renderIitcDrawTools(): void {
+  const layers = ensureLayers();
+  clearRenderedLayers(layers.drawnItems);
+  const items = loadIitcDrawToolsItems();
+  for (const item of items) {
+    if (item.type === 'polyline' && layerSettings.drawnLinks) {
+      addRenderedLayer(layers.drawnItems, createIitcDrawToolsPolyline(item));
+    } else if (item.type === 'marker' && layerSettings.drawnMarkers) {
+      addRenderedLayer(layers.drawnItems, createIitcDrawToolsMarker(item));
+    }
+  }
+  renderIitcDrawToolsCrossings(items);
+}
+
 function clearAllRenderedLayers(): void {
   const layers = ensureLayers();
   clearRenderedLayers(layers.tiles);
@@ -745,6 +998,7 @@ function clearAllRenderedLayers(): void {
   clearRenderedLayers(layers.ornaments);
   clearRenderedLayers(layers.artifacts);
   clearRenderedLayers(layers.labels);
+  clearRenderedLayers(layers.drawnItems);
   clearRenderedLayers(layers.playerTracker);
   clearRenderedLayers(layers.missions);
   clearRenderedLayers(layers.userLocation);
@@ -1808,6 +2062,7 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
   }
   renderSelectedPortal(visiblePortals);
   renderSelectedMapObject();
+  renderIitcDrawTools();
   latestOrnamentDiagnostics = ornamentDiagnostics;
 }
 
@@ -2266,7 +2521,7 @@ function trimMissionCacheEntries<T>(cache: Map<string, MissionCacheEntry<T>>, ma
 
 function storeMissionCache<T>(key: string, cache: Map<string, MissionCacheEntry<T>>, maxChars: number): void {
   try {
-    let entries = [...cache.entries()].sort((a, b) => b[1].time - a[1].time);
+    const entries = [...cache.entries()].sort((a, b) => b[1].time - a[1].time);
     let serialized = JSON.stringify(Object.fromEntries(entries));
     while (serialized.length > maxChars && entries.length > 1) {
       const oldest = entries.pop();
@@ -2720,6 +2975,9 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
   if (event.data?.type === IITC_IRIS_MESSAGES.searchClear) {
     clearSearch();
   }
+  if (event.data?.type === IITC_IRIS_MESSAGES.drawTools) {
+    applyIitcDrawToolsAction(event.data);
+  }
   if (event.data?.type === IITC_IRIS_MESSAGES.renderEntities && event.data.entities) {
     renderEntities(event.data.entities);
   }
@@ -2727,6 +2985,7 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
     layerSettings = event.data.layerSettings;
     if (latestEntities) renderEntities(latestEntities);
     renderLatestTileDebug();
+    renderIitcDrawTools();
     renderPlayerTracker();
     schedulePlayerTrackerRefresh();
     repostLatestEntityStatus();
@@ -3240,7 +3499,7 @@ async function refreshSubscriptionStatus(): Promise<IitcIrisSubscriptionState> {
   const startedAt = performance.now();
   setSubscriptionState({...latestSubscriptionState, status: 'loading', error: undefined});
 
-  currentSubscriptionPromise = (async () => {
+  currentSubscriptionPromise = (async (): Promise<IitcIrisSubscriptionState> => {
     try {
       const response = await postIntelEndpoint('getHasActiveSubscription', {}, abortController.signal);
       const hasActive = parseSubscriptionResponse(response);
@@ -4475,6 +4734,7 @@ function boot(): void {
     openMapContextAtPoint(event.containerPoint);
   });
   map.on('zoomend', () => {
+    renderIitcDrawTools();
     renderPlayerTracker();
     schedulePlayerTrackerRefresh();
   });
@@ -4483,6 +4743,7 @@ function boot(): void {
 	    map.invalidateSize();
 	    postMapMoved();
 	    postAgentState();
+	    renderIitcDrawTools();
 	    void refreshSubscriptionStatus();
 	    window.postMessage({type: IITC_IRIS_MESSAGES.pageReady}, '*');
 	  }, 0);
@@ -4498,6 +4759,7 @@ function createIitcIrisPanes(map: LeafletMap): void {
     ['artifacts', 445],
     ['selectedPortal', 448],
     ['selectedMapObject', 448],
+    ['drawnItems', 449],
     ['playerTracker', 449],
     ['missions', 449],
     ['search', 451],

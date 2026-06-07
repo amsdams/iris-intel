@@ -3,7 +3,7 @@ import {useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import './iitc-iris.css';
 import {formatIitcColorVars, getIitcItemColor, getIitcLevelColor, getIitcRarityColor, IITC_RESONATOR_ENERGY} from './iitc-colors';
 import {formatSubscriptionBadge, formatSubscriptionLabel, getAuthErrorMessage, getPanelStatusClass, getSubscriptionStatusClass} from './ui-status';
-import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPlayerTrackerDiagnostics, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsLatLng, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPlayerTrackerDiagnostics, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
 import {
   createIitcMapDataPlan,
   IITC_MAX_REQUESTS,
@@ -97,6 +97,8 @@ const DETAIL_LAYER_TOGGLE_LABELS: [BooleanLayerSettingKey, string, string][] = [
   ['artifacts', 'AR', 'Artifacts'],
   ['labels', 'LV', 'Level labels'],
   ['tiles', 'T', 'Tile debug overlay'],
+  ['drawnLinks', 'DL', 'Drawn Links'],
+  ['drawnMarkers', 'DM', 'Drawn Markers'],
   ['playerTrackerResistance', 'PTR', 'Resistance player tracker'],
   ['playerTrackerEnlightened', 'PTE', 'Enlightened player tracker'],
   ['playerTrackerMachina', 'PTM', 'Machina player tracker'],
@@ -109,6 +111,13 @@ const PORTAL_DATA_LAYER_LABELS: [TriStateLayerSettingKey, string, string][] = [
   ['historyVisited', 'VIS', 'Visited history'],
   ['historyScoutControlled', 'SC', 'Scout controlled history'],
 ];
+const DRAW_TOOLS_MARKER_PRESETS = [
+  {id: 'white', color: '#ffffff', title: 'Add white marker'},
+  {id: 'red', color: '#c34a4a', title: 'Add red marker'},
+  {id: 'blue', color: '#4aa8c3', title: 'Add blue marker'},
+  {id: 'green', color: '#51c34a', title: 'Add green marker'},
+] as const;
+const DRAW_TOOLS_DEFAULT_COLOR = '#a24ac3';
 const RESONATOR_PANEL_ORDER: (number | null)[] = [0, 1, 2, 3, null, 4, 5, 6, 7];
 const SIDE_PANEL_OPTIONS = [
   {id: 'agent', label: 'Agent', title: 'Agent status'},
@@ -145,6 +154,8 @@ const DEFAULT_LAYER_SETTINGS: IitcIrisLayerSettings = {
   artifacts: false,
   labels: false,
   tiles: false,
+  drawnLinks: true,
+  drawnMarkers: true,
   playerTracker: false,
   playerTrackerResistance: false,
   playerTrackerEnlightened: false,
@@ -263,7 +274,7 @@ interface EntityFetchState {
 }
 
 type SidePanelId = typeof SIDE_PANEL_OPTIONS[number]['id'];
-type SheetId = 'map' | 'layers' | 'view' | 'search' | 'portal' | 'system' | 'help' | SidePanelId;
+type SheetId = 'map' | 'layers' | 'view' | 'drawLinks' | 'drawMarkers' | 'search' | 'portal' | 'system' | 'help' | SidePanelId;
 type PrimaryMenuId = 'map' | 'portal' | 'agent' | 'comm' | 'system';
 type PortalSectionId = 'mods' | 'resonators' | 'facts';
 
@@ -337,6 +348,12 @@ interface MapContextSelection {
   portalGuids?: string[];
   portalAnchors?: IitcIrisMapContextPortalAnchor[];
   distanceMeters?: number;
+}
+
+interface DrawToolsTarget {
+  lat: number;
+  lng: number;
+  label: string;
 }
 
 function isScenarioSettled(diagnostics: unknown): boolean {
@@ -558,6 +575,7 @@ function loadStoredLayerSettings(): IitcIrisLayerSettings {
     if (!value) return DEFAULT_LAYER_SETTINGS;
     const parsed = JSON.parse(value) as unknown;
     if (!isLayerSettings(parsed)) return DEFAULT_LAYER_SETTINGS;
+    const legacyParsed = parsed as Partial<IitcIrisLayerSettings> & {drawnItems?: unknown};
     const legacyPlayerTracker = typeof parsed.playerTracker === 'boolean' ? parsed.playerTracker : undefined;
     return {
       fields: typeof parsed.fields === 'boolean' ? parsed.fields : DEFAULT_LAYER_SETTINGS.fields,
@@ -581,6 +599,16 @@ function loadStoredLayerSettings(): IitcIrisLayerSettings {
       artifacts: typeof parsed.artifacts === 'boolean' ? parsed.artifacts : DEFAULT_LAYER_SETTINGS.artifacts,
       labels: typeof parsed.labels === 'boolean' ? parsed.labels : DEFAULT_LAYER_SETTINGS.labels,
       tiles: typeof parsed.tiles === 'boolean' ? parsed.tiles : DEFAULT_LAYER_SETTINGS.tiles,
+      drawnLinks: typeof parsed.drawnLinks === 'boolean'
+        ? parsed.drawnLinks
+        : typeof legacyParsed.drawnItems === 'boolean'
+          ? legacyParsed.drawnItems
+          : DEFAULT_LAYER_SETTINGS.drawnLinks,
+      drawnMarkers: typeof parsed.drawnMarkers === 'boolean'
+        ? parsed.drawnMarkers
+        : typeof legacyParsed.drawnItems === 'boolean'
+          ? legacyParsed.drawnItems
+          : DEFAULT_LAYER_SETTINGS.drawnMarkers,
       playerTracker: DEFAULT_LAYER_SETTINGS.playerTracker,
       playerTrackerResistance: typeof parsed.playerTrackerResistance === 'boolean'
         ? parsed.playerTrackerResistance
@@ -666,7 +694,7 @@ function isSidePanelId(value: string | null): value is SidePanelId {
 }
 
 function isSheetId(value: string | null): value is SheetId {
-  return value === 'map' || value === 'layers' || value === 'view' || value === 'search' || value === 'portal' || value === 'system' || value === 'help' || isSidePanelId(value);
+  return value === 'map' || value === 'layers' || value === 'view' || value === 'drawLinks' || value === 'drawMarkers' || value === 'search' || value === 'portal' || value === 'system' || value === 'help' || isSidePanelId(value);
 }
 
 function isCommTab(value: string | null): value is IitcIrisCommTab {
@@ -1111,6 +1139,7 @@ function App(): h.JSX.Element {
   const [viewInputStatus, setViewInputStatus] = useState('');
   const [geolocationStatus, setGeolocationStatus] = useState('');
   const [mapContext, setMapContext] = useState<MapContextSelection | null>(null);
+  const [drawToolsLinkStart, setDrawToolsLinkStart] = useState<IitcIrisDrawToolsLatLng | null>(null);
   const [debugDockVisible, setDebugDockVisible] = useState(() => loadStoredDebugDockVisible());
   const [activeSheet, setActiveSheet] = useState<SheetId>(() => loadStoredActiveSheet());
   const [activeSidePanel, setActiveSidePanel] = useState<SidePanelId | null>(() => {
@@ -1559,6 +1588,81 @@ function App(): h.JSX.Element {
   const centerMapContext = (): void => {
     if (!mapContext) return;
     setMapView(mapContext.lat, mapContext.lng, mapContext.zoom);
+  };
+
+  const getDrawToolsTarget = (): DrawToolsTarget | null => {
+    if (entityFetch.selectedPortal) {
+      const {lat, lng} = getPortalLatLng(entityFetch.selectedPortal);
+      return {
+        lat,
+        lng,
+        label: entityFetch.selectedPortal.title || entityFetch.selectedPortal.guid,
+      };
+    }
+    return mapContext
+      ? {
+          lat: mapContext.lat,
+          lng: mapContext.lng,
+          label: `${mapContext.lat.toFixed(6)}, ${mapContext.lng.toFixed(6)}`,
+        }
+      : null;
+  };
+
+  const getDrawToolsTargetLatLng = (): IitcIrisDrawToolsLatLng | null => {
+    const target = getDrawToolsTarget();
+    return target ? {lat: target.lat, lng: target.lng} : null;
+  };
+
+  const postDrawToolsAction = (message: Omit<IitcIrisMessage, 'type'>): void => {
+    window.postMessage({
+      type: IITC_IRIS_MESSAGES.drawTools,
+      ...message,
+    } satisfies IitcIrisMessage, '*');
+  };
+
+  const addDrawToolsMarker = (color: string): void => {
+    const latLng = getDrawToolsTargetLatLng();
+    if (!latLng) return;
+    postDrawToolsAction({
+      drawToolsAction: 'addMarker',
+      drawToolsColor: color,
+      drawToolsLatLngs: [latLng],
+    });
+    setStatus('draw marker added');
+  };
+
+  const addDrawToolsLinkPoint = (): void => {
+    const latLng = getDrawToolsTargetLatLng();
+    if (!latLng) return;
+    if (!drawToolsLinkStart) {
+      setDrawToolsLinkStart(latLng);
+      setStatus('draw link start set');
+      return;
+    }
+    postDrawToolsAction({
+      drawToolsAction: 'addPolyline',
+      drawToolsColor: DRAW_TOOLS_DEFAULT_COLOR,
+      drawToolsLatLngs: [drawToolsLinkStart, latLng],
+    });
+    setDrawToolsLinkStart(null);
+    setStatus('draw link added');
+  };
+
+  const deleteDrawToolsAtContext = (itemType?: 'polyline' | 'marker'): void => {
+    const latLng = getDrawToolsTargetLatLng();
+    if (!latLng) return;
+    postDrawToolsAction({
+      drawToolsAction: 'deleteAt',
+      drawToolsItemType: itemType,
+      drawToolsLatLngs: [latLng],
+    });
+    setStatus('draw item delete requested');
+  };
+
+  const clearDrawToolsItems = (itemType?: 'polyline' | 'marker'): void => {
+    postDrawToolsAction({drawToolsAction: 'clear', drawToolsItemType: itemType});
+    if (!itemType || itemType === 'polyline') setDrawToolsLinkStart(null);
+    setStatus(itemType === 'polyline' ? 'draw links cleared' : itemType === 'marker' ? 'draw markers cleared' : 'draw items cleared');
   };
 
   const copySelectedPortalLink = (): void => {
@@ -2558,6 +2662,7 @@ function App(): h.JSX.Element {
     {id: 'notices', label: 'Notices', items: renderedSearchResults.filter(({result}) => result.type === 'empty')},
   ].filter((group) => group.items.length > 0);
   const activeSearchResult = searchState.results.filter((result) => result.type !== 'empty')[activeSearchResultIndex];
+  const drawToolsTarget = getDrawToolsTarget();
 
   return (
     <div className={`iitc-iris-shell iitc-iris-sheet-${activeSheet} ${entityFetch.selectedPortal ? 'iitc-iris-has-selected-portal' : ''}`}>
@@ -2670,9 +2775,11 @@ function App(): h.JSX.Element {
         </aside>
       )}
       <aside className="iitc-iris-map-controls" aria-label="Map controls">
-        {(activeSheet === 'view' || activeSheet === 'layers') && (
+        {(activeSheet === 'view' || activeSheet === 'layers' || activeSheet === 'drawLinks' || activeSheet === 'drawMarkers') && (
           <div className="iitc-iris-panel-topbar">
-            <span className="iitc-iris-selected-title">{activeSheet === 'view' ? 'View' : 'Layers'}</span>
+            <span className="iitc-iris-selected-title">
+              {activeSheet === 'view' ? 'View' : activeSheet === 'layers' ? 'Layers' : activeSheet === 'drawLinks' ? 'Draw Links' : 'Draw Markers'}
+            </span>
             <span className="iitc-iris-panel-header-actions">
               <button className="iitc-iris-clear-selection" type="button" onClick={closeSheets} title={`Close ${activeSheet}`} aria-label={`Close ${activeSheet}`}>X</button>
             </span>
@@ -2722,6 +2829,55 @@ function App(): h.JSX.Element {
             <button className="iitc-iris-portal-action" type="button" onClick={centerMapContext} title="Center map on this context point">Center</button>
             <button className="iitc-iris-portal-action" type="button" onClick={copyMapContextLatLng} title="Copy context coordinates">LL</button>
             <button className="iitc-iris-portal-action" type="button" onClick={copyMapContextUrl} title="Copy Intel URL for this context point">URL</button>
+          </div>
+        </div>}
+        {activeSheet === 'drawLinks' && <div className="iitc-iris-map-controls-section">
+          <span className="iitc-iris-status">Draw Links</span>
+          <div className="iitc-iris-map-context-row">
+            <span className="iitc-iris-map-context-coords">
+              {drawToolsTarget?.label ?? 'Select a portal or open a context point'}
+            </span>
+            <button className="iitc-iris-portal-action" type="button" onClick={addDrawToolsLinkPoint} disabled={!drawToolsTarget} title={drawToolsLinkStart ? 'Finish drawn link at the current target' : 'Start drawn link at the current target'}>
+              {drawToolsLinkStart ? 'To' : 'From'}
+            </button>
+            <button className="iitc-iris-portal-action" type="button" onClick={() => setDrawToolsLinkStart(null)} disabled={!drawToolsLinkStart} title="Reset pending drawn link">Reset</button>
+            <button className="iitc-iris-portal-action" type="button" onClick={() => deleteDrawToolsAtContext('polyline')} disabled={!drawToolsTarget} title="Delete nearest drawn link">Del</button>
+          </div>
+          {drawToolsLinkStart && <div className="iitc-iris-map-context-row">
+            <span className="iitc-iris-map-context-coords">
+              From {drawToolsLinkStart.lat.toFixed(6)}, {drawToolsLinkStart.lng.toFixed(6)}
+            </span>
+          </div>}
+          <div className="iitc-iris-map-context-row">
+            <span className="iitc-iris-map-context-coords">Storage</span>
+            <button className="iitc-iris-portal-action" type="button" onClick={() => clearDrawToolsItems('polyline')} title="Clear all drawn links">Clear</button>
+          </div>
+        </div>}
+        {activeSheet === 'drawMarkers' && <div className="iitc-iris-map-controls-section">
+          <span className="iitc-iris-status">Draw Markers</span>
+          <div className="iitc-iris-map-context-row">
+            <span className="iitc-iris-map-context-coords">
+              {drawToolsTarget?.label ?? 'Select a portal or open a context point'}
+            </span>
+            <span className="iitc-iris-draw-tools-marker-actions" aria-label="Add marker">
+              {DRAW_TOOLS_MARKER_PRESETS.map((preset) => (
+                <button
+                  className="iitc-iris-draw-tools-marker-swatch"
+                  key={preset.id}
+                  type="button"
+                  onClick={() => addDrawToolsMarker(preset.color)}
+                  disabled={!drawToolsTarget}
+                  style={{background: preset.color}}
+                  title={preset.title}
+                  aria-label={preset.title}
+                />
+              ))}
+            </span>
+          </div>
+          <div className="iitc-iris-map-context-row">
+            <span className="iitc-iris-map-context-coords">Manage</span>
+            <button className="iitc-iris-portal-action" type="button" onClick={() => deleteDrawToolsAtContext('marker')} disabled={!drawToolsTarget} title="Delete nearest drawn marker">Del</button>
+            <button className="iitc-iris-portal-action" type="button" onClick={() => clearDrawToolsItems('marker')} title="Clear all drawn markers">Clear</button>
           </div>
         </div>}
         {activeSheet === 'view' && <div className="iitc-iris-map-controls-section">
@@ -3123,6 +3279,8 @@ function App(): h.JSX.Element {
             <>
               <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'layers' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('layers')} aria-pressed={activeSheet === 'layers'}>Layers</button>
               <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'view' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('view')} aria-pressed={activeSheet === 'view'}>View</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'drawLinks' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('drawLinks')} aria-pressed={activeSheet === 'drawLinks'}>Links</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'drawMarkers' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('drawMarkers')} aria-pressed={activeSheet === 'drawMarkers'}>Markers</button>
               <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'scores' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('scores')} aria-pressed={activeSheet === 'scores'}>Scores</button>
               <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'search' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('search')} aria-pressed={activeSheet === 'search'}>Search</button>
               <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'missions' && missionsState.source !== 'portal' ? 'is-active' : ''}`} type="button" onClick={() => toggleMissionsSheet('view')} aria-pressed={activeSheet === 'missions' && missionsState.source !== 'portal'}>Missions</button>
