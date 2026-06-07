@@ -3,12 +3,15 @@ import {useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import './iitc-iris.css';
 import {formatIitcColorVars, getIitcItemColor, getIitcLevelColor, getIitcRarityColor, IITC_RESONATOR_ENERGY} from './iitc-colors';
 import {formatSubscriptionBadge, formatSubscriptionLabel, getAuthErrorMessage, getPanelStatusClass, getSubscriptionStatusClass} from './ui-status';
-import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsLatLng, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPlayerTrackerDiagnostics, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPlayerTrackerDiagnostics, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
 import {
   createIitcMapDataPlan,
   IITC_MAX_REQUESTS,
   IITC_MAX_TILE_RETRIES,
   IITC_NUM_TILES_PER_REQUEST,
+  parseIitcDrawToolsLayer,
+  serializeIitcDrawToolsLayer,
+  type IitcDrawToolsItem,
   type IitcBounds,
   type IitcMapDataPlan,
 } from '@iris/iitc-core';
@@ -354,6 +357,49 @@ interface DrawToolsTarget {
   lat: number;
   lng: number;
   label: string;
+}
+
+function isSupportedDrawToolsItem(item: IitcDrawToolsItem): item is Extract<IitcDrawToolsItem, {type: 'polyline' | 'marker'}> {
+  return item.type === 'polyline' || item.type === 'marker';
+}
+
+function getDrawToolsItemCenter(item: IitcIrisDrawToolsItem): IitcIrisDrawToolsLatLng {
+  if (item.type === 'marker') return item.latLng;
+  const total = item.latLngs.reduce((sum, latLng) => ({
+    lat: sum.lat + latLng.lat,
+    lng: sum.lng + latLng.lng,
+  }), {lat: 0, lng: 0});
+  return {
+    lat: total.lat / item.latLngs.length,
+    lng: total.lng / item.latLngs.length,
+  };
+}
+
+function getDrawToolsItemLabel(item: IitcIrisDrawToolsItem, displayIndex: number): string {
+  if (item.type === 'marker') return `Marker ${displayIndex + 1}`;
+  return `Link ${displayIndex + 1}`;
+}
+
+function getDrawToolsItemDetail(item: IitcIrisDrawToolsItem): string {
+  if (item.type === 'marker') return `${item.latLng.lat.toFixed(6)}, ${item.latLng.lng.toFixed(6)}`;
+  const start = item.latLngs[0];
+  const end = item.latLngs[item.latLngs.length - 1];
+  return `${start.lat.toFixed(6)}, ${start.lng.toFixed(6)} -> ${end.lat.toFixed(6)}, ${end.lng.toFixed(6)}`;
+}
+
+function stripDrawToolsStorageIndex(item: IitcIrisDrawToolsItem): IitcDrawToolsItem {
+  if (item.type === 'marker') {
+    return {
+      type: 'marker',
+      latLng: item.latLng,
+      color: item.color,
+    };
+  }
+  return {
+    type: 'polyline',
+    latLngs: item.latLngs,
+    color: item.color,
+  };
 }
 
 function isScenarioSettled(diagnostics: unknown): boolean {
@@ -1140,6 +1186,11 @@ function App(): h.JSX.Element {
   const [geolocationStatus, setGeolocationStatus] = useState('');
   const [mapContext, setMapContext] = useState<MapContextSelection | null>(null);
   const [drawToolsLinkStart, setDrawToolsLinkStart] = useState<IitcIrisDrawToolsLatLng | null>(null);
+  const [drawToolsItems, setDrawToolsItems] = useState<IitcIrisDrawToolsItem[]>([]);
+  const [drawToolsImportText, setDrawToolsImportText] = useState('');
+  const [drawToolsImportMerge, setDrawToolsImportMerge] = useState(true);
+  const [drawToolsImportStatus, setDrawToolsImportStatus] = useState('');
+  const [drawToolsClearConfirm, setDrawToolsClearConfirm] = useState<'polyline' | 'marker' | null>(null);
   const [debugDockVisible, setDebugDockVisible] = useState(() => loadStoredDebugDockVisible());
   const [activeSheet, setActiveSheet] = useState<SheetId>(() => loadStoredActiveSheet());
   const [activeSidePanel, setActiveSidePanel] = useState<SidePanelId | null>(() => {
@@ -1623,6 +1674,7 @@ function App(): h.JSX.Element {
   const addDrawToolsMarker = (color: string): void => {
     const latLng = getDrawToolsTargetLatLng();
     if (!latLng) return;
+    setDrawToolsClearConfirm(null);
     postDrawToolsAction({
       drawToolsAction: 'addMarker',
       drawToolsColor: color,
@@ -1639,6 +1691,7 @@ function App(): h.JSX.Element {
       setStatus('draw link start set');
       return;
     }
+    setDrawToolsClearConfirm(null);
     postDrawToolsAction({
       drawToolsAction: 'addPolyline',
       drawToolsColor: DRAW_TOOLS_DEFAULT_COLOR,
@@ -1651,6 +1704,7 @@ function App(): h.JSX.Element {
   const deleteDrawToolsAtContext = (itemType?: 'polyline' | 'marker'): void => {
     const latLng = getDrawToolsTargetLatLng();
     if (!latLng) return;
+    setDrawToolsClearConfirm(null);
     postDrawToolsAction({
       drawToolsAction: 'deleteAt',
       drawToolsItemType: itemType,
@@ -1659,10 +1713,72 @@ function App(): h.JSX.Element {
     setStatus('draw item delete requested');
   };
 
+  const deleteDrawToolsItem = (item: IitcIrisDrawToolsItem): void => {
+    setDrawToolsClearConfirm(null);
+    postDrawToolsAction({
+      drawToolsAction: 'deleteIndex',
+      drawToolsIndex: item.storageIndex,
+    });
+    setStatus(`${item.type === 'polyline' ? 'draw link' : 'draw marker'} delete requested`);
+  };
+
+  const undoDrawToolsItem = (itemType?: 'polyline' | 'marker'): void => {
+    setDrawToolsClearConfirm(null);
+    postDrawToolsAction({drawToolsAction: 'undo', drawToolsItemType: itemType});
+    setStatus(itemType === 'polyline' ? 'draw link undo requested' : itemType === 'marker' ? 'draw marker undo requested' : 'draw undo requested');
+  };
+
   const clearDrawToolsItems = (itemType?: 'polyline' | 'marker'): void => {
+    if (itemType && drawToolsClearConfirm !== itemType) {
+      setDrawToolsClearConfirm(itemType);
+      setStatus(itemType === 'polyline' ? 'click Clear again to remove drawn links' : 'click Clear again to remove drawn markers');
+      return;
+    }
+    setDrawToolsClearConfirm(null);
     postDrawToolsAction({drawToolsAction: 'clear', drawToolsItemType: itemType});
     if (!itemType || itemType === 'polyline') setDrawToolsLinkStart(null);
     setStatus(itemType === 'polyline' ? 'draw links cleared' : itemType === 'marker' ? 'draw markers cleared' : 'draw items cleared');
+  };
+
+  const centerDrawToolsItem = (item: IitcIrisDrawToolsItem): void => {
+    const center = getDrawToolsItemCenter(item);
+    setMapView(center.lat, center.lng, Math.max(camera.zoom, 15));
+  };
+
+  const copyDrawToolsItems = (itemType?: 'polyline' | 'marker'): void => {
+    const items = drawToolsItems
+      .filter((item) => !itemType || item.type === itemType)
+      .map(stripDrawToolsStorageIndex);
+    void navigator.clipboard.writeText(serializeIitcDrawToolsLayer(items))
+      .then(() => {
+        setDrawToolsImportStatus(itemType === 'polyline' ? 'links copied' : itemType === 'marker' ? 'markers copied' : 'draw tools JSON copied');
+        window.setTimeout(() => setDrawToolsImportStatus(''), 1400);
+      })
+      .catch(() => {
+        setDrawToolsImportStatus('copy failed');
+        window.setTimeout(() => setDrawToolsImportStatus(''), 1800);
+      });
+  };
+
+  const importDrawToolsItems = (): void => {
+    try {
+      const parsedItems = parseIitcDrawToolsLayer(drawToolsImportText);
+      const supportedItems = parsedItems.filter(isSupportedDrawToolsItem);
+      const skippedItems = parsedItems.length - supportedItems.length;
+      if (supportedItems.length === 0) {
+        setDrawToolsImportStatus('no supported links or markers');
+        return;
+      }
+      postDrawToolsAction({
+        drawToolsAction: 'import',
+        drawToolsJson: serializeIitcDrawToolsLayer(supportedItems),
+        drawToolsMerge: drawToolsImportMerge,
+      });
+      setDrawToolsImportStatus(skippedItems > 0 ? `importing ${supportedItems.length}, skipped ${skippedItems}` : `importing ${supportedItems.length}`);
+      setDrawToolsClearConfirm(null);
+    } catch (error) {
+      setDrawToolsImportStatus(error instanceof Error ? error.message : String(error));
+    }
   };
 
   const copySelectedPortalLink = (): void => {
@@ -2330,6 +2446,10 @@ function App(): h.JSX.Element {
           type: IITC_IRIS_MESSAGES.lifecycleSettings,
           lifecycleSettings,
         } satisfies IitcIrisMessage, '*');
+        window.postMessage({
+          type: IITC_IRIS_MESSAGES.drawTools,
+          drawToolsAction: 'requestStatus',
+        } satisfies IitcIrisMessage, '*');
       }
       if (event.data?.type === IITC_IRIS_MESSAGES.mapMoved) {
         setCamera((current) => ({
@@ -2406,6 +2526,12 @@ function App(): h.JSX.Element {
       }
       if (event.data?.type === IITC_IRIS_MESSAGES.searchStatus && event.data.search) {
         setSearchState(event.data.search);
+      }
+      if (event.data?.type === IITC_IRIS_MESSAGES.drawToolsStatus) {
+        setDrawToolsItems(event.data.drawToolsItems ?? []);
+        if (event.data.drawToolsError) {
+          setDrawToolsImportStatus(event.data.drawToolsError);
+        }
       }
     };
 
@@ -2663,6 +2789,8 @@ function App(): h.JSX.Element {
   ].filter((group) => group.items.length > 0);
   const activeSearchResult = searchState.results.filter((result) => result.type !== 'empty')[activeSearchResultIndex];
   const drawToolsTarget = getDrawToolsTarget();
+  const drawToolsLinkItems = drawToolsItems.filter((item) => item.type === 'polyline');
+  const drawToolsMarkerItems = drawToolsItems.filter((item) => item.type === 'marker');
 
   return (
     <div className={`iitc-iris-shell iitc-iris-sheet-${activeSheet} ${entityFetch.selectedPortal ? 'iitc-iris-has-selected-portal' : ''}`}>
@@ -2849,8 +2977,45 @@ function App(): h.JSX.Element {
             </span>
           </div>}
           <div className="iitc-iris-map-context-row">
-            <span className="iitc-iris-map-context-coords">Storage</span>
-            <button className="iitc-iris-portal-action" type="button" onClick={() => clearDrawToolsItems('polyline')} title="Clear all drawn links">Clear</button>
+            <span className="iitc-iris-map-context-coords">{formatInteger(drawToolsLinkItems.length)} drawn links</span>
+            <button className="iitc-iris-portal-action" type="button" onClick={() => undoDrawToolsItem('polyline')} disabled={drawToolsLinkItems.length === 0} title="Remove latest drawn link">Undo</button>
+            <button className="iitc-iris-portal-action" type="button" onClick={() => copyDrawToolsItems('polyline')} disabled={drawToolsLinkItems.length === 0} title="Copy drawn links as IITC Draw Tools JSON">Copy</button>
+            <button className="iitc-iris-portal-action" type="button" onClick={() => copyDrawToolsItems()} disabled={drawToolsItems.length === 0} title="Export all supported Draw Tools items as IITC JSON">Export</button>
+            <button className={`iitc-iris-portal-action ${drawToolsClearConfirm === 'polyline' ? 'is-danger' : ''}`} type="button" onClick={() => clearDrawToolsItems('polyline')} disabled={drawToolsLinkItems.length === 0} title="Clear all drawn links">
+              {drawToolsClearConfirm === 'polyline' ? 'Confirm' : 'Clear'}
+            </button>
+          </div>
+          {drawToolsLinkItems.length > 0 && <div className="iitc-iris-draw-tools-list" aria-label="Drawn links">
+            {drawToolsLinkItems.map((item, index) => (
+              <div className="iitc-iris-draw-tools-list-item" key={`link-${item.storageIndex}`}>
+                <span className="iitc-iris-draw-tools-list-label">
+                  <b>{getDrawToolsItemLabel(item, index)}</b>
+                  <small>{getDrawToolsItemDetail(item)}</small>
+                </span>
+                <span className="iitc-iris-draw-tools-list-actions">
+                  <button className="iitc-iris-portal-action" type="button" onClick={() => centerDrawToolsItem(item)} title="Center this drawn link">Center</button>
+                  <button className="iitc-iris-portal-action" type="button" onClick={() => deleteDrawToolsItem(item)} title="Delete this drawn link">Del</button>
+                </span>
+              </div>
+            ))}
+          </div>}
+          <div className="iitc-iris-draw-tools-import">
+            <span className="iitc-iris-draw-tools-interop">IITC Draw Tools JSON: links and markers</span>
+            <textarea
+              className="iitc-iris-draw-tools-import-input"
+              value={drawToolsImportText}
+              placeholder="Paste IITC Draw Tools JSON"
+              rows={3}
+              onInput={(event) => setDrawToolsImportText(event.currentTarget.value)}
+            />
+            <div className="iitc-iris-map-context-row">
+              <label className="iitc-iris-draw-tools-import-merge">
+                <input type="checkbox" checked={drawToolsImportMerge} onChange={(event) => setDrawToolsImportMerge(event.currentTarget.checked)} />
+                Merge
+              </label>
+              <button className="iitc-iris-portal-action" type="button" onClick={importDrawToolsItems} disabled={!drawToolsImportText.trim()} title="Import supported links and markers">Import</button>
+              {drawToolsImportStatus && <span className="iitc-iris-map-control-status">{drawToolsImportStatus}</span>}
+            </div>
           </div>
         </div>}
         {activeSheet === 'drawMarkers' && <div className="iitc-iris-map-controls-section">
@@ -2875,9 +3040,47 @@ function App(): h.JSX.Element {
             </span>
           </div>
           <div className="iitc-iris-map-context-row">
-            <span className="iitc-iris-map-context-coords">Manage</span>
+            <span className="iitc-iris-map-context-coords">{formatInteger(drawToolsMarkerItems.length)} drawn markers</span>
             <button className="iitc-iris-portal-action" type="button" onClick={() => deleteDrawToolsAtContext('marker')} disabled={!drawToolsTarget} title="Delete nearest drawn marker">Del</button>
-            <button className="iitc-iris-portal-action" type="button" onClick={() => clearDrawToolsItems('marker')} title="Clear all drawn markers">Clear</button>
+            <button className="iitc-iris-portal-action" type="button" onClick={() => undoDrawToolsItem('marker')} disabled={drawToolsMarkerItems.length === 0} title="Remove latest drawn marker">Undo</button>
+            <button className="iitc-iris-portal-action" type="button" onClick={() => copyDrawToolsItems('marker')} disabled={drawToolsMarkerItems.length === 0} title="Copy drawn markers as IITC Draw Tools JSON">Copy</button>
+            <button className="iitc-iris-portal-action" type="button" onClick={() => copyDrawToolsItems()} disabled={drawToolsItems.length === 0} title="Export all supported Draw Tools items as IITC JSON">Export</button>
+            <button className={`iitc-iris-portal-action ${drawToolsClearConfirm === 'marker' ? 'is-danger' : ''}`} type="button" onClick={() => clearDrawToolsItems('marker')} disabled={drawToolsMarkerItems.length === 0} title="Clear all drawn markers">
+              {drawToolsClearConfirm === 'marker' ? 'Confirm' : 'Clear'}
+            </button>
+          </div>
+          {drawToolsMarkerItems.length > 0 && <div className="iitc-iris-draw-tools-list" aria-label="Drawn markers">
+            {drawToolsMarkerItems.map((item, index) => (
+              <div className="iitc-iris-draw-tools-list-item" key={`marker-${item.storageIndex}`}>
+                <span className="iitc-iris-draw-tools-marker-dot" style={{background: item.color ?? DRAW_TOOLS_DEFAULT_COLOR}} />
+                <span className="iitc-iris-draw-tools-list-label">
+                  <b>{getDrawToolsItemLabel(item, index)}</b>
+                  <small>{getDrawToolsItemDetail(item)}</small>
+                </span>
+                <span className="iitc-iris-draw-tools-list-actions">
+                  <button className="iitc-iris-portal-action" type="button" onClick={() => centerDrawToolsItem(item)} title="Center this drawn marker">Center</button>
+                  <button className="iitc-iris-portal-action" type="button" onClick={() => deleteDrawToolsItem(item)} title="Delete this drawn marker">Del</button>
+                </span>
+              </div>
+            ))}
+          </div>}
+          <div className="iitc-iris-draw-tools-import">
+            <span className="iitc-iris-draw-tools-interop">IITC Draw Tools JSON: links and markers</span>
+            <textarea
+              className="iitc-iris-draw-tools-import-input"
+              value={drawToolsImportText}
+              placeholder="Paste IITC Draw Tools JSON"
+              rows={3}
+              onInput={(event) => setDrawToolsImportText(event.currentTarget.value)}
+            />
+            <div className="iitc-iris-map-context-row">
+              <label className="iitc-iris-draw-tools-import-merge">
+                <input type="checkbox" checked={drawToolsImportMerge} onChange={(event) => setDrawToolsImportMerge(event.currentTarget.checked)} />
+                Merge
+              </label>
+              <button className="iitc-iris-portal-action" type="button" onClick={importDrawToolsItems} disabled={!drawToolsImportText.trim()} title="Import supported links and markers">Import</button>
+              {drawToolsImportStatus && <span className="iitc-iris-map-control-status">{drawToolsImportStatus}</span>}
+            </div>
           </div>
         </div>}
         {activeSheet === 'view' && <div className="iitc-iris-map-controls-section">

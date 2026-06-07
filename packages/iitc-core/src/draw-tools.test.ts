@@ -34,6 +34,12 @@ describe('IITC Draw Tools storage', () => {
     expect(parseIitcDrawToolsLayer(serializeIitcDrawToolsLayer(items))).toEqual(items);
   });
 
+  it('keeps IITC-compatible JSON shape for all Draw Tools item types', () => {
+    const iitcJson = '[{"type":"polyline","latLngs":[{"lat":52.37,"lng":4.89},{"lat":52.38,"lng":4.9}],"color":"#a24ac3"},{"type":"polygon","latLngs":[{"lat":52.37,"lng":4.89},{"lat":52.38,"lng":4.9},{"lat":52.39,"lng":4.91}],"color":"#c34a4a"},{"type":"circle","latLng":{"lat":52.371,"lng":4.891},"radius":250,"color":"#4aa8c3"},{"type":"marker","latLng":{"lat":52.372,"lng":4.892},"color":"#ffffff"}]';
+
+    expect(serializeIitcDrawToolsLayer(parseIitcDrawToolsLayer(iitcJson))).toBe(iitcJson);
+  });
+
   it('accepts Leaflet-compatible coordinate arrays from imported JSON', () => {
     expect(parseIitcDrawToolsLayer(JSON.stringify([
       {

@@ -36,6 +36,7 @@ export const IITC_IRIS_MESSAGES = {
   searchPreview: 'IITC_IRIS_SEARCH_PREVIEW',
   searchClear: 'IITC_IRIS_SEARCH_CLEAR',
   drawTools: 'IITC_IRIS_DRAW_TOOLS',
+  drawToolsStatus: 'IITC_IRIS_DRAW_TOOLS_STATUS',
 } as const;
 
 export type IitcIrisMessageType = typeof IITC_IRIS_MESSAGES[keyof typeof IITC_IRIS_MESSAGES];
@@ -137,10 +138,15 @@ export interface IitcIrisMessage {
   searchConfirmed?: boolean;
   searchResult?: IitcIrisSearchResult;
   searchZoom?: boolean;
-  drawToolsAction?: 'addMarker' | 'addPolyline' | 'deleteAt' | 'clear';
+  drawToolsAction?: 'addMarker' | 'addPolyline' | 'deleteAt' | 'deleteIndex' | 'clear' | 'undo' | 'import' | 'requestStatus';
   drawToolsItemType?: 'polyline' | 'marker';
   drawToolsColor?: string;
   drawToolsLatLngs?: IitcIrisDrawToolsLatLng[];
+  drawToolsItems?: IitcIrisDrawToolsItem[];
+  drawToolsIndex?: number;
+  drawToolsJson?: string;
+  drawToolsMerge?: boolean;
+  drawToolsError?: string;
   userLat?: number;
   userLng?: number;
   userAccuracy?: number;
@@ -160,6 +166,22 @@ export interface IitcIrisDrawToolsLatLng {
   lat: number;
   lng: number;
 }
+
+export interface IitcIrisDrawToolsPolyline {
+  type: 'polyline';
+  latLngs: IitcIrisDrawToolsLatLng[];
+  color?: string;
+  storageIndex: number;
+}
+
+export interface IitcIrisDrawToolsMarker {
+  type: 'marker';
+  latLng: IitcIrisDrawToolsLatLng;
+  color?: string;
+  storageIndex: number;
+}
+
+export type IitcIrisDrawToolsItem = IitcIrisDrawToolsPolyline | IitcIrisDrawToolsMarker;
 
 export interface IitcIrisMapContextPortalAnchor {
   guid?: string;

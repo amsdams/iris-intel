@@ -43,6 +43,7 @@ import {
   parseIitcOrnamentVisibilitySettings,
   parseIitcInventoryResponse,
   parseIitcDrawToolsLayer,
+  importIitcDrawToolsItems,
   parseIitcMissionDetailsResponse,
   parseIitcTopMissionsResponse,
   parseIitcPortalDetailsResponse,
@@ -762,6 +763,23 @@ function saveIitcDrawToolsItems(items: readonly IitcDrawToolsItem[]): void {
   window.localStorage.setItem(IITC_DRAW_TOOLS_KEY_STORAGE, serializeIitcDrawToolsLayer(items));
 }
 
+function getIitcDrawToolsSupportedItems(items = loadIitcDrawToolsItems()): NonNullable<IitcIrisMessage['drawToolsItems']> {
+  const supportedItems: NonNullable<IitcIrisMessage['drawToolsItems']> = [];
+  items.forEach((item, storageIndex) => {
+    if (item.type === 'polyline') supportedItems.push({...item, storageIndex});
+    if (item.type === 'marker') supportedItems.push({...item, storageIndex});
+  });
+  return supportedItems;
+}
+
+function postIitcDrawToolsStatus(error?: string): void {
+  window.postMessage({
+    type: IITC_IRIS_MESSAGES.drawToolsStatus,
+    drawToolsItems: getIitcDrawToolsSupportedItems(),
+    drawToolsError: error,
+  } satisfies IitcIrisMessage, '*');
+}
+
 function getIitcDrawToolsRenderColor(color: string | undefined): string {
   if (!color) return IITC_DRAW_TOOLS_DEFAULT_COLOR;
   return /^#[0-9a-f]{3,8}$/i.test(color) ? color : IITC_DRAW_TOOLS_DEFAULT_COLOR;
@@ -854,6 +872,7 @@ function deleteIitcDrawToolsItemAt(lat: number, lng: number, itemType?: 'polylin
   if (bestIndex === -1 || bestDistance > 100) return false;
   saveIitcDrawToolsItems(items.filter((_, index) => index !== bestIndex));
   renderIitcDrawTools();
+  postIitcDrawToolsStatus();
   return true;
 }
 
@@ -861,17 +880,58 @@ function applyIitcDrawToolsAction(message: IitcIrisMessage): void {
   const action = message.drawToolsAction;
   if (!action) return;
 
+  if (action === 'requestStatus') {
+    postIitcDrawToolsStatus();
+    return;
+  }
+
   if (action === 'clear') {
     saveIitcDrawToolsItems(message.drawToolsItemType
       ? loadIitcDrawToolsItems().filter((item) => item.type !== message.drawToolsItemType)
       : []);
     renderIitcDrawTools();
+    postIitcDrawToolsStatus();
     return;
   }
 
   if (action === 'deleteAt') {
     if (message.drawToolsLatLngs?.[0]) {
       deleteIitcDrawToolsItemAt(message.drawToolsLatLngs[0].lat, message.drawToolsLatLngs[0].lng, message.drawToolsItemType);
+    }
+    return;
+  }
+
+  if (action === 'deleteIndex') {
+    const items = loadIitcDrawToolsItems();
+    if (message.drawToolsIndex !== undefined && items[message.drawToolsIndex]) {
+      saveIitcDrawToolsItems(items.filter((_, index) => index !== message.drawToolsIndex));
+      renderIitcDrawTools();
+    }
+    postIitcDrawToolsStatus();
+    return;
+  }
+
+  if (action === 'undo') {
+    const items = loadIitcDrawToolsItems();
+    const index = [...items].reverse().findIndex((item) => !message.drawToolsItemType || item.type === message.drawToolsItemType);
+    if (index >= 0) {
+      const storageIndex = items.length - 1 - index;
+      saveIitcDrawToolsItems(items.filter((_, itemIndex) => itemIndex !== storageIndex));
+      renderIitcDrawTools();
+    }
+    postIitcDrawToolsStatus();
+    return;
+  }
+
+  if (action === 'import') {
+    try {
+      const importedItems = parseIitcDrawToolsLayer(message.drawToolsJson ?? '').filter((item) => item.type === 'polyline' || item.type === 'marker');
+      const nextItems = importIitcDrawToolsItems(loadIitcDrawToolsItems(), importedItems, {merge: message.drawToolsMerge !== false});
+      saveIitcDrawToolsItems(nextItems);
+      renderIitcDrawTools();
+      postIitcDrawToolsStatus();
+    } catch (error) {
+      postIitcDrawToolsStatus(error instanceof Error ? error.message : String(error));
     }
     return;
   }
@@ -885,6 +945,7 @@ function applyIitcDrawToolsAction(message: IitcIrisMessage): void {
       color: message.drawToolsColor ?? IITC_DRAW_TOOLS_DEFAULT_COLOR,
     }]);
     renderIitcDrawTools();
+    postIitcDrawToolsStatus();
     return;
   }
 
@@ -895,6 +956,7 @@ function applyIitcDrawToolsAction(message: IitcIrisMessage): void {
       color: message.drawToolsColor ?? IITC_DRAW_TOOLS_DEFAULT_COLOR,
     }]);
     renderIitcDrawTools();
+    postIitcDrawToolsStatus();
   }
 }
 
@@ -902,9 +964,16 @@ function createIitcDrawToolsMarkerIcon(color = IITC_DRAW_TOOLS_DEFAULT_COLOR): L
   const markerColor = getIitcDrawToolsRenderColor(color);
   return L.divIcon({
     className: 'iitc-iris-draw-tools-marker',
-    html: `<span style="--iitc-iris-draw-tools-marker-color:${markerColor}"></span>`,
-    iconSize: [24, 32],
-    iconAnchor: [12, 32],
+    html: [
+      `<svg viewBox="0 0 25 41" style="fill:${markerColor}" aria-hidden="true" focusable="false">`,
+      '<path d="M1.36241844765,18.67488124675 A12.5,12.5 0 1,1 23.63758155235,18.67488124675 L12.5,40.5336158073 Z" style="stroke:none;" />',
+      '<path d="M1.80792170975,18.44788599685 A12,12 0 1,1 23.19207829025,18.44788599685 L12.5,39.432271175 Z" style="stroke:#000000; stroke-width:1px; stroke-opacity:0.15; fill:none;" />',
+      '<path d="M2.921679865,17.8803978722 A10.75,10.75 0 1,1 22.078320135,17.8803978722 L12.5,36.6789095943 Z" style="stroke:#ffffff; stroke-width:1.5px; stroke-opacity:0.35; fill:none;" />',
+      '<path d="M19.86121593215,17.25 L12.5,21.5 L5.13878406785,17.25 L5.13878406785,8.75 L12.5,4.5 L19.86121593215,8.75 Z M7.7368602792,10.25 L17.2631397208,10.25 L12.5,18.5 Z M12.5,13 L7.7368602792,10.25 M12.5,13 L17.2631397208,10.25 M12.5,13 L12.5,18.5 M19.86121593215,17.25 L16.39711431705,15.25 M5.13878406785,17.25 L8.60288568295,15.25 M12.5,4.5 L12.5,8.5" style="stroke:#ffffff; stroke-width:1.25px; stroke-opacity:1; fill:none;" />',
+      '</svg>',
+    ].join(''),
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
   });
 }
 
@@ -4744,6 +4813,7 @@ function boot(): void {
 	    postMapMoved();
 	    postAgentState();
 	    renderIitcDrawTools();
+	    postIitcDrawToolsStatus();
 	    void refreshSubscriptionStatus();
 	    window.postMessage({type: IITC_IRIS_MESSAGES.pageReady}, '*');
 	  }, 0);

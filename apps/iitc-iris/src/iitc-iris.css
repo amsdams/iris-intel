@@ -877,6 +877,12 @@
   background: rgb(10 45 64 / 96%);
 }
 
+.iitc-iris-portal-action.is-danger {
+  border-color: rgb(255 79 95 / 72%);
+  background: rgb(72 16 24 / 94%);
+  color: #fff;
+}
+
 .iitc-iris-portal-action:disabled {
   border-color: rgb(95 180 255 / 18%);
   background: rgb(10 18 25 / 50%);
@@ -2557,30 +2563,15 @@ button.iitc-iris-inventory-row:hover {
 }
 
 .iitc-iris-draw-tools-marker {
-  width: 24px;
-  height: 32px;
+  width: 25px;
+  height: 41px;
   pointer-events: auto;
 }
 
-.iitc-iris-draw-tools-marker span {
-  position: relative;
+.iitc-iris-draw-tools-marker svg {
   display: block;
-  width: 18px;
-  height: 18px;
-  margin: 0 auto;
-  background: var(--iitc-iris-draw-tools-marker-color, #a24ac3);
-  border: 2px solid rgb(255 255 255 / 92%);
-  border-radius: 50% 50% 50% 0;
-  box-shadow: 0 2px 6px rgb(0 0 0 / 60%);
-  transform: rotate(-45deg);
-}
-
-.iitc-iris-draw-tools-marker span::after {
-  position: absolute;
-  inset: 4px;
-  content: "";
-  background: rgb(0 0 0 / 35%);
-  border-radius: 50%;
+  width: 25px;
+  height: 41px;
 }
 
 .iitc-iris-draw-tools-marker-actions {
@@ -2602,6 +2593,100 @@ button.iitc-iris-inventory-row:hover {
 .iitc-iris-draw-tools-marker-swatch:hover,
 .iitc-iris-draw-tools-marker-swatch:focus-visible {
   border-color: #fff;
+}
+
+.iitc-iris-draw-tools-list {
+  display: grid;
+  gap: 4px;
+  max-height: 180px;
+  overflow: auto;
+}
+
+.iitc-iris-draw-tools-list-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  gap: 6px;
+  align-items: center;
+  padding: 5px 6px;
+  border: 1px solid rgb(95 180 255 / 18%);
+  border-radius: 4px;
+  background: rgb(10 18 25 / 62%);
+}
+
+.iitc-iris-draw-tools-marker-dot {
+  width: 12px;
+  height: 12px;
+  border: 1px solid rgb(255 255 255 / 72%);
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 48%);
+}
+
+.iitc-iris-draw-tools-marker-dot + .iitc-iris-draw-tools-list-label {
+  min-width: 0;
+}
+
+.iitc-iris-draw-tools-list-item:has(.iitc-iris-draw-tools-marker-dot) {
+  grid-template-columns: 12px minmax(0, 1fr) max-content;
+}
+
+.iitc-iris-draw-tools-list-label {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.iitc-iris-draw-tools-list-label b,
+.iitc-iris-draw-tools-list-label small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iitc-iris-draw-tools-list-label b {
+  color: #fff;
+  font-size: 11px;
+}
+
+.iitc-iris-draw-tools-list-label small {
+  color: #91a6b7;
+  font-size: 10px;
+}
+
+.iitc-iris-draw-tools-list-actions {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.iitc-iris-draw-tools-import {
+  display: grid;
+  gap: 5px;
+}
+
+.iitc-iris-draw-tools-interop {
+  color: #91a6b7;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.iitc-iris-draw-tools-import-input {
+  width: 100%;
+  min-height: 54px;
+  resize: vertical;
+  padding: 5px 6px;
+  border: 1px solid rgb(95 180 255 / 24%);
+  border-radius: 4px;
+  background: rgb(2 10 16 / 84%);
+  color: #d8e8f2;
+  font: 10px/1.35 monospace;
+}
+
+.iitc-iris-draw-tools-import-merge {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  color: #91a6b7;
+  font-size: 10px;
 }
 
 .iitc-iris-player-tracker-marker::before {
