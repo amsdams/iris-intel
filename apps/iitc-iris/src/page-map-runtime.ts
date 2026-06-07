@@ -2,6 +2,7 @@ import L, {type Layer as LeafletLayer, type LeafletMouseEvent, type Map as Leafl
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionDetails, type IitcIrisMissionSource, type IitcIrisMissionSummary, type IitcIrisMissionWaypoint, type IitcIrisMissionsState, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisSubscriptionState, type IitcIrisTriStateLayer} from './messages';
 import {IITC_LEVEL_COLORS, IITC_TEAM_COLORS} from './iitc-colors';
 import {createIitcIrisMapContextMessage, installIitcIrisContextGestures} from './map-context-runtime';
+import {convertIitcGeodesicLatLngs, createIitcGeodesicPolygon, createIitcGeodesicPolyline} from './leaflet-geodesic';
 import {
   appendIitcResponseBucketDiagnostics,
   applyIitcTileRequestResponseToQueue,
@@ -894,7 +895,7 @@ function createSelectedPortalMarker(portal: IitcIrisRenderPortal): LeafletLayer 
 }
 
 function createSelectedLinkMarker(link: IitcIrisRenderLink): LeafletLayer {
-  return L.polyline([toLatLng(link.oLatE6, link.oLngE6), toLatLng(link.dLatE6, link.dLngE6)], {
+  return createIitcGeodesicPolyline([toLatLng(link.oLatE6, link.oLngE6), toLatLng(link.dLatE6, link.dLngE6)], {
     color: '#ff9900',
     opacity: 0.95,
     pane: getLayerPane('selectedMapObject'),
@@ -904,7 +905,7 @@ function createSelectedLinkMarker(link: IitcIrisRenderLink): LeafletLayer {
 }
 
 function createSelectedFieldMarker(field: IitcIrisRenderField): LeafletLayer {
-  return L.polygon(field.points.map((point) => toLatLng(point.latE6, point.lngE6)), {
+  return createIitcGeodesicPolygon(field.points.map((point) => toLatLng(point.latE6, point.lngE6)), {
     color: '#ff9900',
     fill: false,
     opacity: 0.95,
@@ -1155,11 +1156,13 @@ function findContextLinkAtPoint(point: L.Point): IitcIrisRenderLink | undefined 
   let nearest: {link: IitcIrisRenderLink; distance: number} | undefined;
   for (const link of latestEntities.links) {
     if (!isLinkVisible(link)) continue;
-    const start = map.latLngToContainerPoint(toLatLng(link.oLatE6, link.oLngE6));
-    const end = map.latLngToContainerPoint(toLatLng(link.dLatE6, link.dLngE6));
-    const distance = getPointToSegmentDistance(point, start, end);
-    if (distance > LINK_CONTEXT_HIT_TOLERANCE_PX) continue;
-    if (!nearest || distance < nearest.distance) nearest = {link, distance};
+    const linePoints = convertIitcGeodesicLatLngs([toLatLng(link.oLatE6, link.oLngE6), toLatLng(link.dLatE6, link.dLngE6)])
+      .map((latLng) => map.latLngToContainerPoint(latLng));
+    for (let index = 0; index < linePoints.length - 1; index += 1) {
+      const distance = getPointToSegmentDistance(point, linePoints[index], linePoints[index + 1]);
+      if (distance > LINK_CONTEXT_HIT_TOLERANCE_PX) continue;
+      if (!nearest || distance < nearest.distance) nearest = {link, distance};
+    }
   }
   return nearest?.link;
 }
@@ -1193,7 +1196,8 @@ function findContextFieldAtPoint(point: L.Point): IitcIrisRenderField | undefine
   let smallest: {field: IitcIrisRenderField; area: number} | undefined;
   for (const field of latestEntities.fields) {
     if (!isFieldVisible(field) || field.points.length < 3) continue;
-    const polygon = field.points.map((fieldPoint) => map.latLngToContainerPoint(toLatLng(fieldPoint.latE6, fieldPoint.lngE6)));
+    const polygon = convertIitcGeodesicLatLngs(field.points.map((fieldPoint) => toLatLng(fieldPoint.latE6, fieldPoint.lngE6)), {closed: true})
+      .map((latLng) => map.latLngToContainerPoint(latLng));
     if (!isPointInPolygon(point, polygon)) continue;
     const area = getPolygonArea(polygon);
     if (!smallest || area < smallest.area) smallest = {field, area};
@@ -1712,7 +1716,7 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
 
   for (const field of entities.fields) {
     if (!isFieldVisible(field) || field.points.length !== 3) continue;
-    addRenderedLayer(layers.fields, L.polygon(field.points.map((point) => toLatLng(point.latE6, point.lngE6)), {
+    addRenderedLayer(layers.fields, createIitcGeodesicPolygon(field.points.map((point) => toLatLng(point.latE6, point.lngE6)), {
       color: getTeamColor(field.team),
       fillColor: getTeamColor(field.team),
       fillOpacity: 0.25,
@@ -1726,7 +1730,7 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
 
   for (const link of entities.links) {
     if (!isLinkVisible(link)) continue;
-    addRenderedLayer(layers.links, L.polyline([toLatLng(link.oLatE6, link.oLngE6), toLatLng(link.dLatE6, link.dLngE6)], {
+    addRenderedLayer(layers.links, createIitcGeodesicPolyline([toLatLng(link.oLatE6, link.oLngE6), toLatLng(link.dLatE6, link.dLngE6)], {
       color: getTeamColor(link.team),
       opacity: 1,
       pane: getLayerPane('links'),
