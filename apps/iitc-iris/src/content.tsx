@@ -2531,6 +2531,8 @@ function App(): h.JSX.Element {
         setDrawToolsItems(event.data.drawToolsItems ?? []);
         if (event.data.drawToolsError) {
           setDrawToolsImportStatus(event.data.drawToolsError);
+        } else if (event.data.drawToolsStatusText) {
+          setDrawToolsImportStatus(event.data.drawToolsStatusText);
         }
       }
     };

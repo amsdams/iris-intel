@@ -772,10 +772,11 @@ function getIitcDrawToolsSupportedItems(items = loadIitcDrawToolsItems()): NonNu
   return supportedItems;
 }
 
-function postIitcDrawToolsStatus(error?: string): void {
+function postIitcDrawToolsStatus(statusText?: string, error?: string): void {
   window.postMessage({
     type: IITC_IRIS_MESSAGES.drawToolsStatus,
     drawToolsItems: getIitcDrawToolsSupportedItems(),
+    drawToolsStatusText: statusText,
     drawToolsError: error,
   } satisfies IitcIrisMessage, '*');
 }
@@ -855,6 +856,83 @@ function iitcSegmentsIntersect(
   return t > 0 && t < 1 && u > 0 && u < 1;
 }
 
+function getIitcDrawToolsGeodesicSegments(latLngs: readonly {lat: number; lng: number}[]): {a: {lat: number; lng: number}; b: {lat: number; lng: number}}[] {
+  const points = convertIitcGeodesicLatLngs(latLngs.map((latLng) => [latLng.lat, latLng.lng]));
+  return points.slice(1).map((latLng, index) => ({
+    a: {lat: points[index].lat, lng: points[index].lng},
+    b: {lat: latLng.lat, lng: latLng.lng},
+  }));
+}
+
+function snapIitcDrawToolsToPortals(): void {
+  const map = window.__iitcIrisMap;
+  if (!map || !latestEntities) {
+    postIitcDrawToolsStatus(undefined, 'snap unavailable');
+    return;
+  }
+
+  const visibleBounds = map.getBounds();
+  const visiblePortals = latestEntities.portals
+    .filter((portal) => !portal.isPlaceholder)
+    .map((portal) => ({
+      latLng: {lat: portal.latE6 / 1_000_000, lng: portal.lngE6 / 1_000_000},
+      point: map.project(toLatLng(portal.latE6, portal.lngE6)),
+    }))
+    .filter((portal) => visibleBounds.contains(portal.latLng));
+
+  if (visiblePortals.length === 0) {
+    postIitcDrawToolsStatus('snap tested 0, moved 0', 'no visible portals');
+    return;
+  }
+
+  const findClosestPortalLatLng = (latLng: {lat: number; lng: number}): {lat: number; lng: number} | undefined => {
+    const point = map.project([latLng.lat, latLng.lng]);
+    let bestPortal: typeof visiblePortals[number] | undefined;
+    let bestDistanceSquared = Infinity;
+
+    for (const portal of visiblePortals) {
+      const distanceSquared = point.distanceTo(portal.point) ** 2;
+      if (distanceSquared < bestDistanceSquared) {
+        bestDistanceSquared = distanceSquared;
+        bestPortal = portal;
+      }
+    }
+
+    if (!bestPortal || (bestPortal.latLng.lat === latLng.lat && bestPortal.latLng.lng === latLng.lng)) return undefined;
+    return bestPortal.latLng;
+  };
+
+  let testedCount = 0;
+  let changedCount = 0;
+  let anyChanged = false;
+
+  const snapLatLng = (latLng: {lat: number; lng: number}): {lat: number; lng: number} => {
+    if (!visibleBounds.contains(latLng)) return latLng;
+    testedCount += 1;
+    const snapped = findClosestPortalLatLng(latLng);
+    if (!snapped) return latLng;
+    changedCount += 1;
+    anyChanged = true;
+    return snapped;
+  };
+
+  const items = loadIitcDrawToolsItems().map((item): IitcDrawToolsItem => {
+    if (item.type === 'marker') return {...item, latLng: snapLatLng(item.latLng)};
+    if (item.type === 'circle') return {...item, latLng: snapLatLng(item.latLng)};
+    if (item.type === 'polyline') return {...item, latLngs: item.latLngs.map(snapLatLng)};
+    if (item.type === 'polygon') return {...item, latLngs: item.latLngs.map(snapLatLng)};
+    return item;
+  });
+
+  if (anyChanged) {
+    saveIitcDrawToolsItems(items);
+    renderIitcDrawTools();
+  }
+
+  const incompleteWarning = latestPlan && !latestPlan.tileParams.hasPortals ? '; portal data may be incomplete' : '';
+  postIitcDrawToolsStatus(`snap tested ${testedCount}, moved ${changedCount}${incompleteWarning}`);
+}
+
 function deleteIitcDrawToolsItemAt(lat: number, lng: number, itemType?: 'polyline' | 'marker'): boolean {
   const items = loadIitcDrawToolsItems();
   let bestIndex = -1;
@@ -931,8 +1009,13 @@ function applyIitcDrawToolsAction(message: IitcIrisMessage): void {
       renderIitcDrawTools();
       postIitcDrawToolsStatus();
     } catch (error) {
-      postIitcDrawToolsStatus(error instanceof Error ? error.message : String(error));
+      postIitcDrawToolsStatus(undefined, error instanceof Error ? error.message : String(error));
     }
+    return;
+  }
+
+  if (action === 'snapToPortals') {
+    snapIitcDrawToolsToPortals();
     return;
   }
 
@@ -1005,23 +1088,21 @@ function renderIitcDrawToolsCrossings(items: readonly IitcDrawToolsItem[]): void
 
   const drawnSegments = items
     .filter((item): item is IitcDrawToolsPolyline => item.type === 'polyline')
-    .flatMap((item) => item.latLngs.slice(1).map((latLng, index) => ({
-      a: {lat: item.latLngs[index].lat, lng: item.latLngs[index].lng},
-      b: {lat: latLng.lat, lng: latLng.lng},
-    })));
+    .flatMap((item) => getIitcDrawToolsGeodesicSegments(item.latLngs));
   if (drawnSegments.length === 0) return;
 
   const crossingLinkGuids = new Set<string>();
   for (const link of latestEntities.links) {
     if (!isLinkVisible(link)) continue;
-    const linkSegment = {
-      a: {lat: link.oLatE6 / 1_000_000, lng: link.oLngE6 / 1_000_000},
-      b: {lat: link.dLatE6 / 1_000_000, lng: link.dLngE6 / 1_000_000},
-    };
-    const linkBounds = getIitcSegmentBounds(linkSegment.a, linkSegment.b);
+    const linkSegments = getIitcDrawToolsGeodesicSegments([
+      {lat: link.oLatE6 / 1_000_000, lng: link.oLngE6 / 1_000_000},
+      {lat: link.dLatE6 / 1_000_000, lng: link.dLngE6 / 1_000_000},
+    ]);
     if (drawnSegments.some((drawnSegment) => (
-      iitcSegmentBoundsOverlap(getIitcSegmentBounds(drawnSegment.a, drawnSegment.b), linkBounds) &&
-      iitcSegmentsIntersect(drawnSegment.a, drawnSegment.b, linkSegment.a, linkSegment.b)
+      linkSegments.some((linkSegment) => (
+        iitcSegmentBoundsOverlap(getIitcSegmentBounds(drawnSegment.a, drawnSegment.b), getIitcSegmentBounds(linkSegment.a, linkSegment.b)) &&
+        iitcSegmentsIntersect(drawnSegment.a, drawnSegment.b, linkSegment.a, linkSegment.b)
+      ))
     ))) {
       crossingLinkGuids.add(link.guid);
     }

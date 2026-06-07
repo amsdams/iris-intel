@@ -138,7 +138,7 @@ export interface IitcIrisMessage {
   searchConfirmed?: boolean;
   searchResult?: IitcIrisSearchResult;
   searchZoom?: boolean;
-  drawToolsAction?: 'addMarker' | 'addPolyline' | 'deleteAt' | 'deleteIndex' | 'clear' | 'undo' | 'import' | 'requestStatus';
+  drawToolsAction?: 'addMarker' | 'addPolyline' | 'deleteAt' | 'deleteIndex' | 'clear' | 'undo' | 'import' | 'snapToPortals' | 'requestStatus';
   drawToolsItemType?: 'polyline' | 'marker';
   drawToolsColor?: string;
   drawToolsLatLngs?: IitcIrisDrawToolsLatLng[];
@@ -147,6 +147,7 @@ export interface IitcIrisMessage {
   drawToolsJson?: string;
   drawToolsMerge?: boolean;
   drawToolsError?: string;
+  drawToolsStatusText?: string;
   userLat?: number;
   userLng?: number;
   userAccuracy?: number;

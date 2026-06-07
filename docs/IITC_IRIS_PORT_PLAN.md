@@ -975,6 +975,69 @@ Current status:
   `/r/getTopMissionsInBounds`, `Portal -> Missions` calls `/r/getTopMissionsForPortal`, details call
   `/r/getMissionDetails`, and selected mission routes/waypoints render on the map.
 
+### Draw Tools V1 Checkpoint - 2026-06-07
+
+IITC source references:
+
+- `reference/ingress-intel-total-conversion/plugins/draw-tools.js`
+- `reference/ingress-intel-total-conversion/core/code/boot.js` for `L.DivIcon.ColoredSvg`
+- `reference/ingress-intel-total-conversion/plugins/external/leaflet.draw-geodesic.js`
+- `reference/ingress-intel-total-conversion/plugins/external/leaflet.draw-snap.js`
+- `reference/ingress-intel-total-conversion/plugins/external/leaflet.draw-src.js`
+
+Ported IITC concepts and names:
+
+- Storage key and JSON shape: `plugin-draw-tools-layer` with Draw Tools item records for `polyline`, `polygon`,
+  `circle`, and `marker` in `packages/iitc-core/src/draw-tools.ts`.
+- Supported native v1 records: `polyline` and `marker`.
+- Drawn overlay concept: internal Leaflet pane remains `drawnItems`; layer UI exposes split `Drawn Links` and
+  `Drawn Markers` toggles (`DL`/`DM`) for usability while preserving stored Draw Tools data.
+- Draw styling: drawn links use geodesic rendering, IITC Draw Tools line defaults where practical (`weight: 4`,
+  `opacity: 0.5`, default color `#a24ac3`), and marker icons use a local equivalent of IITC's
+  `L.DivIcon.ColoredSvg` marker SVG.
+
+Current implementation choices:
+
+- Draw Tools v1 is a native IITC IRIS slice, not a global plugin-system port. It deliberately does not expose
+  `window.plugin.drawTools`, `pluginDrawTools`, Leaflet.draw toolbar/events, or DrawTools Opt yet.
+- `Map -> Links` supports portal/context based two-step link creation (`From` / `To`), nearest-link deletion, undo,
+  clear with confirmation, per-link listing, centering, and IITC Draw Tools JSON export/import for supported records.
+- `Map -> Markers` supports four marker presets (white, red, blue, green), nearest-marker deletion, undo, clear with
+  confirmation, per-marker listing, centering, and IITC Draw Tools JSON export/import for supported records.
+- Portal interaction stays map-first: left-click selects/activates the portal menu and feeds Draw Tools targets, while
+  right-click opens the Portal sheet directly.
+- Drawn overlays are non-interactive so they do not intercept portal selection. Management is sheet-driven for this
+  milestone.
+- Crossed-link visualization is available as a first pass: visible Intel links crossing drawn polylines render as red
+  dashed overlays. This follows the IRIS planned-link visual concept and now uses the same IITC geodesic sampled geometry
+  as rendering for both drawn links and visible Intel links.
+- IITC Draw Tools `snapToPortals` has a native runtime action that moves stored drawn points in the current view to the
+  nearest visible loaded portal using projected screen-space distance. The visible `Snap` sheet button is hidden for v1
+  because selected-portal drawing already produces exact portal coordinates; keep the action parked for later
+  import-cleanup UX.
+
+Validation and accepted scope:
+
+- Focused Draw Tools storage tests pass, including IITC-compatible mixed JSON round-trip for polyline, polygon, circle,
+  and marker record shapes.
+- IITC IRIS import/export has been user-validated for the supported v1 direction: export from IITC IRIS and import into
+  IITC, plus import from IITC into IITC IRIS for links/markers.
+- Latest local validation for this slice included `npm run lint:iitc-iris`, `npm run lint:css`,
+  `npm run typecheck:iitc-iris`, `npm run test:iitc-core -- --run src/draw-tools.test.ts`, and
+  `npm run package:iitc-iris`.
+- Latest package artifacts:
+  - `apps/iitc-iris/builds/iitc-iris-chrome-0.1.0-2026-06-07T21-21-45.zip`
+  - `apps/iitc-iris/builds/iitc-iris-firefox-0.1.0-2026-06-07T21-21-45.xpi`
+
+Deferred by design for v1:
+
+- Polygon and circle rendering/UI.
+- Full Leaflet.draw edit handles, keyboard access keys, toolbar parity, and `draw:*` event parity.
+- `DrawTools Opt`, stock Intel `pls` import/export, `getDrawAsLines`, full palette/color picker, MPE, and plugin-facing
+  compatibility.
+- `window.plugin.drawTools` and `pluginDrawTools` should stay deferred until a concrete dependent plugin or workflow
+  needs them.
+
 ### Menu Symbol Guidance
 
 The two-layer menu can use symbols, but do not use ASCII art or decorative Unicode pictures as the primary navigation
@@ -1010,7 +1073,7 @@ what to port natively and what to leave out.
 | Mission endpoints | Partial | First read-only vertical slice exists: top missions in view, selected-portal missions, details, route/waypoint map overlay, elapsed diagnostics, and IITC-style persistent cache TTLs for mission details and portal mission summaries. Remaining parity: richer dialog actions, completed/progress checkmark state, distance-to-start/focus polish, uniques/history integrations, and plugin hooks. |
 | Bookmarks and saved map/portal sets | Open | High-value IITC workflow still missing. Should be designed around persistent saved portals/views before broad plugin parity. |
 | Keys workflows | Partial | Basic key counts and inventory parsing exist. Missing richer IITC `keys`/`keys-on-map` workflows, key search/list views, and saved key-management affordances. |
-| Draw/planning tools | Open | IITC `draw-tools` concepts are not ported: lines, polygons, circles, import/export, and planning interactions. This should be a dedicated pass. |
+| Draw/planning tools | Partial | Native Draw Tools v1 is stable for links and markers: IITC-compatible storage, geodesic drawn links, IITC-shaped marker icons, split layer toggles, Map -> Links/Markers management sheets, undo/delete/clear/list/center, crossed-link visualization, and IITC Draw Tools JSON import/export for supported records. Deferred: polygons, circles, Leaflet.draw edit handles/events, visible snap cleanup UX, DrawTools Opt, stock Intel `pls`, and plugin-facing `window.plugin.drawTools` / `pluginDrawTools`. |
 | Link analysis layers | Open | Missing cross-links, link direction, linked portals, tidy/fly/done links, and related planning helpers. |
 | Portal list/count views | Open | Missing IITC-style viewport portal tables, portal counts, and analysis lists. |
 | Missions/uniques/history workflows | Partial | Portal history indicators and mission discovery/details exist. Missing full completed/progress workflows, uniques, and richer history list workflows. |
