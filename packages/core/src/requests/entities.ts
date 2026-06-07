@@ -164,7 +164,7 @@ export function buildEntityRequestPayload(bounds: BoundsE6, mapZoom: number): En
   const centerLat = (north + south) / 2;
   const centerX = lngToTileFloat(centerLng, params);
   const centerY = latToTileFloat(centerLat, params);
-  const tileEntries: Array<{key: string; distanceSquared: number}> = [];
+  const tileEntries: {key: string; distanceSquared: number}[] = [];
   let capped = false;
 
   for (const [minX, maxX] of xRanges) {

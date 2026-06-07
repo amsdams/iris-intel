@@ -982,7 +982,7 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
     }),
     cullEntities: (centerLat, centerLng, maxDistKm) => set((state) => {
         const portals: Record<string, Portal> = {};
-        const tileFreshness = { ...state.tileFreshness };
+        let tileFreshness = { ...state.tileFreshness };
         let changed = false;
 
         const selectedPortalId = (state as IRISState).selectedPortalId;
@@ -1021,9 +1021,7 @@ const createEntitiesSlice: StateCreator<IRISState, [], [], EntitiesSlice> = (set
         // If entity culling removed map data, avoid later surgical fetch skips that
         // would treat now-missing tile contents as fresh.
         if (changed) {
-            Object.keys(tileFreshness).forEach((key) => {
-                delete tileFreshness[key];
-            });
+            tileFreshness = {};
         }
 
         // Also cull old tile freshness entries (older than 1 hour)
@@ -1294,7 +1292,7 @@ const createUISlice: StateCreator<IRISState, [], [], UISlice> = (set) => ({
         );
         return mapState === state.mapState ? state : {mapState};
     }),
-    updateMapState: (lat, lng, zoom, bounds) => {
+    updateMapState: (lat, lng, zoom, bounds): void => {
         const store = useStore.getState();
         if (bounds) {
             store.updateMapViewport(lat, lng, zoom, bounds);

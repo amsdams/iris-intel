@@ -72,7 +72,7 @@ export interface IrisMoveMapPayload {
   bounds?: BoundsE6;
 }
 
-export interface IrisRegionScoreRequestPayload extends LatLngDegrees {}
+export type IrisRegionScoreRequestPayload = LatLngDegrees;
 
 function parseBoundsE6(value: unknown): BoundsE6 | null {
   if (!isRuntimeRecord(value)) return null;

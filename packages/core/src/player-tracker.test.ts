@@ -3,7 +3,14 @@ import {PLAYER_TRACKER_HISTORY_EXPIRATION_MS, prunePlayerTrackerHistories, proce
 import type {PlayerTrackerHistory} from './player-tracker';
 import {mockPlext} from './mock-intel';
 
-function plext(id: string, time: number, player: string, latE6: number, lngE6: number, text = ' deployed a Resonator on ') {
+function plext(
+  id: string,
+  time: number,
+  player: string,
+  latE6: number,
+  lngE6: number,
+  text = ' deployed a Resonator on ',
+): ReturnType<typeof mockPlext> {
   return mockPlext({
     id,
     time,

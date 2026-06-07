@@ -4,7 +4,7 @@ import {mockPlext} from './mock-intel';
 
 const now = 1_000_000;
 
-function plext(id: string, latE6: number, lngE6: number, time = now) {
+function plext(id: string, latE6: number, lngE6: number, time = now): ReturnType<typeof mockPlext> {
   return mockPlext({
     id,
     time,

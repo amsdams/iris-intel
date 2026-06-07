@@ -3,10 +3,22 @@ import { Artifact } from '../store';
 import { normalizeTeam } from '../team';
 
 function idsFromArtifactEntry(entry: [string, ...unknown[]]): string[] {
-  const ids = entry.slice(1)
-    .flatMap((value) => Array.isArray(value) ? value : [value])
-    .filter((value): value is string => typeof value === 'string' && value.length > 0);
+  const ids: string[] = [];
+  entry.slice(1).forEach((value) => {
+    const values = Array.isArray(value) ? value : [value];
+    values.forEach((candidate) => {
+      if (typeof candidate === 'string' && candidate.length > 0) {
+        ids.push(candidate);
+      }
+    });
+  });
   return ids.length > 0 ? ids : [entry[0]];
+}
+
+function isArtifactEntryList(value: unknown): value is [string, ...unknown[]][] {
+  return Array.isArray(value) && value.every((entry) =>
+    Array.isArray(entry) && typeof entry[0] === 'string'
+  );
 }
 
 function parseArtifactBriefPortal(portalId: string, summary: ArtifactPortalSummary): Artifact[] {
@@ -26,8 +38,8 @@ function parseArtifactBriefPortal(portalId: string, summary: ArtifactPortalSumma
     ornaments: Array.isArray(summary[9]) ? summary[9] : undefined,
   };
 
-  const fragments = Array.isArray(artifactBrief[0]) ? artifactBrief[0] : [];
-  const targets = Array.isArray(artifactBrief[1]) ? artifactBrief[1] : [];
+  const fragments = isArtifactEntryList(artifactBrief[0]) ? artifactBrief[0] : [];
+  const targets = isArtifactEntryList(artifactBrief[1]) ? artifactBrief[1] : [];
 
   return [
     ...fragments.map((entry) => ({

@@ -2,7 +2,7 @@ import {describe, expect, it} from 'vitest';
 import {parseMsgData} from './comm';
 import {getIitcPlayerTrackerLatLng, processIitcPlayerTrackerData, pruneIitcPlayerTrackerStored} from './player-tracker';
 
-function message(row: Parameters<typeof parseMsgData>[0]) {
+function message(row: Parameters<typeof parseMsgData>[0]): NonNullable<ReturnType<typeof parseMsgData>> {
   const parsed = parseMsgData(row);
   if (!parsed) throw new Error('expected parsed COMM message');
   return parsed;
