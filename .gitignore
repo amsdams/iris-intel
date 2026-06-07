@@ -69,6 +69,8 @@ docs/REF-IITC_BUTTON.md
 !/docs/README.md
 !/docs/WORK_ITEMS.md
 !/docs/IITC_IRIS_PORT_PLAN.md
+!/docs/iitc-iris/
+!/docs/iitc-iris/**
 !/docs/20260414/
 !/docs/20260414/*.md
 /apps/mini-iris/builds/
