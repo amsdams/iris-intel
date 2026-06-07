@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import mockInventoryData from '../../../../apps/iris/src/content/domains/inventory/mock.inventory.json';
-import liveInventoryData from '../../../../docs/update-map/get-inventory-20260413.json';
+import liveInventoryData from '../../../../docs/iris/update-map-samples/get-inventory-20260413.json';
 import { InventoryParser } from './InventoryParser';
 import { InventoryData } from './intel-types';
 

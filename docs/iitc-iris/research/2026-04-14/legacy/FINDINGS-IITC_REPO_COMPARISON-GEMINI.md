@@ -3,8 +3,8 @@
 > Historical note, May 2026: this April 2026 comparison is retained as
 > reference material. It predates the page-world MapLibre runtime, owned entity
 > refresh follow-ups, expanded Bench variants, Draw Tools baseline, and player
-> tracker pin work. Use `docs/IRIS_ARCHITECTURE.md`,
-> `docs/PAGE_WORLD_MAP_RUNTIME.md`, and `docs/WORK_ITEMS.md` for current
+> tracker pin work. Use `docs/iris/architecture.md`,
+> `docs/iris/page-world-map-runtime.md`, and `docs/iris/work-items.md` for current
 > architecture and priorities.
 
 This document provides a historical comparison of the **IRIS** extension, the **IITC-Button** reference, and the **IITC-CE** (Community Edition) core.
@@ -60,7 +60,7 @@ To align IRIS closer to the "IITC Experience" while keeping its modern architect
 
 ## 4. Next Prioritized Work for IRIS
 
-Based on these findings, the next steps in `WORK_ITEMS.md` should be:
+Based on these findings, the next steps in `docs/iris/work-items.md` should be:
 
 1.  **[Live Map Freshness]** Implement a strict concurrent request limit (5) in `RequestCoordinator`.
 2.  **[Plugin Overlay]** Implement a "Single Highlighter" selection model to allow for classic IITC portal highlighting.

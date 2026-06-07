@@ -17,7 +17,7 @@ Current verification caveat - 2026-06-06:
 
 - `npm run typecheck:iitc-iris` and `npm run package:iitc-iris` pass.
 - `npm run test:iitc-core` currently fails only on missing fixture files used by two entity-decode parity tests:
-  `docs/update-map/get-entities-z12.json` and `docs/update-map/get-entities-z14.json`. Keep Pass 1's intended
+  `docs/iris/update-map-samples/get-entities-z12.json` and `docs/iris/update-map-samples/get-entities-z14.json`. Keep Pass 1's intended
   acceptance target, but treat the fixture harness as degraded until those inputs are restored or replaced.
 
 ## Pass 2: Request Lifecycle - Done

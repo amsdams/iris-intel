@@ -29,7 +29,7 @@ function rawCounts(response: IitcGetEntitiesResponse): {p: number; e: number; re
 
 describe('IITC entity decoding', () => {
   it('decodes raw portals, links, and fields from Amsterdam z14 fixture', () => {
-    const fixture = readFixture('docs/update-map/get-entities-z14.json');
+    const fixture = readFixture('docs/iris/update-map-samples/get-entities-z14.json');
     const decoded = decodeIitcGetEntitiesResponse(fixture);
     const counts = rawCounts(fixture);
 
@@ -40,7 +40,7 @@ describe('IITC entity decoding', () => {
   });
 
   it('creates placeholder portals from low-zoom links and fields like IITC', () => {
-    const fixture = readFixture('docs/update-map/get-entities-z12.json');
+    const fixture = readFixture('docs/iris/update-map-samples/get-entities-z12.json');
     const decoded = decodeIitcGetEntitiesResponse(fixture);
     const counts = rawCounts(fixture);
 

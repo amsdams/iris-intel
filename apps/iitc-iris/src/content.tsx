@@ -46,7 +46,7 @@ const DATA_SOURCE_OPTIONS = [
   {
     id: 'ams-z10',
     label: 'AMS F10',
-    title: 'Amsterdam fixture from docs/update-map/get-entities-z10.json',
+    title: 'Amsterdam fixture from docs/iris/update-map-samples/get-entities-z10.json',
     mode: 'fixture' as const,
     fixturePath: 'fixtures/get-entities-z10.json',
     lat: 52.3730796,
@@ -56,7 +56,7 @@ const DATA_SOURCE_OPTIONS = [
   {
     id: 'ams-z14',
     label: 'AMS F14',
-    title: 'Amsterdam fixture from docs/update-map/get-entities-z14.json',
+    title: 'Amsterdam fixture from docs/iris/update-map-samples/get-entities-z14.json',
     mode: 'fixture' as const,
     fixturePath: 'fixtures/get-entities-z14.json',
     lat: 52.3730796,

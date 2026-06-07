@@ -140,6 +140,6 @@ Left
 
 ## Current References
 
-- `docs/IRIS_ARCHITECTURE.md` is the current architecture overview and restart guide.
-- `docs/PERF_BENCHMARKS.md` stores copied benchmark samples and comparison scenarios.
-- `docs/WORK_ITEMS.md` tracks active follow-ups and historical worklog decisions.
+- `docs/iris/architecture.md` is the current architecture overview and restart guide.
+- `docs/iris/performance-benchmarks.md` stores copied benchmark samples and comparison scenarios.
+- `docs/iris/work-items.md` tracks active follow-ups and historical worklog decisions.

@@ -233,7 +233,7 @@ Tasks:
 | Tune low-zoom moving-mode link rendering                      | Open   | IRIS 0.1.6 mobile batch on Firefox 149 showed z8 Normal pan at `30ms avg / 43 slow` while `No Links` improved to `18ms avg / 3 slow`; consider thinning or hiding links while actively moving, but compare against the field option first                                 |
 | Make pan benchmark path deterministic under stutter           | Done   | Bench now drives the map by requestAnimationFrame and direct center interpolation instead of animated `panBy`, avoiding path drift from queued mobile pan animations                                                                                                      |
 | Add benchmark sample history or run count                     | Done   | Bench now runs 3 samples and reports run count, median average frame time, average range, and worst frame in Diagnostics copy output                                                                                                                                      |
-| Define fixed benchmark scenarios for version comparisons      | Done   | `docs/PERF_BENCHMARKS.md` now defines base map, default use, labels on, draw tools on, and heavy overlay scenarios with fixed center/zoom/style/browser/run-count guidance                                                                                                |
+| Define fixed benchmark scenarios for version comparisons      | Done   | `docs/iris/performance-benchmarks.md` now defines base map, default use, labels on, draw tools on, and heavy overlay scenarios with fixed center/zoom/style/browser/run-count guidance                                                                                                |
 | Compare stationary vs moving field-render modes               | Open   | IRIS 0.1.6 mobile batch on Firefox 149 showed z8 Normal pan at `30ms avg / 43 slow` while `No Fields` improved to `18ms avg / 0 slow`; field simplification/hiding is the lowest-risk first candidate because links are usually more useful for orientation while panning |
 | Add overlay-hidden benchmark variant                          | Done   | Bench now supports `Base` and `No Plugins`; page-world HTML marker registries stay hidden during those runs even if marker sync fires mid-benchmark                                                                                                                       |
 | Add entity-layer isolation benchmark variants                 | Done   | Bench now supports `No Links` and `No Fields`, and Batch includes those z8 pan scenarios so low-zoom core entity rendering can be separated from plugin-overlay cost                                                                                                      |
@@ -761,7 +761,7 @@ Tasks:
 | Migrate page-world interaction events                                     | Done        | page-world map emits plain camera, selection, contextmenu, draw-tool, and benchmark messages back to extension UI without exposing MapLibre feature objects across worlds                                                                                                                    |
 | Retire duplicate content-world MapLibre runtime after migration           | Done        | page-world rendering owns the normal map surface, diagnostics, interaction, draw tools, and marker pins; the old `MapOverlay` fallback is no longer mounted                                                                                                                                  |
 | Remove old `MapOverlay` reference implementation                          | Done        | deleted the unmounted extension-world renderer after page-world source sync, selection, diagnostics, theme switching, draw tools, and pin rendering were covered                                                                                                                             |
-| Keep page-world migration notes in tracked docs                           | Done        | `docs/PAGE_WORLD_MAP_RUNTIME.md` is now an active tracked-doc candidate again, while benchmark details continue to live in `docs/PERF_BENCHMARKS.md`                                                                                                                                         |
+| Keep page-world migration notes in tracked docs                           | Done        | `docs/iris/page-world-map-runtime.md` is now an active tracked-doc candidate again, while benchmark details continue to live in `docs/iris/performance-benchmarks.md`                                                                                                                                         |
 | Document IITC marker pin parity                                           | Done        | IITC Draw Tools uses Leaflet marker pins with coloured SVG div icons and a purple default; IITC Player Activity Tracker uses faction pin icons while its trail lines are magenta/dashed; both register markers with OverlappingMarkerSpiderfier                                              |
 | Scope MapLibre Marker pin experiment                                      | Done        | tested `maplibregl.Marker` DOM pins for planned markers first, then player tracker; page-world ownership works for the baseline and follow-up work is now focused on co-located markers and richer UX                                                                                        |
 | Preserve planned marker portal snapping semantics                         | Done        | planned marker pins still use existing portal-anchored planned-marker snapshot data; later IITC snap-to-nearest-portal behavior can be considered only if free placement is added                                                                                                            |
@@ -1248,7 +1248,7 @@ Status: `Open`
 
 Related design note:
 
-- `docs/20260414/IITC_IRIS_REQUEST_LIFECYCLE_MAP_SYNC.md`
+- `docs/iitc-iris/research/2026-04-14/legacy/IITC_IRIS_REQUEST_LIFECYCLE_MAP_SYNC.md`
 
 Why:
 
@@ -1364,7 +1364,7 @@ Tasks:
 |-------------------------------------------|--------|---------------------------------------------------------------------------------------------------------------------------------|
 | Add JSON export beside copied text report | Open   | keep text as primary, but include machine-readable scenario objects for local diff scripts                                      |
 | Add local compare script for two reports  | Open   | compare scenario rows by workload signature and highlight deltas in frame time, slow frames, requests, source updates, and max |
-| Add benchmark history capture guidance    | Open   | document where to paste before/after rows for request lifecycle work in `docs/PERF_BENCHMARKS.md`                              |
+| Add benchmark history capture guidance    | Open   | document where to paste before/after rows for request lifecycle work in `docs/iris/performance-benchmarks.md`                              |
 | Add optional git revision/build metadata  | Open   | include commit hash or package version when available so copied reports can be tied to a build                                 |
 | Decide whether Mini should emit same JSON | Open   | after IRIS fields stabilize, align Mini output where semantics match without forcing app-specific diagnostics                   |
 
@@ -1372,8 +1372,8 @@ Benchmark capture slots:
 
 | Date | Build / Commit | Device | Browser | Scenario Set | Result | Notes |
 |------|----------------|--------|---------|--------------|--------|-------|
-| 2026-05-26 | baseline before request/map-sync changes | Desktop Mac | Firefox | shared IRIS batch | Captured | see `docs/PERF_BENCHMARKS.md`; z8 Normal had `83` moving source calls and `27` slow frames |
-| 2026-05-26 | baseline before request/map-sync changes | Mobile ARM | Firefox | shared IRIS batch plus manual pan note | Captured | see `docs/PERF_BENCHMARKS.md`; preload bounds fixed and z8 Normal had no moving source calls in the clean baseline |
+| 2026-05-26 | baseline before request/map-sync changes | Desktop Mac | Firefox | shared IRIS batch | Captured | see `docs/iris/performance-benchmarks.md`; z8 Normal had `83` moving source calls and `27` slow frames |
+| 2026-05-26 | baseline before request/map-sync changes | Mobile ARM | Firefox | shared IRIS batch plus manual pan note | Captured | see `docs/iris/performance-benchmarks.md`; preload bounds fixed and z8 Normal had no moving source calls in the clean baseline |
 | 2026-05-26 | after deferred source sync while moving | Desktop Mac | Firefox | same as baseline | Captured | moving source calls dropped to `0`; z8 Normal improved to `9ms / 113fps / 7 slow` |
 | 2026-05-26 | after deferred source sync while moving | Mobile ARM | Firefox | same as baseline | Captured | moving source calls dropped to `0`, but z8 Normal still had a long task and `10` slow frames; repeat before claiming a phone win |
 
@@ -1493,7 +1493,7 @@ Tasks:
 
 Active tracker:
 
-- [`docs/WORK_ITEMS.md`](docs/WORK_ITEMS.md)
+- [`work-items.md`](work-items.md)
 - IITC Draw Tools
   reference: <https://raw.githubusercontent.com/IITC-CE/ingress-intel-total-conversion/master/plugins/draw-tools.js>
 - IITC Player Activity Tracker

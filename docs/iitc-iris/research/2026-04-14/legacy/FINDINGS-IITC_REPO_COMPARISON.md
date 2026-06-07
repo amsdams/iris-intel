@@ -3,8 +3,8 @@
 > Historical note, May 2026: this April 2026 comparison is retained as
 > reference material. It predates the page-world MapLibre runtime, owned entity
 > refresh follow-ups, expanded Bench variants, Draw Tools baseline, and player
-> tracker pin work. Use `docs/IRIS_ARCHITECTURE.md`,
-> `docs/PAGE_WORLD_MAP_RUNTIME.md`, and `docs/WORK_ITEMS.md` for current
+> tracker pin work. Use `docs/iris/architecture.md`,
+> `docs/iris/page-world-map-runtime.md`, and `docs/iris/work-items.md` for current
 > architecture and priorities.
 
 ## Scope

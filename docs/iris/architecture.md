@@ -1,8 +1,8 @@
 # IRIS Architecture Notes
 
 This is a compact restart guide for IRIS. It captures current architecture and
-recent decisions; the detailed chronological log remains in `docs/WORK_ITEMS.md`
-and benchmark samples remain in `docs/PERF_BENCHMARKS.md`.
+recent decisions; the detailed chronological log remains in `docs/iris/work-items.md`
+and benchmark samples remain in `docs/iris/performance-benchmarks.md`.
 
 ## Current Shape
 
@@ -174,7 +174,7 @@ package split.
 
 ## Backlog
 
-Keep active follow-ups in `docs/WORK_ITEMS.md`. This file should describe durable
+Keep active follow-ups in `docs/iris/work-items.md`. This file should describe durable
 architecture and decisions, not duplicate the live backlog.
 
 ## Verification

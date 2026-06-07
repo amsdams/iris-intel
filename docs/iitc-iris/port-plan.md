@@ -90,7 +90,7 @@ Latest package artifacts:
 - `apps/iitc-iris/builds/iitc-iris-firefox-0.1.0-2026-06-07T21-21-45.xpi`
 
 Known validation caveat: full `npm run test:iitc-core` has previously been degraded by missing optional entity-decode
-fixture files under `docs/update-map/`. Focused Draw Tools tests are green. Restore or replace the missing sanitized
+fixture files under `docs/iris/update-map-samples/`. Focused Draw Tools tests are green. Restore or replace the missing sanitized
 fixtures before treating the full core parity harness as healthy.
 
 ## Documentation Layout
@@ -99,16 +99,16 @@ Feature details have been split out of this entry point so the current truth is 
 
 | Area | Status | Detail |
 |------|--------|--------|
-| Missions | Partial | [features/missions.md](iitc-iris/features/missions.md) |
-| Geodesic rendering | Partial | [features/geodesic-rendering.md](iitc-iris/features/geodesic-rendering.md) |
-| Map lifecycle | Partial | [features/map-lifecycle.md](iitc-iris/features/map-lifecycle.md) |
-| Scaffold/request lifecycle | Done/Partial | [features/scaffold-request-lifecycle.md](iitc-iris/features/scaffold-request-lifecycle.md) |
-| Entity decode and Leaflet rendering | Partial | [features/entity-rendering.md](iitc-iris/features/entity-rendering.md) |
-| Comparison UI | Started | [features/comparison-ui.md](iitc-iris/features/comparison-ui.md) |
-| Portal selection and details | Started | [features/portal-details.md](iitc-iris/features/portal-details.md) |
-| IITC side request/UI systems | Started | [features/side-systems.md](iitc-iris/features/side-systems.md) |
-| Draw Tools | Stable v1 / Partial | [features/draw-tools.md](iitc-iris/features/draw-tools.md) |
-| Backlog and replacement readiness | Ongoing | [backlog.md](iitc-iris/backlog.md) |
+| Missions | Partial | [features/missions.md](features/missions.md) |
+| Geodesic rendering | Partial | [features/geodesic-rendering.md](features/geodesic-rendering.md) |
+| Map lifecycle | Partial | [features/map-lifecycle.md](features/map-lifecycle.md) |
+| Scaffold/request lifecycle | Done/Partial | [features/scaffold-request-lifecycle.md](features/scaffold-request-lifecycle.md) |
+| Entity decode and Leaflet rendering | Partial | [features/entity-rendering.md](features/entity-rendering.md) |
+| Comparison UI | Started | [features/comparison-ui.md](features/comparison-ui.md) |
+| Portal selection and details | Started | [features/portal-details.md](features/portal-details.md) |
+| IITC side request/UI systems | Started | [features/side-systems.md](features/side-systems.md) |
+| Draw Tools | Stable v1 / Partial | [features/draw-tools.md](features/draw-tools.md) |
+| Backlog and replacement readiness | Ongoing | [backlog.md](backlog.md) |
 
 ## Current High-Level Gaps
 
@@ -125,5 +125,5 @@ Feature details have been split out of this entry point so the current truth is 
 ## Next Planning Entry Points
 
 - For new feature ports, update the relevant feature file or add a new file under `docs/iitc-iris/features/`.
-- For cross-cutting parity gaps and prioritization, update [docs/iitc-iris/backlog.md](iitc-iris/backlog.md).
+- For cross-cutting parity gaps and prioritization, update [backlog.md](backlog.md).
 - Keep this file as the short index, doctrine, latest validation snapshot, and high-level gap summary.

@@ -1,116 +1,61 @@
-# IRIS
-### Ingress Reconnaissance & Intelligence System
+# iris-intel
 
-A modern, open-source browser extension alternative to IITC — built with TypeScript, Preact, and MapLibre GL.
+Browser-extension experiments for Ingress Intel, currently focused on **IITC-IRIS**: a TypeScript/Preact/Leaflet extension that smart-ports IITC-CE behavior into a maintainable modern codebase.
 
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)
+![TypeScript](https://img.shields.io/badge/TypeScript-6.x-blue)
 ![Manifest](https://img.shields.io/badge/Manifest-V3-green)
 ![Status](https://img.shields.io/badge/status-Active-orange)
 
----
+## Current Focus
 
-## What is IRIS?
+### IITC-IRIS
 
-IRIS overlays a fully interactive [MapLibre GL](https://maplibre.org/) map on top of [Ingress Intel](https://intel.ingress.com), intercepting the Intel API to render portals, links and fields in real time. It is designed as a modern, maintainable alternative to [IITC-CE](https://iitc.app/) with a clean TypeScript codebase, a structured plugin API, and first-class mobile browser support.
+`apps/iitc-iris` is the main active product. Its goal is not to make a new MapLibre overlay, but to preserve IITC-CE semantics where they matter: Leaflet map behavior, entity lifecycle, portal details, COMM, scores, inventory, missions, player tracker, Draw Tools links/markers, and IITC-compatible data formats.
 
-> **Note:** IRIS is under active development. Use at your own risk and in accordance with Niantic's Terms of Service.
+Start here for current work:
 
----
+- [IITC-IRIS port plan](docs/iitc-iris/port-plan.md)
+- [IITC-IRIS feature notes](docs/iitc-iris/features/)
+- [IITC-IRIS backlog](docs/iitc-iris/backlog.md)
 
-## Features
+### Earlier POCs
 
-- 🗺️ **MapLibre GL overlay** — smooth WebGL-rendered map over Intel
-- 📡 **Real-time entity capture** — portals, links and fields via XHR/Fetch interception
-- 🔄 **Bidirectional map sync** — pan either map, both follow
-- 🏛️ **Portal details** — name, image, level, health, owner, resonators and mods on click
-- 🎒 **Inventory-aware UI** — inventory popup, Intel-like grouping, capsule-aware totals, and portal key counts in portal details
-- 👤 **Player stats** — agent name, level, AP, XM capacity, and progress bars via `window.PLAYER` interception
-- 💬 **COMM overlay** — tabbed comm views with clickable portal names and player-tracker integration
-- 🗺️ **Mission and artifact support** — mission routes, mission details, artifact overlays, and viewport mission requests
-- 🔍 **Location search** — Nominatim/OpenStreetMap geocoding with result dropdown
-- 📊 **Scoring** — Real-time Global MU scores and detailed Regional Cell rankings
-- 🧭 **Persistent map state** — camera state survives reloads and Intel search jumps sync back into IRIS
-- 🛡️ **Tactical Filtering** — Filter portals by Faction, Level (L1-L8), and Health buckets (25%, 50%, 75%, 100%)
-- 🧩 **Plugin system** — typed manifest API with `setup()`/`teardown()` lifecycle, persisted enable-state, and first-party overlay/menu plugins
-- ⚡ **Lightweight** — Preact (3kb) + Zustand (1.5kb), no heavy framework
+`apps/iris` and `apps/mini-iris` came first. They proved a lot of useful pieces: Intel request interception, page-world map runtime, mobile shell ideas, diagnostics, shared parsing/store code, and packaging. They also exposed the main weakness of the MapLibre-first approach: dense Intel areas and live update churn are hard to make feel as smooth as IITC without copying more of IITC's lifecycle model.
 
----
+Those apps remain useful references, but they are not the main direction right now.
 
-## Screenshots
+`ISTS` was also an earlier proof-of-concept direction. Treat it as historical context rather than the active implementation path.
 
-> _Add screenshots here once UI is polished_
+## Repository Layout
 
----
-
-## Architecture
-
-```
-IRIS/
-├── apps/
-│   ├── iris/              # Main IRIS browser extension app
-│   │   ├── src/
-│   │   │   ├── content/   # Content script + main-world interceptor
-│   │   │   └── ui/        # Preact components, dock, drawer, popups
-│   │   └── vite.config.ts
-│   └── mini-iris/         # Compact secondary app with a different UI and interaction model
-├── packages/
-│   ├── core/               # Shared platform: Zustand store, types, plugin manager
-│   ├── plugin-sdk/         # Plugin-facing API/types
-│   └── plugins/            # First-party plugins (portal-names, player-tracker, etc.)
+```text
+apps/
+  iitc-iris/     Active IITC-style browser extension
+  iris/          Earlier full IRIS MapLibre extension
+  mini-iris/     Earlier compact/mobile POC
+packages/
+  iitc-core/     IITC-compatible parsing, geometry, request, and Draw Tools logic
+  core/          Shared IRIS/Mini-IRIS store, parsers, and plugin manager
+  plugin-sdk/    IRIS plugin-facing API/types
+  plugins/       First-party IRIS plugins
+docs/
+  iitc-iris/     Active IITC-IRIS plans, feature notes, backlog, research
+  iris/          IRIS architecture, worklog, benchmarks, samples
+  iris-mini/     Mini-IRIS docs index
 ```
 
-### How it works
+## What IITC-IRIS Does Today
 
-```
-Intel page loads
-    │
-    ▼
-Interceptor (main world, document_start)
-  ├── Hooks google.maps.Map constructor → captures map instance
-  ├── Patches XMLHttpRequest.prototype → intercepts getEntities / getPortalDetails / getPlexts
-  └── Wraps window.fetch → same endpoints + proactive version sniffing
-    │
-    ▼
-postMessage → Content script (isolated world)
-    │
-    ▼
-Zustand store (portals, links, fields, mapState, plexts)
-    │
-    ▼
-Preact + MapLibre GL renders overlay
-```
+- Renders portals, links, fields, artifacts, ornaments, missions, and selected portal state with Leaflet.
+- Uses IITC-style request lifecycle concepts for map data and side-panel endpoints.
+- Provides portal details, COMM, scores, inventory, passcodes, search, missions, and player tracker surfaces.
+- Supports Draw Tools v1 for IITC-compatible links and markers, including import/export with IITC Draw Tools data.
+- Packages as Chrome ZIP and Firefox XPI browser extensions.
 
-The interceptor uses both **prototype patching** for `XMLHttpRequest` and a **functional wrap** for `window.fetch`. This ensures that even if Intel captures a reference to the original `XMLHttpRequest` constructor early, IRIS still catches the data flowing through its prototype.
+IITC-IRIS deliberately does not yet expose a broad IITC plugin compatibility layer such as global `window.plugin.*`, `addHook`, toolbox, highlighter registry, or full Leaflet.draw event parity. Those are future decisions after the core user-facing parity is stable.
 
----
-
-## Installation (Development)
-
-## Command Matrix
-
-| Target | Build | Check | Clean | Package | Release |
-|---|---|---|---|---|---|
-| `core` | `npm run build:core` | `npm run check:core` | `npm run clean:core` | None | None |
-| `iris` | `npm run build:iris` | `npm run check:iris` | `npm run clean:iris` | `npm run package:iris` | `npm run release:iris` |
-| `mini-iris` | `npm run build:mini-iris` | `npm run check:mini-iris` | `npm run clean:mini-iris` | `npm run package:mini-iris` | `npm run release:mini-iris` |
-| `all` | `npm run build:all` | `npm run check:all` | `npm run clean:all` | `npm run package:all` | `npm run release:all` |
-
-Command semantics:
-
-- `build:*` creates unpacked browser-extension output for local loading.
-- `package:*` creates timestamped ZIP/XPI files and refreshes the unpacked output first.
-- `release:*` currently aliases the matching product package flow.
-- Prefer product-level root commands (`*:iris`, `*:mini-iris`) for day-to-day work; browser-specific workspace scripts
-  are implementation details of the IRIS package flow.
-
-Package outputs:
-
-- IRIS unpacked builds: `npm run build:iris` writes the Chrome build to `apps/iris/dist/chrome`; `npm run package:iris`
-  refreshes both `apps/iris/dist/chrome` and `apps/iris/dist/firefox` before packaging.
-- IRIS packages: `apps/iris/builds/iris-chrome-<version>-<timestamp>.zip` and `apps/iris/builds/iris-firefox-<version>-<timestamp>.xpi`.
-- mini-IRIS unpacked build: `apps/mini-iris/dist`.
-- mini-IRIS packages: `apps/mini-iris/builds/mini-iris-chrome-<version>-<timestamp>.zip` and `apps/mini-iris/builds/mini-iris-firefox-<version>-<timestamp>.xpi`.
+## Development
 
 ### Prerequisites
 
@@ -120,158 +65,73 @@ Package outputs:
 ### Setup
 
 ```bash
-git clone https://github.com/yourusername/iris-intel.git
-cd iris-intel
 npm install
-npm run lint  # Verify code quality
-npm run build
+npm run lint:iitc-iris
+npm run typecheck:iitc-iris
+npm run package:iitc-iris
 ```
 
-### Load in Chrome / Chromium
+### Command Matrix
 
-1. Open `chrome://extensions`
-2. Enable **Developer mode** (top right)
-3. Click **Load unpacked**
-4. Select the `apps/iris/dist/chrome` folder
-5. Navigate to `https://intel.ingress.com`
+| Target | Build | Check | Clean | Package | Release |
+|---|---|---|---|---|---|
+| `iitc-core` | `npm run build:iitc-core` | `npm run check:iitc-core` | `npm run clean:iitc-core` | None | None |
+| `iitc-iris` | `npm run build:iitc-iris` | `npm run check:iitc-iris` | `npm run clean:iitc-iris` | `npm run package:iitc-iris` | `npm run release:iitc-iris` |
+| `core` | `npm run build:core` | `npm run check:core` | `npm run clean:core` | None | None |
+| `iris` | `npm run build:iris` | `npm run check:iris` | `npm run clean:iris` | `npm run package:iris` | `npm run release:iris` |
+| `mini-iris` | `npm run build:mini-iris` | `npm run check:mini-iris` | `npm run clean:mini-iris` | `npm run package:mini-iris` | `npm run release:mini-iris` |
+| `all` | `npm run build:all` | `npm run check:all` | `npm run clean:all` | `npm run package:all` | `npm run release:all` |
 
-### Load in Firefox
+Command semantics:
 
-1. Open `about:debugging`
-2. Click **This Firefox** → **Load Temporary Add-on**
-3. Select `apps/iris/dist/firefox/manifest.json` (Note: Use `dist/firefox` for Firefox-specific builds)
+- `build:*` creates unpacked browser-extension output for local loading.
+- `package:*` creates timestamped ZIP/XPI files and refreshes unpacked output first.
+- `release:*` currently aliases the matching product package flow.
+- For current work, prefer the IITC-IRIS commands first.
 
----
+Package outputs:
 
-## Plugin System
+- IITC-IRIS unpacked build: `apps/iitc-iris/dist`.
+- IITC-IRIS packages: `apps/iitc-iris/builds/iitc-iris-chrome-<version>-<timestamp>.zip` and `apps/iitc-iris/builds/iitc-iris-firefox-<version>-<timestamp>.xpi`.
+- IRIS unpacked builds: `apps/iris/dist/chrome` and `apps/iris/dist/firefox`.
+- IRIS packages: `apps/iris/builds/iris-chrome-<version>-<timestamp>.zip` and `apps/iris/builds/iris-firefox-<version>-<timestamp>.xpi`.
+- Mini-IRIS unpacked build: `apps/mini-iris/dist`.
+- Mini-IRIS packages: `apps/mini-iris/builds/mini-iris-chrome-<version>-<timestamp>.zip` and `apps/mini-iris/builds/mini-iris-firefox-<version>-<timestamp>.xpi`.
 
-Plugins declare a manifest and receive a typed API:
+## Load IITC-IRIS Locally
 
-```typescript
-import { IRISPlugin } from '@iris/plugin-sdk';
+### Chrome / Chromium
 
-const MyPlugin: IRISPlugin = {
-  manifest: {
-    id: 'my-plugin',
-    name: 'My Plugin',
-    version: '1.0.0',
-    description: 'Does something useful',
-    author: 'Your Name',
-    defaultEnabled: true,
-    capabilities: ['menu'],
-  },
-  setup(api) {
-    api.portals.subscribe((portals) => {
-      console.log('Portal count:', Object.keys(portals).length);
-    });
-  },
-  teardown(api) {
-    // cleanup
-  },
-};
+1. Run `npm run build:iitc-iris` or `npm run package:iitc-iris`.
+2. Open `chrome://extensions`.
+3. Enable Developer mode.
+4. Click Load unpacked.
+5. Select `apps/iitc-iris/dist`.
+6. Navigate to `https://intel.ingress.com`.
 
-export default MyPlugin;
-```
+### Firefox
 
-Current first-party plugins include:
+1. Run `npm run build:iitc-iris` or `npm run package:iitc-iris`.
+2. Open `about:debugging`.
+3. Click This Firefox, then Load Temporary Add-on.
+4. Select `apps/iitc-iris/dist/manifest.json`.
+5. Navigate to `https://intel.ingress.com`.
 
-- `portal-names`
-- `theme-selector`
-- `export-data`
-- `player-tracker`
-- `portal-level-fill`
-- `portal-health-fill`
-- `portal-level-labels`
-- `portal-key-count-labels`
+## Documentation
 
----
+- [Docs index](docs/README.md)
+- [IITC-IRIS port plan](docs/iitc-iris/port-plan.md)
+- [IRIS architecture notes](docs/iris/architecture.md)
+- [Mini-IRIS docs](docs/iris-mini/README.md)
 
-## Data Sources
+## Legal And Ethics
 
-| Data | Source |
-|------|--------|
-| Portal / link / field entities | `intel.ingress.com/r/getEntities` |
-| Portal details | `intel.ingress.com/r/getPortalDetails` |
-| COMM messages (Plexts) | `intel.ingress.com/r/getPlexts` |
-| Map tiles | Dynamic (Carto Dark/Light, Voyager, OSM) |
-| Geocoding | Nominatim / OpenStreetMap |
-| Player stats | `window.PLAYER` global object |
+This project is independent and is not affiliated with or endorsed by Niantic, Inc.
 
----
+Using third-party tools with Ingress Intel may violate [Niantic's Terms of Service](https://www.nianticlabs.com/terms). The extensions in this repository operate by observing data that the browser loads for Intel and do not modify game state.
 
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Extension | Manifest V3, Chrome / Firefox |
-| UI framework | [Preact](https://preactjs.com/) |
-| Map rendering | [MapLibre GL JS](https://maplibre.org/) |
-| State management | [Zustand](https://github.com/pmndrs/zustand) |
-| Build tool | [Vite](https://vitejs.dev/) |
-| Linting | [ESLint](https://eslint.org/) (Flat Config) |
-| Language | TypeScript (Strict, no-any) |
-| Package manager | npm workspaces |
-
----
-
-## Roadmap
-
-- [x] XHR / fetch interception (Core)
-- [x] Portal, link and field rendering
-- [x] Bidirectional map sync
-- [x] Portal details popup
-- [x] Player stats (Enhanced via `window.PLAYER`)
-- [x] Location search (Nominatim)
-- [x] Plugin system (Core SDK)
-- [x] **COMM / Chat Overlay** (Tabbed views, clickable portal names)
-- [x] **Data Export** (Plugin: JSON, KML, GeoJSON)
-- [x] **Scoring UI** (Global and Regional popups)
-- [x] **Inventory Viewer** (Popup-driven fetch, grouping, capsule-aware totals)
-- [x] **Portal key counts** (Portal details plus plugin label overlay)
-- [x] **Mission and Artifact layers**
-- [x] **Portal History indicators** (Visited/Captured/Scanned)
-- [ ] **Search Enhancements:**
-    - [ ] Portal Search via verified Intel request path
-- [ ] **Plugin System Enhancements:**
-    - [ ] Continue page-world plugin overlay polish for labels, pins, artifacts, and ornaments
-    - [ ] Decide whether highlighter-style overlays should stay concurrent or become mutually exclusive
-- [ ] **Performance Optimizations:**
-    - [ ] GeoJSON source throttling for extremely dense areas
-- [ ] **Mobile:**
-    - [ ] Decision between Capacitor App vs. Mobile Browser Extension
-- [ ] **Features:**
-    - [ ] Draw-tools style planning plugin
-
----
-
-## Legal & Ethics
-
-IRIS is an independent open-source project and is not affiliated with or endorsed by Niantic, Inc.
-
-Using third-party tools with Ingress Intel may violate [Niantic's Terms of Service](https://www.nianticlabs.com/terms). IRIS operates in the same manner as IITC-CE — passively intercepting data that your browser loads anyway, without modifying game state or making unauthorised requests.
-
-Use IRIS responsibly and at your own risk.
-
----
-
-## Contributing
-
-Contributions are welcome. Please open an issue before submitting a pull request for significant changes.
-
-- Bug reports → GitHub Issues
-- Feature requests → GitHub Discussions
-- Pull requests → `main` branch, squash commits
-
----
+Use at your own risk.
 
 ## License
 
-IRIS is licensed under [GPL-3.0](LICENSE).
-
-Plugin authors may use any licence for their own plugins, subject to the interfaces and dependencies they build against.
-
----
-
-## Acknowledgements
-
-Inspired by [IITC-CE](https://iitc.app/) and the Ingress community. Built on the shoulders of [MapLibre GL](https://maplibre.org/), [Preact](https://preactjs.com/), and [OpenStreetMap](https://www.openstreetmap.org/).
+GPL-3.0. See [LICENSE](LICENSE).
