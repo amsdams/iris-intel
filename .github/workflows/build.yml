@@ -22,38 +22,42 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm install
 
-      - name: Build Chrome extension
-        run: npm run build:chrome -w packages/extension
+      - name: Typecheck
+        run: npm run typecheck
 
-      - name: Build Firefox extension
-        run: npm run build:firefox -w packages/extension
+      - name: Lint
+        run: npm run lint
 
-      - name: Package Chrome zip
+      - name: Test
+        run: npm run test
+
+      - name: Package all apps
+        run: npm run package:all
+
+      - name: Prepare artifacts
         run: |
           mkdir -p out
-          cd packages/extension/dist
-          zip -r ../../../out/iris-chrome.zip .
-
-      - name: Package Firefox xpi
-        run: |
-          mkdir -p out
-          cd packages/extension/dist-firefox
-          zip -r ../../../out/iris-firefox.xpi .
+          # Use stable names for the automated latest release
+          cp apps/iris/builds/iris-chrome-*.zip out/iris-chrome.zip
+          cp apps/iris/builds/iris-firefox-*.xpi out/iris-firefox.xpi
+          cp apps/mini-iris/builds/mini-iris-chrome-*.zip out/mini-iris-chrome.zip
+          cp apps/mini-iris/builds/mini-iris-firefox-*.xpi out/mini-iris-firefox.xpi
+          cp apps/iitc-iris/builds/iitc-iris-chrome-*.zip out/iitc-iris-chrome.zip
+          cp apps/iitc-iris/builds/iitc-iris-firefox-*.xpi out/iitc-iris-firefox.xpi
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: iris-extension
-          path: |
-            out/iris-chrome.zip
-            out/iris-firefox.xpi
+          name: iris-artifacts
+          path: out/
           retention-days: 30
 
-      - name: Create Release
+      - name: Create/Update Latest Release
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: softprops/action-gh-release@v2
         with:
@@ -64,30 +68,26 @@ jobs:
           body: |
             Automated build from commit ${{ github.sha }}
 
-            ## Android
+            This release contains the latest automated builds for all IRIS variants.
 
-            **Kiwi Browser (easiest):**
-            1. Download `iris-chrome.zip`
-            2. Kiwi → Extensions → Developer mode → Load unpacked → select zip
+            ### IRIS (Modern)
+            Full-featured extension with MapLibre GL.
+            - Chrome: `iris-chrome.zip`
+            - Firefox: `iris-firefox.xpi`
 
-            **Firefox Nightly for Android:**
-            1. `about:config` → set `xpinstall.signatures.required` to `false`
-            2. Navigate to this URL in Firefox Nightly:
-               `https://github.com/${{ github.repository }}/releases/latest/download/iris-firefox.xpi`
-            3. Firefox will prompt to install
+            ### Mini-IRIS
+            Lightweight tactical overlay.
+            - Chrome: `mini-iris-chrome.zip`
+            - Firefox: `mini-iris-firefox.xpi`
 
-            ## Desktop
+            ### IITC IRIS (Alpha)
+            IITC-compatible port with Leaflet.
+            - Chrome: `iitc-iris-chrome.zip`
+            - Firefox: `iitc-iris-firefox.xpi`
 
-            **Chrome / Chromium / Edge:**
-            1. Download and unzip `iris-chrome.zip`
-            2. `chrome://extensions` → Developer mode → Load unpacked
-
-            **Firefox Desktop:**
-            1. Download `iris-firefox.xpi`
-            2. `about:addons` → gear icon → Install Add-on From File
-
-          files: |
-            out/iris-chrome.zip
-            out/iris-firefox.xpi
+            ---
+            **Installation Instructions:**
+            Refer to the [README](https://github.com/${{ github.repository }}#installation) for detailed setup guides for Desktop and Android.
+          files: out/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

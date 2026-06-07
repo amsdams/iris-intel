@@ -21,6 +21,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm install
@@ -40,8 +41,31 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Test
+        run: npm run test
+
       - name: Build all release artifacts
-        run: npm run release
+        run: npm run release:all
+
+      - name: Prepare artifacts
+        run: |
+          mkdir -p out
+          
+          # Helper to copy and rename without timestamp
+          copy_artifact() {
+            local app_dir=$1
+            local name_prefix=$2
+            local ext=$3
+            local version=$(node -p "require('./apps/${app_dir}/package.json').version")
+            cp apps/${app_dir}/builds/${name_prefix}-${version}-*.${ext} out/${name_prefix}-${version}.${ext}
+          }
+
+          copy_artifact "iris" "iris-chrome" "zip"
+          copy_artifact "iris" "iris-firefox" "xpi"
+          copy_artifact "mini-iris" "mini-iris-chrome" "zip"
+          copy_artifact "mini-iris" "mini-iris-firefox" "xpi"
+          copy_artifact "iitc-iris" "iitc-iris-chrome" "zip"
+          copy_artifact "iitc-iris" "iitc-iris-firefox" "xpi"
 
       - name: Publish tagged release
         uses: softprops/action-gh-release@v2
@@ -49,8 +73,6 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: IRIS ${{ github.ref_name }}
           generate_release_notes: true
-          files: |
-            out/iris-chrome.zip
-            out/iris-firefox.xpi
+          files: out/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
