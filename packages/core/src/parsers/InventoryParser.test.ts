@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import mockInventoryData from '../../../../apps/iris/src/content/domains/inventory/mock.inventory.json';
-import liveInventoryData from '../../../../docs/iris/update-map-samples/get-inventory-20260413.json';
 import { InventoryParser } from './InventoryParser';
 import { InventoryData } from './intel-types';
 
@@ -20,8 +19,8 @@ describe('InventoryParser', () => {
     ]));
   });
 
-  it('derives power cubes, boosted power cubes, and drones from saved live data', () => {
-    const parsed = InventoryParser.parse(liveInventoryData as InventoryData);
+  it('derives power cubes, boosted power cubes, and drones from representative inventory data', () => {
+    const parsed = InventoryParser.parse(mockInventoryData as InventoryData);
     const derived = InventoryParser.deriveInventoryDisplayItems(parsed);
 
     expect(derived.some((item) => item.type === 'POWER_CUBE' && item.category === 'POWERUPS')).toBe(true);
