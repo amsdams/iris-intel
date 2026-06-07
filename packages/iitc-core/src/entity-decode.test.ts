@@ -1,11 +1,5 @@
-import {readFileSync} from 'node:fs';
-import {resolve} from 'node:path';
 import {describe, expect, it} from 'vitest';
 import {decodeIitcGameEntities, decodeIitcGetEntitiesResponse, getIitcPortalArtifacts, isIitcFakeFieldEdgeLink, type IitcGetEntitiesResponse, type IitcRawGameEntity} from './index';
-
-function readFixture(path: string): IitcGetEntitiesResponse {
-  return JSON.parse(readFileSync(resolve(import.meta.dirname, '../../..', path), 'utf8')) as IitcGetEntitiesResponse;
-}
 
 function rawCounts(response: IitcGetEntitiesResponse): {p: number; e: number; realLinks: number; uniqueRealLinks: number; r: number; uniqueFields: number} {
   const counts = {p: 0, e: 0, realLinks: 0, r: 0};
@@ -27,9 +21,49 @@ function rawCounts(response: IitcGetEntitiesResponse): {p: number; e: number; re
   return {...counts, uniqueRealLinks: uniqueRealLinks.size, uniqueFields: uniqueFields.size};
 }
 
+function getEntitiesResponse(gameEntities: IitcRawGameEntity[]): IitcGetEntitiesResponse {
+  return {
+    result: {
+      map: {
+        'mock-tile': {gameEntities},
+      },
+    },
+  };
+}
+
 describe('IITC entity decoding', () => {
   it('decodes raw portals, links, and fields from Amsterdam z14 fixture', () => {
-    const fixture = readFixture('docs/iris/update-map-samples/get-entities-z14.json');
+    const fixture = getEntitiesResponse([
+      [
+        'portal-a.16',
+        1000,
+        ['p', 'E', 52_373_000, 4_895_000, 6, 80, 8, 'image-a', 'Portal A', ['sc5_p'], false, false, null, 1000],
+      ],
+      [
+        'portal-b.16',
+        1001,
+        ['p', 'R', 52_374_000, 4_896_000, 5, 60, 7, 'image-b', 'Portal B', [], false, false, null, 1001],
+      ],
+      [
+        'link-ab.9',
+        1002,
+        ['e', 'E', 'portal-a.16', 52_373_000, 4_895_000, 'portal-b.16', 52_374_000, 4_896_000],
+      ],
+      [
+        '0123456789abcdef0123456789abcdef.b_ab',
+        1003,
+        ['e', 'E', 'portal-a.16', 52_373_000, 4_895_000, 'portal-b.16', 52_374_000, 4_896_000],
+      ],
+      [
+        'field-ab.9',
+        1004,
+        ['r', 'E', [
+          ['portal-a.16', 52_373_000, 4_895_000],
+          ['portal-b.16', 52_374_000, 4_896_000],
+          ['portal-c.16', 52_375_000, 4_897_000],
+        ]],
+      ],
+    ]);
     const decoded = decodeIitcGetEntitiesResponse(fixture);
     const counts = rawCounts(fixture);
 
@@ -40,7 +74,22 @@ describe('IITC entity decoding', () => {
   });
 
   it('creates placeholder portals from low-zoom links and fields like IITC', () => {
-    const fixture = readFixture('docs/iris/update-map-samples/get-entities-z12.json');
+    const fixture = getEntitiesResponse([
+      [
+        'low-link.9',
+        2000,
+        ['e', 'R', 'low-a.16', 52_300_000, 4_800_000, 'low-b.16', 52_400_000, 4_900_000],
+      ],
+      [
+        'low-field.9',
+        2001,
+        ['r', 'R', [
+          ['low-a.16', 52_300_000, 4_800_000],
+          ['low-b.16', 52_400_000, 4_900_000],
+          ['low-c.16', 52_500_000, 5_000_000],
+        ]],
+      ],
+    ]);
     const decoded = decodeIitcGetEntitiesResponse(fixture);
     const counts = rawCounts(fixture);
 
