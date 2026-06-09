@@ -31,6 +31,11 @@ Current status:
 - UI access is native to the IITC IRIS shell: `Map -> Counts`, `Map -> List`, and `Map -> Scoreboard`.
 - The List sheet supports sortable IITC-style columns and portal navigation via the existing `zoomToAndShowPortal`
   selection path.
+- Visual parity pass adds faction-colored columns/cells across Counts, List, and Scoreboard.
+- Counts now includes native SVG level bars and an IITC-style two-layer pie: filled faction share in the body and level
+  share in the outer ring, keeping the numeric table as the source of truth for comparison.
+- List now includes name, faction, and level filters plus summary chips for filtered portals, links, fields, AP, and
+  keys.
 
 Intentional divergences:
 
@@ -38,8 +43,8 @@ Intentional divergences:
   IITC-aligned so live comparison remains cheap.
 - Counts are marked approximate when the current `getEntities` plan is at link-level zoom and real portal payloads are
   not requested.
-- The first pass does not implement every portals-list addon column or export action. It focuses on counts, list, and
-  scoreboard parity that can be compared directly against IITC.
+- The first pass does not implement every portals-list addon column or export action. It focuses on counts, list,
+  filtering, and scoreboard parity that can be compared directly against IITC.
 
 Validation:
 
