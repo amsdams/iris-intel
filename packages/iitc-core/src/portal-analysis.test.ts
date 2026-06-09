@@ -38,6 +38,17 @@ const entities: IitcPortalAnalysisEntities = {
       isPlaceholder: true,
     },
     {
+      guid: 'neutral',
+      title: 'Neutral',
+      team: 'N',
+      latE6: 52_003_000,
+      lngE6: 4_003_000,
+      level: 3,
+      health: 0,
+      resCount: 0,
+      isPlaceholder: false,
+    },
+    {
       guid: 'outside',
       title: 'Outside',
       team: 'M',
@@ -83,12 +94,14 @@ describe('portal analysis', () => {
       getKeyCount: (guid) => guid === 'res-5' ? 2 : 0,
     });
 
-    expect(analysis.portalcounts.total).toBe(3);
-    expect(analysis.portalcounts.real).toBe(2);
+    expect(analysis.portalcounts.total).toBe(4);
+    expect(analysis.portalcounts.real).toBe(3);
     expect(analysis.portalcounts.placeholders).toBe(1);
-    expect(analysis.portalcounts.teams).toMatchObject({E: 1, R: 2, M: 0, N: 0});
+    expect(analysis.portalcounts.teams).toMatchObject({E: 1, R: 2, M: 0, N: 1});
     expect(analysis.portalcounts.levels[8].teams.E).toBe(1);
     expect(analysis.portalcounts.levels[0].teams.R).toBe(1);
+    expect(analysis.portalcounts.levels[0].teams.N).toBe(1);
+    expect(analysis.portalcounts.levels[3].teams.N).toBe(0);
     expect(analysis.portalcounts.history).toEqual({visited: 2, captured: 1, scoutControlled: 1});
     expect(analysis.portalcounts.ornaments).toBe(1);
     expect(analysis.portalcounts.artifacts).toBe(1);
@@ -100,7 +113,7 @@ describe('portal analysis', () => {
   it('builds a portals list compatible with IITC visible portal columns', () => {
     const analysis = getIitcPortalAnalysis(entities, bounds, {getKeyCount: (guid) => guid === 'res-5' ? 2 : 0});
 
-    expect(analysis.portalslist.map((portal) => portal.guid)).toEqual(['enl-8', 'res-5']);
+    expect(analysis.portalslist.map((portal) => portal.guid)).toEqual(['enl-8', 'res-5', 'neutral']);
     expect(analysis.portalslist[0]).toMatchObject({
       title: 'ENL Eight',
       level: 8,
@@ -115,6 +128,11 @@ describe('portal analysis', () => {
       links: {in: 1, out: 0, count: 1},
       keyCount: 2,
       mission: true,
+    });
+    expect(analysis.portalslist[2]).toMatchObject({
+      team: 'N',
+      level: 0,
+      health: null,
     });
   });
 

@@ -77,23 +77,22 @@ Naming checklist before creating a new file or exported function:
 
 IITC IRIS is in a usable parity/polish checkpoint. The extension now has the core IITC live-map path, entity rendering,
 geodesic links/fields, portal selection/details, COMM, scores, missions, inventory, passcodes, agent profile, player
-tracker, search, diagnostics, native Draw Tools v1 for links/markers, and first-pass native portal analysis views for
-counts, list, and scoreboard.
+tracker, search, diagnostics, native Draw Tools v1 for links/markers, and stable first-pass native portal analysis views
+for counts, list, and scoreboard.
 
-Latest portal analysis validation included:
+Latest IITC IRIS portal analysis validation included:
 
-- `npm run lint`
-- `npm run typecheck`
+- `npm run typecheck:iitc-iris`
 - `npm run lint:iitc-iris`
 - `npm run lint:css`
-- `npm run typecheck:iitc-iris`
 - `npm run test:iitc-core -- --run src/portal-analysis.test.ts`
 - `npm run package:iitc-iris`
+- `git diff --check`
 
 Latest package artifacts:
 
-- `apps/iitc-iris/builds/iitc-iris-chrome-0.1.0-2026-06-09T18-47-58.zip`
-- `apps/iitc-iris/builds/iitc-iris-firefox-0.1.0-2026-06-09T18-47-58.xpi`
+- `apps/iitc-iris/builds/iitc-iris-chrome-0.1.0-2026-06-09T21-17-14.zip`
+- `apps/iitc-iris/builds/iitc-iris-firefox-0.1.0-2026-06-09T21-17-14.xpi`
 
 Known validation caveat: full `npm run test:iitc-core` has previously been degraded by missing optional entity-decode
 fixture files under `docs/iris/update-map-samples/`. Focused portal-analysis tests are green. Restore or replace the
@@ -114,7 +113,7 @@ Feature details have been split out of this entry point so the current truth is 
 | Portal selection and details        | Started             | [features/portal-details.md](features/portal-details.md)                         |
 | IITC side request/UI systems        | Started             | [features/side-systems.md](features/side-systems.md)                             |
 | Draw Tools                          | Stable v1 / Partial | [features/draw-tools.md](features/draw-tools.md)                                 |
-| Portal analysis views               | Started             | [features/portal-analysis.md](features/portal-analysis.md)                       |
+| Portal analysis views               | Stable v1 / Partial | [features/portal-analysis.md](features/portal-analysis.md)                       |
 | Backlog and replacement readiness   | Ongoing             | [backlog.md](backlog.md)                                                         |
 
 ## Current High-Level Gaps

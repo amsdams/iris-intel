@@ -223,7 +223,7 @@ export function getIitcPortalCounts(
   };
 
   for (const portal of getIitcPortalsInBounds(entities, bounds)) {
-    const level = portal.isPlaceholder ? 0 : Math.max(0, Math.min(8, portal.level ?? 0));
+    const level = portal.isPlaceholder || portal.team === 'N' ? 0 : Math.max(0, Math.min(8, portal.level ?? 0));
     counts.total += 1;
     counts.teams[portal.team] += 1;
     counts.levels[level].count += 1;
@@ -262,7 +262,7 @@ export function getIitcPortalsList(
         team: portal.team,
         latE6: portal.latE6,
         lngE6: portal.lngE6,
-        level: portal.level ?? 0,
+        level: portal.team === 'N' ? 0 : portal.level ?? 0,
         health: portal.team === 'N' ? null : portal.health ?? null,
         resCount,
         links: {
