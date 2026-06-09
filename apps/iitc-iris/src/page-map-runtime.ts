@@ -21,6 +21,7 @@ import {
   getIitcCommChannelMessages,
   getIitcInventoryPortalKeyCount,
   getIitcMissionBounds,
+  getIitcPortalAnalysis,
   IITC_DRAW_TOOLS_DEFAULT_COLOR,
   IITC_DRAW_TOOLS_KEY_STORAGE,
   IITC_MISSION_ORDER,
@@ -3242,6 +3243,12 @@ function postEntityStatus(
   const artifactCounts = countRenderArtifacts(portals);
   const renderPolicy = getRenderPolicy();
   const viewportCounts = countViewportEntities(entities, tileDiagnostics.viewportBounds);
+  const portalAnalysis = entities && tileDiagnostics.viewportBounds
+    ? getIitcPortalAnalysis(entities, tileDiagnostics.viewportBounds, {
+      hasPortals: latestPlan?.tileParams.hasPortals,
+      getKeyCount: getPortalKeyCount,
+    })
+    : null;
   const authRequired = isIitcAuthMessage(status);
   setAuthRecoveryActive(authRequired);
   latestEntityStatus = status;
@@ -3296,6 +3303,7 @@ function postEntityStatus(
     timing: tileDiagnostics.timing,
     requestDiagnostics: getIitcRequestDiagnostics(),
     playerTracker: playerTrackerDiagnostics,
+    portalAnalysis,
     baseLayerId,
     dataSource,
     renderPolicy: getRenderPolicy(),

@@ -17,7 +17,8 @@ modules to avoid carrying over hard-to-maintain structure.
 
 Non-functional requirements:
 
-- Source of truth: use `reference/ingress-intel-total-conversion` first for behavior, naming, request shape, lifecycle, and UI concepts. Use
+- Source of truth: use `reference/ingress-intel-total-conversion` first for behavior, naming, request shape, lifecycle,
+  and UI concepts. Use
   current IRIS/Mini-IRIS only as implementation reference or migration context.
 - Parity before improvement: the first acceptable version of any core map workflow is the IITC-CE behavior, not a
   cleaner IRIS-style reinterpretation. Optimization, UX redesign, and architectural simplification are allowed only
@@ -41,7 +42,8 @@ Non-functional requirements:
 
 Required process for each new subsystem:
 
-1. Identify the IITC-CE source files under `reference/ingress-intel-total-conversion` and record them in the pass notes before implementing.
+1. Identify the IITC-CE source files under `reference/ingress-intel-total-conversion` and record them in the pass notes
+   before implementing.
 2. List the IITC public concepts being ported: file/module name, function names, endpoint names, data fields, UI
    pane/control names, and lifecycle events.
 3. Choose IITC-aligned names at the boundary first. For example, prefer `comm.ts` plus `parseMsgData` over a cleaner but
@@ -52,7 +54,8 @@ Required process for each new subsystem:
 6. Document every intentional divergence in this plan with the reason, expected effect, and how to compare it against
    IITC-CE.
 
-Validation rule: after validating IITC IRIS code changes, run `npm run package:iitc-iris` from the repository root so the
+Validation rule: after validating IITC IRIS code changes, run `npm run package:iitc-iris` from the repository root so
+the
 extension build and ZIP/XPI packaging are checked. Documentation-only changes do not require this package step.
 
 Current local reference checkout: `reference/ingress-intel-total-conversion`. Older notes may refer to the same IITC-CE
@@ -70,45 +73,49 @@ Naming checklist before creating a new file or exported function:
   IITC naming is not appropriate.
 - Is the divergence only for code cleanliness? Keep the IITC name at the boundary and hide the cleaner structure inside.
 
-## Current Status - 2026-06-07
+## Current Status - 2026-06-09
 
 IITC IRIS is in a usable parity/polish checkpoint. The extension now has the core IITC live-map path, entity rendering,
 geodesic links/fields, portal selection/details, COMM, scores, missions, inventory, passcodes, agent profile, player
-tracker, search, diagnostics, and native Draw Tools v1 for links/markers.
+tracker, search, diagnostics, native Draw Tools v1 for links/markers, and first-pass native portal analysis views for
+counts, list, and scoreboard.
 
-Latest Draw Tools validation included:
+Latest portal analysis validation included:
 
+- `npm run lint`
+- `npm run typecheck`
 - `npm run lint:iitc-iris`
 - `npm run lint:css`
 - `npm run typecheck:iitc-iris`
-- `npm run test:iitc-core -- --run src/draw-tools.test.ts`
+- `npm run test:iitc-core -- --run src/portal-analysis.test.ts`
 - `npm run package:iitc-iris`
 
 Latest package artifacts:
 
-- `apps/iitc-iris/builds/iitc-iris-chrome-0.1.0-2026-06-07T21-21-45.zip`
-- `apps/iitc-iris/builds/iitc-iris-firefox-0.1.0-2026-06-07T21-21-45.xpi`
+- `apps/iitc-iris/builds/iitc-iris-chrome-0.1.0-2026-06-09T18-47-58.zip`
+- `apps/iitc-iris/builds/iitc-iris-firefox-0.1.0-2026-06-09T18-47-58.xpi`
 
 Known validation caveat: full `npm run test:iitc-core` has previously been degraded by missing optional entity-decode
-fixture files under `docs/iris/update-map-samples/`. Focused Draw Tools tests are green. Restore or replace the missing sanitized
-fixtures before treating the full core parity harness as healthy.
+fixture files under `docs/iris/update-map-samples/`. Focused portal-analysis tests are green. Restore or replace the
+missing sanitized fixtures before treating the full core parity harness as healthy.
 
 ## Documentation Layout
 
 Feature details have been split out of this entry point so the current truth is easier to scan:
 
-| Area | Status | Detail |
-|------|--------|--------|
-| Missions | Partial | [features/missions.md](features/missions.md) |
-| Geodesic rendering | Partial | [features/geodesic-rendering.md](features/geodesic-rendering.md) |
-| Map lifecycle | Partial | [features/map-lifecycle.md](features/map-lifecycle.md) |
-| Scaffold/request lifecycle | Done/Partial | [features/scaffold-request-lifecycle.md](features/scaffold-request-lifecycle.md) |
-| Entity decode and Leaflet rendering | Partial | [features/entity-rendering.md](features/entity-rendering.md) |
-| Comparison UI | Started | [features/comparison-ui.md](features/comparison-ui.md) |
-| Portal selection and details | Started | [features/portal-details.md](features/portal-details.md) |
-| IITC side request/UI systems | Started | [features/side-systems.md](features/side-systems.md) |
-| Draw Tools | Stable v1 / Partial | [features/draw-tools.md](features/draw-tools.md) |
-| Backlog and replacement readiness | Ongoing | [backlog.md](backlog.md) |
+| Area                                | Status              | Detail                                                                           |
+|-------------------------------------|---------------------|----------------------------------------------------------------------------------|
+| Missions                            | Partial             | [features/missions.md](features/missions.md)                                     |
+| Geodesic rendering                  | Partial             | [features/geodesic-rendering.md](features/geodesic-rendering.md)                 |
+| Map lifecycle                       | Partial             | [features/map-lifecycle.md](features/map-lifecycle.md)                           |
+| Scaffold/request lifecycle          | Done/Partial        | [features/scaffold-request-lifecycle.md](features/scaffold-request-lifecycle.md) |
+| Entity decode and Leaflet rendering | Partial             | [features/entity-rendering.md](features/entity-rendering.md)                     |
+| Comparison UI                       | Started             | [features/comparison-ui.md](features/comparison-ui.md)                           |
+| Portal selection and details        | Started             | [features/portal-details.md](features/portal-details.md)                         |
+| IITC side request/UI systems        | Started             | [features/side-systems.md](features/side-systems.md)                             |
+| Draw Tools                          | Stable v1 / Partial | [features/draw-tools.md](features/draw-tools.md)                                 |
+| Portal analysis views               | Started             | [features/portal-analysis.md](features/portal-analysis.md)                       |
+| Backlog and replacement readiness   | Ongoing             | [backlog.md](backlog.md)                                                         |
 
 ## Current High-Level Gaps
 

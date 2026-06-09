@@ -3,7 +3,7 @@ import {useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import './iitc-iris.css';
 import {formatIitcColorVars, getIitcItemColor, getIitcLevelColor, getIitcRarityColor, IITC_RESONATOR_ENERGY} from './iitc-colors';
 import {formatSubscriptionBadge, formatSubscriptionLabel, getAuthErrorMessage, getPanelStatusClass, getSubscriptionStatusClass} from './ui-status';
-import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPlayerTrackerDiagnostics, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPlayerTrackerDiagnostics, type IitcIrisPortalAnalysis, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
 import {
   createIitcMapDataPlan,
   IITC_MAX_REQUESTS,
@@ -14,6 +14,8 @@ import {
   type IitcDrawToolsItem,
   type IitcBounds,
   type IitcMapDataPlan,
+  type IitcPortalsListEntry,
+  type IitcScoreboardTeam,
 } from '@iris/iitc-core';
 
 const REQUEST_BOUNDS_PADDING_RATIO = 0.25;
@@ -274,12 +276,15 @@ interface EntityFetchState {
   renderPolicy: IitcIrisRenderPolicy;
   selectedPortal: IitcIrisSelectedPortal | null;
   portalDetails: IitcIrisPortalDetailsState | null;
+  portalAnalysis: IitcIrisPortalAnalysis | null;
 }
 
 type SidePanelId = typeof SIDE_PANEL_OPTIONS[number]['id'];
-type SheetId = 'map' | 'layers' | 'view' | 'drawLinks' | 'drawMarkers' | 'search' | 'portal' | 'system' | 'help' | SidePanelId;
+type SheetId = 'map' | 'layers' | 'view' | 'drawLinks' | 'drawMarkers' | 'portalCounts' | 'portalsList' | 'scoreboard' | 'search' | 'portal' | 'system' | 'help' | SidePanelId;
 type PrimaryMenuId = 'map' | 'portal' | 'agent' | 'comm' | 'system';
 type PortalSectionId = 'mods' | 'resonators' | 'facts';
+type PortalsListSortField = 'title' | 'level' | 'team' | 'health' | 'resCount' | 'links' | 'fields' | 'enemyAp' | 'keys';
+type SortOrder = 1 | -1;
 
 interface ParsedViewInput {
   lat: number;
@@ -740,7 +745,19 @@ function isSidePanelId(value: string | null): value is SidePanelId {
 }
 
 function isSheetId(value: string | null): value is SheetId {
-  return value === 'map' || value === 'layers' || value === 'view' || value === 'drawLinks' || value === 'drawMarkers' || value === 'search' || value === 'portal' || value === 'system' || value === 'help' || isSidePanelId(value);
+  return value === 'map' ||
+    value === 'layers' ||
+    value === 'view' ||
+    value === 'drawLinks' ||
+    value === 'drawMarkers' ||
+    value === 'portalCounts' ||
+    value === 'portalsList' ||
+    value === 'scoreboard' ||
+    value === 'search' ||
+    value === 'portal' ||
+    value === 'system' ||
+    value === 'help' ||
+    isSidePanelId(value);
 }
 
 function isCommTab(value: string | null): value is IitcIrisCommTab {
@@ -933,6 +950,7 @@ function entityFetchStateFromMessage(message: IitcIrisMessage, current: EntityFe
     renderPolicy: message.renderPolicy ?? current.renderPolicy,
     selectedPortal: message.selectedPortal === undefined ? current.selectedPortal : message.selectedPortal,
     portalDetails: message.portalDetails === undefined ? current.portalDetails : message.portalDetails,
+    portalAnalysis: message.portalAnalysis === undefined ? current.portalAnalysis : message.portalAnalysis,
   };
 }
 
@@ -1043,6 +1061,71 @@ function formatTeamClass(team: string): string {
   if (team === 'M') return 'iitc-iris-team-machina';
   return 'iitc-iris-team-neutral';
 }
+
+function formatPortalAnalysisValue(value: number | null | undefined, suffix = ''): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) return '-';
+  return `${formatInteger(value)}${suffix}`;
+}
+
+function formatPortalHistory(entry: IitcPortalsListEntry): string {
+  if (entry.history.captured) return 'C';
+  if (entry.history.visited) return 'V';
+  return '-';
+}
+
+function formatScoutControlled(entry: IitcPortalsListEntry): string {
+  return entry.history.scoutControlled ? 'S' : '-';
+}
+
+function formatPortalMission(entry: IitcPortalsListEntry): string {
+  return entry.mission ? 'M' : '-';
+}
+
+function getPortalsListSortValue(entry: IitcPortalsListEntry, field: PortalsListSortField): string | number {
+  if (field === 'title') return entry.title.toLowerCase();
+  if (field === 'level') return entry.level;
+  if (field === 'team') return entry.team;
+  if (field === 'health') return entry.health ?? -1;
+  if (field === 'resCount') return entry.resCount;
+  if (field === 'links') return entry.links.count;
+  if (field === 'fields') return entry.fields;
+  if (field === 'enemyAp') return entry.ap.enemyAp;
+  return entry.keyCount ?? 0;
+}
+
+function sortPortalsList(entries: IitcPortalsListEntry[], sortBy: PortalsListSortField, sortOrder: SortOrder): IitcPortalsListEntry[] {
+  return [...entries].sort((a, b) => {
+    const aValue = getPortalsListSortValue(a, sortBy);
+    const bValue = getPortalsListSortValue(b, sortBy);
+    if (aValue < bValue) return -sortOrder;
+    if (aValue > bValue) return sortOrder;
+    return a.title.localeCompare(b.title) || a.guid.localeCompare(b.guid);
+  });
+}
+
+function getScoreboardTeamLabel(team: 'E' | 'R' | 'M'): string {
+  if (team === 'E') return 'Enlightened';
+  if (team === 'R') return 'Resistance';
+  return 'Machina';
+}
+
+function formatScoreboardAverage(value: number | null): string {
+  return value === null ? '-' : value.toFixed(1);
+}
+
+function formatScoreboardTotal(team: IitcScoreboardTeam): string {
+  return team.placeholders > 0 ? `${formatInteger(team.total)} + ${formatInteger(team.placeholders)}` : formatInteger(team.total);
+}
+
+const SCOREBOARD_ROWS: {label: string; format: (team: IitcScoreboardTeam) => string}[] = [
+  {label: 'Portals', format: (team): string => formatScoreboardTotal(team)},
+  {label: 'avg Level', format: (team): string => formatScoreboardAverage(team.avgLevel)},
+  {label: 'avg Health', format: (team): string => formatScoreboardAverage(team.avgHealth)},
+  {label: 'Level 8', format: (team): string => formatPortalAnalysisValue(team.level8)},
+  {label: 'Max Level', format: (team): string => formatPortalAnalysisValue(team.maxLevel)},
+  {label: 'Links', format: (team): string => formatPortalAnalysisValue(team.links)},
+  {label: 'Fields', format: (team): string => formatPortalAnalysisValue(team.fields)},
+];
 
 function formatMapObjectDistance(meters: number | undefined): string {
   if (meters === undefined || !Number.isFinite(meters)) return '-';
@@ -1292,13 +1375,29 @@ function App(): h.JSX.Element {
     renderPolicy: DEFAULT_RENDER_POLICY,
     selectedPortal: null,
     portalDetails: null,
+    portalAnalysis: null,
   });
+  const [portalsListSortBy, setPortalsListSortBy] = useState<PortalsListSortField>('level');
+  const [portalsListSortOrder, setPortalsListSortOrder] = useState<SortOrder>(-1);
   const plan: IitcMapDataPlan | null = useMemo(() => createPlan(camera), [camera]);
   const summaryMode = plan?.tileParams.hasPortals ? 'summary' : 'placeholder';
   const requestBatches = plan ? plan.requestBatches.map((batch) => batch.length) : [];
   const intelUrl = createIntelUrl(camera);
   const dataSource = useMemo(() => createDataSourceSettings(dataSourceId), [dataSourceId]);
   const innerStatus = createInnerStatusView(plan, entityFetch, requestDiagnostics);
+  const portalAnalysis = entityFetch.portalAnalysis;
+  const sortedPortalsList = useMemo(
+    () => sortPortalsList(portalAnalysis?.portalslist ?? [], portalsListSortBy, portalsListSortOrder),
+    [portalAnalysis?.portalslist, portalsListSortBy, portalsListSortOrder],
+  );
+  const sortPortalsListBy = (field: PortalsListSortField): void => {
+    if (portalsListSortBy === field) {
+      setPortalsListSortOrder((current) => current === 1 ? -1 : 1);
+      return;
+    }
+    setPortalsListSortBy(field);
+    setPortalsListSortOrder(field === 'title' || field === 'team' ? 1 : -1);
+  };
   const detailOverlaysActive = entityFetch.renderPolicy.levelFill ||
     entityFetch.renderPolicy.healthFill ||
     entityFetch.renderPolicy.ornaments ||
@@ -2905,10 +3004,22 @@ function App(): h.JSX.Element {
         </aside>
       )}
       <aside className="iitc-iris-map-controls" aria-label="Map controls">
-        {(activeSheet === 'view' || activeSheet === 'layers' || activeSheet === 'drawLinks' || activeSheet === 'drawMarkers') && (
+        {(activeSheet === 'view' || activeSheet === 'layers' || activeSheet === 'drawLinks' || activeSheet === 'drawMarkers' || activeSheet === 'portalCounts' || activeSheet === 'portalsList' || activeSheet === 'scoreboard') && (
           <div className="iitc-iris-panel-topbar">
             <span className="iitc-iris-selected-title">
-              {activeSheet === 'view' ? 'View' : activeSheet === 'layers' ? 'Layers' : activeSheet === 'drawLinks' ? 'Draw Links' : 'Draw Markers'}
+              {activeSheet === 'view'
+                ? 'View'
+                : activeSheet === 'layers'
+                  ? 'Layers'
+                  : activeSheet === 'drawLinks'
+                    ? 'Draw Links'
+                    : activeSheet === 'drawMarkers'
+                      ? 'Draw Markers'
+                      : activeSheet === 'portalCounts'
+                        ? 'Portal Counts'
+                        : activeSheet === 'portalsList'
+                          ? 'Portals List'
+                          : 'Scoreboard'}
             </span>
             <span className="iitc-iris-panel-header-actions">
               <button className="iitc-iris-clear-selection" type="button" onClick={closeSheets} title={`Close ${activeSheet}`} aria-label={`Close ${activeSheet}`}>X</button>
@@ -3084,6 +3195,166 @@ function App(): h.JSX.Element {
               {drawToolsImportStatus && <span className="iitc-iris-map-control-status">{drawToolsImportStatus}</span>}
             </div>
           </div>
+        </div>}
+        {activeSheet === 'portalCounts' && <div className="iitc-iris-map-controls-section iitc-iris-portal-analysis">
+          <span className="iitc-iris-status">Portal Counts</span>
+          {portalAnalysis ? (
+            <>
+              <div className="iitc-iris-analysis-summary-grid">
+                <span><b>{formatInteger(portalAnalysis.portalcounts.total)}</b><small>visible</small></span>
+                <span><b>{formatInteger(portalAnalysis.portalcounts.real)}</b><small>real</small></span>
+                <span><b>{formatInteger(portalAnalysis.portalcounts.placeholders)}</b><small>placeholders</small></span>
+                <span><b>{formatInteger(portalAnalysis.portalcounts.withKeys)}</b><small>with keys</small></span>
+              </div>
+              {portalAnalysis.portalcounts.inaccurateAtLinkLevel && (
+                <div className="iitc-iris-empty-state">Portal counts are approximate at link-level zoom.</div>
+              )}
+              <div className="iitc-iris-portal-counts-table-wrap">
+                <table className="iitc-iris-portal-analysis-table">
+                  <thead>
+                    <tr>
+                      <th>Level</th>
+                      <th>ENL</th>
+                      <th>RES</th>
+                      <th>MAC</th>
+                      <th>Neutral</th>
+                      <th>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...portalAnalysis.portalcounts.levels].reverse().map((level) => (
+                      <tr key={level.level} className={level.count === 0 ? 'is-muted' : ''}>
+                        <td className={`iitc-iris-level-cell iitc-iris-level-${level.level}`}>{level.level === 0 ? 'Placeholders' : `Level ${level.level}`}</td>
+                        <td className="iitc-iris-team-enl">{formatInteger(level.teams.E)}</td>
+                        <td className="iitc-iris-team-res">{formatInteger(level.teams.R)}</td>
+                        <td className="iitc-iris-team-machina">{formatInteger(level.teams.M)}</td>
+                        <td>{formatInteger(level.teams.N)}</td>
+                        <td>{formatInteger(level.count)}</td>
+                      </tr>
+                    ))}
+                    <tr>
+                      <th>Total</th>
+                      <th className="iitc-iris-team-enl">{formatInteger(portalAnalysis.portalcounts.teams.E)}</th>
+                      <th className="iitc-iris-team-res">{formatInteger(portalAnalysis.portalcounts.teams.R)}</th>
+                      <th className="iitc-iris-team-machina">{formatInteger(portalAnalysis.portalcounts.teams.M)}</th>
+                      <th>{formatInteger(portalAnalysis.portalcounts.teams.N)}</th>
+                      <th>{formatInteger(portalAnalysis.portalcounts.total)}</th>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div className="iitc-iris-analysis-chip-row">
+                <span className="iitc-iris-status">visited {formatInteger(portalAnalysis.portalcounts.history.visited)}</span>
+                <span className="iitc-iris-status">captured {formatInteger(portalAnalysis.portalcounts.history.captured)}</span>
+                <span className="iitc-iris-status">scout {formatInteger(portalAnalysis.portalcounts.history.scoutControlled)}</span>
+                <span className="iitc-iris-status">missions {formatInteger(portalAnalysis.portalcounts.missions)}</span>
+                <span className="iitc-iris-status">ornaments {formatInteger(portalAnalysis.portalcounts.ornaments)}</span>
+                <span className="iitc-iris-status">artifacts {formatInteger(portalAnalysis.portalcounts.artifacts)}</span>
+              </div>
+            </>
+          ) : (
+            <div className="iitc-iris-empty-state">No portal count data for the current view.</div>
+          )}
+        </div>}
+        {activeSheet === 'portalsList' && <div className="iitc-iris-map-controls-section iitc-iris-portal-analysis">
+          <span className="iitc-iris-status">Portals List</span>
+          {portalAnalysis && sortedPortalsList.length > 0 ? (
+            <>
+              <div className="iitc-iris-analysis-chip-row">
+                <span className="iitc-iris-status">{formatInteger(sortedPortalsList.length)} portals</span>
+                <span className="iitc-iris-status">sort {portalsListSortBy} {portalsListSortOrder === 1 ? 'asc' : 'desc'}</span>
+              </div>
+              <div className="iitc-iris-portals-list-table-wrap">
+                <table className="iitc-iris-portal-analysis-table iitc-iris-portals-list-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      {([
+                        ['title', 'Portal Name'],
+                        ['level', 'Level'],
+                        ['team', 'Team'],
+                        ['health', 'Health'],
+                        ['resCount', 'Res'],
+                        ['links', 'Links'],
+                        ['fields', 'Fields'],
+                        ['enemyAp', 'AP'],
+                        ['keys', 'Keys'],
+                      ] as const).map(([field, label]) => (
+                        <th key={field}>
+                          <button className="iitc-iris-table-sort" type="button" onClick={() => sortPortalsListBy(field)}>
+                            {label}{portalsListSortBy === field ? portalsListSortOrder === 1 ? ' ^' : ' v' : ''}
+                          </button>
+                        </th>
+                      ))}
+                      <th>V/C</th>
+                      <th>S</th>
+                      <th>M</th>
+                      <th>Go</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedPortalsList.map((portal, index) => (
+                      <tr key={portal.guid} className={formatTeamClass(portal.team)}>
+                        <td>{index + 1}</td>
+                        <td className="iitc-iris-portal-list-title">
+                          <button type="button" onClick={() => zoomToAndShowPortal(portal.guid, portal.latE6, portal.lngE6, camera.zoom)} onDblClick={() => zoomToAndShowPortal(portal.guid, portal.latE6, portal.lngE6)}>
+                            {portal.title}
+                          </button>
+                        </td>
+                        <td className={`iitc-iris-level-cell iitc-iris-level-${portal.level}`}>L{portal.level}</td>
+                        <td>{formatTeamLabel(portal.team)}</td>
+                        <td>{portal.health === null ? '-' : `${Math.round(portal.health)}%`}</td>
+                        <td>{formatInteger(portal.resCount)}</td>
+                        <td title={`In: ${portal.links.in}\nOut: ${portal.links.out}`}>{formatInteger(portal.links.count)}</td>
+                        <td>{formatInteger(portal.fields)}</td>
+                        <td title={`Destroy AP: ${portal.ap.destroyAp}\nCapture AP: ${portal.ap.captureAp}`}>{formatInteger(portal.ap.enemyAp)}</td>
+                        <td>{portal.keyCount === undefined ? '-' : formatInteger(portal.keyCount)}</td>
+                        <td>{formatPortalHistory(portal)}</td>
+                        <td>{formatScoutControlled(portal)}</td>
+                        <td>{formatPortalMission(portal)}</td>
+                        <td>
+                          <button className="iitc-iris-table-action" type="button" onClick={() => zoomToAndShowPortal(portal.guid, portal.latE6, portal.lngE6)} title="Zoom to and select portal">Zoom</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          ) : (
+            <div className="iitc-iris-empty-state">Nothing to show.</div>
+          )}
+        </div>}
+        {activeSheet === 'scoreboard' && <div className="iitc-iris-map-controls-section iitc-iris-portal-analysis">
+          <span className="iitc-iris-status">Scoreboard</span>
+          {portalAnalysis ? (
+            <div className="iitc-iris-portal-counts-table-wrap">
+              <table className="iitc-iris-portal-analysis-table iitc-iris-scoreboard-table">
+                <thead>
+                  <tr>
+                    <th>Metrics</th>
+                    <th className="iitc-iris-team-enl">Enlightened</th>
+                    <th className="iitc-iris-team-res">Resistance</th>
+                    <th className="iitc-iris-team-machina">Machina</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {SCOREBOARD_ROWS.map(({label, format}) => (
+                    <tr key={label}>
+                      <td>{label}</td>
+                      {(['E', 'R', 'M'] as const).map((team) => (
+                        <td className={formatTeamClass(team)} key={team} title={getScoreboardTeamLabel(team)}>
+                          {format(portalAnalysis.scoreboard.teams[team])}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="iitc-iris-empty-state">Nothing to show.</div>
+          )}
         </div>}
         {activeSheet === 'view' && <div className="iitc-iris-map-controls-section">
           <span className="iitc-iris-status">Base</span>
@@ -3486,6 +3757,9 @@ function App(): h.JSX.Element {
               <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'view' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('view')} aria-pressed={activeSheet === 'view'}>View</button>
               <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'drawLinks' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('drawLinks')} aria-pressed={activeSheet === 'drawLinks'}>Links</button>
               <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'drawMarkers' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('drawMarkers')} aria-pressed={activeSheet === 'drawMarkers'}>Markers</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'portalCounts' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('portalCounts')} aria-pressed={activeSheet === 'portalCounts'}>Counts</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'portalsList' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('portalsList')} aria-pressed={activeSheet === 'portalsList'}>List</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'scoreboard' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('scoreboard')} aria-pressed={activeSheet === 'scoreboard'}>Scoreboard</button>
               <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'scores' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('scores')} aria-pressed={activeSheet === 'scores'}>Scores</button>
               <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'search' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('search')} aria-pressed={activeSheet === 'search'}>Search</button>
               <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'missions' && missionsState.source !== 'portal' ? 'is-active' : ''}`} type="button" onClick={() => toggleMissionsSheet('view')} aria-pressed={activeSheet === 'missions' && missionsState.source !== 'portal'}>Missions</button>

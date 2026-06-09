@@ -1,3 +1,5 @@
+import type {IitcPortalCounts, IitcPortalsListEntry, IitcScoreboard} from '@iris/iitc-core';
+
 export const IITC_IRIS_MESSAGES = {
   boot: 'IITC_IRIS_BOOT',
   pageReady: 'IITC_IRIS_PAGE_READY',
@@ -114,6 +116,7 @@ export interface IitcIrisMessage {
   timing?: IitcIrisMapTimingDiagnostics | null;
   requestDiagnostics?: IitcIrisRequestDiagnostics;
   playerTracker?: IitcIrisPlayerTrackerDiagnostics;
+  portalAnalysis?: IitcIrisPortalAnalysis | null;
   layerSettings?: IitcIrisLayerSettings;
   baseLayerId?: IitcIrisBaseLayerId;
   dataSource?: IitcIrisDataSourceSettings;
@@ -687,4 +690,10 @@ export interface IitcIrisRenderEntities {
   portals: IitcIrisRenderPortal[];
   links: IitcIrisRenderLink[];
   fields: IitcIrisRenderField[];
+}
+
+export interface IitcIrisPortalAnalysis {
+  portalcounts: IitcPortalCounts;
+  portalslist: IitcPortalsListEntry[];
+  scoreboard: IitcScoreboard;
 }
