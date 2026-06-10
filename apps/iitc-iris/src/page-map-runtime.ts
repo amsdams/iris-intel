@@ -1,6 +1,8 @@
 import L, {type Layer as LeafletLayer, type LeafletMouseEvent, type Map as LeafletMap, type TileLayer} from 'leaflet';
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionDetails, type IitcIrisMissionSource, type IitcIrisMissionSummary, type IitcIrisMissionWaypoint, type IitcIrisMissionsState, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisPortalHighlighterId, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderMutationLayerDiagnostics, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisSubscriptionState} from './messages';
+import {DEFAULT_LAYER_SETTINGS} from './layer-registry';
 import {IITC_LEVEL_COLORS, IITC_TEAM_COLORS} from './iitc-colors';
+import {getLayerUpdatePlan} from './layer-update-routing';
 import {createIitcIrisMapContextMessage, installIitcIrisContextGestures} from './map-context-runtime';
 import {convertIitcGeodesicLatLngs, createIitcGeodesicPolygon, createIitcGeodesicPolyline} from './leaflet-geodesic';
 import {
@@ -143,34 +145,6 @@ const BASE_LAYERS: Record<IitcIrisBaseLayerId, {
     attribution: 'OpenStreetMap, CARTO',
     maxZoom: 20,
   },
-};
-const DEFAULT_LAYER_SETTINGS: IitcIrisLayerSettings = {
-  fields: true,
-  links: true,
-  portals: true,
-  unclaimedPortals: true,
-  level1Portals: true,
-  level2Portals: true,
-  level3Portals: true,
-  level4Portals: true,
-  level5Portals: true,
-  level6Portals: true,
-  level7Portals: true,
-  level8Portals: true,
-  resistance: true,
-  enlightened: true,
-  machina: true,
-  ornaments: false,
-  artifacts: false,
-  labels: false,
-  tiles: false,
-  drawnLinks: true,
-  drawnMarkers: true,
-  playerTracker: false,
-  playerTrackerResistance: false,
-  playerTrackerEnlightened: false,
-  playerTrackerMachina: false,
-  keyCount: 'off',
 };
 const DEFAULT_HIGHLIGHTER_SETTINGS: IitcIrisHighlighterSettings = {
   active: 'none',
@@ -3498,11 +3472,15 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
   if (event.data?.type === IITC_IRIS_MESSAGES.layerSettings && event.data.layerSettings) {
     const previousLayerSettings = layerSettings;
     layerSettings = event.data.layerSettings;
-    if (latestEntities) renderEntities(latestEntities, {previousLayerSettings});
-    renderLatestTileDebug();
-    renderIitcDrawTools();
-    renderPlayerTracker();
-    schedulePlayerTrackerRefresh();
+    const layerUpdatePlan = getLayerUpdatePlan(previousLayerSettings, layerSettings);
+
+    if (latestEntities && layerUpdatePlan.renderEntities) renderEntities(latestEntities, {previousLayerSettings});
+    if (layerUpdatePlan.renderTileDebug) renderLatestTileDebug();
+    if (layerUpdatePlan.renderDrawTools) renderIitcDrawTools();
+    if (layerUpdatePlan.renderPlayerTracker) {
+      renderPlayerTracker();
+      schedulePlayerTrackerRefresh();
+    }
     repostLatestEntityStatus();
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.layerSettings && event.data.highlighterSettings) {
