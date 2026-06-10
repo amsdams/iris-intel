@@ -36,6 +36,14 @@ Non-functional requirements:
   `packages/iitc-core`; the extension runtime should mostly wire Leaflet, browser APIs, and UI messages.
 - Avoid “smart” rewrites before parity: simplify internals only after the equivalent IITC behavior is understood, named,
   and covered by tests or diagnostics.
+- Preserve IITC runtime semantics before optimization: for every ported subsystem, identify the IITC ownership model,
+  lifecycle, mutation path, and hook/plugin contract. Prefer an explicit typed equivalent of the IITC model over a local
+  shortcut that only matches the visible output.
+- Visual parity is not JavaScript timing: for interaction-sensitive map features, measure click-to-pixels latency across
+  content dispatch, page-runtime work, Leaflet invalidation, and browser paint before choosing further optimizations.
+- Do not claim implementation superiority without measured visual parity: an IRIS implementation can be structurally
+  cleaner or faster in internal timings, but it is not better than IITC-CE until click-to-visible behavior is comparable
+  or intentionally documented as a divergence.
 - Keep user-facing UI comparable: core map workflows should look and behave close enough to IITC-CE that screenshot and
   live-state comparisons are meaningful. Debug and fixture controls can remain IITC IRIS-specific, but should stay
   visually separate.
@@ -44,14 +52,16 @@ Required process for each new subsystem:
 
 1. Identify the IITC-CE source files under `reference/ingress-intel-total-conversion` and record them in the pass notes
    before implementing.
-2. List the IITC public concepts being ported: file/module name, function names, endpoint names, data fields, UI
+2. Record the IITC ownership model, lifecycle, mutation path, and whether the behavior is hook/plugin-visible.
+3. List the IITC public concepts being ported: file/module name, function names, endpoint names, data fields, UI
    pane/control names, and lifecycle events.
-3. Choose IITC-aligned names at the boundary first. For example, prefer `comm.ts` plus `parseMsgData` over a cleaner but
+4. Choose IITC-aligned names at the boundary first. For example, prefer `comm.ts` plus `parseMsgData` over a cleaner but
    less traceable `plext.ts` parser name.
-4. If a cleaner internal split is useful, keep a small IITC-named facade that maps directly back to the IITC source. The
+5. If a cleaner internal split is useful, keep a small IITC-named facade that maps directly back to the IITC source. The
    facade is the debugging contract.
-5. Add tests or copied diagnostics that prove the IITC behavior before adding larger UI or architectural cleanup.
-6. Document every intentional divergence in this plan with the reason, expected effect, and how to compare it against
+6. Add tests or copied diagnostics that prove the IITC behavior before adding larger UI or architectural cleanup.
+7. For interaction-sensitive features, add click-to-pixels diagnostics or document why visual parity is not yet measured.
+8. Document every intentional divergence in this plan with the reason, expected effect, and how to compare it against
    IITC-CE.
 
 Validation rule: after validating IITC IRIS code changes, run `npm run package:iitc-iris` from the repository root so

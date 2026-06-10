@@ -336,6 +336,38 @@ function recordInteractionUpdateDiagnostics(update: IitcIrisInteractionUpdateTim
   ].slice(-MAX_INTERACTION_UPDATE_DIAGNOSTICS);
 }
 
+function scheduleInteractionFrameDiagnostics(
+  update: IitcIrisInteractionUpdateTimingDiagnostics,
+  runtimeStartedAt: number,
+  sentAt?: number,
+  mirror?: IitcIrisLayerUpdateTimingDiagnostics,
+): void {
+  window.requestAnimationFrame(() => {
+    const firstFrameAt = performance.now();
+    const firstAnimationFrameMs = roundTimingMs(firstFrameAt - runtimeStartedAt);
+    update.firstAnimationFrameMs = firstAnimationFrameMs;
+    if (mirror) mirror.firstAnimationFrameMs = firstAnimationFrameMs;
+    if (sentAt !== undefined) {
+      const sentToFirstAnimationFrameMs = roundTimingMs(Math.max(0, firstFrameAt - sentAt));
+      update.sentToFirstAnimationFrameMs = sentToFirstAnimationFrameMs;
+      if (mirror) mirror.sentToFirstAnimationFrameMs = sentToFirstAnimationFrameMs;
+    }
+
+    window.requestAnimationFrame(() => {
+      const secondFrameAt = performance.now();
+      const secondAnimationFrameMs = roundTimingMs(secondFrameAt - runtimeStartedAt);
+      update.secondAnimationFrameMs = secondAnimationFrameMs;
+      if (mirror) mirror.secondAnimationFrameMs = secondAnimationFrameMs;
+      if (sentAt !== undefined) {
+        const sentToSecondAnimationFrameMs = roundTimingMs(Math.max(0, secondFrameAt - sentAt));
+        update.sentToSecondAnimationFrameMs = sentToSecondAnimationFrameMs;
+        if (mirror) mirror.sentToSecondAnimationFrameMs = sentToSecondAnimationFrameMs;
+      }
+      repostLatestEntityStatus();
+    });
+  });
+}
+
 interface ArtifactFetchDiagnostics {
   status: string;
   portalCount: number;
@@ -4114,14 +4146,15 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.layerSettings && event.data.layerSettings) {
     const layerUpdateStartedAt = performance.now();
+    const sentAt = event.data.sentAt;
     const previousLayerSettings = layerSettings;
     layerSettings = event.data.layerSettings;
     const layerUpdatePlan = getLayerUpdatePlan(previousLayerSettings, layerSettings);
     const layerUpdateTiming: IitcIrisLayerUpdateTimingDiagnostics = {
       changedKeys: layerUpdatePlan.changedKeys.map(String),
     };
-    if (event.data.sentAt !== undefined) {
-      layerUpdateTiming.dispatchDelayMs = roundTimingMs(Math.max(0, layerUpdateStartedAt - event.data.sentAt));
+    if (sentAt !== undefined) {
+      layerUpdateTiming.dispatchDelayMs = roundTimingMs(Math.max(0, layerUpdateStartedAt - sentAt));
     }
 
     if (latestEntities && layerUpdatePlan.renderEntities) {
@@ -4139,11 +4172,12 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
       schedulePlayerTrackerRefresh();
     }
     layerUpdateTiming.totalMs = roundTimingMs(performance.now() - layerUpdateStartedAt);
-    recordInteractionUpdateDiagnostics({
+    const interactionUpdate: IitcIrisInteractionUpdateTimingDiagnostics = {
       kind: 'layer',
       at: Date.now(),
       ...layerUpdateTiming,
-    });
+    };
+    recordInteractionUpdateDiagnostics(interactionUpdate);
     if (latestTileDiagnostics) {
       latestTileDiagnostics = {
         ...latestTileDiagnostics,
@@ -4153,10 +4187,11 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
         },
       };
     }
-    repostLatestEntityStatus();
+    scheduleInteractionFrameDiagnostics(interactionUpdate, layerUpdateStartedAt, sentAt, layerUpdateTiming);
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.layerSettings && event.data.highlighterSettings) {
     const highlighterUpdateStartedAt = performance.now();
+    const sentAt = event.data.sentAt;
     highlighterSettings = event.data.highlighterSettings;
     const highlighterUpdateTiming: IitcIrisInteractionUpdateTimingDiagnostics = {
       kind: 'highlighter',
@@ -4164,8 +4199,8 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
       activeHighlighter: highlighterSettings.active,
       renderPath: 'none',
     };
-    if (event.data.sentAt !== undefined) {
-      highlighterUpdateTiming.dispatchDelayMs = roundTimingMs(Math.max(0, highlighterUpdateStartedAt - event.data.sentAt));
+    if (sentAt !== undefined) {
+      highlighterUpdateTiming.dispatchDelayMs = roundTimingMs(Math.max(0, highlighterUpdateStartedAt - sentAt));
     }
     if (latestEntities) {
       const renderStartedAt = performance.now();
@@ -4180,7 +4215,7 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
     }
     highlighterUpdateTiming.totalMs = roundTimingMs(performance.now() - highlighterUpdateStartedAt);
     recordInteractionUpdateDiagnostics(highlighterUpdateTiming);
-    repostLatestEntityStatus();
+    scheduleInteractionFrameDiagnostics(highlighterUpdateTiming, highlighterUpdateStartedAt, sentAt);
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.layerSettings && event.data.baseLayerId) {
     setBaseLayer(event.data.baseLayerId);

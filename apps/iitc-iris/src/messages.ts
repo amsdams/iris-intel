@@ -525,6 +525,10 @@ export interface IitcIrisLayerUpdateTimingDiagnostics {
   changedKeys: string[];
   dispatchDelayMs?: number;
   totalMs?: number;
+  firstAnimationFrameMs?: number;
+  secondAnimationFrameMs?: number;
+  sentToFirstAnimationFrameMs?: number;
+  sentToSecondAnimationFrameMs?: number;
   renderEntitiesMs?: number;
   renderPolicyMs?: number;
   ornamentSettingsMs?: number;
@@ -549,6 +553,10 @@ export interface IitcIrisInteractionUpdateTimingDiagnostics {
   activeHighlighter?: IitcIrisPortalHighlighterId;
   dispatchDelayMs?: number;
   totalMs?: number;
+  firstAnimationFrameMs?: number;
+  secondAnimationFrameMs?: number;
+  sentToFirstAnimationFrameMs?: number;
+  sentToSecondAnimationFrameMs?: number;
   renderEntitiesMs?: number;
   renderPath?: 'none' | 'style-refresh' | 'full-render';
   renderPolicyMs?: number;
