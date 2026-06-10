@@ -101,6 +101,19 @@ Latest map lifecycle validation included:
   IITC-timing mode exercised the 400ms movement debounce and 1000ms live download delay while panning, then settled to
   complete renders with no partials, no warning strings, no active requests, and no queued tiles.
 
+Latest layer/highlighter stabilization validation included:
+
+- `npm run typecheck:iitc-iris`
+- `npm run test -w apps/iitc-iris`
+- `npm run lint:iitc-iris`
+- `npm run package:iitc-iris`
+- `git diff --check`
+- Manual dense Amsterdam z15 interaction copies for fields, links, faction filters, highlighters, and drawn links.
+  Click-to-pixels diagnostics found the main visual lag was an immediate heavy copied entity-status repost after each
+  interaction. The map mutation now gets two animation frames before that status repost runs. Whole-overlay toggles use
+  persistent groups, highlighters refresh existing portal marker styles, and faction filters use scoped buckets/direct
+  bucket paths. A deeper team-subgroup topology experiment regressed faction-filter paint timing and was rolled back.
+
 Latest IITC IRIS portal analysis validation included:
 
 - `npm run typecheck:iitc-iris`
@@ -123,8 +136,8 @@ Latest core fixture-health validation included:
 
 Latest package artifacts:
 
-- `apps/iitc-iris/builds/iitc-iris-chrome-0.1.0-2026-06-10T17-58-24.zip`
-- `apps/iitc-iris/builds/iitc-iris-firefox-0.1.0-2026-06-10T17-58-24.xpi`
+- `apps/iitc-iris/builds/iitc-iris-chrome-0.1.0-2026-06-10T20-26-53.zip`
+- `apps/iitc-iris/builds/iitc-iris-firefox-0.1.0-2026-06-10T20-26-53.xpi`
 
 Fixture-health note: the previous missing-fixture degradation for full `npm run test:iitc-core` is resolved in the
 current workspace. `@iris/core` and `@iris/iitc-core` full test suites are green; no fresh HAR capture is required for
@@ -146,7 +159,7 @@ Feature details have been split out of this entry point so the current truth is 
 | IITC side request/UI systems        | Started             | [features/side-systems.md](features/side-systems.md)                             |
 | Draw Tools                          | Stable v1 / Partial | [features/draw-tools.md](features/draw-tools.md)                                 |
 | Portal analysis views               | Stable v1 / Partial | [features/portal-analysis.md](features/portal-analysis.md)                       |
-| Highlighters and layers             | Started / Partial   | [features/highlighters-and-layers.md](features/highlighters-and-layers.md)       |
+| Highlighters and layers             | Stabilized v1 / Partial | [features/highlighters-and-layers.md](features/highlighters-and-layers.md)       |
 | Backlog and replacement readiness   | Ongoing             | [backlog.md](backlog.md)                                                         |
 
 ## Current High-Level Gaps
@@ -156,13 +169,14 @@ Feature details have been split out of this entry point so the current truth is 
   True stale-cache retry exhaustion is still wired/diagnosed but needs a live case that proves cached stale tiles render
   exactly like IITC.
 - Plugin-facing compatibility remains intentionally limited: no broad `window.plugin.*`, `addHook`/`runHooks`, toolbox,
-  plugin-facing highlighter API, full layer registry, or Leaflet.draw event parity yet. Native highlighter selection is
-  stable for existing IRIS highlighter-like behavior and IITC-CE's single active highlighter model. The layer registry
-  now has shared metadata/defaults, diagnostics, and focused routing for non-core overlays. Core layer/filter toggles
-  have scoped visibility-sync, timing diagnostics, and persistent Leaflet groups for whole `F`/`LN`/`P` overlay
-  hide/show. Page-runtime core visibility now uses named IITC-style filter descriptors and preserved layer instances,
-  but manual testing still reports visual toggle latency behind IITC-CE. Next pass should instrument click-to-pixels
-  latency before any further render/filter optimization.
+  plugin-facing highlighter API, full plugin layer registry, or Leaflet.draw event parity yet. Native highlighter
+  selection is stable for existing IRIS highlighter-like behavior and IITC-CE's single active highlighter model. The
+  layer registry now has shared metadata/defaults, diagnostics, focused routing for non-core overlays, click-to-pixels
+  timing, persistent Leaflet groups for whole `F`/`LN`/`P` overlay hide/show, named IITC-style filter descriptors,
+  preserved layer instances for filter-only changes, lazy copied-status counts, and scoped/direct faction buckets. The
+  main visual-latency mistake was fixed by deferring heavy copied entity-status reposts until after the map has had two
+  animation frames to paint. Faction filters remain the watch item, but the team-subgroup optimization attempt was
+  measured and rolled back because it worsened paint timing.
 - Draw Tools v1 is links/markers only. Polygons, circles, visible snap cleanup UX, `DrawTools Opt`, stock Intel `pls`,
   and plugin-facing `window.plugin.drawTools` / `pluginDrawTools` remain deferred.
 - The bottom-sheet/two-layer menu model is a deliberate product-shell divergence from IITC's sidebar/dropdown/statusbar

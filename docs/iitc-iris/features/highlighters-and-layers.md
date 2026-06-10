@@ -151,34 +151,43 @@ Current first pass:
   bespoke IRIS conditionals.
 - Copied diagnostics keep a rolling `timing.interactionUpdates` list for the latest layer and highlighter changes.
   Whole-overlay group toggles report `coreGroupToggleMs`.
+- Click-to-pixels diagnostics now record runtime completion plus first and second `requestAnimationFrame` timing for
+  layer/highlighter interactions. This proved that low JS timings were not enough: visible paint was being delayed by
+  work scheduled after the toggle.
+- Layer/highlighter interactions now defer the heavy copied entity-status repost until after the second animation frame.
+  The map mutation happens first, the browser gets a paint opportunity, and then diagnostics/counts are copied back to
+  the UI.
+- Portal visibility lists are built lazily for the copied status path instead of being recomputed on every interaction
+  update.
+- Faction filters use scoped buckets and a direct faction-bucket path for the common all-levels-enabled case. This keeps
+  IITC-style filter semantics while avoiding broad recomputation.
 
-Recent dense Amsterdam z15 diagnostics, with roughly 3.9k portals, 2.8k links, and 1.7k fields loaded, show the current
-shape:
+Latest dense Amsterdam z15 stabilization observations, with roughly 3.9k portals, 2.8k links, and 1.7k fields loaded,
+show the current shape:
 
-| Toggle | Before scoped secondary work | Current observed range | Main remaining cost |
-|--------|------------------------------|------------------------|---------------------|
-| Fields | 36-41ms | 17-31ms before group-toggle pass; needs fresh live validation after group-toggle pass. | Whole-overlay hide/show should be group attach/detach when layers are already built. |
-| Links | 31-50ms | 20-43ms before group-toggle pass; needs fresh live validation after group-toggle pass. | Whole-overlay hide/show should be group attach/detach when layers are already built. |
-| Resistance filter | 42-76ms | 33-66ms before preserved-filter pass; needs fresh live validation after preserved-filter pass. | Cross-kind visibility changes now preserve existing Leaflet layer instances on filter-only toggles. |
-| Highlighter change | 18-23ms | 18-23ms | Portal marker style refresh only. |
-| Drawn links | 1-13ms | 1-13ms | Dedicated Draw Tools overlay path. |
+| Toggle | Earlier scoped JS timing | Paint timing before status deferral | Current observed shape | Notes |
+|--------|--------------------------|-------------------------------------|------------------------|-------|
+| Fields | 15-31ms | First frame around 385-395ms, second frame around 770-808ms. | About 9-28ms runtime, second frame commonly 17-49ms. | Persistent core group attach/detach is now fast enough in the tested viewport. |
+| Links | 18-43ms | First frame around 374-395ms, second frame around 779-880ms. | About 14-42ms runtime, second frame commonly 38-51ms. | Secondary drawn-link work is still the main add-on cost. |
+| Resistance filter | 48-66ms | First frame around 407-441ms, second frame around 814-888ms. | Best observed about 34-54ms runtime, second frame around 47-72ms. | Direct faction-bucket path improved the common case, but this remains heavier than whole-overlay toggles. |
+| Highlighter change | 18-29ms | First frame around 405-419ms, second frame around 809-877ms. | About 22-29ms runtime, second frame around 42-57ms. | Existing portal marker styles refresh in place. |
+| Drawn links | 1-14ms | First frame around 367-373ms, second frame around 724-840ms. | About 2-14ms runtime, second frame around 10-28ms. | Dedicated Draw Tools overlay path. |
 
 Manual status:
 
-- Runtime JS timings improved and the model now matches IITC-CE more closely, but manual side-by-side testing still
-  reports IRIS layer/filter toggles as visually slower than IITC-CE.
-- Current diagnostics time the content-to-runtime dispatch and runtime update path. They do not prove when pixels have
-  visibly changed after Leaflet invalidation and browser paint.
-- Do not continue blind filter/render rewrites from here. The next pass should add visual-latency diagnostics that
-  capture click/message sent time, runtime start, runtime completion, first `requestAnimationFrame`, and second
-  `requestAnimationFrame` for each interaction update. Use those numbers to decide whether the remaining lag is in the
-  React/content message bridge, runtime filter work, Leaflet renderer invalidation, or browser paint/compositing.
+- User testing reported the map felt much faster after deferring the heavy status repost. The earlier “JS is fast but
+  UI feels slow” mismatch was real: the copied status/diagnostic path was blocking paint after the Leaflet mutation.
+- The team-subgroup topology experiment was tested and rolled back. It made faction filters worse in the live viewport
+  because nested group attach/detach still triggered expensive Leaflet work: observed Resistance timings regressed to
+  about 47/61ms runtime and about 105/102ms second-frame timing.
+- This is stable enough for the current checkpoint. Further work should be driven by fresh diagnostics or a different
+  renderer strategy, not another blind grouping rewrite.
 
 Remaining registry work:
 
 - Move page-runtime visibility filters and overlay render owners behind registry metadata where practical.
-- Continue validating faction and level filters against IITC-CE. If preserving layer instances is still not enough on
-  low-end browsers, split core groups further into team/level membership buckets.
-- Add click-to-pixels visual-latency diagnostics before choosing the next optimization target.
+- Continue validating faction and level filters against IITC-CE on watch-only status. Do not retry the subgroup topology
+  without a different rendering strategy or a benchmark that predicts better browser paint behavior.
+- Keep click-to-pixels diagnostics active for future regressions.
 - Keep selected portal/object highlights, mission overlays, and user-location objects classified explicitly so they do
   not drift into portal highlighter behavior.

@@ -1353,9 +1353,9 @@ function renderIitcDrawTools(): void {
 function clearAllRenderedLayers(): void {
   const layers = ensureLayers();
   clearRenderedLayers(layers.tiles);
-  clearRenderedLayersFromGroup(layers.fields, layers.coreLayerGroups.fields);
-  clearRenderedLayersFromGroup(layers.links, layers.coreLayerGroups.links);
-  clearRenderedLayersFromGroup(layers.portals, layers.coreLayerGroups.portals);
+  clearCoreEntityLayerGroup(layers, 'fields');
+  clearCoreEntityLayerGroup(layers, 'links');
+  clearCoreEntityLayerGroup(layers, 'portals');
   clearRenderedLayers(layers.selectedPortal);
   clearRenderedLayers(layers.selectedMapObject);
   clearRenderedLayers(layers.ornaments);
@@ -1372,9 +1372,9 @@ function clearAllRenderedLayers(): void {
 
 function clearEntityLayers(): void {
   const layers = ensureLayers();
-  clearRenderedLayersFromGroup(layers.fields, layers.coreLayerGroups.fields);
-  clearRenderedLayersFromGroup(layers.links, layers.coreLayerGroups.links);
-  clearRenderedLayersFromGroup(layers.portals, layers.coreLayerGroups.portals);
+  clearCoreEntityLayerGroup(layers, 'fields');
+  clearCoreEntityLayerGroup(layers, 'links');
+  clearCoreEntityLayerGroup(layers, 'portals');
   clearRenderedLayers(layers.selectedPortal);
   clearRenderedLayers(layers.selectedMapObject);
   clearRenderedLayers(layers.ornaments);
@@ -2841,6 +2841,123 @@ function getScopedPortals(entities: IitcIrisRenderEntities, scope: IitcIrisCoreE
   return portals;
 }
 
+function getFactionLayerSetting(team: IitcIrisRenderPortal['team'], settings: IitcIrisLayerSettings = layerSettings): boolean {
+  if (team === 'R') return settings.resistance;
+  if (team === 'E') return settings.enlightened;
+  if (team === 'M') return settings.machina;
+  return true;
+}
+
+function arePortalLevelFiltersEnabled(settings: IitcIrisLayerSettings = layerSettings): boolean {
+  return settings.unclaimedPortals &&
+    settings.level1Portals &&
+    settings.level2Portals &&
+    settings.level3Portals &&
+    settings.level4Portals &&
+    settings.level5Portals &&
+    settings.level6Portals &&
+    settings.level7Portals &&
+    settings.level8Portals;
+}
+
+function getDirectFactionToggleTeam(scope: IitcIrisCoreEntityRenderScope): IitcIrisRenderPortal['team'] | null {
+  if (!scope.fields || !scope.links || !scope.portals) return null;
+  if (scope.allFields || scope.allLinks || scope.allPortals) return null;
+  if (scope.fieldTeams.size !== 1 || scope.linkTeams.size !== 1 || scope.portalTeams.size !== 1) return null;
+  if (scope.portalLevels.size > 0) return null;
+  const [fieldTeam] = scope.fieldTeams;
+  const [linkTeam] = scope.linkTeams;
+  const [portalTeam] = scope.portalTeams;
+  return fieldTeam === linkTeam && linkTeam === portalTeam ? portalTeam : null;
+}
+
+function syncFactionBucketLayers<T extends {guid: string}>(
+  layerList: LeafletLayer[],
+  index: IitcIrisEntityLayerIndex,
+  group: L.LayerGroup,
+  entities: T[],
+  visible: boolean,
+  createLayer: (entity: T) => LeafletLayer,
+): IitcIrisRenderMutationLayerDiagnostics {
+  const diagnostics = createEmptyRenderMutationLayerDiagnostics();
+  for (const entity of entities) {
+    const indexedLayers = index.get(entity.guid);
+    if (visible) {
+      if (indexedLayers && indexedLayers.length > 0) {
+        for (const layer of indexedLayers) {
+          if (!group.hasLayer(layer)) group.addLayer(layer);
+        }
+      } else {
+        addEntityRenderedLayer(layerList, index, entity.guid, createLayer(entity), group);
+      }
+      diagnostics.added += 1;
+    } else {
+      if (indexedLayers) {
+        for (const layer of indexedLayers) group.removeLayer(layer);
+      }
+      diagnostics.removed += 1;
+    }
+  }
+  return diagnostics;
+}
+
+function renderCoreEntityFactionToggle(
+  layers: NonNullable<Window['__iitcIrisLayers']>,
+  entities: IitcIrisRenderEntities,
+  renderPolicy: IitcIrisRenderPolicy,
+  previousLayerSettings: IitcIrisLayerSettings,
+  scope: IitcIrisCoreEntityRenderScope,
+  timing?: IitcIrisLayerUpdateTimingDiagnostics,
+): IitcIrisRenderMutationDiagnostics | null {
+  if (!arePortalLevelFiltersEnabled(previousLayerSettings) || !arePortalLevelFiltersEnabled(layerSettings)) return null;
+  const team = getDirectFactionToggleTeam(scope);
+  if (!team || team === 'N') return null;
+  if (getFactionLayerSetting(team, previousLayerSettings) === getFactionLayerSetting(team)) return null;
+
+  const buckets = getRenderEntityBuckets(entities);
+  const visible = getFactionLayerSetting(team);
+
+  let stepStartedAt = performance.now();
+  const fields = syncFactionBucketLayers(
+    layers.fields,
+    layers.entityLayerIndex.fields,
+    layers.coreLayerGroups.fields,
+    (buckets.fieldsByTeam.get(team) ?? []).filter((field) => field.points.length === 3),
+    visible,
+    createFieldLayer,
+  );
+  if (timing) syncVisibilityTiming(timing, 'syncFieldsMs', stepStartedAt);
+
+  stepStartedAt = performance.now();
+  const links = syncFactionBucketLayers(
+    layers.links,
+    layers.entityLayerIndex.links,
+    layers.coreLayerGroups.links,
+    buckets.linksByTeam.get(team) ?? [],
+    visible,
+    createLinkLayer,
+  );
+  if (timing) syncVisibilityTiming(timing, 'syncLinksMs', stepStartedAt);
+
+  stepStartedAt = performance.now();
+  const portals = syncFactionBucketLayers(
+    layers.portals,
+    layers.entityLayerIndex.portals,
+    layers.coreLayerGroups.portals,
+    buckets.portalsByTeam.get(team) ?? [],
+    visible,
+    (portal) => createPortalLayer(portal, renderPolicy),
+  );
+  if (timing) syncVisibilityTiming(timing, 'syncPortalsMs', stepStartedAt);
+
+  return {
+    mode: 'incremental',
+    fields,
+    links,
+    portals,
+  };
+}
+
 function addFactionScope(scope: IitcIrisCoreEntityRenderScope, team: IitcIrisRenderPortal['team']): void {
   scope.fields = true;
   scope.links = true;
@@ -3188,7 +3305,10 @@ function renderEntities(
     const groupToggleMutation = groupToggleKey && previousLayerSettings
       ? renderCoreEntityGroupToggle(layers, groupToggleKey, previousLayerSettings, timing)
       : null;
-    latestRenderMutationDiagnostics = groupToggleMutation ?? (previousEntities === entities && previousLayerSettings
+    const factionToggleMutation = !groupToggleMutation && previousEntities === entities && previousLayerSettings
+      ? renderCoreEntityFactionToggle(layers, entities, renderPolicy, previousLayerSettings, coreRenderScope, timing)
+      : null;
+    latestRenderMutationDiagnostics = groupToggleMutation ?? factionToggleMutation ?? (previousEntities === entities && previousLayerSettings
       ? renderCoreEntityLayersVisibilityChange(
         layers,
         entities,
