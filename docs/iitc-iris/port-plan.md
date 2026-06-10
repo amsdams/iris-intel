@@ -113,8 +113,8 @@ Latest core fixture-health validation included:
 
 Latest package artifacts:
 
-- `apps/iitc-iris/builds/iitc-iris-chrome-0.1.0-2026-06-09T21-17-14.zip`
-- `apps/iitc-iris/builds/iitc-iris-firefox-0.1.0-2026-06-09T21-17-14.xpi`
+- `apps/iitc-iris/builds/iitc-iris-chrome-0.1.0-2026-06-10T15-45-23.zip`
+- `apps/iitc-iris/builds/iitc-iris-firefox-0.1.0-2026-06-10T15-45-23.xpi`
 
 Fixture-health note: the previous missing-fixture degradation for full `npm run test:iitc-core` is resolved in the
 current workspace. `@iris/core` and `@iris/iitc-core` full test suites are green; no fresh HAR capture is required for
@@ -146,8 +146,9 @@ Feature details have been split out of this entry point so the current truth is 
   True stale-cache retry exhaustion is still wired/diagnosed but needs a live case that proves cached stale tiles render
   exactly like IITC.
 - Plugin-facing compatibility remains intentionally limited: no broad `window.plugin.*`, `addHook`/`runHooks`, toolbox,
-  plugin-facing highlighter API, layer registry, or Leaflet.draw event parity yet. Native highlighter selection has
-  started with existing IRIS highlighter-like behavior and IITC-CE's single active highlighter model.
+  plugin-facing highlighter API, full layer registry, or Leaflet.draw event parity yet. Native highlighter selection has
+  started with existing IRIS highlighter-like behavior and IITC-CE's single active highlighter model. The layer registry
+  has a first content-side UI metadata pass, but page-runtime render/filter ownership is still hard-coded.
 - Draw Tools v1 is links/markers only. Polygons, circles, visible snap cleanup UX, `DrawTools Opt`, stock Intel `pls`,
   and plugin-facing `window.plugin.drawTools` / `pluginDrawTools` remain deferred.
 - The bottom-sheet/two-layer menu model is a deliberate product-shell divergence from IITC's sidebar/dropdown/statusbar

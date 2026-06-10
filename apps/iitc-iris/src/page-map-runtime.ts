@@ -172,9 +172,6 @@ const DEFAULT_LAYER_SETTINGS: IitcIrisLayerSettings = {
   playerTrackerResistance: false,
   playerTrackerEnlightened: false,
   playerTrackerMachina: false,
-  historyCaptured: 'off',
-  historyVisited: 'off',
-  historyScoutControlled: 'off',
   keyCount: 'off',
 };
 const DEFAULT_HIGHLIGHTER_SETTINGS: IitcIrisHighlighterSettings = {

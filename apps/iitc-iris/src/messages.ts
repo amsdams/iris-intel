@@ -589,9 +589,6 @@ export interface IitcIrisLayerSettings {
   playerTrackerResistance: boolean;
   playerTrackerEnlightened: boolean;
   playerTrackerMachina: boolean;
-  historyCaptured: IitcIrisTriStateLayer;
-  historyVisited: IitcIrisTriStateLayer;
-  historyScoutControlled: IitcIrisTriStateLayer;
   keyCount: IitcIrisTriStateLayer;
 }
 

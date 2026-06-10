@@ -92,39 +92,55 @@ const DATA_SOURCE_OPTIONS = [
     zoom: 15,
   },
 ] as const;
-type TriStateLayerSettingKey = 'historyCaptured' | 'historyVisited' | 'historyScoutControlled' | 'keyCount';
+type TriStateLayerSettingKey = 'keyCount';
 type BooleanLayerSettingKey = Exclude<keyof IitcIrisLayerSettings, TriStateLayerSettingKey>;
-const CORE_LAYER_TOGGLE_LABELS: [BooleanLayerSettingKey, string, string][] = [
-  ['fields', 'F', 'Fields'],
-  ['links', 'LN', 'Links'],
-  ['portals', 'P', 'Portals'],
-  ['unclaimedPortals', 'U', 'Unclaimed portals'],
-  ['level1Portals', 'L1', 'Level 1 portals'],
-  ['level2Portals', 'L2', 'Level 2 portals'],
-  ['level3Portals', 'L3', 'Level 3 portals'],
-  ['level4Portals', 'L4', 'Level 4 portals'],
-  ['level5Portals', 'L5', 'Level 5 portals'],
-  ['level6Portals', 'L6', 'Level 6 portals'],
-  ['level7Portals', 'L7', 'Level 7 portals'],
-  ['level8Portals', 'L8', 'Level 8 portals'],
-  ['resistance', 'RES', 'Resistance portals'],
-  ['enlightened', 'ENL', 'Enlightened portals'],
-  ['machina', 'MAC', 'Machina portals'],
+type LayerControlGroup = 'core' | 'detail';
+interface BooleanLayerRegistryEntry {
+  id: BooleanLayerSettingKey;
+  label: string;
+  title: string;
+  group: LayerControlGroup;
+  selectionKind: 'overlay' | 'filter';
+}
+interface TriStateLayerRegistryEntry {
+  id: TriStateLayerSettingKey;
+  label: string;
+  title: string;
+  group: LayerControlGroup;
+  selectionKind: 'overlay';
+}
+const BOOLEAN_LAYER_REGISTRY: BooleanLayerRegistryEntry[] = [
+  {id: 'fields', label: 'F', title: 'Fields', group: 'core', selectionKind: 'overlay'},
+  {id: 'links', label: 'LN', title: 'Links', group: 'core', selectionKind: 'overlay'},
+  {id: 'portals', label: 'P', title: 'Portals', group: 'core', selectionKind: 'overlay'},
+  {id: 'unclaimedPortals', label: 'U', title: 'Unclaimed portals', group: 'core', selectionKind: 'filter'},
+  {id: 'level1Portals', label: 'L1', title: 'Level 1 portals', group: 'core', selectionKind: 'filter'},
+  {id: 'level2Portals', label: 'L2', title: 'Level 2 portals', group: 'core', selectionKind: 'filter'},
+  {id: 'level3Portals', label: 'L3', title: 'Level 3 portals', group: 'core', selectionKind: 'filter'},
+  {id: 'level4Portals', label: 'L4', title: 'Level 4 portals', group: 'core', selectionKind: 'filter'},
+  {id: 'level5Portals', label: 'L5', title: 'Level 5 portals', group: 'core', selectionKind: 'filter'},
+  {id: 'level6Portals', label: 'L6', title: 'Level 6 portals', group: 'core', selectionKind: 'filter'},
+  {id: 'level7Portals', label: 'L7', title: 'Level 7 portals', group: 'core', selectionKind: 'filter'},
+  {id: 'level8Portals', label: 'L8', title: 'Level 8 portals', group: 'core', selectionKind: 'filter'},
+  {id: 'resistance', label: 'RES', title: 'Resistance portals', group: 'core', selectionKind: 'filter'},
+  {id: 'enlightened', label: 'ENL', title: 'Enlightened portals', group: 'core', selectionKind: 'filter'},
+  {id: 'machina', label: 'MAC', title: 'Machina portals', group: 'core', selectionKind: 'filter'},
+  {id: 'ornaments', label: 'OR', title: 'Ornaments', group: 'detail', selectionKind: 'overlay'},
+  {id: 'artifacts', label: 'AR', title: 'Artifacts', group: 'detail', selectionKind: 'overlay'},
+  {id: 'labels', label: 'LV', title: 'Level labels', group: 'detail', selectionKind: 'overlay'},
+  {id: 'tiles', label: 'T', title: 'Tile debug overlay', group: 'detail', selectionKind: 'overlay'},
+  {id: 'drawnLinks', label: 'DL', title: 'Drawn Links', group: 'detail', selectionKind: 'overlay'},
+  {id: 'drawnMarkers', label: 'DM', title: 'Drawn Markers', group: 'detail', selectionKind: 'overlay'},
+  {id: 'playerTrackerResistance', label: 'PTR', title: 'Resistance player tracker', group: 'detail', selectionKind: 'overlay'},
+  {id: 'playerTrackerEnlightened', label: 'PTE', title: 'Enlightened player tracker', group: 'detail', selectionKind: 'overlay'},
+  {id: 'playerTrackerMachina', label: 'PTM', title: 'Machina player tracker', group: 'detail', selectionKind: 'overlay'},
 ];
-const DETAIL_LAYER_TOGGLE_LABELS: [BooleanLayerSettingKey, string, string][] = [
-  ['ornaments', 'OR', 'Ornaments'],
-  ['artifacts', 'AR', 'Artifacts'],
-  ['labels', 'LV', 'Level labels'],
-  ['tiles', 'T', 'Tile debug overlay'],
-  ['drawnLinks', 'DL', 'Drawn Links'],
-  ['drawnMarkers', 'DM', 'Drawn Markers'],
-  ['playerTrackerResistance', 'PTR', 'Resistance player tracker'],
-  ['playerTrackerEnlightened', 'PTE', 'Enlightened player tracker'],
-  ['playerTrackerMachina', 'PTM', 'Machina player tracker'],
+const TRI_STATE_LAYER_REGISTRY: TriStateLayerRegistryEntry[] = [
+  {id: 'keyCount', label: 'KEY', title: 'Portal key count', group: 'detail', selectionKind: 'overlay'},
 ];
-const DETAIL_TRI_STATE_LAYER_LABELS: [TriStateLayerSettingKey, string, string][] = [
-  ['keyCount', 'KEY', 'Portal key count'],
-];
+const CORE_LAYER_TOGGLE_LABELS = BOOLEAN_LAYER_REGISTRY.filter((entry) => entry.group === 'core');
+const DETAIL_LAYER_TOGGLE_LABELS = BOOLEAN_LAYER_REGISTRY.filter((entry) => entry.group === 'detail');
+const DETAIL_TRI_STATE_LAYER_LABELS = TRI_STATE_LAYER_REGISTRY.filter((entry) => entry.group === 'detail');
 const PORTAL_HIGHLIGHTER_OPTIONS: {id: IitcIrisPortalHighlighterId; label: string; title: string}[] = [
   {id: 'none', label: 'No Highlights', title: 'No portal highlighter'},
   {id: 'level-color', label: 'Level Color', title: 'Color portal bodies by level'},
@@ -185,9 +201,6 @@ const DEFAULT_LAYER_SETTINGS: IitcIrisLayerSettings = {
   playerTrackerResistance: false,
   playerTrackerEnlightened: false,
   playerTrackerMachina: false,
-  historyCaptured: 'off',
-  historyVisited: 'off',
-  historyScoutControlled: 'off',
   keyCount: 'off',
 };
 const DEFAULT_RENDER_POLICY: IitcIrisRenderPolicy = {
@@ -684,6 +697,13 @@ function isLayerSettings(value: unknown): value is Partial<IitcIrisLayerSettings
   return !!value && typeof value === 'object';
 }
 
+type LegacyStoredLayerSettings = Partial<IitcIrisLayerSettings> & {
+  drawnItems?: unknown;
+  historyCaptured?: unknown;
+  historyVisited?: unknown;
+  historyScoutControlled?: unknown;
+};
+
 function isTriStateLayer(value: unknown): value is IitcIrisTriStateLayer {
   return value === 'off' || value === 'on' || value === 'invert';
 }
@@ -711,7 +731,7 @@ function loadStoredLayerSettings(): IitcIrisLayerSettings {
     if (!value) return DEFAULT_LAYER_SETTINGS;
     const parsed = JSON.parse(value) as unknown;
     if (!isLayerSettings(parsed)) return DEFAULT_LAYER_SETTINGS;
-    const legacyParsed = parsed as Partial<IitcIrisLayerSettings> & {drawnItems?: unknown};
+    const legacyParsed = parsed as LegacyStoredLayerSettings;
     const legacyPlayerTracker = typeof parsed.playerTracker === 'boolean' ? parsed.playerTracker : undefined;
     return {
       fields: typeof parsed.fields === 'boolean' ? parsed.fields : DEFAULT_LAYER_SETTINGS.fields,
@@ -755,9 +775,6 @@ function loadStoredLayerSettings(): IitcIrisLayerSettings {
       playerTrackerMachina: typeof parsed.playerTrackerMachina === 'boolean'
         ? parsed.playerTrackerMachina
         : legacyPlayerTracker ?? DEFAULT_LAYER_SETTINGS.playerTrackerMachina,
-      historyCaptured: isTriStateLayer(parsed.historyCaptured) ? parsed.historyCaptured : DEFAULT_LAYER_SETTINGS.historyCaptured,
-      historyVisited: isTriStateLayer(parsed.historyVisited) ? parsed.historyVisited : DEFAULT_LAYER_SETTINGS.historyVisited,
-      historyScoutControlled: isTriStateLayer(parsed.historyScoutControlled) ? parsed.historyScoutControlled : DEFAULT_LAYER_SETTINGS.historyScoutControlled,
       keyCount: isTriStateLayer(parsed.keyCount) ? parsed.keyCount : DEFAULT_LAYER_SETTINGS.keyCount,
     };
   } catch {
@@ -765,22 +782,28 @@ function loadStoredLayerSettings(): IitcIrisLayerSettings {
   }
 }
 
-function legacyHighlighterFromLayerSettings(layerSettings: IitcIrisLayerSettings): IitcIrisPortalHighlighterId {
+function legacyHighlighterFromLayerSettings(
+  layerSettings: IitcIrisLayerSettings,
+  legacyLayerSettings?: LegacyStoredLayerSettings,
+): IitcIrisPortalHighlighterId {
   if (layerSettings.levelFill) return 'level-color';
   if (layerSettings.healthFill) return 'needs-recharge';
-  if (layerSettings.historyCaptured === 'on') return 'history-captured';
-  if (layerSettings.historyVisited === 'on') return 'history-visited';
-  if (layerSettings.historyCaptured === 'invert') return 'history-not-captured';
-  if (layerSettings.historyVisited === 'invert') return 'history-not-visited';
-  if (layerSettings.historyScoutControlled === 'on') return 'history-scout-controlled';
-  if (layerSettings.historyScoutControlled === 'invert') return 'history-not-scout-controlled';
+  if (legacyLayerSettings?.historyCaptured === 'on') return 'history-captured';
+  if (legacyLayerSettings?.historyVisited === 'on') return 'history-visited';
+  if (legacyLayerSettings?.historyCaptured === 'invert') return 'history-not-captured';
+  if (legacyLayerSettings?.historyVisited === 'invert') return 'history-not-visited';
+  if (legacyLayerSettings?.historyScoutControlled === 'on') return 'history-scout-controlled';
+  if (legacyLayerSettings?.historyScoutControlled === 'invert') return 'history-not-scout-controlled';
   return 'none';
 }
 
 function loadStoredHighlighterSettings(legacyLayerSettings: IitcIrisLayerSettings): IitcIrisHighlighterSettings {
   try {
     const value = window.localStorage.getItem(HIGHLIGHTER_SETTINGS_STORAGE_KEY);
-    if (!value) return {active: legacyHighlighterFromLayerSettings(legacyLayerSettings)};
+    const legacyLayerValue = window.localStorage.getItem(LAYER_SETTINGS_STORAGE_KEY);
+    const legacyParsed = legacyLayerValue ? JSON.parse(legacyLayerValue) as unknown : undefined;
+    const legacyStoredLayerSettings = isLayerSettings(legacyParsed) ? legacyParsed as LegacyStoredLayerSettings : undefined;
+    if (!value) return {active: legacyHighlighterFromLayerSettings(legacyLayerSettings, legacyStoredLayerSettings)};
     const parsed = JSON.parse(value) as Partial<IitcIrisHighlighterSettings>;
     return {active: normalizePortalHighlighterId(parsed.active)};
   } catch {
@@ -3835,14 +3858,14 @@ function App(): h.JSX.Element {
         {activeSheet === 'layers' && <div className="iitc-iris-map-controls-section">
           <span className="iitc-iris-status">Core</span>
           <div className="iitc-iris-map-control-row">
-            {CORE_LAYER_TOGGLE_LABELS.map(([key, label, title]) => (
+            {CORE_LAYER_TOGGLE_LABELS.map(({id, label, title}) => (
               <button
-                key={key}
-                className={`iitc-iris-layer-toggle ${layerSettings[key] ? 'iitc-iris-layer-toggle-active' : ''}`}
+                key={id}
+                className={`iitc-iris-layer-toggle ${layerSettings[id] ? 'iitc-iris-layer-toggle-active' : ''}`}
                 type="button"
-                onClick={() => toggleLayerSetting(key)}
-                title={`${title}: ${layerSettings[key] ? 'on' : 'off'}`}
-                aria-pressed={layerSettings[key]}
+                onClick={() => toggleLayerSetting(id)}
+                title={`${title}: ${layerSettings[id] ? 'on' : 'off'}`}
+                aria-pressed={layerSettings[id]}
               >
                 {label}
               </button>
@@ -3871,29 +3894,29 @@ function App(): h.JSX.Element {
         {activeSheet === 'layers' && <div className="iitc-iris-map-controls-section">
           <span className="iitc-iris-status">Detail</span>
           <div className="iitc-iris-map-control-row">
-            {DETAIL_LAYER_TOGGLE_LABELS.map(([key, label, title]) => (
+            {DETAIL_LAYER_TOGGLE_LABELS.map(({id, label, title}) => (
               <button
-                key={key}
-                className={`iitc-iris-layer-toggle ${layerSettings[key] ? 'iitc-iris-layer-toggle-active' : ''}`}
+                key={id}
+                className={`iitc-iris-layer-toggle ${layerSettings[id] ? 'iitc-iris-layer-toggle-active' : ''}`}
                 type="button"
-                onClick={() => toggleLayerSetting(key)}
-                title={`${title}: ${layerSettings[key] ? 'on' : 'off'}`}
-                aria-pressed={layerSettings[key]}
+                onClick={() => toggleLayerSetting(id)}
+                title={`${title}: ${layerSettings[id] ? 'on' : 'off'}`}
+                aria-pressed={layerSettings[id]}
               >
                 {label}
               </button>
             ))}
-            {DETAIL_TRI_STATE_LAYER_LABELS.map(([key, label, title]) => (
+            {DETAIL_TRI_STATE_LAYER_LABELS.map(({id, label, title}) => (
               <button
-                key={key}
-                className={`iitc-iris-layer-toggle ${layerSettings[key] !== 'off' ? 'iitc-iris-layer-toggle-active' : ''} ${layerSettings[key] === 'invert' ? 'iitc-iris-layer-toggle-invert' : ''}`}
+                key={id}
+                className={`iitc-iris-layer-toggle ${layerSettings[id] !== 'off' ? 'iitc-iris-layer-toggle-active' : ''} ${layerSettings[id] === 'invert' ? 'iitc-iris-layer-toggle-invert' : ''}`}
                 type="button"
-                onClick={() => cycleTriStateLayerSetting(key)}
-                title={`${title}: ${layerSettings[key]}`}
-                aria-label={`${title}: ${layerSettings[key]}`}
-                aria-pressed={layerSettings[key] !== 'off'}
+                onClick={() => cycleTriStateLayerSetting(id)}
+                title={`${title}: ${layerSettings[id]}`}
+                aria-label={`${title}: ${layerSettings[id]}`}
+                aria-pressed={layerSettings[id] !== 'off'}
               >
-                {layerSettings[key] === 'invert' ? `${label}!` : label}
+                {layerSettings[id] === 'invert' ? `${label}!` : label}
               </button>
             ))}
           </div>

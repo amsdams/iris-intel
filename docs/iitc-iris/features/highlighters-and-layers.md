@@ -44,7 +44,7 @@ Use this rule when deciding where a feature belongs:
 | user-location marker/circle | Overlay layer | Separate map objects. |
 | `levelFill` legacy setting | Existing highlighter behavior | Matches IITC-CE `Level Color` behavior more than a layer; the UI exposes it through the highlighter selector. |
 | `healthFill` legacy setting | Existing highlighter behavior | Matches IITC-CE `Needs Recharge (Health)` behavior more than a layer; the UI exposes it through the highlighter selector. |
-| `historyCaptured`, `historyVisited`, `historyScoutControlled` legacy styling | Existing highlighter behavior | These restyle portal markers and map to IITC history highlighters; the UI exposes them through the highlighter selector. |
+| `historyCaptured`, `historyVisited`, `historyScoutControlled` legacy styling | Migration-only highlighter behavior | Old persisted layer settings still migrate to the highlighter selector, but these flags are no longer part of current layer settings. |
 | key-count text labels | Overlay layer | Adds label markers. IITC-CE `keys-on-map` is a layer backed by the manual `keys` plugin; IRIS uses live inventory-derived counts but keeps the map display as a layer. |
 
 ## Existing Highlighter Alignment
@@ -97,13 +97,14 @@ Build an IITC-aligned registry with:
 - Key-count labels remain a layer. They are derived from live inventory in IRIS, unlike IITC-CE `keys-on-map`, which
   reads manual `window.plugin.keys.keys` values.
 
-The initial registry should register only existing highlighter candidates. Legacy `levelFill`, `healthFill`, and history
-settings can remain in persisted settings for migration, but user-facing controls should use the highlighter selector.
+The initial registry registers only existing highlighter candidates. Legacy `levelFill`, `healthFill`, and old history
+settings are migration inputs only. User-facing controls use the highlighter selector, and current layer settings no
+longer include the old history tri-state flags.
 
 ### Map layer registry
 
-Plan separately. A layer registry should describe existing layers and filters declaratively so settings, UI, diagnostics,
-and render ownership stop drifting. It should not add new layers in the first pass.
+Started in the content UI. A layer registry should describe existing layers and filters declaratively so settings, UI,
+diagnostics, and render ownership stop drifting. It should not add new layers in the first pass.
 
 Useful fields:
 
@@ -117,3 +118,17 @@ Useful fields:
 
 This is larger than the highlighter registry because layers are wired through visibility filters, render queues,
 secondary overlays, diagnostics, persistence, and UI grouping.
+
+Current first pass:
+
+- A typed content-side registry describes existing boolean and tri-state layer controls.
+- The registry owns current layer control labels, titles, UI group, and selection kind for the Layers sheet.
+- It intentionally does not change visibility behavior, render ownership, diagnostics, or defaults yet.
+
+Remaining registry work:
+
+- Derive default layer settings from registry metadata where practical.
+- Publish registered layer ids/kinds in diagnostics.
+- Move page-runtime visibility filters and overlay render owners behind registry metadata.
+- Keep selected portal/object highlights, mission overlays, and user-location objects classified explicitly so they do
+  not drift into portal highlighter behavior.
