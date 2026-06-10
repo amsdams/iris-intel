@@ -34,8 +34,10 @@ Current status:
 - The System sheet has fixed Amsterdam and Damrak view presets for repeatable IITC/IITC IRIS comparisons.
 - The System sheet can jump to arbitrary comparison views from `lat,lng,z` text, Intel map URLs with `ll` and `z`, or IITC-CE
   portal links with `pll`.
-- The floating map-controls panel has 25%-viewport pan buttons and +/- zoom buttons; these use the same Leaflet
-  `setView` path as presets and therefore exercise the same move/zoom request lifecycle as mouse interaction.
+- The floating map-controls panel has pan buttons aligned with IITC's Pan Control plugin:
+  `reference/ingress-intel-total-conversion/plugins/external/L.Control.Pan.js` uses `panOffset: 500`, so IITC IRIS
+  projects the current center and pans by 500 Web Mercator pixels at the current zoom before calling the normal
+  `setView` path. The +/- zoom buttons still move one zoom level at a time.
 - The dock can copy the current view back out as an Intel URL.
 - The floating map-controls panel has base-map switches for CartoDB Dark Matter, CartoDB Positron, and OpenStreetMap,
   with the selected base map persisted for repeatable visual comparisons.
