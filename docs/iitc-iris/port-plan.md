@@ -80,6 +80,17 @@ geodesic links/fields, portal selection/details, COMM, scores, missions, invento
 tracker, search, diagnostics, native Draw Tools v1 for links/markers, and stable first-pass native portal analysis views
 for counts, list, and scoreboard.
 
+Latest map lifecycle validation included:
+
+- `npm run test:iitc-core -- --run src/map-data-request.test.ts`
+- `npm run typecheck:iitc-iris`
+- `npm run lint:iitc-iris`
+- `npm run package:iitc-iris`
+- `git diff --check`
+- Manual live fast-pan and IITC-timing scenario copies at z15. Fast mode stayed complete after pan/retry recovery.
+  IITC-timing mode exercised the 400ms movement debounce and 1000ms live download delay while panning, then settled to
+  complete renders with no partials, no warning strings, no active requests, and no queued tiles.
+
 Latest IITC IRIS portal analysis validation included:
 
 - `npm run typecheck:iitc-iris`
@@ -129,9 +140,10 @@ Feature details have been split out of this entry point so the current truth is 
 
 ## Current High-Level Gaps
 
-- Full IITC `MapDataRequest` surgical render mutation and tile-by-tile wanted checks are not fully ported.
-- Stale fallback is wired and diagnosed, but still needs a live case that proves cached stale tiles render exactly like
-  IITC.
+- Map lifecycle is parked as acceptable for current UI/plugin parity work. Queue refill, old wanted-response bridging,
+  IITC comparison timing, incremental core rendering, cache-fresh rendering, and retry recovery have live validation.
+  True stale-cache retry exhaustion is still wired/diagnosed but needs a live case that proves cached stale tiles render
+  exactly like IITC.
 - Plugin-facing compatibility remains intentionally limited: no broad `window.plugin.*`, `addHook`/`runHooks`, toolbox,
   highlighter registry, or Leaflet.draw event parity yet.
 - Draw Tools v1 is links/markers only. Polygons, circles, visible snap cleanup UX, `DrawTools Opt`, stock Intel `pls`,

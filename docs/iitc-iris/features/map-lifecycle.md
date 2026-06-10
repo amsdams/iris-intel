@@ -106,6 +106,14 @@ Adherence summary after 2026-05-31 audit:
 - Runtime timing note on 2026-06-10: comparison mode now uses IITC's 400ms move debounce and 1000ms download delay for
   live queued tiles. Fast mode keeps the 250ms movement delay and skips the download delay. Copied diagnostics include
   `timing.downloadDelayMs` so cached-only refreshes can report `0`.
+- Live IITC-timing pan validation on 2026-06-10 exercised the "while panning, not waiting for settle" path and the final
+  settled path. Mid-pan snapshots correctly showed incomplete cache-first/live states (`12/36`, `24/36`, and `33/36`
+  returned tiles) with active requests or queued retry tiles, `downloadDelayMs: 1000`, no partials, and no warnings. A
+  later settled run at z15 completed cleanly: final snapshots reached `returnedTiles == requestedTiles`, no
+  `partialTileKeys`, no warning strings, no active requests, no queued tiles, and all timeout-retried tiles recovered.
+  This validates the current old-response bridge, queue refill timing, and IITC comparison delay behavior for active
+  panning. Keep retry volume as a watch item only; treat it as a defect if IITC-CE side-by-side shows materially lower
+  retry churn on the same viewport or if retries stop recovering.
 
 Map lifecycle validation runbook - 2026-06-05:
 

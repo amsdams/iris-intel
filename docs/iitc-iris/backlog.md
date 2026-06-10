@@ -25,6 +25,7 @@ what to port natively and what to leave out.
 
 | Area | Status | Notes |
 |------|--------|-------|
+| Map data request lifecycle | Parked / Watch-only | 2026-06-10 fast and IITC-timing live pan scenarios validated queue refill, old wanted-response bridging, 400ms movement debounce, 1000ms download delay, cache-fresh rendering, retry recovery, and final settled completion with no partials/warnings. Remaining watch items: true stale-cache retry-exhaustion behavior and materially excessive retry volume compared with IITC-CE on the same viewport. |
 | Hook/plugin lifecycle | Open | IITC has `addHook`/`runHooks`, plugin setup, toolbox entries, dialogs, panes, layer chooser integration, and portal highlighter registration. IITC IRIS currently has fixed native systems and should add thin registries before porting many plugin concepts. |
 | Portal highlighter framework | Open | Add an IITC-style highlighter registry before adding more highlighters. Likely first native highlighters: high level, missing resonators, needs recharge, portal history, ornaments, and hide team. |
 | Search hover preview | Partial | Search results now render portal/address/coordinate preview geometry on hover/focus and clear it on mouseout/blur. Broader IITC-style hover preview affordances outside the search sheet remain later. |
