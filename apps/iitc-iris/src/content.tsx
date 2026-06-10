@@ -1551,6 +1551,8 @@ function App(): h.JSX.Element {
   const commOlderRequestPendingRef = useRef(false);
   const commStickToBottomRef = useRef(true);
   const commLatestTimestampRef = useRef<number | undefined>(undefined);
+  const layerSettingsIntentAtRef = useRef<number | undefined>(undefined);
+  const highlighterSettingsIntentAtRef = useRef<number | undefined>(undefined);
   const [baseLayerId, setBaseLayerId] = useState<IitcIrisBaseLayerId>(() => loadStoredBaseLayerId());
   const [dataSourceId, setDataSourceId] = useState<typeof DATA_SOURCE_OPTIONS[number]['id']>(() => loadStoredDataSourceId());
   const [lifecycleSettings, setLifecycleSettings] = useState<IitcIrisLifecycleSettings>(() => loadStoredLifecycleSettings());
@@ -2408,14 +2410,17 @@ function App(): h.JSX.Element {
   );
 
   const toggleLayerSetting = (key: BooleanLayerSettingKey): void => {
+    layerSettingsIntentAtRef.current = performance.now();
     setLayerSettings((current) => ({...current, [key]: !current[key]}));
   };
 
   const cycleTriStateLayerSetting = (key: TriStateLayerSettingKey): void => {
+    layerSettingsIntentAtRef.current = performance.now();
     setLayerSettings((current) => ({...current, [key]: nextTriStateLayer(current[key])}));
   };
 
   const selectPortalHighlighter = (active: IitcIrisPortalHighlighterId): void => {
+    highlighterSettingsIntentAtRef.current = performance.now();
     setHighlighterSettings({active});
   };
 
@@ -2815,6 +2820,7 @@ function App(): h.JSX.Element {
         setStatus('leaflet ready');
         window.postMessage({
           type: IITC_IRIS_MESSAGES.layerSettings,
+          sentAt: performance.now(),
           layerSettings,
           baseLayerId,
         } satisfies IitcIrisMessage, '*');
@@ -2927,8 +2933,11 @@ function App(): h.JSX.Element {
 
   useEffect(() => {
     storeLayerSettings(layerSettings);
+    const sentAt = layerSettingsIntentAtRef.current ?? performance.now();
+    layerSettingsIntentAtRef.current = undefined;
     window.postMessage({
       type: IITC_IRIS_MESSAGES.layerSettings,
+      sentAt,
       layerSettings,
       baseLayerId,
     } satisfies IitcIrisMessage, '*');
@@ -2936,8 +2945,11 @@ function App(): h.JSX.Element {
 
   useEffect(() => {
     storeHighlighterSettings(highlighterSettings);
+    const sentAt = highlighterSettingsIntentAtRef.current ?? performance.now();
+    highlighterSettingsIntentAtRef.current = undefined;
     window.postMessage({
       type: IITC_IRIS_MESSAGES.layerSettings,
+      sentAt,
       highlighterSettings,
     } satisfies IitcIrisMessage, '*');
   }, [highlighterSettings]);

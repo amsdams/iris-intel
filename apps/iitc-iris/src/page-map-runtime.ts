@@ -1,5 +1,5 @@
 import L, {type Layer as LeafletLayer, type LeafletMouseEvent, type Map as LeafletMap, type TileLayer} from 'leaflet';
-import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionDetails, type IitcIrisMissionSource, type IitcIrisMissionSummary, type IitcIrisMissionWaypoint, type IitcIrisMissionsState, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisPortalHighlighterId, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderMutationLayerDiagnostics, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisSubscriptionState} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisHighlighterSettings, type IitcIrisInteractionUpdateTimingDiagnostics, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLayerUpdateTimingDiagnostics, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionDetails, type IitcIrisMissionSource, type IitcIrisMissionSummary, type IitcIrisMissionWaypoint, type IitcIrisMissionsState, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisPortalHighlighterId, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderMutationLayerDiagnostics, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisSubscriptionState} from './messages';
 import {DEFAULT_LAYER_SETTINGS} from './layer-registry';
 import {IITC_LEVEL_COLORS, IITC_TEAM_COLORS} from './iitc-colors';
 import {getLayerUpdatePlan} from './layer-update-routing';
@@ -101,6 +101,7 @@ const LONG_PRESS_CLICK_SUPPRESS_MS = 700;
 const PORTAL_CONTEXT_HIT_TOLERANCE_PX = 10;
 const LINK_CONTEXT_HIT_TOLERANCE_PX = 7;
 const PLAYER_TRACKER_COMM_REFRESH_MS = 120_000;
+const MAX_INTERACTION_UPDATE_DIAGNOSTICS = 10;
 const SEARCH_AUTO_MIN_LENGTH = 3;
 const NOMINATIM_SEARCH_URL = 'https://nominatim.openstreetmap.org/search?format=json&polygon_geojson=1&q=';
 const MISSION_ROUTE_COLOR = '#404000';
@@ -193,6 +194,7 @@ let latestRequestKey = '';
 let latestEntities: IitcIrisRenderEntities | undefined;
 let latestEntityRenderContextKey = '';
 let latestRenderMutationDiagnostics: IitcIrisRenderMutationDiagnostics | null = null;
+let latestInteractionUpdateDiagnostics: IitcIrisInteractionUpdateTimingDiagnostics[] = [];
 let latestPlan: IitcMapDataPlan | undefined;
 let latestResponse: IitcGetEntitiesResponse | undefined;
 let latestWantedTileKeys = new Set<string>();
@@ -321,6 +323,17 @@ interface TileBatchResult {
 interface ActiveMapDataRefreshBridge {
   generation: number;
   processExternalBatch(result: TileBatchResult): boolean;
+}
+
+function roundTimingMs(value: number): number {
+  return Math.round(value * 10) / 10;
+}
+
+function recordInteractionUpdateDiagnostics(update: IitcIrisInteractionUpdateTimingDiagnostics): void {
+  latestInteractionUpdateDiagnostics = [
+    ...latestInteractionUpdateDiagnostics,
+    update,
+  ].slice(-MAX_INTERACTION_UPDATE_DIAGNOSTICS);
 }
 
 interface ArtifactFetchDiagnostics {
@@ -778,15 +791,35 @@ function addEntityRenderedLayer(
   index.set(guid, indexedLayers);
 }
 
-function removeEntityRenderedLayers(layers: LeafletLayer[], index: IitcIrisEntityLayerIndex, guid: string): void {
+function removeEntityRenderedLayers(
+  layers: LeafletLayer[],
+  index: IitcIrisEntityLayerIndex,
+  guid: string,
+  removedLayers?: Set<LeafletLayer>,
+): void {
   const indexedLayers = index.get(guid);
   if (!indexedLayers) return;
   for (const layer of indexedLayers) {
     layer.remove();
+    if (removedLayers) {
+      removedLayers.add(layer);
+      continue;
+    }
     const layerIndex = layers.indexOf(layer);
     if (layerIndex >= 0) layers.splice(layerIndex, 1);
   }
   index.delete(guid);
+}
+
+function compactRenderedLayers(layers: LeafletLayer[], removedLayers: Set<LeafletLayer>): void {
+  if (removedLayers.size === 0) return;
+  let nextIndex = 0;
+  for (const layer of layers) {
+    if (removedLayers.has(layer)) continue;
+    layers[nextIndex] = layer;
+    nextIndex += 1;
+  }
+  layers.length = nextIndex;
 }
 
 function getLayerPane(layerKey: IitcIrisLayerPaneKey): string {
@@ -1223,12 +1256,17 @@ function clearEntityLayers(): void {
   clearEntityLayerIndexes(layers);
 }
 
-function clearSecondaryEntityLayers(layers: NonNullable<Window['__iitcIrisLayers']>): void {
-  clearRenderedLayers(layers.selectedPortal);
-  clearRenderedLayers(layers.selectedMapObject);
-  clearRenderedLayers(layers.ornaments);
-  clearRenderedLayers(layers.artifacts);
-  clearRenderedLayers(layers.labels);
+function clearSecondaryEntityLayers(
+  layers: NonNullable<Window['__iitcIrisLayers']>,
+  update: IitcIrisSecondaryEntityRenderUpdate = ALL_SECONDARY_ENTITY_RENDER_UPDATE,
+): void {
+  if (update.selectedPortal) clearRenderedLayers(layers.selectedPortal);
+  if (update.selectedMapObject) clearRenderedLayers(layers.selectedMapObject);
+  if (update.portalOverlays) {
+    clearRenderedLayers(layers.ornaments);
+    clearRenderedLayers(layers.artifacts);
+    clearRenderedLayers(layers.labels);
+  }
 }
 
 function createOrnamentMarker(latLng: [number, number], ornament: string, portalRadius: number): LeafletLayer {
@@ -2345,6 +2383,7 @@ function syncEntityLayers<T extends {guid: string}>(
   const previousByGuid = mapEntitiesByGuid(previousEntities);
   const nextByGuid = mapEntitiesByGuid(nextEntities);
   const diagnostics = createEmptyRenderMutationLayerDiagnostics();
+  const removedLayers = new Set<LeafletLayer>();
 
   for (const [guid, previousEntity] of previousByGuid) {
     const nextEntity = nextByGuid.get(guid);
@@ -2352,13 +2391,14 @@ function syncEntityLayers<T extends {guid: string}>(
       diagnostics.unchanged += 1;
       continue;
     }
-    removeEntityRenderedLayers(layers, index, guid);
+    removeEntityRenderedLayers(layers, index, guid, removedLayers);
     if (nextEntity) {
       diagnostics.replaced += 1;
     } else {
       diagnostics.removed += 1;
     }
   }
+  compactRenderedLayers(layers, removedLayers);
 
   for (const [guid, nextEntity] of nextByGuid) {
     const previousEntity = previousByGuid.get(guid);
@@ -2408,6 +2448,163 @@ function canUseIncrementalCoreEntityRender(
     pendingPortalSelection === null;
 }
 
+interface IitcIrisSecondaryEntityRenderUpdate {
+  portalOverlays: boolean;
+  selectedPortal: boolean;
+  selectedMapObject: boolean;
+  drawTools: boolean;
+}
+
+const ALL_SECONDARY_ENTITY_RENDER_UPDATE: IitcIrisSecondaryEntityRenderUpdate = {
+  portalOverlays: true,
+  selectedPortal: true,
+  selectedMapObject: true,
+  drawTools: true,
+};
+
+function getSecondaryEntityRenderUpdate(changedLayerKeys?: (keyof IitcIrisLayerSettings)[]): IitcIrisSecondaryEntityRenderUpdate {
+  if (!changedLayerKeys) return ALL_SECONDARY_ENTITY_RENDER_UPDATE;
+  const changedKeySet = new Set(changedLayerKeys);
+  const changesPortalVisibility = changedLayerKeys.some((key) => (
+    key === 'portals' ||
+    key === 'unclaimedPortals' ||
+    key === 'resistance' ||
+    key === 'enlightened' ||
+    key === 'machina' ||
+    /^level[1-8]Portals$/.test(key)
+  ));
+  const changesPortalOverlay = changesPortalVisibility ||
+    changedKeySet.has('labels') ||
+    changedKeySet.has('keyCount') ||
+    changedKeySet.has('ornaments') ||
+    changedKeySet.has('artifacts');
+  const changesLinkVisibility = changedKeySet.has('links') ||
+    changedKeySet.has('resistance') ||
+    changedKeySet.has('enlightened') ||
+    changedKeySet.has('machina');
+
+  return {
+    portalOverlays: changesPortalOverlay,
+    selectedPortal: changesPortalVisibility,
+    selectedMapObject: changedKeySet.has('fields') || changesLinkVisibility,
+    drawTools: changesLinkVisibility,
+  };
+}
+
+type IitcIrisPortalLevelBucket = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 'unclaimed';
+
+interface IitcIrisCoreEntityRenderScope {
+  fields: boolean;
+  links: boolean;
+  portals: boolean;
+  allFields: boolean;
+  allLinks: boolean;
+  allPortals: boolean;
+  fieldTeams: Set<IitcIrisRenderField['team']>;
+  linkTeams: Set<IitcIrisRenderLink['team']>;
+  portalTeams: Set<IitcIrisRenderPortal['team']>;
+  portalLevels: Set<IitcIrisPortalLevelBucket>;
+}
+
+const ALL_CORE_ENTITY_RENDER_SCOPE: IitcIrisCoreEntityRenderScope = {
+  fields: true,
+  links: true,
+  portals: true,
+  allFields: true,
+  allLinks: true,
+  allPortals: true,
+  fieldTeams: new Set(),
+  linkTeams: new Set(),
+  portalTeams: new Set(),
+  portalLevels: new Set(),
+};
+
+function createEmptyCoreEntityRenderScope(): IitcIrisCoreEntityRenderScope {
+  return {
+    fields: false,
+    links: false,
+    portals: false,
+    allFields: false,
+    allLinks: false,
+    allPortals: false,
+    fieldTeams: new Set(),
+    linkTeams: new Set(),
+    portalTeams: new Set(),
+    portalLevels: new Set(),
+  };
+}
+
+function getPortalLevelBucket(portal: IitcIrisRenderPortal): IitcIrisPortalLevelBucket {
+  if (portal.team === 'N' || portal.isPlaceholder || portal.level === undefined || portal.level < 1 || portal.level > 8) {
+    return 'unclaimed';
+  }
+  return portal.level as IitcIrisPortalLevelBucket;
+}
+
+function addFactionScope(scope: IitcIrisCoreEntityRenderScope, team: IitcIrisRenderPortal['team']): void {
+  scope.fields = true;
+  scope.links = true;
+  scope.portals = true;
+  if (!scope.allFields) scope.fieldTeams.add(team);
+  if (!scope.allLinks) scope.linkTeams.add(team);
+  if (!scope.allPortals) scope.portalTeams.add(team);
+}
+
+function getCoreEntityRenderScope(changedLayerKeys?: (keyof IitcIrisLayerSettings)[]): IitcIrisCoreEntityRenderScope {
+  if (!changedLayerKeys) return ALL_CORE_ENTITY_RENDER_SCOPE;
+  const scope = createEmptyCoreEntityRenderScope();
+
+  for (const key of changedLayerKeys) {
+    if (key === 'fields') {
+      scope.fields = true;
+      scope.allFields = true;
+      scope.fieldTeams.clear();
+    } else if (key === 'links') {
+      scope.links = true;
+      scope.allLinks = true;
+      scope.linkTeams.clear();
+    } else if (key === 'portals') {
+      scope.portals = true;
+      scope.allPortals = true;
+      scope.portalTeams.clear();
+      scope.portalLevels.clear();
+    } else if (key === 'resistance') {
+      addFactionScope(scope, 'R');
+    } else if (key === 'enlightened') {
+      addFactionScope(scope, 'E');
+    } else if (key === 'machina') {
+      addFactionScope(scope, 'M');
+    } else if (key === 'unclaimedPortals') {
+      scope.portals = true;
+      if (!scope.allPortals) {
+        scope.portalTeams.add('N');
+        scope.portalLevels.add('unclaimed');
+      }
+    } else if (/^level[1-8]Portals$/.test(key)) {
+      scope.portals = true;
+      if (!scope.allPortals) scope.portalLevels.add(Number(key.slice(5, 6)) as IitcIrisPortalLevelBucket);
+    }
+  }
+
+  return scope;
+}
+
+function isFieldAffectedByScope(field: IitcIrisRenderField, scope: IitcIrisCoreEntityRenderScope): boolean {
+  return scope.fields && (scope.allFields || scope.fieldTeams.has(field.team));
+}
+
+function isLinkAffectedByScope(link: IitcIrisRenderLink, scope: IitcIrisCoreEntityRenderScope): boolean {
+  return scope.links && (scope.allLinks || scope.linkTeams.has(link.team));
+}
+
+function isPortalAffectedByScope(portal: IitcIrisRenderPortal, scope: IitcIrisCoreEntityRenderScope): boolean {
+  return scope.portals && (
+    scope.allPortals ||
+    scope.portalTeams.has(portal.team) ||
+    scope.portalLevels.has(getPortalLevelBucket(portal))
+  );
+}
+
 function renderCoreEntityLayersIncremental(
   layers: NonNullable<Window['__iitcIrisLayers']>,
   previousEntities: IitcIrisRenderEntities,
@@ -2415,31 +2612,47 @@ function renderCoreEntityLayersIncremental(
   visiblePortals: IitcIrisRenderPortal[],
   renderPolicy: IitcIrisRenderPolicy,
   previousLayerSettings: IitcIrisLayerSettings = layerSettings,
+  timing?: IitcIrisLayerUpdateTimingDiagnostics,
+  scope: IitcIrisCoreEntityRenderScope = ALL_CORE_ENTITY_RENDER_SCOPE,
 ): IitcIrisRenderMutationDiagnostics {
-  const fields = syncEntityLayers(
-    layers.fields,
-    layers.entityLayerIndex.fields,
-    previousEntities.fields.filter((field) => isFieldVisibleWith(previousLayerSettings, field) && field.points.length === 3),
-    entities.fields.filter((field) => isFieldVisible(field) && field.points.length === 3),
-    areFieldLayersEqual,
-    createFieldLayer,
-  );
-  const links = syncEntityLayers(
-    layers.links,
-    layers.entityLayerIndex.links,
-    previousEntities.links.filter((link) => isLinkVisibleWith(previousLayerSettings, link)),
-    entities.links.filter(isLinkVisible),
-    areLinkLayersEqual,
-    createLinkLayer,
-  );
-  const portals = syncEntityLayers(
-    layers.portals,
-    layers.entityLayerIndex.portals,
-    previousEntities.portals.filter((portal) => isPortalVisibleWith(previousLayerSettings, portal)),
-    visiblePortals,
-    arePortalLayersEqual,
-    (portal) => createPortalLayer(portal, renderPolicy),
-  );
+  let stepStartedAt = performance.now();
+  const fields = scope.fields
+    ? syncEntityLayers(
+      layers.fields,
+      layers.entityLayerIndex.fields,
+      previousEntities.fields.filter((field) => isFieldAffectedByScope(field, scope) && isFieldVisibleWith(previousLayerSettings, field) && field.points.length === 3),
+      entities.fields.filter((field) => isFieldAffectedByScope(field, scope) && isFieldVisible(field) && field.points.length === 3),
+      areFieldLayersEqual,
+      createFieldLayer,
+    )
+    : createEmptyRenderMutationLayerDiagnostics();
+  if (timing) timing.syncFieldsMs = roundTimingMs(performance.now() - stepStartedAt);
+
+  stepStartedAt = performance.now();
+  const links = scope.links
+    ? syncEntityLayers(
+      layers.links,
+      layers.entityLayerIndex.links,
+      previousEntities.links.filter((link) => isLinkAffectedByScope(link, scope) && isLinkVisibleWith(previousLayerSettings, link)),
+      entities.links.filter((link) => isLinkAffectedByScope(link, scope) && isLinkVisible(link)),
+      areLinkLayersEqual,
+      createLinkLayer,
+    )
+    : createEmptyRenderMutationLayerDiagnostics();
+  if (timing) timing.syncLinksMs = roundTimingMs(performance.now() - stepStartedAt);
+
+  stepStartedAt = performance.now();
+  const portals = scope.portals
+    ? syncEntityLayers(
+      layers.portals,
+      layers.entityLayerIndex.portals,
+      previousEntities.portals.filter((portal) => isPortalAffectedByScope(portal, scope) && isPortalVisibleWith(previousLayerSettings, portal)),
+      visiblePortals.filter((portal) => isPortalAffectedByScope(portal, scope)),
+      arePortalLayersEqual,
+      (portal) => createPortalLayer(portal, renderPolicy),
+    )
+    : createEmptyRenderMutationLayerDiagnostics();
+  if (timing) timing.syncPortalsMs = roundTimingMs(performance.now() - stepStartedAt);
 
   return {
     mode: 'incremental',
@@ -2449,17 +2662,41 @@ function renderCoreEntityLayersIncremental(
   };
 }
 
-function renderEntities(entities: IitcIrisRenderEntities, options: {previousLayerSettings?: IitcIrisLayerSettings} = {}): void {
-  if (!window.__iitcIrisMap) return;
+function renderEntities(
+  entities: IitcIrisRenderEntities,
+  options: {
+    previousLayerSettings?: IitcIrisLayerSettings;
+    changedLayerKeys?: (keyof IitcIrisLayerSettings)[];
+    secondaryUpdate?: IitcIrisSecondaryEntityRenderUpdate;
+    timing?: IitcIrisLayerUpdateTimingDiagnostics;
+  } = {},
+): IitcIrisLayerUpdateTimingDiagnostics | undefined {
+  if (!window.__iitcIrisMap) return undefined;
+  const renderStartedAt = performance.now();
+  const timing = options.timing;
   const layers = ensureLayers();
+  let stepStartedAt = performance.now();
   const renderPolicy = getRenderPolicy();
+  if (timing) timing.renderPolicyMs = roundTimingMs(performance.now() - stepStartedAt);
+
+  stepStartedAt = performance.now();
   const ornamentVisibility = loadOrnamentVisibilitySettings();
-  const ornamentDiagnostics = createEmptyOrnamentDiagnostics();
+  if (timing) timing.ornamentSettingsMs = roundTimingMs(performance.now() - stepStartedAt);
+
+  const secondaryUpdate = options.secondaryUpdate ?? ALL_SECONDARY_ENTITY_RENDER_UPDATE;
+  const ornamentDiagnostics = secondaryUpdate.portalOverlays ? createEmptyOrnamentDiagnostics() : latestOrnamentDiagnostics;
+  stepStartedAt = performance.now();
   const visiblePortals = entities.portals.filter(isPortalVisible);
-  const visibleLevelLabelGuids = renderPolicy.labels ? getVisibleLevelLabelGuids(visiblePortals) : new Set<string>();
+  if (timing) timing.visiblePortalsMs = roundTimingMs(performance.now() - stepStartedAt);
+
+  stepStartedAt = performance.now();
+  const visibleLevelLabelGuids = secondaryUpdate.portalOverlays && renderPolicy.labels ? getVisibleLevelLabelGuids(visiblePortals) : new Set<string>();
+  if (timing) timing.visibleLabelsMs = roundTimingMs(performance.now() - stepStartedAt);
+
   const previousEntities = latestEntities;
   const renderContextKey = getEntityRenderContextKey(renderPolicy);
   const useIncrementalCoreRender = canUseIncrementalCoreEntityRender(previousEntities, entities, renderContextKey, options.previousLayerSettings);
+  const coreRenderScope = getCoreEntityRenderScope(options.changedLayerKeys);
 
   latestEntities = entities;
   if (pendingPortalSelection) {
@@ -2468,7 +2705,9 @@ function renderEntities(entities: IitcIrisRenderEntities, options: {previousLaye
   }
 
   if (useIncrementalCoreRender) {
-    clearSecondaryEntityLayers(layers);
+    stepStartedAt = performance.now();
+    clearSecondaryEntityLayers(layers, secondaryUpdate);
+    if (timing) timing.clearSecondaryMs = roundTimingMs(performance.now() - stepStartedAt);
     latestRenderMutationDiagnostics = renderCoreEntityLayersIncremental(
       layers,
       previousEntities,
@@ -2476,26 +2715,37 @@ function renderEntities(entities: IitcIrisRenderEntities, options: {previousLaye
       visiblePortals,
       renderPolicy,
       options.previousLayerSettings,
+      timing,
+      coreRenderScope,
     );
   } else {
+    stepStartedAt = performance.now();
     clearEntityLayers();
+    if (timing) timing.fullClearMs = roundTimingMs(performance.now() - stepStartedAt);
+
     let renderedFieldCount = 0;
     let renderedLinkCount = 0;
+    stepStartedAt = performance.now();
     for (const field of entities.fields) {
       if (!isFieldVisible(field) || field.points.length !== 3) continue;
       addEntityRenderedLayer(layers.fields, layers.entityLayerIndex.fields, field.guid, createFieldLayer(field));
       renderedFieldCount += 1;
     }
+    if (timing) timing.fullFieldsMs = roundTimingMs(performance.now() - stepStartedAt);
 
+    stepStartedAt = performance.now();
     for (const link of entities.links) {
       if (!isLinkVisible(link)) continue;
       addEntityRenderedLayer(layers.links, layers.entityLayerIndex.links, link.guid, createLinkLayer(link));
       renderedLinkCount += 1;
     }
+    if (timing) timing.fullLinksMs = roundTimingMs(performance.now() - stepStartedAt);
 
+    stepStartedAt = performance.now();
     for (const portal of visiblePortals) {
       addEntityRenderedLayer(layers.portals, layers.entityLayerIndex.portals, portal.guid, createPortalLayer(portal, renderPolicy));
     }
+    if (timing) timing.fullPortalsMs = roundTimingMs(performance.now() - stepStartedAt);
     latestRenderMutationDiagnostics = {
       mode: 'full',
       fields: createFullRenderMutationLayerDiagnostics(renderedFieldCount),
@@ -2505,48 +2755,56 @@ function renderEntities(entities: IitcIrisRenderEntities, options: {previousLaye
   }
   latestEntityRenderContextKey = renderContextKey;
 
-  for (const portal of visiblePortals) {
-    const latLng = toLatLng(portal.latE6, portal.lngE6);
-    const radius = getPortalRadius(portal.level, portal.isPlaceholder);
-    if (renderPolicy.labels && visibleLevelLabelGuids.has(portal.guid) && portal.level !== undefined) {
-      addRenderedLayer(layers.labels, createLevelLabelMarker(latLng, portal.level, portal.team));
-    }
-    const keyCount = getPortalKeyCount(portal.guid);
-    if (layerSettings.keyCount === 'on' && keyCount !== undefined && keyCount > 0) {
-      addRenderedLayer(layers.labels, createKeyCountMarker(latLng, keyCount, radius));
-    }
-  }
-
-  if (renderPolicy.artifacts) {
-    for (const portal of entities.portals) {
-      if (portal.isPlaceholder || !portal.artifacts || portal.artifacts.length === 0) continue;
-      const latLng = toLatLng(portal.latE6, portal.lngE6);
-      for (const artifact of portal.artifacts) {
-        addRenderedLayer(layers.artifacts, createArtifactMarker(latLng, artifact));
-      }
-    }
-  }
-
-  if (renderPolicy.ornaments) {
-    for (const portal of entities.portals) {
-      if (!portal.ornaments || portal.ornaments.length === 0) continue;
+  stepStartedAt = performance.now();
+  if (secondaryUpdate.portalOverlays) {
+    for (const portal of visiblePortals) {
       const latLng = toLatLng(portal.latE6, portal.lngE6);
       const radius = getPortalRadius(portal.level, portal.isPlaceholder);
-      for (const ornament of portal.ornaments) {
-        ornamentDiagnostics.types[ornament] = (ornamentDiagnostics.types[ornament] ?? 0) + 1;
-        if (isIitcExcludedOrnament(ornament, ornamentVisibility)) {
-          ornamentDiagnostics.hiddenMarkers += 1;
-          continue;
+      if (renderPolicy.labels && visibleLevelLabelGuids.has(portal.guid) && portal.level !== undefined) {
+        addRenderedLayer(layers.labels, createLevelLabelMarker(latLng, portal.level, portal.team));
+      }
+      const keyCount = getPortalKeyCount(portal.guid);
+      if (layerSettings.keyCount === 'on' && keyCount !== undefined && keyCount > 0) {
+        addRenderedLayer(layers.labels, createKeyCountMarker(latLng, keyCount, radius));
+      }
+    }
+
+    if (renderPolicy.artifacts) {
+      for (const portal of entities.portals) {
+        if (portal.isPlaceholder || !portal.artifacts || portal.artifacts.length === 0) continue;
+        const latLng = toLatLng(portal.latE6, portal.lngE6);
+        for (const artifact of portal.artifacts) {
+          addRenderedLayer(layers.artifacts, createArtifactMarker(latLng, artifact));
         }
-        ornamentDiagnostics.drawnMarkers += 1;
-        addRenderedLayer(layers.ornaments, createOrnamentMarker(latLng, ornament, radius));
+      }
+    }
+
+    if (renderPolicy.ornaments) {
+      for (const portal of entities.portals) {
+        if (!portal.ornaments || portal.ornaments.length === 0) continue;
+        const latLng = toLatLng(portal.latE6, portal.lngE6);
+        const radius = getPortalRadius(portal.level, portal.isPlaceholder);
+        for (const ornament of portal.ornaments) {
+          ornamentDiagnostics.types[ornament] = (ornamentDiagnostics.types[ornament] ?? 0) + 1;
+          if (isIitcExcludedOrnament(ornament, ornamentVisibility)) {
+            ornamentDiagnostics.hiddenMarkers += 1;
+            continue;
+          }
+          ornamentDiagnostics.drawnMarkers += 1;
+          addRenderedLayer(layers.ornaments, createOrnamentMarker(latLng, ornament, radius));
+        }
       }
     }
   }
-  renderSelectedPortal(visiblePortals);
-  renderSelectedMapObject();
-  renderIitcDrawTools();
+  if (secondaryUpdate.selectedPortal) renderSelectedPortal(visiblePortals);
+  if (secondaryUpdate.selectedMapObject) renderSelectedMapObject();
+  if (secondaryUpdate.drawTools) renderIitcDrawTools();
   latestOrnamentDiagnostics = ornamentDiagnostics;
+  if (timing) {
+    timing.secondaryMs = roundTimingMs(performance.now() - stepStartedAt);
+    timing.renderEntitiesMs = roundTimingMs(performance.now() - renderStartedAt);
+  }
+  return timing;
 }
 
 function renderTileDebug(plan: IitcMapDataPlan, response: IitcGetEntitiesResponse): void {
@@ -3470,22 +3728,73 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
     renderEntities(event.data.entities);
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.layerSettings && event.data.layerSettings) {
+    const layerUpdateStartedAt = performance.now();
     const previousLayerSettings = layerSettings;
     layerSettings = event.data.layerSettings;
     const layerUpdatePlan = getLayerUpdatePlan(previousLayerSettings, layerSettings);
+    const layerUpdateTiming: IitcIrisLayerUpdateTimingDiagnostics = {
+      changedKeys: layerUpdatePlan.changedKeys.map(String),
+    };
+    if (event.data.sentAt !== undefined) {
+      layerUpdateTiming.dispatchDelayMs = roundTimingMs(Math.max(0, layerUpdateStartedAt - event.data.sentAt));
+    }
 
-    if (latestEntities && layerUpdatePlan.renderEntities) renderEntities(latestEntities, {previousLayerSettings});
+    if (latestEntities && layerUpdatePlan.renderEntities) {
+      renderEntities(latestEntities, {
+        previousLayerSettings,
+        changedLayerKeys: layerUpdatePlan.changedKeys,
+        secondaryUpdate: getSecondaryEntityRenderUpdate(layerUpdatePlan.changedKeys),
+        timing: layerUpdateTiming,
+      });
+    }
     if (layerUpdatePlan.renderTileDebug) renderLatestTileDebug();
     if (layerUpdatePlan.renderDrawTools) renderIitcDrawTools();
     if (layerUpdatePlan.renderPlayerTracker) {
       renderPlayerTracker();
       schedulePlayerTrackerRefresh();
     }
+    layerUpdateTiming.totalMs = roundTimingMs(performance.now() - layerUpdateStartedAt);
+    recordInteractionUpdateDiagnostics({
+      kind: 'layer',
+      at: Date.now(),
+      ...layerUpdateTiming,
+    });
+    if (latestTileDiagnostics) {
+      latestTileDiagnostics = {
+        ...latestTileDiagnostics,
+        timing: {
+          ...(latestTileDiagnostics.timing ?? {}),
+          layerUpdate: layerUpdateTiming,
+        },
+      };
+    }
     repostLatestEntityStatus();
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.layerSettings && event.data.highlighterSettings) {
+    const highlighterUpdateStartedAt = performance.now();
     highlighterSettings = event.data.highlighterSettings;
-    if (latestEntities && !refreshPortalMarkerStylesForHighlighter()) renderEntities(latestEntities);
+    const highlighterUpdateTiming: IitcIrisInteractionUpdateTimingDiagnostics = {
+      kind: 'highlighter',
+      at: Date.now(),
+      activeHighlighter: highlighterSettings.active,
+      renderPath: 'none',
+    };
+    if (event.data.sentAt !== undefined) {
+      highlighterUpdateTiming.dispatchDelayMs = roundTimingMs(Math.max(0, highlighterUpdateStartedAt - event.data.sentAt));
+    }
+    if (latestEntities) {
+      const renderStartedAt = performance.now();
+      const refreshedExistingStyles = refreshPortalMarkerStylesForHighlighter();
+      if (refreshedExistingStyles) {
+        highlighterUpdateTiming.renderPath = 'style-refresh';
+      } else {
+        renderEntities(latestEntities);
+        highlighterUpdateTiming.renderPath = 'full-render';
+      }
+      highlighterUpdateTiming.renderEntitiesMs = roundTimingMs(performance.now() - renderStartedAt);
+    }
+    highlighterUpdateTiming.totalMs = roundTimingMs(performance.now() - highlighterUpdateStartedAt);
+    recordInteractionUpdateDiagnostics(highlighterUpdateTiming);
     repostLatestEntityStatus();
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.layerSettings && event.data.baseLayerId) {
@@ -3648,7 +3957,10 @@ function postEntityStatus(
     queue: tileDiagnostics.queue,
     renderQueue: tileDiagnostics.renderQueue,
     renderMutation: latestRenderMutationDiagnostics,
-    timing: tileDiagnostics.timing,
+    timing: {
+      ...(tileDiagnostics.timing ?? {}),
+      interactionUpdates: latestInteractionUpdateDiagnostics,
+    },
     requestDiagnostics: getIitcRequestDiagnostics(),
     playerTracker: playerTrackerDiagnostics,
     portalAnalysis,

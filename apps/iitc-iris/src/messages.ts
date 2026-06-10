@@ -47,6 +47,7 @@ export type IitcIrisEntitySource = 'live' | 'cache' | 'fixture';
 
 export interface IitcIrisMessage {
   type: IitcIrisMessageType;
+  sentAt?: number;
   lat?: number;
   lng?: number;
   zoom?: number;
@@ -520,6 +521,50 @@ export interface IitcIrisRenderMutationDiagnostics {
   portals: IitcIrisRenderMutationLayerDiagnostics;
 }
 
+export interface IitcIrisLayerUpdateTimingDiagnostics {
+  changedKeys: string[];
+  dispatchDelayMs?: number;
+  totalMs?: number;
+  renderEntitiesMs?: number;
+  renderPolicyMs?: number;
+  ornamentSettingsMs?: number;
+  visiblePortalsMs?: number;
+  visibleLabelsMs?: number;
+  clearSecondaryMs?: number;
+  syncFieldsMs?: number;
+  syncLinksMs?: number;
+  syncPortalsMs?: number;
+  fullClearMs?: number;
+  fullFieldsMs?: number;
+  fullLinksMs?: number;
+  fullPortalsMs?: number;
+  secondaryMs?: number;
+}
+
+export interface IitcIrisInteractionUpdateTimingDiagnostics {
+  kind: 'layer' | 'highlighter';
+  at: number;
+  changedKeys?: string[];
+  activeHighlighter?: IitcIrisPortalHighlighterId;
+  dispatchDelayMs?: number;
+  totalMs?: number;
+  renderEntitiesMs?: number;
+  renderPath?: 'none' | 'style-refresh' | 'full-render';
+  renderPolicyMs?: number;
+  ornamentSettingsMs?: number;
+  visiblePortalsMs?: number;
+  visibleLabelsMs?: number;
+  clearSecondaryMs?: number;
+  syncFieldsMs?: number;
+  syncLinksMs?: number;
+  syncPortalsMs?: number;
+  fullClearMs?: number;
+  fullFieldsMs?: number;
+  fullLinksMs?: number;
+  fullPortalsMs?: number;
+  secondaryMs?: number;
+}
+
 export interface IitcIrisMapTimingDiagnostics {
   cacheMs?: number;
   initialMs?: number;
@@ -528,6 +573,8 @@ export interface IitcIrisMapTimingDiagnostics {
   totalMs?: number;
   movementDelayMs?: number;
   downloadDelayMs?: number;
+  layerUpdate?: IitcIrisLayerUpdateTimingDiagnostics;
+  interactionUpdates?: IitcIrisInteractionUpdateTimingDiagnostics[];
 }
 
 export interface IitcIrisPlayerTrackerDiagnostics {
