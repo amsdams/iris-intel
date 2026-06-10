@@ -136,6 +136,7 @@ Feature details have been split out of this entry point so the current truth is 
 | IITC side request/UI systems        | Started             | [features/side-systems.md](features/side-systems.md)                             |
 | Draw Tools                          | Stable v1 / Partial | [features/draw-tools.md](features/draw-tools.md)                                 |
 | Portal analysis views               | Stable v1 / Partial | [features/portal-analysis.md](features/portal-analysis.md)                       |
+| Highlighters and layers             | Started / Partial   | [features/highlighters-and-layers.md](features/highlighters-and-layers.md)       |
 | Backlog and replacement readiness   | Ongoing             | [backlog.md](backlog.md)                                                         |
 
 ## Current High-Level Gaps
@@ -145,7 +146,8 @@ Feature details have been split out of this entry point so the current truth is 
   True stale-cache retry exhaustion is still wired/diagnosed but needs a live case that proves cached stale tiles render
   exactly like IITC.
 - Plugin-facing compatibility remains intentionally limited: no broad `window.plugin.*`, `addHook`/`runHooks`, toolbox,
-  highlighter registry, or Leaflet.draw event parity yet.
+  plugin-facing highlighter API, layer registry, or Leaflet.draw event parity yet. Native highlighter selection has
+  started with existing IRIS highlighter-like behavior and IITC-CE's single active highlighter model.
 - Draw Tools v1 is links/markers only. Polygons, circles, visible snap cleanup UX, `DrawTools Opt`, stock Intel `pls`,
   and plugin-facing `window.plugin.drawTools` / `pluginDrawTools` remain deferred.
 - The bottom-sheet/two-layer menu model is a deliberate product-shell divergence from IITC's sidebar/dropdown/statusbar

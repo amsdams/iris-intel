@@ -3,7 +3,7 @@ import {useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import './iitc-iris.css';
 import {formatIitcColorVars, getIitcItemColor, getIitcLevelColor, getIitcRarityColor, IITC_RESONATOR_ENERGY, IITC_TEAM_COLORS} from './iitc-colors';
 import {formatSubscriptionBadge, formatSubscriptionLabel, getAuthErrorMessage, getPanelStatusClass, getSubscriptionStatusClass} from './ui-status';
-import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPlayerTrackerDiagnostics, type IitcIrisPortalAnalysis, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisEntitySource, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPlayerTrackerDiagnostics, type IitcIrisPortalAnalysis, type IitcIrisPortalDetailsState, type IitcIrisPortalHighlighterId, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
 import {
   createIitcMapDataPlan,
   IITC_MAX_REQUESTS,
@@ -23,6 +23,7 @@ const REQUEST_BOUNDS_PADDING_RATIO = 0.25;
 const IITC_PAN_CONTROL_OFFSET_PX = 500;
 const BASE_LAYER_STORAGE_KEY = 'iitc-iris:base-layer';
 const LAYER_SETTINGS_STORAGE_KEY = 'iitc-iris:layer-settings';
+const HIGHLIGHTER_SETTINGS_STORAGE_KEY = 'iitc-iris:highlighter-settings';
 const DATA_SOURCE_STORAGE_KEY = 'iitc-iris:data-source';
 const LIFECYCLE_SETTINGS_STORAGE_KEY = 'iitc-iris:lifecycle-settings';
 const DEBUG_DOCK_STORAGE_KEY = 'iitc-iris:debug-dock';
@@ -111,8 +112,6 @@ const CORE_LAYER_TOGGLE_LABELS: [BooleanLayerSettingKey, string, string][] = [
   ['machina', 'MAC', 'Machina portals'],
 ];
 const DETAIL_LAYER_TOGGLE_LABELS: [BooleanLayerSettingKey, string, string][] = [
-  ['levelFill', 'LF', 'Level fill'],
-  ['healthFill', 'HF', 'Health fill'],
   ['ornaments', 'OR', 'Ornaments'],
   ['artifacts', 'AR', 'Artifacts'],
   ['labels', 'LV', 'Level labels'],
@@ -126,10 +125,16 @@ const DETAIL_LAYER_TOGGLE_LABELS: [BooleanLayerSettingKey, string, string][] = [
 const DETAIL_TRI_STATE_LAYER_LABELS: [TriStateLayerSettingKey, string, string][] = [
   ['keyCount', 'KEY', 'Portal key count'],
 ];
-const PORTAL_DATA_LAYER_LABELS: [TriStateLayerSettingKey, string, string][] = [
-  ['historyCaptured', 'CAP', 'Captured history'],
-  ['historyVisited', 'VIS', 'Visited history'],
-  ['historyScoutControlled', 'SC', 'Scout controlled history'],
+const PORTAL_HIGHLIGHTER_OPTIONS: {id: IitcIrisPortalHighlighterId; label: string; title: string}[] = [
+  {id: 'none', label: 'No Highlights', title: 'No portal highlighter'},
+  {id: 'level-color', label: 'Level Color', title: 'Color portal bodies by level'},
+  {id: 'needs-recharge', label: 'Needs Recharge (Health)', title: 'Color damaged portals by health'},
+  {id: 'history-visited', label: 'History: visited', title: 'Highlight visited portals'},
+  {id: 'history-not-visited', label: 'History: not visited', title: 'Highlight unvisited portals'},
+  {id: 'history-captured', label: 'History: captured', title: 'Highlight captured portals'},
+  {id: 'history-not-captured', label: 'History: not captured', title: 'Highlight uncaptured portals'},
+  {id: 'history-scout-controlled', label: 'History: scout controlled', title: 'Highlight scout-controlled portals'},
+  {id: 'history-not-scout-controlled', label: 'History: not scout controlled', title: 'Highlight portals not scout controlled'},
 ];
 const DRAW_TOOLS_MARKER_PRESETS = [
   {id: 'white', color: '#ffffff', title: 'Add white marker'},
@@ -188,6 +193,7 @@ const DEFAULT_LAYER_SETTINGS: IitcIrisLayerSettings = {
 const DEFAULT_RENDER_POLICY: IitcIrisRenderPolicy = {
   optionalOverlayMinZoom: 14,
   detailedPortals: false,
+  activeHighlighter: 'none',
   levelFill: false,
   healthFill: false,
   ornaments: false,
@@ -289,6 +295,8 @@ interface EntityFetchState {
   playerTracker: IitcIrisPlayerTrackerDiagnostics | null;
   baseLayerId: IitcIrisBaseLayerId;
   dataSource: IitcIrisDataSourceSettings;
+  highlighterSettings: IitcIrisHighlighterSettings;
+  highlighterIds: IitcIrisPortalHighlighterId[];
   renderPolicy: IitcIrisRenderPolicy;
   selectedPortal: IitcIrisSelectedPortal | null;
   portalDetails: IitcIrisPortalDetailsState | null;
@@ -680,6 +688,17 @@ function isTriStateLayer(value: unknown): value is IitcIrisTriStateLayer {
   return value === 'off' || value === 'on' || value === 'invert';
 }
 
+function isPortalHighlighterId(value: unknown): value is IitcIrisPortalHighlighterId {
+  return PORTAL_HIGHLIGHTER_OPTIONS.some((option) => option.id === value);
+}
+
+function normalizePortalHighlighterId(value: unknown): IitcIrisPortalHighlighterId {
+  if (isPortalHighlighterId(value)) return value;
+  if (value === 'history-visited-captured') return 'history-visited';
+  if (value === 'history-not-visited-captured') return 'history-not-visited';
+  return 'none';
+}
+
 function nextTriStateLayer(value: IitcIrisTriStateLayer): IitcIrisTriStateLayer {
   if (value === 'off') return 'on';
   if (value === 'on') return 'invert';
@@ -746,6 +765,29 @@ function loadStoredLayerSettings(): IitcIrisLayerSettings {
   }
 }
 
+function legacyHighlighterFromLayerSettings(layerSettings: IitcIrisLayerSettings): IitcIrisPortalHighlighterId {
+  if (layerSettings.levelFill) return 'level-color';
+  if (layerSettings.healthFill) return 'needs-recharge';
+  if (layerSettings.historyCaptured === 'on') return 'history-captured';
+  if (layerSettings.historyVisited === 'on') return 'history-visited';
+  if (layerSettings.historyCaptured === 'invert') return 'history-not-captured';
+  if (layerSettings.historyVisited === 'invert') return 'history-not-visited';
+  if (layerSettings.historyScoutControlled === 'on') return 'history-scout-controlled';
+  if (layerSettings.historyScoutControlled === 'invert') return 'history-not-scout-controlled';
+  return 'none';
+}
+
+function loadStoredHighlighterSettings(legacyLayerSettings: IitcIrisLayerSettings): IitcIrisHighlighterSettings {
+  try {
+    const value = window.localStorage.getItem(HIGHLIGHTER_SETTINGS_STORAGE_KEY);
+    if (!value) return {active: legacyHighlighterFromLayerSettings(legacyLayerSettings)};
+    const parsed = JSON.parse(value) as Partial<IitcIrisHighlighterSettings>;
+    return {active: normalizePortalHighlighterId(parsed.active)};
+  } catch {
+    return {active: legacyHighlighterFromLayerSettings(legacyLayerSettings)};
+  }
+}
+
 function loadStoredDataSourceId(): typeof DATA_SOURCE_OPTIONS[number]['id'] {
   try {
     const value = window.localStorage.getItem(DATA_SOURCE_STORAGE_KEY);
@@ -771,6 +813,14 @@ function storeLayerSettings(value: IitcIrisLayerSettings): void {
     window.localStorage.setItem(LAYER_SETTINGS_STORAGE_KEY, JSON.stringify(value));
   } catch {
     // Layer preferences are optional.
+  }
+}
+
+function storeHighlighterSettings(value: IitcIrisHighlighterSettings): void {
+  try {
+    window.localStorage.setItem(HIGHLIGHTER_SETTINGS_STORAGE_KEY, JSON.stringify(value));
+  } catch {
+    // Highlighter preferences are optional.
   }
 }
 
@@ -1014,6 +1064,8 @@ function entityFetchStateFromMessage(message: IitcIrisMessage, current: EntityFe
     playerTracker: message.playerTracker ?? current.playerTracker,
     baseLayerId: message.baseLayerId ?? current.baseLayerId,
     dataSource: message.dataSource ?? current.dataSource,
+    highlighterSettings: message.highlighterSettings ?? current.highlighterSettings,
+    highlighterIds: message.highlighterIds ?? current.highlighterIds,
     renderPolicy: message.renderPolicy ?? current.renderPolicy,
     selectedPortal: message.selectedPortal === undefined ? current.selectedPortal : message.selectedPortal,
     portalDetails: message.portalDetails === undefined ? current.portalDetails : message.portalDetails,
@@ -1546,6 +1598,7 @@ function App(): h.JSX.Element {
   const [dataSourceId, setDataSourceId] = useState<typeof DATA_SOURCE_OPTIONS[number]['id']>(() => loadStoredDataSourceId());
   const [lifecycleSettings, setLifecycleSettings] = useState<IitcIrisLifecycleSettings>(() => loadStoredLifecycleSettings());
   const [layerSettings, setLayerSettings] = useState<IitcIrisLayerSettings>(() => loadStoredLayerSettings());
+  const [highlighterSettings, setHighlighterSettings] = useState<IitcIrisHighlighterSettings>(() => loadStoredHighlighterSettings(loadStoredLayerSettings()));
   const [camera, setCamera] = useState<CameraState>(() => ({
     ...loadInitialMapView(),
     bounds: null,
@@ -1612,6 +1665,8 @@ function App(): h.JSX.Element {
     playerTracker: null,
     baseLayerId: loadStoredBaseLayerId(),
     dataSource: createDataSourceSettings(loadStoredDataSourceId()),
+    highlighterSettings: {active: 'none'},
+    highlighterIds: PORTAL_HIGHLIGHTER_OPTIONS.map((option) => option.id),
     renderPolicy: DEFAULT_RENDER_POLICY,
     selectedPortal: null,
     portalDetails: null,
@@ -1655,7 +1710,8 @@ function App(): h.JSX.Element {
     setPortalsListSortBy(field);
     setPortalsListSortOrder(field === 'title' || field === 'team' ? 1 : -1);
   };
-  const detailOverlaysActive = entityFetch.renderPolicy.levelFill ||
+  const detailOverlaysActive = entityFetch.renderPolicy.activeHighlighter !== 'none' ||
+    entityFetch.renderPolicy.levelFill ||
     entityFetch.renderPolicy.healthFill ||
     entityFetch.renderPolicy.ornaments ||
     entityFetch.renderPolicy.artifacts ||
@@ -1787,6 +1843,10 @@ function App(): h.JSX.Element {
     },
     baseLayerId,
     dataSource,
+    highlighters: {
+      active: entityFetch.highlighterSettings.active,
+      registered: entityFetch.highlighterIds,
+    },
     requests: requestDiagnostics,
     lifecycleSettings,
     layers: layerSettings,
@@ -2397,6 +2457,10 @@ function App(): h.JSX.Element {
     setLayerSettings((current) => ({...current, [key]: nextTriStateLayer(current[key])}));
   };
 
+  const selectPortalHighlighter = (active: IitcIrisPortalHighlighterId): void => {
+    setHighlighterSettings({active});
+  };
+
   const setMapView = (lat: number, lng: number, zoom = camera.zoom): void => {
     const clamped = clampView({lat, lng, zoom});
     window.postMessage({
@@ -2797,6 +2861,10 @@ function App(): h.JSX.Element {
           baseLayerId,
         } satisfies IitcIrisMessage, '*');
         window.postMessage({
+          type: IITC_IRIS_MESSAGES.layerSettings,
+          highlighterSettings,
+        } satisfies IitcIrisMessage, '*');
+        window.postMessage({
           type: IITC_IRIS_MESSAGES.dataSourceSettings,
           dataSource,
         } satisfies IitcIrisMessage, '*');
@@ -2897,7 +2965,7 @@ function App(): h.JSX.Element {
 
     window.addEventListener('message', onMessage);
     return (): void => window.removeEventListener('message', onMessage);
-  }, [activeSidePanel, baseLayerId, dataSource, layerSettings, lifecycleSettings]);
+  }, [activeSidePanel, baseLayerId, dataSource, highlighterSettings, layerSettings, lifecycleSettings]);
 
   useEffect(() => {
     storeLayerSettings(layerSettings);
@@ -2907,6 +2975,14 @@ function App(): h.JSX.Element {
       baseLayerId,
     } satisfies IitcIrisMessage, '*');
   }, [baseLayerId, layerSettings]);
+
+  useEffect(() => {
+    storeHighlighterSettings(highlighterSettings);
+    window.postMessage({
+      type: IITC_IRIS_MESSAGES.layerSettings,
+      highlighterSettings,
+    } satisfies IitcIrisMessage, '*');
+  }, [highlighterSettings]);
 
   useEffect(() => {
     storeDataSourceId(dataSourceId);
@@ -3774,6 +3850,25 @@ function App(): h.JSX.Element {
           </div>
         </div>}
         {activeSheet === 'layers' && <div className="iitc-iris-map-controls-section">
+          <span className="iitc-iris-status">Highlighter</span>
+          <div className="iitc-iris-map-control-row">
+            <select
+              className="iitc-iris-highlighter-select"
+              value={highlighterSettings.active}
+              onChange={(event) => {
+                const value = event.currentTarget.value;
+                selectPortalHighlighter(isPortalHighlighterId(value) ? value : 'none');
+              }}
+              title="Portal highlighter"
+              aria-label="Portal highlighter"
+            >
+              {PORTAL_HIGHLIGHTER_OPTIONS.map((option) => (
+                <option key={option.id} value={option.id} title={option.title}>{option.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>}
+        {activeSheet === 'layers' && <div className="iitc-iris-map-controls-section">
           <span className="iitc-iris-status">Detail</span>
           <div className="iitc-iris-map-control-row">
             {DETAIL_LAYER_TOGGLE_LABELS.map(([key, label, title]) => (
@@ -3789,24 +3884,6 @@ function App(): h.JSX.Element {
               </button>
             ))}
             {DETAIL_TRI_STATE_LAYER_LABELS.map(([key, label, title]) => (
-              <button
-                key={key}
-                className={`iitc-iris-layer-toggle ${layerSettings[key] !== 'off' ? 'iitc-iris-layer-toggle-active' : ''} ${layerSettings[key] === 'invert' ? 'iitc-iris-layer-toggle-invert' : ''}`}
-                type="button"
-                onClick={() => cycleTriStateLayerSetting(key)}
-                title={`${title}: ${layerSettings[key]}`}
-                aria-label={`${title}: ${layerSettings[key]}`}
-                aria-pressed={layerSettings[key] !== 'off'}
-              >
-                {layerSettings[key] === 'invert' ? `${label}!` : label}
-              </button>
-            ))}
-          </div>
-        </div>}
-        {activeSheet === 'layers' && <div className="iitc-iris-map-controls-section">
-          <span className="iitc-iris-status">History</span>
-          <div className="iitc-iris-map-control-row">
-            {PORTAL_DATA_LAYER_LABELS.map(([key, label, title]) => (
               <button
                 key={key}
                 className={`iitc-iris-layer-toggle ${layerSettings[key] !== 'off' ? 'iitc-iris-layer-toggle-active' : ''} ${layerSettings[key] === 'invert' ? 'iitc-iris-layer-toggle-invert' : ''}`}

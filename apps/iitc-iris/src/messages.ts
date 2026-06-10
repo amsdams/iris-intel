@@ -122,6 +122,8 @@ export interface IitcIrisMessage {
   playerTracker?: IitcIrisPlayerTrackerDiagnostics;
   portalAnalysis?: IitcIrisPortalAnalysis | null;
   layerSettings?: IitcIrisLayerSettings;
+  highlighterSettings?: IitcIrisHighlighterSettings;
+  highlighterIds?: IitcIrisPortalHighlighterId[];
   baseLayerId?: IitcIrisBaseLayerId;
   dataSource?: IitcIrisDataSourceSettings;
   lifecycleSettings?: IitcIrisLifecycleSettings;
@@ -544,6 +546,20 @@ export interface IitcIrisLifecycleSettings {
 }
 
 export type IitcIrisTriStateLayer = 'off' | 'on' | 'invert';
+export type IitcIrisPortalHighlighterId =
+  | 'none'
+  | 'level-color'
+  | 'needs-recharge'
+  | 'history-visited'
+  | 'history-not-visited'
+  | 'history-captured'
+  | 'history-not-captured'
+  | 'history-scout-controlled'
+  | 'history-not-scout-controlled';
+
+export interface IitcIrisHighlighterSettings {
+  active: IitcIrisPortalHighlighterId;
+}
 
 export interface IitcIrisLayerSettings {
   fields: boolean;
@@ -588,6 +604,7 @@ export type IitcIrisDataSourceSettings =
 export interface IitcIrisRenderPolicy {
   optionalOverlayMinZoom: number;
   detailedPortals: boolean;
+  activeHighlighter: IitcIrisPortalHighlighterId;
   levelFill: boolean;
   healthFill: boolean;
   ornaments: boolean;

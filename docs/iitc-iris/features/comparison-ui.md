@@ -44,8 +44,9 @@ Current status:
 - The dock can copy the current view back out as an Intel URL.
 - The floating map-controls panel has base-map switches for CartoDB Dark Matter, CartoDB Positron, and OpenStreetMap,
   with the selected base map persisted for repeatable visual comparisons.
-- Layer toggles are persisted; the default comparison view enables only fields, links, and portals while leaving level
-  fill, health fill, ornaments, artifacts, labels, and tile debug off.
+- Layer toggles are persisted; the default comparison view enables only fields, links, and portals while leaving
+  ornaments, artifacts, labels, key counts, and tile debug off. Level color, recharge health, and portal history styling
+  are selected through the single portal highlighter selector.
 - Base map, core/detail layer toggles, side-system tabs, and pan/zoom controls live outside the debug/comparison
   controls. The data-source switch now lives in the System sheet because it is comparison/fixture infrastructure rather
   than IITC-style map UI.
@@ -56,16 +57,14 @@ Current status:
     - `U`: unclaimed and placeholder portals.
     - `L1`..`L8`: portal levels 1 through 8.
     - `RES`, `ENL`, `MAC`: faction filters for portals, links, and fields.
-    - `LF`: portal body fill by IITC level colours, matching IITC-CE's `Level Color` highlighter behavior, including
-      neutral portals with an orange outline and level-coloured body.
-    - `HF`: portal body fill by recharge status, matching IITC-CE's `Needs Recharge (Health)` highlighter behavior.
     - `OR`: ornament image overlays.
     - `AR`: artifact rings.
     - `LV`: portal level labels.
+    - `KEY`: inventory-derived key-count labels.
     - `T`: tile debug rectangles.
-- Optional portal styling (`LF`, `HF`, `LV`) only renders when detailed portal data is available at zoom 14+; toggles
-  may be enabled in the dock but still hidden in low-zoom placeholder mode. `OR` and `AR` follow IITC-CE overlay
-  behavior and can render at any zoom when their data is available.
+- Optional portal styling and level labels only render when detailed portal data is available at zoom 14+; controls may
+  be enabled in the dock but still hidden in low-zoom placeholder mode. `OR` and `AR` follow IITC-CE overlay behavior
+  and can render at any zoom when their data is available.
 - The System sheet has a data-source switch for live Intel data, bundled Amsterdam z10/z14 fixtures, and a Damrak z15
   fixture extracted from an IITC HAR. When those fixture files are present, fixture mode renders deterministic saved
   `getEntities` responses and jumps to the matching view. When the optional captured JSON files are missing from the

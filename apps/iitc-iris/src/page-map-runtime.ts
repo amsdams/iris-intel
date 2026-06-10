@@ -1,5 +1,5 @@
 import L, {type Layer as LeafletLayer, type LeafletMouseEvent, type Map as LeafletMap, type TileLayer} from 'leaflet';
-import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionDetails, type IitcIrisMissionSource, type IitcIrisMissionSummary, type IitcIrisMissionWaypoint, type IitcIrisMissionsState, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderMutationLayerDiagnostics, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisSubscriptionState, type IitcIrisTriStateLayer} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionDetails, type IitcIrisMissionSource, type IitcIrisMissionSummary, type IitcIrisMissionWaypoint, type IitcIrisMissionsState, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisPortalHighlighterId, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderMutationLayerDiagnostics, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisSubscriptionState} from './messages';
 import {IITC_LEVEL_COLORS, IITC_TEAM_COLORS} from './iitc-colors';
 import {createIitcIrisMapContextMessage, installIitcIrisContextGestures} from './map-context-runtime';
 import {convertIitcGeodesicLatLngs, createIitcGeodesicPolygon, createIitcGeodesicPolyline} from './leaflet-geodesic';
@@ -177,6 +177,48 @@ const DEFAULT_LAYER_SETTINGS: IitcIrisLayerSettings = {
   historyScoutControlled: 'off',
   keyCount: 'off',
 };
+const DEFAULT_HIGHLIGHTER_SETTINGS: IitcIrisHighlighterSettings = {
+  active: 'none',
+};
+interface PortalHighlighterStyleContext {
+  portal: IitcIrisRenderPortal;
+  history?: NonNullable<IitcIrisRenderPortal['history']>;
+}
+interface PortalHighlighterDefinition {
+  id: IitcIrisPortalHighlighterId;
+  getStyle?: (context: PortalHighlighterStyleContext) => Partial<L.CircleMarkerOptions>;
+}
+const IITC_HISTORY_MARKED_STYLE: Partial<L.CircleMarkerOptions> = {fillColor: 'red', fillOpacity: 1};
+const IITC_HISTORY_SEMI_MARKED_STYLE: Partial<L.CircleMarkerOptions> = {fillColor: 'yellow', fillOpacity: 1};
+const PORTAL_HIGHLIGHTERS: PortalHighlighterDefinition[] = [
+  {id: 'none'},
+  {id: 'level-color'},
+  {id: 'needs-recharge'},
+  {
+    id: 'history-visited',
+    getStyle: ({history}): Partial<L.CircleMarkerOptions> => history?.visited ? IITC_HISTORY_SEMI_MARKED_STYLE : {},
+  },
+  {
+    id: 'history-not-visited',
+    getStyle: ({history}): Partial<L.CircleMarkerOptions> => history && !history.visited ? IITC_HISTORY_MARKED_STYLE : {},
+  },
+  {
+    id: 'history-captured',
+    getStyle: ({history}): Partial<L.CircleMarkerOptions> => history?.captured ? IITC_HISTORY_SEMI_MARKED_STYLE : {},
+  },
+  {
+    id: 'history-not-captured',
+    getStyle: ({history}): Partial<L.CircleMarkerOptions> => history && !history.captured ? IITC_HISTORY_SEMI_MARKED_STYLE : {},
+  },
+  {
+    id: 'history-scout-controlled',
+    getStyle: ({history}): Partial<L.CircleMarkerOptions> => history?.scoutControlled ? IITC_HISTORY_SEMI_MARKED_STYLE : {},
+  },
+  {
+    id: 'history-not-scout-controlled',
+    getStyle: ({history}): Partial<L.CircleMarkerOptions> => history && !history.scoutControlled ? IITC_HISTORY_MARKED_STYLE : {},
+  },
+];
 let latestFetchGeneration = 0;
 let latestRequestKey = '';
 let latestEntities: IitcIrisRenderEntities | undefined;
@@ -200,6 +242,7 @@ let latestSearchState: IitcIrisSearchState = {status: 'idle', term: '', confirme
 const portalHistoryByGuid = new Map<string, NonNullable<IitcIrisRenderPortal['history']>>();
 let latestArtifactEntities: IitcRawGameEntity[] = [];
 let layerSettings: IitcIrisLayerSettings = DEFAULT_LAYER_SETTINGS;
+let highlighterSettings: IitcIrisHighlighterSettings = DEFAULT_HIGHLIGHTER_SETTINGS;
 let baseLayerId: IitcIrisBaseLayerId = DEFAULT_BASE_LAYER_ID;
 let baseLayer: TileLayer | undefined;
 let dataSource: IitcIrisDataSourceSettings = {mode: 'live'};
@@ -621,27 +664,27 @@ function getPortalWeight(level: number | undefined, isPlaceholder: boolean): num
   return LEVEL_TO_WEIGHT[getPortalLevel(level, isPlaceholder)] * Math.sqrt(scale);
 }
 
-function getPortalFillOpacity(_health: number | undefined, _level: number | undefined, _team: keyof typeof TEAM_COLORS, _isPlaceholder: boolean): number {
-  if (getPortalHealthFillColor(_health, _team)) return getPortalHealthFillOpacity(_health ?? 100);
-  if (getPortalLevelFillColor(_level, _team, _isPlaceholder)) return 0.6;
+function getPortalFillOpacity(renderPolicy: IitcIrisRenderPolicy, _health: number | undefined, _level: number | undefined, _team: keyof typeof TEAM_COLORS, _isPlaceholder: boolean): number {
+  if (getPortalHealthFillColor(renderPolicy, _health, _team)) return getPortalHealthFillOpacity(_health ?? 100);
+  if (getPortalLevelFillColor(renderPolicy, _level, _team, _isPlaceholder)) return 0.6;
   return 0.5;
 }
 
-function getPortalFillColor(team: keyof typeof TEAM_COLORS, level: number | undefined, isPlaceholder: boolean, health: number | undefined): string {
-  const healthColor = getPortalHealthFillColor(health, team);
+function getPortalFillColor(renderPolicy: IitcIrisRenderPolicy, team: keyof typeof TEAM_COLORS, level: number | undefined, isPlaceholder: boolean, health: number | undefined): string {
+  const healthColor = getPortalHealthFillColor(renderPolicy, health, team);
   if (healthColor) return healthColor;
-  const levelColor = getPortalLevelFillColor(level, team, isPlaceholder);
+  const levelColor = getPortalLevelFillColor(renderPolicy, level, team, isPlaceholder);
   if (levelColor) return levelColor;
   return getTeamColor(team);
 }
 
-function getPortalLevelFillColor(level: number | undefined, team: keyof typeof TEAM_COLORS, isPlaceholder: boolean): string | null {
-  if (!layerSettings.levelFill || isPlaceholder || level === undefined) return null;
+function getPortalLevelFillColor(renderPolicy: IitcIrisRenderPolicy, level: number | undefined, team: keyof typeof TEAM_COLORS, isPlaceholder: boolean): string | null {
+  if (!renderPolicy.levelFill || isPlaceholder || level === undefined) return null;
   return LEVEL_COLORS[getPortalLevel(level, false)] ?? null;
 }
 
-function getPortalHealthFillColor(health: number | undefined, team: keyof typeof TEAM_COLORS): string | null {
-  if (!layerSettings.healthFill || team === 'N' || health === undefined || health >= 100) return null;
+function getPortalHealthFillColor(renderPolicy: IitcIrisRenderPolicy, health: number | undefined, team: keyof typeof TEAM_COLORS): string | null {
+  if (!renderPolicy.healthFill || team === 'N' || health === undefined || health >= 100) return null;
   if (health > 85) return HEALTH_COLORS.cond85;
   if (health > 70) return HEALTH_COLORS.cond70;
   if (health > 60) return HEALTH_COLORS.cond60;
@@ -661,35 +704,14 @@ function getPortalHealthFillOpacity(health: number): number {
   return 1;
 }
 
-function triStateMatches(mode: IitcIrisTriStateLayer, value: boolean | undefined): boolean {
-  if (mode === 'off') return false;
-  if (value === undefined) return mode === 'invert';
-  return mode === 'invert' ? !value : value;
-}
-
 function getPortalKeyCount(portalGuid: string): number | undefined {
   if (!latestInventorySummary) return undefined;
   return getIitcInventoryPortalKeyCount(latestInventorySummary, portalGuid)?.count ?? 0;
 }
 
-function getPortalDataOverlayStyle(portal: IitcIrisRenderPortal): Partial<L.CircleMarkerOptions> {
+function getPortalDataOverlayStyle(portal: IitcIrisRenderPortal, renderPolicy: IitcIrisRenderPolicy): Partial<L.CircleMarkerOptions> {
   const history = portal.history ?? portalHistoryByGuid.get(portal.guid);
-  const keyCount = getPortalKeyCount(portal.guid);
-
-  if (triStateMatches(layerSettings.historyScoutControlled, history?.scoutControlled)) {
-    return {color: '#4ee7ff', fillColor: '#4ee7ff', fillOpacity: 0.75, opacity: 1, weight: Math.max(3, getPortalWeight(portal.level, portal.isPlaceholder) + 1)};
-  }
-  if (triStateMatches(layerSettings.historyCaptured, history?.captured)) {
-    return {color: '#ffe66d', fillColor: '#ffe66d', fillOpacity: 0.72, opacity: 1, weight: Math.max(3, getPortalWeight(portal.level, portal.isPlaceholder) + 1)};
-  }
-  if (triStateMatches(layerSettings.historyVisited, history?.visited)) {
-    return {color: '#fb6fff', fillColor: '#fb6fff', fillOpacity: 0.72, opacity: 1, weight: Math.max(3, getPortalWeight(portal.level, portal.isPlaceholder) + 1)};
-  }
-  if (triStateMatches(layerSettings.keyCount, keyCount !== undefined && keyCount > 0)) {
-    return {color: '#ffffff', fillColor: '#ffffff', fillOpacity: 0.68, opacity: 1, weight: Math.max(3, getPortalWeight(portal.level, portal.isPlaceholder) + 1)};
-  }
-
-  return {};
+  return PORTAL_HIGHLIGHTERS.find((highlighter) => highlighter.id === renderPolicy.activeHighlighter)?.getStyle?.({portal, history}) ?? {};
 }
 
 function createKeyCountMarker(latLng: [number, number], count: number, portalRadius: number): LeafletLayer {
@@ -2137,11 +2159,13 @@ function getRenderPolicy(): IitcIrisRenderPolicy {
   const mapZoom = window.__iitcIrisMap?.getZoom() ?? DEFAULT_ZOOM;
   const detailedPortals = latestPlan?.tileParams.hasPortals ?? false;
   const optionalOverlaysVisible = detailedPortals && mapZoom >= OPTIONAL_OVERLAY_MIN_ZOOM;
+  const activeHighlighter = optionalOverlaysVisible ? highlighterSettings.active : 'none';
   return {
     optionalOverlayMinZoom: OPTIONAL_OVERLAY_MIN_ZOOM,
     detailedPortals,
-    levelFill: layerSettings.levelFill && optionalOverlaysVisible,
-    healthFill: layerSettings.healthFill && optionalOverlaysVisible,
+    activeHighlighter,
+    levelFill: activeHighlighter === 'level-color',
+    healthFill: activeHighlighter === 'needs-recharge',
     ornaments: layerSettings.ornaments,
     artifacts: layerSettings.artifacts,
     labels: layerSettings.labels && optionalOverlaysVisible,
@@ -2203,16 +2227,16 @@ function createLinkLayer(link: IitcIrisRenderLink): LeafletLayer {
 function createPortalLayer(portal: IitcIrisRenderPortal, renderPolicy: IitcIrisRenderPolicy): LeafletLayer {
   const color = getTeamColor(portal.team);
   const latLng = toLatLng(portal.latE6, portal.lngE6);
-  const dataOverlayStyle = getPortalDataOverlayStyle(portal);
+  const dataOverlayStyle = getPortalDataOverlayStyle(portal, renderPolicy);
 
   const marker = L.circleMarker(latLng, {
     radius: getPortalRadius(portal.level, portal.isPlaceholder),
     color,
     fillColor: renderPolicy.healthFill || renderPolicy.levelFill
-      ? getPortalFillColor(portal.team, portal.level, portal.isPlaceholder, portal.health)
+      ? getPortalFillColor(renderPolicy, portal.team, portal.level, portal.isPlaceholder, portal.health)
       : getTeamColor(portal.team),
     fillOpacity: renderPolicy.healthFill || renderPolicy.levelFill
-      ? getPortalFillOpacity(portal.health, portal.level, portal.team, portal.isPlaceholder)
+      ? getPortalFillOpacity(renderPolicy, portal.health, portal.level, portal.team, portal.isPlaceholder)
       : 0.5,
     opacity: portal.isPlaceholder ? 0.6 : 1,
     pane: getLayerPane('portals'),
@@ -2338,6 +2362,7 @@ function getEntityRenderContextKey(renderPolicy: IitcIrisRenderPolicy): string {
   return JSON.stringify({
     zoom: window.__iitcIrisMap?.getZoom() ?? DEFAULT_ZOOM,
     detailedPortals: renderPolicy.detailedPortals,
+    activeHighlighter: renderPolicy.activeHighlighter,
     levelFill: renderPolicy.levelFill,
     healthFill: renderPolicy.healthFill,
     fields: layerSettings.fields,
@@ -2355,9 +2380,6 @@ function getEntityRenderContextKey(renderPolicy: IitcIrisRenderPolicy): string {
     resistance: layerSettings.resistance,
     enlightened: layerSettings.enlightened,
     machina: layerSettings.machina,
-    historyCaptured: layerSettings.historyCaptured,
-    historyVisited: layerSettings.historyVisited,
-    historyScoutControlled: layerSettings.historyScoutControlled,
     keyCount: layerSettings.keyCount,
   });
 }
@@ -2370,11 +2392,7 @@ function canUseIncrementalCoreEntityRender(
   return previousEntities !== undefined &&
     previousEntities !== nextEntities &&
     latestEntityRenderContextKey === renderContextKey &&
-    pendingPortalSelection === null &&
-    layerSettings.keyCount === 'off' &&
-    layerSettings.historyCaptured === 'off' &&
-    layerSettings.historyVisited === 'off' &&
-    layerSettings.historyScoutControlled === 'off';
+    pendingPortalSelection === null;
 }
 
 function renderCoreEntityLayersIncremental(
@@ -3439,6 +3457,11 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
     schedulePlayerTrackerRefresh();
     repostLatestEntityStatus();
   }
+  if (event.data?.type === IITC_IRIS_MESSAGES.layerSettings && event.data.highlighterSettings) {
+    highlighterSettings = event.data.highlighterSettings;
+    if (latestEntities) renderEntities(latestEntities);
+    repostLatestEntityStatus();
+  }
   if (event.data?.type === IITC_IRIS_MESSAGES.layerSettings && event.data.baseLayerId) {
     setBaseLayer(event.data.baseLayerId);
   }
@@ -3603,6 +3626,8 @@ function postEntityStatus(
     requestDiagnostics: getIitcRequestDiagnostics(),
     playerTracker: playerTrackerDiagnostics,
     portalAnalysis,
+    highlighterSettings,
+    highlighterIds: PORTAL_HIGHLIGHTERS.map((highlighter) => highlighter.id),
     baseLayerId,
     dataSource,
     renderPolicy: getRenderPolicy(),
