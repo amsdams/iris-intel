@@ -149,8 +149,10 @@ Feature details have been split out of this entry point so the current truth is 
   plugin-facing highlighter API, full layer registry, or Leaflet.draw event parity yet. Native highlighter selection is
   stable for existing IRIS highlighter-like behavior and IITC-CE's single active highlighter model. The layer registry
   now has shared metadata/defaults, diagnostics, and focused routing for non-core overlays. Core layer/filter toggles
-  have scoped visibility-sync and timing diagnostics, but page-runtime render/filter ownership still needs the next
-  IITC-style group/filter-layer pass.
+  have scoped visibility-sync, timing diagnostics, and persistent Leaflet groups for whole `F`/`LN`/`P` overlay
+  hide/show. Page-runtime core visibility now uses named IITC-style filter descriptors and preserved layer instances,
+  but manual testing still reports visual toggle latency behind IITC-CE. Next pass should instrument click-to-pixels
+  latency before any further render/filter optimization.
 - Draw Tools v1 is links/markers only. Polygons, circles, visible snap cleanup UX, `DrawTools Opt`, stock Intel `pls`,
   and plugin-facing `window.plugin.drawTools` / `pluginDrawTools` remain deferred.
 - The bottom-sheet/two-layer menu model is a deliberate product-shell divergence from IITC's sidebar/dropdown/statusbar

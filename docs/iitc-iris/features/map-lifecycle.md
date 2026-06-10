@@ -96,14 +96,31 @@ Adherence summary after 2026-05-31 audit:
   labels, ornaments, artifacts, and selected-object overlay work. Link toggles refresh link/draw overlays when needed.
   Portal/faction/level/detail changes refresh the relevant portal-side overlays. Draw Tools, tile debug, and player
   tracker toggles route through dedicated overlay paths.
+- Core group-toggle note on 2026-06-10: fields, links, and portals now live inside persistent Leaflet layer groups.
+  Pure `F`, `LN`, and `P` hide/show toggles can attach or detach the group instead of removing/re-adding every object,
+  as long as the current entity layers already exist. Hidden groups are cleared on later data-changing renders so
+  re-enabling after a map refresh rebuilds current geometry.
+- Filter-layer note on 2026-06-10: faction and level filter-only changes now preserve existing Leaflet layer instances,
+  matching IITC-CE's `IITC.filters.FilterLayer` pattern more closely. Filtered entities are removed from their core
+  group and later re-added rather than destroyed/recreated. Data-changing renders clear cached hidden layers before
+  diffing to avoid stale hidden geometry.
+- Filter runtime note on 2026-06-10: core visibility now flows through named IITC-style filter descriptors, where a
+  disabled layer activates its filter and visible entities are those not matching any active filter. This replaces the
+  earlier scattered `isTeamLayerVisible` / `isPortalLevelLayerVisible` checks with a runtime shape closer to IITC-CE's
+  `IITC.filters.filterPortal/filterLink/filterField`.
 - Runtime diagnostics note on 2026-06-10: entity status and copied scenario summaries include render mutation
   diagnostics (`full` or `incremental`, plus per-layer added/removed/replaced/unchanged counts). Copied diagnostics also
   include `timing.layerUpdate` for the latest layer update and rolling `timing.interactionUpdates` entries for recent
-  layer/highlighter changes. Use these to confirm manual comparisons are exercising the intended incremental,
-  style-refresh, or dedicated-overlay path before expanding mutation further.
-- Current lifecycle WIP: core layer/filter toggles are much more scoped, but dense views still spend visible time in raw
-  Leaflet add/remove work for thousands of fields, links, and portals. The next architectural pass is an IITC-style
-  group/filter-layer model so common layer-only toggles rely less on generic per-entity synchronization.
+  layer/highlighter changes. Whole-overlay group toggles report `coreGroupToggleMs`. Use these to confirm manual
+  comparisons are exercising the intended incremental, style-refresh, group-toggle, or dedicated-overlay path before
+  expanding mutation further.
+- Current lifecycle WIP: core layer/filter toggles are much more scoped and filter-only changes now preserve layers.
+  Dense Amsterdam z15 JS timings improved, but manual comparison still reports IRIS visual latency behind IITC-CE. The
+  next pass should add click-to-pixels diagnostics before changing the render path again: record sent time, runtime
+  start, runtime completion, first `requestAnimationFrame`, and second `requestAnimationFrame` for each layer/highlighter
+  interaction. Use that to decide whether the remaining gap is content/message dispatch, runtime filter work, Leaflet
+  renderer invalidation, or browser paint/compositing. Only then choose between direct dispatch, renderer/pane changes,
+  or team/level membership buckets.
 - Live fast-pan copies on 2026-06-10 at Amsterdam z15 and z14 kept final states complete. The z15 run recovered 3-8
   timeout-retried tiles depending on the pan segment, while z14 placeholder mode recovered 5 timeout-retried tiles after
   2 retry requests. Intermediate snapshots still showed active requests and queued retry tiles, but final snapshots had

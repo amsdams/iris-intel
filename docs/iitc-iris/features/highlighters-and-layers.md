@@ -138,23 +138,47 @@ Current first pass:
 - Removal bookkeeping is batched so core layer toggles compact rendered arrays once per update instead of splicing per
   entity.
 - Layer-setting-only updates use a visibility-only fast path when the entity data object is unchanged.
+- Whole `F`, `LN`, and `P` overlay toggles use persistent Leaflet layer groups when the current entity layers already
+  exist. This avoids removing/re-adding every field, link, or portal for the common hide/show case. If data changes
+  while one of those groups is hidden, the hidden group is cleared so re-enabling rebuilds current geometry instead of
+  showing stale objects.
+- Faction/level filter changes now follow IITC-CE's `IITC.filters.FilterLayer` behavior more closely: layer instances
+  are preserved for filter-only changes and moved out of or back into their core group instead of being destroyed and
+  recreated. Data-changing renders clear cached hidden layers first, so later re-adds do not show stale geometry.
+- Core visibility is now described by named IITC-style filter descriptors (`Fields`, `Links`, `Portals`,
+  `Unclaimed/Placeholder Portals`, `Level 1..8 Portals`, `Resistance`, `Enlightened`, `Machina`). A disabled layer means
+  its filter is active, matching IITC-CE's `FilterLayer` semantics instead of scattering visibility checks through
+  bespoke IRIS conditionals.
 - Copied diagnostics keep a rolling `timing.interactionUpdates` list for the latest layer and highlighter changes.
+  Whole-overlay group toggles report `coreGroupToggleMs`.
 
 Recent dense Amsterdam z15 diagnostics, with roughly 3.9k portals, 2.8k links, and 1.7k fields loaded, show the current
 shape:
 
 | Toggle | Before scoped secondary work | Current observed range | Main remaining cost |
 |--------|------------------------------|------------------------|---------------------|
-| Fields | 36-41ms | 17-31ms | Leaflet add/remove of field polylines/polygons. |
-| Links | 31-50ms | 20-43ms | Leaflet add/remove of link polylines. |
-| Resistance filter | 42-76ms | 33-66ms | Cross-kind visibility changes for portals, links, and fields. |
+| Fields | 36-41ms | 17-31ms before group-toggle pass; needs fresh live validation after group-toggle pass. | Whole-overlay hide/show should be group attach/detach when layers are already built. |
+| Links | 31-50ms | 20-43ms before group-toggle pass; needs fresh live validation after group-toggle pass. | Whole-overlay hide/show should be group attach/detach when layers are already built. |
+| Resistance filter | 42-76ms | 33-66ms before preserved-filter pass; needs fresh live validation after preserved-filter pass. | Cross-kind visibility changes now preserve existing Leaflet layer instances on filter-only toggles. |
 | Highlighter change | 18-23ms | 18-23ms | Portal marker style refresh only. |
 | Drawn links | 1-13ms | 1-13ms | Dedicated Draw Tools overlay path. |
+
+Manual status:
+
+- Runtime JS timings improved and the model now matches IITC-CE more closely, but manual side-by-side testing still
+  reports IRIS layer/filter toggles as visually slower than IITC-CE.
+- Current diagnostics time the content-to-runtime dispatch and runtime update path. They do not prove when pixels have
+  visibly changed after Leaflet invalidation and browser paint.
+- Do not continue blind filter/render rewrites from here. The next pass should add visual-latency diagnostics that
+  capture click/message sent time, runtime start, runtime completion, first `requestAnimationFrame`, and second
+  `requestAnimationFrame` for each interaction update. Use those numbers to decide whether the remaining lag is in the
+  React/content message bridge, runtime filter work, Leaflet renderer invalidation, or browser paint/compositing.
 
 Remaining registry work:
 
 - Move page-runtime visibility filters and overlay render owners behind registry metadata where practical.
-- Model core IITC-style layer/filter ownership more explicitly, likely with group/filter membership buckets, so
-  common layer-only toggles stop relying on generic per-entity synchronization.
+- Continue validating faction and level filters against IITC-CE. If preserving layer instances is still not enough on
+  low-end browsers, split core groups further into team/level membership buckets.
+- Add click-to-pixels visual-latency diagnostics before choosing the next optimization target.
 - Keep selected portal/object highlights, mission overlays, and user-location objects classified explicitly so they do
   not drift into portal highlighter behavior.

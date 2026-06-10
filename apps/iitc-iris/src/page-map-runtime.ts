@@ -582,6 +582,7 @@ declare global {
       fields: LeafletLayer[];
       links: LeafletLayer[];
       portals: LeafletLayer[];
+      coreLayerGroups: Record<IitcIrisCoreLayerKey, L.LayerGroup>;
       selectedPortal: LeafletLayer[];
       selectedMapObject: LeafletLayer[];
       ornaments: LeafletLayer[];
@@ -728,12 +729,24 @@ function isPortalSummary(value: unknown): value is unknown[] {
 
 function ensureLayers(): NonNullable<Window['__iitcIrisLayers']> {
   if (window.__iitcIrisLayers) return window.__iitcIrisLayers;
+  const map = window.__iitcIrisMap;
+  const coreLayerGroups: Record<IitcIrisCoreLayerKey, L.LayerGroup> = {
+    fields: L.layerGroup(),
+    links: L.layerGroup(),
+    portals: L.layerGroup(),
+  };
+  if (map) {
+    if (layerSettings.fields) coreLayerGroups.fields.addTo(map);
+    if (layerSettings.links) coreLayerGroups.links.addTo(map);
+    if (layerSettings.portals) coreLayerGroups.portals.addTo(map);
+  }
 
   window.__iitcIrisLayers = {
     tiles: [],
     fields: [],
     links: [],
     portals: [],
+    coreLayerGroups,
     selectedPortal: [],
     selectedMapObject: [],
     ornaments: [],
@@ -760,10 +773,20 @@ function clearRenderedLayers(layers: LeafletLayer[]): void {
   }
 }
 
+function clearRenderedLayersFromGroup(layers: LeafletLayer[], group: L.LayerGroup): void {
+  group.clearLayers();
+  layers.length = 0;
+}
+
 function addRenderedLayer(layers: LeafletLayer[], layer: LeafletLayer): void {
   const map = window.__iitcIrisMap;
   if (!map) return;
   layer.addTo(map);
+  layers.push(layer);
+}
+
+function addRenderedLayerToGroup(layers: LeafletLayer[], group: L.LayerGroup, layer: LeafletLayer): void {
+  group.addLayer(layer);
   layers.push(layer);
 }
 
@@ -777,14 +800,81 @@ function clearEntityLayerIndexes(layers: NonNullable<Window['__iitcIrisLayers']>
   clearEntityLayerIndex(layers.entityLayerIndex.portals);
 }
 
+function clearCoreEntityLayerGroup(
+  layers: NonNullable<Window['__iitcIrisLayers']>,
+  key: IitcIrisCoreLayerKey,
+): void {
+  clearRenderedLayersFromGroup(layers[key], layers.coreLayerGroups[key]);
+  clearEntityLayerIndex(layers.entityLayerIndex[key]);
+}
+
+function clearDisabledCoreEntityLayerGroups(layers: NonNullable<Window['__iitcIrisLayers']>): void {
+  if (!layerSettings.fields) clearCoreEntityLayerGroup(layers, 'fields');
+  if (!layerSettings.links) clearCoreEntityLayerGroup(layers, 'links');
+  if (!layerSettings.portals) clearCoreEntityLayerGroup(layers, 'portals');
+}
+
+function clearNonVisibleCoreEntityLayerIndexes(
+  layerList: LeafletLayer[],
+  index: IitcIrisEntityLayerIndex,
+  entities: {guid: string}[],
+  isVisible: (entity: {guid: string}) => boolean,
+  group: L.LayerGroup,
+): void {
+  const entityByGuid = mapEntitiesByGuid(entities);
+  const removedLayers = new Set<LeafletLayer>();
+  for (const [guid, indexedLayers] of index) {
+    const entity = entityByGuid.get(guid);
+    if (entity && isVisible(entity)) continue;
+    for (const layer of indexedLayers) {
+      group.removeLayer(layer);
+      removedLayers.add(layer);
+    }
+    index.delete(guid);
+  }
+  compactRenderedLayers(layerList, removedLayers);
+}
+
+function clearNonVisibleCoreEntityLayers(
+  layers: NonNullable<Window['__iitcIrisLayers']>,
+  entities: IitcIrisRenderEntities,
+): void {
+  clearNonVisibleCoreEntityLayerIndexes(
+    layers.fields,
+    layers.entityLayerIndex.fields,
+    entities.fields,
+    (entity) => isFieldVisible(entity as IitcIrisRenderField) && (entity as IitcIrisRenderField).points.length === 3,
+    layers.coreLayerGroups.fields,
+  );
+  clearNonVisibleCoreEntityLayerIndexes(
+    layers.links,
+    layers.entityLayerIndex.links,
+    entities.links,
+    (entity) => isLinkVisible(entity as IitcIrisRenderLink),
+    layers.coreLayerGroups.links,
+  );
+  clearNonVisibleCoreEntityLayerIndexes(
+    layers.portals,
+    layers.entityLayerIndex.portals,
+    entities.portals,
+    (entity) => isPortalVisible(entity as IitcIrisRenderPortal),
+    layers.coreLayerGroups.portals,
+  );
+}
+
 function addEntityRenderedLayer(
   layers: LeafletLayer[],
   index: IitcIrisEntityLayerIndex,
   guid: string,
   layer: LeafletLayer,
+  group?: L.LayerGroup,
 ): void {
   const previousLayerCount = layers.length;
-  addRenderedLayer(layers, layer);
+  if (group) {
+    addRenderedLayerToGroup(layers, group, layer);
+  } else {
+    addRenderedLayer(layers, layer);
+  }
   if (layers.length === previousLayerCount) return;
   const indexedLayers = index.get(guid) ?? [];
   indexedLayers.push(layer);
@@ -796,11 +886,16 @@ function removeEntityRenderedLayers(
   index: IitcIrisEntityLayerIndex,
   guid: string,
   removedLayers?: Set<LeafletLayer>,
+  group?: L.LayerGroup,
 ): void {
   const indexedLayers = index.get(guid);
   if (!indexedLayers) return;
   for (const layer of indexedLayers) {
-    layer.remove();
+    if (group) {
+      group.removeLayer(layer);
+    } else {
+      layer.remove();
+    }
     if (removedLayers) {
       removedLayers.add(layer);
       continue;
@@ -1226,9 +1321,9 @@ function renderIitcDrawTools(): void {
 function clearAllRenderedLayers(): void {
   const layers = ensureLayers();
   clearRenderedLayers(layers.tiles);
-  clearRenderedLayers(layers.fields);
-  clearRenderedLayers(layers.links);
-  clearRenderedLayers(layers.portals);
+  clearRenderedLayersFromGroup(layers.fields, layers.coreLayerGroups.fields);
+  clearRenderedLayersFromGroup(layers.links, layers.coreLayerGroups.links);
+  clearRenderedLayersFromGroup(layers.portals, layers.coreLayerGroups.portals);
   clearRenderedLayers(layers.selectedPortal);
   clearRenderedLayers(layers.selectedMapObject);
   clearRenderedLayers(layers.ornaments);
@@ -1245,9 +1340,9 @@ function clearAllRenderedLayers(): void {
 
 function clearEntityLayers(): void {
   const layers = ensureLayers();
-  clearRenderedLayers(layers.fields);
-  clearRenderedLayers(layers.links);
-  clearRenderedLayers(layers.portals);
+  clearRenderedLayersFromGroup(layers.fields, layers.coreLayerGroups.fields);
+  clearRenderedLayersFromGroup(layers.links, layers.coreLayerGroups.links);
+  clearRenderedLayersFromGroup(layers.portals, layers.coreLayerGroups.portals);
   clearRenderedLayers(layers.selectedPortal);
   clearRenderedLayers(layers.selectedMapObject);
   clearRenderedLayers(layers.ornaments);
@@ -2179,24 +2274,114 @@ function getRenderPolicy(): IitcIrisRenderPolicy {
   };
 }
 
-function isTeamLayerVisibleWith(settings: IitcIrisLayerSettings, team: 'E' | 'R' | 'N' | 'M'): boolean {
-  if (team === 'R') return settings.resistance;
-  if (team === 'E') return settings.enlightened;
-  if (team === 'M') return settings.machina;
-  return settings.unclaimedPortals;
+type IitcIrisCoreFilterEntityKind = 'portal' | 'link' | 'field';
+type IitcIrisCoreFilterDataConstraint = Partial<{
+  team: IitcIrisRenderPortal['team'];
+  level: number | undefined;
+  isPlaceholder: boolean;
+}>;
+interface IitcIrisCoreFilterDesc {
+  portal?: boolean;
+  link?: boolean;
+  field?: boolean;
+  data?: IitcIrisCoreFilterDataConstraint;
+  pred?: (entity: IitcIrisRenderPortal | IitcIrisRenderLink | IitcIrisRenderField) => boolean;
+}
+interface IitcIrisCoreFilterLayer {
+  name: string;
+  setting: keyof IitcIrisLayerSettings;
+  filter: IitcIrisCoreFilterDesc | IitcIrisCoreFilterDesc[];
 }
 
-function isPortalLevelLayerVisibleWith(settings: IitcIrisLayerSettings, portal: IitcIrisRenderPortal): boolean {
-  if (portal.team === 'N' || portal.isPlaceholder || portal.level === undefined || portal.level < 1 || portal.level > 8) {
-    return settings.unclaimedPortals;
-  }
+function createIitcIrisLevelFilterLayer(level: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8): IitcIrisCoreFilterLayer {
+  return {
+    name: `Level ${level} Portals`,
+    setting: `level${level}Portals` as keyof IitcIrisLayerSettings,
+    filter: [
+      {portal: true, data: {level, team: 'R'}},
+      {portal: true, data: {level, team: 'E'}},
+      {portal: true, data: {level, team: 'M'}},
+    ],
+  };
+}
 
-  const levelKey = `level${portal.level}Portals` as keyof IitcIrisLayerSettings;
-  return settings[levelKey] === true;
+const IITC_IRIS_CORE_FILTER_LAYERS: IitcIrisCoreFilterLayer[] = [
+  {name: 'Fields', setting: 'fields', filter: {field: true}},
+  {name: 'Links', setting: 'links', filter: {link: true}},
+  {name: 'Portals', setting: 'portals', filter: {portal: true}},
+  {
+    name: 'Unclaimed/Placeholder Portals',
+    setting: 'unclaimedPortals',
+    filter: [
+      {portal: true, data: {team: 'N'}},
+      {portal: true, data: {level: undefined}},
+      {portal: true, data: {isPlaceholder: true}},
+    ],
+  },
+  ...([1, 2, 3, 4, 5, 6, 7, 8] as const).map(createIitcIrisLevelFilterLayer),
+  {
+    name: 'Resistance',
+    setting: 'resistance',
+    filter: {portal: true, link: true, field: true, data: {team: 'R'}},
+  },
+  {
+    name: 'Enlightened',
+    setting: 'enlightened',
+    filter: {portal: true, link: true, field: true, data: {team: 'E'}},
+  },
+  {
+    name: 'Machina',
+    setting: 'machina',
+    filter: {portal: true, link: true, field: true, data: {team: 'M'}},
+  },
+];
+
+function getCoreFilterEntityData(entity: IitcIrisRenderPortal | IitcIrisRenderLink | IitcIrisRenderField): IitcIrisCoreFilterDataConstraint {
+  if ('level' in entity || 'isPlaceholder' in entity) {
+    const portal = entity as IitcIrisRenderPortal;
+    return {
+      team: portal.team,
+      level: portal.level,
+      isPlaceholder: portal.isPlaceholder,
+    };
+  }
+  return {team: entity.team};
+}
+
+function doesCoreFilterDataMatch(
+  constraint: IitcIrisCoreFilterDataConstraint | undefined,
+  entity: IitcIrisRenderPortal | IitcIrisRenderLink | IitcIrisRenderField,
+): boolean {
+  if (!constraint) return true;
+  const data = getCoreFilterEntityData(entity);
+  return Object.entries(constraint).every(([key, value]) => data[key as keyof IitcIrisCoreFilterDataConstraint] === value);
+}
+
+function doesCoreFilterMatch(
+  kind: IitcIrisCoreFilterEntityKind,
+  entity: IitcIrisRenderPortal | IitcIrisRenderLink | IitcIrisRenderField,
+  filter: IitcIrisCoreFilterDesc,
+): boolean {
+  if (!filter[kind]) return false;
+  if (filter.pred) return filter.pred(entity);
+  return doesCoreFilterDataMatch(filter.data, entity);
+}
+
+function isCoreEntityFilteredWith(
+  settings: IitcIrisLayerSettings,
+  kind: IitcIrisCoreFilterEntityKind,
+  entity: IitcIrisRenderPortal | IitcIrisRenderLink | IitcIrisRenderField,
+): boolean {
+  for (const layer of IITC_IRIS_CORE_FILTER_LAYERS) {
+    if (settings[layer.setting] === true) continue;
+    const filters = Array.isArray(layer.filter) ? layer.filter : [layer.filter];
+    if (filters.some((filter) => doesCoreFilterMatch(kind, entity, filter))) return true;
+  }
+  return false;
 }
 
 function isPortalVisibleWith(settings: IitcIrisLayerSettings, portal: IitcIrisRenderPortal): boolean {
-  return settings.portals && isTeamLayerVisibleWith(settings, portal.team) && isPortalLevelLayerVisibleWith(settings, portal);
+  return !isCoreEntityFilteredWith(settings, 'portal', portal);
 }
 
 function isPortalVisible(portal: IitcIrisRenderPortal): boolean {
@@ -2204,7 +2389,7 @@ function isPortalVisible(portal: IitcIrisRenderPortal): boolean {
 }
 
 function isLinkVisibleWith(settings: IitcIrisLayerSettings, link: IitcIrisRenderLink): boolean {
-  return settings.links && isTeamLayerVisibleWith(settings, link.team);
+  return !isCoreEntityFilteredWith(settings, 'link', link);
 }
 
 function isLinkVisible(link: IitcIrisRenderLink): boolean {
@@ -2212,7 +2397,7 @@ function isLinkVisible(link: IitcIrisRenderLink): boolean {
 }
 
 function isFieldVisibleWith(settings: IitcIrisLayerSettings, field: IitcIrisRenderField): boolean {
-  return settings.fields && isTeamLayerVisibleWith(settings, field.team);
+  return !isCoreEntityFilteredWith(settings, 'field', field);
 }
 
 function isFieldVisible(field: IitcIrisRenderField): boolean {
@@ -2379,6 +2564,7 @@ function syncEntityLayers<T extends {guid: string}>(
   nextEntities: T[],
   areLayersEqual: (previous: T, next: T) => boolean,
   createLayer: (entity: T) => LeafletLayer,
+  group?: L.LayerGroup,
 ): IitcIrisRenderMutationLayerDiagnostics {
   const previousByGuid = mapEntitiesByGuid(previousEntities);
   const nextByGuid = mapEntitiesByGuid(nextEntities);
@@ -2391,7 +2577,7 @@ function syncEntityLayers<T extends {guid: string}>(
       diagnostics.unchanged += 1;
       continue;
     }
-    removeEntityRenderedLayers(layers, index, guid, removedLayers);
+    removeEntityRenderedLayers(layers, index, guid, removedLayers, group);
     if (nextEntity) {
       diagnostics.replaced += 1;
     } else {
@@ -2403,7 +2589,7 @@ function syncEntityLayers<T extends {guid: string}>(
   for (const [guid, nextEntity] of nextByGuid) {
     const previousEntity = previousByGuid.get(guid);
     if (previousEntity && areLayersEqual(previousEntity, nextEntity)) continue;
-    addEntityRenderedLayer(layers, index, guid, createLayer(nextEntity));
+    addEntityRenderedLayer(layers, index, guid, createLayer(nextEntity), group);
     if (!previousEntity) diagnostics.added += 1;
   }
 
@@ -2461,6 +2647,7 @@ const ALL_SECONDARY_ENTITY_RENDER_UPDATE: IitcIrisSecondaryEntityRenderUpdate = 
   selectedMapObject: true,
   drawTools: true,
 };
+type IitcIrisCoreLayerKey = 'fields' | 'links' | 'portals';
 
 function getSecondaryEntityRenderUpdate(changedLayerKeys?: (keyof IitcIrisLayerSettings)[]): IitcIrisSecondaryEntityRenderUpdate {
   if (!changedLayerKeys) return ALL_SECONDARY_ENTITY_RENDER_UPDATE;
@@ -2612,6 +2799,8 @@ function syncVisibilityChangedEntityLayers<T extends {guid: string}>(
   wasVisible: (entity: T) => boolean,
   isVisible: (entity: T) => boolean,
   createLayer: (entity: T) => LeafletLayer,
+  group?: L.LayerGroup,
+  refreshLayer?: (layer: LeafletLayer, entity: T) => void,
 ): IitcIrisRenderMutationLayerDiagnostics {
   const diagnostics = createEmptyRenderMutationLayerDiagnostics();
   const removedLayers = new Set<LeafletLayer>();
@@ -2622,15 +2811,31 @@ function syncVisibilityChangedEntityLayers<T extends {guid: string}>(
     if (previousVisible && nextVisible) {
       diagnostics.unchanged += 1;
     } else if (previousVisible) {
-      removeEntityRenderedLayers(layers, index, entity.guid, removedLayers);
+      if (group) {
+        const indexedLayers = index.get(entity.guid);
+        if (indexedLayers) {
+          for (const layer of indexedLayers) group.removeLayer(layer);
+        }
+      } else {
+        removeEntityRenderedLayers(layers, index, entity.guid, removedLayers);
+      }
       diagnostics.removed += 1;
     } else if (nextVisible) {
-      addEntityRenderedLayer(layers, index, entity.guid, createLayer(entity));
+      const visibleGroup = group;
+      const indexedLayers = visibleGroup ? index.get(entity.guid) : undefined;
+      if (visibleGroup && indexedLayers && indexedLayers.length > 0) {
+        for (const layer of indexedLayers) {
+          refreshLayer?.(layer, entity);
+          if (!visibleGroup.hasLayer(layer)) visibleGroup.addLayer(layer);
+        }
+      } else {
+        addEntityRenderedLayer(layers, index, entity.guid, createLayer(entity), visibleGroup);
+      }
       diagnostics.added += 1;
     }
   }
 
-  compactRenderedLayers(layers, removedLayers);
+  if (!group) compactRenderedLayers(layers, removedLayers);
   return diagnostics;
 }
 
@@ -2651,6 +2856,7 @@ function renderCoreEntityLayersVisibilityChange(
       (field) => isFieldVisibleWith(previousLayerSettings, field),
       isFieldVisible,
       createFieldLayer,
+      layers.coreLayerGroups.fields,
     )
     : createEmptyRenderMutationLayerDiagnostics();
   if (timing) syncVisibilityTiming(timing, 'syncFieldsMs', stepStartedAt);
@@ -2664,6 +2870,7 @@ function renderCoreEntityLayersVisibilityChange(
       (link) => isLinkVisibleWith(previousLayerSettings, link),
       isLinkVisible,
       createLinkLayer,
+      layers.coreLayerGroups.links,
     )
     : createEmptyRenderMutationLayerDiagnostics();
   if (timing) syncVisibilityTiming(timing, 'syncLinksMs', stepStartedAt);
@@ -2677,6 +2884,10 @@ function renderCoreEntityLayersVisibilityChange(
       (portal) => isPortalVisibleWith(previousLayerSettings, portal),
       isPortalVisible,
       (portal) => createPortalLayer(portal, renderPolicy),
+      layers.coreLayerGroups.portals,
+      (layer, portal) => {
+        if (layer instanceof L.CircleMarker) layer.setStyle(getPortalMarkerStyle(portal, renderPolicy));
+      },
     )
     : createEmptyRenderMutationLayerDiagnostics();
   if (timing) syncVisibilityTiming(timing, 'syncPortalsMs', stepStartedAt);
@@ -2695,6 +2906,65 @@ function syncVisibilityTiming(
   startedAt: number,
 ): void {
   timing[key] = roundTimingMs(performance.now() - startedAt);
+}
+
+function getWholeCoreOverlayToggleKey(changedLayerKeys?: (keyof IitcIrisLayerSettings)[]): IitcIrisCoreLayerKey | null {
+  if (!changedLayerKeys || changedLayerKeys.length !== 1) return null;
+  const [key] = changedLayerKeys;
+  if (key === 'fields' || key === 'links' || key === 'portals') return key;
+  return null;
+}
+
+function getCoreLayerSettingValue(key: IitcIrisCoreLayerKey, settings: IitcIrisLayerSettings = layerSettings): boolean {
+  return settings[key];
+}
+
+function setCoreLayerGroupVisible(group: L.LayerGroup, visible: boolean): void {
+  const map = window.__iitcIrisMap;
+  if (!map) return;
+  const isVisible = map.hasLayer(group);
+  if (visible && !isVisible) {
+    group.addTo(map);
+  } else if (!visible && isVisible) {
+    group.removeFrom(map);
+  }
+}
+
+function createCoreGroupToggleMutationDiagnostics(
+  key: IitcIrisCoreLayerKey,
+  layerCount: number,
+  visible: boolean,
+): IitcIrisRenderMutationDiagnostics {
+  return {
+    mode: 'incremental',
+    fields: key === 'fields'
+      ? {...createEmptyRenderMutationLayerDiagnostics(), [visible ? 'added' : 'removed']: layerCount}
+      : createEmptyRenderMutationLayerDiagnostics(),
+    links: key === 'links'
+      ? {...createEmptyRenderMutationLayerDiagnostics(), [visible ? 'added' : 'removed']: layerCount}
+      : createEmptyRenderMutationLayerDiagnostics(),
+    portals: key === 'portals'
+      ? {...createEmptyRenderMutationLayerDiagnostics(), [visible ? 'added' : 'removed']: layerCount}
+      : createEmptyRenderMutationLayerDiagnostics(),
+  };
+}
+
+function renderCoreEntityGroupToggle(
+  layers: NonNullable<Window['__iitcIrisLayers']>,
+  key: IitcIrisCoreLayerKey,
+  previousLayerSettings: IitcIrisLayerSettings,
+  timing?: IitcIrisLayerUpdateTimingDiagnostics,
+): IitcIrisRenderMutationDiagnostics | null {
+  const nextVisible = getCoreLayerSettingValue(key);
+  if (getCoreLayerSettingValue(key, previousLayerSettings) === nextVisible) return null;
+  const layerList = layers[key];
+  if (nextVisible && layerList.length === 0) return null;
+
+  const startedAt = performance.now();
+  if (key === 'portals' && nextVisible) refreshPortalMarkerStylesForHighlighter();
+  setCoreLayerGroupVisible(layers.coreLayerGroups[key], nextVisible);
+  if (timing) timing.coreGroupToggleMs = roundTimingMs(performance.now() - startedAt);
+  return createCoreGroupToggleMutationDiagnostics(key, layerList.length, nextVisible);
 }
 
 function renderCoreEntityLayersIncremental(
@@ -2716,6 +2986,7 @@ function renderCoreEntityLayersIncremental(
       entities.fields.filter((field) => isFieldAffectedByScope(field, scope) && isFieldVisible(field) && field.points.length === 3),
       areFieldLayersEqual,
       createFieldLayer,
+      layers.coreLayerGroups.fields,
     )
     : createEmptyRenderMutationLayerDiagnostics();
   if (timing) timing.syncFieldsMs = roundTimingMs(performance.now() - stepStartedAt);
@@ -2729,6 +3000,7 @@ function renderCoreEntityLayersIncremental(
       entities.links.filter((link) => isLinkAffectedByScope(link, scope) && isLinkVisible(link)),
       areLinkLayersEqual,
       createLinkLayer,
+      layers.coreLayerGroups.links,
     )
     : createEmptyRenderMutationLayerDiagnostics();
   if (timing) timing.syncLinksMs = roundTimingMs(performance.now() - stepStartedAt);
@@ -2742,6 +3014,7 @@ function renderCoreEntityLayersIncremental(
       visiblePortals.filter((portal) => isPortalAffectedByScope(portal, scope)),
       arePortalLayersEqual,
       (portal) => createPortalLayer(portal, renderPolicy),
+      layers.coreLayerGroups.portals,
     )
     : createEmptyRenderMutationLayerDiagnostics();
   if (timing) timing.syncPortalsMs = roundTimingMs(performance.now() - stepStartedAt);
@@ -2800,12 +3073,23 @@ function renderEntities(
     stepStartedAt = performance.now();
     clearSecondaryEntityLayers(layers, secondaryUpdate);
     if (timing) timing.clearSecondaryMs = roundTimingMs(performance.now() - stepStartedAt);
-    latestRenderMutationDiagnostics = previousEntities === entities && options.previousLayerSettings
+    if (previousEntities !== entities) {
+      clearDisabledCoreEntityLayerGroups(layers);
+      clearNonVisibleCoreEntityLayers(layers, previousEntities);
+    }
+    const previousLayerSettings = options.previousLayerSettings;
+    const groupToggleKey = previousEntities === entities && previousLayerSettings
+      ? getWholeCoreOverlayToggleKey(options.changedLayerKeys)
+      : null;
+    const groupToggleMutation = groupToggleKey && previousLayerSettings
+      ? renderCoreEntityGroupToggle(layers, groupToggleKey, previousLayerSettings, timing)
+      : null;
+    latestRenderMutationDiagnostics = groupToggleMutation ?? (previousEntities === entities && previousLayerSettings
       ? renderCoreEntityLayersVisibilityChange(
         layers,
         entities,
         renderPolicy,
-        options.previousLayerSettings,
+        previousLayerSettings,
         coreRenderScope,
         timing,
       )
@@ -2818,7 +3102,7 @@ function renderEntities(
         options.previousLayerSettings,
         timing,
         coreRenderScope,
-      );
+      ));
   } else {
     stepStartedAt = performance.now();
     clearEntityLayers();
@@ -2829,7 +3113,7 @@ function renderEntities(
     stepStartedAt = performance.now();
     for (const field of entities.fields) {
       if (!isFieldVisible(field) || field.points.length !== 3) continue;
-      addEntityRenderedLayer(layers.fields, layers.entityLayerIndex.fields, field.guid, createFieldLayer(field));
+      addEntityRenderedLayer(layers.fields, layers.entityLayerIndex.fields, field.guid, createFieldLayer(field), layers.coreLayerGroups.fields);
       renderedFieldCount += 1;
     }
     if (timing) timing.fullFieldsMs = roundTimingMs(performance.now() - stepStartedAt);
@@ -2837,14 +3121,14 @@ function renderEntities(
     stepStartedAt = performance.now();
     for (const link of entities.links) {
       if (!isLinkVisible(link)) continue;
-      addEntityRenderedLayer(layers.links, layers.entityLayerIndex.links, link.guid, createLinkLayer(link));
+      addEntityRenderedLayer(layers.links, layers.entityLayerIndex.links, link.guid, createLinkLayer(link), layers.coreLayerGroups.links);
       renderedLinkCount += 1;
     }
     if (timing) timing.fullLinksMs = roundTimingMs(performance.now() - stepStartedAt);
 
     stepStartedAt = performance.now();
     for (const portal of visiblePortals) {
-      addEntityRenderedLayer(layers.portals, layers.entityLayerIndex.portals, portal.guid, createPortalLayer(portal, renderPolicy));
+      addEntityRenderedLayer(layers.portals, layers.entityLayerIndex.portals, portal.guid, createPortalLayer(portal, renderPolicy), layers.coreLayerGroups.portals);
     }
     if (timing) timing.fullPortalsMs = roundTimingMs(performance.now() - stepStartedAt);
     latestRenderMutationDiagnostics = {

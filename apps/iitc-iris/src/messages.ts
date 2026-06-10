@@ -534,6 +534,7 @@ export interface IitcIrisLayerUpdateTimingDiagnostics {
   syncFieldsMs?: number;
   syncLinksMs?: number;
   syncPortalsMs?: number;
+  coreGroupToggleMs?: number;
   fullClearMs?: number;
   fullFieldsMs?: number;
   fullLinksMs?: number;

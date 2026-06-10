@@ -79,8 +79,9 @@ Current status:
   fill opacity, full-opacity links, orange neutral portals, and text-only portal level labels with simple overlap
   thinning.
 - Existing highlighter-like styling is now applied through the single active portal highlighter path. Core layer/filter
-  toggles use scoped visibility sync and secondary-overlay masks when entity data has not changed, but dense views still
-  need a fuller IITC-style group/filter-layer model to reduce raw Leaflet add/remove work.
+  toggles use scoped visibility sync and secondary-overlay masks when entity data has not changed. Whole `F`, `LN`, and
+  `P` hide/show toggles can use persistent Leaflet groups; faction/level filter-only changes preserve existing Leaflet
+  layer instances like IITC-CE's `FilterLayer` path instead of destroying and recreating them.
 - Artifact rendering is wired with IITC's marker image convention (`{type}_shard.png` and `{type}_shard_target.png`) and
   can use either artifact briefs from `getEntities` or the live `/r/getArtifactPortals` endpoint. The `AR` toggle
   controls marker visibility only, not whether the endpoint is fetched, but non-empty live Intel data still needs
