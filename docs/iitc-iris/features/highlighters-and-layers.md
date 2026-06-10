@@ -42,8 +42,8 @@ Use this rule when deciding where a feature belongs:
 | mission route/waypoint overlay | Overlay layer | Mission geometry and labels are separate map objects. |
 | selected portal/object highlight | Selection overlay | Separate from the highlighter registry; it is interaction state. |
 | user-location marker/circle | Overlay layer | Separate map objects. |
-| `levelFill` legacy setting | Existing highlighter behavior | Matches IITC-CE `Level Color` behavior more than a layer; the UI exposes it through the highlighter selector. |
-| `healthFill` legacy setting | Existing highlighter behavior | Matches IITC-CE `Needs Recharge (Health)` behavior more than a layer; the UI exposes it through the highlighter selector. |
+| `levelFill` legacy setting | Migration-only highlighter behavior | Old persisted layer settings still migrate to `Level Color`, but this flag is no longer part of current layer settings. |
+| `healthFill` legacy setting | Migration-only highlighter behavior | Old persisted layer settings still migrate to `Needs Recharge (Health)`, but this flag is no longer part of current layer settings. |
 | `historyCaptured`, `historyVisited`, `historyScoutControlled` legacy styling | Migration-only highlighter behavior | Old persisted layer settings still migrate to the highlighter selector, but these flags are no longer part of current layer settings. |
 | key-count text labels | Overlay layer | Adds label markers. IITC-CE `keys-on-map` is a layer backed by the manual `keys` plugin; IRIS uses live inventory-derived counts but keeps the map display as a layer. |
 
@@ -54,8 +54,8 @@ visual modes.
 
 | Candidate | Current IRIS state | IITC-CE reference | Alignment |
 |-----------|--------------------|-------------------|-----------|
-| Level color | Active highlighter `level-color` colors portal body by level at detailed zoom. | `plugins/highlight-level-color.js` registers `Level Color`. | Aligned in concept and exposed through the single highlighter selector. Legacy `levelFill` is migration/backward-compatibility state. |
-| Needs recharge | Active highlighter `needs-recharge` colors damaged portals by health buckets. | `plugins/highlight-needs-recharge.js` registers `Needs Recharge (Health)`. | Aligned in concept and exposed through the single highlighter selector. Legacy `healthFill` is migration/backward-compatibility state. |
+| Level color | Active highlighter `level-color` colors portal body by level at detailed zoom. | `plugins/highlight-level-color.js` registers `Level Color`. | Aligned in concept and exposed through the single highlighter selector. Legacy `levelFill` is migration-only state. |
+| Needs recharge | Active highlighter `needs-recharge` colors damaged portals by health buckets. | `plugins/highlight-needs-recharge.js` registers `Needs Recharge (Health)`. | Aligned in concept and exposed through the single highlighter selector. Legacy `healthFill` is migration-only state. |
 | History visited/captured/scout-controlled | Active history highlighters restyle portal fill color. | `plugins/highlight-portal-history.js` registers four combined history highlighters, but its inherited styles distinguish visited, captured, visit target, capture target, scout controlled, and scout-control target. | IRIS exposes those as six explicit selector entries: visited, not visited, captured, not captured, scout controlled, and not scout controlled. It keeps IITC's red/yellow `fillColor` vocabulary, but uses a consistent IRIS rule: positive history states are yellow and negative/target states are red. |
 
 ## Current Styling Rules
@@ -99,7 +99,7 @@ Build an IITC-aligned registry with:
 
 The initial registry registers only existing highlighter candidates. Legacy `levelFill`, `healthFill`, and old history
 settings are migration inputs only. User-facing controls use the highlighter selector, and current layer settings no
-longer include the old history tri-state flags.
+longer include those old highlighter-like layer flags.
 
 ### Map layer registry
 
@@ -128,7 +128,8 @@ Current first pass:
 Remaining registry work:
 
 - Derive default layer settings from registry metadata where practical.
-- Publish registered layer ids/kinds in diagnostics.
+- Registered layer ids/kinds are exposed in diagnostics.
+- Derive defaults and current active layer settings from registry metadata where practical.
 - Move page-runtime visibility filters and overlay render owners behind registry metadata.
 - Keep selected portal/object highlights, mission overlays, and user-location objects classified explicitly so they do
   not drift into portal highlighter behavior.

@@ -122,6 +122,7 @@ export interface IitcIrisMessage {
   playerTracker?: IitcIrisPlayerTrackerDiagnostics;
   portalAnalysis?: IitcIrisPortalAnalysis | null;
   layerSettings?: IitcIrisLayerSettings;
+  layerRegistry?: IitcIrisLayerRegistryEntry[];
   highlighterSettings?: IitcIrisHighlighterSettings;
   highlighterIds?: IitcIrisPortalHighlighterId[];
   baseLayerId?: IitcIrisBaseLayerId;
@@ -546,6 +547,8 @@ export interface IitcIrisLifecycleSettings {
 }
 
 export type IitcIrisTriStateLayer = 'off' | 'on' | 'invert';
+export type IitcIrisLayerRegistryGroup = 'core' | 'detail';
+export type IitcIrisLayerRegistryKind = 'overlay' | 'filter';
 export type IitcIrisPortalHighlighterId =
   | 'none'
   | 'level-color'
@@ -559,6 +562,15 @@ export type IitcIrisPortalHighlighterId =
 
 export interface IitcIrisHighlighterSettings {
   active: IitcIrisPortalHighlighterId;
+}
+
+export interface IitcIrisLayerRegistryEntry {
+  id: keyof IitcIrisLayerSettings;
+  label: string;
+  title: string;
+  group: IitcIrisLayerRegistryGroup;
+  kind: IitcIrisLayerRegistryKind;
+  setting: 'boolean' | 'tri-state';
 }
 
 export interface IitcIrisLayerSettings {
@@ -577,8 +589,6 @@ export interface IitcIrisLayerSettings {
   resistance: boolean;
   enlightened: boolean;
   machina: boolean;
-  levelFill: boolean;
-  healthFill: boolean;
   ornaments: boolean;
   artifacts: boolean;
   labels: boolean;

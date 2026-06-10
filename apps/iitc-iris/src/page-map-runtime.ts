@@ -160,8 +160,6 @@ const DEFAULT_LAYER_SETTINGS: IitcIrisLayerSettings = {
   resistance: true,
   enlightened: true,
   machina: true,
-  levelFill: false,
-  healthFill: false,
   ornaments: false,
   artifacts: false,
   labels: false,

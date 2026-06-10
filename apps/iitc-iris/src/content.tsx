@@ -3,7 +3,7 @@ import {useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import './iitc-iris.css';
 import {formatIitcColorVars, getIitcItemColor, getIitcLevelColor, getIitcRarityColor, IITC_RESONATOR_ENERGY, IITC_TEAM_COLORS} from './iitc-colors';
 import {formatSubscriptionBadge, formatSubscriptionLabel, getAuthErrorMessage, getPanelStatusClass, getSubscriptionStatusClass} from './ui-status';
-import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisEntitySource, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPlayerTrackerDiagnostics, type IitcIrisPortalAnalysis, type IitcIrisPortalDetailsState, type IitcIrisPortalHighlighterId, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisEntitySource, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerRegistryEntry, type IitcIrisLayerRegistryGroup, type IitcIrisLayerRegistryKind, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPlayerTrackerDiagnostics, type IitcIrisPortalAnalysis, type IitcIrisPortalDetailsState, type IitcIrisPortalHighlighterId, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
 import {
   createIitcMapDataPlan,
   IITC_MAX_REQUESTS,
@@ -94,49 +94,52 @@ const DATA_SOURCE_OPTIONS = [
 ] as const;
 type TriStateLayerSettingKey = 'keyCount';
 type BooleanLayerSettingKey = Exclude<keyof IitcIrisLayerSettings, TriStateLayerSettingKey>;
-type LayerControlGroup = 'core' | 'detail';
 interface BooleanLayerRegistryEntry {
   id: BooleanLayerSettingKey;
   label: string;
   title: string;
-  group: LayerControlGroup;
-  selectionKind: 'overlay' | 'filter';
+  group: IitcIrisLayerRegistryGroup;
+  kind: IitcIrisLayerRegistryKind;
 }
 interface TriStateLayerRegistryEntry {
   id: TriStateLayerSettingKey;
   label: string;
   title: string;
-  group: LayerControlGroup;
-  selectionKind: 'overlay';
+  group: IitcIrisLayerRegistryGroup;
+  kind: IitcIrisLayerRegistryKind;
 }
 const BOOLEAN_LAYER_REGISTRY: BooleanLayerRegistryEntry[] = [
-  {id: 'fields', label: 'F', title: 'Fields', group: 'core', selectionKind: 'overlay'},
-  {id: 'links', label: 'LN', title: 'Links', group: 'core', selectionKind: 'overlay'},
-  {id: 'portals', label: 'P', title: 'Portals', group: 'core', selectionKind: 'overlay'},
-  {id: 'unclaimedPortals', label: 'U', title: 'Unclaimed portals', group: 'core', selectionKind: 'filter'},
-  {id: 'level1Portals', label: 'L1', title: 'Level 1 portals', group: 'core', selectionKind: 'filter'},
-  {id: 'level2Portals', label: 'L2', title: 'Level 2 portals', group: 'core', selectionKind: 'filter'},
-  {id: 'level3Portals', label: 'L3', title: 'Level 3 portals', group: 'core', selectionKind: 'filter'},
-  {id: 'level4Portals', label: 'L4', title: 'Level 4 portals', group: 'core', selectionKind: 'filter'},
-  {id: 'level5Portals', label: 'L5', title: 'Level 5 portals', group: 'core', selectionKind: 'filter'},
-  {id: 'level6Portals', label: 'L6', title: 'Level 6 portals', group: 'core', selectionKind: 'filter'},
-  {id: 'level7Portals', label: 'L7', title: 'Level 7 portals', group: 'core', selectionKind: 'filter'},
-  {id: 'level8Portals', label: 'L8', title: 'Level 8 portals', group: 'core', selectionKind: 'filter'},
-  {id: 'resistance', label: 'RES', title: 'Resistance portals', group: 'core', selectionKind: 'filter'},
-  {id: 'enlightened', label: 'ENL', title: 'Enlightened portals', group: 'core', selectionKind: 'filter'},
-  {id: 'machina', label: 'MAC', title: 'Machina portals', group: 'core', selectionKind: 'filter'},
-  {id: 'ornaments', label: 'OR', title: 'Ornaments', group: 'detail', selectionKind: 'overlay'},
-  {id: 'artifacts', label: 'AR', title: 'Artifacts', group: 'detail', selectionKind: 'overlay'},
-  {id: 'labels', label: 'LV', title: 'Level labels', group: 'detail', selectionKind: 'overlay'},
-  {id: 'tiles', label: 'T', title: 'Tile debug overlay', group: 'detail', selectionKind: 'overlay'},
-  {id: 'drawnLinks', label: 'DL', title: 'Drawn Links', group: 'detail', selectionKind: 'overlay'},
-  {id: 'drawnMarkers', label: 'DM', title: 'Drawn Markers', group: 'detail', selectionKind: 'overlay'},
-  {id: 'playerTrackerResistance', label: 'PTR', title: 'Resistance player tracker', group: 'detail', selectionKind: 'overlay'},
-  {id: 'playerTrackerEnlightened', label: 'PTE', title: 'Enlightened player tracker', group: 'detail', selectionKind: 'overlay'},
-  {id: 'playerTrackerMachina', label: 'PTM', title: 'Machina player tracker', group: 'detail', selectionKind: 'overlay'},
+  {id: 'fields', label: 'F', title: 'Fields', group: 'core', kind: 'overlay'},
+  {id: 'links', label: 'LN', title: 'Links', group: 'core', kind: 'overlay'},
+  {id: 'portals', label: 'P', title: 'Portals', group: 'core', kind: 'overlay'},
+  {id: 'unclaimedPortals', label: 'U', title: 'Unclaimed portals', group: 'core', kind: 'filter'},
+  {id: 'level1Portals', label: 'L1', title: 'Level 1 portals', group: 'core', kind: 'filter'},
+  {id: 'level2Portals', label: 'L2', title: 'Level 2 portals', group: 'core', kind: 'filter'},
+  {id: 'level3Portals', label: 'L3', title: 'Level 3 portals', group: 'core', kind: 'filter'},
+  {id: 'level4Portals', label: 'L4', title: 'Level 4 portals', group: 'core', kind: 'filter'},
+  {id: 'level5Portals', label: 'L5', title: 'Level 5 portals', group: 'core', kind: 'filter'},
+  {id: 'level6Portals', label: 'L6', title: 'Level 6 portals', group: 'core', kind: 'filter'},
+  {id: 'level7Portals', label: 'L7', title: 'Level 7 portals', group: 'core', kind: 'filter'},
+  {id: 'level8Portals', label: 'L8', title: 'Level 8 portals', group: 'core', kind: 'filter'},
+  {id: 'resistance', label: 'RES', title: 'Resistance portals', group: 'core', kind: 'filter'},
+  {id: 'enlightened', label: 'ENL', title: 'Enlightened portals', group: 'core', kind: 'filter'},
+  {id: 'machina', label: 'MAC', title: 'Machina portals', group: 'core', kind: 'filter'},
+  {id: 'ornaments', label: 'OR', title: 'Ornaments', group: 'detail', kind: 'overlay'},
+  {id: 'artifacts', label: 'AR', title: 'Artifacts', group: 'detail', kind: 'overlay'},
+  {id: 'labels', label: 'LV', title: 'Level labels', group: 'detail', kind: 'overlay'},
+  {id: 'tiles', label: 'T', title: 'Tile debug overlay', group: 'detail', kind: 'overlay'},
+  {id: 'drawnLinks', label: 'DL', title: 'Drawn Links', group: 'detail', kind: 'overlay'},
+  {id: 'drawnMarkers', label: 'DM', title: 'Drawn Markers', group: 'detail', kind: 'overlay'},
+  {id: 'playerTrackerResistance', label: 'PTR', title: 'Resistance player tracker', group: 'detail', kind: 'overlay'},
+  {id: 'playerTrackerEnlightened', label: 'PTE', title: 'Enlightened player tracker', group: 'detail', kind: 'overlay'},
+  {id: 'playerTrackerMachina', label: 'PTM', title: 'Machina player tracker', group: 'detail', kind: 'overlay'},
 ];
 const TRI_STATE_LAYER_REGISTRY: TriStateLayerRegistryEntry[] = [
-  {id: 'keyCount', label: 'KEY', title: 'Portal key count', group: 'detail', selectionKind: 'overlay'},
+  {id: 'keyCount', label: 'KEY', title: 'Portal key count', group: 'detail', kind: 'overlay'},
+];
+const LAYER_REGISTRY_DIAGNOSTICS: IitcIrisLayerRegistryEntry[] = [
+  ...BOOLEAN_LAYER_REGISTRY.map((entry) => ({...entry, setting: 'boolean' as const})),
+  ...TRI_STATE_LAYER_REGISTRY.map((entry) => ({...entry, setting: 'tri-state' as const})),
 ];
 const CORE_LAYER_TOGGLE_LABELS = BOOLEAN_LAYER_REGISTRY.filter((entry) => entry.group === 'core');
 const DETAIL_LAYER_TOGGLE_LABELS = BOOLEAN_LAYER_REGISTRY.filter((entry) => entry.group === 'detail');
@@ -189,8 +192,6 @@ const DEFAULT_LAYER_SETTINGS: IitcIrisLayerSettings = {
   resistance: true,
   enlightened: true,
   machina: true,
-  levelFill: false,
-  healthFill: false,
   ornaments: false,
   artifacts: false,
   labels: false,
@@ -699,6 +700,8 @@ function isLayerSettings(value: unknown): value is Partial<IitcIrisLayerSettings
 
 type LegacyStoredLayerSettings = Partial<IitcIrisLayerSettings> & {
   drawnItems?: unknown;
+  levelFill?: unknown;
+  healthFill?: unknown;
   historyCaptured?: unknown;
   historyVisited?: unknown;
   historyScoutControlled?: unknown;
@@ -749,8 +752,6 @@ function loadStoredLayerSettings(): IitcIrisLayerSettings {
       resistance: typeof parsed.resistance === 'boolean' ? parsed.resistance : DEFAULT_LAYER_SETTINGS.resistance,
       enlightened: typeof parsed.enlightened === 'boolean' ? parsed.enlightened : DEFAULT_LAYER_SETTINGS.enlightened,
       machina: typeof parsed.machina === 'boolean' ? parsed.machina : DEFAULT_LAYER_SETTINGS.machina,
-      levelFill: typeof parsed.levelFill === 'boolean' ? parsed.levelFill : DEFAULT_LAYER_SETTINGS.levelFill,
-      healthFill: typeof parsed.healthFill === 'boolean' ? parsed.healthFill : DEFAULT_LAYER_SETTINGS.healthFill,
       ornaments: typeof parsed.ornaments === 'boolean' ? parsed.ornaments : DEFAULT_LAYER_SETTINGS.ornaments,
       artifacts: typeof parsed.artifacts === 'boolean' ? parsed.artifacts : DEFAULT_LAYER_SETTINGS.artifacts,
       labels: typeof parsed.labels === 'boolean' ? parsed.labels : DEFAULT_LAYER_SETTINGS.labels,
@@ -783,11 +784,10 @@ function loadStoredLayerSettings(): IitcIrisLayerSettings {
 }
 
 function legacyHighlighterFromLayerSettings(
-  layerSettings: IitcIrisLayerSettings,
   legacyLayerSettings?: LegacyStoredLayerSettings,
 ): IitcIrisPortalHighlighterId {
-  if (layerSettings.levelFill) return 'level-color';
-  if (layerSettings.healthFill) return 'needs-recharge';
+  if (legacyLayerSettings?.levelFill === true) return 'level-color';
+  if (legacyLayerSettings?.healthFill === true) return 'needs-recharge';
   if (legacyLayerSettings?.historyCaptured === 'on') return 'history-captured';
   if (legacyLayerSettings?.historyVisited === 'on') return 'history-visited';
   if (legacyLayerSettings?.historyCaptured === 'invert') return 'history-not-captured';
@@ -797,17 +797,17 @@ function legacyHighlighterFromLayerSettings(
   return 'none';
 }
 
-function loadStoredHighlighterSettings(legacyLayerSettings: IitcIrisLayerSettings): IitcIrisHighlighterSettings {
+function loadStoredHighlighterSettings(): IitcIrisHighlighterSettings {
   try {
     const value = window.localStorage.getItem(HIGHLIGHTER_SETTINGS_STORAGE_KEY);
     const legacyLayerValue = window.localStorage.getItem(LAYER_SETTINGS_STORAGE_KEY);
     const legacyParsed = legacyLayerValue ? JSON.parse(legacyLayerValue) as unknown : undefined;
     const legacyStoredLayerSettings = isLayerSettings(legacyParsed) ? legacyParsed as LegacyStoredLayerSettings : undefined;
-    if (!value) return {active: legacyHighlighterFromLayerSettings(legacyLayerSettings, legacyStoredLayerSettings)};
+    if (!value) return {active: legacyHighlighterFromLayerSettings(legacyStoredLayerSettings)};
     const parsed = JSON.parse(value) as Partial<IitcIrisHighlighterSettings>;
     return {active: normalizePortalHighlighterId(parsed.active)};
   } catch {
-    return {active: legacyHighlighterFromLayerSettings(legacyLayerSettings)};
+    return {active: legacyHighlighterFromLayerSettings()};
   }
 }
 
@@ -1621,7 +1621,7 @@ function App(): h.JSX.Element {
   const [dataSourceId, setDataSourceId] = useState<typeof DATA_SOURCE_OPTIONS[number]['id']>(() => loadStoredDataSourceId());
   const [lifecycleSettings, setLifecycleSettings] = useState<IitcIrisLifecycleSettings>(() => loadStoredLifecycleSettings());
   const [layerSettings, setLayerSettings] = useState<IitcIrisLayerSettings>(() => loadStoredLayerSettings());
-  const [highlighterSettings, setHighlighterSettings] = useState<IitcIrisHighlighterSettings>(() => loadStoredHighlighterSettings(loadStoredLayerSettings()));
+  const [highlighterSettings, setHighlighterSettings] = useState<IitcIrisHighlighterSettings>(() => loadStoredHighlighterSettings());
   const [camera, setCamera] = useState<CameraState>(() => ({
     ...loadInitialMapView(),
     bounds: null,
@@ -1873,6 +1873,7 @@ function App(): h.JSX.Element {
     requests: requestDiagnostics,
     lifecycleSettings,
     layers: layerSettings,
+    layerRegistry: LAYER_REGISTRY_DIAGNOSTICS,
     renderPolicy: entityFetch.renderPolicy,
     selectedPortal: entityFetch.selectedPortal,
     portalDetails: entityFetch.portalDetails,
