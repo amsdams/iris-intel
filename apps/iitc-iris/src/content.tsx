@@ -93,13 +93,15 @@ const DATA_SOURCE_OPTIONS = [
   },
 ] as const;
 type TriStateLayerSettingKey = 'keyCount';
-type BooleanLayerSettingKey = Exclude<keyof IitcIrisLayerSettings, TriStateLayerSettingKey>;
+type LegacyBooleanLayerSettingKey = 'playerTracker';
+type BooleanLayerSettingKey = Exclude<keyof IitcIrisLayerSettings, TriStateLayerSettingKey | LegacyBooleanLayerSettingKey>;
 interface BooleanLayerRegistryEntry {
   id: BooleanLayerSettingKey;
   label: string;
   title: string;
   group: IitcIrisLayerRegistryGroup;
   kind: IitcIrisLayerRegistryKind;
+  defaultValue: boolean;
 }
 interface TriStateLayerRegistryEntry {
   id: TriStateLayerSettingKey;
@@ -107,35 +109,36 @@ interface TriStateLayerRegistryEntry {
   title: string;
   group: IitcIrisLayerRegistryGroup;
   kind: IitcIrisLayerRegistryKind;
+  defaultValue: IitcIrisTriStateLayer;
 }
 const BOOLEAN_LAYER_REGISTRY: BooleanLayerRegistryEntry[] = [
-  {id: 'fields', label: 'F', title: 'Fields', group: 'core', kind: 'overlay'},
-  {id: 'links', label: 'LN', title: 'Links', group: 'core', kind: 'overlay'},
-  {id: 'portals', label: 'P', title: 'Portals', group: 'core', kind: 'overlay'},
-  {id: 'unclaimedPortals', label: 'U', title: 'Unclaimed portals', group: 'core', kind: 'filter'},
-  {id: 'level1Portals', label: 'L1', title: 'Level 1 portals', group: 'core', kind: 'filter'},
-  {id: 'level2Portals', label: 'L2', title: 'Level 2 portals', group: 'core', kind: 'filter'},
-  {id: 'level3Portals', label: 'L3', title: 'Level 3 portals', group: 'core', kind: 'filter'},
-  {id: 'level4Portals', label: 'L4', title: 'Level 4 portals', group: 'core', kind: 'filter'},
-  {id: 'level5Portals', label: 'L5', title: 'Level 5 portals', group: 'core', kind: 'filter'},
-  {id: 'level6Portals', label: 'L6', title: 'Level 6 portals', group: 'core', kind: 'filter'},
-  {id: 'level7Portals', label: 'L7', title: 'Level 7 portals', group: 'core', kind: 'filter'},
-  {id: 'level8Portals', label: 'L8', title: 'Level 8 portals', group: 'core', kind: 'filter'},
-  {id: 'resistance', label: 'RES', title: 'Resistance portals', group: 'core', kind: 'filter'},
-  {id: 'enlightened', label: 'ENL', title: 'Enlightened portals', group: 'core', kind: 'filter'},
-  {id: 'machina', label: 'MAC', title: 'Machina portals', group: 'core', kind: 'filter'},
-  {id: 'ornaments', label: 'OR', title: 'Ornaments', group: 'detail', kind: 'overlay'},
-  {id: 'artifacts', label: 'AR', title: 'Artifacts', group: 'detail', kind: 'overlay'},
-  {id: 'labels', label: 'LV', title: 'Level labels', group: 'detail', kind: 'overlay'},
-  {id: 'tiles', label: 'T', title: 'Tile debug overlay', group: 'detail', kind: 'overlay'},
-  {id: 'drawnLinks', label: 'DL', title: 'Drawn Links', group: 'detail', kind: 'overlay'},
-  {id: 'drawnMarkers', label: 'DM', title: 'Drawn Markers', group: 'detail', kind: 'overlay'},
-  {id: 'playerTrackerResistance', label: 'PTR', title: 'Resistance player tracker', group: 'detail', kind: 'overlay'},
-  {id: 'playerTrackerEnlightened', label: 'PTE', title: 'Enlightened player tracker', group: 'detail', kind: 'overlay'},
-  {id: 'playerTrackerMachina', label: 'PTM', title: 'Machina player tracker', group: 'detail', kind: 'overlay'},
+  {id: 'fields', label: 'F', title: 'Fields', group: 'core', kind: 'overlay', defaultValue: true},
+  {id: 'links', label: 'LN', title: 'Links', group: 'core', kind: 'overlay', defaultValue: true},
+  {id: 'portals', label: 'P', title: 'Portals', group: 'core', kind: 'overlay', defaultValue: true},
+  {id: 'unclaimedPortals', label: 'U', title: 'Unclaimed portals', group: 'core', kind: 'filter', defaultValue: true},
+  {id: 'level1Portals', label: 'L1', title: 'Level 1 portals', group: 'core', kind: 'filter', defaultValue: true},
+  {id: 'level2Portals', label: 'L2', title: 'Level 2 portals', group: 'core', kind: 'filter', defaultValue: true},
+  {id: 'level3Portals', label: 'L3', title: 'Level 3 portals', group: 'core', kind: 'filter', defaultValue: true},
+  {id: 'level4Portals', label: 'L4', title: 'Level 4 portals', group: 'core', kind: 'filter', defaultValue: true},
+  {id: 'level5Portals', label: 'L5', title: 'Level 5 portals', group: 'core', kind: 'filter', defaultValue: true},
+  {id: 'level6Portals', label: 'L6', title: 'Level 6 portals', group: 'core', kind: 'filter', defaultValue: true},
+  {id: 'level7Portals', label: 'L7', title: 'Level 7 portals', group: 'core', kind: 'filter', defaultValue: true},
+  {id: 'level8Portals', label: 'L8', title: 'Level 8 portals', group: 'core', kind: 'filter', defaultValue: true},
+  {id: 'resistance', label: 'RES', title: 'Resistance portals', group: 'core', kind: 'filter', defaultValue: true},
+  {id: 'enlightened', label: 'ENL', title: 'Enlightened portals', group: 'core', kind: 'filter', defaultValue: true},
+  {id: 'machina', label: 'MAC', title: 'Machina portals', group: 'core', kind: 'filter', defaultValue: true},
+  {id: 'ornaments', label: 'OR', title: 'Ornaments', group: 'detail', kind: 'overlay', defaultValue: false},
+  {id: 'artifacts', label: 'AR', title: 'Artifacts', group: 'detail', kind: 'overlay', defaultValue: false},
+  {id: 'labels', label: 'LV', title: 'Level labels', group: 'detail', kind: 'overlay', defaultValue: false},
+  {id: 'tiles', label: 'T', title: 'Tile debug overlay', group: 'detail', kind: 'overlay', defaultValue: false},
+  {id: 'drawnLinks', label: 'DL', title: 'Drawn Links', group: 'detail', kind: 'overlay', defaultValue: true},
+  {id: 'drawnMarkers', label: 'DM', title: 'Drawn Markers', group: 'detail', kind: 'overlay', defaultValue: true},
+  {id: 'playerTrackerResistance', label: 'PTR', title: 'Resistance player tracker', group: 'detail', kind: 'overlay', defaultValue: false},
+  {id: 'playerTrackerEnlightened', label: 'PTE', title: 'Enlightened player tracker', group: 'detail', kind: 'overlay', defaultValue: false},
+  {id: 'playerTrackerMachina', label: 'PTM', title: 'Machina player tracker', group: 'detail', kind: 'overlay', defaultValue: false},
 ];
 const TRI_STATE_LAYER_REGISTRY: TriStateLayerRegistryEntry[] = [
-  {id: 'keyCount', label: 'KEY', title: 'Portal key count', group: 'detail', kind: 'overlay'},
+  {id: 'keyCount', label: 'KEY', title: 'Portal key count', group: 'detail', kind: 'overlay', defaultValue: 'off'},
 ];
 const LAYER_REGISTRY_DIAGNOSTICS: IitcIrisLayerRegistryEntry[] = [
   ...BOOLEAN_LAYER_REGISTRY.map((entry) => ({...entry, setting: 'boolean' as const})),
@@ -177,32 +180,9 @@ const COMM_TABS: {id: IitcIrisCommTab; label: string}[] = [
   {id: 'alerts', label: 'Alerts'},
 ];
 const DEFAULT_LAYER_SETTINGS: IitcIrisLayerSettings = {
-  fields: true,
-  links: true,
-  portals: true,
-  unclaimedPortals: true,
-  level1Portals: true,
-  level2Portals: true,
-  level3Portals: true,
-  level4Portals: true,
-  level5Portals: true,
-  level6Portals: true,
-  level7Portals: true,
-  level8Portals: true,
-  resistance: true,
-  enlightened: true,
-  machina: true,
-  ornaments: false,
-  artifacts: false,
-  labels: false,
-  tiles: false,
-  drawnLinks: true,
-  drawnMarkers: true,
+  ...(Object.fromEntries(BOOLEAN_LAYER_REGISTRY.map((entry) => [entry.id, entry.defaultValue])) as Record<BooleanLayerSettingKey, boolean>),
+  ...(Object.fromEntries(TRI_STATE_LAYER_REGISTRY.map((entry) => [entry.id, entry.defaultValue])) as Record<TriStateLayerSettingKey, IitcIrisTriStateLayer>),
   playerTracker: false,
-  playerTrackerResistance: false,
-  playerTrackerEnlightened: false,
-  playerTrackerMachina: false,
-  keyCount: 'off',
 };
 const DEFAULT_RENDER_POLICY: IitcIrisRenderPolicy = {
   optionalOverlayMinZoom: 14,

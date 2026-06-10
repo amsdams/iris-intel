@@ -122,14 +122,19 @@ secondary overlays, diagnostics, persistence, and UI grouping.
 Current first pass:
 
 - A typed content-side registry describes existing boolean and tri-state layer controls.
-- The registry owns current layer control labels, titles, UI group, and selection kind for the Layers sheet.
-- It intentionally does not change visibility behavior, render ownership, diagnostics, or defaults yet.
+- The registry owns current layer control labels, titles, UI group, selection kind, and content-side defaults for the
+  Layers sheet.
+- Registered layer ids, kinds, and defaults are exposed in diagnostics.
+- It intentionally does not change visibility behavior or render ownership yet.
+- Highlighter selection now updates existing portal marker styles in place where possible instead of rebuilding entity
+  layers.
+- Core layer/filter setting changes now use the existing incremental entity-layer sync against the previous layer
+  settings where possible, so unchanged fields, links, and portals remain on the map.
 
 Remaining registry work:
 
-- Derive default layer settings from registry metadata where practical.
-- Registered layer ids/kinds are exposed in diagnostics.
-- Derive defaults and current active layer settings from registry metadata where practical.
+- Registered layer ids/kinds/defaults are exposed in diagnostics.
+- Move page-runtime defaults and current active layer settings behind registry metadata where practical.
 - Move page-runtime visibility filters and overlay render owners behind registry metadata.
 - Keep selected portal/object highlights, mission overlays, and user-location objects classified explicitly so they do
   not drift into portal highlighter behavior.

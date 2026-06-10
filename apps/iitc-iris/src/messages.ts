@@ -571,6 +571,7 @@ export interface IitcIrisLayerRegistryEntry {
   group: IitcIrisLayerRegistryGroup;
   kind: IitcIrisLayerRegistryKind;
   setting: 'boolean' | 'tri-state';
+  defaultValue: boolean | IitcIrisTriStateLayer;
 }
 
 export interface IitcIrisLayerSettings {

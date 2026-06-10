@@ -113,8 +113,8 @@ Latest core fixture-health validation included:
 
 Latest package artifacts:
 
-- `apps/iitc-iris/builds/iitc-iris-chrome-0.1.0-2026-06-10T16-26-05.zip`
-- `apps/iitc-iris/builds/iitc-iris-firefox-0.1.0-2026-06-10T16-26-05.xpi`
+- `apps/iitc-iris/builds/iitc-iris-chrome-0.1.0-2026-06-10T17-42-39.zip`
+- `apps/iitc-iris/builds/iitc-iris-firefox-0.1.0-2026-06-10T17-42-39.xpi`
 
 Fixture-health note: the previous missing-fixture degradation for full `npm run test:iitc-core` is resolved in the
 current workspace. `@iris/core` and `@iris/iitc-core` full test suites are green; no fresh HAR capture is required for

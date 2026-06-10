@@ -2167,32 +2167,44 @@ function getRenderPolicy(): IitcIrisRenderPolicy {
   };
 }
 
-function isTeamLayerVisible(team: 'E' | 'R' | 'N' | 'M'): boolean {
-  if (team === 'R') return layerSettings.resistance;
-  if (team === 'E') return layerSettings.enlightened;
-  if (team === 'M') return layerSettings.machina;
-  return layerSettings.unclaimedPortals;
+function isTeamLayerVisibleWith(settings: IitcIrisLayerSettings, team: 'E' | 'R' | 'N' | 'M'): boolean {
+  if (team === 'R') return settings.resistance;
+  if (team === 'E') return settings.enlightened;
+  if (team === 'M') return settings.machina;
+  return settings.unclaimedPortals;
 }
 
-function isPortalLevelLayerVisible(portal: IitcIrisRenderPortal): boolean {
+function isPortalLevelLayerVisibleWith(settings: IitcIrisLayerSettings, portal: IitcIrisRenderPortal): boolean {
   if (portal.team === 'N' || portal.isPlaceholder || portal.level === undefined || portal.level < 1 || portal.level > 8) {
-    return layerSettings.unclaimedPortals;
+    return settings.unclaimedPortals;
   }
 
   const levelKey = `level${portal.level}Portals` as keyof IitcIrisLayerSettings;
-  return layerSettings[levelKey] === true;
+  return settings[levelKey] === true;
+}
+
+function isPortalVisibleWith(settings: IitcIrisLayerSettings, portal: IitcIrisRenderPortal): boolean {
+  return settings.portals && isTeamLayerVisibleWith(settings, portal.team) && isPortalLevelLayerVisibleWith(settings, portal);
 }
 
 function isPortalVisible(portal: IitcIrisRenderPortal): boolean {
-  return layerSettings.portals && isTeamLayerVisible(portal.team) && isPortalLevelLayerVisible(portal);
+  return isPortalVisibleWith(layerSettings, portal);
+}
+
+function isLinkVisibleWith(settings: IitcIrisLayerSettings, link: IitcIrisRenderLink): boolean {
+  return settings.links && isTeamLayerVisibleWith(settings, link.team);
 }
 
 function isLinkVisible(link: IitcIrisRenderLink): boolean {
-  return layerSettings.links && isTeamLayerVisible(link.team);
+  return isLinkVisibleWith(layerSettings, link);
+}
+
+function isFieldVisibleWith(settings: IitcIrisLayerSettings, field: IitcIrisRenderField): boolean {
+  return settings.fields && isTeamLayerVisibleWith(settings, field.team);
 }
 
 function isFieldVisible(field: IitcIrisRenderField): boolean {
-  return layerSettings.fields && isTeamLayerVisible(field.team);
+  return isFieldVisibleWith(layerSettings, field);
 }
 
 function createFieldLayer(field: IitcIrisRenderField): LeafletLayer {
@@ -2220,11 +2232,27 @@ function createLinkLayer(link: IitcIrisRenderLink): LeafletLayer {
 }
 
 function createPortalLayer(portal: IitcIrisRenderPortal, renderPolicy: IitcIrisRenderPolicy): LeafletLayer {
-  const color = getTeamColor(portal.team);
   const latLng = toLatLng(portal.latE6, portal.lngE6);
-  const dataOverlayStyle = getPortalDataOverlayStyle(portal, renderPolicy);
 
   const marker = L.circleMarker(latLng, {
+    ...getPortalMarkerStyle(portal, renderPolicy),
+    pane: getLayerPane('portals'),
+    renderer: getLayerRenderer('portals'),
+    interactive: true,
+  });
+  marker.on('click', (event) => {
+    L.DomEvent.stop(event);
+    if (Date.now() < suppressPortalClickUntil) return;
+    selectPortal(portal);
+  });
+  marker.on('contextmenu', (event) => openPortalContext(portal, event));
+  return marker;
+}
+
+function getPortalMarkerStyle(portal: IitcIrisRenderPortal, renderPolicy: IitcIrisRenderPolicy): L.CircleMarkerOptions {
+  const color = getTeamColor(portal.team);
+  const dataOverlayStyle = getPortalDataOverlayStyle(portal, renderPolicy);
+  return {
     radius: getPortalRadius(portal.level, portal.isPlaceholder),
     color,
     fillColor: renderPolicy.healthFill || renderPolicy.levelFill
@@ -2234,20 +2262,10 @@ function createPortalLayer(portal: IitcIrisRenderPortal, renderPolicy: IitcIrisR
       ? getPortalFillOpacity(renderPolicy, portal.health, portal.level, portal.team, portal.isPlaceholder)
       : 0.5,
     opacity: portal.isPlaceholder ? 0.6 : 1,
-    pane: getLayerPane('portals'),
-    renderer: getLayerRenderer('portals'),
     weight: getPortalWeight(portal.level, portal.isPlaceholder),
     dashArray: portal.isPlaceholder ? '1,2' : undefined,
-    interactive: true,
     ...dataOverlayStyle,
-  });
-  marker.on('click', (event) => {
-    L.DomEvent.stop(event);
-    if (Date.now() < suppressPortalClickUntil) return;
-    selectPortal(portal);
-  });
-  marker.on('contextmenu', (event) => openPortalContext(portal, event));
-  return marker;
+  };
 }
 
 function mapEntitiesByGuid<T extends {guid: string}>(entities: T[]): Map<string, T> {
@@ -2297,6 +2315,31 @@ function arePortalLayersEqual(a: IitcIrisRenderPortal, b: IitcIrisRenderPortal):
     a.health === b.health &&
     a.isPlaceholder === b.isPlaceholder &&
     arePortalHistoriesEqual(a, b);
+}
+
+function refreshPortalMarkerStylesForHighlighter(): boolean {
+  if (!latestEntities || !window.__iitcIrisMap) return false;
+  const layers = ensureLayers();
+  const renderPolicy = getRenderPolicy();
+  const visiblePortals = latestEntities.portals.filter(isPortalVisible);
+
+  for (const portal of visiblePortals) {
+    const portalLayers = layers.entityLayerIndex.portals.get(portal.guid);
+    if (!portalLayers || portalLayers.length === 0) return false;
+    for (const layer of portalLayers) {
+      if (!(layer instanceof L.CircleMarker)) return false;
+      layer.setStyle(getPortalMarkerStyle(portal, renderPolicy));
+    }
+  }
+
+  latestEntityRenderContextKey = getEntityRenderContextKey(renderPolicy);
+  latestRenderMutationDiagnostics = {
+    mode: 'incremental',
+    fields: {...createEmptyRenderMutationLayerDiagnostics(), unchanged: latestEntities.fields.filter(isFieldVisible).length},
+    links: {...createEmptyRenderMutationLayerDiagnostics(), unchanged: latestEntities.links.filter(isLinkVisible).length},
+    portals: {...createEmptyRenderMutationLayerDiagnostics(), unchanged: visiblePortals.length},
+  };
+  return true;
 }
 
 function createEmptyRenderMutationLayerDiagnostics(): IitcIrisRenderMutationLayerDiagnostics {
@@ -2383,10 +2426,11 @@ function canUseIncrementalCoreEntityRender(
   previousEntities: IitcIrisRenderEntities | undefined,
   nextEntities: IitcIrisRenderEntities,
   renderContextKey: string,
+  previousLayerSettings?: IitcIrisLayerSettings,
 ): previousEntities is IitcIrisRenderEntities {
   return previousEntities !== undefined &&
-    previousEntities !== nextEntities &&
-    latestEntityRenderContextKey === renderContextKey &&
+    (previousEntities !== nextEntities || previousLayerSettings !== undefined) &&
+    (latestEntityRenderContextKey === renderContextKey || previousLayerSettings !== undefined) &&
     pendingPortalSelection === null;
 }
 
@@ -2396,11 +2440,12 @@ function renderCoreEntityLayersIncremental(
   entities: IitcIrisRenderEntities,
   visiblePortals: IitcIrisRenderPortal[],
   renderPolicy: IitcIrisRenderPolicy,
+  previousLayerSettings: IitcIrisLayerSettings = layerSettings,
 ): IitcIrisRenderMutationDiagnostics {
   const fields = syncEntityLayers(
     layers.fields,
     layers.entityLayerIndex.fields,
-    previousEntities.fields.filter((field) => isFieldVisible(field) && field.points.length === 3),
+    previousEntities.fields.filter((field) => isFieldVisibleWith(previousLayerSettings, field) && field.points.length === 3),
     entities.fields.filter((field) => isFieldVisible(field) && field.points.length === 3),
     areFieldLayersEqual,
     createFieldLayer,
@@ -2408,7 +2453,7 @@ function renderCoreEntityLayersIncremental(
   const links = syncEntityLayers(
     layers.links,
     layers.entityLayerIndex.links,
-    previousEntities.links.filter(isLinkVisible),
+    previousEntities.links.filter((link) => isLinkVisibleWith(previousLayerSettings, link)),
     entities.links.filter(isLinkVisible),
     areLinkLayersEqual,
     createLinkLayer,
@@ -2416,7 +2461,7 @@ function renderCoreEntityLayersIncremental(
   const portals = syncEntityLayers(
     layers.portals,
     layers.entityLayerIndex.portals,
-    previousEntities.portals.filter(isPortalVisible),
+    previousEntities.portals.filter((portal) => isPortalVisibleWith(previousLayerSettings, portal)),
     visiblePortals,
     arePortalLayersEqual,
     (portal) => createPortalLayer(portal, renderPolicy),
@@ -2430,7 +2475,7 @@ function renderCoreEntityLayersIncremental(
   };
 }
 
-function renderEntities(entities: IitcIrisRenderEntities): void {
+function renderEntities(entities: IitcIrisRenderEntities, options: {previousLayerSettings?: IitcIrisLayerSettings} = {}): void {
   if (!window.__iitcIrisMap) return;
   const layers = ensureLayers();
   const renderPolicy = getRenderPolicy();
@@ -2440,7 +2485,7 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
   const visibleLevelLabelGuids = renderPolicy.labels ? getVisibleLevelLabelGuids(visiblePortals) : new Set<string>();
   const previousEntities = latestEntities;
   const renderContextKey = getEntityRenderContextKey(renderPolicy);
-  const useIncrementalCoreRender = canUseIncrementalCoreEntityRender(previousEntities, entities, renderContextKey);
+  const useIncrementalCoreRender = canUseIncrementalCoreEntityRender(previousEntities, entities, renderContextKey, options.previousLayerSettings);
 
   latestEntities = entities;
   if (pendingPortalSelection) {
@@ -2450,7 +2495,14 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
 
   if (useIncrementalCoreRender) {
     clearSecondaryEntityLayers(layers);
-    latestRenderMutationDiagnostics = renderCoreEntityLayersIncremental(layers, previousEntities, entities, visiblePortals, renderPolicy);
+    latestRenderMutationDiagnostics = renderCoreEntityLayersIncremental(
+      layers,
+      previousEntities,
+      entities,
+      visiblePortals,
+      renderPolicy,
+      options.previousLayerSettings,
+    );
   } else {
     clearEntityLayers();
     let renderedFieldCount = 0;
@@ -3444,8 +3496,9 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
     renderEntities(event.data.entities);
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.layerSettings && event.data.layerSettings) {
+    const previousLayerSettings = layerSettings;
     layerSettings = event.data.layerSettings;
-    if (latestEntities) renderEntities(latestEntities);
+    if (latestEntities) renderEntities(latestEntities, {previousLayerSettings});
     renderLatestTileDebug();
     renderIitcDrawTools();
     renderPlayerTracker();
@@ -3454,7 +3507,7 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.layerSettings && event.data.highlighterSettings) {
     highlighterSettings = event.data.highlighterSettings;
-    if (latestEntities) renderEntities(latestEntities);
+    if (latestEntities && !refreshPortalMarkerStylesForHighlighter()) renderEntities(latestEntities);
     repostLatestEntityStatus();
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.layerSettings && event.data.baseLayerId) {
