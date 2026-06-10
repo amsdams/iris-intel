@@ -78,6 +78,9 @@ Current status:
 - Base renderer styling is closer to IITC-CE: team-coloured portal fills, IITC portal radius/weight scaling, 0.25 field
   fill opacity, full-opacity links, orange neutral portals, and text-only portal level labels with simple overlap
   thinning.
+- Existing highlighter-like styling is now applied through the single active portal highlighter path. Core layer/filter
+  toggles use scoped visibility sync and secondary-overlay masks when entity data has not changed, but dense views still
+  need a fuller IITC-style group/filter-layer model to reduce raw Leaflet add/remove work.
 - Artifact rendering is wired with IITC's marker image convention (`{type}_shard.png` and `{type}_shard_target.png`) and
   can use either artifact briefs from `getEntities` or the live `/r/getArtifactPortals` endpoint. The `AR` toggle
   controls marker visibility only, not whether the endpoint is fetched, but non-empty live Intel data still needs

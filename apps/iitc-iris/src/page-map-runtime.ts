@@ -2605,6 +2605,98 @@ function isPortalAffectedByScope(portal: IitcIrisRenderPortal, scope: IitcIrisCo
   );
 }
 
+function syncVisibilityChangedEntityLayers<T extends {guid: string}>(
+  layers: LeafletLayer[],
+  index: IitcIrisEntityLayerIndex,
+  entities: T[],
+  wasVisible: (entity: T) => boolean,
+  isVisible: (entity: T) => boolean,
+  createLayer: (entity: T) => LeafletLayer,
+): IitcIrisRenderMutationLayerDiagnostics {
+  const diagnostics = createEmptyRenderMutationLayerDiagnostics();
+  const removedLayers = new Set<LeafletLayer>();
+
+  for (const entity of entities) {
+    const previousVisible = wasVisible(entity);
+    const nextVisible = isVisible(entity);
+    if (previousVisible && nextVisible) {
+      diagnostics.unchanged += 1;
+    } else if (previousVisible) {
+      removeEntityRenderedLayers(layers, index, entity.guid, removedLayers);
+      diagnostics.removed += 1;
+    } else if (nextVisible) {
+      addEntityRenderedLayer(layers, index, entity.guid, createLayer(entity));
+      diagnostics.added += 1;
+    }
+  }
+
+  compactRenderedLayers(layers, removedLayers);
+  return diagnostics;
+}
+
+function renderCoreEntityLayersVisibilityChange(
+  layers: NonNullable<Window['__iitcIrisLayers']>,
+  entities: IitcIrisRenderEntities,
+  renderPolicy: IitcIrisRenderPolicy,
+  previousLayerSettings: IitcIrisLayerSettings,
+  scope: IitcIrisCoreEntityRenderScope,
+  timing?: IitcIrisLayerUpdateTimingDiagnostics,
+): IitcIrisRenderMutationDiagnostics {
+  let stepStartedAt = performance.now();
+  const fields = scope.fields
+    ? syncVisibilityChangedEntityLayers(
+      layers.fields,
+      layers.entityLayerIndex.fields,
+      entities.fields.filter((field) => isFieldAffectedByScope(field, scope) && field.points.length === 3),
+      (field) => isFieldVisibleWith(previousLayerSettings, field),
+      isFieldVisible,
+      createFieldLayer,
+    )
+    : createEmptyRenderMutationLayerDiagnostics();
+  if (timing) syncVisibilityTiming(timing, 'syncFieldsMs', stepStartedAt);
+
+  stepStartedAt = performance.now();
+  const links = scope.links
+    ? syncVisibilityChangedEntityLayers(
+      layers.links,
+      layers.entityLayerIndex.links,
+      entities.links.filter((link) => isLinkAffectedByScope(link, scope)),
+      (link) => isLinkVisibleWith(previousLayerSettings, link),
+      isLinkVisible,
+      createLinkLayer,
+    )
+    : createEmptyRenderMutationLayerDiagnostics();
+  if (timing) syncVisibilityTiming(timing, 'syncLinksMs', stepStartedAt);
+
+  stepStartedAt = performance.now();
+  const portals = scope.portals
+    ? syncVisibilityChangedEntityLayers(
+      layers.portals,
+      layers.entityLayerIndex.portals,
+      entities.portals.filter((portal) => isPortalAffectedByScope(portal, scope)),
+      (portal) => isPortalVisibleWith(previousLayerSettings, portal),
+      isPortalVisible,
+      (portal) => createPortalLayer(portal, renderPolicy),
+    )
+    : createEmptyRenderMutationLayerDiagnostics();
+  if (timing) syncVisibilityTiming(timing, 'syncPortalsMs', stepStartedAt);
+
+  return {
+    mode: 'incremental',
+    fields,
+    links,
+    portals,
+  };
+}
+
+function syncVisibilityTiming(
+  timing: IitcIrisLayerUpdateTimingDiagnostics,
+  key: 'syncFieldsMs' | 'syncLinksMs' | 'syncPortalsMs',
+  startedAt: number,
+): void {
+  timing[key] = roundTimingMs(performance.now() - startedAt);
+}
+
 function renderCoreEntityLayersIncremental(
   layers: NonNullable<Window['__iitcIrisLayers']>,
   previousEntities: IitcIrisRenderEntities,
@@ -2708,16 +2800,25 @@ function renderEntities(
     stepStartedAt = performance.now();
     clearSecondaryEntityLayers(layers, secondaryUpdate);
     if (timing) timing.clearSecondaryMs = roundTimingMs(performance.now() - stepStartedAt);
-    latestRenderMutationDiagnostics = renderCoreEntityLayersIncremental(
-      layers,
-      previousEntities,
-      entities,
-      visiblePortals,
-      renderPolicy,
-      options.previousLayerSettings,
-      timing,
-      coreRenderScope,
-    );
+    latestRenderMutationDiagnostics = previousEntities === entities && options.previousLayerSettings
+      ? renderCoreEntityLayersVisibilityChange(
+        layers,
+        entities,
+        renderPolicy,
+        options.previousLayerSettings,
+        coreRenderScope,
+        timing,
+      )
+      : renderCoreEntityLayersIncremental(
+        layers,
+        previousEntities,
+        entities,
+        visiblePortals,
+        renderPolicy,
+        options.previousLayerSettings,
+        timing,
+        coreRenderScope,
+      );
   } else {
     stepStartedAt = performance.now();
     clearEntityLayers();

@@ -88,13 +88,22 @@ Adherence summary after 2026-05-31 audit:
 - Live manual comparison on 2026-06-10 after switching runtime render queue draining to the batched core primitive:
   repeated pan checks showed no visible cleanup, flicker, stale viewport, or tile-hole regression.
 - Runtime implementation note on 2026-06-10: core entity layers are tracked by GUID (`fields`, `links`, and `portals`)
-  and use guarded incremental mutation when safe. The guard keeps full redraw behavior for zoom/style/layer changes,
-  same-object portal-detail rerenders, key-count overlays, and history overlays. Labels, ornaments, artifacts,
-  selections, draw tools, player tracker, and other plugin overlays remain on the existing rebuild path.
-- Runtime diagnostics note on 2026-06-10: entity status and copied scenario summaries now include render mutation
-  diagnostics (`full` or `incremental`, plus per-layer added/removed/replaced/unchanged counts). The System diagnostics
-  row also shows a compact portal mutation summary. Use this to confirm manual pan comparisons are exercising the
-  incremental path before expanding mutation further.
+  and use guarded incremental mutation when safe. Layer-setting-only changes now use scoped visibility sync when the
+  entity data object is unchanged: field toggles touch fields, link toggles touch links, portal toggles touch portals,
+  faction filters touch affected factions across entity kinds, and level/unclaimed filters touch affected portal
+  buckets. Highlighter changes use a portal style-refresh path where possible rather than rebuilding entity layers.
+- Runtime overlay note on 2026-06-10: secondary overlays are masked by the layer change. Field toggles skip portal
+  labels, ornaments, artifacts, and selected-object overlay work. Link toggles refresh link/draw overlays when needed.
+  Portal/faction/level/detail changes refresh the relevant portal-side overlays. Draw Tools, tile debug, and player
+  tracker toggles route through dedicated overlay paths.
+- Runtime diagnostics note on 2026-06-10: entity status and copied scenario summaries include render mutation
+  diagnostics (`full` or `incremental`, plus per-layer added/removed/replaced/unchanged counts). Copied diagnostics also
+  include `timing.layerUpdate` for the latest layer update and rolling `timing.interactionUpdates` entries for recent
+  layer/highlighter changes. Use these to confirm manual comparisons are exercising the intended incremental,
+  style-refresh, or dedicated-overlay path before expanding mutation further.
+- Current lifecycle WIP: core layer/filter toggles are much more scoped, but dense views still spend visible time in raw
+  Leaflet add/remove work for thousands of fields, links, and portals. The next architectural pass is an IITC-style
+  group/filter-layer model so common layer-only toggles rely less on generic per-entity synchronization.
 - Live fast-pan copies on 2026-06-10 at Amsterdam z15 and z14 kept final states complete. The z15 run recovered 3-8
   timeout-retried tiles depending on the pan segment, while z14 placeholder mode recovered 5 timeout-retried tiles after
   2 retry requests. Intermediate snapshots still showed active requests and queued retry tiles, but final snapshots had

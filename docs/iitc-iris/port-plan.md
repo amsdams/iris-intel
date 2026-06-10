@@ -146,10 +146,11 @@ Feature details have been split out of this entry point so the current truth is 
   True stale-cache retry exhaustion is still wired/diagnosed but needs a live case that proves cached stale tiles render
   exactly like IITC.
 - Plugin-facing compatibility remains intentionally limited: no broad `window.plugin.*`, `addHook`/`runHooks`, toolbox,
-  plugin-facing highlighter API, full layer registry, or Leaflet.draw event parity yet. Native highlighter selection has
-  started with existing IRIS highlighter-like behavior and IITC-CE's single active highlighter model. The layer registry
-  now has shared metadata/defaults plus focused registry/routing tests, but page-runtime render/filter ownership is
-  still mostly hard-coded.
+  plugin-facing highlighter API, full layer registry, or Leaflet.draw event parity yet. Native highlighter selection is
+  stable for existing IRIS highlighter-like behavior and IITC-CE's single active highlighter model. The layer registry
+  now has shared metadata/defaults, diagnostics, and focused routing for non-core overlays. Core layer/filter toggles
+  have scoped visibility-sync and timing diagnostics, but page-runtime render/filter ownership still needs the next
+  IITC-style group/filter-layer pass.
 - Draw Tools v1 is links/markers only. Polygons, circles, visible snap cleanup UX, `DrawTools Opt`, stock Intel `pls`,
   and plugin-facing `window.plugin.drawTools` / `pluginDrawTools` remain deferred.
 - The bottom-sheet/two-layer menu model is a deliberate product-shell divergence from IITC's sidebar/dropdown/statusbar

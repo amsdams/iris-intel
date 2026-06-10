@@ -83,28 +83,30 @@ Deferred IITC highlighters include missing resonators, high-level-only, ornament
 portal weakness, my-level filters, forgotten/inactive portals, moved portals, bookmarks, and uniques. Those should not
 be added as part of the registry pass unless the user explicitly scopes them in.
 
-## Planned Registry Work
+## Registry Status
 
 ### Portal highlighter registry and selection model
 
-Build an IITC-aligned registry with:
+The current v1 is implemented for existing IRIS highlighter-like behavior. It is intentionally not a broad plugin
+highlighter port yet.
 
-- Highlighter id, IITC/display name, description, and style callback.
-- One persisted active highlighter id, with `none` as the default.
-- Runtime application from the portal marker style path, after base portal style and before selection overlays.
-- Diagnostics that expose the active highlighter and registered highlighter ids.
-- UI rendered from registry metadata, using one compact selector rather than independent toggle buttons.
+- Highlighter entries have an id, display name, description, and style callback.
+- One persisted active highlighter id is used, with `none` as the fallback.
+- Runtime application happens from the portal marker style path, after base portal style and before selection overlays.
+- Diagnostics expose the active highlighter, registered highlighter ids, and rolling highlighter interaction timings.
+- UI is rendered from registry metadata through one compact selector rather than independent toggle buttons.
 - Key-count labels remain a layer. They are derived from live inventory in IRIS, unlike IITC-CE `keys-on-map`, which
   reads manual `window.plugin.keys.keys` values.
 
-The initial registry registers only existing highlighter candidates. Legacy `levelFill`, `healthFill`, and old history
-settings are migration inputs only. User-facing controls use the highlighter selector, and current layer settings no
-longer include those old highlighter-like layer flags.
+The registry registers only existing highlighter candidates. Legacy `levelFill`, `healthFill`, and old history settings
+are migration inputs only. User-facing controls use the highlighter selector, and current layer settings no longer
+include those old highlighter-like layer flags. Highlighter changes use a style-refresh path for existing portal markers
+when possible, so changing highlighters does not require rebuilding fields or links.
 
 ### Map layer registry
 
-Started in the content UI. A layer registry should describe existing layers and filters declaratively so settings, UI,
-diagnostics, and render ownership stop drifting. It should not add new layers in the first pass.
+Started in the content UI. The first pass describes existing layers and filters declaratively so settings, UI, and
+diagnostics stop drifting. It does not add new layers.
 
 Useful fields:
 
@@ -125,18 +127,34 @@ Current first pass:
 - The registry owns current layer control labels, titles, UI group, selection kind, and content-side defaults for the
   Layers sheet.
 - Registered layer ids, kinds, and defaults are exposed in diagnostics.
-- It intentionally does not change visibility behavior or render ownership yet.
-- Highlighter selection now updates existing portal marker styles in place where possible instead of rebuilding entity
-  layers.
-- Core layer/filter setting changes now use the existing incremental entity-layer sync against the previous layer
-  settings where possible, so unchanged fields, links, and portals remain on the map.
-- Tile debug, Draw Tools, and player tracker layer setting changes now route to their own overlay refresh paths without
-  invoking entity rendering.
+- Tile debug, Draw Tools, and player tracker layer setting changes route to their own overlay refresh paths without
+  invoking core entity rendering.
+- Core layer/filter setting changes use scoped entity sync instead of refreshing every entity kind:
+  `fields` touches fields, `links` touches links, `portals` touches portals, faction filters touch affected factions
+  across entity kinds, and level/unclaimed filters touch affected portal buckets.
+- Secondary overlay work is masked by the changed layer kind. Field toggles do not rebuild portal labels, ornaments, or
+  artifacts. Link toggles refresh link/draw overlays when needed. Portal/faction/level/detail changes refresh the
+  relevant portal-side overlays.
+- Removal bookkeeping is batched so core layer toggles compact rendered arrays once per update instead of splicing per
+  entity.
+- Layer-setting-only updates use a visibility-only fast path when the entity data object is unchanged.
+- Copied diagnostics keep a rolling `timing.interactionUpdates` list for the latest layer and highlighter changes.
+
+Recent dense Amsterdam z15 diagnostics, with roughly 3.9k portals, 2.8k links, and 1.7k fields loaded, show the current
+shape:
+
+| Toggle | Before scoped secondary work | Current observed range | Main remaining cost |
+|--------|------------------------------|------------------------|---------------------|
+| Fields | 36-41ms | 17-31ms | Leaflet add/remove of field polylines/polygons. |
+| Links | 31-50ms | 20-43ms | Leaflet add/remove of link polylines. |
+| Resistance filter | 42-76ms | 33-66ms | Cross-kind visibility changes for portals, links, and fields. |
+| Highlighter change | 18-23ms | 18-23ms | Portal marker style refresh only. |
+| Drawn links | 1-13ms | 1-13ms | Dedicated Draw Tools overlay path. |
 
 Remaining registry work:
 
-- Registered layer ids/kinds/defaults are exposed in diagnostics.
-- Move page-runtime visibility filters and full render ownership behind registry metadata where practical.
-- Move page-runtime visibility filters and overlay render owners behind registry metadata.
+- Move page-runtime visibility filters and overlay render owners behind registry metadata where practical.
+- Model core IITC-style layer/filter ownership more explicitly, likely with group/filter membership buckets, so
+  common layer-only toggles stop relying on generic per-entity synchronization.
 - Keep selected portal/object highlights, mission overlays, and user-location objects classified explicitly so they do
   not drift into portal highlighter behavior.

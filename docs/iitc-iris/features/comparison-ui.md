@@ -47,6 +47,9 @@ Current status:
 - Layer toggles are persisted; the default comparison view enables only fields, links, and portals while leaving
   ornaments, artifacts, labels, key counts, and tile debug off. Level color, recharge health, and portal history styling
   are selected through the single portal highlighter selector.
+- Copied diagnostics expose `layerRegistry`, active/registered highlighters, `timing.layerUpdate`, and rolling
+  `timing.interactionUpdates` entries. Use `interactionUpdates` when testing a sequence of core toggles, detail toggles,
+  and highlighter changes because `layerUpdate` only reports the latest layer update.
 - Base map, core/detail layer toggles, side-system tabs, and pan/zoom controls live outside the debug/comparison
   controls. The data-source switch now lives in the System sheet because it is comparison/fixture infrastructure rather
   than IITC-style map UI.
