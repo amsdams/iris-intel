@@ -95,11 +95,15 @@ describe('buildEntityRequestPayload', () => {
     };
     const payload = buildEntityRequestPayload(bounds, 14.36);
 
-    expect(payload.dataBounds).not.toBe(null);
-    expect(payload.dataBounds!.minLatE6).toBeLessThanOrEqual(bounds.minLatE6);
-    expect(payload.dataBounds!.maxLatE6).toBeGreaterThanOrEqual(bounds.maxLatE6);
-    expect(payload.dataBounds!.minLngE6).toBeLessThanOrEqual(bounds.minLngE6);
-    expect(payload.dataBounds!.maxLngE6).toBeGreaterThanOrEqual(bounds.maxLngE6);
+    const dataBounds = payload.dataBounds;
+    if (dataBounds === null) {
+      throw new Error('Expected tile-aligned data bounds');
+    }
+
+    expect(dataBounds.minLatE6).toBeLessThanOrEqual(bounds.minLatE6);
+    expect(dataBounds.maxLatE6).toBeGreaterThanOrEqual(bounds.maxLatE6);
+    expect(dataBounds.minLngE6).toBeLessThanOrEqual(bounds.minLngE6);
+    expect(dataBounds.maxLngE6).toBeGreaterThanOrEqual(bounds.maxLngE6);
   });
 
   it('batches tile keys with the shared Intel request size', () => {

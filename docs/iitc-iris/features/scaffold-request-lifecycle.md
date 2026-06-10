@@ -13,12 +13,12 @@ Acceptance:
 - `npm run typecheck:iitc-iris`
 - `npm run package:iitc-iris`
 
-Current verification caveat - 2026-06-06:
+Current verification - 2026-06-10:
 
-- `npm run typecheck:iitc-iris` and `npm run package:iitc-iris` pass.
-- `npm run test:iitc-core` currently fails only on missing fixture files used by two entity-decode parity tests:
-  `docs/iris/update-map-samples/get-entities-z12.json` and `docs/iris/update-map-samples/get-entities-z14.json`. Keep Pass 1's intended
-  acceptance target, but treat the fixture harness as degraded until those inputs are restored or replaced.
+- `npm run test:iitc-core`, `npm run typecheck:iitc-core`, and `npm run lint:iitc-core` pass.
+- `npm run test -w packages/core`, `npm run typecheck:core`, and `npm run lint:core` pass.
+- The previous missing-fixture degradation for the entity-decode parity tests is resolved in the current workspace; no
+  fresh HAR capture is required for this checkpoint.
 
 ## Pass 2: Request Lifecycle - Done
 

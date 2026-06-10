@@ -73,7 +73,7 @@ Naming checklist before creating a new file or exported function:
   IITC naming is not appropriate.
 - Is the divergence only for code cleanliness? Keep the IITC name at the boundary and hide the cleaner structure inside.
 
-## Current Status - 2026-06-09
+## Current Status - 2026-06-10
 
 IITC IRIS is in a usable parity/polish checkpoint. The extension now has the core IITC live-map path, entity rendering,
 geodesic links/fields, portal selection/details, COMM, scores, missions, inventory, passcodes, agent profile, player
@@ -88,15 +88,26 @@ Latest IITC IRIS portal analysis validation included:
 - `npm run test:iitc-core -- --run src/portal-analysis.test.ts`
 - `npm run package:iitc-iris`
 - `git diff --check`
+- Manual live comparison against IITC's `portal-counts`, `portals-list`, and `scoreboard` plugins; no blocking
+  mismatches found for the stable v1 checkpoint.
+
+Latest core fixture-health validation included:
+
+- `npm run test -w packages/core`
+- `npm run typecheck:core`
+- `npm run lint:core`
+- `npm run test:iitc-core`
+- `npm run typecheck:iitc-core`
+- `npm run lint:iitc-core`
 
 Latest package artifacts:
 
 - `apps/iitc-iris/builds/iitc-iris-chrome-0.1.0-2026-06-09T21-17-14.zip`
 - `apps/iitc-iris/builds/iitc-iris-firefox-0.1.0-2026-06-09T21-17-14.xpi`
 
-Known validation caveat: full `npm run test:iitc-core` has previously been degraded by missing optional entity-decode
-fixture files under `docs/iris/update-map-samples/`. Focused portal-analysis tests are green. Restore or replace the
-missing sanitized fixtures before treating the full core parity harness as healthy.
+Fixture-health note: the previous missing-fixture degradation for full `npm run test:iitc-core` is resolved in the
+current workspace. `@iris/core` and `@iris/iitc-core` full test suites are green; no fresh HAR capture is required for
+this checkpoint.
 
 ## Documentation Layout
 

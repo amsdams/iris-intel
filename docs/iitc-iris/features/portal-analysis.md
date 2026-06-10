@@ -52,6 +52,7 @@ Current status:
   neutral portals to L0, and includes a reset action for filters.
 - List now includes name, faction, and level filters plus summary chips for filtered portals, links, fields, AP, and
   keys.
+- Live IITC comparison on 2026-06-10 found Counts, List, and Scoreboard acceptable for this stable v1 checkpoint.
 
 Intentional divergences:
 
@@ -68,3 +69,4 @@ Validation:
 - `npm run lint:iitc-iris`
 - `npm run typecheck:iitc-iris`
 - `npm run package:iitc-iris` after code changes.
+- Manual live comparison against IITC's `portal-counts`, `portals-list`, and `scoreboard` plugins.
