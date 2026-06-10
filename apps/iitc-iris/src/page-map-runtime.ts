@@ -1549,7 +1549,7 @@ function createSelectedFieldMarker(field: IitcIrisRenderField): LeafletLayer {
   });
 }
 
-function renderSelectedPortal(visiblePortals: IitcIrisRenderPortal[]): void {
+function renderSelectedPortal(): void {
   const layers = ensureLayers();
   clearRenderedLayers(layers.selectedPortal);
   if (!selectedPortalGuid) {
@@ -1564,7 +1564,7 @@ function renderSelectedPortal(visiblePortals: IitcIrisRenderPortal[]): void {
   }
 
   selectedPortal = toSelectedPortal(portal);
-  if (!visiblePortals.some((candidate) => candidate.guid === portal.guid)) return;
+  if (!isPortalVisible(portal)) return;
   addRenderedLayer(layers.selectedPortal, createSelectedPortalMarker(portal));
 }
 
@@ -2692,7 +2692,11 @@ function getSecondaryEntityRenderUpdate(changedLayerKeys?: (keyof IitcIrisLayerS
     key === 'machina' ||
     /^level[1-8]Portals$/.test(key)
   ));
-  const changesPortalOverlay = changesPortalVisibility ||
+  const enabledPortalOverlay = layerSettings.labels ||
+    layerSettings.keyCount !== 'off' ||
+    layerSettings.ornaments ||
+    layerSettings.artifacts;
+  const needsPortalOverlayUpdate = (changesPortalVisibility && enabledPortalOverlay) ||
     changedKeySet.has('labels') ||
     changedKeySet.has('keyCount') ||
     changedKeySet.has('ornaments') ||
@@ -2703,7 +2707,7 @@ function getSecondaryEntityRenderUpdate(changedLayerKeys?: (keyof IitcIrisLayerS
     changedKeySet.has('machina');
 
   return {
-    portalOverlays: changesPortalOverlay,
+    portalOverlays: needsPortalOverlayUpdate,
     selectedPortal: changesPortalVisibility,
     selectedMapObject: changedKeySet.has('fields') || changesLinkVisibility,
     drawTools: changesLinkVisibility,
@@ -2725,6 +2729,13 @@ interface IitcIrisCoreEntityRenderScope {
   portalLevels: Set<IitcIrisPortalLevelBucket>;
 }
 
+interface IitcIrisRenderEntityBuckets {
+  fieldsByTeam: Map<IitcIrisRenderField['team'], IitcIrisRenderField[]>;
+  linksByTeam: Map<IitcIrisRenderLink['team'], IitcIrisRenderLink[]>;
+  portalsByTeam: Map<IitcIrisRenderPortal['team'], IitcIrisRenderPortal[]>;
+  portalsByLevel: Map<IitcIrisPortalLevelBucket, IitcIrisRenderPortal[]>;
+}
+
 const ALL_CORE_ENTITY_RENDER_SCOPE: IitcIrisCoreEntityRenderScope = {
   fields: true,
   links: true,
@@ -2737,6 +2748,7 @@ const ALL_CORE_ENTITY_RENDER_SCOPE: IitcIrisCoreEntityRenderScope = {
   portalTeams: new Set(),
   portalLevels: new Set(),
 };
+const renderEntityBuckets = new WeakMap<IitcIrisRenderEntities, IitcIrisRenderEntityBuckets>();
 
 function createEmptyCoreEntityRenderScope(): IitcIrisCoreEntityRenderScope {
   return {
@@ -2758,6 +2770,75 @@ function getPortalLevelBucket(portal: IitcIrisRenderPortal): IitcIrisPortalLevel
     return 'unclaimed';
   }
   return portal.level as IitcIrisPortalLevelBucket;
+}
+
+function addToBucket<K, T>(buckets: Map<K, T[]>, key: K, value: T): void {
+  const bucket = buckets.get(key);
+  if (bucket) {
+    bucket.push(value);
+  } else {
+    buckets.set(key, [value]);
+  }
+}
+
+function getRenderEntityBuckets(entities: IitcIrisRenderEntities): IitcIrisRenderEntityBuckets {
+  const cached = renderEntityBuckets.get(entities);
+  if (cached) return cached;
+
+  const buckets: IitcIrisRenderEntityBuckets = {
+    fieldsByTeam: new Map(),
+    linksByTeam: new Map(),
+    portalsByTeam: new Map(),
+    portalsByLevel: new Map(),
+  };
+  for (const field of entities.fields) addToBucket(buckets.fieldsByTeam, field.team, field);
+  for (const link of entities.links) addToBucket(buckets.linksByTeam, link.team, link);
+  for (const portal of entities.portals) {
+    addToBucket(buckets.portalsByTeam, portal.team, portal);
+    addToBucket(buckets.portalsByLevel, getPortalLevelBucket(portal), portal);
+  }
+  renderEntityBuckets.set(entities, buckets);
+  return buckets;
+}
+
+function appendUniqueEntities<T extends {guid: string}>(target: T[], seen: Set<string>, source: T[] | undefined): void {
+  if (!source) return;
+  for (const entity of source) {
+    if (seen.has(entity.guid)) continue;
+    seen.add(entity.guid);
+    target.push(entity);
+  }
+}
+
+function getScopedFields(entities: IitcIrisRenderEntities, scope: IitcIrisCoreEntityRenderScope): IitcIrisRenderField[] {
+  if (!scope.fields) return [];
+  if (scope.allFields) return entities.fields;
+  const buckets = getRenderEntityBuckets(entities);
+  const fields: IitcIrisRenderField[] = [];
+  const seen = new Set<string>();
+  for (const team of scope.fieldTeams) appendUniqueEntities(fields, seen, buckets.fieldsByTeam.get(team));
+  return fields;
+}
+
+function getScopedLinks(entities: IitcIrisRenderEntities, scope: IitcIrisCoreEntityRenderScope): IitcIrisRenderLink[] {
+  if (!scope.links) return [];
+  if (scope.allLinks) return entities.links;
+  const buckets = getRenderEntityBuckets(entities);
+  const links: IitcIrisRenderLink[] = [];
+  const seen = new Set<string>();
+  for (const team of scope.linkTeams) appendUniqueEntities(links, seen, buckets.linksByTeam.get(team));
+  return links;
+}
+
+function getScopedPortals(entities: IitcIrisRenderEntities, scope: IitcIrisCoreEntityRenderScope): IitcIrisRenderPortal[] {
+  if (!scope.portals) return [];
+  if (scope.allPortals) return entities.portals;
+  const buckets = getRenderEntityBuckets(entities);
+  const portals: IitcIrisRenderPortal[] = [];
+  const seen = new Set<string>();
+  for (const team of scope.portalTeams) appendUniqueEntities(portals, seen, buckets.portalsByTeam.get(team));
+  for (const level of scope.portalLevels) appendUniqueEntities(portals, seen, buckets.portalsByLevel.get(level));
+  return portals;
 }
 
 function addFactionScope(scope: IitcIrisCoreEntityRenderScope, team: IitcIrisRenderPortal['team']): void {
@@ -2806,22 +2887,6 @@ function getCoreEntityRenderScope(changedLayerKeys?: (keyof IitcIrisLayerSetting
   }
 
   return scope;
-}
-
-function isFieldAffectedByScope(field: IitcIrisRenderField, scope: IitcIrisCoreEntityRenderScope): boolean {
-  return scope.fields && (scope.allFields || scope.fieldTeams.has(field.team));
-}
-
-function isLinkAffectedByScope(link: IitcIrisRenderLink, scope: IitcIrisCoreEntityRenderScope): boolean {
-  return scope.links && (scope.allLinks || scope.linkTeams.has(link.team));
-}
-
-function isPortalAffectedByScope(portal: IitcIrisRenderPortal, scope: IitcIrisCoreEntityRenderScope): boolean {
-  return scope.portals && (
-    scope.allPortals ||
-    scope.portalTeams.has(portal.team) ||
-    scope.portalLevels.has(getPortalLevelBucket(portal))
-  );
 }
 
 function syncVisibilityChangedEntityLayers<T extends {guid: string}>(
@@ -2884,7 +2949,7 @@ function renderCoreEntityLayersVisibilityChange(
     ? syncVisibilityChangedEntityLayers(
       layers.fields,
       layers.entityLayerIndex.fields,
-      entities.fields.filter((field) => isFieldAffectedByScope(field, scope) && field.points.length === 3),
+      getScopedFields(entities, scope).filter((field) => field.points.length === 3),
       (field) => isFieldVisibleWith(previousLayerSettings, field),
       isFieldVisible,
       createFieldLayer,
@@ -2898,7 +2963,7 @@ function renderCoreEntityLayersVisibilityChange(
     ? syncVisibilityChangedEntityLayers(
       layers.links,
       layers.entityLayerIndex.links,
-      entities.links.filter((link) => isLinkAffectedByScope(link, scope)),
+      getScopedLinks(entities, scope),
       (link) => isLinkVisibleWith(previousLayerSettings, link),
       isLinkVisible,
       createLinkLayer,
@@ -2912,7 +2977,7 @@ function renderCoreEntityLayersVisibilityChange(
     ? syncVisibilityChangedEntityLayers(
       layers.portals,
       layers.entityLayerIndex.portals,
-      entities.portals.filter((portal) => isPortalAffectedByScope(portal, scope)),
+      getScopedPortals(entities, scope),
       (portal) => isPortalVisibleWith(previousLayerSettings, portal),
       isPortalVisible,
       (portal) => createPortalLayer(portal, renderPolicy),
@@ -3003,7 +3068,6 @@ function renderCoreEntityLayersIncremental(
   layers: NonNullable<Window['__iitcIrisLayers']>,
   previousEntities: IitcIrisRenderEntities,
   entities: IitcIrisRenderEntities,
-  visiblePortals: IitcIrisRenderPortal[],
   renderPolicy: IitcIrisRenderPolicy,
   previousLayerSettings: IitcIrisLayerSettings = layerSettings,
   timing?: IitcIrisLayerUpdateTimingDiagnostics,
@@ -3014,8 +3078,8 @@ function renderCoreEntityLayersIncremental(
     ? syncEntityLayers(
       layers.fields,
       layers.entityLayerIndex.fields,
-      previousEntities.fields.filter((field) => isFieldAffectedByScope(field, scope) && isFieldVisibleWith(previousLayerSettings, field) && field.points.length === 3),
-      entities.fields.filter((field) => isFieldAffectedByScope(field, scope) && isFieldVisible(field) && field.points.length === 3),
+      getScopedFields(previousEntities, scope).filter((field) => isFieldVisibleWith(previousLayerSettings, field) && field.points.length === 3),
+      getScopedFields(entities, scope).filter((field) => isFieldVisible(field) && field.points.length === 3),
       areFieldLayersEqual,
       createFieldLayer,
       layers.coreLayerGroups.fields,
@@ -3028,8 +3092,8 @@ function renderCoreEntityLayersIncremental(
     ? syncEntityLayers(
       layers.links,
       layers.entityLayerIndex.links,
-      previousEntities.links.filter((link) => isLinkAffectedByScope(link, scope) && isLinkVisibleWith(previousLayerSettings, link)),
-      entities.links.filter((link) => isLinkAffectedByScope(link, scope) && isLinkVisible(link)),
+      getScopedLinks(previousEntities, scope).filter((link) => isLinkVisibleWith(previousLayerSettings, link)),
+      getScopedLinks(entities, scope).filter(isLinkVisible),
       areLinkLayersEqual,
       createLinkLayer,
       layers.coreLayerGroups.links,
@@ -3042,8 +3106,8 @@ function renderCoreEntityLayersIncremental(
     ? syncEntityLayers(
       layers.portals,
       layers.entityLayerIndex.portals,
-      previousEntities.portals.filter((portal) => isPortalAffectedByScope(portal, scope) && isPortalVisibleWith(previousLayerSettings, portal)),
-      visiblePortals.filter((portal) => isPortalAffectedByScope(portal, scope)),
+      getScopedPortals(previousEntities, scope).filter((portal) => isPortalVisibleWith(previousLayerSettings, portal)),
+      getScopedPortals(entities, scope).filter(isPortalVisible),
       arePortalLayersEqual,
       (portal) => createPortalLayer(portal, renderPolicy),
       layers.coreLayerGroups.portals,
@@ -3082,12 +3146,20 @@ function renderEntities(
 
   const secondaryUpdate = options.secondaryUpdate ?? ALL_SECONDARY_ENTITY_RENDER_UPDATE;
   const ornamentDiagnostics = secondaryUpdate.portalOverlays ? createEmptyOrnamentDiagnostics() : latestOrnamentDiagnostics;
-  stepStartedAt = performance.now();
-  const visiblePortals = entities.portals.filter(isPortalVisible);
-  if (timing) timing.visiblePortalsMs = roundTimingMs(performance.now() - stepStartedAt);
+  let visiblePortals: IitcIrisRenderPortal[] | undefined;
+  const getVisiblePortalsForRender = (): IitcIrisRenderPortal[] => {
+    if (!visiblePortals) {
+      const visiblePortalsStartedAt = performance.now();
+      visiblePortals = entities.portals.filter(isPortalVisible);
+      if (timing) timing.visiblePortalsMs = roundTimingMs(performance.now() - visiblePortalsStartedAt);
+    }
+    return visiblePortals;
+  };
 
   stepStartedAt = performance.now();
-  const visibleLevelLabelGuids = secondaryUpdate.portalOverlays && renderPolicy.labels ? getVisibleLevelLabelGuids(visiblePortals) : new Set<string>();
+  const visibleLevelLabelGuids = secondaryUpdate.portalOverlays && renderPolicy.labels
+    ? getVisibleLevelLabelGuids(getVisiblePortalsForRender())
+    : new Set<string>();
   if (timing) timing.visibleLabelsMs = roundTimingMs(performance.now() - stepStartedAt);
 
   const previousEntities = latestEntities;
@@ -3129,7 +3201,6 @@ function renderEntities(
         layers,
         previousEntities,
         entities,
-        visiblePortals,
         renderPolicy,
         options.previousLayerSettings,
         timing,
@@ -3159,7 +3230,8 @@ function renderEntities(
     if (timing) timing.fullLinksMs = roundTimingMs(performance.now() - stepStartedAt);
 
     stepStartedAt = performance.now();
-    for (const portal of visiblePortals) {
+    const fullRenderVisiblePortals = getVisiblePortalsForRender();
+    for (const portal of fullRenderVisiblePortals) {
       addEntityRenderedLayer(layers.portals, layers.entityLayerIndex.portals, portal.guid, createPortalLayer(portal, renderPolicy), layers.coreLayerGroups.portals);
     }
     if (timing) timing.fullPortalsMs = roundTimingMs(performance.now() - stepStartedAt);
@@ -3167,14 +3239,14 @@ function renderEntities(
       mode: 'full',
       fields: createFullRenderMutationLayerDiagnostics(renderedFieldCount),
       links: createFullRenderMutationLayerDiagnostics(renderedLinkCount),
-      portals: createFullRenderMutationLayerDiagnostics(visiblePortals.length),
+      portals: createFullRenderMutationLayerDiagnostics(fullRenderVisiblePortals.length),
     };
   }
   latestEntityRenderContextKey = renderContextKey;
 
   stepStartedAt = performance.now();
   if (secondaryUpdate.portalOverlays) {
-    for (const portal of visiblePortals) {
+    for (const portal of getVisiblePortalsForRender()) {
       const latLng = toLatLng(portal.latE6, portal.lngE6);
       const radius = getPortalRadius(portal.level, portal.isPlaceholder);
       if (renderPolicy.labels && visibleLevelLabelGuids.has(portal.guid) && portal.level !== undefined) {
@@ -3213,7 +3285,7 @@ function renderEntities(
       }
     }
   }
-  if (secondaryUpdate.selectedPortal) renderSelectedPortal(visiblePortals);
+  if (secondaryUpdate.selectedPortal) renderSelectedPortal();
   if (secondaryUpdate.selectedMapObject) renderSelectedMapObject();
   if (secondaryUpdate.drawTools) renderIitcDrawTools();
   latestOrnamentDiagnostics = ornamentDiagnostics;
