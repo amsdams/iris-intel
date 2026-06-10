@@ -177,6 +177,7 @@ let latestRequestKey = '';
 let latestEntities: IitcIrisRenderEntities | undefined;
 let latestPlan: IitcMapDataPlan | undefined;
 let latestResponse: IitcGetEntitiesResponse | undefined;
+let latestWantedTileKeys = new Set<string>();
 const mapDataCache = new IitcDataCache<IitcMapTilePayload>();
 let selectedPortalGuid: string | undefined;
 let selectedPortal: IitcIrisSelectedPortal | null = null;
@@ -501,6 +502,7 @@ function postMapMoveStarted(): void {
   mapMoveInProgress = true;
   latestFetchGeneration += 1;
   latestRequestKey = '';
+  latestWantedTileKeys = new Set();
   window.clearTimeout(refreshTimer);
 }
 
@@ -4469,6 +4471,13 @@ function storeSuccessfulTilePayloads(response: IitcGetEntitiesResponse | undefin
   return storedTileKeys;
 }
 
+function storeWantedSuccessfulTilePayloads(response: IitcGetEntitiesResponse | undefined, tileKeys: string[]): string[] {
+  return storeSuccessfulTilePayloads(
+    response,
+    tileKeys.filter((tileKey) => latestWantedTileKeys.has(tileKey)),
+  );
+}
+
 function recordStaleGenerationCacheWarmTileKeys(tileKeys: string[]): void {
   if (tileKeys.length === 0 || !latestTileDiagnostics) return;
   latestTileDiagnostics = {
@@ -4593,6 +4602,7 @@ async function refreshEntities(): Promise<void> {
     const liveAbortController = abortController;
     currentFetchAbortController = abortController;
     latestPlan = plan;
+    latestWantedTileKeys = new Set(plan.tileKeys);
     const timingDiagnostics: IitcIrisMapTimingDiagnostics = {
       movementDelayMs: lifecycleSettings.iitcMovementDelay ? IITC_MOVE_REFRESH_DELAY_MS : FAST_MOVE_REFRESH_DELAY_MS,
     };
@@ -4694,13 +4704,16 @@ async function refreshEntities(): Promise<void> {
     const processCompletedBatch = (result: TileBatchResult, startedAsRetry: boolean): void => {
       if (result.error && isAuthLikeError(result.error)) throw result.error;
       const previousStaleTileKeys = new Set(queueState.staleTileKeys);
+      const wantedAtResponse = new Set(queueState.queuedTileKeys);
 
       if (result.response) {
         for (const tileKey of result.tileKeys) {
           const tile = result.response.result?.map?.[tileKey];
           if (tile && !tile.error) {
             mapDataCache.store(tileKey, tile);
-            renderQueue = pushIitcRenderQueueTile(renderQueue, tileKey, tile, 'ok');
+            if (wantedAtResponse.has(tileKey)) {
+              renderQueue = pushIitcRenderQueueTile(renderQueue, tileKey, tile, 'ok');
+            }
           }
         }
       }
@@ -4770,9 +4783,10 @@ async function refreshEntities(): Promise<void> {
         const settled = await Promise.race(inFlight.values());
         inFlight.delete(settled.id);
         if (generation !== latestFetchGeneration) {
-          if (ENABLE_STALE_GENERATION_CACHE_WARMING) {
-            recordStaleGenerationCacheWarmTileKeys(storeSuccessfulTilePayloads(settled.result.response, settled.result.tileKeys));
-          }
+          const warmedTileKeys = ENABLE_STALE_GENERATION_CACHE_WARMING
+            ? storeSuccessfulTilePayloads(settled.result.response, settled.result.tileKeys)
+            : storeWantedSuccessfulTilePayloads(settled.result.response, settled.result.tileKeys);
+          recordStaleGenerationCacheWarmTileKeys(warmedTileKeys);
           queueState = markIitcTileQueueStale(queueState);
           activeQueueState = queueState;
           return false;
@@ -4831,6 +4845,7 @@ async function refreshEntities(): Promise<void> {
       renderQueue: renderQueueDiagnostics,
       timing: timingDiagnostics,
     });
+    if (generation === latestFetchGeneration) latestWantedTileKeys = new Set();
     if (currentFetchAbortController === abortController) currentFetchAbortController = undefined;
   } catch (error) {
     if (generation !== latestFetchGeneration || (error instanceof DOMException && error.name === 'AbortError')) {

@@ -303,6 +303,26 @@ describe('IITC map data request planning', () => {
     expect(state.tileErrorCount.timeout).toBe(1);
   });
 
+  it('ignores successful response tiles that are no longer wanted like IITC', () => {
+    const started = markIitcTileRequestStarted(createIitcTileQueueState(['wanted', 'old']), ['wanted', 'old']);
+    const current = {
+      ...started,
+      queuedTileKeys: ['wanted'],
+    };
+    const {state, classification} = applyIitcTileRequestResponseToQueue(current, {
+      result: {
+        map: {
+          wanted: {gameEntities: [['wanted.1', 1, ['p', 'E', 1, 2]]]},
+          old: {gameEntities: [['old.1', 1, ['p', 'R', 3, 4]]]},
+        },
+      },
+    }, ['wanted', 'old']);
+
+    expect(classification.successTileKeys).toEqual(['wanted', 'old']);
+    expect(state.successTileKeys).toEqual(['wanted']);
+    expect(state.queuedTileKeys).toEqual([]);
+  });
+
   it('creates request batches from queued tiles while excluding active requests', () => {
     const state = markIitcTileRequestStarted(createIitcTileQueueState(['a', 'b', 'c', 'd', 'e', 'f']), ['b']);
 

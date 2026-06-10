@@ -383,7 +383,9 @@ export function applyIitcTileRequestResponseToQueue(
   const returnedEmptyRetryTileKeys = options.retryReturnedEmptyTiles && response
     ? getIitcReturnedEmptyTileKeys(response, requestedTileKeys)
     : [];
-  const successTileKeys = removeMany(classification.successTileKeys, returnedEmptyRetryTileKeys);
+  const queuedTileKeySet = new Set(state.queuedTileKeys);
+  const successTileKeys = removeMany(classification.successTileKeys, returnedEmptyRetryTileKeys)
+    .filter((tileKey) => queuedTileKeySet.has(tileKey));
   let nextState: IitcTileQueueState = {
     ...state,
     activeRequestCount: Math.max(0, state.activeRequestCount - 1),
