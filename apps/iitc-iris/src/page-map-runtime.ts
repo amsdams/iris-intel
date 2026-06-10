@@ -11,11 +11,11 @@ import {
   createIitcTileQueueState,
   createIitcTileQueueRequestBatches,
   createIitcCommChannelData,
+  drainIitcRenderQueueBatch,
   createIitcRenderQueueState,
   createIitcMapDataPlan,
   decodeIitcGameEntities,
   decodeIitcGetEntitiesResponse,
-  drainIitcRenderQueueToResponse,
   genIitcCommPostData,
   genIitcCommSendPlextPostData,
   getIitcCommChannelMessages,
@@ -88,6 +88,7 @@ const REQUEST_BOUNDS_PADDING_RATIO = 0.25;
 const OPTIONAL_OVERLAY_MIN_ZOOM = 14;
 const FAST_MOVE_REFRESH_DELAY_MS = 250;
 const IITC_MOVE_REFRESH_DELAY_MS = 3000;
+const IITC_RENDER_BATCH_SIZE = 1_000_000_000;
 const ENABLE_STALE_GENERATION_CACHE_WARMING = false;
 const LONG_PRESS_MS = 600;
 const LONG_PRESS_MOVE_TOLERANCE_PX = 12;
@@ -4675,7 +4676,7 @@ async function refreshEntities(): Promise<void> {
         ...renderQueueDiagnostics,
         queuedTiles: renderQueue.entries.length,
       };
-      const drainResult = drainIitcRenderQueueToResponse(renderQueue, mergeIitcGetEntitiesResponses(responses));
+      const drainResult = drainIitcRenderQueueBatch(renderQueue, IITC_RENDER_BATCH_SIZE, mergeIitcGetEntitiesResponses(responses));
       renderQueue = drainResult.state;
       renderQueueDiagnostics = appendRenderQueueDiagnostics(renderQueueDiagnostics, drainResult.tileStatuses);
       responses.length = 0;
