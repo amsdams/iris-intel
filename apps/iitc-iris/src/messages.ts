@@ -12,6 +12,7 @@ export const IITC_IRIS_MESSAGES = {
   dataSourceSettings: 'IITC_IRIS_DATA_SOURCE_SETTINGS',
   lifecycleSettings: 'IITC_IRIS_LIFECYCLE_SETTINGS',
   setView: 'IITC_IRIS_SET_VIEW',
+  panBy: 'IITC_IRIS_PAN_BY',
   setUserLocation: 'IITC_IRIS_SET_USER_LOCATION',
   zoomToAndShowPortal: 'IITC_IRIS_ZOOM_TO_AND_SHOW_PORTAL',
   clearPortalSelection: 'IITC_IRIS_CLEAR_PORTAL_SELECTION',
@@ -49,6 +50,8 @@ export interface IitcIrisMessage {
   lat?: number;
   lng?: number;
   zoom?: number;
+  panX?: number;
+  panY?: number;
   bounds?: {
     south: number;
     west: number;

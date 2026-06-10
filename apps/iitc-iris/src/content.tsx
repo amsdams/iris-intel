@@ -21,7 +21,6 @@ import {
 
 const REQUEST_BOUNDS_PADDING_RATIO = 0.25;
 const IITC_PAN_CONTROL_OFFSET_PX = 500;
-const WEB_MERCATOR_TILE_SIZE = 256;
 const BASE_LAYER_STORAGE_KEY = 'iitc-iris:base-layer';
 const LAYER_SETTINGS_STORAGE_KEY = 'iitc-iris:layer-settings';
 const DATA_SOURCE_STORAGE_KEY = 'iitc-iris:data-source';
@@ -560,32 +559,6 @@ function clampView(view: ParsedViewInput): ParsedViewInput {
     lng: Math.max(-180, Math.min(179.999999, view.lng)),
     zoom: view.zoom === undefined ? undefined : Math.max(0, Math.min(21, view.zoom)),
   };
-}
-
-function projectIitcViewLatLng(lat: number, lng: number, zoom: number): {x: number; y: number} {
-  const clampedLat = Math.max(-85.051128, Math.min(85.051128, lat));
-  const sinLat = Math.sin(clampedLat * Math.PI / 180);
-  const scale = WEB_MERCATOR_TILE_SIZE * 2 ** zoom;
-  return {
-    x: ((lng + 180) / 360) * scale,
-    y: (0.5 - Math.log((1 + sinLat) / (1 - sinLat)) / (4 * Math.PI)) * scale,
-  };
-}
-
-function unprojectIitcViewPoint(x: number, y: number, zoom: number): ParsedViewInput {
-  const scale = WEB_MERCATOR_TILE_SIZE * 2 ** zoom;
-  const lng = (x / scale) * 360 - 180;
-  const latRadians = Math.atan(Math.sinh(Math.PI * (1 - 2 * y / scale)));
-  return clampView({
-    lat: latRadians * 180 / Math.PI,
-    lng,
-    zoom,
-  });
-}
-
-function panIitcViewByPixels(view: StoredMapView, offsetX: number, offsetY: number): ParsedViewInput {
-  const projected = projectIitcViewLatLng(view.lat, view.lng, view.zoom);
-  return unprojectIitcViewPoint(projected.x + offsetX, projected.y + offsetY, view.zoom);
 }
 
 function isStoredMapView(value: unknown): value is StoredMapView {
@@ -2627,8 +2600,11 @@ function App(): h.JSX.Element {
   const panMap = (direction: 'north' | 'south' | 'west' | 'east'): void => {
     const offsetX = direction === 'east' ? IITC_PAN_CONTROL_OFFSET_PX : direction === 'west' ? -IITC_PAN_CONTROL_OFFSET_PX : 0;
     const offsetY = direction === 'south' ? IITC_PAN_CONTROL_OFFSET_PX : direction === 'north' ? -IITC_PAN_CONTROL_OFFSET_PX : 0;
-    const nextView = panIitcViewByPixels(camera, offsetX, offsetY);
-    setMapView(nextView.lat, nextView.lng);
+    window.postMessage({
+      type: IITC_IRIS_MESSAGES.panBy,
+      panX: offsetX,
+      panY: offsetY,
+    } satisfies IitcIrisMessage, '*');
   };
 
   const zoomMap = (delta: number): void => {

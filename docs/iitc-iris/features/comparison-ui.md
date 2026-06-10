@@ -36,8 +36,11 @@ Current status:
   portal links with `pll`.
 - The floating map-controls panel has pan buttons aligned with IITC's Pan Control plugin:
   `reference/ingress-intel-total-conversion/plugins/external/L.Control.Pan.js` uses `panOffset: 500`, so IITC IRIS
-  projects the current center and pans by 500 Web Mercator pixels at the current zoom before calling the normal
-  `setView` path. The +/- zoom buttons still move one zoom level at a time.
+  sends a direct Leaflet `panBy([x, y])` command with 500px offsets. This keeps fast repeated clicks cumulative like
+  IITC's plugin instead of deriving each pan from possibly stale content-side camera state. The +/- zoom buttons still
+  move one zoom level at a time.
+- Manual comparison on 2026-06-10 confirmed the direct `panBy` behavior feels closer to IITC for repeated fast pan
+  clicks than the previous content-side projected-center calculation.
 - The dock can copy the current view back out as an Intel URL.
 - The floating map-controls panel has base-map switches for CartoDB Dark Matter, CartoDB Positron, and OpenStreetMap,
   with the selected base map persisted for repeatable visual comparisons.

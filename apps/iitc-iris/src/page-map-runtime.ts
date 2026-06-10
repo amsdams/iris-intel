@@ -22,6 +22,7 @@ import {
   getIitcInventoryPortalKeyCount,
   getIitcMissionBounds,
   getIitcPortalAnalysis,
+  getIitcRequestQueueDelayMs,
   IITC_DRAW_TOOLS_DEFAULT_COLOR,
   IITC_DRAW_TOOLS_KEY_STORAGE,
   IITC_MISSION_ORDER,
@@ -3080,6 +3081,11 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
     const zoom = typeof event.data.zoom === 'number' ? event.data.zoom : map.getZoom();
     map.setView([event.data.lat, event.data.lng], zoom);
   }
+  if (event.data?.type === IITC_IRIS_MESSAGES.panBy) {
+    const map = window.__iitcIrisMap;
+    if (!map || typeof event.data.panX !== 'number' || typeof event.data.panY !== 'number') return;
+    map.panBy([event.data.panX, event.data.panY]);
+  }
   if (event.data?.type === IITC_IRIS_MESSAGES.setUserLocation) {
     renderUserLocation(event.data.userLat, event.data.userLng, event.data.userAccuracy);
   }
@@ -4458,6 +4464,25 @@ async function fetchEntityBatchResult(tileKeys: string[], version: string, signa
   }
 }
 
+async function waitForIitcQueueDelay(delayMs: number, generation: number, signal: AbortSignal): Promise<boolean> {
+  if (signal.aborted) return false;
+  if (delayMs <= 0) return generation === latestFetchGeneration && !signal.aborted;
+  return await new Promise<boolean>((resolve) => {
+    let settled = false;
+    let timer = 0;
+    const finish = (value: boolean): void => {
+      if (settled) return;
+      settled = true;
+      signal.removeEventListener('abort', onAbort);
+      window.clearTimeout(timer);
+      resolve(value);
+    };
+    const onAbort = (): void => finish(false);
+    timer = window.setTimeout(() => finish(generation === latestFetchGeneration && !signal.aborted), delayMs);
+    signal.addEventListener('abort', onAbort, {once: true});
+  });
+}
+
 function storeSuccessfulTilePayloads(response: IitcGetEntitiesResponse | undefined, tileKeys: string[]): string[] {
   const storedTileKeys: string[] = [];
   if (!response) return storedTileKeys;
@@ -4701,7 +4726,7 @@ async function refreshEntities(): Promise<void> {
     let mergedResponse = mergeIitcGetEntitiesResponses(responses);
     const retriedTileKeys = new Set<string>();
     let retryRequests = 0;
-    const processCompletedBatch = (result: TileBatchResult, startedAsRetry: boolean): void => {
+    const processCompletedBatch = (result: TileBatchResult, startedAsRetry: boolean): number => {
       if (result.error && isAuthLikeError(result.error)) throw result.error;
       const previousStaleTileKeys = new Set(queueState.staleTileKeys);
       const wantedAtResponse = new Set(queueState.queuedTileKeys);
@@ -4718,9 +4743,10 @@ async function refreshEntities(): Promise<void> {
         }
       }
 
-      queueState = applyIitcTileRequestResponseToQueue(queueState, result.response ?? null, result.tileKeys, result.response !== undefined, {
+      const queueApplyResult = applyIitcTileRequestResponseToQueue(queueState, result.response ?? null, result.tileKeys, result.response !== undefined, {
         staleTileKeys: queueState.queuedTileKeys.filter((tileKey) => mapDataCache.get(tileKey) !== undefined),
-      }).state;
+      });
+      queueState = queueApplyResult.state;
       for (const tileKey of queueState.staleTileKeys) {
         if (previousStaleTileKeys.has(tileKey)) continue;
         const staleTile = mapDataCache.get(tileKey);
@@ -4761,10 +4787,12 @@ async function refreshEntities(): Promise<void> {
         renderQueue: renderQueueDiagnostics,
         timing: timingDiagnostics,
       });
+      return getIitcRequestQueueDelayMs(queueApplyResult.classification.queueDelayReason);
     };
     const runIitcRefillQueue = async (): Promise<boolean> => {
       const inFlight = new Map<number, Promise<{id: number; result: TileBatchResult; startedAsRetry: boolean}>>();
       let requestId = 0;
+      let nextRefillAt = 0;
       const fillOpenRequestSlots = (): void => {
         const batches = createIitcTileQueueRequestBatches(queueState);
         for (const batch of batches) {
@@ -4791,7 +4819,21 @@ async function refreshEntities(): Promise<void> {
           activeQueueState = queueState;
           return false;
         }
-        processCompletedBatch(settled.result, settled.startedAsRetry);
+        const queueDelayMs = processCompletedBatch(settled.result, settled.startedAsRetry);
+        if (queueDelayMs > 0) {
+          nextRefillAt = Math.max(nextRefillAt, performance.now() + queueDelayMs);
+        }
+        const refillDelayMs = nextRefillAt - performance.now();
+        if (refillDelayMs > 0 && inFlight.size > 0) continue;
+        if (refillDelayMs > 0) {
+          const shouldContinue = await waitForIitcQueueDelay(refillDelayMs, generation, liveAbortController.signal);
+          if (!shouldContinue) {
+            queueState = markIitcTileQueueStale(queueState);
+            activeQueueState = queueState;
+            return false;
+          }
+          nextRefillAt = 0;
+        }
         fillOpenRequestSlots();
       }
       return true;

@@ -12,6 +12,7 @@ import {
   createIitcLiveCompatRequestBatches,
   createIitcResponseBucketDiagnostics,
   createIitcRequestBatches,
+  getIitcRequestQueueDelayMs,
   getIitcReusableCacheClassification,
   getIitcLiveCompatRetryTileKeys,
   getIitcRecoveredTileKeys,
@@ -243,6 +244,14 @@ describe('IITC map data request planning', () => {
       retryTileKeys: ['a'],
       queueDelayReason: 'error',
     });
+  });
+
+  it('maps request response bucket reasons to IITC queue delays', () => {
+    expect(getIitcRequestQueueDelayMs('normal')).toBe(0);
+    expect(getIitcRequestQueueDelayMs('server-retry')).toBe(0);
+    expect(getIitcRequestQueueDelayMs('timeout')).toBe(0);
+    expect(getIitcRequestQueueDelayMs('error')).toBe(5_000);
+    expect(getIitcRequestQueueDelayMs('unaccounted')).toBe(5_000);
   });
 
   it('accumulates response bucket diagnostics immutably', () => {

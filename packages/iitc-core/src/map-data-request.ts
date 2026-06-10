@@ -10,6 +10,10 @@ export const IITC_LIVE_COMPAT_TILES_PER_REQUEST = 5;
 export const IITC_EMPTY_TILE_RETRY_PASSES = 2;
 export const IITC_EMPTY_TILE_RETRY_BATCH_SIZE = 1;
 export const IITC_EMPTY_TILE_RETRY_LIMIT = 40;
+export const IITC_RUN_QUEUE_DELAY_MS = 0;
+export const IITC_BAD_REQUEST_RUN_QUEUE_DELAY_MS = 5_000;
+export const IITC_EMPTY_RESPONSE_RUN_QUEUE_DELAY_MS = 5_000;
+export const IITC_TIMEOUT_REQUEST_RUN_QUEUE_DELAY_MS = 0;
 
 export interface IitcLatLng {
   lat: number;
@@ -243,6 +247,13 @@ export function appendIitcResponseBucketDiagnostics(
       ? diagnostics.queueDelayReasons
       : [...diagnostics.queueDelayReasons, classification.queueDelayReason],
   };
+}
+
+export function getIitcRequestQueueDelayMs(reason: IitcRequestQueueDelayReason): number {
+  if (reason === 'error') return IITC_BAD_REQUEST_RUN_QUEUE_DELAY_MS;
+  if (reason === 'unaccounted') return IITC_EMPTY_RESPONSE_RUN_QUEUE_DELAY_MS;
+  if (reason === 'timeout') return IITC_TIMEOUT_REQUEST_RUN_QUEUE_DELAY_MS;
+  return IITC_RUN_QUEUE_DELAY_MS;
 }
 
 export function lngToIitcTile(lng: number, params: IitcTileParams): number {
