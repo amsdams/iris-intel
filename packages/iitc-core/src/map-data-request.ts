@@ -138,6 +138,7 @@ export interface IitcTileQueueApplyOptions {
   maxTileRetries?: number;
   staleTileKeys?: string[];
   retryReturnedEmptyTiles?: boolean;
+  countActiveRequest?: boolean;
 }
 
 export interface IitcTileQueueApplyResult {
@@ -147,6 +148,17 @@ export interface IitcTileQueueApplyResult {
 
 export interface IitcTileQueueRequestBatchOptions extends IitcRequestBatchOptions {
   pendingTileKeys?: string[];
+}
+
+export interface IitcTileQueueRefillDecisionOptions {
+  nowMs: number;
+  nextRefillAtMs: number;
+  inFlightRequests: number;
+}
+
+export interface IitcTileQueueRefillDecision {
+  shouldRefill: boolean;
+  waitMs: number;
 }
 
 function clamp(value: number, max: number, min: number): number {
@@ -399,7 +411,9 @@ export function applyIitcTileRequestResponseToQueue(
     .filter((tileKey) => queuedTileKeySet.has(tileKey));
   let nextState: IitcTileQueueState = {
     ...state,
-    activeRequestCount: Math.max(0, state.activeRequestCount - 1),
+    activeRequestCount: options.countActiveRequest === false
+      ? state.activeRequestCount
+      : Math.max(0, state.activeRequestCount - 1),
     requestedTileKeys: removeMany(state.requestedTileKeys, requestedTileKeys),
     queuedTileKeys: removeMany(state.queuedTileKeys, successTileKeys),
     successTileKeys: unique([...state.successTileKeys, ...successTileKeys]),
@@ -439,6 +453,13 @@ export function createIitcTileQueueRequestBatches(
     activeRequestCount: options.activeRequestCount ?? state.activeRequestCount,
     tileErrorCount: options.tileErrorCount ?? state.tileErrorCount,
   });
+}
+
+export function getIitcTileQueueRefillDecision(options: IitcTileQueueRefillDecisionOptions): IitcTileQueueRefillDecision {
+  const waitMs = Math.max(0, options.nextRefillAtMs - options.nowMs);
+  if (waitMs === 0) return {shouldRefill: true, waitMs: 0};
+  if (options.inFlightRequests > 0) return {shouldRefill: false, waitMs: 0};
+  return {shouldRefill: false, waitMs};
 }
 
 export function createIitcRequestBatches(tileKeys: string[], options: IitcRequestBatchOptions = {}): string[][] {

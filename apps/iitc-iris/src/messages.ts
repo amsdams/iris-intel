@@ -524,6 +524,7 @@ export interface IitcIrisMapTimingDiagnostics {
   artifactWaitMs?: number;
   totalMs?: number;
   movementDelayMs?: number;
+  downloadDelayMs?: number;
 }
 
 export interface IitcIrisPlayerTrackerDiagnostics {

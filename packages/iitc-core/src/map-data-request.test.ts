@@ -18,6 +18,7 @@ import {
   getIitcRecoveredTileKeys,
   getIitcReturnedEmptyTileKeys,
   getIitcMapZoomTileParameters,
+  getIitcTileQueueRefillDecision,
   iitcTileToLat,
   iitcTileToLng,
   iitcBoundsContainsBounds,
@@ -282,6 +283,54 @@ describe('IITC map data request planning', () => {
     expect(getIitcRequestQueueDelayMs('unaccounted')).toBe(5_000);
   });
 
+  it('decides whether the IITC queue can refill open request slots', () => {
+    expect(getIitcTileQueueRefillDecision({
+      nowMs: 1_000,
+      nextRefillAtMs: 1_000,
+      inFlightRequests: 0,
+    })).toEqual({shouldRefill: true, waitMs: 0});
+
+    expect(getIitcTileQueueRefillDecision({
+      nowMs: 1_000,
+      nextRefillAtMs: 6_000,
+      inFlightRequests: 2,
+    })).toEqual({shouldRefill: false, waitMs: 0});
+
+    expect(getIitcTileQueueRefillDecision({
+      nowMs: 1_000,
+      nextRefillAtMs: 6_000,
+      inFlightRequests: 0,
+    })).toEqual({shouldRefill: false, waitMs: 5_000});
+  });
+
+  it('applies IITC refill waits from timeout, hard error, and unaccounted responses', () => {
+    const timeout = classifyIitcTileRequestResponse({
+      result: {map: {timeout: {error: 'TIMEOUT'}}},
+    }, ['timeout']);
+    const hardError = classifyIitcTileRequestResponse({
+      result: {map: {fail: {error: 'ERROR'}}},
+    }, ['fail']);
+    const unaccounted = classifyIitcTileRequestResponse({
+      result: {map: {}},
+    }, ['missing']);
+
+    expect(getIitcTileQueueRefillDecision({
+      nowMs: 2_000,
+      nextRefillAtMs: 2_000 + getIitcRequestQueueDelayMs(timeout.queueDelayReason),
+      inFlightRequests: 0,
+    })).toEqual({shouldRefill: true, waitMs: 0});
+    expect(getIitcTileQueueRefillDecision({
+      nowMs: 2_000,
+      nextRefillAtMs: 2_000 + getIitcRequestQueueDelayMs(hardError.queueDelayReason),
+      inFlightRequests: 0,
+    })).toEqual({shouldRefill: false, waitMs: 5_000});
+    expect(getIitcTileQueueRefillDecision({
+      nowMs: 2_000,
+      nextRefillAtMs: 2_000 + getIitcRequestQueueDelayMs(unaccounted.queueDelayReason),
+      inFlightRequests: 0,
+    })).toEqual({shouldRefill: false, waitMs: 5_000});
+  });
+
   it('accumulates response bucket diagnostics immutably', () => {
     const start = createIitcResponseBucketDiagnostics();
     const next = appendIitcResponseBucketDiagnostics(start, {
@@ -358,6 +407,26 @@ describe('IITC map data request planning', () => {
     expect(classification.successTileKeys).toEqual(['wanted', 'old']);
     expect(state.successTileKeys).toEqual(['wanted']);
     expect(state.queuedTileKeys).toEqual([]);
+  });
+
+  it('can apply an old wanted response without decrementing the current active request count', () => {
+    const current = {
+      ...markIitcTileRequestStarted(createIitcTileQueueState(['wanted', 'later']), ['later']),
+      requestedTileKeys: ['wanted', 'later'],
+    };
+    const {state} = applyIitcTileRequestResponseToQueue(current, {
+      result: {
+        map: {
+          wanted: {gameEntities: [['wanted.1', 1, ['p', 'E', 1, 2]]]},
+        },
+      },
+    }, ['wanted'], true, {countActiveRequest: false});
+
+    expect(current.activeRequestCount).toBe(1);
+    expect(state.activeRequestCount).toBe(1);
+    expect(state.requestedTileKeys).toEqual(['later']);
+    expect(state.successTileKeys).toEqual(['wanted']);
+    expect(state.queuedTileKeys).toEqual(['later']);
   });
 
   it('creates request batches from queued tiles while excluding active requests', () => {

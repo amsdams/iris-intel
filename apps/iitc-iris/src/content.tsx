@@ -4003,12 +4003,12 @@ function App(): h.JSX.Element {
                 className={`iitc-iris-layer-toggle iitc-iris-system-toggle ${lifecycleSettings.iitcMovementDelay ? 'iitc-iris-layer-toggle-active' : ''}`}
                 type="button"
                 onClick={() => setLifecycleSettings((current) => ({...current, iitcMovementDelay: !current.iitcMovementDelay}))}
-                title="Compare current fast refresh with IITC-style delayed refresh after map movement"
+                title="Compare current fast refresh with IITC-style map movement and download timing"
                 aria-pressed={lifecycleSettings.iitcMovementDelay}
               >
                 IITC Delay
               </button>
-              <span className="iitc-iris-status">{lifecycleSettings.iitcMovementDelay ? '3s move delay' : 'fast move'}</span>
+              <span className="iitc-iris-status">{lifecycleSettings.iitcMovementDelay ? 'IITC timing' : 'fast move'}</span>
             </div>
           </div>
           <div className="iitc-iris-map-controls-section">
