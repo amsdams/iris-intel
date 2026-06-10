@@ -168,17 +168,18 @@ describe('IITC map data request planning', () => {
         map: {
           a: {gameEntities: []},
           b: {gameEntities: [['b.1', 1, ['p', 'E', 1, 2]]]},
+          timeout: {error: 'TIMEOUT'},
         },
       },
     };
 
     expect(summarizeIitcReturnedTiles(response)).toEqual({
-      returnedTiles: 2,
+      returnedTiles: 3,
       nonEmptyTiles: 1,
       emptyTileKeys: ['a'],
       nonEmptyTileKeys: ['b'],
     });
-    expect(getIitcReturnedEmptyTileKeys(response, ['a', 'b', 'c'])).toEqual(['a']);
+    expect(getIitcReturnedEmptyTileKeys(response, ['a', 'b', 'timeout', 'c'])).toEqual(['a']);
     expect(getIitcRecoveredTileKeys(['a', 'b', 'c'], ['b', 'd'])).toEqual(['b']);
   });
 
@@ -243,6 +244,33 @@ describe('IITC map data request planning', () => {
       errorTileKeys: ['a'],
       retryTileKeys: ['a'],
       queueDelayReason: 'error',
+    });
+  });
+
+  it('keeps error buckets out of successful empty-tile diagnostics', () => {
+    const response: IitcGetEntitiesResponse = {
+      result: {
+        map: {
+          empty: {gameEntities: []},
+          timeout: {error: 'TIMEOUT'},
+          fail: {error: 'ERROR'},
+        },
+      },
+    };
+
+    expect(classifyIitcGetEntitiesResponse(response, ['empty', 'timeout', 'fail', 'missing'], {
+      retryReturnedEmptyTiles: true,
+      retryUnaccountedTiles: true,
+    })).toEqual({
+      requestedTiles: 4,
+      returnedTiles: 3,
+      nonEmptyTiles: 0,
+      returnedTileKeys: ['empty', 'timeout', 'fail'],
+      emptyTileKeys: ['empty'],
+      nonEmptyTileKeys: [],
+      unaccountedTileKeys: ['missing'],
+      successTileKeys: [],
+      retryTileKeys: ['empty', 'missing'],
     });
   });
 

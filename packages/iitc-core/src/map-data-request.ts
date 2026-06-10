@@ -494,6 +494,10 @@ export function countIitcTileEntities(tile: IitcMapTilePayload | undefined): num
   return tile?.gameEntities?.length ?? 0;
 }
 
+function isIitcTileError(tile: IitcMapTilePayload | undefined): boolean {
+  return typeof tile?.error === 'string' && tile.error.length > 0;
+}
+
 export function mergeIitcGetEntitiesResponses(responses: IitcGetEntitiesResponse[]): IitcGetEntitiesResponse {
   const map: NonNullable<NonNullable<IitcGetEntitiesResponse['result']>['map']> = {};
 
@@ -515,6 +519,7 @@ export function summarizeIitcReturnedTiles(response: IitcGetEntitiesResponse): I
   const nonEmptyTileKeys: string[] = [];
 
   for (const [tileKey, tile] of entries) {
+    if (isIitcTileError(tile)) continue;
     if (countIitcTileEntities(tile) > 0) nonEmptyTileKeys.push(tileKey);
     else emptyTileKeys.push(tileKey);
   }
@@ -540,7 +545,9 @@ export function classifyIitcGetEntitiesResponse(
   const unaccountedTileKeys = requestedTileKeys.filter((tileKey) => !returnedTileKeySet.has(tileKey));
 
   for (const tileKey of returnedTileKeys) {
-    if (countIitcTileEntities(tilePayloads[tileKey]) > 0) nonEmptyTileKeys.push(tileKey);
+    const tile = tilePayloads[tileKey];
+    if (isIitcTileError(tile)) continue;
+    if (countIitcTileEntities(tile) > 0) nonEmptyTileKeys.push(tileKey);
     else emptyTileKeys.push(tileKey);
   }
 
@@ -549,7 +556,7 @@ export function classifyIitcGetEntitiesResponse(
     ...(options.retryUnaccountedTiles ? unaccountedTileKeys : []),
   ];
   const retryTileKeySet = new Set(retryTileKeys);
-  const successTileKeys = returnedTileKeys.filter((tileKey) => !retryTileKeySet.has(tileKey));
+  const successTileKeys = returnedTileKeys.filter((tileKey) => !retryTileKeySet.has(tileKey) && !isIitcTileError(tilePayloads[tileKey]));
 
   return {
     requestedTiles: requestedTileKeys.length,

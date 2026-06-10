@@ -521,6 +521,7 @@ function createScenarioSnapshotSummary(diagnostics: unknown): ScenarioSnapshotSu
   const freshRetried = countIntersection(cacheFreshTileKeys, retriedTileKeys);
   const stalePartial = countIntersection(cacheStaleTileKeys, partialTileKeys);
   const renderQueue = entities.renderQueue ?? undefined;
+  const renderMutation = entities.renderMutation ?? undefined;
   const renderedStatusTotal = renderQueue
     ? renderQueue.renderedOkTiles + renderQueue.renderedCacheFreshTiles + renderQueue.renderedCacheStaleTiles
     : 0;
@@ -551,7 +552,7 @@ function createScenarioSnapshotSummary(diagnostics: unknown): ScenarioSnapshotSu
       cacheStale: renderQueue.renderedCacheStaleTiles,
       lastStatus: renderQueue.lastRenderedTileStatus,
     } : undefined,
-    renderMutation: entities.renderMutation,
+    renderMutation,
     timing: entities.timing,
     warnings,
   };
@@ -1432,6 +1433,12 @@ function formatCommBounds(bounds: IitcIrisCommState['bounds']): string {
   return bounds ? `${bounds.minLatE6},${bounds.minLngE6} to ${bounds.maxLatE6},${bounds.maxLngE6}` : '-';
 }
 
+function formatRenderMutationSummary(mutation: IitcIrisRenderMutationDiagnostics | null): string {
+  if (!mutation) return 'render -';
+  const portals = mutation.portals;
+  return `${mutation.mode === 'incremental' ? 'inc' : 'full'} p +${portals.added}/-${portals.removed}/~${portals.unchanged}/r${portals.replaced}`;
+}
+
 function getCommTeamClass(team?: string): string {
   if (team === 'E') return 'is-enlightened';
   if (team === 'R') return 'is-resistance';
@@ -1773,6 +1780,7 @@ function App(): h.JSX.Element {
       staleGenerationCacheWarmTileKeys: entityFetch.staleGenerationCacheWarmTileKeys,
       queue: entityFetch.queue,
       renderQueue: entityFetch.renderQueue,
+      renderMutation: entityFetch.renderMutation,
       timing: entityFetch.timing,
       playerTracker: entityFetch.playerTracker,
       authRequired: entityFetch.authRequired,
@@ -3927,6 +3935,9 @@ function App(): h.JSX.Element {
               <span className="iitc-iris-status">dmg {entityFetch.damagedPortals}</span>
               <span className="iitc-iris-status">l {entityFetch.links}</span>
               <span className="iitc-iris-status">f {entityFetch.fields}</span>
+              <span className="iitc-iris-status iitc-iris-compare" title={entityFetch.renderMutation ? JSON.stringify(entityFetch.renderMutation) : undefined}>
+                {formatRenderMutationSummary(entityFetch.renderMutation)}
+              </span>
               <span className="iitc-iris-status iitc-iris-compare">compare vp P/L/F {entityFetch.viewportPortals}/{entityFetch.viewportLinks}/{entityFetch.viewportFields}</span>
               <span className="iitc-iris-status">rt {entityFetch.returnedTiles}/{entityFetch.requestedTiles}</span>
               <span className="iitc-iris-status">nt {entityFetch.nonEmptyTiles}</span>

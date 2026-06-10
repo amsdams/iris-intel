@@ -92,8 +92,17 @@ Adherence summary after 2026-05-31 audit:
   same-object portal-detail rerenders, key-count overlays, and history overlays. Labels, ornaments, artifacts,
   selections, draw tools, player tracker, and other plugin overlays remain on the existing rebuild path.
 - Runtime diagnostics note on 2026-06-10: entity status and copied scenario summaries now include render mutation
-  diagnostics (`full` or `incremental`, plus per-layer added/removed/replaced/unchanged counts). Use this to confirm
-  manual pan comparisons are exercising the incremental path before expanding mutation further.
+  diagnostics (`full` or `incremental`, plus per-layer added/removed/replaced/unchanged counts). The System diagnostics
+  row also shows a compact portal mutation summary. Use this to confirm manual pan comparisons are exercising the
+  incremental path before expanding mutation further.
+- Live fast-pan copies on 2026-06-10 at Amsterdam z15 and z14 kept final states complete. The z15 run recovered 3-8
+  timeout-retried tiles depending on the pan segment, while z14 placeholder mode recovered 5 timeout-retried tiles after
+  2 retry requests. Intermediate snapshots still showed active requests and queued retry tiles, but final snapshots had
+  full returned/non-empty coverage, no partials, and no stale-cache fallback. This keeps lifecycle parked unless a
+  copied run shows unrecovered partials, fresh-cache retries, or visible holes after the queue drains.
+- Diagnostics clarification on 2026-06-10: `emptyTileKeys` now means successful returned tiles with zero entities.
+  Timeout/error tile payloads stay in `timeoutTileKeys`/`errorTileKeys` and `responseRetryTileKeys` instead of also
+  appearing as empty tiles.
 
 Map lifecycle validation runbook - 2026-06-05:
 
