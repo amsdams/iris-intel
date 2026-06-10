@@ -3,7 +3,7 @@ import {useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import './iitc-iris.css';
 import {formatIitcColorVars, getIitcItemColor, getIitcLevelColor, getIitcRarityColor, IITC_RESONATOR_ENERGY, IITC_TEAM_COLORS} from './iitc-colors';
 import {formatSubscriptionBadge, formatSubscriptionLabel, getAuthErrorMessage, getPanelStatusClass, getSubscriptionStatusClass} from './ui-status';
-import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPlayerTrackerDiagnostics, type IitcIrisPortalAnalysis, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPlayerTrackerDiagnostics, type IitcIrisPortalAnalysis, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
 import {
   createIitcMapDataPlan,
   IITC_MAX_REQUESTS,
@@ -284,6 +284,7 @@ interface EntityFetchState {
   staleGenerationCacheWarmTileKeys: string[];
   queue: IitcIrisQueueDiagnostics | null;
   renderQueue: IitcIrisRenderQueueDiagnostics | null;
+  renderMutation: IitcIrisRenderMutationDiagnostics | null;
   timing: IitcIrisMapTimingDiagnostics | null;
   playerTracker: IitcIrisPlayerTrackerDiagnostics | null;
   baseLayerId: IitcIrisBaseLayerId;
@@ -393,6 +394,7 @@ interface ScenarioSnapshotSummary {
     cacheStale?: number;
     lastStatus?: string | null;
   };
+  renderMutation?: IitcIrisRenderMutationDiagnostics | null;
   timing?: IitcIrisMapTimingDiagnostics | null;
   warnings: string[];
 }
@@ -506,6 +508,7 @@ function createScenarioSnapshotSummary(diagnostics: unknown): ScenarioSnapshotSu
       cacheFreshTileKeys?: unknown;
       cacheStaleTileKeys?: unknown;
       renderQueue?: IitcIrisRenderQueueDiagnostics | null;
+      renderMutation?: IitcIrisRenderMutationDiagnostics | null;
       timing?: IitcIrisMapTimingDiagnostics | null;
     };
   };
@@ -548,6 +551,7 @@ function createScenarioSnapshotSummary(diagnostics: unknown): ScenarioSnapshotSu
       cacheStale: renderQueue.renderedCacheStaleTiles,
       lastStatus: renderQueue.lastRenderedTileStatus,
     } : undefined,
+    renderMutation: entities.renderMutation,
     timing: entities.timing,
     warnings,
   };
@@ -1004,6 +1008,7 @@ function entityFetchStateFromMessage(message: IitcIrisMessage, current: EntityFe
     staleGenerationCacheWarmTileKeys: message.staleGenerationCacheWarmTileKeys ?? current.staleGenerationCacheWarmTileKeys,
     queue: message.queue ?? null,
     renderQueue: message.renderQueue ?? null,
+    renderMutation: message.renderMutation ?? null,
     timing: message.timing ?? null,
     playerTracker: message.playerTracker ?? current.playerTracker,
     baseLayerId: message.baseLayerId ?? current.baseLayerId,
@@ -1595,6 +1600,7 @@ function App(): h.JSX.Element {
     staleGenerationCacheWarmTileKeys: [],
     queue: null,
     renderQueue: null,
+    renderMutation: null,
     timing: null,
     playerTracker: null,
     baseLayerId: loadStoredBaseLayerId(),

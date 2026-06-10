@@ -1,5 +1,5 @@
 import L, {type Layer as LeafletLayer, type LeafletMouseEvent, type Map as LeafletMap, type TileLayer} from 'leaflet';
-import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionDetails, type IitcIrisMissionSource, type IitcIrisMissionSummary, type IitcIrisMissionWaypoint, type IitcIrisMissionsState, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisSubscriptionState, type IitcIrisTriStateLayer} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionDetails, type IitcIrisMissionSource, type IitcIrisMissionSummary, type IitcIrisMissionWaypoint, type IitcIrisMissionsState, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderMutationLayerDiagnostics, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisSubscriptionState, type IitcIrisTriStateLayer} from './messages';
 import {IITC_LEVEL_COLORS, IITC_TEAM_COLORS} from './iitc-colors';
 import {createIitcIrisMapContextMessage, installIitcIrisContextGestures} from './map-context-runtime';
 import {convertIitcGeodesicLatLngs, createIitcGeodesicPolygon, createIitcGeodesicPolyline} from './leaflet-geodesic';
@@ -177,6 +177,8 @@ const DEFAULT_LAYER_SETTINGS: IitcIrisLayerSettings = {
 let latestFetchGeneration = 0;
 let latestRequestKey = '';
 let latestEntities: IitcIrisRenderEntities | undefined;
+let latestEntityRenderContextKey = '';
+let latestRenderMutationDiagnostics: IitcIrisRenderMutationDiagnostics | null = null;
 let latestPlan: IitcMapDataPlan | undefined;
 let latestResponse: IitcGetEntitiesResponse | undefined;
 let latestWantedTileKeys = new Set<string>();
@@ -556,6 +558,11 @@ declare global {
       search: LeafletLayer[];
       missions: LeafletLayer[];
       userLocation: LeafletLayer[];
+      entityLayerIndex: {
+        fields: IitcIrisEntityLayerIndex;
+        links: IitcIrisEntityLayerIndex;
+        portals: IitcIrisEntityLayerIndex;
+      };
     };
   }
 }
@@ -575,6 +582,7 @@ const LEVEL_TO_WEIGHT = [2, 2, 2, 2, 2, 3, 3, 4, 4] as const;
 const LEVEL_TO_RADIUS = [7, 7, 7, 7, 8, 8, 9, 10, 11] as const;
 const LEVEL_LABEL_COLLISION_SIZE = 15;
 type IitcIrisLayerPaneKey = keyof IitcIrisLayerSettings | 'drawnItems' | 'selectedPortal' | 'selectedMapObject' | 'search' | 'missions' | 'userLocation';
+type IitcIrisEntityLayerIndex = Map<string, LeafletLayer[]>;
 
 function toLatLng(latE6: number, lngE6: number): [number, number] {
   return [latE6 / 1e6, lngE6 / 1e6];
@@ -723,6 +731,11 @@ function ensureLayers(): NonNullable<Window['__iitcIrisLayers']> {
     search: [],
     missions: [],
     userLocation: [],
+    entityLayerIndex: {
+      fields: new Map<string, LeafletLayer[]>(),
+      links: new Map<string, LeafletLayer[]>(),
+      portals: new Map<string, LeafletLayer[]>(),
+    },
   };
   return window.__iitcIrisLayers;
 }
@@ -739,6 +752,41 @@ function addRenderedLayer(layers: LeafletLayer[], layer: LeafletLayer): void {
   if (!map) return;
   layer.addTo(map);
   layers.push(layer);
+}
+
+function clearEntityLayerIndex(index: IitcIrisEntityLayerIndex): void {
+  index.clear();
+}
+
+function clearEntityLayerIndexes(layers: NonNullable<Window['__iitcIrisLayers']>): void {
+  clearEntityLayerIndex(layers.entityLayerIndex.fields);
+  clearEntityLayerIndex(layers.entityLayerIndex.links);
+  clearEntityLayerIndex(layers.entityLayerIndex.portals);
+}
+
+function addEntityRenderedLayer(
+  layers: LeafletLayer[],
+  index: IitcIrisEntityLayerIndex,
+  guid: string,
+  layer: LeafletLayer,
+): void {
+  const previousLayerCount = layers.length;
+  addRenderedLayer(layers, layer);
+  if (layers.length === previousLayerCount) return;
+  const indexedLayers = index.get(guid) ?? [];
+  indexedLayers.push(layer);
+  index.set(guid, indexedLayers);
+}
+
+function removeEntityRenderedLayers(layers: LeafletLayer[], index: IitcIrisEntityLayerIndex, guid: string): void {
+  const indexedLayers = index.get(guid);
+  if (!indexedLayers) return;
+  for (const layer of indexedLayers) {
+    layer.remove();
+    const layerIndex = layers.indexOf(layer);
+    if (layerIndex >= 0) layers.splice(layerIndex, 1);
+  }
+  index.delete(guid);
 }
 
 function getLayerPane(layerKey: IitcIrisLayerPaneKey): string {
@@ -1157,6 +1205,9 @@ function clearAllRenderedLayers(): void {
   clearRenderedLayers(layers.playerTracker);
   clearRenderedLayers(layers.missions);
   clearRenderedLayers(layers.userLocation);
+  clearEntityLayerIndexes(layers);
+  latestEntityRenderContextKey = '';
+  latestRenderMutationDiagnostics = null;
 }
 
 function clearEntityLayers(): void {
@@ -1164,6 +1215,15 @@ function clearEntityLayers(): void {
   clearRenderedLayers(layers.fields);
   clearRenderedLayers(layers.links);
   clearRenderedLayers(layers.portals);
+  clearRenderedLayers(layers.selectedPortal);
+  clearRenderedLayers(layers.selectedMapObject);
+  clearRenderedLayers(layers.ornaments);
+  clearRenderedLayers(layers.artifacts);
+  clearRenderedLayers(layers.labels);
+  clearEntityLayerIndexes(layers);
+}
+
+function clearSecondaryEntityLayers(layers: NonNullable<Window['__iitcIrisLayers']>): void {
   clearRenderedLayers(layers.selectedPortal);
   clearRenderedLayers(layers.selectedMapObject);
   clearRenderedLayers(layers.ornaments);
@@ -2107,6 +2167,247 @@ function isFieldVisible(field: IitcIrisRenderField): boolean {
   return layerSettings.fields && isTeamLayerVisible(field.team);
 }
 
+function createFieldLayer(field: IitcIrisRenderField): LeafletLayer {
+  return createIitcGeodesicPolygon(field.points.map((point) => toLatLng(point.latE6, point.lngE6)), {
+    color: getTeamColor(field.team),
+    fillColor: getTeamColor(field.team),
+    fillOpacity: 0.25,
+    opacity: 0,
+    pane: getLayerPane('fields'),
+    renderer: getLayerRenderer('fields'),
+    weight: 0,
+    interactive: false,
+  });
+}
+
+function createLinkLayer(link: IitcIrisRenderLink): LeafletLayer {
+  return createIitcGeodesicPolyline([toLatLng(link.oLatE6, link.oLngE6), toLatLng(link.dLatE6, link.dLngE6)], {
+    color: getTeamColor(link.team),
+    opacity: 1,
+    pane: getLayerPane('links'),
+    renderer: getLayerRenderer('links'),
+    weight: 2,
+    interactive: false,
+  });
+}
+
+function createPortalLayer(portal: IitcIrisRenderPortal, renderPolicy: IitcIrisRenderPolicy): LeafletLayer {
+  const color = getTeamColor(portal.team);
+  const latLng = toLatLng(portal.latE6, portal.lngE6);
+  const dataOverlayStyle = getPortalDataOverlayStyle(portal);
+
+  const marker = L.circleMarker(latLng, {
+    radius: getPortalRadius(portal.level, portal.isPlaceholder),
+    color,
+    fillColor: renderPolicy.healthFill || renderPolicy.levelFill
+      ? getPortalFillColor(portal.team, portal.level, portal.isPlaceholder, portal.health)
+      : getTeamColor(portal.team),
+    fillOpacity: renderPolicy.healthFill || renderPolicy.levelFill
+      ? getPortalFillOpacity(portal.health, portal.level, portal.team, portal.isPlaceholder)
+      : 0.5,
+    opacity: portal.isPlaceholder ? 0.6 : 1,
+    pane: getLayerPane('portals'),
+    renderer: getLayerRenderer('portals'),
+    weight: getPortalWeight(portal.level, portal.isPlaceholder),
+    dashArray: portal.isPlaceholder ? '1,2' : undefined,
+    interactive: true,
+    ...dataOverlayStyle,
+  });
+  marker.on('click', (event) => {
+    L.DomEvent.stop(event);
+    if (Date.now() < suppressPortalClickUntil) return;
+    selectPortal(portal);
+  });
+  marker.on('contextmenu', (event) => openPortalContext(portal, event));
+  return marker;
+}
+
+function mapEntitiesByGuid<T extends {guid: string}>(entities: T[]): Map<string, T> {
+  const mapped = new Map<string, T>();
+  for (const entity of entities) mapped.set(entity.guid, entity);
+  return mapped;
+}
+
+function areFieldPointsEqual(a: IitcIrisRenderField['points'], b: IitcIrisRenderField['points']): boolean {
+  return a.length === b.length && a.every((point, index) =>
+    point.guid === b[index]?.guid &&
+    point.latE6 === b[index]?.latE6 &&
+    point.lngE6 === b[index]?.lngE6);
+}
+
+function areFieldLayersEqual(a: IitcIrisRenderField, b: IitcIrisRenderField): boolean {
+  return a.team === b.team && areFieldPointsEqual(a.points, b.points);
+}
+
+function areLinkLayersEqual(a: IitcIrisRenderLink, b: IitcIrisRenderLink): boolean {
+  return a.team === b.team &&
+    a.oGuid === b.oGuid &&
+    a.oLatE6 === b.oLatE6 &&
+    a.oLngE6 === b.oLngE6 &&
+    a.dGuid === b.dGuid &&
+    a.dLatE6 === b.dLatE6 &&
+    a.dLngE6 === b.dLngE6;
+}
+
+function getPortalHistoryForLayer(portal: IitcIrisRenderPortal): NonNullable<IitcIrisRenderPortal['history']> | undefined {
+  return portal.history ?? portalHistoryByGuid.get(portal.guid);
+}
+
+function arePortalHistoriesEqual(a: IitcIrisRenderPortal, b: IitcIrisRenderPortal): boolean {
+  const aHistory = getPortalHistoryForLayer(a);
+  const bHistory = getPortalHistoryForLayer(b);
+  return aHistory?.visited === bHistory?.visited &&
+    aHistory?.captured === bHistory?.captured &&
+    aHistory?.scoutControlled === bHistory?.scoutControlled;
+}
+
+function arePortalLayersEqual(a: IitcIrisRenderPortal, b: IitcIrisRenderPortal): boolean {
+  return a.team === b.team &&
+    a.latE6 === b.latE6 &&
+    a.lngE6 === b.lngE6 &&
+    a.level === b.level &&
+    a.health === b.health &&
+    a.isPlaceholder === b.isPlaceholder &&
+    arePortalHistoriesEqual(a, b);
+}
+
+function createEmptyRenderMutationLayerDiagnostics(): IitcIrisRenderMutationLayerDiagnostics {
+  return {
+    added: 0,
+    removed: 0,
+    replaced: 0,
+    unchanged: 0,
+  };
+}
+
+function createFullRenderMutationLayerDiagnostics(renderedCount: number): IitcIrisRenderMutationLayerDiagnostics {
+  return {
+    added: renderedCount,
+    removed: 0,
+    replaced: 0,
+    unchanged: 0,
+  };
+}
+
+function syncEntityLayers<T extends {guid: string}>(
+  layers: LeafletLayer[],
+  index: IitcIrisEntityLayerIndex,
+  previousEntities: T[],
+  nextEntities: T[],
+  areLayersEqual: (previous: T, next: T) => boolean,
+  createLayer: (entity: T) => LeafletLayer,
+): IitcIrisRenderMutationLayerDiagnostics {
+  const previousByGuid = mapEntitiesByGuid(previousEntities);
+  const nextByGuid = mapEntitiesByGuid(nextEntities);
+  const diagnostics = createEmptyRenderMutationLayerDiagnostics();
+
+  for (const [guid, previousEntity] of previousByGuid) {
+    const nextEntity = nextByGuid.get(guid);
+    if (nextEntity && areLayersEqual(previousEntity, nextEntity)) {
+      diagnostics.unchanged += 1;
+      continue;
+    }
+    removeEntityRenderedLayers(layers, index, guid);
+    if (nextEntity) {
+      diagnostics.replaced += 1;
+    } else {
+      diagnostics.removed += 1;
+    }
+  }
+
+  for (const [guid, nextEntity] of nextByGuid) {
+    const previousEntity = previousByGuid.get(guid);
+    if (previousEntity && areLayersEqual(previousEntity, nextEntity)) continue;
+    addEntityRenderedLayer(layers, index, guid, createLayer(nextEntity));
+    if (!previousEntity) diagnostics.added += 1;
+  }
+
+  return diagnostics;
+}
+
+function getEntityRenderContextKey(renderPolicy: IitcIrisRenderPolicy): string {
+  return JSON.stringify({
+    zoom: window.__iitcIrisMap?.getZoom() ?? DEFAULT_ZOOM,
+    detailedPortals: renderPolicy.detailedPortals,
+    levelFill: renderPolicy.levelFill,
+    healthFill: renderPolicy.healthFill,
+    fields: layerSettings.fields,
+    links: layerSettings.links,
+    portals: layerSettings.portals,
+    unclaimedPortals: layerSettings.unclaimedPortals,
+    level1Portals: layerSettings.level1Portals,
+    level2Portals: layerSettings.level2Portals,
+    level3Portals: layerSettings.level3Portals,
+    level4Portals: layerSettings.level4Portals,
+    level5Portals: layerSettings.level5Portals,
+    level6Portals: layerSettings.level6Portals,
+    level7Portals: layerSettings.level7Portals,
+    level8Portals: layerSettings.level8Portals,
+    resistance: layerSettings.resistance,
+    enlightened: layerSettings.enlightened,
+    machina: layerSettings.machina,
+    historyCaptured: layerSettings.historyCaptured,
+    historyVisited: layerSettings.historyVisited,
+    historyScoutControlled: layerSettings.historyScoutControlled,
+    keyCount: layerSettings.keyCount,
+  });
+}
+
+function canUseIncrementalCoreEntityRender(
+  previousEntities: IitcIrisRenderEntities | undefined,
+  nextEntities: IitcIrisRenderEntities,
+  renderContextKey: string,
+): previousEntities is IitcIrisRenderEntities {
+  return previousEntities !== undefined &&
+    previousEntities !== nextEntities &&
+    latestEntityRenderContextKey === renderContextKey &&
+    pendingPortalSelection === null &&
+    layerSettings.keyCount === 'off' &&
+    layerSettings.historyCaptured === 'off' &&
+    layerSettings.historyVisited === 'off' &&
+    layerSettings.historyScoutControlled === 'off';
+}
+
+function renderCoreEntityLayersIncremental(
+  layers: NonNullable<Window['__iitcIrisLayers']>,
+  previousEntities: IitcIrisRenderEntities,
+  entities: IitcIrisRenderEntities,
+  visiblePortals: IitcIrisRenderPortal[],
+  renderPolicy: IitcIrisRenderPolicy,
+): IitcIrisRenderMutationDiagnostics {
+  const fields = syncEntityLayers(
+    layers.fields,
+    layers.entityLayerIndex.fields,
+    previousEntities.fields.filter((field) => isFieldVisible(field) && field.points.length === 3),
+    entities.fields.filter((field) => isFieldVisible(field) && field.points.length === 3),
+    areFieldLayersEqual,
+    createFieldLayer,
+  );
+  const links = syncEntityLayers(
+    layers.links,
+    layers.entityLayerIndex.links,
+    previousEntities.links.filter(isLinkVisible),
+    entities.links.filter(isLinkVisible),
+    areLinkLayersEqual,
+    createLinkLayer,
+  );
+  const portals = syncEntityLayers(
+    layers.portals,
+    layers.entityLayerIndex.portals,
+    previousEntities.portals.filter(isPortalVisible),
+    visiblePortals,
+    arePortalLayersEqual,
+    (portal) => createPortalLayer(portal, renderPolicy),
+  );
+
+  return {
+    mode: 'incremental',
+    fields,
+    links,
+    portals,
+  };
+}
+
 function renderEntities(entities: IitcIrisRenderEntities): void {
   if (!window.__iitcIrisMap) return;
   const layers = ensureLayers();
@@ -2115,71 +2416,50 @@ function renderEntities(entities: IitcIrisRenderEntities): void {
   const ornamentDiagnostics = createEmptyOrnamentDiagnostics();
   const visiblePortals = entities.portals.filter(isPortalVisible);
   const visibleLevelLabelGuids = renderPolicy.labels ? getVisibleLevelLabelGuids(visiblePortals) : new Set<string>();
+  const previousEntities = latestEntities;
+  const renderContextKey = getEntityRenderContextKey(renderPolicy);
+  const useIncrementalCoreRender = canUseIncrementalCoreEntityRender(previousEntities, entities, renderContextKey);
 
   latestEntities = entities;
   if (pendingPortalSelection) {
     const portal = findPortalByGuidOrLatLng(pendingPortalSelection.guid, pendingPortalSelection.lat, pendingPortalSelection.lng);
     if (portal) selectPortal(portal, false);
   }
-  clearEntityLayers();
 
-  for (const field of entities.fields) {
-    if (!isFieldVisible(field) || field.points.length !== 3) continue;
-    addRenderedLayer(layers.fields, createIitcGeodesicPolygon(field.points.map((point) => toLatLng(point.latE6, point.lngE6)), {
-      color: getTeamColor(field.team),
-      fillColor: getTeamColor(field.team),
-      fillOpacity: 0.25,
-      opacity: 0,
-      pane: getLayerPane('fields'),
-      renderer: getLayerRenderer('fields'),
-      weight: 0,
-      interactive: false,
-    }));
-  }
+  if (useIncrementalCoreRender) {
+    clearSecondaryEntityLayers(layers);
+    latestRenderMutationDiagnostics = renderCoreEntityLayersIncremental(layers, previousEntities, entities, visiblePortals, renderPolicy);
+  } else {
+    clearEntityLayers();
+    let renderedFieldCount = 0;
+    let renderedLinkCount = 0;
+    for (const field of entities.fields) {
+      if (!isFieldVisible(field) || field.points.length !== 3) continue;
+      addEntityRenderedLayer(layers.fields, layers.entityLayerIndex.fields, field.guid, createFieldLayer(field));
+      renderedFieldCount += 1;
+    }
 
-  for (const link of entities.links) {
-    if (!isLinkVisible(link)) continue;
-    addRenderedLayer(layers.links, createIitcGeodesicPolyline([toLatLng(link.oLatE6, link.oLngE6), toLatLng(link.dLatE6, link.dLngE6)], {
-      color: getTeamColor(link.team),
-      opacity: 1,
-      pane: getLayerPane('links'),
-      renderer: getLayerRenderer('links'),
-      weight: 2,
-      interactive: false,
-    }));
+    for (const link of entities.links) {
+      if (!isLinkVisible(link)) continue;
+      addEntityRenderedLayer(layers.links, layers.entityLayerIndex.links, link.guid, createLinkLayer(link));
+      renderedLinkCount += 1;
+    }
+
+    for (const portal of visiblePortals) {
+      addEntityRenderedLayer(layers.portals, layers.entityLayerIndex.portals, portal.guid, createPortalLayer(portal, renderPolicy));
+    }
+    latestRenderMutationDiagnostics = {
+      mode: 'full',
+      fields: createFullRenderMutationLayerDiagnostics(renderedFieldCount),
+      links: createFullRenderMutationLayerDiagnostics(renderedLinkCount),
+      portals: createFullRenderMutationLayerDiagnostics(visiblePortals.length),
+    };
   }
+  latestEntityRenderContextKey = renderContextKey;
 
   for (const portal of visiblePortals) {
-    const color = getTeamColor(portal.team);
     const latLng = toLatLng(portal.latE6, portal.lngE6);
     const radius = getPortalRadius(portal.level, portal.isPlaceholder);
-    const dataOverlayStyle = getPortalDataOverlayStyle(portal);
-
-    const marker = L.circleMarker(latLng, {
-      radius,
-      color,
-      fillColor: renderPolicy.healthFill || renderPolicy.levelFill
-        ? getPortalFillColor(portal.team, portal.level, portal.isPlaceholder, portal.health)
-        : getTeamColor(portal.team),
-      fillOpacity: renderPolicy.healthFill || renderPolicy.levelFill
-        ? getPortalFillOpacity(portal.health, portal.level, portal.team, portal.isPlaceholder)
-        : 0.5,
-      opacity: portal.isPlaceholder ? 0.6 : 1,
-      pane: getLayerPane('portals'),
-      renderer: getLayerRenderer('portals'),
-      weight: getPortalWeight(portal.level, portal.isPlaceholder),
-      dashArray: portal.isPlaceholder ? '1,2' : undefined,
-      interactive: true,
-      ...dataOverlayStyle,
-    });
-    marker.on('click', (event) => {
-      L.DomEvent.stop(event);
-      if (Date.now() < suppressPortalClickUntil) return;
-      selectPortal(portal);
-    });
-    marker.on('contextmenu', (event) => openPortalContext(portal, event));
-    addRenderedLayer(layers.portals, marker);
-
     if (renderPolicy.labels && visibleLevelLabelGuids.has(portal.guid) && portal.level !== undefined) {
       addRenderedLayer(layers.labels, createLevelLabelMarker(latLng, portal.level, portal.team));
     }
@@ -3309,6 +3589,7 @@ function postEntityStatus(
     staleGenerationCacheWarmTileKeys: uniqueStrings(tileDiagnostics.staleGenerationCacheWarmTileKeys),
     queue: tileDiagnostics.queue,
     renderQueue: tileDiagnostics.renderQueue,
+    renderMutation: latestRenderMutationDiagnostics,
     timing: tileDiagnostics.timing,
     requestDiagnostics: getIitcRequestDiagnostics(),
     playerTracker: playerTrackerDiagnostics,

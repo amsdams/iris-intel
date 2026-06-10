@@ -116,6 +116,7 @@ export interface IitcIrisMessage {
   staleGenerationCacheWarmTileKeys?: string[];
   queue?: IitcIrisQueueDiagnostics | null;
   renderQueue?: IitcIrisRenderQueueDiagnostics | null;
+  renderMutation?: IitcIrisRenderMutationDiagnostics | null;
   timing?: IitcIrisMapTimingDiagnostics | null;
   requestDiagnostics?: IitcIrisRequestDiagnostics;
   playerTracker?: IitcIrisPlayerTrackerDiagnostics;
@@ -500,6 +501,20 @@ export interface IitcIrisRenderQueueDiagnostics {
   renderedCacheStaleTiles: number;
   lastRenderedTileStatus: 'ok' | 'cache-fresh' | 'cache-stale' | null;
   renderedTileKeys: string[];
+}
+
+export interface IitcIrisRenderMutationLayerDiagnostics {
+  added: number;
+  removed: number;
+  replaced: number;
+  unchanged: number;
+}
+
+export interface IitcIrisRenderMutationDiagnostics {
+  mode: 'full' | 'incremental';
+  fields: IitcIrisRenderMutationLayerDiagnostics;
+  links: IitcIrisRenderMutationLayerDiagnostics;
+  portals: IitcIrisRenderMutationLayerDiagnostics;
 }
 
 export interface IitcIrisMapTimingDiagnostics {
