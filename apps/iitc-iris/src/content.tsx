@@ -250,8 +250,8 @@ interface EntityFetchState {
 }
 
 type SidePanelId = typeof SIDE_PANEL_OPTIONS[number]['id'];
-type SheetId = 'map' | 'layers' | 'view' | 'drawLinks' | 'drawMarkers' | 'portalCounts' | 'portalsList' | 'scoreboard' | 'search' | 'portal' | 'system' | 'help' | SidePanelId;
-type PrimaryMenuId = 'map' | 'portal' | 'agent' | 'comm' | 'system';
+type SheetId = 'map' | 'layers' | 'view' | 'drawLinks' | 'drawMarkers' | 'portalCounts' | 'portalsList' | 'scoreboard' | 'search' | 'portal' | 'selectedLink' | 'selectedField' | 'system' | 'help' | SidePanelId;
+type PrimaryMenuId = 'map' | 'selected' | 'agent' | 'comm' | 'system';
 type PortalSectionId = 'mods' | 'resonators' | 'facts';
 type PortalsListSortField = 'title' | 'level' | 'team' | 'health' | 'resCount' | 'links' | 'fields' | 'enemyAp' | 'keys';
 type PortalsListTeamFilter = 'all' | IitcPortalAnalysisTeam;
@@ -817,6 +817,8 @@ function isSheetId(value: string | null): value is SheetId {
     value === 'scoreboard' ||
     value === 'search' ||
     value === 'portal' ||
+    value === 'selectedLink' ||
+    value === 'selectedField' ||
     value === 'system' ||
     value === 'help' ||
     isSidePanelId(value);
@@ -833,7 +835,7 @@ function isEditableTarget(target: EventTarget | null): boolean {
 }
 
 function getPrimaryMenuId(sheet: SheetId): PrimaryMenuId {
-  if (sheet === 'portal') return 'portal';
+  if (sheet === 'portal' || sheet === 'selectedLink' || sheet === 'selectedField') return 'selected';
   if (sheet === 'agent' || sheet === 'inventory' || sheet === 'passcode') return 'agent';
   if (sheet === 'comm') return 'comm';
   if (sheet === 'system' || sheet === 'help') return 'system';
@@ -1692,6 +1694,24 @@ function App(): h.JSX.Element {
       : selectedPortalHasMissions
         ? 'Starting here'
         : '';
+  const selectedMapObject = mapContext?.target === 'link' || mapContext?.target === 'field' ? mapContext : null;
+  const hasSelectedObject = Boolean(entityFetch.selectedPortal || selectedMapObject);
+  const selectedPrimaryLabel = selectedMapObject?.target === 'link'
+    ? 'Link'
+    : selectedMapObject?.target === 'field'
+      ? 'Field'
+      : entityFetch.selectedPortal
+        ? 'Portal'
+        : 'Selected';
+  const activeSelectedSheet: SheetId = selectedMapObject?.target === 'link'
+    ? 'selectedLink'
+    : selectedMapObject?.target === 'field'
+      ? 'selectedField'
+      : entityFetch.selectedPortal
+        ? 'portal'
+        : 'map';
+  const selectedKind = selectedMapObject?.target ?? (entityFetch.selectedPortal ? 'portal' : null);
+  const showPortalSidePanel = Boolean(entityFetch.selectedPortal && !(selectedMapObject && (activeSheet === 'selectedLink' || activeSheet === 'selectedField')));
   const dockDiagnostics = {
     app: 'IITC IRIS',
     status,
@@ -2682,9 +2702,9 @@ function App(): h.JSX.Element {
   const canPan = camera.bounds !== null;
   const activeSidePanelOption = SIDE_PANEL_OPTIONS.find((option) => option.id === activeSidePanel) ?? null;
   const activePrimaryMenu = activeSheet === 'missions' && missionsState.source === 'portal'
-    ? 'portal'
+    ? 'selected'
     : activeSheet === 'map' && entityFetch.selectedPortal
-      ? 'portal'
+      ? 'selected'
     : getPrimaryMenuId(activeSheet);
   const activeSidePanelStatus = activeSidePanel === 'comm'
     ? commState.status === 'auth' || commState.sendStatus === 'auth' ? 'auth' : commState.status
@@ -2744,8 +2764,9 @@ function App(): h.JSX.Element {
   };
 
   const togglePrimaryMenu = (menu: PrimaryMenuId): void => {
-    if (menu === 'portal') {
-      toggleSheet('portal');
+    if (menu === 'selected') {
+      if (!hasSelectedObject) return;
+      toggleSheet(activeSelectedSheet);
       return;
     }
     if (menu === 'map') {
@@ -2860,6 +2881,7 @@ function App(): h.JSX.Element {
       }
       if (event.data?.type === IITC_IRIS_MESSAGES.mapContext) {
         if (event.data.contextTarget === 'portal') {
+          setMapContext(null);
           if (activeSidePanel) {
             window.postMessage({type: IITC_IRIS_MESSAGES.cancelPanelRequests} satisfies IitcIrisMessage, '*');
           }
@@ -2887,8 +2909,9 @@ function App(): h.JSX.Element {
           setPortalImageOpen(false);
           setActiveSidePanel(null);
           storeSidePanelId(null);
-          setActiveSheet('view');
-          storeActiveSheet('view');
+          const contextSheet = target === 'link' ? 'selectedLink' : target === 'field' ? 'selectedField' : 'view';
+          setActiveSheet(contextSheet);
+          storeActiveSheet(contextSheet);
           setStatus(`${target} context ${event.data.lat.toFixed(6)},${event.data.lng.toFixed(6)}`);
         }
       }
@@ -3125,9 +3148,9 @@ function App(): h.JSX.Element {
           togglePrimaryMenu('map');
           return;
         }
-        if (key === 'p' && entityFetch.selectedPortal) {
+        if (key === 'p' && hasSelectedObject) {
           event.preventDefault();
-          togglePrimaryMenu('portal');
+          togglePrimaryMenu('selected');
           return;
         }
         if (key === 'a') {
@@ -3318,11 +3341,15 @@ function App(): h.JSX.Element {
         </aside>
       )}
       <aside className="iitc-iris-map-controls" aria-label="Map controls">
-        {(activeSheet === 'view' || activeSheet === 'layers' || activeSheet === 'drawLinks' || activeSheet === 'drawMarkers' || activeSheet === 'portalCounts' || activeSheet === 'portalsList' || activeSheet === 'scoreboard') && (
+        {(activeSheet === 'view' || activeSheet === 'layers' || activeSheet === 'drawLinks' || activeSheet === 'drawMarkers' || activeSheet === 'portalCounts' || activeSheet === 'portalsList' || activeSheet === 'scoreboard' || activeSheet === 'selectedLink' || activeSheet === 'selectedField') && (
           <div className="iitc-iris-panel-topbar">
             <span className="iitc-iris-selected-title">
               {activeSheet === 'view'
                 ? 'Controls'
+                : activeSheet === 'selectedLink'
+                  ? 'Link'
+                : activeSheet === 'selectedField'
+                  ? 'Field'
                 : activeSheet === 'layers'
                   ? 'Display'
                   : activeSheet === 'drawLinks'
@@ -3355,8 +3382,14 @@ function App(): h.JSX.Element {
           </div>
           {geolocationStatus && <span className="iitc-iris-map-control-status">{geolocationStatus}</span>}
         </div>}
-        {activeSheet === 'view' && mapContext && <div className="iitc-iris-map-controls-section">
-          <span className="iitc-iris-status">Context</span>
+        {mapContext && (
+          (activeSheet === 'view' && mapContext.target === 'map') ||
+          (activeSheet === 'selectedLink' && mapContext.target === 'link') ||
+          (activeSheet === 'selectedField' && mapContext.target === 'field')
+        ) && <div className="iitc-iris-map-controls-section">
+          <span className="iitc-iris-status">
+            {mapContext.target === 'link' ? 'Link details' : mapContext.target === 'field' ? 'Field details' : 'Context'}
+          </span>
           {mapContext.target !== 'map' && <div className="iitc-iris-map-context-row">
             <span className="iitc-iris-map-context-coords" title={mapContext.guid}>
               {mapContext.target === 'link' ? 'Link' : 'Field'}
@@ -4104,14 +4137,14 @@ function App(): h.JSX.Element {
       <nav className="iitc-iris-sheet-tabbar" aria-label="Panels">
         <div className="iitc-iris-sheet-tabbar-primary">
           <button
-            className={`iitc-iris-sheet-tab ${activePrimaryMenu === 'portal' ? 'is-active' : ''}`}
+            className={`iitc-iris-sheet-tab ${activePrimaryMenu === 'selected' ? 'is-active' : ''}`}
             type="button"
-            onClick={() => togglePrimaryMenu('portal')}
-            disabled={!entityFetch.selectedPortal}
-            aria-pressed={activePrimaryMenu === 'portal'}
-            title="Portal menu (P)"
+            onClick={() => togglePrimaryMenu('selected')}
+            disabled={!hasSelectedObject}
+            aria-pressed={activePrimaryMenu === 'selected'}
+            title={`${selectedPrimaryLabel} menu (P)`}
           >
-            Portal
+            {selectedPrimaryLabel}
           </button>
           <button
             className={`iitc-iris-sheet-tab ${activePrimaryMenu === 'map' ? 'is-active' : ''}`}
@@ -4165,10 +4198,12 @@ function App(): h.JSX.Element {
               <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'drawMarkers' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('drawMarkers')} aria-pressed={activeSheet === 'drawMarkers'}>Markers</button>
             </>
           )}
-          {activePrimaryMenu === 'portal' && (
+          {activePrimaryMenu === 'selected' && (
             <>
-              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'portal' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('portal')} disabled={!entityFetch.selectedPortal} aria-pressed={activeSheet === 'portal'}>Details</button>
-              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'missions' && missionsState.source === 'portal' ? 'is-active' : ''}`} type="button" onClick={() => toggleMissionsSheet('portal')} disabled={!entityFetch.selectedPortal} aria-pressed={activeSheet === 'missions' && missionsState.source === 'portal'}>Missions</button>
+              {selectedKind === 'portal' && <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'portal' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('portal')} aria-pressed={activeSheet === 'portal'}>Details</button>}
+              {selectedKind === 'link' && <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'selectedLink' ? 'is-active' : ''}`} type="button" onClick={() => openSheet('selectedLink')} aria-pressed={activeSheet === 'selectedLink'}>Details</button>}
+              {selectedKind === 'field' && <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'selectedField' ? 'is-active' : ''}`} type="button" onClick={() => openSheet('selectedField')} aria-pressed={activeSheet === 'selectedField'}>Details</button>}
+              {selectedKind === 'portal' && <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'missions' && missionsState.source === 'portal' ? 'is-active' : ''}`} type="button" onClick={() => toggleMissionsSheet('portal')} aria-pressed={activeSheet === 'missions' && missionsState.source === 'portal'}>Missions</button>}
             </>
           )}
           {activePrimaryMenu === 'agent' && (
@@ -4202,7 +4237,7 @@ function App(): h.JSX.Element {
           )}
         </div>
       </nav>
-      {entityFetch.selectedPortal && (
+      {showPortalSidePanel && entityFetch.selectedPortal && (
         <aside className={`iitc-iris-portal-side-panel ${formatTeamClass(entityFetch.selectedPortal.team)} ${activeSidePanel ? 'iitc-iris-portal-side-panel-stacked' : ''}`} aria-label="Selected portal details">
           <div className="iitc-iris-portal-side-header">
             {entityFetch.selectedPortal.image ? (

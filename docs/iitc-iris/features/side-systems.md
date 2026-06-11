@@ -52,11 +52,12 @@ Current status:
   COMM, Scores, and Inventory so live-use panels stay focused while raw endpoint context remains available for testing.
 - The request chips now live in panel footers. Inventory has a more dedicated layout for item totals, selected-portal key
   counts, top item rows, and top key rows now that live inventory responses have been observed working.
-- UI shell now uses a two-layer bottom menu and a one-sheet-at-a-time model on desktop and mobile. The primary layer is
-  `Map`, `Portal`, `Agent`, `COMM`, and `System`; the secondary layer exposes domain actions such as `Search`,
-  `Display`, `Controls`, `Missions`, `Scores`, `Profile`, `Inventory`, `Passcode`, COMM tabs, and diagnostics. This
-  keeps the map-first Mini-IRIS feel while leaving room for IITC-style side systems without adding a permanent crowded
-  toolbar.
+- UI shell now uses a two-layer bottom menu and a one-sheet-at-a-time model on desktop and mobile. The first primary
+  slot is selected-object aware: `Selected` when empty, then `Portal`, `Link`, or `Field` when one of those objects is
+  selected. The other primary slots are `Map`, `Agent`, `COMM`, and `System`; the secondary layer exposes domain actions
+  such as `Details`, portal `Missions`, `Search`, `Display`, `Controls`, `Scores`, `Profile`, `Inventory`, `Passcode`,
+  COMM tabs, and diagnostics. This keeps the map-first Mini-IRIS feel while leaving room for IITC-style side systems
+  without adding a permanent crowded toolbar.
 - Passcodes are now wired as a core Intel panel using IITC's `redeemReward` request shape. The panel sanitizes printable
   passcodes, posts `/r/redeemReward`, and displays AP/XM/other/item rewards with endpoint diagnostics in the footer.
   Passcode redemption is now its own Agent-domain menu item and opens in the same bottom sheet style as the other side

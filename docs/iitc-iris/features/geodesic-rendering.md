@@ -113,11 +113,10 @@ General improvement backlog before calling this replacement-ready:
   keep expanding beyond the already started `getHasActiveSubscription` and Missions endpoints as new IITC/plugin
   request surfaces are verified.
 - Continue IITC-style long-press/right-click interactions for map and portal context actions. Portal context now works
-  across desktop right click and mobile long press by selecting the portal and opening the normal portal sheet/details
-  path. Link/field context now opens the Controls sheet with object metadata, selected-object highlighting, copy actions,
-  and faction-colored clickable anchor rows that jump/select anchor portals. Plain map context events expose a compact
-  Controls-sheet action row for centering the map and copying coordinates or an Intel URL. The Portal menu remains
-  portal-only for now; a generic Selection menu for portal/link/field objects remains a later design decision.
+  across desktop right click and mobile long press by selecting the portal and opening the normal selected-object
+  details path. Link/field context now opens Selected -> Link/Field sheets with object metadata, selected-object
+  highlighting, copy actions, and faction-colored clickable anchor rows that jump/select anchor portals. Plain map
+  context events stay in Controls for centering the map and copying coordinates or an Intel URL.
 - Make portal navigation from COMM, search, player tracker, inventory keys, and other portal links select the portal as
   well as pan/zoom to it. The selected portal should open the normal portal context/details path when the entity is
   loaded, and use a graceful loading/missing state when only a GUID or lat/lng is known.

@@ -2679,6 +2679,8 @@ button.iitc-iris-inventory-row:hover {
 .iitc-iris-sheet-portalCounts .iitc-iris-map-controls,
 .iitc-iris-sheet-portalsList .iitc-iris-map-controls,
 .iitc-iris-sheet-scoreboard .iitc-iris-map-controls,
+.iitc-iris-sheet-selectedLink .iitc-iris-map-controls,
+.iitc-iris-sheet-selectedField .iitc-iris-map-controls,
 .iitc-iris-sheet-portal .iitc-iris-portal-side-panel,
 .iitc-iris-sheet-agent .iitc-iris-request-side-panel,
 .iitc-iris-sheet-comm .iitc-iris-request-side-panel,
