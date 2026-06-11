@@ -153,4 +153,21 @@ describe('IITC entity decoding', () => {
       scoutControlled: false,
     });
   });
+
+  it('decodes missing detailed history as raw zero like IITC', () => {
+    const detailedWithoutHistory: IitcRawGameEntity = [
+      'history.0',
+      123,
+      ['p', 'N', 52_373_000, 4_895_000, 0, 0, 0, 'image', 'Unclaimed Portal', [], false, false, null, 123, [], [], '', null],
+    ];
+
+    const portal = decodeIitcGameEntities([detailedWithoutHistory]).portals['history.0'];
+
+    expect(portal.history).toEqual({
+      raw: 0,
+      visited: false,
+      captured: false,
+      scoutControlled: false,
+    });
+  });
 });

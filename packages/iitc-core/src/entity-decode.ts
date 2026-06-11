@@ -95,7 +95,7 @@ export function decodeIitcPortalEntity(entity: IitcRawGameEntity, isPlaceholder 
     mission: data.length >= SUMMARY_PORTAL_DATA_LENGTH ? Boolean(data[10]) : undefined,
     mission50plus: data.length >= SUMMARY_PORTAL_DATA_LENGTH ? Boolean(data[11]) : undefined,
     artifactBrief: data.length >= SUMMARY_PORTAL_DATA_LENGTH ? parseIitcArtifactBrief(data[12]) : undefined,
-    history: data.length >= EXTENDED_PORTAL_DATA_LENGTH ? parseIitcHistoryDetail(data[DETAILED_PORTAL_DATA_LENGTH]) : undefined,
+    history: data.length >= DETAILED_PORTAL_DATA_LENGTH ? parseIitcHistoryDetail(data[DETAILED_PORTAL_DATA_LENGTH]) : undefined,
     isPlaceholder,
     ent: entity,
   };

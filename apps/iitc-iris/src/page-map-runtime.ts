@@ -170,7 +170,7 @@ const PORTAL_HIGHLIGHTERS: PortalHighlighterDefinition[] = [
   },
   {
     id: 'history-not-visited',
-    getStyle: ({history}): Partial<L.CircleMarkerOptions> => history && !history.visited ? IITC_HISTORY_MARKED_STYLE : {},
+    getStyle: ({history}): Partial<L.CircleMarkerOptions> => !history?.visited ? IITC_HISTORY_MARKED_STYLE : {},
   },
   {
     id: 'history-captured',
@@ -178,7 +178,7 @@ const PORTAL_HIGHLIGHTERS: PortalHighlighterDefinition[] = [
   },
   {
     id: 'history-not-captured',
-    getStyle: ({history}): Partial<L.CircleMarkerOptions> => history && !history.captured ? IITC_HISTORY_SEMI_MARKED_STYLE : {},
+    getStyle: ({history}): Partial<L.CircleMarkerOptions> => !history?.captured ? IITC_HISTORY_MARKED_STYLE : {},
   },
   {
     id: 'history-scout-controlled',
@@ -186,7 +186,7 @@ const PORTAL_HIGHLIGHTERS: PortalHighlighterDefinition[] = [
   },
   {
     id: 'history-not-scout-controlled',
-    getStyle: ({history}): Partial<L.CircleMarkerOptions> => history && !history.scoutControlled ? IITC_HISTORY_MARKED_STYLE : {},
+    getStyle: ({history}): Partial<L.CircleMarkerOptions> => !history?.scoutControlled ? IITC_HISTORY_MARKED_STYLE : {},
   },
 ];
 let latestFetchGeneration = 0;
