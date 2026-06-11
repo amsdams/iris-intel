@@ -114,7 +114,8 @@ Latest layer/highlighter stabilization validation included:
   Click-to-pixels diagnostics found the main visual lag was an immediate heavy copied entity-status repost after each
   interaction. The map mutation now gets two animation frames before that status repost runs. Whole-overlay toggles use
   persistent groups, highlighters refresh existing portal marker styles, and faction filters use scoped buckets/direct
-  bucket paths. The Display sheet now uses IITC-style checkbox groups for overlays/filters, including `Key counts`.
+  bucket paths. The Display sheet now owns base maps and uses IITC-style checkbox groups for overlays/filters, including
+  `Key counts`.
   A deeper team-subgroup topology experiment regressed faction-filter paint timing and was rolled back.
 
 Latest IITC IRIS portal analysis validation included:

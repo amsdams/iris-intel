@@ -891,7 +891,8 @@
 }
 
 .iitc-iris-portal-analysis {
-  min-width: min(92vw, 760px);
+  min-width: 0;
+  width: 100%;
 }
 
 .iitc-iris-portal-analysis .iitc-iris-team-enl {
@@ -951,7 +952,36 @@
 .iitc-iris-analysis-chip-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 6px;
+  align-items: center;
+}
+
+.iitc-iris-analysis-chip {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  min-height: 18px;
+  max-width: 100%;
+  padding: 1px 6px;
+  border: 1px solid rgb(95 180 255 / 22%);
+  border-radius: 4px;
+  background: rgb(10 18 25 / 46%);
+  color: #91a6b7;
+  cursor: default;
+  font: 700 10px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.iitc-iris-analysis-chip b {
+  min-width: 0;
+  color: #c7d8e8;
+  font-weight: 900;
+}
+
+.iitc-iris-analysis-chip small {
+  min-width: 0;
+  color: inherit;
+  font-weight: 800;
 }
 
 .iitc-iris-counts-visuals {
@@ -1094,7 +1124,7 @@
 
 .iitc-iris-portal-counts-table-wrap,
 .iitc-iris-portals-list-table-wrap {
-  overflow: auto;
+  overflow: hidden;
   max-width: 100%;
   border: 1px solid rgb(95 180 255 / 18%);
   border-radius: 4px;
@@ -1102,6 +1132,7 @@
 }
 
 .iitc-iris-portals-list-table-wrap {
+  overflow: auto;
   max-height: min(50vh, 430px);
 }
 
@@ -1119,14 +1150,17 @@
 
 .iitc-iris-portal-counts-table,
 .iitc-iris-scoreboard-table {
+  min-width: 0;
   table-layout: fixed;
 }
 
 .iitc-iris-portal-analysis-table th,
 .iitc-iris-portal-analysis-table td {
+  overflow: hidden;
   padding: 5px 6px;
   border-bottom: 1px solid rgb(95 180 255 / 10%);
   text-align: right;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -1157,14 +1191,15 @@
 
 .iitc-iris-portal-counts-table th:first-child,
 .iitc-iris-portal-counts-table td:first-child {
-  width: 92px;
-  max-width: 92px;
+  width: 42px;
+  max-width: 42px;
+  text-align: center;
 }
 
 .iitc-iris-scoreboard-table th:first-child,
 .iitc-iris-scoreboard-table td:first-child {
-  width: 112px;
-  max-width: 112px;
+  width: 38%;
+  max-width: none;
 }
 
 .iitc-iris-portal-analysis-table th.iitc-iris-team-enl,

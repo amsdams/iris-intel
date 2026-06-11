@@ -3553,6 +3553,14 @@ function App(): h.JSX.Element {
                 <span><b>{formatInteger(portalAnalysis.portalcounts.placeholders)}</b><small>placeholders</small></span>
                 <span><b>{formatInteger(portalAnalysis.portalcounts.withKeys)}</b><small>with keys</small></span>
               </div>
+              <div className="iitc-iris-analysis-chip-row">
+                <span className="iitc-iris-diagnostics-chip iitc-iris-analysis-chip"><b>{formatInteger(portalAnalysis.portalcounts.history.visited)}</b><small>Visited</small></span>
+                <span className="iitc-iris-diagnostics-chip iitc-iris-analysis-chip"><b>{formatInteger(portalAnalysis.portalcounts.history.captured)}</b><small>Captured</small></span>
+                <span className="iitc-iris-diagnostics-chip iitc-iris-analysis-chip"><b>{formatInteger(portalAnalysis.portalcounts.history.scoutControlled)}</b><small>Scout</small></span>
+                <span className="iitc-iris-diagnostics-chip iitc-iris-analysis-chip"><b>{formatInteger(portalAnalysis.portalcounts.missions)}</b><small>Missions</small></span>
+                <span className="iitc-iris-diagnostics-chip iitc-iris-analysis-chip"><b>{formatInteger(portalAnalysis.portalcounts.ornaments)}</b><small>Ornaments</small></span>
+                <span className="iitc-iris-diagnostics-chip iitc-iris-analysis-chip"><b>{formatInteger(portalAnalysis.portalcounts.artifacts)}</b><small>Artifacts</small></span>
+              </div>
               {portalAnalysis.portalcounts.inaccurateAtLinkLevel && (
                 <div className="iitc-iris-empty-state">Portal counts are approximate at link-level zoom.</div>
               )}
@@ -3571,7 +3579,7 @@ function App(): h.JSX.Element {
                   <tbody>
                     {[...portalAnalysis.portalcounts.levels].reverse().map((level) => (
                       <tr key={level.level} className={level.count === 0 ? 'is-muted' : ''}>
-                        <td className={`iitc-iris-level-cell iitc-iris-level-${level.level}`}>{level.level === 0 ? 'Placeholders' : `Level ${level.level}`}</td>
+                        <td className={`iitc-iris-level-cell iitc-iris-level-${level.level}`}>{level.level === 0 ? 'P' : `L${level.level}`}</td>
                         <td className="iitc-iris-team-res">{formatInteger(level.teams.R)}</td>
                         <td className="iitc-iris-team-enl">{formatInteger(level.teams.E)}</td>
                         <td className="iitc-iris-team-machina">{formatInteger(level.teams.M)}</td>
@@ -3589,14 +3597,6 @@ function App(): h.JSX.Element {
                     </tr>
                   </tbody>
                 </table>
-              </div>
-              <div className="iitc-iris-analysis-chip-row">
-                <span className="iitc-iris-status">visited {formatInteger(portalAnalysis.portalcounts.history.visited)}</span>
-                <span className="iitc-iris-status">captured {formatInteger(portalAnalysis.portalcounts.history.captured)}</span>
-                <span className="iitc-iris-status">scout {formatInteger(portalAnalysis.portalcounts.history.scoutControlled)}</span>
-                <span className="iitc-iris-status">missions {formatInteger(portalAnalysis.portalcounts.missions)}</span>
-                <span className="iitc-iris-status">ornaments {formatInteger(portalAnalysis.portalcounts.ornaments)}</span>
-                <span className="iitc-iris-status">artifacts {formatInteger(portalAnalysis.portalcounts.artifacts)}</span>
               </div>
               <div className="iitc-iris-counts-visuals" aria-label="Portal counts graph">
                 <svg viewBox={`0 0 ${PORTAL_COUNTS_SVG_WIDTH} ${PORTAL_COUNTS_SVG_HEIGHT}`} role="img">
@@ -3660,14 +3660,6 @@ function App(): h.JSX.Element {
           <span className="iitc-iris-status">Portals List</span>
           {portalAnalysis ? (
             <>
-              <div className="iitc-iris-analysis-chip-row">
-                <span className="iitc-iris-status">{formatInteger(portalsListSummary.portals)} portals</span>
-                <span className="iitc-iris-status">{formatInteger(portalsListSummary.links)} links</span>
-                <span className="iitc-iris-status">{formatInteger(portalsListSummary.fields)} fields</span>
-                <span className="iitc-iris-status">{formatInteger(portalsListSummary.enemyAp)} AP</span>
-                <span className="iitc-iris-status">{formatInteger(portalsListSummary.keys)} keys</span>
-                <span className="iitc-iris-status">sort {portalsListSortBy} {portalsListSortOrder === 1 ? 'asc' : 'desc'}</span>
-              </div>
               <div className="iitc-iris-portals-list-summary" aria-label="Filtered portal list summary">
                 {([
                   ['R', 'Resistance', portalsListSummary.teams.R],
@@ -3690,6 +3682,14 @@ function App(): h.JSX.Element {
                     <small>{label}</small>
                   </div>
                 ))}
+              </div>
+              <div className="iitc-iris-analysis-chip-row">
+                <span className="iitc-iris-diagnostics-chip iitc-iris-analysis-chip"><b>{formatInteger(portalsListSummary.portals)}</b><small>Portals</small></span>
+                <span className="iitc-iris-diagnostics-chip iitc-iris-analysis-chip"><b>{formatInteger(portalsListSummary.links)}</b><small>Links</small></span>
+                <span className="iitc-iris-diagnostics-chip iitc-iris-analysis-chip"><b>{formatInteger(portalsListSummary.fields)}</b><small>Fields</small></span>
+                <span className="iitc-iris-diagnostics-chip iitc-iris-analysis-chip"><b>{formatInteger(portalsListSummary.enemyAp)}</b><small>AP</small></span>
+                <span className="iitc-iris-diagnostics-chip iitc-iris-analysis-chip"><b>{formatInteger(portalsListSummary.keys)}</b><small>Keys</small></span>
+                <span className="iitc-iris-diagnostics-chip iitc-iris-analysis-chip"><b>{portalsListSortOrder === 1 ? 'Asc' : 'Desc'}</b><small>Sort {portalsListSortBy}</small></span>
               </div>
               <div className="iitc-iris-portals-list-filters">
                 <input
@@ -3803,10 +3803,10 @@ function App(): h.JSX.Element {
               <table className="iitc-iris-portal-analysis-table iitc-iris-scoreboard-table">
                 <thead>
                   <tr>
-                    <th>Metrics</th>
-                    <th className="iitc-iris-scoreboard-column iitc-iris-team-res">Resistance</th>
-                    <th className="iitc-iris-scoreboard-column iitc-iris-team-enl">Enlightened</th>
-                    <th className="iitc-iris-scoreboard-column iitc-iris-team-machina">Machina</th>
+                    <th>Metric</th>
+                    <th className="iitc-iris-scoreboard-column iitc-iris-team-res">RES</th>
+                    <th className="iitc-iris-scoreboard-column iitc-iris-team-enl">ENL</th>
+                    <th className="iitc-iris-scoreboard-column iitc-iris-team-machina">MAC</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -3827,7 +3827,7 @@ function App(): h.JSX.Element {
             <div className="iitc-iris-empty-state">Nothing to show.</div>
           )}
         </div>}
-        {activeSheet === 'view' && <div className="iitc-iris-map-controls-section">
+        {activeSheet === 'layers' && <div className="iitc-iris-map-controls-section">
           <span className="iitc-iris-status">Base</span>
           <div className="iitc-iris-map-control-row">
             {BASE_LAYER_OPTIONS.map((option) => (
