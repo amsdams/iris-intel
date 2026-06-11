@@ -58,6 +58,12 @@ Current status:
   such as `Details`, portal `Missions`, `Search`, `Display`, `Controls`, `Scores`, `Profile`, `Inventory`, `Passcode`,
   COMM tabs, and diagnostics. This keeps the map-first Mini-IRIS feel while leaving room for IITC-style side systems
   without adding a permanent crowded toolbar.
+- Selected-object details are intentionally scoped by entity kind: selected portals expose `Details` and portal
+  `Missions`, while selected links and fields expose only their own `Details` sheets. Portal-only submenu items are not
+  shown for link/field selections.
+- Display owns visual map choices: base map, core overlays, portal filters, portal highlighter, and detail overlays.
+  Controls owns operational actions: camera/context tools, copy/export, presets, lifecycle/scenarios, data source, and
+  debug display. Keep future menu additions in that split unless they need a deliberate product-shell exception.
 - Passcodes are now wired as a core Intel panel using IITC's `redeemReward` request shape. The panel sanitizes printable
   passcodes, posts `/r/redeemReward`, and displays AP/XM/other/item rewards with endpoint diagnostics in the footer.
   Passcode redemption is now its own Agent-domain menu item and opens in the same bottom sheet style as the other side

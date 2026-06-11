@@ -3828,7 +3828,7 @@ function App(): h.JSX.Element {
           )}
         </div>}
         {activeSheet === 'layers' && <div className="iitc-iris-map-controls-section">
-          <span className="iitc-iris-status">Base</span>
+          <span className="iitc-iris-status">Base map</span>
           <div className="iitc-iris-map-control-row">
             {BASE_LAYER_OPTIONS.map((option) => (
               <button
@@ -3857,7 +3857,7 @@ function App(): h.JSX.Element {
           </div>
         </div>}
         {activeSheet === 'layers' && <div className="iitc-iris-map-controls-section">
-          <span className="iitc-iris-status">Highlighter</span>
+          <span className="iitc-iris-status">Portal highlighter</span>
           <div className="iitc-iris-layer-choice-grid" role="radiogroup" aria-label="Portal highlighter">
             {PORTAL_HIGHLIGHTER_OPTIONS.map(renderHighlighterRadio)}
           </div>
@@ -3934,7 +3934,7 @@ function App(): h.JSX.Element {
             </div>
           </div>
           <div className="iitc-iris-map-controls-section">
-            <span className="iitc-iris-status">Display</span>
+            <span className="iitc-iris-status">Debug display</span>
             <div className="iitc-iris-map-control-row">
               <button
                 className={`iitc-iris-layer-toggle iitc-iris-system-toggle ${debugDockVisible ? 'iitc-iris-layer-toggle-active' : ''}`}
@@ -4002,7 +4002,7 @@ function App(): h.JSX.Element {
             </div>
           </div>}
           <div className="iitc-iris-map-controls-section">
-            <span className="iitc-iris-status">Copy</span>
+            <span className="iitc-iris-status">Copy/export</span>
             <div className="iitc-iris-map-control-row">
               <button className="iitc-iris-portal-action" type="button" onClick={copyDockText} title="Copy JSON diagnostics">JSON</button>
               <button className="iitc-iris-portal-action" type="button" onClick={copyIntelUrl} title="Copy current view as an Intel URL">URL</button>
@@ -4116,7 +4116,7 @@ function App(): h.JSX.Element {
             )}
           </div>
           <div className="iitc-iris-map-controls-section">
-            <span className="iitc-iris-status">Data</span>
+            <span className="iitc-iris-status">Data source</span>
             <div className="iitc-iris-map-control-row">
               {DATA_SOURCE_OPTIONS.map((option) => (
                 <button

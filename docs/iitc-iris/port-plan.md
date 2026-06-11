@@ -117,6 +117,13 @@ Latest layer/highlighter stabilization validation included:
   bucket paths. The Display sheet now owns base maps and uses IITC-style checkbox groups for overlays/filters, including
   `Key counts`.
   A deeper team-subgroup topology experiment regressed faction-filter paint timing and was rolled back.
+- Final menu/sheet checkpoint: the primary menu uses a selected-object slot (`Selected`, `Portal`, `Link`, or `Field`)
+  plus `Map`, `Agent`, `COMM`, and `System`. Portal missions only appear for selected portals. Link and field details
+  use their own selected-object sheets, while base maps, layers, filters, and highlighters live under Display. Controls
+  stays focused on camera/context actions, presets, copy/export, lifecycle scenarios, and data source/debug controls.
+- Analysis sheets now use compact diagnostic chips for summary metadata and tighter desktop tables for Counts and
+  Scoreboard. List keeps horizontal overflow for its intentionally wide portal table, but its summary metadata is grouped
+  under the normal summary chips.
 
 Latest IITC IRIS portal analysis validation included:
 
