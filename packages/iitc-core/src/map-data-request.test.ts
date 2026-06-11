@@ -80,6 +80,30 @@ describe('IITC map data request planning', () => {
     expect(batches.map((batch) => batch.length)).toEqual([16, 16, 16, 16, 16]);
   });
 
+  it('shrinks retry-heavy request buckets like IITC without dropping the first tile', () => {
+    const tileKeys = ['retry-a', 'fresh-a', 'fresh-b', 'fresh-c', 'fresh-d', 'fresh-e'];
+
+    expect(createIitcRequestBatches(tileKeys, {
+      maxRequests: 2,
+      tilesPerRequest: 25,
+      maxTileRetries: 5,
+      tileErrorCount: {'retry-a': 6},
+    })).toEqual([
+      ['retry-a'],
+      ['fresh-a', 'fresh-b', 'fresh-c', 'fresh-d', 'fresh-e'],
+    ]);
+
+    expect(createIitcRequestBatches(tileKeys, {
+      maxRequests: 2,
+      tilesPerRequest: 25,
+      maxTileRetries: 5,
+      tileErrorCount: {'retry-a': 3, 'fresh-a': 3},
+    })).toEqual([
+      ['retry-a'],
+      ['fresh-a', 'fresh-b', 'fresh-c', 'fresh-d', 'fresh-e'],
+    ]);
+  });
+
   it('creates live-compatible sequential request and empty-tile retry batches', () => {
     const tileKeys = Array.from({length: 12}, (_, index) => `15_${index}_0_1_8_100`);
 

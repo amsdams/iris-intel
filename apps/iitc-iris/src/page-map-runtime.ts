@@ -2693,7 +2693,7 @@ function getSecondaryEntityRenderUpdate(changedLayerKeys?: (keyof IitcIrisLayerS
     /^level[1-8]Portals$/.test(key)
   ));
   const enabledPortalOverlay = layerSettings.labels ||
-    layerSettings.keyCount !== 'off' ||
+    layerSettings.keyCount ||
     layerSettings.ornaments ||
     layerSettings.artifacts;
   const needsPortalOverlayUpdate = (changesPortalVisibility && enabledPortalOverlay) ||
@@ -3373,7 +3373,7 @@ function renderEntities(
         addRenderedLayer(layers.labels, createLevelLabelMarker(latLng, portal.level, portal.team));
       }
       const keyCount = getPortalKeyCount(portal.guid);
-      if (layerSettings.keyCount === 'on' && keyCount !== undefined && keyCount > 0) {
+      if (layerSettings.keyCount && keyCount !== undefined && keyCount > 0) {
         addRenderedLayer(layers.labels, createKeyCountMarker(latLng, keyCount, radius));
       }
     }

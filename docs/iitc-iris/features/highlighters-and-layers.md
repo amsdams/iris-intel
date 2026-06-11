@@ -45,7 +45,7 @@ Use this rule when deciding where a feature belongs:
 | `levelFill` legacy setting | Migration-only highlighter behavior | Old persisted layer settings still migrate to `Level Color`, but this flag is no longer part of current layer settings. |
 | `healthFill` legacy setting | Migration-only highlighter behavior | Old persisted layer settings still migrate to `Needs Recharge (Health)`, but this flag is no longer part of current layer settings. |
 | `historyCaptured`, `historyVisited`, `historyScoutControlled` legacy styling | Migration-only highlighter behavior | Old persisted layer settings still migrate to the highlighter selector, but these flags are no longer part of current layer settings. |
-| key-count text labels | Overlay layer | Adds label markers. IITC-CE `keys-on-map` is a layer backed by the manual `keys` plugin; IRIS uses live inventory-derived counts but keeps the map display as a layer. |
+| key-count text labels | Overlay layer | Adds label markers. IITC-CE `keys-on-map` is a layer backed by the manual `keys` plugin; IRIS uses live inventory-derived counts but keeps the map display as a boolean `Key counts` layer. |
 
 ## Existing Highlighter Alignment
 
@@ -123,9 +123,14 @@ secondary overlays, diagnostics, persistence, and UI grouping.
 
 Current first pass:
 
-- A shared typed registry describes existing boolean and tri-state layer controls.
+- A shared typed registry describes existing boolean layer controls.
 - The registry owns current layer control labels, titles, UI group, selection kind, and content-side defaults for the
   Layers sheet.
+- The Layers sheet now presents registered boolean overlays/filters as IITC-style multi-select checkbox groups:
+  core overlays, portal filters, and detail overlays. This keeps the many-enabled layer chooser semantics while leaving
+  compact map controls free to stay as shortcuts.
+- `keyCount` is a boolean detail overlay labelled `Key counts`. The previous `invert` mode was removed because the
+  renderer only supported hidden or shown key labels.
 - Registered layer ids, kinds, and defaults are exposed in diagnostics.
 - Tile debug, Draw Tools, and player tracker layer setting changes route to their own overlay refresh paths without
   invoking core entity rendering.

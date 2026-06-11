@@ -2941,23 +2941,48 @@ button.iitc-iris-inventory-row:hover {
   color: #ffe6a3;
 }
 
-.iitc-iris-highlighter-select {
-  appearance: none;
-  width: 100%;
-  min-width: 180px;
-  height: 24px;
-  border: 1px solid rgb(95 180 255 / 34%);
-  border-radius: 4px;
-  background: rgb(10 18 25 / 90%);
-  color: #d9edf8;
-  font: 600 11px/1.2 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  padding: 2px 22px 2px 8px;
-  cursor: pointer;
+.iitc-iris-layer-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  gap: 5px;
+  min-width: 0;
 }
 
-.iitc-iris-highlighter-select:focus-visible {
-  outline: 2px solid rgb(101 217 255 / 70%);
-  outline-offset: 1px;
+.iitc-iris-layer-choice {
+  display: grid;
+  grid-template-columns: 13px minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+  min-height: 24px;
+  min-width: 0;
+  border: 1px solid rgb(95 180 255 / 22%);
+  border-radius: 4px;
+  background: rgb(10 18 25 / 68%);
+  color: #9fb7c8;
+  cursor: pointer;
+  padding: 3px 6px;
+}
+
+.iitc-iris-layer-choice.is-checked {
+  border-color: rgb(101 217 255 / 62%);
+  background: rgb(7 31 45 / 78%);
+  color: #e8f4ff;
+}
+
+.iitc-iris-layer-choice input {
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  accent-color: #65d9ff;
+}
+
+.iitc-iris-layer-choice-label {
+  min-width: 0;
+  overflow: hidden;
+  color: inherit;
+  font: 600 10px/1.15 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .iitc-iris-ornament-icon {

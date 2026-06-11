@@ -602,7 +602,6 @@ export interface IitcIrisLifecycleSettings {
   iitcMovementDelay: boolean;
 }
 
-export type IitcIrisTriStateLayer = 'off' | 'on' | 'invert';
 export type IitcIrisLayerRegistryGroup = 'core' | 'detail';
 export type IitcIrisLayerRegistryKind = 'overlay' | 'filter';
 export type IitcIrisPortalHighlighterId =
@@ -626,8 +625,8 @@ export interface IitcIrisLayerRegistryEntry {
   title: string;
   group: IitcIrisLayerRegistryGroup;
   kind: IitcIrisLayerRegistryKind;
-  setting: 'boolean' | 'tri-state';
-  defaultValue: boolean | IitcIrisTriStateLayer;
+  setting: 'boolean';
+  defaultValue: boolean;
 }
 
 export interface IitcIrisLayerSettings {
@@ -656,7 +655,7 @@ export interface IitcIrisLayerSettings {
   playerTrackerResistance: boolean;
   playerTrackerEnlightened: boolean;
   playerTrackerMachina: boolean;
-  keyCount: IitcIrisTriStateLayer;
+  keyCount: boolean;
 }
 
 export type IitcIrisBaseLayerId = 'osm' | 'cartodb-dark-matter' | 'cartodb-positron';

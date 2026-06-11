@@ -475,9 +475,9 @@ export function createIitcRequestBatches(tileKeys: string[], options: IitcReques
 
   for (let bucket = 0; bucket < requestBuckets; bucket += 1) {
     let numTilesThisRequest = Math.min(requestBucketSize, pendingTiles.length);
-    let retryTotal = 0;
+    let retryTotal = options.tileErrorCount?.[pendingTiles[0]] ?? 0;
 
-    for (let i = 0; i < numTilesThisRequest; i += 1) {
+    for (let i = 1; i < numTilesThisRequest; i += 1) {
       retryTotal += options.tileErrorCount?.[pendingTiles[i]] ?? 0;
       if (retryTotal > (options.maxTileRetries ?? IITC_MAX_TILE_RETRIES)) {
         numTilesThisRequest = i;

@@ -7,12 +7,10 @@ import {
   CORE_LAYER_TOGGLE_REGISTRY,
   DEFAULT_LAYER_SETTINGS,
   DETAIL_LAYER_TOGGLE_REGISTRY,
-  DETAIL_TRI_STATE_LAYER_TOGGLE_REGISTRY,
   LAYER_REGISTRY_DIAGNOSTICS,
   type IitcIrisBooleanLayerSettingKey,
-  type IitcIrisTriStateLayerSettingKey,
 } from './layer-registry';
-import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisEntitySource, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPlayerTrackerDiagnostics, type IitcIrisPortalAnalysis, type IitcIrisPortalDetailsState, type IitcIrisPortalHighlighterId, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisTriStateLayer} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisEntitySource, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPlayerTrackerDiagnostics, type IitcIrisPortalAnalysis, type IitcIrisPortalDetailsState, type IitcIrisPortalHighlighterId, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal} from './messages';
 import {
   createIitcMapDataPlan,
   IITC_MAX_REQUESTS,
@@ -101,21 +99,21 @@ const DATA_SOURCE_OPTIONS = [
     zoom: 15,
   },
 ] as const;
-type TriStateLayerSettingKey = IitcIrisTriStateLayerSettingKey;
 type BooleanLayerSettingKey = IitcIrisBooleanLayerSettingKey;
-const CORE_LAYER_TOGGLE_LABELS = CORE_LAYER_TOGGLE_REGISTRY;
+const CORE_OVERLAY_LAYER_TOGGLE_LABELS = CORE_LAYER_TOGGLE_REGISTRY.filter((entry) => entry.kind === 'overlay');
+const PORTAL_FILTER_LAYER_TOGGLE_LABELS = CORE_LAYER_TOGGLE_REGISTRY.filter((entry) => entry.kind === 'filter');
 const DETAIL_LAYER_TOGGLE_LABELS = DETAIL_LAYER_TOGGLE_REGISTRY;
-const DETAIL_TRI_STATE_LAYER_LABELS = DETAIL_TRI_STATE_LAYER_TOGGLE_REGISTRY;
+type BooleanLayerToggleEntry = (typeof CORE_LAYER_TOGGLE_REGISTRY)[number];
 const PORTAL_HIGHLIGHTER_OPTIONS: {id: IitcIrisPortalHighlighterId; label: string; title: string}[] = [
-  {id: 'none', label: 'No Highlights', title: 'No portal highlighter'},
-  {id: 'level-color', label: 'Level Color', title: 'Color portal bodies by level'},
-  {id: 'needs-recharge', label: 'Needs Recharge (Health)', title: 'Color damaged portals by health'},
-  {id: 'history-visited', label: 'History: visited', title: 'Highlight visited portals'},
-  {id: 'history-not-visited', label: 'History: not visited', title: 'Highlight unvisited portals'},
-  {id: 'history-captured', label: 'History: captured', title: 'Highlight captured portals'},
-  {id: 'history-not-captured', label: 'History: not captured', title: 'Highlight uncaptured portals'},
-  {id: 'history-scout-controlled', label: 'History: scout controlled', title: 'Highlight scout-controlled portals'},
-  {id: 'history-not-scout-controlled', label: 'History: not scout controlled', title: 'Highlight portals not scout controlled'},
+  {id: 'none', label: 'None', title: 'No portal highlighter'},
+  {id: 'level-color', label: 'Level color', title: 'Color portal bodies by level'},
+  {id: 'needs-recharge', label: 'Needs recharge', title: 'Color damaged portals by health'},
+  {id: 'history-visited', label: 'Visited', title: 'Highlight visited portals'},
+  {id: 'history-not-visited', label: 'Not visited', title: 'Highlight unvisited portals'},
+  {id: 'history-captured', label: 'Captured', title: 'Highlight captured portals'},
+  {id: 'history-not-captured', label: 'Not captured', title: 'Highlight uncaptured portals'},
+  {id: 'history-scout-controlled', label: 'Scout controlled', title: 'Highlight scout-controlled portals'},
+  {id: 'history-not-scout-controlled', label: 'Not scout controlled', title: 'Highlight portals not scout controlled'},
 ];
 const DRAW_TOOLS_MARKER_PRESETS = [
   {id: 'white', color: '#ffffff', title: 'Add white marker'},
@@ -641,10 +639,6 @@ type LegacyStoredLayerSettings = Partial<IitcIrisLayerSettings> & {
   historyScoutControlled?: unknown;
 };
 
-function isTriStateLayer(value: unknown): value is IitcIrisTriStateLayer {
-  return value === 'off' || value === 'on' || value === 'invert';
-}
-
 function isPortalHighlighterId(value: unknown): value is IitcIrisPortalHighlighterId {
   return PORTAL_HIGHLIGHTER_OPTIONS.some((option) => option.id === value);
 }
@@ -656,12 +650,6 @@ function normalizePortalHighlighterId(value: unknown): IitcIrisPortalHighlighter
   return 'none';
 }
 
-function nextTriStateLayer(value: IitcIrisTriStateLayer): IitcIrisTriStateLayer {
-  if (value === 'off') return 'on';
-  if (value === 'on') return 'invert';
-  return 'off';
-}
-
 function loadStoredLayerSettings(): IitcIrisLayerSettings {
   try {
     const value = window.localStorage.getItem(LAYER_SETTINGS_STORAGE_KEY);
@@ -670,6 +658,7 @@ function loadStoredLayerSettings(): IitcIrisLayerSettings {
     if (!isLayerSettings(parsed)) return DEFAULT_LAYER_SETTINGS;
     const legacyParsed = parsed as LegacyStoredLayerSettings;
     const legacyPlayerTracker = typeof parsed.playerTracker === 'boolean' ? parsed.playerTracker : undefined;
+    const storedKeyCount = (parsed as Record<string, unknown>).keyCount;
     return {
       fields: typeof parsed.fields === 'boolean' ? parsed.fields : DEFAULT_LAYER_SETTINGS.fields,
       links: typeof parsed.links === 'boolean' ? parsed.links : DEFAULT_LAYER_SETTINGS.links,
@@ -710,7 +699,7 @@ function loadStoredLayerSettings(): IitcIrisLayerSettings {
       playerTrackerMachina: typeof parsed.playerTrackerMachina === 'boolean'
         ? parsed.playerTrackerMachina
         : legacyPlayerTracker ?? DEFAULT_LAYER_SETTINGS.playerTrackerMachina,
-      keyCount: isTriStateLayer(parsed.keyCount) ? parsed.keyCount : DEFAULT_LAYER_SETTINGS.keyCount,
+      keyCount: storedKeyCount === true || storedKeyCount === 'on',
     };
   } catch {
     return DEFAULT_LAYER_SETTINGS;
@@ -2414,15 +2403,35 @@ function App(): h.JSX.Element {
     setLayerSettings((current) => ({...current, [key]: !current[key]}));
   };
 
-  const cycleTriStateLayerSetting = (key: TriStateLayerSettingKey): void => {
-    layerSettingsIntentAtRef.current = performance.now();
-    setLayerSettings((current) => ({...current, [key]: nextTriStateLayer(current[key])}));
-  };
-
   const selectPortalHighlighter = (active: IitcIrisPortalHighlighterId): void => {
     highlighterSettingsIntentAtRef.current = performance.now();
     setHighlighterSettings({active});
   };
+
+  const renderBooleanLayerCheckbox = ({id, title}: BooleanLayerToggleEntry): h.JSX.Element => (
+    <label key={id} className={`iitc-iris-layer-choice ${layerSettings[id] ? 'is-checked' : ''}`} title={`${title}: ${layerSettings[id] ? 'on' : 'off'}`}>
+      <input
+        type="checkbox"
+        checked={layerSettings[id]}
+        onChange={() => toggleLayerSetting(id)}
+        aria-label={title}
+      />
+      <span className="iitc-iris-layer-choice-label">{title}</span>
+    </label>
+  );
+
+  const renderHighlighterRadio = (option: (typeof PORTAL_HIGHLIGHTER_OPTIONS)[number]): h.JSX.Element => (
+    <label key={option.id} className={`iitc-iris-layer-choice ${highlighterSettings.active === option.id ? 'is-checked' : ''}`} title={option.title}>
+      <input
+        type="radio"
+        name="iitc-iris-portal-highlighter"
+        checked={highlighterSettings.active === option.id}
+        onChange={() => selectPortalHighlighter(option.id)}
+        aria-label={option.label}
+      />
+      <span className="iitc-iris-layer-choice-label">{option.label}</span>
+    </label>
+  );
 
   const setMapView = (lat: number, lng: number, zoom = camera.zoom): void => {
     const clamped = clampView({lat, lng, zoom});
@@ -3803,69 +3812,27 @@ function App(): h.JSX.Element {
           </div>
         </div>}
         {activeSheet === 'layers' && <div className="iitc-iris-map-controls-section">
-          <span className="iitc-iris-status">Core</span>
-          <div className="iitc-iris-map-control-row">
-            {CORE_LAYER_TOGGLE_LABELS.map(({id, label, title}) => (
-              <button
-                key={id}
-                className={`iitc-iris-layer-toggle ${layerSettings[id] ? 'iitc-iris-layer-toggle-active' : ''}`}
-                type="button"
-                onClick={() => toggleLayerSetting(id)}
-                title={`${title}: ${layerSettings[id] ? 'on' : 'off'}`}
-                aria-pressed={layerSettings[id]}
-              >
-                {label}
-              </button>
-            ))}
+          <span className="iitc-iris-status">Core overlays</span>
+          <div className="iitc-iris-layer-choice-grid" role="group" aria-label="Core overlay layers">
+            {CORE_OVERLAY_LAYER_TOGGLE_LABELS.map(renderBooleanLayerCheckbox)}
+          </div>
+        </div>}
+        {activeSheet === 'layers' && <div className="iitc-iris-map-controls-section">
+          <span className="iitc-iris-status">Portal filters</span>
+          <div className="iitc-iris-layer-choice-grid" role="group" aria-label="Portal filter layers">
+            {PORTAL_FILTER_LAYER_TOGGLE_LABELS.map(renderBooleanLayerCheckbox)}
           </div>
         </div>}
         {activeSheet === 'layers' && <div className="iitc-iris-map-controls-section">
           <span className="iitc-iris-status">Highlighter</span>
-          <div className="iitc-iris-map-control-row">
-            <select
-              className="iitc-iris-highlighter-select"
-              value={highlighterSettings.active}
-              onChange={(event) => {
-                const value = event.currentTarget.value;
-                selectPortalHighlighter(isPortalHighlighterId(value) ? value : 'none');
-              }}
-              title="Portal highlighter"
-              aria-label="Portal highlighter"
-            >
-              {PORTAL_HIGHLIGHTER_OPTIONS.map((option) => (
-                <option key={option.id} value={option.id} title={option.title}>{option.label}</option>
-              ))}
-            </select>
+          <div className="iitc-iris-layer-choice-grid" role="radiogroup" aria-label="Portal highlighter">
+            {PORTAL_HIGHLIGHTER_OPTIONS.map(renderHighlighterRadio)}
           </div>
         </div>}
         {activeSheet === 'layers' && <div className="iitc-iris-map-controls-section">
-          <span className="iitc-iris-status">Detail</span>
-          <div className="iitc-iris-map-control-row">
-            {DETAIL_LAYER_TOGGLE_LABELS.map(({id, label, title}) => (
-              <button
-                key={id}
-                className={`iitc-iris-layer-toggle ${layerSettings[id] ? 'iitc-iris-layer-toggle-active' : ''}`}
-                type="button"
-                onClick={() => toggleLayerSetting(id)}
-                title={`${title}: ${layerSettings[id] ? 'on' : 'off'}`}
-                aria-pressed={layerSettings[id]}
-              >
-                {label}
-              </button>
-            ))}
-            {DETAIL_TRI_STATE_LAYER_LABELS.map(({id, label, title}) => (
-              <button
-                key={id}
-                className={`iitc-iris-layer-toggle ${layerSettings[id] !== 'off' ? 'iitc-iris-layer-toggle-active' : ''} ${layerSettings[id] === 'invert' ? 'iitc-iris-layer-toggle-invert' : ''}`}
-                type="button"
-                onClick={() => cycleTriStateLayerSetting(id)}
-                title={`${title}: ${layerSettings[id]}`}
-                aria-label={`${title}: ${layerSettings[id]}`}
-                aria-pressed={layerSettings[id] !== 'off'}
-              >
-                {layerSettings[id] === 'invert' ? `${label}!` : label}
-              </button>
-            ))}
+          <span className="iitc-iris-status">Detail overlays</span>
+          <div className="iitc-iris-layer-choice-grid" role="group" aria-label="Detail overlay layers">
+            {DETAIL_LAYER_TOGGLE_LABELS.map(renderBooleanLayerCheckbox)}
           </div>
         </div>}
       </aside>

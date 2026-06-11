@@ -4,9 +4,7 @@ import {
   CORE_LAYER_TOGGLE_REGISTRY,
   DEFAULT_LAYER_SETTINGS,
   DETAIL_LAYER_TOGGLE_REGISTRY,
-  DETAIL_TRI_STATE_LAYER_TOGGLE_REGISTRY,
   LAYER_REGISTRY_DIAGNOSTICS,
-  TRI_STATE_LAYER_REGISTRY,
 } from './layer-registry';
 
 describe('IITC IRIS layer registry', () => {
@@ -37,26 +35,25 @@ describe('IITC IRIS layer registry', () => {
       playerTrackerResistance: false,
       playerTrackerEnlightened: false,
       playerTrackerMachina: false,
-      keyCount: 'off',
+      keyCount: false,
     });
   });
 
   it('keeps UI groups and diagnostics in sync with registered layers', () => {
     const registryIds = [
       ...BOOLEAN_LAYER_REGISTRY.map((entry) => entry.id),
-      ...TRI_STATE_LAYER_REGISTRY.map((entry) => entry.id),
     ];
     const groupedIds = [
       ...CORE_LAYER_TOGGLE_REGISTRY.map((entry) => entry.id),
       ...DETAIL_LAYER_TOGGLE_REGISTRY.map((entry) => entry.id),
-      ...DETAIL_TRI_STATE_LAYER_TOGGLE_REGISTRY.map((entry) => entry.id),
     ];
 
     expect(groupedIds).toEqual(registryIds);
     expect(LAYER_REGISTRY_DIAGNOSTICS.map((entry) => entry.id)).toEqual(registryIds);
     expect(LAYER_REGISTRY_DIAGNOSTICS.find((entry) => entry.id === 'keyCount')).toMatchObject({
-      setting: 'tri-state',
-      defaultValue: 'off',
+      kind: 'overlay',
+      setting: 'boolean',
+      defaultValue: false,
     });
     expect(LAYER_REGISTRY_DIAGNOSTICS.find((entry) => entry.id === 'portals')).toMatchObject({
       kind: 'overlay',

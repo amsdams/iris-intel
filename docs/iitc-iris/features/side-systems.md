@@ -64,13 +64,13 @@ Current status:
   request lifecycle and parser directly from IITC/Intel behavior into the IITC IRIS code path; do not depend on or copy
   the existing IRIS inventory implementation. Plugin-like inventory extensions, player tracker, draw tools, and richer
   key overlays can be classified separately after the core inventory panel works.
-- First-pass history/key overlays are intentionally low risk and IITC-aligned: the Layers sheet has tri-state controls
-  for captured, visited, scout-controlled, and key count (`off`, `on`, `invert`). The runtime styles portals using
-  extended `getEntities` history bits when present, remembered `/r/getPortalDetails` history data, and `/r/getInventory`
-  key counts by GUID, following IITC behavior from `core/code/entity_decode.js`, `plugins/highlight-portal-history.js`,
-  `plugins/keys.js`, and `plugins/keys-on-map.js`. Inverted history modes treat missing history as a target
-  (`VIS!` means not known visited, `CAP!` means not known captured, and `SC!` means not known scout-controlled). This
-  pass does not add bulk history fetching or hide/filter behavior; broader plugin/highlighter parity remains later work.
+- First-pass history/key overlays are intentionally low risk and IITC-aligned: the Layers sheet exposes history through
+  the one-active-highlighter radio group and exposes key labels as a boolean `Key counts` overlay. The runtime styles
+  portals using extended `getEntities` history bits when present, remembered `/r/getPortalDetails` history data, and
+  `/r/getInventory` key counts by GUID, following IITC behavior from `core/code/entity_decode.js`,
+  `plugins/highlight-portal-history.js`, `plugins/keys.js`, and `plugins/keys-on-map.js`. Negative history highlighters
+  cover the old inverted modes such as not visited, not captured, and not scout controlled. This pass does not add bulk
+  history fetching or hide/filter behavior; broader plugin/highlighter parity remains later work.
 - The System sheet now owns app-level comparison/debug controls: copied diagnostics, Intel URL copy, fixture/live data
   source, view presets, jump input, and debug rows. This is an intentional product-shell divergence from IITC-CE’s
   sidebar/dropdown placement, kept separate from core map workflows so visual map comparisons remain meaningful.

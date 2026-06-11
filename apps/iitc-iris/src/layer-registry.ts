@@ -3,12 +3,10 @@ import type {
   IitcIrisLayerRegistryGroup,
   IitcIrisLayerRegistryKind,
   IitcIrisLayerSettings,
-  IitcIrisTriStateLayer,
 } from './messages';
 
-export type IitcIrisTriStateLayerSettingKey = 'keyCount';
 export type IitcIrisLegacyBooleanLayerSettingKey = 'playerTracker';
-export type IitcIrisBooleanLayerSettingKey = Exclude<keyof IitcIrisLayerSettings, IitcIrisTriStateLayerSettingKey | IitcIrisLegacyBooleanLayerSettingKey>;
+export type IitcIrisBooleanLayerSettingKey = Exclude<keyof IitcIrisLayerSettings, IitcIrisLegacyBooleanLayerSettingKey>;
 
 export interface IitcIrisBooleanLayerRegistryEntry {
   id: IitcIrisBooleanLayerSettingKey;
@@ -17,15 +15,6 @@ export interface IitcIrisBooleanLayerRegistryEntry {
   group: IitcIrisLayerRegistryGroup;
   kind: IitcIrisLayerRegistryKind;
   defaultValue: boolean;
-}
-
-export interface IitcIrisTriStateLayerRegistryEntry {
-  id: IitcIrisTriStateLayerSettingKey;
-  label: string;
-  title: string;
-  group: IitcIrisLayerRegistryGroup;
-  kind: IitcIrisLayerRegistryKind;
-  defaultValue: IitcIrisTriStateLayer;
 }
 
 export const BOOLEAN_LAYER_REGISTRY: IitcIrisBooleanLayerRegistryEntry[] = [
@@ -53,23 +42,17 @@ export const BOOLEAN_LAYER_REGISTRY: IitcIrisBooleanLayerRegistryEntry[] = [
   {id: 'playerTrackerResistance', label: 'PTR', title: 'Resistance player tracker', group: 'detail', kind: 'overlay', defaultValue: false},
   {id: 'playerTrackerEnlightened', label: 'PTE', title: 'Enlightened player tracker', group: 'detail', kind: 'overlay', defaultValue: false},
   {id: 'playerTrackerMachina', label: 'PTM', title: 'Machina player tracker', group: 'detail', kind: 'overlay', defaultValue: false},
-];
-
-export const TRI_STATE_LAYER_REGISTRY: IitcIrisTriStateLayerRegistryEntry[] = [
-  {id: 'keyCount', label: 'KEY', title: 'Portal key count', group: 'detail', kind: 'overlay', defaultValue: 'off'},
+  {id: 'keyCount', label: 'KEY', title: 'Key counts', group: 'detail', kind: 'overlay', defaultValue: false},
 ];
 
 export const LAYER_REGISTRY_DIAGNOSTICS: IitcIrisLayerRegistryEntry[] = [
   ...BOOLEAN_LAYER_REGISTRY.map((entry) => ({...entry, setting: 'boolean' as const})),
-  ...TRI_STATE_LAYER_REGISTRY.map((entry) => ({...entry, setting: 'tri-state' as const})),
 ];
 
 export const CORE_LAYER_TOGGLE_REGISTRY = BOOLEAN_LAYER_REGISTRY.filter((entry) => entry.group === 'core');
 export const DETAIL_LAYER_TOGGLE_REGISTRY = BOOLEAN_LAYER_REGISTRY.filter((entry) => entry.group === 'detail');
-export const DETAIL_TRI_STATE_LAYER_TOGGLE_REGISTRY = TRI_STATE_LAYER_REGISTRY.filter((entry) => entry.group === 'detail');
 
 export const DEFAULT_LAYER_SETTINGS: IitcIrisLayerSettings = {
   ...(Object.fromEntries(BOOLEAN_LAYER_REGISTRY.map((entry) => [entry.id, entry.defaultValue])) as Record<IitcIrisBooleanLayerSettingKey, boolean>),
-  ...(Object.fromEntries(TRI_STATE_LAYER_REGISTRY.map((entry) => [entry.id, entry.defaultValue])) as Record<IitcIrisTriStateLayerSettingKey, IitcIrisTriStateLayer>),
   playerTracker: false,
 };

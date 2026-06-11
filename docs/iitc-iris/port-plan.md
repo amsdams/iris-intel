@@ -100,6 +100,8 @@ Latest map lifecycle validation included:
 - Manual live fast-pan and IITC-timing scenario copies at z15. Fast mode stayed complete after pan/retry recovery.
   IITC-timing mode exercised the 400ms movement debounce and 1000ms live download delay while panning, then settled to
   complete renders with no partials, no warning strings, no active requests, and no queued tiles.
+- Retry-sieve parity is now covered in `map-data-request.test.ts`: retry-heavy leading tiles are isolated into
+  one-tile requests like IITC-CE instead of being dropped by a zero-length bucket edge case.
 
 Latest layer/highlighter stabilization validation included:
 
@@ -112,7 +114,8 @@ Latest layer/highlighter stabilization validation included:
   Click-to-pixels diagnostics found the main visual lag was an immediate heavy copied entity-status repost after each
   interaction. The map mutation now gets two animation frames before that status repost runs. Whole-overlay toggles use
   persistent groups, highlighters refresh existing portal marker styles, and faction filters use scoped buckets/direct
-  bucket paths. A deeper team-subgroup topology experiment regressed faction-filter paint timing and was rolled back.
+  bucket paths. The Layers sheet now uses IITC-style checkbox groups for overlays/filters, including `Key counts`.
+  A deeper team-subgroup topology experiment regressed faction-filter paint timing and was rolled back.
 
 Latest IITC IRIS portal analysis validation included:
 
