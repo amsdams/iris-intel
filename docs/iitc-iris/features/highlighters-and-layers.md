@@ -126,8 +126,8 @@ Current first pass:
 
 - A shared typed registry describes existing boolean layer controls.
 - The registry owns current layer control labels, titles, UI group, selection kind, and content-side defaults for the
-  Layers sheet.
-- The Layers sheet now presents registered boolean overlays/filters as IITC-style multi-select checkbox groups:
+  Display sheet.
+- The Display sheet now presents registered boolean overlays/filters as IITC-style multi-select checkbox groups:
   core overlays, portal filters, and detail overlays. This keeps the many-enabled layer chooser semantics while leaving
   compact map controls free to stay as shortcuts.
 - `keyCount` is a boolean detail overlay labelled `Key counts`. The previous `invert` mode was removed because the

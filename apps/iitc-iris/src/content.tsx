@@ -3322,9 +3322,9 @@ function App(): h.JSX.Element {
           <div className="iitc-iris-panel-topbar">
             <span className="iitc-iris-selected-title">
               {activeSheet === 'view'
-                ? 'View'
+                ? 'Controls'
                 : activeSheet === 'layers'
-                  ? 'Layers'
+                  ? 'Display'
                   : activeSheet === 'drawLinks'
                     ? 'Draw Links'
                     : activeSheet === 'drawMarkers'
@@ -3341,7 +3341,7 @@ function App(): h.JSX.Element {
           </div>
         )}
         {activeSheet === 'view' && <div className="iitc-iris-map-controls-section">
-          <span className="iitc-iris-status">View</span>
+          <span className="iitc-iris-status">Controls</span>
           <div className="iitc-iris-map-control-row">
             <div className="iitc-iris-pan-grid" aria-label="Pan controls">
               <button className="iitc-iris-nav-button iitc-iris-pan-north" type="button" disabled={!canPan} onClick={() => panMap('north')} title="Pan north" aria-label="Pan north">N</button>
@@ -3977,7 +3977,7 @@ function App(): h.JSX.Element {
             </div>
           </div>
           <div className="iitc-iris-map-controls-section">
-            <span className="iitc-iris-status">View</span>
+            <span className="iitc-iris-status">Presets</span>
             <div className="iitc-iris-map-control-row">
               {VIEW_PRESETS.map((preset) => (
                 <button
@@ -4153,16 +4153,16 @@ function App(): h.JSX.Element {
         <div className="iitc-iris-sheet-tabbar-secondary">
           {activePrimaryMenu === 'map' && (
             <>
-              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'layers' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('layers')} aria-pressed={activeSheet === 'layers'}>Layers</button>
-              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'view' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('view')} aria-pressed={activeSheet === 'view'}>View</button>
-              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'drawLinks' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('drawLinks')} aria-pressed={activeSheet === 'drawLinks'}>Links</button>
-              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'drawMarkers' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('drawMarkers')} aria-pressed={activeSheet === 'drawMarkers'}>Markers</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'search' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('search')} aria-pressed={activeSheet === 'search'}>Search</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'layers' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('layers')} aria-pressed={activeSheet === 'layers'}>Display</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'view' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('view')} aria-pressed={activeSheet === 'view'}>Controls</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'missions' && missionsState.source !== 'portal' ? 'is-active' : ''}`} type="button" onClick={() => toggleMissionsSheet('view')} aria-pressed={activeSheet === 'missions' && missionsState.source !== 'portal'}>Missions</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'scores' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('scores')} aria-pressed={activeSheet === 'scores'}>Scores</button>
               <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'portalCounts' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('portalCounts')} aria-pressed={activeSheet === 'portalCounts'}>Counts</button>
               <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'portalsList' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('portalsList')} aria-pressed={activeSheet === 'portalsList'}>List</button>
               <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'scoreboard' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('scoreboard')} aria-pressed={activeSheet === 'scoreboard'}>Scoreboard</button>
-              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'scores' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('scores')} aria-pressed={activeSheet === 'scores'}>Scores</button>
-              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'search' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('search')} aria-pressed={activeSheet === 'search'}>Search</button>
-              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'missions' && missionsState.source !== 'portal' ? 'is-active' : ''}`} type="button" onClick={() => toggleMissionsSheet('view')} aria-pressed={activeSheet === 'missions' && missionsState.source !== 'portal'}>Missions</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'drawLinks' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('drawLinks')} aria-pressed={activeSheet === 'drawLinks'}>Links</button>
+              <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'drawMarkers' ? 'is-active' : ''}`} type="button" onClick={() => toggleSheet('drawMarkers')} aria-pressed={activeSheet === 'drawMarkers'}>Markers</button>
             </>
           )}
           {activePrimaryMenu === 'portal' && (

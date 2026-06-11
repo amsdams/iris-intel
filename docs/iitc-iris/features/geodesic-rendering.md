@@ -54,7 +54,7 @@ General improvement backlog before calling this replacement-ready:
   state transitions, and shortcut/menu state transitions.
 - Run a visual/mobile pass with screenshots for the main sheets, portal details, Missions, COMM scrolling, selected search
   geometry, player tracker popup, and keyboard focus states.
-- Browser geolocation is started: Map -> View has a user-triggered Locate action that requests browser location,
+- Browser geolocation is started: Map -> Controls has a user-triggered Locate action that requests browser location,
   pans/zooms with IITC's max zoom 13 behavior, and draws a current-location pin with an accuracy circle. Follow-up:
   keep distance-to-portal and mission distance-to-start as later plugin-style smart ports. They should be revisited
   after the base current-location behavior has had more live comparison time against IITC.
@@ -114,9 +114,9 @@ General improvement backlog before calling this replacement-ready:
   request surfaces are verified.
 - Continue IITC-style long-press/right-click interactions for map and portal context actions. Portal context now works
   across desktop right click and mobile long press by selecting the portal and opening the normal portal sheet/details
-  path. Link/field context now opens the View sheet with object metadata, selected-object highlighting, copy actions,
+  path. Link/field context now opens the Controls sheet with object metadata, selected-object highlighting, copy actions,
   and faction-colored clickable anchor rows that jump/select anchor portals. Plain map context events expose a compact
-  View-sheet action row for centering the map and copying coordinates or an Intel URL. The Portal menu remains
+  Controls-sheet action row for centering the map and copying coordinates or an Intel URL. The Portal menu remains
   portal-only for now; a generic Selection menu for portal/link/field objects remains a later design decision.
 - Make portal navigation from COMM, search, player tracker, inventory keys, and other portal links select the portal as
   well as pan/zoom to it. The selected portal should open the normal portal context/details path when the entity is

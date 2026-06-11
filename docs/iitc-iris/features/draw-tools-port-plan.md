@@ -191,7 +191,7 @@ Status: complete for first stable native slice.
 Completed:
 
 - Added native IITC IRIS passive rendering for stored `polyline` and `marker` records from `plugin-draw-tools-layer`.
-- Added split `Drawn Links` and `Drawn Markers` layer toggles as `DL`/`DM` in the existing Layers sheet. Existing saved
+- Added split `Drawn Links` and `Drawn Markers` layer toggles as `DL`/`DM` in the existing Display sheet. Existing saved
   `drawnItems` visibility is migrated to both toggles.
 - Added a non-interactive `drawnItems` Leaflet pane and local marker icon facade using the IITC `L.DivIcon.ColoredSvg`
   marker SVG shape. Stored marker data remains IITC-compatible via the `color` field.
@@ -224,7 +224,7 @@ Completed:
   context point remains a fallback target when no portal is selected. Stored data remains IITC Draw Tools `polyline` JSON.
 - Left-click portal selection does not open the Portal sheet; it only selects/activates the Portal primary menu and feeds
   Draw Links/Markers targets. Right-click portal context still opens the Portal sheet directly.
-- Draw Tools creation/management lives under Map subtabs as `Links` and `Markers`, not inside View.
+- Draw Tools creation/management lives under Map subtabs as `Links` and `Markers`, not inside Controls.
 - Layer visibility is split into `Drawn Links` and `Drawn Markers` toggles (`DL`/`DM`) instead of one coarse `DT` toggle.
   The internal Leaflet pane can remain `drawnItems` to preserve the IITC overlay concept.
 - Runtime saves on create/delete/clear to `plugin-draw-tools-layer` and rerenders the `Drawn Items` overlay immediately.

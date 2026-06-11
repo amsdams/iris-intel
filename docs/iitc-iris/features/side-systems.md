@@ -53,9 +53,10 @@ Current status:
 - The request chips now live in panel footers. Inventory has a more dedicated layout for item totals, selected-portal key
   counts, top item rows, and top key rows now that live inventory responses have been observed working.
 - UI shell now uses a two-layer bottom menu and a one-sheet-at-a-time model on desktop and mobile. The primary layer is
-  `Map`, `Portal`, `Agent`, `COMM`, and `System`; the secondary layer exposes domain actions such as `Layers`, `View`,
-  `Scores`, `Search`, `Profile`, `Inventory`, `Passcode`, COMM tabs, and diagnostics. This keeps the map-first
-  Mini-IRIS feel while leaving room for IITC-style side systems without adding a permanent crowded toolbar.
+  `Map`, `Portal`, `Agent`, `COMM`, and `System`; the secondary layer exposes domain actions such as `Search`,
+  `Display`, `Controls`, `Missions`, `Scores`, `Profile`, `Inventory`, `Passcode`, COMM tabs, and diagnostics. This
+  keeps the map-first Mini-IRIS feel while leaving room for IITC-style side systems without adding a permanent crowded
+  toolbar.
 - Passcodes are now wired as a core Intel panel using IITC's `redeemReward` request shape. The panel sanitizes printable
   passcodes, posts `/r/redeemReward`, and displays AP/XM/other/item rewards with endpoint diagnostics in the footer.
   Passcode redemption is now its own Agent-domain menu item and opens in the same bottom sheet style as the other side
@@ -64,7 +65,7 @@ Current status:
   request lifecycle and parser directly from IITC/Intel behavior into the IITC IRIS code path; do not depend on or copy
   the existing IRIS inventory implementation. Plugin-like inventory extensions, player tracker, draw tools, and richer
   key overlays can be classified separately after the core inventory panel works.
-- First-pass history/key overlays are intentionally low risk and IITC-aligned: the Layers sheet exposes history through
+- First-pass history/key overlays are intentionally low risk and IITC-aligned: the Display sheet exposes history through
   the one-active-highlighter radio group and exposes key labels as a boolean `Key counts` overlay. The runtime styles
   portals using extended `getEntities` history bits when present, remembered `/r/getPortalDetails` history data, and
   `/r/getInventory` key counts by GUID, following IITC behavior from `core/code/entity_decode.js`,
