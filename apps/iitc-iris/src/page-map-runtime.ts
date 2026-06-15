@@ -49,6 +49,7 @@ import {
   parseIitcInventoryResponse,
   parseIitcDrawToolsLayer,
   importIitcDrawToolsItems,
+  normalizeIitcDrawToolsLabel,
   parseIitcMissionDetailsResponse,
   parseIitcTopMissionsResponse,
   parseIitcPortalDetailsResponse,
@@ -1202,6 +1203,19 @@ function applyIitcDrawToolsAction(message: IitcIrisMessage): void {
     return;
   }
 
+  if (action === 'rename') {
+    const items = loadIitcDrawToolsItems();
+    if (message.drawToolsIndex !== undefined && items[message.drawToolsIndex]?.type === 'marker') {
+      const nextItems = items.map((item, index) => index === message.drawToolsIndex && item.type === 'marker'
+        ? {...item, label: normalizeIitcDrawToolsLabel(message.drawToolsLabel)}
+        : item);
+      saveIitcDrawToolsItems(nextItems);
+      renderIitcDrawTools();
+    }
+    postIitcDrawToolsStatus();
+    return;
+  }
+
   if (action === 'undo') {
     const items = loadIitcDrawToolsItems();
     const index = [...items].reverse().findIndex((item) => !message.drawToolsItemType || item.type === message.drawToolsItemType);
@@ -1239,6 +1253,7 @@ function applyIitcDrawToolsAction(message: IitcIrisMessage): void {
       type: 'marker',
       latLng,
       color: message.drawToolsColor ?? IITC_DRAW_TOOLS_DEFAULT_COLOR,
+      label: normalizeIitcDrawToolsLabel(message.drawToolsLabel),
     }]);
     renderIitcDrawTools();
     postIitcDrawToolsStatus();

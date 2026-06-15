@@ -29,6 +29,7 @@ export interface IitcDrawToolsMarker {
   type: 'marker';
   latLng: IitcDrawToolsLatLng;
   color?: string;
+  label?: string;
 }
 
 export type IitcDrawToolsItem =
@@ -76,6 +77,12 @@ function parseColor(value: unknown): string | undefined {
   return typeof value === 'string' && value.length > 0 ? value : undefined;
 }
 
+export function normalizeIitcDrawToolsLabel(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const label = value.trim();
+  return label.length > 0 ? label : undefined;
+}
+
 function parseItem(value: unknown, index: number): IitcDrawToolsItem {
   if (!isObject(value)) throw new Error(`Invalid Draw Tools item at ${index}`);
 
@@ -104,6 +111,7 @@ function parseItem(value: unknown, index: number): IitcDrawToolsItem {
         type: 'marker',
         latLng: parseLatLng(value.latLng, `item[${index}].latLng`),
         color: parseColor(value.color),
+        label: normalizeIitcDrawToolsLabel(value.label),
       };
     default:
       throw new Error(`Unknown Draw Tools item type at ${index}`);

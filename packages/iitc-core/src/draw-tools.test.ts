@@ -3,6 +3,7 @@ import {
   IITC_DRAW_TOOLS_DEFAULT_COLOR,
   IITC_DRAW_TOOLS_KEY_STORAGE,
   importIitcDrawToolsItems,
+  normalizeIitcDrawToolsLabel,
   parseIitcDrawToolsLayer,
   serializeIitcDrawToolsLayer,
   type IitcDrawToolsItem,
@@ -28,6 +29,7 @@ describe('IITC Draw Tools storage', () => {
         type: 'marker',
         latLng: {lat: 52.371, lng: 4.891},
         color: '#c34a4a',
+        label: 'Farm meetup',
       },
     ];
 
@@ -38,6 +40,28 @@ describe('IITC Draw Tools storage', () => {
     const iitcJson = '[{"type":"polyline","latLngs":[{"lat":52.37,"lng":4.89},{"lat":52.38,"lng":4.9}],"color":"#a24ac3"},{"type":"polygon","latLngs":[{"lat":52.37,"lng":4.89},{"lat":52.38,"lng":4.9},{"lat":52.39,"lng":4.91}],"color":"#c34a4a"},{"type":"circle","latLng":{"lat":52.371,"lng":4.891},"radius":250,"color":"#4aa8c3"},{"type":"marker","latLng":{"lat":52.372,"lng":4.892},"color":"#ffffff"}]';
 
     expect(serializeIitcDrawToolsLayer(parseIitcDrawToolsLayer(iitcJson))).toBe(iitcJson);
+  });
+
+  it('preserves optional IITC IRIS marker labels without requiring them for stock IITC JSON', () => {
+    expect(parseIitcDrawToolsLayer('[{"type":"marker","latLng":{"lat":1,"lng":2},"color":"#fff"}]')).toEqual([{
+      type: 'marker',
+      latLng: {lat: 1, lng: 2},
+      color: '#fff',
+      label: undefined,
+    }]);
+
+    expect(parseIitcDrawToolsLayer('[{"type":"marker","latLng":{"lat":1,"lng":2},"label":"  Alpha anchor  "}]')).toEqual([{
+      type: 'marker',
+      latLng: {lat: 1, lng: 2},
+      color: undefined,
+      label: 'Alpha anchor',
+    }]);
+  });
+
+  it('normalizes marker labels for UI-created Draw Tools records', () => {
+    expect(normalizeIitcDrawToolsLabel(' Portal A ')).toBe('Portal A');
+    expect(normalizeIitcDrawToolsLabel('   ')).toBeUndefined();
+    expect(normalizeIitcDrawToolsLabel(null)).toBeUndefined();
   });
 
   it('accepts Leaflet-compatible coordinate arrays from imported JSON', () => {

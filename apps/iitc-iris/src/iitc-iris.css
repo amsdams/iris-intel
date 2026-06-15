@@ -3168,6 +3168,30 @@ button.iitc-iris-inventory-row:hover {
   gap: 4px;
 }
 
+.iitc-iris-draw-tools-marker-create-row {
+  grid-template-columns: minmax(0, 1fr) max-content;
+}
+
+.iitc-iris-draw-tools-label-input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 3px 6px;
+  border: 1px solid rgb(95 180 255 / 30%);
+  border-radius: 4px;
+  background: rgb(2 10 16 / 88%);
+  color: #e8f4ff;
+  font: inherit;
+}
+
+.iitc-iris-draw-tools-label-input::placeholder {
+  color: #7d95a6;
+}
+
+.iitc-iris-draw-tools-label-input:disabled {
+  color: #4f6575;
+}
+
 .iitc-iris-draw-tools-import {
   display: grid;
   gap: 5px;

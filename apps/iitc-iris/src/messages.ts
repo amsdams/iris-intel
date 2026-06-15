@@ -149,9 +149,10 @@ export interface IitcIrisMessage {
   searchConfirmed?: boolean;
   searchResult?: IitcIrisSearchResult;
   searchZoom?: boolean;
-  drawToolsAction?: 'addMarker' | 'addPolyline' | 'deleteAt' | 'deleteIndex' | 'clear' | 'undo' | 'import' | 'snapToPortals' | 'requestStatus';
+  drawToolsAction?: 'addMarker' | 'addPolyline' | 'deleteAt' | 'deleteIndex' | 'rename' | 'clear' | 'undo' | 'import' | 'snapToPortals' | 'requestStatus';
   drawToolsItemType?: 'polyline' | 'marker';
   drawToolsColor?: string;
+  drawToolsLabel?: string;
   drawToolsLatLngs?: IitcIrisDrawToolsLatLng[];
   drawToolsItems?: IitcIrisDrawToolsItem[];
   drawToolsIndex?: number;
@@ -190,6 +191,7 @@ export interface IitcIrisDrawToolsMarker {
   type: 'marker';
   latLng: IitcIrisDrawToolsLatLng;
   color?: string;
+  label?: string;
   storageIndex: number;
 }
 

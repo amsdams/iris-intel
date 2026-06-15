@@ -16,6 +16,7 @@ import {
   IITC_MAX_REQUESTS,
   IITC_MAX_TILE_RETRIES,
   IITC_NUM_TILES_PER_REQUEST,
+  normalizeIitcDrawToolsLabel,
   parseIitcDrawToolsLayer,
   serializeIitcDrawToolsLayer,
   type IitcDrawToolsItem,
@@ -398,7 +399,7 @@ function getDrawToolsItemCenter(item: IitcIrisDrawToolsItem): IitcIrisDrawToolsL
 }
 
 function getDrawToolsItemLabel(item: IitcIrisDrawToolsItem, displayIndex: number): string {
-  if (item.type === 'marker') return `Marker ${displayIndex + 1}`;
+  if (item.type === 'marker') return item.label ?? `Marker ${displayIndex + 1}`;
   return `Link ${displayIndex + 1}`;
 }
 
@@ -415,6 +416,7 @@ function stripDrawToolsStorageIndex(item: IitcIrisDrawToolsItem): IitcDrawToolsI
       type: 'marker',
       latLng: item.latLng,
       color: item.color,
+      label: item.label,
     };
   }
   return {
@@ -1513,6 +1515,8 @@ function App(): h.JSX.Element {
   const [drawToolsImportMerge, setDrawToolsImportMerge] = useState(true);
   const [drawToolsImportStatus, setDrawToolsImportStatus] = useState('');
   const [drawToolsClearConfirm, setDrawToolsClearConfirm] = useState<'polyline' | 'marker' | null>(null);
+  const [drawToolsMarkerLabel, setDrawToolsMarkerLabel] = useState('');
+  const [editingDrawToolsMarkerIndex, setEditingDrawToolsMarkerIndex] = useState<number | null>(null);
   const [debugDockVisible, setDebugDockVisible] = useState(() => loadStoredDebugDockVisible());
   const [activeSheet, setActiveSheet] = useState<SheetId>(() => loadStoredActiveSheet());
   const [activeSidePanel, setActiveSidePanel] = useState<SidePanelId | null>(() => {
@@ -2058,15 +2062,33 @@ function App(): h.JSX.Element {
   };
 
   const addDrawToolsMarker = (color: string): void => {
-    const latLng = getDrawToolsTargetLatLng();
-    if (!latLng) return;
+    const target = getDrawToolsTarget();
+    if (!target) return;
+    const label = normalizeIitcDrawToolsLabel(drawToolsMarkerLabel) ?? normalizeIitcDrawToolsLabel(target.label);
     setDrawToolsClearConfirm(null);
     postDrawToolsAction({
       drawToolsAction: 'addMarker',
       drawToolsColor: color,
-      drawToolsLatLngs: [latLng],
+      drawToolsLabel: label ?? '',
+      drawToolsLatLngs: [{lat: target.lat, lng: target.lng}],
     });
     setStatus('draw marker added');
+  };
+
+  const renameDrawToolsMarker = (item: Extract<IitcIrisDrawToolsItem, {type: 'marker'}>, label: string): void => {
+    const normalizedLabel = normalizeIitcDrawToolsLabel(label);
+    if (normalizedLabel === item.label) return;
+    postDrawToolsAction({
+      drawToolsAction: 'rename',
+      drawToolsIndex: item.storageIndex,
+      drawToolsLabel: normalizedLabel ?? '',
+    });
+    setStatus(normalizedLabel ? 'draw marker renamed' : 'draw marker label cleared');
+  };
+
+  const saveDrawToolsMarkerLabel = (item: Extract<IitcIrisDrawToolsItem, {type: 'marker'}>, label: string): void => {
+    renameDrawToolsMarker(item, label);
+    setEditingDrawToolsMarkerIndex(null);
   };
 
   const addDrawToolsLinkPoint = (): void => {
@@ -3227,8 +3249,13 @@ function App(): h.JSX.Element {
   ].filter((group) => group.items.length > 0);
   const activeSearchResult = searchState.results.filter((result) => result.type !== 'empty')[activeSearchResultIndex];
   const drawToolsTarget = getDrawToolsTarget();
+  const drawToolsTargetDefaultLabel = drawToolsTarget?.label ?? '';
   const drawToolsLinkItems = drawToolsItems.filter((item) => item.type === 'polyline');
   const drawToolsMarkerItems = drawToolsItems.filter((item) => item.type === 'marker');
+
+  useEffect(() => {
+    setDrawToolsMarkerLabel(drawToolsTargetDefaultLabel);
+  }, [drawToolsTargetDefaultLabel]);
 
   return (
     <div className={`iitc-iris-shell iitc-iris-sheet-${activeSheet} ${entityFetch.selectedPortal ? 'iitc-iris-has-selected-portal' : ''}`}>
@@ -3484,6 +3511,17 @@ function App(): h.JSX.Element {
             <span className="iitc-iris-map-context-coords">
               {drawToolsTarget?.label ?? 'Select a portal or open a context point'}
             </span>
+          </div>
+          <div className="iitc-iris-map-context-row iitc-iris-draw-tools-marker-create-row">
+            <input
+              className="iitc-iris-draw-tools-label-input"
+              type="text"
+              value={drawToolsMarkerLabel}
+              onInput={(event) => setDrawToolsMarkerLabel(event.currentTarget.value)}
+              placeholder={drawToolsTarget ? 'Marker label' : 'Select a marker target'}
+              disabled={!drawToolsTarget}
+              aria-label="New marker label"
+            />
             <span className="iitc-iris-draw-tools-marker-actions" aria-label="Add marker">
               {DRAW_TOOLS_MARKER_PRESETS.map((preset) => (
                 <button
@@ -3514,10 +3552,30 @@ function App(): h.JSX.Element {
               <div className="iitc-iris-draw-tools-list-item" key={`marker-${item.storageIndex}`}>
                 <span className="iitc-iris-draw-tools-marker-dot" style={{background: item.color ?? DRAW_TOOLS_DEFAULT_COLOR}} />
                 <span className="iitc-iris-draw-tools-list-label">
-                  <b>{getDrawToolsItemLabel(item, index)}</b>
+                  {editingDrawToolsMarkerIndex === item.storageIndex ? (
+                    <input
+                      className="iitc-iris-draw-tools-label-input"
+                      type="text"
+                      defaultValue={item.label ?? ''}
+                      placeholder={getDrawToolsItemLabel(item, index)}
+                      aria-label={`Marker ${index + 1} label`}
+                      autoFocus
+                      onBlur={(event) => saveDrawToolsMarkerLabel(item, event.currentTarget.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') event.currentTarget.blur();
+                        if (event.key === 'Escape') {
+                          event.currentTarget.value = item.label ?? '';
+                          setEditingDrawToolsMarkerIndex(null);
+                        }
+                      }}
+                    />
+                  ) : (
+                    <b>{getDrawToolsItemLabel(item, index)}</b>
+                  )}
                   <small>{getDrawToolsItemDetail(item)}</small>
                 </span>
                 <span className="iitc-iris-draw-tools-list-actions">
+                  <button className="iitc-iris-portal-action" type="button" onClick={() => setEditingDrawToolsMarkerIndex(item.storageIndex)} title="Edit this marker label">Edit</button>
                   <button className="iitc-iris-portal-action" type="button" onClick={() => centerDrawToolsItem(item)} title="Center this drawn marker">Center</button>
                   <button className="iitc-iris-portal-action" type="button" onClick={() => deleteDrawToolsItem(item)} title="Delete this drawn marker">Del</button>
                 </span>
