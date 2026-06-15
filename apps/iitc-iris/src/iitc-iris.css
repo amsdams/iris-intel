@@ -29,7 +29,7 @@
   background: rgb(7 31 45 / 72%);
 }
 
-.iitc-iris-search-input {
+#iitc-iris-root .iitc-iris-search-input {
   min-width: 0;
   height: 32px;
   box-sizing: border-box;
@@ -41,7 +41,7 @@
   outline: none;
 }
 
-.iitc-iris-search-input::placeholder {
+#iitc-iris-root .iitc-iris-search-input::placeholder {
   color: #7d95a6;
 }
 
@@ -1617,7 +1617,7 @@
   min-width: 0;
 }
 
-.iitc-iris-passcode-input {
+#iitc-iris-root .iitc-iris-passcode-input {
   min-width: 0;
   box-sizing: border-box;
   border: 1px solid rgb(95 180 255 / 30%);
@@ -1628,7 +1628,7 @@
   padding: 3px 6px;
 }
 
-.iitc-iris-passcode-input:disabled {
+#iitc-iris-root .iitc-iris-passcode-input:disabled {
   color: #4f6575;
 }
 
@@ -3172,7 +3172,7 @@ button.iitc-iris-inventory-row:hover {
   grid-template-columns: minmax(0, 1fr) max-content;
 }
 
-.iitc-iris-draw-tools-label-input {
+#iitc-iris-root .iitc-iris-draw-tools-label-input {
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
@@ -3184,11 +3184,11 @@ button.iitc-iris-inventory-row:hover {
   font: inherit;
 }
 
-.iitc-iris-draw-tools-label-input::placeholder {
+#iitc-iris-root .iitc-iris-draw-tools-label-input::placeholder {
   color: #7d95a6;
 }
 
-.iitc-iris-draw-tools-label-input:disabled {
+#iitc-iris-root .iitc-iris-draw-tools-label-input:disabled {
   color: #4f6575;
 }
 
