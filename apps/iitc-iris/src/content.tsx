@@ -22,7 +22,6 @@ import {
   SIDE_PANEL_REGISTRY,
   SYSTEM_MENU_SHEET_REGISTRY,
   type IitcIrisPrimaryMenuId,
-  type IitcIrisSelectedKind,
   type IitcIrisSheetId,
   type IitcIrisSidePanelId,
 } from './menu-registry';
@@ -31,6 +30,18 @@ import {
   PORTAL_DETAIL_SECTION_REGISTRY,
   type IitcIrisPortalDetailSectionId,
 } from './portal-detail-section-registry';
+import {
+  getContextAction,
+  getContextTarget,
+  isContextActionVisible,
+  type IitcIrisContextActionId,
+} from './context-action-registry';
+import {
+  getSelectionView,
+  mapContextSelected,
+  portalSelected,
+  type IitcIrisMapContextSelection,
+} from './selection-lifecycle';
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisEntitySource, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPlayerTrackerDiagnostics, type IitcIrisPortalAnalysis, type IitcIrisPortalDetailsState, type IitcIrisPortalHighlighterId, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal} from './messages';
 import {
   createIitcMapDataPlan,
@@ -366,18 +377,6 @@ interface ScenarioRun {
   finishedAt?: string;
   lifecycleSettings: IitcIrisLifecycleSettings;
   snapshots: ScenarioSnapshot[];
-}
-
-interface MapContextSelection {
-  lat: number;
-  lng: number;
-  zoom: number;
-  target: 'map' | 'link' | 'field';
-  guid?: string;
-  team?: 'E' | 'R' | 'N' | 'M';
-  portalGuids?: string[];
-  portalAnchors?: IitcIrisMapContextPortalAnchor[];
-  distanceMeters?: number;
 }
 
 interface DrawToolsTarget {
@@ -1472,7 +1471,7 @@ function App(): h.JSX.Element {
   const [viewInput, setViewInput] = useState('');
   const [viewInputStatus, setViewInputStatus] = useState('');
   const [geolocationStatus, setGeolocationStatus] = useState('');
-  const [mapContext, setMapContext] = useState<MapContextSelection | null>(null);
+  const [mapContext, setMapContext] = useState<IitcIrisMapContextSelection | null>(null);
   const [drawToolsLinkStart, setDrawToolsLinkStart] = useState<IitcIrisDrawToolsLatLng | null>(null);
   const [drawToolsItems, setDrawToolsItems] = useState<IitcIrisDrawToolsItem[]>([]);
   const [drawToolsImportText, setDrawToolsImportText] = useState('');
@@ -1662,28 +1661,13 @@ function App(): h.JSX.Element {
       : selectedPortalHasMissions
         ? 'Starting here'
         : '';
-  const selectedMapObject = mapContext?.target === 'link' || mapContext?.target === 'field' ? mapContext : null;
-  const hasSelectedObject = Boolean(entityFetch.selectedPortal || selectedMapObject);
-  const selectedPrimaryLabel = selectedMapObject?.target === 'link'
-    ? 'Link'
-    : selectedMapObject?.target === 'field'
-      ? 'Field'
-      : entityFetch.selectedPortal
-        ? 'Portal'
-        : 'Selected';
-  const activeSelectedSheet: SheetId = selectedMapObject?.target === 'link'
-    ? 'selectedLink'
-    : selectedMapObject?.target === 'field'
-      ? 'selectedField'
-      : entityFetch.selectedPortal
-        ? 'portal'
-        : 'map';
-  const selectedKind: IitcIrisSelectedKind | null = selectedMapObject?.target === 'link' || selectedMapObject?.target === 'field'
-    ? selectedMapObject.target
-    : entityFetch.selectedPortal
-      ? 'portal'
-      : null;
-  const showPortalSidePanel = Boolean(entityFetch.selectedPortal && !(selectedMapObject && (activeSheet === 'selectedLink' || activeSheet === 'selectedField')));
+  const {
+    hasSelectedObject,
+    selectedPrimaryLabel,
+    activeSelectedSheet,
+    selectedKind,
+    showPortalSidePanel,
+  } = getSelectionView({selectedPortal: entityFetch.selectedPortal, mapContext}, activeSheet);
   const dockDiagnostics = {
     app: 'IITC IRIS',
     status,
@@ -2828,6 +2812,27 @@ function App(): h.JSX.Element {
     );
   };
 
+  const renderContextActionButton = (
+    actionId: IitcIrisContextActionId,
+    onClick: () => void,
+    title?: string,
+    disabled = false,
+  ): h.JSX.Element | null => {
+    if (!mapContext || !isContextActionVisible(actionId, mapContext.target)) return null;
+    const action = getContextAction(actionId);
+    return (
+      <button
+        className="iitc-iris-portal-action"
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        title={title ?? action.title}
+      >
+        {action.label}
+      </button>
+    );
+  };
+
   const jumpToPreset = (preset: typeof VIEW_PRESETS[number]): void => {
     setMapView(preset.lat, preset.lng, preset.zoom);
   };
@@ -2922,38 +2927,29 @@ function App(): h.JSX.Element {
       }
       if (event.data?.type === IITC_IRIS_MESSAGES.mapContext) {
         if (event.data.contextTarget === 'portal') {
-          setMapContext(null);
-          if (activeSidePanel) {
+          const effect = portalSelected(Boolean(activeSidePanel));
+          setMapContext(effect.mapContext);
+          if (effect.cancelPanelRequests) {
             window.postMessage({type: IITC_IRIS_MESSAGES.cancelPanelRequests} satisfies IitcIrisMessage, '*');
           }
           setPortalImageOpen(false);
           setActiveSidePanel(null);
           storeSidePanelId(null);
-          setActiveSheet('portal');
-          storeActiveSheet('portal');
+          setActiveSheet(effect.activeSheet);
+          storeActiveSheet(effect.activeSheet);
         } else if (typeof event.data.lat === 'number' && typeof event.data.lng === 'number') {
-          const target = event.data.contextTarget === 'link' || event.data.contextTarget === 'field' ? event.data.contextTarget : 'map';
-          setMapContext({
-            lat: event.data.lat,
-            lng: event.data.lng,
-            zoom: event.data.zoom ?? camera.zoom,
-            target,
-            guid: event.data.contextGuid,
-            team: event.data.contextTeam,
-            portalGuids: event.data.contextPortalGuids,
-            portalAnchors: event.data.contextPortalAnchors,
-            distanceMeters: event.data.contextDistanceMeters,
-          });
-          if (activeSidePanel) {
+          const effect = mapContextSelected(event.data, camera.zoom, Boolean(activeSidePanel));
+          if (!effect) return;
+          setMapContext(effect.mapContext);
+          if (effect.cancelPanelRequests) {
             window.postMessage({type: IITC_IRIS_MESSAGES.cancelPanelRequests} satisfies IitcIrisMessage, '*');
           }
           setPortalImageOpen(false);
           setActiveSidePanel(null);
           storeSidePanelId(null);
-          const contextSheet = target === 'link' ? 'selectedLink' : target === 'field' ? 'selectedField' : 'view';
-          setActiveSheet(contextSheet);
-          storeActiveSheet(contextSheet);
-          setStatus(`${target} context ${event.data.lat.toFixed(6)},${event.data.lng.toFixed(6)}`);
+          setActiveSheet(effect.activeSheet);
+          storeActiveSheet(effect.activeSheet);
+          setStatus(effect.status);
         }
       }
       if (event.data?.type === IITC_IRIS_MESSAGES.entityStatus) {
@@ -3433,20 +3429,18 @@ function App(): h.JSX.Element {
           (activeSheet === 'selectedLink' && mapContext.target === 'link') ||
           (activeSheet === 'selectedField' && mapContext.target === 'field')
         ) && <div className="iitc-iris-map-controls-section">
-          <span className="iitc-iris-status">
-            {mapContext.target === 'link' ? 'Link details' : mapContext.target === 'field' ? 'Field details' : 'Context'}
-          </span>
+          <span className="iitc-iris-status">{getContextTarget(mapContext.target).panelLabel}</span>
           {mapContext.target !== 'map' && <div className="iitc-iris-map-context-row">
             <span className="iitc-iris-map-context-coords" title={mapContext.guid}>
-              {mapContext.target === 'link' ? 'Link' : 'Field'}
+              {getContextTarget(mapContext.target).objectLabel}
               {mapContext.team ? `, ${formatTeamLabel(mapContext.team)}` : ''}
             </span>
-            {mapContext.guid && <button className="iitc-iris-portal-action" type="button" onClick={copyMapContextGuid} title={`Copy ${mapContext.target} GUID`}>GUID</button>}
-            {mapContext.portalGuids?.length ? <button className="iitc-iris-portal-action" type="button" onClick={copyMapContextPortalGuids} title="Copy anchor portal GUIDs">Anchors</button> : null}
+            {mapContext.guid && renderContextActionButton('copyGuid', copyMapContextGuid, `Copy ${mapContext.target} GUID`)}
+            {mapContext.portalGuids?.length ? renderContextActionButton('copyAnchorGuids', copyMapContextPortalGuids) : null}
           </div>}
           {mapContext.target !== 'map' && mapContext.distanceMeters !== undefined && <div className="iitc-iris-map-context-row">
             <span className="iitc-iris-map-context-coords">
-              {mapContext.target === 'link' ? 'Length' : 'Edge total'}: {formatMapObjectDistance(mapContext.distanceMeters)}
+              {getContextTarget(mapContext.target).distanceLabel}: {formatMapObjectDistance(mapContext.distanceMeters)}
             </span>
           </div>}
           {mapContext.target !== 'map' && mapContext.portalAnchors?.length ? mapContext.portalAnchors.map((anchor, index) => (
@@ -3460,9 +3454,9 @@ function App(): h.JSX.Element {
             <span className="iitc-iris-map-context-coords" title={`${mapContext.lat},${mapContext.lng}`}>
               {mapContext.lat.toFixed(6)}, {mapContext.lng.toFixed(6)}
             </span>
-            <button className="iitc-iris-portal-action" type="button" onClick={centerMapContext} title="Center map on this context point">Center</button>
-            <button className="iitc-iris-portal-action" type="button" onClick={copyMapContextLatLng} title="Copy context coordinates">LL</button>
-            <button className="iitc-iris-portal-action" type="button" onClick={copyMapContextUrl} title="Copy Intel URL for this context point">URL</button>
+            {renderContextActionButton('center', centerMapContext)}
+            {renderContextActionButton('copyLatLng', copyMapContextLatLng)}
+            {renderContextActionButton('copyIntelUrl', copyMapContextUrl)}
           </div>
         </div>}
         {activeSheet === 'drawLinks' && <div className="iitc-iris-map-controls-section">

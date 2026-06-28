@@ -25,6 +25,15 @@ The foundation has three narrow pieces:
 3. **Setup sequence:** A local lifecycle for native IITC IRIS feature setup. Do not expose a `window` plugin bridge until
    internal contracts are stable and a real use case needs it.
 
+Latest working slice:
+
+- Native context action registry for existing map, link, and field long-press/right-click actions. This directly supports
+  the backlog's `Long-press/right-click context` and `Context actions` partial items, and the port plan's registry/facade
+  foundation entry.
+- Small local selection lifecycle facade for selected portal/link/field view derivation and content-side context selection
+  effects. This is the first lifecycle-facade slice needed before splitting selected-object UI out of `content.tsx`.
+- Both pieces stay app-local. Do not introduce arbitrary plugin context menus, public hooks, or external plugin setup yet.
+
 ## Phase 1: Current Feature Registries
 
 ### Layer Registry
@@ -74,6 +83,19 @@ Status: started / first slice implemented.
 - This is intentionally a native registry, not `window.addPortalDetail` or a reference-plugin section API.
 - `apps/iitc-iris/src/portal-detail-section-registry.test.ts` locks current section ids, labels, default open state, and
   stored-id validation.
+
+### Context Action Registry
+
+Status: started / first slice implemented.
+
+- `apps/iitc-iris/src/context-action-registry.ts` describes current map, link, and field context targets plus current copy
+  and center actions.
+- The content UI now reads context panel labels, object labels, distance labels, action labels, titles, and action
+  visibility from this registry.
+- This registry exists to make current long-press/right-click behavior easier to extract from `content.tsx`. It is not a
+  plugin context-menu API yet.
+- `apps/iitc-iris/src/context-action-registry.test.ts` locks current target order, action order, labels, and target/action
+  visibility.
 
 ### Progress Checkpoint - 2026-06-28 15:21 UTC
 
@@ -157,23 +179,58 @@ Latest package artifacts from this checkpoint:
 
 Recommended next slice:
 
-- Consider a context action registry only if it directly helps extract map, portal, link, and field long-press/right-click
-  action handling from `content.tsx` or `page-map-runtime.ts`.
+- Context action registry is now the active focused slice because current map, link, and field context labels/actions are
+  still embedded in `content.tsx`, and the backlog tracks long-press/right-click context actions as partial.
 - Keep lifecycle hooks/facades local and minimal until a specific native subsystem needs them.
+
+Recommended next slice after context actions:
+
+- Selection lifecycle facade is now covered by the following checkpoint.
+- Do not expose public `window.addHook` / `window.runHooks` or a broad plugin setup sequence as part of that step.
+
+### Progress Checkpoint - 2026-06-28 18:25 UTC
+
+Implemented the fourth internal registry/facade slice:
+
+- New context action registry now removes duplicated map/link/field context target and action metadata from `content.tsx`.
+- New selection lifecycle facade now centralizes content-side selected portal/link/field view derivation plus portal/context
+  selection effects.
+- Current user-facing selected-object behavior is unchanged: portal context opens Portal details, link/field context opens
+  the corresponding Selected details sheet, and plain map context stays in Controls.
+- Deferred/reference plugins did not shape these APIs.
+
+Validation:
+
+- `npm run test -w apps/iitc-iris -- --run src/selection-lifecycle.test.ts src/context-action-registry.test.ts src/portal-detail-section-registry.test.ts src/menu-registry.test.ts src/highlighter-registry.test.ts src/layer-registry.test.ts`
+- `npm run typecheck:iitc-iris`
+- `npm run lint:iitc-iris` passed with existing warnings only.
+- `npm run package:iitc-iris` passed with existing missing-fixture fallback warnings.
+- `git diff --check`
+
+Latest package artifacts from this checkpoint:
+
+- `apps/iitc-iris/builds/iitc-iris-chrome-0.1.0-2026-06-28T18-25-41.zip`
+- `apps/iitc-iris/builds/iitc-iris-firefox-0.1.0-2026-06-28T18-25-41.xpi`
+
+Recommended next slice:
+
+- Stop adding registries for now unless a concrete extraction needs one. The useful next implementation step is a narrow
+  selected-object UI extraction that consumes `selection-lifecycle.ts`, `menu-registry.ts`, `portal-detail-section-registry.ts`,
+  and `context-action-registry.ts`.
+- Keep lifecycle hooks/facades local and minimal until another native subsystem needs them.
 
 ### Future Internal Registries
 
 Add only when current implementation needs them for refactor pressure:
 
-- Context action registry for current map, portal, link, and field long-press/right-click actions.
 - Request/status registry for panel request categories if it simplifies auth/cancellation UI.
 
 ## Phase 2: Lifecycle Facades For Refactor
 
 Use lifecycle facades to decouple native modules after registries are stable enough:
 
-- Selection: route selected portal/link/field changes through a small lifecycle boundary before splitting selected-object
-  UI.
+- Selection: first local facade is implemented in `apps/iitc-iris/src/selection-lifecycle.ts`; use it as the boundary when
+  splitting selected-object UI.
 - Rendering: expose internal `portalAdded`, `linkAdded`, and `fieldAdded` events only if Draw Tools, labels, or future
   overlays need them during extraction.
 - UI: let extracted sheets subscribe to stable app state or lifecycle events instead of importing broad content-level
