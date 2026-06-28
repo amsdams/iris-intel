@@ -62,6 +62,19 @@ Status: started / first slice implemented.
 - `apps/iitc-iris/src/menu-registry.test.ts` locks current menu order, sheet ids, side-panel order, selected sheet
   ownership, and primary-menu ownership.
 
+### Portal Detail Section Registry
+
+Status: started / first slice implemented.
+
+- `apps/iitc-iris/src/portal-detail-section-registry.ts` describes current selected portal detail sections: Mods,
+  Resonators, and Facts.
+- The content UI now reads portal detail section ids, labels, and default open state from this registry.
+- Section body rendering remains in `content.tsx`; this slice only moves metadata needed for persisted open/closed state
+  and detail-section wrappers.
+- This is intentionally a native registry, not `window.addPortalDetail` or a reference-plugin section API.
+- `apps/iitc-iris/src/portal-detail-section-registry.test.ts` locks current section ids, labels, default open state, and
+  stored-id validation.
+
 ### Progress Checkpoint - 2026-06-28 15:21 UTC
 
 Implemented the first internal registry/facade slice:
@@ -116,8 +129,36 @@ Latest package artifacts from this checkpoint:
 
 Recommended next slice:
 
-- Add a portal-detail-section registry only if it directly helps extract the selected portal side panel from
-  `content.tsx`.
+- Portal-detail-section registry was the next focused registry slice because selected portal details had persisted
+  section metadata embedded in `content.tsx`; this is now covered by the following checkpoint.
+- Keep lifecycle hooks/facades local and minimal until a specific native subsystem needs them.
+
+### Progress Checkpoint - 2026-06-28 17:17 UTC
+
+Implemented the third internal registry/facade slice:
+
+- New portal detail section registry now removes duplicated selected portal detail section ids, labels, and default-open
+  metadata from `content.tsx`.
+- Current user-facing selected portal detail behavior is unchanged; Mods, Resonators, and Facts still render in place.
+- Deferred/reference plugins did not shape this API.
+
+Validation:
+
+- `npm run test -w apps/iitc-iris -- --run src/portal-detail-section-registry.test.ts src/menu-registry.test.ts src/highlighter-registry.test.ts src/layer-registry.test.ts`
+- `npm run typecheck:iitc-iris`
+- `npm run lint:iitc-iris` passed with existing warnings only.
+- `npm run package:iitc-iris` passed with existing missing-fixture fallback warnings.
+- `git diff --check`
+
+Latest package artifacts from this checkpoint:
+
+- `apps/iitc-iris/builds/iitc-iris-chrome-0.1.0-2026-06-28T17-17-44.zip`
+- `apps/iitc-iris/builds/iitc-iris-firefox-0.1.0-2026-06-28T17-17-44.xpi`
+
+Recommended next slice:
+
+- Consider a context action registry only if it directly helps extract map, portal, link, and field long-press/right-click
+  action handling from `content.tsx` or `page-map-runtime.ts`.
 - Keep lifecycle hooks/facades local and minimal until a specific native subsystem needs them.
 
 ### Future Internal Registries
@@ -125,7 +166,6 @@ Recommended next slice:
 Add only when current implementation needs them for refactor pressure:
 
 - Context action registry for current map, portal, link, and field long-press/right-click actions.
-- Portal detail section registry for current details, keys, history, missions, and copy/export sections.
 - Request/status registry for panel request categories if it simplifies auth/cancellation UI.
 
 ## Phase 2: Lifecycle Facades For Refactor

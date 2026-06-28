@@ -26,6 +26,11 @@ import {
   type IitcIrisSheetId,
   type IitcIrisSidePanelId,
 } from './menu-registry';
+import {
+  DEFAULT_PORTAL_DETAIL_SECTION_SETTINGS,
+  PORTAL_DETAIL_SECTION_REGISTRY,
+  type IitcIrisPortalDetailSectionId,
+} from './portal-detail-section-registry';
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisEntitySource, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPlayerTrackerDiagnostics, type IitcIrisPortalAnalysis, type IitcIrisPortalDetailsState, type IitcIrisPortalHighlighterId, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal} from './messages';
 import {
   createIitcMapDataPlan,
@@ -252,7 +257,7 @@ interface EntityFetchState {
 type SidePanelId = IitcIrisSidePanelId;
 type SheetId = IitcIrisSheetId;
 type PrimaryMenuId = IitcIrisPrimaryMenuId;
-type PortalSectionId = 'mods' | 'resonators' | 'facts';
+type PortalSectionId = IitcIrisPortalDetailSectionId;
 type PortalsListSortField = 'title' | 'level' | 'team' | 'health' | 'resCount' | 'links' | 'fields' | 'enemyAp' | 'keys';
 type PortalsListTeamFilter = 'all' | IitcPortalAnalysisTeam;
 type PortalsListLevelFilter = 'all' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8';
@@ -849,13 +854,14 @@ function storeActiveSheet(value: SheetId): void {
 function loadStoredPortalSections(): Record<PortalSectionId, boolean> {
   try {
     const parsed = JSON.parse(window.localStorage.getItem(PORTAL_SECTION_STORAGE_KEY) ?? '{}') as Partial<Record<PortalSectionId, boolean>>;
-    return {
-      mods: typeof parsed.mods === 'boolean' ? parsed.mods : true,
-      resonators: typeof parsed.resonators === 'boolean' ? parsed.resonators : true,
-      facts: typeof parsed.facts === 'boolean' ? parsed.facts : false,
-    };
+    return Object.fromEntries(
+      PORTAL_DETAIL_SECTION_REGISTRY.map((entry) => [
+        entry.id,
+        typeof parsed[entry.id] === 'boolean' ? parsed[entry.id] : entry.defaultOpen,
+      ]),
+    ) as Record<PortalSectionId, boolean>;
   } catch {
-    return {mods: true, resonators: true, facts: false};
+    return DEFAULT_PORTAL_DETAIL_SECTION_SETTINGS;
   }
 }
 
@@ -2808,6 +2814,20 @@ function App(): h.JSX.Element {
     return renderSheetTab(entry.id, entry.label, openSelectedSheet);
   };
 
+  const renderPortalDetailSection = (sectionId: PortalSectionId, children: h.JSX.Element): h.JSX.Element => {
+    const section = PORTAL_DETAIL_SECTION_REGISTRY.find((entry) => entry.id === sectionId);
+    return (
+      <details
+        className="iitc-iris-portal-section"
+        open={portalSections[sectionId]}
+        onToggle={(event) => setPortalSectionOpen(sectionId, event.currentTarget.open)}
+      >
+        <summary className="iitc-iris-section-summary">{section?.label ?? sectionId}</summary>
+        {children}
+      </details>
+    );
+  };
+
   const jumpToPreset = (preset: typeof VIEW_PRESETS[number]): void => {
     setMapView(preset.lat, preset.lng, preset.zoom);
   };
@@ -4333,8 +4353,7 @@ function App(): h.JSX.Element {
             )}
             {selectedPortalDetails?.status === 'ready' && (
               <>
-                <details className="iitc-iris-portal-section" open={portalSections.mods} onToggle={(event) => setPortalSectionOpen('mods', event.currentTarget.open)}>
-                  <summary className="iitc-iris-section-summary">Mods</summary>
+                {renderPortalDetailSection('mods', (
                   <div className="iitc-iris-mod-grid">
                     {Array.from({ length: 4 }, (_, index) => {
                       const mod = entityFetch.portalDetails?.mods?.[index];
@@ -4358,9 +4377,8 @@ function App(): h.JSX.Element {
                       );
                     })}
                   </div>
-                </details>
-                <details className="iitc-iris-portal-section" open={portalSections.resonators} onToggle={(event) => setPortalSectionOpen('resonators', event.currentTarget.open)}>
-                  <summary className="iitc-iris-section-summary">Resonators</summary>
+                ))}
+                {renderPortalDetailSection('resonators', (
                   <div className="iitc-iris-resonator-grid">
                     {RESONATOR_PANEL_ORDER.map((resonatorIndex, panelIndex) => {
                       if (resonatorIndex === null) {
@@ -4394,9 +4412,8 @@ function App(): h.JSX.Element {
                       );
                     })}
                   </div>
-                </details>
-                <details className="iitc-iris-portal-section" open={portalSections.facts} onToggle={(event) => setPortalSectionOpen('facts', event.currentTarget.open)}>
-                  <summary className="iitc-iris-section-summary">Facts</summary>
+                ))}
+                {renderPortalDetailSection('facts', (
                   <div className="iitc-iris-portal-panel-grid iitc-iris-portal-facts">
                     <span className="iitc-iris-status">owner</span>
                     <span className={`iitc-iris-agent-name ${getCommTeamClass(entityFetch.selectedPortal.team)}`}>{selectedPortalDetails.owner || '-'}</span>
@@ -4449,7 +4466,7 @@ function App(): h.JSX.Element {
                       ) : '-'}
                     </div>
                   </div>
-                </details>
+                ))}
                 <div className="iitc-iris-panel-footer">
                   <span
                     className="iitc-iris-diagnostics-chip"
