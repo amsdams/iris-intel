@@ -48,7 +48,21 @@ Status: started / first slice implemented.
 - `apps/iitc-iris/src/highlighter-registry.test.ts` locks the current ids, legacy normalization, level/health fill flags,
   and history color rule.
 
-### Progress Checkpoint - 2026-06-28
+### Menu / Sheet Registry
+
+Status: started / first slice implemented.
+
+- `apps/iitc-iris/src/menu-registry.ts` describes current primary menus, sheet ids, side panels, selected-object sheet
+  ownership, labels, titles, and shortcut labels.
+- The content UI now reads stored-sheet validation, side-panel ids, primary-menu routing, and most primary/secondary tab
+  rendering from this registry.
+- COMM channel tabs and portal-mission sheet behavior remain component-local because they depend on live request state and
+  mission source.
+- This is intentionally a native registry, not a plugin menu API.
+- `apps/iitc-iris/src/menu-registry.test.ts` locks current menu order, sheet ids, side-panel order, selected sheet
+  ownership, and primary-menu ownership.
+
+### Progress Checkpoint - 2026-06-28 15:21 UTC
 
 Implemented the first internal registry/facade slice:
 
@@ -73,7 +87,36 @@ Latest package artifacts from this checkpoint:
 
 Recommended next slice:
 
-- Add a menu/sheet or portal-detail-section registry only if it directly helps extract a focused component from
+- Menu/sheet registry was the next focused registry slice because the current tabs and stored-sheet helpers duplicated
+  sheet ownership metadata in `content.tsx`; this is now covered by the following checkpoint.
+- Keep lifecycle hooks/facades local and minimal until a specific native subsystem needs them.
+
+### Progress Checkpoint - 2026-06-28 16:09 UTC
+
+Implemented the second internal registry/facade slice:
+
+- New menu/sheet registry now removes duplicated primary-menu, sheet-id, side-panel, and selected-object tab metadata
+  from `content.tsx`.
+- Current user-facing menu behavior is unchanged; portal missions and COMM channel tabs remain explicitly wired where
+  they depend on live component state.
+- Deferred/reference plugins did not shape this API.
+
+Validation:
+
+- `npm run test -w apps/iitc-iris -- --run src/menu-registry.test.ts src/highlighter-registry.test.ts src/layer-registry.test.ts`
+- `npm run typecheck:iitc-iris`
+- `npm run lint:iitc-iris` passed with existing warnings only.
+- `npm run package:iitc-iris` passed with existing missing-fixture fallback warnings.
+- `git diff --check`
+
+Latest package artifacts from this checkpoint:
+
+- `apps/iitc-iris/builds/iitc-iris-chrome-0.1.0-2026-06-28T16-09-18.zip`
+- `apps/iitc-iris/builds/iitc-iris-firefox-0.1.0-2026-06-28T16-09-18.xpi`
+
+Recommended next slice:
+
+- Add a portal-detail-section registry only if it directly helps extract the selected portal side panel from
   `content.tsx`.
 - Keep lifecycle hooks/facades local and minimal until a specific native subsystem needs them.
 
@@ -81,7 +124,6 @@ Recommended next slice:
 
 Add only when current implementation needs them for refactor pressure:
 
-- Menu/sheet registry for current Map, Agent, COMM, System, Selected, Portal, Link, and Field entries.
 - Context action registry for current map, portal, link, and field long-press/right-click actions.
 - Portal detail section registry for current details, keys, history, missions, and copy/export sections.
 - Request/status registry for panel request categories if it simplifies auth/cancellation UI.
