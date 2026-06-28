@@ -34,6 +34,28 @@ Latest working slice:
   effects. This is the first lifecycle-facade slice needed before splitting selected-object UI out of `content.tsx`.
 - Both pieces stay app-local. Do not introduce arbitrary plugin context menus, public hooks, or external plugin setup yet.
 
+## Current Status And Next Step
+
+Current status:
+
+- The registry/facade foundation is far enough along for the first UI extraction. Layer, highlighter, menu/sheet, portal
+  detail section, context action, and selection lifecycle boundaries now exist for the selected-object area.
+- The next work should not add another registry by default. Add one only when an extraction exposes repeated metadata or a
+  concrete lifecycle handoff that cannot stay local.
+- The current player tracker marker CSS regression is a separate bug fix. Do not use it to broaden the registry/lifecycle
+  scope.
+
+Next implementation step:
+
+- Extract a narrow selected-object UI module from `content.tsx` that consumes the existing boundaries:
+  `selection-lifecycle.ts`, `menu-registry.ts`, `portal-detail-section-registry.ts`, and `context-action-registry.ts`.
+- Keep this extraction behavior-preserving. Portal context should still open Portal details, link/field context should still
+  open Selected -> Link/Field, and plain map context should still stay under Controls.
+- Start with the selected-object menu/view derivation and context action panel. Leave broad Portal sheet decomposition,
+  request/status helpers, and plugin-compatible hooks for later passes.
+- Use focused tests only where the extracted logic is pure; otherwise rely on the existing registry/facade tests plus normal
+  IITC IRIS validation.
+
 ## Phase 1: Current Feature Registries
 
 ### Layer Registry
