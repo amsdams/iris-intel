@@ -145,10 +145,18 @@ Latest core fixture-health validation included:
 - `npm run typecheck:iitc-core`
 - `npm run lint:iitc-core`
 
+Latest internal registry/facade validation included:
+
+- `npm run test -w apps/iitc-iris -- --run src/highlighter-registry.test.ts src/layer-registry.test.ts`
+- `npm run typecheck:iitc-iris`
+- `npm run lint:iitc-iris` passed with existing warnings only.
+- `npm run package:iitc-iris`
+- `git diff --check`
+
 Latest package artifacts:
 
-- `apps/iitc-iris/builds/iitc-iris-chrome-0.1.0-2026-06-10T20-26-53.zip`
-- `apps/iitc-iris/builds/iitc-iris-firefox-0.1.0-2026-06-10T20-26-53.xpi`
+- `apps/iitc-iris/builds/iitc-iris-chrome-0.1.0-2026-06-28T15-21-40.zip`
+- `apps/iitc-iris/builds/iitc-iris-firefox-0.1.0-2026-06-28T15-21-40.xpi`
 
 Fixture-health note: the previous missing-fixture degradation for full `npm run test:iitc-core` is resolved in the
 current workspace. `@iris/core` and `@iris/iitc-core` full test suites are green; no fresh HAR capture is required for
@@ -161,7 +169,7 @@ Feature details have been split out of this entry point so the current truth is 
 | Area                                | Status              | Detail                                                                           |
 |-------------------------------------|---------------------|----------------------------------------------------------------------------------|
 | Missions                            | Partial             | [features/missions.md](features/missions.md)                                     |
-| Hook and Plugin Lifecycle           | Started             | [features/hook-plugin-lifecycle.md](features/hook-plugin-lifecycle.md)           |
+| Internal registry and lifecycle facades | Started          | [features/hook-plugin-lifecycle.md](features/hook-plugin-lifecycle.md)           |
 | Geodesic rendering                  | Partial             | [features/geodesic-rendering.md](features/geodesic-rendering.md)                 |
 | Map lifecycle                       | Partial             | [features/map-lifecycle.md](features/map-lifecycle.md)                           |
 | Scaffold/request lifecycle          | Done/Partial        | [features/scaffold-request-lifecycle.md](features/scaffold-request-lifecycle.md) |

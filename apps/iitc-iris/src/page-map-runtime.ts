@@ -1,6 +1,7 @@
 import L, {type Layer as LeafletLayer, type LeafletMouseEvent, type Map as LeafletMap, type TileLayer} from 'leaflet';
-import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisHighlighterSettings, type IitcIrisInteractionUpdateTimingDiagnostics, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLayerUpdateTimingDiagnostics, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionDetails, type IitcIrisMissionSource, type IitcIrisMissionSummary, type IitcIrisMissionWaypoint, type IitcIrisMissionsState, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisPortalHighlighterId, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderMutationLayerDiagnostics, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisSubscriptionState} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisHighlighterSettings, type IitcIrisInteractionUpdateTimingDiagnostics, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLayerUpdateTimingDiagnostics, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionDetails, type IitcIrisMissionSource, type IitcIrisMissionSummary, type IitcIrisMissionWaypoint, type IitcIrisMissionsState, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderMutationLayerDiagnostics, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisSubscriptionState} from './messages';
 import {DEFAULT_LAYER_SETTINGS} from './layer-registry';
+import {DEFAULT_HIGHLIGHTER_ID, getPortalHighlighter, PORTAL_HIGHLIGHTER_REGISTRY} from './highlighter-registry';
 import {IITC_LEVEL_COLORS, IITC_TEAM_COLORS} from './iitc-colors';
 import {getLayerUpdatePlan} from './layer-update-routing';
 import {createIitcIrisMapContextMessage, installIitcIrisContextGestures} from './map-context-runtime';
@@ -149,47 +150,8 @@ const BASE_LAYERS: Record<IitcIrisBaseLayerId, {
   },
 };
 const DEFAULT_HIGHLIGHTER_SETTINGS: IitcIrisHighlighterSettings = {
-  active: 'none',
+  active: DEFAULT_HIGHLIGHTER_ID,
 };
-interface PortalHighlighterStyleContext {
-  portal: IitcIrisRenderPortal;
-  history?: NonNullable<IitcIrisRenderPortal['history']>;
-}
-interface PortalHighlighterDefinition {
-  id: IitcIrisPortalHighlighterId;
-  getStyle?: (context: PortalHighlighterStyleContext) => Partial<L.CircleMarkerOptions>;
-}
-const IITC_HISTORY_MARKED_STYLE: Partial<L.CircleMarkerOptions> = {fillColor: 'red', fillOpacity: 1};
-const IITC_HISTORY_SEMI_MARKED_STYLE: Partial<L.CircleMarkerOptions> = {fillColor: 'yellow', fillOpacity: 1};
-const PORTAL_HIGHLIGHTERS: PortalHighlighterDefinition[] = [
-  {id: 'none'},
-  {id: 'level-color'},
-  {id: 'needs-recharge'},
-  {
-    id: 'history-visited',
-    getStyle: ({history}): Partial<L.CircleMarkerOptions> => history?.visited ? IITC_HISTORY_SEMI_MARKED_STYLE : {},
-  },
-  {
-    id: 'history-not-visited',
-    getStyle: ({history}): Partial<L.CircleMarkerOptions> => !history?.visited ? IITC_HISTORY_MARKED_STYLE : {},
-  },
-  {
-    id: 'history-captured',
-    getStyle: ({history}): Partial<L.CircleMarkerOptions> => history?.captured ? IITC_HISTORY_SEMI_MARKED_STYLE : {},
-  },
-  {
-    id: 'history-not-captured',
-    getStyle: ({history}): Partial<L.CircleMarkerOptions> => !history?.captured ? IITC_HISTORY_MARKED_STYLE : {},
-  },
-  {
-    id: 'history-scout-controlled',
-    getStyle: ({history}): Partial<L.CircleMarkerOptions> => history?.scoutControlled ? IITC_HISTORY_SEMI_MARKED_STYLE : {},
-  },
-  {
-    id: 'history-not-scout-controlled',
-    getStyle: ({history}): Partial<L.CircleMarkerOptions> => !history?.scoutControlled ? IITC_HISTORY_MARKED_STYLE : {},
-  },
-];
 let latestFetchGeneration = 0;
 let latestRequestKey = '';
 let latestEntities: IitcIrisRenderEntities | undefined;
@@ -727,7 +689,7 @@ function getPortalKeyCount(portalGuid: string): number | undefined {
 
 function getPortalDataOverlayStyle(portal: IitcIrisRenderPortal, renderPolicy: IitcIrisRenderPolicy): Partial<L.CircleMarkerOptions> {
   const history = portal.history ?? portalHistoryByGuid.get(portal.guid);
-  return PORTAL_HIGHLIGHTERS.find((highlighter) => highlighter.id === renderPolicy.activeHighlighter)?.getStyle?.({portal, history}) ?? {};
+  return getPortalHighlighter(renderPolicy.activeHighlighter).getStyle?.({portal, history}) ?? {};
 }
 
 function createKeyCountMarker(latLng: [number, number], count: number, portalRadius: number): LeafletLayer {
@@ -2308,13 +2270,14 @@ function getRenderPolicy(): IitcIrisRenderPolicy {
   const mapZoom = window.__iitcIrisMap?.getZoom() ?? DEFAULT_ZOOM;
   const detailedPortals = latestPlan?.tileParams.hasPortals ?? false;
   const optionalOverlaysVisible = detailedPortals && mapZoom >= OPTIONAL_OVERLAY_MIN_ZOOM;
-  const activeHighlighter = optionalOverlaysVisible ? highlighterSettings.active : 'none';
+  const activeHighlighter = optionalOverlaysVisible ? highlighterSettings.active : DEFAULT_HIGHLIGHTER_ID;
+  const highlighter = getPortalHighlighter(activeHighlighter);
   return {
     optionalOverlayMinZoom: OPTIONAL_OVERLAY_MIN_ZOOM,
     detailedPortals,
     activeHighlighter,
-    levelFill: activeHighlighter === 'level-color',
-    healthFill: activeHighlighter === 'needs-recharge',
+    levelFill: highlighter.levelFill === true,
+    healthFill: highlighter.healthFill === true,
     ornaments: layerSettings.ornaments,
     artifacts: layerSettings.artifacts,
     labels: layerSettings.labels && optionalOverlaysVisible,
@@ -4592,7 +4555,7 @@ function postEntityStatus(
     playerTracker: playerTrackerDiagnostics,
     portalAnalysis,
     highlighterSettings,
-    highlighterIds: PORTAL_HIGHLIGHTERS.map((highlighter) => highlighter.id),
+    highlighterIds: PORTAL_HIGHLIGHTER_REGISTRY.map((highlighter) => highlighter.id),
     baseLayerId,
     dataSource,
     renderPolicy: getRenderPolicy(),

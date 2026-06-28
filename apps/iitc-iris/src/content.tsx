@@ -10,6 +10,7 @@ import {
   LAYER_REGISTRY_DIAGNOSTICS,
   type IitcIrisBooleanLayerSettingKey,
 } from './layer-registry';
+import {normalizePortalHighlighterId, PORTAL_HIGHLIGHTER_REGISTRY} from './highlighter-registry';
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisEntitySource, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPlayerTrackerDiagnostics, type IitcIrisPortalAnalysis, type IitcIrisPortalDetailsState, type IitcIrisPortalHighlighterId, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal} from './messages';
 import {
   createIitcMapDataPlan,
@@ -105,17 +106,7 @@ const CORE_OVERLAY_LAYER_TOGGLE_LABELS = CORE_LAYER_TOGGLE_REGISTRY.filter((entr
 const PORTAL_FILTER_LAYER_TOGGLE_LABELS = CORE_LAYER_TOGGLE_REGISTRY.filter((entry) => entry.kind === 'filter');
 const DETAIL_LAYER_TOGGLE_LABELS = DETAIL_LAYER_TOGGLE_REGISTRY;
 type BooleanLayerToggleEntry = (typeof CORE_LAYER_TOGGLE_REGISTRY)[number];
-const PORTAL_HIGHLIGHTER_OPTIONS: {id: IitcIrisPortalHighlighterId; label: string; title: string}[] = [
-  {id: 'none', label: 'None', title: 'No portal highlighter'},
-  {id: 'level-color', label: 'Level color', title: 'Color portal bodies by level'},
-  {id: 'needs-recharge', label: 'Needs recharge', title: 'Color damaged portals by health'},
-  {id: 'history-visited', label: 'Visited', title: 'Highlight visited portals'},
-  {id: 'history-not-visited', label: 'Not visited', title: 'Highlight unvisited portals'},
-  {id: 'history-captured', label: 'Captured', title: 'Highlight captured portals'},
-  {id: 'history-not-captured', label: 'Not captured', title: 'Highlight uncaptured portals'},
-  {id: 'history-scout-controlled', label: 'Scout controlled', title: 'Highlight scout-controlled portals'},
-  {id: 'history-not-scout-controlled', label: 'Not scout controlled', title: 'Highlight portals not scout controlled'},
-];
+const PORTAL_HIGHLIGHTER_OPTIONS = PORTAL_HIGHLIGHTER_REGISTRY;
 const DRAW_TOOLS_MARKER_PRESETS = [
   {id: 'white', color: '#ffffff', title: 'Add white marker'},
   {id: 'red', color: '#c34a4a', title: 'Add red marker'},
@@ -640,17 +631,6 @@ type LegacyStoredLayerSettings = Partial<IitcIrisLayerSettings> & {
   historyVisited?: unknown;
   historyScoutControlled?: unknown;
 };
-
-function isPortalHighlighterId(value: unknown): value is IitcIrisPortalHighlighterId {
-  return PORTAL_HIGHLIGHTER_OPTIONS.some((option) => option.id === value);
-}
-
-function normalizePortalHighlighterId(value: unknown): IitcIrisPortalHighlighterId {
-  if (isPortalHighlighterId(value)) return value;
-  if (value === 'history-visited-captured') return 'history-visited';
-  if (value === 'history-not-visited-captured') return 'history-not-visited';
-  return 'none';
-}
 
 function loadStoredLayerSettings(): IitcIrisLayerSettings {
   try {

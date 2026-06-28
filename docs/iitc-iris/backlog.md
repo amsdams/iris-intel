@@ -57,8 +57,8 @@ geodesic rendering.
 
 | Area                                 | Status                | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 |--------------------------------------|-----------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Plugin/core strategy for smart ports | Open                  | Keep endpoint parsing, normalization, and reusable pure logic in `@iris/iitc-core`; keep app-specific sheet/menu/runtime behavior in IITC IRIS until another app needs the same surface. Promote patterns into core after repeated plugin ports prove they are stable.                                                                                                                                                                                                                                                                                                             |
-| Small IITC-style registry layer      | Started / Planned     | Add thin registries for hooks, highlighters, toolbox/menu entries, map context actions, layer registration, and portal detail extensions before porting many one-off plugin features. This is the foundation for selected plugin compatibility, not a full arbitrary IITC plugin runtime.                                                                                                                                                                                                                                                                                          |
+| Plugin/core strategy for smart ports | Open                  | Keep endpoint parsing, normalization, and reusable pure logic in `@iris/iitc-core`; keep app-specific sheet/menu/runtime behavior in IITC IRIS until another app needs the same surface. Promote patterns into core after implemented IITC IRIS behavior proves they are stable. Do not let deferred/reference plugins drive the first contracts.                                                                                                                                                                                                                                  |
+| Internal IITC-style registry layer   | Started / First slice | Layer registry already drives layer defaults, Display grouping, and diagnostics. 2026-06-28 added `apps/iitc-iris/src/highlighter-registry.ts` and wired current highlighters through it from both `content.tsx` and `page-map-runtime.ts`, with focused registry tests. Continue with menu/sheet, context action, or portal-detail-section registries only where they directly help split `content.tsx` and `page-map-runtime.ts`. External IITC plugin compatibility is deferred; this is primarily a UI/core refactor foundation.                                               |
 | `content.tsx` decomposition          | Deferred              | `apps/iitc-iris/src/content.tsx` is large enough to slow safe edits. Do not do a broad split before lifecycle behavior stabilizes. First useful extractions: side-panel header/actions, request/panel status helpers, auth recovery helpers, `SearchSheet`, `PortalSheet`, `MissionsSheet`, `CommSheet`, `AgentSheet`, `SystemSheet`, menu state, keyboard shortcuts, elapsed/request chips, and common faction/portal display helpers.                                                                                                                                            |
 | Runtime request lifecycle helpers    | Deferred              | `page-map-runtime.ts` should get targeted lifecycle helper extraction only after live cancellation behavior is validated. Avoid mixing this with UI cleanup or behavior ports.                                                                                                                                                                                                                                                                                                                                                                                                     |
 | Mobile menu architecture             | Watch                 | Current mitigation keeps submenus to one horizontal scroll row. Later options include icon-first submenus, overflow actions, per-primary compact drawers, or promoting rarely used actions into sheets instead of the tabbar.                                                                                                                                                                                                                                                                                                                                                      |
@@ -115,15 +115,14 @@ geodesic rendering.
    `reference/ingress-intel-total-conversion/core/code` and categorize
    `reference/ingress-intel-total-conversion/plugins` against IITC IRIS. Produce a concrete missing-parity table with
    IITC source file/plugin, IRIS status, importance, and recommended pass.
-3. IITC plugin/core foundation. Before adding many plugins, add a thin IITC-style registry/facade layer for hooks,
-   highlighters, toolbox/menu entries, map context actions, layer registration, and portal detail extensions. This
-   belongs after the small parity refactor and before porting plugin volume, because plugins need stable extension
-   points
-   more than they need a fully refactored UI shell.
-4. Port selected IITC plugins in small vertical slices. Start with high-value plugins whose contracts exercise the new
-   registry without requiring a full architecture rewrite: highlighters, bookmarks/saved views, keys workflows,
-   long-press/right-click context actions, portal lists/counts, and small map utilities. Each plugin should document
-   whether logic lives in `packages/iitc-core`, the extension runtime, or UI-only code.
+3. Internal registry/facade foundation. Add a thin IITC-style registry/facade layer for current highlighters, layers,
+   menu/sheet entries, map context actions, portal detail sections, and only the lifecycle events needed by native
+   systems. This belongs before the UI and larger core refactors because those refactors need stable boundaries.
+4. Port or adapt selected plugin-shaped features only when they are already part of the IITC IRIS product direction.
+   Start with features whose contracts exercise the new registry without requiring a full architecture rewrite:
+   highlighters, bookmarks/saved views, keys workflows, long-press/right-click context actions, portal lists/counts, and
+   small map utilities. Each feature should document whether logic lives in `packages/iitc-core`, the extension runtime,
+   or UI-only code. Arbitrary reference plugin porting remains deferred.
 5. UI refactor. Split the large content UI into sheets/components/hooks after the parity/plugin extension points are
    stable enough. Keep the two-layer IRIS shell as the product decision unless replacement-readiness work says
    otherwise.
@@ -133,10 +132,10 @@ geodesic rendering.
    portal details normalization, inventory/key parsing, highlighter predicates, and plugin registry types. Poor core
    candidates: DOM rendering, sheet layout, browser storage, Leaflet marker instances, and extension messaging.
 
-If the goal is more IITC plugins in core, do not wait for the big core refactor. First add the thin plugin/core
-foundation, then port plugins one by one. As patterns repeat, promote stable pure logic into `packages/iitc-core`; keep
-UI/runtime wiring in the extension. The later big core refactor should consolidate proven patterns, not guess the
-architecture before plugin behavior is understood.
+If the goal later becomes more IITC plugins in core, do not wait for the big core refactor. First extend the internal
+registry/facade foundation only as needed, then port plugin-shaped features one by one. As patterns repeat, promote
+stable pure logic into `packages/iitc-core`; keep UI/runtime wiring in the extension. The later big core refactor should
+consolidate proven patterns, not guess the architecture before behavior is understood.
 
 ## Pass 8: Replacement Readiness - Not Started
 
