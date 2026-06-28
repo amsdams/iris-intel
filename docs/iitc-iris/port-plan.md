@@ -161,6 +161,7 @@ Feature details have been split out of this entry point so the current truth is 
 | Area                                | Status              | Detail                                                                           |
 |-------------------------------------|---------------------|----------------------------------------------------------------------------------|
 | Missions                            | Partial             | [features/missions.md](features/missions.md)                                     |
+| Hook and Plugin Lifecycle           | Started             | [features/hook-plugin-lifecycle.md](features/hook-plugin-lifecycle.md)           |
 | Geodesic rendering                  | Partial             | [features/geodesic-rendering.md](features/geodesic-rendering.md)                 |
 | Map lifecycle                       | Partial             | [features/map-lifecycle.md](features/map-lifecycle.md)                           |
 | Scaffold/request lifecycle          | Done/Partial        | [features/scaffold-request-lifecycle.md](features/scaffold-request-lifecycle.md) |
