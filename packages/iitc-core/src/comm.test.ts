@@ -1,5 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import {createIitcCommChannelData, genIitcCommPostData, genIitcCommSendPlextPostData, getIitcCommChannelMessages, renderIitcCommMarkup, parseIitcCommResponse, parseMsgData, teamStringToId, transformIitcCommMessage, writeIitcCommDataToHash} from './comm';
+import {applyIitcCommResponse, getIitcCommMessages, planIitcCommRequest} from './comm-facade';
 
 describe('parseMsgData', () => {
   it('parses one IITC COMM row using IITC parseMsgData semantics', () => {
@@ -352,9 +353,6 @@ describe('teamStringToId', () => {
   });
 });
 
-// --- Phase 1 Step 1 Comm Facade Parity Tests ---
-import { planIitcCommRequest, applyIitcCommResponse, getIitcCommMessages } from './comm-facade';
-
 describe('planIitcCommRequest', () => {
   it('produces identical payloads to genIitcCommPostData', () => {
     const bounds = {minLatE6: 1, minLngE6: 2, maxLatE6: 3, maxLngE6: 4};
@@ -385,28 +383,79 @@ describe('applyIitcCommResponse', () => {
     };
 
     const initial = createIitcCommChannelData();
-    const facadeResult = applyIitcCommResponse(response, initial, false);
+    const facadeResult = applyIitcCommResponse(response, initial, false, false, 'all');
     const coreResult = writeIitcCommDataToHash(response, initial, false);
 
     expect(facadeResult.responseMessages).toBe(coreResult.responseMessages);
     expect(facadeResult.parsedMessages).toBe(coreResult.parsedMessages);
     expect(facadeResult.addedMessages).toBe(coreResult.addedMessages);
     expect(getIitcCommMessages(facadeResult.channelData)).toHaveLength(2);
+    expect(facadeResult.diagnostics).toMatchObject({
+      channel: 'all',
+      direction: 'newer',
+      isAscendingOrder: false,
+      responseMessages: 2,
+      parsedMessages: 2,
+      addedMessages: 2,
+      oldMessagesWereAdded: true,
+      before: {
+        oldestTimestamp: -1,
+        newestTimestamp: -1,
+        messageCount: 0,
+      },
+      after: {
+        oldestTimestamp: 2000,
+        oldestGUID: 'guid-2',
+        newestTimestamp: 1000,
+        newestGUID: 'guid-1',
+        messageCount: 2,
+      },
+    });
 
-    // Test deduplication
     const dupResult = applyIitcCommResponse(response, facadeResult.channelData, false);
     expect(dupResult.addedMessages).toBe(0);
+    expect(dupResult.diagnostics.addedMessages).toBe(0);
+    expect(dupResult.diagnostics.before.messageCount).toBe(2);
+    expect(dupResult.diagnostics.after.messageCount).toBe(2);
   });
 
   it('preserves older/newer continuation semantics', () => {
     const storage = { ...createIitcCommChannelData(), newestTimestamp: 5000, oldestGUID: 'old' };
 
-    // newer continuation
-    const newerResponse = applyIitcCommResponse({ result: [['n1', 6000, { plext: { text: 'newer', markup: [], categories: 1, team: 'RESISTANCE', plextType: 'SYSTEM_BROADCAST' } }]] }, storage, false, true);
+    const newerResponse = applyIitcCommResponse({ result: [['n1', 6000, { plext: { text: 'newer', markup: [], categories: 1, team: 'RESISTANCE', plextType: 'SYSTEM_BROADCAST' } }]] }, storage, false, true, 'faction');
     expect(newerResponse.channelData.newestTimestamp).toBe(6000);
+    expect(newerResponse.diagnostics).toMatchObject({
+      channel: 'faction',
+      direction: 'newer',
+      isAscendingOrder: true,
+      before: {
+        newestTimestamp: 5000,
+        oldestGUID: 'old',
+        messageCount: 0,
+      },
+      after: {
+        newestTimestamp: 6000,
+        newestGUID: 'n1',
+        messageCount: 1,
+      },
+    });
 
-    // older continuation
-    const olderResponse = applyIitcCommResponse({ result: [['o1', 4000, { plext: { text: 'older', markup: [], categories: 1, team: 'RESISTANCE', plextType: 'SYSTEM_BROADCAST' } }]] }, storage, true);
+    const olderResponse = applyIitcCommResponse({ result: [['o1', 4000, { plext: { text: 'older', markup: [], categories: 1, team: 'RESISTANCE', plextType: 'SYSTEM_BROADCAST' } }]] }, storage, true, false, 'alerts');
     expect(olderResponse.channelData.oldestGUID).toBe('o1');
+    expect(olderResponse.diagnostics).toMatchObject({
+      channel: 'alerts',
+      direction: 'older',
+      isAscendingOrder: false,
+      before: {
+        newestTimestamp: 5000,
+        oldestGUID: 'old',
+        messageCount: 0,
+      },
+      after: {
+        oldestTimestamp: 4000,
+        oldestGUID: 'o1',
+        messageCount: 1,
+      },
+    });
   });
 });

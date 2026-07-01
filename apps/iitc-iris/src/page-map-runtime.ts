@@ -19,7 +19,6 @@ import {
   createIitcMapDataPlan,
   decodeIitcGameEntities,
   decodeIitcGetEntitiesResponse,
-
   genIitcCommSendPlextPostData,
   getIitcCommChannelMessages,
   getIitcInventoryPortalKeyCount,
@@ -59,7 +58,8 @@ import {
   renderIitcCommMarkup,
   serializeIitcDrawToolsLayer,
   summarizeIitcInventory,
-  planIitcCommRequest, applyIitcCommResponse,
+  planIitcCommRequest,
+  applyIitcCommResponse,
   formatIitcMissionDuration,
   type IitcCommChannel,
   type IitcCommChannelData,
@@ -5347,7 +5347,7 @@ async function refreshComm(tab: IitcCommChannel = normalizeCommTab(latestCommSta
     const elapsedMs = performance.now() - startedAt;
     const messages = countCommResponseMessages(response);
     const isAscendingOrder = !getOlderMsgs && commChannelsData[tab].newestTimestamp > -1;
-    const writeResult = applyIitcCommResponse(response, commChannelsData[tab], getOlderMsgs, isAscendingOrder);
+    const writeResult = applyIitcCommResponse(response, commChannelsData[tab], getOlderMsgs, isAscendingOrder, tab);
     commChannelsData[tab] = writeResult.channelData;
     const commMessages = getIitcCommChannelMessages(commChannelsData[tab]);
     if (tab === 'all') {
@@ -5404,7 +5404,7 @@ async function refreshPlayerTrackerComm(): Promise<void> {
 
   try {
     const response = await fetchComm(version, 'all', bounds, false, abortController.signal);
-    const writeResult = applyIitcCommResponse(response, commChannelsData.all, false, commChannelsData.all.newestTimestamp > -1);
+    const writeResult = applyIitcCommResponse(response, commChannelsData.all, false, commChannelsData.all.newestTimestamp > -1, 'all');
     commChannelsData.all = writeResult.channelData;
     const messages = getIitcCommChannelMessages(commChannelsData.all);
     processPlayerTrackerCommMessages(messages);
