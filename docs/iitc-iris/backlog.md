@@ -107,6 +107,10 @@ geodesic rendering.
 
 ## Long-Term Refactor And Plugin Sequence
 
+The short implementation roadmap and required per-plan template live in [plans/index.md](plans/index.md). Keep that
+roadmap synchronized with this sequence; if they disagree, this backlog and the porting doctrine in
+[port-plan.md](port-plan.md) are the source of truth.
+
 1. Small IITC parity refactor. Keep this narrow and behavior-preserving. Extract IITC-named facades and pure helpers for
    code we compare against IITC often: `comm`, `portalDetails`, `search`, `mapDataRequest`, `playerTracker`, portal-link
    navigation, long-press/right-click context handling, and request diagnostics. Add focused tests where helpers are

@@ -181,6 +181,7 @@ Feature details have been split out of this entry point so the current truth is 
 | Portal analysis views               | Stable v1 / Partial | [features/portal-analysis.md](features/portal-analysis.md)                       |
 | Highlighters and layers             | Stabilized v1 / Partial | [features/highlighters-and-layers.md](features/highlighters-and-layers.md)       |
 | Backlog and replacement readiness   | Ongoing             | [backlog.md](backlog.md)                                                         |
+| Refactoring roadmap                 | Ongoing             | [plans/index.md](plans/index.md)                                                 |
 
 ## Current High-Level Gaps
 

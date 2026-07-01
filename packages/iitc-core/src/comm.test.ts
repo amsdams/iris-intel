@@ -351,3 +351,62 @@ describe('teamStringToId', () => {
     expect(teamStringToId('UNKNOWN')).toBe('N');
   });
 });
+
+// --- Phase 1 Step 1 Comm Facade Parity Tests ---
+import { planIitcCommRequest, applyIitcCommResponse, getIitcCommMessages } from './comm-facade';
+
+describe('planIitcCommRequest', () => {
+  it('produces identical payloads to genIitcCommPostData', () => {
+    const bounds = {minLatE6: 1, minLngE6: 2, maxLatE6: 3, maxLngE6: 4};
+    const initialStorage = createIitcCommChannelData();
+
+    expect(planIitcCommRequest({ channel: 'all', bounds, storageHash: initialStorage })).toEqual(
+      genIitcCommPostData({ channel: 'all', bounds, storageHash: initialStorage }),
+    );
+
+    const continuationStorage = { ...initialStorage, newestTimestamp: 2000, oldestGUID: 'older-abc' };
+    expect(planIitcCommRequest({ channel: 'faction', bounds, storageHash: continuationStorage })).toEqual(
+      genIitcCommPostData({ channel: 'faction', bounds, storageHash: continuationStorage }),
+    );
+
+    expect(planIitcCommRequest({ channel: 'all', bounds, storageHash: initialStorage, getOlderMsgs: true, version: 'v1' })).toEqual(
+      genIitcCommPostData({ channel: 'all', bounds, storageHash: initialStorage, getOlderMsgs: true, version: 'v1' }),
+    );
+  });
+});
+
+describe('applyIitcCommResponse', () => {
+  it('writes response data and deduplicates identically to writeIitcCommDataToHash', () => {
+    const response = {
+      result: [
+        ['guid-1', 1000, { plext: { text: 'a', markup: [], categories: 1, team: 'RESISTANCE', plextType: 'SYSTEM_BROADCAST' } }],
+        ['guid-2', 2000, { plext: { text: 'b', markup: [], categories: 1, team: 'ENLIGHTENED', plextType: 'SYSTEM_BROADCAST' } }],
+      ],
+    };
+
+    const initial = createIitcCommChannelData();
+    const facadeResult = applyIitcCommResponse(response, initial, false);
+    const coreResult = writeIitcCommDataToHash(response, initial, false);
+
+    expect(facadeResult.responseMessages).toBe(coreResult.responseMessages);
+    expect(facadeResult.parsedMessages).toBe(coreResult.parsedMessages);
+    expect(facadeResult.addedMessages).toBe(coreResult.addedMessages);
+    expect(getIitcCommMessages(facadeResult.channelData)).toHaveLength(2);
+
+    // Test deduplication
+    const dupResult = applyIitcCommResponse(response, facadeResult.channelData, false);
+    expect(dupResult.addedMessages).toBe(0);
+  });
+
+  it('preserves older/newer continuation semantics', () => {
+    const storage = { ...createIitcCommChannelData(), newestTimestamp: 5000, oldestGUID: 'old' };
+
+    // newer continuation
+    const newerResponse = applyIitcCommResponse({ result: [['n1', 6000, { plext: { text: 'newer', markup: [], categories: 1, team: 'RESISTANCE', plextType: 'SYSTEM_BROADCAST' } }]] }, storage, false, true);
+    expect(newerResponse.channelData.newestTimestamp).toBe(6000);
+
+    // older continuation
+    const olderResponse = applyIitcCommResponse({ result: [['o1', 4000, { plext: { text: 'older', markup: [], categories: 1, team: 'RESISTANCE', plextType: 'SYSTEM_BROADCAST' } }]] }, storage, true);
+    expect(olderResponse.channelData.oldestGUID).toBe('o1');
+  });
+});
