@@ -11,6 +11,8 @@ Every detailed plan must identify IITC-CE source files under `reference/ingress-
 implementation files, public IITC names/API concepts, ownership and lifecycle behavior, hook/plugin visibility,
 tests/diagnostics, intentional divergences, and validation commands.
 
+The current facade extraction pattern is documented in [facade-pattern.md](facade-pattern.md).
+
 ## Phase 1: Narrow IITC Parity Facades
 
 This phase creates small, behavior-preserving landing zones for code that is compared against IITC often. Each facade
@@ -21,6 +23,7 @@ should keep IITC naming at the boundary and move only pure, stable logic first.
 2. `portalDetails` facade: portal detail request state, cached/loading/ready/error behavior, selected portal cancellation.
    See [portal-details-facade-plan.md](portal-details-facade-plan.md).
 3. `search` facade: result ordering/grouping, coordinate/address/portal normalization, preview geometry.
+   See [search-facade-plan.md](search-facade-plan.md).
 4. `mapDataRequest` facade: only IITC `map_data_request` parity around request planning, retry sieve behavior,
    stale-cache retry exhaustion diagnostics, and excessive retry watch items already tracked in `packages/iitc-core`.
 5. `playerTracker` facade: COMM-derived player positions, refresh/cancellation policy, and map link behavior.

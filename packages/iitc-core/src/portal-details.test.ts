@@ -4,7 +4,9 @@ import {
   applyIitcPortalDetailsResponse,
   createIitcPortalDetailsAuthState,
   createIitcPortalDetailsErrorState,
+  createIitcPortalDetailsIdleState,
   createIitcPortalDetailsLoadingState,
+  createIitcPortalDetailsSuccessState,
   getIitcCachedPortalDetails,
   writeIitcPortalDetailsCache,
   type IitcPortalDetailsCache,
@@ -73,6 +75,7 @@ describe('portal details parser', () => {
 
 describe('portal details facade', () => {
   it('creates stable request state objects', () => {
+    expect(createIitcPortalDetailsIdleState()).toEqual({status: 'idle'});
     expect(createIitcPortalDetailsLoadingState('portal.16')).toEqual({status: 'loading', guid: 'portal.16'});
     expect(createIitcPortalDetailsAuthState('portal.16', 'missing Intel version')).toEqual({
       status: 'auth',
@@ -117,6 +120,7 @@ describe('portal details facade', () => {
       parsed: true,
       status: 'ready',
     });
+    expect(result.details ? createIitcPortalDetailsSuccessState(result.details, 42) : null).toEqual(result.state);
   });
 
   it('applies empty getPortalDetails responses to error state', () => {

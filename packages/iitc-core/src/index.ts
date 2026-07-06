@@ -13,5 +13,6 @@ export * from './inventory';
 export * from './missions';
 export * from './draw-tools';
 export * from './portal-analysis';
+export * from './search-facade';
 export * from './types';
 export * from './comm-facade';

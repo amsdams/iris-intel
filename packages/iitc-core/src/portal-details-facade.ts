@@ -45,6 +45,10 @@ export function getIitcCachedPortalDetails(
   return cachedDetails ? {...cachedDetails, cached: true} : null;
 }
 
+export function createIitcPortalDetailsIdleState(): IitcPortalDetailsRequestState {
+  return {status: 'idle'};
+}
+
 export function createIitcPortalDetailsLoadingState(guid: string): IitcPortalDetailsRequestState {
   return {status: 'loading', guid};
 }
@@ -62,6 +66,13 @@ export function createIitcPortalDetailsErrorState(
 }
 
 export function toIitcPortalDetailsRequestState(
+  details: IitcPortalDetails,
+  elapsedMs: number,
+): IitcPortalDetailsRequestState {
+  return createIitcPortalDetailsSuccessState(details, elapsedMs);
+}
+
+export function createIitcPortalDetailsSuccessState(
   details: IitcPortalDetails,
   elapsedMs: number,
 ): IitcPortalDetailsRequestState {
@@ -91,7 +102,7 @@ export function applyIitcPortalDetailsResponse(options: {
   const linkCount = options.linkCount ?? 0;
   const details = parseIitcPortalDetailsResponse(options.response, options.guid, linkCount);
   const state = details
-    ? toIitcPortalDetailsRequestState(details, options.elapsedMs)
+    ? createIitcPortalDetailsSuccessState(details, options.elapsedMs)
     : createIitcPortalDetailsErrorState(options.guid, options.elapsedMs, 'empty portal details');
 
   return {

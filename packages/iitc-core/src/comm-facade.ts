@@ -103,6 +103,14 @@ export function getIitcCommMessages(channelData: IitcCommChannelData): IitcCommM
   return getIitcCommChannelMessages(channelData);
 }
 
+export function createIitcCommIdleState(channel: IitcCommChannel): IitcCommRequestState<never> {
+  return {
+    status: 'idle',
+    tab: channel,
+    messages: 0,
+  };
+}
+
 export function createIitcCommAuthState(options: {
   channel: IitcCommChannel;
   channelData: IitcCommChannelData;

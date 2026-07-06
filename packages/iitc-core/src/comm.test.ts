@@ -4,6 +4,7 @@ import {
   applyIitcCommResponse,
   createIitcCommAuthState,
   createIitcCommErrorState,
+  createIitcCommIdleState,
   createIitcCommLoadingState,
   createIitcCommSuccessState,
   getIitcCommMessages,
@@ -479,6 +480,12 @@ describe('IITC COMM request state facade', () => {
 
   it('creates auth and loading request states from channel continuity', () => {
     const channelData = createIitcCommChannelData();
+
+    expect(createIitcCommIdleState('all')).toEqual({
+      status: 'idle',
+      tab: 'all',
+      messages: 0,
+    });
 
     expect(createIitcCommAuthState({
       channel: 'all',
