@@ -9,7 +9,8 @@ import {convertIitcGeodesicLatLngs, createIitcGeodesicPolygon, createIitcGeodesi
 import {
   appendIitcResponseBucketDiagnostics,
   applyIitcTileRequestResponseToQueue,
-  classifyIitcGetEntitiesResponse,
+  classifyIitcTileDiagnostics,
+  createIitcTileQueueDiagnostics,
   createIitcResponseBucketDiagnostics,
   createIitcTileQueueState,
   createIitcTileQueueRequestBatches,
@@ -4474,20 +4475,6 @@ function postEntityStatus(
   } satisfies IitcIrisMessage, '*');
 }
 
-function toQueueDiagnostics(state: IitcTileQueueState, partialTileKeys: string[] = []): IitcIrisQueueDiagnostics {
-  const partialTileKeySet = new Set(partialTileKeys);
-  return {
-    queuedTiles: state.queuedTileKeys.length,
-    requestedTiles: state.requestedTileKeys.length,
-    successTiles: state.successTileKeys.length,
-    failedTiles: state.failedTileKeys.filter((tileKey) => !partialTileKeySet.has(tileKey)).length,
-    partialTiles: partialTileKeys.length,
-    staleTiles: state.staleTileKeys.length,
-    activeRequests: state.activeRequestCount,
-    tileErrorCount: state.tileErrorCount,
-  };
-}
-
 function createEmptyRenderQueueDiagnostics(): IitcIrisRenderQueueDiagnostics {
   return {
     queuedTiles: 0,
@@ -4526,17 +4513,6 @@ function appendRenderQueueDiagnostics(
     renderedCacheStaleTiles,
     lastRenderedTileStatus,
     renderedTileKeys: uniqueStrings([...diagnostics.renderedTileKeys, ...renderedTileKeys]),
-  };
-}
-
-function classifyTileDiagnostics(response: IitcGetEntitiesResponse, plan: IitcMapDataPlan): Pick<TileDiagnostics, 'returnedTiles' | 'nonEmptyTiles' | 'emptyTileKeys' | 'nonEmptyTileKeys' | 'unaccountedTileKeys'> {
-  const classification = classifyIitcGetEntitiesResponse(response, plan.tileKeys);
-  return {
-    returnedTiles: classification.returnedTiles,
-    nonEmptyTiles: classification.nonEmptyTiles,
-    emptyTileKeys: classification.emptyTileKeys,
-    nonEmptyTileKeys: classification.nonEmptyTileKeys,
-    unaccountedTileKeys: classification.unaccountedTileKeys,
   };
 }
 
@@ -5746,7 +5722,7 @@ async function refreshEntities(): Promise<void> {
       const fixtureResponse = await fetchFixtureResponse(dataSource);
       if (generation !== latestFetchGeneration) return;
       const entities = toRenderEntities(fixtureResponse, generation);
-      const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyTileDiagnostics(fixtureResponse, plan);
+      const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyIitcTileDiagnostics(fixtureResponse, plan.tileKeys);
       latestPlan = plan;
       latestResponse = fixtureResponse;
       renderEntities(entities);
@@ -5844,7 +5820,7 @@ async function refreshEntities(): Promise<void> {
       timingDiagnostics.cacheMs = performance.now() - refreshStartTime;
     }
     const cachedDiagnostics = progressResponse
-      ? classifyTileDiagnostics(progressResponse, plan)
+      ? classifyIitcTileDiagnostics(progressResponse, plan.tileKeys)
       : {
         returnedTiles: freshCachedTileKeys.length,
         nonEmptyTiles: freshCachedTileKeys.length,
@@ -5867,7 +5843,7 @@ async function refreshEntities(): Promise<void> {
       ...bucketDiagnostics,
       cacheFreshTileKeys: freshCachedTileKeys,
       cacheStaleTileKeys: staleCachedTileKeys,
-      queue: toQueueDiagnostics(queueState),
+      queue: createIitcTileQueueDiagnostics(queueState),
       renderQueue: renderQueueDiagnostics,
       timing: timingDiagnostics,
     });
@@ -5919,7 +5895,7 @@ async function refreshEntities(): Promise<void> {
       }
       mergedResponse = drainRenderQueue();
       const entities = toRenderEntities(mergedResponse, generation);
-      const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyTileDiagnostics(mergedResponse, plan);
+      const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyIitcTileDiagnostics(mergedResponse, plan.tileKeys);
       initialRequestCount += 1;
       const recoveredTileKeys = getIitcRecoveredTileKeys([...retriedTileKeys], nonEmptyTileKeys);
       const statusEntities = renderLiveProgress(mergedResponse, entities, initialRequestCount === 1);
@@ -5938,7 +5914,7 @@ async function refreshEntities(): Promise<void> {
         ...bucketDiagnostics,
         cacheFreshTileKeys: freshCachedTileKeys,
         cacheStaleTileKeys: staleCachedTileKeys,
-        queue: toQueueDiagnostics(queueState),
+        queue: createIitcTileQueueDiagnostics(queueState),
         renderQueue: renderQueueDiagnostics,
         timing: timingDiagnostics,
       });
@@ -6052,7 +6028,7 @@ async function refreshEntities(): Promise<void> {
       return;
     }
     const entities = toRenderEntities(mergedResponse, generation, artifactEntities);
-    const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyTileDiagnostics(mergedResponse, plan);
+    const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyIitcTileDiagnostics(mergedResponse, plan.tileKeys);
     const recoveredTileKeys = getIitcRecoveredTileKeys([...retriedTileKeys], nonEmptyTileKeys);
     queueState = markIitcTileQueueComplete(queueState);
     const partialTileKeys = plan.tileParams.hasPortals ? [] : [...queueState.failedTileKeys];
@@ -6079,7 +6055,7 @@ async function refreshEntities(): Promise<void> {
       cacheFreshTileKeys: freshCachedTileKeys,
       cacheStaleTileKeys: staleCachedTileKeys,
       partialTileKeys,
-      queue: toQueueDiagnostics(queueState, partialTileKeys),
+      queue: createIitcTileQueueDiagnostics(queueState, partialTileKeys),
       renderQueue: renderQueueDiagnostics,
       timing: timingDiagnostics,
     });

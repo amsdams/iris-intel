@@ -161,6 +161,25 @@ export interface IitcTileQueueRefillDecision {
   waitMs: number;
 }
 
+export interface IitcTileQueueDiagnostics {
+  queuedTiles: number;
+  requestedTiles: number;
+  successTiles: number;
+  failedTiles: number;
+  partialTiles?: number;
+  staleTiles: number;
+  activeRequests: number;
+  tileErrorCount: Record<string, number>;
+}
+
+export interface IitcTileDiagnosticsClassification {
+  returnedTiles: number;
+  nonEmptyTiles: number;
+  emptyTileKeys: string[];
+  nonEmptyTileKeys: string[];
+  unaccountedTileKeys: string[];
+}
+
 function clamp(value: number, max: number, min: number): number {
   return Math.max(min, Math.min(max, value));
 }
@@ -462,6 +481,23 @@ export function getIitcTileQueueRefillDecision(options: IitcTileQueueRefillDecis
   return {shouldRefill: false, waitMs};
 }
 
+export function createIitcTileQueueDiagnostics(
+  state: IitcTileQueueState,
+  partialTileKeys: string[] = [],
+): IitcTileQueueDiagnostics {
+  const partialTileKeySet = new Set(partialTileKeys);
+  return {
+    queuedTiles: state.queuedTileKeys.length,
+    requestedTiles: state.requestedTileKeys.length,
+    successTiles: state.successTileKeys.length,
+    failedTiles: state.failedTileKeys.filter((tileKey) => !partialTileKeySet.has(tileKey)).length,
+    partialTiles: partialTileKeys.length,
+    staleTiles: state.staleTileKeys.length,
+    activeRequests: state.activeRequestCount,
+    tileErrorCount: state.tileErrorCount,
+  };
+}
+
 export function createIitcRequestBatches(tileKeys: string[], options: IitcRequestBatchOptions = {}): string[][] {
   const maxRequests = options.maxRequests ?? IITC_MAX_REQUESTS;
   const tilesPerRequest = options.tilesPerRequest ?? IITC_NUM_TILES_PER_REQUEST;
@@ -589,6 +625,20 @@ export function classifyIitcGetEntitiesResponse(
     unaccountedTileKeys,
     successTileKeys,
     retryTileKeys,
+  };
+}
+
+export function classifyIitcTileDiagnostics(
+  response: IitcGetEntitiesResponse,
+  requestedTileKeys: string[],
+): IitcTileDiagnosticsClassification {
+  const classification = classifyIitcGetEntitiesResponse(response, requestedTileKeys);
+  return {
+    returnedTiles: classification.returnedTiles,
+    nonEmptyTiles: classification.nonEmptyTiles,
+    emptyTileKeys: classification.emptyTileKeys,
+    nonEmptyTileKeys: classification.nonEmptyTileKeys,
+    unaccountedTileKeys: classification.unaccountedTileKeys,
   };
 }
 

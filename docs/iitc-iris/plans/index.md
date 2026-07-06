@@ -26,6 +26,7 @@ should keep IITC naming at the boundary and move only pure, stable logic first.
    See [search-facade-plan.md](search-facade-plan.md).
 4. `mapDataRequest` facade: only IITC `map_data_request` parity around request planning, retry sieve behavior,
    stale-cache retry exhaustion diagnostics, and excessive retry watch items already tracked in `packages/iitc-core`.
+   See [map-data-request-facade-plan.md](map-data-request-facade-plan.md).
 5. `playerTracker` facade: COMM-derived player positions, refresh/cancellation policy, and map link behavior.
 6. Portal-link navigation facade: `zoomToAndShowPortal`, `selectPortalByLatLng`, pending selection resolution.
 7. Context action facade: long-press/right-click handling for portals, links, fields, and plain map actions.
