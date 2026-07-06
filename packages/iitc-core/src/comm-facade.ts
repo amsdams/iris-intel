@@ -50,8 +50,6 @@ export interface IitcCommRequestState<TPreview = IitcCommMessage> {
   bounds?: IitcCommBounds;
 }
 
-export type IitcCommRequestDiagnostics = IitcCommWriteDiagnostics;
-
 function getIitcCommContinuitySnapshot(channelData: IitcCommChannelData): IitcCommContinuitySnapshot {
   return {
     oldestTimestamp: channelData.oldestTimestamp,

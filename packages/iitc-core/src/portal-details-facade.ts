@@ -65,13 +65,6 @@ export function createIitcPortalDetailsErrorState(
   return {status: 'error', guid, elapsedMs, error};
 }
 
-export function toIitcPortalDetailsRequestState(
-  details: IitcPortalDetails,
-  elapsedMs: number,
-): IitcPortalDetailsRequestState {
-  return createIitcPortalDetailsSuccessState(details, elapsedMs);
-}
-
 export function createIitcPortalDetailsSuccessState(
   details: IitcPortalDetails,
   elapsedMs: number,

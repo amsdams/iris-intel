@@ -7,7 +7,6 @@ export const IITC_MAX_REQUESTS = 5;
 export const IITC_NUM_TILES_PER_REQUEST = 25;
 export const IITC_MAX_TILE_RETRIES = 5;
 export const IITC_LIVE_COMPAT_TILES_PER_REQUEST = 5;
-export const IITC_EMPTY_TILE_RETRY_PASSES = 2;
 export const IITC_EMPTY_TILE_RETRY_BATCH_SIZE = 1;
 export const IITC_EMPTY_TILE_RETRY_LIMIT = 40;
 export const IITC_RUN_QUEUE_DELAY_MS = 0;

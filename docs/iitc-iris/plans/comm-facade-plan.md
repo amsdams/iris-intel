@@ -25,7 +25,6 @@ Status: implemented and validated. This is Phase 1, step 1 from [index.md](index
 - `packages/iitc-core/src/comm.ts`
   - `parseMsgData`
   - `parseIitcCommResponse`
-  - `IITC_COMM_CHANNELS`
   - `createIitcCommChannelData`
   - `writeIitcCommDataToHash`
   - `getIitcCommChannelMessages`
