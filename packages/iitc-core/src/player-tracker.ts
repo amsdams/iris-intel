@@ -46,6 +46,18 @@ export interface IitcPlayerTrackerDiagnostics {
   maxAgeMs: number;
 }
 
+export interface IitcPlayerTrackerLayerSettings {
+  playerTracker?: boolean;
+  playerTrackerResistance?: boolean;
+  playerTrackerEnlightened?: boolean;
+  playerTrackerMachina?: boolean;
+}
+
+export interface IitcPlayerTrackerCommApplyResult extends IitcPlayerTrackerProcessResult {
+  processedGuids: string[];
+  latestCommTime: number | null;
+}
+
 function cloneStored(stored: IitcPlayerTrackerStored): IitcPlayerTrackerStored {
   return Object.fromEntries(Object.entries(stored).map(([name, player]) => [name, {
     team: player.team,
@@ -85,6 +97,50 @@ function addUniqueAction(event: IitcPlayerTrackerEvent, action: IitcPlayerTracke
 
 export function getIitcPlayerTrackerLimit(now = Date.now(), maxAgeMs = IITC_PLAYER_TRACKER_MAX_TIME): number {
   return now - maxAgeMs;
+}
+
+export function isIitcPlayerTrackerEnabled(settings: IitcPlayerTrackerLayerSettings): boolean {
+  return settings.playerTracker === true ||
+    settings.playerTrackerResistance === true ||
+    settings.playerTrackerEnlightened === true ||
+    settings.playerTrackerMachina === true;
+}
+
+export function isIitcPlayerTrackerVisibleForZoom(
+  settings: IitcPlayerTrackerLayerSettings,
+  zoom: number | undefined,
+  minZoom = IITC_PLAYER_TRACKER_MIN_ZOOM,
+): boolean {
+  return isIitcPlayerTrackerEnabled(settings) && typeof zoom === 'number' && zoom >= minZoom;
+}
+
+export function isIitcPlayerTrackerTeamVisible(
+  team: IitcTeamId,
+  settings: IitcPlayerTrackerLayerSettings,
+): boolean {
+  if (team === 'R') return settings.playerTrackerResistance === true || settings.playerTracker === true;
+  if (team === 'E') return settings.playerTrackerEnlightened === true || settings.playerTracker === true;
+  if (team === 'M') return settings.playerTrackerMachina === true || settings.playerTracker === true;
+  return false;
+}
+
+export function getIitcPlayerTrackerEventOpacity(
+  time: number,
+  now = Date.now(),
+  maxAgeMs = IITC_PLAYER_TRACKER_MAX_TIME,
+  minOpacity = IITC_PLAYER_TRACKER_MIN_OPACITY,
+): number {
+  const relativeOpacity = 1 - (now - time) / maxAgeMs;
+  return minOpacity + (1 - minOpacity) * Math.max(0, relativeOpacity);
+}
+
+export function getIitcPlayerTrackerTraceAgeBucket(
+  time: number,
+  now = Date.now(),
+  maxAgeMs = IITC_PLAYER_TRACKER_MAX_TIME,
+): number {
+  const split = maxAgeMs / 4;
+  return Math.min(Math.trunc((now - time) / split), 3);
 }
 
 export function pruneIitcPlayerTrackerStored(
@@ -213,6 +269,50 @@ export function processIitcPlayerTrackerData(
     processedMessages,
     touchedPlayers: [...touched],
     maxMessageTime,
+  };
+}
+
+export function applyIitcPlayerTrackerCommMessages(options: {
+  messages: IitcCommMessage[];
+  stored?: IitcPlayerTrackerStored;
+  processedGuids?: Iterable<string>;
+  latestCommTime?: number | null;
+  now?: number;
+  maxAgeMs?: number;
+}): IitcPlayerTrackerCommApplyResult {
+  const processedGuidSet = new Set(options.processedGuids ?? []);
+  const newMessages = options.messages.filter((message) => {
+    if (processedGuidSet.has(message.guid)) return false;
+    processedGuidSet.add(message.guid);
+    return true;
+  });
+
+  if (newMessages.length === 0) {
+    return {
+      stored: pruneIitcPlayerTrackerStored(
+        options.stored ?? {},
+        options.now,
+        options.maxAgeMs,
+      ),
+      processedMessages: 0,
+      touchedPlayers: [],
+      maxMessageTime: null,
+      processedGuids: [...processedGuidSet],
+      latestCommTime: options.latestCommTime ?? null,
+    };
+  }
+
+  const result = processIitcPlayerTrackerData(
+    newMessages,
+    options.stored ?? {},
+    options.now,
+    options.maxAgeMs,
+  );
+
+  return {
+    ...result,
+    processedGuids: [...processedGuidSet],
+    latestCommTime: result.maxMessageTime ?? options.latestCommTime ?? null,
   };
 }
 

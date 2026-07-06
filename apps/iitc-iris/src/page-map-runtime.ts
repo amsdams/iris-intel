@@ -30,16 +30,21 @@ import {
   IITC_DRAW_TOOLS_DEFAULT_COLOR,
   IITC_DRAW_TOOLS_KEY_STORAGE,
   IITC_MISSION_ORDER,
+  applyIitcPlayerTrackerCommMessages,
   getIitcPlayerTrackerDiagnostics,
   getIitcPlayerTrackerLatLng,
+  getIitcPlayerTrackerEventOpacity,
+  getIitcPlayerTrackerTraceAgeBucket,
   getIitcOrnamentDefinition,
   getIitcRecoveredTileKeys,
   getIitcPortalArtifacts,
+  isIitcPlayerTrackerEnabled,
+  isIitcPlayerTrackerTeamVisible,
+  isIitcPlayerTrackerVisibleForZoom,
   isIitcExcludedOrnament,
   IITC_PLAYER_TRACKER_LINE_COLOR,
   IITC_PLAYER_TRACKER_MAX_DISPLAY_EVENTS,
   IITC_PLAYER_TRACKER_MAX_TIME,
-  IITC_PLAYER_TRACKER_MIN_OPACITY,
   IITC_PLAYER_TRACKER_MIN_ZOOM,
   IitcDataCache,
   markIitcTileQueueComplete,
@@ -53,7 +58,6 @@ import {
   normalizeIitcDrawToolsLabel,
   parseIitcMissionDetailsResponse,
   parseIitcTopMissionsResponse,
-  processIitcPlayerTrackerData,
   pruneIitcPlayerTrackerStored,
   renderIitcCommMarkup,
   serializeIitcDrawToolsLayer,
@@ -3438,13 +3442,6 @@ function getPlayerTrackerMarkerIcon(team: keyof typeof TEAM_COLORS, playerName: 
   });
 }
 
-function isPlayerTrackerTeamVisible(team: keyof typeof TEAM_COLORS): boolean {
-  if (team === 'R') return layerSettings.playerTrackerResistance || layerSettings.playerTracker;
-  if (team === 'E') return layerSettings.playerTrackerEnlightened || layerSettings.playerTracker;
-  if (team === 'M') return layerSettings.playerTrackerMachina || layerSettings.playerTracker;
-  return false;
-}
-
 function renderPlayerTracker(): void {
   const layers = ensureLayers();
   clearRenderedLayers(layers.playerTracker);
@@ -3457,13 +3454,12 @@ function renderPlayerTracker(): void {
   }
 
   const now = Date.now();
-  const split = IITC_PLAYER_TRACKER_MAX_TIME / 4;
   let markers = 0;
   let traces = 0;
 
   for (const [playerName, player] of Object.entries(playerTrackerStored)) {
     if (player.events.length === 0) continue;
-    if (!isPlayerTrackerTeamVisible(player.team)) continue;
+    if (!isIitcPlayerTrackerTeamVisible(player.team, layerSettings)) continue;
 
     for (let index = 1; index < player.events.length; index += 1) {
       const current = player.events[index];
@@ -3471,7 +3467,7 @@ function renderPlayerTracker(): void {
       const currentLatLng = getIitcPlayerTrackerLatLng(current);
       const previousLatLng = getIitcPlayerTrackerLatLng(previous);
       if (currentLatLng[0] === previousLatLng[0] && currentLatLng[1] === previousLatLng[1]) continue;
-      const ageBucket = Math.min(Math.trunc((now - current.time) / split), 3);
+      const ageBucket = getIitcPlayerTrackerTraceAgeBucket(current.time, now);
       addRenderedLayer(layers.playerTracker, L.polyline([previousLatLng, currentLatLng], {
         pane: getLayerPane('playerTracker'),
         color: IITC_PLAYER_TRACKER_LINE_COLOR,
@@ -3485,8 +3481,7 @@ function renderPlayerTracker(): void {
 
     const last = player.events[player.events.length - 1];
     const lastLatLng = getIitcPlayerTrackerLatLng(last);
-    const relativeOpacity = 1 - (now - last.time) / IITC_PLAYER_TRACKER_MAX_TIME;
-    const opacity = IITC_PLAYER_TRACKER_MIN_OPACITY + (1 - IITC_PLAYER_TRACKER_MIN_OPACITY) * Math.max(0, relativeOpacity);
+    const opacity = getIitcPlayerTrackerEventOpacity(last.time, now);
     const marker = createPlayerTrackerMarker(lastLatLng, playerName, player.team, opacity, last.time);
     marker.bindPopup(createPlayerTrackerPopup(playerName, player), {
       className: 'iitc-iris-player-tracker-leaflet-popup',
@@ -4091,18 +4086,12 @@ function zoomToSelectedMission(): void {
 
 function isPlayerTrackerVisible(): boolean {
   const map = window.__iitcIrisMap;
-  return (layerSettings.playerTracker ||
-    layerSettings.playerTrackerResistance ||
-    layerSettings.playerTrackerEnlightened ||
-    layerSettings.playerTrackerMachina) && !!map && map.getZoom() >= IITC_PLAYER_TRACKER_MIN_ZOOM;
+  return isIitcPlayerTrackerVisibleForZoom(layerSettings, map?.getZoom(), IITC_PLAYER_TRACKER_MIN_ZOOM);
 }
 
 function updatePlayerTrackerDiagnostics(markers = playerTrackerDiagnostics.markers, traces = playerTrackerDiagnostics.traces): void {
   playerTrackerDiagnostics = getIitcPlayerTrackerDiagnostics(playerTrackerStored, {
-    enabled: layerSettings.playerTracker ||
-      layerSettings.playerTrackerResistance ||
-      layerSettings.playerTrackerEnlightened ||
-      layerSettings.playerTrackerMachina,
+    enabled: isIitcPlayerTrackerEnabled(layerSettings),
     visible: isPlayerTrackerVisible(),
     markers,
     traces,
@@ -4139,18 +4128,16 @@ function schedulePlayerTrackerRefresh(delayMs = 250): void {
 }
 
 function processPlayerTrackerCommMessages(messages: IitcCommMessage[]): void {
-  const newMessages = messages.filter((message) => {
-    if (playerTrackerProcessedCommGuids.has(message.guid)) return false;
-    playerTrackerProcessedCommGuids.add(message.guid);
-    return true;
+  const result = applyIitcPlayerTrackerCommMessages({
+    messages,
+    stored: playerTrackerStored,
+    processedGuids: playerTrackerProcessedCommGuids,
+    latestCommTime: playerTrackerLatestCommTime,
   });
-  if (newMessages.length === 0) {
-    playerTrackerStored = pruneIitcPlayerTrackerStored(playerTrackerStored);
-    return;
-  }
-  const result = processIitcPlayerTrackerData(newMessages, playerTrackerStored);
+  playerTrackerProcessedCommGuids.clear();
+  for (const guid of result.processedGuids) playerTrackerProcessedCommGuids.add(guid);
   playerTrackerStored = result.stored;
-  playerTrackerLatestCommTime = result.maxMessageTime ?? playerTrackerLatestCommTime;
+  playerTrackerLatestCommTime = result.latestCommTime;
 }
 
 function uniqueStrings(values: string[] | undefined): string[] {

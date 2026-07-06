@@ -1,6 +1,16 @@
 import {describe, expect, it} from 'vitest';
 import {parseMsgData} from './comm';
-import {getIitcPlayerTrackerLatLng, processIitcPlayerTrackerData, pruneIitcPlayerTrackerStored} from './player-tracker';
+import {
+  applyIitcPlayerTrackerCommMessages,
+  getIitcPlayerTrackerEventOpacity,
+  getIitcPlayerTrackerLatLng,
+  getIitcPlayerTrackerTraceAgeBucket,
+  isIitcPlayerTrackerEnabled,
+  isIitcPlayerTrackerTeamVisible,
+  isIitcPlayerTrackerVisibleForZoom,
+  processIitcPlayerTrackerData,
+  pruneIitcPlayerTrackerStored,
+} from './player-tracker';
 
 function message(row: Parameters<typeof parseMsgData>[0]): NonNullable<ReturnType<typeof parseMsgData>> {
   const parsed = parseMsgData(row);
@@ -136,5 +146,62 @@ describe('pruneIitcPlayerTrackerStored', () => {
     expect(pruned).toEqual({
       Kept: {team: 'E', events: [{latlngs: [[2, 2]], time: 5000, actions: []}]},
     });
+  });
+});
+
+describe('IITC player tracker facade policy', () => {
+  it('derives enabled, zoom-visible, and team-visible state from layer settings', () => {
+    expect(isIitcPlayerTrackerEnabled({})).toBe(false);
+    expect(isIitcPlayerTrackerEnabled({playerTrackerResistance: true})).toBe(true);
+    expect(isIitcPlayerTrackerVisibleForZoom({playerTrackerResistance: true}, 8)).toBe(false);
+    expect(isIitcPlayerTrackerVisibleForZoom({playerTrackerResistance: true}, 9)).toBe(true);
+    expect(isIitcPlayerTrackerTeamVisible('R', {playerTrackerResistance: true})).toBe(true);
+    expect(isIitcPlayerTrackerTeamVisible('E', {playerTrackerResistance: true})).toBe(false);
+    expect(isIitcPlayerTrackerTeamVisible('M', {playerTracker: true})).toBe(true);
+    expect(isIitcPlayerTrackerTeamVisible('N', {playerTracker: true})).toBe(false);
+  });
+
+  it('calculates marker opacity and trace age buckets', () => {
+    expect(getIitcPlayerTrackerEventOpacity(1_000, 1_000, 1000, 0.3)).toBe(1);
+    expect(getIitcPlayerTrackerEventOpacity(0, 1_000, 1000, 0.3)).toBe(0.3);
+    expect(getIitcPlayerTrackerEventOpacity(-1_000, 1_000, 1000, 0.3)).toBe(0.3);
+    expect(getIitcPlayerTrackerTraceAgeBucket(1_000, 1_000, 1000)).toBe(0);
+    expect(getIitcPlayerTrackerTraceAgeBucket(700, 1_000, 1000)).toBe(1);
+    expect(getIitcPlayerTrackerTraceAgeBucket(0, 1_000, 1000)).toBe(3);
+  });
+
+  it('applies COMM messages once and preserves latest COMM time across prune-only runs', () => {
+    const comm = message(['m1', 1000, {plext: {
+      text: 'Agent captured Portal One',
+      markup: [
+        ['PLAYER', {plain: 'Agent', team: 'RESISTANCE'}],
+        ['TEXT', {plain: ' captured '}],
+        ['PORTAL', {name: 'Portal One', address: 'One St', latE6: 52000000, lngE6: 4000000}],
+      ],
+      categories: 1,
+      team: 'RESISTANCE',
+      plextType: 'SYSTEM_BROADCAST',
+    }}]);
+
+    const first = applyIitcPlayerTrackerCommMessages({
+      messages: [comm],
+      now: 2000,
+    });
+    expect(first.processedMessages).toBe(1);
+    expect(first.processedGuids).toEqual(['m1']);
+    expect(first.latestCommTime).toBe(1000);
+    expect(first.stored.Agent.events).toHaveLength(1);
+
+    const second = applyIitcPlayerTrackerCommMessages({
+      messages: [comm],
+      stored: first.stored,
+      processedGuids: first.processedGuids,
+      latestCommTime: first.latestCommTime,
+      now: 2500,
+    });
+    expect(second.processedMessages).toBe(0);
+    expect(second.processedGuids).toEqual(['m1']);
+    expect(second.latestCommTime).toBe(1000);
+    expect(second.stored.Agent.events).toHaveLength(1);
   });
 });
