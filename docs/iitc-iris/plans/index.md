@@ -17,7 +17,9 @@ This phase creates small, behavior-preserving landing zones for code that is com
 should keep IITC naming at the boundary and move only pure, stable logic first.
 
 1. `comm` facade: parsing/display model, `getPlexts` request lifecycle, channel behavior, de-duplication diagnostics.
+   See [comm-facade-plan.md](comm-facade-plan.md).
 2. `portalDetails` facade: portal detail request state, cached/loading/ready/error behavior, selected portal cancellation.
+   See [portal-details-facade-plan.md](portal-details-facade-plan.md).
 3. `search` facade: result ordering/grouping, coordinate/address/portal normalization, preview geometry.
 4. `mapDataRequest` facade: only IITC `map_data_request` parity around request planning, retry sieve behavior,
    stale-cache retry exhaustion diagnostics, and excessive retry watch items already tracked in `packages/iitc-core`.

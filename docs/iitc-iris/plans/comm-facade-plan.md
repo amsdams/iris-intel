@@ -1,6 +1,6 @@
 # COMM Facade Plan
 
-Status: ready for implementation planning. This is Phase 1, step 1 from [index.md](index.md).
+Status: implemented and validated. This is Phase 1, step 1 from [index.md](index.md).
 
 ## IITC Sources
 
@@ -103,11 +103,13 @@ Suggested implementation shape:
   - `planIitcCommRequest`
   - `applyIitcCommResponse`
   - `getIitcCommMessages`
+  - request-state helpers for `loading`, `ready`, `empty`, `error`, and `auth`
   - `toIitcCommPreviewParts` or another UI-neutral preview helper, if existing preview conversion can be moved safely
 - Re-export from `packages/iitc-core/src/index.ts` only if the package already exports similar IITC helpers there.
 - Update `apps/iitc-iris/src/page-map-runtime.ts` to call the facade helpers where this removes inline request/write
   orchestration.
 - Do not move fetch, auth recovery, DOM/Leaflet work, or React scroll behavior into `packages/iitc-core`.
+- COMM send state remains in the runtime; this facade only centralizes receive/request state.
 
 ## Non-Goals
 
@@ -144,6 +146,7 @@ Add or update focused tests in `packages/iitc-core/src/comm.test.ts` for:
 - `applyIitcCommResponse` parity with `writeIitcCommDataToHash`, if a new wrapper is added.
 - duplicate GUID rows reporting zero added messages without a second cache.
 - diagnostic object shape and before/after timestamp/GUID fields if those are added.
+- request-state helper output for `auth`, `loading`, `ready`, and `error` states.
 
 Keep existing player tracker tests green:
 
@@ -156,6 +159,14 @@ Manual/live comparison notes to capture after implementation:
 - Older still prepends history and keeps scroll position
 - send-then-refresh still updates `all` where supported
 - auth failure still reports `Intel login required` through the existing COMM state
+
+Implemented notes:
+
+- `packages/iitc-core/src/comm-facade.ts` owns request planning, response application, de-duplication diagnostics,
+  channel message access, and receive/request-state construction.
+- `apps/iitc-iris/src/page-map-runtime.ts` still owns fetch execution, auth classification, AbortController
+  cancellation, send state, player tracker side effects, and app-specific COMM preview shaping.
+- Request-state helpers accept a preview callback so `packages/iitc-core` does not depend on `IitcIrisCommMessage`.
 
 ## Divergences
 

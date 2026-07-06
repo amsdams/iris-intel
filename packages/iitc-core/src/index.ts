@@ -4,6 +4,7 @@ export * from './entity-decode';
 export * from './data-cache';
 export * from './map-data-render-queue';
 export * from './portal-details';
+export * from './portal-details-facade';
 export * from './comm';
 export * from './player-tracker';
 export * from './artifact';

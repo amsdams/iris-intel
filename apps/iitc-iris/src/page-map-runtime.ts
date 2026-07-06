@@ -52,7 +52,6 @@ import {
   normalizeIitcDrawToolsLabel,
   parseIitcMissionDetailsResponse,
   parseIitcTopMissionsResponse,
-  parseIitcPortalDetailsResponse,
   processIitcPlayerTrackerData,
   pruneIitcPlayerTrackerStored,
   renderIitcCommMarkup,
@@ -60,7 +59,16 @@ import {
   summarizeIitcInventory,
   planIitcCommRequest,
   applyIitcCommResponse,
+  createIitcCommAuthState,
+  createIitcCommErrorState,
+  createIitcCommLoadingState,
+  createIitcCommSuccessState,
+  applyIitcPortalDetailsResponse,
+  createIitcPortalDetailsAuthState,
+  createIitcPortalDetailsErrorState,
+  createIitcPortalDetailsLoadingState,
   formatIitcMissionDuration,
+  getIitcCachedPortalDetails,
   type IitcCommChannel,
   type IitcCommChannelData,
   type IitcCommMessage,
@@ -73,6 +81,7 @@ import {
   type IitcMissionSummary as CoreIitcMissionSummary,
   type IitcMapDataPlan,
   type IitcMapTilePayload,
+  type IitcPortalDetailsCache,
   type IitcPortalDetailsResponse,
   type IitcPortalArtifact,
   type IitcOrnamentVisibilitySettings,
@@ -82,6 +91,7 @@ import {
   type IitcRenderQueueTileStatus,
   pushIitcRenderQueueTile,
   type IitcTileQueueState,
+  writeIitcPortalDetailsCache,
 } from '@iris/iitc-core';
 
 const DEFAULT_CENTER: [number, number] = [52.3730796, 4.8924534];
@@ -170,7 +180,7 @@ let pendingPortalSelection: {guid?: string; lat?: number; lng?: number} | null =
 let latestPortalDetails: IitcIrisPortalDetailsState | null = null;
 let suppressPortalClickUntil = 0;
 let lastContextPostAt = 0;
-const portalDetailsCache = new Map<string, IitcIrisPortalDetailsState>();
+const portalDetailsCache: IitcPortalDetailsCache = new Map();
 let latestSearchSequence = 0;
 let latestSearchState: IitcIrisSearchState = {status: 'idle', term: '', confirmed: false, results: [], localResults: 0};
 const portalHistoryByGuid = new Map<string, NonNullable<IitcIrisRenderPortal['history']>>();
@@ -4742,12 +4752,6 @@ function getMapCenterE6(): {latE6: number; lngE6: number} | undefined {
   };
 }
 
-function countCommResponseMessages(response: unknown): number {
-  if (!response || typeof response !== 'object') return 0;
-  const result = (response as {result?: unknown}).result;
-  return Array.isArray(result) ? result.length : 0;
-}
-
 function normalizeCommTab(tab: unknown): IitcCommChannel {
   return tab === 'faction' || tab === 'alerts' ? tab : 'all';
 }
@@ -5320,7 +5324,13 @@ async function refreshComm(tab: IitcCommChannel = normalizeCommTab(latestCommSta
   const version = extractVersion();
   const bounds = getCurrentCommBounds();
   if (!version) {
-    latestCommState = {status: 'auth', tab, messages: getIitcCommChannelMessages(commChannelsData[tab]).length, requestOlder: getOlderMsgs, bounds, error: 'missing Intel version'};
+    latestCommState = createIitcCommAuthState({
+      channel: tab,
+      channelData: commChannelsData[tab],
+      getOlderMsgs,
+      bounds,
+      error: 'missing Intel version',
+    });
     postCommState();
     return;
   }
@@ -5328,24 +5338,21 @@ async function refreshComm(tab: IitcCommChannel = normalizeCommTab(latestCommSta
   const abortController = new AbortController();
   currentCommAbortController = abortController;
   const startedAt = performance.now();
-  const cachedCommMessages = getIitcCommChannelMessages(commChannelsData[tab]);
   latestCommState = {
     ...latestCommState,
-    status: 'loading',
-    tab,
-    messages: cachedCommMessages.length,
-    requestOlder: getOlderMsgs,
-    bounds,
-    recent: cachedCommMessages.map(toCommMessagePreview),
-    oldestTimestamp: commChannelsData[tab].oldestTimestamp,
-    newestTimestamp: commChannelsData[tab].newestTimestamp,
+    ...createIitcCommLoadingState({
+      channel: tab,
+      channelData: commChannelsData[tab],
+      getOlderMsgs,
+      bounds,
+      toPreview: toCommMessagePreview,
+    }),
   };
   postCommState();
 
   try {
     const response = await fetchComm(version, tab, bounds, getOlderMsgs, abortController.signal);
     const elapsedMs = performance.now() - startedAt;
-    const messages = countCommResponseMessages(response);
     const isAscendingOrder = !getOlderMsgs && commChannelsData[tab].newestTimestamp > -1;
     const writeResult = applyIitcCommResponse(response, commChannelsData[tab], getOlderMsgs, isAscendingOrder, tab);
     commChannelsData[tab] = writeResult.channelData;
@@ -5354,32 +5361,26 @@ async function refreshComm(tab: IitcCommChannel = normalizeCommTab(latestCommSta
       processPlayerTrackerCommMessages(commMessages);
       renderPlayerTracker();
     }
-    latestCommState = {
-      status: commMessages.length > 0 ? 'ready' : 'empty',
-      tab,
-      messages: commMessages.length,
-      responseMessages: messages,
-      addedMessages: writeResult.addedMessages,
-      requestOlder: getOlderMsgs,
-      oldMessagesWereAdded: writeResult.oldMessagesWereAdded,
-      recent: commMessages.map(toCommMessagePreview),
+    latestCommState = createIitcCommSuccessState({
+      channel: tab,
+      applyResult: writeResult,
+      getOlderMsgs,
       elapsedMs,
       bounds,
-      oldestTimestamp: commChannelsData[tab].oldestTimestamp,
-      newestTimestamp: commChannelsData[tab].newestTimestamp,
-    };
+      toPreview: toCommMessagePreview,
+    });
     postCommState();
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') return;
-    latestCommState = {
-      status: isIitcAuthError(error) ? 'auth' : 'error',
-      tab,
-      messages: getIitcCommChannelMessages(commChannelsData[tab]).length,
-      requestOlder: getOlderMsgs,
+    latestCommState = createIitcCommErrorState({
+      channel: tab,
+      channelData: commChannelsData[tab],
+      getOlderMsgs,
       elapsedMs: performance.now() - startedAt,
       bounds,
       error: error instanceof Error ? error.message : String(error),
-    };
+      status: isIitcAuthError(error) ? 'auth' : 'error',
+    });
     postCommState();
   } finally {
     if (currentCommAbortController === abortController) currentCommAbortController = undefined;
@@ -5419,37 +5420,16 @@ async function refreshPlayerTrackerComm(): Promise<void> {
   }
 }
 
-function toPortalDetailsState(
-  details: NonNullable<ReturnType<typeof parseIitcPortalDetailsResponse>>,
-  elapsedMs: number,
-): IitcIrisPortalDetailsState {
-  return {
-    status: 'ready',
-    guid: details.guid,
-    elapsedMs,
-    owner: details.owner,
-    mods: details.mods,
-    resonators: details.resonators,
-    history: {
-      visited: details.visited,
-      captured: details.captured,
-      scoutControlled: details.scoutControlled,
-    },
-    mitigation: details.mitigation,
-    hasMissionsStartingHere: details.hasMissionsStartingHere,
-  };
-}
-
 async function refreshSelectedPortalDetails(guid: string): Promise<void> {
   cancelActivePortalDetailsFetch();
-  const cachedDetails = portalDetailsCache.get(guid);
+  const cachedDetails = getIitcCachedPortalDetails(portalDetailsCache, guid);
   if (cachedDetails) {
-    latestPortalDetails = {...cachedDetails, cached: true};
+    latestPortalDetails = cachedDetails;
     repostLatestEntityStatus();
   }
   const version = extractVersion();
   if (!version) {
-    latestPortalDetails = {status: 'auth', guid, error: 'missing Intel version'};
+    latestPortalDetails = createIitcPortalDetailsAuthState(guid, 'missing Intel version');
     repostLatestEntityStatus();
     return;
   }
@@ -5458,7 +5438,7 @@ async function refreshSelectedPortalDetails(guid: string): Promise<void> {
   currentPortalDetailsAbortController = abortController;
   const startedAt = performance.now();
   if (!cachedDetails) {
-    latestPortalDetails = {status: 'loading', guid};
+    latestPortalDetails = createIitcPortalDetailsLoadingState(guid);
     repostLatestEntityStatus();
   }
 
@@ -5466,13 +5446,18 @@ async function refreshSelectedPortalDetails(guid: string): Promise<void> {
     const response = await fetchPortalDetails(guid, version, abortController.signal);
     if (selectedPortalGuid !== guid) return;
     const linkCount = selectedPortal?.links.count ?? 0;
-    const details = parseIitcPortalDetailsResponse(response, guid, linkCount);
+    const applyResult = applyIitcPortalDetailsResponse({
+      response,
+      guid,
+      linkCount,
+      elapsedMs: performance.now() - startedAt,
+    });
+    const details = applyResult.details;
     if (!details) {
-      latestPortalDetails = {status: 'error', guid, elapsedMs: performance.now() - startedAt, error: 'empty portal details'};
+      latestPortalDetails = applyResult.state;
     } else {
-      latestPortalDetails = toPortalDetailsState(details, performance.now() - startedAt);
-      portalDetailsCache.set(guid, latestPortalDetails);
-      if (portalDetailsCache.size > 12) portalDetailsCache.delete(portalDetailsCache.keys().next().value as string);
+      latestPortalDetails = applyResult.state;
+      writeIitcPortalDetailsCache(portalDetailsCache, guid, latestPortalDetails);
       if (latestPortalDetails.history) portalHistoryByGuid.set(guid, latestPortalDetails.history);
       const currentEntities = latestEntities;
       const portal = currentEntities?.portals.find((candidate) => candidate.guid === guid);
@@ -5495,12 +5480,11 @@ async function refreshSelectedPortalDetails(guid: string): Promise<void> {
     repostLatestEntityStatus();
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') return;
-    latestPortalDetails = {
-      status: isIitcAuthError(error) ? 'auth' : 'error',
-      guid,
-      elapsedMs: performance.now() - startedAt,
-      error: error instanceof Error ? error.message : String(error),
-    };
+    const elapsedMs = performance.now() - startedAt;
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    latestPortalDetails = isIitcAuthError(error)
+      ? createIitcPortalDetailsAuthState(guid, errorMessage)
+      : createIitcPortalDetailsErrorState(guid, elapsedMs, errorMessage);
     repostLatestEntityStatus();
   } finally {
     if (currentPortalDetailsAbortController === abortController) currentPortalDetailsAbortController = undefined;
