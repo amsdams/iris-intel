@@ -211,9 +211,7 @@ let suppressPortalClickUntil = 0;
 let lastContextPostAt = 0;
 const portalDetailsCache: IitcPortalDetailsCache = new Map();
 let latestSearchSequence = 0;
-let latestSearchState: IitcIrisSearchState = createIitcSearchIdleState();
 const portalHistoryByGuid = new Map<string, NonNullable<IitcIrisRenderPortal['history']>>();
-let latestArtifactEntities: IitcRawGameEntity[] = [];
 let layerSettings: IitcIrisLayerSettings = DEFAULT_LAYER_SETTINGS;
 let highlighterSettings: IitcIrisHighlighterSettings = DEFAULT_HIGHLIGHTER_SETTINGS;
 let baseLayerId: IitcIrisBaseLayerId = DEFAULT_BASE_LAYER_ID;
@@ -1908,7 +1906,6 @@ async function fetchNominatimSearchResults(term: string): Promise<IitcIrisSearch
 }
 
 function postSearchState(search: IitcIrisSearchState): void {
-  latestSearchState = search;
   window.postMessage({
     type: IITC_IRIS_MESSAGES.searchStatus,
     search,
@@ -5584,7 +5581,6 @@ async function fetchArtifactEntitiesForRender(version: string, signal: AbortSign
 
   try {
     const entities = await fetchArtifactPortals(version, signal);
-    latestArtifactEntities = entities;
     latestArtifactDiagnostics = {
       status: entities.length > 0 ? 'ready' : 'empty',
       portalCount: entities.length,
@@ -5595,7 +5591,6 @@ async function fetchArtifactEntitiesForRender(version: string, signal: AbortSign
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') throw error;
     if (isAuthLikeError(error)) throw error;
-    latestArtifactEntities = [];
     latestArtifactDiagnostics = {
       status: 'error',
       portalCount: 0,
@@ -5635,7 +5630,6 @@ async function refreshEntities(): Promise<void> {
     latestFetchGeneration = generation;
 
     if (dataSource.mode === 'fixture') {
-      latestArtifactEntities = [];
       resetArtifactDiagnostics('fixture-disabled');
       postEntityStatus(`loading fixture ${dataSource.label}`, undefined, {
         requestedTiles: plan.tileKeys.length,

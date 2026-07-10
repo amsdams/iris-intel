@@ -1,5 +1,5 @@
 import {h, render} from 'preact';
-import {useEffect, useMemo, useRef, useState} from 'preact/hooks';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import './iitc-iris.css';
 import {formatIitcColorVars, getIitcItemColor, getIitcLevelColor, getIitcRarityColor, IITC_RESONATOR_ENERGY, IITC_TEAM_COLORS} from './iitc-colors';
 import {formatSubscriptionBadge, formatSubscriptionLabel, getAuthErrorMessage, getPanelStatusClass, getSubscriptionStatusClass} from './ui-status';
@@ -2190,7 +2190,7 @@ function App(): h.JSX.Element {
     });
   };
 
-  const closeSheetToMap = (): void => {
+  const closeSheetToMap = useCallback((): void => {
     if (activeSidePanel) {
       window.postMessage({type: IITC_IRIS_MESSAGES.cancelPanelRequests} satisfies IitcIrisMessage, '*');
     }
@@ -2198,24 +2198,13 @@ function App(): h.JSX.Element {
     setActiveSheet('map');
     storeSidePanelId(null);
     storeActiveSheet('map');
-  };
+  }, [activeSidePanel]);
 
-  const toggleSidePanel = (panelId: SidePanelId): void => {
-    setActiveSidePanel((current) => {
-      const next = current === panelId ? null : panelId;
-      storeSidePanelId(next);
-      const nextSheet = next ?? 'map';
-      setActiveSheet(nextSheet);
-      storeActiveSheet(nextSheet);
-      return next;
-    });
-  };
-
-  const closeSidePanel = (): void => {
+  const closeSidePanel = useCallback((): void => {
     closeSheetToMap();
-  };
+  }, [closeSheetToMap]);
 
-  const openSheet = (sheet: SheetId): void => {
+  const openSheet = useCallback((sheet: SheetId): void => {
     setActiveSheet(sheet);
     storeActiveSheet(sheet);
     if (isSidePanelId(sheet)) {
@@ -2228,24 +2217,24 @@ function App(): h.JSX.Element {
     }
     setActiveSidePanel(null);
     storeSidePanelId(null);
-  };
+  }, [activeSidePanel]);
 
-  const toggleSheet = (sheet: SheetId): void => {
+  const toggleSheet = useCallback((sheet: SheetId): void => {
     if (activeSheet === sheet) {
       closeSheetToMap();
       return;
     }
     openSheet(sheet);
-  };
+  }, [activeSheet, closeSheetToMap, openSheet]);
 
-  const refreshComm = (tab: IitcIrisCommTab = commState.tab, older = false): void => {
+  const refreshComm = useCallback((tab: IitcIrisCommTab = commState.tab, older = false): void => {
     storeCommTab(tab);
     window.postMessage({
       type: IITC_IRIS_MESSAGES.requestComm,
       commTab: tab,
       commOlder: older,
     } satisfies IitcIrisMessage, '*');
-  };
+  }, [commState.tab]);
 
   const requestOlderComm = (): void => {
     if (commState.status === 'loading' || commState.oldestTimestamp === undefined || commState.oldestTimestamp < 0) return;
@@ -2286,12 +2275,12 @@ function App(): h.JSX.Element {
     } satisfies IitcIrisMessage, '*');
   };
 
-  const refreshMissions = (source: IitcIrisMissionSource = missionsState.source ?? 'view'): void => {
+  const refreshMissions = useCallback((source: IitcIrisMissionSource = missionsState.source ?? 'view'): void => {
     window.postMessage({
       type: IITC_IRIS_MESSAGES.requestMissions,
       missionSource: source,
     } satisfies IitcIrisMessage, '*');
-  };
+  }, [missionsState.source]);
 
   const openSelectedPortalMissions = (): void => {
     if (!entityFetch.selectedPortal) return;
@@ -2427,7 +2416,7 @@ function App(): h.JSX.Element {
     </label>
   );
 
-  const setMapView = (lat: number, lng: number, zoom = camera.zoom): void => {
+  const setMapView = useCallback((lat: number, lng: number, zoom = camera.zoom): void => {
     const clamped = clampView({lat, lng, zoom});
     window.postMessage({
       type: IITC_IRIS_MESSAGES.setView,
@@ -2435,7 +2424,7 @@ function App(): h.JSX.Element {
       lng: clamped.lng,
       zoom: clamped.zoom ?? camera.zoom,
     } satisfies IitcIrisMessage, '*');
-  };
+  }, [camera.zoom]);
 
   const requestSearch = (term: string, confirmed = false): void => {
     window.postMessage({
@@ -2651,9 +2640,9 @@ function App(): h.JSX.Element {
     } satisfies IitcIrisMessage, '*');
   };
 
-  const zoomMap = (delta: number): void => {
+  const zoomMap = useCallback((delta: number): void => {
     setMapView(camera.lat, camera.lng, camera.zoom + delta);
-  };
+  }, [camera.lat, camera.lng, camera.zoom, setMapView]);
 
   const clearPortalSelection = (): void => {
     window.postMessage({
@@ -2661,10 +2650,10 @@ function App(): h.JSX.Element {
     } satisfies IitcIrisMessage, '*');
   };
 
-  const closeSheets = (): void => {
+  const closeSheets = useCallback((): void => {
     setPortalImageOpen(false);
     openSheet('map');
-  };
+  }, [openSheet]);
 
   const focusSelectedPortal = (): void => {
     if (!entityFetch.selectedPortal) return;
@@ -2709,10 +2698,10 @@ function App(): h.JSX.Element {
       : `${authSources.length} requests need an authenticated Intel session`
     : '';
   const activePanelNeedsAuth = activeSidePanelStatus === 'auth';
-  const openCommPanel = (tab?: IitcIrisCommTab): void => {
+  const openCommPanel = useCallback((tab?: IitcIrisCommTab): void => {
     if (tab) refreshComm(tab);
     openSheet('comm');
-  };
+  }, [openSheet, refreshComm]);
 
   const selectCommTab = (tab: IitcIrisCommTab): void => {
     if (activeSheet === 'comm' && commState.tab === tab) return;
@@ -2720,13 +2709,13 @@ function App(): h.JSX.Element {
     if (activeSheet !== 'comm') openSheet('comm');
   };
 
-  const toggleCommPanel = (tab?: IitcIrisCommTab): void => {
+  const toggleCommPanel = useCallback((tab?: IitcIrisCommTab): void => {
     if (activeSheet === 'comm' && (!tab || commState.tab === tab)) {
       closeSheetToMap();
       return;
     }
     openCommPanel(tab);
-  };
+  }, [activeSheet, closeSheetToMap, commState.tab, openCommPanel]);
 
   const toggleMissionsSheet = (source: IitcIrisMissionSource): void => {
     if (activeSheet === 'missions' && missionsState.source === source) {
@@ -2737,7 +2726,7 @@ function App(): h.JSX.Element {
     refreshMissions(source);
   };
 
-  const togglePrimaryMenu = (menu: PrimaryMenuId): void => {
+  const togglePrimaryMenu = useCallback((menu: PrimaryMenuId): void => {
     if (menu === 'selected') {
       if (!hasSelectedObject) return;
       toggleSheet(activeSelectedSheet);
@@ -2759,7 +2748,7 @@ function App(): h.JSX.Element {
     if (menu === 'system') {
       toggleSheet('system');
     }
-  };
+  }, [activePrimaryMenu, activeSelectedSheet, activeSheet, closeSheetToMap, hasSelectedObject, openSheet, toggleCommPanel, toggleSheet]);
 
   const renderSheetTab = (sheet: SheetId, label: string, onClick?: () => void, active = activeSheet === sheet): h.JSX.Element => (
     <button
@@ -2998,7 +2987,7 @@ function App(): h.JSX.Element {
 
     window.addEventListener('message', onMessage);
     return (): void => window.removeEventListener('message', onMessage);
-  }, [activeSidePanel, baseLayerId, dataSource, highlighterSettings, layerSettings, lifecycleSettings]);
+  }, [activeSidePanel, baseLayerId, camera.zoom, dataSource, highlighterSettings, layerSettings, lifecycleSettings]);
 
   useEffect(() => {
     storeLayerSettings(layerSettings);
@@ -3096,7 +3085,7 @@ function App(): h.JSX.Element {
     const selectedPortalGuid = entityFetch.selectedPortal?.guid;
     if (!selectedPortalGuid || selectedPortalGuid === missionsState.portalGuid) return;
     refreshMissions('portal');
-  }, [activeSidePanel, entityFetch.selectedPortal?.guid, missionsState.portalGuid, missionsState.source, missionsState.status]);
+  }, [activeSidePanel, entityFetch.selectedPortal?.guid, missionsState.portalGuid, missionsState.source, missionsState.status, refreshMissions]);
 
   useEffect(() => {
     const term = searchTerm.trim();
@@ -3243,7 +3232,7 @@ function App(): h.JSX.Element {
     };
     window.addEventListener('keydown', onKeyDown);
     return (): void => window.removeEventListener('keydown', onKeyDown);
-  }, [activePrimaryMenu, activeSheet, entityFetch.selectedPortal, portalImageOpen, camera, shortcutsEnabled]);
+  }, [activePrimaryMenu, activeSheet, camera, closeSheets, entityFetch.selectedPortal, hasSelectedObject, portalImageOpen, shortcutsEnabled, togglePrimaryMenu, toggleSheet, zoomMap]);
 
   const setDataSource = (id: typeof DATA_SOURCE_OPTIONS[number]['id']): void => {
     setDataSourceId(id);

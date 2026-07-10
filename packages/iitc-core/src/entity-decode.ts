@@ -47,7 +47,6 @@ export interface IitcGetEntitiesResponse {
 const FAKE_FIELD_EDGE_LINK_PATTERN = /^[0-9a-f]{32}\.b_[ab][bc]$/;
 const SUMMARY_PORTAL_DATA_LENGTH = 14;
 const DETAILED_PORTAL_DATA_LENGTH = SUMMARY_PORTAL_DATA_LENGTH + 4;
-const EXTENDED_PORTAL_DATA_LENGTH = DETAILED_PORTAL_DATA_LENGTH + 1;
 
 function asTeam(value: unknown): IitcTeam {
   if (value === 'E' || value === 'R' || value === 'N' || value === 'M') return value;
