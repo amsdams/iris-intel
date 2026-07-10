@@ -38,6 +38,7 @@ import {
   getIitcOrnamentDefinition,
   getIitcRecoveredTileKeys,
   getIitcPortalArtifacts,
+  findIitcPortalByGuidOrLatLng,
   isIitcPlayerTrackerEnabled,
   isIitcPlayerTrackerTeamVisible,
   isIitcPlayerTrackerVisibleForZoom,
@@ -58,8 +59,10 @@ import {
   normalizeIitcDrawToolsLabel,
   parseIitcMissionDetailsResponse,
   parseIitcTopMissionsResponse,
+  planIitcPortalLinkNavigation,
   pruneIitcPlayerTrackerStored,
   renderIitcCommMarkup,
+  resolveIitcPendingPortalSelection,
   serializeIitcDrawToolsLayer,
   summarizeIitcInventory,
   planIitcCommRequest,
@@ -1841,43 +1844,39 @@ function findContextFieldAtPoint(point: L.Point): IitcIrisRenderField | undefine
 }
 
 function findPortalByGuidOrLatLng(guid: string | undefined, lat: number | undefined, lng: number | undefined): IitcIrisRenderPortal | undefined {
-  if (!latestEntities) return undefined;
-  if (guid) {
-    const portal = latestEntities.portals.find((candidate) => candidate.guid === guid);
-    if (portal) return portal;
-  }
-  if (lat === undefined || lng === undefined) return undefined;
-  const latE6 = Math.round(lat * 1_000_000);
-  const lngE6 = Math.round(lng * 1_000_000);
-  return latestEntities.portals.find((portal) => Math.abs(portal.latE6 - latE6) <= 1 && Math.abs(portal.lngE6 - lngE6) <= 1);
+  return findIitcPortalByGuidOrLatLng(latestEntities?.portals ?? [], {guid, lat, lng});
 }
 
 function selectPortalByLatLng(lat: number | undefined, lng: number | undefined): IitcIrisRenderPortal | undefined {
-  const portal = findPortalByGuidOrLatLng(undefined, lat, lng);
-  if (portal) {
-    selectPortal(portal);
-    return portal;
+  const plan = planIitcPortalLinkNavigation(latestEntities?.portals ?? [], {lat, lng});
+  if (plan.portal) {
+    selectPortal(plan.portal);
+    return plan.portal;
   }
-  if (lat !== undefined && lng !== undefined) pendingPortalSelection = {lat, lng};
+  if (plan.pendingSelection) pendingPortalSelection = plan.pendingSelection;
   return undefined;
 }
 
 function zoomToAndShowPortal(guid: string | undefined, lat: number | undefined, lng: number | undefined, zoom: number | undefined): void {
   const map = window.__iitcIrisMap;
   if (!map) return;
-  const portal = guid ? findPortalByGuidOrLatLng(guid, lat, lng) : selectPortalByLatLng(lat, lng);
-  if (portal) {
-    const latLng = toLatLng(portal.latE6, portal.lngE6);
-    map.setView(latLng, zoom ?? Math.max(map.getZoom(), 15));
-    if (guid) selectPortal(portal);
+  const selectedPortal = guid ? undefined : selectPortalByLatLng(lat, lng);
+  if (selectedPortal) {
+    map.setView(toLatLng(selectedPortal.latE6, selectedPortal.lngE6), zoom ?? Math.max(map.getZoom(), 15));
     return;
   }
-  if (lat === undefined || lng === undefined) {
-    if (guid) pendingPortalSelection = {guid};
+  const plan = planIitcPortalLinkNavigation(latestEntities?.portals ?? [], {guid, lat, lng, zoom});
+  if (plan.portal) {
+    const latLng = toLatLng(plan.portal.latE6, plan.portal.lngE6);
+    map.setView(latLng, plan.focus?.zoom ?? Math.max(map.getZoom(), 15));
+    selectPortal(plan.portal);
     return;
   }
-  pendingPortalSelection = {guid, lat, lng};
-  map.setView([lat, lng], zoom ?? Math.max(map.getZoom(), 15));
+  if (plan.pendingSelection) pendingPortalSelection = plan.pendingSelection;
+  if (!plan.focus) {
+    return;
+  }
+  map.setView([plan.focus.lat, plan.focus.lng], plan.focus.zoom ?? Math.max(map.getZoom(), 15));
 }
 
 function selectMissionWaypoint(waypoint: IitcIrisMissionWaypoint): void {
@@ -3178,7 +3177,7 @@ function renderEntities(
 
   latestEntities = entities;
   if (pendingPortalSelection) {
-    const portal = findPortalByGuidOrLatLng(pendingPortalSelection.guid, pendingPortalSelection.lat, pendingPortalSelection.lng);
+    const portal = resolveIitcPendingPortalSelection(pendingPortalSelection, latestEntities.portals);
     if (portal) selectPortal(portal, false);
   }
 

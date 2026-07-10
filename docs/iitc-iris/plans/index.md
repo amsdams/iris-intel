@@ -30,6 +30,7 @@ should keep IITC naming at the boundary and move only pure, stable logic first.
 5. `playerTracker` facade: COMM-derived player positions, refresh/cancellation policy, and map link behavior.
    See [player-tracker-facade-plan.md](player-tracker-facade-plan.md).
 6. Portal-link navigation facade: `zoomToAndShowPortal`, `selectPortalByLatLng`, pending selection resolution.
+   See [portal-link-navigation-facade-plan.md](portal-link-navigation-facade-plan.md).
 7. Context action facade: long-press/right-click handling for portals, links, fields, and plain map actions.
 8. Request diagnostics facade: copied timing/cancellation/status diagnostics used by live IITC comparisons.
 
