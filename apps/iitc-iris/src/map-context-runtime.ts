@@ -1,21 +1,6 @@
 import L, {type Map as LeafletMap, type Point as LeafletPoint} from 'leaflet';
-import {IITC_IRIS_MESSAGES, type IitcIrisMapContextPortalAnchor, type IitcIrisMessage, type IitcIrisRenderPortal} from './messages';
-
-export interface IitcIrisMapContextPayloadOptions {
-  lat: number;
-  lng: number;
-  zoom?: number;
-  portal?: IitcIrisRenderPortal;
-  portalGuid?: string;
-  portalLat?: number;
-  portalLng?: number;
-  contextTarget?: 'map' | 'portal' | 'link' | 'field';
-  contextGuid?: string;
-  contextTeam?: 'E' | 'R' | 'N' | 'M';
-  contextPortalGuids?: string[];
-  contextPortalAnchors?: IitcIrisMapContextPortalAnchor[];
-  contextDistanceMeters?: number;
-}
+import {createIitcMapContextPayload, type IitcMapContextPayloadOptions} from '@iris/iitc-core';
+import {IITC_IRIS_MESSAGES, type IitcIrisMessage} from './messages';
 
 export interface IitcIrisContextGestureOptions {
   longPressMs: number;
@@ -25,21 +10,10 @@ export interface IitcIrisContextGestureOptions {
   getLastContextPostAt: () => number;
 }
 
-export function createIitcIrisMapContextMessage(options: IitcIrisMapContextPayloadOptions): IitcIrisMessage {
+export function createIitcIrisMapContextMessage(options: IitcMapContextPayloadOptions): IitcIrisMessage {
   return {
     type: IITC_IRIS_MESSAGES.mapContext,
-    contextTarget: options.contextTarget ?? (options.portal || options.portalGuid ? 'portal' : 'map'),
-    lat: options.lat,
-    lng: options.lng,
-    zoom: options.zoom,
-    portalGuid: options.portal?.guid ?? options.portalGuid,
-    portalLat: options.portal ? options.portal.latE6 / 1_000_000 : options.portalLat,
-    portalLng: options.portal ? options.portal.lngE6 / 1_000_000 : options.portalLng,
-    contextGuid: options.contextGuid,
-    contextTeam: options.contextTeam,
-    contextPortalGuids: options.contextPortalGuids,
-    contextPortalAnchors: options.contextPortalAnchors,
-    contextDistanceMeters: options.contextDistanceMeters,
+    ...createIitcMapContextPayload(options),
   };
 }
 

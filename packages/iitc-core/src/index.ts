@@ -6,6 +6,7 @@ export * from './map-data-render-queue';
 export * from './portal-details';
 export * from './portal-details-facade';
 export * from './comm';
+export * from './context-action';
 export * from './player-tracker';
 export * from './artifact';
 export * from './ornaments';

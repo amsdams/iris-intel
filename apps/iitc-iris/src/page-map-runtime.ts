@@ -24,6 +24,12 @@ import {
   getIitcCommChannelMessages,
   getIitcInventoryPortalKeyCount,
   getIitcMissionBounds,
+  getIitcMapContextFieldPerimeterMeters,
+  getIitcMapContextFieldPortalAnchors,
+  getIitcMapContextFieldPortalGuids,
+  getIitcMapContextLinkDistanceMeters,
+  getIitcMapContextLinkPortalAnchors,
+  getIitcMapContextLinkPortalGuids,
   getIitcPortalAnalysis,
   getIitcRequestQueueDelayMs,
   getIitcTileQueueRefillDecision,
@@ -60,6 +66,7 @@ import {
   parseIitcMissionDetailsResponse,
   parseIitcTopMissionsResponse,
   planIitcPortalLinkNavigation,
+  planIitcMapContextPoint,
   pruneIitcPlayerTrackerStored,
   renderIitcCommMarkup,
   resolveIitcPendingPortalSelection,
@@ -1612,7 +1619,8 @@ function selectPortal(portal: IitcIrisRenderPortal, rerender = true): void {
 function postMapContext(lat: number, lng: number, portal?: IitcIrisRenderPortal): void {
   const map = window.__iitcIrisMap;
   lastContextPostAt = performance.now();
-  window.postMessage(createIitcIrisMapContextMessage({lat, lng, zoom: map?.getZoom(), portal}), '*');
+  const plan = planIitcMapContextPoint({lat, lng, zoom: map?.getZoom(), portal});
+  window.postMessage(createIitcIrisMapContextMessage(plan.payload), '*');
 }
 
 function postPortalContextReference(guid: string | undefined, lat: number, lng: number): void {
@@ -1636,17 +1644,8 @@ function postMapObjectContext(
 ): void {
   const map = window.__iitcIrisMap;
   lastContextPostAt = performance.now();
-  window.postMessage(createIitcIrisMapContextMessage({
-    contextTarget,
-    lat,
-    lng,
-    zoom: map?.getZoom(),
-    contextGuid: object.guid,
-    contextTeam: object.team,
-    contextPortalGuids: object.portalGuids,
-    contextPortalAnchors: object.portalAnchors,
-    contextDistanceMeters: object.distanceMeters,
-  }), '*');
+  const plan = planIitcMapContextPoint({lat, lng, zoom: map?.getZoom(), [contextTarget]: object});
+  window.postMessage(createIitcIrisMapContextMessage(plan.payload), '*');
 }
 
 function openPortalContext(portal: IitcIrisRenderPortal, event?: LeafletMouseEvent): void {
@@ -1719,16 +1718,6 @@ function getPointToSegmentDistance(point: L.Point, start: L.Point, end: L.Point)
   return point.distanceTo(L.point(start.x + t * dx, start.y + t * dy));
 }
 
-function getDistanceMeters(from: {latE6: number; lngE6: number}, to: {latE6: number; lngE6: number}): number {
-  const earthRadiusMeters = 6_371_000;
-  const lat1 = from.latE6 / 1_000_000 * Math.PI / 180;
-  const lat2 = to.latE6 / 1_000_000 * Math.PI / 180;
-  const deltaLat = lat2 - lat1;
-  const deltaLng = (to.lngE6 - from.lngE6) / 1_000_000 * Math.PI / 180;
-  const a = Math.sin(deltaLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) ** 2;
-  return earthRadiusMeters * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
 function getPortalLabelByGuid(guid: string | undefined, fallback: string): string {
   if (!guid || !latestEntities) return fallback;
   const portal = latestEntities.portals.find((candidate) => candidate.guid === guid);
@@ -1736,55 +1725,27 @@ function getPortalLabelByGuid(guid: string | undefined, fallback: string): strin
 }
 
 function getLinkPortalGuids(link: IitcIrisRenderLink): string[] {
-  return [link.oGuid, link.dGuid].filter((guid): guid is string => Boolean(guid));
+  return getIitcMapContextLinkPortalGuids(link);
 }
 
 function getLinkPortalAnchors(link: IitcIrisRenderLink): IitcIrisMapContextPortalAnchor[] {
-  return [
-    {
-      guid: link.oGuid,
-      label: getPortalLabelByGuid(link.oGuid, `${(link.oLatE6 / 1_000_000).toFixed(6)}, ${(link.oLngE6 / 1_000_000).toFixed(6)}`),
-      latE6: link.oLatE6,
-      lngE6: link.oLngE6,
-    },
-    {
-      guid: link.dGuid,
-      label: getPortalLabelByGuid(link.dGuid, `${(link.dLatE6 / 1_000_000).toFixed(6)}, ${(link.dLngE6 / 1_000_000).toFixed(6)}`),
-      latE6: link.dLatE6,
-      lngE6: link.dLngE6,
-    },
-  ];
+  return getIitcMapContextLinkPortalAnchors(link, getPortalLabelByGuid);
 }
 
 function getLinkDistanceMeters(link: IitcIrisRenderLink): number {
-  return getDistanceMeters(
-    {latE6: link.oLatE6, lngE6: link.oLngE6},
-    {latE6: link.dLatE6, lngE6: link.dLngE6},
-  );
+  return getIitcMapContextLinkDistanceMeters(link);
 }
 
 function getFieldPortalGuids(field: IitcIrisRenderField): string[] {
-  return field.points.map((fieldPoint) => fieldPoint.guid).filter((guid): guid is string => Boolean(guid));
+  return getIitcMapContextFieldPortalGuids(field);
 }
 
 function getFieldPortalAnchors(field: IitcIrisRenderField): IitcIrisMapContextPortalAnchor[] {
-  return field.points.map((fieldPoint) => ({
-    guid: fieldPoint.guid,
-    label: getPortalLabelByGuid(
-      fieldPoint.guid,
-      `${(fieldPoint.latE6 / 1_000_000).toFixed(6)}, ${(fieldPoint.lngE6 / 1_000_000).toFixed(6)}`,
-    ),
-    latE6: fieldPoint.latE6,
-    lngE6: fieldPoint.lngE6,
-  }));
+  return getIitcMapContextFieldPortalAnchors(field, getPortalLabelByGuid);
 }
 
 function getFieldPerimeterMeters(field: IitcIrisRenderField): number | undefined {
-  if (field.points.length < 2) return undefined;
-  return field.points.reduce((total, point, index) => {
-    const next = field.points[(index + 1) % field.points.length];
-    return total + getDistanceMeters(point, next);
-  }, 0);
+  return getIitcMapContextFieldPerimeterMeters(field);
 }
 
 function findContextLinkAtPoint(point: L.Point): IitcIrisRenderLink | undefined {
