@@ -9,9 +9,12 @@ import {convertIitcGeodesicLatLngs, createIitcGeodesicPolygon, createIitcGeodesi
 import {
   appendIitcResponseBucketDiagnostics,
   applyIitcTileRequestResponseToQueue,
+  beginIitcRequestDiagnostics,
   classifyIitcTileDiagnostics,
   createIitcTileQueueDiagnostics,
   createIitcResponseBucketDiagnostics,
+  createIitcRequestDiagnosticsSnapshot,
+  createIitcRequestDiagnosticsState,
   createIitcTileQueueState,
   createIitcTileQueueRequestBatches,
   createIitcCommChannelData,
@@ -45,6 +48,7 @@ import {
   getIitcRecoveredTileKeys,
   getIitcPortalArtifacts,
   findIitcPortalByGuidOrLatLng,
+  finishIitcRequestDiagnostics,
   isIitcPlayerTrackerEnabled,
   isIitcPlayerTrackerTeamVisible,
   isIitcPlayerTrackerVisibleForZoom,
@@ -112,6 +116,7 @@ import {
   type IitcPlayerTrackerDiagnostics,
   type IitcPlayerTrackerStored,
   type IitcRawGameEntity,
+  type IitcRequestDiagnosticsState,
   type IitcRenderQueueTileStatus,
   pushIitcRenderQueueTile,
   type IitcTileQueueState,
@@ -258,12 +263,7 @@ let playerTrackerDiagnostics: IitcPlayerTrackerDiagnostics = getIitcPlayerTracke
 let playerTrackerRefreshTimer: number | undefined;
 let currentPlayerTrackerCommAbortController: AbortController | undefined;
 const playerTrackerProcessedCommGuids = new Set<string>();
-let nextIitcRequestId = 1;
-const activeIitcRequests = new Map<number, {
-  endpoint: string;
-  group?: string;
-  startedAt: number;
-}>();
+let requestDiagnosticsState: IitcRequestDiagnosticsState = createIitcRequestDiagnosticsState();
 
 interface IitcPagePlayer {
   ap?: unknown;
@@ -3460,22 +3460,7 @@ function repostLatestEntityStatus(): void {
 }
 
 function getIitcRequestDiagnostics(): IitcIrisRequestDiagnostics {
-  const activeByEndpoint: Record<string, number> = {};
-  const now = performance.now();
-  const active = [...activeIitcRequests.entries()].map(([id, request]) => {
-    activeByEndpoint[request.endpoint] = (activeByEndpoint[request.endpoint] ?? 0) + 1;
-    return {
-      id,
-      endpoint: request.endpoint,
-      group: request.group,
-      elapsedMs: Math.round(now - request.startedAt),
-    };
-  });
-  return {
-    activeRequests: active.length,
-    activeByEndpoint,
-    active,
-  };
+  return createIitcRequestDiagnosticsSnapshot(requestDiagnosticsState, performance.now());
 }
 
 function toFiniteNumber(value: unknown): number | undefined {
@@ -3546,12 +3531,13 @@ function postRequestDiagnostics(): void {
 }
 
 function beginIitcRequest(endpoint: string, group?: string): () => void {
-  const id = nextIitcRequestId;
-  nextIitcRequestId += 1;
-  activeIitcRequests.set(id, {endpoint, group, startedAt: performance.now()});
+  const result = beginIitcRequestDiagnostics(requestDiagnosticsState, endpoint, performance.now(), group);
+  requestDiagnosticsState = result.state;
   postRequestDiagnostics();
   return () => {
-    if (!activeIitcRequests.delete(id)) return;
+    const nextState = finishIitcRequestDiagnostics(requestDiagnosticsState, result.request.id);
+    if (nextState === requestDiagnosticsState) return;
+    requestDiagnosticsState = nextState;
     postRequestDiagnostics();
   };
 }
