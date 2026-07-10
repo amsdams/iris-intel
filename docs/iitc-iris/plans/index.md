@@ -34,6 +34,7 @@ should keep IITC naming at the boundary and move only pure, stable logic first.
 7. Context action facade: long-press/right-click handling for portals, links, fields, and plain map actions.
    See [context-action-facade-plan.md](context-action-facade-plan.md).
 8. Request diagnostics facade: copied timing/cancellation/status diagnostics used by live IITC comparisons.
+   See [request-diagnostics-facade-plan.md](request-diagnostics-facade-plan.md).
 
 ## Deferred Refactors
 
