@@ -45,9 +45,10 @@ import {handleIitcIrisContentKeyDown, type IitcIrisPanDirection} from './content
 import {copyIitcIrisText} from './content-feedback';
 import {closeIitcIrisSheet, openIitcIrisSheet, toggleIitcIrisSheet} from './content-sheet-navigation';
 import {getIitcIrisPrimaryMenuEffect} from './content-primary-menu';
-import {formatCommActor, formatCommBounds, formatCommContextTitle, formatCommTime, getCommDisplayParts, getCommTeamClass} from './comm-display';
+import {formatCommBounds, getCommTeamClass} from './comm-display';
 import {IITC_IRIS_COMM_TABS, IitcIrisCommPanelControls} from './comm-panel-controls';
 import {IitcIrisCommPanelBody} from './comm-panel-body';
+import {IitcIrisCommMessageList} from './comm-message-list';
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPortalHighlighterId, type IitcIrisRequestDiagnostics, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal} from './messages';
 import {
   createIitcMapDataPlan,
@@ -4193,65 +4194,7 @@ function App(): h.JSX.Element {
               {(commState.status === 'empty' || (!commState.recent?.length && commState.status !== 'loading' && commState.status !== 'idle' && commState.status !== 'auth')) && (
                 <div className="iitc-iris-empty-state">No COMM messages for this channel and map bounds.</div>
               )}
-              {commState.recent && commState.recent.length > 0 && (
-                <div className="iitc-iris-comm-list iitc-iris-scroll-region" ref={commListRef} onScroll={handleCommScroll}>
-                  {commState.requestOlder && commState.status === 'loading' && <span className="iitc-iris-comm-divider">loading older messages</span>}
-                  {commState.requestOlder && commState.oldMessagesWereAdded && <span className="iitc-iris-comm-divider">older messages loaded</span>}
-                  {commState.recent.map((message) => {
-                    const displayParts = getCommDisplayParts(message);
-                    return (
-                      <div className={`iitc-iris-comm-row ${message.alert ? 'is-alert' : ''} ${message.narrowcast ? 'is-direct' : ''}`} key={message.id} title={formatCommContextTitle(message)}>
-                        <span className={`iitc-iris-comm-meta ${getCommTeamClass(message.team)}`}>
-                          <b>{formatCommTime(message.time)}</b>
-                          <span className="iitc-iris-comm-tags">
-                            {message.auto && <small>system</small>}
-                            {message.alert && <small>alert</small>}
-                            {message.narrowcast && <small>direct</small>}
-                          </span>
-                        </span>
-                        <span className={`iitc-iris-comm-text ${message.narrowcast ? 'is-narrowcast' : ''}`}>
-                          <span className={`iitc-iris-comm-actor ${getCommTeamClass(message.playerTeam || message.team)}`}>
-                            {formatCommActor(message)}
-                          </span>
-                          {displayParts.length > 0 ? displayParts.map((part, index) => {
-                            const key = `${message.id}-${index}`;
-                            if (part.type === 'portal') {
-                              return (
-                                <button
-                                  className="iitc-iris-comm-portal"
-                                  type="button"
-                                  title={part.portal?.address || part.text}
-                                  onClick={() => selectCommPortal(part.portal?.latE6, part.portal?.lngE6, part.portal?.guid)}
-                                  key={key}
-                                >
-                                  {part.text}
-                                </button>
-                              );
-                            }
-                            if (part.type === 'player') {
-                              return (
-                                <button
-                                  className={`iitc-iris-comm-player ${getCommTeamClass(part.team)} ${part.at ? 'is-at' : ''}`}
-                                  type="button"
-                                  onClick={() => addCommNickname(part.text)}
-                                  title={`Message ${part.text}`}
-                                  key={key}
-                                >
-                                  {part.at ? '@' : ''}{part.text}
-                                </button>
-                              );
-                            }
-                            if (part.type === 'faction') {
-                              return <span className={`iitc-iris-comm-faction ${getCommTeamClass(part.team)}`} key={key}>{part.text}</span>;
-                            }
-                            return <span className={getCommTeamClass(part.team)} key={key}>{part.text}</span>;
-                          }) : (message.text || message.type)}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+              <IitcIrisCommMessageList addNickname={addCommNickname} commListRef={commListRef as import('preact').RefObject<HTMLDivElement>} commState={commState} onScroll={handleCommScroll} selectPortal={selectCommPortal} />
               <IitcIrisCommPanelBody commDraft={commDraft} commState={commState} onDraftChange={setCommDraft} send={sendComm} />
               {(commState.sendStatus === 'sent' || commState.sendError) && (
                 <span className={`iitc-iris-status ${commState.sendError ? 'iitc-iris-warning' : ''}`} title={commState.sendError}>
