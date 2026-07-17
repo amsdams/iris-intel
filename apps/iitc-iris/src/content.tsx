@@ -2943,6 +2943,7 @@ function App(): h.JSX.Element {
       }
       if (event.data?.type === IITC_IRIS_MESSAGES.entityStatus) {
         setEntityFetch((current) => entityFetchStateFromMessage(event.data, current));
+        if (event.data.selectedPortal) setMapContext(null);
         if (event.data.requestDiagnostics) setRequestDiagnostics(event.data.requestDiagnostics);
         if (event.data.comm) setCommState(event.data.comm);
       }
