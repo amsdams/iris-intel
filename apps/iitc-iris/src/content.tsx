@@ -45,7 +45,8 @@ import {handleIitcIrisContentKeyDown, type IitcIrisPanDirection} from './content
 import {copyIitcIrisText} from './content-feedback';
 import {closeIitcIrisSheet, openIitcIrisSheet, toggleIitcIrisSheet} from './content-sheet-navigation';
 import {getIitcIrisPrimaryMenuEffect} from './content-primary-menu';
-import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPortalHighlighterId, type IitcIrisRequestDiagnostics, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal} from './messages';
+import {formatCommActor, formatCommBounds, formatCommContextTitle, formatCommTime, getCommDisplayParts, getCommTeamClass} from './comm-display';
+import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPortalHighlighterId, type IitcIrisRequestDiagnostics, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal} from './messages';
 import {
   createIitcMapDataPlan,
   IITC_MAX_REQUESTS,
@@ -1211,39 +1212,7 @@ function formatItemBadge(item: {level?: number; rarity?: string; type?: string})
   return 'IT';
 }
 
-function formatCommActor(message: IitcIrisCommMessage): string {
-  return message.player || message.players[0] || (message.auto ? 'system' : 'unknown');
-}
 
-function normalizeCommText(value: string): string {
-  return value.replace(/\s+/g, ' ').replace(/^\s*[,.:;-]\s*/, '').trimStart();
-}
-
-function getCommDisplayParts(message: IitcIrisCommMessage): IitcIrisCommMessage['parts'] {
-  const actor = formatCommActor(message).replace(/^@/, '').toLowerCase();
-  return message.parts.filter((part) => {
-    if (part.type !== 'player') return true;
-    return part.text.replace(/^@/, '').toLowerCase() !== actor;
-  }).map((part, index) => part.type === 'text' && index === 0 ? {...part, text: normalizeCommText(part.text)} : part)
-    .filter((part) => part.type !== 'text' || part.text.length > 0);
-}
-
-function formatCommContextTitle(message: IitcIrisCommMessage): string {
-  const context = [
-    ...message.players.map((player) => `player: ${player}`),
-    ...message.portals.map((portal) => `portal: ${portal.name || portal.address || 'portal'}`),
-  ];
-  return context.length > 0 ? context.join('\n') : message.text || message.type;
-}
-
-function formatCommTime(time: number): string {
-  if (!Number.isFinite(time)) return '-';
-  return new Date(time).toLocaleTimeString();
-}
-
-function formatCommBounds(bounds: IitcIrisCommState['bounds']): string {
-  return bounds ? `${bounds.minLatE6},${bounds.minLngE6} to ${bounds.maxLatE6},${bounds.maxLngE6}` : '-';
-}
 
 function formatRenderMutationSummary(mutation: IitcIrisRenderMutationDiagnostics | null): string {
   if (!mutation) return 'render -';
@@ -1251,12 +1220,7 @@ function formatRenderMutationSummary(mutation: IitcIrisRenderMutationDiagnostics
   return `${mutation.mode === 'incremental' ? 'inc' : 'full'} p +${portals.added}/-${portals.removed}/~${portals.unchanged}/r${portals.replaced}`;
 }
 
-function getCommTeamClass(team?: string): string {
-  if (team === 'E') return 'is-enlightened';
-  if (team === 'R') return 'is-resistance';
-  if (team === 'M') return 'is-machina';
-  return '';
-}
+
 
 function createInnerStatusView(plan: IitcMapDataPlan | null, entityFetch: EntityFetchState, requests: IitcIrisRequestDiagnostics): InnerStatusView {
   const portalText = plan?.tileParams.hasPortals

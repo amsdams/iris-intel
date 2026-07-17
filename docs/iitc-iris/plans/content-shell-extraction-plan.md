@@ -29,11 +29,13 @@ Status: first implementation slice started. This is Phase 2, step 1 from [index.
 - Moved repeated clipboard status/timeout handling into `content-feedback.ts` with success and failure feedback tests.
 - Moved sheet open/close/toggle decisions into `content-sheet-navigation.ts` with focused cancellation behavior tests.
 - Moved primary-menu routing decisions into `content-primary-menu.ts` with focused routing tests.
+- Started the COMM panel extraction by moving its display formatting and message-part shaping into `comm-display.ts` with focused tests.
 
 ## Next Slices
 
 - Extract outbound map/runtime command helpers once a second call site or panel split makes the repeated posting clearer.
-- Extract panels one at a time after the shell no longer owns their message-adapter details.
+- Move the COMM panel markup into a focused app component, retaining request ownership, scroll refs, and handlers in the shell.
+- Extract remaining panels one at a time after the shell no longer owns their message-adapter details.
 
 ## Non-goals
 
