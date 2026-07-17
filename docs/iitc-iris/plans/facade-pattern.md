@@ -1,6 +1,7 @@
 # Facade Pattern
 
-Status: working pattern from the COMM, portal details, and search facade slices.
+Status: Phase 1 working pattern from the COMM, portal details, search, map-data-request, player tracker,
+portal-link-navigation, context action, and request diagnostics facade slices.
 
 ## Purpose
 
@@ -96,3 +97,16 @@ After several facade slices, do a short review before adding more:
 - Confirm no app-only UI types leaked into `packages/iitc-core`.
 - Confirm runtime still owns effects and cancellation.
 - Confirm tests cover the extracted contract rather than incidental UI behavior.
+
+## Phase 1 Retrospective
+
+The pattern is useful, but it should stay selective. The strongest facades extracted pure behavior that was already
+domain-shaped: request planning, response application, result normalization, map-object matching, active request
+diagnostics, and portal/context navigation plans.
+
+The pattern is weak when the target is mostly app composition. JSX layout, panel state, keyboard interaction, DOM
+gestures, Leaflet layer mutation, and request cancellation are better handled as app-side modules or hooks. Moving those
+into core would blur ownership and make parity debugging harder.
+
+Use facades later as a parity tool, not as the default refactoring mechanism. When extracting UI or runtime code, prefer
+an app module unless the behavior can be tested as a small IITC-named contract without browser globals.
