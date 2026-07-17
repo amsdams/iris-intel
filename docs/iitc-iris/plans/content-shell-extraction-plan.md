@@ -25,11 +25,13 @@ Status: first implementation slice started. This is Phase 2, step 1 from [index.
 - Moved `entityFetchStateFromMessage` out of `content.tsx`.
 - Moved the `window` message handler dispatch body out of `content.tsx`.
 - Added tests for entity status projection and stale map-context clearing when a normal portal selection arrives.
+- Moved keyboard shortcut routing into `content-keyboard-shortcuts.ts` with focused shortcut tests.
+- Moved repeated clipboard status/timeout handling into `content-feedback.ts` with success and failure feedback tests.
 
 ## Next Slices
 
 - Extract outbound map/runtime command helpers once a second call site or panel split makes the repeated posting clearer.
-- Extract sheet/menu/keyboard helpers as app modules before moving large panels.
+- Extract sheet/menu helpers as app modules before moving large panels.
 - Extract panels one at a time after the shell no longer owns their message-adapter details.
 
 ## Non-goals

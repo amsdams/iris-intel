@@ -42,6 +42,7 @@ import {
 } from './selection-lifecycle';
 import {handleIitcIrisContentMessage, type CameraState, type EntityFetchState} from './content-message-adapter';
 import {handleIitcIrisContentKeyDown, type IitcIrisPanDirection} from './content-keyboard-shortcuts';
+import {copyIitcIrisText} from './content-feedback';
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPortalHighlighterId, type IitcIrisRequestDiagnostics, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal} from './messages';
 import {
   createIitcMapDataPlan,
@@ -1746,80 +1747,32 @@ function App(): h.JSX.Element {
   };
 
   const copyDockText = (): void => {
-    void navigator.clipboard.writeText(JSON.stringify(dockDiagnostics, null, 2))
-      .then(() => {
-        setCopyStatus('json copied');
-        window.setTimeout(() => setCopyStatus(''), 1200);
-      })
-      .catch(() => {
-        setCopyStatus('copy failed');
-        window.setTimeout(() => setCopyStatus(''), 1600);
-      });
+    copyIitcIrisText(JSON.stringify(dockDiagnostics, null, 2), {setStatus: setCopyStatus, successStatus: 'json copied'});
   };
 
   const copyIntelUrl = (): void => {
-    void navigator.clipboard.writeText(intelUrl)
-      .then(() => {
-        setCopyStatus('url copied');
-        window.setTimeout(() => setCopyStatus(''), 1200);
-      })
-      .catch(() => {
-        setCopyStatus('copy failed');
-        window.setTimeout(() => setCopyStatus(''), 1600);
-      });
+    copyIitcIrisText(intelUrl, {setStatus: setCopyStatus, successStatus: 'url copied'});
   };
 
   const copyMapContextLatLng = (): void => {
     if (!mapContext) return;
-    void navigator.clipboard.writeText(`${mapContext.lat.toFixed(6)},${mapContext.lng.toFixed(6)}`)
-      .then(() => {
-        setCopyStatus('coords copied');
-        window.setTimeout(() => setCopyStatus(''), 1200);
-      })
-      .catch(() => {
-        setCopyStatus('copy failed');
-        window.setTimeout(() => setCopyStatus(''), 1600);
-      });
+    copyIitcIrisText(`${mapContext.lat.toFixed(6)},${mapContext.lng.toFixed(6)}`, {setStatus: setCopyStatus, successStatus: 'coords copied'});
   };
 
   const copyMapContextUrl = (): void => {
     if (!mapContext) return;
     const url = `https://intel.ingress.com/intel?ll=${mapContext.lat.toFixed(6)},${mapContext.lng.toFixed(6)}&z=${Math.round(mapContext.zoom)}`;
-    void navigator.clipboard.writeText(url)
-      .then(() => {
-        setCopyStatus('context url copied');
-        window.setTimeout(() => setCopyStatus(''), 1200);
-      })
-      .catch(() => {
-        setCopyStatus('copy failed');
-        window.setTimeout(() => setCopyStatus(''), 1600);
-      });
+    copyIitcIrisText(url, {setStatus: setCopyStatus, successStatus: 'context url copied'});
   };
 
   const copyMapContextGuid = (): void => {
     if (!mapContext?.guid) return;
-    void navigator.clipboard.writeText(mapContext.guid)
-      .then(() => {
-        setCopyStatus(`${mapContext.target} guid copied`);
-        window.setTimeout(() => setCopyStatus(''), 1200);
-      })
-      .catch(() => {
-        setCopyStatus('copy failed');
-        window.setTimeout(() => setCopyStatus(''), 1600);
-      });
+    copyIitcIrisText(mapContext.guid, {setStatus: setCopyStatus, successStatus: `${mapContext.target} guid copied`});
   };
 
   const copyMapContextPortalGuids = (): void => {
     if (!mapContext?.portalGuids?.length) return;
-    void navigator.clipboard.writeText(mapContext.portalGuids.join('\n'))
-      .then(() => {
-        setCopyStatus('anchor guids copied');
-        window.setTimeout(() => setCopyStatus(''), 1200);
-      })
-      .catch(() => {
-        setCopyStatus('copy failed');
-        window.setTimeout(() => setCopyStatus(''), 1600);
-      });
+    copyIitcIrisText(mapContext.portalGuids.join('\n'), {setStatus: setCopyStatus, successStatus: 'anchor guids copied'});
   };
 
   const centerMapContext = (): void => {
@@ -1953,15 +1906,12 @@ function App(): h.JSX.Element {
     const items = drawToolsItems
       .filter((item) => !itemType || item.type === itemType)
       .map(stripDrawToolsStorageIndex);
-    void navigator.clipboard.writeText(serializeIitcDrawToolsLayer(items))
-      .then(() => {
-        setDrawToolsImportStatus(itemType === 'polyline' ? 'links copied' : itemType === 'marker' ? 'markers copied' : 'draw tools JSON copied');
-        window.setTimeout(() => setDrawToolsImportStatus(''), 1400);
-      })
-      .catch(() => {
-        setDrawToolsImportStatus('copy failed');
-        window.setTimeout(() => setDrawToolsImportStatus(''), 1800);
-      });
+    copyIitcIrisText(serializeIitcDrawToolsLayer(items), {
+      setStatus: setDrawToolsImportStatus,
+      successStatus: itemType === 'polyline' ? 'links copied' : itemType === 'marker' ? 'markers copied' : 'draw tools JSON copied',
+      successTimeoutMs: 1400,
+      failureTimeoutMs: 1800,
+    });
   };
 
   const importDrawToolsItems = (): void => {
@@ -1989,41 +1939,17 @@ function App(): h.JSX.Element {
     if (!entityFetch.selectedPortal) return;
     const {lat, lng} = getPortalLatLng(entityFetch.selectedPortal);
     const portalUrl = `https://intel.ingress.com/intel?ll=${lat.toFixed(6)},${lng.toFixed(6)}&z=${Math.max(17, Math.round(camera.zoom))}&pll=${lat.toFixed(6)},${lng.toFixed(6)}`;
-    void navigator.clipboard.writeText(portalUrl)
-      .then(() => {
-        setCopyStatus('portal link copied');
-        window.setTimeout(() => setCopyStatus(''), 1200);
-      })
-      .catch(() => {
-        setCopyStatus('copy failed');
-        window.setTimeout(() => setCopyStatus(''), 1600);
-      });
+    copyIitcIrisText(portalUrl, {setStatus: setCopyStatus, successStatus: 'portal link copied'});
   };
 
   const copySelectedPortalGuid = (): void => {
     if (!entityFetch.selectedPortal) return;
-    void navigator.clipboard.writeText(entityFetch.selectedPortal.guid)
-      .then(() => {
-        setCopyStatus('portal guid copied');
-        window.setTimeout(() => setCopyStatus(''), 1200);
-      })
-      .catch(() => {
-        setCopyStatus('copy failed');
-        window.setTimeout(() => setCopyStatus(''), 1600);
-      });
+    copyIitcIrisText(entityFetch.selectedPortal.guid, {setStatus: setCopyStatus, successStatus: 'portal guid copied'});
   };
 
   const copySelectedPortalTitle = (): void => {
     if (!entityFetch.selectedPortal) return;
-    void navigator.clipboard.writeText(entityFetch.selectedPortal.title || entityFetch.selectedPortal.guid)
-      .then(() => {
-        setCopyStatus('portal title copied');
-        window.setTimeout(() => setCopyStatus(''), 1200);
-      })
-      .catch(() => {
-        setCopyStatus('copy failed');
-        window.setTimeout(() => setCopyStatus(''), 1600);
-      });
+    copyIitcIrisText(entityFetch.selectedPortal.title || entityFetch.selectedPortal.guid, {setStatus: setCopyStatus, successStatus: 'portal title copied'});
   };
 
   const toggleDebugDock = (): void => {
