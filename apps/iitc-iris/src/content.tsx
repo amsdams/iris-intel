@@ -41,6 +41,7 @@ import {
   type IitcIrisMapContextSelection,
 } from './selection-lifecycle';
 import {handleIitcIrisContentMessage, type CameraState, type EntityFetchState} from './content-message-adapter';
+import {handleIitcIrisContentKeyDown, type IitcIrisPanDirection} from './content-keyboard-shortcuts';
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPortalHighlighterId, type IitcIrisRequestDiagnostics, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal} from './messages';
 import {
   createIitcMapDataPlan,
@@ -719,12 +720,6 @@ function storeDebugDockVisible(value: boolean): void {
 
 function isCommTab(value: string | null): value is IitcIrisCommTab {
   return value === 'all' || value === 'faction' || value === 'alerts';
-}
-
-function isEditableTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  const tagName = target.tagName.toLowerCase();
-  return tagName === 'input' || tagName === 'textarea' || tagName === 'select' || target.isContentEditable;
 }
 
 function loadStoredCommTab(): IitcIrisCommTab {
@@ -2479,7 +2474,7 @@ function App(): h.JSX.Element {
     selectPortalByLatLng(latE6, lngE6, portalGuid);
   };
 
-  const panMap = (direction: 'north' | 'south' | 'west' | 'east'): void => {
+  const panMap = useCallback((direction: IitcIrisPanDirection): void => {
     const offsetX = direction === 'east' ? IITC_PAN_CONTROL_OFFSET_PX : direction === 'west' ? -IITC_PAN_CONTROL_OFFSET_PX : 0;
     const offsetY = direction === 'south' ? IITC_PAN_CONTROL_OFFSET_PX : direction === 'north' ? -IITC_PAN_CONTROL_OFFSET_PX : 0;
     window.postMessage({
@@ -2487,7 +2482,7 @@ function App(): h.JSX.Element {
       panX: offsetX,
       panY: offsetY,
     } satisfies IitcIrisMessage, '*');
-  };
+  }, []);
 
   const zoomMap = useCallback((delta: number): void => {
     setMapView(camera.lat, camera.lng, camera.zoom + delta);
@@ -2921,91 +2916,21 @@ function App(): h.JSX.Element {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
-      if (isEditableTarget(event.target)) return;
-      const key = event.key.toLowerCase();
-      if (event.key === 'Escape') {
-        if (portalImageOpen) {
-          event.preventDefault();
-          setPortalImageOpen(false);
-          return;
-        }
-        event.preventDefault();
-        closeSheets();
-        return;
-      }
-      if (!shortcutsEnabled) return;
-      if (event.key === '?' && !event.ctrlKey && !event.metaKey && !event.altKey) {
-        event.preventDefault();
-        toggleSheet('help');
-        return;
-      }
-      const menuShortcut = (!event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) ||
-        (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey);
-      if (menuShortcut) {
-        if (key === 'm') {
-          event.preventDefault();
-          togglePrimaryMenu('map');
-          return;
-        }
-        if (key === 'p' && hasSelectedObject) {
-          event.preventDefault();
-          togglePrimaryMenu('selected');
-          return;
-        }
-        if (key === 'a') {
-          event.preventDefault();
-          togglePrimaryMenu('agent');
-          return;
-        }
-        if (key === 'c') {
-          event.preventDefault();
-          togglePrimaryMenu('comm');
-          return;
-        }
-        if (key === 's') {
-          event.preventDefault();
-          togglePrimaryMenu('system');
-          return;
-        }
-      }
-      if (event.key === '/') {
-        event.preventDefault();
-        toggleSheet('search');
-        return;
-      }
-      if (event.key === '+' || event.key === '=') {
-        event.preventDefault();
-        zoomMap(1);
-        return;
-      }
-      if (event.key === '-' || event.key === '_') {
-        event.preventDefault();
-        zoomMap(-1);
-        return;
-      }
-      if (event.key === 'ArrowUp') {
-        event.preventDefault();
-        panMap('north');
-        return;
-      }
-      if (event.key === 'ArrowDown') {
-        event.preventDefault();
-        panMap('south');
-        return;
-      }
-      if (event.key === 'ArrowLeft') {
-        event.preventDefault();
-        panMap('west');
-        return;
-      }
-      if (event.key === 'ArrowRight') {
-        event.preventDefault();
-        panMap('east');
-      }
+      handleIitcIrisContentKeyDown(event, {
+        hasSelectedObject,
+        portalImageOpen,
+        shortcutsEnabled,
+        closeSheets,
+        closePortalImage: () => setPortalImageOpen(false),
+        panMap,
+        togglePrimaryMenu,
+        toggleSheet,
+        zoomMap,
+      });
     };
     window.addEventListener('keydown', onKeyDown);
     return (): void => window.removeEventListener('keydown', onKeyDown);
-  }, [activePrimaryMenu, activeSheet, camera, closeSheets, entityFetch.selectedPortal, hasSelectedObject, portalImageOpen, shortcutsEnabled, togglePrimaryMenu, toggleSheet, zoomMap]);
+  }, [closeSheets, hasSelectedObject, panMap, portalImageOpen, shortcutsEnabled, togglePrimaryMenu, toggleSheet, zoomMap]);
 
   const setDataSource = (id: typeof DATA_SOURCE_OPTIONS[number]['id']): void => {
     setDataSourceId(id);
