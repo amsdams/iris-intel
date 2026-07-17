@@ -38,11 +38,10 @@ import {
 } from './context-action-registry';
 import {
   getSelectionView,
-  mapContextSelected,
-  portalSelected,
   type IitcIrisMapContextSelection,
 } from './selection-lifecycle';
-import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisEntitySource, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPlayerTrackerDiagnostics, type IitcIrisPortalAnalysis, type IitcIrisPortalDetailsState, type IitcIrisPortalHighlighterId, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal} from './messages';
+import {handleIitcIrisContentMessage, type CameraState, type EntityFetchState} from './content-message-adapter';
+import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPortalHighlighterId, type IitcIrisRequestDiagnostics, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal} from './messages';
 import {
   createIitcMapDataPlan,
   IITC_MAX_REQUESTS,
@@ -52,7 +51,6 @@ import {
   parseIitcDrawToolsLayer,
   serializeIitcDrawToolsLayer,
   type IitcDrawToolsItem,
-  type IitcBounds,
   type IitcMapDataPlan,
   type IitcPortalAnalysisTeam,
   type IitcPortalsListEntry,
@@ -187,83 +185,6 @@ const MISSION_TYPE_IMAGE_BY_TYPE_NUM: Record<number, string> = {
   2: 'mission-type-random.png',
   3: 'mission-type-hidden.png',
 };
-
-interface CameraState {
-  lat: number;
-  lng: number;
-  zoom: number;
-  bounds: IitcBounds | null;
-}
-
-interface EntityFetchState {
-  status: string;
-  entitySource: IitcIrisEntitySource | 'idle';
-  authRequired: boolean;
-  generation: number;
-  key: string;
-  collision: boolean;
-  portals: number;
-  realPortals: number;
-  placeholderPortals: number;
-  ornamentPortals: number;
-  drawnOrnamentMarkers: number;
-  hiddenOrnamentMarkers: number;
-  ornamentTypes: Record<string, number>;
-  artifactPortals: number;
-  drawnArtifactMarkers: number;
-  artifactTypes: Record<string, number>;
-  artifactFetchStatus: string;
-  artifactFetchPortalCount: number;
-  artifactFetchTypes: string[];
-  artifactFetchElapsedMs: number | null;
-  artifactFetchError: string;
-  levelLabels: number;
-  damagedPortals: number;
-  links: number;
-  fields: number;
-  viewportPortals: number;
-  viewportRealPortals: number;
-  viewportPlaceholderPortals: number;
-  viewportLinks: number;
-  viewportFields: number;
-  viewportOrnamentPortals: number;
-  viewportOrnamentMarkers: number;
-  viewportArtifactPortals: number;
-  viewportArtifactMarkers: number;
-  requestedTiles: number;
-  returnedTiles: number;
-  nonEmptyTiles: number;
-  elapsedMs: number | null;
-  firstRenderElapsedMs: number | null;
-  retryRequests: number;
-  retriedTileKeys: string[];
-  recoveredTileKeys: string[];
-  emptyTileKeys: string[];
-  nonEmptyTileKeys: string[];
-  unaccountedTileKeys: string[];
-  serverRetryTileKeys: string[];
-  timeoutTileKeys: string[];
-  errorTileKeys: string[];
-  responseRetryTileKeys: string[];
-  queueDelayReasons: string[];
-  partialTileKeys: string[];
-  cacheFreshTileKeys: string[];
-  cacheStaleTileKeys: string[];
-  staleGenerationCacheWarmTileKeys: string[];
-  queue: IitcIrisQueueDiagnostics | null;
-  renderQueue: IitcIrisRenderQueueDiagnostics | null;
-  renderMutation: IitcIrisRenderMutationDiagnostics | null;
-  timing: IitcIrisMapTimingDiagnostics | null;
-  playerTracker: IitcIrisPlayerTrackerDiagnostics | null;
-  baseLayerId: IitcIrisBaseLayerId;
-  dataSource: IitcIrisDataSourceSettings;
-  highlighterSettings: IitcIrisHighlighterSettings;
-  highlighterIds: IitcIrisPortalHighlighterId[];
-  renderPolicy: IitcIrisRenderPolicy;
-  selectedPortal: IitcIrisSelectedPortal | null;
-  portalDetails: IitcIrisPortalDetailsState | null;
-  portalAnalysis: IitcIrisPortalAnalysis | null;
-}
 
 type SidePanelId = IitcIrisSidePanelId;
 type SheetId = IitcIrisSheetId;
@@ -911,78 +832,6 @@ function createDataSourceSettings(id: typeof DATA_SOURCE_OPTIONS[number]['id']):
     id: option.id,
     label: option.label,
     url: getExtensionUrl(option.fixturePath),
-  };
-}
-
-function entityFetchStateFromMessage(message: IitcIrisMessage, current: EntityFetchState): EntityFetchState {
-  return {
-    status: message.status ?? current.status,
-    entitySource: message.entitySource ?? 'live',
-    authRequired: message.authRequired ?? false,
-    generation: current.generation,
-    key: current.key,
-    collision: current.collision,
-    portals: message.portals ?? 0,
-    realPortals: message.realPortals ?? 0,
-    placeholderPortals: message.placeholderPortals ?? 0,
-    ornamentPortals: message.ornamentPortals ?? 0,
-    drawnOrnamentMarkers: message.drawnOrnamentMarkers ?? 0,
-    hiddenOrnamentMarkers: message.hiddenOrnamentMarkers ?? 0,
-    ornamentTypes: message.ornamentTypes ?? {},
-    artifactPortals: message.artifactPortals ?? 0,
-    drawnArtifactMarkers: message.drawnArtifactMarkers ?? 0,
-    artifactTypes: message.artifactTypes ?? {},
-    artifactFetchStatus: message.artifactFetchStatus ?? 'disabled',
-    artifactFetchPortalCount: message.artifactFetchPortalCount ?? 0,
-    artifactFetchTypes: message.artifactFetchTypes ?? [],
-    artifactFetchElapsedMs: message.artifactFetchElapsedMs ?? null,
-    artifactFetchError: message.artifactFetchError ?? '',
-    levelLabels: message.levelLabels ?? 0,
-    damagedPortals: message.damagedPortals ?? 0,
-    links: message.links ?? 0,
-    fields: message.fields ?? 0,
-    viewportPortals: message.viewportPortals ?? 0,
-    viewportRealPortals: message.viewportRealPortals ?? 0,
-    viewportPlaceholderPortals: message.viewportPlaceholderPortals ?? 0,
-    viewportLinks: message.viewportLinks ?? 0,
-    viewportFields: message.viewportFields ?? 0,
-    viewportOrnamentPortals: message.viewportOrnamentPortals ?? 0,
-    viewportOrnamentMarkers: message.viewportOrnamentMarkers ?? 0,
-    viewportArtifactPortals: message.viewportArtifactPortals ?? 0,
-    viewportArtifactMarkers: message.viewportArtifactMarkers ?? 0,
-    requestedTiles: message.requestedTiles ?? 0,
-    returnedTiles: message.returnedTiles ?? 0,
-    nonEmptyTiles: message.nonEmptyTiles ?? 0,
-    elapsedMs: message.elapsedMs ?? null,
-    firstRenderElapsedMs: message.firstRenderElapsedMs ?? current.firstRenderElapsedMs,
-    retryRequests: message.retryRequests ?? 0,
-    retriedTileKeys: message.retriedTileKeys ?? [],
-    recoveredTileKeys: message.recoveredTileKeys ?? [],
-    emptyTileKeys: message.emptyTileKeys ?? [],
-    nonEmptyTileKeys: message.nonEmptyTileKeys ?? [],
-    unaccountedTileKeys: message.unaccountedTileKeys ?? [],
-    serverRetryTileKeys: message.serverRetryTileKeys ?? [],
-    timeoutTileKeys: message.timeoutTileKeys ?? [],
-    errorTileKeys: message.errorTileKeys ?? [],
-    responseRetryTileKeys: message.responseRetryTileKeys ?? [],
-    queueDelayReasons: message.queueDelayReasons ?? [],
-    partialTileKeys: message.partialTileKeys ?? [],
-    cacheFreshTileKeys: message.cacheFreshTileKeys ?? [],
-    cacheStaleTileKeys: message.cacheStaleTileKeys ?? [],
-    staleGenerationCacheWarmTileKeys: message.staleGenerationCacheWarmTileKeys ?? current.staleGenerationCacheWarmTileKeys,
-    queue: message.queue ?? null,
-    renderQueue: message.renderQueue ?? null,
-    renderMutation: message.renderMutation ?? null,
-    timing: message.timing ?? null,
-    playerTracker: message.playerTracker ?? current.playerTracker,
-    baseLayerId: message.baseLayerId ?? current.baseLayerId,
-    dataSource: message.dataSource ?? current.dataSource,
-    highlighterSettings: message.highlighterSettings ?? current.highlighterSettings,
-    highlighterIds: message.highlighterIds ?? current.highlighterIds,
-    renderPolicy: message.renderPolicy ?? current.renderPolicy,
-    selectedPortal: message.selectedPortal === undefined ? current.selectedPortal : message.selectedPortal,
-    portalDetails: message.portalDetails === undefined ? current.portalDetails : message.portalDetails,
-    portalAnalysis: message.portalAnalysis === undefined ? current.portalAnalysis : message.portalAnalysis,
   };
 }
 
@@ -2878,112 +2727,35 @@ function App(): h.JSX.Element {
   useEffect(() => {
     const onMessage = (event: MessageEvent<IitcIrisMessage>): void => {
       if (event.source !== window) return;
-      if (typeof event.data?.type === 'string' && event.data.type.startsWith('IRIS_')) {
-        setEntityFetch((current) => ({...current, collision: true}));
-      }
-      if (event.data?.type === IITC_IRIS_MESSAGES.pageReady) {
-        setStatus('leaflet ready');
-        window.postMessage({
-          type: IITC_IRIS_MESSAGES.layerSettings,
-          sentAt: performance.now(),
-          layerSettings,
-          baseLayerId,
-        } satisfies IitcIrisMessage, '*');
-        window.postMessage({
-          type: IITC_IRIS_MESSAGES.layerSettings,
-          highlighterSettings,
-        } satisfies IitcIrisMessage, '*');
-        window.postMessage({
-          type: IITC_IRIS_MESSAGES.dataSourceSettings,
-          dataSource,
-        } satisfies IitcIrisMessage, '*');
-        window.postMessage({
-          type: IITC_IRIS_MESSAGES.lifecycleSettings,
-          lifecycleSettings,
-        } satisfies IitcIrisMessage, '*');
-        window.postMessage({
-          type: IITC_IRIS_MESSAGES.drawTools,
-          drawToolsAction: 'requestStatus',
-        } satisfies IitcIrisMessage, '*');
-      }
-      if (event.data?.type === IITC_IRIS_MESSAGES.mapMoved) {
-        setCamera((current) => ({
-          lat: event.data.lat ?? current.lat,
-          lng: event.data.lng ?? current.lng,
-          zoom: event.data.zoom ?? current.zoom,
-          bounds: event.data.bounds ?? current.bounds,
-        }));
-      }
-      if (event.data?.type === IITC_IRIS_MESSAGES.mapContext) {
-        if (event.data.contextTarget === 'portal') {
-          const effect = portalSelected(Boolean(activeSidePanel));
-          setMapContext(effect.mapContext);
-          if (effect.cancelPanelRequests) {
-            window.postMessage({type: IITC_IRIS_MESSAGES.cancelPanelRequests} satisfies IitcIrisMessage, '*');
-          }
-          setPortalImageOpen(false);
-          setActiveSidePanel(null);
-          storeSidePanelId(null);
-          setActiveSheet(effect.activeSheet);
-          storeActiveSheet(effect.activeSheet);
-        } else if (typeof event.data.lat === 'number' && typeof event.data.lng === 'number') {
-          const effect = mapContextSelected(event.data, camera.zoom, Boolean(activeSidePanel));
-          if (!effect) return;
-          setMapContext(effect.mapContext);
-          if (effect.cancelPanelRequests) {
-            window.postMessage({type: IITC_IRIS_MESSAGES.cancelPanelRequests} satisfies IitcIrisMessage, '*');
-          }
-          setPortalImageOpen(false);
-          setActiveSidePanel(null);
-          storeSidePanelId(null);
-          setActiveSheet(effect.activeSheet);
-          storeActiveSheet(effect.activeSheet);
-          setStatus(effect.status);
-        }
-      }
-      if (event.data?.type === IITC_IRIS_MESSAGES.entityStatus) {
-        setEntityFetch((current) => entityFetchStateFromMessage(event.data, current));
-        if (event.data.selectedPortal) setMapContext(null);
-        if (event.data.requestDiagnostics) setRequestDiagnostics(event.data.requestDiagnostics);
-        if (event.data.comm) setCommState(event.data.comm);
-      }
-      if (event.data?.type === IITC_IRIS_MESSAGES.commStatus && event.data.comm) {
-        setCommState(event.data.comm);
-        if (event.data.requestDiagnostics) setRequestDiagnostics(event.data.requestDiagnostics);
-      }
-      if (event.data?.type === IITC_IRIS_MESSAGES.scoresStatus && event.data.scores) {
-        setScoresState(event.data.scores);
-        if (event.data.requestDiagnostics) setRequestDiagnostics(event.data.requestDiagnostics);
-      }
-      if (event.data?.type === IITC_IRIS_MESSAGES.passcodeStatus && event.data.passcode) {
-        setPasscodeState(event.data.passcode);
-        if (event.data.requestDiagnostics) setRequestDiagnostics(event.data.requestDiagnostics);
-      }
-      if (event.data?.type === IITC_IRIS_MESSAGES.inventoryStatus && event.data.inventory) {
-        setInventoryState(event.data.inventory);
-        if (event.data.requestDiagnostics) setRequestDiagnostics(event.data.requestDiagnostics);
-      }
-      if (event.data?.type === IITC_IRIS_MESSAGES.missionsStatus && event.data.missions) {
-        setMissionsState(event.data.missions);
-        if (event.data.requestDiagnostics) setRequestDiagnostics(event.data.requestDiagnostics);
-      }
-      if (event.data?.type === IITC_IRIS_MESSAGES.requestStatus && event.data.requestDiagnostics) {
-        setRequestDiagnostics(event.data.requestDiagnostics);
-      }
-      if (event.data?.type === IITC_IRIS_MESSAGES.agentStatus && event.data.agent) {
-        setAgentState(event.data.agent);
-      }
-      if (event.data?.type === IITC_IRIS_MESSAGES.searchStatus && event.data.search) {
-        setSearchState(event.data.search);
-      }
-      if (event.data?.type === IITC_IRIS_MESSAGES.drawToolsStatus) {
-        setDrawToolsItems(event.data.drawToolsItems ?? []);
-        if (event.data.drawToolsError) {
-          setDrawToolsImportStatus(event.data.drawToolsError);
-        } else if (event.data.drawToolsStatusText) {
-          setDrawToolsImportStatus(event.data.drawToolsStatusText);
-        }
-      }
+      handleIitcIrisContentMessage(event.data, {
+        activeSidePanel,
+        baseLayerId,
+        cameraZoom: camera.zoom,
+        dataSource,
+        highlighterSettings,
+        layerSettings,
+        lifecycleSettings,
+      }, {
+        setActiveSheet,
+        setActiveSidePanel,
+        setAgentState,
+        setCamera,
+        setCommState,
+        setDrawToolsImportStatus,
+        setDrawToolsItems,
+        setEntityFetch,
+        setInventoryState,
+        setMapContext,
+        setMissionsState,
+        setPasscodeState,
+        setPortalImageOpen,
+        setRequestDiagnostics,
+        setScoresState,
+        setSearchState,
+        setStatus,
+        storeActiveSheet,
+        storeSidePanelId,
+      });
     };
 
     window.addEventListener('message', onMessage);
