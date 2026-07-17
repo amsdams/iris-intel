@@ -47,6 +47,7 @@ import {closeIitcIrisSheet, openIitcIrisSheet, toggleIitcIrisSheet} from './cont
 import {getIitcIrisPrimaryMenuEffect} from './content-primary-menu';
 import {formatCommActor, formatCommBounds, formatCommContextTitle, formatCommTime, getCommDisplayParts, getCommTeamClass} from './comm-display';
 import {IITC_IRIS_COMM_TABS, IitcIrisCommPanelControls} from './comm-panel-controls';
+import {IitcIrisCommPanelBody} from './comm-panel-body';
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPortalHighlighterId, type IitcIrisRequestDiagnostics, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal} from './messages';
 import {
   createIitcMapDataPlan,
@@ -4251,24 +4252,7 @@ function App(): h.JSX.Element {
                   })}
                 </div>
               )}
-              <form
-                className="iitc-iris-comm-send-form"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  sendComm();
-                }}
-              >
-                <input
-                  className="iitc-iris-passcode-input"
-                  value={commDraft}
-                  placeholder={commState.tab === 'faction' ? 'tell faction:' : commState.tab === 'all' ? 'broadcast:' : "can't send to alerts"}
-                  disabled={commState.tab === 'alerts' || commState.sendStatus === 'sending'}
-                  onInput={(event) => setCommDraft(event.currentTarget.value)}
-                />
-                <button className="iitc-iris-portal-action" type="submit" disabled={!commDraft.trim() || commState.tab === 'alerts' || commState.sendStatus === 'sending'}>
-                  {commState.sendStatus === 'sending' ? 'Sending' : 'Send'}
-                </button>
-              </form>
+              <IitcIrisCommPanelBody commDraft={commDraft} commState={commState} onDraftChange={setCommDraft} send={sendComm} />
               {(commState.sendStatus === 'sent' || commState.sendError) && (
                 <span className={`iitc-iris-status ${commState.sendError ? 'iitc-iris-warning' : ''}`} title={commState.sendError}>
                   send {commState.sendError ? getAuthErrorMessage(commState.sendStatus, commState.sendError) : commState.sendStatus}
