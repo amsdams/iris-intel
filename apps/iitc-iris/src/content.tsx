@@ -44,6 +44,7 @@ import {handleIitcIrisContentMessage, type CameraState, type EntityFetchState} f
 import {handleIitcIrisContentKeyDown, type IitcIrisPanDirection} from './content-keyboard-shortcuts';
 import {copyIitcIrisText} from './content-feedback';
 import {closeIitcIrisSheet, openIitcIrisSheet, toggleIitcIrisSheet} from './content-sheet-navigation';
+import {getIitcIrisPrimaryMenuEffect} from './content-primary-menu';
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPortalHighlighterId, type IitcIrisRequestDiagnostics, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal} from './messages';
 import {
   createIitcMapDataPlan,
@@ -2498,26 +2499,15 @@ function App(): h.JSX.Element {
   };
 
   const togglePrimaryMenu = useCallback((menu: PrimaryMenuId): void => {
-    if (menu === 'selected') {
-      if (!hasSelectedObject) return;
-      toggleSheet(activeSelectedSheet);
-      return;
-    }
-    if (menu === 'map') {
-      if (activePrimaryMenu === 'map' && activeSheet !== 'map') closeSheetToMap();
-      else openSheet('layers');
-      return;
-    }
-    if (menu === 'agent') {
-      toggleSheet('agent');
-      return;
-    }
-    if (menu === 'comm') {
+    const effect = getIitcIrisPrimaryMenuEffect(menu, {activePrimaryMenu, activeSelectedSheet, activeSheet, hasSelectedObject});
+    if (effect.kind === 'closeSheet') {
+      closeSheetToMap();
+    } else if (effect.kind === 'openSheet') {
+      openSheet(effect.sheet);
+    } else if (effect.kind === 'toggleComm') {
       toggleCommPanel();
-      return;
-    }
-    if (menu === 'system') {
-      toggleSheet('system');
+    } else if (effect.kind === 'toggleSheet') {
+      toggleSheet(effect.sheet);
     }
   }, [activePrimaryMenu, activeSelectedSheet, activeSheet, closeSheetToMap, hasSelectedObject, openSheet, toggleCommPanel, toggleSheet]);
 

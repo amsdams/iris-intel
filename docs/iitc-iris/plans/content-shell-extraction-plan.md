@@ -28,11 +28,11 @@ Status: first implementation slice started. This is Phase 2, step 1 from [index.
 - Moved keyboard shortcut routing into `content-keyboard-shortcuts.ts` with focused shortcut tests.
 - Moved repeated clipboard status/timeout handling into `content-feedback.ts` with success and failure feedback tests.
 - Moved sheet open/close/toggle decisions into `content-sheet-navigation.ts` with focused cancellation behavior tests.
+- Moved primary-menu routing decisions into `content-primary-menu.ts` with focused routing tests.
 
 ## Next Slices
 
 - Extract outbound map/runtime command helpers once a second call site or panel split makes the repeated posting clearer.
-- Extract primary-menu helpers as app modules before moving large panels.
 - Extract panels one at a time after the shell no longer owns their message-adapter details.
 
 ## Non-goals
