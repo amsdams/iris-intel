@@ -43,6 +43,7 @@ import {
 import {handleIitcIrisContentMessage, type CameraState, type EntityFetchState} from './content-message-adapter';
 import {handleIitcIrisContentKeyDown, type IitcIrisPanDirection} from './content-keyboard-shortcuts';
 import {copyIitcIrisText} from './content-feedback';
+import {closeIitcIrisSheet, openIitcIrisSheet, toggleIitcIrisSheet} from './content-sheet-navigation';
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommMessage, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPortalHighlighterId, type IitcIrisRequestDiagnostics, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal} from './messages';
 import {
   createIitcMapDataPlan,
@@ -1961,41 +1962,41 @@ function App(): h.JSX.Element {
   };
 
   const closeSheetToMap = useCallback((): void => {
-    if (activeSidePanel) {
+    const effect = closeIitcIrisSheet({activeSheet, activeSidePanel});
+    if (effect.cancelPanelRequests) {
       window.postMessage({type: IITC_IRIS_MESSAGES.cancelPanelRequests} satisfies IitcIrisMessage, '*');
     }
-    setActiveSidePanel(null);
-    setActiveSheet('map');
-    storeSidePanelId(null);
-    storeActiveSheet('map');
-  }, [activeSidePanel]);
+    setActiveSidePanel(effect.activeSidePanel);
+    setActiveSheet(effect.activeSheet);
+    storeSidePanelId(effect.activeSidePanel);
+    storeActiveSheet(effect.activeSheet);
+  }, [activeSheet, activeSidePanel]);
 
   const closeSidePanel = useCallback((): void => {
     closeSheetToMap();
   }, [closeSheetToMap]);
 
   const openSheet = useCallback((sheet: SheetId): void => {
-    setActiveSheet(sheet);
-    storeActiveSheet(sheet);
-    if (isSidePanelId(sheet)) {
-      setActiveSidePanel(sheet);
-      storeSidePanelId(sheet);
-      return;
-    }
-    if (activeSidePanel) {
+    const effect = openIitcIrisSheet({activeSheet, activeSidePanel}, sheet);
+    if (effect.cancelPanelRequests) {
       window.postMessage({type: IITC_IRIS_MESSAGES.cancelPanelRequests} satisfies IitcIrisMessage, '*');
     }
-    setActiveSidePanel(null);
-    storeSidePanelId(null);
-  }, [activeSidePanel]);
+    setActiveSheet(effect.activeSheet);
+    storeActiveSheet(effect.activeSheet);
+    setActiveSidePanel(effect.activeSidePanel);
+    storeSidePanelId(effect.activeSidePanel);
+  }, [activeSheet, activeSidePanel]);
 
   const toggleSheet = useCallback((sheet: SheetId): void => {
-    if (activeSheet === sheet) {
-      closeSheetToMap();
-      return;
+    const effect = toggleIitcIrisSheet({activeSheet, activeSidePanel}, sheet);
+    if (effect.cancelPanelRequests) {
+      window.postMessage({type: IITC_IRIS_MESSAGES.cancelPanelRequests} satisfies IitcIrisMessage, '*');
     }
-    openSheet(sheet);
-  }, [activeSheet, closeSheetToMap, openSheet]);
+    setActiveSheet(effect.activeSheet);
+    storeActiveSheet(effect.activeSheet);
+    setActiveSidePanel(effect.activeSidePanel);
+    storeSidePanelId(effect.activeSidePanel);
+  }, [activeSheet, activeSidePanel]);
 
   const refreshComm = useCallback((tab: IitcIrisCommTab = commState.tab, older = false): void => {
     storeCommTab(tab);
