@@ -30,11 +30,12 @@ Status: first implementation slice started. This is Phase 2, step 1 from [index.
 - Moved sheet open/close/toggle decisions into `content-sheet-navigation.ts` with focused cancellation behavior tests.
 - Moved primary-menu routing decisions into `content-primary-menu.ts` with focused routing tests.
 - Started the COMM panel extraction by moving its display formatting and message-part shaping into `comm-display.ts` with focused tests.
+- Moved the COMM channel controls, request controls, and summary markup into `comm-panel-controls.tsx`.
 
 ## Next Slices
 
 - Extract outbound map/runtime command helpers once a second call site or panel split makes the repeated posting clearer.
-- Move the COMM panel markup into a focused app component, retaining request ownership, scroll refs, and handlers in the shell.
+- Move the COMM message list and composer into focused app components, retaining request ownership, scroll refs, and handlers in the shell.
 - Extract remaining panels one at a time after the shell no longer owns their message-adapter details.
 
 ## Non-goals

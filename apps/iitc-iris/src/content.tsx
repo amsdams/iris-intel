@@ -46,6 +46,7 @@ import {copyIitcIrisText} from './content-feedback';
 import {closeIitcIrisSheet, openIitcIrisSheet, toggleIitcIrisSheet} from './content-sheet-navigation';
 import {getIitcIrisPrimaryMenuEffect} from './content-primary-menu';
 import {formatCommActor, formatCommBounds, formatCommContextTitle, formatCommTime, getCommDisplayParts, getCommTeamClass} from './comm-display';
+import {IITC_IRIS_COMM_TABS, IitcIrisCommPanelControls} from './comm-panel-controls';
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPortalHighlighterId, type IitcIrisRequestDiagnostics, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal} from './messages';
 import {
   createIitcMapDataPlan,
@@ -150,11 +151,6 @@ const DRAW_TOOLS_MARKER_PRESETS = [
 const DRAW_TOOLS_DEFAULT_COLOR = '#a24ac3';
 const RESONATOR_PANEL_ORDER: (number | null)[] = [0, 1, 2, 3, null, 4, 5, 6, 7];
 const SIDE_PANEL_OPTIONS = SIDE_PANEL_REGISTRY;
-const COMM_TABS: {id: IitcIrisCommTab; label: string}[] = [
-  {id: 'all', label: 'All'},
-  {id: 'faction', label: 'Faction'},
-  {id: 'alerts', label: 'Alerts'},
-];
 const DEFAULT_RENDER_POLICY: IitcIrisRenderPolicy = {
   optionalOverlayMinZoom: 14,
   detailedPortals: false,
@@ -3800,7 +3796,7 @@ function App(): h.JSX.Element {
           )}
           {activePrimaryMenu === 'comm' && (
             <>
-              {COMM_TABS.map((tab) => (
+              {IITC_IRIS_COMM_TABS.map((tab) => (
                 <button
                   className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'comm' && commState.tab === tab.id ? 'is-active' : ''}`}
                   type="button"
@@ -4179,41 +4175,17 @@ function App(): h.JSX.Element {
 	              )}
 	            </div>
 	          )}
-	          {activeSidePanel === 'comm' && (
-	            <div className="iitc-iris-request-panel-body">
-              <div className="iitc-iris-segmented-row" role="tablist" aria-label="COMM channel">
-                {COMM_TABS.map((tab) => (
-                  <button
-                    className={`iitc-iris-segmented-button ${commState.tab === tab.id ? 'is-active' : ''}`}
-                    type="button"
-                    role="tab"
-                    aria-selected={commState.tab === tab.id}
-                    onClick={() => selectCommTab(tab.id)}
-                    disabled={commState.status === 'loading' && commState.tab === tab.id}
-                    key={tab.id}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-              <div className="iitc-iris-map-control-row">
-                <button className="iitc-iris-portal-action" type="button" onClick={() => refreshComm()} disabled={commState.status === 'loading'} title="Fetch COMM messages for the current map bounds">
-                  {commState.status === 'loading' ? 'Loading' : 'Refresh'}
-                </button>
-                <button className="iitc-iris-portal-action" type="button" onClick={requestOlderComm} disabled={commState.status === 'loading' || commState.oldestTimestamp === undefined || commState.oldestTimestamp < 0} title="Fetch older COMM messages before the current oldest timestamp">
-                  Older
-                </button>
-                {(!commUserAtBottom || commNewBelow) && (
-                  <button className="iitc-iris-portal-action" type="button" onClick={jumpCommToLatest} title="Jump to latest COMM message">
-                    {commNewBelow ? 'New' : 'Latest'}
-                  </button>
-                )}
-              </div>
-              <div className="iitc-iris-panel-summary">
-                <span><b>{formatInteger(commState.messages)}</b><small>messages</small></span>
-                <span><b>{formatInteger(commState.addedMessages)}</b><small>added</small></span>
-                <span><b>{commState.oldestTimestamp !== undefined && commState.newestTimestamp !== undefined ? `${formatCommTime(commState.oldestTimestamp)} - ${formatCommTime(commState.newestTimestamp)}` : '-'}</b><small>range</small></span>
-              </div>
+          {activeSidePanel === 'comm' && (
+            <div className="iitc-iris-request-panel-body">
+              <IitcIrisCommPanelControls
+                commNewBelow={commNewBelow}
+                commState={commState}
+                commUserAtBottom={commUserAtBottom}
+                jumpToLatest={jumpCommToLatest}
+                refresh={refreshComm}
+                requestOlder={requestOlderComm}
+                selectTab={selectCommTab}
+              />
               {commState.status === 'auth' && (
                 <div className="iitc-iris-empty-state">COMM requires an authenticated Intel session.</div>
               )}
