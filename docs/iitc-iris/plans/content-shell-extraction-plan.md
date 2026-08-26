@@ -1,7 +1,6 @@
 # Content Shell Extraction Plan
 
-Status: first implementation slice complete; COMM panel extraction slice complete. This is Phase 2, step 1 from
-[index.md](index.md).
+Status: complete for the Phase 2 shell-extraction checkpoint. This is Phase 2, step 1 from [index.md](index.md).
 
 ## Current IRIS Sources
 
@@ -31,6 +30,8 @@ Status: first implementation slice complete; COMM panel extraction slice complet
   - COMM composer markup
 - `apps/iitc-iris/src/comm-panel.tsx`
   - COMM panel composition, empty/error/send feedback, and request diagnostics markup
+- `apps/iitc-iris/src/passcode-panel.tsx`
+  - passcode redemption form, reward summary/list, empty/error state, and request diagnostics markup
 - `apps/iitc-iris/src/content-message-adapter.test.ts`
 
 ## Ownership
@@ -39,6 +40,8 @@ Status: first implementation slice complete; COMM panel extraction slice complet
 - `content-message-adapter.ts` owns the message-to-state adapter boundary for inbound runtime messages.
 - COMM components own only rendering composition and event callback wiring. COMM request ownership, scroll refs, draft
   state, tab persistence, and outbound page-runtime messages remain in `content.tsx`.
+- Passcode panel owns only rendering composition and form callback wiring. Passcode sanitization, request state, and
+  outbound page-runtime messages remain in `content.tsx`.
 - This is an app-side extraction, not a core facade. It may call app selection helpers and post app messages.
 
 ## Completed Slice
@@ -57,12 +60,14 @@ Status: first implementation slice complete; COMM panel extraction slice complet
 - Moved the COMM panel composition, empty/error/send feedback, and request diagnostics markup into `comm-panel.tsx`.
 - Moved shared elapsed request formatting into `ui-status.ts` so extracted panels can reuse the shell's existing display
   rule.
+- Moved the passcode redemption form, reward summary/list, empty/error state, and request diagnostics markup into
+  `passcode-panel.tsx`.
 
-## Next Slices
+## Follow-up Plans
 
 - Extract outbound map/runtime command helpers once a second call site or panel split makes the repeated posting clearer.
-- Extract remaining panels one at a time after the shell no longer owns their message-adapter details. Good next
-  candidates are search, portal details, missions, scores, inventory, passcodes, and agent/profile panels.
+- Continue remaining panel extraction under a separate panel-extraction plan rather than extending this shell checkpoint.
+  Good next candidates are search, portal details, missions, scores, inventory, and agent/profile panels.
 - Keep panel extraction behavior-preserving: move markup and local display helpers first, then consider request helper
   extraction only when repeated command assembly is visible across panels.
 

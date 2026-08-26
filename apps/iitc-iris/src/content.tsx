@@ -48,6 +48,7 @@ import {getIitcIrisPrimaryMenuEffect} from './content-primary-menu';
 import {getCommTeamClass} from './comm-display';
 import {IITC_IRIS_COMM_TABS} from './comm-panel-controls';
 import {IitcIrisCommPanel} from './comm-panel';
+import {IitcIrisPasscodePanel} from './passcode-panel';
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPortalHighlighterId, type IitcIrisRequestDiagnostics, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal} from './messages';
 import {
   createIitcMapDataPlan,
@@ -4481,76 +4482,12 @@ function App(): h.JSX.Element {
             </div>
           )}
           {activeSidePanel === 'passcode' && (
-            <div className="iitc-iris-request-panel-body">
-              <form
-                className="iitc-iris-passcode-form"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  redeemPasscode();
-                }}
-              >
-                <input
-                  className="iitc-iris-passcode-input"
-                  type="text"
-                  value={passcodeDraft}
-                  placeholder="passcode"
-                  disabled={passcodeState.status === 'loading'}
-                  onInput={(event) => setPasscodeDraft(event.currentTarget.value)}
-                />
-                <button className="iitc-iris-portal-action" type="submit" disabled={!passcodeDraft.trim() || passcodeState.status === 'loading'}>
-                  {passcodeState.status === 'loading' ? 'Redeeming' : 'Redeem'}
-                </button>
-              </form>
-              <div className="iitc-iris-panel-summary">
-                <span><b>{formatInteger(passcodeState.ap)}</b><small>AP</small></span>
-                <span><b>{formatInteger(passcodeState.xm)}</b><small>XM</small></span>
-                <span><b>{formatInteger(passcodeState.items?.reduce((sum, item) => sum + (item.count ?? 1), 0))}</b><small>items</small></span>
-              </div>
-              {passcodeState.other && passcodeState.other.length > 0 && (
-                <div className="iitc-iris-inventory-list">
-                  {passcodeState.other.map((reward) => (
-                    <div className="iitc-iris-inventory-row" key={reward}>
-                      <span>{reward}</span>
-                      <b>1</b>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {passcodeState.items && passcodeState.items.length > 0 && (
-                <div className="iitc-iris-inventory-list">
-                  {passcodeState.items.map((item, index) => (
-                    <div
-                      className="iitc-iris-inventory-row"
-                      key={`${item.label}-${item.level ?? ''}-${index}`}
-                      style={formatIitcColorVars(getIitcLevelColor(item.level))}
-                    >
-                      <span><b className="iitc-iris-item-badge">{formatItemBadge(item)}</b>{item.label}{item.level ? ` L${item.level}` : ''}</span>
-                      <b>{item.count ?? 1}</b>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {(passcodeState.status === 'empty' || passcodeState.error) && (
-                <div className={passcodeState.error ? 'iitc-iris-warning' : 'iitc-iris-empty-state'}>
-                  {passcodeState.error
-                    ? passcodeState.status === 'auth'
-                      ? 'Passcode redemption requires an authenticated Intel session.'
-                      : getAuthErrorMessage(passcodeState.status, passcodeState.error)
-                    : 'Passcode returned no rewards.'}
-                </div>
-              )}
-              <div className="iitc-iris-panel-footer">
-                <span
-                  className="iitc-iris-diagnostics-chip"
-                  title={[
-                    'request: /r/redeemReward',
-                    `passcode: ${passcodeState.passcode ?? '-'}`,
-                  ].join('\n')}
-                >
-                  {passcodeState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(passcodeState.elapsedMs)}s` : 'request'}
-                </span>
-              </div>
-            </div>
+            <IitcIrisPasscodePanel
+              onDraftChange={setPasscodeDraft}
+              passcodeDraft={passcodeDraft}
+              passcodeState={passcodeState}
+              redeem={redeemPasscode}
+            />
           )}
         </aside>
       )}
