@@ -82,7 +82,7 @@ Order of work:
 1. Content shell split: extract top-level view state helpers and message-handling adapters from `content.tsx` while
    keeping rendered markup unchanged. See [content-shell-extraction-plan.md](content-shell-extraction-plan.md).
 2. Panel extraction: move COMM, inventory, missions, portal details, search, Draw Tools, and diagnostics panels into
-   focused app modules one at a time.
+   focused app modules one at a time. See [panel-extraction-plan.md](panel-extraction-plan.md).
 3. Shared app hooks/helpers: extract reusable clipboard/status timeout, sheet/menu, keyboard shortcut, and map command
    helpers only after at least two panels need the same behavior.
 4. Runtime message adapters: introduce small app-side adapters for message posting/handling where repeated message
