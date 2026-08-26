@@ -15,6 +15,10 @@ Status: started. This continues Phase 2, step 2 from [index.md](index.md), after
   - passcode panel composition
 - `apps/iitc-iris/src/scores-panel.tsx`
   - scores panel composition
+- `apps/iitc-iris/src/agent-panel.tsx`
+  - agent/profile panel composition
+- `apps/iitc-iris/src/inventory-panel.tsx`
+  - inventory panel composition
 
 ## Ownership
 
@@ -28,10 +32,12 @@ Status: started. This continues Phase 2, step 2 from [index.md](index.md), after
   `comm-panel-body.tsx`, and `comm-panel.tsx`.
 - Passcode rendering extracted into `passcode-panel.tsx`.
 - Scores rendering extracted into `scores-panel.tsx`.
+- Agent/profile rendering extracted into `agent-panel.tsx`.
+- Inventory rendering extracted into `inventory-panel.tsx`.
 
 ## Next Slices
 
-- Extract inventory, agent/profile, search, portal details, and missions one at a time.
+- Extract search, portal details, and missions one at a time.
 - Prefer smaller display-only extractions before moving request helpers.
 - Extract outbound runtime command helpers only after repeated command assembly is visible across at least two extracted
   panels.
