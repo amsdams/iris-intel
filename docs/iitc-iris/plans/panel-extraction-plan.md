@@ -1,59 +1,38 @@
 # Panel Extraction Plan
 
-Status: started. This continues Phase 2, step 2 from [index.md](index.md), after the completed
-[content-shell-extraction-plan.md](content-shell-extraction-plan.md).
+Status: started. This is Phase 2, step 2 from [index.md](index.md).
 
-## Current IRIS Sources
+## Scope
 
-- `apps/iitc-iris/src/content.tsx`
-  - app state ownership
-  - side-panel request lifecycle
-  - rendered shell and remaining inline panels
-- `apps/iitc-iris/src/comm-panel.tsx`
-  - COMM panel composition
-- `apps/iitc-iris/src/passcode-panel.tsx`
-  - passcode panel composition
-- `apps/iitc-iris/src/scores-panel.tsx`
-  - scores panel composition
-- `apps/iitc-iris/src/agent-panel.tsx`
-  - agent/profile panel composition
-- `apps/iitc-iris/src/inventory-panel.tsx`
-  - inventory panel composition
+Move side-panel JSX out of `apps/iitc-iris/src/content.tsx` in batches while preserving behavior.
 
-## Ownership
+`content.tsx` keeps state, storage, refs, request timing/cancellation, and page-runtime messages. Panel modules own
+rendering and callback wiring only.
 
-- `content.tsx` owns state, request side effects, refs, storage, and outbound page-runtime messages.
-- Extracted panel modules own rendering composition and callback wiring only.
-- This is app-side extraction, not a new `packages/iitc-core` facade pass.
-
-## Completed Slices
+## Done
 
 - COMM rendering extracted through `comm-display.ts`, `comm-panel-controls.tsx`, `comm-message-list.tsx`,
   `comm-panel-body.tsx`, and `comm-panel.tsx`.
-- Passcode rendering extracted into `passcode-panel.tsx`.
-- Scores rendering extracted into `scores-panel.tsx`.
-- Agent/profile rendering extracted into `agent-panel.tsx`.
-- Inventory rendering extracted into `inventory-panel.tsx`.
+- Passcode: `passcode-panel.tsx`.
+- Scores: `scores-panel.tsx`.
+- Agent/profile: `agent-panel.tsx`.
+- Inventory: `inventory-panel.tsx`.
 
-## Next Slices
+## Next
 
-- Extract search, portal details, and missions one at a time.
-- Prefer smaller display-only extractions before moving request helpers.
-- Extract outbound runtime command helpers only after repeated command assembly is visible across at least two extracted
-  panels.
+- Extract search, portal details, and missions.
+- Prefer display-only moves first.
+- Extract shared command/request helpers only when repeated across extracted panels.
 
-## Non-goals
+## Guardrails
 
-- Do not change panel behavior, request timing, storage, or cancellation rules in this pass.
-- Do not introduce a global store.
-- Do not redesign panel UI while extracting modules.
-- Do not move browser effects into `packages/iitc-core`.
+- No behavior, request, storage, cancellation, or UI redesign changes.
+- No global store.
+- No browser effects in `packages/iitc-core`.
 
 ## Validation
 
-For code changes, run:
-
-- `npm run test -w apps/iitc-iris -- --run src/comm-display.test.ts src/content-message-adapter.test.ts src/content-keyboard-shortcuts.test.ts src/content-feedback.test.ts src/content-sheet-navigation.test.ts src/content-primary-menu.test.ts`
+- Focused app tests for touched helpers.
 - `npm run lint:iitc-iris`
 - `npm run typecheck:iitc-iris`
 - `npm run package:iitc-iris`
