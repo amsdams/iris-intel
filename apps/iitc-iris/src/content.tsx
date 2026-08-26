@@ -2,7 +2,7 @@ import {h, render} from 'preact';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import './iitc-iris.css';
 import {formatIitcColorVars, getIitcItemColor, getIitcLevelColor, getIitcRarityColor, IITC_RESONATOR_ENERGY, IITC_TEAM_COLORS} from './iitc-colors';
-import {formatSubscriptionBadge, formatSubscriptionLabel, getAuthErrorMessage, getPanelStatusClass, getSubscriptionStatusClass} from './ui-status';
+import {formatElapsedSeconds, formatSubscriptionBadge, formatSubscriptionLabel, getAuthErrorMessage, getPanelStatusClass, getSubscriptionStatusClass} from './ui-status';
 import {
   CORE_LAYER_TOGGLE_REGISTRY,
   DEFAULT_LAYER_SETTINGS,
@@ -45,10 +45,9 @@ import {handleIitcIrisContentKeyDown, type IitcIrisPanDirection} from './content
 import {copyIitcIrisText} from './content-feedback';
 import {closeIitcIrisSheet, openIitcIrisSheet, toggleIitcIrisSheet} from './content-sheet-navigation';
 import {getIitcIrisPrimaryMenuEffect} from './content-primary-menu';
-import {formatCommBounds, getCommTeamClass} from './comm-display';
-import {IITC_IRIS_COMM_TABS, IitcIrisCommPanelControls} from './comm-panel-controls';
-import {IitcIrisCommPanelBody} from './comm-panel-body';
-import {IitcIrisCommMessageList} from './comm-message-list';
+import {getCommTeamClass} from './comm-display';
+import {IITC_IRIS_COMM_TABS} from './comm-panel-controls';
+import {IitcIrisCommPanel} from './comm-panel';
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPortalHighlighterId, type IitcIrisRequestDiagnostics, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal} from './messages';
 import {
   createIitcMapDataPlan,
@@ -863,10 +862,6 @@ function createIntelUrl(camera: CameraState): string {
 
 function formatLinkLength(meters: number): string {
   return meters > 1000 ? `${meters / 1000}km` : `${meters}m`;
-}
-
-function formatElapsedSeconds(milliseconds: number): string {
-  return (Math.round(milliseconds / 100) / 10).toFixed(1);
 }
 
 function formatMissionRating(ratingE6: number | undefined): string {
@@ -4176,50 +4171,24 @@ function App(): h.JSX.Element {
 	                </div>
 	              )}
 	            </div>
-	          )}
+          )}
           {activeSidePanel === 'comm' && (
-            <div className="iitc-iris-request-panel-body">
-              <IitcIrisCommPanelControls
-                commNewBelow={commNewBelow}
-                commState={commState}
-                commUserAtBottom={commUserAtBottom}
-                jumpToLatest={jumpCommToLatest}
-                refresh={refreshComm}
-                requestOlder={requestOlderComm}
-                selectTab={selectCommTab}
-              />
-              {commState.status === 'auth' && (
-                <div className="iitc-iris-empty-state">COMM requires an authenticated Intel session.</div>
-              )}
-              {(commState.status === 'empty' || (!commState.recent?.length && commState.status !== 'loading' && commState.status !== 'idle' && commState.status !== 'auth')) && (
-                <div className="iitc-iris-empty-state">No COMM messages for this channel and map bounds.</div>
-              )}
-              <IitcIrisCommMessageList addNickname={addCommNickname} commListRef={commListRef as import('preact').RefObject<HTMLDivElement>} commState={commState} onScroll={handleCommScroll} selectPortal={selectCommPortal} />
-              <IitcIrisCommPanelBody commDraft={commDraft} commState={commState} onDraftChange={setCommDraft} send={sendComm} />
-              {(commState.sendStatus === 'sent' || commState.sendError) && (
-                <span className={`iitc-iris-status ${commState.sendError ? 'iitc-iris-warning' : ''}`} title={commState.sendError}>
-                  send {commState.sendError ? getAuthErrorMessage(commState.sendStatus, commState.sendError) : commState.sendStatus}
-                </span>
-              )}
-              <div className="iitc-iris-panel-footer">
-                <span
-                  className="iitc-iris-diagnostics-chip"
-                  title={[
-                    `request: /r/getPlexts ${commState.tab}`,
-                    `bounds: ${formatCommBounds(commState.bounds)}`,
-                    `response: ${commState.responseMessages ?? '-'}`,
-                    `older: ${commState.requestOlder ? (commState.oldMessagesWereAdded ? 'added' : 'none') : '-'}`,
-                  ].join('\n')}
-                >
-                  {commState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(commState.elapsedMs)}s` : 'request'}
-                </span>
-                {commState.error && (
-                  <span className="iitc-iris-warning" title={commState.error}>
-                    {commState.status === 'auth' ? 'COMM requires an authenticated Intel session.' : getAuthErrorMessage(commState.status, commState.error)}
-                  </span>
-                )}
-              </div>
-            </div>
+            <IitcIrisCommPanel
+              addNickname={addCommNickname}
+              commDraft={commDraft}
+              commListRef={commListRef as import('preact').RefObject<HTMLDivElement>}
+              commNewBelow={commNewBelow}
+              commState={commState}
+              commUserAtBottom={commUserAtBottom}
+              jumpToLatest={jumpCommToLatest}
+              onDraftChange={setCommDraft}
+              onScroll={handleCommScroll}
+              refresh={refreshComm}
+              requestOlder={requestOlderComm}
+              selectPortal={selectCommPortal}
+              selectTab={selectCommTab}
+              send={sendComm}
+            />
           )}
           {activeSidePanel === 'scores' && (
             <div className="iitc-iris-request-panel-body">

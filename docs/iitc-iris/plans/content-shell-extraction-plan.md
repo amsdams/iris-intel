@@ -1,6 +1,7 @@
 # Content Shell Extraction Plan
 
-Status: first implementation slice started. This is Phase 2, step 1 from [index.md](index.md).
+Status: first implementation slice complete; COMM panel extraction slice complete. This is Phase 2, step 1 from
+[index.md](index.md).
 
 ## Current IRIS Sources
 
@@ -12,12 +13,32 @@ Status: first implementation slice started. This is Phase 2, step 1 from [index.
   - inbound page-runtime message dispatch
   - entity-fetch state projection from status messages
   - selection side effects from portal/context messages
+- `apps/iitc-iris/src/content-keyboard-shortcuts.ts`
+  - keyboard shortcut routing decisions
+- `apps/iitc-iris/src/content-feedback.ts`
+  - clipboard feedback and timeout decisions
+- `apps/iitc-iris/src/content-sheet-navigation.ts`
+  - sheet open/close/toggle decisions
+- `apps/iitc-iris/src/content-primary-menu.ts`
+  - primary-menu routing effects
+- `apps/iitc-iris/src/comm-display.ts`
+  - COMM display formatting and message-part shaping
+- `apps/iitc-iris/src/comm-panel-controls.tsx`
+  - COMM channel controls, request controls, and summary markup
+- `apps/iitc-iris/src/comm-message-list.tsx`
+  - COMM message list and message-row markup
+- `apps/iitc-iris/src/comm-panel-body.tsx`
+  - COMM composer markup
+- `apps/iitc-iris/src/comm-panel.tsx`
+  - COMM panel composition, empty/error/send feedback, and request diagnostics markup
 - `apps/iitc-iris/src/content-message-adapter.test.ts`
 
 ## Ownership
 
-- `content.tsx` still owns Preact state, rendered markup, refs, and local UI actions.
+- `content.tsx` still owns Preact state, rendered shell markup, refs, request lifecycle, and local UI actions.
 - `content-message-adapter.ts` owns the message-to-state adapter boundary for inbound runtime messages.
+- COMM components own only rendering composition and event callback wiring. COMM request ownership, scroll refs, draft
+  state, tab persistence, and outbound page-runtime messages remain in `content.tsx`.
 - This is an app-side extraction, not a core facade. It may call app selection helpers and post app messages.
 
 ## Completed Slice
@@ -31,12 +52,19 @@ Status: first implementation slice started. This is Phase 2, step 1 from [index.
 - Moved primary-menu routing decisions into `content-primary-menu.ts` with focused routing tests.
 - Started the COMM panel extraction by moving its display formatting and message-part shaping into `comm-display.ts` with focused tests.
 - Moved the COMM channel controls, request controls, and summary markup into `comm-panel-controls.tsx`.
+- Moved the COMM message list and message-row markup into `comm-message-list.tsx`.
+- Moved the COMM composer markup into `comm-panel-body.tsx`.
+- Moved the COMM panel composition, empty/error/send feedback, and request diagnostics markup into `comm-panel.tsx`.
+- Moved shared elapsed request formatting into `ui-status.ts` so extracted panels can reuse the shell's existing display
+  rule.
 
 ## Next Slices
 
 - Extract outbound map/runtime command helpers once a second call site or panel split makes the repeated posting clearer.
-- Move the COMM message list and composer into focused app components, retaining request ownership, scroll refs, and handlers in the shell.
-- Extract remaining panels one at a time after the shell no longer owns their message-adapter details.
+- Extract remaining panels one at a time after the shell no longer owns their message-adapter details. Good next
+  candidates are search, portal details, missions, scores, inventory, passcodes, and agent/profile panels.
+- Keep panel extraction behavior-preserving: move markup and local display helpers first, then consider request helper
+  extraction only when repeated command assembly is visible across panels.
 
 ## Non-goals
 
@@ -48,7 +76,7 @@ Status: first implementation slice started. This is Phase 2, step 1 from [index.
 
 For code changes, run:
 
-- `npm run test:iitc-iris -- --run src/content-message-adapter.test.ts`
+- `npm run test -w apps/iitc-iris -- --run src/comm-display.test.ts src/content-message-adapter.test.ts src/content-keyboard-shortcuts.test.ts src/content-feedback.test.ts src/content-sheet-navigation.test.ts src/content-primary-menu.test.ts`
 - `npm run lint:iitc-iris`
 - `npm run typecheck:iitc-iris`
 - `npm run package:iitc-iris`

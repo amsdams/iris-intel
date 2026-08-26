@@ -32,6 +32,10 @@ export function getPanelStatusClass(status: string | undefined): string {
   return '';
 }
 
+export function formatElapsedSeconds(milliseconds: number): string {
+  return (Math.round(milliseconds / 100) / 10).toFixed(1);
+}
+
 export function getAuthErrorMessage(status?: string, error?: string): string {
   if (status === 'auth' || /missing csrftoken|missing Intel version|waiting for Intel version|login html/i.test(error ?? '')) {
     return 'Intel login required.';
