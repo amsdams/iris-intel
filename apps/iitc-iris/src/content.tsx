@@ -54,6 +54,15 @@ import {IitcIrisPasscodePanel} from './passcode-panel';
 import {IitcIrisPortalDetailsPanel} from './portal-details-panel';
 import {IitcIrisSearchPanel} from './search-panel';
 import {IitcIrisScoresPanel} from './scores-panel';
+import {IitcIrisDrawToolsPanel} from './draw-tools-panel';
+import {IitcIrisSystemDiagnosticsPanel} from './system-diagnostics-panel';
+import {
+  DRAW_TOOLS_DEFAULT_COLOR,
+  getDrawToolsItemCenter,
+  isSupportedDrawToolsItem,
+  stripDrawToolsStorageIndex,
+  type DrawToolsTarget,
+} from './content-draw-tools';
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPortalHighlighterId, type IitcIrisRequestDiagnostics, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal} from './messages';
 import {
   createIitcMapDataPlan,
@@ -63,7 +72,6 @@ import {
   normalizeIitcDrawToolsLabel,
   parseIitcDrawToolsLayer,
   serializeIitcDrawToolsLayer,
-  type IitcDrawToolsItem,
   type IitcMapDataPlan,
   type IitcPortalAnalysisTeam,
   type IitcPortalsListEntry,
@@ -149,13 +157,6 @@ const PORTAL_FILTER_LAYER_TOGGLE_LABELS = CORE_LAYER_TOGGLE_REGISTRY.filter((ent
 const DETAIL_LAYER_TOGGLE_LABELS = DETAIL_LAYER_TOGGLE_REGISTRY;
 type BooleanLayerToggleEntry = (typeof CORE_LAYER_TOGGLE_REGISTRY)[number];
 const PORTAL_HIGHLIGHTER_OPTIONS = PORTAL_HIGHLIGHTER_REGISTRY;
-const DRAW_TOOLS_MARKER_PRESETS = [
-  {id: 'white', color: '#ffffff', title: 'Add white marker'},
-  {id: 'red', color: '#c34a4a', title: 'Add red marker'},
-  {id: 'blue', color: '#4aa8c3', title: 'Add blue marker'},
-  {id: 'green', color: '#51c34a', title: 'Add green marker'},
-] as const;
-const DRAW_TOOLS_DEFAULT_COLOR = '#a24ac3';
 const SIDE_PANEL_OPTIONS = SIDE_PANEL_REGISTRY;
 const DEFAULT_RENDER_POLICY: IitcIrisRenderPolicy = {
   optionalOverlayMinZoom: 14,
@@ -299,56 +300,6 @@ interface ScenarioRun {
   finishedAt?: string;
   lifecycleSettings: IitcIrisLifecycleSettings;
   snapshots: ScenarioSnapshot[];
-}
-
-interface DrawToolsTarget {
-  lat: number;
-  lng: number;
-  label: string;
-}
-
-function isSupportedDrawToolsItem(item: IitcDrawToolsItem): item is Extract<IitcDrawToolsItem, {type: 'polyline' | 'marker'}> {
-  return item.type === 'polyline' || item.type === 'marker';
-}
-
-function getDrawToolsItemCenter(item: IitcIrisDrawToolsItem): IitcIrisDrawToolsLatLng {
-  if (item.type === 'marker') return item.latLng;
-  const total = item.latLngs.reduce((sum, latLng) => ({
-    lat: sum.lat + latLng.lat,
-    lng: sum.lng + latLng.lng,
-  }), {lat: 0, lng: 0});
-  return {
-    lat: total.lat / item.latLngs.length,
-    lng: total.lng / item.latLngs.length,
-  };
-}
-
-function getDrawToolsItemLabel(item: IitcIrisDrawToolsItem, displayIndex: number): string {
-  if (item.type === 'marker') return item.label ?? `Marker ${displayIndex + 1}`;
-  return `Link ${displayIndex + 1}`;
-}
-
-function getDrawToolsItemDetail(item: IitcIrisDrawToolsItem): string {
-  if (item.type === 'marker') return `${item.latLng.lat.toFixed(6)}, ${item.latLng.lng.toFixed(6)}`;
-  const start = item.latLngs[0];
-  const end = item.latLngs[item.latLngs.length - 1];
-  return `${start.lat.toFixed(6)}, ${start.lng.toFixed(6)} -> ${end.lat.toFixed(6)}, ${end.lng.toFixed(6)}`;
-}
-
-function stripDrawToolsStorageIndex(item: IitcIrisDrawToolsItem): IitcDrawToolsItem {
-  if (item.type === 'marker') {
-    return {
-      type: 'marker',
-      latLng: item.latLng,
-      color: item.color,
-      label: item.label,
-    };
-  }
-  return {
-    type: 'polyline',
-    latLngs: item.latLngs,
-    color: item.color,
-  };
 }
 
 function isScenarioSettled(diagnostics: unknown): boolean {
@@ -2699,161 +2650,64 @@ function App(): h.JSX.Element {
             {renderContextActionButton('copyIntelUrl', copyMapContextUrl)}
           </div>
         </div>}
-        {activeSheet === 'drawLinks' && <div className="iitc-iris-map-controls-section">
-          <span className="iitc-iris-status">Draw Links</span>
-          <div className="iitc-iris-map-context-row">
-            <span className="iitc-iris-map-context-coords">
-              {drawToolsTarget?.label ?? 'Select a portal or open a context point'}
-            </span>
-            <button className="iitc-iris-portal-action" type="button" onClick={addDrawToolsLinkPoint} disabled={!drawToolsTarget} title={drawToolsLinkStart ? 'Finish drawn link at the current target' : 'Start drawn link at the current target'}>
-              {drawToolsLinkStart ? 'To' : 'From'}
-            </button>
-            <button className="iitc-iris-portal-action" type="button" onClick={() => setDrawToolsLinkStart(null)} disabled={!drawToolsLinkStart} title="Reset pending drawn link">Reset</button>
-            <button className="iitc-iris-portal-action" type="button" onClick={() => deleteDrawToolsAtContext('polyline')} disabled={!drawToolsTarget} title="Delete nearest drawn link">Del</button>
-          </div>
-          {drawToolsLinkStart && <div className="iitc-iris-map-context-row">
-            <span className="iitc-iris-map-context-coords">
-              From {drawToolsLinkStart.lat.toFixed(6)}, {drawToolsLinkStart.lng.toFixed(6)}
-            </span>
-          </div>}
-          <div className="iitc-iris-map-context-row">
-            <span className="iitc-iris-map-context-coords">{formatInteger(drawToolsLinkItems.length)} drawn links</span>
-            <button className="iitc-iris-portal-action" type="button" onClick={() => undoDrawToolsItem('polyline')} disabled={drawToolsLinkItems.length === 0} title="Remove latest drawn link">Undo</button>
-            <button className="iitc-iris-portal-action" type="button" onClick={() => copyDrawToolsItems('polyline')} disabled={drawToolsLinkItems.length === 0} title="Copy drawn links as IITC Draw Tools JSON">Copy</button>
-            <button className="iitc-iris-portal-action" type="button" onClick={() => copyDrawToolsItems()} disabled={drawToolsItems.length === 0} title="Export all supported Draw Tools items as IITC JSON">Export</button>
-            <button className={`iitc-iris-portal-action ${drawToolsClearConfirm === 'polyline' ? 'is-danger' : ''}`} type="button" onClick={() => clearDrawToolsItems('polyline')} disabled={drawToolsLinkItems.length === 0} title="Clear all drawn links">
-              {drawToolsClearConfirm === 'polyline' ? 'Confirm' : 'Clear'}
-            </button>
-          </div>
-          {drawToolsLinkItems.length > 0 && <div className="iitc-iris-draw-tools-list" aria-label="Drawn links">
-            {drawToolsLinkItems.map((item, index) => (
-              <div className="iitc-iris-draw-tools-list-item" key={`link-${item.storageIndex}`}>
-                <span className="iitc-iris-draw-tools-list-label">
-                  <b>{getDrawToolsItemLabel(item, index)}</b>
-                  <small>{getDrawToolsItemDetail(item)}</small>
-                </span>
-                <span className="iitc-iris-draw-tools-list-actions">
-                  <button className="iitc-iris-portal-action" type="button" onClick={() => centerDrawToolsItem(item)} title="Center this drawn link">Center</button>
-                  <button className="iitc-iris-portal-action" type="button" onClick={() => deleteDrawToolsItem(item)} title="Delete this drawn link">Del</button>
-                </span>
-              </div>
-            ))}
-          </div>}
-          <div className="iitc-iris-draw-tools-import">
-            <span className="iitc-iris-draw-tools-interop">IITC Draw Tools JSON: links and markers</span>
-            <textarea
-              className="iitc-iris-draw-tools-import-input"
-              value={drawToolsImportText}
-              placeholder="Paste IITC Draw Tools JSON"
-              rows={3}
-              onInput={(event) => setDrawToolsImportText(event.currentTarget.value)}
-            />
-            <div className="iitc-iris-map-context-row">
-              <label className="iitc-iris-draw-tools-import-merge">
-                <input type="checkbox" checked={drawToolsImportMerge} onChange={(event) => setDrawToolsImportMerge(event.currentTarget.checked)} />
-                Merge
-              </label>
-              <button className="iitc-iris-portal-action" type="button" onClick={importDrawToolsItems} disabled={!drawToolsImportText.trim()} title="Import supported links and markers">Import</button>
-              {drawToolsImportStatus && <span className="iitc-iris-map-control-status">{drawToolsImportStatus}</span>}
-            </div>
-          </div>
-        </div>}
-        {activeSheet === 'drawMarkers' && <div className="iitc-iris-map-controls-section">
-          <span className="iitc-iris-status">Draw Markers</span>
-          <div className="iitc-iris-map-context-row">
-            <span className="iitc-iris-map-context-coords">
-              {drawToolsTarget?.label ?? 'Select a portal or open a context point'}
-            </span>
-          </div>
-          <div className="iitc-iris-map-context-row iitc-iris-draw-tools-marker-create-row">
-            <input
-              className="iitc-iris-draw-tools-label-input"
-              type="text"
-              value={drawToolsMarkerLabel}
-              onInput={(event) => setDrawToolsMarkerLabel(event.currentTarget.value)}
-              placeholder={drawToolsTarget ? 'Marker label' : 'Select a marker target'}
-              disabled={!drawToolsTarget}
-              aria-label="New marker label"
-            />
-            <span className="iitc-iris-draw-tools-marker-actions" aria-label="Add marker">
-              {DRAW_TOOLS_MARKER_PRESETS.map((preset) => (
-                <button
-                  className="iitc-iris-draw-tools-marker-swatch"
-                  key={preset.id}
-                  type="button"
-                  onClick={() => addDrawToolsMarker(preset.color)}
-                  disabled={!drawToolsTarget}
-                  style={{background: preset.color}}
-                  title={preset.title}
-                  aria-label={preset.title}
-                />
-              ))}
-            </span>
-          </div>
-          <div className="iitc-iris-map-context-row">
-            <span className="iitc-iris-map-context-coords">{formatInteger(drawToolsMarkerItems.length)} drawn markers</span>
-            <button className="iitc-iris-portal-action" type="button" onClick={() => deleteDrawToolsAtContext('marker')} disabled={!drawToolsTarget} title="Delete nearest drawn marker">Del</button>
-            <button className="iitc-iris-portal-action" type="button" onClick={() => undoDrawToolsItem('marker')} disabled={drawToolsMarkerItems.length === 0} title="Remove latest drawn marker">Undo</button>
-            <button className="iitc-iris-portal-action" type="button" onClick={() => copyDrawToolsItems('marker')} disabled={drawToolsMarkerItems.length === 0} title="Copy drawn markers as IITC Draw Tools JSON">Copy</button>
-            <button className="iitc-iris-portal-action" type="button" onClick={() => copyDrawToolsItems()} disabled={drawToolsItems.length === 0} title="Export all supported Draw Tools items as IITC JSON">Export</button>
-            <button className={`iitc-iris-portal-action ${drawToolsClearConfirm === 'marker' ? 'is-danger' : ''}`} type="button" onClick={() => clearDrawToolsItems('marker')} disabled={drawToolsMarkerItems.length === 0} title="Clear all drawn markers">
-              {drawToolsClearConfirm === 'marker' ? 'Confirm' : 'Clear'}
-            </button>
-          </div>
-          {drawToolsMarkerItems.length > 0 && <div className="iitc-iris-draw-tools-list" aria-label="Drawn markers">
-            {drawToolsMarkerItems.map((item, index) => (
-              <div className="iitc-iris-draw-tools-list-item" key={`marker-${item.storageIndex}`}>
-                <span className="iitc-iris-draw-tools-marker-dot" style={{background: item.color ?? DRAW_TOOLS_DEFAULT_COLOR}} />
-                <span className="iitc-iris-draw-tools-list-label">
-                  {editingDrawToolsMarkerIndex === item.storageIndex ? (
-                    <input
-                      className="iitc-iris-draw-tools-label-input"
-                      type="text"
-                      defaultValue={item.label ?? ''}
-                      placeholder={getDrawToolsItemLabel(item, index)}
-                      aria-label={`Marker ${index + 1} label`}
-                      autoFocus
-                      onBlur={(event) => saveDrawToolsMarkerLabel(item, event.currentTarget.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter') event.currentTarget.blur();
-                        if (event.key === 'Escape') {
-                          event.currentTarget.value = item.label ?? '';
-                          setEditingDrawToolsMarkerIndex(null);
-                        }
-                      }}
-                    />
-                  ) : (
-                    <b>{getDrawToolsItemLabel(item, index)}</b>
-                  )}
-                  <small>{getDrawToolsItemDetail(item)}</small>
-                </span>
-                <span className="iitc-iris-draw-tools-list-actions">
-                  <button className="iitc-iris-portal-action" type="button" onClick={() => setEditingDrawToolsMarkerIndex(item.storageIndex)} title="Edit this marker label">Edit</button>
-                  <button className="iitc-iris-portal-action" type="button" onClick={() => centerDrawToolsItem(item)} title="Center this drawn marker">Center</button>
-                  <button className="iitc-iris-portal-action" type="button" onClick={() => deleteDrawToolsItem(item)} title="Delete this drawn marker">Del</button>
-                </span>
-              </div>
-            ))}
-          </div>}
-          <div className="iitc-iris-draw-tools-import">
-            <span className="iitc-iris-draw-tools-interop">IITC Draw Tools JSON: links and markers</span>
-            <textarea
-              className="iitc-iris-draw-tools-import-input"
-              value={drawToolsImportText}
-              placeholder="Paste IITC Draw Tools JSON"
-              rows={3}
-              onInput={(event) => setDrawToolsImportText(event.currentTarget.value)}
-            />
-            <div className="iitc-iris-map-context-row">
-              <label className="iitc-iris-draw-tools-import-merge">
-                <input type="checkbox" checked={drawToolsImportMerge} onChange={(event) => setDrawToolsImportMerge(event.currentTarget.checked)} />
-                Merge
-              </label>
-              <button className="iitc-iris-portal-action" type="button" onClick={importDrawToolsItems} disabled={!drawToolsImportText.trim()} title="Import supported links and markers">Import</button>
-              {drawToolsImportStatus && <span className="iitc-iris-map-control-status">{drawToolsImportStatus}</span>}
-            </div>
-          </div>
-        </div>}
+        {activeSheet === 'drawLinks' && <IitcIrisDrawToolsPanel
+          allItemsCount={drawToolsItems.length}
+          clearConfirm={drawToolsClearConfirm}
+          editingMarkerIndex={editingDrawToolsMarkerIndex}
+          importMerge={drawToolsImportMerge}
+          importStatus={drawToolsImportStatus}
+          importText={drawToolsImportText}
+          linkItems={drawToolsLinkItems}
+          linkStart={drawToolsLinkStart}
+          markerItems={drawToolsMarkerItems}
+          markerLabel={drawToolsMarkerLabel}
+          mode="links"
+          target={drawToolsTarget}
+          addLinkPoint={addDrawToolsLinkPoint}
+          addMarker={addDrawToolsMarker}
+          centerItem={centerDrawToolsItem}
+          clearItems={clearDrawToolsItems}
+          copyItems={copyDrawToolsItems}
+          deleteAtContext={deleteDrawToolsAtContext}
+          deleteItem={deleteDrawToolsItem}
+          importItems={importDrawToolsItems}
+          saveMarkerLabel={saveDrawToolsMarkerLabel}
+          setEditingMarkerIndex={setEditingDrawToolsMarkerIndex}
+          setImportMerge={setDrawToolsImportMerge}
+          setImportText={setDrawToolsImportText}
+          setLinkStart={setDrawToolsLinkStart}
+          setMarkerLabel={setDrawToolsMarkerLabel}
+          undoItem={undoDrawToolsItem}
+        />}
+        {activeSheet === 'drawMarkers' && <IitcIrisDrawToolsPanel
+          allItemsCount={drawToolsItems.length}
+          clearConfirm={drawToolsClearConfirm}
+          editingMarkerIndex={editingDrawToolsMarkerIndex}
+          importMerge={drawToolsImportMerge}
+          importStatus={drawToolsImportStatus}
+          importText={drawToolsImportText}
+          linkItems={drawToolsLinkItems}
+          linkStart={drawToolsLinkStart}
+          markerItems={drawToolsMarkerItems}
+          markerLabel={drawToolsMarkerLabel}
+          mode="markers"
+          target={drawToolsTarget}
+          addLinkPoint={addDrawToolsLinkPoint}
+          addMarker={addDrawToolsMarker}
+          centerItem={centerDrawToolsItem}
+          clearItems={clearDrawToolsItems}
+          copyItems={copyDrawToolsItems}
+          deleteAtContext={deleteDrawToolsAtContext}
+          deleteItem={deleteDrawToolsItem}
+          importItems={importDrawToolsItems}
+          saveMarkerLabel={saveDrawToolsMarkerLabel}
+          setEditingMarkerIndex={setEditingDrawToolsMarkerIndex}
+          setImportMerge={setDrawToolsImportMerge}
+          setImportText={setDrawToolsImportText}
+          setLinkStart={setDrawToolsLinkStart}
+          setMarkerLabel={setDrawToolsMarkerLabel}
+          undoItem={undoDrawToolsItem}
+        />}
         {activeSheet === 'portalCounts' && <div className="iitc-iris-map-controls-section iitc-iris-portal-analysis">
           <span className="iitc-iris-status">Portal Counts</span>
           {portalAnalysis ? (
@@ -3188,37 +3042,23 @@ function App(): h.JSX.Element {
               <span className="iitc-iris-status">UI and diagnostics</span>
             </span>
           </div>
-          <div className="iitc-iris-map-controls-section">
-            <span className="iitc-iris-status">Status</span>
-            <div id="iitc-iris-innerstatus" className="iitc-iris-innerstatus">
-              <span className="help portallevel" title="Indicates portal levels/link lengths displayed. Zoom in to display more.">{innerStatus.portalText}</span>
-              <span className="map">
-                <b>map</b>:{' '}
-                <span className="help" title={innerStatus.mapTitle}>{innerStatus.mapText}</span>
-                {innerStatus.progressPercent !== null && ` ${innerStatus.progressPercent}%`}
-              </span>
-              {innerStatus.activeRequests > 0 && (
-                <span title={Object.entries(requestDiagnostics.activeByEndpoint).map(([endpoint, count]) => `${endpoint}: ${count}`).join('\n')}>
-                  {innerStatus.activeRequests} requests
-                </span>
-              )}
-              {innerStatus.failedRequests > 0 && <span className="failed-request">{innerStatus.failedRequests} failed</span>}
-              {entityFetch.selectedPortal && (
-                <>
-                  <span className="selected-portal" title={entityFetch.selectedPortal.guid}>
-                    selected {formatSelectedPortal(entityFetch.selectedPortal)}
-                  </span>
-                  <button className="iitc-iris-clear-selection" type="button" onClick={clearPortalSelection} title="Clear selected portal" aria-label="Clear selected portal">X</button>
-                </>
-              )}
-              {entityFetch.collision && <span className="failed-request">old IRIS active</span>}
-              {entityFetch.authRequired && (
-                <button className="iitc-iris-login iitc-iris-innerstatus-login" type="button" onClick={openIntelLogin} title="Open Intel login">
-                  Intel Login
-                </button>
-              )}
-            </div>
-          </div>
+          <IitcIrisSystemDiagnosticsPanel
+            activeByEndpoint={requestDiagnostics.activeByEndpoint}
+            camera={camera}
+            debugDockVisible={debugDockVisible}
+            detailOverlaysActive={detailOverlaysActive}
+            entityFetch={entityFetch}
+            innerStatus={innerStatus}
+            plan={plan}
+            requestBatches={requestBatches}
+            selectedPortalLabel={entityFetch.selectedPortal ? formatSelectedPortal(entityFetch.selectedPortal) : null}
+            status={status}
+            summaryMode={summaryMode}
+            clearPortalSelection={clearPortalSelection}
+            formatRenderMutationSummary={formatRenderMutationSummary}
+            openIntelLogin={openIntelLogin}
+            toggleDebugDock={toggleDebugDock}
+          />
           <div className="iitc-iris-map-controls-section">
             <span className="iitc-iris-status">Interaction</span>
             <div className="iitc-iris-map-control-row">
@@ -3244,74 +3084,6 @@ function App(): h.JSX.Element {
               <span className="iitc-iris-status">{mapFocusMode ? 'auto close' : 'stay open'}</span>
             </div>
           </div>
-          <div className="iitc-iris-map-controls-section">
-            <span className="iitc-iris-status">Debug display</span>
-            <div className="iitc-iris-map-control-row">
-              <button
-                className={`iitc-iris-layer-toggle iitc-iris-system-toggle ${debugDockVisible ? 'iitc-iris-layer-toggle-active' : ''}`}
-                type="button"
-                onClick={toggleDebugDock}
-                title="Show or hide debug diagnostic rows"
-                aria-pressed={debugDockVisible}
-              >
-                Debug
-              </button>
-            </div>
-          </div>
-          {debugDockVisible && <div className="iitc-iris-map-controls-section iitc-iris-system-debug">
-            <span className="iitc-iris-status">Map diagnostics</span>
-            <div className="iitc-iris-dock-row iitc-iris-debug-row">
-              <span className="iitc-iris-status">{status}</span>
-              <span className="iitc-iris-status">z {camera.zoom.toFixed(2)}</span>
-              <span className="iitc-iris-status">data z {plan?.dataZoom ?? '-'}</span>
-              <span className="iitc-iris-status">mode {summaryMode}</span>
-              <span className="iitc-iris-status">detail {detailOverlaysActive ? 'on' : 'off'}</span>
-              <span className="iitc-iris-status">tiles {plan?.tiles.length ?? '-'}</span>
-              <span className="iitc-iris-status">x {plan ? `${plan.xRange[0]}-${plan.xRange[1]}` : '-'}</span>
-              <span className="iitc-iris-status">y {plan ? `${plan.yRange[0]}-${plan.yRange[1]}` : '-'}</span>
-              <span className="iitc-iris-status">batch {requestBatches[0] ?? 0}</span>
-              {entityFetch.collision && <span className="iitc-iris-status iitc-iris-warning">old IRIS active</span>}
-              {entityFetch.authRequired && (
-                <button className="iitc-iris-login" type="button" onClick={openIntelLogin} title="Open Intel login">
-                  Intel Login
-                </button>
-              )}
-            </div>
-            <div className="iitc-iris-dock-row iitc-iris-debug-row">
-              <span className="iitc-iris-status">{entityFetch.status}</span>
-              <span className="iitc-iris-status">src {entityFetch.entitySource}</span>
-              <span className="iitc-iris-status">p {entityFetch.portals}</span>
-              <span className="iitc-iris-status">real {entityFetch.realPortals}</span>
-              <span className="iitc-iris-status">ph {entityFetch.placeholderPortals}</span>
-              <span className="iitc-iris-status">orn {entityFetch.ornamentPortals}</span>
-              <span className="iitc-iris-status">ornDraw {entityFetch.drawnOrnamentMarkers}</span>
-              <span className="iitc-iris-status">ornHide {entityFetch.hiddenOrnamentMarkers}</span>
-              <span className="iitc-iris-status">art {entityFetch.artifactPortals}</span>
-              <span className="iitc-iris-status">artDraw {entityFetch.drawnArtifactMarkers}</span>
-              <span className="iitc-iris-status">artFetch {entityFetch.artifactFetchStatus}:{entityFetch.artifactFetchPortalCount}</span>
-              <span className="iitc-iris-status">lvl {entityFetch.levelLabels}</span>
-              <span className="iitc-iris-status">dmg {entityFetch.damagedPortals}</span>
-              <span className="iitc-iris-status">l {entityFetch.links}</span>
-              <span className="iitc-iris-status">f {entityFetch.fields}</span>
-              <span className="iitc-iris-status iitc-iris-compare" title={entityFetch.renderMutation ? JSON.stringify(entityFetch.renderMutation) : undefined}>
-                {formatRenderMutationSummary(entityFetch.renderMutation)}
-              </span>
-              <span className="iitc-iris-status iitc-iris-compare">compare vp P/L/F {entityFetch.viewportPortals}/{entityFetch.viewportLinks}/{entityFetch.viewportFields}</span>
-              <span className="iitc-iris-status">rt {entityFetch.returnedTiles}/{entityFetch.requestedTiles}</span>
-              <span className="iitc-iris-status">nt {entityFetch.nonEmptyTiles}</span>
-              {entityFetch.elapsedMs !== null && <span className="iitc-iris-status">in {formatElapsedSeconds(entityFetch.elapsedMs)}s</span>}
-              {entityFetch.timing?.initialMs !== undefined && <span className="iitc-iris-status">init {formatElapsedSeconds(entityFetch.timing.initialMs)}s</span>}
-              {entityFetch.timing?.retryMs !== undefined && <span className="iitc-iris-status">retryT {formatElapsedSeconds(entityFetch.timing.retryMs)}s</span>}
-              {entityFetch.retryRequests > 0 && <span className="iitc-iris-status">retry {entityFetch.retryRequests}</span>}
-              {entityFetch.playerTracker && <span className="iitc-iris-status">pt {entityFetch.playerTracker.players}/{entityFetch.playerTracker.events}</span>}
-              {entityFetch.selectedPortal && (
-                <>
-                  <span className="iitc-iris-status iitc-iris-compare">sel {formatSelectedPortal(entityFetch.selectedPortal)}</span>
-                  <button className="iitc-iris-preset" type="button" onClick={clearPortalSelection} title="Clear selected portal">Clear Sel</button>
-                </>
-              )}
-            </div>
-          </div>}
           <div className="iitc-iris-map-controls-section">
             <span className="iitc-iris-status">Copy/export</span>
             <div className="iitc-iris-map-control-row">

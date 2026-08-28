@@ -16,11 +16,13 @@ modules own routing/display decisions or JSX composition only.
   `content-sheet-navigation.ts`, `content-feedback.ts`.
 - First panel components: COMM and passcode rendering moved into focused app modules.
 - Shared elapsed request formatting moved to `ui-status.ts`.
+- Draw Tools display helpers and panel JSX moved to `content-draw-tools.ts` and `draw-tools-panel.tsx`.
+- System diagnostics status/debug rows moved to `system-diagnostics-panel.tsx`.
 
 ## Follow-up Plans
 
-Continue panel work in [panel-extraction-plan.md](panel-extraction-plan.md). Extract runtime command helpers only after
-multiple extracted panels share the same command assembly.
+Continue broader app-surface work in [panel-extraction-plan.md](panel-extraction-plan.md). Extract runtime command
+helpers only after multiple extracted panels share the same command assembly.
 
 ## Guardrails
 

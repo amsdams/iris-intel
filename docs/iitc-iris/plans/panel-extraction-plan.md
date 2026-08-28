@@ -20,10 +20,12 @@ rendering and callback wiring only.
 - Missions: `missions-panel.tsx`.
 - Search: `search-panel.tsx`.
 - Portal details: `portal-details-panel.tsx`.
+- Draw Tools: `draw-tools-panel.tsx`, with pure display/export helpers in `content-draw-tools.ts`.
+- System diagnostics status/debug rows: `system-diagnostics-panel.tsx`.
 
 ## Follow-up
 
-- Continue app-surface extraction for Draw Tools and diagnostics sheet content in a separate pass.
+- Continue app-surface extraction for the remaining map controls, layers, portal analysis, and scenario workflow UI.
 - Extract shared command/request helpers only when repeated across extracted panels.
 
 ## Guardrails
