@@ -180,9 +180,6 @@ export function IitcIrisPortalDetailsPanel(props: IitcIrisPortalDetailsPanelProp
           <b>{portal.links.count}</b>
         </span>
       </div>
-      <div className="iitc-iris-health-track" title={`Portal health ${formatPortalHealth(portal)}`}>
-        <span className="iitc-iris-health-fill" style={`width: ${formatPortalHealthPercent(portal)}%;`} />
-      </div>
       <div className="iitc-iris-portal-panel">
         <div className="iitc-iris-portal-panel-header">
           <span className="iitc-iris-status">details</span>
