@@ -1,6 +1,6 @@
 # Panel Extraction Plan
 
-Status: started. This is Phase 2, step 2 from [index.md](index.md).
+Status: complete for the side-panel checkpoint. This is Phase 2, step 2 from [index.md](index.md).
 
 ## Scope
 
@@ -17,11 +17,13 @@ rendering and callback wiring only.
 - Scores: `scores-panel.tsx`.
 - Agent/profile: `agent-panel.tsx`.
 - Inventory: `inventory-panel.tsx`.
+- Missions: `missions-panel.tsx`.
+- Search: `search-panel.tsx`.
+- Portal details: `portal-details-panel.tsx`.
 
-## Next
+## Follow-up
 
-- Extract search, portal details, and missions.
-- Prefer display-only moves first.
+- Continue app-surface extraction for Draw Tools and diagnostics sheet content in a separate pass.
 - Extract shared command/request helpers only when repeated across extracted panels.
 
 ## Guardrails

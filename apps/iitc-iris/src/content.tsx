@@ -1,8 +1,8 @@
 import {h, render} from 'preact';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import './iitc-iris.css';
-import {formatIitcColorVars, getIitcLevelColor, getIitcRarityColor, IITC_RESONATOR_ENERGY, IITC_TEAM_COLORS} from './iitc-colors';
-import {formatElapsedSeconds, getAuthErrorMessage, getPanelStatusClass} from './ui-status';
+import {getIitcLevelColor, IITC_TEAM_COLORS} from './iitc-colors';
+import {formatElapsedSeconds, getPanelStatusClass} from './ui-status';
 import {
   CORE_LAYER_TOGGLE_REGISTRY,
   DEFAULT_LAYER_SETTINGS,
@@ -46,11 +46,13 @@ import {copyIitcIrisText} from './content-feedback';
 import {closeIitcIrisSheet, openIitcIrisSheet, toggleIitcIrisSheet} from './content-sheet-navigation';
 import {getIitcIrisPrimaryMenuEffect} from './content-primary-menu';
 import {IitcIrisAgentPanel} from './agent-panel';
-import {getCommTeamClass} from './comm-display';
 import {IITC_IRIS_COMM_TABS} from './comm-panel-controls';
 import {IitcIrisCommPanel} from './comm-panel';
 import {IitcIrisInventoryPanel} from './inventory-panel';
+import {IitcIrisMissionsPanel} from './missions-panel';
 import {IitcIrisPasscodePanel} from './passcode-panel';
+import {IitcIrisPortalDetailsPanel} from './portal-details-panel';
+import {IitcIrisSearchPanel} from './search-panel';
 import {IitcIrisScoresPanel} from './scores-panel';
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPortalHighlighterId, type IitcIrisRequestDiagnostics, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal} from './messages';
 import {
@@ -154,7 +156,6 @@ const DRAW_TOOLS_MARKER_PRESETS = [
   {id: 'green', color: '#51c34a', title: 'Add green marker'},
 ] as const;
 const DRAW_TOOLS_DEFAULT_COLOR = '#a24ac3';
-const RESONATOR_PANEL_ORDER: (number | null)[] = [0, 1, 2, 3, null, 4, 5, 6, 7];
 const SIDE_PANEL_OPTIONS = SIDE_PANEL_REGISTRY;
 const DEFAULT_RENDER_POLICY: IitcIrisRenderPolicy = {
   optionalOverlayMinZoom: 14,
@@ -185,12 +186,6 @@ const EMPTY_MISSIONS_STATE: IitcIrisMissionsState = {
   detailsStatus: 'idle',
 };
 const GEOLOCATION_MAX_ZOOM = 13;
-const IITC_TM_ICON_BASE = 'https://commondatastorage.googleapis.com/ingress.com/img/tm_icons';
-const MISSION_TYPE_IMAGE_BY_TYPE_NUM: Record<number, string> = {
-  1: 'mission-type-sequential.png',
-  2: 'mission-type-random.png',
-  3: 'mission-type-hidden.png',
-};
 
 type SidePanelId = IitcIrisSidePanelId;
 type SheetId = IitcIrisSheetId;
@@ -533,18 +528,6 @@ function getExtensionUrl(path: string): string {
   return chrome.runtime.getURL(path);
 }
 
-function getMissionTypeIcon(typeNum?: number): string {
-  return getExtensionUrl(`images/${MISSION_TYPE_IMAGE_BY_TYPE_NUM[typeNum ?? 0] ?? 'mission-type-unknown.png'}`);
-}
-
-function getMissionMetricIcon(name: 'rating' | 'time' | 'length' | 'agents' | 'waypoints' | 'order'): string {
-  if (name === 'rating') return `${IITC_TM_ICON_BASE}/like.png`;
-  if (name === 'time') return `${IITC_TM_ICON_BASE}/time.png`;
-  if (name === 'agents') return `${IITC_TM_ICON_BASE}/players.png`;
-  if (name === 'length') return getExtensionUrl('images/mission-length.png');
-  return getMissionTypeIcon();
-}
-
 function isBaseLayerId(value: string | null): value is IitcIrisBaseLayerId {
   return value === 'osm' || value === 'cartodb-dark-matter' || value === 'cartodb-positron';
 }
@@ -868,23 +851,6 @@ function formatLinkLength(meters: number): string {
   return meters > 1000 ? `${meters / 1000}km` : `${meters}m`;
 }
 
-function formatMissionRating(ratingE6: number | undefined): string {
-  if (ratingE6 === undefined) return '-';
-  return `${Math.round(ratingE6 / 10_000)}%`;
-}
-
-function formatMissionDuration(milliseconds: number | undefined, label: string | undefined): string {
-  if (label) return label;
-  if (milliseconds === undefined || milliseconds <= 0) return '-';
-  const minutes = Math.max(1, Math.round(milliseconds / 60000));
-  return minutes >= 60 ? `${Math.floor(minutes / 60)}h ${minutes % 60}m` : `${minutes}m`;
-}
-
-function formatDistance(meters: number | undefined): string {
-  if (meters === undefined || !Number.isFinite(meters) || meters <= 0) return '-';
-  return meters > 1000 ? `${Math.round(meters / 100) / 10}km` : `${Math.round(meters * 10) / 10}m`;
-}
-
 function formatInteger(value: number | undefined): string {
   return value === undefined || !Number.isFinite(value) ? '-' : value.toLocaleString();
 }
@@ -894,16 +860,6 @@ function formatSelectedPortal(portal: IitcIrisSelectedPortal | null): string {
   const label = portal.title || portal.guid.slice(0, 8);
   const level = portal.isPlaceholder || portal.level === undefined ? 'P' : `L${portal.level}`;
   return `${label} ${portal.team}${level}`;
-}
-
-function formatPortalHealth(portal: IitcIrisSelectedPortal): string {
-  if (portal.isPlaceholder || portal.health === undefined) return '-';
-  return `${Math.round(portal.health)}%`;
-}
-
-function formatPortalHealthPercent(portal: IitcIrisSelectedPortal): number {
-  if (portal.isPlaceholder || portal.health === undefined || !Number.isFinite(portal.health)) return 0;
-  return Math.max(0, Math.min(100, Math.round(portal.health)));
 }
 
 function getPortalLatLng(portal: IitcIrisSelectedPortal): {lat: number; lng: number} {
@@ -1165,30 +1121,6 @@ function formatMapObjectDistance(meters: number | undefined): string {
   return `${Math.round(meters)} m`;
 }
 
-function formatResonatorEnergy(energy: number): string {
-  return energy >= 1000 ? `${Math.round(energy / 100) / 10}k` : String(energy);
-}
-
-function formatResonatorEnergyPercent(level: number, energy: number): number {
-  const normalizedLevel = Math.max(0, Math.min(8, Math.floor(level)));
-  const maxEnergy = IITC_RESONATOR_ENERGY[normalizedLevel] ?? 1000;
-  return Math.max(0, Math.min(100, Math.round((energy / maxEnergy) * 100)));
-}
-
-function formatModName(name: string): string {
-  return name.replace(/^Portal\s+/i, '').replace(/_/g, ' ');
-}
-
-function formatModStats(stats: Record<string, string | number>): string {
-  const preferredStats = ['MITIGATION', 'REMOVAL_STICKINESS', 'FORCE_AMPLIFIER', 'LINK_RANGE_MULTIPLIER', 'HACK_SPEED', 'HIT_BONUS', 'ATTACK_FREQUENCY'];
-  const parts: string[] = [];
-  for (const key of preferredStats) {
-    const value = stats[key];
-    if (value !== undefined) parts.push(`${key.toLowerCase().replace(/_/g, ' ')} ${value}`);
-  }
-  return parts.slice(0, 2).join(', ');
-}
-
 function formatRenderMutationSummary(mutation: IitcIrisRenderMutationDiagnostics | null): string {
   if (!mutation) return 'render -';
   const portals = mutation.portals;
@@ -1422,31 +1354,11 @@ function App(): h.JSX.Element {
   const selectedPortalDetails = entityFetch.selectedPortal && entityFetch.portalDetails?.guid === entityFetch.selectedPortal.guid
     ? entityFetch.portalDetails
     : null;
-  const selectedPortalDetailsStatus = selectedPortalDetails?.status ?? 'waiting';
   const selectedPortalMissionState = entityFetch.selectedPortal &&
     missionsState.source === 'portal' &&
     missionsState.portalGuid === entityFetch.selectedPortal.guid
     ? missionsState
     : null;
-  const selectedPortalHasMissions = Boolean(
-    entityFetch.selectedPortal?.mission ||
-    entityFetch.selectedPortal?.mission50plus ||
-    selectedPortalDetails?.hasMissionsStartingHere ||
-    selectedPortalMissionState,
-  );
-  const selectedPortalMissionSummary = selectedPortalMissionState
-    ? selectedPortalMissionState.status === 'loading'
-      ? 'Loading'
-      : selectedPortalMissionState.status === 'empty'
-        ? '0 starting here'
-        : selectedPortalMissionState.status === 'ready'
-          ? `${formatInteger(selectedPortalMissionState.missions.length)} starting here`
-          : selectedPortalMissionState.status
-    : entityFetch.selectedPortal?.mission50plus
-      ? '50+ starting here'
-      : selectedPortalHasMissions
-        ? 'Starting here'
-        : '';
   const {
     hasSelectedObject,
     selectedPrimaryLabel,
@@ -2226,117 +2138,6 @@ function App(): h.JSX.Element {
     zoomToAndShowPortal(portalGuid, latE6, lngE6);
   };
 
-  const formatMissionOrderLabel = (order?: string): string => {
-    if (!order) return 'any order';
-    return order.replace(/_/g, ' ').toLowerCase();
-  };
-
-  const formatMissionRowMeta = (mission: IitcIrisMissionsState['missions'][number]): string => {
-    const selected = missionsState.selectedMission?.guid === mission.guid ? missionsState.selectedMission : undefined;
-    if (selected) {
-      return [
-        `${formatMissionRating(mission.ratingE6)} rating`,
-        formatMissionDuration(mission.medianCompletionTimeMs, mission.durationLabel),
-      ].filter((part) => part && part !== '-').join(' · ');
-    }
-    const waypointCount = mission.waypointCount;
-    const routeLengthMeters = mission.routeLengthMeters;
-    const orderType = mission.type;
-    const completedAgents = mission.numUniqueCompletedPlayers;
-    const author = mission.authorNickname;
-    const parts = [
-      `${formatMissionRating(mission.ratingE6)} rating`,
-      formatMissionDuration(mission.medianCompletionTimeMs, mission.durationLabel),
-    ];
-    if (author) parts.push(`by ${author}`);
-    if (routeLengthMeters !== undefined) parts.push(formatDistance(routeLengthMeters));
-    if (completedAgents !== undefined) parts.push(`${formatInteger(completedAgents)} agents`);
-    if (waypointCount !== undefined) parts.push(`${waypointCount} waypoints`);
-    if (orderType) parts.push(formatMissionOrderLabel(orderType));
-    return parts.filter((part) => part && part !== '-').join(' · ');
-  };
-
-  const renderSelectedMissionDetails = (): h.JSX.Element | null => {
-    if (!missionsState.selectedMission) return null;
-    const firstWaypoint = missionsState.selectedMission.waypoints.find((waypoint) => waypoint.latE6 !== undefined && waypoint.lngE6 !== undefined);
-    const renderMissionMetric = (
-      icon: 'rating' | 'time' | 'length' | 'agents' | 'waypoints' | 'order',
-      value: string | number,
-      label: string,
-      title: string,
-    ): h.JSX.Element => (
-      <span title={title}>
-        <img
-          src={icon === 'waypoints' || icon === 'order' ? getMissionTypeIcon(missionsState.selectedMission?.typeNum) : getMissionMetricIcon(icon)}
-          alt=""
-          loading="lazy"
-        />
-        <b>{value}</b>
-        <small>{label}</small>
-      </span>
-    );
-    return (
-      <div className="iitc-iris-mission-details">
-        <div className="iitc-iris-mission-expanded-top">
-          <span className="iitc-iris-status">
-            {missionsState.selectedMission.authorNickname ? (
-              <>
-                by <b className={`iitc-iris-mission-author ${getCommTeamClass(missionsState.selectedMission.authorTeam)}`}>{missionsState.selectedMission.authorNickname}</b>
-              </>
-            ) : 'unknown author'}
-          </span>
-        </div>
-        <div className="iitc-iris-mission-metrics">
-          {renderMissionMetric('rating', formatMissionRating(missionsState.selectedMission.ratingE6), 'rating', 'Average rating')}
-          {renderMissionMetric('time', formatMissionDuration(missionsState.selectedMission.medianCompletionTimeMs, missionsState.selectedMission.durationLabel), 'typical', 'Typical duration')}
-          {renderMissionMetric('length', formatDistance(missionsState.selectedMission.routeLengthMeters), 'length', 'Length of this mission. The actual distance required may vary.')}
-          {renderMissionMetric('agents', formatInteger(missionsState.selectedMission.numUniqueCompletedPlayers), 'agents', 'Unique players who have completed this mission')}
-          {renderMissionMetric('waypoints', missionsState.selectedMission.waypoints.length, 'waypoints', `${missionsState.selectedMission.type ?? 'Unknown'} mission with ${missionsState.selectedMission.waypoints.length} waypoints`)}
-          {renderMissionMetric('order', formatMissionOrderLabel(missionsState.selectedMission.type), 'order', 'Mission order')}
-        </div>
-        <div className="iitc-iris-mission-detail-actions">
-          <button
-            className="iitc-iris-portal-action"
-            type="button"
-            onClick={() => firstWaypoint && zoomToAndShowPortal(firstWaypoint.portalGuid, firstWaypoint.latE6, firstWaypoint.lngE6, Math.max(camera.zoom, 17))}
-            disabled={!firstWaypoint}
-            title="Pan to the first visible waypoint and select it when the portal is loaded"
-          >
-            First
-          </button>
-          <button className="iitc-iris-portal-action" type="button" onClick={zoomToMission} disabled={!missionsState.selectedMission.bounds} title="Zoom to mission route">
-            Zoom
-          </button>
-        </div>
-        {missionsState.selectedMission.description && (
-          <p className="iitc-iris-mission-description">{missionsState.selectedMission.description}</p>
-        )}
-        <div className="iitc-iris-mission-waypoint-list">
-          {missionsState.selectedMission.waypoints.map((waypoint) => (
-            <button
-              className={`iitc-iris-mission-waypoint ${waypoint.hidden ? 'is-hidden' : ''}`}
-              type="button"
-              key={`${waypoint.guid}-${waypoint.index}`}
-              onClick={() => {
-                if (waypoint.latE6 !== undefined && waypoint.lngE6 !== undefined) {
-                  zoomToAndShowPortal(waypoint.portalGuid, waypoint.latE6, waypoint.lngE6);
-                }
-              }}
-              disabled={waypoint.latE6 === undefined || waypoint.lngE6 === undefined}
-              title={waypoint.portalGuid || waypoint.guid}
-            >
-              <b>{waypoint.index + 1}</b>
-              <span>
-                <strong>{waypoint.hidden ? 'Hidden waypoint' : waypoint.title}</strong>
-                <small>{waypoint.objective} · {waypoint.type}</small>
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
   const selectCommPortal = (latE6?: number, lngE6?: number, portalGuid?: string): void => {
     selectPortalByLatLng(latE6, lngE6, portalGuid);
   };
@@ -2485,20 +2286,6 @@ function App(): h.JSX.Element {
       ? (): void => openSheet(entry.id)
       : undefined;
     return renderSheetTab(entry.id, entry.label, openSelectedSheet);
-  };
-
-  const renderPortalDetailSection = (sectionId: PortalSectionId, children: h.JSX.Element): h.JSX.Element => {
-    const section = PORTAL_DETAIL_SECTION_REGISTRY.find((entry) => entry.id === sectionId);
-    return (
-      <details
-        className="iitc-iris-portal-section"
-        open={portalSections[sectionId]}
-        onToggle={(event) => setPortalSectionOpen(sectionId, event.currentTarget.open)}
-      >
-        <summary className="iitc-iris-section-summary">{section?.label ?? sectionId}</summary>
-        {children}
-      </details>
-    );
   };
 
   const renderContextActionButton = (
@@ -2794,17 +2581,6 @@ function App(): h.JSX.Element {
     if (!option || option.mode === 'live') return;
     setMapView(option.lat, option.lng, option.zoom);
   };
-  let searchSelectableIndex = -1;
-  const renderedSearchResults = searchState.results.map((result) => ({
-    result,
-    selectableIndex: result.type === 'empty' ? -1 : ++searchSelectableIndex,
-  }));
-  const groupedSearchResults = [
-    {id: 'portals', label: 'Loaded portals', items: renderedSearchResults.filter(({result}) => result.type === 'portal' || result.type === 'guid')},
-    {id: 'addresses', label: 'Addresses', items: renderedSearchResults.filter(({result}) => result.type === 'address')},
-    {id: 'coordinates', label: 'Coordinates', items: renderedSearchResults.filter(({result}) => result.type === 'coordinate')},
-    {id: 'notices', label: 'Notices', items: renderedSearchResults.filter(({result}) => result.type === 'empty')},
-  ].filter((group) => group.items.length > 0);
   const activeSearchResult = searchState.results.filter((result) => result.type !== 'empty')[activeSearchResultIndex];
   const drawToolsTarget = getDrawToolsTarget();
   const drawToolsTargetDefaultLabel = drawToolsTarget?.label ?? '';
@@ -2832,98 +2608,19 @@ function App(): h.JSX.Element {
         </div>
       )}
       {activeSheet === 'search' && (
-        <aside className="iitc-iris-request-side-panel iitc-iris-search-panel" role="search" aria-label="Search">
-          <div className="iitc-iris-request-panel-header">
-            <span className="iitc-iris-selected-title">Search</span>
-            <span className="iitc-iris-panel-header-actions">
-              <span className={`iitc-iris-status iitc-iris-panel-state ${getPanelStatusClass(searchState.status)}`}>{searchState.status}</span>
-              <button className="iitc-iris-clear-selection" type="button" onClick={() => openSheet('map')} title="Close search" aria-label="Close search">X</button>
-            </span>
-          </div>
-          <div className="iitc-iris-request-panel-body">
-          <form
-            className="iitc-iris-search-box"
-            onSubmit={(event) => {
-              event.preventDefault();
-              requestSearch(searchTerm, true);
-            }}
-          >
-            <input
-              className="iitc-iris-search-input"
-              type="search"
-              value={searchTerm}
-              placeholder="Search portal or address"
-              title="Type to search loaded portals. Press Enter to search OpenStreetMap."
-              onInput={(event) => setSearchTerm(event.currentTarget.value)}
-              onKeyDown={handleSearchKeyDown}
-            />
-            {searchTerm && (
-              <button className="iitc-iris-search-clear" type="button" onClick={clearSearch} title="Clear search" aria-label="Clear search">x</button>
-            )}
-          </form>
-          {searchTerm.trim().length > 0 && (
-            <div className="iitc-iris-search-results">
-              <div className="iitc-iris-search-status">
-                <span>{searchState.status === 'loading' ? 'searching online' : searchState.results.length > 0 ? `${searchState.results.length} results` : searchTerm.trim().length < 3 ? 'type 3+ chars' : 'no local results'}</span>
-                {!searchState.confirmed && searchTerm.trim().length >= 3 && <span>Enter for address</span>}
-              </div>
-              {groupedSearchResults.map((group) => (
-                <div className="iitc-iris-search-result-group" key={group.id}>
-                  <span className="iitc-iris-search-result-heading">
-                    {group.label}
-                    <b>{group.items.length}</b>
-                  </span>
-                  {group.items.map(({result, selectableIndex}) => (
-                    <button
-                      className={`iitc-iris-search-result iitc-iris-search-result-${result.type} ${selectableIndex === activeSearchResultIndex ? 'is-active' : ''}`}
-                      type="button"
-                      onClick={() => selectSearchResult(result)}
-                      onDblClick={(event) => {
-                        event.preventDefault();
-                        selectSearchResult(result, true);
-                      }}
-                      disabled={result.type === 'empty'}
-                      key={result.id}
-                      onMouseEnter={() => {
-                        if (selectableIndex >= 0) setActiveSearchResultIndex(selectableIndex);
-                        previewSearchResult(result);
-                      }}
-                      onMouseLeave={() => previewSearchResult(null)}
-                      onFocus={() => previewSearchResult(result)}
-                      onBlur={() => previewSearchResult(null)}
-                      title={result.title}
-                    >
-                      <span className="iitc-iris-search-result-main">
-                        <span className="iitc-iris-search-result-type">{result.type === 'coordinate' ? 'coords' : result.type}</span>
-                        <span className={result.team ? getCommTeamClass(result.team) : ''}>{result.title}</span>
-                      </span>
-                      {result.description && <small>{result.description}</small>}
-                    </button>
-                  ))}
-                </div>
-              ))}
-              {searchState.error && <span className="iitc-iris-warning">{searchState.error}</span>}
-            </div>
-          )}
-          <div className="iitc-iris-panel-footer">
-            <span
-              className="iitc-iris-diagnostics-chip"
-              title={[
-                searchState.confirmed ? 'request: Nominatim search' : 'request: local portal search only',
-                `local: ${searchState.localResults}`,
-                `online: ${searchState.onlineResults ?? '-'}`,
-              ].join('\n')}
-            >
-              {searchState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(searchState.elapsedMs)}s` : 'request'}
-            </span>
-            {searchState.results.length > 0 && (
-              <button className="iitc-iris-diagnostics-chip iitc-iris-chip-button" type="button" onClick={clearSearch} title="Clear search results and map overlay">
-                clear overlay
-              </button>
-            )}
-          </div>
-          </div>
-        </aside>
+        <IitcIrisSearchPanel
+          activeSearchResultIndex={activeSearchResultIndex}
+          clearSearch={clearSearch}
+          closeSearch={() => openSheet('map')}
+          handleSearchKeyDown={handleSearchKeyDown}
+          previewSearchResult={previewSearchResult}
+          requestSearch={requestSearch}
+          searchState={searchState}
+          searchTerm={searchTerm}
+          selectSearchResult={selectSearchResult}
+          setActiveSearchResultIndex={setActiveSearchResultIndex}
+          setSearchTerm={setSearchTerm}
+        />
       )}
       <aside className="iitc-iris-map-controls" aria-label="Map controls">
         {(activeSheet === 'view' || activeSheet === 'layers' || activeSheet === 'drawLinks' || activeSheet === 'drawMarkers' || activeSheet === 'portalCounts' || activeSheet === 'portalsList' || activeSheet === 'scoreboard' || activeSheet === 'selectedLink' || activeSheet === 'selectedField') && (
@@ -3797,229 +3494,22 @@ function App(): h.JSX.Element {
         </div>
       </nav>
       {showPortalSidePanel && entityFetch.selectedPortal && (
-        <aside className={`iitc-iris-portal-side-panel ${formatTeamClass(entityFetch.selectedPortal.team)} ${activeSidePanel ? 'iitc-iris-portal-side-panel-stacked' : ''}`} aria-label="Selected portal details">
-          <div className="iitc-iris-portal-side-header">
-            {entityFetch.selectedPortal.image ? (
-              <button className="iitc-iris-selected-image-button" type="button" onClick={() => setPortalImageOpen(true)} title="Open portal image preview">
-                <img
-                  className="iitc-iris-selected-image"
-                  src={entityFetch.selectedPortal.image}
-                  alt=""
-                />
-              </button>
-            ) : (
-              <span className="iitc-iris-selected-image-placeholder" title="No portal image">No image</span>
-            )}
-            <div className="iitc-iris-portal-side-title">
-              <span className="iitc-iris-selected-title-row">
-                <span className="iitc-iris-selected-title" title={entityFetch.selectedPortal.guid}>
-                  {entityFetch.selectedPortal.title || entityFetch.selectedPortal.guid}
-                </span>
-                <span className={`iitc-iris-status iitc-iris-panel-state ${getPanelStatusClass(selectedPortalDetailsStatus)}`}>
-                  {selectedPortalDetailsStatus}
-                </span>
-              </span>
-              {selectedPortalDetails?.owner && (
-                <span className="iitc-iris-portal-owner-prominent" title={`Owner: ${selectedPortalDetails.owner}`}>
-                  <small>owner</small>
-                  <b className={getCommTeamClass(entityFetch.selectedPortal.team)}>{selectedPortalDetails.owner}</b>
-                </span>
-              )}
-            </div>
-            <span className="iitc-iris-panel-header-actions">
-              <button className="iitc-iris-clear-selection" type="button" onClick={closeSheetToMap} title="Close portal details" aria-label="Close portal details">X</button>
-            </span>
-          </div>
-          <div className="iitc-iris-portal-scroll-body">
-          <div className="iitc-iris-portal-actions" aria-label="Selected portal actions">
-            <button className="iitc-iris-portal-action" type="button" onClick={focusSelectedPortal} title="Center and zoom to this portal">Zoom</button>
-            <button className="iitc-iris-portal-action" type="button" onClick={copySelectedPortalTitle} title="Copy portal title">Title</button>
-            <button className="iitc-iris-portal-action" type="button" onClick={copySelectedPortalLink} title="Copy Intel portal link">Link</button>
-            <button className="iitc-iris-portal-action" type="button" onClick={copySelectedPortalGuid} title="Copy portal GUID">GUID</button>
-            {selectedPortalHasMissions && (
-              <button className="iitc-iris-portal-action" type="button" onClick={openSelectedPortalMissions} title="Fetch missions starting at this portal">Missions</button>
-            )}
-          </div>
-          <div className="iitc-iris-portal-summary">
-            <span className="iitc-iris-portal-summary-cell">
-              <span className="iitc-iris-status">level</span>
-              <b
-                className="iitc-iris-portal-level-value"
-                style={formatIitcColorVars(getIitcLevelColor(entityFetch.selectedPortal.level))}
-              >
-                {entityFetch.selectedPortal.isPlaceholder || entityFetch.selectedPortal.level === undefined ? '-' : `L${entityFetch.selectedPortal.level}`}
-              </b>
-            </span>
-            <span className="iitc-iris-portal-summary-cell">
-              <span className="iitc-iris-status">health</span>
-              <b>{formatPortalHealth(entityFetch.selectedPortal)}</b>
-              <span className="iitc-iris-summary-mini-track" aria-hidden="true">
-                <span style={`width: ${formatPortalHealthPercent(entityFetch.selectedPortal)}%;`} />
-              </span>
-            </span>
-            <span className="iitc-iris-portal-summary-cell">
-              <span className="iitc-iris-status">res</span>
-              <b>{entityFetch.selectedPortal.resCount !== undefined ? `${entityFetch.selectedPortal.resCount}/8` : '-'}</b>
-            </span>
-            <span className="iitc-iris-portal-summary-cell">
-              <span className="iitc-iris-status">links</span>
-              <b>{entityFetch.selectedPortal.links.count}</b>
-            </span>
-          </div>
-          <div className="iitc-iris-health-track" title={`Portal health ${formatPortalHealth(entityFetch.selectedPortal)}`}>
-            <span className="iitc-iris-health-fill" style={`width: ${formatPortalHealthPercent(entityFetch.selectedPortal)}%;`} />
-          </div>
-          <div className="iitc-iris-portal-panel">
-            <div className="iitc-iris-portal-panel-header">
-              <span className="iitc-iris-status">details</span>
-              <span className="iitc-iris-panel-header-actions">
-                {selectedPortalDetails?.error && (
-                  <span className="iitc-iris-status iitc-iris-warning" title={selectedPortalDetails.error}>
-                    {getAuthErrorMessage(selectedPortalDetails.status, selectedPortalDetails.error)}
-                  </span>
-                )}
-                {selectedPortalDetailsStatus === 'auth' && (
-                  inlineAuthActions
-                )}
-              </span>
-            </div>
-            {selectedPortalDetailsStatus !== 'ready' && (
-              <div className="iitc-iris-empty-state">
-                {selectedPortalDetailsStatus === 'loading' ? 'Fetching portal details...' : 'Waiting for portal details.'}
-              </div>
-            )}
-            {selectedPortalDetails?.status === 'ready' && (
-              <>
-                {renderPortalDetailSection('mods', (
-                  <div className="iitc-iris-mod-grid">
-                    {Array.from({ length: 4 }, (_, index) => {
-                      const mod = entityFetch.portalDetails?.mods?.[index];
-                      const modStats = mod ? formatModStats(mod.stats) : '';
-                      return (
-                        <div
-                          className={`iitc-iris-mod-slot ${mod ? '' : 'iitc-iris-empty-slot'}`}
-                          key={`mod-${index}`}
-                          style={formatIitcColorVars(getIitcRarityColor(mod?.rarity))}
-                        >
-                          {mod ? (
-                            <>
-                              <span className="iitc-iris-portal-mod-name">{mod.rarity.replace(/_/g, ' ')} {formatModName(mod.name)}</span>
-                              <span className={`iitc-iris-status iitc-iris-agent-name ${getCommTeamClass(entityFetch.selectedPortal?.team)}`}>{mod.owner}</span>
-                              {modStats && <span className="iitc-iris-status">{modStats}</span>}
-                            </>
-                          ) : (
-                            <span className="iitc-iris-status">empty</span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
-                {renderPortalDetailSection('resonators', (
-                  <div className="iitc-iris-resonator-grid">
-                    {RESONATOR_PANEL_ORDER.map((resonatorIndex, panelIndex) => {
-                      if (resonatorIndex === null) {
-                        return (
-                          <span className="iitc-iris-resonator-center" key="portal-center" title={entityFetch.selectedPortal?.title || entityFetch.selectedPortal?.guid || 'selected portal'}>
-                            portal
-                          </span>
-                        );
-                      }
-                      const resonator = entityFetch.portalDetails?.resonators?.[resonatorIndex];
-                      const resonatorHealth = resonator ? formatResonatorEnergyPercent(resonator.level, resonator.energy) : 0;
-                      return (
-                        <span
-                          className={`iitc-iris-resonator-slot ${resonator ? '' : 'iitc-iris-empty-slot'}`}
-                          key={`resonator-${panelIndex}`}
-                          style={resonator ? `${formatIitcColorVars(getIitcLevelColor(resonator.level)) ?? ''}` : undefined}
-                          title={resonator ? `${resonator.owner} ${resonator.energy} XM, ${resonatorHealth}% charged` : 'empty resonator slot'}
-                        >
-                          {resonator ? (
-                            <>
-                              <span className="iitc-iris-resonator-level">L{resonator.level}</span>
-                              <span className="iitc-iris-resonator-energy">{formatResonatorEnergy(resonator.energy)}</span>
-                              <span className={`iitc-iris-resonator-owner ${getCommTeamClass(entityFetch.selectedPortal?.team)}`}>{resonator.owner}</span>
-                              <span className="iitc-iris-resonator-percent">{resonatorHealth}%</span>
-                              <span className="iitc-iris-resonator-fill" style={`width: ${resonatorHealth}%;`} />
-                            </>
-                          ) : (
-                            <span className="iitc-iris-status">empty</span>
-                          )}
-                        </span>
-                      );
-                    })}
-                  </div>
-                ))}
-                {renderPortalDetailSection('facts', (
-                  <div className="iitc-iris-portal-panel-grid iitc-iris-portal-facts">
-                    <span className="iitc-iris-status">owner</span>
-                    <span className={`iitc-iris-agent-name ${getCommTeamClass(entityFetch.selectedPortal.team)}`}>{selectedPortalDetails.owner || '-'}</span>
-                    <span className="iitc-iris-status">mitigation</span>
-                    <span>
-                      {selectedPortalDetails.mitigation
-                        ? `${Math.round(selectedPortalDetails.mitigation.total)} total, ${Math.round(selectedPortalDetails.mitigation.shields)} shields, ${Math.round(selectedPortalDetails.mitigation.links)} links`
-                        : '-'}
-                    </span>
-                    <span className="iitc-iris-status">history</span>
-                    <span>
-                      {selectedPortalDetails.history
-                        ? [
-                          selectedPortalDetails.history.captured ? 'captured' : 'not captured',
-                          selectedPortalDetails.history.visited ? 'visited' : 'not visited',
-                          selectedPortalDetails.history.scoutControlled ? 'scout controlled' : 'not scout controlled',
-                        ].join(' / ')
-                        : '-'}
-                    </span>
-                    <span className="iitc-iris-status">topology</span>
-                    <span>
-                      {entityFetch.selectedPortal.links.count} links ({entityFetch.selectedPortal.links.outgoing} out/{entityFetch.selectedPortal.links.incoming} in), {entityFetch.selectedPortal.fields.count} fields
-                    </span>
-                    <span className="iitc-iris-status">markers</span>
-                    <span>
-                      {entityFetch.selectedPortal.ornaments.length} ornaments, {entityFetch.selectedPortal.artifacts.length} artifacts
-                      {(entityFetch.selectedPortal.mission || entityFetch.selectedPortal.mission50plus) && ', mission'}
-                    </span>
-                    <span className="iitc-iris-status">missions</span>
-                    <div>
-                      {selectedPortalHasMissions ? (
-                        <div className="iitc-iris-portal-mission-enrichment">
-                          <span>
-                            <small>missions</small>
-                            <b>{selectedPortalMissionSummary}</b>
-                          </span>
-                          <span className="iitc-iris-portal-mission-meta">
-                            {selectedPortalMissionState
-                              ? selectedPortalMissionState.cached
-                                ? 'cached'
-                                : selectedPortalMissionState.elapsedMs !== undefined
-                                  ? `request ${formatElapsedSeconds(selectedPortalMissionState.elapsedMs)}s`
-                                  : selectedPortalMissionState.status
-                              : 'from portal details'}
-                          </span>
-                          <button className="iitc-iris-portal-action" type="button" onClick={openSelectedPortalMissions} disabled={selectedPortalMissionState?.status === 'loading'} title="Open missions starting at this portal">
-                            {selectedPortalMissionState?.status === 'loading' ? 'Loading' : 'Open'}
-                          </button>
-                        </div>
-                      ) : '-'}
-                    </div>
-                  </div>
-                ))}
-                <div className="iitc-iris-panel-footer">
-                  <span
-                    className="iitc-iris-diagnostics-chip"
-                    title={[
-                      'request: /r/getPortalDetails',
-                      `guid: ${entityFetch.selectedPortal.guid}`,
-                    ].join('\n')}
-                  >
-                    {selectedPortalDetails.cached ? 'cached' : selectedPortalDetails.elapsedMs !== undefined ? `request ${formatElapsedSeconds(selectedPortalDetails.elapsedMs)}s` : 'request'}
-                  </span>
-                </div>
-              </>
-            )}
-          </div>
-          </div>
-        </aside>
+        <IitcIrisPortalDetailsPanel
+          activeSidePanel={activeSidePanel}
+          closePortalDetails={closeSheetToMap}
+          copySelectedPortalGuid={copySelectedPortalGuid}
+          copySelectedPortalLink={copySelectedPortalLink}
+          copySelectedPortalTitle={copySelectedPortalTitle}
+          focusSelectedPortal={focusSelectedPortal}
+          inlineAuthActions={inlineAuthActions}
+          openPortalImage={() => setPortalImageOpen(true)}
+          openSelectedPortalMissions={openSelectedPortalMissions}
+          portal={entityFetch.selectedPortal}
+          portalDetails={selectedPortalDetails}
+          portalMissionState={selectedPortalMissionState}
+          portalSections={portalSections}
+          setPortalSectionOpen={setPortalSectionOpen}
+        />
       )}
       {portalImageOpen && entityFetch.selectedPortal?.image && (
         <div className="iitc-iris-image-preview-backdrop" role="dialog" aria-modal="true" aria-label="Portal image preview" onClick={() => setPortalImageOpen(false)}>
@@ -4104,99 +3594,15 @@ function App(): h.JSX.Element {
             <IitcIrisScoresPanel refresh={refreshScores} scoresState={scoresState} />
           )}
           {activeSidePanel === 'missions' && (
-            <div className="iitc-iris-request-panel-body">
-              <div className="iitc-iris-map-control-row">
-                <button className="iitc-iris-portal-action" type="button" onClick={() => refreshMissions('view')} disabled={missionsState.status === 'loading'} title="Fetch top missions in the current map view">
-                  View
-                </button>
-                <button className="iitc-iris-portal-action" type="button" onClick={() => refreshMissions('portal')} disabled={!entityFetch.selectedPortal || missionsState.status === 'loading'} title="Fetch top missions starting at the selected portal">
-                  Portal
-                </button>
-                <a className="iitc-iris-portal-action iitc-iris-mission-create-link" href="https://missions.ingress.com/" target="_blank" rel="noreferrer" title="Open the Ingress Mission Authoring Tool">
-                  Create
-                </a>
-                <button className="iitc-iris-portal-action" type="button" onClick={() => refreshMissions()} disabled={missionsState.status === 'loading'} title="Refresh current mission source">
-                  {missionsState.status === 'loading' ? 'Loading' : 'Refresh'}
-                </button>
-              </div>
-              <div className="iitc-iris-panel-summary">
-                <span><b>{formatInteger(missionsState.missions.length)}</b><small>{missionsState.source === 'portal' ? 'portal missions' : 'view missions'}</small></span>
-                <span><b>{missionsState.selectedMission?.waypoints.length ?? '-'}</b><small>waypoints</small></span>
-                <span><b>{formatDistance(missionsState.selectedMission?.routeLengthMeters)}</b><small>length</small></span>
-              </div>
-              {missionsState.caption && (
-                <div className="iitc-iris-inventory-selected" title={missionsState.portalGuid}>
-                  <span className="iitc-iris-status">{missionsState.source === 'portal' ? 'portal' : 'view'}</span>
-                  <b>{missionsState.caption}</b>
-                </div>
-              )}
-              {missionsState.status === 'loading' && (
-                <div className="iitc-iris-empty-state">
-                  {missionsState.source === 'portal' ? 'Fetching missions starting at this portal...' : 'Fetching missions in the current map view...'}
-                </div>
-              )}
-              {missionsState.status === 'empty' && (
-                <div className="iitc-iris-empty-state">
-                  {missionsState.source === 'portal' ? 'No missions start at this portal.' : 'No missions found in this map view.'}
-                </div>
-              )}
-              {(missionsState.status === 'error' || missionsState.status === 'auth') && missionsState.missions.length === 0 && (
-                <div className="iitc-iris-empty-state">
-                  {missionsState.status === 'auth' ? 'Missions require an authenticated Intel session.' : 'Mission request failed.'}
-                </div>
-              )}
-              <div className="iitc-iris-scroll-region iitc-iris-missions-scroll">
-                {missionsState.missions.length > 0 && (
-                  <div className="iitc-iris-mission-list">
-                    {missionsState.missions.map((mission) => (
-                      <div className="iitc-iris-mission-entry" key={mission.guid}>
-                        <button
-                          className={`iitc-iris-mission-row ${missionsState.selectedMission?.guid === mission.guid ? 'is-active' : ''}`}
-                          type="button"
-                          onClick={() => requestMissionDetails(mission.guid)}
-                          disabled={missionsState.detailsStatus === 'loading' && missionsState.selectedMission?.guid === mission.guid}
-                          title={mission.guid}
-                        >
-                          {mission.image && <img src={mission.image} alt="" loading="lazy" />}
-                          <span>
-                            <b>{mission.title}</b>
-                            <small>{formatMissionRowMeta(mission)}</small>
-                          </span>
-                        </button>
-                        {missionsState.selectedMission?.guid === mission.guid && renderSelectedMissionDetails()}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="iitc-iris-panel-footer">
-                <span
-                  className="iitc-iris-diagnostics-chip"
-                  title={[
-                    missionsState.source === 'portal' ? 'request: /r/getTopMissionsForPortal' : 'request: /r/getTopMissionsInBounds',
-                    `portal: ${missionsState.portalGuid ?? '-'}`,
-                  ].join('\n')}
-                >
-                  {missionsState.cached
-                    ? 'cached'
-                    : missionsState.elapsedMs !== undefined
-                      ? `request ${formatElapsedSeconds(missionsState.elapsedMs)}s`
-                      : 'request'}
-                </span>
-                {missionsState.detailsElapsedMs !== undefined && (
-                  <span className="iitc-iris-diagnostics-chip" title="request: /r/getMissionDetails">
-                    {missionsState.detailsCached ? 'details cached' : `details ${formatElapsedSeconds(missionsState.detailsElapsedMs)}s`}
-                  </span>
-                )}
-                {missionsState.error && (
-                  <span className="iitc-iris-warning" title={missionsState.error}>
-                    {missionsState.status === 'auth' || missionsState.detailsStatus === 'auth'
-                      ? 'Missions require an authenticated Intel session.'
-                      : getAuthErrorMessage(missionsState.status, missionsState.error)}
-                  </span>
-                )}
-              </div>
-            </div>
+            <IitcIrisMissionsPanel
+              cameraZoom={camera.zoom}
+              hasSelectedPortal={Boolean(entityFetch.selectedPortal)}
+              missionsState={missionsState}
+              refreshMissions={refreshMissions}
+              requestMissionDetails={requestMissionDetails}
+              zoomToAndShowPortal={zoomToAndShowPortal}
+              zoomToMission={zoomToMission}
+            />
           )}
           {activeSidePanel === 'inventory' && (
             <IitcIrisInventoryPanel
