@@ -3,15 +3,13 @@ import {useCallback, useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import './iitc-iris.css';
 import {formatElapsedSeconds, getPanelStatusClass} from './ui-status';
 import {
-  DEFAULT_LAYER_SETTINGS,
   LAYER_REGISTRY_DIAGNOSTICS,
   type IitcIrisBooleanLayerSettingKey,
 } from './layer-registry';
-import {normalizePortalHighlighterId, PORTAL_HIGHLIGHTER_REGISTRY} from './highlighter-registry';
+import {PORTAL_HIGHLIGHTER_REGISTRY} from './highlighter-registry';
 import {
   AGENT_MENU_SHEET_REGISTRY,
   getPrimaryMenuId,
-  isSheetId,
   isSidePanelId,
   MAP_MENU_SHEET_REGISTRY,
   PRIMARY_MENU_REGISTRY,
@@ -23,8 +21,6 @@ import {
   type IitcIrisSidePanelId,
 } from './menu-registry';
 import {
-  DEFAULT_PORTAL_DETAIL_SECTION_SETTINGS,
-  PORTAL_DETAIL_SECTION_REGISTRY,
   type IitcIrisPortalDetailSectionId,
 } from './portal-detail-section-registry';
 import {
@@ -63,13 +59,51 @@ import {IitcIrisLayersPanel} from './layers-panel';
 import {IitcIrisMapContextPanel, IitcIrisMapNavigationPanel} from './map-controls-panel';
 import {IitcIrisHelpPanel} from './help-panel';
 import {
+  createDataSourceSettings,
+  DATA_SOURCE_OPTIONS,
+  getExtensionUrl,
+  loadInitialMapView,
+  loadStoredActiveSheet,
+  loadStoredBaseLayerId,
+  loadStoredBoolean,
+  loadStoredCommTab,
+  loadStoredDataSourceId,
+  loadStoredDebugDockVisible,
+  loadStoredHighlighterSettings,
+  loadStoredLayerSettings,
+  loadStoredLifecycleSettings,
+  loadStoredPortalSections,
+  LOGIN_BYPASS_STORAGE_KEY,
+  MAP_FOCUS_MODE_STORAGE_KEY,
+  SHORTCUTS_ENABLED_STORAGE_KEY,
+  storeActiveSheet,
+  storeBoolean,
+  storeCommTab,
+  storeDataSourceId,
+  storeDebugDockVisible,
+  storeHighlighterSettings,
+  storeLayerSettings,
+  storeLifecycleSettings,
+  storePortalSections,
+  storeSidePanelId,
+  VIEW_PRESETS,
+} from './content-storage-settings';
+import {
+  clampView,
+  createScenarioSnapshotSummary,
+  isScenarioSettled,
+  parseViewInput,
+  type ScenarioRun,
+  type ScenarioSnapshot,
+} from './content-scenarios';
+import {
   DRAW_TOOLS_DEFAULT_COLOR,
   getDrawToolsItemCenter,
   isSupportedDrawToolsItem,
   stripDrawToolsStorageIndex,
   type DrawToolsTarget,
 } from './content-draw-tools';
-import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDataSourceSettings, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPortalHighlighterId, type IitcIrisRequestDiagnostics, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPortalHighlighterId, type IitcIrisRequestDiagnostics, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderPolicy, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal} from './messages';
 import {
   createIitcMapDataPlan,
   IITC_MAX_REQUESTS,
@@ -83,59 +117,7 @@ import {
 
 const REQUEST_BOUNDS_PADDING_RATIO = 0.25;
 const IITC_PAN_CONTROL_OFFSET_PX = 500;
-const LOGIN_BYPASS_STORAGE_KEY = 'iitc-iris:login-bypass-until';
-const COMM_TAB_STORAGE_KEY = 'iitc-chat-tab';
 const LOGIN_BYPASS_MS = 5 * 60 * 1000;
-const BASE_LAYER_STORAGE_KEY = 'iitc-iris:base-layer';
-const LAYER_SETTINGS_STORAGE_KEY = 'iitc-iris:layer-settings';
-const HIGHLIGHTER_SETTINGS_STORAGE_KEY = 'iitc-iris:highlighter-settings';
-const DATA_SOURCE_STORAGE_KEY = 'iitc-iris:data-source';
-const LIFECYCLE_SETTINGS_STORAGE_KEY = 'iitc-iris:lifecycle-settings';
-const DEBUG_DOCK_STORAGE_KEY = 'iitc-iris:debug-dock';
-const SIDE_PANEL_STORAGE_KEY = 'iitc-iris:side-panel';
-const ACTIVE_SHEET_STORAGE_KEY = 'iitc-iris:active-sheet';
-const MAP_VIEW_STORAGE_KEY = 'iitc-iris:map-view';
-const PORTAL_SECTION_STORAGE_KEY = 'iitc-iris:portal-sections';
-const SHORTCUTS_ENABLED_STORAGE_KEY = 'iitc-iris:shortcuts-enabled';
-const MAP_FOCUS_MODE_STORAGE_KEY = 'iitc-iris:map-focus-mode';
-const VIEW_PRESETS = [
-  {id: 'amsterdam-z10', label: 'AMS 10', lat: 52.3730796, lng: 4.8924534, zoom: 10},
-  {id: 'amsterdam-z15', label: 'AMS 15', lat: 52.3730796, lng: 4.8924534, zoom: 15},
-  {id: 'damrak-z15', label: 'DAM 15', lat: 52.3761096, lng: 4.8980545, zoom: 15},
-] as const;
-const DATA_SOURCE_OPTIONS = [
-  {id: 'live', label: 'Live', title: 'Fetch live Intel getEntities responses', mode: 'live' as const},
-  {
-    id: 'ams-z10',
-    label: 'AMS F10',
-    title: 'Amsterdam fixture from docs/iris/update-map-samples/get-entities-z10.json',
-    mode: 'fixture' as const,
-    fixturePath: 'fixtures/get-entities-z10.json',
-    lat: 52.3730796,
-    lng: 4.8924534,
-    zoom: 10,
-  },
-  {
-    id: 'ams-z14',
-    label: 'AMS F14',
-    title: 'Amsterdam fixture from docs/iris/update-map-samples/get-entities-z14.json',
-    mode: 'fixture' as const,
-    fixturePath: 'fixtures/get-entities-z14.json',
-    lat: 52.3730796,
-    lng: 4.8924534,
-    zoom: 14,
-  },
-  {
-    id: 'dam-iitc-z15',
-    label: 'DAM IITC',
-    title: 'Damrak fixture extracted from IITC HAR getEntities response',
-    mode: 'fixture' as const,
-    fixturePath: 'fixtures/get-entities-damrak-iitc-z15.json',
-    lat: 52.3761096,
-    lng: 4.8980545,
-    zoom: 15,
-  },
-] as const;
 type BooleanLayerSettingKey = IitcIrisBooleanLayerSettingKey;
 const SIDE_PANEL_OPTIONS = SIDE_PANEL_REGISTRY;
 const DEFAULT_RENDER_POLICY: IitcIrisRenderPolicy = {
@@ -172,18 +154,6 @@ type SidePanelId = IitcIrisSidePanelId;
 type SheetId = IitcIrisSheetId;
 type PrimaryMenuId = IitcIrisPrimaryMenuId;
 type PortalSectionId = IitcIrisPortalDetailSectionId;
-interface ParsedViewInput {
-  lat: number;
-  lng: number;
-  zoom?: number;
-}
-
-interface StoredMapView {
-  lat: number;
-  lng: number;
-  zoom: number;
-}
-
 interface InnerStatusView {
   portalText: string;
   mapText: string;
@@ -193,512 +163,8 @@ interface InnerStatusView {
   failedRequests: number;
 }
 
-interface ScenarioSnapshot {
-  label: string;
-  capturedAt: string;
-  diagnostics: unknown;
-}
 
-interface ScenarioSnapshotSummary {
-  complete?: boolean;
-  source?: string;
-  requestedTiles?: number;
-  returnedTiles?: number;
-  nonEmptyTiles?: number;
-  retryRequests: number;
-  retriedTiles: number;
-  recoveredTiles: number;
-  partialTiles: number;
-  cacheFreshTiles: number;
-  cacheStaleTiles: number;
-  renderQueue?: {
-    renderedTiles?: number;
-    ok?: number;
-    cacheFresh?: number;
-    cacheStale?: number;
-    lastStatus?: string | null;
-  };
-  renderMutation?: IitcIrisRenderMutationDiagnostics | null;
-  timing?: IitcIrisMapTimingDiagnostics | null;
-  warnings: string[];
-}
 
-interface ScenarioRun {
-  id: string;
-  name: string;
-  startedAt: string;
-  status: 'running' | 'finished';
-  finishedAt?: string;
-  lifecycleSettings: IitcIrisLifecycleSettings;
-  snapshots: ScenarioSnapshot[];
-}
-
-function isScenarioSettled(diagnostics: unknown): boolean {
-  const view = diagnostics as {
-    entities?: {
-      complete?: boolean;
-      queue?: {activeRequests?: number};
-    };
-    requests?: {activeRequests?: number};
-  };
-  return view.entities?.complete === true &&
-    (view.requests?.activeRequests ?? 0) === 0 &&
-    (view.entities?.queue?.activeRequests ?? 0) === 0;
-}
-
-function readStringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
-}
-
-function countIntersection(left: string[], right: string[]): number {
-  const rightSet = new Set(right);
-  return left.filter((item) => rightSet.has(item)).length;
-}
-
-function createScenarioSnapshotSummary(diagnostics: unknown): ScenarioSnapshotSummary {
-  const view = diagnostics as {
-    entities?: {
-      complete?: boolean;
-      source?: string;
-      entitySource?: string;
-      requestedTiles?: number;
-      returnedTiles?: number;
-      nonEmptyTiles?: number;
-      retryRequests?: number;
-      retriedTileKeys?: unknown;
-      recoveredTileKeys?: unknown;
-      partialTileKeys?: unknown;
-      cacheFreshTileKeys?: unknown;
-      cacheStaleTileKeys?: unknown;
-      renderQueue?: IitcIrisRenderQueueDiagnostics | null;
-      renderMutation?: IitcIrisRenderMutationDiagnostics | null;
-      timing?: IitcIrisMapTimingDiagnostics | null;
-    };
-  };
-  const entities = view.entities ?? {};
-  const retriedTileKeys = readStringArray(entities.retriedTileKeys);
-  const recoveredTileKeys = readStringArray(entities.recoveredTileKeys);
-  const partialTileKeys = readStringArray(entities.partialTileKeys);
-  const cacheFreshTileKeys = readStringArray(entities.cacheFreshTileKeys);
-  const cacheStaleTileKeys = readStringArray(entities.cacheStaleTileKeys);
-  const freshRetried = countIntersection(cacheFreshTileKeys, retriedTileKeys);
-  const stalePartial = countIntersection(cacheStaleTileKeys, partialTileKeys);
-  const renderQueue = entities.renderQueue ?? undefined;
-  const renderMutation = entities.renderMutation ?? undefined;
-  const renderedStatusTotal = renderQueue
-    ? renderQueue.renderedOkTiles + renderQueue.renderedCacheFreshTiles + renderQueue.renderedCacheStaleTiles
-    : 0;
-  const warnings = [
-    freshRetried > 0 ? `${freshRetried} fresh cached tiles were retried` : null,
-    stalePartial > 0 ? `${stalePartial} stale cached tiles ended partial` : null,
-    renderQueue && renderQueue.renderedTiles !== renderedStatusTotal
-      ? `rendered tile count ${renderQueue.renderedTiles} differs from status total ${renderedStatusTotal}`
-      : null,
-  ].filter((warning): warning is string => warning !== null);
-
-  return {
-    complete: entities.complete,
-    source: entities.source ?? entities.entitySource,
-    requestedTiles: entities.requestedTiles,
-    returnedTiles: entities.returnedTiles,
-    nonEmptyTiles: entities.nonEmptyTiles,
-    retryRequests: entities.retryRequests ?? 0,
-    retriedTiles: retriedTileKeys.length,
-    recoveredTiles: recoveredTileKeys.length,
-    partialTiles: partialTileKeys.length,
-    cacheFreshTiles: cacheFreshTileKeys.length,
-    cacheStaleTiles: cacheStaleTileKeys.length,
-    renderQueue: renderQueue ? {
-      renderedTiles: renderQueue.renderedTiles,
-      ok: renderQueue.renderedOkTiles,
-      cacheFresh: renderQueue.renderedCacheFreshTiles,
-      cacheStale: renderQueue.renderedCacheStaleTiles,
-      lastStatus: renderQueue.lastRenderedTileStatus,
-    } : undefined,
-    renderMutation,
-    timing: entities.timing,
-    warnings,
-  };
-}
-
-function clampView(view: ParsedViewInput): ParsedViewInput {
-  return {
-    lat: Math.max(-85.051128, Math.min(85.051128, view.lat)),
-    lng: Math.max(-180, Math.min(179.999999, view.lng)),
-    zoom: view.zoom === undefined ? undefined : Math.max(0, Math.min(21, view.zoom)),
-  };
-}
-
-function isStoredMapView(value: unknown): value is StoredMapView {
-  if (!value || typeof value !== 'object') return false;
-  const view = value as Partial<StoredMapView>;
-  return typeof view.lat === 'number' && Number.isFinite(view.lat) &&
-    typeof view.lng === 'number' && Number.isFinite(view.lng) &&
-    typeof view.zoom === 'number' && Number.isFinite(view.zoom);
-}
-
-function defaultMapView(): StoredMapView {
-  return {lat: 52.3730796, lng: 4.8924534, zoom: 11};
-}
-
-function loadUrlMapView(): StoredMapView | null {
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const ll = params.get('ll');
-    const z = params.get('z');
-    if (!ll || !z) return null;
-    const [latText, lngText] = ll.split(',');
-    const parsed = {lat: Number(latText), lng: Number(lngText), zoom: Number(z)};
-    if (!isStoredMapView(parsed)) return null;
-    const clamped = clampView(parsed);
-    return {lat: clamped.lat, lng: clamped.lng, zoom: clamped.zoom ?? defaultMapView().zoom};
-  } catch {
-    return null;
-  }
-}
-
-function loadStoredMapView(): StoredMapView {
-  try {
-    const value = window.localStorage.getItem(MAP_VIEW_STORAGE_KEY);
-    if (!value) return defaultMapView();
-    const parsed = JSON.parse(value) as unknown;
-    if (!isStoredMapView(parsed)) return defaultMapView();
-    const clamped = clampView(parsed);
-    return {lat: clamped.lat, lng: clamped.lng, zoom: clamped.zoom ?? defaultMapView().zoom};
-  } catch {
-    return defaultMapView();
-  }
-}
-
-function loadInitialMapView(): StoredMapView {
-  return loadUrlMapView() ?? loadStoredMapView();
-}
-
-function parseViewInput(value: string): ParsedViewInput | null {
-  const text = value.trim();
-  if (!text) return null;
-
-  try {
-    const url = new URL(text);
-    const ll = url.searchParams.get('ll') ?? url.searchParams.get('pll');
-    const z = url.searchParams.get('z');
-    if (ll) {
-      const [latText, lngText] = ll.split(',');
-      const parsed = {
-        lat: Number(latText),
-        lng: Number(lngText),
-        zoom: z ? Number(z) : undefined,
-      };
-      if (Number.isFinite(parsed.lat) && Number.isFinite(parsed.lng) && (parsed.zoom === undefined || Number.isFinite(parsed.zoom))) return clampView(parsed);
-    }
-  } catch {
-    // Fall through to coordinate parsing.
-  }
-
-  const [latText, lngText, zoomText] = text.split(/[,\s]+/).filter(Boolean);
-  const parsed = {
-    lat: Number(latText),
-    lng: Number(lngText),
-    zoom: zoomText ? Number(zoomText) : undefined,
-  };
-  if (!Number.isFinite(parsed.lat) || !Number.isFinite(parsed.lng)) return null;
-  if (parsed.zoom !== undefined && !Number.isFinite(parsed.zoom)) return null;
-  return clampView(parsed);
-}
-
-function getExtensionUrl(path: string): string {
-  return chrome.runtime.getURL(path);
-}
-
-function isBaseLayerId(value: string | null): value is IitcIrisBaseLayerId {
-  return value === 'osm' || value === 'cartodb-dark-matter' || value === 'cartodb-positron';
-}
-
-function loadStoredBaseLayerId(): IitcIrisBaseLayerId {
-  try {
-    const value = window.localStorage.getItem(BASE_LAYER_STORAGE_KEY);
-    return isBaseLayerId(value) ? value : 'cartodb-dark-matter';
-  } catch {
-    return 'cartodb-dark-matter';
-  }
-}
-
-function isLayerSettings(value: unknown): value is Partial<IitcIrisLayerSettings> {
-  return !!value && typeof value === 'object';
-}
-
-type LegacyStoredLayerSettings = Partial<IitcIrisLayerSettings> & {
-  drawnItems?: unknown;
-  levelFill?: unknown;
-  healthFill?: unknown;
-  historyCaptured?: unknown;
-  historyVisited?: unknown;
-  historyScoutControlled?: unknown;
-};
-
-function loadStoredLayerSettings(): IitcIrisLayerSettings {
-  try {
-    const value = window.localStorage.getItem(LAYER_SETTINGS_STORAGE_KEY);
-    if (!value) return DEFAULT_LAYER_SETTINGS;
-    const parsed = JSON.parse(value) as unknown;
-    if (!isLayerSettings(parsed)) return DEFAULT_LAYER_SETTINGS;
-    const legacyParsed = parsed as LegacyStoredLayerSettings;
-    const legacyPlayerTracker = typeof parsed.playerTracker === 'boolean' ? parsed.playerTracker : undefined;
-    const storedKeyCount = (parsed as Record<string, unknown>).keyCount;
-    return {
-      fields: typeof parsed.fields === 'boolean' ? parsed.fields : DEFAULT_LAYER_SETTINGS.fields,
-      links: typeof parsed.links === 'boolean' ? parsed.links : DEFAULT_LAYER_SETTINGS.links,
-      portals: typeof parsed.portals === 'boolean' ? parsed.portals : DEFAULT_LAYER_SETTINGS.portals,
-      unclaimedPortals: typeof parsed.unclaimedPortals === 'boolean' ? parsed.unclaimedPortals : DEFAULT_LAYER_SETTINGS.unclaimedPortals,
-      level1Portals: typeof parsed.level1Portals === 'boolean' ? parsed.level1Portals : DEFAULT_LAYER_SETTINGS.level1Portals,
-      level2Portals: typeof parsed.level2Portals === 'boolean' ? parsed.level2Portals : DEFAULT_LAYER_SETTINGS.level2Portals,
-      level3Portals: typeof parsed.level3Portals === 'boolean' ? parsed.level3Portals : DEFAULT_LAYER_SETTINGS.level3Portals,
-      level4Portals: typeof parsed.level4Portals === 'boolean' ? parsed.level4Portals : DEFAULT_LAYER_SETTINGS.level4Portals,
-      level5Portals: typeof parsed.level5Portals === 'boolean' ? parsed.level5Portals : DEFAULT_LAYER_SETTINGS.level5Portals,
-      level6Portals: typeof parsed.level6Portals === 'boolean' ? parsed.level6Portals : DEFAULT_LAYER_SETTINGS.level6Portals,
-      level7Portals: typeof parsed.level7Portals === 'boolean' ? parsed.level7Portals : DEFAULT_LAYER_SETTINGS.level7Portals,
-      level8Portals: typeof parsed.level8Portals === 'boolean' ? parsed.level8Portals : DEFAULT_LAYER_SETTINGS.level8Portals,
-      resistance: typeof parsed.resistance === 'boolean' ? parsed.resistance : DEFAULT_LAYER_SETTINGS.resistance,
-      enlightened: typeof parsed.enlightened === 'boolean' ? parsed.enlightened : DEFAULT_LAYER_SETTINGS.enlightened,
-      machina: typeof parsed.machina === 'boolean' ? parsed.machina : DEFAULT_LAYER_SETTINGS.machina,
-      ornaments: typeof parsed.ornaments === 'boolean' ? parsed.ornaments : DEFAULT_LAYER_SETTINGS.ornaments,
-      artifacts: typeof parsed.artifacts === 'boolean' ? parsed.artifacts : DEFAULT_LAYER_SETTINGS.artifacts,
-      labels: typeof parsed.labels === 'boolean' ? parsed.labels : DEFAULT_LAYER_SETTINGS.labels,
-      tiles: typeof parsed.tiles === 'boolean' ? parsed.tiles : DEFAULT_LAYER_SETTINGS.tiles,
-      drawnLinks: typeof parsed.drawnLinks === 'boolean'
-        ? parsed.drawnLinks
-        : typeof legacyParsed.drawnItems === 'boolean'
-          ? legacyParsed.drawnItems
-          : DEFAULT_LAYER_SETTINGS.drawnLinks,
-      drawnMarkers: typeof parsed.drawnMarkers === 'boolean'
-        ? parsed.drawnMarkers
-        : typeof legacyParsed.drawnItems === 'boolean'
-          ? legacyParsed.drawnItems
-          : DEFAULT_LAYER_SETTINGS.drawnMarkers,
-      playerTracker: DEFAULT_LAYER_SETTINGS.playerTracker,
-      playerTrackerResistance: typeof parsed.playerTrackerResistance === 'boolean'
-        ? parsed.playerTrackerResistance
-        : legacyPlayerTracker ?? DEFAULT_LAYER_SETTINGS.playerTrackerResistance,
-      playerTrackerEnlightened: typeof parsed.playerTrackerEnlightened === 'boolean'
-        ? parsed.playerTrackerEnlightened
-        : legacyPlayerTracker ?? DEFAULT_LAYER_SETTINGS.playerTrackerEnlightened,
-      playerTrackerMachina: typeof parsed.playerTrackerMachina === 'boolean'
-        ? parsed.playerTrackerMachina
-        : legacyPlayerTracker ?? DEFAULT_LAYER_SETTINGS.playerTrackerMachina,
-      keyCount: storedKeyCount === true || storedKeyCount === 'on',
-    };
-  } catch {
-    return DEFAULT_LAYER_SETTINGS;
-  }
-}
-
-function legacyHighlighterFromLayerSettings(
-  legacyLayerSettings?: LegacyStoredLayerSettings,
-): IitcIrisPortalHighlighterId {
-  if (legacyLayerSettings?.levelFill === true) return 'level-color';
-  if (legacyLayerSettings?.healthFill === true) return 'needs-recharge';
-  if (legacyLayerSettings?.historyCaptured === 'on') return 'history-captured';
-  if (legacyLayerSettings?.historyVisited === 'on') return 'history-visited';
-  if (legacyLayerSettings?.historyCaptured === 'invert') return 'history-not-captured';
-  if (legacyLayerSettings?.historyVisited === 'invert') return 'history-not-visited';
-  if (legacyLayerSettings?.historyScoutControlled === 'on') return 'history-scout-controlled';
-  if (legacyLayerSettings?.historyScoutControlled === 'invert') return 'history-not-scout-controlled';
-  return 'none';
-}
-
-function loadStoredHighlighterSettings(): IitcIrisHighlighterSettings {
-  try {
-    const value = window.localStorage.getItem(HIGHLIGHTER_SETTINGS_STORAGE_KEY);
-    const legacyLayerValue = window.localStorage.getItem(LAYER_SETTINGS_STORAGE_KEY);
-    const legacyParsed = legacyLayerValue ? JSON.parse(legacyLayerValue) as unknown : undefined;
-    const legacyStoredLayerSettings = isLayerSettings(legacyParsed) ? legacyParsed as LegacyStoredLayerSettings : undefined;
-    if (!value) return {active: legacyHighlighterFromLayerSettings(legacyStoredLayerSettings)};
-    const parsed = JSON.parse(value) as Partial<IitcIrisHighlighterSettings>;
-    return {active: normalizePortalHighlighterId(parsed.active)};
-  } catch {
-    return {active: legacyHighlighterFromLayerSettings()};
-  }
-}
-
-function loadStoredDataSourceId(): typeof DATA_SOURCE_OPTIONS[number]['id'] {
-  try {
-    const value = window.localStorage.getItem(DATA_SOURCE_STORAGE_KEY);
-    return DATA_SOURCE_OPTIONS.some((option) => option.id === value) ? value as typeof DATA_SOURCE_OPTIONS[number]['id'] : 'live';
-  } catch {
-    return 'live';
-  }
-}
-
-function loadStoredLifecycleSettings(): IitcIrisLifecycleSettings {
-  try {
-    const value = window.localStorage.getItem(LIFECYCLE_SETTINGS_STORAGE_KEY);
-    if (!value) return {iitcMovementDelay: false};
-    const parsed = JSON.parse(value) as Partial<IitcIrisLifecycleSettings>;
-    return {iitcMovementDelay: parsed.iitcMovementDelay === true};
-  } catch {
-    return {iitcMovementDelay: false};
-  }
-}
-
-function storeLayerSettings(value: IitcIrisLayerSettings): void {
-  try {
-    window.localStorage.setItem(LAYER_SETTINGS_STORAGE_KEY, JSON.stringify(value));
-  } catch {
-    // Layer preferences are optional.
-  }
-}
-
-function storeHighlighterSettings(value: IitcIrisHighlighterSettings): void {
-  try {
-    window.localStorage.setItem(HIGHLIGHTER_SETTINGS_STORAGE_KEY, JSON.stringify(value));
-  } catch {
-    // Highlighter preferences are optional.
-  }
-}
-
-function storeDataSourceId(value: string): void {
-  try {
-    window.localStorage.setItem(DATA_SOURCE_STORAGE_KEY, value);
-  } catch {
-    // Data source preference is optional.
-  }
-}
-
-function storeLifecycleSettings(value: IitcIrisLifecycleSettings): void {
-  try {
-    window.localStorage.setItem(LIFECYCLE_SETTINGS_STORAGE_KEY, JSON.stringify(value));
-  } catch {
-    // Lifecycle diagnostics are optional.
-  }
-}
-
-function loadStoredDebugDockVisible(): boolean {
-  try {
-    return window.localStorage.getItem(DEBUG_DOCK_STORAGE_KEY) !== 'false';
-  } catch {
-    return true;
-  }
-}
-
-function storeDebugDockVisible(value: boolean): void {
-  try {
-    window.localStorage.setItem(DEBUG_DOCK_STORAGE_KEY, value ? 'true' : 'false');
-  } catch {
-    // Debug visibility is optional.
-  }
-}
-
-function isCommTab(value: string | null): value is IitcIrisCommTab {
-  return value === 'all' || value === 'faction' || value === 'alerts';
-}
-
-function loadStoredCommTab(): IitcIrisCommTab {
-  try {
-    const value = window.localStorage.getItem(COMM_TAB_STORAGE_KEY);
-    return isCommTab(value) ? value : 'all';
-  } catch {
-    return 'all';
-  }
-}
-
-function storeCommTab(value: IitcIrisCommTab): void {
-  try {
-    window.localStorage.setItem(COMM_TAB_STORAGE_KEY, value);
-  } catch {
-    // COMM tab preference is optional.
-  }
-}
-
-function loadStoredSidePanelId(): SidePanelId | null {
-  try {
-    const value = window.localStorage.getItem(SIDE_PANEL_STORAGE_KEY);
-    return isSidePanelId(value) ? value : null;
-  } catch {
-    return null;
-  }
-}
-
-function loadStoredActiveSheet(): SheetId {
-  try {
-    const value = window.localStorage.getItem(ACTIVE_SHEET_STORAGE_KEY);
-    if (isSheetId(value)) return value;
-    return loadStoredSidePanelId() ?? 'map';
-  } catch {
-    return loadStoredSidePanelId() ?? 'map';
-  }
-}
-
-function storeActiveSheet(value: SheetId): void {
-  try {
-    window.localStorage.setItem(ACTIVE_SHEET_STORAGE_KEY, value);
-  } catch {
-    // Sheet preference is optional.
-  }
-}
-
-function loadStoredPortalSections(): Record<PortalSectionId, boolean> {
-  try {
-    const parsed = JSON.parse(window.localStorage.getItem(PORTAL_SECTION_STORAGE_KEY) ?? '{}') as Partial<Record<PortalSectionId, boolean>>;
-    return Object.fromEntries(
-      PORTAL_DETAIL_SECTION_REGISTRY.map((entry) => [
-        entry.id,
-        typeof parsed[entry.id] === 'boolean' ? parsed[entry.id] : entry.defaultOpen,
-      ]),
-    ) as Record<PortalSectionId, boolean>;
-  } catch {
-    return DEFAULT_PORTAL_DETAIL_SECTION_SETTINGS;
-  }
-}
-
-function storePortalSections(value: Record<PortalSectionId, boolean>): void {
-  try {
-    window.localStorage.setItem(PORTAL_SECTION_STORAGE_KEY, JSON.stringify(value));
-  } catch {
-    // Portal section state is optional.
-  }
-}
-
-function loadStoredBoolean(key: string, fallback: boolean): boolean {
-  try {
-    const value = window.localStorage.getItem(key);
-    if (value === 'true') return true;
-    if (value === 'false') return false;
-    return fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function storeBoolean(key: string, value: boolean): void {
-  try {
-    window.localStorage.setItem(key, value ? 'true' : 'false');
-  } catch {
-    // Boolean preferences are optional.
-  }
-}
-
-function storeSidePanelId(value: SidePanelId | null): void {
-  try {
-    if (value) {
-      window.localStorage.setItem(SIDE_PANEL_STORAGE_KEY, value);
-    } else {
-      window.localStorage.removeItem(SIDE_PANEL_STORAGE_KEY);
-    }
-  } catch {
-    // Side panel preference is optional.
-  }
-}
-
-function createDataSourceSettings(id: typeof DATA_SOURCE_OPTIONS[number]['id']): IitcIrisDataSourceSettings {
-  const option = DATA_SOURCE_OPTIONS.find((candidate) => candidate.id === id) ?? DATA_SOURCE_OPTIONS[0];
-  if (option.mode === 'live') return {mode: 'live'};
-  return {
-    mode: 'fixture',
-    id: option.id,
-    label: option.label,
-    url: getExtensionUrl(option.fixturePath),
-  };
-}
 
 function injectScript(src: string): void {
   if (document.querySelector(`script[data-iitc-iris-src="${CSS.escape(src)}"]`)) return;
@@ -2160,10 +1626,10 @@ function App(): h.JSX.Element {
     return (): void => window.removeEventListener('keydown', onKeyDown);
   }, [closeSheets, hasSelectedObject, panMap, portalImageOpen, shortcutsEnabled, togglePrimaryMenu, toggleSheet, zoomMap]);
 
-  const setDataSource = (id: typeof DATA_SOURCE_OPTIONS[number]['id']): void => {
+  const setDataSource = (id: string): void => {
     setDataSourceId(id);
     const option = DATA_SOURCE_OPTIONS.find((candidate) => candidate.id === id);
-    if (!option || option.mode === 'live') return;
+    if (!option || option.mode === 'live' || option.lat === undefined || option.lng === undefined || option.zoom === undefined) return;
     setMapView(option.lat, option.lng, option.zoom);
   };
   const activeSearchResult = searchState.results.filter((result) => result.type !== 'empty')[activeSearchResultIndex];
