@@ -58,6 +58,8 @@ import {IitcIrisScoreboardPanel} from './scoreboard-panel';
 import {IitcIrisLayersPanel} from './layers-panel';
 import {IitcIrisMapContextPanel, IitcIrisMapNavigationPanel} from './map-controls-panel';
 import {IitcIrisHelpPanel} from './help-panel';
+import {IitcIrisSystemControlsPanel} from './system-controls-panel';
+import {IitcIrisPortalImageModal} from './portal-image-modal';
 import {
   createDataSourceSettings,
   DATA_SOURCE_OPTIONS,
@@ -503,20 +505,21 @@ function App(): h.JSX.Element {
   const scenarioProgressLabels = scenarioProgressRun ? new Set(scenarioProgressRun.snapshots.map((snapshot) => snapshot.label)) : new Set<string>();
   const scenarioExpectedSteps = ['previous', 'before-pan-south', 'reload', 'in-progress', 'done'];
 
-  const startScenarioRun = (name: string, settings: IitcIrisLifecycleSettings): void => {
+  const startScenarioRun = (name: string, overrides: Partial<IitcIrisLifecycleSettings>): void => {
     if (activeScenarioRun) {
       setScenarioStatusBriefly('finish current run first');
       return;
     }
+    const nextSettings: IitcIrisLifecycleSettings = { ...lifecycleSettings, ...overrides };
     const runId = `${name}-${Date.now()}`;
-    setLifecycleSettings(settings);
+    setLifecycleSettings(nextSettings);
     setScenarioRuns((current) => [...current, {
       id: runId,
       name,
       startedAt: new Date().toISOString(),
       status: 'running',
-      lifecycleSettings: settings,
-      snapshots: [createScenarioSnapshot('previous', settings)],
+      lifecycleSettings: nextSettings,
+      snapshots: [createScenarioSnapshot('previous', nextSettings)],
     }]);
     setActiveScenarioRunId(runId);
     setScenarioStatusBriefly(`${name}: previous captured`);
@@ -1742,162 +1745,41 @@ function App(): h.JSX.Element {
             openIntelLogin={openIntelLogin}
             toggleDebugDock={toggleDebugDock}
           />
-          <div className="iitc-iris-map-controls-section">
-            <span className="iitc-iris-status">Interaction</span>
-            <div className="iitc-iris-map-control-row">
-              <button
-                className={`iitc-iris-layer-toggle ${shortcutsEnabled ? 'iitc-iris-layer-toggle-active' : ''}`}
-                type="button"
-                onClick={() => setShortcutsEnabled((current) => !current)}
-                title="Enable plain keyboard shortcuts when focus is not in a text field"
-                aria-pressed={shortcutsEnabled}
-              >
-                Shortcuts
-              </button>
-              <button
-                className={`iitc-iris-layer-toggle ${mapFocusMode ? 'iitc-iris-layer-toggle-active' : ''}`}
-                type="button"
-                onClick={() => setMapFocusMode((current) => !current)}
-                title="Auto-close panels after navigation actions that move the map"
-                aria-pressed={mapFocusMode}
-              >
-                Map Focus
-              </button>
-              <span className="iitc-iris-status">{shortcutsEnabled ? 'keys on' : 'keys off'}</span>
-              <span className="iitc-iris-status">{mapFocusMode ? 'auto close' : 'stay open'}</span>
-            </div>
-          </div>
-          <div className="iitc-iris-map-controls-section">
-            <span className="iitc-iris-status">Copy/export</span>
-            <div className="iitc-iris-map-control-row">
-              <button className="iitc-iris-portal-action" type="button" onClick={copyDockText} title="Copy JSON diagnostics">JSON</button>
-              <button className="iitc-iris-portal-action" type="button" onClick={copyIntelUrl} title="Copy current view as an Intel URL">URL</button>
-              {copyStatus && <span className="iitc-iris-status">{copyStatus}</span>}
-            </div>
-          </div>
-          <div className="iitc-iris-map-controls-section">
-            <span className="iitc-iris-status">Presets</span>
-            <div className="iitc-iris-map-control-row">
-              {VIEW_PRESETS.map((preset) => (
-                <button
-                  key={preset.id}
-                  className="iitc-iris-preset"
-                  type="button"
-                  onClick={() => jumpToPreset(preset)}
-                  title={`${preset.label} ${preset.lat.toFixed(6)},${preset.lng.toFixed(6)}`}
-                >
-                  {preset.label}
-                </button>
-              ))}
-            </div>
-            <form
-              className="iitc-iris-jump"
-              onSubmit={(event) => {
-                event.preventDefault();
-                jumpToViewInput();
-              }}
-            >
-              <input
-                className="iitc-iris-jump-input"
-                type="text"
-                value={viewInput}
-                onInput={(event) => setViewInput((event.currentTarget as HTMLInputElement).value)}
-                placeholder="lat,lng,z or Intel URL"
-                title="Paste lat,lng,z or an Intel URL with ll, pll, and optional z"
-              />
-              <button className="iitc-iris-preset" type="submit">Jump</button>
-              {viewInputStatus && <span className="iitc-iris-status">{viewInputStatus}</span>}
-            </form>
-          </div>
-          <div className="iitc-iris-map-controls-section">
-            <span className="iitc-iris-status">Lifecycle</span>
-            <div className="iitc-iris-map-control-row">
-              <button
-                className={`iitc-iris-layer-toggle iitc-iris-system-toggle ${lifecycleSettings.iitcMovementDelay ? 'iitc-iris-layer-toggle-active' : ''}`}
-                type="button"
-                onClick={() => setLifecycleSettings((current) => ({...current, iitcMovementDelay: !current.iitcMovementDelay}))}
-                title="Compare current fast refresh with IITC-style map movement and download timing"
-                aria-pressed={lifecycleSettings.iitcMovementDelay}
-              >
-                IITC Delay
-              </button>
-              <span className="iitc-iris-status">{lifecycleSettings.iitcMovementDelay ? 'IITC timing' : 'fast move'}</span>
-            </div>
-          </div>
-          <div className="iitc-iris-map-controls-section">
-            <span className="iitc-iris-status">Scenarios</span>
-            <div className="iitc-iris-map-control-row">
-              <button
-                className="iitc-iris-preset"
-                type="button"
-                disabled={activeScenarioRun !== null}
-                onClick={() => startScenarioRun('fast-pan', {iitcMovementDelay: false})}
-                title="Start a fast-refresh scenario and capture the previous state"
-              >
-                Start Fast
-              </button>
-              <button
-                className="iitc-iris-preset"
-                type="button"
-                disabled={activeScenarioRun !== null}
-                onClick={() => startScenarioRun('iitc-delay-pan', {iitcMovementDelay: true})}
-                title="Start an IITC-delay scenario and capture the previous state"
-              >
-                Start Delay
-              </button>
-              <button
-                className="iitc-iris-preset"
-                type="button"
-                disabled={!canPan || activeScenarioRun === null}
-                onClick={panScenarioSouth}
-                title="Capture the current diagnostics before panning south, then pan south"
-              >
-                Snap Before Pan S
-              </button>
-              <button className="iitc-iris-preset" type="button" disabled={activeScenarioRun === null} onClick={() => captureScenarioSnapshot('reload')} title="Capture the current diagnostics after the selected scenario mode has refreshed">Snap Reload</button>
-              <button className="iitc-iris-preset" type="button" disabled={activeScenarioRun === null} onClick={() => captureScenarioSnapshot('in-progress')} title="Capture the current diagnostics as the in-progress point">Snap Prog</button>
-              <button className="iitc-iris-preset" type="button" disabled={activeScenarioRun === null} onClick={finishScenarioRun} title="Capture the final diagnostics and finish the active scenario run">Snap Done</button>
-              <button className="iitc-iris-portal-action" type="button" onClick={copyScenarioRun} title="Copy all scenario runs as JSON">Copy Runs</button>
-              <button className="iitc-iris-preset" type="button" onClick={clearScenarioRuns}>Clear</button>
-              {activeScenarioRun
-                ? <span className="iitc-iris-status iitc-iris-panel-state is-loading">{activeScenarioRun.name}: running</span>
-                : latestScenarioRun
-                  ? <span className="iitc-iris-status iitc-iris-panel-state is-ready">{scenarioRuns.length} runs, {scenarioSnapCount} snaps</span>
-                  : <span className="iitc-iris-status">no run</span>}
-              {scenarioStatus && <span className="iitc-iris-status">{scenarioStatus}</span>}
-            </div>
-            {scenarioProgressRun && (
-              <div className="iitc-iris-scenario-progress" title={`${scenarioProgressRun.name} ${scenarioProgressRun.status}`}>
-                {scenarioExpectedSteps.map((label) => {
-                  const doneLabel = label === 'done'
-                    ? scenarioProgressLabels.has('done') || scenarioProgressLabels.has('done-active')
-                    : scenarioProgressLabels.has(label);
-                  return (
-                    <span className={doneLabel ? 'is-done' : ''} key={label}>
-                      {label === 'before-pan-south' ? 'pan-south' : label}
-                    </span>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-          <div className="iitc-iris-map-controls-section">
-            <span className="iitc-iris-status">Data source</span>
-            <div className="iitc-iris-map-control-row">
-              {DATA_SOURCE_OPTIONS.map((option) => (
-                <button
-                  key={option.id}
-                  className={`iitc-iris-layer-toggle iitc-iris-source-toggle ${dataSourceId === option.id ? 'iitc-iris-layer-toggle-active' : ''}`}
-                  type="button"
-                  onClick={() => setDataSource(option.id)}
-                  title={option.title}
-                  aria-pressed={dataSourceId === option.id}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <IitcIrisSystemControlsPanel
+            activeScenarioRun={activeScenarioRun}
+            canPan={canPan}
+            captureScenarioSnapshot={captureScenarioSnapshot}
+            clearScenarioRuns={clearScenarioRuns}
+            copyDockText={copyDockText}
+            copyIntelUrl={copyIntelUrl}
+            copyScenarioRun={copyScenarioRun}
+            copyStatus={copyStatus}
+            dataSourceId={dataSourceId}
+            dataSourceOptions={DATA_SOURCE_OPTIONS}
+            finishScenarioRun={finishScenarioRun}
+            jumpToPreset={jumpToPreset}
+            jumpToViewInput={jumpToViewInput}
+            latestScenarioRun={latestScenarioRun}
+            lifecycleSettings={lifecycleSettings}
+            mapFocusMode={mapFocusMode}
+            panScenarioSouth={panScenarioSouth}
+            scenarioExpectedSteps={scenarioExpectedSteps}
+            scenarioProgressLabels={scenarioProgressLabels}
+            scenarioProgressRun={scenarioProgressRun}
+            scenarioRuns={scenarioRuns}
+            scenarioSnapCount={scenarioSnapCount}
+            scenarioStatus={scenarioStatus}
+            setDataSource={setDataSource}
+            setLifecycleSettings={setLifecycleSettings}
+            setMapFocusMode={setMapFocusMode}
+            setShortcutsEnabled={setShortcutsEnabled}
+            setViewInput={setViewInput}
+            shortcutsEnabled={shortcutsEnabled}
+            startScenarioRun={startScenarioRun}
+            viewInput={viewInput}
+            viewInputStatus={viewInputStatus}
+            viewPresets={VIEW_PRESETS}
+          />
         </aside>
       )}
       <nav className="iitc-iris-sheet-tabbar" aria-label="Panels">
@@ -1966,23 +1848,11 @@ function App(): h.JSX.Element {
           setPortalSectionOpen={setPortalSectionOpen}
         />
       )}
-      {portalImageOpen && entityFetch.selectedPortal?.image && (
-        <div className="iitc-iris-image-preview-backdrop" role="dialog" aria-modal="true" aria-label="Portal image preview" onClick={() => setPortalImageOpen(false)}>
-          <div className="iitc-iris-image-preview" onClick={(event) => event.stopPropagation()}>
-            <div className="iitc-iris-request-panel-header">
-              <span className="iitc-iris-selected-title">{entityFetch.selectedPortal.title || 'Portal image'}</span>
-              <span className="iitc-iris-panel-header-actions">
-                <button className="iitc-iris-clear-selection" type="button" onClick={() => setPortalImageOpen(false)} title="Close image preview" aria-label="Close image preview">X</button>
-              </span>
-            </div>
-            <img src={entityFetch.selectedPortal.image} alt={entityFetch.selectedPortal.title || 'Portal image'} />
-            <div className="iitc-iris-image-preview-caption">
-              <b>{entityFetch.selectedPortal.title || 'Selected portal'}</b>
-              <span>{entityFetch.selectedPortal.guid}</span>
-            </div>
-          </div>
-        </div>
-      )}
+      <IitcIrisPortalImageModal
+        isOpen={portalImageOpen}
+        onClose={() => setPortalImageOpen(false)}
+        portal={entityFetch.selectedPortal}
+      />
       {activeSheet === 'help' && (
         <IitcIrisHelpPanel closeHelp={closeSheets} />
       )}
