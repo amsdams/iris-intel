@@ -22,6 +22,10 @@ rendering and callback wiring only.
 - Portal details: `portal-details-panel.tsx`.
 - Draw Tools: `draw-tools-panel.tsx`, with pure display/export helpers in `content-draw-tools.ts`.
 - System diagnostics status/debug rows: `system-diagnostics-panel.tsx`.
+- Portal Counts: `portal-counts-panel.tsx`.
+- Portals List: `portals-list-panel.tsx`.
+- Scoreboard: `scoreboard-panel.tsx`.
+- Portal Analysis display/filter/sort helpers: `content-portal-analysis.ts`.
 
 ## Follow-up
 

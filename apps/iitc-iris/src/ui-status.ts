@@ -42,3 +42,8 @@ export function getAuthErrorMessage(status?: string, error?: string): string {
   }
   return error ?? '';
 }
+
+export function formatInteger(value: number | undefined): string {
+  if (value === undefined || !Number.isFinite(value)) return '-';
+  return value.toLocaleString('en-US');
+}
