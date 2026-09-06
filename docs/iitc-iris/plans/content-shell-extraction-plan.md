@@ -18,6 +18,7 @@ modules own routing/display decisions or JSX composition only.
 - Auth recovery banner: `auth-recovery-banner.tsx`.
 - Scenario diagnostics helpers and tests: `content-scenarios.ts`, `content-scenarios.test.ts`.
 - Storage and persistence helpers: `content-storage-settings.ts`, `content-storage-settings.test.ts`.
+- Map status and tile progress helpers: `content-map-status.ts`, `content-map-status.test.ts`.
 - First panel components: COMM and passcode rendering moved into focused app modules.
 - Shared elapsed request formatting moved to `ui-status.ts`.
 - Draw Tools display helpers and panel JSX moved to `content-draw-tools.ts` and `draw-tools-panel.tsx`.
