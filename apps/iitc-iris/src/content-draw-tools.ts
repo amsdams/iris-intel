@@ -1,4 +1,6 @@
 import {
+  parseIitcDrawToolsLayer,
+  serializeIitcDrawToolsLayer,
   type IitcDrawToolsItem,
 } from '@iris/iitc-core';
 import type {IitcIrisDrawToolsItem, IitcIrisDrawToolsLatLng} from './messages';
@@ -60,4 +62,36 @@ export function stripDrawToolsStorageIndex(item: IitcIrisDrawToolsItem): IitcDra
     latLngs: item.latLngs,
     color: item.color,
   };
+}
+
+export interface DrawToolsImportPreparation {
+  supportedItems: Extract<IitcDrawToolsItem, {type: 'polyline' | 'marker'}>[];
+  supportedJson: string;
+  supportedCount: number;
+  skippedCount: number;
+}
+
+export function prepareDrawToolsImport(jsonText: string): DrawToolsImportPreparation {
+  const parsedItems = parseIitcDrawToolsLayer(jsonText);
+  const supportedItems = parsedItems.filter(isSupportedDrawToolsItem);
+  const skippedCount = parsedItems.length - supportedItems.length;
+  if (supportedItems.length === 0) {
+    throw new Error('no supported links or markers');
+  }
+  return {
+    supportedItems,
+    supportedJson: serializeIitcDrawToolsLayer(supportedItems),
+    supportedCount: supportedItems.length,
+    skippedCount,
+  };
+}
+
+export function filterAndSerializeDrawToolsItems(
+  items: readonly IitcIrisDrawToolsItem[],
+  itemType?: 'polyline' | 'marker',
+): string {
+  const filtered = items
+    .filter((item) => !itemType || item.type === itemType)
+    .map(stripDrawToolsStorageIndex);
+  return serializeIitcDrawToolsLayer(filtered);
 }

@@ -1,9 +1,11 @@
 import {describe, expect, it} from 'vitest';
 import {
+  filterAndSerializeDrawToolsItems,
   getDrawToolsItemCenter,
   getDrawToolsItemDetail,
   getDrawToolsItemLabel,
   isSupportedDrawToolsItem,
+  prepareDrawToolsImport,
   stripDrawToolsStorageIndex,
 } from './content-draw-tools';
 import type {IitcIrisDrawToolsItem} from './messages';
@@ -61,5 +63,29 @@ describe('IITC IRIS Draw Tools helpers', () => {
     expect(isSupportedDrawToolsItem({type: 'marker', latLng: {lat: 1, lng: 2}})).toBe(true);
     expect(isSupportedDrawToolsItem({type: 'polyline', latLngs: [{lat: 1, lng: 2}]})).toBe(true);
     expect(isSupportedDrawToolsItem({type: 'polygon', latLngs: [{lat: 1, lng: 2}]})).toBe(false);
+  });
+
+  it('filters and serializes items by type for copy action', () => {
+    const jsonAll = filterAndSerializeDrawToolsItems([marker, link]);
+    expect(jsonAll).toContain('Target');
+    const jsonMarkers = filterAndSerializeDrawToolsItems([marker, link], 'marker');
+    expect(jsonMarkers).toContain('Target');
+    const jsonLinks = filterAndSerializeDrawToolsItems([marker, link], 'polyline');
+    expect(jsonLinks).not.toContain('Target');
+  });
+
+  it('prepares imported JSON and filters out unsupported items', () => {
+    const rawJson = JSON.stringify([
+      {type: 'marker', latLng: {lat: 10, lng: 20}, color: '#ffffff', label: 'Imported'},
+      {type: 'polygon', latLngs: [{lat: 1, lng: 2}, {lat: 3, lng: 4}]},
+    ]);
+    const prep = prepareDrawToolsImport(rawJson);
+    expect(prep.supportedCount).toBe(1);
+    expect(prep.skippedCount).toBe(1);
+    expect(prep.supportedJson).toContain('Imported');
+
+    expect(() => prepareDrawToolsImport(JSON.stringify([{type: 'polygon', latLngs: [{lat: 1, lng: 2}, {lat: 3, lng: 4}]}]))).toThrow(
+      'no supported links or markers',
+    );
   });
 });

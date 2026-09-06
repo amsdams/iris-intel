@@ -117,9 +117,9 @@ import {
 } from './content-map-context';
 import {
   DRAW_TOOLS_DEFAULT_COLOR,
+  filterAndSerializeDrawToolsItems,
   getDrawToolsItemCenter,
-  isSupportedDrawToolsItem,
-  stripDrawToolsStorageIndex,
+  prepareDrawToolsImport,
   type DrawToolsTarget,
 } from './content-draw-tools';
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPortalHighlighterId, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState} from './messages';
@@ -128,8 +128,6 @@ import {
   IITC_MAX_TILE_RETRIES,
   IITC_NUM_TILES_PER_REQUEST,
   normalizeIitcDrawToolsLabel,
-  parseIitcDrawToolsLayer,
-  serializeIitcDrawToolsLayer,
   type IitcMapDataPlan,
 } from '@iris/iitc-core';
 
@@ -746,10 +744,7 @@ function App(): h.JSX.Element {
   };
 
   const copyDrawToolsItems = (itemType?: 'polyline' | 'marker'): void => {
-    const items = drawToolsItems
-      .filter((item) => !itemType || item.type === itemType)
-      .map(stripDrawToolsStorageIndex);
-    copyIitcIrisText(serializeIitcDrawToolsLayer(items), {
+    copyIitcIrisText(filterAndSerializeDrawToolsItems(drawToolsItems, itemType), {
       setStatus: setDrawToolsImportStatus,
       successStatus: itemType === 'polyline' ? 'links copied' : itemType === 'marker' ? 'markers copied' : 'draw tools JSON copied',
       successTimeoutMs: 1400,
@@ -759,19 +754,13 @@ function App(): h.JSX.Element {
 
   const importDrawToolsItems = (): void => {
     try {
-      const parsedItems = parseIitcDrawToolsLayer(drawToolsImportText);
-      const supportedItems = parsedItems.filter(isSupportedDrawToolsItem);
-      const skippedItems = parsedItems.length - supportedItems.length;
-      if (supportedItems.length === 0) {
-        setDrawToolsImportStatus('no supported links or markers');
-        return;
-      }
+      const {supportedJson, supportedCount, skippedCount} = prepareDrawToolsImport(drawToolsImportText);
       postDrawToolsAction({
         drawToolsAction: 'import',
-        drawToolsJson: serializeIitcDrawToolsLayer(supportedItems),
+        drawToolsJson: supportedJson,
         drawToolsMerge: drawToolsImportMerge,
       });
-      setDrawToolsImportStatus(skippedItems > 0 ? `importing ${supportedItems.length}, skipped ${skippedItems}` : `importing ${supportedItems.length}`);
+      setDrawToolsImportStatus(skippedCount > 0 ? `importing ${supportedCount}, skipped ${skippedCount}` : `importing ${supportedCount}`);
       setDrawToolsClearConfirm(null);
     } catch (error) {
       setDrawToolsImportStatus(error instanceof Error ? error.message : String(error));
