@@ -28,6 +28,18 @@ import {
   type IitcIrisMapContextSelection,
 } from './selection-lifecycle';
 import {handleIitcIrisContentMessage, type CameraState, type EntityFetchState} from './content-message-adapter';
+import {
+  createCancelPanelRequestsMessage,
+  createMissionZoomMessage,
+  createRequestCommMessage,
+  createRequestInventoryMessage,
+  createRequestMissionDetailsMessage,
+  createRequestMissionsMessage,
+  createRequestPasscodeMessage,
+  createRequestScoresMessage,
+  createSendCommMessage,
+  formatCommDraftWithNickname,
+} from './content-outbound-messages';
 import {handleIitcIrisContentKeyDown, type IitcIrisPanDirection} from './content-keyboard-shortcuts';
 import {copyIitcIrisText} from './content-feedback';
 import {closeIitcIrisSheet, openIitcIrisSheet, toggleIitcIrisSheet} from './content-sheet-navigation';
@@ -794,7 +806,7 @@ function App(): h.JSX.Element {
   const closeSheetToMap = useCallback((): void => {
     const effect = closeIitcIrisSheet({activeSheet, activeSidePanel});
     if (effect.cancelPanelRequests) {
-      window.postMessage({type: IITC_IRIS_MESSAGES.cancelPanelRequests} satisfies IitcIrisMessage, '*');
+      window.postMessage(createCancelPanelRequestsMessage(), '*');
     }
     setActiveSidePanel(effect.activeSidePanel);
     setActiveSheet(effect.activeSheet);
@@ -809,7 +821,7 @@ function App(): h.JSX.Element {
   const openSheet = useCallback((sheet: SheetId): void => {
     const effect = openIitcIrisSheet({activeSheet, activeSidePanel}, sheet);
     if (effect.cancelPanelRequests) {
-      window.postMessage({type: IITC_IRIS_MESSAGES.cancelPanelRequests} satisfies IitcIrisMessage, '*');
+      window.postMessage(createCancelPanelRequestsMessage(), '*');
     }
     setActiveSheet(effect.activeSheet);
     storeActiveSheet(effect.activeSheet);
@@ -820,7 +832,7 @@ function App(): h.JSX.Element {
   const toggleSheet = useCallback((sheet: SheetId): void => {
     const effect = toggleIitcIrisSheet({activeSheet, activeSidePanel}, sheet);
     if (effect.cancelPanelRequests) {
-      window.postMessage({type: IITC_IRIS_MESSAGES.cancelPanelRequests} satisfies IitcIrisMessage, '*');
+      window.postMessage(createCancelPanelRequestsMessage(), '*');
     }
     setActiveSheet(effect.activeSheet);
     storeActiveSheet(effect.activeSheet);
@@ -830,11 +842,7 @@ function App(): h.JSX.Element {
 
   const refreshComm = useCallback((tab: IitcIrisCommTab = commState.tab, older = false): void => {
     storeCommTab(tab);
-    window.postMessage({
-      type: IITC_IRIS_MESSAGES.requestComm,
-      commTab: tab,
-      commOlder: older,
-    } satisfies IitcIrisMessage, '*');
+    window.postMessage(createRequestCommMessage(tab, older), '*');
   }, [commState.tab]);
 
   const requestOlderComm = (): void => {
@@ -865,22 +873,15 @@ function App(): h.JSX.Element {
   };
 
   const refreshScores = (): void => {
-    window.postMessage({
-      type: IITC_IRIS_MESSAGES.requestScores,
-    } satisfies IitcIrisMessage, '*');
+    window.postMessage(createRequestScoresMessage(), '*');
   };
 
   const refreshInventory = (): void => {
-    window.postMessage({
-      type: IITC_IRIS_MESSAGES.requestInventory,
-    } satisfies IitcIrisMessage, '*');
+    window.postMessage(createRequestInventoryMessage(), '*');
   };
 
   const refreshMissions = useCallback((source: IitcIrisMissionSource = missionsState.source ?? 'view'): void => {
-    window.postMessage({
-      type: IITC_IRIS_MESSAGES.requestMissions,
-      missionSource: source,
-    } satisfies IitcIrisMessage, '*');
+    window.postMessage(createRequestMissionsMessage(source), '*');
   }, [missionsState.source]);
 
   const openSelectedPortalMissions = (): void => {
@@ -890,43 +891,30 @@ function App(): h.JSX.Element {
   };
 
   const requestMissionDetails = (missionGuid: string): void => {
-    window.postMessage({
-      type: IITC_IRIS_MESSAGES.requestMissionDetails,
-      missionGuid,
-    } satisfies IitcIrisMessage, '*');
+    window.postMessage(createRequestMissionDetailsMessage(missionGuid), '*');
   };
 
   const zoomToMission = (): void => {
-    window.postMessage({
-      type: IITC_IRIS_MESSAGES.missionZoom,
-    } satisfies IitcIrisMessage, '*');
+    window.postMessage(createMissionZoomMessage(), '*');
   };
 
   const redeemPasscode = (): void => {
-    const passcode = passcodeDraft.replace(/[^\x20-\x7E]+/g, '').trim();
-    if (!passcode || passcodeState.status === 'loading') return;
-    setPasscodeDraft(passcode);
-    window.postMessage({
-      type: IITC_IRIS_MESSAGES.requestPasscode,
-      passcodeText: passcode,
-    } satisfies IitcIrisMessage, '*');
+    if (passcodeState.status === 'loading') return;
+    const res = createRequestPasscodeMessage(passcodeDraft);
+    if (!res) return;
+    setPasscodeDraft(res.cleanPasscode);
+    window.postMessage(res.message, '*');
   };
 
   const sendComm = (): void => {
-    const message = commDraft.trim();
-    if (!message || commState.tab === 'alerts') return;
-    window.postMessage({
-      type: IITC_IRIS_MESSAGES.sendComm,
-      commTab: commState.tab,
-      commMessage: message,
-    } satisfies IitcIrisMessage, '*');
+    const msg = createSendCommMessage(commState.tab, commDraft);
+    if (!msg) return;
+    window.postMessage(msg, '*');
     setCommDraft('');
   };
 
   const addCommNickname = (nickname: string): void => {
-    const normalized = nickname.replace(/^@/, '').trim();
-    if (!normalized) return;
-    setCommDraft((current) => `${current.trim()} @${normalized} `.trimStart());
+    setCommDraft((current) => formatCommDraftWithNickname(current, nickname));
   };
 
   const openIntelLogin = (): void => {
