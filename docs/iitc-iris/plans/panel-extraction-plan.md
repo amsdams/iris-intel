@@ -26,6 +26,11 @@ rendering and callback wiring only.
 - Portals List: `portals-list-panel.tsx`.
 - Scoreboard: `scoreboard-panel.tsx`.
 - Portal Analysis display/filter/sort helpers: `content-portal-analysis.ts`.
+- Map Navigation & Context controls: `map-controls-panel.tsx`.
+- Layers panel (base map, core overlays, portal filters, highlighters, detail overlays): `layers-panel.tsx`.
+- System controls panel: `system-controls-panel.tsx`.
+- Shortcuts help panel: `help-panel.tsx`.
+- Portal image preview modal: `portal-image-modal.tsx`.
 
 ## Follow-up
 

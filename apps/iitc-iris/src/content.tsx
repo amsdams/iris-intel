@@ -3,9 +3,7 @@ import {useCallback, useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import './iitc-iris.css';
 import {formatElapsedSeconds, getPanelStatusClass} from './ui-status';
 import {
-  CORE_LAYER_TOGGLE_REGISTRY,
   DEFAULT_LAYER_SETTINGS,
-  DETAIL_LAYER_TOGGLE_REGISTRY,
   LAYER_REGISTRY_DIAGNOSTICS,
   type IitcIrisBooleanLayerSettingKey,
 } from './layer-registry';
@@ -30,12 +28,6 @@ import {
   type IitcIrisPortalDetailSectionId,
 } from './portal-detail-section-registry';
 import {
-  getContextAction,
-  getContextTarget,
-  isContextActionVisible,
-  type IitcIrisContextActionId,
-} from './context-action-registry';
-import {
   getSelectionView,
   type IitcIrisMapContextSelection,
 } from './selection-lifecycle';
@@ -57,7 +49,6 @@ import {IitcIrisDrawToolsPanel} from './draw-tools-panel';
 import {IitcIrisSystemDiagnosticsPanel} from './system-diagnostics-panel';
 import {
   filterPortalsList,
-  formatTeamClass,
   PortalsListLevelFilter,
   PortalsListSortField,
   PortalsListTeamFilter,
@@ -68,6 +59,9 @@ import {
 import {IitcIrisPortalCountsPanel} from './portal-counts-panel';
 import {IitcIrisPortalsListPanel} from './portals-list-panel';
 import {IitcIrisScoreboardPanel} from './scoreboard-panel';
+import {IitcIrisLayersPanel} from './layers-panel';
+import {IitcIrisMapContextPanel, IitcIrisMapNavigationPanel} from './map-controls-panel';
+import {IitcIrisHelpPanel} from './help-panel';
 import {
   DRAW_TOOLS_DEFAULT_COLOR,
   getDrawToolsItemCenter,
@@ -109,11 +103,6 @@ const VIEW_PRESETS = [
   {id: 'amsterdam-z15', label: 'AMS 15', lat: 52.3730796, lng: 4.8924534, zoom: 15},
   {id: 'damrak-z15', label: 'DAM 15', lat: 52.3761096, lng: 4.8980545, zoom: 15},
 ] as const;
-const BASE_LAYER_OPTIONS: {id: IitcIrisBaseLayerId; label: string; title: string}[] = [
-  {id: 'cartodb-dark-matter', label: 'Dark', title: 'CartoDB Dark Matter'},
-  {id: 'cartodb-positron', label: 'Light', title: 'CartoDB Positron'},
-  {id: 'osm', label: 'OSM', title: 'OpenStreetMap'},
-];
 const DATA_SOURCE_OPTIONS = [
   {id: 'live', label: 'Live', title: 'Fetch live Intel getEntities responses', mode: 'live' as const},
   {
@@ -148,11 +137,6 @@ const DATA_SOURCE_OPTIONS = [
   },
 ] as const;
 type BooleanLayerSettingKey = IitcIrisBooleanLayerSettingKey;
-const CORE_OVERLAY_LAYER_TOGGLE_LABELS = CORE_LAYER_TOGGLE_REGISTRY.filter((entry) => entry.kind === 'overlay');
-const PORTAL_FILTER_LAYER_TOGGLE_LABELS = CORE_LAYER_TOGGLE_REGISTRY.filter((entry) => entry.kind === 'filter');
-const DETAIL_LAYER_TOGGLE_LABELS = DETAIL_LAYER_TOGGLE_REGISTRY;
-type BooleanLayerToggleEntry = (typeof CORE_LAYER_TOGGLE_REGISTRY)[number];
-const PORTAL_HIGHLIGHTER_OPTIONS = PORTAL_HIGHLIGHTER_REGISTRY;
 const SIDE_PANEL_OPTIONS = SIDE_PANEL_REGISTRY;
 const DEFAULT_RENDER_POLICY: IitcIrisRenderPolicy = {
   optionalOverlayMinZoom: 14,
@@ -957,7 +941,7 @@ function App(): h.JSX.Element {
     baseLayerId: loadStoredBaseLayerId(),
     dataSource: createDataSourceSettings(loadStoredDataSourceId()),
     highlighterSettings: {active: 'none'},
-    highlighterIds: PORTAL_HIGHLIGHTER_OPTIONS.map((option) => option.id),
+    highlighterIds: PORTAL_HIGHLIGHTER_REGISTRY.map((entry) => entry.id),
     renderPolicy: DEFAULT_RENDER_POLICY,
     selectedPortal: null,
     portalDetails: null,
@@ -1661,31 +1645,6 @@ function App(): h.JSX.Element {
     setHighlighterSettings({active});
   };
 
-  const renderBooleanLayerCheckbox = ({id, title}: BooleanLayerToggleEntry): h.JSX.Element => (
-    <label key={id} className={`iitc-iris-layer-choice ${layerSettings[id] ? 'is-checked' : ''}`} title={`${title}: ${layerSettings[id] ? 'on' : 'off'}`}>
-      <input
-        type="checkbox"
-        checked={layerSettings[id]}
-        onChange={() => toggleLayerSetting(id)}
-        aria-label={title}
-      />
-      <span className="iitc-iris-layer-choice-label">{title}</span>
-    </label>
-  );
-
-  const renderHighlighterRadio = (option: (typeof PORTAL_HIGHLIGHTER_OPTIONS)[number]): h.JSX.Element => (
-    <label key={option.id} className={`iitc-iris-layer-choice ${highlighterSettings.active === option.id ? 'is-checked' : ''}`} title={option.title}>
-      <input
-        type="radio"
-        name="iitc-iris-portal-highlighter"
-        checked={highlighterSettings.active === option.id}
-        onChange={() => selectPortalHighlighter(option.id)}
-        aria-label={option.label}
-      />
-      <span className="iitc-iris-layer-choice-label">{option.label}</span>
-    </label>
-  );
-
   const setMapView = useCallback((lat: number, lng: number, zoom = camera.zoom): void => {
     const clamped = clampView({lat, lng, zoom});
     window.postMessage({
@@ -1933,27 +1892,6 @@ function App(): h.JSX.Element {
       ? (): void => openSheet(entry.id)
       : undefined;
     return renderSheetTab(entry.id, entry.label, openSelectedSheet);
-  };
-
-  const renderContextActionButton = (
-    actionId: IitcIrisContextActionId,
-    onClick: () => void,
-    title?: string,
-    disabled = false,
-  ): h.JSX.Element | null => {
-    if (!mapContext || !isContextActionVisible(actionId, mapContext.target)) return null;
-    const action = getContextAction(actionId);
-    return (
-      <button
-        className="iitc-iris-portal-action"
-        type="button"
-        onClick={onClick}
-        disabled={disabled}
-        title={title ?? action.title}
-      >
-        {action.label}
-      </button>
-    );
   };
 
   const jumpToPreset = (preset: typeof VIEW_PRESETS[number]): void => {
@@ -2296,56 +2234,32 @@ function App(): h.JSX.Element {
             </span>
           </div>
         )}
-        {activeSheet === 'view' && <div className="iitc-iris-map-controls-section">
-          <span className="iitc-iris-status">Controls</span>
-          <div className="iitc-iris-map-control-row">
-            <div className="iitc-iris-pan-grid" aria-label="Pan controls">
-              <button className="iitc-iris-nav-button iitc-iris-pan-north" type="button" disabled={!canPan} onClick={() => panMap('north')} title="Pan north" aria-label="Pan north">N</button>
-              <button className="iitc-iris-nav-button iitc-iris-pan-west" type="button" disabled={!canPan} onClick={() => panMap('west')} title="Pan west" aria-label="Pan west">W</button>
-              <button className="iitc-iris-nav-button iitc-iris-pan-east" type="button" disabled={!canPan} onClick={() => panMap('east')} title="Pan east" aria-label="Pan east">E</button>
-              <button className="iitc-iris-nav-button iitc-iris-pan-south" type="button" disabled={!canPan} onClick={() => panMap('south')} title="Pan south" aria-label="Pan south">S</button>
-            </div>
-            <button className="iitc-iris-nav-button" type="button" onClick={() => zoomMap(1)} title="Zoom in" aria-label="Zoom in">+</button>
-            <button className="iitc-iris-nav-button" type="button" onClick={() => zoomMap(-1)} title="Zoom out" aria-label="Zoom out">-</button>
-            <button className="iitc-iris-nav-button iitc-iris-nav-button-wide" type="button" onClick={locateBrowserPosition} title="Pan to current browser location">Locate</button>
-          </div>
-          {geolocationStatus && <span className="iitc-iris-map-control-status">{geolocationStatus}</span>}
-        </div>}
+        {activeSheet === 'view' && (
+          <IitcIrisMapNavigationPanel
+            canPan={canPan}
+            geolocationStatus={geolocationStatus}
+            locateBrowserPosition={locateBrowserPosition}
+            panMap={panMap}
+            zoomMap={zoomMap}
+          />
+        )}
         {mapContext && (
           (activeSheet === 'view' && mapContext.target === 'map') ||
           (activeSheet === 'selectedLink' && mapContext.target === 'link') ||
           (activeSheet === 'selectedField' && mapContext.target === 'field')
-        ) && <div className="iitc-iris-map-controls-section">
-          <span className="iitc-iris-status">{getContextTarget(mapContext.target).panelLabel}</span>
-          {mapContext.target !== 'map' && <div className="iitc-iris-map-context-row">
-            <span className="iitc-iris-map-context-coords" title={mapContext.guid}>
-              {getContextTarget(mapContext.target).objectLabel}
-              {mapContext.team ? `, ${formatTeamLabel(mapContext.team)}` : ''}
-            </span>
-            {mapContext.guid && renderContextActionButton('copyGuid', copyMapContextGuid, `Copy ${mapContext.target} GUID`)}
-            {mapContext.portalGuids?.length ? renderContextActionButton('copyAnchorGuids', copyMapContextPortalGuids) : null}
-          </div>}
-          {mapContext.target !== 'map' && mapContext.distanceMeters !== undefined && <div className="iitc-iris-map-context-row">
-            <span className="iitc-iris-map-context-coords">
-              {getContextTarget(mapContext.target).distanceLabel}: {formatMapObjectDistance(mapContext.distanceMeters)}
-            </span>
-          </div>}
-          {mapContext.target !== 'map' && mapContext.portalAnchors?.length ? mapContext.portalAnchors.map((anchor, index) => (
-            <div className="iitc-iris-map-context-row" key={`${anchor.guid || 'anchor'}-${index}`}>
-              <button className={`iitc-iris-map-context-anchor ${mapContext.team ? formatTeamClass(mapContext.team) : ''}`} type="button" onClick={() => selectMapContextAnchor(anchor)} title="Center and select this anchor portal">
-                {mapContext.target === 'link' ? (index === 0 ? 'From' : 'To') : `Anchor ${index + 1}`}: {anchor.label}
-              </button>
-            </div>
-          )) : null}
-          <div className="iitc-iris-map-context-row">
-            <span className="iitc-iris-map-context-coords" title={`${mapContext.lat},${mapContext.lng}`}>
-              {mapContext.lat.toFixed(6)}, {mapContext.lng.toFixed(6)}
-            </span>
-            {renderContextActionButton('center', centerMapContext)}
-            {renderContextActionButton('copyLatLng', copyMapContextLatLng)}
-            {renderContextActionButton('copyIntelUrl', copyMapContextUrl)}
-          </div>
-        </div>}
+        ) && (
+          <IitcIrisMapContextPanel
+            centerMapContext={centerMapContext}
+            copyMapContextGuid={copyMapContextGuid}
+            copyMapContextLatLng={copyMapContextLatLng}
+            copyMapContextPortalGuids={copyMapContextPortalGuids}
+            copyMapContextUrl={copyMapContextUrl}
+            formatMapObjectDistance={formatMapObjectDistance}
+            formatTeamLabel={formatTeamLabel}
+            mapContext={mapContext}
+            selectMapContextAnchor={selectMapContextAnchor}
+          />
+        )}
         {activeSheet === 'drawLinks' && <IitcIrisDrawToolsPanel
           allItemsCount={drawToolsItems.length}
           clearConfirm={drawToolsClearConfirm}
@@ -2428,47 +2342,16 @@ function App(): h.JSX.Element {
         {activeSheet === 'scoreboard' && (
           <IitcIrisScoreboardPanel portalAnalysis={portalAnalysis} />
         )}
-        {activeSheet === 'layers' && <div className="iitc-iris-map-controls-section">
-          <span className="iitc-iris-status">Base map</span>
-          <div className="iitc-iris-map-control-row">
-            {BASE_LAYER_OPTIONS.map((option) => (
-              <button
-                key={option.id}
-                className={`iitc-iris-layer-toggle iitc-iris-base-toggle ${baseLayerId === option.id ? 'iitc-iris-layer-toggle-active' : ''}`}
-                type="button"
-                onClick={() => setBaseLayerId(option.id)}
-                title={option.title}
-                aria-pressed={baseLayerId === option.id}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>}
-        {activeSheet === 'layers' && <div className="iitc-iris-map-controls-section">
-          <span className="iitc-iris-status">Core overlays</span>
-          <div className="iitc-iris-layer-choice-grid" role="group" aria-label="Core overlay layers">
-            {CORE_OVERLAY_LAYER_TOGGLE_LABELS.map(renderBooleanLayerCheckbox)}
-          </div>
-        </div>}
-        {activeSheet === 'layers' && <div className="iitc-iris-map-controls-section">
-          <span className="iitc-iris-status">Portal filters</span>
-          <div className="iitc-iris-layer-choice-grid" role="group" aria-label="Portal filter layers">
-            {PORTAL_FILTER_LAYER_TOGGLE_LABELS.map(renderBooleanLayerCheckbox)}
-          </div>
-        </div>}
-        {activeSheet === 'layers' && <div className="iitc-iris-map-controls-section">
-          <span className="iitc-iris-status">Portal highlighter</span>
-          <div className="iitc-iris-layer-choice-grid" role="radiogroup" aria-label="Portal highlighter">
-            {PORTAL_HIGHLIGHTER_OPTIONS.map(renderHighlighterRadio)}
-          </div>
-        </div>}
-        {activeSheet === 'layers' && <div className="iitc-iris-map-controls-section">
-          <span className="iitc-iris-status">Detail overlays</span>
-          <div className="iitc-iris-layer-choice-grid" role="group" aria-label="Detail overlay layers">
-            {DETAIL_LAYER_TOGGLE_LABELS.map(renderBooleanLayerCheckbox)}
-          </div>
-        </div>}
+        {activeSheet === 'layers' && (
+          <IitcIrisLayersPanel
+            baseLayerId={baseLayerId}
+            highlighterSettings={highlighterSettings}
+            layerSettings={layerSettings}
+            selectBaseLayer={setBaseLayerId}
+            selectPortalHighlighter={selectPortalHighlighter}
+            toggleLayerSetting={toggleLayerSetting}
+          />
+        )}
       </aside>
       {activeSheet === 'system' && (
         <aside className="iitc-iris-system-panel" aria-label="System controls">
@@ -2737,31 +2620,7 @@ function App(): h.JSX.Element {
         </div>
       )}
       {activeSheet === 'help' && (
-        <aside className="iitc-iris-request-side-panel iitc-iris-help-panel" aria-label="Shortcuts">
-          <div className="iitc-iris-request-panel-header">
-            <span className="iitc-iris-selected-title">Shortcuts</span>
-            <span className="iitc-iris-panel-header-actions">
-              <button className="iitc-iris-clear-selection" type="button" onClick={closeSheets} title="Close shortcuts" aria-label="Close shortcuts">X</button>
-            </span>
-          </div>
-          <div className="iitc-iris-request-panel-body">
-            <div className="iitc-iris-shortcut-grid">
-              <span>Pan map</span><b>Arrow keys</b>
-              <span>Zoom map</span><b>+ / -</b>
-              <span>Toggle Search</span><b>/</b>
-              <span>Close sheets</span><b>Esc</b>
-              <span>Toggle Map</span><b>M</b>
-              <span>Toggle Portal</span><b>P</b>
-              <span>Toggle Agent</span><b>A</b>
-              <span>Toggle COMM</span><b>C</b>
-              <span>Toggle System</span><b>S</b>
-              <span>Toggle Shortcuts</span><b>?</b>
-              <span>Keyboard setting</span><b>System / Interaction</b>
-              <span>Search result</span><b>Up / Down / Enter</b>
-              <span>Zoom result</span><b>Shift+Enter</b>
-            </div>
-          </div>
-        </aside>
+        <IitcIrisHelpPanel closeHelp={closeSheets} />
       )}
       {activeSidePanelOption && (
         <aside className="iitc-iris-request-side-panel" aria-label={`${activeSidePanelOption.title} panel`}>

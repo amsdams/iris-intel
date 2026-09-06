@@ -14,6 +14,9 @@ modules own routing/display decisions or JSX composition only.
 - Inbound message adaptation: `content-message-adapter.ts`.
 - Keyboard/menu/sheet/feedback helpers: `content-keyboard-shortcuts.ts`, `content-primary-menu.ts`,
   `content-sheet-navigation.ts`, `content-feedback.ts`.
+- Sheet tabbar navigation: `sheet-tabbar.tsx`.
+- Auth recovery banner: `auth-recovery-banner.tsx`.
+- Scenario diagnostics helpers and tests: `content-scenarios.ts`, `content-scenarios.test.ts`.
 - First panel components: COMM and passcode rendering moved into focused app modules.
 - Shared elapsed request formatting moved to `ui-status.ts`.
 - Draw Tools display helpers and panel JSX moved to `content-draw-tools.ts` and `draw-tools-panel.tsx`.
