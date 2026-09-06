@@ -109,6 +109,13 @@ import {
   getPortalLatLng,
 } from './content-map-status';
 import {
+  formatAnchorPortalGuids,
+  formatMapContextIntelUrl,
+  formatMapContextLatLng,
+  formatPortalIntelUrl,
+  getDrawToolsTargetFromContext,
+} from './content-map-context';
+import {
   DRAW_TOOLS_DEFAULT_COLOR,
   getDrawToolsItemCenter,
   isSupportedDrawToolsItem,
@@ -607,13 +614,12 @@ function App(): h.JSX.Element {
 
   const copyMapContextLatLng = (): void => {
     if (!mapContext) return;
-    copyIitcIrisText(`${mapContext.lat.toFixed(6)},${mapContext.lng.toFixed(6)}`, {setStatus: setCopyStatus, successStatus: 'coords copied'});
+    copyIitcIrisText(formatMapContextLatLng(mapContext.lat, mapContext.lng), {setStatus: setCopyStatus, successStatus: 'coords copied'});
   };
 
   const copyMapContextUrl = (): void => {
     if (!mapContext) return;
-    const url = `https://intel.ingress.com/intel?ll=${mapContext.lat.toFixed(6)},${mapContext.lng.toFixed(6)}&z=${Math.round(mapContext.zoom)}`;
-    copyIitcIrisText(url, {setStatus: setCopyStatus, successStatus: 'context url copied'});
+    copyIitcIrisText(formatMapContextIntelUrl(mapContext.lat, mapContext.lng, mapContext.zoom), {setStatus: setCopyStatus, successStatus: 'context url copied'});
   };
 
   const copyMapContextGuid = (): void => {
@@ -623,7 +629,7 @@ function App(): h.JSX.Element {
 
   const copyMapContextPortalGuids = (): void => {
     if (!mapContext?.portalGuids?.length) return;
-    copyIitcIrisText(mapContext.portalGuids.join('\n'), {setStatus: setCopyStatus, successStatus: 'anchor guids copied'});
+    copyIitcIrisText(formatAnchorPortalGuids(mapContext.portalGuids), {setStatus: setCopyStatus, successStatus: 'anchor guids copied'});
   };
 
   const centerMapContext = (): void => {
@@ -632,21 +638,7 @@ function App(): h.JSX.Element {
   };
 
   const getDrawToolsTarget = (): DrawToolsTarget | null => {
-    if (entityFetch.selectedPortal) {
-      const {lat, lng} = getPortalLatLng(entityFetch.selectedPortal);
-      return {
-        lat,
-        lng,
-        label: entityFetch.selectedPortal.title || entityFetch.selectedPortal.guid,
-      };
-    }
-    return mapContext
-      ? {
-          lat: mapContext.lat,
-          lng: mapContext.lng,
-          label: `${mapContext.lat.toFixed(6)}, ${mapContext.lng.toFixed(6)}`,
-        }
-      : null;
+    return getDrawToolsTargetFromContext(entityFetch.selectedPortal, mapContext);
   };
 
   const getDrawToolsTargetLatLng = (): IitcIrisDrawToolsLatLng | null => {
@@ -788,8 +780,7 @@ function App(): h.JSX.Element {
 
   const copySelectedPortalLink = (): void => {
     if (!entityFetch.selectedPortal) return;
-    const {lat, lng} = getPortalLatLng(entityFetch.selectedPortal);
-    const portalUrl = `https://intel.ingress.com/intel?ll=${lat.toFixed(6)},${lng.toFixed(6)}&z=${Math.max(17, Math.round(camera.zoom))}&pll=${lat.toFixed(6)},${lng.toFixed(6)}`;
+    const portalUrl = formatPortalIntelUrl(entityFetch.selectedPortal, camera.zoom);
     copyIitcIrisText(portalUrl, {setStatus: setCopyStatus, successStatus: 'portal link copied'});
   };
 
