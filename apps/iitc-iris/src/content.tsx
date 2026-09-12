@@ -1,21 +1,15 @@
 import {h, render} from 'preact';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import './iitc-iris.css';
-import {formatElapsedSeconds, getPanelStatusClass} from './ui-status';
+import {getPanelStatusClass} from './ui-status';
 import {
-  LAYER_REGISTRY_DIAGNOSTICS,
   type IitcIrisBooleanLayerSettingKey,
 } from './layer-registry';
 import {PORTAL_HIGHLIGHTER_REGISTRY} from './highlighter-registry';
 import {
-  AGENT_MENU_SHEET_REGISTRY,
   getPrimaryMenuId,
   isSidePanelId,
-  MAP_MENU_SHEET_REGISTRY,
-  PRIMARY_MENU_REGISTRY,
-  SELECTED_MENU_SHEET_REGISTRY,
   SIDE_PANEL_REGISTRY,
-  SYSTEM_MENU_SHEET_REGISTRY,
   type IitcIrisPrimaryMenuId,
   type IitcIrisSheetId,
   type IitcIrisSidePanelId,
@@ -45,7 +39,6 @@ import {copyIitcIrisText} from './content-feedback';
 import {closeIitcIrisSheet, openIitcIrisSheet, toggleIitcIrisSheet} from './content-sheet-navigation';
 import {getIitcIrisPrimaryMenuEffect} from './content-primary-menu';
 import {IitcIrisAgentPanel} from './agent-panel';
-import {IITC_IRIS_COMM_TABS} from './comm-panel-controls';
 import {IitcIrisCommPanel} from './comm-panel';
 import {IitcIrisInventoryPanel} from './inventory-panel';
 import {IitcIrisMissionsPanel} from './missions-panel';
@@ -75,12 +68,6 @@ import {IitcIrisPortalImageModal} from './portal-image-modal';
 import {IitcIrisSheetTabBar} from './sheet-tabbar';
 import {IitcIrisAuthRecoveryBanner} from './auth-recovery-banner';
 import {createDockDiagnostics} from './content-dock-diagnostics';
-import {
-  buildAddMarkerPayload,
-  buildClearDrawToolsPayload,
-  buildRenameMarkerPayload,
-  postDrawToolsAction,
-} from './content-draw-tools-actions';
 import {
   copyMapContextGuid as copyMapContextGuidHelper,
   copyMapContextLatLng as copyMapContextLatLngHelper,
@@ -139,10 +126,6 @@ import {
   getPortalLatLng,
 } from './content-map-status';
 import {
-  formatAnchorPortalGuids,
-  formatMapContextIntelUrl,
-  formatMapContextLatLng,
-  formatPortalIntelUrl,
   getDrawToolsTargetFromContext,
 } from './content-map-context';
 import {
@@ -154,9 +137,6 @@ import {
 } from './content-draw-tools';
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPortalHighlighterId, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState} from './messages';
 import {
-  IITC_MAX_REQUESTS,
-  IITC_MAX_TILE_RETRIES,
-  IITC_NUM_TILES_PER_REQUEST,
   normalizeIitcDrawToolsLabel,
   type IitcMapDataPlan,
 } from '@iris/iitc-core';
