@@ -31,7 +31,6 @@ import {
   createRequestMissionsMessage,
   createRequestPasscodeMessage,
   createRequestScoresMessage,
-  createSendCommMessage,
   formatCommDraftWithNickname,
 } from './content-outbound-messages';
 import {handleIitcIrisContentKeyDown, type IitcIrisPanDirection} from './content-keyboard-shortcuts';
@@ -68,6 +67,15 @@ import {IitcIrisPortalImageModal} from './portal-image-modal';
 import {IitcIrisSheetTabBar} from './sheet-tabbar';
 import {IitcIrisAuthRecoveryBanner} from './auth-recovery-banner';
 import {createDockDiagnostics} from './content-dock-diagnostics';
+import {
+  checkCommIsAtBottom,
+  checkShouldRequestOlderComm,
+  createCommSendRequest,
+} from './content-comm-actions';
+import {
+  performIntelLoginRedirect,
+  retryActiveAuthPanelRequest,
+} from './content-auth-navigation';
 import {
   copyMapContextGuid as copyMapContextGuidHelper,
   copyMapContextLatLng as copyMapContextLatLngHelper,
@@ -746,11 +754,11 @@ function App(): h.JSX.Element {
   const handleCommScroll = (): void => {
     const list = commListRef.current;
     if (!list || activeSidePanel !== 'comm' || commState.status === 'loading' || commOlderRequestPendingRef.current) return;
-    const atBottom = list.scrollHeight - list.scrollTop - list.clientHeight <= 10;
+    const atBottom = checkCommIsAtBottom(list);
     commStickToBottomRef.current = atBottom;
     setCommUserAtBottom(atBottom);
     if (atBottom) setCommNewBelow(false);
-    if (list.scrollTop <= 8) requestOlderComm();
+    if (checkShouldRequestOlderComm(list.scrollTop)) requestOlderComm();
   };
 
   const jumpCommToLatest = (): void => {
@@ -797,7 +805,7 @@ function App(): h.JSX.Element {
   };
 
   const sendComm = (): void => {
-    const msg = createSendCommMessage(commState.tab, commDraft);
+    const msg = createCommSendRequest(commState.tab, commDraft);
     if (!msg) return;
     window.postMessage(msg, '*');
     setCommDraft('');
@@ -808,49 +816,29 @@ function App(): h.JSX.Element {
   };
 
   const openIntelLogin = (): void => {
-    try {
-      window.sessionStorage.setItem(LOGIN_BYPASS_STORAGE_KEY, String(Date.now() + LOGIN_BYPASS_MS));
-    } catch {
-      // Login recovery still works without session storage.
-    }
-    document.getElementById('iitc-iris-root')?.remove();
-    if (window.location.origin === 'https://intel.ingress.com' && window.location.pathname === '/intel') {
-      window.location.reload();
-      return;
-    }
-    window.location.assign('https://intel.ingress.com/intel');
+    performIntelLoginRedirect(
+      LOGIN_BYPASS_STORAGE_KEY,
+      LOGIN_BYPASS_MS,
+      document.getElementById('iitc-iris-root'),
+      window.location
+    );
   };
 
   const retryAuthRequest = (): void => {
-    if (activeSidePanel === 'comm') {
-      refreshComm(commState.tab);
-      return;
-    }
-    if (activeSidePanel === 'scores') {
-      refreshScores();
-      return;
-    }
-    if (activeSidePanel === 'missions') {
-      refreshMissions();
-      return;
-    }
-    if (activeSidePanel === 'inventory') {
-      refreshInventory();
-      return;
-    }
-    if (activeSidePanel === 'passcode' && (passcodeDraft.trim() || passcodeState.passcode)) {
-      const passcode = passcodeDraft.trim() || passcodeState.passcode || '';
-      setPasscodeDraft(passcode);
-      window.postMessage({
-        type: IITC_IRIS_MESSAGES.requestPasscode,
-        passcodeText: passcode,
-      } satisfies IitcIrisMessage, '*');
-      return;
-    }
-    window.postMessage({
-      type: IITC_IRIS_MESSAGES.dataSourceSettings,
-      dataSource,
-    } satisfies IitcIrisMessage, '*');
+    retryActiveAuthPanelRequest(activeSidePanel, activeSheet, commState.tab, missionsState.source, {
+      refreshComm,
+      refreshScores,
+      refreshInventory,
+      refreshMissions,
+      requestSearch,
+      searchTerm,
+      retryMapFetch: (): void => {
+        window.postMessage({
+          type: IITC_IRIS_MESSAGES.dataSourceSettings,
+          dataSource,
+        } satisfies IitcIrisMessage, '*');
+      },
+    });
   };
 
   const inlineAuthActions = (

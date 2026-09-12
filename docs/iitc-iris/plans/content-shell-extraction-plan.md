@@ -28,6 +28,8 @@ modules own routing/display decisions or JSX composition only.
 - System dock diagnostics creation helper: `content-dock-diagnostics.ts`, `content-dock-diagnostics.test.ts`.
 - Draw Tools payload action builders: `content-draw-tools-actions.ts`, `content-draw-tools-actions.test.ts`.
 - Clipboard copy feedback helpers: `content-copy-helpers.ts`, `content-copy-helpers.test.ts`.
+- COMM action & scroll helpers: `content-comm-actions.ts`, `content-comm-actions.test.ts`.
+- Auth recovery & login navigation helpers: `content-auth-navigation.ts`, `content-auth-navigation.test.ts`.
 
 ## Follow-up Plans
 
