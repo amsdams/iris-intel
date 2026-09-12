@@ -86,6 +86,16 @@ import {
   copySelectedPortalTitle as copySelectedPortalTitleHelper,
 } from './content-copy-helpers';
 import {
+  createScenarioSnapshotObject,
+  getScenarioDerivedState,
+  SCENARIO_EXPECTED_STEPS,
+  serializeScenarioHistory,
+} from './content-scenario-actions';
+import {
+  buildUserLocationMessage,
+  parseAndBuildViewInputJump,
+} from './content-map-navigation';
+import {
   createDataSourceSettings,
   DATA_SOURCE_OPTIONS,
   getExtensionUrl,
@@ -117,9 +127,7 @@ import {
 } from './content-storage-settings';
 import {
   clampView,
-  createScenarioSnapshotSummary,
   isScenarioSettled,
-  parseViewInput,
   type ScenarioRun,
   type ScenarioSnapshot,
 } from './content-scenarios';
@@ -407,26 +415,22 @@ function App(): h.JSX.Element {
     passcodeState,
     inventoryState,
   });
-  const createScenarioSnapshot = (label: string, settings = lifecycleSettings): ScenarioSnapshot => ({
-    label,
-    capturedAt: new Date().toISOString(),
-    diagnostics: {
-      ...dockDiagnostics,
-      lifecycleSettings: settings,
-    },
-  });
+  const createScenarioSnapshot = (label: string, settings = lifecycleSettings): ScenarioSnapshot =>
+    createScenarioSnapshotObject(label, dockDiagnostics, settings);
 
   const setScenarioStatusBriefly = (value: string): void => {
     setScenarioStatus(value);
     window.setTimeout(() => setScenarioStatus(''), 1800);
   };
 
-  const activeScenarioRun = scenarioRuns.find((run) => run.id === activeScenarioRunId && run.status === 'running') ?? null;
-  const latestScenarioRun = scenarioRuns.length > 0 ? scenarioRuns[scenarioRuns.length - 1] : null;
-  const scenarioSnapCount = scenarioRuns.reduce((total, run) => total + run.snapshots.length, 0);
-  const scenarioProgressRun = activeScenarioRun ?? latestScenarioRun;
-  const scenarioProgressLabels = scenarioProgressRun ? new Set(scenarioProgressRun.snapshots.map((snapshot) => snapshot.label)) : new Set<string>();
-  const scenarioExpectedSteps = ['previous', 'before-pan-south', 'reload', 'in-progress', 'done'];
+  const {
+    activeScenarioRun,
+    latestScenarioRun,
+    scenarioSnapCount,
+    scenarioProgressRun,
+    scenarioProgressLabels,
+  } = getScenarioDerivedState(scenarioRuns, activeScenarioRunId);
+  const scenarioExpectedSteps = SCENARIO_EXPECTED_STEPS;
 
   const startScenarioRun = (name: string, overrides: Partial<IitcIrisLifecycleSettings>): void => {
     if (activeScenarioRun) {
@@ -493,29 +497,13 @@ function App(): h.JSX.Element {
   };
 
   const copyScenarioRun = (): void => {
-    const summarizeRun = (run: ScenarioRun): ScenarioRun => ({
-      ...run,
-      snapshots: run.snapshots.map((snapshot) => ({
-        ...snapshot,
-        summary: createScenarioSnapshotSummary(snapshot.diagnostics),
-      })),
-    });
-    const currentRun = {
-      id: `current-${Date.now()}`,
-      name: 'current',
-      startedAt: new Date().toISOString(),
-      status: 'finished' as const,
-      lifecycleSettings,
-      snapshots: [createScenarioSnapshot('current')],
-    };
-    const runs = (scenarioRuns.length > 0 ? scenarioRuns : [currentRun]).map(summarizeRun);
-    const latest = runs.length > 0 ? runs[runs.length - 1] : currentRun;
-    void navigator.clipboard.writeText(JSON.stringify({
-      runs,
-      latest,
-      activeRunId: activeScenarioRunId,
-      copiedAt: new Date().toISOString(),
-    }, null, 2))
+    const json = serializeScenarioHistory(
+      scenarioRuns,
+      activeScenarioRunId,
+      createScenarioSnapshot('current'),
+      lifecycleSettings
+    );
+    void navigator.clipboard.writeText(json)
       .then(() => setScenarioStatusBriefly('scenario history copied'))
       .catch(() => setScenarioStatusBriefly('copy failed'));
   };
@@ -1077,14 +1065,14 @@ function App(): h.JSX.Element {
   };
 
   const jumpToViewInput = (): void => {
-    const parsed = parseViewInput(viewInput);
-    if (!parsed) {
+    const res = parseAndBuildViewInputJump(viewInput, camera.zoom);
+    if ('error' in res) {
       setViewInputStatus('bad view');
       window.setTimeout(() => setViewInputStatus(''), 1600);
       return;
     }
 
-    setMapView(parsed.lat, parsed.lng, parsed.zoom ?? camera.zoom);
+    setMapView(res.lat, res.lng, res.zoom);
     setViewInputStatus('jumped');
     window.setTimeout(() => setViewInputStatus(''), 1200);
   };
@@ -1098,12 +1086,10 @@ function App(): h.JSX.Element {
     setGeolocationStatus('locating...');
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        window.postMessage({
-          type: IITC_IRIS_MESSAGES.setUserLocation,
-          userLat: position.coords.latitude,
-          userLng: position.coords.longitude,
-          userAccuracy: position.coords.accuracy,
-        } satisfies IitcIrisMessage, '*');
+        window.postMessage(
+          buildUserLocationMessage(position.coords.latitude, position.coords.longitude, position.coords.accuracy),
+          '*'
+        );
         setMapView(position.coords.latitude, position.coords.longitude, GEOLOCATION_MAX_ZOOM);
         setGeolocationStatus(position.coords.accuracy ? `located +/- ${Math.round(position.coords.accuracy)}m` : 'located');
         window.setTimeout(() => setGeolocationStatus(''), 2200);

@@ -30,6 +30,8 @@ modules own routing/display decisions or JSX composition only.
 - Clipboard copy feedback helpers: `content-copy-helpers.ts`, `content-copy-helpers.test.ts`.
 - COMM action & scroll helpers: `content-comm-actions.ts`, `content-comm-actions.test.ts`.
 - Auth recovery & login navigation helpers: `content-auth-navigation.ts`, `content-auth-navigation.test.ts`.
+- Scenario execution & history helpers: `content-scenario-actions.ts`, `content-scenario-actions.test.ts`.
+- Map navigation & view input jump helpers: `content-map-navigation.ts`, `content-map-navigation.test.ts`.
 
 ## Follow-up Plans
 
