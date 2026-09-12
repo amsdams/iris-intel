@@ -74,6 +74,22 @@ import {IitcIrisSystemControlsPanel} from './system-controls-panel';
 import {IitcIrisPortalImageModal} from './portal-image-modal';
 import {IitcIrisSheetTabBar} from './sheet-tabbar';
 import {IitcIrisAuthRecoveryBanner} from './auth-recovery-banner';
+import {createDockDiagnostics} from './content-dock-diagnostics';
+import {
+  buildAddMarkerPayload,
+  buildClearDrawToolsPayload,
+  buildRenameMarkerPayload,
+  postDrawToolsAction,
+} from './content-draw-tools-actions';
+import {
+  copyMapContextGuid as copyMapContextGuidHelper,
+  copyMapContextLatLng as copyMapContextLatLngHelper,
+  copyMapContextPortalGuids as copyMapContextPortalGuidsHelper,
+  copyMapContextUrl as copyMapContextUrlHelper,
+  copySelectedPortalGuid as copySelectedPortalGuidHelper,
+  copySelectedPortalLink as copySelectedPortalLinkHelper,
+  copySelectedPortalTitle as copySelectedPortalTitleHelper,
+} from './content-copy-helpers';
 import {
   createDataSourceSettings,
   DATA_SOURCE_OPTIONS,
@@ -382,127 +398,27 @@ function App(): h.JSX.Element {
     selectedKind,
     showPortalSidePanel,
   } = getSelectionView({selectedPortal: entityFetch.selectedPortal, mapContext}, activeSheet);
-  const dockDiagnostics = {
-    app: 'IITC IRIS',
+  const dockDiagnostics = createDockDiagnostics({
     status,
     intelUrl,
-    camera: {
-      lat: camera.lat,
-      lng: camera.lng,
-      zoom: camera.zoom,
-      bounds: camera.bounds,
-    },
-    plan: plan ? {
-      dataZoom: plan.dataZoom,
-      mode: summaryMode,
-      tiles: plan.tiles.length,
-      xRange: plan.xRange,
-      yRange: plan.yRange,
-      firstBatchSize: requestBatches[0] ?? 0,
-      requestBatches,
-      requestPolicy: {
-        name: 'iitc-refill-queue',
-        maxRequests: IITC_MAX_REQUESTS,
-        maxTilesPerRequest: IITC_NUM_TILES_PER_REQUEST,
-        adaptiveRequestBatches: true,
-        sequentialRequestBatches: false,
-        timeoutRetryLimit: IITC_MAX_TILE_RETRIES,
-      },
-      dataBounds: plan.dataBounds,
-    } : null,
-    entities: {
-      status: entityFetch.status,
-      source: entityFetch.entitySource,
-      complete: entityFetch.status === 'entities ready',
-      portals: entityFetch.portals,
-      realPortals: entityFetch.realPortals,
-      placeholderPortals: entityFetch.placeholderPortals,
-      ornamentPortals: entityFetch.ornamentPortals,
-      drawnOrnamentMarkers: entityFetch.drawnOrnamentMarkers,
-      hiddenOrnamentMarkers: entityFetch.hiddenOrnamentMarkers,
-      ornamentTypes: entityFetch.ornamentTypes,
-      artifactPortals: entityFetch.artifactPortals,
-      drawnArtifactMarkers: entityFetch.drawnArtifactMarkers,
-      artifactTypes: entityFetch.artifactTypes,
-      artifactFetch: {
-        status: entityFetch.artifactFetchStatus,
-        portalCount: entityFetch.artifactFetchPortalCount,
-        types: entityFetch.artifactFetchTypes,
-        elapsedMs: entityFetch.artifactFetchElapsedMs,
-        elapsedSeconds: entityFetch.artifactFetchElapsedMs === null ? null : Number(formatElapsedSeconds(entityFetch.artifactFetchElapsedMs)),
-        error: entityFetch.artifactFetchError || undefined,
-      },
-      levelLabels: entityFetch.levelLabels,
-      damagedPortals: entityFetch.damagedPortals,
-      links: entityFetch.links,
-      fields: entityFetch.fields,
-      viewport: {
-        portals: entityFetch.viewportPortals,
-        realPortals: entityFetch.viewportRealPortals,
-        placeholderPortals: entityFetch.viewportPlaceholderPortals,
-        links: entityFetch.viewportLinks,
-        fields: entityFetch.viewportFields,
-        ornamentPortals: entityFetch.viewportOrnamentPortals,
-        ornamentMarkers: entityFetch.viewportOrnamentMarkers,
-        artifactPortals: entityFetch.viewportArtifactPortals,
-        artifactMarkers: entityFetch.viewportArtifactMarkers,
-      },
-      requestedTiles: entityFetch.requestedTiles,
-      returnedTiles: entityFetch.returnedTiles,
-      nonEmptyTiles: entityFetch.nonEmptyTiles,
-      elapsedMs: entityFetch.elapsedMs,
-      elapsedSeconds: entityFetch.elapsedMs === null ? null : Number(formatElapsedSeconds(entityFetch.elapsedMs)),
-      firstRenderMs: entityFetch.firstRenderElapsedMs,
-      firstRenderSeconds: entityFetch.firstRenderElapsedMs === null ? null : Number(formatElapsedSeconds(entityFetch.firstRenderElapsedMs)),
-      retryRequests: entityFetch.retryRequests,
-      retriedTileKeys: entityFetch.retriedTileKeys,
-      recoveredTileKeys: entityFetch.recoveredTileKeys,
-      emptyTileKeys: entityFetch.emptyTileKeys,
-      nonEmptyTileKeys: entityFetch.nonEmptyTileKeys,
-      unaccountedTileKeys: entityFetch.unaccountedTileKeys,
-      serverRetryTileKeys: entityFetch.serverRetryTileKeys,
-      timeoutTileKeys: entityFetch.timeoutTileKeys,
-      errorTileKeys: entityFetch.errorTileKeys,
-      responseRetryTileKeys: entityFetch.responseRetryTileKeys,
-      queueDelayReasons: entityFetch.queueDelayReasons,
-      partialTileKeys: entityFetch.partialTileKeys,
-      cacheFreshTiles: entityFetch.cacheFreshTileKeys.length,
-      cacheFreshTileKeys: entityFetch.cacheFreshTileKeys,
-      cacheStaleTiles: entityFetch.cacheStaleTileKeys.length,
-      cacheStaleTileKeys: entityFetch.cacheStaleTileKeys,
-      staleGenerationCacheWarmTiles: entityFetch.staleGenerationCacheWarmTileKeys.length,
-      staleGenerationCacheWarmTileKeys: entityFetch.staleGenerationCacheWarmTileKeys,
-      queue: entityFetch.queue,
-      renderQueue: entityFetch.renderQueue,
-      renderMutation: entityFetch.renderMutation,
-      timing: entityFetch.timing,
-      playerTracker: entityFetch.playerTracker,
-      authRequired: entityFetch.authRequired,
-    },
+    camera,
+    plan,
+    summaryMode,
+    requestBatches,
+    entityFetch,
     baseLayerId,
     dataSource,
-    highlighters: {
-      active: entityFetch.highlighterSettings.active,
-      registered: entityFetch.highlighterIds,
-    },
-    requests: requestDiagnostics,
+    requestDiagnostics,
     lifecycleSettings,
-    layers: layerSettings,
-    layerRegistry: LAYER_REGISTRY_DIAGNOSTICS,
-    renderPolicy: entityFetch.renderPolicy,
-    selectedPortal: entityFetch.selectedPortal,
-    portalDetails: entityFetch.portalDetails,
-    sidePanels: {
-      active: activeSidePanel,
-      agent: agentState,
-      comm: commState,
-      scores: scoresState,
-      missions: missionsState,
-      passcodes: passcodeState,
-      inventory: inventoryState,
-    },
-    collision: entityFetch.collision,
-  };
+    layerSettings,
+    activeSidePanel,
+    agentState,
+    commState,
+    scoresState,
+    missionsState,
+    passcodeState,
+    inventoryState,
+  });
   const createScenarioSnapshot = (label: string, settings = lifecycleSettings): ScenarioSnapshot => ({
     label,
     capturedAt: new Date().toISOString(),
@@ -625,23 +541,19 @@ function App(): h.JSX.Element {
   };
 
   const copyMapContextLatLng = (): void => {
-    if (!mapContext) return;
-    copyIitcIrisText(formatMapContextLatLng(mapContext.lat, mapContext.lng), {setStatus: setCopyStatus, successStatus: 'coords copied'});
+    copyMapContextLatLngHelper(mapContext, setCopyStatus);
   };
 
   const copyMapContextUrl = (): void => {
-    if (!mapContext) return;
-    copyIitcIrisText(formatMapContextIntelUrl(mapContext.lat, mapContext.lng, mapContext.zoom), {setStatus: setCopyStatus, successStatus: 'context url copied'});
+    copyMapContextUrlHelper(mapContext, setCopyStatus);
   };
 
   const copyMapContextGuid = (): void => {
-    if (!mapContext?.guid) return;
-    copyIitcIrisText(mapContext.guid, {setStatus: setCopyStatus, successStatus: `${mapContext.target} guid copied`});
+    copyMapContextGuidHelper(mapContext, setCopyStatus);
   };
 
   const copyMapContextPortalGuids = (): void => {
-    if (!mapContext?.portalGuids?.length) return;
-    copyIitcIrisText(formatAnchorPortalGuids(mapContext.portalGuids), {setStatus: setCopyStatus, successStatus: 'anchor guids copied'});
+    copyMapContextPortalGuidsHelper(mapContext, setCopyStatus);
   };
 
   const centerMapContext = (): void => {
@@ -782,19 +694,15 @@ function App(): h.JSX.Element {
   };
 
   const copySelectedPortalLink = (): void => {
-    if (!entityFetch.selectedPortal) return;
-    const portalUrl = formatPortalIntelUrl(entityFetch.selectedPortal, camera.zoom);
-    copyIitcIrisText(portalUrl, {setStatus: setCopyStatus, successStatus: 'portal link copied'});
+    copySelectedPortalLinkHelper(entityFetch.selectedPortal, camera.zoom, setCopyStatus);
   };
 
   const copySelectedPortalGuid = (): void => {
-    if (!entityFetch.selectedPortal) return;
-    copyIitcIrisText(entityFetch.selectedPortal.guid, {setStatus: setCopyStatus, successStatus: 'portal guid copied'});
+    copySelectedPortalGuidHelper(entityFetch.selectedPortal, setCopyStatus);
   };
 
   const copySelectedPortalTitle = (): void => {
-    if (!entityFetch.selectedPortal) return;
-    copyIitcIrisText(entityFetch.selectedPortal.title || entityFetch.selectedPortal.guid, {setStatus: setCopyStatus, successStatus: 'portal title copied'});
+    copySelectedPortalTitleHelper(entityFetch.selectedPortal, setCopyStatus);
   };
 
   const toggleDebugDock = (): void => {

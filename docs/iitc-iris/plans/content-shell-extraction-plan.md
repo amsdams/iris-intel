@@ -25,6 +25,9 @@ modules own routing/display decisions or JSX composition only.
 - Shared elapsed request formatting moved to `ui-status.ts`.
 - Draw Tools display helpers and panel JSX moved to `content-draw-tools.ts` and `draw-tools-panel.tsx`.
 - System diagnostics status/debug rows moved to `system-diagnostics-panel.tsx`.
+- System dock diagnostics creation helper: `content-dock-diagnostics.ts`, `content-dock-diagnostics.test.ts`.
+- Draw Tools payload action builders: `content-draw-tools-actions.ts`, `content-draw-tools-actions.test.ts`.
+- Clipboard copy feedback helpers: `content-copy-helpers.ts`, `content-copy-helpers.test.ts`.
 
 ## Follow-up Plans
 
