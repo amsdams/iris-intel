@@ -72,6 +72,8 @@ import {IitcIrisMapContextPanel, IitcIrisMapNavigationPanel} from './map-control
 import {IitcIrisHelpPanel} from './help-panel';
 import {IitcIrisSystemControlsPanel} from './system-controls-panel';
 import {IitcIrisPortalImageModal} from './portal-image-modal';
+import {IitcIrisSheetTabBar} from './sheet-tabbar';
+import {IitcIrisAuthRecoveryBanner} from './auth-recovery-banner';
 import {
   createDataSourceSettings,
   DATA_SOURCE_OPTIONS,
@@ -1192,42 +1194,7 @@ function App(): h.JSX.Element {
     }
   }, [activePrimaryMenu, activeSelectedSheet, activeSheet, closeSheetToMap, hasSelectedObject, openSheet, toggleCommPanel, toggleSheet]);
 
-  const renderSheetTab = (sheet: SheetId, label: string, onClick?: () => void, active = activeSheet === sheet): h.JSX.Element => (
-    <button
-      className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${active ? 'is-active' : ''}`}
-      type="button"
-      onClick={onClick ?? ((): void => toggleSheet(sheet))}
-      aria-pressed={active}
-      key={sheet}
-    >
-      {label}
-    </button>
-  );
 
-  const renderPrimaryMenuTab = (menu: typeof PRIMARY_MENU_REGISTRY[number]): h.JSX.Element => {
-    const label = menu.id === 'selected' ? selectedPrimaryLabel : menu.label;
-    return (
-      <button
-        className={`iitc-iris-sheet-tab ${activePrimaryMenu === menu.id ? 'is-active' : ''}`}
-        type="button"
-        onClick={() => togglePrimaryMenu(menu.id)}
-        disabled={menu.id === 'selected' && !hasSelectedObject}
-        aria-pressed={activePrimaryMenu === menu.id}
-        title={`${label} menu (${menu.shortcut})`}
-        key={menu.id}
-      >
-        {label}
-      </button>
-    );
-  };
-
-  const renderSelectedSheetTab = (entry: typeof SELECTED_MENU_SHEET_REGISTRY[number]): h.JSX.Element | null => {
-    if (!entry.selectedKind || selectedKind !== entry.selectedKind) return null;
-    const openSelectedSheet = entry.id === 'selectedLink' || entry.id === 'selectedField'
-      ? (): void => openSheet(entry.id)
-      : undefined;
-    return renderSheetTab(entry.id, entry.label, openSelectedSheet);
-  };
 
   const jumpToPreset = (preset: typeof VIEW_PRESETS[number]): void => {
     setMapView(preset.lat, preset.lng, preset.zoom);
@@ -1514,13 +1481,11 @@ function App(): h.JSX.Element {
   return (
     <div className={`iitc-iris-shell iitc-iris-sheet-${activeSheet} ${entityFetch.selectedPortal ? 'iitc-iris-has-selected-portal' : ''}`}>
       <div id="iitc-iris-map" className="iitc-iris-map" />
-      {authRecoveryText && (
-        <div className="iitc-iris-auth-recovery" role="status" aria-live="polite">
-          <span>{authRecoveryText}</span>
-          <button type="button" onClick={openIntelLogin} title="Open Intel login">Login</button>
-          <button type="button" onClick={retryAuthRequest} title="Retry the latest affected request">Retry</button>
-        </div>
-      )}
+      <IitcIrisAuthRecoveryBanner
+        authRecoveryText={authRecoveryText}
+        openIntelLogin={openIntelLogin}
+        retryAuthRequest={retryAuthRequest}
+      />
       {activeSheet === 'map' && searchState.term && searchState.results.length > 0 && (
         <div className="iitc-iris-map-search-badge">
           <span title={activeSearchResult?.title || searchState.term}>search: {activeSearchResult?.title || searchState.term}</span>
@@ -1750,54 +1715,20 @@ function App(): h.JSX.Element {
           />
         </aside>
       )}
-      <nav className="iitc-iris-sheet-tabbar" aria-label="Panels">
-        <div className="iitc-iris-sheet-tabbar-primary">
-          {PRIMARY_MENU_REGISTRY.map(renderPrimaryMenuTab)}
-        </div>
-        <div className="iitc-iris-sheet-tabbar-secondary">
-          {activePrimaryMenu === 'map' && (
-            <>
-              {MAP_MENU_SHEET_REGISTRY.map((entry) => (
-                entry.id === 'missions'
-                  ? renderSheetTab(entry.id, entry.label, () => toggleMissionsSheet('view'), activeSheet === 'missions' && missionsState.source !== 'portal')
-                  : renderSheetTab(entry.id, entry.label)
-              ))}
-            </>
-          )}
-          {activePrimaryMenu === 'selected' && (
-            <>
-              {SELECTED_MENU_SHEET_REGISTRY.map(renderSelectedSheetTab)}
-              {selectedKind === 'portal' && <button className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'missions' && missionsState.source === 'portal' ? 'is-active' : ''}`} type="button" onClick={() => toggleMissionsSheet('portal')} aria-pressed={activeSheet === 'missions' && missionsState.source === 'portal'}>Missions</button>}
-            </>
-          )}
-          {activePrimaryMenu === 'agent' && (
-            <>
-              {AGENT_MENU_SHEET_REGISTRY.map((entry) => renderSheetTab(entry.id, entry.label))}
-            </>
-          )}
-          {activePrimaryMenu === 'comm' && (
-            <>
-              {IITC_IRIS_COMM_TABS.map((tab) => (
-                <button
-                  className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${activeSheet === 'comm' && commState.tab === tab.id ? 'is-active' : ''}`}
-                  type="button"
-                  onClick={() => selectCommTab(tab.id)}
-                  disabled={commState.status === 'loading' && commState.tab === tab.id}
-                  aria-pressed={activeSheet === 'comm' && commState.tab === tab.id}
-                  key={tab.id}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </>
-          )}
-          {activePrimaryMenu === 'system' && (
-            <>
-              {SYSTEM_MENU_SHEET_REGISTRY.map((entry) => renderSheetTab(entry.id, entry.label))}
-            </>
-          )}
-        </div>
-      </nav>
+      <IitcIrisSheetTabBar
+        activePrimaryMenu={activePrimaryMenu}
+        togglePrimaryMenu={togglePrimaryMenu}
+        selectedPrimaryLabel={selectedPrimaryLabel}
+        hasSelectedObject={hasSelectedObject}
+        activeSheet={activeSheet}
+        selectedKind={selectedKind}
+        toggleSheet={toggleSheet}
+        openSheet={openSheet}
+        toggleMissionsSheet={toggleMissionsSheet}
+        missionsState={missionsState}
+        commState={commState}
+        selectCommTab={selectCommTab}
+      />
       {showPortalSidePanel && entityFetch.selectedPortal && (
         <IitcIrisPortalDetailsPanel
           activeSidePanel={activeSidePanel}
