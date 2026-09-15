@@ -34,6 +34,8 @@ modules own routing/display decisions or JSX composition only.
 - Map navigation & view input jump helpers: `content-map-navigation.ts`, `content-map-navigation.test.ts`.
 - Draw Tools lifecycle helpers: `content-draw-tools-lifecycle.ts`, `content-draw-tools-lifecycle.test.ts`.
 - Portal Analysis sorting action helpers: `content-portal-analysis-actions.ts`, `content-portal-analysis-actions.test.ts`.
+- Layer & Highlighter settings action helpers: `content-layer-actions.ts`, `content-layer-actions.test.ts`.
+- Scenario snapshot & run lifecycle management: `content-scenario-management.ts`, `content-scenario-management.test.ts`.
 
 ## Follow-up Plans
 

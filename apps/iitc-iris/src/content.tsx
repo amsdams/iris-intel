@@ -155,15 +155,28 @@ import {
   DRAW_TOOLS_DEFAULT_COLOR,
   filterAndSerializeDrawToolsItems,
   getDrawToolsItemCenter,
-  prepareDrawToolsImport,
   type DrawToolsTarget,
 } from './content-draw-tools';
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPortalHighlighterId, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState} from './messages';
 import {
-  normalizeIitcDrawToolsLabel,
   type IitcMapDataPlan,
 } from '@iris/iitc-core';
-import {buildClearDrawToolsPayload} from './content-draw-tools-actions';
+import {
+  buildAddMarkerPayload,
+  buildClearDrawToolsPayload,
+  buildImportDrawToolsPayload,
+  buildRenameMarkerPayload,
+} from './content-draw-tools-actions';
+import {
+  buildHighlighterSettingsMessage,
+  buildHighlighterSettingsValue,
+  buildLayerSettingsMessage,
+  calculateToggledLayerSettings,
+} from './content-layer-actions';
+import {
+  appendScenarioSnapshot,
+  finishScenarioRunState,
+} from './content-scenario-management';
 
 const IITC_PAN_CONTROL_OFFSET_PX = 500;
 const LOGIN_BYPASS_MS = 5 * 60 * 1000;
@@ -463,9 +476,9 @@ function App(): h.JSX.Element {
       setScenarioStatusBriefly('start a scenario first');
       return;
     }
-    setScenarioRuns((current) => current.map((run) => run.id === runId
-      ? {...run, snapshots: [...run.snapshots, createScenarioSnapshot(label, run.lifecycleSettings)]}
-      : run));
+    setScenarioRuns((current) =>
+      appendScenarioSnapshot(current, runId, createScenarioSnapshot(label, activeScenarioRun?.lifecycleSettings))
+    );
     setScenarioStatusBriefly(`${label} captured`);
   };
 
@@ -483,14 +496,8 @@ function App(): h.JSX.Element {
     }
     const finalLabel = isScenarioSettled(dockDiagnostics) ? 'done' : 'done-active';
     const finishedAt = new Date().toISOString();
-    setScenarioRuns((current) => current.map((item) => item.id === run.id
-      ? {
-        ...item,
-        status: 'finished',
-        finishedAt,
-        snapshots: [...item.snapshots, createScenarioSnapshot(finalLabel, item.lifecycleSettings)],
-      }
-      : item));
+    const finalSnapshot = createScenarioSnapshot(finalLabel, run.lifecycleSettings);
+    setScenarioRuns((current) => finishScenarioRunState(current, run.id, finalSnapshot, finishedAt));
     setActiveScenarioRunId(null);
     setScenarioStatusBriefly(finalLabel === 'done' ? `${run.name} finished` : `${run.name} captured active finish`);
   };
@@ -560,27 +567,18 @@ function App(): h.JSX.Element {
 
   const addDrawToolsMarker = (color: string): void => {
     const target = getDrawToolsTarget();
-    if (!target) return;
-    const label = normalizeIitcDrawToolsLabel(drawToolsMarkerLabel) ?? normalizeIitcDrawToolsLabel(target.label);
+    const payload = buildAddMarkerPayload(target, drawToolsMarkerLabel, color);
+    if (!payload) return;
     setDrawToolsClearConfirm(null);
-    postDrawToolsAction({
-      drawToolsAction: 'addMarker',
-      drawToolsColor: color,
-      drawToolsLabel: label ?? '',
-      drawToolsLatLngs: [{lat: target.lat, lng: target.lng}],
-    });
+    postDrawToolsAction(payload);
     setStatus('draw marker added');
   };
 
   const renameDrawToolsMarker = (item: Extract<IitcIrisDrawToolsItem, {type: 'marker'}>, label: string): void => {
-    const normalizedLabel = normalizeIitcDrawToolsLabel(label);
-    if (normalizedLabel === item.label) return;
-    postDrawToolsAction({
-      drawToolsAction: 'rename',
-      drawToolsIndex: item.storageIndex,
-      drawToolsLabel: normalizedLabel ?? '',
-    });
-    setStatus(normalizedLabel ? 'draw marker renamed' : 'draw marker label cleared');
+    const res = buildRenameMarkerPayload(item, label);
+    if (!res) return;
+    postDrawToolsAction(res.payload);
+    setStatus(res.statusText);
   };
 
   const saveDrawToolsMarkerLabel = (item: Extract<IitcIrisDrawToolsItem, {type: 'marker'}>, label: string): void => {
@@ -652,18 +650,12 @@ function App(): h.JSX.Element {
   };
 
   const importDrawToolsItems = (): void => {
-    try {
-      const {supportedJson, supportedCount, skippedCount} = prepareDrawToolsImport(drawToolsImportText);
-      postDrawToolsAction({
-        drawToolsAction: 'import',
-        drawToolsJson: supportedJson,
-        drawToolsMerge: drawToolsImportMerge,
-      });
-      setDrawToolsImportStatus(skippedCount > 0 ? `importing ${supportedCount}, skipped ${skippedCount}` : `importing ${supportedCount}`);
+    const res = buildImportDrawToolsPayload(drawToolsImportText, drawToolsImportMerge);
+    if (res.success) {
+      postDrawToolsAction(res.payload);
       setDrawToolsClearConfirm(null);
-    } catch (error) {
-      setDrawToolsImportStatus(error instanceof Error ? error.message : String(error));
     }
+    setDrawToolsImportStatus(res.statusText);
   };
 
   const copySelectedPortalLink = (): void => {
@@ -835,12 +827,12 @@ function App(): h.JSX.Element {
 
   const toggleLayerSetting = (key: BooleanLayerSettingKey): void => {
     layerSettingsIntentAtRef.current = performance.now();
-    setLayerSettings((current) => ({...current, [key]: !current[key]}));
+    setLayerSettings((current) => calculateToggledLayerSettings(current, key));
   };
 
   const selectPortalHighlighter = (active: IitcIrisPortalHighlighterId): void => {
     highlighterSettingsIntentAtRef.current = performance.now();
-    setHighlighterSettings({active});
+    setHighlighterSettings(buildHighlighterSettingsValue(active));
   };
 
   const setMapView = useCallback((lat: number, lng: number, zoom = camera.zoom): void => {
@@ -1150,23 +1142,14 @@ function App(): h.JSX.Element {
     storeLayerSettings(layerSettings);
     const sentAt = layerSettingsIntentAtRef.current ?? performance.now();
     layerSettingsIntentAtRef.current = undefined;
-    window.postMessage({
-      type: IITC_IRIS_MESSAGES.layerSettings,
-      sentAt,
-      layerSettings,
-      baseLayerId,
-    } satisfies IitcIrisMessage, '*');
+    window.postMessage(buildLayerSettingsMessage(layerSettings, baseLayerId, sentAt), '*');
   }, [baseLayerId, layerSettings]);
 
   useEffect(() => {
     storeHighlighterSettings(highlighterSettings);
     const sentAt = highlighterSettingsIntentAtRef.current ?? performance.now();
     highlighterSettingsIntentAtRef.current = undefined;
-    window.postMessage({
-      type: IITC_IRIS_MESSAGES.layerSettings,
-      sentAt,
-      highlighterSettings,
-    } satisfies IitcIrisMessage, '*');
+    window.postMessage(buildHighlighterSettingsMessage(highlighterSettings, sentAt), '*');
   }, [highlighterSettings]);
 
   useEffect(() => {

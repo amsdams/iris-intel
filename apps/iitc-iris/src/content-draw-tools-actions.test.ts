@@ -2,6 +2,7 @@ import {describe, expect, it} from 'vitest';
 import {
   buildAddMarkerPayload,
   buildClearDrawToolsPayload,
+  buildImportDrawToolsPayload,
   buildRenameMarkerPayload,
 } from './content-draw-tools-actions';
 
@@ -41,4 +42,21 @@ describe('content-draw-tools-actions', () => {
       drawToolsItemType: 'polyline',
     });
   });
+
+  it('builds import payload for valid draw tools JSON', () => {
+    const json = JSON.stringify([{type: 'polyline', latLngs: [{lat: 52.3, lng: 4.9}, {lat: 52.4, lng: 5.0}], color: '#a6527a'}]);
+    const res = buildImportDrawToolsPayload(json, true);
+    expect(res.success).toBe(true);
+    if (res.success) {
+      expect(res.statusText).toBe('importing 1');
+      expect(res.payload.drawToolsAction).toBe('import');
+    }
+  });
+
+  it('returns failure for invalid JSON in draw tools import', () => {
+    const res = buildImportDrawToolsPayload('not-json', true);
+    expect(res.success).toBe(false);
+    expect(res.statusText).toBeDefined();
+  });
 });
+

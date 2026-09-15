@@ -4,6 +4,7 @@ import type {
   IitcIrisMessage,
 } from './messages';
 import {IITC_IRIS_MESSAGES} from './messages';
+import {prepareDrawToolsImport} from './content-draw-tools';
 
 export function postDrawToolsAction(message: Omit<IitcIrisMessage, 'type'>): void {
   window.postMessage(
@@ -62,3 +63,40 @@ export function buildClearDrawToolsPayload(
           : 'draw items cleared',
   };
 }
+
+export function buildImportDrawToolsPayload(
+  importText: string,
+  merge: boolean
+):
+  | {
+      success: true;
+      payload: Omit<IitcIrisMessage, 'type'>;
+      statusText: string;
+    }
+  | {
+      success: false;
+      statusText: string;
+    } {
+  try {
+    const {supportedJson, supportedCount, skippedCount} = prepareDrawToolsImport(importText);
+    return {
+      success: true,
+      payload: {
+        drawToolsAction: 'import',
+        drawToolsJson: supportedJson,
+        drawToolsMerge: merge,
+      },
+      statusText:
+        skippedCount > 0
+          ? `importing ${supportedCount}, skipped ${skippedCount}`
+          : `importing ${supportedCount}`,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      statusText: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+
