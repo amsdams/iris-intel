@@ -36,6 +36,9 @@ modules own routing/display decisions or JSX composition only.
 - Portal Analysis sorting action helpers: `content-portal-analysis-actions.ts`, `content-portal-analysis-actions.test.ts`.
 - Layer & Highlighter settings action helpers: `content-layer-actions.ts`, `content-layer-actions.test.ts`.
 - Scenario snapshot & run lifecycle management: `content-scenario-management.ts`, `content-scenario-management.test.ts`.
+- Search request & navigation action helpers: `content-search-actions.ts`, `content-search-actions.test.ts`.
+- COMM input submission & passcode redeem helpers: `content-comm-input-actions.ts`, `content-comm-input-actions.test.ts`.
+- Map camera view & zoom action helpers: `content-camera-actions.ts`, `content-camera-actions.test.ts`.
 
 ## Follow-up Plans
 

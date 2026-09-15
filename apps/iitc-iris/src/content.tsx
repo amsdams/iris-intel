@@ -29,9 +29,7 @@ import {
   createRequestInventoryMessage,
   createRequestMissionDetailsMessage,
   createRequestMissionsMessage,
-  createRequestPasscodeMessage,
   createRequestScoresMessage,
-  formatCommDraftWithNickname,
 } from './content-outbound-messages';
 import {handleIitcIrisContentKeyDown, type IitcIrisPanDirection} from './content-keyboard-shortcuts';
 import {copyIitcIrisText} from './content-feedback';
@@ -70,7 +68,6 @@ import {createDockDiagnostics} from './content-dock-diagnostics';
 import {
   checkCommIsAtBottom,
   checkShouldRequestOlderComm,
-  createCommSendRequest,
 } from './content-comm-actions';
 import {
   performIntelLoginRedirect,
@@ -133,7 +130,6 @@ import {
   VIEW_PRESETS,
 } from './content-storage-settings';
 import {
-  clampView,
   isScenarioSettled,
   type ScenarioRun,
   type ScenarioSnapshot,
@@ -177,6 +173,22 @@ import {
   appendScenarioSnapshot,
   finishScenarioRunState,
 } from './content-scenario-management';
+import {
+  buildSearchClearMessage,
+  buildSearchPreviewMessage,
+  buildSearchRequestMessage,
+  buildSearchSelectMessage,
+  calculateNextSearchResultIndex,
+  getActiveSearchResult,
+} from './content-search-actions';
+import {
+  appendCommNickname,
+  buildCommSendAction,
+  buildPasscodeRedeemAction,
+} from './content-comm-input-actions';
+import {
+  buildSetViewMessage,
+} from './content-camera-actions';
 
 const IITC_PAN_CONTROL_OFFSET_PX = 500;
 const LOGIN_BYPASS_MS = 5 * 60 * 1000;
@@ -775,21 +787,21 @@ function App(): h.JSX.Element {
 
   const redeemPasscode = (): void => {
     if (passcodeState.status === 'loading') return;
-    const res = createRequestPasscodeMessage(passcodeDraft);
+    const res = buildPasscodeRedeemAction(passcodeDraft);
     if (!res) return;
     setPasscodeDraft(res.cleanPasscode);
     window.postMessage(res.message, '*');
   };
 
   const sendComm = (): void => {
-    const msg = createCommSendRequest(commState.tab, commDraft);
-    if (!msg) return;
-    window.postMessage(msg, '*');
+    const res = buildCommSendAction(commState.tab, commDraft);
+    if (!res) return;
+    window.postMessage(res.message, '*');
     setCommDraft('');
   };
 
   const addCommNickname = (nickname: string): void => {
-    setCommDraft((current) => formatCommDraftWithNickname(current, nickname));
+    setCommDraft((current) => appendCommNickname(current, nickname));
   };
 
   const openIntelLogin = (): void => {
@@ -836,56 +848,37 @@ function App(): h.JSX.Element {
   };
 
   const setMapView = useCallback((lat: number, lng: number, zoom = camera.zoom): void => {
-    const clamped = clampView({lat, lng, zoom});
-    window.postMessage({
-      type: IITC_IRIS_MESSAGES.setView,
-      lat: clamped.lat,
-      lng: clamped.lng,
-      zoom: clamped.zoom ?? camera.zoom,
-    } satisfies IitcIrisMessage, '*');
+    window.postMessage(buildSetViewMessage(lat, lng, zoom), '*');
   }, [camera.zoom]);
 
   const requestSearch = (term: string, confirmed = false): void => {
-    window.postMessage({
-      type: IITC_IRIS_MESSAGES.searchRequest,
-      searchTerm: term,
-      searchConfirmed: confirmed,
-    } satisfies IitcIrisMessage, '*');
+    window.postMessage(buildSearchRequestMessage(term, confirmed), '*');
   };
 
   const clearSearch = (): void => {
     setSearchTerm('');
     setSearchState(EMPTY_SEARCH_STATE);
     setActiveSearchResultIndex(0);
-    window.postMessage({type: IITC_IRIS_MESSAGES.searchClear} satisfies IitcIrisMessage, '*');
+    window.postMessage(buildSearchClearMessage(), '*');
   };
 
   const previewSearchResult = (result: IitcIrisSearchResult | null): void => {
-    window.postMessage({
-      type: IITC_IRIS_MESSAGES.searchPreview,
-      searchResult: result ?? undefined,
-    } satisfies IitcIrisMessage, '*');
+    window.postMessage(buildSearchPreviewMessage(result), '*');
   };
 
   const selectSearchResult = (result: IitcIrisSearchResult, zoom = false): void => {
     if (result.type === 'empty') return;
-    window.postMessage({
-      type: IITC_IRIS_MESSAGES.searchSelect,
-      searchResult: result,
-      searchZoom: zoom,
-    } satisfies IitcIrisMessage, '*');
+    window.postMessage(buildSearchSelectMessage(result, zoom), '*');
     if (mapFocusMode) closeSheets();
     else if (result.type === 'portal' || result.type === 'guid') openSheet('portal');
   };
 
   const moveSearchSelection = (delta: number): void => {
-    const selectableResults = searchState.results.filter((result) => result.type !== 'empty');
-    if (selectableResults.length === 0) return;
-    setActiveSearchResultIndex((current) => (current + delta + selectableResults.length) % selectableResults.length);
+    setActiveSearchResultIndex((current) => calculateNextSearchResultIndex(current, delta, searchState.results));
   };
 
   const selectActiveSearchResult = (zoom = false): boolean => {
-    const result = searchState.results.filter((candidate) => candidate.type !== 'empty')[activeSearchResultIndex];
+    const result = getActiveSearchResult(searchState.results, activeSearchResultIndex);
     if (!result) return false;
     selectSearchResult(result, zoom);
     return true;

@@ -1,0 +1,24 @@
+import {describe, expect, it} from 'vitest';
+import {buildSetViewMessage, calculateZoomView} from './content-camera-actions';
+import {IITC_IRIS_MESSAGES} from './messages';
+
+describe('content-camera-actions', () => {
+  it('builds setView message with clamped coordinates', () => {
+    const msg = buildSetViewMessage(52.3, 4.9, 15);
+    expect(msg).toEqual({
+      type: IITC_IRIS_MESSAGES.setView,
+      lat: 52.3,
+      lng: 4.9,
+      zoom: 15,
+    });
+  });
+
+  it('calculates zoom view with clamped zoom bounds', () => {
+    const view = calculateZoomView({lat: 52.3, lng: 4.9, zoom: 15}, 1);
+    expect(view).toEqual({
+      lat: 52.3,
+      lng: 4.9,
+      zoom: 16,
+    });
+  });
+});
