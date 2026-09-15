@@ -9,6 +9,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
+    target: 'esnext',
     emptyOutDir: false,
     lib: {
       entry: resolve(__dirname, 'src/page-map-runtime.ts'),
@@ -18,7 +19,8 @@ export default defineConfig({
     },
     rollupOptions: {
       output: {
-        extend: true,
+        banner: '(function(){',
+        footer: '})();',
       },
     },
   },
