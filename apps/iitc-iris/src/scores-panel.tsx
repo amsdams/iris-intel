@@ -36,7 +36,7 @@ function formatRegionCenter(scoresState: IitcIrisScoresState): string {
 export function IitcIrisScoresPanel({scoresState, refresh}: IitcIrisScoresPanelProps): h.JSX.Element {
   return <div className="iitc-iris-request-panel-body">
     <div className="iitc-iris-map-control-row">
-      <button className="iitc-iris-portal-action" type="button" onClick={refresh} disabled={scoresState.status === 'loading'} title="Fetch global and regional scores for the current map center">
+      <button className="iitc-iris-portal-action" type="button" onClick={() => refresh()} disabled={scoresState.status === 'loading'} title="Fetch global and regional scores for the current map center">
         {scoresState.status === 'loading' ? 'Loading' : 'Refresh'}
       </button>
       <span className={`iitc-iris-status ${scoresState.status === 'error' || scoresState.status === 'auth' ? 'iitc-iris-warning' : ''}`}>

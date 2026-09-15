@@ -2218,6 +2218,9 @@ const IITC_IRIS_CORE_FILTER_LAYERS: IitcIrisCoreFilterLayer[] = [
 ];
 
 function getCoreFilterEntityData(entity: IitcIrisRenderPortal | IitcIrisRenderLink | IitcIrisRenderField): IitcIrisCoreFilterDataConstraint {
+  if (!entity || typeof entity !== 'object') {
+    return {team: undefined as unknown as IitcIrisRenderPortal['team']};
+  }
   if ('level' in entity || 'isPlaceholder' in entity) {
     const portal = entity as IitcIrisRenderPortal;
     return {

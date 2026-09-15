@@ -33,8 +33,8 @@ export function IitcIrisCommPanelControls(props: IitcIrisCommPanelControlsProps)
       ))}
     </div>
     <div className="iitc-iris-map-control-row">
-      <button className="iitc-iris-portal-action" type="button" onClick={props.refresh} disabled={commState.status === 'loading'} title="Fetch COMM messages for the current map bounds">{commState.status === 'loading' ? 'Loading' : 'Refresh'}</button>
-      <button className="iitc-iris-portal-action" type="button" onClick={props.requestOlder} disabled={commState.status === 'loading' || commState.oldestTimestamp === undefined || commState.oldestTimestamp < 0} title="Fetch older COMM messages before the current oldest timestamp">Older</button>
+      <button className="iitc-iris-portal-action" type="button" onClick={() => props.refresh()} disabled={commState.status === 'loading'} title="Fetch COMM messages for the current map bounds">{commState.status === 'loading' ? 'Loading' : 'Refresh'}</button>
+      <button className="iitc-iris-portal-action" type="button" onClick={() => props.requestOlder()} disabled={commState.status === 'loading' || commState.oldestTimestamp === undefined || commState.oldestTimestamp < 0} title="Fetch older COMM messages before the current oldest timestamp">Older</button>
       {(!commUserAtBottom || commNewBelow) && <button className="iitc-iris-portal-action" type="button" onClick={props.jumpToLatest} title="Jump to latest COMM message">{commNewBelow ? 'New' : 'Latest'}</button>}
     </div>
     <div className="iitc-iris-panel-summary">
