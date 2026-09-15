@@ -40,6 +40,10 @@ modules own routing/display decisions or JSX composition only.
 - COMM input submission & passcode redeem helpers: `content-comm-input-actions.ts`, `content-comm-input-actions.test.ts`.
 - Map camera view, pan & portal selection action helpers: `content-camera-actions.ts`, `content-camera-actions.test.ts`.
 - Auth recovery, side-panel status & login navigation helpers: `content-auth-navigation.ts`, `content-auth-navigation.test.ts`.
+- Map location presets, view input jump & browser geolocation actions: `content-location-actions.ts`, `content-location-actions.test.ts`.
+- Draw Tools UI panel actions: `content-draw-tools-panel-actions.ts`, `content-draw-tools-panel-actions.test.ts`.
+- COMM panel scrolling, pagination & passcode actions: `content-comm-panel-actions.ts`, `content-comm-panel-actions.test.ts`.
+- Portal section, selection, clear & focus actions: `content-portal-selection-actions.ts`, `content-portal-selection-actions.test.ts`.
 
 ## Follow-up Plans
 

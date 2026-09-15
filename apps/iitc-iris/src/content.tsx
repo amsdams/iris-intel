@@ -25,7 +25,6 @@ import {handleIitcIrisContentMessage, type CameraState, type EntityFetchState} f
 import {
   createCancelPanelRequestsMessage,
   createMissionZoomMessage,
-  createRequestCommMessage,
   createRequestInventoryMessage,
   createRequestMissionDetailsMessage,
   createRequestMissionsMessage,
@@ -66,10 +65,6 @@ import {IitcIrisSheetTabBar} from './sheet-tabbar';
 import {IitcIrisAuthRecoveryBanner} from './auth-recovery-banner';
 import {createDockDiagnostics} from './content-dock-diagnostics';
 import {
-  checkCommIsAtBottom,
-  checkShouldRequestOlderComm,
-} from './content-comm-actions';
-import {
   calculateSidePanelStatus,
   formatAuthRecoveryText,
   getAuthSources,
@@ -93,15 +88,10 @@ import {
   serializeScenarioHistory,
 } from './content-scenario-actions';
 import {
-  buildUserLocationMessage,
-  parseAndBuildViewInputJump,
-} from './content-map-navigation';
-import {
-  buildAddPolylinePayload,
-  buildDeleteAtPayload,
-  buildDeleteIndexPayload,
-  buildUndoPayload,
-} from './content-draw-tools-lifecycle';
+  jumpToPresetAction,
+  jumpToViewInputAction,
+  locateBrowserPositionAction,
+} from './content-location-actions';
 import {calculateNextSortOrder} from './content-portal-analysis-actions';
 import {
   createDataSourceSettings,
@@ -129,7 +119,6 @@ import {
   storeHighlighterSettings,
   storeLayerSettings,
   storeLifecycleSettings,
-  storePortalSections,
   storeSidePanelId,
   VIEW_PRESETS,
 } from './content-storage-settings';
@@ -146,27 +135,18 @@ import {
   formatRenderMutationSummary,
   formatSelectedPortal,
   formatTeamLabel,
-  getPortalLatLng,
 } from './content-map-status';
 import {
   getDrawToolsTargetFromContext,
 } from './content-map-context';
 import {
-  DRAW_TOOLS_DEFAULT_COLOR,
   filterAndSerializeDrawToolsItems,
-  getDrawToolsItemCenter,
   type DrawToolsTarget,
 } from './content-draw-tools';
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPortalHighlighterId, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState} from './messages';
 import {
   type IitcMapDataPlan,
 } from '@iris/iitc-core';
-import {
-  buildAddMarkerPayload,
-  buildClearDrawToolsPayload,
-  buildImportDrawToolsPayload,
-  buildRenameMarkerPayload,
-} from './content-draw-tools-actions';
 import {
   buildHighlighterSettingsMessage,
   buildHighlighterSettingsValue,
@@ -186,15 +166,35 @@ import {
   getActiveSearchResult,
 } from './content-search-actions';
 import {
-  appendCommNickname,
-  buildCommSendAction,
-  buildPasscodeRedeemAction,
-} from './content-comm-input-actions';
+  addDrawToolsLinkPointAction,
+  addDrawToolsMarkerAction,
+  centerDrawToolsItemAction,
+  clearDrawToolsItemsAction,
+  deleteDrawToolsAtContextAction,
+  deleteDrawToolsItemAction,
+  importDrawToolsItemsAction,
+  renameDrawToolsMarkerAction,
+  undoDrawToolsItemAction,
+} from './content-draw-tools-panel-actions';
 import {
-  buildClearPortalSelectionMessage,
+  addCommNicknameAction,
+  handleCommScrollAction,
+  jumpCommToLatestAction,
+  redeemPasscodeAction,
+  requestCommAction,
+  requestOlderCommAction,
+  sendCommAction,
+} from './content-comm-panel-actions';
+import {
+  clearPortalSelectionAction,
+  focusSelectedPortalAction,
+  selectPortalByLatLngAction,
+  setPortalSectionOpenAction,
+  zoomToAndShowPortalAction,
+} from './content-portal-selection-actions';
+import {
   buildPanByMessage,
   buildSetViewMessage,
-  buildZoomToAndShowPortalMessage,
 } from './content-camera-actions';
 
 const IITC_PAN_CONTROL_OFFSET_PX = 500;
@@ -229,8 +229,6 @@ const EMPTY_MISSIONS_STATE: IitcIrisMissionsState = {
   missions: [],
   detailsStatus: 'idle',
 };
-const GEOLOCATION_MAX_ZOOM = 13;
-
 type SidePanelId = IitcIrisSidePanelId;
 type SheetId = IitcIrisSheetId;
 type PrimaryMenuId = IitcIrisPrimaryMenuId;
@@ -585,19 +583,11 @@ function App(): h.JSX.Element {
   };
 
   const addDrawToolsMarker = (color: string): void => {
-    const target = getDrawToolsTarget();
-    const payload = buildAddMarkerPayload(target, drawToolsMarkerLabel, color);
-    if (!payload) return;
-    setDrawToolsClearConfirm(null);
-    postDrawToolsAction(payload);
-    setStatus('draw marker added');
+    addDrawToolsMarkerAction(getDrawToolsTarget(), drawToolsMarkerLabel, color, setDrawToolsClearConfirm, postDrawToolsAction, setStatus);
   };
 
   const renameDrawToolsMarker = (item: Extract<IitcIrisDrawToolsItem, {type: 'marker'}>, label: string): void => {
-    const res = buildRenameMarkerPayload(item, label);
-    if (!res) return;
-    postDrawToolsAction(res.payload);
-    setStatus(res.statusText);
+    renameDrawToolsMarkerAction(item, label, postDrawToolsAction, setStatus);
   };
 
   const saveDrawToolsMarkerLabel = (item: Extract<IitcIrisDrawToolsItem, {type: 'marker'}>, label: string): void => {
@@ -606,57 +596,27 @@ function App(): h.JSX.Element {
   };
 
   const addDrawToolsLinkPoint = (): void => {
-    const latLng = getDrawToolsTargetLatLng();
-    if (!latLng) return;
-    if (!drawToolsLinkStart) {
-      setDrawToolsLinkStart(latLng);
-      setStatus('draw link start set');
-      return;
-    }
-    setDrawToolsClearConfirm(null);
-    postDrawToolsAction(buildAddPolylinePayload(drawToolsLinkStart, latLng, DRAW_TOOLS_DEFAULT_COLOR));
-    setDrawToolsLinkStart(null);
-    setStatus('draw link added');
+    addDrawToolsLinkPointAction(getDrawToolsTargetLatLng(), drawToolsLinkStart, setDrawToolsLinkStart, setDrawToolsClearConfirm, postDrawToolsAction, setStatus);
   };
 
   const deleteDrawToolsAtContext = (itemType?: 'polyline' | 'marker'): void => {
-    const latLng = getDrawToolsTargetLatLng();
-    if (!latLng) return;
-    setDrawToolsClearConfirm(null);
-    postDrawToolsAction(buildDeleteAtPayload(latLng, itemType));
-    setStatus('draw item delete requested');
+    deleteDrawToolsAtContextAction(getDrawToolsTargetLatLng(), itemType, setDrawToolsClearConfirm, postDrawToolsAction, setStatus);
   };
 
   const deleteDrawToolsItem = (item: IitcIrisDrawToolsItem): void => {
-    setDrawToolsClearConfirm(null);
-    const {payload, statusText} = buildDeleteIndexPayload(item);
-    postDrawToolsAction(payload);
-    setStatus(statusText);
+    deleteDrawToolsItemAction(item, setDrawToolsClearConfirm, postDrawToolsAction, setStatus);
   };
 
   const undoDrawToolsItem = (itemType?: 'polyline' | 'marker'): void => {
-    setDrawToolsClearConfirm(null);
-    const {payload, statusText} = buildUndoPayload(itemType);
-    postDrawToolsAction(payload);
-    setStatus(statusText);
+    undoDrawToolsItemAction(itemType, setDrawToolsClearConfirm, postDrawToolsAction, setStatus);
   };
 
   const clearDrawToolsItems = (itemType?: 'polyline' | 'marker'): void => {
-    if (itemType && drawToolsClearConfirm !== itemType) {
-      setDrawToolsClearConfirm(itemType);
-      setStatus(itemType === 'polyline' ? 'click Clear again to remove drawn links' : 'click Clear again to remove drawn markers');
-      return;
-    }
-    setDrawToolsClearConfirm(null);
-    const {payload, statusText} = buildClearDrawToolsPayload(itemType);
-    postDrawToolsAction(payload);
-    if (!itemType || itemType === 'polyline') setDrawToolsLinkStart(null);
-    setStatus(statusText);
+    clearDrawToolsItemsAction(itemType, drawToolsClearConfirm, setDrawToolsClearConfirm, setDrawToolsLinkStart, postDrawToolsAction, setStatus);
   };
 
   const centerDrawToolsItem = (item: IitcIrisDrawToolsItem): void => {
-    const center = getDrawToolsItemCenter(item);
-    setMapView(center.lat, center.lng, Math.max(camera.zoom, 15));
+    centerDrawToolsItemAction(item, camera.zoom, setMapView);
   };
 
   const copyDrawToolsItems = (itemType?: 'polyline' | 'marker'): void => {
@@ -669,12 +629,7 @@ function App(): h.JSX.Element {
   };
 
   const importDrawToolsItems = (): void => {
-    const res = buildImportDrawToolsPayload(drawToolsImportText, drawToolsImportMerge);
-    if (res.success) {
-      postDrawToolsAction(res.payload);
-      setDrawToolsClearConfirm(null);
-    }
-    setDrawToolsImportStatus(res.statusText);
+    importDrawToolsItemsAction(drawToolsImportText, drawToolsImportMerge, setDrawToolsClearConfirm, postDrawToolsAction, setDrawToolsImportStatus);
   };
 
   const copySelectedPortalLink = (): void => {
@@ -735,35 +690,39 @@ function App(): h.JSX.Element {
   }, [activeSheet, activeSidePanel]);
 
   const refreshComm = useCallback((tab: IitcIrisCommTab = commState.tab, older = false): void => {
-    storeCommTab(tab);
-    window.postMessage(createRequestCommMessage(tab, older), '*');
+    requestCommAction(tab, older);
   }, [commState.tab]);
 
   const requestOlderComm = (): void => {
-    if (commState.status === 'loading' || commState.oldestTimestamp === undefined || commState.oldestTimestamp < 0) return;
-    const list = commListRef.current;
-    commOlderScrollHeightRef.current = list?.scrollHeight ?? null;
-    commOlderRequestPendingRef.current = true;
-    refreshComm(commState.tab, true);
+    requestOlderCommAction(
+      commState,
+      commListRef.current,
+      (h) => { commOlderScrollHeightRef.current = h; },
+      (p) => { commOlderRequestPendingRef.current = p; },
+      refreshComm
+    );
   };
 
   const handleCommScroll = (): void => {
-    const list = commListRef.current;
-    if (!list || activeSidePanel !== 'comm' || commState.status === 'loading' || commOlderRequestPendingRef.current) return;
-    const atBottom = checkCommIsAtBottom(list);
-    commStickToBottomRef.current = atBottom;
-    setCommUserAtBottom(atBottom);
-    if (atBottom) setCommNewBelow(false);
-    if (checkShouldRequestOlderComm(list.scrollTop)) requestOlderComm();
+    handleCommScrollAction(
+      commListRef.current,
+      activeSidePanel,
+      commState,
+      commOlderRequestPendingRef.current,
+      (stick) => { commStickToBottomRef.current = stick; },
+      setCommUserAtBottom,
+      setCommNewBelow,
+      requestOlderComm
+    );
   };
 
   const jumpCommToLatest = (): void => {
-    const list = commListRef.current;
-    if (!list) return;
-    list.scrollTop = list.scrollHeight;
-    commStickToBottomRef.current = true;
-    setCommUserAtBottom(true);
-    setCommNewBelow(false);
+    jumpCommToLatestAction(
+      commListRef.current,
+      (stick) => { commStickToBottomRef.current = stick; },
+      setCommUserAtBottom,
+      setCommNewBelow
+    );
   };
 
   const refreshScores = (): void => {
@@ -793,22 +752,15 @@ function App(): h.JSX.Element {
   };
 
   const redeemPasscode = (): void => {
-    if (passcodeState.status === 'loading') return;
-    const res = buildPasscodeRedeemAction(passcodeDraft);
-    if (!res) return;
-    setPasscodeDraft(res.cleanPasscode);
-    window.postMessage(res.message, '*');
+    redeemPasscodeAction(passcodeState, passcodeDraft, setPasscodeDraft);
   };
 
   const sendComm = (): void => {
-    const res = buildCommSendAction(commState.tab, commDraft);
-    if (!res) return;
-    window.postMessage(res.message, '*');
-    setCommDraft('');
+    sendCommAction(commState.tab, commDraft, setCommDraft);
   };
 
   const addCommNickname = (nickname: string): void => {
-    setCommDraft((current) => appendCommNickname(current, nickname));
+    setCommDraft((current) => addCommNicknameAction(current, nickname));
   };
 
   const openIntelLogin = (): void => {
@@ -908,15 +860,11 @@ function App(): h.JSX.Element {
   };
 
   const setPortalSectionOpen = (section: PortalSectionId, open: boolean): void => {
-    setPortalSections((current) => {
-      const next = {...current, [section]: open};
-      storePortalSections(next);
-      return next;
-    });
+    setPortalSectionOpenAction(portalSections, section, open, setPortalSections);
   };
 
   const zoomToAndShowPortal = (portalGuid?: string, latE6?: number, lngE6?: number, zoom = Math.max(camera.zoom, 15)): void => {
-    window.postMessage(buildZoomToAndShowPortalMessage(portalGuid, latE6, lngE6, zoom), '*');
+    zoomToAndShowPortalAction(portalGuid, latE6, lngE6, zoom);
   };
 
   const selectMapContextAnchor = (anchor: IitcIrisMapContextPortalAnchor): void => {
@@ -924,8 +872,7 @@ function App(): h.JSX.Element {
   };
 
   const selectPortalByLatLng = (latE6?: number, lngE6?: number, portalGuid?: string): void => {
-    if (latE6 === undefined || lngE6 === undefined) return;
-    zoomToAndShowPortal(portalGuid, latE6, lngE6);
+    selectPortalByLatLngAction(latE6, lngE6, portalGuid, camera.zoom);
   };
 
   const selectCommPortal = (latE6?: number, lngE6?: number, portalGuid?: string): void => {
@@ -941,7 +888,7 @@ function App(): h.JSX.Element {
   }, [camera.lat, camera.lng, camera.zoom, setMapView]);
 
   const clearPortalSelection = (): void => {
-    window.postMessage(buildClearPortalSelectionMessage(), '*');
+    clearPortalSelectionAction();
   };
 
   const closeSheets = useCallback((): void => {
@@ -950,10 +897,7 @@ function App(): h.JSX.Element {
   }, [openSheet]);
 
   const focusSelectedPortal = (): void => {
-    if (!entityFetch.selectedPortal) return;
-    const {lat, lng} = getPortalLatLng(entityFetch.selectedPortal);
-    setMapView(lat, lng, Math.max(17, camera.zoom));
-    if (mapFocusMode) closeSheets();
+    focusSelectedPortalAction(entityFetch.selectedPortal, camera.zoom, mapFocusMode, setMapView, closeSheets);
   };
 
   const canPan = camera.bounds !== null;
@@ -1021,53 +965,20 @@ function App(): h.JSX.Element {
 
 
   const jumpToPreset = (preset: typeof VIEW_PRESETS[number]): void => {
-    setMapView(preset.lat, preset.lng, preset.zoom);
+    jumpToPresetAction(preset, setMapView);
   };
 
   const jumpToViewInput = (): void => {
-    const res = parseAndBuildViewInputJump(viewInput, camera.zoom);
-    if ('error' in res) {
-      setViewInputStatus('bad view');
-      window.setTimeout(() => setViewInputStatus(''), 1600);
-      return;
-    }
-
-    setMapView(res.lat, res.lng, res.zoom);
-    setViewInputStatus('jumped');
-    window.setTimeout(() => setViewInputStatus(''), 1200);
+    jumpToViewInputAction(viewInput, camera.zoom, setMapView, setViewInputStatus);
   };
 
   const locateBrowserPosition = (): void => {
-    if (!navigator.geolocation) {
-      setGeolocationStatus('unavailable');
-      window.setTimeout(() => setGeolocationStatus(''), 1800);
-      return;
-    }
-    setGeolocationStatus('locating...');
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        window.postMessage(
-          buildUserLocationMessage(position.coords.latitude, position.coords.longitude, position.coords.accuracy),
-          '*'
-        );
-        setMapView(position.coords.latitude, position.coords.longitude, GEOLOCATION_MAX_ZOOM);
-        setGeolocationStatus(position.coords.accuracy ? `located +/- ${Math.round(position.coords.accuracy)}m` : 'located');
-        window.setTimeout(() => setGeolocationStatus(''), 2200);
-      },
-      (error) => {
-        const message = error.code === error.PERMISSION_DENIED
-          ? 'permission denied'
-          : error.code === error.POSITION_UNAVAILABLE
-            ? 'unavailable'
-            : 'timeout';
-        setGeolocationStatus(message);
-        window.setTimeout(() => setGeolocationStatus(''), 2200);
-      },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 60_000,
-        timeout: 10_000,
-      },
+    locateBrowserPositionAction(
+      Boolean(navigator.geolocation),
+      (success, error, options) => navigator.geolocation.getCurrentPosition(success, error, options),
+      setMapView,
+      setGeolocationStatus,
+      (msg) => window.postMessage(msg, '*')
     );
   };
 
