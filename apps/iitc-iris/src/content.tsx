@@ -96,6 +96,13 @@ import {
   parseAndBuildViewInputJump,
 } from './content-map-navigation';
 import {
+  buildAddPolylinePayload,
+  buildDeleteAtPayload,
+  buildDeleteIndexPayload,
+  buildUndoPayload,
+} from './content-draw-tools-lifecycle';
+import {calculateNextSortOrder} from './content-portal-analysis-actions';
+import {
   createDataSourceSettings,
   DATA_SOURCE_OPTIONS,
   getExtensionUrl,
@@ -156,6 +163,7 @@ import {
   normalizeIitcDrawToolsLabel,
   type IitcMapDataPlan,
 } from '@iris/iitc-core';
+import {buildClearDrawToolsPayload} from './content-draw-tools-actions';
 
 const IITC_PAN_CONTROL_OFFSET_PX = 500;
 const LOGIN_BYPASS_MS = 5 * 60 * 1000;
@@ -366,12 +374,9 @@ function App(): h.JSX.Element {
   );
   const portalsListSummary = useMemo(() => summarizePortalsList(filteredPortalsList), [filteredPortalsList]);
   const sortPortalsListBy = (field: PortalsListSortField): void => {
-    if (portalsListSortBy === field) {
-      setPortalsListSortOrder((current) => current === 1 ? -1 : 1);
-      return;
-    }
-    setPortalsListSortBy(field);
-    setPortalsListSortOrder(field === 'title' || field === 'team' ? 1 : -1);
+    const {nextField, nextOrder} = calculateNextSortOrder(field, portalsListSortBy, portalsListSortOrder);
+    setPortalsListSortBy(nextField);
+    setPortalsListSortOrder(nextOrder);
   };
   const detailOverlaysActive = entityFetch.renderPolicy.activeHighlighter !== 'none' ||
     entityFetch.renderPolicy.levelFill ||
@@ -592,11 +597,7 @@ function App(): h.JSX.Element {
       return;
     }
     setDrawToolsClearConfirm(null);
-    postDrawToolsAction({
-      drawToolsAction: 'addPolyline',
-      drawToolsColor: DRAW_TOOLS_DEFAULT_COLOR,
-      drawToolsLatLngs: [drawToolsLinkStart, latLng],
-    });
+    postDrawToolsAction(buildAddPolylinePayload(drawToolsLinkStart, latLng, DRAW_TOOLS_DEFAULT_COLOR));
     setDrawToolsLinkStart(null);
     setStatus('draw link added');
   };
@@ -605,27 +606,22 @@ function App(): h.JSX.Element {
     const latLng = getDrawToolsTargetLatLng();
     if (!latLng) return;
     setDrawToolsClearConfirm(null);
-    postDrawToolsAction({
-      drawToolsAction: 'deleteAt',
-      drawToolsItemType: itemType,
-      drawToolsLatLngs: [latLng],
-    });
+    postDrawToolsAction(buildDeleteAtPayload(latLng, itemType));
     setStatus('draw item delete requested');
   };
 
   const deleteDrawToolsItem = (item: IitcIrisDrawToolsItem): void => {
     setDrawToolsClearConfirm(null);
-    postDrawToolsAction({
-      drawToolsAction: 'deleteIndex',
-      drawToolsIndex: item.storageIndex,
-    });
-    setStatus(`${item.type === 'polyline' ? 'draw link' : 'draw marker'} delete requested`);
+    const {payload, statusText} = buildDeleteIndexPayload(item);
+    postDrawToolsAction(payload);
+    setStatus(statusText);
   };
 
   const undoDrawToolsItem = (itemType?: 'polyline' | 'marker'): void => {
     setDrawToolsClearConfirm(null);
-    postDrawToolsAction({drawToolsAction: 'undo', drawToolsItemType: itemType});
-    setStatus(itemType === 'polyline' ? 'draw link undo requested' : itemType === 'marker' ? 'draw marker undo requested' : 'draw undo requested');
+    const {payload, statusText} = buildUndoPayload(itemType);
+    postDrawToolsAction(payload);
+    setStatus(statusText);
   };
 
   const clearDrawToolsItems = (itemType?: 'polyline' | 'marker'): void => {
@@ -635,9 +631,10 @@ function App(): h.JSX.Element {
       return;
     }
     setDrawToolsClearConfirm(null);
-    postDrawToolsAction({drawToolsAction: 'clear', drawToolsItemType: itemType});
+    const {payload, statusText} = buildClearDrawToolsPayload(itemType);
+    postDrawToolsAction(payload);
     if (!itemType || itemType === 'polyline') setDrawToolsLinkStart(null);
-    setStatus(itemType === 'polyline' ? 'draw links cleared' : itemType === 'marker' ? 'draw markers cleared' : 'draw items cleared');
+    setStatus(statusText);
   };
 
   const centerDrawToolsItem = (item: IitcIrisDrawToolsItem): void => {

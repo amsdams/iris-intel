@@ -32,6 +32,8 @@ modules own routing/display decisions or JSX composition only.
 - Auth recovery & login navigation helpers: `content-auth-navigation.ts`, `content-auth-navigation.test.ts`.
 - Scenario execution & history helpers: `content-scenario-actions.ts`, `content-scenario-actions.test.ts`.
 - Map navigation & view input jump helpers: `content-map-navigation.ts`, `content-map-navigation.test.ts`.
+- Draw Tools lifecycle helpers: `content-draw-tools-lifecycle.ts`, `content-draw-tools-lifecycle.test.ts`.
+- Portal Analysis sorting action helpers: `content-portal-analysis-actions.ts`, `content-portal-analysis-actions.test.ts`.
 
 ## Follow-up Plans
 
