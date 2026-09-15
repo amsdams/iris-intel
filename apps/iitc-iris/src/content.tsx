@@ -70,8 +70,12 @@ import {
   checkShouldRequestOlderComm,
 } from './content-comm-actions';
 import {
+  calculateSidePanelStatus,
+  formatAuthRecoveryText,
+  getAuthSources,
   performIntelLoginRedirect,
   retryActiveAuthPanelRequest,
+  type AppAuthStates,
 } from './content-auth-navigation';
 import {
   copyMapContextGuid as copyMapContextGuidHelper,
@@ -187,7 +191,10 @@ import {
   buildPasscodeRedeemAction,
 } from './content-comm-input-actions';
 import {
+  buildClearPortalSelectionMessage,
+  buildPanByMessage,
   buildSetViewMessage,
+  buildZoomToAndShowPortalMessage,
 } from './content-camera-actions';
 
 const IITC_PAN_CONTROL_OFFSET_PX = 500;
@@ -909,13 +916,7 @@ function App(): h.JSX.Element {
   };
 
   const zoomToAndShowPortal = (portalGuid?: string, latE6?: number, lngE6?: number, zoom = Math.max(camera.zoom, 15)): void => {
-    window.postMessage({
-      type: IITC_IRIS_MESSAGES.zoomToAndShowPortal,
-      portalGuid,
-      portalLat: latE6 === undefined ? undefined : latE6 / 1_000_000,
-      portalLng: lngE6 === undefined ? undefined : lngE6 / 1_000_000,
-      zoom,
-    } satisfies IitcIrisMessage, '*');
+    window.postMessage(buildZoomToAndShowPortalMessage(portalGuid, latE6, lngE6, zoom), '*');
   };
 
   const selectMapContextAnchor = (anchor: IitcIrisMapContextPortalAnchor): void => {
@@ -932,13 +933,7 @@ function App(): h.JSX.Element {
   };
 
   const panMap = useCallback((direction: IitcIrisPanDirection): void => {
-    const offsetX = direction === 'east' ? IITC_PAN_CONTROL_OFFSET_PX : direction === 'west' ? -IITC_PAN_CONTROL_OFFSET_PX : 0;
-    const offsetY = direction === 'south' ? IITC_PAN_CONTROL_OFFSET_PX : direction === 'north' ? -IITC_PAN_CONTROL_OFFSET_PX : 0;
-    window.postMessage({
-      type: IITC_IRIS_MESSAGES.panBy,
-      panX: offsetX,
-      panY: offsetY,
-    } satisfies IitcIrisMessage, '*');
+    window.postMessage(buildPanByMessage(direction, IITC_PAN_CONTROL_OFFSET_PX), '*');
   }, []);
 
   const zoomMap = useCallback((delta: number): void => {
@@ -946,9 +941,7 @@ function App(): h.JSX.Element {
   }, [camera.lat, camera.lng, camera.zoom, setMapView]);
 
   const clearPortalSelection = (): void => {
-    window.postMessage({
-      type: IITC_IRIS_MESSAGES.clearPortalSelection,
-    } satisfies IitcIrisMessage, '*');
+    window.postMessage(buildClearPortalSelectionMessage(), '*');
   };
 
   const closeSheets = useCallback((): void => {
@@ -970,34 +963,19 @@ function App(): h.JSX.Element {
     : activeSheet === 'map' && entityFetch.selectedPortal
       ? 'selected'
     : getPrimaryMenuId(activeSheet);
-  const activeSidePanelStatus = activeSidePanel === 'comm'
-    ? commState.status === 'auth' || commState.sendStatus === 'auth' ? 'auth' : commState.status
-    : activeSidePanel === 'scores'
-      ? scoresState.status === 'auth' || scoresState.region?.status === 'auth' ? 'auth' : scoresState.status
-      : activeSidePanel === 'missions'
-        ? missionsState.status === 'auth' || missionsState.detailsStatus === 'auth' ? 'auth' : missionsState.status
-        : activeSidePanel === 'inventory'
-          ? inventoryState.status === 'auth' || inventoryState.subscription?.status === 'auth' ? 'auth' : inventoryState.status
-          : activeSidePanel === 'passcode'
-            ? passcodeState.status
-            : activeSidePanel === 'agent'
-              ? agentState.status === 'missing' || agentState.subscription?.status === 'auth' ? 'auth' : agentState.status
-              : 'idle';
-  const authSources = [
-    entityFetch.authRequired ? 'map' : null,
-    selectedPortalDetails?.status === 'auth' ? 'portal details' : null,
-    commState.status === 'auth' || commState.sendStatus === 'auth' ? 'COMM' : null,
-    scoresState.status === 'auth' || scoresState.region?.status === 'auth' ? 'scores' : null,
-    missionsState.status === 'auth' || missionsState.detailsStatus === 'auth' ? 'missions' : null,
-    inventoryState.status === 'auth' || inventoryState.subscription?.status === 'auth' ? 'inventory' : null,
-    passcodeState.status === 'auth' ? 'passcode' : null,
-    agentState.status === 'missing' || agentState.subscription?.status === 'auth' ? 'agent' : null,
-  ].filter((source): source is string => source !== null);
-  const authRecoveryText = authSources.length > 0
-    ? authSources.length === 1
-      ? `${authSources[0]} needs an authenticated Intel session`
-      : `${authSources.length} requests need an authenticated Intel session`
-    : '';
+  const appAuthStates: AppAuthStates = {
+    entityFetch,
+    selectedPortalDetails,
+    commState,
+    scoresState,
+    missionsState,
+    inventoryState,
+    passcodeState,
+    agentState,
+  };
+  const activeSidePanelStatus = calculateSidePanelStatus(activeSidePanel, appAuthStates);
+  const authSources = getAuthSources(appAuthStates);
+  const authRecoveryText = formatAuthRecoveryText(authSources);
   const activePanelNeedsAuth = activeSidePanelStatus === 'auth';
   const openCommPanel = useCallback((tab?: IitcIrisCommTab): void => {
     if (tab) refreshComm(tab);

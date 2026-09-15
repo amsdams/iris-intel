@@ -66,3 +66,59 @@ export function retryActiveAuthPanelRequest(
   }
   callbacks.retryMapFetch();
 }
+
+export interface AppAuthStates {
+  entityFetch: {authRequired?: boolean};
+  selectedPortalDetails?: {status?: string} | null;
+  commState: {status?: string; sendStatus?: string};
+  scoresState: {status?: string; region?: {status?: string}};
+  missionsState: {status?: string; detailsStatus?: string};
+  inventoryState: {status?: string; subscription?: {status?: string}};
+  passcodeState: {status?: string};
+  agentState: {status?: string; subscription?: {status?: string}};
+}
+
+export function calculateSidePanelStatus(
+  activeSidePanel: IitcIrisSidePanelId | null,
+  states: AppAuthStates
+): string {
+  if (activeSidePanel === 'comm') {
+    return states.commState.status === 'auth' || states.commState.sendStatus === 'auth' ? 'auth' : (states.commState.status ?? 'idle');
+  }
+  if (activeSidePanel === 'scores') {
+    return states.scoresState.status === 'auth' || states.scoresState.region?.status === 'auth' ? 'auth' : (states.scoresState.status ?? 'idle');
+  }
+  if (activeSidePanel === 'missions') {
+    return states.missionsState.status === 'auth' || states.missionsState.detailsStatus === 'auth' ? 'auth' : (states.missionsState.status ?? 'idle');
+  }
+  if (activeSidePanel === 'inventory') {
+    return states.inventoryState.status === 'auth' || states.inventoryState.subscription?.status === 'auth' ? 'auth' : (states.inventoryState.status ?? 'idle');
+  }
+  if (activeSidePanel === 'passcode') {
+    return states.passcodeState.status ?? 'idle';
+  }
+  if (activeSidePanel === 'agent') {
+    return states.agentState.status === 'missing' || states.agentState.subscription?.status === 'auth' ? 'auth' : (states.agentState.status ?? 'idle');
+  }
+  return 'idle';
+}
+
+export function getAuthSources(states: AppAuthStates): string[] {
+  const sources = [
+    states.entityFetch.authRequired ? 'map' : null,
+    states.selectedPortalDetails?.status === 'auth' ? 'portal details' : null,
+    states.commState.status === 'auth' || states.commState.sendStatus === 'auth' ? 'COMM' : null,
+    states.scoresState.status === 'auth' || states.scoresState.region?.status === 'auth' ? 'scores' : null,
+    states.missionsState.status === 'auth' || states.missionsState.detailsStatus === 'auth' ? 'missions' : null,
+    states.inventoryState.status === 'auth' || states.inventoryState.subscription?.status === 'auth' ? 'inventory' : null,
+    states.passcodeState.status === 'auth' ? 'passcode' : null,
+    states.agentState.status === 'missing' || states.agentState.subscription?.status === 'auth' ? 'agent' : null,
+  ];
+  return sources.filter((s): s is string => s !== null);
+}
+
+export function formatAuthRecoveryText(authSources: string[]): string {
+  if (authSources.length === 0) return '';
+  if (authSources.length === 1) return `${authSources[0]} needs an authenticated Intel session`;
+  return `${authSources.length} requests need an authenticated Intel session`;
+}

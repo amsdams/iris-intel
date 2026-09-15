@@ -1,5 +1,8 @@
 import {describe, expect, it, vi} from 'vitest';
 import {
+  calculateSidePanelStatus,
+  formatAuthRecoveryText,
+  getAuthSources,
   performIntelLoginRedirect,
   retryActiveAuthPanelRequest,
 } from './content-auth-navigation';
@@ -39,5 +42,25 @@ describe('content-auth-navigation', () => {
 
     retryActiveAuthPanelRequest(null, 'map', 'all', 'view', callbacks);
     expect(callbacks.retryMapFetch).toHaveBeenCalled();
+  });
+
+  it('calculates side panel status and identifies auth sources', () => {
+    const states = {
+      entityFetch: {authRequired: true},
+      selectedPortalDetails: {status: 'ready'},
+      commState: {status: 'auth'},
+      scoresState: {status: 'idle'},
+      missionsState: {status: 'idle'},
+      inventoryState: {status: 'idle'},
+      passcodeState: {status: 'idle'},
+      agentState: {status: 'idle'},
+    };
+
+    expect(calculateSidePanelStatus('comm', states)).toBe('auth');
+    expect(calculateSidePanelStatus('scores', states)).toBe('idle');
+    expect(getAuthSources(states)).toEqual(['map', 'COMM']);
+    expect(formatAuthRecoveryText(['map', 'COMM'])).toBe('2 requests need an authenticated Intel session');
+    expect(formatAuthRecoveryText(['map'])).toBe('map needs an authenticated Intel session');
+    expect(formatAuthRecoveryText([])).toBe('');
   });
 });

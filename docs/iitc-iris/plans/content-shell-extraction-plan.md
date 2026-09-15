@@ -38,7 +38,8 @@ modules own routing/display decisions or JSX composition only.
 - Scenario snapshot & run lifecycle management: `content-scenario-management.ts`, `content-scenario-management.test.ts`.
 - Search request & navigation action helpers: `content-search-actions.ts`, `content-search-actions.test.ts`.
 - COMM input submission & passcode redeem helpers: `content-comm-input-actions.ts`, `content-comm-input-actions.test.ts`.
-- Map camera view & zoom action helpers: `content-camera-actions.ts`, `content-camera-actions.test.ts`.
+- Map camera view, pan & portal selection action helpers: `content-camera-actions.ts`, `content-camera-actions.test.ts`.
+- Auth recovery, side-panel status & login navigation helpers: `content-auth-navigation.ts`, `content-auth-navigation.test.ts`.
 
 ## Follow-up Plans
 
