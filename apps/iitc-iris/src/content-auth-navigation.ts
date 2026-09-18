@@ -63,12 +63,12 @@ export function retryActiveAuthPanelRequest(
     callbacks.refreshMissions(missionsSource ?? 'view');
     return;
   }
-  if (activeSheet === 'search' && callbacks.searchTerm.trim()) {
-    callbacks.requestSearch(callbacks.searchTerm.trim(), false);
-    return;
-  }
   if (activeSidePanel === 'passcode' && (callbacks.passcodeDraft.trim() || callbacks.passcodeState.passcode)) {
     callbacks.retryPasscode(callbacks.passcodeDraft.trim() || callbacks.passcodeState.passcode || '');
+    return;
+  }
+  if (activeSheet === 'search' && callbacks.searchTerm.trim()) {
+    callbacks.requestSearch(callbacks.searchTerm.trim(), false);
     return;
   }
   callbacks.retryMapFetch();

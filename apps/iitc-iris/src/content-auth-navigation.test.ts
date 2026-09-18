@@ -54,16 +54,17 @@ describe('content-auth-navigation', () => {
       refreshInventory: vi.fn(),
       refreshMissions: vi.fn(),
       requestSearch: vi.fn(),
-      searchTerm: '',
+      searchTerm: 'active search',
       passcodeDraft: '  PASS-123  ',
       passcodeState: {status: 'auth', requestState: 'auth'} as const,
       retryPasscode: vi.fn(),
       retryMapFetch: vi.fn(),
     };
 
-    retryActiveAuthPanelRequest('passcode', 'passcode', 'all', 'view', callbacks);
+    retryActiveAuthPanelRequest('passcode', 'search', 'all', 'view', callbacks);
 
     expect(callbacks.retryPasscode).toHaveBeenCalledWith('PASS-123');
+    expect(callbacks.requestSearch).not.toHaveBeenCalled();
     expect(callbacks.retryMapFetch).not.toHaveBeenCalled();
   });
 

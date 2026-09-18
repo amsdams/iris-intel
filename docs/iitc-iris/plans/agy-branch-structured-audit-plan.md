@@ -1,6 +1,7 @@
 # AGY Branch Structured Audit Plan
 
-Status: planned. This audit compares `feaure/the-refactor-agy` against `feaure/the-refactor`.
+Status: audit fixes applied locally; re-review before merge. This audit compares `feaure/the-refactor-agy` against
+`feaure/the-refactor`.
 
 ## Purpose
 
@@ -19,6 +20,18 @@ or parity debugging.
 - Working tree prerequisite: start from a clean tree. Do not mix new refactor work into the audit.
 - Review size at audit planning time: 82 files changed, with `content.tsx` reduced by about 3k lines and many app-side
   helper, workflow, and panel modules added.
+
+## Current Next Steps
+
+1. Commit or otherwise include the audit fixes for passcode auth retry, Damrak data-source id compatibility, storage
+   type ownership, Draw Tools plan wording, `port-plan.md` validation wording, and diff hygiene.
+2. Re-run this structured audit against the fixed branch. The re-review should focus on confirming the previous
+   findings are actually resolved, then spot-check the remaining changed workflows for missed behavior differences.
+3. Run focused tests for the fixed areas, then `npm run test -w apps/iitc-iris`, `npm run typecheck:iitc-iris`,
+   `npm run lint:iitc-iris`, `npm run package:iitc-iris`, and `git diff --check`.
+4. Merge to `feaure/the-refactor` only when there are no blocking findings, no undocumented behavior divergences, and
+   validation is clean.
+5. After merge, close this review plan as complete and start the next Phase 2 extraction from a fresh detailed plan.
 
 ## IITC Sources
 

@@ -13,6 +13,31 @@ tests/diagnostics, intentional divergences, and validation commands.
 
 The current facade extraction pattern is documented in [facade-pattern.md](facade-pattern.md).
 
+## AI Agent Working Rules
+
+These rules apply to Codex, AGY/Gemini, and any other AI-assisted refactor branch.
+
+- Read this roadmap, [port-plan.md](../port-plan.md), and the relevant detailed plan before changing code. If the work
+  does not fit an existing detailed plan, add or update the plan first.
+- Treat Phase 2 extraction as behavior-preserving by default. Do not rename persisted ids, message types, public panel
+  ids, storage keys, UI labels used as user-facing contracts, or IITC-aligned concepts unless the plan explicitly marks
+  the change as an intentional divergence.
+- Compare against the current baseline branch before judging success. For AGY review work, compare
+  `feaure/the-refactor-agy` against `feaure/the-refactor` and record any behavior difference as a bug unless the
+  relevant plan documents it.
+- Keep ownership boundaries visible: `content.tsx` owns top-level state, refs, storage effects, browser/page-runtime
+  effects, request lifecycle triggers, and stale-response guards unless a detailed plan says otherwise. App helpers may
+  own pure derivation, payload builders, formatting, and callback routing. Panels own rendering and event prop wiring.
+- Do not move browser, Preact, DOM, Leaflet, or extension runtime dependencies into `packages/iitc-core` during an app
+  extraction pass.
+- Tests must protect the externally visible behavior that changed shape: message payloads, storage compatibility,
+  callback routing, lifecycle/status transitions, sorting/filtering, diagnostics, and user-visible fallback behavior.
+  Tests that only mirror a helper implementation are not enough when a callback or runtime message boundary moved.
+- Update the detailed plan in the same change when extracting a new module, changing ownership, adding a test, or
+  documenting an intentional divergence. Keep documentation claims narrower than the actual tests.
+- Finish every code-changing slice with focused tests for touched modules, then
+  `npm run typecheck:iitc-iris`, `npm run lint:iitc-iris`, `npm run package:iitc-iris`, and `git diff --check`.
+
 ## Phase 1: Narrow IITC Parity Facades
 
 Status: complete. The first pass established stable, tested seams for the IITC-facing behavior we compare most often.
@@ -74,6 +99,9 @@ Before starting Phase 2:
 
 ## Phase 2: App Surface Extraction
 
+Status: AGY branch audit fixes are applied locally on `feaure/the-refactor-agy`; re-review and merge back to
+`feaure/the-refactor` before opening the next extraction slice.
+
 Goal: reduce the size and coupling of `apps/iitc-iris/src/content.tsx` without changing behavior. Phase 1 made this
 safer by moving the main parity-sensitive behavior behind tested core facades.
 
@@ -87,6 +115,16 @@ Order of work:
    helpers only after at least two panels need the same behavior.
 4. Runtime message adapters: introduce small app-side adapters for message posting/handling where repeated message
    assembly remains in `content.tsx`. Keep these adapters separate from core facades.
+
+Next steps before continuing Phase 2:
+
+1. Re-run the structured audit after the current AGY audit fixes are committed or otherwise included in the review.
+2. Merge `feaure/the-refactor-agy` into `feaure/the-refactor` only after the audit has no blocking findings and full
+   validation is clean.
+3. After merge, create a fresh detailed plan for the next remaining extraction slice instead of continuing broad,
+   mixed-purpose extraction on the AGY branch.
+4. Prefer the next slice that removes a coherent shell responsibility from `content.tsx` without changing public
+   behavior, such as repeated command/request posting helpers or one still-coupled workflow boundary.
 
 Non-goals for Phase 2:
 
@@ -109,7 +147,8 @@ surface smaller and easier to reason about.
 
 ## Active Review Plans
 
-- AGY branch structured audit: [agy-branch-structured-audit-plan.md](agy-branch-structured-audit-plan.md).
+- AGY branch structured audit: [agy-branch-structured-audit-plan.md](agy-branch-structured-audit-plan.md). Current
+  next step: re-review after the local audit fixes, then merge only if validation and diff hygiene remain clean.
 
 ## Detailed Plan Template
 
