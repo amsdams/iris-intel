@@ -27,6 +27,22 @@ export function performIntelLoginRedirect(
   locationObj.assign('https://intel.ingress.com/intel');
 }
 
+export function performIntelLogoutRedirect(
+  storageKey: string,
+  rootElement: HTMLElement | null,
+  locationObj: LocationAdapter,
+  storageObj?: Pick<Storage, 'removeItem'> | null
+): void {
+  try {
+    const storage = storageObj ?? (typeof sessionStorage === 'undefined' ? null : sessionStorage);
+    storage?.removeItem(storageKey);
+  } catch {
+    // Intel logout still works without clearing the local bypass marker.
+  }
+  rootElement?.remove();
+  locationObj.assign('https://intel.ingress.com/logout');
+}
+
 export interface RetryAuthCallbacks {
   refreshComm: (tab: IitcIrisCommTab) => void;
   refreshScores: () => void;

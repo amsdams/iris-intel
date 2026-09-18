@@ -19,6 +19,7 @@ interface IitcIrisSystemControlsPanelProps {
   viewInputStatus: string;
   lifecycleSettings: IitcIrisLifecycleSettings;
   setLifecycleSettings: (action: (current: IitcIrisLifecycleSettings) => IitcIrisLifecycleSettings) => void;
+  logoutIntel: () => void;
   activeScenarioRun: ScenarioRun | null;
   latestScenarioRun: ScenarioRun | null;
   scenarioRuns: ScenarioRun[];
@@ -55,6 +56,7 @@ export function IitcIrisSystemControlsPanel({
   viewInputStatus,
   lifecycleSettings,
   setLifecycleSettings,
+  logoutIntel,
   activeScenarioRun,
   latestScenarioRun,
   scenarioRuns,
@@ -76,6 +78,19 @@ export function IitcIrisSystemControlsPanel({
 }: IitcIrisSystemControlsPanelProps): h.JSX.Element {
   return (
     <>
+      <div className="iitc-iris-map-controls-section">
+        <span className="iitc-iris-status">Account</span>
+        <div className="iitc-iris-map-control-row">
+          <button
+            className="iitc-iris-portal-action"
+            type="button"
+            onClick={logoutIntel}
+            title="Sign out of the current Intel session"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
       <div className="iitc-iris-map-controls-section">
         <span className="iitc-iris-status">Interaction</span>
         <div className="iitc-iris-map-control-row">

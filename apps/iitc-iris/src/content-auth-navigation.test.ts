@@ -4,6 +4,7 @@ import {
   formatAuthRecoveryText,
   getAuthSources,
   performIntelLoginRedirect,
+  performIntelLogoutRedirect,
   retryActiveAuthPanelRequest,
 } from './content-auth-navigation';
 
@@ -23,6 +24,25 @@ describe('content-auth-navigation', () => {
     expect(mockElement.remove).toHaveBeenCalled();
     expect(reload).toHaveBeenCalled();
     expect(assign).not.toHaveBeenCalled();
+  });
+
+  it('clears login bypass state and navigates to Intel logout', () => {
+    const reload = vi.fn();
+    const assign = vi.fn();
+    const removeItem = vi.fn();
+    const mockElement = {remove: vi.fn()} as unknown as HTMLElement;
+
+    performIntelLogoutRedirect('bypass-key', mockElement, {
+      origin: 'https://intel.ingress.com',
+      pathname: '/intel',
+      reload,
+      assign,
+    }, {removeItem});
+
+    expect(removeItem).toHaveBeenCalledWith('bypass-key');
+    expect(mockElement.remove).toHaveBeenCalled();
+    expect(assign).toHaveBeenCalledWith('https://intel.ingress.com/logout');
+    expect(reload).not.toHaveBeenCalled();
   });
 
   it('routes auth retries to active side panel', () => {

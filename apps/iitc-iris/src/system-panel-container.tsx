@@ -35,6 +35,7 @@ export interface IitcIrisSystemPanelContainerProps {
   formatRenderMutationSummary: (mutation: EntityFetchState['renderMutation']) => string;
   formatSelectedPortalLabel: () => string | null;
   openIntelLogin: () => void;
+  logoutIntel: () => void;
   toggleDebugDock: () => void;
 
   activeScenarioRun: ScenarioRun | null;
@@ -86,6 +87,7 @@ export function IitcIrisSystemPanelContainer(props: IitcIrisSystemPanelContainer
     formatRenderMutationSummary,
     formatSelectedPortalLabel,
     openIntelLogin,
+    logoutIntel,
     toggleDebugDock,
     activeScenarioRun,
     canPan,
@@ -163,6 +165,7 @@ export function IitcIrisSystemPanelContainer(props: IitcIrisSystemPanelContainer
         jumpToViewInput={jumpToViewInput}
         latestScenarioRun={latestScenarioRun}
         lifecycleSettings={lifecycleSettings}
+        logoutIntel={logoutIntel}
         mapFocusMode={mapFocusMode}
         panScenarioSouth={panScenarioSouth}
         scenarioExpectedSteps={scenarioExpectedSteps}

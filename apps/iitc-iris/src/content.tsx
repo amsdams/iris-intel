@@ -49,6 +49,7 @@ import {
   formatAuthRecoveryText,
   getAuthSources,
   performIntelLoginRedirect,
+  performIntelLogoutRedirect,
   retryActiveAuthPanelRequest,
   type AppAuthStates,
 } from './content-auth-navigation';
@@ -548,6 +549,14 @@ function App(): h.JSX.Element {
     performIntelLoginRedirect(
       LOGIN_BYPASS_STORAGE_KEY,
       LOGIN_BYPASS_MS,
+      document.getElementById('iitc-iris-root'),
+      window.location
+    );
+  };
+
+  const logoutIntel = (): void => {
+    performIntelLogoutRedirect(
+      LOGIN_BYPASS_STORAGE_KEY,
       document.getElementById('iitc-iris-root'),
       window.location
     );
@@ -1145,6 +1154,7 @@ function App(): h.JSX.Element {
           formatRenderMutationSummary={formatRenderMutationSummary}
           formatSelectedPortalLabel={() => (entityFetch.selectedPortal ? formatSelectedPortal(entityFetch.selectedPortal) : null)}
           openIntelLogin={openIntelLogin}
+          logoutIntel={logoutIntel}
           toggleDebugDock={toggleDebugDock}
           activeScenarioRun={activeScenarioRun}
           canPan={canPan}
