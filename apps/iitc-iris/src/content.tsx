@@ -1,7 +1,6 @@
 import {h, render} from 'preact';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import './iitc-iris.css';
-import {getPanelStatusClass} from './ui-status';
 import {
   type IitcIrisBooleanLayerSettingKey,
 } from './layer-registry';
@@ -34,16 +33,9 @@ import {handleIitcIrisContentKeyDown, type IitcIrisPanDirection} from './content
 import {copyIitcIrisText} from './content-feedback';
 import {closeIitcIrisSheet, openIitcIrisSheet, toggleIitcIrisSheet} from './content-sheet-navigation';
 import {getIitcIrisPrimaryMenuEffect} from './content-primary-menu';
-import {IitcIrisAgentPanel} from './agent-panel';
-import {IitcIrisCommPanel} from './comm-panel';
-import {IitcIrisInventoryPanel} from './inventory-panel';
-import {IitcIrisMissionsPanel} from './missions-panel';
-import {IitcIrisPasscodePanel} from './passcode-panel';
 import {IitcIrisPortalDetailsPanel} from './portal-details-panel';
 import {IitcIrisSearchPanel} from './search-panel';
-import {IitcIrisScoresPanel} from './scores-panel';
 import {IitcIrisDrawToolsPanel} from './draw-tools-panel';
-import {IitcIrisSystemDiagnosticsPanel} from './system-diagnostics-panel';
 import {
   filterPortalsList,
   PortalsListLevelFilter,
@@ -59,10 +51,11 @@ import {IitcIrisScoreboardPanel} from './scoreboard-panel';
 import {IitcIrisLayersPanel} from './layers-panel';
 import {IitcIrisMapContextPanel, IitcIrisMapNavigationPanel} from './map-controls-panel';
 import {IitcIrisHelpPanel} from './help-panel';
-import {IitcIrisSystemControlsPanel} from './system-controls-panel';
 import {IitcIrisPortalImageModal} from './portal-image-modal';
 import {IitcIrisSheetTabBar} from './sheet-tabbar';
 import {IitcIrisAuthRecoveryBanner} from './auth-recovery-banner';
+import {IitcIrisRequestSidePanelContainer} from './request-side-panel-container';
+import {IitcIrisSystemPanelContainer} from './system-panel-container';
 import {createDockDiagnostics} from './content-dock-diagnostics';
 import {
   calculateSidePanelStatus,
@@ -1378,66 +1371,54 @@ function App(): h.JSX.Element {
         )}
       </aside>
       {activeSheet === 'system' && (
-        <aside className="iitc-iris-system-panel" aria-label="System controls">
-          <div className="iitc-iris-panel-topbar">
-            <span className="iitc-iris-selected-title">System</span>
-            <span className="iitc-iris-panel-header-actions">
-              <span className="iitc-iris-status">UI and diagnostics</span>
-            </span>
-          </div>
-          <IitcIrisSystemDiagnosticsPanel
-            activeByEndpoint={requestDiagnostics.activeByEndpoint}
-            camera={camera}
-            debugDockVisible={debugDockVisible}
-            detailOverlaysActive={detailOverlaysActive}
-            entityFetch={entityFetch}
-            innerStatus={innerStatus}
-            plan={plan}
-            requestBatches={requestBatches}
-            selectedPortalLabel={entityFetch.selectedPortal ? formatSelectedPortal(entityFetch.selectedPortal) : null}
-            status={status}
-            summaryMode={summaryMode}
-            clearPortalSelection={clearPortalSelection}
-            formatRenderMutationSummary={formatRenderMutationSummary}
-            openIntelLogin={openIntelLogin}
-            toggleDebugDock={toggleDebugDock}
-          />
-          <IitcIrisSystemControlsPanel
-            activeScenarioRun={activeScenarioRun}
-            canPan={canPan}
-            captureScenarioSnapshot={captureScenarioSnapshot}
-            clearScenarioRuns={clearScenarioRuns}
-            copyDockText={copyDockText}
-            copyIntelUrl={copyIntelUrl}
-            copyScenarioRun={copyScenarioRun}
-            copyStatus={copyStatus}
-            dataSourceId={dataSourceId}
-            dataSourceOptions={DATA_SOURCE_OPTIONS}
-            finishScenarioRun={finishScenarioRun}
-            jumpToPreset={jumpToPreset}
-            jumpToViewInput={jumpToViewInput}
-            latestScenarioRun={latestScenarioRun}
-            lifecycleSettings={lifecycleSettings}
-            mapFocusMode={mapFocusMode}
-            panScenarioSouth={panScenarioSouth}
-            scenarioExpectedSteps={scenarioExpectedSteps}
-            scenarioProgressLabels={scenarioProgressLabels}
-            scenarioProgressRun={scenarioProgressRun}
-            scenarioRuns={scenarioRuns}
-            scenarioSnapCount={scenarioSnapCount}
-            scenarioStatus={scenarioStatus}
-            setDataSource={setDataSource}
-            setLifecycleSettings={setLifecycleSettings}
-            setMapFocusMode={setMapFocusMode}
-            setShortcutsEnabled={setShortcutsEnabled}
-            setViewInput={setViewInput}
-            shortcutsEnabled={shortcutsEnabled}
-            startScenarioRun={startScenarioRun}
-            viewInput={viewInput}
-            viewInputStatus={viewInputStatus}
-            viewPresets={VIEW_PRESETS}
-          />
-        </aside>
+        <IitcIrisSystemPanelContainer
+          camera={camera}
+          debugDockVisible={debugDockVisible}
+          detailOverlaysActive={detailOverlaysActive}
+          entityFetch={entityFetch}
+          innerStatus={innerStatus}
+          plan={plan}
+          requestBatches={requestBatches}
+          requestDiagnostics={requestDiagnostics}
+          status={status}
+          summaryMode={summaryMode}
+          clearPortalSelection={clearPortalSelection}
+          formatRenderMutationSummary={formatRenderMutationSummary}
+          formatSelectedPortalLabel={() => (entityFetch.selectedPortal ? formatSelectedPortal(entityFetch.selectedPortal) : null)}
+          openIntelLogin={openIntelLogin}
+          toggleDebugDock={toggleDebugDock}
+          activeScenarioRun={activeScenarioRun}
+          canPan={canPan}
+          captureScenarioSnapshot={captureScenarioSnapshot}
+          clearScenarioRuns={clearScenarioRuns}
+          copyDockText={copyDockText}
+          copyIntelUrl={copyIntelUrl}
+          copyScenarioRun={copyScenarioRun}
+          copyStatus={copyStatus}
+          dataSourceId={dataSourceId}
+          finishScenarioRun={finishScenarioRun}
+          jumpToPreset={jumpToPreset}
+          jumpToViewInput={jumpToViewInput}
+          latestScenarioRun={latestScenarioRun}
+          lifecycleSettings={lifecycleSettings}
+          mapFocusMode={mapFocusMode}
+          panScenarioSouth={panScenarioSouth}
+          scenarioExpectedSteps={scenarioExpectedSteps}
+          scenarioProgressLabels={scenarioProgressLabels}
+          scenarioProgressRun={scenarioProgressRun}
+          scenarioRuns={scenarioRuns}
+          scenarioSnapCount={scenarioSnapCount}
+          scenarioStatus={scenarioStatus}
+          setDataSource={setDataSource}
+          setLifecycleSettings={setLifecycleSettings}
+          setMapFocusMode={setMapFocusMode}
+          setShortcutsEnabled={setShortcutsEnabled}
+          setViewInput={setViewInput}
+          shortcutsEnabled={shortcutsEnabled}
+          startScenarioRun={startScenarioRun}
+          viewInput={viewInput}
+          viewInputStatus={viewInputStatus}
+        />
       )}
       <IitcIrisSheetTabBar
         activePrimaryMenu={activePrimaryMenu}
@@ -1480,70 +1461,44 @@ function App(): h.JSX.Element {
         <IitcIrisHelpPanel closeHelp={closeSheets} />
       )}
       {activeSidePanelOption && (
-        <aside className="iitc-iris-request-side-panel" aria-label={`${activeSidePanelOption.title} panel`}>
-          <div className="iitc-iris-request-panel-header">
-            <span className="iitc-iris-selected-title">{activeSidePanelOption.label}</span>
-            <span className="iitc-iris-panel-header-actions">
-              <span className={`iitc-iris-status iitc-iris-panel-state ${getPanelStatusClass(activeSidePanelStatus)}`}>
-                {activeSidePanelStatus}
-              </span>
-              {activePanelNeedsAuth && (
-                inlineAuthActions
-              )}
-	            <button className="iitc-iris-clear-selection" type="button" onClick={closeSidePanel} title={`Close ${activeSidePanelOption.title}`} aria-label={`Close ${activeSidePanelOption.title}`}>X</button>
-            </span>
-	          </div>
-	          {activeSidePanel === 'agent' && (
-	            <IitcIrisAgentPanel agentState={agentState} />
-          )}
-          {activeSidePanel === 'comm' && (
-            <IitcIrisCommPanel
-              addNickname={addCommNickname}
-              commDraft={commDraft}
-              commListRef={commListRef as import('preact').RefObject<HTMLDivElement>}
-              commNewBelow={commNewBelow}
-              commState={commState}
-              commUserAtBottom={commUserAtBottom}
-              jumpToLatest={jumpCommToLatest}
-              onDraftChange={setCommDraft}
-              onScroll={handleCommScroll}
-              refresh={refreshComm}
-              requestOlder={requestOlderComm}
-              selectPortal={selectCommPortal}
-              selectTab={selectCommTab}
-              send={sendComm}
-            />
-          )}
-          {activeSidePanel === 'scores' && (
-            <IitcIrisScoresPanel refresh={refreshScores} scoresState={scoresState} />
-          )}
-          {activeSidePanel === 'missions' && (
-            <IitcIrisMissionsPanel
-              cameraZoom={camera.zoom}
-              hasSelectedPortal={Boolean(entityFetch.selectedPortal)}
-              missionsState={missionsState}
-              refreshMissions={refreshMissions}
-              requestMissionDetails={requestMissionDetails}
-              zoomToAndShowPortal={zoomToAndShowPortal}
-              zoomToMission={zoomToMission}
-            />
-          )}
-          {activeSidePanel === 'inventory' && (
-            <IitcIrisInventoryPanel
-              inventoryState={inventoryState}
-              refresh={refreshInventory}
-              zoomToAndShowPortal={zoomToAndShowPortal}
-            />
-          )}
-          {activeSidePanel === 'passcode' && (
-            <IitcIrisPasscodePanel
-              onDraftChange={setPasscodeDraft}
-              passcodeDraft={passcodeDraft}
-              passcodeState={passcodeState}
-              redeem={redeemPasscode}
-            />
-          )}
-        </aside>
+        <IitcIrisRequestSidePanelContainer
+          activeSidePanel={activeSidePanel}
+          activeSidePanelOption={activeSidePanelOption}
+          activeSidePanelStatus={activeSidePanelStatus}
+          activePanelNeedsAuth={activePanelNeedsAuth}
+          inlineAuthActions={inlineAuthActions}
+          closeSidePanel={closeSidePanel}
+          agentState={agentState}
+          commState={commState}
+          commDraft={commDraft}
+          commListRef={commListRef as import('preact').RefObject<HTMLDivElement>}
+          commNewBelow={commNewBelow}
+          commUserAtBottom={commUserAtBottom}
+          addCommNickname={addCommNickname}
+          handleCommScroll={handleCommScroll}
+          jumpCommToLatest={jumpCommToLatest}
+          refreshComm={refreshComm}
+          requestOlderComm={requestOlderComm}
+          selectCommPortal={selectCommPortal}
+          selectCommTab={selectCommTab}
+          sendComm={sendComm}
+          setCommDraft={setCommDraft}
+          scoresState={scoresState}
+          refreshScores={refreshScores}
+          missionsState={missionsState}
+          cameraZoom={camera.zoom}
+          hasSelectedPortal={Boolean(entityFetch.selectedPortal)}
+          refreshMissions={refreshMissions}
+          requestMissionDetails={requestMissionDetails}
+          zoomToAndShowPortal={zoomToAndShowPortal}
+          zoomToMission={zoomToMission}
+          inventoryState={inventoryState}
+          refreshInventory={refreshInventory}
+          passcodeState={passcodeState}
+          passcodeDraft={passcodeDraft}
+          setPasscodeDraft={setPasscodeDraft}
+          redeemPasscode={redeemPasscode}
+        />
       )}
     </div>
   );

@@ -31,6 +31,8 @@ rendering and callback wiring only.
 - System controls panel: `system-controls-panel.tsx`.
 - Shortcuts help panel: `help-panel.tsx`.
 - Portal image preview modal: `portal-image-modal.tsx`.
+- Request side-panel container wrapper: `request-side-panel-container.tsx`.
+- System panel container wrapper: `system-panel-container.tsx`.
 
 ## Follow-up
 
