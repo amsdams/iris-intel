@@ -45,6 +45,7 @@ modules own routing/display decisions or JSX composition only.
 - COMM panel scrolling, pagination & passcode actions: `content-comm-panel-actions.ts`, `content-comm-panel-actions.test.ts`.
 - Portal section, selection, clear & focus actions: `content-portal-selection-actions.ts`, `content-portal-selection-actions.test.ts`.
 - Scenario workflow state & execution custom hook: `content-scenario-workflow.ts`, `content-scenario-workflow.test.ts`.
+- Portal Analysis workflow state & filter/sort custom hook: `content-portal-analysis-workflow.ts`, `content-portal-analysis-workflow.test.ts`.
 
 ## Follow-up Plans
 

@@ -33,10 +33,13 @@ rendering and callback wiring only.
 - Portal image preview modal: `portal-image-modal.tsx`.
 - Request side-panel container wrapper: `request-side-panel-container.tsx`.
 - System panel container wrapper: `system-panel-container.tsx`.
+- Map controls panel container wrapper (topbar/navigation/draw tools/portal analysis/layers): `map-controls-panel-container.tsx`, `map-controls-panel-container.test.ts`.
+- Scenario workflow state & execution custom hook (missed in cc357a9): `content-scenario-workflow.ts`, `content-scenario-workflow.test.ts`.
+- Portal Analysis workflow state & filter/sort custom hook: `content-portal-analysis-workflow.ts`, `content-portal-analysis-workflow.test.ts`.
 
 ## Follow-up
 
-- Continue app-surface extraction for the remaining map controls, layers, portal analysis, and scenario workflow UI.
+- Continue app-surface extraction for remaining shell workflows, search, and command helpers.
 - Extract shared command/request helpers only when repeated across extracted panels.
 
 ## Guardrails
