@@ -36,17 +36,9 @@ import {getIitcIrisPrimaryMenuEffect} from './content-primary-menu';
 import {IitcIrisPortalDetailsPanel} from './portal-details-panel';
 import {IitcIrisSearchPanel} from './search-panel';
 import {IitcIrisDrawToolsPanel} from './draw-tools-panel';
-import {
-  filterPortalsList,
-  PortalsListLevelFilter,
-  PortalsListSortField,
-  PortalsListTeamFilter,
-  SortOrder,
-  sortPortalsList,
-  summarizePortalsList,
-} from './content-portal-analysis';
 import {IitcIrisPortalCountsPanel} from './portal-counts-panel';
 import {IitcIrisPortalsListPanel} from './portals-list-panel';
+import {usePortalAnalysisWorkflow} from './content-portal-analysis-workflow';
 import {IitcIrisScoreboardPanel} from './scoreboard-panel';
 import {IitcIrisLayersPanel} from './layers-panel';
 import {IitcIrisMapContextPanel, IitcIrisMapNavigationPanel} from './map-controls-panel';
@@ -80,7 +72,6 @@ import {
   jumpToViewInputAction,
   locateBrowserPositionAction,
 } from './content-location-actions';
-import {calculateNextSortOrder} from './content-portal-analysis-actions';
 import {
   createDataSourceSettings,
   DATA_SOURCE_OPTIONS,
@@ -358,11 +349,6 @@ function App(): h.JSX.Element {
     portalDetails: null,
     portalAnalysis: null,
   });
-  const [portalsListSortBy, setPortalsListSortBy] = useState<PortalsListSortField>('level');
-  const [portalsListSortOrder, setPortalsListSortOrder] = useState<SortOrder>(-1);
-  const [portalsListTeamFilter, setPortalsListTeamFilter] = useState<PortalsListTeamFilter>('all');
-  const [portalsListLevelFilter, setPortalsListLevelFilter] = useState<PortalsListLevelFilter>('all');
-  const [portalsListTextFilter, setPortalsListTextFilter] = useState('');
   const plan: IitcMapDataPlan | null = useMemo(() => createPlan(camera), [camera]);
   const summaryMode = plan?.tileParams.hasPortals ? 'summary' : 'placeholder';
   const requestBatches = plan ? plan.requestBatches.map((batch) => batch.length) : [];
@@ -370,20 +356,19 @@ function App(): h.JSX.Element {
   const dataSource = useMemo(() => createDataSourceSettings(dataSourceId), [dataSourceId]);
   const innerStatus = createInnerStatusView(plan, entityFetch, requestDiagnostics);
   const portalAnalysis = entityFetch.portalAnalysis;
-  const filteredPortalsList = useMemo(
-    () => filterPortalsList(portalAnalysis?.portalslist ?? [], portalsListTeamFilter, portalsListLevelFilter, portalsListTextFilter),
-    [portalAnalysis?.portalslist, portalsListTeamFilter, portalsListLevelFilter, portalsListTextFilter],
-  );
-  const sortedPortalsList = useMemo(
-    () => sortPortalsList(filteredPortalsList, portalsListSortBy, portalsListSortOrder),
-    [filteredPortalsList, portalsListSortBy, portalsListSortOrder],
-  );
-  const portalsListSummary = useMemo(() => summarizePortalsList(filteredPortalsList), [filteredPortalsList]);
-  const sortPortalsListBy = (field: PortalsListSortField): void => {
-    const {nextField, nextOrder} = calculateNextSortOrder(field, portalsListSortBy, portalsListSortOrder);
-    setPortalsListSortBy(nextField);
-    setPortalsListSortOrder(nextOrder);
-  };
+  const {
+    portalsListSortBy,
+    portalsListSortOrder,
+    portalsListTeamFilter,
+    portalsListLevelFilter,
+    portalsListTextFilter,
+    sortedPortalsList,
+    portalsListSummary,
+    setPortalsListLevelFilter,
+    setPortalsListTeamFilter,
+    setPortalsListTextFilter,
+    sortPortalsListBy,
+  } = usePortalAnalysisWorkflow({portalAnalysis});
   const detailOverlaysActive = entityFetch.renderPolicy.activeHighlighter !== 'none' ||
     entityFetch.renderPolicy.levelFill ||
     entityFetch.renderPolicy.healthFill ||
