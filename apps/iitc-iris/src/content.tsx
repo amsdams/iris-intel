@@ -74,12 +74,7 @@ import {
   copySelectedPortalLink as copySelectedPortalLinkHelper,
   copySelectedPortalTitle as copySelectedPortalTitleHelper,
 } from './content-copy-helpers';
-import {
-  createScenarioSnapshotObject,
-  getScenarioDerivedState,
-  SCENARIO_EXPECTED_STEPS,
-  serializeScenarioHistory,
-} from './content-scenario-actions';
+import {useScenarioWorkflow} from './content-scenario-workflow';
 import {
   jumpToPresetAction,
   jumpToViewInputAction,
@@ -116,11 +111,6 @@ import {
   VIEW_PRESETS,
 } from './content-storage-settings';
 import {
-  isScenarioSettled,
-  type ScenarioRun,
-  type ScenarioSnapshot,
-} from './content-scenarios';
-import {
   createInnerStatusView,
   createIntelUrl,
   createPlan,
@@ -146,10 +136,6 @@ import {
   buildLayerSettingsMessage,
   calculateToggledLayerSettings,
 } from './content-layer-actions';
-import {
-  appendScenarioSnapshot,
-  finishScenarioRunState,
-} from './content-scenario-management';
 import {
   buildSearchClearMessage,
   buildSearchPreviewMessage,
@@ -242,9 +228,6 @@ function injectScript(src: string): void {
 function App(): h.JSX.Element {
   const [status, setStatus] = useState('booting');
   const [copyStatus, setCopyStatus] = useState('');
-  const [scenarioStatus, setScenarioStatus] = useState('');
-  const [scenarioRuns, setScenarioRuns] = useState<ScenarioRun[]>([]);
-  const [activeScenarioRunId, setActiveScenarioRunId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchState, setSearchState] = useState<IitcIrisSearchState>(EMPTY_SEARCH_STATE);
   const [activeSearchResultIndex, setActiveSearchResultIndex] = useState(0);
@@ -443,92 +426,7 @@ function App(): h.JSX.Element {
     passcodeState,
     inventoryState,
   });
-  const createScenarioSnapshot = (label: string, settings = lifecycleSettings): ScenarioSnapshot =>
-    createScenarioSnapshotObject(label, dockDiagnostics, settings);
 
-  const setScenarioStatusBriefly = (value: string): void => {
-    setScenarioStatus(value);
-    window.setTimeout(() => setScenarioStatus(''), 1800);
-  };
-
-  const {
-    activeScenarioRun,
-    latestScenarioRun,
-    scenarioSnapCount,
-    scenarioProgressRun,
-    scenarioProgressLabels,
-  } = getScenarioDerivedState(scenarioRuns, activeScenarioRunId);
-  const scenarioExpectedSteps = SCENARIO_EXPECTED_STEPS;
-
-  const startScenarioRun = (name: string, overrides: Partial<IitcIrisLifecycleSettings>): void => {
-    if (activeScenarioRun) {
-      setScenarioStatusBriefly('finish current run first');
-      return;
-    }
-    const nextSettings: IitcIrisLifecycleSettings = { ...lifecycleSettings, ...overrides };
-    const runId = `${name}-${Date.now()}`;
-    setLifecycleSettings(nextSettings);
-    setScenarioRuns((current) => [...current, {
-      id: runId,
-      name,
-      startedAt: new Date().toISOString(),
-      status: 'running',
-      lifecycleSettings: nextSettings,
-      snapshots: [createScenarioSnapshot('previous', nextSettings)],
-    }]);
-    setActiveScenarioRunId(runId);
-    setScenarioStatusBriefly(`${name}: previous captured`);
-  };
-
-  const captureScenarioSnapshot = (label: string): void => {
-    const runId = activeScenarioRunId;
-    if (!runId) {
-      setScenarioStatusBriefly('start a scenario first');
-      return;
-    }
-    setScenarioRuns((current) =>
-      appendScenarioSnapshot(current, runId, createScenarioSnapshot(label, activeScenarioRun?.lifecycleSettings))
-    );
-    setScenarioStatusBriefly(`${label} captured`);
-  };
-
-  const panScenarioSouth = (): void => {
-    if (!canPan || !activeScenarioRun) return;
-    captureScenarioSnapshot('before-pan-south');
-    panMap('south');
-  };
-
-  const finishScenarioRun = (): void => {
-    const run = activeScenarioRun;
-    if (!run) {
-      setScenarioStatusBriefly('no active run');
-      return;
-    }
-    const finalLabel = isScenarioSettled(dockDiagnostics) ? 'done' : 'done-active';
-    const finishedAt = new Date().toISOString();
-    const finalSnapshot = createScenarioSnapshot(finalLabel, run.lifecycleSettings);
-    setScenarioRuns((current) => finishScenarioRunState(current, run.id, finalSnapshot, finishedAt));
-    setActiveScenarioRunId(null);
-    setScenarioStatusBriefly(finalLabel === 'done' ? `${run.name} finished` : `${run.name} captured active finish`);
-  };
-
-  const clearScenarioRuns = (): void => {
-    setScenarioRuns([]);
-    setActiveScenarioRunId(null);
-    setScenarioStatusBriefly('scenario history cleared');
-  };
-
-  const copyScenarioRun = (): void => {
-    const json = serializeScenarioHistory(
-      scenarioRuns,
-      activeScenarioRunId,
-      createScenarioSnapshot('current'),
-      lifecycleSettings
-    );
-    void navigator.clipboard.writeText(json)
-      .then(() => setScenarioStatusBriefly('scenario history copied'))
-      .catch(() => setScenarioStatusBriefly('copy failed'));
-  };
 
   const copyDockText = (): void => {
     copyIitcIrisText(JSON.stringify(dockDiagnostics, null, 2), {setStatus: setCopyStatus, successStatus: 'json copied'});
@@ -894,6 +792,28 @@ function App(): h.JSX.Element {
   };
 
   const canPan = camera.bounds !== null;
+  const {
+    scenarioRuns,
+    activeScenarioRun,
+    latestScenarioRun,
+    scenarioSnapCount,
+    scenarioStatus,
+    scenarioProgressRun,
+    scenarioProgressLabels,
+    scenarioExpectedSteps,
+    startScenarioRun,
+    captureScenarioSnapshot,
+    panScenarioSouth,
+    finishScenarioRun,
+    clearScenarioRuns,
+    copyScenarioRun,
+  } = useScenarioWorkflow({
+    lifecycleSettings,
+    dockDiagnostics,
+    canPan,
+    panMap,
+    setLifecycleSettings,
+  });
   const activeSidePanelOption = SIDE_PANEL_OPTIONS.find((option) => option.id === activeSidePanel) ?? null;
   const activePrimaryMenu = activeSheet === 'missions' && missionsState.source === 'portal'
     ? 'selected'
