@@ -99,8 +99,8 @@ Before starting Phase 2:
 
 ## Phase 2: App Surface Extraction
 
-Status: AGY branch audit fixes are applied locally on `feaure/the-refactor-agy`; re-review and merge back to
-`feaure/the-refactor` before opening the next extraction slice.
+Status: AGY app-surface extraction was audited, fixed, and merged into `feaure/the-refactor`. Continue with fresh
+detailed plans for narrow remaining slices.
 
 Goal: reduce the size and coupling of `apps/iitc-iris/src/content.tsx` without changing behavior. Phase 1 made this
 safer by moving the main parity-sensitive behavior behind tested core facades.
@@ -118,13 +118,13 @@ Order of work:
 
 Next steps before continuing Phase 2:
 
-1. Re-run the structured audit after the current AGY audit fixes are committed or otherwise included in the review.
-2. Merge `feaure/the-refactor-agy` into `feaure/the-refactor` only after the audit has no blocking findings and full
-   validation is clean.
-3. After merge, create a fresh detailed plan for the next remaining extraction slice instead of continuing broad,
-   mixed-purpose extraction on the AGY branch.
-4. Prefer the next slice that removes a coherent shell responsibility from `content.tsx` without changing public
-   behavior, such as repeated command/request posting helpers or one still-coupled workflow boundary.
+1. Use [content-command-callbacks-extraction-plan.md](content-command-callbacks-extraction-plan.md) for the next narrow
+   slice, following its checkpoints in order.
+2. Keep the next implementation branch scoped to callback/command wiring only; do not combine it with rendering,
+   runtime lifecycle, storage semantics, or facade work.
+3. Re-run focused callback tests after each checkpoint and full validation before merging the next slice.
+4. After that slice, choose the next coherent remaining shell responsibility from `content.tsx` and write or update a
+   detailed plan before implementation.
 
 Non-goals for Phase 2:
 
@@ -147,8 +147,9 @@ surface smaller and easier to reason about.
 
 ## Active Review Plans
 
-- AGY branch structured audit: [agy-branch-structured-audit-plan.md](agy-branch-structured-audit-plan.md). Current
-  next step: re-review after the local audit fixes, then merge only if validation and diff hygiene remain clean.
+- Completed AGY branch structured audit: [agy-branch-structured-audit-plan.md](agy-branch-structured-audit-plan.md).
+- Active next Phase 2 slice:
+  [content-command-callbacks-extraction-plan.md](content-command-callbacks-extraction-plan.md).
 
 ## Detailed Plan Template
 
