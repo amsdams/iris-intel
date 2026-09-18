@@ -103,14 +103,8 @@ import {
   formatRenderMutationSummary,
   formatSelectedPortal,
 } from './content-map-status';
-import {
-  getDrawToolsTargetFromContext,
-} from './content-map-context';
-import {
-  filterAndSerializeDrawToolsItems,
-  type DrawToolsTarget,
-} from './content-draw-tools';
-import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDrawToolsItem, type IitcIrisDrawToolsLatLng, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPortalHighlighterId, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState} from './messages';
+
+import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDrawToolsItem, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPortalHighlighterId, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState} from './messages';
 import {
   type IitcMapDataPlan,
 } from '@iris/iitc-core';
@@ -128,17 +122,7 @@ import {
   calculateNextSearchResultIndex,
   getActiveSearchResult,
 } from './content-search-actions';
-import {
-  addDrawToolsLinkPointAction,
-  addDrawToolsMarkerAction,
-  centerDrawToolsItemAction,
-  clearDrawToolsItemsAction,
-  deleteDrawToolsAtContextAction,
-  deleteDrawToolsItemAction,
-  importDrawToolsItemsAction,
-  renameDrawToolsMarkerAction,
-  undoDrawToolsItemAction,
-} from './content-draw-tools-panel-actions';
+import {useDrawToolsWorkflow} from './content-draw-tools-workflow';
 import {
   addCommNicknameAction,
   handleCommScrollAction,
@@ -225,14 +209,7 @@ function App(): h.JSX.Element {
   const [viewInputStatus, setViewInputStatus] = useState('');
   const [geolocationStatus, setGeolocationStatus] = useState('');
   const [mapContext, setMapContext] = useState<IitcIrisMapContextSelection | null>(null);
-  const [drawToolsLinkStart, setDrawToolsLinkStart] = useState<IitcIrisDrawToolsLatLng | null>(null);
   const [drawToolsItems, setDrawToolsItems] = useState<IitcIrisDrawToolsItem[]>([]);
-  const [drawToolsImportText, setDrawToolsImportText] = useState('');
-  const [drawToolsImportMerge, setDrawToolsImportMerge] = useState(true);
-  const [drawToolsImportStatus, setDrawToolsImportStatus] = useState('');
-  const [drawToolsClearConfirm, setDrawToolsClearConfirm] = useState<'polyline' | 'marker' | null>(null);
-  const [drawToolsMarkerLabel, setDrawToolsMarkerLabel] = useState('');
-  const [editingDrawToolsMarkerIndex, setEditingDrawToolsMarkerIndex] = useState<number | null>(null);
   const [debugDockVisible, setDebugDockVisible] = useState(() => loadStoredDebugDockVisible());
   const [activeSheet, setActiveSheet] = useState<SheetId>(() => loadStoredActiveSheet());
   const [activeSidePanel, setActiveSidePanel] = useState<SidePanelId | null>(() => {
@@ -435,71 +412,6 @@ function App(): h.JSX.Element {
     setMapView(mapContext.lat, mapContext.lng, mapContext.zoom);
   };
 
-  const getDrawToolsTarget = (): DrawToolsTarget | null => {
-    return getDrawToolsTargetFromContext(entityFetch.selectedPortal, mapContext);
-  };
-
-  const getDrawToolsTargetLatLng = (): IitcIrisDrawToolsLatLng | null => {
-    const target = getDrawToolsTarget();
-    return target ? {lat: target.lat, lng: target.lng} : null;
-  };
-
-  const postDrawToolsAction = (message: Omit<IitcIrisMessage, 'type'>): void => {
-    window.postMessage({
-      type: IITC_IRIS_MESSAGES.drawTools,
-      ...message,
-    } satisfies IitcIrisMessage, '*');
-  };
-
-  const addDrawToolsMarker = (color: string): void => {
-    addDrawToolsMarkerAction(getDrawToolsTarget(), drawToolsMarkerLabel, color, setDrawToolsClearConfirm, postDrawToolsAction, setStatus);
-  };
-
-  const renameDrawToolsMarker = (item: Extract<IitcIrisDrawToolsItem, {type: 'marker'}>, label: string): void => {
-    renameDrawToolsMarkerAction(item, label, postDrawToolsAction, setStatus);
-  };
-
-  const saveDrawToolsMarkerLabel = (item: Extract<IitcIrisDrawToolsItem, {type: 'marker'}>, label: string): void => {
-    renameDrawToolsMarker(item, label);
-    setEditingDrawToolsMarkerIndex(null);
-  };
-
-  const addDrawToolsLinkPoint = (): void => {
-    addDrawToolsLinkPointAction(getDrawToolsTargetLatLng(), drawToolsLinkStart, setDrawToolsLinkStart, setDrawToolsClearConfirm, postDrawToolsAction, setStatus);
-  };
-
-  const deleteDrawToolsAtContext = (itemType?: 'polyline' | 'marker'): void => {
-    deleteDrawToolsAtContextAction(getDrawToolsTargetLatLng(), itemType, setDrawToolsClearConfirm, postDrawToolsAction, setStatus);
-  };
-
-  const deleteDrawToolsItem = (item: IitcIrisDrawToolsItem): void => {
-    deleteDrawToolsItemAction(item, setDrawToolsClearConfirm, postDrawToolsAction, setStatus);
-  };
-
-  const undoDrawToolsItem = (itemType?: 'polyline' | 'marker'): void => {
-    undoDrawToolsItemAction(itemType, setDrawToolsClearConfirm, postDrawToolsAction, setStatus);
-  };
-
-  const clearDrawToolsItems = (itemType?: 'polyline' | 'marker'): void => {
-    clearDrawToolsItemsAction(itemType, drawToolsClearConfirm, setDrawToolsClearConfirm, setDrawToolsLinkStart, postDrawToolsAction, setStatus);
-  };
-
-  const centerDrawToolsItem = (item: IitcIrisDrawToolsItem): void => {
-    centerDrawToolsItemAction(item, camera.zoom, setMapView);
-  };
-
-  const copyDrawToolsItems = (itemType?: 'polyline' | 'marker'): void => {
-    copyIitcIrisText(filterAndSerializeDrawToolsItems(drawToolsItems, itemType), {
-      setStatus: setDrawToolsImportStatus,
-      successStatus: itemType === 'polyline' ? 'links copied' : itemType === 'marker' ? 'markers copied' : 'draw tools JSON copied',
-      successTimeoutMs: 1400,
-      failureTimeoutMs: 1800,
-    });
-  };
-
-  const importDrawToolsItems = (): void => {
-    importDrawToolsItemsAction(drawToolsImportText, drawToolsImportMerge, setDrawToolsClearConfirm, postDrawToolsAction, setDrawToolsImportStatus);
-  };
 
   const copySelectedPortalLink = (): void => {
     copySelectedPortalLinkHelper(entityFetch.selectedPortal, camera.zoom, setCopyStatus);
@@ -678,6 +590,42 @@ function App(): h.JSX.Element {
   const setMapView = useCallback((lat: number, lng: number, zoom = camera.zoom): void => {
     window.postMessage(buildSetViewMessage(lat, lng, zoom), '*');
   }, [camera.zoom]);
+
+  const {
+    drawToolsLinkStart,
+    drawToolsImportText,
+    drawToolsImportMerge,
+    drawToolsImportStatus,
+    drawToolsClearConfirm,
+    drawToolsMarkerLabel,
+    editingDrawToolsMarkerIndex,
+    drawToolsTarget,
+    drawToolsLinkItems,
+    drawToolsMarkerItems,
+    setDrawToolsLinkStart,
+    setDrawToolsImportText,
+    setDrawToolsImportMerge,
+    setDrawToolsImportStatus,
+    setDrawToolsMarkerLabel,
+    setEditingDrawToolsMarkerIndex,
+    addDrawToolsMarker,
+    saveDrawToolsMarkerLabel,
+    addDrawToolsLinkPoint,
+    deleteDrawToolsAtContext,
+    deleteDrawToolsItem,
+    undoDrawToolsItem,
+    clearDrawToolsItems,
+    centerDrawToolsItem,
+    copyDrawToolsItems,
+    importDrawToolsItems,
+  } = useDrawToolsWorkflow({
+    drawToolsItems,
+    selectedPortal: entityFetch.selectedPortal,
+    mapContext,
+    cameraZoom: camera.zoom,
+    setMapView,
+    setStatus,
+  });
 
   const requestSearch = (term: string, confirmed = false): void => {
     window.postMessage(buildSearchRequestMessage(term, confirmed), '*');
@@ -909,7 +857,7 @@ function App(): h.JSX.Element {
 
     window.addEventListener('message', onMessage);
     return (): void => window.removeEventListener('message', onMessage);
-  }, [activeSidePanel, baseLayerId, camera.zoom, dataSource, highlighterSettings, layerSettings, lifecycleSettings]);
+  }, [activeSidePanel, baseLayerId, camera.zoom, dataSource, highlighterSettings, layerSettings, lifecycleSettings, setDrawToolsImportStatus]);
 
   useEffect(() => {
     storeLayerSettings(layerSettings);
@@ -1084,14 +1032,6 @@ function App(): h.JSX.Element {
     setMapView(option.lat, option.lng, option.zoom);
   };
   const activeSearchResult = searchState.results.filter((result) => result.type !== 'empty')[activeSearchResultIndex];
-  const drawToolsTarget = getDrawToolsTarget();
-  const drawToolsTargetDefaultLabel = drawToolsTarget?.label ?? '';
-  const drawToolsLinkItems = drawToolsItems.filter((item) => item.type === 'polyline');
-  const drawToolsMarkerItems = drawToolsItems.filter((item) => item.type === 'marker');
-
-  useEffect(() => {
-    setDrawToolsMarkerLabel(drawToolsTargetDefaultLabel);
-  }, [drawToolsTargetDefaultLabel]);
 
   return (
     <div className={`iitc-iris-shell iitc-iris-sheet-${activeSheet} ${entityFetch.selectedPortal ? 'iitc-iris-has-selected-portal' : ''}`}>

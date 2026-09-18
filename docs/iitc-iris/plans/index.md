@@ -107,6 +107,10 @@ surface smaller and easier to reason about.
 - Entity abstraction and global store: revisit only after repeated concrete patterns from IITC-named facades justify the
   scope.
 
+## Active Review Plans
+
+- AGY branch structured audit: [agy-branch-structured-audit-plan.md](agy-branch-structured-audit-plan.md).
+
 ## Detailed Plan Template
 
 Each new plan file under this directory should use this structure:

@@ -46,6 +46,35 @@ modules own routing/display decisions or JSX composition only.
 - Portal section, selection, clear & focus actions: `content-portal-selection-actions.ts`, `content-portal-selection-actions.test.ts`.
 - Scenario workflow state & execution custom hook: `content-scenario-workflow.ts`, `content-scenario-workflow.test.ts`.
 - Portal Analysis workflow state & filter/sort custom hook: `content-portal-analysis-workflow.ts`, `content-portal-analysis-workflow.test.ts`.
+- Draw Tools workflow state and callback wiring custom hook: `content-draw-tools-workflow.ts`,
+  `content-draw-tools-workflow.test.ts`, plus supporting coverage in `content-draw-tools-panel-actions.test.ts`,
+  `content-draw-tools-lifecycle.test.ts`, and `content-message-adapter.test.ts`.
+
+## Draw Tools Workflow Extraction Checkpoint
+
+- IITC sources: Draw Tools behavior remains aligned with IITC-CE's Draw Tools plugin concepts under
+  `reference/ingress-intel-total-conversion/plugins/draw-tools*`; this pass did not port new Draw Tools behavior.
+- Current IRIS sources: `apps/iitc-iris/src/content.tsx`, `apps/iitc-iris/src/content-draw-tools-workflow.ts`,
+  `apps/iitc-iris/src/content-draw-tools-panel-actions.ts`, `apps/iitc-iris/src/content-draw-tools-lifecycle.ts`,
+  `apps/iitc-iris/src/content-draw-tools-actions.ts`, `apps/iitc-iris/src/content-map-context.ts`, and
+  `apps/iitc-iris/src/content-message-adapter.ts`.
+- Public concepts: existing Draw Tools v1 link and marker actions, import/export text, marker labels, selected/context
+  target handling, and page-runtime `IITC_IRIS_MESSAGES.drawTools` messages.
+- Ownership/lifecycle: `content-draw-tools-workflow.ts` owns only Preact-local Draw Tools UI workflow state and callback
+  wiring. `content.tsx` still owns page message handling, selected portal/map context state, map camera state, and the
+  runtime message boundary. Page-runtime Draw Tools storage and Leaflet mutation remain outside the hook.
+- Hook/plugin visibility: no new plugin-facing `window.plugin.drawTools` or Leaflet.draw event surface is exposed.
+- Scope: move Draw Tools link-start, import text/status, clear-confirm, marker-label, editing-index state, target
+  derivation, list filtering, and callback wiring out of `content.tsx` without changing behavior.
+- Non-goals: polygons, circles, DrawTools Opt, stock Intel `pls`, plugin-facing Draw Tools API parity, and broader UI
+  redesign remain deferred.
+- Tests/diagnostics: `content-draw-tools-workflow.test.ts` covers hook-owned target derivation, list filtering,
+  runtime import-status setter wiring, and posted Draw Tools message shape. Supporting focused unit tests cover action
+  payloads/statuses, lifecycle payload builders, and inbound message adapter import-status updates.
+- Divergences: none intended; this is a behavior-preserving app-surface extraction.
+- Validation: `npm run lint:iitc-iris`, `npm run typecheck:iitc-iris`,
+  `npm run test -w apps/iitc-iris -- --run src/content-draw-tools-workflow.test.ts src/content-draw-tools-panel-actions.test.ts src/content-draw-tools-lifecycle.test.ts src/content-message-adapter.test.ts`,
+  `npm run package:iitc-iris`, and `git diff --check`.
 
 ## Follow-up Plans
 
