@@ -33,6 +33,9 @@ describe('content-auth-navigation', () => {
       refreshMissions: vi.fn(),
       requestSearch: vi.fn(),
       searchTerm: '',
+      passcodeDraft: '',
+      passcodeState: {status: 'idle', requestState: 'idle'} as const,
+      retryPasscode: vi.fn(),
       retryMapFetch: vi.fn(),
     };
 
@@ -42,6 +45,26 @@ describe('content-auth-navigation', () => {
 
     retryActiveAuthPanelRequest(null, 'map', 'all', 'view', callbacks);
     expect(callbacks.retryMapFetch).toHaveBeenCalled();
+  });
+
+  it('routes auth retries to passcode redemption when a passcode is available', () => {
+    const callbacks = {
+      refreshComm: vi.fn(),
+      refreshScores: vi.fn(),
+      refreshInventory: vi.fn(),
+      refreshMissions: vi.fn(),
+      requestSearch: vi.fn(),
+      searchTerm: '',
+      passcodeDraft: '  PASS-123  ',
+      passcodeState: {status: 'auth', requestState: 'auth'} as const,
+      retryPasscode: vi.fn(),
+      retryMapFetch: vi.fn(),
+    };
+
+    retryActiveAuthPanelRequest('passcode', 'passcode', 'all', 'view', callbacks);
+
+    expect(callbacks.retryPasscode).toHaveBeenCalledWith('PASS-123');
+    expect(callbacks.retryMapFetch).not.toHaveBeenCalled();
   });
 
   it('calculates side panel status and identifies auth sources', () => {

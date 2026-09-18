@@ -68,9 +68,9 @@ modules own routing/display decisions or JSX composition only.
   derivation, list filtering, and callback wiring out of `content.tsx` without changing behavior.
 - Non-goals: polygons, circles, DrawTools Opt, stock Intel `pls`, plugin-facing Draw Tools API parity, and broader UI
   redesign remain deferred.
-- Tests/diagnostics: `content-draw-tools-workflow.test.ts` covers hook-owned target derivation, list filtering,
-  runtime import-status setter wiring, and posted Draw Tools message shape. Supporting focused unit tests cover action
-  payloads/statuses, lifecycle payload builders, and inbound message adapter import-status updates.
+- Tests/diagnostics: `content-draw-tools-workflow.test.ts` covers hook-owned target derivation and list filtering.
+  Supporting focused unit tests cover action payloads/statuses, lifecycle payload builders, posted Draw Tools message
+  shape, and inbound message adapter import-status updates.
 - Divergences: none intended; this is a behavior-preserving app-surface extraction.
 - Validation: `npm run lint:iitc-iris`, `npm run typecheck:iitc-iris`,
   `npm run test -w apps/iitc-iris -- --run src/content-draw-tools-workflow.test.ts src/content-draw-tools-panel-actions.test.ts src/content-draw-tools-lifecycle.test.ts src/content-message-adapter.test.ts`,

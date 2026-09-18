@@ -25,7 +25,6 @@ import {
   isStoredMapView,
   type StoredMapView,
 } from './content-scenarios';
-import type { DataSourceOption, ViewPresetOption } from './system-controls-panel';
 
 export const LOGIN_BYPASS_STORAGE_KEY = 'iitc-iris:login-bypass-until';
 export const COMM_TAB_STORAGE_KEY = 'iitc-chat-tab';
@@ -47,6 +46,25 @@ function getLocalStorage(): Storage | null {
     return window.localStorage;
   }
   return null;
+}
+
+export interface ViewPresetOption {
+  id: string;
+  label: string;
+  lat: number;
+  lng: number;
+  zoom: number;
+}
+
+export interface DataSourceOption {
+  id: string;
+  label: string;
+  title: string;
+  mode: 'live' | 'fixture';
+  fixturePath?: string;
+  lat?: number;
+  lng?: number;
+  zoom?: number;
 }
 
 export const VIEW_PRESETS: readonly ViewPresetOption[] = [
@@ -78,9 +96,9 @@ export const DATA_SOURCE_OPTIONS: readonly DataSourceOption[] = [
     zoom: 14,
   },
   {
-    id: 'damrak-z15',
-    label: 'DAM F15',
-    title: 'Damrak fixture from docs/iris/update-map-samples/get-entities-damrak-iitc-z15.json',
+    id: 'dam-iitc-z15',
+    label: 'DAM IITC',
+    title: 'Damrak fixture extracted from IITC HAR getEntities response',
     mode: 'fixture',
     fixturePath: 'fixtures/get-entities-damrak-iitc-z15.json',
     lat: 52.3761096,
@@ -89,8 +107,17 @@ export const DATA_SOURCE_OPTIONS: readonly DataSourceOption[] = [
   },
 ];
 
+const DATA_SOURCE_ID_ALIASES: Record<string, string> = {
+  'damrak-z15': 'dam-iitc-z15',
+};
+
+export function normalizeDataSourceId(id: string | null | undefined): string {
+  return id ? DATA_SOURCE_ID_ALIASES[id] ?? id : 'live';
+}
+
 export function createDataSourceSettings(id: string): IitcIrisDataSourceSettings {
-  const option = DATA_SOURCE_OPTIONS.find((candidate) => candidate.id === id) ?? DATA_SOURCE_OPTIONS[0];
+  const normalizedId = normalizeDataSourceId(id);
+  const option = DATA_SOURCE_OPTIONS.find((candidate) => candidate.id === normalizedId) ?? DATA_SOURCE_OPTIONS[0];
   if (option.mode === 'live' || !option.fixturePath) return { mode: 'live' };
   const url = typeof chrome !== 'undefined' && chrome.runtime?.getURL
     ? chrome.runtime.getURL(option.fixturePath)
@@ -263,8 +290,8 @@ export function loadStoredHighlighterSettings(): IitcIrisHighlighterSettings {
 
 export function loadStoredDataSourceId(): string {
   try {
-    const value = getLocalStorage()?.getItem(DATA_SOURCE_STORAGE_KEY);
-    return DATA_SOURCE_OPTIONS.some((option) => option.id === value) ? (value as string) : 'live';
+    const value = normalizeDataSourceId(getLocalStorage()?.getItem(DATA_SOURCE_STORAGE_KEY));
+    return DATA_SOURCE_OPTIONS.some((option) => option.id === value) ? value : 'live';
   } catch {
     return 'live';
   }
@@ -299,7 +326,7 @@ export function storeHighlighterSettings(value: IitcIrisHighlighterSettings): vo
 
 export function storeDataSourceId(value: string): void {
   try {
-    getLocalStorage()?.setItem(DATA_SOURCE_STORAGE_KEY, value);
+    getLocalStorage()?.setItem(DATA_SOURCE_STORAGE_KEY, normalizeDataSourceId(value));
   } catch {
     // Data source preference is optional.
   }

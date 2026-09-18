@@ -15,7 +15,6 @@ export function postDrawToolsAction(message: Omit<IitcIrisMessage, 'type'>): voi
     '*'
   );
 }
-
 export function buildAddMarkerPayload(
   target: {lat: number; lng: number; label: string} | null,
   drawToolsMarkerLabel: string,
@@ -98,5 +97,3 @@ export function buildImportDrawToolsPayload(
     };
   }
 }
-
-

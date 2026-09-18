@@ -59,4 +59,3 @@ describe('content-draw-tools-actions', () => {
     expect(res.statusText).toBeDefined();
   });
 });
-

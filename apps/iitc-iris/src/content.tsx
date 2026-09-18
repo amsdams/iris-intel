@@ -561,6 +561,11 @@ function App(): h.JSX.Element {
       refreshMissions,
       requestSearch,
       searchTerm,
+      passcodeDraft,
+      passcodeState,
+      retryPasscode: (passcode): void => {
+        redeemPasscodeAction(passcodeState, passcode, setPasscodeDraft);
+      },
       retryMapFetch: (): void => {
         window.postMessage({
           type: IITC_IRIS_MESSAGES.dataSourceSettings,

@@ -1,4 +1,4 @@
-import type {IitcIrisCommTab, IitcIrisMissionSource} from './messages';
+import type {IitcIrisCommTab, IitcIrisMissionSource, IitcIrisPasscodeState} from './messages';
 import type {IitcIrisSidePanelId} from './menu-registry';
 
 export interface LocationAdapter {
@@ -34,6 +34,9 @@ export interface RetryAuthCallbacks {
   refreshMissions: (source: IitcIrisMissionSource) => void;
   requestSearch: (term: string, clear: boolean) => void;
   searchTerm: string;
+  passcodeDraft: string;
+  passcodeState: IitcIrisPasscodeState;
+  retryPasscode: (passcode: string) => void;
   retryMapFetch: () => void;
 }
 
@@ -62,6 +65,10 @@ export function retryActiveAuthPanelRequest(
   }
   if (activeSheet === 'search' && callbacks.searchTerm.trim()) {
     callbacks.requestSearch(callbacks.searchTerm.trim(), false);
+    return;
+  }
+  if (activeSidePanel === 'passcode' && (callbacks.passcodeDraft.trim() || callbacks.passcodeState.passcode)) {
+    callbacks.retryPasscode(callbacks.passcodeDraft.trim() || callbacks.passcodeState.passcode || '');
     return;
   }
   callbacks.retryMapFetch();

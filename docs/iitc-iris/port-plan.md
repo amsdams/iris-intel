@@ -150,7 +150,7 @@ Latest internal registry/facade validation included:
 - `npm run test -w apps/iitc-iris -- --run src/highlighter-registry.test.ts src/layer-registry.test.ts`
 - `npm run typecheck:iitc-iris`
 - `npm run lint:iitc-iris` passed with existing warnings only.
-- ` `
+- `npm run package:iitc-iris`
 - `git diff --check`
 
 Latest package artifacts:

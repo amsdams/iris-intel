@@ -1,25 +1,7 @@
 import {h} from 'preact';
 import type {ScenarioRun} from './content-scenarios';
 import type {IitcIrisLifecycleSettings} from './messages';
-
-export interface ViewPresetOption {
-  id: string;
-  label: string;
-  lat: number;
-  lng: number;
-  zoom: number;
-}
-
-export interface DataSourceOption {
-  id: string;
-  label: string;
-  title: string;
-  mode: 'live' | 'fixture';
-  fixturePath?: string;
-  lat?: number;
-  lng?: number;
-  zoom?: number;
-}
+import type {DataSourceOption, ViewPresetOption} from './content-storage-settings';
 
 interface IitcIrisSystemControlsPanelProps {
   shortcutsEnabled: boolean;
