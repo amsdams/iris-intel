@@ -21,7 +21,6 @@ import {
   type IitcIrisMapContextSelection,
 } from './selection-lifecycle';
 import {handleIitcIrisContentMessage, type CameraState, type EntityFetchState} from './content-message-adapter';
-import {createCancelPanelRequestsMessage} from './content-outbound-messages';
 import {
   addCommNicknameCommand,
   centerMapContextCommand,
@@ -52,11 +51,20 @@ import {
   setPortalSectionOpenCommand,
   zoomToAndShowPortalCommand,
   zoomToMissionCommand,
+  closeSheetToMapCommand,
+  openSheetCommand,
+  toggleSheetCommand,
+  openCommPanelCommand,
+  selectCommTabCommand,
+  toggleCommPanelCommand,
+  toggleMissionsSheetCommand,
+  togglePrimaryMenuCommand,
+  openIntelLoginCommand,
+  logoutIntelCommand,
+  setDataSourceCommand,
 } from './content-command-callbacks';
 import {handleIitcIrisContentKeyDown, type IitcIrisPanDirection} from './content-keyboard-shortcuts';
 import {copyIitcIrisText} from './content-feedback';
-import {closeIitcIrisSheet, openIitcIrisSheet, toggleIitcIrisSheet} from './content-sheet-navigation';
-import {getIitcIrisPrimaryMenuEffect} from './content-primary-menu';
 import {IitcIrisPortalDetailsPanel} from './portal-details-panel';
 import {IitcIrisSearchPanel} from './search-panel';
 import {usePortalAnalysisWorkflow} from './content-portal-analysis-workflow';
@@ -72,8 +80,6 @@ import {
   calculateSidePanelStatus,
   formatAuthRecoveryText,
   getAuthSources,
-  performIntelLoginRedirect,
-  performIntelLogoutRedirect,
   retryActiveAuthPanelRequest,
   type AppAuthStates,
 } from './content-auth-navigation';
@@ -429,42 +435,25 @@ function App(): h.JSX.Element {
     });
   };
 
+  const postIitcMessage = useCallback((message: IitcIrisMessage): void => {
+    window.postMessage(message, '*');
+  }, []);
+
   const closeSheetToMap = useCallback((): void => {
-    const effect = closeIitcIrisSheet({activeSheet, activeSidePanel});
-    if (effect.cancelPanelRequests) {
-      window.postMessage(createCancelPanelRequestsMessage(), '*');
-    }
-    setActiveSidePanel(effect.activeSidePanel);
-    setActiveSheet(effect.activeSheet);
-    storeSidePanelId(effect.activeSidePanel);
-    storeActiveSheet(effect.activeSheet);
-  }, [activeSheet, activeSidePanel]);
+    closeSheetToMapCommand(activeSheet, activeSidePanel, postIitcMessage, {setActiveSheet, setActiveSidePanel, storeActiveSheet, storeSidePanelId});
+  }, [activeSheet, activeSidePanel, postIitcMessage]);
 
   const closeSidePanel = useCallback((): void => {
     closeSheetToMap();
   }, [closeSheetToMap]);
 
   const openSheet = useCallback((sheet: SheetId): void => {
-    const effect = openIitcIrisSheet({activeSheet, activeSidePanel}, sheet);
-    if (effect.cancelPanelRequests) {
-      window.postMessage(createCancelPanelRequestsMessage(), '*');
-    }
-    setActiveSheet(effect.activeSheet);
-    storeActiveSheet(effect.activeSheet);
-    setActiveSidePanel(effect.activeSidePanel);
-    storeSidePanelId(effect.activeSidePanel);
-  }, [activeSheet, activeSidePanel]);
+    openSheetCommand(sheet, activeSheet, activeSidePanel, postIitcMessage, {setActiveSheet, setActiveSidePanel, storeActiveSheet, storeSidePanelId});
+  }, [activeSheet, activeSidePanel, postIitcMessage]);
 
   const toggleSheet = useCallback((sheet: SheetId): void => {
-    const effect = toggleIitcIrisSheet({activeSheet, activeSidePanel}, sheet);
-    if (effect.cancelPanelRequests) {
-      window.postMessage(createCancelPanelRequestsMessage(), '*');
-    }
-    setActiveSheet(effect.activeSheet);
-    storeActiveSheet(effect.activeSheet);
-    setActiveSidePanel(effect.activeSidePanel);
-    storeSidePanelId(effect.activeSidePanel);
-  }, [activeSheet, activeSidePanel]);
+    toggleSheetCommand(sheet, activeSheet, activeSidePanel, postIitcMessage, {setActiveSheet, setActiveSidePanel, storeActiveSheet, storeSidePanelId});
+  }, [activeSheet, activeSidePanel, postIitcMessage]);
 
   const refreshComm = useCallback((tab: IitcIrisCommTab = commState.tab, older = false): void => {
     requestCommAction(tab, older);
@@ -501,10 +490,6 @@ function App(): h.JSX.Element {
       setCommNewBelow
     );
   };
-
-  const postIitcMessage = useCallback((message: IitcIrisMessage): void => {
-    window.postMessage(message, '*');
-  }, []);
 
   const refreshScores = (): void => {
     refreshScoresCommand(postIitcMessage);
@@ -545,7 +530,7 @@ function App(): h.JSX.Element {
   };
 
   const openIntelLogin = (): void => {
-    performIntelLoginRedirect(
+    openIntelLoginCommand(
       LOGIN_BYPASS_STORAGE_KEY,
       LOGIN_BYPASS_MS,
       document.getElementById('iitc-iris-root'),
@@ -554,13 +539,16 @@ function App(): h.JSX.Element {
   };
 
   const logoutIntel = (): void => {
-    performIntelLogoutRedirect(
+    logoutIntelCommand(
       LOGIN_BYPASS_STORAGE_KEY,
       document.getElementById('iitc-iris-root'),
       window.location
     );
   };
 
+  // Deliberately kept in content.tsx: extracting this to a pure command would require
+  // passing ~13 distinct dependencies (state values and update callbacks) which creates
+  // a massive untyped bag, reducing clarity compared to inline assembly.
   const retryAuthRequest = (): void => {
     retryActiveAuthPanelRequest(activeSidePanel, activeSheet, commState.tab, missionsState.source, {
       refreshComm,
@@ -575,10 +563,10 @@ function App(): h.JSX.Element {
         redeemPasscodeCommand(passcodeState, passcode, setPasscodeDraft, postIitcMessage);
       },
       retryMapFetch: (): void => {
-        window.postMessage({
+        postIitcMessage({
           type: IITC_IRIS_MESSAGES.dataSourceSettings,
           dataSource,
-        } satisfies IitcIrisMessage, '*');
+        });
       },
     });
   };
@@ -746,44 +734,30 @@ function App(): h.JSX.Element {
   const authRecoveryText = formatAuthRecoveryText(authSources);
   const activePanelNeedsAuth = activeSidePanelStatus === 'auth';
   const openCommPanel = useCallback((tab?: IitcIrisCommTab): void => {
-    if (tab) refreshComm(tab);
-    openSheet('comm');
+    openCommPanelCommand(tab, refreshComm, openSheet);
   }, [openSheet, refreshComm]);
 
   const selectCommTab = (tab: IitcIrisCommTab): void => {
-    if (activeSheet === 'comm' && commState.tab === tab) return;
-    refreshComm(tab);
-    if (activeSheet !== 'comm') openSheet('comm');
+    selectCommTabCommand(tab, activeSheet, commState.tab, refreshComm, openSheet);
   };
 
   const toggleCommPanel = useCallback((tab?: IitcIrisCommTab): void => {
-    if (activeSheet === 'comm' && (!tab || commState.tab === tab)) {
-      closeSheetToMap();
-      return;
-    }
-    openCommPanel(tab);
+    toggleCommPanelCommand(tab, activeSheet, commState.tab, closeSheetToMap, openCommPanel);
   }, [activeSheet, closeSheetToMap, commState.tab, openCommPanel]);
 
   const toggleMissionsSheet = (source: IitcIrisMissionSource): void => {
-    if (activeSheet === 'missions' && missionsState.source === source) {
-      closeSheetToMap();
-      return;
-    }
-    openSheet('missions');
-    refreshMissions(source);
+    toggleMissionsSheetCommand(source, activeSheet, missionsState.source, closeSheetToMap, openSheet, refreshMissions);
   };
 
   const togglePrimaryMenu = useCallback((menu: PrimaryMenuId): void => {
-    const effect = getIitcIrisPrimaryMenuEffect(menu, {activePrimaryMenu, activeSelectedSheet, activeSheet, hasSelectedObject});
-    if (effect.kind === 'closeSheet') {
-      closeSheetToMap();
-    } else if (effect.kind === 'openSheet') {
-      openSheet(effect.sheet);
-    } else if (effect.kind === 'toggleComm') {
-      toggleCommPanel();
-    } else if (effect.kind === 'toggleSheet') {
-      toggleSheet(effect.sheet);
-    }
+    togglePrimaryMenuCommand(
+      menu,
+      {activePrimaryMenu, activeSelectedSheet, activeSheet, hasSelectedObject},
+      closeSheetToMap,
+      openSheet,
+      toggleCommPanel,
+      toggleSheet
+    );
   }, [activePrimaryMenu, activeSelectedSheet, activeSheet, closeSheetToMap, hasSelectedObject, openSheet, toggleCommPanel, toggleSheet]);
 
 
@@ -1011,10 +985,7 @@ function App(): h.JSX.Element {
   }, [closeSheets, hasSelectedObject, panMap, portalImageOpen, shortcutsEnabled, togglePrimaryMenu, toggleSheet, zoomMap]);
 
   const setDataSource = (id: string): void => {
-    setDataSourceId(id);
-    const option = DATA_SOURCE_OPTIONS.find((candidate) => candidate.id === id);
-    if (!option || option.mode === 'live' || option.lat === undefined || option.lng === undefined || option.zoom === undefined) return;
-    setMapView(option.lat, option.lng, option.zoom);
+    setDataSourceCommand(id, DATA_SOURCE_OPTIONS, setDataSourceId, setMapView);
   };
   const activeSearchResult = searchState.results.filter((result) => result.type !== 'empty')[activeSearchResultIndex];
 

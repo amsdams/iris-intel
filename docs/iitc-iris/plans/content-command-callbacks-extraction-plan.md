@@ -1,6 +1,6 @@
 # Content Command Callbacks Extraction Plan
 
-Status: **completed**. This extraction has been successfully executed. Checkpoints 0, 1, 2, 3, and 6 are implemented. Checkpoints 4 and 5 were deliberately scoped out and left in `content.tsx` to satisfy the plan's own stop conditions (to avoid moving `performance.now()` intent tracking and complex `setActiveSheet`/`cancelPanelRequests` ordering).
+Status: **completed**. This extraction has been successfully executed. Checkpoints 0, 1, 2, 3, 4, and 6 are implemented. Checkpoint 4 is partial by design: `retryAuthRequest` and the thin `closeSidePanel` alias remain in `content.tsx` to satisfy this plan's stop conditions. Checkpoint 5 remains deliberately scoped out to avoid moving `performance.now()` intent tracking for layer/highlighter settings.
 
 ## Purpose
 
@@ -148,7 +148,7 @@ Expected tests:
 - Assert selected portal copy/focus behavior for null and selected portal states.
 - Assert portal section persistence uses the updated section map.
 
-### Checkpoint 4: Sheet/Menu/Auth/Data Source Commands (Skipped - See Stop Conditions)
+### Checkpoint 4: Sheet/Menu/Auth/Data Source Commands (Done / Partial By Design)
 
 Target callbacks:
 
@@ -164,6 +164,22 @@ Target callbacks:
 - `toggleMissionsSheet`
 - `togglePrimaryMenu`
 - `setDataSource`
+
+Completed extraction:
+
+- Extracted `closeSheetToMap`, `openSheet`, and `toggleSheet` through command helpers that preserve
+  `cancelPanelRequests` posting before state updates and preserve the original sheet/side-panel setter ordering.
+- Extracted `openIntelLogin` and `logoutIntel` as thin wrappers around the auth navigation helpers with browser
+  dependencies passed in from `content.tsx`.
+- Extracted `openCommPanel`, `selectCommTab`, `toggleCommPanel`, `toggleMissionsSheet`, `togglePrimaryMenu`, and
+  `setDataSource` into `content-command-callbacks.ts`.
+- Kept `closeSidePanel` in `content.tsx` as a local alias around `closeSheetToMap`; extracting it would only add an
+  extra pass-through wrapper.
+- Kept `retryAuthRequest` in `content.tsx` because extracting it would require passing a broad dependency bag of active
+  auth state, sheet/search state, and multiple retry callbacks. This preserves auth retry priority and keeps request
+  routing visible in the content shell.
+- Added checkpoint coverage in `content-command-callbacks.test.ts`, supported by existing auth navigation, sheet
+  navigation, primary menu, and storage settings tests.
 
 Expected extraction:
 
