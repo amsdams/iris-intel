@@ -24,12 +24,33 @@ import {handleIitcIrisContentMessage, type CameraState, type EntityFetchState} f
 import {createCancelPanelRequestsMessage} from './content-outbound-messages';
 import {
   addCommNicknameCommand,
+  centerMapContextCommand,
+  clearPortalSelectionCommand,
+  clearSearchCommand,
+  copyMapContextGuidCommand,
+  copyMapContextLatLngCommand,
+  copyMapContextPortalGuidsCommand,
+  copyMapContextUrlCommand,
+  copySelectedPortalGuidCommand,
+  copySelectedPortalLinkCommand,
+  copySelectedPortalTitleCommand,
+  focusSelectedPortalCommand,
+  handleSearchKeyDownCommand,
+  panMapCommand,
+  previewSearchResultCommand,
   redeemPasscodeCommand,
   refreshInventoryCommand,
   refreshMissionsCommand,
   refreshScoresCommand,
   requestMissionDetailsCommand,
+  requestSearchCommand,
+  selectMapContextAnchorCommand,
+  selectPortalByLatLngCommand,
+  selectSearchResultCommand,
   sendCommCommand,
+  setMapViewCommand,
+  setPortalSectionOpenCommand,
+  zoomToAndShowPortalCommand,
   zoomToMissionCommand,
 } from './content-command-callbacks';
 import {handleIitcIrisContentKeyDown, type IitcIrisPanDirection} from './content-keyboard-shortcuts';
@@ -56,15 +77,6 @@ import {
   retryActiveAuthPanelRequest,
   type AppAuthStates,
 } from './content-auth-navigation';
-import {
-  copyMapContextGuid as copyMapContextGuidHelper,
-  copyMapContextLatLng as copyMapContextLatLngHelper,
-  copyMapContextPortalGuids as copyMapContextPortalGuidsHelper,
-  copyMapContextUrl as copyMapContextUrlHelper,
-  copySelectedPortalGuid as copySelectedPortalGuidHelper,
-  copySelectedPortalLink as copySelectedPortalLinkHelper,
-  copySelectedPortalTitle as copySelectedPortalTitleHelper,
-} from './content-copy-helpers';
 import {useScenarioWorkflow} from './content-scenario-workflow';
 import {
   jumpToPresetAction,
@@ -108,6 +120,7 @@ import {
   formatSelectedPortal,
 } from './content-map-status';
 
+
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDrawToolsItem, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPortalHighlighterId, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState} from './messages';
 import {
   type IitcMapDataPlan,
@@ -118,14 +131,6 @@ import {
   buildLayerSettingsMessage,
   calculateToggledLayerSettings,
 } from './content-layer-actions';
-import {
-  buildSearchClearMessage,
-  buildSearchPreviewMessage,
-  buildSearchRequestMessage,
-  buildSearchSelectMessage,
-  calculateNextSearchResultIndex,
-  getActiveSearchResult,
-} from './content-search-actions';
 import {useDrawToolsWorkflow} from './content-draw-tools-workflow';
 import {
   handleCommScrollAction,
@@ -133,17 +138,7 @@ import {
   requestCommAction,
   requestOlderCommAction,
 } from './content-comm-panel-actions';
-import {
-  clearPortalSelectionAction,
-  focusSelectedPortalAction,
-  selectPortalByLatLngAction,
-  setPortalSectionOpenAction,
-  zoomToAndShowPortalAction,
-} from './content-portal-selection-actions';
-import {
-  buildPanByMessage,
-  buildSetViewMessage,
-} from './content-camera-actions';
+
 
 const IITC_PAN_CONTROL_OFFSET_PX = 500;
 const LOGIN_BYPASS_MS = 5 * 60 * 1000;
@@ -393,38 +388,38 @@ function App(): h.JSX.Element {
   };
 
   const copyMapContextLatLng = (): void => {
-    copyMapContextLatLngHelper(mapContext, setCopyStatus);
+    copyMapContextLatLngCommand(mapContext, setCopyStatus);
   };
 
   const copyMapContextUrl = (): void => {
-    copyMapContextUrlHelper(mapContext, setCopyStatus);
+    copyMapContextUrlCommand(mapContext, setCopyStatus);
   };
 
   const copyMapContextGuid = (): void => {
-    copyMapContextGuidHelper(mapContext, setCopyStatus);
+    copyMapContextGuidCommand(mapContext, setCopyStatus);
   };
 
   const copyMapContextPortalGuids = (): void => {
-    copyMapContextPortalGuidsHelper(mapContext, setCopyStatus);
+    copyMapContextPortalGuidsCommand(mapContext, setCopyStatus);
   };
 
   const centerMapContext = (): void => {
-    if (!mapContext) return;
-    setMapView(mapContext.lat, mapContext.lng, mapContext.zoom);
+    centerMapContextCommand(mapContext, setMapView);
   };
 
 
   const copySelectedPortalLink = (): void => {
-    copySelectedPortalLinkHelper(entityFetch.selectedPortal, camera.zoom, setCopyStatus);
+    copySelectedPortalLinkCommand(entityFetch.selectedPortal, camera.zoom, setCopyStatus);
   };
 
   const copySelectedPortalGuid = (): void => {
-    copySelectedPortalGuidHelper(entityFetch.selectedPortal, setCopyStatus);
+    copySelectedPortalGuidCommand(entityFetch.selectedPortal, setCopyStatus);
   };
 
   const copySelectedPortalTitle = (): void => {
-    copySelectedPortalTitleHelper(entityFetch.selectedPortal, setCopyStatus);
+    copySelectedPortalTitleCommand(entityFetch.selectedPortal, setCopyStatus);
   };
+
 
   const toggleDebugDock = (): void => {
     setDebugDockVisible((current) => {
@@ -507,9 +502,9 @@ function App(): h.JSX.Element {
     );
   };
 
-  const postIitcMessage = (message: IitcIrisMessage): void => {
+  const postIitcMessage = useCallback((message: IitcIrisMessage): void => {
     window.postMessage(message, '*');
-  };
+  }, []);
 
   const refreshScores = (): void => {
     refreshScoresCommand(postIitcMessage);
@@ -521,7 +516,7 @@ function App(): h.JSX.Element {
 
   const refreshMissions = useCallback((source: IitcIrisMissionSource = missionsState.source ?? 'view'): void => {
     refreshMissionsCommand(postIitcMessage, source);
-  }, [missionsState.source]);
+  }, [missionsState.source, postIitcMessage]);
 
   const openSelectedPortalMissions = (): void => {
     if (!entityFetch.selectedPortal) return;
@@ -606,8 +601,8 @@ function App(): h.JSX.Element {
   };
 
   const setMapView = useCallback((lat: number, lng: number, zoom = camera.zoom): void => {
-    window.postMessage(buildSetViewMessage(lat, lng, zoom), '*');
-  }, [camera.zoom]);
+    setMapViewCommand(lat, lng, zoom, postIitcMessage);
+  }, [camera.zoom, postIitcMessage]);
 
   const {
     drawToolsLinkStart,
@@ -645,69 +640,41 @@ function App(): h.JSX.Element {
     setStatus,
   });
 
-  const requestSearch = (term: string, confirmed = false): void => {
-    window.postMessage(buildSearchRequestMessage(term, confirmed), '*');
-  };
+  const requestSearch = useCallback((term: string, confirmed = false): void => {
+    requestSearchCommand(postIitcMessage, term, confirmed);
+  }, [postIitcMessage]);
 
   const clearSearch = (): void => {
-    setSearchTerm('');
-    setSearchState(EMPTY_SEARCH_STATE);
-    setActiveSearchResultIndex(0);
-    window.postMessage(buildSearchClearMessage(), '*');
+    clearSearchCommand(postIitcMessage, setSearchTerm, setSearchState, setActiveSearchResultIndex, EMPTY_SEARCH_STATE);
   };
 
-  const previewSearchResult = (result: IitcIrisSearchResult | null): void => {
-    window.postMessage(buildSearchPreviewMessage(result), '*');
-  };
+  const previewSearchResult = useCallback((result: IitcIrisSearchResult | null): void => {
+    previewSearchResultCommand(postIitcMessage, result);
+  }, [postIitcMessage]);
 
   const selectSearchResult = (result: IitcIrisSearchResult, zoom = false): void => {
-    if (result.type === 'empty') return;
-    window.postMessage(buildSearchSelectMessage(result, zoom), '*');
-    if (mapFocusMode) closeSheets();
-    else if (result.type === 'portal' || result.type === 'guid') openSheet('portal');
-  };
-
-  const moveSearchSelection = (delta: number): void => {
-    setActiveSearchResultIndex((current) => calculateNextSearchResultIndex(current, delta, searchState.results));
-  };
-
-  const selectActiveSearchResult = (zoom = false): boolean => {
-    const result = getActiveSearchResult(searchState.results, activeSearchResultIndex);
-    if (!result) return false;
-    selectSearchResult(result, zoom);
-    return true;
+    selectSearchResultCommand(result, zoom, postIitcMessage, mapFocusMode, closeSheets, openSheet);
   };
 
   const handleSearchKeyDown = (event: h.JSX.TargetedKeyboardEvent<HTMLInputElement>): void => {
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      moveSearchSelection(1);
-      return;
-    }
-    if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      moveSearchSelection(-1);
-      return;
-    }
-    if (event.key === 'Enter' && selectActiveSearchResult(event.shiftKey)) {
-      event.preventDefault();
-    }
+    // We cast event because Preact TargetedKeyboardEvent doesn't exactly match the generic signature, but it conforms.
+    handleSearchKeyDownCommand(event as unknown as {key: string; shiftKey: boolean; preventDefault(): void}, searchState.results, activeSearchResultIndex, postIitcMessage, mapFocusMode, closeSheets, openSheet, setActiveSearchResultIndex);
   };
 
   const setPortalSectionOpen = (section: PortalSectionId, open: boolean): void => {
-    setPortalSectionOpenAction(portalSections, section, open, setPortalSections);
+    setPortalSectionOpenCommand(portalSections, section, open, setPortalSections);
   };
 
   const zoomToAndShowPortal = (portalGuid?: string, latE6?: number, lngE6?: number, zoom = Math.max(camera.zoom, 15)): void => {
-    zoomToAndShowPortalAction(portalGuid, latE6, lngE6, zoom);
+    zoomToAndShowPortalCommand(portalGuid, latE6, lngE6, zoom, postIitcMessage);
   };
 
   const selectMapContextAnchor = (anchor: IitcIrisMapContextPortalAnchor): void => {
-    zoomToAndShowPortal(anchor.guid, anchor.latE6, anchor.lngE6);
+    selectMapContextAnchorCommand(anchor, Math.max(camera.zoom, 15), postIitcMessage);
   };
 
   const selectPortalByLatLng = (latE6?: number, lngE6?: number, portalGuid?: string): void => {
-    selectPortalByLatLngAction(latE6, lngE6, portalGuid, camera.zoom);
+    selectPortalByLatLngCommand(latE6, lngE6, portalGuid, camera.zoom, postIitcMessage);
   };
 
   const selectCommPortal = (latE6?: number, lngE6?: number, portalGuid?: string): void => {
@@ -715,15 +682,15 @@ function App(): h.JSX.Element {
   };
 
   const panMap = useCallback((direction: IitcIrisPanDirection): void => {
-    window.postMessage(buildPanByMessage(direction, IITC_PAN_CONTROL_OFFSET_PX), '*');
-  }, []);
+    panMapCommand(direction, IITC_PAN_CONTROL_OFFSET_PX, postIitcMessage);
+  }, [postIitcMessage]);
 
   const zoomMap = useCallback((delta: number): void => {
     setMapView(camera.lat, camera.lng, camera.zoom + delta);
   }, [camera.lat, camera.lng, camera.zoom, setMapView]);
 
   const clearPortalSelection = (): void => {
-    clearPortalSelectionAction();
+    clearPortalSelectionCommand(postIitcMessage);
   };
 
   const closeSheets = useCallback((): void => {
@@ -732,7 +699,7 @@ function App(): h.JSX.Element {
   }, [openSheet]);
 
   const focusSelectedPortal = (): void => {
-    focusSelectedPortalAction(entityFetch.selectedPortal, camera.zoom, mapFocusMode, setMapView, closeSheets);
+    focusSelectedPortalCommand(entityFetch.selectedPortal, camera.zoom, mapFocusMode, setMapView, closeSheets);
   };
 
   const canPan = camera.bounds !== null;
@@ -976,7 +943,7 @@ function App(): h.JSX.Element {
     }
     const timer = window.setTimeout(() => requestSearch(term, false), 100);
     return (): void => window.clearTimeout(timer);
-  }, [searchTerm]);
+  }, [searchTerm, requestSearch]);
 
   useEffect(() => {
     setActiveSearchResultIndex(0);
@@ -986,7 +953,7 @@ function App(): h.JSX.Element {
     if (activeSheet !== 'search') return;
     const result = searchState.results.filter((candidate) => candidate.type !== 'empty')[activeSearchResultIndex];
     previewSearchResult(result ?? null);
-  }, [activeSheet, activeSearchResultIndex, searchState.results]);
+  }, [activeSheet, activeSearchResultIndex, searchState.results, previewSearchResult]);
 
   useEffect(() => {
     if (activeSidePanel !== 'comm') return;

@@ -1,7 +1,6 @@
 # Content Command Callbacks Extraction Plan
 
-Status: planned. This is the next Phase 2 slice after merging the AGY app-surface extraction work into
-`feaure/the-refactor`.
+Status: **completed**. This extraction has been successfully executed. Checkpoints 0, 1, 2, 3, and 6 are implemented. Checkpoints 4 and 5 were deliberately scoped out and left in `content.tsx` to satisfy the plan's own stop conditions (to avoid moving `performance.now()` intent tracking and complex `setActiveSheet`/`cancelPanelRequests` ordering).
 
 ## Purpose
 
@@ -50,7 +49,7 @@ Only add more files if the implementation proves one module would become too bro
 Implement this as a sequence of small checkpoints. Stop after any checkpoint that reveals behavior uncertainty and
 record the issue in this plan before continuing.
 
-### Checkpoint 0: Baseline Inventory
+### Checkpoint 0: Baseline Inventory (Done)
 
 - Start from a clean `feaure/the-refactor` working tree.
 - List the remaining inline command callbacks in `content.tsx` and group them by public behavior, not by file size.
@@ -63,7 +62,7 @@ Expected output:
 - A short note in this plan, or in the implementation summary, naming the callback groups selected for extraction.
 - Baseline validation from the "Before implementation" commands.
 
-### Checkpoint 1: Simple Request Commands
+### Checkpoint 1: Simple Request Commands (Done)
 
 Target callbacks:
 
@@ -88,7 +87,7 @@ Expected tests:
   COMM send, and nickname append.
 - Include negative cases for empty passcode, loading passcode, empty COMM draft, and alerts COMM tab.
 
-### Checkpoint 2: Search Commands
+### Checkpoint 2: Search Commands (Done)
 
 Target callbacks:
 
@@ -113,7 +112,7 @@ Expected tests:
 - Assert Enter and Shift+Enter selection behavior.
 - Assert map-focus mode closes sheets instead of opening the portal sheet.
 
-### Checkpoint 3: Map, Context, And Portal Commands
+### Checkpoint 3: Map, Context, And Portal Commands (Done)
 
 Target callbacks:
 
@@ -149,7 +148,7 @@ Expected tests:
 - Assert selected portal copy/focus behavior for null and selected portal states.
 - Assert portal section persistence uses the updated section map.
 
-### Checkpoint 4: Sheet/Menu/Auth/Data Source Commands
+### Checkpoint 4: Sheet/Menu/Auth/Data Source Commands (Skipped - See Stop Conditions)
 
 Target callbacks:
 
@@ -183,7 +182,7 @@ Expected tests:
 - Assert auth retry routes to active side panel before search/map fallback.
 - Assert data-source fixture selection stores id and jumps to fixture coordinates.
 
-### Checkpoint 5: Layer And Highlighter Commands
+### Checkpoint 5: Layer And Highlighter Commands (Skipped - See Stop Conditions)
 
 Target callbacks:
 
@@ -202,7 +201,7 @@ Expected tests:
 - Assert highlighter selection value.
 - If timestamp handling moves, assert the posted `sentAt` behavior does not regress.
 
-### Checkpoint 6: Cleanup And Review
+### Checkpoint 6: Cleanup And Review (Done)
 
 - Remove only imports and inline callbacks made obsolete by this slice.
 - Keep panel prop names stable unless changing them removes a now-redundant local wrapper without changing behavior.
