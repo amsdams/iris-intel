@@ -21,14 +21,17 @@ import {
   type IitcIrisMapContextSelection,
 } from './selection-lifecycle';
 import {handleIitcIrisContentMessage, type CameraState, type EntityFetchState} from './content-message-adapter';
+import {createCancelPanelRequestsMessage} from './content-outbound-messages';
 import {
-  createCancelPanelRequestsMessage,
-  createMissionZoomMessage,
-  createRequestInventoryMessage,
-  createRequestMissionDetailsMessage,
-  createRequestMissionsMessage,
-  createRequestScoresMessage,
-} from './content-outbound-messages';
+  addCommNicknameCommand,
+  redeemPasscodeCommand,
+  refreshInventoryCommand,
+  refreshMissionsCommand,
+  refreshScoresCommand,
+  requestMissionDetailsCommand,
+  sendCommCommand,
+  zoomToMissionCommand,
+} from './content-command-callbacks';
 import {handleIitcIrisContentKeyDown, type IitcIrisPanDirection} from './content-keyboard-shortcuts';
 import {copyIitcIrisText} from './content-feedback';
 import {closeIitcIrisSheet, openIitcIrisSheet, toggleIitcIrisSheet} from './content-sheet-navigation';
@@ -125,13 +128,10 @@ import {
 } from './content-search-actions';
 import {useDrawToolsWorkflow} from './content-draw-tools-workflow';
 import {
-  addCommNicknameAction,
   handleCommScrollAction,
   jumpCommToLatestAction,
-  redeemPasscodeAction,
   requestCommAction,
   requestOlderCommAction,
-  sendCommAction,
 } from './content-comm-panel-actions';
 import {
   clearPortalSelectionAction,
@@ -507,16 +507,20 @@ function App(): h.JSX.Element {
     );
   };
 
+  const postIitcMessage = (message: IitcIrisMessage): void => {
+    window.postMessage(message, '*');
+  };
+
   const refreshScores = (): void => {
-    window.postMessage(createRequestScoresMessage(), '*');
+    refreshScoresCommand(postIitcMessage);
   };
 
   const refreshInventory = (): void => {
-    window.postMessage(createRequestInventoryMessage(), '*');
+    refreshInventoryCommand(postIitcMessage);
   };
 
   const refreshMissions = useCallback((source: IitcIrisMissionSource = missionsState.source ?? 'view'): void => {
-    window.postMessage(createRequestMissionsMessage(source), '*');
+    refreshMissionsCommand(postIitcMessage, source);
   }, [missionsState.source]);
 
   const openSelectedPortalMissions = (): void => {
@@ -526,23 +530,23 @@ function App(): h.JSX.Element {
   };
 
   const requestMissionDetails = (missionGuid: string): void => {
-    window.postMessage(createRequestMissionDetailsMessage(missionGuid), '*');
+    requestMissionDetailsCommand(postIitcMessage, missionGuid);
   };
 
   const zoomToMission = (): void => {
-    window.postMessage(createMissionZoomMessage(), '*');
+    zoomToMissionCommand(postIitcMessage);
   };
 
   const redeemPasscode = (): void => {
-    redeemPasscodeAction(passcodeState, passcodeDraft, setPasscodeDraft);
+    redeemPasscodeCommand(passcodeState, passcodeDraft, setPasscodeDraft, postIitcMessage);
   };
 
   const sendComm = (): void => {
-    sendCommAction(commState.tab, commDraft, setCommDraft);
+    sendCommCommand(commState.tab, commDraft, setCommDraft, postIitcMessage);
   };
 
   const addCommNickname = (nickname: string): void => {
-    setCommDraft((current) => addCommNicknameAction(current, nickname));
+    setCommDraft((current) => addCommNicknameCommand(current, nickname));
   };
 
   const openIntelLogin = (): void => {
@@ -573,7 +577,7 @@ function App(): h.JSX.Element {
       passcodeDraft,
       passcodeState,
       retryPasscode: (passcode): void => {
-        redeemPasscodeAction(passcodeState, passcode, setPasscodeDraft);
+        redeemPasscodeCommand(passcodeState, passcode, setPasscodeDraft, postIitcMessage);
       },
       retryMapFetch: (): void => {
         window.postMessage({
