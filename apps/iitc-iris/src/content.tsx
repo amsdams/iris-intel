@@ -623,6 +623,7 @@ function App(): h.JSX.Element {
     drawToolsItems,
     selectedPortal: entityFetch.selectedPortal,
     mapContext,
+    cameraCenter: {lat: camera.lat, lng: camera.lng},
     cameraZoom: camera.zoom,
     setMapView,
     setStatus,

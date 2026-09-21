@@ -197,12 +197,18 @@ describe('content-draw-tools-panel-actions', () => {
 
   it('centers map on draw tools item', () => {
     const setMapView = vi.fn();
+    const postAction = vi.fn();
     centerDrawToolsItemAction(
       {type: 'marker', storageIndex: 0, latLng: {lat: 52.3, lng: 4.9}, color: '#00f'},
       12,
-      setMapView
+      setMapView,
+      postAction
     );
     expect(setMapView).toHaveBeenCalledWith(52.3, 4.9, 15);
+    expect(postAction).toHaveBeenCalledWith({
+      drawToolsAction: 'highlightIndex',
+      drawToolsIndex: 0,
+    });
   });
 
   it('imports valid draw tools items payload', () => {

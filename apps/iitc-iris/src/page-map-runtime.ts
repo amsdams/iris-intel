@@ -154,6 +154,7 @@ const PORTAL_MISSIONS_CACHE_STORAGE_KEY = 'iitc-iris:missions:portal-cache';
 const DRAW_TOOLS_LINE_WEIGHT = 4;
 const DRAW_TOOLS_LINE_OPACITY = 0.5;
 const DRAW_TOOLS_CROSSING_COLOR = '#ff4d4d';
+const DRAW_TOOLS_HIGHLIGHT_COLOR = '#ffd84d';
 const MISSION_DETAILS_CACHE_STORAGE_MAX_CHARS = 2_000_000;
 const PORTAL_MISSIONS_CACHE_STORAGE_MAX_CHARS = 1_000_000;
 const IITC_IRIS_ASSET_BASE_URL = ((): string => {
@@ -205,6 +206,7 @@ const mapDataCache = new IitcDataCache<IitcMapTilePayload>();
 let selectedPortalGuid: string | undefined;
 let selectedPortal: IitcIrisSelectedPortal | null = null;
 let selectedMapObject: {type: 'link' | 'field'; guid: string} | null = null;
+let highlightedDrawToolsIndex: number | undefined;
 let pendingPortalSelection: {guid?: string; lat?: number; lng?: number} | null = null;
 let latestPortalDetails: IitcIrisPortalDetailsState | null = null;
 let suppressPortalClickUntil = 0;
@@ -1171,7 +1173,14 @@ function applyIitcDrawToolsAction(message: IitcIrisMessage): void {
     return;
   }
 
+  if (action === 'highlightIndex') {
+    highlightedDrawToolsIndex = message.drawToolsIndex;
+    renderIitcDrawTools();
+    return;
+  }
+
   if (action === 'clear') {
+    highlightedDrawToolsIndex = undefined;
     saveIitcDrawToolsItems(message.drawToolsItemType
       ? loadIitcDrawToolsItems().filter((item) => item.type !== message.drawToolsItemType)
       : []);
@@ -1181,6 +1190,7 @@ function applyIitcDrawToolsAction(message: IitcIrisMessage): void {
   }
 
   if (action === 'deleteAt') {
+    highlightedDrawToolsIndex = undefined;
     if (message.drawToolsLatLngs?.[0]) {
       deleteIitcDrawToolsItemAt(message.drawToolsLatLngs[0].lat, message.drawToolsLatLngs[0].lng, message.drawToolsItemType);
     }
@@ -1188,6 +1198,7 @@ function applyIitcDrawToolsAction(message: IitcIrisMessage): void {
   }
 
   if (action === 'deleteIndex') {
+    highlightedDrawToolsIndex = undefined;
     const items = loadIitcDrawToolsItems();
     if (message.drawToolsIndex !== undefined && items[message.drawToolsIndex]) {
       saveIitcDrawToolsItems(items.filter((_, index) => index !== message.drawToolsIndex));
@@ -1211,6 +1222,7 @@ function applyIitcDrawToolsAction(message: IitcIrisMessage): void {
   }
 
   if (action === 'undo') {
+    highlightedDrawToolsIndex = undefined;
     const items = loadIitcDrawToolsItems();
     const index = [...items].reverse().findIndex((item) => !message.drawToolsItemType || item.type === message.drawToolsItemType);
     if (index >= 0) {
@@ -1223,6 +1235,7 @@ function applyIitcDrawToolsAction(message: IitcIrisMessage): void {
   }
 
   if (action === 'import') {
+    highlightedDrawToolsIndex = undefined;
     try {
       const importedItems = parseIitcDrawToolsLayer(message.drawToolsJson ?? '').filter((item) => item.type === 'polyline' || item.type === 'marker');
       const nextItems = importIitcDrawToolsItems(loadIitcDrawToolsItems(), importedItems, {merge: message.drawToolsMerge !== false});
@@ -1236,6 +1249,7 @@ function applyIitcDrawToolsAction(message: IitcIrisMessage): void {
   }
 
   if (action === 'snapToPortals') {
+    highlightedDrawToolsIndex = undefined;
     snapIitcDrawToolsToPortals();
     return;
   }
@@ -1293,6 +1307,17 @@ function createIitcDrawToolsPolyline(item: IitcDrawToolsPolyline): LeafletLayer 
   });
 }
 
+function createHighlightedIitcDrawToolsPolyline(item: IitcDrawToolsPolyline): LeafletLayer {
+  return createIitcGeodesicPolyline(item.latLngs.map((latLng) => [latLng.lat, latLng.lng]), {
+    pane: getLayerPane('drawnItems'),
+    color: DRAW_TOOLS_HIGHLIGHT_COLOR,
+    weight: DRAW_TOOLS_LINE_WEIGHT + 5,
+    opacity: 0.95,
+    fill: false,
+    interactive: false,
+  });
+}
+
 function createIitcDrawToolsCrossingLink(link: IitcIrisRenderLink): LeafletLayer {
   return createIitcGeodesicPolyline([toLatLng(link.oLatE6, link.oLngE6), toLatLng(link.dLatE6, link.dLngE6)], {
     pane: getLayerPane('drawnItems'),
@@ -1345,11 +1370,25 @@ function createIitcDrawToolsMarker(item: IitcDrawToolsMarker): LeafletLayer {
   });
 }
 
+function createHighlightedIitcDrawToolsMarker(item: IitcDrawToolsMarker): LeafletLayer {
+  return L.circleMarker([item.latLng.lat, item.latLng.lng], {
+    pane: getLayerPane('drawnItems'),
+    radius: 16,
+    color: DRAW_TOOLS_HIGHLIGHT_COLOR,
+    weight: 3,
+    opacity: 0.95,
+    fill: false,
+    interactive: false,
+  });
+}
+
 function renderIitcDrawTools(): void {
   const layers = ensureLayers();
   clearRenderedLayers(layers.drawnItems);
   const items = loadIitcDrawToolsItems();
-  for (const item of items) {
+  let highlightedItem: IitcDrawToolsItem | undefined;
+  for (const [index, item] of items.entries()) {
+    if (highlightedDrawToolsIndex === index) highlightedItem = item;
     if (item.type === 'polyline' && layerSettings.drawnLinks) {
       addRenderedLayer(layers.drawnItems, createIitcDrawToolsPolyline(item));
     } else if (item.type === 'marker' && layerSettings.drawnMarkers) {
@@ -1357,6 +1396,11 @@ function renderIitcDrawTools(): void {
     }
   }
   renderIitcDrawToolsCrossings(items);
+  if (highlightedItem?.type === 'polyline' && layerSettings.drawnLinks) {
+    addRenderedLayer(layers.drawnItems, createHighlightedIitcDrawToolsPolyline(highlightedItem));
+  } else if (highlightedItem?.type === 'marker' && layerSettings.drawnMarkers) {
+    addRenderedLayer(layers.drawnItems, createHighlightedIitcDrawToolsMarker(highlightedItem));
+  }
 }
 
 function clearAllRenderedLayers(): void {

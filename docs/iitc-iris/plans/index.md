@@ -140,6 +140,12 @@ surface smaller and easier to reason about.
 
 - Draw Tools refactoring: extract only within the existing Draw Tools v1 boundaries unless the pass explicitly ports
   more IITC Draw Tools behavior.
+- Source directory layout migration: move files into feature/domain folders only after Phase 2 has made the ownership
+  boundaries obvious. Prefer folders such as `comm`, `search`, `portals`, `missions`, `draw-tools`, `map`, `auth`, and
+  `shell` over broad layer buckets such as generic `components`, `hooks`, or `utils`. This must be a behavior-preserving
+  move-only pass: no logic changes, no UI changes, no storage/message id changes, and no facade contract changes. Move
+  one feature at a time, keep tests green after each move, and do not move `content.tsx` until the content shell is
+  smaller and stable enough that its final ownership is clear.
 - Map lifecycle/state cleanup: adjust or extract only around validated IITC `map_data_request` behavior and documented
   watch items; avoid a general all-data-flow rewrite.
 - Entity abstraction and global store: revisit only after repeated concrete patterns from IITC-named facades justify the

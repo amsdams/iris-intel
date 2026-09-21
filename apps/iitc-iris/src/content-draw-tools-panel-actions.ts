@@ -134,10 +134,15 @@ export function clearDrawToolsItemsAction(
 export function centerDrawToolsItemAction(
   item: IitcIrisDrawToolsItem,
   cameraZoom: number,
-  setMapView: (lat: number, lng: number, zoom?: number) => void
+  setMapView: (lat: number, lng: number, zoom?: number) => void,
+  postAction: (message: Omit<IitcIrisMessage, 'type'>) => void,
 ): void {
   const center = getDrawToolsItemCenter(item);
   setMapView(center.lat, center.lng, Math.max(cameraZoom, 15));
+  postAction({
+    drawToolsAction: 'highlightIndex',
+    drawToolsIndex: item.storageIndex,
+  });
 }
 
 export function importDrawToolsItemsAction(

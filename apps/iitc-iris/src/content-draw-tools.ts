@@ -36,6 +36,30 @@ export function getDrawToolsItemCenter(item: IitcIrisDrawToolsItem): IitcIrisDra
   };
 }
 
+export function getDrawToolsItemDistanceMeters(
+  item: IitcIrisDrawToolsItem,
+  origin: IitcIrisDrawToolsLatLng,
+): number {
+  const center = getDrawToolsItemCenter(item);
+  const toRadians = (value: number): number => value * Math.PI / 180;
+  const radiusMeters = 6_371_000;
+  const lat1 = toRadians(origin.lat);
+  const lat2 = toRadians(center.lat);
+  const deltaLat = toRadians(center.lat - origin.lat);
+  const deltaLng = toRadians(center.lng - origin.lng);
+  const haversine = Math.sin(deltaLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) ** 2;
+  return radiusMeters * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+}
+
+export function sortDrawToolsItemsByDistance<T extends IitcIrisDrawToolsItem>(
+  items: readonly T[],
+  origin: IitcIrisDrawToolsLatLng,
+): T[] {
+  return [...items].sort((left, right) => (
+    getDrawToolsItemDistanceMeters(left, origin) - getDrawToolsItemDistanceMeters(right, origin)
+  ));
+}
+
 export function getDrawToolsItemLabel(item: IitcIrisDrawToolsItem, displayIndex: number): string {
   if (item.type === 'marker') return item.label ?? `Marker ${displayIndex + 1}`;
   return `Link ${displayIndex + 1}`;

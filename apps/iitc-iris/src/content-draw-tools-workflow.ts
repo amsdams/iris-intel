@@ -1,7 +1,7 @@
 import {useCallback, useEffect, useState} from 'preact/hooks';
 import {copyIitcIrisText} from './content-feedback';
 import {getDrawToolsTargetFromContext} from './content-map-context';
-import {filterAndSerializeDrawToolsItems, type DrawToolsTarget} from './content-draw-tools';
+import {filterAndSerializeDrawToolsItems, sortDrawToolsItemsByDistance, type DrawToolsTarget} from './content-draw-tools';
 import {
   addDrawToolsLinkPointAction,
   addDrawToolsMarkerAction,
@@ -21,6 +21,7 @@ export interface UseDrawToolsWorkflowParams {
   drawToolsItems: IitcIrisDrawToolsItem[];
   selectedPortal: {latE6: number; lngE6: number; title?: string; guid: string} | null;
   mapContext: {lat: number; lng: number} | null;
+  cameraCenter: IitcIrisDrawToolsLatLng;
   cameraZoom: number;
   setMapView: (lat: number, lng: number, zoom?: number) => void;
   setStatus: (status: string) => void;
@@ -72,19 +73,22 @@ function postDrawToolsAction(message: Omit<IitcIrisMessage, 'type'>): void {
 export function getDrawToolsWorkflowDerivedState(
   drawToolsItems: IitcIrisDrawToolsItem[],
   selectedPortal: UseDrawToolsWorkflowParams['selectedPortal'],
-  mapContext: UseDrawToolsWorkflowParams['mapContext']
+  mapContext: UseDrawToolsWorkflowParams['mapContext'],
+  cameraCenter: UseDrawToolsWorkflowParams['cameraCenter'],
 ): DrawToolsWorkflowDerivedState {
   const drawToolsTarget = getDrawToolsTargetFromContext(selectedPortal, mapContext);
+  const linkItems = drawToolsItems.filter((item): item is Extract<IitcIrisDrawToolsItem, {type: 'polyline'}> => item.type === 'polyline');
+  const markerItems = drawToolsItems.filter((item): item is Extract<IitcIrisDrawToolsItem, {type: 'marker'}> => item.type === 'marker');
   return {
     drawToolsTarget,
     drawToolsTargetDefaultLabel: drawToolsTarget?.label ?? '',
-    drawToolsLinkItems: drawToolsItems.filter((item): item is Extract<IitcIrisDrawToolsItem, {type: 'polyline'}> => item.type === 'polyline'),
-    drawToolsMarkerItems: drawToolsItems.filter((item): item is Extract<IitcIrisDrawToolsItem, {type: 'marker'}> => item.type === 'marker'),
+    drawToolsLinkItems: sortDrawToolsItemsByDistance(linkItems, cameraCenter),
+    drawToolsMarkerItems: sortDrawToolsItemsByDistance(markerItems, cameraCenter),
   };
 }
 
 export function useDrawToolsWorkflow(params: UseDrawToolsWorkflowParams): UseDrawToolsWorkflowResult {
-  const {drawToolsItems, selectedPortal, mapContext, cameraZoom, setMapView, setStatus} = params;
+  const {drawToolsItems, selectedPortal, mapContext, cameraCenter, cameraZoom, setMapView, setStatus} = params;
 
   const [drawToolsLinkStart, setDrawToolsLinkStart] = useState<IitcIrisDrawToolsLatLng | null>(null);
   const [drawToolsImportText, setDrawToolsImportText] = useState('');
@@ -99,7 +103,7 @@ export function useDrawToolsWorkflow(params: UseDrawToolsWorkflowParams): UseDra
     drawToolsTargetDefaultLabel,
     drawToolsLinkItems,
     drawToolsMarkerItems,
-  } = getDrawToolsWorkflowDerivedState(drawToolsItems, selectedPortal, mapContext);
+  } = getDrawToolsWorkflowDerivedState(drawToolsItems, selectedPortal, mapContext, cameraCenter);
 
   useEffect(() => {
     setDrawToolsMarkerLabel(drawToolsTargetDefaultLabel);
@@ -144,7 +148,7 @@ export function useDrawToolsWorkflow(params: UseDrawToolsWorkflowParams): UseDra
   }, [drawToolsClearConfirm, setStatus]);
 
   const centerDrawToolsItem = useCallback((item: IitcIrisDrawToolsItem): void => {
-    centerDrawToolsItemAction(item, cameraZoom, setMapView);
+    centerDrawToolsItemAction(item, cameraZoom, setMapView, postDrawToolsAction);
   }, [cameraZoom, setMapView]);
 
   const copyDrawToolsItems = useCallback((itemType?: 'polyline' | 'marker'): void => {

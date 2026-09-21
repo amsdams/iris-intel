@@ -2,10 +2,12 @@ import {describe, expect, it} from 'vitest';
 import {
   filterAndSerializeDrawToolsItems,
   getDrawToolsItemCenter,
+  getDrawToolsItemDistanceMeters,
   getDrawToolsItemDetail,
   getDrawToolsItemLabel,
   isSupportedDrawToolsItem,
   prepareDrawToolsImport,
+  sortDrawToolsItemsByDistance,
   stripDrawToolsStorageIndex,
 } from './content-draw-tools';
 import type {IitcIrisDrawToolsItem} from './messages';
@@ -40,6 +42,14 @@ describe('IITC IRIS Draw Tools helpers', () => {
   it('computes item centers used by map centering actions', () => {
     expect(getDrawToolsItemCenter(marker)).toEqual({lat: 52.1, lng: 4.2});
     expect(getDrawToolsItemCenter(link)).toEqual({lat: 53, lng: 5});
+  });
+
+  it('sorts items by distance from an origin without changing storage indices', () => {
+    const near = {...marker, storageIndex: 8, latLng: {lat: 52.11, lng: 4.21}};
+    const far = {...marker, storageIndex: 9, latLng: {lat: 53, lng: 5}};
+
+    expect(getDrawToolsItemDistanceMeters(near, {lat: 52.1, lng: 4.2})).toBeLessThan(2_000);
+    expect(sortDrawToolsItemsByDistance([far, near], {lat: 52.1, lng: 4.2}).map((item) => item.storageIndex)).toEqual([8, 9]);
   });
 
   it('removes app-only storage indices before exporting IITC Draw Tools JSON', () => {
