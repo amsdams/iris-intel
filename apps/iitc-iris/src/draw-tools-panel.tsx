@@ -4,8 +4,10 @@ import {
   DRAW_TOOLS_MARKER_PRESETS,
   getDrawToolsItemDetail,
   getDrawToolsItemLabel,
+  type DrawToolsMarkerPortalInfo,
   type DrawToolsTarget,
 } from './content-draw-tools';
+import {formatTeamClass, formatTeamShortLabel, getPortalCountsLevelColor} from './content-portal-analysis';
 import type {IitcIrisDrawToolsItem, IitcIrisDrawToolsLatLng} from './messages';
 
 type DrawToolsItemType = 'polyline' | 'marker';
@@ -21,6 +23,7 @@ export interface IitcIrisDrawToolsPanelProps {
   linkStart: IitcIrisDrawToolsLatLng | null;
   markerItems: Extract<IitcIrisDrawToolsItem, {type: 'marker'}>[];
   markerLabel: string;
+  markerPortalInfoByStorageIndex: Record<number, DrawToolsMarkerPortalInfo>;
   mode: 'links' | 'markers';
   target: DrawToolsTarget | null;
   addMarker: (color: string) => void;
@@ -59,6 +62,10 @@ function IitcIrisDrawToolsImport(props: Pick<IitcIrisDrawToolsPanelProps, 'impor
       {props.importStatus && <span className="iitc-iris-map-control-status">{props.importStatus}</span>}
     </div>
   </div>;
+}
+
+function getLevelChipTextColor(level: number): string {
+  return level === 0 || level >= 4 ? '#ffffff' : '#111111';
 }
 
 export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JSX.Element {
@@ -150,39 +157,50 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
       </button>
     </div>
     {props.markerItems.length > 0 && <div className="iitc-iris-draw-tools-list" aria-label="Drawn markers">
-      {props.markerItems.map((item, index) => (
-        <div className="iitc-iris-draw-tools-list-item" key={`marker-${item.storageIndex}`}>
-          <span className="iitc-iris-draw-tools-marker-dot" style={{background: item.color ?? DRAW_TOOLS_DEFAULT_COLOR}} />
-          <span className="iitc-iris-draw-tools-list-label">
-            {props.editingMarkerIndex === item.storageIndex ? (
-              <input
-                className="iitc-iris-draw-tools-label-input"
-                type="text"
-                defaultValue={item.label ?? ''}
-                placeholder={getDrawToolsItemLabel(item, index)}
-                aria-label={`Marker ${index + 1} label`}
-                autoFocus
-                onBlur={(event) => props.saveMarkerLabel(item, event.currentTarget.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') event.currentTarget.blur();
-                  if (event.key === 'Escape') {
-                    event.currentTarget.value = item.label ?? '';
-                    props.setEditingMarkerIndex(null);
-                  }
-                }}
-              />
-            ) : (
-              <b>{getDrawToolsItemLabel(item, index)}</b>
-            )}
-            <small>{getDrawToolsItemDetail(item)}</small>
-          </span>
-          <span className="iitc-iris-draw-tools-list-actions">
-            <button className="iitc-iris-portal-action" type="button" onClick={() => props.setEditingMarkerIndex(item.storageIndex)} title="Edit this marker label">Edit</button>
-            <button className="iitc-iris-portal-action" type="button" onClick={() => props.centerItem(item)} title="Center this drawn marker">Center</button>
-            <button className="iitc-iris-portal-action" type="button" onClick={() => props.deleteItem(item)} title="Delete this drawn marker">Del</button>
-          </span>
-        </div>
-      ))}
+      {props.markerItems.map((item, index) => {
+        const portalInfo = props.markerPortalInfoByStorageIndex[item.storageIndex];
+        return (
+          <div className="iitc-iris-draw-tools-list-item" key={`marker-${item.storageIndex}`}>
+            <span className="iitc-iris-draw-tools-marker-dot" style={{background: item.color ?? DRAW_TOOLS_DEFAULT_COLOR}} />
+            <span className="iitc-iris-draw-tools-list-label">
+              {props.editingMarkerIndex === item.storageIndex ? (
+                <input
+                  className="iitc-iris-draw-tools-label-input"
+                  type="text"
+                  defaultValue={item.label ?? ''}
+                  placeholder={getDrawToolsItemLabel(item, index)}
+                  aria-label={`Marker ${index + 1} label`}
+                  autoFocus
+                  onBlur={(event) => props.saveMarkerLabel(item, event.currentTarget.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') event.currentTarget.blur();
+                    if (event.key === 'Escape') {
+                      event.currentTarget.value = item.label ?? '';
+                      props.setEditingMarkerIndex(null);
+                    }
+                  }}
+                />
+              ) : (
+                <b title={portalInfo?.title}>{getDrawToolsItemLabel(item, index)}</b>
+              )}
+              <small className="iitc-iris-draw-tools-marker-detail" title={portalInfo?.title}>
+                <span className="iitc-iris-draw-tools-marker-coords">{getDrawToolsItemDetail(item)}</span>
+                {portalInfo && (
+                  <span className="iitc-iris-draw-tools-marker-chips" aria-label={`Portal ${portalInfo.title}, level ${portalInfo.level}, ${formatTeamShortLabel(portalInfo.team)}`}>
+                    <span className="iitc-iris-draw-tools-level-chip" style={{background: getPortalCountsLevelColor(portalInfo.level), color: getLevelChipTextColor(portalInfo.level)}}>{`L${portalInfo.level}`}</span>
+                    <span className={`iitc-iris-draw-tools-team-chip ${formatTeamClass(portalInfo.team)}`}>{formatTeamShortLabel(portalInfo.team)}</span>
+                  </span>
+                )}
+              </small>
+            </span>
+            <span className="iitc-iris-draw-tools-list-actions">
+              <button className="iitc-iris-portal-action" type="button" onClick={() => props.setEditingMarkerIndex(item.storageIndex)} title="Edit this marker label">Edit</button>
+              <button className="iitc-iris-portal-action" type="button" onClick={() => props.centerItem(item)} title="Center this drawn marker">Center</button>
+              <button className="iitc-iris-portal-action" type="button" onClick={() => props.deleteItem(item)} title="Delete this drawn marker">Del</button>
+            </span>
+          </div>
+        );
+      })}
     </div>}
     <IitcIrisDrawToolsImport {...props} />
   </div>;

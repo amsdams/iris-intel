@@ -5,6 +5,7 @@ import {
   getDrawToolsItemDistanceMeters,
   getDrawToolsItemDetail,
   getDrawToolsItemLabel,
+  getDrawToolsMarkerPortalInfo,
   isSupportedDrawToolsItem,
   prepareDrawToolsImport,
   sortDrawToolsItemsByDistance,
@@ -50,6 +51,30 @@ describe('IITC IRIS Draw Tools helpers', () => {
 
     expect(getDrawToolsItemDistanceMeters(near, {lat: 52.1, lng: 4.2})).toBeLessThan(2_000);
     expect(sortDrawToolsItemsByDistance([far, near], {lat: 52.1, lng: 4.2}).map((item) => item.storageIndex)).toEqual([8, 9]);
+  });
+
+  it('matches marker portal metadata by E6 coordinates', () => {
+    expect(getDrawToolsMarkerPortalInfo(marker, [{
+      guid: 'portal-1',
+      title: 'Portal One',
+      team: 'R',
+      latE6: 52100000,
+      lngE6: 4200000,
+      level: 6,
+      health: 100,
+      resCount: 8,
+      links: {in: 0, out: 0, count: 0},
+      fields: 0,
+      ap: {friendlyAp: 0, enemyAp: 0, destroyAp: 0, destroyResoAp: 0, captureAp: 0},
+      history: {visited: false, captured: false, scoutControlled: false},
+      mission: false,
+      ornaments: 0,
+      artifacts: 0,
+    }])).toEqual({
+      title: 'Portal One',
+      team: 'R',
+      level: 6,
+    });
   });
 
   it('removes app-only storage indices before exporting IITC Draw Tools JSON', () => {

@@ -10,7 +10,7 @@ import {type IitcIrisSheetId} from './menu-registry';
 import {type IitcIrisPanDirection} from './content-keyboard-shortcuts';
 import {type IitcIrisMapContextSelection} from './selection-lifecycle';
 import {type IitcIrisBooleanLayerSettingKey} from './layer-registry';
-import {type DrawToolsTarget} from './content-draw-tools';
+import {type DrawToolsMarkerPortalInfo, type DrawToolsTarget} from './content-draw-tools';
 import {
   type PortalAnalysisListSummary,
   type PortalsListLevelFilter,
@@ -58,6 +58,7 @@ export interface IitcIrisMapControlsPanelContainerProps {
   drawToolsLinkStart: IitcIrisDrawToolsLatLng | null;
   drawToolsMarkerItems: Extract<IitcIrisDrawToolsItem, {type: 'marker'}>[];
   drawToolsMarkerLabel: string;
+  drawToolsMarkerPortalInfoByStorageIndex: Record<number, DrawToolsMarkerPortalInfo>;
   drawToolsTarget: DrawToolsTarget | null;
   addDrawToolsLinkPoint: () => void;
   addDrawToolsMarker: (color: string) => void;
@@ -149,6 +150,7 @@ export function IitcIrisMapControlsPanelContainer(props: IitcIrisMapControlsPane
     drawToolsLinkStart,
     drawToolsMarkerItems,
     drawToolsMarkerLabel,
+    drawToolsMarkerPortalInfoByStorageIndex,
     drawToolsTarget,
     addDrawToolsLinkPoint,
     addDrawToolsMarker,
@@ -255,6 +257,7 @@ export function IitcIrisMapControlsPanelContainer(props: IitcIrisMapControlsPane
           linkStart={drawToolsLinkStart}
           markerItems={drawToolsMarkerItems}
           markerLabel={drawToolsMarkerLabel}
+          markerPortalInfoByStorageIndex={drawToolsMarkerPortalInfoByStorageIndex}
           mode="links"
           target={drawToolsTarget}
           addLinkPoint={addDrawToolsLinkPoint}
@@ -286,6 +289,7 @@ export function IitcIrisMapControlsPanelContainer(props: IitcIrisMapControlsPane
           linkStart={drawToolsLinkStart}
           markerItems={drawToolsMarkerItems}
           markerLabel={drawToolsMarkerLabel}
+          markerPortalInfoByStorageIndex={drawToolsMarkerPortalInfoByStorageIndex}
           mode="markers"
           target={drawToolsTarget}
           addLinkPoint={addDrawToolsLinkPoint}

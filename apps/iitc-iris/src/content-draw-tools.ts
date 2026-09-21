@@ -1,6 +1,7 @@
 import {
   parseIitcDrawToolsLayer,
   serializeIitcDrawToolsLayer,
+  type IitcPortalsListEntry,
   type IitcDrawToolsItem,
 } from '@iris/iitc-core';
 import type {IitcIrisDrawToolsItem, IitcIrisDrawToolsLatLng} from './messages';
@@ -9,6 +10,12 @@ export interface DrawToolsTarget {
   lat: number;
   lng: number;
   label: string;
+}
+
+export interface DrawToolsMarkerPortalInfo {
+  title: string;
+  team: IitcPortalsListEntry['team'];
+  level: number;
 }
 
 export const DRAW_TOOLS_MARKER_PRESETS = [
@@ -58,6 +65,42 @@ export function sortDrawToolsItemsByDistance<T extends IitcIrisDrawToolsItem>(
   return [...items].sort((left, right) => (
     getDrawToolsItemDistanceMeters(left, origin) - getDrawToolsItemDistanceMeters(right, origin)
   ));
+}
+
+function toLatLngE6(latLng: IitcIrisDrawToolsLatLng): {latE6: number; lngE6: number} {
+  return {
+    latE6: Math.round(latLng.lat * 1_000_000),
+    lngE6: Math.round(latLng.lng * 1_000_000),
+  };
+}
+
+export function getDrawToolsMarkerPortalInfo(
+  marker: Extract<IitcIrisDrawToolsItem, {type: 'marker'}>,
+  portals: readonly IitcPortalsListEntry[],
+): DrawToolsMarkerPortalInfo | null {
+  const markerLatLng = toLatLngE6(marker.latLng);
+  const portal = portals.find((candidate) => (
+    candidate.latE6 === markerLatLng.latE6 &&
+    candidate.lngE6 === markerLatLng.lngE6
+  ));
+  if (!portal) return null;
+  return {
+    title: portal.title,
+    team: portal.team,
+    level: portal.level,
+  };
+}
+
+export function getDrawToolsMarkerPortalInfoByStorageIndex(
+  markers: readonly Extract<IitcIrisDrawToolsItem, {type: 'marker'}>[],
+  portals: readonly IitcPortalsListEntry[],
+): Record<number, DrawToolsMarkerPortalInfo> {
+  const infoByStorageIndex: Record<number, DrawToolsMarkerPortalInfo> = {};
+  for (const marker of markers) {
+    const info = getDrawToolsMarkerPortalInfo(marker, portals);
+    if (info) infoByStorageIndex[marker.storageIndex] = info;
+  }
+  return infoByStorageIndex;
 }
 
 export function getDrawToolsItemLabel(item: IitcIrisDrawToolsItem, displayIndex: number): string {

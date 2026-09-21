@@ -603,6 +603,7 @@ function App(): h.JSX.Element {
     drawToolsTarget,
     drawToolsLinkItems,
     drawToolsMarkerItems,
+    drawToolsMarkerPortalInfoByStorageIndex,
     setDrawToolsLinkStart,
     setDrawToolsImportText,
     setDrawToolsImportMerge,
@@ -625,6 +626,7 @@ function App(): h.JSX.Element {
     mapContext,
     cameraCenter: {lat: camera.lat, lng: camera.lng},
     cameraZoom: camera.zoom,
+    portalAnalysis,
     setMapView,
     setStatus,
   });
@@ -1044,6 +1046,7 @@ function App(): h.JSX.Element {
         drawToolsLinkStart={drawToolsLinkStart}
         drawToolsMarkerItems={drawToolsMarkerItems}
         drawToolsMarkerLabel={drawToolsMarkerLabel}
+        drawToolsMarkerPortalInfoByStorageIndex={drawToolsMarkerPortalInfoByStorageIndex}
         drawToolsTarget={drawToolsTarget}
         addDrawToolsLinkPoint={addDrawToolsLinkPoint}
         addDrawToolsMarker={addDrawToolsMarker}
