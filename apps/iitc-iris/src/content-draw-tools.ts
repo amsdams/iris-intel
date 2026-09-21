@@ -20,6 +20,11 @@ export interface DrawToolsMarkerPortalInfo {
 
 export type DrawToolsMarkerPortalInfoCache = Record<string, DrawToolsMarkerPortalInfo>;
 
+export interface DrawToolsLinkEndpointLabels {
+  from: string;
+  to: string;
+}
+
 export const DRAW_TOOLS_MARKER_PRESETS = [
   {id: 'white', color: '#ffffff', title: 'Add white marker'},
   {id: 'red', color: '#c34a4a', title: 'Add red marker'},
@@ -80,6 +85,10 @@ function formatDrawToolsLatLngCacheKey(latE6: number, lngE6: number): string {
   return `${latE6},${lngE6}`;
 }
 
+function formatDrawToolsLatLngLabel(latLng: IitcIrisDrawToolsLatLng): string {
+  return `${latLng.lat.toFixed(6)}, ${latLng.lng.toFixed(6)}`;
+}
+
 export function getDrawToolsMarkerPortalInfoCacheKey(marker: Extract<IitcIrisDrawToolsItem, {type: 'marker'}>): string {
   const markerLatLng = toLatLngE6(marker.latLng);
   return formatDrawToolsLatLngCacheKey(markerLatLng.latE6, markerLatLng.lngE6);
@@ -91,6 +100,19 @@ function getDrawToolsPortalInfo(portal: IitcPortalsListEntry): DrawToolsMarkerPo
     team: portal.team,
     level: portal.level,
   };
+}
+
+function getDrawToolsPortalInfoForLatLng(
+  latLng: IitcIrisDrawToolsLatLng,
+  portals: readonly IitcPortalsListEntry[],
+  cache: DrawToolsMarkerPortalInfoCache,
+): DrawToolsMarkerPortalInfo | null {
+  const e6 = toLatLngE6(latLng);
+  const portal = portals.find((candidate) => (
+    candidate.latE6 === e6.latE6 &&
+    candidate.lngE6 === e6.lngE6
+  ));
+  return portal ? getDrawToolsPortalInfo(portal) : cache[formatDrawToolsLatLngCacheKey(e6.latE6, e6.lngE6)] ?? null;
 }
 
 export function mergeDrawToolsMarkerPortalInfoCache(
@@ -115,12 +137,7 @@ export function getDrawToolsMarkerPortalInfo(
   portals: readonly IitcPortalsListEntry[],
   cache: DrawToolsMarkerPortalInfoCache = {},
 ): DrawToolsMarkerPortalInfo | null {
-  const markerLatLng = toLatLngE6(marker.latLng);
-  const portal = portals.find((candidate) => (
-    candidate.latE6 === markerLatLng.latE6 &&
-    candidate.lngE6 === markerLatLng.lngE6
-  ));
-  return portal ? getDrawToolsPortalInfo(portal) : cache[formatDrawToolsLatLngCacheKey(markerLatLng.latE6, markerLatLng.lngE6)] ?? null;
+  return getDrawToolsPortalInfoForLatLng(marker.latLng, portals, cache);
 }
 
 export function getDrawToolsMarkerPortalInfoByStorageIndex(
@@ -134,6 +151,33 @@ export function getDrawToolsMarkerPortalInfoByStorageIndex(
     if (info) infoByStorageIndex[marker.storageIndex] = info;
   }
   return infoByStorageIndex;
+}
+
+export function getDrawToolsLinkEndpointLabels(
+  link: Extract<IitcIrisDrawToolsItem, {type: 'polyline'}>,
+  portals: readonly IitcPortalsListEntry[],
+  cache: DrawToolsMarkerPortalInfoCache = {},
+): DrawToolsLinkEndpointLabels {
+  const start = link.latLngs[0];
+  const end = link.latLngs[link.latLngs.length - 1];
+  const fromInfo = getDrawToolsPortalInfoForLatLng(start, portals, cache);
+  const toInfo = getDrawToolsPortalInfoForLatLng(end, portals, cache);
+  return {
+    from: fromInfo?.title ?? formatDrawToolsLatLngLabel(start),
+    to: toInfo?.title ?? formatDrawToolsLatLngLabel(end),
+  };
+}
+
+export function getDrawToolsLinkEndpointLabelsByStorageIndex(
+  links: readonly Extract<IitcIrisDrawToolsItem, {type: 'polyline'}>[],
+  portals: readonly IitcPortalsListEntry[],
+  cache: DrawToolsMarkerPortalInfoCache = {},
+): Record<number, DrawToolsLinkEndpointLabels> {
+  const labelsByStorageIndex: Record<number, DrawToolsLinkEndpointLabels> = {};
+  for (const link of links) {
+    labelsByStorageIndex[link.storageIndex] = getDrawToolsLinkEndpointLabels(link, portals, cache);
+  }
+  return labelsByStorageIndex;
 }
 
 export function getDrawToolsItemLabel(item: IitcIrisDrawToolsItem, displayIndex: number): string {

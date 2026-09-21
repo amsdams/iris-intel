@@ -602,6 +602,7 @@ function App(): h.JSX.Element {
     editingDrawToolsMarkerIndex,
     drawToolsTarget,
     drawToolsLinkItems,
+    drawToolsLinkEndpointLabelsByStorageIndex,
     drawToolsMarkerItems,
     drawToolsMarkerPortalInfoByStorageIndex,
     setDrawToolsLinkStart,
@@ -1043,6 +1044,7 @@ function App(): h.JSX.Element {
         drawToolsImportStatus={drawToolsImportStatus}
         drawToolsImportText={drawToolsImportText}
         drawToolsLinkItems={drawToolsLinkItems}
+        drawToolsLinkEndpointLabelsByStorageIndex={drawToolsLinkEndpointLabelsByStorageIndex}
         drawToolsLinkStart={drawToolsLinkStart}
         drawToolsMarkerItems={drawToolsMarkerItems}
         drawToolsMarkerLabel={drawToolsMarkerLabel}

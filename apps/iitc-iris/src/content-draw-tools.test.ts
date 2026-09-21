@@ -1,6 +1,7 @@
 import {describe, expect, it} from 'vitest';
 import {
   filterAndSerializeDrawToolsItems,
+  getDrawToolsLinkEndpointLabels,
   getDrawToolsItemCenter,
   getDrawToolsItemDistanceMeters,
   getDrawToolsItemDetail,
@@ -125,6 +126,47 @@ describe('IITC IRIS Draw Tools helpers', () => {
       title: 'Updated Portal',
       team: 'E',
       level: 8,
+    });
+  });
+
+  it('formats link endpoint labels from loaded or cached portal metadata', () => {
+    const cache = mergeDrawToolsMarkerPortalInfoCache({}, [{
+      guid: 'portal-start',
+      title: 'Start Portal',
+      team: 'E',
+      latE6: 52000000,
+      lngE6: 4000000,
+      level: 7,
+      health: 100,
+      resCount: 8,
+      links: {in: 0, out: 0, count: 0},
+      fields: 0,
+      ap: {friendlyAp: 0, enemyAp: 0, destroyAp: 0, destroyResoAp: 0, captureAp: 0},
+      history: {visited: false, captured: false, scoutControlled: false},
+      mission: false,
+      ornaments: 0,
+      artifacts: 0,
+    }]);
+
+    expect(getDrawToolsLinkEndpointLabels(link, [{
+      guid: 'portal-end',
+      title: 'End Portal',
+      team: 'R',
+      latE6: 54000000,
+      lngE6: 6000000,
+      level: 6,
+      health: 100,
+      resCount: 8,
+      links: {in: 0, out: 0, count: 0},
+      fields: 0,
+      ap: {friendlyAp: 0, enemyAp: 0, destroyAp: 0, destroyResoAp: 0, captureAp: 0},
+      history: {visited: false, captured: false, scoutControlled: false},
+      mission: false,
+      ornaments: 0,
+      artifacts: 0,
+    }], cache)).toEqual({
+      from: 'Start Portal',
+      to: 'End Portal',
     });
   });
 

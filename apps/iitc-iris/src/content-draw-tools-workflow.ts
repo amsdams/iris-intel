@@ -3,9 +3,11 @@ import {copyIitcIrisText} from './content-feedback';
 import {getDrawToolsTargetFromContext} from './content-map-context';
 import {
   filterAndSerializeDrawToolsItems,
+  getDrawToolsLinkEndpointLabelsByStorageIndex,
   getDrawToolsMarkerPortalInfoByStorageIndex,
   mergeDrawToolsMarkerPortalInfoCache,
   sortDrawToolsItemsByDistance,
+  type DrawToolsLinkEndpointLabels,
   type DrawToolsMarkerPortalInfoCache,
   type DrawToolsMarkerPortalInfo,
   type DrawToolsTarget,
@@ -41,6 +43,7 @@ export interface DrawToolsWorkflowDerivedState {
   drawToolsTarget: DrawToolsTarget | null;
   drawToolsTargetDefaultLabel: string;
   drawToolsLinkItems: Extract<IitcIrisDrawToolsItem, {type: 'polyline'}>[];
+  drawToolsLinkEndpointLabelsByStorageIndex: Record<number, DrawToolsLinkEndpointLabels>;
   drawToolsMarkerItems: Extract<IitcIrisDrawToolsItem, {type: 'marker'}>[];
   drawToolsMarkerPortalInfoByStorageIndex: Record<number, DrawToolsMarkerPortalInfo>;
 }
@@ -55,6 +58,7 @@ export interface UseDrawToolsWorkflowResult {
   editingDrawToolsMarkerIndex: number | null;
   drawToolsTarget: DrawToolsTarget | null;
   drawToolsLinkItems: Extract<IitcIrisDrawToolsItem, {type: 'polyline'}>[];
+  drawToolsLinkEndpointLabelsByStorageIndex: Record<number, DrawToolsLinkEndpointLabels>;
   drawToolsMarkerItems: Extract<IitcIrisDrawToolsItem, {type: 'marker'}>[];
   drawToolsMarkerPortalInfoByStorageIndex: Record<number, DrawToolsMarkerPortalInfo>;
   setDrawToolsLinkStart: StateSetter<IitcIrisDrawToolsLatLng | null>;
@@ -93,11 +97,17 @@ export function getDrawToolsWorkflowDerivedState(
   const drawToolsTarget = getDrawToolsTargetFromContext(selectedPortal, mapContext);
   const linkItems = drawToolsItems.filter((item): item is Extract<IitcIrisDrawToolsItem, {type: 'polyline'}> => item.type === 'polyline');
   const markerItems = drawToolsItems.filter((item): item is Extract<IitcIrisDrawToolsItem, {type: 'marker'}> => item.type === 'marker');
+  const sortedLinkItems = sortDrawToolsItemsByDistance(linkItems, cameraCenter);
   const sortedMarkerItems = sortDrawToolsItemsByDistance(markerItems, cameraCenter);
   return {
     drawToolsTarget,
     drawToolsTargetDefaultLabel: drawToolsTarget?.label ?? '',
-    drawToolsLinkItems: sortDrawToolsItemsByDistance(linkItems, cameraCenter),
+    drawToolsLinkItems: sortedLinkItems,
+    drawToolsLinkEndpointLabelsByStorageIndex: getDrawToolsLinkEndpointLabelsByStorageIndex(
+      sortedLinkItems,
+      portalAnalysis?.portalslist ?? [],
+      portalInfoCache
+    ),
     drawToolsMarkerItems: sortedMarkerItems,
     drawToolsMarkerPortalInfoByStorageIndex: getDrawToolsMarkerPortalInfoByStorageIndex(
       sortedMarkerItems,
@@ -123,6 +133,7 @@ export function useDrawToolsWorkflow(params: UseDrawToolsWorkflowParams): UseDra
     drawToolsTarget,
     drawToolsTargetDefaultLabel,
     drawToolsLinkItems,
+    drawToolsLinkEndpointLabelsByStorageIndex,
     drawToolsMarkerItems,
     drawToolsMarkerPortalInfoByStorageIndex,
   } = getDrawToolsWorkflowDerivedState(
@@ -208,6 +219,7 @@ export function useDrawToolsWorkflow(params: UseDrawToolsWorkflowParams): UseDra
     editingDrawToolsMarkerIndex,
     drawToolsTarget,
     drawToolsLinkItems,
+    drawToolsLinkEndpointLabelsByStorageIndex,
     drawToolsMarkerItems,
     drawToolsMarkerPortalInfoByStorageIndex,
     setDrawToolsLinkStart,

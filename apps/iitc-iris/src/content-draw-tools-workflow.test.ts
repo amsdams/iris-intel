@@ -113,6 +113,48 @@ describe('content-draw-tools-workflow', () => {
     });
   });
 
+  it('exposes drawn link endpoint labels by storage index', () => {
+    const portalAnalysis = {
+      portalslist: [{
+        guid: 'portal-1',
+        title: 'From Portal',
+        team: 'E',
+        latE6: 52300000,
+        lngE6: 4900000,
+        level: 8,
+        health: 100,
+        resCount: 8,
+        links: {in: 0, out: 0, count: 0},
+        fields: 0,
+        ap: {friendlyAp: 0, enemyAp: 0, destroyAp: 0, destroyResoAp: 0, captureAp: 0},
+        history: {visited: false, captured: false, scoutControlled: false},
+        mission: false,
+        ornaments: 0,
+        artifacts: 0,
+      }],
+    } as unknown as IitcIrisPortalAnalysis;
+
+    const result = getDrawToolsWorkflowDerivedState(
+      [polylineItem],
+      null,
+      null,
+      {lat: 52.3, lng: 4.9},
+      portalAnalysis,
+      {
+        '52400000,5000000': {
+          title: 'To Portal',
+          team: 'R',
+          level: 6,
+        },
+      }
+    );
+
+    expect(result.drawToolsLinkEndpointLabelsByStorageIndex[2]).toEqual({
+      from: 'From Portal',
+      to: 'To Portal',
+    });
+  });
+
   it('uses cached marker portal levels when the portal is no longer loaded', () => {
     const result = getDrawToolsWorkflowDerivedState(
       [markerItem],

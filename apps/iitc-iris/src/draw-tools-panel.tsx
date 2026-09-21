@@ -4,6 +4,7 @@ import {
   DRAW_TOOLS_MARKER_PRESETS,
   getDrawToolsItemDetail,
   getDrawToolsItemLabel,
+  type DrawToolsLinkEndpointLabels,
   type DrawToolsMarkerPortalInfo,
   type DrawToolsTarget,
 } from './content-draw-tools';
@@ -20,6 +21,7 @@ export interface IitcIrisDrawToolsPanelProps {
   importStatus: string;
   importText: string;
   linkItems: Extract<IitcIrisDrawToolsItem, {type: 'polyline'}>[];
+  linkEndpointLabelsByStorageIndex: Record<number, DrawToolsLinkEndpointLabels>;
   linkStart: IitcIrisDrawToolsLatLng | null;
   markerItems: Extract<IitcIrisDrawToolsItem, {type: 'marker'}>[];
   markerLabel: string;
@@ -97,18 +99,24 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
         </button>
       </div>
       {props.linkItems.length > 0 && <div className="iitc-iris-draw-tools-list" aria-label="Drawn links">
-        {props.linkItems.map((item, index) => (
-          <div className="iitc-iris-draw-tools-list-item" key={`link-${item.storageIndex}`}>
-            <span className="iitc-iris-draw-tools-list-label">
-              <b>{getDrawToolsItemLabel(item, index)}</b>
-              <small>{getDrawToolsItemDetail(item)}</small>
-            </span>
-            <span className="iitc-iris-draw-tools-list-actions">
-              <button className="iitc-iris-portal-action" type="button" onClick={() => props.centerItem(item)} title="Center this drawn link">Center</button>
-              <button className="iitc-iris-portal-action" type="button" onClick={() => props.deleteItem(item)} title="Delete this drawn link">Del</button>
-            </span>
-          </div>
-        ))}
+        {props.linkItems.map((item, index) => {
+          const endpointLabels = props.linkEndpointLabelsByStorageIndex[item.storageIndex];
+          const detail = endpointLabels
+            ? `${endpointLabels.from} -> ${endpointLabels.to}`
+            : getDrawToolsItemDetail(item);
+          return (
+            <div className="iitc-iris-draw-tools-list-item" key={`link-${item.storageIndex}`}>
+              <span className="iitc-iris-draw-tools-list-label">
+                <b>{getDrawToolsItemLabel(item, index)}</b>
+                <small title={getDrawToolsItemDetail(item)}>{detail}</small>
+              </span>
+              <span className="iitc-iris-draw-tools-list-actions">
+                <button className="iitc-iris-portal-action" type="button" onClick={() => props.centerItem(item)} title="Center this drawn link">Center</button>
+                <button className="iitc-iris-portal-action" type="button" onClick={() => props.deleteItem(item)} title="Delete this drawn link">Del</button>
+              </span>
+            </div>
+          );
+        })}
       </div>}
       <IitcIrisDrawToolsImport {...props} />
     </div>;

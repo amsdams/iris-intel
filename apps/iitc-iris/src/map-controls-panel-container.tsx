@@ -10,7 +10,7 @@ import {type IitcIrisSheetId} from './menu-registry';
 import {type IitcIrisPanDirection} from './content-keyboard-shortcuts';
 import {type IitcIrisMapContextSelection} from './selection-lifecycle';
 import {type IitcIrisBooleanLayerSettingKey} from './layer-registry';
-import {type DrawToolsMarkerPortalInfo, type DrawToolsTarget} from './content-draw-tools';
+import {type DrawToolsLinkEndpointLabels, type DrawToolsMarkerPortalInfo, type DrawToolsTarget} from './content-draw-tools';
 import {
   type PortalAnalysisListSummary,
   type PortalsListLevelFilter,
@@ -55,6 +55,7 @@ export interface IitcIrisMapControlsPanelContainerProps {
   drawToolsImportStatus: string;
   drawToolsImportText: string;
   drawToolsLinkItems: Extract<IitcIrisDrawToolsItem, {type: 'polyline'}>[];
+  drawToolsLinkEndpointLabelsByStorageIndex: Record<number, DrawToolsLinkEndpointLabels>;
   drawToolsLinkStart: IitcIrisDrawToolsLatLng | null;
   drawToolsMarkerItems: Extract<IitcIrisDrawToolsItem, {type: 'marker'}>[];
   drawToolsMarkerLabel: string;
@@ -147,6 +148,7 @@ export function IitcIrisMapControlsPanelContainer(props: IitcIrisMapControlsPane
     drawToolsImportStatus,
     drawToolsImportText,
     drawToolsLinkItems,
+    drawToolsLinkEndpointLabelsByStorageIndex,
     drawToolsLinkStart,
     drawToolsMarkerItems,
     drawToolsMarkerLabel,
@@ -254,6 +256,7 @@ export function IitcIrisMapControlsPanelContainer(props: IitcIrisMapControlsPane
           importStatus={drawToolsImportStatus}
           importText={drawToolsImportText}
           linkItems={drawToolsLinkItems}
+          linkEndpointLabelsByStorageIndex={drawToolsLinkEndpointLabelsByStorageIndex}
           linkStart={drawToolsLinkStart}
           markerItems={drawToolsMarkerItems}
           markerLabel={drawToolsMarkerLabel}
@@ -286,6 +289,7 @@ export function IitcIrisMapControlsPanelContainer(props: IitcIrisMapControlsPane
           importStatus={drawToolsImportStatus}
           importText={drawToolsImportText}
           linkItems={drawToolsLinkItems}
+          linkEndpointLabelsByStorageIndex={drawToolsLinkEndpointLabelsByStorageIndex}
           linkStart={drawToolsLinkStart}
           markerItems={drawToolsMarkerItems}
           markerLabel={drawToolsMarkerLabel}
