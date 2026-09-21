@@ -4,7 +4,9 @@ import {getDrawToolsTargetFromContext} from './content-map-context';
 import {
   filterAndSerializeDrawToolsItems,
   getDrawToolsMarkerPortalInfoByStorageIndex,
+  mergeDrawToolsMarkerPortalInfoCache,
   sortDrawToolsItemsByDistance,
+  type DrawToolsMarkerPortalInfoCache,
   type DrawToolsMarkerPortalInfo,
   type DrawToolsTarget,
 } from './content-draw-tools';
@@ -86,6 +88,7 @@ export function getDrawToolsWorkflowDerivedState(
   mapContext: UseDrawToolsWorkflowParams['mapContext'],
   cameraCenter: UseDrawToolsWorkflowParams['cameraCenter'],
   portalAnalysis: UseDrawToolsWorkflowParams['portalAnalysis'],
+  portalInfoCache: DrawToolsMarkerPortalInfoCache = {},
 ): DrawToolsWorkflowDerivedState {
   const drawToolsTarget = getDrawToolsTargetFromContext(selectedPortal, mapContext);
   const linkItems = drawToolsItems.filter((item): item is Extract<IitcIrisDrawToolsItem, {type: 'polyline'}> => item.type === 'polyline');
@@ -98,7 +101,8 @@ export function getDrawToolsWorkflowDerivedState(
     drawToolsMarkerItems: sortedMarkerItems,
     drawToolsMarkerPortalInfoByStorageIndex: getDrawToolsMarkerPortalInfoByStorageIndex(
       sortedMarkerItems,
-      portalAnalysis?.portalslist ?? []
+      portalAnalysis?.portalslist ?? [],
+      portalInfoCache
     ),
   };
 }
@@ -113,6 +117,7 @@ export function useDrawToolsWorkflow(params: UseDrawToolsWorkflowParams): UseDra
   const [drawToolsClearConfirm, setDrawToolsClearConfirm] = useState<'polyline' | 'marker' | null>(null);
   const [drawToolsMarkerLabel, setDrawToolsMarkerLabel] = useState('');
   const [editingDrawToolsMarkerIndex, setEditingDrawToolsMarkerIndex] = useState<number | null>(null);
+  const [drawToolsMarkerPortalInfoCache, setDrawToolsMarkerPortalInfoCache] = useState<DrawToolsMarkerPortalInfoCache>({});
 
   const {
     drawToolsTarget,
@@ -120,11 +125,23 @@ export function useDrawToolsWorkflow(params: UseDrawToolsWorkflowParams): UseDra
     drawToolsLinkItems,
     drawToolsMarkerItems,
     drawToolsMarkerPortalInfoByStorageIndex,
-  } = getDrawToolsWorkflowDerivedState(drawToolsItems, selectedPortal, mapContext, cameraCenter, portalAnalysis);
+  } = getDrawToolsWorkflowDerivedState(
+    drawToolsItems,
+    selectedPortal,
+    mapContext,
+    cameraCenter,
+    portalAnalysis,
+    drawToolsMarkerPortalInfoCache
+  );
 
   useEffect(() => {
     setDrawToolsMarkerLabel(drawToolsTargetDefaultLabel);
   }, [drawToolsTargetDefaultLabel]);
+
+  useEffect(() => {
+    if (!portalAnalysis?.portalslist.length) return;
+    setDrawToolsMarkerPortalInfoCache((current) => mergeDrawToolsMarkerPortalInfoCache(current, portalAnalysis.portalslist));
+  }, [portalAnalysis]);
 
   const getTargetLatLng = useCallback((): IitcIrisDrawToolsLatLng | null => {
     if (!drawToolsTarget) return null;

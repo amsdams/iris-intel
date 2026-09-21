@@ -7,6 +7,7 @@ import {
   getDrawToolsItemLabel,
   getDrawToolsMarkerPortalInfo,
   isSupportedDrawToolsItem,
+  mergeDrawToolsMarkerPortalInfoCache,
   prepareDrawToolsImport,
   sortDrawToolsItemsByDistance,
   stripDrawToolsStorageIndex,
@@ -74,6 +75,56 @@ describe('IITC IRIS Draw Tools helpers', () => {
       title: 'Portal One',
       team: 'R',
       level: 6,
+    });
+  });
+
+  it('falls back to cached marker portal metadata and refreshes it with newer loaded portal data', () => {
+    const oldCache = mergeDrawToolsMarkerPortalInfoCache({}, [{
+      guid: 'portal-1',
+      title: 'Old Portal',
+      team: 'R',
+      latE6: 52100000,
+      lngE6: 4200000,
+      level: 5,
+      health: 100,
+      resCount: 8,
+      links: {in: 0, out: 0, count: 0},
+      fields: 0,
+      ap: {friendlyAp: 0, enemyAp: 0, destroyAp: 0, destroyResoAp: 0, captureAp: 0},
+      history: {visited: false, captured: false, scoutControlled: false},
+      mission: false,
+      ornaments: 0,
+      artifacts: 0,
+    }]);
+
+    expect(getDrawToolsMarkerPortalInfo(marker, [], oldCache)).toEqual({
+      title: 'Old Portal',
+      team: 'R',
+      level: 5,
+    });
+
+    const refreshedCache = mergeDrawToolsMarkerPortalInfoCache(oldCache, [{
+      guid: 'portal-1',
+      title: 'Updated Portal',
+      team: 'E',
+      latE6: 52100000,
+      lngE6: 4200000,
+      level: 8,
+      health: 100,
+      resCount: 8,
+      links: {in: 0, out: 0, count: 0},
+      fields: 0,
+      ap: {friendlyAp: 0, enemyAp: 0, destroyAp: 0, destroyResoAp: 0, captureAp: 0},
+      history: {visited: false, captured: false, scoutControlled: false},
+      mission: false,
+      ornaments: 0,
+      artifacts: 0,
+    }]);
+
+    expect(getDrawToolsMarkerPortalInfo(marker, [], refreshedCache)).toEqual({
+      title: 'Updated Portal',
+      team: 'E',
+      level: 8,
     });
   });
 

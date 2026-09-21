@@ -112,4 +112,27 @@ describe('content-draw-tools-workflow', () => {
       level: 8,
     });
   });
+
+  it('uses cached marker portal levels when the portal is no longer loaded', () => {
+    const result = getDrawToolsWorkflowDerivedState(
+      [markerItem],
+      null,
+      null,
+      {lat: 52.3, lng: 4.9},
+      null,
+      {
+        '52300000,4900000': {
+          title: 'Cached Portal',
+          team: 'R',
+          level: 6,
+        },
+      }
+    );
+
+    expect(result.drawToolsMarkerPortalInfoByStorageIndex[1]).toEqual({
+      title: 'Cached Portal',
+      team: 'R',
+      level: 6,
+    });
+  });
 });
