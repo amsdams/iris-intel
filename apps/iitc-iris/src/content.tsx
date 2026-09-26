@@ -3,8 +3,8 @@ import {useCallback, useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import './iitc-iris.css';
 import {
   type IitcIrisBooleanLayerSettingKey,
-} from './layer-registry';
-import {PORTAL_HIGHLIGHTER_REGISTRY} from './highlighter-registry';
+} from './layers/layer-registry';
+import {PORTAL_HIGHLIGHTER_REGISTRY} from './layers/highlighter-registry';
 import {
   getPrimaryMenuId,
   isSidePanelId,
@@ -136,7 +136,7 @@ import {
   buildHighlighterSettingsValue,
   buildLayerSettingsMessage,
   calculateToggledLayerSettings,
-} from './content-layer-actions';
+} from './layers/content-layer-actions';
 import {useDrawToolsWorkflow} from './draw-tools/content-draw-tools-workflow';
 import {
   handleCommScrollAction,

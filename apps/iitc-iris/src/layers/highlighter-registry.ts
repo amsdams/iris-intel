@@ -1,5 +1,5 @@
 import type {CircleMarkerOptions} from 'leaflet';
-import type {IitcIrisPortalHighlighterId, IitcIrisRenderPortal} from './messages';
+import type {IitcIrisPortalHighlighterId, IitcIrisRenderPortal} from '../messages';
 
 export interface IitcIrisPortalHighlighterStyleContext {
   portal: IitcIrisRenderPortal;

@@ -4,12 +4,12 @@ import {IitcIrisDrawToolsPanel} from './draw-tools/draw-tools-panel';
 import {IitcIrisPortalCountsPanel} from './portal-analysis/portal-counts-panel';
 import {IitcIrisPortalsListPanel} from './portal-analysis/portals-list-panel';
 import {IitcIrisScoreboardPanel} from './portal-analysis/scoreboard-panel';
-import {IitcIrisLayersPanel} from './layers-panel';
+import {IitcIrisLayersPanel} from './layers/layers-panel';
 import {formatMapObjectDistance, formatTeamLabel} from './content-map-status';
 import {type IitcIrisSheetId} from './menu-registry';
 import {type IitcIrisPanDirection} from './content-keyboard-shortcuts';
 import {type IitcIrisMapContextSelection} from './portals/selection-lifecycle';
-import {type IitcIrisBooleanLayerSettingKey} from './layer-registry';
+import {type IitcIrisBooleanLayerSettingKey} from './layers/layer-registry';
 import {type DrawToolsLinkEndpointLabels, type DrawToolsMarkerPortalInfo, type DrawToolsTarget} from './draw-tools/content-draw-tools';
 import {
   type PortalAnalysisListSummary,

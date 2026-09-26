@@ -1,7 +1,7 @@
 import {formatElapsedSeconds} from './ui-status';
 import {
   LAYER_REGISTRY_DIAGNOSTICS,
-} from './layer-registry';
+} from './layers/layer-registry';
 import {IITC_MAX_REQUESTS, IITC_NUM_TILES_PER_REQUEST, IITC_MAX_TILE_RETRIES} from '@iris/iitc-core';
 import type {
   CameraState,

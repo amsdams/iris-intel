@@ -10,7 +10,7 @@ import type {
   IitcIrisHighlighterSettings,
   IitcIrisLayerSettings,
   IitcIrisPortalHighlighterId,
-} from './messages';
+} from '../messages';
 
 export interface BooleanLayerToggleEntry {
   id: IitcIrisBooleanLayerSettingKey;

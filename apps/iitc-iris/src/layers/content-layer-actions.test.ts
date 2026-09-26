@@ -6,7 +6,7 @@ import {
   calculateToggledLayerSettings,
 } from './content-layer-actions';
 import {DEFAULT_LAYER_SETTINGS} from './layer-registry';
-import {IITC_IRIS_MESSAGES} from './messages';
+import {IITC_IRIS_MESSAGES} from '../messages';
 
 describe('content-layer-actions', () => {
   it('toggles boolean layer setting', () => {

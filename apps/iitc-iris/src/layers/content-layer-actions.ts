@@ -4,8 +4,8 @@ import type {
   IitcIrisLayerSettings,
   IitcIrisMessage,
   IitcIrisPortalHighlighterId,
-} from './messages';
-import {IITC_IRIS_MESSAGES} from './messages';
+} from '../messages';
+import {IITC_IRIS_MESSAGES} from '../messages';
 import type {IitcIrisBooleanLayerSettingKey} from './layer-registry';
 
 export function calculateToggledLayerSettings(

@@ -87,7 +87,7 @@ checkpoint.
    - portal counts/list/scoreboard panels and portal-analysis helpers.
 6. Portals folder:
    - portal details, portal image modal, portal selection, portal detail section registry, and selection lifecycle.
-7. Layers folder:
+7. Layers folder, done:
    - layer/highlighter registries, layer update routing, layer settings actions, and layers panel.
 8. Map folder:
    - map controls, map navigation/camera/location/context/status helpers, geodesic helpers, and map context runtime.
@@ -405,7 +405,7 @@ Reviewed against the approved file list and import-rewrite scope. The eight move
 
 ### Checkpoint 7: Layers Folder Move
 
-Status: ready. Execute only this move-only checkpoint in its own branch.
+Status: done.
 
 Move only these files:
 
@@ -427,9 +427,24 @@ Validation:
 - `npm run package:iitc-iris`
 - `git diff --check`
 
+#### Checkpoint 7 implementation notes (done)
+
+Moved with `git mv`. Import rewrites only — no logic, export, CSS, or test changes.
+
+Validation results:
+- Focused Layers tests: 4 files and 14 tests passed.
+- `npm run typecheck:iitc-iris`: pass.
+- `npm run lint:iitc-iris`: pass.
+- `npm run package:iitc-iris`: pass; Chrome ZIP and Firefox XPI built.
+- `git diff --check`: clean.
+
+#### Checkpoint 7 review (2026-09-26)
+
+Reviewed against the approved file list and import-rewrite scope. The nine moves preserve file bodies; the only changes are required parent-relative imports and consumer import paths. Focused Layers tests (14 tests), typecheck, lint, package, and `git diff --check` pass. Checkpoint 8 is unblocked.
+
 ### Checkpoint 8: Map Folder Move
 
-Status: planned, blocked until Checkpoint 7 is reviewed.
+Status: ready. Execute only this move-only checkpoint in its own branch.
 
 Move only these files:
 

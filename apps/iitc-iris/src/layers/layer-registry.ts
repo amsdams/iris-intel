@@ -3,7 +3,7 @@ import type {
   IitcIrisLayerRegistryGroup,
   IitcIrisLayerRegistryKind,
   IitcIrisLayerSettings,
-} from './messages';
+} from '../messages';
 
 export type IitcIrisLegacyBooleanLayerSettingKey = 'playerTracker';
 export type IitcIrisBooleanLayerSettingKey = Exclude<keyof IitcIrisLayerSettings, IitcIrisLegacyBooleanLayerSettingKey>;

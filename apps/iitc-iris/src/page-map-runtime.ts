@@ -1,9 +1,9 @@
 import L, {type Layer as LeafletLayer, type LeafletMouseEvent, type Map as LeafletMap, type TileLayer} from 'leaflet';
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisHighlighterSettings, type IitcIrisInteractionUpdateTimingDiagnostics, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLayerUpdateTimingDiagnostics, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionDetails, type IitcIrisMissionSource, type IitcIrisMissionSummary, type IitcIrisMissionWaypoint, type IitcIrisMissionsState, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderMutationLayerDiagnostics, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisSubscriptionState} from './messages';
-import {DEFAULT_LAYER_SETTINGS} from './layer-registry';
-import {DEFAULT_HIGHLIGHTER_ID, getPortalHighlighter, PORTAL_HIGHLIGHTER_REGISTRY} from './highlighter-registry';
+import {DEFAULT_LAYER_SETTINGS} from './layers/layer-registry';
+import {DEFAULT_HIGHLIGHTER_ID, getPortalHighlighter, PORTAL_HIGHLIGHTER_REGISTRY} from './layers/highlighter-registry';
 import {IITC_LEVEL_COLORS, IITC_TEAM_COLORS} from './iitc-colors';
-import {getLayerUpdatePlan} from './layer-update-routing';
+import {getLayerUpdatePlan} from './layers/layer-update-routing';
 import {createIitcIrisMapContextMessage, installIitcIrisContextGestures} from './map-context-runtime';
 import {convertIitcGeodesicLatLngs, createIitcGeodesicPolygon, createIitcGeodesicPolyline} from './leaflet-geodesic';
 import {

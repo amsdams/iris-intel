@@ -6,7 +6,7 @@ import {
   normalizePortalHighlighterId,
   PORTAL_HIGHLIGHTER_REGISTRY,
 } from './highlighter-registry';
-import type {IitcIrisPortalHighlighterId} from './messages';
+import type {IitcIrisPortalHighlighterId} from '../messages';
 
 const EXPECTED_HIGHLIGHTER_IDS: IitcIrisPortalHighlighterId[] = [
   'none',

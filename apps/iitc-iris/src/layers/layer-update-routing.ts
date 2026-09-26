@@ -1,4 +1,4 @@
-import type {IitcIrisLayerSettings} from './messages';
+import type {IitcIrisLayerSettings} from '../messages';
 
 const ENTITY_RENDER_LAYER_SETTING_KEYS = new Set<keyof IitcIrisLayerSettings>([
   'fields',

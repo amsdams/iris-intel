@@ -1,5 +1,5 @@
-import { DEFAULT_LAYER_SETTINGS } from './layer-registry';
-import { normalizePortalHighlighterId } from './highlighter-registry';
+import { DEFAULT_LAYER_SETTINGS } from './layers/layer-registry';
+import { normalizePortalHighlighterId } from './layers/highlighter-registry';
 import {
   isSheetId,
   isSidePanelId,
