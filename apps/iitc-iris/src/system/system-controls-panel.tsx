@@ -1,7 +1,7 @@
 import {h} from 'preact';
 import type {ScenarioRun} from './content-scenarios';
-import type {IitcIrisLifecycleSettings} from './messages';
-import type {DataSourceOption, ViewPresetOption} from './content-storage-settings';
+import type {IitcIrisLifecycleSettings} from '../messages';
+import type {DataSourceOption, ViewPresetOption} from '../content-storage-settings';
 
 interface IitcIrisSystemControlsPanelProps {
   shortcutsEnabled: boolean;

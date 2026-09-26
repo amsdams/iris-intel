@@ -3,7 +3,7 @@ import type {
   IitcIrisMapTimingDiagnostics,
   IitcIrisRenderMutationDiagnostics,
   IitcIrisRenderQueueDiagnostics,
-} from './messages';
+} from '../messages';
 
 export interface ScenarioSnapshot {
   label: string;

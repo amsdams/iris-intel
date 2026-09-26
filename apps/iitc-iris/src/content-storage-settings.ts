@@ -24,7 +24,7 @@ import {
   clampView,
   isStoredMapView,
   type StoredMapView,
-} from './content-scenarios';
+} from './system/content-scenarios';
 
 export const LOGIN_BYPASS_STORAGE_KEY = 'iitc-iris:login-bypass-until';
 export const COMM_TAB_STORAGE_KEY = 'iitc-chat-tab';

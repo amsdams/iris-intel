@@ -91,7 +91,7 @@ checkpoint.
    - layer/highlighter registries, layer update routing, layer settings actions, and layers panel.
 8. Map folder, done:
    - map controls, map navigation/camera/location/context/status helpers, geodesic helpers, and map context runtime.
-9. System folder:
+9. System folder, done:
    - system panels, diagnostics, scenarios, dock diagnostics, help panel, and copy/feedback helpers if still root-local.
 10. Auth folder:
    - auth recovery/navigation and login/logout related helpers.
@@ -492,7 +492,7 @@ Reviewed against the approved file list and import-rewrite scope. The moves pres
 
 ### Checkpoint 9: System Folder Move
 
-Status: ready. Execute only this move-only checkpoint in its own branch.
+Status: done.
 
 Move only these files:
 
@@ -521,7 +521,7 @@ Validation:
 
 ### Checkpoint 10: Auth Folder Move
 
-Status: planned, blocked until Checkpoint 9 is reviewed.
+Status: ready. Execute only this move-only checkpoint in its own branch.
 
 Move only these files:
 

@@ -1,4 +1,4 @@
-import {parseViewInput} from '../content-scenarios';
+import {parseViewInput} from '../system/content-scenarios';
 import type {IitcIrisMessage} from '../messages';
 import {IITC_IRIS_MESSAGES} from '../messages';
 

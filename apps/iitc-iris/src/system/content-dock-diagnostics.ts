@@ -1,12 +1,12 @@
-import {formatElapsedSeconds} from './ui-status';
+import {formatElapsedSeconds} from '../ui-status';
 import {
   LAYER_REGISTRY_DIAGNOSTICS,
-} from './layers/layer-registry';
+} from '../layers/layer-registry';
 import {IITC_MAX_REQUESTS, IITC_NUM_TILES_PER_REQUEST, IITC_MAX_TILE_RETRIES} from '@iris/iitc-core';
 import type {
   CameraState,
   EntityFetchState,
-} from './content-message-adapter';
+} from '../content-message-adapter';
 import type {
   IitcIrisAgentState,
   IitcIrisBaseLayerId,
@@ -18,10 +18,10 @@ import type {
   IitcIrisPasscodeState,
   IitcIrisRequestDiagnostics,
   IitcIrisScoresState,
-} from './messages';
-import type {IitcIrisSidePanelId} from './menu-registry';
+} from '../messages';
+import type {IitcIrisSidePanelId} from '../menu-registry';
 import type {IitcMapDataPlan} from '@iris/iitc-core';
-import type {createDataSourceSettings} from './content-storage-settings';
+import type {createDataSourceSettings} from '../content-storage-settings';
 
 export interface DockDiagnosticsParams {
   status: string;

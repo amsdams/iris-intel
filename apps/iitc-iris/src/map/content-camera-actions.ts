@@ -1,4 +1,4 @@
-import {clampView} from '../content-scenarios';
+import {clampView} from '../system/content-scenarios';
 import type {IitcIrisMessage} from '../messages';
 import {IITC_IRIS_MESSAGES} from '../messages';
 

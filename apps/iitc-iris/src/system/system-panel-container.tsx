@@ -4,18 +4,18 @@ import {IitcIrisSystemDiagnosticsPanel, type IitcIrisInnerStatusView} from './sy
 import {
   type CameraState,
   type EntityFetchState,
-} from './content-message-adapter';
+} from '../content-message-adapter';
 import {
   DATA_SOURCE_OPTIONS,
   VIEW_PRESETS,
-} from './content-storage-settings';
+} from '../content-storage-settings';
 import {
   type ScenarioRun,
 } from './content-scenarios';
 import {
   type IitcIrisLifecycleSettings,
   type IitcIrisRequestDiagnostics,
-} from './messages';
+} from '../messages';
 import {
   type IitcMapDataPlan,
 } from '@iris/iitc-core';

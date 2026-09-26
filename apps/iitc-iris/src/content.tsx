@@ -69,13 +69,13 @@ import {IitcIrisPortalDetailsPanel} from './portals/portal-details-panel';
 import {IitcIrisSearchPanel} from './search/search-panel';
 import {usePortalAnalysisWorkflow} from './portal-analysis/content-portal-analysis-workflow';
 import {IitcIrisMapControlsPanelContainer} from './map/map-controls-panel-container';
-import {IitcIrisHelpPanel} from './help-panel';
+import {IitcIrisHelpPanel} from './system/help-panel';
 import {IitcIrisPortalImageModal} from './portals/portal-image-modal';
 import {IitcIrisSheetTabBar} from './sheet-tabbar';
 import {IitcIrisAuthRecoveryBanner} from './auth-recovery-banner';
 import {IitcIrisRequestSidePanelContainer} from './request-side-panel-container';
-import {IitcIrisSystemPanelContainer} from './system-panel-container';
-import {createDockDiagnostics} from './content-dock-diagnostics';
+import {IitcIrisSystemPanelContainer} from './system/system-panel-container';
+import {createDockDiagnostics} from './system/content-dock-diagnostics';
 import {
   calculateSidePanelStatus,
   formatAuthRecoveryText,
@@ -83,7 +83,7 @@ import {
   retryActiveAuthPanelRequest,
   type AppAuthStates,
 } from './content-auth-navigation';
-import {useScenarioWorkflow} from './content-scenario-workflow';
+import {useScenarioWorkflow} from './system/content-scenario-workflow';
 import {
   jumpToPresetAction,
   jumpToViewInputAction,

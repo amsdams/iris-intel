@@ -1,7 +1,7 @@
 import {h} from 'preact';
 import type {IitcMapDataPlan} from '@iris/iitc-core';
-import type {CameraState, EntityFetchState} from './content-message-adapter';
-import {formatElapsedSeconds} from './ui-status';
+import type {CameraState, EntityFetchState} from '../content-message-adapter';
+import {formatElapsedSeconds} from '../ui-status';
 
 export interface IitcIrisInnerStatusView {
   portalText: string;

@@ -1,4 +1,4 @@
-import type {IitcIrisLifecycleSettings} from './messages';
+import type {IitcIrisLifecycleSettings} from '../messages';
 import type {ScenarioRun, ScenarioSnapshot} from './content-scenarios';
 import {createScenarioSnapshotSummary} from './content-scenarios';
 

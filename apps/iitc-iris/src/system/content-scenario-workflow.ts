@@ -1,7 +1,7 @@
 import {useState} from 'preact/hooks';
 import {
   type IitcIrisLifecycleSettings,
-} from './messages';
+} from '../messages';
 import {
   type ScenarioRun,
   type ScenarioSnapshot,

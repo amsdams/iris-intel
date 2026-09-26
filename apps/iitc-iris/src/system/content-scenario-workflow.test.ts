@@ -4,7 +4,7 @@ import {
   getScenarioDerivedState,
   SCENARIO_EXPECTED_STEPS,
 } from './content-scenario-actions';
-import type {IitcIrisLifecycleSettings} from './messages';
+import type {IitcIrisLifecycleSettings} from '../messages';
 
 const DEFAULT_SETTINGS: IitcIrisLifecycleSettings = {
   iitcMovementDelay: false,
