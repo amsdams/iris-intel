@@ -1,7 +1,8 @@
 # Content Runtime Effects Extraction Plan
 
-Status: planned. This is the next Phase 2 slice after the completed command callback, shell, and side-panel extraction
-checkpoints.
+Status: Checkpoint 1 complete. Checkpoint 0 (baseline review) and Checkpoint 1 (side-panel
+auto-request plans) are done. Checkpoints 2–4 are planned.
+
 
 ## IITC Sources
 
@@ -66,12 +67,11 @@ Extract only pure side-panel request planning from these `content.tsx` effects:
 - Scores auto-request when `activeSidePanel === 'scores'` and `scoresState.status === 'idle'`.
 - Inventory auto-request when `activeSidePanel === 'inventory'` and `inventoryState.status === 'idle'`.
 
-Create a focused app module such as `content-side-panel-request-plans.ts` with pure helpers that return either `null` or
-a typed plan containing:
+Create a focused app module such as `content-side-panel-auto-requests.ts` with pure helpers that return either `null` or
+a typed object containing:
 
 - the exact message object to post;
-- retry delays, preserving COMM `500` and `1500` ms retries and scores/inventory `500` ms retry;
-- whether the COMM tab should be stored before posting.
+- retry delays, preserving COMM `500` and `1500` ms retries and scores/inventory `500` ms retry.
 
 Important compatibility rule: the existing COMM auto-request message omits `commOlder`. Do not reuse a builder that adds
 `commOlder: false` unless the test proves the payload remains intentionally compatible and the divergence is documented.
@@ -88,6 +88,28 @@ Add focused unit tests for:
 - No helper emits browser side effects.
 
 Stop after this checkpoint for the first AGY pass.
+
+#### Checkpoint 1 implementation notes (done)
+
+Extracted to `apps/iitc-iris/src/content-side-panel-auto-requests.ts`:
+
+- `getCommAutoRequest(activeSidePanel, commStatus, commTab)` — returns `null` or `{ message, retryDelaysMs: [500, 1500] }`.
+- `getScoresAutoRequest(activeSidePanel, scoresStatus)` — returns `null` or `{ message, retryDelaysMs: [500] }`.
+- `getInventoryAutoRequest(activeSidePanel, inventoryStatus)` — returns `null` or `{ message, retryDelaysMs: [500] }`.
+
+Input types use `IitcIrisSidePanelId | null` and the exact status literal unions from the state interfaces. All three helpers are wired into their corresponding `useEffect` bodies in `content.tsx`.
+
+Intentionally left inline in `content.tsx`:
+
+- The `useEffect` bodies themselves (hook ownership, timer setup/cleanup via `window.setTimeout`/`clearTimeout`).
+- `storeCommTab(commState.tab)` call — storage side effect owned by `content.tsx`.
+- `window.postMessage(autoRequest.message, '*')` calls — browser API owned by `content.tsx`.
+
+Compatibility verified by test: the COMM auto-request message omits `commOlder`. A dedicated test
+(`does not include commOlder in the message`) guards this payload contract explicitly.
+
+Naming: "plan" was replaced with "auto-request" to reflect the runtime behavior rather than the
+planning document terminology. Renamed file: `content-side-panel-auto-requests.ts`.
 
 ### Checkpoint 2: Runtime Settings Message Builders
 
@@ -151,7 +173,7 @@ document the divergence here before continuing.
 
 For checkpoint 1:
 
-- `npm run test -w apps/iitc-iris -- --run src/content-side-panel-request-plans.test.ts`
+- `npm run test -w apps/iitc-iris -- --run src/content-side-panel-auto-requests.test.ts`
 - `npm run typecheck:iitc-iris`
 - `npm run lint:iitc-iris`
 - `npm run package:iitc-iris`

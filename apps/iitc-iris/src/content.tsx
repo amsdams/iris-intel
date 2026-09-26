@@ -144,6 +144,11 @@ import {
   requestCommAction,
   requestOlderCommAction,
 } from './content-comm-panel-actions';
+import {
+  getCommAutoRequest,
+  getInventoryAutoRequest,
+  getScoresAutoRequest,
+} from './content-side-panel-auto-requests';
 
 
 const IITC_PAN_CONTROL_OFFSET_PX = 500;
@@ -861,47 +866,37 @@ function App(): h.JSX.Element {
   }, [mapFocusMode]);
 
   useEffect(() => {
-    if (activeSidePanel !== 'comm' || commState.status !== 'idle') return;
-    const postCommRequest = (): void => {
+    const autoRequest = getCommAutoRequest(activeSidePanel, commState.status, commState.tab);
+    if (!autoRequest) return;
+    const post = (): void => {
       storeCommTab(commState.tab);
-      window.postMessage({
-        type: IITC_IRIS_MESSAGES.requestComm,
-        commTab: commState.tab,
-      } satisfies IitcIrisMessage, '*');
+      window.postMessage(autoRequest.message, '*');
     };
-    postCommRequest();
-    const retryTimers = [
-      window.setTimeout(postCommRequest, 500),
-      window.setTimeout(postCommRequest, 1500),
-    ];
+    post();
+    const retryTimers = autoRequest.retryDelaysMs.map((ms) => window.setTimeout(post, ms));
     return (): void => {
       retryTimers.forEach((timer) => window.clearTimeout(timer));
     };
   }, [activeSidePanel, commState.status, commState.tab]);
 
   useEffect(() => {
-    if (activeSidePanel !== 'scores' || scoresState.status !== 'idle') return;
-    const postScoresRequest = (): void => {
-      window.postMessage({
-        type: IITC_IRIS_MESSAGES.requestScores,
-      } satisfies IitcIrisMessage, '*');
-    };
-    postScoresRequest();
-    const retryTimer = window.setTimeout(postScoresRequest, 500);
+    const autoRequest = getScoresAutoRequest(activeSidePanel, scoresState.status);
+    if (!autoRequest) return;
+    const post = (): void => { window.postMessage(autoRequest.message, '*'); };
+    post();
+    const retryTimer = window.setTimeout(post, autoRequest.retryDelaysMs[0]);
     return (): void => window.clearTimeout(retryTimer);
   }, [activeSidePanel, scoresState.status]);
 
   useEffect(() => {
-    if (activeSidePanel !== 'inventory' || inventoryState.status !== 'idle') return;
-    const postInventoryRequest = (): void => {
-      window.postMessage({
-        type: IITC_IRIS_MESSAGES.requestInventory,
-      } satisfies IitcIrisMessage, '*');
-    };
-    postInventoryRequest();
-    const retryTimer = window.setTimeout(postInventoryRequest, 500);
+    const autoRequest = getInventoryAutoRequest(activeSidePanel, inventoryState.status);
+    if (!autoRequest) return;
+    const post = (): void => { window.postMessage(autoRequest.message, '*'); };
+    post();
+    const retryTimer = window.setTimeout(post, autoRequest.retryDelaysMs[0]);
     return (): void => window.clearTimeout(retryTimer);
   }, [activeSidePanel, inventoryState.status]);
+
 
   useEffect(() => {
     if (activeSidePanel !== 'missions') return;
