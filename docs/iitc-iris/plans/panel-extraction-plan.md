@@ -39,8 +39,10 @@ rendering and callback wiring only.
 
 ## Follow-up
 
-- Continue app-surface extraction for remaining shell workflows, search, and command helpers.
-- Extract shared command/request helpers only when repeated across extracted panels.
+- Continue app-surface extraction with
+  [content-runtime-effects-extraction-plan.md](content-runtime-effects-extraction-plan.md).
+- Extract shared command/request helpers only when repeated across extracted panels or runtime effects, and keep each
+  helper pure unless a later detailed plan explicitly moves lifecycle ownership.
 
 ## Guardrails
 

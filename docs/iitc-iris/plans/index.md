@@ -99,8 +99,8 @@ Before starting Phase 2:
 
 ## Phase 2: App Surface Extraction
 
-Status: AGY app-surface extraction was audited, fixed, and merged into `feaure/the-refactor`. Continue with fresh
-detailed plans for narrow remaining slices.
+Status: shell and side-panel extraction checkpoints are complete. Continue with narrow runtime-wiring slices from
+`content.tsx`, guided by fresh detailed plans.
 
 Goal: reduce the size and coupling of `apps/iitc-iris/src/content.tsx` without changing behavior. Phase 1 made this
 safer by moving the main parity-sensitive behavior behind tested core facades.
@@ -116,14 +116,20 @@ Order of work:
 4. Runtime message adapters: introduce small app-side adapters for message posting/handling where repeated message
    assembly remains in `content.tsx`. Keep these adapters separate from core facades.
 
+Completed Phase 2 checkpoints:
+
+1. Command callback extraction: [content-command-callbacks-extraction-plan.md](content-command-callbacks-extraction-plan.md).
+2. Content shell extraction: [content-shell-extraction-plan.md](content-shell-extraction-plan.md).
+3. Side-panel extraction: [panel-extraction-plan.md](panel-extraction-plan.md).
+
 Next steps before continuing Phase 2:
 
-1. Use [content-command-callbacks-extraction-plan.md](content-command-callbacks-extraction-plan.md) for the next narrow
+1. Use [content-runtime-effects-extraction-plan.md](content-runtime-effects-extraction-plan.md) for the next narrow
    slice, following its checkpoints in order.
-2. Keep the next implementation branch scoped to callback/command wiring only; do not combine it with rendering,
-   runtime lifecycle, storage semantics, or facade work.
-3. Re-run focused callback tests after each checkpoint and full validation before merging the next slice.
-4. After that slice, choose the next coherent remaining shell responsibility from `content.tsx` and write or update a
+2. Keep the next implementation branch scoped to runtime-effect message/retry planning only; do not combine it with
+   rendering, folder migration, UI changes, facade work, or broad hook extraction.
+3. Re-run focused runtime-helper tests after each checkpoint and full validation before merging the next slice.
+4. After that slice, choose the next coherent remaining runtime responsibility from `content.tsx` and update the
    detailed plan before implementation.
 
 Non-goals for Phase 2:
@@ -155,7 +161,7 @@ surface smaller and easier to reason about.
 
 - Completed AGY branch structured audit: [agy-branch-structured-audit-plan.md](agy-branch-structured-audit-plan.md).
 - Active next Phase 2 slice:
-  [content-command-callbacks-extraction-plan.md](content-command-callbacks-extraction-plan.md).
+  [content-runtime-effects-extraction-plan.md](content-runtime-effects-extraction-plan.md).
 
 ## Detailed Plan Template
 
