@@ -1,7 +1,6 @@
 # Content Runtime Effects Extraction Plan
 
-Status: Checkpoint 1 complete. Checkpoint 0 (baseline review) and Checkpoint 1 (side-panel
-auto-request plans) are done. Checkpoints 2–4 are planned.
+Status: Checkpoint 2 complete. Checkpoints 0 (baseline review), 1 (side-panel auto-request plans), and 2 (runtime settings message builders) are done. Checkpoints 3–4 are planned.
 
 
 ## IITC Sources
@@ -122,6 +121,33 @@ After checkpoint 1 is reviewed, extract missing pure message builders for inline
 Keep layer and highlighter timing logic in `content.tsx`; their `performance.now()` intent refs are deliberately owned by
 the component. Existing `buildLayerSettingsMessage` and `buildHighlighterSettingsMessage` stay in
 `content-layer-actions.ts` unless a later checkpoint narrows that ownership further.
+
+#### Checkpoint 2 implementation notes (done)
+
+Added to `apps/iitc-iris/src/content-outbound-messages.ts`:
+
+- `buildDataSourceSettingsMessage(dataSource)` — returns `{ type: IITC_IRIS_MESSAGES.dataSourceSettings, dataSource }`.
+- `buildLifecycleSettingsMessage(lifecycleSettings)` — returns `{ type: IITC_IRIS_MESSAGES.lifecycleSettings, lifecycleSettings }`.
+
+`searchClear` was already extracted as `buildSearchClearMessage()` in `content-search-actions.ts` and is tested there.
+`content.tsx` now imports it from `content-search-actions` instead of assembling the literal inline.
+
+`content.tsx` wires the builders in three locations:
+- the `dataSourceSettings` `useEffect` (replacing inline literal).
+- the `lifecycleSettings` `useEffect` (replacing inline literal).
+- the empty-search branch inside the search debounce `useEffect` (replacing inline literal via `buildSearchClearMessage`).
+- the `retryMapFetch` closure in `retryAuthRequest` (also replaced with `buildDataSourceSettingsMessage`).
+
+`IITC_IRIS_MESSAGES` is no longer directly referenced in `content.tsx`; the import was removed.
+
+Intentionally left inline in `content.tsx`:
+
+- The `useEffect` bodies (hook ownership, timer setup/cleanup).
+- `storeDataSourceId`, `storeLifecycleSettings` calls — storage side effects owned by `content.tsx`.
+- `window.postMessage(…, '*')` calls — browser API owned by `content.tsx`.
+- Layer and highlighter timing logic (`layerSettingsIntentAtRef`, `highlighterSettingsIntentAtRef`) and their `buildLayerSettingsMessage` / `buildHighlighterSettingsMessage` calls — not touched per plan constraint.
+- `setSearchState`, `setActiveSearchResultIndex` calls in the search effect — state setter ownership remains in `content.tsx`.
+- The `100` ms debounce timer for non-empty search terms — timer ownership remains in `content.tsx`.
 
 ### Checkpoint 3: Portal Mission Refresh Decision
 

@@ -1,6 +1,8 @@
 import {
   IITC_IRIS_MESSAGES,
   type IitcIrisCommTab,
+  type IitcIrisDataSourceSettings,
+  type IitcIrisLifecycleSettings,
   type IitcIrisMessage,
   type IitcIrisMissionSource,
 } from './messages';
@@ -77,4 +79,18 @@ export function formatCommDraftWithNickname(currentDraft: string, nickname: stri
   const normalized = nickname.replace(/^@/, '').trim();
   if (!normalized) return currentDraft;
   return `${currentDraft.trim()} @${normalized} `.trimStart();
+}
+
+export function buildDataSourceSettingsMessage(dataSource: IitcIrisDataSourceSettings): IitcIrisMessage {
+  return {
+    type: IITC_IRIS_MESSAGES.dataSourceSettings,
+    dataSource,
+  };
+}
+
+export function buildLifecycleSettingsMessage(lifecycleSettings: IitcIrisLifecycleSettings): IitcIrisMessage {
+  return {
+    type: IITC_IRIS_MESSAGES.lifecycleSettings,
+    lifecycleSettings,
+  };
 }

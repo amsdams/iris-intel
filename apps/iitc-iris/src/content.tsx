@@ -127,7 +127,7 @@ import {
 } from './content-map-status';
 
 
-import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDrawToolsItem, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPortalHighlighterId, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState} from './messages';
+import {type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDrawToolsItem, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPortalHighlighterId, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState} from './messages';
 import {
   type IitcMapDataPlan,
 } from '@iris/iitc-core';
@@ -149,6 +149,11 @@ import {
   getInventoryAutoRequest,
   getScoresAutoRequest,
 } from './content-side-panel-auto-requests';
+import {
+  buildDataSourceSettingsMessage,
+  buildLifecycleSettingsMessage,
+} from './content-outbound-messages';
+import {buildSearchClearMessage} from './content-search-actions';
 
 
 const IITC_PAN_CONTROL_OFFSET_PX = 500;
@@ -568,10 +573,7 @@ function App(): h.JSX.Element {
         redeemPasscodeCommand(passcodeState, passcode, setPasscodeDraft, postIitcMessage);
       },
       retryMapFetch: (): void => {
-        postIitcMessage({
-          type: IITC_IRIS_MESSAGES.dataSourceSettings,
-          dataSource,
-        });
+        postIitcMessage(buildDataSourceSettingsMessage(dataSource));
       },
     });
   };
@@ -843,18 +845,12 @@ function App(): h.JSX.Element {
 
   useEffect(() => {
     storeDataSourceId(dataSourceId);
-    window.postMessage({
-      type: IITC_IRIS_MESSAGES.dataSourceSettings,
-      dataSource,
-    } satisfies IitcIrisMessage, '*');
+    window.postMessage(buildDataSourceSettingsMessage(dataSource), '*');
   }, [dataSource, dataSourceId]);
 
   useEffect(() => {
     storeLifecycleSettings(lifecycleSettings);
-    window.postMessage({
-      type: IITC_IRIS_MESSAGES.lifecycleSettings,
-      lifecycleSettings,
-    } satisfies IitcIrisMessage, '*');
+    window.postMessage(buildLifecycleSettingsMessage(lifecycleSettings), '*');
   }, [lifecycleSettings]);
 
   useEffect(() => {
@@ -911,7 +907,7 @@ function App(): h.JSX.Element {
     if (term.length === 0) {
       setSearchState(EMPTY_SEARCH_STATE);
       setActiveSearchResultIndex(0);
-      window.postMessage({type: IITC_IRIS_MESSAGES.searchClear} satisfies IitcIrisMessage, '*');
+      window.postMessage(buildSearchClearMessage(), '*');
       return;
     }
     const timer = window.setTimeout(() => requestSearch(term, false), 100);

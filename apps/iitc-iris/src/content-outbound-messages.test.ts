@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildDataSourceSettingsMessage,
+  buildLifecycleSettingsMessage,
   createCancelPanelRequestsMessage,
   createMissionZoomMessage,
   createRequestCommMessage,
@@ -61,5 +63,30 @@ describe('content-outbound-messages', () => {
   it('formats comm draft when mentioning nicknames', () => {
     expect(formatCommDraftWithNickname('', '@AgentX')).toBe('@AgentX ');
     expect(formatCommDraftWithNickname('Hey ', 'AgentY')).toBe('Hey @AgentY ');
+  });
+
+  it('builds dataSourceSettings message for live mode', () => {
+    expect(buildDataSourceSettingsMessage({ mode: 'live' })).toEqual({
+      type: IITC_IRIS_MESSAGES.dataSourceSettings,
+      dataSource: { mode: 'live' },
+    });
+  });
+
+  it('builds dataSourceSettings message for fixture mode', () => {
+    expect(buildDataSourceSettingsMessage({ mode: 'fixture', id: 'fx-1', label: 'Fixture 1', url: '/fixture.json' })).toEqual({
+      type: IITC_IRIS_MESSAGES.dataSourceSettings,
+      dataSource: { mode: 'fixture', id: 'fx-1', label: 'Fixture 1', url: '/fixture.json' },
+    });
+  });
+
+  it('builds lifecycleSettings message', () => {
+    expect(buildLifecycleSettingsMessage({ iitcMovementDelay: true })).toEqual({
+      type: IITC_IRIS_MESSAGES.lifecycleSettings,
+      lifecycleSettings: { iitcMovementDelay: true },
+    });
+    expect(buildLifecycleSettingsMessage({ iitcMovementDelay: false })).toEqual({
+      type: IITC_IRIS_MESSAGES.lifecycleSettings,
+      lifecycleSettings: { iitcMovementDelay: false },
+    });
   });
 });
