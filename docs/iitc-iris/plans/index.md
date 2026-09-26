@@ -11,10 +11,11 @@ plan with exact scope, files, stop conditions, and validation.
 
 Likely next priorities:
 
-1. Move-only source layout, one feature folder at a time.
-2. Use the app on phone/desktop and collect concrete UI/CSS/mobile pain.
-3. UI/CSS/mobile polish for those findings.
-4. Backlog refinement if usage shows priorities have changed.
+1. Create a shared UI component library (extract raw HTML UI into reusable React components).
+2. Move-only source layout, one feature folder at a time.
+3. Use the app on phone/desktop and collect concrete UI/CSS/mobile pain.
+4. UI/CSS/mobile polish for those findings.
+5. Backlog refinement if usage shows priorities have changed.
 
 Do not mix these three tracks in one branch.
 
@@ -83,6 +84,7 @@ Active:
 
 Ready/Blocked:
 
+- [ui-component-library-plan.md](ui-component-library-plan.md): Extract raw HTML tags into shared React UI components.
 - [source-directory-layout-plan.md](source-directory-layout-plan.md): All Checkpoints (1 through 12) are completely done.
 
 Completed Phase 2:
