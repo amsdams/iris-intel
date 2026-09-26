@@ -10,7 +10,7 @@ import {
   addCommNicknameAction,
   redeemPasscodeAction,
   sendCommAction,
-} from './content-comm-panel-actions';
+} from './comm/content-comm-panel-actions';
 import type {
   IitcIrisCommTab,
   IitcIrisMapContextPortalAnchor,
@@ -47,7 +47,7 @@ import {
   setPortalSectionOpenAction,
   zoomToAndShowPortalAction,
   type PortalSectionId,
-} from './content-portal-selection-actions';
+} from './portals/content-portal-selection-actions';
 import {
   buildPanByMessage,
   buildSetViewMessage,
@@ -61,7 +61,7 @@ import {
   copySelectedPortalLink as copySelectedPortalLinkHelper,
   copySelectedPortalTitle as copySelectedPortalTitleHelper,
 } from './content-copy-helpers';
-import type {IitcIrisMapContextSelection} from './selection-lifecycle';
+import type {IitcIrisMapContextSelection} from './portals/selection-lifecycle';
 import type {IitcIrisPanDirection} from './content-keyboard-shortcuts';
 
 import type {IitcIrisSheetId, IitcIrisSidePanelId, IitcIrisPrimaryMenuId} from './menu-registry';

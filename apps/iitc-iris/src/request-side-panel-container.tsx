@@ -1,9 +1,9 @@
 import {h} from 'preact';
 import {getPanelStatusClass} from './ui-status';
 import {IitcIrisAgentPanel} from './agent-panel';
-import {IitcIrisCommPanel} from './comm-panel';
+import {IitcIrisCommPanel} from './comm/comm-panel';
 import {IitcIrisInventoryPanel} from './inventory-panel';
-import {IitcIrisMissionsPanel} from './missions-panel';
+import {IitcIrisMissionsPanel} from './missions/missions-panel';
 import {IitcIrisPasscodePanel} from './passcode-panel';
 import {IitcIrisScoresPanel} from './scores-panel';
 import {type IitcIrisSidePanelId} from './menu-registry';

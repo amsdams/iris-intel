@@ -1,4 +1,4 @@
-import type { DrawToolsTarget } from './content-draw-tools';
+import type { DrawToolsTarget } from './draw-tools/content-draw-tools';
 
 export function formatMapContextLatLng(lat: number, lng: number): string {
   return `${lat.toFixed(6)},${lng.toFixed(6)}`;

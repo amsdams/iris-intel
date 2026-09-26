@@ -15,11 +15,11 @@ import {
 } from './menu-registry';
 import {
   type IitcIrisPortalDetailSectionId,
-} from './portal-detail-section-registry';
+} from './portals/portal-detail-section-registry';
 import {
   getSelectionView,
   type IitcIrisMapContextSelection,
-} from './selection-lifecycle';
+} from './portals/selection-lifecycle';
 import {handleIitcIrisContentMessage, type CameraState, type EntityFetchState} from './content-message-adapter';
 import {
   addCommNicknameCommand,
@@ -65,12 +65,12 @@ import {
 } from './content-command-callbacks';
 import {handleIitcIrisContentKeyDown, type IitcIrisPanDirection} from './content-keyboard-shortcuts';
 import {copyIitcIrisText} from './content-feedback';
-import {IitcIrisPortalDetailsPanel} from './portal-details-panel';
+import {IitcIrisPortalDetailsPanel} from './portals/portal-details-panel';
 import {IitcIrisSearchPanel} from './search/search-panel';
-import {usePortalAnalysisWorkflow} from './content-portal-analysis-workflow';
+import {usePortalAnalysisWorkflow} from './portal-analysis/content-portal-analysis-workflow';
 import {IitcIrisMapControlsPanelContainer} from './map-controls-panel-container';
 import {IitcIrisHelpPanel} from './help-panel';
-import {IitcIrisPortalImageModal} from './portal-image-modal';
+import {IitcIrisPortalImageModal} from './portals/portal-image-modal';
 import {IitcIrisSheetTabBar} from './sheet-tabbar';
 import {IitcIrisAuthRecoveryBanner} from './auth-recovery-banner';
 import {IitcIrisRequestSidePanelContainer} from './request-side-panel-container';
@@ -137,13 +137,13 @@ import {
   buildLayerSettingsMessage,
   calculateToggledLayerSettings,
 } from './content-layer-actions';
-import {useDrawToolsWorkflow} from './content-draw-tools-workflow';
+import {useDrawToolsWorkflow} from './draw-tools/content-draw-tools-workflow';
 import {
   handleCommScrollAction,
   jumpCommToLatestAction,
   requestCommAction,
   requestOlderCommAction,
-} from './content-comm-panel-actions';
+} from './comm/content-comm-panel-actions';
 import {
   getCommAutoRequest,
   getInventoryAutoRequest,
@@ -154,7 +154,7 @@ import {
   buildLifecycleSettingsMessage,
 } from './content-outbound-messages';
 import {buildSearchClearMessage, getSearchDebounceAction} from './search/content-search-actions';
-import {shouldRefreshPortalMissions} from './content-mission-refresh';
+import {shouldRefreshPortalMissions} from './missions/content-mission-refresh';
 
 
 const IITC_PAN_CONTROL_OFFSET_PX = 500;

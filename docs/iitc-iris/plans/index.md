@@ -31,6 +31,11 @@ None.
 - Phase 2 runtime-effects extraction: complete.
 - Phase 2 closure audit: complete; decision was to stop extracting from `content.tsx` for now.
 - Source layout Checkpoint 1: complete; `search` files moved into `apps/iitc-iris/src/search/`.
+- Source layout Checkpoint 2: complete; `missions` files moved into `apps/iitc-iris/src/missions/`.
+- Source layout Checkpoint 3: complete; `COMM` files moved into `apps/iitc-iris/src/comm/`.
+- Source layout Checkpoint 4: complete; `Draw Tools` files moved into `apps/iitc-iris/src/draw-tools/`.
+- Source layout Checkpoint 5: complete; `Portal Analysis` files moved into `apps/iitc-iris/src/portal-analysis/`.
+- Source layout Checkpoint 6: complete; `Portals` files moved into `apps/iitc-iris/src/portals/`.
 
 ## Next Rules
 
@@ -72,8 +77,8 @@ Active:
 
 Ready/Blocked:
 
-- [source-directory-layout-plan.md](source-directory-layout-plan.md): Checkpoint 1 `search` move is done. Checkpoint 2
-  may be planned for `missions` only, then reviewed before any further folder moves.
+- [source-directory-layout-plan.md](source-directory-layout-plan.md): Checkpoints 1 `search`, 2 `missions`, 3 `COMM`, 4 `Draw Tools`, 5 `Portal Analysis`, and 6 `Portals` are done.
+  Checkpoint 7 `Layers` is ready as the next move-only checkpoint.
 
 Completed Phase 2:
 
@@ -102,7 +107,7 @@ Reference:
 ## Later Tracks
 
 - Move-only source layout: continue only one domain at a time after explicit approval in
-  [source-directory-layout-plan.md](source-directory-layout-plan.md). `missions` is the next preferred candidate.
+  [source-directory-layout-plan.md](source-directory-layout-plan.md). `Layers` is the next preferred candidate.
 - UI/CSS/mobile polish: do after app usage. Scope by concrete findings, not broad restyling.
 - Draw Tools refactoring: stay within Draw Tools v1 boundaries unless a pass explicitly ports more IITC Draw Tools
   behavior.

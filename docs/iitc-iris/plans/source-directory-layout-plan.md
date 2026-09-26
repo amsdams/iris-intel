@@ -178,7 +178,7 @@ Validation results:
 
 ### Checkpoint 2: Missions Folder Move
 
-Status: planned, not started.
+Status: done.
 
 Move only these files:
 
@@ -213,11 +213,30 @@ Validation:
 - `npm run package:iitc-iris`
 - `git diff --check`
 
-After implementation, update this checkpoint status to `done` and record validation results.
+#### Checkpoint 2 implementation notes (done)
+
+Moved with `git mv`. Import rewrites only — no logic, export, CSS, or test changes.
+
+Files with updated import paths:
+- `missions/missions-panel.tsx`: root-local `comm-display`, `messages`, and `ui-status` imports now use `../`.
+- `missions/content-mission-refresh.ts`: root-local `messages` and `menu-registry` imports now use `../`.
+- `src/content.tsx`: `./content-mission-refresh` → `./missions/content-mission-refresh`.
+- `src/request-side-panel-container.tsx`: `./missions-panel` → `./missions/missions-panel`.
+
+Validation results:
+- Focused test: 7 tests passed.
+- `npm run typecheck:iitc-iris`: pass.
+- `npm run lint:iitc-iris`: pass.
+- `npm run package:iitc-iris`: pass; Chrome ZIP and Firefox XPI built.
+- `git diff --check`: clean.
+
+#### Checkpoint 2 review (2026-09-26)
+
+Reviewed against the approved file list and import-rewrite scope. The staged moves preserve all three file bodies; the working-tree changes are limited to the required parent-relative imports and the two approved consumer imports. `git diff --check` passes. After dependencies were installed, the focused test passed; typecheck, lint, and package also pass. Checkpoint 3 is unblocked.
 
 ### Checkpoint 3: COMM Folder Move
 
-Status: planned, blocked until Checkpoint 2 is reviewed.
+Status: done.
 
 Move only these files:
 
@@ -249,9 +268,24 @@ Validation:
 - `npm run package:iitc-iris`
 - `git diff --check`
 
+#### Checkpoint 3 implementation notes (done)
+
+Moved with `git mv`. Import rewrites only — no logic, export, CSS, or test changes.
+
+Validation results:
+- Focused COMM tests: 4 files and 16 tests passed.
+- `npm run typecheck:iitc-iris`: pass.
+- `npm run lint:iitc-iris`: pass.
+- `npm run package:iitc-iris`: pass; Chrome ZIP and Firefox XPI built.
+- `git diff --check`: clean.
+
+#### Checkpoint 3 review (2026-09-26)
+
+Reviewed against the approved file list and import-rewrite scope. The twelve moves preserve file bodies; the only changes are required parent-relative imports and consumer import paths. Focused COMM tests (16 tests), typecheck, lint, package, and `git diff --check` pass. Checkpoint 4 is unblocked.
+
 ### Checkpoint 4: Draw Tools Folder Move
 
-Status: planned, blocked until Checkpoint 3 is reviewed.
+Status: done.
 
 Move only these files:
 
@@ -277,9 +311,24 @@ Validation:
 - `npm run package:iitc-iris`
 - `git diff --check`
 
+#### Checkpoint 4 implementation notes (done)
+
+Moved with `git mv`. Import rewrites only — no logic, export, CSS, or test changes.
+
+Validation results:
+- Focused Draw Tools tests: 5 files and 34 tests passed.
+- `npm run typecheck:iitc-iris`: pass.
+- `npm run lint:iitc-iris`: pass.
+- `npm run package:iitc-iris`: pass; Chrome ZIP and Firefox XPI built.
+- `git diff --check`: clean.
+
+#### Checkpoint 4 review (2026-09-26)
+
+Reviewed against the approved file list and import-rewrite scope. The eleven moves preserve file bodies; the only changes are required parent-relative imports and consumer import paths. Focused Draw Tools tests (34 tests), typecheck, lint, package, and `git diff --check` pass. Checkpoint 5 is unblocked.
+
 ### Checkpoint 5: Portal Analysis Folder Move
 
-Status: planned, blocked until Checkpoint 4 is reviewed.
+Status: done.
 
 Move only these files:
 
@@ -301,9 +350,24 @@ Validation:
 - `npm run package:iitc-iris`
 - `git diff --check`
 
+#### Checkpoint 5 implementation notes (done)
+
+Moved with `git mv`. Import rewrites only — no logic, export, CSS, or test changes.
+
+Validation results:
+- Focused Portal Analysis tests: 3 files and 12 tests passed.
+- `npm run typecheck:iitc-iris`: pass.
+- `npm run lint:iitc-iris`: pass.
+- `npm run package:iitc-iris`: pass; Chrome ZIP and Firefox XPI built.
+- `git diff --check`: clean.
+
+#### Checkpoint 5 review (2026-09-26)
+
+Reviewed against the approved file list and import-rewrite scope. The nine moves preserve file bodies; the only changes are required parent-relative imports and consumer import paths. Focused Portal Analysis tests (12 tests), typecheck, lint, package, and `git diff --check` pass. Checkpoint 6 is unblocked.
+
 ### Checkpoint 6: Portals Folder Move
 
-Status: planned, blocked until Checkpoint 5 is reviewed.
+Status: done.
 
 Move only these files:
 
@@ -324,9 +388,24 @@ Validation:
 - `npm run package:iitc-iris`
 - `git diff --check`
 
+#### Checkpoint 6 implementation notes (done)
+
+Moved with `git mv`. Import rewrites only — no logic, export, CSS, or test changes.
+
+Validation results:
+- Focused Portals tests: 3 files and 12 tests passed.
+- `npm run typecheck:iitc-iris`: pass.
+- `npm run lint:iitc-iris`: pass.
+- `npm run package:iitc-iris`: pass; Chrome ZIP and Firefox XPI built.
+- `git diff --check`: clean.
+
+#### Checkpoint 6 review (2026-09-26)
+
+Reviewed against the approved file list and import-rewrite scope. The eight moves preserve file bodies; the only changes are required parent-relative imports and consumer import paths. Focused Portals tests (12 tests), typecheck, lint, package, and `git diff --check` pass. Checkpoint 7 is unblocked.
+
 ### Checkpoint 7: Layers Folder Move
 
-Status: planned, blocked until Checkpoint 6 is reviewed.
+Status: ready. Execute only this move-only checkpoint in its own branch.
 
 Move only these files:
 

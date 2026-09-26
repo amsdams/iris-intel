@@ -1,5 +1,5 @@
 import {h} from 'preact';
-import {getCommTeamClass} from './comm-display';
+import {getCommTeamClass} from './comm/comm-display';
 import type {IitcIrisScoresState} from './messages';
 import {formatElapsedSeconds, getAuthErrorMessage} from './ui-status';
 

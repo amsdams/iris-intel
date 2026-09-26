@@ -5,11 +5,11 @@ import {
   isContextActionVisible,
   type IitcIrisContextActionId,
 } from './context-action-registry';
-import { formatTeamClass } from './content-portal-analysis';
+import { formatTeamClass } from './portal-analysis/content-portal-analysis';
 import type { IitcIrisMapContextPortalAnchor } from './messages';
 import type {
   IitcIrisMapContextSelection,
-} from './selection-lifecycle';
+} from './portals/selection-lifecycle';
 
 export interface IitcIrisMapNavigationPanelProps {
   canPan: boolean;

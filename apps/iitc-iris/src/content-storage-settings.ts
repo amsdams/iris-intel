@@ -10,7 +10,7 @@ import {
   DEFAULT_PORTAL_DETAIL_SECTION_SETTINGS,
   PORTAL_DETAIL_SECTION_REGISTRY,
   type IitcIrisPortalDetailSectionId as PortalSectionId,
-} from './portal-detail-section-registry';
+} from './portals/portal-detail-section-registry';
 import type {
   IitcIrisBaseLayerId,
   IitcIrisCommTab,
