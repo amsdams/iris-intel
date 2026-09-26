@@ -4,7 +4,7 @@ import {
   formatMapContextIntelUrl,
   formatMapContextLatLng,
   formatPortalIntelUrl,
-} from './content-map-context';
+} from './map/content-map-context';
 import type {IitcIrisMapContextSelection} from './portals/selection-lifecycle';
 
 export function copySelectedPortalLink(

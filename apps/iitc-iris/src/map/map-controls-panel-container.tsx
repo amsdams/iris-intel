@@ -1,23 +1,23 @@
 import {h} from 'preact';
 import {IitcIrisMapNavigationPanel, IitcIrisMapContextPanel} from './map-controls-panel';
-import {IitcIrisDrawToolsPanel} from './draw-tools/draw-tools-panel';
-import {IitcIrisPortalCountsPanel} from './portal-analysis/portal-counts-panel';
-import {IitcIrisPortalsListPanel} from './portal-analysis/portals-list-panel';
-import {IitcIrisScoreboardPanel} from './portal-analysis/scoreboard-panel';
-import {IitcIrisLayersPanel} from './layers/layers-panel';
+import {IitcIrisDrawToolsPanel} from '../draw-tools/draw-tools-panel';
+import {IitcIrisPortalCountsPanel} from '../portal-analysis/portal-counts-panel';
+import {IitcIrisPortalsListPanel} from '../portal-analysis/portals-list-panel';
+import {IitcIrisScoreboardPanel} from '../portal-analysis/scoreboard-panel';
+import {IitcIrisLayersPanel} from '../layers/layers-panel';
 import {formatMapObjectDistance, formatTeamLabel} from './content-map-status';
-import {type IitcIrisSheetId} from './menu-registry';
-import {type IitcIrisPanDirection} from './content-keyboard-shortcuts';
-import {type IitcIrisMapContextSelection} from './portals/selection-lifecycle';
-import {type IitcIrisBooleanLayerSettingKey} from './layers/layer-registry';
-import {type DrawToolsLinkEndpointLabels, type DrawToolsMarkerPortalInfo, type DrawToolsTarget} from './draw-tools/content-draw-tools';
+import {type IitcIrisSheetId} from '../menu-registry';
+import {type IitcIrisPanDirection} from '../content-keyboard-shortcuts';
+import {type IitcIrisMapContextSelection} from '../portals/selection-lifecycle';
+import {type IitcIrisBooleanLayerSettingKey} from '../layers/layer-registry';
+import {type DrawToolsLinkEndpointLabels, type DrawToolsMarkerPortalInfo, type DrawToolsTarget} from '../draw-tools/content-draw-tools';
 import {
   type PortalAnalysisListSummary,
   type PortalsListLevelFilter,
   type PortalsListSortField,
   type PortalsListTeamFilter,
   type SortOrder,
-} from './portal-analysis/content-portal-analysis';
+} from '../portal-analysis/content-portal-analysis';
 import {type IitcPortalsListEntry} from '@iris/iitc-core';
 import {
   type IitcIrisBaseLayerId,
@@ -28,7 +28,7 @@ import {
   type IitcIrisMapContextPortalAnchor,
   type IitcIrisPortalAnalysis,
   type IitcIrisPortalHighlighterId,
-} from './messages';
+} from '../messages';
 
 export interface IitcIrisMapControlsPanelContainerProps {
   activeSheet: IitcIrisSheetId;

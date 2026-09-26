@@ -4,12 +4,12 @@ import {
   getContextTarget,
   isContextActionVisible,
   type IitcIrisContextActionId,
-} from './context-action-registry';
-import { formatTeamClass } from './portal-analysis/content-portal-analysis';
-import type { IitcIrisMapContextPortalAnchor } from './messages';
+} from '../context-action-registry';
+import { formatTeamClass } from '../portal-analysis/content-portal-analysis';
+import type { IitcIrisMapContextPortalAnchor } from '../messages';
 import type {
   IitcIrisMapContextSelection,
-} from './portals/selection-lifecycle';
+} from '../portals/selection-lifecycle';
 
 export interface IitcIrisMapNavigationPanelProps {
   canPan: boolean;

@@ -37,6 +37,7 @@ None.
 - Source layout Checkpoint 5: complete; `Portal Analysis` files moved into `apps/iitc-iris/src/portal-analysis/`.
 - Source layout Checkpoint 6: complete; `Portals` files moved into `apps/iitc-iris/src/portals/`.
 - Source layout Checkpoint 7: complete; `Layers` files moved into `apps/iitc-iris/src/layers/`.
+- Source layout Checkpoint 8: complete; `Map` files moved into `apps/iitc-iris/src/map/`.
 
 ## Next Rules
 
@@ -78,8 +79,8 @@ Active:
 
 Ready/Blocked:
 
-- [source-directory-layout-plan.md](source-directory-layout-plan.md): Checkpoints 1 through 7 are done.
-  Checkpoint 8 `Map` is ready as the next move-only checkpoint.
+- [source-directory-layout-plan.md](source-directory-layout-plan.md): Checkpoints 1 through 8 are done.
+  Checkpoint 9 `System` is ready as the next move-only checkpoint.
 
 Completed Phase 2:
 

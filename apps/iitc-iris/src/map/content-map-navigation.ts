@@ -1,6 +1,6 @@
-import {parseViewInput} from './content-scenarios';
-import type {IitcIrisMessage} from './messages';
-import {IITC_IRIS_MESSAGES} from './messages';
+import {parseViewInput} from '../content-scenarios';
+import type {IitcIrisMessage} from '../messages';
+import {IITC_IRIS_MESSAGES} from '../messages';
 
 export interface ViewInputParseResult {
   lat: number;

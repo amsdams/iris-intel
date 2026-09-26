@@ -2,12 +2,12 @@ import {
   createIitcMapDataPlan,
   type IitcMapDataPlan,
 } from '@iris/iitc-core';
-import type { CameraState, EntityFetchState } from './content-message-adapter';
-import { formatElapsedSeconds } from './ui-status';
+import type { CameraState, EntityFetchState } from '../content-message-adapter';
+import { formatElapsedSeconds } from '../ui-status';
 import type {
   IitcIrisRenderMutationDiagnostics,
   IitcIrisRequestDiagnostics,
-} from './messages';
+} from '../messages';
 
 export const REQUEST_BOUNDS_PADDING_RATIO = 0.25;
 

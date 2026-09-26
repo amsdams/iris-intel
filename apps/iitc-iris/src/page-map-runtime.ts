@@ -4,8 +4,8 @@ import {DEFAULT_LAYER_SETTINGS} from './layers/layer-registry';
 import {DEFAULT_HIGHLIGHTER_ID, getPortalHighlighter, PORTAL_HIGHLIGHTER_REGISTRY} from './layers/highlighter-registry';
 import {IITC_LEVEL_COLORS, IITC_TEAM_COLORS} from './iitc-colors';
 import {getLayerUpdatePlan} from './layers/layer-update-routing';
-import {createIitcIrisMapContextMessage, installIitcIrisContextGestures} from './map-context-runtime';
-import {convertIitcGeodesicLatLngs, createIitcGeodesicPolygon, createIitcGeodesicPolyline} from './leaflet-geodesic';
+import {createIitcIrisMapContextMessage, installIitcIrisContextGestures} from './map/map-context-runtime';
+import {convertIitcGeodesicLatLngs, createIitcGeodesicPolygon, createIitcGeodesicPolyline} from './map/leaflet-geodesic';
 import {
   appendIitcResponseBucketDiagnostics,
   applyIitcTileRequestResponseToQueue,

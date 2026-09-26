@@ -1,6 +1,6 @@
-import {clampView} from './content-scenarios';
-import type {IitcIrisMessage} from './messages';
-import {IITC_IRIS_MESSAGES} from './messages';
+import {clampView} from '../content-scenarios';
+import type {IitcIrisMessage} from '../messages';
+import {IITC_IRIS_MESSAGES} from '../messages';
 
 export function buildSetViewMessage(
   lat: number,

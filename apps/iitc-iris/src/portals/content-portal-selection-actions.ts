@@ -3,9 +3,9 @@ import type {IitcIrisPortalDetailSectionId} from './portal-detail-section-regist
 import {
   buildClearPortalSelectionMessage,
   buildZoomToAndShowPortalMessage,
-} from '../content-camera-actions';
+} from '../map/content-camera-actions';
 import {storePortalSections} from '../content-storage-settings';
-import {getPortalLatLng} from '../content-map-status';
+import {getPortalLatLng} from '../map/content-map-status';
 
 export type PortalSectionId = IitcIrisPortalDetailSectionId;
 

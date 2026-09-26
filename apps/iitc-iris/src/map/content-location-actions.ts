@@ -1,5 +1,5 @@
 import {buildUserLocationMessage, parseAndBuildViewInputJump} from './content-map-navigation';
-import type {IitcIrisMessage} from './messages';
+import type {IitcIrisMessage} from '../messages';
 
 export const GEOLOCATION_MAX_ZOOM = 13;
 

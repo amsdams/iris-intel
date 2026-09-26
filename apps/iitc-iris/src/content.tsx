@@ -68,7 +68,7 @@ import {copyIitcIrisText} from './content-feedback';
 import {IitcIrisPortalDetailsPanel} from './portals/portal-details-panel';
 import {IitcIrisSearchPanel} from './search/search-panel';
 import {usePortalAnalysisWorkflow} from './portal-analysis/content-portal-analysis-workflow';
-import {IitcIrisMapControlsPanelContainer} from './map-controls-panel-container';
+import {IitcIrisMapControlsPanelContainer} from './map/map-controls-panel-container';
 import {IitcIrisHelpPanel} from './help-panel';
 import {IitcIrisPortalImageModal} from './portals/portal-image-modal';
 import {IitcIrisSheetTabBar} from './sheet-tabbar';
@@ -88,7 +88,7 @@ import {
   jumpToPresetAction,
   jumpToViewInputAction,
   locateBrowserPositionAction,
-} from './content-location-actions';
+} from './map/content-location-actions';
 import {
   createDataSourceSettings,
   DATA_SOURCE_OPTIONS,
@@ -124,7 +124,7 @@ import {
   createPlan,
   formatRenderMutationSummary,
   formatSelectedPortal,
-} from './content-map-status';
+} from './map/content-map-status';
 
 
 import {type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDrawToolsItem, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPortalHighlighterId, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState} from './messages';

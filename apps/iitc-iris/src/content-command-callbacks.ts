@@ -51,7 +51,7 @@ import {
 import {
   buildPanByMessage,
   buildSetViewMessage,
-} from './content-camera-actions';
+} from './map/content-camera-actions';
 import {
   copyMapContextGuid as copyMapContextGuidHelper,
   copyMapContextLatLng as copyMapContextLatLngHelper,

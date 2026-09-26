@@ -1,6 +1,6 @@
 import L, {type Map as LeafletMap, type Point as LeafletPoint} from 'leaflet';
 import {createIitcMapContextPayload, type IitcMapContextPayloadOptions} from '@iris/iitc-core';
-import {IITC_IRIS_MESSAGES, type IitcIrisMessage} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisMessage} from '../messages';
 
 export interface IitcIrisContextGestureOptions {
   longPressMs: number;

@@ -6,7 +6,7 @@ import {
   buildZoomToAndShowPortalMessage,
   calculateZoomView,
 } from './content-camera-actions';
-import {IITC_IRIS_MESSAGES} from './messages';
+import {IITC_IRIS_MESSAGES} from '../messages';
 
 describe('content-camera-actions', () => {
   it('builds setView message with clamped coordinates', () => {
