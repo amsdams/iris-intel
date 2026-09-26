@@ -31,7 +31,7 @@ import {getIitcIrisPrimaryMenuEffect} from './content-primary-menu';
 import {
   performIntelLoginRedirect,
   performIntelLogoutRedirect,
-} from './content-auth-navigation';
+} from './auth/content-auth-navigation';
 import {
   buildSearchClearMessage,
   buildSearchPreviewMessage,

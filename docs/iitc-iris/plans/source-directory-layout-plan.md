@@ -93,9 +93,9 @@ checkpoint.
    - map controls, map navigation/camera/location/context/status helpers, geodesic helpers, and map context runtime.
 9. System folder, done:
    - system panels, diagnostics, scenarios, dock diagnostics, help panel, and copy/feedback helpers if still root-local.
-10. Auth folder:
+10. Auth folder, done:
    - auth recovery/navigation and login/logout related helpers.
-11. Side request panels:
+11. Side request panels, done:
    - agent, inventory, passcode, and scores panels if they have not naturally moved with another domain.
 12. Shell/shared app folder:
    - menu/sheet/keyboard/storage/message-adapter/outbound-message helpers and panel containers, after all feature
@@ -521,7 +521,7 @@ Validation:
 
 ### Checkpoint 10: Auth Folder Move
 
-Status: ready. Execute only this move-only checkpoint in its own branch.
+Status: done.
 
 Move only these files:
 
@@ -537,9 +537,24 @@ Validation:
 - `npm run package:iitc-iris`
 - `git diff --check`
 
+#### Checkpoint 10 implementation notes (done)
+
+Moved with `git mv`. Import rewrites only — no logic, export, CSS, or test changes.
+
+Validation results:
+- Focused Auth test: 1 file and 5 tests passed.
+- `npm run typecheck:iitc-iris`: pass.
+- `npm run lint:iitc-iris`: pass.
+- `npm run package:iitc-iris`: pass; Chrome ZIP and Firefox XPI built.
+- `git diff --check`: clean.
+
+#### Checkpoint 10 review (2026-09-26)
+
+Reviewed against the approved file list and import-rewrite scope. The moves preserve file bodies; the only changes are required parent-relative imports and consumer import paths. Focused Auth tests (5 tests), typecheck, lint, package, and `git diff --check` pass. Checkpoint 11 is unblocked.
+
 ### Checkpoint 11: Side Request Panel Folder Move
 
-Status: planned, blocked until Checkpoint 10 is reviewed.
+Status: done.
 
 Move only these files:
 
@@ -557,9 +572,23 @@ Validation:
 - `npm run package:iitc-iris`
 - `git diff --check`
 
+#### Checkpoint 11 implementation notes (done)
+
+Moved with `git mv`. Import rewrites only — no logic, export, CSS, or test changes.
+
+Validation results:
+- `npm run typecheck:iitc-iris`: pass.
+- `npm run lint:iitc-iris`: pass.
+- `npm run package:iitc-iris`: pass; Chrome ZIP and Firefox XPI built.
+- `git diff --check`: clean.
+
+#### Checkpoint 11 review (2026-09-26)
+
+Reviewed against the approved file list and import-rewrite scope. The moves preserve file bodies; the only changes are required parent-relative imports and consumer import paths. Typecheck, lint, package, and `git diff --check` pass. Checkpoint 12 is unblocked.
+
 ### Checkpoint 12: Shell And Shared App Folder Move
 
-Status: planned, blocked until Checkpoint 11 is reviewed.
+Status: ready. Execute only this move-only checkpoint in its own branch.
 
 This is the highest-churn move-only checkpoint. Re-review this file list before assigning it.
 

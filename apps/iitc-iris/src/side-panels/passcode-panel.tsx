@@ -1,7 +1,7 @@
 import {h} from 'preact';
-import {formatIitcColorVars, getIitcLevelColor} from './iitc-colors';
-import type {IitcIrisPasscodeRewardItem, IitcIrisPasscodeState} from './messages';
-import {formatElapsedSeconds, getAuthErrorMessage} from './ui-status';
+import {formatIitcColorVars, getIitcLevelColor} from '../iitc-colors';
+import type {IitcIrisPasscodeRewardItem, IitcIrisPasscodeState} from '../messages';
+import {formatElapsedSeconds, getAuthErrorMessage} from '../ui-status';
 
 export interface IitcIrisPasscodePanelProps {
   passcodeDraft: string;

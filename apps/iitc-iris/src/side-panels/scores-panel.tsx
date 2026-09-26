@@ -1,7 +1,7 @@
 import {h} from 'preact';
-import {getCommTeamClass} from './comm/comm-display';
-import type {IitcIrisScoresState} from './messages';
-import {formatElapsedSeconds, getAuthErrorMessage} from './ui-status';
+import {getCommTeamClass} from '../comm/comm-display';
+import type {IitcIrisScoresState} from '../messages';
+import {formatElapsedSeconds, getAuthErrorMessage} from '../ui-status';
 
 export interface IitcIrisScoresPanelProps {
   scoresState: IitcIrisScoresState;

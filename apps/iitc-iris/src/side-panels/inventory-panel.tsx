@@ -1,7 +1,7 @@
 import {h} from 'preact';
-import {formatIitcColorVars, getIitcItemColor} from './iitc-colors';
-import type {IitcIrisInventoryState} from './messages';
-import {formatElapsedSeconds, formatSubscriptionLabel, getAuthErrorMessage, getSubscriptionStatusClass} from './ui-status';
+import {formatIitcColorVars, getIitcItemColor} from '../iitc-colors';
+import type {IitcIrisInventoryState} from '../messages';
+import {formatElapsedSeconds, formatSubscriptionLabel, getAuthErrorMessage, getSubscriptionStatusClass} from '../ui-status';
 
 export interface IitcIrisInventoryPanelProps {
   inventoryState: IitcIrisInventoryState;

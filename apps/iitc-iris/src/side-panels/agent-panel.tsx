@@ -1,7 +1,7 @@
 import {h} from 'preact';
-import {getCommTeamClass} from './comm/comm-display';
-import type {IitcIrisAgentState} from './messages';
-import {formatElapsedSeconds, formatSubscriptionBadge, formatSubscriptionLabel, getSubscriptionStatusClass} from './ui-status';
+import {getCommTeamClass} from '../comm/comm-display';
+import type {IitcIrisAgentState} from '../messages';
+import {formatElapsedSeconds, formatSubscriptionBadge, formatSubscriptionLabel, getSubscriptionStatusClass} from '../ui-status';
 
 export interface IitcIrisAgentPanelProps {
   agentState: IitcIrisAgentState;

@@ -72,7 +72,7 @@ import {IitcIrisMapControlsPanelContainer} from './map/map-controls-panel-contai
 import {IitcIrisHelpPanel} from './system/help-panel';
 import {IitcIrisPortalImageModal} from './portals/portal-image-modal';
 import {IitcIrisSheetTabBar} from './sheet-tabbar';
-import {IitcIrisAuthRecoveryBanner} from './auth-recovery-banner';
+import {IitcIrisAuthRecoveryBanner} from './auth/auth-recovery-banner';
 import {IitcIrisRequestSidePanelContainer} from './request-side-panel-container';
 import {IitcIrisSystemPanelContainer} from './system/system-panel-container';
 import {createDockDiagnostics} from './system/content-dock-diagnostics';
@@ -82,7 +82,7 @@ import {
   getAuthSources,
   retryActiveAuthPanelRequest,
   type AppAuthStates,
-} from './content-auth-navigation';
+} from './auth/content-auth-navigation';
 import {useScenarioWorkflow} from './system/content-scenario-workflow';
 import {
   jumpToPresetAction,
