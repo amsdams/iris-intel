@@ -66,7 +66,7 @@ import {
 import {handleIitcIrisContentKeyDown, type IitcIrisPanDirection} from './content-keyboard-shortcuts';
 import {copyIitcIrisText} from './content-feedback';
 import {IitcIrisPortalDetailsPanel} from './portal-details-panel';
-import {IitcIrisSearchPanel} from './search-panel';
+import {IitcIrisSearchPanel} from './search/search-panel';
 import {usePortalAnalysisWorkflow} from './content-portal-analysis-workflow';
 import {IitcIrisMapControlsPanelContainer} from './map-controls-panel-container';
 import {IitcIrisHelpPanel} from './help-panel';
@@ -153,7 +153,7 @@ import {
   buildDataSourceSettingsMessage,
   buildLifecycleSettingsMessage,
 } from './content-outbound-messages';
-import {buildSearchClearMessage, getSearchDebounceAction} from './content-search-actions';
+import {buildSearchClearMessage, getSearchDebounceAction} from './search/content-search-actions';
 import {shouldRefreshPortalMissions} from './content-mission-refresh';
 
 

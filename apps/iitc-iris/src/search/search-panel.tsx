@@ -1,7 +1,7 @@
 import {h} from 'preact';
-import {getCommTeamClass} from './comm-display';
-import type {IitcIrisSearchResult, IitcIrisSearchState} from './messages';
-import {formatElapsedSeconds, getPanelStatusClass} from './ui-status';
+import {getCommTeamClass} from '../comm-display';
+import type {IitcIrisSearchResult, IitcIrisSearchState} from '../messages';
+import {formatElapsedSeconds, getPanelStatusClass} from '../ui-status';
 
 interface RenderedSearchResult {
   result: IitcIrisSearchResult;

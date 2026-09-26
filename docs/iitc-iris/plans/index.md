@@ -99,8 +99,8 @@ Before starting Phase 2:
 
 ## Phase 2: App Surface Extraction
 
-Status: shell and side-panel extraction checkpoints are complete. Continue with narrow runtime-wiring slices from
-`content.tsx`, guided by fresh detailed plans.
+Status: complete/parked for now. Shell, side-panel, command-callback, runtime-effects, closure-audit, and the first
+move-only source-layout checkpoint are complete. No further `content.tsx` extraction is approved.
 
 Goal: reduce the size and coupling of `apps/iitc-iris/src/content.tsx` without changing behavior. Phase 1 made this
 safer by moving the main parity-sensitive behavior behind tested core facades.
@@ -121,16 +121,16 @@ Completed Phase 2 checkpoints:
 1. Command callback extraction: [content-command-callbacks-extraction-plan.md](content-command-callbacks-extraction-plan.md).
 2. Content shell extraction: [content-shell-extraction-plan.md](content-shell-extraction-plan.md).
 3. Side-panel extraction: [panel-extraction-plan.md](panel-extraction-plan.md).
+4. Runtime effects extraction: [content-runtime-effects-extraction-plan.md](content-runtime-effects-extraction-plan.md).
 
 Next steps before continuing Phase 2:
 
-1. Use [content-runtime-effects-extraction-plan.md](content-runtime-effects-extraction-plan.md) for the next narrow
-   slice, following its checkpoints in order.
-2. Keep the next implementation branch scoped to runtime-effect message/retry planning only; do not combine it with
-   rendering, folder migration, UI changes, facade work, or broad hook extraction.
-3. Re-run focused runtime-helper tests after each checkpoint and full validation before merging the next slice.
-4. After that slice, choose the next coherent remaining runtime responsibility from `content.tsx` and update the
-   detailed plan before implementation.
+1. Do not continue extracting from `content.tsx` unless a new detailed plan identifies a narrow, repeated, testable
+   responsibility with a clear owner.
+2. Review the completed `search` folder move in [source-directory-layout-plan.md](source-directory-layout-plan.md).
+3. Do not start another source-layout checkpoint until [source-directory-layout-plan.md](source-directory-layout-plan.md)
+   names one approved folder and exact files.
+4. Do not mix future layout moves with logic changes, UI changes, CSS changes, behavior changes, or additional folders.
 
 Non-goals for Phase 2:
 
@@ -146,12 +146,8 @@ surface smaller and easier to reason about.
 
 - Draw Tools refactoring: extract only within the existing Draw Tools v1 boundaries unless the pass explicitly ports
   more IITC Draw Tools behavior.
-- Source directory layout migration: move files into feature/domain folders only after Phase 2 has made the ownership
-  boundaries obvious. Prefer folders such as `comm`, `search`, `portals`, `missions`, `draw-tools`, `map`, `auth`, and
-  `shell` over broad layer buckets such as generic `components`, `hooks`, or `utils`. This must be a behavior-preserving
-  move-only pass: no logic changes, no UI changes, no storage/message id changes, and no facade contract changes. Move
-  one feature at a time, keep tests green after each move, and do not move `content.tsx` until the content shell is
-  smaller and stable enough that its final ownership is clear.
+- Source directory layout migration: see [source-directory-layout-plan.md](source-directory-layout-plan.md). Checkpoint 1
+  moved the `search` files into a `search/` folder without behavior changes. Later moves need explicit approval.
 - Map lifecycle/state cleanup: adjust or extract only around validated IITC `map_data_request` behavior and documented
   watch items; avoid a general all-data-flow rewrite.
 - Entity abstraction and global store: revisit only after repeated concrete patterns from IITC-named facades justify the
@@ -160,8 +156,10 @@ surface smaller and easier to reason about.
 ## Active Review Plans
 
 - Completed AGY branch structured audit: [agy-branch-structured-audit-plan.md](agy-branch-structured-audit-plan.md).
-- Active next Phase 2 slice:
-  [content-runtime-effects-extraction-plan.md](content-runtime-effects-extraction-plan.md).
+- Completed Phase 2 closure audit: [content-phase2-closure-audit-plan.md](content-phase2-closure-audit-plan.md).
+- Completed source layout Checkpoint 1:
+  [source-directory-layout-plan.md](source-directory-layout-plan.md).
+- Active next refactor: none approved. Update a detailed plan before assigning more refactor work.
 
 ## Detailed Plan Template
 

@@ -39,8 +39,8 @@ rendering and callback wiring only.
 
 ## Follow-up
 
-- Continue app-surface extraction with
-  [content-runtime-effects-extraction-plan.md](content-runtime-effects-extraction-plan.md).
+- Continue app-surface planning with
+  [content-phase2-closure-audit-plan.md](content-phase2-closure-audit-plan.md).
 - Extract shared command/request helpers only when repeated across extracted panels or runtime effects, and keep each
   helper pure unless a later detailed plan explicitly moves lifecycle ownership.
 

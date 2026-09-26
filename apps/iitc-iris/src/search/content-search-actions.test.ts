@@ -8,8 +8,8 @@ import {
   getActiveSearchResult,
   getSearchDebounceAction,
 } from './content-search-actions';
-import type {IitcIrisSearchResult} from './messages';
-import {IITC_IRIS_MESSAGES} from './messages';
+import type {IitcIrisSearchResult} from '../messages';
+import {IITC_IRIS_MESSAGES} from '../messages';
 
 describe('content-search-actions', () => {
   const portalResult: IitcIrisSearchResult = {

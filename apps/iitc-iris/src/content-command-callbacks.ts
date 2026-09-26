@@ -39,7 +39,7 @@ import {
   buildSearchSelectMessage,
   calculateNextSearchResultIndex,
   getActiveSearchResult,
-} from './content-search-actions';
+} from './search/content-search-actions';
 import {
   clearPortalSelectionAction,
   focusSelectedPortalAction,

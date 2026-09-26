@@ -1,5 +1,5 @@
-import type {IitcIrisMessage, IitcIrisSearchResult} from './messages';
-import {IITC_IRIS_MESSAGES} from './messages';
+import type {IitcIrisMessage, IitcIrisSearchResult} from '../messages';
+import {IITC_IRIS_MESSAGES} from '../messages';
 
 export function buildSearchRequestMessage(
   searchTerm: string,
