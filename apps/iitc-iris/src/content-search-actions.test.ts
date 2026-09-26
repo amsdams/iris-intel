@@ -6,6 +6,7 @@ import {
   buildSearchSelectMessage,
   calculateNextSearchResultIndex,
   getActiveSearchResult,
+  getSearchDebounceAction,
 } from './content-search-actions';
 import type {IitcIrisSearchResult} from './messages';
 import {IITC_IRIS_MESSAGES} from './messages';
@@ -69,5 +70,25 @@ describe('content-search-actions', () => {
       portalResult,
     ];
     expect(getActiveSearchResult(results, 0)).toEqual(portalResult);
+  });
+});
+
+describe('getSearchDebounceAction', () => {
+  it('returns clear for an empty string', () => {
+    expect(getSearchDebounceAction('')).toEqual({type: 'clear'});
+  });
+
+  it('returns clear for a whitespace-only string', () => {
+    expect(getSearchDebounceAction('   ')).toEqual({type: 'clear'});
+    expect(getSearchDebounceAction('\t')).toEqual({type: 'clear'});
+  });
+
+  it('returns a request action with the trimmed term and 100ms delay for non-empty input', () => {
+    expect(getSearchDebounceAction('Amsterdam')).toEqual({type: 'request', term: 'Amsterdam', delayMs: 100});
+  });
+
+  it('trims the request term without changing the debounce delay', () => {
+    const result = getSearchDebounceAction('  test  ');
+    expect(result).toEqual({type: 'request', term: 'test', delayMs: 100});
   });
 });

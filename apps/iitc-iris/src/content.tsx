@@ -153,7 +153,8 @@ import {
   buildDataSourceSettingsMessage,
   buildLifecycleSettingsMessage,
 } from './content-outbound-messages';
-import {buildSearchClearMessage} from './content-search-actions';
+import {buildSearchClearMessage, getSearchDebounceAction} from './content-search-actions';
+import {shouldRefreshPortalMissions} from './content-mission-refresh';
 
 
 const IITC_PAN_CONTROL_OFFSET_PX = 500;
@@ -895,22 +896,25 @@ function App(): h.JSX.Element {
 
 
   useEffect(() => {
-    if (activeSidePanel !== 'missions') return;
-    if (missionsState.source !== 'portal' || missionsState.status === 'loading') return;
-    const selectedPortalGuid = entityFetch.selectedPortal?.guid;
-    if (!selectedPortalGuid || selectedPortalGuid === missionsState.portalGuid) return;
+    if (!shouldRefreshPortalMissions({
+      activeSidePanel,
+      selectedPortalGuid: entityFetch.selectedPortal?.guid,
+      missionSource: missionsState.source,
+      missionStatus: missionsState.status,
+      missionPortalGuid: missionsState.portalGuid,
+    })) return;
     refreshMissions('portal');
   }, [activeSidePanel, entityFetch.selectedPortal?.guid, missionsState.portalGuid, missionsState.source, missionsState.status, refreshMissions]);
 
   useEffect(() => {
-    const term = searchTerm.trim();
-    if (term.length === 0) {
+    const action = getSearchDebounceAction(searchTerm);
+    if (action.type === 'clear') {
       setSearchState(EMPTY_SEARCH_STATE);
       setActiveSearchResultIndex(0);
       window.postMessage(buildSearchClearMessage(), '*');
       return;
     }
-    const timer = window.setTimeout(() => requestSearch(term, false), 100);
+    const timer = window.setTimeout(() => requestSearch(action.term, false), action.delayMs);
     return (): void => window.clearTimeout(timer);
   }, [searchTerm, requestSearch]);
 

@@ -55,3 +55,16 @@ export function getActiveSearchResult(
   const selectable = results.filter((r) => r.type !== 'empty');
   return selectable[index];
 }
+
+export type SearchDebounceAction =
+  | {type: 'clear'}
+  | {type: 'request'; term: string; delayMs: 100};
+
+/** Returns 'clear' for an empty/whitespace term, or 'request' with the trimmed term and debounce delay. */
+export function getSearchDebounceAction(searchTerm: string): SearchDebounceAction {
+  const term = searchTerm.trim();
+  if (term.length === 0) {
+    return {type: 'clear'};
+  }
+  return {type: 'request', term, delayMs: 100};
+}

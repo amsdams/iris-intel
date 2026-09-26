@@ -1,6 +1,8 @@
 # Content Runtime Effects Extraction Plan
 
-Status: Checkpoint 2 complete. Checkpoints 0 (baseline review), 1 (side-panel auto-request plans), and 2 (runtime settings message builders) are done. Checkpoints 3–4 are planned.
+Status: All checkpoints complete. Checkpoints 0 (baseline review), 1 (side-panel auto-request plans), 2
+(runtime settings message builders), 3 (portal mission refresh decision), and 4 (search debounce plan) are done.
+No further checkpoints are planned for this slice.
 
 
 ## IITC Sources
@@ -21,6 +23,7 @@ avoid changing request semantics, but implementation should stay in `apps/iitc-i
 - `apps/iitc-iris/src/content-command-callbacks.ts`
 - `apps/iitc-iris/src/content-message-adapter.ts`
 - `apps/iitc-iris/src/content-layer-actions.ts`
+- `apps/iitc-iris/src/content-search-actions.ts`
 - Existing focused tests beside those modules.
 
 ## Public Concepts
@@ -49,6 +52,21 @@ divergence. There are no intended divergences in this plan.
 ## Scope
 
 Reduce repeated runtime message and retry-plan assembly in `content.tsx` without changing behavior.
+
+Remaining checkpoint execution rules:
+
+- AGY may implement Checkpoints 3 and 4 in the same branch only if Checkpoint 3 is completed first and both checkpoints
+  stay inside this plan's exact boundaries.
+- Do not create a broad `content-runtime-effects` hook, dependency object, service, class, registry, or generic effect
+  runner.
+- Prefer small named helpers that answer one question, such as `shouldRefreshPortalMissions` or
+  `getSearchDebounceAction`.
+- Do not move `useEffect`, `window.setTimeout`, `window.clearTimeout`, `window.postMessage`, state setters, refs,
+  `refreshMissions`, or `requestSearch` out of `content.tsx`.
+- Do not touch layer/highlighter effects, side-panel auto-request effects, panel JSX, folder layout, CSS, storage keys,
+  message type names, or page-runtime code while completing Checkpoints 3 and 4.
+- If the implementation needs more than one small helper module plus focused tests, stop and update this plan before
+  changing code.
 
 ### Checkpoint 0: Baseline Review
 
@@ -161,6 +179,46 @@ After checkpoint 2 is reviewed, extract only the pure decision behind the select
 
 `content.tsx` still calls `refreshMissions('portal')`.
 
+Preferred implementation:
+
+- Add `apps/iitc-iris/src/content-mission-refresh.ts`.
+- Export `shouldRefreshPortalMissions(input)` or an equivalently narrow name.
+- The helper should return only `boolean`.
+- Input should be a typed object or narrow positional args containing only:
+  - `activeSidePanel`
+  - selected portal guid
+  - `missionsState.source`
+  - `missionsState.status`
+  - `missionsState.portalGuid`
+- Keep `entityFetch`, full `missionsState`, callbacks, setters, refs, `window`, and Preact types out of the helper.
+- Wire the helper into only the existing selected-portal mission refresh `useEffect` in `content.tsx`.
+
+Required tests:
+
+- returns `true` when missions panel is active, source is `portal`, status is not `loading`, selected portal guid exists,
+  and selected portal differs from `missionsState.portalGuid`;
+- returns `false` when the active panel is not `missions`;
+- returns `false` when source is not `portal`;
+- returns `false` while missions are `loading`;
+- returns `false` when selected portal guid is missing;
+- returns `false` when selected portal guid already matches `missionsState.portalGuid`.
+
+#### Checkpoint 3 implementation notes (done)
+
+Added `apps/iitc-iris/src/content-mission-refresh.ts`:
+
+- `shouldRefreshPortalMissions(input: ShouldRefreshPortalMissionsInput)` — returns `boolean`.
+- Input interface carries only `activeSidePanel`, `selectedPortalGuid`, `missionSource`, `missionStatus`, and
+  `missionPortalGuid`; no setters, refs, `window`, or Preact types.
+- `IitcIrisSidePanelId` is imported from `menu-registry` (its actual source), not `messages`.
+
+`content.tsx` still calls `refreshMissions('portal')` and owns the `useEffect` dependency array.
+
+Intentionally left inline in `content.tsx`:
+
+- The `useEffect` body and its `refreshMissions('portal')` call.
+- The `refreshMissions` `useCallback` wrapper and the `postIitcMessage` call inside it.
+
 ### Checkpoint 4: Search Debounce Plan
 
 After checkpoint 3 is reviewed, extract only pure search debounce decisions:
@@ -169,6 +227,45 @@ After checkpoint 3 is reviewed, extract only pure search debounce decisions:
 - non-empty term schedules a search after the current `100` ms delay.
 
 `content.tsx` still owns the debounce timer, state setters, and actual request callback.
+
+Preferred implementation:
+
+- Add the helper to `apps/iitc-iris/src/content-search-actions.ts` unless that file becomes unclear; only then add a
+  focused file such as `content-search-debounce.ts`.
+- Export `getSearchDebounceAction(searchTerm)` or an equivalently narrow name.
+- The helper should trim the term and return a small discriminated union:
+  - `{type: 'clear'}` for empty trimmed terms;
+  - `{type: 'request'; term: string; delayMs: 100}` for non-empty trimmed terms.
+- The helper must not call `buildSearchClearMessage`, `requestSearch`, setters, timers, `window`, or storage.
+- Wire the helper into only the existing search debounce `useEffect` in `content.tsx`.
+- `content.tsx` still calls `setSearchState(EMPTY_SEARCH_STATE)`, `setActiveSearchResultIndex(0)`,
+  `window.postMessage(buildSearchClearMessage(), '*')`, `window.setTimeout`, `window.clearTimeout`, and
+  `requestSearch(action.term, false)`.
+
+Required tests:
+
+- empty string returns `{type: 'clear'}`;
+- whitespace-only string returns `{type: 'clear'}`;
+- non-empty input returns `{type: 'request', term: trimmedTerm, delayMs: 100}`;
+- the helper trims the request term without changing the current debounce delay;
+- existing `buildSearchClearMessage` tests remain green.
+
+#### Checkpoint 4 implementation notes (done)
+
+Added `getSearchDebounceAction(searchTerm: string): SearchDebounceAction` to
+`apps/iitc-iris/src/content-search-actions.ts` (the file remained clear with the addition).
+
+- `SearchDebounceAction` is a discriminated union: `{type: 'clear'}` | `{type: 'request'; term: string; delayMs: 100}`.
+- The helper trims the input term and returns `'clear'` for empty/whitespace, `'request'` otherwise.
+- The helper does not call `buildSearchClearMessage`, `requestSearch`, setters, timers, `window`, or storage.
+- Four new tests were added to `content-search-actions.test.ts`; existing tests remain green.
+
+`content.tsx` still owns all runtime in the search debounce `useEffect`:
+
+- `setSearchState(EMPTY_SEARCH_STATE)` and `setActiveSearchResultIndex(0)` on clear.
+- `window.postMessage(buildSearchClearMessage(), '*')` on clear.
+- `window.setTimeout(() => requestSearch(action.term, false), action.delayMs)` on request.
+- `window.clearTimeout` for cleanup.
 
 ## Non-Goals
 
@@ -200,6 +297,22 @@ document the divergence here before continuing.
 For checkpoint 1:
 
 - `npm run test -w apps/iitc-iris -- --run src/content-side-panel-auto-requests.test.ts`
+- `npm run typecheck:iitc-iris`
+- `npm run lint:iitc-iris`
+- `npm run package:iitc-iris`
+- `git diff --check`
+
+For checkpoint 2:
+
+- `npm run test -w apps/iitc-iris -- --run src/content-outbound-messages.test.ts src/content-search-actions.test.ts`
+- `npm run typecheck:iitc-iris`
+- `npm run lint:iitc-iris`
+- `npm run package:iitc-iris`
+- `git diff --check`
+
+For checkpoints 3 and 4:
+
+- `npm run test -w apps/iitc-iris -- --run src/content-mission-refresh.test.ts src/content-search-actions.test.ts`
 - `npm run typecheck:iitc-iris`
 - `npm run lint:iitc-iris`
 - `npm run package:iitc-iris`
