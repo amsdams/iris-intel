@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useState} from 'preact/hooks';
-import {copyIitcIrisText} from '../content-feedback';
+import {copyIitcIrisText} from '../shell/content-feedback';
 import {getDrawToolsTargetFromContext} from '../map/content-map-context';
 import {
   filterAndSerializeDrawToolsItems,

@@ -41,6 +41,7 @@ None.
 - Source layout Checkpoint 9: complete; `System` files moved into `apps/iitc-iris/src/system/`.
 - Source layout Checkpoint 10: complete; `Auth` files moved into `apps/iitc-iris/src/auth/`.
 - Source layout Checkpoint 11: complete; `Side Request Panel` files moved into `apps/iitc-iris/src/side-panels/`.
+- Source layout Checkpoint 12: complete; `Shell And Shared App` files moved into `apps/iitc-iris/src/shell/`.
 
 ## Next Rules
 
@@ -82,8 +83,7 @@ Active:
 
 Ready/Blocked:
 
-- [source-directory-layout-plan.md](source-directory-layout-plan.md): Checkpoints 1 through 11 are done.
-  Checkpoint 12 `Shell And Shared App` is ready as the next move-only checkpoint.
+- [source-directory-layout-plan.md](source-directory-layout-plan.md): All Checkpoints (1 through 12) are completely done.
 
 Completed Phase 2:
 

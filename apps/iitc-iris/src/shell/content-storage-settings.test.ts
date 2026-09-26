@@ -18,7 +18,7 @@ import {
   storeLayerSettings,
   VIEW_PRESETS,
 } from './content-storage-settings';
-import { DEFAULT_LAYER_SETTINGS } from './layers/layer-registry';
+import { DEFAULT_LAYER_SETTINGS } from '../layers/layer-registry';
 
 function mockLocalStorage(): Storage {
   let store = new Map<string, string>();

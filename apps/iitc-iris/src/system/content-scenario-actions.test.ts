@@ -5,7 +5,7 @@ import {
   SCENARIO_EXPECTED_STEPS,
   serializeScenarioHistory,
 } from './content-scenario-actions';
-import {loadStoredLifecycleSettings} from '../content-storage-settings';
+import {loadStoredLifecycleSettings} from '../shell/content-storage-settings';
 
 describe('content-scenario-actions', () => {
   const mockLifecycleSettings = loadStoredLifecycleSettings();

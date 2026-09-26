@@ -5,7 +5,7 @@ import {
   createRequestMissionDetailsMessage,
   createRequestMissionsMessage,
   createRequestScoresMessage,
-} from './content-outbound-messages';
+} from './shell/content-outbound-messages';
 import {
   addCommNicknameAction,
   redeemPasscodeAction,
@@ -26,8 +26,8 @@ import {
   openIitcIrisSheet,
   toggleIitcIrisSheet,
   type IitcIrisSheetNavigationEffect,
-} from './content-sheet-navigation';
-import {getIitcIrisPrimaryMenuEffect} from './content-primary-menu';
+} from './shell/content-sheet-navigation';
+import {getIitcIrisPrimaryMenuEffect} from './shell/content-primary-menu';
 import {
   performIntelLoginRedirect,
   performIntelLogoutRedirect,
@@ -60,12 +60,12 @@ import {
   copySelectedPortalGuid as copySelectedPortalGuidHelper,
   copySelectedPortalLink as copySelectedPortalLinkHelper,
   copySelectedPortalTitle as copySelectedPortalTitleHelper,
-} from './content-copy-helpers';
+} from './shell/content-copy-helpers';
 import type {IitcIrisMapContextSelection} from './portals/selection-lifecycle';
-import type {IitcIrisPanDirection} from './content-keyboard-shortcuts';
+import type {IitcIrisPanDirection} from './shell/content-keyboard-shortcuts';
 
-import type {IitcIrisSheetId, IitcIrisSidePanelId, IitcIrisPrimaryMenuId} from './menu-registry';
-import type {IitcIrisPrimaryMenuContext} from './content-primary-menu';
+import type {IitcIrisSheetId, IitcIrisSidePanelId, IitcIrisPrimaryMenuId} from './shell/menu-registry';
+import type {IitcIrisPrimaryMenuContext} from './shell/content-primary-menu';
 
 /** Narrow postMessage adapter type accepted by every command in this module. */
 export type PostMessageFn = (message: IitcIrisMessage) => void;

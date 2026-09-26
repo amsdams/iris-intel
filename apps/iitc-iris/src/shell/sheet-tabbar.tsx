@@ -8,8 +8,8 @@ import {
   type IitcIrisPrimaryMenuId,
   type IitcIrisSheetId,
 } from './menu-registry';
-import {IITC_IRIS_COMM_TABS} from './comm/comm-panel-controls';
-import type {IitcIrisCommState, IitcIrisCommTab, IitcIrisMissionsState} from './messages';
+import {IITC_IRIS_COMM_TABS} from '../comm/comm-panel-controls';
+import type {IitcIrisCommState, IitcIrisCommTab, IitcIrisMissionsState} from '../messages';
 
 interface IitcIrisSheetTabBarProps {
   activePrimaryMenu: IitcIrisPrimaryMenuId;

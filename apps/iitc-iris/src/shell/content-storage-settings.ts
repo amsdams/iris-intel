@@ -1,5 +1,5 @@
-import { DEFAULT_LAYER_SETTINGS } from './layers/layer-registry';
-import { normalizePortalHighlighterId } from './layers/highlighter-registry';
+import { DEFAULT_LAYER_SETTINGS } from '../layers/layer-registry';
+import { normalizePortalHighlighterId } from '../layers/highlighter-registry';
 import {
   isSheetId,
   isSidePanelId,
@@ -10,7 +10,7 @@ import {
   DEFAULT_PORTAL_DETAIL_SECTION_SETTINGS,
   PORTAL_DETAIL_SECTION_REGISTRY,
   type IitcIrisPortalDetailSectionId as PortalSectionId,
-} from './portals/portal-detail-section-registry';
+} from '../portals/portal-detail-section-registry';
 import type {
   IitcIrisBaseLayerId,
   IitcIrisCommTab,
@@ -19,12 +19,12 @@ import type {
   IitcIrisLayerSettings,
   IitcIrisLifecycleSettings,
   IitcIrisPortalHighlighterId,
-} from './messages';
+} from '../messages';
 import {
   clampView,
   isStoredMapView,
   type StoredMapView,
-} from './system/content-scenarios';
+} from '../system/content-scenarios';
 
 export const LOGIN_BYPASS_STORAGE_KEY = 'iitc-iris:login-bypass-until';
 export const COMM_TAB_STORAGE_KEY = 'iitc-chat-tab';

@@ -2,7 +2,7 @@ import {createCommSendRequest} from './content-comm-actions';
 import {
   createRequestPasscodeMessage,
   formatCommDraftWithNickname,
-} from '../content-outbound-messages';
+} from '../shell/content-outbound-messages';
 import type {IitcIrisCommTab, IitcIrisMessage} from '../messages';
 
 export function buildCommSendAction(

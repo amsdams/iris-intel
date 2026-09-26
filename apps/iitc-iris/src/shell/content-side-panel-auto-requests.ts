@@ -8,7 +8,7 @@
  * content.tsx owns useEffect, window.postMessage, setTimeout, and storage.
  */
 
-import {IITC_IRIS_MESSAGES, type IitcIrisCommTab, type IitcIrisMessage} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisCommTab, type IitcIrisMessage} from '../messages';
 import {type IitcIrisSidePanelId} from './menu-registry';
 
 export interface SidePanelAutoRequest {

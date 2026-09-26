@@ -1,5 +1,5 @@
 import type {IitcIrisContextTarget} from '../context-action-registry';
-import type {IitcIrisSelectedKind, IitcIrisSheetId} from '../menu-registry';
+import type {IitcIrisSelectedKind, IitcIrisSheetId} from '../shell/menu-registry';
 import type {IitcIrisMapContextPortalAnchor, IitcIrisMessage, IitcIrisSelectedPortal} from '../messages';
 
 export interface IitcIrisMapContextSelection {

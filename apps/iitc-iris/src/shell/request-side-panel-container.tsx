@@ -1,11 +1,11 @@
 import {h} from 'preact';
-import {getPanelStatusClass} from './ui-status';
-import {IitcIrisAgentPanel} from './side-panels/agent-panel';
-import {IitcIrisCommPanel} from './comm/comm-panel';
-import {IitcIrisInventoryPanel} from './side-panels/inventory-panel';
-import {IitcIrisMissionsPanel} from './missions/missions-panel';
-import {IitcIrisPasscodePanel} from './side-panels/passcode-panel';
-import {IitcIrisScoresPanel} from './side-panels/scores-panel';
+import {getPanelStatusClass} from '../ui-status';
+import {IitcIrisAgentPanel} from '../side-panels/agent-panel';
+import {IitcIrisCommPanel} from '../comm/comm-panel';
+import {IitcIrisInventoryPanel} from '../side-panels/inventory-panel';
+import {IitcIrisMissionsPanel} from '../missions/missions-panel';
+import {IitcIrisPasscodePanel} from '../side-panels/passcode-panel';
+import {IitcIrisScoresPanel} from '../side-panels/scores-panel';
 import {type IitcIrisSidePanelId} from './menu-registry';
 import {
   type IitcIrisAgentState,
@@ -16,7 +16,7 @@ import {
   type IitcIrisMissionsState,
   type IitcIrisPasscodeState,
   type IitcIrisScoresState,
-} from './messages';
+} from '../messages';
 
 export interface IitcIrisRequestSidePanelContainerProps {
   activeSidePanel: IitcIrisSidePanelId | null;

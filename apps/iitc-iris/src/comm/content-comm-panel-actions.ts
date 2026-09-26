@@ -1,7 +1,7 @@
 import type {IitcIrisCommState, IitcIrisCommTab, IitcIrisMessage, IitcIrisPasscodeState} from '../messages';
 import {
   createRequestCommMessage,
-} from '../content-outbound-messages';
+} from '../shell/content-outbound-messages';
 import {
   checkCommIsAtBottom,
   checkShouldRequestOlderComm,
@@ -11,7 +11,7 @@ import {
   buildCommSendAction,
   buildPasscodeRedeemAction,
 } from './content-comm-input-actions';
-import {storeCommTab} from '../content-storage-settings';
+import {storeCommTab} from '../shell/content-storage-settings';
 
 export function requestCommAction(
   tab: IitcIrisCommTab | unknown,

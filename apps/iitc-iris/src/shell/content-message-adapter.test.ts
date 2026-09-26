@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
-import {IITC_IRIS_MESSAGES, type IitcIrisMessage, type IitcIrisRenderPolicy, type IitcIrisRequestDiagnostics, type IitcIrisSelectedPortal} from './messages';
-import {DEFAULT_LAYER_SETTINGS} from './layers/layer-registry';
+import {IITC_IRIS_MESSAGES, type IitcIrisMessage, type IitcIrisRenderPolicy, type IitcIrisRequestDiagnostics, type IitcIrisSelectedPortal} from '../messages';
+import {DEFAULT_LAYER_SETTINGS} from '../layers/layer-registry';
 import {
   entityFetchStateFromMessage,
   handleIitcIrisContentMessage,

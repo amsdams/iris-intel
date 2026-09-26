@@ -12,7 +12,7 @@ import {
   type IitcIrisPrimaryMenuId,
   type IitcIrisSheetId,
   type IitcIrisSidePanelId,
-} from './menu-registry';
+} from './shell/menu-registry';
 import {
   type IitcIrisPortalDetailSectionId,
 } from './portals/portal-detail-section-registry';
@@ -20,7 +20,7 @@ import {
   getSelectionView,
   type IitcIrisMapContextSelection,
 } from './portals/selection-lifecycle';
-import {handleIitcIrisContentMessage, type CameraState, type EntityFetchState} from './content-message-adapter';
+import {handleIitcIrisContentMessage, type CameraState, type EntityFetchState} from './shell/content-message-adapter';
 import {
   addCommNicknameCommand,
   centerMapContextCommand,
@@ -63,17 +63,17 @@ import {
   logoutIntelCommand,
   setDataSourceCommand,
 } from './content-command-callbacks';
-import {handleIitcIrisContentKeyDown, type IitcIrisPanDirection} from './content-keyboard-shortcuts';
-import {copyIitcIrisText} from './content-feedback';
+import {handleIitcIrisContentKeyDown, type IitcIrisPanDirection} from './shell/content-keyboard-shortcuts';
+import {copyIitcIrisText} from './shell/content-feedback';
 import {IitcIrisPortalDetailsPanel} from './portals/portal-details-panel';
 import {IitcIrisSearchPanel} from './search/search-panel';
 import {usePortalAnalysisWorkflow} from './portal-analysis/content-portal-analysis-workflow';
 import {IitcIrisMapControlsPanelContainer} from './map/map-controls-panel-container';
 import {IitcIrisHelpPanel} from './system/help-panel';
 import {IitcIrisPortalImageModal} from './portals/portal-image-modal';
-import {IitcIrisSheetTabBar} from './sheet-tabbar';
+import {IitcIrisSheetTabBar} from './shell/sheet-tabbar';
 import {IitcIrisAuthRecoveryBanner} from './auth/auth-recovery-banner';
-import {IitcIrisRequestSidePanelContainer} from './request-side-panel-container';
+import {IitcIrisRequestSidePanelContainer} from './shell/request-side-panel-container';
 import {IitcIrisSystemPanelContainer} from './system/system-panel-container';
 import {createDockDiagnostics} from './system/content-dock-diagnostics';
 import {
@@ -117,7 +117,7 @@ import {
   storeLifecycleSettings,
   storeSidePanelId,
   VIEW_PRESETS,
-} from './content-storage-settings';
+} from './shell/content-storage-settings';
 import {
   createInnerStatusView,
   createIntelUrl,
@@ -148,11 +148,11 @@ import {
   getCommAutoRequest,
   getInventoryAutoRequest,
   getScoresAutoRequest,
-} from './content-side-panel-auto-requests';
+} from './shell/content-side-panel-auto-requests';
 import {
   buildDataSourceSettingsMessage,
   buildLifecycleSettingsMessage,
-} from './content-outbound-messages';
+} from './shell/content-outbound-messages';
 import {buildSearchClearMessage, getSearchDebounceAction} from './search/content-search-actions';
 import {shouldRefreshPortalMissions} from './missions/content-mission-refresh';
 

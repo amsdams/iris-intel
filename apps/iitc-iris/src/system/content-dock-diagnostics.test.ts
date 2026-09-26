@@ -5,7 +5,7 @@ import {
   loadStoredBaseLayerId,
   loadStoredLayerSettings,
   loadStoredLifecycleSettings,
-} from '../content-storage-settings';
+} from '../shell/content-storage-settings';
 
 describe('createDockDiagnostics', () => {
   it('shapes diagnostics correctly with null plan', () => {

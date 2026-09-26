@@ -97,7 +97,7 @@ checkpoint.
    - auth recovery/navigation and login/logout related helpers.
 11. Side request panels, done:
    - agent, inventory, passcode, and scores panels if they have not naturally moved with another domain.
-12. Shell/shared app folder:
+12. Shell/shared app folder, done:
    - menu/sheet/keyboard/storage/message-adapter/outbound-message helpers and panel containers, after all feature
      folders are stable.
 
@@ -112,7 +112,24 @@ For a move-only checkpoint, run:
 - `npm run typecheck:iitc-iris`;
 - `npm run lint:iitc-iris`;
 - `npm run package:iitc-iris`;
-- `git diff --check`.
+- `git diff --check`
+
+#### Checkpoint 12 implementation notes (done)
+
+Moved with `git mv`. Import rewrites only — no logic, export, CSS, or test changes.
+
+Validation results:
+- Focused Shell tests: 10 files and 48 tests passed.
+- `npm run typecheck:iitc-iris`: pass.
+- `npm run lint:iitc-iris`: pass.
+- `npm run package:iitc-iris`: pass; Chrome ZIP and Firefox XPI built.
+- `git diff --check`: clean.
+
+#### Checkpoint 12 review (2026-09-26)
+
+Reviewed against the approved file list and import-rewrite scope. The moves preserve file bodies; the only changes are required parent-relative imports and consumer import paths. Typecheck, lint, package, and `git diff --check` pass. 
+All checkpoints in this source-layout refactor are now complete!
+.
 
 Manual live testing is not required for import-only moves unless package/build output changes unexpectedly.
 
@@ -588,7 +605,7 @@ Reviewed against the approved file list and import-rewrite scope. The moves pres
 
 ### Checkpoint 12: Shell And Shared App Folder Move
 
-Status: ready. Execute only this move-only checkpoint in its own branch.
+Status: done.
 
 This is the highest-churn move-only checkpoint. Re-review this file list before assigning it.
 

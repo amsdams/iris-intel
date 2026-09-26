@@ -1,4 +1,4 @@
-import {createSendCommMessage} from '../content-outbound-messages';
+import {createSendCommMessage} from '../shell/content-outbound-messages';
 import type {IitcIrisCommTab, IitcIrisMessage} from '../messages';
 
 export function checkCommIsAtBottom(list: {

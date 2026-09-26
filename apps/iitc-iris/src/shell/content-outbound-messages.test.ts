@@ -13,7 +13,7 @@ import {
   createSendCommMessage,
   formatCommDraftWithNickname,
 } from './content-outbound-messages';
-import { IITC_IRIS_MESSAGES } from './messages';
+import { IITC_IRIS_MESSAGES } from '../messages';
 
 describe('content-outbound-messages', () => {
   it('creates request comm message', () => {

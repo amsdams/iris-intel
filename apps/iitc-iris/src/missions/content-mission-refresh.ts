@@ -1,5 +1,5 @@
 import type {IitcIrisMissionSource, IitcIrisMissionsState} from '../messages';
-import type {IitcIrisSidePanelId} from '../menu-registry';
+import type {IitcIrisSidePanelId} from '../shell/menu-registry';
 
 export interface ShouldRefreshPortalMissionsInput {
   activeSidePanel: IitcIrisSidePanelId | null;

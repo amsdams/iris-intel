@@ -1,5 +1,5 @@
 import type {IitcIrisCommTab, IitcIrisMissionSource, IitcIrisPasscodeState} from '../messages';
-import type {IitcIrisSidePanelId} from '../menu-registry';
+import type {IitcIrisSidePanelId} from '../shell/menu-registry';
 
 export interface LocationAdapter {
   origin: string;

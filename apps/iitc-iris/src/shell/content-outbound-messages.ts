@@ -5,7 +5,7 @@ import {
   type IitcIrisLifecycleSettings,
   type IitcIrisMessage,
   type IitcIrisMissionSource,
-} from './messages';
+} from '../messages';
 
 export function createRequestCommMessage(tab: IitcIrisCommTab, older = false): IitcIrisMessage {
   return {

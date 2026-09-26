@@ -4,7 +4,7 @@ import {
   buildClearPortalSelectionMessage,
   buildZoomToAndShowPortalMessage,
 } from '../map/content-camera-actions';
-import {storePortalSections} from '../content-storage-settings';
+import {storePortalSections} from '../shell/content-storage-settings';
 import {getPortalLatLng} from '../map/content-map-status';
 
 export type PortalSectionId = IitcIrisPortalDetailSectionId;

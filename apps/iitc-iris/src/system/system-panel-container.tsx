@@ -4,11 +4,11 @@ import {IitcIrisSystemDiagnosticsPanel, type IitcIrisInnerStatusView} from './sy
 import {
   type CameraState,
   type EntityFetchState,
-} from '../content-message-adapter';
+} from '../shell/content-message-adapter';
 import {
   DATA_SOURCE_OPTIONS,
   VIEW_PRESETS,
-} from '../content-storage-settings';
+} from '../shell/content-storage-settings';
 import {
   type ScenarioRun,
 } from './content-scenarios';
