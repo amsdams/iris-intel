@@ -1,175 +1,123 @@
 # IITC IRIS Refactoring Roadmap
 
-## Guiding Principle
+## Current State
 
-Parity first, function over form. Refactoring follows the sequence in
-[backlog.md](../backlog.md), with the porting rules in [port-plan.md](../port-plan.md) as the mandatory process. Add
-thin, IITC-named facades for concrete parity work before introducing broad architecture such as a global store, general
-event bus, or universal entity model.
+Status: Phase 2 app-surface extraction is complete/parked. Continue only with optional move-only source layout
+checkpoints, one domain at a time. UI/CSS/mobile polish comes after the app has been used for a while and concrete usage
+pain is known.
 
-Every detailed plan must identify IITC-CE source files under `reference/ingress-intel-total-conversion`, current IRIS
-implementation files, public IITC names/API concepts, ownership and lifecycle behavior, hook/plugin visibility,
-tests/diagnostics, intentional divergences, and validation commands.
+No active refactor is approved right now. Before assigning AGY/Codex more refactor work, update or create one detailed
+plan with exact scope, files, stop conditions, and validation.
 
-The current facade extraction pattern is documented in [facade-pattern.md](facade-pattern.md).
+Likely next priorities:
+
+1. Move-only source layout, one feature folder at a time.
+2. Use the app on phone/desktop and collect concrete UI/CSS/mobile pain.
+3. UI/CSS/mobile polish for those findings.
+4. Backlog refinement if usage shows priorities have changed.
+
+Do not mix these three tracks in one branch.
+
+## Active Work
+
+None.
+
+## Recently Completed
+
+- Phase 1 IITC parity facades: complete.
+- Phase 2 command callback extraction: complete.
+- Phase 2 content shell extraction: complete.
+- Phase 2 side-panel extraction: complete.
+- Phase 2 runtime-effects extraction: complete.
+- Phase 2 closure audit: complete; decision was to stop extracting from `content.tsx` for now.
+- Source layout Checkpoint 1: complete; `search` files moved into `apps/iitc-iris/src/search/`.
+
+## Next Rules
+
+- Do not continue extracting from `content.tsx` unless a new detailed plan identifies a narrow, repeated, testable
+  responsibility with a clear owner.
+- Do not start another source-layout move until [source-directory-layout-plan.md](source-directory-layout-plan.md)
+  names one approved folder and exact files.
+- Do not mix layout moves with logic changes, UI changes, CSS changes, behavior changes, or additional folders.
+- UI/CSS polish should be driven by app usage findings, screenshots, or specific workflow pain, not general cleanup.
+- Feature or parity work should start from [../backlog.md](../backlog.md) and [../port-plan.md](../port-plan.md), then a
+  fresh detailed plan if the work is non-trivial.
 
 ## AI Agent Working Rules
 
-These rules apply to Codex, AGY/Gemini, and any other AI-assisted refactor branch.
+These rules apply to Codex, AGY/Gemini, and any other AI-assisted branch.
 
-- Read this roadmap, [port-plan.md](../port-plan.md), and the relevant detailed plan before changing code. If the work
-  does not fit an existing detailed plan, add or update the plan first.
-- Treat Phase 2 extraction as behavior-preserving by default. Do not rename persisted ids, message types, public panel
-  ids, storage keys, UI labels used as user-facing contracts, or IITC-aligned concepts unless the plan explicitly marks
-  the change as an intentional divergence.
-- Compare against the current baseline branch before judging success. For AGY review work, compare
-  `feaure/the-refactor-agy` against `feaure/the-refactor` and record any behavior difference as a bug unless the
-  relevant plan documents it.
-- Keep ownership boundaries visible: `content.tsx` owns top-level state, refs, storage effects, browser/page-runtime
-  effects, request lifecycle triggers, and stale-response guards unless a detailed plan says otherwise. App helpers may
-  own pure derivation, payload builders, formatting, and callback routing. Panels own rendering and event prop wiring.
+- Read this roadmap first. Read [../port-plan.md](../port-plan.md) for behavior/parity work. Read only the relevant
+  detailed plan for the current assignment.
+- If this file says there is no active work, do not improvise a refactor. Ask for or create a detailed plan first.
+- Treat app-surface refactors as behavior-preserving by default. Do not rename persisted ids, message types, public panel
+  ids, storage keys, user-facing labels, or IITC-aligned concepts unless the plan explicitly marks a divergence.
+- Compare AGY review work against the current baseline branch and record behavior differences as bugs unless a plan
+  documents them.
+- Keep ownership boundaries visible: `content.tsx` owns top-level state, refs, browser/page-runtime effects, storage
+  effects, request lifecycle triggers, stale-response guards, mount/bootstrap behavior, and final app composition unless
+  a detailed plan says otherwise.
 - Do not move browser, Preact, DOM, Leaflet, or extension runtime dependencies into `packages/iitc-core` during an app
   extraction pass.
-- Tests must protect the externally visible behavior that changed shape: message payloads, storage compatibility,
-  callback routing, lifecycle/status transitions, sorting/filtering, diagnostics, and user-visible fallback behavior.
-  Tests that only mirror a helper implementation are not enough when a callback or runtime message boundary moved.
-- Update the detailed plan in the same change when extracting a new module, changing ownership, adding a test, or
-  documenting an intentional divergence. Keep documentation claims narrower than the actual tests.
-- Finish every code-changing slice with focused tests for touched modules, then
-  `npm run typecheck:iitc-iris`, `npm run lint:iitc-iris`, `npm run package:iitc-iris`, and `git diff --check`.
+- Tests must protect externally visible behavior: message payloads, storage compatibility, callback routing,
+  lifecycle/status transitions, sorting/filtering, diagnostics, and user-visible fallback behavior.
+- Every code-changing slice must finish with focused tests for touched modules, then `npm run typecheck:iitc-iris`,
+  `npm run lint:iitc-iris`, `npm run package:iitc-iris`, and `git diff --check`.
 
-## Phase 1: Narrow IITC Parity Facades
+## Detailed Plans
 
-Status: complete. The first pass established stable, tested seams for the IITC-facing behavior we compare most often.
+Active:
 
-This phase creates small, behavior-preserving landing zones for code that is compared against IITC often. Each facade
-should keep IITC naming at the boundary and move only pure, stable logic first.
+- None.
 
-1. `comm` facade: parsing/display model, `getPlexts` request lifecycle, channel behavior, de-duplication diagnostics.
-   See [comm-facade-plan.md](comm-facade-plan.md).
-2. `portalDetails` facade: portal detail request state, cached/loading/ready/error behavior, selected portal cancellation.
-   See [portal-details-facade-plan.md](portal-details-facade-plan.md).
-3. `search` facade: result ordering/grouping, coordinate/address/portal normalization, preview geometry.
-   See [search-facade-plan.md](search-facade-plan.md).
-4. `mapDataRequest` facade: only IITC `map_data_request` parity around request planning, retry sieve behavior,
-   stale-cache retry exhaustion diagnostics, and excessive retry watch items already tracked in `packages/iitc-core`.
-   See [map-data-request-facade-plan.md](map-data-request-facade-plan.md).
-5. `playerTracker` facade: COMM-derived player positions, refresh/cancellation policy, and map link behavior.
-   See [player-tracker-facade-plan.md](player-tracker-facade-plan.md).
-6. Portal-link navigation facade: `zoomToAndShowPortal`, `selectPortalByLatLng`, pending selection resolution.
-   See [portal-link-navigation-facade-plan.md](portal-link-navigation-facade-plan.md).
-7. Context action facade: long-press/right-click handling for portals, links, fields, and plain map actions.
-   See [context-action-facade-plan.md](context-action-facade-plan.md).
-8. Request diagnostics facade: copied timing/cancellation/status diagnostics used by live IITC comparisons.
-   See [request-diagnostics-facade-plan.md](request-diagnostics-facade-plan.md).
+Ready/Blocked:
 
-## Phase 1 Review
+- [source-directory-layout-plan.md](source-directory-layout-plan.md): Checkpoint 1 `search` move is done. Checkpoint 2
+  may be planned for `missions` only, then reviewed before any further folder moves.
 
-What we learned:
+Completed Phase 2:
 
-- Facades work best when they extract a narrow decision or transformation, not a whole feature. The successful slices
-  moved parsing, planning, matching, state shaping, diagnostics, and bounded cache behavior into `packages/iitc-core`.
-- Runtime ownership stayed clear. Fetch execution, AbortController cancellation, Leaflet rendering, DOM events,
-  `window.postMessage`, stale-response guards, and React/Preact state remained in `apps/iitc-iris`.
-- The useful boundary is usually a typed plan or state object. Examples include COMM request planning, portal-link
-  navigation plans, map context payload plans, and active request diagnostics snapshots.
-- Tests are most valuable when they lock extracted contracts, including surprising current behavior such as coordinate
-  tolerance, request diagnostic rounding, and pending portal-selection shape.
-- Symmetry matters, but exact symmetry is not always the right goal. Facades should share naming and responsibility
-  levels, while still reflecting the real lifecycle of each domain.
+- [content-command-callbacks-extraction-plan.md](content-command-callbacks-extraction-plan.md)
+- [content-shell-extraction-plan.md](content-shell-extraction-plan.md)
+- [panel-extraction-plan.md](panel-extraction-plan.md)
+- [content-runtime-effects-extraction-plan.md](content-runtime-effects-extraction-plan.md)
+- [content-phase2-closure-audit-plan.md](content-phase2-closure-audit-plan.md)
+- [agy-branch-structured-audit-plan.md](agy-branch-structured-audit-plan.md)
 
-Use another facade later only when at least one of these is true:
+Completed Phase 1 Facades:
 
-- The code maps directly to an IITC source file, plugin, endpoint, or named lifecycle concept.
-- The behavior is pure enough to test without browser globals, Leaflet objects, DOM nodes, timers, or fetch.
-- The extraction gives parity work a clearer comparison point or removes duplicated request/state/diagnostic shaping.
-- A larger refactor would otherwise have to understand an unstable app-runtime detail.
+- [comm-facade-plan.md](comm-facade-plan.md)
+- [portal-details-facade-plan.md](portal-details-facade-plan.md)
+- [search-facade-plan.md](search-facade-plan.md)
+- [map-data-request-facade-plan.md](map-data-request-facade-plan.md)
+- [player-tracker-facade-plan.md](player-tracker-facade-plan.md)
+- [portal-link-navigation-facade-plan.md](portal-link-navigation-facade-plan.md)
+- [context-action-facade-plan.md](context-action-facade-plan.md)
+- [request-diagnostics-facade-plan.md](request-diagnostics-facade-plan.md)
 
-Do not create more facades just to reduce file size. If the next work is mostly JSX, local interaction state, or visual
-composition, prefer an app-side component/module split.
+Reference:
 
-Before starting Phase 2:
+- [facade-pattern.md](facade-pattern.md)
 
-- Keep lint/typecheck/package validation clean after each slice.
-- Run a root export review for `@iris/iitc-core` and stop exporting helpers that are purely internal when no app import
-  or documented facade contract needs them.
-- Keep each Phase 2 PR scoped to one view, panel, or runtime lifecycle concern. Avoid mixing component extraction with
-  behavior changes.
-- Capture any live IITC comparison notes in the relevant facade plan before changing behavior built on top of it.
+## Later Tracks
 
-## Phase 2: App Surface Extraction
-
-Status: complete/parked for now. Shell, side-panel, command-callback, runtime-effects, closure-audit, and the first
-move-only source-layout checkpoint are complete. No further `content.tsx` extraction is approved.
-
-Goal: reduce the size and coupling of `apps/iitc-iris/src/content.tsx` without changing behavior. Phase 1 made this
-safer by moving the main parity-sensitive behavior behind tested core facades.
-
-Order of work:
-
-1. Content shell split: extract top-level view state helpers and message-handling adapters from `content.tsx` while
-   keeping rendered markup unchanged. See [content-shell-extraction-plan.md](content-shell-extraction-plan.md).
-2. Panel extraction: move COMM, inventory, missions, portal details, search, Draw Tools, and diagnostics panels into
-   focused app modules one at a time. See [panel-extraction-plan.md](panel-extraction-plan.md).
-3. Shared app hooks/helpers: extract reusable clipboard/status timeout, sheet/menu, keyboard shortcut, and map command
-   helpers only after at least two panels need the same behavior.
-4. Runtime message adapters: introduce small app-side adapters for message posting/handling where repeated message
-   assembly remains in `content.tsx`. Keep these adapters separate from core facades.
-
-Completed Phase 2 checkpoints:
-
-1. Command callback extraction: [content-command-callbacks-extraction-plan.md](content-command-callbacks-extraction-plan.md).
-2. Content shell extraction: [content-shell-extraction-plan.md](content-shell-extraction-plan.md).
-3. Side-panel extraction: [panel-extraction-plan.md](panel-extraction-plan.md).
-4. Runtime effects extraction: [content-runtime-effects-extraction-plan.md](content-runtime-effects-extraction-plan.md).
-
-Next steps before continuing Phase 2:
-
-1. Do not continue extracting from `content.tsx` unless a new detailed plan identifies a narrow, repeated, testable
-   responsibility with a clear owner.
-2. Review the completed `search` folder move in [source-directory-layout-plan.md](source-directory-layout-plan.md).
-3. Do not start another source-layout checkpoint until [source-directory-layout-plan.md](source-directory-layout-plan.md)
-   names one approved folder and exact files.
-4. Do not mix future layout moves with logic changes, UI changes, CSS changes, behavior changes, or additional folders.
-
-Non-goals for Phase 2:
-
-- Do not introduce a global store.
-- Do not redesign the UI while extracting modules.
-- Do not move browser effects into `packages/iitc-core`.
-- Do not change facade contracts unless a focused parity bug requires it.
-
-## Later Refactors
-
-These tracks are intentionally later. They can be planned, but implementation should wait until Phase 2 has made the app
-surface smaller and easier to reason about.
-
-- Draw Tools refactoring: extract only within the existing Draw Tools v1 boundaries unless the pass explicitly ports
-  more IITC Draw Tools behavior.
-- Source directory layout migration: see [source-directory-layout-plan.md](source-directory-layout-plan.md). Checkpoint 1
-  moved the `search` files into a `search/` folder without behavior changes. Later moves need explicit approval.
-- Map lifecycle/state cleanup: adjust or extract only around validated IITC `map_data_request` behavior and documented
-  watch items; avoid a general all-data-flow rewrite.
-- Entity abstraction and global store: revisit only after repeated concrete patterns from IITC-named facades justify the
-  scope.
-
-## Active Review Plans
-
-- Completed AGY branch structured audit: [agy-branch-structured-audit-plan.md](agy-branch-structured-audit-plan.md).
-- Completed Phase 2 closure audit: [content-phase2-closure-audit-plan.md](content-phase2-closure-audit-plan.md).
-- Completed source layout Checkpoint 1:
-  [source-directory-layout-plan.md](source-directory-layout-plan.md).
-- Active next refactor: none approved. Update a detailed plan before assigning more refactor work.
+- Move-only source layout: continue only one domain at a time after explicit approval in
+  [source-directory-layout-plan.md](source-directory-layout-plan.md). `missions` is the next preferred candidate.
+- UI/CSS/mobile polish: do after app usage. Scope by concrete findings, not broad restyling.
+- Draw Tools refactoring: stay within Draw Tools v1 boundaries unless a pass explicitly ports more IITC Draw Tools
+  behavior.
+- Map lifecycle/state cleanup: only around validated IITC `map_data_request` behavior and documented watch items.
+- Entity abstraction/global store: deferred until repeated concrete patterns justify it.
 
 ## Detailed Plan Template
 
-Each new plan file under this directory should use this structure:
+Each new plan file under this directory should include:
 
 - IITC sources: exact files/functions/plugins in `reference/ingress-intel-total-conversion`.
 - Current IRIS sources: exact files/modules being changed.
 - Public concepts: IITC file/module names, function names, endpoint names, data fields, UI names, and lifecycle events.
 - Ownership/lifecycle: who owns state, when it is created/disposed, mutation path, cancellation behavior.
-- Hook/plugin visibility: whether IITC exposes this behavior to hooks or plugins, and what IITC IRIS will expose now.
+- Hook/plugin visibility: whether IITC exposes this behavior to hooks/plugins, and what IITC IRIS will expose now.
 - Scope: behavior being ported or extracted in this pass, plus explicit non-goals.
 - Tests/diagnostics: unit tests, fixture/live comparisons, copied diagnostics, click-to-pixels timing where relevant.
 - Divergences: reason, expected effect, and how to compare against IITC-CE.
