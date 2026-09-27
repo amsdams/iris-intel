@@ -3,6 +3,8 @@ import {formatIitcColorVars, getIitcLevelColor} from '../iitc-colors';
 import type {IitcIrisPasscodeRewardItem, IitcIrisPasscodeState} from '../messages';
 import {formatElapsedSeconds, getAuthErrorMessage} from '../ui-status';
 
+import {TextInput} from '../ui/text-input';
+
 export interface IitcIrisPasscodePanelProps {
   passcodeDraft: string;
   passcodeState: IitcIrisPasscodeState;
@@ -29,7 +31,7 @@ export function IitcIrisPasscodePanel(props: IitcIrisPasscodePanelProps): h.JSX.
         props.redeem();
       }}
     >
-      <input
+      <TextInput
         className="iitc-iris-passcode-input"
         type="text"
         value={passcodeDraft}
