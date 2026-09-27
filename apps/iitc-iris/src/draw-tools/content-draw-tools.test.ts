@@ -1,11 +1,13 @@
 import {describe, expect, it} from 'vitest';
 import {
+  filterAndSortDrawToolsMarkersForDisplay,
   filterAndSerializeDrawToolsItems,
   getDrawToolsLinkEndpointLabels,
   getDrawToolsItemCenter,
   getDrawToolsItemDistanceMeters,
   getDrawToolsItemDetail,
   getDrawToolsItemLabel,
+  getDrawToolsMarkerCreatedIndexByStorageIndex,
   getDrawToolsMarkerPortalInfo,
   isSupportedDrawToolsItem,
   mergeDrawToolsMarkerPortalInfoCache,
@@ -42,6 +44,18 @@ describe('IITC IRIS Draw Tools helpers', () => {
     expect(getDrawToolsItemDetail(link)).toBe('52.000000, 4.000000 -> 54.000000, 6.000000');
   });
 
+  it('builds stable marker label indices from storage order', () => {
+    expect(getDrawToolsMarkerCreatedIndexByStorageIndex([
+      {...marker, storageIndex: 9},
+      {...marker, storageIndex: 4},
+      {...marker, storageIndex: 7},
+    ])).toEqual({
+      4: 0,
+      7: 1,
+      9: 2,
+    });
+  });
+
   it('computes item centers used by map centering actions', () => {
     expect(getDrawToolsItemCenter(marker)).toEqual({lat: 52.1, lng: 4.2});
     expect(getDrawToolsItemCenter(link)).toEqual({lat: 53, lng: 5});
@@ -53,6 +67,65 @@ describe('IITC IRIS Draw Tools helpers', () => {
 
     expect(getDrawToolsItemDistanceMeters(near, {lat: 52.1, lng: 4.2})).toBeLessThan(2_000);
     expect(sortDrawToolsItemsByDistance([far, near], {lat: 52.1, lng: 4.2}).map((item) => item.storageIndex)).toEqual([8, 9]);
+  });
+
+  it('filters and sorts marker display items by faction metadata', () => {
+    const resMarker = {...marker, storageIndex: 8, label: 'Resistance'};
+    const enlMarker = {...marker, storageIndex: 5, label: 'Enlightened'};
+    const unknownMarker = {...marker, storageIndex: 9, label: 'Unknown'};
+    const markerInfo = {
+      8: {title: 'RES Portal', team: 'R' as const, level: 4},
+      5: {title: 'ENL Portal', team: 'E' as const, level: 7},
+    };
+
+    expect(filterAndSortDrawToolsMarkersForDisplay(
+      [unknownMarker, resMarker, enlMarker],
+      markerInfo,
+      'R',
+      'nearby',
+    ).map((item) => item.storageIndex)).toEqual([8]);
+    expect(filterAndSortDrawToolsMarkersForDisplay(
+      [unknownMarker, resMarker, enlMarker],
+      markerInfo,
+      'unknown',
+      'nearby',
+    ).map((item) => item.storageIndex)).toEqual([9]);
+    expect(filterAndSortDrawToolsMarkersForDisplay(
+      [unknownMarker, resMarker, enlMarker],
+      markerInfo,
+      'all',
+      'team',
+    ).map((item) => item.storageIndex)).toEqual([8, 5, 9]);
+  });
+
+  it('sorts marker display items by created order, level, and name', () => {
+    const unlabeledMarker = {...marker, storageIndex: 8, label: undefined};
+    const namedMarker = {...marker, storageIndex: 5, label: 'Alpha'};
+    const lowMarker = {...marker, storageIndex: 9, label: 'Beta'};
+    const markerInfo = {
+      8: {title: 'Zulu Portal', team: 'R' as const, level: 7},
+      5: {title: 'Alpha Portal', team: 'E' as const, level: 4},
+      9: {title: 'Beta Portal', team: 'M' as const, level: 1},
+    };
+
+    expect(filterAndSortDrawToolsMarkersForDisplay(
+      [unlabeledMarker, lowMarker, namedMarker],
+      markerInfo,
+      'all',
+      'created',
+    ).map((item) => item.storageIndex)).toEqual([5, 8, 9]);
+    expect(filterAndSortDrawToolsMarkersForDisplay(
+      [lowMarker, namedMarker, unlabeledMarker],
+      markerInfo,
+      'all',
+      'level',
+    ).map((item) => item.storageIndex)).toEqual([8, 5, 9]);
+    expect(filterAndSortDrawToolsMarkersForDisplay(
+      [lowMarker, unlabeledMarker, namedMarker],
+      markerInfo,
+      'all',
+      'name',
+    ).map((item) => item.storageIndex)).toEqual([5, 9, 8]);
   });
 
   it('matches marker portal metadata by E6 coordinates', () => {

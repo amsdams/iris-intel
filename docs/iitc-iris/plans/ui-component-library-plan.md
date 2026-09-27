@@ -2,8 +2,11 @@
 
 ## Status
 
-Checkpoints 0-16 complete. Next recommended checkpoint is `EmptyState` and `ChipButton`, followed by narrow form
-controls.
+Checkpoints 0-16 complete. Pause before extracting more components.
+
+Current direction: keep the shared primitives already extracted, but stop treating raw HTML as a problem by itself.
+The remaining work should be driven by visible inconsistency, repeated behavior, accessibility risk, or clear CSS
+duplication. If a candidate only moves markup from a feature file into a component file, defer it.
 
 This is an internal IITC IRIS UI-shell refactor. It is allowed to introduce shared Preact components and limited CSS
 consolidation, but it must not redesign the app, rename user-facing concepts, change panel behavior, or obscure
@@ -11,6 +14,8 @@ IITC-aligned domain names.
 
 Do not implement this plan as one broad sweep. Execute one checkpoint at a time, review it, then update this plan before
 continuing.
+
+This plan is now a stop/go checklist, not a mandate to componentize the app.
 
 ## IITC Sources
 
@@ -72,7 +77,8 @@ keys are changed.
 
 ## Scope
 
-Create a small shared UI component layer only where repeated markup already exists.
+Create a small shared UI component layer only where repeated markup already exists and extraction has practical value.
+Semantic HTML plus shared CSS is the preferred answer for one-off or stable domain UI.
 
 Candidate primitive families:
 
@@ -94,80 +100,121 @@ Current extracted component families:
 - Layout wrappers: `Panel`, `PanelHeader`, `PanelTitle`, `PanelBody`, `PanelFooter`, `Section`, `ControlRow`,
   `SegmentedRow`, `SummaryGrid`, `SummaryCell`.
 
+Keep these unless review finds a concrete harm. They already encode repeated classes, default button types, status/chip
+semantics, or shared shell structure. Reverting them would create churn without clearly improving maintainability.
+
+## Extraction Decision Policy
+
+Use this policy before starting any new component checkpoint.
+
+Extract when at least one of these is true:
+
+- the same markup/class structure appears in three or more places;
+- the element has repeated behavior that can drift, such as `type`, disabled state, copy feedback, pressed state, sort
+  labeling, focus/blur behavior, or ARIA attributes;
+- the extraction removes meaningful CSS duplication by introducing a shared base class;
+- the feature file is hard to scan because repeated local UI shapes obscure domain logic;
+- a component gives tests a useful place to verify behavior that is currently copied by hand.
+
+Prefer HTML plus CSS when:
+
+- the markup is a native element with a feature-specific class and no repeated behavior;
+- the candidate is used once or twice and the differences are domain-specific;
+- the component would mainly pass through props without naming a real UI concept;
+- the extraction would not reduce CSS or make a file easier to read;
+- a table/list can stay readable with native `<table>`, `<ul>`, `<ol>`, `<button>`, `<label>`, and CSS.
+
+Stop criteria:
+
+- After Assignment A, reassess before implementing Assignment B.
+- After any CSS consolidation pass, run a raw-markup grep and decide whether the remaining markup is actually painful.
+- Do not start Tier 2 or Tier 3 assignments unless active feature work already touches those files or review identifies a
+  specific maintainability bug.
+
 ## Extraction Roadmap
 
-This roadmap answers "how much is left" and helps choose the next checkpoint. Counts are approximate because some
-families should remain domain-specific rather than becoming generic UI.
+This roadmap answers "what is still worth considering". It is intentionally conservative. Items in the tables are not
+automatic work; they are candidates that must pass the decision policy above before implementation.
 
-### Tier 1: Highest Value, Low Risk
+### Keep
 
-These are likely worth extracting soon because they repeat, have simple semantics, and should improve consistency.
+These extracted primitives still look valuable and should stay:
+
+| Component Family               | Keep Because                                                                                 |
+|--------------------------------|----------------------------------------------------------------------------------------------|
+| Action buttons                 | Repeated button styling plus important `type` semantics and disabled/event forwarding.        |
+| Status/chip/badge primitives   | Repeated status and compact metadata patterns; tooltip/click cursor behavior had drift risk.  |
+| TextInput                      | Thin single-line input wrapper with a shared base class; useful while kept narrow.            |
+| LayerCheckbox/LayerRadio       | Layer controls have a specific visual/ARIA contract that was already repeated.                |
+| Panel/section/control wrappers | Shell/layout wrappers reduced repeated structural classes without owning feature state.        |
+
+### Still Worth Doing
+
+These have a clear near-term value case. Do these only one checkpoint at a time.
 
 | Candidate                      | Priority | Likely Component Type | Main Files                                                             | Expected CSS Payoff | Notes                                                                                    |
 |--------------------------------|----------|-----------------------|------------------------------------------------------------------------|---------------------|------------------------------------------------------------------------------------------|
-| `EmptyState`                   | High     | generic               | COMM, missions, portal analysis, portal details, agent/passcode panels | Medium              | Repeated `.iitc-iris-empty-state`; likely the best next component.                       |
+| `EmptyState`                   | High     | generic               | COMM, missions, portal analysis, portal details, agent/passcode panels | Medium              | Best remaining extraction: repeated class, simple semantics, consistent empty messaging. |
 | `ChipButton`                   | High     | generic               | search clear-overlay chip                                              | Low                 | Button-shaped diagnostics chip; keeps clickable chip semantics separate from span chips. |
-| `SelectInput` / `FilterSelect` | High     | generic/narrow form   | portal list filters                                                    | Medium              | Preserve select-specific semantics; pairs with text input CSS cleanup.                   |
-| `TextareaInput`                | High     | generic/narrow form   | Draw Tools import                                                      | Medium              | Single current textarea, but clarifies input CSS and future import forms.                |
-| `CheckboxField`                | High     | generic/narrow form   | Draw Tools import merge                                                | Low                 | Layer choices are already special; this covers normal checkbox-label fields.             |
+| Form-control CSS pass          | Medium   | CSS-first             | portal list filters, Draw Tools import                                 | Medium              | Prefer shared CSS before adding `SelectInput`, `TextareaInput`, or `CheckboxField`.      |
 
-### Tier 2: Valuable, Needs Domain Shape
+### Defer Unless Pain Is Proven
 
-These should probably be extracted, but not as generic `List` or `Table` first.
+These may become useful, but they do not currently justify extraction just because the markup exists. Keep native HTML
+and shared CSS unless a file is being actively changed or a review finds repeated behavior/CSS drift.
 
 | Candidate                                  | Priority | Likely Component Type | Main Files                              | Expected CSS Payoff | Notes                                                         |
 |--------------------------------------------|----------|-----------------------|-----------------------------------------|---------------------|---------------------------------------------------------------|
-| `PortalAnalysisTable` shell                | Medium   | domain/generic hybrid | portal counts, scoreboard, portals list | Medium              | Share table wrapper/classes, but keep row/cell content local. |
-| `TableSortButton`                          | Medium   | table-specific        | portals list                            | Low                 | Must preserve sort labeling and accessible button behavior.   |
-| `TableActionButton`                        | Medium   | table-specific        | portals list `Zoom`                     | Low                 | Useful if more table actions appear.                          |
-| `SearchResultRow`                          | Medium   | domain-specific       | search panel                            | Medium              | Result preview/focus semantics are specialized.               |
-| `MissionListRow` / `MissionWaypointButton` | Medium   | domain-specific       | missions panel                          | Medium              | Avoid generic row abstraction.                                |
-| `InventoryListSection` / `InventoryRow`    | Medium   | domain-specific       | inventory/passcode panels               | Medium              | Shares list visual language, but key rows are buttons.        |
-| `DrawToolsList` / `DrawToolsListItem`      | Medium   | domain-specific       | Draw Tools panel                        | High                | Likely the biggest remaining Draw Tools cleanup.              |
-| `DrawToolsImportForm`                      | Medium   | domain-specific       | Draw Tools panel                        | Medium              | Groups textarea, merge checkbox, import button/status.        |
+| `PortalAnalysisTable` shell                | Optional | domain/generic hybrid | portal counts, scoreboard, portals list | Medium              | Maybe useful for wrapper CSS; do not hide native table markup. |
+| `TableSortButton`                          | Optional | table-specific        | portals list                            | Low                 | Only if sort labeling/ARIA repeats or drifts.                 |
+| `SearchResultRow`                          | Optional | domain-specific       | search panel                            | Medium              | Worthwhile only if search panel readability is a real issue.  |
+| `DrawToolsList` / `DrawToolsListItem`      | Optional | domain-specific       | Draw Tools panel                        | High                | Best optional domain extraction if Draw Tools remains noisy.  |
+| `DrawToolsImportForm`                      | Optional | domain-specific       | Draw Tools panel                        | Medium              | Extract only with active Draw Tools work.                     |
 
-### Tier 3: Specialized or CSS-Only First
+### No Value Yet
 
-These are visible, but a generic component may not be the right first move.
+These should stay as semantic HTML and CSS for now. Revisit only if future feature work creates repetition or bugs.
 
 | Candidate                                | Priority   | Likely Component Type | Main Files                      | Expected CSS Payoff | Notes                                                                       |
 |------------------------------------------|------------|-----------------------|---------------------------------|---------------------|-----------------------------------------------------------------------------|
-| `PortalSummaryCell`                      | Low/Medium | portal-specific       | portal details                  | Medium              | Current portal summary is not the same as generic `SummaryCell`.            |
-| `PortalDetailPanelSection`               | Low/Medium | portal-specific       | portal details                  | Medium              | Details/mods/resonators/facts differ enough to audit first.                 |
-| `AuthActionButton`                       | Low/Medium | generic/domain hybrid | auth recovery, diagnostics auth | Medium              | Possible CSS consolidation with action buttons, but semantics differ.       |
-| `PresetButton` / system scenario buttons | Low/Medium | system-specific       | system controls/diagnostics     | Medium              | Many `.iitc-iris-preset`/copy buttons; audit with button CSS consolidation. |
-| `MapNavButton`                           | Low        | map-specific          | map controls                    | Low                 | Pan/zoom layout is specialized and stable.                                  |
-| `LayerToggleButton`                      | Low        | layer-specific        | layers/system diagnostics       | Low                 | Active/pressed toggle semantics differ from action buttons.                 |
-| `SheetTabButton`                         | Low        | shell-specific        | sheet tabbar                    | Low                 | Navigation/tab semantics; leave until shell UI pass.                        |
-| COMM token buttons                       | Low        | COMM-specific         | COMM message list               | Low                 | Portal/player tokens have custom behavior.                                  |
+| `TableActionButton`                      | Low        | table-specific        | portals list `Zoom`             | Low                 | A single styled action does not need a component yet.                        |
+| `MissionListRow` / `MissionWaypointButton` | Low      | domain-specific       | missions panel                  | Medium              | Domain rows are readable enough unless missions work expands.                |
+| `InventoryListSection` / `InventoryRow`  | Low        | domain-specific       | inventory/passcode panels       | Medium              | Extract only if repeated behavior grows beyond styling.                      |
+| `PortalSummaryCell`                      | Low        | portal-specific       | portal details                  | Medium              | Current portal summary differs from generic `SummaryCell`; leave local.      |
+| `PortalDetailPanelSection`               | Low        | portal-specific       | portal details                  | Medium              | Portal-specific content is clearer inline for now.                           |
+| `AuthActionButton`                       | Low        | generic/domain hybrid | auth recovery, diagnostics auth | Medium              | CSS may be enough; no component until behavior repeats.                      |
+| `PresetButton` / system scenario buttons | Low        | system-specific       | system controls/diagnostics     | Medium              | Consider CSS consolidation only, not a component by default.                 |
+| `MapNavButton`                           | Low        | map-specific          | map controls                    | Low                 | Specialized and stable.                                                     |
+| `LayerToggleButton`                      | Low        | layer-specific        | layers/system diagnostics       | Low                 | Active/pressed toggle semantics differ from action buttons.                  |
+| `SheetTabButton`                         | Low        | shell-specific        | sheet tabbar                    | Low                 | Navigation/tab semantics; leave until shell UI pass.                         |
+| COMM token buttons                       | Low        | COMM-specific         | COMM message list               | Low                 | Portal/player tokens have custom behavior.                                   |
 
 ### Rough Progress
 
 - Extracted shared families: about 18.
-- Remaining generic high-value candidates: about 5.
-- Remaining medium-value domain candidates: about 8.
-- Remaining specialized/CSS-first candidates: about 9.
-- Expected remaining implementation checkpoints before the UI library feels "mostly extracted": about 5-6.
+- Remaining high-confidence component candidates: 2 (`EmptyState`, `ChipButton`).
+- Remaining CSS-first candidate areas: 1-2, mostly form controls and possibly button families.
+- Remaining optional domain candidates: several, but none should be treated as required.
+- Expected remaining implementation checkpoints before stopping this plan: 1-3, not 5-6.
 
-"Mostly extracted" means Tier 1 complete plus the useful Tier 2 domain components chosen by audit. Tier 3 can remain raw
-unless CSS consolidation or a feature change makes it worth touching.
+"Good enough" means the repeated primitives are extracted, the obvious empty/chip gap is closed, and any remaining raw
+HTML is either native semantic UI or has a documented reason to stay local.
 
 ### Suggested Next Checkpoints
 
 1. `EmptyState` and `ChipButton`.
-2. Form controls: `SelectInput`, `TextareaInput`, `CheckboxField`.
-3. Portal analysis table audit and table shell/buttons.
-4. Search result row component.
-5. Draw Tools import/list components.
-6. Button-family CSS consolidation.
+2. Reassess. If form CSS duplication is still obvious, do a CSS-first form-control pass.
+3. Optional: button-family CSS consolidation if duplicated button rules remain painful.
+4. Stop the UI extraction plan unless an active feature/change exposes a concrete repeated pattern.
 
-Do not introduce a generic `List` or `Table` component until after checkpoints 3-5 prove which parts are genuinely
-shared.
+Do not introduce generic `List`, `Table`, row, select, textarea, or checkbox components unless the reassessment names a
+specific repeated behavior or CSS problem.
 
 ## Actionable Assignments
 
-Use these assignments for the remaining work. Each assignment should be implemented and reviewed separately unless the
-files and behavior overlap heavily.
+Use these assignments only when the decision policy says they are worth doing. Assignment A is the only currently
+recommended implementation checkpoint. Assignments B-H are optional recipes so future work has a clear path without
+forcing extraction now.
 
 ### Assignment A: Empty States and Chip Button
 
@@ -219,24 +266,26 @@ Validation:
 
 ### Assignment B: Narrow Form Controls
 
-Status: ready after Assignment A.
+Status: defer; reassess after Assignment A.
 
-Goal: finish non-text form leaves without inventing a generic all-input abstraction.
+Goal: decide whether non-text form leaves need components, or whether shared CSS is enough.
 
 Components:
 
-- `SelectInput`
-- `TextareaInput`
-- `CheckboxField`
+- possible `SelectInput`
+- possible `TextareaInput`
+- possible `CheckboxField`
+- preferred first step: shared form-control CSS only, if it removes duplicated rules
 
 Files:
 
-- Add `apps/iitc-iris/src/ui/select-input.tsx`
-- Add `apps/iitc-iris/src/ui/select-input.test.tsx`
-- Add `apps/iitc-iris/src/ui/textarea-input.tsx`
-- Add `apps/iitc-iris/src/ui/textarea-input.test.tsx`
-- Add `apps/iitc-iris/src/ui/checkbox-field.tsx`
-- Add `apps/iitc-iris/src/ui/checkbox-field.test.tsx`
+- Only if reassessment approves components:
+    - Add `apps/iitc-iris/src/ui/select-input.tsx`
+    - Add `apps/iitc-iris/src/ui/select-input.test.tsx`
+    - Add `apps/iitc-iris/src/ui/textarea-input.tsx`
+    - Add `apps/iitc-iris/src/ui/textarea-input.test.tsx`
+    - Add `apps/iitc-iris/src/ui/checkbox-field.tsx`
+    - Add `apps/iitc-iris/src/ui/checkbox-field.test.tsx`
 - Refactor portal list selects in `apps/iitc-iris/src/portal-analysis/portals-list-panel.tsx`
 - Refactor Draw Tools import textarea and merge checkbox in `apps/iitc-iris/src/draw-tools/draw-tools-panel.tsx`
 
@@ -245,11 +294,13 @@ Rules:
 - Keep native `<select>`, `<textarea>`, and `<input type="checkbox">` semantics.
 - Do not reuse `LayerCheckbox`; layer choices have a different visual/ARIA contract.
 - CSS consolidation is allowed only for exact shared form-control base rules.
+- Do not create these components if each one would be a one-off prop pass-through.
 
 Done when:
 
-- Remaining raw `<select>` usages are intentionally domain-specific or documented.
-- Draw Tools import textarea and merge checkbox no longer own ad hoc class composition in TSX.
+- Either shared CSS removes the useful duplication and raw native elements remain local, or a component is introduced
+  because repeated behavior/CSS makes it worthwhile.
+- Remaining raw `<select>`, `<textarea>`, and checkbox usages are intentionally domain-specific or documented.
 
 Validation:
 
@@ -261,9 +312,9 @@ Validation:
 
 ### Assignment C: Portal Analysis Tables
 
-Status: needs implementation plan before code.
+Status: optional; no value yet unless table CSS or sort behavior drifts.
 
-Goal: reduce table wrapper/button duplication without hiding table semantics.
+Goal: reduce table wrapper/button duplication only if native table markup becomes noisy or inconsistent.
 
 Candidate components:
 
@@ -286,8 +337,9 @@ Rules:
 
 Done when:
 
-- Table wrapper/class repetition is centralized.
-- Portals list sort/action buttons are either extracted or explicitly deferred with reason.
+- Table wrapper/class repetition is centralized, or the assignment is explicitly deferred because native table markup plus
+  CSS is clearer.
+- Portals list sort/action buttons are either extracted or explicitly left local with reason.
 
 Validation:
 
@@ -299,7 +351,7 @@ Validation:
 
 ### Assignment D: Search Results
 
-Status: after Assignment C or if search work is active.
+Status: optional; only if search work is active.
 
 Goal: make search result rows maintainable without making a generic row component.
 
@@ -333,9 +385,9 @@ Validation:
 
 ### Assignment E: Draw Tools Import and Lists
 
-Status: after Assignment B or when Draw Tools work is active.
+Status: optional; only if Draw Tools work is active or the panel remains hard to maintain after form CSS reassessment.
 
-Goal: extract the largest remaining local component cluster.
+Goal: simplify Draw Tools only if local repeated markup is hiding the feature logic.
 
 Candidate components:
 
@@ -370,7 +422,7 @@ Validation:
 
 ### Assignment F: Inventory and Missions Rows
 
-Status: optional after Assignments C-E.
+Status: no value yet; revisit only with inventory or missions feature work.
 
 Goal: extract remaining repeated row/list structures only if they still feel noisy.
 
@@ -406,7 +458,7 @@ Validation:
 
 ### Assignment G: Portal Details Domain Components
 
-Status: optional; do after higher-value assignments.
+Status: no value yet; revisit only if portal details work expands.
 
 Goal: reduce portal-details file size and isolate portal-specific layout.
 
@@ -441,7 +493,7 @@ Validation:
 
 ### Assignment H: CSS Consolidation Passes
 
-Status: after Assignments A-C at minimum.
+Status: optional after Assignment A; CSS-first is preferred over new components where possible.
 
 Goal: reduce CSS after component boundaries are stable.
 
@@ -471,12 +523,13 @@ Validation:
 - `npm run package:iitc-iris`;
 - visual checks of every affected panel.
 
-Avoid broad abstractions at first:
+Avoid broad abstractions going forward:
 
-- Do not introduce a generic `Panel` wrapper until repeated panel structure is proven across at least two reviewed
-  checkpoints.
-- Do not introduce generic `Badge`, `List`, `Row`, or `SummaryGrid` components until the exact repeated shapes and class
-  contracts are listed in this plan.
+- Do not introduce generic `List`, `Row`, or `Table` components until the exact repeated behavior and class contracts are
+  listed in this plan.
+- Do not add more layout wrappers unless they replace repeated structure across at least three reviewed usages.
+- Existing `Panel`, `Badge`, and `SummaryGrid` components can stay; do not use them as justification for extracting every
+  remaining layout shape.
 - Do not introduce one generic "all inputs" component. Text inputs, textareas, selects, checkboxes, and radios have
   different accessibility and layout contracts and must be planned separately.
 

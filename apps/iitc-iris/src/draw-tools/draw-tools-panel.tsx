@@ -1,11 +1,16 @@
 import {h} from 'preact';
+import {useState} from 'preact/hooks';
 import {
   DRAW_TOOLS_DEFAULT_COLOR,
   DRAW_TOOLS_MARKER_PRESETS,
+  filterAndSortDrawToolsMarkersForDisplay,
   getDrawToolsItemDetail,
   getDrawToolsItemLabel,
+  getDrawToolsMarkerCreatedIndexByStorageIndex,
   type DrawToolsLinkEndpointLabels,
+  type DrawToolsMarkerSort,
   type DrawToolsMarkerPortalInfo,
+  type DrawToolsMarkerTeamFilter,
   type DrawToolsTarget,
 } from './content-draw-tools';
 import {formatTeamClass, formatTeamShortLabel, getPortalCountsLevelColor} from '../portal-analysis/content-portal-analysis';
@@ -16,6 +21,23 @@ import {ActionButton} from '../ui/action-button';
 import {Section} from '../ui/section';
 
 type DrawToolsItemType = 'polyline' | 'marker';
+
+const DRAW_TOOLS_MARKER_TEAM_FILTERS: {value: DrawToolsMarkerTeamFilter; label: string}[] = [
+  {value: 'all', label: 'All factions'},
+  {value: 'R', label: 'RES'},
+  {value: 'E', label: 'ENL'},
+  {value: 'M', label: 'MAC'},
+  {value: 'N', label: 'Neutral'},
+  {value: 'unknown', label: 'Unknown'},
+];
+
+const DRAW_TOOLS_MARKER_SORTS: {value: DrawToolsMarkerSort; label: string}[] = [
+  {value: 'nearby', label: 'Nearby'},
+  {value: 'created', label: 'Created'},
+  {value: 'team', label: 'Faction'},
+  {value: 'level', label: 'Level'},
+  {value: 'name', label: 'Name'},
+];
 
 export interface IitcIrisDrawToolsPanelProps {
   allItemsCount: number;
@@ -75,6 +97,9 @@ function getLevelChipTextColor(level: number): string {
 }
 
 export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JSX.Element {
+  const [markerTeamFilter, setMarkerTeamFilter] = useState<DrawToolsMarkerTeamFilter>('all');
+  const [markerSort, setMarkerSort] = useState<DrawToolsMarkerSort>('nearby');
+
   if (props.mode === 'links') {
     return <Section titleHeading="Draw Links">
       <div className="iitc-iris-map-context-row">
@@ -125,6 +150,18 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
     </Section>;
   }
 
+  const visibleMarkerItems = filterAndSortDrawToolsMarkersForDisplay(
+    props.markerItems,
+    props.markerPortalInfoByStorageIndex,
+    markerTeamFilter,
+    markerSort,
+  );
+  const createdIndexByStorageIndex = getDrawToolsMarkerCreatedIndexByStorageIndex(props.markerItems);
+  const markerFilterLabel = DRAW_TOOLS_MARKER_TEAM_FILTERS.find((filter) => filter.value === markerTeamFilter)?.label ?? 'markers';
+  const markerSummary = markerTeamFilter === 'all'
+    ? `${props.markerItems.length.toLocaleString()} drawn markers`
+    : `${props.markerItems.length.toLocaleString()} drawn markers - showing ${visibleMarkerItems.length.toLocaleString()} ${markerFilterLabel}`;
+
   return <Section titleHeading="Draw Markers">
     <div className="iitc-iris-map-context-row">
       <span className="iitc-iris-map-context-coords">
@@ -157,7 +194,7 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
       </span>
     </div>
     <div className="iitc-iris-map-context-row">
-      <span className="iitc-iris-map-context-coords">{props.markerItems.length.toLocaleString()} drawn markers</span>
+      <span className="iitc-iris-map-context-coords">{markerSummary}</span>
       <ActionButton onClick={() => props.deleteAtContext('marker')} disabled={!props.target} title="Delete nearest drawn marker">Del</ActionButton>
       <ActionButton onClick={() => props.undoItem('marker')} disabled={props.markerItems.length === 0} title="Remove latest drawn marker">Undo</ActionButton>
       <ActionButton onClick={() => props.copyItems('marker')} disabled={props.markerItems.length === 0} title="Copy drawn markers as IITC Draw Tools JSON">Copy</ActionButton>
@@ -166,9 +203,25 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
         {props.clearConfirm === 'marker' ? 'Confirm' : 'Clear'}
       </ActionButton>
     </div>
-    {props.markerItems.length > 0 && <div className="iitc-iris-draw-tools-list" aria-label="Drawn markers">
-      {props.markerItems.map((item, index) => {
+    {props.markerItems.length > 0 && <div className="iitc-iris-map-context-row iitc-iris-draw-tools-list-controls">
+      <label>
+        <span>Faction</span>
+        <select aria-label="Filter drawn markers by faction" value={markerTeamFilter} onChange={(event) => setMarkerTeamFilter(event.currentTarget.value as DrawToolsMarkerTeamFilter)}>
+          {DRAW_TOOLS_MARKER_TEAM_FILTERS.map((filter) => <option value={filter.value} key={filter.value}>{filter.label}</option>)}
+        </select>
+      </label>
+      <label>
+        <span>Sort</span>
+        <select aria-label="Sort drawn markers" value={markerSort} onChange={(event) => setMarkerSort(event.currentTarget.value as DrawToolsMarkerSort)}>
+          {DRAW_TOOLS_MARKER_SORTS.map((sort) => <option value={sort.value} key={sort.value}>{sort.label}</option>)}
+        </select>
+      </label>
+    </div>}
+    {props.markerItems.length > 0 && visibleMarkerItems.length === 0 && <div className="iitc-iris-draw-tools-list-empty">No markers match this filter.</div>}
+    {visibleMarkerItems.length > 0 && <div className="iitc-iris-draw-tools-list" aria-label="Drawn markers">
+      {visibleMarkerItems.map((item) => {
         const portalInfo = props.markerPortalInfoByStorageIndex[item.storageIndex];
+        const createdIndex = createdIndexByStorageIndex[item.storageIndex] ?? 0;
         return (
           <div className="iitc-iris-draw-tools-list-item" key={`marker-${item.storageIndex}`}>
             <span className="iitc-iris-draw-tools-marker-dot" style={{background: item.color ?? DRAW_TOOLS_DEFAULT_COLOR}} />
@@ -178,8 +231,8 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
                   className="iitc-iris-draw-tools-label-input"
                   type="text"
                   defaultValue={item.label ?? ''}
-                  placeholder={getDrawToolsItemLabel(item, index)}
-                  aria-label={`Marker ${index + 1} label`}
+                  placeholder={getDrawToolsItemLabel(item, createdIndex)}
+                  aria-label={`Marker ${createdIndex + 1} label`}
                   autoFocus
                   onBlur={(event) => props.saveMarkerLabel(item, event.currentTarget.value)}
                   onKeyDown={(event) => {
@@ -191,7 +244,7 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
                   }}
                 />
               ) : (
-                <b title={portalInfo?.title}>{getDrawToolsItemLabel(item, index)}</b>
+                <b title={portalInfo?.title}>{getDrawToolsItemLabel(item, createdIndex)}</b>
               )}
               <small className="iitc-iris-draw-tools-marker-detail" title={portalInfo?.title}>
                 <span className="iitc-iris-draw-tools-marker-coords">{getDrawToolsItemDetail(item)}</span>

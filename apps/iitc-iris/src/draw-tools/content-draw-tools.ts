@@ -6,6 +6,8 @@ import {
 } from '@iris/iitc-core';
 import type {IitcIrisDrawToolsItem, IitcIrisDrawToolsLatLng} from '../messages';
 
+type DrawToolsMarkerItem = Extract<IitcIrisDrawToolsItem, {type: 'marker'}>;
+
 export interface DrawToolsTarget {
   lat: number;
   lng: number;
@@ -24,6 +26,9 @@ export interface DrawToolsLinkEndpointLabels {
   from: string;
   to: string;
 }
+
+export type DrawToolsMarkerTeamFilter = 'all' | IitcPortalsListEntry['team'] | 'unknown';
+export type DrawToolsMarkerSort = 'nearby' | 'created' | 'team' | 'level' | 'name';
 
 export const DRAW_TOOLS_MARKER_PRESETS = [
   {id: 'white', color: '#ffffff', title: 'Add white marker'},
@@ -183,6 +188,90 @@ export function getDrawToolsLinkEndpointLabelsByStorageIndex(
 export function getDrawToolsItemLabel(item: IitcIrisDrawToolsItem, displayIndex: number): string {
   if (item.type === 'marker') return item.label ?? `Marker ${displayIndex + 1}`;
   return `Link ${displayIndex + 1}`;
+}
+
+function getDrawToolsMarkerTeamSortValue(team: DrawToolsMarkerTeamFilter): number {
+  if (team === 'R') return 0;
+  if (team === 'E') return 1;
+  if (team === 'M') return 2;
+  if (team === 'N') return 3;
+  return 4;
+}
+
+function getDrawToolsMarkerTeamFilterValue(
+  item: DrawToolsMarkerItem,
+  portalInfoByStorageIndex: Record<number, DrawToolsMarkerPortalInfo>,
+): DrawToolsMarkerTeamFilter {
+  return portalInfoByStorageIndex[item.storageIndex]?.team ?? 'unknown';
+}
+
+function getDrawToolsMarkerNameSortValue(
+  item: DrawToolsMarkerItem,
+  portalInfoByStorageIndex: Record<number, DrawToolsMarkerPortalInfo>,
+): string {
+  return (item.label ?? portalInfoByStorageIndex[item.storageIndex]?.title ?? '').toLowerCase();
+}
+
+export function getDrawToolsMarkerCreatedIndexByStorageIndex(
+  items: readonly DrawToolsMarkerItem[],
+): Record<number, number> {
+  const createdIndexByStorageIndex: Record<number, number> = {};
+  [...items]
+    .sort((left, right) => left.storageIndex - right.storageIndex)
+    .forEach((item, index) => {
+      createdIndexByStorageIndex[item.storageIndex] = index;
+    });
+  return createdIndexByStorageIndex;
+}
+
+export function filterDrawToolsMarkersByTeam(
+  items: readonly DrawToolsMarkerItem[],
+  portalInfoByStorageIndex: Record<number, DrawToolsMarkerPortalInfo>,
+  teamFilter: DrawToolsMarkerTeamFilter,
+): DrawToolsMarkerItem[] {
+  if (teamFilter === 'all') return [...items];
+  return items.filter((item) => getDrawToolsMarkerTeamFilterValue(item, portalInfoByStorageIndex) === teamFilter);
+}
+
+export function sortDrawToolsMarkersForDisplay(
+  items: readonly DrawToolsMarkerItem[],
+  portalInfoByStorageIndex: Record<number, DrawToolsMarkerPortalInfo>,
+  sortBy: DrawToolsMarkerSort,
+): DrawToolsMarkerItem[] {
+  const sortedItems = [...items];
+  if (sortBy === 'nearby') return sortedItems;
+  return sortedItems.sort((left, right) => {
+    if (sortBy === 'created') return left.storageIndex - right.storageIndex;
+    if (sortBy === 'team') {
+      const teamDiff = getDrawToolsMarkerTeamSortValue(getDrawToolsMarkerTeamFilterValue(left, portalInfoByStorageIndex)) -
+        getDrawToolsMarkerTeamSortValue(getDrawToolsMarkerTeamFilterValue(right, portalInfoByStorageIndex));
+      if (teamDiff !== 0) return teamDiff;
+    }
+    if (sortBy === 'level') {
+      const levelDiff = (portalInfoByStorageIndex[right.storageIndex]?.level ?? -1) -
+        (portalInfoByStorageIndex[left.storageIndex]?.level ?? -1);
+      if (levelDiff !== 0) return levelDiff;
+    }
+    if (sortBy === 'name') {
+      const nameDiff = getDrawToolsMarkerNameSortValue(left, portalInfoByStorageIndex)
+        .localeCompare(getDrawToolsMarkerNameSortValue(right, portalInfoByStorageIndex));
+      if (nameDiff !== 0) return nameDiff;
+    }
+    return left.storageIndex - right.storageIndex;
+  });
+}
+
+export function filterAndSortDrawToolsMarkersForDisplay(
+  items: readonly DrawToolsMarkerItem[],
+  portalInfoByStorageIndex: Record<number, DrawToolsMarkerPortalInfo>,
+  teamFilter: DrawToolsMarkerTeamFilter,
+  sortBy: DrawToolsMarkerSort,
+): DrawToolsMarkerItem[] {
+  return sortDrawToolsMarkersForDisplay(
+    filterDrawToolsMarkersByTeam(items, portalInfoByStorageIndex, teamFilter),
+    portalInfoByStorageIndex,
+    sortBy,
+  );
 }
 
 export function getDrawToolsItemDetail(item: IitcIrisDrawToolsItem): string {
