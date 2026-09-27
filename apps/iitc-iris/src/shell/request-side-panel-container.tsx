@@ -1,5 +1,8 @@
 import {h} from 'preact';
 import {getPanelStatusClass} from '../ui-status';
+import {Panel, PanelHeader, PanelTitle} from '../ui/panel';
+import {ClearButton} from '../ui/clear-button';
+import {StatusText} from '../ui/status-text';
 import {IitcIrisAgentPanel} from '../side-panels/agent-panel';
 import {IitcIrisCommPanel} from '../comm/comm-panel';
 import {IitcIrisInventoryPanel} from '../side-panels/inventory-panel';
@@ -104,25 +107,21 @@ export function IitcIrisRequestSidePanelContainer(props: IitcIrisRequestSidePane
   } = props;
 
   return (
-    <aside className="iitc-iris-request-side-panel" aria-label={`${activeSidePanelOption.title} panel`}>
-      <div className="iitc-iris-request-panel-header">
-        <span className="iitc-iris-selected-title">{activeSidePanelOption.label}</span>
+    <Panel aria-label={`${activeSidePanelOption.title} panel`}>
+      <PanelHeader>
+        <PanelTitle>{activeSidePanelOption.label}</PanelTitle>
         <span className="iitc-iris-panel-header-actions">
-          <span className={`iitc-iris-status iitc-iris-panel-state ${getPanelStatusClass(activeSidePanelStatus)}`}>
+          <StatusText className={`iitc-iris-panel-state ${getPanelStatusClass(activeSidePanelStatus)}`}>
             {activeSidePanelStatus}
-          </span>
+          </StatusText>
           {activePanelNeedsAuth && inlineAuthActions}
-          <button
-            className="iitc-iris-clear-selection"
-            type="button"
+          <ClearButton
             onClick={closeSidePanel}
             title={`Close ${activeSidePanelOption.title}`}
             aria-label={`Close ${activeSidePanelOption.title}`}
-          >
-            X
-          </button>
+          />
         </span>
-      </div>
+      </PanelHeader>
       {activeSidePanel === 'agent' && (
         <IitcIrisAgentPanel agentState={agentState} />
       )}
@@ -173,6 +172,6 @@ export function IitcIrisRequestSidePanelContainer(props: IitcIrisRequestSidePane
           redeem={redeemPasscode}
         />
       )}
-    </aside>
+    </Panel>
   );
 }

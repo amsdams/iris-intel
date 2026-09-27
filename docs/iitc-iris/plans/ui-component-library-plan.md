@@ -325,11 +325,34 @@ Validation:
 - `npm run package:iitc-iris`
 - manual visual inspection of the COMM panel controls.
 
+### Checkpoint 6: Panel Wrappers
+
+Status: complete.
+
+Candidate scope:
+- `Panel`: wrapping `<aside className="iitc-iris-request-side-panel">`
+- `PanelHeader`: wrapping `<div className="iitc-iris-request-panel-header">`
+- `PanelTitle`: wrapping `<span className="iitc-iris-selected-title">`
+- `PanelBody`: wrapping `<div className="iitc-iris-request-panel-body">`
+- `PanelFooter`: wrapping `<div className="iitc-iris-panel-footer">`
+
+Exact files for implementation:
+- `apps/iitc-iris/src/ui/panel.tsx` (containing all the above exports)
+- `apps/iitc-iris/src/ui/panel.test.tsx`
+- Refactor target: `apps/iitc-iris/src/search/search-panel.tsx` (to replace its root structure)
+- Refactor target: `apps/iitc-iris/src/shell/request-side-panel-container.tsx` (to replace its header and root structure)
+
+Validation:
+- `npm run test -w apps/iitc-iris -- --run src/ui/panel.test.tsx`
+- `npm run typecheck:iitc-iris`
+- `npm run lint:iitc-iris`
+- `npm run package:iitc-iris`
+- manual visual inspection of the search panel and a side panel (like COMM or info).
+
 ### Later Candidates
 
 These require a fresh checkpoint section before implementation:
 
 - text/input components;
 - badges;
-- panel wrappers;
 - broader CSS consolidation.

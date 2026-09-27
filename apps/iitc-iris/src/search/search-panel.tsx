@@ -1,6 +1,7 @@
 import {h} from 'preact';
 import {getCommTeamClass} from '../comm/comm-display';
 import type {IitcIrisSearchResult, IitcIrisSearchState} from '../messages';
+import {Panel, PanelHeader, PanelTitle, PanelBody, PanelFooter} from '../ui/panel';
 import {formatElapsedSeconds, getPanelStatusClass} from '../ui-status';
 
 interface RenderedSearchResult {
@@ -40,15 +41,15 @@ export function IitcIrisSearchPanel(props: IitcIrisSearchPanelProps): h.JSX.Elem
   const groupedSearchResults = getGroupedSearchResults(props.searchState.results);
   const trimmedSearchTerm = props.searchTerm.trim();
 
-  return <aside className="iitc-iris-request-side-panel iitc-iris-search-panel" role="search" aria-label="Search">
-    <div className="iitc-iris-request-panel-header">
-      <span className="iitc-iris-selected-title">Search</span>
+  return <Panel className="iitc-iris-search-panel" role="search" aria-label="Search">
+    <PanelHeader>
+      <PanelTitle>Search</PanelTitle>
       <span className="iitc-iris-panel-header-actions">
         <span className={`iitc-iris-status iitc-iris-panel-state ${getPanelStatusClass(props.searchState.status)}`}>{props.searchState.status}</span>
         <button className="iitc-iris-clear-selection" type="button" onClick={props.closeSearch} title="Close search" aria-label="Close search">X</button>
       </span>
-    </div>
-    <div className="iitc-iris-request-panel-body">
+    </PanelHeader>
+    <PanelBody>
       <form
         className="iitc-iris-search-box"
         onSubmit={(event) => {
@@ -130,7 +131,7 @@ export function IitcIrisSearchPanel(props: IitcIrisSearchPanelProps): h.JSX.Elem
           {props.searchState.error && <span className="iitc-iris-warning">{props.searchState.error}</span>}
         </div>
       )}
-      <div className="iitc-iris-panel-footer">
+      <PanelFooter>
         <span
           className="iitc-iris-diagnostics-chip"
           title={[
@@ -146,7 +147,7 @@ export function IitcIrisSearchPanel(props: IitcIrisSearchPanelProps): h.JSX.Elem
             clear overlay
           </button>
         )}
-      </div>
-    </div>
-  </aside>;
+      </PanelFooter>
+    </PanelBody>
+  </Panel>;
 }
