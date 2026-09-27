@@ -2,6 +2,8 @@ import {h} from 'preact';
 import type {ScenarioRun} from './content-scenarios';
 import type {IitcIrisLifecycleSettings} from '../messages';
 import type {DataSourceOption, ViewPresetOption} from '../shell/content-storage-settings';
+import {ActionButton} from '../ui/action-button';
+import {StatusText} from '../ui/status-text';
 
 interface IitcIrisSystemControlsPanelProps {
   shortcutsEnabled: boolean;
@@ -79,20 +81,18 @@ export function IitcIrisSystemControlsPanel({
   return (
     <>
       <div className="iitc-iris-map-controls-section">
-        <span className="iitc-iris-status">Account</span>
+        <StatusText>Account</StatusText>
         <div className="iitc-iris-map-control-row">
-          <button
-            className="iitc-iris-portal-action"
-            type="button"
+          <ActionButton
             onClick={logoutIntel}
             title="Sign out of the current Intel session"
           >
             Logout
-          </button>
+          </ActionButton>
         </div>
       </div>
       <div className="iitc-iris-map-controls-section">
-        <span className="iitc-iris-status">Interaction</span>
+        <StatusText>Interaction</StatusText>
         <div className="iitc-iris-map-control-row">
           <button
             className={`iitc-iris-layer-toggle ${shortcutsEnabled ? 'iitc-iris-layer-toggle-active' : ''}`}
@@ -112,20 +112,20 @@ export function IitcIrisSystemControlsPanel({
           >
             Map Focus
           </button>
-          <span className="iitc-iris-status">{shortcutsEnabled ? 'keys on' : 'keys off'}</span>
-          <span className="iitc-iris-status">{mapFocusMode ? 'auto close' : 'stay open'}</span>
+          <StatusText>{shortcutsEnabled ? 'keys on' : 'keys off'}</StatusText>
+          <StatusText>{mapFocusMode ? 'auto close' : 'stay open'}</StatusText>
         </div>
       </div>
       <div className="iitc-iris-map-controls-section">
-        <span className="iitc-iris-status">Copy/export</span>
+        <StatusText>Copy/export</StatusText>
         <div className="iitc-iris-map-control-row">
-          <button className="iitc-iris-portal-action" type="button" onClick={copyDockText} title="Copy JSON diagnostics">JSON</button>
-          <button className="iitc-iris-portal-action" type="button" onClick={copyIntelUrl} title="Copy current view as an Intel URL">URL</button>
-          {copyStatus && <span className="iitc-iris-status">{copyStatus}</span>}
+          <ActionButton onClick={copyDockText} title="Copy JSON diagnostics">JSON</ActionButton>
+          <ActionButton onClick={copyIntelUrl} title="Copy current view as an Intel URL">URL</ActionButton>
+          {copyStatus && <StatusText>{copyStatus}</StatusText>}
         </div>
       </div>
       <div className="iitc-iris-map-controls-section">
-        <span className="iitc-iris-status">Presets</span>
+        <StatusText>Presets</StatusText>
         <div className="iitc-iris-map-control-row">
           {viewPresets.map((preset) => (
             <button
@@ -155,11 +155,11 @@ export function IitcIrisSystemControlsPanel({
             title="Paste lat,lng,z or an Intel URL with ll, pll, and optional z"
           />
           <button className="iitc-iris-preset" type="submit">Jump</button>
-          {viewInputStatus && <span className="iitc-iris-status">{viewInputStatus}</span>}
+          {viewInputStatus && <StatusText>{viewInputStatus}</StatusText>}
         </form>
       </div>
       <div className="iitc-iris-map-controls-section">
-        <span className="iitc-iris-status">Lifecycle</span>
+        <StatusText>Lifecycle</StatusText>
         <div className="iitc-iris-map-control-row">
           <button
             className={`iitc-iris-layer-toggle iitc-iris-system-toggle ${lifecycleSettings.iitcMovementDelay ? 'iitc-iris-layer-toggle-active' : ''}`}
@@ -170,11 +170,11 @@ export function IitcIrisSystemControlsPanel({
           >
             IITC Delay
           </button>
-          <span className="iitc-iris-status">{lifecycleSettings.iitcMovementDelay ? 'IITC timing' : 'fast move'}</span>
+          <StatusText>{lifecycleSettings.iitcMovementDelay ? 'IITC timing' : 'fast move'}</StatusText>
         </div>
       </div>
       <div className="iitc-iris-map-controls-section">
-        <span className="iitc-iris-status">Scenarios</span>
+        <StatusText>Scenarios</StatusText>
         <div className="iitc-iris-map-control-row">
           <button
             className="iitc-iris-preset"
@@ -206,14 +206,14 @@ export function IitcIrisSystemControlsPanel({
           <button className="iitc-iris-preset" type="button" disabled={activeScenarioRun === null} onClick={() => captureScenarioSnapshot('reload')} title="Capture the current diagnostics after the selected scenario mode has refreshed">Snap Reload</button>
           <button className="iitc-iris-preset" type="button" disabled={activeScenarioRun === null} onClick={() => captureScenarioSnapshot('in-progress')} title="Capture the current diagnostics as the in-progress point">Snap Prog</button>
           <button className="iitc-iris-preset" type="button" disabled={activeScenarioRun === null} onClick={finishScenarioRun} title="Capture the final diagnostics and finish the active scenario run">Snap Done</button>
-          <button className="iitc-iris-portal-action" type="button" onClick={copyScenarioRun} title="Copy all scenario runs as JSON">Copy Runs</button>
+          <ActionButton onClick={copyScenarioRun} title="Copy all scenario runs as JSON">Copy Runs</ActionButton>
           <button className="iitc-iris-preset" type="button" onClick={clearScenarioRuns}>Clear</button>
           {activeScenarioRun
-            ? <span className="iitc-iris-status iitc-iris-panel-state is-loading">{activeScenarioRun.name}: running</span>
+            ? <StatusText className="iitc-iris-panel-state is-loading">{activeScenarioRun.name}: running</StatusText>
             : latestScenarioRun
-              ? <span className="iitc-iris-status iitc-iris-panel-state is-ready">{scenarioRuns.length} runs, {scenarioSnapCount} snaps</span>
-              : <span className="iitc-iris-status">no run</span>}
-          {scenarioStatus && <span className="iitc-iris-status">{scenarioStatus}</span>}
+              ? <StatusText className="iitc-iris-panel-state is-ready">{scenarioRuns.length} runs, {scenarioSnapCount} snaps</StatusText>
+              : <StatusText>no run</StatusText>}
+          {scenarioStatus && <StatusText>{scenarioStatus}</StatusText>}
         </div>
         {scenarioProgressRun && (
           <div className="iitc-iris-scenario-progress" title={`${scenarioProgressRun.name} ${scenarioProgressRun.status}`}>
@@ -231,7 +231,7 @@ export function IitcIrisSystemControlsPanel({
         )}
       </div>
       <div className="iitc-iris-map-controls-section">
-        <span className="iitc-iris-status">Data source</span>
+        <StatusText>Data source</StatusText>
         <div className="iitc-iris-map-control-row">
           {dataSourceOptions.map((option) => (
             <button

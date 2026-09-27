@@ -170,30 +170,39 @@ If CSS or visible markup changes, also run or record:
 
 ### Checkpoint 0: UI Pattern Audit
 
-Status: planned.
+Status: complete.
 
 Documentation only. Do not change app code.
 
-Update this plan with:
+Audit Results:
+- Top repeated classes and usage counts:
+  - `iitc-iris-status`: 102 usages
+  - `iitc-iris-portal-action`: 44 usages
+  - `iitc-iris-map-controls-section`: 25 usages
+  - `iitc-iris-diagnostics-chip`: 24 usages
+  - `iitc-iris-map-control-row`: 14 usages
+  - `iitc-iris-clear-selection`: 7 usages
+  - `iitc-iris-segmented` (including segmented-row/segmented-button): 2 files
 
-- the top repeated classes and their usage counts;
-- candidate components sorted by lowest risk first;
-- the first implementation checkpoint's exact files;
-- whether that checkpoint is markup-only or includes CSS consolidation.
+- Candidate components sorted by lowest risk first:
+  1. `StatusText` (`iitc-iris-status`) - pure span/div styling.
+  2. `ActionButton` (`iitc-iris-portal-action`) - pure button styling.
+  3. `ClearButton` (`iitc-iris-clear-selection`) - pure icon button.
+  4. `DiagnosticsChip` (`iitc-iris-diagnostics-chip`).
 
-Suggested audit commands:
+- First implementation checkpoint exact files:
+  `apps/iitc-iris/src/system/system-controls-panel.tsx` (contains a mix of action buttons and status text).
 
-- `rg "iitc-iris-portal-action|iitc-iris-clear-selection|iitc-iris-status|iitc-iris-diagnostics-chip|iitc-iris-map-control-row|iitc-iris-map-controls-section|iitc-iris-segmented" apps/iitc-iris/src -g '*.tsx'`
-- `rg "<button|<input|<aside|<label" apps/iitc-iris/src -g '*.tsx'`
+- Scope:
+  Markup-only. No CSS consolidation is needed or approved for Checkpoint 1.
 
 Validation:
-
 - Documentation review only.
 - `git diff --check`.
 
 ### Checkpoint 1: Leaf Button/Status Components
 
-Status: planned, blocked until Checkpoint 0 identifies exact files.
+Status: complete.
 
 Preferred first implementation slice:
 
@@ -201,10 +210,10 @@ Preferred first implementation slice:
 - add `apps/iitc-iris/src/ui/clear-button.tsx`;
 - add `apps/iitc-iris/src/ui/status-text.tsx`;
 - add focused component tests if these components contain any conditional logic;
-- replace usages in one small, low-risk panel file only.
+- replace usages in one small, low-risk panel file only: `apps/iitc-iris/src/system/system-controls-panel.tsx`.
 
 Do not edit CSS in this checkpoint unless Checkpoint 0 identifies an exact duplicate class consolidation and updates this
-section first.
+section first (none identified yet, so no CSS edits).
 
 Validation:
 
@@ -213,7 +222,7 @@ Validation:
 - `npm run lint:iitc-iris`;
 - `npm run package:iitc-iris`;
 - `git diff --check`;
-- manual visual check of the one touched panel.
+- manual visual check of the touched panel.
 
 ### Checkpoint 2: Chips And Control Rows
 
