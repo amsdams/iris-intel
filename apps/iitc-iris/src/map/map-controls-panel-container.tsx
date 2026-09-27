@@ -29,6 +29,7 @@ import {
   type IitcIrisPortalAnalysis,
   type IitcIrisPortalHighlighterId,
 } from '../messages';
+import {ClearButton} from '../ui/clear-button';
 
 export interface IitcIrisMapControlsPanelContainerProps {
   activeSheet: IitcIrisSheetId;
@@ -209,15 +210,11 @@ export function IitcIrisMapControlsPanelContainer(props: IitcIrisMapControlsPane
             {getMapControlsPanelTitle(activeSheet)}
           </span>
           <span className="iitc-iris-panel-header-actions">
-            <button
-              className="iitc-iris-clear-selection"
-              type="button"
+            <ClearButton
               onClick={closeSheets}
               title={`Close ${activeSheet}`}
               aria-label={`Close ${activeSheet}`}
-            >
-              X
-            </button>
+            />
           </span>
         </div>
       )}

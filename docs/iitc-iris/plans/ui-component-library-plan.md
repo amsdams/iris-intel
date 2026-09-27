@@ -2,7 +2,8 @@
 
 ## Status
 
-Checkpoints 0-6 complete. Next checkpoint requires planning before implementation.
+Checkpoints 0-13 complete. Next checkpoint is CSS consolidation planning; free-text diagnostics chips still need a
+narrow component decision before they are refactored.
 
 This is an internal IITC IRIS UI-shell refactor. It is allowed to introduce shared Preact components and limited CSS
 consolidation, but it must not redesign the app, rename user-facing concepts, change panel behavior, or obscure
@@ -121,6 +122,14 @@ If a component needs CSS consolidation, the checkpoint must list:
 
 Before any CSS consolidation or broad component variants, add focused tests for the shared UI primitives that are already
 in use.
+
+CSS consolidation order:
+
+- audit remaining raw markup and stylesheet duplication first;
+- consolidate only one component family per checkpoint;
+- prefer components that already exist in `apps/iitc-iris/src/ui/`;
+- preserve existing specialized classes as aliases until every touched usage has visual parity notes;
+- do not turn CSS consolidation into broad selector reorganization.
 
 ## Non-Goals
 
@@ -481,8 +490,112 @@ Validation:
 - `npm run package:iitc-iris`
 - manual visual inspection.
 
+### Checkpoint 11: Residual Markup and CSS Audit
+
+Status: complete.
+
+Documentation only. Do not change app code.
+
+Purpose: decide whether the next implementation checkpoint should be CSS consolidation or another small component
+extraction. Checkpoint 10 did not finish the UI extraction pass; it only covered layer choices and small badge-like
+elements.
+
+Audit Results:
+
+Remaining raw markup that should become shared UI components:
+- `ActionButton`: non-submit `.iitc-iris-portal-action` buttons in `draw-tools-panel.tsx`, `missions-panel.tsx`, `portal-details-panel.tsx`, `portals-list-panel.tsx`, `map-controls-panel.tsx`, `scores-panel.tsx`, and `inventory-panel.tsx`
+- `StatusText`: `portal-details-panel.tsx`, `inventory-panel.tsx`, `missions-panel.tsx`, `search-panel.tsx`, `scoreboard-panel.tsx`, `agent-panel.tsx`, `comm-panel.tsx`, `system-diagnostics-panel.tsx`, `scores-panel.tsx`, `layers-panel.tsx`, `system-panel-container.tsx`, `portals-list-panel.tsx`
+- `DiagnosticsChip`: `portal-details-panel.tsx`, `missions-panel.tsx`, `agent-panel.tsx`, `search-panel.tsx`, `comm-panel.tsx`, `scores-panel.tsx`, `passcode-panel.tsx`, `inventory-panel.tsx`, `portals-list-panel.tsx`
+- `ClearButton`: `map-controls-panel-container.tsx`, `portal-image-modal.tsx`, `portal-details-panel.tsx`, `help-panel.tsx`, `system-diagnostics-panel.tsx`, `search-panel.tsx`
+- `ControlRow` / `Section`: `draw-tools-panel.tsx`, `map-controls-panel.tsx`, `system-diagnostics-panel.tsx`, `layers-panel.tsx`, `portals-list-panel.tsx`, `scoreboard-panel.tsx`, `missions-panel.tsx`, `inventory-panel.tsx`, `scores-panel.tsx`
+- `SummaryGrid` / `SummaryCell`: `missions-panel.tsx`, `agent-panel.tsx`, `passcode-panel.tsx`, `scores-panel.tsx`, `inventory-panel.tsx`
+
+Remaining raw markup that should intentionally stay raw:
+- Table structures, map/canvas layers, base layer toggle buttons (`iitc-iris-layer-toggle`), COMM special links (`iitc-iris-comm-portal`), sheet tabs (`iitc-iris-sheet-tab`), auth login buttons, submit buttons that intentionally use `.iitc-iris-portal-action`, anchor links styled as `.iitc-iris-portal-action`, and other highly specialized domain-specific controls. Portal list `<select>` filters and table sort/action buttons wait until a table semantics audit.
+
+Exact CSS selectors duplicated or nearly duplicated:
+- Inputs: `.iitc-iris-passcode-input`, `.iitc-iris-draw-tools-label-input`, and `.iitc-iris-jump-input` share very similar properties for border, radius, background, color, and box-sizing.
+- Buttons: `.iitc-iris-portal-action` vs `.iitc-iris-copy`/`.iitc-iris-preset` vs `.iitc-iris-login` have similar background, border, color, and border-radius.
+
+Next implementation step:
+CSS consolidation remains deferred until the remaining duplicated selectors are reviewed. Free-text
+`.iitc-iris-diagnostics-chip` usages were intentionally not forced through `DiagnosticsChip`, because the current
+component models the `<b>{value}</b><small>{label}</small>` shape only.
+
+Validation:
+- Documentation review.
+- `git diff --check`.
+
+### Checkpoint 12: ActionButton Application
+
+Status: complete.
+
+Scope: Apply `ActionButton` to compatible remaining `.iitc-iris-portal-action` buttons.
+
+Exact files:
+
+- `apps/iitc-iris/src/draw-tools/draw-tools-panel.tsx`
+- `apps/iitc-iris/src/map/map-controls-panel.tsx`
+- `apps/iitc-iris/src/missions/missions-panel.tsx`
+- `apps/iitc-iris/src/portal-analysis/portals-list-panel.tsx`
+- `apps/iitc-iris/src/portals/portal-details-panel.tsx`
+- `apps/iitc-iris/src/side-panels/inventory-panel.tsx`
+- `apps/iitc-iris/src/side-panels/scores-panel.tsx`
+
+Rules:
+- Do not apply `ActionButton` to form submit buttons if `type="submit"` is intended.
+- Do not apply `ActionButton` to anchors such as the mission authoring link.
+- Keep CSS untouched.
+- After this checkpoint, the only remaining `.iitc-iris-portal-action` usages should be submit buttons, anchors, the
+  `ActionButton` component itself, and tests.
+
+Validation:
+- `npm run typecheck:iitc-iris`
+- `npm run lint:iitc-iris`
+- `npm run package:iitc-iris`
+- manual visual inspection of the panels.
+
+### Checkpoint 13: Remaining Primitive Application
+
+Status: complete.
+
+Scope: Apply the already-extracted shared components (`StatusText`, `DiagnosticsChip`, `ClearButton`, `ControlRow`,
+`Section`, `SummaryGrid`, `SummaryCell`) to the remaining compatible raw markup identified in Checkpoint 11.
+
+Rules:
+- Keep CSS untouched.
+- Do not replace table structure, map/canvas layers, base layer toggles, COMM token buttons, auth buttons, or other
+  domain-specific controls without a narrower audit.
+- Keep free-text diagnostics chips raw until a `PlainDiagnosticsChip` or equivalent component is planned.
+
+Validation:
+- `npm run typecheck:iitc-iris`
+- `npm run lint:iitc-iris`
+- `npm run package:iitc-iris`
+- manual visual inspection of the touched panels.
+
+### Checkpoint 14: CSS Consolidation - Inputs
+
+Status: planned.
+
+Scope: Consolidate the duplicate CSS rules for text inputs identified in Checkpoint 11.
+- Exact old classes: `.iitc-iris-search-input`, `.iitc-iris-passcode-input`, `.iitc-iris-jump-input`, `.iitc-iris-portals-list-search`, `.iitc-iris-draw-tools-label-input`.
+- Exact new class: `.iitc-iris-text-input`.
+- Keep existing classes composed alongside the new class for backwards compatibility during transition.
+
+Validation:
+- `npm run typecheck:iitc-iris`
+- `npm run lint:iitc-iris`
+- `npm run package:iitc-iris`
+- manual visual inspection of the touched panels.
+
 ### Later Candidates
 
 These require a fresh checkpoint section before implementation:
 
-- broader CSS consolidation.
+- Draw Tools action/list/import components.
+- Portal detail action/status/chip extraction.
+- Remaining side-panel summary/action/status extraction for missions, inventory, scores, and agent panels.
+- Search panel header actions, diagnostics chip/button, and result-row action wrappers.
+- Portal list select controls and table sort/action buttons after a table semantics audit.
+- Auth recovery and content fallback buttons, if they are visually compatible with existing UI primitives.

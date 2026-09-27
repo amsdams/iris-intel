@@ -11,7 +11,9 @@ import type {
   IitcIrisLayerSettings,
   IitcIrisPortalHighlighterId,
 } from '../messages';
+import {ControlRow} from '../ui/control-row';
 import { LayerCheckbox, LayerRadio } from '../ui/layer-choice';
+import {Section} from '../ui/section';
 
 export interface BooleanLayerToggleEntry {
   id: IitcIrisBooleanLayerSettingKey;
@@ -76,9 +78,8 @@ export function IitcIrisLayersPanel({
 
   return (
     <>
-      <div className="iitc-iris-map-controls-section">
-        <span className="iitc-iris-status">Base map</span>
-        <div className="iitc-iris-map-control-row">
+      <Section titleHeading="Base map">
+        <ControlRow>
           {BASE_LAYER_OPTIONS.map((option) => (
             <button
               key={option.id}
@@ -91,32 +92,28 @@ export function IitcIrisLayersPanel({
               {option.label}
             </button>
           ))}
-        </div>
-      </div>
-      <div className="iitc-iris-map-controls-section">
-        <span className="iitc-iris-status">Core overlays</span>
+        </ControlRow>
+      </Section>
+      <Section titleHeading="Core overlays">
         <div className="iitc-iris-layer-choice-grid" role="group" aria-label="Core overlay layers">
           {CORE_OVERLAY_LAYER_TOGGLE_LABELS.map(renderBooleanLayerCheckbox)}
         </div>
-      </div>
-      <div className="iitc-iris-map-controls-section">
-        <span className="iitc-iris-status">Portal filters</span>
+      </Section>
+      <Section titleHeading="Portal filters">
         <div className="iitc-iris-layer-choice-grid" role="group" aria-label="Portal filter layers">
           {PORTAL_FILTER_LAYER_TOGGLE_LABELS.map(renderBooleanLayerCheckbox)}
         </div>
-      </div>
-      <div className="iitc-iris-map-controls-section">
-        <span className="iitc-iris-status">Portal highlighter</span>
+      </Section>
+      <Section titleHeading="Portal highlighter">
         <div className="iitc-iris-layer-choice-grid" role="radiogroup" aria-label="Portal highlighter">
           {PORTAL_HIGHLIGHTER_OPTIONS.map(renderHighlighterRadio)}
         </div>
-      </div>
-      <div className="iitc-iris-map-controls-section">
-        <span className="iitc-iris-status">Detail overlays</span>
+      </Section>
+      <Section titleHeading="Detail overlays">
         <div className="iitc-iris-layer-choice-grid" role="group" aria-label="Detail overlay layers">
           {DETAIL_LAYER_TOGGLE_LABELS.map(renderBooleanLayerCheckbox)}
         </div>
-      </div>
+      </Section>
     </>
   );
 }

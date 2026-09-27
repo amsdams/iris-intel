@@ -10,6 +10,7 @@ import {
   PORTAL_ANALYSIS_PLAYER_TEAMS,
   SCOREBOARD_ROWS,
 } from './content-portal-analysis';
+import {Section} from '../ui/section';
 
 export interface IitcIrisScoreboardPanelProps {
   portalAnalysis: {
@@ -24,16 +25,14 @@ export function IitcIrisScoreboardPanel({
 }: IitcIrisScoreboardPanelProps): h.JSX.Element {
   if (!portalAnalysis) {
     return (
-      <div className="iitc-iris-map-controls-section iitc-iris-portal-analysis">
-        <span className="iitc-iris-status">Scoreboard</span>
+      <Section className="iitc-iris-portal-analysis" titleHeading="Scoreboard">
         <div className="iitc-iris-empty-state">Nothing to show.</div>
-      </div>
+      </Section>
     );
   }
 
   return (
-    <div className="iitc-iris-map-controls-section iitc-iris-portal-analysis">
-      <span className="iitc-iris-status">Scoreboard</span>
+    <Section className="iitc-iris-portal-analysis" titleHeading="Scoreboard">
       <div className="iitc-iris-portal-counts-table-wrap">
         <table className="iitc-iris-portal-analysis-table iitc-iris-scoreboard-table">
           <thead>
@@ -58,6 +57,6 @@ export function IitcIrisScoreboardPanel({
           </tbody>
         </table>
       </div>
-    </div>
+    </Section>
   );
 }

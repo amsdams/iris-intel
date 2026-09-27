@@ -3,6 +3,8 @@ import {formatIitcColorVars, getIitcLevelColor} from '../iitc-colors';
 import type {IitcIrisPasscodeRewardItem, IitcIrisPasscodeState} from '../messages';
 import {Badge} from '../ui/badge';
 import {TextInput} from '../ui/text-input';
+import {SummaryCell} from '../ui/summary-cell';
+import {SummaryGrid} from '../ui/summary-grid';
 import {formatElapsedSeconds, getAuthErrorMessage} from '../ui-status';
 
 export interface IitcIrisPasscodePanelProps {
@@ -43,11 +45,11 @@ export function IitcIrisPasscodePanel(props: IitcIrisPasscodePanelProps): h.JSX.
         {passcodeState.status === 'loading' ? 'Redeeming' : 'Redeem'}
       </button>
     </form>
-    <div className="iitc-iris-panel-summary">
-      <span><b>{formatInteger(passcodeState.ap)}</b><small>AP</small></span>
-      <span><b>{formatInteger(passcodeState.xm)}</b><small>XM</small></span>
-      <span><b>{formatInteger(passcodeState.items?.reduce((sum, item) => sum + (item.count ?? 1), 0))}</b><small>items</small></span>
-    </div>
+    <SummaryGrid>
+      <SummaryCell value={formatInteger(passcodeState.ap)} label="AP" />
+      <SummaryCell value={formatInteger(passcodeState.xm)} label="XM" />
+      <SummaryCell value={formatInteger(passcodeState.items?.reduce((sum, item) => sum + (item.count ?? 1), 0))} label="items" />
+    </SummaryGrid>
     {passcodeState.other && passcodeState.other.length > 0 && (
       <div className="iitc-iris-inventory-list">
         {passcodeState.other.map((reward) => (

@@ -4,6 +4,8 @@ import type {IitcIrisSearchResult, IitcIrisSearchState} from '../messages';
 import {Panel, PanelHeader, PanelTitle, PanelBody, PanelFooter} from '../ui/panel';
 import {formatElapsedSeconds, getPanelStatusClass} from '../ui-status';
 import {TextInput} from '../ui/text-input';
+import {ClearButton} from '../ui/clear-button';
+import {StatusText} from '../ui/status-text';
 
 interface RenderedSearchResult {
   result: IitcIrisSearchResult;
@@ -46,8 +48,8 @@ export function IitcIrisSearchPanel(props: IitcIrisSearchPanelProps): h.JSX.Elem
     <PanelHeader>
       <PanelTitle>Search</PanelTitle>
       <span className="iitc-iris-panel-header-actions">
-        <span className={`iitc-iris-status iitc-iris-panel-state ${getPanelStatusClass(props.searchState.status)}`}>{props.searchState.status}</span>
-        <button className="iitc-iris-clear-selection" type="button" onClick={props.closeSearch} title="Close search" aria-label="Close search">X</button>
+        <StatusText className={`iitc-iris-panel-state ${getPanelStatusClass(props.searchState.status)}`}>{props.searchState.status}</StatusText>
+        <ClearButton onClick={props.closeSearch} title="Close search" aria-label="Close search" />
       </span>
     </PanelHeader>
     <PanelBody>

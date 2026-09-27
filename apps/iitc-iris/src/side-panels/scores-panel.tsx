@@ -2,6 +2,11 @@ import {h} from 'preact';
 import {getCommTeamClass} from '../comm/comm-display';
 import type {IitcIrisScoresState} from '../messages';
 import {formatElapsedSeconds, getAuthErrorMessage} from '../ui-status';
+import {ActionButton} from '../ui/action-button';
+import {ControlRow} from '../ui/control-row';
+import {StatusText} from '../ui/status-text';
+import {SummaryCell} from '../ui/summary-cell';
+import {SummaryGrid} from '../ui/summary-grid';
 
 export interface IitcIrisScoresPanelProps {
   scoresState: IitcIrisScoresState;
@@ -35,18 +40,18 @@ function formatRegionCenter(scoresState: IitcIrisScoresState): string {
 
 export function IitcIrisScoresPanel({scoresState, refresh}: IitcIrisScoresPanelProps): h.JSX.Element {
   return <div className="iitc-iris-request-panel-body">
-    <div className="iitc-iris-map-control-row">
-      <button className="iitc-iris-portal-action" type="button" onClick={() => refresh()} disabled={scoresState.status === 'loading'} title="Fetch global and regional scores for the current map center">
+    <ControlRow>
+      <ActionButton onClick={() => refresh()} disabled={scoresState.status === 'loading'} title="Fetch global and regional scores for the current map center">
         {scoresState.status === 'loading' ? 'Loading' : 'Refresh'}
-      </button>
-      <span className={`iitc-iris-status ${scoresState.status === 'error' || scoresState.status === 'auth' ? 'iitc-iris-warning' : ''}`}>
+      </ActionButton>
+      <StatusText className={scoresState.status === 'error' || scoresState.status === 'auth' ? 'iitc-iris-warning' : ''}>
         {scoresState.status}
-      </span>
-    </div>
+      </StatusText>
+    </ControlRow>
     <div className="iitc-iris-score-block">
       <div className="iitc-iris-score-heading">
         <span>Global</span>
-        <span className="iitc-iris-status">{formatScoreLead(scoresState.game?.enlightened, scoresState.game?.resistance)}</span>
+        <StatusText>{formatScoreLead(scoresState.game?.enlightened, scoresState.game?.resistance)}</StatusText>
       </div>
       <div className="iitc-iris-score-bar" style={`--enl-percent: ${scoresState.game?.enlightenedPercent ?? 50}%;`}>
         <span className="iitc-iris-score-bar-enl" />
@@ -60,9 +65,9 @@ export function IitcIrisScoresPanel({scoresState, refresh}: IitcIrisScoresPanelP
     <div className="iitc-iris-score-block">
       <div className="iitc-iris-score-heading">
         <span>{scoresState.region?.name || 'Region'}</span>
-        <span className="iitc-iris-status">
+        <StatusText>
           CP {scoresState.region?.lastCheckpoint !== undefined ? `${scoresState.region.lastCheckpoint} / ${scoresState.region.checkpoints ?? '-'}` : '-'}
-        </span>
+        </StatusText>
       </div>
       <div className="iitc-iris-score-bar" style={`--enl-percent: ${getRegionEnlightenedPercent(scoresState)}%;`}>
         <span className="iitc-iris-score-bar-enl" />
@@ -73,11 +78,11 @@ export function IitcIrisScoresPanel({scoresState, refresh}: IitcIrisScoresPanelP
         <span className="is-resistance">RES <b>{formatInteger(scoresState.region?.resistanceAvg)}</b> MU</span>
       </div>
     </div>
-    <div className="iitc-iris-panel-summary">
-      <span><b>{formatScoreLead(scoresState.region?.enlightenedAvg, scoresState.region?.resistanceAvg)}</b><small>region lead</small></span>
-      <span><b>{formatInteger(scoresState.region?.topAgents)}</b><small>top agents</small></span>
-      <span><b>{formatRegionCenter(scoresState)}</b><small>center</small></span>
-    </div>
+    <SummaryGrid>
+      <SummaryCell value={formatScoreLead(scoresState.region?.enlightenedAvg, scoresState.region?.resistanceAvg)} label="region lead" />
+      <SummaryCell value={formatInteger(scoresState.region?.topAgents)} label="top agents" />
+      <SummaryCell value={formatRegionCenter(scoresState)} label="center" />
+    </SummaryGrid>
     {scoresState.region?.topAgentList && scoresState.region.topAgentList.length > 0 && (
       <div className="iitc-iris-agent-list">
         {scoresState.region.topAgentList.slice(0, 5).map((agent, index) => (

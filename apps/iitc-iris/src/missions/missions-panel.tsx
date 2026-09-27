@@ -2,6 +2,11 @@ import {h} from 'preact';
 import {getCommTeamClass} from '../comm/comm-display';
 import type {IitcIrisMissionSource, IitcIrisMissionsState} from '../messages';
 import {formatElapsedSeconds, getAuthErrorMessage} from '../ui-status';
+import {ActionButton} from '../ui/action-button';
+import {ControlRow} from '../ui/control-row';
+import {StatusText} from '../ui/status-text';
+import {SummaryCell} from '../ui/summary-cell';
+import {SummaryGrid} from '../ui/summary-grid';
 
 const IITC_TM_ICON_BASE = 'https://commondatastorage.googleapis.com/ingress.com/img/tm_icons';
 const MISSION_TYPE_IMAGE_BY_TYPE_NUM: Record<number, string> = {
@@ -110,13 +115,13 @@ function MissionDetails(props: {
 
   return <div className="iitc-iris-mission-details">
     <div className="iitc-iris-mission-expanded-top">
-      <span className="iitc-iris-status">
+      <StatusText>
         {selectedMission.authorNickname ? (
           <>
             by <b className={`iitc-iris-mission-author ${getCommTeamClass(selectedMission.authorTeam)}`}>{selectedMission.authorNickname}</b>
           </>
         ) : 'unknown author'}
-      </span>
+      </StatusText>
     </div>
     <div className="iitc-iris-mission-metrics">
       {renderMissionMetric('rating', formatMissionRating(selectedMission.ratingE6), 'rating', 'Average rating')}
@@ -127,18 +132,16 @@ function MissionDetails(props: {
       {renderMissionMetric('order', formatMissionOrderLabel(selectedMission.type), 'order', 'Mission order')}
     </div>
     <div className="iitc-iris-mission-detail-actions">
-      <button
-        className="iitc-iris-portal-action"
-        type="button"
+      <ActionButton
         onClick={() => firstWaypoint && props.zoomToAndShowPortal(firstWaypoint.portalGuid, firstWaypoint.latE6, firstWaypoint.lngE6, Math.max(props.cameraZoom, 17))}
         disabled={!firstWaypoint}
         title="Pan to the first visible waypoint and select it when the portal is loaded"
       >
         First
-      </button>
-      <button className="iitc-iris-portal-action" type="button" onClick={props.zoomToMission} disabled={!selectedMission.bounds} title="Zoom to mission route">
+      </ActionButton>
+      <ActionButton onClick={props.zoomToMission} disabled={!selectedMission.bounds} title="Zoom to mission route">
         Zoom
-      </button>
+      </ActionButton>
     </div>
     {selectedMission.description && (
       <p className="iitc-iris-mission-description">{selectedMission.description}</p>
@@ -172,28 +175,28 @@ export function IitcIrisMissionsPanel(props: IitcIrisMissionsPanelProps): h.JSX.
   const {missionsState} = props;
 
   return <div className="iitc-iris-request-panel-body">
-    <div className="iitc-iris-map-control-row">
-      <button className="iitc-iris-portal-action" type="button" onClick={() => props.refreshMissions('view')} disabled={missionsState.status === 'loading'} title="Fetch top missions in the current map view">
+    <ControlRow>
+      <ActionButton onClick={() => props.refreshMissions('view')} disabled={missionsState.status === 'loading'} title="Fetch top missions in the current map view">
         View
-      </button>
-      <button className="iitc-iris-portal-action" type="button" onClick={() => props.refreshMissions('portal')} disabled={!props.hasSelectedPortal || missionsState.status === 'loading'} title="Fetch top missions starting at the selected portal">
+      </ActionButton>
+      <ActionButton onClick={() => props.refreshMissions('portal')} disabled={!props.hasSelectedPortal || missionsState.status === 'loading'} title="Fetch top missions starting at the selected portal">
         Portal
-      </button>
+      </ActionButton>
       <a className="iitc-iris-portal-action iitc-iris-mission-create-link" href="https://missions.ingress.com/" target="_blank" rel="noreferrer" title="Open the Ingress Mission Authoring Tool">
         Create
       </a>
-      <button className="iitc-iris-portal-action" type="button" onClick={() => props.refreshMissions()} disabled={missionsState.status === 'loading'} title="Refresh current mission source">
+      <ActionButton onClick={() => props.refreshMissions()} disabled={missionsState.status === 'loading'} title="Refresh current mission source">
         {missionsState.status === 'loading' ? 'Loading' : 'Refresh'}
-      </button>
-    </div>
-    <div className="iitc-iris-panel-summary">
-      <span><b>{formatInteger(missionsState.missions.length)}</b><small>{missionsState.source === 'portal' ? 'portal missions' : 'view missions'}</small></span>
-      <span><b>{missionsState.selectedMission?.waypoints.length ?? '-'}</b><small>waypoints</small></span>
-      <span><b>{formatDistance(missionsState.selectedMission?.routeLengthMeters)}</b><small>length</small></span>
-    </div>
+      </ActionButton>
+    </ControlRow>
+    <SummaryGrid>
+      <SummaryCell value={formatInteger(missionsState.missions.length)} label={missionsState.source === 'portal' ? 'portal missions' : 'view missions'} />
+      <SummaryCell value={missionsState.selectedMission?.waypoints.length ?? '-'} label="waypoints" />
+      <SummaryCell value={formatDistance(missionsState.selectedMission?.routeLengthMeters)} label="length" />
+    </SummaryGrid>
     {missionsState.caption && (
       <div className="iitc-iris-inventory-selected" title={missionsState.portalGuid}>
-        <span className="iitc-iris-status">{missionsState.source === 'portal' ? 'portal' : 'view'}</span>
+        <StatusText>{missionsState.source === 'portal' ? 'portal' : 'view'}</StatusText>
         <b>{missionsState.caption}</b>
       </div>
     )}

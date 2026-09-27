@@ -2,6 +2,11 @@ import {h} from 'preact';
 import {formatIitcColorVars, getIitcItemColor} from '../iitc-colors';
 import type {IitcIrisInventoryState} from '../messages';
 import {formatElapsedSeconds, formatSubscriptionLabel, getAuthErrorMessage, getSubscriptionStatusClass} from '../ui-status';
+import {ActionButton} from '../ui/action-button';
+import {ControlRow} from '../ui/control-row';
+import {StatusText} from '../ui/status-text';
+import {SummaryCell} from '../ui/summary-cell';
+import {SummaryGrid} from '../ui/summary-grid';
 
 export interface IitcIrisInventoryPanelProps {
   inventoryState: IitcIrisInventoryState;
@@ -24,46 +29,37 @@ function formatItemBadge(item: {level?: number; rarity?: string; type?: string})
 
 export function IitcIrisInventoryPanel({inventoryState, refresh, zoomToAndShowPortal}: IitcIrisInventoryPanelProps): h.JSX.Element {
   return <div className="iitc-iris-request-panel-body">
-    <div className="iitc-iris-map-control-row">
-      <button className="iitc-iris-portal-action" type="button" onClick={refresh} disabled={inventoryState.status === 'loading'} title="Fetch Intel inventory with lastQueryTimestamp 0">
+    <ControlRow>
+      <ActionButton onClick={refresh} disabled={inventoryState.status === 'loading'} title="Fetch Intel inventory with lastQueryTimestamp 0">
         {inventoryState.status === 'loading' ? 'Loading' : 'Refresh'}
-      </button>
-      <span className={`iitc-iris-status ${inventoryState.status === 'error' || inventoryState.status === 'auth' ? 'iitc-iris-warning' : ''}`}>
+      </ActionButton>
+      <StatusText className={inventoryState.status === 'error' || inventoryState.status === 'auth' ? 'iitc-iris-warning' : ''}>
         {inventoryState.status}
-      </span>
-      <span className={`iitc-iris-status ${getSubscriptionStatusClass(inventoryState.subscription)}`}>
+      </StatusText>
+      <StatusText className={getSubscriptionStatusClass(inventoryState.subscription)}>
         {formatSubscriptionLabel(inventoryState.subscription)}
-      </span>
-    </div>
-    <div className="iitc-iris-panel-summary">
-      <span><b>{formatInteger(inventoryState.items)} / 2500</b><small>items</small></span>
-      <span><b>{formatInteger(inventoryState.keys)}</b><small>{formatInteger(inventoryState.portalsWithKeys)} portals</small></span>
-      <span><b>{formatInteger(inventoryState.capsules)}</b><small>capsules</small></span>
-    </div>
-    <div className="iitc-iris-panel-summary">
-      <span>
-        <b>{inventoryState.portalKeysForSelectedPortal ? inventoryState.portalKeysForSelectedPortal.total : '-'}</b>
-        <small>selected keys</small>
-      </span>
-      <span>
-        <b>{inventoryState.portalKeysForSelectedPortal ? inventoryState.portalKeysForSelectedPortal.loose : '-'}</b>
-        <small>loose</small>
-      </span>
-      <span>
-        <b>{inventoryState.portalKeysForSelectedPortal ? inventoryState.portalKeysForSelectedPortal.capsule : '-'}</b>
-        <small>capsule</small>
-      </span>
-    </div>
+      </StatusText>
+    </ControlRow>
+    <SummaryGrid>
+      <SummaryCell value={`${formatInteger(inventoryState.items)} / 2500`} label="items" />
+      <SummaryCell value={formatInteger(inventoryState.keys)} label={`${formatInteger(inventoryState.portalsWithKeys)} portals`} />
+      <SummaryCell value={formatInteger(inventoryState.capsules)} label="capsules" />
+    </SummaryGrid>
+    <SummaryGrid>
+      <SummaryCell value={inventoryState.portalKeysForSelectedPortal ? inventoryState.portalKeysForSelectedPortal.total : '-'} label="selected keys" />
+      <SummaryCell value={inventoryState.portalKeysForSelectedPortal ? inventoryState.portalKeysForSelectedPortal.loose : '-'} label="loose" />
+      <SummaryCell value={inventoryState.portalKeysForSelectedPortal ? inventoryState.portalKeysForSelectedPortal.capsule : '-'} label="capsule" />
+    </SummaryGrid>
     {inventoryState.selectedPortalTitle && (
       <div className="iitc-iris-inventory-selected" title={inventoryState.selectedPortalGuid}>
-        <span className="iitc-iris-status">selected</span>
+        <StatusText>selected</StatusText>
         <b>{inventoryState.selectedPortalTitle}</b>
       </div>
     )}
     <div className="iitc-iris-scroll-region iitc-iris-inventory-scroll">
       {inventoryState.portalKeysForSelectedPortal && Object.keys(inventoryState.portalKeysForSelectedPortal.capsules).length > 0 && (
         <div className="iitc-iris-inventory-section">
-          <span className="iitc-iris-status">Selected key capsules</span>
+          <StatusText>Selected key capsules</StatusText>
           <div className="iitc-iris-inventory-list">
             {Object.entries(inventoryState.portalKeysForSelectedPortal.capsules).map(([capsule, count]) => (
               <div className="iitc-iris-inventory-row" key={capsule}>
@@ -76,7 +72,7 @@ export function IitcIrisInventoryPanel({inventoryState, refresh, zoomToAndShowPo
       )}
       {inventoryState.topItems && inventoryState.topItems.length > 0 && (
         <div className="iitc-iris-inventory-section">
-          <span className="iitc-iris-status">Top items</span>
+          <StatusText>Top items</StatusText>
           <div className="iitc-iris-inventory-list">
             {inventoryState.topItems.map((item) => (
               <div
@@ -94,7 +90,7 @@ export function IitcIrisInventoryPanel({inventoryState, refresh, zoomToAndShowPo
       )}
       {inventoryState.topKeys && inventoryState.topKeys.length > 0 && (
         <div className="iitc-iris-inventory-section">
-          <span className="iitc-iris-status">Top keys</span>
+          <StatusText>Top keys</StatusText>
           <div className="iitc-iris-inventory-list">
             {inventoryState.topKeys.map((key) => (
               <button className="iitc-iris-inventory-row iitc-iris-inventory-key-row" type="button" key={key.portalGuid} title={key.portalGuid} onClick={() => zoomToAndShowPortal(key.portalGuid, undefined, undefined)}>

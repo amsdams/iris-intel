@@ -1,4 +1,5 @@
 import { h } from 'preact';
+import {ClearButton} from '../ui/clear-button';
 
 export interface IitcIrisHelpPanelProps {
   closeHelp: () => void;
@@ -10,7 +11,7 @@ export function IitcIrisHelpPanel({ closeHelp }: IitcIrisHelpPanelProps): h.JSX.
       <div className="iitc-iris-request-panel-header">
         <span className="iitc-iris-selected-title">Shortcuts</span>
         <span className="iitc-iris-panel-header-actions">
-          <button className="iitc-iris-clear-selection" type="button" onClick={closeHelp} title="Close shortcuts" aria-label="Close shortcuts">X</button>
+          <ClearButton onClick={closeHelp} title="Close shortcuts" aria-label="Close shortcuts" />
         </span>
       </div>
       <div className="iitc-iris-request-panel-body">

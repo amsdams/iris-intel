@@ -2,6 +2,9 @@ import {h} from 'preact';
 import {getCommTeamClass} from '../comm/comm-display';
 import type {IitcIrisAgentState} from '../messages';
 import {formatElapsedSeconds, formatSubscriptionBadge, formatSubscriptionLabel, getSubscriptionStatusClass} from '../ui-status';
+import {StatusText} from '../ui/status-text';
+import {SummaryCell} from '../ui/summary-cell';
+import {SummaryGrid} from '../ui/summary-grid';
 
 export interface IitcIrisAgentPanelProps {
   agentState: IitcIrisAgentState;
@@ -38,11 +41,11 @@ export function IitcIrisAgentPanel({agentState}: IitcIrisAgentPanelProps): h.JSX
               {formatSubscriptionBadge(agentState.subscription)}
             </span>
           </div>
-          <div className="iitc-iris-panel-summary">
-            <span><b>{formatInteger(agentState.ap)}</b><small>AP</small></span>
-            <span><b>{formatInteger(agentState.energy)} / {formatInteger(agentState.xmCapacity)}</b><small>XM</small></span>
-            <span><b>{formatInteger(agentState.availableInvites)}</b><small>invites</small></span>
-          </div>
+          <SummaryGrid>
+            <SummaryCell value={formatInteger(agentState.ap)} label="AP" />
+            <SummaryCell value={`${formatInteger(agentState.energy)} / ${formatInteger(agentState.xmCapacity)}`} label="XM" />
+            <SummaryCell value={formatInteger(agentState.availableInvites)} label="invites" />
+          </SummaryGrid>
           <div className="iitc-iris-agent-progress">
             <div>
               <span>XM</span>
@@ -62,7 +65,7 @@ export function IitcIrisAgentPanel({agentState}: IitcIrisAgentPanelProps): h.JSX
             </div>
           </div>
           {!agentState.maxLevel && (
-            <span className="iitc-iris-status">{formatInteger(agentState.apToNextLevel)} AP to next level</span>
+            <StatusText>{formatInteger(agentState.apToNextLevel)} AP to next level</StatusText>
           )}
         </div>
         <div className="iitc-iris-panel-footer">

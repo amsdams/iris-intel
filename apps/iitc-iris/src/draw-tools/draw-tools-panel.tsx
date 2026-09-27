@@ -12,6 +12,8 @@ import {formatTeamClass, formatTeamShortLabel, getPortalCountsLevelColor} from '
 import type {IitcIrisDrawToolsItem, IitcIrisDrawToolsLatLng} from '../messages';
 import {Badge} from '../ui/badge';
 import {TextInput} from '../ui/text-input';
+import {ActionButton} from '../ui/action-button';
+import {Section} from '../ui/section';
 
 type DrawToolsItemType = 'polyline' | 'marker';
 
@@ -62,7 +64,7 @@ function IitcIrisDrawToolsImport(props: Pick<IitcIrisDrawToolsPanelProps, 'impor
         <input type="checkbox" checked={props.importMerge} onChange={(event) => props.setImportMerge(event.currentTarget.checked)} />
         Merge
       </label>
-      <button className="iitc-iris-portal-action" type="button" onClick={props.importItems} disabled={!props.importText.trim()} title="Import supported links and markers">Import</button>
+      <ActionButton onClick={props.importItems} disabled={!props.importText.trim()} title="Import supported links and markers">Import</ActionButton>
       {props.importStatus && <span className="iitc-iris-map-control-status">{props.importStatus}</span>}
     </div>
   </div>;
@@ -74,17 +76,16 @@ function getLevelChipTextColor(level: number): string {
 
 export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JSX.Element {
   if (props.mode === 'links') {
-    return <div className="iitc-iris-map-controls-section">
-      <span className="iitc-iris-status">Draw Links</span>
+    return <Section titleHeading="Draw Links">
       <div className="iitc-iris-map-context-row">
         <span className="iitc-iris-map-context-coords">
           {props.target?.label ?? 'Select a portal or open a context point'}
         </span>
-        <button className="iitc-iris-portal-action" type="button" onClick={props.addLinkPoint} disabled={!props.target} title={props.linkStart ? 'Finish drawn link at the current target' : 'Start drawn link at the current target'}>
+        <ActionButton onClick={props.addLinkPoint} disabled={!props.target} title={props.linkStart ? 'Finish drawn link at the current target' : 'Start drawn link at the current target'}>
           {props.linkStart ? 'To' : 'From'}
-        </button>
-        <button className="iitc-iris-portal-action" type="button" onClick={() => props.setLinkStart(null)} disabled={!props.linkStart} title="Reset pending drawn link">Reset</button>
-        <button className="iitc-iris-portal-action" type="button" onClick={() => props.deleteAtContext('polyline')} disabled={!props.target} title="Delete nearest drawn link">Del</button>
+        </ActionButton>
+        <ActionButton onClick={() => props.setLinkStart(null)} disabled={!props.linkStart} title="Reset pending drawn link">Reset</ActionButton>
+        <ActionButton onClick={() => props.deleteAtContext('polyline')} disabled={!props.target} title="Delete nearest drawn link">Del</ActionButton>
       </div>
       {props.linkStart && <div className="iitc-iris-map-context-row">
         <span className="iitc-iris-map-context-coords">
@@ -93,12 +94,12 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
       </div>}
       <div className="iitc-iris-map-context-row">
         <span className="iitc-iris-map-context-coords">{props.linkItems.length.toLocaleString()} drawn links</span>
-        <button className="iitc-iris-portal-action" type="button" onClick={() => props.undoItem('polyline')} disabled={props.linkItems.length === 0} title="Remove latest drawn link">Undo</button>
-        <button className="iitc-iris-portal-action" type="button" onClick={() => props.copyItems('polyline')} disabled={props.linkItems.length === 0} title="Copy drawn links as IITC Draw Tools JSON">Copy</button>
-        <button className="iitc-iris-portal-action" type="button" onClick={() => props.copyItems()} disabled={props.allItemsCount === 0} title="Export all supported Draw Tools items as IITC JSON">Export</button>
-        <button className={`iitc-iris-portal-action ${props.clearConfirm === 'polyline' ? 'is-danger' : ''}`} type="button" onClick={() => props.clearItems('polyline')} disabled={props.linkItems.length === 0} title="Clear all drawn links">
+        <ActionButton onClick={() => props.undoItem('polyline')} disabled={props.linkItems.length === 0} title="Remove latest drawn link">Undo</ActionButton>
+        <ActionButton onClick={() => props.copyItems('polyline')} disabled={props.linkItems.length === 0} title="Copy drawn links as IITC Draw Tools JSON">Copy</ActionButton>
+        <ActionButton onClick={() => props.copyItems()} disabled={props.allItemsCount === 0} title="Export all supported Draw Tools items as IITC JSON">Export</ActionButton>
+        <ActionButton className={props.clearConfirm === 'polyline' ? 'is-danger' : ''} onClick={() => props.clearItems('polyline')} disabled={props.linkItems.length === 0} title="Clear all drawn links">
           {props.clearConfirm === 'polyline' ? 'Confirm' : 'Clear'}
-        </button>
+        </ActionButton>
       </div>
       {props.linkItems.length > 0 && <div className="iitc-iris-draw-tools-list" aria-label="Drawn links">
         {props.linkItems.map((item, index) => {
@@ -113,19 +114,18 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
                 <small title={getDrawToolsItemDetail(item)}>{detail}</small>
               </span>
               <span className="iitc-iris-draw-tools-list-actions">
-                <button className="iitc-iris-portal-action" type="button" onClick={() => props.centerItem(item)} title="Center this drawn link">Center</button>
-                <button className="iitc-iris-portal-action" type="button" onClick={() => props.deleteItem(item)} title="Delete this drawn link">Del</button>
+                <ActionButton onClick={() => props.centerItem(item)} title="Center this drawn link">Center</ActionButton>
+                <ActionButton onClick={() => props.deleteItem(item)} title="Delete this drawn link">Del</ActionButton>
               </span>
             </div>
           );
         })}
       </div>}
       <IitcIrisDrawToolsImport {...props} />
-    </div>;
+    </Section>;
   }
 
-  return <div className="iitc-iris-map-controls-section">
-    <span className="iitc-iris-status">Draw Markers</span>
+  return <Section titleHeading="Draw Markers">
     <div className="iitc-iris-map-context-row">
       <span className="iitc-iris-map-context-coords">
         {props.target?.label ?? 'Select a portal or open a context point'}
@@ -158,13 +158,13 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
     </div>
     <div className="iitc-iris-map-context-row">
       <span className="iitc-iris-map-context-coords">{props.markerItems.length.toLocaleString()} drawn markers</span>
-      <button className="iitc-iris-portal-action" type="button" onClick={() => props.deleteAtContext('marker')} disabled={!props.target} title="Delete nearest drawn marker">Del</button>
-      <button className="iitc-iris-portal-action" type="button" onClick={() => props.undoItem('marker')} disabled={props.markerItems.length === 0} title="Remove latest drawn marker">Undo</button>
-      <button className="iitc-iris-portal-action" type="button" onClick={() => props.copyItems('marker')} disabled={props.markerItems.length === 0} title="Copy drawn markers as IITC Draw Tools JSON">Copy</button>
-      <button className="iitc-iris-portal-action" type="button" onClick={() => props.copyItems()} disabled={props.allItemsCount === 0} title="Export all supported Draw Tools items as IITC JSON">Export</button>
-      <button className={`iitc-iris-portal-action ${props.clearConfirm === 'marker' ? 'is-danger' : ''}`} type="button" onClick={() => props.clearItems('marker')} disabled={props.markerItems.length === 0} title="Clear all drawn markers">
+      <ActionButton onClick={() => props.deleteAtContext('marker')} disabled={!props.target} title="Delete nearest drawn marker">Del</ActionButton>
+      <ActionButton onClick={() => props.undoItem('marker')} disabled={props.markerItems.length === 0} title="Remove latest drawn marker">Undo</ActionButton>
+      <ActionButton onClick={() => props.copyItems('marker')} disabled={props.markerItems.length === 0} title="Copy drawn markers as IITC Draw Tools JSON">Copy</ActionButton>
+      <ActionButton onClick={() => props.copyItems()} disabled={props.allItemsCount === 0} title="Export all supported Draw Tools items as IITC JSON">Export</ActionButton>
+      <ActionButton className={props.clearConfirm === 'marker' ? 'is-danger' : ''} onClick={() => props.clearItems('marker')} disabled={props.markerItems.length === 0} title="Clear all drawn markers">
         {props.clearConfirm === 'marker' ? 'Confirm' : 'Clear'}
-      </button>
+      </ActionButton>
     </div>
     {props.markerItems.length > 0 && <div className="iitc-iris-draw-tools-list" aria-label="Drawn markers">
       {props.markerItems.map((item, index) => {
@@ -204,14 +204,14 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
               </small>
             </span>
             <span className="iitc-iris-draw-tools-list-actions">
-              <button className="iitc-iris-portal-action" type="button" onClick={() => props.setEditingMarkerIndex(item.storageIndex)} title="Edit this marker label">Edit</button>
-              <button className="iitc-iris-portal-action" type="button" onClick={() => props.centerItem(item)} title="Center this drawn marker">Center</button>
-              <button className="iitc-iris-portal-action" type="button" onClick={() => props.deleteItem(item)} title="Delete this drawn marker">Del</button>
+              <ActionButton onClick={() => props.setEditingMarkerIndex(item.storageIndex)} title="Edit this marker label">Edit</ActionButton>
+              <ActionButton onClick={() => props.centerItem(item)} title="Center this drawn marker">Center</ActionButton>
+              <ActionButton onClick={() => props.deleteItem(item)} title="Delete this drawn marker">Del</ActionButton>
             </span>
           </div>
         );
       })}
     </div>}
     <IitcIrisDrawToolsImport {...props} />
-  </div>;
+  </Section>;
 }

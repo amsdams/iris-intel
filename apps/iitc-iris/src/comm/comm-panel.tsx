@@ -5,6 +5,7 @@ import {IitcIrisCommPanelBody} from './comm-panel-body';
 import {IitcIrisCommPanelControls} from './comm-panel-controls';
 import type {IitcIrisCommState, IitcIrisCommTab} from '../messages';
 import {formatElapsedSeconds, getAuthErrorMessage} from '../ui-status';
+import {StatusText} from '../ui/status-text';
 
 export interface IitcIrisCommPanelProps {
   commDraft: string;
@@ -44,9 +45,9 @@ export function IitcIrisCommPanel(props: IitcIrisCommPanelProps): h.JSX.Element 
     <IitcIrisCommMessageList addNickname={props.addNickname} commListRef={props.commListRef} commState={commState} onScroll={props.onScroll} selectPortal={props.selectPortal} />
     <IitcIrisCommPanelBody commDraft={props.commDraft} commState={commState} onDraftChange={props.onDraftChange} send={props.send} />
     {(commState.sendStatus === 'sent' || commState.sendError) && (
-      <span className={`iitc-iris-status ${commState.sendError ? 'iitc-iris-warning' : ''}`} title={commState.sendError}>
+      <StatusText className={commState.sendError ? 'iitc-iris-warning' : ''} title={commState.sendError}>
         send {commState.sendError ? getAuthErrorMessage(commState.sendStatus, commState.sendError) : commState.sendStatus}
-      </span>
+      </StatusText>
     )}
     <div className="iitc-iris-panel-footer">
       <span

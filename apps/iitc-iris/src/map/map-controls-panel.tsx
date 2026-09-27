@@ -10,6 +10,9 @@ import type { IitcIrisMapContextPortalAnchor } from '../messages';
 import type {
   IitcIrisMapContextSelection,
 } from '../portals/selection-lifecycle';
+import {ActionButton} from '../ui/action-button';
+import {ControlRow} from '../ui/control-row';
+import {Section} from '../ui/section';
 
 export interface IitcIrisMapNavigationPanelProps {
   canPan: boolean;
@@ -27,9 +30,8 @@ export function IitcIrisMapNavigationPanel({
   zoomMap,
 }: IitcIrisMapNavigationPanelProps): h.JSX.Element {
   return (
-    <div className="iitc-iris-map-controls-section">
-      <span className="iitc-iris-status">Controls</span>
-      <div className="iitc-iris-map-control-row">
+    <Section titleHeading="Controls">
+      <ControlRow>
         <div className="iitc-iris-pan-grid" aria-label="Pan controls">
           <button className="iitc-iris-nav-button iitc-iris-pan-north" type="button" disabled={!canPan} onClick={() => panMap('north')} title="Pan north" aria-label="Pan north">N</button>
           <button className="iitc-iris-nav-button iitc-iris-pan-west" type="button" disabled={!canPan} onClick={() => panMap('west')} title="Pan west" aria-label="Pan west">W</button>
@@ -39,9 +41,9 @@ export function IitcIrisMapNavigationPanel({
         <button className="iitc-iris-nav-button" type="button" onClick={() => zoomMap(1)} title="Zoom in" aria-label="Zoom in">+</button>
         <button className="iitc-iris-nav-button" type="button" onClick={() => zoomMap(-1)} title="Zoom out" aria-label="Zoom out">-</button>
         <button className="iitc-iris-nav-button iitc-iris-nav-button-wide" type="button" onClick={locateBrowserPosition} title="Pan to current browser location">Locate</button>
-      </div>
+      </ControlRow>
       {geolocationStatus && <span className="iitc-iris-map-control-status">{geolocationStatus}</span>}
-    </div>
+    </Section>
   );
 }
 
@@ -79,21 +81,18 @@ export function IitcIrisMapContextPanel({
     if (!isContextActionVisible(actionId, mapContext.target)) return null;
     const action = getContextAction(actionId);
     return (
-      <button
-        className="iitc-iris-portal-action"
-        type="button"
+      <ActionButton
         onClick={onClick}
         disabled={disabled}
         title={title ?? action.title}
       >
         {action.label}
-      </button>
+      </ActionButton>
     );
   };
 
   return (
-    <div className="iitc-iris-map-controls-section">
-      <span className="iitc-iris-status">{target.panelLabel}</span>
+    <Section titleHeading={target.panelLabel}>
       {mapContext.target !== 'map' && (
         <div className="iitc-iris-map-context-row">
           <span className="iitc-iris-map-context-coords" title={mapContext.guid}>
@@ -126,6 +125,6 @@ export function IitcIrisMapContextPanel({
         {renderContextActionButton('copyLatLng', copyMapContextLatLng)}
         {renderContextActionButton('copyIntelUrl', copyMapContextUrl)}
       </div>
-    </div>
+    </Section>
   );
 }

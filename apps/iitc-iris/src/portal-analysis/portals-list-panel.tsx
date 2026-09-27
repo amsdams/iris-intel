@@ -20,6 +20,9 @@ import {
 } from './content-portal-analysis';
 import {Badge} from '../ui/badge';
 import {TextInput} from '../ui/text-input';
+import {ActionButton} from '../ui/action-button';
+import {DiagnosticsChip} from '../ui/diagnostics-chip';
+import {Section} from '../ui/section';
 
 export interface IitcIrisPortalsListPanelProps {
   cameraZoom: number;
@@ -60,16 +63,14 @@ export function IitcIrisPortalsListPanel({
 }: IitcIrisPortalsListPanelProps): h.JSX.Element {
   if (!portalAnalysis) {
     return (
-      <div className="iitc-iris-map-controls-section iitc-iris-portal-analysis">
-        <span className="iitc-iris-status">Portals List</span>
+      <Section className="iitc-iris-portal-analysis" titleHeading="Portals List">
         <div className="iitc-iris-empty-state">Nothing to show.</div>
-      </div>
+      </Section>
     );
   }
 
   return (
-    <div className="iitc-iris-map-controls-section iitc-iris-portal-analysis">
-      <span className="iitc-iris-status">Portals List</span>
+    <Section className="iitc-iris-portal-analysis" titleHeading="Portals List">
       <div className="iitc-iris-portals-list-summary" aria-label="Filtered portal list summary">
         {([
           ['R', 'Resistance', portalsListSummary.teams.R],
@@ -94,12 +95,12 @@ export function IitcIrisPortalsListPanel({
         ))}
       </div>
       <div className="iitc-iris-analysis-chip-row">
-        <span className="iitc-iris-diagnostics-chip iitc-iris-analysis-chip"><b>{formatInteger(portalsListSummary.portals)}</b><small>Portals</small></span>
-        <span className="iitc-iris-diagnostics-chip iitc-iris-analysis-chip"><b>{formatInteger(portalsListSummary.links)}</b><small>Links</small></span>
-        <span className="iitc-iris-diagnostics-chip iitc-iris-analysis-chip"><b>{formatInteger(portalsListSummary.fields)}</b><small>Fields</small></span>
-        <span className="iitc-iris-diagnostics-chip iitc-iris-analysis-chip"><b>{formatInteger(portalsListSummary.enemyAp)}</b><small>AP</small></span>
-        <span className="iitc-iris-diagnostics-chip iitc-iris-analysis-chip"><b>{formatInteger(portalsListSummary.keys)}</b><small>Keys</small></span>
-        <span className="iitc-iris-diagnostics-chip iitc-iris-analysis-chip"><b>{portalsListSortOrder === 1 ? 'Asc' : 'Desc'}</b><small>Sort {portalsListSortBy}</small></span>
+        <DiagnosticsChip className="iitc-iris-analysis-chip" value={formatInteger(portalsListSummary.portals)} label="Portals" />
+        <DiagnosticsChip className="iitc-iris-analysis-chip" value={formatInteger(portalsListSummary.links)} label="Links" />
+        <DiagnosticsChip className="iitc-iris-analysis-chip" value={formatInteger(portalsListSummary.fields)} label="Fields" />
+        <DiagnosticsChip className="iitc-iris-analysis-chip" value={formatInteger(portalsListSummary.enemyAp)} label="AP" />
+        <DiagnosticsChip className="iitc-iris-analysis-chip" value={formatInteger(portalsListSummary.keys)} label="Keys" />
+        <DiagnosticsChip className="iitc-iris-analysis-chip" value={portalsListSortOrder === 1 ? 'Asc' : 'Desc'} label={<>Sort {portalsListSortBy}</>} />
       </div>
       <div className="iitc-iris-portals-list-filters">
         <TextInput
@@ -129,9 +130,7 @@ export function IitcIrisPortalsListPanel({
           <option value="7">Level 7</option>
           <option value="8">Level 8</option>
         </select>
-        <button
-          className="iitc-iris-portal-action"
-          type="button"
+        <ActionButton
           onClick={() => {
             setPortalsListTextFilter('');
             setPortalsListTeamFilter('all');
@@ -141,7 +140,7 @@ export function IitcIrisPortalsListPanel({
           title="Reset portal list filters"
         >
           Reset
-        </button>
+        </ActionButton>
       </div>
       {sortedPortalsList.length > 0 ? (
         <div className="iitc-iris-portals-list-table-wrap">
@@ -201,6 +200,6 @@ export function IitcIrisPortalsListPanel({
       ) : (
         <div className="iitc-iris-empty-state">No portals match the current filters.</div>
       )}
-    </div>
+    </Section>
   );
 }
