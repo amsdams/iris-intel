@@ -5,6 +5,8 @@ import {
   IitcScoreboard,
 } from '@iris/iitc-core';
 import { formatInteger } from '../ui-status';
+import { DiagnosticsChip } from '../ui/diagnostics-chip';
+import { Section } from '../ui/section';
 import {
   getPortalCountsBars,
   getPortalCountsLevelColor,
@@ -33,10 +35,9 @@ export function IitcIrisPortalCountsPanel({
 }: IitcIrisPortalCountsPanelProps): h.JSX.Element {
   if (!portalAnalysis) {
     return (
-      <div className="iitc-iris-map-controls-section iitc-iris-portal-analysis">
-        <span className="iitc-iris-status">Portal Counts</span>
+      <Section className="iitc-iris-portal-analysis" titleHeading="Portal Counts">
         <div className="iitc-iris-empty-state">No portal count data for the current view.</div>
-      </div>
+      </Section>
     );
   }
 
@@ -46,8 +47,7 @@ export function IitcIrisPortalCountsPanel({
   const portalCountsLevelRingSegments = getPortalCountsLevelRingSegments(portalCountsPieSegments, portalcounts.levels, portalcounts.total);
 
   return (
-    <div className="iitc-iris-map-controls-section iitc-iris-portal-analysis">
-      <span className="iitc-iris-status">Portal Counts</span>
+    <Section className="iitc-iris-portal-analysis" titleHeading="Portal Counts">
       <div className="iitc-iris-analysis-summary-grid">
         <span><b>{formatInteger(portalcounts.total)}</b><small>visible</small></span>
         <span><b>{formatInteger(portalcounts.real)}</b><small>real</small></span>
@@ -55,12 +55,12 @@ export function IitcIrisPortalCountsPanel({
         <span><b>{formatInteger(portalcounts.withKeys)}</b><small>with keys</small></span>
       </div>
       <div className="iitc-iris-analysis-chip-row">
-        <span className="iitc-iris-diagnostics-chip iitc-iris-analysis-chip"><b>{formatInteger(portalcounts.history.visited)}</b><small>Visited</small></span>
-        <span className="iitc-iris-diagnostics-chip iitc-iris-analysis-chip"><b>{formatInteger(portalcounts.history.captured)}</b><small>Captured</small></span>
-        <span className="iitc-iris-diagnostics-chip iitc-iris-analysis-chip"><b>{formatInteger(portalcounts.history.scoutControlled)}</b><small>Scout</small></span>
-        <span className="iitc-iris-diagnostics-chip iitc-iris-analysis-chip"><b>{formatInteger(portalcounts.missions)}</b><small>Missions</small></span>
-        <span className="iitc-iris-diagnostics-chip iitc-iris-analysis-chip"><b>{formatInteger(portalcounts.ornaments)}</b><small>Ornaments</small></span>
-        <span className="iitc-iris-diagnostics-chip iitc-iris-analysis-chip"><b>{formatInteger(portalcounts.artifacts)}</b><small>Artifacts</small></span>
+        <DiagnosticsChip className="iitc-iris-analysis-chip" value={formatInteger(portalcounts.history.visited)} label="Visited" />
+        <DiagnosticsChip className="iitc-iris-analysis-chip" value={formatInteger(portalcounts.history.captured)} label="Captured" />
+        <DiagnosticsChip className="iitc-iris-analysis-chip" value={formatInteger(portalcounts.history.scoutControlled)} label="Scout" />
+        <DiagnosticsChip className="iitc-iris-analysis-chip" value={formatInteger(portalcounts.missions)} label="Missions" />
+        <DiagnosticsChip className="iitc-iris-analysis-chip" value={formatInteger(portalcounts.ornaments)} label="Ornaments" />
+        <DiagnosticsChip className="iitc-iris-analysis-chip" value={formatInteger(portalcounts.artifacts)} label="Artifacts" />
       </div>
       {portalcounts.inaccurateAtLinkLevel && (
         <div className="iitc-iris-empty-state">Portal counts are approximate at link-level zoom.</div>
@@ -152,6 +152,6 @@ export function IitcIrisPortalCountsPanel({
           </g>
         </svg>
       </div>
-    </div>
+    </Section>
   );
 }

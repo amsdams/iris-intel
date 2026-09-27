@@ -226,15 +226,26 @@ Validation:
 
 ### Checkpoint 2: Chips And Control Rows
 
-Status: planned, blocked until Checkpoint 1 is reviewed.
+Status: complete.
 
 Candidate components:
 
-- `DiagnosticsChip`;
-- `ControlRow`;
-- possibly `Section` if repeated heading + body markup is identical in the chosen files.
+- `DiagnosticsChip`: wrapping `<span className="iitc-iris-diagnostics-chip"><b>{value}</b><small>{label}</small></span>`.
+- `ControlRow`: wrapping `<div className="iitc-iris-map-control-row">`.
+- `Section`: wrapping `<div className="iitc-iris-map-controls-section">` with an optional `<StatusText>` title heading.
 
-Exact files must be listed before implementation.
+Exact files for implementation:
+- `apps/iitc-iris/src/ui/diagnostics-chip.tsx`
+- `apps/iitc-iris/src/ui/control-row.tsx`
+- `apps/iitc-iris/src/ui/section.tsx`
+- Refactor target: `apps/iitc-iris/src/system/system-controls-panel.tsx` (to finish its extraction using Section/ControlRow).
+- Refactor target: `apps/iitc-iris/src/portal-analysis/portal-counts-panel.tsx` (for DiagnosticsChip usages).
+
+Validation:
+- `npm run typecheck:iitc-iris`
+- `npm run lint:iitc-iris`
+- `npm run package:iitc-iris`
+- manual visual inspection of system-controls-panel and portal-counts-panel.
 
 ### Checkpoint 3: Segmented Controls
 
