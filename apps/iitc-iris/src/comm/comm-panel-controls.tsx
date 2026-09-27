@@ -1,6 +1,10 @@
 import {h} from 'preact';
 import type {IitcIrisCommState, IitcIrisCommTab} from '../messages';
 import {formatCommTime} from './comm-display';
+import {SegmentedRow} from '../ui/segmented-row';
+import {SegmentedButton} from '../ui/segmented-button';
+import {ControlRow} from '../ui/control-row';
+import {ActionButton} from '../ui/action-button';
 
 export const IITC_IRIS_COMM_TABS: {id: IitcIrisCommTab; label: string}[] = [
   {id: 'all', label: 'All'},
@@ -25,18 +29,18 @@ function formatInteger(value: number | undefined): string {
 export function IitcIrisCommPanelControls(props: IitcIrisCommPanelControlsProps): h.JSX.Element {
   const {commNewBelow, commState, commUserAtBottom} = props;
   return <>
-    <div className="iitc-iris-segmented-row" role="tablist" aria-label="COMM channel">
+    <SegmentedRow role="tablist" aria-label="COMM channel">
       {IITC_IRIS_COMM_TABS.map((tab) => (
-        <button className={`iitc-iris-segmented-button ${commState.tab === tab.id ? 'is-active' : ''}`} type="button" role="tab" aria-selected={commState.tab === tab.id} onClick={() => props.selectTab(tab.id)} disabled={commState.status === 'loading' && commState.tab === tab.id} key={tab.id}>
+        <SegmentedButton active={commState.tab === tab.id} role="tab" aria-selected={commState.tab === tab.id} onClick={() => props.selectTab(tab.id)} disabled={commState.status === 'loading' && commState.tab === tab.id} key={tab.id}>
           {tab.label}
-        </button>
+        </SegmentedButton>
       ))}
-    </div>
-    <div className="iitc-iris-map-control-row">
-      <button className="iitc-iris-portal-action" type="button" onClick={() => props.refresh()} disabled={commState.status === 'loading'} title="Fetch COMM messages for the current map bounds">{commState.status === 'loading' ? 'Loading' : 'Refresh'}</button>
-      <button className="iitc-iris-portal-action" type="button" onClick={() => props.requestOlder()} disabled={commState.status === 'loading' || commState.oldestTimestamp === undefined || commState.oldestTimestamp < 0} title="Fetch older COMM messages before the current oldest timestamp">Older</button>
-      {(!commUserAtBottom || commNewBelow) && <button className="iitc-iris-portal-action" type="button" onClick={props.jumpToLatest} title="Jump to latest COMM message">{commNewBelow ? 'New' : 'Latest'}</button>}
-    </div>
+    </SegmentedRow>
+    <ControlRow>
+      <ActionButton onClick={() => props.refresh()} disabled={commState.status === 'loading'} title="Fetch COMM messages for the current map bounds">{commState.status === 'loading' ? 'Loading' : 'Refresh'}</ActionButton>
+      <ActionButton onClick={() => props.requestOlder()} disabled={commState.status === 'loading' || commState.oldestTimestamp === undefined || commState.oldestTimestamp < 0} title="Fetch older COMM messages before the current oldest timestamp">Older</ActionButton>
+      {(!commUserAtBottom || commNewBelow) && <ActionButton onClick={props.jumpToLatest} title="Jump to latest COMM message">{commNewBelow ? 'New' : 'Latest'}</ActionButton>}
+    </ControlRow>
     <div className="iitc-iris-panel-summary">
       <span><b>{formatInteger(commState.messages)}</b><small>messages</small></span>
       <span><b>{formatInteger(commState.addedMessages)}</b><small>added</small></span>

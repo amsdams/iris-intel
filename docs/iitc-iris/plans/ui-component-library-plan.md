@@ -249,13 +249,22 @@ Validation:
 
 ### Checkpoint 3: Segmented Controls
 
-Status: planned, blocked until Checkpoint 2 is reviewed.
+Status: complete.
 
 Candidate scope:
+- `SegmentedRow`: wrapping `<div className="iitc-iris-segmented-row">`.
+- `SegmentedButton`: wrapping `<button className="iitc-iris-segmented-button is-active">` and supporting an `active?: boolean` prop.
 
-- COMM tab segmented control first, because it has a focused repeated class pattern.
+Exact files for implementation:
+- `apps/iitc-iris/src/ui/segmented-row.tsx`
+- `apps/iitc-iris/src/ui/segmented-button.tsx`
+- Refactor target: `apps/iitc-iris/src/comm/comm-panel-controls.tsx` (will also opportunistically apply ActionButton and ControlRow from CP1/CP2 to this file since it uses them).
 
-Exact files must be listed before implementation.
+Validation:
+- `npm run typecheck:iitc-iris`
+- `npm run lint:iitc-iris`
+- `npm run package:iitc-iris`
+- manual visual inspection of the COMM panel controls.
 
 ### Later Candidates
 
