@@ -10,6 +10,8 @@ import {
 } from './content-draw-tools';
 import {formatTeamClass, formatTeamShortLabel, getPortalCountsLevelColor} from '../portal-analysis/content-portal-analysis';
 import type {IitcIrisDrawToolsItem, IitcIrisDrawToolsLatLng} from '../messages';
+import {Badge} from '../ui/badge';
+import {TextInput} from '../ui/text-input';
 
 type DrawToolsItemType = 'polyline' | 'marker';
 
@@ -130,7 +132,7 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
       </span>
     </div>
     <div className="iitc-iris-map-context-row iitc-iris-draw-tools-marker-create-row">
-      <input
+      <TextInput
         className="iitc-iris-draw-tools-label-input"
         type="text"
         value={props.markerLabel}
@@ -172,7 +174,7 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
             <span className="iitc-iris-draw-tools-marker-dot" style={{background: item.color ?? DRAW_TOOLS_DEFAULT_COLOR}} />
             <span className="iitc-iris-draw-tools-list-label">
               {props.editingMarkerIndex === item.storageIndex ? (
-                <input
+                <TextInput
                   className="iitc-iris-draw-tools-label-input"
                   type="text"
                   defaultValue={item.label ?? ''}
@@ -195,8 +197,8 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
                 <span className="iitc-iris-draw-tools-marker-coords">{getDrawToolsItemDetail(item)}</span>
                 {portalInfo && (
                   <span className="iitc-iris-draw-tools-marker-chips" aria-label={`Portal ${portalInfo.title}, level ${portalInfo.level}, ${formatTeamShortLabel(portalInfo.team)}`}>
-                    <span className="iitc-iris-draw-tools-level-chip" style={{background: getPortalCountsLevelColor(portalInfo.level), color: getLevelChipTextColor(portalInfo.level)}}>{`L${portalInfo.level}`}</span>
-                    <span className={`iitc-iris-draw-tools-team-chip ${formatTeamClass(portalInfo.team)}`}>{formatTeamShortLabel(portalInfo.team)}</span>
+                    <Badge className="iitc-iris-draw-tools-level-chip" style={{background: getPortalCountsLevelColor(portalInfo.level), color: getLevelChipTextColor(portalInfo.level)}}>{`L${portalInfo.level}`}</Badge>
+                    <Badge className={`iitc-iris-draw-tools-team-chip ${formatTeamClass(portalInfo.team)}`}>{formatTeamShortLabel(portalInfo.team)}</Badge>
                   </span>
                 )}
               </small>

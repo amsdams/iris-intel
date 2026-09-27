@@ -11,6 +11,7 @@ import type {
   IitcIrisLayerSettings,
   IitcIrisPortalHighlighterId,
 } from '../messages';
+import { LayerCheckbox, LayerRadio } from '../ui/layer-choice';
 
 export interface BooleanLayerToggleEntry {
   id: IitcIrisBooleanLayerSettingKey;
@@ -51,28 +52,26 @@ export function IitcIrisLayersPanel({
   toggleLayerSetting,
 }: IitcIrisLayersPanelProps): h.JSX.Element {
   const renderBooleanLayerCheckbox = ({ id, title }: BooleanLayerToggleEntry): h.JSX.Element => (
-    <label key={id} className={`iitc-iris-layer-choice ${layerSettings[id] ? 'is-checked' : ''}`} title={`${title}: ${layerSettings[id] ? 'on' : 'off'}`}>
-      <input
-        type="checkbox"
-        checked={layerSettings[id]}
-        onChange={() => toggleLayerSetting(id)}
-        aria-label={title}
-      />
-      <span className="iitc-iris-layer-choice-label">{title}</span>
-    </label>
+    <LayerCheckbox
+      key={id}
+      label={title}
+      title={`${title}: ${layerSettings[id] ? 'on' : 'off'}`}
+      checked={layerSettings[id]}
+      onChange={() => toggleLayerSetting(id)}
+      aria-label={title}
+    />
   );
 
   const renderHighlighterRadio = (option: (typeof PORTAL_HIGHLIGHTER_OPTIONS)[number]): h.JSX.Element => (
-    <label key={option.id} className={`iitc-iris-layer-choice ${highlighterSettings.active === option.id ? 'is-checked' : ''}`} title={option.title}>
-      <input
-        type="radio"
-        name="iitc-iris-portal-highlighter"
-        checked={highlighterSettings.active === option.id}
-        onChange={() => selectPortalHighlighter(option.id)}
-        aria-label={option.label}
-      />
-      <span className="iitc-iris-layer-choice-label">{option.label}</span>
-    </label>
+    <LayerRadio
+      key={option.id}
+      label={option.label}
+      title={option.title}
+      name="iitc-iris-portal-highlighter"
+      checked={highlighterSettings.active === option.id}
+      onChange={() => selectPortalHighlighter(option.id)}
+      aria-label={option.label}
+    />
   );
 
   return (

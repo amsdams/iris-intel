@@ -6,6 +6,7 @@ import {ActionButton} from '../ui/action-button';
 import {Section} from '../ui/section';
 import {ControlRow} from '../ui/control-row';
 import {StatusText} from '../ui/status-text';
+import {TextInput} from '../ui/text-input';
 interface IitcIrisSystemControlsPanelProps {
   shortcutsEnabled: boolean;
   setShortcutsEnabled: (action: (current: boolean) => boolean) => void;
@@ -142,7 +143,7 @@ export function IitcIrisSystemControlsPanel({
             jumpToViewInput();
           }}
         >
-          <input
+          <TextInput
             className="iitc-iris-jump-input"
             type="text"
             value={viewInput}

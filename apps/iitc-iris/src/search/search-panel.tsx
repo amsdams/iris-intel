@@ -3,6 +3,7 @@ import {getCommTeamClass} from '../comm/comm-display';
 import type {IitcIrisSearchResult, IitcIrisSearchState} from '../messages';
 import {Panel, PanelHeader, PanelTitle, PanelBody, PanelFooter} from '../ui/panel';
 import {formatElapsedSeconds, getPanelStatusClass} from '../ui-status';
+import {TextInput} from '../ui/text-input';
 
 interface RenderedSearchResult {
   result: IitcIrisSearchResult;
@@ -57,7 +58,7 @@ export function IitcIrisSearchPanel(props: IitcIrisSearchPanelProps): h.JSX.Elem
           props.requestSearch(props.searchTerm, true);
         }}
       >
-        <input
+        <TextInput
           className="iitc-iris-search-input"
           type="search"
           value={props.searchTerm}

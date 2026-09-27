@@ -423,14 +423,66 @@ Validation:
 - `git diff --check`
 - manual visual inspection of COMM send input and Passcode panel.
 
+### Checkpoint 9: Remaining TextInput Usages
+
+Status: complete.
+
+Scope: Apply `TextInput` to the remaining single-line text inputs identified in the Checkpoint 7 audit. Since the `TextInput` component has been validated, this checkpoint will refactor multiple panels at once.
+
+Exact files to refactor:
+
+- `apps/iitc-iris/src/search/search-panel.tsx` (replace `.iitc-iris-search-input`)
+- `apps/iitc-iris/src/system/system-controls-panel.tsx` (replace `.iitc-iris-jump-input`)
+- `apps/iitc-iris/src/portal-analysis/portals-list-panel.tsx` (replace `.iitc-iris-portals-list-search`)
+- `apps/iitc-iris/src/draw-tools/draw-tools-panel.tsx` (replace `.iitc-iris-draw-tools-label-input` usages)
+
+Validation:
+
+- `npm run typecheck:iitc-iris`
+- `npm run lint:iitc-iris`
+- `npm run package:iitc-iris`
+- manual visual inspection.
+
+### Checkpoint 10: Layer Choices and Badges
+
+Status: complete.
+
+Scope: Introduce generic components for layer checkboxes/radios and badges, then apply them to the relevant panels.
+
+**Layer Choices Audit:**
+- Checkbox/Radio structure in `layers-panel.tsx`:
+  `<label className="iitc-iris-layer-choice [is-checked]"><input type="checkbox/radio" /> <span className="iitc-iris-layer-choice-label">...</span></label>`
+- Action: Create `LayerCheckbox` and `LayerRadio` in `apps/iitc-iris/src/ui/layer-choice.tsx`.
+
+**Badges Audit:**
+- `.iitc-iris-item-badge`: `<b>` badge for item levels in `passcode-panel.tsx`.
+- `.iitc-iris-team-pill`: `<span>` pill for faction in `portals-list-panel.tsx`.
+- `.iitc-iris-draw-tools-team-chip`: `<span>` chip for faction in `draw-tools-panel.tsx`.
+- `.iitc-iris-draw-tools-level-chip`: `<span>` chip for level in `draw-tools-panel.tsx`.
+- `.iitc-iris-level-cell`: `<td>` class for level in `portals-list-panel.tsx`.
+- Action: Create `Badge` in `apps/iitc-iris/src/ui/badge.tsx` that renders a `<span>` or `<b>` (via `as` prop or just `span` default). It should accept `className` and `style`. `iitc-iris-level-cell` is a `td` and inherently part of a table, so we will not refactor it into a `Badge` to avoid breaking table semantics.
+
+Implementation files:
+- `apps/iitc-iris/src/ui/layer-choice.tsx`
+- `apps/iitc-iris/src/ui/layer-choice.test.tsx`
+- `apps/iitc-iris/src/ui/badge.tsx`
+- `apps/iitc-iris/src/ui/badge.test.tsx`
+
+Refactor files:
+- `apps/iitc-iris/src/layers/layers-panel.tsx`
+- `apps/iitc-iris/src/side-panels/passcode-panel.tsx`
+- `apps/iitc-iris/src/portal-analysis/portals-list-panel.tsx`
+- `apps/iitc-iris/src/draw-tools/draw-tools-panel.tsx`
+
+Validation:
+- `npm run test -w apps/iitc-iris`
+- `npm run typecheck:iitc-iris`
+- `npm run lint:iitc-iris`
+- `npm run package:iitc-iris`
+- manual visual inspection.
+
 ### Later Candidates
 
 These require a fresh checkpoint section before implementation:
 
-- search input and clear button extraction;
-- jump/view input extraction;
-- portal list filter input/select extraction;
-- Draw Tools textarea and marker label input extraction;
-- layer checkbox/radio components;
-- badges;
 - broader CSS consolidation.

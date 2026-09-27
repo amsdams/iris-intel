@@ -1,9 +1,9 @@
 import {h} from 'preact';
 import {formatIitcColorVars, getIitcLevelColor} from '../iitc-colors';
 import type {IitcIrisPasscodeRewardItem, IitcIrisPasscodeState} from '../messages';
-import {formatElapsedSeconds, getAuthErrorMessage} from '../ui-status';
-
+import {Badge} from '../ui/badge';
 import {TextInput} from '../ui/text-input';
+import {formatElapsedSeconds, getAuthErrorMessage} from '../ui-status';
 
 export interface IitcIrisPasscodePanelProps {
   passcodeDraft: string;
@@ -66,7 +66,7 @@ export function IitcIrisPasscodePanel(props: IitcIrisPasscodePanelProps): h.JSX.
             key={`${item.label}-${item.level ?? ''}-${index}`}
             style={formatIitcColorVars(getIitcLevelColor(item.level))}
           >
-            <span><b className="iitc-iris-item-badge">{formatItemBadge(item)}</b>{item.label}{item.level ? ` L${item.level}` : ''}</span>
+            <span><Badge as="b" className="iitc-iris-item-badge">{formatItemBadge(item)}</Badge>{item.label}{item.level ? ` L${item.level}` : ''}</span>
             <b>{item.count ?? 1}</b>
           </div>
         ))}

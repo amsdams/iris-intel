@@ -18,6 +18,8 @@ import {
   PortalsListTeamFilter,
   SortOrder,
 } from './content-portal-analysis';
+import {Badge} from '../ui/badge';
+import {TextInput} from '../ui/text-input';
 
 export interface IitcIrisPortalsListPanelProps {
   cameraZoom: number;
@@ -100,7 +102,7 @@ export function IitcIrisPortalsListPanel({
         <span className="iitc-iris-diagnostics-chip iitc-iris-analysis-chip"><b>{portalsListSortOrder === 1 ? 'Asc' : 'Desc'}</b><small>Sort {portalsListSortBy}</small></span>
       </div>
       <div className="iitc-iris-portals-list-filters">
-        <input
+        <TextInput
           aria-label="Filter portal list by name"
           className="iitc-iris-portals-list-search"
           placeholder="Filter portals"
@@ -178,7 +180,7 @@ export function IitcIrisPortalsListPanel({
                     </button>
                   </td>
                   <td className={`iitc-iris-level-cell iitc-iris-level-${portal.level}`}>L{portal.level}</td>
-                  <td><span className={`iitc-iris-team-pill ${formatTeamClass(portal.team)}`}>{formatTeamShortLabel(portal.team)}</span></td>
+                  <td><Badge className={`iitc-iris-team-pill ${formatTeamClass(portal.team)}`}>{formatTeamShortLabel(portal.team)}</Badge></td>
                   <td>{portal.health === null ? '-' : `${Math.round(portal.health)}%`}</td>
                   <td>{formatInteger(portal.resCount)}</td>
                   <td title={`In: ${portal.links.in}\nOut: ${portal.links.out}`}>{formatInteger(portal.links.count)}</td>
