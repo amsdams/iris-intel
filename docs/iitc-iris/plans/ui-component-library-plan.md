@@ -2,8 +2,8 @@
 
 ## Status
 
-Checkpoints 0-13 complete. Next checkpoint is CSS consolidation planning; free-text diagnostics chips still need a
-narrow component decision before they are refactored.
+Checkpoints 0-15 complete. Next checkpoint is a list/table/domain-control pattern audit before introducing generic
+list or table components.
 
 This is an internal IITC IRIS UI-shell refactor. It is allowed to introduce shared Preact components and limited CSS
 consolidation, but it must not redesign the app, rename user-facing concepts, change panel behavior, or obscure
@@ -84,6 +84,83 @@ Candidate primitive families:
 - `SegmentedControl` / `SegmentedButton`: `.iitc-iris-segmented-row` and `.iitc-iris-segmented-button`.
 - `TextInput`: only after input variants are audited; do not force search, passcode, view, and Draw Tools inputs into
   one abstraction unless their props and CSS contracts truly match.
+
+Current extracted component families:
+
+- Buttons/actions: `ActionButton`, `SubmitActionButton`, `ClearButton`, `SegmentedButton`.
+- Text and form leaves: `TextInput`, `LayerCheckbox`, `LayerRadio`.
+- Status/chips/badges: `StatusText`, `DiagnosticsChip`, `PlainDiagnosticsChip`, `Badge`.
+- Layout wrappers: `Panel`, `PanelHeader`, `PanelTitle`, `PanelBody`, `PanelFooter`, `Section`, `ControlRow`,
+  `SegmentedRow`, `SummaryGrid`, `SummaryCell`.
+
+## Extraction Roadmap
+
+This roadmap answers "how much is left" and helps choose the next checkpoint. Counts are approximate because some
+families should remain domain-specific rather than becoming generic UI.
+
+### Tier 1: Highest Value, Low Risk
+
+These are likely worth extracting soon because they repeat, have simple semantics, and should improve consistency.
+
+| Candidate | Priority | Likely Component Type | Main Files | Expected CSS Payoff | Notes |
+| --- | --- | --- | --- | --- | --- |
+| `EmptyState` | High | generic | COMM, missions, portal analysis, portal details, agent/passcode panels | Medium | Repeated `.iitc-iris-empty-state`; likely the best next component. |
+| `ChipButton` | High | generic | search clear-overlay chip | Low | Button-shaped diagnostics chip; keeps clickable chip semantics separate from span chips. |
+| `SelectInput` / `FilterSelect` | High | generic/narrow form | portal list filters | Medium | Preserve select-specific semantics; pairs with text input CSS cleanup. |
+| `TextareaInput` | High | generic/narrow form | Draw Tools import | Medium | Single current textarea, but clarifies input CSS and future import forms. |
+| `CheckboxField` | High | generic/narrow form | Draw Tools import merge | Low | Layer choices are already special; this covers normal checkbox-label fields. |
+
+### Tier 2: Valuable, Needs Domain Shape
+
+These should probably be extracted, but not as generic `List` or `Table` first.
+
+| Candidate | Priority | Likely Component Type | Main Files | Expected CSS Payoff | Notes |
+| --- | --- | --- | --- | --- | --- |
+| `PortalAnalysisTable` shell | Medium | domain/generic hybrid | portal counts, scoreboard, portals list | Medium | Share table wrapper/classes, but keep row/cell content local. |
+| `TableSortButton` | Medium | table-specific | portals list | Low | Must preserve sort labeling and accessible button behavior. |
+| `TableActionButton` | Medium | table-specific | portals list `Zoom` | Low | Useful if more table actions appear. |
+| `SearchResultRow` | Medium | domain-specific | search panel | Medium | Result preview/focus semantics are specialized. |
+| `MissionListRow` / `MissionWaypointButton` | Medium | domain-specific | missions panel | Medium | Avoid generic row abstraction. |
+| `InventoryListSection` / `InventoryRow` | Medium | domain-specific | inventory/passcode panels | Medium | Shares list visual language, but key rows are buttons. |
+| `DrawToolsList` / `DrawToolsListItem` | Medium | domain-specific | Draw Tools panel | High | Likely the biggest remaining Draw Tools cleanup. |
+| `DrawToolsImportForm` | Medium | domain-specific | Draw Tools panel | Medium | Groups textarea, merge checkbox, import button/status. |
+
+### Tier 3: Specialized or CSS-Only First
+
+These are visible, but a generic component may not be the right first move.
+
+| Candidate | Priority | Likely Component Type | Main Files | Expected CSS Payoff | Notes |
+| --- | --- | --- | --- | --- | --- |
+| `PortalSummaryCell` | Low/Medium | portal-specific | portal details | Medium | Current portal summary is not the same as generic `SummaryCell`. |
+| `PortalDetailPanelSection` | Low/Medium | portal-specific | portal details | Medium | Details/mods/resonators/facts differ enough to audit first. |
+| `AuthActionButton` | Low/Medium | generic/domain hybrid | auth recovery, diagnostics auth | Medium | Possible CSS consolidation with action buttons, but semantics differ. |
+| `PresetButton` / system scenario buttons | Low/Medium | system-specific | system controls/diagnostics | Medium | Many `.iitc-iris-preset`/copy buttons; audit with button CSS consolidation. |
+| `MapNavButton` | Low | map-specific | map controls | Low | Pan/zoom layout is specialized and stable. |
+| `LayerToggleButton` | Low | layer-specific | layers/system diagnostics | Low | Active/pressed toggle semantics differ from action buttons. |
+| `SheetTabButton` | Low | shell-specific | sheet tabbar | Low | Navigation/tab semantics; leave until shell UI pass. |
+| COMM token buttons | Low | COMM-specific | COMM message list | Low | Portal/player tokens have custom behavior. |
+
+### Rough Progress
+
+- Extracted shared families: about 18.
+- Remaining high-value candidates: about 5.
+- Remaining medium-value domain candidates: about 7-8.
+- Remaining specialized/CSS-first candidates: about 7-9.
+
+"Mostly extracted" means Tier 1 complete plus the useful Tier 2 domain components chosen by audit. Tier 3 can remain raw
+unless CSS consolidation or a feature change makes it worth touching.
+
+### Suggested Next Checkpoints
+
+1. `EmptyState` and `ChipButton`.
+2. Form controls: `SelectInput`, `TextareaInput`, `CheckboxField`.
+3. Portal analysis table audit and table shell/buttons.
+4. Search result row component.
+5. Draw Tools import/list components.
+6. Button-family CSS consolidation.
+
+Do not introduce a generic `List` or `Table` component until after checkpoints 3-5 prove which parts are genuinely
+shared.
 
 Avoid broad abstractions at first:
 
@@ -576,12 +653,19 @@ Validation:
 
 ### Checkpoint 14: CSS Consolidation - Inputs
 
-Status: planned.
+Status: complete.
 
 Scope: Consolidate the duplicate CSS rules for text inputs identified in Checkpoint 11.
 - Exact old classes: `.iitc-iris-search-input`, `.iitc-iris-passcode-input`, `.iitc-iris-jump-input`, `.iitc-iris-portals-list-search`, `.iitc-iris-draw-tools-label-input`.
 - Exact new class: `.iitc-iris-text-input`.
 - Keep existing classes composed alongside the new class for backwards compatibility during transition.
+
+Implementation notes:
+- `TextInput` now always emits `.iitc-iris-text-input` and composes any specialized class passed by callers.
+- `.iitc-iris-text-input` owns the shared min-width, box-sizing, border, radius, color, font, letter-spacing, and disabled
+  color rules.
+- Specialized classes still own visual differences such as search-box transparency, portal-list text color, jump width,
+  background, padding, height, and placeholder styling.
 
 Validation:
 - `npm run typecheck:iitc-iris`
@@ -589,13 +673,79 @@ Validation:
 - `npm run package:iitc-iris`
 - manual visual inspection of the touched panels.
 
-### Later Candidates
+### Checkpoint 15: Submit Actions and Plain Diagnostics Chips
 
-These require a fresh checkpoint section before implementation:
+Status: complete.
 
-- Draw Tools action/list/import components.
-- Portal detail action/status/chip extraction.
-- Remaining side-panel summary/action/status extraction for missions, inventory, scores, and agent panels.
-- Search panel header actions, diagnostics chip/button, and result-row action wrappers.
-- Portal list select controls and table sort/action buttons after a table semantics audit.
-- Auth recovery and content fallback buttons, if they are visually compatible with existing UI primitives.
+Scope:
+- Add `SubmitActionButton` for submit-safe `.iitc-iris-portal-action` form buttons.
+- Add `PlainDiagnosticsChip` for free-text diagnostics chips that do not fit the structured
+  `<b>{value}</b><small>{label}</small>` `DiagnosticsChip` shape.
+- Keep anchor-styled action links raw.
+- Keep clickable chip buttons raw until a button-shaped chip component is planned.
+
+Exact files:
+- `apps/iitc-iris/src/ui/action-button.tsx`
+- `apps/iitc-iris/src/ui/action-button.test.tsx`
+- `apps/iitc-iris/src/ui/diagnostics-chip.tsx`
+- `apps/iitc-iris/src/ui/diagnostics-chip.test.tsx`
+- `apps/iitc-iris/src/comm/comm-panel-body.tsx`
+- `apps/iitc-iris/src/side-panels/passcode-panel.tsx`
+- footer chip call sites in COMM, portal details, missions, search, agent, inventory, scores, and passcode panels.
+
+Validation:
+- focused UI component tests;
+- `npm run typecheck:iitc-iris`;
+- `npm run lint:iitc-iris`;
+- `npm run package:iitc-iris`;
+- manual visual inspection of submit buttons and footer chips.
+
+### Checkpoint 16: List/Table/Domain-Control Pattern Audit
+
+Status: planned.
+
+Documentation only. Do not change app code.
+
+Purpose: decide which remaining raw lists, tables, rows, and domain-specific buttons should become shared components and
+which should stay local.
+
+Audit groups:
+- Empty states: repeated `.iitc-iris-empty-state` blocks.
+- Tables: portal list table wrapper, sortable headers, portal title buttons, and table action buttons.
+- Lists: mission list/rows/waypoints, inventory lists/key rows, Draw Tools list rows/actions, COMM message token rows,
+  agent/top-agent rows.
+- Form controls: portal list selects, Draw Tools import textarea, Draw Tools import merge checkbox.
+- Button-like domain controls: search result rows/zoom buttons, clear-overlay chip button, map pan/zoom/location buttons,
+  layer base toggles, system debug toggle, auth login buttons, mission authoring anchor, marker swatches, sheet tabs.
+- Portal details structures: portal summary cells, portal panels, mod grid, resonator grid, facts grid, mission enrichment.
+
+Audit output must classify each item as:
+- generic shared component now;
+- domain-specific component now;
+- CSS-only consolidation candidate;
+- intentionally raw.
+
+Likely first candidates after the audit:
+- `EmptyState`;
+- `ChipButton` for clickable diagnostics chips;
+- `TableActionButton` / `TableSortButton` after table semantics are confirmed;
+- Draw Tools-specific row/import components rather than a generic list.
+
+Validation:
+- Documentation review.
+- `git diff --check`.
+
+### Remaining Backlog
+
+Use the Extraction Roadmap above as the source of truth for what remains. These notes call out important boundaries for
+future checkpoints:
+
+- Anchor-styled action links: the mission authoring link remains an `<a>` with `.iitc-iris-portal-action`; do not convert
+  it to a button component.
+- Portal list form/table controls need a table/form semantics audit before extraction.
+- Search results, Draw Tools, portal details, missions, inventory, and COMM rows should use domain-shaped components
+  rather than a generic `Row`/`List` first.
+- Map/domain controls, layer base toggles, system debug toggle, auth login buttons, COMM token buttons, inventory key
+  rows, mission rows/waypoints, and sheet tabs may remain raw unless a domain checkpoint proves value.
+- CSS consolidation candidates still open: button families (`.iitc-iris-portal-action`, `.iitc-iris-preset`,
+  `.iitc-iris-copy`, `.iitc-iris-login`) and diagnostics chip variants, after exact selector/state audits.

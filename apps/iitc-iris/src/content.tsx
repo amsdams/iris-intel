@@ -208,7 +208,9 @@ function injectScript(src: string): void {
 
 function App(): h.JSX.Element {
   const [status, setStatus] = useState('booting');
-  const [copyStatus, setCopyStatus] = useState('');
+  const [systemCopyStatus, setSystemCopyStatus] = useState('');
+  const [contextCopyStatus, setContextCopyStatus] = useState('');
+  const [portalCopyStatus, setPortalCopyStatus] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [searchState, setSearchState] = useState<IitcIrisSearchState>(EMPTY_SEARCH_STATE);
   const [activeSearchResultIndex, setActiveSearchResultIndex] = useState(0);
@@ -397,27 +399,27 @@ function App(): h.JSX.Element {
 
 
   const copyDockText = (): void => {
-    copyIitcIrisText(JSON.stringify(dockDiagnostics, null, 2), {setStatus: setCopyStatus, successStatus: 'json copied'});
+    copyIitcIrisText(JSON.stringify(dockDiagnostics, null, 2), {setStatus: setSystemCopyStatus, successStatus: 'json copied'});
   };
 
   const copyIntelUrl = (): void => {
-    copyIitcIrisText(intelUrl, {setStatus: setCopyStatus, successStatus: 'url copied'});
+    copyIitcIrisText(intelUrl, {setStatus: setSystemCopyStatus, successStatus: 'url copied'});
   };
 
   const copyMapContextLatLng = (): void => {
-    copyMapContextLatLngCommand(mapContext, setCopyStatus);
+    copyMapContextLatLngCommand(mapContext, setContextCopyStatus);
   };
 
   const copyMapContextUrl = (): void => {
-    copyMapContextUrlCommand(mapContext, setCopyStatus);
+    copyMapContextUrlCommand(mapContext, setContextCopyStatus);
   };
 
   const copyMapContextGuid = (): void => {
-    copyMapContextGuidCommand(mapContext, setCopyStatus);
+    copyMapContextGuidCommand(mapContext, setContextCopyStatus);
   };
 
   const copyMapContextPortalGuids = (): void => {
-    copyMapContextPortalGuidsCommand(mapContext, setCopyStatus);
+    copyMapContextPortalGuidsCommand(mapContext, setContextCopyStatus);
   };
 
   const centerMapContext = (): void => {
@@ -426,15 +428,15 @@ function App(): h.JSX.Element {
 
 
   const copySelectedPortalLink = (): void => {
-    copySelectedPortalLinkCommand(entityFetch.selectedPortal, camera.zoom, setCopyStatus);
+    copySelectedPortalLinkCommand(entityFetch.selectedPortal, camera.zoom, setPortalCopyStatus);
   };
 
   const copySelectedPortalGuid = (): void => {
-    copySelectedPortalGuidCommand(entityFetch.selectedPortal, setCopyStatus);
+    copySelectedPortalGuidCommand(entityFetch.selectedPortal, setPortalCopyStatus);
   };
 
   const copySelectedPortalTitle = (): void => {
-    copySelectedPortalTitleCommand(entityFetch.selectedPortal, setCopyStatus);
+    copySelectedPortalTitleCommand(entityFetch.selectedPortal, setPortalCopyStatus);
   };
 
 
@@ -1031,6 +1033,7 @@ function App(): h.JSX.Element {
         copyMapContextLatLng={copyMapContextLatLng}
         copyMapContextPortalGuids={copyMapContextPortalGuids}
         copyMapContextUrl={copyMapContextUrl}
+        copyStatus={contextCopyStatus}
         selectMapContextAnchor={selectMapContextAnchor}
         drawToolsItems={drawToolsItems}
         drawToolsClearConfirm={drawToolsClearConfirm}
@@ -1106,7 +1109,7 @@ function App(): h.JSX.Element {
           copyDockText={copyDockText}
           copyIntelUrl={copyIntelUrl}
           copyScenarioRun={copyScenarioRun}
-          copyStatus={copyStatus}
+          copyStatus={systemCopyStatus}
           dataSourceId={dataSourceId}
           finishScenarioRun={finishScenarioRun}
           jumpToPreset={jumpToPreset}
@@ -1153,6 +1156,7 @@ function App(): h.JSX.Element {
           copySelectedPortalGuid={copySelectedPortalGuid}
           copySelectedPortalLink={copySelectedPortalLink}
           copySelectedPortalTitle={copySelectedPortalTitle}
+          copyStatus={portalCopyStatus}
           focusSelectedPortal={focusSelectedPortal}
           inlineAuthActions={inlineAuthActions}
           openPortalImage={() => setPortalImageOpen(true)}

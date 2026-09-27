@@ -4,6 +4,7 @@ import type {IitcIrisMissionSource, IitcIrisMissionsState} from '../messages';
 import {formatElapsedSeconds, getAuthErrorMessage} from '../ui-status';
 import {ActionButton} from '../ui/action-button';
 import {ControlRow} from '../ui/control-row';
+import {PlainDiagnosticsChip} from '../ui/diagnostics-chip';
 import {StatusText} from '../ui/status-text';
 import {SummaryCell} from '../ui/summary-cell';
 import {SummaryGrid} from '../ui/summary-grid';
@@ -247,8 +248,7 @@ export function IitcIrisMissionsPanel(props: IitcIrisMissionsPanelProps): h.JSX.
       )}
     </div>
     <div className="iitc-iris-panel-footer">
-      <span
-        className="iitc-iris-diagnostics-chip"
+      <PlainDiagnosticsChip
         title={[
           missionsState.source === 'portal' ? 'request: /r/getTopMissionsForPortal' : 'request: /r/getTopMissionsInBounds',
           `portal: ${missionsState.portalGuid ?? '-'}`,
@@ -259,11 +259,11 @@ export function IitcIrisMissionsPanel(props: IitcIrisMissionsPanelProps): h.JSX.
           : missionsState.elapsedMs !== undefined
             ? `request ${formatElapsedSeconds(missionsState.elapsedMs)}s`
             : 'request'}
-      </span>
+      </PlainDiagnosticsChip>
       {missionsState.detailsElapsedMs !== undefined && (
-        <span className="iitc-iris-diagnostics-chip" title="request: /r/getMissionDetails">
+        <PlainDiagnosticsChip title="request: /r/getMissionDetails">
           {missionsState.detailsCached ? 'details cached' : `details ${formatElapsedSeconds(missionsState.detailsElapsedMs)}s`}
-        </span>
+        </PlainDiagnosticsChip>
       )}
       {missionsState.error && (
         <span className="iitc-iris-warning" title={missionsState.error}>

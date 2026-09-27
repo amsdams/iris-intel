@@ -7,11 +7,12 @@ describe('TextInput', () => {
     const vnode = TextInput({});
     expect(vnode.type).toBe('input');
     expect(vnode.props.type).toBe('text');
+    expect(vnode.props.className).toBe('iitc-iris-text-input');
   });
 
-  it('preserves the provided className', () => {
+  it('composes the provided className with the base class', () => {
     const vnode = TextInput({ className: 'custom-class' });
-    expect(vnode.props.className).toBe('custom-class');
+    expect(vnode.props.className).toBe('iitc-iris-text-input custom-class');
   });
 
   it('can render as a search input', () => {
@@ -52,4 +53,3 @@ describe('TextInput', () => {
     expect(vnode.props.onKeyDown).toBe(onKeyDown);
   });
 });
-

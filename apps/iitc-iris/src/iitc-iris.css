@@ -29,16 +29,27 @@
     background: rgb(7 31 45 / 72%);
 }
 
-.iitc-iris-search-input {
+.iitc-iris-text-input {
     min-width: 0;
-    height: 32px;
     box-sizing: border-box;
+    border: 1px solid rgb(95 180 255 / 30%);
+    border-radius: 4px;
+    color: #e8f4ff;
+    font: inherit;
+    letter-spacing: 0;
+}
+
+.iitc-iris-text-input:disabled {
+    color: #4f6575;
+}
+
+.iitc-iris-search-input {
+    height: 32px;
     border: 0;
     background: transparent;
-    color: #e8f4ff;
     font: 500 12px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    padding: 0 10px;
     outline: none;
+    padding: 0 10px;
 }
 
 .iitc-iris-search-input::placeholder {
@@ -1094,15 +1105,23 @@
 
 .iitc-iris-portals-list-filters input,
 .iitc-iris-portals-list-filters select {
-    min-width: 0;
     height: 30px;
+    background: rgb(4 14 21 / 94%);
+    font-size: 11px;
+}
+
+.iitc-iris-portals-list-filters select {
+    min-width: 0;
     box-sizing: border-box;
     border: 1px solid rgb(95 180 255 / 24%);
     border-radius: 4px;
-    background: rgb(4 14 21 / 94%);
     color: #d7e7f5;
     font: inherit;
-    font-size: 11px;
+}
+
+.iitc-iris-portals-list-search {
+    border-color: rgb(95 180 255 / 24%);
+    color: #d7e7f5;
 }
 
 .iitc-iris-portals-list-filters input {
@@ -1650,18 +1669,8 @@
 }
 
 .iitc-iris-passcode-input {
-    min-width: 0;
-    box-sizing: border-box;
-    border: 1px solid rgb(95 180 255 / 30%);
-    border-radius: 4px;
     background: rgb(2 10 16 / 88%);
-    color: #e8f4ff;
-    font: inherit;
     padding: 3px 6px;
-}
-
-.iitc-iris-passcode-input:disabled {
-    color: #4f6575;
 }
 
 .iitc-iris-panel-footer {
@@ -1693,8 +1702,15 @@
     background: rgb(10 18 25 / 46%);
     color: #91a6b7;
     font: 700 10px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    cursor: help;
     text-transform: uppercase;
+}
+
+.iitc-iris-diagnostics-chip[title] {
+    cursor: help;
+}
+
+.iitc-iris-diagnostics-chip.iitc-iris-chip-button {
+    cursor: pointer;
 }
 
 .iitc-iris-diagnostics-chip:hover {
@@ -2942,13 +2958,7 @@ button.iitc-iris-inventory-row:hover {
     width: 170px;
     min-width: 120px;
     height: 22px;
-    box-sizing: border-box;
-    border: 1px solid rgb(95 180 255 / 30%);
-    border-radius: 4px;
     background: rgb(10 18 25 / 88%);
-    color: #e8f4ff;
-    font: inherit;
-    letter-spacing: 0;
     padding: 2px 6px;
 }
 
@@ -3252,22 +3262,12 @@ button.iitc-iris-inventory-row:hover {
 
 .iitc-iris-draw-tools-label-input {
     width: 100%;
-    min-width: 0;
-    box-sizing: border-box;
-    padding: 3px 6px;
-    border: 1px solid rgb(95 180 255 / 30%);
-    border-radius: 4px;
     background: rgb(2 10 16 / 88%);
-    color: #e8f4ff;
-    font: inherit;
+    padding: 3px 6px;
 }
 
 .iitc-iris-draw-tools-label-input::placeholder {
     color: #7d95a6;
-}
-
-.iitc-iris-draw-tools-label-input:disabled {
-    color: #4f6575;
 }
 
 .iitc-iris-draw-tools-import {

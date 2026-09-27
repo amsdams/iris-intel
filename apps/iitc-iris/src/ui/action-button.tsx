@@ -14,3 +14,11 @@ export function ActionButton({children, className, ...props}: ActionButtonProps)
     </button>
   );
 }
+
+export function SubmitActionButton({children, className, ...props}: ActionButtonProps): h.JSX.Element {
+  return (
+    <button type="submit" className={`iitc-iris-portal-action ${className || ''}`.trim()} {...props}>
+      {children}
+    </button>
+  );
+}

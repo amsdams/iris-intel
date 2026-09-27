@@ -13,6 +13,7 @@ import type {
 import {ActionButton} from '../ui/action-button';
 import {ControlRow} from '../ui/control-row';
 import {Section} from '../ui/section';
+import {StatusText} from '../ui/status-text';
 
 export interface IitcIrisMapNavigationPanelProps {
   canPan: boolean;
@@ -54,6 +55,7 @@ export interface IitcIrisMapContextPanelProps {
   copyMapContextLatLng: () => void;
   copyMapContextPortalGuids: () => void;
   copyMapContextUrl: () => void;
+  copyStatus: string;
   formatMapObjectDistance: (meters: number | undefined) => string;
   formatTeamLabel: (team: string) => string;
   selectMapContextAnchor: (anchor: IitcIrisMapContextPortalAnchor) => void;
@@ -66,6 +68,7 @@ export function IitcIrisMapContextPanel({
   copyMapContextLatLng,
   copyMapContextPortalGuids,
   copyMapContextUrl,
+  copyStatus,
   formatMapObjectDistance,
   formatTeamLabel,
   selectMapContextAnchor,
@@ -124,6 +127,7 @@ export function IitcIrisMapContextPanel({
         {renderContextActionButton('center', centerMapContext)}
         {renderContextActionButton('copyLatLng', copyMapContextLatLng)}
         {renderContextActionButton('copyIntelUrl', copyMapContextUrl)}
+        {copyStatus && <StatusText>{copyStatus}</StatusText>}
       </div>
     </Section>
   );

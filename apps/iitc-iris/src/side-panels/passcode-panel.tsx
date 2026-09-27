@@ -1,7 +1,9 @@
 import {h} from 'preact';
 import {formatIitcColorVars, getIitcLevelColor} from '../iitc-colors';
 import type {IitcIrisPasscodeRewardItem, IitcIrisPasscodeState} from '../messages';
+import {SubmitActionButton} from '../ui/action-button';
 import {Badge} from '../ui/badge';
+import {PlainDiagnosticsChip} from '../ui/diagnostics-chip';
 import {TextInput} from '../ui/text-input';
 import {SummaryCell} from '../ui/summary-cell';
 import {SummaryGrid} from '../ui/summary-grid';
@@ -41,9 +43,9 @@ export function IitcIrisPasscodePanel(props: IitcIrisPasscodePanelProps): h.JSX.
         disabled={passcodeState.status === 'loading'}
         onInput={(event) => props.onDraftChange(event.currentTarget.value)}
       />
-      <button className="iitc-iris-portal-action" type="submit" disabled={!passcodeDraft.trim() || passcodeState.status === 'loading'}>
+      <SubmitActionButton disabled={!passcodeDraft.trim() || passcodeState.status === 'loading'}>
         {passcodeState.status === 'loading' ? 'Redeeming' : 'Redeem'}
-      </button>
+      </SubmitActionButton>
     </form>
     <SummaryGrid>
       <SummaryCell value={formatInteger(passcodeState.ap)} label="AP" />
@@ -84,15 +86,14 @@ export function IitcIrisPasscodePanel(props: IitcIrisPasscodePanelProps): h.JSX.
       </div>
     )}
     <div className="iitc-iris-panel-footer">
-      <span
-        className="iitc-iris-diagnostics-chip"
+      <PlainDiagnosticsChip
         title={[
           'request: /r/redeemReward',
           `passcode: ${passcodeState.passcode ?? '-'}`,
         ].join('\n')}
       >
         {passcodeState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(passcodeState.elapsedMs)}s` : 'request'}
-      </span>
+      </PlainDiagnosticsChip>
     </div>
   </div>;
 }

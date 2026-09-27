@@ -2,6 +2,7 @@ import {h} from 'preact';
 import {getCommTeamClass} from '../comm/comm-display';
 import type {IitcIrisAgentState} from '../messages';
 import {formatElapsedSeconds, formatSubscriptionBadge, formatSubscriptionLabel, getSubscriptionStatusClass} from '../ui-status';
+import {PlainDiagnosticsChip} from '../ui/diagnostics-chip';
 import {StatusText} from '../ui/status-text';
 import {SummaryCell} from '../ui/summary-cell';
 import {SummaryGrid} from '../ui/summary-grid';
@@ -69,8 +70,7 @@ export function IitcIrisAgentPanel({agentState}: IitcIrisAgentPanelProps): h.JSX
           )}
         </div>
         <div className="iitc-iris-panel-footer">
-          <span
-            className="iitc-iris-diagnostics-chip"
+          <PlainDiagnosticsChip
             title={[
               'source: window.PLAYER inline Intel data',
               `subscription: ${formatSubscriptionLabel(agentState.subscription)}`,
@@ -80,11 +80,11 @@ export function IitcIrisAgentPanel({agentState}: IitcIrisAgentPanelProps): h.JSX
             ].join('\n')}
           >
             {formatSubscriptionLabel(agentState.subscription)}
-          </span>
+          </PlainDiagnosticsChip>
           {agentState.subscription?.elapsedMs !== undefined && (
-            <span className="iitc-iris-diagnostics-chip">
+            <PlainDiagnosticsChip>
               core {formatElapsedSeconds(agentState.subscription.elapsedMs)}s
-            </span>
+            </PlainDiagnosticsChip>
           )}
         </div>
       </>

@@ -5,6 +5,7 @@ import {Panel, PanelHeader, PanelTitle, PanelBody, PanelFooter} from '../ui/pane
 import {formatElapsedSeconds, getPanelStatusClass} from '../ui-status';
 import {TextInput} from '../ui/text-input';
 import {ClearButton} from '../ui/clear-button';
+import {PlainDiagnosticsChip} from '../ui/diagnostics-chip';
 import {StatusText} from '../ui/status-text';
 
 interface RenderedSearchResult {
@@ -135,8 +136,7 @@ export function IitcIrisSearchPanel(props: IitcIrisSearchPanelProps): h.JSX.Elem
         </div>
       )}
       <PanelFooter>
-        <span
-          className="iitc-iris-diagnostics-chip"
+        <PlainDiagnosticsChip
           title={[
             props.searchState.confirmed ? 'request: Nominatim search' : 'request: local portal search only',
             `local: ${props.searchState.localResults}`,
@@ -144,7 +144,7 @@ export function IitcIrisSearchPanel(props: IitcIrisSearchPanelProps): h.JSX.Elem
           ].join('\n')}
         >
           {props.searchState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(props.searchState.elapsedMs)}s` : 'request'}
-        </span>
+        </PlainDiagnosticsChip>
         {props.searchState.results.length > 0 && (
           <button className="iitc-iris-diagnostics-chip iitc-iris-chip-button" type="button" onClick={props.clearSearch} title="Clear search results and map overlay">
             clear overlay

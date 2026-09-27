@@ -4,6 +4,7 @@ import type {IitcIrisScoresState} from '../messages';
 import {formatElapsedSeconds, getAuthErrorMessage} from '../ui-status';
 import {ActionButton} from '../ui/action-button';
 import {ControlRow} from '../ui/control-row';
+import {PlainDiagnosticsChip} from '../ui/diagnostics-chip';
 import {StatusText} from '../ui/status-text';
 import {SummaryCell} from '../ui/summary-cell';
 import {SummaryGrid} from '../ui/summary-grid';
@@ -94,15 +95,14 @@ export function IitcIrisScoresPanel({scoresState, refresh}: IitcIrisScoresPanelP
       </div>
     )}
     <div className="iitc-iris-panel-footer">
-      <span
-        className="iitc-iris-diagnostics-chip"
+      <PlainDiagnosticsChip
         title={[
           'request: /r/getGameScore + /r/getRegionScoreDetails',
           `center: ${formatRegionCenter(scoresState)}`,
         ].join('\n')}
       >
         {scoresState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(scoresState.elapsedMs)}s` : 'request'}
-      </span>
+      </PlainDiagnosticsChip>
       {(scoresState.error || scoresState.region?.error) && (
         <span className="iitc-iris-warning" title={scoresState.error || scoresState.region?.error}>
           {scoresState.status === 'auth' || scoresState.region?.status === 'auth'

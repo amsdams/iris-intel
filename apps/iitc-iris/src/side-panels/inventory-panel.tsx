@@ -4,6 +4,7 @@ import type {IitcIrisInventoryState} from '../messages';
 import {formatElapsedSeconds, formatSubscriptionLabel, getAuthErrorMessage, getSubscriptionStatusClass} from '../ui-status';
 import {ActionButton} from '../ui/action-button';
 import {ControlRow} from '../ui/control-row';
+import {PlainDiagnosticsChip} from '../ui/diagnostics-chip';
 import {StatusText} from '../ui/status-text';
 import {SummaryCell} from '../ui/summary-cell';
 import {SummaryGrid} from '../ui/summary-grid';
@@ -104,8 +105,7 @@ export function IitcIrisInventoryPanel({inventoryState, refresh, zoomToAndShowPo
       )}
     </div>
     <div className="iitc-iris-panel-footer">
-      <span
-        className="iitc-iris-diagnostics-chip"
+      <PlainDiagnosticsChip
         title={[
           'request: /r/getInventory lastQueryTimestamp=0',
           'subscription request: /r/getHasActiveSubscription',
@@ -115,14 +115,13 @@ export function IitcIrisInventoryPanel({inventoryState, refresh, zoomToAndShowPo
         ].join('\n')}
       >
         {inventoryState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(inventoryState.elapsedMs)}s` : 'request'}
-      </span>
+      </PlainDiagnosticsChip>
       {inventoryState.subscription?.elapsedMs !== undefined && (
-        <span
-          className="iitc-iris-diagnostics-chip"
+        <PlainDiagnosticsChip
           title="request: /r/getHasActiveSubscription"
         >
           core {formatElapsedSeconds(inventoryState.subscription.elapsedMs)}s
-        </span>
+        </PlainDiagnosticsChip>
       )}
       {inventoryState.error && (
         <span className="iitc-iris-warning" title={inventoryState.error}>

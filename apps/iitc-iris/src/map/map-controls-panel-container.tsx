@@ -47,6 +47,7 @@ export interface IitcIrisMapControlsPanelContainerProps {
   copyMapContextLatLng: () => void;
   copyMapContextPortalGuids: () => void;
   copyMapContextUrl: () => void;
+  copyStatus: string;
   selectMapContextAnchor: (anchor: IitcIrisMapContextPortalAnchor) => void;
 
   drawToolsItems: IitcIrisDrawToolsItem[];
@@ -141,6 +142,7 @@ export function IitcIrisMapControlsPanelContainer(props: IitcIrisMapControlsPane
     copyMapContextLatLng,
     copyMapContextPortalGuids,
     copyMapContextUrl,
+    copyStatus,
     selectMapContextAnchor,
     drawToolsItems,
     drawToolsClearConfirm,
@@ -238,6 +240,7 @@ export function IitcIrisMapControlsPanelContainer(props: IitcIrisMapControlsPane
           copyMapContextLatLng={copyMapContextLatLng}
           copyMapContextPortalGuids={copyMapContextPortalGuids}
           copyMapContextUrl={copyMapContextUrl}
+          copyStatus={copyStatus}
           formatMapObjectDistance={formatMapObjectDistance}
           formatTeamLabel={formatTeamLabel}
           mapContext={mapContext}

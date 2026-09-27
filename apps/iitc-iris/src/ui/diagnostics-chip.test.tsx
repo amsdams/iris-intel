@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
 import {describe, expect, it} from 'vitest';
-import {DiagnosticsChip} from './diagnostics-chip';
+import {DiagnosticsChip, PlainDiagnosticsChip} from './diagnostics-chip';
 
 describe('DiagnosticsChip', () => {
   it('preserves the <b> value and <small> label structure', () => {
@@ -23,5 +23,13 @@ describe('DiagnosticsChip', () => {
   it('composes extra className values without dropping the base class', () => {
     const vnode = DiagnosticsChip({ value: '1', label: 'Item', className: 'extra-class' });
     expect(vnode.props.className).toBe('iitc-iris-diagnostics-chip extra-class');
+  });
+
+  it('renders PlainDiagnosticsChip without forcing value/label structure', () => {
+    const vnode = PlainDiagnosticsChip({ children: 'request 0.2s', title: 'request details' });
+    expect(vnode.type).toBe('span');
+    expect(vnode.props.className).toBe('iitc-iris-diagnostics-chip');
+    expect(vnode.props.title).toBe('request details');
+    expect(vnode.props.children).toBe('request 0.2s');
   });
 });

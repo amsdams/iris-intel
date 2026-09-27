@@ -6,6 +6,7 @@ import type {IitcIrisMissionsState, IitcIrisPortalDetailsState, IitcIrisSelected
 import {formatElapsedSeconds, getAuthErrorMessage, getPanelStatusClass} from '../ui-status';
 import {ActionButton} from '../ui/action-button';
 import {ClearButton} from '../ui/clear-button';
+import {PlainDiagnosticsChip} from '../ui/diagnostics-chip';
 import {StatusText} from '../ui/status-text';
 
 export interface IitcIrisPortalDetailsPanelProps {
@@ -14,6 +15,7 @@ export interface IitcIrisPortalDetailsPanelProps {
   copySelectedPortalGuid: () => void;
   copySelectedPortalLink: () => void;
   copySelectedPortalTitle: () => void;
+  copyStatus: string;
   focusSelectedPortal: () => void;
   inlineAuthActions: h.JSX.Element;
   openPortalImage: () => void;
@@ -159,6 +161,7 @@ export function IitcIrisPortalDetailsPanel(props: IitcIrisPortalDetailsPanelProp
         {hasMissions && (
           <ActionButton onClick={props.openSelectedPortalMissions} title="Fetch missions starting at this portal">Missions</ActionButton>
         )}
+        {props.copyStatus && <StatusText>{props.copyStatus}</StatusText>}
       </div>
       <div className="iitc-iris-portal-summary">
         <span className="iitc-iris-portal-summary-cell">
@@ -317,15 +320,14 @@ export function IitcIrisPortalDetailsPanel(props: IitcIrisPortalDetailsPanelProp
               </div>
             </PortalDetailSection>
             <div className="iitc-iris-panel-footer">
-              <span
-                className="iitc-iris-diagnostics-chip"
+              <PlainDiagnosticsChip
                 title={[
                   'request: /r/getPortalDetails',
                   `guid: ${portal.guid}`,
                 ].join('\n')}
               >
                 {portalDetails.cached ? 'cached' : portalDetails.elapsedMs !== undefined ? `request ${formatElapsedSeconds(portalDetails.elapsedMs)}s` : 'request'}
-              </span>
+              </PlainDiagnosticsChip>
             </div>
           </>
         )}

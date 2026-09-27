@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {describe, expect, it, vi} from 'vitest';
-import {ActionButton} from './action-button';
+import {ActionButton, SubmitActionButton} from './action-button';
 
 describe('ActionButton', () => {
   it('renders type="button" and base class', () => {
@@ -29,5 +29,14 @@ describe('ActionButton', () => {
     expect(vnode.props.title).toBe('Tooltip');
     expect(vnode.props['aria-label']).toBe('Label');
     expect(vnode.props.onClick).toBe(onClick);
+  });
+
+  it('renders SubmitActionButton as type="submit" with the base class', () => {
+    const vnode = SubmitActionButton({ children: 'Submit', disabled: true });
+    expect(vnode.type).toBe('button');
+    expect(vnode.props.type).toBe('submit');
+    expect(vnode.props.className).toBe('iitc-iris-portal-action');
+    expect(vnode.props.disabled).toBe(true);
+    expect(vnode.props.children).toBe('Submit');
   });
 });
