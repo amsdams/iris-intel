@@ -5,6 +5,8 @@ import {SegmentedRow} from '../ui/segmented-row';
 import {SegmentedButton} from '../ui/segmented-button';
 import {ControlRow} from '../ui/control-row';
 import {ActionButton} from '../ui/action-button';
+import {SummaryGrid} from '../ui/summary-grid';
+import {SummaryCell} from '../ui/summary-cell';
 
 export const IITC_IRIS_COMM_TABS: {id: IitcIrisCommTab; label: string}[] = [
   {id: 'all', label: 'All'},
@@ -41,10 +43,10 @@ export function IitcIrisCommPanelControls(props: IitcIrisCommPanelControlsProps)
       <ActionButton onClick={() => props.requestOlder()} disabled={commState.status === 'loading' || commState.oldestTimestamp === undefined || commState.oldestTimestamp < 0} title="Fetch older COMM messages before the current oldest timestamp">Older</ActionButton>
       {(!commUserAtBottom || commNewBelow) && <ActionButton onClick={props.jumpToLatest} title="Jump to latest COMM message">{commNewBelow ? 'New' : 'Latest'}</ActionButton>}
     </ControlRow>
-    <div className="iitc-iris-panel-summary">
-      <span><b>{formatInteger(commState.messages)}</b><small>messages</small></span>
-      <span><b>{formatInteger(commState.addedMessages)}</b><small>added</small></span>
-      <span><b>{commState.oldestTimestamp !== undefined && commState.newestTimestamp !== undefined ? `${formatCommTime(commState.oldestTimestamp)} - ${formatCommTime(commState.newestTimestamp)}` : '-'}</b><small>range</small></span>
-    </div>
+    <SummaryGrid>
+      <SummaryCell value={formatInteger(commState.messages)} label="messages" />
+      <SummaryCell value={formatInteger(commState.addedMessages)} label="added" />
+      <SummaryCell value={commState.oldestTimestamp !== undefined && commState.newestTimestamp !== undefined ? `${formatCommTime(commState.oldestTimestamp)} - ${formatCommTime(commState.newestTimestamp)}` : '-'} label="range" />
+    </SummaryGrid>
   </>;
 }

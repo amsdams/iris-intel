@@ -2,7 +2,7 @@
 
 ## Status
 
-Planned, not started.
+Checkpoints 0-3 complete. Next checkpoint requires planning before implementation.
 
 This is an internal IITC IRIS UI-shell refactor. It is allowed to introduce shared Preact components and limited CSS
 consolidation, but it must not redesign the app, rename user-facing concepts, change panel behavior, or obscure
@@ -117,12 +117,16 @@ If a component needs CSS consolidation, the checkpoint must list:
 - touched `.tsx` files;
 - visual states to compare: normal, hover/focus if practical, disabled, active/selected, warning/danger where relevant.
 
+Before any CSS consolidation or broad component variants, add focused tests for the shared UI primitives that are already
+in use.
+
 ## Non-Goals
 
 - No visual redesign.
 - No broad UI/CSS/mobile polish.
 - No feature work or parity work.
 - No behavior changes.
+- Do not use `ActionButton` for form submit buttons; it intentionally defaults to `type="button"`.
 - No extraction from `content.tsx` beyond replacing markup imports/usages required by an approved checkpoint.
 - No barrel files unless a checkpoint explicitly approves one and explains why direct imports are worse.
 
@@ -266,12 +270,66 @@ Validation:
 - `npm run package:iitc-iris`
 - manual visual inspection of the COMM panel controls.
 
+### Checkpoint 4: UI Primitive Tests
+
+Status: complete.
+
+Add focused tests for shared UI primitives before introducing additional variants or CSS consolidation.
+
+Exact files:
+
+- `apps/iitc-iris/src/ui/action-button.test.tsx`
+- `apps/iitc-iris/src/ui/clear-button.test.tsx`
+- `apps/iitc-iris/src/ui/status-text.test.tsx`
+- `apps/iitc-iris/src/ui/diagnostics-chip.test.tsx`
+- `apps/iitc-iris/src/ui/segmented-button.test.tsx`
+
+Test expectations:
+
+- default class names are present;
+- extra `className` values are composed without dropping the base class;
+- `ActionButton`, `ClearButton`, and `SegmentedButton` render `type="button"`;
+- `disabled`, `title`, `aria-*`, and event props are forwarded where applicable;
+- `SegmentedButton active` adds `is-active`;
+- `DiagnosticsChip` preserves the `<b>` value and `<small>` label structure.
+
+Do not refactor additional app panels in this checkpoint.
+
+Validation:
+
+- `npm run test -w apps/iitc-iris -- --run src/ui/action-button.test.tsx src/ui/clear-button.test.tsx src/ui/status-text.test.tsx src/ui/diagnostics-chip.test.tsx src/ui/segmented-button.test.tsx`
+- `npm run typecheck:iitc-iris`
+- `npm run lint:iitc-iris`
+- `npm run package:iitc-iris`
+- `git diff --check`
+
+### Checkpoint 5: Summary Grid and Cells
+
+Status: complete.
+
+Candidate scope:
+- `SummaryGrid`: wrapping `<div className="iitc-iris-panel-summary">` or similar repeated summary wrappers.
+- `SummaryCell`: wrapping the `<span><b>{value}</b><small>{label}</small></span>` structure commonly found inside panel summaries (which is structurally similar to `DiagnosticsChip` but often lacks the specific chip class).
+
+Exact files for implementation:
+- `apps/iitc-iris/src/ui/summary-grid.tsx`
+- `apps/iitc-iris/src/ui/summary-cell.tsx`
+- `apps/iitc-iris/src/ui/summary-grid.test.tsx`
+- `apps/iitc-iris/src/ui/summary-cell.test.tsx`
+- Refactor target: `apps/iitc-iris/src/comm/comm-panel-controls.tsx` (to replace the raw summary markup at the bottom of the panel).
+
+Validation:
+- `npm run test -w apps/iitc-iris -- --run src/ui/summary-grid.test.tsx src/ui/summary-cell.test.tsx`
+- `npm run typecheck:iitc-iris`
+- `npm run lint:iitc-iris`
+- `npm run package:iitc-iris`
+- manual visual inspection of the COMM panel controls.
+
 ### Later Candidates
 
 These require a fresh checkpoint section before implementation:
 
 - text/input components;
-- summary cells/grids;
 - badges;
 - panel wrappers;
 - broader CSS consolidation.

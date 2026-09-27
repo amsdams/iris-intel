@@ -5,12 +5,13 @@ export interface SegmentedButtonProps extends Omit<JSX.HTMLAttributes<HTMLButton
   children?: ComponentChildren;
   className?: string;
   disabled?: boolean;
+  title?: string;
 }
 
 export function SegmentedButton({active, children, className, ...props}: SegmentedButtonProps): h.JSX.Element {
-  const activeClass = active ? 'is-active' : '';
+  const classes = ['iitc-iris-segmented-button', active ? 'is-active' : '', className || ''].filter(Boolean).join(' ');
   return (
-    <button type="button" className={`iitc-iris-segmented-button ${activeClass} ${className || ''}`.trim()} {...props}>
+    <button type="button" className={classes} {...props}>
       {children}
     </button>
   );
