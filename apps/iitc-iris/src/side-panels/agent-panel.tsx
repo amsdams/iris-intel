@@ -3,6 +3,7 @@ import {getCommTeamClass} from '../comm/comm-display';
 import type {IitcIrisAgentState} from '../messages';
 import {formatElapsedSeconds, formatSubscriptionBadge, formatSubscriptionLabel, getSubscriptionStatusClass} from '../ui-status';
 import {PlainDiagnosticsChip} from '../ui/diagnostics-chip';
+import {EmptyState} from '../ui/empty-state';
 import {StatusText} from '../ui/status-text';
 import {SummaryCell} from '../ui/summary-cell';
 import {SummaryGrid} from '../ui/summary-grid';
@@ -89,9 +90,9 @@ export function IitcIrisAgentPanel({agentState}: IitcIrisAgentPanelProps): h.JSX
         </div>
       </>
     ) : (
-      <div className="iitc-iris-empty-state">
+      <EmptyState>
         Agent stats require an authenticated Intel session.
-      </div>
+      </EmptyState>
     )}
   </div>;
 }

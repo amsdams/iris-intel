@@ -7,6 +7,7 @@ import type {IitcIrisCommState, IitcIrisCommTab} from '../messages';
 import {formatElapsedSeconds, getAuthErrorMessage} from '../ui-status';
 import {PlainDiagnosticsChip} from '../ui/diagnostics-chip';
 import {StatusText} from '../ui/status-text';
+import {EmptyState} from '../ui/empty-state';
 
 export interface IitcIrisCommPanelProps {
   commDraft: string;
@@ -38,10 +39,10 @@ export function IitcIrisCommPanel(props: IitcIrisCommPanelProps): h.JSX.Element 
       selectTab={props.selectTab}
     />
     {commState.status === 'auth' && (
-      <div className="iitc-iris-empty-state">COMM requires an authenticated Intel session.</div>
+      <EmptyState>COMM requires an authenticated Intel session.</EmptyState>
     )}
     {(commState.status === 'empty' || (!commState.recent?.length && commState.status !== 'loading' && commState.status !== 'idle' && commState.status !== 'auth')) && (
-      <div className="iitc-iris-empty-state">No COMM messages for this channel and map bounds.</div>
+      <EmptyState>No COMM messages for this channel and map bounds.</EmptyState>
     )}
     <IitcIrisCommMessageList addNickname={props.addNickname} commListRef={props.commListRef} commState={commState} onScroll={props.onScroll} selectPortal={props.selectPortal} />
     <IitcIrisCommPanelBody commDraft={props.commDraft} commState={commState} onDraftChange={props.onDraftChange} send={props.send} />

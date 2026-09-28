@@ -4,6 +4,7 @@ import type {IitcIrisPasscodeRewardItem, IitcIrisPasscodeState} from '../message
 import {SubmitActionButton} from '../ui/action-button';
 import {Badge} from '../ui/badge';
 import {PlainDiagnosticsChip} from '../ui/diagnostics-chip';
+import {EmptyState} from '../ui/empty-state';
 import {TextInput} from '../ui/text-input';
 import {SummaryCell} from '../ui/summary-cell';
 import {SummaryGrid} from '../ui/summary-grid';
@@ -77,13 +78,17 @@ export function IitcIrisPasscodePanel(props: IitcIrisPasscodePanelProps): h.JSX.
       </div>
     )}
     {(passcodeState.status === 'empty' || passcodeState.error) && (
-      <div className={passcodeState.error ? 'iitc-iris-warning' : 'iitc-iris-empty-state'}>
-        {passcodeState.error
-          ? passcodeState.status === 'auth'
+      passcodeState.error ? (
+        <div className="iitc-iris-warning">
+          {passcodeState.status === 'auth'
             ? 'Passcode redemption requires an authenticated Intel session.'
-            : getAuthErrorMessage(passcodeState.status, passcodeState.error)
-          : 'Passcode returned no rewards.'}
-      </div>
+            : getAuthErrorMessage(passcodeState.status, passcodeState.error)}
+        </div>
+      ) : (
+        <EmptyState>
+          Passcode returned no rewards.
+        </EmptyState>
+      )
     )}
     <div className="iitc-iris-panel-footer">
       <PlainDiagnosticsChip

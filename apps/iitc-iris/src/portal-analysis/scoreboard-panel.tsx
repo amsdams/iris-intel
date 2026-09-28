@@ -11,6 +11,7 @@ import {
   SCOREBOARD_ROWS,
 } from './content-portal-analysis';
 import {Section} from '../ui/section';
+import {EmptyState} from '../ui/empty-state';
 
 export interface IitcIrisScoreboardPanelProps {
   portalAnalysis: {
@@ -26,7 +27,7 @@ export function IitcIrisScoreboardPanel({
   if (!portalAnalysis) {
     return (
       <Section className="iitc-iris-portal-analysis" titleHeading="Scoreboard">
-        <div className="iitc-iris-empty-state">Nothing to show.</div>
+        <EmptyState>Nothing to show.</EmptyState>
       </Section>
     );
   }

@@ -6,6 +6,7 @@ import {formatElapsedSeconds, getPanelStatusClass} from '../ui-status';
 import {TextInput} from '../ui/text-input';
 import {ClearButton} from '../ui/clear-button';
 import {PlainDiagnosticsChip} from '../ui/diagnostics-chip';
+import {ChipButton} from '../ui/chip-button';
 import {StatusText} from '../ui/status-text';
 
 interface RenderedSearchResult {
@@ -146,9 +147,9 @@ export function IitcIrisSearchPanel(props: IitcIrisSearchPanelProps): h.JSX.Elem
           {props.searchState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(props.searchState.elapsedMs)}s` : 'request'}
         </PlainDiagnosticsChip>
         {props.searchState.results.length > 0 && (
-          <button className="iitc-iris-diagnostics-chip iitc-iris-chip-button" type="button" onClick={props.clearSearch} title="Clear search results and map overlay">
+          <ChipButton onClick={props.clearSearch} title="Clear search results and map overlay">
             clear overlay
-          </button>
+          </ChipButton>
         )}
       </PanelFooter>
     </PanelBody>

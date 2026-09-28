@@ -7,6 +7,7 @@ import {
 import { formatInteger } from '../ui-status';
 import { DiagnosticsChip } from '../ui/diagnostics-chip';
 import { Section } from '../ui/section';
+import { EmptyState } from '../ui/empty-state';
 import {
   getPortalCountsBars,
   getPortalCountsLevelColor,
@@ -36,7 +37,7 @@ export function IitcIrisPortalCountsPanel({
   if (!portalAnalysis) {
     return (
       <Section className="iitc-iris-portal-analysis" titleHeading="Portal Counts">
-        <div className="iitc-iris-empty-state">No portal count data for the current view.</div>
+        <EmptyState>No portal count data for the current view.</EmptyState>
       </Section>
     );
   }
@@ -63,7 +64,7 @@ export function IitcIrisPortalCountsPanel({
         <DiagnosticsChip className="iitc-iris-analysis-chip" value={formatInteger(portalcounts.artifacts)} label="Artifacts" />
       </div>
       {portalcounts.inaccurateAtLinkLevel && (
-        <div className="iitc-iris-empty-state">Portal counts are approximate at link-level zoom.</div>
+        <EmptyState>Portal counts are approximate at link-level zoom.</EmptyState>
       )}
       <div className="iitc-iris-portal-counts-table-wrap">
         <table className="iitc-iris-portal-analysis-table iitc-iris-portal-counts-table">

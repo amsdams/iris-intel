@@ -8,6 +8,7 @@ import {ActionButton} from '../ui/action-button';
 import {ClearButton} from '../ui/clear-button';
 import {PlainDiagnosticsChip} from '../ui/diagnostics-chip';
 import {StatusText} from '../ui/status-text';
+import {EmptyState} from '../ui/empty-state';
 
 export interface IitcIrisPortalDetailsPanelProps {
   activeSidePanel: string | null;
@@ -198,11 +199,11 @@ export function IitcIrisPortalDetailsPanel(props: IitcIrisPortalDetailsPanelProp
             {detailsStatus === 'auth' && props.inlineAuthActions}
           </span>
         </div>
-        {detailsStatus !== 'ready' && (
-          <div className="iitc-iris-empty-state">
-            {detailsStatus === 'loading' ? 'Fetching portal details...' : 'Waiting for portal details.'}
-          </div>
-        )}
+          {detailsStatus !== 'ready' && (
+            <EmptyState>
+              {detailsStatus === 'loading' ? 'Fetching portal details...' : 'Waiting for portal details.'}
+            </EmptyState>
+          )}
         {portalDetails?.status === 'ready' && (
           <>
             <PortalDetailSection sectionId="mods" portalSections={props.portalSections} setPortalSectionOpen={props.setPortalSectionOpen}>

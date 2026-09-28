@@ -23,6 +23,7 @@ import {TextInput} from '../ui/text-input';
 import {ActionButton} from '../ui/action-button';
 import {DiagnosticsChip} from '../ui/diagnostics-chip';
 import {Section} from '../ui/section';
+import {EmptyState} from '../ui/empty-state';
 
 export interface IitcIrisPortalsListPanelProps {
   cameraZoom: number;
@@ -64,7 +65,7 @@ export function IitcIrisPortalsListPanel({
   if (!portalAnalysis) {
     return (
       <Section className="iitc-iris-portal-analysis" titleHeading="Portals List">
-        <div className="iitc-iris-empty-state">Nothing to show.</div>
+        <EmptyState>Nothing to show.</EmptyState>
       </Section>
     );
   }
@@ -198,7 +199,7 @@ export function IitcIrisPortalsListPanel({
           </table>
         </div>
       ) : (
-        <div className="iitc-iris-empty-state">No portals match the current filters.</div>
+        <EmptyState>No portals match the current filters.</EmptyState>
       )}
     </Section>
   );

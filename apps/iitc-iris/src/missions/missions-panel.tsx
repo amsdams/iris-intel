@@ -8,6 +8,7 @@ import {PlainDiagnosticsChip} from '../ui/diagnostics-chip';
 import {StatusText} from '../ui/status-text';
 import {SummaryCell} from '../ui/summary-cell';
 import {SummaryGrid} from '../ui/summary-grid';
+import {EmptyState} from '../ui/empty-state';
 
 const IITC_TM_ICON_BASE = 'https://commondatastorage.googleapis.com/ingress.com/img/tm_icons';
 const MISSION_TYPE_IMAGE_BY_TYPE_NUM: Record<number, string> = {
@@ -202,19 +203,19 @@ export function IitcIrisMissionsPanel(props: IitcIrisMissionsPanelProps): h.JSX.
       </div>
     )}
     {missionsState.status === 'loading' && (
-      <div className="iitc-iris-empty-state">
+      <EmptyState>
         {missionsState.source === 'portal' ? 'Fetching missions starting at this portal...' : 'Fetching missions in the current map view...'}
-      </div>
+      </EmptyState>
     )}
     {missionsState.status === 'empty' && (
-      <div className="iitc-iris-empty-state">
+      <EmptyState>
         {missionsState.source === 'portal' ? 'No missions start at this portal.' : 'No missions found in this map view.'}
-      </div>
+      </EmptyState>
     )}
     {(missionsState.status === 'error' || missionsState.status === 'auth') && missionsState.missions.length === 0 && (
-      <div className="iitc-iris-empty-state">
+      <EmptyState>
         {missionsState.status === 'auth' ? 'Missions require an authenticated Intel session.' : 'Mission request failed.'}
-      </div>
+      </EmptyState>
     )}
     <div className="iitc-iris-scroll-region iitc-iris-missions-scroll">
       {missionsState.missions.length > 0 && (
