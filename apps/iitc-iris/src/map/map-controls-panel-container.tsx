@@ -30,6 +30,7 @@ import {
   type IitcIrisPortalHighlighterId,
 } from '../messages';
 import {ClearButton} from '../ui/clear-button';
+import {PanelTitle} from '../ui/panel';
 
 export interface IitcIrisMapControlsPanelContainerProps {
   activeSheet: IitcIrisSheetId;
@@ -208,9 +209,9 @@ export function IitcIrisMapControlsPanelContainer(props: IitcIrisMapControlsPane
     <aside className="iitc-iris-map-controls" aria-label="Map controls">
       {showTopBar && (
         <div className="iitc-iris-panel-topbar">
-          <span className="iitc-iris-selected-title">
+          <PanelTitle>
             {getMapControlsPanelTitle(activeSheet)}
-          </span>
+          </PanelTitle>
           <span className="iitc-iris-panel-header-actions">
             <ClearButton
               onClick={closeSheets}

@@ -1,5 +1,6 @@
 import { h } from 'preact';
 import {ClearButton} from '../ui/clear-button';
+import {Panel, PanelHeader, PanelTitle, PanelBody} from '../ui/panel';
 
 export interface IitcIrisHelpPanelProps {
   closeHelp: () => void;
@@ -7,14 +8,14 @@ export interface IitcIrisHelpPanelProps {
 
 export function IitcIrisHelpPanel({ closeHelp }: IitcIrisHelpPanelProps): h.JSX.Element {
   return (
-    <aside className="iitc-iris-request-side-panel iitc-iris-help-panel" aria-label="Shortcuts">
-      <div className="iitc-iris-request-panel-header">
-        <span className="iitc-iris-selected-title">Shortcuts</span>
+    <Panel aria-label="Shortcuts" className="iitc-iris-help-panel">
+      <PanelHeader>
+        <PanelTitle>Shortcuts</PanelTitle>
         <span className="iitc-iris-panel-header-actions">
           <ClearButton onClick={closeHelp} title="Close shortcuts" aria-label="Close shortcuts" />
         </span>
-      </div>
-      <div className="iitc-iris-request-panel-body">
+      </PanelHeader>
+      <PanelBody>
         <div className="iitc-iris-shortcut-grid">
           <span>Pan map</span><b>Arrow keys</b>
           <span>Zoom map</span><b>+ / -</b>
@@ -30,7 +31,7 @@ export function IitcIrisHelpPanel({ closeHelp }: IitcIrisHelpPanelProps): h.JSX.
           <span>Search result</span><b>Up / Down / Enter</b>
           <span>Zoom result</span><b>Shift+Enter</b>
         </div>
-      </div>
-    </aside>
+      </PanelBody>
+    </Panel>
   );
 }

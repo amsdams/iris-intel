@@ -9,6 +9,7 @@ import {StatusText} from '../ui/status-text';
 import {SummaryCell} from '../ui/summary-cell';
 import {SummaryGrid} from '../ui/summary-grid';
 import {EmptyState} from '../ui/empty-state';
+import {PanelBody, PanelFooter} from '../ui/panel';
 
 const IITC_TM_ICON_BASE = 'https://commondatastorage.googleapis.com/ingress.com/img/tm_icons';
 const MISSION_TYPE_IMAGE_BY_TYPE_NUM: Record<number, string> = {
@@ -176,7 +177,7 @@ function MissionDetails(props: {
 export function IitcIrisMissionsPanel(props: IitcIrisMissionsPanelProps): h.JSX.Element {
   const {missionsState} = props;
 
-  return <div className="iitc-iris-request-panel-body">
+  return <PanelBody>
     <ControlRow>
       <ActionButton onClick={() => props.refreshMissions('view')} disabled={missionsState.status === 'loading'} title="Fetch top missions in the current map view">
         View
@@ -248,7 +249,7 @@ export function IitcIrisMissionsPanel(props: IitcIrisMissionsPanelProps): h.JSX.
         </div>
       )}
     </div>
-    <div className="iitc-iris-panel-footer">
+    <PanelFooter>
       <PlainDiagnosticsChip
         title={[
           missionsState.source === 'portal' ? 'request: /r/getTopMissionsForPortal' : 'request: /r/getTopMissionsInBounds',
@@ -273,8 +274,8 @@ export function IitcIrisMissionsPanel(props: IitcIrisMissionsPanelProps): h.JSX.
             : getAuthErrorMessage(missionsState.status, missionsState.error)}
         </span>
       )}
-    </div>
-  </div>;
+    </PanelFooter>
+  </PanelBody>;
 }
 
 export {formatDistance as formatIitcIrisMissionDistance};

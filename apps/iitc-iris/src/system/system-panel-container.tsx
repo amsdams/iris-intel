@@ -20,6 +20,7 @@ import {
   type IitcMapDataPlan,
 } from '@iris/iitc-core';
 import {StatusText} from '../ui/status-text';
+import {PanelTitle} from '../ui/panel';
 
 export interface IitcIrisSystemPanelContainerProps {
   requestDiagnostics: IitcIrisRequestDiagnostics;
@@ -126,7 +127,7 @@ export function IitcIrisSystemPanelContainer(props: IitcIrisSystemPanelContainer
   return (
     <aside className="iitc-iris-system-panel" aria-label="System controls">
       <div className="iitc-iris-panel-topbar">
-        <span className="iitc-iris-selected-title">System</span>
+        <PanelTitle>System</PanelTitle>
         <span className="iitc-iris-panel-header-actions">
           <StatusText>UI and diagnostics</StatusText>
         </span>

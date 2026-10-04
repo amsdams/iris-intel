@@ -3,6 +3,7 @@ import {getCommTeamClass} from '../comm/comm-display';
 import type {IitcIrisAgentState} from '../messages';
 import {formatElapsedSeconds, formatSubscriptionBadge, formatSubscriptionLabel, getSubscriptionStatusClass} from '../ui-status';
 import {PlainDiagnosticsChip} from '../ui/diagnostics-chip';
+import {PanelBody, PanelFooter} from '../ui/panel';
 import {EmptyState} from '../ui/empty-state';
 import {StatusText} from '../ui/status-text';
 import {SummaryCell} from '../ui/summary-cell';
@@ -23,7 +24,7 @@ function formatAgentTeam(team: IitcIrisAgentState['team']): string {
 }
 
 export function IitcIrisAgentPanel({agentState}: IitcIrisAgentPanelProps): h.JSX.Element {
-  return <div className="iitc-iris-request-panel-body">
+  return <PanelBody>
     {agentState.status === 'ready' ? (
       <>
         <div className="iitc-iris-agent-card">
@@ -70,7 +71,7 @@ export function IitcIrisAgentPanel({agentState}: IitcIrisAgentPanelProps): h.JSX
             <StatusText>{formatInteger(agentState.apToNextLevel)} AP to next level</StatusText>
           )}
         </div>
-        <div className="iitc-iris-panel-footer">
+        <PanelFooter>
           <PlainDiagnosticsChip
             title={[
               'source: window.PLAYER inline Intel data',
@@ -87,12 +88,12 @@ export function IitcIrisAgentPanel({agentState}: IitcIrisAgentPanelProps): h.JSX
               core {formatElapsedSeconds(agentState.subscription.elapsedMs)}s
             </PlainDiagnosticsChip>
           )}
-        </div>
+        </PanelFooter>
       </>
     ) : (
       <EmptyState>
         Agent stats require an authenticated Intel session.
       </EmptyState>
     )}
-  </div>;
+  </PanelBody>;
 }

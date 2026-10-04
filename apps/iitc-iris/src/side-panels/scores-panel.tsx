@@ -5,6 +5,7 @@ import {formatElapsedSeconds, getAuthErrorMessage} from '../ui-status';
 import {ActionButton} from '../ui/action-button';
 import {ControlRow} from '../ui/control-row';
 import {PlainDiagnosticsChip} from '../ui/diagnostics-chip';
+import {PanelBody, PanelFooter} from '../ui/panel';
 import {StatusText} from '../ui/status-text';
 import {SummaryCell} from '../ui/summary-cell';
 import {SummaryGrid} from '../ui/summary-grid';
@@ -40,7 +41,7 @@ function formatRegionCenter(scoresState: IitcIrisScoresState): string {
 }
 
 export function IitcIrisScoresPanel({scoresState, refresh}: IitcIrisScoresPanelProps): h.JSX.Element {
-  return <div className="iitc-iris-request-panel-body">
+  return <PanelBody>
     <ControlRow>
       <ActionButton onClick={() => refresh()} disabled={scoresState.status === 'loading'} title="Fetch global and regional scores for the current map center">
         {scoresState.status === 'loading' ? 'Loading' : 'Refresh'}
@@ -94,7 +95,7 @@ export function IitcIrisScoresPanel({scoresState, refresh}: IitcIrisScoresPanelP
         ))}
       </div>
     )}
-    <div className="iitc-iris-panel-footer">
+    <PanelFooter>
       <PlainDiagnosticsChip
         title={[
           'request: /r/getGameScore + /r/getRegionScoreDetails',
@@ -110,6 +111,6 @@ export function IitcIrisScoresPanel({scoresState, refresh}: IitcIrisScoresPanelP
             : getAuthErrorMessage(scoresState.status, scoresState.error || scoresState.region?.error)}
         </span>
       )}
-    </div>
-  </div>;
+    </PanelFooter>
+  </PanelBody>;
 }

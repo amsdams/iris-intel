@@ -2,6 +2,7 @@ import {h} from 'preact';
 import {formatIitcColorVars, getIitcLevelColor} from '../iitc-colors';
 import type {IitcIrisPasscodeRewardItem, IitcIrisPasscodeState} from '../messages';
 import {SubmitActionButton} from '../ui/action-button';
+import {PanelBody, PanelFooter} from '../ui/panel';
 import {Badge} from '../ui/badge';
 import {PlainDiagnosticsChip} from '../ui/diagnostics-chip';
 import {EmptyState} from '../ui/empty-state';
@@ -28,7 +29,7 @@ function formatItemBadge(item: IitcIrisPasscodeRewardItem): string {
 
 export function IitcIrisPasscodePanel(props: IitcIrisPasscodePanelProps): h.JSX.Element {
   const {passcodeDraft, passcodeState} = props;
-  return <div className="iitc-iris-request-panel-body">
+  return <PanelBody>
     <form
       className="iitc-iris-passcode-form"
       onSubmit={(event) => {
@@ -90,7 +91,7 @@ export function IitcIrisPasscodePanel(props: IitcIrisPasscodePanelProps): h.JSX.
         </EmptyState>
       )
     )}
-    <div className="iitc-iris-panel-footer">
+    <PanelFooter>
       <PlainDiagnosticsChip
         title={[
           'request: /r/redeemReward',
@@ -99,6 +100,6 @@ export function IitcIrisPasscodePanel(props: IitcIrisPasscodePanelProps): h.JSX.
       >
         {passcodeState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(passcodeState.elapsedMs)}s` : 'request'}
       </PlainDiagnosticsChip>
-    </div>
-  </div>;
+    </PanelFooter>
+  </PanelBody>;
 }

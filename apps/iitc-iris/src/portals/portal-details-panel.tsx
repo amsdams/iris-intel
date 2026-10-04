@@ -7,6 +7,7 @@ import {formatElapsedSeconds, getAuthErrorMessage, getPanelStatusClass} from '..
 import {ActionButton} from '../ui/action-button';
 import {ClearButton} from '../ui/clear-button';
 import {PlainDiagnosticsChip} from '../ui/diagnostics-chip';
+import {PanelFooter, PanelTitle} from '../ui/panel';
 import {StatusText} from '../ui/status-text';
 import {EmptyState} from '../ui/empty-state';
 
@@ -135,9 +136,9 @@ export function IitcIrisPortalDetailsPanel(props: IitcIrisPortalDetailsPanelProp
       )}
       <div className="iitc-iris-portal-side-title">
         <span className="iitc-iris-selected-title-row">
-          <span className="iitc-iris-selected-title" title={portal.guid}>
+          <PanelTitle title={portal.guid}>
             {portal.title || portal.guid}
-          </span>
+          </PanelTitle>
           <StatusText className={`iitc-iris-panel-state ${getPanelStatusClass(detailsStatus)}`}>
             {detailsStatus}
           </StatusText>
@@ -320,7 +321,7 @@ export function IitcIrisPortalDetailsPanel(props: IitcIrisPortalDetailsPanelProp
                 </div>
               </div>
             </PortalDetailSection>
-            <div className="iitc-iris-panel-footer">
+            <PanelFooter>
               <PlainDiagnosticsChip
                 title={[
                   'request: /r/getPortalDetails',
@@ -329,7 +330,7 @@ export function IitcIrisPortalDetailsPanel(props: IitcIrisPortalDetailsPanelProp
               >
                 {portalDetails.cached ? 'cached' : portalDetails.elapsedMs !== undefined ? `request ${formatElapsedSeconds(portalDetails.elapsedMs)}s` : 'request'}
               </PlainDiagnosticsChip>
-            </div>
+            </PanelFooter>
           </>
         )}
       </div>

@@ -6,6 +6,7 @@ import {IitcIrisCommPanelControls} from './comm-panel-controls';
 import type {IitcIrisCommState, IitcIrisCommTab} from '../messages';
 import {formatElapsedSeconds, getAuthErrorMessage} from '../ui-status';
 import {PlainDiagnosticsChip} from '../ui/diagnostics-chip';
+import {PanelBody, PanelFooter} from '../ui/panel';
 import {StatusText} from '../ui/status-text';
 import {EmptyState} from '../ui/empty-state';
 
@@ -28,7 +29,7 @@ export interface IitcIrisCommPanelProps {
 
 export function IitcIrisCommPanel(props: IitcIrisCommPanelProps): h.JSX.Element {
   const {commState} = props;
-  return <div className="iitc-iris-request-panel-body">
+  return <PanelBody>
     <IitcIrisCommPanelControls
       commNewBelow={props.commNewBelow}
       commState={commState}
@@ -51,7 +52,7 @@ export function IitcIrisCommPanel(props: IitcIrisCommPanelProps): h.JSX.Element 
         send {commState.sendError ? getAuthErrorMessage(commState.sendStatus, commState.sendError) : commState.sendStatus}
       </StatusText>
     )}
-    <div className="iitc-iris-panel-footer">
+    <PanelFooter>
       <PlainDiagnosticsChip
         title={[
           `request: /r/getPlexts ${commState.tab}`,
@@ -67,6 +68,6 @@ export function IitcIrisCommPanel(props: IitcIrisCommPanelProps): h.JSX.Element 
           {commState.status === 'auth' ? 'COMM requires an authenticated Intel session.' : getAuthErrorMessage(commState.status, commState.error)}
         </span>
       )}
-    </div>
-  </div>;
+    </PanelFooter>
+  </PanelBody>;
 }

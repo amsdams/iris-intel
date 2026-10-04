@@ -5,6 +5,7 @@ import {formatElapsedSeconds, formatSubscriptionLabel, getAuthErrorMessage, getS
 import {ActionButton} from '../ui/action-button';
 import {ControlRow} from '../ui/control-row';
 import {PlainDiagnosticsChip} from '../ui/diagnostics-chip';
+import {PanelBody, PanelFooter} from '../ui/panel';
 import {StatusText} from '../ui/status-text';
 import {SummaryCell} from '../ui/summary-cell';
 import {SummaryGrid} from '../ui/summary-grid';
@@ -29,7 +30,7 @@ function formatItemBadge(item: {level?: number; rarity?: string; type?: string})
 }
 
 export function IitcIrisInventoryPanel({inventoryState, refresh, zoomToAndShowPortal}: IitcIrisInventoryPanelProps): h.JSX.Element {
-  return <div className="iitc-iris-request-panel-body">
+  return <PanelBody>
     <ControlRow>
       <ActionButton onClick={refresh} disabled={inventoryState.status === 'loading'} title="Fetch Intel inventory with lastQueryTimestamp 0">
         {inventoryState.status === 'loading' ? 'Loading' : 'Refresh'}
@@ -104,7 +105,7 @@ export function IitcIrisInventoryPanel({inventoryState, refresh, zoomToAndShowPo
         </div>
       )}
     </div>
-    <div className="iitc-iris-panel-footer">
+    <PanelFooter>
       <PlainDiagnosticsChip
         title={[
           'request: /r/getInventory lastQueryTimestamp=0',
@@ -130,6 +131,6 @@ export function IitcIrisInventoryPanel({inventoryState, refresh, zoomToAndShowPo
             : getAuthErrorMessage(inventoryState.status, inventoryState.error)}
         </span>
       )}
-    </div>
-  </div>;
+    </PanelFooter>
+  </PanelBody>;
 }

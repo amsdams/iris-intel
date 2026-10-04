@@ -1,6 +1,7 @@
 import {h} from 'preact';
 import type {IitcIrisSelectedPortal} from '../messages';
 import {ClearButton} from '../ui/clear-button';
+import {PanelHeader, PanelTitle} from '../ui/panel';
 
 interface IitcIrisPortalImageModalProps {
   isOpen: boolean;
@@ -24,8 +25,8 @@ export function IitcIrisPortalImageModal({
       onClick={onClose}
     >
       <div className="iitc-iris-image-preview" onClick={(event) => event.stopPropagation()}>
-        <div className="iitc-iris-request-panel-header">
-          <span className="iitc-iris-selected-title">{portal.title || 'Portal image'}</span>
+        <PanelHeader>
+          <PanelTitle>{portal.title || 'Portal image'}</PanelTitle>
           <span className="iitc-iris-panel-header-actions">
             <ClearButton
               onClick={onClose}
@@ -33,7 +34,7 @@ export function IitcIrisPortalImageModal({
               aria-label="Close image preview"
             />
           </span>
-        </div>
+        </PanelHeader>
         <img src={portal.image} alt={portal.title || 'Portal image'} />
         <div className="iitc-iris-image-preview-caption">
           <b>{portal.title || 'Selected portal'}</b>

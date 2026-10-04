@@ -2,7 +2,17 @@
 
 ## Status
 
-Checkpoints 0-16 complete. Pause before extracting more components.
+Checkpoints 0-16 and Assignment A complete. Pause before extracting more components.
+
+Verified on 2026-10-04:
+
+- `EmptyState` and `ChipButton` exist under `apps/iitc-iris/src/ui/` with focused tests.
+- App code no longer directly renders `.iitc-iris-empty-state`; raw uses are limited to the shared component, CSS, and
+  tests.
+- The search clear-overlay diagnostics button uses `ChipButton`; the combined
+  `.iitc-iris-diagnostics-chip iitc-iris-chip-button` class contract is now owned by the shared component.
+- The current uncommitted diff is a separate panel-wrapper cleanup, not Assignment A. Review found the portal image modal
+  should keep its specialized image-preview structure instead of using generic `Panel`.
 
 Current direction: keep the shared primitives already extracted, but stop treating raw HTML as a problem by itself.
 The remaining work should be driven by visible inconsistency, repeated behavior, accessibility risk, or clear CSS
@@ -99,6 +109,7 @@ Current extracted component families:
 - Status/chips/badges: `StatusText`, `DiagnosticsChip`, `PlainDiagnosticsChip`, `Badge`.
 - Layout wrappers: `Panel`, `PanelHeader`, `PanelTitle`, `PanelBody`, `PanelFooter`, `Section`, `ControlRow`,
   `SegmentedRow`, `SummaryGrid`, `SummaryCell`.
+- Empty/display leaves: `EmptyState`, `ChipButton`.
 
 Keep these unless review finds a concrete harm. They already encode repeated classes, default button types, status/chip
 semantics, or shared shell structure. Reverting them would create churn without clearly improving maintainability.
@@ -154,8 +165,6 @@ These have a clear near-term value case. Do these only one checkpoint at a time.
 
 | Candidate                      | Priority | Likely Component Type | Main Files                                                             | Expected CSS Payoff | Notes                                                                                    |
 |--------------------------------|----------|-----------------------|------------------------------------------------------------------------|---------------------|------------------------------------------------------------------------------------------|
-| `EmptyState`                   | High     | generic               | COMM, missions, portal analysis, portal details, agent/passcode panels | Medium              | Best remaining extraction: repeated class, simple semantics, consistent empty messaging. |
-| `ChipButton`                   | High     | generic               | search clear-overlay chip                                              | Low                 | Button-shaped diagnostics chip; keeps clickable chip semantics separate from span chips. |
 | Form-control CSS pass          | Medium   | CSS-first             | portal list filters, Draw Tools import                                 | Medium              | Prefer shared CSS before adding `SelectInput`, `TextareaInput`, or `CheckboxField`.      |
 
 ### Defer Unless Pain Is Proven
@@ -191,21 +200,20 @@ These should stay as semantic HTML and CSS for now. Revisit only if future featu
 
 ### Rough Progress
 
-- Extracted shared families: about 18.
-- Remaining high-confidence component candidates: 2 (`EmptyState`, `ChipButton`).
+- Extracted shared families: about 20.
+- Remaining high-confidence component candidates: 0.
 - Remaining CSS-first candidate areas: 1-2, mostly form controls and possibly button families.
 - Remaining optional domain candidates: several, but none should be treated as required.
-- Expected remaining implementation checkpoints before stopping this plan: 1-3, not 5-6.
+- Expected remaining implementation checkpoints before stopping this plan: 0-2, not 5-6.
 
-"Good enough" means the repeated primitives are extracted, the obvious empty/chip gap is closed, and any remaining raw
-HTML is either native semantic UI or has a documented reason to stay local.
+"Good enough" now means the repeated primitives are extracted, the obvious empty/chip gap is closed, and any remaining
+raw HTML is either native semantic UI or has a documented reason to stay local.
 
 ### Suggested Next Checkpoints
 
-1. `EmptyState` and `ChipButton`.
-2. Reassess. If form CSS duplication is still obvious, do a CSS-first form-control pass.
-3. Optional: button-family CSS consolidation if duplicated button rules remain painful.
-4. Stop the UI extraction plan unless an active feature/change exposes a concrete repeated pattern.
+1. Reassess. If form CSS duplication is still obvious, do a CSS-first form-control pass.
+2. Optional: button-family CSS consolidation if duplicated button rules remain painful.
+3. Stop the UI extraction plan unless an active feature/change exposes a concrete repeated pattern.
 
 Do not introduce generic `List`, `Table`, row, select, textarea, or checkbox components unless the reassessment names a
 specific repeated behavior or CSS problem.
@@ -218,7 +226,7 @@ forcing extraction now.
 
 ### Assignment A: Empty States and Chip Button
 
-Status: ready.
+Status: complete; verified on 2026-10-04.
 
 Goal: finish the remaining small generic display primitives.
 
@@ -255,6 +263,13 @@ Done when:
 
 - App code no longer directly uses `.iitc-iris-empty-state`.
 - The only app-level raw `.iitc-iris-diagnostics-chip` button usage is gone.
+
+Verified result:
+
+- `EmptyState` wraps all app-level `.iitc-iris-empty-state` use sites listed above.
+- `ChipButton` wraps the search clear-overlay diagnostics button and preserves `type="button"`.
+- Remaining `.iitc-iris-empty-state`, `.iitc-iris-diagnostics-chip`, and `.iitc-iris-chip-button` matches are in shared
+  UI components, focused tests, or CSS.
 
 Validation:
 
@@ -798,6 +813,20 @@ Validation:
 ### Checkpoint 6: Panel Wrappers
 
 Status: complete.
+
+Current uncommitted panel wrapper cleanup belongs here as a follow-up to this checkpoint, not to Assignment A or
+Assignments B-H. It applies existing `PanelBody`, `PanelFooter`, `PanelHeader`, and `PanelTitle` primitives to remaining
+matching shell markup in COMM, map controls, missions, portal details, portal image header, side panels, system panels,
+and the help panel. Keep this follow-up limited to class-equivalent wrapper replacements; specialized containers such as
+the portal image preview backdrop/body should remain local.
+
+Verified on 2026-10-04:
+
+- The five Checkpoint 6 class contracts are now owned by `apps/iitc-iris/src/ui/panel.tsx`, its focused test, and CSS.
+- App code no longer directly renders `.iitc-iris-request-side-panel`, `.iitc-iris-request-panel-header`,
+  `.iitc-iris-selected-title`, `.iitc-iris-request-panel-body`, or `.iitc-iris-panel-footer`.
+- `.iitc-iris-selected-title-row` remains local in portal details because it is a different layout class and not part of
+  the `PanelTitle` extraction.
 
 Candidate scope:
 
