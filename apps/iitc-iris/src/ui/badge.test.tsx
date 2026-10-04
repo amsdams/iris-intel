@@ -6,13 +6,14 @@ describe('Badge', () => {
   it('renders a span by default', () => {
     const vnode = Badge({ children: 'Hello', className: 'test' });
     expect(vnode.type).toBe('span');
-    expect(vnode.props.className).toBe('test');
+    expect(vnode.props.className).toBe('iitc-iris-badge test');
     expect(vnode.props.children).toBe('Hello');
   });
 
   it('renders a b tag when as is provided', () => {
     const vnode = Badge({ as: 'b', children: 'Bold', style: { color: 'red' } });
     expect(vnode.type).toBe('b');
+    expect(vnode.props.className).toBe('iitc-iris-badge');
     expect(vnode.props.style.color).toBe('red');
     expect(vnode.props.children).toBe('Bold');
   });

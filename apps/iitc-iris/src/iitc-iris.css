@@ -1,8 +1,51 @@
 #iitc-iris-root {
+    --iitc-iris-font-ui: "Inter", system-ui, -apple-system, "BlinkMacSystemFont", "Segoe UI", sans-serif;
+    --iitc-iris-font-mono: monospace;
+    --iitc-iris-text-xxs: 8px;
+    --iitc-iris-text-xs: 9px;
+    --iitc-iris-text-sm: 10px;
+    --iitc-iris-text-md: 11px;
+    --iitc-iris-text-lg: 12px;
+    --iitc-iris-text-xl: 16px;
+    --iitc-iris-font-medium: 500;
+    --iitc-iris-font-semibold: 600;
+    --iitc-iris-font-bold: 700;
+    --iitc-iris-font-extrabold: 800;
+    --iitc-iris-font-black: 900;
+    --iitc-iris-line-tight: 1;
+    --iitc-iris-line-compact: 1.2;
+    --iitc-iris-line-readable: 1.35;
+    --iitc-iris-letter-normal: 0;
+    --iitc-iris-letter-meta: 0.04em;
+    --iitc-iris-space-1: 2px;
+    --iitc-iris-space-2: 4px;
+    --iitc-iris-space-3: 6px;
+    --iitc-iris-space-4: 8px;
+    --iitc-iris-panel-padding: 8px 10px;
+    --iitc-iris-item-padding: 5px 6px;
+    --iitc-iris-control-padding: 3px 6px;
+    --iitc-iris-chip-padding: 1px 6px;
+    --iitc-iris-button-font: var(--iitc-iris-font-bold) var(--iitc-iris-text-md) / var(--iitc-iris-line-tight) var(--iitc-iris-font-ui);
+    --iitc-iris-button-font-sm: var(--iitc-iris-font-bold) var(--iitc-iris-text-sm) / var(--iitc-iris-line-tight) var(--iitc-iris-font-ui);
+    --iitc-iris-label-font: var(--iitc-iris-font-extrabold) var(--iitc-iris-text-sm) / var(--iitc-iris-line-tight) var(--iitc-iris-font-ui);
+
+    /*
+     * Typography role reference
+     * ─────────────────────────────────────────────────────────────
+     * text-xxs  8px   SVG/map sub-labels, tiny badges
+     * text-xs   9px   Section dividers, uppercase meta labels (letter-spacing, all-caps)
+     * text-sm  10px   Supporting body: small row text, resonator owners, secondary captions
+     * text-md  11px   Primary body: main row text, comm messages, scores, buttons
+     * text-lg  12px   Panel/section headings, nav labels, primary values
+     * text-xl  16px   Large metric numbers
+     *
+     * Domain-specific one-offs (SVG map labels, monospace debug) are kept as literals.
+     */
+
     position: fixed;
     inset: 0;
     z-index: 2147483000;
-    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family: var(--iitc-iris-font-ui);
     color: #e8f4ff;
     pointer-events: none;
 }
@@ -18,6 +61,20 @@
     position: absolute;
     inset: 0;
     z-index: 0;
+}
+
+.iitc-iris-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    padding: var(--iitc-iris-chip-padding);
+    border-radius: 4px;
+    font: var(--iitc-iris-label-font);
+    letter-spacing: var(--iitc-iris-letter-meta);
+    line-height: var(--iitc-iris-line-tight);
+    text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .iitc-iris-search-box {
@@ -57,7 +114,7 @@
     height: 32px;
     border: 0;
     background: transparent;
-    font: 500 12px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: var(--iitc-iris-font-medium) var(--iitc-iris-text-lg) / var(--iitc-iris-line-tight) var(--iitc-iris-font-ui);
     outline: none;
     padding: 0 10px;
 }
@@ -73,7 +130,7 @@
     border: 0;
     background: transparent;
     color: #9fb6c7;
-    font: 700 13px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: var(--iitc-iris-font-bold) 13px / var(--iitc-iris-line-tight) var(--iitc-iris-font-ui);
     cursor: pointer;
 }
 
@@ -88,15 +145,15 @@
     z-index: 10001;
     display: grid;
     grid-template-columns: minmax(0, 1fr) 18px;
-    gap: 6px;
+    gap: var(--iitc-iris-space-3);
     align-items: center;
     max-width: min(280px, calc(100vw - 24px));
-    padding: 4px 6px;
+    padding: 4px var(--iitc-iris-space-3);
     border: 1px solid rgb(95 180 255 / 22%);
     border-radius: 5px;
     background: rgb(2 10 16 / 82%);
     color: #d7e7f5;
-    font-size: 11px;
+    font-size: var(--iitc-iris-text-md);
     pointer-events: auto;
 }
 
@@ -116,7 +173,7 @@
     border-radius: 4px;
     background: rgb(10 18 25 / 72%);
     color: #9fb6c7;
-    font: 800 11px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: var(--iitc-iris-font-extrabold) var(--iitc-iris-text-md) / var(--iitc-iris-line-tight) var(--iitc-iris-font-ui);
     cursor: pointer;
 }
 
@@ -126,7 +183,7 @@
 
 .iitc-iris-search-results {
     display: grid;
-    gap: 2px;
+    gap: var(--iitc-iris-space-1);
     max-height: min(42vh, 360px);
     overflow: auto;
     padding: 5px;
@@ -138,26 +195,26 @@
 .iitc-iris-search-status {
     display: flex;
     justify-content: space-between;
-    gap: 8px;
+    gap: var(--iitc-iris-space-4);
     padding: 3px 5px 5px;
     color: #91a6b7;
-    font-size: 10px;
+    font-size: var(--iitc-iris-text-sm);
 }
 
 .iitc-iris-search-result-group {
     display: grid;
-    gap: 2px;
+    gap: var(--iitc-iris-space-1);
 }
 
 .iitc-iris-search-result-heading {
     display: flex;
     justify-content: space-between;
-    gap: 8px;
+    gap: var(--iitc-iris-space-4);
     padding: 6px 5px 2px;
     color: #91a6b7;
-    font-size: 9px;
-    font-weight: 900;
-    letter-spacing: 0.04em;
+    font-size: var(--iitc-iris-text-xs);
+    font-weight: var(--iitc-iris-font-black);
+    letter-spacing: var(--iitc-iris-letter-meta);
     text-transform: uppercase;
 }
 
@@ -168,7 +225,7 @@
 .iitc-iris-search-result-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    gap: 2px;
+    gap: var(--iitc-iris-space-1);
     min-width: 0;
     border: 1px solid transparent;
     border-radius: 5px;
@@ -178,14 +235,14 @@
 .iitc-iris-search-result {
     appearance: none;
     display: grid;
-    gap: 2px;
+    gap: var(--iitc-iris-space-1);
     min-width: 0;
     padding: 6px 7px;
     border: 0;
     border-radius: 4px;
     background: transparent;
     color: #d7e7f5;
-    font: 500 12px/1.2 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: var(--iitc-iris-font-medium) var(--iitc-iris-text-lg) / var(--iitc-iris-line-compact) var(--iitc-iris-font-ui);
     text-align: left;
     cursor: pointer;
 }
@@ -193,7 +250,7 @@
 .iitc-iris-search-result-main {
     display: grid;
     grid-template-columns: max-content minmax(0, 1fr);
-    gap: 6px;
+    gap: var(--iitc-iris-space-3);
     align-items: center;
 }
 
@@ -204,8 +261,8 @@
     border-radius: 3px;
     background: rgb(10 18 25 / 62%);
     color: #91a6b7;
-    font-size: 9px;
-    font-weight: 800;
+    font-size: var(--iitc-iris-text-xs);
+    font-weight: var(--iitc-iris-font-extrabold);
     text-align: center;
     text-transform: uppercase;
 }
@@ -220,7 +277,7 @@
     border-radius: 0 4px 4px 0;
     background: rgb(10 18 25 / 62%);
     color: #9fcce8;
-    font: 800 10px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: var(--iitc-iris-font-extrabold) var(--iitc-iris-text-sm) / var(--iitc-iris-line-tight) var(--iitc-iris-font-ui);
     text-transform: uppercase;
     cursor: pointer;
 }
@@ -259,7 +316,7 @@
 
 .iitc-iris-search-result small {
     color: #91a6b7;
-    font-size: 10px;
+    font-size: var(--iitc-iris-text-sm);
 }
 
 .iitc-iris-search-marker {
@@ -309,23 +366,23 @@
     z-index: 10000;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: var(--iitc-iris-space-3);
     align-items: flex-start;
     max-width: calc(100vw - 24px);
-    padding: 8px 10px;
+    padding: var(--iitc-iris-panel-padding);
     border: 1px solid rgb(95 180 255 / 35%);
     border-radius: 6px;
     background: rgb(2 10 16 / 86%);
     box-shadow: 0 8px 24px rgb(0 0 0 / 35%);
-    font-size: 12px;
-    letter-spacing: 0;
+    font-size: var(--iitc-iris-text-lg);
+    letter-spacing: var(--iitc-iris-letter-normal);
     pointer-events: auto;
 }
 
 .iitc-iris-dock-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: var(--iitc-iris-space-4);
     align-items: center;
     max-width: 100%;
 }
@@ -336,18 +393,18 @@
     left: 12px;
     z-index: 9998;
     display: grid;
-    gap: 8px;
+    gap: var(--iitc-iris-space-4);
     width: min(320px, calc(100vw - 24px));
     max-height: calc(100vh - 208px);
     box-sizing: border-box;
     overflow: auto;
-    padding: 8px 10px;
+    padding: var(--iitc-iris-panel-padding);
     border: 1px solid rgb(95 180 255 / 28%);
     border-radius: 6px;
     background: rgb(2 10 16 / 80%);
     box-shadow: 0 8px 24px rgb(0 0 0 / 28%);
-    font-size: 12px;
-    letter-spacing: 0;
+    font-size: var(--iitc-iris-text-lg);
+    letter-spacing: var(--iitc-iris-letter-normal);
     pointer-events: auto;
 }
 
@@ -366,16 +423,16 @@
 
 .iitc-iris-map-controls-section > .iitc-iris-status {
     color: #dbefff;
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.04em;
+    font-size: var(--iitc-iris-text-sm);
+    font-weight: var(--iitc-iris-font-extrabold);
+    letter-spacing: var(--iitc-iris-letter-meta);
     text-transform: uppercase;
 }
 
 .iitc-iris-map-control-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: var(--iitc-iris-space-3);
     align-items: center;
     min-width: 0;
 }
@@ -392,7 +449,7 @@
     min-width: 0;
     overflow: hidden;
     color: #dbefff;
-    font: 700 11px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: var(--iitc-iris-button-font);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -405,7 +462,7 @@
     background: transparent;
     color: var(--portal-team-color, #57e7ff);
     cursor: pointer;
-    font: 700 11px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: var(--iitc-iris-button-font);
     text-align: left;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -420,18 +477,18 @@
 .iitc-iris-segmented-row {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 2px;
+    gap: var(--iitc-iris-space-1);
     min-width: 0;
 }
 
 .iitc-iris-segmented-button {
     appearance: none;
     min-width: 0;
-    padding: 4px 6px;
+    padding: 4px var(--iitc-iris-space-3);
     border: 1px solid rgb(95 180 255 / 24%);
     background: rgb(6 20 30 / 88%);
     color: #9fb3c5;
-    font: 700 11px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: var(--iitc-iris-button-font);
     cursor: pointer;
 }
 
@@ -495,7 +552,7 @@
     border-radius: 4px;
     background: rgb(45 24 7 / 86%);
     color: #ffb347;
-    font: 700 11px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: var(--iitc-iris-button-font);
     cursor: pointer;
 }
 
@@ -545,7 +602,7 @@
     border-radius: 4px;
     background: rgb(67 43 3 / 92%);
     color: #ffd166;
-    font: 700 11px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: var(--iitc-iris-button-font);
     cursor: pointer;
 }
 
@@ -573,7 +630,7 @@
     border-radius: 4px;
     background: rgb(67 43 3 / 82%);
     color: #ffd166;
-    font: 700 10px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: var(--iitc-iris-button-font-sm);
     white-space: nowrap;
     cursor: pointer;
 }
@@ -623,7 +680,7 @@
     border-radius: 5px;
     background: rgb(10 18 25 / 46%);
     color: #7894aa;
-    font-size: 10px;
+    font-size: var(--iitc-iris-text-sm);
     font-weight: 800;
     text-align: center;
     text-transform: uppercase;
@@ -854,7 +911,7 @@
 .iitc-iris-panel-summary small {
     overflow: hidden;
     color: #91a6b7;
-    font-size: 10px;
+    font-size: var(--iitc-iris-text-sm);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -896,7 +953,7 @@
 .iitc-iris-portal-mission-meta {
     overflow: hidden;
     color: #c7c383;
-    font-size: 10px;
+    font-size: var(--iitc-iris-text-sm);
     font-weight: 800;
     text-overflow: ellipsis;
     text-transform: uppercase;
@@ -914,12 +971,12 @@
 .iitc-iris-portal-action {
     appearance: none;
     min-width: 0;
-    padding: 3px 6px;
+    padding: var(--iitc-iris-control-padding);
     border: 1px solid var(--portal-team-soft);
     border-radius: 4px;
     background: rgb(7 31 45 / 92%);
     color: #e8f4ff;
-    font: 700 11px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: var(--iitc-iris-button-font);
     cursor: pointer;
     text-align: center;
     text-decoration: none;
@@ -971,14 +1028,14 @@
 .iitc-iris-analysis-summary-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 6px;
+    gap: var(--iitc-iris-space-3);
 }
 
 .iitc-iris-analysis-summary-grid span {
     display: grid;
-    gap: 2px;
+    gap: var(--iitc-iris-space-1);
     min-width: 0;
-    padding: 6px;
+    padding: var(--iitc-iris-space-3);
     border: 1px solid rgb(95 180 255 / 18%);
     border-radius: 4px;
     background: rgb(10 18 25 / 62%);
@@ -987,7 +1044,7 @@
 .iitc-iris-analysis-summary-grid b {
     overflow: hidden;
     color: #fff;
-    font-size: 16px;
+    font-size: var(--iitc-iris-text-xl);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -995,8 +1052,8 @@
 .iitc-iris-analysis-summary-grid small {
     overflow: hidden;
     color: #91a6b7;
-    font-size: 10px;
-    font-weight: 800;
+    font-size: var(--iitc-iris-text-sm);
+    font-weight: var(--iitc-iris-font-extrabold);
     text-overflow: ellipsis;
     text-transform: uppercase;
     white-space: nowrap;
@@ -1005,42 +1062,42 @@
 .iitc-iris-analysis-chip-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: var(--iitc-iris-space-3);
     align-items: center;
 }
 
 .iitc-iris-analysis-chip {
     display: inline-flex;
-    gap: 4px;
+    gap: var(--iitc-iris-space-2);
     align-items: center;
     min-height: 18px;
     max-width: 100%;
-    padding: 1px 6px;
+    padding: var(--iitc-iris-chip-padding);
     border: 1px solid rgb(95 180 255 / 22%);
     border-radius: 4px;
     background: rgb(10 18 25 / 46%);
     color: #91a6b7;
     cursor: default;
-    font: 700 10px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: var(--iitc-iris-button-font-sm);
     text-transform: uppercase;
 }
 
 .iitc-iris-analysis-chip b {
     min-width: 0;
     color: #c7d8e8;
-    font-weight: 900;
+    font-weight: var(--iitc-iris-font-black);
 }
 
 .iitc-iris-analysis-chip small {
     min-width: 0;
     color: inherit;
-    font-weight: 800;
+    font-weight: var(--iitc-iris-font-extrabold);
 }
 
 .iitc-iris-counts-visuals {
     overflow: auto hidden;
     max-width: 100%;
-    padding: 6px;
+    padding: var(--iitc-iris-space-3);
     border: 1px solid rgb(95 180 255 / 18%);
     border-radius: 4px;
     background: rgb(4 12 18 / 72%);
@@ -1099,7 +1156,7 @@
 
 .iitc-iris-counts-pie-percent {
     fill: #050b10;
-    font-size: 11px;
+    font-size: var(--iitc-iris-text-md);
     font-weight: 800;
     dominant-baseline: central;
     paint-order: stroke;
@@ -1110,14 +1167,14 @@
 .iitc-iris-portals-list-filters {
     display: grid;
     grid-template-columns: minmax(140px, 1fr) 130px 138px 64px;
-    gap: 6px;
+    gap: var(--iitc-iris-space-3);
 }
 
 .iitc-iris-portals-list-filters input,
 .iitc-iris-portals-list-filters select {
     height: 30px;
     background: rgb(4 14 21 / 94%);
-    font-size: 11px;
+    font-size: var(--iitc-iris-text-md);
 }
 
 .iitc-iris-portals-list-filters .iitc-iris-select-input {
@@ -1138,16 +1195,16 @@
 .iitc-iris-portals-list-summary {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 6px;
-    font-size: 11px;
+    gap: var(--iitc-iris-space-3);
+    font-size: var(--iitc-iris-text-md);
 }
 
 .iitc-iris-portals-list-summary-item {
     display: grid;
-    gap: 2px;
+    gap: var(--iitc-iris-space-1);
     align-content: start;
     min-width: 0;
-    padding: 6px;
+    padding: var(--iitc-iris-space-3);
     border: 1px solid color-mix(in srgb, var(--portal-team-color, #5fb4ff) 24%, transparent);
     border-radius: 4px;
     background: color-mix(in srgb, var(--portal-team-color, #5fb4ff) 10%, rgb(10 18 25 / 62%));
@@ -1159,8 +1216,8 @@
     display: block;
     overflow: hidden;
     color: #fff;
-    font-size: 16px;
-    font-weight: 900;
+    font-size: var(--iitc-iris-text-xl);
+    font-weight: var(--iitc-iris-font-black);
     line-height: 1.05;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1169,8 +1226,8 @@
 .iitc-iris-portals-list-summary-item small {
     overflow: hidden;
     color: var(--portal-team-color, #91a6b7);
-    font-size: 10px;
-    font-weight: 800;
+    font-size: var(--iitc-iris-text-sm);
+    font-weight: var(--iitc-iris-font-extrabold);
     text-overflow: ellipsis;
     text-transform: uppercase;
     white-space: nowrap;
@@ -1195,7 +1252,7 @@
     min-width: 520px;
     border-collapse: collapse;
     color: #d7e7f5;
-    font-size: 11px;
+    font-size: var(--iitc-iris-text-md);
 }
 
 .iitc-iris-portals-list-table {
@@ -1211,7 +1268,7 @@
 .iitc-iris-portal-analysis-table th,
 .iitc-iris-portal-analysis-table td {
     overflow: hidden;
-    padding: 5px 6px;
+    padding: var(--iitc-iris-item-padding);
     border-bottom: 1px solid rgb(95 180 255 / 10%);
     text-align: right;
     text-overflow: ellipsis;
@@ -1235,7 +1292,7 @@
     z-index: 1;
     background: rgb(6 20 31 / 98%);
     color: #9ed8ff;
-    font-size: 10px;
+    font-size: var(--iitc-iris-text-sm);
     text-transform: uppercase;
 }
 
@@ -1266,31 +1323,27 @@
 .iitc-iris-portal-analysis-table td.iitc-iris-team-neutral {
     background: color-mix(in srgb, var(--portal-team-color) 24%, transparent);
     color: var(--portal-team-color);
-    font-weight: 900;
+    font-weight: var(--iitc-iris-font-black);
 }
 
 .iitc-iris-scoreboard-table .iitc-iris-scoreboard-column {
     border-left: 1px solid var(--portal-team-soft);
     background: color-mix(in srgb, var(--portal-team-color) 20%, transparent);
     color: var(--portal-team-color);
-    font-weight: 900;
+    font-weight: var(--iitc-iris-font-black);
 }
 
 .iitc-iris-team-pill {
-    display: inline-flex;
     min-width: 36px;
-    justify-content: center;
-    padding: 1px 5px;
     border: 1px solid var(--portal-team-soft);
-    border-radius: 3px;
     background: color-mix(in srgb, var(--portal-team-color) 20%, transparent);
     color: var(--portal-team-color);
-    font-weight: 900;
+    font-weight: var(--iitc-iris-font-black);
 }
 
 .iitc-iris-level-cell {
     color: #fff;
-    font-weight: 900;
+    font-weight: var(--iitc-iris-font-black);
 }
 
 .iitc-iris-portal-analysis .iitc-iris-level-8 { background: #9627f4; color: #fff; }
@@ -1318,7 +1371,7 @@
 
 .iitc-iris-table-sort {
     color: #9ed8ff;
-    font-weight: 900;
+    font-weight: var(--iitc-iris-font-black);
     text-transform: uppercase;
 }
 
@@ -1328,7 +1381,7 @@
     border-radius: 3px;
     background: rgb(8 31 45 / 88%);
     color: #e8f4ff;
-    font-weight: 800;
+    font-weight: var(--iitc-iris-font-extrabold);
 }
 
 .iitc-iris-portal-list-title button {
@@ -1400,7 +1453,7 @@
     border-radius: 4px;
     background: rgb(10 18 25 / 42%);
     color: #dbefff;
-    font-size: 10px;
+    font-size: var(--iitc-iris-text-sm);
     font-weight: 800;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -1463,7 +1516,7 @@
     min-height: 34px;
     padding: 3px 5px;
     border-color: rgb(95 180 255 / 20%);
-    font: 700 11px/1.2 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: var(--iitc-iris-font-bold) var(--iitc-iris-text-md) / var(--iitc-iris-line-compact) var(--iitc-iris-font-ui);
 }
 
 .iitc-iris-resonator-center {
@@ -1473,7 +1526,7 @@
     padding: 3px 5px;
     border-color: var(--portal-team-soft);
     color: var(--portal-team-color);
-    font: 700 11px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: var(--iitc-iris-button-font);
     text-transform: uppercase;
 }
 
@@ -1496,7 +1549,7 @@
     grid-column: 1 / 3;
     min-width: 0;
     overflow: hidden;
-    font-size: 10px;
+    font-size: var(--iitc-iris-text-sm);
     font-weight: 800;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1505,7 +1558,7 @@
 .iitc-iris-resonator-percent {
     grid-column: 3;
     color: var(--iitc-iris-resonator-health);
-    font-size: 10px;
+    font-size: var(--iitc-iris-text-sm);
     font-weight: 800;
     text-align: right;
 }
@@ -1627,7 +1680,7 @@
     border: 1px solid rgb(95 180 255 / 18%);
     border-radius: 4px;
     background: rgb(10 18 25 / 56%);
-    font: 700 10px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: var(--iitc-iris-button-font-sm);
     text-transform: uppercase;
     white-space: nowrap;
 }
@@ -1704,7 +1757,7 @@
     border-radius: 4px;
     background: rgb(10 18 25 / 46%);
     color: #91a6b7;
-    font: 700 10px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: var(--iitc-iris-button-font-sm);
     text-transform: uppercase;
 }
 
@@ -1879,7 +1932,7 @@
 .iitc-iris-mission-metrics small {
     overflow: hidden;
     color: #8ea6b8;
-    font-size: 10px;
+    font-size: var(--iitc-iris-text-sm);
     text-overflow: ellipsis;
     text-transform: uppercase;
     white-space: nowrap;
@@ -1973,7 +2026,7 @@
 
 .iitc-iris-comm-meta b {
     color: inherit;
-    font-size: 11px;
+    font-size: var(--iitc-iris-text-md);
 }
 
 .iitc-iris-comm-meta small {
@@ -2012,7 +2065,7 @@
     border-radius: 4px;
     background: rgb(2 10 16 / 58%);
     color: #fff;
-    font-size: 11px;
+    font-size: var(--iitc-iris-text-md);
     font-weight: 900;
     line-height: 1.25;
     overflow: hidden;
@@ -2080,7 +2133,7 @@
     min-width: 0;
     overflow: hidden;
     color: #91a6b7;
-    font-size: 10px;
+    font-size: var(--iitc-iris-text-sm);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -2164,7 +2217,7 @@
     gap: 2px;
     min-width: 0;
     color: #91a6b7;
-    font-size: 10px;
+    font-size: var(--iitc-iris-text-sm);
 }
 
 .iitc-iris-image-preview-caption b,
@@ -2202,7 +2255,7 @@
     border-radius: 4px;
     background: rgb(10 18 25 / 58%);
     color: #e8f4ff;
-    font-size: 10px;
+    font-size: var(--iitc-iris-text-sm);
     text-align: right;
 }
 
@@ -2238,7 +2291,7 @@
 }
 
 .iitc-iris-score-pair {
-    font-size: 11px;
+    font-size: var(--iitc-iris-text-md);
 }
 
 .iitc-iris-score-pair > span {
@@ -2323,7 +2376,7 @@
     background: linear-gradient(180deg, rgb(255 211 77 / 20%), rgb(10 18 25 / 72%));
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 10%), 0 0 12px rgb(255 211 77 / 12%);
     color: #ffd34d;
-    font: 900 10px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: var(--iitc-iris-font-black) var(--iitc-iris-text-sm) / var(--iitc-iris-line-tight) var(--iitc-iris-font-ui);
     text-align: center;
     text-transform: uppercase;
     white-space: nowrap;
@@ -2494,7 +2547,7 @@ button.iitc-iris-inventory-row:hover {
 .iitc-iris-inventory-row small {
     grid-column: 1 / -1;
     color: #91a6b7;
-    font-size: 10px;
+    font-size: var(--iitc-iris-text-sm);
     text-transform: lowercase;
 }
 
@@ -2531,7 +2584,7 @@ button.iitc-iris-inventory-row:hover {
 
     .iitc-iris-innerstatus {
         gap: 6px;
-        font-size: 11px;
+        font-size: var(--iitc-iris-text-md);
     }
 
     .iitc-iris-map-controls {
@@ -2703,7 +2756,7 @@ button.iitc-iris-inventory-row:hover {
     border-radius: 5px;
     background: rgb(7 31 45 / 72%);
     color: #c7d8e8;
-    font: 700 10px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: var(--iitc-iris-button-font-sm);
     cursor: pointer;
 }
 
@@ -2857,7 +2910,7 @@ button.iitc-iris-inventory-row:hover {
 
     .iitc-iris-portal-analysis-table {
         min-width: 0;
-        font-size: 10px;
+        font-size: var(--iitc-iris-text-sm);
     }
 
     .iitc-iris-portal-analysis-table th,
@@ -2896,7 +2949,7 @@ button.iitc-iris-inventory-row:hover {
     border-radius: 4px;
     background: rgb(7 31 45 / 92%);
     color: #e8f4ff;
-    font: 700 11px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: var(--iitc-iris-button-font);
     cursor: pointer;
 }
 
@@ -2927,8 +2980,8 @@ button.iitc-iris-inventory-row:hover {
 
 .iitc-iris-map-control-status {
     color: #91a6b7;
-    font-size: 10px;
-    line-height: 1.2;
+    font-size: var(--iitc-iris-text-sm);
+    line-height: var(--iitc-iris-line-compact);
 }
 
 .iitc-iris-pan-north {
@@ -2996,7 +3049,7 @@ button.iitc-iris-inventory-row:hover {
     border-radius: 4px;
     background: rgb(10 18 25 / 82%);
     color: #7894aa;
-    font: 700 11px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: var(--iitc-iris-button-font);
     text-transform: uppercase;
     cursor: pointer;
 }
@@ -3062,7 +3115,7 @@ button.iitc-iris-inventory-row:hover {
     min-width: 0;
     overflow: hidden;
     color: inherit;
-    font: 600 10px/1.15 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: var(--iitc-iris-font-semibold) var(--iitc-iris-text-sm) / 1.15 var(--iitc-iris-font-ui);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -3092,7 +3145,7 @@ button.iitc-iris-inventory-row:hover {
     border-radius: 4px;
     background: rgb(2 10 16 / 88%);
     color: #fff;
-    font: 800 10px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: var(--iitc-iris-font-extrabold) var(--iitc-iris-text-sm) / var(--iitc-iris-line-tight) var(--iitc-iris-font-ui);
     pointer-events: none;
 }
 
@@ -3132,7 +3185,7 @@ button.iitc-iris-inventory-row:hover {
 
 .iitc-iris-draw-tools-marker-actions {
     display: inline-flex;
-    gap: 4px;
+    gap: var(--iitc-iris-space-2);
     align-items: center;
 }
 
@@ -3166,7 +3219,7 @@ button.iitc-iris-inventory-row:hover {
 
 .iitc-iris-draw-tools-list {
     display: grid;
-    gap: 4px;
+    gap: var(--iitc-iris-space-2);
     max-height: 180px;
     overflow: auto;
 }
@@ -3177,16 +3230,16 @@ button.iitc-iris-inventory-row:hover {
 
 .iitc-iris-draw-tools-list-controls label {
     display: grid;
-    gap: 2px;
+    gap: var(--iitc-iris-space-1);
     min-width: 0;
 }
 
 .iitc-iris-draw-tools-list-controls span {
     overflow: hidden;
     color: #91a6b7;
-    font-size: 9px;
-    font-weight: 800;
-    letter-spacing: 0;
+    font-size: var(--iitc-iris-text-xs);
+    font-weight: var(--iitc-iris-font-extrabold);
+    letter-spacing: var(--iitc-iris-letter-normal);
     text-overflow: ellipsis;
     text-transform: uppercase;
     white-space: nowrap;
@@ -3194,26 +3247,26 @@ button.iitc-iris-inventory-row:hover {
 
 .iitc-iris-draw-tools-list-controls .iitc-iris-select-input {
     width: 100%;
-    padding: 3px 6px;
+    padding: var(--iitc-iris-control-padding);
     background: rgb(2 10 16 / 88%);
-    font: 700 10px/1.2 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font: var(--iitc-iris-font-bold) var(--iitc-iris-text-sm) / var(--iitc-iris-line-compact) var(--iitc-iris-font-ui);
 }
 
 .iitc-iris-draw-tools-list-empty {
-    padding: 6px;
+    padding: var(--iitc-iris-space-3);
     border: 1px solid rgb(95 180 255 / 14%);
     border-radius: 4px;
     background: rgb(10 18 25 / 42%);
     color: #91a6b7;
-    font-size: 10px;
+    font-size: var(--iitc-iris-text-sm);
 }
 
 .iitc-iris-draw-tools-list-item {
     display: grid;
     grid-template-columns: minmax(0, 1fr) max-content;
-    gap: 6px;
+    gap: var(--iitc-iris-space-3);
     align-items: center;
-    padding: 5px 6px;
+    padding: var(--iitc-iris-item-padding);
     border: 1px solid rgb(95 180 255 / 18%);
     border-radius: 4px;
     background: rgb(10 18 25 / 62%);
@@ -3237,7 +3290,7 @@ button.iitc-iris-inventory-row:hover {
 
 .iitc-iris-draw-tools-list-label {
     display: grid;
-    gap: 2px;
+    gap: var(--iitc-iris-space-1);
     min-width: 0;
 }
 
@@ -3250,12 +3303,12 @@ button.iitc-iris-inventory-row:hover {
 
 .iitc-iris-draw-tools-list-label b {
     color: #fff;
-    font-size: 11px;
+    font-size: var(--iitc-iris-text-md);
 }
 
 .iitc-iris-draw-tools-list-label small {
     color: #91a6b7;
-    font-size: 10px;
+    font-size: var(--iitc-iris-text-sm);
 }
 
 .iitc-iris-draw-tools-marker-detail {
@@ -3281,16 +3334,11 @@ button.iitc-iris-inventory-row:hover {
 
 .iitc-iris-draw-tools-level-chip,
 .iitc-iris-draw-tools-team-chip {
-    display: inline-grid;
-    place-items: center;
     min-width: 24px;
     height: 15px;
-    padding: 0 4px;
     box-sizing: border-box;
-    border-radius: 4px;
-    font: 800 9px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    letter-spacing: 0;
-    white-space: nowrap;
+    font: var(--iitc-iris-font-extrabold) var(--iitc-iris-text-xs) / var(--iitc-iris-line-tight) var(--iitc-iris-font-ui);
+    letter-spacing: var(--iitc-iris-letter-normal);
 }
 
 .iitc-iris-draw-tools-level-chip {
@@ -3306,7 +3354,7 @@ button.iitc-iris-inventory-row:hover {
 
 .iitc-iris-draw-tools-list-actions {
     display: inline-flex;
-    gap: 4px;
+    gap: var(--iitc-iris-space-2);
 }
 
 .iitc-iris-draw-tools-marker-create-row {
@@ -3316,7 +3364,7 @@ button.iitc-iris-inventory-row:hover {
 .iitc-iris-draw-tools-label-input {
     width: 100%;
     background: rgb(2 10 16 / 88%);
-    padding: 3px 6px;
+    padding: var(--iitc-iris-control-padding);
 }
 
 .iitc-iris-draw-tools-label-input::placeholder {
@@ -3330,26 +3378,26 @@ button.iitc-iris-inventory-row:hover {
 
 .iitc-iris-draw-tools-interop {
     color: #91a6b7;
-    font-size: 10px;
-    font-weight: 700;
-    line-height: 1.2;
+    font-size: var(--iitc-iris-text-sm);
+    font-weight: var(--iitc-iris-font-bold);
+    line-height: var(--iitc-iris-line-compact);
 }
 
 .iitc-iris-draw-tools-import-input {
     width: 100%;
     min-height: 54px;
     resize: vertical;
-    padding: 5px 6px;
+    padding: var(--iitc-iris-item-padding);
     background: rgb(2 10 16 / 84%);
-    font: 10px/1.35 monospace;
+    font: var(--iitc-iris-text-sm) / var(--iitc-iris-line-readable) var(--iitc-iris-font-mono);
 }
 
 .iitc-iris-draw-tools-import-merge {
     display: inline-flex;
-    gap: 4px;
+    gap: var(--iitc-iris-space-2);
     align-items: center;
     color: #91a6b7;
-    font-size: 10px;
+    font-size: var(--iitc-iris-text-sm);
 }
 
 .iitc-iris-player-tracker-marker::before {

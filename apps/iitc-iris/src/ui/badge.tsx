@@ -4,7 +4,8 @@ export interface BadgeProps extends h.JSX.HTMLAttributes<HTMLElement> {
   as?: 'span' | 'b';
 }
 
-export function Badge({as = 'span', ...props}: BadgeProps): h.JSX.Element {
+export function Badge({as = 'span', className, ...props}: BadgeProps): h.JSX.Element {
   const Component = as;
-  return <Component {...props} />;
+  const classes = ['iitc-iris-badge', className || ''].filter(Boolean).join(' ');
+  return <Component className={classes} {...props} />;
 }

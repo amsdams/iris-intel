@@ -31,6 +31,7 @@ None.
 - Phase 2 side-panel extraction: complete.
 - Phase 2 runtime-effects extraction: complete.
 - Phase 2 closure audit: complete; decision was to stop extracting from `content.tsx` for now.
+- Typography and spacing consistency Checkpoint 1: complete; token baseline added and high-repeat CSS values migrated.
 - Source layout Checkpoint 1: complete; `search` files moved into `apps/iitc-iris/src/search/`.
 - Source layout Checkpoint 2: complete; `missions` files moved into `apps/iitc-iris/src/missions/`.
 - Source layout Checkpoint 3: complete; `COMM` files moved into `apps/iitc-iris/src/comm/`.
@@ -87,8 +88,12 @@ Active:
 
 Ready/Blocked:
 
+- [css-consolidation-plan.md](css-consolidation-plan.md): Ready for one narrow `Badge` base-class consolidation slice;
+  do not run as a broad sweep.
 - [android-apk-installable-plan.md](android-apk-installable-plan.md): Prove the friend-shared sideload APK path before
   scaffolding native app code; store distribution is deferred.
+- [typography-spacing-consistency-plan.md](typography-spacing-consistency-plan.md): Keep IITC IRIS compact typography and
+  spacing consistent through tokens and narrow CSS-only checkpoints.
 - [ui-component-library-plan.md](ui-component-library-plan.md): Parked; shared primitives are extracted, with only
   optional reassessment remaining.
 - [source-directory-layout-plan.md](source-directory-layout-plan.md): All Checkpoints (1 through 12) are completely done.
