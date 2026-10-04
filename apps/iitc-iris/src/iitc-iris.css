@@ -51,6 +51,16 @@
     pointer-events: none;
 }
 
+.iitc-iris-button {
+    appearance: none;
+    border-radius: var(--iitc-iris-radius-control);
+    cursor: pointer;
+}
+
+.iitc-iris-button:disabled {
+    cursor: default;
+}
+
 .iitc-iris-shell {
     position: absolute;
     inset: 0;
@@ -78,7 +88,6 @@
     white-space: nowrap;
 }
 
-.iitc-iris-text-truncate,
 .iitc-iris-map-search-badge span,
 .iitc-iris-search-result span,
 .iitc-iris-search-result small {
@@ -97,7 +106,8 @@
     background: rgb(7 31 45 / 72%);
 }
 
-.iitc-iris-text-input {
+/* Shared control base: border, radius, color, font, and disabled state for all form inputs. */
+.iitc-iris-control {
     min-width: 0;
     box-sizing: border-box;
     border: 1px solid rgb(95 180 255 / 30%);
@@ -107,19 +117,11 @@
     letter-spacing: 0;
 }
 
-.iitc-iris-text-input:disabled {
+.iitc-iris-control:disabled {
     color: #4f6575;
 }
 
-.iitc-iris-select-input,
-.iitc-iris-textarea-input {
-    min-width: 0;
-    box-sizing: border-box;
-    border: 1px solid rgb(95 180 255 / 24%);
-    border-radius: var(--iitc-iris-radius-control);
-    color: #d8e8f2;
-    letter-spacing: 0;
-}
+/* Variant classes (.iitc-iris-text-input, .iitc-iris-select-input, .iitc-iris-textarea-input) — visual contract fully inherited from .iitc-iris-control; no shared properties to re-declare. */
 
 .iitc-iris-search-input {
     height: 32px;
@@ -480,14 +482,12 @@
 }
 
 .iitc-iris-segmented-button {
-    appearance: none;
     min-width: 0;
     padding: 4px var(--iitc-iris-space-3);
     border: 1px solid rgb(95 180 255 / 24%);
     background: rgb(6 20 30 / 88%);
     color: #9fb3c5;
     font: var(--iitc-iris-button-font);
-    cursor: pointer;
 }
 
 .iitc-iris-segmented-button.is-active {
@@ -594,14 +594,11 @@
 }
 
 .iitc-iris-auth-recovery button {
-    appearance: none;
     height: 20px;
     border: 1px solid rgb(255 209 102 / 70%);
-    border-radius: 4px;
     background: rgb(67 43 3 / 92%);
     color: #ffd166;
     font: var(--iitc-iris-button-font);
-    cursor: pointer;
 }
 
 .iitc-iris-auth-recovery button:hover {
@@ -620,17 +617,14 @@
 }
 
 .iitc-iris-inline-auth button {
-    appearance: none;
     height: 18px;
     min-width: 0;
     padding: 0 5px;
     border: 1px solid rgb(255 209 102 / 58%);
-    border-radius: 4px;
     background: rgb(67 43 3 / 82%);
     color: #ffd166;
     font: var(--iitc-iris-button-font-sm);
     white-space: nowrap;
-    cursor: pointer;
 }
 
 .iitc-iris-inline-auth button:hover {
@@ -847,7 +841,6 @@
 }
 
 .iitc-iris-chip-button {
-    appearance: none;
     cursor: pointer;
 }
 
@@ -967,15 +960,12 @@
 }
 
 .iitc-iris-portal-action {
-    appearance: none;
     min-width: 0;
     padding: var(--iitc-iris-control-padding);
     border: 1px solid var(--portal-team-soft);
-    border-radius: 4px;
     background: rgb(7 31 45 / 92%);
     color: #e8f4ff;
     font: var(--iitc-iris-button-font);
-    cursor: pointer;
     text-align: center;
     text-decoration: none;
 }
@@ -995,7 +985,6 @@
     border-color: rgb(95 180 255 / 18%);
     background: rgb(10 18 25 / 50%);
     color: #4f6575;
-    cursor: default;
 }
 
 .iitc-iris-portal-analysis {
@@ -1150,7 +1139,6 @@
 .iitc-iris-portals-list-filters .iitc-iris-select-input {
     padding: 0 5px;
     color: #d7e7f5;
-    font: inherit;
 }
 
 .iitc-iris-portals-list-search {
@@ -1329,14 +1317,12 @@
 .iitc-iris-table-sort,
 .iitc-iris-table-action,
 .iitc-iris-portal-list-title button {
-    appearance: none;
     min-width: 0;
     padding: 0;
     border: 0;
     background: transparent;
     color: inherit;
     font: inherit;
-    cursor: pointer;
 }
 
 .iitc-iris-table-sort {
@@ -2649,15 +2635,12 @@ button.iitc-iris-inventory-row:hover {
 
 .iitc-iris-copy,
 .iitc-iris-preset {
-    appearance: none;
     border: 1px solid rgb(95 180 255 / 40%);
-    border-radius: 4px;
     background: rgb(7 31 45 / 92%);
     color: #e8f4ff;
     font: inherit;
     font-weight: 700;
     padding: 2px 6px;
-    cursor: pointer;
 }
 
 .iitc-iris-copy:hover,
@@ -2926,15 +2909,12 @@ button.iitc-iris-inventory-row:hover {
 }
 
 .iitc-iris-nav-button {
-    appearance: none;
     width: 24px;
     height: 22px;
     border: 1px solid rgb(95 180 255 / 40%);
-    border-radius: 4px;
     background: rgb(7 31 45 / 92%);
     color: #e8f4ff;
     font: var(--iitc-iris-button-font);
-    cursor: pointer;
 }
 
 .iitc-iris-nav-button-wide {
@@ -2952,7 +2932,6 @@ button.iitc-iris-inventory-row:hover {
     border-color: rgb(95 180 255 / 18%);
     background: rgb(10 18 25 / 50%);
     color: #4f6575;
-    cursor: default;
 }
 
 .iitc-iris-pan-grid {
@@ -3003,15 +2982,12 @@ button.iitc-iris-inventory-row:hover {
 }
 
 .iitc-iris-login {
-    appearance: none;
     border: 1px solid rgb(255 209 102 / 70%);
-    border-radius: 4px;
     background: rgb(67 43 3 / 92%);
     color: #ffd166;
     font: inherit;
     font-weight: 700;
     padding: 2px 6px;
-    cursor: pointer;
 }
 
 .iitc-iris-login:hover {
@@ -3026,16 +3002,13 @@ button.iitc-iris-inventory-row:hover {
 }
 
 .iitc-iris-layer-toggle {
-    appearance: none;
     min-width: 20px;
     height: 20px;
     border: 1px solid rgb(95 180 255 / 30%);
-    border-radius: 4px;
     background: rgb(10 18 25 / 82%);
     color: #7894aa;
     font: var(--iitc-iris-button-font);
     text-transform: uppercase;
-    cursor: pointer;
 }
 
 .iitc-iris-base-toggle,

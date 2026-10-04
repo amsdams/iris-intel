@@ -96,140 +96,146 @@ Manual validation:
 
 ## Assignment 0: Clean Planning State
 
-Status: Ready.
+Status: Complete on 2026-10-04.
 
 Goal: make this file the only active UI-system plan.
 
-Files:
+Completed:
 
-- `docs/iitc-iris/plans/index.md`
-- `docs/iitc-iris/plans/ui-component-library-plan.md`
-- `docs/iitc-iris/plans/css-consolidation-plan.md`
-- `docs/iitc-iris/plans/typography-spacing-consistency-plan.md`
-
-Required result:
-
-- roadmap lists this plan as the active UI-system plan;
-- old plans state they are historical and superseded by this plan;
-- old plans do not advertise active or next checkpoints.
-
-Validation:
-
-- `git diff --check`
+- `index.md` updated to list this plan as the active UI-system plan and move old plans to Superseded/Historical.
+- `typography-spacing-consistency-plan.md` marked as historical and superseded.
+- `css-consolidation-plan.md` and `ui-component-library-plan.md` were already deleted in a prior commit.
+- Removed unused `.iitc-iris-text-truncate` selector from `iitc-iris.css` (it had no TSX users and added more CSS than
+  it removed).
 
 ## Assignment 1: Button System Consolidation
 
-Status: Next implementation assignment after Assignment 0.
+Status: Complete on 2026-10-04.
 
-Why this is first: buttons are highly visible and currently split across several local classes. Consolidating them should
+Why this is first: buttons are highly visible and currently split across several local classes. Consolidating them
+should
 improve consistency and delete more CSS than selector grouping did.
 
 Primary files:
 
 - `apps/iitc-iris/src/ui/action-button.tsx`
 - `apps/iitc-iris/src/ui/action-button.test.tsx`
-- `apps/iitc-iris/src/ui/segmented-button.tsx`
-- `apps/iitc-iris/src/ui/chip-button.tsx`
 - `apps/iitc-iris/src/iitc-iris.css`
-- call sites using button classes listed below.
 
-Candidate CSS families:
+Completed consolidation:
 
-- `.iitc-iris-portal-action`
-- `.iitc-iris-table-action`
-- `.iitc-iris-preset`
-- `.iitc-iris-login`
-- `.iitc-iris-nav-button`
-- `.iitc-iris-layer-toggle`
-- `.iitc-iris-segmented-button`
-- `.iitc-iris-diagnostics-chip.iitc-iris-chip-button`
+- Introduced `.iitc-iris-button` base class owning `appearance: none`, `border-radius: var(--iitc-iris-radius-control)`,
+  and `cursor: pointer`.
+- Added `.iitc-iris-button:disabled { cursor: default }` to the base.
+- Updated `ActionButton` and `SubmitActionButton` to emit `iitc-iris-button iitc-iris-portal-action`.
+- Removed `appearance: none`, `border-radius: 4px`, and `cursor: pointer` from:
+    - `.iitc-iris-portal-action` (and `cursor: default` from `:disabled`)
+    - `.iitc-iris-segmented-button`
+    - `.iitc-iris-nav-button` (and `cursor: default` from `:disabled`)
+    - `.iitc-iris-preset`
+    - `.iitc-iris-login`
+    - `.iitc-iris-layer-toggle`
+    - `.iitc-iris-auth-recovery button` and `.iitc-iris-inline-auth button`
+    - `.iitc-iris-chip-button` (`appearance: none` only; keeps `cursor: pointer` to override the DiagnosticsChip
+      default)
 
-Target shape:
+Kept local:
 
-- introduce one base button class, for example `.iitc-iris-button`;
-- make `ActionButton` render the base class plus its existing compatibility class if needed;
-- keep semantic variants as modifiers: action, table, nav, preset, login, toggle, danger, active, wide;
-- move shared button declarations into the base class;
-- delete duplicate declarations from variants.
-
-Base button CSS may own:
-
-- `appearance: none`;
-- `box-sizing`;
-- base border radius;
-- base font;
-- base cursor and disabled cursor;
-- base transition/focus style if existing behavior supports it.
-
-Variant CSS must keep:
-
-- dimensions such as nav button square sizes;
-- colors/backgrounds/borders for danger, active, login, layer toggle, table action, and nav;
-- grid/flex placement and feature-specific width.
-
-Rules:
-
-- Preserve `type="button"` / `type="submit"` behavior.
-- Preserve disabled behavior and visual states.
-- Do not force toggles, nav buttons, and table actions to have identical size.
-- Do not change user-facing text.
-- Keep compatibility class names until every call site and CSS rule is audited.
-
-Stop condition:
-
-- stop after button CSS is consolidated once.
-- update this assignment with completed selectors, deleted declarations, and kept-local variants.
+- `.iitc-iris-table-action` / `.iitc-iris-portal-list-title button`: kept `cursor: pointer` local since these are native
+  `<button>` elements used without a component wrapper; they still strip `appearance` via the shared rule.
+- All domain colors, backgrounds, borders, font choices, and dimensions remain local to their variant classes.
+- `.iitc-iris-table-action` keeps its `border-radius: 3px` since it intentionally uses a slightly tighter radius.
 
 ## Assignment 2: Form Controls As A Real Family
 
-Status: Deferred until Assignment 1 is reviewed.
+Status: Complete on 2026-10-04.
 
 Goal: make text inputs, selects, and textareas look like one control family with fewer feature overrides.
 
 Primary files:
 
 - `apps/iitc-iris/src/ui/text-input.tsx`
-- optional new `SelectInput` / `TextareaInput` only if they remove repeated class composition or behavior;
+- `apps/iitc-iris/src/ui/text-input.test.tsx`
+- `apps/iitc-iris/src/draw-tools/draw-tools-panel.tsx`
+- `apps/iitc-iris/src/portal-analysis/portals-list-panel.tsx`
 - `apps/iitc-iris/src/iitc-iris.css`
-- portal-list filters, Draw Tools filters/import, system jump/view inputs, passcode inputs.
 
-Target shape:
+Completed consolidation:
 
-- `.iitc-iris-control` or equivalent base class owns border, radius, color, font, disabled state, box sizing;
-- `TextInput`, select, and textarea use that base contract;
-- feature classes own width, height, background, and layout only.
+- Introduced `.iitc-iris-control` base class owning `min-width:0`, `box-sizing:border-box`, `border`,
+  `border-radius: var(--iitc-iris-radius-control)`, `color:#e8f4ff`, `font:inherit`, `letter-spacing:0`, and
+  `:disabled { color:#4f6575 }`.
+- Unified border opacity from `30%` (text-input) and `24%` (select/textarea) to a single `30%` value across all
+  controls.
+- Unified text color from `#e8f4ff` (text-input) and `#d8e8f2` (select/textarea) to a single `#e8f4ff` value at the
+  base.
+- Removed the separate `.iitc-iris-text-input { ... }` block (7 declarations) and
+  `.iitc-iris-text-input:disabled { ... }` block.
+- Removed the combined `.iitc-iris-select-input, .iitc-iris-textarea-input { ... }` block (6 declarations).
+- Updated `TextInput` to emit `iitc-iris-control iitc-iris-text-input` (base + identity).
+- Added `iitc-iris-control` to the draw-tools `<textarea>` (already had `iitc-iris-textarea-input`).
+- Added `iitc-iris-control` to all four `<select>` elements (portals-list ×2, draw-tools ×2).
+- Removed redundant `font: inherit` from `.iitc-iris-portals-list-filters .iitc-iris-select-input` override.
+- No new `SelectInput` or `TextareaInput` components needed — CSS-first consolidation was sufficient.
 
-Rules:
+Kept local:
 
-- Prefer CSS class consolidation before adding `SelectInput` or `TextareaInput`.
-- Add components only when they reduce call-site repetition or preserve behavior such as labels/ARIA/default props.
-- Do not change field labels, placeholders, form submit behavior, or keyboard behavior.
+- `.iitc-iris-portals-list-filters .iitc-iris-select-input`: keeps `padding: 0 5px` (domain sizing) and `color: #d7e7f5`
+  (intentional slight dimming for dense filter panel).
+- `.iitc-iris-portals-list-search`: keeps `border-color: rgb(95 180 255 / 24%)` (softer border inside search-box) and
+  `color: #d7e7f5` (domain color).
+- `.iitc-iris-draw-tools-list-controls .iitc-iris-select-input`: keeps `width:100%`, `padding`, `background`, and
+  explicit `font` (bold sm — overrides base inherit intentionally).
+- `.iitc-iris-passcode-input`: keeps `background` and `padding` only; all structural contract now from base.
+- `.iitc-iris-jump-input`: keeps `width`, `min-width`, `height`, `background`, and `padding`; structural contract from
+  base.
+- `.iitc-iris-draw-tools-label-input`: keeps `width` and `background`; structural contract from base.
+- `.iitc-iris-draw-tools-import-input`: keeps `width`, `min-height`, `resize`, `padding`, `background`, and `font`
+  (mono — domain typography).
+- `.iitc-iris-search-input`: special search-box leaf — resets border and background; no base class applied (search-box
+  provides the container shape).
 
 ## Assignment 3: Row/List Item Family
 
-Status: Deferred until Assignment 2 is reviewed.
+Status: Complete on 2026-10-04 (no-op — no shared base class warranted).
 
 Goal: reduce repeated list-row CSS and improve consistent density across panels.
 
-Candidate areas:
+Analysis: all five candidate row types were inspected against the shared-contract test.
 
-- search result rows;
-- inventory rows;
-- missions rows/waypoints;
-- Draw Tools list items;
-- portal-analysis summary/list rows.
+| Row class                                                | border opacity                                     | border-radius | background opacity | padding                       |
+|----------------------------------------------------------|----------------------------------------------------|---------------|--------------------|-------------------------------|
+| `.iitc-iris-search-result-row`                           | transparent (0%)                                   | 5px           | transparent        | none                          |
+| `.iitc-iris-inventory-row`                               | 14%                                                | 4px           | 46%                | 4px 6px                       |
+| `.iitc-iris-mission-row` / `.iitc-iris-mission-waypoint` | 16%                                                | 5px           | 58%                | 5px                           |
+| `.iitc-iris-draw-tools-list-item`                        | 18%                                                | 4px           | 62%                | var(--iitc-iris-item-padding) |
+| `portals-list-table` rows                                | different element (`<tr>`) — excluded by role rule |               |                    |                               |
 
-Target shape:
+No shared base class introduced because:
 
-- one shared row/list item base class for repeated border, radius, padding, font, hover, and truncation behavior;
-- feature classes keep grid columns, icons, team colors, active state meaning, and domain actions.
+- Border opacity differs across all four (transparent, 14%, 16%, 18%); a base value would force 3 of 4 to immediately
+  override it, adding selectors rather than removing them.
+- Background opacity differs across all (46%, 58%, 62%, transparent); same problem.
+- Border-radius splits evenly: 4px vs 5px. A 4px base forces mission rows to override; a 5px base forces inventory and
+  draw-tools to override.
+- Padding is close (`4px 6px` / `5px` / `5px 6px`) but each is intentionally domain-tuned; forcing the same token
+  produces visible density drift.
+- `display: grid; min-width: 0` is shared in 3 of 4, but extracting only those two declarations into a base class saves
+  4–6 lines while adding a new selector group — a net wash or worse.
 
-Rules:
+Per the plan's own done criteria: "Some local CSS is the right answer for domain-specific UI." A base class here would
+add CSS complexity, not reduce it.
 
-- Do not extract domain row components first. Start CSS-first.
-- Only add a `ListItem`/`DataRow` component after at least three call sites share markup and behavior.
-- Do not flatten rows that have different accessibility roles: buttons, table rows, and passive spans are not the same
-  element.
+Kept local (all row CSS stays as-is):
+
+- `.iitc-iris-search-result-row` — transparent border/background until hover; unique hover + active + focus-within
+  states.
+- `.iitc-iris-inventory-row` — tighter 4px 6px padding; color accent via `--iitc-iris-item-color` custom property;
+  `button.iitc-iris-inventory-row` specialization.
+- `.iitc-iris-mission-row` / `.iitc-iris-mission-waypoint` — shared selector already groups both; yellow hover/active
+  colors are domain-specific.
+- `.iitc-iris-draw-tools-list-item` — uses `var(--iitc-iris-item-padding)` token correctly; already the most
+  token-aligned of the group.
 
 ## Assignment 4: Compact Metadata Family
 

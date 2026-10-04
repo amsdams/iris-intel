@@ -19,7 +19,7 @@ export function TextInput({className, type = 'text', ...props}: TextInputProps):
   return (
     <input
       type={type}
-      className={`iitc-iris-text-input ${className || ''}`.trim()}
+      className={`iitc-iris-control iitc-iris-text-input${className ? ` ${className}` : ''}`}
       {...props}
     />
   );

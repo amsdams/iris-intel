@@ -113,14 +113,14 @@ export function IitcIrisPortalsListPanel({
           value={portalsListTextFilter}
           onInput={(event) => setPortalsListTextFilter(event.currentTarget.value)}
         />
-        <select className="iitc-iris-select-input" aria-label="Filter portal list by faction" value={portalsListTeamFilter} onChange={(event) => setPortalsListTeamFilter(event.currentTarget.value as PortalsListTeamFilter)}>
+        <select className="iitc-iris-control iitc-iris-select-input" aria-label="Filter portal list by faction" value={portalsListTeamFilter} onChange={(event) => setPortalsListTeamFilter(event.currentTarget.value as PortalsListTeamFilter)}>
           <option value="all">All factions</option>
           <option value="R">Resistance</option>
           <option value="E">Enlightened</option>
           <option value="M">Machina</option>
           <option value="N">Neutral</option>
         </select>
-        <select className="iitc-iris-select-input" aria-label="Filter portal list by level" value={portalsListLevelFilter} onChange={(event) => setPortalsListLevelFilter(event.currentTarget.value as PortalsListLevelFilter)}>
+        <select className="iitc-iris-control iitc-iris-select-input" aria-label="Filter portal list by level" value={portalsListLevelFilter} onChange={(event) => setPortalsListLevelFilter(event.currentTarget.value as PortalsListLevelFilter)}>
           <option value="all">All levels</option>
           <option value="0">Level 0 / Neutral</option>
           <option value="1">Level 1</option>

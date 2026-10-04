@@ -3,17 +3,17 @@ import {describe, expect, it, vi} from 'vitest';
 import {ActionButton, SubmitActionButton} from './action-button';
 
 describe('ActionButton', () => {
-  it('renders type="button" and base class', () => {
+  it('renders type="button" and includes both base and feature class', () => {
     const vnode = ActionButton({ children: 'Test' });
     expect(vnode.type).toBe('button');
     expect(vnode.props.type).toBe('button');
-    expect(vnode.props.className).toBe('iitc-iris-portal-action');
+    expect(vnode.props.className).toBe('iitc-iris-button iitc-iris-portal-action');
     expect(vnode.props.children).toBe('Test');
   });
 
-  it('composes extra className values without dropping the base class', () => {
+  it('composes extra className values without dropping the base classes', () => {
     const vnode = ActionButton({ className: 'extra-class' });
-    expect(vnode.props.className).toBe('iitc-iris-portal-action extra-class');
+    expect(vnode.props.className).toBe('iitc-iris-button iitc-iris-portal-action extra-class');
   });
 
   it('forwards disabled, title, aria-*, and event props', () => {
@@ -31,11 +31,11 @@ describe('ActionButton', () => {
     expect(vnode.props.onClick).toBe(onClick);
   });
 
-  it('renders SubmitActionButton as type="submit" with the base class', () => {
+  it('renders SubmitActionButton as type="submit" with the base classes', () => {
     const vnode = SubmitActionButton({ children: 'Submit', disabled: true });
     expect(vnode.type).toBe('button');
     expect(vnode.props.type).toBe('submit');
-    expect(vnode.props.className).toBe('iitc-iris-portal-action');
+    expect(vnode.props.className).toBe('iitc-iris-button iitc-iris-portal-action');
     expect(vnode.props.disabled).toBe(true);
     expect(vnode.props.children).toBe('Submit');
   });

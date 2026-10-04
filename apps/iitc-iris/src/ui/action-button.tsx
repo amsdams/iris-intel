@@ -9,7 +9,7 @@ export interface ActionButtonProps extends Omit<JSX.HTMLAttributes<HTMLButtonEle
 
 export function ActionButton({children, className, ...props}: ActionButtonProps): h.JSX.Element {
   return (
-    <button type="button" className={`iitc-iris-portal-action ${className || ''}`.trim()} {...props}>
+    <button type="button" className={`iitc-iris-button iitc-iris-portal-action ${className || ''}`.trim()} {...props}>
       {children}
     </button>
   );
@@ -17,7 +17,7 @@ export function ActionButton({children, className, ...props}: ActionButtonProps)
 
 export function SubmitActionButton({children, className, ...props}: ActionButtonProps): h.JSX.Element {
   return (
-    <button type="submit" className={`iitc-iris-portal-action ${className || ''}`.trim()} {...props}>
+    <button type="submit" className={`iitc-iris-button iitc-iris-portal-action ${className || ''}`.trim()} {...props}>
       {children}
     </button>
   );

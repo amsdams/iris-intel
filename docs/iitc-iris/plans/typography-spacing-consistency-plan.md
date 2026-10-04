@@ -2,7 +2,7 @@
 
 ## Plan Dashboard
 
-Status: Checkpoint 1 complete on 2026-10-04. Checkpoint 1b complete on 2026-10-04.
+Status: Historical. Superseded by `ui-system-consolidation-plan.md`. Do not start new checkpoints here.
 
 ### Done
 

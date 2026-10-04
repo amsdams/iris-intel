@@ -76,7 +76,7 @@ function IitcIrisDrawToolsImport(props: Pick<IitcIrisDrawToolsPanelProps, 'impor
   return <div className="iitc-iris-draw-tools-import">
     <span className="iitc-iris-draw-tools-interop">IITC Draw Tools JSON: links and markers</span>
     <textarea
-      className="iitc-iris-textarea-input iitc-iris-draw-tools-import-input"
+      className="iitc-iris-control iitc-iris-textarea-input iitc-iris-draw-tools-import-input"
       value={props.importText}
       placeholder="Paste IITC Draw Tools JSON"
       rows={3}
@@ -215,13 +215,13 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
     {props.markerItems.length > 0 && <div className="iitc-iris-map-context-row iitc-iris-draw-tools-list-controls">
       <label>
         <span>Faction</span>
-        <select className="iitc-iris-select-input" aria-label="Filter drawn markers by faction" value={markerTeamFilter} onChange={(event) => setMarkerTeamFilter(event.currentTarget.value as DrawToolsMarkerTeamFilter)}>
+        <select className="iitc-iris-control iitc-iris-select-input" aria-label="Filter drawn markers by faction" value={markerTeamFilter} onChange={(event) => setMarkerTeamFilter(event.currentTarget.value as DrawToolsMarkerTeamFilter)}>
           {DRAW_TOOLS_MARKER_TEAM_FILTERS.map((filter) => <option value={filter.value} key={filter.value}>{filter.label}</option>)}
         </select>
       </label>
       <label>
         <span>Sort</span>
-        <select className="iitc-iris-select-input" aria-label="Sort drawn markers" value={markerSort} onChange={(event) => setMarkerSort(event.currentTarget.value as DrawToolsMarkerSort)}>
+        <select className="iitc-iris-control iitc-iris-select-input" aria-label="Sort drawn markers" value={markerSort} onChange={(event) => setMarkerSort(event.currentTarget.value as DrawToolsMarkerSort)}>
           {DRAW_TOOLS_MARKER_SORTS.map((sort) => <option value={sort.value} key={sort.value}>{sort.label}</option>)}
         </select>
       </label>

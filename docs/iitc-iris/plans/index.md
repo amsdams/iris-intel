@@ -84,19 +84,17 @@ These rules apply to Codex, AGY/Gemini, and any other AI-assisted branch.
 
 Active:
 
-- None.
+- [ui-system-consolidation-plan.md](ui-system-consolidation-plan.md): Active source of truth for IITC IRIS UI/CSS consolidation.
 
 Ready/Blocked:
 
-- [css-consolidation-plan.md](css-consolidation-plan.md): Ready for one narrow `Badge` base-class consolidation slice;
-  do not run as a broad sweep.
 - [android-apk-installable-plan.md](android-apk-installable-plan.md): Prove the friend-shared sideload APK path before
   scaffolding native app code; store distribution is deferred.
-- [typography-spacing-consistency-plan.md](typography-spacing-consistency-plan.md): Keep IITC IRIS compact typography and
-  spacing consistent through tokens and narrow CSS-only checkpoints.
-- [ui-component-library-plan.md](ui-component-library-plan.md): Parked; shared primitives are extracted, with only
-  optional reassessment remaining.
 - [source-directory-layout-plan.md](source-directory-layout-plan.md): All Checkpoints (1 through 12) are completely done.
+
+Superseded/Historical:
+
+- [typography-spacing-consistency-plan.md](typography-spacing-consistency-plan.md): Superseded by `ui-system-consolidation-plan.md`.
 
 Completed Phase 2:
 
