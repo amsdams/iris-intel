@@ -144,8 +144,8 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
                 <small title={getDrawToolsItemDetail(item)}>{detail}</small>
               </span>
               <span className="iitc-iris-draw-tools-list-actions">
-                <ActionButton onClick={() => props.centerItem(item)} title="Center this drawn link">Center</ActionButton>
                 <ActionButton onClick={() => props.deleteItem(item)} title="Delete this drawn link">Del</ActionButton>
+                <ActionButton onClick={() => props.centerItem(item)} title="Center this drawn link">Center</ActionButton>
               </span>
             </div>
           );
@@ -267,8 +267,9 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
             </span>
             <span className="iitc-iris-draw-tools-list-actions">
               <ActionButton onClick={() => props.setEditingMarkerIndex(item.storageIndex)} title="Edit this marker label">Edit</ActionButton>
-              <ActionButton onClick={() => props.centerItem(item)} title="Center this drawn marker">Center</ActionButton>
               <ActionButton onClick={() => props.deleteItem(item)} title="Delete this drawn marker">Del</ActionButton>
+              <ActionButton onClick={() => props.centerItem(item)} title="Center this drawn marker">Center</ActionButton>
+
             </span>
           </div>
         );

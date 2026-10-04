@@ -214,7 +214,7 @@ export function IitcIrisPortalDetailsPanel(props: IitcIrisPortalDetailsPanelProp
                   const modStats = mod ? formatModStats(mod.stats) : '';
                   return (
                     <div
-                      className={`iitc-iris-mod-slot ${mod ? '' : 'iitc-iris-empty-slot'}`}
+                      className={`iitc-iris-slot iitc-iris-mod-slot ${mod ? '' : 'iitc-iris-empty-slot'}`}
                       key={`mod-${index}`}
                       style={formatIitcColorVars(getIitcRarityColor(mod?.rarity))}
                     >
@@ -237,7 +237,7 @@ export function IitcIrisPortalDetailsPanel(props: IitcIrisPortalDetailsPanelProp
                 {RESONATOR_PANEL_ORDER.map((resonatorIndex, panelIndex) => {
                   if (resonatorIndex === null) {
                     return (
-                      <span className="iitc-iris-resonator-center" key="portal-center" title={portal.title || portal.guid}>
+                      <span className="iitc-iris-slot iitc-iris-resonator-center" key="portal-center" title={portal.title || portal.guid}>
                         portal
                       </span>
                     );
@@ -246,7 +246,7 @@ export function IitcIrisPortalDetailsPanel(props: IitcIrisPortalDetailsPanelProp
                   const resonatorHealth = resonator ? formatResonatorEnergyPercent(resonator.level, resonator.energy) : 0;
                   return (
                     <span
-                      className={`iitc-iris-resonator-slot ${resonator ? '' : 'iitc-iris-empty-slot'}`}
+                      className={`iitc-iris-slot iitc-iris-resonator-slot ${resonator ? '' : 'iitc-iris-empty-slot'}`}
                       key={`resonator-${panelIndex}`}
                       style={resonator ? `${formatIitcColorVars(getIitcLevelColor(resonator.level)) ?? ''}` : undefined}
                       title={resonator ? `${resonator.owner} ${resonator.energy} XM, ${resonatorHealth}% charged` : 'empty resonator slot'}

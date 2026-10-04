@@ -254,6 +254,7 @@ Completed consolidation:
 - Simplified `.iitc-iris-analysis-summary-grid` and `.iitc-iris-portals-list-summary-item` to inherit structural layout from `.iitc-iris-summary-cell`.
 - `Badge`: Updated `agent-panel.tsx` core status badge (`<Badge className="iitc-iris-core-badge">`) and `inventory-panel.tsx` item badge (`<Badge as="b" className="iitc-iris-item-badge">`) to emit the `.iitc-iris-badge` primitive base.
 - Stripped redundant flex, alignment, text-transform, and `box-sizing` declarations from `.iitc-iris-core-badge`, `.iitc-iris-item-badge`, `.iitc-iris-draw-tools-level-chip`, and `.iitc-iris-draw-tools-team-chip`.
+- `Slot`: Introduced `.iitc-iris-slot` primitive base class (`box-sizing: border-box`, `min-width: 0`, `border`, `border-radius: 4px`, `background`, `color`) shared across `.iitc-iris-mod-slot`, `.iitc-iris-resonator-slot`, and `.iitc-iris-resonator-center`. Updated `portal-details-panel.tsx` call sites to emit `.iitc-iris-slot`.
 - Truncation: Confirmed `.iitc-iris-text-truncate` remains deleted; individual components own text overflow behavior locally when needed.
 
 Kept local:

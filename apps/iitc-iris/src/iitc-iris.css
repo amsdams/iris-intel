@@ -1439,38 +1439,33 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.iitc-iris-resonator-slot,
-.iitc-iris-resonator-center,
-.iitc-iris-mod-slot {
+.iitc-iris-slot {
+    position: relative;
+    display: grid;
+    gap: 2px 4px;
+    align-items: baseline;
     box-sizing: border-box;
     min-width: 0;
+    padding: 4px 5px;
     border: 1px solid rgb(95 180 255 / 24%);
     border-radius: 4px;
+    overflow: hidden;
     background: rgb(10 18 25 / 76%);
     color: #e8f4ff;
+    font: var(--iitc-iris-font-bold) var(--iitc-iris-text-md) / var(--iitc-iris-line-compact) var(--iitc-iris-font-ui);
 }
 
 .iitc-iris-resonator-slot {
     --iitc-iris-item-color: var(--portal-team-color);
     --iitc-iris-resonator-health: var(--iitc-iris-item-color);
 
-    position: relative;
-    overflow: hidden;
-    display: grid;
     grid-template-columns: max-content minmax(0, 1fr) max-content;
-    gap: 2px 4px;
-    align-items: baseline;
     min-height: 34px;
-    padding: 3px 5px;
-    border-color: rgb(95 180 255 / 20%);
-    font: var(--iitc-iris-font-bold) var(--iitc-iris-text-md) / var(--iitc-iris-line-compact) var(--iitc-iris-font-ui);
 }
 
 .iitc-iris-resonator-center {
-    display: grid;
     place-items: center;
     min-height: 28px;
-    padding: 3px 5px;
     border-color: var(--portal-team-soft);
     color: var(--portal-team-color);
     font: var(--iitc-iris-button-font);
@@ -1524,11 +1519,7 @@
 .iitc-iris-mod-slot {
     --iitc-iris-item-color: rgb(95 180 255);
 
-    display: grid;
-    gap: 2px;
-    align-items: baseline;
     min-height: 48px;
-    padding: 5px 6px;
     border-color: color-mix(in srgb, var(--iitc-iris-item-color) 55%, transparent);
     box-shadow: inset 2px 0 0 var(--iitc-iris-item-color);
 }
