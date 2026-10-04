@@ -1,8 +1,52 @@
 # UI Component Library Extraction Plan
 
-## Status
+## Plan Dashboard
 
-Checkpoints 0-16 and Assignment A complete. Pause before extracting more components.
+Historical checkpoints 0-16, the Checkpoint 6 follow-up, and Assignment A are complete. Pause before extracting more
+components.
+
+### Done
+
+- Shared primitives listed below are extracted and should stay unless review finds concrete harm.
+- `EmptyState` and `ChipButton` are extracted, tested, and applied.
+- The planned panel wrapper class contracts are fully applied.
+- Draw Tools import collapse is complete as local UX/layout work; it is not a generic component extraction.
+
+### In Progress
+
+- None.
+
+### Todo / Deferred
+
+There is no active required UI component extraction work. Only optional reassessment remains:
+
+- form-control CSS/component reassessment, CSS-first, only if duplication or drift becomes painful;
+- button-family CSS audit, only if repeated button styling starts causing maintenance issues;
+- domain-specific extraction, only with active feature work or a concrete readability/accessibility bug.
+
+### APK Readiness Note
+
+No UI component extraction is required before starting the Android APK readiness work. APK/mobile testing may find
+visible usability or accessibility bugs, but those should be handled as targeted mobile/accessibility fixes first. Reopen
+this component extraction plan only if the fix needs a shared component or CSS family named below.
+
+### Next 10 Candidate Assignments
+
+These are ordered candidates, not approved work. Start one only after the trigger is true and this plan is updated with
+exact files, preserved behavior, validation, and stop conditions.
+
+| # | Assignment | Status | Trigger |
+|---|---|---|---|
+| 1 | Reassess form controls | Deferred | Portal filters or Draw Tools import controls show CSS/behavior drift. |
+| 2 | Form-control CSS pass | Deferred | Assignment 1 finds exact duplicated selectors worth consolidating. |
+| 3 | Button-family CSS audit | Deferred | `.iitc-iris-portal-action`, preset, copy, login, nav, or layer buttons drift. |
+| 4 | Portal analysis table audit | Deferred | Table wrappers/sort behavior drifts or portal-analysis work resumes. |
+| 5 | Search result row audit | Deferred | Active search work or search accessibility/readability bugs appear. |
+| 6 | Draw Tools list/import audit | Deferred | Draw Tools panel becomes noisy again after collapsed import UX. |
+| 7 | Inventory/passcode row audit | Deferred | Inventory/passcode feature work exposes repeated row behavior. |
+| 8 | Missions row/waypoint audit | Deferred | Missions feature work exposes repeated row behavior. |
+| 9 | Portal details domain audit | Deferred | Portal-details work expands and the file becomes hard to scan. |
+| 10 | Plan cleanup | Deferred | A future assignment changes the done/todo picture. |
 
 Verified on 2026-10-04:
 
@@ -11,8 +55,8 @@ Verified on 2026-10-04:
   tests.
 - The search clear-overlay diagnostics button uses `ChipButton`; the combined
   `.iitc-iris-diagnostics-chip iitc-iris-chip-button` class contract is now owned by the shared component.
-- The current uncommitted diff is a separate panel-wrapper cleanup, not Assignment A. Review found the portal image modal
-  should keep its specialized image-preview structure instead of using generic `Panel`.
+- The planned panel wrapper class contracts are owned by `apps/iitc-iris/src/ui/panel.tsx`, its focused test, and CSS.
+- Draw Tools import collapse is a completed local UX/layout change, not a generic component extraction.
 
 Current direction: keep the shared primitives already extracted, but stop treating raw HTML as a problem by itself.
 The remaining work should be driven by visible inconsistency, repeated behavior, accessibility risk, or clear CSS
@@ -22,10 +66,10 @@ This is an internal IITC IRIS UI-shell refactor. It is allowed to introduce shar
 consolidation, but it must not redesign the app, rename user-facing concepts, change panel behavior, or obscure
 IITC-aligned domain names.
 
-Do not implement this plan as one broad sweep. Execute one checkpoint at a time, review it, then update this plan before
+Do not implement this plan as one broad sweep. Execute one assignment at a time, review it, then update this plan before
 continuing.
 
-This plan is now a stop/go checklist, not a mandate to componentize the app.
+This plan is now a stop/go checklist and historical record, not a mandate to componentize the app.
 
 ## IITC Sources
 
@@ -159,9 +203,10 @@ These extracted primitives still look valuable and should stay:
 | LayerCheckbox/LayerRadio       | Layer controls have a specific visual/ARIA contract that was already repeated.                |
 | Panel/section/control wrappers | Shell/layout wrappers reduced repeated structural classes without owning feature state.        |
 
-### Still Worth Doing
+### Optional Reassessment Only
 
-These have a clear near-term value case. Do these only one checkpoint at a time.
+These may still have value, but they are not active work. Reassess one assignment at a time only if a concrete trigger
+from the dashboard is true.
 
 | Candidate                      | Priority | Likely Component Type | Main Files                                                             | Expected CSS Payoff | Notes                                                                                    |
 |--------------------------------|----------|-----------------------|------------------------------------------------------------------------|---------------------|------------------------------------------------------------------------------------------|
@@ -209,19 +254,19 @@ These should stay as semantic HTML and CSS for now. Revisit only if future featu
 "Good enough" now means the repeated primitives are extracted, the obvious empty/chip gap is closed, and any remaining
 raw HTML is either native semantic UI or has a documented reason to stay local.
 
-### Suggested Next Checkpoints
+### Reopen Rules
 
-1. Reassess. If form CSS duplication is still obvious, do a CSS-first form-control pass.
-2. Optional: button-family CSS consolidation if duplicated button rules remain painful.
-3. Stop the UI extraction plan unless an active feature/change exposes a concrete repeated pattern.
+1. Reassess the exact files named by the trigger before writing code.
+2. Prefer CSS-first fixes when native controls are already semantic and readable.
+3. Stop again if the assignment would only move local markup into a wrapper.
 
 Do not introduce generic `List`, `Table`, row, select, textarea, or checkbox components unless the reassessment names a
 specific repeated behavior or CSS problem.
 
 ## Actionable Assignments
 
-Use these assignments only when the decision policy says they are worth doing. Assignment A is the only currently
-recommended implementation checkpoint. Assignments B-H are optional recipes so future work has a clear path without
+Use these assignments only when the decision policy says they are worth doing. No assignment is currently recommended
+as required work. Assignment A is complete. Assignments B-H are optional recipes so future work has a clear path without
 forcing extraction now.
 
 ### Assignment A: Empty States and Chip Button
@@ -641,7 +686,9 @@ If CSS or visible markup changes, also run or record:
 - screenshots when practical for desktop and narrow/mobile widths;
 - confirmation that there is no intentional layout shift.
 
-## Checkpoints
+## Historical Checkpoints
+
+The sections below are retained as implementation history. They are not active todo.
 
 ### Checkpoint 0: UI Pattern Audit
 
@@ -818,11 +865,10 @@ Validation:
 
 Status: complete.
 
-Current uncommitted panel wrapper cleanup belongs here as a follow-up to this checkpoint, not to Assignment A or
-Assignments B-H. It applies existing `PanelBody`, `PanelFooter`, `PanelHeader`, and `PanelTitle` primitives to remaining
-matching shell markup in COMM, map controls, missions, portal details, portal image header, side panels, system panels,
-and the help panel. Keep this follow-up limited to class-equivalent wrapper replacements; specialized containers such as
-the portal image preview backdrop/body should remain local.
+Completed follow-up: remaining class-equivalent panel wrapper markup in COMM, map controls, missions, portal details,
+portal image header, side panels, system panels, and the help panel now uses existing `PanelBody`, `PanelFooter`,
+`PanelHeader`, and `PanelTitle` primitives. Specialized containers such as the portal image preview backdrop/body remain
+local.
 
 Verified on 2026-10-04:
 
@@ -1207,24 +1253,16 @@ Validation:
 
 Audit Results:
 
-Generic shared component candidates now:
+Current disposition after Assignment A:
 
-- `EmptyState`: repeated in COMM, missions, portal analysis, portal details, agent, and passcode flows.
-  Expected files: `ui/empty-state.tsx`, optional test, and simple replacements.
-  Value: high consistency, medium CSS cleanup.
-- `ChipButton`: the search clear-overlay chip is a clickable diagnostics-style chip. This should be separate from
-  `PlainDiagnosticsChip` because it is a button.
-  Expected files: `ui/chip-button.tsx`, optional test, and `search-panel.tsx`.
-  Value: small but cleans up the last raw `.iitc-iris-diagnostics-chip` app usage.
-- `SelectInput` / `FilterSelect`: portal list faction and level filters are the only current select controls.
-  Expected files: `ui/select-input.tsx`, optional test, and `portals-list-panel.tsx`.
-  Value: medium CSS cleanup; keep native select semantics.
-- `TextareaInput`: Draw Tools import JSON textarea is the only current textarea.
-  Expected files: `ui/textarea-input.tsx`, optional test, and `draw-tools-panel.tsx`.
-  Value: medium CSS cleanup; useful if more import/edit forms appear.
-- `CheckboxField`: Draw Tools import merge checkbox is a normal label+checkbox field, unlike layer choices.
-  Expected files: `ui/checkbox-field.tsx`, optional test, and `draw-tools-panel.tsx`.
-  Value: low CSS cleanup, but clarifies checkbox semantics.
+- `EmptyState`: complete.
+- `ChipButton`: complete.
+- `SelectInput` / `FilterSelect`: deferred. Portal-list faction and level filters can stay native unless a form-control
+  reassessment proves CSS or behavior drift.
+- `TextareaInput`: deferred. Draw Tools import is the only current textarea and now lives behind a collapsed local
+  `Import` toggle; keep it raw unless more textarea forms appear.
+- `CheckboxField`: deferred. Draw Tools import merge is the only normal label+checkbox field outside layer controls;
+  keep it raw unless form CSS consolidation proves value.
 
 Domain-shaped candidates now:
 
@@ -1254,7 +1292,8 @@ Domain-shaped candidates now:
 
 Classification Summary:
 
-- Generic shared components left: `EmptyState`, `ChipButton`, `SelectInput`, `TextareaInput`, `CheckboxField`.
+- Generic shared components left: none required.
+- Generic form-control candidates deferred: `SelectInput`, `TextareaInput`, `CheckboxField`.
 - Domain components worth considering: portal analysis table shell/buttons, search results, Draw Tools import/list,
   inventory/passcode rows, mission rows/waypoints, portal-details structures, system preset/source buttons.
 - Intentionally raw for now: map nav buttons, layer toggles, sheet tabs, auth buttons, COMM tokens, mission authoring
@@ -1264,23 +1303,24 @@ Classification Summary:
 
 Work Remaining Estimate:
 
-- To finish the generic library layer: about 2 checkpoints.
-    1. `EmptyState` + `ChipButton`.
-    2. `SelectInput` + `TextareaInput` + `CheckboxField`.
-- To make repeated domain UI substantially cleaner: about 3-4 more checkpoints.
+- To finish the generic library layer: 0 required checkpoints.
+- Optional generic/form-control work: 0-1 checkpoint, CSS-first, only if reassessment proves value.
+- To make repeated domain UI substantially cleaner: about 0-4 optional checkpoints, only with active feature work or
+  clear pain.
     1. Portal analysis table shell/buttons.
     2. Search result rows.
     3. Draw Tools import/list components.
     4. Inventory/mission rows if still valuable after the first three.
-- To reduce CSS meaningfully after components: 1-2 CSS consolidation checkpoints.
+- To reduce CSS meaningfully after components: 0-2 optional CSS consolidation checkpoints.
     1. Form/table/list CSS cleanup.
     2. Button-family CSS cleanup.
 
 Definition of "mostly done":
 
 - Tier 1 complete.
-- Portal analysis table and Draw Tools list/import either extracted or explicitly deferred.
-- CSS consolidation has removed obvious duplicated form/button/table/list rules without changing visual behavior.
+- Assignment A complete.
+- Portal analysis table and Draw Tools list/import are documented as optional/deferred unless active work proves pain.
+- Remaining CSS consolidation candidates are optional and scoped to exact duplicated selectors/states.
 
 ### Remaining Backlog
 

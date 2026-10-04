@@ -2,22 +2,22 @@
 
 ## Current State
 
-Status: Phase 2 app-surface extraction is complete/parked. Continue only with optional move-only source layout
-checkpoints, one domain at a time. UI/CSS/mobile polish comes after the app has been used for a while and concrete usage
-pain is known.
+Status: Phase 2 app-surface extraction, source layout, and the current UI component extraction pass are complete/parked.
+Do not assign more refactor work unless a detailed plan names exact scope, files, stop conditions, and validation.
+Android APK work is a separate readiness track, not a continuation of the refactor plans.
 
 No active refactor is approved right now. Before assigning AGY/Codex more refactor work, update or create one detailed
 plan with exact scope, files, stop conditions, and validation.
 
 Likely next priorities:
 
-1. Create a shared UI component library (extract raw HTML UI into reusable React components).
-2. Move-only source layout, one feature folder at a time.
-3. Use the app on phone/desktop and collect concrete UI/CSS/mobile pain.
-4. UI/CSS/mobile polish for those findings.
+1. Use the app on phone/desktop and collect concrete UI/CSS/mobile pain.
+2. Prepare for a friend-shared sideload APK, with Play/store distribution deferred.
+3. Run the Android/WebView readiness spikes before creating an IRIS APK scaffold.
+4. UI/CSS/mobile polish for concrete findings.
 5. Backlog refinement if usage shows priorities have changed.
 
-Do not mix these three tracks in one branch.
+Do not mix refactor cleanup, UI/mobile polish, Android APK work, and feature/parity work in one branch.
 
 ## Active Work
 
@@ -48,8 +48,11 @@ None.
 
 - Do not continue extracting from `content.tsx` unless a new detailed plan identifies a narrow, repeated, testable
   responsibility with a clear owner.
-- Do not start another source-layout move until [source-directory-layout-plan.md](source-directory-layout-plan.md)
-  names one approved folder and exact files.
+- Do not start another source-layout move unless [source-directory-layout-plan.md](source-directory-layout-plan.md)
+  is reopened with one approved folder and exact files.
+- Do not start Android APK implementation until
+  [android-apk-installable-plan.md](android-apk-installable-plan.md) completes the distribution decision and WebView
+  runtime spikes.
 - Do not mix layout moves with logic changes, UI changes, CSS changes, behavior changes, or additional folders.
 - UI/CSS polish should be driven by app usage findings, screenshots, or specific workflow pain, not general cleanup.
 - Feature or parity work should start from [../backlog.md](../backlog.md) and [../port-plan.md](../port-plan.md), then a
@@ -84,7 +87,10 @@ Active:
 
 Ready/Blocked:
 
-- [ui-component-library-plan.md](ui-component-library-plan.md): Extract raw HTML tags into shared React UI components.
+- [android-apk-installable-plan.md](android-apk-installable-plan.md): Prove the friend-shared sideload APK path before
+  scaffolding native app code; store distribution is deferred.
+- [ui-component-library-plan.md](ui-component-library-plan.md): Parked; shared primitives are extracted, with only
+  optional reassessment remaining.
 - [source-directory-layout-plan.md](source-directory-layout-plan.md): All Checkpoints (1 through 12) are completely done.
 
 Completed Phase 2:
@@ -116,6 +122,8 @@ Reference:
 - Move-only source layout: continue only one domain at a time after explicit approval in
   [source-directory-layout-plan.md](source-directory-layout-plan.md). `Layers` is the next preferred candidate.
 - UI/CSS/mobile polish: do after app usage. Scope by concrete findings, not broad restyling.
+- Android APK/installable app: follow [android-apk-installable-plan.md](android-apk-installable-plan.md); keep it
+  separate from refactor cleanup.
 - Draw Tools refactoring: stay within Draw Tools v1 boundaries unless a pass explicitly ports more IITC Draw Tools
   behavior.
 - Map lifecycle/state cleanup: only around validated IITC `map_data_request` behavior and documented watch items.

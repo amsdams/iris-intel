@@ -1,8 +1,84 @@
 # Content Runtime Effects Extraction Plan
 
-Status: All checkpoints complete. Checkpoints 0 (baseline review), 1 (side-panel auto-request plans), 2
-(runtime settings message builders), 3 (portal mission refresh decision), and 4 (search debounce plan) are done.
-No further checkpoints are planned for this slice.
+This file is the merged refactor dashboard and historical runtime-effects extraction plan. It replaces
+`gpt-oss-plan.md`.
+
+Use one unit of work name: **assignment**.
+
+## Status Snapshot
+
+Updated: 2026-10-04.
+
+### Done
+
+- Content runtime effects extraction assignments 0-4 are complete:
+  - Assignment 0: baseline review.
+  - Assignment 1: side-panel auto-request planning.
+  - Assignment 2: runtime settings message builders.
+  - Assignment 3: portal mission refresh decision.
+  - Assignment 4: search debounce decision.
+- Source directory layout refactor is complete. See `source-directory-layout-plan.md`.
+- Content shell extraction is complete. See `content-shell-extraction-plan.md`.
+- UI component library assignments through Assignment A are complete. See `ui-component-library-plan.md`.
+- Draw Tools import/export UX is complete for the current slice. Import is collapsed behind `Import`; copy actions stay
+  visible.
+
+### In Progress
+
+- None.
+
+There is no active required extraction assignment. Broad extraction is paused.
+
+### Todo / Deferred
+
+These are candidates, not active assignments:
+
+- Reassess narrow form controls. Prefer CSS-first cleanup before adding `SelectInput`, `TextareaInput`, or
+  `CheckboxField`.
+- Optional button-family CSS consolidation if duplicated button rules become painful.
+- Optional domain-specific extractions only with active work or clear pain: portal analysis tables, search rows, Draw
+  Tools list/import pieces, inventory/mission rows, or portal-details helpers.
+
+## Next 10 Candidate Assignments
+
+These are ordered candidates if we decide to continue refactoring. Do not start any item automatically; first confirm the
+trigger condition and update the relevant detailed plan.
+
+| # | Assignment | Status | Trigger |
+|---|---|---|---|
+| 1 | Reassess narrow form controls | Deferred | Start only if portal filters or Draw Tools import controls show CSS/behavior drift. |
+| 2 | Form-control CSS pass | Deferred | Do only if assignment 1 finds duplicated exact selectors worth consolidating. |
+| 3 | Button-family CSS audit | Deferred | Start only if `.iitc-iris-portal-action`, preset, copy, login, nav, or layer button duplication becomes painful. |
+| 4 | Portal analysis table audit | Deferred | Start only if table wrapper/sort behavior drifts or portal-analysis work resumes. |
+| 5 | Search result row audit | Deferred | Start only with active search work or a readability/accessibility bug. |
+| 6 | Draw Tools list/import component audit | Deferred | Start only if Draw Tools panel grows noisy again after the collapsed import UX. |
+| 7 | Inventory/passcode row audit | Deferred | Start only with inventory/passcode feature work or repeated row behavior bugs. |
+| 8 | Missions row/waypoint audit | Deferred | Start only with missions feature work or repeated row behavior bugs. |
+| 9 | Portal details domain extraction audit | Deferred | Start only if portal-details work expands and the file becomes hard to scan. |
+| 10 | Refactor roadmap cleanup | Deferred | Do after any future assignment changes the done/todo picture across plans. |
+
+## Source Of Truth
+
+| Area | Status | Plan |
+|---|---|---|
+| Runtime effects extraction | Done | This file |
+| Source layout | Done | `source-directory-layout-plan.md` |
+| Content shell extraction | Done | `content-shell-extraction-plan.md` |
+| UI component library | Pause / reassess | `ui-component-library-plan.md` |
+| Draw Tools feature notes | Current | `../features/draw-tools.md` and `../features/draw-tools-port-plan.md` |
+
+## Validation Standard
+
+For code-changing assignments, run the relevant focused tests plus:
+
+- `npm run typecheck:iitc-iris`
+- `npm run lint:iitc-iris`
+- `npm run package:iitc-iris`
+- `git diff --check`
+
+If CSS changes, also run:
+
+- `npm run lint:css`
 
 
 ## IITC Sources
@@ -46,16 +122,16 @@ state setters into a helper in this slice. Do not create a broad hook that owns 
 ## Hook/Plugin Visibility
 
 No new IITC hook, plugin, `window.plugin.*`, Leaflet, or page-runtime public API is exposed. Message payloads crossing
-the existing content/page boundary must remain byte-for-byte compatible unless a checkpoint explicitly documents a
+the existing content/page boundary must remain byte-for-byte compatible unless an assignment explicitly documents a
 divergence. There are no intended divergences in this plan.
 
 ## Scope
 
 Reduce repeated runtime message and retry-plan assembly in `content.tsx` without changing behavior.
 
-Remaining checkpoint execution rules:
+Remaining assignment execution rules:
 
-- AGY may implement Checkpoints 3 and 4 in the same branch only if Checkpoint 3 is completed first and both checkpoints
+- AGY may implement assignments 3 and 4 in the same branch only if assignment 3 is completed first and both assignments
   stay inside this plan's exact boundaries.
 - Do not create a broad `content-runtime-effects` hook, dependency object, service, class, registry, or generic effect
   runner.
@@ -64,19 +140,19 @@ Remaining checkpoint execution rules:
 - Do not move `useEffect`, `window.setTimeout`, `window.clearTimeout`, `window.postMessage`, state setters, refs,
   `refreshMissions`, or `requestSearch` out of `content.tsx`.
 - Do not touch layer/highlighter effects, side-panel auto-request effects, panel JSX, folder layout, CSS, storage keys,
-  message type names, or page-runtime code while completing Checkpoints 3 and 4.
+  message type names, or page-runtime code while completing assignments 3 and 4.
 - If the implementation needs more than one small helper module plus focused tests, stop and update this plan before
   changing code.
 
-### Checkpoint 0: Baseline Review
+### Assignment 0: Baseline Review
 
 - Read `index.md`, `port-plan.md`, this plan, and the current `content.tsx`.
 - Confirm the working tree is based on the current refactor branch.
-- Identify the exact `content.tsx` effects touched by the next checkpoint before editing.
-- Do not change code in this checkpoint unless the plan is stale; update the plan first if the current code no longer
+- Identify the exact `content.tsx` effects touched by the next assignment before editing.
+- Do not change code in this assignment unless the plan is stale; update the plan first if the current code no longer
   matches the checklist.
 
-### Checkpoint 1: Side-Panel Auto-Request Plans
+### Assignment 1: Side-Panel Auto-Request Plans
 
 Extract only pure side-panel request planning from these `content.tsx` effects:
 
@@ -104,9 +180,9 @@ Add focused unit tests for:
 - Inventory active/idle returns the current request payload and retry delay.
 - No helper emits browser side effects.
 
-Stop after this checkpoint for the first AGY pass.
+Stop after this assignment for the first AGY pass.
 
-#### Checkpoint 1 implementation notes (done)
+#### Assignment 1 implementation notes (done)
 
 Extracted to `apps/iitc-iris/src/content-side-panel-auto-requests.ts`:
 
@@ -128,9 +204,9 @@ Compatibility verified by test: the COMM auto-request message omits `commOlder`.
 Naming: "plan" was replaced with "auto-request" to reflect the runtime behavior rather than the
 planning document terminology. Renamed file: `content-side-panel-auto-requests.ts`.
 
-### Checkpoint 2: Runtime Settings Message Builders
+### Assignment 2: Runtime Settings Message Builders
 
-After checkpoint 1 is reviewed, extract missing pure message builders for inline runtime settings payloads:
+After assignment 1 is reviewed, extract missing pure message builders for inline runtime settings payloads:
 
 - `dataSourceSettings`
 - `lifecycleSettings`
@@ -138,9 +214,9 @@ After checkpoint 1 is reviewed, extract missing pure message builders for inline
 
 Keep layer and highlighter timing logic in `content.tsx`; their `performance.now()` intent refs are deliberately owned by
 the component. Existing `buildLayerSettingsMessage` and `buildHighlighterSettingsMessage` stay in
-`content-layer-actions.ts` unless a later checkpoint narrows that ownership further.
+`content-layer-actions.ts` unless a later assignment narrows that ownership further.
 
-#### Checkpoint 2 implementation notes (done)
+#### Assignment 2 implementation notes (done)
 
 Added to `apps/iitc-iris/src/content-outbound-messages.ts`:
 
@@ -167,9 +243,9 @@ Intentionally left inline in `content.tsx`:
 - `setSearchState`, `setActiveSearchResultIndex` calls in the search effect — state setter ownership remains in `content.tsx`.
 - The `100` ms debounce timer for non-empty search terms — timer ownership remains in `content.tsx`.
 
-### Checkpoint 3: Portal Mission Refresh Decision
+### Assignment 3: Portal Mission Refresh Decision
 
-After checkpoint 2 is reviewed, extract only the pure decision behind the selected-portal mission refresh effect:
+After assignment 2 is reviewed, extract only the pure decision behind the selected-portal mission refresh effect:
 
 - active side panel must be `missions`;
 - mission source must be `portal`;
@@ -203,7 +279,7 @@ Required tests:
 - returns `false` when selected portal guid is missing;
 - returns `false` when selected portal guid already matches `missionsState.portalGuid`.
 
-#### Checkpoint 3 implementation notes (done)
+#### Assignment 3 implementation notes (done)
 
 Added `apps/iitc-iris/src/content-mission-refresh.ts`:
 
@@ -219,9 +295,9 @@ Intentionally left inline in `content.tsx`:
 - The `useEffect` body and its `refreshMissions('portal')` call.
 - The `refreshMissions` `useCallback` wrapper and the `postIitcMessage` call inside it.
 
-### Checkpoint 4: Search Debounce Plan
+### Assignment 4: Search Debounce Plan
 
-After checkpoint 3 is reviewed, extract only pure search debounce decisions:
+After assignment 3 is reviewed, extract only pure search debounce decisions:
 
 - trimmed empty term clears local search state and emits `searchClear`;
 - non-empty term schedules a search after the current `100` ms delay.
@@ -250,7 +326,7 @@ Required tests:
 - the helper trims the request term without changing the current debounce delay;
 - existing `buildSearchClearMessage` tests remain green.
 
-#### Checkpoint 4 implementation notes (done)
+#### Assignment 4 implementation notes (done)
 
 Added `getSearchDebounceAction(searchTerm: string): SearchDebounceAction` to
 `apps/iitc-iris/src/content-search-actions.ts` (the file remained clear with the addition).
@@ -275,17 +351,17 @@ Added `getSearchDebounceAction(searchTerm: string): SearchDebounceAction` to
 - No broad `useContentRuntimeEffects` hook.
 - No movement of browser, DOM, Leaflet, extension runtime, or Preact effect ownership into `packages/iitc-core`.
 - No changes to storage keys, message type names, persisted ids, public panel ids, or user-facing labels.
-- No cleanup of unrelated `content.tsx` callbacks while implementing these checkpoints.
+- No cleanup of unrelated `content.tsx` callbacks while implementing these assignments.
 
 ## Tests/Diagnostics
 
-Each code-changing checkpoint needs focused unit tests for the extracted pure helper. Tests should assert externally
+Each code-changing assignment needs focused unit tests for the extracted pure helper. Tests should assert externally
 visible contracts: message payload shape, retry delays, run/skip decisions, and compatibility with current storage or
 request semantics. Avoid tests that only duplicate a helper's internal branches without protecting a content/page
 boundary contract.
 
-Manual live diagnostics are not required for checkpoint 1 if the payload and timing tests are exact and full validation
-passes. Add manual notes only if a checkpoint changes when requests are posted, retried, or cleared.
+Manual live diagnostics are not required for assignment 1 if the payload and timing tests are exact and full validation
+passes. Add manual notes only if an assignment changes when requests are posted, retried, or cleared.
 
 ## Divergences
 
@@ -294,7 +370,7 @@ document the divergence here before continuing.
 
 ## Validation
 
-For checkpoint 1:
+For assignment 1:
 
 - `npm run test -w apps/iitc-iris -- --run src/content-side-panel-auto-requests.test.ts`
 - `npm run typecheck:iitc-iris`
@@ -302,7 +378,7 @@ For checkpoint 1:
 - `npm run package:iitc-iris`
 - `git diff --check`
 
-For checkpoint 2:
+For assignment 2:
 
 - `npm run test -w apps/iitc-iris -- --run src/content-outbound-messages.test.ts src/content-search-actions.test.ts`
 - `npm run typecheck:iitc-iris`
@@ -310,7 +386,7 @@ For checkpoint 2:
 - `npm run package:iitc-iris`
 - `git diff --check`
 
-For checkpoints 3 and 4:
+For assignments 3 and 4:
 
 - `npm run test -w apps/iitc-iris -- --run src/content-mission-refresh.test.ts src/content-search-actions.test.ts`
 - `npm run typecheck:iitc-iris`
@@ -318,5 +394,5 @@ For checkpoints 3 and 4:
 - `npm run package:iitc-iris`
 - `git diff --check`
 
-For later checkpoints, run the focused tests for every touched helper plus the same typecheck, lint, package, and diff
+For later assignments, run the focused tests for every touched helper plus the same typecheck, lint, package, and diff
 validation.

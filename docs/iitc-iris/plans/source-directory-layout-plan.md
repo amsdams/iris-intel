@@ -1,7 +1,6 @@
 # Source Directory Layout Plan
 
-Status: Checkpoint 1 complete. The first move-only `search` folder checkpoint is done. Continue with move-only layout
-one domain at a time, in checkpoint order. Checkpoint 2 is `missions`.
+Status: complete. All move-only source directory layout checkpoints are done.
 
 ## IITC Sources
 
@@ -33,8 +32,8 @@ are changed.
 
 ## Scope
 
-Move files into feature/domain folders after the Phase 2 closure audit approves this plan. The first approved checkpoint
-must be a small folder move with import rewrites only.
+Move files into feature/domain folders after the Phase 2 closure audit approves this plan. This queue is now completed
+history; keep it as a record of the move-only scopes.
 
 Preferred folder vocabulary:
 
@@ -65,15 +64,13 @@ folder is worse.
 
 ## Move Queue
 
-Choose only one domain per checkpoint. Do not combine checkpoints in one branch. Checkpoints after `missions` may be
-adjusted before execution if the code has changed, but AGY must not invent a different scope while implementing a
-checkpoint.
+Completed one domain per checkpoint. These entries are retained as the historical move-only scope.
 
 1. Search folder, done:
    - `content-search-actions.ts`
    - `content-search-actions.test.ts`
    - `search-panel.tsx`
-2. Missions folder, next:
+2. Missions folder, done:
    - `missions-panel.tsx`
    - `content-mission-refresh.ts`
    - `content-mission-refresh.test.ts`
