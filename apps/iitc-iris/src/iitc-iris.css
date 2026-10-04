@@ -1066,34 +1066,6 @@
     align-items: center;
 }
 
-.iitc-iris-analysis-chip {
-    display: inline-flex;
-    gap: var(--iitc-iris-space-2);
-    align-items: center;
-    min-height: 18px;
-    max-width: 100%;
-    padding: var(--iitc-iris-chip-padding);
-    border: 1px solid rgb(95 180 255 / 22%);
-    border-radius: 4px;
-    background: rgb(10 18 25 / 46%);
-    color: #91a6b7;
-    cursor: default;
-    font: var(--iitc-iris-button-font-sm);
-    text-transform: uppercase;
-}
-
-.iitc-iris-analysis-chip b {
-    min-width: 0;
-    color: #c7d8e8;
-    font-weight: var(--iitc-iris-font-black);
-}
-
-.iitc-iris-analysis-chip small {
-    min-width: 0;
-    color: inherit;
-    font-weight: var(--iitc-iris-font-extrabold);
-}
-
 .iitc-iris-counts-visuals {
     overflow: auto hidden;
     max-width: 100%;
@@ -1750,15 +1722,29 @@
 
 .iitc-iris-diagnostics-chip {
     display: inline-flex;
+    gap: var(--iitc-iris-space-2);
     align-items: center;
     min-height: 18px;
-    padding: 1px 6px;
+    max-width: 100%;
+    padding: var(--iitc-iris-chip-padding);
     border: 1px solid rgb(95 180 255 / 22%);
     border-radius: 4px;
     background: rgb(10 18 25 / 46%);
     color: #91a6b7;
     font: var(--iitc-iris-button-font-sm);
     text-transform: uppercase;
+}
+
+.iitc-iris-diagnostics-chip b {
+    min-width: 0;
+    color: #c7d8e8;
+    font-weight: var(--iitc-iris-font-black);
+}
+
+.iitc-iris-diagnostics-chip small {
+    min-width: 0;
+    color: inherit;
+    font-weight: var(--iitc-iris-font-extrabold);
 }
 
 .iitc-iris-diagnostics-chip[title] {

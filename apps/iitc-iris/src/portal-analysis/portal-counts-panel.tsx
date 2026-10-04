@@ -57,12 +57,12 @@ export function IitcIrisPortalCountsPanel({
         <span><b>{formatInteger(portalcounts.withKeys)}</b><small>with keys</small></span>
       </div>
       <div className="iitc-iris-analysis-chip-row">
-        <DiagnosticsChip className="iitc-iris-analysis-chip" value={formatInteger(portalcounts.history.visited)} label="Visited" />
-        <DiagnosticsChip className="iitc-iris-analysis-chip" value={formatInteger(portalcounts.history.captured)} label="Captured" />
-        <DiagnosticsChip className="iitc-iris-analysis-chip" value={formatInteger(portalcounts.history.scoutControlled)} label="Scout" />
-        <DiagnosticsChip className="iitc-iris-analysis-chip" value={formatInteger(portalcounts.missions)} label="Missions" />
-        <DiagnosticsChip className="iitc-iris-analysis-chip" value={formatInteger(portalcounts.ornaments)} label="Ornaments" />
-        <DiagnosticsChip className="iitc-iris-analysis-chip" value={formatInteger(portalcounts.artifacts)} label="Artifacts" />
+        <DiagnosticsChip value={formatInteger(portalcounts.history.visited)} label="Visited" />
+        <DiagnosticsChip value={formatInteger(portalcounts.history.captured)} label="Captured" />
+        <DiagnosticsChip value={formatInteger(portalcounts.history.scoutControlled)} label="Scout" />
+        <DiagnosticsChip value={formatInteger(portalcounts.missions)} label="Missions" />
+        <DiagnosticsChip value={formatInteger(portalcounts.ornaments)} label="Ornaments" />
+        <DiagnosticsChip value={formatInteger(portalcounts.artifacts)} label="Artifacts" />
       </div>
       {portalcounts.inaccurateAtLinkLevel && (
         <EmptyState>Portal counts are approximate at link-level zoom.</EmptyState>

@@ -97,12 +97,12 @@ export function IitcIrisPortalsListPanel({
         ))}
       </div>
       <div className="iitc-iris-analysis-chip-row">
-        <DiagnosticsChip className="iitc-iris-analysis-chip" value={formatInteger(portalsListSummary.portals)} label="Portals" />
-        <DiagnosticsChip className="iitc-iris-analysis-chip" value={formatInteger(portalsListSummary.links)} label="Links" />
-        <DiagnosticsChip className="iitc-iris-analysis-chip" value={formatInteger(portalsListSummary.fields)} label="Fields" />
-        <DiagnosticsChip className="iitc-iris-analysis-chip" value={formatInteger(portalsListSummary.enemyAp)} label="AP" />
-        <DiagnosticsChip className="iitc-iris-analysis-chip" value={formatInteger(portalsListSummary.keys)} label="Keys" />
-        <DiagnosticsChip className="iitc-iris-analysis-chip" value={portalsListSortOrder === 1 ? 'Asc' : 'Desc'} label={<>Sort {portalsListSortBy}</>} />
+        <DiagnosticsChip value={formatInteger(portalsListSummary.portals)} label="Portals" />
+        <DiagnosticsChip value={formatInteger(portalsListSummary.links)} label="Links" />
+        <DiagnosticsChip value={formatInteger(portalsListSummary.fields)} label="Fields" />
+        <DiagnosticsChip value={formatInteger(portalsListSummary.enemyAp)} label="AP" />
+        <DiagnosticsChip value={formatInteger(portalsListSummary.keys)} label="Keys" />
+        <DiagnosticsChip value={portalsListSortOrder === 1 ? 'Asc' : 'Desc'} label={<>Sort {portalsListSortBy}</>} />
       </div>
       <div className="iitc-iris-portals-list-filters">
         <TextInput

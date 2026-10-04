@@ -2,7 +2,7 @@
 
 ## Plan Dashboard
 
-Status: Checkpoint 2 complete on 2026-10-04. Ready for Checkpoint 3.
+Status: Checkpoint 3 complete on 2026-10-04. Ready for Checkpoint 4.
 
 Goal: make the IITC IRIS UI CSS more consistent and smaller by consolidating existing shared UI primitives one family at
 a time. The cleanup should delete duplicated declarations where the UI role is truly shared, while preserving feature
@@ -10,10 +10,9 @@ classes for domain color, state, layout, and labels.
 
 Next approved slice:
 
-- Checkpoint 3: `DiagnosticsChip` / `ChipButton` consolidation.
-
-Deferred until Checkpoint 3 is reviewed:
 - Checkpoint 4: control shell tokens for inputs, selects, buttons, and panel-like boxes.
+
+Deferred until Checkpoint 4 is reviewed:
 - Checkpoint 5: safe truncation utility audit and one-feature migration.
 
 Do not start more than one checkpoint at a time. After each checkpoint, update this plan with what was changed, what was
@@ -220,7 +219,7 @@ Stop condition:
 
 ## Checkpoint 3: DiagnosticsChip And ChipButton
 
-Status: Deferred until Checkpoint 2 is reviewed or skipped with a documented reason.
+Status: Complete and verified on 2026-10-04.
 
 Goal: centralize diagnostics chip box styling and delete duplicate analysis-chip overrides that repeat the base shape.
 
@@ -238,6 +237,13 @@ Rules:
 - keep `PlainDiagnosticsChip` flexible for inline diagnostic text;
 - keep button-specific cursor, hover, and focus behavior in `ChipButton`;
 - do not merge this with `Badge`; diagnostics chips have different structure and use.
+
+Completed consolidation:
+
+- Merged `.iitc-iris-analysis-chip` box styling (gap, max-width) into `.iitc-iris-diagnostics-chip`.
+- Merged typography for `b` and `small` tags from `.iitc-iris-analysis-chip` to `.iitc-iris-diagnostics-chip`.
+- Deleted `.iitc-iris-analysis-chip` and `.iitc-iris-analysis-chip-row` overrides since the components natively handle it now.
+- Removed `className="iitc-iris-analysis-chip"` from all `DiagnosticsChip` calls in `portals-list-panel.tsx` and `portal-counts-panel.tsx`.
 
 Stop condition:
 
