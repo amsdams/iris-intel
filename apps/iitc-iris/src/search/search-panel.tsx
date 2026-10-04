@@ -96,7 +96,7 @@ export function IitcIrisSearchPanel(props: IitcIrisSearchPanelProps): h.JSX.Elem
                 };
                 return (
                   <div
-                    className={`iitc-iris-search-result-row iitc-iris-search-result-${result.type} ${active ? 'is-active' : ''}`}
+                    className={`iitc-iris-list-item iitc-iris-search-result-row iitc-iris-search-result-${result.type} ${active ? 'is-active' : ''}`}
                     key={result.id}
                     onMouseEnter={preview}
                     onMouseLeave={() => props.previewSearchResult(null)}

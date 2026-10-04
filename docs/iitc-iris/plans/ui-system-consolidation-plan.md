@@ -197,49 +197,52 @@ Kept local:
 
 ## Assignment 3: Row/List Item Family
 
-Status: Complete on 2026-10-04 (no-op — no shared base class warranted).
+Status: Complete on 2026-10-04.
 
 Goal: reduce repeated list-row CSS and improve consistent density across panels.
 
-Analysis: all five candidate row types were inspected against the shared-contract test.
+Introduced `.iitc-iris-list-item` base class owning the full visual contract:
 
-| Row class                                                | border opacity                                     | border-radius | background opacity | padding                       |
-|----------------------------------------------------------|----------------------------------------------------|---------------|--------------------|-------------------------------|
-| `.iitc-iris-search-result-row`                           | transparent (0%)                                   | 5px           | transparent        | none                          |
-| `.iitc-iris-inventory-row`                               | 14%                                                | 4px           | 46%                | 4px 6px                       |
-| `.iitc-iris-mission-row` / `.iitc-iris-mission-waypoint` | 16%                                                | 5px           | 58%                | 5px                           |
-| `.iitc-iris-draw-tools-list-item`                        | 18%                                                | 4px           | 62%                | var(--iitc-iris-item-padding) |
-| `portals-list-table` rows                                | different element (`<tr>`) — excluded by role rule |               |                    |                               |
+- `display: grid`
+- `min-width: 0`
+- `padding: 5px 6px`
+- `border: 1px solid rgb(95 180 255 / 16%)`
+- `border-radius: 4px`
+- `background: rgb(10 18 25 / 62%)`
 
-No shared base class introduced because:
+Updated call sites (all emit `iitc-iris-list-item <variant>`):
 
-- Border opacity differs across all four (transparent, 14%, 16%, 18%); a base value would force 3 of 4 to immediately
-  override it, adding selectors rather than removing them.
-- Background opacity differs across all (46%, 58%, 62%, transparent); same problem.
-- Border-radius splits evenly: 4px vs 5px. A 4px base forces mission rows to override; a 5px base forces inventory and
-  draw-tools to override.
-- Padding is close (`4px 6px` / `5px` / `5px 6px`) but each is intentionally domain-tuned; forcing the same token
-  produces visible density drift.
-- `display: grid; min-width: 0` is shared in 3 of 4, but extracting only those two declarations into a base class saves
-  4–6 lines while adding a new selector group — a net wash or worse.
+- `search-panel.tsx` — `iitc-iris-search-result-row`
+- `inventory-panel.tsx` — `iitc-iris-inventory-row` (3 instances including button variant)
+- `passcode-panel.tsx` — `iitc-iris-inventory-row` (2 instances)
+- `missions-panel.tsx` — `iitc-iris-mission-row` and `iitc-iris-mission-waypoint`
+- `draw-tools-panel.tsx` — `iitc-iris-draw-tools-list-item` (link and marker)
+- `comm-message-list.tsx` — `iitc-iris-comm-row`
 
-Per the plan's own done criteria: "Some local CSS is the right answer for domain-specific UI." A base class here would
-add CSS complexity, not reduce it.
+Each variant now owns only:
 
-Kept local (all row CSS stays as-is):
+- `grid-template-columns` (always unique)
+- `gap` and `align-items` where they differ
+- `border-color` override when it differs from the 16% base
+- `border-radius: 5px` override for mission and search rows
+- Domain colors (accent `box-shadow`, `border-left-color`, hover/active state colors)
+- Button-specific resets (`font: inherit`, `cursor`, `text-align`)
 
-- `.iitc-iris-search-result-row` — transparent border/background until hover; unique hover + active + focus-within
-  states.
-- `.iitc-iris-inventory-row` — tighter 4px 6px padding; color accent via `--iitc-iris-item-color` custom property;
-  `button.iitc-iris-inventory-row` specialization.
-- `.iitc-iris-mission-row` / `.iitc-iris-mission-waypoint` — shared selector already groups both; yellow hover/active
-  colors are domain-specific.
-- `.iitc-iris-draw-tools-list-item` — uses `var(--iitc-iris-item-padding)` token correctly; already the most
-  token-aligned of the group.
+Kept local (explicit per-variant overrides):
+
+- `.iitc-iris-search-result-row`: `padding: 0; background: transparent; border-color: transparent; border-radius: 5px`
+  — it is a transparent wrapper; background and padding live on its child `button.iitc-iris-search-result`.
+- `.iitc-iris-inventory-row`: `border-color: rgb(95 180 255 / 14%)` + left-accent `box-shadow`
+- `.iitc-iris-mission-row`/`.iitc-iris-mission-waypoint`: `border-radius: 5px`; yellow hover/active states
+- `.iitc-iris-draw-tools-list-item`: `border-color: rgb(95 180 255 / 18%)`
+- `.iitc-iris-comm-row`: `border-color: rgb(95 180 255 / 18%)` (18% vs base 16%)
+- `portals-list-table` rows excluded (native `<tr>` — different semantic role)
+
+
 
 ## Assignment 4: Compact Metadata Family
 
-Status: Deferred until Assignment 3 is reviewed.
+Status: Not started.
 
 Goal: finish compact display consistency around `Badge`, `StatusText`, `DiagnosticsChip`, and `SummaryCell`.
 

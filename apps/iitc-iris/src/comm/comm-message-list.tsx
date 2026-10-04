@@ -12,7 +12,7 @@ export interface IitcIrisCommMessageListProps {
 
 function IitcIrisCommMessageRow({message, addNickname, selectPortal}: {message: IitcIrisCommMessage; addNickname: (nickname: string) => void; selectPortal: (latE6?: number, lngE6?: number, portalGuid?: string) => void}): h.JSX.Element {
   const displayParts = getCommDisplayParts(message);
-  return <div className={`iitc-iris-comm-row ${message.alert ? 'is-alert' : ''} ${message.narrowcast ? 'is-direct' : ''}`} title={formatCommContextTitle(message)}>
+  return <div className={`iitc-iris-list-item iitc-iris-comm-row ${message.alert ? 'is-alert' : ''} ${message.narrowcast ? 'is-direct' : ''}`} title={formatCommContextTitle(message)}>
     <span className={`iitc-iris-comm-meta ${getCommTeamClass(message.team)}`}><b>{formatCommTime(message.time)}</b><span className="iitc-iris-comm-tags">{message.auto && <small>system</small>}{message.alert && <small>alert</small>}{message.narrowcast && <small>direct</small>}</span></span>
     <span className={`iitc-iris-comm-text ${message.narrowcast ? 'is-narrowcast' : ''}`}><span className={`iitc-iris-comm-actor ${getCommTeamClass(message.playerTeam || message.team)}`}>{formatCommActor(message)}</span>{displayParts.length > 0 ? displayParts.map((part, index) => {
       const key = `${message.id}-${index}`;

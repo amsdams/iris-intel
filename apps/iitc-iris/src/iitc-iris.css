@@ -229,13 +229,21 @@
     color: #d7e7f5;
 }
 
-.iitc-iris-search-result-row {
+/* Shared list-item base: grid layout, border shell, and border-radius for all row/item types. */
+.iitc-iris-list-item {
     display: grid;
+    min-width: 0;
+    padding: 5px 6px;
+    border: 1px solid rgb(95 180 255 / 16%);
+    border-radius: 4px;
+    background: rgb(10 18 25 / 62%);
+}
+
+.iitc-iris-search-result-row {
     grid-template-columns: minmax(0, 1fr) auto;
     gap: var(--iitc-iris-space-1);
-    min-width: 0;
-    border: 1px solid transparent;
-    border-radius: 5px;
+    padding: 0;
+    border-color: transparent;
     background: transparent;
 }
 
@@ -1766,15 +1774,9 @@
 
 .iitc-iris-mission-row,
 .iitc-iris-mission-waypoint {
-    display: grid;
     grid-template-columns: 42px minmax(0, 1fr);
     gap: 8px;
     align-items: center;
-    min-width: 0;
-    padding: 5px;
-    border: 1px solid rgb(95 180 255 / 16%);
-    border-radius: 5px;
-    background: rgb(9 20 28 / 58%);
     color: #d7e7f5;
     font: inherit;
     text-align: left;
@@ -1964,14 +1966,8 @@
 }
 
 .iitc-iris-comm-row {
-    display: grid;
     grid-template-columns: 74px minmax(0, 1fr);
     gap: 4px 8px;
-    min-width: 0;
-    padding: 5px 6px;
-    border: 1px solid rgb(95 180 255 / 18%);
-    border-radius: 4px;
-    background: rgb(10 18 25 / 62%);
 }
 
 .iitc-iris-comm-row.is-alert,
@@ -2460,15 +2456,9 @@
 .iitc-iris-inventory-row {
     --iitc-iris-item-color: rgb(95 180 255 / 45%);
 
-    display: grid;
     grid-template-columns: minmax(0, 1fr) max-content;
     gap: 2px 8px;
     align-items: baseline;
-    min-width: 0;
-    padding: 4px 6px;
-    border: 1px solid rgb(95 180 255 / 14%);
-    border-radius: 4px;
-    background: rgb(10 18 25 / 46%);
     border-left-color: var(--iitc-iris-item-color);
     box-shadow: inset 2px 0 0 var(--iitc-iris-item-color);
 }
@@ -3219,14 +3209,9 @@ button.iitc-iris-inventory-row:hover {
 }
 
 .iitc-iris-draw-tools-list-item {
-    display: grid;
     grid-template-columns: minmax(0, 1fr) max-content;
     gap: var(--iitc-iris-space-3);
     align-items: center;
-    padding: var(--iitc-iris-item-padding);
-    border: 1px solid rgb(95 180 255 / 18%);
-    border-radius: 4px;
-    background: rgb(10 18 25 / 62%);
 }
 
 .iitc-iris-draw-tools-marker-dot {

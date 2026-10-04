@@ -152,7 +152,7 @@ function MissionDetails(props: {
     <div className="iitc-iris-mission-waypoint-list">
       {selectedMission.waypoints.map((waypoint) => (
         <button
-          className={`iitc-iris-mission-waypoint ${waypoint.hidden ? 'is-hidden' : ''}`}
+          className={`iitc-iris-list-item iitc-iris-mission-waypoint ${waypoint.hidden ? 'is-hidden' : ''}`}
           type="button"
           key={`${waypoint.guid}-${waypoint.index}`}
           onClick={() => {
@@ -224,7 +224,7 @@ export function IitcIrisMissionsPanel(props: IitcIrisMissionsPanelProps): h.JSX.
           {missionsState.missions.map((mission) => (
             <div className="iitc-iris-mission-entry" key={mission.guid}>
               <button
-                className={`iitc-iris-mission-row ${missionsState.selectedMission?.guid === mission.guid ? 'is-active' : ''}`}
+                className={`iitc-iris-list-item iitc-iris-mission-row ${missionsState.selectedMission?.guid === mission.guid ? 'is-active' : ''}`}
                 type="button"
                 onClick={() => props.requestMissionDetails(mission.guid)}
                 disabled={missionsState.detailsStatus === 'loading' && missionsState.selectedMission?.guid === mission.guid}

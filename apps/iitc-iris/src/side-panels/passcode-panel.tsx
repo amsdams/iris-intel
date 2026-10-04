@@ -57,7 +57,7 @@ export function IitcIrisPasscodePanel(props: IitcIrisPasscodePanelProps): h.JSX.
     {passcodeState.other && passcodeState.other.length > 0 && (
       <div className="iitc-iris-inventory-list">
         {passcodeState.other.map((reward) => (
-          <div className="iitc-iris-inventory-row" key={reward}>
+          <div className="iitc-iris-list-item iitc-iris-inventory-row" key={reward}>
             <span>{reward}</span>
             <b>1</b>
           </div>
@@ -68,7 +68,7 @@ export function IitcIrisPasscodePanel(props: IitcIrisPasscodePanelProps): h.JSX.
       <div className="iitc-iris-inventory-list">
         {passcodeState.items.map((item, index) => (
           <div
-            className="iitc-iris-inventory-row"
+            className="iitc-iris-list-item iitc-iris-inventory-row"
             key={`${item.label}-${item.level ?? ''}-${index}`}
             style={formatIitcColorVars(getIitcLevelColor(item.level))}
           >

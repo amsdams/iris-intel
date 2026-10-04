@@ -138,7 +138,7 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
             ? `${endpointLabels.from} -> ${endpointLabels.to}`
             : getDrawToolsItemDetail(item);
           return (
-            <div className="iitc-iris-draw-tools-list-item" key={`link-${item.storageIndex}`}>
+            <div className="iitc-iris-list-item iitc-iris-draw-tools-list-item" key={`link-${item.storageIndex}`}>
               <span className="iitc-iris-draw-tools-list-label">
                 <b>{getDrawToolsItemLabel(item, index)}</b>
                 <small title={getDrawToolsItemDetail(item)}>{detail}</small>
@@ -232,7 +232,7 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
         const portalInfo = props.markerPortalInfoByStorageIndex[item.storageIndex];
         const createdIndex = createdIndexByStorageIndex[item.storageIndex] ?? 0;
         return (
-          <div className="iitc-iris-draw-tools-list-item" key={`marker-${item.storageIndex}`}>
+          <div className="iitc-iris-list-item iitc-iris-draw-tools-list-item" key={`marker-${item.storageIndex}`}>
             <span className="iitc-iris-draw-tools-marker-dot" style={{background: item.color ?? DRAW_TOOLS_DEFAULT_COLOR}} />
             <span className="iitc-iris-draw-tools-list-label">
               {props.editingMarkerIndex === item.storageIndex ? (

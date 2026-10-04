@@ -64,7 +64,7 @@ export function IitcIrisInventoryPanel({inventoryState, refresh, zoomToAndShowPo
           <StatusText>Selected key capsules</StatusText>
           <div className="iitc-iris-inventory-list">
             {Object.entries(inventoryState.portalKeysForSelectedPortal.capsules).map(([capsule, count]) => (
-              <div className="iitc-iris-inventory-row" key={capsule}>
+              <div className="iitc-iris-list-item iitc-iris-inventory-row" key={capsule}>
                 <span>{capsule}</span>
                 <b>{count}</b>
               </div>
@@ -78,7 +78,7 @@ export function IitcIrisInventoryPanel({inventoryState, refresh, zoomToAndShowPo
           <div className="iitc-iris-inventory-list">
             {inventoryState.topItems.map((item) => (
               <div
-                className="iitc-iris-inventory-row"
+                className="iitc-iris-list-item iitc-iris-inventory-row"
                 key={`${item.type}-${item.level ?? ''}-${item.rarity ?? ''}-${item.label}`}
                 style={formatIitcColorVars(getIitcItemColor(item))}
               >
@@ -95,7 +95,7 @@ export function IitcIrisInventoryPanel({inventoryState, refresh, zoomToAndShowPo
           <StatusText>Top keys</StatusText>
           <div className="iitc-iris-inventory-list">
             {inventoryState.topKeys.map((key) => (
-              <button className="iitc-iris-inventory-row iitc-iris-inventory-key-row" type="button" key={key.portalGuid} title={key.portalGuid} onClick={() => zoomToAndShowPortal(key.portalGuid, undefined, undefined)}>
+              <button className="iitc-iris-list-item iitc-iris-inventory-row iitc-iris-inventory-key-row" type="button" key={key.portalGuid} title={key.portalGuid} onClick={() => zoomToAndShowPortal(key.portalGuid, undefined, undefined)}>
                 <span>{key.portalTitle || key.portalGuid}</span>
                 <b>{key.count}</b>
                 {key.capsule > 0 && <small>{key.capsule} capsule</small>}
