@@ -268,11 +268,11 @@ export function IitcIrisMissionsPanel(props: IitcIrisMissionsPanelProps): h.JSX.
         </PlainDiagnosticsChip>
       )}
       {missionsState.error && (
-        <span className="iitc-iris-warning" title={missionsState.error}>
+        <StatusText className="iitc-iris-warning" title={missionsState.error}>
           {missionsState.status === 'auth' || missionsState.detailsStatus === 'auth'
             ? 'Missions require an authenticated Intel session.'
             : getAuthErrorMessage(missionsState.status, missionsState.error)}
-        </span>
+        </StatusText>
       )}
     </PanelFooter>
   </PanelBody>;

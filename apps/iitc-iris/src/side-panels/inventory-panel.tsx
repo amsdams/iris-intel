@@ -125,11 +125,11 @@ export function IitcIrisInventoryPanel({inventoryState, refresh, zoomToAndShowPo
         </PlainDiagnosticsChip>
       )}
       {inventoryState.error && (
-        <span className="iitc-iris-warning" title={inventoryState.error}>
+        <StatusText className="iitc-iris-warning" title={inventoryState.error}>
           {inventoryState.status === 'auth'
             ? 'Inventory requires an authenticated Intel session.'
             : getAuthErrorMessage(inventoryState.status, inventoryState.error)}
-        </span>
+        </StatusText>
       )}
     </PanelFooter>
   </PanelBody>;

@@ -2,7 +2,7 @@
 
 ## Plan Dashboard
 
-Status: Checkpoint 1 complete on 2026-10-04. Ready for Checkpoint 2.
+Status: Checkpoint 2 complete on 2026-10-04. Ready for Checkpoint 3.
 
 Goal: make the IITC IRIS UI CSS more consistent and smaller by consolidating existing shared UI primitives one family at
 a time. The cleanup should delete duplicated declarations where the UI role is truly shared, while preserving feature
@@ -10,11 +10,9 @@ classes for domain color, state, layout, and labels.
 
 Next approved slice:
 
-- Checkpoint 2: `StatusText` / panel-state compact label consolidation.
-
-Deferred until Checkpoint 2 is reviewed:
-
 - Checkpoint 3: `DiagnosticsChip` / `ChipButton` consolidation.
+
+Deferred until Checkpoint 3 is reviewed:
 - Checkpoint 4: control shell tokens for inputs, selects, buttons, and panel-like boxes.
 - Checkpoint 5: safe truncation utility audit and one-feature migration.
 
@@ -182,7 +180,7 @@ Stop condition:
 
 ## Checkpoint 2: StatusText And Panel-State Labels
 
-Status: Deferred until Checkpoint 1 is reviewed.
+Status: Complete and verified on 2026-10-04.
 
 Goal: consolidate repeated compact status-label declarations around `StatusText` while preserving semantic state classes.
 
@@ -208,6 +206,13 @@ Rules:
 - preserve `is-loading`, `is-ready`, `is-muted`, and `is-warning` state colors;
 - keep unboxed text statuses unboxed;
 - avoid forcing all `StatusText` usages into one visual shape.
+
+Completed consolidation:
+
+- Upgraded `.iitc-iris-status` base class to establish the default shared `text-sm` font size and `line-compact` height while keeping it unboxed.
+- Converted all scattered raw `<span className="iitc-iris-warning">` and `iitc-iris-map-control-status` instances in TSX to use the `<StatusText>` component.
+- Removed now-redundant font-size and line-height declarations from `.iitc-iris-map-control-status` and `.iitc-iris-map-controls-section > .iitc-iris-status`.
+- Verified `.iitc-iris-warning` and `.iitc-iris-compare` now inherit standard text sizes properly when combined with `<StatusText>`.
 
 Stop condition:
 

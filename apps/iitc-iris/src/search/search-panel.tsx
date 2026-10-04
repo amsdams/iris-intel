@@ -133,7 +133,7 @@ export function IitcIrisSearchPanel(props: IitcIrisSearchPanelProps): h.JSX.Elem
               })}
             </div>
           ))}
-          {props.searchState.error && <span className="iitc-iris-warning">{props.searchState.error}</span>}
+          {props.searchState.error && <StatusText className="iitc-iris-warning">{props.searchState.error}</StatusText>}
         </div>
       )}
       <PanelFooter>

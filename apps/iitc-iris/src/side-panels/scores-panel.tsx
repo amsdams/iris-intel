@@ -105,11 +105,11 @@ export function IitcIrisScoresPanel({scoresState, refresh}: IitcIrisScoresPanelP
         {scoresState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(scoresState.elapsedMs)}s` : 'request'}
       </PlainDiagnosticsChip>
       {(scoresState.error || scoresState.region?.error) && (
-        <span className="iitc-iris-warning" title={scoresState.error || scoresState.region?.error}>
+        <StatusText className="iitc-iris-warning" title={scoresState.error || scoresState.region?.error}>
           {scoresState.status === 'auth' || scoresState.region?.status === 'auth'
             ? 'Scores require an authenticated Intel session.'
             : getAuthErrorMessage(scoresState.status, scoresState.error || scoresState.region?.error)}
-        </span>
+        </StatusText>
       )}
     </PanelFooter>
   </PanelBody>;

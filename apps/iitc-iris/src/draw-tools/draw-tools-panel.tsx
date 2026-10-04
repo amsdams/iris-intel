@@ -1,3 +1,4 @@
+import {StatusText} from '../ui/status-text';
 import {h} from 'preact';
 import {useState} from 'preact/hooks';
 import {
@@ -128,7 +129,7 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
         <ActionButton className={props.clearConfirm === 'polyline' ? 'is-danger' : ''} onClick={() => props.clearItems('polyline')} disabled={props.linkItems.length === 0} title="Clear all drawn links">
           {props.clearConfirm === 'polyline' ? 'Confirm' : 'Clear'}
         </ActionButton>
-        {props.importStatus && <span className="iitc-iris-map-control-status">{props.importStatus}</span>}
+        {props.importStatus && <StatusText className="iitc-iris-map-control-status">{props.importStatus}</StatusText>}
       </div>
       {props.linkItems.length > 0 && <div className="iitc-iris-draw-tools-list" aria-label="Drawn links">
         {props.linkItems.map((item, index) => {
@@ -209,7 +210,7 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
       <ActionButton className={props.clearConfirm === 'marker' ? 'is-danger' : ''} onClick={() => props.clearItems('marker')} disabled={props.markerItems.length === 0} title="Clear all drawn markers">
         {props.clearConfirm === 'marker' ? 'Confirm' : 'Clear'}
       </ActionButton>
-      {props.importStatus && <span className="iitc-iris-map-control-status">{props.importStatus}</span>}
+      {props.importStatus && <StatusText className="iitc-iris-map-control-status">{props.importStatus}</StatusText>}
     </div>
     {props.markerItems.length > 0 && <div className="iitc-iris-map-context-row iitc-iris-draw-tools-list-controls">
       <label>

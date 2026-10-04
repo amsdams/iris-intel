@@ -43,7 +43,7 @@ export function IitcIrisMapNavigationPanel({
         <button className="iitc-iris-nav-button" type="button" onClick={() => zoomMap(-1)} title="Zoom out" aria-label="Zoom out">-</button>
         <button className="iitc-iris-nav-button iitc-iris-nav-button-wide" type="button" onClick={locateBrowserPosition} title="Pan to current browser location">Locate</button>
       </ControlRow>
-      {geolocationStatus && <span className="iitc-iris-map-control-status">{geolocationStatus}</span>}
+      {geolocationStatus && <StatusText className="iitc-iris-map-control-status">{geolocationStatus}</StatusText>}
     </Section>
   );
 }

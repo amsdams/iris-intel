@@ -64,9 +64,9 @@ export function IitcIrisCommPanel(props: IitcIrisCommPanelProps): h.JSX.Element 
         {commState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(commState.elapsedMs)}s` : 'request'}
       </PlainDiagnosticsChip>
       {commState.error && (
-        <span className="iitc-iris-warning" title={commState.error}>
+        <StatusText className="iitc-iris-warning" title={commState.error}>
           {commState.status === 'auth' ? 'COMM requires an authenticated Intel session.' : getAuthErrorMessage(commState.status, commState.error)}
-        </span>
+        </StatusText>
       )}
     </PanelFooter>
   </PanelBody>;
