@@ -252,8 +252,10 @@ Status: partially complete for the supported native slice; `DrawTools Opt` remai
 
 Completed:
 
-- Added per-type copy and all-supported-item `Export` from `Map > Links` and `Map > Markers` for IITC Draw Tools JSON
+- Added per-type copy and all-supported-item copy from `Map > Links` and `Map > Markers` for IITC Draw Tools JSON
   records: `polyline` and `marker`.
+- Import controls are collapsed behind an `Import` action in the native Links and Markers sheets; copy actions stay
+  directly visible for frequent use.
 - Added paste/import for supported IITC Draw Tools JSON records. Unsupported `polygon` and `circle` records are filtered
   out for now because they are intentionally not rendered in this milestone.
 - Added import status text that reports skipped unsupported records when IITC JSON contains polygons/circles.

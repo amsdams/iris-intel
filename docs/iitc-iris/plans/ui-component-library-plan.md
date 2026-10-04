@@ -402,6 +402,10 @@ Validation:
 
 Status: optional; only if Draw Tools work is active or the panel remains hard to maintain after form CSS reassessment.
 
+UX note from 2026-10-04: Draw Tools import was collapsed behind a local `Import` toggle in Links and Markers so frequent
+marker/list workflows keep more vertical space, especially on mobile. This was intentionally implemented as local Draw
+Tools layout state, not a generic tabs/disclosure component and not a completion of this extraction assignment.
+
 Goal: simplify Draw Tools only if local repeated markup is hiding the feature logic.
 
 Candidate components:

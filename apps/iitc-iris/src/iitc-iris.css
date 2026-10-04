@@ -1113,6 +1113,7 @@
 .iitc-iris-portals-list-filters select {
     min-width: 0;
     box-sizing: border-box;
+    padding: 0 5px;
     border: 1px solid rgb(95 180 255 / 24%);
     border-radius: 4px;
     color: #d7e7f5;
@@ -1126,10 +1127,6 @@
 
 .iitc-iris-portals-list-filters input {
     padding: 0 8px;
-}
-
-.iitc-iris-portals-list-filters select {
-    padding: 0 5px;
 }
 
 .iitc-iris-portals-list-summary {
@@ -3133,6 +3130,19 @@ button.iitc-iris-inventory-row:hover {
     align-items: center;
 }
 
+.iitc-iris-draw-tools-actions-row {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.iitc-iris-draw-tools-actions-row .iitc-iris-map-context-coords {
+    flex: 1 1 130px;
+}
+
+.iitc-iris-draw-tools-actions-row .iitc-iris-map-control-status {
+    flex: 1 1 100%;
+}
+
 .iitc-iris-draw-tools-marker-swatch {
     width: 22px;
     height: 22px;
@@ -3324,6 +3334,8 @@ button.iitc-iris-inventory-row:hover {
 }
 
 .iitc-iris-draw-tools-import-input {
+    box-sizing: border-box;
+    min-width: 0;
     width: 100%;
     min-height: 54px;
     resize: vertical;

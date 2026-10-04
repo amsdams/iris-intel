@@ -71,7 +71,7 @@ export interface IitcIrisDrawToolsPanelProps {
   undoItem: (itemType?: DrawToolsItemType) => void;
 }
 
-function IitcIrisDrawToolsImport(props: Pick<IitcIrisDrawToolsPanelProps, 'importMerge' | 'importStatus' | 'importText' | 'importItems' | 'setImportMerge' | 'setImportText'>): h.JSX.Element {
+function IitcIrisDrawToolsImport(props: Pick<IitcIrisDrawToolsPanelProps, 'importMerge' | 'importText' | 'importItems' | 'setImportMerge' | 'setImportText'>): h.JSX.Element {
   return <div className="iitc-iris-draw-tools-import">
     <span className="iitc-iris-draw-tools-interop">IITC Draw Tools JSON: links and markers</span>
     <textarea
@@ -87,7 +87,6 @@ function IitcIrisDrawToolsImport(props: Pick<IitcIrisDrawToolsPanelProps, 'impor
         Merge
       </label>
       <ActionButton onClick={props.importItems} disabled={!props.importText.trim()} title="Import supported links and markers">Import</ActionButton>
-      {props.importStatus && <span className="iitc-iris-map-control-status">{props.importStatus}</span>}
     </div>
   </div>;
 }
@@ -97,6 +96,7 @@ function getLevelChipTextColor(level: number): string {
 }
 
 export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JSX.Element {
+  const [importOpen, setImportOpen] = useState(false);
   const [markerTeamFilter, setMarkerTeamFilter] = useState<DrawToolsMarkerTeamFilter>('all');
   const [markerSort, setMarkerSort] = useState<DrawToolsMarkerSort>('nearby');
 
@@ -117,14 +117,18 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
           From {props.linkStart.lat.toFixed(6)}, {props.linkStart.lng.toFixed(6)}
         </span>
       </div>}
-      <div className="iitc-iris-map-context-row">
+      <div className="iitc-iris-map-context-row iitc-iris-draw-tools-actions-row">
         <span className="iitc-iris-map-context-coords">{props.linkItems.length.toLocaleString()} drawn links</span>
         <ActionButton onClick={() => props.undoItem('polyline')} disabled={props.linkItems.length === 0} title="Remove latest drawn link">Undo</ActionButton>
         <ActionButton onClick={() => props.copyItems('polyline')} disabled={props.linkItems.length === 0} title="Copy drawn links as IITC Draw Tools JSON">Copy</ActionButton>
-        <ActionButton onClick={() => props.copyItems()} disabled={props.allItemsCount === 0} title="Export all supported Draw Tools items as IITC JSON">Export</ActionButton>
+        <ActionButton onClick={() => props.copyItems()} disabled={props.allItemsCount === 0} title="Copy all supported Draw Tools items as IITC JSON">Copy all</ActionButton>
+        <ActionButton onClick={() => setImportOpen((open) => !open)} aria-pressed={importOpen} title={importOpen ? 'Hide IITC Draw Tools JSON import' : 'Show IITC Draw Tools JSON import'}>
+          {importOpen ? 'Hide' : 'Import'}
+        </ActionButton>
         <ActionButton className={props.clearConfirm === 'polyline' ? 'is-danger' : ''} onClick={() => props.clearItems('polyline')} disabled={props.linkItems.length === 0} title="Clear all drawn links">
           {props.clearConfirm === 'polyline' ? 'Confirm' : 'Clear'}
         </ActionButton>
+        {props.importStatus && <span className="iitc-iris-map-control-status">{props.importStatus}</span>}
       </div>
       {props.linkItems.length > 0 && <div className="iitc-iris-draw-tools-list" aria-label="Drawn links">
         {props.linkItems.map((item, index) => {
@@ -146,7 +150,7 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
           );
         })}
       </div>}
-      <IitcIrisDrawToolsImport {...props} />
+      {importOpen && <IitcIrisDrawToolsImport {...props} />}
     </Section>;
   }
 
@@ -193,15 +197,19 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
         ))}
       </span>
     </div>
-    <div className="iitc-iris-map-context-row">
+    <div className="iitc-iris-map-context-row iitc-iris-draw-tools-actions-row">
       <span className="iitc-iris-map-context-coords">{markerSummary}</span>
       <ActionButton onClick={() => props.deleteAtContext('marker')} disabled={!props.target} title="Delete nearest drawn marker">Del</ActionButton>
       <ActionButton onClick={() => props.undoItem('marker')} disabled={props.markerItems.length === 0} title="Remove latest drawn marker">Undo</ActionButton>
       <ActionButton onClick={() => props.copyItems('marker')} disabled={props.markerItems.length === 0} title="Copy drawn markers as IITC Draw Tools JSON">Copy</ActionButton>
-      <ActionButton onClick={() => props.copyItems()} disabled={props.allItemsCount === 0} title="Export all supported Draw Tools items as IITC JSON">Export</ActionButton>
+      <ActionButton onClick={() => props.copyItems()} disabled={props.allItemsCount === 0} title="Copy all supported Draw Tools items as IITC JSON">Copy all</ActionButton>
+      <ActionButton onClick={() => setImportOpen((open) => !open)} aria-pressed={importOpen} title={importOpen ? 'Hide IITC Draw Tools JSON import' : 'Show IITC Draw Tools JSON import'}>
+        {importOpen ? 'Hide' : 'Import'}
+      </ActionButton>
       <ActionButton className={props.clearConfirm === 'marker' ? 'is-danger' : ''} onClick={() => props.clearItems('marker')} disabled={props.markerItems.length === 0} title="Clear all drawn markers">
         {props.clearConfirm === 'marker' ? 'Confirm' : 'Clear'}
       </ActionButton>
+      {props.importStatus && <span className="iitc-iris-map-control-status">{props.importStatus}</span>}
     </div>
     {props.markerItems.length > 0 && <div className="iitc-iris-map-context-row iitc-iris-draw-tools-list-controls">
       <label>
@@ -265,6 +273,6 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
         );
       })}
     </div>}
-    <IitcIrisDrawToolsImport {...props} />
+    {importOpen && <IitcIrisDrawToolsImport {...props} />}
   </Section>;
 }
