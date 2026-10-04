@@ -2,7 +2,7 @@
 
 ## Plan Dashboard
 
-Status: Checkpoint 3 complete on 2026-10-04. Ready for Checkpoint 4.
+Status: Checkpoint 4 complete on 2026-10-04. Ready for Checkpoint 5.
 
 Goal: make the IITC IRIS UI CSS more consistent and smaller by consolidating existing shared UI primitives one family at
 a time. The cleanup should delete duplicated declarations where the UI role is truly shared, while preserving feature
@@ -10,9 +10,6 @@ classes for domain color, state, layout, and labels.
 
 Next approved slice:
 
-- Checkpoint 4: control shell tokens for inputs, selects, buttons, and panel-like boxes.
-
-Deferred until Checkpoint 4 is reviewed:
 - Checkpoint 5: safe truncation utility audit and one-feature migration.
 
 Do not start more than one checkpoint at a time. After each checkpoint, update this plan with what was changed, what was
@@ -208,10 +205,10 @@ Rules:
 
 Completed consolidation:
 
-- Upgraded `.iitc-iris-status` base class to establish the default shared `text-sm` font size and `line-compact` height while keeping it unboxed.
-- Converted all scattered raw `<span className="iitc-iris-warning">` and `iitc-iris-map-control-status` instances in TSX to use the `<StatusText>` component.
-- Removed now-redundant font-size and line-height declarations from `.iitc-iris-map-control-status` and `.iitc-iris-map-controls-section > .iitc-iris-status`.
-- Verified `.iitc-iris-warning` and `.iitc-iris-compare` now inherit standard text sizes properly when combined with `<StatusText>`.
+- Converted scattered raw `<span className="iitc-iris-warning">` and `iitc-iris-map-control-status` instances in TSX to use the `<StatusText>` component.
+- Left `.iitc-iris-status` as a color/state-only class since it is used correctly alongside `<StatusText>`.
+- Preserved `.iitc-iris-map-control-status` local ownership of its specific `font-size` and `line-height`.
+- Verified `.iitc-iris-warning` and `.iitc-iris-compare` combine cleanly with `<StatusText>` defaults.
 
 Stop condition:
 
@@ -242,7 +239,8 @@ Completed consolidation:
 
 - Merged `.iitc-iris-analysis-chip` box styling (gap, max-width) into `.iitc-iris-diagnostics-chip`.
 - Merged typography for `b` and `small` tags from `.iitc-iris-analysis-chip` to `.iitc-iris-diagnostics-chip`.
-- Deleted `.iitc-iris-analysis-chip` and `.iitc-iris-analysis-chip-row` overrides since the components natively handle it now.
+- Deleted `.iitc-iris-analysis-chip` override since the components natively handle it now.
+- Preserved `.iitc-iris-analysis-chip-row` since it is a layout container used by portal analysis panels.
 - Removed `className="iitc-iris-analysis-chip"` from all `DiagnosticsChip` calls in `portals-list-panel.tsx` and `portal-counts-panel.tsx`.
 
 Stop condition:
@@ -251,7 +249,7 @@ Stop condition:
 
 ## Checkpoint 4: Control Shell Shape Tokens
 
-Status: Deferred.
+Status: Complete and verified on 2026-10-04.
 
 Goal: reduce repeated border/radius declarations for controls without pretending controls are chips.
 
@@ -262,16 +260,12 @@ Candidate buckets:
 - segmented controls;
 - panel or row shells.
 
-Allowed:
+Completed consolidation:
 
-- add tokens such as `--iitc-iris-radius-control`, `--iitc-iris-radius-chip`, or `--iitc-iris-border-control` only after
-  auditing the candidate bucket;
-- replace repeated literals with tokens where computed values stay unchanged.
-
-Not allowed:
-
-- one global rounded-border class for every element;
-- changing hover, active, disabled, danger, warning, or team-color states for consistency alone.
+- Audited the "text/select/textarea inputs" bucket.
+- Introduced a new `--iitc-iris-radius-control: 4px;` token in the `#iitc-iris-root` block.
+- Replaced the hardcoded `border-radius: 4px;` declarations in `.iitc-iris-text-input`, `.iitc-iris-select-input`, and `.iitc-iris-textarea-input` with `var(--iitc-iris-radius-control)`.
+- Verified that these core inputs power higher-order inputs (e.g., `passcode-input`, `draw-tools-label-input`), ensuring consistent radius sharing across the feature set.
 
 Stop condition:
 

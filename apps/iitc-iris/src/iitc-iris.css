@@ -25,6 +25,7 @@
     --iitc-iris-item-padding: 5px 6px;
     --iitc-iris-control-padding: 3px 6px;
     --iitc-iris-chip-padding: 1px 6px;
+    --iitc-iris-radius-control: 4px;
     --iitc-iris-button-font: var(--iitc-iris-font-bold) var(--iitc-iris-text-md) / var(--iitc-iris-line-tight) var(--iitc-iris-font-ui);
     --iitc-iris-button-font-sm: var(--iitc-iris-font-bold) var(--iitc-iris-text-sm) / var(--iitc-iris-line-tight) var(--iitc-iris-font-ui);
     --iitc-iris-label-font: var(--iitc-iris-font-extrabold) var(--iitc-iris-text-sm) / var(--iitc-iris-line-tight) var(--iitc-iris-font-ui);
@@ -90,7 +91,7 @@
     min-width: 0;
     box-sizing: border-box;
     border: 1px solid rgb(95 180 255 / 30%);
-    border-radius: 4px;
+    border-radius: var(--iitc-iris-radius-control);
     color: #e8f4ff;
     font: inherit;
     letter-spacing: 0;
@@ -105,7 +106,7 @@
     min-width: 0;
     box-sizing: border-box;
     border: 1px solid rgb(95 180 255 / 24%);
-    border-radius: 4px;
+    border-radius: var(--iitc-iris-radius-control);
     color: #d8e8f2;
     letter-spacing: 0;
 }
