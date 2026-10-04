@@ -7,8 +7,9 @@ export interface SummaryCellProps extends Omit<JSX.HTMLAttributes<HTMLSpanElemen
 }
 
 export function SummaryCell({value, label, className, ...props}: SummaryCellProps): h.JSX.Element {
+  const classes = ['iitc-iris-summary-cell', className || ''].filter(Boolean).join(' ');
   return (
-    <span className={className} {...props}>
+    <span className={classes} {...props}>
       <b>{value}</b><small>{label}</small>
     </span>
   );

@@ -7,6 +7,8 @@ import {
 import { formatInteger } from '../ui-status';
 import { DiagnosticsChip } from '../ui/diagnostics-chip';
 import { Section } from '../ui/section';
+import { SummaryGrid } from '../ui/summary-grid';
+import { SummaryCell } from '../ui/summary-cell';
 import { EmptyState } from '../ui/empty-state';
 import {
   getPortalCountsBars,
@@ -50,12 +52,12 @@ export function IitcIrisPortalCountsPanel({
 
   return (
     <Section className="iitc-iris-portal-analysis" titleHeading="Portal Counts">
-      <div className="iitc-iris-analysis-summary-grid">
-        <span><b>{formatInteger(portalcounts.total)}</b><small>visible</small></span>
-        <span><b>{formatInteger(portalcounts.real)}</b><small>real</small></span>
-        <span><b>{formatInteger(portalcounts.placeholders)}</b><small>placeholders</small></span>
-        <span><b>{formatInteger(portalcounts.withKeys)}</b><small>with keys</small></span>
-      </div>
+      <SummaryGrid className="iitc-iris-analysis-summary-grid">
+        <SummaryCell value={formatInteger(portalcounts.total)} label="visible" />
+        <SummaryCell value={formatInteger(portalcounts.real)} label="real" />
+        <SummaryCell value={formatInteger(portalcounts.placeholders)} label="placeholders" />
+        <SummaryCell value={formatInteger(portalcounts.withKeys)} label="with keys" />
+      </SummaryGrid>
       <div className="iitc-iris-analysis-chip-row">
         <DiagnosticsChip value={formatInteger(portalcounts.history.visited)} label="Visited" />
         <DiagnosticsChip value={formatInteger(portalcounts.history.captured)} label="Captured" />

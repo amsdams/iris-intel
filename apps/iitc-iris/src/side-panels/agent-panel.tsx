@@ -2,6 +2,7 @@ import {h} from 'preact';
 import {getCommTeamClass} from '../comm/comm-display';
 import type {IitcIrisAgentState} from '../messages';
 import {formatElapsedSeconds, formatSubscriptionBadge, formatSubscriptionLabel, getSubscriptionStatusClass} from '../ui-status';
+import {Badge} from '../ui/badge';
 import {PlainDiagnosticsChip} from '../ui/diagnostics-chip';
 import {PanelBody, PanelFooter} from '../ui/panel';
 import {EmptyState} from '../ui/empty-state';
@@ -34,7 +35,7 @@ export function IitcIrisAgentPanel({agentState}: IitcIrisAgentPanelProps): h.JSX
               <strong className={getCommTeamClass(agentState.team)}>{agentState.nickname}</strong>
               <small>{formatAgentTeam(agentState.team)}</small>
             </span>
-            <span
+            <Badge
               className={`iitc-iris-core-badge ${getSubscriptionStatusClass(agentState.subscription)}`}
               title={[
                 formatSubscriptionLabel(agentState.subscription),
@@ -42,7 +43,7 @@ export function IitcIrisAgentPanel({agentState}: IitcIrisAgentPanelProps): h.JSX
               ].join('\n')}
             >
               {formatSubscriptionBadge(agentState.subscription)}
-            </span>
+            </Badge>
           </div>
           <SummaryGrid>
             <SummaryCell value={formatInteger(agentState.ap)} label="AP" />

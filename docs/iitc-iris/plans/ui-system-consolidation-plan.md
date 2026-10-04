@@ -242,21 +242,25 @@ Kept local (explicit per-variant overrides):
 
 ## Assignment 4: Compact Metadata Family
 
-Status: Not started.
+Status: Complete on 2026-10-04.
 
 Goal: finish compact display consistency around `Badge`, `StatusText`, `DiagnosticsChip`, and `SummaryCell`.
 
-Candidate work:
+Completed consolidation:
 
-- remove any remaining local chip/status CSS that only restates base primitive shape;
-- decide whether `.iitc-iris-text-truncate` should be real and used, or removed;
-- unify summary metric cells only when they share structure and visual role.
+- `SummaryGrid`: Component (`summary-grid.tsx`) and base `.iitc-iris-summary-grid` now own structural grid layout (`display: grid; min-width: 0`). Unified all 4 summary grid variants (`panel-summary`, `portal-summary`, `analysis-summary-grid`, `portals-list-summary`) into a single mobile media query rule.
+- `SummaryCell`: Component (`summary-cell.tsx`) now emits `.iitc-iris-summary-cell` base class. Updated `portals-list-panel.tsx` and `portal-counts-panel.tsx` to use `<SummaryGrid>` and `<SummaryCell>` primitives.
+- Absorbed `position: relative; overflow: hidden` directly into `.iitc-iris-summary-cell` base, eliminating the separate `.iitc-iris-portal-summary-cell` declaration block.
+- Simplified `.iitc-iris-analysis-summary-grid` and `.iitc-iris-portals-list-summary-item` to inherit structural layout from `.iitc-iris-summary-cell`.
+- `Badge`: Updated `agent-panel.tsx` core status badge (`<Badge className="iitc-iris-core-badge">`) and `inventory-panel.tsx` item badge (`<Badge as="b" className="iitc-iris-item-badge">`) to emit the `.iitc-iris-badge` primitive base.
+- Stripped redundant flex, alignment, text-transform, and `box-sizing` declarations from `.iitc-iris-core-badge`, `.iitc-iris-item-badge`, `.iitc-iris-draw-tools-level-chip`, and `.iitc-iris-draw-tools-team-chip`.
+- Truncation: Confirmed `.iitc-iris-text-truncate` remains deleted; individual components own text overflow behavior locally when needed.
 
-Rules:
+Kept local:
 
-- Do not merge `Badge` and `DiagnosticsChip`; their markup and use are different.
-- Do not introduce utility classes unless they are used by TSX or delete substantial CSS.
-- Keep team/level/warning colors local.
+- `Badge` vs `DiagnosticsChip`: Kept separate as required (distinct markup contracts).
+- Portal-level and team chip background/color gradients remain local to domain classes (`is-enlightened`, `is-resistance`, `draw-tools-team-chip`).
+- Sizing for specialized badges (`item-badge`, `draw-tools-level-chip`) stays local.
 
 ## Done Criteria
 

@@ -3,6 +3,7 @@ import {formatIitcColorVars, getIitcItemColor} from '../iitc-colors';
 import type {IitcIrisInventoryState} from '../messages';
 import {formatElapsedSeconds, formatSubscriptionLabel, getAuthErrorMessage, getSubscriptionStatusClass} from '../ui-status';
 import {ActionButton} from '../ui/action-button';
+import {Badge} from '../ui/badge';
 import {ControlRow} from '../ui/control-row';
 import {PlainDiagnosticsChip} from '../ui/diagnostics-chip';
 import {PanelBody, PanelFooter} from '../ui/panel';
@@ -82,7 +83,7 @@ export function IitcIrisInventoryPanel({inventoryState, refresh, zoomToAndShowPo
                 key={`${item.type}-${item.level ?? ''}-${item.rarity ?? ''}-${item.label}`}
                 style={formatIitcColorVars(getIitcItemColor(item))}
               >
-                <span><b className="iitc-iris-item-badge">{formatItemBadge(item)}</b>{item.label}{item.level ? ` L${item.level}` : ''}</span>
+                <span><Badge as="b" className="iitc-iris-item-badge">{formatItemBadge(item)}</Badge>{item.label}{item.level ? ` L${item.level}` : ''}</span>
                 <b>{item.count}</b>
                 {item.rarity && <small>{item.rarity.replace(/_/g, ' ')}</small>}
               </div>

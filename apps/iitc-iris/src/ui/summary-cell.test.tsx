@@ -19,8 +19,11 @@ describe('SummaryCell', () => {
     expect(children[1].props.children).toBe('Items');
   });
 
-  it('applies extra className values correctly', () => {
+  it('applies default and extra className values correctly', () => {
+    const defaultNode = SummaryCell({ value: '10', label: 'Items' });
+    expect(defaultNode.props.className).toBe('iitc-iris-summary-cell');
+
     const vnode = SummaryCell({ value: '1', label: 'Item', className: 'extra-class' });
-    expect(vnode.props.className).toBe('extra-class');
+    expect(vnode.props.className).toBe('iitc-iris-summary-cell extra-class');
   });
 });

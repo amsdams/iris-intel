@@ -5,6 +5,9 @@ import {
   IitcScoreboard,
 } from '@iris/iitc-core';
 import { formatInteger } from '../ui-status';
+import { Section } from '../ui/section';
+import { SummaryGrid } from '../ui/summary-grid';
+import { SummaryCell } from '../ui/summary-cell';
 import {
   formatPortalAnalysisPercent,
   formatPortalHistory,
@@ -22,7 +25,6 @@ import {Badge} from '../ui/badge';
 import {TextInput} from '../ui/text-input';
 import {ActionButton} from '../ui/action-button';
 import {DiagnosticsChip} from '../ui/diagnostics-chip';
-import {Section} from '../ui/section';
 import {EmptyState} from '../ui/empty-state';
 import {PortalAnalysisTable} from './portal-analysis-table';
 
@@ -73,29 +75,33 @@ export function IitcIrisPortalsListPanel({
 
   return (
     <Section className="iitc-iris-portal-analysis" titleHeading="Portals List">
-      <div className="iitc-iris-portals-list-summary" aria-label="Filtered portal list summary">
+      <SummaryGrid className="iitc-iris-portals-list-summary" aria-label="Filtered portal list summary">
         {([
           ['R', 'Resistance', portalsListSummary.teams.R],
           ['E', 'Enlightened', portalsListSummary.teams.E],
           ['M', 'MACHINA', portalsListSummary.teams.M],
           ['N', 'Neutral', portalsListSummary.teams.N],
         ] as const).map(([team, label, count]) => (
-          <div className={`iitc-iris-portals-list-summary-item ${formatTeamClass(team)}`} key={team}>
-            <b>{formatInteger(count)} ({formatPortalAnalysisPercent(count, portalsListSummary.portals)})</b>
-            <small>{label}</small>
-          </div>
+          <SummaryCell
+            className={`iitc-iris-portals-list-summary-item ${formatTeamClass(team)}`}
+            key={team}
+            value={`${formatInteger(count)} (${formatPortalAnalysisPercent(count, portalsListSummary.portals)})`}
+            label={label}
+          />
         ))}
         {([
           ['Visited', portalsListSummary.history.visited],
           ['Captured', portalsListSummary.history.captured],
           ['Scout Controlled', portalsListSummary.history.scoutControlled],
         ] as const).map(([label, count]) => (
-          <div className="iitc-iris-portals-list-summary-item" key={label}>
-            <b>{formatInteger(count)} ({formatPortalAnalysisPercent(count, portalsListSummary.portals)})</b>
-            <small>{label}</small>
-          </div>
+          <SummaryCell
+            className="iitc-iris-portals-list-summary-item"
+            key={label}
+            value={`${formatInteger(count)} (${formatPortalAnalysisPercent(count, portalsListSummary.portals)})`}
+            label={label}
+          />
         ))}
-      </div>
+      </SummaryGrid>
       <div className="iitc-iris-analysis-chip-row">
         <DiagnosticsChip value={formatInteger(portalsListSummary.portals)} label="Portals" />
         <DiagnosticsChip value={formatInteger(portalsListSummary.links)} label="Links" />
