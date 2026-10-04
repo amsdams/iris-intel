@@ -22,6 +22,7 @@ import {
   PORTAL_COUNTS_SVG_HEIGHT,
   PORTAL_COUNTS_SVG_WIDTH,
 } from './content-portal-analysis';
+import {PortalAnalysisTable} from './portal-analysis-table';
 
 export interface IitcIrisPortalCountsPanelProps {
   portalAnalysis: {
@@ -66,40 +67,38 @@ export function IitcIrisPortalCountsPanel({
       {portalcounts.inaccurateAtLinkLevel && (
         <EmptyState>Portal counts are approximate at link-level zoom.</EmptyState>
       )}
-      <div className="iitc-iris-portal-counts-table-wrap">
-        <table className="iitc-iris-portal-analysis-table iitc-iris-portal-counts-table">
-          <thead>
-            <tr>
-              <th>Level</th>
-              <th className="iitc-iris-team-res">RES</th>
-              <th className="iitc-iris-team-enl">ENL</th>
-              <th className="iitc-iris-team-machina">MAC</th>
-              <th className="iitc-iris-team-neutral">Neutral</th>
-              <th>Total</th>
+      <PortalAnalysisTable variant="counts">
+        <thead>
+          <tr>
+            <th>Level</th>
+            <th className="iitc-iris-team-res">RES</th>
+            <th className="iitc-iris-team-enl">ENL</th>
+            <th className="iitc-iris-team-machina">MAC</th>
+            <th className="iitc-iris-team-neutral">Neutral</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {[...portalcounts.levels].reverse().map((level) => (
+            <tr key={level.level} className={level.count === 0 ? 'is-muted' : ''}>
+              <td className={`iitc-iris-level-cell iitc-iris-level-${level.level}`}>{level.level === 0 ? 'P' : `L${level.level}`}</td>
+              <td className="iitc-iris-team-res">{formatInteger(level.teams.R)}</td>
+              <td className="iitc-iris-team-enl">{formatInteger(level.teams.E)}</td>
+              <td className="iitc-iris-team-machina">{formatInteger(level.teams.M)}</td>
+              <td className="iitc-iris-team-neutral">{formatInteger(level.teams.N)}</td>
+              <td>{formatInteger(level.count)}</td>
             </tr>
-          </thead>
-          <tbody>
-            {[...portalcounts.levels].reverse().map((level) => (
-              <tr key={level.level} className={level.count === 0 ? 'is-muted' : ''}>
-                <td className={`iitc-iris-level-cell iitc-iris-level-${level.level}`}>{level.level === 0 ? 'P' : `L${level.level}`}</td>
-                <td className="iitc-iris-team-res">{formatInteger(level.teams.R)}</td>
-                <td className="iitc-iris-team-enl">{formatInteger(level.teams.E)}</td>
-                <td className="iitc-iris-team-machina">{formatInteger(level.teams.M)}</td>
-                <td className="iitc-iris-team-neutral">{formatInteger(level.teams.N)}</td>
-                <td>{formatInteger(level.count)}</td>
-              </tr>
-            ))}
-            <tr>
-              <th>Total</th>
-              <th className="iitc-iris-team-res">{formatInteger(portalcounts.teams.R)}</th>
-              <th className="iitc-iris-team-enl">{formatInteger(portalcounts.teams.E)}</th>
-              <th className="iitc-iris-team-machina">{formatInteger(portalcounts.teams.M)}</th>
-              <th className="iitc-iris-team-neutral">{formatInteger(portalcounts.teams.N)}</th>
-              <th>{formatInteger(portalcounts.total)}</th>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+          ))}
+          <tr>
+            <th>Total</th>
+            <th className="iitc-iris-team-res">{formatInteger(portalcounts.teams.R)}</th>
+            <th className="iitc-iris-team-enl">{formatInteger(portalcounts.teams.E)}</th>
+            <th className="iitc-iris-team-machina">{formatInteger(portalcounts.teams.M)}</th>
+            <th className="iitc-iris-team-neutral">{formatInteger(portalcounts.teams.N)}</th>
+            <th>{formatInteger(portalcounts.total)}</th>
+          </tr>
+        </tbody>
+      </PortalAnalysisTable>
       <div className="iitc-iris-counts-visuals" aria-label="Portal counts graph">
         <svg viewBox={`0 0 ${PORTAL_COUNTS_SVG_WIDTH} ${PORTAL_COUNTS_SVG_HEIGHT}`} role="img">
           <title>Portal counts by level and faction</title>

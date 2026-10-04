@@ -9,6 +9,9 @@ components.
 
 - Shared primitives listed below are extracted and should stay unless review finds concrete harm.
 - `EmptyState` and `ChipButton` are extracted, tested, and applied.
+- Assignment B form-control reassessment is complete as a CSS-first pass; no new select/textarea/checkbox components were
+  warranted.
+- Assignment C portal-analysis table reassessment is complete; only the table shell class contract was extracted.
 - The planned panel wrapper class contracts are fully applied.
 - Draw Tools import collapse is complete as local UX/layout work; it is not a generic component extraction.
 
@@ -37,10 +40,10 @@ exact files, preserved behavior, validation, and stop conditions.
 
 | # | Assignment | Status | Trigger |
 |---|---|---|---|
-| 1 | Reassess form controls | Deferred | Portal filters or Draw Tools import controls show CSS/behavior drift. |
-| 2 | Form-control CSS pass | Deferred | Assignment 1 finds exact duplicated selectors worth consolidating. |
+| 1 | Reassess form controls | Complete | Completed 2026-10-04; CSS-first pass was sufficient. |
+| 2 | Form-control CSS pass | Complete | Completed 2026-10-04 for portal filters, Draw Tools marker filters, and Draw Tools import textarea. |
 | 3 | Button-family CSS audit | Deferred | `.iitc-iris-portal-action`, preset, copy, login, nav, or layer buttons drift. |
-| 4 | Portal analysis table audit | Deferred | Table wrappers/sort behavior drifts or portal-analysis work resumes. |
+| 4 | Portal analysis table audit | Complete | Completed 2026-10-04; table shell extracted, sort/action buttons stayed local. |
 | 5 | Search result row audit | Deferred | Active search work or search accessibility/readability bugs appear. |
 | 6 | Draw Tools list/import audit | Deferred | Draw Tools panel becomes noisy again after collapsed import UX. |
 | 7 | Inventory/passcode row audit | Deferred | Inventory/passcode feature work exposes repeated row behavior. |
@@ -57,6 +60,12 @@ Verified on 2026-10-04:
   `.iitc-iris-diagnostics-chip iitc-iris-chip-button` class contract is now owned by the shared component.
 - The planned panel wrapper class contracts are owned by `apps/iitc-iris/src/ui/panel.tsx`, its focused test, and CSS.
 - Draw Tools import collapse is a completed local UX/layout change, not a generic component extraction.
+- Assignment B left `<select>`, `<textarea>`, and import merge checkbox controls as native markup. Shared
+  `.iitc-iris-select-input` and `.iitc-iris-textarea-input` base classes now own the duplicated select/textarea border,
+  radius, sizing, and color rules while existing feature-specific classes preserve layout, font, background, labels, and
+  behavior.
+- Assignment C added a portal-analysis-local `PortalAnalysisTable` shell for the repeated wrapper and base table class
+  contract. Native table sections, rows, cells, sort buttons, and action buttons remain local to the feature panels.
 
 Current direction: keep the shared primitives already extracted, but stop treating raw HTML as a problem by itself.
 The remaining work should be driven by visible inconsistency, repeated behavior, accessibility risk, or clear CSS
@@ -326,28 +335,23 @@ Validation:
 
 ### Assignment B: Narrow Form Controls
 
-Status: defer; reassess after Assignment A.
+Status: complete; verified on 2026-10-04.
 
 Goal: decide whether non-text form leaves need components, or whether shared CSS is enough.
 
 Components:
 
-- possible `SelectInput`
-- possible `TextareaInput`
-- possible `CheckboxField`
-- preferred first step: shared form-control CSS only, if it removes duplicated rules
+- no `SelectInput`, `TextareaInput`, or `CheckboxField` was introduced;
+- shared CSS base classes only:
+    - `.iitc-iris-select-input`
+    - `.iitc-iris-textarea-input`
 
 Files:
 
-- Only if reassessment approves components:
-    - Add `apps/iitc-iris/src/ui/select-input.tsx`
-    - Add `apps/iitc-iris/src/ui/select-input.test.tsx`
-    - Add `apps/iitc-iris/src/ui/textarea-input.tsx`
-    - Add `apps/iitc-iris/src/ui/textarea-input.test.tsx`
-    - Add `apps/iitc-iris/src/ui/checkbox-field.tsx`
-    - Add `apps/iitc-iris/src/ui/checkbox-field.test.tsx`
-- Refactor portal list selects in `apps/iitc-iris/src/portal-analysis/portals-list-panel.tsx`
-- Refactor Draw Tools import textarea and merge checkbox in `apps/iitc-iris/src/draw-tools/draw-tools-panel.tsx`
+- Updated portal list selects in `apps/iitc-iris/src/portal-analysis/portals-list-panel.tsx`
+- Updated Draw Tools marker filter selects and import textarea in `apps/iitc-iris/src/draw-tools/draw-tools-panel.tsx`
+- Consolidated duplicated base rules in `apps/iitc-iris/src/iitc-iris.css`
+- Left the Draw Tools import merge checkbox local because it has no matching repeated behavior/CSS contract.
 
 Rules:
 
@@ -358,9 +362,16 @@ Rules:
 
 Done when:
 
-- Either shared CSS removes the useful duplication and raw native elements remain local, or a component is introduced
-  because repeated behavior/CSS makes it worthwhile.
+- Shared CSS removes the useful duplication and raw native elements remain local.
 - Remaining raw `<select>`, `<textarea>`, and checkbox usages are intentionally domain-specific or documented.
+
+Verified result:
+
+- Portal list filter selects and Draw Tools marker filter selects now compose `.iitc-iris-select-input` with their
+  existing container selectors.
+- Draw Tools import textarea now composes `.iitc-iris-textarea-input` with `.iitc-iris-draw-tools-import-input`.
+- Existing feature selectors still own domain layout, font, background, row labels, and control behavior.
+- No new form-control components were added because they would have been one-off prop pass-through wrappers.
 
 Validation:
 
@@ -372,22 +383,22 @@ Validation:
 
 ### Assignment C: Portal Analysis Tables
 
-Status: optional; no value yet unless table CSS or sort behavior drifts.
+Status: complete; verified on 2026-10-04.
 
 Goal: reduce table wrapper/button duplication only if native table markup becomes noisy or inconsistent.
 
-Candidate components:
+Components:
 
 - `PortalAnalysisTable`
-- `TableSortButton`
-- `TableActionButton`
+- no `TableSortButton` or `TableActionButton` was introduced
 
 Files:
 
 - `apps/iitc-iris/src/portal-analysis/portal-counts-panel.tsx`
 - `apps/iitc-iris/src/portal-analysis/scoreboard-panel.tsx`
 - `apps/iitc-iris/src/portal-analysis/portals-list-panel.tsx`
-- possible new files under `apps/iitc-iris/src/ui/` or `apps/iitc-iris/src/portal-analysis/`
+- Added `apps/iitc-iris/src/portal-analysis/portal-analysis-table.tsx`
+- Added `apps/iitc-iris/src/portal-analysis/portal-analysis-table.test.tsx`
 
 Rules:
 
@@ -397,13 +408,21 @@ Rules:
 
 Done when:
 
-- Table wrapper/class repetition is centralized, or the assignment is explicitly deferred because native table markup plus
-  CSS is clearer.
-- Portals list sort/action buttons are either extracted or explicitly left local with reason.
+- Table wrapper/class repetition is centralized.
+- Portals list sort/action buttons are explicitly left local because their behavior is confined to the Portals List table
+  and a component would mostly move one-off markup.
+
+Verified result:
+
+- `PortalAnalysisTable` owns the repeated `.iitc-iris-portal-analysis-table` base class and the existing table wrapper
+  classes for counts, scoreboard, and portals-list variants.
+- Portal Counts, Scoreboard, and Portals List still render native `<thead>`, `<tbody>`, `<tr>`, `<th>`, and `<td>` markup
+  in their feature files.
+- Existing CSS class names are preserved; no CSS changes or visual redesign were needed.
 
 Validation:
 
-- portal-analysis focused tests if available;
+- `portal-analysis-table` focused tests;
 - `npm run typecheck:iitc-iris`;
 - `npm run lint:iitc-iris`;
 - `npm run package:iitc-iris`;

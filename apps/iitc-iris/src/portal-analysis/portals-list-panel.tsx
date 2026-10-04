@@ -24,6 +24,7 @@ import {ActionButton} from '../ui/action-button';
 import {DiagnosticsChip} from '../ui/diagnostics-chip';
 import {Section} from '../ui/section';
 import {EmptyState} from '../ui/empty-state';
+import {PortalAnalysisTable} from './portal-analysis-table';
 
 export interface IitcIrisPortalsListPanelProps {
   cameraZoom: number;
@@ -112,14 +113,14 @@ export function IitcIrisPortalsListPanel({
           value={portalsListTextFilter}
           onInput={(event) => setPortalsListTextFilter(event.currentTarget.value)}
         />
-        <select aria-label="Filter portal list by faction" value={portalsListTeamFilter} onChange={(event) => setPortalsListTeamFilter(event.currentTarget.value as PortalsListTeamFilter)}>
+        <select className="iitc-iris-select-input" aria-label="Filter portal list by faction" value={portalsListTeamFilter} onChange={(event) => setPortalsListTeamFilter(event.currentTarget.value as PortalsListTeamFilter)}>
           <option value="all">All factions</option>
           <option value="R">Resistance</option>
           <option value="E">Enlightened</option>
           <option value="M">Machina</option>
           <option value="N">Neutral</option>
         </select>
-        <select aria-label="Filter portal list by level" value={portalsListLevelFilter} onChange={(event) => setPortalsListLevelFilter(event.currentTarget.value as PortalsListLevelFilter)}>
+        <select className="iitc-iris-select-input" aria-label="Filter portal list by level" value={portalsListLevelFilter} onChange={(event) => setPortalsListLevelFilter(event.currentTarget.value as PortalsListLevelFilter)}>
           <option value="all">All levels</option>
           <option value="0">Level 0 / Neutral</option>
           <option value="1">Level 1</option>
@@ -144,60 +145,58 @@ export function IitcIrisPortalsListPanel({
         </ActionButton>
       </div>
       {sortedPortalsList.length > 0 ? (
-        <div className="iitc-iris-portals-list-table-wrap">
-          <table className="iitc-iris-portal-analysis-table iitc-iris-portals-list-table">
-            <thead>
-              <tr>
-                {([
-                  ['title', 'Portal Name'],
-                  ['level', 'Level'],
-                  ['team', 'Team'],
-                  ['health', 'Health'],
-                  ['resCount', 'Res'],
-                  ['links', 'Links'],
-                  ['fields', 'Fields'],
-                  ['enemyAp', 'AP'],
-                  ['keys', 'Keys'],
-                ] as const).map(([field, label]) => (
-                  <th key={field}>
-                    <button className="iitc-iris-table-sort" type="button" onClick={() => sortPortalsListBy(field)}>
-                      {label}{portalsListSortBy === field ? portalsListSortOrder === 1 ? ' ^' : ' v' : ''}
-                    </button>
-                  </th>
-                ))}
-                <th>V/C</th>
-                <th>S</th>
-                <th>M</th>
-                <th>Go</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedPortalsList.map((portal) => (
-                <tr key={portal.guid} className={formatTeamClass(portal.team)}>
-                  <td className="iitc-iris-portal-list-title">
-                    <button type="button" onClick={() => zoomToAndShowPortal(portal.guid, portal.latE6, portal.lngE6, cameraZoom)} onDblClick={() => zoomToAndShowPortal(portal.guid, portal.latE6, portal.lngE6)}>
-                      {portal.title}
-                    </button>
-                  </td>
-                  <td className={`iitc-iris-level-cell iitc-iris-level-${portal.level}`}>L{portal.level}</td>
-                  <td><Badge className={`iitc-iris-team-pill ${formatTeamClass(portal.team)}`}>{formatTeamShortLabel(portal.team)}</Badge></td>
-                  <td>{portal.health === null ? '-' : `${Math.round(portal.health)}%`}</td>
-                  <td>{formatInteger(portal.resCount)}</td>
-                  <td title={`In: ${portal.links.in}\nOut: ${portal.links.out}`}>{formatInteger(portal.links.count)}</td>
-                  <td>{formatInteger(portal.fields)}</td>
-                  <td title={`Destroy AP: ${portal.ap.destroyAp}\nCapture AP: ${portal.ap.captureAp}`}>{formatInteger(portal.ap.enemyAp)}</td>
-                  <td>{portal.keyCount === undefined ? '-' : formatInteger(portal.keyCount)}</td>
-                  <td>{formatPortalHistory(portal)}</td>
-                  <td>{formatScoutControlled(portal)}</td>
-                  <td>{formatPortalMission(portal)}</td>
-                  <td>
-                    <button className="iitc-iris-table-action" type="button" onClick={() => zoomToAndShowPortal(portal.guid, portal.latE6, portal.lngE6)} title="Zoom to and select portal">Zoom</button>
-                  </td>
-                </tr>
+        <PortalAnalysisTable variant="portals-list">
+          <thead>
+            <tr>
+              {([
+                ['title', 'Portal Name'],
+                ['level', 'Level'],
+                ['team', 'Team'],
+                ['health', 'Health'],
+                ['resCount', 'Res'],
+                ['links', 'Links'],
+                ['fields', 'Fields'],
+                ['enemyAp', 'AP'],
+                ['keys', 'Keys'],
+              ] as const).map(([field, label]) => (
+                <th key={field}>
+                  <button className="iitc-iris-table-sort" type="button" onClick={() => sortPortalsListBy(field)}>
+                    {label}{portalsListSortBy === field ? portalsListSortOrder === 1 ? ' ^' : ' v' : ''}
+                  </button>
+                </th>
               ))}
-            </tbody>
-          </table>
-        </div>
+              <th>V/C</th>
+              <th>S</th>
+              <th>M</th>
+              <th>Go</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedPortalsList.map((portal) => (
+              <tr key={portal.guid} className={formatTeamClass(portal.team)}>
+                <td className="iitc-iris-portal-list-title">
+                  <button type="button" onClick={() => zoomToAndShowPortal(portal.guid, portal.latE6, portal.lngE6, cameraZoom)} onDblClick={() => zoomToAndShowPortal(portal.guid, portal.latE6, portal.lngE6)}>
+                    {portal.title}
+                  </button>
+                </td>
+                <td className={`iitc-iris-level-cell iitc-iris-level-${portal.level}`}>L{portal.level}</td>
+                <td><Badge className={`iitc-iris-team-pill ${formatTeamClass(portal.team)}`}>{formatTeamShortLabel(portal.team)}</Badge></td>
+                <td>{portal.health === null ? '-' : `${Math.round(portal.health)}%`}</td>
+                <td>{formatInteger(portal.resCount)}</td>
+                <td title={`In: ${portal.links.in}\nOut: ${portal.links.out}`}>{formatInteger(portal.links.count)}</td>
+                <td>{formatInteger(portal.fields)}</td>
+                <td title={`Destroy AP: ${portal.ap.destroyAp}\nCapture AP: ${portal.ap.captureAp}`}>{formatInteger(portal.ap.enemyAp)}</td>
+                <td>{portal.keyCount === undefined ? '-' : formatInteger(portal.keyCount)}</td>
+                <td>{formatPortalHistory(portal)}</td>
+                <td>{formatScoutControlled(portal)}</td>
+                <td>{formatPortalMission(portal)}</td>
+                <td>
+                  <button className="iitc-iris-table-action" type="button" onClick={() => zoomToAndShowPortal(portal.guid, portal.latE6, portal.lngE6)} title="Zoom to and select portal">Zoom</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </PortalAnalysisTable>
       ) : (
         <EmptyState>No portals match the current filters.</EmptyState>
       )}

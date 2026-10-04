@@ -43,6 +43,16 @@
     color: #4f6575;
 }
 
+.iitc-iris-select-input,
+.iitc-iris-textarea-input {
+    min-width: 0;
+    box-sizing: border-box;
+    border: 1px solid rgb(95 180 255 / 24%);
+    border-radius: 4px;
+    color: #d8e8f2;
+    letter-spacing: 0;
+}
+
 .iitc-iris-search-input {
     height: 32px;
     border: 0;
@@ -1110,12 +1120,8 @@
     font-size: 11px;
 }
 
-.iitc-iris-portals-list-filters select {
-    min-width: 0;
-    box-sizing: border-box;
+.iitc-iris-portals-list-filters .iitc-iris-select-input {
     padding: 0 5px;
-    border: 1px solid rgb(95 180 255 / 24%);
-    border-radius: 4px;
     color: #d7e7f5;
     font: inherit;
 }
@@ -3186,14 +3192,10 @@ button.iitc-iris-inventory-row:hover {
     white-space: nowrap;
 }
 
-.iitc-iris-draw-tools-list-controls select {
-    min-width: 0;
+.iitc-iris-draw-tools-list-controls .iitc-iris-select-input {
     width: 100%;
     padding: 3px 6px;
-    border: 1px solid rgb(95 180 255 / 24%);
-    border-radius: 4px;
     background: rgb(2 10 16 / 88%);
-    color: #d8e8f2;
     font: 700 10px/1.2 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -3334,16 +3336,11 @@ button.iitc-iris-inventory-row:hover {
 }
 
 .iitc-iris-draw-tools-import-input {
-    box-sizing: border-box;
-    min-width: 0;
     width: 100%;
     min-height: 54px;
     resize: vertical;
     padding: 5px 6px;
-    border: 1px solid rgb(95 180 255 / 24%);
-    border-radius: 4px;
     background: rgb(2 10 16 / 84%);
-    color: #d8e8f2;
     font: 10px/1.35 monospace;
 }
 
