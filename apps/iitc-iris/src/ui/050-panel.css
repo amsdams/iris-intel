@@ -1,0 +1,12 @@
+
+
+.iitc-iris-request-panel-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    gap: 8px;
+    align-items: start;
+}
+
+.iitc-iris-request-panel-header .iitc-iris-selected-title {
+    min-width: 0;
+}

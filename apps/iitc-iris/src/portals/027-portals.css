@@ -1,0 +1,6 @@
+
+
+.iitc-iris-portal-summary-cell .iitc-iris-portal-level-value {
+    color: var(--iitc-color, #fff);
+    text-shadow: 0 0 10px color-mix(in srgb, var(--iitc-color, #fff) 42%, transparent);
+}

@@ -1,0 +1,9 @@
+
+
+.iitc-iris-empty-state {
+    padding: 8px 6px;
+    border: 1px dashed rgb(95 180 255 / 20%);
+    border-radius: 4px;
+    background: rgb(10 18 25 / 34%);
+    color: #91a6b7;
+}

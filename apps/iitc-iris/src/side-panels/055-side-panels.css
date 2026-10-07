@@ -1,0 +1,7 @@
+
+
+.iitc-iris-passcode-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    gap: 6px;
+}

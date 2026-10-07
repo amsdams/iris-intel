@@ -1,0 +1,17 @@
+
+
+.iitc-iris-map-controls,
+.iitc-iris-portal-side-panel,
+.iitc-iris-request-side-panel,
+.iitc-iris-system-panel {
+    top: auto;
+    right: 12px;
+    bottom: 104px;
+    left: 12px;
+    z-index: 10002;
+    display: none;
+    width: min(560px, calc(100vw - 24px));
+    max-height: min(64vh, 520px);
+    margin: 0 auto;
+    border-radius: 8px 8px 6px 6px;
+}

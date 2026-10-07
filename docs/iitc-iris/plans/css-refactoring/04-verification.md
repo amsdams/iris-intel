@@ -1,113 +1,68 @@
-# IITC-IRIS CSS Verification - Phase 4
+# IITC IRIS CSS Verification - Phase 4
 
-## Purpose
-
-This document verifies that the CSS migration has been completed correctly, ensuring that all CSS selectors are in their proper ownership locations and that behavior remains unchanged.
+Status: Complete for this migration pass.
 
 ## Static Verification
 
 | Check | Command/method | Result | Evidence | Status |
 |-------|----------------|--------|----------|--------|
-| Typecheck | npm run typecheck | PASS | No TypeScript errors | PASS |
-| Lint | npm run lint | PASS | Linter passes without issues | PASS |
-| Tests | npm run test | PASS | All existing tests pass | PASS |
-| Production build | npm run build:prod | PASS | Build completes successfully | PASS |
+| Typecheck | `npm run typecheck:iitc-iris` | Passed | `tsc --noEmit` exited 0. | PASS |
+| Lint | `npm run lint:iitc-iris` | Passed | `eslint src` exited 0. | PASS |
+| Tests | `npm run test:iitc-iris` | Passed | 60 test files and 346 tests passed. | PASS |
+| CSS lint | `npm run lint:css` | Passed | `stylelint '**/*.css'` exited 0. | PASS |
+| Production package | `npm run package:iitc-iris` | Passed | Built CSS/JS bundles and produced ZIP/XPI packages. | PASS |
+| Diff hygiene | `git diff --check` | Passed | Command produced no output. | PASS |
+| CSS cascade reconstruction | Concatenate imported chunks and compare to saved original CSS | Passed | `reconstructed CSS matches original`. | PASS |
 
-## CSS Selector Coverage
+## Package Artifacts
 
-### Selectors Moved from `iitc-iris.css`:
-- `.iitc-iris-agent-card`
-- `.iitc-iris-agent-row`
-- `.iitc-iris-agent-level`
-- `.iitc-iris-comm-row`
-- `.iitc-iris-inventory-row`
-- `.iitc-iris-draw-tools-list-item`
-- `.iitc-iris-mission-row`
-- `.iitc-iris-search-result-row`
-- `.iitc-iris-empty-state`
-- `.iitc-iris-panel-footer`
-- `.iitc-iris-button`
-- `.iitc-iris-control`
-- `.iitc-iris-list-item`
-- `.iitc-iris-badge`
-- `.iitc-iris-panel-header`
-- `.iitc-iris-search-box`
-- `.iitc-iris-search-input`
-- `.iitc-iris-search-clear`
-- `.iitc-iris-search-results`
-- `.iitc-iris-search-result-heading`
-- `.iitc-iris-search-status`
-- `.iitc-iris-text-input`
-- `.iitc-iris-select-input`
-- `.iitc-iris-textarea-input`
-- `.iitc-iris-chip-button`
-- `.iitc-iris-clear-selection`
-- `.iitc-iris-base-toggle`
-- `.iitc-iris-shell`
-- `.iitc-iris-map`
-- `.iitc-iris-panel-container`
+Latest artifacts from this pass:
 
-### Selectors Remaining in `iitc-iris.css`:
-None - all selectors have been moved to appropriate locations
+```text
+apps/iitc-iris/builds/iitc-iris-chrome-0.1.0-2026-10-07T21-24-30.zip
+apps/iitc-iris/builds/iitc-iris-firefox-0.1.0-2026-10-07T21-24-30.xpi
+```
+
+Package warnings:
+
+```text
+IITC IRIS: missing fixture /Users/jula/ittca/docs/iris/update-map-samples/get-entities-z10.json; wrote empty fallback /Users/jula/ittca/apps/iitc-iris/dist/fixtures/get-entities-z10.json
+IITC IRIS: missing fixture /Users/jula/ittca/docs/iris/update-map-samples/get-entities-z14.json; wrote empty fallback /Users/jula/ittca/apps/iitc-iris/dist/fixtures/get-entities-z14.json
+IITC IRIS: missing fixture /Users/jula/ittca/docs/iris/update-map-samples/get-entities-damrak-iitc-z15.json; wrote empty fallback /Users/jula/ittca/apps/iitc-iris/dist/fixtures/get-entities-damrak-iitc-z15.json
+```
+
+The package command exited successfully despite these existing fixture fallback warnings.
 
 ## Import Verification
 
-### Updated Imports in `content.tsx`:
-All CSS files are properly imported from their new ownership locations.
+`apps/iitc-iris/src/iitc-iris.css` is still the single CSS entry point imported by `content.tsx`. It now contains only
+ordered `@import url(...)` rules.
 
-### New CSS Files Created:
-- `src/ui/ui.css` (shared UI primitives)
-- `src/search/search-panel.css` (search-specific styles)  
-- `src/side-panels/inventory-panel.css` (inventory-specific styles)
-- `src/missions/missions-panel.css` (missions-specific styles)
-- `src/comm/comm-panel.css` (communication-specific styles)
-- `src/draw-tools/draw-tools-panel.css` (draw tools-specific styles)
-- `src/portals/agent-card.css` (agent card styles)
-- `src/portal-analysis/analysis-card.css` (analysis card styles)
+The package build produced:
 
-## Cascade Sensitivity
+```text
+dist/iitc-iris.css   61.13 kB │ gzip: 10.35 kB
+```
 
-### Verified Cascading Behavior:
-All selectors maintain their original specificity and cascading order.
-No declaration values were unintentionally changed.
+This matches the baseline package output size from before the split.
 
-### IITC/Leaflet Integration:
-Selectors targeting external DOM elements (IITC/Leaflet) have been preserved in their appropriate locations.
+## Visual Verification
 
-## Diff Verification
+Status: PASS.
 
-### git diff --check
-No issues found - all changes are intentional.
+Method:
 
-### git diff --stat  
-Shows expected file movements and content changes.
+- User smoke-tested the migrated extension on Firefox desktop after the CSS split.
 
-## Behavioral/Visual Verification
+Result:
 
-### Application Load:
-Application loads without CSS errors or missing styles.
+- No visual or functional smoke-test problems reported.
 
-### Feature Panels:
-- Search panel displays correctly with proper row layouts
-- Inventory panel displays correctly with proper spacing 
-- Missions panel displays correctly with mission rows
-- Communication panel displays correctly with message rows
-- Draw tools panel displays correctly with list items
-- Portal panels display correctly with agent cards and rows
+Limitations:
 
-## Verification Results Summary
+- This was a quick desktop Firefox smoke test, not an exhaustive panel/state/mobile comparison.
+- Mobile/sheet-width visual verification remains a useful follow-up if the branch is kept.
 
-| Category | Status |
-|----------|--------|
-| Typecheck | PASS |
-| Lint | PASS |
-| Tests | PASS |
-| Production Build | PASS |
-| CSS Selector Coverage | COMPLETE |
-| Import Verification | COMPLETE |
-| Cascade Sensitivity | VERIFIED |
-| Visual Verification | VERIFIED |
+## Final Status
 
-## Final Assessment
-
-The migration has been completed successfully with all verification checks passing. All CSS has been properly reorganized according to ownership, and application behavior remains unchanged.
+Phase 4 is complete for this migration pass.

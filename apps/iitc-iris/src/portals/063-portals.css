@@ -1,0 +1,55 @@
+
+
+.iitc-iris-image-preview-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10002;
+    display: grid;
+    place-items: center;
+    padding: 18px;
+    background: rgb(0 0 0 / 70%);
+    pointer-events: auto;
+}
+
+.iitc-iris-image-preview {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 8px;
+    width: min(520px, calc(100vw - 36px));
+    max-height: calc(100vh - 36px);
+    padding: 8px;
+    border: 1px solid rgb(95 180 255 / 28%);
+    border-radius: 6px;
+    background: rgb(2 10 16 / 94%);
+    box-shadow: 0 14px 42px rgb(0 0 0 / 48%);
+}
+
+.iitc-iris-image-preview img {
+    display: block;
+    width: 100%;
+    max-height: calc(100vh - 116px);
+    border-radius: 5px;
+    object-fit: contain;
+    background: rgb(0 0 0 / 34%);
+}
+
+.iitc-iris-image-preview-caption {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+    color: #91a6b7;
+    font-size: var(--iitc-iris-text-sm);
+}
+
+.iitc-iris-image-preview-caption b,
+.iitc-iris-image-preview-caption span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.iitc-iris-image-preview-caption b {
+    color: #fff;
+    font-size: 12px;
+}

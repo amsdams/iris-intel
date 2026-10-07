@@ -1,0 +1,8 @@
+
+
+.iitc-iris-panel-topbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    gap: 8px;
+    align-items: start;
+}

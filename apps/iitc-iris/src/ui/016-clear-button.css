@@ -1,0 +1,22 @@
+
+
+.iitc-iris-clear-selection {
+    appearance: none;
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: 1px solid rgb(255 179 71 / 55%);
+    border-radius: 4px;
+    background: rgb(45 24 7 / 86%);
+    color: #ffb347;
+    font: var(--iitc-iris-button-font);
+    cursor: pointer;
+}
+
+.iitc-iris-clear-selection:hover {
+    border-color: rgb(255 179 71 / 90%);
+    background: rgb(64 32 7 / 94%);
+}

@@ -1,0 +1,27 @@
+
+
+.iitc-iris-shortcut-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    gap: 5px 12px;
+    align-items: center;
+}
+
+.iitc-iris-shortcut-grid span,
+.iitc-iris-shortcut-grid b {
+    min-width: 0;
+}
+
+.iitc-iris-shortcut-grid span {
+    color: #91a6b7;
+}
+
+.iitc-iris-shortcut-grid b {
+    padding: 2px 6px;
+    border: 1px solid rgb(95 180 255 / 18%);
+    border-radius: 4px;
+    background: rgb(10 18 25 / 58%);
+    color: #e8f4ff;
+    font-size: var(--iitc-iris-text-sm);
+    text-align: right;
+}

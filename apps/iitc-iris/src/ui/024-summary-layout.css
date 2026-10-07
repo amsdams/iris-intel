@@ -1,0 +1,15 @@
+
+
+.iitc-iris-summary-grid,
+.iitc-iris-portal-summary,
+.iitc-iris-panel-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    min-width: 0;
+}
+
+.iitc-iris-summary-grid,
+.iitc-iris-panel-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}

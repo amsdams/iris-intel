@@ -1,0 +1,30 @@
+
+
+.iitc-iris-request-side-panel,
+.iitc-iris-system-panel {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    z-index: 9999;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 8px;
+    width: min(360px, calc(100vw - 24px));
+    max-height: min(42vh, 360px);
+    box-sizing: border-box;
+    overflow: hidden;
+    padding: 8px 10px;
+    border: 1px solid rgb(95 180 255 / 34%);
+    border-radius: 6px;
+    background: rgb(2 10 16 / 88%);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 35%);
+    color: #d7e7f5;
+    font-size: 12px;
+    letter-spacing: 0;
+    pointer-events: auto;
+}
+
+.iitc-iris-system-panel {
+    grid-template-rows: none;
+    overflow: auto;
+}

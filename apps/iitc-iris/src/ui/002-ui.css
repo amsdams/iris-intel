@@ -1,0 +1,11 @@
+
+
+.iitc-iris-button {
+    appearance: none;
+    border-radius: var(--iitc-iris-radius-control);
+    cursor: pointer;
+}
+
+.iitc-iris-button:disabled {
+    cursor: default;
+}

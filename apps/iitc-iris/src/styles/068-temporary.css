@@ -1,0 +1,94 @@
+
+
+@media (width <= 760px) {
+    .iitc-iris-dock {
+        top: 8px;
+        right: 8px;
+        left: 8px;
+        max-width: none;
+        padding: 6px 8px;
+    }
+
+    .iitc-iris-dock > .iitc-iris-dock-row:not(:first-child, .iitc-iris-debug-row) {
+        display: none;
+    }
+
+    .iitc-iris-dock-row:first-child .iitc-iris-copy:not(:first-of-type),
+    .iitc-iris-dock-row:first-child .iitc-iris-preset,
+    .iitc-iris-dock-row:first-child .iitc-iris-jump {
+        display: none;
+    }
+
+    .iitc-iris-innerstatus {
+        gap: 6px;
+        font-size: var(--iitc-iris-text-md);
+    }
+
+    .iitc-iris-map-controls {
+        top: auto;
+        right: 8px;
+        bottom: 56px;
+        left: 8px;
+        z-index: 10002;
+        display: none;
+        width: auto;
+        max-height: min(58vh, 420px);
+        border-radius: 8px 8px 6px 6px;
+    }
+
+    .iitc-iris-portal-side-panel {
+        top: auto;
+        right: 8px;
+        bottom: 56px;
+        left: 8px;
+        z-index: 10002;
+        display: none;
+        width: auto;
+        max-height: min(64vh, 480px);
+        border-radius: 8px 8px 6px 6px;
+    }
+
+    .iitc-iris-portal-side-panel-stacked {
+        max-height: min(64vh, 480px);
+    }
+
+    .iitc-iris-portal-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .iitc-iris-request-side-panel {
+        right: 8px;
+        bottom: 56px;
+        left: 8px;
+        z-index: 10002;
+        display: none;
+        width: auto;
+        max-height: min(64vh, 480px);
+        border-radius: 8px 8px 6px 6px;
+    }
+
+    .iitc-iris-resonator-grid,
+    .iitc-iris-mod-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .iitc-iris-resonator-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .iitc-iris-summary-grid,
+    .iitc-iris-portal-summary,
+    .iitc-iris-panel-summary,
+    .iitc-iris-analysis-summary-grid,
+    .iitc-iris-portals-list-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .iitc-iris-mission-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .iitc-iris-comm-row {
+        grid-template-columns: 58px minmax(0, 1fr);
+    }
+}

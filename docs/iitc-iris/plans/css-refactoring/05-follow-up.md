@@ -1,145 +1,152 @@
-# IITC-IRIS CSS Follow-up Opportunities - Phase 5
+# IITC IRIS CSS Refactor Follow-up - Phase 5
 
-## Introduction
+Status: Complete.
 
-This document captures additional CSS consolidation and improvement opportunities that were identified during the refactoring process but were not included in the immediate migration due to scope limitations. These represent future work that could further improve the CSS architecture.
+## Final Report
 
-## Strong Consolidation Opportunities
+The migration split `apps/iitc-iris/src/iitc-iris.css` into ordered owner-directory CSS chunks while preserving the
+original cascade exactly.
 
-### 1. Row/List Pattern Consolidation
+## Files Created
 
-**Category**: SHARED_PATTERN
-**Confidence**: High
-**Risk**: Medium
-**Recommendation**: WORTH_CONSIDERING
+Created 90 imported CSS chunk files under existing source directories:
 
-Multiple feature areas use grid-based row layouts with similar structure but different specific properties:
+| Area | Files |
+|------|-------|
+| `apps/iitc-iris/src/auth/` | 2 |
+| `apps/iitc-iris/src/comm/` | 2 |
+| `apps/iitc-iris/src/draw-tools/` | 1 |
+| `apps/iitc-iris/src/layers/` | 4 |
+| `apps/iitc-iris/src/map/` | 11 |
+| `apps/iitc-iris/src/missions/` | 3 |
+| `apps/iitc-iris/src/portal-analysis/` | 6 |
+| `apps/iitc-iris/src/portals/` | 14 |
+| `apps/iitc-iris/src/search/` | 3 |
+| `apps/iitc-iris/src/shell/` | 4 |
+| `apps/iitc-iris/src/side-panels/` | 4 |
+| `apps/iitc-iris/src/styles/` | 6 |
+| `apps/iitc-iris/src/system/` | 9 |
+| `apps/iitc-iris/src/ui/` | 21 |
 
-- `.iitc-iris-search-result-row` 
-- `.iitc-iris-inventory-row`
-- `.iitc-iris-mission-row`
-- `.iitc-iris-comm-row`
-- `.iitc-iris-draw-tools-list-item`
-- `.iitc-iris-agent-row`
+Created or finalized the audit artifacts:
 
-These all implement grid-based layouts but differ in:
-- Grid column definitions
-- Gap spacing
-- Padding values
+- `docs/iitc-iris/plans/css-refactoring/00-baseline.md`
+- `docs/iitc-iris/plans/css-refactoring/01-css-inventory.md`
+- `docs/iitc-iris/plans/css-refactoring/02-ownership-map.md`
+- `docs/iitc-iris/plans/css-refactoring/03-migration-log.md`
+- `docs/iitc-iris/plans/css-refactoring/04-verification.md`
+- `docs/iitc-iris/plans/css-refactoring/05-follow-up.md`
 
-**Opportunity**: Consider creating a base grid row class that can be extended by feature-specific classes, similar to how `.iitc-iris-list-item` works.
+## Files Modified
 
-### 2. Design Token Standardization
+- `apps/iitc-iris/src/iitc-iris.css`
+- `docs/iitc-iris/plans/css-refactor.md`
+- `docs/iitc-iris/plans/css-refactoring/02-ownership-map.md`
+- `docs/iitc-iris/plans/css-refactoring/03-migration-log.md`
+- `docs/iitc-iris/plans/css-refactoring/04-verification.md`
 
-**Category**: TOKEN_CANDIDATE  
-**Confidence**: High
-**Risk**: Low
-**Recommendation**: WORTH_CONSIDERING
+## CSS Moved
 
-Several spacing values are used repeatedly across different components:
-- `4px`, `5px`, `6px`, `7px`, `8px`, `9px`, `10px`, `12px` (used for padding, gaps, margins)
+All original CSS text was moved into ordered chunk files. The migration verified that concatenating the chunk files in
+manifest order reconstructs the original `iitc-iris.css` exactly.
 
-**Opportunity**: Standardize these into a consistent spacing scale that can be expressed as CSS variables.
+`apps/iitc-iris/src/iitc-iris.css` now contains only ordered `@import url(...)` rules.
 
-### 3. Control Height Standardization
+## CSS Intentionally Left In `iitc-iris.css`
 
-**Category**: TOKEN_CANDIDATE
-**Confidence**: Medium  
-**Risk**: Low
-**Recommendation**: WORTH_CONSIDERING
+No style rules remain in `iitc-iris.css`.
 
-Control heights show some variation:
-- `32px` for standard controls
-- `24px` for small controls
+It remains as the CSS entry-point/import manifest because `content.tsx` already imports this file and the extension
+manifest expects the bundled CSS output.
 
-**Opportunity**: Define a consistent control height scale that can be reused.
+## Ownership Decisions
 
-### 4. Typography Scale Standardization
+The split uses the Phase 1 ownership map while prioritizing cascade preservation:
 
-**Category**: TOKEN_CANDIDATE
-**Confidence**: High
-**Risk**: Low
-**Recommendation**: WORTH_CONSIDERING
+- shared primitives and component wrappers live under `src/ui/`;
+- feature-prefixed selectors live under their feature directory;
+- shell/sheet layout selectors live under `src/shell/`;
+- root/team/foundation selectors live under `src/styles/`;
+- player-tracker and Leaflet popup selectors live under `src/map/`;
+- broad responsive blocks live in ordered `src/styles/*-temporary.css` chunks.
 
-Typography values are well-defined but could benefit from further standardization:
-- `8px`, `9px`, `10px`, `11px`, `12px`, `16px` for font sizes
+## Uncertain Ownership Cases
 
-**Opportunity**: Establish a complete typography scale with appropriate semantic names.
+No selectors were deleted as unused.
 
-### 5. Color System Refinement
+Temporary chunks remain for CSS that should not be assigned more aggressively yet:
 
-**Category**: TOKEN_CANDIDATE
-**Confidence**: Medium
-**Risk**: Low
-**Recommendation**: WORTH_CONSIDERING
+- two whole `@media` blocks kept intact to preserve responsive cascade.
 
-Color variables are defined but could be better organized:
-- Primary, secondary, success, warning, error, info colors
+## Selectors Requiring Future Review
 
-**Opportunity**: Create a comprehensive color palette with appropriate semantic meanings.
+Review the `KEEP_TEMPORARILY` rows in `02-ownership-map.md`, especially:
 
-## Component-Level Consolidations
+- `.iitc-iris-title`
+- `.iitc-iris-health-track`
+- `.iitc-iris-health-fill`
+- `.iitc-iris-mission-details-head ...`
+- `.iitc-iris-comm-context`
+- `.iitc-iris-divider`
+- page-runtime `.iitc-iris-innerstatus ...` selectors
 
-### 1. Shared Panel Components
+Do not remove these selectors in this branch.
 
-**Category**: COMPONENT_CANDIDATE
-**Confidence**: Medium
-**Risk**: Medium  
-**Recommendation**: WORTH_CONSIDERING
+## Verification Results
 
-Several components implement similar panel structures:
-- `PanelHeader`, `PanelFooter`
-- `EmptyState` implementations across multiple features
+Passed:
 
-**Opportunity**: Consider creating more reusable panel component abstractions.
+- `npm run typecheck:iitc-iris`
+- `npm run lint:iitc-iris`
+- `npm run test:iitc-iris`
+- `npm run lint:css`
+- `npm run package:iitc-iris`
+- `git diff --check`
+- CSS reconstruction check: imported chunks concatenate to the original CSS exactly
+- Firefox desktop smoke test by the user
 
-### 2. Form Control Patterns
+Package warnings:
 
-**Category**: SHARED_PATTERN
-**Confidence**: High
-**Risk**: Low
-**Recommendation**: WORTH_CONSIDERING
+- Missing fixture warnings were reported and empty fallback fixtures were written, as recorded in `04-verification.md`.
+- The package command exited successfully.
 
-Form controls show consistent patterns:
-- Input containers with proper spacing and validation states
-- Select dropdowns with consistent styling
+## Visual And Cascade Risks
 
-**Opportunity**: Create shared form control abstractions that can be extended.
+Cascade risk is low for the static CSS split because original source order is preserved by numeric import order and the
+reconstruction check matched the original CSS exactly.
 
-## Design System Observations
+Visual risk remains for untested viewports/states:
 
-### Spacing Scale
-Current usage shows a reasonable progression:
-- 2px, 4px, 5px, 6px, 7px, 8px, 9px, 10px, 12px, 16px (standardized)
+- mobile/sheet-width layouts;
+- unusual active/disabled/selected combinations;
+- live player-tracker Leaflet popup states;
+- panels not covered in the quick Firefox desktop smoke test.
 
-### Typography Scale  
-- 8px, 9px, 10px, 11px, 12px, 16px (with semantic meanings)
+## Existing Failures Or Warnings
 
-### Border Radius
-- 4px (main standard)
-- Some variations in components
+No blocking failures remain.
 
-### Control Heights
-- Standard: ~32px
-- Small: ~24px
+Known non-blocking warning:
 
-## Recommendations for Future Work
+- package step reports missing fixture files and writes empty fallback fixtures.
 
-### Immediate Actions
-1. Establish a complete spacing scale as CSS variables
-2. Document typography scale with semantic names  
-3. Create color palette documentation
+## Follow-up Opportunities
 
-### Medium-term Goals
-1. Implement shared grid row abstractions
-2. Standardize control height values 
-3. Create reusable panel components
+Do not perform these as part of this migration branch:
 
-### Long-term Vision
-1. Fully modular CSS architecture following design system principles
-2. Component-level CSS-in-JS integration options
-3. Theme support for dark/light modes
+- Reduce the number of chunk files once visual parity is accepted.
+- Review the two remaining `styles/*-temporary.css` mobile chunks if a future pass wants to split responsive CSS by
+  owner.
+- Decide whether repeated numbered chunks should be consolidated per owner without changing cascade.
+- Investigate no-source-evidence selectors in a separate cleanup pass.
+- Add mobile/sheet-width visual verification notes.
+- Consider later design-system cleanup only after this ownership migration is accepted.
+- Investigate whether CSS should eventually follow component import structure, such as `import './Button.css'` from the
+  component that owns the markup. Treat this as a separate loading-model change, because it can alter bundler CSS order
+  and cascade behavior.
 
-## Summary
+## Final Hard Stop
 
-The immediate refactoring has successfully established clear ownership of CSS files, but there are several opportunities for further improvement in terms of design consistency and maintainability. These follow-up items would benefit from a systematic approach to create a robust, scalable CSS architecture that follows modern design system principles.
+The CSS ownership migration is complete for this branch.
+
+Do not perform additional CSS cleanup in this branch unless a new plan is opened.

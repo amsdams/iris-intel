@@ -1,0 +1,60 @@
+
+
+.iitc-iris-nav-button {
+    width: 24px;
+    height: 22px;
+    border: 1px solid rgb(95 180 255 / 40%);
+    background: rgb(7 31 45 / 92%);
+    color: #e8f4ff;
+    font: var(--iitc-iris-button-font);
+}
+
+.iitc-iris-nav-button-wide {
+    width: auto;
+    min-width: 52px;
+    padding: 0 7px;
+}
+
+.iitc-iris-nav-button:hover {
+    border-color: rgb(101 217 255 / 80%);
+    background: rgb(10 45 64 / 96%);
+}
+
+.iitc-iris-nav-button:disabled {
+    border-color: rgb(95 180 255 / 18%);
+    background: rgb(10 18 25 / 50%);
+    color: #4f6575;
+}
+
+.iitc-iris-pan-grid {
+    display: grid;
+    grid-template-columns: 24px 24px 24px;
+    grid-template-rows: 22px 22px;
+    gap: 3px;
+}
+
+.iitc-iris-map-control-status {
+    color: #91a6b7;
+    font-size: var(--iitc-iris-text-sm);
+    line-height: var(--iitc-iris-line-compact);
+}
+
+.iitc-iris-pan-north {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.iitc-iris-pan-west {
+    grid-column: 1;
+    grid-row: 2;
+}
+
+.iitc-iris-pan-east {
+    grid-column: 3;
+    grid-row: 2;
+}
+
+.iitc-iris-pan-south {
+    grid-column: 2;
+    grid-row: 2;
+}

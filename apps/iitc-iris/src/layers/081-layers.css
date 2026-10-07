@@ -1,0 +1,11 @@
+
+
+.iitc-iris-layer-toggle {
+    min-width: 20px;
+    height: 20px;
+    border: 1px solid rgb(95 180 255 / 30%);
+    background: rgb(10 18 25 / 82%);
+    color: #7894aa;
+    font: var(--iitc-iris-button-font);
+    text-transform: uppercase;
+}

@@ -1,0 +1,10 @@
+
+
+.iitc-iris-portal-section {
+    display: grid;
+    gap: 4px;
+}
+
+.iitc-iris-portal-section[open] {
+    gap: 6px;
+}

@@ -1,0 +1,16 @@
+
+
+/* Shared control base: border, radius, color, font, and disabled state for all form inputs. */
+.iitc-iris-control {
+    min-width: 0;
+    box-sizing: border-box;
+    border: 1px solid rgb(95 180 255 / 30%);
+    border-radius: var(--iitc-iris-radius-control);
+    color: #e8f4ff;
+    font: inherit;
+    letter-spacing: 0;
+}
+
+.iitc-iris-control:disabled {
+    color: #4f6575;
+}

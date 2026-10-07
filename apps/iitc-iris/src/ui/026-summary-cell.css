@@ -1,0 +1,24 @@
+
+
+.iitc-iris-summary-cell,
+.iitc-iris-portal-summary-cell {
+    position: relative;
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+    padding: 5px 6px;
+    border: 1px solid rgb(95 180 255 / 18%);
+    border-radius: 4px;
+    overflow: hidden;
+    background: rgb(10 18 25 / 58%);
+}
+
+.iitc-iris-summary-cell b,
+.iitc-iris-portal-summary-cell b {
+    min-width: 0;
+    overflow: hidden;
+    color: #fff;
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

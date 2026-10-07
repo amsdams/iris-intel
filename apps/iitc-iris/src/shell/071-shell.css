@@ -1,0 +1,104 @@
+
+
+.iitc-iris-sheet-tabbar {
+    --iitc-iris-tabbar-clearance: 96px;
+
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    z-index: 10003;
+    display: grid;
+    gap: 5px;
+    box-sizing: border-box;
+    width: min(560px, calc(100vw - 24px));
+    margin: 0 auto;
+    padding: 5px;
+    border: 1px solid rgb(95 180 255 / 32%);
+    border-radius: 8px;
+    background: rgb(2 10 16 / 92%);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 38%);
+    pointer-events: auto;
+}
+
+.iitc-iris-sheet-tabbar-primary,
+.iitc-iris-sheet-tabbar-secondary {
+    display: grid;
+    gap: 4px;
+}
+
+.iitc-iris-sheet-tabbar-primary {
+    grid-row: 2;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.iitc-iris-sheet-tabbar-secondary {
+    grid-row: 1;
+    grid-auto-columns: minmax(72px, max-content);
+    grid-auto-flow: column;
+    grid-template-columns: none;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgb(95 180 255 / 16%);
+    scrollbar-width: thin;
+    white-space: nowrap;
+}
+
+.iitc-iris-sheet-tabbar-secondary::-webkit-scrollbar {
+    height: 3px;
+}
+
+.iitc-iris-sheet-tabbar-secondary::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgb(95 180 255 / 32%);
+}
+
+.iitc-iris-sheet-tab {
+    appearance: none;
+    position: relative;
+    min-width: 0;
+    min-height: 32px;
+    padding: 3px 2px;
+    border: 1px solid rgb(95 180 255 / 18%);
+    border-radius: 5px;
+    background: rgb(7 31 45 / 72%);
+    color: #c7d8e8;
+    font: var(--iitc-iris-button-font-sm);
+    cursor: pointer;
+}
+
+.iitc-iris-sheet-subtab {
+    min-height: 26px;
+    background: rgb(5 23 34 / 74%);
+    color: #9fb6c7;
+    font-size: 9px;
+}
+
+.iitc-iris-sheet-tab.is-active {
+    border-color: rgb(105 210 255 / 70%);
+    background: rgb(12 48 68 / 96%);
+    color: #fff;
+}
+
+.iitc-iris-sheet-tab.is-active::before {
+    position: absolute;
+    right: 7px;
+    bottom: 3px;
+    left: 7px;
+    height: 2px;
+    border-radius: 999px;
+    background: #65d9ff;
+    content: "";
+}
+
+.iitc-iris-sheet-subtab.is-active::before {
+    right: 12px;
+    left: 12px;
+    background: rgb(255 210 63 / 95%);
+}
+
+.iitc-iris-sheet-tab:disabled {
+    color: #526675;
+    cursor: default;
+}

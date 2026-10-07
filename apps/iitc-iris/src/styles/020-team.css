@@ -1,0 +1,21 @@
+
+
+.iitc-iris-team-res {
+    --portal-team-color: #49a9ff;
+    --portal-team-soft: rgb(73 169 255 / 34%);
+}
+
+.iitc-iris-team-enl {
+    --portal-team-color: #41d66f;
+    --portal-team-soft: rgb(65 214 111 / 34%);
+}
+
+.iitc-iris-team-machina {
+    --portal-team-color: #ff4f5f;
+    --portal-team-soft: rgb(255 79 95 / 34%);
+}
+
+.iitc-iris-team-neutral {
+    --portal-team-color: #9aa8b4;
+    --portal-team-soft: rgb(154 168 180 / 34%);
+}

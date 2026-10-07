@@ -1,0 +1,85 @@
+
+
+@media (width <= 760px) {
+    .iitc-iris-sheet-tabbar {
+        right: 8px;
+        bottom: 8px;
+        left: 8px;
+        width: auto;
+    }
+
+    .iitc-iris-map-controls,
+    .iitc-iris-portal-side-panel,
+    .iitc-iris-request-side-panel,
+    .iitc-iris-search {
+        right: 8px;
+        bottom: var(--iitc-iris-tabbar-clearance, 96px);
+        left: 8px;
+        width: auto;
+        max-height: min(64vh, 480px);
+    }
+
+    .iitc-iris-map-search-badge {
+        top: 58px;
+        right: 8px;
+        left: 8px;
+        max-width: none;
+    }
+
+    .iitc-iris-portal-analysis {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .iitc-iris-counts-visuals {
+        padding: 4px;
+    }
+
+    .iitc-iris-counts-visuals svg {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .iitc-iris-portals-list-filters {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    .iitc-iris-portals-list-search {
+        grid-column: 1 / -1;
+    }
+
+    .iitc-iris-portals-list-summary-item {
+        padding: 5px;
+    }
+
+    .iitc-iris-portals-list-summary-item b {
+        font-size: 14px;
+    }
+
+    .iitc-iris-portal-analysis-table {
+        min-width: 0;
+        font-size: var(--iitc-iris-text-sm);
+    }
+
+    .iitc-iris-portal-analysis-table th,
+    .iitc-iris-portal-analysis-table td {
+        padding: 4px 5px;
+    }
+
+    .iitc-iris-portal-counts-table {
+        min-width: 0;
+    }
+
+    .iitc-iris-portals-list-table {
+        min-width: 780px;
+    }
+
+    .iitc-iris-scoreboard-table {
+        min-width: 0;
+    }
+
+    .iitc-iris-scoreboard-table th,
+    .iitc-iris-scoreboard-table td {
+        white-space: normal;
+    }
+}

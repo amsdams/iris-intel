@@ -1,99 +1,126 @@
-# IITC-IRIS CSS Migration Log - Phase 3
+# IITC IRIS CSS Migration Log - Phase 3
 
-## Migration Plan Overview
-
-This document outlines the planned migration of CSS from `src/iitc-iris.css` to their appropriate ownership locations based on the analysis in Phase 2.
+Status: CSS migration implemented for static review.
 
 ## Migration Strategy
 
-### Phase 1: Shared UI Primitives
-Move global/base UI components to `src/ui/ui.css`
+The migration uses ordered chunk files instead of one large owner file per feature.
 
-Selectors to move:
-- `.iitc-iris-button`
-- `.iitc-iris-control` 
-- `.iitc-iris-list-item`
-- `.iitc-iris-badge`
-- `.iitc-iris-panel-header`
-- `.iitc-iris-panel-footer`
-- `.iitc-iris-empty-state`
-- `.iitc-iris-text-input`
-- `.iitc-iris-select-input`
-- `.iitc-iris-textarea-input`
-- `.iitc-iris-chip-button`
-- `.iitc-iris-clear-selection`
-- `.iitc-iris-base-toggle`
+Reason: a simple owner-grouped split would reorder CSS across feature/UI boundaries. To preserve the original cascade,
+`apps/iitc-iris/src/iitc-iris.css` is now an import manifest whose imports are ordered by the original monolithic
+stylesheet order. Each imported chunk lives under the owning source directory identified by the Phase 1 ownership map.
 
-### Phase 2: Feature-Specific CSS
-Move feature-specific selectors to their respective feature directories
+The split is intentionally mechanical:
 
-#### Search
-- Move all search-related selectors to `src/search/search-panel.css`
-- Selectors: `.iitc-iris-search-box`, `.iitc-iris-search-input`, `.iitc-iris-search-clear`, etc.
+- selector text is unchanged;
+- declaration text is unchanged;
+- comments inside moved ranges are preserved;
+- source order is preserved by manifest import order;
+- whole broad responsive `@media` blocks are kept in ordered temporary chunks under `apps/iitc-iris/src/styles/`;
+- no TS/TSX imports were changed.
 
-#### Inventory  
-- Move inventory selectors to `src/side-panels/inventory-panel.css`
-- Selectors: `.iitc-iris-inventory-row`, `.iitc-iris-inventory-key-row`
+## Files Created
 
-#### Missions
-- Move mission selectors to `src/missions/missions-panel.css`
-- Selectors: `.iitc-iris-mission-row`
+CSS files after migration:
 
-#### Communication
-- Move comm selectors to `src/comm/comm-panel.css`
-- Selectors: `.iitc-iris-comm-row`
+| Area | Files |
+|------|-------|
+| `auth` | 2 |
+| `comm` | 2 |
+| `draw-tools` | 1 |
+| `layers` | 4 |
+| `map` | 11 |
+| `missions` | 3 |
+| `portal-analysis` | 6 |
+| `portals` | 14 |
+| `search` | 3 |
+| `shell` | 4 |
+| `side-panels` | 4 |
+| `styles` | 6 |
+| `system` | 9 |
+| `ui` | 21 |
 
-#### Draw Tools
-- Move draw tools selectors to `src/draw-tools/draw-tools-panel.css`
-- Selectors: `.iitc-iris-draw-tools-list-item`
+Total imported chunk files: 90.
 
-#### Portals (Agent-related)
-- Move agent-related selectors to `src/portals/agent-card.css`
-- Selectors: `.iitc-iris-agent-card`, `.iitc-iris-agent-row`, `.iitc-iris-agent-level`
+`apps/iitc-iris/src/iitc-iris.css` remains the single CSS entry point and now contains only ordered `@import url(...)`
+statements.
 
-#### Portal Analysis
-- Move analysis selectors to `src/portal-analysis/analysis-card.css`
-- Selectors: `.iitc-iris-analysis-card`, `.iitc-iris-analysis-row`
+## Cascade Preservation
 
-### Phase 3: Panel Layout Components
-Move panel layout styles to appropriate panel files
+Cascade preservation method:
 
-Selectors to move:
-- `.iitc-iris-shell`
-- `.iitc-iris-map`
-- `.iitc-iris-panel-container`
+1. Save the original `apps/iitc-iris/src/iitc-iris.css`.
+2. Split the CSS into contiguous chunks by proposed owner while preserving original order.
+3. Write the chunks into owner directories with numeric prefixes.
+4. Replace `iitc-iris.css` with ordered imports.
+5. Concatenate every imported chunk in manifest order and compare it with the original CSS.
 
-## Implementation Order
+Verification result:
 
-1. Create CSS files in their new locations with appropriate selectors
-2. Update imports in content.tsx to import from new locations  
-3. Remove moved selectors from `src/iitc-iris.css`
-4. Verify no functionality was broken
+```text
+reconstructed CSS matches original
+```
 
-## Risk Assessment
+This proves the imported chunk contents, when read in manifest order, reproduce the original stylesheet exactly.
 
-### Low Risk Items:
-- Shared UI primitives that are clearly reusable across features
-- Well-defined panel layouts and containers
+## Temporary Chunks
 
-### Medium Risk Items:
-- Selectors that may be used in multiple components but aren't shared by design
-- Complex selectors that may have cross-dependencies
+Temporary chunks are under `apps/iitc-iris/src/styles/*-temporary.css`.
 
-### High Risk Items:
-- Global styles or variables that affect application-wide behavior  
-- Dynamic class construction that's hard to trace
-- IITC/Leaflet integration selectors that may be referenced externally
+After the follow-up cleanup, only two temporary chunks remain:
 
-## Verification Requirements
+- `apps/iitc-iris/src/styles/068-temporary.css`
+- `apps/iitc-iris/src/styles/075-temporary.css`
 
-Before considering migration complete:
-1. All moved CSS selectors must still be applied correctly
-2. No selectors should have been accidentally removed from their owners
-3. All imports must work properly in the build process  
-4. Application behavior must remain unchanged
-5. Type checking and linting must pass
+Both contain broad mobile `@media (width <= 760px)` blocks spanning several UI and feature owners. They are intentionally
+kept intact to avoid responsive cascade drift.
 
-## Phase 3 Status
+The other temporary chunks from the initial mechanical split were moved to clearer owner directories without changing
+their numeric import positions.
 
-This document serves as a preliminary migration plan. The actual implementation will be performed in subsequent phases with careful verification of each move.
+## Entry Point
+
+`apps/iitc-iris/src/iitc-iris.css` now begins:
+
+```css
+/* IITC IRIS CSS entry point. Ordered imports preserve the original monolithic cascade. */
+@import url('./styles/001-globals.css');
+@import url('./ui/002-ui.css');
+@import url('./shell/003-shell.css');
+```
+
+The rest of the file is the ordered import manifest.
+
+## Verification Run During Migration
+
+| Check | Command/method | Result | Evidence | Status |
+|-------|----------------|--------|----------|--------|
+| Typecheck | `npm run typecheck:iitc-iris` | Passed | `tsc --noEmit` exited 0. | PASS |
+| App lint | `npm run lint:iitc-iris` | Passed | `eslint src` exited 0. | PASS |
+| Tests | `npm run test:iitc-iris` | Passed | 60 test files and 346 tests passed. | PASS |
+| CSS lint | `npm run lint:css` | Passed | `stylelint '**/*.css'` exited 0 after import notation was changed to `url(...)`. | PASS |
+| Package | `npm run package:iitc-iris` | Passed | Built `dist/iitc-iris.css` at 61.13 kB and created Chrome ZIP / Firefox XPI. | PASS |
+| Diff hygiene | `git diff --check` | Passed | Command produced no output. | PASS |
+| Cascade reconstruction | Concatenate imported chunks in manifest order and compare with saved original CSS | Passed | `reconstructed CSS matches original`. | PASS |
+
+Package warnings:
+
+```text
+IITC IRIS: missing fixture /Users/jula/ittca/docs/iris/update-map-samples/get-entities-z10.json; wrote empty fallback /Users/jula/ittca/apps/iitc-iris/dist/fixtures/get-entities-z10.json
+IITC IRIS: missing fixture /Users/jula/ittca/docs/iris/update-map-samples/get-entities-z14.json; wrote empty fallback /Users/jula/ittca/apps/iitc-iris/dist/fixtures/get-entities-z14.json
+IITC IRIS: missing fixture /Users/jula/ittca/docs/iris/update-map-samples/get-entities-damrak-iitc-z15.json; wrote empty fallback /Users/jula/ittca/apps/iitc-iris/dist/fixtures/get-entities-damrak-iitc-z15.json
+```
+
+The package command exited successfully despite those existing fixture fallback warnings.
+
+## Visual Verification
+
+Not performed by Codex in this pass.
+
+The user requested to verify after code changes. Phase 4 should record the user's visual/browser verification results.
+
+## Known Tradeoff
+
+The chunked split creates more CSS files than a hand-authored final architecture. This is deliberate for the first
+migration: it preserves cascade exactly and makes later consolidation reviewable as a separate follow-up instead of
+mixing layout moves with behavioral risk.

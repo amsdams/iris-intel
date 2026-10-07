@@ -1,0 +1,16 @@
+
+
+.iitc-iris-summary-mini-track {
+    position: relative;
+    height: 3px;
+    overflow: hidden;
+    border-radius: 3px;
+    background: rgb(128 150 165 / 18%);
+}
+
+.iitc-iris-summary-mini-track > span {
+    position: absolute;
+    inset: 0 auto 0 0;
+    border-radius: inherit;
+    background: var(--portal-team-color);
+}

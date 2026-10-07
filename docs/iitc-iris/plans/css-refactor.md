@@ -27,7 +27,8 @@ This plan is written for a navigator/driver split:
   selector accounting, and uncertainty handling; do not delegate phase completion to a weaker local driver.
 * A local driver may gather evidence, run exact commands, fill exact templates, and later perform mechanical CSS moves
   from an approved manifest.
-* A local driver must not decide that a selector is unused, decide final ownership, approve an ownership map, or declare a
+* A local driver must not decide that a selector is unused, decide final ownership, approve an ownership map, or declare
+  a
   phase complete.
 * Do not create numbered replacement artifacts such as `00-baseline-1.md` or `00-baseline-2.md` as final deliverables.
   Draft variants may be used during review, but the accepted artifact must be copied into the canonical filename listed
@@ -245,7 +246,8 @@ Counting rules:
 
 * `wc -l` records CSS line count.
 * At-rule counts must be derived from the matching `rg` output above. Do not estimate.
-* CSS variable count must be labeled either as `custom property declaration count` or `unique custom property name count`.
+* CSS variable count must be labeled either as `custom property declaration count` or
+  `unique custom property name count`.
   If both are useful, record both.
 * Do not call `grep -n "^\." ... | wc -l` a selector/rule count. It is only a count of CSS lines that begin with a dot,
   and it misses grouped selectors, id selectors, nested media selectors, pseudo selectors, and external selectors.
@@ -254,16 +256,16 @@ Counting rules:
 
 Phase 0 table template:
 
-| Check | Command/method | Result | Evidence | Status |
-|-------|----------------|--------|----------|--------|
-| Current commit | `git rev-parse HEAD` | `<hash>` | exact output | PASS |
-| Working tree | `git status --short` | `<summary>` | exact output or summarized lines | PASS |
-| Diff hygiene | `git diff --check` | `<pass/fail>` | exact output | PASS/FAIL |
-| Typecheck | `npm run typecheck:iitc-iris` | `<result>` | final output summary | PASS/FAIL/NOT VERIFIED |
-| Lint | `npm run lint:iitc-iris` | `<result>` | final output summary | PASS/FAIL/NOT VERIFIED |
-| Tests | `npm run test:iitc-iris` | `<result>` | final output summary | PASS/FAIL/NOT VERIFIED |
-| CSS lint | `npm run lint:css` | `<result>` | final output summary | PASS/FAIL/NOT VERIFIED |
-| Package | `npm run package:iitc-iris` | `<result>` | final output summary | PASS/FAIL/NOT VERIFIED |
+| Check          | Command/method                | Result        | Evidence                         | Status                 |
+|----------------|-------------------------------|---------------|----------------------------------|------------------------|
+| Current commit | `git rev-parse HEAD`          | `<hash>`      | exact output                     | PASS                   |
+| Working tree   | `git status --short`          | `<summary>`   | exact output or summarized lines | PASS                   |
+| Diff hygiene   | `git diff --check`            | `<pass/fail>` | exact output                     | PASS/FAIL              |
+| Typecheck      | `npm run typecheck:iitc-iris` | `<result>`    | final output summary             | PASS/FAIL/NOT VERIFIED |
+| Lint           | `npm run lint:iitc-iris`      | `<result>`    | final output summary             | PASS/FAIL/NOT VERIFIED |
+| Tests          | `npm run test:iitc-iris`      | `<result>`    | final output summary             | PASS/FAIL/NOT VERIFIED |
+| CSS lint       | `npm run lint:css`            | `<result>`    | final output summary             | PASS/FAIL/NOT VERIFIED |
+| Package        | `npm run package:iitc-iris`   | `<result>`    | final output summary             | PASS/FAIL/NOT VERIFIED |
 
 ## Verification
 
@@ -361,15 +363,15 @@ Minimum required workflow:
 
 Required Phase 1 coverage table:
 
-| Metric | Count | Method | Status |
-|--------|-------|--------|--------|
-| CSS source lines | `<count>` | command | PASS |
-| Extracted selector entries | `<count>` | parser/command name | PASS |
-| Inventory rows | `<count>` | table row count | PASS |
-| Selectors with TS/TSX evidence | `<count>` | search method | PASS |
-| External/IITC/Leaflet selectors | `<count>` | manual review/search | PASS |
-| UNCERTAIN selectors | `<count>` | ownership table | PASS |
-| Suspected unused selectors | `<count>` | evidence-backed only | PASS |
+| Metric                          | Count     | Method               | Status |
+|---------------------------------|-----------|----------------------|--------|
+| CSS source lines                | `<count>` | command              | PASS   |
+| Extracted selector entries      | `<count>` | parser/command name  | PASS   |
+| Inventory rows                  | `<count>` | table row count      | PASS   |
+| Selectors with TS/TSX evidence  | `<count>` | search method        | PASS   |
+| External/IITC/Leaflet selectors | `<count>` | manual review/search | PASS   |
+| UNCERTAIN selectors             | `<count>` | ownership table      | PASS   |
+| Suspected unused selectors      | `<count>` | evidence-backed only | PASS   |
 
 `01-css-inventory.md` must not say "complete inventory" unless `Extracted selector entries` equals `Inventory rows` or
 the difference is explained.
