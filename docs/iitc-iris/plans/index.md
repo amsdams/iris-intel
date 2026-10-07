@@ -2,26 +2,26 @@
 
 ## Current State
 
-Status: Phase 2 app-surface extraction, source layout, and the current UI component extraction pass are complete/parked.
-Do not assign more refactor work unless a detailed plan names exact scope, files, stop conditions, and validation.
+Status: Phase 2 app-surface extraction, source layout, and the UI component extraction pass are complete/parked.
+The active refactor track is the CSS ownership refactor in `css-refactor-new.md`.
 Android APK work is a separate readiness track, not a continuation of the refactor plans.
 
-No active refactor is approved right now. Before assigning AGY/Codex more refactor work, update or create one detailed
-plan with exact scope, files, stop conditions, and validation.
+Do not assign any other refactor work unless a detailed plan names exact scope, files, stop conditions, and validation.
 
 Likely next priorities:
 
-1. Use the app on phone/desktop and collect concrete UI/CSS/mobile pain.
-2. Prepare for a friend-shared sideload APK, with Play/store distribution deferred.
-3. Run the Android/WebView readiness spikes before creating an IRIS APK scaffold.
-4. UI/CSS/mobile polish for concrete findings.
-5. Backlog refinement if usage shows priorities have changed.
+1. Execute `css-refactor-new.md` one phase at a time, stopping at each phase gate.
+2. Use the app on phone/desktop and collect concrete UI/CSS/mobile pain.
+3. Prepare for a friend-shared sideload APK, with Play/store distribution deferred.
+4. Run the Android/WebView readiness spikes before creating an IRIS APK scaffold.
+5. UI/CSS/mobile polish for concrete findings.
+6. Backlog refinement if usage shows priorities have changed.
 
 Do not mix refactor cleanup, UI/mobile polish, Android APK work, and feature/parity work in one branch.
 
 ## Active Work
 
-None.
+- [css-refactor.md](css-refactor-new.md): Active source of truth for the CSS ownership refactor. Start with Phase 0 only.
 
 ## Recently Completed
 
@@ -66,6 +66,7 @@ These rules apply to Codex, AGY/Gemini, and any other AI-assisted branch.
 - Read this roadmap first. Read [../port-plan.md](../port-plan.md) for behavior/parity work. Read only the relevant
   detailed plan for the current assignment.
 - If this file says there is no active work, do not improvise a refactor. Ask for or create a detailed plan first.
+- For CSS refactor work, follow `css-refactor-new.md` exactly. Do not use exploratory notes as approval to move CSS.
 - Treat app-surface refactors as behavior-preserving by default. Do not rename persisted ids, message types, public panel
   ids, storage keys, user-facing labels, or IITC-aligned concepts unless the plan explicitly marks a divergence.
 - Compare AGY review work against the current baseline branch and record behavior differences as bugs unless a plan
@@ -84,7 +85,7 @@ These rules apply to Codex, AGY/Gemini, and any other AI-assisted branch.
 
 Active:
 
-- [ui-system-consolidation-plan.md](ui-system-consolidation-plan.md): Active source of truth for IITC IRIS UI/CSS consolidation.
+- [css-refactor.md](css-refactor-new.md): Active source of truth for the IITC IRIS CSS ownership refactor.
 
 Ready/Blocked:
 
@@ -94,6 +95,10 @@ Ready/Blocked:
 
 Superseded/Historical:
 
+- [ui-system-consolidation-plan.md](ui-system-consolidation-plan.md): Parked after Assignment 4; do not continue this
+  consolidation track unless it is reopened with a new user-approved scope.
+- [css-ownership.md](css-ownership.md): Exploratory draft only. It is not an approved ownership map and must not be used
+  as a migration contract.
 - [typography-spacing-consistency-plan.md](typography-spacing-consistency-plan.md): Superseded by `ui-system-consolidation-plan.md`.
 
 Completed Phase 2:

@@ -1,0 +1,1211 @@
+# IITC IRIS CSS Inventory - Phase 1
+
+Status: Inventory complete for selector coverage. This is not an approved ownership map; ownership decisions belong in `02-ownership-map.md`.
+
+Source CSS: `apps/iitc-iris/src/iitc-iris.css`.
+
+Baseline: `00-baseline.md`.
+
+## Method
+
+Selectors were extracted with a local parser that preserves source line numbers, descends into `@media` blocks, splits grouped selectors into individual selector entries, and records the original selector group. Usage evidence was gathered by searching class/id fragments from each selector across `apps/iitc-iris/src/**/*.ts`, `apps/iitc-iris/src/**/*.tsx`, and adjacent JS/JSX source files. Fragment search is evidence for inventory triage, not final ownership proof.
+
+Selectors with no source-tree fragment evidence are marked `UNCERTAIN` unless they target known external/IITC/Leaflet DOM. No selector is classified as unused in this inventory.
+
+## Coverage Summary
+
+| Metric | Count | Method | Status |
+|--------|-------|--------|--------|
+| CSS source lines | 3431 | `wc -l apps/iitc-iris/src/iitc-iris.css` | PASS |
+| Rule groups | 468 | Parser count before grouped-selector splitting | PASS |
+| Extracted selector entries | 566 | Parser count after grouped-selector splitting | PASS |
+| Inventory rows | 566 | Full Selector Inventory row count | PASS |
+| Selectors with TS/TSX fragment evidence | 527 | Source fragment search | PASS |
+| External/IITC/Leaflet selectors | 10 | Selector/manual pattern review | PASS |
+| UNCERTAIN selectors | 29 | No fragment evidence and not known external DOM | PASS |
+| Suspected unused selectors | 0 | Not classified in inventory phase | PASS |
+| Cross-area fragment matches | 102 | Source fragment search by top-level source directory | PASS |
+
+## At-Rules
+
+| At-rule | Count | Lines |
+|---------|-------|-------|
+| `@media` | 2 | 2490, 2771 |
+| `@keyframes` | 0 | None |
+| `@supports` | 0 | None |
+
+## CSS Variables
+
+Custom property declarations: 38. Unique custom property names: 34.
+
+Unique names:
+- `--iitc-iris-button-font`
+- `--iitc-iris-button-font-sm`
+- `--iitc-iris-chip-padding`
+- `--iitc-iris-control-padding`
+- `--iitc-iris-font-black`
+- `--iitc-iris-font-bold`
+- `--iitc-iris-font-extrabold`
+- `--iitc-iris-font-medium`
+- `--iitc-iris-font-mono`
+- `--iitc-iris-font-semibold`
+- `--iitc-iris-font-ui`
+- `--iitc-iris-item-color`
+- `--iitc-iris-item-padding`
+- `--iitc-iris-label-font`
+- `--iitc-iris-letter-meta`
+- `--iitc-iris-letter-normal`
+- `--iitc-iris-line-compact`
+- `--iitc-iris-line-readable`
+- `--iitc-iris-line-tight`
+- `--iitc-iris-panel-padding`
+- `--iitc-iris-player-tracker-color`
+- `--iitc-iris-radius-control`
+- `--iitc-iris-resonator-health`
+- `--iitc-iris-space-1`
+- `--iitc-iris-space-2`
+- `--iitc-iris-space-3`
+- `--iitc-iris-space-4`
+- `--iitc-iris-tabbar-clearance`
+- `--iitc-iris-text-lg`
+- `--iitc-iris-text-md`
+- `--iitc-iris-text-sm`
+- `--iitc-iris-text-xl`
+- `--iitc-iris-text-xs`
+- `--iitc-iris-text-xxs`
+
+Repeated custom property assignments are intentional/local unless ownership review decides otherwise. Repeated names: `--iitc-iris-item-color`, `--iitc-iris-player-tracker-color`.
+
+## Important Declarations
+
+No `!important` declarations were found.
+
+## High-Specificity Selectors
+
+| Line | Selector | Reason |
+|------|----------|--------|
+| 1 | `#iitc-iris-root` | ID selector |
+| 1742 | `.iitc-iris-mission-entry:has(.iitc-iris-mission-row.is-active)` | Multiple state/compound selectors |
+| 2499 | `.iitc-iris-dock > .iitc-iris-dock-row:not(:first-child, .iitc-iris-debug-row)` | Multiple state/compound selectors |
+| 2503 | `.iitc-iris-dock-row:first-child .iitc-iris-copy:not(:first-of-type)` | Multiple state/compound selectors |
+
+## Global And Foundation Rules
+
+Foundation candidates are broad shell/map/panel/status rules. Final ownership remains for `02-ownership-map.md`.
+
+| Line | Selector | Evidence areas |
+|------|----------|----------------|
+| 1 | `#iitc-iris-root` | src-root |
+| 64 | `.iitc-iris-shell` | src-root |
+| 71 | `.iitc-iris-map` | draw-tools, map, src-root, ui |
+| 91 | `.iitc-iris-map-search-badge span` | src-root |
+| 154 | `.iitc-iris-map-search-badge` | src-root |
+| 174 | `.iitc-iris-map-search-badge button` | src-root |
+| 187 | `.iitc-iris-map-search-badge button:hover` | src-root |
+| 370 | `.iitc-iris-dock` | system |
+| 390 | `.iitc-iris-dock-row` | system |
+| 398 | `.iitc-iris-map-controls` | map, ui |
+| 419 | `.iitc-iris-map-controls-section` | ui |
+| 427 | `.iitc-iris-map-controls-section:first-child` | ui |
+| 432 | `.iitc-iris-map-controls-section > .iitc-iris-status` | ui |
+| 440 | `.iitc-iris-map-control-row` | ui |
+| 448 | `.iitc-iris-map-context-row` | draw-tools, map |
+| 456 | `.iitc-iris-map-context-coords` | draw-tools, map |
+| 465 | `.iitc-iris-map-context-anchor` | map |
+| 479 | `.iitc-iris-map-context-anchor:hover` | map |
+| 479 | `.iitc-iris-map-context-anchor:focus-visible` | map |
+| 643 | `.iitc-iris-status` | ui |
+| 843 | `.iitc-iris-panel-summary` | ui |
+| 852 | `.iitc-iris-panel-summary` | ui |
+| 1571 | `.iitc-iris-panel-topbar` | map, system |
+| 1589 | `.iitc-iris-panel-header-actions` | map, portals, search, shell, system |
+| 1611 | `.iitc-iris-panel-state` | portals, search, shell, system |
+| 1626 | `.iitc-iris-panel-state.is-loading` | portals, search, shell, src-root, system |
+| 1631 | `.iitc-iris-panel-state.is-ready` | portals, search, shell, src-root, system |
+| 1636 | `.iitc-iris-panel-state.is-muted` | portal-analysis, portals, search, shell, src-root, system |
+| 1640 | `.iitc-iris-panel-state.is-warning` | comm, missions, portals, search, shell, side-panels, src-root, system |
+| 1670 | `.iitc-iris-panel-footer` | ui |
+| 2491 | `.iitc-iris-dock` | system |
+| 2499 | `.iitc-iris-dock > .iitc-iris-dock-row:not(:first-child, .iitc-iris-debug-row)` | system |
+| 2503 | `.iitc-iris-dock-row:first-child .iitc-iris-copy:not(:first-of-type)` | system |
+| 2503 | `.iitc-iris-dock-row:first-child .iitc-iris-preset` | system |
+| 2503 | `.iitc-iris-dock-row:first-child .iitc-iris-jump` | system |
+| 2514 | `.iitc-iris-map-controls` | map, ui |
+| 2566 | `.iitc-iris-panel-summary` | ui |
+| 2583 | `.iitc-iris-warning` | comm, missions, portals, search, side-panels, system |
+| 2619 | `.iitc-iris-sheet-tabbar` | shell |
+| 2640 | `.iitc-iris-sheet-tabbar-primary` | shell |
+| 2640 | `.iitc-iris-sheet-tabbar-secondary` | shell |
+| 2646 | `.iitc-iris-sheet-tabbar-primary` | shell |
+| 2651 | `.iitc-iris-sheet-tabbar-secondary` | shell |
+| 2664 | `.iitc-iris-sheet-tabbar-secondary::-webkit-scrollbar` | shell |
+| 2668 | `.iitc-iris-sheet-tabbar-secondary::-webkit-scrollbar-thumb` | shell |
+| 2673 | `.iitc-iris-sheet-tab` | shell |
+| 2687 | `.iitc-iris-sheet-subtab` | shell |
+| 2694 | `.iitc-iris-sheet-tab.is-active` | missions, search, shell, src-root, ui |
+| 2700 | `.iitc-iris-sheet-tab.is-active::before` | missions, search, shell, src-root, ui |
+| 2711 | `.iitc-iris-sheet-subtab.is-active::before` | missions, search, shell, src-root, ui |
+| 2717 | `.iitc-iris-sheet-tab:disabled` | shell |
+| 2722 | `.iitc-iris-map-controls` | map, ui |
+| 2738 | `.iitc-iris-sheet-layers .iitc-iris-map-controls` | map, ui |
+| 2738 | `.iitc-iris-sheet-view .iitc-iris-map-controls` | map, ui |
+| 2738 | `.iitc-iris-sheet-drawLinks .iitc-iris-map-controls` | map, ui |
+| 2738 | `.iitc-iris-sheet-drawMarkers .iitc-iris-map-controls` | map, ui |
+| 2738 | `.iitc-iris-sheet-portalCounts .iitc-iris-map-controls` | map, ui |
+| 2738 | `.iitc-iris-sheet-portalsList .iitc-iris-map-controls` | map, ui |
+| 2738 | `.iitc-iris-sheet-scoreboard .iitc-iris-map-controls` | map, ui |
+| 2738 | `.iitc-iris-sheet-selectedLink .iitc-iris-map-controls` | map, ui |
+| 2738 | `.iitc-iris-sheet-selectedField .iitc-iris-map-controls` | map, ui |
+| 2738 | `.iitc-iris-sheet-portal .iitc-iris-portal-side-panel` | portals |
+| 2738 | `.iitc-iris-sheet-agent .iitc-iris-request-side-panel` | ui |
+| 2738 | `.iitc-iris-sheet-comm .iitc-iris-request-side-panel` | ui |
+| 2738 | `.iitc-iris-sheet-scores .iitc-iris-request-side-panel` | ui |
+| 2738 | `.iitc-iris-sheet-missions .iitc-iris-request-side-panel` | ui |
+| 2738 | `.iitc-iris-sheet-inventory .iitc-iris-request-side-panel` | ui |
+| 2738 | `.iitc-iris-sheet-passcode .iitc-iris-request-side-panel` | ui |
+| 2738 | `.iitc-iris-sheet-search .iitc-iris-request-side-panel` | ui |
+| 2738 | `.iitc-iris-sheet-help .iitc-iris-request-side-panel` | ui |
+| 2738 | `.iitc-iris-sheet-system .iitc-iris-system-panel` | system |
+| 2760 | `.iitc-iris-sheet-map .iitc-iris-map-controls` | map, ui |
+| 2760 | `.iitc-iris-sheet-map .iitc-iris-portal-side-panel` | portals |
+| 2760 | `.iitc-iris-sheet-map .iitc-iris-request-side-panel` | ui |
+| 2760 | `.iitc-iris-sheet-map .iitc-iris-system-panel` | system |
+| 2772 | `.iitc-iris-sheet-tabbar` | shell |
+| 2779 | `.iitc-iris-map-controls` | map, ui |
+| 2790 | `.iitc-iris-map-search-badge` | src-root |
+| 2893 | `.iitc-iris-map-control-status` | draw-tools, map |
+
+## IITC/Leaflet/External DOM Selectors
+
+| Line | Selector | Reason |
+|------|----------|--------|
+| 526 | `.iitc-iris-innerstatus .portallevel` | IITC/page-runtime inner status DOM |
+| 531 | `.iitc-iris-innerstatus .map b` | IITC/page-runtime inner status DOM |
+| 535 | `.iitc-iris-innerstatus .help` | IITC/page-runtime inner status DOM |
+| 539 | `.iitc-iris-innerstatus .failed-request` | IITC/page-runtime inner status DOM |
+| 544 | `.iitc-iris-innerstatus .selected-portal` | IITC/page-runtime inner status DOM |
+| 3345 | `.iitc-iris-player-tracker-leaflet-popup .leaflet-popup-content-wrapper` | Leaflet popup DOM |
+| 3353 | `.iitc-iris-player-tracker-leaflet-popup .leaflet-popup-content` | Leaflet popup DOM |
+| 3357 | `.iitc-iris-player-tracker-leaflet-popup .leaflet-popup-tip` | Leaflet popup DOM |
+| 3363 | `.iitc-iris-player-tracker-leaflet-popup .leaflet-popup-close-button` | Leaflet popup DOM |
+| 3367 | `.iitc-iris-player-tracker-leaflet-popup .leaflet-popup-close-button:hover` | Leaflet popup DOM |
+
+## Potentially Dynamic Or State Selectors
+
+State/pseudo/dynamic selector entries: 93. These require ownership review with the component or external DOM that creates the corresponding state class.
+
+| Line | Selector | Evidence areas |
+|------|----------|----------------|
+| 60 | `.iitc-iris-button:disabled` | ui |
+| 120 | `.iitc-iris-control:disabled` | draw-tools, portal-analysis, ui |
+| 135 | `.iitc-iris-search-input::placeholder` | search |
+| 150 | `.iitc-iris-search-clear:hover` | search |
+| 187 | `.iitc-iris-map-search-badge button:hover` | src-root |
+| 300 | `.iitc-iris-search-result-row:hover` | search |
+| 300 | `.iitc-iris-search-result-row:focus-within` | search |
+| 300 | `.iitc-iris-search-result-row.is-active` | missions, search, shell, src-root, ui |
+| 308 | `.iitc-iris-search-result-row.is-active` | missions, search, shell, src-root, ui |
+| 312 | `.iitc-iris-search-result-zoom:hover` | search |
+| 312 | `.iitc-iris-search-result-zoom:focus-visible` | search |
+| 319 | `.iitc-iris-search-result:disabled` | search |
+| 345 | `.iitc-iris-user-location-pin::before` | src-root |
+| 427 | `.iitc-iris-map-controls-section:first-child` | ui |
+| 479 | `.iitc-iris-map-context-anchor:hover` | map |
+| 479 | `.iitc-iris-map-context-anchor:focus-visible` | map |
+| 501 | `.iitc-iris-segmented-button.is-active` | missions, search, shell, src-root, ui |
+| 507 | `.iitc-iris-segmented-button:disabled` | ui |
+| 565 | `.iitc-iris-clear-selection:hover` | ui |
+| 612 | `.iitc-iris-auth-recovery button:hover` | auth |
+| 638 | `.iitc-iris-inline-auth button:hover` | src-root |
+| 689 | `.iitc-iris-selected-image-button:hover .iitc-iris-selected-image` | portals |
+| 689 | `.iitc-iris-selected-image-button:focus-visible .iitc-iris-selected-image` | portals |
+| 861 | `.iitc-iris-chip-button:hover` | ui |
+| 981 | `.iitc-iris-portal-action:hover` | missions, portals, ui |
+| 986 | `.iitc-iris-portal-action.is-danger` | draw-tools, missions, portals, ui |
+| 992 | `.iitc-iris-portal-action:disabled` | missions, portals, ui |
+| 1227 | `.iitc-iris-portal-analysis-table th:first-child` | portal-analysis |
+| 1227 | `.iitc-iris-portal-analysis-table td:first-child` | portal-analysis |
+| 1233 | `.iitc-iris-portals-list-table th:first-child` | portal-analysis |
+| 1233 | `.iitc-iris-portals-list-table td:first-child` | portal-analysis |
+| 1248 | `.iitc-iris-portal-analysis-table tr.is-muted` | portal-analysis, src-root |
+| 1252 | `.iitc-iris-portal-counts-table th:first-child` | portal-analysis |
+| 1252 | `.iitc-iris-portal-counts-table td:first-child` | portal-analysis |
+| 1259 | `.iitc-iris-scoreboard-table th:first-child` | portal-analysis |
+| 1259 | `.iitc-iris-scoreboard-table td:first-child` | portal-analysis |
+| 1414 | `.iitc-iris-section-summary:hover` | portals |
+| 1414 | `.iitc-iris-section-summary:focus-visible` | portals |
+| 1626 | `.iitc-iris-panel-state.is-loading` | portals, search, shell, src-root, system |
+| 1631 | `.iitc-iris-panel-state.is-ready` | portals, search, shell, src-root, system |
+| 1636 | `.iitc-iris-panel-state.is-muted` | portal-analysis, portals, search, shell, src-root, system |
+| 1640 | `.iitc-iris-panel-state.is-warning` | comm, missions, portals, search, shell, side-panels, src-root, system |
+| 1724 | `.iitc-iris-diagnostics-chip:hover` | ui |
+| 1742 | `.iitc-iris-mission-entry:has(.iitc-iris-mission-row.is-active)` | missions, search, shell, src-root, ui |
+| 1760 | `.iitc-iris-mission-row:hover` | missions |
+| 1760 | `.iitc-iris-mission-row.is-active` | missions, search, shell, src-root, ui |
+| 1760 | `.iitc-iris-mission-waypoint:hover` | missions, src-root |
+| 1825 | `.iitc-iris-mission-author.is-enlightened` | comm, missions, side-panels |
+| 1829 | `.iitc-iris-mission-author.is-resistance` | comm, missions, side-panels |
+| 1833 | `.iitc-iris-mission-author.is-machina` | comm, missions |
+| 1909 | `.iitc-iris-mission-waypoint.is-hidden > b` | missions, src-root |
+| 1926 | `.iitc-iris-mission-waypoint-marker.is-start` | src-root |
+| 1931 | `.iitc-iris-mission-waypoint-marker.is-hidden` | missions |
+| 1947 | `.iitc-iris-comm-row.is-alert` | comm |
+| 1947 | `.iitc-iris-comm-row.is-direct` | comm |
+| 2017 | `.iitc-iris-comm-actor.is-resistance` | comm, side-panels |
+| 2022 | `.iitc-iris-comm-actor.is-enlightened` | comm, side-panels |
+| 2027 | `.iitc-iris-comm-actor.is-machina` | comm |
+| 2032 | `.iitc-iris-comm-text.is-narrowcast` | comm |
+| 2066 | `.iitc-iris-comm-player:hover` | comm |
+| 2116 | `.iitc-iris-scenario-progress > span.is-done` | system |
+| 2318 | `.iitc-iris-core-badge.is-active` | missions, search, shell, side-panels, src-root, ui |
+| 2325 | `.iitc-iris-core-badge.is-inactive` | side-panels, src-root |
+| 2332 | `.iitc-iris-core-badge.is-unknown` | side-panels, src-root |
+| 2338 | `.iitc-iris-core-badge.is-loading` | side-panels, src-root, system |
+| 2349 | `.iitc-iris-agent-progress > div:first-child` | side-panels |
+| 2441 | `button.iitc-iris-inventory-row:hover` | side-panels |
+| 2478 | `.is-enlightened` | comm, side-panels |
+| 2482 | `.is-resistance` | comm, side-panels |
+| 2486 | `.is-machina` | comm |
+| 2499 | `.iitc-iris-dock > .iitc-iris-dock-row:not(:first-child, .iitc-iris-debug-row)` | system |
+| 2503 | `.iitc-iris-dock-row:first-child .iitc-iris-copy:not(:first-of-type)` | system |
+| 2503 | `.iitc-iris-dock-row:first-child .iitc-iris-preset` | system |
+| 2503 | `.iitc-iris-dock-row:first-child .iitc-iris-jump` | system |
+| 2603 | `.iitc-iris-copy:hover` | UNCERTAIN |
+| 2603 | `.iitc-iris-preset:hover` | system |
+| 2694 | `.iitc-iris-sheet-tab.is-active` | missions, search, shell, src-root, ui |
+| 2700 | `.iitc-iris-sheet-tab.is-active::before` | missions, search, shell, src-root, ui |
+| 2711 | `.iitc-iris-sheet-subtab.is-active::before` | missions, search, shell, src-root, ui |
+| 2717 | `.iitc-iris-sheet-tab:disabled` | shell |
+| 2875 | `.iitc-iris-nav-button:hover` | map |
+| 2880 | `.iitc-iris-nav-button:disabled` | map |
+| 2942 | `.iitc-iris-login:hover` | system |
+| 3007 | `.iitc-iris-layer-choice.is-checked` | layers, ui |
+| 3070 | `.iitc-iris-mission-waypoint-label.is-start` | src-root |
+| 3121 | `.iitc-iris-draw-tools-marker-swatch:hover` | draw-tools |
+| 3121 | `.iitc-iris-draw-tools-marker-swatch:focus-visible` | draw-tools |
+| 3188 | `.iitc-iris-draw-tools-list-item:has(.iitc-iris-draw-tools-marker-dot)` | draw-tools |
+| 3270 | `.iitc-iris-draw-tools-label-input::placeholder` | draw-tools |
+| 3303 | `.iitc-iris-player-tracker-marker::before` | src-root |
+| 3367 | `.iitc-iris-player-tracker-leaflet-popup .leaflet-popup-close-button:hover` | EXTERNAL |
+| 3411 | `.iitc-iris-player-tracker-link:hover` | src-root |
+| 3426 | `.iitc-iris-player-tracker-previous-table td:last-child` | src-root |
+
+## Selectors With Uncertain Usage
+
+These selector entries had no TS/TSX/JS fragment evidence from the search method and were not classified as known external DOM. They are `UNCERTAIN`, not unused.
+
+| Line | Selector | Classes/IDs Searched |
+|------|----------|----------------------|
+| 512 | `.iitc-iris-title` | `iitc-iris-title` |
+| 647 | `.iitc-iris-selected-details` | `iitc-iris-selected-details` |
+| 843 | `.iitc-iris-summary-grid` | `iitc-iris-summary-grid` |
+| 852 | `.iitc-iris-summary-grid` | `iitc-iris-summary-grid` |
+| 918 | `.iitc-iris-health-track` | `iitc-iris-health-track` |
+| 926 | `.iitc-iris-health-fill` | `iitc-iris-health-fill` |
+| 1067 | `.iitc-iris-counts-bar-track` | `iitc-iris-counts-bar-track` |
+| 1071 | `.iitc-iris-counts-bar-label` | `iitc-iris-counts-bar-label` |
+| 1091 | `.iitc-iris-counts-bar-label` | `iitc-iris-counts-bar-label` |
+| 1378 | `.iitc-iris-debug-grid` | `iitc-iris-debug-grid` |
+| 1681 | `.iitc-iris-diagnostics-row` | `iitc-iris-diagnostics-row` |
+| 1767 | `.iitc-iris-mission-details-head img` | `iitc-iris-mission-details-head` |
+| 1776 | `.iitc-iris-mission-details-head span` | `iitc-iris-mission-details-head` |
+| 1788 | `.iitc-iris-mission-details-head b` | `iitc-iris-mission-details-head` |
+| 1796 | `.iitc-iris-mission-details-head small` | `iitc-iris-mission-details-head` |
+| 1914 | `.iitc-iris-mission-waypoint-marker` | `iitc-iris-mission-waypoint-marker` |
+| 2070 | `.iitc-iris-comm-context` | `iitc-iris-comm-context` |
+| 2566 | `.iitc-iris-summary-grid` | `iitc-iris-summary-grid` |
+| 2593 | `.iitc-iris-copy` | `iitc-iris-copy` |
+| 2603 | `.iitc-iris-copy:hover` | `iitc-iris-copy` |
+| 2609 | `.iitc-iris-debug-active` | `iitc-iris-debug-active` |
+| 2947 | `.iitc-iris-divider` | `iitc-iris-divider` |
+| 2980 | `.iitc-iris-layer-toggle-invert` | `iitc-iris-layer-toggle-invert` |
+| 3329 | `.iitc-iris-player-tracker-marker-R` | `iitc-iris-player-tracker-marker-R` |
+| 3333 | `.iitc-iris-player-tracker-marker-E` | `iitc-iris-player-tracker-marker-E` |
+| 3337 | `.iitc-iris-player-tracker-marker-M` | `iitc-iris-player-tracker-marker-M` |
+| 3381 | `.iitc-iris-player-tracker-R` | `iitc-iris-player-tracker-R` |
+| 3385 | `.iitc-iris-player-tracker-E` | `iitc-iris-player-tracker-E` |
+| 3389 | `.iitc-iris-player-tracker-M` | `iitc-iris-player-tracker-M` |
+
+## Cross-Area Fragment Matches
+
+These selector entries matched fragments in more than one top-level source area. Some matches are broad state names such as `is-active`; final ownership must inspect call sites.
+
+| Line | Selector | Areas |
+|------|----------|-------|
+| 71 | `.iitc-iris-map` | draw-tools, map, src-root, ui |
+| 110 | `.iitc-iris-control` | draw-tools, portal-analysis, ui |
+| 120 | `.iitc-iris-control:disabled` | draw-tools, portal-analysis, ui |
+| 233 | `.iitc-iris-list-item` | comm, draw-tools, missions, search, side-panels |
+| 300 | `.iitc-iris-search-result-row.is-active` | missions, search, shell, src-root, ui |
+| 308 | `.iitc-iris-search-result-row.is-active` | missions, search, shell, src-root, ui |
+| 398 | `.iitc-iris-map-controls` | map, ui |
+| 448 | `.iitc-iris-map-context-row` | draw-tools, map |
+| 456 | `.iitc-iris-map-context-coords` | draw-tools, map |
+| 501 | `.iitc-iris-segmented-button.is-active` | missions, search, shell, src-root, ui |
+| 531 | `.iitc-iris-innerstatus .map b` | auth, comm, draw-tools, layers, map, missions, portal-analysis, portals, search, shell, side-panels, src-root, system, ui |
+| 535 | `.iitc-iris-innerstatus .help` | draw-tools, map, shell, src-root, system |
+| 544 | `.iitc-iris-innerstatus .selected-portal` | src-root, system |
+| 695 | `.iitc-iris-selected-title` | portals, ui |
+| 729 | `.iitc-iris-team-res` | portal-analysis, portals |
+| 734 | `.iitc-iris-team-enl` | portal-analysis, portals |
+| 739 | `.iitc-iris-team-machina` | portal-analysis, portals |
+| 744 | `.iitc-iris-team-neutral` | portal-analysis, portals |
+| 970 | `.iitc-iris-portal-action` | missions, portals, ui |
+| 981 | `.iitc-iris-portal-action:hover` | missions, portals, ui |
+| 986 | `.iitc-iris-portal-action.is-danger` | draw-tools, missions, portals, ui |
+| 992 | `.iitc-iris-portal-action:disabled` | missions, portals, ui |
+| 1003 | `.iitc-iris-portal-analysis .iitc-iris-team-enl` | portal-analysis, portals |
+| 1008 | `.iitc-iris-portal-analysis .iitc-iris-team-res` | portal-analysis, portals |
+| 1013 | `.iitc-iris-portal-analysis .iitc-iris-team-machina` | portal-analysis, portals |
+| 1018 | `.iitc-iris-portal-analysis .iitc-iris-team-neutral` | portal-analysis, portals |
+| 1029 | `.iitc-iris-analysis-summary-grid .iitc-iris-summary-cell` | portal-analysis, ui |
+| 1035 | `.iitc-iris-analysis-summary-grid .iitc-iris-summary-cell b` | portal-analysis, ui |
+| 1039 | `.iitc-iris-analysis-summary-grid .iitc-iris-summary-cell small` | portal-analysis, ui |
+| 1134 | `.iitc-iris-portals-list-filters .iitc-iris-select-input` | draw-tools, portal-analysis |
+| 1248 | `.iitc-iris-portal-analysis-table tr.is-muted` | portal-analysis, src-root |
+| 1265 | `.iitc-iris-portal-analysis-table th.iitc-iris-team-enl` | portal-analysis, portals |
+| 1265 | `.iitc-iris-portal-analysis-table th.iitc-iris-team-res` | portal-analysis, portals |
+| 1265 | `.iitc-iris-portal-analysis-table th.iitc-iris-team-machina` | portal-analysis, portals |
+| 1265 | `.iitc-iris-portal-analysis-table th.iitc-iris-team-neutral` | portal-analysis, portals |
+| 1265 | `.iitc-iris-portal-analysis-table td.iitc-iris-team-enl` | portal-analysis, portals |
+| 1265 | `.iitc-iris-portal-analysis-table td.iitc-iris-team-res` | portal-analysis, portals |
+| 1265 | `.iitc-iris-portal-analysis-table td.iitc-iris-team-machina` | portal-analysis, portals |
+| 1265 | `.iitc-iris-portal-analysis-table td.iitc-iris-team-neutral` | portal-analysis, portals |
+| 1571 | `.iitc-iris-panel-topbar` | map, system |
+| 1585 | `.iitc-iris-request-panel-header .iitc-iris-selected-title` | portals, ui |
+| 1589 | `.iitc-iris-panel-header-actions` | map, portals, search, shell, system |
+| 1611 | `.iitc-iris-panel-state` | portals, search, shell, system |
+| 1626 | `.iitc-iris-panel-state.is-loading` | portals, search, shell, src-root, system |
+| 1631 | `.iitc-iris-panel-state.is-ready` | portals, search, shell, src-root, system |
+| 1636 | `.iitc-iris-panel-state.is-muted` | portal-analysis, portals, search, shell, src-root, system |
+| 1640 | `.iitc-iris-panel-state.is-warning` | comm, missions, portals, search, shell, side-panels, src-root, system |
+| 1645 | `.iitc-iris-scroll-region` | comm, missions, side-panels |
+| 1665 | `.iitc-iris-passcode-input` | comm, side-panels |
+| 1742 | `.iitc-iris-mission-entry:has(.iitc-iris-mission-row.is-active)` | missions, search, shell, src-root, ui |
+| 1749 | `.iitc-iris-mission-waypoint` | missions, src-root |
+| 1760 | `.iitc-iris-mission-row.is-active` | missions, search, shell, src-root, ui |
+| 1760 | `.iitc-iris-mission-waypoint:hover` | missions, src-root |
+| 1776 | `.iitc-iris-mission-waypoint span` | missions, src-root |
+| 1788 | `.iitc-iris-mission-waypoint strong` | missions, src-root |
+| 1796 | `.iitc-iris-mission-waypoint small` | missions, src-root |
+| 1821 | `.iitc-iris-mission-expanded-top .iitc-iris-status b` | missions, ui |
+| 1825 | `.iitc-iris-mission-author.is-enlightened` | comm, missions, side-panels |
+| 1829 | `.iitc-iris-mission-author.is-resistance` | comm, missions, side-panels |
+| 1833 | `.iitc-iris-mission-author.is-machina` | comm, missions |
+| 1895 | `.iitc-iris-mission-waypoint` | missions, src-root |
+| 1899 | `.iitc-iris-mission-waypoint > b` | missions, src-root |
+| 1909 | `.iitc-iris-mission-waypoint.is-hidden > b` | missions, src-root |
+| 2017 | `.iitc-iris-comm-actor.is-resistance` | comm, side-panels |
+| 2022 | `.iitc-iris-comm-actor.is-enlightened` | comm, side-panels |
+| 2318 | `.iitc-iris-core-badge.is-active` | missions, search, shell, side-panels, src-root, ui |
+| 2325 | `.iitc-iris-core-badge.is-inactive` | side-panels, src-root |
+| 2332 | `.iitc-iris-core-badge.is-unknown` | side-panels, src-root |
+| 2338 | `.iitc-iris-core-badge.is-loading` | side-panels, src-root, system |
+| 2388 | `.iitc-iris-inventory-selected` | missions, side-panels |
+| 2398 | `.iitc-iris-inventory-selected b` | missions, side-panels |
+| 2478 | `.is-enlightened` | comm, side-panels |
+| 2482 | `.is-resistance` | comm, side-panels |
+| 2514 | `.iitc-iris-map-controls` | map, ui |
+| 2583 | `.iitc-iris-warning` | comm, missions, portals, search, side-panels, system |
+| 2694 | `.iitc-iris-sheet-tab.is-active` | missions, search, shell, src-root, ui |
+| 2700 | `.iitc-iris-sheet-tab.is-active::before` | missions, search, shell, src-root, ui |
+| 2711 | `.iitc-iris-sheet-subtab.is-active::before` | missions, search, shell, src-root, ui |
+| 2722 | `.iitc-iris-map-controls` | map, ui |
+| 2738 | `.iitc-iris-sheet-layers .iitc-iris-map-controls` | map, ui |
+| 2738 | `.iitc-iris-sheet-view .iitc-iris-map-controls` | map, ui |
+| 2738 | `.iitc-iris-sheet-drawLinks .iitc-iris-map-controls` | map, ui |
+| 2738 | `.iitc-iris-sheet-drawMarkers .iitc-iris-map-controls` | map, ui |
+| 2738 | `.iitc-iris-sheet-portalCounts .iitc-iris-map-controls` | map, ui |
+| 2738 | `.iitc-iris-sheet-portalsList .iitc-iris-map-controls` | map, ui |
+| 2738 | `.iitc-iris-sheet-scoreboard .iitc-iris-map-controls` | map, ui |
+| 2738 | `.iitc-iris-sheet-selectedLink .iitc-iris-map-controls` | map, ui |
+| 2738 | `.iitc-iris-sheet-selectedField .iitc-iris-map-controls` | map, ui |
+| 2760 | `.iitc-iris-sheet-map .iitc-iris-map-controls` | map, ui |
+| 2779 | `.iitc-iris-map-controls` | map, ui |
+| 2779 | `.iitc-iris-search` | search, src-root |
+| 2893 | `.iitc-iris-map-control-status` | draw-tools, map |
+| 2953 | `.iitc-iris-layer-toggle` | layers, system |
+| 2974 | `.iitc-iris-layer-toggle-active` | layers, system |
+| 2992 | `.iitc-iris-layer-choice` | layers, ui |
+| 3007 | `.iitc-iris-layer-choice.is-checked` | layers, ui |
+| 3013 | `.iitc-iris-layer-choice input` | layers, ui |
+| 3080 | `.iitc-iris-draw-tools-marker` | draw-tools, src-root |
+| 3086 | `.iitc-iris-draw-tools-marker svg` | draw-tools, src-root |
+| 3103 | `.iitc-iris-draw-tools-actions-row .iitc-iris-map-context-coords` | draw-tools, map |
+| 3107 | `.iitc-iris-draw-tools-actions-row .iitc-iris-map-control-status` | draw-tools, map |
+| 3154 | `.iitc-iris-draw-tools-list-controls .iitc-iris-select-input` | draw-tools, portal-analysis |
+
+## Rules Overriding Earlier Declarations
+
+The parser found 122 repeated selector/property pairs later in the stylesheet. Some are intentional cascade refinements, especially responsive overrides and repeated grouped selectors.
+
+| Later line | Selector | Property | Previous line |
+|------------|----------|----------|---------------|
+| 852 | `.iitc-iris-summary-grid` | `grid-template-columns` | 843 |
+| 852 | `.iitc-iris-panel-summary` | `grid-template-columns` | 843 |
+| 1091 | `.iitc-iris-counts-bar-label` | `fill` | 1071 |
+| 1111 | `.iitc-iris-counts-pie-percent` | `fill` | 1071 |
+| 1194 | `.iitc-iris-portals-list-table-wrap` | `overflow` | 1185 |
+| 1319 | `.iitc-iris-table-sort` | `color` | 1308 |
+| 1325 | `.iitc-iris-table-action` | `padding` | 1308 |
+| 1325 | `.iitc-iris-table-action` | `border` | 1308 |
+| 1325 | `.iitc-iris-table-action` | `background` | 1308 |
+| 1325 | `.iitc-iris-table-action` | `color` | 1308 |
+| 1334 | `.iitc-iris-portal-list-title button` | `color` | 1308 |
+| 1566 | `.iitc-iris-system-panel` | `grid-template-rows` | 1542 |
+| 1566 | `.iitc-iris-system-panel` | `overflow` | 1542 |
+| 1895 | `.iitc-iris-mission-waypoint` | `grid-template-columns` | 1749 |
+| 2491 | `.iitc-iris-dock` | `top` | 370 |
+| 2491 | `.iitc-iris-dock` | `left` | 370 |
+| 2491 | `.iitc-iris-dock` | `max-width` | 370 |
+| 2491 | `.iitc-iris-dock` | `padding` | 370 |
+| 2509 | `.iitc-iris-innerstatus` | `gap` | 517 |
+| 2514 | `.iitc-iris-map-controls` | `top` | 398 |
+| 2514 | `.iitc-iris-map-controls` | `left` | 398 |
+| 2514 | `.iitc-iris-map-controls` | `z-index` | 398 |
+| 2514 | `.iitc-iris-map-controls` | `display` | 398 |
+| 2514 | `.iitc-iris-map-controls` | `width` | 398 |
+| 2514 | `.iitc-iris-map-controls` | `max-height` | 398 |
+| 2514 | `.iitc-iris-map-controls` | `border-radius` | 398 |
+| 2526 | `.iitc-iris-portal-side-panel` | `top` | 704 |
+| 2526 | `.iitc-iris-portal-side-panel` | `right` | 704 |
+| 2526 | `.iitc-iris-portal-side-panel` | `z-index` | 704 |
+| 2526 | `.iitc-iris-portal-side-panel` | `display` | 704 |
+| 2526 | `.iitc-iris-portal-side-panel` | `width` | 704 |
+| 2526 | `.iitc-iris-portal-side-panel` | `max-height` | 704 |
+| 2526 | `.iitc-iris-portal-side-panel` | `border-radius` | 704 |
+| 2542 | `.iitc-iris-portal-summary` | `grid-template-columns` | 843 |
+| 2546 | `.iitc-iris-request-side-panel` | `right` | 1542 |
+| 2546 | `.iitc-iris-request-side-panel` | `bottom` | 1542 |
+| 2546 | `.iitc-iris-request-side-panel` | `z-index` | 1542 |
+| 2546 | `.iitc-iris-request-side-panel` | `display` | 1542 |
+| 2546 | `.iitc-iris-request-side-panel` | `width` | 1542 |
+| 2546 | `.iitc-iris-request-side-panel` | `max-height` | 1542 |
+| 2546 | `.iitc-iris-request-side-panel` | `border-radius` | 1542 |
+| 2557 | `.iitc-iris-resonator-grid` | `grid-template-columns` | 1434 |
+| 2557 | `.iitc-iris-mod-grid` | `grid-template-columns` | 1438 |
+| 2562 | `.iitc-iris-resonator-grid` | `grid-template-columns` | 2557 |
+| 2566 | `.iitc-iris-summary-grid` | `grid-template-columns` | 852 |
+| 2566 | `.iitc-iris-portal-summary` | `grid-template-columns` | 2542 |
+| 2566 | `.iitc-iris-panel-summary` | `grid-template-columns` | 852 |
+| 2566 | `.iitc-iris-analysis-summary-grid` | `grid-template-columns` | 1023 |
+| 2566 | `.iitc-iris-portals-list-summary` | `grid-template-columns` | 1148 |
+| 2574 | `.iitc-iris-mission-metrics` | `grid-template-columns` | 1843 |
+| 2578 | `.iitc-iris-comm-row` | `grid-template-columns` | 1942 |
+| 2722 | `.iitc-iris-map-controls` | `top` | 2514 |
+| 2722 | `.iitc-iris-map-controls` | `right` | 2514 |
+| 2722 | `.iitc-iris-map-controls` | `bottom` | 2514 |
+| 2722 | `.iitc-iris-map-controls` | `left` | 2514 |
+| 2722 | `.iitc-iris-map-controls` | `z-index` | 2514 |
+| 2722 | `.iitc-iris-map-controls` | `display` | 2514 |
+| 2722 | `.iitc-iris-map-controls` | `width` | 2514 |
+| 2722 | `.iitc-iris-map-controls` | `max-height` | 2514 |
+| 2722 | `.iitc-iris-map-controls` | `border-radius` | 2514 |
+| 2722 | `.iitc-iris-portal-side-panel` | `top` | 2526 |
+| 2722 | `.iitc-iris-portal-side-panel` | `right` | 2526 |
+| 2722 | `.iitc-iris-portal-side-panel` | `bottom` | 2526 |
+| 2722 | `.iitc-iris-portal-side-panel` | `left` | 2526 |
+| 2722 | `.iitc-iris-portal-side-panel` | `z-index` | 2526 |
+| 2722 | `.iitc-iris-portal-side-panel` | `display` | 2526 |
+| 2722 | `.iitc-iris-portal-side-panel` | `width` | 2526 |
+| 2722 | `.iitc-iris-portal-side-panel` | `max-height` | 2526 |
+| 2722 | `.iitc-iris-portal-side-panel` | `border-radius` | 2526 |
+| 2722 | `.iitc-iris-request-side-panel` | `right` | 2546 |
+| 2722 | `.iitc-iris-request-side-panel` | `bottom` | 2546 |
+| 2722 | `.iitc-iris-request-side-panel` | `left` | 2546 |
+| 2722 | `.iitc-iris-request-side-panel` | `z-index` | 2546 |
+| 2722 | `.iitc-iris-request-side-panel` | `display` | 2546 |
+| 2722 | `.iitc-iris-request-side-panel` | `width` | 2546 |
+| 2722 | `.iitc-iris-request-side-panel` | `max-height` | 2546 |
+| 2722 | `.iitc-iris-request-side-panel` | `border-radius` | 2546 |
+| 2722 | `.iitc-iris-system-panel` | `right` | 1542 |
+| 2722 | `.iitc-iris-system-panel` | `bottom` | 1542 |
+| 2722 | `.iitc-iris-system-panel` | `z-index` | 1542 |
+| 2722 | `.iitc-iris-system-panel` | `display` | 1542 |
+| 2722 | `.iitc-iris-system-panel` | `width` | 1542 |
+| 2722 | `.iitc-iris-system-panel` | `max-height` | 1542 |
+| 2722 | `.iitc-iris-system-panel` | `border-radius` | 1542 |
+| 2767 | `.iitc-iris-portal-side-panel-stacked` | `max-height` | 2538 |
+| 2772 | `.iitc-iris-sheet-tabbar` | `right` | 2619 |
+| 2772 | `.iitc-iris-sheet-tabbar` | `bottom` | 2619 |
+| 2772 | `.iitc-iris-sheet-tabbar` | `left` | 2619 |
+| 2772 | `.iitc-iris-sheet-tabbar` | `width` | 2619 |
+| 2779 | `.iitc-iris-map-controls` | `right` | 2722 |
+| 2779 | `.iitc-iris-map-controls` | `bottom` | 2722 |
+| 2779 | `.iitc-iris-map-controls` | `left` | 2722 |
+| 2779 | `.iitc-iris-map-controls` | `width` | 2722 |
+| 2779 | `.iitc-iris-map-controls` | `max-height` | 2722 |
+| 2779 | `.iitc-iris-portal-side-panel` | `right` | 2722 |
+| 2779 | `.iitc-iris-portal-side-panel` | `bottom` | 2722 |
+| 2779 | `.iitc-iris-portal-side-panel` | `left` | 2722 |
+| 2779 | `.iitc-iris-portal-side-panel` | `width` | 2722 |
+| 2779 | `.iitc-iris-portal-side-panel` | `max-height` | 2722 |
+| 2779 | `.iitc-iris-request-side-panel` | `right` | 2722 |
+| 2779 | `.iitc-iris-request-side-panel` | `bottom` | 2722 |
+| 2779 | `.iitc-iris-request-side-panel` | `left` | 2722 |
+| 2779 | `.iitc-iris-request-side-panel` | `width` | 2722 |
+| 2779 | `.iitc-iris-request-side-panel` | `max-height` | 2722 |
+| 2790 | `.iitc-iris-map-search-badge` | `top` | 154 |
+| 2790 | `.iitc-iris-map-search-badge` | `left` | 154 |
+| 2790 | `.iitc-iris-map-search-badge` | `max-width` | 154 |
+| 2797 | `.iitc-iris-portal-analysis` | `width` | 998 |
+| 2797 | `.iitc-iris-portal-analysis` | `min-width` | 998 |
+| 2802 | `.iitc-iris-counts-visuals` | `padding` | 1051 |
+| 2806 | `.iitc-iris-counts-visuals svg` | `width` | 1060 |
+| 2811 | `.iitc-iris-portals-list-filters` | `grid-template-columns` | 1121 |
+| 2819 | `.iitc-iris-portals-list-summary-item` | `padding` | 1154 |
+| 2823 | `.iitc-iris-portals-list-summary-item b` | `font-size` | 1164 |
+| 2827 | `.iitc-iris-portal-analysis-table` | `min-width` | 1199 |
+| 2827 | `.iitc-iris-portal-analysis-table` | `font-size` | 1199 |
+| 2832 | `.iitc-iris-portal-analysis-table th` | `padding` | 1217 |
+| 2832 | `.iitc-iris-portal-analysis-table td` | `padding` | 1217 |
+| 2837 | `.iitc-iris-portal-counts-table` | `min-width` | 1211 |
+| 2841 | `.iitc-iris-portals-list-table` | `min-width` | 1207 |
+| 2845 | `.iitc-iris-scoreboard-table` | `min-width` | 1211 |
+| 2970 | `.iitc-iris-source-toggle` | `min-width` | 2963 |
+
+## Duplicate Declaration Groups
+
+Exact duplicate declaration signatures found: 66. Near-duplicate semantic analysis is not performed here; future consolidation opportunities belong in `05-follow-up.md`.
+
+| Group | Selectors |
+|-------|-----------|
+| 1 | `.iitc-iris-map-search-badge span @91`<br>`.iitc-iris-search-result span @91`<br>`.iitc-iris-search-result small @91`<br>`.iitc-iris-auth-recovery span @597`<br>`.iitc-iris-image-preview-caption b @2163`<br>`.iitc-iris-image-preview-caption span @2163`<br>`.iitc-iris-score-pair > span @2237`<br>`.iitc-iris-agent-level strong @2300`<br>`.iitc-iris-agent-row b @2381`<br>`.iitc-iris-inventory-row span @2446`<br>`.iitc-iris-inventory-row small @2446`<br>`.iitc-iris-draw-tools-marker-coords @3222` |
+| 2 | `.iitc-iris-search-input::placeholder @135`<br>`.iitc-iris-draw-tools-label-input::placeholder @3270` |
+| 3 | `.iitc-iris-search-clear:hover @150`<br>`.iitc-iris-map-search-badge button:hover @187`<br>`.iitc-iris-innerstatus .map b @531`<br>`.iitc-iris-player-tracker-leaflet-popup .leaflet-popup-close-button:hover @3367` |
+| 4 | `.iitc-iris-search-result-row:hover @300`<br>`.iitc-iris-search-result-row:focus-within @300`<br>`.iitc-iris-search-result-row.is-active @300` |
+| 5 | `.iitc-iris-search-result-zoom:hover @312`<br>`.iitc-iris-search-result-zoom:focus-visible @312` |
+| 6 | `.iitc-iris-search-result small @325`<br>`.iitc-iris-draw-tools-list-label small @3210` |
+| 7 | `.iitc-iris-map-context-anchor:hover @479`<br>`.iitc-iris-map-context-anchor:focus-visible @479` |
+| 8 | `.iitc-iris-innerstatus .help @535`<br>`.iitc-iris-diagnostics-chip[title] @1716` |
+| 9 | `.iitc-iris-auth-recovery button:hover @612`<br>`.iitc-iris-login:hover @2942` |
+| 10 | `.iitc-iris-selected-image-button:hover .iitc-iris-selected-image @689`<br>`.iitc-iris-selected-image-button:focus-visible .iitc-iris-selected-image @689` |
+| 11 | `.iitc-iris-portal-side-panel-stacked .iitc-iris-selected-image @753`<br>`.iitc-iris-portal-side-panel-stacked .iitc-iris-selected-image-button @758`<br>`.iitc-iris-portal-side-panel-stacked .iitc-iris-selected-image-placeholder @763` |
+| 12 | `.iitc-iris-portal-side-title @789`<br>`.iitc-iris-portal-mission-enrichment > span @945`<br>`.iitc-iris-mission-row span @1776`<br>`.iitc-iris-mission-details-head span @1776`<br>`.iitc-iris-mission-waypoint span @1776`<br>`.iitc-iris-agent-level span @2294` |
+| 13 | `.iitc-iris-summary-grid @843`<br>`.iitc-iris-portal-summary @843`<br>`.iitc-iris-panel-summary @843` |
+| 14 | `.iitc-iris-summary-grid @852`<br>`.iitc-iris-panel-summary @852`<br>`.iitc-iris-resonator-grid @1434`<br>`.iitc-iris-resonator-grid @2562` |
+| 15 | `.iitc-iris-chip-button @857`<br>`.iitc-iris-diagnostics-chip.iitc-iris-chip-button @1720` |
+| 16 | `.iitc-iris-summary-cell @866`<br>`.iitc-iris-portal-summary-cell @866` |
+| 17 | `.iitc-iris-summary-cell b @879`<br>`.iitc-iris-portal-summary-cell b @879` |
+| 18 | `.iitc-iris-summary-mini-track > span @902`<br>`.iitc-iris-health-fill @926` |
+| 19 | `.iitc-iris-summary-cell small @909`<br>`.iitc-iris-portal-summary-cell small @909` |
+| 20 | `.iitc-iris-portal-mission-enrichment small @951`<br>`.iitc-iris-portal-mission-meta @951` |
+| 21 | `.iitc-iris-portal-action:disabled @992`<br>`.iitc-iris-nav-button:disabled @2880` |
+| 22 | `.iitc-iris-portal-analysis @998`<br>`.iitc-iris-portal-analysis @2797`<br>`.iitc-iris-counts-visuals svg @2806` |
+| 23 | `.iitc-iris-counts-bar-value @1071`<br>`.iitc-iris-counts-bar-label @1071`<br>`.iitc-iris-counts-pie-percent @1071` |
+| 24 | `.iitc-iris-portals-list-filters input @1127`<br>`.iitc-iris-portals-list-filters select @1127` |
+| 25 | `.iitc-iris-portal-counts-table-wrap @1185`<br>`.iitc-iris-portals-list-table-wrap @1185` |
+| 26 | `.iitc-iris-portal-counts-table @1211`<br>`.iitc-iris-scoreboard-table @1211` |
+| 27 | `.iitc-iris-portal-analysis-table th @1217`<br>`.iitc-iris-portal-analysis-table td @1217` |
+| 28 | `.iitc-iris-portal-analysis-table th:first-child @1227`<br>`.iitc-iris-portal-analysis-table td:first-child @1227`<br>`.iitc-iris-portal-list-title @1227`<br>`.iitc-iris-portals-list-table th:first-child @1233`<br>`.iitc-iris-portals-list-table td:first-child @1233` |
+| 29 | `.iitc-iris-portal-counts-table th:first-child @1252`<br>`.iitc-iris-portal-counts-table td:first-child @1252` |
+| 30 | `.iitc-iris-scoreboard-table th:first-child @1259`<br>`.iitc-iris-scoreboard-table td:first-child @1259` |
+| 31 | `.iitc-iris-portal-analysis-table th.iitc-iris-team-enl @1265`<br>`.iitc-iris-portal-analysis-table th.iitc-iris-team-res @1265`<br>`.iitc-iris-portal-analysis-table th.iitc-iris-team-machina @1265`<br>`.iitc-iris-portal-analysis-table th.iitc-iris-team-neutral @1265`<br>`.iitc-iris-portal-analysis-table td.iitc-iris-team-enl @1265`<br>`.iitc-iris-portal-analysis-table td.iitc-iris-team-res @1265`<br>`.iitc-iris-portal-analysis-table td.iitc-iris-team-machina @1265`<br>`.iitc-iris-portal-analysis-table td.iitc-iris-team-neutral @1265` |
+| 32 | `.iitc-iris-table-sort @1308`<br>`.iitc-iris-table-action @1308`<br>`.iitc-iris-portal-list-title button @1308` |
+| 33 | `.iitc-iris-portal-panel-header @1359`<br>`.iitc-iris-panel-topbar @1571`<br>`.iitc-iris-request-panel-header @1578` |
+| 34 | `.iitc-iris-portal-panel-grid > span @1373`<br>`.iitc-iris-portal-panel-grid > div @1373`<br>`.iitc-iris-request-panel-header .iitc-iris-selected-title @1585`<br>`.iitc-iris-shortcut-grid span @2183`<br>`.iitc-iris-shortcut-grid b @2183`<br>`.iitc-iris-portal-counts-table @2837`<br>`.iitc-iris-scoreboard-table @2845`<br>`.iitc-iris-draw-tools-marker-dot + .iitc-iris-draw-tools-list-label @3184` |
+| 35 | `.iitc-iris-portal-section @1383`<br>`.iitc-iris-resonator-grid @1428`<br>`.iitc-iris-mod-grid @1428`<br>`.iitc-iris-agent-progress @2344`<br>`.iitc-iris-sheet-tabbar-primary @2640`<br>`.iitc-iris-sheet-tabbar-secondary @2640` |
+| 36 | `.iitc-iris-section-summary:hover @1414`<br>`.iitc-iris-section-summary:focus-visible @1414` |
+| 37 | `.iitc-iris-mod-grid @1438`<br>`.iitc-iris-portal-summary @2542`<br>`.iitc-iris-resonator-grid @2557`<br>`.iitc-iris-mod-grid @2557`<br>`.iitc-iris-summary-grid @2566`<br>`.iitc-iris-portal-summary @2566`<br>`.iitc-iris-panel-summary @2566`<br>`.iitc-iris-analysis-summary-grid @2566`<br>`.iitc-iris-portals-list-summary @2566`<br>`.iitc-iris-mission-metrics @2574`<br>`.iitc-iris-draw-tools-list-controls @3133` |
+| 38 | `.iitc-iris-request-side-panel @1542`<br>`.iitc-iris-system-panel @1542` |
+| 39 | `.iitc-iris-mission-list @1729`<br>`.iitc-iris-mission-waypoint-list @1729` |
+| 40 | `.iitc-iris-mission-row @1749`<br>`.iitc-iris-mission-waypoint @1749` |
+| 41 | `.iitc-iris-mission-row:hover @1760`<br>`.iitc-iris-mission-row.is-active @1760`<br>`.iitc-iris-mission-waypoint:hover @1760` |
+| 42 | `.iitc-iris-mission-row img @1767`<br>`.iitc-iris-mission-details-head img @1767` |
+| 43 | `.iitc-iris-mission-row b @1788`<br>`.iitc-iris-mission-details-head b @1788`<br>`.iitc-iris-mission-waypoint strong @1788`<br>`.iitc-iris-draw-tools-list-label b @3198`<br>`.iitc-iris-draw-tools-list-label small @3198` |
+| 44 | `.iitc-iris-mission-row small @1796`<br>`.iitc-iris-mission-details-head small @1796`<br>`.iitc-iris-mission-waypoint small @1796` |
+| 45 | `.iitc-iris-mission-author.is-enlightened @1825`<br>`.is-enlightened @2478` |
+| 46 | `.iitc-iris-mission-author.is-resistance @1829`<br>`.is-resistance @2482` |
+| 47 | `.iitc-iris-mission-author.is-machina @1833`<br>`.is-machina @2486` |
+| 48 | `.iitc-iris-comm-list @1936`<br>`.iitc-iris-inventory-section @2406` |
+| 49 | `.iitc-iris-comm-row.is-alert @1947`<br>`.iitc-iris-comm-row.is-direct @1947` |
+| 50 | `.iitc-iris-comm-player @2049`<br>`.iitc-iris-comm-faction @2049` |
+| 51 | `.iitc-iris-score-heading @2220`<br>`.iitc-iris-score-pair @2220` |
+| 52 | `.iitc-iris-score-heading @2228`<br>`.iitc-iris-compare @2588` |
+| 53 | `.iitc-iris-agent-list @2264`<br>`.iitc-iris-inventory-list @2417` |
+| 54 | `.iitc-iris-dock > .iitc-iris-dock-row:not(:first-child, .iitc-iris-debug-row) @2499`<br>`.iitc-iris-dock-row:first-child .iitc-iris-copy:not(:first-of-type) @2503`<br>`.iitc-iris-dock-row:first-child .iitc-iris-preset @2503`<br>`.iitc-iris-dock-row:first-child .iitc-iris-jump @2503`<br>`.iitc-iris-sheet-map .iitc-iris-map-controls @2760`<br>`.iitc-iris-sheet-map .iitc-iris-portal-side-panel @2760`<br>`.iitc-iris-sheet-map .iitc-iris-request-side-panel @2760`<br>`.iitc-iris-sheet-map .iitc-iris-system-panel @2760` |
+| 55 | `.iitc-iris-copy @2593`<br>`.iitc-iris-preset @2593` |
+| 56 | `.iitc-iris-copy:hover @2603`<br>`.iitc-iris-preset:hover @2603`<br>`.iitc-iris-nav-button:hover @2875` |
+| 57 | `.iitc-iris-map-controls @2722`<br>`.iitc-iris-portal-side-panel @2722`<br>`.iitc-iris-request-side-panel @2722`<br>`.iitc-iris-system-panel @2722` |
+| 58 | `.iitc-iris-sheet-layers .iitc-iris-map-controls @2738`<br>`.iitc-iris-sheet-view .iitc-iris-map-controls @2738`<br>`.iitc-iris-sheet-drawLinks .iitc-iris-map-controls @2738`<br>`.iitc-iris-sheet-drawMarkers .iitc-iris-map-controls @2738`<br>`.iitc-iris-sheet-portalCounts .iitc-iris-map-controls @2738`<br>`.iitc-iris-sheet-portalsList .iitc-iris-map-controls @2738`<br>`.iitc-iris-sheet-scoreboard .iitc-iris-map-controls @2738`<br>`.iitc-iris-sheet-selectedLink .iitc-iris-map-controls @2738`<br>`.iitc-iris-sheet-selectedField .iitc-iris-map-controls @2738`<br>`.iitc-iris-sheet-portal .iitc-iris-portal-side-panel @2738`<br>`.iitc-iris-sheet-agent .iitc-iris-request-side-panel @2738`<br>`.iitc-iris-sheet-comm .iitc-iris-request-side-panel @2738`<br>`.iitc-iris-sheet-scores .iitc-iris-request-side-panel @2738`<br>`.iitc-iris-sheet-missions .iitc-iris-request-side-panel @2738`<br>`.iitc-iris-sheet-inventory .iitc-iris-request-side-panel @2738`<br>`.iitc-iris-sheet-passcode .iitc-iris-request-side-panel @2738`<br>`.iitc-iris-sheet-search .iitc-iris-request-side-panel @2738`<br>`.iitc-iris-sheet-help .iitc-iris-request-side-panel @2738`<br>`.iitc-iris-sheet-system .iitc-iris-system-panel @2738` |
+| 59 | `.iitc-iris-map-controls @2779`<br>`.iitc-iris-portal-side-panel @2779`<br>`.iitc-iris-request-side-panel @2779`<br>`.iitc-iris-search @2779` |
+| 60 | `.iitc-iris-portal-analysis-table th @2832`<br>`.iitc-iris-portal-analysis-table td @2832` |
+| 61 | `.iitc-iris-scoreboard-table th @2849`<br>`.iitc-iris-scoreboard-table td @2849` |
+| 62 | `.iitc-iris-base-toggle @2963`<br>`.iitc-iris-source-toggle @2963` |
+| 63 | `.iitc-iris-ornament-icon @3029`<br>`.iitc-iris-artifact-icon @3033` |
+| 64 | `.iitc-iris-draw-tools-marker-swatch:hover @3121`<br>`.iitc-iris-draw-tools-marker-swatch:focus-visible @3121` |
+| 65 | `.iitc-iris-draw-tools-list-controls label @3137`<br>`.iitc-iris-draw-tools-list-label @3192` |
+| 66 | `.iitc-iris-draw-tools-level-chip @3236`<br>`.iitc-iris-draw-tools-team-chip @3236` |
+
+## Full Selector Inventory
+
+Every extracted selector entry appears once in this table. `Evidence areas` are derived from source-fragment matches and are not final ownership decisions.
+
+| # | Line | Selector | Group size | Context | Classes/IDs | Evidence areas | Status |
+|---|------|----------|------------|---------|-------------|----------------|--------|
+| 1 | 1 | `#iitc-iris-root` | 1 | base | `#iitc-iris-root` | src-root | EVIDENCE |
+| 2 | 54 | `.iitc-iris-button` | 1 | base | `iitc-iris-button` | ui | EVIDENCE |
+| 3 | 60 | `.iitc-iris-button:disabled` | 1 | base | `iitc-iris-button` | ui | EVIDENCE |
+| 4 | 64 | `.iitc-iris-shell` | 1 | base | `iitc-iris-shell` | src-root | EVIDENCE |
+| 5 | 71 | `.iitc-iris-map` | 1 | base | `iitc-iris-map` | draw-tools, map, src-root, ui | EVIDENCE |
+| 6 | 77 | `.iitc-iris-badge` | 1 | base | `iitc-iris-badge` | ui | EVIDENCE |
+| 7 | 91 | `.iitc-iris-map-search-badge span` | 3 | base | `iitc-iris-map-search-badge` | src-root | EVIDENCE |
+| 8 | 91 | `.iitc-iris-search-result span` | 3 | base | `iitc-iris-search-result` | search | EVIDENCE |
+| 9 | 91 | `.iitc-iris-search-result small` | 3 | base | `iitc-iris-search-result` | search | EVIDENCE |
+| 10 | 100 | `.iitc-iris-search-box` | 1 | base | `iitc-iris-search-box` | search | EVIDENCE |
+| 11 | 110 | `.iitc-iris-control` | 1 | base | `iitc-iris-control` | draw-tools, portal-analysis, ui | EVIDENCE |
+| 12 | 120 | `.iitc-iris-control:disabled` | 1 | base | `iitc-iris-control` | draw-tools, portal-analysis, ui | EVIDENCE |
+| 13 | 126 | `.iitc-iris-search-input` | 1 | base | `iitc-iris-search-input` | search | EVIDENCE |
+| 14 | 135 | `.iitc-iris-search-input::placeholder` | 1 | base | `iitc-iris-search-input` | search | EVIDENCE |
+| 15 | 139 | `.iitc-iris-search-clear` | 1 | base | `iitc-iris-search-clear` | search | EVIDENCE |
+| 16 | 150 | `.iitc-iris-search-clear:hover` | 1 | base | `iitc-iris-search-clear` | search | EVIDENCE |
+| 17 | 154 | `.iitc-iris-map-search-badge` | 1 | base | `iitc-iris-map-search-badge` | src-root | EVIDENCE |
+| 18 | 174 | `.iitc-iris-map-search-badge button` | 1 | base | `iitc-iris-map-search-badge` | src-root | EVIDENCE |
+| 19 | 187 | `.iitc-iris-map-search-badge button:hover` | 1 | base | `iitc-iris-map-search-badge` | src-root | EVIDENCE |
+| 20 | 191 | `.iitc-iris-search-results` | 1 | base | `iitc-iris-search-results` | search | EVIDENCE |
+| 21 | 202 | `.iitc-iris-search-status` | 1 | base | `iitc-iris-search-status` | search | EVIDENCE |
+| 22 | 211 | `.iitc-iris-search-result-group` | 1 | base | `iitc-iris-search-result-group` | search | EVIDENCE |
+| 23 | 216 | `.iitc-iris-search-result-heading` | 1 | base | `iitc-iris-search-result-heading` | search | EVIDENCE |
+| 24 | 228 | `.iitc-iris-search-result-heading b` | 1 | base | `iitc-iris-search-result-heading` | search | EVIDENCE |
+| 25 | 233 | `.iitc-iris-list-item` | 1 | base | `iitc-iris-list-item` | comm, draw-tools, missions, search, side-panels | EVIDENCE |
+| 26 | 242 | `.iitc-iris-search-result-row` | 1 | base | `iitc-iris-search-result-row` | search | EVIDENCE |
+| 27 | 250 | `.iitc-iris-search-result` | 1 | base | `iitc-iris-search-result` | search | EVIDENCE |
+| 28 | 265 | `.iitc-iris-search-result-main` | 1 | base | `iitc-iris-search-result-main` | search | EVIDENCE |
+| 29 | 272 | `.iitc-iris-search-result-type` | 1 | base | `iitc-iris-search-result-type` | search | EVIDENCE |
+| 30 | 285 | `.iitc-iris-search-result-zoom` | 1 | base | `iitc-iris-search-result-zoom` | search | EVIDENCE |
+| 31 | 300 | `.iitc-iris-search-result-row:hover` | 3 | base | `iitc-iris-search-result-row` | search | EVIDENCE |
+| 32 | 300 | `.iitc-iris-search-result-row:focus-within` | 3 | base | `iitc-iris-search-result-row` | search | EVIDENCE |
+| 33 | 300 | `.iitc-iris-search-result-row.is-active` | 3 | base | `iitc-iris-search-result-row`, `is-active` | missions, search, shell, src-root, ui | EVIDENCE |
+| 34 | 308 | `.iitc-iris-search-result-row.is-active` | 1 | base | `iitc-iris-search-result-row`, `is-active` | missions, search, shell, src-root, ui | EVIDENCE |
+| 35 | 312 | `.iitc-iris-search-result-zoom:hover` | 2 | base | `iitc-iris-search-result-zoom` | search | EVIDENCE |
+| 36 | 312 | `.iitc-iris-search-result-zoom:focus-visible` | 2 | base | `iitc-iris-search-result-zoom` | search | EVIDENCE |
+| 37 | 319 | `.iitc-iris-search-result:disabled` | 1 | base | `iitc-iris-search-result` | search | EVIDENCE |
+| 38 | 325 | `.iitc-iris-search-result small` | 1 | base | `iitc-iris-search-result` | search | EVIDENCE |
+| 39 | 330 | `.iitc-iris-search-marker` | 1 | base | `iitc-iris-search-marker` | src-root | EVIDENCE |
+| 40 | 339 | `.iitc-iris-user-location-pin` | 1 | base | `iitc-iris-user-location-pin` | src-root | EVIDENCE |
+| 41 | 345 | `.iitc-iris-user-location-pin::before` | 1 | base | `iitc-iris-user-location-pin` | src-root | EVIDENCE |
+| 42 | 360 | `.iitc-iris-user-location-pin span` | 1 | base | `iitc-iris-user-location-pin` | src-root | EVIDENCE |
+| 43 | 370 | `.iitc-iris-dock` | 1 | base | `iitc-iris-dock` | system | EVIDENCE |
+| 44 | 390 | `.iitc-iris-dock-row` | 1 | base | `iitc-iris-dock-row` | system | EVIDENCE |
+| 45 | 398 | `.iitc-iris-map-controls` | 1 | base | `iitc-iris-map-controls` | map, ui | EVIDENCE |
+| 46 | 419 | `.iitc-iris-map-controls-section` | 1 | base | `iitc-iris-map-controls-section` | ui | EVIDENCE |
+| 47 | 427 | `.iitc-iris-map-controls-section:first-child` | 1 | base | `iitc-iris-map-controls-section` | ui | EVIDENCE |
+| 48 | 432 | `.iitc-iris-map-controls-section > .iitc-iris-status` | 1 | base | `iitc-iris-map-controls-section`, `iitc-iris-status` | ui | EVIDENCE |
+| 49 | 440 | `.iitc-iris-map-control-row` | 1 | base | `iitc-iris-map-control-row` | ui | EVIDENCE |
+| 50 | 448 | `.iitc-iris-map-context-row` | 1 | base | `iitc-iris-map-context-row` | draw-tools, map | EVIDENCE |
+| 51 | 456 | `.iitc-iris-map-context-coords` | 1 | base | `iitc-iris-map-context-coords` | draw-tools, map | EVIDENCE |
+| 52 | 465 | `.iitc-iris-map-context-anchor` | 1 | base | `iitc-iris-map-context-anchor` | map | EVIDENCE |
+| 53 | 479 | `.iitc-iris-map-context-anchor:hover` | 2 | base | `iitc-iris-map-context-anchor` | map | EVIDENCE |
+| 54 | 479 | `.iitc-iris-map-context-anchor:focus-visible` | 2 | base | `iitc-iris-map-context-anchor` | map | EVIDENCE |
+| 55 | 485 | `.iitc-iris-segmented-row` | 1 | base | `iitc-iris-segmented-row` | ui | EVIDENCE |
+| 56 | 492 | `.iitc-iris-segmented-button` | 1 | base | `iitc-iris-segmented-button` | ui | EVIDENCE |
+| 57 | 501 | `.iitc-iris-segmented-button.is-active` | 1 | base | `iitc-iris-segmented-button`, `is-active` | missions, search, shell, src-root, ui | EVIDENCE |
+| 58 | 507 | `.iitc-iris-segmented-button:disabled` | 1 | base | `iitc-iris-segmented-button` | ui | EVIDENCE |
+| 59 | 512 | `.iitc-iris-title` | 1 | base | `iitc-iris-title` | UNCERTAIN | UNCERTAIN |
+| 60 | 517 | `.iitc-iris-innerstatus` | 1 | base | `iitc-iris-innerstatus` | system | EVIDENCE |
+| 61 | 526 | `.iitc-iris-innerstatus .portallevel` | 1 | base | `iitc-iris-innerstatus`, `portallevel` | EXTERNAL | EXTERNAL |
+| 62 | 531 | `.iitc-iris-innerstatus .map b` | 1 | base | `iitc-iris-innerstatus`, `map` | EXTERNAL | EXTERNAL |
+| 63 | 535 | `.iitc-iris-innerstatus .help` | 1 | base | `help`, `iitc-iris-innerstatus` | EXTERNAL | EXTERNAL |
+| 64 | 539 | `.iitc-iris-innerstatus .failed-request` | 1 | base | `failed-request`, `iitc-iris-innerstatus` | EXTERNAL | EXTERNAL |
+| 65 | 544 | `.iitc-iris-innerstatus .selected-portal` | 1 | base | `iitc-iris-innerstatus`, `selected-portal` | EXTERNAL | EXTERNAL |
+| 66 | 549 | `.iitc-iris-clear-selection` | 1 | base | `iitc-iris-clear-selection` | ui | EVIDENCE |
+| 67 | 565 | `.iitc-iris-clear-selection:hover` | 1 | base | `iitc-iris-clear-selection` | ui | EVIDENCE |
+| 68 | 570 | `.iitc-iris-innerstatus-login` | 1 | base | `iitc-iris-innerstatus-login` | system | EVIDENCE |
+| 69 | 575 | `.iitc-iris-auth-recovery` | 1 | base | `iitc-iris-auth-recovery` | auth | EVIDENCE |
+| 70 | 597 | `.iitc-iris-auth-recovery span` | 1 | base | `iitc-iris-auth-recovery` | auth | EVIDENCE |
+| 71 | 604 | `.iitc-iris-auth-recovery button` | 1 | base | `iitc-iris-auth-recovery` | auth | EVIDENCE |
+| 72 | 612 | `.iitc-iris-auth-recovery button:hover` | 1 | base | `iitc-iris-auth-recovery` | auth | EVIDENCE |
+| 73 | 617 | `.iitc-iris-inline-auth` | 1 | base | `iitc-iris-inline-auth` | src-root | EVIDENCE |
+| 74 | 627 | `.iitc-iris-inline-auth button` | 1 | base | `iitc-iris-inline-auth` | src-root | EVIDENCE |
+| 75 | 638 | `.iitc-iris-inline-auth button:hover` | 1 | base | `iitc-iris-inline-auth` | src-root | EVIDENCE |
+| 76 | 643 | `.iitc-iris-status` | 1 | base | `iitc-iris-status` | ui | EVIDENCE |
+| 77 | 647 | `.iitc-iris-selected-details` | 1 | base | `iitc-iris-selected-details` | UNCERTAIN | UNCERTAIN |
+| 78 | 653 | `.iitc-iris-selected-image-button` | 1 | base | `iitc-iris-selected-image-button` | portals | EVIDENCE |
+| 79 | 664 | `.iitc-iris-selected-image` | 1 | base | `iitc-iris-selected-image` | portals | EVIDENCE |
+| 80 | 673 | `.iitc-iris-selected-image-placeholder` | 1 | base | `iitc-iris-selected-image-placeholder` | portals | EVIDENCE |
+| 81 | 689 | `.iitc-iris-selected-image-button:hover .iitc-iris-selected-image` | 2 | base | `iitc-iris-selected-image`, `iitc-iris-selected-image-button` | portals | EVIDENCE |
+| 82 | 689 | `.iitc-iris-selected-image-button:focus-visible .iitc-iris-selected-image` | 2 | base | `iitc-iris-selected-image`, `iitc-iris-selected-image-button` | portals | EVIDENCE |
+| 83 | 695 | `.iitc-iris-selected-title` | 1 | base | `iitc-iris-selected-title` | portals, ui | EVIDENCE |
+| 84 | 704 | `.iitc-iris-portal-side-panel` | 1 | base | `iitc-iris-portal-side-panel` | portals | EVIDENCE |
+| 85 | 729 | `.iitc-iris-team-res` | 1 | base | `iitc-iris-team-res` | portal-analysis, portals | EVIDENCE |
+| 86 | 734 | `.iitc-iris-team-enl` | 1 | base | `iitc-iris-team-enl` | portal-analysis, portals | EVIDENCE |
+| 87 | 739 | `.iitc-iris-team-machina` | 1 | base | `iitc-iris-team-machina` | portal-analysis, portals | EVIDENCE |
+| 88 | 744 | `.iitc-iris-team-neutral` | 1 | base | `iitc-iris-team-neutral` | portal-analysis, portals | EVIDENCE |
+| 89 | 749 | `.iitc-iris-portal-side-panel-stacked .iitc-iris-portal-side-header` | 1 | base | `iitc-iris-portal-side-header`, `iitc-iris-portal-side-panel-stacked` | portals | EVIDENCE |
+| 90 | 753 | `.iitc-iris-portal-side-panel-stacked .iitc-iris-selected-image` | 1 | base | `iitc-iris-portal-side-panel-stacked`, `iitc-iris-selected-image` | portals | EVIDENCE |
+| 91 | 758 | `.iitc-iris-portal-side-panel-stacked .iitc-iris-selected-image-button` | 1 | base | `iitc-iris-portal-side-panel-stacked`, `iitc-iris-selected-image-button` | portals | EVIDENCE |
+| 92 | 763 | `.iitc-iris-portal-side-panel-stacked .iitc-iris-selected-image-placeholder` | 1 | base | `iitc-iris-portal-side-panel-stacked`, `iitc-iris-selected-image-placeholder` | portals | EVIDENCE |
+| 93 | 768 | `.iitc-iris-portal-side-header` | 1 | base | `iitc-iris-portal-side-header` | portals | EVIDENCE |
+| 94 | 781 | `.iitc-iris-portal-scroll-body` | 1 | base | `iitc-iris-portal-scroll-body` | portals | EVIDENCE |
+| 95 | 789 | `.iitc-iris-portal-side-title` | 1 | base | `iitc-iris-portal-side-title` | portals | EVIDENCE |
+| 96 | 795 | `.iitc-iris-selected-title-row` | 1 | base | `iitc-iris-selected-title-row` | portals | EVIDENCE |
+| 97 | 803 | `.iitc-iris-portal-owner-prominent` | 1 | base | `iitc-iris-portal-owner-prominent` | portals | EVIDENCE |
+| 98 | 817 | `.iitc-iris-portal-owner-prominent small` | 1 | base | `iitc-iris-portal-owner-prominent` | portals | EVIDENCE |
+| 99 | 824 | `.iitc-iris-portal-owner-prominent b` | 1 | base | `iitc-iris-portal-owner-prominent` | portals | EVIDENCE |
+| 100 | 832 | `.iitc-iris-agent-name` | 1 | base | `iitc-iris-agent-name` | portals | EVIDENCE |
+| 101 | 837 | `.iitc-iris-portal-actions` | 1 | base | `iitc-iris-portal-actions` | portals | EVIDENCE |
+| 102 | 843 | `.iitc-iris-summary-grid` | 3 | base | `iitc-iris-summary-grid` | UNCERTAIN | UNCERTAIN |
+| 103 | 843 | `.iitc-iris-portal-summary` | 3 | base | `iitc-iris-portal-summary` | portals | EVIDENCE |
+| 104 | 843 | `.iitc-iris-panel-summary` | 3 | base | `iitc-iris-panel-summary` | ui | EVIDENCE |
+| 105 | 852 | `.iitc-iris-summary-grid` | 2 | base | `iitc-iris-summary-grid` | UNCERTAIN | UNCERTAIN |
+| 106 | 852 | `.iitc-iris-panel-summary` | 2 | base | `iitc-iris-panel-summary` | ui | EVIDENCE |
+| 107 | 857 | `.iitc-iris-chip-button` | 1 | base | `iitc-iris-chip-button` | ui | EVIDENCE |
+| 108 | 861 | `.iitc-iris-chip-button:hover` | 1 | base | `iitc-iris-chip-button` | ui | EVIDENCE |
+| 109 | 866 | `.iitc-iris-summary-cell` | 2 | base | `iitc-iris-summary-cell` | ui | EVIDENCE |
+| 110 | 866 | `.iitc-iris-portal-summary-cell` | 2 | base | `iitc-iris-portal-summary-cell` | portals | EVIDENCE |
+| 111 | 879 | `.iitc-iris-summary-cell b` | 2 | base | `iitc-iris-summary-cell` | ui | EVIDENCE |
+| 112 | 879 | `.iitc-iris-portal-summary-cell b` | 2 | base | `iitc-iris-portal-summary-cell` | portals | EVIDENCE |
+| 113 | 889 | `.iitc-iris-portal-summary-cell .iitc-iris-portal-level-value` | 1 | base | `iitc-iris-portal-level-value`, `iitc-iris-portal-summary-cell` | portals | EVIDENCE |
+| 114 | 894 | `.iitc-iris-summary-mini-track` | 1 | base | `iitc-iris-summary-mini-track` | portals | EVIDENCE |
+| 115 | 902 | `.iitc-iris-summary-mini-track > span` | 1 | base | `iitc-iris-summary-mini-track` | portals | EVIDENCE |
+| 116 | 909 | `.iitc-iris-summary-cell small` | 2 | base | `iitc-iris-summary-cell` | ui | EVIDENCE |
+| 117 | 909 | `.iitc-iris-portal-summary-cell small` | 2 | base | `iitc-iris-portal-summary-cell` | portals | EVIDENCE |
+| 118 | 918 | `.iitc-iris-health-track` | 1 | base | `iitc-iris-health-track` | UNCERTAIN | UNCERTAIN |
+| 119 | 926 | `.iitc-iris-health-fill` | 1 | base | `iitc-iris-health-fill` | UNCERTAIN | UNCERTAIN |
+| 120 | 933 | `.iitc-iris-portal-mission-enrichment` | 1 | base | `iitc-iris-portal-mission-enrichment` | portals | EVIDENCE |
+| 121 | 945 | `.iitc-iris-portal-mission-enrichment > span` | 1 | base | `iitc-iris-portal-mission-enrichment` | portals | EVIDENCE |
+| 122 | 951 | `.iitc-iris-portal-mission-enrichment small` | 2 | base | `iitc-iris-portal-mission-enrichment` | portals | EVIDENCE |
+| 123 | 951 | `.iitc-iris-portal-mission-meta` | 2 | base | `iitc-iris-portal-mission-meta` | portals | EVIDENCE |
+| 124 | 962 | `.iitc-iris-portal-mission-enrichment b` | 1 | base | `iitc-iris-portal-mission-enrichment` | portals | EVIDENCE |
+| 125 | 970 | `.iitc-iris-portal-action` | 1 | base | `iitc-iris-portal-action` | missions, portals, ui | EVIDENCE |
+| 126 | 981 | `.iitc-iris-portal-action:hover` | 1 | base | `iitc-iris-portal-action` | missions, portals, ui | EVIDENCE |
+| 127 | 986 | `.iitc-iris-portal-action.is-danger` | 1 | base | `iitc-iris-portal-action`, `is-danger` | draw-tools, missions, portals, ui | EVIDENCE |
+| 128 | 992 | `.iitc-iris-portal-action:disabled` | 1 | base | `iitc-iris-portal-action` | missions, portals, ui | EVIDENCE |
+| 129 | 998 | `.iitc-iris-portal-analysis` | 1 | base | `iitc-iris-portal-analysis` | portal-analysis | EVIDENCE |
+| 130 | 1003 | `.iitc-iris-portal-analysis .iitc-iris-team-enl` | 1 | base | `iitc-iris-portal-analysis`, `iitc-iris-team-enl` | portal-analysis, portals | EVIDENCE |
+| 131 | 1008 | `.iitc-iris-portal-analysis .iitc-iris-team-res` | 1 | base | `iitc-iris-portal-analysis`, `iitc-iris-team-res` | portal-analysis, portals | EVIDENCE |
+| 132 | 1013 | `.iitc-iris-portal-analysis .iitc-iris-team-machina` | 1 | base | `iitc-iris-portal-analysis`, `iitc-iris-team-machina` | portal-analysis, portals | EVIDENCE |
+| 133 | 1018 | `.iitc-iris-portal-analysis .iitc-iris-team-neutral` | 1 | base | `iitc-iris-portal-analysis`, `iitc-iris-team-neutral` | portal-analysis, portals | EVIDENCE |
+| 134 | 1023 | `.iitc-iris-analysis-summary-grid` | 1 | base | `iitc-iris-analysis-summary-grid` | portal-analysis | EVIDENCE |
+| 135 | 1029 | `.iitc-iris-analysis-summary-grid .iitc-iris-summary-cell` | 1 | base | `iitc-iris-analysis-summary-grid`, `iitc-iris-summary-cell` | portal-analysis, ui | EVIDENCE |
+| 136 | 1035 | `.iitc-iris-analysis-summary-grid .iitc-iris-summary-cell b` | 1 | base | `iitc-iris-analysis-summary-grid`, `iitc-iris-summary-cell` | portal-analysis, ui | EVIDENCE |
+| 137 | 1039 | `.iitc-iris-analysis-summary-grid .iitc-iris-summary-cell small` | 1 | base | `iitc-iris-analysis-summary-grid`, `iitc-iris-summary-cell` | portal-analysis, ui | EVIDENCE |
+| 138 | 1044 | `.iitc-iris-analysis-chip-row` | 1 | base | `iitc-iris-analysis-chip-row` | portal-analysis | EVIDENCE |
+| 139 | 1051 | `.iitc-iris-counts-visuals` | 1 | base | `iitc-iris-counts-visuals` | portal-analysis | EVIDENCE |
+| 140 | 1060 | `.iitc-iris-counts-visuals svg` | 1 | base | `iitc-iris-counts-visuals` | portal-analysis | EVIDENCE |
+| 141 | 1067 | `.iitc-iris-counts-bar-track` | 1 | base | `iitc-iris-counts-bar-track` | UNCERTAIN | UNCERTAIN |
+| 142 | 1071 | `.iitc-iris-counts-bar-value` | 3 | base | `iitc-iris-counts-bar-value` | portal-analysis | EVIDENCE |
+| 143 | 1071 | `.iitc-iris-counts-bar-label` | 3 | base | `iitc-iris-counts-bar-label` | UNCERTAIN | UNCERTAIN |
+| 144 | 1071 | `.iitc-iris-counts-pie-percent` | 3 | base | `iitc-iris-counts-pie-percent` | portal-analysis | EVIDENCE |
+| 145 | 1079 | `.iitc-iris-counts-bar-value` | 1 | base | `iitc-iris-counts-bar-value` | portal-analysis | EVIDENCE |
+| 146 | 1084 | `.iitc-iris-counts-bar-team` | 1 | base | `iitc-iris-counts-bar-team` | portal-analysis | EVIDENCE |
+| 147 | 1091 | `.iitc-iris-counts-bar-label` | 1 | base | `iitc-iris-counts-bar-label` | UNCERTAIN | UNCERTAIN |
+| 148 | 1097 | `.iitc-iris-counts-pie-track` | 1 | base | `iitc-iris-counts-pie-track` | portal-analysis | EVIDENCE |
+| 149 | 1101 | `.iitc-iris-counts-pie-slice` | 1 | base | `iitc-iris-counts-pie-slice` | portal-analysis | EVIDENCE |
+| 150 | 1106 | `.iitc-iris-counts-level-ring` | 1 | base | `iitc-iris-counts-level-ring` | portal-analysis | EVIDENCE |
+| 151 | 1111 | `.iitc-iris-counts-pie-percent` | 1 | base | `iitc-iris-counts-pie-percent` | portal-analysis | EVIDENCE |
+| 152 | 1121 | `.iitc-iris-portals-list-filters` | 1 | base | `iitc-iris-portals-list-filters` | portal-analysis | EVIDENCE |
+| 153 | 1127 | `.iitc-iris-portals-list-filters input` | 2 | base | `iitc-iris-portals-list-filters` | portal-analysis | EVIDENCE |
+| 154 | 1127 | `.iitc-iris-portals-list-filters select` | 2 | base | `iitc-iris-portals-list-filters` | portal-analysis | EVIDENCE |
+| 155 | 1134 | `.iitc-iris-portals-list-filters .iitc-iris-select-input` | 1 | base | `iitc-iris-portals-list-filters`, `iitc-iris-select-input` | draw-tools, portal-analysis | EVIDENCE |
+| 156 | 1139 | `.iitc-iris-portals-list-search` | 1 | base | `iitc-iris-portals-list-search` | portal-analysis | EVIDENCE |
+| 157 | 1144 | `.iitc-iris-portals-list-filters input` | 1 | base | `iitc-iris-portals-list-filters` | portal-analysis | EVIDENCE |
+| 158 | 1148 | `.iitc-iris-portals-list-summary` | 1 | base | `iitc-iris-portals-list-summary` | portal-analysis | EVIDENCE |
+| 159 | 1154 | `.iitc-iris-portals-list-summary-item` | 1 | base | `iitc-iris-portals-list-summary-item` | portal-analysis | EVIDENCE |
+| 160 | 1164 | `.iitc-iris-portals-list-summary-item b` | 1 | base | `iitc-iris-portals-list-summary-item` | portal-analysis | EVIDENCE |
+| 161 | 1175 | `.iitc-iris-portals-list-summary-item small` | 1 | base | `iitc-iris-portals-list-summary-item` | portal-analysis | EVIDENCE |
+| 162 | 1185 | `.iitc-iris-portal-counts-table-wrap` | 2 | base | `iitc-iris-portal-counts-table-wrap` | portal-analysis | EVIDENCE |
+| 163 | 1185 | `.iitc-iris-portals-list-table-wrap` | 2 | base | `iitc-iris-portals-list-table-wrap` | portal-analysis | EVIDENCE |
+| 164 | 1194 | `.iitc-iris-portals-list-table-wrap` | 1 | base | `iitc-iris-portals-list-table-wrap` | portal-analysis | EVIDENCE |
+| 165 | 1199 | `.iitc-iris-portal-analysis-table` | 1 | base | `iitc-iris-portal-analysis-table` | portal-analysis | EVIDENCE |
+| 166 | 1207 | `.iitc-iris-portals-list-table` | 1 | base | `iitc-iris-portals-list-table` | portal-analysis | EVIDENCE |
+| 167 | 1211 | `.iitc-iris-portal-counts-table` | 2 | base | `iitc-iris-portal-counts-table` | portal-analysis | EVIDENCE |
+| 168 | 1211 | `.iitc-iris-scoreboard-table` | 2 | base | `iitc-iris-scoreboard-table` | portal-analysis | EVIDENCE |
+| 169 | 1217 | `.iitc-iris-portal-analysis-table th` | 2 | base | `iitc-iris-portal-analysis-table` | portal-analysis | EVIDENCE |
+| 170 | 1217 | `.iitc-iris-portal-analysis-table td` | 2 | base | `iitc-iris-portal-analysis-table` | portal-analysis | EVIDENCE |
+| 171 | 1227 | `.iitc-iris-portal-analysis-table th:first-child` | 3 | base | `iitc-iris-portal-analysis-table` | portal-analysis | EVIDENCE |
+| 172 | 1227 | `.iitc-iris-portal-analysis-table td:first-child` | 3 | base | `iitc-iris-portal-analysis-table` | portal-analysis | EVIDENCE |
+| 173 | 1227 | `.iitc-iris-portal-list-title` | 3 | base | `iitc-iris-portal-list-title` | portal-analysis | EVIDENCE |
+| 174 | 1233 | `.iitc-iris-portals-list-table th:first-child` | 2 | base | `iitc-iris-portals-list-table` | portal-analysis | EVIDENCE |
+| 175 | 1233 | `.iitc-iris-portals-list-table td:first-child` | 2 | base | `iitc-iris-portals-list-table` | portal-analysis | EVIDENCE |
+| 176 | 1238 | `.iitc-iris-portal-analysis-table thead th` | 1 | base | `iitc-iris-portal-analysis-table` | portal-analysis | EVIDENCE |
+| 177 | 1248 | `.iitc-iris-portal-analysis-table tr.is-muted` | 1 | base | `iitc-iris-portal-analysis-table`, `is-muted` | portal-analysis, src-root | EVIDENCE |
+| 178 | 1252 | `.iitc-iris-portal-counts-table th:first-child` | 2 | base | `iitc-iris-portal-counts-table` | portal-analysis | EVIDENCE |
+| 179 | 1252 | `.iitc-iris-portal-counts-table td:first-child` | 2 | base | `iitc-iris-portal-counts-table` | portal-analysis | EVIDENCE |
+| 180 | 1259 | `.iitc-iris-scoreboard-table th:first-child` | 2 | base | `iitc-iris-scoreboard-table` | portal-analysis | EVIDENCE |
+| 181 | 1259 | `.iitc-iris-scoreboard-table td:first-child` | 2 | base | `iitc-iris-scoreboard-table` | portal-analysis | EVIDENCE |
+| 182 | 1265 | `.iitc-iris-portal-analysis-table th.iitc-iris-team-enl` | 8 | base | `iitc-iris-portal-analysis-table`, `iitc-iris-team-enl` | portal-analysis, portals | EVIDENCE |
+| 183 | 1265 | `.iitc-iris-portal-analysis-table th.iitc-iris-team-res` | 8 | base | `iitc-iris-portal-analysis-table`, `iitc-iris-team-res` | portal-analysis, portals | EVIDENCE |
+| 184 | 1265 | `.iitc-iris-portal-analysis-table th.iitc-iris-team-machina` | 8 | base | `iitc-iris-portal-analysis-table`, `iitc-iris-team-machina` | portal-analysis, portals | EVIDENCE |
+| 185 | 1265 | `.iitc-iris-portal-analysis-table th.iitc-iris-team-neutral` | 8 | base | `iitc-iris-portal-analysis-table`, `iitc-iris-team-neutral` | portal-analysis, portals | EVIDENCE |
+| 186 | 1265 | `.iitc-iris-portal-analysis-table td.iitc-iris-team-enl` | 8 | base | `iitc-iris-portal-analysis-table`, `iitc-iris-team-enl` | portal-analysis, portals | EVIDENCE |
+| 187 | 1265 | `.iitc-iris-portal-analysis-table td.iitc-iris-team-res` | 8 | base | `iitc-iris-portal-analysis-table`, `iitc-iris-team-res` | portal-analysis, portals | EVIDENCE |
+| 188 | 1265 | `.iitc-iris-portal-analysis-table td.iitc-iris-team-machina` | 8 | base | `iitc-iris-portal-analysis-table`, `iitc-iris-team-machina` | portal-analysis, portals | EVIDENCE |
+| 189 | 1265 | `.iitc-iris-portal-analysis-table td.iitc-iris-team-neutral` | 8 | base | `iitc-iris-portal-analysis-table`, `iitc-iris-team-neutral` | portal-analysis, portals | EVIDENCE |
+| 190 | 1278 | `.iitc-iris-scoreboard-table .iitc-iris-scoreboard-column` | 1 | base | `iitc-iris-scoreboard-column`, `iitc-iris-scoreboard-table` | portal-analysis | EVIDENCE |
+| 191 | 1285 | `.iitc-iris-team-pill` | 1 | base | `iitc-iris-team-pill` | portal-analysis | EVIDENCE |
+| 192 | 1293 | `.iitc-iris-level-cell` | 1 | base | `iitc-iris-level-cell` | portal-analysis | EVIDENCE |
+| 193 | 1298 | `.iitc-iris-portal-analysis .iitc-iris-level-8` | 1 | base | `iitc-iris-level-8`, `iitc-iris-portal-analysis` | portal-analysis | EVIDENCE |
+| 194 | 1299 | `.iitc-iris-portal-analysis .iitc-iris-level-7` | 1 | base | `iitc-iris-level-7`, `iitc-iris-portal-analysis` | portal-analysis | EVIDENCE |
+| 195 | 1300 | `.iitc-iris-portal-analysis .iitc-iris-level-6` | 1 | base | `iitc-iris-level-6`, `iitc-iris-portal-analysis` | portal-analysis | EVIDENCE |
+| 196 | 1301 | `.iitc-iris-portal-analysis .iitc-iris-level-5` | 1 | base | `iitc-iris-level-5`, `iitc-iris-portal-analysis` | portal-analysis | EVIDENCE |
+| 197 | 1302 | `.iitc-iris-portal-analysis .iitc-iris-level-4` | 1 | base | `iitc-iris-level-4`, `iitc-iris-portal-analysis` | portal-analysis | EVIDENCE |
+| 198 | 1303 | `.iitc-iris-portal-analysis .iitc-iris-level-3` | 1 | base | `iitc-iris-level-3`, `iitc-iris-portal-analysis` | portal-analysis | EVIDENCE |
+| 199 | 1304 | `.iitc-iris-portal-analysis .iitc-iris-level-2` | 1 | base | `iitc-iris-level-2`, `iitc-iris-portal-analysis` | portal-analysis | EVIDENCE |
+| 200 | 1305 | `.iitc-iris-portal-analysis .iitc-iris-level-1` | 1 | base | `iitc-iris-level-1`, `iitc-iris-portal-analysis` | portal-analysis | EVIDENCE |
+| 201 | 1306 | `.iitc-iris-portal-analysis .iitc-iris-level-0` | 1 | base | `iitc-iris-level-0`, `iitc-iris-portal-analysis` | portal-analysis | EVIDENCE |
+| 202 | 1308 | `.iitc-iris-table-sort` | 3 | base | `iitc-iris-table-sort` | portal-analysis | EVIDENCE |
+| 203 | 1308 | `.iitc-iris-table-action` | 3 | base | `iitc-iris-table-action` | portal-analysis | EVIDENCE |
+| 204 | 1308 | `.iitc-iris-portal-list-title button` | 3 | base | `iitc-iris-portal-list-title` | portal-analysis | EVIDENCE |
+| 205 | 1319 | `.iitc-iris-table-sort` | 1 | base | `iitc-iris-table-sort` | portal-analysis | EVIDENCE |
+| 206 | 1325 | `.iitc-iris-table-action` | 1 | base | `iitc-iris-table-action` | portal-analysis | EVIDENCE |
+| 207 | 1334 | `.iitc-iris-portal-list-title button` | 1 | base | `iitc-iris-portal-list-title` | portal-analysis | EVIDENCE |
+| 208 | 1344 | `.iitc-iris-mission-create-link` | 1 | base | `iitc-iris-mission-create-link` | missions | EVIDENCE |
+| 209 | 1349 | `.iitc-iris-portal-panel` | 1 | base | `iitc-iris-portal-panel` | portals | EVIDENCE |
+| 210 | 1359 | `.iitc-iris-portal-panel-header` | 1 | base | `iitc-iris-portal-panel-header` | portals | EVIDENCE |
+| 211 | 1366 | `.iitc-iris-portal-panel-grid` | 1 | base | `iitc-iris-portal-panel-grid` | portals | EVIDENCE |
+| 212 | 1373 | `.iitc-iris-portal-panel-grid > span` | 2 | base | `iitc-iris-portal-panel-grid` | portals | EVIDENCE |
+| 213 | 1373 | `.iitc-iris-portal-panel-grid > div` | 2 | base | `iitc-iris-portal-panel-grid` | portals | EVIDENCE |
+| 214 | 1378 | `.iitc-iris-debug-grid` | 1 | base | `iitc-iris-debug-grid` | UNCERTAIN | UNCERTAIN |
+| 215 | 1383 | `.iitc-iris-portal-section` | 1 | base | `iitc-iris-portal-section` | portals | EVIDENCE |
+| 216 | 1388 | `.iitc-iris-portal-section[open]` | 1 | base | `iitc-iris-portal-section` | portals | EVIDENCE |
+| 217 | 1392 | `.iitc-iris-section-summary` | 1 | base | `iitc-iris-section-summary` | portals | EVIDENCE |
+| 218 | 1410 | `.iitc-iris-section-summary::marker` | 1 | base | `iitc-iris-section-summary` | portals | EVIDENCE |
+| 219 | 1414 | `.iitc-iris-section-summary:hover` | 2 | base | `iitc-iris-section-summary` | portals | EVIDENCE |
+| 220 | 1414 | `.iitc-iris-section-summary:focus-visible` | 2 | base | `iitc-iris-section-summary` | portals | EVIDENCE |
+| 221 | 1421 | `.iitc-iris-portal-facts` | 1 | base | `iitc-iris-portal-facts` | portals | EVIDENCE |
+| 222 | 1428 | `.iitc-iris-resonator-grid` | 2 | base | `iitc-iris-resonator-grid` | portals | EVIDENCE |
+| 223 | 1428 | `.iitc-iris-mod-grid` | 2 | base | `iitc-iris-mod-grid` | portals | EVIDENCE |
+| 224 | 1434 | `.iitc-iris-resonator-grid` | 1 | base | `iitc-iris-resonator-grid` | portals | EVIDENCE |
+| 225 | 1438 | `.iitc-iris-mod-grid` | 1 | base | `iitc-iris-mod-grid` | portals | EVIDENCE |
+| 226 | 1442 | `.iitc-iris-slot` | 1 | base | `iitc-iris-slot` | portals | EVIDENCE |
+| 227 | 1458 | `.iitc-iris-resonator-slot` | 1 | base | `iitc-iris-resonator-slot` | portals | EVIDENCE |
+| 228 | 1466 | `.iitc-iris-resonator-center` | 1 | base | `iitc-iris-resonator-center` | portals | EVIDENCE |
+| 229 | 1475 | `.iitc-iris-resonator-level` | 1 | base | `iitc-iris-resonator-level` | portals | EVIDENCE |
+| 230 | 1482 | `.iitc-iris-resonator-energy` | 1 | base | `iitc-iris-resonator-energy` | portals | EVIDENCE |
+| 231 | 1490 | `.iitc-iris-resonator-owner` | 1 | base | `iitc-iris-resonator-owner` | portals | EVIDENCE |
+| 232 | 1500 | `.iitc-iris-resonator-percent` | 1 | base | `iitc-iris-resonator-percent` | portals | EVIDENCE |
+| 233 | 1508 | `.iitc-iris-resonator-fill` | 1 | base | `iitc-iris-resonator-fill` | portals | EVIDENCE |
+| 234 | 1519 | `.iitc-iris-mod-slot` | 1 | base | `iitc-iris-mod-slot` | portals | EVIDENCE |
+| 235 | 1527 | `.iitc-iris-portal-mod-name` | 1 | base | `iitc-iris-portal-mod-name` | portals | EVIDENCE |
+| 236 | 1536 | `.iitc-iris-empty-slot` | 1 | base | `iitc-iris-empty-slot` | portals | EVIDENCE |
+| 237 | 1542 | `.iitc-iris-request-side-panel` | 2 | base | `iitc-iris-request-side-panel` | ui | EVIDENCE |
+| 238 | 1542 | `.iitc-iris-system-panel` | 2 | base | `iitc-iris-system-panel` | system | EVIDENCE |
+| 239 | 1566 | `.iitc-iris-system-panel` | 1 | base | `iitc-iris-system-panel` | system | EVIDENCE |
+| 240 | 1571 | `.iitc-iris-panel-topbar` | 1 | base | `iitc-iris-panel-topbar` | map, system | EVIDENCE |
+| 241 | 1578 | `.iitc-iris-request-panel-header` | 1 | base | `iitc-iris-request-panel-header` | ui | EVIDENCE |
+| 242 | 1585 | `.iitc-iris-request-panel-header .iitc-iris-selected-title` | 1 | base | `iitc-iris-request-panel-header`, `iitc-iris-selected-title` | portals, ui | EVIDENCE |
+| 243 | 1589 | `.iitc-iris-panel-header-actions` | 1 | base | `iitc-iris-panel-header-actions` | map, portals, search, shell, system | EVIDENCE |
+| 244 | 1600 | `.iitc-iris-request-panel-body` | 1 | base | `iitc-iris-request-panel-body` | ui | EVIDENCE |
+| 245 | 1611 | `.iitc-iris-panel-state` | 1 | base | `iitc-iris-panel-state` | portals, search, shell, system | EVIDENCE |
+| 246 | 1626 | `.iitc-iris-panel-state.is-loading` | 1 | base | `iitc-iris-panel-state`, `is-loading` | portals, search, shell, src-root, system | EVIDENCE |
+| 247 | 1631 | `.iitc-iris-panel-state.is-ready` | 1 | base | `iitc-iris-panel-state`, `is-ready` | portals, search, shell, src-root, system | EVIDENCE |
+| 248 | 1636 | `.iitc-iris-panel-state.is-muted` | 1 | base | `iitc-iris-panel-state`, `is-muted` | portal-analysis, portals, search, shell, src-root, system | EVIDENCE |
+| 249 | 1640 | `.iitc-iris-panel-state.is-warning` | 1 | base | `iitc-iris-panel-state`, `is-warning` | comm, missions, portals, search, shell, side-panels, src-root, system | EVIDENCE |
+| 250 | 1645 | `.iitc-iris-scroll-region` | 1 | base | `iitc-iris-scroll-region` | comm, missions, side-panels | EVIDENCE |
+| 251 | 1652 | `.iitc-iris-passcode-form` | 1 | base | `iitc-iris-passcode-form` | side-panels | EVIDENCE |
+| 252 | 1658 | `.iitc-iris-comm-send-form` | 1 | base | `iitc-iris-comm-send-form` | comm | EVIDENCE |
+| 253 | 1665 | `.iitc-iris-passcode-input` | 1 | base | `iitc-iris-passcode-input` | comm, side-panels | EVIDENCE |
+| 254 | 1670 | `.iitc-iris-panel-footer` | 1 | base | `iitc-iris-panel-footer` | ui | EVIDENCE |
+| 255 | 1681 | `.iitc-iris-diagnostics-row` | 1 | base | `iitc-iris-diagnostics-row` | UNCERTAIN | UNCERTAIN |
+| 256 | 1689 | `.iitc-iris-diagnostics-chip` | 1 | base | `iitc-iris-diagnostics-chip` | ui | EVIDENCE |
+| 257 | 1704 | `.iitc-iris-diagnostics-chip b` | 1 | base | `iitc-iris-diagnostics-chip` | ui | EVIDENCE |
+| 258 | 1710 | `.iitc-iris-diagnostics-chip small` | 1 | base | `iitc-iris-diagnostics-chip` | ui | EVIDENCE |
+| 259 | 1716 | `.iitc-iris-diagnostics-chip[title]` | 1 | base | `iitc-iris-diagnostics-chip` | ui | EVIDENCE |
+| 260 | 1720 | `.iitc-iris-diagnostics-chip.iitc-iris-chip-button` | 1 | base | `iitc-iris-chip-button`, `iitc-iris-diagnostics-chip` | ui | EVIDENCE |
+| 261 | 1724 | `.iitc-iris-diagnostics-chip:hover` | 1 | base | `iitc-iris-diagnostics-chip` | ui | EVIDENCE |
+| 262 | 1729 | `.iitc-iris-mission-list` | 2 | base | `iitc-iris-mission-list` | missions | EVIDENCE |
+| 263 | 1729 | `.iitc-iris-mission-waypoint-list` | 2 | base | `iitc-iris-mission-waypoint-list` | missions | EVIDENCE |
+| 264 | 1736 | `.iitc-iris-mission-entry` | 1 | base | `iitc-iris-mission-entry` | missions | EVIDENCE |
+| 265 | 1742 | `.iitc-iris-mission-entry:has(.iitc-iris-mission-row.is-active)` | 1 | base | `iitc-iris-mission-entry`, `iitc-iris-mission-row`, `is-active` | missions, search, shell, src-root, ui | EVIDENCE |
+| 266 | 1749 | `.iitc-iris-mission-row` | 2 | base | `iitc-iris-mission-row` | missions | EVIDENCE |
+| 267 | 1749 | `.iitc-iris-mission-waypoint` | 2 | base | `iitc-iris-mission-waypoint` | missions, src-root | EVIDENCE |
+| 268 | 1760 | `.iitc-iris-mission-row:hover` | 3 | base | `iitc-iris-mission-row` | missions | EVIDENCE |
+| 269 | 1760 | `.iitc-iris-mission-row.is-active` | 3 | base | `iitc-iris-mission-row`, `is-active` | missions, search, shell, src-root, ui | EVIDENCE |
+| 270 | 1760 | `.iitc-iris-mission-waypoint:hover` | 3 | base | `iitc-iris-mission-waypoint` | missions, src-root | EVIDENCE |
+| 271 | 1767 | `.iitc-iris-mission-row img` | 2 | base | `iitc-iris-mission-row` | missions | EVIDENCE |
+| 272 | 1767 | `.iitc-iris-mission-details-head img` | 2 | base | `iitc-iris-mission-details-head` | UNCERTAIN | UNCERTAIN |
+| 273 | 1776 | `.iitc-iris-mission-row span` | 3 | base | `iitc-iris-mission-row` | missions | EVIDENCE |
+| 274 | 1776 | `.iitc-iris-mission-details-head span` | 3 | base | `iitc-iris-mission-details-head` | UNCERTAIN | UNCERTAIN |
+| 275 | 1776 | `.iitc-iris-mission-waypoint span` | 3 | base | `iitc-iris-mission-waypoint` | missions, src-root | EVIDENCE |
+| 276 | 1784 | `.iitc-iris-mission-row > span` | 1 | base | `iitc-iris-mission-row` | missions | EVIDENCE |
+| 277 | 1788 | `.iitc-iris-mission-row b` | 3 | base | `iitc-iris-mission-row` | missions | EVIDENCE |
+| 278 | 1788 | `.iitc-iris-mission-details-head b` | 3 | base | `iitc-iris-mission-details-head` | UNCERTAIN | UNCERTAIN |
+| 279 | 1788 | `.iitc-iris-mission-waypoint strong` | 3 | base | `iitc-iris-mission-waypoint` | missions, src-root | EVIDENCE |
+| 280 | 1796 | `.iitc-iris-mission-row small` | 3 | base | `iitc-iris-mission-row` | missions | EVIDENCE |
+| 281 | 1796 | `.iitc-iris-mission-details-head small` | 3 | base | `iitc-iris-mission-details-head` | UNCERTAIN | UNCERTAIN |
+| 282 | 1796 | `.iitc-iris-mission-waypoint small` | 3 | base | `iitc-iris-mission-waypoint` | missions, src-root | EVIDENCE |
+| 283 | 1805 | `.iitc-iris-mission-details` | 1 | base | `iitc-iris-mission-details` | missions | EVIDENCE |
+| 284 | 1813 | `.iitc-iris-mission-expanded-top` | 1 | base | `iitc-iris-mission-expanded-top` | missions | EVIDENCE |
+| 285 | 1821 | `.iitc-iris-mission-expanded-top .iitc-iris-status b` | 1 | base | `iitc-iris-mission-expanded-top`, `iitc-iris-status` | missions, ui | EVIDENCE |
+| 286 | 1825 | `.iitc-iris-mission-author.is-enlightened` | 1 | base | `iitc-iris-mission-author`, `is-enlightened` | comm, missions, side-panels | EVIDENCE |
+| 287 | 1829 | `.iitc-iris-mission-author.is-resistance` | 1 | base | `iitc-iris-mission-author`, `is-resistance` | comm, missions, side-panels | EVIDENCE |
+| 288 | 1833 | `.iitc-iris-mission-author.is-machina` | 1 | base | `iitc-iris-mission-author`, `is-machina` | comm, missions | EVIDENCE |
+| 289 | 1837 | `.iitc-iris-mission-detail-actions` | 1 | base | `iitc-iris-mission-detail-actions` | missions | EVIDENCE |
+| 290 | 1843 | `.iitc-iris-mission-metrics` | 1 | base | `iitc-iris-mission-metrics` | missions | EVIDENCE |
+| 291 | 1850 | `.iitc-iris-mission-metrics > span` | 1 | base | `iitc-iris-mission-metrics` | missions | EVIDENCE |
+| 292 | 1863 | `.iitc-iris-mission-metrics img` | 1 | base | `iitc-iris-mission-metrics` | missions | EVIDENCE |
+| 293 | 1871 | `.iitc-iris-mission-metrics b` | 1 | base | `iitc-iris-mission-metrics` | missions | EVIDENCE |
+| 294 | 1878 | `.iitc-iris-mission-metrics small` | 1 | base | `iitc-iris-mission-metrics` | missions | EVIDENCE |
+| 295 | 1887 | `.iitc-iris-mission-description` | 1 | base | `iitc-iris-mission-description` | missions | EVIDENCE |
+| 296 | 1895 | `.iitc-iris-mission-waypoint` | 1 | base | `iitc-iris-mission-waypoint` | missions, src-root | EVIDENCE |
+| 297 | 1899 | `.iitc-iris-mission-waypoint > b` | 1 | base | `iitc-iris-mission-waypoint` | missions, src-root | EVIDENCE |
+| 298 | 1909 | `.iitc-iris-mission-waypoint.is-hidden > b` | 1 | base | `iitc-iris-mission-waypoint`, `is-hidden` | missions, src-root | EVIDENCE |
+| 299 | 1914 | `.iitc-iris-mission-waypoint-marker` | 1 | base | `iitc-iris-mission-waypoint-marker` | UNCERTAIN | UNCERTAIN |
+| 300 | 1926 | `.iitc-iris-mission-waypoint-marker.is-start` | 1 | base | `iitc-iris-mission-waypoint-marker`, `is-start` | src-root | EVIDENCE |
+| 301 | 1931 | `.iitc-iris-mission-waypoint-marker.is-hidden` | 1 | base | `iitc-iris-mission-waypoint-marker`, `is-hidden` | missions | EVIDENCE |
+| 302 | 1936 | `.iitc-iris-comm-list` | 1 | base | `iitc-iris-comm-list` | comm | EVIDENCE |
+| 303 | 1942 | `.iitc-iris-comm-row` | 1 | base | `iitc-iris-comm-row` | comm | EVIDENCE |
+| 304 | 1947 | `.iitc-iris-comm-row.is-alert` | 2 | base | `iitc-iris-comm-row`, `is-alert` | comm | EVIDENCE |
+| 305 | 1947 | `.iitc-iris-comm-row.is-direct` | 2 | base | `iitc-iris-comm-row`, `is-direct` | comm | EVIDENCE |
+| 306 | 1953 | `.iitc-iris-comm-meta` | 1 | base | `iitc-iris-comm-meta` | comm | EVIDENCE |
+| 307 | 1961 | `.iitc-iris-comm-tags` | 1 | base | `iitc-iris-comm-tags` | comm | EVIDENCE |
+| 308 | 1967 | `.iitc-iris-comm-meta b` | 1 | base | `iitc-iris-comm-meta` | comm | EVIDENCE |
+| 309 | 1972 | `.iitc-iris-comm-meta small` | 1 | base | `iitc-iris-comm-meta` | comm | EVIDENCE |
+| 310 | 1983 | `.iitc-iris-comm-tags small` | 1 | base | `iitc-iris-comm-tags` | comm | EVIDENCE |
+| 311 | 1990 | `.iitc-iris-comm-text` | 1 | base | `iitc-iris-comm-text` | comm | EVIDENCE |
+| 312 | 1999 | `.iitc-iris-comm-actor` | 1 | base | `iitc-iris-comm-actor` | comm | EVIDENCE |
+| 313 | 2017 | `.iitc-iris-comm-actor.is-resistance` | 1 | base | `iitc-iris-comm-actor`, `is-resistance` | comm, side-panels | EVIDENCE |
+| 314 | 2022 | `.iitc-iris-comm-actor.is-enlightened` | 1 | base | `iitc-iris-comm-actor`, `is-enlightened` | comm, side-panels | EVIDENCE |
+| 315 | 2027 | `.iitc-iris-comm-actor.is-machina` | 1 | base | `iitc-iris-comm-actor`, `is-machina` | comm | EVIDENCE |
+| 316 | 2032 | `.iitc-iris-comm-text.is-narrowcast` | 1 | base | `iitc-iris-comm-text`, `is-narrowcast` | comm | EVIDENCE |
+| 317 | 2036 | `.iitc-iris-comm-portal` | 1 | base | `iitc-iris-comm-portal` | comm | EVIDENCE |
+| 318 | 2049 | `.iitc-iris-comm-player` | 2 | base | `iitc-iris-comm-player` | comm | EVIDENCE |
+| 319 | 2049 | `.iitc-iris-comm-faction` | 2 | base | `iitc-iris-comm-faction` | comm | EVIDENCE |
+| 320 | 2054 | `.iitc-iris-comm-player` | 1 | base | `iitc-iris-comm-player` | comm | EVIDENCE |
+| 321 | 2066 | `.iitc-iris-comm-player:hover` | 1 | base | `iitc-iris-comm-player` | comm | EVIDENCE |
+| 322 | 2070 | `.iitc-iris-comm-context` | 1 | base | `iitc-iris-comm-context` | UNCERTAIN | UNCERTAIN |
+| 323 | 2081 | `.iitc-iris-comm-divider` | 1 | base | `iitc-iris-comm-divider` | comm | EVIDENCE |
+| 324 | 2094 | `.iitc-iris-scenario-progress` | 1 | base | `iitc-iris-scenario-progress` | system | EVIDENCE |
+| 325 | 2101 | `.iitc-iris-scenario-progress > span` | 1 | base | `iitc-iris-scenario-progress` | system | EVIDENCE |
+| 326 | 2116 | `.iitc-iris-scenario-progress > span.is-done` | 1 | base | `iitc-iris-scenario-progress`, `is-done` | system | EVIDENCE |
+| 327 | 2122 | `.iitc-iris-image-preview-backdrop` | 1 | base | `iitc-iris-image-preview-backdrop` | portals | EVIDENCE |
+| 328 | 2133 | `.iitc-iris-image-preview` | 1 | base | `iitc-iris-image-preview` | portals | EVIDENCE |
+| 329 | 2146 | `.iitc-iris-image-preview img` | 1 | base | `iitc-iris-image-preview` | portals | EVIDENCE |
+| 330 | 2155 | `.iitc-iris-image-preview-caption` | 1 | base | `iitc-iris-image-preview-caption` | portals | EVIDENCE |
+| 331 | 2163 | `.iitc-iris-image-preview-caption b` | 2 | base | `iitc-iris-image-preview-caption` | portals | EVIDENCE |
+| 332 | 2163 | `.iitc-iris-image-preview-caption span` | 2 | base | `iitc-iris-image-preview-caption` | portals | EVIDENCE |
+| 333 | 2171 | `.iitc-iris-image-preview-caption b` | 1 | base | `iitc-iris-image-preview-caption` | portals | EVIDENCE |
+| 334 | 2176 | `.iitc-iris-shortcut-grid` | 1 | base | `iitc-iris-shortcut-grid` | system | EVIDENCE |
+| 335 | 2183 | `.iitc-iris-shortcut-grid span` | 2 | base | `iitc-iris-shortcut-grid` | system | EVIDENCE |
+| 336 | 2183 | `.iitc-iris-shortcut-grid b` | 2 | base | `iitc-iris-shortcut-grid` | system | EVIDENCE |
+| 337 | 2188 | `.iitc-iris-shortcut-grid span` | 1 | base | `iitc-iris-shortcut-grid` | system | EVIDENCE |
+| 338 | 2192 | `.iitc-iris-shortcut-grid b` | 1 | base | `iitc-iris-shortcut-grid` | system | EVIDENCE |
+| 339 | 2202 | `.iitc-iris-empty-state` | 1 | base | `iitc-iris-empty-state` | ui | EVIDENCE |
+| 340 | 2210 | `.iitc-iris-score-block` | 1 | base | `iitc-iris-score-block` | side-panels | EVIDENCE |
+| 341 | 2220 | `.iitc-iris-score-heading` | 2 | base | `iitc-iris-score-heading` | side-panels | EVIDENCE |
+| 342 | 2220 | `.iitc-iris-score-pair` | 2 | base | `iitc-iris-score-pair` | side-panels | EVIDENCE |
+| 343 | 2228 | `.iitc-iris-score-heading` | 1 | base | `iitc-iris-score-heading` | side-panels | EVIDENCE |
+| 344 | 2233 | `.iitc-iris-score-pair` | 1 | base | `iitc-iris-score-pair` | side-panels | EVIDENCE |
+| 345 | 2237 | `.iitc-iris-score-pair > span` | 1 | base | `iitc-iris-score-pair` | side-panels | EVIDENCE |
+| 346 | 2244 | `.iitc-iris-score-bar` | 1 | base | `iitc-iris-score-bar` | side-panels | EVIDENCE |
+| 347 | 2254 | `.iitc-iris-score-bar-enl` | 1 | base | `iitc-iris-score-bar-enl` | side-panels | EVIDENCE |
+| 348 | 2259 | `.iitc-iris-score-bar-res` | 1 | base | `iitc-iris-score-bar-res` | side-panels | EVIDENCE |
+| 349 | 2264 | `.iitc-iris-agent-list` | 1 | base | `iitc-iris-agent-list` | side-panels | EVIDENCE |
+| 350 | 2270 | `.iitc-iris-agent-card` | 1 | base | `iitc-iris-agent-card` | side-panels | EVIDENCE |
+| 351 | 2276 | `.iitc-iris-agent-level` | 1 | base | `iitc-iris-agent-level` | side-panels | EVIDENCE |
+| 352 | 2283 | `.iitc-iris-agent-level > b` | 1 | base | `iitc-iris-agent-level` | side-panels | EVIDENCE |
+| 353 | 2294 | `.iitc-iris-agent-level span` | 1 | base | `iitc-iris-agent-level` | side-panels | EVIDENCE |
+| 354 | 2300 | `.iitc-iris-agent-level strong` | 1 | base | `iitc-iris-agent-level` | side-panels | EVIDENCE |
+| 355 | 2307 | `.iitc-iris-core-badge` | 1 | base | `iitc-iris-core-badge` | side-panels | EVIDENCE |
+| 356 | 2318 | `.iitc-iris-core-badge.is-active` | 1 | base | `iitc-iris-core-badge`, `is-active` | missions, search, shell, side-panels, src-root, ui | EVIDENCE |
+| 357 | 2325 | `.iitc-iris-core-badge.is-inactive` | 1 | base | `iitc-iris-core-badge`, `is-inactive` | side-panels, src-root | EVIDENCE |
+| 358 | 2332 | `.iitc-iris-core-badge.is-unknown` | 1 | base | `iitc-iris-core-badge`, `is-unknown` | side-panels, src-root | EVIDENCE |
+| 359 | 2338 | `.iitc-iris-core-badge.is-loading` | 1 | base | `iitc-iris-core-badge`, `is-loading` | side-panels, src-root, system | EVIDENCE |
+| 360 | 2344 | `.iitc-iris-agent-progress` | 1 | base | `iitc-iris-agent-progress` | side-panels | EVIDENCE |
+| 361 | 2349 | `.iitc-iris-agent-progress > div:first-child` | 1 | base | `iitc-iris-agent-progress` | side-panels | EVIDENCE |
+| 362 | 2355 | `.iitc-iris-agent-progress-track` | 1 | base | `iitc-iris-agent-progress-track` | side-panels | EVIDENCE |
+| 363 | 2362 | `.iitc-iris-agent-progress-track span` | 1 | base | `iitc-iris-agent-progress-track` | side-panels | EVIDENCE |
+| 364 | 2369 | `.iitc-iris-agent-row` | 1 | base | `iitc-iris-agent-row` | side-panels | EVIDENCE |
+| 365 | 2381 | `.iitc-iris-agent-row b` | 1 | base | `iitc-iris-agent-row` | side-panels | EVIDENCE |
+| 366 | 2388 | `.iitc-iris-inventory-selected` | 1 | base | `iitc-iris-inventory-selected` | missions, side-panels | EVIDENCE |
+| 367 | 2398 | `.iitc-iris-inventory-selected b` | 1 | base | `iitc-iris-inventory-selected` | missions, side-panels | EVIDENCE |
+| 368 | 2406 | `.iitc-iris-inventory-section` | 1 | base | `iitc-iris-inventory-section` | side-panels | EVIDENCE |
+| 369 | 2412 | `.iitc-iris-inventory-scroll` | 1 | base | `iitc-iris-inventory-scroll` | side-panels | EVIDENCE |
+| 370 | 2417 | `.iitc-iris-inventory-list` | 1 | base | `iitc-iris-inventory-list` | side-panels | EVIDENCE |
+| 371 | 2423 | `.iitc-iris-inventory-row` | 1 | base | `iitc-iris-inventory-row` | side-panels | EVIDENCE |
+| 372 | 2433 | `button.iitc-iris-inventory-row` | 1 | base | `iitc-iris-inventory-row` | side-panels | EVIDENCE |
+| 373 | 2441 | `button.iitc-iris-inventory-row:hover` | 1 | base | `iitc-iris-inventory-row` | side-panels | EVIDENCE |
+| 374 | 2446 | `.iitc-iris-inventory-row span` | 2 | base | `iitc-iris-inventory-row` | side-panels | EVIDENCE |
+| 375 | 2446 | `.iitc-iris-inventory-row small` | 2 | base | `iitc-iris-inventory-row` | side-panels | EVIDENCE |
+| 376 | 2454 | `.iitc-iris-item-badge` | 1 | base | `iitc-iris-item-badge` | side-panels | EVIDENCE |
+| 377 | 2467 | `.iitc-iris-inventory-row b` | 1 | base | `iitc-iris-inventory-row` | side-panels | EVIDENCE |
+| 378 | 2471 | `.iitc-iris-inventory-row small` | 1 | base | `iitc-iris-inventory-row` | side-panels | EVIDENCE |
+| 379 | 2478 | `.is-enlightened` | 1 | base | `is-enlightened` | comm, side-panels | EVIDENCE |
+| 380 | 2482 | `.is-resistance` | 1 | base | `is-resistance` | comm, side-panels | EVIDENCE |
+| 381 | 2486 | `.is-machina` | 1 | base | `is-machina` | comm | EVIDENCE |
+| 382 | 2491 | `.iitc-iris-dock` | 1 | @media (width <= 760px) | `iitc-iris-dock` | system | EVIDENCE |
+| 383 | 2499 | `.iitc-iris-dock > .iitc-iris-dock-row:not(:first-child, .iitc-iris-debug-row)` | 1 | @media (width <= 760px) | `iitc-iris-debug-row`, `iitc-iris-dock`, `iitc-iris-dock-row` | system | EVIDENCE |
+| 384 | 2503 | `.iitc-iris-dock-row:first-child .iitc-iris-copy:not(:first-of-type)` | 3 | @media (width <= 760px) | `iitc-iris-copy`, `iitc-iris-dock-row` | system | EVIDENCE |
+| 385 | 2503 | `.iitc-iris-dock-row:first-child .iitc-iris-preset` | 3 | @media (width <= 760px) | `iitc-iris-dock-row`, `iitc-iris-preset` | system | EVIDENCE |
+| 386 | 2503 | `.iitc-iris-dock-row:first-child .iitc-iris-jump` | 3 | @media (width <= 760px) | `iitc-iris-dock-row`, `iitc-iris-jump` | system | EVIDENCE |
+| 387 | 2509 | `.iitc-iris-innerstatus` | 1 | @media (width <= 760px) | `iitc-iris-innerstatus` | system | EVIDENCE |
+| 388 | 2514 | `.iitc-iris-map-controls` | 1 | @media (width <= 760px) | `iitc-iris-map-controls` | map, ui | EVIDENCE |
+| 389 | 2526 | `.iitc-iris-portal-side-panel` | 1 | @media (width <= 760px) | `iitc-iris-portal-side-panel` | portals | EVIDENCE |
+| 390 | 2538 | `.iitc-iris-portal-side-panel-stacked` | 1 | @media (width <= 760px) | `iitc-iris-portal-side-panel-stacked` | portals | EVIDENCE |
+| 391 | 2542 | `.iitc-iris-portal-summary` | 1 | @media (width <= 760px) | `iitc-iris-portal-summary` | portals | EVIDENCE |
+| 392 | 2546 | `.iitc-iris-request-side-panel` | 1 | @media (width <= 760px) | `iitc-iris-request-side-panel` | ui | EVIDENCE |
+| 393 | 2557 | `.iitc-iris-resonator-grid` | 2 | @media (width <= 760px) | `iitc-iris-resonator-grid` | portals | EVIDENCE |
+| 394 | 2557 | `.iitc-iris-mod-grid` | 2 | @media (width <= 760px) | `iitc-iris-mod-grid` | portals | EVIDENCE |
+| 395 | 2562 | `.iitc-iris-resonator-grid` | 1 | @media (width <= 760px) | `iitc-iris-resonator-grid` | portals | EVIDENCE |
+| 396 | 2566 | `.iitc-iris-summary-grid` | 5 | @media (width <= 760px) | `iitc-iris-summary-grid` | UNCERTAIN | UNCERTAIN |
+| 397 | 2566 | `.iitc-iris-portal-summary` | 5 | @media (width <= 760px) | `iitc-iris-portal-summary` | portals | EVIDENCE |
+| 398 | 2566 | `.iitc-iris-panel-summary` | 5 | @media (width <= 760px) | `iitc-iris-panel-summary` | ui | EVIDENCE |
+| 399 | 2566 | `.iitc-iris-analysis-summary-grid` | 5 | @media (width <= 760px) | `iitc-iris-analysis-summary-grid` | portal-analysis | EVIDENCE |
+| 400 | 2566 | `.iitc-iris-portals-list-summary` | 5 | @media (width <= 760px) | `iitc-iris-portals-list-summary` | portal-analysis | EVIDENCE |
+| 401 | 2574 | `.iitc-iris-mission-metrics` | 1 | @media (width <= 760px) | `iitc-iris-mission-metrics` | missions | EVIDENCE |
+| 402 | 2578 | `.iitc-iris-comm-row` | 1 | @media (width <= 760px) | `iitc-iris-comm-row` | comm | EVIDENCE |
+| 403 | 2583 | `.iitc-iris-warning` | 1 | base | `iitc-iris-warning` | comm, missions, portals, search, side-panels, system | EVIDENCE |
+| 404 | 2588 | `.iitc-iris-compare` | 1 | base | `iitc-iris-compare` | system | EVIDENCE |
+| 405 | 2593 | `.iitc-iris-copy` | 2 | base | `iitc-iris-copy` | UNCERTAIN | UNCERTAIN |
+| 406 | 2593 | `.iitc-iris-preset` | 2 | base | `iitc-iris-preset` | system | EVIDENCE |
+| 407 | 2603 | `.iitc-iris-copy:hover` | 2 | base | `iitc-iris-copy` | UNCERTAIN | UNCERTAIN |
+| 408 | 2603 | `.iitc-iris-preset:hover` | 2 | base | `iitc-iris-preset` | system | EVIDENCE |
+| 409 | 2609 | `.iitc-iris-debug-active` | 1 | base | `iitc-iris-debug-active` | UNCERTAIN | UNCERTAIN |
+| 410 | 2614 | `.iitc-iris-debug-row` | 1 | base | `iitc-iris-debug-row` | system | EVIDENCE |
+| 411 | 2619 | `.iitc-iris-sheet-tabbar` | 1 | base | `iitc-iris-sheet-tabbar` | shell | EVIDENCE |
+| 412 | 2640 | `.iitc-iris-sheet-tabbar-primary` | 2 | base | `iitc-iris-sheet-tabbar-primary` | shell | EVIDENCE |
+| 413 | 2640 | `.iitc-iris-sheet-tabbar-secondary` | 2 | base | `iitc-iris-sheet-tabbar-secondary` | shell | EVIDENCE |
+| 414 | 2646 | `.iitc-iris-sheet-tabbar-primary` | 1 | base | `iitc-iris-sheet-tabbar-primary` | shell | EVIDENCE |
+| 415 | 2651 | `.iitc-iris-sheet-tabbar-secondary` | 1 | base | `iitc-iris-sheet-tabbar-secondary` | shell | EVIDENCE |
+| 416 | 2664 | `.iitc-iris-sheet-tabbar-secondary::-webkit-scrollbar` | 1 | base | `iitc-iris-sheet-tabbar-secondary` | shell | EVIDENCE |
+| 417 | 2668 | `.iitc-iris-sheet-tabbar-secondary::-webkit-scrollbar-thumb` | 1 | base | `iitc-iris-sheet-tabbar-secondary` | shell | EVIDENCE |
+| 418 | 2673 | `.iitc-iris-sheet-tab` | 1 | base | `iitc-iris-sheet-tab` | shell | EVIDENCE |
+| 419 | 2687 | `.iitc-iris-sheet-subtab` | 1 | base | `iitc-iris-sheet-subtab` | shell | EVIDENCE |
+| 420 | 2694 | `.iitc-iris-sheet-tab.is-active` | 1 | base | `iitc-iris-sheet-tab`, `is-active` | missions, search, shell, src-root, ui | EVIDENCE |
+| 421 | 2700 | `.iitc-iris-sheet-tab.is-active::before` | 1 | base | `iitc-iris-sheet-tab`, `is-active` | missions, search, shell, src-root, ui | EVIDENCE |
+| 422 | 2711 | `.iitc-iris-sheet-subtab.is-active::before` | 1 | base | `iitc-iris-sheet-subtab`, `is-active` | missions, search, shell, src-root, ui | EVIDENCE |
+| 423 | 2717 | `.iitc-iris-sheet-tab:disabled` | 1 | base | `iitc-iris-sheet-tab` | shell | EVIDENCE |
+| 424 | 2722 | `.iitc-iris-map-controls` | 4 | base | `iitc-iris-map-controls` | map, ui | EVIDENCE |
+| 425 | 2722 | `.iitc-iris-portal-side-panel` | 4 | base | `iitc-iris-portal-side-panel` | portals | EVIDENCE |
+| 426 | 2722 | `.iitc-iris-request-side-panel` | 4 | base | `iitc-iris-request-side-panel` | ui | EVIDENCE |
+| 427 | 2722 | `.iitc-iris-system-panel` | 4 | base | `iitc-iris-system-panel` | system | EVIDENCE |
+| 428 | 2738 | `.iitc-iris-sheet-layers .iitc-iris-map-controls` | 19 | base | `iitc-iris-map-controls`, `iitc-iris-sheet-layers` | map, ui | EVIDENCE |
+| 429 | 2738 | `.iitc-iris-sheet-view .iitc-iris-map-controls` | 19 | base | `iitc-iris-map-controls`, `iitc-iris-sheet-view` | map, ui | EVIDENCE |
+| 430 | 2738 | `.iitc-iris-sheet-drawLinks .iitc-iris-map-controls` | 19 | base | `iitc-iris-map-controls`, `iitc-iris-sheet-drawLinks` | map, ui | EVIDENCE |
+| 431 | 2738 | `.iitc-iris-sheet-drawMarkers .iitc-iris-map-controls` | 19 | base | `iitc-iris-map-controls`, `iitc-iris-sheet-drawMarkers` | map, ui | EVIDENCE |
+| 432 | 2738 | `.iitc-iris-sheet-portalCounts .iitc-iris-map-controls` | 19 | base | `iitc-iris-map-controls`, `iitc-iris-sheet-portalCounts` | map, ui | EVIDENCE |
+| 433 | 2738 | `.iitc-iris-sheet-portalsList .iitc-iris-map-controls` | 19 | base | `iitc-iris-map-controls`, `iitc-iris-sheet-portalsList` | map, ui | EVIDENCE |
+| 434 | 2738 | `.iitc-iris-sheet-scoreboard .iitc-iris-map-controls` | 19 | base | `iitc-iris-map-controls`, `iitc-iris-sheet-scoreboard` | map, ui | EVIDENCE |
+| 435 | 2738 | `.iitc-iris-sheet-selectedLink .iitc-iris-map-controls` | 19 | base | `iitc-iris-map-controls`, `iitc-iris-sheet-selectedLink` | map, ui | EVIDENCE |
+| 436 | 2738 | `.iitc-iris-sheet-selectedField .iitc-iris-map-controls` | 19 | base | `iitc-iris-map-controls`, `iitc-iris-sheet-selectedField` | map, ui | EVIDENCE |
+| 437 | 2738 | `.iitc-iris-sheet-portal .iitc-iris-portal-side-panel` | 19 | base | `iitc-iris-portal-side-panel`, `iitc-iris-sheet-portal` | portals | EVIDENCE |
+| 438 | 2738 | `.iitc-iris-sheet-agent .iitc-iris-request-side-panel` | 19 | base | `iitc-iris-request-side-panel`, `iitc-iris-sheet-agent` | ui | EVIDENCE |
+| 439 | 2738 | `.iitc-iris-sheet-comm .iitc-iris-request-side-panel` | 19 | base | `iitc-iris-request-side-panel`, `iitc-iris-sheet-comm` | ui | EVIDENCE |
+| 440 | 2738 | `.iitc-iris-sheet-scores .iitc-iris-request-side-panel` | 19 | base | `iitc-iris-request-side-panel`, `iitc-iris-sheet-scores` | ui | EVIDENCE |
+| 441 | 2738 | `.iitc-iris-sheet-missions .iitc-iris-request-side-panel` | 19 | base | `iitc-iris-request-side-panel`, `iitc-iris-sheet-missions` | ui | EVIDENCE |
+| 442 | 2738 | `.iitc-iris-sheet-inventory .iitc-iris-request-side-panel` | 19 | base | `iitc-iris-request-side-panel`, `iitc-iris-sheet-inventory` | ui | EVIDENCE |
+| 443 | 2738 | `.iitc-iris-sheet-passcode .iitc-iris-request-side-panel` | 19 | base | `iitc-iris-request-side-panel`, `iitc-iris-sheet-passcode` | ui | EVIDENCE |
+| 444 | 2738 | `.iitc-iris-sheet-search .iitc-iris-request-side-panel` | 19 | base | `iitc-iris-request-side-panel`, `iitc-iris-sheet-search` | ui | EVIDENCE |
+| 445 | 2738 | `.iitc-iris-sheet-help .iitc-iris-request-side-panel` | 19 | base | `iitc-iris-request-side-panel`, `iitc-iris-sheet-help` | ui | EVIDENCE |
+| 446 | 2738 | `.iitc-iris-sheet-system .iitc-iris-system-panel` | 19 | base | `iitc-iris-sheet-system`, `iitc-iris-system-panel` | system | EVIDENCE |
+| 447 | 2760 | `.iitc-iris-sheet-map .iitc-iris-map-controls` | 4 | base | `iitc-iris-map-controls`, `iitc-iris-sheet-map` | map, ui | EVIDENCE |
+| 448 | 2760 | `.iitc-iris-sheet-map .iitc-iris-portal-side-panel` | 4 | base | `iitc-iris-portal-side-panel`, `iitc-iris-sheet-map` | portals | EVIDENCE |
+| 449 | 2760 | `.iitc-iris-sheet-map .iitc-iris-request-side-panel` | 4 | base | `iitc-iris-request-side-panel`, `iitc-iris-sheet-map` | ui | EVIDENCE |
+| 450 | 2760 | `.iitc-iris-sheet-map .iitc-iris-system-panel` | 4 | base | `iitc-iris-sheet-map`, `iitc-iris-system-panel` | system | EVIDENCE |
+| 451 | 2767 | `.iitc-iris-portal-side-panel-stacked` | 1 | base | `iitc-iris-portal-side-panel-stacked` | portals | EVIDENCE |
+| 452 | 2772 | `.iitc-iris-sheet-tabbar` | 1 | @media (width <= 760px) | `iitc-iris-sheet-tabbar` | shell | EVIDENCE |
+| 453 | 2779 | `.iitc-iris-map-controls` | 4 | @media (width <= 760px) | `iitc-iris-map-controls` | map, ui | EVIDENCE |
+| 454 | 2779 | `.iitc-iris-portal-side-panel` | 4 | @media (width <= 760px) | `iitc-iris-portal-side-panel` | portals | EVIDENCE |
+| 455 | 2779 | `.iitc-iris-request-side-panel` | 4 | @media (width <= 760px) | `iitc-iris-request-side-panel` | ui | EVIDENCE |
+| 456 | 2779 | `.iitc-iris-search` | 4 | @media (width <= 760px) | `iitc-iris-search` | search, src-root | EVIDENCE |
+| 457 | 2790 | `.iitc-iris-map-search-badge` | 1 | @media (width <= 760px) | `iitc-iris-map-search-badge` | src-root | EVIDENCE |
+| 458 | 2797 | `.iitc-iris-portal-analysis` | 1 | @media (width <= 760px) | `iitc-iris-portal-analysis` | portal-analysis | EVIDENCE |
+| 459 | 2802 | `.iitc-iris-counts-visuals` | 1 | @media (width <= 760px) | `iitc-iris-counts-visuals` | portal-analysis | EVIDENCE |
+| 460 | 2806 | `.iitc-iris-counts-visuals svg` | 1 | @media (width <= 760px) | `iitc-iris-counts-visuals` | portal-analysis | EVIDENCE |
+| 461 | 2811 | `.iitc-iris-portals-list-filters` | 1 | @media (width <= 760px) | `iitc-iris-portals-list-filters` | portal-analysis | EVIDENCE |
+| 462 | 2815 | `.iitc-iris-portals-list-search` | 1 | @media (width <= 760px) | `iitc-iris-portals-list-search` | portal-analysis | EVIDENCE |
+| 463 | 2819 | `.iitc-iris-portals-list-summary-item` | 1 | @media (width <= 760px) | `iitc-iris-portals-list-summary-item` | portal-analysis | EVIDENCE |
+| 464 | 2823 | `.iitc-iris-portals-list-summary-item b` | 1 | @media (width <= 760px) | `iitc-iris-portals-list-summary-item` | portal-analysis | EVIDENCE |
+| 465 | 2827 | `.iitc-iris-portal-analysis-table` | 1 | @media (width <= 760px) | `iitc-iris-portal-analysis-table` | portal-analysis | EVIDENCE |
+| 466 | 2832 | `.iitc-iris-portal-analysis-table th` | 2 | @media (width <= 760px) | `iitc-iris-portal-analysis-table` | portal-analysis | EVIDENCE |
+| 467 | 2832 | `.iitc-iris-portal-analysis-table td` | 2 | @media (width <= 760px) | `iitc-iris-portal-analysis-table` | portal-analysis | EVIDENCE |
+| 468 | 2837 | `.iitc-iris-portal-counts-table` | 1 | @media (width <= 760px) | `iitc-iris-portal-counts-table` | portal-analysis | EVIDENCE |
+| 469 | 2841 | `.iitc-iris-portals-list-table` | 1 | @media (width <= 760px) | `iitc-iris-portals-list-table` | portal-analysis | EVIDENCE |
+| 470 | 2845 | `.iitc-iris-scoreboard-table` | 1 | @media (width <= 760px) | `iitc-iris-scoreboard-table` | portal-analysis | EVIDENCE |
+| 471 | 2849 | `.iitc-iris-scoreboard-table th` | 2 | @media (width <= 760px) | `iitc-iris-scoreboard-table` | portal-analysis | EVIDENCE |
+| 472 | 2849 | `.iitc-iris-scoreboard-table td` | 2 | @media (width <= 760px) | `iitc-iris-scoreboard-table` | portal-analysis | EVIDENCE |
+| 473 | 2855 | `.iitc-iris-preset` | 1 | base | `iitc-iris-preset` | system | EVIDENCE |
+| 474 | 2860 | `.iitc-iris-nav-button` | 1 | base | `iitc-iris-nav-button` | map | EVIDENCE |
+| 475 | 2869 | `.iitc-iris-nav-button-wide` | 1 | base | `iitc-iris-nav-button-wide` | map | EVIDENCE |
+| 476 | 2875 | `.iitc-iris-nav-button:hover` | 1 | base | `iitc-iris-nav-button` | map | EVIDENCE |
+| 477 | 2880 | `.iitc-iris-nav-button:disabled` | 1 | base | `iitc-iris-nav-button` | map | EVIDENCE |
+| 478 | 2886 | `.iitc-iris-pan-grid` | 1 | base | `iitc-iris-pan-grid` | map | EVIDENCE |
+| 479 | 2893 | `.iitc-iris-map-control-status` | 1 | base | `iitc-iris-map-control-status` | draw-tools, map | EVIDENCE |
+| 480 | 2899 | `.iitc-iris-pan-north` | 1 | base | `iitc-iris-pan-north` | map | EVIDENCE |
+| 481 | 2904 | `.iitc-iris-pan-west` | 1 | base | `iitc-iris-pan-west` | map | EVIDENCE |
+| 482 | 2909 | `.iitc-iris-pan-east` | 1 | base | `iitc-iris-pan-east` | map | EVIDENCE |
+| 483 | 2914 | `.iitc-iris-pan-south` | 1 | base | `iitc-iris-pan-south` | map | EVIDENCE |
+| 484 | 2919 | `.iitc-iris-jump` | 1 | base | `iitc-iris-jump` | system | EVIDENCE |
+| 485 | 2925 | `.iitc-iris-jump-input` | 1 | base | `iitc-iris-jump-input` | system | EVIDENCE |
+| 486 | 2933 | `.iitc-iris-login` | 1 | base | `iitc-iris-login` | system | EVIDENCE |
+| 487 | 2942 | `.iitc-iris-login:hover` | 1 | base | `iitc-iris-login` | system | EVIDENCE |
+| 488 | 2947 | `.iitc-iris-divider` | 1 | base | `iitc-iris-divider` | UNCERTAIN | UNCERTAIN |
+| 489 | 2953 | `.iitc-iris-layer-toggle` | 1 | base | `iitc-iris-layer-toggle` | layers, system | EVIDENCE |
+| 490 | 2963 | `.iitc-iris-base-toggle` | 2 | base | `iitc-iris-base-toggle` | layers | EVIDENCE |
+| 491 | 2963 | `.iitc-iris-source-toggle` | 2 | base | `iitc-iris-source-toggle` | system | EVIDENCE |
+| 492 | 2970 | `.iitc-iris-source-toggle` | 1 | base | `iitc-iris-source-toggle` | system | EVIDENCE |
+| 493 | 2974 | `.iitc-iris-layer-toggle-active` | 1 | base | `iitc-iris-layer-toggle-active` | layers, system | EVIDENCE |
+| 494 | 2980 | `.iitc-iris-layer-toggle-invert` | 1 | base | `iitc-iris-layer-toggle-invert` | UNCERTAIN | UNCERTAIN |
+| 495 | 2985 | `.iitc-iris-layer-choice-grid` | 1 | base | `iitc-iris-layer-choice-grid` | layers | EVIDENCE |
+| 496 | 2992 | `.iitc-iris-layer-choice` | 1 | base | `iitc-iris-layer-choice` | layers, ui | EVIDENCE |
+| 497 | 3007 | `.iitc-iris-layer-choice.is-checked` | 1 | base | `iitc-iris-layer-choice`, `is-checked` | layers, ui | EVIDENCE |
+| 498 | 3013 | `.iitc-iris-layer-choice input` | 1 | base | `iitc-iris-layer-choice` | layers, ui | EVIDENCE |
+| 499 | 3020 | `.iitc-iris-layer-choice-label` | 1 | base | `iitc-iris-layer-choice-label` | ui | EVIDENCE |
+| 500 | 3029 | `.iitc-iris-ornament-icon` | 1 | base | `iitc-iris-ornament-icon` | src-root | EVIDENCE |
+| 501 | 3033 | `.iitc-iris-artifact-icon` | 1 | base | `iitc-iris-artifact-icon` | src-root | EVIDENCE |
+| 502 | 3037 | `.iitc-iris-level-label` | 1 | base | `iitc-iris-level-label` | src-root | EVIDENCE |
+| 503 | 3045 | `.iitc-iris-key-count-label` | 1 | base | `iitc-iris-key-count-label` | src-root | EVIDENCE |
+| 504 | 3058 | `.iitc-iris-mission-waypoint-label` | 1 | base | `iitc-iris-mission-waypoint-label` | src-root | EVIDENCE |
+| 505 | 3070 | `.iitc-iris-mission-waypoint-label.is-start` | 1 | base | `iitc-iris-mission-waypoint-label`, `is-start` | src-root | EVIDENCE |
+| 506 | 3074 | `.iitc-iris-player-tracker-marker` | 1 | base | `iitc-iris-player-tracker-marker` | src-root | EVIDENCE |
+| 507 | 3080 | `.iitc-iris-draw-tools-marker` | 1 | base | `iitc-iris-draw-tools-marker` | draw-tools, src-root | EVIDENCE |
+| 508 | 3086 | `.iitc-iris-draw-tools-marker svg` | 1 | base | `iitc-iris-draw-tools-marker` | draw-tools, src-root | EVIDENCE |
+| 509 | 3092 | `.iitc-iris-draw-tools-marker-actions` | 1 | base | `iitc-iris-draw-tools-marker-actions` | draw-tools | EVIDENCE |
+| 510 | 3098 | `.iitc-iris-draw-tools-actions-row` | 1 | base | `iitc-iris-draw-tools-actions-row` | draw-tools | EVIDENCE |
+| 511 | 3103 | `.iitc-iris-draw-tools-actions-row .iitc-iris-map-context-coords` | 1 | base | `iitc-iris-draw-tools-actions-row`, `iitc-iris-map-context-coords` | draw-tools, map | EVIDENCE |
+| 512 | 3107 | `.iitc-iris-draw-tools-actions-row .iitc-iris-map-control-status` | 1 | base | `iitc-iris-draw-tools-actions-row`, `iitc-iris-map-control-status` | draw-tools, map | EVIDENCE |
+| 513 | 3111 | `.iitc-iris-draw-tools-marker-swatch` | 1 | base | `iitc-iris-draw-tools-marker-swatch` | draw-tools | EVIDENCE |
+| 514 | 3121 | `.iitc-iris-draw-tools-marker-swatch:hover` | 2 | base | `iitc-iris-draw-tools-marker-swatch` | draw-tools | EVIDENCE |
+| 515 | 3121 | `.iitc-iris-draw-tools-marker-swatch:focus-visible` | 2 | base | `iitc-iris-draw-tools-marker-swatch` | draw-tools | EVIDENCE |
+| 516 | 3126 | `.iitc-iris-draw-tools-list` | 1 | base | `iitc-iris-draw-tools-list` | draw-tools | EVIDENCE |
+| 517 | 3133 | `.iitc-iris-draw-tools-list-controls` | 1 | base | `iitc-iris-draw-tools-list-controls` | draw-tools | EVIDENCE |
+| 518 | 3137 | `.iitc-iris-draw-tools-list-controls label` | 1 | base | `iitc-iris-draw-tools-list-controls` | draw-tools | EVIDENCE |
+| 519 | 3143 | `.iitc-iris-draw-tools-list-controls span` | 1 | base | `iitc-iris-draw-tools-list-controls` | draw-tools | EVIDENCE |
+| 520 | 3154 | `.iitc-iris-draw-tools-list-controls .iitc-iris-select-input` | 1 | base | `iitc-iris-draw-tools-list-controls`, `iitc-iris-select-input` | draw-tools, portal-analysis | EVIDENCE |
+| 521 | 3161 | `.iitc-iris-draw-tools-list-empty` | 1 | base | `iitc-iris-draw-tools-list-empty` | draw-tools | EVIDENCE |
+| 522 | 3170 | `.iitc-iris-draw-tools-list-item` | 1 | base | `iitc-iris-draw-tools-list-item` | draw-tools | EVIDENCE |
+| 523 | 3176 | `.iitc-iris-draw-tools-marker-dot` | 1 | base | `iitc-iris-draw-tools-marker-dot` | draw-tools | EVIDENCE |
+| 524 | 3184 | `.iitc-iris-draw-tools-marker-dot + .iitc-iris-draw-tools-list-label` | 1 | base | `iitc-iris-draw-tools-list-label`, `iitc-iris-draw-tools-marker-dot` | draw-tools | EVIDENCE |
+| 525 | 3188 | `.iitc-iris-draw-tools-list-item:has(.iitc-iris-draw-tools-marker-dot)` | 1 | base | `iitc-iris-draw-tools-list-item`, `iitc-iris-draw-tools-marker-dot` | draw-tools | EVIDENCE |
+| 526 | 3192 | `.iitc-iris-draw-tools-list-label` | 1 | base | `iitc-iris-draw-tools-list-label` | draw-tools | EVIDENCE |
+| 527 | 3198 | `.iitc-iris-draw-tools-list-label b` | 2 | base | `iitc-iris-draw-tools-list-label` | draw-tools | EVIDENCE |
+| 528 | 3198 | `.iitc-iris-draw-tools-list-label small` | 2 | base | `iitc-iris-draw-tools-list-label` | draw-tools | EVIDENCE |
+| 529 | 3205 | `.iitc-iris-draw-tools-list-label b` | 1 | base | `iitc-iris-draw-tools-list-label` | draw-tools | EVIDENCE |
+| 530 | 3210 | `.iitc-iris-draw-tools-list-label small` | 1 | base | `iitc-iris-draw-tools-list-label` | draw-tools | EVIDENCE |
+| 531 | 3215 | `.iitc-iris-draw-tools-marker-detail` | 1 | base | `iitc-iris-draw-tools-marker-detail` | draw-tools | EVIDENCE |
+| 532 | 3222 | `.iitc-iris-draw-tools-marker-coords` | 1 | base | `iitc-iris-draw-tools-marker-coords` | draw-tools | EVIDENCE |
+| 533 | 3229 | `.iitc-iris-draw-tools-marker-chips` | 1 | base | `iitc-iris-draw-tools-marker-chips` | draw-tools | EVIDENCE |
+| 534 | 3236 | `.iitc-iris-draw-tools-level-chip` | 2 | base | `iitc-iris-draw-tools-level-chip` | draw-tools | EVIDENCE |
+| 535 | 3236 | `.iitc-iris-draw-tools-team-chip` | 2 | base | `iitc-iris-draw-tools-team-chip` | draw-tools | EVIDENCE |
+| 536 | 3244 | `.iitc-iris-draw-tools-level-chip` | 1 | base | `iitc-iris-draw-tools-level-chip` | draw-tools | EVIDENCE |
+| 537 | 3249 | `.iitc-iris-draw-tools-team-chip` | 1 | base | `iitc-iris-draw-tools-team-chip` | draw-tools | EVIDENCE |
+| 538 | 3255 | `.iitc-iris-draw-tools-list-actions` | 1 | base | `iitc-iris-draw-tools-list-actions` | draw-tools | EVIDENCE |
+| 539 | 3260 | `.iitc-iris-draw-tools-marker-create-row` | 1 | base | `iitc-iris-draw-tools-marker-create-row` | draw-tools | EVIDENCE |
+| 540 | 3264 | `.iitc-iris-draw-tools-label-input` | 1 | base | `iitc-iris-draw-tools-label-input` | draw-tools | EVIDENCE |
+| 541 | 3270 | `.iitc-iris-draw-tools-label-input::placeholder` | 1 | base | `iitc-iris-draw-tools-label-input` | draw-tools | EVIDENCE |
+| 542 | 3274 | `.iitc-iris-draw-tools-import` | 1 | base | `iitc-iris-draw-tools-import` | draw-tools | EVIDENCE |
+| 543 | 3279 | `.iitc-iris-draw-tools-interop` | 1 | base | `iitc-iris-draw-tools-interop` | draw-tools | EVIDENCE |
+| 544 | 3286 | `.iitc-iris-draw-tools-import-input` | 1 | base | `iitc-iris-draw-tools-import-input` | draw-tools | EVIDENCE |
+| 545 | 3295 | `.iitc-iris-draw-tools-import-merge` | 1 | base | `iitc-iris-draw-tools-import-merge` | draw-tools | EVIDENCE |
+| 546 | 3303 | `.iitc-iris-player-tracker-marker::before` | 1 | base | `iitc-iris-player-tracker-marker` | src-root | EVIDENCE |
+| 547 | 3317 | `.iitc-iris-player-tracker-marker span` | 1 | base | `iitc-iris-player-tracker-marker` | src-root | EVIDENCE |
+| 548 | 3329 | `.iitc-iris-player-tracker-marker-R` | 1 | base | `iitc-iris-player-tracker-marker-R` | UNCERTAIN | UNCERTAIN |
+| 549 | 3333 | `.iitc-iris-player-tracker-marker-E` | 1 | base | `iitc-iris-player-tracker-marker-E` | UNCERTAIN | UNCERTAIN |
+| 550 | 3337 | `.iitc-iris-player-tracker-marker-M` | 1 | base | `iitc-iris-player-tracker-marker-M` | UNCERTAIN | UNCERTAIN |
+| 551 | 3341 | `.iitc-iris-player-tracker-marker-image` | 1 | base | `iitc-iris-player-tracker-marker-image` | src-root | EVIDENCE |
+| 552 | 3345 | `.iitc-iris-player-tracker-leaflet-popup .leaflet-popup-content-wrapper` | 1 | base | `iitc-iris-player-tracker-leaflet-popup`, `leaflet-popup-content-wrapper` | EXTERNAL | EXTERNAL |
+| 553 | 3353 | `.iitc-iris-player-tracker-leaflet-popup .leaflet-popup-content` | 1 | base | `iitc-iris-player-tracker-leaflet-popup`, `leaflet-popup-content` | EXTERNAL | EXTERNAL |
+| 554 | 3357 | `.iitc-iris-player-tracker-leaflet-popup .leaflet-popup-tip` | 1 | base | `iitc-iris-player-tracker-leaflet-popup`, `leaflet-popup-tip` | EXTERNAL | EXTERNAL |
+| 555 | 3363 | `.iitc-iris-player-tracker-leaflet-popup .leaflet-popup-close-button` | 1 | base | `iitc-iris-player-tracker-leaflet-popup`, `leaflet-popup-close-button` | EXTERNAL | EXTERNAL |
+| 556 | 3367 | `.iitc-iris-player-tracker-leaflet-popup .leaflet-popup-close-button:hover` | 1 | base | `iitc-iris-player-tracker-leaflet-popup`, `leaflet-popup-close-button` | EXTERNAL | EXTERNAL |
+| 557 | 3371 | `.iitc-iris-player-tracker-popup` | 1 | base | `iitc-iris-player-tracker-popup` | src-root | EVIDENCE |
+| 558 | 3377 | `.iitc-iris-player-tracker-name` | 1 | base | `iitc-iris-player-tracker-name` | src-root | EVIDENCE |
+| 559 | 3381 | `.iitc-iris-player-tracker-R` | 1 | base | `iitc-iris-player-tracker-R` | UNCERTAIN | UNCERTAIN |
+| 560 | 3385 | `.iitc-iris-player-tracker-E` | 1 | base | `iitc-iris-player-tracker-E` | UNCERTAIN | UNCERTAIN |
+| 561 | 3389 | `.iitc-iris-player-tracker-M` | 1 | base | `iitc-iris-player-tracker-M` | UNCERTAIN | UNCERTAIN |
+| 562 | 3393 | `.iitc-iris-player-tracker-link` | 1 | base | `iitc-iris-player-tracker-link` | src-root | EVIDENCE |
+| 563 | 3411 | `.iitc-iris-player-tracker-link:hover` | 1 | base | `iitc-iris-player-tracker-link` | src-root | EVIDENCE |
+| 564 | 3415 | `.iitc-iris-player-tracker-previous-table` | 1 | base | `iitc-iris-player-tracker-previous-table` | src-root | EVIDENCE |
+| 565 | 3420 | `.iitc-iris-player-tracker-previous-table td` | 1 | base | `iitc-iris-player-tracker-previous-table` | src-root | EVIDENCE |
+| 566 | 3426 | `.iitc-iris-player-tracker-previous-table td:last-child` | 1 | base | `iitc-iris-player-tracker-previous-table` | src-root | EVIDENCE |

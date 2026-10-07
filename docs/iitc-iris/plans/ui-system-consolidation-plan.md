@@ -2,7 +2,12 @@
 
 ## Plan Dashboard
 
-Status: Active source of truth for IITC IRIS UI/CSS consolidation.
+Status: Parked/historical. Do not continue this consolidation plan unless it is reopened with a new user-approved scope.
+
+The active UI/CSS refactor track is now [css-refactor.md](css-refactor-new.md). That plan is intentionally different: it
+organizes CSS ownership while preserving existing visual behavior, selectors, declarations, and cascade semantics.
+
+This file remains as a historical record of completed UI primitive consolidation through Assignment 4.
 
 Use this plan instead of:
 
