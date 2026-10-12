@@ -5,7 +5,8 @@
 Status: Track A and Track B (Named CSS) Complete.
 - Track A (Pretty owner files consolidation) is complete (`docs/iitc-iris/plans/css-refactoring/14-track-a-final-report.md`).
 - Track B (Component-local CSS imports for named stylesheets) is complete (`docs/iitc-iris/plans/css-refactoring/24-track-b-closeout-report.md`).
-- Track C (Component folder layout co-location) is the next logical step.
+- Track C (Component folder layout co-location) is proposed for the next session (`docs/iitc-iris/plans/css-refactoring/25-track-c-component-colocation-plan.md`).
+- Numbered CSS consolidation remains a separate possible track and needs a fresh plan before implementation.
 
 Goal: turn the cascade-preserving numbered chunk split into a human-friendly CSS architecture while keeping behavior and
 visual output unchanged.
@@ -31,17 +32,19 @@ apps/iitc-iris/src/search/006-search.css
 The numbers preserve the original monolithic cascade. This was deliberately safe, but not the final pleasant
 architecture.
 
-This plan makes the CSS easier to read and maintain without changing the loading model yet.
+This plan first made the CSS easier to read while preserving the original loading model, then proved the component-local
+loading model for named CSS. Further work should either co-locate stable components (Track C) or create a new numbered
+CSS consolidation plan.
 
 ## Non-goals
 
 - Do not redesign UI.
 - Do not change selectors.
 - Do not change declaration values.
-- Do not convert to component-local CSS imports yet.
+- Do not add new component-local CSS imports without an approved Track B/Track C follow-up plan.
 - Do not remove selectors because they appear unused.
 - Do not merge semantically different CSS merely because declarations look similar.
-- Do not change TSX imports except in the later Track B investigation plan.
+- Do not change TSX imports except in an approved Track C or numbered-CSS migration slice.
 
 ## Target Shape After Track A
 
@@ -224,7 +227,12 @@ Track B is closed out for named CSS. Remaining modularization proceeds to Track 
 
 ## Track C - Future Component Folder Layout
 
-If Track B proves that component-local CSS imports are safe, consider moving stable components into co-located folders.
+Track C is the proposed next step now that Track B proved component-local CSS imports are safe for isolated and explicitly
+shared named CSS.
+
+Detailed next-session plan:
+
+- `docs/iitc-iris/plans/css-refactoring/25-track-c-component-colocation-plan.md`
 
 Example target:
 
@@ -240,23 +248,24 @@ This can make ownership clearer because markup, styles, tests, and exports live 
 
 Start with small UI primitives before feature panels:
 
-- `Badge`
-- `EmptyState`
 - `ClearButton`
+- `EmptyState`
+- `DiagnosticsChip`
 - `ChipButton`
-- `SegmentedButton`
+- `SegmentedButton` / `SegmentedRow` as a later shared-style slice
 
-Do not combine this with Track A. Component folder layout is a source-layout refactor, and component-local CSS imports are
-a loading-model refactor. Each should have its own approval and validation.
+Do not start with `Badge` or `StatusText`: their CSS intentionally remains central for cascade safety.
+
+Do not combine this with numbered CSS consolidation. Component folder layout is a source-layout refactor; numbered CSS
+consolidation is a cascade refactor. Each needs its own approval and validation.
 
 ## Done Criteria
 
-Track A is done when:
+Track A and Track B are done. Track C first pass is done when:
 
-- numbered chunks are reduced where safe;
-- remaining numbered chunks have documented cascade reasons;
-- broad responsive CSS has a named strategy;
-- the CSS entry manifest is understandable;
-- all static checks pass;
-- smoke verification passes;
-- Track B and Track C candidates are documented without being implemented.
+- selected leaf components live in co-located folders;
+- existing import paths continue to work through per-component `index.ts` files;
+- no CSS selectors or declarations changed;
+- central named CSS remains central for the reasons documented in Track B closeout;
+- all static checks, tests, package build, and diff check pass;
+- a follow-up report records components intentionally left flat.

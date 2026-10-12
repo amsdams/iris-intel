@@ -2,15 +2,17 @@
 
 ## Current State
 
-Status: Phase 2 app-surface extraction, source layout, and the UI component extraction pass are complete/parked.
-The active refactor track is the CSS ownership refactor in `css-refactor-new.md`.
+Status: Phase 2 app-surface extraction, source layout, Track A CSS consolidation, and Track B named-CSS component-local imports are complete/parked.
+There is no active implementation track until the next session explicitly chooses either Track C component co-location or numbered CSS consolidation.
 Android APK work is a separate readiness track, not a continuation of the refactor plans.
 
 Do not assign any other refactor work unless a detailed plan names exact scope, files, stop conditions, and validation.
 
 Likely next priorities:
 
-1. Execute `css-refactor-new.md` one phase at a time, stopping at each phase gate.
+1. Choose the next CSS architecture direction:
+   - Track C component co-location, starting from `css-refactoring/25-track-c-component-colocation-plan.md`; or
+   - a new numbered CSS consolidation plan for the 65 remaining numbered chunks.
 2. Use the app on phone/desktop and collect concrete UI/CSS/mobile pain.
 3. Prepare for a friend-shared sideload APK, with Play/store distribution deferred.
 4. Run the Android/WebView readiness spikes before creating an IRIS APK scaffold.
@@ -21,7 +23,7 @@ Do not mix refactor cleanup, UI/mobile polish, Android APK work, and feature/par
 
 ## Active Work
 
-- [css-refactor.md](css-refactor-new.md): Active source of truth for the CSS ownership refactor. Start with Phase 0 only.
+- No active implementation plan. Track B is closed out; start the next session by choosing Track C co-location or numbered CSS consolidation.
 
 ## Recently Completed
 
@@ -68,7 +70,7 @@ These rules apply to Codex, AGY/Gemini, and any other AI-assisted branch.
 - Read this roadmap first. Read [../port-plan.md](../port-plan.md) for behavior/parity work. Read only the relevant
   detailed plan for the current assignment.
 - If this file says there is no active work, do not improvise a refactor. Ask for or create a detailed plan first.
-- For CSS refactor work, follow `css-refactor-new.md` exactly. Do not use exploratory notes as approval to move CSS.
+- For future CSS architecture work, follow the currently approved detailed plan exactly. Do not use exploratory notes or completed closeout reports as approval to move CSS or files.
 - Treat app-surface refactors as behavior-preserving by default. Do not rename persisted ids, message types, public panel
   ids, storage keys, user-facing labels, or IITC-aligned concepts unless the plan explicitly marks a divergence.
 - Compare AGY review work against the current baseline branch and record behavior differences as bugs unless a plan
@@ -85,10 +87,10 @@ These rules apply to Codex, AGY/Gemini, and any other AI-assisted branch.
 
 ## Detailed Plans
 
-Active:
+Current / Proposed:
 
-- [css-refactor.md](css-refactor-new.md): Active source of truth for the IITC IRIS CSS ownership refactor.
 - [css-pretty-architecture-plan.md](css-pretty-architecture-plan.md): Architectural roadmap for Track A, Track B, and Track C.
+- [css-refactoring/25-track-c-component-colocation-plan.md](css-refactoring/25-track-c-component-colocation-plan.md): Proposed next-session plan for Track C component folder co-location. Not approved for implementation until explicitly selected.
 
 Completed Track B (Named CSS Component-Local Imports):
 
