@@ -1,6 +1,7 @@
 import {StatusText} from '../ui/status-text';
 import {h} from 'preact';
 import {useState} from 'preact/hooks';
+import './draw-tools.css';
 import {
   DRAW_TOOLS_DEFAULT_COLOR,
   DRAW_TOOLS_MARKER_PRESETS,
