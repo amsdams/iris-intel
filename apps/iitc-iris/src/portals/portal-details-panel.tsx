@@ -10,7 +10,7 @@ import {PlainDiagnosticsChip} from '../ui/diagnostics-chip';
 import {PanelFooter, PanelTitle} from '../ui/panel';
 import {StatusText} from '../ui/status-text';
 import {EmptyState} from '../ui/empty-state';
-import '../ui/summary-cell-label.css';
+import '../ui/summary-cell/summary-cell-label.css';
 import './portal-summary-mini-track.css';
 
 export interface IitcIrisPortalDetailsPanelProps {
