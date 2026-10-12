@@ -1,4 +1,5 @@
 import {h, ComponentChildren, JSX} from 'preact';
+import './segmented-button.css';
 
 export interface SegmentedButtonProps extends Omit<JSX.HTMLAttributes<HTMLButtonElement>, 'className' | 'type'> {
   active?: boolean;

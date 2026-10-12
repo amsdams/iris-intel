@@ -1,4 +1,6 @@
 import {h, ComponentChildren, JSX} from 'preact';
+import './diagnostics-chip.css';
+import './chip-button.css';
 
 /**
  * Button styled like the diagnostics chip.

@@ -1,4 +1,5 @@
 import {h, ComponentChildren, JSX} from 'preact';
+import './diagnostics-chip.css';
 
 export interface DiagnosticsChipProps extends Omit<JSX.HTMLAttributes<HTMLSpanElement>, 'className'> {
   value: ComponentChildren;

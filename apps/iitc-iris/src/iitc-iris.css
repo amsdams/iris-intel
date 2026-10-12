@@ -12,7 +12,6 @@
 @import url('./map/011-map.css');
 @import url('./system/012-system.css');
 @import url('./map/013-map.css');
-@import url('./ui/segmented-button.css');
 @import url('./system/015-innerstatus.css');
 @import url('./auth/017-auth.css');
 @import url('./ui/status-text.css');
@@ -22,7 +21,6 @@
 @import url('./side-panels/022-side-panels.css');
 @import url('./portals/023-portals.css');
 @import url('./ui/024-summary-layout.css');
-@import url('./ui/chip-button.css');
 @import url('./ui/026-summary-cell.css');
 @import url('./portals/027-portals.css');
 @import url('./ui/summary-mini.css');
@@ -51,7 +49,6 @@
 @import url('./comm/056-comm.css');
 @import url('./side-panels/057-side-panels.css');
 @import url('./map/058-map.css');
-@import url('./ui/diagnostics-chip.css');
 @import url('./missions/060-missions.css');
 @import url('./comm/061-comm.css');
 @import url('./system/062-system.css');

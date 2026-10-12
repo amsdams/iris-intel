@@ -1,4 +1,5 @@
 import {h, ComponentChildren, JSX} from 'preact';
+import './segmented-button.css';
 
 export interface SegmentedRowProps extends Omit<JSX.HTMLAttributes<HTMLDivElement>, 'className'> {
   children?: ComponentChildren;
