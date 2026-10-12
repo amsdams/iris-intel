@@ -83,9 +83,9 @@ Required checks:
 - Record all current CSS imports from `apps/iitc-iris/src/iitc-iris.css`.
 - Record current package output size for `dist/iitc-iris.css`.
 - Run:
-  - `npm run lint:css`
-  - `npm run package:iitc-iris`
-  - `git diff --check`
+    - `npm run lint:css`
+    - `npm run package:iitc-iris`
+    - `git diff --check`
 
 Hard stop after Phase 0.
 
@@ -230,6 +230,33 @@ Track B should start with a spike, not a migration:
 3. Compare package CSS output and visual behavior.
 4. Decide whether component-local imports are viable for the broader app.
 
+## Track C - Future Component Folder Layout
+
+If Track B proves that component-local CSS imports are safe, consider moving stable components into co-located folders.
+
+Example target:
+
+```text
+apps/iitc-iris/src/ui/badge/
+├── badge.tsx
+├── badge.css
+├── badge.test.tsx
+└── index.ts
+```
+
+This can make ownership clearer because markup, styles, tests, and exports live together.
+
+Start with small UI primitives before feature panels:
+
+- `Badge`
+- `EmptyState`
+- `ClearButton`
+- `ChipButton`
+- `SegmentedButton`
+
+Do not combine this with Track A. Component folder layout is a source-layout refactor, and component-local CSS imports are
+a loading-model refactor. Each should have its own approval and validation.
+
 ## Done Criteria
 
 Track A is done when:
@@ -240,4 +267,4 @@ Track A is done when:
 - the CSS entry manifest is understandable;
 - all static checks pass;
 - smoke verification passes;
-- Track B candidates are documented without being implemented.
+- Track B and Track C candidates are documented without being implemented.
