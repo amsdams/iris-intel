@@ -1,4 +1,5 @@
 import {h, ComponentChildren, JSX} from 'preact';
+import './clear-button.css';
 
 export interface ClearButtonProps extends Omit<JSX.HTMLAttributes<HTMLButtonElement>, 'className' | 'type'> {
   children?: ComponentChildren;

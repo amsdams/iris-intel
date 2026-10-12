@@ -12,7 +12,7 @@ Reference plans:
 
 ## 1. Current Commit Hash
 
-`b54c804a554e893b69faac1039f4839d35501839`
+`90e3ce72031cb058168cc1d1277fce5decdfe914`
 
 ---
 
@@ -43,7 +43,7 @@ In `apps/iitc-iris/src/iitc-iris.css` (82 total imports, lines 1–83 with line 
 
 Both files contain a single outer `@media (width <= 760px)` wrapper enclosing all rules.
 
-### Inventory for `apps/iitc-iris/src/styles/068-temporary.css` (94 lines, 2189 bytes)
+### Inventory for `apps/iitc-iris/src/styles/068-temporary.css` (93 lines, 2189 bytes)
 
 1. `.iitc-iris-dock` (lines 4–10)
 2. `.iitc-iris-dock > .iitc-iris-dock-row:not(:first-child, .iitc-iris-debug-row)` (lines 12–14)
@@ -62,7 +62,7 @@ Both files contain a single outer `@media (width <= 760px)` wrapper enclosing al
 13. `.iitc-iris-mission-metrics` (lines 87–89)
 14. `.iitc-iris-comm-row` (lines 91–93)
 
-### Inventory for `apps/iitc-iris/src/styles/075-temporary.css` (85 lines, 1649 bytes)
+### Inventory for `apps/iitc-iris/src/styles/075-temporary.css` (84 lines, 1649 bytes)
 
 1. `.iitc-iris-sheet-tabbar` (lines 4–9)
 2. `.iitc-iris-map-controls`,

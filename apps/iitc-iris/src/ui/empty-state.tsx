@@ -1,4 +1,5 @@
 import {h} from 'preact';
+import './empty-state.css';
 
 /**
  * Renders a standard empty state container.
