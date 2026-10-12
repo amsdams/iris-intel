@@ -58,6 +58,6 @@ Start with a manual smoke test, not another broad refactor:
 1. Open the app in Firefox desktop and verify map controls, portal details, search, side panels, layers, missions, COMM, and draw tools.
 2. Do one narrow mobile or small-width sheet smoke test.
 3. If the UI looks correct, commit the CSS architecture branch.
-4. Only after that, decide whether to do a separate optional consolidation pass that merges adjacent named CSS files. That should be a new plan because it changes the import shape more aggressively than Track C did.
+4. Only after that, decide whether to use `docs/iitc-iris/plans/css-refactoring/35-css-architecture-followups.md` for optional manifest compression or feature component folder work.
 
 Track C should be treated as complete unless smoke testing reveals a concrete regression.

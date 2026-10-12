@@ -12,11 +12,12 @@ Likely next priorities:
 
 1. Smoke test the completed CSS architecture branch on desktop and at least one narrow/mobile viewport.
 2. Commit Track C if smoke testing is clean.
-3. Use the app on phone/desktop and collect concrete UI/CSS/mobile pain.
-4. Prepare for a friend-shared sideload APK, with Play/store distribution deferred.
-5. Run the Android/WebView readiness spikes before creating an IRIS APK scaffold.
-6. UI/CSS/mobile polish for concrete findings.
-7. Backlog refinement if usage shows priorities have changed.
+3. Decide whether to stop CSS refactoring or use the optional follow-up plan in `css-refactoring/35-css-architecture-followups.md`.
+4. Use the app on phone/desktop and collect concrete UI/CSS/mobile pain.
+5. Prepare for a friend-shared sideload APK, with Play/store distribution deferred.
+6. Run the Android/WebView readiness spikes before creating an IRIS APK scaffold.
+7. UI/CSS/mobile polish for concrete findings.
+8. Backlog refinement if usage shows priorities have changed.
 
 Do not mix refactor cleanup, UI/mobile polish, Android APK work, and feature/parity work in one branch.
 
@@ -91,6 +92,7 @@ Current / Proposed:
 
 - [css-pretty-architecture-plan.md](css-pretty-architecture-plan.md): Architectural roadmap for Track A, Track B, and Track C.
 - [css-refactoring/34-track-c-final-audit.md](css-refactoring/34-track-c-final-audit.md): Track C final audit and next-session smoke-test handoff.
+- [css-refactoring/35-css-architecture-followups.md](css-refactoring/35-css-architecture-followups.md): Optional future work toward a smaller manifest and more feature component folders. Do not start until Track C is smoke-tested and committed.
 
 Completed Track C (Component Folder Layout And CSS Path Cleanup):
 
