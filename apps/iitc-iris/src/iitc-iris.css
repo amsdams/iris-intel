@@ -1,7 +1,7 @@
 /* IITC IRIS CSS entry point. Ordered imports preserve the original monolithic cascade. */
 @import url('./styles/globals.css');
 @import url('./ui/002-ui.css');
-@import url('./shell/003-shell.css');
+@import url('./shell/shell.css');
 @import url('./map/004-map.css');
 @import url('./ui/badge.css');
 @import url('./search/006-search.css');
