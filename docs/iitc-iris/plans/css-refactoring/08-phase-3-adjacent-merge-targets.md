@@ -18,7 +18,7 @@ Reference plans:
 ## 2. Working Tree Status (`git status --short`)
 
 ```text
-(clean — no uncommitted changes)
+ M docs/iitc-iris/plans/css-refactoring/08-phase-3-adjacent-merge-targets.md
 ```
 
 ---
@@ -238,7 +238,7 @@ Reference plans:
 
 ## 6. Post-Merge Import Manifest (After All 5 Clusters Merged)
 
-If all 5 clusters are merged, the manifest would shrink from **90 imports to 80 imports**. The 10 removed import lines are the second and third files of each cluster (cluster A removes 1, clusters B and C each remove 2, cluster D removes 2, cluster E removes 1).
+If all 5 clusters are merged, the manifest would shrink from **90 imports to 82 imports**. The clusters contain 13 source imports and would be replaced by 5 merged-file imports, removing 8 import lines total (cluster A removes 1, clusters B and C each remove 2, cluster D removes 2, cluster E removes 1).
 
 The new import lines replacing clusters would be:
 
@@ -267,7 +267,7 @@ The new import lines replacing clusters would be:
 + @import url('./layers/layer-toggle.css');
 ```
 
-All other 80 import lines remain unchanged.
+All other 77 import lines remain unchanged.
 
 ---
 
@@ -299,7 +299,7 @@ These items are not candidates for this phase and must not be merged here:
 
 ## 9. Validation
 
-- `git status --short`: clean (no uncommitted changes)
+- `git status --short`: ` M docs/iitc-iris/plans/css-refactoring/08-phase-3-adjacent-merge-targets.md`
 - Import count in `apps/iitc-iris/src/iitc-iris.css`: **90** (verified by script)
 - Missing imports: **0** (all 90 resolve to existing files on disk)
 - No application CSS files were modified.
@@ -310,5 +310,5 @@ These items are not candidates for this phase and must not be merged here:
 
 ## Hard Stop
 
-This document is a planning artefact only. No files were renamed, created, merged, or edited.
+This document is a planning artefact only. No application files were renamed, created, merged, or edited.
 Do not proceed to Phase 3 implementation without human review of the proposed merged filenames.

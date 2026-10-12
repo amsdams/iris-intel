@@ -69,9 +69,7 @@
 @import url('./styles/068-temporary.css');
 @import url('./ui/069-ui.css');
 @import url('./system/070-system.css');
-@import url('./shell/071-shell.css');
-@import url('./shell/072-sheet-panel-placement.css');
-@import url('./shell/073-shell.css');
+@import url('./shell/shell-panels.css');
 @import url('./portals/074-portals.css');
 @import url('./styles/075-temporary.css');
 @import url('./system/076-system.css');
@@ -79,8 +77,7 @@
 @import url('./system/078-system.css');
 @import url('./auth/079-auth.css');
 @import url('./system/080-divider.css');
-@import url('./layers/081-layers.css');
-@import url('./layers/082-toggle-width.css');
+@import url('./layers/layer-toggle.css');
 @import url('./map/083-map.css');
 @import url('./layers/084-layers.css');
 @import url('./portals/085-portals.css');
