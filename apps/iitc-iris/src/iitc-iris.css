@@ -1,9 +1,9 @@
 /* IITC IRIS CSS entry point. Ordered imports preserve the original monolithic cascade. */
-@import url('./styles/001-globals.css');
+@import url('./styles/globals.css');
 @import url('./ui/002-ui.css');
 @import url('./shell/003-shell.css');
 @import url('./map/004-map.css');
-@import url('./ui/005-badge.css');
+@import url('./ui/badge.css');
 @import url('./search/006-search.css');
 @import url('./ui/007-ui.css');
 @import url('./search/008-search.css');
@@ -12,18 +12,18 @@
 @import url('./map/011-map.css');
 @import url('./system/012-system.css');
 @import url('./map/013-map.css');
-@import url('./ui/014-segmented-button.css');
+@import url('./ui/segmented-button.css');
 @import url('./system/015-innerstatus.css');
-@import url('./ui/016-clear-button.css');
+@import url('./ui/clear-button.css');
 @import url('./auth/017-auth.css');
-@import url('./ui/018-status-text.css');
+@import url('./ui/status-text.css');
 @import url('./portals/019-portals.css');
 @import url('./styles/020-team.css');
 @import url('./portals/021-portals.css');
 @import url('./side-panels/022-side-panels.css');
 @import url('./portals/023-portals.css');
 @import url('./ui/024-summary-layout.css');
-@import url('./ui/025-chip-button.css');
+@import url('./ui/chip-button.css');
 @import url('./ui/026-summary-cell.css');
 @import url('./portals/027-portals.css');
 @import url('./ui/028-summary.css');
@@ -57,13 +57,13 @@
 @import url('./comm/056-comm.css');
 @import url('./side-panels/057-side-panels.css');
 @import url('./map/058-map.css');
-@import url('./ui/059-diagnostics-chip.css');
+@import url('./ui/diagnostics-chip.css');
 @import url('./missions/060-missions.css');
 @import url('./comm/061-comm.css');
 @import url('./system/062-system.css');
 @import url('./portals/063-portals.css');
 @import url('./system/064-system.css');
-@import url('./ui/065-empty-state.css');
+@import url('./ui/empty-state.css');
 @import url('./side-panels/066-side-panels.css');
 @import url('./styles/067-team.css');
 @import url('./styles/068-temporary.css');
@@ -87,5 +87,5 @@
 @import url('./layers/086-layers.css');
 @import url('./missions/087-missions.css');
 @import url('./map/088-player-tracker.css');
-@import url('./draw-tools/089-draw-tools.css');
+@import url('./draw-tools/draw-tools.css');
 @import url('./map/090-player-tracker.css');
