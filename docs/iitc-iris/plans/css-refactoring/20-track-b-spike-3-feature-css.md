@@ -34,7 +34,7 @@ The remaining feature and layout stylesheets in `iitc-iris.css` were audited and
 
 ### A. `layers/layer-toggle.css` (Do Not Move)
 - **Root selectors:** `.iitc-iris-layer-toggle`, `.iitc-iris-layer-toggle-active`
-- **Ownership:** Shared across both layers (`src/layers/layer-toggle.tsx`) and system controls (`src/system/system-controls-panel.tsx`).
+- **Ownership:** Shared across layers (`src/layers/layers-panel.tsx`) and system controls (`src/system/system-controls-panel.tsx`, `src/system/system-diagnostics-panel.tsx`). No single owning component.
 - **Cascade Risk:** It composes with later numbered rules (e.g. `084-layers.css`, `086-layers.css`).
 - **Decision:** **RETAINED IN MANIFEST**. Not a component-isolated stylesheet.
 

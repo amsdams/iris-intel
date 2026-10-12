@@ -25,6 +25,7 @@ import {
   PORTAL_COUNTS_SVG_WIDTH,
 } from './content-portal-analysis';
 import {PortalAnalysisTable} from './portal-analysis-table';
+import './portal-analysis-table-actions.css';
 
 export interface IitcIrisPortalCountsPanelProps {
   portalAnalysis: {

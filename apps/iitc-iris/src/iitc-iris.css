@@ -23,12 +23,11 @@
 @import url('./ui/024-summary-layout.css');
 @import url('./ui/026-summary-cell.css');
 @import url('./portals/027-portals.css');
-@import url('./ui/summary-mini.css');
 @import url('./portals/030-portals.css');
 @import url('./portal-analysis/portal-analysis-base.css');
 @import url('./styles/034-team.css');
 @import url('./portals/035-portals.css');
-@import url('./portal-analysis/portal-analysis-table-actions.css');
+@import url('./portal-analysis/portal-list-title-reset.css');
 @import url('./portals/039-portals.css');
 @import url('./missions/040-missions.css');
 @import url('./portals/041-portals.css');

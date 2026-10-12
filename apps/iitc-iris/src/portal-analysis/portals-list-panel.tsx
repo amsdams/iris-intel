@@ -27,6 +27,7 @@ import {ActionButton} from '../ui/action-button';
 import {DiagnosticsChip} from '../ui/diagnostics-chip';
 import {EmptyState} from '../ui/empty-state';
 import {PortalAnalysisTable} from './portal-analysis-table';
+import './portal-analysis-table-actions.css';
 
 export interface IitcIrisPortalsListPanelProps {
   cameraZoom: number;

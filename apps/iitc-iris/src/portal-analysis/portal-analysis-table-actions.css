@@ -11,8 +11,7 @@
 .iitc-iris-portal-analysis .iitc-iris-level-0 { background: #9aa8b4; color: #111; }
 
 .iitc-iris-table-sort,
-.iitc-iris-table-action,
-.iitc-iris-portal-list-title button {
+.iitc-iris-table-action {
     min-width: 0;
     padding: 0;
     border: 0;
