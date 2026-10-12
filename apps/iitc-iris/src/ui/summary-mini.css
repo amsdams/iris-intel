@@ -14,3 +14,12 @@
     border-radius: inherit;
     background: var(--portal-team-color);
 }
+
+.iitc-iris-summary-cell small,
+.iitc-iris-portal-summary-cell small {
+    overflow: hidden;
+    color: #91a6b7;
+    font-size: var(--iitc-iris-text-sm);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
