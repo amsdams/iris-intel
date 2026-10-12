@@ -1,5 +1,5 @@
 import {h, ComponentChildren, JSX} from 'preact';
-import './diagnostics-chip.css';
+import '../diagnostics-chip/diagnostics-chip.css';
 import './chip-button.css';
 
 /**
