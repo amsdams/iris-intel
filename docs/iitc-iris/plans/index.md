@@ -44,6 +44,8 @@ Do not mix refactor cleanup, UI/mobile polish, Android APK work, and feature/par
 - Source layout Checkpoint 10: complete; `Auth` files moved into `apps/iitc-iris/src/auth/`.
 - Source layout Checkpoint 11: complete; `Side Request Panel` files moved into `apps/iitc-iris/src/side-panels/`.
 - Source layout Checkpoint 12: complete; `Shell And Shared App` files moved into `apps/iitc-iris/src/shell/`.
+- Track A CSS pretty architecture consolidation: complete (`14-track-a-final-report.md`).
+- Track B CSS component-local imports (named CSS migration): complete (`css-refactoring/24-track-b-closeout-report.md`).
 
 ## Next Rules
 
@@ -86,6 +88,12 @@ These rules apply to Codex, AGY/Gemini, and any other AI-assisted branch.
 Active:
 
 - [css-refactor.md](css-refactor-new.md): Active source of truth for the IITC IRIS CSS ownership refactor.
+- [css-pretty-architecture-plan.md](css-pretty-architecture-plan.md): Architectural roadmap for Track A, Track B, and Track C.
+
+Completed Track B (Named CSS Component-Local Imports):
+
+- [css-refactoring/23-track-b-final-named-css-audit.md](css-refactoring/23-track-b-final-named-css-audit.md): Final classification and retention audit for all remaining central named CSS.
+- [css-refactoring/24-track-b-closeout-report.md](css-refactoring/24-track-b-closeout-report.md): Track B closeout report marking named-CSS component-local import migration complete.
 
 Ready/Blocked:
 

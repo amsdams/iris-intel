@@ -2,20 +2,20 @@
 
 ## Plan Dashboard
 
-Status: Proposed future plan. Do not start until the current CSS ownership migration branch is accepted.
+Status: Track A and Track B (Named CSS) Complete.
+- Track A (Pretty owner files consolidation) is complete (`docs/iitc-iris/plans/css-refactoring/14-track-a-final-report.md`).
+- Track B (Component-local CSS imports for named stylesheets) is complete (`docs/iitc-iris/plans/css-refactoring/24-track-b-closeout-report.md`).
+- Track C (Component folder layout co-location) is the next logical step.
 
 Goal: turn the cascade-preserving numbered chunk split into a human-friendly CSS architecture while keeping behavior and
 visual output unchanged.
 
 Desired end direction: component-local CSS imports, such as `import './button.css'`, where safe.
 
-Important sequencing:
-
-1. Track A: pretty owner files while keeping the single CSS entry point.
-2. Track B: investigate component-local CSS imports as a separate loading-model change.
-
-Do not jump directly to Track B in this plan. Track B changes when and how the bundler orders CSS, which can alter the
-cascade even if selector text is unchanged.
+Status of sequencing:
+1. Track A: pretty owner files while keeping the single CSS entry point. (COMPLETE)
+2. Track B: component-local CSS imports for isolated and explicitly shared component styles. (COMPLETE FOR NAMED CSS)
+3. Track C: co-located component directory layout. (NEXT)
 
 ## Background
 
@@ -210,25 +210,17 @@ Final report must record:
 - visual verification performed;
 - remaining Track B candidates.
 
-## Track B - Future Component-Local CSS Import Investigation
+## Track B - Component-Local CSS Import Migration (Complete for Named CSS)
 
-Track B is the desired long-term direction but should be planned separately.
+Track B investigated and proved the component-local CSS import model across Spikes 1 through 6 (documented in `docs/iitc-iris/plans/css-refactoring/24-track-b-closeout-report.md`).
 
-Questions for Track B:
+Key conclusions established by Track B:
+- **Viable for isolated & explicitly shared styles:** Component-local CSS imports (`import './name.css'`) are fully viable for UI primitives and feature components that own their styling or explicitly declare shared dependencies (`clear-button`, `empty-state`, `diagnostics-chip`, `chip-button`, `segmented-button`, `draw-tools`, `portal-analysis-table-actions`, `summary-cell-label`, `portal-summary-mini-track`).
+- **Bundler deduplication works cleanly:** Vite automatically deduplicates CSS imported by multiple TSX modules, emitting single rule blocks with zero output inflation.
+- **Foundations, shell layout, and responsive layers stay central:** `styles/globals.css`, `shell/shell.css`, `shell/shell-panels.css`, `styles/mobile-dock-panels.css`, and `styles/mobile-sheet-analysis.css` must remain in `iitc-iris.css` to govern application-level geometry and responsive overrides.
+- **Cascade-sensitive shared styles stay central:** Stylesheets whose base selectors compose with equal-specificity caller-provided classes (`badge.css`, `status-text.css`, `portal-list-title-reset.css`, `layer-toggle.css`) must remain in the central manifest to prevent cascade-order inversion.
 
-- Which UI primitives can safely import their own CSS?
-- Which feature panels can safely import their CSS?
-- What remains global in `iitc-iris.css`?
-- How does Vite order CSS imported from TSX modules?
-- Can package output remain equivalent enough to trust?
-- What visual checks are required after changing the CSS loading model?
-
-Track B should start with a spike, not a migration:
-
-1. Pick one low-risk component with isolated CSS.
-2. Move its CSS import from `iitc-iris.css` to the component module.
-3. Compare package CSS output and visual behavior.
-4. Decide whether component-local imports are viable for the broader app.
+Track B is closed out for named CSS. Remaining modularization proceeds to Track C or numbered chunk consolidation.
 
 ## Track C - Future Component Folder Layout
 
