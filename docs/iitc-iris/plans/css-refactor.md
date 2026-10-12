@@ -2,9 +2,9 @@
 
 ## Plan Dashboard
 
-Status: Active source of truth for IITC IRIS CSS ownership refactoring.
+Status: Historical baseline and operating rules. Track C follow-up work is complete; use `css-pretty-architecture-plan.md` and `css-refactoring/34-track-c-final-audit.md` as the current handoff.
 
-Current phase: Phase 0, baseline only.
+Current phase: Closed. Phase 0 through the later Track A/B/C CSS architecture work have been completed in follow-up reports under `docs/iitc-iris/plans/css-refactoring/`.
 
 Artifact directory: `docs/iitc-iris/plans/css-refactoring/`.
 
@@ -12,7 +12,7 @@ Review gates:
 
 * Phase 0: agent stops after creating `docs/iitc-iris/plans/css-refactoring/00-baseline.md`.
 * Phase 1: human review is required after `01-css-inventory.md` and `02-ownership-map.md`.
-* Later phases must not start until the previous phase gate is satisfied.
+* Later broad CSS work must start from a fresh plan. Do not continue this document as an active phase checklist.
 
 Supersedes:
 

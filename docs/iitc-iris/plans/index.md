@@ -2,28 +2,27 @@
 
 ## Current State
 
-Status: Phase 2 app-surface extraction, source layout, Track A CSS consolidation, and Track B named-CSS component-local imports are complete/parked.
-There is no active implementation track until the next session explicitly chooses either Track C component co-location or numbered CSS consolidation.
+Status: Phase 2 app-surface extraction, source layout, Track A CSS consolidation, Track B named-CSS component-local imports, and Track C CSS/component folder architecture are complete/parked.
+There is no active implementation track. The next session should start with smoke testing and review of the Track C final audit, not more broad refactoring.
 Android APK work is a separate readiness track, not a continuation of the refactor plans.
 
 Do not assign any other refactor work unless a detailed plan names exact scope, files, stop conditions, and validation.
 
 Likely next priorities:
 
-1. Choose the next CSS architecture direction:
-   - Track C component co-location, starting from `css-refactoring/25-track-c-component-colocation-plan.md`; or
-   - a new numbered CSS consolidation plan for the 65 remaining numbered chunks.
-2. Use the app on phone/desktop and collect concrete UI/CSS/mobile pain.
-3. Prepare for a friend-shared sideload APK, with Play/store distribution deferred.
-4. Run the Android/WebView readiness spikes before creating an IRIS APK scaffold.
-5. UI/CSS/mobile polish for concrete findings.
-6. Backlog refinement if usage shows priorities have changed.
+1. Smoke test the completed CSS architecture branch on desktop and at least one narrow/mobile viewport.
+2. Commit Track C if smoke testing is clean.
+3. Use the app on phone/desktop and collect concrete UI/CSS/mobile pain.
+4. Prepare for a friend-shared sideload APK, with Play/store distribution deferred.
+5. Run the Android/WebView readiness spikes before creating an IRIS APK scaffold.
+6. UI/CSS/mobile polish for concrete findings.
+7. Backlog refinement if usage shows priorities have changed.
 
 Do not mix refactor cleanup, UI/mobile polish, Android APK work, and feature/parity work in one branch.
 
 ## Active Work
 
-- No active implementation plan. Track B is closed out; start the next session by choosing Track C co-location or numbered CSS consolidation.
+- No active implementation plan. Track C is closed out; start the next session by reviewing `css-refactoring/34-track-c-final-audit.md` and smoke testing the app.
 
 ## Recently Completed
 
@@ -48,6 +47,7 @@ Do not mix refactor cleanup, UI/mobile polish, Android APK work, and feature/par
 - Source layout Checkpoint 12: complete; `Shell And Shared App` files moved into `apps/iitc-iris/src/shell/`.
 - Track A CSS pretty architecture consolidation: complete (`14-track-a-final-report.md`).
 - Track B CSS component-local imports (named CSS migration): complete (`css-refactoring/24-track-b-closeout-report.md`).
+- Track C CSS/component folder architecture: complete (`css-refactoring/34-track-c-final-audit.md`).
 
 ## Next Rules
 
@@ -90,7 +90,19 @@ These rules apply to Codex, AGY/Gemini, and any other AI-assisted branch.
 Current / Proposed:
 
 - [css-pretty-architecture-plan.md](css-pretty-architecture-plan.md): Architectural roadmap for Track A, Track B, and Track C.
-- [css-refactoring/25-track-c-component-colocation-plan.md](css-refactoring/25-track-c-component-colocation-plan.md): Proposed next-session plan for Track C component folder co-location. Not approved for implementation until explicitly selected.
+- [css-refactoring/34-track-c-final-audit.md](css-refactoring/34-track-c-final-audit.md): Track C final audit and next-session smoke-test handoff.
+
+Completed Track C (Component Folder Layout And CSS Path Cleanup):
+
+- [css-refactoring/25-track-c-component-colocation-plan.md](css-refactoring/25-track-c-component-colocation-plan.md): Track C source-layout plan.
+- [css-refactoring/26-track-c-group-a-implementation.md](css-refactoring/26-track-c-group-a-implementation.md): Group A UI primitive co-location.
+- [css-refactoring/27-track-c-group-b-segmented-controls.md](css-refactoring/27-track-c-group-b-segmented-controls.md): Group B segmented controls.
+- [css-refactoring/28-track-c-group-c-ui-helpers.md](css-refactoring/28-track-c-group-c-ui-helpers.md): Group C UI helper co-location.
+- [css-refactoring/29-track-c-group-d-remaining-ui-components.md](css-refactoring/29-track-c-group-d-remaining-ui-components.md): Group D remaining UI components.
+- [css-refactoring/30-track-c-group-e-ui-css-path-cleanup.md](css-refactoring/30-track-c-group-e-ui-css-path-cleanup.md): Group E UI CSS path cleanup.
+- [css-refactoring/31-track-c-group-f-small-domain-css-path-cleanup.md](css-refactoring/31-track-c-group-f-small-domain-css-path-cleanup.md): Group F small-domain CSS path cleanup.
+- [css-refactoring/32-track-c-group-g-map-css-path-cleanup.md](css-refactoring/32-track-c-group-g-map-css-path-cleanup.md): Group G map CSS path cleanup.
+- [css-refactoring/33-track-c-group-h-portals-css-path-cleanup.md](css-refactoring/33-track-c-group-h-portals-css-path-cleanup.md): Group H portals CSS path cleanup.
 
 Completed Track B (Named CSS Component-Local Imports):
 

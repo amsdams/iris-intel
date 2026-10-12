@@ -2,11 +2,12 @@
 
 ## Plan Dashboard
 
-Status: Track A and Track B (Named CSS) Complete.
+Status: Track A, Track B, and Track C Complete.
 - Track A (Pretty owner files consolidation) is complete (`docs/iitc-iris/plans/css-refactoring/14-track-a-final-report.md`).
 - Track B (Component-local CSS imports for named stylesheets) is complete (`docs/iitc-iris/plans/css-refactoring/24-track-b-closeout-report.md`).
-- Track C (Component folder layout co-location) is proposed for the next session (`docs/iitc-iris/plans/css-refactoring/25-track-c-component-colocation-plan.md`).
-- Numbered CSS consolidation remains a separate possible track and needs a fresh plan before implementation.
+- Track C (Component folder layout co-location and numbered CSS path cleanup) is complete (`docs/iitc-iris/plans/css-refactoring/34-track-c-final-audit.md`).
+- Numbered CSS filenames have been eliminated from `apps/iitc-iris/src/`.
+- Further CSS consolidation remains optional and needs a fresh plan before implementation.
 
 Goal: turn the cascade-preserving numbered chunk split into a human-friendly CSS architecture while keeping behavior and
 visual output unchanged.
@@ -16,11 +17,11 @@ Desired end direction: component-local CSS imports, such as `import './button.cs
 Status of sequencing:
 1. Track A: pretty owner files while keeping the single CSS entry point. (COMPLETE)
 2. Track B: component-local CSS imports for isolated and explicitly shared component styles. (COMPLETE FOR NAMED CSS)
-3. Track C: co-located component directory layout. (NEXT)
+3. Track C: co-located component directory layout and descriptive CSS path cleanup. (COMPLETE)
 
 ## Background
 
-The current CSS migration split `apps/iitc-iris/src/iitc-iris.css` into numbered owner-directory chunks:
+The earlier CSS migration split `apps/iitc-iris/src/iitc-iris.css` into numbered owner-directory chunks:
 
 ```text
 apps/iitc-iris/src/iitc-iris.css
@@ -29,12 +30,12 @@ apps/iitc-iris/src/search/006-search.css
 ...
 ```
 
-The numbers preserve the original monolithic cascade. This was deliberately safe, but not the final pleasant
+The numbers preserved the original monolithic cascade. That was deliberately safe, but not the final pleasant
 architecture.
 
 This plan first made the CSS easier to read while preserving the original loading model, then proved the component-local
-loading model for named CSS. Further work should either co-locate stable components (Track C) or create a new numbered
-CSS consolidation plan.
+loading model for named CSS, then co-located UI components and removed numbered CSS filenames. Further CSS work should
+start from concrete UI findings or from a fresh consolidation plan.
 
 ## Non-goals
 
@@ -225,14 +226,15 @@ Key conclusions established by Track B:
 
 Track B is closed out for named CSS. Remaining modularization proceeds to Track C or numbered chunk consolidation.
 
-## Track C - Future Component Folder Layout
+## Track C - Component Folder Layout And CSS Path Cleanup
 
-Track C is the proposed next step now that Track B proved component-local CSS imports are safe for isolated and explicitly
-shared named CSS.
+Track C is complete. It co-located UI components into component folders, preserved public imports through `index.ts`
+barrels, moved safe CSS beside components, kept cascade-sensitive CSS centrally loaded, and removed numbered CSS
+filenames from `apps/iitc-iris/src/`.
 
-Detailed next-session plan:
+Final audit:
 
-- `docs/iitc-iris/plans/css-refactoring/25-track-c-component-colocation-plan.md`
+- `docs/iitc-iris/plans/css-refactoring/34-track-c-final-audit.md`
 
 Example target:
 
@@ -244,28 +246,17 @@ apps/iitc-iris/src/ui/badge/
 └── index.ts
 ```
 
-This can make ownership clearer because markup, styles, tests, and exports live together.
-
-Start with small UI primitives before feature panels:
-
-- `ClearButton`
-- `EmptyState`
-- `DiagnosticsChip`
-- `ChipButton`
-- `SegmentedButton` / `SegmentedRow` as a later shared-style slice
-
-Do not start with `Badge` or `StatusText`: their CSS intentionally remains central for cascade safety.
-
-Do not combine this with numbered CSS consolidation. Component folder layout is a source-layout refactor; numbered CSS
-consolidation is a cascade refactor. Each needs its own approval and validation.
+Track C deliberately did not merge CSS files. `apps/iitc-iris/src/iitc-iris.css` remains the ordered manifest for
+global, shared, responsive, and cascade-sensitive styles.
 
 ## Done Criteria
 
-Track A and Track B are done. Track C first pass is done when:
+Track A, Track B, and Track C are done. Track C completion means:
 
-- selected leaf components live in co-located folders;
+- selected UI components live in co-located folders;
 - existing import paths continue to work through per-component `index.ts` files;
 - no CSS selectors or declarations changed;
 - central named CSS remains central for the reasons documented in Track B closeout;
+- numbered CSS filenames have been eliminated from `apps/iitc-iris/src/`;
 - all static checks, tests, package build, and diff check pass;
-- a follow-up report records components intentionally left flat.
+- the final audit records intentional central-loaded CSS and next-session guidance.
