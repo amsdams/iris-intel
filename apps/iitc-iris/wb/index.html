@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IITC-Iris — UI Component Workbench</title>
+  <style>
+    html, body { margin: 0; padding: 0; }
+    #render-target { height: 100dvh; }
+
+    /* Workbench styles use their own names and leave app tokens untouched. */
+    .wb-shell {
+      display: flex;
+      gap: 1.5rem;
+      height: 100%;
+      padding: 1rem;
+      box-sizing: border-box;
+      background: #0b0e11;
+      color: #f0f6fc;
+      font-family: system-ui, sans-serif;
+    }
+    .wb-sidebar {
+      display: flex;
+      flex-direction: column;
+      flex: 0 0 220px;
+      min-height: 0;
+      border-right: 1px solid #30363d;
+      padding-right: 1rem;
+    }
+    .wb-heading { margin: 0 0 1rem; color: #8b949e; font-size: 0.85rem; }
+    .wb-navigation { overflow: auto; min-height: 0; }
+    .wb-list { list-style: none; padding: 0; margin: 0; }
+    .wb-component-button {
+      width: 100%;
+      margin-bottom: 0.25rem;
+      padding: 0.5rem;
+      border: 0;
+      border-radius: 4px;
+      background: transparent;
+      color: #c9d1d9;
+      font: inherit;
+      text-align: left;
+      overflow-wrap: anywhere;
+      cursor: pointer;
+    }
+    .wb-component-button[aria-current="page"] { background: #2c353d; color: #58a6ff; font-weight: bold; }
+    .wb-component-button:hover { background: #212830; }
+    .wb-component-button:focus-visible, .wb-button:focus-visible, .wb-text-input:focus-visible {
+      outline: 2px solid #58a6ff;
+      outline-offset: 2px;
+    }
+    .wb-main { display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 0; }
+    .wb-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      background: #161b22;
+    }
+    .wb-title { margin: 0; font-size: 1rem; overflow-wrap: anywhere; }
+    .wb-control-label { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; font-size: 0.85rem; }
+    .wb-text-input, .wb-button {
+      box-sizing: border-box;
+      max-width: 100%;
+      padding: 0.4rem 0.6rem;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      background: #0d1117;
+      color: #f0f6fc;
+      font: inherit;
+    }
+    .wb-button { cursor: pointer; }
+    .wb-note { margin: 0.75rem 0; color: #8b949e; font-size: 0.85rem; }
+    .wb-stage { flex: 1; min-height: 0; overflow: auto; }
+    .wb-preview {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 1rem;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      background: #0d1117;
+    }
+    .wb-preview-narrow { width: 360px; max-width: 100%; }
+    .wb-error { color: #f0f6fc; overflow-wrap: anywhere; }
+    .wb-error pre { white-space: pre-wrap; font-size: 0.85rem; }
+    @media (max-width: 640px) {
+      .wb-shell { flex-direction: column; gap: 1rem; padding: 0.75rem; }
+      .wb-sidebar { flex: 0 0 auto; max-height: 30%; border-right: 0; border-bottom: 1px solid #30363d; padding: 0 0 0.5rem; }
+      .wb-heading { margin-bottom: 0.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div id="render-target"></div>
+  <script type="module" src="./workbench.ts"></script>
+</body>
+</html>

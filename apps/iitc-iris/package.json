@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite build --watch",
+    "dev:wb": "vite wb --open",
     "build": "vite build && vite build --config vite.page-map.config.ts && node copy-assets.cjs",
     "package": "npm run build && node build-zip.cjs",
     "package:chrome": "npm run build && node build-zip.cjs chrome",
