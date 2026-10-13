@@ -1,4 +1,9 @@
 import {h} from 'preact';
+import '../ui/panel/panel.css';
+import '../ui/shared/layer-toggle.css';
+import '../map/source-toggle.css';
+import './system-actions.css';
+import './system.css';
 import type {ScenarioRun} from './content-scenarios';
 import type {IitcIrisLifecycleSettings} from '../messages';
 import type {DataSourceOption, ViewPresetOption} from '../shell/content-storage-settings';

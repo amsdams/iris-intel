@@ -1,7 +1,5 @@
-
-
 /* Shared control base: border, radius, color, font, and disabled state for all form inputs. */
-.iitc-iris-control {
+:where(.iitc-iris-control) {
     min-width: 0;
     box-sizing: border-box;
     border: 1px solid rgb(95 180 255 / 30%);

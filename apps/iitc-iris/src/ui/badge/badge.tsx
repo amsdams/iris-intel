@@ -1,4 +1,5 @@
 import {h} from 'preact';
+import './badge.css';
 
 export interface BadgeProps extends h.JSX.HTMLAttributes<HTMLElement> {
   as?: 'span' | 'b';

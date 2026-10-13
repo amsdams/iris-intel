@@ -3,21 +3,33 @@
 ## Plan Dashboard
 
 Status: Track A, Track B, and Track C Complete.
+
 - Track A (Pretty owner files consolidation) is complete (`docs/iitc-iris/plans/css-refactoring/14-track-a-final-report.md`).
 - Track B (Component-local CSS imports for named stylesheets) is complete (`docs/iitc-iris/plans/css-refactoring/24-track-b-closeout-report.md`).
 - Track C (Component folder layout co-location and numbered CSS path cleanup) is complete (`docs/iitc-iris/plans/css-refactoring/34-track-c-final-audit.md`).
 - Numbered CSS filenames have been eliminated from `apps/iitc-iris/src/`.
-- Further CSS consolidation is optional; proposed next-session follow-ups are captured in `docs/iitc-iris/plans/css-refactoring/35-css-architecture-followups.md`.
+- Gate 0 and follow-ups A–E are complete as of 2026-10-14: 52 central imports, passing automated checks, and a user-reported successful smoke test.
+- Follow-Up F is complete as of 2026-10-19: 43 central imports, passing automated checks, and a user-reported successful smoke test.
+- Follow-Up G is complete as of 2026-10-19: 38 central imports, passing automated checks, and a user-reported successful smoke test.
+- Follow-Up H is complete as of 2026-10-19: 37 central imports, passing automated checks, and a user-reported successful smoke test; SummaryCell retained centrally for ordering.
+- Gate 0 and follow-ups A–H are closed with their documented exceptions.
+- Component/feature CSS ownership is complete under [36-component-css-ownership-plan.md](css-refactoring/36-component-css-ownership-plan.md), with passing automated checks and user smoke acceptance: 10 central infrastructure imports; primitive and feature appearance loads through its owners. The previous SummaryCell ordering exception is resolved.
+- [Component simplification review and architecture contract](css-refactoring/37-component-simplification-review.md): review complete, with 23 exports across 16 files and three proposed consolidations. Next recommended slice is ActionButton/SubmitActionButton; no component implementation yet. The CSS ownership refactor remains accepted.
+- Progress, cascade exceptions, and suggestions for a later architecture review are recorded in
+  `docs/iitc-iris/plans/css-refactoring/35-css-architecture-followups.md`.
 
 Goal: turn the cascade-preserving numbered chunk split into a human-friendly CSS architecture while keeping behavior and
 visual output unchanged.
 
-Desired end direction: component-local CSS imports, such as `import './button.css'`, where safe.
+Desired end direction: component-local CSS imports, such as `import './button.css'`, with explicit ownership and override relationships.
 
 Status of sequencing:
+
 1. Track A: pretty owner files while keeping the single CSS entry point. (COMPLETE)
 2. Track B: component-local CSS imports for isolated and explicitly shared component styles. (COMPLETE FOR NAMED CSS)
 3. Track C: co-located component directory layout and descriptive CSS path cleanup. (COMPLETE)
+4. Component CSS ownership: resolve retained ordering dependencies and move component/feature styling to its owners. (COMPLETE; AUTOMATED CHECKS AND USER SMOKE ACCEPTED; see plan 36)
+5. Component simplification and visual-variant reduction. (REVIEW COMPLETE; THREE CONSOLIDATION SLICES PROPOSED IN PLAN 37; VISUAL CHANGES DEFERRED)
 
 ## Background
 
@@ -34,10 +46,12 @@ The numbers preserved the original monolithic cascade. That was deliberately saf
 architecture.
 
 This plan first made the CSS easier to read while preserving the original loading model, then proved the component-local
-loading model for named CSS, then co-located UI components and removed numbered CSS filenames. Further CSS work should
-start from concrete UI findings or from a fresh consolidation plan.
+loading model for named CSS, then co-located UI components and removed numbered CSS filenames. The component ownership
+implementation and user smoke acceptance are recorded in [plan 36](css-refactoring/36-component-css-ownership-plan.md).
 
 ## Non-goals
+
+These original migration constraints remain applicable except where plan 36 explicitly permits changes needed for CSS ownership.
 
 - Do not redesign UI.
 - Do not change selectors.
@@ -52,16 +66,16 @@ start from concrete UI findings or from a fresh consolidation plan.
 `apps/iitc-iris/src/iitc-iris.css` remains the single entry point, but imports stable owner files:
 
 ```css
-@import url('./styles/globals.css');
-@import url('./styles/team.css');
-@import url('./ui/ui.css');
-@import url('./ui/panel.css');
-@import url('./search/search.css');
-@import url('./portals/portals.css');
-@import url('./portal-analysis/portal-analysis.css');
-@import url('./map/map.css');
-@import url('./map/player-tracker.css');
-@import url('./styles/mobile.css');
+@import url("./styles/globals.css");
+@import url("./styles/team.css");
+@import url("./ui/ui.css");
+@import url("./ui/panel.css");
+@import url("./search/search.css");
+@import url("./portals/portals.css");
+@import url("./portal-analysis/portal-analysis.css");
+@import url("./map/map.css");
+@import url("./map/player-tracker.css");
+@import url("./styles/mobile.css");
 ```
 
 Exact file names should follow the final ownership map and cascade analysis, not this example blindly.
@@ -87,9 +101,9 @@ Required checks:
 - Record all current CSS imports from `apps/iitc-iris/src/iitc-iris.css`.
 - Record current package output size for `dist/iitc-iris.css`.
 - Run:
-    - `npm run lint:css`
-    - `npm run package:iitc-iris`
-    - `git diff --check`
+  - `npm run lint:css`
+  - `npm run package:iitc-iris`
+  - `git diff --check`
 
 Hard stop after Phase 0.
 
@@ -98,7 +112,7 @@ Hard stop after Phase 0.
 Create a table:
 
 | Current chunk | Owner | Proposed file | Merge safety | Reason |
-|---------------|-------|---------------|--------------|--------|
+| ------------- | ----- | ------------- | ------------ | ------ |
 
 Classification:
 
@@ -219,6 +233,7 @@ Final report must record:
 Track B investigated and proved the component-local CSS import model across Spikes 1 through 6 (documented in `docs/iitc-iris/plans/css-refactoring/24-track-b-closeout-report.md`).
 
 Key conclusions established by Track B:
+
 - **Viable for isolated & explicitly shared styles:** Component-local CSS imports (`import './name.css'`) are fully viable for UI primitives and feature components that own their styling or explicitly declare shared dependencies (`clear-button`, `empty-state`, `diagnostics-chip`, `chip-button`, `segmented-button`, `draw-tools`, `portal-analysis-table-actions`, `summary-cell-label`, `portal-summary-mini-track`).
 - **Bundler deduplication works cleanly:** Vite automatically deduplicates CSS imported by multiple TSX modules, emitting single rule blocks with zero output inflation.
 - **Foundations, shell layout, and responsive layers stay central:** `styles/globals.css`, `shell/shell.css`, `shell/shell-panels.css`, `styles/mobile-dock-panels.css`, and `styles/mobile-sheet-analysis.css` must remain in `iitc-iris.css` to govern application-level geometry and responsive overrides.

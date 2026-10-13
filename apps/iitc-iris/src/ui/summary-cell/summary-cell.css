@@ -1,7 +1,6 @@
-
-
-.iitc-iris-summary-cell,
-.iitc-iris-portal-summary-cell {
+/* Base defaults stay weaker than feature/variant rules, independent of import order. */
+:where(.iitc-iris-summary-cell),
+:where(.iitc-iris-portal-summary-cell) {
     position: relative;
     display: grid;
     gap: 2px;
@@ -13,8 +12,8 @@
     background: rgb(10 18 25 / 58%);
 }
 
-.iitc-iris-summary-cell b,
-.iitc-iris-portal-summary-cell b {
+:where(.iitc-iris-summary-cell) b,
+:where(.iitc-iris-portal-summary-cell) b {
     min-width: 0;
     overflow: hidden;
     color: #fff;

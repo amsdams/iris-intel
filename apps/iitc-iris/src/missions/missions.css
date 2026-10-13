@@ -1,0 +1,199 @@
+/* Mission panel and waypoint markers */
+
+.iitc-iris-mission-list,
+.iitc-iris-mission-waypoint-list {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+}
+
+.iitc-iris-mission-entry {
+    display: grid;
+    gap: 0;
+    min-width: 0;
+}
+
+.iitc-iris-mission-entry:has(.iitc-iris-mission-row.is-active) {
+    overflow: hidden;
+    border: 1px solid rgb(255 230 70 / 35%);
+    border-radius: 6px;
+    background: rgb(50 46 12 / 22%);
+}
+
+.iitc-iris-mission-row,
+.iitc-iris-mission-waypoint {
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 8px;
+    align-items: center;
+    color: #d7e7f5;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.iitc-iris-mission-row:hover,
+.iitc-iris-mission-row.is-active,
+.iitc-iris-mission-waypoint:hover {
+    border-color: rgb(255 230 70 / 45%);
+    background: rgb(50 46 12 / 42%);
+}
+
+.iitc-iris-mission-row img,
+.iitc-iris-mission-details-head img {
+    width: 42px;
+    height: 42px;
+    border-radius: 4px;
+    object-fit: cover;
+    background: rgb(0 0 0 / 45%);
+}
+
+.iitc-iris-mission-row span,
+.iitc-iris-mission-details-head span,
+.iitc-iris-mission-waypoint span {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.iitc-iris-mission-row > span {
+    grid-column: 2;
+}
+
+.iitc-iris-mission-row b,
+.iitc-iris-mission-details-head b,
+.iitc-iris-mission-waypoint strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.iitc-iris-mission-row small,
+.iitc-iris-mission-details-head small,
+.iitc-iris-mission-waypoint small {
+    overflow: hidden;
+    color: #8ea6b8;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.iitc-iris-mission-details {
+    display: grid;
+    gap: 7px;
+    padding: 8px;
+    border-top: 1px solid rgb(255 230 70 / 24%);
+    background: rgb(8 15 20 / 46%);
+}
+
+.iitc-iris-mission-expanded-top {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    min-width: 0;
+}
+
+.iitc-iris-mission-expanded-top .iitc-iris-status b {
+    color: var(--portal-team-color, #e8f4ff);
+}
+
+.iitc-iris-mission-author.is-enlightened {
+    color: #04c748;
+}
+
+.iitc-iris-mission-author.is-resistance {
+    color: #00a2ff;
+}
+
+.iitc-iris-mission-author.is-machina {
+    color: #ff4d57;
+}
+
+.iitc-iris-mission-detail-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+}
+
+.iitc-iris-mission-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+    min-width: 0;
+}
+
+.iitc-iris-mission-metrics > span {
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr);
+    gap: 1px;
+    column-gap: 6px;
+    align-items: center;
+    min-width: 64px;
+    padding: 4px 6px;
+    border: 1px solid rgb(95 180 255 / 14%);
+    border-radius: 4px;
+    background: rgb(10 18 25 / 42%);
+}
+
+.iitc-iris-mission-metrics img {
+    grid-row: span 2;
+    width: 14px;
+    height: 14px;
+    object-fit: contain;
+    opacity: 0.82;
+}
+
+.iitc-iris-mission-metrics b {
+    overflow: hidden;
+    color: #e8f4ff;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.iitc-iris-mission-metrics small {
+    overflow: hidden;
+    color: #8ea6b8;
+    font-size: var(--iitc-iris-text-sm);
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.iitc-iris-mission-description {
+    max-height: 72px;
+    margin: 0;
+    overflow: auto;
+    color: #b9cbd8;
+    line-height: 1.35;
+}
+
+.iitc-iris-mission-waypoint {
+    grid-template-columns: 24px minmax(0, 1fr);
+}
+
+.iitc-iris-mission-waypoint > b {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border: 1px solid rgb(255 230 70 / 52%);
+    border-radius: 50%;
+    color: #ffeb70;
+}
+
+.iitc-iris-mission-waypoint.is-hidden > b {
+    border-color: rgb(160 170 180 / 38%);
+    color: #9aaabd;
+}
+
+/* Authoring link override */
+
+.iitc-iris-mission-create-link {
+    border-color: rgb(255 209 102 / 58%);
+    color: #ffe6a3;
+}
+
+@media (width <= 760px) {
+    .iitc-iris-mission-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}

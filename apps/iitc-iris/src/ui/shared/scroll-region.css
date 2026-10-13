@@ -1,6 +1,5 @@
-
-
-.iitc-iris-scroll-region {
+/* Base defaults stay weaker than feature/variant rules, independent of import order. */
+:where(.iitc-iris-scroll-region) {
     flex: 1 1 auto;
     min-height: 0;
     overflow: auto;

@@ -1,6 +1,5 @@
-
-
-.iitc-iris-badge {
+/* Base defaults stay weaker than feature/variant rules, independent of import order. */
+:where(.iitc-iris-badge) {
     display: inline-flex;
     align-items: center;
     justify-content: center;

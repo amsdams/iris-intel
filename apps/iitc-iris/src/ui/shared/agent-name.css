@@ -1,0 +1,8 @@
+/* Agent names inherit the selected faction utility when present. */
+.iitc-iris-agent-name:not(:where(.is-enlightened, .is-resistance, .is-machina)) {
+    color: var(--portal-team-color, currentColor);
+}
+
+:where(.iitc-iris-agent-name) {
+    font-weight: 800;
+}

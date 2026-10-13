@@ -1,4 +1,5 @@
 import {h, ComponentChildren, JSX} from 'preact';
+import './summary-cell.css';
 import './summary-cell-label.css';
 
 export interface SummaryCellProps extends Omit<JSX.HTMLAttributes<HTMLSpanElement>, 'className'> {

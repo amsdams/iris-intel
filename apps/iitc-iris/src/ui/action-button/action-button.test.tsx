@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {describe, expect, it, vi} from 'vitest';
-import {ActionButton, SubmitActionButton} from './action-button';
+import {ActionButton} from './action-button';
 
 describe('ActionButton', () => {
   it('renders type="button" and includes both base and feature class', () => {
@@ -31,10 +31,10 @@ describe('ActionButton', () => {
     expect(vnode.props.onClick).toBe(onClick);
   });
 
-  it('renders SubmitActionButton as type="submit" with the base classes', () => {
-    const vnode = SubmitActionButton({ children: 'Submit', disabled: true });
+  it.each(['submit', 'reset'] as const)('preserves explicit native type="%s" with the base classes', (type) => {
+    const vnode = ActionButton({ type, children: 'Submit', disabled: true });
     expect(vnode.type).toBe('button');
-    expect(vnode.props.type).toBe('submit');
+    expect(vnode.props.type).toBe(type);
     expect(vnode.props.className).toBe('iitc-iris-button iitc-iris-portal-action');
     expect(vnode.props.disabled).toBe(true);
     expect(vnode.props.children).toBe('Submit');

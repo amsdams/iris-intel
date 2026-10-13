@@ -1,0 +1,41 @@
+
+
+
+
+.iitc-iris-mission-waypoint-marker {
+    display: grid;
+    place-items: center;
+    box-sizing: border-box;
+    border: 2px solid rgb(255 235 80 / 92%);
+    border-radius: 50%;
+    background: transparent;
+    box-shadow: 0 0 8px rgb(255 235 80 / 32%);
+    color: #ffeb70;
+    font: 800 11px/1 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.iitc-iris-mission-waypoint-marker.is-start {
+    border-color: rgb(42 255 145 / 90%);
+    color: #60ffad;
+}
+
+.iitc-iris-mission-waypoint-marker.is-hidden {
+    border-style: dashed;
+    opacity: 0.84;
+}
+
+.iitc-iris-mission-waypoint-label {
+    width: 12px;
+    height: 12px;
+    border: 0;
+    background: transparent;
+    color: #ffb;
+    font: 700 10px/12px monospace;
+    text-align: center;
+    text-shadow: 0 0 1px #000, 0 0 1em #000, 0 0 0.2em #000;
+    pointer-events: none;
+}
+
+.iitc-iris-mission-waypoint-label.is-start {
+    color: #ff6;
+}

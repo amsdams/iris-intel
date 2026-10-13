@@ -1,4 +1,8 @@
 import {StatusText} from '../ui/status-text';
+import '../ui/shared/map-context.css';
+import '../map/map-navigation-controls.css';
+import '../ui/shared/list-item.css';
+import '../ui/shared/control.css';
 import {h} from 'preact';
 import {useState} from 'preact/hooks';
 import './draw-tools.css';

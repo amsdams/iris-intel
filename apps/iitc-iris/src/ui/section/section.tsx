@@ -1,4 +1,5 @@
 import {h, ComponentChildren, JSX} from 'preact';
+import './section.css';
 import {StatusText} from '../status-text';
 
 export interface SectionProps extends Omit<JSX.HTMLAttributes<HTMLDivElement>, 'className' | 'title'> {

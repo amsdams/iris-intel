@@ -1,4 +1,5 @@
 import {h, ComponentChildren, JSX} from 'preact';
+import './control-row.css';
 
 export interface ControlRowProps extends Omit<JSX.HTMLAttributes<HTMLDivElement>, 'className'> {
   children?: ComponentChildren;

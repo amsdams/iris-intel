@@ -1,29 +1,23 @@
 import {h, ComponentChildren, JSX} from 'preact';
 import './diagnostics-chip.css';
 
-export interface DiagnosticsChipProps extends Omit<JSX.HTMLAttributes<HTMLSpanElement>, 'className'> {
+export type DiagnosticsChipProps = Omit<JSX.HTMLAttributes<HTMLSpanElement>, 'className' | 'children' | 'value'> & {
+  className?: string;
+} & ({
   value: ComponentChildren;
   label: ComponentChildren;
-  className?: string;
-}
-
-export function DiagnosticsChip({value, label, className, ...props}: DiagnosticsChipProps): h.JSX.Element {
-  return (
-    <span className={`iitc-iris-diagnostics-chip ${className || ''}`.trim()} {...props}>
-      <b>{value}</b><small>{label}</small>
-    </span>
-  );
-}
-
-export interface PlainDiagnosticsChipProps extends Omit<JSX.HTMLAttributes<HTMLSpanElement>, 'className'> {
+  children?: never;
+} | {
   children?: ComponentChildren;
-  className?: string;
-}
+  value?: never;
+  label?: never;
+});
 
-export function PlainDiagnosticsChip({children, className, ...props}: PlainDiagnosticsChipProps): h.JSX.Element {
+export function DiagnosticsChip(props: DiagnosticsChipProps): h.JSX.Element {
+  const {value, label, children, className, ...attributes} = props;
   return (
-    <span className={`iitc-iris-diagnostics-chip ${className || ''}`.trim()} {...props}>
-      {children}
+    <span className={`iitc-iris-diagnostics-chip ${className || ''}`.trim()} {...attributes}>
+      {'value' in props ? [<b key="value">{value}</b>, <small key="label">{label}</small>] : children}
     </span>
   );
 }

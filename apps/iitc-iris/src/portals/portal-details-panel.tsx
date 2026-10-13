@@ -1,4 +1,11 @@
 import {h} from 'preact';
+import './portal-side-panel-stacked.css';
+import '../ui/shared/agent-name.css';
+import './portal-side-panel.css';
+import './portal-content.css';
+import './portal-details.css';
+import '../ui/summary-grid/summary-layout.css';
+import '../ui/summary-cell/summary-cell.css';
 import {getCommTeamClass} from '../comm/comm-display';
 import {formatIitcColorVars, getIitcLevelColor, getIitcRarityColor, IITC_RESONATOR_ENERGY} from '../iitc-colors';
 import {PORTAL_DETAIL_SECTION_REGISTRY, type IitcIrisPortalDetailSectionId} from './portal-detail-section-registry';
@@ -6,7 +13,7 @@ import type {IitcIrisMissionsState, IitcIrisPortalDetailsState, IitcIrisSelected
 import {formatElapsedSeconds, getAuthErrorMessage, getPanelStatusClass} from '../ui-status';
 import {ActionButton} from '../ui/action-button';
 import {ClearButton} from '../ui/clear-button';
-import {PlainDiagnosticsChip} from '../ui/diagnostics-chip';
+import {DiagnosticsChip} from '../ui/diagnostics-chip';
 import {PanelFooter, PanelTitle} from '../ui/panel';
 import {StatusText} from '../ui/status-text';
 import {EmptyState} from '../ui/empty-state';
@@ -324,14 +331,14 @@ export function IitcIrisPortalDetailsPanel(props: IitcIrisPortalDetailsPanelProp
               </div>
             </PortalDetailSection>
             <PanelFooter>
-              <PlainDiagnosticsChip
+              <DiagnosticsChip
                 title={[
                   'request: /r/getPortalDetails',
                   `guid: ${portal.guid}`,
                 ].join('\n')}
               >
                 {portalDetails.cached ? 'cached' : portalDetails.elapsedMs !== undefined ? `request ${formatElapsedSeconds(portalDetails.elapsedMs)}s` : 'request'}
-              </PlainDiagnosticsChip>
+              </DiagnosticsChip>
             </PanelFooter>
           </>
         )}

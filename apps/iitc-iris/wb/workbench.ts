@@ -3,7 +3,9 @@ import { render, h } from 'preact';
 import type { ComponentChildren, ComponentType } from 'preact';
 import { useEffect, useErrorBoundary, useState } from 'preact/hooks';
 
-import '../src/iitc-iris.css';
+import '../src/styles/tokens.css';
+import '../src/styles/team-colors.css';
+import '../src/styles/team-text-colors.css';
 
 // Keep discovery automatic; previews still receive only generic props.
 const modules = import.meta.glob<Record<string, unknown>>([

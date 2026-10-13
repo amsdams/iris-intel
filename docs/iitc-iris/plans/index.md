@@ -2,17 +2,19 @@
 
 ## Current State
 
-Status: Phase 2 app-surface extraction, source layout, Track A CSS consolidation, Track B named-CSS component-local imports, and Track C CSS/component folder architecture are complete/parked.
-There is no active implementation track. The next session should start with smoke testing and review of the Track C final audit, not more broad refactoring.
+Status: Phase 2 app-surface extraction, source layout, CSS Tracks A–C, follow-ups A–H, and component CSS ownership are complete/accepted.
+The current CSS/component architecture contract and next review are in
+[plan 37](css-refactoring/37-component-simplification-review.md). Component/caller review and the combined A–C implementation
+are complete with passing automated checks: shared exports reduced from 23 to 20. User smoke acceptance is next.
 Android APK work is a separate readiness track, not a continuation of the refactor plans.
 
 Do not assign any other refactor work unless a detailed plan names exact scope, files, stop conditions, and validation.
 
 Likely next priorities:
 
-1. Smoke test the completed CSS architecture branch on desktop and at least one narrow/mobile viewport.
-2. Commit Track C if smoke testing is clean.
-3. Decide whether to stop CSS refactoring or use the optional follow-up plan in `css-refactoring/35-css-architecture-followups.md`.
+1. Run plan 37's combined smoke checklist for action/form types, layer choices, and diagnostic chips.
+2. Record acceptance or fix any regression in the A–C batch.
+3. Select further UI work only for concrete complexity or usage findings; broad visual changes remain separate.
 4. Use the app on phone/desktop and collect concrete UI/CSS/mobile pain.
 5. Prepare for a friend-shared sideload APK, with Play/store distribution deferred.
 6. Run the Android/WebView readiness spikes before creating an IRIS APK scaffold.
@@ -23,7 +25,8 @@ Do not mix refactor cleanup, UI/mobile polish, Android APK work, and feature/par
 
 ## Active Work
 
-- No active implementation plan. Track C is closed out; start the next session by reviewing `css-refactoring/34-track-c-final-audit.md` and smoke testing the app.
+- [Component simplification review](css-refactoring/37-component-simplification-review.md): current architecture contract
+  and completed source review. A–C are implemented and automatically validated together (23 → 20 exports); user smoke acceptance remains.
 
 ## Recently Completed
 
@@ -49,6 +52,8 @@ Do not mix refactor cleanup, UI/mobile polish, Android APK work, and feature/par
 - Track A CSS pretty architecture consolidation: complete (`14-track-a-final-report.md`).
 - Track B CSS component-local imports (named CSS migration): complete (`css-refactoring/24-track-b-closeout-report.md`).
 - Track C CSS/component folder architecture: complete (`css-refactoring/34-track-c-final-audit.md`).
+- Gate 0 and CSS architecture follow-ups A–H: complete with user smoke acceptance (`css-refactoring/35-css-architecture-followups.md`).
+- Component CSS ownership: complete with user smoke acceptance; 10 central infrastructure imports (`css-refactoring/36-component-css-ownership-plan.md`).
 
 ## Next Rules
 
@@ -90,9 +95,14 @@ These rules apply to Codex, AGY/Gemini, and any other AI-assisted branch.
 
 Current / Proposed:
 
-- [css-pretty-architecture-plan.md](css-pretty-architecture-plan.md): Architectural roadmap for Track A, Track B, and Track C.
-- [css-refactoring/34-track-c-final-audit.md](css-refactoring/34-track-c-final-audit.md): Track C final audit and next-session smoke-test handoff.
-- [css-refactoring/35-css-architecture-followups.md](css-refactoring/35-css-architecture-followups.md): Optional future work toward a smaller manifest and more feature component folders. Do not start until Track C is smoke-tested and committed.
+- [css-refactoring/37-component-simplification-review.md](css-refactoring/37-component-simplification-review.md): Current CSS/component architecture contract, completed review, and implemented A–C batch; user smoke acceptance pending.
+- [css-pretty-architecture-plan.md](css-pretty-architecture-plan.md): Progress dashboard and historical CSS migration roadmap; use plan 37 for current architecture guidance.
+
+Completed CSS Follow-Ups And Ownership:
+
+- [css-refactoring/34-track-c-final-audit.md](css-refactoring/34-track-c-final-audit.md): Completed Track C audit.
+- [css-refactoring/35-css-architecture-followups.md](css-refactoring/35-css-architecture-followups.md): Accepted Gate 0 and A–H cleanup record.
+- [css-refactoring/36-component-css-ownership-plan.md](css-refactoring/36-component-css-ownership-plan.md): Accepted loading migration, ownership inventory, and validation record.
 
 Completed Track C (Component Folder Layout And CSS Path Cleanup):
 

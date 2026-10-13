@@ -1,4 +1,6 @@
 import {h, render} from 'preact';
+import './search/map-search-badge.css';
+import './auth/auth.css';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import './iitc-iris.css';
 import {

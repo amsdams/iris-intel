@@ -1,4 +1,5 @@
 import {h} from 'preact';
+import '../shared/control.css';
 
 /**
  * Text input component that forwards all standard `<input>` attributes except the

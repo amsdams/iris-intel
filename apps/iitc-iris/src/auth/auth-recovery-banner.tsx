@@ -1,4 +1,5 @@
 import {h} from 'preact';
+import './auth.css';
 
 interface IitcIrisAuthRecoveryBannerProps {
   authRecoveryText: string | null;

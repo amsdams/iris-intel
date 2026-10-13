@@ -1,5 +1,4 @@
-
-
+/* system-actions */
 .iitc-iris-compare {
     color: #fff;
     font-weight: 700;
@@ -29,4 +28,32 @@
 .iitc-iris-debug-row {
     padding-top: 2px;
     border-top: 1px solid rgb(95 180 255 / 16%);
+}
+
+/* preset-button */
+.iitc-iris-preset {
+    min-width: 46px;
+    text-align: center;
+}
+
+/* jump-controls */
+.iitc-iris-jump {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.iitc-iris-jump-input {
+    width: 170px;
+    min-width: 120px;
+    height: 22px;
+    background: rgb(10 18 25 / 88%);
+    padding: 2px 6px;
+}
+
+/* divider */
+.iitc-iris-divider {
+    width: 1px;
+    height: 16px;
+    background: rgb(95 180 255 / 28%);
 }

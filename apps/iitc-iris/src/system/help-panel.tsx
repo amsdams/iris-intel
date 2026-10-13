@@ -1,4 +1,5 @@
 import { h } from 'preact';
+import './system.css';
 import {ClearButton} from '../ui/clear-button';
 import {Panel, PanelHeader, PanelTitle, PanelBody} from '../ui/panel';
 

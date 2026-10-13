@@ -1,4 +1,5 @@
 import {h, ComponentChildren, JSX} from 'preact';
+import './panel.css';
 
 export interface PanelProps extends Omit<JSX.HTMLAttributes<HTMLElement>, 'className'> {
   children?: ComponentChildren;

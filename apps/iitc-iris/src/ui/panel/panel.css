@@ -1,0 +1,122 @@
+:where(.iitc-iris-request-side-panel),
+:where(.iitc-iris-system-panel) {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    z-index: 9999;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 8px;
+    width: min(360px, calc(100vw - 24px));
+    max-height: min(42vh, 360px);
+    box-sizing: border-box;
+    overflow: hidden;
+    padding: 8px 10px;
+    border: 1px solid rgb(95 180 255 / 34%);
+    border-radius: 6px;
+    background: rgb(2 10 16 / 88%);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 35%);
+    color: #d7e7f5;
+    font-size: 12px;
+    letter-spacing: 0;
+    pointer-events: auto;
+}
+
+.iitc-iris-system-panel {
+    grid-template-rows: none;
+    overflow: auto;
+}
+
+.iitc-iris-panel-topbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    gap: 8px;
+    align-items: start;
+}
+
+.iitc-iris-request-panel-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    gap: 8px;
+    align-items: start;
+}
+
+.iitc-iris-request-panel-header .iitc-iris-selected-title {
+    min-width: 0;
+}
+
+.iitc-iris-panel-header-actions {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: flex-start;
+    justify-content: flex-end;
+    justify-self: end;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.iitc-iris-request-panel-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+    padding-top: 6px;
+    border-top: 1px solid rgb(95 180 255 / 18%);
+}
+
+.iitc-iris-panel-state {
+    justify-self: end;
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+    height: 18px;
+    padding: 0 6px;
+    border: 1px solid rgb(95 180 255 / 18%);
+    border-radius: 4px;
+    background: rgb(10 18 25 / 56%);
+    font: var(--iitc-iris-button-font-sm);
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.iitc-iris-panel-state.is-loading {
+    border-color: rgb(255 210 63 / 45%);
+    color: #ffd23f;
+}
+
+.iitc-iris-panel-state.is-ready {
+    border-color: rgb(56 240 110 / 36%);
+    color: #80f0a0;
+}
+
+.iitc-iris-panel-state.is-muted {
+    color: #7894aa;
+}
+
+.iitc-iris-panel-state.is-warning {
+    border-color: rgb(255 78 96 / 48%);
+    color: #ff6f7e;
+}
+
+.iitc-iris-panel-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    min-width: 0;
+    margin-top: 2px;
+    padding-top: 5px;
+    border-top: 1px solid rgb(95 180 255 / 10%);
+}
+
+.iitc-iris-selected-title {
+    max-width: 220px;
+    overflow: hidden;
+    color: #fff;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

@@ -1,0 +1,153 @@
+/* dock */
+.iitc-iris-dock {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: var(--iitc-iris-space-3);
+    align-items: flex-start;
+    max-width: calc(100vw - 24px);
+    padding: var(--iitc-iris-panel-padding);
+    border: 1px solid rgb(95 180 255 / 35%);
+    border-radius: 6px;
+    background: rgb(2 10 16 / 86%);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 35%);
+    font-size: var(--iitc-iris-text-lg);
+    letter-spacing: var(--iitc-iris-letter-normal);
+    pointer-events: auto;
+}
+
+.iitc-iris-dock-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--iitc-iris-space-4);
+    align-items: center;
+    max-width: 100%;
+}
+
+/* inner-status */
+.iitc-iris-title {
+    color: #00d9ff;
+    font-weight: 700;
+}
+
+.iitc-iris-innerstatus {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    max-width: 100%;
+    color: #d7e7f5;
+}
+
+.iitc-iris-innerstatus .portallevel {
+    color: #ffb;
+    font-weight: 700;
+}
+
+.iitc-iris-innerstatus .map b {
+    color: #fff;
+}
+
+.iitc-iris-innerstatus .help {
+    cursor: help;
+}
+
+.iitc-iris-innerstatus .failed-request {
+    color: #ff7676;
+    font-weight: 700;
+}
+
+.iitc-iris-innerstatus .selected-portal {
+    color: #ffb347;
+    font-weight: 700;
+}
+
+/* diagnostics-grid */
+.iitc-iris-debug-grid {
+    padding-top: 4px;
+    border-top: 1px solid rgb(95 180 255 / 12%);
+}
+
+/* scenario-progress */
+.iitc-iris-scenario-progress {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+    min-width: 0;
+}
+
+.iitc-iris-scenario-progress > span {
+    overflow: hidden;
+    padding: 3px 4px;
+    border: 1px solid rgb(95 180 255 / 16%);
+    border-radius: 4px;
+    background: rgb(10 18 25 / 48%);
+    color: #7894aa;
+    font-size: 9px;
+    font-weight: 800;
+    text-align: center;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.iitc-iris-scenario-progress > span.is-done {
+    border-color: rgb(56 240 110 / 34%);
+    background: rgb(56 240 110 / 10%);
+    color: #80f0a0;
+}
+
+/* shortcut-grid */
+.iitc-iris-shortcut-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    gap: 5px 12px;
+    align-items: center;
+}
+
+.iitc-iris-shortcut-grid span,
+.iitc-iris-shortcut-grid b {
+    min-width: 0;
+}
+
+.iitc-iris-shortcut-grid span {
+    color: #91a6b7;
+}
+
+.iitc-iris-shortcut-grid b {
+    padding: 2px 6px;
+    border: 1px solid rgb(95 180 255 / 18%);
+    border-radius: 4px;
+    background: rgb(10 18 25 / 58%);
+    color: #e8f4ff;
+    font-size: var(--iitc-iris-text-sm);
+    text-align: right;
+}
+
+@media (width <= 760px) {
+    .iitc-iris-dock {
+        top: 8px;
+        right: 8px;
+        left: 8px;
+        max-width: none;
+        padding: 6px 8px;
+    }
+
+    .iitc-iris-dock > .iitc-iris-dock-row:not(:first-child, .iitc-iris-debug-row) {
+        display: none;
+    }
+
+    .iitc-iris-dock-row:first-child .iitc-iris-copy:not(:first-of-type),
+    .iitc-iris-dock-row:first-child .iitc-iris-preset,
+    .iitc-iris-dock-row:first-child .iitc-iris-jump {
+        display: none;
+    }
+
+    .iitc-iris-innerstatus {
+        gap: 6px;
+        font-size: var(--iitc-iris-text-md);
+    }
+}

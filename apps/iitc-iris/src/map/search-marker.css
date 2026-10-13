@@ -1,0 +1,12 @@
+
+
+
+
+.iitc-iris-search-marker {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #ff3b30;
+    border-radius: 50%;
+    background: rgb(255 59 48 / 24%);
+    box-shadow: 0 0 0 2px rgb(255 255 255 / 35%), 0 2px 8px rgb(0 0 0 / 45%);
+}

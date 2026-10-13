@@ -1,4 +1,6 @@
 import {h} from 'preact';
+import './map-controls.css';
+import '../ui/panel/panel.css';
 import {IitcIrisMapNavigationPanel, IitcIrisMapContextPanel} from './map-controls-panel';
 import {IitcIrisDrawToolsPanel} from '../draw-tools/draw-tools-panel';
 import {IitcIrisPortalCountsPanel} from '../portal-analysis/portal-counts-panel';

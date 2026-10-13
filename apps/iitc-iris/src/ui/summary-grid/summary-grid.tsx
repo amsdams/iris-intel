@@ -1,4 +1,5 @@
 import {h, ComponentChildren, JSX} from 'preact';
+import './summary-layout.css';
 
 export interface SummaryGridProps extends Omit<JSX.HTMLAttributes<HTMLDivElement>, 'className'> {
   children?: ComponentChildren;

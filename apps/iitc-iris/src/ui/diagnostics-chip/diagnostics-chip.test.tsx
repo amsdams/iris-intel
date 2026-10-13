@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
 import {describe, expect, it} from 'vitest';
-import {DiagnosticsChip, PlainDiagnosticsChip} from './diagnostics-chip';
+import {DiagnosticsChip} from './diagnostics-chip';
 
 describe('DiagnosticsChip', () => {
   it('preserves the <b> value and <small> label structure', () => {
@@ -25,11 +25,23 @@ describe('DiagnosticsChip', () => {
     expect(vnode.props.className).toBe('iitc-iris-diagnostics-chip extra-class');
   });
 
-  it('renders PlainDiagnosticsChip without forcing value/label structure', () => {
-    const vnode = PlainDiagnosticsChip({ children: 'request 0.2s', title: 'request details' });
+  it('renders children without forcing value/label structure', () => {
+    const vnode = DiagnosticsChip({ children: 'request 0.2s', title: 'request details' });
     expect(vnode.type).toBe('span');
     expect(vnode.props.className).toBe('iitc-iris-diagnostics-chip');
     expect(vnode.props.title).toBe('request details');
     expect(vnode.props.children).toBe('request 0.2s');
+  });
+
+  it.each([0, '', null])('keeps the labeled structure for a falsy value (%s)', (value) => {
+    const vnode = DiagnosticsChip({ value, label: 'Items' });
+    const children = vnode.props.children;
+    expect(children).toHaveLength(2);
+    expect(children[0].type).toBe('b');
+    expect(children[0].props.children).toBe(value);
+    expect(children[1].type).toBe('small');
+    expect(children[1].props.children).toBe('Items');
+    expect(vnode.props).not.toHaveProperty('value');
+    expect(vnode.props).not.toHaveProperty('label');
   });
 });

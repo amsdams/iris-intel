@@ -1,4 +1,6 @@
 import {h} from 'preact';
+import '../ui/panel/panel.css';
+import './portal-image-preview.css';
 import type {IitcIrisSelectedPortal} from '../messages';
 import {ClearButton} from '../ui/clear-button';
 import {PanelHeader, PanelTitle} from '../ui/panel';

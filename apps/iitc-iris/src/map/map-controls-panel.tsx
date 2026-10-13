@@ -1,4 +1,7 @@
 import { h } from 'preact';
+import '../ui/shared/map-context.css';
+import './map-controls.css';
+import './map-navigation-controls.css';
 import {
   getContextAction,
   getContextTarget,

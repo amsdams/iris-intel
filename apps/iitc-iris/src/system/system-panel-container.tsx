@@ -1,4 +1,5 @@
 import {h} from 'preact';
+import '../ui/panel/panel.css';
 import {IitcIrisSystemControlsPanel} from './system-controls-panel';
 import {IitcIrisSystemDiagnosticsPanel, type IitcIrisInnerStatusView} from './system-diagnostics-panel';
 import {

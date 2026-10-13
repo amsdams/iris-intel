@@ -1,4 +1,6 @@
 import { h } from 'preact';
+import './layers.css';
+import '../ui/shared/layer-toggle.css';
 import {
   CORE_LAYER_TOGGLE_REGISTRY,
   DETAIL_LAYER_TOGGLE_REGISTRY,
@@ -12,7 +14,7 @@ import type {
   IitcIrisPortalHighlighterId,
 } from '../messages';
 import {ControlRow} from '../ui/control-row';
-import { LayerCheckbox, LayerRadio } from '../ui/layer-choice';
+import { LayerChoice } from '../ui/layer-choice';
 import {Section} from '../ui/section';
 
 export interface BooleanLayerToggleEntry {
@@ -54,7 +56,8 @@ export function IitcIrisLayersPanel({
   toggleLayerSetting,
 }: IitcIrisLayersPanelProps): h.JSX.Element {
   const renderBooleanLayerCheckbox = ({ id, title }: BooleanLayerToggleEntry): h.JSX.Element => (
-    <LayerCheckbox
+    <LayerChoice
+      type="checkbox"
       key={id}
       label={title}
       title={`${title}: ${layerSettings[id] ? 'on' : 'off'}`}
@@ -65,7 +68,8 @@ export function IitcIrisLayersPanel({
   );
 
   const renderHighlighterRadio = (option: (typeof PORTAL_HIGHLIGHTER_OPTIONS)[number]): h.JSX.Element => (
-    <LayerRadio
+    <LayerChoice
+      type="radio"
       key={option.id}
       label={option.label}
       title={option.title}
