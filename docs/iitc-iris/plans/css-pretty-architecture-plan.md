@@ -7,7 +7,9 @@ Status: Track A, Track B, and Track C Complete.
 - Track B (Component-local CSS imports for named stylesheets) is complete (`docs/iitc-iris/plans/css-refactoring/24-track-b-closeout-report.md`).
 - Track C (Component folder layout co-location and numbered CSS path cleanup) is complete (`docs/iitc-iris/plans/css-refactoring/34-track-c-final-audit.md`).
 - Numbered CSS filenames have been eliminated from `apps/iitc-iris/src/`.
-- Further CSS consolidation is optional; proposed next-session follow-ups are captured in `docs/iitc-iris/plans/css-refactoring/35-css-architecture-followups.md`.
+- Gate 0 and follow-ups A–E are complete as of 2026-10-14: 52 central imports, passing automated checks, and a user-reported successful smoke test.
+- F–H remain deferred; progress, cascade exceptions, and suggestions for a later architecture review are recorded in
+  `docs/iitc-iris/plans/css-refactoring/35-css-architecture-followups.md`. No further implementation is currently requested.
 
 Goal: turn the cascade-preserving numbered chunk split into a human-friendly CSS architecture while keeping behavior and
 visual output unchanged.
