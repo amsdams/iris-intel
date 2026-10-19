@@ -3,12 +3,12 @@ import {getPanelStatusClass} from '../ui-status';
 import {Panel, PanelHeader, PanelTitle} from '../ui/panel';
 import {ClearButton} from '../ui/clear-button';
 import {StatusText} from '../ui/status-text';
-import {IitcIrisAgentPanel} from '../agent/agent-panel';
+import {IitcIrisProfilePanel} from '../agent/profile-panel';
 import {IitcIrisCommPanel} from '../comm/comm-panel';
-import {IitcIrisInventoryPanel} from '../inventory/inventory-panel';
-import {IitcIrisMissionsPanel} from '../missions/missions-panel';
-import {IitcIrisPasscodePanel} from '../passcode/passcode-panel';
-import {IitcIrisScoresPanel} from '../scores/scores-panel';
+import {IitcIrisInventoryPanel} from '../agent/inventory-panel';
+import {IitcIrisMissionsPanel} from '../map/missions-panel';
+import {IitcIrisPasscodePanel} from '../agent/passcode-panel';
+import {IitcIrisScoresPanel} from '../map/scores-panel';
 import {type IitcIrisSidePanelId} from './menu-registry';
 import {
   type IitcIrisAgentState,
@@ -123,7 +123,7 @@ export function IitcIrisRequestSidePanelContainer(props: IitcIrisRequestSidePane
         </span>
       </PanelHeader>
       {activeSidePanel === 'agent' && (
-        <IitcIrisAgentPanel agentState={agentState} />
+        <IitcIrisProfilePanel agentState={agentState} />
       )}
       {activeSidePanel === 'comm' && (
         <IitcIrisCommPanel

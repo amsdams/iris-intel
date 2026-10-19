@@ -16,7 +16,7 @@ Status: Track A, Track B, and Track C Complete.
 - Component/feature CSS ownership is complete under [36-component-css-ownership-plan.md](css-refactoring/36-component-css-ownership-plan.md), with passing automated checks and user smoke acceptance: 10 central infrastructure imports; primitive and feature appearance loads through its owners. The previous SummaryCell ordering exception is resolved.
 - [Component simplification review and architecture contract](css-refactoring/37-component-simplification-review.md): A–C implemented and smoke accepted (23 → 20 exports). Both subsequent styling-contract and CSS cleanup batches are implemented with passing automated checks; user acceptance is recorded. The CSS ownership refactor remains accepted.
 - Shared Button now owns reset/default semantics; four styled families and 32 feature button sites compose it. Shared exports: 21; all 360 tests and required checks pass. The combined cleanup and Button follow-up are user accepted.
-- Latest authorized batch: shared Table replaces the analysis helper; segmented family grouped; domain CSS helpers and four request panels moved to their owners. All 360 tests/checks and structural cascade comparisons pass; combined user smoke pending in plan 37.
+- Table/segmented/domain ownership and subsequent Inventory/panel organization follow-ups are implemented and user accepted. Latest app checks: 376 tests, lint/typecheck, and packaging pass; final shared-helper moves preserve emitted JavaScript/CSS byte-for-byte. Current next-session handoff and deferred `content.tsx` review are linked from plan 37.
 - Progress, cascade exceptions, and suggestions for a later architecture review are recorded in
   `docs/iitc-iris/plans/css-refactoring/35-css-architecture-followups.md`.
 

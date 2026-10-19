@@ -1,13 +1,13 @@
 import {Button} from './ui/button';
 import {h, render} from 'preact';
-import './search/map-search-badge.css';
+import './map/search-panel/map-search-badge.css';
 import './auth/auth.css';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import './iitc-iris.css';
 import {
   type IitcIrisBooleanLayerSettingKey,
-} from './layers/layer-registry';
-import {PORTAL_HIGHLIGHTER_REGISTRY} from './layers/highlighter-registry';
+} from './map/layers/layer-registry';
+import {PORTAL_HIGHLIGHTER_REGISTRY} from './map/layers/highlighter-registry';
 import {
   getPrimaryMenuId,
   isSidePanelId,
@@ -23,7 +23,7 @@ import {
   getSelectionView,
   type IitcIrisMapContextSelection,
 } from './portals/selection-lifecycle';
-import {handleIitcIrisContentMessage, type CameraState, type EntityFetchState} from './shell/content-message-adapter';
+import {handleIitcIrisContentMessage, type CameraState, type EntityFetchState} from './shell/message-adapter';
 import {
   addCommNicknameCommand,
   centerMapContextCommand,
@@ -66,32 +66,32 @@ import {
   logoutIntelCommand,
   setDataSourceCommand,
 } from './content-command-callbacks';
-import {handleIitcIrisContentKeyDown, type IitcIrisPanDirection} from './shell/content-keyboard-shortcuts';
-import {copyIitcIrisText} from './shell/content-feedback';
+import {handleIitcIrisContentKeyDown, type IitcIrisPanDirection} from './shell/keyboard-shortcuts';
+import {copyIitcIrisText} from './shell/feedback';
 import {IitcIrisPortalDetailsPanel} from './portals/portal-details-panel';
-import {IitcIrisSearchPanel} from './search/search-panel';
-import {usePortalAnalysisWorkflow} from './portal-analysis/content-portal-analysis-workflow';
-import {IitcIrisMapControlsPanelContainer} from './map/map-controls-panel';
+import {IitcIrisSearchPanel} from './map/search-panel';
+import {usePortalAnalysisWorkflow} from './map/portal-analysis/workflow';
+import {IitcIrisMapControlsPanelContainer} from './map/controls-panel';
 import {IitcIrisHelpPanel} from './system/help-panel';
 import {IitcIrisPortalImageModal} from './portals/portal-image-modal';
 import {IitcIrisSheetTabBar} from './shell/sheet-tabbar';
 import {IitcIrisAuthRecoveryBanner} from './auth/auth-recovery-banner';
 import {IitcIrisRequestSidePanelContainer} from './shell/request-side-panel-container';
-import {IitcIrisSystemPanelContainer} from './system/system-panel';
-import {createDockDiagnostics} from './system/content-dock-diagnostics';
+import {IitcIrisDiagnosticsPanelContainer} from './system/diagnostics-panel';
+import {createDockDiagnostics} from './system/dock-diagnostics';
 import {
   calculateSidePanelStatus,
   formatAuthRecoveryText,
   getAuthSources,
   retryActiveAuthPanelRequest,
   type AppAuthStates,
-} from './auth/content-auth-navigation';
-import {useScenarioWorkflow} from './system/content-scenario-workflow';
+} from './auth/navigation';
+import {useScenarioWorkflow} from './system/scenario-workflow';
 import {
   jumpToPresetAction,
   jumpToViewInputAction,
   locateBrowserPositionAction,
-} from './map/content-location-actions';
+} from './map/location-actions';
 import {
   createDataSourceSettings,
   DATA_SOURCE_OPTIONS,
@@ -120,14 +120,14 @@ import {
   storeLifecycleSettings,
   storeSidePanelId,
   VIEW_PRESETS,
-} from './shell/content-storage-settings';
+} from './shell/storage-settings';
 import {
   createInnerStatusView,
   createIntelUrl,
   createPlan,
   formatRenderMutationSummary,
   formatSelectedPortal,
-} from './map/content-map-status';
+} from './map/map-status';
 
 
 import {type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDrawToolsItem, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPortalHighlighterId, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState} from './messages';
@@ -139,25 +139,25 @@ import {
   buildHighlighterSettingsValue,
   buildLayerSettingsMessage,
   calculateToggledLayerSettings,
-} from './layers/content-layer-actions';
-import {useDrawToolsWorkflow} from './draw-tools/content-draw-tools-workflow';
+} from './map/layers/actions';
+import {useDrawToolsWorkflow} from './map/draw-tools/workflow';
 import {
   handleCommScrollAction,
   jumpCommToLatestAction,
   requestCommAction,
   requestOlderCommAction,
-} from './comm/content-comm-panel-actions';
+} from './comm/panel-actions';
 import {
   getCommAutoRequest,
   getInventoryAutoRequest,
   getScoresAutoRequest,
-} from './shell/content-side-panel-auto-requests';
+} from './shell/side-panel-auto-requests';
 import {
   buildDataSourceSettingsMessage,
   buildLifecycleSettingsMessage,
-} from './shell/content-outbound-messages';
-import {buildSearchClearMessage, getSearchDebounceAction} from './search/content-search-actions';
-import {shouldRefreshPortalMissions} from './missions/content-mission-refresh';
+} from './shell/outbound-messages';
+import {buildSearchClearMessage, getSearchDebounceAction} from './map/search/actions';
+import {shouldRefreshPortalMissions} from './map/missions/refresh';
 
 
 const IITC_PAN_CONTROL_OFFSET_PX = 500;
@@ -1088,7 +1088,7 @@ function App(): h.JSX.Element {
         toggleLayerSetting={toggleLayerSetting}
       />
       {activeSheet === 'system' && (
-        <IitcIrisSystemPanelContainer
+        <IitcIrisDiagnosticsPanelContainer
           camera={camera}
           debugDockVisible={debugDockVisible}
           detailOverlaysActive={detailOverlaysActive}

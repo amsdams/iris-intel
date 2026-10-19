@@ -5,12 +5,12 @@ import {
   createRequestMissionDetailsMessage,
   createRequestMissionsMessage,
   createRequestScoresMessage,
-} from './shell/content-outbound-messages';
+} from './shell/outbound-messages';
 import {
   addCommNicknameAction,
   redeemPasscodeAction,
   sendCommAction,
-} from './comm/content-comm-panel-actions';
+} from './comm/panel-actions';
 import type {
   IitcIrisCommTab,
   IitcIrisMapContextPortalAnchor,
@@ -26,12 +26,12 @@ import {
   openIitcIrisSheet,
   toggleIitcIrisSheet,
   type IitcIrisSheetNavigationEffect,
-} from './shell/content-sheet-navigation';
-import {getIitcIrisPrimaryMenuEffect} from './shell/content-primary-menu';
+} from './shell/sheet-navigation';
+import {getIitcIrisPrimaryMenuEffect} from './shell/primary-menu';
 import {
   performIntelLoginRedirect,
   performIntelLogoutRedirect,
-} from './auth/content-auth-navigation';
+} from './auth/navigation';
 import {
   buildSearchClearMessage,
   buildSearchPreviewMessage,
@@ -39,7 +39,7 @@ import {
   buildSearchSelectMessage,
   calculateNextSearchResultIndex,
   getActiveSearchResult,
-} from './search/content-search-actions';
+} from './map/search/actions';
 import {
   clearPortalSelectionAction,
   focusSelectedPortalAction,
@@ -47,11 +47,11 @@ import {
   setPortalSectionOpenAction,
   zoomToAndShowPortalAction,
   type PortalSectionId,
-} from './portals/content-portal-selection-actions';
+} from './portals/selection-actions';
 import {
   buildPanByMessage,
   buildSetViewMessage,
-} from './map/content-camera-actions';
+} from './map/camera-actions';
 import {
   copyMapContextGuid as copyMapContextGuidHelper,
   copyMapContextLatLng as copyMapContextLatLngHelper,
@@ -60,12 +60,12 @@ import {
   copySelectedPortalGuid as copySelectedPortalGuidHelper,
   copySelectedPortalLink as copySelectedPortalLinkHelper,
   copySelectedPortalTitle as copySelectedPortalTitleHelper,
-} from './shell/content-copy-helpers';
+} from './shell/copy-helpers';
 import type {IitcIrisMapContextSelection} from './portals/selection-lifecycle';
-import type {IitcIrisPanDirection} from './shell/content-keyboard-shortcuts';
+import type {IitcIrisPanDirection} from './shell/keyboard-shortcuts';
 
 import type {IitcIrisSheetId, IitcIrisSidePanelId, IitcIrisPrimaryMenuId} from './shell/menu-registry';
-import type {IitcIrisPrimaryMenuContext} from './shell/content-primary-menu';
+import type {IitcIrisPrimaryMenuContext} from './shell/primary-menu';
 
 /** Narrow postMessage adapter type accepted by every command in this module. */
 export type PostMessageFn = (message: IitcIrisMessage) => void;

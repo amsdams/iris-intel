@@ -1,13 +1,31 @@
 # IITC IRIS Component Simplification Review
 
-Status: A–C, architecture cleanup, and Button accepted. Subsequent shared Table/segmented/domain ownership batch implemented; automated checks pass, user smoke pending.
+Status: complete. A–C, cleanup, Button, Table, and subsequent organization/UI follow-ups implemented with user acceptance and passing automated checks.
+
+## Next-Session Handoff — 2026-10-19
+
+- The goal remains a simple, manageable CSS/component architecture: explicit ownership, fewer competing defaults and
+  variants, native semantics, and small reusable primitives. Shared UI exports: 22; central infrastructure imports: 10.
+- The user accepted the Table/segmented/domain batch and subsequent panel organization with “looks good” / “looks better.”
+  No separate agent-run browser, keyboard, or narrow-layout audit was performed; these statements record user acceptance.
+- Inventory now shows separate rarity/level badges using shared palettes, type-only labels, and neutral item counts.
+  Inventory and Passcode explicitly load their common styles from `agent/item-list.css`.
+- Panels follow application/menu areas. Panel exports and helper filenames were aligned; panel entry points are explicit.
+  Shared map logic lives outside panels in `map/layers/`, `map/search/`, and `map/missions/`. Exact organization changes
+  and validation are in the [source layout record](../source-directory-layout-plan.md).
+- Latest app checks: 376 tests, lint/typecheck, and Chrome/Firefox packaging pass. CSS lint and workbench build passed
+  for the preceding organization batch. The final domain-helper move preserves emitted JavaScript and CSS byte-for-byte.
+- Next candidate is the deferred [content.tsx composition review](../index.md#deferred-contenttsx-composition-review),
+  starting with responsibility/ownership review. Implementation has not started. Scrolling remains deferred. No further
+  generic component, folder, or CSS cleanup is queued without a concrete need; keep workbench discovery automatic with
+  generic previews. Prefer combined implementation/checks and brief notes over more planning slices.
 
 ## Goal And Authority
 
 Keep the CSS and component architecture easy to understand and change: fewer overlapping components and visual
 variants, sensible defaults, explicit styling ownership, and simple feature composition.
 
-This document is the current CSS/component architecture reference and the next review plan. It carries forward the
+This document is the current CSS/component architecture reference and completed review record. It carries forward the
 accepted loading contract from [plan 36](36-component-css-ownership-plan.md); that document retains the implementation
 inventory and validation evidence. Plans 34–36 are completed records. Older consolidation plans remain historical;
 their unfinished checklists are not active assignments. [The port plan](../../port-plan.md) still governs IITC behavior
@@ -282,5 +300,6 @@ All 360 tests, app lint/typecheck, CSS lint, packaging, workbench build, and `gi
 cascade comparison passed 172,560 element comparisons across 20 sheets, four widths, and normal/hover/focus states;
 all non-table emitted CSS selector/declaration sets are unchanged. This supplements browser inspection; it does not
 prove browser rendering. Packaging retains its three pre-existing missing-fixture fallbacks.
-Combined smoke pending: Counts/List/Scoreboard at desktop/narrow widths (headers, alignment, faction tint, scrolling),
-Agent/Inventory/Scores/Passcode presentation and actions, COMM tabs, and Map/Draw Tools context plus portal owner names.
+The user subsequently reported “looks good,” accepting this batch. The original suggested smoke covered
+Counts/List/Scoreboard at desktop/narrow widths, Agent/Inventory/Scores/Passcode presentation/actions, COMM tabs,
+Map/Draw Tools context, and portal owner names; no separate agent-run browser audit was performed.

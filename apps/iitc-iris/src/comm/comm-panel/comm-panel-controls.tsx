@@ -8,11 +8,7 @@ import {ActionButton} from '../../ui/action-button';
 import {SummaryGrid} from '../../ui/summary-grid';
 import {SummaryCell} from '../../ui/summary-cell';
 
-export const IITC_IRIS_COMM_TABS: {id: IitcIrisCommTab; label: string}[] = [
-  {id: 'all', label: 'All'},
-  {id: 'faction', label: 'Faction'},
-  {id: 'alerts', label: 'Alerts'},
-];
+import {IITC_IRIS_COMM_TABS} from '../tabs';
 
 export interface IitcIrisCommPanelControlsProps {
   commNewBelow: boolean;

@@ -1,0 +1,110 @@
+import {h} from 'preact';
+import '../../ui/shared/compact-input.css';
+import '../item-list.css';
+import './passcode-panel.css';
+import '../../ui/shared/warning.css';
+import '../../ui/shared/list-item.css';
+import {formatIitcColorVars, getIitcLevelColor} from '../../iitc-colors';
+import type {IitcIrisPasscodeRewardItem, IitcIrisPasscodeState} from '../../messages';
+import {ActionButton} from '../../ui/action-button';
+import {PanelBody, PanelFooter} from '../../ui/panel';
+import {Badge} from '../../ui/badge';
+import {DiagnosticsChip} from '../../ui/diagnostics-chip';
+import {EmptyState} from '../../ui/empty-state';
+import {TextInput} from '../../ui/text-input';
+import {SummaryCell} from '../../ui/summary-cell';
+import {SummaryGrid} from '../../ui/summary-grid';
+import {formatElapsedSeconds, getAuthErrorMessage} from '../../ui-status';
+
+export interface IitcIrisPasscodePanelProps {
+  passcodeDraft: string;
+  passcodeState: IitcIrisPasscodeState;
+  onDraftChange: (value: string) => void;
+  redeem: () => void;
+}
+
+function formatInteger(value: number | undefined): string {
+  return new Intl.NumberFormat('en-US').format(value ?? 0);
+}
+
+function formatItemBadge(item: IitcIrisPasscodeRewardItem): string {
+  if (item.level !== undefined) return `L${item.level}`;
+  return 'IT';
+}
+
+export function IitcIrisPasscodePanel(props: IitcIrisPasscodePanelProps): h.JSX.Element {
+  const {passcodeDraft, passcodeState} = props;
+  return <PanelBody>
+    <form
+      className="iitc-iris-passcode-form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        props.redeem();
+      }}
+    >
+      <TextInput
+        className="iitc-iris-passcode-input"
+        type="text"
+        value={passcodeDraft}
+        placeholder="passcode"
+        disabled={passcodeState.status === 'loading'}
+        onInput={(event) => props.onDraftChange(event.currentTarget.value)}
+      />
+      <ActionButton type="submit" disabled={!passcodeDraft.trim() || passcodeState.status === 'loading'}>
+        {passcodeState.status === 'loading' ? 'Redeeming' : 'Redeem'}
+      </ActionButton>
+    </form>
+    <SummaryGrid>
+      <SummaryCell value={formatInteger(passcodeState.ap)} label="AP" />
+      <SummaryCell value={formatInteger(passcodeState.xm)} label="XM" />
+      <SummaryCell value={formatInteger(passcodeState.items?.reduce((sum, item) => sum + (item.count ?? 1), 0))} label="items" />
+    </SummaryGrid>
+    {passcodeState.other && passcodeState.other.length > 0 && (
+      <div className="iitc-iris-agent-item-list">
+        {passcodeState.other.map((reward) => (
+          <div className="iitc-iris-list-item iitc-iris-agent-item-row" key={reward}>
+            <span>{reward}</span>
+            <b>1</b>
+          </div>
+        ))}
+      </div>
+    )}
+    {passcodeState.items && passcodeState.items.length > 0 && (
+      <div className="iitc-iris-agent-item-list">
+        {passcodeState.items.map((item, index) => (
+          <div
+            className="iitc-iris-list-item iitc-iris-agent-item-row"
+            key={`${item.label}-${item.level ?? ''}-${index}`}
+            style={formatIitcColorVars(getIitcLevelColor(item.level))}
+          >
+            <span><Badge as="b" className="iitc-iris-agent-item-badge">{formatItemBadge(item)}</Badge>{item.label}{item.level ? ` L${item.level}` : ''}</span>
+            <b>{item.count ?? 1}</b>
+          </div>
+        ))}
+      </div>
+    )}
+    {(passcodeState.status === 'empty' || passcodeState.error) && (
+      passcodeState.error ? (
+        <div className="iitc-iris-warning">
+          {passcodeState.status === 'auth'
+            ? 'Passcode redemption requires an authenticated Intel session.'
+            : getAuthErrorMessage(passcodeState.status, passcodeState.error)}
+        </div>
+      ) : (
+        <EmptyState>
+          Passcode returned no rewards.
+        </EmptyState>
+      )
+    )}
+    <PanelFooter>
+      <DiagnosticsChip
+        title={[
+          'request: /r/redeemReward',
+          `passcode: ${passcodeState.passcode ?? '-'}`,
+        ].join('\n')}
+      >
+        {passcodeState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(passcodeState.elapsedMs)}s` : 'request'}
+      </DiagnosticsChip>
+    </PanelFooter>
+  </PanelBody>;
+}

@@ -48,7 +48,7 @@ import {
 import {IITC_IRIS_MESSAGES} from './messages';
 import type {IitcIrisSearchResult, IitcIrisSearchState, IitcIrisSelectedPortal} from './messages';
 import type {IitcIrisMapContextSelection} from './portals/selection-lifecycle';
-import type {PortalSectionId} from './portals/content-portal-selection-actions';
+import type {PortalSectionId} from './portals/selection-actions';
 
 // ---------------------------------------------------------------------------
 // Helpers

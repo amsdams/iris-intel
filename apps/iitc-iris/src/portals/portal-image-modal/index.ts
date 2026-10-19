@@ -1,1 +1,1 @@
-export * from './portal-image-modal';
+export {IitcIrisPortalImageModal} from './portal-image-modal';

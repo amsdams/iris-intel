@@ -2,6 +2,58 @@
 
 Status: complete. All move-only source directory layout checkpoints are done.
 
+## Current Application-Area Grouping — 2026-10-19
+
+Panels follow their main application/menu area. Each panel folder keeps its entry, owned CSS, private helpers, and
+tests together; larger features can retain a subgroup for multiple panels and shared logic.
+
+```text
+src/
+  portals/{portal-details-panel,portal-image-modal}/
+  map/{search-panel,display-panel,controls-panel,missions-panel,scores-panel}/
+  map/{layers,search,missions,draw-tools,portal-analysis}/
+  agent/{profile-panel,inventory-panel,passcode-panel}/
+  comm/comm-panel/
+  system/{diagnostics-panel,help-panel}/
+  shell/
+  ui/
+```
+
+Missions has one implementation under Map, also used from the selected portal. Shell owns navigation and panel
+placement; `ui/` owns reusable components. Menu ids remain stable; panel export names follow the folders as described below.
+
+The authorized grouping pass moved 75 files and updated relative imports only. All 376 tests, app lint/typecheck,
+CSS lint, Chrome/Firefox packaging, and the workbench build pass. Generated JavaScript and CSS are byte-identical to
+the pre-move build. The checkpoints below record earlier layouts and are retained as history.
+
+### Organization Follow-Up
+
+- Inventory and Passcode explicitly import `agent/item-list.css`, which owns their shared item rows and badges.
+  Shared classes use the `iitc-iris-agent-item-*` prefix; Inventory keeps its section, scrolling, and count overrides.
+- Profile, Display, and Diagnostics exports now match their folder names, including their props types and consumers.
+- Removed repetitive `content-` and redundant domain prefixes from 70 helper/test filenames; imports were updated.
+  Application entry points keep their existing names.
+- All 17 panel/modal entry points explicitly export their component and public props instead of wildcard exports.
+  Display options remain private; removed an unused Missions formatter export. COMM tab definitions live in
+  `comm/tabs.ts`, shared by the panel and shell without importing a private panel component.
+
+All 376 tests, app lint/typecheck, CSS lint, packaging, workbench build, and `git diff --check` pass. A stylesheet audit
+confirms the Agent extraction preserves every selector/declaration after the shared class renames. Generated content
+JavaScript and CSS change for this follow-up; the byte-identity result above applies to the preceding folder move.
+
+### Shared Domain Logic Outside Panels
+
+Panel folders own rendering, styles, and private presentation helpers. Logic used by app composition, settings,
+diagnostics, or the page runtime belongs in its domain, with tests alongside it:
+
+- `map/layers/`: layer actions, layer/highlighter registries, update routing, and their four test files.
+- `map/search/`: search actions and tests.
+- `map/missions/`: mission refresh decisions and tests.
+
+Moved these 12 files and updated consumers; no logic or styling changes. All 376 tests, app lint/typecheck, packaging,
+and `git diff --check` pass; generated JavaScript and CSS remain byte-identical to the preceding build.
+The later `content.tsx` composition review is recorded in the [roadmap](index.md#deferred-contenttsx-composition-review).
+
 ## IITC Sources
 
 This is not an IITC behavior port. IITC-CE sources are relevant only for preserving recognizable domain names when

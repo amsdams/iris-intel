@@ -8,17 +8,18 @@ The current CSS/component architecture contract and progress are in
 are complete and smoke accepted: shared exports reduced from 23 to 20. Both subsequent styling-contract and CSS cleanup
 batches are complete with passing automated checks and user acceptance.
 The shared Button follow-up is also user accepted (21 exports); all 360 tests and required checks pass.
-The domain → panel grouping is implemented. The subsequent shared Table/segmented/domain ownership batch is also
-implemented (22 shared UI exports); all 360 tests/checks pass and structural cascade comparisons pass. Its combined user
-smoke is pending in [plan 37](css-refactoring/37-component-simplification-review.md); source grouping is recorded in
-[the source layout record](source-directory-layout-plan.md).
+The Table/segmented/domain ownership batch and subsequent Inventory/panel organization follow-ups are implemented and
+user accepted (22 shared UI exports). Latest app checks: 376 tests, lint/typecheck, and packaging pass; CSS lint and
+workbench build also passed for the preceding organization batch. The final shared-domain-helper move preserves emitted
+JavaScript/CSS byte-for-byte. Current handoff is in [plan 37](css-refactoring/37-component-simplification-review.md);
+source grouping is recorded in [the source layout record](source-directory-layout-plan.md).
 Android APK work is a separate readiness track, not a continuation of the refactor plans.
 
 Do not assign any other refactor work unless a detailed plan names exact scope, files, stop conditions, and validation.
 
 Likely next priorities:
 
-1. Smoke the combined Table/segmented/domain ownership batch in plan 37; broader scrolling changes remain deferred.
+1. When resuming architecture work, start with the deferred `content.tsx` composition review below; scrolling remains deferred.
 2. Use the app on phone/desktop and collect concrete UI/CSS/mobile pain.
 3. Prepare for a friend-shared sideload APK, with Play/store distribution deferred.
 4. Run the Android/WebView readiness spikes before creating an IRIS APK scaffold.
@@ -29,8 +30,18 @@ Do not mix refactor cleanup, UI/mobile polish, Android APK work, and feature/par
 
 ## Active Work
 
-- [Component simplification review](css-refactoring/37-component-simplification-review.md): current architecture contract
-  and completed source review. A–C accepted (23 → 20 exports); prior cleanup/Button accepted; latest Table/segmented/domain batch implemented with passing checks (22 exports), user smoke pending.
+- No implementation slice is active. [Plan 37](css-refactoring/37-component-simplification-review.md) records the completed
+  work, current architecture contract, and next-session handoff. The `content.tsx` review below is deferred.
+
+## Deferred: content.tsx Composition Review
+
+Goal: keep `src/content.tsx` focused on assembling the app, with feature state and workflows owned by their domains
+where that makes ownership clearer. Review its responsibilities and dependencies first; identify a small, repeated,
+testable responsibility and record its exact scope before implementing an extraction. Preserve request lifecycles,
+stale-response guards, storage, effects, message payloads, and UI behavior. Avoid a generic state/framework layer or
+splitting code solely to reduce line count. Shared domain helpers have already moved out of panel folders; the
+`content.tsx` review has not started. Validate any future extraction with relevant behavior tests, app checks, packaging,
+and a user smoke.
 
 ## Recently Completed
 
