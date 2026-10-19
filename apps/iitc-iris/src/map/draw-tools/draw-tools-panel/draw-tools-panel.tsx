@@ -7,16 +7,16 @@ import {h} from 'preact';
 import {useState} from 'preact/hooks';
 import './draw-tools.css';
 import {
-  DRAW_TOOLS_DEFAULT_COLOR,
   DRAW_TOOLS_MARKER_PRESETS,
   filterAndSortDrawToolsMarkersForDisplay,
   getDrawToolsItemDetail,
   getDrawToolsItemLabel,
+  getDrawToolsMarkerColor,
+  getDrawToolsMarkerColorOptions,
   getDrawToolsMarkerCreatedIndexByStorageIndex,
   type DrawToolsLinkEndpointLabels,
   type DrawToolsMarkerSort,
   type DrawToolsMarkerPortalInfo,
-  type DrawToolsMarkerTeamFilter,
   type DrawToolsTarget,
 } from '../draw-tools';
 import {formatTeamClass, formatTeamShortLabel, getPortalCountsLevelColor} from '../../portal-analysis/portal-analysis';
@@ -27,15 +27,6 @@ import {ActionButton} from '../../../ui/action-button';
 import {Section} from '../../../ui/section';
 
 type DrawToolsItemType = 'polyline' | 'marker';
-
-const DRAW_TOOLS_MARKER_TEAM_FILTERS: {value: DrawToolsMarkerTeamFilter; label: string}[] = [
-  {value: 'all', label: 'All factions'},
-  {value: 'R', label: 'RES'},
-  {value: 'E', label: 'ENL'},
-  {value: 'M', label: 'MAC'},
-  {value: 'N', label: 'Neutral'},
-  {value: 'unknown', label: 'Unknown'},
-];
 
 const DRAW_TOOLS_MARKER_SORTS: {value: DrawToolsMarkerSort; label: string}[] = [
   {value: 'nearby', label: 'Nearby'},
@@ -103,7 +94,7 @@ function getLevelChipTextColor(level: number): string {
 
 export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JSX.Element {
   const [importOpen, setImportOpen] = useState(false);
-  const [markerTeamFilter, setMarkerTeamFilter] = useState<DrawToolsMarkerTeamFilter>('all');
+  const [markerColorFilter, setMarkerColorFilter] = useState('all');
   const [markerSort, setMarkerSort] = useState<DrawToolsMarkerSort>('nearby');
 
   if (props.mode === 'links') {
@@ -163,12 +154,16 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
   const visibleMarkerItems = filterAndSortDrawToolsMarkersForDisplay(
     props.markerItems,
     props.markerPortalInfoByStorageIndex,
-    markerTeamFilter,
+    markerColorFilter,
     markerSort,
   );
   const createdIndexByStorageIndex = getDrawToolsMarkerCreatedIndexByStorageIndex(props.markerItems);
-  const markerFilterLabel = DRAW_TOOLS_MARKER_TEAM_FILTERS.find((filter) => filter.value === markerTeamFilter)?.label ?? 'markers';
-  const markerSummary = markerTeamFilter === 'all'
+  const markerColorOptions = getDrawToolsMarkerColorOptions(props.markerItems);
+  if (markerColorFilter !== 'all' && !markerColorOptions.some((option) => option.value === markerColorFilter)) {
+    markerColorOptions.push({value: markerColorFilter, label: markerColorFilter});
+  }
+  const markerFilterLabel = markerColorOptions.find((filter) => filter.value === markerColorFilter)?.label ?? 'markers';
+  const markerSummary = markerColorFilter === 'all'
     ? `${props.markerItems.length.toLocaleString()} drawn markers`
     : `${props.markerItems.length.toLocaleString()} drawn markers - showing ${visibleMarkerItems.length.toLocaleString()} ${markerFilterLabel}`;
 
@@ -219,9 +214,10 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
     </div>
     {props.markerItems.length > 0 && <div className="iitc-iris-map-context-row iitc-iris-draw-tools-list-controls">
       <label>
-        <span>Faction</span>
-        <select className="iitc-iris-control iitc-iris-select-input" aria-label="Filter drawn markers by faction" value={markerTeamFilter} onChange={(event) => setMarkerTeamFilter(event.currentTarget.value as DrawToolsMarkerTeamFilter)}>
-          {DRAW_TOOLS_MARKER_TEAM_FILTERS.map((filter) => <option value={filter.value} key={filter.value}>{filter.label}</option>)}
+        <span>Color</span>
+        <select className="iitc-iris-control iitc-iris-select-input" aria-label="Filter drawn markers by color" value={markerColorFilter} onChange={(event) => setMarkerColorFilter(event.currentTarget.value)}>
+          <option value="all">All colors</option>
+          {markerColorOptions.map((filter) => <option value={filter.value} key={filter.value}>{filter.label}</option>)}
         </select>
       </label>
       <label>
@@ -238,7 +234,7 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
         const createdIndex = createdIndexByStorageIndex[item.storageIndex] ?? 0;
         return (
           <div className="iitc-iris-list-item iitc-iris-draw-tools-list-item" key={`marker-${item.storageIndex}`}>
-            <span className="iitc-iris-draw-tools-marker-dot" style={{background: item.color ?? DRAW_TOOLS_DEFAULT_COLOR}} />
+            <span className="iitc-iris-draw-tools-marker-dot" style={{background: getDrawToolsMarkerColor(item)}} />
             <span className="iitc-iris-draw-tools-list-label">
               {props.editingMarkerIndex === item.storageIndex ? (
                 <TextInput

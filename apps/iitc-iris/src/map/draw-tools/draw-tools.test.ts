@@ -1,13 +1,17 @@
 import {describe, expect, it} from 'vitest';
 import {
+  DRAW_TOOLS_DEFAULT_COLOR,
+  DRAW_TOOLS_MARKER_PRESETS,
   filterAndSortDrawToolsMarkersForDisplay,
   filterAndSerializeDrawToolsItems,
+  filterDrawToolsMarkersByColor,
   getDrawToolsLinkEndpointLabels,
   getDrawToolsItemCenter,
   getDrawToolsItemDistanceMeters,
   getDrawToolsItemDetail,
   getDrawToolsItemLabel,
   getDrawToolsMarkerCreatedIndexByStorageIndex,
+  getDrawToolsMarkerColorOptions,
   getDrawToolsMarkerPortalInfo,
   isSupportedDrawToolsItem,
   mergeDrawToolsMarkerPortalInfoCache,
@@ -69,10 +73,10 @@ describe('IITC IRIS Draw Tools helpers', () => {
     expect(sortDrawToolsItemsByDistance([far, near], {lat: 52.1, lng: 4.2}).map((item) => item.storageIndex)).toEqual([8, 9]);
   });
 
-  it('filters and sorts marker display items by faction metadata', () => {
-    const resMarker = {...marker, storageIndex: 8, label: 'Resistance'};
-    const enlMarker = {...marker, storageIndex: 5, label: 'Enlightened'};
-    const unknownMarker = {...marker, storageIndex: 9, label: 'Unknown'};
+  it('filters by saved marker color independently of portal ownership and metadata availability', () => {
+    const resMarker = {...marker, storageIndex: 8, color: '#51c34a'};
+    const enlMarker = {...marker, storageIndex: 5, color: '#4aa8c3'};
+    const unknownMarker = {...marker, storageIndex: 9, color: '#51c34a'};
     const markerInfo = {
       8: {title: 'RES Portal', team: 'R' as const, level: 4},
       5: {title: 'ENL Portal', team: 'E' as const, level: 7},
@@ -81,21 +85,52 @@ describe('IITC IRIS Draw Tools helpers', () => {
     expect(filterAndSortDrawToolsMarkersForDisplay(
       [unknownMarker, resMarker, enlMarker],
       markerInfo,
-      'R',
+      '#51c34a',
       'nearby',
-    ).map((item) => item.storageIndex)).toEqual([8]);
+    ).map((item) => item.storageIndex)).toEqual([9, 8]);
     expect(filterAndSortDrawToolsMarkersForDisplay(
       [unknownMarker, resMarker, enlMarker],
-      markerInfo,
-      'unknown',
+      {...markerInfo, 8: {...markerInfo[8], team: 'E'}},
+      '#4aa8c3',
       'nearby',
-    ).map((item) => item.storageIndex)).toEqual([9]);
+    ).map((item) => item.storageIndex)).toEqual([5]);
+    expect(filterAndSortDrawToolsMarkersForDisplay(
+      [unknownMarker, resMarker, enlMarker],
+      {},
+      '#51c34a',
+      'created',
+    ).map((item) => item.storageIndex)).toEqual([8, 9]);
     expect(filterAndSortDrawToolsMarkersForDisplay(
       [unknownMarker, resMarker, enlMarker],
       markerInfo,
       'all',
       'team',
     ).map((item) => item.storageIndex)).toEqual([8, 5, 9]);
+  });
+
+  it.each([
+    ['#FFF', '#ffffff'],
+    ['#4AA8C3', '#4aa8c3'],
+    ['#abcd', '#aabbccdd'],
+    [undefined, DRAW_TOOLS_DEFAULT_COLOR],
+    ['#123456', '#123456'],
+  ])('matches saved color %s against %s', (savedColor, filterColor) => {
+    const item = {...marker, color: savedColor};
+    expect(filterDrawToolsMarkersByColor([item], filterColor)).toEqual([item]);
+    expect(filterDrawToolsMarkersByColor([item], '#000000')).toEqual([]);
+  });
+
+  it('offers preset, default, and imported colors without duplicate equivalent hex values', () => {
+    const options = getDrawToolsMarkerColorOptions([
+      {...marker, color: '#FFF'},
+      {...marker, color: '#123456'},
+      {...marker, color: '#123456'},
+      {...marker, color: undefined},
+    ]);
+    expect(options.filter((option) => option.value === '#ffffff')).toEqual([{value: '#ffffff', label: 'White'}]);
+    expect(options.filter((option) => option.value === '#123456')).toEqual([{value: '#123456', label: '#123456'}]);
+    expect(options).toContainEqual({value: DRAW_TOOLS_DEFAULT_COLOR, label: 'Purple'});
+    expect(options).toHaveLength(DRAW_TOOLS_MARKER_PRESETS.length + 2);
   });
 
   it('sorts marker display items by created order, level, and name', () => {

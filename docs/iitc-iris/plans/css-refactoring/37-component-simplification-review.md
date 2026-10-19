@@ -13,8 +13,11 @@ Status: complete. A–C, cleanup, Button, Table, and subsequent organization/UI 
 - Panels follow application/menu areas. Panel exports and helper filenames were aligned; panel entry points are explicit.
   Shared map logic lives outside panels in `map/layers/`, `map/search/`, and `map/missions/`. Exact organization changes
   and validation are in the [source layout record](../source-directory-layout-plan.md).
-- Latest app checks: 376 tests, lint/typecheck, and Chrome/Firefox packaging pass. CSS lint and workbench build passed
-  for the preceding organization batch. The final domain-helper move preserves emitted JavaScript and CSS byte-for-byte.
+- Markers now filter by saved marker color, with preset/default colors and custom imported hex colors available.
+  Filtering is independent of portal ownership; faction sorting and portal metadata chips retain their existing meaning.
+  User visual check of the Color dropdown is pending.
+- Latest app checks: 382 tests, lint/typecheck, and Chrome/Firefox packaging pass. CSS lint and workbench build passed
+  for the preceding organization batch. The earlier domain-helper move preserved emitted JavaScript and CSS byte-for-byte.
 - Next candidate is the deferred [content.tsx composition review](../index.md#deferred-contenttsx-composition-review),
   starting with responsibility/ownership review. Implementation has not started. Scrolling remains deferred. No further
   generic component, folder, or CSS cleanup is queued without a concrete need; keep workbench discovery automatic with

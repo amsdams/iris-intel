@@ -27,7 +27,6 @@ export interface DrawToolsLinkEndpointLabels {
   to: string;
 }
 
-export type DrawToolsMarkerTeamFilter = 'all' | IitcPortalsListEntry['team'] | 'unknown';
 export type DrawToolsMarkerSort = 'nearby' | 'created' | 'team' | 'level' | 'name';
 
 export const DRAW_TOOLS_MARKER_PRESETS = [
@@ -38,6 +37,25 @@ export const DRAW_TOOLS_MARKER_PRESETS = [
 ] as const;
 
 export const DRAW_TOOLS_DEFAULT_COLOR = '#a24ac3';
+
+export function getDrawToolsMarkerColor(item: Pick<DrawToolsMarkerItem, 'color'>): string {
+  const color = (item.color ?? DRAW_TOOLS_DEFAULT_COLOR).toLowerCase();
+  if (/^#[0-9a-f]{3,4}$/.test(color)) {
+    return '#' + [...color.slice(1)].map((digit) => digit + digit).join('');
+  }
+  return color;
+}
+
+export function getDrawToolsMarkerColorOptions(items: readonly DrawToolsMarkerItem[]): {value: string; label: string}[] {
+  const colors = new Map<string, string>(DRAW_TOOLS_MARKER_PRESETS.map((preset) => [
+    preset.color, preset.id.charAt(0).toUpperCase() + preset.id.slice(1),
+  ]));
+  colors.set(DRAW_TOOLS_DEFAULT_COLOR, 'Purple');
+  for (const color of [...new Set(items.map(getDrawToolsMarkerColor))].sort()) {
+    if (!colors.has(color)) colors.set(color, color);
+  }
+  return [...colors].map(([value, label]) => ({value, label}));
+}
 
 export function isSupportedDrawToolsItem(item: IitcDrawToolsItem): item is Extract<IitcDrawToolsItem, {type: 'polyline' | 'marker'}> {
   return item.type === 'polyline' || item.type === 'marker';
@@ -190,7 +208,7 @@ export function getDrawToolsItemLabel(item: IitcIrisDrawToolsItem, displayIndex:
   return `Link ${displayIndex + 1}`;
 }
 
-function getDrawToolsMarkerTeamSortValue(team: DrawToolsMarkerTeamFilter): number {
+function getDrawToolsMarkerTeamSortValue(team: IitcPortalsListEntry['team'] | 'unknown'): number {
   if (team === 'R') return 0;
   if (team === 'E') return 1;
   if (team === 'M') return 2;
@@ -198,10 +216,10 @@ function getDrawToolsMarkerTeamSortValue(team: DrawToolsMarkerTeamFilter): numbe
   return 4;
 }
 
-function getDrawToolsMarkerTeamFilterValue(
+function getDrawToolsMarkerTeam(
   item: DrawToolsMarkerItem,
   portalInfoByStorageIndex: Record<number, DrawToolsMarkerPortalInfo>,
-): DrawToolsMarkerTeamFilter {
+): IitcPortalsListEntry['team'] | 'unknown' {
   return portalInfoByStorageIndex[item.storageIndex]?.team ?? 'unknown';
 }
 
@@ -224,13 +242,13 @@ export function getDrawToolsMarkerCreatedIndexByStorageIndex(
   return createdIndexByStorageIndex;
 }
 
-export function filterDrawToolsMarkersByTeam(
+export function filterDrawToolsMarkersByColor(
   items: readonly DrawToolsMarkerItem[],
-  portalInfoByStorageIndex: Record<number, DrawToolsMarkerPortalInfo>,
-  teamFilter: DrawToolsMarkerTeamFilter,
+  colorFilter: string,
 ): DrawToolsMarkerItem[] {
-  if (teamFilter === 'all') return [...items];
-  return items.filter((item) => getDrawToolsMarkerTeamFilterValue(item, portalInfoByStorageIndex) === teamFilter);
+  if (colorFilter === 'all') return [...items];
+  const color = getDrawToolsMarkerColor({color: colorFilter});
+  return items.filter((item) => getDrawToolsMarkerColor(item) === color);
 }
 
 export function sortDrawToolsMarkersForDisplay(
@@ -243,8 +261,8 @@ export function sortDrawToolsMarkersForDisplay(
   return sortedItems.sort((left, right) => {
     if (sortBy === 'created') return left.storageIndex - right.storageIndex;
     if (sortBy === 'team') {
-      const teamDiff = getDrawToolsMarkerTeamSortValue(getDrawToolsMarkerTeamFilterValue(left, portalInfoByStorageIndex)) -
-        getDrawToolsMarkerTeamSortValue(getDrawToolsMarkerTeamFilterValue(right, portalInfoByStorageIndex));
+      const teamDiff = getDrawToolsMarkerTeamSortValue(getDrawToolsMarkerTeam(left, portalInfoByStorageIndex)) -
+        getDrawToolsMarkerTeamSortValue(getDrawToolsMarkerTeam(right, portalInfoByStorageIndex));
       if (teamDiff !== 0) return teamDiff;
     }
     if (sortBy === 'level') {
@@ -264,11 +282,11 @@ export function sortDrawToolsMarkersForDisplay(
 export function filterAndSortDrawToolsMarkersForDisplay(
   items: readonly DrawToolsMarkerItem[],
   portalInfoByStorageIndex: Record<number, DrawToolsMarkerPortalInfo>,
-  teamFilter: DrawToolsMarkerTeamFilter,
+  colorFilter: string,
   sortBy: DrawToolsMarkerSort,
 ): DrawToolsMarkerItem[] {
   return sortDrawToolsMarkersForDisplay(
-    filterDrawToolsMarkersByTeam(items, portalInfoByStorageIndex, teamFilter),
+    filterDrawToolsMarkersByColor(items, colorFilter),
     portalInfoByStorageIndex,
     sortBy,
   );
