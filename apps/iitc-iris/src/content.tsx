@@ -71,13 +71,13 @@ import {copyIitcIrisText} from './shell/content-feedback';
 import {IitcIrisPortalDetailsPanel} from './portals/portal-details-panel';
 import {IitcIrisSearchPanel} from './search/search-panel';
 import {usePortalAnalysisWorkflow} from './portal-analysis/content-portal-analysis-workflow';
-import {IitcIrisMapControlsPanelContainer} from './map/map-controls-panel-container';
+import {IitcIrisMapControlsPanelContainer} from './map/map-controls-panel';
 import {IitcIrisHelpPanel} from './system/help-panel';
 import {IitcIrisPortalImageModal} from './portals/portal-image-modal';
 import {IitcIrisSheetTabBar} from './shell/sheet-tabbar';
 import {IitcIrisAuthRecoveryBanner} from './auth/auth-recovery-banner';
 import {IitcIrisRequestSidePanelContainer} from './shell/request-side-panel-container';
-import {IitcIrisSystemPanelContainer} from './system/system-panel-container';
+import {IitcIrisSystemPanelContainer} from './system/system-panel';
 import {createDockDiagnostics} from './system/content-dock-diagnostics';
 import {
   calculateSidePanelStatus,

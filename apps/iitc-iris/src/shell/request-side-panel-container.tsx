@@ -3,12 +3,12 @@ import {getPanelStatusClass} from '../ui-status';
 import {Panel, PanelHeader, PanelTitle} from '../ui/panel';
 import {ClearButton} from '../ui/clear-button';
 import {StatusText} from '../ui/status-text';
-import {IitcIrisAgentPanel} from '../side-panels/agent-panel';
+import {IitcIrisAgentPanel} from '../agent/agent-panel';
 import {IitcIrisCommPanel} from '../comm/comm-panel';
-import {IitcIrisInventoryPanel} from '../side-panels/inventory-panel';
+import {IitcIrisInventoryPanel} from '../inventory/inventory-panel';
 import {IitcIrisMissionsPanel} from '../missions/missions-panel';
-import {IitcIrisPasscodePanel} from '../side-panels/passcode-panel';
-import {IitcIrisScoresPanel} from '../side-panels/scores-panel';
+import {IitcIrisPasscodePanel} from '../passcode/passcode-panel';
+import {IitcIrisScoresPanel} from '../scores/scores-panel';
 import {type IitcIrisSidePanelId} from './menu-registry';
 import {
   type IitcIrisAgentState,

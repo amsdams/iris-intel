@@ -641,3 +641,43 @@ Validation:
 - `npm run lint:iitc-iris`
 - `npm run package:iitc-iris`
 - `git diff --check`
+
+## Domain → Panel Component Follow-Up — 2026-10-19
+
+The user explicitly authorized this multi-domain grouping pass after reviewing the directory inconsistencies. This
+bounded follow-up supersedes the historical one-domain-at-a-time queue for these moves only; it does not reopen
+behavior extraction or change stylesheet declarations/order.
+
+Convention: `domain/panel-name/` holds the panel entry, owned CSS/tests, and private parts. Domain logic/tests and
+styles shared across that domain remain at its root. `ui/` retains reusable primitives; shell coordination stays in
+`shell/`. The initial pass retained `side-panels/`; the subsequent authorized batch below resolves that exception.
+
+- `draw-tools/draw-tools-panel/`: moved `draw-tools-panel.tsx` and `draw-tools.css` from the domain root.
+- `layers/layers-panel/`: moved `layers-panel.tsx` and `layers.css` from the domain root.
+- `portals/portal-details-panel/`: moved the TSX plus `portal-side-panel-stacked.css`, `portal-side-panel.css`,
+  `portal-content.css`, `portal-details.css`, and `portal-summary-mini-track.css` from the domain root.
+- `portals/portal-image-modal/`: moved `portal-image-modal.tsx` and `portal-image-preview.css` from the domain root.
+- `map/map-controls-panel/`: moved both panel/container TSX files, the container test, and `map-controls.css` together.
+  Shared map navigation/runtime CSS stays at the domain root.
+- `system/system-panel/`: moved container, controls, diagnostics TSX, and `system-actions.css` together.
+  `help-panel.tsx` moved into `system/help-panel/`; shared `system.css` stays at the domain root.
+- `comm/comm-panel/`: moved body, controls, message-list TSX and `comm.css` together; removed the three private barrels.
+- Moved `missions.css` into `missions/missions-panel/` and `portal-list-title.css` into
+  `portal-analysis/portals-list-panel/`. Kept shared `portal-analysis.css` at its domain root.
+
+27 files moved, seven panel entry points added, relative imports updated; existing exports and implementation preserved.
+All 360 tests, app lint/typecheck, CSS lint, packaging, and `git diff --check` pass. Both emitted `content.js` and
+`iitc-iris.css` are byte-identical to the pre-move build. Source comparison also verified only relative import paths
+changed in existing files. No new tests or agent-run browser smoke were needed for this move-only change.
+
+### Remaining Domain Grouping And Shared Families — 2026-10-19
+
+The user subsequently authorized the shared Table, segmented family, domain CSS helper, and remaining request-panel
+cleanup together. Moved both TSX/entry files for Agent, Inventory, Scores, and Passcode from `side-panels/` to their own
+`domain/domain-panel/` directories, with owned CSS split by actual consumers; removed the old directory. Grouped both
+segmented exports/tests/CSS under `ui/segmented-control/`. Moved `ui/shared/map-context.css` to `map/map-context.css`
+and `ui/shared/agent-name.css` beside PortalDetailsPanel. Replaced the feature table helper with `ui/table`; feature
+geometry/tints/scrolling remain feature-owned. This batch includes the explicitly approved styling ownership changes,
+so the initial move-only byte-identity claim applies only to the preceding grouping pass.
+All 360 tests and required checks pass; structural cascade comparisons pass. User smoke pending; implementation and
+validation details are in [plan 37](css-refactoring/37-component-simplification-review.md).

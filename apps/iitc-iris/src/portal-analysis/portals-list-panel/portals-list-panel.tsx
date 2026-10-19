@@ -1,6 +1,6 @@
 import {Button} from '../../ui/button';
 import { h } from 'preact';
-import '../portal-list-title.css';
+import './portal-list-title.css';
 import '../portal-analysis.css';
 import '../../ui/shared/control.css';
 import {
@@ -30,7 +30,7 @@ import {TextInput} from '../../ui/text-input';
 import {ActionButton} from '../../ui/action-button';
 import {DiagnosticsChip} from '../../ui/diagnostics-chip';
 import {EmptyState} from '../../ui/empty-state';
-import {PortalAnalysisTable} from '../portal-analysis-table';
+import {Table} from '../../ui/table';
 
 export interface IitcIrisPortalsListPanelProps {
   cameraZoom: number;
@@ -155,7 +155,7 @@ export function IitcIrisPortalsListPanel({
         </ActionButton>
       </div>
       {sortedPortalsList.length > 0 ? (
-        <PortalAnalysisTable variant="portals-list">
+        <Table containerClassName="iitc-iris-portals-list-table-wrap" className="iitc-iris-portal-analysis-table iitc-iris-portals-list-table">
           <thead>
             <tr>
               {([
@@ -206,7 +206,7 @@ export function IitcIrisPortalsListPanel({
               </tr>
             ))}
           </tbody>
-        </PortalAnalysisTable>
+        </Table>
       ) : (
         <EmptyState>No portals match the current filters.</EmptyState>
       )}

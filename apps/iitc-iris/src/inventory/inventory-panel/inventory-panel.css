@@ -1,0 +1,75 @@
+.iitc-iris-inventory-section {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+
+.iitc-iris-inventory-scroll {
+    display: grid;
+    gap: 6px;
+}
+
+.iitc-iris-inventory-list {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+}
+
+.iitc-iris-inventory-row {
+    --iitc-iris-item-color: rgb(95 180 255 / 45%);
+
+    grid-template-columns: minmax(0, 1fr) max-content;
+    gap: 2px 8px;
+    align-items: baseline;
+    border-left-color: var(--iitc-iris-item-color);
+    box-shadow: inset 2px 0 0 var(--iitc-iris-item-color);
+}
+
+button.iitc-iris-inventory-row {
+    width: 100%;
+    color: #d7e7f5;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+button.iitc-iris-inventory-row:hover {
+    border-color: rgb(95 180 255 / 38%);
+    background: rgb(13 30 42 / 72%);
+}
+
+.iitc-iris-inventory-row span,
+.iitc-iris-inventory-row small {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.iitc-iris-item-badge {
+    min-width: 24px;
+    min-height: 16px;
+    margin-right: 6px;
+    padding: 0 4px;
+    border: 1px solid color-mix(in srgb, var(--iitc-iris-item-color) 70%, transparent);
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--iitc-iris-item-color) 18%, transparent);
+    color: var(--iitc-iris-item-color);
+    font-size: 9px;
+    line-height: 1;
+}
+
+.iitc-iris-inventory-row b {
+    color: var(--iitc-iris-item-color);
+}
+
+.iitc-iris-inventory-item-row > b {
+    color: inherit;
+}
+
+.iitc-iris-inventory-row small {
+    grid-column: 1 / -1;
+    color: #91a6b7;
+    font-size: var(--iitc-iris-text-sm);
+    text-transform: lowercase;
+}

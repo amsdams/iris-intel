@@ -5,7 +5,7 @@ import {Button, type ButtonProps} from './button';
 import {ActionButton} from '../action-button';
 import {ChipButton} from '../chip-button';
 import {ClearButton} from '../clear-button';
-import {SegmentedButton} from '../segmented-button';
+import {SegmentedButton} from '../segmented-control';
 
 describe('Button', () => {
   it('defaults to a native non-submitting button with the shared class', () => {

@@ -1,9 +1,9 @@
 import {h, type RefObject} from 'preact';
-import '../comm.css';
+import './comm.css';
 import {formatCommBounds} from '../comm-display';
-import {IitcIrisCommMessageList} from '../comm-message-list';
-import {IitcIrisCommPanelBody} from '../comm-panel-body';
-import {IitcIrisCommPanelControls} from '../comm-panel-controls';
+import {IitcIrisCommMessageList} from './comm-message-list';
+import {IitcIrisCommPanelBody} from './comm-panel-body';
+import {IitcIrisCommPanelControls} from './comm-panel-controls';
 import type {IitcIrisCommState, IitcIrisCommTab} from '../../messages';
 import {formatElapsedSeconds, getAuthErrorMessage} from '../../ui-status';
 import {DiagnosticsChip} from '../../ui/diagnostics-chip';

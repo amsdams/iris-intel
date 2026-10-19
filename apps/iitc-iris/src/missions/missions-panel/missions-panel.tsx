@@ -1,6 +1,6 @@
 import {h} from 'preact';
 import '../../ui/shared/selection-summary.css';
-import '../missions.css';
+import './missions.css';
 import '../../ui/shared/scroll-region.css';
 import '../../ui/shared/list-item.css';
 import {getCommTeamClass} from '../../comm/comm-display';

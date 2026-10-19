@@ -14,8 +14,9 @@ Status: Track A, Track B, and Track C Complete.
 - Follow-Up H is complete as of 2026-10-19: 37 central imports, passing automated checks, and a user-reported successful smoke test; SummaryCell retained centrally for ordering.
 - Gate 0 and follow-ups A–H are closed with their documented exceptions.
 - Component/feature CSS ownership is complete under [36-component-css-ownership-plan.md](css-refactoring/36-component-css-ownership-plan.md), with passing automated checks and user smoke acceptance: 10 central infrastructure imports; primitive and feature appearance loads through its owners. The previous SummaryCell ordering exception is resolved.
-- [Component simplification review and architecture contract](css-refactoring/37-component-simplification-review.md): A–C implemented and smoke accepted (23 → 20 exports). Both subsequent styling-contract and CSS cleanup batches are implemented with passing automated checks; their browser smoke remains. The CSS ownership refactor remains accepted.
-- Shared Button now owns reset/default semantics; four styled families and 32 feature button sites compose it. Shared exports: 21; all 360 tests and required checks pass. The combined browser smoke remains pending.
+- [Component simplification review and architecture contract](css-refactoring/37-component-simplification-review.md): A–C implemented and smoke accepted (23 → 20 exports). Both subsequent styling-contract and CSS cleanup batches are implemented with passing automated checks; user acceptance is recorded. The CSS ownership refactor remains accepted.
+- Shared Button now owns reset/default semantics; four styled families and 32 feature button sites compose it. Shared exports: 21; all 360 tests and required checks pass. The combined cleanup and Button follow-up are user accepted.
+- Latest authorized batch: shared Table replaces the analysis helper; segmented family grouped; domain CSS helpers and four request panels moved to their owners. All 360 tests/checks and structural cascade comparisons pass; combined user smoke pending in plan 37.
 - Progress, cascade exceptions, and suggestions for a later architecture review are recorded in
   `docs/iitc-iris/plans/css-refactoring/35-css-architecture-followups.md`.
 
@@ -30,7 +31,7 @@ Status of sequencing:
 2. Track B: component-local CSS imports for isolated and explicitly shared component styles. (COMPLETE FOR NAMED CSS)
 3. Track C: co-located component directory layout and descriptive CSS path cleanup. (COMPLETE)
 4. Component CSS ownership: resolve retained ordering dependencies and move component/feature styling to its owners. (COMPLETE; AUTOMATED CHECKS AND USER SMOKE ACCEPTED; see plan 36)
-5. Component simplification and styling contracts. (A–C ACCEPTED; TWO CLEANUP BATCHES IMPLEMENTED AND AUTOMATICALLY VALIDATED; BROWSER SMOKE PENDING IN PLAN 37)
+5. Component simplification and styling contracts. (COMPLETE; A–C, BOTH CLEANUP BATCHES, AND SHARED BUTTON USER ACCEPTED IN PLAN 37)
 
 ## Background
 

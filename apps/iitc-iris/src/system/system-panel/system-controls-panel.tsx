@@ -1,0 +1,244 @@
+import {Button} from '../../ui/button';
+import {h} from 'preact';
+import '../../ui/panel/panel.css';
+import '../../ui/shared/layer-toggle.css';
+import '../../map/source-toggle.css';
+import './system-actions.css';
+import '../system.css';
+import type {ScenarioRun} from '../content-scenarios';
+import type {IitcIrisLifecycleSettings} from '../../messages';
+import type {DataSourceOption, ViewPresetOption} from '../../shell/content-storage-settings';
+import {ActionButton} from '../../ui/action-button';
+import {Section} from '../../ui/section';
+import {ControlRow} from '../../ui/control-row';
+import {StatusText} from '../../ui/status-text';
+import {TextInput} from '../../ui/text-input';
+interface IitcIrisSystemControlsPanelProps {
+  shortcutsEnabled: boolean;
+  setShortcutsEnabled: (action: (current: boolean) => boolean) => void;
+  mapFocusMode: boolean;
+  setMapFocusMode: (action: (current: boolean) => boolean) => void;
+  copyDockText: () => void;
+  copyIntelUrl: () => void;
+  copyStatus: string;
+  viewPresets: readonly ViewPresetOption[];
+  jumpToPreset: (preset: ViewPresetOption) => void;
+  jumpToViewInput: () => void;
+  viewInput: string;
+  setViewInput: (value: string) => void;
+  viewInputStatus: string;
+  lifecycleSettings: IitcIrisLifecycleSettings;
+  setLifecycleSettings: (action: (current: IitcIrisLifecycleSettings) => IitcIrisLifecycleSettings) => void;
+  logoutIntel: () => void;
+  activeScenarioRun: ScenarioRun | null;
+  latestScenarioRun: ScenarioRun | null;
+  scenarioRuns: ScenarioRun[];
+  scenarioSnapCount: number;
+  scenarioStatus: string;
+  startScenarioRun: (name: string, overrides: Partial<IitcIrisLifecycleSettings>) => void;
+  panScenarioSouth: () => void;
+  canPan: boolean;
+  captureScenarioSnapshot: (label: string) => void;
+  finishScenarioRun: () => void;
+  copyScenarioRun: () => void;
+  clearScenarioRuns: () => void;
+  scenarioProgressRun: ScenarioRun | null;
+  scenarioExpectedSteps: readonly string[];
+  scenarioProgressLabels: Set<string>;
+  dataSourceOptions: readonly DataSourceOption[];
+  dataSourceId: string;
+  setDataSource: (id: string) => void;
+}
+export function IitcIrisSystemControlsPanel({
+  shortcutsEnabled,
+  setShortcutsEnabled,
+  mapFocusMode,
+  setMapFocusMode,
+  copyDockText,
+  copyIntelUrl,
+  copyStatus,
+  viewPresets,
+  jumpToPreset,
+  jumpToViewInput,
+  viewInput,
+  setViewInput,
+  viewInputStatus,
+  lifecycleSettings,
+  setLifecycleSettings,
+  logoutIntel,
+  activeScenarioRun,
+  latestScenarioRun,
+  scenarioRuns,
+  scenarioSnapCount,
+  scenarioStatus,
+  startScenarioRun,
+  panScenarioSouth,
+  canPan,
+  captureScenarioSnapshot,
+  finishScenarioRun,
+  copyScenarioRun,
+  clearScenarioRuns,
+  scenarioProgressRun,
+  scenarioExpectedSteps,
+  scenarioProgressLabels,
+  dataSourceOptions,
+  dataSourceId,
+  setDataSource,
+}: IitcIrisSystemControlsPanelProps): h.JSX.Element {
+  return (
+    <>
+      <Section titleHeading="Account">
+        <ControlRow>
+          <ActionButton
+            onClick={logoutIntel}
+            title="Sign out of the current Intel session"
+          >
+            Logout
+          </ActionButton>
+        </ControlRow>
+      </Section>
+      <Section titleHeading="Interaction">
+        <ControlRow>
+          <Button
+            className={`iitc-iris-layer-toggle ${shortcutsEnabled ? 'iitc-iris-layer-toggle-active' : ''}`}
+            onClick={() => setShortcutsEnabled((current) => !current)}
+            title="Enable plain keyboard shortcuts when focus is not in a text field"
+            aria-pressed={shortcutsEnabled}
+          >
+            Shortcuts
+          </Button>
+          <Button
+            className={`iitc-iris-layer-toggle ${mapFocusMode ? 'iitc-iris-layer-toggle-active' : ''}`}
+            onClick={() => setMapFocusMode((current) => !current)}
+            title="Auto-close panels after navigation actions that move the map"
+            aria-pressed={mapFocusMode}
+          >
+            Map Focus
+          </Button>
+          <StatusText>{shortcutsEnabled ? 'keys on' : 'keys off'}</StatusText>
+          <StatusText>{mapFocusMode ? 'auto close' : 'stay open'}</StatusText>
+        </ControlRow>
+      </Section>
+      <Section titleHeading="Copy/export">
+        <ControlRow>
+          <ActionButton onClick={copyDockText} title="Copy JSON diagnostics">JSON</ActionButton>
+          <ActionButton onClick={copyIntelUrl} title="Copy current view as an Intel URL">URL</ActionButton>
+          {copyStatus && <StatusText>{copyStatus}</StatusText>}
+        </ControlRow>
+      </Section>
+      <Section titleHeading="Presets">
+        <ControlRow>
+          {viewPresets.map((preset) => (
+            <Button
+              key={preset.id}
+              className="iitc-iris-preset"
+              onClick={() => jumpToPreset(preset)}
+              title={`${preset.label} ${preset.lat.toFixed(6)},${preset.lng.toFixed(6)}`}
+            >
+              {preset.label}
+            </Button>
+          ))}
+        </ControlRow>
+        <form
+          className="iitc-iris-jump"
+          onSubmit={(event) => {
+            event.preventDefault();
+            jumpToViewInput();
+          }}
+        >
+          <TextInput
+            className="iitc-iris-jump-input"
+            type="text"
+            value={viewInput}
+            onInput={(event) => setViewInput((event.currentTarget as HTMLInputElement).value)}
+            placeholder="lat,lng,z or Intel URL"
+            title="Paste lat,lng,z or an Intel URL with ll, pll, and optional z"
+          />
+          <Button className="iitc-iris-preset" type="submit">Jump</Button>
+          {viewInputStatus && <StatusText>{viewInputStatus}</StatusText>}
+        </form>
+      </Section>
+      <Section titleHeading="Lifecycle">
+        <ControlRow>
+          <Button
+            className={`iitc-iris-layer-toggle iitc-iris-system-toggle ${lifecycleSettings.iitcMovementDelay ? 'iitc-iris-layer-toggle-active' : ''}`}
+            onClick={() => setLifecycleSettings((current) => ({...current, iitcMovementDelay: !current.iitcMovementDelay}))}
+            title="Compare current fast refresh with IITC-style map movement and download timing"
+            aria-pressed={lifecycleSettings.iitcMovementDelay}
+          >
+            IITC Delay
+          </Button>
+          <StatusText>{lifecycleSettings.iitcMovementDelay ? 'IITC timing' : 'fast move'}</StatusText>
+        </ControlRow>
+      </Section>
+      <Section titleHeading="Scenarios">
+        <ControlRow>
+          <Button
+            className="iitc-iris-preset"
+            disabled={activeScenarioRun !== null}
+            onClick={() => startScenarioRun('fast-pan', {iitcMovementDelay: false})}
+            title="Start a fast-refresh scenario and capture the previous state"
+          >
+            Start Fast
+          </Button>
+          <Button
+            className="iitc-iris-preset"
+            disabled={activeScenarioRun !== null}
+            onClick={() => startScenarioRun('iitc-delay-pan', {iitcMovementDelay: true})}
+            title="Start an IITC-delay scenario and capture the previous state"
+          >
+            Start Delay
+          </Button>
+          <Button
+            className="iitc-iris-preset"
+            disabled={!canPan || activeScenarioRun === null}
+            onClick={panScenarioSouth}
+            title="Capture the current diagnostics before panning south, then pan south"
+          >
+            Snap Before Pan S
+          </Button>
+          <Button className="iitc-iris-preset" disabled={activeScenarioRun === null} onClick={() => captureScenarioSnapshot('reload')} title="Capture the current diagnostics after the selected scenario mode has refreshed">Snap Reload</Button>
+          <Button className="iitc-iris-preset" disabled={activeScenarioRun === null} onClick={() => captureScenarioSnapshot('in-progress')} title="Capture the current diagnostics as the in-progress point">Snap Prog</Button>
+          <Button className="iitc-iris-preset" disabled={activeScenarioRun === null} onClick={finishScenarioRun} title="Capture the final diagnostics and finish the active scenario run">Snap Done</Button>
+          <ActionButton onClick={copyScenarioRun} title="Copy all scenario runs as JSON">Copy Runs</ActionButton>
+          <Button className="iitc-iris-preset" onClick={clearScenarioRuns}>Clear</Button>
+          {activeScenarioRun
+            ? <StatusText className="iitc-iris-panel-state is-loading">{activeScenarioRun.name}: running</StatusText>
+            : latestScenarioRun
+              ? <StatusText className="iitc-iris-panel-state is-ready">{scenarioRuns.length} runs, {scenarioSnapCount} snaps</StatusText>
+              : <StatusText>no run</StatusText>}
+          {scenarioStatus && <StatusText>{scenarioStatus}</StatusText>}
+        </ControlRow>
+        {scenarioProgressRun && (
+          <div className="iitc-iris-scenario-progress" title={`${scenarioProgressRun.name} ${scenarioProgressRun.status}`}>
+            {scenarioExpectedSteps.map((label) => {
+              const doneLabel = label === 'done'
+                ? scenarioProgressLabels.has('done') || scenarioProgressLabels.has('done-active')
+                : scenarioProgressLabels.has(label);
+              return (
+                <span className={doneLabel ? 'is-done' : ''} key={label}>
+                  {label === 'before-pan-south' ? 'pan-south' : label}
+                </span>
+              );
+            })}
+          </div>
+        )}
+      </Section>
+      <Section titleHeading="Data source">
+        <ControlRow>
+          {dataSourceOptions.map((option) => (
+            <Button
+              key={option.id}
+              className={`iitc-iris-layer-toggle iitc-iris-source-toggle ${dataSourceId === option.id ? 'iitc-iris-layer-toggle-active' : ''}`}
+              onClick={() => setDataSource(option.id)}
+              title={option.title}
+              aria-pressed={dataSourceId === option.id}
+            >
+              {option.label}
+            </Button>
+          ))}
+        </ControlRow>
+      </Section>
+    </>
+  );
+}

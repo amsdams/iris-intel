@@ -1,0 +1,78 @@
+.iitc-iris-score-block {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+    padding: 6px;
+    border: 1px solid rgb(95 180 255 / 18%);
+    border-radius: 4px;
+    background: rgb(10 18 25 / 62%);
+}
+
+.iitc-iris-score-heading,
+.iitc-iris-score-pair {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
+}
+
+.iitc-iris-score-heading {
+    color: #fff;
+    font-weight: 700;
+}
+
+.iitc-iris-score-pair {
+    font-size: var(--iitc-iris-text-md);
+}
+
+.iitc-iris-score-pair > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.iitc-iris-score-bar {
+    --enl-percent: 50%;
+
+    display: flex;
+    height: 8px;
+    overflow: hidden;
+    border-radius: 4px;
+    background: rgb(128 150 165 / 18%);
+}
+
+.iitc-iris-score-bar-enl {
+    width: var(--enl-percent);
+    background: #04c748;
+}
+
+.iitc-iris-score-bar-res {
+    flex: 1;
+    background: #00a2ff;
+}
+
+.iitc-iris-agent-list {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+}
+
+.iitc-iris-agent-row {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr);
+    gap: 6px;
+    align-items: center;
+    min-width: 0;
+    padding: 3px 6px;
+    border: 1px solid rgb(95 180 255 / 14%);
+    border-radius: 4px;
+    background: rgb(10 18 25 / 46%);
+}
+
+.iitc-iris-agent-row b {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

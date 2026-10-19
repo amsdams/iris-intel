@@ -25,7 +25,7 @@ import {
   PORTAL_COUNTS_SVG_HEIGHT,
   PORTAL_COUNTS_SVG_WIDTH,
 } from '../content-portal-analysis';
-import {PortalAnalysisTable} from '../portal-analysis-table';
+import {Table} from '../../ui/table';
 
 export interface IitcIrisPortalCountsPanelProps {
   portalAnalysis: {
@@ -70,7 +70,7 @@ export function IitcIrisPortalCountsPanel({
       {portalcounts.inaccurateAtLinkLevel && (
         <EmptyState>Portal counts are approximate at link-level zoom.</EmptyState>
       )}
-      <PortalAnalysisTable variant="counts">
+      <Table className="iitc-iris-portal-analysis-table iitc-iris-portal-counts-table">
         <thead>
           <tr>
             <th>Level</th>
@@ -101,7 +101,7 @@ export function IitcIrisPortalCountsPanel({
             <th>{formatInteger(portalcounts.total)}</th>
           </tr>
         </tbody>
-      </PortalAnalysisTable>
+      </Table>
       <div className="iitc-iris-counts-visuals" aria-label="Portal counts graph">
         <svg viewBox={`0 0 ${PORTAL_COUNTS_SVG_WIDTH} ${PORTAL_COUNTS_SVG_HEIGHT}`} role="img">
           <title>Portal counts by level and faction</title>

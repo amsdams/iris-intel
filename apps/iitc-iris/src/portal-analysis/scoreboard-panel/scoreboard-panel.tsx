@@ -13,7 +13,7 @@ import {
 } from '../content-portal-analysis';
 import {Section} from '../../ui/section';
 import {EmptyState} from '../../ui/empty-state';
-import {PortalAnalysisTable} from '../portal-analysis-table';
+import {Table} from '../../ui/table';
 
 export interface IitcIrisScoreboardPanelProps {
   portalAnalysis: {
@@ -36,7 +36,7 @@ export function IitcIrisScoreboardPanel({
 
   return (
     <Section className="iitc-iris-portal-analysis" titleHeading="Scoreboard">
-      <PortalAnalysisTable variant="scoreboard">
+      <Table className="iitc-iris-portal-analysis-table iitc-iris-scoreboard-table">
         <thead>
           <tr>
             <th>Metric</th>
@@ -57,7 +57,7 @@ export function IitcIrisScoreboardPanel({
             </tr>
           ))}
         </tbody>
-      </PortalAnalysisTable>
+      </Table>
     </Section>
   );
 }

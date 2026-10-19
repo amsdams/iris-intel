@@ -1,6 +1,6 @@
 # IITC IRIS Component Simplification Review
 
-Status: A–C accepted; both subsequent architecture cleanup batches implemented and automatically validated; browser smoke pending.
+Status: A–C, architecture cleanup, and Button accepted. Subsequent shared Table/segmented/domain ownership batch implemented; automated checks pass, user smoke pending.
 
 ## Goal And Authority
 
@@ -239,7 +239,7 @@ with shared validation and brief progress notes, without separate planning turns
 - **Styling contracts:** ActionButton has neutral normal/hover border fallbacks outside portal themes. Existing action,
   chip, clear, segmented, navigation, layer, preset, auth, and analysis button owners explicitly load one small shared
   appearance/cursor reset; each family retains its own shape and skin. Native focus remains intact. Disabled chip
-  buttons now use the default cursor. These default corrections need browser smoke, including host-page styles.
+  buttons now use the default cursor. These default corrections were included in the combined user acceptance below.
 - **Summary and CSS cleanup:** SummaryCell owns value/label typography through five root custom properties; Counts/List
   callers no longer target its nested b/small elements. Merged summary labels and portal-title resets into their owning
   sheets, grouped identical panel headers, removed superseded table-button declarations and five confirmed unused classes
@@ -259,4 +259,28 @@ without an extra DOM element. Explicit submit buttons remain explicit. Removed t
 stylesheets; Button loads its own CSS. Shared exports are now 21, including this infrastructure primitive.
 App lint/typecheck, all 360 tests, CSS lint, packaging, workbench build, and `git diff --check` pass. Production CSS
 selectors/declarations are unchanged from the preceding cleanup; only the two reset rules moved in import order.
-The combined browser smoke above remains pending. Workbench discovers Button automatically; no example catalogue added.
+Workbench discovers Button automatically; no example catalogue added.
+
+The user subsequently reported “ok, looks good,” accepting the combined cleanup and Button follow-up. This closes
+plan 37; its architecture contract remains guidance for future changes. No additional agent-run browser checks were
+performed. Scrolling remains deferred; further cleanup should follow concrete usage findings.
+
+### Shared Table And Remaining Ownership Cleanup — 2026-10-19
+
+User authorized all four recommendations as one batch. Replaced PortalAnalysisTable with `ui/table`: native table props,
+children, and separate table/container classes; no feature-named variants. The three analysis callers retain their
+column widths, numeric alignment, faction colors, and existing scroll constraints in feature CSS. Shared table skin,
+headers, and intrinsic responsive spacing load through Table. Removed the replaced component/tests and obsolete counts
+wrapper marker; added focused generic table semantics/forwarding tests. Shared UI exports are now 22.
+
+Grouped SegmentedRow/Button under `ui/segmented-control/` with one stylesheet and entry point. Moved map-context CSS to
+`map/` and the portal agent-name helper beside PortalDetailsPanel. Moved Agent, Inventory, Scores, and Passcode into
+`domain/domain-panel/`, splitting the old mixed stylesheet by actual consumer; removed `side-panels/`. Runtime side-panel
+IDs, navigation/request lifecycle, domain logic, and scrolling remain unchanged.
+
+All 360 tests, app lint/typecheck, CSS lint, packaging, workbench build, and `git diff --check` pass. A temporary structural
+cascade comparison passed 172,560 element comparisons across 20 sheets, four widths, and normal/hover/focus states;
+all non-table emitted CSS selector/declaration sets are unchanged. This supplements browser inspection; it does not
+prove browser rendering. Packaging retains its three pre-existing missing-fixture fallbacks.
+Combined smoke pending: Counts/List/Scoreboard at desktop/narrow widths (headers, alignment, faction tint, scrolling),
+Agent/Inventory/Scores/Passcode presentation and actions, COMM tabs, and Map/Draw Tools context plus portal owner names.
