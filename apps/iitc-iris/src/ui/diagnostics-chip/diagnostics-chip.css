@@ -1,13 +1,3 @@
-
-
-.iitc-iris-diagnostics-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    align-items: center;
-    min-width: 0;
-}
-
 .iitc-iris-diagnostics-chip {
     display: inline-flex;
     gap: var(--iitc-iris-space-2);
@@ -37,10 +27,6 @@
 
 .iitc-iris-diagnostics-chip[title] {
     cursor: help;
-}
-
-.iitc-iris-diagnostics-chip.iitc-iris-chip-button {
-    cursor: pointer;
 }
 
 .iitc-iris-diagnostics-chip:hover {

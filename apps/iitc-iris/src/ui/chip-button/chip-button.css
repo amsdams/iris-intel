@@ -1,7 +1,9 @@
-
-
-.iitc-iris-chip-button {
+.iitc-iris-diagnostics-chip.iitc-iris-chip-button {
     cursor: pointer;
+}
+
+.iitc-iris-diagnostics-chip.iitc-iris-chip-button:disabled {
+    cursor: default;
 }
 
 .iitc-iris-chip-button:hover {

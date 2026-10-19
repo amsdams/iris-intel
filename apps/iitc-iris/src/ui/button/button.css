@@ -1,0 +1,9 @@
+/* Shared interaction defaults; each button family owns its shape and skin. */
+.iitc-iris-button {
+    appearance: none;
+    cursor: pointer;
+}
+
+.iitc-iris-button:disabled {
+    cursor: default;
+}

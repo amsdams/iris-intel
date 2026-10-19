@@ -1,3 +1,4 @@
+import {Button} from '../../ui/button';
 import { h } from 'preact';
 import '../portal-list-title.css';
 import '../portal-analysis.css';
@@ -169,9 +170,9 @@ export function IitcIrisPortalsListPanel({
                 ['keys', 'Keys'],
               ] as const).map(([field, label]) => (
                 <th key={field}>
-                  <button className="iitc-iris-table-sort" type="button" onClick={() => sortPortalsListBy(field)}>
+                  <Button className="iitc-iris-table-sort" onClick={() => sortPortalsListBy(field)}>
                     {label}{portalsListSortBy === field ? portalsListSortOrder === 1 ? ' ^' : ' v' : ''}
-                  </button>
+                  </Button>
                 </th>
               ))}
               <th>V/C</th>
@@ -184,9 +185,9 @@ export function IitcIrisPortalsListPanel({
             {sortedPortalsList.map((portal) => (
               <tr key={portal.guid} className={formatTeamClass(portal.team)}>
                 <td className="iitc-iris-portal-list-title">
-                  <button type="button" onClick={() => zoomToAndShowPortal(portal.guid, portal.latE6, portal.lngE6, cameraZoom)} onDblClick={() => zoomToAndShowPortal(portal.guid, portal.latE6, portal.lngE6)}>
+                  <Button onClick={() => zoomToAndShowPortal(portal.guid, portal.latE6, portal.lngE6, cameraZoom)} onDblClick={() => zoomToAndShowPortal(portal.guid, portal.latE6, portal.lngE6)}>
                     {portal.title}
-                  </button>
+                  </Button>
                 </td>
                 <td className={`iitc-iris-level-cell iitc-iris-level-${portal.level}`}>L{portal.level}</td>
                 <td><Badge className={`iitc-iris-team-pill ${formatTeamClass(portal.team)}`}>{formatTeamShortLabel(portal.team)}</Badge></td>
@@ -200,7 +201,7 @@ export function IitcIrisPortalsListPanel({
                 <td>{formatScoutControlled(portal)}</td>
                 <td>{formatPortalMission(portal)}</td>
                 <td>
-                  <button className="iitc-iris-table-action" type="button" onClick={() => zoomToAndShowPortal(portal.guid, portal.latE6, portal.lngE6)} title="Zoom to and select portal">Zoom</button>
+                  <Button className="iitc-iris-table-action" onClick={() => zoomToAndShowPortal(portal.guid, portal.latE6, portal.lngE6)} title="Zoom to and select portal">Zoom</Button>
                 </td>
               </tr>
             ))}

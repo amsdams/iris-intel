@@ -3,17 +3,19 @@
 ## Current State
 
 Status: Phase 2 app-surface extraction, source layout, CSS Tracks A–C, follow-ups A–H, and component CSS ownership are complete/accepted.
-The current CSS/component architecture contract and next review are in
+The current CSS/component architecture contract and progress are in
 [plan 37](css-refactoring/37-component-simplification-review.md). Component/caller review and the combined A–C implementation
-are complete with passing automated checks: shared exports reduced from 23 to 20. User smoke acceptance is next.
+are complete and smoke accepted: shared exports reduced from 23 to 20. Both subsequent styling-contract and CSS cleanup
+batches are implemented with passing automated checks; their browser smoke is next.
+The approved shared Button follow-up is also implemented (21 exports); all 360 tests and required checks pass.
 Android APK work is a separate readiness track, not a continuation of the refactor plans.
 
 Do not assign any other refactor work unless a detailed plan names exact scope, files, stop conditions, and validation.
 
 Likely next priorities:
 
-1. Run plan 37's combined smoke checklist for action/form types, layer choices, and diagnostic chips.
-2. Record acceptance or fix any regression in the A–C batch.
+1. Smoke plan 37's two architecture cleanup batches: button defaults/states and Counts/List summaries at desktop/narrow widths.
+2. Record acceptance or fix any regression; scrolling remains deferred.
 3. Select further UI work only for concrete complexity or usage findings; broad visual changes remain separate.
 4. Use the app on phone/desktop and collect concrete UI/CSS/mobile pain.
 5. Prepare for a friend-shared sideload APK, with Play/store distribution deferred.
@@ -26,7 +28,7 @@ Do not mix refactor cleanup, UI/mobile polish, Android APK work, and feature/par
 ## Active Work
 
 - [Component simplification review](css-refactoring/37-component-simplification-review.md): current architecture contract
-  and completed source review. A–C are implemented and automatically validated together (23 → 20 exports); user smoke acceptance remains.
+  and completed source review. A–C accepted (23 → 20 exports); both subsequent cleanup batches automatically validated, browser smoke pending.
 
 ## Recently Completed
 
@@ -95,7 +97,7 @@ These rules apply to Codex, AGY/Gemini, and any other AI-assisted branch.
 
 Current / Proposed:
 
-- [css-refactoring/37-component-simplification-review.md](css-refactoring/37-component-simplification-review.md): Current CSS/component architecture contract, completed review, and implemented A–C batch; user smoke acceptance pending.
+- [css-refactoring/37-component-simplification-review.md](css-refactoring/37-component-simplification-review.md): Current architecture contract; A–C accepted and both subsequent cleanup batches implemented/automatically validated; browser smoke pending.
 - [css-pretty-architecture-plan.md](css-pretty-architecture-plan.md): Progress dashboard and historical CSS migration roadmap; use plan 37 for current architecture guidance.
 
 Completed CSS Follow-Ups And Ownership:

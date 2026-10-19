@@ -1,5 +1,3 @@
-
-
 .iitc-iris-segmented-row {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -24,5 +22,4 @@
 
 .iitc-iris-segmented-button:disabled {
     color: #4f6575;
-    cursor: default;
 }

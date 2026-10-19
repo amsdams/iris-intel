@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
+import {Button} from '../button';
 import {describe, expect, it, vi} from 'vitest';
 import {SegmentedButton} from './segmented-button';
 
 describe('SegmentedButton', () => {
-  it('renders type="button" and base class', () => {
+  it('composes Button with its style', () => {
     const vnode = SegmentedButton({ children: 'Tab' });
-    expect(vnode.type).toBe('button');
-    expect(vnode.props.type).toBe('button');
+    expect(vnode.type).toBe(Button);
     expect(vnode.props.className).toBe('iitc-iris-segmented-button');
     expect(vnode.props.children).toBe('Tab');
   });

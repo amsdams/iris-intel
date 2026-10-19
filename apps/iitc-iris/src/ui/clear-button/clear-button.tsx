@@ -1,17 +1,13 @@
-import {h, ComponentChildren, JSX} from 'preact';
+import {h} from 'preact';
+import {Button, type ButtonProps} from '../button';
 import './clear-button.css';
 
-export interface ClearButtonProps extends Omit<JSX.HTMLAttributes<HTMLButtonElement>, 'className' | 'type'> {
-  children?: ComponentChildren;
-  className?: string;
-  disabled?: boolean;
-  title?: string;
-}
+export type ClearButtonProps = Omit<ButtonProps, 'type'>;
 
 export function ClearButton({children, className, ...props}: ClearButtonProps): h.JSX.Element {
   return (
-    <button type="button" className={`iitc-iris-clear-selection ${className || ''}`.trim()} {...props}>
+    <Button className={`iitc-iris-clear-selection ${className || ''}`.trim()} {...props}>
       {children || 'X'}
-    </button>
+    </Button>
   );
 }

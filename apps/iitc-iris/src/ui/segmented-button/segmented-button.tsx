@@ -1,19 +1,16 @@
-import {h, ComponentChildren, JSX} from 'preact';
+import {h} from 'preact';
+import {Button, type ButtonProps} from '../button';
 import './segmented-button.css';
 
-export interface SegmentedButtonProps extends Omit<JSX.HTMLAttributes<HTMLButtonElement>, 'className' | 'type'> {
+export interface SegmentedButtonProps extends Omit<ButtonProps, 'type'> {
   active?: boolean;
-  children?: ComponentChildren;
-  className?: string;
-  disabled?: boolean;
-  title?: string;
 }
 
 export function SegmentedButton({active, children, className, ...props}: SegmentedButtonProps): h.JSX.Element {
   const classes = ['iitc-iris-segmented-button', active ? 'is-active' : '', className || ''].filter(Boolean).join(' ');
   return (
-    <button type="button" className={classes} {...props}>
+    <Button className={classes} {...props}>
       {children}
-    </button>
+    </Button>
   );
 }

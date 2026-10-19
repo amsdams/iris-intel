@@ -1,7 +1,4 @@
-
-
 .iitc-iris-clear-selection {
-    appearance: none;
     display: inline-grid;
     place-items: center;
     flex: 0 0 18px;
@@ -13,7 +10,6 @@
     background: rgb(45 24 7 / 86%);
     color: #ffb347;
     font: var(--iitc-iris-button-font);
-    cursor: pointer;
 }
 
 .iitc-iris-clear-selection:hover {

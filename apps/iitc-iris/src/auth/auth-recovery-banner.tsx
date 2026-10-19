@@ -1,3 +1,4 @@
+import {Button} from '../ui/button';
 import {h} from 'preact';
 import './auth.css';
 
@@ -17,12 +18,12 @@ export function IitcIrisAuthRecoveryBanner({
   return (
     <div className="iitc-iris-auth-recovery" role="status" aria-live="polite">
       <span>{authRecoveryText}</span>
-      <button type="button" onClick={openIntelLogin} title="Open Intel login">
+      <Button onClick={openIntelLogin} title="Open Intel login">
         Login
-      </button>
-      <button type="button" onClick={retryAuthRequest} title="Retry the latest affected request">
+      </Button>
+      <Button onClick={retryAuthRequest} title="Retry the latest affected request">
         Retry
-      </button>
+      </Button>
     </div>
   );
 }

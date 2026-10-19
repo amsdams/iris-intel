@@ -1,3 +1,4 @@
+import {Button} from '../ui/button';
 import { h } from 'preact';
 import '../ui/shared/map-context.css';
 import './map-controls.css';
@@ -37,14 +38,14 @@ export function IitcIrisMapNavigationPanel({
     <Section titleHeading="Controls">
       <ControlRow>
         <div className="iitc-iris-pan-grid" aria-label="Pan controls">
-          <button className="iitc-iris-nav-button iitc-iris-pan-north" type="button" disabled={!canPan} onClick={() => panMap('north')} title="Pan north" aria-label="Pan north">N</button>
-          <button className="iitc-iris-nav-button iitc-iris-pan-west" type="button" disabled={!canPan} onClick={() => panMap('west')} title="Pan west" aria-label="Pan west">W</button>
-          <button className="iitc-iris-nav-button iitc-iris-pan-east" type="button" disabled={!canPan} onClick={() => panMap('east')} title="Pan east" aria-label="Pan east">E</button>
-          <button className="iitc-iris-nav-button iitc-iris-pan-south" type="button" disabled={!canPan} onClick={() => panMap('south')} title="Pan south" aria-label="Pan south">S</button>
+          <Button className="iitc-iris-nav-button iitc-iris-pan-north" disabled={!canPan} onClick={() => panMap('north')} title="Pan north" aria-label="Pan north">N</Button>
+          <Button className="iitc-iris-nav-button iitc-iris-pan-west" disabled={!canPan} onClick={() => panMap('west')} title="Pan west" aria-label="Pan west">W</Button>
+          <Button className="iitc-iris-nav-button iitc-iris-pan-east" disabled={!canPan} onClick={() => panMap('east')} title="Pan east" aria-label="Pan east">E</Button>
+          <Button className="iitc-iris-nav-button iitc-iris-pan-south" disabled={!canPan} onClick={() => panMap('south')} title="Pan south" aria-label="Pan south">S</Button>
         </div>
-        <button className="iitc-iris-nav-button" type="button" onClick={() => zoomMap(1)} title="Zoom in" aria-label="Zoom in">+</button>
-        <button className="iitc-iris-nav-button" type="button" onClick={() => zoomMap(-1)} title="Zoom out" aria-label="Zoom out">-</button>
-        <button className="iitc-iris-nav-button iitc-iris-nav-button-wide" type="button" onClick={locateBrowserPosition} title="Pan to current browser location">Locate</button>
+        <Button className="iitc-iris-nav-button" onClick={() => zoomMap(1)} title="Zoom in" aria-label="Zoom in">+</Button>
+        <Button className="iitc-iris-nav-button" onClick={() => zoomMap(-1)} title="Zoom out" aria-label="Zoom out">-</Button>
+        <Button className="iitc-iris-nav-button iitc-iris-nav-button-wide" onClick={locateBrowserPosition} title="Pan to current browser location">Locate</Button>
       </ControlRow>
       {geolocationStatus && <StatusText className="iitc-iris-map-control-status">{geolocationStatus}</StatusText>}
     </Section>

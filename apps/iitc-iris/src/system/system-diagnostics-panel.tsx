@@ -1,3 +1,4 @@
+import {Button} from '../ui/button';
 import {h} from 'preact';
 import '../ui/shared/layer-toggle.css';
 import '../auth/auth.css';
@@ -64,23 +65,22 @@ export function IitcIrisSystemDiagnosticsPanel(props: IitcIrisSystemDiagnosticsP
         )}
         {props.entityFetch.collision && <span className="failed-request">old IRIS active</span>}
         {props.entityFetch.authRequired && (
-          <button className="iitc-iris-login iitc-iris-innerstatus-login" type="button" onClick={props.openIntelLogin} title="Open Intel login">
+          <Button className="iitc-iris-login iitc-iris-innerstatus-login" onClick={props.openIntelLogin} title="Open Intel login">
             Intel Login
-          </button>
+          </Button>
         )}
       </div>
     </Section>
     <Section titleHeading="Debug display">
       <ControlRow>
-        <button
+        <Button
           className={`iitc-iris-layer-toggle iitc-iris-system-toggle ${props.debugDockVisible ? 'iitc-iris-layer-toggle-active' : ''}`}
-          type="button"
           onClick={props.toggleDebugDock}
           title="Show or hide debug diagnostic rows"
           aria-pressed={props.debugDockVisible}
         >
           Debug
-        </button>
+        </Button>
       </ControlRow>
     </Section>
     {props.debugDockVisible && <Section className="iitc-iris-system-debug" titleHeading="Map diagnostics">
@@ -96,9 +96,9 @@ export function IitcIrisSystemDiagnosticsPanel(props: IitcIrisSystemDiagnosticsP
         <StatusText>batch {props.requestBatches[0] ?? 0}</StatusText>
         {props.entityFetch.collision && <StatusText className="iitc-iris-warning">old IRIS active</StatusText>}
         {props.entityFetch.authRequired && (
-          <button className="iitc-iris-login" type="button" onClick={props.openIntelLogin} title="Open Intel login">
+          <Button className="iitc-iris-login" onClick={props.openIntelLogin} title="Open Intel login">
             Intel Login
-          </button>
+          </Button>
         )}
       </div>
       <div className="iitc-iris-dock-row iitc-iris-debug-row">
@@ -131,7 +131,7 @@ export function IitcIrisSystemDiagnosticsPanel(props: IitcIrisSystemDiagnosticsP
         {props.entityFetch.selectedPortal && props.selectedPortalLabel && (
           <>
             <StatusText className="iitc-iris-compare">sel {props.selectedPortalLabel}</StatusText>
-            <button className="iitc-iris-preset" type="button" onClick={props.clearPortalSelection} title="Clear selected portal">Clear Sel</button>
+            <Button className="iitc-iris-preset" onClick={props.clearPortalSelection} title="Clear selected portal">Clear Sel</Button>
           </>
         )}
       </div>

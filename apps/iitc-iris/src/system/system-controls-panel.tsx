@@ -1,3 +1,4 @@
+import {Button} from '../ui/button';
 import {h} from 'preact';
 import '../ui/panel/panel.css';
 import '../ui/shared/layer-toggle.css';
@@ -98,24 +99,22 @@ export function IitcIrisSystemControlsPanel({
       </Section>
       <Section titleHeading="Interaction">
         <ControlRow>
-          <button
+          <Button
             className={`iitc-iris-layer-toggle ${shortcutsEnabled ? 'iitc-iris-layer-toggle-active' : ''}`}
-            type="button"
             onClick={() => setShortcutsEnabled((current) => !current)}
             title="Enable plain keyboard shortcuts when focus is not in a text field"
             aria-pressed={shortcutsEnabled}
           >
             Shortcuts
-          </button>
-          <button
+          </Button>
+          <Button
             className={`iitc-iris-layer-toggle ${mapFocusMode ? 'iitc-iris-layer-toggle-active' : ''}`}
-            type="button"
             onClick={() => setMapFocusMode((current) => !current)}
             title="Auto-close panels after navigation actions that move the map"
             aria-pressed={mapFocusMode}
           >
             Map Focus
-          </button>
+          </Button>
           <StatusText>{shortcutsEnabled ? 'keys on' : 'keys off'}</StatusText>
           <StatusText>{mapFocusMode ? 'auto close' : 'stay open'}</StatusText>
         </ControlRow>
@@ -130,15 +129,14 @@ export function IitcIrisSystemControlsPanel({
       <Section titleHeading="Presets">
         <ControlRow>
           {viewPresets.map((preset) => (
-            <button
+            <Button
               key={preset.id}
               className="iitc-iris-preset"
-              type="button"
               onClick={() => jumpToPreset(preset)}
               title={`${preset.label} ${preset.lat.toFixed(6)},${preset.lng.toFixed(6)}`}
             >
               {preset.label}
-            </button>
+            </Button>
           ))}
         </ControlRow>
         <form
@@ -156,58 +154,54 @@ export function IitcIrisSystemControlsPanel({
             placeholder="lat,lng,z or Intel URL"
             title="Paste lat,lng,z or an Intel URL with ll, pll, and optional z"
           />
-          <button className="iitc-iris-preset" type="submit">Jump</button>
+          <Button className="iitc-iris-preset" type="submit">Jump</Button>
           {viewInputStatus && <StatusText>{viewInputStatus}</StatusText>}
         </form>
       </Section>
       <Section titleHeading="Lifecycle">
         <ControlRow>
-          <button
+          <Button
             className={`iitc-iris-layer-toggle iitc-iris-system-toggle ${lifecycleSettings.iitcMovementDelay ? 'iitc-iris-layer-toggle-active' : ''}`}
-            type="button"
             onClick={() => setLifecycleSettings((current) => ({...current, iitcMovementDelay: !current.iitcMovementDelay}))}
             title="Compare current fast refresh with IITC-style map movement and download timing"
             aria-pressed={lifecycleSettings.iitcMovementDelay}
           >
             IITC Delay
-          </button>
+          </Button>
           <StatusText>{lifecycleSettings.iitcMovementDelay ? 'IITC timing' : 'fast move'}</StatusText>
         </ControlRow>
       </Section>
       <Section titleHeading="Scenarios">
         <ControlRow>
-          <button
+          <Button
             className="iitc-iris-preset"
-            type="button"
             disabled={activeScenarioRun !== null}
             onClick={() => startScenarioRun('fast-pan', {iitcMovementDelay: false})}
             title="Start a fast-refresh scenario and capture the previous state"
           >
             Start Fast
-          </button>
-          <button
+          </Button>
+          <Button
             className="iitc-iris-preset"
-            type="button"
             disabled={activeScenarioRun !== null}
             onClick={() => startScenarioRun('iitc-delay-pan', {iitcMovementDelay: true})}
             title="Start an IITC-delay scenario and capture the previous state"
           >
             Start Delay
-          </button>
-          <button
+          </Button>
+          <Button
             className="iitc-iris-preset"
-            type="button"
             disabled={!canPan || activeScenarioRun === null}
             onClick={panScenarioSouth}
             title="Capture the current diagnostics before panning south, then pan south"
           >
             Snap Before Pan S
-          </button>
-          <button className="iitc-iris-preset" type="button" disabled={activeScenarioRun === null} onClick={() => captureScenarioSnapshot('reload')} title="Capture the current diagnostics after the selected scenario mode has refreshed">Snap Reload</button>
-          <button className="iitc-iris-preset" type="button" disabled={activeScenarioRun === null} onClick={() => captureScenarioSnapshot('in-progress')} title="Capture the current diagnostics as the in-progress point">Snap Prog</button>
-          <button className="iitc-iris-preset" type="button" disabled={activeScenarioRun === null} onClick={finishScenarioRun} title="Capture the final diagnostics and finish the active scenario run">Snap Done</button>
+          </Button>
+          <Button className="iitc-iris-preset" disabled={activeScenarioRun === null} onClick={() => captureScenarioSnapshot('reload')} title="Capture the current diagnostics after the selected scenario mode has refreshed">Snap Reload</Button>
+          <Button className="iitc-iris-preset" disabled={activeScenarioRun === null} onClick={() => captureScenarioSnapshot('in-progress')} title="Capture the current diagnostics as the in-progress point">Snap Prog</Button>
+          <Button className="iitc-iris-preset" disabled={activeScenarioRun === null} onClick={finishScenarioRun} title="Capture the final diagnostics and finish the active scenario run">Snap Done</Button>
           <ActionButton onClick={copyScenarioRun} title="Copy all scenario runs as JSON">Copy Runs</ActionButton>
-          <button className="iitc-iris-preset" type="button" onClick={clearScenarioRuns}>Clear</button>
+          <Button className="iitc-iris-preset" onClick={clearScenarioRuns}>Clear</Button>
           {activeScenarioRun
             ? <StatusText className="iitc-iris-panel-state is-loading">{activeScenarioRun.name}: running</StatusText>
             : latestScenarioRun
@@ -233,16 +227,15 @@ export function IitcIrisSystemControlsPanel({
       <Section titleHeading="Data source">
         <ControlRow>
           {dataSourceOptions.map((option) => (
-            <button
+            <Button
               key={option.id}
               className={`iitc-iris-layer-toggle iitc-iris-source-toggle ${dataSourceId === option.id ? 'iitc-iris-layer-toggle-active' : ''}`}
-              type="button"
               onClick={() => setDataSource(option.id)}
               title={option.title}
               aria-pressed={dataSourceId === option.id}
             >
               {option.label}
-            </button>
+            </Button>
           ))}
         </ControlRow>
       </Section>

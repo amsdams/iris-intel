@@ -1,6 +1,6 @@
 # IITC IRIS Component Simplification Review
 
-Status: review complete; three bounded consolidation slices proposed. No component implementation performed.
+Status: A–C accepted; both subsequent architecture cleanup batches implemented and automatically validated; browser smoke pending.
 
 ## Goal And Authority
 
@@ -225,3 +225,38 @@ claiming to remove visual variants or requiring further reductions.
 - Referenced source/plan paths and component counts checked; `git diff --check`: pass.
 - Review complete. Recommended next action is slice A; B and C can follow separately. Defer universal Button, List/ListItem,
   Badge/Status unification, broad token conversion, and visual-default changes until a concrete need selects them.
+
+## Completion
+
+A–C were subsequently implemented together: one ActionButton with native type, one LayerChoice, and one DiagnosticsChip
+with either children or value/label. Shared exports reduced 23 → 20; all callers migrated and CSS remained unchanged.
+Lint/typecheck, 352 tests, packaging, and workbench build passed. The user reported “smoke test passed,” closing the batch.
+The preceding review and proposed slices remain the historical rationale. Future authorized small changes can be batched
+with shared validation and brief progress notes, without separate planning turns for each slice.
+
+### Architecture Cleanup Batches — 2026-10-19
+
+- **Styling contracts:** ActionButton has neutral normal/hover border fallbacks outside portal themes. Existing action,
+  chip, clear, segmented, navigation, layer, preset, auth, and analysis button owners explicitly load one small shared
+  appearance/cursor reset; each family retains its own shape and skin. Native focus remains intact. Disabled chip
+  buttons now use the default cursor. These default corrections need browser smoke, including host-page styles.
+- **Summary and CSS cleanup:** SummaryCell owns value/label typography through five root custom properties; Counts/List
+  callers no longer target its nested b/small elements. Merged summary labels and portal-title resets into their owning
+  sheets, grouped identical panel headers, removed superseded table-button declarations and five confirmed unused classes
+  (diagnostics-row, copy, debug-active, divider, layer-toggle-invert). Shared exports remain 20; central imports remain 10.
+- App lint/typecheck, all 352 tests, CSS lint, packaging, workbench build, and `git diff --check` pass. A temporary structural
+  cascade comparison preserved generic/counts/faction/raw-portal summary styles at 380/760/761/1200px; this is not browser
+  rendering evidence. Packaging still reports its three pre-existing missing-fixture fallbacks.
+- Scrolling is explicitly deferred and unchanged. Smoke: Counts/List summaries at desktop/narrow widths; ordinary and
+  team-tinted actions, chip/clear/COMM tabs, map navigation, Display/System toggles and auth controls; hover, disabled,
+  keyboard focus and activation. No new component framework or further refactor slice is required before that check.
+
+### Shared Button — 2026-10-19
+
+Following user approval, `ui/button` now owns the reset CSS, base class, native attributes, and default non-submitting
+button type. ActionButton, ChipButton, ClearButton, and SegmentedButton compose it; 32 feature button sites migrated
+without an extra DOM element. Explicit submit buttons remain explicit. Removed the ten reset imports from visual
+stylesheets; Button loads its own CSS. Shared exports are now 21, including this infrastructure primitive.
+App lint/typecheck, all 360 tests, CSS lint, packaging, workbench build, and `git diff --check` pass. Production CSS
+selectors/declarations are unchanged from the preceding cleanup; only the two reset rules moved in import order.
+The combined browser smoke above remains pending. Workbench discovers Button automatically; no example catalogue added.

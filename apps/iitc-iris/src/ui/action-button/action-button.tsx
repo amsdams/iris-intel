@@ -1,18 +1,13 @@
-import {h, ComponentChildren, JSX} from 'preact';
+import {h} from 'preact';
+import {Button, type ButtonProps} from '../button';
 import './action-button.css';
 
-export interface ActionButtonProps extends Omit<JSX.HTMLAttributes<HTMLButtonElement>, 'className' | 'type'> {
-  children?: ComponentChildren;
-  className?: string; // Optional extra classes
-  disabled?: boolean;
-  title?: string;
-  type?: 'button' | 'submit' | 'reset';
-}
+export type ActionButtonProps = ButtonProps;
 
-export function ActionButton({children, className, type = 'button', ...props}: ActionButtonProps): h.JSX.Element {
+export function ActionButton({children, className, ...props}: ActionButtonProps): h.JSX.Element {
   return (
-    <button type={type} className={`iitc-iris-button iitc-iris-portal-action ${className || ''}`.trim()} {...props}>
+    <Button className={`iitc-iris-portal-action ${className || ''}`.trim()} {...props}>
       {children}
-    </button>
+    </Button>
   );
 }

@@ -140,7 +140,6 @@
         display: none;
     }
 
-    .iitc-iris-dock-row:first-child .iitc-iris-copy:not(:first-of-type),
     .iitc-iris-dock-row:first-child .iitc-iris-preset,
     .iitc-iris-dock-row:first-child .iitc-iris-jump {
         display: none;

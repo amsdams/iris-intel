@@ -33,19 +33,14 @@
     gap: var(--iitc-iris-space-3);
 }
 
-.iitc-iris-analysis-summary-grid .iitc-iris-summary-cell {
+.iitc-iris-analysis-summary-cell {
+    --iitc-iris-summary-value-size: var(--iitc-iris-text-xl);
+    --iitc-iris-summary-label-weight: var(--iitc-iris-font-extrabold);
+    --iitc-iris-summary-label-transform: uppercase;
+
     gap: var(--iitc-iris-space-1);
     padding: var(--iitc-iris-space-3);
     background: rgb(10 18 25 / 62%);
-}
-
-.iitc-iris-analysis-summary-grid .iitc-iris-summary-cell b {
-    font-size: var(--iitc-iris-text-xl);
-}
-
-.iitc-iris-analysis-summary-grid .iitc-iris-summary-cell small {
-    font-weight: var(--iitc-iris-font-extrabold);
-    text-transform: uppercase;
 }
 
 .iitc-iris-analysis-chip-row {
@@ -159,6 +154,12 @@
 }
 
 .iitc-iris-portals-list-summary-item {
+    --iitc-iris-summary-value-size: var(--iitc-iris-text-xl);
+    --iitc-iris-summary-value-weight: var(--iitc-iris-font-black);
+    --iitc-iris-summary-value-line-height: 1.05;
+    --iitc-iris-summary-label-weight: var(--iitc-iris-font-extrabold);
+    --iitc-iris-summary-label-transform: uppercase;
+
     gap: var(--iitc-iris-space-1);
     align-content: start;
     padding: var(--iitc-iris-space-3);
@@ -166,27 +167,6 @@
     background: color-mix(in srgb, var(--portal-team-color, #5fb4ff) 10%, rgb(10 18 25 / 62%));
     color: #d7e7f5;
     text-align: left;
-}
-
-.iitc-iris-portals-list-summary-item b {
-    display: block;
-    overflow: hidden;
-    color: #fff;
-    font-size: var(--iitc-iris-text-xl);
-    font-weight: var(--iitc-iris-font-black);
-    line-height: 1.05;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-:where(.iitc-iris-portals-list-summary-item) small {
-    overflow: hidden;
-    color: var(--portal-team-color, #91a6b7);
-    font-size: var(--iitc-iris-text-sm);
-    font-weight: var(--iitc-iris-font-extrabold);
-    text-overflow: ellipsis;
-    text-transform: uppercase;
-    white-space: nowrap;
 }
 
 .iitc-iris-portal-counts-table-wrap,
@@ -304,14 +284,13 @@
 .iitc-iris-table-sort,
 .iitc-iris-table-action {
     min-width: 0;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: inherit;
     font: inherit;
 }
 
 .iitc-iris-table-sort {
+    padding: 0;
+    border: 0;
+    background: transparent;
     color: #9ed8ff;
     font-weight: var(--iitc-iris-font-black);
     text-transform: uppercase;
@@ -362,11 +341,9 @@
     }
 
     .iitc-iris-portals-list-summary-item {
-        padding: 5px;
-    }
+        --iitc-iris-summary-value-size: 14px;
 
-    .iitc-iris-portals-list-summary-item b {
-        font-size: 14px;
+        padding: 5px;
     }
 
     .iitc-iris-portal-analysis-table {

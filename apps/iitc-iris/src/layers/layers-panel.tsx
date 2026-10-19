@@ -1,3 +1,4 @@
+import {Button} from '../ui/button';
 import { h } from 'preact';
 import './layers.css';
 import '../ui/shared/layer-toggle.css';
@@ -85,16 +86,15 @@ export function IitcIrisLayersPanel({
       <Section titleHeading="Base map">
         <ControlRow>
           {BASE_LAYER_OPTIONS.map((option) => (
-            <button
+            <Button
               key={option.id}
               className={`iitc-iris-layer-toggle iitc-iris-base-toggle ${baseLayerId === option.id ? 'iitc-iris-layer-toggle-active' : ''}`}
-              type="button"
               onClick={() => selectBaseLayer(option.id)}
               title={option.title}
               aria-pressed={baseLayerId === option.id}
             >
               {option.label}
-            </button>
+            </Button>
           ))}
         </ControlRow>
       </Section>

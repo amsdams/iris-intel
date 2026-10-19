@@ -1,3 +1,4 @@
+import {Button} from './ui/button';
 import {h, render} from 'preact';
 import './search/map-search-badge.css';
 import './auth/auth.css';
@@ -585,8 +586,8 @@ function App(): h.JSX.Element {
 
   const inlineAuthActions = (
     <span className="iitc-iris-inline-auth">
-      <button type="button" onClick={openIntelLogin} title="Open Intel login">Login</button>
-      <button type="button" onClick={retryAuthRequest} title="Retry after login">Retry</button>
+      <Button onClick={openIntelLogin} title="Open Intel login">Login</Button>
+      <Button onClick={retryAuthRequest} title="Retry after login">Retry</Button>
     </span>
   );
 

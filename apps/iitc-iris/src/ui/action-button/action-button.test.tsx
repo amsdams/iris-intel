@@ -1,19 +1,19 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
+import {Button} from '../button';
 import {describe, expect, it, vi} from 'vitest';
 import {ActionButton} from './action-button';
 
 describe('ActionButton', () => {
-  it('renders type="button" and includes both base and feature class', () => {
+  it('composes Button with the action style', () => {
     const vnode = ActionButton({ children: 'Test' });
-    expect(vnode.type).toBe('button');
-    expect(vnode.props.type).toBe('button');
-    expect(vnode.props.className).toBe('iitc-iris-button iitc-iris-portal-action');
+    expect(vnode.type).toBe(Button);
+    expect(vnode.props.className).toBe('iitc-iris-portal-action');
     expect(vnode.props.children).toBe('Test');
   });
 
   it('composes extra className values without dropping the base classes', () => {
     const vnode = ActionButton({ className: 'extra-class' });
-    expect(vnode.props.className).toBe('iitc-iris-button iitc-iris-portal-action extra-class');
+    expect(vnode.props.className).toBe('iitc-iris-portal-action extra-class');
   });
 
   it('forwards disabled, title, aria-*, and event props', () => {
@@ -33,9 +33,9 @@ describe('ActionButton', () => {
 
   it.each(['submit', 'reset'] as const)('preserves explicit native type="%s" with the base classes', (type) => {
     const vnode = ActionButton({ type, children: 'Submit', disabled: true });
-    expect(vnode.type).toBe('button');
+    expect(vnode.type).toBe(Button);
     expect(vnode.props.type).toBe(type);
-    expect(vnode.props.className).toBe('iitc-iris-button iitc-iris-portal-action');
+    expect(vnode.props.className).toBe('iitc-iris-portal-action');
     expect(vnode.props.disabled).toBe(true);
     expect(vnode.props.children).toBe('Submit');
   });

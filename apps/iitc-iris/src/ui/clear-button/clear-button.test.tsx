@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
+import {Button} from '../button';
 import {describe, expect, it, vi} from 'vitest';
 import {ClearButton} from './clear-button';
 
 describe('ClearButton', () => {
-  it('renders type="button" and base class', () => {
+  it('composes Button with its style', () => {
     const vnode = ClearButton({ children: 'Clear' });
-    expect(vnode.type).toBe('button');
-    expect(vnode.props.type).toBe('button');
+    expect(vnode.type).toBe(Button);
     expect(vnode.props.className).toBe('iitc-iris-clear-selection');
     expect(vnode.props.children).toBe('Clear');
   });

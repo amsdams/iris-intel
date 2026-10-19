@@ -1,7 +1,9 @@
-@import url('./portal-list-title-reset.css');
-
-
 .iitc-iris-portal-list-title button {
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font: inherit;
     overflow: hidden;
     max-width: 220px;
     color: color-mix(in srgb, var(--portal-team-color) 46%, #e8f4ff);
