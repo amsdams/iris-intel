@@ -11,8 +11,8 @@ The shared Button follow-up is also user accepted (21 exports); all 360 tests an
 The Table/segmented/domain ownership batch and subsequent Inventory/panel organization follow-ups are implemented and
 user accepted (22 shared UI exports). The content composition pass is complete: Search, Layers, Missions, and location
 controls own their feature workflows; the user reported the combined smoke test passed on 2026-10-20.
-Latest app checks: 391 tests, lint/typecheck, and Chrome/Firefox packaging pass; CSS lint and workbench build also passed
-for the preceding organization batch. The earlier shared-domain-helper move preserved emitted JavaScript/CSS byte-for-byte.
+Latest app checks: 405 tests, lint/typecheck (including the workbench), CSS lint, workbench build, and Chrome/Firefox
+packaging pass (112 additional core tests). The earlier shared-domain-helper move preserved emitted JavaScript/CSS byte-for-byte.
 Current handoff is in [plan 37](css-refactoring/37-component-simplification-review.md);
 source grouping is recorded in [the source layout record](source-directory-layout-plan.md).
 Android APK work is a separate readiness track, not a continuation of the refactor plans.
@@ -36,7 +36,8 @@ Do not mix refactor cleanup, UI/mobile polish, Android APK work, and feature/par
 ## Active Work
 
 - Repository cleanup is complete, following user approval to delete superseded code and retain its Git history.
-  No implementation slice is active; platform-boundary and runtime-lifecycle hardening remain the next preparation work.
+  Repository tooling, asset URL ownership, and map-replacement lifetime hardening are implemented (details below).
+  No further architecture slice is queued; Android/WebView readiness proofs remain separate work.
   The content composition pass is complete with passing automated checks and user smoke acceptance.
   [Plan 37](css-refactoring/37-component-simplification-review.md) records the architecture contract and handoff.
 
@@ -93,7 +94,7 @@ User clarified the goal on 2026-10-20: a clean repository and solid application 
 Initial source scan: 137 production app modules, no relative runtime import cycles, no shared-UI imports outside `ui/`,
 and no browser/Leaflet/Preact references found in production `iitc-core` sources. This is not a full runtime audit.
 
-Recommended next implementation scope:
+Preparation status:
 
 - Reproducible, self-contained builds (complete): the root lockfile is included, CI uses Node 24 and
   `npm ci`, and required images plus notices are bundled under `apps/iitc-iris/assets/`. Samples moved unchanged into
@@ -118,14 +119,32 @@ Recommended next implementation scope:
   ([GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)). Recheck when an upstream fix is published;
   do not apply npm's proposed downgrade to Stylelint 7 or suppress the advisory. Current lint patterns are repository-owned.
   Preact 11, TypeScript 7, Vite 8, Vitest 5, and the newer Chrome type-definition line remain separate migration work;
-  Vite 6.4 still receives security patches ([support policy](https://vite.dev/releases)). No browser smoke test requested.
-- Platform boundaries: `map/missions-panel/missions-panel.tsx` calls `chrome.runtime.getURL` directly, while
-  `shell/storage-settings.ts` has two guarded resolution paths. Consolidate asset resolution behind one clear owner;
-  inventory injection, clipboard, geolocation, storage, and auth seams before choosing Android replacements.
-- Runtime lifecycle: review ownership of requests, timers, DOM listeners, and Leaflet resources around map replacement.
-  `page-map-runtime.ts` removes the previous map without one disposal owner; `map/map-context-runtime.ts` installs
-  listeners and timers without returning cleanup. Prove remount/cancellation behavior with lifecycle tests before
-  changing runtime boundaries. Extract cohesive responsibilities only when this improves ownership/testability.
+  Vite 6.4 still receives security patches ([support policy](https://vite.dev/releases)). The user subsequently reported a quick dependency-update smoke test passed.
+- Housekeeping and map lifetime pass (2026-10-20): root scripts use direct workspace commands; redundant aliases
+  and direct TypeScript ESLint parser/plugin dependencies were removed. `package:iitc-iris` remains for compatibility.
+  `npm run check` now includes workbench lint/typechecking, CSS lint, and a workbench build; both CI workflows use it.
+  Manual tagged releases require an existing `vX.Y.Z` tag, check out that tag, and retain version-consistency checks.
+  Release checks were exercised locally with valid, malformed, and mismatched versions; nothing was tagged or published.
+- Asset URL ownership: `src/platform/assets.ts` now serves script injection, Missions, and stored fixture resolution.
+  It uses the extension runtime when available and otherwise preserves relative URLs. Persisted keys are unchanged.
+- Map replacement: `map/map-runtime-lifetime.ts` owns cancellation of map fetches (including body reads), startup/refresh/
+  queue timers, and animation callbacks. Custom context gestures return cleanup; direct Leaflet removal and replacement
+  share one idempotent disposal path. Reset stale base-layer/render references so the replacement recreates its layers.
+  Invalidate old generations and guard async state application; an old subscription/player-tracker completion cannot
+  clear or reschedule replacement work. Page-level message/container-ready listeners intentionally survive replacements.
+  Fourteen new tests cover gesture cleanup/reinstallation, pending callbacks, request cancellation, late bodies, actual
+  runtime replacement, base-layer recreation, subscription races, and a single boot retry. This is a focused map-lifetime
+  review, not a complete audit of every app effect or browser lifecycle.
+
+Browser/platform ownership review:
+
+| Boundary | Current owner / decision |
+| --- | --- |
+| Bundled asset URLs | `platform/assets.ts`; shared by extension-side callers. The injected page runtime derives its own asset base from its script URL because it runs outside the extension context. |
+| Clipboard | `shell/feedback.ts`; the feedback helper already accepts an injected copy operation. Keep that seam for a future Android implementation. |
+| Geolocation | `map/location-workflow.ts` supplies browser capability to `map/location-actions.ts`; the action already accepts an injected position callback. |
+| Storage | `shell/storage-settings.ts` owns UI preference keys; the page runtime owns map/domain caches and IITC-compatible settings. Preserve these separate lifetimes and persisted formats. |
+| Injection, auth, transport | `content.tsx` injects the page script and bridges messages. The page runtime reads Intel cookies/version and performs authenticated requests. Keep those page-context assumptions explicit for the Android spike. |
 
 Keep this separate from Android scaffolding and visual changes. Stop when a fresh checkout builds consistently,
 platform assumptions have explicit owners, and the reviewed lifecycle paths have cleanup and meaningful tests.

@@ -10,12 +10,13 @@
     "package": "npm run build && node build-zip.cjs",
     "package:chrome": "npm run build && node build-zip.cjs chrome",
     "package:firefox": "npm run build && node build-zip.cjs firefox",
-    "clean": "rm -rf dist builds",
+    "clean": "rm -rf dist builds wb/dist",
     "check": "npm run lint && npm run typecheck && npm run test",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
-    "lint": "eslint src",
-    "lint:fix": "eslint src --fix"
+    "lint": "eslint src wb",
+    "lint:fix": "eslint src wb --fix",
+    "build:wb": "vite build wb"
   },
   "dependencies": {
     "@iris/iitc-core": "*",

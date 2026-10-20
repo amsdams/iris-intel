@@ -17,8 +17,9 @@ export function createIitcIrisMapContextMessage(options: IitcMapContextPayloadOp
   };
 }
 
-export function installIitcIrisContextGestures(map: LeafletMap, options: IitcIrisContextGestureOptions): void {
+export function installIitcIrisContextGestures(map: LeafletMap, options: IitcIrisContextGestureOptions): () => void {
   const container = map.getContainer();
+  const contextTimers = new Set<number>();
   let timer: number | null = null;
   let start: {x: number; y: number} | null = null;
 
@@ -30,11 +31,9 @@ export function installIitcIrisContextGestures(map: LeafletMap, options: IitcIri
     start = null;
   };
 
-  container.addEventListener('touchstart', (event) => {
-    if (event.touches.length !== 1) {
-      clear();
-      return;
-    }
+  const onTouchStart = (event: TouchEvent): void => {
+    clear();
+    if (event.touches.length !== 1) return;
 
     const touch = event.touches[0];
     const rect = container.getBoundingClientRect();
@@ -45,27 +44,43 @@ export function installIitcIrisContextGestures(map: LeafletMap, options: IitcIri
       options.onContextPoint(L.point(start.x, start.y));
       clear();
     }, options.longPressMs);
-  }, {passive: true});
+  };
 
-  container.addEventListener('touchmove', (event) => {
+  const onTouchMove = (event: TouchEvent): void => {
     if (!start || event.touches.length !== 1) return;
     const touch = event.touches[0];
     const rect = container.getBoundingClientRect();
     const x = touch.clientX - rect.left;
     const y = touch.clientY - rect.top;
     if (Math.hypot(x - start.x, y - start.y) > options.moveTolerancePx) clear();
-  }, {passive: true});
+  };
 
-  container.addEventListener('touchend', clear, {passive: true});
-  container.addEventListener('touchcancel', clear, {passive: true});
-
-  container.addEventListener('contextmenu', (event) => {
+  const onContextMenu = (event: MouseEvent): void => {
     event.preventDefault();
     const startedAt = performance.now();
-    window.setTimeout(() => {
+    const contextTimer = window.setTimeout(() => {
+      contextTimers.delete(contextTimer);
       if (options.getLastContextPostAt() >= startedAt) return;
       const rect = container.getBoundingClientRect();
       options.onContextPoint(L.point(event.clientX - rect.left, event.clientY - rect.top));
     }, 0);
-  }, {capture: true});
+    contextTimers.add(contextTimer);
+  };
+
+  container.addEventListener('touchstart', onTouchStart, {passive: true});
+  container.addEventListener('touchmove', onTouchMove, {passive: true});
+  container.addEventListener('touchend', clear, {passive: true});
+  container.addEventListener('touchcancel', clear, {passive: true});
+  container.addEventListener('contextmenu', onContextMenu, {capture: true});
+
+  return (): void => {
+    clear();
+    for (const contextTimer of contextTimers) window.clearTimeout(contextTimer);
+    contextTimers.clear();
+    container.removeEventListener('touchstart', onTouchStart);
+    container.removeEventListener('touchmove', onTouchMove);
+    container.removeEventListener('touchend', clear);
+    container.removeEventListener('touchcancel', clear);
+    container.removeEventListener('contextmenu', onContextMenu, {capture: true});
+  };
 }

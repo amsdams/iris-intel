@@ -28,20 +28,20 @@ Use Node.js 24 (`nvm use` with the supplied `.nvmrc`) and npm.
 ```bash
 npm ci
 npm run check
-npm run lint:css
 npm run package
 ```
 
 - `npm run dev`: watch the extension build. Load `apps/iitc-iris/dist` in your browser; this is not a hosted web page.
-- `npm run dev:wb`: open the component workbench through Vite.
+- `npm run dev:wb`: open the component workbench through Vite; `npm run build:wb` builds it separately.
 - `npm run build`: check the core build and produce the unpacked extension.
-- `npm run check`: lint, typecheck, and test both workspaces.
+- `npm run check`: lint, typecheck, and test both workspaces (including workbench sources), lint CSS, and build the workbench.
 - `npm run lint`: lint both workspaces and application CSS.
 - `npm run package` / `npm run release`: build Chrome ZIP and Firefox XPI artifacts locally; these do not publish.
 - `npm run clean`: remove generated application output.
 
-The `:iitc-core`, `:iitc-iris`, and `:all` command aliases remain available for focused checks and existing workflows.
-Only the two active workspaces are included. Commit the root `package-lock.json` when dependency resolution changes;
+For focused commands, use npm workspaces, for example `npm run test -w packages/iitc-core`.
+Only the two active workspaces are included; `package:iitc-iris` remains as a compatibility alias.
+Commit the root `package-lock.json` when dependency resolution changes;
 CI installs it with `npm ci` on Node 24.
 
 ## Load IITC IRIS Locally
@@ -63,7 +63,7 @@ live Intel data; retired fixture choices and empty fallback maps are no longer i
 `npm run version:bump -- X.Y.Z --no-tag` updates root/application versions, the manifest, and lockfile together.
 Without `--no-tag`, the existing script also creates a local release tag. Commit reviewed version changes before pushing
 any tag. CI checks, tests, and packages IITC IRIS; main pushes update the existing `latest` release, and version tags
-trigger the tagged release workflow.
+trigger the tagged release workflow. Manual release runs require an existing `vX.Y.Z` tag and build that tag.
 
 ## Product Scope
 

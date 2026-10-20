@@ -1,3 +1,4 @@
+import {createIitcIrisMapLifetime, type IitcIrisMapLifetime} from './map/map-runtime-lifetime';
 import L, {type Layer as LeafletLayer, type LeafletMouseEvent, type Map as LeafletMap, type TileLayer} from 'leaflet';
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisHighlighterSettings, type IitcIrisInteractionUpdateTimingDiagnostics, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLayerUpdateTimingDiagnostics, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionDetails, type IitcIrisMissionSource, type IitcIrisMissionSummary, type IitcIrisMissionWaypoint, type IitcIrisMissionsState, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderMutationLayerDiagnostics, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisSubscriptionState} from './messages';
 import {DEFAULT_LAYER_SETTINGS} from './map/layers/layer-registry';
@@ -191,6 +192,8 @@ const BASE_LAYERS: Record<IitcIrisBaseLayerId, {
 const DEFAULT_HIGHLIGHTER_SETTINGS: IitcIrisHighlighterSettings = {
   active: DEFAULT_HIGHLIGHTER_ID,
 };
+let mapLifetime: IitcIrisMapLifetime | undefined;
+let bootRetryTimer: number | undefined;
 let latestFetchGeneration = 0;
 let latestRequestKey = '';
 let latestEntities: IitcIrisRenderEntities | undefined;
@@ -338,7 +341,7 @@ function scheduleInteractionFrameDiagnostics(
   sentAt?: number,
   mirror?: IitcIrisLayerUpdateTimingDiagnostics,
 ): void {
-  window.requestAnimationFrame(() => {
+  mapLifetime?.requestFrame(() => {
     const firstFrameAt = performance.now();
     const firstAnimationFrameMs = roundTimingMs(firstFrameAt - runtimeStartedAt);
     update.firstAnimationFrameMs = firstAnimationFrameMs;
@@ -349,7 +352,7 @@ function scheduleInteractionFrameDiagnostics(
       if (mirror) mirror.sentToFirstAnimationFrameMs = sentToFirstAnimationFrameMs;
     }
 
-    window.requestAnimationFrame(() => {
+    mapLifetime?.requestFrame(() => {
       const secondFrameAt = performance.now();
       const secondAnimationFrameMs = roundTimingMs(secondFrameAt - runtimeStartedAt);
       update.secondAnimationFrameMs = secondAnimationFrameMs;
@@ -569,7 +572,7 @@ function postMapMoveStarted(): void {
   latestFetchGeneration += 1;
   latestRequestKey = '';
   latestWantedTileKeys = new Set();
-  window.clearTimeout(refreshTimer);
+  mapLifetime?.cancelScheduled(refreshTimer);
 }
 
 function postMapMoved(): void {
@@ -1930,14 +1933,16 @@ function getLocalSearchResults(term: string): IitcIrisSearchResult[] {
 async function fetchNominatimSearchResults(term: string): Promise<IitcIrisSearchResult[]> {
   const map = window.__iitcIrisMap;
   if (!map) return [];
+  const lifetime = mapLifetime;
+  if (!lifetime) return [];
   const bounds = map.getBounds();
   const viewbox = `&viewbox=${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}`;
   const seen = new Set<string>();
   const results: IitcIrisSearchResult[] = [];
 
   const fetchResults = async (bounded: boolean): Promise<boolean> => {
-    const response = await fetch(`${NOMINATIM_SEARCH_URL}${encodeURIComponent(term)}${viewbox}${bounded ? '&bounded=1' : ''}`);
-    const data = await response.json() as IitcNominatimResult[];
+    const {text} = await lifetime.fetchText(`${NOMINATIM_SEARCH_URL}${encodeURIComponent(term)}${viewbox}${bounded ? '&bounded=1' : ''}`);
+    const data = JSON.parse(text) as IitcNominatimResult[];
     if (bounded && data.length === 0) return false;
     results.push(...normalizeIitcNominatimResults(data, seen, 10 - results.length));
     return data.length > 0;
@@ -3974,6 +3979,7 @@ async function refreshMissions(source: IitcIrisMissionSource = 'view'): Promise<
       payload,
       abortController.signal,
     );
+    abortController.signal.throwIfAborted();
     const missionSummaries = sortMissionSummaries(parseIitcTopMissionsResponse(response).map(toIrisMissionSummary));
     if (source === 'portal' && portalGuid) setPortalMissionsCache(portalGuid, missionSummaries);
     const missions = enrichMissionSummariesWithCache(missionSummaries);
@@ -4037,6 +4043,7 @@ async function refreshMissionDetails(guid: unknown): Promise<void> {
 
   try {
     const response = await postIntelEndpoint('getMissionDetails', {guid: missionGuid}, abortController.signal);
+    abortController.signal.throwIfAborted();
     const details = parseIitcMissionDetailsResponse(response);
     const selectedMission = details ? toIrisMissionDetails(details) : undefined;
     if (selectedMission) setMissionDetailsCache(missionGuid, selectedMission);
@@ -4097,7 +4104,7 @@ function cancelActivePlayerTrackerFetch(): void {
 
 function clearPlayerTrackerRefreshTimer(): void {
   if (playerTrackerRefreshTimer !== undefined) {
-    window.clearTimeout(playerTrackerRefreshTimer);
+    mapLifetime?.cancelScheduled(playerTrackerRefreshTimer);
     playerTrackerRefreshTimer = undefined;
   }
 }
@@ -4110,7 +4117,7 @@ function schedulePlayerTrackerRefresh(delayMs = 250): void {
     renderPlayerTracker();
     return;
   }
-  playerTrackerRefreshTimer = window.setTimeout(() => {
+  playerTrackerRefreshTimer = mapLifetime?.schedule(() => {
     playerTrackerRefreshTimer = undefined;
     void refreshPlayerTrackerComm();
   }, delayMs);
@@ -4536,7 +4543,7 @@ function createMissingIntelVersionError(endpoint: string): Error {
 function setAuthRecoveryActive(active: boolean): void {
   authRecoveryActive = active;
   if (active) {
-    window.clearTimeout(refreshTimer);
+    mapLifetime?.cancelScheduled(refreshTimer);
     clearPlayerTrackerRefreshTimer();
   }
 }
@@ -4546,10 +4553,11 @@ async function fetchIitcEndpointText(
   init: RequestInit,
   group?: string,
 ): Promise<{response: Response; text: string}> {
+  const lifetime = mapLifetime;
+  if (!lifetime) throw new DOMException('Map is unavailable', 'AbortError');
   const finish = beginIitcRequest(endpoint, group);
   try {
-    const response = await fetch(`/r/${endpoint}`, init);
-    return {response, text: await response.text()};
+    return await lifetime.fetchText(`/r/${endpoint}`, init);
   } finally {
     finish();
   }
@@ -4767,6 +4775,7 @@ async function refreshSubscriptionStatus(): Promise<IitcIrisSubscriptionState> {
   currentSubscriptionPromise = (async (): Promise<IitcIrisSubscriptionState> => {
     try {
       const response = await postIntelEndpoint('getHasActiveSubscription', {}, abortController.signal);
+      abortController.signal.throwIfAborted();
       const hasActive = parseSubscriptionResponse(response);
       const nextState: IitcIrisSubscriptionState = {
         status: hasActive ? 'active' : 'inactive',
@@ -4789,8 +4798,10 @@ async function refreshSubscriptionStatus(): Promise<IitcIrisSubscriptionState> {
       setSubscriptionState(nextState);
       return nextState;
     } finally {
-      if (currentSubscriptionAbortController === abortController) currentSubscriptionAbortController = undefined;
-      currentSubscriptionPromise = undefined;
+      if (currentSubscriptionAbortController === abortController) {
+        currentSubscriptionAbortController = undefined;
+        currentSubscriptionPromise = undefined;
+      }
     }
   })();
 
@@ -5006,6 +5017,7 @@ async function refreshScores(): Promise<void> {
       postIntelEndpoint('getGameScore', {}, abortController.signal),
       postIntelEndpoint('getRegionScoreDetails', center, abortController.signal),
     ]);
+    abortController.signal.throwIfAborted();
     const game = parseGameScoreResponse(gameResponse);
     const region = parseRegionScoreResponse(regionResponse, center);
     latestScoresState = {
@@ -5061,6 +5073,7 @@ async function redeemPasscode(passcodeInput: unknown): Promise<void> {
 
   try {
     const response = await postIntelEndpoint('redeemReward', {passcode}, abortController.signal);
+    abortController.signal.throwIfAborted();
     latestPasscodeState = parsePasscodeRewards(response, passcode, performance.now() - startedAt);
     postPasscodeState();
   } catch (error) {
@@ -5096,6 +5109,7 @@ async function refreshInventory(): Promise<void> {
   try {
     void refreshSubscriptionStatus();
     const response = await postIntelEndpoint('getInventory', {lastQueryTimestamp: 0}, abortController.signal);
+    abortController.signal.throwIfAborted();
     const rawItems = parseIitcInventoryResponse(response);
     latestInventorySummary = summarizeIitcInventory(rawItems);
     latestInventoryState = createInventoryStateFromSummary(
@@ -5122,6 +5136,8 @@ async function refreshInventory(): Promise<void> {
 }
 
 async function sendComm(tab: IitcCommChannel, message: unknown): Promise<void> {
+  const lifetime = mapLifetime;
+  if (!lifetime) return;
   const text = typeof message === 'string' ? message : '';
   const center = getMapCenterE6();
   const payload = center ? genIitcCommSendPlextPostData({
@@ -5151,6 +5167,7 @@ async function sendComm(tab: IitcCommChannel, message: unknown): Promise<void> {
 
   try {
     await postSendPlext(payload, abortController.signal);
+    lifetime.signal.throwIfAborted();
     latestCommState = {
       ...latestCommState,
       tab,
@@ -5160,6 +5177,7 @@ async function sendComm(tab: IitcCommChannel, message: unknown): Promise<void> {
     postCommState();
     await refreshComm(tab);
   } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') return;
     latestCommState = {
       ...latestCommState,
       tab,
@@ -5203,6 +5221,7 @@ async function refreshComm(tab: IitcCommChannel = normalizeCommTab(latestCommSta
 
   try {
     const response = await fetchComm(version, tab, bounds, getOlderMsgs, abortController.signal);
+    abortController.signal.throwIfAborted();
     const elapsedMs = performance.now() - startedAt;
     const isAscendingOrder = !getOlderMsgs && commChannelsData[tab].newestTimestamp > -1;
     const writeResult = applyIitcCommResponse(response, commChannelsData[tab], getOlderMsgs, isAscendingOrder, tab);
@@ -5256,6 +5275,7 @@ async function refreshPlayerTrackerComm(): Promise<void> {
 
   try {
     const response = await fetchComm(version, 'all', bounds, false, abortController.signal);
+    abortController.signal.throwIfAborted();
     const writeResult = applyIitcCommResponse(response, commChannelsData.all, false, commChannelsData.all.newestTimestamp > -1, 'all');
     commChannelsData.all = writeResult.channelData;
     const messages = getIitcCommChannelMessages(commChannelsData.all);
@@ -5266,8 +5286,10 @@ async function refreshPlayerTrackerComm(): Promise<void> {
       renderPlayerTracker();
     }
   } finally {
-    if (currentPlayerTrackerCommAbortController === abortController) currentPlayerTrackerCommAbortController = undefined;
-    if (isPlayerTrackerVisible()) schedulePlayerTrackerRefresh(PLAYER_TRACKER_COMM_REFRESH_MS);
+    if (currentPlayerTrackerCommAbortController === abortController) {
+      currentPlayerTrackerCommAbortController = undefined;
+      if (isPlayerTrackerVisible()) schedulePlayerTrackerRefresh(PLAYER_TRACKER_COMM_REFRESH_MS);
+    }
   }
 }
 
@@ -5295,6 +5317,7 @@ async function refreshSelectedPortalDetails(guid: string): Promise<void> {
 
   try {
     const response = await fetchPortalDetails(guid, version, abortController.signal);
+    abortController.signal.throwIfAborted();
     if (selectedPortalGuid !== guid) return;
     const linkCount = selectedPortal?.links.count ?? 0;
     const applyResult = applyIitcPortalDetailsResponse({
@@ -5437,9 +5460,11 @@ async function fetchEntityBatch(tileKeys: string[], version: string, signal?: Ab
 }
 
 async function fetchFixtureResponse(source: Extract<IitcIrisDataSourceSettings, {mode: 'fixture'}>): Promise<IitcGetEntitiesResponse> {
-  const response = await fetch(source.url);
+  const lifetime = mapLifetime;
+  if (!lifetime) throw new DOMException('Map is unavailable', 'AbortError');
+  const {response, text} = await lifetime.fetchText(source.url);
   if (!response.ok) throw new Error(`fixture ${source.label} failed HTTP ${response.status}`);
-  return await response.json() as IitcGetEntitiesResponse;
+  return JSON.parse(text) as IitcGetEntitiesResponse;
 }
 
 function getArtifactTypes(entities: IitcRawGameEntity[]): string[] {
@@ -5544,21 +5569,23 @@ async function fetchEntityBatchResult(tileKeys: string[], version: string, signa
 }
 
 async function waitForIitcQueueDelay(delayMs: number, generation: number, signal: AbortSignal): Promise<boolean> {
-  if (signal.aborted) return false;
+  const lifetime = mapLifetime;
+  if (!lifetime || lifetime.signal.aborted || signal.aborted) return false;
   if (delayMs <= 0) return generation === latestFetchGeneration && !signal.aborted;
   return await new Promise<boolean>((resolve) => {
     let settled = false;
-    let timer = 0;
     const finish = (value: boolean): void => {
       if (settled) return;
       settled = true;
       signal.removeEventListener('abort', onAbort);
-      window.clearTimeout(timer);
+      lifetime.signal.removeEventListener('abort', onAbort);
+      lifetime.cancelScheduled(timer);
       resolve(value);
     };
     const onAbort = (): void => finish(false);
-    timer = window.setTimeout(() => finish(generation === latestFetchGeneration && !signal.aborted), delayMs);
+    const timer = lifetime.schedule(() => finish(generation === latestFetchGeneration && !signal.aborted), delayMs);
     signal.addEventListener('abort', onAbort, {once: true});
+    lifetime.signal.addEventListener('abort', onAbort, {once: true});
   });
 }
 
@@ -5627,6 +5654,7 @@ async function fetchArtifactEntitiesForRender(version: string, signal: AbortSign
 
   try {
     const entities = await fetchArtifactPortals(version, signal);
+    signal.throwIfAborted();
     latestArtifactDiagnostics = {
       status: entities.length > 0 ? 'ready' : 'empty',
       portalCount: entities.length,
@@ -5649,9 +5677,9 @@ async function fetchArtifactEntitiesForRender(version: string, signal: AbortSign
 }
 
 function scheduleEntityRefresh(delayMs = FAST_MOVE_REFRESH_DELAY_MS): void {
-  window.clearTimeout(refreshTimer);
+  mapLifetime?.cancelScheduled(refreshTimer);
   if (authRecoveryActive && dataSource.mode === 'live') return;
-  refreshTimer = window.setTimeout(() => {
+  refreshTimer = mapLifetime?.schedule(() => {
     void refreshEntities();
   }, delayMs);
 }
@@ -6038,8 +6066,8 @@ async function refreshEntities(): Promise<void> {
   }
 }
 
-function installContextLongPress(map: LeafletMap): void {
-  installIitcIrisContextGestures(map, {
+function installContextLongPress(map: LeafletMap): () => void {
+  return installIitcIrisContextGestures(map, {
     longPressMs: LONG_PRESS_MS,
     moveTolerancePx: LONG_PRESS_MOVE_TOLERANCE_PX,
     onLongPressStarted: () => {
@@ -6051,18 +6079,18 @@ function installContextLongPress(map: LeafletMap): void {
 }
 
 function boot(): void {
+  window.clearTimeout(bootRetryTimer);
+  bootRetryTimer = undefined;
   const container = document.getElementById('iitc-iris-map');
   if (!container) {
-    window.setTimeout(boot, 50);
+    bootRetryTimer = window.setTimeout(boot, 50);
     return;
   }
-  if (window.__iitcIrisPageRuntimeInitialized && window.__iitcIrisMapContainer === container && window.__iitcIrisMap) return;
+  if (mapLifetime && window.__iitcIrisPageRuntimeInitialized && window.__iitcIrisMapContainer === container && window.__iitcIrisMap) return;
 
-  window.__iitcIrisPageRuntimeInitialized = true;
-  if (window.__iitcIrisMap && window.__iitcIrisMapContainer !== container) {
-    window.__iitcIrisMap.remove();
-    window.__iitcIrisLayers = undefined;
-  }
+  // Dispose the old map before creating resources for its replacement.
+  if (mapLifetime) mapLifetime.dispose();
+  else window.__iitcIrisMap?.remove();
 
   const storedView = loadUrlMapView() ?? loadStoredMapView();
   const map = L.map(container, {
@@ -6072,6 +6100,36 @@ function boot(): void {
   }).setView([storedView.lat, storedView.lng], storedView.zoom);
 
   window.__iitcIrisMap = map;
+  window.__iitcIrisPageRuntimeInitialized = true;
+  const removeGestures = installContextLongPress(map);
+  mapLifetime = createIitcIrisMapLifetime(map, () => {
+    removeGestures();
+    cancelActiveEntityFetch();
+    cancelActivePanelRequests();
+    cancelActivePlayerTrackerFetch();
+    currentSubscriptionAbortController?.abort();
+    currentSubscriptionAbortController = undefined;
+    currentSubscriptionPromise = undefined;
+    if (latestSubscriptionState.status === 'loading') latestSubscriptionState = {status: 'unknown'};
+    latestFetchGeneration += 1;
+    latestSearchSequence += 1;
+    latestRequestKey = '';
+    latestWantedTileKeys.clear();
+    activeMapDataRefreshBridge = undefined;
+    refreshTimer = undefined;
+    playerTrackerRefreshTimer = undefined;
+    mapMoveInProgress = false;
+    baseLayer = undefined;
+    latestEntities = undefined;
+    latestEntityRenderContextKey = '';
+    latestPlan = undefined;
+    latestResponse = undefined;
+    window.__iitcIrisLayers = undefined;
+    window.__iitcIrisMap = undefined;
+    window.__iitcIrisMapContainer = undefined;
+    window.__iitcIrisPageRuntimeInitialized = false;
+    mapLifetime = undefined;
+  });
   window.__iitcIrisMapContainer = container;
   createIitcIrisPanes(map);
 
@@ -6089,16 +6147,15 @@ function boot(): void {
     renderPlayerTracker();
     schedulePlayerTrackerRefresh();
   });
-  installContextLongPress(map);
-	  window.setTimeout(() => {
-	    map.invalidateSize();
-	    postMapMoved();
-	    postAgentState();
-	    renderIitcDrawTools();
-	    postIitcDrawToolsStatus();
-	    void refreshSubscriptionStatus();
-	    window.postMessage({type: IITC_IRIS_MESSAGES.pageReady}, '*');
-	  }, 0);
+  mapLifetime.schedule(() => {
+    map.invalidateSize();
+    postMapMoved();
+    postAgentState();
+    renderIitcDrawTools();
+    postIitcDrawToolsStatus();
+    void refreshSubscriptionStatus();
+    window.postMessage({type: IITC_IRIS_MESSAGES.pageReady}, '*');
+  }, 0);
 }
 
 function createIitcIrisPanes(map: LeafletMap): void {
@@ -6127,6 +6184,7 @@ function createIitcIrisPanes(map: LeafletMap): void {
   }
 }
 
+// The page bridge survives map replacement; map-specific resources belong to mapLifetime.
 window.addEventListener('IITC_IRIS_CONTAINER_READY', boot);
 window.addEventListener('message', handleMessage);
 boot();

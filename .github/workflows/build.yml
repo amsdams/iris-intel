@@ -27,17 +27,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Test
-        run: npm run test
+      - name: Check workspaces, CSS, and workbench
+        run: npm run check
 
       - name: Package IITC IRIS
-        run: npm run package:all
+        run: npm run package
 
       - name: Prepare artifacts
         run: |

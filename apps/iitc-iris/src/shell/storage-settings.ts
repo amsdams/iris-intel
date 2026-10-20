@@ -1,3 +1,4 @@
+import {getExtensionUrl} from '../platform/assets';
 import { DEFAULT_LAYER_SETTINGS } from '../map/layers/layer-registry';
 import { normalizePortalHighlighterId } from '../map/layers/highlighter-registry';
 import {
@@ -85,9 +86,7 @@ export function createDataSourceSettings(id: string): IitcIrisDataSourceSettings
   const normalizedId = normalizeDataSourceId(id);
   const option = DATA_SOURCE_OPTIONS.find((candidate) => candidate.id === normalizedId) ?? DATA_SOURCE_OPTIONS[0];
   if (option.mode === 'live' || !option.fixturePath) return { mode: 'live' };
-  const url = typeof chrome !== 'undefined' && chrome.runtime?.getURL
-    ? chrome.runtime.getURL(option.fixturePath)
-    : option.fixturePath;
+  const url = getExtensionUrl(option.fixturePath);
   return {
     mode: 'fixture',
     id: option.id,
@@ -424,8 +423,4 @@ export function storeSidePanelId(value: SidePanelId | null): void {
   } catch {
     // Side panel preference is optional.
   }
-}
-
-export function getExtensionUrl(path: string): string {
-  return typeof chrome !== 'undefined' && chrome.runtime?.getURL ? chrome.runtime.getURL(path) : path;
 }

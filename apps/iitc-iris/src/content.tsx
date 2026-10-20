@@ -1,3 +1,4 @@
+import {getExtensionUrl} from './platform/assets';
 import {Button} from './ui/button';
 import {h, render} from 'preact';
 import './map/search-panel/map-search-badge.css';
@@ -80,7 +81,6 @@ import {useLocationWorkflow} from './map/location-workflow';
 import {
   createDataSourceSettings,
   DATA_SOURCE_OPTIONS,
-  getExtensionUrl,
   loadInitialMapView,
   loadStoredActiveSheet,
   loadStoredBaseLayerId,

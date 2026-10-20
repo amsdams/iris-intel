@@ -1,3 +1,4 @@
+import {getExtensionUrl} from '../../platform/assets';
 import {h} from 'preact';
 import '../../ui/shared/selection-summary.css';
 import './missions.css';
@@ -30,10 +31,6 @@ export interface IitcIrisMissionsPanelProps {
   requestMissionDetails: (missionGuid: string) => void;
   zoomToAndShowPortal: (portalGuid?: string, latE6?: number, lngE6?: number, zoom?: number) => void;
   zoomToMission: () => void;
-}
-
-function getExtensionUrl(path: string): string {
-  return chrome.runtime.getURL(path);
 }
 
 function getMissionTypeIcon(typeNum?: number): string {

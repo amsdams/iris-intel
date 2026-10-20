@@ -39,7 +39,9 @@ interface PreviewProps {
 }
 
 function Preview({ selected, disabled, sampleText }: PreviewProps): ComponentChildren {
-  const [error, resetError] = useErrorBoundary();
+  const boundary = useErrorBoundary();
+  const error: unknown = boundary[0];
+  const resetError = boundary[1];
   if (error) {
     return h('div', { class: 'wb-error', role: 'alert' },
       h('strong', {}, 'This component could not render.'),
@@ -66,7 +68,7 @@ function DynamicWorkbench(): ComponentChildren {
   const [sampleText, setSampleText] = useState('Sample Label');
   const [narrow, setNarrow] = useState(false);
 
-  useEffect(() => {
+  useEffect((): (() => void) => {
     const onPopState = (): void => setSelected(selectionFromUrl());
     window.addEventListener('popstate', onPopState);
     // Give the initial/default selection a shareable URL too.
