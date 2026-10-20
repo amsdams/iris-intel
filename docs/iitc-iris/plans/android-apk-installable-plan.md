@@ -5,7 +5,7 @@
 Status: planning and research only. No IRIS Android project exists yet. Repository cleanup completed on 2026-10-20:
 only `apps/iitc-iris` and `packages/iitc-core` remain; builds no longer require legacy apps or local reference assets.
 The repository/platform ownership and map-replacement lifetime pass is implemented and user smoke accepted.
-See [the roadmap](index.md#before-apk-repository-and-runtime-hardening) for the current ownership inventory.
+See [the architecture reference](../architecture.md#browser-and-runtime-ownership) for the current ownership inventory.
 
 This plan answers what must be decided and proven before trying to create an installable Android APK/AAB. It is not a
 refactoring plan, and it should not be mixed with UI extraction or source-layout cleanup.
@@ -18,7 +18,7 @@ refactoring plan, and it should not be mixed with UI extraction or source-layout
 - Reference IITC-CE Android prior art exists under `reference/IITC-CE/mobile/` and
   `reference/ingress-intel-total-conversion/mobile/`.
 - First target decided: private/friends sideloadable APK. Store/Play distribution is deferred.
-- Browser boundary owners are inventoried in the roadmap: assets, injection/messaging, clipboard, geolocation,
+- Browser boundary owners are inventoried in the architecture reference: assets, injection/messaging, clipboard, geolocation,
   preferences, runtime caches, and Intel authentication. Android replacements are not implemented.
 - Shared asset URL resolution and map disposal are implemented. Automated checks pass (517 tests, workbench checks,
   CSS lint, and extension packaging); the user reported the cleanup smoke test passed on 2026-10-20.
@@ -68,7 +68,7 @@ own injection, auth, storage, permissions, and releases.
 Choose one path before implementation.
 
 | Path | Use When | Main Cost |
-|---|---|---|
+| --- | --- | --- |
 | Sideload debug/release APK | The first goal is sharing with friends for real-device testing. | Still needs native wrapper, signing, permissions, and install docs. |
 | Play-distributable AAB | The goal is public or wider distribution through Google Play. | Requires Play policy/readiness, target SDK compliance, release signing, store metadata, and review risk. |
 | TWA/PWA wrapper | IRIS becomes a hosted web app that the Android shell opens fullscreen. | Needs a hosted app, asset links/site ownership, and does not match the current extension injection model. |
@@ -140,7 +140,7 @@ Use "assignment" as the single active-work term. Assignments 2–5 may be comple
 their individual evidence and stop conditions.
 
 | # | Assignment | Status | Done When |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 1 | Distribution decision | Done | First target is private/friends sideload APK; Play/store distribution is deferred. |
 | 2 | Android prior-art audit | Todo | Reference IITC mobile files are summarized into reusable patterns and rejected patterns. |
 | 3 | Runtime boundary audit | Partial: browser owners inventoried | Every extension-only assumption has an owner, replacement, or explicit non-goal. |
@@ -195,7 +195,7 @@ Document:
 
 Goal: complete the Android replacement decisions for current browser-extension assumptions.
 
-The browser-side owner inventory is already recorded in [the roadmap](index.md#before-apk-repository-and-runtime-hardening).
+The browser-side owner inventory is already recorded in [the architecture reference](../architecture.md#browser-and-runtime-ownership).
 Asset resolution lives in `src/platform/assets.ts`; map resources have an explicit lifetime. Do not repeat that refactor
 or treat this partial inventory as a tested Android bridge. File handling, network/deep-link behavior, Android storage,
 and authentication/session behavior still require Android-specific decisions and proof.

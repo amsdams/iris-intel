@@ -28,7 +28,7 @@ Use this rule when deciding where a feature belongs:
 ## Current IRIS Classification
 
 | IRIS feature | IITC-aligned category | Notes |
-|--------------|-----------------------|-------|
+| --- | --- | --- |
 | Base map switch | Base layer | One selected base map at a time. |
 | `fields`, `links`, `portals` | Overlay/filter layers | Existing hard-coded layer toggles align with IITC's layer chooser concept. |
 | `resistance`, `enlightened`, `machina` | Overlay/filter layers | Faction filters affect portals, links, and fields. |
@@ -53,7 +53,7 @@ The first registry pass should only move existing behavior into an IITC-shaped s
 visual modes.
 
 | Candidate | Current IRIS state | IITC-CE reference | Alignment |
-|-----------|--------------------|-------------------|-----------|
+| --- | --- | --- | --- |
 | Level color | Active highlighter `level-color` colors portal body by level at detailed zoom. | `plugins/highlight-level-color.js` registers `Level Color`. | Aligned in concept and exposed through the single highlighter selector. Legacy `levelFill` is migration-only state. |
 | Needs recharge | Active highlighter `needs-recharge` colors damaged portals by health buckets. | `plugins/highlight-needs-recharge.js` registers `Needs Recharge (Health)`. | Aligned in concept and exposed through the single highlighter selector. Legacy `healthFill` is migration-only state. |
 | History visited/captured/scout-controlled | Active history highlighters restyle portal fill color. | `plugins/highlight-portal-history.js` registers four combined history highlighters, but its inherited styles distinguish visited, captured, visit target, capture target, scout controlled, and scout-control target. | IRIS exposes those as six explicit selector entries: visited, not visited, captured, not captured, scout controlled, and not scout controlled. It keeps IITC's red/yellow `fillColor` vocabulary, but uses a consistent IRIS rule: positive history states are yellow and negative/target states are red. |
@@ -65,7 +65,7 @@ objects. Portal visibility still comes from layer/filter settings such as portal
 levels.
 
 | Highlighter | Matching rule | Applied marker style | Non-matching portals |
-|-------------|---------------|----------------------|----------------------|
+| --- | --- | --- | --- |
 | No Highlights | Always selected fallback. | No data-overlay style. | Normal portal style. |
 | Level Color | Portal has detailed data and optional overlays are enabled. | Fill color uses the IITC level color for the portal level. | Normal portal style. |
 | Needs Recharge (Health) | Portal has detailed data, belongs to a team, and health is below 100. | Fill color uses the existing health bucket color. | Normal portal style. |
@@ -175,7 +175,7 @@ Latest dense Amsterdam z15 stabilization observations, with roughly 3.9k portals
 show the current shape:
 
 | Toggle | Earlier scoped JS timing | Paint timing before status deferral | Current observed shape | Notes |
-|--------|--------------------------|-------------------------------------|------------------------|-------|
+| --- | --- | --- | --- | --- |
 | Fields | 15-31ms | First frame around 385-395ms, second frame around 770-808ms. | About 9-28ms runtime, second frame commonly 17-49ms. | Persistent core group attach/detach is now fast enough in the tested viewport. |
 | Links | 18-43ms | First frame around 374-395ms, second frame around 779-880ms. | About 14-42ms runtime, second frame commonly 38-51ms. | Secondary drawn-link work is still the main add-on cost. |
 | Resistance filter | 48-66ms | First frame around 407-441ms, second frame around 814-888ms. | Best observed about 34-54ms runtime, second frame around 47-72ms. | Direct faction-bucket path improved the common case, but this remains heavier than whole-overlay toggles. |

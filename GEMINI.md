@@ -1,24 +1,6 @@
-# IITC IRIS Project Mandates
+# IITC IRIS Project Guide
 
-This file contains foundational instructions and preferences for the IRIS development workflow.
-
-## Technical Integrity
-- **Validation:** Always verify library-specific API properties (e.g., MapLibre style specifications, Preact hook signatures) against official documentation or existing codebase patterns before implementation to prevent runtime errors.
-- **Linting Discipline:** Do not run `npm run lint` automatically after every change. Run it when the user requests verification, when a change is likely to affect lint/type rules broadly, or when you need confirmation before closing out a risky code change.
-- **Typecheck Discipline:** Do not run `npm run typecheck` automatically after every change. Prefer it for TypeScript-heavy changes, cross-file refactors, public type changes, or when the user asks for verification.
-- **Build Verification:** Do not run `npm run build` automatically after every change. Prefer it for runtime-sensitive UI/build/config changes, release-oriented work, or when the user explicitly asks for verification.
-- **Docs-Only Exception:** For markdown or docs-only edits, do not run `npm run typecheck`, `npm run lint`, `npm run build`, or `npm run release` unless the documentation change also updates commands, generated outputs, configuration expectations, or anything else that should be verified against the repo state.
-- **Ask Before Full Verification:** If all three of `npm run typecheck`, `npm run lint`, and `npm run build` would be run mainly as a precaution rather than a clear necessity, ask first instead of running them automatically.
-- **Post-Change Release:** Execute `npm run release` from the project root after completing code modifications or feature implementations when release artifacts are part of the task. Do not run release for docs-only changes.
-- **Testing:** Prefer testing changes before committing; do not ask to commit immediately after making changes.
-- **Style:** Adhere to Preact/TypeScript patterns in `apps/iitc-iris` and pure domain logic in `packages/iitc-core`. Earlier apps and their core/plugin libraries are historical Git references.
-- **IDE Cleanliness:** Treat IntelliJ/TypeScript warnings as real defects when they point to type unsafety, redundant checks, or avoidable coercions. Keep the IDE warning surface minimal, not just ESLint green.
-- **Boolean Defaults:** Avoid redundant `!!value` coercions for `boolean | undefined` state. Prefer `value ?? false` when the intended fallback is false.
-- **Type vs Interface:** Use `interface` for plain object contracts and API/domain models. Use `type` for unions, tuples, intersections, and helper compositions. Do not use `interface extends GeoJSON.GeoJsonProperties`; use a `type` intersection instead because `GeoJsonProperties` includes `null`.
-
-## Allowed/Preferred Commands
-- **Build & Release:** Use `npm run release` to build both Chrome and Firefox extensions.
-- **Development:** Use `npm run dev` for watching changes.
-- **Linting:** Use `npm run lint` or `npx eslint apps/iitc-iris/src` for code style checks.
-- **Typechecking:** Use `npm run typecheck` for repository-wide TypeScript verification.
-- **Testing:** (Add project-specific test commands here as they are established).
+Follow [the repository guide](SKILL.md) for ownership, validation, and authorization rules.
+Start with the [documentation index](docs/README.md) and [roadmap](docs/iitc-iris/plans/index.md).
+For code changes, use existing Preact/TypeScript patterns and keep pure domain logic in `packages/iitc-core`.
+Preserve observable behavior and persisted/message contracts unless the authorized task changes them.

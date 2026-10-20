@@ -25,7 +25,7 @@ Keep in `apps/iitc-iris`:
 - Fetch execution, CSRF/version handling, and auth classification.
 - AbortController ownership and cancellation policy.
 - Leaflet rendering, map movement, selected-object guards, and stale-response guards.
-- React state, keyboard interaction, scroll retention, and visual grouping.
+- Preact state, keyboard interaction, scroll retention, and visual grouping.
 - App-specific display models unless core can stay UI-neutral through a callback.
 
 ## Implementation Shape

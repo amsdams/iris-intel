@@ -65,8 +65,7 @@ Intentional divergences:
 
 Validation:
 
-- `npm run test:iitc-core -- --run src/portal-analysis.test.ts`
-- `npm run lint:iitc-iris`
-- `npm run typecheck:iitc-iris`
-- `npm run package:iitc-iris` after code changes.
+- `npm run test -w packages/iitc-core -- --run src/portal-analysis.test.ts`
+- `npm run check`
+- `npm run package` after code changes.
 - Manual live comparison against IITC's `portal-counts`, `portals-list`, and `scoreboard` plugins.

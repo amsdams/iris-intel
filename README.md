@@ -12,7 +12,7 @@ flowchart LR
 
 - `apps/iitc-iris/`: the application, component workbench, bundled assets, and extension packaging.
 - `packages/iitc-core/`: IITC-compatible domain logic, without UI or browser-runtime dependencies.
-- `docs/iitc-iris/`: active plans, feature notes, research, and payload samples.
+- `docs/iitc-iris/`: architecture guidance, the APK plan, feature notes, and payload samples.
 - `scripts/`: release version tooling.
 - `reference/`: optional, ignored IITC-CE checkouts for comparison; not required to build.
 
@@ -71,7 +71,8 @@ IITC IRIS renders portals, links, fields, artifacts, ornaments, missions, and se
 details, COMM, scores, inventory, passcodes, search, player tracker, Draw Tools v1 links/markers, and portal analysis.
 Broad IITC plugin compatibility and Android APK hosting remain separate decisions. No Android project exists yet.
 
-Start with the [roadmap](docs/iitc-iris/plans/index.md), [port plan](docs/iitc-iris/port-plan.md),
+Start with the [documentation index](docs/README.md), [architecture](docs/iitc-iris/architecture.md),
+[roadmap](docs/iitc-iris/plans/index.md), [port plan](docs/iitc-iris/port-plan.md),
 [feature notes](docs/iitc-iris/features/), and [backlog](docs/iitc-iris/backlog.md).
 
 ## Attribution

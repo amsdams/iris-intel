@@ -47,12 +47,7 @@ Validation and accepted scope:
   and marker record shapes.
 - IITC IRIS import/export has been user-validated for the supported v1 direction: export from IITC IRIS and import into
   IITC, plus import from IITC into IITC IRIS for links/markers.
-- Latest local validation for this slice included `npm run lint:iitc-iris`, `npm run lint:css`,
-  `npm run typecheck:iitc-iris`, `npm run test:iitc-core -- --run src/draw-tools.test.ts`, and
-  `npm run package:iitc-iris`.
-- Latest package artifacts:
-  - `apps/iitc-iris/builds/iitc-iris-chrome-0.1.0-2026-06-07T21-21-45.zip`
-  - `apps/iitc-iris/builds/iitc-iris-firefox-0.1.0-2026-06-07T21-21-45.xpi`
+- For changes, run the focused core Draw Tools tests, `npm run check`, and `npm run package`.
 
 Deferred by design for v1:
 

@@ -79,8 +79,7 @@ Current status:
   `plugins/highlight-portal-history.js`, `plugins/keys.js`, and `plugins/keys-on-map.js`. Negative history highlighters
   cover the old inverted modes such as not visited, not captured, and not scout controlled. This pass does not add bulk
   history fetching or hide/filter behavior; broader plugin/highlighter parity remains later work.
-- The System sheet now owns app-level comparison/debug controls: copied diagnostics, Intel URL copy, fixture/live data
-  source, view presets, jump input, and debug rows. This is an intentional product-shell divergence from IITC-CE’s
+- The System sheet now owns app-level comparison/debug controls: copied diagnostics, Intel URL copy, view presets, jump input, and debug rows. This is an intentional product-shell divergence from IITC-CE’s
   sidebar/dropdown placement, kept separate from core map workflows so visual map comparisons remain meaningful.
 - Map data request lifecycle now follows IITC-CE's active refill model: initial requests keep up to five active
   `getEntities` calls, each completed response immediately opens a slot for the next queued batch, and tile
