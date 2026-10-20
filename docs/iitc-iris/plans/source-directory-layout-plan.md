@@ -52,7 +52,7 @@ diagnostics, or the page runtime belongs in its domain, with tests alongside it:
 
 Moved these 12 files and updated consumers; no logic or styling changes. All 376 tests, app lint/typecheck, packaging,
 and `git diff --check` pass; generated JavaScript and CSS remain byte-identical to the preceding build.
-The later `content.tsx` composition review is recorded in the [roadmap](index.md#deferred-contenttsx-composition-review).
+The `content.tsx` composition review is recorded in the [roadmap](index.md#contenttsx-composition-review).
 
 ## IITC Sources
 

@@ -4,9 +4,6 @@ import './map/search-panel/map-search-badge.css';
 import './auth/auth.css';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import './iitc-iris.css';
-import {
-  type IitcIrisBooleanLayerSettingKey,
-} from './map/layers/layer-registry';
 import {PORTAL_HIGHLIGHTER_REGISTRY} from './map/layers/highlighter-registry';
 import {
   getPrimaryMenuId,
@@ -28,7 +25,6 @@ import {
   addCommNicknameCommand,
   centerMapContextCommand,
   clearPortalSelectionCommand,
-  clearSearchCommand,
   copyMapContextGuidCommand,
   copyMapContextLatLngCommand,
   copyMapContextPortalGuidsCommand,
@@ -37,23 +33,16 @@ import {
   copySelectedPortalLinkCommand,
   copySelectedPortalTitleCommand,
   focusSelectedPortalCommand,
-  handleSearchKeyDownCommand,
   panMapCommand,
-  previewSearchResultCommand,
   redeemPasscodeCommand,
   refreshInventoryCommand,
-  refreshMissionsCommand,
   refreshScoresCommand,
-  requestMissionDetailsCommand,
-  requestSearchCommand,
   selectMapContextAnchorCommand,
   selectPortalByLatLngCommand,
-  selectSearchResultCommand,
   sendCommCommand,
   setMapViewCommand,
   setPortalSectionOpenCommand,
   zoomToAndShowPortalCommand,
-  zoomToMissionCommand,
   closeSheetToMapCommand,
   openSheetCommand,
   toggleSheetCommand,
@@ -87,11 +76,7 @@ import {
   type AppAuthStates,
 } from './auth/navigation';
 import {useScenarioWorkflow} from './system/scenario-workflow';
-import {
-  jumpToPresetAction,
-  jumpToViewInputAction,
-  locateBrowserPositionAction,
-} from './map/location-actions';
+import {useLocationWorkflow} from './map/location-workflow';
 import {
   createDataSourceSettings,
   DATA_SOURCE_OPTIONS,
@@ -103,8 +88,6 @@ import {
   loadStoredCommTab,
   loadStoredDataSourceId,
   loadStoredDebugDockVisible,
-  loadStoredHighlighterSettings,
-  loadStoredLayerSettings,
   loadStoredLifecycleSettings,
   loadStoredPortalSections,
   LOGIN_BYPASS_STORAGE_KEY,
@@ -115,11 +98,8 @@ import {
   storeCommTab,
   storeDataSourceId,
   storeDebugDockVisible,
-  storeHighlighterSettings,
-  storeLayerSettings,
   storeLifecycleSettings,
   storeSidePanelId,
-  VIEW_PRESETS,
 } from './shell/storage-settings';
 import {
   createInnerStatusView,
@@ -130,16 +110,10 @@ import {
 } from './map/map-status';
 
 
-import {type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDrawToolsItem, type IitcIrisHighlighterSettings, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisMissionsState, type IitcIrisPasscodeState, type IitcIrisPortalHighlighterId, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState} from './messages';
+import {type IitcIrisAgentState, type IitcIrisCommState, type IitcIrisCommTab, type IitcIrisDrawToolsItem, type IitcIrisInventoryState, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMessage, type IitcIrisMissionSource, type IitcIrisPasscodeState, type IitcIrisRequestDiagnostics, type IitcIrisRenderPolicy, type IitcIrisScoresState} from './messages';
 import {
   type IitcMapDataPlan,
 } from '@iris/iitc-core';
-import {
-  buildHighlighterSettingsMessage,
-  buildHighlighterSettingsValue,
-  buildLayerSettingsMessage,
-  calculateToggledLayerSettings,
-} from './map/layers/actions';
 import {useDrawToolsWorkflow} from './map/draw-tools/workflow';
 import {
   handleCommScrollAction,
@@ -156,13 +130,13 @@ import {
   buildDataSourceSettingsMessage,
   buildLifecycleSettingsMessage,
 } from './shell/outbound-messages';
-import {buildSearchClearMessage, getSearchDebounceAction} from './map/search/actions';
-import {shouldRefreshPortalMissions} from './map/missions/refresh';
+import {useSearchWorkflow, useSearchEffects} from './map/search/workflow';
+import {useLayerSettingsWorkflow, useLayerSettingsEffects} from './map/layers/workflow';
+import {useMissionsWorkflow, useMissionsEffects} from './map/missions/workflow';
 
 
 const IITC_PAN_CONTROL_OFFSET_PX = 500;
 const LOGIN_BYPASS_MS = 5 * 60 * 1000;
-type BooleanLayerSettingKey = IitcIrisBooleanLayerSettingKey;
 const SIDE_PANEL_OPTIONS = SIDE_PANEL_REGISTRY;
 const DEFAULT_RENDER_POLICY: IitcIrisRenderPolicy = {
   optionalOverlayMinZoom: 14,
@@ -178,19 +152,6 @@ const EMPTY_REQUEST_DIAGNOSTICS: IitcIrisRequestDiagnostics = {
   activeRequests: 0,
   activeByEndpoint: {},
   active: [],
-};
-const EMPTY_SEARCH_STATE: IitcIrisSearchState = {
-  status: 'idle',
-  term: '',
-  confirmed: false,
-  results: [],
-  localResults: 0,
-};
-const EMPTY_MISSIONS_STATE: IitcIrisMissionsState = {
-  status: 'idle',
-  requestState: 'idle',
-  missions: [],
-  detailsStatus: 'idle',
 };
 type SidePanelId = IitcIrisSidePanelId;
 type SheetId = IitcIrisSheetId;
@@ -210,22 +171,20 @@ function injectScript(src: string): void {
 }
 
 function App(): h.JSX.Element {
+  const postIitcMessage = useCallback((message: IitcIrisMessage): void => {
+    window.postMessage(message, '*');
+  }, []);
+
   const [status, setStatus] = useState('booting');
   const [systemCopyStatus, setSystemCopyStatus] = useState('');
   const [contextCopyStatus, setContextCopyStatus] = useState('');
   const [portalCopyStatus, setPortalCopyStatus] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchState, setSearchState] = useState<IitcIrisSearchState>(EMPTY_SEARCH_STATE);
-  const [activeSearchResultIndex, setActiveSearchResultIndex] = useState(0);
   const [portalImageOpen, setPortalImageOpen] = useState(false);
   const [portalSections, setPortalSections] = useState<Record<PortalSectionId, boolean>>(() => loadStoredPortalSections());
   const [shortcutsEnabled, setShortcutsEnabled] = useState(() => loadStoredBoolean(SHORTCUTS_ENABLED_STORAGE_KEY, true));
   const [mapFocusMode, setMapFocusMode] = useState(() => loadStoredBoolean(MAP_FOCUS_MODE_STORAGE_KEY, false));
   const [commUserAtBottom, setCommUserAtBottom] = useState(true);
   const [commNewBelow, setCommNewBelow] = useState(false);
-  const [viewInput, setViewInput] = useState('');
-  const [viewInputStatus, setViewInputStatus] = useState('');
-  const [geolocationStatus, setGeolocationStatus] = useState('');
   const [mapContext, setMapContext] = useState<IitcIrisMapContextSelection | null>(null);
   const [drawToolsItems, setDrawToolsItems] = useState<IitcIrisDrawToolsItem[]>([]);
   const [debugDockVisible, setDebugDockVisible] = useState(() => loadStoredDebugDockVisible());
@@ -237,7 +196,8 @@ function App(): h.JSX.Element {
   const [agentState, setAgentState] = useState<IitcIrisAgentState>(() => ({status: 'idle'}));
   const [commState, setCommState] = useState<IitcIrisCommState>(() => ({status: 'idle', tab: loadStoredCommTab(), messages: 0}));
   const [scoresState, setScoresState] = useState<IitcIrisScoresState>(() => ({status: 'idle', requestState: 'idle', region: {status: 'idle'}}));
-  const [missionsState, setMissionsState] = useState<IitcIrisMissionsState>(() => EMPTY_MISSIONS_STATE);
+  const missions = useMissionsWorkflow(postIitcMessage);
+  const {missionsState, setMissionsState, refreshMissions, requestMissionDetails, zoomToMission} = missions;
   const [passcodeState, setPasscodeState] = useState<IitcIrisPasscodeState>(() => ({status: 'idle', requestState: 'idle'}));
   const [requestDiagnostics, setRequestDiagnostics] = useState<IitcIrisRequestDiagnostics>(EMPTY_REQUEST_DIAGNOSTICS);
   const [inventoryState, setInventoryState] = useState<IitcIrisInventoryState>(() => ({
@@ -257,13 +217,10 @@ function App(): h.JSX.Element {
   const commOlderRequestPendingRef = useRef(false);
   const commStickToBottomRef = useRef(true);
   const commLatestTimestampRef = useRef<number | undefined>(undefined);
-  const layerSettingsIntentAtRef = useRef<number | undefined>(undefined);
-  const highlighterSettingsIntentAtRef = useRef<number | undefined>(undefined);
-  const [baseLayerId, setBaseLayerId] = useState<IitcIrisBaseLayerId>(() => loadStoredBaseLayerId());
+  const layers = useLayerSettingsWorkflow(postIitcMessage);
+  const {baseLayerId, layerSettings, highlighterSettings, setBaseLayerId, toggleLayerSetting, selectPortalHighlighter} = layers;
   const [dataSourceId, setDataSourceId] = useState<typeof DATA_SOURCE_OPTIONS[number]['id']>(() => loadStoredDataSourceId());
   const [lifecycleSettings, setLifecycleSettings] = useState<IitcIrisLifecycleSettings>(() => loadStoredLifecycleSettings());
-  const [layerSettings, setLayerSettings] = useState<IitcIrisLayerSettings>(() => loadStoredLayerSettings());
-  const [highlighterSettings, setHighlighterSettings] = useState<IitcIrisHighlighterSettings>(() => loadStoredHighlighterSettings());
   const [camera, setCamera] = useState<CameraState>(() => ({
     ...loadInitialMapView(),
     bounds: null,
@@ -451,10 +408,6 @@ function App(): h.JSX.Element {
     });
   };
 
-  const postIitcMessage = useCallback((message: IitcIrisMessage): void => {
-    window.postMessage(message, '*');
-  }, []);
-
   const closeSheetToMap = useCallback((): void => {
     closeSheetToMapCommand(activeSheet, activeSidePanel, postIitcMessage, {setActiveSheet, setActiveSidePanel, storeActiveSheet, storeSidePanelId});
   }, [activeSheet, activeSidePanel, postIitcMessage]);
@@ -515,22 +468,10 @@ function App(): h.JSX.Element {
     refreshInventoryCommand(postIitcMessage);
   };
 
-  const refreshMissions = useCallback((source: IitcIrisMissionSource = missionsState.source ?? 'view'): void => {
-    refreshMissionsCommand(postIitcMessage, source);
-  }, [missionsState.source, postIitcMessage]);
-
   const openSelectedPortalMissions = (): void => {
     if (!entityFetch.selectedPortal) return;
     openSheet('missions');
     refreshMissions('portal');
-  };
-
-  const requestMissionDetails = (missionGuid: string): void => {
-    requestMissionDetailsCommand(postIitcMessage, missionGuid);
-  };
-
-  const zoomToMission = (): void => {
-    zoomToMissionCommand(postIitcMessage);
   };
 
   const redeemPasscode = (): void => {
@@ -591,19 +532,14 @@ function App(): h.JSX.Element {
     </span>
   );
 
-  const toggleLayerSetting = (key: BooleanLayerSettingKey): void => {
-    layerSettingsIntentAtRef.current = performance.now();
-    setLayerSettings((current) => calculateToggledLayerSettings(current, key));
-  };
-
-  const selectPortalHighlighter = (active: IitcIrisPortalHighlighterId): void => {
-    highlighterSettingsIntentAtRef.current = performance.now();
-    setHighlighterSettings(buildHighlighterSettingsValue(active));
-  };
-
   const setMapView = useCallback((lat: number, lng: number, zoom = camera.zoom): void => {
     setMapViewCommand(lat, lng, zoom, postIitcMessage);
   }, [camera.zoom, postIitcMessage]);
+
+  const {viewInput, setViewInput, viewInputStatus, geolocationStatus,
+    jumpToPreset, jumpToViewInput, locateBrowserPosition} = useLocationWorkflow({
+    cameraZoom: camera.zoom, setMapView, postMessage: postIitcMessage,
+  });
 
   const {
     drawToolsLinkStart,
@@ -645,27 +581,6 @@ function App(): h.JSX.Element {
     setStatus,
   });
 
-  const requestSearch = useCallback((term: string, confirmed = false): void => {
-    requestSearchCommand(postIitcMessage, term, confirmed);
-  }, [postIitcMessage]);
-
-  const clearSearch = (): void => {
-    clearSearchCommand(postIitcMessage, setSearchTerm, setSearchState, setActiveSearchResultIndex, EMPTY_SEARCH_STATE);
-  };
-
-  const previewSearchResult = useCallback((result: IitcIrisSearchResult | null): void => {
-    previewSearchResultCommand(postIitcMessage, result);
-  }, [postIitcMessage]);
-
-  const selectSearchResult = (result: IitcIrisSearchResult, zoom = false): void => {
-    selectSearchResultCommand(result, zoom, postIitcMessage, mapFocusMode, closeSheets, openSheet);
-  };
-
-  const handleSearchKeyDown = (event: h.JSX.TargetedKeyboardEvent<HTMLInputElement>): void => {
-    // We cast event because Preact TargetedKeyboardEvent doesn't exactly match the generic signature, but it conforms.
-    handleSearchKeyDownCommand(event as unknown as {key: string; shiftKey: boolean; preventDefault(): void}, searchState.results, activeSearchResultIndex, postIitcMessage, mapFocusMode, closeSheets, openSheet, setActiveSearchResultIndex);
-  };
-
   const setPortalSectionOpen = (section: PortalSectionId, open: boolean): void => {
     setPortalSectionOpenCommand(portalSections, section, open, setPortalSections);
   };
@@ -702,6 +617,11 @@ function App(): h.JSX.Element {
     setPortalImageOpen(false);
     openSheet('map');
   }, [openSheet]);
+
+  const search = useSearchWorkflow({mapFocusMode, postMessage: postIitcMessage, openSheet, closeSheets});
+  const {searchTerm, searchState, activeSearchResultIndex, activeSearchResult,
+    setSearchTerm, setSearchState, setActiveSearchResultIndex,
+    requestSearch, clearSearch, previewSearchResult, selectSearchResult, handleSearchKeyDown} = search;
 
   const focusSelectedPortal = (): void => {
     focusSelectedPortalCommand(entityFetch.selectedPortal, camera.zoom, mapFocusMode, setMapView, closeSheets);
@@ -779,24 +699,6 @@ function App(): h.JSX.Element {
 
 
 
-  const jumpToPreset = (preset: typeof VIEW_PRESETS[number]): void => {
-    jumpToPresetAction(preset, setMapView);
-  };
-
-  const jumpToViewInput = (): void => {
-    jumpToViewInputAction(viewInput, camera.zoom, setMapView, setViewInputStatus);
-  };
-
-  const locateBrowserPosition = (): void => {
-    locateBrowserPositionAction(
-      Boolean(navigator.geolocation),
-      (success, error, options) => navigator.geolocation.getCurrentPosition(success, error, options),
-      setMapView,
-      setGeolocationStatus,
-      (msg) => window.postMessage(msg, '*')
-    );
-  };
-
   useEffect(() => {
     const onMessage = (event: MessageEvent<IitcIrisMessage>): void => {
       if (event.source !== window) return;
@@ -833,21 +735,9 @@ function App(): h.JSX.Element {
 
     window.addEventListener('message', onMessage);
     return (): void => window.removeEventListener('message', onMessage);
-  }, [activeSidePanel, baseLayerId, camera.zoom, dataSource, highlighterSettings, layerSettings, lifecycleSettings, setDrawToolsImportStatus]);
+  }, [activeSidePanel, baseLayerId, camera.zoom, dataSource, highlighterSettings, layerSettings, lifecycleSettings, setDrawToolsImportStatus, setMissionsState, setSearchState]);
 
-  useEffect(() => {
-    storeLayerSettings(layerSettings);
-    const sentAt = layerSettingsIntentAtRef.current ?? performance.now();
-    layerSettingsIntentAtRef.current = undefined;
-    window.postMessage(buildLayerSettingsMessage(layerSettings, baseLayerId, sentAt), '*');
-  }, [baseLayerId, layerSettings]);
-
-  useEffect(() => {
-    storeHighlighterSettings(highlighterSettings);
-    const sentAt = highlighterSettingsIntentAtRef.current ?? performance.now();
-    highlighterSettingsIntentAtRef.current = undefined;
-    window.postMessage(buildHighlighterSettingsMessage(highlighterSettings, sentAt), '*');
-  }, [highlighterSettings]);
+  useLayerSettingsEffects(layers);
 
   useEffect(() => {
     storeDataSourceId(dataSourceId);
@@ -900,38 +790,9 @@ function App(): h.JSX.Element {
   }, [activeSidePanel, inventoryState.status]);
 
 
-  useEffect(() => {
-    if (!shouldRefreshPortalMissions({
-      activeSidePanel,
-      selectedPortalGuid: entityFetch.selectedPortal?.guid,
-      missionSource: missionsState.source,
-      missionStatus: missionsState.status,
-      missionPortalGuid: missionsState.portalGuid,
-    })) return;
-    refreshMissions('portal');
-  }, [activeSidePanel, entityFetch.selectedPortal?.guid, missionsState.portalGuid, missionsState.source, missionsState.status, refreshMissions]);
+  useMissionsEffects(missions, activeSidePanel, entityFetch.selectedPortal?.guid);
 
-  useEffect(() => {
-    const action = getSearchDebounceAction(searchTerm);
-    if (action.type === 'clear') {
-      setSearchState(EMPTY_SEARCH_STATE);
-      setActiveSearchResultIndex(0);
-      window.postMessage(buildSearchClearMessage(), '*');
-      return;
-    }
-    const timer = window.setTimeout(() => requestSearch(action.term, false), action.delayMs);
-    return (): void => window.clearTimeout(timer);
-  }, [searchTerm, requestSearch]);
-
-  useEffect(() => {
-    setActiveSearchResultIndex(0);
-  }, [searchState.term, searchState.results.length]);
-
-  useEffect(() => {
-    if (activeSheet !== 'search') return;
-    const result = searchState.results.filter((candidate) => candidate.type !== 'empty')[activeSearchResultIndex];
-    previewSearchResult(result ?? null);
-  }, [activeSheet, activeSearchResultIndex, searchState.results, previewSearchResult]);
+  useSearchEffects(search, activeSheet, postIitcMessage);
 
   useEffect(() => {
     if (activeSidePanel !== 'comm') return;
@@ -991,7 +852,6 @@ function App(): h.JSX.Element {
   const setDataSource = (id: string): void => {
     setDataSourceCommand(id, DATA_SOURCE_OPTIONS, setDataSourceId, setMapView);
   };
-  const activeSearchResult = searchState.results.filter((result) => result.type !== 'empty')[activeSearchResultIndex];
 
   return (
     <div className={`iitc-iris-shell iitc-iris-sheet-${activeSheet} ${entityFetch.selectedPortal ? 'iitc-iris-has-selected-portal' : ''}`}>

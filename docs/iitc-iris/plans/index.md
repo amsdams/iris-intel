@@ -9,9 +9,11 @@ are complete and smoke accepted: shared exports reduced from 23 to 20. Both subs
 batches are complete with passing automated checks and user acceptance.
 The shared Button follow-up is also user accepted (21 exports); all 360 tests and required checks pass.
 The Table/segmented/domain ownership batch and subsequent Inventory/panel organization follow-ups are implemented and
-user accepted (22 shared UI exports). Latest app checks: 376 tests, lint/typecheck, and packaging pass; CSS lint and
-workbench build also passed for the preceding organization batch. The final shared-domain-helper move preserves emitted
-JavaScript/CSS byte-for-byte. Current handoff is in [plan 37](css-refactoring/37-component-simplification-review.md);
+user accepted (22 shared UI exports). The content composition pass is complete: Search, Layers, Missions, and location
+controls own their feature workflows; the user reported the combined smoke test passed on 2026-10-20.
+Latest app checks: 391 tests, lint/typecheck, and Chrome/Firefox packaging pass; CSS lint and workbench build also passed
+for the preceding organization batch. The earlier shared-domain-helper move preserved emitted JavaScript/CSS byte-for-byte.
+Current handoff is in [plan 37](css-refactoring/37-component-simplification-review.md);
 source grouping is recorded in [the source layout record](source-directory-layout-plan.md).
 Android APK work is a separate readiness track, not a continuation of the refactor plans.
 
@@ -19,8 +21,8 @@ Do not assign any other refactor work unless a detailed plan names exact scope, 
 
 Likely next priorities:
 
-1. When resuming architecture work, start with the deferred `content.tsx` composition review below; scrolling remains deferred.
-2. Use the app on phone/desktop and collect concrete UI/CSS/mobile pain.
+1. CSS/component cleanup and the content composition pass are complete and user smoke accepted; no further batch is queued.
+2. Use the app on phone/desktop and collect concrete UI/CSS/mobile pain; scrolling remains deferred.
 3. Prepare for a friend-shared sideload APK, with Play/store distribution deferred.
 4. Run the Android/WebView readiness spikes before creating an IRIS APK scaffold.
 5. UI/CSS/mobile polish for concrete findings.
@@ -30,18 +32,55 @@ Do not mix refactor cleanup, UI/mobile polish, Android APK work, and feature/par
 
 ## Active Work
 
-- No implementation slice is active. [Plan 37](css-refactoring/37-component-simplification-review.md) records the completed
-  work, current architecture contract, and next-session handoff. The `content.tsx` review below is deferred.
+- No implementation slice is active. The content composition pass is complete with passing automated checks and user smoke acceptance.
+  [Plan 37](css-refactoring/37-component-simplification-review.md) records the architecture contract and handoff.
 
-## Deferred: content.tsx Composition Review
+## content.tsx Composition Review
 
-Goal: keep `src/content.tsx` focused on assembling the app, with feature state and workflows owned by their domains
-where that makes ownership clearer. Review its responsibilities and dependencies first; identify a small, repeated,
-testable responsibility and record its exact scope before implementing an extraction. Preserve request lifecycles,
-stale-response guards, storage, effects, message payloads, and UI behavior. Avoid a generic state/framework layer or
-splitting code solely to reduce line count. Shared domain helpers have already moved out of panel folders; the
-`content.tsx` review has not started. Validate any future extraction with relevant behavior tests, app checks, packaging,
-and a user smoke.
+Reviewed 2026-10-20: all 1,281 lines of `src/content.tsx`, the command callbacks and message adapter, existing feature
+workflows, and relevant Search/COMM/layer helpers and tests. Goal: clearer domain ownership while keeping app assembly
+readable. The initial review was source-only; the user subsequently approved implementing Search and Layers together.
+
+| Responsibility | Decision | Reason |
+| --- | --- | --- |
+| Search state, callbacks, debounce, selection reset, and preview effects | Implemented in `map/search/workflow.ts` | Feature owns its state and commands; app supplies messaging/navigation and routes responses. |
+| Layer/highlighter state, intent refs, persistence, and message effects | Implemented in `map/layers/workflow.ts` | Feature owns settings and synchronization; app supplies messaging and still wires page-ready synchronization and diagnostics. |
+| COMM state, refs, older-message retention, and new-message indicators | Keep for now | Has a real feature boundary, but involves animation-frame/scroll behavior and request retries. Revisit only for a concrete COMM change; scrolling remains deferred. |
+| Shared page-message bridge, camera/entity state, auth retry, navigation, and keyboard listener | Keep in app composition | Coordinates several domains; moving it would mostly replace explicit wiring with a large dependency object. |
+| Draw Tools, Portal Analysis, and Scenarios | Keep existing workflows | Already own focused feature behavior; their invocation and prop wiring belong in the app. |
+| Panel JSX, defaults, bootstrap, remount, and login bypass | Keep | Existing panels already own rendering internals. A broad app hook, shell wrapper, or defaults-only extraction would add indirection. |
+
+Implemented 2026-10-20 as one combined batch:
+
+- Added the two domain workflows; moved seven Search commands and their 26 existing tests into `map/search/commands.*`.
+  Removed the corresponding app-owned state, callbacks, effects, and imports. `content.tsx` is now 1,191 lines.
+- Explicit `useSearchEffects` and `useLayerSettingsEffects` calls retain their original positions relative to the page
+  listener and other app effects. Source comparison confirmed all 17 effects retain their relative registration order,
+  all seven moved command bodies are unchanged, and app JSX is unchanged. No CSS or message contract changed.
+- Added six real Preact lifecycle tests for Search debounce/cancellation, selection/preview/navigation, and Layers
+  persistence and intent timestamps. All 388 tests, lint/typecheck, Chrome/Firefox packaging, and `git diff --check` pass.
+- Combined smoke scope: Search typing/clearing, arrow/Enter/Shift+Enter selection, map preview, map-focus navigation,
+  closing/reopening, and auth retry; Display overlays, highlighter/base selection, and saved settings after reload.
+
+Final composition batch, implemented 2026-10-20 (user requested a combined smoke test at the end):
+
+- Move Missions state, refresh/details/zoom actions, and the portal-following effect into `map/missions/workflow.ts`.
+  Remove the three redundant command wrappers and cover their payloads through the workflow tests; keep sheet navigation
+  and selected-portal assembly in the app. Register the effect at its original position.
+- Move view input, location status, and their three actions into `map/location-workflow.ts`, reusing `location-actions.ts`
+  unchanged. Preserve browser geolocation, status timers, and zoom behavior; camera state remains app-owned.
+- Stop after these feature boundaries: no generic store, new message listener, COMM/scroll changes, or JSX/CSS changes.
+  Validate real workflow state/effects, existing action/message tests, full app checks, packaging, and source comparison.
+  Smoke Search, Display, Missions, and location controls together at the end, as requested by the user.
+
+Validation: seven new lifecycle tests replace four command-wrapper tests, bringing the suite to 391 passing tests.
+Lint/typecheck, Chrome/Firefox packaging, and `git diff --check` pass. Source comparison confirms unchanged app JSX,
+bootstrap, effect order, and equivalent Missions refresh-effect behavior. `content.tsx` is now 1,141 lines.
+
+The composition pass is complete. Shared app coordination and COMM remain in place; scrolling remains deferred.
+Combined smoke scope: Search and Display checks above; Missions view/portal switching, changing the selected portal
+while Missions is open, mission details/zoom and auth retry; location preset/input jumps and browser location success/denial.
+The user reported smoke testing passed on 2026-10-20; no separate agent-run browser audit or per-item results are recorded.
 
 ## Recently Completed
 

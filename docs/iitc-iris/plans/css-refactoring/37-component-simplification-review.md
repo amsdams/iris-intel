@@ -2,7 +2,7 @@
 
 Status: complete. A–C, cleanup, Button, Table, and subsequent organization/UI follow-ups implemented with user acceptance and passing automated checks.
 
-## Next-Session Handoff — 2026-10-19
+## Next-Session Handoff — 2026-10-20
 
 - The goal remains a simple, manageable CSS/component architecture: explicit ownership, fewer competing defaults and
   variants, native semantics, and small reusable primitives. Shared UI exports: 22; central infrastructure imports: 10.
@@ -15,11 +15,13 @@ Status: complete. A–C, cleanup, Button, Table, and subsequent organization/UI 
   and validation are in the [source layout record](../source-directory-layout-plan.md).
 - Markers now filter by saved marker color, with preset/default colors and custom imported hex colors available.
   Filtering is independent of portal ownership; faction sorting and portal metadata chips retain their existing meaning.
-  User visual check of the Color dropdown is pending.
-- Latest app checks: 382 tests, lint/typecheck, and Chrome/Firefox packaging pass. CSS lint and workbench build passed
+  User confirmed the Color filter works on 2026-10-20.
+- Latest app checks: 391 tests, lint/typecheck, and Chrome/Firefox packaging pass. CSS lint and workbench build passed
   for the preceding organization batch. The earlier domain-helper move preserved emitted JavaScript and CSS byte-for-byte.
-- Next candidate is the deferred [content.tsx composition review](../index.md#deferred-contenttsx-composition-review),
-  starting with responsibility/ownership review. Implementation has not started. Scrolling remains deferred. No further
+- The [content.tsx composition pass](../index.md#contenttsx-composition-review) is complete as of 2026-10-20: Search,
+  Layers, Missions, and location controls own their workflows. App effect order, JSX, bootstrap, and message contracts
+  are preserved. The user reported the combined smoke test passed on 2026-10-20; the Search/Display/Missions/location
+  smoke scope is recorded in the roadmap. Shared app coordination and COMM remain in the app; scrolling remains deferred. No further
   generic component, folder, or CSS cleanup is queued without a concrete need; keep workbench discovery automatic with
   generic previews. Prefer combined implementation/checks and brief notes over more planning slices.
 
