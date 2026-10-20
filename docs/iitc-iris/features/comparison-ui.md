@@ -1,12 +1,9 @@
 # Comparison UI
 
-- Add a Mini-IRIS-style control surface for fixture/mock mode, free search, current request state, and entity counts.
-- Include a compact diagnostic view for zoom, data zoom, tile count, request count, and decoded entity totals.
-
-Acceptance:
-
-- Amsterdam and Damrak can be selected from fixtures.
-- Free search can be used for other places without changing fixture behavior.
+The System diagnostics and Controls surfaces provide copied request/entity diagnostics, repeatable view presets,
+scenario snapshots, and navigation for live IITC comparisons. The app uses live Intel data; retired diagnostics
+fixture choices and generated empty fallbacks were removed on 2026-10-20. Amsterdam and Damrak remain view presets,
+not bundled map captures. See [payload samples](../fixtures/README.md).
 
 Current status:
 
@@ -27,10 +24,10 @@ Current status:
   was disabled, empty, ready, errored, or blocked by login HTML.
 - Per-tile cached renders explicitly report cache-fresh/cache-stale diagnostics, so copied snapshots do not mix the
   current tile plan with stale queue counters from the previous network fetch.
-- Copied diagnostics and the System sheet now show entity source (`live`, `cache`, or `fixture`) so pan/zoom lifecycle
+- Copied diagnostics and the System sheet now show entity source (`live` or `cache`) so pan/zoom lifecycle
   tests can distinguish network fetches from cached same-bounds renders.
-- The dock replaces entity diagnostic snapshots on each status message instead of partially merging them, preventing
-  stale retry/source/queue fields from leaking across live/cache/fixture transitions.
+- The diagnostics view replaces entity diagnostic snapshots on each status message instead of partially merging them, preventing
+  stale retry/source/queue fields from leaking across live/cache transitions.
 - The System sheet has fixed Amsterdam and Damrak view presets for repeatable IITC/IITC IRIS comparisons.
 - The System sheet can jump to arbitrary comparison views from `lat,lng,z` text, Intel map URLs with `ll` and `z`, or IITC-CE
   portal links with `pll`.
@@ -41,7 +38,7 @@ Current status:
   move one zoom level at a time.
 - Manual comparison on 2026-06-10 confirmed the direct `panBy` behavior feels closer to IITC for repeated fast pan
   clicks than the previous content-side projected-center calculation.
-- The dock can copy the current view back out as an Intel URL.
+- Controls can copy the current view back out as an Intel URL.
 - The floating map-controls panel has base-map switches for CartoDB Dark Matter, CartoDB Positron, and OpenStreetMap,
   with the selected base map persisted for repeatable visual comparisons.
 - Layer toggles are persisted; the default comparison view enables only fields, links, and portals while leaving
@@ -50,9 +47,7 @@ Current status:
 - Copied diagnostics expose `layerRegistry`, active/registered highlighters, `timing.layerUpdate`, and rolling
   `timing.interactionUpdates` entries. Use `interactionUpdates` when testing a sequence of core toggles, detail toggles,
   and highlighter changes because `layerUpdate` only reports the latest layer update.
-- Base map, core/detail layer toggles, side-system tabs, and pan/zoom controls live outside the debug/comparison
-  controls. The data-source switch now lives in the System sheet because it is comparison/fixture infrastructure rather
-  than IITC-style map UI.
+- Base map, core/detail layer toggles, side-system tabs, and pan/zoom controls remain separate from diagnostic controls.
 - Current layer toggles:
     - `F`: fields.
     - `LN`: links.
@@ -66,16 +61,11 @@ Current status:
     - `KEY`: inventory-derived key-count labels.
     - `T`: tile debug rectangles.
 - Optional portal styling and level labels only render when detailed portal data is available at zoom 14+; controls may
-  be enabled in the dock but still hidden in low-zoom placeholder mode. `OR` and `AR` follow IITC-CE overlay behavior
+  be enabled in Display but still hidden in low-zoom placeholder mode. `OR` and `AR` follow IITC-CE overlay behavior
   and can render at any zoom when their data is available.
-- The System sheet has a data-source switch for live Intel data, bundled Amsterdam z10/z14 fixtures, and a Damrak z15
-  fixture extracted from an IITC HAR. When those fixture files are present, fixture mode renders deterministic saved
-  `getEntities` responses and jumps to the matching view. When the optional captured JSON files are missing from the
-  checkout, packaging writes empty valid fixture fallbacks so the extension can still build, but fixture mode is not
-  useful for visual parity until real fixtures are restored.
 - Copied diagnostics include `renderPolicy`, so comparison snapshots show whether optional detail overlays were eligible
   to render.
-- Visual parity comparisons should use the dock's viewport P/L/F counts and copied `entities.viewport` block; total
+- Visual parity comparisons should use the viewport P/L/F counts and copied `entities.viewport` block; total
   fetched counts include padded request bounds and placeholder support entities.
 - Mock controls are not yet implemented in IITC IRIS. Place-name geocoding now exists through confirmed Nominatim
   search with `polygon_geojson=1`; remaining search parity is hover/preview behavior beyond the search sheet and

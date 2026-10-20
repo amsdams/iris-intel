@@ -1,0 +1,15 @@
+
+
+
+.iitc-iris-key-count-label {
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 14px;
+    border: 1px solid rgb(255 255 255 / 78%);
+    border-radius: 4px;
+    background: rgb(2 10 16 / 88%);
+    color: #fff;
+    font: var(--iitc-iris-font-extrabold) var(--iitc-iris-text-sm) / var(--iitc-iris-line-tight) var(--iitc-iris-font-ui);
+    pointer-events: none;
+}

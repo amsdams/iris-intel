@@ -1,0 +1,48 @@
+import {h} from 'preact';
+import '../../ui/panel/panel.css';
+import './portal-image-preview.css';
+import type {IitcIrisSelectedPortal} from '../../messages';
+import {ClearButton} from '../../ui/clear-button';
+import {PanelHeader, PanelTitle} from '../../ui/panel';
+
+interface IitcIrisPortalImageModalProps {
+  isOpen: boolean;
+  portal: IitcIrisSelectedPortal | null;
+  onClose: () => void;
+}
+
+export function IitcIrisPortalImageModal({
+  isOpen,
+  portal,
+  onClose,
+}: IitcIrisPortalImageModalProps): h.JSX.Element | null {
+  if (!isOpen || !portal?.image) return null;
+
+  return (
+    <div
+      className="iitc-iris-image-preview-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Portal image preview"
+      onClick={onClose}
+    >
+      <div className="iitc-iris-image-preview" onClick={(event) => event.stopPropagation()}>
+        <PanelHeader>
+          <PanelTitle>{portal.title || 'Portal image'}</PanelTitle>
+          <span className="iitc-iris-panel-header-actions">
+            <ClearButton
+              onClick={onClose}
+              title="Close image preview"
+              aria-label="Close image preview"
+            />
+          </span>
+        </PanelHeader>
+        <img src={portal.image} alt={portal.title || 'Portal image'} />
+        <div className="iitc-iris-image-preview-caption">
+          <b>{portal.title || 'Selected portal'}</b>
+          <span>{portal.guid}</span>
+        </div>
+      </div>
+    </div>
+  );
+}

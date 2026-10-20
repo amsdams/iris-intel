@@ -12,8 +12,8 @@ Ported IITC concepts and names:
   field `stroke: false` equivalent, and non-interactive link/field map paths.
 - Core map entity behavior: links and fields render as great-circle/geodesic paths, not straight projected Leaflet
   chords; selected link/field overlays and map-object context hit-testing use the same geodesic points.
-- Local facade: `apps/iitc-iris/src/iitc-geodesic.ts` keeps the pure IITC geodesic conversion algorithm as
-  `convertIitcGeodesicPoints`; `apps/iitc-iris/src/leaflet-geodesic.ts` exposes Leaflet-facing
+- Local facade: `apps/iitc-iris/src/map/iitc-geodesic.ts` keeps the pure IITC geodesic conversion algorithm as
+  `convertIitcGeodesicPoints`; `apps/iitc-iris/src/map/leaflet-geodesic.ts` exposes Leaflet-facing
   `convertIitcGeodesicLatLngs`, `createIitcGeodesicPolyline`, and `createIitcGeodesicPolygon`.
 
 Current implementation choices:

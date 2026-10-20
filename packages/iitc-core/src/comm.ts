@@ -123,12 +123,6 @@ const COMM_PUBLIC = 1;
 const COMM_SECURE = 2;
 const COMM_ALERT = 4;
 
-export const IITC_COMM_CHANNELS: IitcCommChannelDescription[] = [
-  {id: 'all', name: 'All', localBounds: true, inputPrompt: 'broadcast:', inputClass: 'public'},
-  {id: 'faction', name: 'Faction', localBounds: true, inputPrompt: 'tell faction:', inputClass: 'faction'},
-  {id: 'alerts', name: 'Alerts', localBounds: false, inputPrompt: 'tell Jarvis:', inputClass: 'alerts'},
-];
-
 function isRawMarkup(value: unknown): value is RawCommMarkup {
   return Array.isArray(value) && typeof value[0] === 'string' && !!value[1] && typeof value[1] === 'object';
 }

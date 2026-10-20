@@ -1,0 +1,14 @@
+/* Base defaults stay weaker than feature/variant rules, independent of import order. */
+:where(.iitc-iris-badge) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    padding: var(--iitc-iris-chip-padding);
+    border-radius: 4px;
+    font: var(--iitc-iris-label-font);
+    letter-spacing: var(--iitc-iris-letter-meta);
+    line-height: var(--iitc-iris-line-tight);
+    text-transform: uppercase;
+    white-space: nowrap;
+}

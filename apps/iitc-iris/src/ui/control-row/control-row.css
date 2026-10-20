@@ -1,0 +1,9 @@
+
+
+.iitc-iris-map-control-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--iitc-iris-space-3);
+    align-items: center;
+    min-width: 0;
+}

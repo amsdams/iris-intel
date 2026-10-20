@@ -1,0 +1,40 @@
+/* map-root */
+.iitc-iris-map {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+}
+
+/* user-location-pin */
+.iitc-iris-user-location-pin {
+    position: relative;
+    width: 22px;
+    height: 30px;
+}
+
+.iitc-iris-user-location-pin::before {
+    content: "";
+    position: absolute;
+    left: 4px;
+    top: 1px;
+    width: 14px;
+    height: 14px;
+    border: 2px solid #fff;
+    border-radius: 50% 50% 50% 0;
+    background: #65d9ff;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 55%);
+    transform: rotate(-45deg);
+    transform-origin: 50% 50%;
+}
+
+.iitc-iris-user-location-pin span {
+    position: absolute;
+    left: 9px;
+    top: 6px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #071019;
+}
+
+/* map-controls */

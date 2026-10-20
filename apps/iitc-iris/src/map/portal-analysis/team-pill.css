@@ -1,0 +1,9 @@
+
+
+.iitc-iris-team-pill {
+    min-width: 36px;
+    border: 1px solid var(--portal-team-soft);
+    background: color-mix(in srgb, var(--portal-team-color) 20%, transparent);
+    color: var(--portal-team-color);
+    font-weight: var(--iitc-iris-font-black);
+}

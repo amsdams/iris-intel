@@ -1,27 +1,18 @@
-# Docs Index
+# Documentation
 
-## IRIS
+| Document | Purpose |
+| --- | --- |
+| [Root README](../README.md) | Install, develop, verify, and package the extension. |
+| [Roadmap](iitc-iris/plans/index.md) | Current status and next work. |
+| [Application architecture](iitc-iris/architecture.md) | Package, component/CSS, workflow, and runtime ownership. |
+| [Port plan](iitc-iris/port-plan.md) | IITC behavior, naming, intentional divergences, and feature index. |
+| [Backlog](iitc-iris/backlog.md) | Unprioritized gaps, deferred work, and live-validation watch items. |
+| [APK plan](iitc-iris/plans/android-apk-installable-plan.md) | Android feasibility proofs and implementation readiness. |
+| [Facade pattern](iitc-iris/facade-pattern.md) | Selective extraction of pure IITC-shaped domain contracts. |
+| [Payload samples](iitc-iris/fixtures/README.md) | Retained reference samples and capture policy. |
 
-- [`iris/architecture.md`](./iris/architecture.md) - current architecture and restart guide
-- [`iris/page-world-map-runtime.md`](./iris/page-world-map-runtime.md) - page-world map runtime reference
-- [`iris/performance-benchmarks.md`](./iris/performance-benchmarks.md) - copied IRIS benchmark samples and comparison scenarios
-- [`iris/work-items.md`](./iris/work-items.md) - current work tracker
-- [`iris/update-map-samples/`](./iris/update-map-samples/) - sanitized map payload samples
-
-## IITC-IRIS
-
-- [`iitc-iris/port-plan.md`](./iitc-iris/port-plan.md) - active semantic port plan and status index
-- [`iitc-iris/features/`](./iitc-iris/features/) - feature-specific port notes
-- [`iitc-iris/backlog.md`](./iitc-iris/backlog.md) - parity backlog and replacement readiness
-- [`iitc-iris/research/2026-04-14/legacy/`](./iitc-iris/research/2026-04-14/legacy/) - archived IITC comparison research
-
-## IRIS-MINI
-
-- [`iris-mini/README.md`](./iris-mini/README.md) - Mini-IRIS docs index
-
-## Rule
-
-- keep active IRIS and Mini-IRIS decisions in `docs/iris/work-items.md`
-- keep active IITC-IRIS decisions in `docs/iitc-iris/port-plan.md` and the relevant `docs/iitc-iris/features/` file
-- keep product-specific docs under `docs/iris/`, `docs/iitc-iris/`, or `docs/iris-mini/`
-- captured payloads, local browser error dumps, and personal backup files stay ignored unless explicitly sanitized
+Feature notes under `iitc-iris/features/` retain implemented behavior, IITC source references, deliberate limitations,
+and dated comparison evidence. Old checkpoint observations are not new assignments or fresh validation claims.
+Completed plans and obsolete research live in Git history; the [roadmap](iitc-iris/plans/index.md#historical-work)
+records how to retrieve them. Keep future docs focused on current guidance and useful evidence rather than per-slice logs.
+Personal captures and browser dumps stay ignored unless explicitly sanitized for inclusion.

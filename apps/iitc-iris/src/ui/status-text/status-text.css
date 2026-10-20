@@ -1,0 +1,4 @@
+/* Base defaults stay weaker than feature/variant rules, independent of import order. */
+:where(.iitc-iris-status) {
+    color: #c7d8e8;
+}

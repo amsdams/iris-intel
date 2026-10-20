@@ -1,0 +1,12 @@
+.iitc-iris-diagnostics-chip.iitc-iris-chip-button {
+    cursor: pointer;
+}
+
+.iitc-iris-diagnostics-chip.iitc-iris-chip-button:disabled {
+    cursor: default;
+}
+
+.iitc-iris-chip-button:hover {
+    border-color: rgb(105 210 255 / 45%);
+    color: #fff;
+}

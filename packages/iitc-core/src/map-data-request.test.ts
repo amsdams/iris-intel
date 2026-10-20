@@ -1,11 +1,13 @@
 import {describe, expect, it} from 'vitest';
 import {
   classifyIitcGetEntitiesResponse,
+  classifyIitcTileDiagnostics,
   classifyIitcTileRequestResponse,
   clampIitcBounds,
   applyIitcTileRequestResponseToQueue,
   appendIitcResponseBucketDiagnostics,
   createIitcTileQueueState,
+  createIitcTileQueueDiagnostics,
   createIitcTileQueueRequestBatches,
   createIitcMapDataPlan,
   createIitcEmptyTileRetryBatches,
@@ -236,6 +238,13 @@ describe('IITC map data request planning', () => {
         retryUnaccountedTiles: true,
       }).retryTileKeys,
     ).toEqual(['a', 'c']);
+    expect(classifyIitcTileDiagnostics(response, ['a', 'b', 'c'])).toEqual({
+      returnedTiles: 2,
+      nonEmptyTiles: 1,
+      emptyTileKeys: ['a'],
+      nonEmptyTileKeys: ['b'],
+      unaccountedTileKeys: ['c'],
+    });
   });
 
   it('classifies IITC request response buckets and queue delay reasons', () => {
@@ -519,6 +528,16 @@ describe('IITC map data request planning', () => {
     expect(completeState.requestedTileKeys).toEqual([]);
     expect(completeState.failedTileKeys).toEqual(['a', 'b', 'c']);
     expect(completeState.activeRequestCount).toBe(0);
+    expect(createIitcTileQueueDiagnostics(completeState, ['a'])).toEqual({
+      queuedTiles: 0,
+      requestedTiles: 0,
+      successTiles: 0,
+      failedTiles: 2,
+      partialTiles: 1,
+      staleTiles: 0,
+      activeRequests: 0,
+      tileErrorCount: {},
+    });
   });
 
   it('can keep returned-empty summary tiles queued for live-compatible recovery', () => {

@@ -3,7 +3,7 @@
 - Port IITC-CE map entity parsing into `packages/iitc-core`.
 - Preserve IITC concepts and names where they make comparison easier: portals, links, fields, ornaments, artifacts,
   shards, events.
-- Decode fixtures from `docs/har` and `docs/iris/update-map-samples` without rendering concerns mixed in.
+- Decode fixtures from the retained samples in `docs/iitc-iris/fixtures/` and inline test fixtures without rendering concerns mixed in.
 
 IITC-CE source references:
 

@@ -1,0 +1,41 @@
+/* system-actions */
+.iitc-iris-compare {
+    color: #fff;
+    font-weight: 700;
+}
+
+.iitc-iris-preset {
+    min-width: 46px;
+    text-align: center;
+    border: 1px solid rgb(95 180 255 / 40%);
+    background: rgb(7 31 45 / 92%);
+    color: #e8f4ff;
+    font: inherit;
+    font-weight: 700;
+    padding: 2px 6px;
+}
+
+.iitc-iris-preset:hover {
+    border-color: rgb(101 217 255 / 80%);
+    background: rgb(10 45 64 / 96%);
+}
+
+.iitc-iris-debug-row {
+    padding-top: 2px;
+    border-top: 1px solid rgb(95 180 255 / 16%);
+}
+
+/* jump-controls */
+.iitc-iris-jump {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.iitc-iris-jump-input {
+    width: 170px;
+    min-width: 120px;
+    height: 22px;
+    background: rgb(10 18 25 / 88%);
+    padding: 2px 6px;
+}

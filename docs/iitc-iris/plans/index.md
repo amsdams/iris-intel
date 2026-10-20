@@ -1,0 +1,47 @@
+# Roadmap
+
+## Current State
+
+CSS ownership, component simplification, domain/panel organization, content composition, repository cleanup, dependency
+refresh, and map-replacement lifetime hardening are complete and user smoke accepted as of 2026-10-20.
+Only `apps/iitc-iris` and `packages/iitc-core` remain active. No further generic refactor batch is queued.
+
+The retained ownership rules and known limits are in [Application Architecture](../architecture.md).
+[IITC behavior and intentional divergences](../port-plan.md) remain the porting contract.
+
+## Next Work
+
+1. Finish the merge checkpoint: push reviewed changes and require green PR CI before merging to `main`.
+2. On a separate Android branch, follow the [APK plan](android-apk-installable-plan.md). First prove supported Intel
+   login/session persistence, an authenticated request, bundled IRIS loading, and a message round trip on a real device.
+   Combine targeted prior-art and platform-boundary investigation with this proof.
+3. Create the permanent Android project after the login/injection proofs pass. The first distribution target is a
+   private/friends sideload APK; store distribution is deferred.
+
+Mobile polish and feature expansion should follow concrete usage findings. The [backlog](../backlog.md) records
+unprioritized parity gaps and watch items; those are not prerequisites for the Android feasibility proof.
+
+## Working Rules
+
+Keep domain logic in core and UI/browser/Leaflet effects in the app. Preserve persisted keys, message contracts,
+IITC-facing concepts, appearance, and cascade order unless the task explicitly changes them.
+
+Use brief, combined implementation/validation batches. Create a detailed plan when unresolved scope or risk warrants it;
+small authorized changes do not need another numbered slice or standalone planning document. For parity work, record
+reference sources, ownership/lifecycle, observable behavior, intentional divergences, and validation evidence.
+
+For code changes, run focused tests, `npm run check`, `npm run package`, and `git diff --check`.
+Documentation-only changes need link/path/command checks and `git diff --check`.
+Do not commit, tag, push, merge, or publish without user authorization.
+
+## Historical Work
+
+Completed extraction plans, CSS migration inventories, and obsolete research were removed after their lasting guidance
+was consolidated. Their last complete snapshot is commit `b8a0c069f958512342b2f329ff076c43965dad4e`.
+For example:
+
+```bash
+git show b8a0c069f958512342b2f329ff076c43965dad4e:docs/iitc-iris/plans/css-refactoring/37-component-simplification-review.md
+```
+
+Earlier applications and their documentation have a separate retrieval baseline in the [root README](../../../README.md).

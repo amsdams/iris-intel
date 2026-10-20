@@ -1,0 +1,45 @@
+:where(.iitc-iris-table-container) {
+    overflow: hidden;
+    max-width: 100%;
+    border: 1px solid rgb(95 180 255 / 18%);
+    border-radius: 4px;
+    background: rgb(4 12 18 / 78%);
+}
+
+:where(.iitc-iris-table) {
+    width: 100%;
+    border-collapse: collapse;
+    color: #d7e7f5;
+    font-size: var(--iitc-iris-text-md);
+}
+
+:where(.iitc-iris-table) th,
+:where(.iitc-iris-table) td {
+    overflow: hidden;
+    padding: var(--iitc-iris-item-padding);
+    border-bottom: 1px solid rgb(95 180 255 / 10%);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: left;
+}
+
+:where(.iitc-iris-table) thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: rgb(6 20 31 / 98%);
+    color: #9ed8ff;
+    font-size: var(--iitc-iris-text-sm);
+    text-transform: uppercase;
+}
+
+@media (width <= 760px) {
+    :where(.iitc-iris-table) {
+        font-size: var(--iitc-iris-text-sm);
+    }
+
+    :where(.iitc-iris-table) th,
+    :where(.iitc-iris-table) td {
+        padding: 4px 5px;
+    }
+}

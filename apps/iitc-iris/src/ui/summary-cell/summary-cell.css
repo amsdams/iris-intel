@@ -1,0 +1,38 @@
+/* Customize value/label typography on the cell root using the summary custom properties. */
+
+/* Base defaults stay weaker than feature/variant rules, independent of import order. */
+:where(.iitc-iris-summary-cell),
+:where(.iitc-iris-portal-summary-cell) {
+    position: relative;
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+    padding: 5px 6px;
+    border: 1px solid rgb(95 180 255 / 18%);
+    border-radius: 4px;
+    overflow: hidden;
+    background: rgb(10 18 25 / 58%);
+}
+
+:where(.iitc-iris-summary-cell) b,
+:where(.iitc-iris-portal-summary-cell) b {
+    min-width: 0;
+    overflow: hidden;
+    color: #fff;
+    font-size: var(--iitc-iris-summary-value-size, 12px);
+    font-weight: var(--iitc-iris-summary-value-weight, bolder);
+    line-height: var(--iitc-iris-summary-value-line-height, inherit);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.iitc-iris-summary-cell small,
+.iitc-iris-portal-summary-cell small {
+    overflow: hidden;
+    color: #91a6b7;
+    font-size: var(--iitc-iris-text-sm);
+    font-weight: var(--iitc-iris-summary-label-weight, inherit);
+    text-transform: var(--iitc-iris-summary-label-transform, inherit);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

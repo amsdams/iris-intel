@@ -1,0 +1,10 @@
+/* layer-controls */
+
+.iitc-iris-layer-choice-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+    gap: 5px;
+    min-width: 0;
+}
+
+/* key-count-label */

@@ -1,0 +1,19 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+import {Button} from '../button';
+import {describe, expect, it} from 'vitest';
+import {ChipButton} from './chip-button';
+
+describe('ChipButton', () => {
+  it('composes Button with the diagnostics chip classes', () => {
+    const vnode = ChipButton({ children: 'Clear' });
+    expect(vnode.type).toBe(Button);
+    expect(vnode.props.className).toBe('iitc-iris-diagnostics-chip iitc-iris-chip-button');
+    expect(vnode.props.children).toBe('Clear');
+  });
+
+  it('composes extra className values', () => {
+    const vnode = ChipButton({ className: 'extra' });
+    expect(vnode.props.className).toBe('iitc-iris-diagnostics-chip iitc-iris-chip-button extra');
+  });
+});
+

@@ -1,0 +1,35 @@
+.iitc-iris-diagnostics-chip {
+    display: inline-flex;
+    gap: var(--iitc-iris-space-2);
+    align-items: center;
+    min-height: 18px;
+    max-width: 100%;
+    padding: var(--iitc-iris-chip-padding);
+    border: 1px solid rgb(95 180 255 / 22%);
+    border-radius: 4px;
+    background: rgb(10 18 25 / 46%);
+    color: #91a6b7;
+    font: var(--iitc-iris-button-font-sm);
+    text-transform: uppercase;
+}
+
+.iitc-iris-diagnostics-chip b {
+    min-width: 0;
+    color: #c7d8e8;
+    font-weight: var(--iitc-iris-font-black);
+}
+
+.iitc-iris-diagnostics-chip small {
+    min-width: 0;
+    color: inherit;
+    font-weight: var(--iitc-iris-font-extrabold);
+}
+
+.iitc-iris-diagnostics-chip[title] {
+    cursor: help;
+}
+
+.iitc-iris-diagnostics-chip:hover {
+    border-color: rgb(105 210 255 / 50%);
+    color: #c7d8e8;
+}

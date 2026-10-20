@@ -1,8 +1,10 @@
 # IITC IRIS Port Plan
 
-Goal: build a clean IITC-compatible IRIS track with a Mini-IRIS-sized UI shell and an IITC-CE-derived core. This track
-should use the same map library family as IITC-CE and avoid depending on the current IRIS map renderer while the port is
-being validated.
+Repository cleanup (2026-10-20): only `apps/iitc-iris` and `packages/iitc-core` remain active. Earlier IRIS/Mini-IRIS
+code and documentation references below are historical Git paths; see the root README for retrieval. Retained samples
+now live in `docs/iitc-iris/fixtures/`. Current implementation scope is in [the roadmap](plans/index.md).
+
+Goal: maintain a clean IITC-compatible app with a compact UI shell, Leaflet rendering, and an IITC-CE-derived core.
 
 Porting rule: prefer IITC-CE file names, public method names, data model names, and UI concepts when adding ported
 behavior. Diverge only when TypeScript packaging, extension boundaries, or deliberate product decisions require it, and
@@ -19,7 +21,7 @@ Non-functional requirements:
 
 - Source of truth: use `reference/ingress-intel-total-conversion` first for behavior, naming, request shape, lifecycle,
   and UI concepts. Use
-  current IRIS/Mini-IRIS only as implementation reference or migration context.
+  earlier IRIS/Mini-IRIS from Git history only as implementation reference or migration context.
 - Parity before improvement: the first acceptable version of any core map workflow is the IITC-CE behavior, not a
   cleaner IRIS-style reinterpretation. Optimization, UX redesign, and architectural simplification are allowed only
   after parity is demonstrated or the divergence is documented as temporary.
@@ -64,9 +66,8 @@ Required process for each new subsystem:
 8. Document every intentional divergence in this plan with the reason, expected effect, and how to compare it against
    IITC-CE.
 
-Validation rule: after validating IITC IRIS code changes, run `npm run package:iitc-iris` from the repository root so
-the
-extension build and ZIP/XPI packaging are checked. Documentation-only changes do not require this package step.
+Validation rule: after validating IITC IRIS code changes, run `npm run package` from the repository root so
+the extension build and ZIP/XPI packaging are checked. Documentation-only changes do not require this package step.
 
 Current local reference checkout: `reference/ingress-intel-total-conversion`. Older notes may refer to the same IITC-CE
 lineage by repository name; new source references should use the local path above so searches and comparisons are
@@ -83,96 +84,41 @@ Naming checklist before creating a new file or exported function:
   IITC naming is not appropriate.
 - Is the divergence only for code cleanliness? Keep the IITC name at the boundary and hide the cleaner structure inside.
 
-## Current Status - 2026-06-10
+## Current Status - 2026-10-20
 
-IITC IRIS is in a usable parity/polish checkpoint. The extension now has the core IITC live-map path, entity rendering,
-geodesic links/fields, portal selection/details, COMM, scores, missions, inventory, passcodes, agent profile, player
-tracker, search, diagnostics, native Draw Tools v1 for links/markers, and stable first-pass native portal analysis views
-for counts, list, and scoreboard.
+IITC IRIS has the core live-map path, entity rendering, geodesic links/fields, portal selection/details, COMM, scores,
+missions, inventory, passcodes, agent profile, player tracker, search, diagnostics, Draw Tools v1 links/markers, and
+portal analysis Counts/List/Scoreboard views. CSS/component ownership, feature composition, and repository/runtime
+cleanup are complete; see [Application Architecture](architecture.md) for the retained ownership contract and limits.
 
-Latest map lifecycle validation included:
+The extension version is `0.1.2`. Latest verification passed 112 core and 405 app tests, lint/typechecks, CSS lint,
+workbench build, and Chrome/Firefox packaging. The user reported the cleanup smoke test passed. Build/install commands
+and artifact naming are maintained in the [root README](../../README.md#development).
 
-- `npm run test:iitc-core -- --run src/map-data-request.test.ts`
-- `npm run typecheck:iitc-iris`
-- `npm run lint:iitc-iris`
-- `npm run package:iitc-iris`
-- `git diff --check`
-- Manual live fast-pan and IITC-timing scenario copies at z15. Fast mode stayed complete after pan/retry recovery.
-  IITC-timing mode exercised the 400ms movement debounce and 1000ms live download delay while panning, then settled to
-  complete renders with no partials, no warning strings, no active requests, and no queued tiles.
-- Retry-sieve parity is now covered in `map-data-request.test.ts`: retry-heavy leading tiles are isolated into
-  one-tile requests like IITC-CE instead of being dropped by a zero-length bucket edge case.
-
-Latest layer/highlighter stabilization validation included:
-
-- `npm run typecheck:iitc-iris`
-- `npm run test -w apps/iitc-iris`
-- `npm run lint:iitc-iris`
-- `npm run package:iitc-iris`
-- `git diff --check`
-- Manual dense Amsterdam z15 interaction copies for fields, links, faction filters, highlighters, and drawn links.
-  Click-to-pixels diagnostics found the main visual lag was an immediate heavy copied entity-status repost after each
-  interaction. The map mutation now gets two animation frames before that status repost runs. Whole-overlay toggles use
-  persistent groups, highlighters refresh existing portal marker styles, and faction filters use scoped buckets/direct
-  bucket paths. The Display sheet now owns base maps and uses IITC-style checkbox groups for overlays/filters, including
-  `Key counts`.
-  A deeper team-subgroup topology experiment regressed faction-filter paint timing and was rolled back.
-- Final menu/sheet checkpoint: the primary menu uses a selected-object slot (`Selected`, `Portal`, `Link`, or `Field`)
-  plus `Map`, `Agent`, `COMM`, and `System`. Portal missions only appear for selected portals. Link and field details
-  use their own selected-object sheets, while base maps, layers, filters, and highlighters live under Display. Controls
-  stays focused on camera/context actions, presets, copy/export, lifecycle scenarios, and data source/debug controls.
-- Analysis sheets now use compact diagnostic chips for summary metadata and tighter desktop tables for Counts and
-  Scoreboard. List keeps horizontal overflow for its intentionally wide portal table, but its summary metadata is grouped
-  under the normal summary chips.
-
-Latest IITC IRIS portal analysis validation included:
-
-- `npm run typecheck:iitc-iris`
-- `npm run lint:iitc-iris`
-- `npm run lint:css`
-- `npm run test:iitc-core -- --run src/portal-analysis.test.ts`
-- `npm run package:iitc-iris`
-- `git diff --check`
-- Manual live comparison against IITC's `portal-counts`, `portals-list`, and `scoreboard` plugins; no blocking
-  mismatches found for the stable v1 checkpoint.
-
-Latest core fixture-health validation included:
-
-- `npm run test -w packages/core`
-- `npm run typecheck:core`
-- `npm run lint:core`
-- `npm run test:iitc-core`
-- `npm run typecheck:iitc-core`
-- `npm run lint:iitc-core`
-
-Latest package artifacts:
-
-- `apps/iitc-iris/builds/iitc-iris-chrome-0.1.0-2026-06-10T20-26-53.zip`
-- `apps/iitc-iris/builds/iitc-iris-firefox-0.1.0-2026-06-10T20-26-53.xpi`
-
-Fixture-health note: the previous missing-fixture degradation for full `npm run test:iitc-core` is resolved in the
-current workspace. `@iris/core` and `@iris/iitc-core` full test suites are green; no fresh HAR capture is required for
-this checkpoint.
+Only `apps/iitc-iris` and `packages/iitc-core` remain active. The retired diagnostics fixture choices and empty fallback
+maps were removed; the app uses live Intel data. Retained [payload samples](fixtures/README.md) are reference material.
+Android hosting remains unproven and is governed by the [APK plan](plans/android-apk-installable-plan.md).
 
 ## Documentation Layout
 
 Feature details have been split out of this entry point so the current truth is easier to scan:
 
-| Area                                | Status              | Detail                                                                           |
-|-------------------------------------|---------------------|----------------------------------------------------------------------------------|
-| Missions                            | Partial             | [features/missions.md](features/missions.md)                                     |
-| Hook and Plugin Lifecycle           | Started             | [features/hook-plugin-lifecycle.md](features/hook-plugin-lifecycle.md)           |
-| Geodesic rendering                  | Partial             | [features/geodesic-rendering.md](features/geodesic-rendering.md)                 |
-| Map lifecycle                       | Partial             | [features/map-lifecycle.md](features/map-lifecycle.md)                           |
-| Scaffold/request lifecycle          | Done/Partial        | [features/scaffold-request-lifecycle.md](features/scaffold-request-lifecycle.md) |
-| Entity decode and Leaflet rendering | Partial             | [features/entity-rendering.md](features/entity-rendering.md)                     |
-| Comparison UI                       | Started             | [features/comparison-ui.md](features/comparison-ui.md)                           |
-| Portal selection and details        | Started             | [features/portal-details.md](features/portal-details.md)                         |
-| IITC side request/UI systems        | Started             | [features/side-systems.md](features/side-systems.md)                             |
-| Draw Tools                          | Stable v1 / Partial | [features/draw-tools.md](features/draw-tools.md)                                 |
-| Portal analysis views               | Stable v1 / Partial | [features/portal-analysis.md](features/portal-analysis.md)                       |
-| Highlighters and layers             | Stabilized v1 / Partial | [features/highlighters-and-layers.md](features/highlighters-and-layers.md)       |
-| Backlog and replacement readiness   | Ongoing             | [backlog.md](backlog.md)                                                         |
+| Area | Status | Detail |
+| --- | --- | --- |
+| Missions | Partial | [features/missions.md](features/missions.md) |
+| Internal registry and lifecycle facades | Native foundation implemented | [features/hook-plugin-lifecycle.md](features/hook-plugin-lifecycle.md) |
+| Geodesic rendering | Partial | [features/geodesic-rendering.md](features/geodesic-rendering.md) |
+| Map lifecycle | Partial | [features/map-lifecycle.md](features/map-lifecycle.md) |
+| Scaffold/request lifecycle | Done/Partial | [features/scaffold-request-lifecycle.md](features/scaffold-request-lifecycle.md) |
+| Entity decode and Leaflet rendering | Partial | [features/entity-rendering.md](features/entity-rendering.md) |
+| Comparison UI | Implemented / Live comparison | [features/comparison-ui.md](features/comparison-ui.md) |
+| Portal selection and details | Implemented / Partial parity | [features/portal-details.md](features/portal-details.md) |
+| IITC side request/UI systems | Implemented / Partial parity | [features/side-systems.md](features/side-systems.md) |
+| Draw Tools | Stable v1 / Partial | [features/draw-tools.md](features/draw-tools.md) |
+| Portal analysis views | Stable v1 / Partial | [features/portal-analysis.md](features/portal-analysis.md) |
+| Highlighters and layers | Stabilized v1 / Partial | [features/highlighters-and-layers.md](features/highlighters-and-layers.md) |
+| Backlog and watch items | Ongoing | [backlog.md](backlog.md) |
+| Roadmap | Ongoing | [plans/index.md](plans/index.md) |
 
 ## Current High-Level Gaps
 

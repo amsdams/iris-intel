@@ -1,0 +1,14 @@
+.iitc-iris-inventory-section {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+
+.iitc-iris-inventory-scroll {
+    display: grid;
+    gap: 6px;
+}
+
+.iitc-iris-inventory-item-row > b {
+    color: inherit;
+}

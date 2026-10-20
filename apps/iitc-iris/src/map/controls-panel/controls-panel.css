@@ -1,0 +1,23 @@
+
+
+
+:where(.iitc-iris-map-controls) {
+    position: absolute;
+    top: 184px;
+    left: 12px;
+    z-index: 9998;
+    display: grid;
+    gap: var(--iitc-iris-space-4);
+    width: min(320px, calc(100vw - 24px));
+    max-height: calc(100vh - 208px);
+    box-sizing: border-box;
+    overflow: auto;
+    padding: var(--iitc-iris-panel-padding);
+    border: 1px solid rgb(95 180 255 / 28%);
+    border-radius: 6px;
+    background: rgb(2 10 16 / 80%);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 28%);
+    font-size: var(--iitc-iris-text-lg);
+    letter-spacing: var(--iitc-iris-letter-normal);
+    pointer-events: auto;
+}

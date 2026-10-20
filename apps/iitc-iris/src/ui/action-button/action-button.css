@@ -1,0 +1,31 @@
+.iitc-iris-button:where(.iitc-iris-portal-action) {
+    border-radius: var(--iitc-iris-radius-control);
+}
+
+:where(.iitc-iris-portal-action) {
+    min-width: 0;
+    padding: var(--iitc-iris-control-padding);
+    border: 1px solid var(--portal-team-soft, rgb(95 180 255 / 40%));
+    background: rgb(7 31 45 / 92%);
+    color: #e8f4ff;
+    font: var(--iitc-iris-button-font);
+    text-align: center;
+    text-decoration: none;
+}
+
+.iitc-iris-portal-action:hover {
+    border-color: var(--portal-team-color, rgb(101 217 255 / 80%));
+    background: rgb(10 45 64 / 96%);
+}
+
+.iitc-iris-portal-action.is-danger {
+    border-color: rgb(255 79 95 / 72%);
+    background: rgb(72 16 24 / 94%);
+    color: #fff;
+}
+
+.iitc-iris-portal-action:disabled {
+    border-color: rgb(95 180 255 / 18%);
+    background: rgb(10 18 25 / 50%);
+    color: #4f6575;
+}

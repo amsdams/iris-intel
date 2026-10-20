@@ -1,50 +1,36 @@
-# Hook and Plugin Lifecycle
+# Internal Registries And Lifecycle Facades
 
-Goal: Establish a "thin" but robust plugin infrastructure for IITC IRIS to enable internal decoupling and simplify porting external IITC plugins.
+Native registries and a local selection facade are implemented. They support existing app behavior; broad external
+IITC plugin compatibility is deferred. The component/content extraction they originally supported is complete.
 
-## Architecture
+| Owner under `apps/iitc-iris/src/` | Responsibility |
+| --- | --- |
+| `map/layers/layer-registry.ts` | Existing layer defaults, grouping, and diagnostics. |
+| `map/layers/highlighter-registry.ts` | One active highlighter, labels, style callbacks, and legacy setting normalization. |
+| `shell/menu-registry.ts` | Primary menus, sheet IDs, labels, shortcuts, and side-panel routing metadata. |
+| `portals/portal-detail-section-registry.ts` | Mods, Resonators, and Facts section IDs, labels, and default-open state. |
+| `context-action-registry.ts` | Map/link/field context targets and copy/center action metadata. |
+| `portals/selection-lifecycle.ts` | Selected-object derivation and portal/context selection effects. |
 
-The system relies on three pillars:
-1. **Event Bus (Hooks):** Typed `addHook` / `runHooks` for subsystem communication.
-2. **Registry (Highlighters):** Dynamic registration for portal markers.
-3. **Setup Sequence (Lifecycle):** Orchestrating the `setup` and `iitcLoaded` phases.
+Their adjacent tests protect IDs, defaults, ordering, normalization, visibility, and selection behavior. Rendering and
+request-dependent decisions stay with the owning components/workflows. Portal context opens Portal details; link/field
+context opens Selected details; plain map context stays in Controls.
 
-## Phase 1: Core Registries
+Add another registry only for repeated metadata or a concrete lifecycle handoff. Keep it app-local unless the contract
+is pure and suitable for core. Proposed rendering hooks such as `portalAdded`, `linkAdded`, `fieldAdded`, or
+`mapDataRefreshEnd` are possible future seams, not implemented public compatibility promises.
 
-### Hooks Module (`src/hooks.ts`)
-Implement the IITC `hooks.js` pattern with TypeScript safety.
-- **Contract:** Define `HookData` interface for all supported events (e.g., `portalSelected`, `mapDataRefreshEnd`).
-- **Methods:** `addHook`, `removeHook`, `runHooks`.
-- **Safety:** Use `try/catch` around callback execution to prevent plugin failures from crashing the core.
+Deferred:
 
-### Highlighter Registry (`src/highlighters.ts`)
-Extract hard-coded highlighters from `content.tsx`.
-- **API:** `addPortalHighlighter(name, highlighterObj)`.
-- **Interface:** Highlighters must implement `highlight(portal: IitcIrisSelectedPortal): void`.
-- **Migration:** Move "Level color", "Needs recharge", and "History" highlighters into this registry.
+- Broad `window.plugin.*` support or arbitrary reference-plugin ports.
+- Public `window.addHook`, `window.runHooks`, `window.addPortalHighlighter`, or plugin menu/detail-section APIs.
+- A general plugin setup sequence or request/status registry without a concrete consumer.
 
-## Phase 2: Internal Decoupling
+IITC-CE comparison sources:
 
-Migrate existing `content.tsx` logic to use the new infrastructure:
-- **Selection:** Fire `portalSelected` hook instead of calling `setPortalDetails` directly.
-- **Rendering:** Fire `portalAdded`, `linkAdded`, and `fieldAdded` during the Leaflet render loop.
-- **UI:** Update the "Display" sheet to generate the highlighter list dynamically from the registry.
-
-## Phase 3: Plugin Bridge
-
-Enable compatibility with external IITC plugins:
-- **Window API:** Attach `addHook` and `addPortalHighlighter` to the `window` object.
-- **Lifecycle:** Fire `iitcLoaded` after the main `App` and all internal plugins have initialized.
-- **Toolbox:** Add a minimal registry for "System" menu items.
-
-## Phase 4: UI Refactor Integration
-
-Once the registries are stable, split `content.tsx` by domain:
-- **CommPanel:** Listen for `nicknameClicked` hooks.
-- **DrawTools:** Listen for `mapDataEntityInject` to manage its own layers.
-- **PortalDetails:** Re-render when the `portalDetailsUpdated` hook fires.
-
-## IITC-CE Source References
 - `reference/ingress-intel-total-conversion/core/code/hooks.js`
 - `reference/ingress-intel-total-conversion/core/code/portal_highlighter.js`
 - `reference/ingress-intel-total-conversion/core/code/portal_detail_display.js`
+
+Use [Application Architecture](../architecture.md) for current composition rules and the
+[port plan](../port-plan.md) for parity work. Completed per-registry checkpoint logs are available in Git history.

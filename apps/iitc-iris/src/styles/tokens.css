@@ -1,0 +1,44 @@
+/*
+ * Typography role reference
+ * ─────────────────────────────────────────────────────────────
+ * text-xxs  8px   SVG/map sub-labels, tiny badges
+ * text-xs   9px   Section dividers, uppercase meta labels (letter-spacing, all-caps)
+ * text-sm  10px   Supporting body: small row text, resonator owners, secondary captions
+ * text-md  11px   Primary body: main row text, comm messages, scores, buttons
+ * text-lg  12px   Panel/section headings, nav labels, primary values
+ * text-xl  16px   Large metric numbers
+ *
+ * Domain-specific one-offs (SVG map labels, monospace debug) are kept as literals.
+ */
+:root {
+    --iitc-iris-font-ui: "Inter", system-ui, -apple-system, "BlinkMacSystemFont", "Segoe UI", sans-serif;
+    --iitc-iris-font-mono: monospace;
+    --iitc-iris-text-xxs: 8px;
+    --iitc-iris-text-xs: 9px;
+    --iitc-iris-text-sm: 10px;
+    --iitc-iris-text-md: 11px;
+    --iitc-iris-text-lg: 12px;
+    --iitc-iris-text-xl: 16px;
+    --iitc-iris-font-medium: 500;
+    --iitc-iris-font-semibold: 600;
+    --iitc-iris-font-bold: 700;
+    --iitc-iris-font-extrabold: 800;
+    --iitc-iris-font-black: 900;
+    --iitc-iris-line-tight: 1;
+    --iitc-iris-line-compact: 1.2;
+    --iitc-iris-line-readable: 1.35;
+    --iitc-iris-letter-normal: 0;
+    --iitc-iris-letter-meta: 0.04em;
+    --iitc-iris-space-1: 2px;
+    --iitc-iris-space-2: 4px;
+    --iitc-iris-space-3: 6px;
+    --iitc-iris-space-4: 8px;
+    --iitc-iris-panel-padding: 8px 10px;
+    --iitc-iris-item-padding: 5px 6px;
+    --iitc-iris-control-padding: 3px 6px;
+    --iitc-iris-chip-padding: 1px 6px;
+    --iitc-iris-radius-control: 4px;
+    --iitc-iris-button-font: var(--iitc-iris-font-bold) var(--iitc-iris-text-md) / var(--iitc-iris-line-tight) var(--iitc-iris-font-ui);
+    --iitc-iris-button-font-sm: var(--iitc-iris-font-bold) var(--iitc-iris-text-sm) / var(--iitc-iris-line-tight) var(--iitc-iris-font-ui);
+    --iitc-iris-label-font: var(--iitc-iris-font-extrabold) var(--iitc-iris-text-sm) / var(--iitc-iris-line-tight) var(--iitc-iris-font-ui);
+}

@@ -1,0 +1,37 @@
+/* Base defaults stay weaker than feature/variant rules, independent of import order. */
+:where(.iitc-iris-map-context-row) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
+    gap: 5px;
+    align-items: center;
+    min-width: 0;
+}
+
+.iitc-iris-map-context-coords {
+    min-width: 0;
+    overflow: hidden;
+    color: #dbefff;
+    font: var(--iitc-iris-button-font);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.iitc-iris-map-context-anchor {
+    min-width: 0;
+    overflow: hidden;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--portal-team-color, #57e7ff);
+    cursor: pointer;
+    font: var(--iitc-iris-button-font);
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.iitc-iris-map-context-anchor:hover,
+.iitc-iris-map-context-anchor:focus-visible {
+    color: color-mix(in srgb, var(--portal-team-color, #57e7ff) 72%, #fff);
+    text-decoration: underline;
+}

@@ -149,7 +149,7 @@ export interface IitcIrisMessage {
   searchConfirmed?: boolean;
   searchResult?: IitcIrisSearchResult;
   searchZoom?: boolean;
-  drawToolsAction?: 'addMarker' | 'addPolyline' | 'deleteAt' | 'deleteIndex' | 'rename' | 'clear' | 'undo' | 'import' | 'snapToPortals' | 'requestStatus';
+  drawToolsAction?: 'addMarker' | 'addPolyline' | 'deleteAt' | 'deleteIndex' | 'rename' | 'clear' | 'undo' | 'import' | 'snapToPortals' | 'requestStatus' | 'highlightIndex';
   drawToolsItemType?: 'polyline' | 'marker';
   drawToolsColor?: string;
   drawToolsLabel?: string;

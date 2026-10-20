@@ -24,9 +24,11 @@ Current implementation choices:
 - Draw Tools v1 is a native IITC IRIS slice, not a global plugin-system port. It deliberately does not expose
   `window.plugin.drawTools`, `pluginDrawTools`, Leaflet.draw toolbar/events, or DrawTools Opt yet.
 - `Map -> Links` supports portal/context based two-step link creation (`From` / `To`), nearest-link deletion, undo,
-  clear with confirmation, per-link listing, centering, and IITC Draw Tools JSON export/import for supported records.
+  clear with confirmation, per-link listing, centering, and IITC Draw Tools JSON copy/import for supported records.
 - `Map -> Markers` supports four marker presets (white, red, blue, green), nearest-marker deletion, undo, clear with
-  confirmation, per-marker listing, centering, and IITC Draw Tools JSON export/import for supported records.
+  confirmation, per-marker listing, centering, and IITC Draw Tools JSON copy/import for supported records.
+- Import controls are collapsed behind an `Import` action in the Links and Markers sheets so the frequent drawing and
+  marker-list workflows keep vertical space on mobile. Per-type `Copy` and all-item `Copy all` remain directly visible.
 - Portal interaction stays map-first: left-click selects/activates the portal menu and feeds Draw Tools targets, while
   right-click opens the Portal sheet directly.
 - Drawn overlays are non-interactive so they do not intercept portal selection. Management is sheet-driven for this
@@ -45,12 +47,7 @@ Validation and accepted scope:
   and marker record shapes.
 - IITC IRIS import/export has been user-validated for the supported v1 direction: export from IITC IRIS and import into
   IITC, plus import from IITC into IITC IRIS for links/markers.
-- Latest local validation for this slice included `npm run lint:iitc-iris`, `npm run lint:css`,
-  `npm run typecheck:iitc-iris`, `npm run test:iitc-core -- --run src/draw-tools.test.ts`, and
-  `npm run package:iitc-iris`.
-- Latest package artifacts:
-  - `apps/iitc-iris/builds/iitc-iris-chrome-0.1.0-2026-06-07T21-21-45.zip`
-  - `apps/iitc-iris/builds/iitc-iris-firefox-0.1.0-2026-06-07T21-21-45.xpi`
+- For changes, run the focused core Draw Tools tests, `npm run check`, and `npm run package`.
 
 Deferred by design for v1:
 

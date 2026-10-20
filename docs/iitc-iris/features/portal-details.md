@@ -1,16 +1,9 @@
 # Portal Selection And Details
 
-- Port IITC-like portal selection as the next comparison surface before broader side request/UI systems.
-- Keep the first pass narrow: click/select a portal, render the selected portal highlight, expose selected
-  GUID/title/team/level in the dock or innerstatus row, clear selection, and preserve selection across entity refreshes
-  when the selected portal is still present.
-- Add a portal details panel after the selection baseline is stable. The details panel should start with title, team,
-  level, health, resonators, mods, owner, ornaments, artifacts, and basic link/field context where the decoded data
-  supports it.
-- Align core map UI with IITC-CE for comparison: selected portal details should live in an IITC-like side panel, while
-  Mini-IRIS-style debug/copy controls stay collapsed in the comparison dock.
-- Use portal selection/details to validate richer entity decoding and to anchor later COMM, inventory, artifact, and
-  ornament comparisons.
+Portal selection/details are implemented. Markers are selectable, selection survives supported refresh paths, and
+`getPortalDetails` supplies owner, mods, resonators, history, and mitigation. The Portal details panel composes these
+with selected-object context and copy/navigation actions. The separate orange selection ring is a deliberate visual
+choice. Request/cancellation and persisted-section contracts remain behavior-preserving boundaries.
 
 IITC-CE source references:
 
@@ -26,7 +19,7 @@ Acceptance:
 
 Current status:
 
-- First selection baseline is in progress: visible portal markers are clickable, the selected portal gets a separate
+- Selection baseline: visible portal markers are clickable, the selected portal gets a separate
   orange Leaflet highlight ring, the compact innerstatus row shows the selected portal, selection can be cleared, and
   copied diagnostics include `selectedPortal`.
 - A compact selected-portal summary row now uses the currently decoded map entity data: image, title, team, level,
@@ -35,8 +28,7 @@ Current status:
 - Selecting a portal now starts a `/r/getPortalDetails` request. `packages/iitc-core` parses the IITC-shaped details
   response into owner, mods, resonators, history flags, mission flag, and derived mitigation; IITC IRIS exposes request
   status and parsed detail data in the selected row and copied diagnostics.
-- A compact portal details panel now renders as a separate IITC-like right-side selected portal panel instead of
-  expanding the main comparison dock. It shows a faction-colored shell, owner, mitigation, history flags, stable mod
+- A compact portal details panel now renders as a separate IITC-like right-side selected portal panel as part of the Portal domain. It shows a faction-colored shell, owner, mitigation, history flags, stable mod
   slots, a portal-centered resonator layout, selected link/field context, and safe portal actions for zoom/copy
   link/copy GUID.
 - The first pass intentionally does not yet include verified IITC resonator compass-slot parity, deploy/recharge/link

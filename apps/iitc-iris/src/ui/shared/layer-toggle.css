@@ -1,0 +1,22 @@
+:where(.iitc-iris-layer-toggle) {
+    min-width: 20px;
+    height: 20px;
+    border: 1px solid rgb(95 180 255 / 30%);
+    background: rgb(10 18 25 / 82%);
+    color: #7894aa;
+    font: var(--iitc-iris-button-font);
+    text-transform: uppercase;
+}
+
+.iitc-iris-base-toggle,
+:where(.iitc-iris-source-toggle) {
+    min-width: 42px;
+    padding: 0 6px;
+    text-transform: none;
+}
+
+.iitc-iris-layer-toggle-active {
+    border-color: rgb(101 217 255 / 80%);
+    background: rgb(7 31 45 / 92%);
+    color: #e8f4ff;
+}

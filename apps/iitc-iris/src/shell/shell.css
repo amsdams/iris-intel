@@ -1,0 +1,218 @@
+/* shell */
+.iitc-iris-shell {
+    position: absolute;
+    inset: 0;
+    background: #05080b;
+    pointer-events: auto;
+}
+
+/* shell-panels */
+.iitc-iris-sheet-tabbar {
+    --iitc-iris-tabbar-clearance: 96px;
+
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    z-index: 10003;
+    display: grid;
+    gap: 5px;
+    box-sizing: border-box;
+    width: min(560px, calc(100vw - 24px));
+    margin: 0 auto;
+    padding: 5px;
+    border: 1px solid rgb(95 180 255 / 32%);
+    border-radius: 8px;
+    background: rgb(2 10 16 / 92%);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 38%);
+    pointer-events: auto;
+}
+
+.iitc-iris-sheet-tabbar-primary,
+.iitc-iris-sheet-tabbar-secondary {
+    display: grid;
+    gap: 4px;
+}
+
+.iitc-iris-sheet-tabbar-primary {
+    grid-row: 2;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.iitc-iris-sheet-tabbar-secondary {
+    grid-row: 1;
+    grid-auto-columns: minmax(72px, max-content);
+    grid-auto-flow: column;
+    grid-template-columns: none;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgb(95 180 255 / 16%);
+    scrollbar-width: thin;
+    white-space: nowrap;
+}
+
+.iitc-iris-sheet-tabbar-secondary::-webkit-scrollbar {
+    height: 3px;
+}
+
+.iitc-iris-sheet-tabbar-secondary::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgb(95 180 255 / 32%);
+}
+
+.iitc-iris-sheet-tab {
+    appearance: none;
+    position: relative;
+    min-width: 0;
+    min-height: 32px;
+    padding: 3px 2px;
+    border: 1px solid rgb(95 180 255 / 18%);
+    border-radius: 5px;
+    background: rgb(7 31 45 / 72%);
+    color: #c7d8e8;
+    font: var(--iitc-iris-button-font-sm);
+    cursor: pointer;
+}
+
+.iitc-iris-sheet-subtab {
+    min-height: 26px;
+    background: rgb(5 23 34 / 74%);
+    color: #9fb6c7;
+    font-size: 9px;
+}
+
+.iitc-iris-sheet-tab.is-active {
+    border-color: rgb(105 210 255 / 70%);
+    background: rgb(12 48 68 / 96%);
+    color: #fff;
+}
+
+.iitc-iris-sheet-tab.is-active::before {
+    position: absolute;
+    right: 7px;
+    bottom: 3px;
+    left: 7px;
+    height: 2px;
+    border-radius: 999px;
+    background: #65d9ff;
+    content: "";
+}
+
+.iitc-iris-sheet-subtab.is-active::before {
+    right: 12px;
+    left: 12px;
+    background: rgb(255 210 63 / 95%);
+}
+
+.iitc-iris-sheet-tab:disabled {
+    color: #526675;
+    cursor: default;
+}
+
+.iitc-iris-map-controls,
+.iitc-iris-portal-side-panel,
+.iitc-iris-request-side-panel,
+.iitc-iris-system-panel {
+    top: auto;
+    right: 12px;
+    bottom: 104px;
+    left: 12px;
+    z-index: 10002;
+    display: none;
+    width: min(560px, calc(100vw - 24px));
+    max-height: min(64vh, 520px);
+    margin: 0 auto;
+    border-radius: 8px 8px 6px 6px;
+}
+
+.iitc-iris-sheet-layers .iitc-iris-map-controls,
+.iitc-iris-sheet-view .iitc-iris-map-controls,
+.iitc-iris-sheet-drawLinks .iitc-iris-map-controls,
+.iitc-iris-sheet-drawMarkers .iitc-iris-map-controls,
+.iitc-iris-sheet-portalCounts .iitc-iris-map-controls,
+.iitc-iris-sheet-portalsList .iitc-iris-map-controls,
+.iitc-iris-sheet-scoreboard .iitc-iris-map-controls,
+.iitc-iris-sheet-selectedLink .iitc-iris-map-controls,
+.iitc-iris-sheet-selectedField .iitc-iris-map-controls,
+.iitc-iris-sheet-portal .iitc-iris-portal-side-panel,
+.iitc-iris-sheet-agent .iitc-iris-request-side-panel,
+.iitc-iris-sheet-comm .iitc-iris-request-side-panel,
+.iitc-iris-sheet-scores .iitc-iris-request-side-panel,
+.iitc-iris-sheet-missions .iitc-iris-request-side-panel,
+.iitc-iris-sheet-inventory .iitc-iris-request-side-panel,
+.iitc-iris-sheet-passcode .iitc-iris-request-side-panel,
+.iitc-iris-sheet-search .iitc-iris-request-side-panel,
+.iitc-iris-sheet-help .iitc-iris-request-side-panel,
+.iitc-iris-sheet-system .iitc-iris-system-panel {
+    display: grid;
+}
+
+.iitc-iris-sheet-map .iitc-iris-map-controls,
+.iitc-iris-sheet-map .iitc-iris-portal-side-panel,
+.iitc-iris-sheet-map .iitc-iris-request-side-panel,
+.iitc-iris-sheet-map .iitc-iris-system-panel {
+    display: none;
+}
+
+/* Responsive sheet coordination */
+@media (width <= 760px) {
+    .iitc-iris-map-controls {
+        top: auto;
+        right: 8px;
+        bottom: 56px;
+        left: 8px;
+        z-index: 10002;
+        display: none;
+        width: auto;
+        max-height: min(58vh, 420px);
+        border-radius: 8px 8px 6px 6px;
+    }
+
+    .iitc-iris-portal-side-panel {
+        top: auto;
+        right: 8px;
+        bottom: 56px;
+        left: 8px;
+        z-index: 10002;
+        display: none;
+        width: auto;
+        max-height: min(64vh, 480px);
+        border-radius: 8px 8px 6px 6px;
+    }
+
+    .iitc-iris-portal-side-panel-stacked {
+        max-height: min(64vh, 480px);
+    }
+
+    .iitc-iris-request-side-panel {
+        right: 8px;
+        bottom: 56px;
+        left: 8px;
+        z-index: 10002;
+        display: none;
+        width: auto;
+        max-height: min(64vh, 480px);
+        border-radius: 8px 8px 6px 6px;
+    }
+}
+
+@media (width <= 760px) {
+    .iitc-iris-sheet-tabbar {
+        right: 8px;
+        bottom: 8px;
+        left: 8px;
+        width: auto;
+    }
+
+    .iitc-iris-map-controls,
+    .iitc-iris-portal-side-panel,
+    .iitc-iris-request-side-panel,
+    .iitc-iris-search {
+        right: 8px;
+        bottom: var(--iitc-iris-tabbar-clearance, 96px);
+        left: 8px;
+        width: auto;
+        max-height: min(64vh, 480px);
+    }
+}
