@@ -242,7 +242,7 @@ export function processIitcPlayerTrackerData(
     playerData.team = playerTeam;
     const events = playerData.events;
     let insertIndex = 0;
-    for (insertIndex = 0; insertIndex < events.length; insertIndex += 1) {
+    for (; insertIndex < events.length; insertIndex += 1) {
       if (events[insertIndex].time > message.time) break;
     }
 

@@ -2,7 +2,11 @@
   "compilerOptions": {
     "target": "ESNext",
     "useDefineForClassFields": true,
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ESNext"
+    ],
     "allowJs": false,
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
@@ -16,23 +20,20 @@
     "jsx": "react-jsx",
     "jsxImportSource": "preact",
     "paths": {
-      "@iris/core": ["./packages/core/src"],
-      "@iris/core/*": ["./packages/core/src/*"],
-      "@iris/iitc-core": ["./packages/iitc-core/src"],
-      "@iris/iitc-core/*": ["./packages/iitc-core/src/*"],
-      "@iris/plugin-sdk": ["./packages/plugin-sdk/src"]
+      "@iris/iitc-core": [
+        "./packages/iitc-core/src"
+      ],
+      "@iris/iitc-core/*": [
+        "./packages/iitc-core/src/*"
+      ]
     }
   },
   "include": [
-    "packages/**/*.ts",
-    "packages/**/*.tsx",
-    "apps/iris/src/**/*.ts",
-    "apps/iris/src/**/*.tsx",
-    "apps/mini-iris/src/**/*.ts",
-    "apps/mini-iris/src/**/*.tsx",
+    "packages/iitc-core/src/**/*.ts",
     "apps/iitc-iris/src/**/*.ts",
-    "apps/iitc-iris/src/**/*.tsx",
-    "vitest.setup.ts"
+    "apps/iitc-iris/src/**/*.tsx"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }

@@ -1,25 +1,14 @@
-## IRIS Build Skill
+# IITC IRIS Repository Guide
 
-### When to use
-- You need to understand or describe how to work inside `/Users/jula/ittca`.
-- The user asks for instructions, plans, docs, or tooling tied to this IRIS browser extension stack.
-- You need to document a workflow before making code changes.
+The active workspaces are `apps/iitc-iris` and `packages/iitc-core`. Earlier IRIS/Mini-IRIS applications and their
+core/plugin libraries are available in Git history; they are not current implementation or build targets.
 
-### What it covers
-- Project structure: `apps/iris`, `packages/core`, `packages/plugins`, and related docs under `docs/`.
-- Runtime features: session handling, request coordination, mission/COMM UI, passcodes, and theme palette.
-- Key assets: mission references (`reference/…`), IITC/IITC-Button analysis, ticket docs (`docs/TICKETS-*`).
+Read `docs/iitc-iris/plans/index.md` for current scope and `docs/iitc-iris/port-plan.md` for behavior/parity work.
+The app owns Preact, Leaflet, and browser integration. Keep domain logic in `packages/iitc-core`.
 
-### Workflow
-1. Open relevant code/docs using `rg` or `sed` to gather context.
-2. Update planning docs (`docs/PLAN.md`, tickets) before touching runtime behavior.
-3. Use `apply_patch` for manual edits; prefer descriptive commits for feature work.
-4. Run `npx tsc --noEmit -p apps/iris/tsconfig.json` after any TypeScript touch.
-5. Summarize results referencing files with absolute paths and line numbers.
+Use Node 24 and `npm ci`. Validate changes with focused tests, `npm run check`, `npm run lint:css` for CSS/build changes,
+`npm run package`, and `git diff --check`. Documentation-only changes do not require application checks.
 
-### Testing & validation
-- `npx tsc --noEmit -p apps/iris/tsconfig.json`
-- Browser testing via IRIS extension load (not automated).
-
-### Notes
-- Avoid linting/deleting unrelated changes. Keep telemetry docs up to date when adding new features.
+Use `npm run dev:wb` for component browsing. Keep appearance, message contracts, persisted keys, and request lifecycle
+behavior unchanged unless the authorized task explicitly changes them. Prefer combined implementation/checks and brief
+progress notes. Do not commit, tag, push, or publish without user authorization.

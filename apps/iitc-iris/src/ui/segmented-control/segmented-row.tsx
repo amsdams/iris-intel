@@ -1,7 +1,7 @@
-import {h, ComponentChildren, JSX} from 'preact';
+import {h, ComponentChildren, type HTMLAttributes} from 'preact';
 import './segmented-control.css';
 
-export interface SegmentedRowProps extends Omit<JSX.HTMLAttributes<HTMLDivElement>, 'className'> {
+export interface SegmentedRowProps extends Omit<HTMLAttributes<HTMLDivElement>, 'className'> {
   children?: ComponentChildren;
   className?: string;
 }

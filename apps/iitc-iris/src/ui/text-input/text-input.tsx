@@ -1,4 +1,4 @@
-import {h} from 'preact';
+import {h, type InputHTMLAttributes} from 'preact';
 import '../shared/control.css';
 
 /**
@@ -9,7 +9,7 @@ import '../shared/control.css';
  * component for `search` inputs.  This patch respects the provided `type` and
  * still falls back to `'text'` when none is supplied.
  */
-export interface TextInputProps extends Omit<h.JSX.InputHTMLAttributes<HTMLInputElement>, 'type'> {
+export interface TextInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
   /**
    * The type of the `<input>` element.  Defaults to `'text'` if omitted.
    */

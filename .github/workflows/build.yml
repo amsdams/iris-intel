@@ -1,4 +1,4 @@
-name: Build IRIS Extension
+name: Build IITC IRIS Extension
 
 on:
   push:
@@ -21,10 +21,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
+          cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Typecheck
         run: npm run typecheck
@@ -35,24 +36,20 @@ jobs:
       - name: Test
         run: npm run test
 
-      - name: Package all apps
+      - name: Package IITC IRIS
         run: npm run package:all
 
       - name: Prepare artifacts
         run: |
           mkdir -p out
           # Use stable names for the automated latest release
-          cp apps/iris/builds/iris-chrome-*.zip out/iris-chrome.zip
-          cp apps/iris/builds/iris-firefox-*.xpi out/iris-firefox.xpi
-          cp apps/mini-iris/builds/mini-iris-chrome-*.zip out/mini-iris-chrome.zip
-          cp apps/mini-iris/builds/mini-iris-firefox-*.xpi out/mini-iris-firefox.xpi
           cp apps/iitc-iris/builds/iitc-iris-chrome-*.zip out/iitc-iris-chrome.zip
           cp apps/iitc-iris/builds/iitc-iris-firefox-*.xpi out/iitc-iris-firefox.xpi
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: iris-artifacts
+          name: iitc-iris-artifacts
           path: out/
           retention-days: 30
 
@@ -67,17 +64,7 @@ jobs:
           body: |
             Automated build from commit ${{ github.sha }}
 
-            This release contains the latest automated builds for all IRIS variants.
-
-            ### IRIS (Modern)
-            Full-featured extension with MapLibre GL.
-            - Chrome: `iris-chrome.zip`
-            - Firefox: `iris-firefox.xpi`
-
-            ### Mini-IRIS
-            Lightweight tactical overlay.
-            - Chrome: `mini-iris-chrome.zip`
-            - Firefox: `mini-iris-firefox.xpi`
+            IITC IRIS browser-extension packages.
 
             ### IITC IRIS (Alpha)
             IITC-compatible port with Leaflet.
@@ -86,7 +73,7 @@ jobs:
 
             ---
             **Installation Instructions:**
-            Refer to the [README](https://github.com/${{ github.repository }}#installation) for detailed setup guides for Desktop and Android.
+            Refer to the [README](https://github.com/${{ github.repository }}#load-iitc-iris-locally) for extension installation instructions.
           files: out/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

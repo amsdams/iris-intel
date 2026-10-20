@@ -224,7 +224,7 @@ export function IitcIrisSystemControlsPanel({
           </div>
         )}
       </Section>
-      <Section titleHeading="Data source">
+      {dataSourceOptions.length > 1 && <Section titleHeading="Data source">
         <ControlRow>
           {dataSourceOptions.map((option) => (
             <Button
@@ -238,7 +238,7 @@ export function IitcIrisSystemControlsPanel({
             </Button>
           ))}
         </ControlRow>
-      </Section>
+      </Section>}
     </>
   );
 }

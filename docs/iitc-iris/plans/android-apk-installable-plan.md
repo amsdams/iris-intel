@@ -2,7 +2,8 @@
 
 ## Plan Dashboard
 
-Status: planning and research only. No IRIS Android project exists yet.
+Status: planning and research only. No IRIS Android project exists yet. Repository cleanup completed on 2026-10-20:
+only `apps/iitc-iris` and `packages/iitc-core` remain; builds no longer require legacy apps or local reference assets.
 
 This plan answers what must be decided and proven before trying to create an installable Android APK/AAB. It is not a
 refactoring plan, and it should not be mixed with UI extraction or source-layout cleanup.
@@ -181,8 +182,8 @@ Start with:
 - `apps/iitc-iris/package.json`
 - `apps/iitc-iris/src/content.tsx`
 - `apps/iitc-iris/src/page-map-runtime.ts`
-- `apps/iitc-iris/src/shell/content-storage-settings.ts`
-- `apps/iitc-iris/src/missions/missions-panel.tsx`
+- `apps/iitc-iris/src/shell/storage-settings.ts`
+- `apps/iitc-iris/src/map/missions-panel/missions-panel.tsx`
 
 Must cover:
 

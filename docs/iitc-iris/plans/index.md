@@ -16,13 +16,16 @@ for the preceding organization batch. The earlier shared-domain-helper move pres
 Current handoff is in [plan 37](css-refactoring/37-component-simplification-review.md);
 source grouping is recorded in [the source layout record](source-directory-layout-plan.md).
 Android APK work is a separate readiness track, not a continuation of the refactor plans.
+Repository cleanup is complete: only `apps/iitc-iris` and `packages/iitc-core` remain. Required images/notices and retained
+  samples have active owners; clean installation, checks, workbench build, and extension packaging pass without references.
 
 Do not assign any other refactor work unless a detailed plan names exact scope, files, stop conditions, and validation.
 
 Likely next priorities:
 
 1. CSS/component cleanup and the content composition pass are complete and user smoke accepted; no further batch is queued.
-2. Use the app on phone/desktop and collect concrete UI/CSS/mobile pain; scrolling remains deferred.
+2. Harden the repository and runtime before APK work: reproducible builds, platform boundaries, and lifecycle ownership
+   (scope below). This preparation does not depend on finding new usability issues; scrolling remains deferred.
 3. Prepare for a friend-shared sideload APK, with Play/store distribution deferred.
 4. Run the Android/WebView readiness spikes before creating an IRIS APK scaffold.
 5. UI/CSS/mobile polish for concrete findings.
@@ -32,7 +35,9 @@ Do not mix refactor cleanup, UI/mobile polish, Android APK work, and feature/par
 
 ## Active Work
 
-- No implementation slice is active. The content composition pass is complete with passing automated checks and user smoke acceptance.
+- Repository cleanup is complete, following user approval to delete superseded code and retain its Git history.
+  No implementation slice is active; platform-boundary and runtime-lifecycle hardening remain the next preparation work.
+  The content composition pass is complete with passing automated checks and user smoke acceptance.
   [Plan 37](css-refactoring/37-component-simplification-review.md) records the architecture contract and handoff.
 
 ## content.tsx Composition Review
@@ -81,6 +86,50 @@ The composition pass is complete. Shared app coordination and COMM remain in pla
 Combined smoke scope: Search and Display checks above; Missions view/portal switching, changing the selected portal
 while Missions is open, mission details/zoom and auth retry; location preset/input jumps and browser location success/denial.
 The user reported smoke testing passed on 2026-10-20; no separate agent-run browser audit or per-item results are recorded.
+
+## Before APK: Repository And Runtime Hardening
+
+User clarified the goal on 2026-10-20: a clean repository and solid application before attempting an APK.
+Initial source scan: 137 production app modules, no relative runtime import cycles, no shared-UI imports outside `ui/`,
+and no browser/Leaflet/Preact references found in production `iitc-core` sources. This is not a full runtime audit.
+
+Recommended next implementation scope:
+
+- Reproducible, self-contained builds (complete): the root lockfile is included, CI uses Node 24 and
+  `npm ci`, and required images plus notices are bundled under `apps/iitc-iris/assets/`. Samples moved unchanged into
+  `docs/iitc-iris/fixtures/`. The three absent diagnostics captures and their choices were subsequently retired;
+  saved fixture selections fall back to Live, and packaging removes old generated fixture output without creating fallbacks.
+  Removed `apps/{iris,mini-iris}`, `packages/{core,plugin-sdk,plugins}`, their obsolete docs, and their tooling entries.
+  Validation: a separate source copy with no existing dependencies or reference checkout passed `npm ci`, both workspace
+  checks (112 core + 391 app tests), CSS lint, and packaging. Root test discovery also passes all 503 tests, and the
+  workbench builds. Both extension payloads include exact images/notices; missing required images fail explicitly.
+  Version tooling synchronizes root/app/manifest/lockfile versions; verified in isolation without creating a tag.
+  Git baseline before removal: `aae62a6e896ab30aa4608562af05d4e16b0614bb` (retrieval noted in the root README).
+- Dependency/deprecation review (2026-10-20): refreshed compatible direct/transitive dependencies, including Preact
+  10.29.8, Vite 6.4.4, Vitest 4.1.12, Stylelint 17.16, and TypeScript ESLint 8.72; Node definitions now match Node 24.
+  Upgraded ESLint to 10.13 and its native `defineConfig`, removing the unused JSX lint plugin (Hooks checks remain).
+  Replaced 18 deprecated Preact attribute/event type aliases and enabled `@typescript-eslint/no-deprecated` as an error.
+  The newer lint rules also removed redundant assignments and preserved original causes when wrapping request errors.
+  No packages in the resulting lockfile are marked deprecated. This checks APIs annotated `@deprecated` in available
+  type definitions; it is not an exhaustive browser/runtime compatibility audit.
+  Validation: clean cached `npm ci`, both workspace checks (503 tests), CSS lint, workbench build, and Chrome/Firefox
+  packaging pass. Production dependency audit: zero findings. Full audit: seven high-severity entries, all tracing to
+  one unpatched development-only `braces` advisory through Stylelint's glob dependencies
+  ([GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)). Recheck when an upstream fix is published;
+  do not apply npm's proposed downgrade to Stylelint 7 or suppress the advisory. Current lint patterns are repository-owned.
+  Preact 11, TypeScript 7, Vite 8, Vitest 5, and the newer Chrome type-definition line remain separate migration work;
+  Vite 6.4 still receives security patches ([support policy](https://vite.dev/releases)). No browser smoke test requested.
+- Platform boundaries: `map/missions-panel/missions-panel.tsx` calls `chrome.runtime.getURL` directly, while
+  `shell/storage-settings.ts` has two guarded resolution paths. Consolidate asset resolution behind one clear owner;
+  inventory injection, clipboard, geolocation, storage, and auth seams before choosing Android replacements.
+- Runtime lifecycle: review ownership of requests, timers, DOM listeners, and Leaflet resources around map replacement.
+  `page-map-runtime.ts` removes the previous map without one disposal owner; `map/map-context-runtime.ts` installs
+  listeners and timers without returning cleanup. Prove remount/cancellation behavior with lifecycle tests before
+  changing runtime boundaries. Extract cohesive responsibilities only when this improves ownership/testability.
+
+Keep this separate from Android scaffolding and visual changes. Stop when a fresh checkout builds consistently,
+platform assumptions have explicit owners, and the reviewed lifecycle paths have cleanup and meaningful tests.
+The existing APK plan still governs later WebView auth/injection proofs; none has been performed by this source scan.
 
 ## Recently Completed
 

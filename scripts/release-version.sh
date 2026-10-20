@@ -43,12 +43,17 @@ function updateJson(file) {
     if (json.packages && json.packages['']) {
       json.packages[''].version = version;
     }
+    if (json.packages?.['apps/iitc-iris']) {
+      json.packages['apps/iitc-iris'].version = version;
+    }
   }
 
   fs.writeFileSync(file, `${JSON.stringify(json, null, 2)}\n`);
 }
 
 updateJson('package.json');
+updateJson('apps/iitc-iris/package.json');
+updateJson('apps/iitc-iris/manifest.json');
 
 if (fs.existsSync('package-lock.json')) {
   updateJson('package-lock.json');

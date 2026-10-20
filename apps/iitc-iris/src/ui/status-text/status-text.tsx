@@ -1,8 +1,8 @@
-import {h, ComponentChildren, JSX} from 'preact';
+import {h, ComponentChildren, type HTMLAttributes} from 'preact';
 import '../shared/warning.css';
 import './status-text.css';
 
-export interface StatusTextProps extends Omit<JSX.HTMLAttributes<HTMLSpanElement>, 'className'> {
+export interface StatusTextProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'className'> {
   children?: ComponentChildren;
   className?: string;
 }

@@ -1,4 +1,4 @@
-# IRIS Project Mandates
+# IITC IRIS Project Mandates
 
 This file contains foundational instructions and preferences for the IRIS development workflow.
 
@@ -11,14 +11,14 @@ This file contains foundational instructions and preferences for the IRIS develo
 - **Ask Before Full Verification:** If all three of `npm run typecheck`, `npm run lint`, and `npm run build` would be run mainly as a precaution rather than a clear necessity, ask first instead of running them automatically.
 - **Post-Change Release:** Execute `npm run release` from the project root after completing code modifications or feature implementations when release artifacts are part of the task. Do not run release for docs-only changes.
 - **Testing:** Prefer testing changes before committing; do not ask to commit immediately after making changes.
-- **Style:** Adhere to Preact (TypeScript) and Zustand state management patterns already established in the `@iris/core` and `@iris/extension` packages.
+- **Style:** Adhere to Preact/TypeScript patterns in `apps/iitc-iris` and pure domain logic in `packages/iitc-core`. Earlier apps and their core/plugin libraries are historical Git references.
 - **IDE Cleanliness:** Treat IntelliJ/TypeScript warnings as real defects when they point to type unsafety, redundant checks, or avoidable coercions. Keep the IDE warning surface minimal, not just ESLint green.
 - **Boolean Defaults:** Avoid redundant `!!value` coercions for `boolean | undefined` state. Prefer `value ?? false` when the intended fallback is false.
 - **Type vs Interface:** Use `interface` for plain object contracts and API/domain models. Use `type` for unions, tuples, intersections, and helper compositions. Do not use `interface extends GeoJSON.GeoJsonProperties`; use a `type` intersection instead because `GeoJsonProperties` includes `null`.
 
 ## Allowed/Preferred Commands
 - **Build & Release:** Use `npm run release` to build both Chrome and Firefox extensions.
-- **Development:** Use `npm run dev -w apps/iris` for watching changes.
-- **Linting:** Use `npm run lint` or `npx eslint apps/iris/src` for code style checks.
+- **Development:** Use `npm run dev` for watching changes.
+- **Linting:** Use `npm run lint` or `npx eslint apps/iitc-iris/src` for code style checks.
 - **Typechecking:** Use `npm run typecheck` for repository-wide TypeScript verification.
 - **Testing:** (Add project-specific test commands here as they are established).

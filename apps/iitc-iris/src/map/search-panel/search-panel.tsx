@@ -1,4 +1,4 @@
-import {h} from 'preact';
+import {h, type TargetedKeyboardEvent} from 'preact';
 import './search.css';
 import '../../ui/shared/list-item.css';
 import {getCommTeamClass} from '../../comm/comm-display';
@@ -20,7 +20,7 @@ export interface IitcIrisSearchPanelProps {
   activeSearchResultIndex: number;
   clearSearch: () => void;
   closeSearch: () => void;
-  handleSearchKeyDown: (event: h.JSX.TargetedKeyboardEvent<HTMLInputElement>) => void;
+  handleSearchKeyDown: (event: TargetedKeyboardEvent<HTMLInputElement>) => void;
   previewSearchResult: (result: IitcIrisSearchResult | null) => void;
   requestSearch: (term: string, confirmed?: boolean) => void;
   searchState: IitcIrisSearchState;

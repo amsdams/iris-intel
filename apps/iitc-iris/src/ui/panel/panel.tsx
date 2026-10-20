@@ -1,7 +1,7 @@
-import {h, ComponentChildren, JSX} from 'preact';
+import {h, ComponentChildren, type HTMLAttributes} from 'preact';
 import './panel.css';
 
-export interface PanelProps extends Omit<JSX.HTMLAttributes<HTMLElement>, 'className'> {
+export interface PanelProps extends Omit<HTMLAttributes<HTMLElement>, 'className'> {
   children?: ComponentChildren;
   className?: string;
 }
@@ -15,7 +15,7 @@ export function Panel({children, className, ...props}: PanelProps): h.JSX.Elemen
   );
 }
 
-export interface PanelHeaderProps extends Omit<JSX.HTMLAttributes<HTMLDivElement>, 'className'> {
+export interface PanelHeaderProps extends Omit<HTMLAttributes<HTMLDivElement>, 'className'> {
   children?: ComponentChildren;
   className?: string;
 }
@@ -29,7 +29,7 @@ export function PanelHeader({children, className, ...props}: PanelHeaderProps): 
   );
 }
 
-export interface PanelTitleProps extends Omit<JSX.HTMLAttributes<HTMLSpanElement>, 'className'> {
+export interface PanelTitleProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'className'> {
   children?: ComponentChildren;
   className?: string;
 }
@@ -43,7 +43,7 @@ export function PanelTitle({children, className, ...props}: PanelTitleProps): h.
   );
 }
 
-export interface PanelBodyProps extends Omit<JSX.HTMLAttributes<HTMLDivElement>, 'className'> {
+export interface PanelBodyProps extends Omit<HTMLAttributes<HTMLDivElement>, 'className'> {
   children?: ComponentChildren;
   className?: string;
 }
@@ -57,7 +57,7 @@ export function PanelBody({children, className, ...props}: PanelBodyProps): h.JS
   );
 }
 
-export interface PanelFooterProps extends Omit<JSX.HTMLAttributes<HTMLDivElement>, 'className'> {
+export interface PanelFooterProps extends Omit<HTMLAttributes<HTMLDivElement>, 'className'> {
   children?: ComponentChildren;
   className?: string;
 }

@@ -4,6 +4,10 @@ Status: complete. A–C, cleanup, Button, Table, and subsequent organization/UI 
 
 ## Next-Session Handoff — 2026-10-20
 
+- Repository cleanup is complete: the two active workspaces are `apps/iitc-iris` and `packages/iitc-core`; earlier apps,
+  their core/plugin libraries, and obsolete docs/tooling were removed with history retained. Clean installation passes
+  all 503 tests, lint/typecheck, CSS lint, and packaging; workbench build also passes. Platform/runtime hardening is next,
+  as recorded in the roadmap; the accepted CSS/component work below remains complete.
 - The goal remains a simple, manageable CSS/component architecture: explicit ownership, fewer competing defaults and
   variants, native semantics, and small reusable primitives. Shared UI exports: 22; central infrastructure imports: 10.
 - The user accepted the Table/segmented/domain batch and subsequent panel organization with “looks good” / “looks better.”

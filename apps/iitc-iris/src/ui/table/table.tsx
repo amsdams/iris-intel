@@ -1,7 +1,7 @@
-import {h, JSX} from 'preact';
+import {h, type TableHTMLAttributes} from 'preact';
 import './table.css';
 
-export interface TableProps extends Omit<JSX.TableHTMLAttributes<HTMLTableElement>, 'class' | 'className'> {
+export interface TableProps extends Omit<TableHTMLAttributes<HTMLTableElement>, 'class' | 'className'> {
   className?: string;
   containerClassName?: string;
 }

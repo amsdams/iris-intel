@@ -1,7 +1,7 @@
-import {h} from 'preact';
+import {h, type InputHTMLAttributes} from 'preact';
 import './layer-choice.css';
 
-export interface LayerChoiceProps extends Omit<h.JSX.InputHTMLAttributes<HTMLInputElement>, 'type'> {
+export interface LayerChoiceProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
   label: string;
   type: 'checkbox' | 'radio';
 }

@@ -1,7 +1,0 @@
-{
-  "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "types": ["chrome", "vite/client", "geojson"]
-  },
-  "include": ["src/**/*"]
-}

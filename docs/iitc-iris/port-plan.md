@@ -1,5 +1,9 @@
 # IITC IRIS Port Plan
 
+Repository cleanup (2026-10-20): only `apps/iitc-iris` and `packages/iitc-core` remain active. Earlier IRIS/Mini-IRIS
+code and documentation references below are historical Git paths; see the root README for retrieval. Retained samples
+now live in `docs/iitc-iris/fixtures/`. Current implementation scope is in [the roadmap](plans/index.md).
+
 Goal: build a clean IITC-compatible IRIS track with a Mini-IRIS-sized UI shell and an IITC-CE-derived core. This track
 should use the same map library family as IITC-CE and avoid depending on the current IRIS map renderer while the port is
 being validated.

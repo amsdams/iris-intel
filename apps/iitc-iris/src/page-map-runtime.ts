@@ -119,7 +119,6 @@ import {
   type IitcRequestDiagnosticsState,
   type IitcRenderQueueTileStatus,
   pushIitcRenderQueueTile,
-  type IitcTileQueueState,
   writeIitcPortalDetailsCache,
 } from '@iris/iitc-core';
 
@@ -1475,9 +1474,9 @@ function createOrnamentMarker(latLng: [number, number], ornament: string, portal
 }
 
 function loadOrnamentVisibilitySettings(): IitcOrnamentVisibilitySettings {
-  let excludedOrnaments: unknown = [];
-  let knownOrnaments: unknown = {};
-  let layerGroupDisplayed: unknown = {};
+  let excludedOrnaments: unknown;
+  let knownOrnaments: unknown;
+  let layerGroupDisplayed: unknown;
   try {
     const rawExcluded = window.localStorage.getItem('excludedOrnaments');
     excludedOrnaments = rawExcluded ? JSON.parse(rawExcluded) : [];
@@ -4679,7 +4678,7 @@ async function fetchComm(
   try {
     parsed = JSON.parse(text) as unknown;
   } catch (error) {
-    if (!response.ok) throw new Error(`getPlexts HTTP ${response.status}`);
+    if (!response.ok) throw new Error(`getPlexts HTTP ${response.status}`, {cause: error});
     throw error;
   }
   if (!response.ok) throw new Error(`getPlexts HTTP ${response.status}`);
@@ -4713,7 +4712,7 @@ async function postSendPlext(payload: NonNullable<ReturnType<typeof genIitcCommS
   try {
     parsed = JSON.parse(text) as unknown;
   } catch (error) {
-    if (!response.ok) throw new Error(`sendPlext HTTP ${response.status}`);
+    if (!response.ok) throw new Error(`sendPlext HTTP ${response.status}`, {cause: error});
     throw error;
   }
   if (!response.ok) throw new Error(`sendPlext HTTP ${response.status}`);
@@ -5433,7 +5432,7 @@ async function fetchEntityBatch(tileKeys: string[], version: string, signal?: Ab
   try {
     return JSON.parse(text) as IitcGetEntitiesResponse;
   } catch (error) {
-    throw new Error(`getEntities returned non-JSON HTTP ${response.status}: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(`getEntities returned non-JSON HTTP ${response.status}: ${error instanceof Error ? error.message : String(error)}`, {cause: error});
   }
 }
 
@@ -5660,7 +5659,6 @@ function scheduleEntityRefresh(delayMs = FAST_MOVE_REFRESH_DELAY_MS): void {
 async function refreshEntities(): Promise<void> {
   const refreshStartTime = performance.now();
   let generation = latestFetchGeneration;
-  let activeQueueState: IitcTileQueueState | undefined;
   let abortController: AbortController | undefined;
   try {
     const plan = createPlanFromMap();
@@ -5754,7 +5752,6 @@ async function refreshEntities(): Promise<void> {
       }
     }
     let queueState = createIitcTileQueueState(queueTileKeys);
-    activeQueueState = queueState;
     let firstRenderElapsedMs: number | undefined;
     let lastProgressRenderTime = 0;
     const renderLiveProgress = (response: IitcGetEntitiesResponse, entities: IitcIrisRenderEntities, force = false): IitcIrisRenderEntities | undefined => {
@@ -5858,7 +5855,6 @@ async function refreshEntities(): Promise<void> {
           renderQueue = pushIitcRenderQueueTile(renderQueue, tileKey, staleTile, 'cache-stale');
         }
       }
-      activeQueueState = queueState;
       bucketDiagnostics = appendIitcResponseBucketDiagnostics(bucketDiagnostics, result.response ?? null, result.tileKeys, result.response !== undefined);
       if (startedAsRetry) {
         retryRequests += 1;
@@ -5918,7 +5914,6 @@ async function refreshEntities(): Promise<void> {
         for (const batch of batches) {
           const startedAsRetry = batch.some((tileKey) => (queueState.tileErrorCount[tileKey] ?? 0) > 0);
           queueState = markIitcTileRequestStarted(queueState, batch);
-          activeQueueState = queueState;
           const id = requestId;
           requestId += 1;
           inFlight.set(id, fetchEntityBatchResult(batch, version, liveAbortController.signal)
@@ -5936,7 +5931,6 @@ async function refreshEntities(): Promise<void> {
             : false;
           if (deliveredToCurrentRefresh) {
             queueState = markIitcTileQueueStale(queueState);
-            activeQueueState = queueState;
             return false;
           }
           const warmedTileKeys = ENABLE_STALE_GENERATION_CACHE_WARMING
@@ -5944,7 +5938,6 @@ async function refreshEntities(): Promise<void> {
             : storeWantedSuccessfulTilePayloads(settled.result.response, settled.result.tileKeys);
           recordStaleGenerationCacheWarmTileKeys(warmedTileKeys);
           queueState = markIitcTileQueueStale(queueState);
-          activeQueueState = queueState;
           return false;
         }
         const queueDelayMs = processCompletedBatch(settled.result, settled.startedAsRetry);
@@ -5961,7 +5954,6 @@ async function refreshEntities(): Promise<void> {
           const shouldContinue = await waitForIitcQueueDelay(refillDecision.waitMs, generation, liveAbortController.signal);
           if (!shouldContinue) {
             queueState = markIitcTileQueueStale(queueState);
-            activeQueueState = queueState;
             return false;
           }
           nextRefillAt = 0;
@@ -5974,7 +5966,6 @@ async function refreshEntities(): Promise<void> {
       const shouldContinue = await waitForIitcQueueDelay(timingDiagnostics.downloadDelayMs, generation, liveAbortController.signal);
       if (!shouldContinue) {
         queueState = markIitcTileQueueStale(queueState);
-        activeQueueState = queueState;
         if (activeMapDataRefreshBridge?.generation === generation) activeMapDataRefreshBridge = undefined;
         return;
       }
@@ -5988,7 +5979,6 @@ async function refreshEntities(): Promise<void> {
 
     if (generation !== latestFetchGeneration) {
       queueState = markIitcTileQueueStale(queueState);
-      activeQueueState = queueState;
       if (activeMapDataRefreshBridge?.generation === generation) activeMapDataRefreshBridge = undefined;
       return;
     }
@@ -5997,7 +5987,6 @@ async function refreshEntities(): Promise<void> {
     timingDiagnostics.artifactWaitMs = performance.now() - artifactWaitStartTime;
     if (generation !== latestFetchGeneration) {
       queueState = markIitcTileQueueStale(queueState);
-      activeQueueState = queueState;
       if (activeMapDataRefreshBridge?.generation === generation) activeMapDataRefreshBridge = undefined;
       return;
     }
@@ -6006,7 +5995,6 @@ async function refreshEntities(): Promise<void> {
     const recoveredTileKeys = getIitcRecoveredTileKeys([...retriedTileKeys], nonEmptyTileKeys);
     queueState = markIitcTileQueueComplete(queueState);
     const partialTileKeys = plan.tileParams.hasPortals ? [] : [...queueState.failedTileKeys];
-    activeQueueState = queueState;
     latestPlan = plan;
     latestResponse = mergedResponse;
     renderEntities(entities);
@@ -6038,7 +6026,6 @@ async function refreshEntities(): Promise<void> {
     if (currentFetchAbortController === abortController) currentFetchAbortController = undefined;
   } catch (error) {
     if (generation !== latestFetchGeneration || (error instanceof DOMException && error.name === 'AbortError')) {
-      if (activeQueueState) activeQueueState = markIitcTileQueueStale(activeQueueState);
       if (activeMapDataRefreshBridge?.generation === generation) activeMapDataRefreshBridge = undefined;
       if (currentFetchAbortController === abortController) currentFetchAbortController = undefined;
       return;

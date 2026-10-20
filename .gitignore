@@ -1,7 +1,6 @@
 # Dependencies
 node_modules/
 .pnpm-store/
-package-lock.json
 pnpm-lock.yaml
 
 # Build
@@ -57,21 +56,10 @@ pnpm-debug.log*
 .vercel
 /reference/
 .aider*
-/packages/extension/dist-firefox/
-/packages/extension/builds/
-docs/PLAYER-TRACKER.md
-docs/REF-IITC_BUTTON.md
-/poc-map-interaction/builds/
 /docs/*
 !/docs/README.md
-!/docs/iris/
-!/docs/iris/**
-!/docs/iris-mini/
-!/docs/iris-mini/**
 !/docs/iitc-iris/
 !/docs/iitc-iris/**
-/apps/mini-iris/builds/
 /tmp/markers-and-links.json
-/apps/iris/builds/
 /apps/iitc-iris/builds/
 /apps/iitc-iris/dist/

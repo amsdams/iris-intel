@@ -1,16 +1,16 @@
 import eslint from '@eslint/js';
+import {defineConfig} from 'eslint/config';
 import tseslint from 'typescript-eslint';
-import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
 
-export default tseslint.config(
+export default defineConfig(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   ...tseslint.configs.strict,
   ...tseslint.configs.stylistic,
   {
-    files: ['**/vite.config.ts', 'apps/mini-iris/build-zip.cjs'],
+    files: ['**/vite.config.ts'],
     languageOptions: {
         globals: {
             ...globals.node,
@@ -24,7 +24,6 @@ export default tseslint.config(
     files: ['**/*.ts', '**/*.tsx'],
     ignores: ['**/vite.config.ts'],
     plugins: {
-      react,
       'react-hooks': reactHooks,
     },
     languageOptions: {
@@ -38,13 +37,9 @@ export default tseslint.config(
         chrome: 'readonly',
       },
     },
-    settings: {
-      react: {
-        version: 'detect',
-      },
-    },
     rules: {
       // THE "NO ANY" RULES
+      '@typescript-eslint/no-deprecated': 'error',
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unsafe-assignment': 'error',
       '@typescript-eslint/no-unsafe-call': 'error',
@@ -74,7 +69,6 @@ export default tseslint.config(
       'vite.config.ts',
       '**/vite.config.ts.timestamp-*',
       'eslint.config.mjs',
-      'apps/iris/public/**'
     ],
   }
 );

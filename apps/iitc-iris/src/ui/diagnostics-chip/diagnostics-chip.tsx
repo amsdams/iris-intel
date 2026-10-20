@@ -1,7 +1,7 @@
-import {h, ComponentChildren, JSX} from 'preact';
+import {h, ComponentChildren, type HTMLAttributes} from 'preact';
 import './diagnostics-chip.css';
 
-export type DiagnosticsChipProps = Omit<JSX.HTMLAttributes<HTMLSpanElement>, 'className' | 'children' | 'value'> & {
+export type DiagnosticsChipProps = Omit<HTMLAttributes<HTMLSpanElement>, 'className' | 'children' | 'value'> & {
   className?: string;
 } & ({
   value: ComponentChildren;

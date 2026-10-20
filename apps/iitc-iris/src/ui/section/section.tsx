@@ -1,8 +1,8 @@
-import {h, ComponentChildren, JSX} from 'preact';
+import {h, ComponentChildren, type HTMLAttributes} from 'preact';
 import './section.css';
 import {StatusText} from '../status-text';
 
-export interface SectionProps extends Omit<JSX.HTMLAttributes<HTMLDivElement>, 'className' | 'title'> {
+export interface SectionProps extends Omit<HTMLAttributes<HTMLDivElement>, 'className' | 'title'> {
   titleHeading?: ComponentChildren;
   title?: string;
   children?: ComponentChildren;

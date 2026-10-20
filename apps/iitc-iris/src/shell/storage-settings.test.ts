@@ -77,34 +77,20 @@ describe('content-storage-settings', () => {
     expect(loadStoredBoolean('test-key', false)).toBe(true);
   });
 
-  it('creates data source settings from registered ids', () => {
-    const live = createDataSourceSettings('live');
-    expect(live.mode).toBe('live');
-
-    const fixture = createDataSourceSettings('ams-z10');
-    expect(fixture.mode).toBe('fixture');
-    if (fixture.mode === 'fixture') {
-      expect(fixture.url).toContain('get-entities-z10.json');
-    }
-
-    const damrakFixture = createDataSourceSettings('dam-iitc-z15');
-    expect(damrakFixture.mode).toBe('fixture');
-    if (damrakFixture.mode === 'fixture') {
-      expect(damrakFixture.id).toBe('dam-iitc-z15');
-      expect(damrakFixture.label).toBe('DAM IITC');
-      expect(damrakFixture.url).toContain('get-entities-damrak-iitc-z15.json');
-    }
+  it('uses live data for current and unknown source ids', () => {
+    expect(createDataSourceSettings('live')).toEqual({mode: 'live'});
+    expect(createDataSourceSettings('unknown')).toEqual({mode: 'live'});
   });
 
-  it('loads and stores stable data source ids', () => {
-    window.localStorage.setItem(DATA_SOURCE_STORAGE_KEY, 'dam-iitc-z15');
-    expect(loadStoredDataSourceId()).toBe('dam-iitc-z15');
-
-    window.localStorage.setItem(DATA_SOURCE_STORAGE_KEY, 'damrak-z15');
-    expect(loadStoredDataSourceId()).toBe('dam-iitc-z15');
-
-    storeDataSourceId('damrak-z15');
-    expect(window.localStorage.getItem(DATA_SOURCE_STORAGE_KEY)).toBe('dam-iitc-z15');
+  it('recovers retired fixture selections to live data when loading and persisting', () => {
+    expect(loadStoredDataSourceId()).toBe('live');
+    for (const id of ['live', 'ams-z10', 'ams-z14', 'dam-iitc-z15', 'damrak-z15', 'unknown']) {
+      window.localStorage.setItem(DATA_SOURCE_STORAGE_KEY, id);
+      expect(loadStoredDataSourceId()).toBe('live');
+      expect(createDataSourceSettings(id)).toEqual({mode: 'live'});
+      storeDataSourceId(id);
+      expect(window.localStorage.getItem(DATA_SOURCE_STORAGE_KEY)).toBe('live');
+    }
   });
 
   it('migrates legacy highlighter settings from legacy layer settings', () => {

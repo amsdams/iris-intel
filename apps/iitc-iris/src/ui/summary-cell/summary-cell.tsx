@@ -1,7 +1,7 @@
-import {h, ComponentChildren, JSX} from 'preact';
+import {h, ComponentChildren, type HTMLAttributes} from 'preact';
 import './summary-cell.css';
 
-export interface SummaryCellProps extends Omit<JSX.HTMLAttributes<HTMLSpanElement>, 'className'> {
+export interface SummaryCellProps extends Omit<HTMLAttributes<HTMLSpanElement>, 'className'> {
   value: ComponentChildren;
   label: ComponentChildren;
   className?: string;

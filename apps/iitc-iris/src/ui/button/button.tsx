@@ -1,7 +1,7 @@
-import {h, JSX} from 'preact';
+import {h, type ButtonHTMLAttributes} from 'preact';
 import './button.css';
 
-export interface ButtonProps extends Omit<JSX.ButtonHTMLAttributes<HTMLButtonElement>, 'class' | 'className' | 'type'> {
+export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'class' | 'className' | 'type'> {
   className?: string;
   type?: 'button' | 'submit' | 'reset';
 }

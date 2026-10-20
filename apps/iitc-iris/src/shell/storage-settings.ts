@@ -75,44 +75,10 @@ export const VIEW_PRESETS: readonly ViewPresetOption[] = [
 
 export const DATA_SOURCE_OPTIONS: readonly DataSourceOption[] = [
   { id: 'live', label: 'Live', title: 'Fetch live Intel getEntities responses', mode: 'live' },
-  {
-    id: 'ams-z10',
-    label: 'AMS F10',
-    title: 'Amsterdam fixture from docs/iris/update-map-samples/get-entities-z10.json',
-    mode: 'fixture',
-    fixturePath: 'fixtures/get-entities-z10.json',
-    lat: 52.3730796,
-    lng: 4.8924534,
-    zoom: 10,
-  },
-  {
-    id: 'ams-z14',
-    label: 'AMS F14',
-    title: 'Amsterdam fixture from docs/iris/update-map-samples/get-entities-z14.json',
-    mode: 'fixture',
-    fixturePath: 'fixtures/get-entities-z14.json',
-    lat: 52.3730796,
-    lng: 4.8924534,
-    zoom: 14,
-  },
-  {
-    id: 'dam-iitc-z15',
-    label: 'DAM IITC',
-    title: 'Damrak fixture extracted from IITC HAR getEntities response',
-    mode: 'fixture',
-    fixturePath: 'fixtures/get-entities-damrak-iitc-z15.json',
-    lat: 52.3761096,
-    lng: 4.8980545,
-    zoom: 15,
-  },
 ];
 
-const DATA_SOURCE_ID_ALIASES: Record<string, string> = {
-  'damrak-z15': 'dam-iitc-z15',
-};
-
 export function normalizeDataSourceId(id: string | null | undefined): string {
-  return id ? DATA_SOURCE_ID_ALIASES[id] ?? id : 'live';
+  return DATA_SOURCE_OPTIONS.find((option) => option.id === id)?.id ?? 'live';
 }
 
 export function createDataSourceSettings(id: string): IitcIrisDataSourceSettings {
@@ -290,8 +256,7 @@ export function loadStoredHighlighterSettings(): IitcIrisHighlighterSettings {
 
 export function loadStoredDataSourceId(): string {
   try {
-    const value = normalizeDataSourceId(getLocalStorage()?.getItem(DATA_SOURCE_STORAGE_KEY));
-    return DATA_SOURCE_OPTIONS.some((option) => option.id === value) ? value : 'live';
+    return normalizeDataSourceId(getLocalStorage()?.getItem(DATA_SOURCE_STORAGE_KEY));
   } catch {
     return 'live';
   }
