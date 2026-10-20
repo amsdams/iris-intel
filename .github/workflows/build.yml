@@ -7,6 +7,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -47,8 +50,21 @@ jobs:
           path: out/
           retention-days: 30
 
+  publish-latest:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download verified extension packages
+        uses: actions/download-artifact@v4
+        with:
+          name: iitc-iris-artifacts
+          path: out/
+
       - name: Create/Update Latest Release
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest

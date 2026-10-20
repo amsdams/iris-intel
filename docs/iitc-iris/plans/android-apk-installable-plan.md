@@ -4,6 +4,8 @@
 
 Status: planning and research only. No IRIS Android project exists yet. Repository cleanup completed on 2026-10-20:
 only `apps/iitc-iris` and `packages/iitc-core` remain; builds no longer require legacy apps or local reference assets.
+The repository/platform ownership and map-replacement lifetime pass is implemented and user smoke accepted.
+See [the roadmap](index.md#before-apk-repository-and-runtime-hardening) for the current ownership inventory.
 
 This plan answers what must be decided and proven before trying to create an installable Android APK/AAB. It is not a
 refactoring plan, and it should not be mixed with UI extraction or source-layout cleanup.
@@ -15,17 +17,33 @@ refactoring plan, and it should not be mixed with UI extraction or source-layout
   under `apps/iitc-iris`, `packages`, or `docs/iitc-iris`.
 - Reference IITC-CE Android prior art exists under `reference/IITC-CE/mobile/` and
   `reference/ingress-intel-total-conversion/mobile/`.
+- First target decided: private/friends sideloadable APK. Store/Play distribution is deferred.
+- Browser boundary owners are inventoried in the roadmap: assets, injection/messaging, clipboard, geolocation,
+  preferences, runtime caches, and Intel authentication. Android replacements are not implemented.
+- Shared asset URL resolution and map disposal are implemented. Automated checks pass (517 tests, workbench checks,
+  CSS lint, and extension packaging); the user reported the cleanup smoke test passed on 2026-10-20.
 - Current IRIS packaging is browser-extension packaging only:
   - `apps/iitc-iris/manifest.json`
   - `apps/iitc-iris/package.json`
 
 ### In Progress
 
-- None.
+- None. Finish the merge checkpoint, then begin Android work on a separate branch.
+
+### Immediate Next Work
+
+Combine the targeted IITC mobile prior-art check and remaining Android boundary decisions with one small, real-device
+login/session and injection spike (assignments 2–5). Prove Intel authentication/session persistence, an authenticated
+request, bundled IRIS asset loading, and a message round trip before growing a permanent Android app. Reuse the ownership
+inventory already completed; investigate only the Android replacements and unknowns.
+
+If Intel uses Google OAuth, account for its
+[embedded-user-agent restrictions](https://developers.google.com/identity/protocols/oauth2/policies#use-secure-browsers).
+Validate the supported sign-in/session path before choosing the wrapper. A disposable spike shell is allowed; the
+permanent app scaffold still waits for the authentication and injection proofs.
 
 ### Todo
 
-- First target decided: private/friends sideloadable APK. Store/Play distribution is deferred.
 - Prove that IRIS can run inside the chosen Android shell before moving feature code.
 - Audit and adapt extension-only assumptions.
 - Bring forward the release/mobile must-haves from `../port-plan.md` and `../backlog.md`.
@@ -118,13 +136,14 @@ These are required before calling an installable Android build ready for use bey
 
 ## Next 10 Assignments
 
-Use "assignment" as the single active-work term. Complete these in order unless a result invalidates the chosen path.
+Use "assignment" as the single active-work term. Assignments 2–5 may be completed together in the first spike; retain
+their individual evidence and stop conditions.
 
 | # | Assignment | Status | Done When |
 |---|---|---|---|
 | 1 | Distribution decision | Done | First target is private/friends sideload APK; Play/store distribution is deferred. |
 | 2 | Android prior-art audit | Todo | Reference IITC mobile files are summarized into reusable patterns and rejected patterns. |
-| 3 | Runtime boundary audit | Todo | Every extension-only assumption has an owner, replacement, or explicit non-goal. |
+| 3 | Runtime boundary audit | Partial: browser owners inventoried | Every extension-only assumption has an owner, replacement, or explicit non-goal. |
 | 4 | WebView auth spike | Todo | A minimal Android/WebView shell can load Intel, authenticate, and observe required cookies/tokens. |
 | 5 | IRIS injection spike | Todo | A minimal IRIS bundle can load in the shell and exchange one map/runtime message. |
 | 6 | Storage and asset strategy | Todo | Local storage, bundled assets, fixture paths, icons, imports/exports, and cache behavior are defined. |
@@ -174,7 +193,12 @@ Document:
 
 ### Assignment 3: Runtime Boundary Audit
 
-Goal: list every current browser-extension assumption that blocks APK packaging.
+Goal: complete the Android replacement decisions for current browser-extension assumptions.
+
+The browser-side owner inventory is already recorded in [the roadmap](index.md#before-apk-repository-and-runtime-hardening).
+Asset resolution lives in `src/platform/assets.ts`; map resources have an explicit lifetime. Do not repeat that refactor
+or treat this partial inventory as a tested Android bridge. File handling, network/deep-link behavior, Android storage,
+and authentication/session behavior still require Android-specific decisions and proof.
 
 Start with:
 
@@ -183,6 +207,8 @@ Start with:
 - `apps/iitc-iris/src/content.tsx`
 - `apps/iitc-iris/src/page-map-runtime.ts`
 - `apps/iitc-iris/src/shell/storage-settings.ts`
+- `apps/iitc-iris/src/platform/assets.ts`
+- `apps/iitc-iris/src/map/map-runtime-lifetime.ts`
 - `apps/iitc-iris/src/map/missions-panel/missions-panel.tsx`
 
 Must cover:
@@ -205,8 +231,10 @@ Goal: prove Android can host the Intel page in the intended shell.
 Done when:
 
 - the shell loads `https://intel.ingress.com/`;
-- login/auth flow reaches the map for an already authorized test account/device;
-- cookies required by IRIS requests are visible through the chosen approach;
+- a supported login/auth flow reaches the map for an authorized test account/device, including session persistence
+  after reopening the spike shell;
+- an authenticated Intel request succeeds with the chosen cookie/CSRF approach; record expiry/logout behavior without
+  recording secrets or session tokens;
 - failure behavior is understood and documented.
 
 No IRIS UI work belongs in this assignment.
@@ -258,7 +286,8 @@ Must cover:
 
 ### Assignment 8: Android Project Scaffold
 
-Goal: create the smallest native project after the risky spikes pass.
+Goal: create the smallest permanent native project after the risky spikes pass. Disposable spike shells are allowed
+for assignments 4 and 5.
 
 Possible approaches:
 
@@ -311,5 +340,5 @@ Deferred until later:
 - Do not create release signing material in this repo unless the storage policy is written first.
 - Do not claim "APK ready" until an APK installs and runs on a real device.
 - Keep Android work separate from UI extraction/source-layout cleanup.
-- For code-changing IRIS work, still run focused tests plus `npm run typecheck:iitc-iris`, `npm run lint:iitc-iris`,
-  `npm run package:iitc-iris`, and `git diff --check`.
+- For code-changing IRIS work, run focused tests, `npm run check` (workspace lint/typechecks/tests, CSS lint, and
+  workbench build), `npm run package`, and `git diff --check`. Add Android build/device checks when native code exists.
