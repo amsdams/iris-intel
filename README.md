@@ -13,7 +13,8 @@ flowchart LR
 - `apps/iitc-iris/`: the application, component workbench, bundled assets, and extension packaging.
 - `packages/iitc-core/`: IITC-compatible domain logic, without UI or browser-runtime dependencies.
 - `docs/iitc-iris/`: architecture guidance, the APK plan, feature notes, and payload samples.
-- `scripts/`: release version tooling.
+- `apps/android-intel-spike/`: disposable native WebView login proof; separate from the npm workspaces.
+- `scripts/`: release version and Android test tooling.
 - `reference/`: optional, ignored IITC-CE checkouts for comparison; not required to build.
 
 Earlier IRIS/Mini-IRIS applications and their core/plugin libraries were removed after IITC-IRIS superseded them.
@@ -69,7 +70,9 @@ trigger the tagged release workflow. Manual release runs require an existing `vX
 
 IITC IRIS renders portals, links, fields, artifacts, ornaments, missions, and selected portal state. It includes portal
 details, COMM, scores, inventory, passcodes, search, player tracker, Draw Tools v1 links/markers, and portal analysis.
-Broad IITC plugin compatibility and Android APK hosting remain separate decisions. No Android project exists yet.
+Broad IITC plugin compatibility and permanent Android APK hosting remain separate decisions.
+A disposable [Android login test](apps/android-intel-spike/README.md) builds with `npm run android:check`;
+`npm run android:serve` serves its APK for manual phone installation. Real-device authentication is still unproven.
 
 Start with the [documentation index](docs/README.md), [architecture](docs/iitc-iris/architecture.md),
 [roadmap](docs/iitc-iris/plans/index.md), [port plan](docs/iitc-iris/port-plan.md),

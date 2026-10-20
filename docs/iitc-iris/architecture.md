@@ -8,6 +8,8 @@ This is the retained architecture guidance from the completed CSS, component, co
 - `apps/iitc-iris` owns Preact UI, feature workflows, extension integration, and the injected Leaflet runtime.
 - `packages/iitc-core` owns UI-independent parsing, geometry, request planning, response application, and caches.
   Keep browser, DOM, Preact, Leaflet, and extension APIs in the app.
+- `apps/android-intel-spike` is a disposable native login proof, outside the npm workspaces. It does not inject IRIS yet;
+  authentication/session behavior still needs a phone test.
 - Features depend on shared `ui/` primitives. Shared UI does not depend on features.
 - Use [IITC-shaped facades](facade-pattern.md) selectively for pure domain contracts.
 

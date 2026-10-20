@@ -1,0 +1,33 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'org.iris.intelspike'
+    compileSdk 36
+    buildToolsVersion '36.0.0'
+
+    defaultConfig {
+        applicationId 'org.iris.intelspike'
+        minSdk 26
+        targetSdk 36
+        versionCode 4
+        versionName '0.1.3-spike'
+        resValue 'string', 'spike_version', versionName
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        warningsAsErrors true
+        // Intentional API 36/toolchain pins for this disposable proof, not automatic upgrade gates.
+        disable 'OldTargetApi', 'AndroidGradlePluginVersion'
+    }
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+}
