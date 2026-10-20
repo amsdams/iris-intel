@@ -8,8 +8,8 @@ This is the retained architecture guidance from the completed CSS, component, co
 - `apps/iitc-iris` owns Preact UI, feature workflows, extension integration, and the injected Leaflet runtime.
 - `packages/iitc-core` owns UI-independent parsing, geometry, request planning, response application, and caches.
   Keep browser, DOM, Preact, Leaflet, and extension APIs in the app.
-- `apps/android-intel-spike` is a disposable native login proof, outside the npm workspaces. It does not inject IRIS yet;
-  authentication/session behavior still needs a phone test.
+- `apps/android-intel-spike` is a disposable native login/injection proof, outside the npm workspaces;
+  phone login/persistence and manual bundled IRIS injection passed a quick feature smoke.
 - Features depend on shared `ui/` primitives. Shared UI does not depend on features.
 - Use [IITC-shaped facades](facade-pattern.md) selectively for pure domain contracts.
 
@@ -69,7 +69,7 @@ shared component would add no useful contract. Inventory uses separate rarity/le
 
 | Boundary | Current owner / decision |
 | --- | --- |
-| Bundled asset URLs | `platform/assets.ts`; shared by extension-side callers. The injected page runtime derives its own asset base from its script URL because it runs outside the extension context. |
+| Bundled asset URLs | `platform/assets.ts`; shared by UI callers, using extension URLs or an explicit host-provided asset base. Android serves bundled assets under a reserved Intel HTTPS path. The injected page runtime derives its own asset base from its script URL because it runs outside the extension context. |
 | Clipboard | `shell/feedback.ts`; the feedback helper already accepts an injected copy operation. Keep that seam for a future Android implementation. |
 | Geolocation | `map/location-workflow.ts` supplies browser capability to `map/location-actions.ts`; the action already accepts an injected position callback. |
 | Storage | `shell/storage-settings.ts` owns UI preference keys; the page runtime owns map/domain caches and IITC-compatible settings. Preserve these separate lifetimes and persisted formats. |
@@ -93,5 +93,5 @@ tracing to one development-only `braces` advisory through Stylelint dependencies
 that toolchain; avoid a forced major downgrade. Audit results are dated evidence, not a permanent guarantee.
 
 Scrolling changes, further generic component consolidation, a global store, and arbitrary plugin compatibility remain
-deferred. Start new work from a concrete requirement. Android authentication, injection, and platform replacements are
-unproven; follow the [APK plan](plans/android-apk-installable-plan.md).
+deferred. Start new work from a concrete requirement. Android login/persistence and manual injection passed a quick phone smoke; permanent auth/platform decisions remain
+open; follow the [APK plan](plans/android-apk-installable-plan.md).

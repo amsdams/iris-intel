@@ -13,7 +13,7 @@ flowchart LR
 - `apps/iitc-iris/`: the application, component workbench, bundled assets, and extension packaging.
 - `packages/iitc-core/`: IITC-compatible domain logic, without UI or browser-runtime dependencies.
 - `docs/iitc-iris/`: architecture guidance, the APK plan, feature notes, and payload samples.
-- `apps/android-intel-spike/`: disposable native WebView login proof; separate from the npm workspaces.
+- `apps/android-intel-spike/`: disposable native WebView login/injection proof; separate from the npm workspaces.
 - `scripts/`: release version and Android test tooling.
 - `reference/`: optional, ignored IITC-CE checkouts for comparison; not required to build.
 
@@ -38,6 +38,9 @@ npm run package
 - `npm run check`: lint, typecheck, and test both workspaces (including workbench sources), lint CSS, and build the workbench.
 - `npm run lint`: lint both workspaces and application CSS.
 - `npm run package` / `npm run release`: build Chrome ZIP and Firefox XPI artifacts locally; these do not publish.
+- `npm run serve`: browse/download local Firefox XPI, Chrome ZIP, and Android APK builds at `http://localhost:6969`.
+  The terminal prints a same-Wi-Fi URL; `PORT=8787 npm run serve` overrides the port. No build is triggered.
+- `npm run android:serve`: compatibility alias for the same download page.
 - `npm run clean`: remove generated application output.
 
 For focused commands, use npm workspaces, for example `npm run test -w packages/iitc-core`.
@@ -71,8 +74,9 @@ trigger the tagged release workflow. Manual release runs require an existing `vX
 IITC IRIS renders portals, links, fields, artifacts, ornaments, missions, and selected portal state. It includes portal
 details, COMM, scores, inventory, passcodes, search, player tracker, Draw Tools v1 links/markers, and portal analysis.
 Broad IITC plugin compatibility and permanent Android APK hosting remain separate decisions.
-A disposable [Android login test](apps/android-intel-spike/README.md) builds with `npm run android:check`;
-`npm run android:serve` serves its APK for manual phone installation. Real-device authentication is still unproven.
+A disposable [Android login/injection test](apps/android-intel-spike/README.md) builds with `npm run android:check`;
+`npm run serve` lists the APK alongside extension packages for manual download. Phone login, persistence, bundled
+IRIS injection, and a quick feature smoke passed; wrapper hardening remains next.
 
 Start with the [documentation index](docs/README.md), [architecture](docs/iitc-iris/architecture.md),
 [roadmap](docs/iitc-iris/plans/index.md), [port plan](docs/iitc-iris/port-plan.md),

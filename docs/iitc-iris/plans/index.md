@@ -6,17 +6,33 @@ CSS ownership, component simplification, domain/panel organization, content comp
 refresh, and map-replacement lifetime hardening are complete and user smoke accepted as of 2026-10-20.
 The active npm workspaces are `apps/iitc-iris` and `packages/iitc-core`. No further generic refactor batch is queued.
 The merge checkpoint is complete: PR #1 and main CI passed; the latest extension release published.
-A disposable native Android login proof now lives in `apps/android-intel-spike`; phone validation is pending.
+The disposable Android spike lives in `apps/android-intel-spike`. Phone login/persistence passed on 0.1.3;
+0.2.0 bundled IRIS injection and a quick smoke of inventory, layers, COMM, portal details, and missions passed.
 
 The retained ownership rules and known limits are in [Application Architecture](../architecture.md).
 [IITC behavior and intentional divergences](../port-plan.md) remain the porting contract.
 
+## Next Session Handoff
+
+The 0.2.0 phone smoke passed for IRIS, inventory, layers, COMM, portal details, and missions. Login persisted after
+force-stop on 0.1.3. Load IRIS is still manual per page; Reload/Intel returns to stock Intel. Google Password Manager
+autofill remains unresolved. The native round-trip PASS label was not separately reported; do not invent that result.
+
+Run `npm run serve` from the repo root for the XPI/ZIP/APK download page (`http://localhost:6969`, LAN URL printed).
+Build extensions with `npm run package`, or the APK with `npm run android:check`; refresh the page after building.
+`npm run android:serve` is an alias. The server starts without existing artifacts and exposes no repository files.
+
+Latest implementation checks passed: `npm run check` (519 tests plus lint/types/CSS/workbench), `npm run package`,
+`npm run android:check` (11 native and 13 JavaScript tests), APK signature and byte-for-byte download checks.
+The restored download server also passed live artifact/hash, HEAD, missing-build, dynamic-refresh, and private-file
+rejection checks. Continue with the wrapper-hardening batch below; no further generic CSS/component cleanup is queued.
+
 ## Next Work
 
-1. Build/download the [Android login test](../../../apps/android-intel-spike/README.md) and validate Intel login,
-   an authenticated request, and session persistence on the user's phone. Version 0.1.3 tests IITC-style embedded Google login with a user-agent
-   compatibility workaround; this is not a supported permanent OAuth architecture.
-2. After auth works, prove bundled IRIS loading and a message round trip under the [APK plan](android-apk-installable-plan.md).
+1. Harden the [Android spike](../../../apps/android-intel-spike/README.md): automatic signed-in injection with stock-Intel
+   recovery, native Back, and background/resume checks. Manual injection and the quick feature smoke passed on the phone.
+2. Review injection timing/stock-runtime ownership and Android platform gaps under the [APK plan](android-apk-installable-plan.md).
+   IITC-style embedded Google login remains a compatibility workaround, not a supported permanent OAuth architecture.
 3. Create the permanent Android project after the login/injection proofs pass. The first distribution target is a
    private/friends sideload APK; store distribution is deferred.
 

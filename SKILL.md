@@ -3,8 +3,9 @@
 The active workspaces are `apps/iitc-iris` and `packages/iitc-core`. Earlier IRIS/Mini-IRIS applications and their
 core/plugin libraries are available in Git history; they are not current implementation or build targets.
 
-The disposable Android login proof is `apps/android-intel-spike` (a Gradle project, outside npm workspaces).
-Use `npm run android:check` to test/lint/build it and `npm run android:serve` for local phone downloads.
+The disposable Android login/injection proof is `apps/android-intel-spike` (a Gradle project, outside npm workspaces).
+Use `npm run android:check` to test/lint/build it. `npm run serve` lists local XPI/ZIP/APK downloads on port 6969;
+`npm run android:serve` is an alias. No builds run automatically when serving.
 Do not treat compilation as real-device authentication or IRIS injection evidence.
 
 Read `docs/iitc-iris/plans/index.md` for current scope and `docs/iitc-iris/port-plan.md` for behavior/parity work.

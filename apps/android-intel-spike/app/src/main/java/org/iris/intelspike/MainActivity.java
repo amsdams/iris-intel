@@ -36,10 +36,12 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 
 import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
+import java.util.Collections;
 
 public final class MainActivity extends Activity {
     private static final String INTEL_URL = "https://intel.ingress.com/";
@@ -48,17 +50,21 @@ public final class MainActivity extends Activity {
     private TextView status;
     private ProgressBar progress;
     private Button checkButton;
+    private Button irisButton;
     private String loadStatus;
     private String sessionStatus;
+    private String irisStatus;
     private String lastExternalHost = "none";
     private String probeKey;
     private int pageGeneration;
     private boolean pageFailed;
+    private boolean irisProbe;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         loadStatus = getString(R.string.loading, NavigationPolicy.host(INTEL_URL));
         sessionStatus = getString(R.string.not_checked);
+        irisStatus = getString(R.string.iris_not_loaded);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(0xfff5f7f8);
@@ -83,6 +89,8 @@ public final class MainActivity extends Activity {
         controls.addView(button(R.string.reload, () -> webView.reload()));
         checkButton = button(R.string.check_session, this::checkSession);
         controls.addView(checkButton);
+        irisButton = button(R.string.load_iris, () -> startProbe("load-iris.js", true));
+        controls.addView(irisButton);
         controls.addView(button(R.string.diagnostics, this::showDiagnostics));
         HorizontalScrollView scroll = new HorizontalScrollView(this);
         scroll.addView(controls);
@@ -143,6 +151,19 @@ public final class MainActivity extends Activity {
             }
         });
         webView.setWebViewClient(new WebViewClient() {
+            @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                String url = request.getUrl().toString();
+                if (!BundledAssets.handles(url)) return null;
+                if (!"GET".equals(request.getMethod())) return assetError(405, "Method Not Allowed");
+                String path = BundledAssets.path(url);
+                if (path == null) return assetError(404, "Not Found");
+                try {
+                    return new WebResourceResponse(BundledAssets.mimeType(path),
+                            path.endsWith(".png") ? null : "UTF-8", 200, "OK",
+                            Collections.singletonMap("Cache-Control", "no-store"), getAssets().open(path));
+                } catch (IOException error) { return assetError(404, "Not Found"); }
+            }
+
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
                 if (NavigationPolicy.isEmbedded(url)) return false;
@@ -160,6 +181,7 @@ public final class MainActivity extends Activity {
                 }
                 pageFailed = false;
                 sessionStatus = getString(R.string.not_checked);
+                irisStatus = getString(R.string.iris_not_loaded);
                 loadStatus = getString(R.string.loading, NavigationPolicy.host(url));
                 status.setText(loadStatus);
             }
@@ -180,6 +202,11 @@ public final class MainActivity extends Activity {
                 if (request.isForMainFrame()) failPage(getString(R.string.http_failed, response.getStatusCode()));
             }
         });
+    }
+
+    private WebResourceResponse assetError(int code, String reason) {
+        return new WebResourceResponse("text/plain", "UTF-8", code, reason,
+                Collections.singletonMap("Cache-Control", "no-store"), new ByteArrayInputStream(new byte[0]));
     }
 
     private void failPage(String message) {
@@ -206,18 +233,26 @@ public final class MainActivity extends Activity {
     }
 
     private void checkSession() {
+        startProbe("session-check.js", false);
+    }
+
+    private void startProbe(String asset, boolean loadIris) {
         if (!NavigationPolicy.isIntel(webView.getUrl()) || progress.getVisibility() == android.view.View.VISIBLE || pageFailed) {
             status.setText(R.string.intel_required);
             return;
         }
         invalidateProbe();
+        irisProbe = loadIris;
         final int generation = pageGeneration;
         final String key = "__irisSessionProbe_" + UUID.randomUUID().toString().replace("-", "");
         probeKey = key;
         checkButton.setEnabled(false);
-        sessionStatus = getString(R.string.checking);
-        status.setText(sessionStatus);
-        try (InputStream stream = getAssets().open("session-check.js")) {
+        irisButton.setEnabled(false);
+        String checking = getString(loadIris ? R.string.iris_loading : R.string.checking);
+        if (loadIris) irisStatus = checking;
+        else sessionStatus = checking;
+        status.setText(checking);
+        try (InputStream stream = getAssets().open(asset)) {
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
             byte[] buffer = new byte[4096];
             int length;
@@ -232,7 +267,10 @@ public final class MainActivity extends Activity {
 
     private void pollProbe(String key, int generation, int attempt) {
         if (generation != pageGeneration || !key.equals(probeKey) || !NavigationPolicy.isIntel(webView.getUrl())) return;
-        if (attempt >= 60) { finishProbe(getString(R.string.check_timeout)); return; }
+        if (attempt >= (irisProbe ? 160 : 60)) {
+            finishProbe(getString(irisProbe ? R.string.iris_timeout : R.string.check_timeout));
+            return;
+        }
         webView.evaluateJavascript("window[" + JSONObject.quote(key) + "] || null", result -> {
             if (generation != pageGeneration || !key.equals(probeKey)) return;
             String message = null;
@@ -240,7 +278,7 @@ public final class MainActivity extends Activity {
                 Object value = new JSONTokener(result).nextValue();
                 if (value instanceof String) message = (String) value;
             } catch (JSONException ignored) { /* A navigation can discard the JS result. */ }
-            if (message != null && !message.equals(getString(R.string.checking))) {
+            if (message != null && !message.equals(getString(irisProbe ? R.string.iris_loading : R.string.checking))) {
                 webView.evaluateJavascript("delete window[" + JSONObject.quote(key) + "]", null);
                 finishProbe(message);
             } else {
@@ -250,10 +288,12 @@ public final class MainActivity extends Activity {
     }
 
     private void finishProbe(String message) {
-        sessionStatus = message;
+        if (irisProbe) irisStatus = message;
+        else sessionStatus = message;
         status.setText(message);
         probeKey = null;
         checkButton.setEnabled(true);
+        irisButton.setEnabled(true);
     }
 
     private void invalidateProbe() {
@@ -261,13 +301,14 @@ public final class MainActivity extends Activity {
         handler.removeCallbacksAndMessages(null);
         probeKey = null;
         if (checkButton != null) checkButton.setEnabled(true);
+        if (irisButton != null) irisButton.setEnabled(true);
     }
 
     private void showDiagnostics() {
         PackageInfo provider = WebView.getCurrentWebViewPackage();
         String text = getString(R.string.diagnostic_text, getString(R.string.spike_version), Build.VERSION.RELEASE,
                 provider == null ? "unknown" : provider.versionName, NavigationPolicy.host(webView.getUrl()),
-                loadStatus, sessionStatus, lastExternalHost);
+                loadStatus, sessionStatus, lastExternalHost, irisStatus);
         new AlertDialog.Builder(this).setTitle(R.string.diagnostics).setMessage(text)
                 .setPositiveButton(android.R.string.ok, null)
                 .setNeutralButton(R.string.copy, (dialog, which) -> {

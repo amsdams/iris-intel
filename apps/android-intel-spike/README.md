@@ -1,7 +1,8 @@
-# Intel Login Test APK
+# IRIS Android Spike APK
 
-Disposable native Android/WebView proof on `feature/android-readiness`. It loads live Intel and checks login/request
-behavior. It does not bundle or inject IRIS yet. A successful build is not proof that Intel sign-in works on a phone.
+Disposable native Android/WebView proof on `feature/android-readiness`. Version **0.2.0-spike** loads live Intel and
+can manually inject bundled IRIS. Phone login and reopening without another login passed on 0.1.3;
+0.2.0 displayed IRIS on the phone and the user accepted a quick smoke of inventory, layers, COMM, portal details, and missions.
 
 ## Build And Download
 
@@ -11,16 +12,19 @@ Gradle can install missing SDK components when the SDK licenses have been accept
 
 ```bash
 npm run android:check
-npm run android:serve
+npm run serve
 ```
 
-`android:check` runs the session-probe tests, native navigation tests, Android lint, and debug APK assembly.
+`android:check` runs the session/injection tests, native navigation/asset tests, Android lint, and debug APK assembly.
+Gradle builds the existing web bundles and packages their scripts, CSS, images, and licenses from generated output.
+Node 24 and `npm ci` are prerequisites; no generated web files are committed.
 For subsequent build-only runs, use `npm run android:build`.
 
-The server prints a phone URL (port 8787 by default; set `PORT` to override). Connect the phone to the same Wi-Fi as the Mac, open that URL, download the APK, and
+The server prints a phone URL (port 6969 by default; set `PORT` to override). Connect the phone to the same Wi-Fi as the Mac, open that URL, download the APK, and
 allow installation from the browser when Android asks. If macOS asks about incoming connections, allow this local server.
 Guest networks/VPNs may prevent devices from reaching each other. Stop the server with Ctrl+C after downloading.
-Only the download page and APK are served, not the repository or any session data.
+The page lists generated Firefox XPI, Chrome ZIP, and APK artifacts only; repository and session files are not served.
+`npm run android:serve` remains an alias. Missing artifacts show their build command; starting the server does not build.
 
 Output: `app/build/outputs/apk/debug/app-debug.apk`. The download is named `iris-intel-test.apk`.
 It is automatically debug-signed using the local Android debug key; no release signing material is stored in the repo.
@@ -29,30 +33,33 @@ Keep the local debug key to install subsequent builds over this one without losi
 
 ## Phone Check
 
-1. Launch **IRIS Intel Test** and sign in through the Intel page.
-2. When the map is loaded, tap **Check session**. PASS requires an Intel player bootstrap and a successful, typed
-   response from `getHasActiveSubscription`; being a paying subscriber is not required.
-3. Close/reopen the app and check again; also test after removing it from Recents. Record whether sign-in persists.
-4. Check Back navigation and background/resume. **Intel** returns to the start page; **Reload** retries loading.
-5. If something fails, open **Diagnostics → Copy** and share the result. It contains versions, page host, last external host, and fixed
-   status messages; it does not copy cookies, tokens, player identity, full URLs, or response bodies.
+1. Install the update over the existing **IRIS Intel Test** app, preserving its session. Open Intel and sign in if needed.
+2. Tap **Check session**: PASS requires a signed-in player plus a valid `getHasActiveSubscription` response.
+3. Tap **Load IRIS** (scroll the native button row horizontally if needed). Expect IRIS UI/map and
+   **PASS: bundled IRIS UI, Leaflet runtime, and message round trip confirmed.**
+4. Pan/zoom, select a portal, and open a panel. Tap Check session again to confirm the injected app still authenticates.
+5. Tap Load IRIS again to recheck without duplicating assets. **Reload** or **Intel** returns to stock Intel.
+   Injection is manual per page in this spike; reload/relaunch requires Load IRIS again.
+6. Close/force-stop/reopen and verify login persists, then load IRIS again.
+7. On failure, use **Diagnostics → Copy**. It includes versions, hosts, and fixed session/injection status messages;
+   no cookies, tokens, player identity, full URLs, or response bodies. Share visible errors without authentication URLs.
 
-Version **0.1.3-spike** keeps `accounts.google.com` and `accounts.youtube.com` in the same WebView as Intel and its authorization page.
+Login compatibility (since 0.1.3) keeps `accounts.google.com` and `accounts.youtube.com` in the same WebView as Intel and its authorization page.
 It uses the updated IITC mobile user-agent workaround: remove the WebView marker and adjust a reduced Chrome version
 ending in `.0.0.0` to `.0.0.1`, preserving the installed browser major version and device information.
 This is a compatibility experiment, not a supported Google OAuth integration; Google's
 [embedded-user-agent policy](https://developers.google.com/identity/protocols/oauth2/policies#use-secure-browsers)
 prohibits this kind of embedded authorization, so it is not a permanent auth architecture or a distribution-ready solution.
-One phone session reached Intel and passed the authenticated probe after a 400 error and manual Intel-button recovery.
-Repeatable sign-in and persistence still need testing. No credentials are copied to native code.
+Version 0.1.3 reached stock Intel without Chrome and stayed logged in after force-stop; the earlier recovered
+0.1.2 session passed the authenticated probe. No credentials are copied to native code.
 USB is optional; debug builds can also be inspected with Chrome DevTools and Android Studio Logcat.
 
 ## Ownership And Next Step
 
-A native Activity owns the WebView, lifecycle, and Back behavior. Cookies/DOM storage stay in the WebView, flushed when
+A native Activity owns the WebView, lifecycle, Back behavior, and a manual Load IRIS action. Cookies/DOM storage stay in the WebView, flushed when
 pausing. Embedded top-level pages are restricted to Intel, `login.ingress.com`, `accounts.google.com`, `accounts.youtube.com`, and its named Niantic sign-in hosts; other HTTPS links open
 in the browser. The app requests Internet access only. Location, clipboard integration for the web page, file handling,
-and IRIS runtime injection remain later work. Native clipboard access only supports the explicit diagnostics Copy action.
+remain later work. Native clipboard access only supports the explicit diagnostics Copy action.
 
 IITC mobile comparison sources are `IITC_WebView.java`, `IITC_WebViewClient.java`, and the user-agent helpers in
 `IITC_Mobile.java` under `reference/ingress-intel-total-conversion/mobile/`. Reused concepts: JavaScript/DOM storage,
@@ -63,23 +70,16 @@ Native diagnostics evaluate a bundled probe only on the exact HTTPS Intel origin
 same-origin request; no privileged native JavaScript bridge is installed. Navigation/disposal invalidates pending probe
 callbacks. Request format mirrors `postIntelEndpoint`/`extractVersion` in the existing page runtime.
 
-The next deliverable is bundled IRIS assets plus a message round trip, after the supported auth/session path is proven.
+Bundled assets are served only under the reserved HTTPS Intel path `/__iris_android__/`; other Intel requests
+keep their network owner. The host supplies an asset-base meta tag; no fake extension APIs or privileged JavaScript
+bridge are installed. The read-only Draw Tools status request/reply proves the existing shell/runtime transport.
+This late-injection spike overlays stock Intel; injection timing and stock-runtime ownership need review for a permanent wrapper.
+Next: wrapper hardening (automatic injection, stock-runtime ownership, native Back, background/resume) and outstanding
+platform/auth decisions before permanent Android packaging.
 See the [APK plan](../../docs/iitc-iris/plans/android-apk-installable-plan.md).
 
-First phone test (2026-10-20): APK installs, but sign-in leaves the app and returns to the login page in Chrome.
-Version 0.1.1 keeps the current `login.ingress.com` authorization page embedded (missing in the first build).
-Google still opens externally; this correction alone does not establish a working Google session handoff.
-The updated upstream IITC reference at `c33820e7` keeps Google embedded and rewrites the user agent; version 0.1.2 now tests that workaround.
-The user confirmed `accounts.google.com` was the external host in 0.1.1.
-
-Version 0.1.2 phone result: account selection stayed embedded, followed by a reported 400 / malformed-URL error.
-Tapping Intel recovered to the stock map and Check session returned PASS. Saved-password selection was unavailable.
-Retest persistence before resetting: remove from Recents/reopen, then force-stop/reopen and check the session each time.
-For a fresh login, use Android app settings → IRIS Intel Test → Storage → Clear storage/data (not just cache).
-This removes the spike’s local session; repeat sign-in and capture Diagnostics plus the visible error text before
-tapping Intel if the 400 returns. Do not share full authentication URLs, passwords, or tokens.
-
-The repeated 0.1.2 test identified `accounts.youtube.com` as the external host while the embedded page stayed on
-`accounts.google.com`. Version 0.1.3 keeps that exact additional login host embedded, matching upstream IITC.
-The user confirmed the 0.1.3 retest stayed in the app and reached the stock Intel map.
-Check session on this build and persistence across force-stop/relaunch remain to be confirmed.
+Phone evidence (2026-10-20): early versions handed sign-in to Chrome, losing the WebView session.
+Adding `login.ingress.com`, `accounts.google.com`, then `accounts.youtube.com` kept the complete flow embedded.
+Version 0.1.3 reached stock Intel and persisted login across force-stop. Google Password Manager autofill remains
+unresolved. Version 0.2.0 phone injection and the quick feature smoke passed. The native PASS label was not
+separately reported; keep that diagnostic distinct from the accepted feature smoke.

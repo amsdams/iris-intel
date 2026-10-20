@@ -17,4 +17,19 @@ describe('bundled asset URLs', () => {
     vi.stubGlobal('chrome', {});
     expect(getExtensionUrl('page-map-runtime.js')).toBe('page-map-runtime.js');
   });
+
+  it('resolves Android scripts and images against the host-provided base', () => {
+    vi.stubGlobal('chrome', undefined);
+    vi.stubGlobal('document', {querySelector: () => ({content: 'https://intel.ingress.com/__iris_android__/'})});
+    expect(getExtensionUrl('page-map-runtime.js')).toBe('https://intel.ingress.com/__iris_android__/page-map-runtime.js');
+    expect(getExtensionUrl('images/mission-length.png')).toBe('https://intel.ingress.com/__iris_android__/images/mission-length.png');
+  });
+
+  it('preserves extension precedence and tolerates invalid host configuration', () => {
+    vi.stubGlobal('document', {querySelector: () => ({content: 'invalid base'})});
+    vi.stubGlobal('chrome', {runtime: {getURL: (path: string) => `chrome-extension://iris/${path}`}});
+    expect(getExtensionUrl('content.js')).toBe('chrome-extension://iris/content.js');
+    vi.stubGlobal('chrome', undefined);
+    expect(getExtensionUrl('content.js')).toBe('content.js');
+  });
 });

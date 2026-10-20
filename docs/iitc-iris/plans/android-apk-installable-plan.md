@@ -2,7 +2,7 @@
 
 ## Plan Dashboard
 
-Status: 0.1.3 phone sign-in reached stock Intel without leaving the app. The authenticated request passed on 0.1.2; recheck it on 0.1.3 and verify session persistence. Repository cleanup completed on
+Status: phone login/persistence passed on 0.1.3; 0.2.0 bundled IRIS injection and a quick feature smoke test passed. Repository cleanup completed on
 2026-10-20. The npm workspaces remain `apps/iitc-iris` and `packages/iitc-core`; the Gradle spike lives separately at
 `apps/android-intel-spike`. Builds no longer require legacy apps or local reference assets.
 The repository/platform ownership and map-replacement lifetime pass is implemented and user smoke accepted.
@@ -14,24 +14,27 @@ refactoring plan, and it should not be mixed with UI extraction or source-layout
 ### Done
 
 - The initial 2026-10-04 search found no native Android app. A disposable login shell has now been added; no permanent
-  IRIS Android scaffold or runtime injection exists yet.
+  IRIS Android scaffold exists yet. Version 0.2.0 implements manual bundled injection in the disposable shell.
 - Merge checkpoint complete: PR #1, main CI, and latest-extension publishing passed.
-- Debug APK assembly, Android lint, native navigation tests, seven session-probe tests, APK signature verification,
-  and the local APK-only download route pass. Existing extension checks (517 tests) and packaging also pass.
+- Debug APK assembly, Android lint, 11 native tests, 13 session/injection tests, APK signature verification,
+  and the local artifact download routes pass. Existing extension checks (519 tests) and packaging also pass.
   Phone installation passed; the first login test opened Chrome and returned to the login page.
   The shell embeds the previously missing `login.ingress.com` host. Version 0.1.1 diagnostics confirmed
   `accounts.google.com` was the remaining external handoff; 0.1.2 tests IITC-style embedded Google login.
   Version 0.1.2 phone test: account selection stayed in the app; a reported HTTP 400 / malformed-URL error
   preceded recovery using the Intel button, then the stock map loaded and Check session reported PASS.
   Saved-password selection did not work. Version 0.1.3 phone retest reached the stock Intel map while staying
-  in the app. Session persistence, the 0.1.3 authenticated probe, and IRIS injection remain unproven.
+  in the app and stayed logged in after force-stop/reopen. Version 0.2.0 displayed IRIS on the phone; the user
+  accepted a quick smoke test of inventory, layers, COMM, portal details, and missions. The native round-trip
+  PASS label was not separately reported; functional UI/runtime communication was exercised by the smoke test.
 - Targeted IITC mobile prior-art review completed for the login shell: WebView settings, navigation, cookie lifecycle,
   and user-agent handling. The [spike README](../../../apps/android-intel-spike/README.md) records adopted/rejected patterns.
 - Reference IITC-CE Android prior art exists under `reference/IITC-CE/mobile/` and
   `reference/ingress-intel-total-conversion/mobile/`.
 - First target decided: private/friends sideloadable APK. Store/Play distribution is deferred.
 - Browser boundary owners are inventoried in the architecture reference: assets, injection/messaging, clipboard, geolocation,
-  preferences, runtime caches, and Intel authentication. Android replacements are not implemented.
+  preferences, runtime caches, and Intel authentication. The spike now replaces asset loading and hosts the
+  existing page messages; other Android platform replacements remain unimplemented.
 - Shared asset URL resolution and map disposal are implemented. Automated checks pass (517 tests, workbench checks,
   CSS lint, and extension packaging); the user reported the cleanup smoke test passed on 2026-10-20.
 - Current IRIS packaging is browser-extension packaging only:
@@ -40,21 +43,22 @@ refactoring plan, and it should not be mixed with UI extraction or source-layout
 
 ### In Progress
 
-- On `feature/android-readiness`, build and manually install the login test APK. Validate sign-in, a successful
-  authenticated request, session persistence after closing/reopening, Back behavior, and background/resume.
+- Manual injection and the quick feature smoke passed on the phone. Next, review automatic injection timing,
+  stock-runtime ownership, native Back behavior, and background/resume before promoting the disposable wrapper.
+  Reload returns to stock Intel; the native shell adds no privileged JavaScript bridge.
 - Version 0.1.3 keeps the exact `accounts.google.com` and `accounts.youtube.com` hosts embedded and tests IITC-style
   user-agent rewriting. A repeated 0.1.2 test identified `accounts.youtube.com` as the remaining external handoff;
   0.1.3 corrects its routing; the user confirmed sign-in stayed in the app and reached the stock map.
   This is an unsupported compatibility experiment under Google’s embedded-user-agent restrictions, not a permanent
-  auth decision. Next, run Check session on 0.1.3, verify persistence across force-stop/relaunch, and review
-  Google Password Manager autofill. No 400 was reported in the latest successful sign-in.
+  auth decision. Login persisted across force-stop/relaunch on 0.1.3. Google Password Manager autofill remains
+  unresolved. No 400 was reported in the latest successful sign-in.
 
 ### Immediate Next Work
 
-Combine the targeted IITC mobile prior-art check and remaining Android boundary decisions with one small, real-device
-login/session and injection spike (assignments 2–5). Prove Intel authentication/session persistence, an authenticated
-request, bundled IRIS asset loading, and a message round trip before growing a permanent Android app. Reuse the ownership
-inventory already completed; investigate only the Android replacements and unknowns.
+The real-device spike demonstrated login/persistence and bundled IRIS with a quick feature smoke. Continue with one
+focused wrapper-hardening batch: automatic injection on signed-in Intel, a stock-Intel recovery path, stock-runtime
+ownership, native Back handling, and background/resume checks. Keep outstanding platform capabilities and auth-policy
+decisions explicit before choosing permanent packaging; reuse the existing ownership inventory.
 
 If Intel uses Google OAuth, account for its
 [embedded-user-agent restrictions](https://developers.google.com/identity/protocols/oauth2/policies#use-secure-browsers).
@@ -75,8 +79,11 @@ IRIS is currently a Manifest V3 content-script extension. It injects `content.js
 extension zips through Vite scripts.
 
 A disposable native Intel login test now exists in `apps/android-intel-spike`. It produces a debug-signed APK through
-`npm run android:build` / `npm run android:check`; `npm run android:serve` serves only the APK and its download page.
-It has no IRIS injection yet, and permanent Android packaging remains undecided.
+`npm run android:build` / `npm run android:check`; `npm run serve` lists local XPI, ZIP, and APK downloads.
+`npm run android:serve` remains an alias; default port is 6969.
+Version 0.2.0 bundles existing IRIS assets and injects them manually on signed-in Intel. Local asset interception
+is restricted to `/__iris_android__/`; the shared asset resolver accepts an explicit host base, and the runtime
+keeps its existing script-relative image URLs. Permanent Android packaging remains undecided.
 
 The reference IITC-CE mobile app is native Android/WebView prior art, not an IRIS implementation. It uses an Android
 Gradle project, `org.exarhteam.iitc_mobile`, a WebView activity, native permissions, signing configs, and Android
@@ -164,8 +171,8 @@ their individual evidence and stop conditions.
 | 1 | Distribution decision | Done | First target is private/friends sideload APK; Play/store distribution is deferred. |
 | 2 | Android prior-art audit | Partial: targeted auth-shell review complete | Reference IITC mobile files are summarized into reusable patterns and rejected patterns. |
 | 3 | Runtime boundary audit | Partial: browser owners inventoried | Every extension-only assumption has an owner, replacement, or explicit non-goal. |
-| 4 | WebView auth spike | Partial: recovered phone login/request PASS; redirect and persistence checks pending | A minimal Android/WebView shell can load Intel, authenticate, and observe required cookies/tokens. |
-| 5 | IRIS injection spike | Todo | A minimal IRIS bundle can load in the shell and exchange one map/runtime message. |
+| 4 | WebView auth spike | Phone login/persistence passed on 0.1.3; earlier request PASS; compatibility policy unresolved | A minimal Android/WebView shell can load Intel, authenticate, and observe required cookies/tokens. |
+| 5 | IRIS injection spike | Phone UI/feature smoke accepted on 0.2.0; native PASS label not separately reported | A minimal IRIS bundle can load in the shell and exchange one map/runtime message. |
 | 6 | Storage and asset strategy | Todo | Local storage, bundled assets, fixture paths, icons, imports/exports, and cache behavior are defined. |
 | 7 | Permission, privacy, and release-readiness audit | Todo | Android permissions plus backlog must-haves are listed and minimized. |
 | 8 | Android project scaffold | Todo | Native project exists only after assignments 4 and 5 pass. |
