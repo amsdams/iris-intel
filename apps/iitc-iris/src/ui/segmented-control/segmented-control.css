@@ -8,18 +8,18 @@
 .iitc-iris-segmented-button {
     min-width: 0;
     padding: 4px var(--iitc-iris-space-3);
-    border: 1px solid rgb(95 180 255 / 24%);
-    background: rgb(6 20 30 / 88%);
-    color: #9fb3c5;
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 24%);
+    background: rgb(var(--iitc-iris-segment-rgb) / 88%);
+    color: var(--iitc-iris-color-secondary);
     font: var(--iitc-iris-button-font);
 }
 
 .iitc-iris-segmented-button.is-active {
-    border-color: rgb(105 210 255 / 70%);
-    background: rgb(12 48 68 / 96%);
-    color: #e8f4ff;
+    border-color: rgb(var(--iitc-iris-focus-rgb) / 70%);
+    background: rgb(var(--iitc-iris-selected-rgb) / 96%);
+    color: var(--iitc-iris-color-strong);
 }
 
 .iitc-iris-segmented-button:disabled {
-    color: #4f6575;
+    color: var(--iitc-iris-color-disabled);
 }

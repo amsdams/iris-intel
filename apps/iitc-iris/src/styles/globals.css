@@ -1,10 +1,11 @@
 @import url('./tokens.css');
+@import url('./theme.css');
 
 #iitc-iris-root {
     position: fixed;
     inset: 0;
     z-index: 2147483000;
     font-family: var(--iitc-iris-font-ui);
-    color: #e8f4ff;
+    color: var(--iitc-iris-color-strong);
     pointer-events: none;
 }

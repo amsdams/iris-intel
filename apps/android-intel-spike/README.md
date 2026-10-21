@@ -1,11 +1,17 @@
-# IRIS Android Spike APK
+# IRIS Android APK — Friends Alpha
 
-Disposable native Android/WebView proof, now merged into `main`. Version **0.3.8-spike** loads bundled IRIS automatically on signed-in Intel,
+The existing native Android/WebView wrapper now has a small friends-testing interface. Version **0.4.0-alpha** loads bundled IRIS automatically on signed-in Intel,
 with a stock-Intel recovery mode. Phone confirmed mode persistence, IRIS startup after reopen, and stock-dashboard
 blocking on 0.3.0. Panel Back, rotation, restoring the open panel after Reload, and background/resume also passed.
 Version 0.3.1 location prompt, permission acceptance, and successful positioning passed on phone.
 Phone login and reopening without another login passed on 0.1.3;
 0.2.0 displayed IRIS on the phone and the user accepted a quick smoke of inventory, layers, COMM, portal details, and missions.
+
+The launcher name is **IRIS**. A compact **App** menu holds About, Privacy/Feedback (inside About), Reload,
+Recovery, and Diagnostics. Successful startup hides the temporary status line. Native chrome follows Android appearance;
+**System → Appearance** controls the full web interface separately from the map style. Existing installations retain
+the dark UI until another theme is selected. See the [friends testing guide](../../docs/iitc-iris/friends-testing.md).
+The technical project folder/application ID stay unchanged to preserve signed updates.
 
 ## Build And Download
 
@@ -65,17 +71,18 @@ release builds use the same signing key and can update in place. Local debug bui
 
 ## Phone Check
 
-1. Install the update over **IRIS Intel Test** when the signing key matches, preserving its session. For the first
+1. Install the update over **IRIS** (previously **IRIS Intel Test**) when the signing key matches, preserving its session. For the first
    release-signed APK, uninstall the old debug build first; this clears its session/settings. Open the app; sign in if needed.
-   IRIS should start automatically, with **PASS: bundled IRIS UI, Leaflet runtime, and message round trip confirmed.**
-2. Tap **Check session**: PASS requires a signed-in player plus a valid `getHasActiveSubscription` response.
-   In **Diagnostics**, IRIS mode should show **Stock dashboard: blocked**.
+   IRIS should start automatically; the loading/checking status line should disappear after success.
+2. Open **App → Diagnostics**. **Check session** starts the probe; reopen Diagnostics to see its result.
+   PASS requires a signed-in player plus a valid `getHasActiveSubscription` response.
+   In IRIS mode, Diagnostics should show **Stock dashboard: blocked**.
 3. Pan/zoom, select a portal, and open a panel. Android Back should close a portal image first, then the panel,
    then the selection. Back on the plain map backgrounds the app rather than revisiting sign-in.
 4. Background/reopen the app and lock/unlock the phone; the map should remain usable. Try rotation too.
-5. Tap **Stock Intel** to recover the original map; tap **IRIS** to switch back. Each opens a fresh page.
+5. Use **App → Recovery → Stock Intel** to recover the original map; choose **IRIS** there to switch back. Each opens a fresh page.
    **Reload** and force-stop/reopen preserve the selected mode. Finish in IRIS mode and verify automatic startup again.
-6. On failure, use **Diagnostics → Copy**. It includes versions, hosts, mode, and fixed session/injection status messages;
+6. On failure, use **App → Diagnostics → Copy**. It includes versions, hosts, mode, and fixed session/injection status messages;
    no cookies, tokens, player identity, full URLs, or response bodies. Share visible errors without authentication URLs.
 
 For 0.3.1, use **Map → Controls → Locate** (the existing location action). The Android prompt should appear only
@@ -139,8 +146,9 @@ the stock dashboard runtime from starting while retaining its script-tag version
 authenticated endpoints. Stock Intel mode permits the original script. This depends on Intel’s current bootstrap layout;
 confirm the blocked diagnostic and map behavior on the phone. Back reaches IRIS through a cancelable DOM event,
 without native access to component state.
-Next: resolve outstanding platform/auth decisions before permanent Android packaging. Include Back from
-image/selection/plain map in the next device regression check.
+Next: phone-smoke the new App menu and interface themes, then invite 2–5 trusted players for a short sideload trial.
+Collect concrete usability/auth failures before another polish pass. Store distribution and the outstanding auth
+architecture remain later decisions. Include Back from image/selection/plain map in the next device regression check.
 See the [APK plan](../../docs/iitc-iris/plans/android-apk-installable-plan.md).
 
 Phone evidence (2026-10-20): early versions handed sign-in to Chrome, losing the WebView session.

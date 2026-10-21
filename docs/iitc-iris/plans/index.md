@@ -14,6 +14,24 @@ The retained ownership rules and known limits are in [Application Architecture](
 
 ## Next Session Handoff
 
+**Friends alpha (0.4.0-alpha, 2026-10-21):** launcher name IRIS, compact native App menu, About/Privacy/Feedback,
+Reload, Recovery, and Diagnostics; successful startup hides the temporary status line. Existing app ID and signing
+key are preserved. Full web interface has **System → Appearance → System / Dark / Light**, in APK and extensions,
+independent of map style. Existing default remains dark; native header/dialogs follow Android system appearance.
+The shared palette covers panels, fields, navigation, tables, status text, and player popups; map/game colors retain
+their existing meaning. Workbench loads the same palette. See the [friends guide](../friends-testing.md).
+App checks (534 tests), packaging, browser theme persistence/live-system switching, and representative light/dark
+panels pass. Android release tests (27 native + 13 JavaScript), lint, and assembly pass. Signed local APK
+`0.4.0-alpha+cffbff2` (version code 1831) matches the existing certificate pin; all 19 embedded assets match
+the tested web build, and the local download matches the APK checksum. Populated inventory/portal details and
+player group/list touch behavior were checked in the browser with simulated data.
+Initial user feedback on the new appearance is positive; Passcode/COMM fields retained Intel’s black input background.
+Search, COMM, and Passcode now share `ui/shared/input-surface.css`: matching background, border, 6px corners,
+font, height, and focus treatment. The passcode-specific helper was removed. Browser checks with Intel CSS
+confirm matching computed styles in both light and dark themes.
+The user accepted the aligned input styling (2026-10-21). Native-menu acceptance remains unreported; no friends
+invitations or publishing have been performed.
+
 **Session wrap-up (2026-10-21):** PR #3 merged as `c8a7d4b`; [main CI](https://github.com/amsdams/iris-intel/actions/runs/39579786375)
 passed extension checks/package and Android release tests/lint/build, then published
 [the signed APK](https://github.com/amsdams/iris-intel/releases/download/latest/iitc-iris-android.apk)
@@ -34,9 +52,9 @@ popup/history, with an All agents return link. Grouping uses exact last-seen coo
 nearby portals remain separate at every zoom. Single-agent pins are unchanged. IITC's spiderfier was reviewed;
 the user chose the count/list alternative. App checks (531 tests), packaging, Android release tests/lint/build,
 and a real-browser touch check pass: each agent/history, Back to list, pan refresh, zoom, faction counts, map
-replacement, and cleanup. Signed local APK uses the existing release key. The user reports the popup works,
-but has no live location with multiple tracked agents to test the group. Browser evidence uses three simulated
-colocated agents; live count/list acceptance remains pending (platform of the latest popup check not specified).
+replacement, and cleanup. Signed local APK uses the existing release key. Browser evidence uses three simulated colocated agents. The user subsequently tested the grouped player-tracker
+marker and confirmed it works (2026-10-21); live grouped-marker smoke is accepted. The platform and individual
+history/faction paths were not separately reported.
 The local download page now distinguishes signed and debug APKs; use `iitc-iris-android.apk` to update a GitHub install.
 
 **OpenFreeMap trial (0.3.6-spike):** Dark/Light now use OpenFreeMap via MapLibre’s Leaflet binding, without API keys.
@@ -83,19 +101,19 @@ Run `npm run serve` from the repo root for the XPI/ZIP/APK download page (`http:
 Build extensions with `npm run package`, or the APK with `npm run android:check`; refresh the page after building.
 `npm run android:serve` is an alias. The server starts without existing artifacts and exposes no repository files.
 
-Latest implementation checks passed: `npm run check` (528 tests plus lint/types/CSS/workbench), `npm run package`,
+Latest implementation checks passed: `npm run check` (534 tests plus lint/types/CSS/workbench), `npm run package`,
 `npm run android:check`, and `npm run android:release` (27 native and 13 JavaScript tests), plus published APK
-signature, checksum, version, and embedded-asset checks. Local `main` was synchronized and clean before this docs handoff.
+signature, checksum, version, and embedded-asset checks. The friends-alpha changes are local and uncommitted; earlier release evidence above refers to the published build.
 The restored download server also passed live artifact/hash, HEAD, missing-build, dynamic-refresh, and private-file
 rejection checks. No further generic CSS/component cleanup is queued.
 
 ## Next Work
 
-1. When a live group is available, smoke-test the count-marker/list trial in XPI and APK: select each history,
-   return to the list, and check faction counts. The user reports the popup works; live grouped-marker testing is
-   pending availability and need not block unrelated work. Nearby overlapping portals remain a separate decision.
-2. **Feasibility spike phone checks and release installation are accepted for the tested paths.** Promote the existing wrapper into the
-   permanent Android project; update names/scripts and move test controls behind accessible diagnostics/recovery UI.
+1. Grouped player-marker smoke is accepted. Keep history/back and faction counts in routine regression checks;
+   nearby overlapping portals remain a separate decision.
+2. Phone-smoke **0.4.0-alpha**: App menu/About/Privacy, Reload/Recovery/Diagnostics, theme switching and persistence.
+   Then share the signed APK with 2–5 trusted players using the friends guide; gather concrete feedback.
+   Launcher/menu polish is implemented; technical folder/script naming remains unchanged for now.
 3. Carry the existing platform ownership inventory and known limits forward: embedded Google login is a compatibility
    workaround, Google Password Manager is unresolved, and file handling is deferred because Draw Tools uses text/clipboard.
 4. Keep unreported edge cases (approximate-only access, permission cancellation during navigation, and individual

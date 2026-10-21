@@ -18,9 +18,9 @@
     width: min(520px, calc(100vw - 36px));
     max-height: calc(100vh - 36px);
     padding: 8px;
-    border: 1px solid rgb(95 180 255 / 28%);
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 28%);
     border-radius: 6px;
-    background: rgb(2 10 16 / 94%);
+    background: rgb(var(--iitc-iris-panel-rgb) / 94%);
     box-shadow: 0 14px 42px rgb(0 0 0 / 48%);
 }
 
@@ -37,7 +37,7 @@
     display: grid;
     gap: 2px;
     min-width: 0;
-    color: #91a6b7;
+    color: var(--iitc-iris-color-muted);
     font-size: var(--iitc-iris-text-sm);
 }
 
@@ -50,6 +50,6 @@
 }
 
 .iitc-iris-image-preview-caption b {
-    color: #fff;
+    color: var(--iitc-iris-color-heading);
     font-size: 12px;
 }

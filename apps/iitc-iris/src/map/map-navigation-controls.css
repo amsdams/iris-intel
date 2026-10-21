@@ -1,9 +1,9 @@
 .iitc-iris-nav-button {
     width: 24px;
     height: 22px;
-    border: 1px solid rgb(95 180 255 / 40%);
-    background: rgb(7 31 45 / 92%);
-    color: #e8f4ff;
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 40%);
+    background: rgb(var(--iitc-iris-button-rgb) / 92%);
+    color: var(--iitc-iris-color-strong);
     font: var(--iitc-iris-button-font);
 }
 
@@ -14,14 +14,14 @@
 }
 
 .iitc-iris-nav-button:hover {
-    border-color: rgb(101 217 255 / 80%);
-    background: rgb(10 45 64 / 96%);
+    border-color: rgb(var(--iitc-iris-accent-rgb) / 80%);
+    background: rgb(var(--iitc-iris-hover-rgb) / 96%);
 }
 
 .iitc-iris-nav-button:disabled {
-    border-color: rgb(95 180 255 / 18%);
-    background: rgb(10 18 25 / 50%);
-    color: #4f6575;
+    border-color: rgb(var(--iitc-iris-border-rgb) / 18%);
+    background: rgb(var(--iitc-iris-control-rgb) / 50%);
+    color: var(--iitc-iris-color-disabled);
 }
 
 .iitc-iris-pan-grid {
@@ -32,7 +32,7 @@
 }
 
 .iitc-iris-map-control-status {
-    color: #91a6b7;
+    color: var(--iitc-iris-color-muted);
     font-size: var(--iitc-iris-text-sm);
     line-height: var(--iitc-iris-line-compact);
 }

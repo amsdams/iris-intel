@@ -19,3 +19,19 @@
     --portal-team-color: #9aa8b4;
     --portal-team-soft: rgb(154 168 180 / 34%);
 }
+
+:root[data-iitc-iris-theme="light"] .iitc-iris-team-res {
+    --portal-team-color: #0063aa;
+}
+
+:root[data-iitc-iris-theme="light"] .iitc-iris-team-enl {
+    --portal-team-color: #08752e;
+}
+
+:root[data-iitc-iris-theme="light"] .iitc-iris-team-machina {
+    --portal-team-color: #b91b32;
+}
+
+:root[data-iitc-iris-theme="light"] .iitc-iris-team-neutral {
+    --portal-team-color: #526b7b;
+}

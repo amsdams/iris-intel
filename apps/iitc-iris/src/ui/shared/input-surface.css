@@ -1,0 +1,27 @@
+/* Shared skin for standalone fields and fields with an inset clear button.
+   The input selector also overrides Intel's input[type="text"] defaults. */
+.iitc-iris-input-surface,
+input.iitc-iris-input-surface {
+    box-sizing: border-box;
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 34%);
+    border-radius: 6px;
+    appearance: none;
+    background: rgb(var(--iitc-iris-button-rgb) / 72%);
+    color: var(--iitc-iris-color-strong);
+    font: var(--iitc-iris-font-medium) var(--iitc-iris-text-lg) / var(--iitc-iris-line-tight) var(--iitc-iris-font-ui);
+    letter-spacing: 0;
+}
+
+input.iitc-iris-input-surface {
+    height: 34px;
+    padding: 0 10px;
+}
+
+.iitc-iris-input-surface:focus-within {
+    outline: 2px solid rgb(var(--iitc-iris-focus-rgb) / 70%);
+    outline-offset: 1px;
+}
+
+input.iitc-iris-input-surface::placeholder {
+    color: var(--iitc-iris-color-muted);
+}

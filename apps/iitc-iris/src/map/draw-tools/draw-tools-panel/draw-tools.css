@@ -65,7 +65,7 @@
 
 .iitc-iris-draw-tools-list-controls span {
     overflow: hidden;
-    color: #91a6b7;
+    color: var(--iitc-iris-color-muted);
     font-size: var(--iitc-iris-text-xs);
     font-weight: var(--iitc-iris-font-extrabold);
     letter-spacing: var(--iitc-iris-letter-normal);
@@ -77,16 +77,16 @@
 .iitc-iris-draw-tools-list-controls .iitc-iris-select-input {
     width: 100%;
     padding: var(--iitc-iris-control-padding);
-    background: rgb(2 10 16 / 88%);
+    background: rgb(var(--iitc-iris-panel-rgb) / 88%);
     font: var(--iitc-iris-font-bold) var(--iitc-iris-text-sm) / var(--iitc-iris-line-compact) var(--iitc-iris-font-ui);
 }
 
 .iitc-iris-draw-tools-list-empty {
     padding: var(--iitc-iris-space-3);
-    border: 1px solid rgb(95 180 255 / 14%);
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 14%);
     border-radius: 4px;
-    background: rgb(10 18 25 / 42%);
-    color: #91a6b7;
+    background: rgb(var(--iitc-iris-control-rgb) / 42%);
+    color: var(--iitc-iris-color-muted);
     font-size: var(--iitc-iris-text-sm);
 }
 
@@ -126,12 +126,12 @@
 }
 
 .iitc-iris-draw-tools-list-label b {
-    color: #fff;
+    color: var(--iitc-iris-color-heading);
     font-size: var(--iitc-iris-text-md);
 }
 
 .iitc-iris-draw-tools-list-label small {
-    color: #91a6b7;
+    color: var(--iitc-iris-color-muted);
     font-size: var(--iitc-iris-text-sm);
 }
 
@@ -171,7 +171,7 @@
 
 .iitc-iris-draw-tools-team-chip {
     border: 1px solid var(--portal-team-soft);
-    background: color-mix(in srgb, var(--portal-team-color) 22%, rgb(10 18 25 / 76%));
+    background: color-mix(in srgb, var(--portal-team-color) 22%, rgb(var(--iitc-iris-control-rgb) / 76%));
     color: var(--portal-team-color);
 }
 
@@ -186,12 +186,12 @@
 
 .iitc-iris-draw-tools-label-input {
     width: 100%;
-    background: rgb(2 10 16 / 88%);
+    background: rgb(var(--iitc-iris-panel-rgb) / 88%);
     padding: var(--iitc-iris-control-padding);
 }
 
 .iitc-iris-draw-tools-label-input::placeholder {
-    color: #7d95a6;
+    color: var(--iitc-iris-color-muted);
 }
 
 .iitc-iris-draw-tools-import {
@@ -200,7 +200,7 @@
 }
 
 .iitc-iris-draw-tools-interop {
-    color: #91a6b7;
+    color: var(--iitc-iris-color-muted);
     font-size: var(--iitc-iris-text-sm);
     font-weight: var(--iitc-iris-font-bold);
     line-height: var(--iitc-iris-line-compact);
@@ -211,7 +211,7 @@
     min-height: 54px;
     resize: vertical;
     padding: var(--iitc-iris-item-padding);
-    background: rgb(2 10 16 / 84%);
+    background: rgb(var(--iitc-iris-panel-rgb) / 84%);
     font: var(--iitc-iris-text-sm) / var(--iitc-iris-line-readable) var(--iitc-iris-font-mono);
 }
 
@@ -219,6 +219,6 @@
     display: inline-flex;
     gap: var(--iitc-iris-space-2);
     align-items: center;
-    color: #91a6b7;
+    color: var(--iitc-iris-color-muted);
     font-size: var(--iitc-iris-text-sm);
 }

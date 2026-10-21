@@ -4,6 +4,7 @@ import type { ComponentChildren, ComponentType } from 'preact';
 import { useEffect, useErrorBoundary, useState } from 'preact/hooks';
 
 import '../src/styles/tokens.css';
+import '../src/styles/theme.css';
 import '../src/styles/team-colors.css';
 import '../src/styles/team-text-colors.css';
 

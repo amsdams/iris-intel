@@ -1,28 +1,28 @@
 /* system-actions */
 .iitc-iris-compare {
-    color: #fff;
+    color: var(--iitc-iris-color-heading);
     font-weight: 700;
 }
 
 .iitc-iris-preset {
     min-width: 46px;
     text-align: center;
-    border: 1px solid rgb(95 180 255 / 40%);
-    background: rgb(7 31 45 / 92%);
-    color: #e8f4ff;
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 40%);
+    background: rgb(var(--iitc-iris-button-rgb) / 92%);
+    color: var(--iitc-iris-color-strong);
     font: inherit;
     font-weight: 700;
     padding: 2px 6px;
 }
 
 .iitc-iris-preset:hover {
-    border-color: rgb(101 217 255 / 80%);
-    background: rgb(10 45 64 / 96%);
+    border-color: rgb(var(--iitc-iris-accent-rgb) / 80%);
+    background: rgb(var(--iitc-iris-hover-rgb) / 96%);
 }
 
 .iitc-iris-debug-row {
     padding-top: 2px;
-    border-top: 1px solid rgb(95 180 255 / 16%);
+    border-top: 1px solid rgb(var(--iitc-iris-border-rgb) / 16%);
 }
 
 /* jump-controls */
@@ -36,6 +36,6 @@
     width: 170px;
     min-width: 120px;
     height: 22px;
-    background: rgb(10 18 25 / 88%);
+    background: rgb(var(--iitc-iris-control-rgb) / 88%);
     padding: 2px 6px;
 }

@@ -10,7 +10,7 @@
 .iitc-iris-map-context-coords {
     min-width: 0;
     overflow: hidden;
-    color: #dbefff;
+    color: var(--iitc-iris-color-text);
     font: var(--iitc-iris-button-font);
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -22,7 +22,7 @@
     padding: 0;
     border: 0;
     background: transparent;
-    color: var(--portal-team-color, #57e7ff);
+    color: var(--portal-team-color, var(--iitc-iris-color-accent));
     cursor: pointer;
     font: var(--iitc-iris-button-font);
     text-align: left;
@@ -32,6 +32,6 @@
 
 .iitc-iris-map-context-anchor:hover,
 .iitc-iris-map-context-anchor:focus-visible {
-    color: color-mix(in srgb, var(--portal-team-color, #57e7ff) 72%, #fff);
+    color: color-mix(in srgb, var(--portal-team-color, var(--iitc-iris-color-accent)) 72%, var(--iitc-iris-color-heading));
     text-decoration: underline;
 }

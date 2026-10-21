@@ -2,7 +2,7 @@
 .iitc-iris-shell {
     position: absolute;
     inset: 0;
-    background: #05080b;
+    background: var(--iitc-iris-canvas);
     pointer-events: auto;
 }
 
@@ -21,9 +21,9 @@
     width: min(560px, calc(100vw - 24px));
     margin: 0 auto;
     padding: 5px;
-    border: 1px solid rgb(95 180 255 / 32%);
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 32%);
     border-radius: 8px;
-    background: rgb(2 10 16 / 92%);
+    background: rgb(var(--iitc-iris-panel-rgb) / 92%);
     box-shadow: 0 8px 24px rgb(0 0 0 / 38%);
     pointer-events: auto;
 }
@@ -47,7 +47,7 @@
     overflow-x: auto;
     overscroll-behavior-x: contain;
     padding-bottom: 5px;
-    border-bottom: 1px solid rgb(95 180 255 / 16%);
+    border-bottom: 1px solid rgb(var(--iitc-iris-border-rgb) / 16%);
     scrollbar-width: thin;
     white-space: nowrap;
 }
@@ -58,7 +58,7 @@
 
 .iitc-iris-sheet-tabbar-secondary::-webkit-scrollbar-thumb {
     border-radius: 999px;
-    background: rgb(95 180 255 / 32%);
+    background: rgb(var(--iitc-iris-border-rgb) / 32%);
 }
 
 .iitc-iris-sheet-tab {
@@ -67,25 +67,25 @@
     min-width: 0;
     min-height: 32px;
     padding: 3px 2px;
-    border: 1px solid rgb(95 180 255 / 18%);
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 18%);
     border-radius: 5px;
-    background: rgb(7 31 45 / 72%);
-    color: #c7d8e8;
+    background: rgb(var(--iitc-iris-button-rgb) / 72%);
+    color: var(--iitc-iris-color-secondary);
     font: var(--iitc-iris-button-font-sm);
     cursor: pointer;
 }
 
 .iitc-iris-sheet-subtab {
     min-height: 26px;
-    background: rgb(5 23 34 / 74%);
-    color: #9fb6c7;
+    background: rgb(var(--iitc-iris-button-subtle-rgb) / 74%);
+    color: var(--iitc-iris-color-secondary);
     font-size: 9px;
 }
 
 .iitc-iris-sheet-tab.is-active {
-    border-color: rgb(105 210 255 / 70%);
-    background: rgb(12 48 68 / 96%);
-    color: #fff;
+    border-color: rgb(var(--iitc-iris-focus-rgb) / 70%);
+    background: rgb(var(--iitc-iris-selected-rgb) / 96%);
+    color: var(--iitc-iris-color-heading);
 }
 
 .iitc-iris-sheet-tab.is-active::before {
@@ -106,7 +106,7 @@
 }
 
 .iitc-iris-sheet-tab:disabled {
-    color: #526675;
+    color: var(--iitc-iris-color-disabled);
     cursor: default;
 }
 
@@ -144,6 +144,7 @@
 .iitc-iris-sheet-passcode .iitc-iris-request-side-panel,
 .iitc-iris-sheet-search .iitc-iris-request-side-panel,
 .iitc-iris-sheet-help .iitc-iris-request-side-panel,
+.iitc-iris-sheet-appearance .iitc-iris-request-side-panel,
 .iitc-iris-sheet-system .iitc-iris-system-panel {
     display: grid;
 }

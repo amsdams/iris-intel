@@ -11,8 +11,8 @@ android {
         applicationId 'org.iris.intelspike'
         minSdk 26
         targetSdk 36
-        versionCode Integer.parseInt(System.getenv('IRIS_ANDROID_VERSION_CODE') ?: '14')
-        versionName '0.3.8-spike' + (System.getenv('IRIS_ANDROID_BUILD_SHA') ? '+' + System.getenv('IRIS_ANDROID_BUILD_SHA') : '')
+        versionCode Integer.parseInt(System.getenv('IRIS_ANDROID_VERSION_CODE') ?: '15')
+        versionName '0.4.0-alpha' + (System.getenv('IRIS_ANDROID_BUILD_SHA') ? '+' + System.getenv('IRIS_ANDROID_BUILD_SHA') : '')
         resValue 'string', 'spike_version', versionName
     }
 

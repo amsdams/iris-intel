@@ -6,7 +6,7 @@
     max-width: 100%;
     padding-top: 6px;
     border-top: 1px solid var(--portal-team-soft);
-    color: #d7e7f5;
+    color: var(--iitc-iris-color-text);
 }
 
 .iitc-iris-portal-panel-header {
@@ -46,10 +46,10 @@
     min-height: 20px;
     width: fit-content;
     padding: 2px 7px;
-    border: 1px solid rgb(95 180 255 / 18%);
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 18%);
     border-radius: 4px;
-    background: rgb(10 18 25 / 42%);
-    color: #dbefff;
+    background: rgb(var(--iitc-iris-control-rgb) / 42%);
+    color: var(--iitc-iris-color-text);
     font-size: var(--iitc-iris-text-sm);
     font-weight: 800;
     letter-spacing: 0.04em;
@@ -58,22 +58,22 @@
 }
 
 .iitc-iris-section-summary::marker {
-    color: #65d9ff;
+    color: var(--iitc-iris-color-accent);
 }
 
 .iitc-iris-section-summary:hover,
 .iitc-iris-section-summary:focus-visible {
-    border-color: rgb(105 210 255 / 48%);
-    background: rgb(7 31 45 / 70%);
+    border-color: rgb(var(--iitc-iris-focus-rgb) / 48%);
+    background: rgb(var(--iitc-iris-button-rgb) / 70%);
     outline: none;
 }
 
 /* portal-facts-grids */
 .iitc-iris-portal-facts {
     padding: 5px 6px;
-    border: 1px solid rgb(95 180 255 / 14%);
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 14%);
     border-radius: 4px;
-    background: rgb(10 18 25 / 44%);
+    background: rgb(var(--iitc-iris-control-rgb) / 44%);
 }
 
 .iitc-iris-resonator-grid,
@@ -99,11 +99,11 @@
     box-sizing: border-box;
     min-width: 0;
     padding: 4px 5px;
-    border: 1px solid rgb(95 180 255 / 24%);
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 24%);
     border-radius: 4px;
     overflow: hidden;
-    background: rgb(10 18 25 / 76%);
-    color: #e8f4ff;
+    background: rgb(var(--iitc-iris-control-rgb) / 76%);
+    color: var(--iitc-iris-color-strong);
     font: var(--iitc-iris-font-bold) var(--iitc-iris-text-md) / var(--iitc-iris-line-compact) var(--iitc-iris-font-ui);
 }
 
@@ -188,7 +188,7 @@
 
 .iitc-iris-empty-slot {
     border-color: rgb(128 150 165 / 16%);
-    background: rgb(10 18 25 / 42%);
+    background: rgb(var(--iitc-iris-control-rgb) / 42%);
     box-shadow: none;
 }
 
@@ -201,4 +201,16 @@
     .iitc-iris-resonator-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
+}
+
+:root[data-iitc-iris-theme="light"] .iitc-iris-resonator-level {
+    background: #102433;
+}
+
+:root[data-iitc-iris-theme="light"] .iitc-iris-portal-mod-name {
+    color: color-mix(in srgb, var(--iitc-iris-item-color) 35%, var(--iitc-iris-color-strong));
+}
+
+:root[data-iitc-iris-theme="light"] .iitc-iris-resonator-percent {
+    color: var(--iitc-iris-color-text);
 }

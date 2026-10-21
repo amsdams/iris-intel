@@ -6,7 +6,7 @@
     font: inherit;
     overflow: hidden;
     max-width: 220px;
-    color: color-mix(in srgb, var(--portal-team-color) 46%, #e8f4ff);
+    color: color-mix(in srgb, var(--portal-team-color) 46%, var(--iitc-iris-color-strong));
     font-weight: 800;
     text-align: left;
     text-overflow: ellipsis;

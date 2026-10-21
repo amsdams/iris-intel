@@ -14,6 +14,7 @@ export type IitcIrisSheetId =
   | 'portal'
   | 'selectedLink'
   | 'selectedField'
+  | 'appearance'
   | 'system'
   | 'help'
   | IitcIrisSidePanelId;
@@ -60,6 +61,7 @@ export const SHEET_REGISTRY: IitcIrisSheetRegistryEntry[] = [
   {id: 'inventory', label: 'Inventory', title: 'Inventory', primaryMenu: 'agent', sidePanel: true},
   {id: 'passcode', label: 'Passcode', title: 'Passcode redemption', primaryMenu: 'agent', sidePanel: true},
   {id: 'comm', label: 'COMM', title: 'COMM messages', primaryMenu: 'comm', sidePanel: true},
+  {id: 'appearance', label: 'Appearance', title: 'Appearance', primaryMenu: 'system'},
   {id: 'system', label: 'Diagnostics', title: 'Diagnostics', primaryMenu: 'system'},
   {id: 'help', label: 'Shortcuts', title: 'Shortcuts', primaryMenu: 'system'},
 ];

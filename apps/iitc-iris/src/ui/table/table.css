@@ -1,15 +1,15 @@
 :where(.iitc-iris-table-container) {
     overflow: hidden;
     max-width: 100%;
-    border: 1px solid rgb(95 180 255 / 18%);
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 18%);
     border-radius: 4px;
-    background: rgb(4 12 18 / 78%);
+    background: rgb(var(--iitc-iris-inset-rgb) / 78%);
 }
 
 :where(.iitc-iris-table) {
     width: 100%;
     border-collapse: collapse;
-    color: #d7e7f5;
+    color: var(--iitc-iris-color-text);
     font-size: var(--iitc-iris-text-md);
 }
 
@@ -17,7 +17,7 @@
 :where(.iitc-iris-table) td {
     overflow: hidden;
     padding: var(--iitc-iris-item-padding);
-    border-bottom: 1px solid rgb(95 180 255 / 10%);
+    border-bottom: 1px solid rgb(var(--iitc-iris-border-rgb) / 10%);
     text-overflow: ellipsis;
     white-space: nowrap;
     text-align: left;
@@ -27,8 +27,8 @@
     position: sticky;
     top: 0;
     z-index: 1;
-    background: rgb(6 20 31 / 98%);
-    color: #9ed8ff;
+    background: rgb(var(--iitc-iris-table-header-rgb) / 98%);
+    color: var(--iitc-iris-color-link);
     font-size: var(--iitc-iris-text-sm);
     text-transform: uppercase;
 }

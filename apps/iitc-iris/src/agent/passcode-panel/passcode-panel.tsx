@@ -1,5 +1,5 @@
 import {h} from 'preact';
-import '../../ui/shared/compact-input.css';
+import '../../ui/shared/input-surface.css';
 import '../item-list.css';
 import './passcode-panel.css';
 import '../../ui/shared/warning.css';
@@ -43,7 +43,7 @@ export function IitcIrisPasscodePanel(props: IitcIrisPasscodePanelProps): h.JSX.
       }}
     >
       <TextInput
-        className="iitc-iris-passcode-input"
+        className="iitc-iris-input-surface"
         type="text"
         value={passcodeDraft}
         placeholder="passcode"

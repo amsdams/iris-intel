@@ -30,5 +30,5 @@ export function getIitcIrisPrimaryMenuEffect(
   }
   if (menu === 'agent') return {kind: 'toggleSheet', sheet: 'agent'};
   if (menu === 'comm') return {kind: 'toggleComm'};
-  return {kind: 'toggleSheet', sheet: 'system'};
+  return {kind: 'toggleSheet', sheet: 'appearance'};
 }

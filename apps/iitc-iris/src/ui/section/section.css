@@ -5,7 +5,7 @@
     gap: 5px;
     min-width: 0;
     padding-top: 7px;
-    border-top: 1px solid rgb(95 180 255 / 12%);
+    border-top: 1px solid rgb(var(--iitc-iris-border-rgb) / 12%);
 }
 
 .iitc-iris-map-controls-section:first-child {
@@ -14,7 +14,7 @@
 }
 
 .iitc-iris-map-controls-section > .iitc-iris-status {
-    color: #dbefff;
+    color: var(--iitc-iris-color-text);
     font-size: var(--iitc-iris-text-sm);
     font-weight: var(--iitc-iris-font-extrabold);
     letter-spacing: var(--iitc-iris-letter-meta);

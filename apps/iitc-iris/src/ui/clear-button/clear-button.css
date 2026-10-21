@@ -7,12 +7,12 @@
     padding: 0;
     border: 1px solid rgb(255 179 71 / 55%);
     border-radius: 4px;
-    background: rgb(45 24 7 / 86%);
-    color: #ffb347;
+    background: rgb(var(--iitc-iris-clear-rgb) / 86%);
+    color: var(--iitc-iris-color-warning);
     font: var(--iitc-iris-button-font);
 }
 
 .iitc-iris-clear-selection:hover {
     border-color: rgb(255 179 71 / 90%);
-    background: rgb(64 32 7 / 94%);
+    background: rgb(var(--iitc-iris-clear-hover-rgb) / 94%);
 }

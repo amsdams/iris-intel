@@ -7,6 +7,6 @@
 }
 
 .iitc-iris-chip-button:hover {
-    border-color: rgb(105 210 255 / 45%);
-    color: #fff;
+    border-color: rgb(var(--iitc-iris-focus-rgb) / 45%);
+    color: var(--iitc-iris-color-heading);
 }

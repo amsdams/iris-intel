@@ -25,7 +25,7 @@
     grid-template-columns: 42px minmax(0, 1fr);
     gap: 8px;
     align-items: center;
-    color: #d7e7f5;
+    color: var(--iitc-iris-color-text);
     font: inherit;
     text-align: left;
     cursor: pointer;
@@ -71,7 +71,7 @@
 .iitc-iris-mission-details-head small,
 .iitc-iris-mission-waypoint small {
     overflow: hidden;
-    color: #8ea6b8;
+    color: var(--iitc-iris-color-muted);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -81,7 +81,7 @@
     gap: 7px;
     padding: 8px;
     border-top: 1px solid rgb(255 230 70 / 24%);
-    background: rgb(8 15 20 / 46%);
+    background: rgb(var(--iitc-iris-mission-rgb) / 46%);
 }
 
 .iitc-iris-mission-expanded-top {
@@ -97,15 +97,15 @@
 }
 
 .iitc-iris-mission-author.is-enlightened {
-    color: #04c748;
+    color: var(--iitc-iris-color-enl-text);
 }
 
 .iitc-iris-mission-author.is-resistance {
-    color: #00a2ff;
+    color: var(--iitc-iris-color-res-text);
 }
 
 .iitc-iris-mission-author.is-machina {
-    color: #ff4d57;
+    color: var(--iitc-iris-color-machina-text);
 }
 
 .iitc-iris-mission-detail-actions {
@@ -129,9 +129,9 @@
     align-items: center;
     min-width: 64px;
     padding: 4px 6px;
-    border: 1px solid rgb(95 180 255 / 14%);
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 14%);
     border-radius: 4px;
-    background: rgb(10 18 25 / 42%);
+    background: rgb(var(--iitc-iris-control-rgb) / 42%);
 }
 
 .iitc-iris-mission-metrics img {
@@ -144,14 +144,14 @@
 
 .iitc-iris-mission-metrics b {
     overflow: hidden;
-    color: #e8f4ff;
+    color: var(--iitc-iris-color-strong);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .iitc-iris-mission-metrics small {
     overflow: hidden;
-    color: #8ea6b8;
+    color: var(--iitc-iris-color-muted);
     font-size: var(--iitc-iris-text-sm);
     text-overflow: ellipsis;
     text-transform: uppercase;
@@ -162,7 +162,7 @@
     max-height: 72px;
     margin: 0;
     overflow: auto;
-    color: #b9cbd8;
+    color: var(--iitc-iris-color-secondary);
     line-height: 1.35;
 }
 
@@ -177,19 +177,19 @@
     height: 22px;
     border: 1px solid rgb(255 230 70 / 52%);
     border-radius: 50%;
-    color: #ffeb70;
+    color: var(--iitc-iris-color-warning);
 }
 
 .iitc-iris-mission-waypoint.is-hidden > b {
     border-color: rgb(160 170 180 / 38%);
-    color: #9aaabd;
+    color: var(--iitc-iris-color-secondary);
 }
 
 /* Authoring link override */
 
 .iitc-iris-mission-create-link {
     border-color: rgb(255 209 102 / 58%);
-    color: #ffe6a3;
+    color: var(--iitc-iris-color-warning);
 }
 
 @media (width <= 760px) {

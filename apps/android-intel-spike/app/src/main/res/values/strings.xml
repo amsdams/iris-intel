@@ -1,5 +1,13 @@
 <resources>
-    <string name="app_title">IRIS Android · wrapper test</string>
+    <string name="app_name">IRIS</string>
+    <string name="app_menu">App</string>
+    <string name="about">About IRIS</string>
+    <string name="recovery">Recovery</string>
+    <string name="feedback">Feedback</string>
+    <string name="privacy">Privacy</string>
+    <string name="about_text">IRIS %1$s\n\nAn independent Intel map companion for Ingress, based on IITC. This is an early friends-testing build, not an official Niantic or Google app.\n\nReport problems using Feedback, with your app version, Android version, and what happened. Diagnostics can be copied from the App menu. Review them before sharing; avoid account details and private portal information.\n\nIf the map cannot start, try Reload or App → Recovery → Stock Intel. You can return to IRIS from the same menu. Google sign-in currently uses an experimental compatibility workaround; saved-password support may vary.</string>
+    <string name="privacy_text">IRIS does not operate an analytics or crash-reporting service. Feedback and copied diagnostics are only shared when you choose to send them.\n\nIntel and sign-in pages contact Niantic and your sign-in provider. The Android WebView retains session cookies and local settings on this device; IRIS does not send them to an IRIS-operated server. Signing in uses an embedded browser compatibility workaround.\n\nMap requests go to the selected provider: OpenStreetMap or OpenFreeMap and their resources. Address searches send your query to OpenStreetMap Nominatim. These providers receive network information such as your IP address and requested map areas. Portal and mission images load from their supplied hosts.\n\nLocation is requested only when you tap Locate and uses Android foreground location permission. The map centers on the result, so subsequent map requests can reveal that area to map providers. No background location permission is requested.\n\nPreferences, map view, and drawn links/markers are stored locally. Clipboard actions copy the data you select to your device clipboard. Clear Android app storage or uninstall to remove the app session/settings. Logout signs out of Intel while preserving preferences.\n\nFor privacy questions, contact the maintainer through the GitHub project linked by Feedback. Do not include passwords, session cookies, or tokens in reports.</string>
+    <string name="app_title">IRIS</string>
     <string name="open_intel">Stock Intel</string>
     <string name="reload">Reload</string>
     <string name="check_session">Check session</string>
@@ -19,8 +27,8 @@
     <string name="not_checked">Session has not been checked.</string>
     <string name="browser_opened">External link opened in your browser.</string>
     <string name="browser_unavailable">No browser is available to open this HTTPS link.</string>
-    <string name="blocked_navigation">This link cannot open in the test app. Return to Intel to continue.</string>
-    <string name="diagnostic_text">IRIS Intel test %1$s\nAndroid: %2$s\nWebView: %3$s\nPage host: %4$s\nPage: %5$s\nSession: %6$s\nLast external host: %7$s\nIRIS: %8$s\nMode: %9$s\nStock dashboard: %10$s\nLocation permission: %11$s\nAndroid location requests: %12$d\n\nIRIS mode starts automatically on signed-in Intel and prevents the stock dashboard runtime from loading. Stock Intel restores the original page; Reload keeps the selected mode. Google sign-in stays in this WebView using the IITC-style user-agent compatibility workaround. This is an experiment, not a supported Google OAuth integration. No cookies, tokens, player identity, or request bodies are included here.</string>
+    <string name="blocked_navigation">This link cannot open in IRIS. Return to Intel to continue.</string>
+    <string name="diagnostic_text">IRIS %1$s\nAndroid: %2$s\nWebView: %3$s\nPage host: %4$s\nPage: %5$s\nSession: %6$s\nLast external host: %7$s\nIRIS: %8$s\nMode: %9$s\nStock dashboard: %10$s\nLocation permission: %11$s\nAndroid location requests: %12$d\n\nIRIS mode starts automatically on signed-in Intel and prevents the stock dashboard runtime from loading. Stock Intel restores the original page; Reload keeps the selected mode. Google sign-in stays in this WebView using the IITC-style user-agent compatibility workaround. This is an experiment, not a supported Google OAuth integration. No cookies, tokens, player identity, or request bodies are included here.</string>
     <string name="copy">Copy</string>
     <string name="copied">Diagnostics copied</string>
 </resources>

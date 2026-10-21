@@ -13,9 +13,9 @@
     box-sizing: border-box;
     overflow: auto;
     padding: var(--iitc-iris-panel-padding);
-    border: 1px solid rgb(95 180 255 / 28%);
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 28%);
     border-radius: 6px;
-    background: rgb(2 10 16 / 80%);
+    background: rgb(var(--iitc-iris-panel-rgb) / 80%);
     box-shadow: 0 8px 24px rgb(0 0 0 / 28%);
     font-size: var(--iitc-iris-text-lg);
     letter-spacing: var(--iitc-iris-letter-normal);

@@ -28,8 +28,8 @@
     padding: 6px;
     border: 1px solid rgb(166 166 0 / 52%);
     border-radius: 4px;
-    background: linear-gradient(90deg, rgb(64 64 0 / 42%), rgb(10 18 25 / 72%));
-    color: #f2f0b0;
+    background: linear-gradient(90deg, rgb(var(--iitc-iris-mission-highlight-rgb) / 42%), rgb(var(--iitc-iris-control-rgb) / 72%));
+    color: var(--iitc-iris-color-warning);
 }
 
 .iitc-iris-portal-mission-enrichment > span {
@@ -41,7 +41,7 @@
 .iitc-iris-portal-mission-enrichment small,
 .iitc-iris-portal-mission-meta {
     overflow: hidden;
-    color: #c7c383;
+    color: var(--iitc-iris-color-warning);
     font-size: var(--iitc-iris-text-sm);
     font-weight: 800;
     text-overflow: ellipsis;
@@ -51,7 +51,7 @@
 
 .iitc-iris-portal-mission-enrichment b {
     overflow: hidden;
-    color: #fff;
+    color: var(--iitc-iris-color-heading);
     font-size: 12px;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -65,4 +65,11 @@
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 4px;
+}
+
+:root[data-iitc-iris-theme="light"] .iitc-iris-portal-level-value {
+    padding: 1px 4px;
+    border-radius: 3px;
+    background: #102433;
+    text-shadow: none;
 }

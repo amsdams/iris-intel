@@ -1,5 +1,6 @@
 import {h, type TargetedKeyboardEvent} from 'preact';
 import './search.css';
+import '../../ui/shared/input-surface.css';
 import '../../ui/shared/list-item.css';
 import {getCommTeamClass} from '../../comm/comm-display';
 import type {IitcIrisSearchResult, IitcIrisSearchState} from '../../messages';
@@ -58,7 +59,7 @@ export function IitcIrisSearchPanel(props: IitcIrisSearchPanelProps): h.JSX.Elem
     </PanelHeader>
     <PanelBody>
       <form
-        className="iitc-iris-search-box"
+        className="iitc-iris-input-surface iitc-iris-search-box"
         onSubmit={(event) => {
           event.preventDefault();
           props.requestSearch(props.searchTerm, true);

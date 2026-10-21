@@ -6,7 +6,7 @@
 }
 
 .iitc-iris-agent-item-row {
-    --iitc-iris-item-color: rgb(95 180 255 / 45%);
+    --iitc-iris-item-color: rgb(var(--iitc-iris-border-rgb) / 45%);
 
     grid-template-columns: minmax(0, 1fr) max-content;
     gap: 2px 8px;
@@ -17,15 +17,15 @@
 
 button.iitc-iris-agent-item-row {
     width: 100%;
-    color: #d7e7f5;
+    color: var(--iitc-iris-color-text);
     font: inherit;
     text-align: left;
     cursor: pointer;
 }
 
 button.iitc-iris-agent-item-row:hover {
-    border-color: rgb(95 180 255 / 38%);
-    background: rgb(13 30 42 / 72%);
+    border-color: rgb(var(--iitc-iris-border-rgb) / 38%);
+    background: rgb(var(--iitc-iris-row-hover-rgb) / 72%);
 }
 
 .iitc-iris-agent-item-row span,
@@ -55,7 +55,16 @@ button.iitc-iris-agent-item-row:hover {
 
 .iitc-iris-agent-item-row small {
     grid-column: 1 / -1;
-    color: #91a6b7;
+    color: var(--iitc-iris-color-muted);
     font-size: var(--iitc-iris-text-sm);
     text-transform: lowercase;
+}
+
+/* Dark badge surfaces preserve the existing game-color palette in light UI. */
+:root[data-iitc-iris-theme="light"] .iitc-iris-agent-item-badge {
+    background: #102433;
+}
+
+:root[data-iitc-iris-theme="light"] .iitc-iris-agent-item-row > b {
+    color: var(--iitc-iris-color-text);
 }

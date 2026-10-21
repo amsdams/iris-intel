@@ -48,7 +48,7 @@
 .iitc-iris-comm-meta small {
     min-width: 0;
     overflow: hidden;
-    color: #91a6b7;
+    color: var(--iitc-iris-color-muted);
     font-size: 9px;
     line-height: 1.15;
     text-overflow: ellipsis;
@@ -58,14 +58,14 @@
 
 .iitc-iris-comm-tags small {
     padding: 1px 3px;
-    border: 1px solid rgb(95 180 255 / 15%);
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 15%);
     border-radius: 3px;
-    background: rgb(2 10 16 / 42%);
+    background: rgb(var(--iitc-iris-panel-rgb) / 42%);
 }
 
 .iitc-iris-comm-text {
     min-width: 0;
-    color: #cfe0ee;
+    color: var(--iitc-iris-color-text);
     font-weight: 650;
     line-height: 1.35;
     overflow-wrap: anywhere;
@@ -77,10 +77,10 @@
     max-width: 160px;
     margin-right: 5px;
     padding: 1px 5px;
-    border: 1px solid rgb(95 180 255 / 26%);
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 26%);
     border-radius: 4px;
-    background: rgb(2 10 16 / 58%);
-    color: #fff;
+    background: rgb(var(--iitc-iris-panel-rgb) / 58%);
+    color: var(--iitc-iris-color-heading);
     font-size: var(--iitc-iris-text-md);
     font-weight: 900;
     line-height: 1.25;
@@ -106,7 +106,7 @@
 }
 
 .iitc-iris-comm-text.is-narrowcast {
-    color: #f3d37a;
+    color: var(--iitc-iris-color-warning);
 }
 
 .iitc-iris-comm-portal {
@@ -116,15 +116,15 @@
     margin-inline: 1px;
     padding: 0 2px;
     border-radius: 3px;
-    background: rgb(105 210 255 / 8%);
-    color: #8fcfff;
+    background: rgb(var(--iitc-iris-focus-rgb) / 8%);
+    color: var(--iitc-iris-color-link);
     font: inherit;
     cursor: pointer;
 }
 
 :where(.iitc-iris-comm-player),
 :where(.iitc-iris-comm-faction) {
-    color: #c8d5e0;
+    color: var(--iitc-iris-color-text);
 }
 
 :where(.iitc-iris-comm-player) {
@@ -148,7 +148,7 @@
     order: 3;
     min-width: 0;
     overflow: hidden;
-    color: #91a6b7;
+    color: var(--iitc-iris-color-muted);
     font-size: var(--iitc-iris-text-sm);
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -157,10 +157,10 @@
 .iitc-iris-comm-divider {
     display: block;
     padding: 4px 6px;
-    border: 1px solid rgb(95 180 255 / 16%);
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 16%);
     border-radius: 4px;
-    background: rgb(10 18 25 / 48%);
-    color: #91a6b7;
+    background: rgb(var(--iitc-iris-control-rgb) / 48%);
+    color: var(--iitc-iris-color-muted);
     font-size: 9px;
     font-weight: 900;
     text-align: center;

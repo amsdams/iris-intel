@@ -50,11 +50,11 @@
 }
 
 .iitc-iris-player-tracker-leaflet-popup .leaflet-popup-content-wrapper {
-    border: 1px solid rgb(95 180 255 / 34%);
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 34%);
     border-radius: 6px;
-    background: rgb(2 10 16 / 94%);
+    background: rgb(var(--iitc-iris-panel-rgb) / 94%);
     box-shadow: 0 8px 24px rgb(0 0 0 / 38%);
-    color: #dbefff;
+    color: var(--iitc-iris-color-text);
 }
 
 .iitc-iris-player-tracker-leaflet-popup .leaflet-popup-content {
@@ -62,22 +62,22 @@
 }
 
 .iitc-iris-player-tracker-leaflet-popup .leaflet-popup-tip {
-    border: 1px solid rgb(95 180 255 / 24%);
-    background: rgb(2 10 16 / 94%);
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 24%);
+    background: rgb(var(--iitc-iris-panel-rgb) / 94%);
     box-shadow: 0 6px 18px rgb(0 0 0 / 30%);
 }
 
 .iitc-iris-player-tracker-leaflet-popup .leaflet-popup-close-button {
-    color: #9fc7df;
+    color: var(--iitc-iris-color-link);
 }
 
 .iitc-iris-player-tracker-leaflet-popup .leaflet-popup-close-button:hover {
-    color: #fff;
+    color: var(--iitc-iris-color-heading);
 }
 
 .iitc-iris-player-tracker-popup {
     min-width: 200px;
-    color: #dbefff;
+    color: var(--iitc-iris-color-text);
     font: 12px/1.35 Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -86,15 +86,15 @@
 }
 
 .iitc-iris-player-tracker-R {
-    color: #66b8ff;
+    color: var(--iitc-iris-color-res-text);
 }
 
 .iitc-iris-player-tracker-E {
-    color: #72f572;
+    color: var(--iitc-iris-color-enl-text);
 }
 
 .iitc-iris-player-tracker-M {
-    color: #ff6464;
+    color: var(--iitc-iris-color-machina-text);
 }
 
 .iitc-iris-player-tracker-link {
@@ -103,7 +103,7 @@
     max-width: 220px;
     border: 0;
     background: transparent;
-    color: #8fd3ff;
+    color: var(--iitc-iris-color-link);
     font: inherit;
     padding: 0;
     text-align: left;
@@ -116,7 +116,7 @@
 }
 
 .iitc-iris-player-tracker-link:hover {
-    color: #c4e9ff;
+    color: var(--iitc-iris-color-link-hover);
 }
 
 .iitc-iris-player-tracker-previous-table {
@@ -126,7 +126,7 @@
 
 .iitc-iris-player-tracker-previous-table td {
     padding: 0 6px 0 0;
-    color: #dbefff;
+    color: var(--iitc-iris-color-text);
     white-space: nowrap;
 }
 
@@ -166,7 +166,7 @@
     min-height: 44px;
     padding: 6px 2px;
     border: 0;
-    border-bottom: 1px solid rgb(95 180 255 / 24%);
+    border-bottom: 1px solid rgb(var(--iitc-iris-border-rgb) / 24%);
     background: transparent;
     color: inherit;
     font: inherit;
@@ -176,7 +176,7 @@
 
 .iitc-iris-player-tracker-agents button:hover,
 .iitc-iris-player-tracker-agents button:focus-visible {
-    background: rgb(95 180 255 / 15%);
+    background: rgb(var(--iitc-iris-border-rgb) / 15%);
 }
 
 .iitc-iris-player-tracker-agents .iitc-iris-player-tracker-name {

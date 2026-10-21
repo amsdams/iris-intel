@@ -27,7 +27,8 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
-import android.widget.HorizontalScrollView;
+import android.widget.ImageView;
+import android.widget.PopupMenu;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -57,8 +58,6 @@ public final class MainActivity extends Activity {
     private LocationPermissionFlow locationPermissions;
     private TextView status;
     private ProgressBar progress;
-    private Button checkButton;
-    private Button irisButton;
     private String loadStatus;
     private String sessionStatus;
     private String irisStatus;
@@ -82,7 +81,7 @@ public final class MainActivity extends Activity {
         irisStatus = getString(R.string.iris_not_loaded);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(0xfff5f7f8);
+        root.setBackgroundColor(getColor(R.color.app_background));
         // Target 36 draws edge-to-edge. Keep controls and web content outside system bars/keyboard.
         root.setOnApplyWindowInsetsListener((view, insets) -> {
             if (Build.VERSION.SDK_INT >= 30) {
@@ -94,25 +93,26 @@ public final class MainActivity extends Activity {
             }
             return insets;
         });
+        LinearLayout header = new LinearLayout(this);
+        header.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        header.setPadding(dp(8), 0, dp(8), 0);
+        ImageView logo = new ImageView(this);
+        logo.setImageResource(R.drawable.ic_launcher);
+        logo.setImportantForAccessibility(android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        header.addView(logo, new LinearLayout.LayoutParams(dp(28), dp(28)));
         TextView title = new TextView(this);
         title.setText(R.string.app_title);
         title.setTextSize(18);
-        title.setPadding(dp(12), dp(8), dp(12), 0);
-        root.addView(title);
-        LinearLayout controls = new LinearLayout(this);
-        controls.addView(button(R.string.open_intel, () -> openMode(false)));
-        controls.addView(button(R.string.reload, () -> webView.reload()));
-        checkButton = button(R.string.check_session, this::checkSession);
-        controls.addView(checkButton);
-        irisButton = button(R.string.load_iris, () -> openMode(true));
-        controls.addView(irisButton);
-        controls.addView(button(R.string.diagnostics, this::showDiagnostics));
-        HorizontalScrollView scroll = new HorizontalScrollView(this);
-        scroll.addView(controls);
-        root.addView(scroll);
+        title.setPadding(dp(8), 0, 0, 0);
+        header.addView(title, new LinearLayout.LayoutParams(0, dp(48), 1));
+        title.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        Button menuButton = button(R.string.app_menu, () -> {});
+        menuButton.setOnClickListener(view -> showAppMenu(menuButton));
+        header.addView(menuButton);
+        root.addView(header);
         status = new TextView(this);
         status.setPadding(dp(12), 0, dp(12), dp(8));
-        status.setText(loadStatus);
+        showStatus(loadStatus);
         status.setAccessibilityLiveRegion(TextView.ACCESSIBILITY_LIVE_REGION_POLITE);
         root.addView(status);
         progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
@@ -160,6 +160,35 @@ public final class MainActivity extends Activity {
         button.setAllCaps(false);
         button.setOnClickListener(view -> action.run());
         return button;
+    }
+
+    private void showStatus(String message) {
+        status.setText(message);
+        status.setVisibility(android.view.View.VISIBLE);
+    }
+
+    private void showAppMenu(android.view.View anchor) {
+        PopupMenu menu = new PopupMenu(this, anchor);
+        menu.getMenu().add(R.string.about).setOnMenuItemClickListener(item -> { showAbout(); return true; });
+        menu.getMenu().add(R.string.reload).setOnMenuItemClickListener(item -> { webView.reload(); return true; });
+        android.view.SubMenu recovery = menu.getMenu().addSubMenu(R.string.recovery);
+        recovery.add(R.string.load_iris).setOnMenuItemClickListener(item -> { openMode(true); return true; });
+        recovery.add(R.string.open_intel).setOnMenuItemClickListener(item -> { openMode(false); return true; });
+        menu.getMenu().add(R.string.diagnostics).setOnMenuItemClickListener(item -> { showDiagnostics(); return true; });
+        menu.show();
+    }
+
+    private void showAbout() {
+        new AlertDialog.Builder(this).setTitle(R.string.about)
+                .setMessage(getString(R.string.about_text, getString(R.string.spike_version)))
+                .setPositiveButton(android.R.string.ok, null)
+                .setNeutralButton(R.string.feedback, (dialog, which) -> openBrowser("https://github.com/amsdams/iris-intel/issues/new"))
+                .setNegativeButton(R.string.privacy, (dialog, which) -> showPrivacy()).show();
+    }
+
+    private void showPrivacy() {
+        new AlertDialog.Builder(this).setTitle(R.string.privacy).setMessage(R.string.privacy_text)
+                .setPositiveButton(android.R.string.ok, null).show();
     }
 
     private void openMode(boolean useIris) {
@@ -242,7 +271,7 @@ public final class MainActivity extends Activity {
                 sessionStatus = getString(R.string.not_checked);
                 irisStatus = getString(R.string.iris_not_loaded);
                 loadStatus = getString(R.string.loading, NavigationPolicy.host(url));
-                status.setText(loadStatus);
+                showStatus(loadStatus);
             }
 
             @Override public void onPageFinished(WebView view, String url) {
@@ -250,7 +279,7 @@ public final class MainActivity extends Activity {
                 if (!pageFailed) {
                     pageFinished = true;
                     loadStatus = getString(R.string.loaded, NavigationPolicy.host(url));
-                    status.setText(loadStatus);
+                    status.setVisibility(android.view.View.GONE);
                     maybeLoadIris(0);
                 }
             }
@@ -292,14 +321,14 @@ public final class MainActivity extends Activity {
         pageFailed = true;
         invalidateProbe();
         loadStatus = message;
-        status.setText(message);
+        showStatus(message);
         progress.setVisibility(android.view.View.GONE);
     }
 
     private void openBrowser(String url) {
         lastExternalHost = NavigationPolicy.host(url);
         if (NavigationPolicy.host(url).isEmpty()) {
-            status.setText(R.string.blocked_navigation);
+            showStatus(getString(R.string.blocked_navigation));
             return;
         }
         try {
@@ -308,16 +337,17 @@ public final class MainActivity extends Activity {
         } catch (ActivityNotFoundException error) {
             loadStatus = getString(R.string.browser_unavailable);
         }
-        status.setText(loadStatus);
+        showStatus(loadStatus);
     }
 
     private void checkSession() {
+        if (probeKey != null) return;
         startProbe("session-check.js", false);
     }
 
     private void startProbe(String asset, boolean loadIris) {
         if (!NavigationPolicy.isIntel(webView.getUrl()) || !pageFinished || pageFailed) {
-            status.setText(R.string.intel_required);
+            showStatus(getString(R.string.intel_required));
             return;
         }
         invalidateProbe();
@@ -325,12 +355,10 @@ public final class MainActivity extends Activity {
         final int generation = pageGeneration;
         final String key = "__irisSessionProbe_" + UUID.randomUUID().toString().replace("-", "");
         probeKey = key;
-        checkButton.setEnabled(false);
-        irisButton.setEnabled(false);
         String checking = getString(loadIris ? R.string.iris_loading : R.string.checking);
         if (loadIris) irisStatus = checking;
         else sessionStatus = checking;
-        status.setText(checking);
+        showStatus(checking);
         try (InputStream stream = getAssets().open(asset)) {
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
             byte[] buffer = new byte[4096];
@@ -370,10 +398,9 @@ public final class MainActivity extends Activity {
     private void finishProbe(String message) {
         if (irisProbe) irisStatus = message;
         else sessionStatus = message;
-        status.setText(message);
+        showStatus(message);
         probeKey = null;
-        checkButton.setEnabled(true);
-        irisButton.setEnabled(true);
+        if (message.startsWith("PASS")) status.setVisibility(android.view.View.GONE);
         if (!irisProbe) maybeLoadIris(0);
     }
 
@@ -382,8 +409,6 @@ public final class MainActivity extends Activity {
         pollEpoch++;
         handler.removeCallbacksAndMessages(null);
         probeKey = null;
-        if (checkButton != null) checkButton.setEnabled(true);
-        if (irisButton != null) irisButton.setEnabled(true);
     }
 
     private void showDiagnostics() {
@@ -396,6 +421,7 @@ public final class MainActivity extends Activity {
                 getPreferences(MODE_PRIVATE).getInt(LOCATION_REQUEST_COUNT, 0));
         new AlertDialog.Builder(this).setTitle(R.string.diagnostics).setMessage(text)
                 .setPositiveButton(android.R.string.ok, null)
+                .setNegativeButton(R.string.check_session, (dialog, which) -> checkSession())
                 .setNeutralButton(R.string.copy, (dialog, which) -> {
                     ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
                     clipboard.setPrimaryClip(ClipData.newPlainText(getString(R.string.diagnostics), text));

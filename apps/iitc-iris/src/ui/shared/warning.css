@@ -1,6 +1,6 @@
 
 
 .iitc-iris-warning {
-    color: #ffd166;
+    color: var(--iitc-iris-color-warning);
     font-weight: 700;
 }

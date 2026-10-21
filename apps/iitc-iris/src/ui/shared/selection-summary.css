@@ -3,15 +3,15 @@
     gap: 2px;
     min-width: 0;
     padding: 5px 6px;
-    border: 1px solid rgb(95 180 255 / 14%);
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 14%);
     border-radius: 4px;
-    background: rgb(10 18 25 / 44%);
+    background: rgb(var(--iitc-iris-control-rgb) / 44%);
 }
 
 .iitc-iris-inventory-selected b {
     min-width: 0;
     overflow: hidden;
-    color: #fff;
+    color: var(--iitc-iris-color-heading);
     text-overflow: ellipsis;
     white-space: nowrap;
 }

@@ -10,9 +10,9 @@
     align-items: flex-start;
     max-width: calc(100vw - 24px);
     padding: var(--iitc-iris-panel-padding);
-    border: 1px solid rgb(95 180 255 / 35%);
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 35%);
     border-radius: 6px;
-    background: rgb(2 10 16 / 86%);
+    background: rgb(var(--iitc-iris-panel-rgb) / 86%);
     box-shadow: 0 8px 24px rgb(0 0 0 / 35%);
     font-size: var(--iitc-iris-text-lg);
     letter-spacing: var(--iitc-iris-letter-normal);
@@ -29,7 +29,7 @@
 
 /* inner-status */
 .iitc-iris-title {
-    color: #00d9ff;
+    color: var(--iitc-iris-color-accent);
     font-weight: 700;
 }
 
@@ -39,16 +39,16 @@
     gap: 8px;
     align-items: center;
     max-width: 100%;
-    color: #d7e7f5;
+    color: var(--iitc-iris-color-text);
 }
 
 .iitc-iris-innerstatus .portallevel {
-    color: #ffb;
+    color: var(--iitc-iris-color-warning);
     font-weight: 700;
 }
 
 .iitc-iris-innerstatus .map b {
-    color: #fff;
+    color: var(--iitc-iris-color-heading);
 }
 
 .iitc-iris-innerstatus .help {
@@ -56,19 +56,19 @@
 }
 
 .iitc-iris-innerstatus .failed-request {
-    color: #ff7676;
+    color: var(--iitc-iris-color-error);
     font-weight: 700;
 }
 
 .iitc-iris-innerstatus .selected-portal {
-    color: #ffb347;
+    color: var(--iitc-iris-color-warning);
     font-weight: 700;
 }
 
 /* diagnostics-grid */
 .iitc-iris-debug-grid {
     padding-top: 4px;
-    border-top: 1px solid rgb(95 180 255 / 12%);
+    border-top: 1px solid rgb(var(--iitc-iris-border-rgb) / 12%);
 }
 
 /* scenario-progress */
@@ -82,10 +82,10 @@
 .iitc-iris-scenario-progress > span {
     overflow: hidden;
     padding: 3px 4px;
-    border: 1px solid rgb(95 180 255 / 16%);
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 16%);
     border-radius: 4px;
-    background: rgb(10 18 25 / 48%);
-    color: #7894aa;
+    background: rgb(var(--iitc-iris-control-rgb) / 48%);
+    color: var(--iitc-iris-color-muted);
     font-size: 9px;
     font-weight: 800;
     text-align: center;
@@ -97,7 +97,7 @@
 .iitc-iris-scenario-progress > span.is-done {
     border-color: rgb(56 240 110 / 34%);
     background: rgb(56 240 110 / 10%);
-    color: #80f0a0;
+    color: var(--iitc-iris-color-success);
 }
 
 /* shortcut-grid */
@@ -114,15 +114,15 @@
 }
 
 .iitc-iris-shortcut-grid span {
-    color: #91a6b7;
+    color: var(--iitc-iris-color-muted);
 }
 
 .iitc-iris-shortcut-grid b {
     padding: 2px 6px;
-    border: 1px solid rgb(95 180 255 / 18%);
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 18%);
     border-radius: 4px;
-    background: rgb(10 18 25 / 58%);
-    color: #e8f4ff;
+    background: rgb(var(--iitc-iris-control-rgb) / 58%);
+    color: var(--iitc-iris-color-strong);
     font-size: var(--iitc-iris-text-sm);
     text-align: right;
 }

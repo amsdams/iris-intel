@@ -18,8 +18,8 @@
     padding: 5px 8px;
     border: 1px solid rgb(255 209 102 / 58%);
     border-radius: 6px;
-    background: rgb(24 20 11 / 94%);
-    color: #ffe8a6;
+    background: rgb(var(--iitc-iris-warning-panel-rgb) / 94%);
+    color: var(--iitc-iris-color-warning);
     box-shadow: 0 8px 24px rgb(0 0 0 / 38%);
     font-size: 12px;
     font-weight: 700;
@@ -36,14 +36,14 @@
 .iitc-iris-auth-recovery button {
     height: 20px;
     border: 1px solid rgb(255 209 102 / 70%);
-    background: rgb(67 43 3 / 92%);
-    color: #ffd166;
+    background: rgb(var(--iitc-iris-warning-control-rgb) / 92%);
+    color: var(--iitc-iris-color-warning);
     font: var(--iitc-iris-button-font);
 }
 
 .iitc-iris-auth-recovery button:hover {
     border-color: rgb(255 209 102 / 95%);
-    background: rgb(91 58 5 / 96%);
+    background: rgb(var(--iitc-iris-warning-hover-rgb) / 96%);
 }
 
 .iitc-iris-inline-auth {
@@ -61,22 +61,22 @@
     min-width: 0;
     padding: 0 5px;
     border: 1px solid rgb(255 209 102 / 58%);
-    background: rgb(67 43 3 / 82%);
-    color: #ffd166;
+    background: rgb(var(--iitc-iris-warning-control-rgb) / 82%);
+    color: var(--iitc-iris-color-warning);
     font: var(--iitc-iris-button-font-sm);
     white-space: nowrap;
 }
 
 .iitc-iris-inline-auth button:hover {
     border-color: rgb(255 209 102 / 90%);
-    background: rgb(91 58 5 / 92%);
+    background: rgb(var(--iitc-iris-warning-hover-rgb) / 92%);
 }
 
 /* login-button */
 .iitc-iris-login {
     border: 1px solid rgb(255 209 102 / 70%);
-    background: rgb(67 43 3 / 92%);
-    color: #ffd166;
+    background: rgb(var(--iitc-iris-warning-control-rgb) / 92%);
+    color: var(--iitc-iris-color-warning);
     font: inherit;
     font-weight: 700;
     padding: 2px 6px;
@@ -84,5 +84,5 @@
 
 .iitc-iris-login:hover {
     border-color: rgb(255 209 102 / 95%);
-    background: rgb(91 58 5 / 96%);
+    background: rgb(var(--iitc-iris-warning-hover-rgb) / 96%);
 }

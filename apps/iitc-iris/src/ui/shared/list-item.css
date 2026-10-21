@@ -5,7 +5,7 @@
     display: grid;
     min-width: 0;
     padding: 5px 6px;
-    border: 1px solid rgb(95 180 255 / 16%);
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 16%);
     border-radius: 4px;
-    background: rgb(10 18 25 / 62%);
+    background: rgb(var(--iitc-iris-control-rgb) / 62%);
 }

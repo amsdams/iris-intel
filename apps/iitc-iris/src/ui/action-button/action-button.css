@@ -5,27 +5,27 @@
 :where(.iitc-iris-portal-action) {
     min-width: 0;
     padding: var(--iitc-iris-control-padding);
-    border: 1px solid var(--portal-team-soft, rgb(95 180 255 / 40%));
-    background: rgb(7 31 45 / 92%);
-    color: #e8f4ff;
+    border: 1px solid var(--portal-team-soft, rgb(var(--iitc-iris-border-rgb) / 40%));
+    background: rgb(var(--iitc-iris-button-rgb) / 92%);
+    color: var(--iitc-iris-color-strong);
     font: var(--iitc-iris-button-font);
     text-align: center;
     text-decoration: none;
 }
 
 .iitc-iris-portal-action:hover {
-    border-color: var(--portal-team-color, rgb(101 217 255 / 80%));
-    background: rgb(10 45 64 / 96%);
+    border-color: var(--portal-team-color, rgb(var(--iitc-iris-accent-rgb) / 80%));
+    background: rgb(var(--iitc-iris-hover-rgb) / 96%);
 }
 
 .iitc-iris-portal-action.is-danger {
     border-color: rgb(255 79 95 / 72%);
-    background: rgb(72 16 24 / 94%);
-    color: #fff;
+    background: rgb(var(--iitc-iris-danger-rgb) / 94%);
+    color: var(--iitc-iris-color-heading);
 }
 
 .iitc-iris-portal-action:disabled {
-    border-color: rgb(95 180 255 / 18%);
-    background: rgb(10 18 25 / 50%);
-    color: #4f6575;
+    border-color: rgb(var(--iitc-iris-border-rgb) / 18%);
+    background: rgb(var(--iitc-iris-control-rgb) / 50%);
+    color: var(--iitc-iris-color-disabled);
 }

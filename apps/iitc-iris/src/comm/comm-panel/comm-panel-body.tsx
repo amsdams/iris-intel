@@ -1,5 +1,5 @@
 import {h} from 'preact';
-import '../../ui/shared/compact-input.css';
+import '../../ui/shared/input-surface.css';
 import './comm.css';
 import type {IitcIrisCommState} from '../../messages';
 
@@ -17,7 +17,7 @@ export function IitcIrisCommPanelBody(props: IitcIrisCommPanelBodyProps): h.JSX.
   const {commDraft, commState} = props;
   return <>
     <form className="iitc-iris-comm-send-form" onSubmit={(event) => { event.preventDefault(); props.send(); }}>
-      <TextInput className="iitc-iris-passcode-input" value={commDraft} placeholder={commState.tab === 'faction' ? 'tell faction:' : commState.tab === 'all' ? 'broadcast:' : "can't send to alerts"} disabled={commState.tab === 'alerts' || commState.sendStatus === 'sending'} onInput={(event) => props.onDraftChange(event.currentTarget.value)} />
+      <TextInput className="iitc-iris-input-surface" value={commDraft} placeholder={commState.tab === 'faction' ? 'tell faction:' : commState.tab === 'all' ? 'broadcast:' : "can't send to alerts"} disabled={commState.tab === 'alerts' || commState.sendStatus === 'sending'} onInput={(event) => props.onDraftChange(event.currentTarget.value)} />
       <ActionButton type="submit" disabled={!commDraft.trim() || commState.tab === 'alerts' || commState.sendStatus === 'sending'}>{commState.sendStatus === 'sending' ? 'Sending' : 'Send'}</ActionButton>
     </form>
   </>;

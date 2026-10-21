@@ -71,7 +71,8 @@ any tag. CI checks, tests, and packages IITC IRIS; main pushes update the existi
 trigger the tagged release workflow. Both publish the signed Android APK alongside the extension packages.
 Main release APKs are named `iitc-iris-android.apk`; future tagged releases include the tag version in the filename.
 Manual release runs require an existing `vX.Y.Z` tag containing the Android project and build that tag.
-See [Android signing and first-install instructions](apps/android-intel-spike/README.md#signed-github-apks).
+See [Android signing and first-install instructions](apps/android-intel-spike/README.md#signed-github-apks)
+and the [friends testing guide](docs/iitc-iris/friends-testing.md).
 
 ## Product Scope
 

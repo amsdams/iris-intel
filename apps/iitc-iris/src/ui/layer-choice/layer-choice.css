@@ -7,25 +7,25 @@
     align-items: center;
     min-height: 24px;
     min-width: 0;
-    border: 1px solid rgb(95 180 255 / 22%);
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 22%);
     border-radius: 4px;
-    background: rgb(10 18 25 / 68%);
-    color: #9fb7c8;
+    background: rgb(var(--iitc-iris-control-rgb) / 68%);
+    color: var(--iitc-iris-color-secondary);
     cursor: pointer;
     padding: 3px 6px;
 }
 
 .iitc-iris-layer-choice.is-checked {
-    border-color: rgb(101 217 255 / 62%);
-    background: rgb(7 31 45 / 78%);
-    color: #e8f4ff;
+    border-color: rgb(var(--iitc-iris-accent-rgb) / 62%);
+    background: rgb(var(--iitc-iris-button-rgb) / 78%);
+    color: var(--iitc-iris-color-strong);
 }
 
 .iitc-iris-layer-choice input {
     width: 13px;
     height: 13px;
     margin: 0;
-    accent-color: #65d9ff;
+    accent-color: var(--iitc-iris-color-accent);
 }
 
 .iitc-iris-layer-choice-label {

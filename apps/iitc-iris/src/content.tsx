@@ -1,3 +1,5 @@
+import {AppearancePanel} from './system/appearance-panel/appearance-panel';
+import {useUiTheme} from './shell/ui-theme';
 import {getExtensionUrl} from './platform/assets';
 import {installIitcIrisHostBack} from './shell/host-navigation';
 import {Button} from './ui/button';
@@ -172,6 +174,7 @@ function injectScript(src: string): void {
 }
 
 function App(): h.JSX.Element {
+  const {uiTheme, setUiTheme} = useUiTheme();
   const postIitcMessage = useCallback((message: IitcIrisMessage): void => {
     window.postMessage(message, '*');
   }, []);
@@ -957,6 +960,7 @@ function App(): h.JSX.Element {
         selectPortalHighlighter={selectPortalHighlighter}
         toggleLayerSetting={toggleLayerSetting}
       />
+      {activeSheet === 'appearance' && <AppearancePanel uiTheme={uiTheme} setUiTheme={setUiTheme} />}
       {activeSheet === 'system' && (
         <IitcIrisDiagnosticsPanelContainer
           camera={camera}

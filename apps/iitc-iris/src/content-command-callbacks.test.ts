@@ -778,7 +778,7 @@ describe('togglePrimaryMenuCommand', () => {
     togglePrimaryMenuCommand('agent', context, vi.fn(), vi.fn(), vi.fn(), toggleSheet);
     togglePrimaryMenuCommand('system', context, vi.fn(), vi.fn(), vi.fn(), toggleSheet);
     expect(toggleSheet).toHaveBeenNthCalledWith(1, 'agent');
-    expect(toggleSheet).toHaveBeenNthCalledWith(2, 'system');
+    expect(toggleSheet).toHaveBeenNthCalledWith(2, 'appearance');
   });
 });
 

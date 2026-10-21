@@ -1,0 +1,97 @@
+/* UI palette only. Game level, rarity, and map glyph palettes stay independent. */
+:root {
+    --iitc-iris-mission-highlight-rgb: 64 64 0;
+    --iitc-iris-panel-rgb: 2 10 16;
+    --iitc-iris-control-rgb: 10 18 25;
+    --iitc-iris-button-rgb: 7 31 45;
+    --iitc-iris-button-subtle-rgb: 5 23 34;
+    --iitc-iris-selected-rgb: 12 48 68;
+    --iitc-iris-hover-rgb: 10 45 64;
+    --iitc-iris-border-rgb: 95 180 255;
+    --iitc-iris-accent-rgb: 101 217 255;
+    --iitc-iris-focus-rgb: 105 210 255;
+    --iitc-iris-row-hover-rgb: 13 30 42;
+    --iitc-iris-inset-rgb: 4 12 18;
+    --iitc-iris-input-rgb: 4 14 21;
+    --iitc-iris-segment-rgb: 6 20 30;
+    --iitc-iris-table-header-rgb: 6 20 31;
+    --iitc-iris-table-action-rgb: 8 31 45;
+    --iitc-iris-search-input-rgb: 4 18 27;
+    --iitc-iris-search-hover-rgb: 31 75 96;
+    --iitc-iris-mission-rgb: 8 15 20;
+    --iitc-iris-warning-panel-rgb: 24 20 11;
+    --iitc-iris-warning-control-rgb: 67 43 3;
+    --iitc-iris-warning-hover-rgb: 91 58 5;
+    --iitc-iris-clear-rgb: 45 24 7;
+    --iitc-iris-clear-hover-rgb: 64 32 7;
+    --iitc-iris-danger-rgb: 72 16 24;
+    --iitc-iris-color-text: #d7e7f5;
+    --iitc-iris-color-strong: #e8f4ff;
+    --iitc-iris-color-heading: #fff;
+    --iitc-iris-color-secondary: #c7d8e8;
+    --iitc-iris-color-muted: #91a6b7;
+    --iitc-iris-color-disabled: #4f6575;
+    --iitc-iris-color-link: #8fd3ff;
+    --iitc-iris-color-link-hover: #c4e9ff;
+    --iitc-iris-color-accent: #65d9ff;
+    --iitc-iris-color-warning: #ffd166;
+    --iitc-iris-color-success: #80f0a0;
+    --iitc-iris-color-error: #ff6f7e;
+    --iitc-iris-color-res-text: #00a2ff;
+    --iitc-iris-color-enl-text: #04c748;
+    --iitc-iris-color-machina-text: #ff4d57;
+    --iitc-iris-canvas: #05080b;
+    --iitc-iris-contrast-rgb: 255 255 255;
+    --iitc-iris-color-scheme: dark;
+}
+
+:root[data-iitc-iris-theme="light"] {
+    --iitc-iris-mission-highlight-rgb: 255 232 142;
+    --iitc-iris-panel-rgb: 248 251 254;
+    --iitc-iris-control-rgb: 225 234 241;
+    --iitc-iris-button-rgb: 222 235 243;
+    --iitc-iris-button-subtle-rgb: 234 242 247;
+    --iitc-iris-selected-rgb: 190 224 240;
+    --iitc-iris-hover-rgb: 199 228 241;
+    --iitc-iris-border-rgb: 19 93 137;
+    --iitc-iris-accent-rgb: 0 105 135;
+    --iitc-iris-focus-rgb: 0 105 135;
+    --iitc-iris-row-hover-rgb: 212 230 241;
+    --iitc-iris-inset-rgb: 225 235 242;
+    --iitc-iris-input-rgb: 250 253 255;
+    --iitc-iris-segment-rgb: 231 240 246;
+    --iitc-iris-table-header-rgb: 235 243 249;
+    --iitc-iris-table-action-rgb: 220 235 245;
+    --iitc-iris-search-input-rgb: 250 253 255;
+    --iitc-iris-search-hover-rgb: 188 218 235;
+    --iitc-iris-mission-rgb: 237 244 249;
+    --iitc-iris-warning-panel-rgb: 255 248 226;
+    --iitc-iris-warning-control-rgb: 255 231 165;
+    --iitc-iris-warning-hover-rgb: 249 214 125;
+    --iitc-iris-clear-rgb: 255 238 216;
+    --iitc-iris-clear-hover-rgb: 255 219 178;
+    --iitc-iris-danger-rgb: 255 218 225;
+    --iitc-iris-color-text: #203747;
+    --iitc-iris-color-strong: #132d3e;
+    --iitc-iris-color-heading: #102b3d;
+    --iitc-iris-color-secondary: #3b5669;
+    --iitc-iris-color-muted: #506b7c;
+    --iitc-iris-color-disabled: #718493;
+    --iitc-iris-color-link: #075d8a;
+    --iitc-iris-color-link-hover: #003c61;
+    --iitc-iris-color-accent: #006f8b;
+    --iitc-iris-color-warning: #855400;
+    --iitc-iris-color-success: #116d35;
+    --iitc-iris-color-error: #b31d35;
+    --iitc-iris-color-res-text: #0063aa;
+    --iitc-iris-color-enl-text: #08752e;
+    --iitc-iris-color-machina-text: #b91b32;
+    --iitc-iris-canvas: #f5f9fc;
+    --iitc-iris-contrast-rgb: 20 40 55;
+    --iitc-iris-color-scheme: light;
+}
+
+#iitc-iris-root,
+.iitc-iris-player-tracker-leaflet-popup {
+    color-scheme: var(--iitc-iris-color-scheme);
+}

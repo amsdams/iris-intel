@@ -32,6 +32,6 @@ describe('IITC IRIS content primary menu', () => {
   it('routes Agent, COMM, and System to their existing handlers', () => {
     expect(getIitcIrisPrimaryMenuEffect('agent', mapContext)).toEqual({kind: 'toggleSheet', sheet: 'agent'});
     expect(getIitcIrisPrimaryMenuEffect('comm', mapContext)).toEqual({kind: 'toggleComm'});
-    expect(getIitcIrisPrimaryMenuEffect('system', mapContext)).toEqual({kind: 'toggleSheet', sheet: 'system'});
+    expect(getIitcIrisPrimaryMenuEffect('system', mapContext)).toEqual({kind: 'toggleSheet', sheet: 'appearance'});
   });
 });

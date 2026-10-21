@@ -63,6 +63,9 @@ that hides this wiring.
 
 `src/iitc-iris.css` centrally loads theme foundations, shell coordination, global utilities, and styles for runtime-created
 map DOM. Component and feature styles are imported by their owners; shared helper styles have explicit consumers.
+The semantic UI palette lives in `styles/theme.css`; `shell/ui-theme.ts` persists System/Dark/Light and follows
+OS changes only in System mode. This preference is independent of the base map. Map glyphs and game level/rarity
+colors retain their own palettes; light UI uses darker text roles and dark badge surfaces where necessary.
 Cascade-sensitive styles stay centrally ordered where necessary. Preserve appearance, behavior, and cascade order when
 changing ownership. The component workbench (`npm run dev:wb`) uses automatic discovery and generic previews.
 

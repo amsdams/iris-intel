@@ -3,9 +3,9 @@
     gap: 5px;
     min-width: 0;
     padding: 6px;
-    border: 1px solid rgb(95 180 255 / 18%);
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 18%);
     border-radius: 4px;
-    background: rgb(10 18 25 / 62%);
+    background: rgb(var(--iitc-iris-control-rgb) / 62%);
 }
 
 .iitc-iris-score-heading,
@@ -17,7 +17,7 @@
 }
 
 .iitc-iris-score-heading {
-    color: #fff;
+    color: var(--iitc-iris-color-heading);
     font-weight: 700;
 }
 
@@ -65,9 +65,9 @@
     align-items: center;
     min-width: 0;
     padding: 3px 6px;
-    border: 1px solid rgb(95 180 255 / 14%);
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 14%);
     border-radius: 4px;
-    background: rgb(10 18 25 / 46%);
+    background: rgb(var(--iitc-iris-control-rgb) / 46%);
 }
 
 .iitc-iris-agent-row b {
