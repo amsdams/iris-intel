@@ -22,7 +22,11 @@
     "package": "npm run package -w apps/iitc-iris",
     "package:iitc-iris": "npm run package",
     "release": "npm run package",
-    "version:bump": "bash ./scripts/release-version.sh"
+    "serve": "node scripts/serve-artifacts.mjs",
+    "version:bump": "bash ./scripts/release-version.sh",
+    "android:build": "node scripts/android.mjs :app:assembleDebug",
+    "android:check": "node --test apps/android-intel-spike/tests/*.test.mjs && node scripts/android.mjs :app:testDebugUnitTest :app:lintDebug :app:assembleDebug",
+    "android:serve": "npm run serve"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

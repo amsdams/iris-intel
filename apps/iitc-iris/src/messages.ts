@@ -660,7 +660,7 @@ export interface IitcIrisLayerSettings {
   keyCount: boolean;
 }
 
-export type IitcIrisBaseLayerId = 'osm' | 'cartodb-dark-matter' | 'cartodb-positron';
+export type IitcIrisBaseLayerId = 'osm' | 'openfreemap-dark' | 'openfreemap-positron';
 
 export type IitcIrisDataSourceSettings =
   | {mode: 'live'}

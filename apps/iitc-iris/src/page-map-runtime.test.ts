@@ -8,6 +8,9 @@ vi.mock('leaflet', () => ({default: {
   point: (x: number, y: number): {x: number; y: number} => ({x, y}),
 }}));
 
+vi.mock('@maplibre/maplibre-gl-leaflet', () => ({maplibreGL: leaflet.tileLayer}));
+vi.mock('maplibre-gl', () => ({setWorkerUrl: vi.fn()}));
+
 class Container extends EventTarget {
   getBoundingClientRect(): {left: number; top: number} { return {left: 0, top: 0}; }
 }
@@ -17,6 +20,7 @@ interface TestMap {
   getContainer: () => Container;
   getCenter: () => {lat: number; lng: number};
   getZoom: () => number;
+  setMaxZoom: ReturnType<typeof vi.fn>;
   getBounds: () => {getSouth: () => number; getWest: () => number; getNorth: () => number; getEast: () => number};
   getPane: () => undefined;
   createPane: () => {style: Record<string, string>};
@@ -33,6 +37,7 @@ function createMap(container: Container): TestMap {
     getContainer: () => container,
     getCenter: () => ({lat: 52.373, lng: 4.892}),
     getZoom: () => 11,
+    setMaxZoom: vi.fn(),
     getBounds: () => ({getSouth: () => 52.3, getWest: () => 4.8, getNorth: () => 52.4, getEast: () => 4.9}),
     getPane: () => undefined,
     createPane: () => ({style: {}}),

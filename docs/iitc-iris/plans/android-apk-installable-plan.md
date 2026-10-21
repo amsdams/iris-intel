@@ -2,8 +2,11 @@
 
 ## Plan Dashboard
 
-Status: planning and research only. No IRIS Android project exists yet. Repository cleanup completed on 2026-10-20:
-only `apps/iitc-iris` and `packages/iitc-core` remain; builds no longer require legacy apps or local reference assets.
+Status: 0.3.0 mode persistence, IRIS startup after reopen, and stock-dashboard blocking confirmed on phone;
+Panel Back, rotation, and restoring the open panel after Reload also passed; background/resume responsiveness also passed. Phone login/persistence passed on 0.1.3;
+0.2.0 bundled IRIS injection and a quick feature smoke test passed. Repository cleanup completed on
+2026-10-20. The npm workspaces remain `apps/iitc-iris` and `packages/iitc-core`; the Gradle spike lives separately at
+`apps/android-intel-spike`. Builds no longer require legacy apps or local reference assets.
 The repository/platform ownership and map-replacement lifetime pass is implemented and user smoke accepted.
 See [the architecture reference](../architecture.md#browser-and-runtime-ownership) for the current ownership inventory.
 
@@ -12,14 +15,42 @@ refactoring plan, and it should not be mixed with UI extraction or source-layout
 
 ### Done
 
-- Repo search completed on 2026-10-04.
-- No existing IRIS APK plan, Capacitor config, Cordova config, native Android module, or Android build script was found
-  under `apps/iitc-iris`, `packages`, or `docs/iitc-iris`.
+- 0.3.6 replaces CARTO Dark/Light with keyless OpenFreeMap styles through MapLibre’s Leaflet binding.
+  The worker is bundled in both extension and APK; saved preferences migrate. Real-tile browser switching,
+  pan/zoom, map replacement, and cross-origin worker checks pass. The user tested XPI and APK and reported
+  both look fine (2026-10-21).
+
+- 0.3.5 fixes player-tracker shadow hit interception and retains marker identity through COMM refreshes.
+  Browser reproduction and three regression tests pass. The user confirmed popup opening in both XPI and APK
+  (2026-10-21); history-link behavior was not separately reported.
+
+- The initial 2026-10-04 search found no native Android app. A disposable login shell has now been added; no permanent
+  IRIS Android scaffold exists yet. Version 0.3.0 adds automatic signed-in injection and wrapper hardening in the disposable shell.
+- Merge checkpoint complete: PR #1, main CI, and latest-extension publishing passed.
+- Debug APK assembly, Android lint, 27 native tests, 13 session/injection tests, APK signature verification,
+  and the local artifact download routes pass. Existing extension checks (528 tests) and packaging also pass.
+  Phone installation passed; the first login test opened Chrome and returned to the login page.
+  The shell embeds the previously missing `login.ingress.com` host. Version 0.1.1 diagnostics confirmed
+  `accounts.google.com` was the remaining external handoff; 0.1.2 tests IITC-style embedded Google login.
+  Version 0.1.2 phone test: account selection stayed in the app; a reported HTTP 400 / malformed-URL error
+  preceded recovery using the Intel button, then the stock map loaded and Check session reported PASS.
+  Saved-password selection did not work. Version 0.1.3 phone retest reached the stock Intel map while staying
+  in the app and stayed logged in after force-stop/reopen. Version 0.2.0 displayed IRIS on the phone; the user
+  accepted a quick smoke test of inventory, layers, COMM, portal details, and missions. The native round-trip
+  PASS label was not separately reported; functional UI/runtime communication was exercised by the smoke test.
+- Targeted IITC mobile prior-art review completed for the login shell: WebView settings, navigation, cookie lifecycle,
+  and user-agent handling. The [spike README](../../../apps/android-intel-spike/README.md) records adopted/rejected patterns.
 - Reference IITC-CE Android prior art exists under `reference/IITC-CE/mobile/` and
   `reference/ingress-intel-total-conversion/mobile/`.
 - First target decided: private/friends sideloadable APK. Store/Play distribution is deferred.
 - Browser boundary owners are inventoried in the architecture reference: assets, injection/messaging, clipboard, geolocation,
-  preferences, runtime caches, and Intel authentication. Android replacements are not implemented.
+  preferences, runtime caches, and Intel authentication. The spike now replaces asset loading and hosts the
+  existing page messages. Phone clipboard copying passed for markers and portal titles through the existing web path.
+  Location reported permission denied on 0.3.0 because it was disabled. Version 0.3.1 adds on-demand foreground
+  coarse/fine Android permission and an Intel-only WebView handler, with cancellation on navigation/disposal;
+  approximate access is accepted and no separate WebView grant is persisted. The user confirmed prompts,
+  permission acceptance, and successful positioning on phone (2026-10-21).
+  Other Android platform replacements remain unimplemented.
 - Shared asset URL resolution and map disposal are implemented. Automated checks pass (517 tests, workbench checks,
   CSS lint, and extension packaging); the user reported the cleanup smoke test passed on 2026-10-20.
 - Current IRIS packaging is browser-extension packaging only:
@@ -28,23 +59,62 @@ refactoring plan, and it should not be mixed with UI extraction or source-layout
 
 ### In Progress
 
-- None. Finish the merge checkpoint, then begin Android work on a separate branch.
+- Location denial failed on 0.3.3: after reinstalling and denying two prompts, Locate caused status-bar flicker and
+  app closure. No device crash trace is available. Version 0.3.4 hardens denial retention, suppresses automatic and
+  permanently-denied Android retries, drops cancelled callbacks, and adds request-count diagnostics. The user
+  received one prompt, denied it, and saw permission denied on 0.3.4. A second Locate produced one prompt; after
+  denying again, further taps stopped prompting. Enabling location including precise access in Android settings
+  restored successful positioning. The reported denial regression passed the phone retest; its original crash mechanism
+  was not established from a device trace.
+
+- Fresh-install/other-account regression: Google handed off to external `accounts.google.nl`, followed by HTTP 400.
+  Version 0.3.3 replaces individual Google host additions with 187 exact account hosts derived from
+  [Google’s supported-domain list](https://www.google.com/supported_domains), verified 2026-10-21 and pinned with
+  a source hash. All entries/boundaries are tested; the user confirmed 0.3.3 works, with location and clipboard
+  still working. Individual regional login flows have not all been exercised.
+
+- Version 0.3.1 location prompts, permission acceptance, and successful positioning passed on phone.
+  Denial/retry and precise-location recovery passed on 0.3.4; approximate-only access and navigation/rotation cancellation remain unreported.
+
+- Version 0.3.0 adds automatic signed-in injection, exact stock-dashboard entry interception, persistent IRIS/Stock Intel
+  modes, Back through image/panel/selection before backgrounding, and timer/probe pause/resume. On 2026-10-21 the user
+  confirmed both modes persist across close/reopen, IRIS starts again, and Diagnostics shows stock dashboard blocked.
+  The user also confirmed Back closes a panel, rotation follows the phone, and Reload restores the open panel.
+  Background/resume responsiveness was subsequently confirmed. Back from image/selection/plain map remains unreported;
+  no privileged bridge is added.
+- Version 0.1.3 keeps the exact `accounts.google.com` and `accounts.youtube.com` hosts embedded and tests IITC-style
+  user-agent rewriting. A repeated 0.1.2 test identified `accounts.youtube.com` as the remaining external handoff;
+  0.1.3 corrects its routing; the user confirmed sign-in stayed in the app and reached the stock map.
+  This is an unsupported compatibility experiment under Google’s embedded-user-agent restrictions, not a permanent
+  auth decision. Login persisted across force-stop/relaunch on 0.1.3. Google Password Manager autofill remains
+  unresolved. No 400 was reported in the latest successful sign-in.
 
 ### Immediate Next Work
 
-Combine the targeted IITC mobile prior-art check and remaining Android boundary decisions with one small, real-device
-login/session and injection spike (assignments 2–5). Prove Intel authentication/session persistence, an authenticated
-request, bundled IRIS asset loading, and a message round trip before growing a permanent Android app. Reuse the ownership
-inventory already completed; investigate only the Android replacements and unknowns.
+The feasibility spike is complete for the tested paths: login/persistence, bundled IRIS and runtime communication,
+stock-dashboard blocking/recovery, panel Back, rotation/reload, background/resume, clipboard, and location including
+repeated denial and precise-location recovery. Promote the existing wrapper into the permanent project; update
+names/scripts and move test controls behind accessible diagnostics/recovery UI. Carry the Google login compatibility
+workaround and unresolved password-manager support forward explicitly; this conclusion is not production-auth approval.
+Draw Tools currently exchanges JSON through text/clipboard; no file picker/download UI exists, so native file
+import/export is deferred capability work rather than an existing-feature spike acceptance test.
+
+Location success, repeated denial, and precise-location recovery passed on phone. Keep approximate-only access
+and navigation/rotation cancellation in future device regression checks; see the spike README.
+
+The main 0.3.0 [spike](../../../apps/android-intel-spike/README.md) wrapper smoke passed: startup after reopen,
+stock-dashboard blocking, panel Back, rotation, restoring the open panel after Reload, and background/resume responsiveness.
+Keep Back from image/selection/plain map in future device regression checks. Carry outstanding platform capabilities
+and auth-policy decisions into permanent packaging; reuse the existing ownership inventory.
 
 If Intel uses Google OAuth, account for its
 [embedded-user-agent restrictions](https://developers.google.com/identity/protocols/oauth2/policies#use-secure-browsers).
 Validate the supported sign-in/session path before choosing the wrapper. A disposable spike shell is allowed; the
-permanent app scaffold still waits for the authentication and injection proofs.
+working compatibility proof can be promoted while the permanent authentication decision remains explicitly open.
 
 ### Todo
 
-- Prove that IRIS can run inside the chosen Android shell before moving feature code.
+- Promote the tested shell while preserving its known authentication and platform limits.
 - Audit and adapt extension-only assumptions.
 - Bring forward the release/mobile must-haves from `../port-plan.md` and `../backlog.md`.
 - Create signing, permissions, privacy, and release documentation before any release build.
@@ -55,8 +125,12 @@ IRIS is currently a Manifest V3 content-script extension. It injects `content.js
 `https://intel.ingress.com/*`, exposes `page-map-runtime.js` as a web-accessible resource, and packages Chrome/Firefox
 extension zips through Vite scripts.
 
-No IRIS Android app currently exists. A direct APK build cannot be produced from the current `apps/iitc-iris` package
-without adding a native Android wrapper or a web-app packaging path.
+A disposable native Intel login test now exists in `apps/android-intel-spike`. It produces a debug-signed APK through
+`npm run android:build` / `npm run android:check`; `npm run serve` lists local XPI, ZIP, and APK downloads.
+`npm run android:serve` remains an alias; default port is 6969.
+Version 0.3.0 bundles existing IRIS assets and injects them automatically on signed-in Intel in IRIS mode. Local asset interception
+is restricted to `/__iris_android__/`; the shared asset resolver accepts an explicit host base, and the runtime
+keeps its existing script-relative image URLs. Permanent Android packaging remains undecided.
 
 The reference IITC-CE mobile app is native Android/WebView prior art, not an IRIS implementation. It uses an Android
 Gradle project, `org.exarhteam.iitc_mobile`, a WebView activity, native permissions, signing configs, and Android
@@ -142,10 +216,10 @@ their individual evidence and stop conditions.
 | # | Assignment | Status | Done When |
 | --- | --- | --- | --- |
 | 1 | Distribution decision | Done | First target is private/friends sideload APK; Play/store distribution is deferred. |
-| 2 | Android prior-art audit | Todo | Reference IITC mobile files are summarized into reusable patterns and rejected patterns. |
+| 2 | Android prior-art audit | Partial: targeted auth-shell review complete | Reference IITC mobile files are summarized into reusable patterns and rejected patterns. |
 | 3 | Runtime boundary audit | Partial: browser owners inventoried | Every extension-only assumption has an owner, replacement, or explicit non-goal. |
-| 4 | WebView auth spike | Todo | A minimal Android/WebView shell can load Intel, authenticate, and observe required cookies/tokens. |
-| 5 | IRIS injection spike | Todo | A minimal IRIS bundle can load in the shell and exchange one map/runtime message. |
+| 4 | WebView auth spike | Phone login/persistence passed on 0.1.3; earlier request PASS; compatibility policy unresolved | A minimal Android/WebView shell can load Intel, authenticate, and observe required cookies/tokens. |
+| 5 | IRIS injection spike | Phone UI/feature smoke accepted on 0.2.0; native PASS label not separately reported | A minimal IRIS bundle can load in the shell and exchange one map/runtime message. |
 | 6 | Storage and asset strategy | Todo | Local storage, bundled assets, fixture paths, icons, imports/exports, and cache behavior are defined. |
 | 7 | Permission, privacy, and release-readiness audit | Todo | Android permissions plus backlog must-haves are listed and minimized. |
 | 8 | Android project scaffold | Todo | Native project exists only after assignments 4 and 5 pass. |
@@ -335,8 +409,8 @@ Deferred until later:
 ## Validation Rules
 
 - Do not start feature parity work inside Android until assignments 4 and 5 pass.
-- Do not block APK readiness on more UI component extraction. Reopen
-  `ui-component-library-plan.md` only for a concrete mobile/accessibility/CSS drift bug that needs a shared component.
+- Do not block APK readiness on more UI component extraction. Reopen shared UI only for a concrete mobile,
+  accessibility, or CSS drift finding; follow [the architecture reference](../architecture.md).
 - Do not create release signing material in this repo unless the storage policy is written first.
 - Do not claim "APK ready" until an APK installs and runs on a real device.
 - Keep Android work separate from UI extraction/source-layout cleanup.

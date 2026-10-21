@@ -57,10 +57,23 @@ describe('content-storage-settings', () => {
   });
 
   it('loads default base layer and layer settings when storage is empty', () => {
-    expect(loadStoredBaseLayerId()).toBe('cartodb-dark-matter');
+    expect(loadStoredBaseLayerId()).toBe('openfreemap-dark');
     expect(loadStoredLayerSettings()).toEqual(DEFAULT_LAYER_SETTINGS);
     expect(loadStoredLifecycleSettings()).toEqual({ iitcMovementDelay: false });
     expect(loadStoredCommTab()).toBe('all');
+  });
+
+  it('migrates CARTO preferences while retaining OSM and new OpenFreeMap choices', () => {
+    for (const [saved, expected] of [
+      ['cartodb-dark-matter', 'openfreemap-dark'],
+      ['cartodb-positron', 'openfreemap-positron'],
+      ['osm', 'osm'],
+      ['openfreemap-positron', 'openfreemap-positron'],
+      ['unknown', 'openfreemap-dark'],
+    ]) {
+      window.localStorage.setItem('iitc-iris:base-layer', saved);
+      expect(loadStoredBaseLayerId()).toBe(expected);
+    }
   });
 
   it('persists and loads layer settings correctly', () => {

@@ -1,3 +1,5 @@
+import {DEFAULT_BASE_LAYER_ID, normalizeBaseLayerId} from '../map/layers/base-layer-settings';
+export {isBaseLayerId} from '../map/layers/base-layer-settings';
 import {getExtensionUrl} from '../platform/assets';
 import { DEFAULT_LAYER_SETTINGS } from '../map/layers/layer-registry';
 import { normalizePortalHighlighterId } from '../map/layers/highlighter-registry';
@@ -142,16 +144,12 @@ export function storeMapView(view: StoredMapView): void {
   }
 }
 
-export function isBaseLayerId(value: string | null): value is IitcIrisBaseLayerId {
-  return value === 'osm' || value === 'cartodb-dark-matter' || value === 'cartodb-positron';
-}
-
 export function loadStoredBaseLayerId(): IitcIrisBaseLayerId {
   try {
     const value = getLocalStorage()?.getItem(BASE_LAYER_STORAGE_KEY);
-    return isBaseLayerId(value ?? null) ? (value as IitcIrisBaseLayerId) : 'cartodb-dark-matter';
+    return normalizeBaseLayerId(value);
   } catch {
-    return 'cartodb-dark-matter';
+    return DEFAULT_BASE_LAYER_ID;
   }
 }
 

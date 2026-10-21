@@ -1,0 +1,26 @@
+<resources>
+    <string name="app_title">IRIS Android · wrapper test</string>
+    <string name="open_intel">Stock Intel</string>
+    <string name="reload">Reload</string>
+    <string name="check_session">Check session</string>
+    <string name="load_iris">IRIS</string>
+    <string name="iris_not_loaded">IRIS has not been loaded on this page.</string>
+    <string name="iris_loading">Loading IRIS…</string>
+    <string name="iris_timeout">IRIS timed out. Tap IRIS to retry, or Stock Intel to recover.</string>
+    <string name="diagnostics">Diagnostics</string>
+    <string name="loading">Loading %1$s…</string>
+    <string name="loaded">Loaded %1$s.</string>
+    <string name="load_failed">Page failed to load (%1$d). Check your connection and tap Reload.</string>
+    <string name="http_failed">Page returned HTTP %1$d. Tap Reload to retry.</string>
+    <string name="intel_required">Open Intel and finish loading before checking the session.</string>
+    <string name="checking">Checking Intel session…</string>
+    <string name="check_timeout">Session check timed out. Wait for Intel to finish loading, then retry.</string>
+    <string name="probe_failed">The session check could not start. Reload Intel and retry.</string>
+    <string name="not_checked">Session has not been checked.</string>
+    <string name="browser_opened">External link opened in your browser.</string>
+    <string name="browser_unavailable">No browser is available to open this HTTPS link.</string>
+    <string name="blocked_navigation">This link cannot open in the test app. Return to Intel to continue.</string>
+    <string name="diagnostic_text">IRIS Intel test %1$s\nAndroid: %2$s\nWebView: %3$s\nPage host: %4$s\nPage: %5$s\nSession: %6$s\nLast external host: %7$s\nIRIS: %8$s\nMode: %9$s\nStock dashboard: %10$s\nLocation permission: %11$s\nAndroid location requests: %12$d\n\nIRIS mode starts automatically on signed-in Intel and prevents the stock dashboard runtime from loading. Stock Intel restores the original page; Reload keeps the selected mode. Google sign-in stays in this WebView using the IITC-style user-agent compatibility workaround. This is an experiment, not a supported Google OAuth integration. No cookies, tokens, player identity, or request bodies are included here.</string>
+    <string name="copy">Copy</string>
+    <string name="copied">Diagnostics copied</string>
+</resources>

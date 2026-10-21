@@ -5,8 +5,8 @@
   "description": "IITC-parity IRIS track with Leaflet rendering",
   "host_permissions": [
     "https://intel.ingress.com/*",
-    "https://*.basemaps.cartocdn.com/*",
-    "https://*.tile.openstreetmap.org/*"
+    "https://tiles.openfreemap.org/*",
+    "https://tile.openstreetmap.org/*"
   ],
   "content_scripts": [
     {
@@ -18,7 +18,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["page-map-runtime.js", "leaflet.css", "images/*.png"],
+      "resources": ["page-map-runtime.js", "maplibre-worker.cjs", "leaflet.css", "images/*.png"],
       "matches": ["https://intel.ingress.com/*"]
     }
   ],

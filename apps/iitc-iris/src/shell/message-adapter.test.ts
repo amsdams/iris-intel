@@ -94,7 +94,7 @@ function createEntityFetchState(): EntityFetchState {
     renderMutation: null,
     timing: null,
     playerTracker: null,
-    baseLayerId: 'cartodb-dark-matter',
+    baseLayerId: 'openfreemap-dark',
     dataSource: {mode: 'live'},
     highlighterSettings: {active: 'none'},
     highlighterIds: [],
@@ -137,7 +137,7 @@ describe('IITC IRIS content message adapter', () => {
     const camera: CameraState = {lat: 52, lng: 4, zoom: 15, bounds: null};
     const context: IitcIrisContentMessageContext = {
       activeSidePanel: null,
-      baseLayerId: 'cartodb-dark-matter',
+      baseLayerId: 'openfreemap-dark',
       cameraZoom: camera.zoom,
       dataSource: {mode: 'live'},
       highlighterSettings: {active: 'none'},

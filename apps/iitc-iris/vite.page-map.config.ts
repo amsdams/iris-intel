@@ -2,6 +2,11 @@ import {defineConfig} from 'vite';
 import {resolve} from 'path';
 
 export default defineConfig({
+  base: './',
+  worker: {
+    format: 'iife',
+    rollupOptions: {output: {entryFileNames: 'maplibre-worker.cjs'}},
+  },
   resolve: {
     alias: {
       '@iris/iitc-core': resolve(__dirname, '../../packages/iitc-core/src'),
