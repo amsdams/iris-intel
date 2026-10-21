@@ -13,6 +13,7 @@ export * from './ornaments';
 export * from './inventory';
 export * from './missions';
 export * from './draw-tools';
+export * from './cross-links';
 export * from './portal-analysis';
 export * from './portal-link-navigation';
 export * from './request-diagnostics';

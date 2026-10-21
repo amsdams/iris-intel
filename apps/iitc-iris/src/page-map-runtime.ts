@@ -81,6 +81,7 @@ import {
   resolveIitcPendingPortalSelection,
   serializeIitcDrawToolsLayer,
   summarizeIitcInventory,
+  testPolyLine,
   planIitcCommRequest,
   applyIitcCommResponse,
   createIitcCommAuthState,
@@ -1032,50 +1033,6 @@ function getIitcDrawToolsItemDistanceMeters(item: IitcDrawToolsItem, lat: number
   return closest;
 }
 
-function getIitcSegmentBounds(
-  a: {lng: number; lat: number},
-  b: {lng: number; lat: number},
-): {minLng: number; minLat: number; maxLng: number; maxLat: number} {
-  return {
-    minLng: Math.min(a.lng, b.lng),
-    minLat: Math.min(a.lat, b.lat),
-    maxLng: Math.max(a.lng, b.lng),
-    maxLat: Math.max(a.lat, b.lat),
-  };
-}
-
-function iitcSegmentBoundsOverlap(
-  a: {minLng: number; minLat: number; maxLng: number; maxLat: number},
-  b: {minLng: number; minLat: number; maxLng: number; maxLat: number},
-): boolean {
-  return a.minLng <= b.maxLng &&
-    a.maxLng >= b.minLng &&
-    a.minLat <= b.maxLat &&
-    a.maxLat >= b.minLat;
-}
-
-function iitcSegmentsIntersect(
-  a: {lng: number; lat: number},
-  b: {lng: number; lat: number},
-  c: {lng: number; lat: number},
-  d: {lng: number; lat: number},
-): boolean {
-  const denominator = ((a.lng - b.lng) * (c.lat - d.lat)) - ((a.lat - b.lat) * (c.lng - d.lng));
-  if (Math.abs(denominator) < 1e-12) return false;
-
-  const t = (((a.lng - c.lng) * (c.lat - d.lat)) - ((a.lat - c.lat) * (c.lng - d.lng))) / denominator;
-  const u = -(((a.lng - b.lng) * (a.lat - c.lat)) - ((a.lat - b.lat) * (a.lng - c.lng))) / denominator;
-  return t > 0 && t < 1 && u > 0 && u < 1;
-}
-
-function getIitcDrawToolsGeodesicSegments(latLngs: readonly {lat: number; lng: number}[]): {a: {lat: number; lng: number}; b: {lat: number; lng: number}}[] {
-  const points = convertIitcGeodesicLatLngs(latLngs.map((latLng) => [latLng.lat, latLng.lng]));
-  return points.slice(1).map((latLng, index) => ({
-    a: {lat: points[index].lat, lng: points[index].lng},
-    b: {lat: latLng.lat, lng: latLng.lng},
-  }));
-}
-
 function snapIitcDrawToolsToPortals(): void {
   const map = window.__iitcIrisMap;
   if (!map || !latestEntities) {
@@ -1335,24 +1292,16 @@ function renderIitcDrawToolsCrossings(items: readonly IitcDrawToolsItem[]): void
   const layers = ensureLayers();
   if (!latestEntities || !layerSettings.drawnLinks || !layerSettings.links) return;
 
-  const drawnSegments = items
-    .filter((item): item is IitcDrawToolsPolyline => item.type === 'polyline')
-    .flatMap((item) => getIitcDrawToolsGeodesicSegments(item.latLngs));
-  if (drawnSegments.length === 0) return;
+  const polylines = items.filter((item): item is IitcDrawToolsPolyline => item.type === 'polyline');
+  if (polylines.length === 0) return;
 
   const crossingLinkGuids = new Set<string>();
   for (const link of latestEntities.links) {
     if (!isLinkVisible(link)) continue;
-    const linkSegments = getIitcDrawToolsGeodesicSegments([
+    if (polylines.some((item) => testPolyLine(item.latLngs, [
       {lat: link.oLatE6 / 1_000_000, lng: link.oLngE6 / 1_000_000},
       {lat: link.dLatE6 / 1_000_000, lng: link.dLngE6 / 1_000_000},
-    ]);
-    if (drawnSegments.some((drawnSegment) => (
-      linkSegments.some((linkSegment) => (
-        iitcSegmentBoundsOverlap(getIitcSegmentBounds(drawnSegment.a, drawnSegment.b), getIitcSegmentBounds(linkSegment.a, linkSegment.b)) &&
-        iitcSegmentsIntersect(drawnSegment.a, drawnSegment.b, linkSegment.a, linkSegment.b)
-      ))
-    ))) {
+    ]))) {
       crossingLinkGuids.add(link.guid);
     }
   }

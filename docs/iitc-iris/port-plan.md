@@ -104,6 +104,13 @@ Dark/Positron through MapLibre’s Leaflet binding. This changes basemap cartogr
 overlay, and interaction ownership; OSM remains available. Preference migration and real-tile browser checks pass.
 The user tested the updated XPI and APK and reported both look fine (2026-10-21).
 
+Cross Links correction (2026-10-21): port `cross-links.js` whole-arc classification and tolerant shared-anchor
+checks into pure core helpers, replacing IRIS's sampled planar intersections. Intentional delta: omit the upstream
+raw-longitude rejection and recognize equivalent wrapped endpoints so crossings across the antimeridian work.
+Compare the focused fixtures with upstream: ordinary/shared-anchor results should agree; wrapped cases reproduce
+and correct the reference limitation. Rendering, visible-link filtering, and runtime ownership remain unchanged;
+snapping stays parked with its existing IITC-compatible viewport/nearest-portal behavior. See [Draw Tools](features/draw-tools.md).
+
 ## Documentation Layout
 
 Feature details have been split out of this entry point so the current truth is easier to scan:

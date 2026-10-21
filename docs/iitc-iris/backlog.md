@@ -98,6 +98,17 @@ geodesic rendering.
 
 ## Release And Quality Backlog
 
+- Firefox distribution: the current XPI is an unsigned development archive. Before offering persistent installation
+  in ordinary Firefox Release/Beta, add Mozilla signing (listed or unlisted); decide extension version/update
+  delivery separately from stable GitHub artifact names. APK signing does not sign the XPI. See
+  [Mozilla signing requirements](https://extensionworkshop.com/documentation/publish/signing-and-distribution-overview/).
+- Message boundary: `event.source === window` excludes other windows but does not authenticate other scripts in the
+  Intel page. Keep credentials out of the protocol; add payload guards/stronger message types when changing
+  consequential paths. An explicit target origin can restrict delivery but cannot isolate same-page scripts.
+  No exploit was demonstrated by the 2026-10-21 source review; a wholesale protocol rewrite is not queued.
+- CI hardening alongside workflow changes: withhold signing-secret values from unsigned calls or separate trusted
+  signing from PR validation; consider pinning third-party actions to reviewed commit SHAs before wider distribution.
+  The current unsigned path does not consume signing secrets; no leak was established by the review.
 - Mobile ergonomics pass: check sheet height, sticky headers/footers, map gestures, long-press conflicts, keyboard
   shortcuts on mobile browsers, and whether dense panels remain usable in portrait.
 - Accessibility baseline: verify focus order, Escape behavior, button labels/titles, reduced-motion expectations, and

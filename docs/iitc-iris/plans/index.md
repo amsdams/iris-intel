@@ -14,16 +14,27 @@ The retained ownership rules and known limits are in [Application Architecture](
 
 ## Next Session Handoff
 
+**Draw Tools crossing repair (2026-10-21):** classification now ports IITC's whole-arc `crossLinks` helpers into core,
+fixing shared-anchor false positives, antimeridian misses, and misses at generated rendering vertices. Twelve focused
+regressions and full app/core checks (546 tests), CSS/workbench, and extension packaging pass. Reference comparison
+agreed on 5,000 ordinary/shared-anchor/degenerate fixtures; antimeridian handling is an explicit corrected divergence.
+Signed Android release tests/lint/build pass; certificate pin, embedded assets, and local download checks pass.
+Fresh ZIP/XPI and signed APK are available via `npm run serve`. The user smoke-tested the shared-anchor false-positive
+fix and reported improvement (2026-10-21); that case is accepted. Platform and genuine-crossing/antimeridian live
+checks were not separately reported; those cases have automated coverage.
+Snapping remains intentionally hidden and unchanged. See [Draw Tools](../features/draw-tools.md).
+
 **Manual APK updates (0.4.1-alpha):** App → Check for updates fetches public metadata from the `latest` GitHub
 release, compares Android version codes, and reports newer/current/failure. App → Releases opens that release directly.
 Checks run off the UI thread with timeouts and response-size limits; dismissal/destruction cancels the task and
 ignores stale results. No WebView cookies, account details, background polling, or automatic APK downloads are used.
-CI publishes metadata generated from the assembled APK alongside the signed artifact. The first published build
-with metadata and the native dialogs still need phone/CI acceptance. Local validation passed: 534 app/core tests,
+CI publishes metadata generated from the assembled APK alongside the signed artifact. The user confirmed
+**Check for updates works on the phone (2026-10-21)**; the update-check smoke is accepted. Local validation passed: 534 app/core tests,
 packaging, 31 native + 15 JavaScript tests, Android release lint/build, workflow YAML parsing, and APK signature/download
 checks. Generated metadata matches the assembled APK (`0.4.1-alpha+948061e`, version code 1832).
-At local verification, the public metadata URL returned 404; CI publication and the resulting phone update check
-remain to be verified. The user has since shared the app via Telegram.
+At earlier local verification, the public metadata URL returned 404; the subsequent successful phone check
+supersedes that pending acceptance. Individual newer/current/failure outcomes were not separately reported.
+The user has shared the app via Telegram.
 
 **Friends alpha (0.4.0-alpha, 2026-10-21):** launcher name IRIS, compact native App menu, About/Privacy/Feedback,
 Reload, Recovery, and Diagnostics; successful startup hides the temporary status line. Existing app ID and signing
@@ -119,6 +130,29 @@ The restored download server also passed live artifact/hash, HEAD, missing-build
 rejection checks. No further generic CSS/component cleanup is queued.
 
 ## Next Work
+
+**Review follow-ups (2026-10-21), in order:**
+
+1. **Release workflow consistency:** `android.yml` defaults checkout to `github.ref`, while the extension build
+   uses the triggering commit. Default Android to `${{ inputs.ref || github.sha }}` so rerunning an old main build
+   cannot combine artifacts from different commits; preserve explicit tag inputs. Move tag/package/manifest version
+   validation ahead of both release builds, including signing. Verify matching source commits and rejection of a
+   mismatched version before signing. These are source-inspection findings; no failed CI run was reproduced.
+2. **Base-map recovery:** extend the existing OpenFreeMap resilience follow-up with deliberate style/network and
+   WebGL failure checks. Recover to OSM with a clear notice; prevent stale failures from overriding a newer user
+   selection, avoid retry loops, and verify cleanup/map replacement and phone background/resume. OSM is currently
+   a manual alternative; no automatic recovery or observed outage is claimed. This concerns base-map tiles, not
+   Intel portal/entity requests.
+3. **Focused map-runtime decomposition:** review request coordination and overlay rendering as extraction candidates
+   from `page-map-runtime.ts`; choose cohesive ownership boundaries rather than a line-count target. Preserve
+   request generations, cancellation, cache behavior, map replacement, event cleanup, and existing appearance.
+   Use plain runtime controllers/functions, with meaningful lifecycle regressions and XPI/APK smoke checks.
+   No broader component/CSS refactor is needed.
+
+Additional distribution and message-boundary notes are retained in the [backlog](../backlog.md#release-and-quality-backlog).
+These notes stand alone; the temporary `review-xpi-cicd.md` can be deleted.
+
+**Existing acceptance and regression checks:**
 
 1. Grouped player-marker smoke is accepted. Keep history/back and faction counts in routine regression checks;
    nearby overlapping portals remain a separate decision.
