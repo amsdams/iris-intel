@@ -62,6 +62,9 @@ npm run package
 - `npm run dev:wb`: open the component workbench through Vite; `npm run build:wb` builds it separately.
 - `npm run build`: check the core build and produce the unpacked extension.
 - `npm run check`: lint, typecheck, and test both workspaces (including workbench sources), lint CSS, and build the workbench.
+- `npm run test:browser`: build IRIS and run three browser smoke tests using installed Google Chrome.
+  Use `npm run test:browser:watch` to watch the browser, and `npm run test:browser:report` to inspect results/screenshots.
+  See [browser smoke tests](tests/browser/README.md) for scope and setup; these run separately from `npm run check`.
 - `npm run lint`: lint both workspaces and application CSS.
 - `npm run package` / `npm run release`: build Chrome ZIP and Firefox XPI artifacts locally; these do not publish.
 - `npm run serve`: browse/download local Firefox XPI, Chrome ZIP, and Android APK builds at `http://localhost:6969`.

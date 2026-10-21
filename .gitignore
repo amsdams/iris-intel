@@ -63,3 +63,5 @@ pnpm-debug.log*
 /tmp/markers-and-links.json
 /apps/iitc-iris/builds/
 /apps/iitc-iris/dist/
+/playwright-report/
+/test-results/

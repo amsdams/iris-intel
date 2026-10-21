@@ -1,7 +1,3 @@
-.iitc-iris-button:where(.iitc-iris-portal-action) {
-    border-radius: var(--iitc-iris-radius-control);
-}
-
 :where(.iitc-iris-portal-action) {
     min-width: 0;
     padding: var(--iitc-iris-control-padding);

@@ -1,6 +1,7 @@
-/* Shared interaction defaults; each button family owns its shape and skin. */
+/* Shared interaction defaults and corner radius; each button family owns its skin. */
 .iitc-iris-button {
     appearance: none;
+    border-radius: var(--iitc-iris-radius-control);
     cursor: pointer;
 }
 

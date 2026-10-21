@@ -2,6 +2,7 @@ import {Button} from '../../ui/button';
 import {h} from 'preact';
 import '../../ui/panel/panel.css';
 import '../../ui/shared/layer-toggle.css';
+import '../../ui/shared/input-surface.css';
 import '../../map/source-toggle.css';
 import './system-actions.css';
 import '../system.css';
@@ -85,6 +86,8 @@ export function IitcIrisSystemControlsPanel({
   dataSourceId,
   setDataSource,
 }: IitcIrisSystemControlsPanelProps): h.JSX.Element {
+  const canJump = Boolean(viewInput.trim());
+
   return (
     <>
       <Section titleHeading="Account">
@@ -143,18 +146,18 @@ export function IitcIrisSystemControlsPanel({
           className="iitc-iris-jump"
           onSubmit={(event) => {
             event.preventDefault();
-            jumpToViewInput();
+            if (canJump) jumpToViewInput();
           }}
         >
           <TextInput
-            className="iitc-iris-jump-input"
+            className="iitc-iris-input-surface iitc-iris-jump-input"
             type="text"
             value={viewInput}
             onInput={(event) => setViewInput((event.currentTarget as HTMLInputElement).value)}
             placeholder="lat,lng,z or Intel URL"
             title="Paste lat,lng,z or an Intel URL with ll, pll, and optional z"
           />
-          <Button className="iitc-iris-preset" type="submit">Jump</Button>
+          <ActionButton type="submit" disabled={!canJump}>Jump</ActionButton>
           {viewInputStatus && <StatusText>{viewInputStatus}</StatusText>}
         </form>
       </Section>

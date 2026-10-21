@@ -6,7 +6,7 @@ export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement
   type?: 'button' | 'submit' | 'reset';
 }
 
-/** Native button with shared interaction defaults; callers own its visual style. */
+/** Native button with shared interaction defaults and radius; callers own its skin. */
 export function Button({children, className, type = 'button', ...props}: ButtonProps): h.JSX.Element {
   return (
     <button type={type} className={`iitc-iris-button ${className || ''}`.trim()} {...props}>

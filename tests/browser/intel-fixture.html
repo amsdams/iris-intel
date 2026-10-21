@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="iitc-iris-asset-base" content="http://127.0.0.1:6973/">
+  <title>IRIS browser smoke — simulated Intel</title>
+  <link rel="stylesheet" href="/leaflet.css">
+  <style>
+    /* Representative host defaults that previously overrode IRIS light inputs. */
+    input[type="text"], input[type="email"], input[type="submit"] {
+      background: #000;
+      border: 1px solid #59fbea;
+      border-radius: 0;
+      font-family: Arial, sans-serif;
+    }
+    html, body { margin: 0; height: 100%; }
+  </style>
+  <link rel="stylesheet" href="/iitc-iris.css">
+</head>
+<body>
+  <script>
+    // Seed only missing preferences, so reload exercises real persistence.
+    if (!localStorage.getItem('iitc-iris:base-layer')) localStorage.setItem('iitc-iris:base-layer', 'osm');
+    if (!localStorage.getItem('iitc-iris:map-view')) {
+      localStorage.setItem('iitc-iris:map-view', JSON.stringify({lat: 52, lng: 4, zoom: 16}));
+    }
+    window.PLAYER = {nickname: 'SmokeTest'};
+    window.niantic_params = {CURRENT_VERSION: 'smoke-test'};
+    document.cookie = 'csrftoken=smoke-test';
+    window.fetch = async url => {
+      if (String(url).includes('getPlexts')) return Response.json({result: []});
+      if (String(url).includes('getEntities')) return Response.json({result: {map: {}}});
+      return Response.json({result: false});
+    };
+  </script>
+  <script src="/content.js"></script>
+</body>
+</html>

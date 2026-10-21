@@ -18,6 +18,9 @@
     "lint:css": "stylelint 'apps/iitc-iris/**/*.css'",
     "lint:css:fix": "stylelint 'apps/iitc-iris/**/*.css' --fix",
     "test": "npm run test --workspaces --if-present",
+    "test:browser": "playwright test",
+    "test:browser:watch": "playwright test --headed",
+    "test:browser:report": "playwright show-report",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "package": "npm run package -w apps/iitc-iris",
     "package:iitc-iris": "npm run package",
@@ -31,6 +34,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.64.1",
     "@types/chrome": "^0.1.43",
     "@types/node": "^24.19.2",
     "eslint": "^10.13.0",

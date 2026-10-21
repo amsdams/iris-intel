@@ -74,6 +74,14 @@ compose it. Table supplies native table/container composition without domain beh
 custom properties instead of requiring callers to target its inner markup. Native HTML remains appropriate when a
 shared component would add no useful contract. Inventory uses separate rarity/level badges, type labels, and item counts.
 
+Single-field forms keep native `<form>` submission and use ActionButton for their submit action, aligned to the
+adjacent input's height. Disable submission for empty/whitespace-only required input and while the action is busy;
+use the same eligibility rule in the submit handler so keyboard submission cannot bypass it. Keep format validation
+and error feedback in the feature. Review empty, ready, busy (where applicable), and error states in both UI themes;
+matching components alone does not guarantee matching state behavior. No shared form component is required.
+For relevant UI changes, also run `npm run test:browser`; the [browser smoke suite](../../tests/browser/README.md)
+checks theme persistence, shared field/action styling, and Jump submission behavior using simulated Intel data.
+
 ## Browser And Runtime Ownership
 
 | Boundary | Current owner / decision |
