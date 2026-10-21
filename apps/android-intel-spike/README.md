@@ -1,6 +1,6 @@
 # IRIS Android Spike APK
 
-Disposable native Android/WebView proof on `feature/android-readiness`. Version **0.3.7-spike** loads bundled IRIS automatically on signed-in Intel,
+Disposable native Android/WebView proof, now merged into `main`. Version **0.3.7-spike** loads bundled IRIS automatically on signed-in Intel,
 with a stock-Intel recovery mode. Phone confirmed mode persistence, IRIS startup after reopen, and stock-dashboard
 blocking on 0.3.0. Panel Back, rotation, restoring the open panel after Reload, and background/resume also passed.
 Version 0.3.1 location prompt, permission acceptance, and successful positioning passed on phone.
@@ -44,6 +44,7 @@ Signing uses a dedicated key in GitHub repository secrets: `ANDROID_SIGNING_KEYS
 `ANDROID_SIGNING_STORE_PASSWORD`, `ANDROID_SIGNING_KEY_ALIAS`, and `ANDROID_SIGNING_KEY_PASSWORD`.
 The private local backup is the ignored `signing/` directory, including `release.env`; back up the whole directory
 securely. It is not included in artifacts or Git. The public certificate digest is pinned in `release-certificate.sha256`.
+The user confirmed the signing directory is backed up (2026-10-21); restoration has not been tested.
 Do not replace the key: Android requires it to update existing installations. Preserve the application ID
 `org.iris.intelspike` during later project promotion if installed releases must continue receiving updates.
 
@@ -62,7 +63,8 @@ release builds use the same signing key and can update in place. Local debug bui
 
 ## Phone Check
 
-1. Install the update over **IRIS Intel Test**, preserving its session. Open the app; sign in if needed.
+1. Install the update over **IRIS Intel Test** when the signing key matches, preserving its session. For the first
+   release-signed APK, uninstall the old debug build first; this clears its session/settings. Open the app; sign in if needed.
    IRIS should start automatically, with **PASS: bundled IRIS UI, Leaflet runtime, and message round trip confirmed.**
 2. Tap **Check session**: PASS requires a signed-in player plus a valid `getHasActiveSubscription` response.
    In **Diagnostics**, IRIS mode should show **Stock dashboard: blocked**.

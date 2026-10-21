@@ -15,6 +15,12 @@ refactoring plan, and it should not be mixed with UI extraction or source-layout
 
 ### Done
 
+- 0.3.7 signed APK distribution is implemented and published alongside XPI/ZIP after PR #3 merged as `c8a7d4b`.
+  Main CI passed extension checks/package and Android release tests/lint/build. The downloaded release APK's
+  checksum, pinned certificate, version, and all 19 embedded IRIS assets were verified. Dedicated signing credentials
+  are in GitHub secrets; the user confirmed the ignored signing directory is backed up. First phone installation of
+  the release-signed APK remains unreported; uninstall the earlier debug installation once before installing it.
+
 - 0.3.6 replaces CARTO Dark/Light with keyless OpenFreeMap styles through MapLibre’s Leaflet binding.
   The worker is bundled in both extension and APK; saved preferences migrate. Real-tile browser switching,
   pan/zoom, map replacement, and cross-origin worker checks pass. The user tested XPI and APK and reported
@@ -53,7 +59,7 @@ refactoring plan, and it should not be mixed with UI extraction or source-layout
   Other Android platform replacements remain unimplemented.
 - Shared asset URL resolution and map disposal are implemented. Automated checks pass (517 tests, workbench checks,
   CSS lint, and extension packaging); the user reported the cleanup smoke test passed on 2026-10-20.
-- Current IRIS packaging is browser-extension packaging only:
+- Browser-extension packaging remains owned by:
   - `apps/iitc-iris/manifest.json`
   - `apps/iitc-iris/package.json`
 
@@ -91,6 +97,9 @@ refactoring plan, and it should not be mixed with UI extraction or source-layout
 
 ### Immediate Next Work
 
+First install/smoke the published release-signed APK; the prior debug installation needs one uninstall/reinstall.
+See [the roadmap handoff](index.md#next-session-handoff) for release evidence and the overlapping-player-marker pickup.
+
 The feasibility spike is complete for the tested paths: login/persistence, bundled IRIS and runtime communication,
 stock-dashboard blocking/recovery, panel Back, rotation/reload, background/resume, clipboard, and location including
 repeated denial and precise-location recovery. Promote the existing wrapper into the permanent project; update
@@ -117,7 +126,8 @@ working compatibility proof can be promoted while the permanent authentication d
 - Promote the tested shell while preserving its known authentication and platform limits.
 - Audit and adapt extension-only assumptions.
 - Bring forward the release/mobile must-haves from `../port-plan.md` and `../backlog.md`.
-- Create signing, permissions, privacy, and release documentation before any release build.
+- Signing/build/install documentation and automated APK publishing are complete; finish the permission/privacy and
+  release-readiness review before wider sharing. Verify the signing backup can be restored when convenient.
 
 ## Current Repo Facts
 
@@ -126,7 +136,8 @@ IRIS is currently a Manifest V3 content-script extension. It injects `content.js
 extension zips through Vite scripts.
 
 A disposable native Intel login test now exists in `apps/android-intel-spike`. It produces a debug-signed APK through
-`npm run android:build` / `npm run android:check`; `npm run serve` lists local XPI, ZIP, and APK downloads.
+`npm run android:build` / `npm run android:check`; `npm run android:release` builds the release APK using configured
+signing credentials. GitHub publishes signed APKs alongside extensions. `npm run serve` lists local XPI, ZIP, and debug APK downloads.
 `npm run android:serve` remains an alias; default port is 6969.
 Version 0.3.0 bundles existing IRIS assets and injects them automatically on signed-in Intel in IRIS mode. Local asset interception
 is restricted to `/__iris_android__/`; the shared asset resolver accepts an explicit host base, and the runtime
@@ -139,7 +150,7 @@ own injection, auth, storage, permissions, and releases.
 
 ## Distribution Decision
 
-Choose one path before implementation.
+The first path is selected; retain alternatives for a later distribution decision.
 
 | Path | Use When | Main Cost |
 | --- | --- | --- |
@@ -223,8 +234,8 @@ their individual evidence and stop conditions.
 | 6 | Storage and asset strategy | Todo | Local storage, bundled assets, fixture paths, icons, imports/exports, and cache behavior are defined. |
 | 7 | Permission, privacy, and release-readiness audit | Todo | Android permissions plus backlog must-haves are listed and minimized. |
 | 8 | Android project scaffold | Todo | Native project exists only after assignments 4 and 5 pass. |
-| 9 | Debug APK build and mobile smoke test | Todo | A signed debug APK installs and performs mobile/accessibility smoke paths on a real device. |
-| 10 | Friend-shared APK release plan | Todo | APK signing, versioning, install notes, privacy notes, and update/rollback strategy are documented. |
+| 9 | Debug APK build and mobile smoke test | Tested paths accepted; remaining edge/accessibility cases retained | A signed debug APK installs and performs mobile/accessibility smoke paths on a real device. |
+| 10 | Friend-shared APK release plan | Signed publishing/versioning/install notes done; release phone smoke and wider-sharing review remain | APK signing, versioning, install notes, privacy notes, and update/rollback strategy are documented. |
 
 ## Assignment Details
 

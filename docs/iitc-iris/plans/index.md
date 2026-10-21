@@ -5,7 +5,7 @@
 CSS ownership, component simplification, domain/panel organization, content composition, repository cleanup, dependency
 refresh, and map-replacement lifetime hardening are complete and user smoke accepted as of 2026-10-20.
 The active npm workspaces are `apps/iitc-iris` and `packages/iitc-core`. No further generic refactor batch is queued.
-The merge checkpoint is complete: PR #1 and main CI passed; the latest extension release published.
+The merge checkpoints are complete: PRs #1–#3 and main CI passed; the latest release includes XPI/ZIP and a signed APK.
 The disposable Android spike lives in `apps/android-intel-spike`. Phone login/persistence passed on 0.1.3;
 0.2.0 bundled IRIS injection and a quick smoke of inventory, layers, COMM, portal details, and missions passed.
 
@@ -14,11 +14,24 @@ The retained ownership rules and known limits are in [Application Architecture](
 
 ## Next Session Handoff
 
-**APK distribution:** the publishing workflow now includes Android tests/lint and a signed release APK alongside
-XPI/ZIP for main and future version tags. A dedicated signing key is held in encrypted GitHub secrets with an ignored
-local backup under `apps/android-intel-spike/signing/`; back up that whole directory securely. Moving from the previous
-debug-signed phone installation needs one uninstall/reinstall. APK version codes follow full Git history; the signing
-certificate is pinned publicly. Release APK installation still needs its first phone smoke after publication.
+**Session wrap-up (2026-10-21):** PR #3 merged as `c8a7d4b`; [main CI](https://github.com/amsdams/iris-intel/actions/runs/39579786375)
+passed extension checks/package and Android release tests/lint/build, then published
+[the signed APK](https://github.com/amsdams/iris-intel/releases/download/latest/iitc-iris-android.apk)
+(`0.3.7-spike+c8a7d4b`, version code 1829) alongside XPI/ZIP. The downloaded APK's checksum matches GitHub,
+its certificate matches the public pin, and all 19 embedded IRIS assets match the tested local build.
+Future main pushes and version tags include APKs; PRs check debug builds without release credentials.
+A dedicated signing key is held in encrypted GitHub secrets and ignored local `apps/android-intel-spike/signing/`.
+The user confirmed that directory is backed up; backup restoration has not been tested. Moving from the previous
+debug-signed phone installation needs one uninstall/reinstall, clearing its session/settings; later signed releases
+update in place. Preserve the key, application ID, and increasing version codes during project promotion.
+The published release APK still needs its first phone installation smoke. A NAS Git mirror was discussed but not configured;
+normal Git pushes exclude the signing directory.
+
+**Next feature pickup — overlapping player markers:** the user reports that multiple agents at one portal leave
+only one marker accessible. No existing overlap follow-up was found. IITC's player tracker registers markers with
+OverlappingMarkerSpiderfier and handles popup selection through `spiderfiedclick`; see the [backlog](../backlog.md).
+Use that interaction as prior art: spread overlapping pins on click/tap so every agent's popup/history is reachable,
+while preserving actual portal coordinates and stable marker identity. Implement in the shared map runtime for XPI/APK.
 
 **OpenFreeMap trial (0.3.6-spike):** Dark/Light now use OpenFreeMap via MapLibre’s Leaflet binding, without API keys.
 OSM stays available; saved CARTO choices migrate. Workers and licences are packaged locally. Real-tile browser checks
@@ -56,7 +69,7 @@ The main 0.3.0 wrapper smoke is accepted; Back from image/selection/plain map re
 Platform checks: copying markers and portal titles works. Location was denied with geolocation disabled on 0.3.0.
 **0.3.1-spike** adds on-demand Android coarse/fine foreground location permission and an Intel-only WebView handler.
 Phone confirmed: location prompts appeared, access was accepted, and location was found.
-Denial/retry, approximate-only access, and cancellation across navigation remain unreported.
+Denial/retry and precise-location recovery passed on 0.3.4; approximate-only access and cancellation across navigation remain unreported.
 The 0.2.0 feature smoke and 0.1.3 login persistence passed. Google Password Manager autofill remains unresolved.
 The native round-trip PASS label was not separately reported for 0.2.0; do not invent that result.
 
@@ -65,19 +78,26 @@ Build extensions with `npm run package`, or the APK with `npm run android:check`
 `npm run android:serve` is an alias. The server starts without existing artifacts and exposes no repository files.
 
 Latest implementation checks passed: `npm run check` (528 tests plus lint/types/CSS/workbench), `npm run package`,
-`npm run android:check` (27 native and 13 JavaScript tests), APK signature and byte-for-byte download checks.
+`npm run android:check`, and `npm run android:release` (27 native and 13 JavaScript tests), plus published APK
+signature, checksum, version, and embedded-asset checks. Local `main` was synchronized and clean before this docs handoff.
 The restored download server also passed live artifact/hash, HEAD, missing-build, dynamic-refresh, and private-file
 rejection checks. No further generic CSS/component cleanup is queued.
 
 ## Next Work
 
-1. **Feasibility spike phone checks are complete for the tested paths.** Promote the existing wrapper into the
+1. Install the published release APK once (uninstall the earlier debug app first); check fresh login, IRIS startup/reopen,
+   player popup, location, and clipboard. The debug APK phone evidence is accepted; release installation is not yet reported.
+2. Fix overlapping player-marker selection using IITC's spiderfier behavior as prior art; validate XPI and APK.
+3. **Feasibility spike phone checks are complete for the tested paths.** Promote the existing wrapper into the
    permanent Android project; update names/scripts and move test controls behind accessible diagnostics/recovery UI.
-2. Carry the existing platform ownership inventory and known limits forward: embedded Google login is a compatibility
+4. Carry the existing platform ownership inventory and known limits forward: embedded Google login is a compatibility
    workaround, Google Password Manager is unresolved, and file handling is deferred because Draw Tools uses text/clipboard.
-3. Keep unreported edge cases (approximate-only access, permission cancellation during navigation, and individual
+5. Keep unreported edge cases (approximate-only access, permission cancellation during navigation, and individual
    regional account flows) in future regression checks. First distribution remains private/friends sideload APK;
    store distribution is deferred.
+
+When convenient, verify the signing backup can be restored and its certificate matches the public pin. Keep private
+signing material outside Git; any mailbox/NAS archive containing `release.env` should be encrypted independently.
 
 Mobile polish and feature expansion should follow concrete usage findings. The [backlog](../backlog.md) records
 unprioritized parity gaps and watch items; those are not prerequisites for the Android feasibility proof.
