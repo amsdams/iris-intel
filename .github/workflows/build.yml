@@ -1,4 +1,4 @@
-name: Build IITC IRIS Extension
+name: Build IITC IRIS
 
 on:
   push:
@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -50,9 +54,19 @@ jobs:
           path: out/
           retention-days: 30
 
+  android:
+    uses: ./.github/workflows/android.yml
+    with:
+      signed: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+    secrets:
+      ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+      ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
+      ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+      ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+
   publish-latest:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: build
+    needs: [build, android]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -62,6 +76,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: iitc-iris-artifacts
+          path: out/
+
+      - name: Download verified signed APK
+        uses: actions/download-artifact@v4
+        with:
+          name: iitc-iris-android
           path: out/
 
       - name: Create/Update Latest Release
@@ -74,12 +94,13 @@ jobs:
           body: |
             Automated build from commit ${{ github.sha }}
 
-            IITC IRIS browser-extension packages.
+            IITC IRIS browser-extension packages and a signed Android test APK.
 
             ### IITC IRIS (Alpha)
             IITC-compatible port with Leaflet.
             - Chrome: `iitc-iris-chrome.zip`
             - Firefox: `iitc-iris-firefox.xpi`
+            - Android sideload: `iitc-iris-android.apk` (Android 8.0+, experimental WebView wrapper)
 
             ---
             **Installation Instructions:**

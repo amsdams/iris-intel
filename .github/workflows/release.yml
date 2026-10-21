@@ -1,4 +1,4 @@
-name: Release IITC IRIS Extension
+name: Release IITC IRIS
 
 on:
   push:
@@ -15,7 +15,19 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  android:
+    uses: ./.github/workflows/android.yml
+    with:
+      signed: true
+      ref: refs/tags/${{ inputs.tag || github.ref_name }}
+    secrets:
+      ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+      ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
+      ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+      ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+
   release:
+    needs: android
     permissions:
       contents: write
     env:
@@ -64,6 +76,15 @@ jobs:
           VERSION=$(node -p "require('./apps/iitc-iris/package.json').version")
           cp apps/iitc-iris/builds/iitc-iris-chrome-${VERSION}-*.zip out/iitc-iris-chrome-${VERSION}.zip
           cp apps/iitc-iris/builds/iitc-iris-firefox-${VERSION}-*.xpi out/iitc-iris-firefox-${VERSION}.xpi
+
+      - name: Download verified signed APK
+        uses: actions/download-artifact@v4
+        with:
+          name: iitc-iris-android
+          path: out/
+
+      - name: Name versioned APK
+        run: mv out/iitc-iris-android.apk "out/iitc-iris-android-${RELEASE_TAG#v}.apk"
 
       - name: Publish tagged release
         uses: softprops/action-gh-release@v2

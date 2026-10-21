@@ -11,14 +11,31 @@ android {
         applicationId 'org.iris.intelspike'
         minSdk 26
         targetSdk 36
-        versionCode 12
-        versionName '0.3.6-spike'
+        versionCode Integer.parseInt(System.getenv('IRIS_ANDROID_VERSION_CODE') ?: '13')
+        versionName '0.3.7-spike' + (System.getenv('IRIS_ANDROID_BUILD_SHA') ? '+' + System.getenv('IRIS_ANDROID_BUILD_SHA') : '')
         resValue 'string', 'spike_version', versionName
     }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+    }
+
+    signingConfigs {
+        if (System.getenv('IRIS_ANDROID_KEYSTORE')) {
+            release {
+                storeFile file(System.getenv('IRIS_ANDROID_KEYSTORE'))
+                storePassword System.getenv('IRIS_ANDROID_STORE_PASSWORD')
+                keyAlias System.getenv('IRIS_ANDROID_KEY_ALIAS')
+                keyPassword System.getenv('IRIS_ANDROID_KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            if (System.getenv('IRIS_ANDROID_KEYSTORE')) signingConfig signingConfigs.release
+        }
     }
 
     sourceSets.main.assets.srcDir layout.buildDirectory.dir('generated/iris-assets')
