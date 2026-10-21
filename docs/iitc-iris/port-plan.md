@@ -102,7 +102,7 @@ Android hosting remains unproven and is governed by the [APK plan](plans/android
 Base-map divergence (2026-10-21): CARTO’s key requirement prompted replacing Dark/Light with OpenFreeMap
 Dark/Positron through MapLibre’s Leaflet binding. This changes basemap cartography, while Leaflet retains camera,
 overlay, and interaction ownership; OSM remains available. Preference migration and real-tile browser checks pass.
-Compare all three choices, pan/zoom, and portal/player interactions in XPI and APK; user smoke remains pending.
+The user tested the updated XPI and APK and reported both look fine (2026-10-21).
 
 ## Documentation Layout
 

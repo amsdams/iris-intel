@@ -160,4 +160,4 @@ the user confirmed popup opening in both XPI and APK (2026-10-21). History-link 
 OpenFreeMap trial (0.3.6): Dark/Light use keyless OpenFreeMap vector styles via MapLibre’s Leaflet binding;
 OSM remains raster. The standalone worker is packaged and served through an exact native asset route.
 Browser checks passed with real tiles, including cross-origin workers, switching, movement, and map replacement.
-Phone smoke/performance acceptance remains pending; check all three base maps, gestures, and portal/player popups.
+The user tested the updated APK and XPI and reported both look fine (2026-10-21).

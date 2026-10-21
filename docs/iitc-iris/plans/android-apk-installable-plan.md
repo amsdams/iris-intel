@@ -17,7 +17,8 @@ refactoring plan, and it should not be mixed with UI extraction or source-layout
 
 - 0.3.6 replaces CARTO Dark/Light with keyless OpenFreeMap styles through MapLibre’s Leaflet binding.
   The worker is bundled in both extension and APK; saved preferences migrate. Real-tile browser switching,
-  pan/zoom, map replacement, and cross-origin worker checks pass. XPI/APK user smoke acceptance remains pending.
+  pan/zoom, map replacement, and cross-origin worker checks pass. The user tested XPI and APK and reported
+  both look fine (2026-10-21).
 
 - 0.3.5 fixes player-tracker shadow hit interception and retains marker identity through COMM refreshes.
   Browser reproduction and three regression tests pass. The user confirmed popup opening in both XPI and APK

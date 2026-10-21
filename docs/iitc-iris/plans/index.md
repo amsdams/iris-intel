@@ -17,7 +17,9 @@ The retained ownership rules and known limits are in [Application Architecture](
 **OpenFreeMap trial (0.3.6-spike):** Dark/Light now use OpenFreeMap via MapLibre’s Leaflet binding, without API keys.
 OSM stays available; saved CARTO choices migrate. Workers and licences are packaged locally. Real-tile browser checks
 passed for both styles, pan/zoom, OSM switching, map replacement, and cross-origin worker loading. App checks and
-Android checks pass; XPI/APK smoke acceptance, including phone rendering performance, remains pending.
+Android checks pass. The user tested XPI and APK and reported both look fine (2026-10-21).
+Targeted resilience follow-up: provide OSM recovery if WebGL/style loading fails, and verify WebGL context recovery
+after phone background/resume; no such failure was observed during this pass.
 
 **Player-tracker popup (0.3.5-spike):** phone taps did nothing. Browser hit-testing reproduced the marker shadow
 intercepting clicks because Leaflet gives it the pin’s custom CSS class. Pointer handling now targets the icon only.
