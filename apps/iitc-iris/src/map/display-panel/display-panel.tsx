@@ -1,7 +1,5 @@
-import {Button} from '../../ui/button';
 import { h } from 'preact';
 import './display-panel.css';
-import '../../ui/shared/layer-toggle.css';
 import {
   CORE_LAYER_TOGGLE_REGISTRY,
   DETAIL_LAYER_TOGGLE_REGISTRY,
@@ -9,12 +7,10 @@ import {
 } from '../layers/layer-registry';
 import { PORTAL_HIGHLIGHTER_REGISTRY } from '../layers/highlighter-registry';
 import type {
-  IitcIrisBaseLayerId,
   IitcIrisHighlighterSettings,
   IitcIrisLayerSettings,
   IitcIrisPortalHighlighterId,
 } from '../../messages';
-import {ControlRow} from '../../ui/control-row';
 import { LayerChoice } from '../../ui/layer-choice';
 import {Section} from '../../ui/section';
 
@@ -22,12 +18,6 @@ interface BooleanLayerToggleEntry {
   id: IitcIrisBooleanLayerSettingKey;
   title: string;
 }
-
-const BASE_LAYER_OPTIONS: { id: IitcIrisBaseLayerId; label: string; title: string }[] = [
-  { id: 'openfreemap-dark', label: 'Dark', title: 'OpenFreeMap Dark' },
-  { id: 'openfreemap-positron', label: 'Light', title: 'OpenFreeMap Positron' },
-  { id: 'osm', label: 'OSM', title: 'OpenStreetMap' },
-];
 
 const CORE_OVERLAY_LAYER_TOGGLE_LABELS: BooleanLayerToggleEntry[] = CORE_LAYER_TOGGLE_REGISTRY.filter((entry) => entry.kind === 'overlay').map((entry) => ({ id: entry.id, title: entry.title }));
 const PORTAL_FILTER_LAYER_TOGGLE_LABELS: BooleanLayerToggleEntry[] = CORE_LAYER_TOGGLE_REGISTRY.filter((entry) => entry.kind === 'filter').map((entry) => ({ id: entry.id, title: entry.title }));
@@ -40,19 +30,15 @@ const PORTAL_HIGHLIGHTER_OPTIONS = PORTAL_HIGHLIGHTER_REGISTRY.map((entry) => ({
 }));
 
 export interface IitcIrisDisplayPanelProps {
-  baseLayerId: IitcIrisBaseLayerId;
   highlighterSettings: IitcIrisHighlighterSettings;
   layerSettings: IitcIrisLayerSettings;
-  selectBaseLayer: (id: IitcIrisBaseLayerId) => void;
   selectPortalHighlighter: (active: IitcIrisPortalHighlighterId) => void;
   toggleLayerSetting: (key: IitcIrisBooleanLayerSettingKey) => void;
 }
 
 export function IitcIrisDisplayPanel({
-  baseLayerId,
   highlighterSettings,
   layerSettings,
-  selectBaseLayer,
   selectPortalHighlighter,
   toggleLayerSetting,
 }: IitcIrisDisplayPanelProps): h.JSX.Element {
@@ -83,21 +69,6 @@ export function IitcIrisDisplayPanel({
 
   return (
     <>
-      <Section titleHeading="Base map">
-        <ControlRow>
-          {BASE_LAYER_OPTIONS.map((option) => (
-            <Button
-              key={option.id}
-              className={`iitc-iris-layer-toggle iitc-iris-base-toggle ${baseLayerId === option.id ? 'iitc-iris-layer-toggle-active' : ''}`}
-              onClick={() => selectBaseLayer(option.id)}
-              title={option.title}
-              aria-pressed={baseLayerId === option.id}
-            >
-              {option.label}
-            </Button>
-          ))}
-        </ControlRow>
-      </Section>
       <Section titleHeading="Core overlays">
         <div className="iitc-iris-layer-choice-grid" role="group" aria-label="Core overlay layers">
           {CORE_OVERLAY_LAYER_TOGGLE_LABELS.map(renderBooleanLayerCheckbox)}

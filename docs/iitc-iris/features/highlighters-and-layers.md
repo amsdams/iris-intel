@@ -130,9 +130,9 @@ Current first pass:
 - The Display sheet now presents registered boolean overlays/filters as IITC-style multi-select checkbox groups:
   core overlays, portal filters, and detail overlays. This keeps the many-enabled layer chooser semantics while leaving
   compact map controls free to stay as shortcuts.
-- The Display sheet also owns base map selection and the one-active portal highlighter radio group. Section labels use
-  explicit names such as `Base map`, `Portal highlighter`, `Core overlays`, `Portal filters`, and `Detail overlays` so
-  layer controls read as map display choices rather than generic app controls.
+- The Display sheet owns the one-active portal highlighter radio group alongside `Core overlays`, `Portal filters`,
+  and `Detail overlays`. Base map selection lives with interface theme in **System → Appearance**; both preferences
+  remain independent, and base-layer state/persistence stays in the existing layer workflow/runtime.
 - `keyCount` is a boolean detail overlay labelled `Key counts`. The previous `invert` mode was removed because the
   renderer only supported hidden or shown key labels.
 - Registered layer ids, kinds, and defaults are exposed in diagnostics.

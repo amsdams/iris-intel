@@ -44,8 +44,6 @@ export function IitcIrisInventoryPanel({inventoryState, refresh, zoomToAndShowPo
       <SummaryCell value={`${formatInteger(inventoryState.items)} / 2500`} label="items" />
       <SummaryCell value={formatInteger(inventoryState.keys)} label={`${formatInteger(inventoryState.portalsWithKeys)} portals`} />
       <SummaryCell value={formatInteger(inventoryState.capsules)} label="capsules" />
-    </SummaryGrid>
-    <SummaryGrid>
       <SummaryCell value={inventoryState.portalKeysForSelectedPortal ? inventoryState.portalKeysForSelectedPortal.total : '-'} label="selected keys" />
       <SummaryCell value={inventoryState.portalKeysForSelectedPortal ? inventoryState.portalKeysForSelectedPortal.loose : '-'} label="loose" />
       <SummaryCell value={inventoryState.portalKeysForSelectedPortal ? inventoryState.portalKeysForSelectedPortal.capsule : '-'} label="capsule" />

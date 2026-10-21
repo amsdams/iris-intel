@@ -953,14 +953,17 @@ function App(): h.JSX.Element {
         setPortalsListTextFilter={setPortalsListTextFilter}
         sortPortalsListBy={sortPortalsListBy}
         zoomToAndShowPortal={zoomToAndShowPortal}
-        baseLayerId={baseLayerId}
         highlighterSettings={highlighterSettings}
         layerSettings={layerSettings}
-        selectBaseLayer={setBaseLayerId}
         selectPortalHighlighter={selectPortalHighlighter}
         toggleLayerSetting={toggleLayerSetting}
       />
-      {activeSheet === 'appearance' && <AppearancePanel uiTheme={uiTheme} setUiTheme={setUiTheme} />}
+      {activeSheet === 'appearance' && <AppearancePanel
+        uiTheme={uiTheme}
+        setUiTheme={setUiTheme}
+        baseLayerId={baseLayerId}
+        selectBaseLayer={setBaseLayerId}
+      />}
       {activeSheet === 'system' && (
         <IitcIrisDiagnosticsPanelContainer
           camera={camera}

@@ -22,7 +22,6 @@ import {
 } from '../portal-analysis/portal-analysis';
 import {type IitcPortalsListEntry} from '@iris/iitc-core';
 import {
-  type IitcIrisBaseLayerId,
   type IitcIrisDrawToolsItem,
   type IitcIrisDrawToolsLatLng,
   type IitcIrisHighlighterSettings,
@@ -97,10 +96,8 @@ export interface IitcIrisMapControlsPanelContainerProps {
   sortPortalsListBy: (field: PortalsListSortField) => void;
   zoomToAndShowPortal: (portalGuid?: string, latE6?: number, lngE6?: number, zoom?: number) => void;
 
-  baseLayerId: IitcIrisBaseLayerId;
   highlighterSettings: IitcIrisHighlighterSettings;
   layerSettings: IitcIrisLayerSettings;
-  selectBaseLayer: (id: IitcIrisBaseLayerId) => void;
   selectPortalHighlighter: (active: IitcIrisPortalHighlighterId) => void;
   toggleLayerSetting: (key: IitcIrisBooleanLayerSettingKey) => void;
 }
@@ -189,10 +186,8 @@ export function IitcIrisMapControlsPanelContainer(props: IitcIrisMapControlsPane
     setPortalsListTextFilter,
     sortPortalsListBy,
     zoomToAndShowPortal,
-    baseLayerId,
     highlighterSettings,
     layerSettings,
-    selectBaseLayer,
     selectPortalHighlighter,
     toggleLayerSetting,
   } = props;
@@ -342,10 +337,8 @@ export function IitcIrisMapControlsPanelContainer(props: IitcIrisMapControlsPane
       )}
       {activeSheet === 'layers' && (
         <IitcIrisDisplayPanel
-          baseLayerId={baseLayerId}
           highlighterSettings={highlighterSettings}
           layerSettings={layerSettings}
-          selectBaseLayer={selectBaseLayer}
           selectPortalHighlighter={selectPortalHighlighter}
           toggleLayerSetting={toggleLayerSetting}
         />

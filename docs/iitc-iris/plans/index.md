@@ -14,6 +14,10 @@ The retained ownership rules and known limits are in [Application Architecture](
 
 ## Next Session Handoff
 
+**Appearance controls (2026-10-21):** interface theme and base map selection now share **System → Appearance**.
+The choices stay independent and retain existing saved preferences. Map → Display contains overlays, portal filters,
+and highlighters. XPI/APK smoke: change both choices independently and reload to confirm persistence.
+
 **Draw Tools crossing repair (2026-10-21):** classification now ports IITC's whole-arc `crossLinks` helpers into core,
 fixing shared-anchor false positives, antimeridian misses, and misses at generated rendering vertices. Twelve focused
 regressions and full app/core checks (546 tests), CSS/workbench, and extension packaging pass. Reference comparison

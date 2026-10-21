@@ -4,11 +4,20 @@ import {Panel, PanelHeader, PanelTitle, PanelBody} from '../../ui/panel';
 import {ControlRow} from '../../ui/control-row';
 import {Section} from '../../ui/section';
 import {type UiThemePreference} from '../../shell/ui-theme';
+import type {IitcIrisBaseLayerId} from '../../messages';
 import '../../ui/shared/layer-toggle.css';
 
-export function AppearancePanel({uiTheme, setUiTheme}: {
+const BASE_LAYER_OPTIONS: {id: IitcIrisBaseLayerId; label: string; title: string}[] = [
+  {id: 'openfreemap-dark', label: 'OpenFreeMap Dark', title: 'OpenFreeMap Dark'},
+  {id: 'openfreemap-positron', label: 'OpenFreeMap Light', title: 'OpenFreeMap Positron'},
+  {id: 'osm', label: 'OpenStreetMap', title: 'OpenStreetMap'},
+];
+
+export function AppearancePanel({uiTheme, setUiTheme, baseLayerId, selectBaseLayer}: {
   uiTheme: UiThemePreference;
   setUiTheme: (theme: UiThemePreference) => void;
+  baseLayerId: IitcIrisBaseLayerId;
+  selectBaseLayer: (id: IitcIrisBaseLayerId) => void;
 }): h.JSX.Element {
   return (
     <Panel aria-label="Appearance">
@@ -24,7 +33,20 @@ export function AppearancePanel({uiTheme, setUiTheme}: {
               >{theme[0].toUpperCase() + theme.slice(1)}</Button>
             ))}
           </ControlRow>
-          <p>System follows your device’s appearance. Map style is selected separately in Map → Display.</p>
+          <p>System follows your device’s appearance.</p>
+        </Section>
+        <Section titleHeading="Base map">
+          <ControlRow>
+            {BASE_LAYER_OPTIONS.map(option => (
+              <Button key={option.id}
+                className={`iitc-iris-layer-toggle iitc-iris-base-toggle ${baseLayerId === option.id ? 'iitc-iris-layer-toggle-active' : ''}`}
+                onClick={() => selectBaseLayer(option.id)}
+                title={option.title}
+                aria-pressed={baseLayerId === option.id}
+              >{option.label}</Button>
+            ))}
+          </ControlRow>
+          <p>Map style is independent of the interface theme.</p>
         </Section>
       </PanelBody>
     </Panel>

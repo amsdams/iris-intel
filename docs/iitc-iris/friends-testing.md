@@ -14,8 +14,8 @@ Only the first move from a debug APK needs uninstalling, which clears app data. 
 1. Open **IRIS**, sign in, and check that the IRIS map appears.
 2. Try portal details, COMM, inventory, map styles, copying a portal title, and **Map → Controls → Locate**.
    Location permission is optional; denying it should keep the app usable.
-3. In **System → Appearance**, try System/Dark/Light. Reload and check your choice persists.
-   The theme affects the interface; choose the map style separately in **Map → Display**.
+3. In **System → Appearance**, try System/Dark/Light for the interface and choose a base map.
+   The two choices are independent. Reload and check both choices persist.
    The Android header/dialogs follow the device appearance. The initial interface theme remains Dark.
 4. Close/reopen, try Android Back, and use the app during normal play over a few days.
    If multiple tracked players share a last-seen location, try the count marker and each agent's history.
