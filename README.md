@@ -40,6 +40,7 @@ npm run package
 - `npm run package` / `npm run release`: build Chrome ZIP and Firefox XPI artifacts locally; these do not publish.
 - `npm run serve`: browse/download local Firefox XPI, Chrome ZIP, and Android APK builds at `http://localhost:6969`.
   The terminal prints a same-Wi-Fi URL; `PORT=8787 npm run serve` overrides the port. No build is triggered.
+- `npm run android:release`: test/lint/build a signed APK using configured signing credentials (see the Android README).
 - `npm run android:serve`: compatibility alias for the same download page.
 - `npm run clean`: remove generated application output.
 
@@ -67,7 +68,10 @@ live Intel data; retired fixture choices and empty fallback maps are no longer i
 `npm run version:bump -- X.Y.Z --no-tag` updates root/application versions, the manifest, and lockfile together.
 Without `--no-tag`, the existing script also creates a local release tag. Commit reviewed version changes before pushing
 any tag. CI checks, tests, and packages IITC IRIS; main pushes update the existing `latest` release, and version tags
-trigger the tagged release workflow. Manual release runs require an existing `vX.Y.Z` tag and build that tag.
+trigger the tagged release workflow. Both publish the signed Android APK alongside the extension packages.
+Main release APKs are named `iitc-iris-android.apk`; future tagged releases include the tag version in the filename.
+Manual release runs require an existing `vX.Y.Z` tag containing the Android project and build that tag.
+See [Android signing and first-install instructions](apps/android-intel-spike/README.md#signed-github-apks).
 
 ## Product Scope
 

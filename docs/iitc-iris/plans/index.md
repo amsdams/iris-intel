@@ -14,6 +14,12 @@ The retained ownership rules and known limits are in [Application Architecture](
 
 ## Next Session Handoff
 
+**APK distribution:** the publishing workflow now includes Android tests/lint and a signed release APK alongside
+XPI/ZIP for main and future version tags. A dedicated signing key is held in encrypted GitHub secrets with an ignored
+local backup under `apps/android-intel-spike/signing/`; back up that whole directory securely. Moving from the previous
+debug-signed phone installation needs one uninstall/reinstall. APK version codes follow full Git history; the signing
+certificate is pinned publicly. Release APK installation still needs its first phone smoke after publication.
+
 **OpenFreeMap trial (0.3.6-spike):** Dark/Light now use OpenFreeMap via MapLibre’s Leaflet binding, without API keys.
 OSM stays available; saved CARTO choices migrate. Workers and licences are packaged locally. Real-tile browser checks
 passed for both styles, pan/zoom, OSM switching, map replacement, and cross-origin worker loading. App checks and

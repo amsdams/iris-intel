@@ -1,6 +1,6 @@
 # IRIS Android Spike APK
 
-Disposable native Android/WebView proof on `feature/android-readiness`. Version **0.3.6-spike** loads bundled IRIS automatically on signed-in Intel,
+Disposable native Android/WebView proof on `feature/android-readiness`. Version **0.3.7-spike** loads bundled IRIS automatically on signed-in Intel,
 with a stock-Intel recovery mode. Phone confirmed mode persistence, IRIS startup after reopen, and stock-dashboard
 blocking on 0.3.0. Panel Back, rotation, restoring the open panel after Reload, and background/resume also passed.
 Version 0.3.1 location prompt, permission acceptance, and successful positioning passed on phone.
@@ -33,6 +33,32 @@ Output: `app/build/outputs/apk/debug/app-debug.apk`. The download is named `iris
 It is automatically debug-signed using the local Android debug key; no release signing material is stored in the repo.
 Installable on Android 8.0/API 26 or newer. Later permanent-app minimum/version policy is undecided.
 Keep the local debug key to install subsequent builds over this one without losing app data.
+
+## Signed GitHub APKs
+
+Main pushes publish `iitc-iris-android.apk` beside the XPI/ZIP in the `latest` GitHub release, after extension
+checks and Android release tests/lint pass. Future version tags include a version-named APK. Pull requests test a
+debug build without release-signing credentials. Release APKs are not debuggable; the wrapper remains experimental.
+
+Signing uses a dedicated key in GitHub repository secrets: `ANDROID_SIGNING_KEYSTORE_BASE64`,
+`ANDROID_SIGNING_STORE_PASSWORD`, `ANDROID_SIGNING_KEY_ALIAS`, and `ANDROID_SIGNING_KEY_PASSWORD`.
+The private local backup is the ignored `signing/` directory, including `release.env`; back up the whole directory
+securely. It is not included in artifacts or Git. The public certificate digest is pinned in `release-certificate.sha256`.
+Do not replace the key: Android requires it to update existing installations. Preserve the application ID
+`org.iris.intelspike` during later project promotion if installed releases must continue receiving updates.
+
+To build locally with the same key:
+
+```bash
+source apps/android-intel-spike/signing/release.env
+npm run android:release
+```
+
+Output: `app/build/outputs/apk/release/app-release.apk`. Release version codes are `1000 + git rev-list --count HEAD`;
+version names include the source commit. Complete Git history is required. Preserve main history so update codes
+keep increasing. `IRIS_ANDROID_VERSION_CODE` can explicitly override the code when necessary.
+Moving from the earlier local debug APK requires uninstall/reinstall once, losing its session/settings; later
+release builds use the same signing key and can update in place. Local debug builds retain their separate key.
 
 ## Phone Check
 

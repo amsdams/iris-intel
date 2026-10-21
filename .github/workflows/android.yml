@@ -1,0 +1,122 @@
+name: Build Android APK
+
+on:
+  workflow_call:
+    inputs:
+      signed:
+        type: boolean
+        default: false
+      ref:
+        type: string
+        default: ''
+    secrets:
+      ANDROID_SIGNING_KEYSTORE_BASE64:
+        required: false
+      ANDROID_SIGNING_STORE_PASSWORD:
+        required: false
+      ANDROID_SIGNING_KEY_ALIAS:
+        required: false
+      ANDROID_SIGNING_KEY_PASSWORD:
+        required: false
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Setup Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+
+      - name: Install pinned Android SDK packages
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check Android debug build without signing secrets
+        if: ${{ !inputs.signed }}
+        run: npm run android:check
+
+      - name: Restore release keystore
+        if: ${{ inputs.signed }}
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+        shell: python
+        run: |
+          import base64, os
+          from pathlib import Path
+          encoded = os.environ.get('KEYSTORE_BASE64', '')
+          if not encoded:
+              raise SystemExit('Configure ANDROID_SIGNING_KEYSTORE_BASE64 before publishing APKs.')
+          path = Path(os.environ['RUNNER_TEMP']) / 'iris-release.keystore'
+          path.write_bytes(base64.b64decode(encoded, validate=True))
+          path.chmod(0o600)
+          with open(os.environ['GITHUB_ENV'], 'a') as env:
+              env.write(f'IRIS_ANDROID_KEYSTORE={path}\n')
+
+      - name: Test, lint and build signed release APK
+        if: ${{ inputs.signed }}
+        env:
+          IRIS_ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
+          IRIS_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+          IRIS_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+        run: npm run android:release
+
+      - name: Verify and prepare APK
+        env:
+          SIGNED: ${{ inputs.signed }}
+        run: |
+          mkdir -p out
+          if [ "$SIGNED" = 'true' ]; then
+            APK=apps/android-intel-spike/app/build/outputs/apk/release/app-release.apk
+          else
+            APK=apps/android-intel-spike/app/build/outputs/apk/debug/app-debug.apk
+          fi
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$APK"
+          if [ "$SIGNED" = 'true' ]; then
+            CERTIFICATE=$("$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+            test "$CERTIFICATE" = "$(cat apps/android-intel-spike/release-certificate.sha256)"
+          fi
+          cp "$APK" out/iitc-iris-android.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: iitc-iris-android
+          path: out/iitc-iris-android.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Remove temporary signing key
+        if: ${{ always() }}
+        shell: python
+        run: |
+          import os
+          from pathlib import Path
+          (Path(os.environ['RUNNER_TEMP']) / 'iris-release.keystore').unlink(missing_ok=True)
