@@ -1,6 +1,7 @@
 import {createBaseLayer} from './map/base-layers';
 import {DEFAULT_BASE_LAYER_ID, normalizeBaseLayerId} from './map/layers/base-layer-settings';
-import {createPlayerTrackerMarkers} from './map/player-tracker-markers';
+import {createPlayerTrackerMarkers, type PlayerTrackerMarkerGroup} from './map/player-tracker-markers';
+import {createPlayerTrackerGroupPopup} from './map/player-tracker-group-popup';
 import {createIitcIrisMapLifetime, type IitcIrisMapLifetime} from './map/map-runtime-lifetime';
 import L, {type Layer as LeafletLayer, type LeafletMouseEvent, type Map as LeafletMap} from 'leaflet';
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisHighlighterSettings, type IitcIrisInteractionUpdateTimingDiagnostics, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLayerUpdateTimingDiagnostics, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionDetails, type IitcIrisMissionSource, type IitcIrisMissionSummary, type IitcIrisMissionWaypoint, type IitcIrisMissionsState, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderMutationLayerDiagnostics, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisSubscriptionState} from './messages';
@@ -247,20 +248,28 @@ let playerTrackerRefreshTimer: number | undefined;
 let currentPlayerTrackerCommAbortController: AbortController | undefined;
 const playerTrackerProcessedCommGuids = new Set<string>();
 const playerTrackerMarkers = createPlayerTrackerMarkers({
-  createMarker: (name, player, now) => {
+  createMarker: (group, now) => {
+    const {name, player} = group.members[0];
     const last = player.events[player.events.length - 1];
-    const marker = createPlayerTrackerMarker(getIitcPlayerTrackerLatLng(last), name, player.team,
+    const marker = createPlayerTrackerMarker(group.latLng, name, player.team,
       getIitcPlayerTrackerEventOpacity(last.time, now), last.time);
+    marker.setIcon(getPlayerTrackerGroupIcon(group));
+    marker.options.title = getPlayerTrackerGroupTitle(group);
+    marker.options.keyboard = group.members.length > 1;
     const map = window.__iitcIrisMap;
     if (map) marker.addTo(map);
     return marker;
   },
-  createPopup: createPlayerTrackerPopup,
-  updateMarker: (marker, name, player, previous) => {
-    if (player.team !== previous.team) marker.setIcon(getPlayerTrackerMarkerIcon(player.team, name));
+  createPopup: (group, selectedName, select) => createPlayerTrackerGroupPopup(
+    group, selectedName, select, createPlayerTrackerPopup, formatPlayerTrackerAgo),
+  updateMarker: (marker, group, previous) => {
+    if (group.members.length !== previous.members.length || getPlayerTrackerGroupTeam(group) !== getPlayerTrackerGroupTeam(previous)) {
+      marker.setIcon(getPlayerTrackerGroupIcon(group));
+    }
+    const title = getPlayerTrackerGroupTitle(group);
+    marker.options.title = title;
     const icon = marker.getElement();
-    const last = player.events[player.events.length - 1];
-    if (icon) icon.title = `${name}, ${formatPlayerTrackerAgo(last.time)} ago`;
+    if (icon) icon.title = title;
   },
 });
 let requestDiagnosticsState: IitcRequestDiagnosticsState = createIitcRequestDiagnosticsState();
@@ -3442,6 +3451,31 @@ function getPlayerTrackerMarkerIcon(team: keyof typeof TEAM_COLORS, playerName: 
   });
 }
 
+function getPlayerTrackerGroupTeam(group: PlayerTrackerMarkerGroup): string {
+  const team = group.members[0].player.team;
+  return group.members.every(member => member.player.team === team) ? team : 'mixed';
+}
+
+function getPlayerTrackerGroupTitle(group: PlayerTrackerMarkerGroup): string {
+  if (group.members.length > 1) return `${group.members.length} agents last seen here`;
+  const {name, player} = group.members[0];
+  return `${name}, ${formatPlayerTrackerAgo(player.events[player.events.length - 1].time)} ago`;
+}
+
+function getPlayerTrackerGroupIcon(group: PlayerTrackerMarkerGroup): L.Icon | L.DivIcon {
+  if (group.members.length === 1) {
+    const {name, player} = group.members[0];
+    return getPlayerTrackerMarkerIcon(player.team, name);
+  }
+  return L.divIcon({
+    className: `iitc-iris-player-tracker-count iitc-iris-player-tracker-marker-${getPlayerTrackerGroupTeam(group)}`,
+    html: `<span>${group.members.length}</span>`,
+    iconSize: [34, 34],
+    iconAnchor: [17, 34],
+    popupAnchor: [0, -30],
+  });
+}
+
 function renderPlayerTracker(): void {
   const layers = ensureLayers();
   clearRenderedLayers(layers.playerTracker);
@@ -3455,7 +3489,6 @@ function renderPlayerTracker(): void {
   }
 
   const now = Date.now();
-  let markers = 0;
   let traces = 0;
   const visiblePlayers: IitcPlayerTrackerStored = {};
 
@@ -3482,10 +3515,9 @@ function renderPlayerTracker(): void {
     }
 
     visiblePlayers[playerName] = player;
-    markers += 1;
   }
 
-  playerTrackerMarkers.render(visiblePlayers, now);
+  const markers = playerTrackerMarkers.render(visiblePlayers, now);
   updatePlayerTrackerDiagnostics(markers, traces);
   repostLatestEntityStatus();
 }

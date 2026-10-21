@@ -136,3 +136,59 @@
     padding-right: 0;
     text-overflow: ellipsis;
 }
+
+.iitc-iris-player-tracker-count {
+    display: grid;
+    place-items: center;
+    border: 2px solid rgb(255 255 255 / 92%);
+    border-radius: 50%;
+    background: var(--iitc-iris-player-tracker-color, #dbefff);
+    box-shadow: 0 1px 4px rgb(0 0 0 / 65%);
+    color: #071018;
+    font: 800 14px/1 Inter, system-ui, sans-serif;
+    pointer-events: auto;
+}
+
+.iitc-iris-player-tracker-agents {
+    max-height: 240px;
+    overflow-y: auto;
+    margin: 6px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.iitc-iris-player-tracker-agents button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    min-height: 44px;
+    padding: 6px 2px;
+    border: 0;
+    border-bottom: 1px solid rgb(95 180 255 / 24%);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.iitc-iris-player-tracker-agents button:hover,
+.iitc-iris-player-tracker-agents button:focus-visible {
+    background: rgb(95 180 255 / 15%);
+}
+
+.iitc-iris-player-tracker-agents .iitc-iris-player-tracker-name {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.iitc-iris-player-tracker-agents button > :last-child {
+    flex-shrink: 0;
+}
+
+.iitc-iris-player-tracker-back {
+    margin-bottom: 8px;
+    min-height: 32px;
+}

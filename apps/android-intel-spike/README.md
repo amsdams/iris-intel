@@ -1,6 +1,6 @@
 # IRIS Android Spike APK
 
-Disposable native Android/WebView proof, now merged into `main`. Version **0.3.7-spike** loads bundled IRIS automatically on signed-in Intel,
+Disposable native Android/WebView proof, now merged into `main`. Version **0.3.8-spike** loads bundled IRIS automatically on signed-in Intel,
 with a stock-Intel recovery mode. Phone confirmed mode persistence, IRIS startup after reopen, and stock-dashboard
 blocking on 0.3.0. Panel Back, rotation, restoring the open panel after Reload, and background/resume also passed.
 Version 0.3.1 location prompt, permission acceptance, and successful positioning passed on phone.
@@ -55,7 +55,9 @@ source apps/android-intel-spike/signing/release.env
 npm run android:release
 ```
 
-Output: `app/build/outputs/apk/release/app-release.apk`. Release version codes are `1000 + git rev-list --count HEAD`;
+Output: `app/build/outputs/apk/release/app-release.apk`; `npm run serve` offers it as `iitc-iris-android.apk`
+in a separate signed-APK section. Use this to update an installed GitHub release; `iris-intel-test.apk` remains the
+differently signed debug build. Release version codes are `1000 + git rev-list --count HEAD`;
 version names include the source commit. Complete Git history is required. Preserve main history so update codes
 keep increasing. `IRIS_ANDROID_VERSION_CODE` can explicitly override the code when necessary.
 Moving from the earlier local debug APK requires uninstall/reinstall once, losing its session/settings; later

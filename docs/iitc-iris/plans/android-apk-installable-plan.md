@@ -15,11 +15,19 @@ refactoring plan, and it should not be mixed with UI extraction or source-layout
 
 ### Done
 
+- 0.3.8 count-marker/list trial groups agents at matching last-seen coordinates, with individual popup/history
+  selection and an All agents return link. Shared runtime/browser touch checks, app checks/package, and signed
+  Android release tests/lint/build pass. The user reports the popup works but has no live multi-agent location;
+  grouped behavior passed with three simulated agents in a browser, and live grouped-marker acceptance remains pending.
+  Local downloads now offer signed APKs
+  separately from debug APKs so a GitHub installation can be updated without changing its signing key.
+
 - 0.3.7 signed APK distribution is implemented and published alongside XPI/ZIP after PR #3 merged as `c8a7d4b`.
   Main CI passed extension checks/package and Android release tests/lint/build. The downloaded release APK's
   checksum, pinned certificate, version, and all 19 embedded IRIS assets were verified. Dedicated signing credentials
-  are in GitHub secrets; the user confirmed the ignored signing directory is backed up. First phone installation of
-  the release-signed APK remains unreported; uninstall the earlier debug installation once before installing it.
+  are in GitHub secrets; the user confirmed the ignored signing directory is backed up. The user installed the
+  GitHub release after removing the old debug app and confirmed it works. Release installation smoke is accepted;
+  individual feature retests were not separately reported.
 
 - 0.3.6 replaces CARTO Dark/Light with keyless OpenFreeMap styles through MapLibre’s Leaflet binding.
   The worker is bundled in both extension and APK; saved preferences migrate. Real-tile browser switching,
@@ -97,7 +105,7 @@ refactoring plan, and it should not be mixed with UI extraction or source-layout
 
 ### Immediate Next Work
 
-First install/smoke the published release-signed APK; the prior debug installation needs one uninstall/reinstall.
+The published release-signed APK installation smoke is accepted after the one-time debug-app uninstall/reinstall.
 See [the roadmap handoff](index.md#next-session-handoff) for release evidence and the overlapping-player-marker pickup.
 
 The feasibility spike is complete for the tested paths: login/persistence, bundled IRIS and runtime communication,
@@ -137,7 +145,7 @@ extension zips through Vite scripts.
 
 A disposable native Intel login test now exists in `apps/android-intel-spike`. It produces a debug-signed APK through
 `npm run android:build` / `npm run android:check`; `npm run android:release` builds the release APK using configured
-signing credentials. GitHub publishes signed APKs alongside extensions. `npm run serve` lists local XPI, ZIP, and debug APK downloads.
+signing credentials. GitHub publishes signed APKs alongside extensions. `npm run serve` lists local XPI, ZIP, signed APK, and debug APK downloads.
 `npm run android:serve` remains an alias; default port is 6969.
 Version 0.3.0 bundles existing IRIS assets and injects them automatically on signed-in Intel in IRIS mode. Local asset interception
 is restricted to `/__iris_android__/`; the shared asset resolver accepts an explicit host base, and the runtime
@@ -235,7 +243,7 @@ their individual evidence and stop conditions.
 | 7 | Permission, privacy, and release-readiness audit | Todo | Android permissions plus backlog must-haves are listed and minimized. |
 | 8 | Android project scaffold | Todo | Native project exists only after assignments 4 and 5 pass. |
 | 9 | Debug APK build and mobile smoke test | Tested paths accepted; remaining edge/accessibility cases retained | A signed debug APK installs and performs mobile/accessibility smoke paths on a real device. |
-| 10 | Friend-shared APK release plan | Signed publishing/versioning/install notes done; release phone smoke and wider-sharing review remain | APK signing, versioning, install notes, privacy notes, and update/rollback strategy are documented. |
+| 10 | Friend-shared APK release plan | Signed publishing/versioning/install notes done; release installation accepted; wider-sharing review remains | APK signing, versioning, install notes, privacy notes, and update/rollback strategy are documented. |
 
 ## Assignment Details
 

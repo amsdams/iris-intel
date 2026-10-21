@@ -24,14 +24,20 @@ A dedicated signing key is held in encrypted GitHub secrets and ignored local `a
 The user confirmed that directory is backed up; backup restoration has not been tested. Moving from the previous
 debug-signed phone installation needs one uninstall/reinstall, clearing its session/settings; later signed releases
 update in place. Preserve the key, application ID, and increasing version codes during project promotion.
-The published release APK still needs its first phone installation smoke. A NAS Git mirror was discussed but not configured;
+The user installed the published GitHub release after removing the old debug app and confirmed it works;
+the release installation smoke is accepted. Individual feature retests were not separately reported.
+A NAS Git mirror was discussed but not configured;
 normal Git pushes exclude the signing directory.
 
-**Next feature pickup — overlapping player markers:** the user reports that multiple agents at one portal leave
-only one marker accessible. No existing overlap follow-up was found. IITC's player tracker registers markers with
-OverlappingMarkerSpiderfier and handles popup selection through `spiderfiedclick`; see the [backlog](../backlog.md).
-Use that interaction as prior art: spread overlapping pins on click/tap so every agent's popup/history is reachable,
-while preserving actual portal coordinates and stable marker identity. Implement in the shared map runtime for XPI/APK.
+**Overlapping player markers trial (0.3.8-spike):** implemented count marker → compact agent list → existing
+popup/history, with an All agents return link. Grouping uses exact last-seen coordinates after faction filtering;
+nearby portals remain separate at every zoom. Single-agent pins are unchanged. IITC's spiderfier was reviewed;
+the user chose the count/list alternative. App checks (531 tests), packaging, Android release tests/lint/build,
+and a real-browser touch check pass: each agent/history, Back to list, pan refresh, zoom, faction counts, map
+replacement, and cleanup. Signed local APK uses the existing release key. The user reports the popup works,
+but has no live location with multiple tracked agents to test the group. Browser evidence uses three simulated
+colocated agents; live count/list acceptance remains pending (platform of the latest popup check not specified).
+The local download page now distinguishes signed and debug APKs; use `iitc-iris-android.apk` to update a GitHub install.
 
 **OpenFreeMap trial (0.3.6-spike):** Dark/Light now use OpenFreeMap via MapLibre’s Leaflet binding, without API keys.
 OSM stays available; saved CARTO choices migrate. Workers and licences are packaged locally. Real-tile browser checks
@@ -85,14 +91,14 @@ rejection checks. No further generic CSS/component cleanup is queued.
 
 ## Next Work
 
-1. Install the published release APK once (uninstall the earlier debug app first); check fresh login, IRIS startup/reopen,
-   player popup, location, and clipboard. The debug APK phone evidence is accepted; release installation is not yet reported.
-2. Fix overlapping player-marker selection using IITC's spiderfier behavior as prior art; validate XPI and APK.
-3. **Feasibility spike phone checks are complete for the tested paths.** Promote the existing wrapper into the
+1. When a live group is available, smoke-test the count-marker/list trial in XPI and APK: select each history,
+   return to the list, and check faction counts. The user reports the popup works; live grouped-marker testing is
+   pending availability and need not block unrelated work. Nearby overlapping portals remain a separate decision.
+2. **Feasibility spike phone checks and release installation are accepted for the tested paths.** Promote the existing wrapper into the
    permanent Android project; update names/scripts and move test controls behind accessible diagnostics/recovery UI.
-4. Carry the existing platform ownership inventory and known limits forward: embedded Google login is a compatibility
+3. Carry the existing platform ownership inventory and known limits forward: embedded Google login is a compatibility
    workaround, Google Password Manager is unresolved, and file handling is deferred because Draw Tools uses text/clipboard.
-5. Keep unreported edge cases (approximate-only access, permission cancellation during navigation, and individual
+4. Keep unreported edge cases (approximate-only access, permission cancellation during navigation, and individual
    regional account flows) in future regression checks. First distribution remains private/friends sideload APK;
    store distribution is deferred.
 

@@ -6,7 +6,7 @@ import {fileURLToPath} from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const builds = join(root, 'apps/iitc-iris/builds');
-const apkDirectory = join(root, 'apps/android-intel-spike/app/build/outputs/apk/debug');
+const apkDirectory = join(root, 'apps/android-intel-spike/app/build/outputs/apk');
 const port = Number(process.env.PORT || 6969);
 if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('PORT must be between 1 and 65535.');
 
@@ -28,13 +28,16 @@ function artifacts() {
       type: entry.name.endsWith('.xpi') ? 'Firefox XPI' : 'Chrome ZIP',
       mime: entry.name.endsWith('.xpi') ? 'application/x-xpinstall' : 'application/zip'});
   }
-  const apkPath = join(apkDirectory, 'app-debug.apk');
-  const info = fileInfo(apkPath);
-  if (info) {
+  for (const variant of ['release', 'debug']) {
+    const directory = join(apkDirectory, variant);
+    const apkPath = join(directory, `app-${variant}.apk`);
+    const info = fileInfo(apkPath);
+    if (!info) continue;
     let version = '';
-    try { version = JSON.parse(readFileSync(join(apkDirectory, 'output-metadata.json'), 'utf8')).elements?.[0]?.versionName || ''; }
+    try { version = JSON.parse(readFileSync(join(directory, 'output-metadata.json'), 'utf8')).elements?.[0]?.versionName || ''; }
     catch { /* The APK remains downloadable without optional version metadata. */ }
-    files.push({name: 'iris-intel-test.apk', path: apkPath, info, type: 'Android APK',
+    files.push({name: variant === 'release' ? 'iitc-iris-android.apk' : 'iris-intel-test.apk', path: apkPath, info,
+      type: variant === 'release' ? 'Android signed APK' : 'Android debug APK',
       version, mime: 'application/vnd.android.package-archive'});
   }
   return files.sort((a, b) => b.info.mtimeMs - a.info.mtimeMs || a.name.localeCompare(b.name));
@@ -46,7 +49,8 @@ const escape = (text) => String(text).replace(/[&<>"']/g, (character) => ({
 
 function page(files) {
   const groups = [
-    ['Firefox XPI', 'npm run package'], ['Chrome ZIP', 'npm run package'], ['Android APK', 'npm run android:build'],
+    ['Firefox XPI', 'npm run package'], ['Chrome ZIP', 'npm run package'],
+    ['Android signed APK', 'npm run android:release'], ['Android debug APK', 'npm run android:build'],
   ];
   return `<!doctype html>
 <html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -64,6 +68,7 @@ ${groups.map(([type, command]) => {
 <small>${file.version ? `${escape(file.version)} · ` : ''}${Math.ceil(file.info.size / 1024)} KB · ${escape(file.info.mtime.toISOString())}</small>
 </li>`).join('')}</ul>` : '<p>No build yet.</p>'}<p>Build: <code>${command}</code></p></section>`;
   }).join('')}
+<p>Android: use the signed APK to update a GitHub-installed release. Debug and release APKs use different keys; switching requires reinstalling and clears local app data.</p>
 <p>Android: install the update, open <b>IRIS Intel Test</b>, and IRIS starts automatically after sign-in. <b>Stock Intel</b> is the recovery option; <b>IRIS</b> switches back.</p>
 </html>`;
 }
