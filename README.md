@@ -3,6 +3,9 @@
 A TypeScript/Preact/Leaflet browser extension for Ingress Intel, preserving IITC-CE behavior with explicit ownership,
 focused modules, and a tested domain core.
 
+Download the APK and browser extensions from [GitHub Releases](https://github.com/amsdams/iris-intel/releases/tag/latest).
+For Android installation and updates, see the [friends testing guide](docs/iitc-iris/friends-testing.md).
+
 ```mermaid
 flowchart LR
     App["apps/iitc-iris<br/>UI, workflows, browser integration, Leaflet runtime"] --> Core["packages/iitc-core<br/>Parsing, geometry, request planning, caches"]

@@ -46,6 +46,9 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.Collections;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public final class MainActivity extends Activity {
     private static final String INTEL_URL = "https://intel.ingress.com/";
@@ -72,6 +75,9 @@ public final class MainActivity extends Activity {
     private boolean pageFinished;
     private boolean autoStarted;
     private int pollEpoch;
+    private final ExecutorService updateExecutor = Executors.newSingleThreadExecutor();
+    private Future<?> updateTask;
+    private AlertDialog updateDialog;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -170,6 +176,8 @@ public final class MainActivity extends Activity {
     private void showAppMenu(android.view.View anchor) {
         PopupMenu menu = new PopupMenu(this, anchor);
         menu.getMenu().add(R.string.about).setOnMenuItemClickListener(item -> { showAbout(); return true; });
+        menu.getMenu().add(R.string.check_updates).setOnMenuItemClickListener(item -> { checkUpdates(); return true; });
+        menu.getMenu().add(R.string.releases).setOnMenuItemClickListener(item -> { openBrowser(ReleaseUpdate.RELEASES_URL); return true; });
         menu.getMenu().add(R.string.reload).setOnMenuItemClickListener(item -> { webView.reload(); return true; });
         android.view.SubMenu recovery = menu.getMenu().addSubMenu(R.string.recovery);
         recovery.add(R.string.load_iris).setOnMenuItemClickListener(item -> { openMode(true); return true; });
@@ -189,6 +197,45 @@ public final class MainActivity extends Activity {
     private void showPrivacy() {
         new AlertDialog.Builder(this).setTitle(R.string.privacy).setMessage(R.string.privacy_text)
                 .setPositiveButton(android.R.string.ok, null).show();
+    }
+
+    @SuppressWarnings("deprecation") // versionCode is needed on API 26–27.
+    private long installedVersionCode() throws PackageManager.NameNotFoundException {
+        PackageInfo info = getPackageManager().getPackageInfo(getPackageName(), 0);
+        return Build.VERSION.SDK_INT >= 28 ? info.getLongVersionCode() : info.versionCode;
+    }
+
+    private void checkUpdates() {
+        if (updateDialog != null) return;
+        AlertDialog dialog = new AlertDialog.Builder(this).setTitle(R.string.check_updates)
+                .setMessage(R.string.updates_checking)
+                .setPositiveButton(android.R.string.ok, null)
+                .setNeutralButton(R.string.releases, (ignored, which) -> openBrowser(ReleaseUpdate.RELEASES_URL))
+                .create();
+        updateDialog = dialog;
+        dialog.setOnDismissListener(ignored -> {
+            updateDialog = null;
+            if (updateTask != null) updateTask.cancel(true);
+            updateTask = null;
+        });
+        dialog.show();
+        updateTask = updateExecutor.submit(() -> {
+            String message;
+            try {
+                ReleaseUpdate update = ReleaseUpdate.fetch();
+                message = getString(update.isNewerThan(installedVersionCode())
+                        ? R.string.updates_available : R.string.updates_current,
+                        getString(R.string.spike_version), update.versionName);
+            } catch (IOException | PackageManager.NameNotFoundException error) {
+                message = getString(R.string.updates_failed);
+            }
+            final String result = message;
+            runOnUiThread(() -> {
+                if (!isFinishing() && !isDestroyed() && updateDialog == dialog && dialog.isShowing()) {
+                    dialog.setMessage(result);
+                }
+            });
+        });
     }
 
     private void openMode(boolean useIris) {
@@ -507,6 +554,8 @@ public final class MainActivity extends Activity {
     }
 
     @Override protected void onDestroy() {
+        if (updateDialog != null) updateDialog.dismiss();
+        updateExecutor.shutdownNow();
         resumed = false;
         locationPermissions.cancel();
         invalidateProbe();

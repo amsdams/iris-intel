@@ -104,12 +104,15 @@ jobs:
             test "$CERTIFICATE" = "$(cat apps/android-intel-spike/release-certificate.sha256)"
           fi
           cp "$APK" out/iitc-iris-android.apk
+          if [ "$SIGNED" = 'true' ]; then
+            node scripts/write-android-update.mjs apps/android-intel-spike/app/build/outputs/apk/release/output-metadata.json out/iitc-iris-android-update.properties
+          fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: iitc-iris-android
-          path: out/iitc-iris-android.apk
+          path: out/
           if-no-files-found: error
           retention-days: 30
 

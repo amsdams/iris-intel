@@ -20,6 +20,15 @@ Only the first move from a debug APK needs uninstalling, which clears app data. 
 4. Close/reopen, try Android Back, and use the app during normal play over a few days.
    If multiple tracked players share a last-seen location, try the count marker and each agent's history.
 
+## Updates
+
+Use **App → Check for updates** to compare your installed Android build with the latest published main-build APK.
+An available update offers **Releases**, which opens the GitHub release page; download the signed APK and install it
+over the existing app. **App → Releases** opens that page directly. Updates are checked only when requested;
+there are no background checks, automatic APK downloads, or automatic installation.
+A local build may be newer than GitHub. If the check fails, use Releases or try again later.
+The first release containing this feature must be published before its version metadata is available.
+
 ## Recovery And Feedback
 
 **App → Reload** reloads the current mode. **App → Recovery → Stock Intel** opens the original Intel map;
@@ -33,6 +42,8 @@ or account identities. **Check session** runs a probe; reopen Diagnostics to rea
 
 ## Data Use
 
+The manual update check fetches public version metadata from GitHub without Intel cookies or account details;
+GitHub receives the network request, including your IP address. Releases/Feedback open GitHub in your browser.
 IRIS operates no analytics/crash-reporting backend. Reports/diagnostics are shared only when you send them.
 Intel and authentication contact Niantic and the sign-in provider. WebView retains cookies and local settings;
 IRIS does not send them to an IRIS-operated server. Map requests contact OpenStreetMap or OpenFreeMap and their

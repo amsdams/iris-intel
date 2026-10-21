@@ -1,6 +1,6 @@
 # IRIS Android APK — Friends Alpha
 
-The existing native Android/WebView wrapper now has a small friends-testing interface. Version **0.4.0-alpha** loads bundled IRIS automatically on signed-in Intel,
+The existing native Android/WebView wrapper now has a small friends-testing interface. Version **0.4.1-alpha** loads bundled IRIS automatically on signed-in Intel,
 with a stock-Intel recovery mode. Phone confirmed mode persistence, IRIS startup after reopen, and stock-dashboard
 blocking on 0.3.0. Panel Back, rotation, restoring the open panel after Reload, and background/resume also passed.
 Version 0.3.1 location prompt, permission acceptance, and successful positioning passed on phone.
@@ -11,6 +11,8 @@ The launcher name is **IRIS**. A compact **App** menu holds About, Privacy/Feedb
 Recovery, and Diagnostics. Successful startup hides the temporary status line. Native chrome follows Android appearance;
 **System → Appearance** controls the full web interface separately from the map style. Existing installations retain
 the dark UI until another theme is selected. See the [friends testing guide](../../docs/iitc-iris/friends-testing.md).
+**App → Check for updates** manually compares the installed version code with public metadata beside the latest
+main-build APK; **App → Releases** opens that GitHub release directly. No background check or APK installer is added.
 The technical project folder/application ID stay unchanged to preserve signed updates.
 
 ## Build And Download
@@ -64,7 +66,9 @@ npm run android:release
 Output: `app/build/outputs/apk/release/app-release.apk`; `npm run serve` offers it as `iitc-iris-android.apk`
 in a separate signed-APK section. Use this to update an installed GitHub release; `iris-intel-test.apk` remains the
 differently signed debug build. Release version codes are `1000 + git rev-list --count HEAD`;
-version names include the source commit. Complete Git history is required. Preserve main history so update codes
+version names include the source commit. CI also publishes `iitc-iris-android-update.properties`, generated from
+the assembled APK’s `output-metadata.json`; the manual checker compares Android version codes rather than names or tags.
+The checker uses the explicit `latest` tag, including friends prereleases; tagged releases also carry the metadata. Complete Git history is required. Preserve main history so update codes
 keep increasing. `IRIS_ANDROID_VERSION_CODE` can explicitly override the code when necessary.
 Moving from the earlier local debug APK requires uninstall/reinstall once, losing its session/settings; later
 release builds use the same signing key and can update in place. Local debug builds retain their separate key.

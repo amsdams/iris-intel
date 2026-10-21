@@ -105,6 +105,8 @@ jobs:
             ---
             **Installation Instructions:**
             Refer to the [README](https://github.com/${{ github.repository }}#load-iitc-iris-locally) for extension installation instructions.
+            Android: see the [friends testing guide](https://github.com/${{ github.repository }}/blob/main/docs/iitc-iris/friends-testing.md).
+            In IRIS, use **App → Check for updates** or **App → Releases** for future APKs.
           files: out/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

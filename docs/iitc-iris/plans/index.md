@@ -14,6 +14,16 @@ The retained ownership rules and known limits are in [Application Architecture](
 
 ## Next Session Handoff
 
+**Manual APK updates (0.4.1-alpha):** App → Check for updates fetches public metadata from the `latest` GitHub
+release, compares Android version codes, and reports newer/current/failure. App → Releases opens that release directly.
+Checks run off the UI thread with timeouts and response-size limits; dismissal/destruction cancels the task and
+ignores stale results. No WebView cookies, account details, background polling, or automatic APK downloads are used.
+CI publishes metadata generated from the assembled APK alongside the signed artifact. The first published build
+with metadata and the native dialogs still need phone/CI acceptance. Local validation passed: 534 app/core tests,
+packaging, 31 native + 15 JavaScript tests, Android release lint/build, workflow YAML parsing, and APK signature/download
+checks. Generated metadata matches the assembled APK (`0.4.1-alpha+948061e`, version code 1832).
+The public metadata URL currently returns 404; until the next CI publication, the app shows the failure state.
+
 **Friends alpha (0.4.0-alpha, 2026-10-21):** launcher name IRIS, compact native App menu, About/Privacy/Feedback,
 Reload, Recovery, and Diagnostics; successful startup hides the temporary status line. Existing app ID and signing
 key are preserved. Full web interface has **System → Appearance → System / Dark / Light**, in APK and extensions,
