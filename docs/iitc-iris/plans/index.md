@@ -14,6 +14,12 @@ The retained ownership rules and known limits are in [Application Architecture](
 
 ## Next Session Handoff
 
+**Session pickup:** triage concrete alpha feedback first, especially crashes, login, data loss, or broken workflows.
+If none needs attention, start with release workflow consistency, then base-map recovery below. A Play Store readiness
+assessment can follow when broader distribution is the goal. [Optional additional features](../backlog.md#optional-additional-features-deferred-2026-10-21)
+are deferred; the baseline includes Passcode and Missions. Further runtime decomposition should accompany a concrete
+change or finding, rather than become another general cleanup prerequisite.
+
 **Appearance controls (2026-10-21):** interface theme and base map selection now share **System → Appearance**.
 The choices stay independent and retain existing saved preferences. Map → Display contains overlays, portal filters,
 and highlighters. XPI/APK smoke: change both choices independently and reload to confirm persistence.
@@ -135,7 +141,7 @@ rejection checks. No further generic CSS/component cleanup is queued.
 
 ## Next Work
 
-**Review follow-ups (2026-10-21), in order:**
+**Engineering follow-ups (2026-10-21):**
 
 1. **Release workflow consistency:** `android.yml` defaults checkout to `github.ref`, while the extension build
    uses the triggering commit. Default Android to `${{ inputs.ref || github.sha }}` so rerunning an old main build
@@ -147,7 +153,7 @@ rejection checks. No further generic CSS/component cleanup is queued.
    selection, avoid retry loops, and verify cleanup/map replacement and phone background/resume. OSM is currently
    a manual alternative; no automatic recovery or observed outage is claimed. This concerns base-map tiles, not
    Intel portal/entity requests.
-3. **Focused map-runtime decomposition:** review request coordination and overlay rendering as extraction candidates
+3. **Focused map-runtime decomposition (opportunistic):** review request coordination and overlay rendering as extraction candidates
    from `page-map-runtime.ts`; choose cohesive ownership boundaries rather than a line-count target. Preserve
    request generations, cancellation, cache behavior, map replacement, event cleanup, and existing appearance.
    Use plain runtime controllers/functions, with meaningful lifecycle regressions and XPI/APK smoke checks.

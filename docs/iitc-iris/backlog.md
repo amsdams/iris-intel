@@ -60,6 +60,21 @@ what to port natively and what to leave out.
 These items are broader than any single feature port. Keep them here instead of inside feature-specific notes such as
 geodesic rendering.
 
+### Optional Additional Features (Deferred, 2026-10-21)
+
+Consider **System → Additional features** to reduce menu clutter and accommodate future built-in tools. The intended
+distinction is baseline Intel/IITC functionality versus additions, rather than making every panel optional. Keep
+selected-object details, essential navigation/settings, regional Scores, Passcode, and Missions in the baseline;
+Missions is an upstream plugin but need not be optional in IRIS. Candidate optional additions: Counts, Portals List,
+portal Scoreboard (distinct from regional Scores), and Draw Tools Links/Markers. Final inventory/defaults are undecided.
+Reuse the menu registry and persist choices; preserve existing users' availability, saved data, and preferences.
+Navigation, shortcuts, and other entry points must agree, with a safe fallback when an open panel becomes unavailable.
+Decide panel visibility versus whole-feature shutdown explicitly: hiding a panel should not silently change overlays
+or erase drawings, and background work/shared dependencies need separate lifecycle decisions. This does not imply
+installable IITC plugins or a general plugin engine. No implementation is queued for this session.
+
+### Existing Product And Runtime Items
+
 | Area | Status | Notes |
 | --- | --- | --- |
 | Plugin/core strategy for smart ports | Open | Keep endpoint parsing, normalization, and reusable pure logic in `@iris/iitc-core`; keep app-specific sheet/menu/runtime behavior in IITC IRIS until another app needs the same surface. Promote patterns into core after implemented IITC IRIS behavior proves they are stable. Do not let deferred/reference plugins drive the first contracts. |
