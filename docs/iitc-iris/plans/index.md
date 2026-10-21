@@ -22,7 +22,8 @@ CI publishes metadata generated from the assembled APK alongside the signed arti
 with metadata and the native dialogs still need phone/CI acceptance. Local validation passed: 534 app/core tests,
 packaging, 31 native + 15 JavaScript tests, Android release lint/build, workflow YAML parsing, and APK signature/download
 checks. Generated metadata matches the assembled APK (`0.4.1-alpha+948061e`, version code 1832).
-The public metadata URL currently returns 404; until the next CI publication, the app shows the failure state.
+At local verification, the public metadata URL returned 404; CI publication and the resulting phone update check
+remain to be verified. The user has since shared the app via Telegram.
 
 **Friends alpha (0.4.0-alpha, 2026-10-21):** launcher name IRIS, compact native App menu, About/Privacy/Feedback,
 Reload, Recovery, and Diagnostics; successful startup hides the temporary status line. Existing app ID and signing
@@ -39,8 +40,8 @@ Initial user feedback on the new appearance is positive; Passcode/COMM fields re
 Search, COMM, and Passcode now share `ui/shared/input-surface.css`: matching background, border, 6px corners,
 font, height, and focus treatment. The passcode-specific helper was removed. Browser checks with Intel CSS
 confirm matching computed styles in both light and dark themes.
-The user accepted the aligned input styling (2026-10-21). Native-menu acceptance remains unreported; no friends
-invitations or publishing have been performed.
+The user accepted the aligned input styling (2026-10-21) and subsequently shared the app via Telegram.
+Native-menu acceptance remains unreported.
 
 **Session wrap-up (2026-10-21):** PR #3 merged as `c8a7d4b`; [main CI](https://github.com/amsdams/iris-intel/actions/runs/39579786375)
 passed extension checks/package and Android release tests/lint/build, then published

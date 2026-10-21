@@ -1,17 +1,40 @@
-# IITC IRIS
+# IRIS — Ingress Intel Map for Android and Browsers
 
-A TypeScript/Preact/Leaflet browser extension for Ingress Intel, preserving IITC-CE behavior with explicit ownership,
-focused modules, and a tested domain core.
+IRIS (Ingress Reconnaissance & Intelligence System) is an independent Ingress Intel map companion,
+based on IITC. Use it as an Android APK or a Firefox/Chrome browser extension to explore portals,
+plan links, follow player activity, and read COMM.
 
-Download the APK and browser extensions from [GitHub Releases](https://github.com/amsdams/iris-intel/releases/tag/latest).
-For Android installation and updates, see the [friends testing guide](docs/iitc-iris/friends-testing.md).
+- Portal details, missions, inventory, passcodes, regional scores, and portal analysis.
+- Player tracker with grouped markers and individual agent histories.
+- Drawn links and markers, portal/address search, and optional Locate.
+- OpenStreetMap and OpenFreeMap map styles, with a separate System / Dark / Light interface setting.
+
+## Download And Try
+
+Get the current builds from **[GitHub Releases](https://github.com/amsdams/iris-intel/releases/tag/latest)**.
+
+| Platform | Download | Getting started |
+| --- | --- | --- |
+| Android 8.0+ | `iitc-iris-android.apk` | [Installation, updates, recovery, and privacy](docs/iitc-iris/friends-testing.md) |
+| Chrome / Chromium | `iitc-iris-chrome.zip` | Extract and load the folder containing `manifest.json` through Developer mode. |
+| Firefox | `iitc-iris-firefox.xpi` | Development build; see [temporary browser loading](#load-iitc-iris-locally). |
+
+IRIS is an early alpha, currently shared for friends testing. Android uses an experimental WebView sign-in
+compatibility workaround; saved-password support remains unresolved. It is not affiliated with or endorsed by Niantic.
+See the [Android notes](apps/android-intel-spike/README.md) for known limits.
+
+For Android updates, use **App → Check for updates** or **App → Releases**. Install the signed APK over your
+existing release to preserve settings and your session. Report problems through **App → About IRIS → Feedback**
+or [GitHub Issues](https://github.com/amsdams/iris-intel/issues), including the app version and steps to reproduce.
+
+## Repository
+
+Built with TypeScript, Preact, Leaflet, and a UI-independent domain core.
 
 ```mermaid
 flowchart LR
     App["apps/iitc-iris<br/>UI, workflows, browser integration, Leaflet runtime"] --> Core["packages/iitc-core<br/>Parsing, geometry, request planning, caches"]
 ```
-
-## Repository
 
 - `apps/iitc-iris/`: the application, component workbench, bundled assets, and extension packaging.
 - `packages/iitc-core/`: IITC-compatible domain logic, without UI or browser-runtime dependencies.
@@ -54,7 +77,9 @@ CI installs it with `npm ci` on Node 24.
 
 ## Load IITC IRIS Locally
 
-Build with `npm run package`, then open `https://intel.ingress.com/` after loading the extension:
+For a downloaded browser package, extract it to a folder containing `manifest.json` and use the loading steps
+below with that folder. For a source build, run `npm run package` and use `apps/iitc-iris/dist`.
+Then open `https://intel.ingress.com/` after loading the extension:
 
 - Chrome/Chromium: open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select
   `apps/iitc-iris/dist`.
@@ -79,16 +104,11 @@ and the [friends testing guide](docs/iitc-iris/friends-testing.md).
 
 ## Product Scope
 
-IITC IRIS renders portals, links, fields, artifacts, ornaments, missions, and selected portal state. It includes portal
-details, COMM, scores, inventory, passcodes, search, player tracker, Draw Tools v1 links/markers, and portal analysis.
-Broad IITC plugin compatibility and permanent Android APK hosting remain separate decisions.
-A disposable [Android login/injection test](apps/android-intel-spike/README.md) builds with `npm run android:check`;
-`npm run serve` lists the APK alongside extension packages for manual download. Phone login, persistence, bundled
-IRIS injection, and a quick feature smoke passed. Version 0.3.0 adds automatic IRIS loading, stock-Intel recovery,
-Back handling, and background timer suspension. Mode persistence, IRIS startup after reopen, and stock-dashboard
-blocking passed on phone, along with panel Back, rotation, and restoring the open panel after Reload.
-Background/resume responsiveness also passed. Version 0.3.1 adds an on-demand location permission prompt;
-the user confirmed the prompt, permission acceptance, and successful location on phone.
+IRIS renders portals, links, fields, artifacts, ornaments, missions, and selected portal state using live Intel data.
+Broad IITC plugin compatibility and Play Store distribution remain outside the current alpha scope.
+The Android wrapper includes automatic IRIS loading, Stock Intel recovery, native Back handling, foreground location
+permission, and session persistence. See the [Android README](apps/android-intel-spike/README.md) and
+[roadmap](docs/iitc-iris/plans/index.md) for validation evidence and remaining checks.
 
 Start with the [documentation index](docs/README.md), [architecture](docs/iitc-iris/architecture.md),
 [roadmap](docs/iitc-iris/plans/index.md), [port plan](docs/iitc-iris/port-plan.md),
