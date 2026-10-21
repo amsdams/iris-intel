@@ -1,4 +1,5 @@
 import {getExtensionUrl} from './platform/assets';
+import {installIitcIrisHostBack} from './shell/host-navigation';
 import {Button} from './ui/button';
 import {h, render} from 'preact';
 import './map/search-panel/map-search-badge.css';
@@ -848,6 +849,15 @@ function App(): h.JSX.Element {
     window.addEventListener('keydown', onKeyDown);
     return (): void => window.removeEventListener('keydown', onKeyDown);
   }, [closeSheets, hasSelectedObject, panMap, portalImageOpen, shortcutsEnabled, togglePrimaryMenu, toggleSheet, zoomMap]);
+
+  useEffect(() => installIitcIrisHostBack({
+    portalImageOpen, activeSheet, hasSelectedObject,
+    closePortalImage: () => setPortalImageOpen(false), closeSheets,
+    clearSelection: () => {
+      setMapContext(null);
+      clearPortalSelectionCommand(postIitcMessage);
+    },
+  }), [activeSheet, closeSheets, hasSelectedObject, portalImageOpen, postIitcMessage]);
 
   const setDataSource = (id: string): void => {
     setDataSourceCommand(id, DATA_SOURCE_OPTIONS, setDataSourceId, setMapView);

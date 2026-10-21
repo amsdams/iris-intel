@@ -1,6 +1,7 @@
 package org.iris.intelspike;
 
 import android.annotation.SuppressLint;
+import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
@@ -8,6 +9,7 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -16,6 +18,7 @@ import android.os.Looper;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.webkit.CookieManager;
+import android.webkit.GeolocationPermissions;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
@@ -45,8 +48,11 @@ import java.util.Collections;
 
 public final class MainActivity extends Activity {
     private static final String INTEL_URL = "https://intel.ingress.com/";
+    private static final String IRIS_MODE = "iris-mode";
+    private static final int LOCATION_PERMISSION_REQUEST = 1;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private WebView webView;
+    private LocationPermissionFlow locationPermissions;
     private TextView status;
     private ProgressBar progress;
     private Button checkButton;
@@ -59,9 +65,16 @@ public final class MainActivity extends Activity {
     private int pageGeneration;
     private boolean pageFailed;
     private boolean irisProbe;
+    private volatile boolean irisMode;
+    private volatile boolean stockDashboardBlocked;
+    private boolean resumed;
+    private boolean pageFinished;
+    private boolean autoStarted;
+    private int pollEpoch;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
+        irisMode = getPreferences(MODE_PRIVATE).getBoolean(IRIS_MODE, true);
         loadStatus = getString(R.string.loading, NavigationPolicy.host(INTEL_URL));
         sessionStatus = getString(R.string.not_checked);
         irisStatus = getString(R.string.iris_not_loaded);
@@ -85,11 +98,11 @@ public final class MainActivity extends Activity {
         title.setPadding(dp(12), dp(8), dp(12), 0);
         root.addView(title);
         LinearLayout controls = new LinearLayout(this);
-        controls.addView(button(R.string.open_intel, () -> webView.loadUrl(INTEL_URL)));
+        controls.addView(button(R.string.open_intel, () -> openMode(false)));
         controls.addView(button(R.string.reload, () -> webView.reload()));
         checkButton = button(R.string.check_session, this::checkSession);
         controls.addView(checkButton);
-        irisButton = button(R.string.load_iris, () -> startProbe("load-iris.js", true));
+        irisButton = button(R.string.load_iris, () -> openMode(true));
         controls.addView(irisButton);
         controls.addView(button(R.string.diagnostics, this::showDiagnostics));
         HorizontalScrollView scroll = new HorizontalScrollView(this);
@@ -103,6 +116,17 @@ public final class MainActivity extends Activity {
         progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         root.addView(progress, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(3)));
         webView = new WebView(this);
+        locationPermissions = new LocationPermissionFlow(new LocationPermissionFlow.Host() {
+            @Override public boolean isIntelPage() { return NavigationPolicy.isIntel(webView.getUrl()); }
+            @Override public boolean hasLocationPermission() {
+                return checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                        || checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+            }
+            @Override public void requestLocationPermissions() {
+                requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION,
+                        Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION_REQUEST);
+            }
+        });
         configureWebView();
         root.addView(webView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
         setContentView(root);
@@ -111,6 +135,7 @@ public final class MainActivity extends Activity {
                     OnBackInvokedDispatcher.PRIORITY_DEFAULT, this::goBack);
         }
         if (state == null || webView.restoreState(state) == null) webView.loadUrl(INTEL_URL);
+        else webView.reload(); // History restores independently of DOM/JS; rebuild the current document in its saved mode.
     }
 
     @SuppressWarnings("deprecation")
@@ -129,6 +154,14 @@ public final class MainActivity extends Activity {
         return button;
     }
 
+    private void openMode(boolean useIris) {
+        webView.stopLoading();
+        invalidateProbe();
+        irisMode = useIris;
+        getPreferences(MODE_PRIVATE).edit().putBoolean(IRIS_MODE, useIris).apply();
+        webView.loadUrl(INTEL_URL);
+    }
+
     @SuppressLint("SetJavaScriptEnabled") // Intel requires JavaScript; no privileged native JS interface is exposed.
     private void configureWebView() {
         WebSettings settings = webView.getSettings();
@@ -138,13 +171,21 @@ public final class MainActivity extends Activity {
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        settings.setGeolocationEnabled(false);
+        settings.setGeolocationEnabled(true);
         settings.setJavaScriptCanOpenWindowsAutomatically(false);
         CookieManager.getInstance().setAcceptCookie(true);
         CookieManager.getInstance().setAcceptThirdPartyCookies(webView, false);
         WebView.setWebContentsDebuggingEnabled((getApplicationInfo().flags
                 & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0);
         webView.setWebChromeClient(new WebChromeClient() {
+            @Override public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
+                locationPermissions.request(origin, callback::invoke);
+            }
+
+            @Override public void onGeolocationPermissionsHidePrompt() {
+                locationPermissions.cancel();
+            }
+
             @Override public void onProgressChanged(WebView view, int value) {
                 progress.setProgress(value);
                 progress.setVisibility(value == 100 ? android.view.View.GONE : android.view.View.VISIBLE);
@@ -153,6 +194,11 @@ public final class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient() {
             @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
+                if (!request.isForMainFrame() && "GET".equals(request.getMethod()) && StockIntelPolicy.blocks(url, irisMode)) {
+                    stockDashboardBlocked = true;
+                    return new WebResourceResponse("text/javascript", "UTF-8", 200, "OK",
+                            Collections.singletonMap("Cache-Control", "no-store"), new ByteArrayInputStream(new byte[0]));
+                }
                 if (!BundledAssets.handles(url)) return null;
                 if (!"GET".equals(request.getMethod())) return assetError(405, "Method Not Allowed");
                 String path = BundledAssets.path(url);
@@ -172,7 +218,11 @@ public final class MainActivity extends Activity {
             }
 
             @Override public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
+                locationPermissions.cancel();
                 invalidateProbe();
+                pageFinished = false;
+                autoStarted = false;
+                stockDashboardBlocked = false;
                 if (!NavigationPolicy.isEmbedded(url)) {
                     view.stopLoading();
                     pageFailed = true;
@@ -189,8 +239,10 @@ public final class MainActivity extends Activity {
             @Override public void onPageFinished(WebView view, String url) {
                 CookieManager.getInstance().flush();
                 if (!pageFailed) {
+                    pageFinished = true;
                     loadStatus = getString(R.string.loaded, NavigationPolicy.host(url));
                     status.setText(loadStatus);
+                    maybeLoadIris(0);
                 }
             }
 
@@ -200,6 +252,24 @@ public final class MainActivity extends Activity {
 
             @Override public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse response) {
                 if (request.isForMainFrame()) failPage(getString(R.string.http_failed, response.getStatusCode()));
+            }
+        });
+    }
+
+    private void maybeLoadIris(int attempt) {
+        if (!resumed || !irisMode || !pageFinished || pageFailed || autoStarted || probeKey != null
+                || !NavigationPolicy.isIntel(webView.getUrl())) return;
+        final int generation = pageGeneration;
+        final int epoch = pollEpoch;
+        webView.evaluateJavascript("Boolean(document.readyState === 'complete' && document.body && window.PLAYER"
+                + " && typeof window.PLAYER.nickname === 'string' && window.PLAYER.nickname)", result -> {
+            if (generation != pageGeneration || epoch != pollEpoch || !resumed || !irisMode
+                    || autoStarted || probeKey != null || !NavigationPolicy.isIntel(webView.getUrl())) return;
+            if ("true".equals(result)) {
+                autoStarted = true;
+                startProbe("load-iris.js", true);
+            } else if (attempt < 10) {
+                handler.postDelayed(() -> maybeLoadIris(attempt + 1), 500);
             }
         });
     }
@@ -237,7 +307,7 @@ public final class MainActivity extends Activity {
     }
 
     private void startProbe(String asset, boolean loadIris) {
-        if (!NavigationPolicy.isIntel(webView.getUrl()) || progress.getVisibility() == android.view.View.VISIBLE || pageFailed) {
+        if (!NavigationPolicy.isIntel(webView.getUrl()) || !pageFinished || pageFailed) {
             status.setText(R.string.intel_required);
             return;
         }
@@ -266,13 +336,14 @@ public final class MainActivity extends Activity {
     }
 
     private void pollProbe(String key, int generation, int attempt) {
-        if (generation != pageGeneration || !key.equals(probeKey) || !NavigationPolicy.isIntel(webView.getUrl())) return;
+        if (!resumed || generation != pageGeneration || !key.equals(probeKey) || !NavigationPolicy.isIntel(webView.getUrl())) return;
+        final int epoch = pollEpoch;
         if (attempt >= (irisProbe ? 160 : 60)) {
             finishProbe(getString(irisProbe ? R.string.iris_timeout : R.string.check_timeout));
             return;
         }
         webView.evaluateJavascript("window[" + JSONObject.quote(key) + "] || null", result -> {
-            if (generation != pageGeneration || !key.equals(probeKey)) return;
+            if (!resumed || epoch != pollEpoch || generation != pageGeneration || !key.equals(probeKey)) return;
             String message = null;
             try {
                 Object value = new JSONTokener(result).nextValue();
@@ -294,10 +365,12 @@ public final class MainActivity extends Activity {
         probeKey = null;
         checkButton.setEnabled(true);
         irisButton.setEnabled(true);
+        if (!irisProbe) maybeLoadIris(0);
     }
 
     private void invalidateProbe() {
         pageGeneration++;
+        pollEpoch++;
         handler.removeCallbacksAndMessages(null);
         probeKey = null;
         if (checkButton != null) checkButton.setEnabled(true);
@@ -308,7 +381,8 @@ public final class MainActivity extends Activity {
         PackageInfo provider = WebView.getCurrentWebViewPackage();
         String text = getString(R.string.diagnostic_text, getString(R.string.spike_version), Build.VERSION.RELEASE,
                 provider == null ? "unknown" : provider.versionName, NavigationPolicy.host(webView.getUrl()),
-                loadStatus, sessionStatus, lastExternalHost, irisStatus);
+                loadStatus, sessionStatus, lastExternalHost, irisStatus,
+                irisMode ? "IRIS" : "Stock Intel", stockDashboardBlocked ? "blocked" : "not observed");
         new AlertDialog.Builder(this).setTitle(R.string.diagnostics).setMessage(text)
                 .setPositiveButton(android.R.string.ok, null)
                 .setNeutralButton(R.string.copy, (dialog, which) -> {
@@ -319,6 +393,24 @@ public final class MainActivity extends Activity {
     }
 
     private void goBack() {
+        if (!NavigationPolicy.isIntel(webView.getUrl()) || !pageFinished) {
+            goBackInHistory();
+            return;
+        }
+        final int generation = pageGeneration;
+        webView.evaluateJavascript("(() => { if (location.origin !== 'https://intel.ingress.com') return 'history';"
+                + " if (document.getElementById('iitc-iris-root')) {"
+                + " const event = new Event('IITC_IRIS_HOST_BACK', {cancelable:true});"
+                + " window.dispatchEvent(event); return event.defaultPrevented ? 'handled' : 'root'; }"
+                + " return window.PLAYER && window.PLAYER.nickname ? 'root' : 'history'; })()", result -> {
+            if (!resumed || generation != pageGeneration) return;
+            if ("\"handled\"".equals(result)) return;
+            if ("\"root\"".equals(result)) moveTaskToBack(true);
+            else goBackInHistory();
+        });
+    }
+
+    private void goBackInHistory() {
         if (webView.canGoBack()) webView.goBack();
         else finish();
     }
@@ -328,24 +420,45 @@ public final class MainActivity extends Activity {
     @SuppressWarnings("deprecation")
     @Override public void onBackPressed() { goBack(); }
 
+    @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == LOCATION_PERMISSION_REQUEST) locationPermissions.onPermissionResult();
+    }
+
     @Override protected void onSaveInstanceState(Bundle state) {
         webView.saveState(state);
         super.onSaveInstanceState(state);
     }
 
     @Override protected void onPause() {
+        resumed = false;
+        pollEpoch++;
+        handler.removeCallbacksAndMessages(null);
         CookieManager.getInstance().flush();
         webView.onPause();
+        // This spike owns the process's only WebView. pauseTimers affects every WebView in the process.
+        webView.pauseTimers();
         super.onPause();
     }
 
     @Override protected void onResume() {
         super.onResume();
-        if (webView != null) webView.onResume();
+        resumed = true;
+        if (webView != null) {
+            webView.resumeTimers();
+            webView.onResume();
+            if (probeKey != null) pollProbe(probeKey, pageGeneration, 0);
+            else maybeLoadIris(0);
+            webView.evaluateJavascript("if (location.origin === 'https://intel.ingress.com'"
+                    + " && window.__iitcIrisMap) window.__iitcIrisMap.invalidateSize();", null);
+        }
     }
 
     @Override protected void onDestroy() {
+        resumed = false;
+        locationPermissions.cancel();
         invalidateProbe();
+        webView.resumeTimers(); // Do not leave the process-wide timer suspension behind after disposal.
         ((ViewGroup) webView.getParent()).removeView(webView);
         webView.stopLoading();
         webView.destroy();

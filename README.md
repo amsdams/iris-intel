@@ -76,7 +76,11 @@ details, COMM, scores, inventory, passcodes, search, player tracker, Draw Tools 
 Broad IITC plugin compatibility and permanent Android APK hosting remain separate decisions.
 A disposable [Android login/injection test](apps/android-intel-spike/README.md) builds with `npm run android:check`;
 `npm run serve` lists the APK alongside extension packages for manual download. Phone login, persistence, bundled
-IRIS injection, and a quick feature smoke passed; wrapper hardening remains next.
+IRIS injection, and a quick feature smoke passed. Version 0.3.0 adds automatic IRIS loading, stock-Intel recovery,
+Back handling, and background timer suspension. Mode persistence, IRIS startup after reopen, and stock-dashboard
+blocking passed on phone, along with panel Back, rotation, and restoring the open panel after Reload.
+Background/resume responsiveness also passed. Version 0.3.1 adds an on-demand location permission prompt;
+the user confirmed the prompt, permission acceptance, and successful location on phone.
 
 Start with the [documentation index](docs/README.md), [architecture](docs/iitc-iris/architecture.md),
 [roadmap](docs/iitc-iris/plans/index.md), [port plan](docs/iitc-iris/port-plan.md),

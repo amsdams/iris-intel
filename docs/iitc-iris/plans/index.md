@@ -14,24 +14,34 @@ The retained ownership rules and known limits are in [Application Architecture](
 
 ## Next Session Handoff
 
-The 0.2.0 phone smoke passed for IRIS, inventory, layers, COMM, portal details, and missions. Login persisted after
-force-stop on 0.1.3. Load IRIS is still manual per page; Reload/Intel returns to stock Intel. Google Password Manager
-autofill remains unresolved. The native round-trip PASS label was not separately reported; do not invent that result.
+Version **0.3.0-spike** implements automatic signed-in IRIS startup, stock-dashboard interception, persistent
+IRIS/Stock Intel recovery modes, native Back (image → panel → selection → background), and pause/resume of WebView
+timers and native probe polling. **Phone confirmed (2026-10-21):** Stock Intel mode persisted after force-close;
+after selecting IRIS, IRIS loaded again after close/reopen and Diagnostics showed **Stock dashboard: blocked**.
+Back closes an open panel, rotation follows the phone, and Reload restores the open panel (user confirmed).
+The user also confirmed the app remains responsive after the requested background/resume check.
+The main 0.3.0 wrapper smoke is accepted; Back from image/selection/plain map remains unreported.
+Platform checks: copying markers and portal titles works. Location was denied with geolocation disabled on 0.3.0.
+**0.3.1-spike** adds on-demand Android coarse/fine foreground location permission and an Intel-only WebView handler.
+Phone confirmed: location prompts appeared, access was accepted, and location was found.
+Denial/retry, approximate-only access, and cancellation across navigation remain unreported.
+The 0.2.0 feature smoke and 0.1.3 login persistence passed. Google Password Manager autofill remains unresolved.
+The native round-trip PASS label was not separately reported for 0.2.0; do not invent that result.
 
 Run `npm run serve` from the repo root for the XPI/ZIP/APK download page (`http://localhost:6969`, LAN URL printed).
 Build extensions with `npm run package`, or the APK with `npm run android:check`; refresh the page after building.
 `npm run android:serve` is an alias. The server starts without existing artifacts and exposes no repository files.
 
-Latest implementation checks passed: `npm run check` (519 tests plus lint/types/CSS/workbench), `npm run package`,
-`npm run android:check` (11 native and 13 JavaScript tests), APK signature and byte-for-byte download checks.
+Latest implementation checks passed: `npm run check` (520 tests plus lint/types/CSS/workbench), `npm run package`,
+`npm run android:check` (20 native and 13 JavaScript tests), APK signature and byte-for-byte download checks.
 The restored download server also passed live artifact/hash, HEAD, missing-build, dynamic-refresh, and private-file
-rejection checks. Continue with the wrapper-hardening batch below; no further generic CSS/component cleanup is queued.
+rejection checks. No further generic CSS/component cleanup is queued.
 
 ## Next Work
 
-1. Harden the [Android spike](../../../apps/android-intel-spike/README.md): automatic signed-in injection with stock-Intel
-   recovery, native Back, and background/resume checks. Manual injection and the quick feature smoke passed on the phone.
-2. Review injection timing/stock-runtime ownership and Android platform gaps under the [APK plan](android-apk-installable-plan.md).
+1. The 0.3.1 [Android spike](../../../apps/android-intel-spike/README.md) location success path passed on phone,
+   alongside the main 0.3.0 wrapper smoke. Retain unreported permission and Back cases for the next device regression check.
+2. Resolve Android platform gaps under the [APK plan](android-apk-installable-plan.md), using the existing ownership inventory.
    IITC-style embedded Google login remains a compatibility workaround, not a supported permanent OAuth architecture.
 3. Create the permanent Android project after the login/injection proofs pass. The first distribution target is a
    private/friends sideload APK; store distribution is deferred.

@@ -1,4 +1,4 @@
-/* Manual injection proof. Only fixed status text returns to native diagnostics. */
+/* Bundled injection proof. Only fixed status text returns to native diagnostics. */
 (() => {
   if (location.origin !== 'https://intel.ingress.com') return;
   const key = __IRIS_PROBE_KEY__;
@@ -16,7 +16,7 @@
     finish('Sign in to Intel and wait for its map before loading IRIS.');
     return;
   }
-  const timeout = setTimeout(() => finish('IRIS timed out. Reload Intel and retry Load IRIS.'), 30000);
+  const timeout = setTimeout(() => finish('IRIS timed out. Tap Stock Intel to recover, or tap IRIS to retry.'), 30000);
   cleanups.push(() => clearTimeout(timeout));
   const onPageHide = () => finish('IRIS loading cancelled by navigation.');
   window.addEventListener('pagehide', onPageHide, {once: true});
@@ -86,5 +86,5 @@
     window.addEventListener('message', onReply);
     cleanups.push(() => window.removeEventListener('message', onReply));
     window.postMessage({type: 'IITC_IRIS_DRAW_TOOLS', drawToolsAction: 'requestStatus'}, location.origin);
-  })().catch(() => finish('IRIS could not load. Reload Intel and retry Load IRIS.'));
+  })().catch(() => finish('IRIS could not load. Tap Stock Intel to recover, or tap IRIS to retry.'));
 })();

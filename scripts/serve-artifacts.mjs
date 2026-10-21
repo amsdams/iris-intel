@@ -64,7 +64,7 @@ ${groups.map(([type, command]) => {
 <small>${file.version ? `${escape(file.version)} · ` : ''}${Math.ceil(file.info.size / 1024)} KB · ${escape(file.info.mtime.toISOString())}</small>
 </li>`).join('')}</ul>` : '<p>No build yet.</p>'}<p>Build: <code>${command}</code></p></section>`;
   }).join('')}
-<p>Android: install the update, open <b>IRIS Intel Test</b>, and tap <b>Load IRIS</b>. Reload returns to stock Intel.</p>
+<p>Android: install the update, open <b>IRIS Intel Test</b>, and IRIS starts automatically after sign-in. <b>Stock Intel</b> is the recovery option; <b>IRIS</b> switches back.</p>
 </html>`;
 }
 
