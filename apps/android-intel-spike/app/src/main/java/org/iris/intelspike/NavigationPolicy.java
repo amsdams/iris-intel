@@ -27,7 +27,7 @@ final class NavigationPolicy {
     static boolean isEmbedded(String url) {
         String host = host(url);
         return isIntel(url) || "login.ingress.com".equals(host) || "signin.nianticlabs.com".equals(host)
-                || "signin.nianticspatial.com".equals(host) || "accounts.google.com".equals(host)
+                || "signin.nianticspatial.com".equals(host) || GoogleAccountHosts.HOSTS.contains(host)
                 || "accounts.youtube.com".equals(host);
     }
 }

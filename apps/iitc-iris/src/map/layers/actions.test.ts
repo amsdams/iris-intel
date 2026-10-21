@@ -21,12 +21,12 @@ describe('content-layer-actions', () => {
   });
 
   it('builds layer settings message', () => {
-    const msg = buildLayerSettingsMessage(DEFAULT_LAYER_SETTINGS, 'cartodb-dark-matter', 100);
+    const msg = buildLayerSettingsMessage(DEFAULT_LAYER_SETTINGS, 'openfreemap-dark', 100);
     expect(msg).toEqual({
       type: IITC_IRIS_MESSAGES.layerSettings,
       sentAt: 100,
       layerSettings: DEFAULT_LAYER_SETTINGS,
-      baseLayerId: 'cartodb-dark-matter',
+      baseLayerId: 'openfreemap-dark',
     });
   });
 

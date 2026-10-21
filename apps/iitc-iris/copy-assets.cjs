@@ -25,3 +25,10 @@ for (const name of [
   copyRequired(path.join(assetDir, 'images', name), path.join(imageDir, name));
 }
 fs.cpSync(path.join(assetDir, 'licenses'), path.join(distDir, 'licenses'), {recursive: true});
+
+for (const [dependency, filename, output] of [
+  ['maplibre-gl', 'LICENSE.txt', 'MapLibre-GL-JS.txt'],
+  ['@maplibre/maplibre-gl-leaflet', 'LICENSE', 'MapLibre-GL-Leaflet.txt'],
+]) {
+  copyRequired(path.join(__dirname, '../../node_modules', dependency, filename), path.join(distDir, 'licenses', output));
+}

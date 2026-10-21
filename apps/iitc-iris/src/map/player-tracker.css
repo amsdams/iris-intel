@@ -44,7 +44,8 @@
     --iitc-iris-player-tracker-color: #ff1010;
 }
 
-.iitc-iris-player-tracker-marker-image {
+/* Leaflet also assigns the image class to the shadow; only the pin accepts taps. */
+.leaflet-marker-icon.iitc-iris-player-tracker-marker-image {
     pointer-events: auto;
 }
 

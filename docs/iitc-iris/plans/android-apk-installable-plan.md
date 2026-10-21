@@ -15,11 +15,19 @@ refactoring plan, and it should not be mixed with UI extraction or source-layout
 
 ### Done
 
+- 0.3.6 replaces CARTO Dark/Light with keyless OpenFreeMap styles through MapLibre’s Leaflet binding.
+  The worker is bundled in both extension and APK; saved preferences migrate. Real-tile browser switching,
+  pan/zoom, map replacement, and cross-origin worker checks pass. XPI/APK user smoke acceptance remains pending.
+
+- 0.3.5 fixes player-tracker shadow hit interception and retains marker identity through COMM refreshes.
+  Browser reproduction and three regression tests pass. The user confirmed popup opening in both XPI and APK
+  (2026-10-21); history-link behavior was not separately reported.
+
 - The initial 2026-10-04 search found no native Android app. A disposable login shell has now been added; no permanent
   IRIS Android scaffold exists yet. Version 0.3.0 adds automatic signed-in injection and wrapper hardening in the disposable shell.
 - Merge checkpoint complete: PR #1, main CI, and latest-extension publishing passed.
-- Debug APK assembly, Android lint, 20 native tests, 13 session/injection tests, APK signature verification,
-  and the local artifact download routes pass. Existing extension checks (520 tests) and packaging also pass.
+- Debug APK assembly, Android lint, 27 native tests, 13 session/injection tests, APK signature verification,
+  and the local artifact download routes pass. Existing extension checks (528 tests) and packaging also pass.
   Phone installation passed; the first login test opened Chrome and returned to the login page.
   The shell embeds the previously missing `login.ingress.com` host. Version 0.1.1 diagnostics confirmed
   `accounts.google.com` was the remaining external handoff; 0.1.2 tests IITC-style embedded Google login.
@@ -50,8 +58,22 @@ refactoring plan, and it should not be mixed with UI extraction or source-layout
 
 ### In Progress
 
+- Location denial failed on 0.3.3: after reinstalling and denying two prompts, Locate caused status-bar flicker and
+  app closure. No device crash trace is available. Version 0.3.4 hardens denial retention, suppresses automatic and
+  permanently-denied Android retries, drops cancelled callbacks, and adds request-count diagnostics. The user
+  received one prompt, denied it, and saw permission denied on 0.3.4. A second Locate produced one prompt; after
+  denying again, further taps stopped prompting. Enabling location including precise access in Android settings
+  restored successful positioning. The reported denial regression passed the phone retest; its original crash mechanism
+  was not established from a device trace.
+
+- Fresh-install/other-account regression: Google handed off to external `accounts.google.nl`, followed by HTTP 400.
+  Version 0.3.3 replaces individual Google host additions with 187 exact account hosts derived from
+  [Google’s supported-domain list](https://www.google.com/supported_domains), verified 2026-10-21 and pinned with
+  a source hash. All entries/boundaries are tested; the user confirmed 0.3.3 works, with location and clipboard
+  still working. Individual regional login flows have not all been exercised.
+
 - Version 0.3.1 location prompts, permission acceptance, and successful positioning passed on phone.
-  Denial/retry, approximate-only access, and navigation/rotation cancellation remain unreported.
+  Denial/retry and precise-location recovery passed on 0.3.4; approximate-only access and navigation/rotation cancellation remain unreported.
 
 - Version 0.3.0 adds automatic signed-in injection, exact stock-dashboard entry interception, persistent IRIS/Stock Intel
   modes, Back through image/panel/selection before backgrounding, and timer/probe pause/resume. On 2026-10-21 the user
@@ -68,22 +90,30 @@ refactoring plan, and it should not be mixed with UI extraction or source-layout
 
 ### Immediate Next Work
 
-The 0.3.1 location success path passed on phone. Keep denial/retry, approximate-only access, and navigation/rotation
-cancellation in the next device regression check; see the spike README.
+The feasibility spike is complete for the tested paths: login/persistence, bundled IRIS and runtime communication,
+stock-dashboard blocking/recovery, panel Back, rotation/reload, background/resume, clipboard, and location including
+repeated denial and precise-location recovery. Promote the existing wrapper into the permanent project; update
+names/scripts and move test controls behind accessible diagnostics/recovery UI. Carry the Google login compatibility
+workaround and unresolved password-manager support forward explicitly; this conclusion is not production-auth approval.
+Draw Tools currently exchanges JSON through text/clipboard; no file picker/download UI exists, so native file
+import/export is deferred capability work rather than an existing-feature spike acceptance test.
+
+Location success, repeated denial, and precise-location recovery passed on phone. Keep approximate-only access
+and navigation/rotation cancellation in future device regression checks; see the spike README.
 
 The main 0.3.0 [spike](../../../apps/android-intel-spike/README.md) wrapper smoke passed: startup after reopen,
 stock-dashboard blocking, panel Back, rotation, restoring the open panel after Reload, and background/resume responsiveness.
-Keep Back from image/selection/plain map in the next device regression check. Next resolve outstanding
-platform capabilities and auth-policy decisions before choosing permanent packaging; reuse the existing ownership inventory.
+Keep Back from image/selection/plain map in future device regression checks. Carry outstanding platform capabilities
+and auth-policy decisions into permanent packaging; reuse the existing ownership inventory.
 
 If Intel uses Google OAuth, account for its
 [embedded-user-agent restrictions](https://developers.google.com/identity/protocols/oauth2/policies#use-secure-browsers).
 Validate the supported sign-in/session path before choosing the wrapper. A disposable spike shell is allowed; the
-permanent app scaffold still waits for the authentication and injection proofs.
+working compatibility proof can be promoted while the permanent authentication decision remains explicitly open.
 
 ### Todo
 
-- Accept wrapper-hardening phone checks before promoting the disposable shell.
+- Promote the tested shell while preserving its known authentication and platform limits.
 - Audit and adapt extension-only assumptions.
 - Bring forward the release/mobile must-haves from `../port-plan.md` and `../backlog.md`.
 - Create signing, permissions, privacy, and release documentation before any release build.

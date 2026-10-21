@@ -19,7 +19,7 @@ final class BundledAssets {
         if (!handles(url)) return null;
         try {
             String path = new URI(url).getRawPath().substring(PREFIX.length());
-            if (path.matches("content\\.js|page-map-runtime\\.js|iitc-iris\\.css|leaflet\\.css|images/[a-z0-9-]+\\.png")) {
+            if (path.matches("maplibre-worker\\.cjs|content\\.js|page-map-runtime\\.js|iitc-iris\\.css|leaflet\\.css|images/[a-z0-9-]+\\.png")) {
                 return "iris/" + path;
             }
         } catch (URISyntaxException ignored) { /* Invalid paths cannot access packaged assets. */ }
@@ -27,7 +27,7 @@ final class BundledAssets {
     }
 
     static String mimeType(String path) {
-        if (path.endsWith(".js")) return "text/javascript";
+        if (path.endsWith(".js") || path.endsWith(".cjs")) return "text/javascript";
         if (path.endsWith(".css")) return "text/css";
         return "image/png";
     }

@@ -20,7 +20,9 @@
   },
   "dependencies": {
     "@iris/iitc-core": "*",
+    "@maplibre/maplibre-gl-leaflet": "^0.1.4",
     "leaflet": "^1.9.4",
+    "maplibre-gl": "^6.15.0",
     "preact": "^10.29.8"
   },
   "devDependencies": {

@@ -1,5 +1,8 @@
+import {createBaseLayer} from './map/base-layers';
+import {DEFAULT_BASE_LAYER_ID, normalizeBaseLayerId} from './map/layers/base-layer-settings';
+import {createPlayerTrackerMarkers} from './map/player-tracker-markers';
 import {createIitcIrisMapLifetime, type IitcIrisMapLifetime} from './map/map-runtime-lifetime';
-import L, {type Layer as LeafletLayer, type LeafletMouseEvent, type Map as LeafletMap, type TileLayer} from 'leaflet';
+import L, {type Layer as LeafletLayer, type LeafletMouseEvent, type Map as LeafletMap} from 'leaflet';
 import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisEntitySource, type IitcIrisHighlighterSettings, type IitcIrisInteractionUpdateTimingDiagnostics, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLayerUpdateTimingDiagnostics, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMapTimingDiagnostics, type IitcIrisMessage, type IitcIrisMissionDetails, type IitcIrisMissionSource, type IitcIrisMissionSummary, type IitcIrisMissionWaypoint, type IitcIrisMissionsState, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisQueueDiagnostics, type IitcIrisRequestDiagnostics, type IitcIrisRenderArtifact, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderMutationDiagnostics, type IitcIrisRenderMutationLayerDiagnostics, type IitcIrisRenderPortal, type IitcIrisRenderPolicy, type IitcIrisRenderQueueDiagnostics, type IitcIrisScoresState, type IitcIrisSearchResult, type IitcIrisSearchState, type IitcIrisSelectedPortal, type IitcIrisSubscriptionState} from './messages';
 import {DEFAULT_LAYER_SETTINGS} from './map/layers/layer-registry';
 import {DEFAULT_HIGHLIGHTER_ID, getPortalHighlighter, PORTAL_HIGHLIGHTER_REGISTRY} from './map/layers/highlighter-registry';
@@ -167,28 +170,6 @@ const PLAYER_TRACKER_MARKER_ICON_OPTIONS = {
   popupAnchor: [1, -34] as [number, number],
   shadowSize: [41, 41] as [number, number],
 };
-const DEFAULT_BASE_LAYER_ID: IitcIrisBaseLayerId = 'cartodb-dark-matter';
-const BASE_LAYERS: Record<IitcIrisBaseLayerId, {
-  url: string;
-  attribution: string;
-  maxZoom: number;
-}> = {
-  osm: {
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: 'OpenStreetMap',
-    maxZoom: 19,
-  },
-  'cartodb-dark-matter': {
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    attribution: 'OpenStreetMap, CARTO',
-    maxZoom: 20,
-  },
-  'cartodb-positron': {
-    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-    attribution: 'OpenStreetMap, CARTO',
-    maxZoom: 20,
-  },
-};
 const DEFAULT_HIGHLIGHTER_SETTINGS: IitcIrisHighlighterSettings = {
   active: DEFAULT_HIGHLIGHTER_ID,
 };
@@ -219,7 +200,7 @@ const portalHistoryByGuid = new Map<string, NonNullable<IitcIrisRenderPortal['hi
 let layerSettings: IitcIrisLayerSettings = DEFAULT_LAYER_SETTINGS;
 let highlighterSettings: IitcIrisHighlighterSettings = DEFAULT_HIGHLIGHTER_SETTINGS;
 let baseLayerId: IitcIrisBaseLayerId = DEFAULT_BASE_LAYER_ID;
-let baseLayer: TileLayer | undefined;
+let baseLayer: LeafletLayer | undefined;
 let dataSource: IitcIrisDataSourceSettings = {mode: 'live'};
 let lifecycleSettings: IitcIrisLifecycleSettings = {iitcMovementDelay: false};
 let refreshTimer: number | undefined;
@@ -265,6 +246,23 @@ let playerTrackerDiagnostics: IitcPlayerTrackerDiagnostics = getIitcPlayerTracke
 let playerTrackerRefreshTimer: number | undefined;
 let currentPlayerTrackerCommAbortController: AbortController | undefined;
 const playerTrackerProcessedCommGuids = new Set<string>();
+const playerTrackerMarkers = createPlayerTrackerMarkers({
+  createMarker: (name, player, now) => {
+    const last = player.events[player.events.length - 1];
+    const marker = createPlayerTrackerMarker(getIitcPlayerTrackerLatLng(last), name, player.team,
+      getIitcPlayerTrackerEventOpacity(last.time, now), last.time);
+    const map = window.__iitcIrisMap;
+    if (map) marker.addTo(map);
+    return marker;
+  },
+  createPopup: createPlayerTrackerPopup,
+  updateMarker: (marker, name, player, previous) => {
+    if (player.team !== previous.team) marker.setIcon(getPlayerTrackerMarkerIcon(player.team, name));
+    const icon = marker.getElement();
+    const last = player.events[player.events.length - 1];
+    if (icon) icon.title = `${name}, ${formatPlayerTrackerAgo(last.time)} ago`;
+  },
+});
 let requestDiagnosticsState: IitcRequestDiagnosticsState = createIitcRequestDiagnosticsState();
 
 interface IitcPagePlayer {
@@ -461,14 +459,10 @@ function storeMapView(view: StoredMapView): void {
   }
 }
 
-function isBaseLayerId(value: string | null): value is IitcIrisBaseLayerId {
-  return value === 'osm' || value === 'cartodb-dark-matter' || value === 'cartodb-positron';
-}
-
 function loadStoredBaseLayerId(): IitcIrisBaseLayerId {
   try {
     const value = window.localStorage.getItem(BASE_LAYER_STORAGE_KEY);
-    return isBaseLayerId(value) ? value : DEFAULT_BASE_LAYER_ID;
+    return normalizeBaseLayerId(value);
   } catch {
     return DEFAULT_BASE_LAYER_ID;
   }
@@ -517,12 +511,9 @@ function setBaseLayer(nextBaseLayerId: IitcIrisBaseLayerId): void {
   if (!map) return;
   if (baseLayer && baseLayerId === nextBaseLayerId) return;
 
-  const config = BASE_LAYERS[nextBaseLayerId];
   if (baseLayer) map.removeLayer(baseLayer);
-  baseLayer = L.tileLayer(config.url, {
-    maxZoom: config.maxZoom,
-    attribution: config.attribution,
-  }).addTo(map);
+  baseLayer = createBaseLayer(nextBaseLayerId, IITC_IRIS_ASSET_BASE_URL).addTo(map);
+  map.setMaxZoom(nextBaseLayerId === 'osm' ? 19 : 20);
   baseLayerId = nextBaseLayerId;
   storeBaseLayerId(nextBaseLayerId);
 }
@@ -1418,6 +1409,7 @@ function clearAllRenderedLayers(): void {
   clearRenderedLayers(layers.labels);
   clearRenderedLayers(layers.drawnItems);
   clearRenderedLayers(layers.playerTracker);
+  playerTrackerMarkers.clear();
   clearRenderedLayers(layers.missions);
   clearRenderedLayers(layers.userLocation);
   clearEntityLayerIndexes(layers);
@@ -3418,7 +3410,7 @@ function createPlayerTrackerPortalLink(event: IitcPlayerTrackerStored[string]['e
   return link;
 }
 
-function createPlayerTrackerMarker(latLng: [number, number], playerName: string, team: keyof typeof TEAM_COLORS, opacity: number, latestTime: number): LeafletLayer {
+function createPlayerTrackerMarker(latLng: [number, number], playerName: string, team: keyof typeof TEAM_COLORS, opacity: number, latestTime: number): L.Marker {
   const icon = getPlayerTrackerMarkerIcon(team, playerName);
   return L.marker(latLng, {
     icon,
@@ -3456,6 +3448,7 @@ function renderPlayerTracker(): void {
   playerTrackerStored = pruneIitcPlayerTrackerStored(playerTrackerStored);
 
   if (!isPlayerTrackerVisible()) {
+    playerTrackerMarkers.clear();
     updatePlayerTrackerDiagnostics(0, 0);
     repostLatestEntityStatus();
     return;
@@ -3464,6 +3457,7 @@ function renderPlayerTracker(): void {
   const now = Date.now();
   let markers = 0;
   let traces = 0;
+  const visiblePlayers: IitcPlayerTrackerStored = {};
 
   for (const [playerName, player] of Object.entries(playerTrackerStored)) {
     if (player.events.length === 0) continue;
@@ -3487,17 +3481,11 @@ function renderPlayerTracker(): void {
       traces += 1;
     }
 
-    const last = player.events[player.events.length - 1];
-    const lastLatLng = getIitcPlayerTrackerLatLng(last);
-    const opacity = getIitcPlayerTrackerEventOpacity(last.time, now);
-    const marker = createPlayerTrackerMarker(lastLatLng, playerName, player.team, opacity, last.time);
-    marker.bindPopup(createPlayerTrackerPopup(playerName, player), {
-      className: 'iitc-iris-player-tracker-leaflet-popup',
-    });
-    addRenderedLayer(layers.playerTracker, marker);
+    visiblePlayers[playerName] = player;
     markers += 1;
   }
 
+  playerTrackerMarkers.render(visiblePlayers, now);
   updatePlayerTrackerDiagnostics(markers, traces);
   repostLatestEntityStatus();
 }
@@ -6124,6 +6112,7 @@ function boot(): void {
     latestEntityRenderContextKey = '';
     latestPlan = undefined;
     latestResponse = undefined;
+    playerTrackerMarkers.clear();
     window.__iitcIrisLayers = undefined;
     window.__iitcIrisMap = undefined;
     window.__iitcIrisMapContainer = undefined;

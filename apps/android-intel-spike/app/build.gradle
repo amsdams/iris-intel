@@ -11,8 +11,8 @@ android {
         applicationId 'org.iris.intelspike'
         minSdk 26
         targetSdk 36
-        versionCode 7
-        versionName '0.3.1-spike'
+        versionCode 12
+        versionName '0.3.6-spike'
         resValue 'string', 'spike_version', versionName
     }
 

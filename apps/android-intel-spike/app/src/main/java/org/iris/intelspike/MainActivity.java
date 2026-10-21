@@ -50,6 +50,8 @@ public final class MainActivity extends Activity {
     private static final String INTEL_URL = "https://intel.ingress.com/";
     private static final String IRIS_MODE = "iris-mode";
     private static final int LOCATION_PERMISSION_REQUEST = 1;
+    private static final String LOCATION_DECIDED = "location-permission-decided";
+    private static final String LOCATION_REQUEST_COUNT = "location-permission-request-count";
     private final Handler handler = new Handler(Looper.getMainLooper());
     private WebView webView;
     private LocationPermissionFlow locationPermissions;
@@ -119,10 +121,16 @@ public final class MainActivity extends Activity {
         locationPermissions = new LocationPermissionFlow(new LocationPermissionFlow.Host() {
             @Override public boolean isIntelPage() { return NavigationPolicy.isIntel(webView.getUrl()); }
             @Override public boolean hasLocationPermission() {
-                return checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
-                        || checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+                return hasLocationAccess();
+            }
+            @Override public boolean canRequestLocationPermissions() {
+                return !getPreferences(MODE_PRIVATE).getBoolean(LOCATION_DECIDED, false)
+                        || shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_COARSE_LOCATION)
+                        || shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION);
             }
             @Override public void requestLocationPermissions() {
+                getPreferences(MODE_PRIVATE).edit().putInt(LOCATION_REQUEST_COUNT,
+                        getPreferences(MODE_PRIVATE).getInt(LOCATION_REQUEST_COUNT, 0) + 1).apply();
                 requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION,
                         Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION_REQUEST);
             }
@@ -218,7 +226,8 @@ public final class MainActivity extends Activity {
             }
 
             @Override public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
-                locationPermissions.cancel();
+                locationPermissions.onPageStarted();
+                clearIntelLocationDenial();
                 invalidateProbe();
                 pageFinished = false;
                 autoStarted = false;
@@ -382,7 +391,9 @@ public final class MainActivity extends Activity {
         String text = getString(R.string.diagnostic_text, getString(R.string.spike_version), Build.VERSION.RELEASE,
                 provider == null ? "unknown" : provider.versionName, NavigationPolicy.host(webView.getUrl()),
                 loadStatus, sessionStatus, lastExternalHost, irisStatus,
-                irisMode ? "IRIS" : "Stock Intel", stockDashboardBlocked ? "blocked" : "not observed");
+                irisMode ? "IRIS" : "Stock Intel", stockDashboardBlocked ? "blocked" : "not observed",
+                hasLocationAccess() ? "allowed" : "denied",
+                getPreferences(MODE_PRIVATE).getInt(LOCATION_REQUEST_COUNT, 0));
         new AlertDialog.Builder(this).setTitle(R.string.diagnostics).setMessage(text)
                 .setPositiveButton(android.R.string.ok, null)
                 .setNeutralButton(R.string.copy, (dialog, which) -> {
@@ -422,7 +433,21 @@ public final class MainActivity extends Activity {
 
     @Override public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == LOCATION_PERMISSION_REQUEST) locationPermissions.onPermissionResult();
+        if (requestCode == LOCATION_PERMISSION_REQUEST) {
+            if (grantResults.length > 0) getPreferences(MODE_PRIVATE).edit().putBoolean(LOCATION_DECIDED, true).apply();
+            locationPermissions.onPermissionResult();
+        }
+    }
+
+    private boolean hasLocationAccess() {
+        return checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                || checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private void clearIntelLocationDenial() {
+        GeolocationPermissions permissions = GeolocationPermissions.getInstance();
+        for (String origin : new String[]{"https://intel.ingress.com", "https://intel.ingress.com/",
+                "https://intel.ingress.com:443", "https://intel.ingress.com:443/"}) permissions.clear(origin);
     }
 
     @Override protected void onSaveInstanceState(Bundle state) {
@@ -447,6 +472,7 @@ public final class MainActivity extends Activity {
         if (webView != null) {
             webView.resumeTimers();
             webView.onResume();
+            if (hasLocationAccess()) clearIntelLocationDenial(); // Recover after allowing location in Android settings.
             if (probeKey != null) pollProbe(probeKey, pageGeneration, 0);
             else maybeLoadIris(0);
             webView.evaluateJavascript("if (location.origin === 'https://intel.ingress.com'"

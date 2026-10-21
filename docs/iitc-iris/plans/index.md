@@ -14,6 +14,30 @@ The retained ownership rules and known limits are in [Application Architecture](
 
 ## Next Session Handoff
 
+**OpenFreeMap trial (0.3.6-spike):** Dark/Light now use OpenFreeMap via MapLibre’s Leaflet binding, without API keys.
+OSM stays available; saved CARTO choices migrate. Workers and licences are packaged locally. Real-tile browser checks
+passed for both styles, pan/zoom, OSM switching, map replacement, and cross-origin worker loading. App checks and
+Android checks pass; XPI/APK smoke acceptance, including phone rendering performance, remains pending.
+
+**Player-tracker popup (0.3.5-spike):** phone taps did nothing. Browser hit-testing reproduced the marker shadow
+intercepting clicks because Leaflet gives it the pin’s custom CSS class. Pointer handling now targets the icon only.
+Player markers also retain identity across COMM refreshes so popup auto-pan cannot remove the open popup.
+Browser reproduction and three marker-lifetime regressions pass. The user confirmed the popup opens in both
+the XPI and APK (2026-10-21); history-link behavior was not separately reported.
+
+**Fresh-login regression:** uninstall/reinstall and another account exposed an external `accounts.google.nl`
+handoff followed by HTTP 400. Version **0.3.3-spike** uses 187 exact regional Google account hosts derived
+from [Google’s published list](https://www.google.com/supported_domains), verified 2026-10-21 with source hash
+recorded in `GoogleAccountHosts.java`. All entries and host boundaries are tested; individual login flows are not.
+The user confirmed 0.3.3 works after the login fix, with location and clipboard still working.
+Draw Tools import/export currently uses JSON text and clipboard; there is no file-picker/download flow to test.
+**Location denial regression:** 0.3.3 flickered and closed after the user denied two prompts and tapped Locate.
+No crash trace is available. **0.3.4-spike** stops automatic permission retries, retains WebView denials, drops cancelled
+callbacks, and adds location state/request-count diagnostics. Phone retest: the user received one prompt, denied it,
+and saw permission denied. A second Locate produced one more prompt; after denying it, further taps produced no
+prompts. Enabling location with precise access in Android settings restored successful positioning. The reported
+denial regression passes the phone retest; no crash trace was captured to establish the original crash mechanism.
+
 Version **0.3.0-spike** implements automatic signed-in IRIS startup, stock-dashboard interception, persistent
 IRIS/Stock Intel recovery modes, native Back (image → panel → selection → background), and pause/resume of WebView
 timers and native probe polling. **Phone confirmed (2026-10-21):** Stock Intel mode persisted after force-close;
@@ -32,19 +56,20 @@ Run `npm run serve` from the repo root for the XPI/ZIP/APK download page (`http:
 Build extensions with `npm run package`, or the APK with `npm run android:check`; refresh the page after building.
 `npm run android:serve` is an alias. The server starts without existing artifacts and exposes no repository files.
 
-Latest implementation checks passed: `npm run check` (520 tests plus lint/types/CSS/workbench), `npm run package`,
-`npm run android:check` (20 native and 13 JavaScript tests), APK signature and byte-for-byte download checks.
+Latest implementation checks passed: `npm run check` (528 tests plus lint/types/CSS/workbench), `npm run package`,
+`npm run android:check` (27 native and 13 JavaScript tests), APK signature and byte-for-byte download checks.
 The restored download server also passed live artifact/hash, HEAD, missing-build, dynamic-refresh, and private-file
 rejection checks. No further generic CSS/component cleanup is queued.
 
 ## Next Work
 
-1. The 0.3.1 [Android spike](../../../apps/android-intel-spike/README.md) location success path passed on phone,
-   alongside the main 0.3.0 wrapper smoke. Retain unreported permission and Back cases for the next device regression check.
-2. Resolve Android platform gaps under the [APK plan](android-apk-installable-plan.md), using the existing ownership inventory.
-   IITC-style embedded Google login remains a compatibility workaround, not a supported permanent OAuth architecture.
-3. Create the permanent Android project after the login/injection proofs pass. The first distribution target is a
-   private/friends sideload APK; store distribution is deferred.
+1. **Feasibility spike phone checks are complete for the tested paths.** Promote the existing wrapper into the
+   permanent Android project; update names/scripts and move test controls behind accessible diagnostics/recovery UI.
+2. Carry the existing platform ownership inventory and known limits forward: embedded Google login is a compatibility
+   workaround, Google Password Manager is unresolved, and file handling is deferred because Draw Tools uses text/clipboard.
+3. Keep unreported edge cases (approximate-only access, permission cancellation during navigation, and individual
+   regional account flows) in future regression checks. First distribution remains private/friends sideload APK;
+   store distribution is deferred.
 
 Mobile polish and feature expansion should follow concrete usage findings. The [backlog](../backlog.md) records
 unprioritized parity gaps and watch items; those are not prerequisites for the Android feasibility proof.

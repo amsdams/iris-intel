@@ -24,8 +24,8 @@ interface BooleanLayerToggleEntry {
 }
 
 const BASE_LAYER_OPTIONS: { id: IitcIrisBaseLayerId; label: string; title: string }[] = [
-  { id: 'cartodb-dark-matter', label: 'Dark', title: 'CartoDB Dark Matter' },
-  { id: 'cartodb-positron', label: 'Light', title: 'CartoDB Positron' },
+  { id: 'openfreemap-dark', label: 'Dark', title: 'OpenFreeMap Dark' },
+  { id: 'openfreemap-positron', label: 'Light', title: 'OpenFreeMap Positron' },
   { id: 'osm', label: 'OSM', title: 'OpenStreetMap' },
 ];
 

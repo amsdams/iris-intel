@@ -99,6 +99,11 @@ Only `apps/iitc-iris` and `packages/iitc-core` remain active. The retired diagno
 maps were removed; the app uses live Intel data. Retained [payload samples](fixtures/README.md) are reference material.
 Android hosting remains unproven and is governed by the [APK plan](plans/android-apk-installable-plan.md).
 
+Base-map divergence (2026-10-21): CARTO’s key requirement prompted replacing Dark/Light with OpenFreeMap
+Dark/Positron through MapLibre’s Leaflet binding. This changes basemap cartography, while Leaflet retains camera,
+overlay, and interaction ownership; OSM remains available. Preference migration and real-tile browser checks pass.
+Compare all three choices, pan/zoom, and portal/player interactions in XPI and APK; user smoke remains pending.
+
 ## Documentation Layout
 
 Feature details have been split out of this entry point so the current truth is easier to scan:

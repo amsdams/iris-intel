@@ -8,7 +8,7 @@ const build = spawnSync('npm', ['run', 'build', '-w', 'apps/iitc-iris'], {cwd: r
 if (build.status !== 0) process.exit(build.status ?? 1);
 const source = join(root, 'apps/iitc-iris/dist');
 const output = join(root, 'apps/android-intel-spike/app/build/generated/iris-assets/iris');
-const files = ['content.js', 'page-map-runtime.js', 'iitc-iris.css', 'leaflet.css', 'images', 'licenses'];
+const files = ['content.js', 'page-map-runtime.js', 'maplibre-worker.cjs', 'iitc-iris.css', 'leaflet.css', 'images', 'licenses'];
 // Fail before replacing generated assets if the web build is incomplete.
 for (const file of files) statSync(join(source, file));
 rmSync(output, {recursive: true, force: true});

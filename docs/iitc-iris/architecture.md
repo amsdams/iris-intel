@@ -13,6 +13,12 @@ This is the retained architecture guidance from the completed CSS, component, co
 - Features depend on shared `ui/` primitives. Shared UI does not depend on features.
 - Use [IITC-shaped facades](facade-pattern.md) selectively for pure domain contracts.
 
+Base maps stay under Leaflet ownership. `map/base-layers.ts` creates OSM raster tiles or an OpenFreeMap
+Dark/Positron vector layer through MapLibre’s Leaflet binding. Leaflet owns gestures, overlays, and layer removal;
+the binding disposes its WebGL map when removed. The standalone MapLibre worker is bundled in XPI/ZIP/APK,
+with a narrow Android asset route. Saved CARTO preferences migrate to OpenFreeMap; OSM preferences stay unchanged.
+See the [OpenFreeMap integration guide](https://openfreemap.org/quick_start/).
+
 ## Source Organization And Composition
 
 Group app features by menu/domain: `map/`, `portals/`, `agent/`, `comm/`, and `system/`; keep application coordination

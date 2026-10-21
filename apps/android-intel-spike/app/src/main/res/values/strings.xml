@@ -20,7 +20,7 @@
     <string name="browser_opened">External link opened in your browser.</string>
     <string name="browser_unavailable">No browser is available to open this HTTPS link.</string>
     <string name="blocked_navigation">This link cannot open in the test app. Return to Intel to continue.</string>
-    <string name="diagnostic_text">IRIS Intel test %1$s\nAndroid: %2$s\nWebView: %3$s\nPage host: %4$s\nPage: %5$s\nSession: %6$s\nLast external host: %7$s\nIRIS: %8$s\nMode: %9$s\nStock dashboard: %10$s\n\nIRIS mode starts automatically on signed-in Intel and prevents the stock dashboard runtime from loading. Stock Intel restores the original page; Reload keeps the selected mode. Google sign-in stays in this WebView using the IITC-style user-agent compatibility workaround. This is an experiment, not a supported Google OAuth integration. No cookies, tokens, player identity, or request bodies are included here.</string>
+    <string name="diagnostic_text">IRIS Intel test %1$s\nAndroid: %2$s\nWebView: %3$s\nPage host: %4$s\nPage: %5$s\nSession: %6$s\nLast external host: %7$s\nIRIS: %8$s\nMode: %9$s\nStock dashboard: %10$s\nLocation permission: %11$s\nAndroid location requests: %12$d\n\nIRIS mode starts automatically on signed-in Intel and prevents the stock dashboard runtime from loading. Stock Intel restores the original page; Reload keeps the selected mode. Google sign-in stays in this WebView using the IITC-style user-agent compatibility workaround. This is an experiment, not a supported Google OAuth integration. No cookies, tokens, player identity, or request bodies are included here.</string>
     <string name="copy">Copy</string>
     <string name="copied">Diagnostics copied</string>
 </resources>

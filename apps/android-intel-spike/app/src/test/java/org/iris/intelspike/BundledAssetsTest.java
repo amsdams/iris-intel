@@ -9,6 +9,8 @@ public class BundledAssetsTest {
     @Test public void mapsOnlyBundledScriptsStylesAndImages() {
         assertEquals("iris/content.js", BundledAssets.path(BASE + "content.js?v=1"));
         assertEquals("iris/page-map-runtime.js", BundledAssets.path(BASE + "page-map-runtime.js"));
+        assertEquals("iris/maplibre-worker.cjs", BundledAssets.path(BASE + "maplibre-worker.cjs"));
+        assertEquals("text/javascript", BundledAssets.mimeType("iris/maplibre-worker.cjs"));
         assertEquals("iris/iitc-iris.css", BundledAssets.path(BASE + "iitc-iris.css"));
         assertEquals("iris/leaflet.css", BundledAssets.path(BASE + "leaflet.css"));
         assertEquals("iris/images/marker-blue-2x.png", BundledAssets.path(BASE + "images/marker-blue-2x.png"));
