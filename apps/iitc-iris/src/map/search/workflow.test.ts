@@ -18,7 +18,7 @@ describe('Search workflow lifecycle', () => {
 
   function Host({activeSheet = 'map', mapFocusMode = false}: HostProps): null {
     search = useSearchWorkflow({mapFocusMode, postMessage, openSheet, closeSheets});
-    useSearchEffects(search, activeSheet, postMessage);
+    useSearchEffects(search, activeSheet);
     return null;
   }
 
@@ -77,7 +77,7 @@ describe('Search workflow lifecycle', () => {
     }));
     postMessage.mockClear();
     await act(() => search.setActiveSearchResultIndex(1));
-    expect(search.activeSearchResult).toEqual(second);
+    expect(search.activeSearchResultIndex).toBe(1);
     expect(postMessage).not.toHaveBeenCalled();
     await act(() => render(h<HostProps>(Host, {activeSheet: 'search'}), root));
     expect(postMessage).toHaveBeenLastCalledWith({type: IITC_IRIS_MESSAGES.searchPreview, searchResult: second});
@@ -88,18 +88,51 @@ describe('Search workflow lifecycle', () => {
     expect(postMessage).toHaveBeenLastCalledWith({type: IITC_IRIS_MESSAGES.searchPreview, searchResult: first});
     postMessage.mockClear();
     await act(() => render(h<HostProps>(Host, {activeSheet: 'map'}), root));
+    expect(postMessage).toHaveBeenLastCalledWith({type: IITC_IRIS_MESSAGES.searchPreview, searchResult: undefined});
+    expect(search.searchState.results).toEqual([first, second]);
+    postMessage.mockClear();
     await act(() => search.setActiveSearchResultIndex(1));
     expect(postMessage).not.toHaveBeenCalled();
   });
 
-  it('uses current navigation mode for keyboard selection and supports explicit confirmed requests', async () => {
+  it('confirmed submission cancels a pending debounce and editing resumes local search', async () => {
+    await act(() => render(h<HostProps>(Host, {}), root));
+    await act(() => search.setSearchTerm('Amsterdam'));
+    await act(() => { vi.advanceTimersByTime(99); });
+    postMessage.mockClear();
+    await act(() => search.requestSearch('Amsterdam', true));
+    await act(() => { vi.advanceTimersByTime(200); });
+    expect(postMessage).toHaveBeenCalledExactlyOnceWith({
+      type: IITC_IRIS_MESSAGES.searchRequest, searchTerm: 'Amsterdam', searchConfirmed: true,
+    });
+    postMessage.mockClear();
+    await act(() => search.setSearchTerm('Rotterdam'));
+    await act(() => { vi.advanceTimersByTime(100); });
+    expect(postMessage).toHaveBeenCalledExactlyOnceWith({
+      type: IITC_IRIS_MESSAGES.searchRequest, searchTerm: 'Rotterdam', searchConfirmed: false,
+    });
+  });
+
+  it('does not schedule local work when submitted before the term effect runs', async () => {
+    await act(() => render(h<HostProps>(Host, {}), root));
+    postMessage.mockClear();
+    await act(() => {
+      search.setSearchTerm('Amsterdam');
+      search.requestSearch('Amsterdam', true);
+    });
+    await act(() => { vi.advanceTimersByTime(200); });
+    expect(postMessage).toHaveBeenCalledExactlyOnceWith({
+      type: IITC_IRIS_MESSAGES.searchRequest, searchTerm: 'Amsterdam', searchConfirmed: true,
+    });
+  });
+
+  it('uses current navigation mode for result selection and supports explicit confirmed requests', async () => {
     await act(() => render(h<HostProps>(Host, {}), root));
     await act(() => search.setSearchState({
       status: 'ready', term: 'test', confirmed: false, localResults: 2, results: [first, second],
     }));
-    await act(() => search.handleSearchKeyDown({key: 'ArrowDown', shiftKey: false, preventDefault: vi.fn()}));
-    await act(() => search.handleSearchKeyDown({key: 'Enter', shiftKey: true, preventDefault: vi.fn()}));
-    expect(postMessage).toHaveBeenLastCalledWith({type: IITC_IRIS_MESSAGES.searchSelect, searchResult: second, searchZoom: true});
+    await act(() => search.selectSearchResult(second));
+    expect(postMessage).toHaveBeenLastCalledWith({type: IITC_IRIS_MESSAGES.searchSelect, searchResult: second});
     expect(openSheet).toHaveBeenCalledWith('portal');
     openSheet.mockClear();
     await act(() => render(h<HostProps>(Host, {mapFocusMode: true}), root));

@@ -3,6 +3,12 @@
 Unprioritized product/parity gaps and dated comparison evidence. The [roadmap](plans/index.md) owns current work;
 [architecture](architecture.md) owns implementation guidance. Completed refactors below are not prerequisites to repeat.
 
+### Search navigation during zoom animation (2026-10-25)
+
+Browser checks reproduced an existing Leaflet edge case: activating another search result during an in-progress zoom
+transition can discard the second navigation. Normal activation after the transition passes. Keep this as a small
+follow-up; the Enter/result-action simplification preserves the existing map animation behavior.
+
 ### Menu Symbol Guidance
 
 The two-layer menu can use symbols, but do not use ASCII art or decorative Unicode pictures as the primary navigation

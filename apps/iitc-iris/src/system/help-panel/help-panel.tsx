@@ -20,7 +20,7 @@ export function IitcIrisHelpPanel({ closeHelp }: IitcIrisHelpPanelProps): h.JSX.
         <div className="iitc-iris-shortcut-grid">
           <span>Pan map</span><b>Arrow keys</b>
           <span>Zoom map</span><b>+ / -</b>
-          <span>Toggle Search</span><b>/</b>
+          <span>Focus Search</span><b>/</b>
           <span>Close sheets</span><b>Esc</b>
           <span>Toggle Map</span><b>M</b>
           <span>Toggle Portal</span><b>P</b>
@@ -29,8 +29,9 @@ export function IitcIrisHelpPanel({ closeHelp }: IitcIrisHelpPanelProps): h.JSX.
           <span>Toggle System</span><b>S</b>
           <span>Toggle Shortcuts</span><b>?</b>
           <span>Keyboard setting</span><b>System / Interaction</b>
-          <span>Search result</span><b>Up / Down / Enter</b>
-          <span>Zoom result</span><b>Shift+Enter</b>
+          <span>Submit search</span><b>Enter in field</b>
+          <span>Choose result</span><b>Up / Down or Tab</b>
+          <span>Open result</span><b>Enter on row</b>
         </div>
       </PanelBody>
     </Panel>

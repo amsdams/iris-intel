@@ -1,4 +1,5 @@
 import {h, type TargetedKeyboardEvent} from 'preact';
+import {useRef} from 'preact/hooks';
 import './search.css';
 import '../../ui/shared/input-surface.css';
 import '../../ui/shared/list-item.css';
@@ -21,12 +22,11 @@ export interface IitcIrisSearchPanelProps {
   activeSearchResultIndex: number;
   clearSearch: () => void;
   closeSearch: () => void;
-  handleSearchKeyDown: (event: TargetedKeyboardEvent<HTMLInputElement>) => void;
   previewSearchResult: (result: IitcIrisSearchResult | null) => void;
   requestSearch: (term: string, confirmed?: boolean) => void;
   searchState: IitcIrisSearchState;
   searchTerm: string;
-  selectSearchResult: (result: IitcIrisSearchResult, zoom?: boolean) => void;
+  selectSearchResult: (result: IitcIrisSearchResult) => void;
   setActiveSearchResultIndex: (index: number) => void;
   setSearchTerm: (term: string) => void;
 }
@@ -46,8 +46,24 @@ function getGroupedSearchResults(results: IitcIrisSearchResult[]): {id: string; 
 }
 
 export function IitcIrisSearchPanel(props: IitcIrisSearchPanelProps): h.JSX.Element {
+  const resultsRef = useRef<HTMLDivElement>(null);
   const groupedSearchResults = getGroupedSearchResults(props.searchState.results);
   const trimmedSearchTerm = props.searchTerm.trim();
+
+  // Move actual focus, so Enter in the field submits and Enter on a row opens it.
+  const handleResultNavigation = (event: TargetedKeyboardEvent<HTMLInputElement | HTMLButtonElement>): void => {
+    if (event.isComposing || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+    const buttons = Array.from(resultsRef.current?.querySelectorAll<HTMLButtonElement>('.iitc-iris-search-result:not(:disabled)') ?? []);
+    if (buttons.length === 0) return;
+    const current = buttons.indexOf(event.currentTarget as HTMLButtonElement);
+    const next = current < 0
+      ? event.key === 'ArrowDown' ? 0 : buttons.length - 1
+      : (current + (event.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length;
+    event.preventDefault();
+    event.stopPropagation();
+    buttons[next].focus();
+  };
 
   return <Panel className="iitc-iris-search-panel" role="search" aria-label="Search">
     <PanelHeader>
@@ -72,14 +88,14 @@ export function IitcIrisSearchPanel(props: IitcIrisSearchPanelProps): h.JSX.Elem
           placeholder="Search portal or address"
           title="Type to search loaded portals. Press Enter to search OpenStreetMap."
           onInput={(event) => props.setSearchTerm(event.currentTarget.value)}
-          onKeyDown={props.handleSearchKeyDown}
+          onKeyDown={handleResultNavigation}
         />
         {props.searchTerm && (
           <button className="iitc-iris-search-clear" type="button" onClick={props.clearSearch} title="Clear search" aria-label="Clear search">x</button>
         )}
       </form>
       {trimmedSearchTerm.length > 0 && (
-        <div className="iitc-iris-search-results">
+        <div className="iitc-iris-search-results" ref={resultsRef}>
           <div className="iitc-iris-search-status">
             <span>{props.searchState.status === 'loading' ? 'searching online' : props.searchState.results.length > 0 ? `${props.searchState.results.length} results` : trimmedSearchTerm.length < 3 ? 'type 3+ chars' : 'no local results'}</span>
             {!props.searchState.confirmed && trimmedSearchTerm.length >= 3 && <span>Enter for address</span>}
@@ -109,6 +125,7 @@ export function IitcIrisSearchPanel(props: IitcIrisSearchPanelProps): h.JSX.Elem
                       type="button"
                       onClick={() => props.selectSearchResult(result)}
                       disabled={!selectable}
+                      onKeyDown={handleResultNavigation}
                       onFocus={preview}
                       onBlur={() => props.previewSearchResult(null)}
                       title={result.title}
@@ -119,18 +136,6 @@ export function IitcIrisSearchPanel(props: IitcIrisSearchPanelProps): h.JSX.Elem
                       </span>
                       {result.description && <small>{result.description}</small>}
                     </button>
-                    {selectable && (
-                      <button
-                        className="iitc-iris-search-result-zoom"
-                        type="button"
-                        onClick={() => props.selectSearchResult(result, true)}
-                        onFocus={preview}
-                        onBlur={() => props.previewSearchResult(null)}
-                        title={`Zoom to ${result.title}`}
-                      >
-                        Zoom
-                      </button>
-                    )}
                   </div>
                 );
               })}

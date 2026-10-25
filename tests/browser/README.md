@@ -32,6 +32,12 @@ deliberate faults, not live providers. A recovered map uses OSM and updates Appe
 mission, inventory, and drawing lists exercise scrolling to the last row, import controls, and panel footers;
 panels must fit above navigation without clipping their top. The data is simulated through the UI message boundary.
 
+[search.smoke.mjs](search.smoke.mjs) checks Enter submission with existing local results, arrow-key focus in displayed
+order, single-action point/portal navigation, and address bounds fitting with stubbed Nominatim responses. It also
+checks that `/` opens/refocuses the field, menu opening leaves focus alone, and editing/disabled shortcuts are respected.
+Fast Enter submission is checked with a delayed online response; closing clears the preview without losing results or
+changing the camera, and reopening restores the query. Street-sized bounds reach zoom 15; municipality, province, country, and continent fixtures still fit their full bounds.
+
 [intel-fixture.html](intel-fixture.html) loads the actual compiled IRIS UI/runtime with simulated Intel globals,
 empty API responses, and representative host input CSS. External map/network requests are stubbed by the tests.
 No login, credentials, live Intel data, or real messages are used. This covers browser UI behavior, not extension

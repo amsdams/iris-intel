@@ -8,6 +8,7 @@ export interface IitcIrisKeyboardShortcutOptions {
   shortcutsEnabled: boolean;
   closeSheets: () => void;
   closePortalImage: () => void;
+  openSearch: () => void;
   panMap: (direction: IitcIrisPanDirection) => void;
   togglePrimaryMenu: (menu: IitcIrisPrimaryMenuId) => void;
   toggleSheet: (sheet: IitcIrisSheetId) => void;
@@ -72,9 +73,9 @@ export function handleIitcIrisContentKeyDown(event: KeyboardEvent, options: Iitc
     }
   }
 
-  if (event.key === '/') {
+  if (event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey) {
     event.preventDefault();
-    options.toggleSheet('search');
+    options.openSearch();
     return;
   }
   if (event.key === '+' || event.key === '=') {

@@ -1,10 +1,9 @@
-import {useCallback, useEffect, useState, type Dispatch, type StateUpdater} from 'preact/hooks';
+import {useCallback, useEffect, useRef, useState, type Dispatch, type StateUpdater} from 'preact/hooks';
 import type {IitcIrisMessage, IitcIrisSearchResult, IitcIrisSearchState} from '../../messages';
 import type {IitcIrisSheetId} from '../../shell/menu-registry';
 import {buildSearchClearMessage, getActiveSearchResult, getSearchDebounceAction} from './actions';
 import {
   clearSearchCommand,
-  handleSearchKeyDownCommand,
   previewSearchResultCommand,
   requestSearchCommand,
   selectSearchResultCommand,
@@ -25,25 +24,58 @@ interface SearchWorkflow {
   searchTerm: string;
   searchState: IitcIrisSearchState;
   activeSearchResultIndex: number;
-  activeSearchResult: IitcIrisSearchResult | undefined;
-  setSearchTerm: Dispatch<StateUpdater<string>>;
+  setSearchTerm: (term: string) => void;
   setSearchState: Dispatch<StateUpdater<IitcIrisSearchState>>;
   setActiveSearchResultIndex: Dispatch<StateUpdater<number>>;
   requestSearch: (term: string, confirmed?: boolean) => void;
+  syncSearchTerm: () => (() => void) | undefined;
   clearSearch: () => void;
   previewSearchResult: (result: IitcIrisSearchResult | null) => void;
-  selectSearchResult: (result: IitcIrisSearchResult, zoom?: boolean) => void;
-  handleSearchKeyDown: (event: {key: string; shiftKey: boolean; preventDefault(): void}) => void;
+  selectSearchResult: (result: IitcIrisSearchResult) => void;
 }
 
 export function useSearchWorkflow({mapFocusMode, postMessage, openSheet, closeSheets}: SearchWorkflowParams): SearchWorkflow {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, updateSearchTerm] = useState('');
+  const pendingSearch = useRef<{term: string; confirmed: boolean; timer?: number}>({term: '', confirmed: false});
   const [searchState, setSearchState] = useState<IitcIrisSearchState>(EMPTY_SEARCH_STATE);
   const [activeSearchResultIndex, setActiveSearchResultIndex] = useState(0);
 
+  const setSearchTerm = useCallback((term: string): void => {
+    const pending = pendingSearch.current;
+    if (pending.term === term) return;
+    window.clearTimeout(pending.timer);
+    pending.term = term;
+    pending.confirmed = false;
+    updateSearchTerm(term);
+  }, []);
+
   const requestSearch = useCallback((term: string, confirmed = false): void => {
+    if (confirmed) {
+      // Match IITC: submitting takes priority over the pending local debounce.
+      window.clearTimeout(pendingSearch.current.timer);
+      pendingSearch.current.confirmed = true;
+    }
     requestSearchCommand(postMessage, term, confirmed);
   }, [postMessage]);
+
+  // Registered by useSearchEffects to retain the app's effect/message ordering.
+  const syncSearchTerm = useCallback((): (() => void) | undefined => {
+    const pending = pendingSearch.current;
+    // A submit or edit may precede this deferred effect. Do not schedule stale work.
+    if (pending.term !== searchTerm || pending.confirmed) return;
+    const action = getSearchDebounceAction(searchTerm);
+    if (action.type === 'clear') {
+      setSearchState(EMPTY_SEARCH_STATE);
+      setActiveSearchResultIndex(0);
+      postMessage(buildSearchClearMessage());
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      if (pending.term === searchTerm && !pending.confirmed) requestSearch(action.term, false);
+    }, action.delayMs);
+    pending.timer = timer;
+    return (): void => window.clearTimeout(timer);
+  }, [searchTerm, requestSearch, postMessage]);
 
   const clearSearch = (): void => {
     clearSearchCommand(postMessage, setSearchTerm, setSearchState, setActiveSearchResultIndex, EMPTY_SEARCH_STATE);
@@ -53,20 +85,14 @@ export function useSearchWorkflow({mapFocusMode, postMessage, openSheet, closeSh
     previewSearchResultCommand(postMessage, result);
   }, [postMessage]);
 
-  const selectSearchResult = (result: IitcIrisSearchResult, zoom = false): void => {
-    selectSearchResultCommand(result, zoom, postMessage, mapFocusMode, closeSheets, openSheet);
-  };
-
-  const handleSearchKeyDown = (event: {key: string; shiftKey: boolean; preventDefault(): void}): void => {
-    handleSearchKeyDownCommand(event, searchState.results, activeSearchResultIndex, postMessage, mapFocusMode,
-      closeSheets, openSheet, setActiveSearchResultIndex);
+  const selectSearchResult = (result: IitcIrisSearchResult): void => {
+    selectSearchResultCommand(result, postMessage, mapFocusMode, closeSheets, openSheet);
   };
 
   return {
     searchTerm, searchState, activeSearchResultIndex,
-    activeSearchResult: getActiveSearchResult(searchState.results, activeSearchResultIndex),
     setSearchTerm, setSearchState, setActiveSearchResultIndex,
-    requestSearch, clearSearch, previewSearchResult, selectSearchResult, handleSearchKeyDown,
+    requestSearch, syncSearchTerm, clearSearch, previewSearchResult, selectSearchResult,
   };
 }
 
@@ -74,22 +100,10 @@ export function useSearchWorkflow({mapFocusMode, postMessage, openSheet, closeSh
 export function useSearchEffects(
   workflow: ReturnType<typeof useSearchWorkflow>,
   activeSheet: IitcIrisSheetId,
-  postMessage: SearchWorkflowParams['postMessage'],
 ): void {
-  const {searchTerm, searchState, activeSearchResultIndex, setSearchState, setActiveSearchResultIndex,
-    requestSearch, previewSearchResult} = workflow;
+  const {searchState, activeSearchResultIndex, setActiveSearchResultIndex, syncSearchTerm, previewSearchResult} = workflow;
 
-  useEffect(() => {
-    const action = getSearchDebounceAction(searchTerm);
-    if (action.type === 'clear') {
-      setSearchState(EMPTY_SEARCH_STATE);
-      setActiveSearchResultIndex(0);
-      postMessage(buildSearchClearMessage());
-      return;
-    }
-    const timer = window.setTimeout(() => requestSearch(action.term, false), action.delayMs);
-    return (): void => window.clearTimeout(timer);
-  }, [searchTerm, requestSearch, postMessage, setSearchState, setActiveSearchResultIndex]);
+  useEffect(syncSearchTerm, [syncSearchTerm]);
 
   useEffect(() => {
     setActiveSearchResultIndex(0);
@@ -98,5 +112,6 @@ export function useSearchEffects(
   useEffect(() => {
     if (activeSheet !== 'search') return;
     previewSearchResult(getActiveSearchResult(searchState.results, activeSearchResultIndex) ?? null);
+    return (): void => previewSearchResult(null);
   }, [activeSheet, activeSearchResultIndex, searchState.results, previewSearchResult]);
 }

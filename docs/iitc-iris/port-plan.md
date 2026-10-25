@@ -84,6 +84,22 @@ Naming checklist before creating a new file or exported function:
   IITC naming is not appropriate.
 - Is the divergence only for code cleanliness? Keep the IITC name at the boundary and hide the cleaner structure inside.
 
+## Search interaction simplification — 2026-10-25
+
+Reference: `reference/ingress-intel-total-conversion/core/code/search.js`, `search_query.js`, and
+`search_query_results_view.js`. IITC submits confirmed searches from the input and gives result rows keyboard focus;
+its row click/Enter paths distinguish selection from zoom. IRIS deliberately offers one navigation action per result:
+Enter in the field submits an online search, arrows or Tab focus result buttons, and click/Enter on a button navigates.
+The `/` shortcut opens or refocuses the search input; menu opening does not automatically focus it. Existing text-field
+editing and the global shortcuts preference still take precedence.
+Point results center at zoom 15; address/area bounds are fitted with a maximum zoom of 15, matching reference IITC's
+`DEFAULT_ZOOM` in `core/total-conversion-build.js`. Search uses its own constant so the initial map overview stays at 11.
+The separate Zoom button and Shift+Enter variant are removed to avoid overlapping actions. Hover/focus previews,
+local debounce, request sequencing, and map-focus/portal-sheet behavior remain. Confirmed submission cancels pending
+local work, matching IITC; the guard also covers submission before the deferred input effect runs. Closing or leaving
+Search clears its preview and floating badge while retaining the query, results, and map view. Browser checks cover
+fast submission, focus in displayed group order, point navigation, area fitting, portal selection, and close/reopen.
+
 ## Current Status - 2026-10-20
 
 IITC IRIS has the core live-map path, entity rendering, geodesic links/fields, portal selection/details, COMM, scores,

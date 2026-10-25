@@ -152,7 +152,6 @@ export interface IitcIrisMessage {
   searchTerm?: string;
   searchConfirmed?: boolean;
   searchResult?: IitcIrisSearchResult;
-  searchZoom?: boolean;
   drawToolsAction?: 'addMarker' | 'addPolyline' | 'deleteAt' | 'deleteIndex' | 'rename' | 'clear' | 'undo' | 'import' | 'snapToPortals' | 'requestStatus' | 'highlightIndex';
   drawToolsItemType?: 'polyline' | 'marker';
   drawToolsColor?: string;

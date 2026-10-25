@@ -21,6 +21,22 @@ supported authentication and website-distribution permission evidence before beg
 are deferred; the baseline includes Passcode and Missions. Further runtime decomposition should accompany a concrete
 change or finding, rather than become another general cleanup prerequisite.
 
+**Search interaction simplification (2026-10-25):** Enter in the field submits online search; Up/Down or Tab
+focus results; click/Enter on a row navigates. `/` opens or refocuses the input; menu opening leaves focus alone, and
+text editing/disabled shortcuts are respected. Separate Zoom controls and Shift+Enter behavior are removed. Point results
+use IITC's zoom 15; streets and areas fit bounds with a maximum of 15. The initial map overview stays at 11.
+Confirmed submission now cancels pending local work, including submission before the input effect runs. Closing or
+leaving Search clears its preview and floating badge; query, results, and map view remain for reopening.
+`npm run check` passes (544 app/core + six release-gate tests, lint/types/CSS/workbench). All 19 browser cases pass after
+correcting the new close/reopen test to await navigation; all five Search checks also pass in Firefox's browser engine.
+Extension packaging and signed Android tests/lint/build pass (31 native + 15 JavaScript tests). Fresh local APK
+`0.4.1-alpha+8f85b26`, code 1841, has the pinned certificate and matching bundled assets/download on port 6969.
+These source changes are uncommitted. The user smoke-tested search zoom and reports it is “a lot better”; the zoom
+change is accepted. Broader keyboard/device-specific smoke was not separately reported. The rapid-second-click zoom
+animation edge case is recorded in [the backlog](../backlog.md#search-navigation-during-zoom-animation-2026-10-25).
+The local-debounce overwrite is fixed with workflow timing regressions and a delayed-online-response browser check.
+The close/reopen and immediate-Enter changes still need user smoke acceptance.
+
 **Landscape clipping repair (2026-10-25):** reproduced clipped, unscrollable request-panel bodies and panel tops
 above the viewport on short screens. Shared bodies now scroll when their controls exceed available height; controls
 retain their size and nested lists keep a usable minimum height. Shell height limits reserve room above navigation.
@@ -29,10 +45,10 @@ lists, import fields, and footers. All 14 browser tests and `npm run check` (556
 lint/types/CSS/workbench), extension packaging, and Android release tests/lint/build pass. The fresh signed APK
 `0.4.1-alpha+b8724d2`, code 1840, matches the pinned certificate and tested bundled assets; its
 port-6969 download is verified. The user reports landscape is “a lot better” after the fix; general improvement is
-confirmed, without claiming individual acceptance of all sheets. Next focused checks, when convenient: Android keyboard
-open in landscape (COMM/Search/Passcode) and populated selected-portal details, which the new 17-sheet browser sweep
-does not exercise. No new blocker surfaced; prioritize concrete tester feedback over another general cleanup pass.
-Landscape changes remain uncommitted at this handoff.
+confirmed, without claiming individual acceptance of all sheets. The user also tested selected-portal details in
+landscape and accepted its scrolling; leave the sheet layout as-is for now. Android keyboard-open landscape checks
+(COMM/Search/Passcode) remain optional focused checks. No new blocker surfaced; prioritize concrete tester feedback
+over another general cleanup pass. The landscape batch was committed as `8f85b26`.
 
 **CI hardening (2026-10-25):** signed and unsigned Android calls are separate; unsigned/PR calls receive no signing
 secrets. The reusable signing guard allows only main/version-tag push/manual contexts. All 19 external action

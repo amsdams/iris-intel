@@ -4,7 +4,6 @@ import {
   buildSearchPreviewMessage,
   buildSearchRequestMessage,
   buildSearchSelectMessage,
-  calculateNextSearchResultIndex,
   getActiveSearchResult,
   getSearchDebounceAction,
 } from './actions';
@@ -47,21 +46,10 @@ describe('content-search-actions', () => {
   });
 
   it('builds search select message', () => {
-    expect(buildSearchSelectMessage(portalResult, true)).toEqual({
+    expect(buildSearchSelectMessage(portalResult)).toEqual({
       type: IITC_IRIS_MESSAGES.searchSelect,
       searchResult: portalResult,
-      searchZoom: true,
     });
-  });
-
-  it('calculates next search result index with wrap-around', () => {
-    const results: IitcIrisSearchResult[] = [
-      portalResult,
-      {id: 'p2', type: 'address', title: 'Location', lat: 52.4, lng: 5.0},
-    ];
-    expect(calculateNextSearchResultIndex(0, 1, results)).toBe(1);
-    expect(calculateNextSearchResultIndex(1, 1, results)).toBe(0);
-    expect(calculateNextSearchResultIndex(0, -1, results)).toBe(1);
   });
 
   it('gets active search result excluding empty results', () => {

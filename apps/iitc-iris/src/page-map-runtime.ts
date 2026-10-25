@@ -129,7 +129,9 @@ import {
 } from '@iris/iitc-core';
 
 const DEFAULT_CENTER: [number, number] = [52.3730796, 4.8924534];
+// Initial map overview; search navigation follows IITC's DEFAULT_ZOOM separately.
 const DEFAULT_ZOOM = 11;
+const SEARCH_RESULT_ZOOM = 15;
 const MAP_VIEW_STORAGE_KEY = 'iitc-iris:map-view';
 const BASE_LAYER_STORAGE_KEY = 'iitc-iris:base-layer';
 const COMM_TAB_STORAGE_KEY = 'iitc-chat-tab';
@@ -1978,7 +1980,7 @@ function previewSearchResult(result: IitcIrisSearchResult | undefined): void {
   }
 }
 
-function selectSearchResult(result: IitcIrisSearchResult | undefined, zoom = false): void {
+function selectSearchResult(result: IitcIrisSearchResult | undefined): void {
   if (!result || result.type === 'empty') return;
   const map = window.__iitcIrisMap;
   if (!map) return;
@@ -1988,8 +1990,7 @@ function selectSearchResult(result: IitcIrisSearchResult | undefined, zoom = fal
     const portal = latestEntities.portals.find((candidate) => candidate.guid === result.guid);
     if (portal) {
       const latLng = toLatLng(portal.latE6, portal.lngE6);
-      if (zoom) map.setView(latLng, DEFAULT_ZOOM);
-      else if (!map.getBounds().contains(latLng)) map.setView(latLng);
+      map.setView(latLng, SEARCH_RESULT_ZOOM);
       selectPortal(portal);
       return;
     }
@@ -1997,14 +1998,14 @@ function selectSearchResult(result: IitcIrisSearchResult | undefined, zoom = fal
 
   if (result.bounds) {
     const bounds = L.latLngBounds([result.bounds.south, result.bounds.west], [result.bounds.north, result.bounds.east]);
-    map.fitBounds(bounds, {maxZoom: DEFAULT_ZOOM});
+    map.fitBounds(bounds, {maxZoom: SEARCH_RESULT_ZOOM});
     addRenderedLayer(ensureLayers().search, createSearchResultLayer(result, bounds));
     return;
   }
 
   if (typeof result.lat === 'number' && typeof result.lng === 'number') {
     const latLng: [number, number] = [result.lat, result.lng];
-    map.setView(latLng, zoom ? DEFAULT_ZOOM : map.getZoom());
+    map.setView(latLng, SEARCH_RESULT_ZOOM);
     addRenderedLayer(ensureLayers().search, L.circleMarker(latLng, {
       pane: getLayerPane('search'),
       radius: 8,
@@ -4154,7 +4155,7 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
     void runSearch(event.data.searchTerm, event.data.searchConfirmed === true);
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.searchSelect) {
-    selectSearchResult(event.data.searchResult, event.data.searchZoom === true);
+    selectSearchResult(event.data.searchResult);
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.searchPreview) {
     previewSearchResult(event.data.searchResult);

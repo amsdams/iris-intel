@@ -5,7 +5,6 @@ import {getExtensionUrl} from './platform/assets';
 import {installIitcIrisHostBack} from './shell/host-navigation';
 import {Button} from './ui/button';
 import {h, render} from 'preact';
-import './map/search-panel/map-search-badge.css';
 import './auth/auth.css';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import './iitc-iris.css';
@@ -426,6 +425,14 @@ function App(): h.JSX.Element {
     openSheetCommand(sheet, activeSheet, activeSidePanel, postIitcMessage, {setActiveSheet, setActiveSidePanel, storeActiveSheet, storeSidePanelId});
   }, [activeSheet, activeSidePanel, postIitcMessage]);
 
+  const openSearch = useCallback((): void => {
+    openSheet('search');
+    // Search may mount on this render; focus after Preact has updated the DOM.
+    window.requestAnimationFrame(() => {
+      document.querySelector<HTMLInputElement>('.iitc-iris-search-input')?.focus();
+    });
+  }, [openSheet]);
+
   const toggleSheet = useCallback((sheet: SheetId): void => {
     toggleSheetCommand(sheet, activeSheet, activeSidePanel, postIitcMessage, {setActiveSheet, setActiveSidePanel, storeActiveSheet, storeSidePanelId});
   }, [activeSheet, activeSidePanel, postIitcMessage]);
@@ -625,9 +632,9 @@ function App(): h.JSX.Element {
   }, [openSheet]);
 
   const search = useSearchWorkflow({mapFocusMode, postMessage: postIitcMessage, openSheet, closeSheets});
-  const {searchTerm, searchState, activeSearchResultIndex, activeSearchResult,
+  const {searchTerm, searchState, activeSearchResultIndex,
     setSearchTerm, setSearchState, setActiveSearchResultIndex,
-    requestSearch, clearSearch, previewSearchResult, selectSearchResult, handleSearchKeyDown} = search;
+    requestSearch, clearSearch, previewSearchResult, selectSearchResult} = search;
 
   const focusSelectedPortal = (): void => {
     focusSelectedPortalCommand(entityFetch.selectedPortal, camera.zoom, mapFocusMode, setMapView, closeSheets);
@@ -799,7 +806,7 @@ function App(): h.JSX.Element {
 
   useMissionsEffects(missions, activeSidePanel, entityFetch.selectedPortal?.guid);
 
-  useSearchEffects(search, activeSheet, postIitcMessage);
+  useSearchEffects(search, activeSheet);
 
   useEffect(() => {
     if (activeSidePanel !== 'comm') return;
@@ -846,6 +853,7 @@ function App(): h.JSX.Element {
         shortcutsEnabled,
         closeSheets,
         closePortalImage: () => setPortalImageOpen(false),
+        openSearch,
         panMap,
         togglePrimaryMenu,
         toggleSheet,
@@ -854,7 +862,7 @@ function App(): h.JSX.Element {
     };
     window.addEventListener('keydown', onKeyDown);
     return (): void => window.removeEventListener('keydown', onKeyDown);
-  }, [closeSheets, hasSelectedObject, panMap, portalImageOpen, shortcutsEnabled, togglePrimaryMenu, toggleSheet, zoomMap]);
+  }, [closeSheets, hasSelectedObject, openSearch, panMap, portalImageOpen, shortcutsEnabled, togglePrimaryMenu, toggleSheet, zoomMap]);
 
   useEffect(() => installIitcIrisHostBack({
     portalImageOpen, activeSheet, hasSelectedObject,
@@ -880,18 +888,11 @@ function App(): h.JSX.Element {
         />
         <BaseLayerNotice message={baseLayerNotice} dismiss={dismissBaseLayerNotice} />
       </div>
-      {activeSheet === 'map' && searchState.term && searchState.results.length > 0 && (
-        <div className="iitc-iris-map-search-badge">
-          <span title={activeSearchResult?.title || searchState.term}>search: {activeSearchResult?.title || searchState.term}</span>
-          <button type="button" onClick={clearSearch} title="Clear search overlay" aria-label="Clear search overlay">x</button>
-        </div>
-      )}
       {activeSheet === 'search' && (
         <IitcIrisSearchPanel
           activeSearchResultIndex={activeSearchResultIndex}
           clearSearch={clearSearch}
           closeSearch={() => openSheet('map')}
-          handleSearchKeyDown={handleSearchKeyDown}
           previewSearchResult={previewSearchResult}
           requestSearch={requestSearch}
           searchState={searchState}

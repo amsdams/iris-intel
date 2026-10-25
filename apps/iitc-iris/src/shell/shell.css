@@ -138,6 +138,7 @@
     z-index: 10002;
     display: none;
     width: min(560px, calc(100vw - 24px));
+
     /* Leave room for the 104px navigation clearance and a 12px top gap on short screens. */
     max-height: min(64vh, 520px, calc(100% - 116px));
     margin: 0 auto;

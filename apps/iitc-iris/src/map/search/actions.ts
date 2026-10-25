@@ -28,24 +28,12 @@ export function buildSearchPreviewMessage(
 }
 
 export function buildSearchSelectMessage(
-  searchResult: IitcIrisSearchResult,
-  searchZoom = false
+  searchResult: IitcIrisSearchResult
 ): IitcIrisMessage {
   return {
     type: IITC_IRIS_MESSAGES.searchSelect,
     searchResult,
-    searchZoom,
   };
-}
-
-export function calculateNextSearchResultIndex(
-  currentIndex: number,
-  delta: number,
-  results: IitcIrisSearchResult[]
-): number {
-  const selectableResults = results.filter((result) => result.type !== 'empty');
-  if (selectableResults.length === 0) return 0;
-  return (currentIndex + delta + selectableResults.length) % selectableResults.length;
 }
 
 export function getActiveSearchResult(
