@@ -28,10 +28,13 @@
     window.PLAYER = {nickname: 'SmokeTest'};
     window.niantic_params = {CURRENT_VERSION: 'smoke-test'};
     document.cookie = 'csrftoken=smoke-test';
-    window.fetch = async url => {
-      if (String(url).includes('getPlexts')) return Response.json({result: []});
-      if (String(url).includes('getEntities')) return Response.json({result: {map: {}}});
-      return Response.json({result: false});
+    const browserFetch = window.fetch.bind(window);
+    window.fetch = async (url, options) => {
+      const address = url instanceof Request ? url.url : String(url);
+      if (address.includes('getPlexts')) return Response.json({result: []});
+      if (address.includes('getEntities')) return Response.json({result: {map: {}}});
+      if (address.includes('/r/')) return Response.json({result: false});
+      return browserFetch(url, options);
     };
   </script>
   <script src="/content.js"></script>

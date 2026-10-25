@@ -15,9 +15,14 @@ import {
   calculateToggledLayerSettings,
 } from './actions';
 import type {IitcIrisBooleanLayerSettingKey} from './layer-registry';
+import {IITC_IRIS_MESSAGES} from '../../messages';
+import {isBaseLayerId} from './base-layer-settings';
 
 interface LayerSettingsWorkflow {
   baseLayerId: IitcIrisBaseLayerId;
+  baseLayerNotice: string;
+  dismissBaseLayerNotice: () => void;
+  handleBaseLayerStatus: (message: IitcIrisMessage) => void;
   layerSettings: IitcIrisLayerSettings;
   highlighterSettings: IitcIrisHighlighterSettings;
   setBaseLayerId: Dispatch<StateUpdater<IitcIrisBaseLayerId>>;
@@ -28,7 +33,24 @@ interface LayerSettingsWorkflow {
 }
 
 export function useLayerSettingsWorkflow(postMessage: (message: IitcIrisMessage) => void): LayerSettingsWorkflow {
-  const [baseLayerId, setBaseLayerId] = useState(loadStoredBaseLayerId);
+  const [baseLayerId, updateBaseLayerId] = useState(loadStoredBaseLayerId);
+  const [baseLayerNotice, setBaseLayerNotice] = useState('');
+  const requestedBaseLayerId = useRef(baseLayerId);
+  const setBaseLayerId: Dispatch<StateUpdater<IitcIrisBaseLayerId>> = useCallback((action) => {
+    const next = typeof action === 'function' ? action(requestedBaseLayerId.current) : action;
+    requestedBaseLayerId.current = next;
+    setBaseLayerNotice('');
+    updateBaseLayerId(next);
+  }, []);
+  const handleBaseLayerStatus = useCallback((message: IitcIrisMessage): void => {
+    if (message?.type !== IITC_IRIS_MESSAGES.baseLayerStatus || !isBaseLayerId(message.baseLayerId) ||
+        message.baseLayerRequestedId !== requestedBaseLayerId.current) return;
+    requestedBaseLayerId.current = message.baseLayerId;
+    updateBaseLayerId(message.baseLayerId);
+    if (message.baseLayerError) setBaseLayerNotice(message.baseLayerError === 'webgl'
+      ? 'The map renderer could not recover. Switched to OpenStreetMap.'
+      : 'OpenFreeMap could not load. Switched to OpenStreetMap.');
+  }, []);
   const [layerSettings, setLayerSettings] = useState(loadStoredLayerSettings);
   const [highlighterSettings, setHighlighterSettings] = useState(loadStoredHighlighterSettings);
   const layerSettingsIntentAtRef = useRef<number | undefined>(undefined);
@@ -60,6 +82,9 @@ export function useLayerSettingsWorkflow(postMessage: (message: IitcIrisMessage)
 
   return {
     baseLayerId,
+    baseLayerNotice,
+    dismissBaseLayerNotice: () => setBaseLayerNotice(''),
+    handleBaseLayerStatus,
     layerSettings,
     highlighterSettings,
     setBaseLayerId,

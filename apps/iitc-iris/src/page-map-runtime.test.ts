@@ -8,8 +8,7 @@ vi.mock('leaflet', () => ({default: {
   point: (x: number, y: number): {x: number; y: number} => ({x, y}),
 }}));
 
-vi.mock('@maplibre/maplibre-gl-leaflet', () => ({maplibreGL: leaflet.tileLayer}));
-vi.mock('maplibre-gl', () => ({setWorkerUrl: vi.fn()}));
+vi.mock('./map/base-layers', () => ({createBaseLayer: leaflet.tileLayer}));
 
 class Container extends EventTarget {
   getBoundingClientRect(): {left: number; top: number} { return {left: 0, top: 0}; }
@@ -21,6 +20,7 @@ interface TestMap {
   getCenter: () => {lat: number; lng: number};
   getZoom: () => number;
   setMaxZoom: ReturnType<typeof vi.fn>;
+  removeLayer: ReturnType<typeof vi.fn>;
   getBounds: () => {getSouth: () => number; getWest: () => number; getNorth: () => number; getEast: () => number};
   getPane: () => undefined;
   createPane: () => {style: Record<string, string>};
@@ -38,6 +38,7 @@ function createMap(container: Container): TestMap {
     getCenter: () => ({lat: 52.373, lng: 4.892}),
     getZoom: () => 11,
     setMaxZoom: vi.fn(),
+    removeLayer: vi.fn(),
     getBounds: () => ({getSouth: () => 52.3, getWest: () => 4.8, getNorth: () => 52.4, getEast: () => 4.9}),
     getPane: () => undefined,
     createPane: () => ({style: {}}),
@@ -70,7 +71,7 @@ describe('page runtime map replacement', () => {
       setTimeout, clearTimeout,
       requestAnimationFrame: (callback: FrameRequestCallback) => setTimeout(() => callback(performance.now()), 16),
       cancelAnimationFrame: clearTimeout,
-      localStorage: {getItem: () => null, setItem: vi.fn()},
+      localStorage: {getItem: (key: string) => key === 'iitc-iris:base-layer' ? 'osm' : null, setItem: vi.fn()},
       location: {href: 'https://intel.ingress.com/', search: ''},
       history: {replaceState: vi.fn()},
       postMessage: vi.fn<(message: IitcIrisMessage) => void>(),
@@ -91,7 +92,7 @@ describe('page runtime map replacement', () => {
       maps.push(map);
       return map;
     });
-    leaflet.tileLayer.mockImplementation(() => ({addTo: vi.fn()}));
+    leaflet.tileLayer.mockImplementation(() => ({addTo: vi.fn(), on: vi.fn(), off: vi.fn()}));
     leaflet.layerGroup.mockImplementation(() => ({addTo: vi.fn(), clearLayers: vi.fn()}));
     vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockImplementation(async () => new Response('{"result": false}')));
   });

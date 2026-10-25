@@ -103,6 +103,10 @@ Base-map divergence (2026-10-21): CARTO’s key requirement prompted replacing D
 Dark/Positron through MapLibre’s Leaflet binding. This changes basemap cartography, while Leaflet retains camera,
 overlay, and interaction ownership; OSM remains available. Preference migration and real-tile browser checks pass.
 The user tested the updated XPI and APK and reported both look fine (2026-10-21).
+Recovery divergence (2026-10-25): IRIS additionally switches to OSM after unresolved OpenFreeMap style/network or
+WebGL failures. `map/base-layer-controller.ts` owns recovery deadlines and cleanup; the layers workflow reflects
+and persists the actual selection with a dismissible notice. This is IRIS provider resilience, not copied IITC behavior.
+Focused lifecycle tests and browser-injected HTTP/style/WebGL failures pass; live phone background/resume is pending.
 
 Cross Links correction (2026-10-21): port `cross-links.js` whole-arc classification and tolerant shared-anchor
 checks into pure core helpers, replacing IRIS's sampled planar intersections. Intentional delta: omit the upstream

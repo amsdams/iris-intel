@@ -9,6 +9,7 @@ export const IITC_IRIS_MESSAGES = {
   entitiesResponse: 'IITC_IRIS_ENTITIES_RESPONSE',
   entityStatus: 'IITC_IRIS_ENTITY_STATUS',
   layerSettings: 'IITC_IRIS_LAYER_SETTINGS',
+  baseLayerStatus: 'IITC_IRIS_BASE_LAYER_STATUS',
   dataSourceSettings: 'IITC_IRIS_DATA_SOURCE_SETTINGS',
   lifecycleSettings: 'IITC_IRIS_LIFECYCLE_SETTINGS',
   setView: 'IITC_IRIS_SET_VIEW',
@@ -44,6 +45,7 @@ export const IITC_IRIS_MESSAGES = {
 
 export type IitcIrisMessageType = typeof IITC_IRIS_MESSAGES[keyof typeof IITC_IRIS_MESSAGES];
 export type IitcIrisEntitySource = 'live' | 'cache' | 'fixture';
+export type IitcIrisBaseLayerError = 'load' | 'webgl';
 
 export interface IitcIrisMessage {
   type: IitcIrisMessageType;
@@ -127,6 +129,8 @@ export interface IitcIrisMessage {
   highlighterSettings?: IitcIrisHighlighterSettings;
   highlighterIds?: IitcIrisPortalHighlighterId[];
   baseLayerId?: IitcIrisBaseLayerId;
+  baseLayerRequestedId?: IitcIrisBaseLayerId;
+  baseLayerError?: IitcIrisBaseLayerError;
   dataSource?: IitcIrisDataSourceSettings;
   lifecycleSettings?: IitcIrisLifecycleSettings;
   renderPolicy?: IitcIrisRenderPolicy;

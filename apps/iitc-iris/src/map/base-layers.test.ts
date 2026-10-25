@@ -1,10 +1,19 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {createBaseLayer} from './base-layers';
 import {normalizeBaseLayerId} from './layers/base-layer-settings';
+import type {Map as LeafletMap} from 'leaflet';
 
-const mocks = vi.hoisted(() => ({tileLayer: vi.fn(), maplibreGL: vi.fn(), setWorkerUrl: vi.fn()}));
+const mocks = vi.hoisted(() => ({tileLayer: vi.fn(), maplibreGL: vi.fn(), setWorkerUrl: vi.fn(),
+  onAdd: vi.fn(), onRemove: vi.fn(), renderer: vi.fn<() => unknown>(), removeContainer: vi.fn(), fire: vi.fn()}));
 vi.mock('leaflet', () => ({default: {tileLayer: mocks.tileLayer}}));
-vi.mock('@maplibre/maplibre-gl-leaflet', () => ({maplibreGL: mocks.maplibreGL}));
+vi.mock('@maplibre/maplibre-gl-leaflet', () => ({MaplibreGL: class {
+  constructor(options: unknown) { mocks.maplibreGL(options); }
+  onAdd(map: unknown): void { mocks.onAdd(map); }
+  onRemove(map: unknown): void { mocks.onRemove(map); }
+  getMaplibreMap(): unknown { return mocks.renderer(); }
+  getContainer(): {remove: () => void} { return {remove: mocks.removeContainer}; }
+  fire(name: string): void { mocks.fire(name); }
+}}));
 vi.mock('maplibre-gl', () => ({setWorkerUrl: mocks.setWorkerUrl}));
 vi.mock('maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url', () => ({default: './maplibre-worker.cjs'}));
 
@@ -43,5 +52,16 @@ describe('base map providers', () => {
     expect(normalizeBaseLayerId('osm')).toBe('osm');
     expect(normalizeBaseLayerId(null)).toBe('openfreemap-dark');
     expect(normalizeBaseLayerId('not-a-provider')).toBe('openfreemap-dark');
+  });
+
+  it('keeps a layer removable when WebGL initialization throws', () => {
+    const layer = createBaseLayer('openfreemap-dark', 'https://intel.ingress.com/');
+    mocks.onAdd.mockImplementationOnce(() => { throw new Error('No WebGL'); });
+    const map = {} as LeafletMap;
+    expect(() => layer.onAdd(map)).not.toThrow();
+    expect(mocks.fire).toHaveBeenCalledWith('baseerror');
+    expect(() => layer.onRemove(map)).not.toThrow();
+    expect(mocks.removeContainer).toHaveBeenCalledOnce();
+    expect(mocks.onRemove).not.toHaveBeenCalled();
   });
 });

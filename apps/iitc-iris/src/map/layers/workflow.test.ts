@@ -81,4 +81,17 @@ describe('Layer settings workflow lifecycle', () => {
       baseLayerId: 'osm', layerSettings: layers.layerSettings,
     });
   });
+
+  it('synchronizes recovery and ignores status from a superseded style', async () => {
+    await act(() => render(h(Host, {}), root));
+    await act(() => layers.handleBaseLayerStatus({type: IITC_IRIS_MESSAGES.baseLayerStatus,
+      baseLayerRequestedId: 'openfreemap-dark', baseLayerId: 'osm', baseLayerError: 'load'}));
+    expect(layers.baseLayerId).toBe('osm');
+    expect(layers.baseLayerNotice).toContain('Switched to OpenStreetMap');
+    await act(() => layers.setBaseLayerId('openfreemap-positron'));
+    await act(() => layers.handleBaseLayerStatus({type: IITC_IRIS_MESSAGES.baseLayerStatus,
+      baseLayerRequestedId: 'openfreemap-dark', baseLayerId: 'osm', baseLayerError: 'load'}));
+    expect(layers.baseLayerId).toBe('openfreemap-positron');
+    expect(layers.baseLayerNotice).toBe('');
+  });
 });

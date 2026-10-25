@@ -7,6 +7,23 @@
 }
 
 /* shell-panels */
+.iitc-iris-map-notices {
+    position: absolute;
+    z-index: 1220;
+    top: 10px;
+    left: 50%;
+    display: grid;
+    gap: 6px;
+    width: max-content;
+    max-width: min(520px, calc(100vw - 24px));
+    transform: translateX(-50%);
+    pointer-events: none;
+}
+
+.iitc-iris-auth-recovery {
+    pointer-events: auto;
+}
+
 .iitc-iris-sheet-tabbar {
     --iitc-iris-tabbar-clearance: 96px;
 

@@ -1,4 +1,5 @@
 import {AppearancePanel} from './system/appearance-panel/appearance-panel';
+import {BaseLayerNotice} from './map/base-layer-notice';
 import {useUiTheme} from './shell/ui-theme';
 import {getExtensionUrl} from './platform/assets';
 import {installIitcIrisHostBack} from './shell/host-navigation';
@@ -222,7 +223,8 @@ function App(): h.JSX.Element {
   const commStickToBottomRef = useRef(true);
   const commLatestTimestampRef = useRef<number | undefined>(undefined);
   const layers = useLayerSettingsWorkflow(postIitcMessage);
-  const {baseLayerId, layerSettings, highlighterSettings, setBaseLayerId, toggleLayerSetting, selectPortalHighlighter} = layers;
+  const {baseLayerId, baseLayerNotice, dismissBaseLayerNotice, handleBaseLayerStatus,
+    layerSettings, highlighterSettings, setBaseLayerId, toggleLayerSetting, selectPortalHighlighter} = layers;
   const [dataSourceId, setDataSourceId] = useState<typeof DATA_SOURCE_OPTIONS[number]['id']>(() => loadStoredDataSourceId());
   const [lifecycleSettings, setLifecycleSettings] = useState<IitcIrisLifecycleSettings>(() => loadStoredLifecycleSettings());
   const [camera, setCamera] = useState<CameraState>(() => ({
@@ -706,6 +708,7 @@ function App(): h.JSX.Element {
   useEffect(() => {
     const onMessage = (event: MessageEvent<IitcIrisMessage>): void => {
       if (event.source !== window) return;
+      handleBaseLayerStatus(event.data);
       handleIitcIrisContentMessage(event.data, {
         activeSidePanel,
         baseLayerId,
@@ -739,7 +742,7 @@ function App(): h.JSX.Element {
 
     window.addEventListener('message', onMessage);
     return (): void => window.removeEventListener('message', onMessage);
-  }, [activeSidePanel, baseLayerId, camera.zoom, dataSource, highlighterSettings, layerSettings, lifecycleSettings, setDrawToolsImportStatus, setMissionsState, setSearchState]);
+  }, [activeSidePanel, baseLayerId, camera.zoom, dataSource, handleBaseLayerStatus, highlighterSettings, layerSettings, lifecycleSettings, setDrawToolsImportStatus, setMissionsState, setSearchState]);
 
   useLayerSettingsEffects(layers);
 
@@ -869,11 +872,14 @@ function App(): h.JSX.Element {
   return (
     <div className={`iitc-iris-shell iitc-iris-sheet-${activeSheet} ${entityFetch.selectedPortal ? 'iitc-iris-has-selected-portal' : ''}`}>
       <div id="iitc-iris-map" className="iitc-iris-map" />
-      <IitcIrisAuthRecoveryBanner
-        authRecoveryText={authRecoveryText}
-        openIntelLogin={openIntelLogin}
-        retryAuthRequest={retryAuthRequest}
-      />
+      <div className="iitc-iris-map-notices">
+        <IitcIrisAuthRecoveryBanner
+          authRecoveryText={authRecoveryText}
+          openIntelLogin={openIntelLogin}
+          retryAuthRequest={retryAuthRequest}
+        />
+        <BaseLayerNotice message={baseLayerNotice} dismiss={dismissBaseLayerNotice} />
+      </div>
       {activeSheet === 'map' && searchState.term && searchState.results.length > 0 && (
         <div className="iitc-iris-map-search-badge">
           <span title={activeSearchResult?.title || searchState.term}>search: {activeSearchResult?.title || searchState.term}</span>

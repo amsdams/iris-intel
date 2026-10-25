@@ -18,12 +18,31 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.source.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify source versions before building or signing
+        run: node scripts/verify-release.mjs
+      - id: source
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
   build:
+    needs: validate
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate.outputs.sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -55,8 +74,10 @@ jobs:
           retention-days: 30
 
   android:
+    needs: validate
     uses: ./.github/workflows/android.yml
     with:
+      ref: ${{ needs.validate.outputs.sha }}
       signed: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
     secrets:
       ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}

@@ -15,10 +15,18 @@ The retained ownership rules and known limits are in [Application Architecture](
 ## Next Session Handoff
 
 **Session pickup:** triage concrete alpha feedback first, especially crashes, login, data loss, or broken workflows.
-If none needs attention, start with release workflow consistency, then base-map recovery below. A Play Store readiness
-assessment can follow when broader distribution is the goal. [Optional additional features](../backlog.md#optional-additional-features-deferred-2026-10-21)
+Release consistency and automatic base-map recovery are implemented (2026-10-25); run the phone checks below
+and verify the next GitHub Actions run. The [Play Store readiness review](play-store-readiness.md) is complete: resolve
+supported authentication and website-distribution permission evidence before beginning store delivery work. [Optional additional features](../backlog.md#optional-additional-features-deferred-2026-10-21)
 are deferred; the baseline includes Passcode and Missions. Further runtime decomposition should accompany a concrete
 change or finding, rather than become another general cleanup prerequisite.
+
+**Combined follow-ups (2026-10-25):** release consistency, automatic OSM recovery, and the
+[Play Store readiness review](play-store-readiness.md) are complete locally. `npm run check` passes 556 app/core tests
+and six release-gate tests, lint/types/CSS/workbench; all ten browser checks pass. Extension packaging and Android
+release checks pass (31 native + 15 JavaScript tests, lint, signed assembly). APK `0.4.1-alpha+f5a6770`, code 1838,
+matches the pinned certificate; its 19 bundled assets and local download match the tested build. Fresh ZIP/XPI/APK
+are available via `npm run serve`. Changes are uncommitted; GitHub CI and phone smoke remain pending.
 
 **Appearance controls (2026-10-21):** interface theme and base map selection now share **System → Appearance**.
 The choices stay independent and retain existing saved preferences. Map → Display contains overlays, portal filters,
@@ -93,8 +101,8 @@ The local download page now distinguishes signed and debug APKs; use `iitc-iris-
 OSM stays available; saved CARTO choices migrate. Workers and licences are packaged locally. Real-tile browser checks
 passed for both styles, pan/zoom, OSM switching, map replacement, and cross-origin worker loading. App checks and
 Android checks pass. The user tested XPI and APK and reported both look fine (2026-10-21).
-Targeted resilience follow-up: provide OSM recovery if WebGL/style loading fails, and verify WebGL context recovery
-after phone background/resume; no such failure was observed during this pass.
+Automatic OSM recovery and deliberate browser failure/context-restoration checks were added on 2026-10-25 (see Next Work).
+Phone background/resume acceptance of the new recovery handling remains pending; no live provider outage is claimed.
 
 **Player-tracker popup (0.3.5-spike):** phone taps did nothing. Browser hit-testing reproduced the marker shadow
 intercepting clicks because Leaflet gives it the pin’s custom CSS class. Pointer handling now targets the icon only.
@@ -133,9 +141,9 @@ Run `npm run serve` from the repo root for the XPI/ZIP/APK download page (`http:
 Build extensions with `npm run package`, or the APK with `npm run android:check`; refresh the page after building.
 `npm run android:serve` is an alias. The server starts without existing artifacts and exposes no repository files.
 
-Latest implementation checks passed: `npm run check` (534 tests plus lint/types/CSS/workbench), `npm run package`,
-`npm run android:check`, and `npm run android:release` (27 native and 13 JavaScript tests), plus published APK
-signature, checksum, version, and embedded-asset checks. The friends-alpha changes are local and uncommitted; earlier release evidence above refers to the published build.
+Earlier friends-alpha validation passed app, packaging, Android, and published APK checks as recorded above.
+For the latest local build and its pending acceptance, use the dated Combined follow-ups entry above; earlier
+published-release evidence does not establish acceptance of these uncommitted changes.
 The restored download server also passed live artifact/hash, HEAD, missing-build, dynamic-refresh, and private-file
 rejection checks. No further generic CSS/component cleanup is queued.
 
@@ -143,16 +151,17 @@ rejection checks. No further generic CSS/component cleanup is queued.
 
 **Engineering follow-ups (2026-10-21):**
 
-1. **Release workflow consistency:** `android.yml` defaults checkout to `github.ref`, while the extension build
-   uses the triggering commit. Default Android to `${{ inputs.ref || github.sha }}` so rerunning an old main build
-   cannot combine artifacts from different commits; preserve explicit tag inputs. Move tag/package/manifest version
-   validation ahead of both release builds, including signing. Verify matching source commits and rejection of a
-   mismatched version before signing. These are source-inspection findings; no failed CI run was reproduced.
-2. **Base-map recovery:** extend the existing OpenFreeMap resilience follow-up with deliberate style/network and
-   WebGL failure checks. Recover to OSM with a clear notice; prevent stale failures from overriding a newer user
-   selection, avoid retry loops, and verify cleanup/map replacement and phone background/resume. OSM is currently
-   a manual alternative; no automatic recovery or observed outage is claimed. This concerns base-map tiles, not
-   Intel portal/entity requests.
+1. **Release workflow consistency — implemented (2026-10-25):** main and tagged release jobs resolve one source
+   commit for extension and Android builds. Root/app/manifest/lockfile versions and explicit release tags are checked
+   before either build/signing; Android also checks its selected source. Six gate regressions and actionlint pass.
+   Verification in GitHub Actions remains pending the next push; no remote run was triggered in this session.
+2. **Base-map recovery — implemented (2026-10-25):** unresolved style/network failures or WebGL loss switch once
+   to OSM, synchronize and persist the selection, and display a dismissible notice. Transient errors/context restoration
+   get a grace period; hidden-page deadlines pause. Superseded layers cannot override newer choices, and map replacement
+   disposes listeners/timers. Ten focused app regressions and seven real-browser recovery checks pass, including
+   HTTP/style failures, missing WebGL, actual context loss/restoration, manual retry, and map replacement.
+   **Phone check pending:** select Dark/Light, background/resume, pan/zoom, and switch to OSM and back. Browser tests use
+   controlled provider responses; they do not establish live-provider or Android background/resume acceptance.
 3. **Focused map-runtime decomposition (opportunistic):** review request coordination and overlay rendering as extraction candidates
    from `page-map-runtime.ts`; choose cohesive ownership boundaries rather than a line-count target. Preserve
    request generations, cancellation, cache behavior, map replacement, event cleanup, and existing appearance.

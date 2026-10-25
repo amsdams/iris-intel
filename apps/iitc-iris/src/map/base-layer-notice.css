@@ -1,0 +1,12 @@
+.iitc-iris-base-layer-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 58%);
+    border-radius: var(--iitc-iris-radius-control);
+    background: rgb(var(--iitc-iris-panel-rgb) / 96%);
+    color: var(--iitc-iris-color-strong);
+    font-size: var(--iitc-iris-text-lg);
+    pointer-events: auto;
+}

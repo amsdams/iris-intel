@@ -13,6 +13,10 @@ The app owns Preact, Leaflet, and browser integration. Keep domain logic in `pac
 
 Use Node 24 and `npm ci`. Validate changes with focused tests, `npm run check` (including CSS and workbench checks), `npm run package`,
 and `git diff --check`. Documentation-only changes do not require application checks.
+For relevant UI/map changes, run `npm run test:browser`; see `tests/browser/README.md` for scope and setup.
+Browser tests, extension packaging, and Android builds rebuild the same web assets; run those commands sequentially.
+
+Preserve the Android application ID, release signing key, and increasing version codes when maintaining update compatibility.
 
 Use `npm run dev:wb` for component browsing. Keep appearance, message contracts, persisted keys, and request lifecycle
 behavior unchanged unless the authorized task explicitly changes them. Prefer combined implementation/checks and brief

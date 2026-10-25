@@ -61,8 +61,8 @@ npm run package
 - `npm run dev`: watch the extension build. Load `apps/iitc-iris/dist` in your browser; this is not a hosted web page.
 - `npm run dev:wb`: open the component workbench through Vite; `npm run build:wb` builds it separately.
 - `npm run build`: check the core build and produce the unpacked extension.
-- `npm run check`: lint, typecheck, and test both workspaces (including workbench sources), lint CSS, and build the workbench.
-- `npm run test:browser`: build IRIS and run three browser smoke tests using installed Google Chrome.
+- `npm run check`: test the release version gate, lint/typecheck/test both workspaces, lint CSS, and build the workbench.
+- `npm run test:browser`: build IRIS and run browser smoke tests using installed Google Chrome.
   Use `npm run test:browser:watch` to watch the browser, and `npm run test:browser:report` to inspect results/screenshots.
   See [browser smoke tests](tests/browser/README.md) for scope and setup; these run separately from `npm run check`.
 - `npm run lint`: lint both workspaces and application CSS.

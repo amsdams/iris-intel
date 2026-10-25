@@ -15,11 +15,33 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  validate:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+    outputs:
+      sha: ${{ steps.source.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify tag and source versions before either build
+        run: node scripts/verify-release.mjs
+      - id: source
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
   android:
+    needs: validate
     uses: ./.github/workflows/android.yml
     with:
       signed: true
-      ref: refs/tags/${{ inputs.tag || github.ref_name }}
+      ref: ${{ needs.validate.outputs.sha }}
+      release-tag: ${{ inputs.tag || github.ref_name }}
     secrets:
       ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
       ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
@@ -27,7 +49,7 @@ jobs:
       ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
 
   release:
-    needs: android
+    needs: [validate, android]
     permissions:
       contents: write
     env:
@@ -38,7 +60,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: refs/tags/${{ env.RELEASE_TAG }}
+          ref: ${{ needs.validate.outputs.sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -48,21 +70,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Verify tag matches package.json version
-        run: |
-          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Select an existing version tag in vX.Y.Z format."
-            exit 1
-          fi
-          TAG_VERSION="${RELEASE_TAG#v}"
-          PACKAGE_VERSION=$(node -p "require('./package.json').version")
-          APP_VERSION=$(node -p "require('./apps/iitc-iris/package.json').version")
-          MANIFEST_VERSION=$(node -p "require('./apps/iitc-iris/manifest.json').version")
-          if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ] || [ "$TAG_VERSION" != "$APP_VERSION" ] || [ "$TAG_VERSION" != "$MANIFEST_VERSION" ]; then
-            echo "Tag, root package, app package, and manifest versions must match; use npm run version:bump before tagging."
-            exit 1
-          fi
 
       - name: Check workspaces, CSS, and workbench
         run: npm run check

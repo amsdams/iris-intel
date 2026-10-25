@@ -1,8 +1,24 @@
-import L, {type Layer} from 'leaflet';
-import {maplibreGL} from '@maplibre/maplibre-gl-leaflet';
+import L, {type Layer, type Map as LeafletMap} from 'leaflet';
+import {MaplibreGL} from '@maplibre/maplibre-gl-leaflet';
 import {setWorkerUrl} from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import type {IitcIrisBaseLayerId} from '../messages';
+
+// The binding assumes WebGL initialization succeeded in onRemove. Keep a failed
+// initialization removable through Leaflet's normal lifecycle, without private fields.
+class OpenFreeMapLayer extends MaplibreGL {
+  override onAdd(map: LeafletMap): this {
+    try { super.onAdd(map); }
+    catch { this.fire('baseerror'); }
+    return this;
+  }
+
+  override onRemove(map: LeafletMap): this {
+    if (this.getMaplibreMap()) super.onRemove(map);
+    else this.getContainer()?.remove();
+    return this;
+  }
+}
 
 export function createBaseLayer(id: IitcIrisBaseLayerId, assetBaseUrl: string): Layer {
   if (id === 'osm') {
@@ -14,7 +30,7 @@ export function createBaseLayer(id: IitcIrisBaseLayerId, assetBaseUrl: string): 
 
   // A standalone classic worker also works when the page runtime comes from an extension origin.
   setWorkerUrl(new URL(workerUrl, assetBaseUrl || window.location.href).href);
-  return maplibreGL({
+  return new OpenFreeMapLayer({
     style: `https://tiles.openfreemap.org/styles/${id === 'openfreemap-dark' ? 'dark' : 'positron'}`,
     interactive: false,
     attributionControl: {

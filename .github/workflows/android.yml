@@ -9,6 +9,9 @@ on:
       ref:
         type: string
         default: ''
+      release-tag:
+        type: string
+        default: ''
     secrets:
       ANDROID_SIGNING_KEYSTORE_BASE64:
         required: false
@@ -32,7 +35,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref || github.ref }}
+          ref: ${{ inputs.ref || github.sha }}
           fetch-depth: 0
 
       - name: Setup Node.js
@@ -40,6 +43,11 @@ jobs:
         with:
           node-version: 24
           cache: npm
+
+      - name: Verify source versions before restoring signing material
+        env:
+          RELEASE_TAG: ${{ inputs.release-tag }}
+        run: node scripts/verify-release.mjs
 
       - name: Setup Java
         uses: actions/setup-java@v6

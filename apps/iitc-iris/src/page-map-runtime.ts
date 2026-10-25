@@ -1,4 +1,4 @@
-import {createBaseLayer} from './map/base-layers';
+import {createBaseLayerController} from './map/base-layer-controller';
 import {DEFAULT_BASE_LAYER_ID, normalizeBaseLayerId} from './map/layers/base-layer-settings';
 import {createPlayerTrackerMarkers, type PlayerTrackerMarkerGroup} from './map/player-tracker-markers';
 import {createPlayerTrackerGroupPopup} from './map/player-tracker-group-popup';
@@ -202,7 +202,7 @@ const portalHistoryByGuid = new Map<string, NonNullable<IitcIrisRenderPortal['hi
 let layerSettings: IitcIrisLayerSettings = DEFAULT_LAYER_SETTINGS;
 let highlighterSettings: IitcIrisHighlighterSettings = DEFAULT_HIGHLIGHTER_SETTINGS;
 let baseLayerId: IitcIrisBaseLayerId = DEFAULT_BASE_LAYER_ID;
-let baseLayer: LeafletLayer | undefined;
+let baseLayerController: ReturnType<typeof createBaseLayerController> | undefined;
 let dataSource: IitcIrisDataSourceSettings = {mode: 'live'};
 let lifecycleSettings: IitcIrisLifecycleSettings = {iitcMovementDelay: false};
 let refreshTimer: number | undefined;
@@ -517,15 +517,7 @@ function syncUrlMapView(view: StoredMapView): void {
 }
 
 function setBaseLayer(nextBaseLayerId: IitcIrisBaseLayerId): void {
-  const map = window.__iitcIrisMap;
-  if (!map) return;
-  if (baseLayer && baseLayerId === nextBaseLayerId) return;
-
-  if (baseLayer) map.removeLayer(baseLayer);
-  baseLayer = createBaseLayer(nextBaseLayerId, IITC_IRIS_ASSET_BASE_URL).addTo(map);
-  map.setMaxZoom(nextBaseLayerId === 'osm' ? 19 : 20);
-  baseLayerId = nextBaseLayerId;
-  storeBaseLayerId(nextBaseLayerId);
+  baseLayerController?.select(normalizeBaseLayerId(nextBaseLayerId));
 }
 
 function cancelActiveEntityFetch(): void {
@@ -6088,7 +6080,8 @@ function boot(): void {
     refreshTimer = undefined;
     playerTrackerRefreshTimer = undefined;
     mapMoveInProgress = false;
-    baseLayer = undefined;
+    baseLayerController?.dispose();
+    baseLayerController = undefined;
     latestEntities = undefined;
     latestEntityRenderContextKey = '';
     latestPlan = undefined;
@@ -6103,6 +6096,11 @@ function boot(): void {
   window.__iitcIrisMapContainer = container;
   createIitcIrisPanes(map);
 
+  baseLayerController = createBaseLayerController(map, IITC_IRIS_ASSET_BASE_URL, (status) => {
+    baseLayerId = status.baseLayerId;
+    storeBaseLayerId(baseLayerId);
+    window.postMessage({type: IITC_IRIS_MESSAGES.baseLayerStatus, ...status}, '*');
+  });
   setBaseLayer(loadStoredBaseLayerId());
   L.control.zoom({position: 'topright'}).addTo(map);
 
