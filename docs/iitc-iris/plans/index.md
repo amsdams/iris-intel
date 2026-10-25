@@ -21,12 +21,26 @@ supported authentication and website-distribution permission evidence before beg
 are deferred; the baseline includes Passcode and Missions. Further runtime decomposition should accompany a concrete
 change or finding, rather than become another general cleanup prerequisite.
 
+**Landscape clipping repair (2026-10-25):** reproduced clipped, unscrollable request-panel bodies and panel tops
+above the viewport on short screens. Shared bodies now scroll when their controls exceed available height; controls
+retain their size and nested lists keep a usable minimum height. Shell height limits reserve room above navigation.
+Browser coverage exercises 17 sheets at three landscape sizes and portrait, including populated mission/inventory/draw
+lists, import fields, and footers. All 14 browser tests and `npm run check` (556 app/core + six release-gate tests,
+lint/types/CSS/workbench), extension packaging, and Android release tests/lint/build pass. The fresh signed APK
+`0.4.1-alpha+b8724d2`, code 1840, matches the pinned certificate and tested bundled assets; its
+port-6969 download is verified. The user reports landscape is “a lot better” after the fix; general improvement is
+confirmed, without claiming individual acceptance of all sheets. Next focused checks, when convenient: Android keyboard
+open in landscape (COMM/Search/Passcode) and populated selected-portal details, which the new 17-sheet browser sweep
+does not exercise. No new blocker surfaced; prioritize concrete tester feedback over another general cleanup pass.
+Landscape changes remain uncommitted at this handoff.
+
 **CI hardening (2026-10-25):** signed and unsigned Android calls are separate; unsigned/PR calls receive no signing
 secrets. The reusable signing guard allows only main/version-tag push/manual contexts. All 19 external action
 references are pinned to verified upstream release commits, checkouts do not retain credentials, and default workflow
 permissions are read-only. Actionlint, local signing-path checks (four allowed/six rejected contexts), `npm run check`
 (556 app/core + six release-gate tests, lint/types/CSS/workbench), and extension packaging pass.
-The next GitHub run remains pending a push. `AGENTS.md` delegates to the shared `SKILL.md` guide.
+The user subsequently pushed this batch (`b8724d2`); its GitHub Actions result was not inspected here.
+`AGENTS.md` delegates to the shared `SKILL.md` guide.
 
 **Alpha feedback (2026-10-25):** the user reports three testers could run the APK. The refreshed local signed APK
 `0.4.1-alpha+c850134`, code 1839, installed from port 6969 and still works. These confirm basic installation/startup;

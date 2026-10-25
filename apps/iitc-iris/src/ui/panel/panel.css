@@ -56,9 +56,20 @@
     gap: 6px;
     min-height: 0;
     min-width: 0;
-    overflow: hidden;
+    overflow: auto;
     padding-top: 6px;
     border-top: 1px solid rgb(var(--iitc-iris-border-rgb) / 18%);
+}
+
+/* Keep controls intact and list content reachable when the viewport is short.
+ * Lists retain their own scrolling; the body can scroll when controls alone exceed its height. */
+.iitc-iris-request-panel-body > * {
+    flex-shrink: 0;
+}
+
+.iitc-iris-request-panel-body > .iitc-iris-scroll-region {
+    flex-shrink: 1;
+    min-height: 64px;
 }
 
 .iitc-iris-panel-state {

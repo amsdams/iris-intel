@@ -126,8 +126,11 @@ installable IITC plugins or a general plugin engine. No implementation is queued
   release commits with version comments; checkouts do not retain credentials and default tokens are read-only.
   Local actionlint and trigger/secret-boundary checks pass; confirm the next GitHub Actions run after pushing.
   Review upstream release changes when updating pins. No previous secret leak was established.
-- Mobile ergonomics pass: check sheet height, sticky headers/footers, map gestures, long-press conflicts, keyboard
-  shortcuts on mobile browsers, and whether dense panels remain usable in portrait.
+- Mobile ergonomics pass: shared landscape height/clipping and request-body scrolling repaired (2026-10-25), with
+  browser coverage of 17 sheets across three landscape sizes and portrait; the user reports it is “a lot better”.
+  Individual sheet acceptance remains unspecified. Follow up on keyboard-open landscape and populated portal details.
+  Continue checking keyboard overlap, sticky headers/footers, map gestures, long-press conflicts, mobile keyboard
+  shortcuts, and dense-panel usability when concrete findings arise.
 - Accessibility baseline: verify focus order, Escape behavior, button labels/titles, reduced-motion expectations, and
   color contrast for faction, rarity, mission, warning, and disabled states.
 - Release checklist: record exact build/package commands, artifact naming, smoke-test routes, sample locations, and the
