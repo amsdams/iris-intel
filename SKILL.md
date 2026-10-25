@@ -17,6 +17,8 @@ For relevant UI/map changes, run `npm run test:browser`; see `tests/browser/READ
 Browser tests, extension packaging, and Android builds rebuild the same web assets; run those commands sequentially.
 
 Preserve the Android application ID, release signing key, and increasing version codes when maintaining update compatibility.
+For workflow changes, pin external actions to verified upstream commit SHAs with version comments, keep signing secrets
+out of unsigned/PR calls, and validate workflow syntax and signing trigger paths. Do not persist checkout credentials.
 
 Use `npm run dev:wb` for component browsing. Keep appearance, message contracts, persisted keys, and request lifecycle
 behavior unchanged unless the authorized task explicitly changes them. Prefer combined implementation/checks and brief

@@ -21,12 +21,25 @@ supported authentication and website-distribution permission evidence before beg
 are deferred; the baseline includes Passcode and Missions. Further runtime decomposition should accompany a concrete
 change or finding, rather than become another general cleanup prerequisite.
 
+**CI hardening (2026-10-25):** signed and unsigned Android calls are separate; unsigned/PR calls receive no signing
+secrets. The reusable signing guard allows only main/version-tag push/manual contexts. All 19 external action
+references are pinned to verified upstream release commits, checkouts do not retain credentials, and default workflow
+permissions are read-only. Actionlint, local signing-path checks (four allowed/six rejected contexts), `npm run check`
+(556 app/core + six release-gate tests, lint/types/CSS/workbench), and extension packaging pass.
+The next GitHub run remains pending a push. `AGENTS.md` delegates to the shared `SKILL.md` guide.
+
+**Alpha feedback (2026-10-25):** the user reports three testers could run the APK. The refreshed local signed APK
+`0.4.1-alpha+c850134`, code 1839, installed from port 6969 and still works. These confirm basic installation/startup;
+individual feature paths and the new map background/resume checks were not separately reported.
+
 **Combined follow-ups (2026-10-25):** release consistency, automatic OSM recovery, and the
 [Play Store readiness review](play-store-readiness.md) are complete locally. `npm run check` passes 556 app/core tests
 and six release-gate tests, lint/types/CSS/workbench; all ten browser checks pass. Extension packaging and Android
 release checks pass (31 native + 15 JavaScript tests, lint, signed assembly). APK `0.4.1-alpha+f5a6770`, code 1838,
 matches the pinned certificate; its 19 bundled assets and local download match the tested build. Fresh ZIP/XPI/APK
-are available via `npm run serve`. Changes are uncommitted; GitHub CI and phone smoke remain pending.
+are available via `npm run serve`. This batch was subsequently committed as `c850134`; public GitHub update metadata
+reports code 1839 for that commit, and the matching local APK was rebuilt. Full CI logs were not inspected here;
+feature-specific phone smoke remains pending.
 
 **Appearance controls (2026-10-21):** interface theme and base map selection now share **System → Appearance**.
 The choices stay independent and retain existing saved preferences. Map → Display contains overlays, portal filters,

@@ -23,10 +23,11 @@ jobs:
     outputs:
       sha: ${{ steps.source.outputs.sha }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
+          persist-credentials: false
           ref: ${{ github.sha }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
       - name: Verify source versions before building or signing
@@ -40,12 +41,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
+          persist-credentials: false
           ref: ${{ needs.validate.outputs.sha }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
           cache: npm
@@ -67,18 +69,28 @@ jobs:
           cp apps/iitc-iris/builds/iitc-iris-firefox-*.xpi out/iitc-iris-firefox.xpi
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: iitc-iris-artifacts
           path: out/
           retention-days: 30
 
-  android:
+  android-unsigned:
+    if: github.ref != 'refs/heads/main' || github.event_name == 'pull_request'
     needs: validate
     uses: ./.github/workflows/android.yml
     with:
       ref: ${{ needs.validate.outputs.sha }}
-      signed: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+      signed: false
+    # No signing secrets are passed to PR or non-main builds.
+
+  android-signed:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: validate
+    uses: ./.github/workflows/android.yml
+    with:
+      ref: ${{ needs.validate.outputs.sha }}
+      signed: true
     secrets:
       ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
       ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
@@ -87,26 +99,26 @@ jobs:
 
   publish-latest:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: [build, android]
+    needs: [build, android-signed]
     runs-on: ubuntu-latest
     permissions:
       contents: write
 
     steps:
       - name: Download verified extension packages
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: iitc-iris-artifacts
           path: out/
 
       - name: Download verified signed APK
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: iitc-iris-android
           path: out/
 
       - name: Create/Update Latest Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         with:
           tag_name: latest
           name: Latest Build

@@ -121,9 +121,11 @@ installable IITC plugins or a general plugin engine. No implementation is queued
   Intel page. Keep credentials out of the protocol; add payload guards/stronger message types when changing
   consequential paths. An explicit target origin can restrict delivery but cannot isolate same-page scripts.
   No exploit was demonstrated by the 2026-10-21 source review; a wholesale protocol rewrite is not queued.
-- CI hardening alongside workflow changes: withhold signing-secret values from unsigned calls or separate trusted
-  signing from PR validation; consider pinning third-party actions to reviewed commit SHAs before wider distribution.
-  The current unsigned path does not consume signing secrets; no leak was established by the review.
+- CI hardening implemented (2026-10-25): unsigned/PR calls receive no signing secrets; the reusable Android workflow
+  restricts signing to main/version-tag push or manual runs. All external actions are pinned to verified upstream
+  release commits with version comments; checkouts do not retain credentials and default tokens are read-only.
+  Local actionlint and trigger/secret-boundary checks pass; confirm the next GitHub Actions run after pushing.
+  Review upstream release changes when updating pins. No previous secret leak was established.
 - Mobile ergonomics pass: check sheet height, sticky headers/footers, map gestures, long-press conflicts, keyboard
   shortcuts on mobile browsers, and whether dense panels remain usable in portrait.
 - Accessibility baseline: verify focus order, Escape behavior, button labels/titles, reduced-motion expectations, and

@@ -32,14 +32,27 @@ jobs:
   apk:
     runs-on: ubuntu-24.04
     steps:
+      - name: Restrict release signing to main and version-tag workflows
+        if: ${{ inputs.signed }}
+        env:
+          TRIGGER_EVENT: ${{ github.event_name }}
+          TRIGGER_REF: ${{ github.ref }}
+        shell: bash
+        run: |
+          case "$TRIGGER_EVENT:$TRIGGER_REF" in
+            push:refs/heads/main|workflow_dispatch:refs/heads/main|push:refs/tags/v*|workflow_dispatch:refs/tags/v*) ;;
+            *) echo '::error::Release signing is restricted to main and version-tag push/manual workflows.'; exit 1 ;;
+          esac
+
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
+          persist-credentials: false
           ref: ${{ inputs.ref || github.sha }}
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
           cache: npm
@@ -50,13 +63,13 @@ jobs:
         run: node scripts/verify-release.mjs
 
       - name: Setup Java
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: '21'
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
         with:
           packages: platform-tools
           log-accepted-android-sdk-licenses: false
@@ -117,7 +130,7 @@ jobs:
           fi
 
       - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: iitc-iris-android
           path: out/
