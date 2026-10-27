@@ -21,6 +21,17 @@ supported authentication and website-distribution permission evidence before beg
 are deferred; the baseline includes Passcode and Missions. Further runtime decomposition should accompany a concrete
 change or finding, rather than become another general cleanup prerequisite.
 
+**Map request extraction (2026-10-27):** map refresh generations, queues/retries, cached/stale tile delivery, wanted-response
+handoff and artifact fetching now live in `map/map-request.ts`. Shared Intel transport/auth helpers live in
+`intel/intel-request.ts`; panel endpoint behavior stays in the entry point. The entry point is 3,087 lines, down from
+3,962. The core algorithms, messages, diagnostics and timings are retained. `npm run check` passes (569 app/core + six
+release-gate tests, lint/types/CSS/workbench). New regressions cover concurrent slots, cache reuse, stale-cache fallback,
+retry delays, wanted/unwanted late responses, source changes, auth failures and map disposal. All 24 browser checks and
+ten focused Firefox checks pass. Extension packaging and signed Android release tests/lint/build pass (31 native + 15
+JavaScript tests). Local APK `0.4.1-alpha+b159255`, code 1843, matches the pinned certificate; all 19 bundled assets,
+XPI/ZIP contents and port-6969 downloads match the current build. Source changes are uncommitted; focused live XPI
+smoke of map loading and repeated pan/zoom remains pending.
+
 **Map runtime split (2026-10-27):** extracted Search requests/previews/navigation, Draw Tools storage/actions/rendering,
 and mission overlays into their domain folders. A second combined pass extracted entity rendering, incremental layer
 updates, filters, highlighters and portal overlays into `map/entities/map-renderer.ts`, with shared types/panes in
@@ -33,9 +44,7 @@ passed five repetitions. An existing Canvas redraw
 error during immediate map replacement was confirmed against the original runtime and recorded in the backlog.
 Extension packaging and signed Android release tests/lint/build pass (31 native + 15 JavaScript tests). Local APK
 `0.4.1-alpha+6c211bc`, code 1842, matches the pinned certificate; all 19 bundled assets and the port-6969 download match.
-The user accepted XPI smoke of the first Search/Draw Tools/mission extraction. The entity-renderer extraction still
-needs focused live XPI smoke (pan/zoom, select a portal, toggle overlays/factions/levels and change highlighters).
-Source changes are uncommitted.
+The user accepted XPI smoke of both the feature and entity-renderer extractions; they are committed as `b159255`.
 
 **Search interaction simplification (2026-10-25):** Enter in the field submits online search; Up/Down or Tab
 focus results; click/Enter on a row navigates. `/` opens or refocuses the input; menu opening leaves focus alone, and

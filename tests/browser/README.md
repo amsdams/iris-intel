@@ -32,6 +32,9 @@ deliberate faults, not live providers. A recovered map uses OSM and updates Appe
 mission, inventory, and drawing lists exercise scrolling to the last row, import controls, and panel footers;
 panels must fit above navigation without clipping their top. The data is simulated through the UI message boundary.
 
+[map-requests.smoke.mjs](map-requests.smoke.mjs) runs the live request path with simulated Intel responses: TIMEOUT
+retries recover into real Leaflet layers, request metadata is retained, and a subsequent refresh reuses cached tiles.
+
 [map-entities.smoke.mjs](map-entities.smoke.mjs) checks real Leaflet layer identity across incremental generations,
 whole-overlay/faction/level/unclaimed filters, in-place highlighter refresh, and fresh entity layers after map replacement.
 It uses controlled fixture data through the page message boundary.

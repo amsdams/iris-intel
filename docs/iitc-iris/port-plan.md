@@ -84,6 +84,18 @@ Naming checklist before creating a new file or exported function:
   IITC naming is not appropriate.
 - Is the divergence only for code cleanliness? Keep the IITC name at the boundary and hide the cleaner structure inside.
 
+## Map request ownership extraction — 2026-10-27
+
+Reference seams: `core/code/map_request.js`, `map_cache.js`, `send_request.js`, `request_handling.js`, and `artifact.js`.
+IITC's Request owns refresh generations, tile queues/cache and delivery to the renderer; artifacts inject extra entities.
+Extracted existing IRIS coordination into `map/map-request.ts`, retaining the tested core queue/cache algorithms.
+`intel/intel-request.ts` supplies shared page-context CSRF/version/auth helpers and lifetime-bound endpoint transport.
+Movement/download delays, retries, wanted-response bridging, fixture/live switching, diagnostics and map-lifetime
+cancellation are retained. This is an internal ownership change, with existing IRIS/IITC
+timing and artifact behavior retained; no new hooks or public plugin surface. Regression tests cover concurrent/stale
+responses, cache/retry delivery, source changes, authentication and disposal; a browser check runs simulated TIMEOUT
+recovery and cached refresh through real Leaflet layers. Rendering semantics and visual timing are unchanged by intent.
+
 ## Entity renderer ownership extraction — 2026-10-27
 
 Reference seams: `core/code/map_renderer.js`, `portal_marker.js`, `portal_highlighter.js`, and `layerchooser.js`.
@@ -100,8 +112,8 @@ resources. The entry point is 3,962 lines, down from 5,506 after the preceding s
 This is an extraction of existing IRIS behavior, using reference `core/code/search_query.js`, `search_query_results_view.js`,
 `plugins/draw-tools.js`, and `plugins/missions.js` for domain naming and ownership. Search owns its query generation and
 preview/selection paths; Draw Tools owns stored item mutations and rendering; mission overlays own route/waypoint layers.
-The page entry point retains authenticated request coordination, entity rendering, mission fetching/caches, shared panes
-and layer arrays, and map lifetime disposal. Existing message names, persisted formats, render styles/order, geocoder
+Request coordination and entity rendering now have the separate owners above. The page entry point retains panel
+requests, mission fetching/caches, shared panes and layer arrays, and map lifetime disposal. Existing message names, persisted formats, render styles/order, geocoder
 fallback, and documented IRIS/IITC behavior differences remain. Map disposal invalidates Search and aborts its fetches
 through the same lifetime. Draw Tools highlight state retains its page lifetime across map replacement. No public hooks
 or plugin API are introduced. Focused regressions cover stale Search completion, stored indexes and current settings,

@@ -106,9 +106,15 @@ Search invalidation remains in map disposal; its requests use the existing map l
 
 `map/entities/map-renderer.ts` owns portal/link/field layers, visibility filters, incremental synchronization,
 highlighter style refresh, portal overlays and render diagnostics. `map/map-layers.ts` names the shared layer/pane types;
-map creation still owns their allocation. Requests, selection state and mission caches stay in the entry point.
+map creation still owns their allocation. Selection state, panel requests and mission caches stay in the entry point.
 Renderer callbacks read the current state; disposal invalidates its render context and map-keyed resources stay separate.
-Keep feature behavior in these modules and coordination in `page-map-runtime.ts`; no generic plugin/controller framework is required.
+`map/map-request.ts` owns map refresh generations, tile/cache/refill/render queues, fixture/live fetching, artifact
+injection and map-request diagnostics. The existing pure planning, decoding and queue/cache algorithms stay in
+`packages/iitc-core`. Movement and map disposal explicitly notify this page-owned controller; tile cache survives map
+replacement while pending work and request identity are invalidated. `intel/intel-request.ts` holds shared page-context
+CSRF/version/auth helpers and lifetime-bound endpoint transport for both map and panel requests. Endpoint-specific
+panel behavior stays with its existing owner. Keep feature behavior in these modules and composition in
+`page-map-runtime.ts`; no generic plugin/controller framework is required.
 
 ## Validation And Known Limits
 
