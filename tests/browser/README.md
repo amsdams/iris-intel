@@ -37,7 +37,9 @@ retries recover into real Leaflet layers, request metadata is retained, and a su
 
 [map-entities.smoke.mjs](map-entities.smoke.mjs) checks real Leaflet layer identity across incremental generations,
 whole-overlay/faction/level/unclaimed filters, in-place highlighter refresh, and fresh entity layers after map replacement.
-It uses controlled fixture data through the page message boundary.
+It uses controlled fixture data through the page message boundary. Portal cases exercise detailed entity promotion,
+cached-state display while refreshing, cancelled late responses, pending portal arrival, cache/selection retention
+across map replacement, and native context gestures for portals, links, fields and empty map points.
 
 [panel-requests.smoke.mjs](panel-requests.smoke.mjs) runs real Scores, Inventory/Profile, Passcode and COMM panel workflows
 with simulated endpoint responses, checking request metadata, selected-portal key counts and rendered rewards. It also

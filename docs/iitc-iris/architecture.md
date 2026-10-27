@@ -106,7 +106,7 @@ Search invalidation remains in map disposal; its requests use the existing map l
 
 `map/entities/map-renderer.ts` owns portal/link/field layers, visibility filters, incremental synchronization,
 highlighter style refresh, portal overlays and render diagnostics. `map/map-layers.ts` names the shared layer/pane types;
-map creation still owns their allocation. Selection state and portal-detail requests stay in the entry point.
+map creation still owns their allocation. Selection and portal details have their own owners below.
 Renderer callbacks read the current state; disposal invalidates its render context and map-keyed resources stay separate.
 `map/map-request.ts` owns map refresh generations, tile/cache/refill/render queues, fixture/live fetching, artifact
 injection and map-request diagnostics. The existing pure planning, decoding and queue/cache algorithms stay in
@@ -133,9 +133,17 @@ publishing panel status. Public panel refreshes still update Player Tracker. Cha
 fetch cancellation and map-lifetime send guards retain their existing behavior. UI COMM state/scroll coordination
 in `content.tsx` remains a separate concern.
 
-The entry point has fallen from 6,159 to 1,671 lines (73%). This measures ownership moved out of the coordinator,
-not code deleted from the app. It still owns map boot/lifetime/layer allocation, portal selection/context/navigation,
-portal-detail requests/cache, shared panel transport and diagnostic/message aggregation.
+`map/map-selection-runtime.ts` owns selected portal/object state, selection overlays, portal-link navigation and
+pending selection resolution. `portals/portal-details-runtime.ts` owns detail fetching/status and its twelve-entry
+page-lifetime cache. Successful details update shared history, then selection promotes the shared entity and re-renders;
+request abortion and selected-GUID checks reject obsolete results. `map/map-context-actions.ts` owns visible-entity
+hit-testing, context payloads, click suppression and gesture installation. Existing `map-context-runtime.ts` remains
+the gesture/listener cleanup helper. Inventory and Missions read selection through callbacks. Map disposal cancels
+detail requests and removes gestures/layers while retaining the existing selection/cache/history lifetime.
+
+The entry point has fallen from 6,159 to 1,166 lines (81%). This measures ownership moved out of the coordinator,
+not code deleted from the app. It still owns map boot/lifetime/layer allocation, view/settings persistence, location/debug overlays,
+shared panel transport and diagnostic/message aggregation.
 
 ## Validation And Known Limits
 

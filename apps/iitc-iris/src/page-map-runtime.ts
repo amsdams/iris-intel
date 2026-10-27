@@ -1,3 +1,6 @@
+import {createMapSelectionRuntime} from './map/map-selection-runtime';
+import {createMapContextActions} from './map/map-context-actions';
+import {createPortalDetailsRuntime} from './portals/portal-details-runtime';
 import {createCommRuntime, normalizeCommTab} from './comm/comm-runtime';
 import {createScoresRuntime} from './map/scores-runtime';
 import {createPasscodeRuntime} from './agent/passcode-runtime';
@@ -5,7 +8,7 @@ import {createInventoryRuntime} from './agent/inventory-runtime';
 import {createMissionsRuntime} from './map/missions/missions-runtime';
 import {createPlayerTrackerRuntime} from './map/player-tracker-runtime';
 import {createMapRequest, type TileDiagnostics} from './map/map-request';
-import {createIntelRequest, getCsrfToken, extractVersion, looksLikeHtml, isIitcAuthMessage, isIitcAuthError, createIitcAuthError} from './intel/intel-request';
+import {createIntelRequest, getCsrfToken, extractVersion, looksLikeHtml, isIitcAuthMessage, createIitcAuthError} from './intel/intel-request';
 import {createMapRenderer} from './map/entities/map-renderer';
 import {getLayerPane, type IitcIrisCoreLayerKey, type IitcIrisLayerPaneKey, type IitcIrisMapLayers} from './map/map-layers';
 import {createSearchRuntime} from './map/search/search-runtime';
@@ -14,40 +17,20 @@ import {createMissionOverlay} from './map/missions/mission-overlay';
 import {createBaseLayerController} from './map/base-layer-controller';
 import {DEFAULT_BASE_LAYER_ID, normalizeBaseLayerId} from './map/layers/base-layer-settings';
 import {createIitcIrisMapLifetime, type IitcIrisMapLifetime} from './map/map-runtime-lifetime';
-import L, {type Layer as LeafletLayer, type LeafletMouseEvent, type Map as LeafletMap} from 'leaflet';
-import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisDataSourceSettings, type IitcIrisHighlighterSettings, type IitcIrisInteractionUpdateTimingDiagnostics, type IitcIrisLayerSettings, type IitcIrisLayerUpdateTimingDiagnostics, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMessage, type IitcIrisMissionWaypoint, type IitcIrisPortalDetailsState, type IitcIrisRequestDiagnostics, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisSelectedPortal} from './messages';
+import L, {type Layer as LeafletLayer, type Map as LeafletMap} from 'leaflet';
+import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisDataSourceSettings, type IitcIrisHighlighterSettings, type IitcIrisInteractionUpdateTimingDiagnostics, type IitcIrisLayerSettings, type IitcIrisLayerUpdateTimingDiagnostics, type IitcIrisLifecycleSettings, type IitcIrisMessage, type IitcIrisRequestDiagnostics, type IitcIrisRenderEntities, type IitcIrisRenderPortal} from './messages';
 import {DEFAULT_LAYER_SETTINGS} from './map/layers/layer-registry';
 import {DEFAULT_HIGHLIGHTER_ID, PORTAL_HIGHLIGHTER_REGISTRY} from './map/layers/highlighter-registry';
 import {getLayerUpdatePlan} from './map/layers/layer-update-routing';
-import {createIitcIrisMapContextMessage, installIitcIrisContextGestures} from './map/map-context-runtime';
-import {convertIitcGeodesicLatLngs, createIitcGeodesicPolygon, createIitcGeodesicPolyline} from './map/leaflet-geodesic';
 import {
   beginIitcRequestDiagnostics,
   createIitcRequestDiagnosticsSnapshot,
   createIitcRequestDiagnosticsState,
-  getIitcMapContextFieldPerimeterMeters,
-  getIitcMapContextFieldPortalAnchors,
-  getIitcMapContextFieldPortalGuids,
-  getIitcMapContextLinkDistanceMeters,
-  getIitcMapContextLinkPortalAnchors,
-  getIitcMapContextLinkPortalGuids,
   getIitcPortalAnalysis,
-  findIitcPortalByGuidOrLatLng,
   finishIitcRequestDiagnostics,
-  planIitcPortalLinkNavigation,
-  planIitcMapContextPoint,
-  resolveIitcPendingPortalSelection,
-  applyIitcPortalDetailsResponse,
-  createIitcPortalDetailsAuthState,
-  createIitcPortalDetailsErrorState,
-  createIitcPortalDetailsLoadingState,
-  getIitcCachedPortalDetails,
   type IitcGetEntitiesResponse,
   type IitcMapDataPlan,
-  type IitcPortalDetailsCache,
-  type IitcPortalDetailsResponse,
   type IitcRequestDiagnosticsState,
-  writeIitcPortalDetailsCache,
 } from '@iris/iitc-core';
 
 const DEFAULT_CENTER: [number, number] = [52.3730796, 4.8924534];
@@ -56,11 +39,6 @@ const DEFAULT_ZOOM = 11;
 const MAP_VIEW_STORAGE_KEY = 'iitc-iris:map-view';
 const BASE_LAYER_STORAGE_KEY = 'iitc-iris:base-layer';
 
-const LONG_PRESS_MS = 600;
-const LONG_PRESS_MOVE_TOLERANCE_PX = 12;
-const LONG_PRESS_CLICK_SUPPRESS_MS = 700;
-const PORTAL_CONTEXT_HIT_TOLERANCE_PX = 10;
-const LINK_CONTEXT_HIT_TOLERANCE_PX = 7;
 const MAX_INTERACTION_UPDATE_DIAGNOSTICS = 10;
 const IITC_IRIS_ASSET_BASE_URL = ((): string => {
   const script = document.currentScript instanceof HTMLScriptElement ? document.currentScript.src : '';
@@ -75,14 +53,6 @@ let bootRetryTimer: number | undefined;
 let latestEntities: IitcIrisRenderEntities | undefined;
 let latestInteractionUpdateDiagnostics: IitcIrisInteractionUpdateTimingDiagnostics[] = [];
 
-let selectedPortalGuid: string | undefined;
-let selectedPortal: IitcIrisSelectedPortal | null = null;
-let selectedMapObject: {type: 'link' | 'field'; guid: string} | null = null;
-let pendingPortalSelection: {guid?: string; lat?: number; lng?: number} | null = null;
-let latestPortalDetails: IitcIrisPortalDetailsState | null = null;
-let suppressPortalClickUntil = 0;
-let lastContextPostAt = 0;
-const portalDetailsCache: IitcPortalDetailsCache = new Map();
 const portalHistoryByGuid = new Map<string, NonNullable<IitcIrisRenderPortal['history']>>();
 let layerSettings: IitcIrisLayerSettings = DEFAULT_LAYER_SETTINGS;
 let highlighterSettings: IitcIrisHighlighterSettings = DEFAULT_HIGHLIGHTER_SETTINGS;
@@ -93,7 +63,6 @@ let lifecycleSettings: IitcIrisLifecycleSettings = {iitcMovementDelay: false};
 
 let authRecoveryActive = false;
 
-let currentPortalDetailsAbortController: AbortController | undefined;
 let requestDiagnosticsState: IitcRequestDiagnosticsState = createIitcRequestDiagnosticsState();
 
 interface IitcPagePlayer {
@@ -108,6 +77,41 @@ interface IitcPagePlayer {
   level?: unknown;
   xm_capacity?: unknown;
 }
+const {fetchIitcEndpointText} = createIntelRequest({getLifetime: () => mapLifetime, beginRequest: beginIitcRequest});
+const portalDetails = createPortalDetailsRuntime({
+  getSelectedPortalGuid: () => selection.getSelectedPortalGuid(),
+  getSelectedPortal: () => selection.getSelectedPortal(),
+  portalHistoryByGuid, fetchIitcEndpointText, repostLatestEntityStatus,
+  onDetailsLoaded: (details, state) => selection.applyPortalDetails(details, state),
+});
+const {cancelActivePortalDetailsFetch} = portalDetails;
+const selection = createMapSelectionRuntime({
+  getMap: () => window.__iitcIrisMap,
+  getEntities: () => latestEntities,
+  getPortalRadius: (level, placeholder) => getPortalRadius(level, placeholder),
+  isPortalVisible: (portal) => isPortalVisible(portal),
+  isLinkVisible: (link) => isLinkVisible(link),
+  isFieldVisible: (field) => isFieldVisible(field),
+  ensureLayers, clearRenderedLayers, addRenderedLayer,
+  renderEntities: (entities) => renderEntities(entities),
+  selectedPortalChanged: () => inventory.selectedPortalChanged(),
+  refreshSelectedPortalDetails: portalDetails.refreshSelectedPortalDetails,
+  clearPortalDetails: portalDetails.clearState, cancelActivePortalDetailsFetch, repostLatestEntityStatus,
+});
+const {selectPortal, renderSelectedPortal, renderSelectedMapObject, zoomToAndShowPortal,
+  selectMissionWaypoint, clearPortalSelection} = selection;
+const {openPortalContext, openMapContextAtPoint, openMissionWaypointContext, installContextLongPress,
+  isPortalClickSuppressed} = createMapContextActions({
+  getMap: () => window.__iitcIrisMap,
+  getEntities: () => latestEntities,
+  getPortalRadius: (level, placeholder) => getPortalRadius(level, placeholder),
+  isPortalVisible: (portal) => isPortalVisible(portal),
+  isLinkVisible: (link) => isLinkVisible(link),
+  isFieldVisible: (field) => isFieldVisible(field),
+  selectPortal, selectMapObject: selection.selectMapObject, clearSelectedMapObject: selection.clearSelectedMapObject,
+  zoomToAndShowPortal, findPortalByGuidOrLatLng: selection.findPortalByGuidOrLatLng,
+});
+
 const {refreshScores, cancelActiveScoresFetch} = createScoresRuntime({
   getMapCenterE6, postIntelEndpoint, getIitcRequestDiagnostics,
 });
@@ -115,7 +119,7 @@ const {redeemPasscode, cancelActivePasscodeFetch} = createPasscodeRuntime({
   postIntelEndpoint, getIitcRequestDiagnostics,
 });
 const inventory = createInventoryRuntime({
-  getSelectedPortal: () => ({guid: selectedPortalGuid, title: selectedPortal?.title}),
+  getSelectedPortal: () => ({guid: selection.getSelectedPortalGuid(), title: selection.getSelectedPortal()?.title}),
   postIntelEndpoint, getIitcRequestDiagnostics, postAgentState,
 });
 const {getPortalKeyCount, refreshInventory, refreshSubscriptionStatus, cancelActiveInventoryFetch} = inventory;
@@ -131,18 +135,15 @@ const {
   getEntities: () => latestEntities,
   onEntitiesChanged: (entities) => {
     latestEntities = entities;
-    if (pendingPortalSelection) {
-      const portal = resolveIitcPendingPortalSelection(pendingPortalSelection, entities.portals);
-      if (portal) selectPortal(portal, false);
-    }
+    selection.resolvePendingPortalSelection(entities);
   },
   getLayerSettings: () => layerSettings,
   getHighlighterSettings: () => highlighterSettings,
   hasDetailedPortals: () => mapRequests.getSnapshot().plan?.tileParams.hasPortals ?? false,
-  hasPendingPortalSelection: () => pendingPortalSelection !== null,
+  hasPendingPortalSelection: selection.hasPendingPortalSelection,
   getPortalHistory: (guid) => portalHistoryByGuid.get(guid),
   getPortalKeyCount,
-  isPortalClickSuppressed: () => Date.now() < suppressPortalClickUntil,
+  isPortalClickSuppressed,
   selectPortal, openPortalContext, renderSelectedPortal, renderSelectedMapObject,
   renderIitcDrawTools: () => renderIitcDrawTools(),
 });
@@ -174,7 +175,7 @@ const {clearMissionOverlay, renderMissionOverlay, panToMissionStart, zoomToSelec
   getPortals: () => latestEntities?.portals ?? [],
   getSelectedMission: () => missions.getState().selectedMission,
   getPortalRadius,
-  isPortalClickSuppressed: () => Date.now() < suppressPortalClickUntil,
+  isPortalClickSuppressed,
   selectMissionWaypoint,
   openMissionWaypointContext,
   clearLayers: () => clearRenderedLayers(ensureLayers().missions),
@@ -184,12 +185,11 @@ const {clearMissionOverlay, renderMissionOverlay, panToMissionStart, zoomToSelec
 
 const missions = createMissionsRuntime({
   getMap: () => window.__iitcIrisMap,
-  getSelectedPortal: () => ({guid: selectedPortalGuid, title: selectedPortal?.title}),
+  getSelectedPortal: () => ({guid: selection.getSelectedPortalGuid(), title: selection.getSelectedPortal()?.title}),
   postIntelEndpoint, getIitcRequestDiagnostics, clearMissionOverlay, renderMissionOverlay, panToMissionStart,
 });
 const {refreshMissions, refreshMissionDetails} = missions;
 
-const {fetchIitcEndpointText} = createIntelRequest({getLifetime: () => mapLifetime, beginRequest: beginIitcRequest});
 const comm = createCommRuntime({
   getMap: () => window.__iitcIrisMap,
   getLifetime: () => mapLifetime,
@@ -379,11 +379,6 @@ function setBaseLayer(nextBaseLayerId: IitcIrisBaseLayerId): void {
   baseLayerController?.select(normalizeBaseLayerId(nextBaseLayerId));
 }
 
-function cancelActivePortalDetailsFetch(): void {
-  currentPortalDetailsAbortController?.abort();
-  currentPortalDetailsAbortController = undefined;
-}
-
 function cancelActivePanelRequests(): void {
   cancelActivePortalDetailsFetch();
   cancelActiveCommFetch();
@@ -430,10 +425,6 @@ declare global {
     __iitcIrisMapContainer?: HTMLElement;
     __iitcIrisLayers?: IitcIrisMapLayers;
   }
-}
-
-function toLatLng(latE6: number, lngE6: number): [number, number] {
-  return [latE6 / 1e6, lngE6 / 1e6];
 }
 
 function ensureLayers(): NonNullable<Window['__iitcIrisLayers']> {
@@ -507,392 +498,6 @@ function clearAllRenderedLayers(): void {
   clearRenderedLayers(layers.userLocation);
   clearEntityLayerIndexes(layers);
   resetRenderDiagnostics();
-}
-
-function toSelectedPortal(portal: IitcIrisRenderPortal): IitcIrisSelectedPortal {
-  const incomingLinks = latestEntities?.links.filter((link) => link.dGuid === portal.guid) ?? [];
-  const outgoingLinks = latestEntities?.links.filter((link) => link.oGuid === portal.guid) ?? [];
-  const linkGuids = [...outgoingLinks, ...incomingLinks].map((link) => link.guid);
-  const fieldGuids = latestEntities?.fields
-    .filter((field) => field.points.some((point) => point.guid === portal.guid))
-    .map((field) => field.guid) ?? [];
-
-  return {
-    guid: portal.guid,
-    title: portal.title,
-    image: portal.image,
-    team: portal.team,
-    latE6: portal.latE6,
-    lngE6: portal.lngE6,
-    level: portal.level,
-    health: portal.health,
-    resCount: portal.resCount,
-    mission: portal.mission,
-    mission50plus: portal.mission50plus,
-    isPlaceholder: portal.isPlaceholder,
-    ornaments: portal.ornaments ?? [],
-    artifacts: portal.artifacts ?? [],
-    links: {
-      count: linkGuids.length,
-      incoming: incomingLinks.length,
-      outgoing: outgoingLinks.length,
-      guids: linkGuids,
-    },
-    fields: {
-      count: fieldGuids.length,
-      guids: fieldGuids,
-    },
-  };
-}
-
-function createSelectedPortalMarker(portal: IitcIrisRenderPortal): LeafletLayer {
-  const radius = Math.max(10, getPortalRadius(portal.level, portal.isPlaceholder) + 5);
-  return L.circleMarker(toLatLng(portal.latE6, portal.lngE6), {
-    radius,
-    color: '#ff9900',
-    fill: false,
-    opacity: 1,
-    pane: getLayerPane('selectedPortal'),
-    weight: 4,
-    interactive: false,
-  });
-}
-
-function createSelectedLinkMarker(link: IitcIrisRenderLink): LeafletLayer {
-  return createIitcGeodesicPolyline([toLatLng(link.oLatE6, link.oLngE6), toLatLng(link.dLatE6, link.dLngE6)], {
-    color: '#ff9900',
-    opacity: 0.95,
-    pane: getLayerPane('selectedMapObject'),
-    weight: 5,
-    interactive: false,
-  });
-}
-
-function createSelectedFieldMarker(field: IitcIrisRenderField): LeafletLayer {
-  return createIitcGeodesicPolygon(field.points.map((point) => toLatLng(point.latE6, point.lngE6)), {
-    color: '#ff9900',
-    fill: false,
-    opacity: 0.95,
-    pane: getLayerPane('selectedMapObject'),
-    weight: 4,
-    interactive: false,
-  });
-}
-
-function renderSelectedPortal(): void {
-  const layers = ensureLayers();
-  clearRenderedLayers(layers.selectedPortal);
-  if (!selectedPortalGuid) {
-    selectedPortal = null;
-    return;
-  }
-
-  const portal = latestEntities?.portals.find((candidate) => candidate.guid === selectedPortalGuid);
-  if (!portal) {
-    selectedPortal = null;
-    return;
-  }
-
-  selectedPortal = toSelectedPortal(portal);
-  if (!isPortalVisible(portal)) return;
-  addRenderedLayer(layers.selectedPortal, createSelectedPortalMarker(portal));
-}
-
-function renderSelectedMapObject(): void {
-  const layers = ensureLayers();
-  clearRenderedLayers(layers.selectedMapObject);
-  if (!selectedMapObject || !latestEntities) return;
-
-  if (selectedMapObject.type === 'link') {
-    const link = latestEntities.links.find((candidate) => candidate.guid === selectedMapObject?.guid);
-    if (link && isLinkVisible(link)) addRenderedLayer(layers.selectedMapObject, createSelectedLinkMarker(link));
-    return;
-  }
-
-  const field = latestEntities.fields.find((candidate) => candidate.guid === selectedMapObject?.guid);
-  if (field && isFieldVisible(field) && field.points.length >= 3) addRenderedLayer(layers.selectedMapObject, createSelectedFieldMarker(field));
-}
-
-function selectMapObject(type: 'link' | 'field', guid: string): void {
-  selectedMapObject = {type, guid};
-  renderSelectedMapObject();
-}
-
-function clearSelectedMapObject(): void {
-  selectedMapObject = null;
-  clearRenderedLayers(ensureLayers().selectedMapObject);
-}
-
-function selectPortal(portal: IitcIrisRenderPortal, rerender = true): void {
-  selectedMapObject = null;
-  selectedPortalGuid = portal.guid;
-  selectedPortal = toSelectedPortal(portal);
-  pendingPortalSelection = null;
-  inventory.selectedPortalChanged();
-  void refreshSelectedPortalDetails(portal.guid);
-  if (rerender && latestEntities) renderEntities(latestEntities);
-  repostLatestEntityStatus();
-}
-
-function postMapContext(lat: number, lng: number, portal?: IitcIrisRenderPortal): void {
-  const map = window.__iitcIrisMap;
-  lastContextPostAt = performance.now();
-  const plan = planIitcMapContextPoint({lat, lng, zoom: map?.getZoom(), portal});
-  window.postMessage(createIitcIrisMapContextMessage(plan.payload), '*');
-}
-
-function postPortalContextReference(guid: string | undefined, lat: number, lng: number): void {
-  const map = window.__iitcIrisMap;
-  lastContextPostAt = performance.now();
-  window.postMessage(createIitcIrisMapContextMessage({
-    lat,
-    lng,
-    zoom: map?.getZoom(),
-    portalGuid: guid,
-    portalLat: lat,
-    portalLng: lng,
-  }), '*');
-}
-
-function postMapObjectContext(
-  contextTarget: 'link' | 'field',
-  lat: number,
-  lng: number,
-  object: {guid: string; team: 'E' | 'R' | 'N' | 'M'; portalGuids: string[]; portalAnchors: IitcIrisMapContextPortalAnchor[]; distanceMeters?: number},
-): void {
-  const map = window.__iitcIrisMap;
-  lastContextPostAt = performance.now();
-  const plan = planIitcMapContextPoint({lat, lng, zoom: map?.getZoom(), [contextTarget]: object});
-  window.postMessage(createIitcIrisMapContextMessage(plan.payload), '*');
-}
-
-function openPortalContext(portal: IitcIrisRenderPortal, event?: LeafletMouseEvent): void {
-  if (event) L.DomEvent.stop(event);
-  suppressPortalClickUntil = Date.now() + LONG_PRESS_CLICK_SUPPRESS_MS;
-  selectPortal(portal);
-  postMapContext(portal.latE6 / 1_000_000, portal.lngE6 / 1_000_000, portal);
-}
-
-function openMapContextAtPoint(point: L.Point): void {
-  const map = window.__iitcIrisMap;
-  if (!map) return;
-  const portal = findContextPortalAtPoint(point);
-  if (portal) {
-    openPortalContext(portal);
-    return;
-  }
-  const link = findContextLinkAtPoint(point);
-  if (link) {
-    const latLng = map.containerPointToLatLng(point);
-    selectMapObject('link', link.guid);
-    postMapObjectContext('link', latLng.lat, latLng.lng, {
-      guid: link.guid,
-      team: link.team,
-      portalGuids: getLinkPortalGuids(link),
-      portalAnchors: getLinkPortalAnchors(link),
-      distanceMeters: getLinkDistanceMeters(link),
-    });
-    return;
-  }
-  const field = findContextFieldAtPoint(point);
-  if (field) {
-    const latLng = map.containerPointToLatLng(point);
-    selectMapObject('field', field.guid);
-    postMapObjectContext('field', latLng.lat, latLng.lng, {
-      guid: field.guid,
-      team: field.team,
-      portalGuids: getFieldPortalGuids(field),
-      portalAnchors: getFieldPortalAnchors(field),
-      distanceMeters: getFieldPerimeterMeters(field),
-    });
-    return;
-  }
-  const latLng = map.containerPointToLatLng(point);
-  clearSelectedMapObject();
-  postMapContext(latLng.lat, latLng.lng);
-}
-
-function findContextPortalAtPoint(point: L.Point): IitcIrisRenderPortal | undefined {
-  const map = window.__iitcIrisMap;
-  if (!map || !latestEntities) return undefined;
-
-  let nearest: {portal: IitcIrisRenderPortal; distance: number} | undefined;
-  for (const portal of latestEntities.portals) {
-    if (!isPortalVisible(portal)) continue;
-    const portalPoint = map.latLngToContainerPoint(toLatLng(portal.latE6, portal.lngE6));
-    const distance = point.distanceTo(portalPoint);
-    const hitTolerance = getPortalRadius(portal.level, portal.isPlaceholder) + PORTAL_CONTEXT_HIT_TOLERANCE_PX;
-    if (distance > hitTolerance) continue;
-    if (!nearest || distance < nearest.distance) nearest = {portal, distance};
-  }
-  return nearest?.portal;
-}
-
-function getPointToSegmentDistance(point: L.Point, start: L.Point, end: L.Point): number {
-  const dx = end.x - start.x;
-  const dy = end.y - start.y;
-  if (dx === 0 && dy === 0) return point.distanceTo(start);
-  const t = Math.max(0, Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / (dx * dx + dy * dy)));
-  return point.distanceTo(L.point(start.x + t * dx, start.y + t * dy));
-}
-
-function getPortalLabelByGuid(guid: string | undefined, fallback: string): string {
-  if (!guid || !latestEntities) return fallback;
-  const portal = latestEntities.portals.find((candidate) => candidate.guid === guid);
-  return portal?.title || guid;
-}
-
-function getLinkPortalGuids(link: IitcIrisRenderLink): string[] {
-  return getIitcMapContextLinkPortalGuids(link);
-}
-
-function getLinkPortalAnchors(link: IitcIrisRenderLink): IitcIrisMapContextPortalAnchor[] {
-  return getIitcMapContextLinkPortalAnchors(link, getPortalLabelByGuid);
-}
-
-function getLinkDistanceMeters(link: IitcIrisRenderLink): number {
-  return getIitcMapContextLinkDistanceMeters(link);
-}
-
-function getFieldPortalGuids(field: IitcIrisRenderField): string[] {
-  return getIitcMapContextFieldPortalGuids(field);
-}
-
-function getFieldPortalAnchors(field: IitcIrisRenderField): IitcIrisMapContextPortalAnchor[] {
-  return getIitcMapContextFieldPortalAnchors(field, getPortalLabelByGuid);
-}
-
-function getFieldPerimeterMeters(field: IitcIrisRenderField): number | undefined {
-  return getIitcMapContextFieldPerimeterMeters(field);
-}
-
-function findContextLinkAtPoint(point: L.Point): IitcIrisRenderLink | undefined {
-  const map = window.__iitcIrisMap;
-  if (!map || !latestEntities) return undefined;
-
-  let nearest: {link: IitcIrisRenderLink; distance: number} | undefined;
-  for (const link of latestEntities.links) {
-    if (!isLinkVisible(link)) continue;
-    const linePoints = convertIitcGeodesicLatLngs([toLatLng(link.oLatE6, link.oLngE6), toLatLng(link.dLatE6, link.dLngE6)])
-      .map((latLng) => map.latLngToContainerPoint(latLng));
-    for (let index = 0; index < linePoints.length - 1; index += 1) {
-      const distance = getPointToSegmentDistance(point, linePoints[index], linePoints[index + 1]);
-      if (distance > LINK_CONTEXT_HIT_TOLERANCE_PX) continue;
-      if (!nearest || distance < nearest.distance) nearest = {link, distance};
-    }
-  }
-  return nearest?.link;
-}
-
-function isPointInPolygon(point: L.Point, polygon: L.Point[]): boolean {
-  let inside = false;
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i, i += 1) {
-    const a = polygon[i];
-    const b = polygon[j];
-    const intersects = (a.y > point.y) !== (b.y > point.y) &&
-      point.x < ((b.x - a.x) * (point.y - a.y)) / (b.y - a.y) + a.x;
-    if (intersects) inside = !inside;
-  }
-  return inside;
-}
-
-function getPolygonArea(points: L.Point[]): number {
-  let area = 0;
-  for (let index = 0; index < points.length; index += 1) {
-    const current = points[index];
-    const next = points[(index + 1) % points.length];
-    area += current.x * next.y - next.x * current.y;
-  }
-  return Math.abs(area / 2);
-}
-
-function findContextFieldAtPoint(point: L.Point): IitcIrisRenderField | undefined {
-  const map = window.__iitcIrisMap;
-  if (!map || !latestEntities) return undefined;
-
-  let smallest: {field: IitcIrisRenderField; area: number} | undefined;
-  for (const field of latestEntities.fields) {
-    if (!isFieldVisible(field) || field.points.length < 3) continue;
-    const polygon = convertIitcGeodesicLatLngs(field.points.map((fieldPoint) => toLatLng(fieldPoint.latE6, fieldPoint.lngE6)), {closed: true})
-      .map((latLng) => map.latLngToContainerPoint(latLng));
-    if (!isPointInPolygon(point, polygon)) continue;
-    const area = getPolygonArea(polygon);
-    if (!smallest || area < smallest.area) smallest = {field, area};
-  }
-  return smallest?.field;
-}
-
-function findPortalByGuidOrLatLng(guid: string | undefined, lat: number | undefined, lng: number | undefined): IitcIrisRenderPortal | undefined {
-  return findIitcPortalByGuidOrLatLng(latestEntities?.portals ?? [], {guid, lat, lng});
-}
-
-function selectPortalByLatLng(lat: number | undefined, lng: number | undefined): IitcIrisRenderPortal | undefined {
-  const plan = planIitcPortalLinkNavigation(latestEntities?.portals ?? [], {lat, lng});
-  if (plan.portal) {
-    selectPortal(plan.portal);
-    return plan.portal;
-  }
-  if (plan.pendingSelection) pendingPortalSelection = plan.pendingSelection;
-  return undefined;
-}
-
-function zoomToAndShowPortal(guid: string | undefined, lat: number | undefined, lng: number | undefined, zoom: number | undefined): void {
-  const map = window.__iitcIrisMap;
-  if (!map) return;
-  const selectedPortal = guid ? undefined : selectPortalByLatLng(lat, lng);
-  if (selectedPortal) {
-    map.setView(toLatLng(selectedPortal.latE6, selectedPortal.lngE6), zoom ?? Math.max(map.getZoom(), 15));
-    return;
-  }
-  const plan = planIitcPortalLinkNavigation(latestEntities?.portals ?? [], {guid, lat, lng, zoom});
-  if (plan.portal) {
-    const latLng = toLatLng(plan.portal.latE6, plan.portal.lngE6);
-    map.setView(latLng, plan.focus?.zoom ?? Math.max(map.getZoom(), 15));
-    selectPortal(plan.portal);
-    return;
-  }
-  if (plan.pendingSelection) pendingPortalSelection = plan.pendingSelection;
-  if (!plan.focus) {
-    return;
-  }
-  map.setView([plan.focus.lat, plan.focus.lng], plan.focus.zoom ?? Math.max(map.getZoom(), 15));
-}
-
-function selectMissionWaypoint(waypoint: IitcIrisMissionWaypoint): void {
-  const map = window.__iitcIrisMap;
-  if (!map || waypoint.latE6 === undefined || waypoint.lngE6 === undefined) return;
-  zoomToAndShowPortal(
-    waypoint.portalGuid,
-    waypoint.latE6 / 1_000_000,
-    waypoint.lngE6 / 1_000_000,
-    Math.max(map.getZoom(), 15),
-  );
-}
-
-function openMissionWaypointContext(waypoint: IitcIrisMissionWaypoint, event?: LeafletMouseEvent): void {
-  if (event) L.DomEvent.stop(event);
-  if (waypoint.latE6 === undefined || waypoint.lngE6 === undefined) return;
-  const lat = waypoint.latE6 / 1_000_000;
-  const lng = waypoint.lngE6 / 1_000_000;
-  const portal = findPortalByGuidOrLatLng(waypoint.portalGuid, lat, lng);
-  if (portal) {
-    openPortalContext(portal);
-    return;
-  }
-  suppressPortalClickUntil = Date.now() + LONG_PRESS_CLICK_SUPPRESS_MS;
-  zoomToAndShowPortal(waypoint.portalGuid, lat, lng, undefined);
-  postPortalContextReference(waypoint.portalGuid, lat, lng);
-}
-
-function clearPortalSelection(): void {
-  selectedPortalGuid = undefined;
-  selectedPortal = null;
-  pendingPortalSelection = null;
-  latestPortalDetails = null;
-  inventory.selectedPortalChanged();
-  cancelActivePortalDetailsFetch();
-  clearRenderedLayers(ensureLayers().selectedPortal);
-  repostLatestEntityStatus();
 }
 
 function renderUserLocation(lat: number | undefined, lng: number | undefined, accuracy: number | undefined): void {
@@ -1364,8 +969,8 @@ function postEntityStatus(
     baseLayerId,
     dataSource,
     renderPolicy: getRenderPolicy(),
-    selectedPortal,
-    portalDetails: latestPortalDetails,
+    selectedPortal: selection.getSelectedPortal(),
+    portalDetails: portalDetails.getState(),
     comm: comm.getState(),
   } satisfies IitcIrisMessage, '*');
 }
@@ -1376,32 +981,6 @@ function setAuthRecoveryActive(active: boolean): void {
     mapRequests.cancelScheduledRefresh();
     clearPlayerTrackerRefreshTimer();
   }
-}
-
-async function fetchPortalDetails(guid: string, version: string, signal?: AbortSignal): Promise<IitcPortalDetailsResponse> {
-  const csrfToken = getCsrfToken();
-  if (!csrfToken) throw new Error('getPortalDetails missing csrftoken');
-
-  const {response, text} = await fetchIitcEndpointText('getPortalDetails', {
-    method: 'POST',
-    credentials: 'include',
-    signal,
-    headers: {
-      'Accept': 'application/json, text/javascript, */*; q=0.01',
-      'Content-Type': 'application/json; charset=utf-8',
-      'X-CSRFToken': csrfToken,
-      'X-Requested-With': 'XMLHttpRequest',
-    },
-    body: JSON.stringify({guid, v: version}),
-  }, 'portal-details');
-
-  if (looksLikeHtml(text)) {
-    throw createIitcAuthError('getPortalDetails', response);
-  }
-
-  const parsed = JSON.parse(text) as IitcPortalDetailsResponse;
-  if (parsed.error) throw new Error(parsed.error);
-  return parsed;
 }
 
 function getMapCenterE6(): {latE6: number; lngE6: number} | undefined {
@@ -1443,78 +1022,6 @@ async function postIntelEndpoint(endpoint: string, payload: Record<string, unkno
   return parsed;
 }
 
-async function refreshSelectedPortalDetails(guid: string): Promise<void> {
-  cancelActivePortalDetailsFetch();
-  const cachedDetails = getIitcCachedPortalDetails(portalDetailsCache, guid);
-  if (cachedDetails) {
-    latestPortalDetails = cachedDetails;
-    repostLatestEntityStatus();
-  }
-  const version = extractVersion();
-  if (!version) {
-    latestPortalDetails = createIitcPortalDetailsAuthState(guid, 'missing Intel version');
-    repostLatestEntityStatus();
-    return;
-  }
-
-  const abortController = new AbortController();
-  currentPortalDetailsAbortController = abortController;
-  const startedAt = performance.now();
-  if (!cachedDetails) {
-    latestPortalDetails = createIitcPortalDetailsLoadingState(guid);
-    repostLatestEntityStatus();
-  }
-
-  try {
-    const response = await fetchPortalDetails(guid, version, abortController.signal);
-    abortController.signal.throwIfAborted();
-    if (selectedPortalGuid !== guid) return;
-    const linkCount = selectedPortal?.links.count ?? 0;
-    const applyResult = applyIitcPortalDetailsResponse({
-      response,
-      guid,
-      linkCount,
-      elapsedMs: performance.now() - startedAt,
-    });
-    const details = applyResult.details;
-    if (!details) {
-      latestPortalDetails = applyResult.state;
-    } else {
-      latestPortalDetails = applyResult.state;
-      writeIitcPortalDetailsCache(portalDetailsCache, guid, latestPortalDetails);
-      if (latestPortalDetails.history) portalHistoryByGuid.set(guid, latestPortalDetails.history);
-      const currentEntities = latestEntities;
-      const portal = currentEntities?.portals.find((candidate) => candidate.guid === guid);
-      if (currentEntities && portal) {
-        portal.title = details.title || portal.title;
-        portal.image = details.image || portal.image;
-        portal.team = details.team;
-        portal.latE6 = details.latE6;
-        portal.lngE6 = details.lngE6;
-        portal.level = details.level;
-        portal.health = details.health;
-        portal.resCount = details.resCount;
-        portal.mission = details.hasMissionsStartingHere;
-        portal.history = latestPortalDetails.history;
-        portal.isPlaceholder = false;
-        selectedPortal = toSelectedPortal(portal);
-        renderEntities(currentEntities);
-      }
-    }
-    repostLatestEntityStatus();
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') return;
-    const elapsedMs = performance.now() - startedAt;
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    latestPortalDetails = isIitcAuthError(error)
-      ? createIitcPortalDetailsAuthState(guid, errorMessage)
-      : createIitcPortalDetailsErrorState(guid, elapsedMs, errorMessage);
-    repostLatestEntityStatus();
-  } finally {
-    if (currentPortalDetailsAbortController === abortController) currentPortalDetailsAbortController = undefined;
-  }
-}
-
 function countRenderArtifacts(portals: IitcIrisRenderPortal[]): {
   portals: number;
   markers: number;
@@ -1550,18 +1057,6 @@ function recordStaleGenerationCacheWarmTileKeys(tileKeys: string[]): void {
     ]),
   };
   if (latestEntities) postEntityStatus(latestEntityStatus, latestEntities, latestTileDiagnostics);
-}
-
-function installContextLongPress(map: LeafletMap): () => void {
-  return installIitcIrisContextGestures(map, {
-    longPressMs: LONG_PRESS_MS,
-    moveTolerancePx: LONG_PRESS_MOVE_TOLERANCE_PX,
-    onLongPressStarted: () => {
-      suppressPortalClickUntil = Date.now() + LONG_PRESS_CLICK_SUPPRESS_MS;
-    },
-    onContextPoint: openMapContextAtPoint,
-    getLastContextPostAt: () => lastContextPostAt,
-  });
 }
 
 function boot(): void {

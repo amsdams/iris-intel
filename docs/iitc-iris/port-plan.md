@@ -84,6 +84,22 @@ Naming checklist before creating a new file or exported function:
   IITC naming is not appropriate.
 - Is the divergence only for code cleanliness? Keep the IITC name at the boundary and hide the cleaner structure inside.
 
+## Portal selection, details and context ownership extraction — 2026-10-27
+
+Reference checkpoint: `core/code/portal.js` owns portal-link navigation/pending selection;
+`portal_display.js` owns selection/display updates; `portal_details.js` owns detail requests/cache and promotion of
+detailed entities. Preserve the existing IRIS selection/message order, orange selection overlays, shared history,
+12-entry detail cache and cancellation guards. Move browser selection/navigation to `map/map-selection-runtime.ts`,
+detail requests/cache to `portals/portal-details-runtime.ts`, and context hit-testing/gestures to
+`map/map-context-actions.ts`. The IRIS context sheet/long press remains its existing deliberate shell behavior;
+no new IITC hooks, cache expiry/retry parity or rendering changes are introduced. Core algorithms remain unchanged.
+Eighteen focused regressions cover pending/loaded navigation, selection ordering, visibility, detailed entity promotion,
+cache reuse/limits, auth/server failures and cancelled/obsolete responses. Source comparison checks all moved functions
+and the detail-promotion block after explicit dependency substitutions. Real browser checks cover context targets,
+detail-cache reuse, pending portal arrival and map replacement. The initial replacement fixture also failed before
+extraction: it matched another portal at the same coordinates and later refreshed to an empty map. The corrected
+fixture uses a missing GUID and retains the arriving portal in subsequent responses. Live user smoke remains pending.
+
 ## COMM ownership extraction — 2026-10-27
 
 Reference checkpoint: `core/code/comm.js` owns channel buffers, continuation requests and `sendPlext`;

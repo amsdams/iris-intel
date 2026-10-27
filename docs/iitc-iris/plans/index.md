@@ -4,7 +4,7 @@
 
 CSS ownership, component simplification, domain/panel organization, content composition, repository cleanup, dependency
 refresh, and map-replacement lifetime hardening are complete and user smoke accepted as of 2026-10-20.
-The active npm workspaces are `apps/iitc-iris` and `packages/iitc-core`. No further generic refactor batch is queued.
+The active npm workspaces are `apps/iitc-iris` and `packages/iitc-core`. The user-requested map-runtime extraction is recorded below.
 The merge checkpoints are complete: PRs #1–#3 and main CI passed; the latest release includes XPI/ZIP and a signed APK.
 The disposable Android spike lives in `apps/android-intel-spike`. Phone login/persistence passed on 0.1.3;
 0.2.0 bundled IRIS injection and a quick smoke of inventory, layers, COMM, portal details, and missions passed.
@@ -18,8 +18,20 @@ The retained ownership rules and known limits are in [Application Architecture](
 Release consistency and automatic base-map recovery are implemented (2026-10-25); run the phone checks below
 and verify the next GitHub Actions run. The [Play Store readiness review](play-store-readiness.md) is complete: resolve
 supported authentication and website-distribution permission evidence before beginning store delivery work. [Optional additional features](../backlog.md#optional-additional-features-deferred-2026-10-21)
-are deferred; the baseline includes Passcode and Missions. Further runtime decomposition should accompany a concrete
-change or finding, rather than become another general cleanup prerequisite.
+are deferred; the baseline includes Passcode and Missions. The current map-runtime extraction preserves behavior;
+further decomposition should follow clear responsibility boundaries rather than a line-count target.
+
+**Portal selection/details/context extraction (2026-10-27):** selection/navigation and orange overlays now live in
+`map/map-selection-runtime.ts`; detail requests/status/cache in `portals/portal-details-runtime.ts`; context targeting,
+click suppression and gesture installation in `map/map-context-actions.ts`. Shared entity/history mutation, pending
+selection resolution, cache limits and request/message ordering are preserved. Core is unchanged; Inventory, label
+performance and zoom findings remain deferred by user choice. The entry point is 1,166 lines, down from 1,671.
+`npm run check` passes (628 app/core + six release-gate tests, lint/types/CSS/workbench), including 18 new runtime
+regressions. All 32 Chrome and 18 focused Firefox browser cases pass. Source comparison checks moved functions and
+the detail-promotion block after dependency substitutions; no intentional behavior changes. XPI/ZIP packaging and signed
+Android release checks pass (31 native + 15 JavaScript tests, lint/build). APK `0.4.1-alpha+9af2cf1`, code 1845,
+matches the pinned certificate; all 19 assets, extension contents and port-6969 downloads match. Latest local XPI/ZIP
+timestamp: `2026-10-27T20-18-55`. Source changes are uncommitted. Portal and COMM live user smoke are pending.
 
 **COMM extraction (2026-10-27):** channel state/buffers, fetch/send requests, preview conversion and cancellation
 now live in `comm/comm-runtime.ts`. Player Tracker retains its existing polling seam and shares the public buffer.
@@ -31,7 +43,7 @@ expected Send enabled after the draft was cleared; only that assertion was corre
 originals after explicit dependency substitutions. Extension packaging and signed Android release checks pass
 (31 native + 15 JavaScript tests, lint/build). APK `0.4.1-alpha+18f3b4e`, code 1844, matches the pinned certificate;
 all 19 assets, extension contents and port-6969 downloads match. Latest local XPI/ZIP timestamp: `2026-10-27T20-03-44`.
-The three feature batches remain uncommitted; COMM live user smoke is pending.
+The preceding feature batches are committed as `9af2cf1`; COMM live user smoke is pending.
 
 | Extraction checkpoint | Entry-point lines |
 | --- | ---: |
@@ -42,9 +54,10 @@ The three feature batches remain uncommitted; COMM live user smoke is pending.
 | Missions and Player Tracker | 2,401 |
 | Scores, Passcode, Inventory/subscription | 1,963 |
 | COMM | 1,671 |
+| Portal selection, details and context | 1,166 |
 
-Overall reduction: 4,488 lines (73%) moved out of the coordinator. Remaining ownership: map boot/lifetime/layers,
-portal selection/context/navigation and portal details/cache, shared panel transport and diagnostic aggregation.
+Overall reduction: 4,993 lines (81%) moved out of the coordinator. Remaining ownership: map boot/lifetime/layers,
+view/settings persistence, location/debug overlays, shared panel transport and diagnostic/message aggregation.
 These are possible boundaries to review, not a commitment to extract every helper or reach a line-count target.
 
 **Scores, Passcode and Inventory extraction (2026-10-27):** these request workflows, their response-to-UI adaptation
