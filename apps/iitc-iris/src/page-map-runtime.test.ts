@@ -8,7 +8,7 @@ vi.mock('leaflet', () => ({default: {
   point: (x: number, y: number): {x: number; y: number} => ({x, y}),
 }}));
 
-vi.mock('./map/base-layers', () => ({createBaseLayer: leaflet.tileLayer}));
+vi.mock('./map/layers/base-layers', () => ({createBaseLayer: leaflet.tileLayer}));
 
 class Container extends EventTarget {
   getBoundingClientRect(): {left: number; top: number} { return {left: 0, top: 0}; }

@@ -1,20 +1,20 @@
 import {h} from 'preact';
-import '../../ui/shared/selection-summary.css';
-import '../item-list.css';
+import '../../../ui/shared/selection-summary.css';
+import '../../item-list.css';
 import './inventory-panel.css';
-import '../../ui/shared/scroll-region.css';
-import '../../ui/shared/list-item.css';
-import {formatIitcColorVars, getIitcItemColor, getIitcLevelColor, getIitcRarityColor} from '../../iitc-colors';
-import type {IitcIrisInventoryState} from '../../messages';
-import {formatElapsedSeconds, formatSubscriptionLabel, getAuthErrorMessage, getSubscriptionStatusClass} from '../../ui-status';
-import {ActionButton} from '../../ui/action-button';
-import {Badge} from '../../ui/badge';
-import {ControlRow} from '../../ui/control-row';
-import {DiagnosticsChip} from '../../ui/diagnostics-chip';
-import {PanelBody, PanelFooter} from '../../ui/panel';
-import {StatusText} from '../../ui/status-text';
-import {SummaryCell} from '../../ui/summary-cell';
-import {SummaryGrid} from '../../ui/summary-grid';
+import '../../../ui/shared/scroll-region.css';
+import '../../../ui/shared/list-item.css';
+import {formatIitcColorVars, getIitcItemColor, getIitcLevelColor, getIitcRarityColor} from '../../../iitc-colors';
+import type {IitcIrisInventoryState} from '../../../messages';
+import {formatElapsedSeconds, formatSubscriptionLabel, getAuthErrorMessage, getSubscriptionStatusClass} from '../../../ui-status';
+import {ActionButton} from '../../../ui/action-button';
+import {Badge} from '../../../ui/badge';
+import {ControlRow} from '../../../ui/control-row';
+import {DiagnosticsChip} from '../../../ui/diagnostics-chip';
+import {PanelBody, PanelFooter} from '../../../ui/panel';
+import {StatusText} from '../../../ui/status-text';
+import {SummaryCell} from '../../../ui/summary-cell';
+import {SummaryGrid} from '../../../ui/summary-grid';
 import {formatInventoryItemLabel, formatInventoryRarity} from './inventory-item-display';
 
 export interface IitcIrisInventoryPanelProps {

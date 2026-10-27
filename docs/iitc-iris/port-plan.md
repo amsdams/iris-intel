@@ -84,6 +84,37 @@ Naming checklist before creating a new file or exported function:
   IITC naming is not appropriate.
 - Is the divergence only for code cleanliness? Keep the IITC name at the boundary and hide the cleaner structure inside.
 
+## Feature organization and shared persistence contracts — 2026-10-27
+
+Reference seams remain `core/code/map.js` (position/URL/cookies) and `layerchooser.js` (layer preferences).
+Grouped 42 existing feature files and nested panels under features that also own runtime/workflow files.
+Shared map-view keys/defaults/types/validation/parsing between the UI and page adapters; the base-layer key and
+normalization live together in layer settings. Camera/scenario helpers now consume that map contract.
+Stored formats, URL precedence, bounds/defaults, CSS import order and runtime lifetimes are retained. All moved files
+match their previous contents apart from relative paths; compiled CSS is byte-identical. The shared parser matches
+both previous adapters on 4,478 stored/URL fixtures (8,956 comparisons). Static imports/exports resolve across 169
+production TypeScript modules with no runtime cycles or imports from shared UI into features. No new IITC behavior,
+message contract changes or core work are included. Verification results and user smoke status are in the roadmap.
+
+## Map coordination ownership extraction — 2026-10-27
+
+Reference checkpoint: `core/code/map.js` owns initial position and move-end Intel cookies;
+`portal_highlighter.js` and `layerchooser.js` own active highlighter/layer changes; `sidebar.js` reads Intel PLAYER.
+Existing IRIS diagnostics aggregate request, renderer and feature snapshots rather than exposing IITC hooks.
+Extracted view/preference serialization, agent profile publication, diagnostics and layer/highlighter update coordination
+into explicit app owners, and moved the shared JSON endpoint helper into Intel transport. Preserved current IRIS
+storage keys, URL precedence/clamps, cookies, PLAYER conversion, render/message order, two-frame diagnostics,
+page-lifetime retained state and map-lifetime cancellation. Boot/disposal and message routing stay in the entry point;
+core and existing parity differences remain unchanged. This is ownership cleanup, with no new public hooks or UX.
+Twenty-two new runtime regressions cover persistence/fallbacks, profile conversion/subscription publication, ordered
+settings/render paths, auth/status aggregation, concurrent request counts, retained snapshots and lifetime-bound frames.
+Source comparison checks 28 moved functions, both update branches, the mirrored timing block and remaining coordinator
+functions after explicit dependency substitutions. Browser checks cover combined settings and persistence through reload;
+the initial exact-coordinate assertion was corrected to allow Leaflet's pixel rounding while checking actual serialized
+coordinates exactly. All 34 Chrome cases pass (33 in the suite plus that corrected case rerun), as do 20 focused Firefox cases.
+Full app/core checks, extension packaging and signed APK checks pass. The user reports quick XPI smoke behaves as
+before; general extraction smoke is accepted, without claiming exhaustive feature coverage or APK device testing.
+
 ## Portal selection, details and context ownership extraction — 2026-10-27
 
 Reference checkpoint: `core/code/portal.js` owns portal-link navigation/pending selection;
@@ -98,7 +129,7 @@ cache reuse/limits, auth/server failures and cancelled/obsolete responses. Sourc
 and the detail-promotion block after explicit dependency substitutions. Real browser checks cover context targets,
 detail-cache reuse, pending portal arrival and map replacement. The initial replacement fixture also failed before
 extraction: it matched another portal at the same coordinates and later refreshed to an empty map. The corrected
-fixture uses a missing GUID and retains the arriving portal in subsequent responses. Live user smoke remains pending.
+fixture uses a missing GUID and retains the arriving portal in subsequent responses. General XPI user smoke is accepted.
 
 ## COMM ownership extraction — 2026-10-27
 
@@ -110,15 +141,15 @@ storage keys, send/fetch cancellation differences and map-lifetime guards. This 
 COMM parity gaps and cancelled-panel loading behavior remain separate follow-ups. Twelve focused runtime regressions
 and real-panel Chrome/Firefox checks cover shared tracker data, channel isolation/continuations, sending, errors and
 cancellation. Source comparison confirms the ten moved functions retain their bodies after explicit dependency
-substitutions; extension packaging and signed APK checks pass. Live COMM smoke is pending.
+substitutions; extension packaging and signed APK checks pass. Subsequent general XPI extraction smoke is accepted.
 
 ## Scores, Passcode and Inventory ownership extraction — 2026-10-27
 
 Reference seams: `core/code/game_status.js`, `region_scoreboard.js` and `redeeming.js` own score endpoint updates and
 passcode redemption/reward display. Inventory/subscription are existing IRIS additions using Intel's `getInventory`
 and `getHasActiveSubscription` endpoints, with decoding/counting already in core. Extracted existing panel request state,
-response-to-UI conversion and cancellation into `map/scores-runtime.ts`, `agent/passcode-runtime.ts` and
-`agent/inventory-runtime.ts`. Preserved parallel score requests, passcode sanitation,
+response-to-UI conversion and cancellation into `map/scores/scores-runtime.ts`, `agent/passcode/passcode-runtime.ts` and
+`agent/inventory/inventory-runtime.ts`. Preserved parallel score requests, passcode sanitation,
 shared subscription requests, selected-portal key counts and message order. Panel cancellation still leaves the shared
 subscription request running; map disposal cancels it and resets only a loading subscription. No new behavior or hooks.
 Sixteen focused regressions and real-panel browser flows cover score/reward conversion, key selection, stale-response
@@ -128,7 +159,7 @@ rejection and shared subscription lifetime. An existing cancellation/reopen load
 
 Reference seams: `plugins/missions.js` owns mission list/detail requests and age-limited portal/mission caches;
 `plugins/player-activity-tracker.js` owns player history, COMM-derived mutations, marker/trace layers and popups.
-Extracted those existing IRIS workflows into `map/missions/missions-runtime.ts` and `map/player-tracker-runtime.ts`,
+Extracted those existing IRIS workflows into `map/missions/missions-runtime.ts` and `map/player-tracker/player-tracker-runtime.ts`,
 retaining mission endpoint names, cache keys/ages, player history/deduplication and refresh timing. Shared COMM channel data subsequently moved into the COMM owner above; map disposal
 cancels feature requests/timers and clears markers while retaining page-lifetime caches/history. Existing mission
 overlay and grouped-player helpers remain their rendering collaborators. This is an internal extraction, with no
@@ -208,7 +239,7 @@ Dark/Positron through MapLibre’s Leaflet binding. This changes basemap cartogr
 overlay, and interaction ownership; OSM remains available. Preference migration and real-tile browser checks pass.
 The user tested the updated XPI and APK and reported both look fine (2026-10-21).
 Recovery divergence (2026-10-25): IRIS additionally switches to OSM after unresolved OpenFreeMap style/network or
-WebGL failures. `map/base-layer-controller.ts` owns recovery deadlines and cleanup; the layers workflow reflects
+WebGL failures. `map/layers/base-layer-controller.ts` owns recovery deadlines and cleanup; the layers workflow reflects
 and persists the actual selection with a dismissible notice. This is IRIS provider resilience, not copied IITC behavior.
 Focused lifecycle tests and browser-injected HTTP/style/WebGL failures pass; live phone background/resume is pending.
 

@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {createBaseLayer} from './base-layers';
-import {normalizeBaseLayerId} from './layers/base-layer-settings';
+import {normalizeBaseLayerId} from './base-layer-settings';
 import type {Map as LeafletMap} from 'leaflet';
 
 const mocks = vi.hoisted(() => ({tileLayer: vi.fn(), maplibreGL: vi.fn(), setWorkerUrl: vi.fn(),

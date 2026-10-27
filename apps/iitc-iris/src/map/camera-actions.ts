@@ -1,4 +1,4 @@
-import {clampView} from '../system/scenarios';
+import {clampView} from './map-view-settings';
 import type {IitcIrisMessage} from '../messages';
 import {IITC_IRIS_MESSAGES} from '../messages';
 

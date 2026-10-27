@@ -1,6 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {createInventoryRuntime} from './inventory-runtime';
-import {IITC_IRIS_MESSAGES, type IitcIrisRequestDiagnostics} from '../messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisRequestDiagnostics} from '../../messages';
 
 type Options = Parameters<typeof createInventoryRuntime>[0];
 const key = {resource: {resourceType: 'PORTAL_LINK_KEY'}, portalCoupler: {portalGuid: 'portal', portalTitle: 'Portal'}};

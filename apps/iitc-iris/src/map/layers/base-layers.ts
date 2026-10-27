@@ -2,7 +2,7 @@ import L, {type Layer, type Map as LeafletMap} from 'leaflet';
 import {MaplibreGL} from '@maplibre/maplibre-gl-leaflet';
 import {setWorkerUrl} from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
-import type {IitcIrisBaseLayerId} from '../messages';
+import type {IitcIrisBaseLayerId} from '../../messages';
 
 // The binding assumes WebGL initialization succeeded in onRemove. Keep a failed
 // initialization removable through Leaflet's normal lifecycle, without private fields.

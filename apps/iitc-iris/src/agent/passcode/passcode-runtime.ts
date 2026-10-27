@@ -1,6 +1,6 @@
-import {isIitcAuthError} from '../intel/intel-request';
+import {isIitcAuthError} from '../../intel/intel-request';
 import {IITC_IRIS_MESSAGES, type IitcIrisMessage, type IitcIrisPasscodeRewardItem,
-  type IitcIrisPasscodeState, type IitcIrisRequestDiagnostics} from '../messages';
+  type IitcIrisPasscodeState, type IitcIrisRequestDiagnostics} from '../../messages';
 
 interface PasscodeRuntimeOptions {
   postIntelEndpoint: (endpoint: string, payload: Record<string, unknown>, signal?: AbortSignal) => Promise<unknown>;

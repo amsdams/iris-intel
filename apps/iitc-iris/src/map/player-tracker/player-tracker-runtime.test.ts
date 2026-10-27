@@ -2,9 +2,9 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import type {Map as LeafletMap} from 'leaflet';
 import {parseMsgData, type IitcCommMessage} from '@iris/iitc-core';
 import {createPlayerTrackerRuntime} from './player-tracker-runtime';
-import type {IitcIrisLayerSettings} from '../messages';
-import {DEFAULT_LAYER_SETTINGS} from './layers/layer-registry';
-import type {IitcIrisMapLifetime} from './map-runtime-lifetime';
+import type {IitcIrisLayerSettings} from '../../messages';
+import {DEFAULT_LAYER_SETTINGS} from '../layers/layer-registry';
+import type {IitcIrisMapLifetime} from '../map-runtime-lifetime';
 
 const leaflet = vi.hoisted(() => ({marker: vi.fn(), polyline: vi.fn(), icon: vi.fn(), divIcon: vi.fn()}));
 vi.mock('leaflet', () => ({default: leaflet}));

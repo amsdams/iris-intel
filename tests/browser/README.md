@@ -32,6 +32,9 @@ deliberate faults, not live providers. A recovered map uses OSM and updates Appe
 mission, inventory, and drawing lists exercise scrolling to the last row, import controls, and panel footers;
 panels must fit above navigation without clipping their top. The data is simulated through the UI message boundary.
 
+[map-view.smoke.mjs](map-view.smoke.mjs) checks URL-over-storage precedence on boot, move-end storage/Intel
+cookie/history synchronization, and restored position after reload without URL position parameters.
+
 [map-requests.smoke.mjs](map-requests.smoke.mjs) runs the live request path with simulated Intel responses: TIMEOUT
 retries recover into real Leaflet layers, request metadata is retained, and a subsequent refresh reuses cached tiles.
 
@@ -39,7 +42,8 @@ retries recover into real Leaflet layers, request metadata is retained, and a su
 whole-overlay/faction/level/unclaimed filters, in-place highlighter refresh, and fresh entity layers after map replacement.
 It uses controlled fixture data through the page message boundary. Portal cases exercise detailed entity promotion,
 cached-state display while refreshing, cancelled late responses, pending portal arrival, cache/selection retention
-across map replacement, and native context gestures for portals, links, fields and empty map points.
+across map replacement, and native context gestures for portals, links, fields and empty map points. A combined
+layer/highlighter/base-map message verifies update ordering, retained marker identity and both deferred frame timings.
 
 [panel-requests.smoke.mjs](panel-requests.smoke.mjs) runs real Scores, Inventory/Profile, Passcode and COMM panel workflows
 with simulated endpoint responses, checking request metadata, selected-portal key counts and rendered rewards. It also

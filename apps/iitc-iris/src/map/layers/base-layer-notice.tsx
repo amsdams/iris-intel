@@ -1,5 +1,5 @@
 import {h} from 'preact';
-import {ClearButton} from '../ui/clear-button';
+import {ClearButton} from '../../ui/clear-button';
 import './base-layer-notice.css';
 
 export function BaseLayerNotice({message, dismiss}: {message: string; dismiss: () => void}): h.JSX.Element | null {

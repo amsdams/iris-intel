@@ -1,6 +1,6 @@
 import type {Layer, Map as LeafletMap, MaplibreGL} from 'leaflet';
 import type {Map as VectorMap} from 'maplibre-gl';
-import type {IitcIrisBaseLayerId, IitcIrisBaseLayerError} from '../messages';
+import type {IitcIrisBaseLayerId, IitcIrisBaseLayerError} from '../../messages';
 import {createBaseLayer} from './base-layers';
 
 export interface BaseLayerStatus {

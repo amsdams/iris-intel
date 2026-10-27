@@ -1,7 +1,7 @@
 import {isValidElement, toChildArray, type ComponentChildren, type VNode} from 'preact';
 import {describe, expect, it, vi} from 'vitest';
-import {Badge} from '../../ui/badge';
-import {formatIitcColorVars, getIitcLevelColor, getIitcRarityColor} from '../../iitc-colors';
+import {Badge} from '../../../ui/badge';
+import {formatIitcColorVars, getIitcLevelColor, getIitcRarityColor} from '../../../iitc-colors';
 import {IitcIrisInventoryPanel} from './inventory-panel';
 
 type TestNode = VNode<{

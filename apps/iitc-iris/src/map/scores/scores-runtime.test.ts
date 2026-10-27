@@ -1,6 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {createScoresRuntime} from './scores-runtime';
-import type {IitcIrisRequestDiagnostics} from '../messages';
+import type {IitcIrisRequestDiagnostics} from '../../messages';
 
 type Options = Parameters<typeof createScoresRuntime>[0];
 const game = {result: ['300', '100']};

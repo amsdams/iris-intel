@@ -4,15 +4,15 @@ import {
   CORE_LAYER_TOGGLE_REGISTRY,
   DETAIL_LAYER_TOGGLE_REGISTRY,
   type IitcIrisBooleanLayerSettingKey,
-} from '../layers/layer-registry';
-import { PORTAL_HIGHLIGHTER_REGISTRY } from '../layers/highlighter-registry';
+} from '../layer-registry';
+import { PORTAL_HIGHLIGHTER_REGISTRY } from '../highlighter-registry';
 import type {
   IitcIrisHighlighterSettings,
   IitcIrisLayerSettings,
   IitcIrisPortalHighlighterId,
-} from '../../messages';
-import { LayerChoice } from '../../ui/layer-choice';
-import {Section} from '../../ui/section';
+} from '../../../messages';
+import { LayerChoice } from '../../../ui/layer-choice';
+import {Section} from '../../../ui/section';
 
 interface BooleanLayerToggleEntry {
   id: IitcIrisBooleanLayerSettingKey;

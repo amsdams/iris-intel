@@ -2,7 +2,6 @@ import { describe, expect, it, beforeEach } from 'vitest';
 import {
   createDataSourceSettings,
   DATA_SOURCE_OPTIONS,
-  defaultMapView,
   loadStoredActiveSheet,
   loadStoredBaseLayerId,
   loadStoredBoolean,
@@ -18,6 +17,7 @@ import {
   storeLayerSettings,
   VIEW_PRESETS,
 } from './storage-settings';
+import {defaultMapView} from '../map/map-view-settings';
 import { DEFAULT_LAYER_SETTINGS } from '../map/layers/layer-registry';
 
 function mockLocalStorage(): Storage {

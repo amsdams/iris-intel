@@ -5,10 +5,10 @@ import {ClearButton} from '../ui/clear-button';
 import {StatusText} from '../ui/status-text';
 import {IitcIrisProfilePanel} from '../agent/profile-panel';
 import {IitcIrisCommPanel} from '../comm/comm-panel';
-import {IitcIrisInventoryPanel} from '../agent/inventory-panel';
-import {IitcIrisMissionsPanel} from '../map/missions-panel';
-import {IitcIrisPasscodePanel} from '../agent/passcode-panel';
-import {IitcIrisScoresPanel} from '../map/scores-panel';
+import {IitcIrisInventoryPanel} from '../agent/inventory/inventory-panel';
+import {IitcIrisMissionsPanel} from '../map/missions/missions-panel';
+import {IitcIrisPasscodePanel} from '../agent/passcode/passcode-panel';
+import {IitcIrisScoresPanel} from '../map/scores/scores-panel';
 import {type IitcIrisSidePanelId} from './menu-registry';
 import {
   type IitcIrisAgentState,

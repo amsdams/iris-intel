@@ -1,5 +1,5 @@
-import {isIitcAuthError} from '../intel/intel-request';
-import {IITC_IRIS_MESSAGES, type IitcIrisMessage, type IitcIrisRequestDiagnostics, type IitcIrisScoresState} from '../messages';
+import {isIitcAuthError} from '../../intel/intel-request';
+import {IITC_IRIS_MESSAGES, type IitcIrisMessage, type IitcIrisRequestDiagnostics, type IitcIrisScoresState} from '../../messages';
 
 interface ScoresRuntimeOptions {
   getMapCenterE6: () => {latE6: number; lngE6: number} | undefined;

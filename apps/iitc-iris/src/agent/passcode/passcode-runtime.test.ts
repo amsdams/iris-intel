@@ -1,6 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {createPasscodeRuntime} from './passcode-runtime';
-import type {IitcIrisRequestDiagnostics} from '../messages';
+import type {IitcIrisRequestDiagnostics} from '../../messages';
 
 type Options = Parameters<typeof createPasscodeRuntime>[0];
 describe('Passcode runtime requests', () => {

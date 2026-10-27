@@ -1,15 +1,15 @@
 import {h} from 'preact';
 import './scores-panel.css';
-import {getCommTeamClass} from '../../comm/comm-display';
-import type {IitcIrisScoresState} from '../../messages';
-import {formatElapsedSeconds, getAuthErrorMessage} from '../../ui-status';
-import {ActionButton} from '../../ui/action-button';
-import {ControlRow} from '../../ui/control-row';
-import {DiagnosticsChip} from '../../ui/diagnostics-chip';
-import {PanelBody, PanelFooter} from '../../ui/panel';
-import {StatusText} from '../../ui/status-text';
-import {SummaryCell} from '../../ui/summary-cell';
-import {SummaryGrid} from '../../ui/summary-grid';
+import {getCommTeamClass} from '../../../comm/comm-display';
+import type {IitcIrisScoresState} from '../../../messages';
+import {formatElapsedSeconds, getAuthErrorMessage} from '../../../ui-status';
+import {ActionButton} from '../../../ui/action-button';
+import {ControlRow} from '../../../ui/control-row';
+import {DiagnosticsChip} from '../../../ui/diagnostics-chip';
+import {PanelBody, PanelFooter} from '../../../ui/panel';
+import {StatusText} from '../../../ui/status-text';
+import {SummaryCell} from '../../../ui/summary-cell';
+import {SummaryGrid} from '../../../ui/summary-grid';
 
 export interface IitcIrisScoresPanelProps {
   scoresState: IitcIrisScoresState;

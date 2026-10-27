@@ -1,5 +1,5 @@
 import {AppearancePanel} from './system/appearance-panel/appearance-panel';
-import {BaseLayerNotice} from './map/base-layer-notice';
+import {BaseLayerNotice} from './map/layers/base-layer-notice';
 import {useUiTheme} from './shell/ui-theme';
 import {getExtensionUrl} from './platform/assets';
 import {installIitcIrisHostBack} from './shell/host-navigation';
@@ -62,7 +62,7 @@ import {
 import {handleIitcIrisContentKeyDown, type IitcIrisPanDirection} from './shell/keyboard-shortcuts';
 import {copyIitcIrisText} from './shell/feedback';
 import {IitcIrisPortalDetailsPanel} from './portals/portal-details-panel';
-import {IitcIrisSearchPanel} from './map/search-panel';
+import {IitcIrisSearchPanel} from './map/search/search-panel';
 import {usePortalAnalysisWorkflow} from './map/portal-analysis/workflow';
 import {IitcIrisMapControlsPanelContainer} from './map/controls-panel';
 import {IitcIrisHelpPanel} from './system/help-panel';

@@ -302,7 +302,7 @@ Start with:
 - `apps/iitc-iris/src/shell/storage-settings.ts`
 - `apps/iitc-iris/src/platform/assets.ts`
 - `apps/iitc-iris/src/map/map-runtime-lifetime.ts`
-- `apps/iitc-iris/src/map/missions-panel/missions-panel.tsx`
+- `apps/iitc-iris/src/map/missions/missions-panel/missions-panel.tsx`
 
 Must cover:
 

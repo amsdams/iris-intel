@@ -1,9 +1,9 @@
+import {BASE_LAYER_STORAGE_KEY} from './base-layer-settings';
 import {h, render} from 'preact';
 import {act} from 'preact/test-utils';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {IITC_IRIS_MESSAGES, type IitcIrisMessage} from '../../messages';
 import {
-  BASE_LAYER_STORAGE_KEY,
   HIGHLIGHTER_SETTINGS_STORAGE_KEY,
   LAYER_SETTINGS_STORAGE_KEY,
 } from '../../shell/storage-settings';

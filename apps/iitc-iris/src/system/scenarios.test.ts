@@ -1,9 +1,7 @@
 import {describe, expect, it} from 'vitest';
 import {
-  clampView,
   createScenarioSnapshotSummary,
   isScenarioSettled,
-  isStoredMapView,
   parseViewInput,
 } from './scenarios';
 
@@ -49,16 +47,4 @@ describe('content-scenarios helpers', () => {
     expect(parseViewInput('invalid input')).toBeNull();
   });
 
-  it('clamps lat, lng, zoom values within valid map bounds', () => {
-    expect(clampView({lat: 95, lng: 200, zoom: 25})).toEqual({
-      lat: 85.051128,
-      lng: 179.999999,
-      zoom: 21,
-    });
-  });
-
-  it('validates stored map view objects', () => {
-    expect(isStoredMapView({lat: 52, lng: 4, zoom: 10})).toBe(true);
-    expect(isStoredMapView({lat: '52', lng: 4, zoom: 10})).toBe(false);
-  });
 });

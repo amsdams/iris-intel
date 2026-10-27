@@ -4,8 +4,8 @@ import {applyIitcPlayerTrackerCommMessages, getIitcPlayerTrackerDiagnostics, get
   isIitcPlayerTrackerTeamVisible, isIitcPlayerTrackerVisibleForZoom, pruneIitcPlayerTrackerStored,
   IITC_PLAYER_TRACKER_LINE_COLOR, IITC_PLAYER_TRACKER_MAX_DISPLAY_EVENTS, IITC_PLAYER_TRACKER_MAX_TIME,
   IITC_PLAYER_TRACKER_MIN_ZOOM, type IitcCommMessage, type IitcPlayerTrackerDiagnostics, type IitcPlayerTrackerStored} from '@iris/iitc-core';
-import type {IitcIrisLayerSettings, IitcIrisRenderPortal} from '../messages';
-import type {IitcIrisMapLifetime} from './map-runtime-lifetime';
+import type {IitcIrisLayerSettings, IitcIrisRenderPortal} from '../../messages';
+import type {IitcIrisMapLifetime} from '../map-runtime-lifetime';
 import {createPlayerTrackerMarkers, type PlayerTrackerMarkerGroup} from './player-tracker-markers';
 import {createPlayerTrackerGroupPopup} from './player-tracker-group-popup';
 

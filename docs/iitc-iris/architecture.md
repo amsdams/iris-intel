@@ -13,7 +13,7 @@ This is the retained architecture guidance from the completed CSS, component, co
 - Features depend on shared `ui/` primitives. Shared UI does not depend on features.
 - Use [IITC-shaped facades](facade-pattern.md) selectively for pure domain contracts.
 
-Base maps stay under Leaflet ownership. `map/base-layers.ts` creates OSM raster tiles or an OpenFreeMap
+Base maps stay under Leaflet ownership. `map/layers/base-layers.ts` creates OSM raster tiles or an OpenFreeMap
 Dark/Positron vector layer through MapLibre’s Leaflet binding. Leaflet owns gestures, overlays, and layer removal;
 the binding disposes its WebGL map when removed. The standalone MapLibre worker is bundled in XPI/ZIP/APK,
 with a narrow Android asset route. Saved CARTO preferences migrate to OpenFreeMap; OSM preferences stay unchanged.
@@ -23,8 +23,12 @@ See the [OpenFreeMap integration guide](https://openfreemap.org/quick_start/).
 
 Group app features by menu/domain: `map/`, `portals/`, `agent/`, `comm/`, and `system/`; keep application coordination
 in `shell/` and reusable primitives in `ui/`. A rendered panel has an explicit entry point in its component folder.
-Shared domain logic belongs outside panel folders, such as `map/search/`, `map/layers/`, and `map/missions/`.
-Do not create a component or directory solely to satisfy a uniform file count.
+Shared domain logic belongs outside panel folders. A feature with runtime/workflow helpers groups them, its tests,
+map-generated CSS and its panel inside one feature folder: `map/search/search-panel/`, `map/missions/missions-panel/`,
+`map/layers/display-panel/`, `map/scores/scores-panel/`, `agent/inventory/inventory-panel/`, and
+`agent/passcode/passcode-panel/`. Player Tracker keeps its runtime, marker/popup helpers, CSS and tests together in
+`map/player-tracker/`. Simple panels such as Agent Profile or Help remain directly under their domain; shared
+Inventory/Passcode item-list styles remain at `agent/item-list.css`. Do not create a directory solely for uniform depth.
 
 `content.tsx` assembles the app, bridges page messages, and coordinates shared camera/entity/auth/navigation state.
 Search, Layers, Missions, and location controls own their feature workflows. Their effect calls retain deliberate
@@ -89,7 +93,7 @@ checks theme persistence, shared field/action styling, and Jump submission behav
 | Bundled asset URLs | `platform/assets.ts`; shared by UI callers, using extension URLs or an explicit host-provided asset base. Android serves bundled assets under a reserved Intel HTTPS path. The injected page runtime derives its own asset base from its script URL because it runs outside the extension context. |
 | Clipboard | `shell/feedback.ts`; the feedback helper already accepts an injected copy operation. Keep that seam for a future Android implementation. |
 | Geolocation | `map/location-workflow.ts` supplies browser capability to `map/location-actions.ts`; the action already accepts an injected position callback. |
-| Storage | `shell/storage-settings.ts` owns UI preference keys; the page runtime owns map/domain caches and IITC-compatible settings. Preserve these separate lifetimes and persisted formats. |
+| Storage | `shell/storage-settings.ts` and `map/map-view.ts` retain UI/page browser access. `map/map-view-settings.ts` shares the map-view key, defaults, types, validation and parsing; `map/layers/base-layer-settings.ts` owns the base-layer key and normalization. Domain caches retain their feature lifetimes. |
 | Injection, auth, transport | `content.tsx` injects the page script and bridges messages. The page runtime reads Intel cookies/version and performs authenticated requests. Keep those page-context assumptions explicit for the Android spike. |
 
 `map/map-runtime-lifetime.ts` owns map fetch cancellation, timers, and animation callbacks. Map replacement and direct
@@ -112,15 +116,15 @@ Renderer callbacks read the current state; disposal invalidates its render conte
 injection and map-request diagnostics. The existing pure planning, decoding and queue/cache algorithms stay in
 `packages/iitc-core`. Movement and map disposal explicitly notify this page-owned controller; tile cache survives map
 replacement while pending work and request identity are invalidated. `intel/intel-request.ts` holds shared page-context
-CSRF/version/auth helpers and lifetime-bound endpoint transport for both map and panel requests.
+CSRF/version/auth helpers, lifetime-bound endpoint transport and the shared JSON endpoint helper for panel requests.
 
 `map/missions/missions-runtime.ts` owns mission list/detail requests, status, persistent caches and cancellation,
-using `mission-overlay.ts` for geometry/navigation. `map/player-tracker-runtime.ts` owns player history/deduplication,
+using `mission-overlay.ts` for geometry/navigation. `map/player-tracker/player-tracker-runtime.ts` owns player history/deduplication,
 marker/trace rendering, grouped popups and refresh scheduling/cancellation. Shared COMM channel data is owned by `comm/comm-runtime.ts`; authenticated
 transport is supplied by the page coordinator. Both feature instances survive map replacement: mission caches/player history
 remain available while old requests, timers and markers are cleared.
 
-`map/scores-runtime.ts`, `agent/passcode-runtime.ts` and `agent/inventory-runtime.ts` own their request state,
+`map/scores/scores-runtime.ts`, `agent/passcode/passcode-runtime.ts` and `agent/inventory/inventory-runtime.ts` own their request state,
 response-to-UI adaptation and cancellation. Inventory also owns the shared subscription request and summary/key counts;
 Agent Profile reads its subscription state, and map rendering reads key counts through explicit callbacks. Panel
 cancellation leaves subscription work running; map disposal cancels it and resets a loading subscription to unknown.
@@ -141,9 +145,17 @@ hit-testing, context payloads, click suppression and gesture installation. Exist
 the gesture/listener cleanup helper. Inventory and Missions read selection through callbacks. Map disposal cancels
 detail requests and removes gestures/layers while retaining the existing selection/cache/history lifetime.
 
-The entry point has fallen from 6,159 to 1,166 lines (81%). This measures ownership moved out of the coordinator,
-not code deleted from the app. It still owns map boot/lifetime/layer allocation, view/settings persistence, location/debug overlays,
-shared panel transport and diagnostic/message aggregation.
+`map/map-view.ts` owns map-view/base-layer preference serialization, URL synchronization and Intel cookies.
+`agent/agent-runtime.ts` reads the current static Intel PLAYER profile and subscription snapshot for publication.
+`map/map-settings-runtime.ts` owns overlay/highlighter settings and their ordered render updates; the renderer retains
+geometry/style ownership. `map/map-diagnostics.ts` owns request counts, status aggregation, retained tile/interaction
+snapshots and two-frame timings. Its frame callbacks use the current map lifetime; snapshots retain their existing
+page lifetime. Feature snapshots are read through explicit callbacks, with no imports from the entry point.
+
+The entry point has fallen from 6,159 to 631 lines (90%). This measures ownership moved out of the coordinator,
+not code deleted from the app. It retains feature assembly, map boot/disposal, pane/layer allocation, movement and
+message routing, auth-recovery coordination, and the small location/debug overlays. Further extraction needs a useful
+responsibility boundary; a smaller line count alone is not a reason to split it again.
 
 ## Validation And Known Limits
 

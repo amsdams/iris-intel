@@ -1,3 +1,4 @@
+import {clampView, type ParsedViewInput} from '../map/map-view-settings';
 import type {
   IitcIrisLifecycleSettings,
   IitcIrisMapTimingDiagnostics,
@@ -43,18 +44,6 @@ export interface ScenarioRun {
   finishedAt?: string;
   lifecycleSettings: IitcIrisLifecycleSettings;
   snapshots: ScenarioSnapshot[];
-}
-
-export interface ParsedViewInput {
-  lat: number;
-  lng: number;
-  zoom?: number;
-}
-
-export interface StoredMapView {
-  lat: number;
-  lng: number;
-  zoom: number;
 }
 
 export function isScenarioSettled(diagnostics: unknown): boolean {
@@ -145,27 +134,6 @@ export function createScenarioSnapshotSummary(diagnostics: unknown): ScenarioSna
     timing: entities.timing,
     warnings,
   };
-}
-
-export function clampView(view: ParsedViewInput): ParsedViewInput {
-  return {
-    lat: Math.max(-85.051128, Math.min(85.051128, view.lat)),
-    lng: Math.max(-180, Math.min(179.999999, view.lng)),
-    zoom: view.zoom === undefined ? undefined : Math.max(0, Math.min(21, view.zoom)),
-  };
-}
-
-export function isStoredMapView(value: unknown): value is StoredMapView {
-  if (!value || typeof value !== 'object') return false;
-  const view = value as Partial<StoredMapView>;
-  return (
-    typeof view.lat === 'number' &&
-    Number.isFinite(view.lat) &&
-    typeof view.lng === 'number' &&
-    Number.isFinite(view.lng) &&
-    typeof view.zoom === 'number' &&
-    Number.isFinite(view.zoom)
-  );
 }
 
 export function parseViewInput(value: string): ParsedViewInput | null {

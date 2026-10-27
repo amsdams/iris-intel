@@ -1,4 +1,4 @@
-import {DEFAULT_BASE_LAYER_ID, normalizeBaseLayerId} from '../map/layers/base-layer-settings';
+import {BASE_LAYER_STORAGE_KEY, DEFAULT_BASE_LAYER_ID, normalizeBaseLayerId} from '../map/layers/base-layer-settings';
 export {isBaseLayerId} from '../map/layers/base-layer-settings';
 import {getExtensionUrl} from '../platform/assets';
 import { DEFAULT_LAYER_SETTINGS } from '../map/layers/layer-registry';
@@ -23,15 +23,10 @@ import type {
   IitcIrisLifecycleSettings,
   IitcIrisPortalHighlighterId,
 } from '../messages';
-import {
-  clampView,
-  isStoredMapView,
-  type StoredMapView,
-} from '../system/scenarios';
+import {MAP_VIEW_STORAGE_KEY, defaultMapView, parseStoredMapView, parseUrlMapView, type StoredMapView} from '../map/map-view-settings';
 
 export const LOGIN_BYPASS_STORAGE_KEY = 'iitc-iris:login-bypass-until';
 export const COMM_TAB_STORAGE_KEY = 'iitc-chat-tab';
-export const BASE_LAYER_STORAGE_KEY = 'iitc-iris:base-layer';
 export const LAYER_SETTINGS_STORAGE_KEY = 'iitc-iris:layer-settings';
 export const HIGHLIGHTER_SETTINGS_STORAGE_KEY = 'iitc-iris:highlighter-settings';
 export const DATA_SOURCE_STORAGE_KEY = 'iitc-iris:data-source';
@@ -39,7 +34,6 @@ export const LIFECYCLE_SETTINGS_STORAGE_KEY = 'iitc-iris:lifecycle-settings';
 export const DEBUG_DOCK_STORAGE_KEY = 'iitc-iris:debug-dock';
 export const SIDE_PANEL_STORAGE_KEY = 'iitc-iris:side-panel';
 export const ACTIVE_SHEET_STORAGE_KEY = 'iitc-iris:active-sheet';
-export const MAP_VIEW_STORAGE_KEY = 'iitc-iris:map-view';
 export const PORTAL_SECTION_STORAGE_KEY = 'iitc-iris:portal-sections';
 export const SHORTCUTS_ENABLED_STORAGE_KEY = 'iitc-iris:shortcuts-enabled';
 export const MAP_FOCUS_MODE_STORAGE_KEY = 'iitc-iris:map-focus-mode';
@@ -97,22 +91,10 @@ export function createDataSourceSettings(id: string): IitcIrisDataSourceSettings
   };
 }
 
-export function defaultMapView(): StoredMapView {
-  return { lat: 52.3730796, lng: 4.8924534, zoom: 11 };
-}
-
 export function loadUrlMapView(): StoredMapView | null {
   try {
     if (typeof window === 'undefined') return null;
-    const params = new URLSearchParams(window.location.search);
-    const ll = params.get('ll');
-    const z = params.get('z');
-    if (!ll || !z) return null;
-    const [latText, lngText] = ll.split(',');
-    const parsed = { lat: Number(latText), lng: Number(lngText), zoom: Number(z) };
-    if (!isStoredMapView(parsed)) return null;
-    const clamped = clampView(parsed);
-    return { lat: clamped.lat, lng: clamped.lng, zoom: clamped.zoom ?? defaultMapView().zoom };
+    return parseUrlMapView(window.location.search);
   } catch {
     return null;
   }
@@ -120,13 +102,7 @@ export function loadUrlMapView(): StoredMapView | null {
 
 export function loadStoredMapView(): StoredMapView {
   try {
-    const storage = getLocalStorage();
-    const value = storage?.getItem(MAP_VIEW_STORAGE_KEY);
-    if (!value) return defaultMapView();
-    const parsed = JSON.parse(value) as unknown;
-    if (!isStoredMapView(parsed)) return defaultMapView();
-    const clamped = clampView(parsed);
-    return { lat: clamped.lat, lng: clamped.lng, zoom: clamped.zoom ?? defaultMapView().zoom };
+    return parseStoredMapView(getLocalStorage()?.getItem(MAP_VIEW_STORAGE_KEY) ?? null);
   } catch {
     return defaultMapView();
   }

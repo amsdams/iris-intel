@@ -1,7 +1,7 @@
 import {getIitcInventoryPortalKeyCount, parseIitcInventoryResponse, summarizeIitcInventory, type IitcInventorySummary} from '@iris/iitc-core';
-import {isIitcAuthError} from '../intel/intel-request';
+import {isIitcAuthError} from '../../intel/intel-request';
 import {IITC_IRIS_MESSAGES, type IitcIrisInventoryState, type IitcIrisMessage,
-  type IitcIrisRequestDiagnostics, type IitcIrisSubscriptionState} from '../messages';
+  type IitcIrisRequestDiagnostics, type IitcIrisSubscriptionState} from '../../messages';
 
 interface InventoryRuntimeOptions {
   getSelectedPortal: () => {guid?: string; title?: string};

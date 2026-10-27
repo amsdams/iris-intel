@@ -1,17 +1,17 @@
 import {h, type TargetedKeyboardEvent} from 'preact';
 import {useRef} from 'preact/hooks';
 import './search.css';
-import '../../ui/shared/input-surface.css';
-import '../../ui/shared/list-item.css';
-import {getCommTeamClass} from '../../comm/comm-display';
-import type {IitcIrisSearchResult, IitcIrisSearchState} from '../../messages';
-import {Panel, PanelHeader, PanelTitle, PanelBody, PanelFooter} from '../../ui/panel';
-import {formatElapsedSeconds, getPanelStatusClass} from '../../ui-status';
-import {TextInput} from '../../ui/text-input';
-import {ClearButton} from '../../ui/clear-button';
-import {DiagnosticsChip} from '../../ui/diagnostics-chip';
-import {ChipButton} from '../../ui/chip-button';
-import {StatusText} from '../../ui/status-text';
+import '../../../ui/shared/input-surface.css';
+import '../../../ui/shared/list-item.css';
+import {getCommTeamClass} from '../../../comm/comm-display';
+import type {IitcIrisSearchResult, IitcIrisSearchState} from '../../../messages';
+import {Panel, PanelHeader, PanelTitle, PanelBody, PanelFooter} from '../../../ui/panel';
+import {formatElapsedSeconds, getPanelStatusClass} from '../../../ui-status';
+import {TextInput} from '../../../ui/text-input';
+import {ClearButton} from '../../../ui/clear-button';
+import {DiagnosticsChip} from '../../../ui/diagnostics-chip';
+import {ChipButton} from '../../../ui/chip-button';
+import {StatusText} from '../../../ui/status-text';
 
 interface RenderedSearchResult {
   result: IitcIrisSearchResult;

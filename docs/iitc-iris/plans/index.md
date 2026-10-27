@@ -21,6 +21,39 @@ supported authentication and website-distribution permission evidence before beg
 are deferred; the baseline includes Passcode and Missions. The current map-runtime extraction preserves behavior;
 further decomposition should follow clear responsibility boundaries rather than a line-count target.
 
+**Feature organization and persistence contracts (2026-10-27):** grouped Player Tracker and base-layer files;
+Search, Missions, Display, Scores, Inventory and Passcode panels now live inside their feature folders.
+Runtime/workflow logic and tests stay outside panel folders. Map-generated CSS stays centrally imported in the same
+order, alongside its source feature. UI/page persistence adapters share `map/map-view-settings.ts`; the base-layer
+key now lives with its normalization. Camera/scenario helpers use the shared view contract instead of owning it in
+Diagnostics. Storage formats/defaults, URL behavior, lifecycle ordering and core remain unchanged by intent.
+`npm run check` passes (653 app/core + six release-gate tests, lint/types/CSS/workbench), including three added
+shared-contract/adapter regressions; two existing pure map-view tests moved from Diagnostics to their new owner.
+All 34 Chrome and 20 focused Firefox cases pass. All 42 moved files match apart from relative paths; compiled CSS is
+byte-identical. Shared view parsing matches both previous adapters on 4,478 fixtures (8,956 comparisons). Static imports/
+exports resolve across 169 production TypeScript modules, with no runtime cycles, UI-to-feature imports or imports back
+into entry points. Extension packaging and signed Android release checks pass (31 native + 15 JavaScript tests, lint/build).
+APK `0.4.1-alpha+2c92386`, code 1846, matches the pinned certificate; all 19 assets, packaged extension contents and
+port-6969 downloads match. Latest local XPI/ZIP timestamp: `2026-10-27T20-46-44`. Source changes are uncommitted;
+this organization pass needs user smoke: open the moved panels, change/reload base map and pan/zoom/reload position.
+
+**Combined map coordination extraction (2026-10-27):** map-view/preferences/URL/cookies now live in `map/map-view.ts`,
+agent profile publication in `agent/agent-runtime.ts`, overlay/highlighter update coordination in
+`map/map-settings-runtime.ts`, and status/request/interaction diagnostics in `map/map-diagnostics.ts`.
+The shared JSON endpoint helper moved into `intel/intel-request.ts`. The entry point is 630 lines, down from 1,166;
+core, behavior, storage/message contracts and lifecycle ordering are unchanged by intent. Boot/disposal, feature assembly,
+panes/layers, message routing and small location/debug overlays remain in the coordinator. `npm run check` passes
+(650 app/core + six release-gate tests, lint/types/CSS/workbench), including 22 new runtime regressions. Source comparison
+checks 28 moved functions, both update branches, mirrored timing and all remaining coordinator functions after explicit
+dependency substitutions. All 34 Chrome cases pass (33 in the suite plus the corrected persistence case rerun), as do
+20 focused Firefox cases. The new persistence assertion was corrected for Leaflet pixel rounding; serialized coordinates
+are still compared exactly. Extension packaging and signed Android release checks pass (31 native + 15 JavaScript tests,
+lint/build). APK `0.4.1-alpha+2c92386`, code 1846, matches the pinned certificate; all 19 assets, extension contents and
+port-6969 downloads match. Latest local XPI/ZIP timestamp: `2026-10-27T20-32-58`. Source changes are uncommitted;
+the user reports a quick XPI smoke behaves as before. General extraction smoke is accepted, without claiming exhaustive
+feature coverage or APK device testing. Deferred Inventory, label and zoom findings remain separate. Recommend
+investigating Inventory reliability next; further extraction should need a concrete ownership benefit.
+
 **Portal selection/details/context extraction (2026-10-27):** selection/navigation and orange overlays now live in
 `map/map-selection-runtime.ts`; detail requests/status/cache in `portals/portal-details-runtime.ts`; context targeting,
 click suppression and gesture installation in `map/map-context-actions.ts`. Shared entity/history mutation, pending
@@ -31,7 +64,8 @@ regressions. All 32 Chrome and 18 focused Firefox browser cases pass. Source com
 the detail-promotion block after dependency substitutions; no intentional behavior changes. XPI/ZIP packaging and signed
 Android release checks pass (31 native + 15 JavaScript tests, lint/build). APK `0.4.1-alpha+9af2cf1`, code 1845,
 matches the pinned certificate; all 19 assets, extension contents and port-6969 downloads match. Latest local XPI/ZIP
-timestamp: `2026-10-27T20-18-55`. Source changes are uncommitted. Portal and COMM live user smoke are pending.
+timestamp: `2026-10-27T20-18-55`. This batch is committed as `2c92386`; the user reports XPI behavior remains as
+before. General extraction smoke is accepted.
 
 **COMM extraction (2026-10-27):** channel state/buffers, fetch/send requests, preview conversion and cancellation
 now live in `comm/comm-runtime.ts`. Player Tracker retains its existing polling seam and shares the public buffer.
@@ -43,7 +77,7 @@ expected Send enabled after the draft was cleared; only that assertion was corre
 originals after explicit dependency substitutions. Extension packaging and signed Android release checks pass
 (31 native + 15 JavaScript tests, lint/build). APK `0.4.1-alpha+18f3b4e`, code 1844, matches the pinned certificate;
 all 19 assets, extension contents and port-6969 downloads match. Latest local XPI/ZIP timestamp: `2026-10-27T20-03-44`.
-The preceding feature batches are committed as `9af2cf1`; COMM live user smoke is pending.
+The preceding feature batches are committed as `9af2cf1`; subsequent general XPI extraction smoke is accepted.
 
 | Extraction checkpoint | Entry-point lines |
 | --- | ---: |
@@ -55,10 +89,11 @@ The preceding feature batches are committed as `9af2cf1`; COMM live user smoke i
 | Scores, Passcode, Inventory/subscription | 1,963 |
 | COMM | 1,671 |
 | Portal selection, details and context | 1,166 |
+| Diagnostics, view persistence, agent state and settings | 630 |
 
-Overall reduction: 4,993 lines (81%) moved out of the coordinator. Remaining ownership: map boot/lifetime/layers,
-view/settings persistence, location/debug overlays, shared panel transport and diagnostic/message aggregation.
-These are possible boundaries to review, not a commitment to extract every helper or reach a line-count target.
+Extraction checkpoint reduction: 5,529 lines (90%) moved out of the coordinator; the organization pass adds one shared-settings import (631 lines now). Remaining ownership: feature assembly, map
+boot/lifetime/layers, movement/message routing, auth recovery and small location/debug overlays. Further splitting needs
+a meaningful ownership boundary, not a line-count target. Inventory reliability is the first deferred investigation afterward.
 
 **Scores, Passcode and Inventory extraction (2026-10-27):** these request workflows, their response-to-UI adaptation
 and cancellation now have feature owners. Inventory owns the shared subscription check and exposes key counts to the

@@ -1,20 +1,20 @@
-import {getExtensionUrl} from '../../platform/assets';
+import {getExtensionUrl} from '../../../platform/assets';
 import {h} from 'preact';
-import '../../ui/shared/selection-summary.css';
+import '../../../ui/shared/selection-summary.css';
 import './missions.css';
-import '../../ui/shared/scroll-region.css';
-import '../../ui/shared/list-item.css';
-import {getCommTeamClass} from '../../comm/comm-display';
-import type {IitcIrisMissionSource, IitcIrisMissionsState} from '../../messages';
-import {formatElapsedSeconds, getAuthErrorMessage} from '../../ui-status';
-import {ActionButton} from '../../ui/action-button';
-import {ControlRow} from '../../ui/control-row';
-import {DiagnosticsChip} from '../../ui/diagnostics-chip';
-import {StatusText} from '../../ui/status-text';
-import {SummaryCell} from '../../ui/summary-cell';
-import {SummaryGrid} from '../../ui/summary-grid';
-import {EmptyState} from '../../ui/empty-state';
-import {PanelBody, PanelFooter} from '../../ui/panel';
+import '../../../ui/shared/scroll-region.css';
+import '../../../ui/shared/list-item.css';
+import {getCommTeamClass} from '../../../comm/comm-display';
+import type {IitcIrisMissionSource, IitcIrisMissionsState} from '../../../messages';
+import {formatElapsedSeconds, getAuthErrorMessage} from '../../../ui-status';
+import {ActionButton} from '../../../ui/action-button';
+import {ControlRow} from '../../../ui/control-row';
+import {DiagnosticsChip} from '../../../ui/diagnostics-chip';
+import {StatusText} from '../../../ui/status-text';
+import {SummaryCell} from '../../../ui/summary-cell';
+import {SummaryGrid} from '../../../ui/summary-grid';
+import {EmptyState} from '../../../ui/empty-state';
+import {PanelBody, PanelFooter} from '../../../ui/panel';
 
 const IITC_TM_ICON_BASE = 'https://commondatastorage.googleapis.com/ingress.com/img/tm_icons';
 const MISSION_TYPE_IMAGE_BY_TYPE_NUM: Record<number, string> = {

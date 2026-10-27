@@ -6,7 +6,7 @@ import {IitcIrisDrawToolsPanel} from '../draw-tools/draw-tools-panel';
 import {IitcIrisPortalCountsPanel} from '../portal-analysis/portal-counts-panel';
 import {IitcIrisPortalsListPanel} from '../portal-analysis/portals-list-panel';
 import {IitcIrisScoreboardPanel} from '../portal-analysis/scoreboard-panel';
-import {IitcIrisDisplayPanel} from '../display-panel';
+import {IitcIrisDisplayPanel} from '../layers/display-panel';
 import {formatMapObjectDistance, formatTeamLabel} from '../map-status';
 import {type IitcIrisSheetId} from '../../shell/menu-registry';
 import {type IitcIrisPanDirection} from '../../shell/keyboard-shortcuts';

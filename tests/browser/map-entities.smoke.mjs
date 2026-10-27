@@ -246,3 +246,27 @@ test('pending portal selection resolves on arrival and detail cache survives map
     status: window.entityFixture.status?.portalDetails?.status, owner: window.entityFixture.status?.portalDetails?.owner})))
     .toEqual({cached: false, status: 'ready', owner: 'CachedOwner'});
 });
+
+test('combined layer, highlighter and base-map updates retain order and two-frame diagnostics', async ({page}) => {
+  await page.evaluate(() => {
+    const settings = {...window.entityFixture.settings, portals: false};
+    window.postMessage({type: 'IITC_IRIS_LAYER_SETTINGS', layerSettings: settings,
+      highlighterSettings: {active: 'history-visited'}, baseLayerId: 'osm', sentAt: performance.now()}, '*');
+  });
+  await expect.poll(() => counts(page)).toEqual([0, 1, 1]);
+  await expect.poll(() => page.evaluate(() => {
+    const status = window.entityFixture.status;
+    const updates = status?.timing?.interactionUpdates ?? [];
+    const last = updates.slice(-2);
+    return {base: status?.baseLayerId, highlighter: status?.highlighterSettings?.active,
+      kinds: last.map(item => item.kind),
+      painted: last.length === 2 && last.every(item => typeof item.secondAnimationFrameMs === 'number'),
+      mirrorPainted: typeof status?.timing?.layerUpdate?.secondAnimationFrameMs === 'number'};
+  })).toEqual({base: 'osm', highlighter: 'history-visited', kinds: ['layer', 'highlighter'], painted: true, mirrorPainted: true});
+  await settings(page, {portals: true});
+  await expect.poll(() => counts(page)).toEqual([3, 1, 1]);
+  expect(await page.evaluate(() => {
+    const current = window.__iitcIrisLayers.entityLayerIndex.portals.get('res')[0];
+    return {same: current === window.entityFixture.original.portals.get('res')[0], fill: current.options.fillColor};
+  })).toEqual({same: true, fill: 'yellow'});
+});

@@ -1,20 +1,20 @@
 import {h} from 'preact';
-import '../../ui/shared/input-surface.css';
-import '../item-list.css';
+import '../../../ui/shared/input-surface.css';
+import '../../item-list.css';
 import './passcode-panel.css';
-import '../../ui/shared/warning.css';
-import '../../ui/shared/list-item.css';
-import {formatIitcColorVars, getIitcLevelColor} from '../../iitc-colors';
-import type {IitcIrisPasscodeRewardItem, IitcIrisPasscodeState} from '../../messages';
-import {ActionButton} from '../../ui/action-button';
-import {PanelBody, PanelFooter} from '../../ui/panel';
-import {Badge} from '../../ui/badge';
-import {DiagnosticsChip} from '../../ui/diagnostics-chip';
-import {EmptyState} from '../../ui/empty-state';
-import {TextInput} from '../../ui/text-input';
-import {SummaryCell} from '../../ui/summary-cell';
-import {SummaryGrid} from '../../ui/summary-grid';
-import {formatElapsedSeconds, getAuthErrorMessage} from '../../ui-status';
+import '../../../ui/shared/warning.css';
+import '../../../ui/shared/list-item.css';
+import {formatIitcColorVars, getIitcLevelColor} from '../../../iitc-colors';
+import type {IitcIrisPasscodeRewardItem, IitcIrisPasscodeState} from '../../../messages';
+import {ActionButton} from '../../../ui/action-button';
+import {PanelBody, PanelFooter} from '../../../ui/panel';
+import {Badge} from '../../../ui/badge';
+import {DiagnosticsChip} from '../../../ui/diagnostics-chip';
+import {EmptyState} from '../../../ui/empty-state';
+import {TextInput} from '../../../ui/text-input';
+import {SummaryCell} from '../../../ui/summary-cell';
+import {SummaryGrid} from '../../../ui/summary-grid';
+import {formatElapsedSeconds, getAuthErrorMessage} from '../../../ui-status';
 
 export interface IitcIrisPasscodePanelProps {
   passcodeDraft: string;

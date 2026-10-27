@@ -1,5 +1,7 @@
 import type {IitcIrisBaseLayerId} from '../../messages';
 
+export const BASE_LAYER_STORAGE_KEY = 'iitc-iris:base-layer';
+
 export const DEFAULT_BASE_LAYER_ID: IitcIrisBaseLayerId = 'openfreemap-dark';
 
 export function isBaseLayerId(value: unknown): value is IitcIrisBaseLayerId {
