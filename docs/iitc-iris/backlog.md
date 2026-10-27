@@ -8,27 +8,36 @@ Unprioritized product/parity gaps and dated comparison evidence. The [roadmap](p
 The user reports the extraction still behaves as before, with three follow-ups:
 
 - **Inventory first:** roughly ten open/Refresh attempts were needed before inventory appeared, without useful failure
-  feedback. Capture the actual endpoint status/response and cancellation path before assigning a cause. Shared endpoint
-  transport currently does not reject non-OK HTTP responses, and the inventory parser maps missing/non-array `result`
-  to an empty list; these can obscure a failed/unexpected response as `empty`. Verify explicit failures versus genuinely
-  empty inventory, preserve previous data, and improve visible feedback. Investigate alongside the cancellation issue below.
+  feedback. Reproduced by the user as loading → empty on open and Refresh. The app now rejects non-OK HTTP responses
+  and validates inventory results before calling the unchanged core parser. Missing/invalid results get at most
+  three attempts, with visible retry/failure feedback; failed or empty refreshes retain previously loaded items.
+  A valid empty response on first load remains `empty`, with an explanation rather than a claim that the
+  account is empty. Invalid subscription responses no longer imply inactive C.O.R.E. Live response evidence and user
+  verification remain pending; the server-side cause is not established. User-reported messages indicate empty lists
+  on mobile and retained data with a warning on desktop. Reference plugins warn that empty lists may indicate throttling;
+  the follow-up stops retrying valid empty lists and advises waiting before another refresh.
+  The user later fetched inventory on mobile while desktop still received an empty response; these attempts were
+  close together. Stop active investigation here and retain timing/availability as a watch item. The final correction
+  waits for active C.O.R.E. before requesting inventory, matching reference prerequisites, with cancellation guarded
+  during the wait. Its live effect remains unverified; neither a shared-device quota nor a server cooldown is proven.
 - **Level-label performance:** enabling level labels noticeably slows the map. Profile real portal counts, DOM label
   construction/recreation and pan/zoom paint costs; compare against IITC before choosing an optimization.
 - **Zoom-dependent features:** investigate and explain why features such as unclaimed portals become unavailable when
   zoomed out. Separate data omitted by Intel's zoom-dependent responses from IRIS render/filter/overlay policies;
   compare with reference IITC. Avoid implying that a filter can retrieve portals absent from the response.
 
-The user chose to continue behavior-preserving runtime extraction before addressing these findings. Inventory is
-the first investigation afterward, then label performance and zoom policy. No fixes or root causes are claimed by
-the smoke report alone.
+The behavior-preserving extraction is complete. Inventory feedback and mobile retrieval have live confirmation;
+desktop availability and the final subscription-order correction remain watch items. Label performance and zoom
+policy remain deferred. The original smoke report alone does not establish a root cause.
 
 ### Cancelled panel can remain loading on reopen (2026-10-27)
 
 A delayed-response browser probe confirmed that closing Inventory during loading cancels its request, but reopening
 retains `loading` and a disabled Refresh button. Existing abort handlers return without updating status; auto-request
-helpers retry only `idle` panels. Source comparison confirms this predates the request-runtime extraction. Fix the
-cancelled state/reopen policy in a focused change, preserving loaded data and shared subscription work; check Scores,
-Passcode and Missions for the same pattern. The extraction deliberately preserves the current request/status behavior.
+helpers retry only `idle` panels. Source comparison confirms this predates the request-runtime extraction. Inventory
+now restores `idle` when unloaded or its cached ready/empty state on cancellation, cancels retry delays, and ignores
+late results. Browser coverage verifies close/reopen recovery and independent subscription completion. Check Scores,
+Passcode and Missions for the same pattern during a concrete change to those workflows; they remain deferred.
 
 ### Map replacement during Canvas redraw (2026-10-27)
 

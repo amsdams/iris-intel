@@ -89,24 +89,99 @@ test('closing Inventory cancels its response while the shared subscription still
     window.fetch = (url, init) => {
       const endpoint = String(url).split('/').pop();
       if (!['getHasActiveSubscription', 'getInventory'].includes(endpoint)) return original(url, init);
+      if (endpoint === 'getHasActiveSubscription' && window.panelFixture.held[endpoint]) return Promise.resolve(Response.json({result: true}));
       return new Promise(resolve => {
         window.panelFixture.held[endpoint] = {signal: init.signal, finish: value => resolve(Response.json(value))};
       });
     };
   });
   await openPanel(page, 'Agent', 'Inventory');
-  await expect.poll(() => page.evaluate(() => Object.keys(window.panelFixture.held).length)).toBe(2);
+  await expect.poll(() => page.evaluate(() => Object.keys(window.panelFixture.held))).toEqual(['getHasActiveSubscription']);
   await page.getByRole('button', {name: 'Close Inventory', exact: true}).click();
-  await expect.poll(() => page.evaluate(() => ({inventory: window.panelFixture.held.getInventory.signal.aborted,
-    subscription: window.panelFixture.held.getHasActiveSubscription.signal.aborted}))).toEqual({inventory: true, subscription: false});
+  await expect.poll(() => page.evaluate(() => ({inventory: Boolean(window.panelFixture.held.getInventory),
+    subscription: window.panelFixture.held.getHasActiveSubscription.signal.aborted}))).toEqual({inventory: false, subscription: false});
   await page.evaluate(() => {
     window.panelFixture.held.getHasActiveSubscription.finish({result: true});
-    window.panelFixture.held.getInventory.finish({result: []});
   });
   await expect.poll(() => page.evaluate(() => window.panelFixture.agent?.subscription?.status)).toBe('active');
-  expect(await page.evaluate(() => window.panelFixture.inventory.status)).toBe('loading');
-  const panel = await openPanel(page, 'Agent', 'Profile');
+  expect(await page.evaluate(() => window.panelFixture.inventory.status)).toBe('idle');
+  let panel = await openPanel(page, 'Agent', 'Profile');
   await expect(panel).toContainText('C.O.R.E. active');
+  panel = await openPanel(page, 'Agent', 'Inventory');
+  await expect.poll(() => page.evaluate(() => Boolean(window.panelFixture.held.getInventory))).toBe(true);
+  await page.getByRole('button', {name: 'Close Inventory', exact: true}).click();
+  await expect.poll(() => page.evaluate(() => window.panelFixture.held.getInventory.signal.aborted)).toBe(true);
+  await page.evaluate(() => {
+    window.panelFixture.held.getInventory.finish({result: []});
+    delete window.panelFixture.held.getInventory;
+  });
+  panel = await openPanel(page, 'Agent', 'Inventory');
+  await expect.poll(() => page.evaluate(() => Boolean(window.panelFixture.held.getInventory))).toBe(true);
+  await page.evaluate(() => window.panelFixture.held.getInventory.finish({result: [['key', 1,
+    {resource: {resourceType: 'PORTAL_LINK_KEY'}, portalCoupler: {portalGuid: 'reopened', portalTitle: 'Reopened portal'}}]]}));
+  await expect(panel.getByRole('button', {name: 'Reopened portal'})).toBeVisible();
+  await expect(panel.getByRole('button', {name: 'Refresh', exact: true})).toBeEnabled();
+});
+
+test('Inventory retries unexpected results, then preserves loaded items without retrying an empty response', async ({page}) => {
+  await page.evaluate(() => {
+    const original = window.fetch;
+    window.panelFixture.calls = 0;
+    window.panelFixture.mode = 'recover';
+    window.fetch = (url, init) => {
+      const endpoint = String(url).split('/').pop();
+      if (endpoint === 'getHasActiveSubscription') return Promise.resolve(Response.json({result: true}));
+      if (endpoint !== 'getInventory') return original(url, init);
+      window.panelFixture.calls++;
+      if (window.panelFixture.mode === 'http') return Promise.resolve(Response.json({result: []}, {status: 503}));
+      if (window.panelFixture.mode === 'empty') return Promise.resolve(Response.json({result: []}));
+      if (window.panelFixture.calls === 1) return Promise.resolve(Response.json({result: false}));
+      if (window.panelFixture.calls === 2) return Promise.resolve(Response.json({}));
+      return Promise.resolve(Response.json({result: [['key', 1, {resource: {resourceType: 'PORTAL_LINK_KEY'},
+        portalCoupler: {portalGuid: 'retained', portalTitle: 'Retained portal'}}]]}));
+    };
+  });
+  const panel = await openPanel(page, 'Agent', 'Inventory');
+  await expect(panel).toContainText('Retrying');
+  await expect(panel.getByRole('button', {name: 'Retained portal'})).toBeVisible();
+  expect(await page.evaluate(() => window.panelFixture.calls)).toBe(3);
+  await page.evaluate(() => {window.panelFixture.mode = 'http';});
+  await panel.getByRole('button', {name: 'Refresh', exact: true}).click();
+  await expect(panel.getByRole('alert')).toContainText('HTTP 503');
+  await expect(panel.getByRole('alert')).toContainText('Showing previously loaded inventory');
+  await expect(panel.getByRole('button', {name: 'Retained portal'})).toBeVisible();
+  await page.evaluate(() => {window.panelFixture.mode = 'empty';});
+  await panel.getByRole('button', {name: 'Refresh', exact: true}).click();
+  await expect(panel.getByRole('alert')).toContainText('Wait a few minutes');
+  await expect(panel.getByRole('button', {name: 'Retained portal'})).toBeVisible();
+  await expect(panel.getByRole('button', {name: 'Refresh', exact: true})).toBeEnabled();
+  await page.waitForTimeout(1100);
+  expect(await page.evaluate(() => window.panelFixture.calls)).toBe(5);
+});
+
+test('Inventory distinguishes malformed responses from an empty response on first load', async ({page}) => {
+  await page.evaluate(() => {
+    const original = window.fetch;
+    window.panelFixture.mode = 'invalid';
+    window.panelFixture.calls = 0;
+    window.fetch = (url, init) => {
+      if (String(url).endsWith('/getInventory')) {
+        window.panelFixture.calls++;
+        return Promise.resolve(Response.json(window.panelFixture.mode === 'invalid' ? {} : {result: []}));
+      }
+      if (String(url).endsWith('/getHasActiveSubscription')) return Promise.resolve(Response.json({result: true}));
+      return original(url, init);
+    };
+  });
+  const panel = await openPanel(page, 'Agent', 'Inventory');
+  await expect(panel.getByRole('alert')).toContainText('unexpected inventory response');
+  expect(await page.evaluate(() => window.panelFixture.inventory.status)).toBe('error');
+  await page.evaluate(() => {window.panelFixture.mode = 'empty';});
+  await panel.getByRole('button', {name: 'Refresh', exact: true}).click();
+  await expect(panel).toContainText('Wait a few minutes');
+  await expect(panel).toContainText('C.O.R.E. active');
+  expect(await page.evaluate(() => window.panelFixture.inventory.status)).toBe('empty');
+  expect(await page.evaluate(() => window.panelFixture.calls)).toBe(4);
 });
 
 test('COMM channels, older history and sending use the shared authenticated runtime', async ({page}) => {

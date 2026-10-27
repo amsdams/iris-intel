@@ -28,19 +28,7 @@
 }
 
 .iitc-iris-analysis-summary-grid {
-    display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: var(--iitc-iris-space-3);
-}
-
-.iitc-iris-analysis-summary-cell {
-    --iitc-iris-summary-value-size: var(--iitc-iris-text-xl);
-    --iitc-iris-summary-label-weight: var(--iitc-iris-font-extrabold);
-    --iitc-iris-summary-label-transform: uppercase;
-
-    gap: var(--iitc-iris-space-1);
-    padding: var(--iitc-iris-space-3);
-    background: rgb(var(--iitc-iris-control-rgb) / 62%);
 }
 
 .iitc-iris-analysis-chip-row {
@@ -149,20 +137,9 @@
 
 .iitc-iris-portals-list-summary {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: var(--iitc-iris-space-3);
-    font-size: var(--iitc-iris-text-md);
 }
 
 .iitc-iris-portals-list-summary-item {
-    --iitc-iris-summary-value-size: var(--iitc-iris-text-xl);
-    --iitc-iris-summary-value-weight: var(--iitc-iris-font-black);
-    --iitc-iris-summary-value-line-height: 1.05;
-    --iitc-iris-summary-label-weight: var(--iitc-iris-font-extrabold);
-    --iitc-iris-summary-label-transform: uppercase;
-
-    gap: var(--iitc-iris-space-1);
-    align-content: start;
-    padding: var(--iitc-iris-space-3);
     border-color: color-mix(in srgb, var(--portal-team-color, #5fb4ff) 24%, transparent);
     background: color-mix(in srgb, var(--portal-team-color, #5fb4ff) 10%, rgb(var(--iitc-iris-control-rgb) / 62%));
     color: var(--iitc-iris-color-text);
@@ -310,12 +287,6 @@
 
     .iitc-iris-portals-list-search {
         grid-column: 1 / -1;
-    }
-
-    .iitc-iris-portals-list-summary-item {
-        --iitc-iris-summary-value-size: 14px;
-
-        padding: 5px;
     }
 
     .iitc-iris-portal-analysis-table {

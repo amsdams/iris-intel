@@ -48,7 +48,8 @@ for (const viewport of [{width: 780, height: 360}, {width: 780, height: 280}, {w
         const panel = await openPanel(page, menu, name);
         await expect(panel).toBeVisible();
         if (name === 'Inventory' || name === 'Missions') {
-          await expect(panel.locator('.iitc-iris-panel-state')).toHaveText('empty');
+          // The base fixture has no subscription; Inventory must stop before fetching items.
+          await expect(panel.locator('.iitc-iris-panel-state')).toHaveText(name === 'Inventory' ? 'error' : 'empty');
         }
         // Supply representative data through the real UI message boundary, without Intel credentials.
         await page.evaluate(name => {

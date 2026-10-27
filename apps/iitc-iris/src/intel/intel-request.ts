@@ -90,6 +90,7 @@ export function createIntelRequest({getLifetime, beginRequest}: IntelRequestOpti
     if (looksLikeHtml(text)) {
       throw createIitcAuthError(endpoint, response);
     }
+    if (!response.ok) throw new Error(`${endpoint} failed: HTTP ${response.status}`);
 
     const parsed = JSON.parse(text) as unknown;
     const error = parsed && typeof parsed === 'object' ? (parsed as {error?: unknown}).error : undefined;

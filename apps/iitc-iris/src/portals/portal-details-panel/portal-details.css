@@ -1,7 +1,17 @@
+.iitc-iris-portal-summary {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (width <= 760px) {
+    .iitc-iris-portal-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
 /* portal-level-summary */
-.iitc-iris-portal-summary-cell .iitc-iris-portal-level-value {
-    color: var(--iitc-color, #fff);
-    text-shadow: 0 0 10px color-mix(in srgb, var(--iitc-color, #fff) 42%, transparent);
+.iitc-iris-portal-level-value {
+    color: var(--iitc-iris-item-color, #fff);
+    text-shadow: 0 0 10px color-mix(in srgb, var(--iitc-iris-item-color, #fff) 42%, transparent);
 }
 
 /* portal-details-actions */

@@ -1,38 +1,44 @@
-/* Customize value/label typography on the cell root using the summary custom properties. */
-
-/* Base defaults stay weaker than feature/variant rules, independent of import order. */
-:where(.iitc-iris-summary-cell),
-:where(.iitc-iris-portal-summary-cell) {
+/* Shared value-first metric cards. Feature classes may add contextual colour. */
+:where(.iitc-iris-summary-cell) {
     position: relative;
     display: grid;
-    gap: 2px;
+    gap: var(--iitc-iris-space-1);
+    align-content: start;
     min-width: 0;
-    padding: 5px 6px;
+    padding: var(--iitc-iris-space-3);
     border: 1px solid rgb(var(--iitc-iris-border-rgb) / 18%);
     border-radius: 4px;
     overflow: hidden;
-    background: rgb(var(--iitc-iris-control-rgb) / 58%);
+    background: rgb(var(--iitc-iris-control-rgb) / 62%);
 }
 
-:where(.iitc-iris-summary-cell) b,
-:where(.iitc-iris-portal-summary-cell) b {
+:where(.iitc-iris-summary-cell) > b {
     min-width: 0;
     overflow: hidden;
     color: var(--iitc-iris-color-heading);
-    font-size: var(--iitc-iris-summary-value-size, 12px);
-    font-weight: var(--iitc-iris-summary-value-weight, bolder);
-    line-height: var(--iitc-iris-summary-value-line-height, inherit);
+    font-size: var(--iitc-iris-text-xl);
+    font-weight: var(--iitc-iris-font-black);
+    line-height: 1.05;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.iitc-iris-summary-cell small,
-.iitc-iris-portal-summary-cell small {
+.iitc-iris-summary-cell > small {
     overflow: hidden;
     color: var(--iitc-iris-color-muted);
     font-size: var(--iitc-iris-text-sm);
-    font-weight: var(--iitc-iris-summary-label-weight, inherit);
-    text-transform: var(--iitc-iris-summary-label-transform, inherit);
+    font-weight: var(--iitc-iris-font-extrabold);
+    text-transform: uppercase;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+@media (width <= 760px) {
+    :where(.iitc-iris-summary-cell) {
+        padding: 5px;
+    }
+
+    :where(.iitc-iris-summary-cell) > b {
+        font-size: 14px;
+    }
 }

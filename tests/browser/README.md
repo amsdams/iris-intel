@@ -47,7 +47,10 @@ layer/highlighter/base-map message verifies update ordering, retained marker ide
 
 [panel-requests.smoke.mjs](panel-requests.smoke.mjs) runs real Scores, Inventory/Profile, Passcode and COMM panel workflows
 with simulated endpoint responses, checking request metadata, selected-portal key counts and rendered rewards. It also
-checks that closing Inventory cancels its response while the shared subscription still updates Profile.
+checks that Inventory waits for an active shared subscription check, closing during that wait does not dispatch
+items afterward, closing during the inventory fetch cancels it, and reopening loads successfully. Inventory regressions
+exercise bounded retries for malformed responses, stopping on an empty
+response with wait guidance, HTTP failure feedback and retention of previously loaded items after failed or empty refreshes.
 
 The COMM case covers channel changes, older-history continuation, disabled Alerts input and simulated sending.
 All network responses are local fixtures; no live messages are sent.

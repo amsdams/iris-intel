@@ -84,6 +84,32 @@ Naming checklist before creating a new file or exported function:
   IITC naming is not appropriate.
 - Is the divergence only for code cleanliness? Keep the IITC name at the boundary and hide the cleaner structure inside.
 
+## Inventory reliability reference checkpoint — 2026-10-27
+
+Reference: `core/code/send_request.js` (`postAjax`) routes HTTP failures through the error callback;
+`reference/Community-plugins/dist/DanielOnDiordna/liveInventory.user.js` (`getInventory`) validates the result and
+supports bounded 500 ms retries. `reference/Community-plugins/dist/elkuku/inventory.user.js` (`InventoryFetcher.refresh`)
+rejects empty refreshes and retains cached inventory on refresh failure. Inventory is plugin-owned in IITC rather
+than a core panel. IRIS keeps its existing page-lifetime summary, `getInventory`/`lastQueryTimestamp: 0`, subscription
+sharing and message boundary. The app adapter now validates responses, makes at most three attempts for invalid
+results (500 ms between attempts), preserves previous data on failure, and resets cancelled requests so reopening can load again.
+An empty response alone cannot prove an empty account; show that limitation rather than silently clearing known data.
+The first version also retried valid empty lists. Phone testing still returned empty lists; desktop retained earlier
+data with a warning. Further reference comparison found `jaiperdu/player-inventory.user.js` (`handleInventory`,
+`refreshInventory`) explicitly associates empty results with possible rate limiting; Live Inventory/elkuku cache
+successful results for ten minutes. IRIS now stops on a valid empty list, advises waiting, and retains known data.
+This avoids immediate retries on a potentially throttled response. Throttling is plausible, not a confirmed server
+cause; IRIS has not added a persistent cache or assumed an exact server cooldown/shared-device quota.
+Invalid subscription responses are errors rather than inactive subscriptions. Shared transport rejects non-OK HTTP
+responses, retaining HTML-login detection first. The final pass waits for a shared active-subscription result before
+dispatching `getInventory`, matching the plugin prerequisite. Closing while waiting does not cancel the shared check
+or dispatch an inventory request after it finishes. Stock Intel's captured `xp.Ld`/`xp.re` gates access on subscription,
+and `xp.Ua` uses `Ap = 6E5` (ten minutes) between fetches; this establishes a client policy, not a server quota.
+No core parser or public hook changes. User later fetched inventory on mobile while desktop still received an empty
+list, after attempts close together. Stop active investigation here; server timing remains a watch item. Automated
+fixtures verify sequencing/recovery/feedback rather than proving a live-server cause; the final sequencing change
+still needs live observation.
+
 ## Feature organization and shared persistence contracts — 2026-10-27
 
 Reference seams remain `core/code/map.js` (position/URL/cookies) and `layerchooser.js` (layer preferences).
@@ -94,7 +120,8 @@ Stored formats, URL precedence, bounds/defaults, CSS import order and runtime li
 match their previous contents apart from relative paths; compiled CSS is byte-identical. The shared parser matches
 both previous adapters on 4,478 stored/URL fixtures (8,956 comparisons). Static imports/exports resolve across 169
 production TypeScript modules with no runtime cycles or imports from shared UI into features. No new IITC behavior,
-message contract changes or core work are included. Verification results and user smoke status are in the roadmap.
+message contract changes or core work are included. User reports XPI behaves as before; general smoke accepted.
+Verification details are in the roadmap.
 
 ## Map coordination ownership extraction — 2026-10-27
 

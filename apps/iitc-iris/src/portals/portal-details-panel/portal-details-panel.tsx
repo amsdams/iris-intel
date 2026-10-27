@@ -4,14 +4,15 @@ import './agent-name.css';
 import './portal-side-panel.css';
 import './portal-content.css';
 import './portal-details.css';
-import '../../ui/summary-grid/summary-layout.css';
-import '../../ui/summary-cell/summary-cell.css';
+import {SummaryGrid} from '../../ui/summary-grid';
+import {SummaryCell} from '../../ui/summary-cell';
 import {getCommTeamClass} from '../../comm/comm-display';
 import {formatIitcColorVars, getIitcLevelColor, getIitcRarityColor, IITC_RESONATOR_ENERGY} from '../../iitc-colors';
 import {PORTAL_DETAIL_SECTION_REGISTRY, type IitcIrisPortalDetailSectionId} from '../portal-detail-section-registry';
 import type {IitcIrisMissionsState, IitcIrisPortalDetailsState, IitcIrisSelectedPortal} from '../../messages';
 import {formatElapsedSeconds, getAuthErrorMessage, getPanelStatusClass} from '../../ui-status';
 import {ActionButton} from '../../ui/action-button';
+import {Badge} from '../../ui/badge';
 import {ClearButton} from '../../ui/clear-button';
 import {DiagnosticsChip} from '../../ui/diagnostics-chip';
 import {PanelFooter, PanelTitle} from '../../ui/panel';
@@ -131,6 +132,7 @@ const RESONATOR_PANEL_ORDER: (number | null)[] = [0, 1, 2, 3, null, 4, 5, 6, 7];
 export function IitcIrisPortalDetailsPanel(props: IitcIrisPortalDetailsPanelProps): h.JSX.Element {
   const {portal, portalDetails, portalMissionState} = props;
   const detailsStatus = portalDetails?.status ?? 'waiting';
+  const portalLevel = !portal.isPlaceholder && portal.level !== undefined && Number.isFinite(portal.level) ? portal.level : undefined;
   const {hasMissions, summary: missionSummary} = getPortalMissionSummary(portal, portalDetails, portalMissionState);
 
   return <aside className={`iitc-iris-portal-side-panel ${formatTeamClass(portal.team)} ${props.activeSidePanel ? 'iitc-iris-portal-side-panel-stacked' : ''}`} aria-label="Selected portal details">
@@ -151,10 +153,20 @@ export function IitcIrisPortalDetailsPanel(props: IitcIrisPortalDetailsPanelProp
             {detailsStatus}
           </StatusText>
         </span>
-        {portalDetails?.owner && (
-          <span className="iitc-iris-portal-owner-prominent" title={`Owner: ${portalDetails.owner}`}>
-            <small>owner</small>
-            <b className={getCommTeamClass(portal.team)}>{portalDetails.owner}</b>
+        {(portalLevel !== undefined || portalDetails?.owner) && (
+          <span className="iitc-iris-portal-heading-details">
+            {portalLevel !== undefined && (
+              <Badge className="iitc-iris-portal-level-badge" title={`Portal level ${portalLevel}`} aria-label={`Portal level ${portalLevel}`}
+                style={formatIitcColorVars(getIitcLevelColor(portalLevel))}>
+                L{portalLevel}
+              </Badge>
+            )}
+            {portalDetails?.owner && (
+              <span className="iitc-iris-portal-owner-prominent" title={`Owner: ${portalDetails.owner}`}>
+                <small>owner</small>
+                <b className={getCommTeamClass(portal.team)}>{portalDetails.owner}</b>
+              </span>
+            )}
           </span>
         )}
       </div>
@@ -173,29 +185,20 @@ export function IitcIrisPortalDetailsPanel(props: IitcIrisPortalDetailsPanelProp
         )}
         {props.copyStatus && <StatusText>{props.copyStatus}</StatusText>}
       </div>
-      <div className="iitc-iris-portal-summary">
-        <span className="iitc-iris-portal-summary-cell">
-          <StatusText>level</StatusText>
-          <b className="iitc-iris-portal-level-value" style={formatIitcColorVars(getIitcLevelColor(portal.level))}>
+      <SummaryGrid className="iitc-iris-portal-summary">
+        <SummaryCell label="level" value={
+          <span className="iitc-iris-portal-level-value" style={formatIitcColorVars(getIitcLevelColor(portal.level))}>
             {portal.isPlaceholder || portal.level === undefined ? '-' : `L${portal.level}`}
-          </b>
-        </span>
-        <span className="iitc-iris-portal-summary-cell">
-          <StatusText>health</StatusText>
-          <b>{formatPortalHealth(portal)}</b>
+          </span>
+        } />
+        <SummaryCell label="health" value={formatPortalHealth(portal)}>
           <span className="iitc-iris-summary-mini-track" aria-hidden="true">
             <span style={`width: ${formatPortalHealthPercent(portal)}%;`} />
           </span>
-        </span>
-        <span className="iitc-iris-portal-summary-cell">
-          <StatusText>res</StatusText>
-          <b>{portal.resCount !== undefined ? `${portal.resCount}/8` : '-'}</b>
-        </span>
-        <span className="iitc-iris-portal-summary-cell">
-          <StatusText>links</StatusText>
-          <b>{portal.links.count}</b>
-        </span>
-      </div>
+        </SummaryCell>
+        <SummaryCell label="res" value={portal.resCount !== undefined ? `${portal.resCount}/8` : '-'} />
+        <SummaryCell label="links" value={portal.links.count} />
+      </SummaryGrid>
       <div className="iitc-iris-portal-panel">
         <div className="iitc-iris-portal-panel-header">
           <StatusText>details</StatusText>

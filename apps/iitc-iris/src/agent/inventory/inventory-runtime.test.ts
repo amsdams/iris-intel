@@ -27,7 +27,7 @@ describe('Inventory and shared subscription ownership', () => {
       getIitcRequestDiagnostics: (): IitcIrisRequestDiagnostics => ({}) as IitcIrisRequestDiagnostics, postAgentState: vi.fn()};
     runtime = createInventoryRuntime(options);
   });
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {vi.unstubAllGlobals(); vi.useRealTimers();});
 
   it('retains key/capsule counts, selected-portal changes and page-lifetime inventory after map disposal', async () => {
     expect(runtime.getPortalKeyCount('portal')).toBeUndefined();
@@ -67,7 +67,7 @@ describe('Inventory and shared subscription ownership', () => {
       inventory: runtime.getState(), requestDiagnostics: {}}, '*');
   });
 
-  it('cancels the Inventory panel request while allowing shared subscription completion', async () => {
+  it('cancels Inventory while waiting for the shared subscription without requesting items afterward', async () => {
     const items = pending();
     const subscription = pending();
     post.mockImplementation(endpoint => endpoint === 'getInventory' ? items.promise : subscription.promise);
@@ -75,14 +75,35 @@ describe('Inventory and shared subscription ownership', () => {
     runtime.cancelActiveInventoryFetch();
     const inventorySignal = post.mock.calls.find(call => call[0] === 'getInventory')?.[2];
     const subscriptionSignal = post.mock.calls.find(call => call[0] === 'getHasActiveSubscription')?.[2];
-    expect(inventorySignal?.aborted).toBe(true);
+    expect(inventorySignal).toBeUndefined();
     expect(subscriptionSignal?.aborted).toBe(false);
     subscription.resolve({result: true});
     await runtime.refreshSubscriptionStatus();
     items.resolve(inventory);
     await refresh;
-    expect(runtime.getState()).toMatchObject({status: 'loading', items: 0, subscription: {status: 'active'}});
+    expect(runtime.getState()).toMatchObject({status: 'idle', requestState: 'idle', items: 0, subscription: {status: 'active'}});
     expect(runtime.getPortalKeyCount('portal')).toBeUndefined();
+    expect(post.mock.calls.filter(call => call[0] === 'getInventory')).toHaveLength(0);
+  });
+
+  it('waits for a shared active-subscription result before fetching inventory', async () => {
+    const subscription = pending();
+    post.mockImplementation(endpoint => endpoint === 'getInventory' ? Promise.resolve(inventory) : subscription.promise);
+    const shared = runtime.refreshSubscriptionStatus();
+    const refresh = runtime.refreshInventory();
+    expect(post.mock.calls.map(call => call[0])).toEqual(['getHasActiveSubscription']);
+    subscription.resolve({result: true});
+    await Promise.all([shared, refresh]);
+    expect(post.mock.calls.map(call => call[0])).toEqual(['getHasActiveSubscription', 'getInventory']);
+    expect(runtime.getState()).toMatchObject({status: 'ready', keys: 3});
+  });
+
+  it.each([{result: false}, {}, {result: 'true'}])('does not fetch items when subscription eligibility is unavailable: %j', async response => {
+    post.mockResolvedValue(response);
+    await runtime.refreshInventory();
+    expect(post.mock.calls.map(call => call[0])).toEqual(['getHasActiveSubscription']);
+    expect(runtime.getState().status).toBe('error');
+    expect(runtime.getState().error).toContain('C.O.R.E.');
   });
 
   it('disposes an old subscription without accepting its result or clearing the replacement request', async () => {
@@ -108,6 +129,7 @@ describe('Inventory and shared subscription ownership', () => {
     const old = pending();
     post.mockImplementation(endpoint => endpoint === 'getInventory' ? old.promise : Promise.resolve({result: true}));
     const first = runtime.refreshInventory();
+    await vi.waitFor(() => expect(post).toHaveBeenCalledWith('getInventory', {lastQueryTimestamp: 0}, expect.any(AbortSignal)));
     post.mockImplementation(async endpoint => endpoint === 'getInventory' ? inventory : {result: true});
     portal = {guid: 'other', title: 'Other portal'};
     await runtime.refreshInventory();
@@ -124,9 +146,80 @@ describe('Inventory and shared subscription ownership', () => {
     expect(runtime.getSubscriptionState()).toMatchObject({status: 'auth', hasActive: false});
     post.mockResolvedValue({result: 'true'});
     await runtime.refreshSubscriptionStatus();
-    expect(runtime.getSubscriptionState()).toMatchObject({status: 'inactive', hasActive: false});
-    post.mockResolvedValue({result: []});
+    expect(runtime.getSubscriptionState()).toMatchObject({status: 'error', hasActive: false});
+    post.mockImplementation(async endpoint => endpoint === 'getInventory' ? {result: []} : {result: true});
     await runtime.refreshInventory();
-    expect(runtime.getState()).toMatchObject({status: 'empty', keys: 0, portalKeysForSelectedPortal: null});
+    expect(runtime.getState()).toMatchObject({status: 'error', keys: 3, portalKeysForSelectedPortal: {total: 3}});
+    expect(runtime.getState().error).toContain('Wait a few minutes');
+  });
+
+  it.each([{}, {result: false}, {result: null}, {result: [false]}])('rejects an invalid inventory result instead of reporting empty: %j', async response => {
+    vi.useFakeTimers();
+    post.mockImplementation(async endpoint => endpoint === 'getInventory' ? response : {result: true});
+    const refresh = runtime.refreshInventory();
+    await vi.runAllTimersAsync();
+    await refresh;
+    expect(post.mock.calls.filter(call => call[0] === 'getInventory')).toHaveLength(3);
+    expect(runtime.getState()).toMatchObject({status: 'error', requestState: 'error'});
+    expect(runtime.getState().error).toContain('unexpected inventory response');
+    expect(runtime.getPortalKeyCount('portal')).toBeUndefined();
+  });
+
+  it('recovers from unexpected result shapes within one refresh', async () => {
+    vi.useFakeTimers();
+    const responses = [{}, {result: false}, inventory];
+    post.mockImplementation(async endpoint => endpoint === 'getInventory' ? responses.shift() : {result: true});
+    const refresh = runtime.refreshInventory();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(runtime.getState().status).toBe('loading');
+    expect(runtime.getState().error).toContain('Retrying (2/3)');
+    await vi.runAllTimersAsync();
+    await refresh;
+    expect(runtime.getState()).toMatchObject({status: 'ready', keys: 3});
+    expect(runtime.getState().error).toBeUndefined();
+  });
+
+  it('reports an empty response without immediately retrying a potentially throttled request', async () => {
+    vi.useFakeTimers();
+    post.mockImplementation(async endpoint => endpoint === 'getInventory' ? {result: []} : {result: true});
+    const refresh = runtime.refreshInventory();
+    await vi.runAllTimersAsync();
+    await refresh;
+    expect(runtime.getState()).toMatchObject({status: 'empty', requestState: 'ready', rawItems: 0});
+    expect(post.mock.calls.filter(call => call[0] === 'getInventory')).toHaveLength(1);
+  });
+
+  it('cancels retry timers and lets reopening start a new request', async () => {
+    vi.useFakeTimers();
+    post.mockImplementation(async endpoint => endpoint === 'getInventory' ? {} : {result: true});
+    const refresh = runtime.refreshInventory();
+    await vi.advanceTimersByTimeAsync(0);
+    runtime.cancelActiveInventoryFetch();
+    await refresh;
+    await vi.runAllTimersAsync();
+    expect(post.mock.calls.filter(call => call[0] === 'getInventory')).toHaveLength(1);
+    expect(runtime.getState()).toMatchObject({status: 'idle', requestState: 'idle'});
+    post.mockImplementation(async endpoint => endpoint === 'getInventory' ? inventory : {result: true});
+    await runtime.refreshInventory();
+    expect(runtime.getState()).toMatchObject({status: 'ready', keys: 3});
+  });
+
+  it('retains cached items on cancellation and keeps failure feedback when selection changes', async () => {
+    await runtime.refreshInventory();
+    const held = pending();
+    post.mockClear();
+    post.mockImplementation(endpoint => endpoint === 'getInventory' ? held.promise : Promise.resolve({result: true}));
+    const refresh = runtime.refreshInventory();
+    await vi.waitFor(() => expect(post).toHaveBeenCalledWith('getInventory', {lastQueryTimestamp: 0}, expect.any(AbortSignal)));
+    runtime.cancelActiveInventoryFetch();
+    expect(runtime.getState()).toMatchObject({status: 'ready', requestState: 'ready', keys: 3});
+    held.resolve({result: []});
+    await refresh;
+    post.mockRejectedValue(new Error('getInventory failed: HTTP 503'));
+    await runtime.refreshInventory();
+    portal = {guid: 'other', title: 'Other portal'};
+    runtime.selectedPortalChanged();
+    expect(runtime.getState()).toMatchObject({status: 'error', keys: 3, selectedPortalGuid: 'other',
+      error: 'getInventory failed: HTTP 503'});
   });
 });

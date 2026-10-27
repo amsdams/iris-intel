@@ -32,6 +32,7 @@
     window.fetch = async (url, options) => {
       const address = url instanceof Request ? url.url : String(url);
       if (address.includes('getPlexts')) return Response.json({result: []});
+      if (address.includes('getInventory')) return Response.json({result: []});
       if (address.includes('getEntities')) return Response.json({result: {map: {}}});
       if (address.includes('/r/')) return Response.json({result: false});
       return browserFetch(url, options);

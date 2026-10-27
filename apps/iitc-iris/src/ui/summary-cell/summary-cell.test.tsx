@@ -8,7 +8,8 @@ describe('SummaryCell', () => {
     expect(vnode.type).toBe('span');
     
     const children = vnode.props.children;
-    expect(children).toHaveLength(2);
+    expect(children).toHaveLength(3);
+    expect(children[2]).toBeUndefined();
     
     // First child should be <b>
     expect(children[0].type).toBe('b');
@@ -17,6 +18,12 @@ describe('SummaryCell', () => {
     // Second child should be <small>
     expect(children[1].type).toBe('small');
     expect(children[1].props.children).toBe('Items');
+  });
+
+  it('keeps supplementary content after the value and label', () => {
+    const track = 'health indicator';
+    const vnode = SummaryCell({value: '80%', label: 'Health', children: track});
+    expect(vnode.props.children[2]).toBe(track);
   });
 
   it('applies default and extra className values correctly', () => {

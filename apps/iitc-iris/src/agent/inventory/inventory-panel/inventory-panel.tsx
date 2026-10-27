@@ -40,6 +40,20 @@ export function IitcIrisInventoryPanel({inventoryState, refresh, zoomToAndShowPo
         {formatSubscriptionLabel(inventoryState.subscription)}
       </StatusText>
     </ControlRow>
+    {inventoryState.status === 'empty' && (
+      <StatusText role="status">
+        Intel returned no inventory items. Requests may be limited. Wait a few minutes before refreshing.
+        {inventoryState.subscription?.status === 'inactive' && ' Inventory access requires an active C.O.R.E. subscription.'}
+      </StatusText>
+    )}
+    {inventoryState.error && (
+      <StatusText role={inventoryState.status === 'loading' ? 'status' : 'alert'} className="iitc-iris-warning">
+        {inventoryState.status === 'auth'
+          ? 'Inventory requires an authenticated Intel session.'
+          : getAuthErrorMessage(inventoryState.status, inventoryState.error)}
+        {inventoryState.rawItems !== undefined && inventoryState.rawItems > 0 && ' Showing previously loaded inventory.'}
+      </StatusText>
+    )}
     <SummaryGrid>
       <SummaryCell value={`${formatInteger(inventoryState.items)} / 2500`} label="items" />
       <SummaryCell value={formatInteger(inventoryState.keys)} label={`${formatInteger(inventoryState.portalsWithKeys)} portals`} />
@@ -131,13 +145,6 @@ export function IitcIrisInventoryPanel({inventoryState, refresh, zoomToAndShowPo
         >
           core {formatElapsedSeconds(inventoryState.subscription.elapsedMs)}s
         </DiagnosticsChip>
-      )}
-      {inventoryState.error && (
-        <StatusText className="iitc-iris-warning" title={inventoryState.error}>
-          {inventoryState.status === 'auth'
-            ? 'Inventory requires an authenticated Intel session.'
-            : getAuthErrorMessage(inventoryState.status, inventoryState.error)}
-        </StatusText>
       )}
     </PanelFooter>
   </PanelBody>;

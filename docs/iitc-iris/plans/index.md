@@ -21,6 +21,52 @@ supported authentication and website-distribution permission evidence before beg
 are deferred; the baseline includes Passcode and Missions. The current map-runtime extraction preserves behavior;
 further decomposition should follow clear responsibility boundaries rather than a line-count target.
 
+**Session wrap-up:** checks, packaging and desktop XPI/mobile APK smoke pass; no known blocker to committing/pushing
+this session. After pushing, verify release CI and install its published build. Next engineering priority is profiling
+level-label performance; keep inventory availability under observation and investigate zoom-dependent data/features
+afterward. Further architecture/UI cleanup is driven by concrete findings. Play Store authentication/distribution
+requirements remain a separate pre-submission task.
+
+**Summary cards (2026-10-27):** all nine panels use the shared value-first `SummaryCell`/`SummaryGrid`:
+bold values above small muted uppercase labels, with consistent spacing and smaller mobile values. Portal Details
+retains the health indicator and level colour; Lists retains faction tinting and each panel keeps its column layout.
+Removed duplicate typography rules and legacy cell/grid aliases. User reports the final UI looks good on desktop XPI
+and mobile APK; general smoke is accepted, without claiming exhaustive theme/feature coverage. Inventory availability remains a watch item;
+no further map-runtime extraction or core changes are needed for this UI pass.
+`npm run check` passes (666 app/core tests, six release-gate tests, lint/types/CSS/workbench), as do all 36 Chrome
+browser cases and a temporary visual check across six theme/viewport combinations. Packaging and signed Android
+release checks pass (31 native + 15 JavaScript tests, lint/build); signature, bundled assets and downloads match.
+Latest local XPI/ZIP timestamp: `2026-10-27T21-26-41`; APK `0.4.1-alpha+5c18ffe` (1847).
+
+**Portal level visibility (2026-10-27):** Portal Details now uses the shared Badge beside the owner below the title,
+with the existing level palette, a dark tinted surface and bold white text in both themes. The fixed header keeps
+the badge visible while details scroll; unknown/placeholder levels are omitted and the summary value remains.
+Code checks and all 36 Chrome browser cases pass. A temporary visual probe checks six theme/viewport combinations,
+including 320 px width, long owner names and text contrast. Extension packaging and signed Android release checks
+pass; local XPI/ZIP timestamp `2026-10-27T21-18-30`, APK `0.4.1-alpha+5c18ffe` (1847). Pinned signature, bundled assets
+and port-6969 downloads match. The subsequent combined UI smoke is accepted on desktop XPI and mobile APK.
+
+**Inventory recovery and feedback (2026-10-27):** user reproduced loading → empty on open/Refresh while C.O.R.E.
+was active. Shared JSON transport now rejects non-OK HTTP responses. Inventory validates result/item shapes before
+the unchanged core parser and makes up to three attempts, 500 ms apart, for invalid results. Failed/empty
+refreshes preserve previously loaded items; visible feedback distinguishes retries, failures and empty
+responses on first load. Invalid subscription responses report errors rather than inactive C.O.R.E. Cancellation
+restores idle/cached state, cancels retry delays and allows reopening; selection changes retain failure feedback.
+The final pass waits for active C.O.R.E. before dispatching inventory, while keeping shared checks independent of
+panel cancellation. Invalid/inactive subscription results stop before requesting items.
+Reference comparison and intentional differences are in the port plan. The actual live response/server cause remains
+unknown. User confirmed better feedback, with empty results on mobile and preserved data on desktop. Reference
+plugins flag empty replies as possible throttling, so valid empty lists now stop immediately and advise waiting
+before Refresh; only invalid results are retried. User then fetched inventory on mobile while desktop still received
+empty data, after attempts close together. Active investigation stops here; keep availability/timing as a watch item.
+The final subscription-order change still needs live observation.
+`npm run check` passes (665 app/core tests + six release-gate tests,
+lint/types/CSS/workbench); all 36 Chrome cases and five Firefox panel-workflow cases pass. The initial landscape
+suite exposed its old `{result:false}` inventory fixture, which is now correctly rejected; the fixture now supplies
+a valid empty list. Extension packaging passes; XPI/ZIP timestamp `2026-10-27T21-09-07`. Signed Android release
+checks pass (31 native + 15 JavaScript tests, lint/build); APK `0.4.1-alpha+5c18ffe`, code 1847, matches the pinned
+certificate. All 19 bundled assets, extension contents and port-6969 downloads match. Changes remain uncommitted.
+
 **Feature organization and persistence contracts (2026-10-27):** grouped Player Tracker and base-layer files;
 Search, Missions, Display, Scores, Inventory and Passcode panels now live inside their feature folders.
 Runtime/workflow logic and tests stay outside panel folders. Map-generated CSS stays centrally imported in the same
@@ -35,7 +81,7 @@ exports resolve across 169 production TypeScript modules, with no runtime cycles
 into entry points. Extension packaging and signed Android release checks pass (31 native + 15 JavaScript tests, lint/build).
 APK `0.4.1-alpha+2c92386`, code 1846, matches the pinned certificate; all 19 assets, packaged extension contents and
 port-6969 downloads match. Latest local XPI/ZIP timestamp: `2026-10-27T20-46-44`. Source changes are uncommitted;
-this organization pass needs user smoke: open the moved panels, change/reload base map and pan/zoom/reload position.
+user reports XPI behaves as before, so the general smoke test is accepted. APK device testing was not repeated for this pass.
 
 **Combined map coordination extraction (2026-10-27):** map-view/preferences/URL/cookies now live in `map/map-view.ts`,
 agent profile publication in `agent/agent-runtime.ts`, overlay/highlighter update coordination in
@@ -93,7 +139,7 @@ The preceding feature batches are committed as `9af2cf1`; subsequent general XPI
 
 Extraction checkpoint reduction: 5,529 lines (90%) moved out of the coordinator; the organization pass adds one shared-settings import (631 lines now). Remaining ownership: feature assembly, map
 boot/lifetime/layers, movement/message routing, auth recovery and small location/debug overlays. Further splitting needs
-a meaningful ownership boundary, not a line-count target. Inventory reliability is the first deferred investigation afterward.
+a meaningful ownership boundary, not a line-count target. Inventory recovery/feedback is implemented above and awaiting live testing.
 
 **Scores, Passcode and Inventory extraction (2026-10-27):** these request workflows, their response-to-UI adaptation
 and cancellation now have feature owners. Inventory owns the shared subscription check and exposes key counts to the

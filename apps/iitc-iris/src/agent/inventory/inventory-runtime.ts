@@ -39,9 +39,13 @@ export function createInventoryRuntime(options: InventoryRuntimeOptions): Invent
     portalKeysForSelectedPortal: null,
   };
 
-  function cancelActiveInventoryFetch(): void {
+  function cancelActiveInventoryFetch(publish = true): void {
+    if (!currentInventoryAbortController) return;
     currentInventoryAbortController?.abort();
     currentInventoryAbortController = undefined;
+    const status = latestInventorySummary ? (latestInventorySummary.rawItems > 0 ? 'ready' : 'empty') : 'idle';
+    latestInventoryState = {...latestInventoryState, status, requestState: latestInventorySummary ? 'ready' : 'idle', error: undefined};
+    if (publish) postInventoryState();
   }
 
   function getPortalKeyCount(portalGuid: string): number | undefined {
@@ -113,7 +117,8 @@ export function createInventoryRuntime(options: InventoryRuntimeOptions): Invent
 
   function parseSubscriptionResponse(response: unknown): boolean {
     const result = response && typeof response === 'object' ? (response as {result?: unknown}).result : undefined;
-    return result === true;
+    if (typeof result !== 'boolean') throw new Error('Intel returned an unexpected C.O.R.E. response. Try Refresh again.');
+    return result;
   }
 
   function createInventoryStateFromSummary(
@@ -172,16 +177,56 @@ export function createInventoryRuntime(options: InventoryRuntimeOptions): Invent
 
   function refreshInventorySelectedPortalState(): void {
     if (!latestInventorySummary) return;
-    latestInventoryState = createInventoryStateFromSummary(
+    latestInventoryState = {...createInventoryStateFromSummary(
       latestInventorySummary,
       latestInventoryState.status,
       latestInventoryState.requestState,
       latestInventoryState.elapsedMs,
-    );
+    ), error: latestInventoryState.error};
+  }
+
+  async function waitForRetry(signal: AbortSignal): Promise<void> {
+    signal.throwIfAborted();
+    await new Promise<void>((resolve, reject) => {
+      const abort = (): void => {
+        clearTimeout(timer);
+        reject(signal.reason);
+      };
+      const timer = setTimeout(() => {
+        signal.removeEventListener('abort', abort);
+        resolve();
+      }, 500);
+      signal.addEventListener('abort', abort, {once: true});
+    });
+  }
+
+  async function fetchInventory(signal: AbortSignal): Promise<ReturnType<typeof parseIitcInventoryResponse>> {
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const response = await postIntelEndpoint('getInventory', {lastQueryTimestamp: 0}, signal);
+      signal.throwIfAborted();
+      const result = response && typeof response === 'object' ? (response as {result?: unknown}).result : undefined;
+      const rawItems = parseIitcInventoryResponse(response);
+      const valid = Array.isArray(result) && rawItems.length === result.length;
+      if (valid) {
+        // IITC inventory plugins treat empty replies as possible throttling, not a reason for rapid retries.
+        if (rawItems.length === 0 && latestInventorySummary?.rawItems) {
+          throw new Error('Intel returned no inventory items. Requests may be limited. Wait a few minutes before refreshing.');
+        }
+        return rawItems;
+      }
+      const problem = 'Intel returned an unexpected inventory response (missing or invalid item list).';
+      if (attempt === 3) {
+        throw new Error(`${problem} After 3 attempts, inventory could not be refreshed. Try Refresh again.`);
+      }
+      latestInventoryState = {...latestInventoryState, error: `${problem} Retrying (${attempt + 1}/3)…`};
+      postInventoryState();
+      await waitForRetry(signal);
+    }
+    throw new Error('Inventory could not be refreshed.');
   }
 
   async function refreshInventory(): Promise<void> {
-    cancelActiveInventoryFetch();
+    cancelActiveInventoryFetch(false);
     const abortController = new AbortController();
     currentInventoryAbortController = abortController;
     const startedAt = performance.now();
@@ -194,10 +239,15 @@ export function createInventoryRuntime(options: InventoryRuntimeOptions): Invent
     postInventoryState();
 
     try {
-      void refreshSubscriptionStatus();
-      const response = await postIntelEndpoint('getInventory', {lastQueryTimestamp: 0}, abortController.signal);
+      const subscription = await refreshSubscriptionStatus();
       abortController.signal.throwIfAborted();
-      const rawItems = parseIitcInventoryResponse(response);
+      if (subscription.status !== 'active') {
+        throw new Error(subscription.status === 'inactive'
+          ? 'Inventory access requires an active C.O.R.E. subscription.'
+          : subscription.error ?? 'Could not verify the C.O.R.E. subscription. Try Refresh again.');
+      }
+      const rawItems = await fetchInventory(abortController.signal);
+      abortController.signal.throwIfAborted();
       latestInventorySummary = summarizeIitcInventory(rawItems);
       latestInventoryState = createInventoryStateFromSummary(
         latestInventorySummary,
@@ -207,7 +257,7 @@ export function createInventoryRuntime(options: InventoryRuntimeOptions): Invent
       );
       postInventoryState();
     } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') return;
+      if (abortController.signal.aborted || (error instanceof DOMException && error.name === 'AbortError')) return;
       const status = isIitcAuthError(error) ? 'auth' : 'error';
       latestInventoryState = {
         ...latestInventoryState,

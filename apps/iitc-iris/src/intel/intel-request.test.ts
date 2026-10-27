@@ -84,8 +84,8 @@ describe('Authenticated Intel JSON endpoints', () => {
     expect(finish).toHaveBeenCalledTimes(3);
   });
 
-  it('keeps the existing JSON handling of non-OK HTTP responses during extraction', async () => {
+  it('rejects non-OK HTTP responses even when the body looks like successful JSON', async () => {
     const {transport} = setup('{"result":false}', 503);
-    await expect(transport.postIntelEndpoint('getInventory', {})).resolves.toEqual({result: false});
+    await expect(transport.postIntelEndpoint('getInventory', {})).rejects.toThrow('getInventory failed: HTTP 503');
   });
 });
