@@ -32,6 +32,13 @@ deliberate faults, not live providers. A recovered map uses OSM and updates Appe
 mission, inventory, and drawing lists exercise scrolling to the last row, import controls, and panel footers;
 panels must fit above navigation without clipping their top. The data is simulated through the UI message boundary.
 
+[map-entities.smoke.mjs](map-entities.smoke.mjs) checks real Leaflet layer identity across incremental generations,
+whole-overlay/faction/level/unclaimed filters, in-place highlighter refresh, and fresh entity layers after map replacement.
+It uses controlled fixture data through the page message boundary.
+
+[map-overlays.smoke.mjs](map-overlays.smoke.mjs) exercises real Draw Tools actions and cached mission route/waypoint
+rendering before and after map replacement, including stored drawing restoration and undo. It uses simulated data.
+
 [search.smoke.mjs](search.smoke.mjs) checks Enter submission with existing local results, arrow-key focus in displayed
 order, single-action point/portal navigation, and address bounds fitting with stubbed Nominatim responses. It also
 checks that `/` opens/refocuses the field, menu opening leaves focus alone, and editing/disabled shortcuts are respected.

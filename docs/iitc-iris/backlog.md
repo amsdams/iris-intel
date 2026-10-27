@@ -3,6 +3,13 @@
 Unprioritized product/parity gaps and dated comparison evidence. The [roadmap](plans/index.md) owns current work;
 [architecture](architecture.md) owns implementation guidance. Completed refactors below are not prerequisites to repeat.
 
+### Map replacement during Canvas redraw (2026-10-27)
+
+A populated Draw Tools/mission browser scenario reproduced Leaflet `clearRect` errors when the map is replaced before
+pending Canvas redraw callbacks finish. The original runtime failed 2 of 5 repetitions, so this predates the module
+extraction. Clearing paths before map disposal did not consistently fix it and was not retained. Investigate renderer
+callback ownership separately; the overlay replacement regression awaits completed animation/paint before replacement.
+
 ### Search navigation during zoom animation (2026-10-25)
 
 Browser checks reproduced an existing Leaflet edge case: activating another search result during an in-progress zoom

@@ -84,6 +84,29 @@ Naming checklist before creating a new file or exported function:
   IITC naming is not appropriate.
 - Is the divergence only for code cleanliness? Keep the IITC name at the boundary and hide the cleaner structure inside.
 
+## Entity renderer ownership extraction — 2026-10-27
+
+Reference seams: `core/code/map_renderer.js`, `portal_marker.js`, `portal_highlighter.js`, and `layerchooser.js`.
+Extracted existing portal/link/field construction, visibility filters, persistent groups, incremental synchronization,
+highlighter style refresh and portal overlays into `map/entities/map-renderer.ts`. Preserved object reuse, faction/level fast
+paths, diagnostics, pane/style order, pending portal selection and map replacement semantics. Requests, selection state,
+and the page message bridge keep their existing owners. Shared layer types/pane names live in `map/map-layers.ts`.
+This is an internal extraction with no intentional behavior changes or new public hooks. Real Leaflet browser regressions
+cover unchanged/replaced/removed entities, overlay/faction/level/unclaimed filters, highlighter style reuse and replacement-map
+resources. The entry point is 3,962 lines, down from 5,506 after the preceding split.
+
+## Map runtime ownership split — 2026-10-27
+
+This is an extraction of existing IRIS behavior, using reference `core/code/search_query.js`, `search_query_results_view.js`,
+`plugins/draw-tools.js`, and `plugins/missions.js` for domain naming and ownership. Search owns its query generation and
+preview/selection paths; Draw Tools owns stored item mutations and rendering; mission overlays own route/waypoint layers.
+The page entry point retains authenticated request coordination, entity rendering, mission fetching/caches, shared panes
+and layer arrays, and map lifetime disposal. Existing message names, persisted formats, render styles/order, geocoder
+fallback, and documented IRIS/IITC behavior differences remain. Map disposal invalidates Search and aborts its fetches
+through the same lifetime. Draw Tools highlight state retains its page lifetime across map replacement. No public hooks
+or plugin API are introduced. Focused regressions cover stale Search completion, stored indexes and current settings,
+mission waypoint interactions and replacement-map navigation; browser checks exercise real Leaflet layers after replacement.
+
 ## Search interaction simplification — 2026-10-25
 
 Reference: `reference/ingress-intel-total-conversion/core/code/search.js`, `search_query.js`, and

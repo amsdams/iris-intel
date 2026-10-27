@@ -98,6 +98,18 @@ ownership guards stop old responses or completions from mutating replacement sta
 listeners intentionally survive map replacement. This is a focused lifetime boundary, not a claim that every effect
 or browser lifecycle has been audited.
 
+The page runtime composes `map/search/search-runtime.ts` (query sequencing, geocoder requests, previews and navigation),
+`map/draw-tools/draw-tools-runtime.ts` (stored items, actions, highlighting and drawing), and
+`map/missions/mission-overlay.ts` (route/waypoint geometry and navigation). These page-owned controllers read the
+current map/entities/settings through explicit callbacks; they do not capture a replaced map or import the entry point.
+Search invalidation remains in map disposal; its requests use the existing map lifetime.
+
+`map/entities/map-renderer.ts` owns portal/link/field layers, visibility filters, incremental synchronization,
+highlighter style refresh, portal overlays and render diagnostics. `map/map-layers.ts` names the shared layer/pane types;
+map creation still owns their allocation. Requests, selection state and mission caches stay in the entry point.
+Renderer callbacks read the current state; disposal invalidates its render context and map-keyed resources stay separate.
+Keep feature behavior in these modules and coordination in `page-map-runtime.ts`; no generic plugin/controller framework is required.
+
 ## Validation And Known Limits
 
 The completed cleanup passed 112 core and 405 app tests, lint/typechecks including workbench sources, CSS lint,
